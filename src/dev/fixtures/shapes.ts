@@ -685,6 +685,7 @@ export function shapeDetailsProps(key: ShapeKey, selectedId: string = SHAPES[key
     onSessionGoal: noop,
     // CA-05: what a session carries, a check's runs, how a model was run, an agent's lines and a trained model's file.
     onSessionExtras: noop,
+    onAddPlugin: noop,
     onSessionTogether: noop,
     onCheckRuns: noop,
     onModelRun: noop,

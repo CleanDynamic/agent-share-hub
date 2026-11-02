@@ -23,6 +23,8 @@ import { PROMPT_TYPE } from "./composePrompts";
 import { AGENT_TYPE, TEAM_TYPE } from "./graph";
 import { methodOf } from "./forkRules";
 import { newSessionKey, todayDay } from "./making";
+import { originOf } from "./promptOrigin";
+import { copiedFacts } from "./sessionFacts";
 import type { BuildNode } from "./types";
 
 type Payload = Record<string, unknown>;
@@ -208,12 +210,12 @@ export function sessionCopyOf(item: Pick<LibrarySavedItem, "id" | "ref" | "snaps
   const sourceRef = { import_session_id: item.ref ?? item.id, build_id: snap.source?.buildId ?? null, saved_item_id: item.id } as unknown as Json;
   return {
     key,
-    meta: { tool: snap.source?.tool?.trim() || null, date: today, ...(snap.model ? { model: snap.model } : null), ...(snap.title?.trim() ? { title: snap.title.trim().slice(0, 80) } : null), ...(credit ? { contributor_id: credit } : null) },
+    meta: { tool: snap.source?.tool?.trim() || null, date: today, ...(snap.model ? { model: snap.model } : null), ...(snap.title?.trim() ? { title: snap.title.trim().slice(0, 80) } : null), ...(credit ? { contributor_id: credit } : null), ...copiedFacts(snap.facts) },
     tiles: (snap.prompts ?? []).map((prompt) => ({
       type: PROMPT_TYPE,
       title: null,
       note: null,
-      payload: { text: text(prompt.text), ...(snap.model ? { model: snap.model } : null) } as Json,
+      payload: { text: text(prompt.text), ...(snap.model ? { model: snap.model } : null), ...(originOf(prompt) ? { sent_by: prompt.sent_by, ...(prompt.interval ? { interval: prompt.interval } : null), ...(prompt.event ? { event: prompt.event } : null) } : null) } as Json,
       source_ref: sourceRef,
     })),
   };

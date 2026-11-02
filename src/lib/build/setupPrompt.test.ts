@@ -97,3 +97,21 @@ describe("setupPromptOf: what it says", () => {
     expect(SETUP_PROMPT_COPY.copied).toBe("Setup prompt copied");
   });
 });
+
+describe("SV-30: plugins and prompt origin in the setup prompt", () => {
+  it("writes a plugin as its install line, never as files", () => {
+    const tree = [
+      node("a", 0, "agent_config", { model: "m", system_prompt: "Help." }),
+      node("pl", 1, "code", { source: "/plugin install review-kit@acme", setup: { agent: "a", kind: "plugin" }, plugin: { name: "review-kit", source: "acme marketplace", contains: ["commands"], install: "/plugin install review-kit@acme" } }),
+    ];
+    const text = setupPromptOf("a", { tree }).text;
+    expect(text).toContain("Install the plugin review-kit from acme marketplace: /plugin install review-kit@acme");
+    expect(text).not.toMatch(/Create .*review-kit/);
+  });
+  it("says a job prompt was not typed by the maker", () => {
+    const job = node("j", 0, "prompt", { text: "Check the queue", sent_by: "heartbeat", interval: "daily 09:00", deliverable: { kind: "report", name: "Queue" } }, "Queue check");
+    const tree = [node("a", 0, "agent_config", { model: "m", system_prompt: "Help." }, null, [job])];
+    const text = setupPromptOf("a", { tree }).text;
+    expect(text).toContain("(sent daily at 09:00)");
+  });
+});

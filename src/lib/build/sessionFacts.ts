@@ -10,7 +10,11 @@
 // Costs are always said as "about". A cost read from a Claude Code result file is in the file's own currency (US
 // dollars) and is shown in it; it is never converted, because no rate is known here.
 
+import { ACCESS_SYSTEMS, ENVIRONMENTS, ISOLATIONS, accessLine, accessOf, environmentLine, type AccessEntry, type Environment, type Isolation } from "./sessionAccess";
+import { reviewLine, reviewOf, reviewRefusal, type SessionReview } from "./sessionReview";
+import { outputsCountLine, outputsOf, outputsRefusal, type OutputLink } from "./sessionOutputs";
 import { traceUrlOf } from "./trace";
+import { EFFORTS, EFFORT_LABEL, type Effort } from "./tileExtras";
 
 export type Currency = "GBP" | "USD";
 
@@ -38,17 +42,63 @@ export interface SessionExtras {
   parallelWith?: string[];
   /** CA-05 P5: the branch or folder it worked in. */
   ownCopy?: string;
+  /** SV-30 P1: the provider's exact model ID, with its version or date ("claude-opus-4-5-20251101"). `model` stays the display name. */
+  model_id?: string;
+  /** SV-30 P1: the harness's reasoning effort for the session. */
+  effort?: Effort;
+  /** SV-30 P4: where the harness ran, how its changes were kept apart, whether it could install packages, and what it could reach. */
+  environment?: Environment;
+  isolation?: Isolation;
+  can_install?: boolean;
+  access?: AccessEntry[];
+  /** SV-30 P6: how many turns the session had, and how many times it was compacted. */
+  messages?: number;
+  compactions?: number;
+  /** SV-30 P6: which of these figures were read from the run when the session was added; any other is the maker's figure. */
+  from_run?: RunKey[];
+  /** SV-30 P7: what the session produced, as the maker gave it, and whether readers see it. */
+  outputs?: OutputLink[];
+  showOutputs?: boolean;
+  /** SV-30 P8: how much of its changes a human reviewed. */
+  review?: SessionReview;
+  /** SV-30: the outputs (and the review) came with a copy of the original: they are the original's evidence, not this build's. */
+  from_original?: boolean;
 }
+
+export const RUN_KEYS = ["messages", "compactions"] as const;
+export type RunKey = (typeof RUN_KEYS)[number];
+
+/** SV-30 P6: what the run itself showed, per session: the import's turn count, and the compaction summaries among its turns. Never stored. */
+export interface RunFacts {
+  messages?: number;
+  compactions?: number;
+}
+
+/** The count to show and whether it was read from the run: the maker's own figure wins, then the run's. */
+export function figureOf(maker: number | undefined, run: number | undefined): { value: number; from: "maker" | "run" } | null {
+  if (maker !== undefined) return { value: maker, from: "maker" };
+  return run !== undefined && run > 0 ? { value: run, from: "run" } : null;
+}
+
+/** Where a stored count came from: the run it was read from when the session was added, or the maker. */
+export const sourceOfCount = (extras: SessionExtras, key: RunKey): "run" | "maker" => (extras.from_run?.includes(key) ? "run" : "maker");
+
+export const countWords = {
+  messages: (n: number) => `${n.toLocaleString("en-GB")} ${n === 1 ? "message" : "messages"}`,
+  compactions: (n: number) => `${n.toLocaleString("en-GB")} ${n === 1 ? "compaction" : "compactions"}`,
+};
 
 export const COST_MAX = 100_000;
 export const TOKENS_MAX = 1_000_000_000_000;
 export const STARTED_WITH_MAX = 2000;
 export const OWN_COPY_MAX = 80;
 export const PARALLEL_MAX = 20;
+/** SV-30 P1: the longest model ID. */
+export const MODEL_ID_MAX = 80;
 /** A session over this many words is "long". */
 export const LONG_SESSION_WORDS = 100_000;
 
-const EXTRA_KEYS = ["cost", "currency", "tokens", "ms", "traceUrl", "cached", "words", "showCost", "background", "startedWith", "parallelWith", "ownCopy"] as const;
+const EXTRA_KEYS = ["cost", "currency", "tokens", "ms", "traceUrl", "cached", "words", "showCost", "background", "startedWith", "parallelWith", "ownCopy", "model_id", "effort", "environment", "isolation", "can_install", "access", "messages", "compactions", "from_run", "outputs", "showOutputs", "review", "from_original"] as const;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -82,6 +132,28 @@ export function extrasOf(entry: unknown): SessionExtras {
     if (keys.length > 0) out.parallelWith = keys;
   }
   if (typeof entry.ownCopy === "string" && entry.ownCopy.trim()) out.ownCopy = entry.ownCopy.trim().slice(0, OWN_COPY_MAX);
+  const modelId = typeof entry.model_id === "string" ? entry.model_id.trim() : "";
+  if (modelId) out.model_id = modelId.slice(0, MODEL_ID_MAX);
+  if (EFFORTS.includes(entry.effort as Effort)) out.effort = entry.effort as Effort;
+  if (ENVIRONMENTS.includes(entry.environment as Environment)) out.environment = entry.environment as Environment;
+  if (ISOLATIONS.includes(entry.isolation as Isolation)) out.isolation = entry.isolation as Isolation;
+  if (typeof entry.can_install === "boolean") out.can_install = entry.can_install;
+  const access = accessOf(entry.access);
+  if (access.length > 0) out.access = access;
+  const messages = whole(entry.messages, TOKENS_MAX);
+  if (messages !== undefined && messages > 0) out.messages = messages;
+  const compactions = whole(entry.compactions, 10_000);
+  if (compactions !== undefined && compactions > 0) out.compactions = compactions;
+  if (Array.isArray(entry.from_run)) {
+    const kept = RUN_KEYS.filter((key) => (entry.from_run as unknown[]).includes(key) && out[key] !== undefined);
+    if (kept.length > 0) out.from_run = kept;
+  }
+  const outputs = outputsOf(entry.outputs);
+  if (outputs.length > 0) out.outputs = outputs;
+  if (entry.showOutputs === true) out.showOutputs = true;
+  const review = reviewOf(entry.review);
+  if (review) out.review = review;
+  if (entry.from_original === true) out.from_original = true;
   return out;
 }
 
@@ -90,6 +162,25 @@ export function withExtras<T extends object>(entry: T, next: SessionExtras): T {
   const out: Record<string, unknown> = { ...(entry as Record<string, unknown>) };
   for (const key of EXTRA_KEYS) delete out[key];
   return { ...out, ...extrasOf(next) } as T;
+}
+
+/** SV-30: the facts of a session that are METHOD, and travel with a copy of it. */
+export const METHOD_FACT_KEYS = ["model_id", "effort", "environment", "isolation", "can_install", "access"] as const;
+
+/**
+ * SV-30: the facts a copy of a session starts with. How it was run (model, effort, environment, isolation, access) is method and is
+ * kept. What it cost, how long it ran, what it produced and who reviewed it belong to the run that earned them, so they stay with the
+ * original (later parts add the evidence the copy keeps, labelled as the original's).
+ */
+export function copiedFacts(extras: unknown): SessionExtras {
+  const read = extrasOf(extras);
+  const out: Record<string, unknown> = {};
+  for (const key of METHOD_FACT_KEYS) if (read[key] !== undefined) out[key] = read[key];
+  // What it produced is the original's evidence: kept, labelled as the original's, and not shown to readers until the copier says so.
+  if (read.outputs) out.outputs = read.outputs;
+  if (read.review) out.review = read.review;
+  if (read.outputs || read.review) out.from_original = true;
+  return out as SessionExtras;
 }
 
 /** What the cost well shows and what it takes back: a number with at most two decimals, or nothing. */
@@ -106,6 +197,21 @@ export function extrasRefusal(extras: SessionExtras): string | null {
   if (extras.cost !== undefined && (!Number.isFinite(extras.cost) || extras.cost < 0 || extras.cost > COST_MAX)) return `What it cost is a number from 0 to ${COST_MAX.toLocaleString("en-GB")}.`;
   if (extras.startedWith !== undefined && extras.startedWith.length > STARTED_WITH_MAX) return `Command: ${STARTED_WITH_MAX} characters max`;
   if (extras.ownCopy !== undefined && extras.ownCopy.length > OWN_COPY_MAX) return `Name: ${OWN_COPY_MAX} characters max`;
+  if (extras.model_id !== undefined && extras.model_id.trim().length > MODEL_ID_MAX) return `Model ID: ${MODEL_ID_MAX} characters max`;
+  if (extras.effort !== undefined && !EFFORTS.includes(extras.effort)) return "Reasoning effort is default, low or high.";
+  if (extras.environment !== undefined && !ENVIRONMENTS.includes(extras.environment)) return "Where it ran is the maker's machine, a remote environment or a cloud sandbox.";
+  if (extras.isolation !== undefined && !ISOLATIONS.includes(extras.isolation)) return "Isolation is a worktree, a container, a virtual machine or none.";
+  if (extras.access && (extras.access.length > ACCESS_SYSTEMS.length || accessOf(extras.access).length !== extras.access.length)) return "Access is a system and read or write, once each.";
+  if (extras.messages !== undefined && !(Number.isInteger(extras.messages) && extras.messages >= 0)) return "Messages is a whole number.";
+  if (extras.compactions !== undefined && !(Number.isInteger(extras.compactions) && extras.compactions >= 0 && extras.compactions <= 10_000)) return "Compactions is a whole number.";
+  if (extras.outputs) {
+    const why = outputsRefusal(extras.outputs);
+    if (why) return why;
+  }
+  if (extras.review) {
+    const why = reviewRefusal(extras.review);
+    if (why) return why;
+  }
   if (extras.parallelWith && extras.parallelWith.length > PARALLEL_MAX) return `At most ${PARALLEL_MAX} sessions ran at the same time.`;
   return null;
 }
@@ -118,7 +224,17 @@ export const FACTS_COPY = {
   tokens: (tokens: number) => (tokens >= 1_000_000 ? `${(Math.round(tokens / 100_000) / 10).toString()} million tokens` : `${tokens.toLocaleString("en-GB")} tokens`),
   cached: "Later runs cost less, because the start is reused.",
   background: "Ran in the background",
+  /** SV-30 P1. */
+  effort: (effort: Effort) => `Reasoning effort: ${EFFORT_LABEL[effort].toLowerCase()}`,
 } as const;
+
+/** SV-30 P1: "Claude Opus 4.5 (claude-opus-4-5-20251101)"; the display name alone, or the ID alone, when only one is known. */
+export function modelWithId(display: string | null | undefined, id: string | null | undefined): string | null {
+  const name = display?.trim() ?? "";
+  const modelId = id?.trim() ?? "";
+  if (name && modelId && name !== modelId) return `${name} (${modelId})`;
+  return name || modelId || null;
+}
 
 /** The words of a session, to the nearest thousand: it is said as "about". */
 export const roundedWords = (words: number): number => Math.round(words / 1000) * 1000;
@@ -127,13 +243,17 @@ export interface FactsInput {
   extras?: SessionExtras;
   /** The session's own text, in words, worked out from its steps. */
   words?: number;
+  /** SV-30 P1: the session's display model name, so a model ID is said beside it. */
+  model?: string | null;
+  /** SV-30 P6: what the import showed (its turns, its compaction summaries), used where the maker gave no figure. */
+  run?: RunFacts;
 }
 
 /**
- * The one optional line under a session head: the parts that exist, joined with " · ", or null. A maker sees all of
+ * The one optional line under a session head: the parts that exist (SV-30: with the model ID, effort and where it ran; the rest are `sessionDetailLines`), joined with " · ", or null. A maker sees all of
  * it; a reader sees the cost, the tokens and the cached sentence only when the maker ticked Show readers.
  */
-export function sessionFactsLine({ extras = {}, words = 0 }: FactsInput, audience: "maker" | "reader"): string | null {
+export function sessionFactsLine({ extras = {}, words = 0, model = null, run = {} }: FactsInput, audience: "maker" | "reader"): string | null {
   const total = Math.max(words, extras.words ?? 0);
   const costShown = audience === "maker" || extras.showCost === true;
   const parts: string[] = [];
@@ -146,8 +266,30 @@ export function sessionFactsLine({ extras = {}, words = 0 }: FactsInput, audienc
     if (cost.length > 0) parts.push(cost.join(" and "));
     if (extras.cached) parts.push(FACTS_COPY.cached);
   }
+  if (extras.model_id) parts.push(modelWithId(model, extras.model_id) as string);
+  if (extras.effort) parts.push(FACTS_COPY.effort(extras.effort));
+  const environment = environmentLine(extras);
+  if (environment) parts.push(environment);
   if (extras.background) parts.push(FACTS_COPY.background);
   return parts.length > 0 ? parts.join(" · ") : null;
+}
+
+/** SV-30: the labelled lines under an open session's head, one fact each: Access, Produced, Length and Human review. Each only when it has something to say. */
+export function sessionDetailLines({ extras = {}, run = {} }: Pick<FactsInput, "extras" | "run">, audience: "maker" | "reader"): string[] {
+  const original = extras.from_original === true;
+  const lines: string[] = [];
+  const access = accessLine(extras.access);
+  if (access) lines.push(access);
+  // What it produced: readers get it only when the maker ticked Show readers.
+  const produced = audience === "maker" || extras.showOutputs === true ? outputsCountLine(extras.outputs ?? []) : null;
+  if (produced) lines.push(original ? `Produced, the original's: ${produced}` : `Produced: ${produced}`);
+  const messages = figureOf(extras.messages, run.messages);
+  const compactions = figureOf(extras.compactions, run.compactions);
+  const length = [messages ? countWords.messages(messages.value) : null, compactions ? countWords.compactions(compactions.value) : null].filter((part): part is string => part !== null);
+  if (length.length > 0) lines.push(`Length: ${length.join(" · ")}`);
+  // How much a human reviewed is a fact the maker states about their own work, so readers see it.
+  if (extras.review) lines.push(original ? `The original's ${reviewLine(extras.review).replace(/^Human review/, "human review")}` : reviewLine(extras.review));
+  return lines;
 }
 
 /* ── a Claude Code result file ── */

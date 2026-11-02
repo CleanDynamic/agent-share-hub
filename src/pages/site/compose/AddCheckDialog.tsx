@@ -41,6 +41,8 @@ import {
 import { CheckCasesField, keptCases } from "./CheckCasesField";
 import { comparisonFields, harnessFields, type EvalChoices, type Extras } from "./EvalHarnessFields";
 import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from "./ModalFrame";
+import { EMPTY_EVIDENCE, EVIDENCE_KIND_LABEL, evidenceDraftRefusal, evidenceFromDraft, measurementLine, type EvidenceDraft, type EvidencePayload } from "@/lib/build/evidenceKinds";
+import { EvidenceControl } from "./EvidenceControl";
 import { ModelPicker } from "./ModelPicker";
 import { Alert, Block, BlockHead, Count, FieldArea, FieldInput, FileButton, FileLine, Hint, Inline, LabelText, MODAL_WIDTH, NARROW, Panel, PanelBody, RateBar, SegmentedField, Spread } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
@@ -87,8 +89,9 @@ export const CHECK_DIALOG_COPY = {
 } as const;
 
 export type AddCheckInput = Omit<CheckInput, "testedStep" | "evidence"> & {
-  /** CA-15 P5: evidence is a URL, or one file the page stores. */
-  evidenceUrl?: string;
+  /** CA-15 P5, SV-30 P8: evidence is a kind and a link, a measurement or pasted output, or one file the page stores. `evidence` is what a draft stores; `evidenceDraft` is the draft itself, for the Details row. */
+  evidence?: EvidencePayload | null;
+  evidenceDraft?: EvidenceDraft;
   evidenceFile?: File | null;
 };
 
@@ -107,9 +110,8 @@ export interface CheckSeed {
   target: string;
   model: string;
   version: string;
-  evidenceUrl: string;
-  /** The file kept as the evidence, by name. */
-  evidenceName: string | null;
+  /** SV-30 P8: the evidence as the one control holds it (a file kept as the evidence is carried in it). */
+  evidence: EvidenceDraft;
   /** SV-29: the comparison's and the eval harness's payload keys, as stored. */
   extras?: Extras;
 }
@@ -153,7 +155,7 @@ function Form({ onAdd, onCancel, phone, seed, edit, evalChoices }: Pick<AddCheck
   const [target, setTarget] = useState(seed?.target ?? "");
   const [model, setModel] = useState<string | null>(seed?.model || null);
   const [version, setVersion] = useState(seed?.version ?? "");
-  const [evidenceUrl, setEvidenceUrl] = useState(seed?.evidenceUrl ?? "");
+  const [evidence, setEvidence] = useState<EvidenceDraft>(seed?.evidence ?? EMPTY_EVIDENCE);
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [fileWrong, setFileWrong] = useState<string | null>(null);
   const [tried, setTried] = useState(false);
@@ -167,7 +169,7 @@ function Form({ onAdd, onCancel, phone, seed, edit, evalChoices }: Pick<AddCheck
   const shownTotal = fromCases ? String(given.length) : total;
   const input = { tested, passing, onFail: failed, passed: countOf(passed), total: countOf(total), runAt, ...(fromCases ? { cases: given } : null) };
   // A check that is there keeps its counts as they are, so only its text and date are held to the Add rules.
-  const why = (edit ? checkRefusal({ ...input, passed: 0, total: 0, cases: undefined }) : checkRefusal(input)) ?? (evidenceUrl.trim() && !cleanUrl(evidenceUrl) ? CHECK_DIALOG_COPY.evidenceBad : null) ?? extrasRefusal(extras, scoring);
+  const why = (edit ? checkRefusal({ ...input, passed: 0, total: 0, cases: undefined }) : checkRefusal(input)) ?? evidenceDraftRefusal(evidence) ?? extrasRefusal(extras, scoring);
   const missing = missingLabels([
     [tested.trim().length > 0, "Test description"],
     [passing.trim().length > 0, "Pass criteria"],
@@ -209,7 +211,9 @@ function Form({ onAdd, onCancel, phone, seed, edit, evalChoices }: Pick<AddCheck
       ...(reviewer ? { reviewer } : null),
       ...(scoring ? { scoring: { how: scoring, ...(scoring === "metric" && target.trim() ? { target: target.trim() } : null) } } : null),
       ...(model?.trim() || version.trim() ? { modelTested: { model: (model ?? "").trim(), version: version.trim() } } : null),
-      ...(evidenceFile ? { evidenceFile } : evidenceUrl.trim() ? { evidenceUrl: evidenceUrl.trim() } : null),
+      ...(edit || evidenceFromDraft(evidence) || evidenceFile ? { evidenceDraft: evidence } : null),
+      ...(evidenceFile ? { evidenceFile } : null),
+      ...(!evidenceFile && evidenceFromDraft(evidence) ? { evidence: evidenceFromDraft(evidence) } : null),
       ...(Object.keys(extras).length > 0 ? { extras } : null),
     });
   };
@@ -278,16 +282,15 @@ function Form({ onAdd, onCancel, phone, seed, edit, evalChoices }: Pick<AddCheck
           <FieldInput phone={phone} aria-label={CHECK_DIALOG_COPY.version} maxLength={MODEL_VERSION_MAX} value={version} placeholder={CHECK_DIALOG_COPY.versionPlaceholder} onChange={(event) => setVersion(event.target.value)} />
         </OptionalField>
 
-        <OptionalField name={CHECK_DIALOG_COPY.evidence} description={CHECK_DIALOG_COPY.evidenceLine} summary={summaryOf(evidenceFile?.name, evidenceFile ? null : evidenceUrl)} phone={phone}>
-          <FieldInput phone={phone} aria-label={CHECK_DIALOG_COPY.evidenceUrl} inputMode="url" disabled={Boolean(evidenceFile) || Boolean(seed?.evidenceName)} value={evidenceUrl} onChange={(event) => setEvidenceUrl(event.target.value)} />
+        <OptionalField name={CHECK_DIALOG_COPY.evidence} description={CHECK_DIALOG_COPY.evidenceLine} summary={summaryOf(evidence.kind ? EVIDENCE_KIND_LABEL[evidence.kind] : null, evidenceFile?.name ?? (evidence.mediaId ? evidence.name : null), evidenceFile || evidence.mediaId ? null : evidence.kind === "measurement" ? evidenceFromDraft(evidence)?.measurement && measurementLine(evidenceFromDraft(evidence)?.measurement as NonNullable<EvidencePayload["measurement"]>) : evidence.url)} phone={phone}>
+          <EvidenceControl draft={evidence} onChange={(next) => setEvidence(next)} phone={phone} fileChosen={Boolean(evidenceFile)} />
           {edit ? null : (
             <Inline>
-              <FileButton phone={phone} onFiles={chooseEvidence} testId="check-evidence-file" inputLabel={CHECK_DIALOG_COPY.evidenceFile} disabled={evidenceUrl.trim().length > 0}>
+              <FileButton phone={phone} onFiles={chooseEvidence} testId="check-evidence-file" inputLabel={CHECK_DIALOG_COPY.evidenceFile} disabled={evidence.url.trim().length > 0 || evidence.kind === "measurement"}>
                 {CHECK_DIALOG_COPY.evidenceFile}
               </FileButton>
             </Inline>
           )}
-          {seed?.evidenceName ? <Hint>{`${seed.evidenceName} attached`}</Hint> : null}
           {evidenceFile ? <FileLine name={evidenceFile.name} removeLabel={`${CHECK_DIALOG_COPY.remove} ${evidenceFile.name}`} onRemove={() => setEvidenceFile(null)} phone={phone} /> : null}
           {fileWrong ? <Alert>{fileWrong}</Alert> : null}
         </OptionalField>

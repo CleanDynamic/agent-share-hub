@@ -16,7 +16,11 @@ import { MenuButton } from "@/components/brand/MenuButton";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
-import { COST_MAX, costField, OWN_COPY_MAX, STARTED_WITH_MAX, type SessionExtras } from "@/lib/build/sessionFacts";
+import { COST_MAX, costField, countWords, figureOf, sourceOfCount, MODEL_ID_MAX, OWN_COPY_MAX, STARTED_WITH_MAX, type RunFacts, type SessionExtras } from "@/lib/build/sessionFacts";
+import { EFFORT_LABEL, EFFORTS, type Effort } from "@/lib/build/tileExtras";
+import { REVIEW_FILES_MAX, REVIEW_SCOPES, reviewLine, reviewRefusal, type ReviewScope } from "@/lib/build/sessionReview";
+import { OUTPUT_KINDS, OUTPUT_LABEL, OUTPUTS_MAX, outputRow, outputsCountLine, outputsRefusal, type OutputKind, type OutputLink } from "@/lib/build/sessionOutputs";
+import { ACCESS_LABEL, ACCESS_SYSTEMS, ENVIRONMENT_LABEL, ENVIRONMENTS, ISOLATION_LABEL, ISOLATIONS, accessLine, type AccessScope, type AccessSystem, type Environment, type Isolation } from "@/lib/build/sessionAccess";
 import { settingLines, worktreeOf } from "@/lib/build/startedWith";
 import { DM_MONO } from "@/lib/theme/type";
 
@@ -39,7 +43,7 @@ export const EXTRAS_COPY = {
   showReadersLine: "Off: cost hidden from readers",
   how: "Method",
   watching: "Supervised",
-  background: "Background",
+  background: "Ran in the background",
   time: "How long it ran",
   timeHint: "Minutes",
   tokens: "Tokens used",
@@ -51,6 +55,12 @@ export const EXTRAS_COPY = {
   togetherNone: "No other session",
   ownCopy: "Own copy of the code",
   ownCopyHint: "fix-totals",
+  /** SV-30 P1. */
+  modelId: "Model ID",
+  modelIdHint: "claude-opus-4-5-20251101",
+  effort: "Reasoning effort",
+  makersFigure: "Maker's figure",
+  fromRun: "From the run",
 } as const;
 
 export function ExtrasInput({ label, value, placeholder, max, phone, inputMode, onCommit }: { label: string; value: string; placeholder?: string; max: number; phone: boolean; inputMode?: "decimal" | "numeric"; onCommit: (value: string) => void }) {
@@ -464,5 +474,270 @@ export function CheckRunsField({ id, runs, phone, onChange }: { id: string; runs
         )}
       </div>
     </Field>
+  );
+}
+
+/* ── SV-30 P1: the exact model ID and the reasoning effort ── */
+
+/** The model ID, as the section counts it. */
+export const modelIdHeld = (extras: SessionExtras): string | null => extras.model_id ?? null;
+export function ModelIdControl({ id, extras, phone, fromRun, onChange }: { id: string; extras: SessionExtras; phone: boolean; fromRun?: boolean; onChange: (change: SessionExtras) => void }) {
+  return (
+    <>
+      <ExtrasInput key={`${id}:model_id:${extras.model_id ?? ""}`} label={EXTRAS_COPY.modelId} value={extras.model_id ?? ""} placeholder={EXTRAS_COPY.modelIdHint} max={MODEL_ID_MAX} phone={phone} onCommit={(value) => onChange({ ...extras, model_id: value.trim() || undefined })} />
+      {extras.model_id ? <span style={text(12, 400, t.label)}>{fromRun ? EXTRAS_COPY.fromRun : EXTRAS_COPY.makersFigure}</span> : null}
+    </>
+  );
+}
+
+/** Reasoning effort, as the section counts it. */
+export const effortHeld = (extras: SessionExtras): string | null => (extras.effort ? EFFORT_LABEL[extras.effort] : null);
+export function EffortControl({ id, extras, phone, onChange }: { id: string; extras: SessionExtras; phone: boolean; onChange: (change: SessionExtras) => void }) {
+  return (
+    <ChoiceRows<Effort>
+      label={EXTRAS_COPY.effort}
+      name={`effort-${id}`}
+      phone={phone}
+      value={extras.effort ?? "default"}
+      onChange={(effort) => onChange({ ...extras, effort: effort === "default" ? undefined : effort })}
+      rows={EFFORTS.map((value) => ({ value, label: EFFORT_LABEL[value] }))}
+    />
+  );
+}
+
+/* ── SV-30 P4: where it ran, how it was kept apart, and what it could reach ── */
+
+export const environmentHeld = (extras: SessionExtras): string | null => (extras.environment ? ENVIRONMENT_LABEL[extras.environment] : null);
+export function EnvironmentControl({ id, extras, phone, onChange }: { id: string; extras: SessionExtras; phone: boolean; onChange: (change: SessionExtras) => void }) {
+  return (
+    <>
+      <span style={text(12.5, 500, t.text2)}>Where it ran</span>
+      <ChoiceRows<Environment | "unsaid">
+        label="Where it ran"
+        name={`environment-${id}`}
+        phone={phone}
+        value={extras.environment ?? "unsaid"}
+        onChange={(environment) => onChange({ ...extras, environment: environment === "unsaid" ? undefined : environment })}
+        rows={[{ value: "unsaid", label: "Not said" }, ...ENVIRONMENTS.map((value) => ({ value, label: ENVIRONMENT_LABEL[value] }))]}
+      />
+      <span style={text(12.5, 500, t.text2)}>Isolation</span>
+      <ChoiceRows<Isolation | "unsaid">
+        label="Isolation"
+        name={`isolation-${id}`}
+        phone={phone}
+        value={extras.isolation ?? "unsaid"}
+        onChange={(isolation) => onChange({ ...extras, isolation: isolation === "unsaid" ? undefined : isolation })}
+        rows={[{ value: "unsaid", label: "Not said" }, ...ISOLATIONS.map((value) => ({ value, label: ISOLATION_LABEL[value] }))]}
+      />
+      <label style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 28, cursor: "pointer" }}>
+        <Checkbox checked={extras.can_install === true} onChange={(event) => onChange({ ...extras, can_install: event.target.checked ? true : undefined })} />
+        <span style={text(13, 400, t.text)}>Could install packages</span>
+      </label>
+    </>
+  );
+}
+
+export const accessHeld = (extras: SessionExtras): string | null => accessLine(extras.access)?.replace(/^Access: /, "") ?? null;
+/** Each system with Read and Write; a system from the session's setup is proposed (marked, unticked) until the maker ticks it. */
+export function AccessControl({ id, extras, proposed = [], phone, onChange }: { id: string; extras: SessionExtras; proposed?: readonly AccessSystem[]; phone: boolean; onChange: (change: SessionExtras) => void }) {
+  const held = new Map((extras.access ?? []).map((entry) => [entry.system, entry.scope] as const));
+  const set = (system: AccessSystem, scope: AccessScope | null) => {
+    const next = ACCESS_SYSTEMS.flatMap((candidate) => {
+      const was = candidate === system ? scope : (held.get(candidate) ?? null);
+      return was ? [{ system: candidate, scope: was }] : [];
+    });
+    onChange({ ...extras, access: next.length > 0 ? next : undefined });
+  };
+  return (
+    <div role="group" aria-label="Access" data-testid="access-control" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      {ACCESS_SYSTEMS.map((system) => {
+        const scope = held.get(system) ?? null;
+        return (
+          <div key={system} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: phone ? 44 : 28, flexWrap: "wrap" }}>
+            <span style={{ ...text(13, 400, t.text), minWidth: 120 }}>
+              {ACCESS_LABEL[system]}
+              {proposed.includes(system) && !scope ? <span style={text(12, 400, t.label)}> · in this session&apos;s setup</span> : null}
+            </span>
+            {ACCESS_SCOPES_UI.map((candidate) => (
+              <label key={candidate} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                <Checkbox aria-label={`${ACCESS_LABEL[system]}: ${candidate}`} checked={scope === candidate} onChange={(event) => set(system, event.target.checked ? candidate : null)} />
+                <span style={text(13, 400, t.text2)}>{candidate === "read" ? "Read" : "Write"}</span>
+              </label>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+const ACCESS_SCOPES_UI: readonly AccessScope[] = ["read", "write"];
+
+/* ── SV-30 P6: how the session was driven ── */
+
+/** How many turns, and how many compactions; a figure read from the run is said so, the maker's own is the maker's. */
+export const messagesHeld = (extras: SessionExtras, run?: RunFacts): string | null => {
+  const figure = figureOf(extras.messages, run?.messages);
+  return figure ? countWords.messages(figure.value) : null;
+};
+export const compactionsHeld = (extras: SessionExtras, run?: RunFacts): string | null => {
+  const figure = figureOf(extras.compactions, run?.compactions);
+  return figure ? countWords.compactions(figure.value) : null;
+};
+function CountControl({ id, field, label, extras, run, phone, onChange }: { id: string; field: "messages" | "compactions"; label: string; extras: SessionExtras; run?: RunFacts; phone: boolean; onChange: (change: SessionExtras) => void }) {
+  const figure = figureOf(extras[field], run?.[field]);
+  return (
+    <>
+      <div style={{ width: 120 }}>
+        <ExtrasInput
+          key={`${id}:${field}:${extras[field] ?? ""}`}
+          label={label}
+          value={figure ? String(figure.value) : ""}
+          placeholder={field === "messages" ? "3714" : "2"}
+          max={9}
+          phone={phone}
+          inputMode="numeric"
+          onCommit={(value) => {
+            const n = Number(value.trim().replace(/,/g, ""));
+            // A figure the maker types is theirs: it leaves From the run.
+            const kept = (extras.from_run ?? []).filter((key) => key !== field);
+            onChange({ ...extras, [field]: value.trim() && Number.isInteger(n) && n > 0 ? n : undefined, from_run: kept.length > 0 ? kept : undefined });
+          }}
+        />
+      </div>
+      {figure ? <span style={text(12, 400, t.label)}>{(extras[field] !== undefined ? sourceOfCount(extras, field) : figure.from) === "run" ? EXTRAS_COPY.fromRun : EXTRAS_COPY.makersFigure}</span> : null}
+    </>
+  );
+}
+export const MessagesControl = (props: Omit<Parameters<typeof CountControl>[0], "field" | "label">) => <CountControl {...props} field="messages" label="Messages" />;
+export const CompactionsControl = (props: Omit<Parameters<typeof CountControl>[0], "field" | "label">) => <CountControl {...props} field="compactions" label="Compactions" />;
+
+/* ── SV-30 P7: what the session produced ── */
+
+export const outputsHeld = (extras: SessionExtras): string | null => outputsCountLine(extras.outputs ?? []);
+/**
+ * Links entered by hand: a kind, then a repository and SHA for a commit or an https address for the rest. The list is kept as typed;
+ * a row that is not whole waits and says why. Show readers is off until the maker ticks it (a private repository stays private).
+ */
+export function OutputsControl({ id, extras, phone, onChange }: { id: string; extras: SessionExtras; phone: boolean; onChange: (change: SessionExtras) => void }) {
+  const [rows, setRows] = useState<{ kind: OutputKind; a: string; b: string }[]>(() => (extras.outputs ?? []).map((entry) => (entry.kind === "commit" ? { kind: entry.kind, a: entry.repo, b: entry.sha } : { kind: entry.kind, a: entry.url, b: "" })));
+  const [wrong, setWrong] = useState<string | null>(null);
+  const toLinks = (list: typeof rows): OutputLink[] => list.map((row) => (row.kind === "commit" ? { kind: "commit", repo: row.a.trim(), sha: row.b.trim() } : { kind: row.kind, url: row.a.trim() }));
+  const commit = (next: typeof rows) => {
+    setRows(next);
+    const links = toLinks(next.filter((row) => row.a.trim() || row.b.trim()));
+    const why = outputsRefusal(links);
+    setWrong(why);
+    if (why) return;
+    onChange({ ...extras, outputs: links.length > 0 ? links : undefined, ...(links.length === 0 ? { showOutputs: undefined } : null) });
+  };
+  return (
+    <div data-testid="outputs-control" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {rows.map((row, index) => (
+        <div key={index} data-testid="output-row" style={{ display: "flex", alignItems: "center", flexWrap: phone ? "wrap" : "nowrap", gap: 8, minWidth: 0 }}>
+          <OutputKindMenu index={index} kind={row.kind} phone={phone} onPick={(kind) => commit(rows.map((other, at) => (at === index ? { kind, a: "", b: "" } : other)))} />
+          <div style={{ flex: phone ? "1 1 200px" : "1 1 0", minWidth: 0 }}>
+            <ExtrasInput key={`${id}:o${index}a:${row.a}`} label={row.kind === "commit" ? `Repository of output ${index + 1}` : `Link of output ${index + 1}`} value={row.a} placeholder={row.kind === "commit" ? "https://github.com/acme/app" : "https://…"} max={2000} phone={phone} onCommit={(a) => commit(rows.map((other, at) => (at === index ? { ...other, a } : other)))} />
+          </div>
+          {row.kind === "commit" ? (
+            <div style={{ width: phone ? 140 : 112, flexShrink: 0 }}>
+              <ExtrasInput key={`${id}:o${index}b:${row.b}`} label={`SHA of output ${index + 1}`} value={row.b} placeholder="a1b2c3d" max={40} phone={phone} onCommit={(b) => commit(rows.map((other, at) => (at === index ? { ...other, b } : other)))} />
+            </div>
+          ) : null}
+          <IconButton icon={X} glyph="x" boxed={false} label={`Remove output ${index + 1}`} size={26} onClick={() => commit(rows.filter((_, at) => at !== index))} />
+        </div>
+      ))}
+      {wrong ? <span style={text(12, 400, t.text2)}>{wrong}</span> : null}
+      {rows.length < OUTPUTS_MAX ? (
+        <span>
+          <TextButton target={phone} style={text(12.5, 500, t.text2)} onClick={() => setRows((now) => [...now, { kind: "commit", a: "", b: "" }])}>
+            Add a link
+          </TextButton>
+        </span>
+      ) : (
+        <span style={text(12, 400, t.text2)}>{OUTPUTS_MAX} max</span>
+      )}
+      {(extras.outputs ?? []).length > 0 ? (
+        <>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 28, cursor: "pointer" }}>
+            <Checkbox checked={extras.showOutputs === true} onChange={(event) => onChange({ ...extras, showOutputs: event.target.checked ? true : undefined })} />
+            <span style={text(13, 400, t.text)}>{EXTRAS_COPY.showReaders}</span>
+          </label>
+          <span style={text(12, 400, t.text2)}>Off: links hidden from readers. {extras.from_original ? "These came with the original." : ""}</span>
+          <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
+            {(extras.outputs ?? []).map((entry, at) => (
+              <li key={at} style={text(12, 400, t.label)}>
+                {outputRow(entry).label}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+/* ── SV-30 P8: how much a human reviewed ── */
+
+const REVIEW_CHOICE: Record<ReviewScope | "unsaid", string> = { unsaid: "Not said", none: "None", high_blast_radius: "High-blast-radius files only", all: "All changes" };
+export const reviewHeld = (extras: SessionExtras): string | null => (extras.review ? reviewLine(extras.review).replace(/^Human review: /, "") : null);
+/** None, the central files and migrations only (up to 10 paths, one per line), or all. A fact the maker states about their own work. */
+export function ReviewControl({ id, extras, phone, onChange }: { id: string; extras: SessionExtras; phone: boolean; onChange: (change: SessionExtras) => void }) {
+  const [files, setFiles] = useState((extras.review?.files ?? []).join("\n"));
+  const [wrong, setWrong] = useState<string | null>(null);
+  const save = (scope: ReviewScope | "unsaid", text: string) => {
+    if (scope === "unsaid") return onChange({ ...extras, review: undefined });
+    const list = scope === "high_blast_radius" ? text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean) : [];
+    const review = { scope, ...(list.length > 0 ? { files: list } : null) };
+    const why = reviewRefusal(review);
+    setWrong(why);
+    if (!why) onChange({ ...extras, review });
+  };
+  return (
+    <>
+      <ChoiceRows<ReviewScope | "unsaid">
+        label="Human review"
+        name={`review-${id}`}
+        phone={phone}
+        value={extras.review?.scope ?? "unsaid"}
+        onChange={(scope) => save(scope, files)}
+        rows={(["unsaid", ...REVIEW_SCOPES] as const).map((value) => ({ value, label: REVIEW_CHOICE[value] }))}
+      />
+      {extras.review?.scope === "high_blast_radius" ? (
+        <textarea
+          aria-label="Files reviewed"
+          rows={3}
+          value={files}
+          placeholder={`One path per line, ${REVIEW_FILES_MAX} at most`}
+          spellCheck={false}
+          onChange={(event) => setFiles(event.target.value)}
+          onBlur={() => save("high_blast_radius", files)}
+          style={{ ...typedArea(phone, ring(false)), fontFamily: DM_MONO, fontSize: phone ? 16 : 12 }}
+        />
+      ) : null}
+      {wrong ? <span style={text(12, 400, t.text2)}>{wrong}</span> : null}
+      {extras.from_original && extras.review ? <span style={text(12, 400, t.label)}>The original&apos;s</span> : null}
+    </>
+  );
+}
+
+/** The kind of one output link, from a menu. */
+function OutputKindMenu({ index, kind, phone, onPick }: { index: number; kind: OutputKind; phone: boolean; onPick: (kind: OutputKind) => void }) {
+  const [open, setOpen] = useState(false);
+  const name = (value: OutputKind) => OUTPUT_LABEL[value].one.replace(/^./, (c) => c.toUpperCase());
+  return (
+    <Menu.Root open={open} onOpenChange={setOpen}>
+      <Menu.Trigger asChild>
+        <MenuButton aria-label={`Kind of output ${index + 1}`} label="" value={name(kind)} open={open} style={{ width: phone ? 160 : 140, ...(phone ? { height: 44 } : null) }} />
+      </Menu.Trigger>
+      <Menu.Portal>
+        <MenuContent align="start" sideOffset={4} style={{ ...menuSurface(), zIndex: FLOATING_Z }}>
+          {OUTPUT_KINDS.map((value) => (
+            <Menu.Item key={value} onSelect={() => onPick(value)} style={menuItem(true, phone)}>
+              {name(value)}
+            </Menu.Item>
+          ))}
+        </MenuContent>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }

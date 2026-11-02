@@ -18,9 +18,11 @@ import { useMemo, useState } from "react";
 
 import { Checkbox } from "@/components/brand/Checkbox";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { GOAL_CONDITION_MAX, GOAL_TURNS_MAX, GOAL_TURNS_MIN, type SessionGoal } from "@/lib/build/making";
+import { GOAL_CONDITION_MAX, GOAL_TURNS_MAX, GOAL_TURNS_MIN, TARGET_METRIC_MAX, TARGET_UNIT_MAX, type GoalTarget, type SessionGoal } from "@/lib/build/making";
 import { isIsoDay } from "@/lib/build/graph";
-import type { SessionExtras } from "@/lib/build/sessionFacts";
+import { proposedAccess } from "@/lib/build/sessionAccess";
+import { PLUGIN_CONTAINS, PLUGIN_CONTAINS_LABEL, PLUGIN_INSTALL_MAX, PLUGIN_NAME_MAX, PLUGIN_SOURCE_MAX, SETUP_KIND_LABEL, pluginRefusal, type PluginContains, type SetupPlugin } from "@/lib/build/setup";
+import { modelWithId, type SessionExtras } from "@/lib/build/sessionFacts";
 import { modelLabel } from "@/lib/models/registry";
 
 import type { DetailsHandlers, SessionView } from "./DetailsPanel";
@@ -31,8 +33,16 @@ import { MODAL_COPY, ModalForm, ModalShell } from "./ModalFrame";
 import { BODY_TEXT, Block, BlockHead, FieldArea, FieldInput, Hint, Inline, LabelText, MODAL_WIDTH, NARROW, PANEL_LIST, RecipeButton, Row, SegmentedField, TextLink } from "./modalRecipes";
 import { OptionalField, OptionalSection } from "./OptionalSection";
 import {
+  AccessControl,
+  CompactionsControl,
   CostControl,
   EXTRAS_COPY,
+  EnvironmentControl,
+  EffortControl,
+  ModelIdControl,
+  MessagesControl,
+  OutputsControl,
+  ReviewControl,
   MethodControl,
   OwnCopyControl,
   StartedWithControl,
@@ -40,8 +50,16 @@ import {
   TogetherControl,
   TokensControl,
   TraceControl,
+  accessHeld,
+  compactionsHeld,
   costHeld,
+  effortHeld,
+  environmentHeld,
+  messagesHeld,
   methodHeld,
+  modelIdHeld,
+  outputsHeld,
+  reviewHeld,
   timeHeld,
   togetherHeld,
   tokensHeld,
@@ -69,6 +87,16 @@ export const SESSION_DIALOG_COPY = {
   reached: "Outcome",
   tookTurns: "Reached in",
   removeGoal: "Remove goal",
+  /** SV-30 P2. */
+  target: "Measurable target",
+  metric: "Metric",
+  unit: "Unit",
+  baseline: "Baseline",
+  targetValue: "Target",
+  achieved: "Result",
+  makersFigure: "Maker's figure",
+  fromRun: "From the run",
+  badTarget: "Metric, baseline and target are needed, and the numbers are numbers.",
   badTurns: `Turns: whole number, ${GOAL_TURNS_MIN} to ${GOAL_TURNS_MAX}`,
   costAndTokens: "Cost and tokens",
   together: "At the same time as",
@@ -93,6 +121,117 @@ const turnsOf = (value: string): number | undefined | null => {
   const n = Number(said);
   return Number.isInteger(n) && n >= GOAL_TURNS_MIN && n <= GOAL_TURNS_MAX ? n : null;
 };
+
+/** A number as typed, undefined for blank, null for anything that is not one. */
+const numberField = (value: string): number | undefined | null => {
+  const said = value.trim().replace(/,/g, "");
+  if (!said) return undefined;
+  const n = Number(said);
+  return Number.isFinite(n) ? n : null;
+};
+
+/** SV-30 P2: the goal's metric, where it started, the value to reach and what it reached. Saved when the first three are whole. */
+function TargetFields({ phone, goal, onChange }: { phone: boolean; goal: SessionGoal; onChange: (target: GoalTarget | undefined) => void }) {
+  const [draft, setDraft] = useState({ metric: goal.target?.metric ?? "", unit: goal.target?.unit ?? "", baseline: goal.target ? String(goal.target.baseline) : "", target: goal.target ? String(goal.target.target) : "", achieved: goal.target?.achieved !== undefined ? String(goal.target.achieved) : "" });
+  const [wrong, setWrong] = useState(false);
+  const commit = (next: typeof draft) => {
+    setDraft(next);
+    if (!next.metric.trim() && !next.baseline.trim() && !next.target.trim() && !next.achieved.trim()) {
+      setWrong(false);
+      if (goal.target) onChange(undefined);
+      return;
+    }
+    const baseline = numberField(next.baseline);
+    const target = numberField(next.target);
+    const achieved = numberField(next.achieved);
+    const whole = next.metric.trim() && baseline !== undefined && baseline !== null && target !== undefined && target !== null && achieved !== null;
+    setWrong(!whole);
+    if (!whole) return;
+    onChange({ metric: next.metric.trim(), ...(next.unit.trim() ? { unit: next.unit.trim() } : null), baseline, target, ...(achieved !== undefined ? { achieved } : null), source: goal.target?.source ?? "maker" });
+  };
+  const field = (key: keyof typeof draft, label: string, max: number, width: number, mono?: boolean) => (
+    <Inline>
+      <LabelText>{label}</LabelText>
+      <FieldInput phone={phone} mono={mono} width={width} aria-label={`${SESSION_DIALOG_COPY.target}: ${label}`} maxLength={max} value={draft[key]} onChange={(event) => setDraft((now) => ({ ...now, [key]: event.target.value }))} onBlur={() => commit(draft)} />
+    </Inline>
+  );
+  return (
+    <div role="group" aria-label={SESSION_DIALOG_COPY.target} data-testid="goal-target" style={PANEL_LIST}>
+      <LabelText>{SESSION_DIALOG_COPY.target}</LabelText>
+      {field("metric", SESSION_DIALOG_COPY.metric, TARGET_METRIC_MAX, 160)}
+      {field("unit", SESSION_DIALOG_COPY.unit, TARGET_UNIT_MAX, NARROW.count, true)}
+      {field("baseline", SESSION_DIALOG_COPY.baseline, 12, NARROW.count, true)}
+      {field("target", SESSION_DIALOG_COPY.targetValue, 12, NARROW.count, true)}
+      {field("achieved", SESSION_DIALOG_COPY.achieved, 12, NARROW.count, true)}
+      {goal.target ? <Hint>{goal.target.source === "run" ? SESSION_DIALOG_COPY.fromRun : SESSION_DIALOG_COPY.makersFigure}</Hint> : null}
+      {wrong ? <Hint>{SESSION_DIALOG_COPY.badTarget}</Hint> : null}
+    </div>
+  );
+}
+
+/** SV-30 P5: a plugin by its install line. Its name, where it comes from, what it bundles, and the line exactly as the maker has it. */
+function PluginForm({ phone, onAdd }: { phone: boolean; onAdd: (plugin: { name: string } & SetupPlugin) => void }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [source, setSource] = useState("");
+  const [install, setInstall] = useState("");
+  const [contains, setContains] = useState<PluginContains[]>([]);
+  const why = pluginRefusal({ name, source, install, contains });
+  if (!open)
+    return (
+      <Inline>
+        <RecipeButton small phone={phone} onClick={() => setOpen(true)}>
+          Add a plugin
+        </RecipeButton>
+      </Inline>
+    );
+  return (
+    <div role="group" aria-label="Add a plugin" data-testid="plugin-form" style={PANEL_LIST}>
+      <Inline>
+        <LabelText>Name</LabelText>
+        <FieldInput phone={phone} width={200} aria-label="Plugin name" maxLength={PLUGIN_NAME_MAX} value={name} onChange={(event) => setName(event.target.value)} />
+      </Inline>
+      <Inline>
+        <LabelText>Source</LabelText>
+        <FieldInput phone={phone} width={260} aria-label="Plugin source" maxLength={PLUGIN_SOURCE_MAX} placeholder="A marketplace name or a repository address" value={source} onChange={(event) => setSource(event.target.value)} />
+      </Inline>
+      <div role="group" aria-label="Plugin contains" style={PANEL_LIST}>
+        {PLUGIN_CONTAINS.map((part) => (
+          <label key={part} style={BODY_TEXT}>
+            <Inline>
+              <Checkbox checked={contains.includes(part)} onChange={(event) => setContains((now) => (event.target.checked ? [...now, part] : now.filter((other) => other !== part)))} />
+              {PLUGIN_CONTAINS_LABEL[part]}
+            </Inline>
+          </label>
+        ))}
+      </div>
+      <Inline>
+        <LabelText>Install line</LabelText>
+        <FieldInput phone={phone} mono width={300} aria-label="Plugin install line" maxLength={PLUGIN_INSTALL_MAX} placeholder="/plugin install review-kit@acme" value={install} onChange={(event) => setInstall(event.target.value)} />
+      </Inline>
+      <Inline>
+        <RecipeButton
+          small
+          phone={phone}
+          disabled={why !== null}
+          onClick={() => {
+            onAdd({ name: name.trim(), source: source.trim(), contains, install });
+            setOpen(false);
+            setName("");
+            setSource("");
+            setInstall("");
+            setContains([]);
+          }}
+        >
+          Add plugin
+        </RecipeButton>
+        <RecipeButton small phone={phone} onClick={() => setOpen(false)}>
+          Cancel
+        </RecipeButton>
+      </Inline>
+    </div>
+  );
+}
 
 export interface SessionDialogProps {
   view: SessionView | null;
@@ -164,7 +303,7 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
           )}
         </Row>
         <Row id={`${key}-model`} label={SESSION_DIALOG_COPY.model} phone={phone}>
-          <span style={BODY_TEXT}>{view.model ? modelLabel(view.model) : SESSION_DIALOG_COPY.notNamed}</span>
+          <span style={BODY_TEXT}>{modelWithId(view.model ? modelLabel(view.model) : null, extras.model_id) ?? SESSION_DIALOG_COPY.notNamed}</span>
         </Row>
 
         <Row id={`${key}-date`} label={SESSION_DIALOG_COPY.date} phone={phone}>
@@ -226,12 +365,25 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
                 ) : null}
               </>
             ) : null}
+            {goal ? <TargetFields phone={phone} goal={goal} onChange={(target) => saveGoal({ target })} /> : null}
             {wrongTurns ? <Hint>{SESSION_DIALOG_COPY.badTurns}</Hint> : null}
           </Block>
         ) : null}
 
         {h.onSessionExtras ? (
           <OptionalSection>
+            <OptionalField name={EXTRAS_COPY.modelId} summary={modelIdHeld(extras)} phone={phone}>
+              <ModelIdControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name={EXTRAS_COPY.effort} summary={effortHeld(extras)} phone={phone}>
+              <EffortControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name="Where it ran" summary={environmentHeld(extras)} phone={phone}>
+              <EnvironmentControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name="Access" summary={accessHeld(extras)} phone={phone}>
+              <AccessControl id={key} extras={extras} proposed={proposedAccess((view.setup ?? []).filter((row) => row.kind === SETUP_KIND_LABEL.server).map((row) => row.name))} phone={phone} onChange={saveExtras} />
+            </OptionalField>
             <OptionalField name={EXTRAS_COPY.cost} summary={costHeld(extras)} phone={phone}>
               <CostControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
             </OptionalField>
@@ -243,6 +395,18 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
             </OptionalField>
             <OptionalField name={EXTRAS_COPY.trace} description={EXTRAS_COPY.traceHint} summary={extras.traceUrl ?? null} phone={phone}>
               <TraceControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name="Messages" summary={messagesHeld(extras, view.run)} phone={phone}>
+              <MessagesControl id={key} extras={extras} run={view.run} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name="Compactions" summary={compactionsHeld(extras, view.run)} phone={phone}>
+              <CompactionsControl id={key} extras={extras} run={view.run} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name="Output links" summary={outputsHeld(extras)} phone={phone}>
+              <OutputsControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
+            </OptionalField>
+            <OptionalField name="Human review" summary={reviewHeld(extras)} phone={phone}>
+              <ReviewControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
             </OptionalField>
             <OptionalField name={EXTRAS_COPY.how} summary={methodHeld(extras)} phone={phone}>
               <MethodControl id={key} extras={extras} phone={phone} onChange={saveExtras} />
@@ -301,6 +465,7 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
                 </RecipeButton>
               </Inline>
             ) : null}
+            {handlers.onAddPlugin ? <PluginForm phone={phone} onAdd={(plugin) => handlers.onAddPlugin?.(key, plugin)} /> : null}
           </Block>
         ) : null}
 

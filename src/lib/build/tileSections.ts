@@ -35,6 +35,7 @@ import {
 } from "@/lib/build/tileExtras";
 import { RETRIEVAL_COPY, corpusText, recallSource, recallText, retrievalOf } from "@/lib/build/retrieval";
 import { DATASET_USE_LABEL, REPO_OWNERSHIP_LABEL, REPO_PIN_LABEL, REPO_USAGE_LABEL, datasetOf, repoOf, scopeOf, systemPromptOf } from "@/lib/build/sourceTiles";
+import { EVIDENCE_KIND_LABEL, STATED_NO_ARTEFACT, measurementLine } from "@/lib/build/evidenceKinds";
 
 export type TileKind = DetailsView["kind"];
 
@@ -306,7 +307,8 @@ const CHECK: readonly SectionDef[] = [
   }),
   S("evidence", "Evidence", "Log, screenshot or link", (tile) => {
     const evidence = checkExtrasOf(payloadOf(tile)).evidence;
-    return evidence ? rows([["File", evidence.mediaId ? (evidence.name ?? "A file") : null], ["Link", evidence.url]]) : null;
+    if (!evidence) return rows([["Evidence", STATED_NO_ARTEFACT]]);
+    return rows([["Kind", evidence.kind ? EVIDENCE_KIND_LABEL[evidence.kind] : null], ["File", evidence.mediaId ? (evidence.name ?? "A file") : null], ["Link", evidence.url], ["Measured", evidence.measurement ? `${evidence.measurement.metric} · ${measurementLine(evidence.measurement)}` : null], ["Output", evidence.text ? "Pasted output" : null]]);
   }),
   USES,
   GOES,

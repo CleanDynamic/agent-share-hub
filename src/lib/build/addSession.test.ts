@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/integrations/supabase/client", async () => (await import("./__audit__/fakeSupabase")).clientModule);
 
 import { REPO_SCHEMA, startAuditBackend, tableRows, type Fault } from "./__audit__/fakeSupabase";
-import { addOfferedSession, addSessionToBuild, emptyFirstSession, linkSessionToBuild, placeSession, promptsOfProposal, startsCollapsed, tileRows } from "./addSession";
+import { addOfferedSession, addSessionToBuild, emptyFirstSession, linkSessionToBuild, placeSession, promptsOfProposal, runFactsOf, startsCollapsed, tileRows } from "./addSession";
 import { COLLAPSE_OVER, reorderBuildSessions } from "./buildSessions";
 import { resetContributorColumn } from "./contributors";
 import { sessionsMetaOf } from "./making";
@@ -103,6 +103,20 @@ describe("addSessionToBuild", () => {
     await addSessionToBuild(LONG, { kind: "existing", buildId: DRAFT });
     expect(nodesOf(DRAFT)).toHaveLength(250);
     expect(requests().filter((r) => r.method === "POST" && r.path.startsWith("/rest/v1/build_nodes"))).toHaveLength(3);
+  });
+
+  it("SV-30 P6: stores the import's turn count with the session's entry when it is added, as From the run", async () => {
+    startAuditBackend({ schema: REPO_SCHEMA });
+    await addSessionToBuild(WAITING, { kind: "existing", buildId: DRAFT });
+    const entry = sessionsMetaOf(tableRows("builds").find((r) => r.id === DRAFT)?.making)[WAITING];
+    expect(entry).toMatchObject({ messages: 2, from_run: ["messages"] });
+    expect(entry.compactions).toBeUndefined();
+  });
+
+  it("SV-30 P6: counts the compaction summaries among the prompts", () => {
+    const summary = "This session is being continued from a previous conversation that ran out of context.";
+    expect(runFactsOf(3714, [{ text: summary }, { text: "Fix it" }, { text: summary }])).toEqual({ messages: 3714, compactions: 2 });
+    expect(runFactsOf(0, [{ text: "Fix it" }])).toEqual({});
   });
 
   it("appends: Session 2 at position 1, after the first, with its tiles after the first's", async () => {

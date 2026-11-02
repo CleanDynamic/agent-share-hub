@@ -56,12 +56,14 @@ import { PromptName, MANUAL_LEAN_LINES, DatasetTileBody, FileTileBody, ManualTil
 import { GlyphButton } from "./ModalFrame";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { SUMMARY_COPY } from "@/lib/build/summaryTurn";
+import { ASKS_FOR_LABEL, originLine } from "@/lib/build/promptOrigin";
 import { useAnnounce } from "./BuildAnnouncer";
 import { PREVIEW } from "@/lib/theme/truncate";
 import { SessionTiles, WINDOW_FROM, WindowedTile } from "./largeBuild";
 import { FOUND_RING, FindHit, FindProvider, NO_FIND, type FindView } from "@/components/build/FindHit";
 import { useItemRing, useRovingList } from "./buildFocus";
 import { CodeLines } from "@/components/code/CodeLines";
+import { CodePartLine } from "./CodePartLine";
 import { bothRefs, usePartRef } from "@/components/build/partNav";
 import { REF_COPY } from "@/components/post/RefLinks";
 import { ColourButton } from "@/components/brand/ColourButton";
@@ -727,7 +729,10 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
         {[kind === "Prompt" ? null : kind, step.title ?? (kind === "Prompt" ? stepTitle(step) : named ?? (step.kind === "file" ? step.filename : null))].filter(Boolean).join(" · ")}
       </span>
       {step.kind === "code" ? (
-        <CodeLines text={step.text} compact testId="code-lines" label={`${kind} text`} />
+        <>
+          <CodePartLine step={step} />
+          <CodeLines text={step.text} compact testId="code-lines" label={`${kind} text`} />
+        </>
       ) : step.text ? (
         <p style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", ...clamp2 }}>{step.text}</p>
       ) : null}
@@ -827,6 +832,11 @@ function SessionLines({ session }: { session: SourceSession }) {
       ) : null}
       {session.runsWhen ? <DotLine testId="runs-when-line">{session.runsWhen}</DotLine> : null}
       {session.facts ? <DotLine testId="facts-line">{session.facts}</DotLine> : null}
+      {(session.lines ?? []).map((line) => (
+        <DotLine key={line} testId="session-detail-line">
+          {line}
+        </DotLine>
+      ))}
       {session.together ? <DotLine testId="together-line">{session.together}</DotLine> : null}
     </>
   );
@@ -1306,6 +1316,11 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         ) : null
         }
       />
+      {step.origin || step.asksFor ? (
+        <p data-testid="prompt-origin" style={{ ...text(12, 400, t.label), margin: 0, paddingLeft: INDENT }}>
+          {[step.origin ? originLine(step.origin) : null, step.asksFor ? ASKS_FOR_LABEL[step.asksFor] : null].filter(Boolean).join(" · ")}
+        </p>
+      ) : null}
       <p
         ref={textRef}
         style={{ ...text(13.5, 400, t.text), lineHeight: "21px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }}
@@ -1792,6 +1807,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
         menu={<TileMenu step={step} noun="Code" index={index} last={last} props={props} rename={rename} />}
       />
       <div style={{ paddingLeft: INDENT, minWidth: 0 }}>
+        <CodePartLine step={step} />
         <SmallCodeWell text={step.text} lines={all ? Number.POSITIVE_INFINITY : CODE_TILE_LINES} label={`Code ${step.number}`} />
       </div>
       <LinkLines lines={[...callsOf(step.id, props.steps), ...definesOf(step.id, props.steps)]} onOpen={props.onSelect} indent={INDENT} />

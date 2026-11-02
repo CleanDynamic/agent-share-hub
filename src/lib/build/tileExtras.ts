@@ -8,6 +8,8 @@
 
 import type { Json } from "@/integrations/supabase/types";
 
+import { EVIDENCE_KINDS, EVIDENCE_TEXT_MAX, measurementOf, measurementRefusal, type EvidenceKind, type EvidenceMeasurement } from "./evidenceKinds";
+
 type Raw = Record<string, unknown>;
 
 const isRecord = (value: unknown): value is Raw => Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -194,19 +196,33 @@ export interface CheckEvidence {
   url: string | null;
   mediaId: string | null;
   name: string | null;
+  /** SV-30 P8: what kind of evidence it is; absent on evidence from before kinds (read as a link or a file). */
+  kind?: EvidenceKind;
+  measurement?: EvidenceMeasurement | null;
+  /** SV-30 P8: a pasted log. */
+  text?: string | null;
 }
 
 /** What a check says beyond what it tested and how it ran; each key only when given. */
 export function checkExtrasOf(payload: Raw): { method?: CheckMethod; reviewer?: CheckReviewer; scoring?: CheckScoring; modelTested?: CheckModelTested; evidence?: CheckEvidence } {
   const scoring = isRecord(payload.scoring) && SCORING_HOWS.includes(payload.scoring.how as ScoringHow) ? { how: payload.scoring.how as ScoringHow, target: payload.scoring.how === "metric" ? clean(payload.scoring.target, SCORING_TARGET_MAX) : "" } : null;
   const tested = isRecord(payload.model_tested) ? { model: clean(payload.model_tested.model, MODEL_TESTED_MAX), version: clean(payload.model_tested.version, MODEL_VERSION_MAX) } : null;
-  const evidence = isRecord(payload.evidence) ? { url: cleanUrl(payload.evidence.url), mediaId: clean(payload.evidence.media_id) || null, name: clean(payload.evidence.name, EVIDENCE_NAME_MAX) || null } : null;
+  const evidence: CheckEvidence | null = isRecord(payload.evidence)
+    ? {
+        url: cleanUrl(payload.evidence.url),
+        mediaId: clean(payload.evidence.media_id) || null,
+        name: clean(payload.evidence.name, EVIDENCE_NAME_MAX) || null,
+        ...(EVIDENCE_KINDS.includes(payload.evidence.kind as EvidenceKind) ? { kind: payload.evidence.kind as EvidenceKind } : null),
+        ...(measurementOf(payload.evidence.measurement) ? { measurement: measurementOf(payload.evidence.measurement) } : null),
+        ...(clean(payload.evidence.text, EVIDENCE_TEXT_MAX) ? { text: clean(payload.evidence.text, EVIDENCE_TEXT_MAX) } : null),
+      }
+    : null;
   return {
     ...(CHECK_METHODS.includes(payload.method as CheckMethod) ? { method: payload.method as CheckMethod } : null),
     ...(CHECK_REVIEWERS.includes(payload.reviewer as CheckReviewer) ? { reviewer: payload.reviewer as CheckReviewer } : null),
     ...(scoring ? { scoring } : null),
     ...(tested && (tested.model || tested.version) ? { modelTested: tested } : null),
-    ...(evidence && (evidence.url || evidence.mediaId) ? { evidence } : null),
+    ...(evidence && (evidence.url || evidence.mediaId || evidence.measurement || evidence.text) ? { evidence } : null),
   };
 }
 
@@ -304,12 +320,28 @@ const CLEANERS: Record<string, Record<string, Cleaner>> = {
     },
     evidence: (value) => {
       if (!isRecord(value)) return null;
+      // SV-30 P8: a kind says what the evidence is; one kind, one thing attached.
+      if (value.kind !== undefined && value.kind !== null && !EVIDENCE_KINDS.includes(value.kind as EvidenceKind)) throw new Error("Evidence is a recording, a video, a measurement, test output or a link.");
+      const kind = value.kind as EvidenceKind | undefined | null;
+      if (kind === "measurement") {
+        const why = measurementRefusal(value.measurement);
+        if (why) throw new Error(why);
+        const measured = measurementOf(value.measurement) as EvidenceMeasurement;
+        return { kind, measurement: { metric: measured.metric, unit: measured.unit, before: measured.before, after: measured.after, runs: measured.runs } };
+      }
+      if (kind === "test_output") {
+        const text = clean(value.text);
+        if (text.length > EVIDENCE_TEXT_MAX) throw new Error(`Test output: ${EVIDENCE_TEXT_MAX.toLocaleString("en-GB")} characters max`);
+        const file = clean(value.media_id) || clean(value.mediaId);
+        if (file) return { kind, media_id: file, ...(clean(value.name, EVIDENCE_NAME_MAX) ? { name: clean(value.name, EVIDENCE_NAME_MAX) } : null) };
+        return text ? { kind, text } : null;
+      }
       const url = clean(value.url) ? cleanUrl(value.url) : null;
       if (clean(value.url) && !url) throw new Error("Format: example.com/results");
       const mediaId = clean(value.media_id) || clean(value.mediaId);
       const name = clean(value.name, EVIDENCE_NAME_MAX);
-      if (mediaId) return { media_id: mediaId, ...(name ? { name } : null) };
-      return url ? { url } : null;
+      if (mediaId) return { ...(kind ? { kind } : null), media_id: mediaId, ...(name ? { name } : null) };
+      return url ? { ...(kind ? { kind } : null), url } : null;
     },
   },
   integration: {
@@ -334,6 +366,9 @@ const CLEANERS: Record<string, Record<string, Cleaner>> = {
     filename: lineCleaner("The file path", 200),
     tool: lineCleaner("The tool", 80),
     model: lineCleaner("The model", 80),
+    /* SV-30 P9: what it belongs to, and where it runs. */
+    part_of: (value) => (value === "app" || value === "eval_harness" || value === "ci" || value === "setup" ? value : null),
+    runs_where: lineCleaner("Where it runs", 40),
   },
   result: {
     caption: lineCleaner("A caption", 140),
@@ -346,6 +381,11 @@ const CLEANERS: Record<string, Record<string, Cleaner>> = {
       return settings ? { model: settings.model, effort: settings.effort, instructions: settings.instructions } : null;
     },
     variables: (value) => cleanVariablesValue(value),
+    /* SV-30 P3: how it was sent (the maker's own is not stored) and what it asks for. */
+    sent_by: (value) => (value === "schedule" || value === "agent_wakeup" || value === "heartbeat" || value === "event" ? value : null),
+    interval: lineCleaner("Interval", 20),
+    event: lineCleaner("Event", 80),
+    asks_for: (value) => (value === "outcome" || value === "procedure" ? value : null),
   },
 };
 

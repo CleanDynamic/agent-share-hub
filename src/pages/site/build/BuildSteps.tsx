@@ -30,6 +30,7 @@ import {
 
 import { Button } from "@/components/brand/Button";
 import { CodeLines } from "@/components/code/CodeLines";
+import { CodePartLine } from "../compose/CodePartLine";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
@@ -40,6 +41,7 @@ import { ModelMark } from "@/components/brand/ModelMark";
 import { Segmented } from "@/components/brand/Segmented";
 import { MediaFigure } from "@/components/build/MediaFigure";
 import { ChangedText } from "@/components/build/ChangedText";
+import { ASKS_FOR_LABEL, originLine } from "@/lib/build/promptOrigin";
 import { FullPromptWindow, windowPrompts } from "@/components/build/FullPromptWindow";
 import { PartWindow } from "@/components/build/PartWindow";
 import { drawBranches } from "@/components/build/BranchRows";
@@ -410,6 +412,11 @@ function StepText({ step, onRead, alone = false, indent = INDENT }: { step: Step
   if (!step.text) return null;
   return (
     <>
+      {step.origin || step.asksFor ? (
+        <p data-testid="prompt-origin" style={{ ...text(12, 400, t.label), margin: 0, paddingLeft: indent }}>
+          {[step.origin ? originLine(step.origin) : null, step.asksFor ? ASKS_FOR_LABEL[step.asksFor] : null].filter(Boolean).join(" · ")}
+        </p>
+      ) : null}
       <p
         data-testid="step-text"
         style={{
@@ -597,7 +604,10 @@ function SentWithTile({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         <>
           <span style={{ ...text(12.5, 500, t.text), overflowWrap: "anywhere" }}>{[TILE_KIND[step.kind] ?? step.kind, name].filter(Boolean).join(" · ")}</span>
           {step.kind === "code" ? (
-            <CodeLines text={step.text} compact testId="code-lines" label={`${name ?? "Code"} text`} />
+            <>
+              <CodePartLine step={step} />
+              <CodeLines text={step.text} compact testId="code-lines" label={`${name ?? "Code"} text`} />
+            </>
           ) : step.text ? (
             <StepText step={step} indent={0} onRead={() => ctx.read(step.id)} />
           ) : null}
@@ -694,6 +704,7 @@ function ReaderSessionHead({ chat, fold }: { chat: SessionChat; fold: Fold }) {
 
 function ChatHead({ chat, copy, fold }: { chat: SessionChat; copy?: { onCopy: (text: string) => Promise<boolean>; announce: (text: string) => void; phone: boolean }; fold?: Fold | null }) {
   const [open, setOpen] = useState(false);
+  const [outputsOpen, setOutputsOpen] = useState(false);
   const setup = chat.setup;
   // CA-05 P6: under two quiet labels, only when both have rows.
   const grouped = groupByLoaded(setup.map((item) => ({ ...item, loaded: item.loaded ?? ("start" as const) })));
@@ -741,6 +752,35 @@ function ChatHead({ chat, copy, fold }: { chat: SessionChat; copy?: { onCopy: (t
       ) : null}
       {chat.runsWhen && !fold?.folded ? <DotLine testId="runs-when-line">{chat.runsWhen}</DotLine> : null}
       {chat.facts && !fold?.folded ? <DotLine testId="facts-line">{chat.facts}</DotLine> : null}
+      {!fold?.folded
+        ? (chat.lines ?? []).map((line) => (
+            <DotLine key={line} testId="session-detail-line">
+              {line}
+            </DotLine>
+          ))
+        : null}
+      {chat.outputs && !fold?.folded ? (
+        <div data-testid="outputs" style={{ marginLeft: SETUP_INDENT, display: "flex", flexDirection: "column", gap: 2 }}>
+          <span style={{ paddingTop: 2 }}>
+            <ReadAll label="Show the links" onRead={() => setOutputsOpen((value) => !value)} expanded={outputsOpen} />
+          </span>
+          {outputsOpen ? (
+            <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 2 }}>
+              {chat.outputs.map((row) => (
+                <li key={`${row.label}:${row.href ?? ""}`} style={text(12.5, 400, t.text2)}>
+                  {row.href ? (
+                    <a href={row.href} rel="noopener noreferrer" target="_blank" style={{ color: "inherit", textDecoration: "underline" }}>
+                      {row.label}
+                    </a>
+                  ) : (
+                    row.label
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
       {chat.together && !fold?.folded ? <DotLine testId="together-line">{chat.together}</DotLine> : null}
       {open && !fold?.folded ? (
         <div data-testid="session-setup" style={{ marginLeft: SETUP_INDENT, paddingLeft: 12, borderLeft: `1px solid ${t.hairline}`, display: "flex", flexDirection: "column" }}>
@@ -972,7 +1012,12 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
       <Title entry={entry} place={step.kind === "prompt" ? promptPlace(step.number, readerSession(view.groups, step)) : undefined} right={<><CopyButton what={`step ${step.number}`} text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} /><SaveMark kind="step" id={step.id} /></>} />
       <TypeLine step={step} indent={INDENT} />
       {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} style={{ paddingLeft: INDENT }} /> : null}
-      {step.kind === "code" ? <CodeLines text={step.text} maxLines={8} testId="code-lines" label={`Code ${step.number}`} style={{ marginLeft: INDENT }} /> : <StepText step={step} alone={view.steps.length === 1} onRead={() => ctx.read(step.id)} />}
+      {step.kind === "code" ? (
+        <>
+          <CodePartLine step={step} style={{ paddingLeft: INDENT }} />
+          <CodeLines text={step.text} maxLines={8} testId="code-lines" label={`Code ${step.number}`} style={{ marginLeft: INDENT }} />
+        </>
+      ) : <StepText step={step} alone={view.steps.length === 1} onRead={() => ctx.read(step.id)} />}
       {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} onRead={() => ctx.read(step.id)} /> : null}
       {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
       <TileCostLines step={step} audience="reader" groups={view.groups ?? []} indent={INDENT} />

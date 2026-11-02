@@ -20,9 +20,9 @@ import { readWorkflow, usesClaudeAction, type WorkflowEvent, type WorkflowReadin
 import { buildLayerError, type BuildNode, type BuildNodeInsert, type NodeTree } from "./types";
 
 /** CA-04 P6 adds "workflow": a GitHub workflow that runs Claude Code, kept as a code tile in the setup. */
-export type SetupKind = "instructions" | "skill" | "server" | "rule" | "workflow";
+export type SetupKind = "instructions" | "skill" | "server" | "rule" | "workflow" | "plugin";
 
-export const SETUP_KINDS: readonly SetupKind[] = ["instructions", "skill", "server", "rule", "workflow"];
+export const SETUP_KINDS: readonly SetupKind[] = ["instructions", "skill", "server", "rule", "workflow", "plugin"];
 
 /** How a kind is named in a setup row. */
 export const SETUP_KIND_LABEL: Record<SetupKind, string> = {
@@ -32,6 +32,8 @@ export const SETUP_KIND_LABEL: Record<SetupKind, string> = {
   /** SV-27 P1: the kind holds hooks (`HOOK_EVENTS`); stored as `rule`. */
   rule: "Hook",
   workflow: "Workflow",
+  /** SV-30 P5: a bundle installed into a harness that adds commands, skills, hooks or MCP servers together. */
+  plugin: "Plugin",
 };
 
 /** A hook's event in plain words; any other event reads as its name as written. */
@@ -58,6 +60,7 @@ export const SETUP_LOADED_DEFAULT: Record<SetupKind, SetupLoaded> = {
   skill: "when-needed",
   server: "start",
   workflow: "start",
+  plugin: "start",
 };
 
 /** The two quiet labels over a session's setup, when both have rows. */
@@ -92,6 +95,36 @@ export interface SetupRule {
   filter: string | null;
   command: string;
 }
+
+/** SV-30 P5: what a plugin bundles. */
+export const PLUGIN_CONTAINS = ["commands", "skills", "hooks", "mcp_servers"] as const;
+export type PluginContains = (typeof PLUGIN_CONTAINS)[number];
+export const PLUGIN_CONTAINS_LABEL: Record<PluginContains, string> = { commands: "Commands", skills: "Skills", hooks: "Hooks", mcp_servers: "MCP servers" };
+export const PLUGIN_NAME_MAX = 80;
+export const PLUGIN_SOURCE_MAX = 200;
+export const PLUGIN_INSTALL_MAX = 500;
+
+export interface SetupPlugin {
+  /** A marketplace name or a repository address. */
+  source: string;
+  contains: PluginContains[];
+  /** The install line, exactly as the maker gave it. */
+  install: string;
+}
+
+/** Why a plugin cannot be saved, or null. */
+export function pluginRefusal(plugin: { name: string } & Partial<SetupPlugin>): string | null {
+  if (!plugin.name.trim()) return "A plugin needs its name.";
+  if (plugin.name.trim().length > PLUGIN_NAME_MAX) return `Plugin name: ${PLUGIN_NAME_MAX} characters max`;
+  if ((plugin.source ?? "").trim().length > PLUGIN_SOURCE_MAX) return `Source: ${PLUGIN_SOURCE_MAX} characters max`;
+  if (!(plugin.install ?? "").trim()) return "A plugin needs its install line.";
+  if ((plugin.install ?? "").length > PLUGIN_INSTALL_MAX) return `Install line: ${PLUGIN_INSTALL_MAX} characters max`;
+  if ((plugin.contains ?? []).some((part) => !PLUGIN_CONTAINS.includes(part))) return "A plugin holds commands, skills, hooks or MCP servers.";
+  return null;
+}
+
+/** "Install the plugin review-kit from the acme marketplace: /plugin install review-kit@acme". The line exactly as given, never files. */
+export const pluginInstallLine = (name: string, plugin: Pick<SetupPlugin, "source" | "install">): string => `Install the plugin ${name}${plugin.source ? ` from ${plugin.source}` : ""}: ${plugin.install}`;
 
 /** SV-27 P6: who wrote a skill: the maker, the agent itself, or a skill registry it was installed from. */
 export const SKILL_ORIGINS = ["maker", "agent", "registry"] as const;
@@ -140,6 +173,8 @@ export interface SetupItem {
   loaded: SetupLoaded;
   /** CA-04 P6: a workflow file, as written, and what was read of it (null where the reader was not sure). */
   workflow: { filename: string; source: string; events: WorkflowEvent[] | null; prompt: string | null } | null;
+  /** SV-30 P5: a plugin's source, what it bundles and its install line. */
+  plugin: SetupPlugin | null;
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -211,6 +246,17 @@ function workflowOf(payload: Record<string, unknown>): SetupItem["workflow"] {
   return { filename: str(payload.filename) ?? "workflow.yml", source: str(payload.source) ?? "", events: events && events.length > 0 ? events : null, prompt: str(read.prompt) };
 }
 
+function pluginOf(payload: Record<string, unknown>): SetupPlugin | null {
+  const raw = isRecord(payload.plugin) ? payload.plugin : null;
+  const install = str(raw?.install)?.slice(0, PLUGIN_INSTALL_MAX);
+  if (!raw || !install) return null;
+  return {
+    source: str(raw.source)?.trim().slice(0, PLUGIN_SOURCE_MAX) ?? "",
+    contains: PLUGIN_CONTAINS.filter((part) => Array.isArray(raw.contains) && raw.contains.includes(part)),
+    install,
+  };
+}
+
 /** The setup items of a tree, in position order; with `session`, only that session's. */
 export function setupItemsOf(tree: readonly NodeTree[], session?: string | null): SetupItem[] {
   const out: SetupItem[] = [];
@@ -222,7 +268,9 @@ export function setupItemsOf(tree: readonly NodeTree[], session?: string | null)
     const skill = isRecord(payload.skill) ? payload.skill : null;
     const rule = isRecord(payload.rule) ? payload.rule : null;
     const name =
-      setup.kind === "workflow"
+      setup.kind === "plugin"
+        ? (str(isRecord(payload.plugin) ? payload.plugin.name : null)?.slice(0, PLUGIN_NAME_MAX) ?? "Plugin")
+        : setup.kind === "workflow"
         ? (str(payload.filename) ?? "workflow.yml")
         : setup.kind === "skill"
         ? (str(skill?.name) ?? str(payload.title) ?? "Skill")
@@ -258,6 +306,7 @@ export function setupItemsOf(tree: readonly NodeTree[], session?: string | null)
       server: setup.kind === "server" ? readServer(payload, name) : null,
       rule: setup.kind === "rule" ? { when: str(rule?.when) ?? "", filter: str(rule?.filter), command: str(payload.source) ?? "" } : null,
       workflow: setup.kind === "workflow" ? workflowOf(payload) : null,
+      plugin: setup.kind === "plugin" ? pluginOf(payload) : null,
     });
   }
   return out;
@@ -489,6 +538,18 @@ export async function addSetupWorkflow(buildId: string, tree: readonly NodeTree[
   refuseIf("addSetupWorkflow", !source.trim() ? "A workflow needs its lines." : null);
   const workflow = { ...(reading.events ? { events: reading.events } : null), ...(reading.prompt ? { prompt: reading.prompt } : null) };
   const payload = { source, language: "yaml", filename: filename.trim() || "workflow.yml", setup: setupKey(session, "workflow"), workflow };
+  return placeTopNode(buildId, tree, { type: CODE_TYPE, title: null, payload: payload as unknown as Json });
+}
+
+/** SV-30 P5: a plugin, as a code tile in the setup: its install line as the code, never the files it installs. */
+export async function addSetupPlugin(buildId: string, tree: readonly NodeTree[], session: string, plugin: { name: string } & SetupPlugin): Promise<BuildNode> {
+  refuseIf("addSetupPlugin", pluginRefusal(plugin));
+  const payload = {
+    source: plugin.install,
+    language: "bash",
+    setup: setupKey(session, "plugin"),
+    plugin: { name: plugin.name.trim(), source: plugin.source.trim(), contains: PLUGIN_CONTAINS.filter((part) => plugin.contains.includes(part)), install: plugin.install },
+  };
   return placeTopNode(buildId, tree, { type: CODE_TYPE, title: null, payload: payload as unknown as Json });
 }
 

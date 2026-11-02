@@ -41,7 +41,7 @@ import { evalChoicesOf } from "@/lib/build/comparison";
 import { addFile, buildSteps, fileKindOf, previewOf, canCheck, resultFactsOf, resultHoldsWord, FILE_TYPE, groupKey, nestRefusal, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, testedStepOf, TOOL_TYPE, usesOf, type ResultInput, type Step } from "@/lib/build/graph";
 import { toolFor } from "@/lib/tools/registry";
 import { addWrittenPrompt } from "@/lib/build/composePrompts";
-import { addSetupFile, addSetupRule, addSetupServer, addSetupWorkflow, isSetupPayload, needsText, routeSetupFiles, setNotShared, setupItemsOf, type DroppedFile, type SetupDraft } from "@/lib/build/setup";
+import { addSetupFile, addSetupPlugin, addSetupRule, addSetupServer, addSetupWorkflow, isSetupPayload, needsText, routeSetupFiles, setNotShared, setupItemsOf, type DroppedFile, type SetupDraft } from "@/lib/build/setup";
 import { connection } from "@/lib/build/connection";
 import { pendingWrites, trackWrite } from "@/lib/build/pendingWrites";
 import { fieldLabel } from "@/lib/build/clash";
@@ -1391,15 +1391,15 @@ function SandboxPageBody() {
   );
 
   const onAddCheck = useCallback(
-    async ({ evidenceFile, evidenceUrl, ...input }: AddCheckInput) => {
+    async ({ evidenceFile, evidenceDraft, ...input }: AddCheckInput) => {
       try {
         // CA-15 P5: evidence is a URL, or one file stored through the same media path as every other file.
-        let evidence: { url?: string; mediaId?: string; name?: string } | null = null;
+        let evidence = input.evidence ?? null;
         if (evidenceFile) {
           const build = await ensureBuild();
           const media = await nodes.run(() => uploadMedia({ buildId: build, file: evidenceFile }));
-          evidence = { mediaId: media.id, name: evidenceFile.name };
-        } else if (evidenceUrl) evidence = { url: evidenceUrl };
+          evidence = { ...(evidenceDraft?.kind ? { kind: evidenceDraft.kind } : null), media_id: media.id, name: evidenceFile.name };
+        }
         // A check uses the step it tested: the selected one, else the last agent, team or code.
         const id = await prompts.addCheckStep({ ...input, ...(evidence ? { evidence } : null), testedStep: testedStepOf(steps, afterStep?.id ?? null), session: await sessionToWrite() });
         if (!id) return;
@@ -2013,6 +2013,27 @@ function SandboxPageBody() {
     [ensureBuild, sessionForSetup, nodes, storeSetupFile, refreshRecord],
   );
 
+  /** SV-30 P5: a plugin is added by its install line, never by files. */
+  const onAddPlugin = useCallback(
+    async function again(session: string, plugin: Parameters<typeof addSetupPlugin>[3]): Promise<void> {
+      try {
+        const id = await ensureBuild();
+        const key = await sessionForSetup(session);
+        if (!key) return;
+        await nodes.run(async () => {
+          const node = await addSetupPlugin(id, nodes.current(), key, plugin);
+          nodes.record(node.id, node);
+        });
+        await refreshRecord(id);
+      } catch (cause) {
+        // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+        console.error("[Sandbox] plugin not added", cause);
+        sayFailed(cause, "Plugin not added", () => void again(session, plugin));
+      }
+    },
+    [ensureBuild, sessionForSetup, nodes, refreshRecord],
+  );
+
   /** "Add to setup": the picker's next files go to that session's setup. */
   const setupFor = useRef<string | null>(null);
   const pickForSetup = useCallback((key: string) => {
@@ -2336,6 +2357,7 @@ function SandboxPageBody() {
     onAddPicture: (id, file) => void addPicture(id, file),
     onUseAsCover: (mediaId) => void setAsCover(mediaId),
     onAddToSetup: pickForSetup,
+    onAddPlugin: (key, plugin) => void onAddPlugin(key, plugin),
     onToolConnection: prompts.setConnection,
     onNotShared: onNotShared,
   };

@@ -50,7 +50,8 @@ import { isSetupPayload, setupOfNode, setupOwnerKey, SETUP_KIND_LABEL, setupItem
 import { goalLine, sessionOrderOf, sessionsCollapsedOf, sessionsMetaOf, storedWorkstreamsOf, type Making } from "./making";
 import { modelRunLine } from "./modelRun";
 import { runsWhenLine } from "./runsFrom";
-import { sessionFactsLine, togetherLine } from "./sessionFacts";
+import { sessionDetailLines, sessionFactsLine, togetherLine } from "./sessionFacts";
+import { outputRow } from "./sessionOutputs";
 import { settingLines } from "./startedWith";
 import { mediaUrl, type MediaRef } from "./media";
 import { PROMPT_TYPE } from "./composePrompts";
@@ -86,6 +87,10 @@ export type ReaderChat =
       runsWhen?: string;
       /** CA-05 P2: length, cost and nobody watching, as a reader gets them: the cost only when the maker ticked Show readers. */
       facts?: string;
+      /** SV-30: the labelled lines under an open head: Access, Produced, Length, Human review. */
+      lines?: string[];
+      /** SV-30 P7: what it produced, as links, only when the maker ticked Show readers. */
+      outputs?: { label: string; href: string | null }[];
       /** CA-05 P3: the command that opened the session, as pasted, and the settings it names in plain words. */
       startedWith?: { command: string; settings: string[] };
       /** CA-05 P5: "At the same time as Session 3 · own copy: fix-totals". */
@@ -121,6 +126,8 @@ export interface ReaderSetupItem {
   files: { id: string; name: string; path: string | null; download: string | null }[];
   server: SetupServer | null;
   rule: SetupRule | null;
+  /** SV-30 P5: a plugin's source, what it bundles and its install line. */
+  plugin?: SetupItem["plugin"];
   /** CA-04 P6: a workflow file that runs Claude Code, as written, and what was read of it. */
   workflow: SetupItem["workflow"];
   /** Where it sat ("docs/CLAUDE.md"), when known. */
@@ -472,6 +479,7 @@ function readSetup(tree: readonly NodeTree[], media: ReadonlyMap<string, ReaderM
       files: item.notShared ? [] : item.files.map((file) => ({ id: file.id, name: file.name, path: file.path, download: download(file.mediaId, null, false) })),
       server: item.notShared && item.server ? { ...item.server, url: null, command: null, args: [] } : item.server,
       rule: item.rule,
+      ...(item.plugin ? { plugin: item.plugin } : null),
       workflow: item.notShared ? null : item.workflow,
       path: item.path,
       loaded: item.loaded,
@@ -536,6 +544,8 @@ function chatFor(step: Step, context: Context): ReaderChat | null {
     tiles: group.stepNumbers.length,
     ...runsWhenOf(context.setup.get(groupKey(group)) ?? []),
     ...factsOfGroup(group),
+    ...(sessionDetailLines({ extras: group.extras, run: group.run }, "reader").length > 0 ? { lines: sessionDetailLines({ extras: group.extras, run: group.run }, "reader") } : null),
+    ...(group.extras?.showOutputs && group.extras.outputs?.length ? { outputs: group.extras.outputs.map(outputRow) } : null),
     ...togetherOfGroup(group, context.groups),
     ...(group.extras?.startedWith ? { startedWith: { command: group.extras.startedWith, settings: settingLines(group.extras.startedWith) } } : null),
   };
@@ -543,7 +553,7 @@ function chatFor(step: Step, context: Context): ReaderChat | null {
 
 /** CA-05 P2: the line under a session's head, as a reader gets it. */
 function factsOfGroup(group: SessionGroup): { facts?: string } {
-  const facts = sessionFactsLine({ extras: group.extras, words: group.longWords }, "reader");
+  const facts = sessionFactsLine({ extras: group.extras, words: group.longWords, model: group.model, run: group.run }, "reader");
   return facts ? { facts } : {};
 }
 

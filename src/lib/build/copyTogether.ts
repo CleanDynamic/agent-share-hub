@@ -7,6 +7,7 @@
 
 import { bracketed } from "./changes";
 import type { Step } from "./graph";
+import { originNote } from "./promptOrigin";
 
 /** A code fence longer than any run of backticks inside the text, so the text appears whole. */
 function fence(body: string, info: string): string {
@@ -27,7 +28,8 @@ function partOf(step: Step): string | null {
       return `Attach ${step.filename ?? step.title ?? "the file"}`;
     default:
       // CA-05 P1: the words a reader changes go in square brackets.
-      return step.text.trim() ? bracketed(step.text, step.changes) : null;
+      // SV-30 P3: a prompt the maker did not type says how it was sent.
+      return step.text.trim() ? [bracketed(step.text, step.changes), step.kind === "prompt" ? originNote(step.origin ?? null) : null].filter(Boolean).join(" ") : null;
   }
 }
 

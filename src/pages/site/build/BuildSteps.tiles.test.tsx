@@ -76,7 +76,10 @@ describe("the build page, every kind with its optional details empty (CA-15 P12)
       expect(card.querySelector('[data-testid$="-eyebrow"]')?.textContent?.trim(), `${name}: type line`).toBeTruthy();
       expect(name.trim(), "title").toBeTruthy();
       expect(emptyRows(card).map((row) => row.outerHTML.slice(0, 80)), `${name}: empty rows`).toEqual([]);
-      expect(within(card).queryByTestId("reader-facts"), `${name}: facts`).toBeNull();
+      // SV-30 P8: a Check with no evidence says `Stated, no artefact`; no other bare tile has a fact.
+      const facts = within(card).queryByTestId("reader-facts");
+      if (card.querySelector('[data-testid="check-eyebrow"]')) expect(facts?.textContent, `${name}: facts`).toContain("Stated, no artefact");
+      else expect(facts, `${name}: facts`).toBeNull();
     }
   });
 

@@ -30,7 +30,7 @@
  */
 
 import { expect, test } from "@playwright/test";
-import { DEGRADED, ROUTES, THEMES, openRoute } from "./support/harness";
+import { DEGRADED, ROUTES, THEMES, inOwnRoom, openRoute } from "./support/harness";
 import { collectColours } from "./support/probe";
 import { writeCsv, writeText } from "./support/report";
 import { dusk, noon, TOKEN_NAMES } from "../../src/lib/theme/semantics";
@@ -118,8 +118,9 @@ test("BG-P30 — no element renders a colour defined only in the other room", as
   const rows: unknown[][] = [];
   const leaks: string[] = [];
 
-  for (const route of ROUTES) {
+  for (const route of ROUTES.filter((each) => !process.env.SWEEP_ONLY || each.id.startsWith(process.env.SWEEP_ONLY))) {
     for (const theme of THEMES) {
+      if (!inOwnRoom(route, theme)) continue;
       const other = theme === "noon" ? "dusk" : "noon";
       const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
       const page = await context.newPage();

@@ -1,18 +1,19 @@
 {
   "moments": {
     "remove-a-tile": {
-      "frameGaps": 3,
+      "frameGaps": 12,
       "longTasks": 1,
-      "longestTaskMs": 88,
+      "longestTaskMs": 131,
       "cancelled": 0,
-      "largestJump": 0.25,
-      "jumpOf": "tile:c22-p2 (2 of 8 px)",
-      "firstFrameMs": 9,
-      "settledMs": 1119,
+      "largestJump": 0.42,
+      "jumpOf": "tile:c22-p3 (112 of 267 px)",
+      "firstFrameMs": 3,
+      "settledMs": 1236,
       "offCompositor": [],
       "failed": [
-        "3 frame gaps over 25 ms",
-        "1 long tasks (longest 88 ms)"
+        "12 frame gaps over 25 ms",
+        "1 long tasks (longest 131 ms)",
+        "a 42% jump: tile:c22-p3 (112 of 267 px)"
       ]
     }
   },

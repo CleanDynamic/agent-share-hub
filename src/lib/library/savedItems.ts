@@ -23,6 +23,8 @@ import type { Json } from "@/integrations/supabase/types";
 import { getBuildHeader } from "@/lib/build/builds";
 import { methodOf } from "@/lib/build/forkRules";
 import { sessionsMetaOf } from "@/lib/build/making";
+import { originOf } from "@/lib/build/promptOrigin";
+import { copiedFacts, type SessionExtras } from "@/lib/build/sessionFacts";
 import { getNodeTree } from "@/lib/build/nodes";
 import type { Build, NodeTree } from "@/lib/build/types";
 import { versionNow } from "./sourceVersions";
@@ -87,7 +89,9 @@ export interface SessionSnapshot {
   title: string | null;
   model: string | null;
   /** The prompts in order: their text, nothing else. */
-  prompts: { text: string }[];
+  prompts: { text: string; sent_by?: string; interval?: string; event?: string }[];
+  /** SV-30: how the session was run (model ID, effort, environment, isolation, access): method, kept on a copy. */
+  facts?: SessionExtras;
   source: SnapshotSource;
 }
 
@@ -133,13 +137,19 @@ export function sessionSnapshot(tree: readonly NodeTree[], sessionKey: string, b
     const ref = asPayload(node.source_ref);
     return node.type === "prompt" && (asPayload(node.payload).session === sessionKey || ref.import_session_id === sessionKey);
   });
-  const prompts = tiles.map((node) => ({ text: String(asPayload(node.payload).text ?? "") })).filter((prompt) => prompt.text.trim());
+  const prompts = tiles
+    .map((node) => {
+      const origin = originOf(node.payload);
+      return { text: String(asPayload(node.payload).text ?? ""), ...(origin ? { sent_by: origin.sentBy, ...(origin.interval ? { interval: origin.interval } : null), ...(origin.event ? { event: origin.event } : null) } : null) };
+    })
+    .filter((prompt) => prompt.text.trim());
   const model = tiles.map((node) => asPayload(node.payload).model).find((value): value is string => typeof value === "string" && value.length > 0) ?? null;
   const meta = sessionsMetaOf(build.making)[sessionKey];
   return {
     title: meta?.title?.trim() || null,
     model,
     prompts,
+    ...(meta && Object.keys(copiedFacts(meta)).length > 0 ? { facts: copiedFacts(meta) } : null),
     source: { ...sourceOf(build), makerId: meta?.contributor_id ?? build.creator_id ?? null, tool: meta?.tool ?? null, date: meta?.date || null },
   };
 }

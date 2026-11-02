@@ -50,7 +50,7 @@ import { modelLabel } from "@/lib/models/registry";
 import { HEX_HINT, normaliseHex } from "@/lib/theme/partColour";
 import { changesOf, type ChangeRange } from "./changes";
 import { modelRunOf, modelRunRefusal, type ModelRun } from "./modelRun";
-import { extrasOf, LONG_SESSION_WORDS, type SessionExtras } from "./sessionFacts";
+import { extrasOf, LONG_SESSION_WORDS, type RunFacts, type SessionExtras } from "./sessionFacts";
 import { numberSessions } from "./sessionNumbers";
 import { failureTypesOf } from "./evalHarness";
 import { runsOfCasesLine, evalHarnessOf, evalHarnessPatchRefusal, exampleCaseOf, runExtrasOf, runExtrasRefusal, stabilityCounts, STABILITIES, FLAKY_CAUSES, type EvalHarness, type FlakyCause, type RunExtras, type Stability, type StabilityCounts } from "./evalHarness";
@@ -82,6 +82,9 @@ import {
 import { agentExtrasOf, checkExtrasOf, cleanExtras, patternOf, settingsOf, toolExtrasOf, variablesOf, type CheckEvidence, type CheckMethod, type CheckModelTested, type CheckReviewer, type CheckScoring, type AgentPattern, type PromptSettings, type PromptVariable, type ToolPermission } from "./tileExtras";
 import { canRunWhen, DECISION_TYPE, decisionOf, questionsRefusal, runsWhenOf, runsWhenRefusal, STATE_SAMPLE_MAX, takesOptions, type DecisionAnswer, type DecisionExample, type DecisionFacts, type DecisionQuestion, type DecisionRef, type LowConfidence, type RunsWhen } from "./decision";
 import { isSummaryPayload, SUMMARY_COPY } from "./summaryTurn";
+import type { EvidencePayload } from "./evidenceKinds";
+import { partOfOf, runsWhereOf, type PartOf } from "./codePart";
+import { asksForOf, originOf, type AsksFor, type PromptOrigin } from "./promptOrigin";
 
 export const AGENT_TYPE = "agent_config";
 export const TEAM_TYPE = "team";
@@ -168,6 +171,9 @@ export interface Step {
   filename?: string | null;
   /** CA-02 P7, code only: "start reading here". */
   entrypoint?: boolean;
+  /** SV-30 P9, code only: what it belongs to, and where it runs. */
+  partOf?: PartOf;
+  runsWhere?: string;
   /** CA-02 P5, an agent only: the tool it ran in, by name (or as typed); null when it names none. */
   harness?: string | null;
   /** SV-27: the agent is built in the maker's own code (no harness), as the maker said (`payload.built_in_code`). */
@@ -211,6 +217,9 @@ export interface Step {
   reply?: string;
   /** CA-15 P2, a prompt or a system prompt: what it ran with (`payload.settings`), and the descriptions given to its `{variables}` (`payload.variables`). */
   settings?: PromptSettings;
+  /** SV-30 P3, a prompt: how it was sent when not by the maker, and what the maker says it asks for. */
+  origin?: PromptOrigin;
+  asksFor?: AsksFor;
   variables?: PromptVariable[];
   /** CA-15 P9, a system prompt only: where it applies and its version; `appliesTo` is how many of the build's prompts that reaches. */
   systemPrompt?: SystemPromptFacts & { appliesTo: number };
@@ -395,6 +404,8 @@ export interface SessionGroup {
   title?: string;
   /** SV-21: the maker opened the session as a request (`sessions_meta[key].open`). Absent when they did not. */
   open?: { problem: string };
+  /** SV-30 P6: what the import showed of it: its turns, and the compaction summaries among them. Never stored. */
+  run?: RunFacts;
   /**
    * CA-12: the session has an entry in `sessions_meta`. A session added the CA-12 way is given one, so its head is always
    * drawn; an old build's lone imported session has none and is drawn as it was, without a head.
@@ -986,11 +997,13 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     ...(kind === "team" && patternOf(payload.pattern) ? { pattern: patternOf(payload.pattern) as AgentPattern } : null),
     ...(kind === "team" || kind === "agent" ? teamFactsOf(kind, payload) : null),
     ...(kind === "manual" && gateOf(payload) ? { gate: gateOf(payload) as Gate } : null),
-    ...(kind === "code" ? { language: stringOf(payload.language), filename: stringOf(payload.filename)?.trim() || null, entrypoint: payload.entrypoint === true } : null),
+    ...(kind === "code" ? { language: stringOf(payload.language), filename: stringOf(payload.filename)?.trim() || null, entrypoint: payload.entrypoint === true, ...(partOfOf(payload) ? { partOf: partOfOf(payload) as PartOf } : null), ...(runsWhereOf(payload) ? { runsWhere: runsWhereOf(payload) as string } : null) } : null),
     ...(kind === "check" ? { check: checkFacts(payload, cases) } : null),
     ...(kind === "check" && cases.length > 0 ? { cases } : null),
     ...(kind === "prompt" && stringOf(payload.reply)?.trim() ? { reply: (stringOf(payload.reply) as string).trim().slice(0, REPLY_MAX) } : null),
     ...(kind === "prompt" && settingsOf(payload.settings) ? { settings: settingsOf(payload.settings) as PromptSettings } : null),
+    ...(kind === "prompt" && originOf(payload) ? { origin: originOf(payload) as PromptOrigin } : null),
+    ...(kind === "prompt" && asksForOf(payload) ? { asksFor: asksForOf(payload) as AsksFor } : null),
     ...((kind === "prompt" || kind === "system_prompt") && variablesOf(payload.variables).length > 0 ? { variables: variablesOf(payload.variables) } : null),
     ...(kind === "system_prompt" ? { systemPrompt: { ...systemPromptOf(payload), appliesTo: 0 } } : null),
     ...(kind === "dataset" ? { dataset: datasetOf(payload) } : null),
@@ -1369,6 +1382,10 @@ export function sessionGroups(
     if (meta[key]?.title) group.title = meta[key].title;
     if (meta[key]?.open) group.open = meta[key].open;
     if (meta[key]) group.marked = true;
+    // SV-30 P6: the import's turn count, and the compaction summaries among the session's own tiles.
+    const turns = known.get(key)?.turns ?? 0;
+    const summaries = group.stepNumbers.filter((number) => stepsByNumber.get(number)?.summary).length;
+    if (turns > 0 || summaries > 0) group.run = { ...(turns > 0 ? { messages: turns } : null), ...(summaries > 0 ? { compactions: summaries } : null) };
     const words = group.stepNumbers.reduce((sum, number) => sum + (stepsByNumber.get(number) ? sessionWords(stepsByNumber.get(number) as Step) : 0), 0);
     if (words > LONG_SESSION_WORDS) group.longWords = words;
   }
@@ -2181,7 +2198,7 @@ export interface CheckInput {
   scoring?: { how: CheckScoring["how"]; target?: string } | null;
   modelTested?: { model: string; version: string } | null;
   /** A URL, or the id and name of one file already stored. */
-  evidence?: { url?: string; mediaId?: string; name?: string } | null;
+  evidence?: EvidencePayload | null;
   /** SV-29 P3, P4: the Check's other payload keys (test set, metric, rows, design, failure types, graders, runs per case, gate), each a stored shape; null leaves it out. Cleaned by the extras writer. */
   extras?: Record<string, unknown>;
 }
@@ -2417,7 +2434,7 @@ function checkPayload(operation: string, input: CheckInput, tree: readonly NodeT
       reviewer: input.reviewer ?? null,
       scoring: input.scoring ?? null,
       model_tested: input.modelTested ?? null,
-      evidence: input.evidence ? { url: input.evidence.url, media_id: input.evidence.mediaId, name: input.evidence.name } : null,
+      evidence: input.evidence ?? null,
       ...Object.fromEntries(Object.entries(input.extras ?? {}).filter(([, value]) => value !== null && value !== undefined)),
     });
     const crossWhy = comparisonPatchRefusal({ scoring: input.scoring ? { how: input.scoring.how } : undefined }, input.extras ?? {}) ?? evalHarnessPatchRefusal({ cases: given }, input.extras ?? {});

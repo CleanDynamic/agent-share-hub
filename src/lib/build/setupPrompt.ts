@@ -21,7 +21,9 @@ import { buildSteps, type Step } from "./graph";
 import { FIELD_WORDS, harnessEntry, notCarriedLine, skillFolder, type HarnessEntry } from "./harnessMap";
 import { precisionWord } from "./modelRun";
 import { hasPipelineSetup, pipelineSections } from "./pipelineSetup";
-import { setupItemsOf, type SetupItem } from "./setup";
+import { PART_INSTRUCTION } from "./codePart";
+import { originNote } from "./promptOrigin";
+import { pluginInstallLine, setupItemsOf, type SetupItem } from "./setup";
 import {
   DELIVERABLE_ARTICLE,
   MAKER,
@@ -215,6 +217,9 @@ function fileSections(items: readonly SetupItem[], entry: HarnessEntry | null, i
           .join("\n"),
       );
   }
+  // SV-30 P5: a plugin is its install line, never its files.
+  const plugins = items.filter((candidate) => candidate.kind === "plugin" && candidate.plugin);
+  if (plugins.length > 0) out.push(plugins.map((item) => pluginInstallLine(item.name, item.plugin as NonNullable<SetupItem["plugin"]>)).join("\n"));
   const servers = items.filter((candidate) => candidate.kind === "server" && candidate.server);
   if (servers.length > 0) {
     if (entry && !entry.mcpConfig) into.notCarried.push(notCarriedLine("mcpConfig", entry));
@@ -248,7 +253,8 @@ function jobSections(step: Step | undefined, all: readonly NodeTree[], into: Col
     const node = all.find((entry) => entry.id === child.id);
     const n = child.number.split(".").pop() ?? child.number;
     const deliver = job.deliverable ? `Deliver ${DELIVERABLE_ARTICLE[job.deliverable.kind]}${job.deliverable.name ? ` named ${job.deliverable.name}` : ""}${job.destination ? ` to ${destinationName(job.destination, all)}` : ""}.` : job.destination ? `Deliver it to ${destinationName(job.destination, all)}.` : "";
-    const lines = [`Job ${n}: ${child.title ?? child.defaultTitle}.`, deliver, job.needsApproval ? "Wait for approval before delivering it." : ""].filter(Boolean).join(" ");
+    const sent = originNote(child.origin ?? null);
+    const lines = [`Job ${n}: ${child.title ?? child.defaultTitle}${sent ? ` ${sent}` : ""}.`, deliver, job.needsApproval ? "Wait for approval before delivering it." : ""].filter(Boolean).join(" ");
     out.push(child.text.trim() ? `${lines}\n\n${fence(child.text.trim())}` : lines);
     noteVariables(into, child.text, variablesOf(payloadOf(node).variables));
   }
@@ -390,7 +396,10 @@ export function setupPromptOf(target: AgentOrTeam, build: Pick<BuildRecord, "tre
   const node = all.find((entry) => entry.id === id);
   const into: Collect = { variables: new Map(), secrets: [], notCarried: [] };
   // SV-29 P8: a Retrieval, Decision or Check tile (or "pipeline") asks for the pipeline's own setup prompt: no agent is needed.
-  if (id === "pipeline" || (node && PIPELINE_TYPES.has(node.type))) return finish(pipelineSections(buildSteps(tree as NodeTree[]), { showCost: build.showCost }), into);
+  if (id === "pipeline" || (node && PIPELINE_TYPES.has(node.type))) {
+    const steps = buildSteps(tree as NodeTree[]);
+    return finish([...pipelineSections(steps, { showCost: build.showCost }), ...codePartSections(steps)], into);
+  }
   if (!node || (node.type !== "agent_config" && node.type !== "team")) return { text: "", variables: [], secrets: [], notCarried: [] };
   const team = node.type === "team";
   const members = team ? all.filter((entry) => entry.parent_id === node.id && entry.type === "agent_config").sort((a, b) => (a.position ?? 0) - (b.position ?? 0)) : [];
@@ -492,10 +501,28 @@ export function setupPromptOf(target: AgentOrTeam, build: Pick<BuildRecord, "tre
   // SV-29 P8: the pipeline and its eval harness, when the build has them, before Fill in.
   const pipeline = buildSteps(tree as NodeTree[]);
   if (hasPipelineSetup(pipeline)) sections.push(...pipelineSections(pipeline, { showCost: build.showCost }));
+  sections.push(...codePartSections(pipeline));
   return finish(sections, into);
 }
 
 const PIPELINE_TYPES = new Set(["decision", "retrieval_config", "eval_run"]);
+
+/** SV-30 P9: each code tile that says what it belongs to, introduced by that part: "Add this to the eval harness, not the app:". */
+function codePartSections(steps: readonly Step[]): string[] {
+  const out: string[] = [];
+  const visit = (list: readonly Step[]) => {
+    for (const step of list) {
+      if (step.kind === "code" && step.partOf && step.text.trim()) {
+        const where = step.runsWhere ? ` It runs in: ${step.runsWhere}.` : "";
+        out.push(`${PART_INSTRUCTION[step.partOf]}${step.filename ? ` (${step.filename})` : ""}:${where}\n\n${fence(step.text)}`);
+      }
+      visit(step.children ?? []);
+      visit(step.sentWith ?? []);
+    }
+  };
+  visit(steps);
+  return out;
+}
 
 function finish(sections: string[], into: Collect): SetupPrompt {
   const variables = [...into.variables.entries()].map(([name, description]) => ({ name, description }));

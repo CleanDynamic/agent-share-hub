@@ -45,10 +45,19 @@ const openRow = (name: string) => void fieldNamed(name);
 describe("the row builders say what each tile holds, with the modals' words (CA-15 P11)", () => {
   it("a prompt: Model settings and Variables", () => {
     const rows = promptRows({ settings: { model: "Opus 5.5", effort: "high", instructions: "Be terse" } }, "Hi {name}");
-    expect(rows.map((r) => r.name)).toEqual(["Model settings", "Variables"]);
+    expect(rows.map((r) => r.name)).toEqual(["Model settings", "How it was sent", "Asks for", "Variables"]);
     expect(rows[0].summary).toBe("Opus 5.5 · High effort · Be terse");
-    expect(rows[1].summary).toBe("{name}");
-    expect(rows[1].toPatch({ name: "First name" })).toEqual({ variables: [{ name: "name", description: "First name" }] });
+    expect(rows[3].summary).toBe("{name}");
+    expect(rows[3].toPatch({ name: "First name" })).toEqual({ variables: [{ name: "name", description: "First name" }] });
+  });
+
+  it("a prompt: how it was sent and what it asks for are the maker's, and typed by the maker is not stored (SV-30 P3)", () => {
+    const rows = promptRows({ sent_by: "heartbeat", interval: "daily 09:00", asks_for: "outcome" }, "Check");
+    expect(rows[1].summary).toBe("Heartbeat · daily 09:00");
+    expect(rows[2].summary).toBe("Asks for an outcome");
+    expect(rows[1].toPatch({ sent_by: "maker" })).toEqual({ sent_by: null, interval: null, event: null });
+    expect(rows[1].toPatch({ sent_by: "event", event: "a deploy finished" })).toEqual({ sent_by: "event", interval: null, event: "a deploy finished" });
+    expect(promptRows({}, "Hi")[1].summary).toBeNull();
   });
 
   it("an agent: Limits, Output and destination, Sample run; a team: Orchestration pattern", () => {
@@ -64,16 +73,17 @@ describe("the row builders say what each tile holds, with the modals' words (CA-
   it("a check: Test method, Reviewer, Scoring method, Model tested, Evidence", () => {
     const rows = checkRows({ method: "review", reviewer: "client", scoring: { how: "metric", target: "95% correct" }, model_tested: { model: "Opus 5.5", version: "2026-09-30" }, evidence: { url: "https://example.com/results" } });
     expect(rows.map((r) => r.name)).toEqual(["Test method", "Reviewer", "Scoring method", "Model tested", "Evidence"]);
-    expect(rows.map((r) => r.summary)).toEqual(["Peer review", "Client", "Metric against a target · 95% correct", "Opus 5.5 · 2026-09-30", "https://example.com/results"]);
+    expect(rows.map((r) => r.summary)).toEqual(["Peer review", "Client", "Metric against a target · 95% correct", "Opus 5.5 · 2026-09-30", "Link · https://example.com/results"]);
     expect(rows[2].toPatch({ how: "pass_fail", target: "ignored" })).toEqual({ scoring: { how: "pass_fail", target: "" } });
     expect(rows[2].toPatch({ how: "", target: "" })).toEqual({ scoring: null });
   });
 
-  it("an evidence file is named and not editable here", () => {
+  it("an evidence file is named, and reads as test output when it has no kind; an address reads as a link (SV-30 P8)", () => {
     const evidence = checkRows({ evidence: { media_id: "m1", name: "results.csv" } })[4];
-    expect(evidence.summary).toBe("results.csv");
-    expect(evidence.fields).toEqual([]);
-    expect(evidence.note).toBe("results.csv attached");
+    expect(evidence.summary).toBe("Test run output · results.csv");
+    expect(JSON.parse(evidence.values.evidence)).toMatchObject({ kind: "test_output", mediaId: "m1", name: "results.csv" });
+    expect(evidence.toPatch(evidence.values)).toEqual({ evidence: { kind: "test_output", media_id: "m1", name: "results.csv" } });
+    expect(JSON.parse(checkRows({ evidence: { url: "https://example.com/r" } })[4].values.evidence).kind).toBe("link");
   });
 
   it("a tool: Permissions, Required plan, Setup steps, Alternatives", () => {
@@ -87,7 +97,10 @@ describe("the row builders say what each tile holds, with the modals' words (CA-
   });
 
   it("code: File path and Generated with; a result: Caption", () => {
-    expect(codeRows({ filename: "src/app.ts", tool: "claude-code", model: "Opus 5.5" }).map((r) => [r.name, r.summary])).toEqual([["File path", "src/app.ts"], ["Generated with", "Claude Code · Opus 5.5"]]);
+    expect(codeRows({ filename: "src/app.ts", tool: "claude-code", model: "Opus 5.5" }).map((r) => [r.name, r.summary])).toEqual([["File path", "src/app.ts"], ["What it belongs to", null], ["Generated with", "Claude Code · Opus 5.5"]]);
+    // SV-30 P9: what it belongs to, and where it runs.
+    expect(codeRows({ part_of: "eval_harness", runs_where: "Terminal 2" })[1].summary).toBe("Part of the eval harness · Terminal 2");
+    expect(codeRows({ part_of: "eval_harness" })[1].toPatch({ part_of: "", runs_where: "" })).toEqual({ part_of: null, runs_where: "" });
     expect(resultRows({ caption: "As printed" }).map((r) => [r.name, r.summary])).toEqual([["Caption", "As printed"]]);
   });
 
@@ -282,5 +295,18 @@ describe("a system prompt, a dataset and a GitHub repository in their windows (C
     fireEvent.change(screen.getByRole("textbox", { name: "Name" }), { target: { value: "Support tickets" } });
     save();
     expect(props.onRename).toHaveBeenCalledWith("ds", "Support tickets");
+  });
+});
+
+describe("SV-30 P8: a stored measurement survives the Details row and the Check window's seed", () => {
+  const stored = { evidence: { kind: "measurement", measurement: { metric: "Latency", unit: "ms", before: 120, after: 58, runs: 20 } } };
+  it("reads back into the control and saves unchanged", () => {
+    const row = checkRows(stored)[4];
+    expect(JSON.parse(row.values.evidence)).toMatchObject({ kind: "measurement", metric: "Latency", before: "120", after: "58", runs: "20" });
+    expect(row.toPatch(row.values)).toEqual({ evidence: stored.evidence });
+  });
+  it("keeps what is saved when the draft is half a measurement", () => {
+    const row = checkRows(stored)[4];
+    expect(row.toPatch({ evidence: JSON.stringify({ ...JSON.parse(row.values.evidence), after: "" }) })).toEqual({ evidence: stored.evidence });
   });
 });

@@ -144,7 +144,8 @@ describe("Add › Check", () => {
       reviewer: "client",
       scoring: { how: "metric", target: "95% correct" },
       modelTested: { model: "", version: "2026-09-30" },
-      evidenceUrl: "example.com/results",
+      evidence: { url: "example.com/results" },
+      evidenceDraft: expect.objectContaining({ kind: "", url: "example.com/results" }),
     });
   });
 
@@ -167,7 +168,7 @@ describe("Add › Check", () => {
     expect((screen.getByLabelText("Evidence URL") as HTMLInputElement).disabled).toBe(true);
     fireEvent.click(add());
     expect(onAdd.mock.calls[0][0].evidenceFile).toBe(file);
-    expect(onAdd.mock.calls[0][0].evidenceUrl).toBeUndefined();
+    expect(onAdd.mock.calls[0][0].evidence).toBeUndefined();
   });
 
   it("refuses an evidence file that holds keys, by name", () => {

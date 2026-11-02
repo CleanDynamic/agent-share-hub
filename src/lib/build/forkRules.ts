@@ -70,6 +70,8 @@ export function methodOf<T extends object | null | undefined>(payload: T): T {
     out.gate = gate;
     if (gate.minutes || gate.cost_per_run) out.from_original = true;
   }
+  // SV-30 P8: a Check's evidence (a recording, a measurement, a log, a link) is the original's: it stays, labelled as the original's.
+  if (isRecord(out.evidence) && (out.evidence.url || out.evidence.media_id || out.evidence.measurement || out.evidence.text)) out.from_original = true;
   // A decision's answer is the original's: it stays, as what the copy is checked against.
   if (isRecord(out.answer) && Array.isArray(out.questions)) {
     out.expected = out.answer;

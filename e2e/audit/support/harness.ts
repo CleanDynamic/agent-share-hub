@@ -818,7 +818,19 @@ export interface AuditRoute {
   ready?: string;
 }
 
+/** A route whose id ends in a room is that room's own entry: the sweeps visit it in that room only. */
+export const inOwnRoom = (route: { id: string }, theme: string): boolean => !/-(noon|dusk)$/.test(route.id) || route.id.endsWith(`-${theme}`);
+
 export const ROUTES: AuditRoute[] = [
+  /* SV-30 P10: one background session with every fact a session can record: its head and labelled lines, prompt origins, the Check's
+     measurement, code with its part, the Session window's new fields, and the build page. Dev pages pick their room from the address,
+     so each room is its own entry (and the sweeps visit it in that room only). */
+  ...(["noon", "dusk"] as const).flatMap((room) => [
+    { id: `sv30-list-${room}`, path: `/dev/kit/pages/sandbox?build=sessions-sdlc&fit=content&theme=${room}` },
+    { id: `sv30-session-window-${room}`, path: `/dev/kit/pages/sandbox?build=sessions-sdlc&window=session&for=typed-sdlc-fixture-0001&fit=content&theme=${room}` },
+    { id: `sv30-check-window-${room}`, path: `/dev/kit/pages/sandbox?build=sessions-sdlc&window=edit&for=sd-k1&fit=content&theme=${room}` },
+    { id: `sv30-reader-${room}`, path: `/dev/kit/pages/build-steps?build=sessions-sdlc&theme=${room}` },
+  ]),
   /* CA-06 P7: "A post with links" with every suggested colour on a linked part, in the composer and on the build
      page. Dev pages pick their room from the address, not from storage, so each room is its own entry. */
   ...(["noon", "dusk"] as const).flatMap((room) => [

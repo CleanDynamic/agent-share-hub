@@ -3,7 +3,10 @@
 import { describe, expect, it } from "vitest";
 
 import { sessionsMetaOf } from "./making";
-import { togetherChanges, togetherLine, extrasOf, extrasRefusal, FACTS_COPY, readResultFile, sessionFactsLine, withExtras } from "./sessionFacts";
+import { methodOf } from "./forkRules";
+import { proposedAccess } from "./sessionAccess";
+import { copiedFacts, figureOf, sessionDetailLines } from "./sessionFacts";
+import { modelWithId, togetherChanges, togetherLine, extrasOf, extrasRefusal, FACTS_COPY, readResultFile, sessionFactsLine, withExtras } from "./sessionFacts";
 
 describe("the line", () => {
   it("is absent when nothing is set", () => {
@@ -94,5 +97,78 @@ describe("sessions at the same time", () => {
     expect(togetherChanges({ b: ["c"], c: ["b"] }, "b", ["c"])).toEqual({});
     expect(togetherChanges({ b: ["c"], c: ["b", "a"], a: ["c"] }, "b", [])).toEqual({ b: [], c: ["a"] });
     expect(togetherChanges({ b: ["b", "c"] }, "b", ["b", "c"])).toEqual({ b: ["c"], c: ["b"] });
+  });
+});
+
+describe("SV-30 P1: model ID and reasoning effort", () => {
+  it("keeps both through the one read and write path, and the display name is unchanged", () => {
+    const meta = sessionsMetaOf({ sessions_meta: { "typed-1": { tool: "claude-code", date: "2026-10-20", model: "Claude Opus 4.5", model_id: " claude-opus-4-5-20251101 ", effort: "high" } } })["typed-1"];
+    expect(meta.model).toBe("Claude Opus 4.5");
+    expect(meta.model_id).toBe("claude-opus-4-5-20251101");
+    expect(meta.effort).toBe("high");
+    expect(withExtras({ tool: null, date: "" }, { model_id: "m-1", effort: "low" })).toMatchObject({ model_id: "m-1", effort: "low" });
+  });
+  it("says the ID beside the name, and the effort, on the line", () => {
+    expect(modelWithId("Claude Opus 4.5", "claude-opus-4-5-20251101")).toBe("Claude Opus 4.5 (claude-opus-4-5-20251101)");
+    expect(modelWithId(null, "claude-opus-4-5-20251101")).toBe("claude-opus-4-5-20251101");
+    expect(sessionFactsLine({ model: "Claude Opus 4.5", extras: { model_id: "claude-opus-4-5-20251101", effort: "high" } }, "reader")).toBe("Claude Opus 4.5 (claude-opus-4-5-20251101) · Reasoning effort: high");
+  });
+  it("refuses an ID over 80 characters and an effort that is not one, and reads them out of range as absent", () => {
+    expect(extrasRefusal({ model_id: "x".repeat(81) })).toBe("Model ID: 80 characters max");
+    expect(extrasRefusal({ effort: "max" as never })).toContain("Reasoning effort");
+    expect(extrasOf({ effort: "max", model_id: 4 })).toEqual({});
+  });
+});
+
+describe("SV-30 P4: environment, isolation and access", () => {
+  const facts = { environment: "cloud_sandbox", isolation: "worktree", can_install: true, access: [{ system: "code", scope: "write" }, { system: "tests", scope: "write" }, { system: "prod_logs", scope: "read" }, { system: "deploy", scope: "write" }, { system: "feature_flags", scope: "write" }] };
+  it("saves each key through the one path, and says them as facts", () => {
+    expect(extrasOf({ ...facts })).toEqual(facts);
+    expect(sessionFactsLine({ extras: facts as never }, "reader")).toBe("Cloud sandbox · Isolation: git worktree · Could install packages");
+    expect(sessionDetailLines({ extras: facts as never }, "reader")).toEqual(["Access: code (write) · tests (write) · production logs (read) · deploy (write) · feature flags (write)"]);
+    expect(sessionsMetaOf({ sessions_meta: { "typed-1": { tool: null, date: "2026-10-20", ...facts } } })["typed-1"]).toMatchObject(facts);
+  });
+  it("reads nothing it does not know and keeps a system once", () => {
+    expect(extrasOf({ environment: "laptop", isolation: "jail", can_install: "yes", access: [{ system: "code", scope: "admin" }, { system: "fax", scope: "read" }] })).toEqual({});
+    expect(extrasOf({ access: [{ system: "code", scope: "read" }, { system: "code", scope: "write" }] }).access).toEqual([{ system: "code", scope: "write" }]);
+  });
+  it("proposes systems from the tools a session set up, and sets none itself", () => {
+    expect(proposedAccess(["GitHub", "Supabase", "Slack", "Linear"])).toEqual(["code", "issues", "database"]);
+    expect(extrasOf({})).toEqual({});
+  });
+  it("is kept on a fork, as method: the keys are not evidence", () => {
+    expect(Object.keys(methodOf({ environment: "local", isolation: "none", access: [] }))).toEqual(["environment", "isolation", "access"]);
+  });
+});
+
+describe("SV-30: what a copy of a session keeps", () => {
+  it("keeps how it was run and leaves the run's own figures with the original", () => {
+    const run = { model_id: "m-1", effort: "high", environment: "cloud_sandbox", isolation: "worktree", can_install: true, access: [{ system: "code", scope: "write" }], cost: 3.4, currency: "GBP", tokens: 5000, background: true, ms: 60000 };
+    expect(copiedFacts(run)).toEqual({ model_id: "m-1", effort: "high", environment: "cloud_sandbox", isolation: "worktree", can_install: true, access: [{ system: "code", scope: "write" }] });
+    expect(copiedFacts(undefined)).toEqual({});
+    // What it produced is the original's evidence: kept, labelled, and not shown to readers until the copier ticks Show readers.
+    const outputs = [{ kind: "pull_request", url: "https://github.com/acme/app/pull/9" }];
+    expect(copiedFacts({ outputs, showOutputs: true, environment: "local" })).toEqual({ environment: "local", outputs, from_original: true });
+    expect(sessionDetailLines({ extras: { ...copiedFacts({ outputs }), showOutputs: true } as never }, "reader")).toEqual(["Produced, the original's: 1 pull request"]);
+  });
+});
+
+describe("SV-30 P6: how the session was driven", () => {
+  it("saves messages and compactions, and says them beside the other figures", () => {
+    expect(extrasOf({ messages: 3714, compactions: 2 })).toEqual({ messages: 3714, compactions: 2 });
+    expect(sessionFactsLine({ extras: { messages: 3714, compactions: 2, tokens: 52_000, showCost: true, background: true } }, "reader")).toBe("52,000 tokens · Ran in the background");
+    expect(sessionDetailLines({ extras: { messages: 3714, compactions: 2 } }, "reader")).toEqual(["Length: 3,714 messages · 2 compactions"]);
+    expect(sessionDetailLines({ extras: { compactions: 1 } }, "maker")).toEqual(["Length: 1 compaction"]);
+  });
+  it("uses what the run showed when the maker gave no figure, and the maker's own figure over it", () => {
+    expect(sessionDetailLines({ run: { messages: 90, compactions: 2 } }, "reader")).toEqual(["Length: 90 messages · 2 compactions"]);
+    expect(sessionDetailLines({ extras: { messages: 12 }, run: { messages: 90 } }, "reader")).toEqual(["Length: 12 messages"]);
+    expect(figureOf(undefined, 2)).toEqual({ value: 2, from: "run" });
+    expect(figureOf(5, 2)).toEqual({ value: 5, from: "maker" });
+    expect(figureOf(undefined, 0)).toBeNull();
+  });
+  it("refuses a count that is not a whole number", () => {
+    expect(extrasRefusal({ messages: 1.5 })).toBe("Messages is a whole number.");
+    expect(extrasRefusal({ compactions: -1 })).toBe("Compactions is a whole number.");
   });
 });

@@ -29,6 +29,10 @@ import {
   variableNamesIn,
   variablesOf,
 } from "@/lib/build/tileExtras";
+import { EVIDENCE_KIND_LABEL, evidenceDraftFromJson, evidenceDraftOf, evidenceDraftRefusal, evidenceFromDraft, measurementLine } from "@/lib/build/evidenceKinds";
+import { EvidenceControl } from "./EvidenceControl";
+import { PART_OF, PART_OF_LABEL, RUNS_WHERE_MAX, partOfOf, runsWhereOf, type PartOf } from "@/lib/build/codePart";
+import { ASKS_FOR, ASKS_FOR_LABEL, EVENT_MAX, INTERVAL_MAX, SENT_BY_CHOICES, asksForOf, originLine, originOf } from "@/lib/build/promptOrigin";
 import { toolName } from "@/lib/tools/registry";
 
 import {
@@ -74,7 +78,7 @@ import { FIELD_LABEL } from "./composeControls";
 /** The words the prompt window uses for the same two rows. */
 import { FULL_PROMPT_COPY } from "@/components/build/FullPromptWindow";
 
-export type ExtraKind = "line" | "text" | "lines" | "count" | "choice" | "model" | "tool";
+export type ExtraKind = "line" | "text" | "lines" | "count" | "choice" | "model" | "tool" | "evidence";
 
 export interface ExtraField {
   key: string;
@@ -103,11 +107,23 @@ export interface ExtraRow {
   note?: string;
 }
 
+const parseDraft = (value: string): unknown => {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+};
+
 const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
 
 /* ── one row's editors ── */
 
 function Editor({ field, value, phone, inBuild, set, commit }: { field: ExtraField; value: string; phone: boolean; inBuild: readonly string[]; set: (value: string, now?: boolean) => void; commit: () => void }) {
+  if (field.kind === "evidence") {
+    // SV-30 P8: the one evidence control; the row holds its draft as JSON in one value.
+    return <EvidenceControl draft={evidenceDraftFromJson(value)} onChange={(next, now) => set(JSON.stringify(next), now)} onBlur={commit} phone={phone} />;
+  }
   if (field.kind === "choice") {
     return <ChoiceGrid label={field.label} items={field.items ?? []} value={value || null} onChange={(next) => set(next ?? "", true)} phone={phone} allowClear columns={field.items && field.items.length > 4 ? 2 : 3} />;
   }
@@ -197,6 +213,8 @@ export function promptRows(payload: Raw, promptText: string): ExtraRow[] {
   const names = variableNamesIn(promptText);
   const described = Object.fromEntries(names.map((name) => [name, saved.find((entry) => entry.name === name)?.description ?? ""]));
   const effortHeld = settings.effort !== "default";
+  const origin = originOf(payload);
+  const asks = asksForOf(payload);
   return [
     {
       name: FULL_PROMPT_COPY.modelSettings,
@@ -209,6 +227,27 @@ export function promptRows(payload: Raw, promptText: string): ExtraRow[] {
       ],
       values: { model: settings.model, effort: settings.effort === "default" ? "" : settings.effort, instructions: settings.instructions },
       toPatch: (v) => ({ settings: { model: v.model, effort: v.effort || "default", instructions: v.instructions } }),
+    },
+    /* SV-30 P3: how it was sent, and what it asks for. Both are the maker's to say; neither is read from the text. */
+    {
+      name: "How it was sent",
+      description: "",
+      summary: origin ? originLine(origin) : null,
+      fields: [
+        { key: "sent_by", label: "Sent by", kind: "choice", items: SENT_BY_CHOICES.map((choice) => ({ ...choice })) },
+        { key: "interval", label: "How often", kind: "line", max: INTERVAL_MAX, placeholder: "daily 09:00", when: (v) => v.sent_by === "heartbeat" },
+        { key: "event", label: "The event", kind: "line", max: EVENT_MAX, placeholder: "a deploy finished", when: (v) => v.sent_by === "event" },
+      ],
+      values: { sent_by: origin?.sentBy ?? "maker", interval: origin?.interval ?? "", event: origin?.event ?? "" },
+      toPatch: (v) => ({ sent_by: v.sent_by && v.sent_by !== "maker" ? v.sent_by : null, interval: v.sent_by === "heartbeat" ? (v.interval ?? "") : null, event: v.sent_by === "event" ? (v.event ?? "") : null }),
+    },
+    {
+      name: "Asks for",
+      description: "",
+      summary: asks ? ASKS_FOR_LABEL[asks] : null,
+      fields: [{ key: "asks_for", label: "Asks for", kind: "choice", items: ASKS_FOR.map((value) => ({ value, label: ASKS_FOR_LABEL[value] })) }],
+      values: { asks_for: asks ?? "" },
+      toPatch: (v) => ({ asks_for: v.asks_for || null }),
     },
     {
       name: FULL_PROMPT_COPY.variables,
@@ -270,6 +309,7 @@ export function checkRows(payload: Raw): ExtraRow[] {
   const extras = checkExtrasOf(payload);
   const evidence = extras.evidence;
   const evidenceFile = evidence?.mediaId ? (evidence.name ?? "A file") : null;
+  const evidenceDraft = evidenceDraftOf(payload.evidence);
   return [
     {
       name: CHECK_DIALOG_COPY.method,
@@ -312,11 +352,15 @@ export function checkRows(payload: Raw): ExtraRow[] {
     {
       name: CHECK_DIALOG_COPY.evidence,
       description: CHECK_DIALOG_COPY.evidenceLine,
-      summary: summaryOf(evidenceFile, evidenceFile ? null : evidence?.url),
-      fields: evidenceFile ? [] : [{ key: "url", label: CHECK_DIALOG_COPY.evidenceUrl, kind: "line" }],
-      values: { url: evidence?.url ?? "" },
-      toPatch: (v) => ({ evidence: v.url ? { url: v.url } : null }),
-      ...(evidenceFile ? { note: `${evidenceFile} attached` } : null),
+      summary: summaryOf(evidence?.kind ? EVIDENCE_KIND_LABEL[evidence.kind] : evidenceDraft.kind ? EVIDENCE_KIND_LABEL[evidenceDraft.kind] : null, evidence?.measurement ? measurementLine(evidence.measurement) : evidenceFile, evidenceFile || evidence?.measurement ? null : evidence?.url, evidence?.text ? "Pasted output" : null),
+      /* SV-30 P8: one control for the kind and the thing; evidence from before kinds reads as a link, or as test output when it is a file. */
+      fields: [{ key: "evidence", label: CHECK_DIALOG_COPY.evidence, kind: "evidence" }],
+      values: { evidence: JSON.stringify(evidenceDraft) },
+      toPatch: (v) => {
+        const draft = evidenceDraftFromJson(v.evidence);
+        // A draft that cannot be saved yet (half a measurement) changes nothing; the control says why.
+        return { evidence: evidenceFromDraft(evidenceDraftRefusal(draft) ? evidenceDraft : draft) };
+      },
     },
   ];
 }
@@ -374,6 +418,18 @@ export function codeRows(payload: Raw): ExtraRow[] {
       fields: [{ key: "filename", label: CODE_DIALOG_COPY.filename, kind: "line", max: 200, placeholder: CODE_DIALOG_COPY.filenamePlaceholder, mono: true }],
       values: { filename },
       toPatch: (v) => ({ filename: v.filename ?? "" }),
+    },
+    /* SV-30 P9: what it belongs to, and where it runs. */
+    {
+      name: "What it belongs to",
+      description: "",
+      summary: summaryOf(partOfOf(payload) ? PART_OF_LABEL[partOfOf(payload) as PartOf] : null, runsWhereOf(payload)),
+      fields: [
+        { key: "part_of", label: "Part of", kind: "choice", items: PART_OF.map((value) => ({ value, label: PART_OF_LABEL[value] })) },
+        { key: "runs_where", label: "Where it runs", kind: "line", max: RUNS_WHERE_MAX, placeholder: "Terminal 2, in the harness folder" },
+      ],
+      values: { part_of: partOfOf(payload) ?? "", runs_where: runsWhereOf(payload) ?? "" },
+      toPatch: (v) => ({ part_of: v.part_of || null, runs_where: v.runs_where ?? "" }),
     },
     {
       name: CODE_DIALOG_COPY.writtenWith,

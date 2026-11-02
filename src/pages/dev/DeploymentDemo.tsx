@@ -22,13 +22,17 @@ import { chiefOfStaffTree } from "@/dev/fixtures/deployment/chief-of-staff";
 import { selfHostedTree } from "@/dev/fixtures/deployment/self-hosted";
 import { productCategoriesTree } from "@/dev/fixtures/pipeline/product-categories";
 import { supportBotEvalsTree } from "@/dev/fixtures/pipeline/support-bot-evals";
+import { sessionsSdlcMaking, sessionsSdlcTree } from "@/dev/fixtures/sessions/sdlc";
 import { sandboxListProps, sandboxViewProps } from "@/dev/fixtures/sandbox";
-import { buildSteps } from "@/lib/build/graph";
+import { buildSteps, sessionGroups } from "@/lib/build/graph";
+import { sessionsMetaOf } from "@/lib/build/making";
 import type { NodeTree } from "@/lib/build/types";
 import { AddManualStepDialog } from "@/pages/site/compose/AddManualStepDialog";
 import { AddRetrievalDialog } from "@/pages/site/compose/AddRetrievalDialog";
 import { MapViews } from "@/pages/site/compose/ArchitectureMap";
 import { BuildList } from "@/pages/site/compose/BuildList";
+import { dividers } from "@/pages/site/compose/buildListModel";
+import { sourceSessions } from "@/pages/site/compose/sourcesModel";
 import { DetailsPanel, type DetailsHandlers } from "@/pages/site/compose/DetailsPanel";
 import { resolveView } from "@/pages/site/compose/detailsView";
 import { SandboxView } from "@/pages/site/compose/SandboxView";
@@ -45,11 +49,13 @@ export const DEPLOYMENT_FIXTURES: Record<string, { tree: NodeTree[]; title: stri
   /* SV-29 P9: the pipeline fixtures, in the same composer. */
   "pipeline-product-categories": { tree: productCategoriesTree, title: "Product categories at 10 million a day" },
   "pipeline-support-bot-evals": { tree: supportBotEvalsTree, title: "A shoe shop's support bot, with its evals" },
+  /* SV-30 P10: one background session with every SDLC fact. */
+  "sessions-sdlc": { tree: sessionsSdlcTree, title: "A VM that boots twice as fast" },
 };
 
 const flat = (nodes: readonly NodeTree[]): NodeTree[] => nodes.flatMap((node) => [node, ...flat(node.children ?? [])]);
 const noop = () => undefined;
-const HANDLERS: DetailsHandlers = { onRename: noop, onModel: noop, onAddUse: noop, onRemoveUse: noop, onRuns: noop, onRemoveInside: noop, onToggleSessionPrompt: noop, onExtras: noop } as unknown as DetailsHandlers;
+const HANDLERS: DetailsHandlers = { onRename: noop, onModel: noop, onAddUse: noop, onRemoveUse: noop, onRuns: noop, onRemoveInside: noop, onToggleSessionPrompt: noop, onExtras: noop, onSessionExtras: noop, onSessionGoal: noop, onSessionMeta: noop, onAddPlugin: noop } as unknown as DetailsHandlers;
 
 export default function DeploymentDemo({ fit = "board", state = "populated" }: DesignPageProps) {
   const [params] = useSearchParams();
@@ -57,11 +63,13 @@ export default function DeploymentDemo({ fit = "board", state = "populated" }: D
   const fixture = DEPLOYMENT_FIXTURES[params.get("build") ?? ""] ?? DEPLOYMENT_FIXTURES["deployment-chief-of-staff"];
   const tree = fixture.tree;
   const steps = buildSteps(tree);
+  // SV-30 P10: the sessions fixture has a session with a head, so its facts line is drawn.
+  const groups = (params.get("build") ?? "").startsWith("sessions-") ? sessionGroups(steps, [], {}, sessionsMetaOf(sessionsSdlcMaking), sessionsSdlcMaking.session_order) : [];
   const names = Object.fromEntries(flat(tree).flatMap((node) => (node.type === "integration" && typeof (node.payload as Record<string, unknown>)?.service === "string" ? [[node.id, (node.payload as Record<string, string>).service]] : [])));
   const [selected, setSelected] = useState<string | null>(params.get("select"));
   const [windowFor, setWindowFor] = useState<{ kind: string; id: string | null } | null>(params.get("window") ? { kind: params.get("window") as string, id: params.get("for") } : null);
   const view = (id: string | null) =>
-    id ? resolveView({ selectedId: id, steps, groups: [], tree, sources: [], sourceFiles: [], promptsState: () => ({ prompts: [], error: false }), intoResult: new Set(), media: () => undefined }) : null;
+    id ? resolveView({ selectedId: id, steps, groups, tree, sources: groups.length > 0 ? sourceSessions(groups, steps) : [], sourceFiles: [], promptsState: () => ({ prompts: [], error: false }), intoResult: new Set(), media: () => undefined }) : null;
   const base = sandboxViewProps("bakery", state);
   const teamId = steps.find((step) => step.kind === "team")?.id ?? null;
   return (
@@ -72,7 +80,7 @@ export default function DeploymentDemo({ fit = "board", state = "populated" }: D
         title={fixture.title}
         lens={params.get("lens") === "map" ? "map" : "list"}
         mapAvailable
-        list={<BuildList {...sandboxListProps("bakery")} dividers={new Map()} results={[]} costGroups={[]} steps={steps} names={names} selectedId={selected} onSelect={setSelected} phone={phone} onSetupPrompt={(id, how) => (how === "show" ? setWindowFor({ kind: "setup", id }) : undefined)} />}
+        list={<BuildList {...sandboxListProps("bakery")} dividers={groups.length > 0 ? dividers(steps, groups) : new Map()} results={[]} costGroups={[]} steps={steps} names={names} selectedId={selected} onSelect={setSelected} phone={phone} onSetupPrompt={(id, how) => (how === "show" ? setWindowFor({ kind: "setup", id }) : undefined)} />}
         map={<MapViews made={{ map: { view: "architecture" } }} sessions={1} tree={tree} direction={params.get("direction") === "vertical" ? "vertical" : "horizontal"} sessionsMap={null} onView={noop} onOpen={setSelected} />}
         selectedKey={selected}
         selection={<DetailsPanel {...(HANDLERS as unknown as ComponentProps<typeof DetailsPanel>)} view={view(selected)} phone={phone} />}
@@ -80,7 +88,7 @@ export default function DeploymentDemo({ fit = "board", state = "populated" }: D
       {windowFor?.kind === "setup" ? <SetupPromptWindow key={params.get("harness") ?? "own"} harness={params.get("harness") ?? undefined} id={windowFor.id ?? teamId} tree={tree} onCopy={noop} onClose={() => setWindowFor(null)} /> : null}
       {windowFor?.kind === "retrieval" ? <AddRetrievalDialog open onOpenChange={() => setWindowFor(null)} onAdd={noop} /> : null}
       {windowFor?.kind === "approval" ? <AddManualStepDialog open onOpenChange={() => setWindowFor(null)} after={null} available approval={{ steps, afterId: teamId }} onAdd={noop} /> : null}
-      {windowFor?.kind === "edit" ? <TileEditDialog view={view(windowFor.id)} handlers={HANDLERS} onClose={() => setWindowFor(null)} /> : null}
+      {windowFor?.kind === "edit" || windowFor?.kind === "session" ? <TileEditDialog view={view(windowFor.id)} handlers={HANDLERS} onClose={() => setWindowFor(null)} /> : null}
       <FullPromptWindow steps={steps} names={names} openId={windowFor?.kind === "prompt" ? windowFor.id : null} mode="maker" onExtras={noop} onTitle={noop} onClose={() => setWindowFor(null)} />
     </>
   );

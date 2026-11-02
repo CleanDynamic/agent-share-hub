@@ -7,8 +7,9 @@
 export const isSessionSummary = (text: string): boolean => /^\s*This session is being continued from a previous\b/.test(text);
 
 export const SUMMARY_COPY = {
-  kind: "Summary",
-  title: "Summary of an earlier chat",
+  /** SV-30 P6: the stored kind is unchanged; only what is said changed. */
+  kind: "Compaction summary",
+  title: "Compaction summary",
 } as const;
 
 /** A prompt row's payload is a Summary tile: its text is the summary turn, and its maker has not made it a prompt. */

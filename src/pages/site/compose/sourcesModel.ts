@@ -10,7 +10,7 @@
    "made in step {n}". */
 
 import { NO_HARNESS } from "@/lib/build/harnessWords";
-import { sessionFactsLine, togetherLine } from "@/lib/build/sessionFacts";
+import { sessionDetailLines, sessionFactsLine, togetherLine } from "@/lib/build/sessionFacts";
 import { FILE_TYPE, groupKey, groupKind, madeByOf, shownGroups, stepTitle, type SessionGroup, type Step } from "@/lib/build/graph";
 import { detectExportSource } from "@/lib/build/lovable";
 import { goalLine, toolLabel } from "@/lib/build/making";
@@ -49,6 +49,8 @@ export interface SourceSession {
   runsWhen?: string;
   /** CA-05 P2: length, cost, and nobody watching, one line, the parts that exist; the maker sees all of it. Absent when none. */
   facts?: string;
+  /** SV-30: the labelled lines under an open head: Access, Produced, Length, Human review. */
+  lines?: string[];
   /** CA-05 P5: "At the same time as Session 3 · own copy: fix-totals"; absent when the session says neither. */
   together?: string;
   /** CA-06 P4: the maker's colour for the session, "#RRGGBB"; absent when it has none. */
@@ -206,7 +208,7 @@ export function shortDate(iso: string | null | undefined): string {
 }
 
 /** CA-05 P2: the line under a session's head. */
-const factsOf = (group: SessionGroup, audience: "maker" | "reader"): string | null => sessionFactsLine({ extras: group.extras, words: group.longWords }, audience);
+const factsOf = (group: SessionGroup, audience: "maker" | "reader"): string | null => sessionFactsLine({ extras: group.extras, words: group.longWords, model: group.model, run: group.run }, audience);
 
 const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [step, ...flatten(step.children)]);
 
@@ -266,6 +268,7 @@ export function sourceSessions(
       ...(group.title ? { title: group.title } : null),
       ...(group.open ? { open: group.open.problem } : null),
       ...(factsOf(group, "maker") ? { facts: factsOf(group, "maker") as string } : null),
+      ...(sessionDetailLines({ extras: group.extras, run: group.run }, "maker").length > 0 ? { lines: sessionDetailLines({ extras: group.extras, run: group.run }, "maker") } : null),
       ...(togetherLine(group.extras, (other) => groups.find((candidate) => groupKey(candidate) === other)?.number) ? { together: togetherLine(group.extras, (other) => groups.find((candidate) => groupKey(candidate) === other)?.number) as string } : null),
       prompts: mine.map((step) => ({
         id: step.id,

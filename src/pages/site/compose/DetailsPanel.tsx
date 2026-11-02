@@ -78,9 +78,9 @@ import type { CheckCase, CheckFacts, CheckRun, AgentModel, Runs, Use, ToolConnec
 import type { Gate } from "@/lib/build/teamFields";
 import type { AgentSetupValue } from "./AgentSetupFields";
 import type { OtherSession } from "./SessionExtrasFields";
-import type { SessionExtras } from "@/lib/build/sessionFacts";
+import type { RunFacts, SessionExtras } from "@/lib/build/sessionFacts";
 import type { SessionGoal } from "@/lib/build/making";
-import type { SetupLoaded } from "@/lib/build/setup";
+import type { SetupLoaded, SetupPlugin } from "@/lib/build/setup";
 import { Swap } from "./buildMotion";
 
 export interface InputsView {
@@ -163,6 +163,8 @@ export interface SessionView {
   goal?: SessionGoal | null;
   /** CA-05: what the session carries beyond its steps (cost, background, ...). Absent in older fixtures. */
   extras?: SessionExtras;
+  /** SV-30 P6: what the import showed of the session: its turns and compaction summaries. */
+  run?: RunFacts;
   /** CA-05 P5: the build's other sessions, for Ran at the same time as. Absent or empty: the menu is not shown. */
   others?: readonly OtherSession[];
 }
@@ -421,6 +423,8 @@ export interface DetailsHandlers {
   onToolConnection?: (id: string, connection: ToolConnection | null, runsAt: ToolRunsAt | null) => void;
   /** CA-04 P4: "Add to setup" opens the file picker for this session's setup. Absent: the button is not shown. */
   onAddToSetup?: (sessionKey: string) => void;
+  /** SV-30 P5: add a plugin (its install line, never its files) to this session's setup. Absent: the form is not shown. */
+  onAddPlugin?: (sessionKey: string, plugin: { name: string } & SetupPlugin) => void;
   /** CA-04 P4: mark a setup item Not shared. Absent: the button is not shown. */
   onNotShared?: (id: string) => void;
   onDownload: (id: string) => void;

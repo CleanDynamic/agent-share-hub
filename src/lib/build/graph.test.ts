@@ -225,10 +225,20 @@ describe("sessionGroups", () => {
       fromSession("s2", { position: 4 }),
     ]);
     expect(sessionGroups(steps, sessions, {})).toEqual([
-      { key: "s1", kind: "import", sessionId: "s1", number: 1, tool: "Claude Code", model: "Sonnet 5.5", startedAt: "2026-10-04T09:00:00Z", stepNumbers: ["1", "2"] },
+      { key: "s1", kind: "import", sessionId: "s1", number: 1, tool: "Claude Code", model: "Sonnet 5.5", startedAt: "2026-10-04T09:00:00Z", stepNumbers: ["1", "2"], run: { messages: 4 } },
       { key: "typed-legacy-1", kind: "legacy", sessionId: null, number: 2, tool: "Claude Code", model: null, startedAt: "typed here", stepNumbers: ["3"] },
-      { key: "s2", kind: "import", sessionId: "s2", number: 3, tool: "ChatGPT", model: "GPT-6 Luna", startedAt: "2026-10-05T09:00:00Z", stepNumbers: ["4"] },
+      { key: "s2", kind: "import", sessionId: "s2", number: 3, tool: "ChatGPT", model: "GPT-6 Luna", startedAt: "2026-10-05T09:00:00Z", stepNumbers: ["4"], run: { messages: 2 } },
     ]);
+  });
+
+  it("SV-30 P6: counts the compaction summaries among a session's own tiles as what the run showed", () => {
+    const summary = "This session is being continued from a previous conversation that ran out of context.";
+    const steps = buildSteps([
+      fromSession("s1", { position: 1, payload: { text: summary } as never }),
+      fromSession("s1", { position: 2 }),
+      fromSession("s1", { position: 3, payload: { text: summary } as never }),
+    ]);
+    expect(sessionGroups(steps, sessions, {})[0].run).toEqual({ messages: 4, compactions: 2 });
   });
 
   describe("CA-12 P5: numbered by build_sessions.position", () => {
