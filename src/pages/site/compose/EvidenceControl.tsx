@@ -29,7 +29,7 @@ export const EVIDENCE_COPY = {
   attached: (name: string) => `${name} attached`,
 } as const;
 
-const number = (raw: string): string => raw.replace(/[^0-9.\-]/g, "");
+const number = (raw: string): string => raw.replace(/[^0-9.-]/g, "");
 
 export function EvidenceControl({
   draft,
