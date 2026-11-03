@@ -31,7 +31,7 @@ beforeEach(() => {
 describe("what is kept", () => {
   it("keeps the allow list, and only successful queries", () => {
     expect(shouldKeep(query(["build", "listDraftsWithSessions", "u1"], [{ id: "d1" }]))).toBe(true);
-    expect(shouldKeep(query(["feed", "getBuildFeed", "everyone", "u1"], { pages: [], pageParams: [] }))).toBe(true);
+    expect(shouldKeep(query(["feed", "getBuildFeed", "everyone"], { pages: [], pageParams: [] }))).toBe(true);
     expect(shouldKeep(query(["build", "listDraftsWithSessions", "u1"], [], "error"))).toBe(false);
     expect(KEPT_KEYS.length).toBeGreaterThan(0);
   });
@@ -101,5 +101,12 @@ describe("the store", () => {
     await expect(persister.restoreClient()).resolves.toBeUndefined();
     await expect(clearKeptCache()).resolves.toBeUndefined();
     expect(await createKeptCache(null).restoreClient()).toBeUndefined();
+  });
+});
+
+describe("UX-01 P6: signed media addresses are never kept", () => {
+  it("no key under 'media' is in KEPT_KEYS, and none would be kept: a kept signed URL could outlive its token", () => {
+    expect(KEPT_KEYS.filter((prefix) => prefix[0] === "media")).toEqual([]);
+    expect(shouldKeep(query(["media", "signedUrl", "build-media", "a/b.png", "image", 640], "https://x/sign?token=t"))).toBe(false);
   });
 });

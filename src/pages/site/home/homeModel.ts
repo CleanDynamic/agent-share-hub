@@ -18,6 +18,11 @@ import { weekStartUtc, type ChallengeProgress } from "@/lib/progress/weekly";
 
 /* ── the feed's kind filter ── */
 
+/** UX-01 P5: the first feed page's query key. Everyone does not depend on the reader (`get_build_feed` reads `auth.uid()` only for follows), so its key carries no viewer and its request need not wait for the session check. Following is the reader's own, so it does. */
+export type HomeFeedScope = "everyone" | "following";
+export const feedKey = (scope: HomeFeedScope, userId: string | null): readonly unknown[] => (scope === "everyone" ? ["feed", "getBuildFeed", "everyone"] : ["feed", "getBuildFeed", "following", userId]);
+export const feedWaitsForSession = (scope: HomeFeedScope): boolean => scope === "following";
+
 export type HomeFilter = "all" | "builds" | "rebuilds" | "notes" | "asks";
 
 export const HOME_FILTERS: readonly { value: HomeFilter; label: string }[] = [

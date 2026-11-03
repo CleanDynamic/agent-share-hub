@@ -69,7 +69,7 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
       const weekStart = weekStartUtc(new Date()).toISOString();
       await Promise.all([
         queryClient.prefetchInfiniteQuery({
-          queryKey: ["feed", "getBuildFeed", "everyone", userId],
+          queryKey: ["feed", "getBuildFeed", "everyone"],
           initialPageParam: undefined as string | undefined,
           queryFn: ({ pageParam }) => getBuildFeed({ before: pageParam, onlyFollowing: false }),
           getNextPageParam: (last) => last.nextBefore ?? undefined,
