@@ -119,6 +119,17 @@ describe("BuildView on a desktop", () => {
     expect(bar.getAttribute("aria-valuenow")).toBe("86");
   });
 
+  it("UX-01 P3: the completeness module has one marker, Gallery, the rule that applies, and says it is private", () => {
+    const props = stepsProps();
+    mount({ ...props, proof: { ...props.proof, completeness: { score: 86, publishAt: 40, galleryAt: 70, next: null } } });
+    const module = screen.getByTestId("build-completeness");
+    expect(within(module).getByText("Visible to you only")).toBeTruthy();
+    expect(module.textContent).toContain("Gallery 70");
+    expect(module.textContent).not.toMatch(/Publish\s?\d/);
+    const bar = within(module).getByRole("progressbar", { name: "Completeness" });
+    expect(bar.getAttribute("aria-valuetext")).toBe("86 of 100. The gallery lists builds at 70 or above.");
+  });
+
   it("says a run that did not save, with a retry", () => {
     const onRetry = vi.fn();
     const props = stepsProps();

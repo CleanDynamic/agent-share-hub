@@ -924,16 +924,14 @@ function ThreadHero({
 /* ── the reproduction column ── */
 
 function CompletenessModule({ completeness }: { completeness: CompletenessView }) {
-  const { score, publishAt, galleryAt, next } = completeness;
-  const ticks: StripedBarTick[] =
-    publishAt === galleryAt
-      ? [{ at: galleryAt, colour: t.label, label: `Gallery ${galleryAt}` }]
-      : [
-          { at: publishAt, colour: t.label, label: `Publish ${publishAt}` },
-          { at: galleryAt, colour: t.label, label: `Gallery ${galleryAt}` },
-        ];
+  /* UX-01 P3: publishing is not gated on completeness; it decides Gallery placement only. So the bar has one marker, Gallery. */
+  const { score, galleryAt, next } = completeness;
+  const ticks: StripedBarTick[] = [{ at: galleryAt, colour: t.label, label: `Gallery ${galleryAt}` }];
   return (
     <div data-testid="build-completeness" style={{ ...moduleStyle, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+      <span data-testid="build-completeness-private" style={{ ...text(11, 400, t.label), marginBottom: -4 }}>
+        Visible to you only
+      </span>
       <div style={{ display: "flex", alignItems: "baseline" }}>
         <span style={{ ...text(13, 500, t.text), flexGrow: 1 }}>Completeness</span>
         <span style={text(13, 500, t.text, tnum)}>
@@ -946,7 +944,7 @@ function CompletenessModule({ completeness }: { completeness: CompletenessView }
         height={11}
         ticks={ticks}
         label="Completeness"
-        valueText={`${score} of 100. Publishing needs ${publishAt}, the gallery ${galleryAt}.`}
+        valueText={`${score} of 100. The gallery lists builds at ${galleryAt} or above.`}
       />
       {next ? (
         <p style={{ ...text(12, 400, t.text2), margin: 0, paddingTop: 12, borderTop: `1px solid ${t.hairlineModule}` }}>Next: {next}.</p>
