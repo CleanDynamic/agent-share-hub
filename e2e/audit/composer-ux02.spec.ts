@@ -80,20 +80,25 @@ async function open(page: Page, width = 1440) {
   await expect(page.getByRole("group", { name: /^Session 1 · / })).toBeVisible({ timeout: 30_000 });
 }
 
-/** A real file drop: a DataTransfer holding a file, dropped at a point over `target`. */
-async function dropFile(page: Page, target: Locator, at: { x: number; y: number } | "middle", name = "notes.md", body = "# Notes\n\nWhat the poster says.", type = "text/markdown") {
-  const box = await target.boundingBox();
-  if (!box) throw new Error("nothing to drop on");
-  const point = at === "middle" ? { x: box.x + box.width / 2, y: box.y + box.height / 2 } : at;
-  const data = await page.evaluateHandle(
-    ([fileName, text, mime]) => {
+/**
+ * A real file drop: a DataTransfer holding a file, dispatched on `target` at a point measured from `from` (default: the target) in
+ * the same task, so the layout cannot move between the measure and the drop. `at` is "middle", an offset from `from`'s top left, or
+ * `below`: that far under its bottom edge (negative: above it).
+ */
+async function dropFile(page: Page, target: Locator, at: "middle" | { dx: number; dy: number } | { dx: number; below: number } = "middle", options: { from?: Locator; name?: string; body?: string; type?: string } = {}) {
+  const { name = "notes.md", body = "# Notes\n\nWhat the poster says.", type = "text/markdown" } = options;
+  const on = await target.elementHandle();
+  const from = await (options.from ?? target).elementHandle();
+  await page.evaluate(
+    ([element, measured, where, fileName, text, mime]) => {
+      const box = (measured as Element).getBoundingClientRect();
+      const point = where === "middle" ? { x: box.left + box.width / 2, y: box.top + box.height / 2 } : { x: box.left + where.dx, y: "below" in where ? box.bottom + where.below : box.top + where.dy };
       const transfer = new DataTransfer();
       transfer.items.add(new File([text], fileName, { type: mime }));
-      return transfer;
+      for (const kind of ["dragenter", "dragover", "drop"]) (element as Element).dispatchEvent(new DragEvent(kind, { dataTransfer: transfer, clientX: point.x, clientY: point.y, bubbles: true, cancelable: true }));
     },
-    [name, body, type] as const,
+    [on, from, at, name, body, type] as const,
   );
-  for (const kind of ["dragenter", "dragover", "drop"]) await target.dispatchEvent(kind, { dataTransfer: data, clientX: point.x, clientY: point.y, bubbles: true, cancelable: true });
 }
 
 const fileTiles = (name = "notes.md") => tableRows("build_nodes").filter((row) => row.build_id === DRAFT && row.type === "document" && (row.payload as Row).step === true && (row.payload as Row).title === name);
@@ -123,20 +128,16 @@ test.describe("UX-02 P1 · a dropped file becomes a step tile", () => {
 
   test("in the gap after a session's last tile: a File step tile there", async ({ page }) => {
     await open(page);
-    const last = await card(page, IDS.p2).boundingBox();
-    if (!last) throw new Error("no tile");
     // Just under Session 1's last tile, inside the session (its add row stands there).
-    await dropFile(page, page.getByTestId("build-list"), { x: last.x + 40, y: last.y + last.height + 8 });
+    await dropFile(page, page.getByTestId("build-list"), { dx: 40, below: 8 }, { from: card(page, IDS.p2) });
     await expect.poll(() => fileTiles().length, { timeout: 15_000 }).toBe(1);
     await expect.poll(() => inSession(KEY.a)).toEqual([IDS.p1, IDS.p2, fileTiles()[0].id]);
   });
 
   test("elsewhere on the List: a File step tile at the end of the current session", async ({ page }) => {
     await open(page);
-    const list = await page.getByTestId("build-list").boundingBox();
-    if (!list) throw new Error("no list");
-    // The List's first line, above every session.
-    await dropFile(page, page.getByTestId("build-list"), { x: list.x + 10, y: list.y + 2 });
+    // The List's foot, under every session (the Add a session row).
+    await dropFile(page, page.getByTestId("build-list"), { dx: 10, below: -4 });
     await expect.poll(() => fileTiles().length, { timeout: 15_000 }).toBe(1);
     expect((fileTiles()[0].payload as Row).session).toBeTruthy();
   });
@@ -150,7 +151,7 @@ test.describe("UX-02 P1 · a dropped file becomes a step tile", () => {
 
   test("a chat export still goes to the intake", async ({ page }) => {
     await open(page);
-    await dropFile(page, page.getByTestId("build-list"), "middle", "conversations.json", JSON.stringify([{ mapping: {} }]), "application/json");
+    await dropFile(page, page.getByTestId("build-list"), "middle", { name: "conversations.json", body: JSON.stringify([{ mapping: {} }]), type: "application/json" });
     await expect(page).toHaveURL(/\/compose\/start/, { timeout: 15_000 });
   });
 });
