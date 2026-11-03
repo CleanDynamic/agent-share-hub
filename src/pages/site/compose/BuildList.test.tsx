@@ -130,11 +130,12 @@ describe("step cards", () => {
     expect(props.onDismiss).toHaveBeenCalledWith(props.suggestions[0]);
   });
 
-  it("opens the full prompt on double click and Enter, when it can", () => {
+  it("opens the full prompt from Open prompt and Enter, when it can", () => {
     const onOpenPrompt = vi.fn();
     list({ onOpenPrompt });
     const card = screen.getByRole("group", { name: /^Prompt 2:/ });
-    fireEvent.doubleClick(card);
+    // UX-02 P5: the footer's Open prompt, where a double click used to be.
+    fireEvent.click(within(card).getByRole("button", { name: "Open prompt" }));
     fireEvent.keyDown(card, { key: "Enter" });
     expect(onOpenPrompt).toHaveBeenCalledTimes(2);
     expect(onOpenPrompt).toHaveBeenCalledWith("p2");

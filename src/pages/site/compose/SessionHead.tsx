@@ -342,15 +342,6 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
           if (plain && (event.target as HTMLElement).closest("button, input, a, [role=menuitem]")) return;
           selection.clickHead(session.key, event);
         }}
-        onDoubleClick={
-          onEdit && maker && !phone
-            ? (event) => {
-                // A double click on a field, a button or a menu is that control's own.
-                if ((event.target as HTMLElement).closest("input, button, a, [role=menuitem]")) return;
-                onEdit();
-              }
-            : undefined
-        }
         style={{
           position: "relative",
           outline: "none",

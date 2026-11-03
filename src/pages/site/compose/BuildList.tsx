@@ -164,9 +164,12 @@ import { useBuildSelectionContext } from "./useBuildSelection";
 export const ADD_FLASH_MS = 1200;
 
 export const LIST_COPY = {
-  hint: "Click a tile to see its details · double-click to read all",
-  /** CA-10 (CA-09 F12): a phone has no double-click (the card's onDoubleClick is off there) and taps, not clicks. */
-  hintPhone: "Tap a tile to see its details",
+  /** UX-02 P5: the phone's one line; a computer has none (double-click is not a command, every tile shows its controls). */
+  hintPhone: "Tap a step tile to see its details",
+  /** UX-02 P5: a tile's visible ways to open and to change it, in place of the double-click. */
+  edit: "Edit…",
+  /** Product names keep their case: "Open GitHub repository". */
+  open: (noun: string) => `Open ${/^GitHub/.test(noun) ? noun : noun.charAt(0).toLowerCase() + noun.slice(1)}`,
   placeholder: "Paste or type a prompt…",
   /** CA-15 P10: the one link in a prompt tile's footer. */
   openPrompt: "Open prompt",
@@ -982,7 +985,6 @@ function RenameField({ label, draft, placeholder, phone, onDraft, onFinish }: { 
       placeholder={placeholder}
       onChange={(event) => onDraft(event.target.value)}
       onClick={(event) => event.stopPropagation()}
-      onDoubleClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => {
         event.stopPropagation();
         if (event.key === "Enter") onFinish(true);
@@ -1051,6 +1053,7 @@ function TileMenu({ step, noun, index, last, props, rename }: { step: Step; noun
       </Menu.Trigger>
       <Menu.Portal>
         <MenuContent align="end" sideOffset={4} style={menuSurface()} onClick={(event) => event.stopPropagation()} onCloseAutoFocus={rename.onCloseAutoFocus}>
+          {props.onEditTile ? <MenuRow phone={phone} onSelect={() => props.onEditTile?.(step.id)}>{LIST_COPY.edit}</MenuRow> : null}
           <MenuRow phone={phone} onSelect={rename.ask}>Rename</MenuRow>
           <ConvertRows step={step} phone={phone} />
           <CopyTogetherRow step={step} phone={phone} />
@@ -1212,7 +1215,6 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
       tabIndex={0}
       {...focus.bind}
       onClick={() => props.onSelect(step.id)}
-      onDoubleClick={phone ? undefined : open}
       onKeyDown={onKeyDown}
       onDragEnter={takesDrops ? (event) => {
         if (!carriesFiles(event)) return;
@@ -1304,6 +1306,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
                   setRenaming(true);
                 }}
               >
+                {props.onEditTile ? <MenuRow phone={phone} onSelect={() => props.onEditTile?.(step.id)}>{LIST_COPY.edit}</MenuRow> : null}
                 <MenuRow phone={phone} onSelect={() => (renameNext.current = true)}>Rename</MenuRow>
                 <ConvertRows step={step} phone={phone} />
                 <MenuRow phone={phone} disabled={!open} reason={REASONS.readAll} onSelect={open}>Read all</MenuRow>
@@ -1542,7 +1545,6 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
       tabIndex={0}
       {...focus.bind}
       onClick={() => props.onSelect(step.id)}
-      onDoubleClick={props.phone ? undefined : () => props.onEditTile?.(step.id)}
       style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
     >
       <TileHeader
@@ -1645,7 +1647,9 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
             <FooterLink phone={phone} expanded={unfolded} onClick={() => setUnfolded((open) => !open)}>
               {unfolded ? (isTeam ? "Hide agents" : "Hide prompts") : isTeam ? "Show agents" : "Show prompts"}
             </FooterLink>
-          ) : null
+          ) : (
+            openLink(step, noun, props)
+          )
         }
       />
     </div>
@@ -1690,7 +1694,6 @@ function PlainCard({ step, index, last, props, noun, body, after, link, typeLine
       tabIndex={0}
       {...focus.bind}
       onClick={() => props.onSelect(step.id)}
-      onDoubleClick={props.phone ? undefined : () => props.onEditTile?.(step.id)}
       onKeyDown={(event) => {
         if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
           event.preventDefault();
@@ -1713,8 +1716,18 @@ function PlainCard({ step, index, last, props, noun, body, after, link, typeLine
       <MadeLine names={props.madeNames?.[step.id]} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
-      <TileFoot step={step} props={props} link={link} />
+      <TileFoot step={step} props={props} link={link ?? openLink(step, noun, props)} />
     </div>
+  );
+}
+
+/** UX-02 P5: "Open tool", "Open file": the tile's window, as the double-click opened it. The footer's one link, where it has no other. None where nothing opens. */
+function openLink(step: Step, noun: string, props: BuildListProps): ReactNode {
+  if (!props.onEditTile) return null;
+  return (
+    <FooterLink phone={props.phone} onClick={() => props.onEditTile?.(step.id)}>
+      {LIST_COPY.open(noun)}
+    </FooterLink>
   );
 }
 
@@ -1802,7 +1815,6 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
       tabIndex={0}
       {...focus.bind}
       onClick={() => props.onSelect(step.id)}
-      onDoubleClick={props.phone ? undefined : () => props.onEditTile?.(step.id)}
       onKeyDown={(event) => {
         if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
           event.preventDefault();
@@ -1837,7 +1849,9 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
             <FooterLink phone={phone} expanded={all} onClick={() => setAll((open) => !open)}>
               {all ? "Show fewer lines" : `Show all ${lines.toLocaleString("en-GB")} lines`}
             </FooterLink>
-          ) : null
+          ) : (
+            openLink(step, "Code", props)
+          )
         }
       />
     </div>
@@ -1870,7 +1884,6 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
       tabIndex={0}
       {...focus.bind}
       onClick={() => props.onSelect(step.id)}
-      onDoubleClick={props.phone ? undefined : () => props.onEditTile?.(step.id)}
       onKeyDown={(event) => {
         if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
           event.preventDefault();
@@ -1906,7 +1919,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
       ) : null}
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
-      <TileFoot step={step} props={props} />
+      <TileFoot step={step} props={props} link={openLink(step, "Check", props)} />
     </div>
   );
 }
@@ -1945,7 +1958,6 @@ function ResultCard({ result, selected, ringed = false, onSelect, onEdit }: { re
       {...focus.bind}
       aria-pressed={selected}
       onClick={() => onSelect(result.id)}
-      onDoubleClick={onEdit ? () => onEdit(result.id) : undefined}
       onKeyDown={(event) => {
         if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
           event.preventDefault();
@@ -1968,7 +1980,23 @@ function ResultCard({ result, selected, ringed = false, onSelect, onEdit }: { re
           {result.title}
         </span>
         <ResultTileBody facts={result.facts} />
-        <TileFooter facts={[resultHolds(result.facts) ? result.holds : null, result.from ? `from prompt ${result.from}` : null]} />
+        {/* UX-02 P5: a result has no menu: its one link opens its window, where it is read and changed. */}
+        <TileFooter
+          facts={[resultHolds(result.facts) ? result.holds : null, result.from ? `from prompt ${result.from}` : null]}
+          link={
+            onEdit ? (
+              <TextButton
+                style={FOOT_LINK}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onEdit(result.id);
+                }}
+              >
+                {LIST_COPY.open("result")}
+              </TextButton>
+            ) : null
+          }
+        />
       </div>
     </div>
   );
@@ -2603,7 +2631,7 @@ export function BuildList(raw: BuildListProps) {
      fields' type is set here, where they inherit it. */
     <div ref={sorting.rootRef} data-testid="build-list" {...fileDrop} style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13.5, ...(sorting.skeleton || arrival.skeleton || director.skeleton ? { position: "relative", isolation: "isolate" } : null) }}>
       {sorting.skeleton ? <SkeletonLayer skeleton={sorting.skeleton} shown={sorting.skeletonShown} /> : arrival.skeleton ? <SkeletonLayer skeleton={arrival.skeleton} shown={arrival.shown} fadeIn={arrival.fadeIn} opening={arrival.opening} fadeAfter={arrival.fadeAfter} onGone={arrival.gone} /> : director.skeleton ? <SkeletonLayer skeleton={director.skeleton} shown={director.shown} fadeAfter={FADE_AFTER_MS} onGone={director.gone} /> : null}
-      <p style={{ ...text(12, 400, t.label), margin: 0 }}>{props.phone ? LIST_COPY.hintPhone : LIST_COPY.hint}</p>
+      {props.phone ? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{LIST_COPY.hintPhone}</p> : null}
       {props.costGroups ? <CostStrip steps={steps} groups={props.costGroups} audience="maker" /> : null}
       {parts ? (
         <>
@@ -2617,7 +2645,7 @@ export function BuildList(raw: BuildListProps) {
         </>
       )}
       {props.results.map((result) => (
-        <ResultCard key={result.id} result={result} selected={props.selectedId === result.id} ringed={props.ringedId === result.id} onSelect={props.onSelect} onEdit={props.phone ? undefined : props.onEditTile} />
+        <ResultCard key={result.id} result={result} selected={props.selectedId === result.id} ringed={props.ringedId === result.id} onSelect={props.onSelect} onEdit={props.onEditTile} />
       ))}
       {props.pendingAdd ? <PendingAddCard kind={props.pendingAdd} /> : null}
       {/* SV-07 P5: what the List says is heard through the page's one announcer, and the notice is the one thing seen. These

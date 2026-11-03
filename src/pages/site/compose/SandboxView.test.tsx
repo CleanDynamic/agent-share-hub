@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sandboxViewProps } from "@/dev/fixtures/sandbox";
 
 import { SandboxView as SandboxView } from "./SandboxView";
-import { ADD_ITEMS, LIST_HINT, addEntries, countsLine, listHint, notSavedLine, type SandboxViewProps } from "./SandboxView";
+import { ADD_ITEMS, addEntries, countsLine, listHint, notSavedLine, type SandboxViewProps } from "./SandboxView";
 
 function stubWidth(px: number) {
   vi.stubGlobal("matchMedia", (query: string) => {
@@ -559,11 +559,12 @@ describe("CA-10 · on a phone, Add opens as a bottom sheet", () => {
 
 describe("CA-10 · words on a phone (CA-09 F12)", () => {
   it("never says click or double-click on a phone", () => {
-    expect(listHint(true)).toBe("Tap a tile to see its details");
-    expect(listHint(false)).toBe(LIST_HINT);
+    expect(listHint(true)).toBe("Tap a step tile to see its details");
+    // UX-02 P5: a computer has no hint line.
+    expect(listHint(false)).toBeNull();
     stubWidth(390);
     view({ list: undefined, lens: "list" });
-    expect(screen.getByText("Tap a tile to see its details")).toBeTruthy();
+    expect(screen.getByText("Tap a step tile to see its details")).toBeTruthy();
     expect(screen.queryByText(/click/i)).toBeNull();
   });
 });

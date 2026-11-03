@@ -9,7 +9,7 @@ import type { Step } from "@/lib/build/graph";
 
 import { BuildList, LIST_COPY } from "./BuildList";
 import { titleRepeatsText } from "./buildListModel";
-import { listHint, LIST_HINT, LIST_HINT_PHONE } from "./SandboxView";
+import { listHint, LIST_HINT_PHONE } from "./SandboxView";
 
 afterEach(cleanup);
 
@@ -56,11 +56,11 @@ describe("the List", () => {
 });
 
 describe("the hint", () => {
-  it("says tile, on a computer and on a phone, and never click on a phone", () => {
-    expect(LIST_COPY.hint).toBe("Click a tile to see its details · double-click to read all");
-    expect(LIST_COPY.hintPhone).toBe("Tap a tile to see its details");
-    expect(LIST_HINT).toBe(LIST_COPY.hint);
+  // UX-02 P5: a computer has no hint line; the phone's says step tile.
+  it("says step tile on a phone, never click there, and a computer has none", () => {
+    expect(LIST_COPY.hintPhone).toBe("Tap a step tile to see its details");
     expect(LIST_HINT_PHONE).toBe(LIST_COPY.hintPhone);
-    expect(listHint(true)).toBe("Tap a tile to see its details");
+    expect(listHint(true)).toBe("Tap a step tile to see its details");
+    expect(listHint(false)).toBeNull();
   });
 });

@@ -279,10 +279,9 @@ export function notSavedLine(problem: SaveFailure): string {
   return `Not saved: ${problem.reason}.${problem.code ? ` Code ${problem.code}.` : ""}`;
 }
 
-export const LIST_HINT = "Click a tile to see its details · double-click to read all";
-/** CA-10 (CA-09 F12): a phone has no double-click and taps, not clicks. */
-export const LIST_HINT_PHONE = "Tap a tile to see its details";
-export const listHint = (phone: boolean) => (phone ? LIST_HINT_PHONE : LIST_HINT);
+/** CA-10 (CA-09 F12): a phone has no double-click and taps, not clicks. UX-02 P5: a computer has no hint line (double-click is not a command). */
+export const LIST_HINT_PHONE = "Tap a step tile to see its details";
+export const listHint = (phone: boolean): string | null => (phone ? LIST_HINT_PHONE : null);
 
 /** The columns start this far under the title row. */
 const COLUMNS_TOP = 32;
@@ -1274,7 +1273,7 @@ function SandboxBody(props: SandboxViewProps) {
         {phone ? null : addMenu}
       </div>
       {lens === "list" ? props.sessionList : null}
-      {guard("Build", props.emptyBuild ? <EmptyBuild {...props.emptyBuild} /> : (props.list ?? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{listHint(phone)}</p>))}
+      {guard("Build", props.emptyBuild ? <EmptyBuild {...props.emptyBuild} /> : (props.list ?? (listHint(phone) ? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{listHint(phone)}</p> : null)))}
     </section>
   );
 

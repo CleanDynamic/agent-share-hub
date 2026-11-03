@@ -233,7 +233,6 @@ export function DragHandle({ label, nest, testId = "drag-handle", phone }: { lab
       {...listeners}
       aria-label={label}
       onClick={(event) => event.stopPropagation()}
-      onDoubleClick={(event) => event.stopPropagation()}
       onMouseEnter={handlers.onMouseEnter}
       onMouseLeave={handlers.onMouseLeave}
       onFocus={handlers.onFocus}

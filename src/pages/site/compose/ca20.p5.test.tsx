@@ -203,7 +203,8 @@ describe("Save in a tile's window", () => {
       seedCa20(rows);
       rows.build_nodes.push({ id: MANUAL, build_id: "0d0d0d0d-0000-4000-8000-000000000003", parent_id: null, position: 6, type: "manual_step", title: null, note: null, payload: { tool: "Figma", text: "Laid out the hero", session: KEY_B }, source_ref: null, event_id: null, is_gap: false, created_at: "2026-10-20T10:00:00Z" });
     });
-    fireEvent.doubleClick(screen.getByRole("group", { name: /^Manual step/ }));
+    // UX-02 P5: its footer's Open link, where a double click used to be.
+    fireEvent.click(within(screen.getByRole("group", { name: /^Manual step/ })).getByRole("button", { name: "Open manual step" }));
     const dialog = await screen.findByRole("dialog");
     const title = within(dialog).getByLabelText("Title");
     fireEvent.change(title, { target: { value: "Hero layout" } });
