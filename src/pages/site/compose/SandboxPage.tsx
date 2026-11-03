@@ -136,6 +136,7 @@ import { useTwoTabs, type ClashDescription } from "./useTwoTabs";
 import { useReferences } from "./useReferences";
 import { BuildHistoryContext, useBuildHistory } from "./useBuildHistory";
 import { rowOf } from "./useComposeNodes";
+import { ComposeDnd } from "./ComposeDnd";
 import { classificationKey } from "./useClassificationCard";
 import { writeClassification, type StoredClassification } from "@/lib/classify/storage";
 import { computeFacets, hasClassification, shapeFromBuilt, shownValues } from "@/lib/classify/facets";
@@ -2648,6 +2649,8 @@ function SandboxPageBody() {
       <PartRegistryProvider registry={registry}>
       <GroupLabelsProvider making={makingDrawn} onOpen={referenceActions.openGroup}>
       <DetailsReferencesProvider value={detailsRefs}>
+      {/* UX-02 P3: one drag context round Sources and the List, so a row of Sources can be dropped on the build. */}
+      <ComposeDnd phone={phone}>
       <SandboxView
         {...viewProps}
         noticeRoom={buildHistory.notice ? NOTICE_ROOM : undefined}
@@ -2838,6 +2841,7 @@ function SandboxPageBody() {
         onLens={onLens}
         mapAvailable={mapAvailable}
       />
+      </ComposeDnd>
       </DetailsReferencesProvider>
       </GroupLabelsProvider>
       </PartRegistryProvider>

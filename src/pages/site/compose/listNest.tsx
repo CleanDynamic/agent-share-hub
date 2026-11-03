@@ -8,19 +8,8 @@
 
    Nothing here writes. `useBuildSorting` hands a drop to the List's handlers, which say what happened in one polite line. */
 
-import {
-  DndContext,
-  DragOverlay,
-  KeyboardSensor,
-  PointerSensor,
-  TouchSensor,
-  useDraggable,
-  useSensor,
-  useSensors,
-  type CollisionDetection,
-  type Modifier,
-} from "@dnd-kit/core";
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
+import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, TouchSensor, useDraggable, useSensor, useSensors, type CollisionDetection, type KeyboardCoordinateGetter, type Modifier } from "@dnd-kit/core";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 
 import { Glyph } from "@/components/brand/Glyph";
 import { useResolvedTheme } from "@/contexts/ThemeContext";
@@ -53,8 +42,10 @@ export const isSessionDrag = (id: string | null | undefined): boolean => Boolean
 /** CA-17 P2: a part's own drag. Its draggable id starts with this. */
 export const isWorkstreamDrag = (id: string | null | undefined): boolean => Boolean(id?.startsWith(WORKSTREAM_DRAG));
 
+/* ── the drag's pieces, shared by the List's own context and the page's (`ComposeDnd`, UX-02 P3) ── */
+
 /** Nothing is "over" anything: the place is decided from the pointer and the page's own boxes (`useBuildSorting`). */
-const noCollisions: CollisionDetection = () => [];
+export const noCollisions: CollisionDetection = () => [];
 
 /** The shadow a held copy carries, and nothing else is added to it: no scale, no turn, no fade. */
 export function heldShadow(dusk: boolean): string {
@@ -62,7 +53,7 @@ export function heldShadow(dusk: boolean): string {
 }
 
 /** The held copy: the element's own markup at its own size. A session or a part has no ground of its own, so it sits on a block. */
-function HeldCopy({ overlay }: { overlay: NonNullable<Sorting["overlay"]> }) {
+export function HeldCopy({ overlay }: { overlay: NonNullable<Sorting["overlay"]> }) {
   const dusk = useResolvedTheme() === "dusk";
   const shadow = heldShadow(dusk);
   const whole = overlay.type === "session" || overlay.type === "part";
@@ -75,25 +66,25 @@ function HeldCopy({ overlay }: { overlay: NonNullable<Sorting["overlay"]> }) {
   );
 }
 
-/**
- * The drag around the List. Its state is `useBuildSorting`'s; this is the `DndContext` (sensors, the held copy in the
- * `DragOverlay`) and the context the tiles and heads read.
- */
-export function NestList({ phone, sorting, children }: { phone: boolean; sorting: Sorting; children: ReactNode }) {
+/** The sensors: a touch screen of any width picks up by a press of 250 ms on the grip (CA-27 P4); a mouse after 4 px; the keys. */
+export function useDragSensors(phone: boolean, coordinateGetter: KeyboardCoordinateGetter) {
   /* CA-27 P4: a touch screen of any width (a tablet's too) picks a tile up by a press of 250 ms on its grip, so one finger anywhere else scrolls. */
   const coarse = typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches;
   const press = phone || coarse ? { delay: 250, tolerance: 6 } : { distance: 4 };
-  const sensors = useSensors(
+  return useSensors(
     useSensor(PointerSensor, { activationConstraint: press }),
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sorting.coordinateGetter }),
+    useSensor(KeyboardSensor, { coordinateGetter }),
   );
-  const holding = sorting.holding;
-  /* The held thing's own element moves as the page slides (and is made again where it lands), so its measured box moves too: the
-     copy keeps to where it was picked up, plus the pointer's travel. */
-  const initial = sorting.initial;
-  const at = sorting.keyboardAt;
-  const keepToStart: Modifier = ({ transform, activeNodeRect }) => (at ? { ...transform, x: at.x, y: at.y } : initial && activeNodeRect ? { ...transform, x: transform.x - (activeNodeRect.left - initial.left), y: transform.y - (activeNodeRect.top - initial.top) } : transform);
+}
+
+/** The held thing's own element moves as the page slides, so the copy keeps to where it was picked up, plus the pointer's travel. */
+export function keepToStartOf(initial: Sorting["initial"], at: Sorting["keyboardAt"]): Modifier {
+  return ({ transform, activeNodeRect }) => (at ? { ...transform, x: at.x, y: at.y } : initial && activeNodeRect ? { ...transform, x: transform.x - (activeNodeRect.left - initial.left), y: transform.y - (activeNodeRect.top - initial.top) } : transform);
+}
+
+/** While something is held, the page's cursor is the grab. */
+export function useGrabbingCursor(holding: boolean) {
   useEffect(() => {
     if (!holding) return;
     const before = document.body.style.cursor;
@@ -102,26 +93,63 @@ export function NestList({ phone, sorting, children }: { phone: boolean; sorting
       document.body.style.cursor = before;
     };
   }, [holding]);
+}
+
+export const DRAG_ACCESSIBILITY = {
+  // The line under the build is the polite announcement (`sorting.said`): these say nothing of their own.
+  announcements: { onDragStart: () => "", onDragOver: () => "", onDragEnd: () => "", onDragCancel: () => "" },
+  screenReaderInstructions: { draggable: "Press Space to pick up the tile, the arrow keys to move it, and Space again to drop it. Escape puts it back." },
+};
+
+export interface DndHost {
+  /** The List hands its drag state to the page, every render. */
+  register: (sorting: Sorting | null) => void;
+}
+
+export const ComposeDndContext = createContext<DndHost | null>(null);
+
+/** Whether the List is inside the page's drag context (it then owns none of its own). */
+export const useComposeDnd = (): DndHost | null => useContext(ComposeDndContext);
+
+/** The List's part: hand `sorting` to the page's context, every render, and take it back when the List goes. */
+export function useComposeDndHost(host: DndHost | null, sorting: Sorting): void {
+  useLayoutEffect(() => {
+    host?.register(sorting);
+  });
+  useEffect(() => () => host?.register(null), [host]);
+}
+
+/** The held copy's way back to its place: `SETTLE_MS` on `STANDARD`; none under reduced motion, or when `settles` is false. */
+export const dropAnimationOf = (settles: boolean) => (prefersReducedMotion() || !settles ? null : { duration: SETTLE_MS, easing: STANDARD });
+
+/**
+ * The drag around the List. Its state is `useBuildSorting`'s; this is the `DndContext` (sensors, the held copy in the
+ * `DragOverlay`) and the context the tiles and heads read.
+ */
+export function NestList({ phone, sorting, children }: { phone: boolean; sorting: Sorting; children: ReactNode }) {
+  /* UX-02 P3: inside the composer the drag context is the page's (`ComposeDnd`, round Sources and the List); the List hands it its state. */
+  const shared = useComposeDnd();
+  useComposeDndHost(shared, sorting);
   const state: NestState = { active: sorting.held ? (sorting.held.type === "session" ? `${SESSION_DRAG}${sorting.held.id}` : sorting.held.type === "part" ? `${WORKSTREAM_DRAG}${sorting.held.id}` : sorting.held.id) : null, held: sorting.held, send: sorting.send, phone };
+  if (shared) return <NestContext.Provider value={state}>{children}</NestContext.Provider>;
   return (
     <NestContext.Provider value={state}>
-      <DndContext
-        sensors={sensors}
-        collisionDetection={noCollisions}
-        onDragStart={sorting.onDragStart}
-        onDragMove={sorting.onDragMove}
-        onDragCancel={sorting.onDragCancel}
-        onDragEnd={sorting.onDragEnd}
-        accessibility={{
-          // The line under the build is the polite announcement (`sorting.said`): these say nothing of their own.
-          announcements: { onDragStart: () => "", onDragOver: () => "", onDragEnd: () => "", onDragCancel: () => "" },
-          screenReaderInstructions: { draggable: "Press Space to pick up the tile, the arrow keys to move it, and Space again to drop it. Escape puts it back." },
-        }}
-      >
+      <OwnDnd phone={phone} sorting={sorting}>
         {children}
-        <DragOverlay modifiers={sorting.holding ? [keepToStart] : undefined} dropAnimation={prefersReducedMotion() ? null : { duration: SETTLE_MS, easing: STANDARD }}>{sorting.overlay ? <HeldCopy overlay={sorting.overlay} /> : null}</DragOverlay>
-      </DndContext>
+      </OwnDnd>
     </NestContext.Provider>
+  );
+}
+
+/** A List with no `ComposeDnd` round it (its own tests, a dev page) keeps its own context, as before. */
+function OwnDnd({ phone, sorting, children }: { phone: boolean; sorting: Sorting; children: ReactNode }) {
+  const sensors = useDragSensors(phone, sorting.coordinateGetter);
+  useGrabbingCursor(sorting.holding);
+  return (
+    <DndContext sensors={sensors} collisionDetection={noCollisions} onDragStart={sorting.onDragStart} onDragMove={sorting.onDragMove} onDragCancel={sorting.onDragCancel} onDragEnd={sorting.onDragEnd} accessibility={DRAG_ACCESSIBILITY}>
+      {children}
+      <DragOverlay modifiers={sorting.holding ? [keepToStartOf(sorting.initial, sorting.keyboardAt)] : undefined} dropAnimation={dropAnimationOf(true)}>{sorting.overlay ? <HeldCopy overlay={sorting.overlay} /> : null}</DragOverlay>
+    </DndContext>
   );
 }
 
