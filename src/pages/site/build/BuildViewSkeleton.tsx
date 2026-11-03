@@ -9,6 +9,8 @@ import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { BOARD_GRID_HEIGHT, boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
 import { sideTrack, useIsPhone, useWidthTier, type WidthTier } from "@/components/shell/useMinWidth";
 import { r } from "@/lib/theme/radius";
+import { asideStyle, mainStyle, trackRow } from "@/lib/theme/refinedLayout";
+import { t } from "@/lib/theme/tokens";
 
 /** The first row's height on the desktop board. */
 export const HERO_ROW = 402;
@@ -40,6 +42,52 @@ export function bottomRow(tier: WidthTier): CSSProperties {
 export const dropped = (tier: WidthTier): CSSProperties => (tier === "full" ? {} : { gridColumn: "1 / -1" });
 
 export const MOCK_ROWS = 6;
+
+/* UX-01 P10: the page's own track layout for the steps, here so the skeleton and BuildView draw the same boxes. */
+export const pair = (stacked: boolean): CSSProperties => trackRow(stacked, 48);
+export const wide = (stacked: boolean): CSSProperties => mainStyle(stacked, { flex: "999 1 640px", minWidth: 0 });
+export const side: CSSProperties = { flex: "1 0 300px", maxWidth: 340, minWidth: 0 };
+
+/** The steps and What you need before the record arrives: the tabs, the step rows, and the aside with its hairline. */
+function StepsSkeleton({ phone, stacked }: { phone: boolean; stacked: boolean }) {
+  const stepRows = Array.from({ length: 5 }, (_, i) => <Skeleton key={i} height={phone ? 96 : 88} radius={r.control} />);
+  const need = (
+    <div data-testid="build-need-loading" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <Skeleton width={110} height={17} />
+        <Skeleton width={150} height={14} />
+      </div>
+      {[3, 2, 2].map((count, group) => (
+        <div key={group} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <Skeleton width={80} height={11} />
+          {Array.from({ length: count }, (_, i) => (
+            <Skeleton key={i} height={24} radius={r.chip} />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+  if (phone) {
+    return (
+      <>
+        <div data-testid="build-steps-loading" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <Skeleton height={36} radius={r.control} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{stepRows}</div>
+        </div>
+        {need}
+      </>
+    );
+  }
+  return (
+    <div data-testid="build-steps-loading" style={pair(stacked)}>
+      <div style={{ ...wide(stacked), display: "flex", flexDirection: "column", gap: 16 }}>
+        <Skeleton height={36} radius={r.control} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{stepRows}</div>
+      </div>
+      <div style={asideStyle(stacked, { ...side, boxSizing: "content-box", paddingLeft: 32, borderLeft: `1px solid ${t.hairline}` })}>{need}</div>
+    </div>
+  );
+}
 
 /** The proof panel before the record arrives: the orb's circle, the plaque, the button and the details, as bones. */
 export function ProofSkeleton({ phone }: { phone: boolean }) {
@@ -74,22 +122,12 @@ export function BuildViewSkeleton({ fit = "content" }: { fit?: PageFit }) {
         <Skeleton height={382} radius={18} />
         <Skeleton height={76} radius={18} />
         <ProofSkeleton phone />
-        <Skeleton height={30} radius={r.media} />
-        <Panel surface="glass" padding="14px 10px">
-          <PanelHead headingLevel={2} title="Anatomy" subtitle={"\u00a0"} />
-          <div style={{ marginTop: 6 }}>{rows(46, MOCK_ROWS, 2)}</div>
-          {/* "Show n more parts" */}
-          <Skeleton width={120} height={13} style={{ margin: "8px 0 0 8px" }} />
-        </Panel>
-        <Skeleton height={317} radius={r.panel} />
-        <Panel surface="glass" padding="14px 16px">
-          <PanelHead headingLevel={2} title="Watch it get built" subtitle={"\u00a0"} />
-          <div style={{ marginTop: 8 }}>{rows(43, 4, 0)}</div>
-        </Panel>
+        <StepsSkeleton phone stacked />
       </LoadingRegion>
     );
   }
   const board = fit === "board" && tier === "full";
+  const stacked = tier === "stacked";
   return (
     <LoadingRegion
       what="the build"
@@ -105,17 +143,7 @@ export function BuildViewSkeleton({ fit = "content" }: { fit?: PageFit }) {
           <ProofSkeleton phone={false} />
         </div>
       </div>
-      <div style={bottomRow(tier)}>
-        <Panel surface="glass" padding="14px 12px" style={{ height: "100%" }}>
-          <PanelHead headingLevel={2} title="Anatomy" subtitle={"\u00a0"} />
-          <div style={{ marginTop: 6 }}>{rows(40, MOCK_ROWS, 2)}</div>
-        </Panel>
-        <Skeleton height="100%" radius={r.panel} />
-        <Panel surface="glass" padding="14px 16px" style={{ height: "100%", ...dropped(tier) }}>
-          <PanelHead headingLevel={2} title="Watch it get built" subtitle={"\u00a0"} />
-          <div style={{ marginTop: 8 }}>{rows(41, 5, 0)}</div>
-        </Panel>
-      </div>
+      <StepsSkeleton phone={false} stacked={stacked} />
     </LoadingRegion>
   );
 }

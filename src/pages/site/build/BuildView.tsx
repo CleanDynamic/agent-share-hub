@@ -45,7 +45,7 @@ import {
   useWidthTier,
 } from "@/components/shell/useMinWidth";
 import { EngagementRow } from "@/components/social/EngagementRow";
-import { asideStyle, mainStyle, trackRow } from "@/lib/theme/refinedLayout";
+import { asideStyle, mainStyle } from "@/lib/theme/refinedLayout";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { scrollBehavior } from "@/lib/theme/motion";
@@ -112,7 +112,7 @@ export interface BuildViewProps {
 
 export { BOTTOM_ROW, BuildViewSkeleton, dropped, HERO_ROW, heroRow, bottomRow, MOCK_ROWS, ProofSkeleton } from "./BuildViewSkeleton";
 import { creditLine } from "@/lib/build/contributors";
-import { BOTTOM_ROW, dropped, HERO_ROW, heroRow, bottomRow, MOCK_ROWS, ProofSkeleton } from "./BuildViewSkeleton";
+import { BOTTOM_ROW, dropped, HERO_ROW, heroRow, bottomRow, MOCK_ROWS, pair, ProofSkeleton, side, wide } from "./BuildViewSkeleton";
 
 /** The phone shows this many parts before "Show n more parts". */
 export const PHONE_PARTS = 6;
@@ -491,10 +491,7 @@ const moduleStyle: CSSProperties = {
   minWidth: 0,
 };
 
-/** A row of a wide column and a side column, as the board lays both rows out; one column below 1024 (UI-P97). */
-const pair = (stacked: boolean): CSSProperties => trackRow(stacked, 48);
-const wide = (stacked: boolean): CSSProperties => mainStyle(stacked, { flex: "999 1 640px", minWidth: 0 });
-const side: CSSProperties = { flex: "1 0 300px", maxWidth: 340, minWidth: 0 };
+/* The rows of a wide column and a side column (`pair`, `wide`, `side`) are in BuildViewSkeleton.tsx, so the skeleton draws the same boxes. */
 
 /* ── the hero ── */
 

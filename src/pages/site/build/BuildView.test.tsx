@@ -14,7 +14,7 @@ import BuildStepsDemo from "@/pages/dev/BuildStepsDemo";
 
 import type { BuildViewProps } from "./BuildView";
 import { stepTabs } from "./buildModel";
-import { BuildView } from "./BuildView";
+import { BuildView, BuildViewSkeleton } from "./BuildView";
 
 const REFINED = "/dev/kit/pages/build-steps";
 
@@ -339,5 +339,15 @@ describe("the Classification section (CA-16 P7)", () => {
   it("draws nothing extra without it", () => {
     mount(stepsProps("desktop"));
     expect(screen.queryByTestId("build-classification")).toBeNull();
+  });
+});
+
+describe("UX-01 P10: the loading shape is the steps layout", () => {
+  it("draws the tabs, the step rows and What you need, not Anatomy and Watch it get built", () => {
+    const { container } = render(<BuildViewSkeleton />);
+    expect(container.querySelector('[data-testid="build-steps-loading"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="build-need-loading"]')).not.toBeNull();
+    expect(container.textContent).not.toContain("Anatomy");
+    expect(container.textContent).not.toContain("Watch it get built");
   });
 });
