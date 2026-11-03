@@ -17,6 +17,7 @@ const base: ChecklistInput = {
   reminders: [],
   appless: [],
   cardFilled: true,
+  unsent: [],
 };
 
 const keys = (items: readonly { key: string }[]) => items.map((item) => item.key);
@@ -110,5 +111,21 @@ describe("publishChecklist line and need", () => {
     expect(publishChecklist({ ...base, missing: ["title"] }).needed).toBe(true);
     expect(publishChecklist({ ...base, cardFilled: false }).needed).toBe(true);
     expect(publishChecklist(base).line).toBe("");
+  });
+});
+
+describe("UX-01 P1: unsent prompts", () => {
+  it("lists each unsent prompt as a required item with two actions, and blocks Publish", () => {
+    const text = "x".repeat(120);
+    const out = publishChecklist({ ...base, unsent: [{ sessionKey: "s2", sessionNumber: 2, text }] });
+    const item = out.required.find((entry) => entry.key === "unsent-s2");
+    expect(item).toMatchObject({ section: "required", done: false, words: "Unsent prompt in Session 2", unsentKey: "s2" });
+    expect(item?.detail).toBe("x".repeat(80));
+    expect(item?.actions?.map((action) => action.label)).toEqual(["Add as step tile", "Discard"]);
+    expect(out.canPublish).toBe(false);
+    expect(out.openRequired).toBe(1);
+  });
+  it("lets Publish through with none unsent", () => {
+    expect(publishChecklist({ ...base, unsent: [] }).canPublish).toBe(true);
   });
 });

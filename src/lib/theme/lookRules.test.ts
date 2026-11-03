@@ -1301,6 +1301,12 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/TeamWorkFields.tsx",
   "src/pages/site/compose/composerWindows.tsx",
   "src/pages/site/compose/openRequestCopy.ts",
+  // UX-01 P1
+  "src/pages/site/compose/useUnsentPrompts.tsx",
+  "src/pages/site/compose/sendUnsentTile.ts",
+  "src/lib/build/publishChecklist.ts",
+  "src/pages/site/compose/PublishChecklist.tsx",
+  "src/pages/site/compose/useLeaveGuard.ts",
 ];
 
 /**

@@ -38,6 +38,7 @@ const BASE: ChecklistInput = {
     { key: "s4", number: 4 },
   ],
   cardFilled: false,
+  unsent: [],
 };
 
 export default function Ca25Demo({ fit = "board", state = "populated" }: DesignPageProps) {

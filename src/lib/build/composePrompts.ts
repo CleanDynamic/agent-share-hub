@@ -138,6 +138,7 @@ export async function addWrittenPrompt({
   tool,
   model,
   session,
+  id,
 }: {
   buildId: string;
   tree: readonly NodeTree[];
@@ -146,6 +147,8 @@ export async function addWrittenPrompt({
   model?: string | null;
   /** CA-04 P1: the session it was typed into, when the maker chose one. */
   session?: string | null;
+  /** UX-01 P1: an id chosen before the write, so the List can be told which tile is coming. */
+  id?: string;
 }): Promise<BuildNode> {
   if (!text.trim()) throw buildLayerError("addWrittenPrompt", new Error("A prompt needs its text."));
   const payload: Record<string, string> = { text };
@@ -156,7 +159,7 @@ export async function addWrittenPrompt({
   }
   if (model?.trim()) payload.model = model.trim();
   if (session) payload.session = session;
-  return placeTopNode(buildId, tree, { type: PROMPT_TYPE, title: null, payload, source_ref: null });
+  return placeTopNode(buildId, tree, { ...(id ? { id } : null), type: PROMPT_TYPE, title: null, payload, source_ref: null });
 }
 
 /** Save a prompt's text, keeping everything else it carries. Refuses an empty one. */

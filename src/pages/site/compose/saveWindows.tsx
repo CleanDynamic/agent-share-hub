@@ -19,6 +19,12 @@ export const LEAVE_COPY = {
   body: (count: number): string => (count === 1 ? "1 change hasn't saved. Leaving may lose it." : `${count} changes haven't saved. Leaving may lose them.`),
   leave: "Leave",
   stay: "Stay",
+  /** UX-01 P1: the title when nothing is saving and only prompt boxes hold text, so "still saving" is never false. */
+  titleUnsent: "Prompt not sent",
+  /** One line per session, up to three, then "and k more". */
+  unsent: (session: number): string => `Unsent prompt in Session ${session}`,
+  unsentMore: (more: number): string => `and ${more} more`,
+  unsentShown: 3,
 } as const;
 
 /** The footer: `--window-foot`, and a 1px `--hairline` rule on top. */
@@ -36,6 +42,8 @@ export interface RecipeWindowProps {
   testId: string;
   width: number;
   children?: ReactNode;
+  /** Lines under the note, before the footer. */
+  body?: ReactNode;
   /** The note's size: 13 for a body line, 12.5 where the title has a panel under it. */
   small?: boolean;
 }
@@ -46,7 +54,7 @@ const focusPrimary = (event: Event) => {
   (event.currentTarget as HTMLElement | null)?.querySelector<HTMLElement>('[data-variant="primary"]')?.focus();
 };
 
-export function RecipeWindow({ open, onClose, title, note, buttons, testId, width, children, small = false }: RecipeWindowProps) {
+export function RecipeWindow({ open, onClose, title, note, buttons, testId, width, children, body, small = false }: RecipeWindowProps) {
   const phone = useIsPhone();
   const focus = useWindowFocus(open, undefined, focusPrimary);
   const noteStyle = small ? { ...NOTE, color: t.text2, margin: 0 } : { ...LABEL, margin: 0 };
@@ -55,6 +63,7 @@ export function RecipeWindow({ open, onClose, title, note, buttons, testId, widt
       <BottomSheet open={open} onOpenChange={(next) => !next && onClose()} title={title}>
         <div data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {note ? <p style={noteStyle}>{note}</p> : null}
+          {body}
           {children}
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: 8 }}>{buttons}</div>
         </div>
@@ -69,6 +78,7 @@ export function RecipeWindow({ open, onClose, title, note, buttons, testId, widt
           <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12, overflowY: "auto", minHeight: 0 }}>
             <Dialog.Title style={TITLE}>{title}</Dialog.Title>
             {note ? <p style={noteStyle}>{note}</p> : null}
+            {body}
             {children}
           </div>
           <div style={{ ...footerStyle(false), ...FOOT }}>
@@ -82,16 +92,28 @@ export function RecipeWindow({ open, onClose, title, note, buttons, testId, widt
 }
 
 /** "Changes still saving": Leave (secondary), then Stay (primary). Stay is also what Escape does. */
-export function LeaveWindow({ open, count, onStay, onLeave }: { open: boolean; count: number; onStay: () => void; onLeave: () => void }) {
+export function LeaveWindow({ open, count, unsent = [], onStay, onLeave }: { open: boolean; count: number; /** Session numbers of the boxes with unsent text. */ unsent?: readonly number[]; onStay: () => void; onLeave: () => void }) {
   const phone = useIsPhone();
+  const shown = unsent.slice(0, LEAVE_COPY.unsentShown);
+  const more = unsent.length - shown.length;
   return (
     <RecipeWindow
       open={open}
       onClose={onStay}
-      title={LEAVE_COPY.title}
-      note={LEAVE_COPY.body(count)}
+      title={count > 0 || unsent.length === 0 ? LEAVE_COPY.title : LEAVE_COPY.titleUnsent}
+      note={count > 0 || unsent.length === 0 ? LEAVE_COPY.body(count) : undefined}
       testId="leave-window"
       width={420}
+      body={
+        unsent.length > 0 ? (
+          <ul data-testid="leave-unsent" style={{ ...NOTE, color: t.text2, margin: 0, paddingLeft: 0, listStyle: "none" }}>
+            {shown.map((session) => (
+              <li key={session}>{LEAVE_COPY.unsent(session)}</li>
+            ))}
+            {more > 0 ? <li>{LEAVE_COPY.unsentMore(more)}</li> : null}
+          </ul>
+        ) : undefined
+      }
       buttons={
         <>
           <RecipeButton small={!phone} phone={phone} data-testid="leave-leave" onClick={onLeave}>

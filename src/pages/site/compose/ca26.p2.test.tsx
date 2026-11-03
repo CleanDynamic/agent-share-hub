@@ -54,7 +54,7 @@ function Host({ draw }: { draw: Render }) {
 }
 
 const noop = () => undefined;
-const checklist = publishChecklist({ missing: [], title: "Bakery homepage", description: "A warm homepage.", cover: "image", tiles: 18, blockers: [], threadHold: null, reminders: [], appless: [], cardFilled: true });
+const checklist = publishChecklist({ missing: [], title: "Bakery homepage", description: "A warm homepage.", cover: "image", tiles: 18, blockers: [], threadHold: null, reminders: [], appless: [], cardFilled: true, unsent: [] });
 
 /** Every window the build page opens, drawn as the page draws it. */
 const WINDOWS: readonly (readonly [string, Render])[] = [

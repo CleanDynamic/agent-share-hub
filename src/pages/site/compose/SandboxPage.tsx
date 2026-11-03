@@ -127,6 +127,8 @@ import { NOTICE_ROOM, ReferenceNotice } from "./referencePieces";
 import { OfflineStrip, OtherTabStrip, Strips } from "./saveStrips";
 import { useConnectionWatch, useOffline, usePendingWrites, useReconnected } from "./usePendingWrites";
 import { useLeaveGuard } from "./useLeaveGuard";
+import { sendUnsentTile } from "./sendUnsentTile";
+import { UnsentContext, useUnsentPrompts } from "./useUnsentPrompts";
 import { useWriteGuard } from "./useWriteGuard";
 import type { LeaveWindow as LeaveWindowImpl } from "./saveWindows";
 import type { ClashWindow as ClashWindowImpl } from "./ClashWindow";
@@ -266,6 +268,8 @@ function SandboxPageBody() {
   /* SV-06 P2: where every action says how the List should move for it; the List and Sources take it from here. */
   const [motion] = useState(() => new MotionChannel());
   const buildHistory = useBuildHistory({ buildId, nodes, motion, getBridge: () => bridgeHolder.current, peek: () => ({ making: (build as { making?: unknown } | null)?.making, sessions: sessions.rows }) });
+  /* UX-01 P1: text left in a prompt box, kept for a reload, and read by the checklist and the leave window. */
+  const unsent = useUnsentPrompts(buildId);
   const notice = buildHistory.notice;
   useEffect(() => {
     if (notice) announce(noticeWords(notice));
@@ -330,7 +334,7 @@ function SandboxPageBody() {
   const offline = useOffline();
   const { pending, failed: writesFailed, failedCount, retry: retryWrites } = usePendingWrites();
   /* CA-23 P3: leaving with changes that have not landed (or have stopped) asks first; closing the tab asks the browser's way. */
-  const leaving = useLeaveGuard(pending + failedCount);
+  const leaving = useLeaveGuard(pending + failedCount, unsent.entries().length);
   useReconnected((count) => buildHistory.notify(RECONNECTED.saved(count), { undo: false }));
   const strips =
     offline || twoTabs.changedElsewhere ? (
@@ -707,6 +711,12 @@ function SandboxPageBody() {
     if (empties.length === 0 && !buildId && shown.length === 0 && !arriving) return [{ key: FIRST_SESSION_KEY, number: 1, tool: NO_APP, detail: "", prompts: [] }];
     return empties;
   }, [shown, sourceSessionRows, buildId, order, arriving]);
+  /* UX-01 P1: Session 1's box, typed in before the draft existed, follows the session to its real key. */
+  const firstReal = firstSession.current;
+  useEffect(() => {
+    if (buildId && firstReal && firstReal !== FIRST_SESSION_KEY) unsent.rename(FIRST_SESSION_KEY, firstReal);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buildId, firstReal]);
   const refreshRecord = useCallback(async (id: string) => queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) }), [queryClient]);
 
   /** An old build's run of typed prompts, saved as a session made here so it can change. Resolves its new key. */
@@ -1665,6 +1675,22 @@ function SandboxPageBody() {
   /* CA-25: the Publish checklist's input. The sessions with no app are the ones a maker can still give one; a legacy session cannot be. */
   const appless = useMemo(() => sourceSessionRows.filter((row) => row.tool === NO_APP && !isLegacySession(row.key)).map((row) => ({ key: row.key, number: row.number })), [sourceSessionRows]);
   const tileCount = useMemo(() => allTiles(orderOf(drawn)).length, [drawn]);
+  /* UX-01 P1: the boxes with unsent text, each with its session's number. Session 1 before the build exists is the sentinel key. */
+  const unsentBoxes = useMemo(() => {
+    const numberOf = (key: string): number | null => {
+      if (key.startsWith("agent:")) {
+        const step = steps.find((entry) => entry.id === key.slice("agent:".length));
+        const group = step ? groups.find((entry) => entry.stepNumbers.includes(step.number)) : null;
+        return group ? (sourceSessionRows.find((row) => row.key === groupKey(group))?.number ?? null) : null;
+      }
+      return sourceSessionRows.find((row) => row.key === key)?.number ?? (key === FIRST_SESSION_KEY ? 1 : null);
+    };
+    return unsent.entries().flatMap((entry) => {
+      const sessionNumber = numberOf(entry.key);
+      return sessionNumber === null ? [] : [{ sessionKey: entry.key, sessionNumber, text: entry.text }];
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unsent.version, unsent.entries, sourceSessionRows, steps, groups]);
   const checklist = useMemo(
     () =>
       publishChecklist({
@@ -1679,8 +1705,9 @@ function SandboxPageBody() {
         appless: appless,
         // Until the database holds the classification, the Card cannot be filled: it is not asked for.
         cardFilled: !classificationCard.live || hasClassification(classificationCard.stored),
+        unsent: unsentBoxes,
       }),
-    [missing, viewProps.title, viewProps.description, viewProps.cover?.kind, tileCount, runtimeFound, threadHold, appless, classificationCard.live, classificationCard.stored],
+    [missing, viewProps.title, viewProps.description, viewProps.cover?.kind, tileCount, runtimeFound, threadHold, appless, classificationCard.live, classificationCard.stored, unsentBoxes],
   );
   /* CA-25 P2: what Confirm lists, read when it opens: the post as it stands, and the parts, sessions, tiles and files. */
   const confirmInput = useCallback(
@@ -2419,6 +2446,35 @@ function SandboxPageBody() {
     setup: asStep("Added setup files", addSetup),
   };
 
+  /* UX-01 P1: the two links on an unsent prompt in the Publish checklist. Add as step tile sends it as the box's own button does,
+     as one step of the history, with the List told which tile is coming. Discard clears the box. */
+  const onUnsentAction = useCallback(
+    async (key: string, action: "add" | "discard") => {
+      const text = unsent.get(key);
+      if (action === "discard" || !text.trim()) return void unsent.clear(key);
+      if (key.startsWith("agent:")) {
+        if (await stepOf.agentPrompt(key.slice("agent:".length), text)) unsent.clear(key);
+        return;
+      }
+      const row = sourceSessionRows.find((entry) => entry.key === key);
+      const saved = await sendUnsentTile({
+        track,
+        sentence: ADDED.prompt,
+        write: async (id) => {
+          let session: string | null = key;
+          if (key === FIRST_SESSION_KEY) {
+            if (!buildId) await ensureBuild();
+            session = firstSession.current;
+          } else if (isLegacySession(key)) session = await claim(key);
+          return prompts.addNow({ text, tool: row && row.tool !== NO_APP ? row.tool : null, model: null, session, id });
+        },
+      });
+      if (saved) unsent.clear(key);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [unsent, sourceSessionRows, track, buildId, ensureBuild, firstSession, claim, prompts],
+  );
+
   /* CA-27 P1: Find in build: what it reads is what the List is drawn from. */
   const findTargets = useMemo(() => findTargetsOf({ steps, dividers: dividerRows, emptySessions, parts: partsModel ? { parts: partsModel.list } : undefined }), [steps, dividerRows, emptySessions, partsModel]);
   const isFolded = useCallback((key: string) => collapsedKeys.has(key) || Boolean(partsModel?.list.find((part) => part.view.key === key)?.view.collapsed), [collapsedKeys, partsModel]);
@@ -2487,6 +2543,7 @@ function SandboxPageBody() {
     : null;
 
   return (
+    <UnsentContext.Provider value={unsent}>
     <MotionChannelContext.Provider value={motion}>
     <BuildHistoryContext.Provider value={buildHistory}>
       <ReferenceBridgeContext.Provider value={bridge}>
@@ -2534,7 +2591,7 @@ function SandboxPageBody() {
         onPublish={onPublish}
         onUnpublish={unpublish}
         publishedAt={build?.published_at}
-        publish={{ checklist, prepare: preparePublish, confirm: confirmInput, onShowApps: showApps }}
+        publish={{ checklist, prepare: preparePublish, confirm: confirmInput, onShowApps: showApps, onUnsent: onUnsentAction }}
         post={
           <PostTab
             thread={thread}
@@ -2802,7 +2859,7 @@ function SandboxPageBody() {
       />
       {colourPicker}
       <ClashWindow view={twoTabs.clash} busy={twoTabs.busy} onUseOther={twoTabs.useOther} onKeepThis={twoTabs.keepThis} />
-      <LeaveWindow open={leaving.open} count={leaving.count} onStay={leaving.stay} onLeave={leaving.leave} />
+      <LeaveWindow open={leaving.open} count={leaving.count} unsent={unsentBoxes.map((box) => box.sessionNumber)} onStay={leaving.stay} onLeave={leaving.leave} />
       <ReferenceNotice notice={buildHistory.notice} onUndo={() => void buildHistory.undo()} onDone={buildHistory.dismiss} phone={phone} />
       {actionDialogs}
       {referenceActions.keepDialog}
@@ -2827,6 +2884,7 @@ function SandboxPageBody() {
       </ReferenceBridgeContext.Provider>
     </BuildHistoryContext.Provider>
     </MotionChannelContext.Provider>
+    </UnsentContext.Provider>
   );
 }
 

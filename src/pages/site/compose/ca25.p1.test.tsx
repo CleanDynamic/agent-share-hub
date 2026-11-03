@@ -23,6 +23,7 @@ const input = (over: Partial<ChecklistInput> = {}): ChecklistInput => ({
   reminders: [],
   appless: [],
   cardFilled: true,
+  unsent: [],
   ...over,
 });
 
