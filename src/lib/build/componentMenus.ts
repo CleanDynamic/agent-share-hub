@@ -62,6 +62,9 @@ export const MENU_COPY = {
   removeSession: "Remove session",
   removePart: "Remove part",
   removeFile: "Remove file",
+  /** UX-02 P2: a source file's menu, before Remove file. */
+  openFile: "Open file",
+  addToSession: "Add to session",
 } as const;
 
 /** The one Remove item at the end of every menu, after a separator, in the danger text colour. */

@@ -1918,6 +1918,44 @@ function SandboxPageBody() {
     [ensureBuild, nodes, queryClient, writeFileTile],
   );
 
+  /**
+   * UX-02 P2, P3: a file already in the build (a source file) added as a File step tile: a new tile that holds the same stored file,
+   * in `place` (the end of a session from its menu; where it was dropped from Sources). Nothing is uploaded again.
+   */
+  const addSourceFileTile = useCallback(
+    async function again(fileId: string, place: FilePlace): Promise<BuildNode | null> {
+      const source = tree.find((node) => node.id === fileId);
+      const payload = (source?.payload ?? {}) as Record<string, unknown>;
+      if (!source || typeof payload.media_id !== "string") return null;
+      const title = typeof payload.title === "string" && payload.title.trim() ? payload.title : "Untitled file";
+      try {
+        const id = await ensureBuild();
+        const added: { node: BuildNode | null } = { node: null };
+        await nodes.run(async () => {
+          added.node = await writeFileTile(
+            id,
+            {
+              title,
+              media_id: payload.media_id as string,
+              size: typeof payload.size === "number" ? payload.size : null,
+              mime: typeof payload.mime === "string" ? payload.mime : null,
+              preview: Array.isArray(payload.preview) ? (payload.preview as string[]) : undefined,
+            },
+            place,
+          );
+        });
+        await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) });
+        return added.node;
+      } catch (cause) {
+        // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
+        console.error("[Sandbox] file not added", cause);
+        sayFailed(cause, `${title} not added`, () => void again(fileId, place));
+        return null;
+      }
+    },
+    [tree, ensureBuild, nodes, writeFileTile, queryClient],
+  );
+
   /** Files onto one prompt: each is added to the build and then listed as that prompt's input, in order. */
   const attach = useCallback(
     (stepId: string, files: File[]) =>
@@ -2476,6 +2514,7 @@ function SandboxPageBody() {
     startSession: asStep(ADDED.session, onStartSession),
     picked: asStep(ADDED.file, onPicked),
     dropped: asStep(ADDED.file, onDropFiles),
+    sourceFile: asStep(ADDED.file, addSourceFileTile),
     attach: asStep((id: string) => `Attached a file to ${whatIs(id)}`, attach),
     dropOnStep: asStep((id: string) => `Attached a file to ${whatIs(id)}`, onDropOnStep),
     setup: asStep("Added setup files", addSetup),
@@ -2789,6 +2828,7 @@ function SandboxPageBody() {
             onPick={pick}
             connectHref="/connect"
             onRemoveFile={actions.removeFile}
+            onAddFileToSession={(fileId, key) => void stepOf.sourceFile(fileId, { session: key, index: Number.MAX_SAFE_INTEGER })}
           />
           </div>
         }

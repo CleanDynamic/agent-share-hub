@@ -32,7 +32,7 @@ import { DM_MONO } from "@/lib/theme/type";
 
 import { TextButton } from "./composeControls";
 import type { AddToPart } from "./AddSessionRow";
-import { MenuContent } from "./ComposeMenu";
+import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { MENU_COPY } from "@/lib/build/componentMenus";
 import { RemoveRow } from "./removePieces";
 import { useLeaving } from "./buildMotion";
@@ -100,6 +100,8 @@ export interface SourcesPanelProps {
   connectHref: string;
   /** CA-20 P2: "Remove file" in a file's menu. Absent: files have no menu. */
   onRemoveFile?: (id: string) => void;
+  /** UX-02 P2: "Add to session" in a file's menu: the file as a File step tile at the end of that session. */
+  onAddFileToSession?: (fileId: string, sessionKey: string) => void;
 }
 
 /* ── pieces ── */
@@ -261,7 +263,7 @@ function SessionRow({
   );
 }
 
-function FileRow({ file, phone, onRemove, leaving = false }: { file: SourceFile; phone: boolean; onRemove?: (id: string) => void; leaving?: boolean }) {
+function FileRow({ file, phone, sessions, onOpen, onAddToSession, onRemove, leaving = false }: { file: SourceFile; phone: boolean; sessions: readonly SourceSession[]; onOpen?: (id: string) => void; onAddToSession?: (id: string, sessionKey: string) => void; onRemove?: (id: string) => void; leaving?: boolean }) {
   return (
     <div data-file-id={file.id} {...{ [SLIDE_ATTR]: `file:${file.id}` }} aria-hidden={leaving || undefined} style={{ ...(leaving ? { pointerEvents: "none" } : null), ...rowLine, display: "flex", alignItems: "flex-start", gap: 8, minHeight: phone ? 44 : undefined, padding: "12px 0", boxSizing: "border-box" }}>
       <span style={{ display: "inline-flex", color: t.label, flexShrink: 0 }}>
@@ -271,7 +273,7 @@ function FileRow({ file, phone, onRemove, leaving = false }: { file: SourceFile;
         <span {...fullText(file.name)} style={{ ...text(13, 500, t.text), ...ellipsis }}>{file.name}</span>
         <span {...fullText(file.note)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{file.note}</span>
       </span>
-      {/* CA-20 P2: a file's menu ends with Remove file, like every other component's. */}
+      {/* CA-20 P2: a file's menu ends with Remove file, like every other component's. UX-02 P2: Open file and Add to session come first. */}
       {onRemove ? (
         <Menu.Root>
           <Menu.Trigger asChild>
@@ -279,6 +281,31 @@ function FileRow({ file, phone, onRemove, leaving = false }: { file: SourceFile;
           </Menu.Trigger>
           <Menu.Portal>
             <MenuContent align="end" sideOffset={4} style={menuSurface()}>
+              {onOpen ? (
+                <Menu.Item onSelect={() => onOpen(file.id)} style={menuItem(true, phone)}>
+                  {MENU_COPY.openFile}
+                </Menu.Item>
+              ) : null}
+              {onAddToSession && sessions.length > 0 ? (
+                <Menu.Sub>
+                  <Menu.SubTrigger style={{ ...menuItem(true, phone), justifyContent: "space-between", gap: 12 }}>
+                    <span>{MENU_COPY.addToSession}</span>
+                    <span aria-hidden="true" style={{ display: "inline-flex", color: t.label }}>
+                      <Glyph name="chev" size={16} />
+                    </span>
+                  </Menu.SubTrigger>
+                  <Menu.Portal>
+                    <MenuSubContent sideOffset={4} style={menuSurface()}>
+                      {/* Built as "Add this session to" builds its rows: one per session of the build, in order. */}
+                      {sessions.map((session) => (
+                        <Menu.Item key={session.key} onSelect={() => onAddToSession(file.id, session.key)} style={{ ...menuItem(true, phone), gap: 8 }}>
+                          <span style={{ flexGrow: 1, minWidth: 0 }}>{`Session ${session.number} · ${session.tool}`}</span>
+                        </Menu.Item>
+                      ))}
+                    </MenuSubContent>
+                  </Menu.Portal>
+                </Menu.Sub>
+              ) : null}
               <RemoveRow label={MENU_COPY.removeFile} phone={phone} onSelect={() => onRemove(file.id)} />
             </MenuContent>
           </Menu.Portal>
@@ -517,7 +544,7 @@ export function SourcesPanel(props: SourcesPanelProps) {
         {files.length > 0 || reminders.length > 0 ? (
           <section aria-label={SOURCES_COPY.files} {...{ [SLIDE_ATTR]: `sources:${SOURCES_COPY.files}` }} style={group}>
             <GroupHead name={SOURCES_COPY.files} count={files.length} />
-            <Capped rows={files} phone={phone} render={(file) => <FileRow key={file.id} file={file} phone={phone} onRemove={props.onRemoveFile} leaving={leaving.has(file.id)} />} />
+            <Capped rows={files} phone={phone} render={(file) => <FileRow key={file.id} file={file} phone={phone} sessions={sessions} onOpen={props.onSelect} onAddToSession={props.onAddFileToSession} onRemove={props.onRemoveFile} leaving={leaving.has(file.id)} />} />
             {reminders.map((reminder) => (
               <ReminderRow key={reminder.toolId} reminder={reminder} phone={phone} onPick={props.onPick} />
             ))}
