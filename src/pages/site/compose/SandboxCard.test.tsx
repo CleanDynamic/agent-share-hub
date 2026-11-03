@@ -385,3 +385,28 @@ describe("SV-05 P7 · the window's inset", () => {
     expect((screen.getByTestId("card-body").firstElementChild as HTMLElement).style.padding).toBe("0px 0px 16px");
   });
 });
+
+describe("UX-01 P2: a live build's title", () => {
+  it("on a live build, an emptied title shows the field error and Save waits; on a draft it does not", async () => {
+    live();
+    mount({ titleLive: true });
+    const dialog = await screen.findByRole("dialog", { name: "Classification" });
+    const field = within(dialog).getByLabelText("Title");
+    fireEvent.change(field, { target: { value: "" } });
+    expect(within(dialog).getByText("A published build needs a title.")).toBeTruthy();
+    expect((within(dialog).getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(field, { target: { value: "Untitled build" } });
+    expect(within(dialog).getByText("A published build needs a title.")).toBeTruthy();
+    fireEvent.change(field, { target: { value: "Policy search v2" } });
+    expect(within(dialog).queryByText("A published build needs a title.")).toBeNull();
+    expect((within(dialog).getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("on a draft the field error is not drawn", async () => {
+    live();
+    mount({ titleLive: false });
+    const dialog = await screen.findByRole("dialog", { name: "Classification" });
+    fireEvent.change(within(dialog).getByLabelText("Title"), { target: { value: "Untitled build" } });
+    expect(within(dialog).queryByText("A published build needs a title.")).toBeNull();
+  });
+});

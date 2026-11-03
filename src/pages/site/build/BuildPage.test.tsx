@@ -323,7 +323,8 @@ describe("BuildPage (site frame)", () => {
     await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" });
 
     const block = screen.getByTestId("build-completeness");
-    expect(block.textContent).toContain("Publish 60");
+    expect(block.textContent).not.toContain("Publish 60");
+    expect(block.textContent).toContain("Visible to you only");
     expect(block.textContent).toMatch(/Next: /);
 
     fireEvent.click(screen.getByRole("button", { name: "Re-confirm it still works" }));

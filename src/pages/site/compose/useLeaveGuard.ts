@@ -22,6 +22,8 @@ export interface LeaveGuard {
   open: boolean;
   /** How many changes are still waiting, live. */
   count: number;
+  /** UX-01 P1: how many prompt boxes hold text that was never sent. Counted apart from `count`, which says "saving". */
+  unsent: number;
   stay: () => void;
   leave: () => void;
 }
@@ -33,7 +35,8 @@ const indexOf = (state: unknown): number | null => {
   return typeof idx === "number" ? idx : null;
 };
 
-export function useLeaveGuard(pending: number): LeaveGuard {
+export function useLeaveGuard(writes: number, unsent = 0): LeaveGuard {
+  const pending = writes + unsent;
   const { navigator } = useContext(UNSAFE_NavigationContext);
   const location = useLocation();
   const pendingRef = useRef(pending);
@@ -128,5 +131,5 @@ export function useLeaveGuard(pending: number): LeaveGuard {
     }
   }, [asked, pending]);
 
-  return { open: asked !== null, count: pending, stay, leave };
+  return { open: asked !== null, count: writes, unsent, stay, leave };
 }

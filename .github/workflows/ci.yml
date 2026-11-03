@@ -1,0 +1,45 @@
+# UX-01 P8: the checks that run on every pull request to main.
+#
+# What is left out, and why:
+# - `npm run lint`: it fails on main today (1430 errors in 353 files at 8ab4cdd, mostly `no-explicit-any` in supabase/functions and
+#   older src files), so it would make the first run red. Add it back when lint passes on main.
+# - The Playwright audits (`npm run audit:*`, `e2e/tier1`): they need a browser (Chromium, with PW_CHROMIUM_PATH if it is not the
+#   one Playwright downloads), `vite build` and `vite preview` or the dev server on 127.0.0.1 (IPv6 off), and several minutes each.
+#   They are run by hand before a merge. They need no real keys: every spec fakes the database.
+#
+# The build needs `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` (index.html and the Supabase client read them). They are
+# placeholders here, never real keys; nothing in these steps reaches a database.
+
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VITE_SUPABASE_URL: https://placeholder.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: placeholder-publishable-key
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # vite.config.ts reads `git rev-parse --short HEAD` for the build-commit meta tag
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit -p tsconfig.app.json
+      - run: npm test
+      - run: npm run build
+      # The first download is over its 200 KB budget on main today (230.7 KB), and the composer chunk is at its edge. Until they are
+      # brought back under, this step reports the numbers without failing the run. Remove `continue-on-error` then.
+      - run: node scripts/check-size.mjs
+        continue-on-error: true

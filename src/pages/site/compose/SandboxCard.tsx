@@ -42,7 +42,8 @@ import { MadeWithLine } from "./MadeWithLine";
 import { ModalShell } from "./ModalFrame";
 import { OptionalRow, OptionalRows } from "./OptionalRows";
 import { ChosenValue } from "./classificationPieces";
-import { BlockHead, Block, FOOT_NOTE, FieldArea, FieldInput, MODAL_PAD, ModalInset, RecipeButton, SegmentedField, footerStyle, useModalInset } from "./modalRecipes";
+import { LIVE_NEEDS_TITLE, refusesLiveTitle } from "@/lib/build/publish";
+import { Alert, BlockHead, Block, FOOT_NOTE, FieldArea, FieldInput, MODAL_PAD, ModalInset, RecipeButton, SegmentedField, footerStyle, useModalInset } from "./modalRecipes";
 import { ReadFromBuild } from "./ReadFromBuild";
 import { text } from "./refinedStyles";
 import { type ComposeViewProps } from "./ComposeView";
@@ -63,6 +64,8 @@ export type CardProps = Pick<
   ComposeViewProps,
   | "title"
   | "onTitle"
+  | "titleError"
+  | "titleLive"
   | "description"
   | "onDescription"
   | "audience"
@@ -211,7 +214,9 @@ function CardBody(props: SandboxCardProps) {
 
   const set = <K extends keyof ClassificationDraft>(key: K, value: ClassificationDraft[K]) => setDraft((current) => ({ ...current, [key]: value }));
 
-  const titleOk = title.trim() !== "";
+  /* UX-01 P2: on a live build the title cannot be emptied or set back to "Untitled build"; Save waits, and the field says why. */
+  const liveRefused = Boolean(props.titleLive) && refusesLiveTitle("published", title);
+  const titleOk = title.trim() !== "" && !liveRefused;
 
   const onSave = async () => {
     if (!titleOk || saving) return;
@@ -282,6 +287,7 @@ function CardBody(props: SandboxCardProps) {
         <Block testId="card-title-block">
           <RefinedField id={CARD_FIELD_ID.title} label="Title" right="Required">
             <FieldInput id={CARD_FIELD_ID.title} phone={phone} type="text" value={title} placeholder="Fox poster" autoComplete="off" onChange={(event) => setTitle(event.target.value)} />
+            {liveRefused ? <Alert>{LIVE_NEEDS_TITLE}</Alert> : null}
           </RefinedField>
         </Block>
 

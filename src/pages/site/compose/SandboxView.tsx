@@ -110,6 +110,8 @@ export interface PublishPanel {
   confirm: () => ConfirmInput;
   /** "Show" on the sessions with no app: choose them and scroll to the first. */
   onShowApps: (keys: readonly string[]) => void;
+  /** UX-01 P1: an unsent prompt's links in the checklist: send it as a step tile, or discard it. */
+  onUnsent?: (key: string, action: "add" | "discard") => void;
 }
 
 export interface SandboxViewProps extends CardProps {
@@ -1083,9 +1085,13 @@ function SandboxBody(props: SandboxViewProps) {
     target.scrollIntoView?.({ block: "center", behavior: scrollBehavior() });
     outlineOnce(target);
   };
-  const onChecklistAction = (item: ChecklistItem) => {
+  const onChecklistAction = (item: ChecklistItem, chosen?: ChecklistItem["action"]) => {
     const run = () => {
-      switch (item.action?.id) {
+      const id = (chosen ?? item.action)?.id;
+      switch (id) {
+        case "add_unsent":
+        case "discard_unsent":
+          return item.unsentKey ? latest.current.publish?.onUnsent?.(item.unsentKey, id === "add_unsent" ? "add" : "discard") : undefined;
         case "add_cover":
           return openPost();
         case "add_title":

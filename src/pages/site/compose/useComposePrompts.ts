@@ -223,7 +223,7 @@ export interface ComposePrompts {
   /** Write every pending edit now; resolves once the queue is empty. */
   flush: () => Promise<void>;
   /** UI-P65: add a prompt the maker wrote, now, with the tool and model it names. Resolves true once it is saved. */
-  addNow: (input: { text: string; tool: string | null; model: string | null; session?: string | null }) => Promise<boolean>;
+  addNow: (input: { text: string; tool: string | null; model: string | null; session?: string | null; id?: string }) => Promise<boolean>;
   /** UI-P65: name a step ("" puts its default name back). */
   rename: (id: string, title: string) => void;
   /** CA-05 P9: how an agent tidies its notes and what it changes each round. */
@@ -609,10 +609,10 @@ export function useComposePrompts({
     }
   };
 
-  const addNow = ({ text, tool, model, session }: { text: string; tool: string | null; model: string | null; session?: string | null }) =>
+  const addNow = ({ text, tool, model, session, id }: { text: string; tool: string | null; model: string | null; session?: string | null; id?: string }) =>
     attempt("Prompt not added", async () => {
       const build = await latest.current.ensureBuild();
-      const created = await addWrittenPrompt({ buildId: build, tree: nodes.current(), text, tool, model, session });
+      const created = await addWrittenPrompt({ buildId: build, tree: nodes.current(), text, tool, model, session, id });
       nodes.record(created.id, created);
       noteTool(build, tool);
       return true;

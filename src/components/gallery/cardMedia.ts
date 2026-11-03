@@ -32,7 +32,8 @@
 // is why cardMedia is no longer a superset. The post set is at most four rows —
 // a database CHECK, not a convention — so the ceiling per card is unchanged.
 
-import { useEffect, useState } from "react";
+import { QueryClient, QueryClientContext, useQueries } from "@tanstack/react-query";
+import { useContext, useMemo } from "react";
 import {
   BUILD_MEDIA_BUCKET,
   postEntriesOf,
@@ -429,31 +430,59 @@ export function stillRef(media: GalleryMedia): MediaRef {
   return { bucket: media.bucket, path: media.path, kind: media.kind };
 }
 
+/** UX-01 P6: a signed address is good for an hour (`SIGNED_URL_TTL_SECONDS`), so it is reused for fifty minutes. */
+export const SIGNED_URL_CACHE_MS = 50 * 60_000;
+
+/** One query per image. These keys are never kept (`KEPT_KEYS` holds no "media" key): a kept address could outlive its token. */
+export const signedUrlKey = (ref: MediaRef, width: number) => ["media", "signedUrl", ref.bucket ?? BUILD_MEDIA_BUCKET, ref.path, ref.kind, width] as const;
+
+const signedUrlQuery = (ref: MediaRef, width: number) => ({
+  queryKey: signedUrlKey(ref, width),
+  queryFn: () => signedMediaUrl(ref, { width }),
+  staleTime: SIGNED_URL_CACHE_MS,
+  gcTime: SIGNED_URL_CACHE_MS,
+  // As before: a row storage will not sign is one missing picture, and is not asked again.
+  retry: false,
+});
+
+/** The signing targets of a list of rows: one per path; the first width wins (cardMedia puts the body's row before the grid's). */
+function targetsOf(rows: readonly CardMedia[]): { path: string; ref: MediaRef; width: number }[] {
+  const targets = new Map<string, { path: string; ref: MediaRef; width: number }>();
+  for (const row of rows) {
+    const ref = stillRef(row);
+    if (!targets.has(ref.path)) targets.set(ref.path, { path: ref.path, ref, width: row.slotWidth });
+  }
+  return [...targets.values()];
+}
+
 /**
  * The same signing as useSignedMedia, once and as a promise: for a surface that
  * decides to sign rows at a moment of its own (the feed's Show more). A row the
- * storage would not sign is left out of the map.
+ * storage would not sign is left out of the map. With the app's query client it
+ * shares useSignedMedia's cache, so a picture signed here is not signed again.
  */
-export async function signCardMedia(rows: readonly CardMedia[]): Promise<MediaSrcMap> {
-  const targets = new Map<string, { ref: MediaRef; width: number }>();
-  for (const row of rows) {
-    const ref = stillRef(row);
-    if (!targets.has(ref.path)) targets.set(ref.path, { ref, width: row.slotWidth });
-  }
+export async function signCardMedia(rows: readonly CardMedia[], client?: QueryClient | null): Promise<MediaSrcMap> {
   const results = await Promise.allSettled(
-    [...targets].map(async ([path, { ref, width }]) => [path, await signedMediaUrl(ref, { width })] as const)
+    targetsOf(rows).map(async ({ path, ref, width }) => [path, await (client ? client.fetchQuery(signedUrlQuery(ref, width)) : signedMediaUrl(ref, { width }))] as const)
   );
   const out = new Map<string, string>();
   for (const result of results) if (result.status === "fulfilled") out.set(...result.value);
   return out;
 }
 
+/** Where no provider is mounted (a dev page, a test): its own cache, for the page's life. */
+const FALLBACK_CLIENT = new QueryClient();
+
 /**
- * One signed, transformed URL per row.
+ * One signed, transformed URL per row, from the query cache.
  *
  * ONE REQUEST PER ROW, deliberately — see the note at the top of this file. The
  * transform has to be signed INTO the token, so the batch endpoint cannot carry
  * it, and a card-sized derivative is worth more here than a saved round trip.
+ *
+ * UX-01 P6: each signature is a query (`["media", "signedUrl", bucket, path, kind, width]`) kept for fifty minutes, so
+ * leaving a page and coming back finds the same address, and the browser reuses the picture it already has. Before, every
+ * mount signed again and every signature was a new address.
  *
  * Returns an empty map until the signatures come back, so nothing renders a URL
  * that is about to be replaced — and every body treats a missing src as "no
@@ -461,68 +490,17 @@ export async function signCardMedia(rows: readonly CardMedia[]): Promise<MediaSr
  * is therefore never empty while this is in flight.
  *
  * A row whose signature fails is simply absent from the map rather than taking
- * the whole page's imagery down with it: allSettled, not all.
+ * the whole page's imagery down with it.
  */
 export function useSignedMedia(rows: readonly CardMedia[]): MediaSrcMap {
-  // A stable key over what is actually requested — path, kind and width — so
-  // re-renders that produce an equal list do not re-sign, and a slot that
-  // changes width does. Paths are unique per object; sorting makes order
-  // irrelevant.
-  const key = rows
-    .map((row) => {
-      const ref = stillRef(row);
-      return [
-        ref.bucket ?? BUILD_MEDIA_BUCKET,
-        ref.path,
-        ref.kind,
-        String(row.slotWidth),
-      ].join("|");
-    })
-    .sort()
-    .join("\n");
-
-  const [srcByPath, setSrcByPath] = useState<MediaSrcMap>(NO_SRC);
-
-  useEffect(() => {
-    if (!key) {
-      setSrcByPath(NO_SRC);
-      return;
-    }
-
-    let cancelled = false;
-    const targets = new Map<string, { ref: MediaRef; width: number }>();
-    for (const entry of key.split("\n")) {
-      const [bucket, path, kind, width] = entry.split("|");
-      // First width wins: cardMedia puts the body's row before the grid's, so
-      // a row in both slots is signed at the larger of the two.
-      if (targets.has(path)) continue;
-      targets.set(path, {
-        ref: { bucket, path, kind: kind as MediaRef["kind"] },
-        width: Number(width),
-      });
-    }
-
-    void Promise.allSettled(
-      [...targets].map(async ([path, { ref, width }]) => {
-        return [path, await signedMediaUrl(ref, { width })] as const;
-      })
-    ).then((results) => {
-      if (cancelled) return;
-      const next = new Map<string, string>();
-      for (const result of results) {
-        // A row storage would not sign — an object removed from under its row,
-        // a policy that says no — is one missing picture, not a blank grid.
-        if (result.status === "fulfilled") next.set(...result.value);
-      }
-      setSrcByPath(next);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [key]);
-
-  return srcByPath;
+  const client = useContext(QueryClientContext) ?? FALLBACK_CLIENT;
+  // A stable key over what is actually requested, so re-renders that produce an equal list change nothing.
+  const targets = targetsOf(rows);
+  const key = targets.map(({ ref, width }) => signedUrlKey(ref, width).join("|")).join("\n");
+  const results = useQueries({ queries: targets.map(({ ref, width }) => signedUrlQuery(ref, width)) }, client);
+  const addresses = results.map((result) => result.data ?? "").join("\n");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useMemo(() => new Map(targets.flatMap(({ path }, at) => (results[at]?.data ? [[path, results[at].data as string] as const] : []))), [key, addresses]);
 }
 
 /** The src for one row's own object, or null while it is unsigned. */

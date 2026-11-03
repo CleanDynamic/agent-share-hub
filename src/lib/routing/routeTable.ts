@@ -17,6 +17,7 @@ import { matchPath } from "react-router-dom";
 import { SITE_NAV } from "@/components/shell/siteNav";
 import { SANDBOX_COMPOSER_ENABLED } from "@/lib/build/flags";
 import { SkipToBuild } from "@/pages/site/compose/SkipToBuild";
+import { SignInFallback } from "@/pages/site/signin/SignInFallback";
 import { LIST_STALE_MS, SLOW_STALE_MS } from "@/lib/query/client";
 
 import {
@@ -69,7 +70,7 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
       const weekStart = weekStartUtc(new Date()).toISOString();
       await Promise.all([
         queryClient.prefetchInfiniteQuery({
-          queryKey: ["feed", "getBuildFeed", "everyone", userId],
+          queryKey: ["feed", "getBuildFeed", "everyone"],
           initialPageParam: undefined as string | undefined,
           queryFn: ({ pageParam }) => getBuildFeed({ before: pageParam, onlyFollowing: false }),
           getNextPageParam: (last) => last.nextBefore ?? undefined,
@@ -220,6 +221,16 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
     },
     Placeholder: DraftsPlaceholder,
     frame: { board: true },
+  },
+  /* UX-01 P9: the sign-in page, so that hovering or focusing the header's Sign in opens its chunk before the press. It sits outside the
+     app shell (no placeholder is drawn by a page change): its Placeholder is the fallback `SignInSite` draws while the chunk loads. */
+  login: {
+    key: "login",
+    pattern: "/login",
+    signedIn: false,
+    load: () => import("@/pages/site/signin/LoginPage"),
+    prefetch: () => undefined,
+    Placeholder: SignInFallback,
   },
   create: {
     key: "create",

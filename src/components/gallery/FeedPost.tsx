@@ -21,7 +21,8 @@
 // Title line and its cover through the existing chain, coverMedia then
 // CoverFallback, so no item is empty.
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { QueryClientContext } from "@tanstack/react-query";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { IntentLink as Link } from "@/lib/routing/IntentLink";
 
 import { Avatar } from "@/components/brand/Avatar";
@@ -149,6 +150,7 @@ export function FeedPost({
   const [phase, setPhase] = useState<Phase>("closed");
   const [rest, setRest] = useState<{ rows: ThreadRow[]; src: MediaSrcMap } | null>(null);
   const asking = useRef(false);
+  const client = useContext(QueryClientContext);
 
   const open = useCallback(async () => {
     if (asking.current || phase !== "closed") return;
@@ -161,7 +163,7 @@ export function FeedPost({
     setPhase("loading");
     try {
       const rows = (await getThreadMedia(build.id)) as ThreadRow[];
-      const src = await signCardMedia(rows.map((row) => ({ ...row, slotWidth: CARD_THREAD_WIDTH })));
+      const src = await signCardMedia(rows.map((row) => ({ ...row, slotWidth: CARD_THREAD_WIDTH })), client);
       setRest({ rows, src });
     } catch {
       // The posts still open; their pictures hold their reserved places.
@@ -169,7 +171,7 @@ export function FeedPost({
       asking.current = false;
       setPhase("open");
     }
-  }, [build.id, phase, preview, rest]);
+  }, [build.id, phase, preview, rest, client]);
 
   const close = useCallback(() => setPhase("closed"), []);
 

@@ -7,6 +7,8 @@ import { toFeedItem, type BuildFeedRow } from "@/lib/feed/getBuildFeed";
 import {
   HOME_SEEN_KEY,
   closesIn,
+  feedKey,
+  feedWaitsForSession,
   filterOf,
   homeItemOf,
   homeWeek,
@@ -268,5 +270,18 @@ describe("sinceSection", () => {
       ["answer", "An answer to your request", "@kit · Call notes", "/bounties/q1/solve"],
       ["stale", "Call notes is out of date", "Not confirmed in a while", "/b2/call-notes"],
     ]);
+  });
+});
+
+describe("UX-01 P5: the feed's key and when it may start", () => {
+  it("Everyone's key has no viewer in it, and does not wait for the session check", () => {
+    expect(feedKey("everyone", "u1")).toEqual(["feed", "getBuildFeed", "everyone"]);
+    expect(feedKey("everyone", null)).toEqual(["feed", "getBuildFeed", "everyone"]);
+    expect(feedWaitsForSession("everyone")).toBe(false);
+  });
+  it("Following's key still includes the viewer, and waits for the session check", () => {
+    expect(feedKey("following", "u1")).toEqual(["feed", "getBuildFeed", "following", "u1"]);
+    expect(feedKey("following", "u2")).not.toEqual(feedKey("following", "u1"));
+    expect(feedWaitsForSession("following")).toBe(true);
   });
 });

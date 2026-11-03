@@ -13,6 +13,7 @@ import type { PostMediaAttrs } from "@/lib/build/thread";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { cropStyle } from "./cropStyle";
+import { useImageLoading } from "./priorityImage";
 import { PICTURE_INK, PICTURE_SHADE } from "./shade";
 
 /** The badges' row, 8 in from the bottom left. */
@@ -105,6 +106,7 @@ export function GridTile({ attrs, media, srcByPath, cellRatio, align, index, cou
 
   // A video's still is its poster; a video with no poster shows its first frame.
   const still = preview ? (preview.kind === "image" ? preview.url : null) : media && (kind !== "video" || media.poster_path) ? stillFor(srcByPath, media) : null;
+  const loading = useImageLoading(still);
   const videoSrc = preview ? (preview.kind === "video" ? preview.url : null) : media && kind === "video" ? (srcByPath.get(media.path) ?? null) : null;
   const length = kind === "video" ? videoLength(media?.duration ?? loadedLength) : null;
   const size = { w: attrs.w ?? media?.width ?? null, h: attrs.h ?? media?.height ?? null, crop: kind === "image" ? (attrs.crop ?? null) : null };
@@ -145,14 +147,14 @@ export function GridTile({ attrs, media, srcByPath, cellRatio, align, index, cou
           style={{ ...fill, ...pictureStyle }}
         />
       ) : kind === "video" && still ? (
-        <img src={still} alt={label} loading="lazy" decoding="async" style={{ ...fill, ...pictureStyle }} />
+        <img src={still} alt={label} {...loading} style={{ ...fill, ...pictureStyle }} />
       ) : still ? (
         cover ? (
           <span data-tile-cover="" style={{ position: "absolute", top: 0, bottom: 0, left: "50%", transform: "translateX(-50%)", aspectRatio: String(cellRatio), overflow: "hidden" }}>
-            <img src={still} alt={label} loading="lazy" decoding="async" data-tile-img="" style={{ ...cropStyle(size, cellRatio, align), ...pictureStyle }} />
+            <img src={still} alt={label} {...loading} data-tile-img="" style={{ ...cropStyle(size, cellRatio, align), ...pictureStyle }} />
           </span>
         ) : (
-          <img src={still} alt={label} loading="lazy" decoding="async" data-tile-img="" style={{ ...cropStyle(size, cellRatio, align), ...pictureStyle }} />
+          <img src={still} alt={label} {...loading} data-tile-img="" style={{ ...cropStyle(size, cellRatio, align), ...pictureStyle }} />
         )
       ) : (
         // Not signed yet: the cell's own tile, at the reserved size, named for a screen reader.

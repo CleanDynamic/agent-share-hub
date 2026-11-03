@@ -18,7 +18,8 @@ import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persi
 import type { Query } from "@tanstack/react-query";
 import { del, get, set } from "idb-keyval";
 
-export const CACHE_VERSION = "1";
+/* UX-01 P5: "2". The Everyone feed's key lost its viewer (["feed", "getBuildFeed", "everyone"]), so a kept entry under the old key would never be read again and only take room. */
+export const CACHE_VERSION = "2";
 export const MAX_BYTES = 2 * 1024 * 1024;
 export const MAX_AGE_MS = 24 * 60 * 60_000;
 const STORE_KEY = `bg-kept-cache:v${CACHE_VERSION}`;

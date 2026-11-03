@@ -13,6 +13,7 @@
          The faces are read through src/lib/theme/type.ts. -->
     <!-- SV-03: the first database request would pay for DNS and TLS; this pays for them while the bundle loads. The address is the client's own, filled in by Vite at build time. -->
     <link rel="preconnect" href="%VITE_SUPABASE_URL%" crossorigin />
+    <meta name="build-commit" content="%VITE_BUILD_COMMIT%" />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/Geist-Variable.woff2" crossorigin />
 
     <!-- BG-P02 theme boot: sets <html data-theme> before the bundle, so nobody
@@ -36,7 +37,22 @@
 </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- UX-01 P4: something paints before the scripts run. A static copy of what SiteFrame variant="site" draws on a desktop:
+           the frame, the header row (48) and the empty surface (width calc(100% - 12px), max 1428, margin 0 auto 6px, radius 10,
+           1px border, background and shadow), reading the same custom properties the theme boot script selects. No page-specific
+           skeleton. React replaces it when it mounts, with no fade: the only first-load fade is PageArrival's.
+           It is for the pages that draw that frame at 768px and up (the list in the script is the site routes in App.tsx inside
+           Layout, minus the composer, which draws a wide surface). The style below hides it under 768px with no script
+           (useIsPhone's breakpoint); the script after it removes it on any other path or width before first paint.
+           Change SiteFrame's SURFACE, HEADER_HEIGHT or that breakpoint, change this. -->
+      <style>@media (max-width:767px){#boot-shell{display:none!important}}</style>
+      <div id="boot-shell" aria-hidden="true" style="position:relative;min-height:100dvh;display:flex;flex-direction:column;background:var(--frame)">
+        <div style="min-height:48px;background:var(--frame)"></div>
+        <div style="flex-grow:1;box-sizing:border-box;width:calc(100% - 12px);max-width:1428px;margin:0 auto 6px;background:var(--surface);border:1px solid var(--surface-border);border-radius:10px;box-shadow:var(--surface-shadow)"></div>
+      </div>
+      <script>(function(){var p=location.pathname,ok=p=="/"||/^\/(builds|openbuilds|library|drafts|b|about|api-docs|profile|notifications|gallery|bounties)(\/|$)/.test(p);if(!ok||!matchMedia("(min-width:768px)").matches){var s=document.getElementById("boot-shell");if(s)s.remove()}})()</script>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

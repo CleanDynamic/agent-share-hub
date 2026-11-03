@@ -130,7 +130,7 @@ function ActionLink({ children, onClick, label }: { children: ReactNode; onClick
   );
 }
 
-function ChecklistRow({ item, first, onAction }: { item: ChecklistItem; first: boolean; onAction: (item: ChecklistItem) => void }) {
+function ChecklistRow({ item, first, onAction }: { item: ChecklistItem; first: boolean; onAction: (item: ChecklistItem, action?: ChecklistItem["action"]) => void }) {
   return (
     <li data-testid={`checklist-${item.key}`} data-done={item.done ? "true" : "false"} style={{ ...ROW, ...(first ? null : { borderTop: `1px solid ${t.hairline}` }) }}>
       <Circle done={item.done} />
@@ -138,7 +138,15 @@ function ChecklistRow({ item, first, onAction }: { item: ChecklistItem; first: b
         <span style={{ ...(item.done ? text(13, 400, t.text2) : text(13, 500, t.text)), overflowWrap: "anywhere" }}>{item.words}</span>
         {item.detail ? <span style={{ ...text(12, 400, t.label), overflowWrap: "anywhere", ...(item.done ? { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } : null) }}>{item.detail}</span> : null}
       </div>
-      {item.action ? (
+      {item.actions ? (
+        <span style={{ display: "flex", gap: 12, flexShrink: 0 }}>
+          {item.actions.map((action) => (
+            <ActionLink key={action.id} label={`${action.label}: ${item.words}`} onClick={() => onAction(item, action)}>
+              {action.label}
+            </ActionLink>
+          ))}
+        </span>
+      ) : item.action ? (
         <ActionLink label={`${item.action.label}: ${item.words}`} onClick={() => onAction(item)}>
           {item.action.label}
         </ActionLink>
@@ -147,7 +155,7 @@ function ChecklistRow({ item, first, onAction }: { item: ChecklistItem; first: b
   );
 }
 
-function Section({ label, items, onAction }: { label: string; items: readonly ChecklistItem[]; onAction: (item: ChecklistItem) => void }) {
+function Section({ label, items, onAction }: { label: string; items: readonly ChecklistItem[]; onAction: (item: ChecklistItem, action?: ChecklistItem["action"]) => void }) {
   return (
     <section aria-label={label} data-testid={`checklist-section-${label.toLowerCase()}`}>
       <h3 style={{ ...SECTION_LABEL, fontWeight: 400 }}>{label}</h3>
@@ -165,7 +173,7 @@ export interface PublishChecklistProps {
   checklist: Checklist;
   onClose: () => void;
   /** An action was chosen. The window has already closed. */
-  onAction: (item: ChecklistItem) => void;
+  onAction: (item: ChecklistItem, action?: ChecklistItem["action"]) => void;
   /** Publish in the footer: the page opens Confirm. The window has already closed. */
   onPublish: () => void;
 }

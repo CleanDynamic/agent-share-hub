@@ -13,7 +13,7 @@ import { canSucceedLater } from "@/lib/errors/code";
 
 import { postPlainText, splitThread, type ThreadDoc } from "./thread";
 
-export type ChecklistAction = "add_cover" | "add_title" | "add_description" | "add_prompt" | "go_to" | "show_apps" | "open_card";
+export type ChecklistAction = "add_cover" | "add_title" | "add_description" | "add_prompt" | "go_to" | "show_apps" | "open_card" | "add_unsent" | "discard_unsent";
 
 export interface ChecklistItem {
   /** `evidence`, `title`, `outcome`, `instruction_or_artefact`, `blocker-0`, `thread`, `apps`, `card`, `reminder-0`. */
@@ -25,6 +25,10 @@ export interface ChecklistItem {
   detail: string | null;
   /** The text link at the right; absent for a done item. */
   action?: { id: ChecklistAction; label: string };
+  /** UX-01 P1: an unsent prompt has two links, Add as step tile and Discard; `action` is the first. */
+  actions?: readonly { id: ChecklistAction; label: string }[];
+  /** UX-01 P1: the prompt box this item is about: the session key, or `agent:<id>`. */
+  unsentKey?: string;
   /** `go_to`: the step to scroll to and outline; null for the post, or for something about the whole build. */
   stepId?: string | null;
   /** `show_apps`: the keys of the sessions with no app. */
@@ -47,6 +51,15 @@ export interface ChecklistInput {
   appless: readonly { key: string; number: number }[];
   /** Whether the Classification Card has anything in it. */
   cardFilled: boolean;
+  /** UX-01 P1: text typed in a prompt box and not sent. Each one is a required item. */
+  unsent: readonly UnsentPrompt[];
+}
+
+export interface UnsentPrompt {
+  /** The box's key: the session key, or `agent:<id>` for an agent's prompt field. */
+  sessionKey: string;
+  sessionNumber: number;
+  text: string;
 }
 
 export interface Checklist {
@@ -73,6 +86,11 @@ export const CHECKLIST_COPY = {
   none: "None added",
   notFilled: "Not filled",
   goTo: "Go to it",
+  addUnsent: "Add as step tile",
+  discardUnsent: "Discard",
+  unsentWords: (session: number): string => `Unsent prompt in Session ${session}`,
+  /** How much of the unsent text the detail shows. */
+  unsentDetail: 80,
   postText: "Post text",
 } as const;
 
@@ -105,6 +123,22 @@ export function publishChecklist(input: ChecklistInput): Checklist {
   input.blockers.forEach((blocker, at) =>
     required.push({ key: `blocker-${at}`, section: "required", done: false, words: blocker.line, detail: null, action: { id: "go_to", label: CHECKLIST_COPY.goTo }, stepId: blocker.stepId }),
   );
+  for (const box of input.unsent) {
+    const actions = [
+      { id: "add_unsent", label: CHECKLIST_COPY.addUnsent },
+      { id: "discard_unsent", label: CHECKLIST_COPY.discardUnsent },
+    ] as const;
+    required.push({
+      key: `unsent-${box.sessionKey}`,
+      section: "required",
+      done: false,
+      words: CHECKLIST_COPY.unsentWords(box.sessionNumber),
+      detail: box.text.trim().slice(0, CHECKLIST_COPY.unsentDetail),
+      action: actions[0],
+      actions,
+      unsentKey: box.sessionKey,
+    });
+  }
   if (input.threadHold) {
     required.push({ key: "thread", section: "required", done: false, words: CHECKLIST_COPY.postText, detail: input.threadHold, action: { id: "go_to", label: CHECKLIST_COPY.goTo }, stepId: null });
   }

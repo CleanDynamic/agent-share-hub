@@ -120,7 +120,7 @@ const ProfileSitePage = lazy(ROUTE_TABLE.profile.load as () => Promise<{ default
 // UI-P35: Activity in the site frame; its own chunk (it draws a chart), rendered directly.
 const ActivitySitePage = lazy(() => import("./pages/site/activity/ActivityPage"));
 // UI-P36: Sign in, Join, reset and verify in the entrance's frame; each its own chunk, rendered directly.
-const LoginSitePage = lazy(() => import("./pages/site/signin/LoginPage"));
+const LoginSitePage = lazy(ROUTE_TABLE.login.load as () => Promise<{ default: React.ComponentType }>);
 const SignupSitePage = lazy(() => import("./pages/site/signin/SignupPage"));
 const ResetPasswordSitePage = lazy(() => import("./pages/site/signin/ResetPasswordPage"));
 const VerifyEmailSitePage = lazy(() => import("./pages/site/signin/VerifyEmailPage"));

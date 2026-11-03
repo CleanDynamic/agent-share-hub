@@ -12,6 +12,7 @@
    NOTHING MOVES. Tabs and the kind filter change at once; the "n new" pill appears in place and choosing it adds the new
    items at the top at once. */
 
+import { PriorityImageScope } from "@/components/post/media/priorityImage";
 import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 
 import { Avatar } from "@/components/brand/Avatar";
@@ -700,6 +701,7 @@ function FeedBody(props: HomeViewProps) {
   const visible = feed.items.filter((item) => matchesFilter(item.kind, filter));
   return (
     <>
+      <PriorityImageScope>
       <div data-testid="home-feed">
         {visible.map((item) =>
           item.kind === "build" ? (
@@ -713,6 +715,7 @@ function FeedBody(props: HomeViewProps) {
           ),
         )}
       </div>
+      </PriorityImageScope>
       {visible.length === 0 ? (
         <p style={text(12, 400, t.text2, { margin: 0, padding: "16px 20px 0" })}>
           None of these among the latest.{feed.hasMore ? " Show more to look further back." : ""}

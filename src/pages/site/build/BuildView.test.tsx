@@ -14,7 +14,7 @@ import BuildStepsDemo from "@/pages/dev/BuildStepsDemo";
 
 import type { BuildViewProps } from "./BuildView";
 import { stepTabs } from "./buildModel";
-import { BuildView } from "./BuildView";
+import { BuildView, BuildViewSkeleton } from "./BuildView";
 
 const REFINED = "/dev/kit/pages/build-steps";
 
@@ -117,6 +117,17 @@ describe("BuildView on a desktop", () => {
     expect(proof.querySelectorAll('[data-ui="row"]')).toHaveLength(6);
     const bar = within(screen.getByTestId("build-completeness")).getByRole("progressbar", { name: "Completeness" });
     expect(bar.getAttribute("aria-valuenow")).toBe("86");
+  });
+
+  it("UX-01 P3: the completeness module has one marker, Gallery, the rule that applies, and says it is private", () => {
+    const props = stepsProps();
+    mount({ ...props, proof: { ...props.proof, completeness: { score: 86, publishAt: 40, galleryAt: 70, next: null } } });
+    const module = screen.getByTestId("build-completeness");
+    expect(within(module).getByText("Visible to you only")).toBeTruthy();
+    expect(module.textContent).toContain("Gallery 70");
+    expect(module.textContent).not.toMatch(/Publish\s?\d/);
+    const bar = within(module).getByRole("progressbar", { name: "Completeness" });
+    expect(bar.getAttribute("aria-valuetext")).toBe("86 of 100. The gallery lists builds at 70 or above.");
   });
 
   it("says a run that did not save, with a retry", () => {
@@ -328,5 +339,15 @@ describe("the Classification section (CA-16 P7)", () => {
   it("draws nothing extra without it", () => {
     mount(stepsProps("desktop"));
     expect(screen.queryByTestId("build-classification")).toBeNull();
+  });
+});
+
+describe("UX-01 P10: the loading shape is the steps layout", () => {
+  it("draws the tabs, the step rows and What you need, not Anatomy and Watch it get built", () => {
+    const { container } = render(<BuildViewSkeleton />);
+    expect(container.querySelector('[data-testid="build-steps-loading"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="build-need-loading"]')).not.toBeNull();
+    expect(container.textContent).not.toContain("Anatomy");
+    expect(container.textContent).not.toContain("Watch it get built");
   });
 });

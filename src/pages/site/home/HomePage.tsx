@@ -47,6 +47,8 @@ import { HomeView, type HomeScope, type Loadable } from "./HomeView";
 import {
   filterOf,
   firstScreenPosts,
+  feedKey,
+  feedWaitsForSession,
   homeItemOf,
   homeWeek,
   newerThan,
@@ -134,8 +136,9 @@ export function HomePage() {
   const [revealed, setRevealed] = useState(false);
 
   const feedQuery = useInfiniteQuery({
-    queryKey: ["feed", "getBuildFeed", scope, userId],
-    enabled: !authLoading,
+    queryKey: feedKey(scope, userId),
+    // UX-01 P5: Everyone starts at once; Following waits for the reader.
+    enabled: !feedWaitsForSession(scope) || !authLoading,
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam }) => {
       const page = await getBuildFeed({ before: pageParam, onlyFollowing: scope === "following" });

@@ -40,6 +40,7 @@ import { countDraftBuilds } from "@/lib/build/draftCount";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useCurrentPath, useGo } from "@/lib/routing/go";
 import { useIdleReady } from "@/lib/routing/lazyHost";
+import { useIntent } from "@/lib/routing/useIntent";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -325,9 +326,7 @@ function RefinedSiteHeaderView({
       {viewer ? (
         <LazyAccountMenu viewer={viewer} onSignOut={onSignOut} avatarSize={26} />
       ) : (
-        <Button variant="secondary" size={30} onClick={onSignIn} style={REFINED_30}>
-          Sign in
-        </Button>
+        <SignInControl onSignIn={onSignIn} />
       )}
 
       {searchField ? null : (
@@ -345,6 +344,16 @@ function RefinedSiteHeaderView({
         </LazyBottomSheet>
       )}
     </header>
+  );
+}
+
+/** UX-01 P9: hovering or focusing Sign in opens the sign-in page's chunk, as a link in the route table does. */
+function SignInControl({ onSignIn }: { onSignIn: () => void }) {
+  const intent = useIntent("/login");
+  return (
+    <Button variant="secondary" size={30} onClick={onSignIn} style={REFINED_30} {...intent}>
+      Sign in
+    </Button>
   );
 }
 

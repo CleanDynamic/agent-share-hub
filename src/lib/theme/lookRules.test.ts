@@ -756,6 +756,16 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/modalBoards.test.tsx",
   "src/pages/site/compose/referenceActions.ui.test.tsx",
   "src/pages/site/compose/useLeaveGuard.ts",
+  // UX-01 P2
+  "src/lib/build/publish.ts",
+  // UX-01 P6
+  "src/components/post/media/priorityImage.tsx",
+  "src/pages/site/compose/unsentAction.ts",
+  // UX-01 P9
+  "src/pages/site/signin/SignInFallback.tsx",
+  // UX-01 P10
+  "src/pages/site/build/BuildViewSkeleton.tsx",
+  "src/pages/site/compose/SandboxCard.tsx",
   // CA-23 P4
   "e2e/tier3/two-tabs.spec.ts",
   "src/lib/build/builds.ts",
@@ -1301,6 +1311,12 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/TeamWorkFields.tsx",
   "src/pages/site/compose/composerWindows.tsx",
   "src/pages/site/compose/openRequestCopy.ts",
+  // UX-01 P1
+  "src/pages/site/compose/useUnsentPrompts.tsx",
+  "src/pages/site/compose/sendUnsentTile.ts",
+  "src/lib/build/publishChecklist.ts",
+  "src/pages/site/compose/PublishChecklist.tsx",
+  "src/pages/site/compose/useLeaveGuard.ts",
 ];
 
 /**

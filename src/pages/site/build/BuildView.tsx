@@ -45,7 +45,7 @@ import {
   useWidthTier,
 } from "@/components/shell/useMinWidth";
 import { EngagementRow } from "@/components/social/EngagementRow";
-import { asideStyle, mainStyle, trackRow } from "@/lib/theme/refinedLayout";
+import { asideStyle, mainStyle } from "@/lib/theme/refinedLayout";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { scrollBehavior } from "@/lib/theme/motion";
@@ -112,7 +112,7 @@ export interface BuildViewProps {
 
 export { BOTTOM_ROW, BuildViewSkeleton, dropped, HERO_ROW, heroRow, bottomRow, MOCK_ROWS, ProofSkeleton } from "./BuildViewSkeleton";
 import { creditLine } from "@/lib/build/contributors";
-import { BOTTOM_ROW, dropped, HERO_ROW, heroRow, bottomRow, MOCK_ROWS, ProofSkeleton } from "./BuildViewSkeleton";
+import { BOTTOM_ROW, dropped, HERO_ROW, heroRow, bottomRow, MOCK_ROWS, pair, ProofSkeleton, side, wide } from "./BuildViewSkeleton";
 
 /** The phone shows this many parts before "Show n more parts". */
 export const PHONE_PARTS = 6;
@@ -491,10 +491,7 @@ const moduleStyle: CSSProperties = {
   minWidth: 0,
 };
 
-/** A row of a wide column and a side column, as the board lays both rows out; one column below 1024 (UI-P97). */
-const pair = (stacked: boolean): CSSProperties => trackRow(stacked, 48);
-const wide = (stacked: boolean): CSSProperties => mainStyle(stacked, { flex: "999 1 640px", minWidth: 0 });
-const side: CSSProperties = { flex: "1 0 300px", maxWidth: 340, minWidth: 0 };
+/* The rows of a wide column and a side column (`pair`, `wide`, `side`) are in BuildViewSkeleton.tsx, so the skeleton draws the same boxes. */
 
 /* ── the hero ── */
 
@@ -924,16 +921,14 @@ function ThreadHero({
 /* ── the reproduction column ── */
 
 function CompletenessModule({ completeness }: { completeness: CompletenessView }) {
-  const { score, publishAt, galleryAt, next } = completeness;
-  const ticks: StripedBarTick[] =
-    publishAt === galleryAt
-      ? [{ at: galleryAt, colour: t.label, label: `Gallery ${galleryAt}` }]
-      : [
-          { at: publishAt, colour: t.label, label: `Publish ${publishAt}` },
-          { at: galleryAt, colour: t.label, label: `Gallery ${galleryAt}` },
-        ];
+  /* UX-01 P3: publishing is not gated on completeness; it decides Gallery placement only. So the bar has one marker, Gallery. */
+  const { score, galleryAt, next } = completeness;
+  const ticks: StripedBarTick[] = [{ at: galleryAt, colour: t.label, label: `Gallery ${galleryAt}` }];
   return (
     <div data-testid="build-completeness" style={{ ...moduleStyle, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+      <span data-testid="build-completeness-private" style={{ ...text(11, 400, t.label), marginBottom: -4 }}>
+        Visible to you only
+      </span>
       <div style={{ display: "flex", alignItems: "baseline" }}>
         <span style={{ ...text(13, 500, t.text), flexGrow: 1 }}>Completeness</span>
         <span style={text(13, 500, t.text, tnum)}>
@@ -946,7 +941,7 @@ function CompletenessModule({ completeness }: { completeness: CompletenessView }
         height={11}
         ticks={ticks}
         label="Completeness"
-        valueText={`${score} of 100. Publishing needs ${publishAt}, the gallery ${galleryAt}.`}
+        valueText={`${score} of 100. The gallery lists builds at ${galleryAt} or above.`}
       />
       {next ? (
         <p style={{ ...text(12, 400, t.text2), margin: 0, paddingTop: 12, borderTop: `1px solid ${t.hairlineModule}` }}>Next: {next}.</p>

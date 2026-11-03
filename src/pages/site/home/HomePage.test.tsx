@@ -10,8 +10,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { toFeedItem, type BuildFeedRow } from "@/lib/feed/getBuildFeed";
 
-const auth = vi.hoisted(() => ({ user: { id: "u1" } as { id: string } | null }));
-vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: auth.user, loading: false }) }));
+const auth = vi.hoisted(() => ({ user: { id: "u1" } as { id: string } | null, loading: false }));
+vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: auth.user, loading: auth.loading }) }));
 vi.mock("@/hooks/useProgressPage", () => ({ useMyWeek: () => ({ data: [], isLoading: false, error: null, refetch: vi.fn() }) }));
 vi.mock("@/hooks/useLibrarySessions", () => ({ librarySessionsKey: ["build", "listLibrarySessions"], useLibrarySessions: () => ({ data: [], isLoadingError: false, error: null, refetch: vi.fn() }) }));
 vi.mock("@/hooks/useEngagement", () => ({ useEngagement: () => ({ counts: {}, liked: new Set(), saved: new Set(), loaded: true }), engagementFor: () => undefined }));
@@ -78,6 +78,7 @@ function mount() {
 
 beforeEach(() => {
   auth.user = { id: "u1" };
+  auth.loading = false;
   window.localStorage.clear();
   getGalleryBuildsByIds.mockClear();
   getBuildFeed.mockReset();
@@ -85,6 +86,17 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+});
+
+describe("Home · UX-01 P5: Everyone does not wait for the session check", () => {
+  it("asks for the Everyone feed while the session is still being checked", async () => {
+    auth.user = null;
+    auth.loading = true;
+    getBuildFeed.mockResolvedValue({ items: [row("a", "2026-10-01T00:00:00Z")], nextBefore: null });
+    mount();
+    await waitFor(() => expect(getBuildFeed).toHaveBeenCalledWith(expect.objectContaining({ onlyFollowing: false })));
+    await waitFor(() => expect(screen.getByTestId("rows").textContent).toContain("build:a:"));
+  });
 });
 
 describe("Home · Everyone to Following", () => {

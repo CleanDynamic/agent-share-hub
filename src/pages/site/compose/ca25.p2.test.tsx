@@ -117,7 +117,7 @@ describe("Confirm from the page's Publish", () => {
       onPublish: vi.fn(),
       onLens: vi.fn(),
       publish: {
-        checklist: publishChecklist({ missing: [], title: "Bakery homepage", description: "d", cover: "image", tiles: 18, blockers: [], threadHold: null, reminders: [], appless: [], cardFilled: true }),
+        checklist: publishChecklist({ missing: [], title: "Bakery homepage", description: "d", cover: "image", tiles: 18, blockers: [], threadHold: null, reminders: [], appless: [], cardFilled: true, unsent: [] }),
         confirm: () => FIXTURE,
         onShowApps: vi.fn(),
       },

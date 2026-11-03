@@ -58,6 +58,7 @@ import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { SUMMARY_COPY } from "@/lib/build/summaryTurn";
 import { ASKS_FOR_LABEL, originLine } from "@/lib/build/promptOrigin";
 import { useAnnounce } from "./BuildAnnouncer";
+import { UnsentContext, useUnsentBox } from "./useUnsentPrompts";
 import { PREVIEW } from "@/lib/theme/truncate";
 import { SessionTiles, WINDOW_FROM, WindowedTile } from "./largeBuild";
 import { FOUND_RING, FindHit, FindProvider, NO_FIND, type FindView } from "@/components/build/FindHit";
@@ -1415,10 +1416,15 @@ function GhostAdd({ label, phone, onClick }: { label: string; phone: boolean; on
 
 /** The field "Add a prompt to this agent" opens: a well, Cancel and the boxed `up` (the agent's model applies). */
 function AgentPromptField({ agent, props, onDone }: { agent: Step; props: BuildListProps; onDone: () => void }) {
-  const [text_, setText] = useState("");
+  const [text_, setText] = useUnsentBox(`agent:${agent.id}`);
   const [busy, setBusy] = useState(false);
   const field = useRef<HTMLTextAreaElement>(null);
   useEffect(() => field.current?.focus(), []);
+  /* Cancel and Escape throw the text away: it is not left behind, hidden, for the checklist to find. */
+  const cancel = () => {
+    setText("");
+    onDone();
+  };
   const submit = async () => {
     if (!text_.trim() || busy) return;
     setBusy(true);
@@ -1441,7 +1447,7 @@ function AgentPromptField({ agent, props, onDone }: { agent: Step; props: BuildL
         onKeyDown={(event) => {
           if (event.key === "Escape") {
             event.stopPropagation();
-            onDone();
+            cancel();
           } else if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
             event.preventDefault();
             void submit();
@@ -1450,7 +1456,7 @@ function AgentPromptField({ agent, props, onDone }: { agent: Step; props: BuildL
         style={{ ...wellField, resize: "none", padding: 12, fontSize: props.phone ? 16 : 13.5 }}
       />
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
-        <TextButton onClick={onDone} target={props.phone} style={text(12.5, 500, t.text2)}>
+        <TextButton onClick={cancel} target={props.phone} style={text(12.5, 500, t.text2)}>
           Cancel
         </TextButton>
         <IconButton icon={ArrowUp} glyph="up" label="Add prompt to this agent" size={28} disabled={!text_.trim() || busy} onClick={() => void submit()} />
@@ -1495,7 +1501,9 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
   const picked = usePicked(step.id);
   const selected = props.selectedId === step.id || picked;
   const made = madeIn(step, props.steps);
-  const [adding, setAdding] = useState(false);
+  /* UX-01 P1: an agent whose prompt box still holds unsent text opens it again. */
+  const unsentStore = useContext(UnsentContext);
+  const [adding, setAdding] = useState(() => Boolean(unsentStore?.get(`agent:${step.id}`)));
   /** Its prompts, or a team's agents, start folded behind the footer link. */
   const [unfolded, setUnfolded] = useState(false);
   /** One agent of a team shows its own prompts at a time. */
@@ -1995,7 +2003,7 @@ function AddPrompt({
   /** The session the prompt box sits in; it is named by where it stands, so no "Adding to" picker is drawn. */
   sessionKey?: string | null;
 }) {
-  const [value, setValue] = useState("");
+  const [value, setValue] = useUnsentBox(sessionKey);
   /** CA-02 P7: true once text was pasted in, until the field is emptied. Only pasted text is offered as code. */
   const [pasted, setPasted] = useState(false);
   const [tool, setTool] = useState<string | null>(null);

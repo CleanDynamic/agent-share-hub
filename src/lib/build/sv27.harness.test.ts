@@ -59,4 +59,5 @@ const CHECKLIST_EMPTY: Parameters<typeof publishChecklist>[0] = {
   reminders: [],
   appless: [],
   cardFilled: true,
+  unsent: [],
 };
