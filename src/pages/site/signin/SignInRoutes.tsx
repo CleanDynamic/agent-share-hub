@@ -11,11 +11,13 @@ import { Suspense, type ReactNode } from "react";
 import { RouteBoundary } from "@/components/routing/RouteBoundary";
 import { SiteFrame } from "@/components/shell/SiteFrame";
 
+import { SignInFallback } from "./SignInFallback";
+
 export function SignInSite({ children }: { children: ReactNode }) {
   return (
     <SiteFrame variant="bare">
       <RouteBoundary>
-        <Suspense fallback={<div style={{ minHeight: "100dvh" }} />}>{children}</Suspense>
+        <Suspense fallback={<SignInFallback />}>{children}</Suspense>
       </RouteBoundary>
     </SiteFrame>
   );

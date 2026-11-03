@@ -761,6 +761,8 @@ export const CA03_FILES: readonly string[] = [
   // UX-01 P6
   "src/components/post/media/priorityImage.tsx",
   "src/pages/site/compose/unsentAction.ts",
+  // UX-01 P9
+  "src/pages/site/signin/SignInFallback.tsx",
   "src/pages/site/compose/SandboxCard.tsx",
   // CA-23 P4
   "e2e/tier3/two-tabs.spec.ts",
