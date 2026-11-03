@@ -13,6 +13,7 @@
          The faces are read through src/lib/theme/type.ts. -->
     <!-- SV-03: the first database request would pay for DNS and TLS; this pays for them while the bundle loads. The address is the client's own, filled in by Vite at build time. -->
     <link rel="preconnect" href="%VITE_SUPABASE_URL%" crossorigin />
+    <meta name="build-commit" content="%VITE_BUILD_COMMIT%" />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/Geist-Variable.woff2" crossorigin />
 
     <!-- BG-P02 theme boot: sets <html data-theme> before the bundle, so nobody

@@ -41,6 +41,7 @@ import {
 } from "@/lib/build/composeCover";
 import { seedFirstSession } from "@/lib/build/firstSession";
 import { refreshMakingStats } from "@/lib/build/making";
+import { LIVE_NEEDS_TITLE, refusesLiveTitle } from "@/lib/build/publish";
 import { modelLabel } from "@/lib/models/registry";
 import { sessionDate, sessionSource } from "@/pages/site/drafts/draftsModel";
 
@@ -171,7 +172,16 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
     compose.patchBuild(patch);
   }, [compose, compose.isOwner]);
 
+  /* UX-01 P2: a live build's title cannot be emptied. The field keeps the last saved title and says so, at once. */
+  const [titleError, setTitleError] = useState<string | null>(null);
   const onTitle = (value: string) => {
+    if (build && refusesLiveTitle(build.status, value)) {
+      form.current.title = build.title;
+      setTitle(build.title);
+      setTitleError(LIVE_NEEDS_TITLE);
+      return;
+    }
+    setTitleError(null);
     form.current.title = value;
     setTitle(value);
     edit({ title: value.trim() || UNTITLED });
@@ -360,6 +370,8 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
     onRetry: () => void queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(buildId) }),
     title,
     onTitle,
+    titleError,
+    titleLive: build !== null && (build.status === "published" || build.status === "gallery"),
     description,
     onDescription,
     audience,

@@ -49,6 +49,12 @@ export const hasTitle = (title: string | null | undefined): boolean => {
   return trimmed !== "" && trimmed !== UNTITLED_TITLE;
 };
 
+/** UX-01 P2: what a live build's title field says when it is emptied, or set back to the one a new draft is given. */
+export const LIVE_NEEDS_TITLE = "A published build needs a title.";
+
+/** UX-01 P2: a build that is live (published or in the Gallery) keeps a title: saving none, or "Untitled build", is refused. A draft's may be emptied. */
+export const refusesLiveTitle = (status: string | null | undefined, title: string | null | undefined): boolean => (status === "published" || status === "gallery") && !hasTitle(title);
+
 /** The columns publishReadiness reads, so a caller can pass a stub. */
 export type PublishSource = CompletenessSource;
 

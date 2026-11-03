@@ -80,6 +80,10 @@ export interface ComposeViewProps {
 
   title: string;
   onTitle: (value: string) => void;
+  /** UX-01 P2: the line under the title field when a live build's title was refused. */
+  titleError?: string | null;
+  /** UX-01 P2: the build is published or in the Gallery, so its title cannot be left empty. */
+  titleLive?: boolean;
   description: string;
   onDescription: (value: string) => void;
   /** The "Who it's for" input's text, as typed. */
@@ -346,12 +350,13 @@ function TextPanel({
   phone,
   title,
   onTitle,
+  titleError,
   description,
   onDescription,
   audience,
   onAudience,
   audienceOptions,
-}: Pick<ComposeViewProps, "title" | "onTitle" | "description" | "onDescription" | "audience" | "onAudience" | "audienceOptions"> & { phone: boolean }) {
+}: Pick<ComposeViewProps, "title" | "onTitle" | "titleError" | "description" | "onDescription" | "audience" | "onAudience" | "audienceOptions"> & { phone: boolean }) {
   const titleRing = useRing<HTMLInputElement>();
   const descRing = useRing<HTMLTextAreaElement>();
   const forRing = useRing<HTMLInputElement>();
@@ -370,6 +375,11 @@ function TextPanel({
             {...titleRing.handlers}
             style={{ ...fieldBase, height: phone ? 44 : 36, padding: "0 10px", fontSize: 16, fontWeight: 600, ...titleRing.style }}
           />
+          {titleError ? (
+            <p role="alert" data-testid="title-error" style={{ margin: "7px 0 0", fontFamily: FIGTREE, fontSize: 13, color: t.catBreakage }}>
+              {titleError}
+            </p>
+          ) : null}
         </Field>
 
         <Field
@@ -564,6 +574,7 @@ export function ComposeView(props: ComposeViewProps) {
           phone={phone}
           title={props.title}
           onTitle={props.onTitle}
+          titleError={props.titleError}
           description={props.description}
           onDescription={props.onDescription}
           audience={props.audience}

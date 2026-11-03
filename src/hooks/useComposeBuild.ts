@@ -43,7 +43,7 @@ import type {
   NodeType,
 } from "@/lib/build";
 import { onBuildWritten } from "@/lib/build/builds";
-import { hasTitle, NO_TITLE } from "@/lib/build/publish";
+import { hasTitle, NO_TITLE, refusesLiveTitle } from "@/lib/build/publish";
 import { connection, isNetworkFailure } from "@/lib/build/connection";
 import { pendingWrites } from "@/lib/build/pendingWrites";
 import { flatNodes, noteRecord } from "@/lib/build/staleWrites";
@@ -316,8 +316,14 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
   }, [flush]);
 
   const patchBuild = useCallback(
-    (patch: BuildPatch) => {
+    (incoming: BuildPatch) => {
       if (!buildIdRef.current || !isOwnerRef.current) return;
+      // UX-01 P2: a live build keeps its title. The refusal is the caller's to say (the field's error); nothing is written here.
+      let patch = incoming;
+      if ("title" in incoming && refusesLiveTitle(buildRef.current?.status, incoming.title)) {
+        const { title: _refused, ...rest } = incoming;
+        patch = rest;
+      }
       if (Object.keys(patch).length === 0) return;
       setOverlay((current) => ({ ...current, ...patch }));
       pendingRef.current = { ...pendingRef.current, ...patch };

@@ -756,6 +756,9 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/modalBoards.test.tsx",
   "src/pages/site/compose/referenceActions.ui.test.tsx",
   "src/pages/site/compose/useLeaveGuard.ts",
+  // UX-01 P2
+  "src/lib/build/publish.ts",
+  "src/pages/site/compose/SandboxCard.tsx",
   // CA-23 P4
   "e2e/tier3/two-tabs.spec.ts",
   "src/lib/build/builds.ts",
