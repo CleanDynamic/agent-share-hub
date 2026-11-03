@@ -1,4 +1,4 @@
-// Tier 1 — UX-01 P1, text left in the prompt box is never lost.
+// Tier 1: UX-01 P1, text left in the prompt box is never lost.
 //
 // Typed text survives a reload, is listed as a required item when Publish is pressed (with both of its links working), and is
 // named in the window that asks before leaving. The backend is the same stateful fake the post-thread spec uses.

@@ -214,7 +214,7 @@ const REBUILDS: Row[] = [
 ];
 
 /**
- * A 160x90 PNG — 16:9, the ratio a screen recording arrives at.
+ * A 160x90 PNG: 16:9, the ratio a screen recording arrives at.
  *
  * Solid colour, so it compresses to under 300 bytes. Its only job is to give
  * the hero slot an intrinsic ratio, so a `height: auto` media element resolves
@@ -268,7 +268,7 @@ export async function stubBuild(page: Page, { heroKind = "video", delayBuildMs =
   // hairline, and "the hero leads" would then be measuring nothing. POSTER is a
   // real 16:9 PNG, which is the ratio a screen recording arrives at.
   // `object/sign` is the POST that signs; `render/image/sign` is where the
-  // client sends the GET once a transform is asked for — which is the whole of
+  // client sends the GET once a transform is asked for: which is the whole of
   // acceptance 5, and why both have to be intercepted rather than just the one.
   await page.route(/\/storage\/v1\/(object|render\/image)\/sign\//, (route: Route) => {
     if (route.request().method() === "GET") {

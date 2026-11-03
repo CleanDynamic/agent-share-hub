@@ -1,4 +1,4 @@
-// Tier 1 — UX-01 P4, something paints before the scripts run.
+// Tier 1: UX-01 P4, something paints before the scripts run.
 //
 // index.html carries a static copy of the site frame's header row and empty surface, for the site routes at desktop width. It is
 // there with JavaScript off, it is taken away before first paint on any other path or width, and its surface sits where the

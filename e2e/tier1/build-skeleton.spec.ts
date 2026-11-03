@@ -1,4 +1,4 @@
-// Tier 1 — UX-01 P10, the build page's loading shape matches the page.
+// Tier 1: UX-01 P10, the build page's loading shape matches the page.
 //
 // The skeleton draws the steps layout (tabs, step rows, What you need); a build with steps then replaces it. The layout shift across
 // that change, summed over the page's life, stays under 0.1. (The old skeleton, Anatomy and Watch it get built, measures the same

@@ -1,4 +1,4 @@
-// Tier 1 — UX-01 P6, card images keep their addresses between visits.
+// Tier 1: UX-01 P6, card images keep their addresses between visits.
 //
 // Home's feed is served by a fake; storage signs each picture with a new token every time it is asked. Leave Home for another
 // page inside the app and come back: no picture is signed again and none is fetched again, because the address is the same one.

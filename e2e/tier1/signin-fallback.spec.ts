@@ -1,4 +1,4 @@
-// Tier 1 — UX-01 P9, no blank screen on the way to sign in.
+// Tier 1: UX-01 P9, no blank screen on the way to sign in.
 //
 // While the sign-in chunk loads (throttled here), the page shows the form's outline in LoadingBlocks, sized like the card, not an
 // empty page; the card then replaces it at once. And hovering or focusing the header's Sign in opens the chunk before the press.
