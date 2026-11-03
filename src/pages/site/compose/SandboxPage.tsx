@@ -38,7 +38,8 @@ import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import type { BuildNode } from "@/lib/build/types";
 import { evalChoicesOf } from "@/lib/build/comparison";
-import { addFile, buildSteps, fileKindOf, previewOf, canCheck, resultFactsOf, resultHoldsWord, FILE_TYPE, groupKey, nestRefusal, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, testedStepOf, TOOL_TYPE, usesOf, type ResultInput, type Step } from "@/lib/build/graph";
+import { afterForIndex, type FilePlace } from "@/lib/build/fileDrop";
+import { addFile, placeStepAfter, topSteps, buildSteps, fileKindOf, previewOf, canCheck, resultFactsOf, resultHoldsWord, FILE_TYPE, groupKey, nestRefusal, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, testedStepOf, TOOL_TYPE, usesOf, type ResultInput, type Step } from "@/lib/build/graph";
 import { toolFor } from "@/lib/tools/registry";
 import { addWrittenPrompt } from "@/lib/build/composePrompts";
 import { addSetupFile, addSetupPlugin, addSetupRule, addSetupServer, addSetupWorkflow, isSetupPayload, needsText, routeSetupFiles, setNotShared, setupItemsOf, type DroppedFile, type SetupDraft } from "@/lib/build/setup";
@@ -134,6 +135,7 @@ import type { ClashWindow as ClashWindowImpl } from "./ClashWindow";
 import { useTwoTabs, type ClashDescription } from "./useTwoTabs";
 import { useReferences } from "./useReferences";
 import { BuildHistoryContext, useBuildHistory } from "./useBuildHistory";
+import { rowOf } from "./useComposeNodes";
 import { classificationKey } from "./useClassificationCard";
 import { writeClassification, type StoredClassification } from "@/lib/classify/storage";
 import { computeFacets, hasClassification, shapeFromBuilt, shownValues } from "@/lib/classify/facets";
@@ -816,9 +818,10 @@ function SandboxPageBody() {
    * The session a new step records. None while it is an old build's last run of typed prompts, which a step added at
    * the end joins by itself; an earlier run is saved first, so the step can name it.
    */
-  const sessionToWrite = useCallback(async (): Promise<string | null> => {
+  const sessionToWrite = useCallback(async (wanted?: string | null): Promise<string | null> => {
     const picked = chosenRef.current;
-    const key = picked && sourceSessionRows.some((row) => row.key === picked) ? picked : currentSession;
+    // UX-02 P1: a tile dropped on a session goes to that session; otherwise the one chosen, else the current one.
+    const key = wanted && sourceSessionRows.some((row) => row.key === wanted) ? wanted : picked && sourceSessionRows.some((row) => row.key === picked) ? picked : currentSession;
     // CA-14 P5: a tile added to a session that is not the last is put with its own session once it is written.
     edits.arm();
     // CA-12 P3: a new post's first change makes the draft and its Session 1, and goes into it.
@@ -1855,9 +1858,32 @@ function SandboxPageBody() {
     [buildId, queryClient],
   );
 
-  /** One file of the build: stored through the media path, then recorded as a file node, behind the other node writes. CA-04 P2: with `parentId`, sent with that step. */
+  /**
+   * UX-02 P1: a File tile written, inside the node queue: in `place`'s session at its index, else at the end of the session a new tile
+   * goes to. The List is told it is an add before the tile is recorded, so it arrives as an add (SV-06). The row's id comes from its
+   * insert, so the label follows the insert and comes before anything the List draws from.
+   */
+  const writeFileTile = useCallback(
+    async (buildId: string, fields: { title: string; media_id: string; size?: number | null; mime?: string | null; preview?: readonly string[] }, place: FilePlace | null): Promise<BuildNode> => {
+      const session = await sessionToWrite(place?.session);
+      const node = await addFile(buildId, nodes.current(), { ...fields, tile: true, session });
+      motion.expect({ kind: "add", keys: [node.id] });
+      nodes.record(node.id, node);
+      const after = place && session && !isLegacySession(session) ? afterForIndex(topSteps(nodes.current()).map((step) => step.id), topSteps(nodes.current()).filter((step) => step.id !== node.id && (step.payload as { session?: unknown } | null)?.session === session).map((step) => step.id), place.index) : undefined;
+      if (after !== undefined) {
+        for (const moved of await placeStepAfter(buildId, nodes.current(), node.id, after)) {
+          const row = nodes.current().find((entry) => entry.id === moved.id);
+          if (row) nodes.record(row.id, { ...rowOf(row), position: moved.position });
+        }
+      }
+      return node;
+    },
+    [nodes, sessionToWrite, motion],
+  );
+
+  /** One file of the build: stored through the media path, then recorded as a file node, behind the other node writes. CA-04 P2: with `parentId`, sent with that step. UX-02 P1: a tile goes to `place` when one is given. */
   const addOneFile = useCallback(
-    async function again(file: File, verb: "add" | "attach" = "add", parentId: string | null = null, rows: number | null = null, tile = false): Promise<BuildNode | null> {
+    async function again(file: File, verb: "add" | "attach" = "add", parentId: string | null = null, rows: number | null = null, tile = false, place: FilePlace | null = null): Promise<BuildNode | null> {
       const decided = fileKindFor(file);
       if ("refused" in decided) {
         toast.error(decided.refused);
@@ -1872,8 +1898,11 @@ function SandboxPageBody() {
         const added: { node: BuildNode | null } = { node: null };
         await nodes.run(async () => {
           const media = await uploadMedia({ buildId: id, file });
-          const tileFacts = tile && !parentId ? { tile: true, session: await sessionToWrite(), size: file.size, mime: file.type || null, preview: await previewOfFile(file) } : null;
-          const node = await addFile(id, nodes.current(), { title: file.name, media_id: media.id, parentId, rows, ...tileFacts });
+          if (tile && !parentId) {
+            added.node = await writeFileTile(id, { title: file.name, media_id: media.id, size: file.size, mime: file.type || null, preview: await previewOfFile(file) }, place);
+            return;
+          }
+          const node = await addFile(id, nodes.current(), { title: file.name, media_id: media.id, parentId, rows });
           nodes.record(node.id, node);
           added.node = node;
         });
@@ -1882,11 +1911,11 @@ function SandboxPageBody() {
       } catch (cause) {
         // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
         console.error("[Sandbox] file not added", cause);
-        sayFailed(cause, `${file.name} not ${verb === "attach" ? "attached" : "added"}`, () => void again(file, verb, parentId, rows, tile));
+        sayFailed(cause, `${file.name} not ${verb === "attach" ? "attached" : "added"}`, () => void again(file, verb, parentId, rows, tile, place));
         return null;
       }
     },
-    [ensureBuild, nodes, queryClient, sessionToWrite],
+    [ensureBuild, nodes, queryClient, writeFileTile],
   );
 
   /** Files onto one prompt: each is added to the build and then listed as that prompt's input, in order. */
@@ -2126,14 +2155,23 @@ function SandboxPageBody() {
     [groups, onSessionExtras, sessionForSetup],
   );
 
-  /** A drop sorts its files: a chat export goes to the intake, a setup file to the current session's setup, the rest are files of the build. */
+  /**
+   * A drop sorts its files: a chat export goes to the intake, a setup file to the current session's setup, the rest are files of the
+   * build. UX-02 P1: dropped on the List (`onList`), the rest are File tiles: at its place, or the end of the current session.
+   */
   const onDropFiles = useCallback(
-    async (files: File[], paths?: string[]) => {
+    async (files: File[], paths?: string[], onList?: { place: FilePlace | null }) => {
       if ((await Promise.all(files.map(isChatExport))).some(Boolean)) {
         navigate("/compose/start");
         return;
       }
-      for (const file of await addSetup(await takeResultFiles(files), paths)) void addOneFile(file);
+      const rest = await addSetup(await takeResultFiles(files), paths);
+      if (!onList) {
+        for (const file of rest) void addOneFile(file);
+        return;
+      }
+      // One after another, so several files keep their order at the place they were dropped.
+      for (const [at, file] of rest.entries()) await addOneFile(file, "add", null, null, true, onList.place ? { ...onList.place, index: onList.place.index + at } : null);
     },
     [addOneFile, addSetup, navigate, takeResultFiles],
   );
@@ -2651,6 +2689,7 @@ function SandboxPageBody() {
             onNameMade={onNameMade}
             madeNames={madeByStep}
             onDropOnStep={(id, files) => void stepOf.dropOnStep(id, files)}
+            onDropFiles={(files, paths, place) => void stepOf.dropped(files, paths, { place })}
             onNest={stepOf.nest}
             onSetupPrompt={onSetupPrompt}
             canNest={canNest}

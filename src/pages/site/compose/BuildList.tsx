@@ -125,6 +125,8 @@ import { FLOATING_Z, ToolPicker } from "./ToolPicker";
 import { DragHandle, NestList, TAKES, useNestTile, useTileNear } from "./listNest";
 import { EmptyPlace, SkeletonLayer } from "./skeleton";
 import { useBuildSorting, viewOf, type Commit } from "./useBuildSorting";
+import { fileDropPlace, type DropBox, type FilePlace } from "@/lib/build/fileDrop";
+import { holdsFolder, readDrop } from "./dropFolders";
 import { SLIDE_ATTR } from "./flip";
 import { listRuns, type Run } from "./buildRuns";
 import { useBuildDirector } from "./buildDirector";
@@ -236,6 +238,8 @@ export interface BuildListProps {
   onAttach?: (id: string) => void;
   /** TF-06: files dropped on a prompt's card. Only with a fine pointer; absent: a card takes no drop. */
   onDropOnStep?: (id: string, files: File[]) => void;
+  /** UX-02 P1: files dropped anywhere else on the List: at the place under the pointer (a session's head or a gap), or null for the end of the current session. Only with a fine pointer. */
+  onDropFiles?: (files: File[], paths: string[] | undefined, place: FilePlace | null) => void;
   fine?: boolean;
   /** TF-08: "Add file name" selects the prompt and opens the Makes field in Details. Absent: the item is not shown. */
   onNameMade?: (id: string) => void;
@@ -2509,10 +2513,57 @@ export function BuildList(raw: BuildListProps) {
     );
   };
   useRovingList(sorting.rootRef, props.onSelect);
+  /* UX-02 P1: files dropped on the List and not on a step that takes them (that step's card has handled the drop): a File tile at the
+     place under the pointer. The boxes are read once, at the drop. */
+  const takesFiles = Boolean(props.fine && props.onDropFiles);
+  const carriesFiles = (event: DragEvent) => Array.from(event.dataTransfer?.types ?? []).includes("Files");
+  const placeOfDrop = (point: { x: number; y: number }): FilePlace | null => {
+    const root = sorting.rootRef.current;
+    if (!root) return null;
+    const boxOf = (element: Element): DropBox => {
+      const r = element.getBoundingClientRect();
+      return { x: r.left, y: r.top, w: r.width, h: r.height };
+    };
+    const sessions = runs.flatMap((run) => {
+      if (!run.head || run.head.key.startsWith("typed-legacy-")) return [];
+      const element = root.querySelector(`[data-session-key="${run.head.key}"]`);
+      if (!element) return [];
+      const head = element.querySelector('[data-testid="session-head"]');
+      const tiles = run.steps.flatMap((step) => {
+        const card = element.querySelector(`[data-node-id="${step.id}"]`);
+        return card ? [{ id: step.id, box: boxOf(card) }] : [];
+      });
+      return [{ key: run.head.key, box: boxOf(element), head: head ? boxOf(head) : null, tiles }];
+    });
+    return fileDropPlace(point, sessions);
+  };
+  const fileDrop = takesFiles
+    ? {
+        onDragOver: (event: DragEvent<HTMLDivElement>) => {
+          if (!carriesFiles(event) || event.defaultPrevented) return;
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "copy";
+        },
+        onDrop: (event: DragEvent<HTMLDivElement>) => {
+          if (!carriesFiles(event) || event.defaultPrevented) return;
+          event.preventDefault();
+          const place = placeOfDrop({ x: event.clientX, y: event.clientY });
+          // CA-04 P4: a folder is walked, so a skill's files keep their places.
+          if (holdsFolder(event.dataTransfer)) {
+            void readDrop(event.dataTransfer).then(({ files, paths }) => {
+              if (files.length > 0) props.onDropFiles?.(files, paths, place);
+            });
+            return;
+          }
+          const files = Array.from(event.dataTransfer.files);
+          if (files.length > 0) props.onDropFiles?.(files, undefined, place);
+        },
+      }
+    : null;
   const list = (
     /* The global field rule makes a field inherit its size on a desktop (`font-size: inherit !important`), so the
      fields' type is set here, where they inherit it. */
-    <div ref={sorting.rootRef} data-testid="build-list" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13.5, ...(sorting.skeleton || arrival.skeleton || director.skeleton ? { position: "relative", isolation: "isolate" } : null) }}>
+    <div ref={sorting.rootRef} data-testid="build-list" {...fileDrop} style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13.5, ...(sorting.skeleton || arrival.skeleton || director.skeleton ? { position: "relative", isolation: "isolate" } : null) }}>
       {sorting.skeleton ? <SkeletonLayer skeleton={sorting.skeleton} shown={sorting.skeletonShown} /> : arrival.skeleton ? <SkeletonLayer skeleton={arrival.skeleton} shown={arrival.shown} fadeIn={arrival.fadeIn} opening={arrival.opening} fadeAfter={arrival.fadeAfter} onGone={arrival.gone} /> : director.skeleton ? <SkeletonLayer skeleton={director.skeleton} shown={director.shown} fadeAfter={FADE_AFTER_MS} onGone={director.gone} /> : null}
       <p style={{ ...text(12, 400, t.label), margin: 0 }}>{props.phone ? LIST_COPY.hintPhone : LIST_COPY.hint}</p>
       {props.costGroups ? <CostStrip steps={steps} groups={props.costGroups} audience="maker" /> : null}
