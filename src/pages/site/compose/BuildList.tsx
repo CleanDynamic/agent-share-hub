@@ -122,9 +122,9 @@ import { FramePieces } from "./framePieces";
 import { AskNextSessionRow } from "./AskNextSessionRow";
 import { WORKSTREAM_HEAD_COPY, WorkstreamHead, type WorkstreamHeadView, type WorkstreamOps } from "./WorkstreamHead";
 import { FLOATING_Z, ToolPicker } from "./ToolPicker";
-import { DragHandle, NestList, TAKES, useNestTile, useTileNear } from "./listNest";
+import { DragHandle, NestList, TAKES, useComposeDnd, useComposeDndHost, useNestTile, useTileNear } from "./listNest";
 import { EmptyPlace, SkeletonLayer } from "./skeleton";
-import { useBuildSorting, viewOf, type Commit } from "./useBuildSorting";
+import { useBuildSorting, viewOf, type Commit, type IncomingAdd } from "./useBuildSorting";
 import { fileDropPlace, type DropBox, type FilePlace } from "@/lib/build/fileDrop";
 import { holdsFolder, readDrop } from "./dropFolders";
 import { SLIDE_ATTR } from "./flip";
@@ -153,7 +153,7 @@ import {
 import { NO_APP, REPEAT_COPY, repeatedTiles, type SourceSession } from "./sourcesModel";
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { MENU_COPY, REASONS, moveReason } from "@/lib/build/componentMenus";
-import { canMove as canMoveIn, locate, moveBy, moveModelOf, type MoveModel, type MoveNames } from "@/lib/build/moveRules";
+import { canMove as canMoveIn, locate, moveBy, moveModelOf, spotOf, type MoveModel, type MoveNames } from "@/lib/build/moveRules";
 import { shortcutLabel, type ShortcutId } from "@/lib/build/shortcuts";
 import { COUNT } from "./modalRecipes";
 import { RemoveRow, useReason } from "./removePieces";
@@ -238,6 +238,8 @@ export interface BuildListProps {
   onAttach?: (id: string) => void;
   /** TF-06: files dropped on a prompt's card. Only with a fine pointer; absent: a card takes no drop. */
   onDropOnStep?: (id: string, files: File[]) => void;
+  /** UX-02 P3: a row of Sources dropped on the List (a session to add, a file as a File tile or inside a step). Resolves true once written. */
+  onAddFromSources?: (add: IncomingAdd) => Promise<boolean>;
   /** UX-02 P1: files dropped anywhere else on the List: at the place under the pointer (a session's head or a gap), or null for the end of the current session. Only with a fine pointer. */
   onDropFiles?: (files: File[], paths: string[] | undefined, place: FilePlace | null) => void;
   fine?: boolean;
@@ -2151,6 +2153,26 @@ function AddPrompt({
 
 /** The tiles of a session: 16 in from its head, with the 2px line down their left, 8 in from their edge. */
 
+/** UX-02 P3: the stand-in an incoming file is drawn from while held: only its place matters, it is never seen. */
+const incomingStepOf = (id: string): Step => ({ id, kind: "file", number: id, title: null, defaultTitle: "", text: "", children: [] }) as unknown as Step;
+/** The same for an incoming session: a head with its key, never drawn. Sessions are drawn in number order, so it is numbered between its neighbours. */
+const incomingHeadOf = (key: string, number: number): SourceSession => ({ key, number, tool: "", detail: "", prompts: [] }) as unknown as SourceSession;
+/** Half way between the numbers of the sessions either side of `key` in the live order. */
+function incomingNumber(live: MoveModel, key: string, heads: ReadonlyMap<string, SourceSession>): number {
+  const order = live.parts.flatMap((part) => part.sessions);
+  const at = order.indexOf(key);
+  const before = order.slice(0, Math.max(0, at)).reverse().find((entry) => heads.has(entry));
+  const after = order.slice(at + 1).find((entry) => heads.has(entry));
+  if (before) return (heads.get(before) as SourceSession).number + 0.5;
+  if (after) return (heads.get(after) as SourceSession).number - 0.5;
+  return 0.5;
+}
+
+/** The slot an item from Sources holds while it is over the List: as tall as its row, hidden, measured like a held thing's own place. */
+function IncomingSlot({ kind, id, container, height }: { kind: "tile" | "session"; id: string; container: string; height: number }) {
+  return <div data-testid="incoming-slot" aria-hidden="true" data-skel-kind={kind} data-skel-id={id} data-skel-container={container} {...{ [SLIDE_ATTR]: `${kind}:${id}` }} style={{ height, minWidth: 0, visibility: "hidden", flexShrink: 0 }} />;
+}
+
 /** A tile's name in the List's lines, from the tiles by id. */
 const labelOf = (tiles: ReadonlyMap<string, Step>, id: string): string => {
   const tile = tiles.get(id);
@@ -2228,6 +2250,7 @@ export function BuildList(raw: BuildListProps) {
     session: (key) => (headByKey.get(key) ? `Session ${(headByKey.get(key) as SourceSession).number}` : "that session"),
     part: (key) => base.parts?.parts.find((part) => part.view.key === key)?.view.label ?? "that part",
   };
+  const composeDnd = useComposeDnd();
   const sorting = useBuildSorting({
     model: baseModel,
     phone: base.phone,
@@ -2253,7 +2276,15 @@ export function BuildList(raw: BuildListProps) {
     sentLine: (id, parentId) => NEST_LIST_COPY.nowSentWith(labelOf(stepsById, id), labelOf(stepsById, parentId)),
     say: setSaid,
     restOf: motion.restOf,
+    add: base.onAddFromSources,
+    // A held file goes inside a step that takes a dropped file: a prompt (as a file dropped on its card is attached, P1).
+    takesFile: (id) => stepsById.get(id)?.kind === "prompt",
+    addedLine: (add) =>
+      add.kind === "attach-file" ? `Attached a file to ${names.tile(add.into)}.` : add.kind === "add-file" ? `Added a file to ${names.session(add.session)}.` : "Added a session.",
   });
+  /* UX-02 P3: inside the composer the drag context is the page's, round Sources and the List: the List hands it its drag state,
+     always, as a row of Sources can be dropped here even when nothing in the List can be moved. */
+  useComposeDndHost(composeDnd, sorting);
   /* CA-21 P6: Move up and Move down in the menus show the move at once, sliding; when the write does not land, they slide back. */
   const slid = (id: string, by: -1 | 1, run: (id: string, by: -1 | 1) => unknown) => {
     const result = moveBy(baseModel, id, by);
@@ -2274,7 +2305,12 @@ export function BuildList(raw: BuildListProps) {
       if (moved) outlineOnce(moved);
     });
   });
-  const shown = viewOf(base, sorting.live);
+  /* UX-02 P3: an item from Sources held over the List has a place in the live order; it is drawn there as a slot the size of its row
+     (a hidden socket, as a held tile's own element is), so the build slides apart for it and the skeleton says where. */
+  const fromSources = sorting.incoming && sorting.live && spotOf(sorting.live, sorting.incoming.held.id) ? sorting.incoming : null;
+  const incomingStep = fromSources?.source === "file" ? incomingStepOf(fromSources.held.id) : null;
+  const incomingHead = fromSources?.source === "session" && !headByKey.has(fromSources.id) && sorting.live ? incomingHeadOf(fromSources.id, incomingNumber(sorting.live, fromSources.id, headByKey)) : null;
+  const shown = viewOf(incomingStep || incomingHead ? { ...base, steps: incomingStep ? [...base.steps, incomingStep] : base.steps, emptySessions: incomingHead ? [...(base.emptySessions ?? []), incomingHead] : base.emptySessions } : base, sorting.live);
   const props: BuildListProps = {
     ...shown,
     onMove: (id, by) => slid(id, by, base.onMove),
@@ -2362,6 +2398,7 @@ export function BuildList(raw: BuildListProps) {
   }
   /* Each top-level tile stands in a wrapper the page can find (to measure, to slide and to hide while it is held). */
   const placed = (step: Step) => {
+    if (incomingStep && step.id === incomingStep.id) return <IncomingSlot key={step.id} kind="tile" id={step.id} container={containerOfTile.get(step.id) ?? ""} height={fromSources?.size.h ?? 0} />;
     if (!nestOn) return card(step);
     const box = {
       "data-skel-kind": "tile",
@@ -2378,7 +2415,7 @@ export function BuildList(raw: BuildListProps) {
     );
   };
   const runs = listRuns(steps, props.dividers, props.emptySessions ?? []);
-  const arrival = useArrival({ arriving: base.arriving, landed: Boolean(base.arriving && runs.some((run) => run.head?.key === base.arriving?.key)), rootRef: sorting.rootRef, motion, onArrived: base.onArrived });
+  const arrival = useArrival({ arriving: base.arriving, landed: Boolean(base.arriving && runs.some((run) => run.head !== incomingHead && run.head?.key === base.arriving?.key)), rootRef: sorting.rootRef, motion, onArrived: base.onArrived });
   const containerOfTile = new Map(runs.flatMap((run) => (run.head ? run.steps.map((step) => [step.id, run.head?.key ?? ""] as const) : [])));
   const numberDigits = String(runs.reduce((most, run) => Math.max(most, run.head?.number ?? 0), 0)).length;
   const headOrder = runs.flatMap((run) => (run.head && !run.head.key.startsWith("typed-legacy-") ? [run.head.key] : []));
@@ -2405,6 +2442,7 @@ export function BuildList(raw: BuildListProps) {
         const isLastHead = inPart ? here === inPart.sessions.length - 1 : headed && headOrder.indexOf(run.head.key) === headOrder.length - 1;
         const emptyDraft = steps.length === 0 && at === 0;
         const promptHere = headed && (props.promptIn === key || emptyDraft);
+        if (incomingHead && key === incomingHead.key) return <IncomingSlot key={run.key} kind="session" id={key} container={inPart?.view.key ?? ""} height={fromSources?.size.h ?? 0} />;
         const sameStageAs = parts && inPart && key && here > 0 && parts.withAbove?.has(key) ? `Session ${numberByKey.get(inPart.sessions[here - 1]) ?? ""}`.trim() : undefined;
         return (
           <SessionRun key={run.key} head={run.head} phone={props.phone} first={at === 0 || inPart !== null} lit={Boolean(key && props.ringedSession?.key === key)} found={Boolean(key && props.find?.view.current === key)} part={inPart?.view.key} hidden={Boolean(key && sorting.hidden === key)}>
@@ -2488,7 +2526,7 @@ export function BuildList(raw: BuildListProps) {
           {view.collapsed && !folding.parts.has(view.key) ? null : mine.length > 0 || (arrival.block && arrivingPart === view.key) ? (
             <>
               {mine.map((run) => drawRun(run, runs.indexOf(run), part))}
-              {arrival.block && base.arriving && arrivingPart === view.key ? <ArrivingBlock arriving={base.arriving} rootRef={sorting.rootRef} first={mine.length === 0} /> : null}
+              {arrival.block && base.arriving && arrivingPart === view.key && base.arriving.key !== incomingHead?.key ? <ArrivingBlock arriving={base.arriving} rootRef={sorting.rootRef} first={mine.length === 0} /> : null}
               {parts?.ops?.onOpen ? <AskNextSessionRow label={view.label} partKey={view.key} open={view.open} phone={props.phone} onOpen={parts.ops.onOpen} /> : null}
             </>
           ) : (
@@ -2575,7 +2613,7 @@ export function BuildList(raw: BuildListProps) {
       ) : (
         <>
           {runs.map((run, at) => drawRun(run, at))}
-          {arrival.block && base.arriving ? <ArrivingBlock arriving={base.arriving} rootRef={sorting.rootRef} first={runs.length === 0} /> : null}
+          {arrival.block && base.arriving && base.arriving.key !== incomingHead?.key ? <ArrivingBlock arriving={base.arriving} rootRef={sorting.rootRef} first={runs.length === 0} /> : null}
         </>
       )}
       {props.results.map((result) => (

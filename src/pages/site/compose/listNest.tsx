@@ -20,7 +20,7 @@ import { prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
 import { t } from "@/lib/theme/tokens";
 
 import { bareButton } from "./refinedStyles";
-import { SESSION_DRAG, WORKSTREAM_DRAG, type Held, type Sorting } from "./useBuildSorting";
+import { SESSION_DRAG, SOURCE_FILE_DRAG, SOURCE_SESSION_DRAG, WORKSTREAM_DRAG, type Held, type Sorting } from "./useBuildSorting";
 
 /** Where a held tile is dropped. */
 export type NestTarget = { kind: "tile"; id: string } | { kind: "gap"; index: number } | { kind: "session"; key: string } | { kind: "workstream"; key: string };
@@ -129,7 +129,6 @@ export const dropAnimationOf = (settles: boolean) => (prefersReducedMotion() || 
 export function NestList({ phone, sorting, children }: { phone: boolean; sorting: Sorting; children: ReactNode }) {
   /* UX-02 P3: inside the composer the drag context is the page's (`ComposeDnd`, round Sources and the List); the List hands it its state. */
   const shared = useComposeDnd();
-  useComposeDndHost(shared, sorting);
   const state: NestState = { active: sorting.held ? (sorting.held.type === "session" ? `${SESSION_DRAG}${sorting.held.id}` : sorting.held.type === "part" ? `${WORKSTREAM_DRAG}${sorting.held.id}` : sorting.held.id) : null, held: sorting.held, send: sorting.send, phone };
   if (shared) return <NestContext.Provider value={state}>{children}</NestContext.Provider>;
   return (
@@ -186,7 +185,7 @@ export function useTileNear(ref: RefObject<HTMLElement | null>, phone: boolean):
   // CA-21: while something is held no tile shows what it shows when it is near, so none changes size under the pointer.
   const holding = Boolean(useContext(NestContext)?.active);
   useEffect(() => {
-    const tile = ref.current?.closest<HTMLElement>('[role="group"], [data-testid="sent-with-tile"]');
+    const tile = ref.current?.closest<HTMLElement>('[role="group"], [data-testid="sent-with-tile"], [data-source-drag]');
     if (!tile || phone) return;
     const on = () => setNear(true);
     const off = (event: Event) => {
@@ -209,8 +208,9 @@ export function useTileNear(ref: RefObject<HTMLElement | null>, phone: boolean):
 }
 
 /** The `grip` at a tile's left: the only place a drag starts. 18 by 22; 44 high on a phone. It is drawn while its tile is hovered or has focus, and on a phone. */
-export function DragHandle({ label, nest, testId = "drag-handle" }: { label: string; nest: Pick<ReturnType<typeof useNestTile>, "on" | "handle" | "held">; testId?: string }) {
-  const state = useContext(NestContext);
+export function DragHandle({ label, nest, testId = "drag-handle", phone }: { label: string; nest: Pick<ReturnType<typeof useNestTile>, "on" | "handle" | "held">; testId?: string; phone?: boolean }) {
+  const nestState = useContext(NestContext);
+  const state = phone === undefined ? nestState : { phone };
   const { state: interactive, handlers } = useInteractive<HTMLButtonElement>();
   const own = useRef<HTMLButtonElement | null>(null);
   const near = useTileNear(own, Boolean(state?.phone));
@@ -257,6 +257,25 @@ export function DragHandle({ label, nest, testId = "drag-handle" }: { label: str
       <Glyph name="grip" size={16} />
     </button>
   );
+}
+
+/**
+ * UX-02 P3 Stage B: a row of Sources as something to drag onto the List, by the List's own grip. Its id starts with `src-session:` or
+ * `src-file:`, so it never matches a node, a session or a part. Only inside the page's drag context (`ComposeDnd`). The keys do not
+ * pick it up: a row is added from its `+` or its menu (see the report).
+ */
+export function useSourceDrag(source: "session" | "file", id: string) {
+  const shared = useContext(ComposeDndContext);
+  const dragId = `${source === "session" ? SOURCE_SESSION_DRAG : SOURCE_FILE_DRAG}${id}`;
+  const drag = useDraggable({ id: dragId, data: { source, id }, disabled: !shared });
+  const { onKeyDown: _keys, ...listeners } = (drag.listeners ?? {}) as Record<string, unknown>;
+  return {
+    on: Boolean(shared),
+    dragId,
+    handle: { attributes: { ...drag.attributes, tabIndex: -1 }, listeners: listeners as typeof drag.listeners, setActivator: drag.setActivatorNodeRef },
+    setRef: drag.setNodeRef,
+    held: drag.isDragging,
+  };
 }
 
 /** A session's head: nothing draws on it while a tile is held (the place is the skeleton's), so it takes nothing and shows no line. */

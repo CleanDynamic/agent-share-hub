@@ -37,6 +37,7 @@ import { MENU_COPY } from "@/lib/build/componentMenus";
 import { RemoveRow } from "./removePieces";
 import { useLeaving } from "./buildMotion";
 import { MotionBoundary, NO_SLIDE, useListMotion } from "./listMotion";
+import { DragHandle, useSourceDrag } from "./listNest";
 import { holdsFolder, readDrop } from "./dropFolders";
 import { SLIDE_ATTR } from "./flip";
 import { ToolMark } from "./refinedPieces";
@@ -105,6 +106,12 @@ export interface SourcesPanelProps {
 }
 
 /* ── pieces ── */
+
+/** UX-02 P3 Stage B: the List's own grip at a row's start, drawn while the row is hovered or holds focus, at once. The only drag start. */
+function SourceGrip({ drag, label, phone }: { drag: ReturnType<typeof useSourceDrag>; label: string; phone: boolean }) {
+  if (!drag.on) return null;
+  return <DragHandle label={label} nest={drag} testId="source-drag-handle" phone={phone} />;
+}
 
 const rowLine: CSSProperties = { borderTop: `1px solid ${t.hairline}` };
 
@@ -208,9 +215,11 @@ function SessionRow({
   const [open, setOpen] = useState(false);
   const hasPrompts = session.prompts.length > 0;
   const toggle = useInteractive<HTMLButtonElement>();
+  const drag = useSourceDrag("session", session.key);
   return (
-    <div style={{ ...rowLine, padding: "6px 0" }}>
+    <div ref={drag.setRef} data-source-drag={drag.on ? drag.dragId : undefined} style={{ ...rowLine, padding: "6px 0" }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
+        <SourceGrip drag={drag} label={`Move Session ${session.number}`} phone={phone} />
         <button
           type="button"
           aria-expanded={open}
@@ -264,8 +273,10 @@ function SessionRow({
 }
 
 function FileRow({ file, phone, sessions, onOpen, onAddToSession, onRemove, leaving = false }: { file: SourceFile; phone: boolean; sessions: readonly SourceSession[]; onOpen?: (id: string) => void; onAddToSession?: (id: string, sessionKey: string) => void; onRemove?: (id: string) => void; leaving?: boolean }) {
+  const drag = useSourceDrag("file", file.id);
   return (
-    <div data-file-id={file.id} {...{ [SLIDE_ATTR]: `file:${file.id}` }} aria-hidden={leaving || undefined} style={{ ...(leaving ? { pointerEvents: "none" } : null), ...rowLine, display: "flex", alignItems: "flex-start", gap: 8, minHeight: phone ? 44 : undefined, padding: "12px 0", boxSizing: "border-box" }}>
+    <div ref={drag.setRef} data-source-drag={drag.on ? drag.dragId : undefined} data-file-id={file.id} {...{ [SLIDE_ATTR]: `file:${file.id}` }} aria-hidden={leaving || undefined} style={{ ...(leaving ? { pointerEvents: "none" } : null), ...rowLine, display: "flex", alignItems: "flex-start", gap: 8, minHeight: phone ? 44 : undefined, padding: "12px 0", boxSizing: "border-box" }}>
+      <SourceGrip drag={drag} label={`Move ${file.name}`} phone={phone} />
       <span style={{ display: "inline-flex", color: t.label, flexShrink: 0 }}>
         <Glyph name="file" size={16} />
       </span>
@@ -364,8 +375,11 @@ function AddToMenu({ item, parts, phone, onAdd, lastPart }: { item: SourceLibrar
 }
 
 function LibraryRow({ item, phone, onAdd, parts, lastPart }: { item: SourceLibraryItem; phone: boolean; onAdd: (id: string, part?: string) => void; parts?: readonly AddToPart[]; lastPart?: string }) {
+  const drag = useSourceDrag("session", item.id);
+  const movable = drag.on && !item.inThisDraft && !item.adding;
   return (
-    <div style={{ ...rowLine, display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : undefined, padding: "8px 0", boxSizing: "border-box" }}>
+    <div ref={drag.setRef} data-source-drag={movable ? drag.dragId : undefined} style={{ ...rowLine, display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : undefined, padding: "8px 0", boxSizing: "border-box" }}>
+      {movable ? <SourceGrip drag={drag} label={`Move ${libraryName(item)}`} phone={phone} /> : null}
       {/* SV-05 P3: the app's mark when the app is known; none when it is not. */}
       {item.appKnown ? <ToolMark tool={item.app} size={20} /> : <span aria-hidden="true" style={{ width: 20, flexShrink: 0 }} />}
       <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>

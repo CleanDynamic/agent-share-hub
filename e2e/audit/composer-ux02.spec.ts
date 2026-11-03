@@ -6,11 +6,11 @@
    recording does. The file store is not modelled there, so an upload is answered here. The draft is seeded with three sessions:
    Session 1 (two prompts), Session 2 (one prompt), Session 3 (empty), and one source file, `brief.md`. */
 
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-import { ACCESS_TOKEN, answer, MAKER_ID, REPO_SCHEMA, startAuditBackend, tableRows } from "../../src/lib/build/__audit__/fakeSupabase";
+import { ACCESS_TOKEN, answer, MAKER_ID, REPO_SCHEMA, startAuditBackend, tableRows, type Fault } from "../../src/lib/build/__audit__/fakeSupabase";
 
 const CORS = { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "*", "access-control-expose-headers": "content-range, content-profile" };
 const DRAFT = "0d0d0d0d-0000-4000-8000-000000000003";
@@ -49,9 +49,9 @@ function projectRef(): string {
 }
 
 /** The composer on the seeded draft, signed in as the fake's maker, in Dusk. */
-async function open(page: Page, width = 1440) {
-  startAuditBackend({ schema: REPO_SCHEMA, seed });
-  await page.setViewportSize({ width, height: 900 });
+async function open(page: Page, width = 1440, faults: Fault[] = [], height = 900) {
+  startAuditBackend({ schema: REPO_SCHEMA, seed, faults });
+  await page.setViewportSize({ width, height });
   const session = { access_token: "ux02", refresh_token: "ux02-refresh", token_type: "bearer", expires_in: 86400, expires_at: Math.floor(Date.now() / 1000) + 86400, user: { id: MAKER_ID, aud: "authenticated", role: "authenticated", email: "maker@example.test", app_metadata: {}, user_metadata: {}, created_at: "2026-08-01T00:00:00Z" } };
   await page.addInitScript(
     ([key, value]) => {
@@ -169,5 +169,135 @@ test.describe("UX-02 P2 · a source file has a way into a session", () => {
     await page.keyboard.press("Enter");
     await expect.poll(() => fileTiles("brief.md").length, { timeout: 15_000 }).toBe(1);
     await expect.poll(() => inSession(KEY.a)).toEqual([IDS.p1, IDS.p2, fileTiles("brief.md")[0].id]);
+  });
+});
+
+/* ── P3: drag from Sources ── */
+
+const SHOTS = "design/audits/composer/ux-02";
+/** The fake backend's waiting session: in Available to add. */
+const WAITING = "0e0e0e0e-0000-4000-8000-000000000001";
+const sourceRow = (page: Page, dragId: string) => page.locator(`[data-source-drag="${dragId}"]`);
+const listOrder = (page: Page) => page.getByTestId("build-list").locator("[data-session-key]").evaluateAll((els) => els.map((el) => el.getAttribute("data-session-key")));
+
+/** Pick a row of Sources up by its grip and carry it to `to` (a point, or the middle of a locator); `beforeUp` runs while it is held. */
+async function carry(page: Page, dragId: string, to: Locator | { x: number; y: number } | ((page: Page) => Promise<{ x: number; y: number }>), options: { hold?: number; beforeUp?: () => Promise<void>; up?: boolean } = {}) {
+  const row = sourceRow(page, dragId);
+  await row.scrollIntoViewIfNeeded();
+  await row.hover();
+  const grip = row.getByTestId("source-drag-handle");
+  await expect(grip).toHaveCSS("opacity", "1");
+  const from = await grip.boundingBox();
+  if (!from) throw new Error("no grip");
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2 + 10, from.y + from.height / 2, { steps: 3 });
+  const target = typeof to === "function" ? await to(page) : "x" in to ? to : await (async () => {
+    const box = await to.boundingBox();
+    if (!box) throw new Error("no target");
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  })();
+  await page.mouse.move(target.x, target.y, { steps: 12 });
+  // Once more where it is, after the List has slid apart under it.
+  const again = typeof to === "function" ? await to(page) : target;
+  await page.mouse.move(again.x, again.y, { steps: 2 });
+  if (options.hold) await page.waitForTimeout(options.hold);
+  await options.beforeUp?.();
+  if (options.up !== false) await page.mouse.up();
+}
+
+/** Between two boxes: the middle of the gap from `above`'s bottom to `below`'s top. */
+const between = (above: Locator, below: Locator, dx = 60) => async () => {
+  const a = await above.boundingBox();
+  const b = await below.boundingBox();
+  if (!a || !b) throw new Error("no boxes");
+  return { x: a.x + dx, y: (a.y + a.height + b.y) / 2 };
+};
+
+test.describe("UX-02 P3 · drag from Sources onto the build", () => {
+  test("B: a session row is picked up and dropped back on Sources with no write and no change", async ({ page }) => {
+    await open(page);
+    const before = { nodes: tableRows("build_nodes").length, sessions: tableRows("build_sessions").length, order: await listOrder(page) };
+    await carry(page, `src-session:${WAITING}`, page.getByTestId("sources-panel"), {
+      beforeUp: async () => {
+        await expect(page.getByTestId("held-copy")).toBeVisible();
+      },
+    });
+    await expect(page.getByTestId("held-copy")).toHaveCount(0, { timeout: 100 });
+    await page.waitForTimeout(400);
+    expect({ nodes: tableRows("build_nodes").length, sessions: tableRows("build_sessions").length, order: await listOrder(page) }).toEqual(before);
+  });
+
+  test("C: an Available session dragged between Sessions 1 and 2 is added there", async ({ page }) => {
+    // Tall enough that the place is clear of the window's edge, where the drag scrolls the page under the pointer.
+    await open(page, 1440, [], 1300);
+    mkdirSync(SHOTS, { recursive: true });
+    await carry(page, `src-session:${WAITING}`, between(session(page, KEY.a), session(page, KEY.b)), {
+      hold: 300,
+      beforeUp: async () => {
+        await expect(page.getByTestId("incoming-slot")).toHaveCount(1);
+        await page.screenshot({ path: `${SHOTS}/p3-held-session-1440.png` });
+      },
+    });
+    await expect.poll(() => listOrder(page), { timeout: 20_000 }).toEqual([KEY.a, WAITING, KEY.b, KEY.c]);
+    await expect.poll(() => tableRows("build_sessions").filter((row) => row.build_id === DRAFT).sort((x, y) => Number(x.position) - Number(y.position)).map((row) => row.session_key), { timeout: 10_000 }).toEqual([KEY.a, WAITING, KEY.b, KEY.c]);
+  });
+
+  test("C: a file row dragged into the gap after Session 1's first tile is a File step tile there", async ({ page }) => {
+    await open(page);
+    await carry(page, `src-file:${IDS.source}`, between(card(page, IDS.p1), card(page, IDS.p2)), {
+      hold: 200,
+      beforeUp: async () => {
+        await expect(page.getByTestId("incoming-slot")).toHaveCount(1);
+        await page.screenshot({ path: `${SHOTS}/p3-held-file-1440.png` });
+      },
+    });
+    await expect.poll(() => fileTiles("brief.md").length, { timeout: 15_000 }).toBe(1);
+    await expect.poll(() => inSession(KEY.a)).toEqual([IDS.p1, fileTiles("brief.md")[0].id, IDS.p2]);
+  });
+
+  test("C: a file row held on the middle of a step tile is attached inside it", async ({ page }) => {
+    await open(page);
+    // The middle of the tile as it stands once the List has made room: measured again after the first move.
+    const middle = async () => {
+      const box = await card(page, IDS.p1).boundingBox();
+      if (!box) throw new Error("no tile");
+      return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    };
+    await carry(page, `src-file:${IDS.source}`, middle, { hold: 900 });
+    await expect.poll(() => tableRows("build_nodes").filter((row) => row.parent_id === IDS.p1 && (row.payload as Row).media_id === SOURCE_MEDIA).length, { timeout: 15_000 }).toBe(1);
+    expect(fileTiles("brief.md")).toHaveLength(0);
+  });
+
+  test("C: Escape writes nothing, and the held copy is gone at once", async ({ page }) => {
+    await open(page);
+    const nodes = tableRows("build_nodes").length;
+    await carry(page, `src-file:${IDS.source}`, between(card(page, IDS.p1), card(page, IDS.p2)), { up: false });
+    await expect(page.getByTestId("held-copy")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("held-copy")).toHaveCount(0, { timeout: 100 });
+    await expect(page.getByTestId("incoming-slot")).toHaveCount(0);
+    await page.mouse.up();
+    await page.waitForTimeout(500);
+    expect(tableRows("build_nodes").length).toBe(nodes);
+  });
+
+  test("C: dropped outside the List, nothing is written and the held copy is gone at once", async ({ page }) => {
+    await open(page);
+    const nodes = tableRows("build_nodes").length;
+    const header = await page.getByTestId("sandbox-heading").boundingBox();
+    if (!header) throw new Error("no heading");
+    await carry(page, `src-file:${IDS.source}`, { x: header.x + 20, y: header.y + 10 });
+    await expect(page.getByTestId("held-copy")).toHaveCount(0, { timeout: 100 });
+    await page.waitForTimeout(500);
+    expect(tableRows("build_nodes").length).toBe(nodes);
+  });
+
+  test("C: with the add forced to fail, the build is as it was and the failure is said", async ({ page }) => {
+    await open(page, 1440, [{ method: "POST", path: /^\/rest\/v1\/build_nodes/, answer: { status: 500, body: { code: "XX000", message: "forced" } } }]);
+    await carry(page, `src-file:${IDS.source}`, between(card(page, IDS.p1), card(page, IDS.p2)), { hold: 200 });
+    await expect(page.getByText("brief.md not added")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("incoming-slot")).toHaveCount(0, { timeout: 2_000 });
+    expect(inSession(KEY.a)).toEqual([IDS.p1, IDS.p2]);
   });
 });

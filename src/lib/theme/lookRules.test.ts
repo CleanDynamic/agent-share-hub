@@ -1327,6 +1327,8 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/ux02.p2.test.tsx",
   "src/pages/site/compose/ComposeDnd.tsx",
   "src/pages/site/compose/listNest.tsx",
+  "src/pages/site/compose/useBuildSorting.ts",
+  "src/pages/site/compose/useBuildSorting.incoming.test.tsx",
 ];
 
 /**

@@ -14,22 +14,17 @@ import { ComposeDndContext, DRAG_ACCESSIBILITY, dropAnimationOf, HeldCopy, keepT
 import type { Sorting } from "./useBuildSorting";
 
 /** What of the List's drag the page's overlay draws: re-drawn only when one of these changes. */
-type Shown = Pick<Sorting, "overlay" | "holding" | "initial" | "keyboardAt">;
-const sameShown = (a: Shown | null, b: Shown) => Boolean(a) && a?.overlay === b.overlay && a?.holding === b.holding && a?.initial === b.initial && a?.keyboardAt === b.keyboardAt;
+type Shown = Pick<Sorting, "overlay" | "holding" | "initial" | "keyboardAt" | "settles">;
+const sameShown = (a: Shown | null, b: Shown) => Boolean(a) && a?.overlay === b.overlay && a?.holding === b.holding && a?.initial === b.initial && a?.keyboardAt === b.keyboardAt && a?.settles === b.settles;
 
 export function ComposeDnd({ phone, children }: { phone: boolean; children: ReactNode }) {
   const sorting = useRef<Sorting | null>(null);
   const [shown, setShown] = useState<Shown | null>(null);
-  /* dnd-kit always draws its own (silent) live region and instructions. Before, a List with nothing to drag had no context and so
-     none; they stay out of the document until something registers a drag, so the page keeps one live region of its own (CA-26 P4). */
-  const [registered, setRegistered] = useState(false);
-  const [aside] = useState(() => (typeof document === "undefined" ? undefined : document.createElement("div")));
   const [host] = useState<DndHost>(() => ({
     register: (next) => {
       sorting.current = next;
-      setRegistered(Boolean(next));
       if (!next) return setShown(null);
-      const view: Shown = { overlay: next.overlay, holding: next.holding, initial: next.initial, keyboardAt: next.keyboardAt };
+      const view: Shown = { overlay: next.overlay, holding: next.holding, initial: next.initial, keyboardAt: next.keyboardAt, settles: next.settles };
       setShown((current) => (sameShown(current, view) ? current : view));
     },
   }));
@@ -46,10 +41,10 @@ export function ComposeDnd({ phone, children }: { phone: boolean; children: Reac
         onDragMove={(event: DragMoveEvent) => sorting.current?.onDragMove(event)}
         onDragCancel={() => sorting.current?.onDragCancel()}
         onDragEnd={(event: DragEndEvent) => sorting.current?.onDragEnd(event)}
-        accessibility={{ ...DRAG_ACCESSIBILITY, container: registered ? undefined : aside }}
+        accessibility={DRAG_ACCESSIBILITY}
       >
         {children}
-        <DragOverlay modifiers={holding ? [keepToStartOf(shown?.initial ?? null, shown?.keyboardAt ?? null)] : undefined} dropAnimation={dropAnimationOf(true)}>
+        <DragOverlay modifiers={holding ? [keepToStartOf(shown?.initial ?? null, shown?.keyboardAt ?? null)] : undefined} dropAnimation={dropAnimationOf(shown?.settles ?? true)}>
           {shown?.overlay ? <HeldCopy overlay={shown.overlay} /> : null}
         </DragOverlay>
       </DndContext>

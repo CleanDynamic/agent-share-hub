@@ -137,6 +137,7 @@ import { useReferences } from "./useReferences";
 import { BuildHistoryContext, useBuildHistory } from "./useBuildHistory";
 import { rowOf } from "./useComposeNodes";
 import { ComposeDnd } from "./ComposeDnd";
+import type { IncomingAdd } from "./useBuildSorting";
 import { classificationKey } from "./useClassificationCard";
 import { writeClassification, type StoredClassification } from "@/lib/classify/storage";
 import { computeFacets, hasClassification, shapeFromBuilt, shownValues } from "@/lib/classify/facets";
@@ -835,6 +836,27 @@ function SandboxPageBody() {
     if (last && groupKey(last) === key) return null;
     return claim(key);
   }, [currentSession, sourceSessionRows, edits, shown, claim, buildId, ensureBuild, firstSession]);
+
+  /* UX-02 P3: resolves once the List's sessions hold `key` (a session just written, before it is moved into place). */
+  const drawnWaiters = useRef(new Map<string, () => void>());
+  const drawnGroups = useRef(groups);
+  drawnGroups.current = groups;
+  const sessionDrawn = useCallback((key: string) => new Promise<void>((resolve) => {
+    if (orderKeys(drawnGroups.current).includes(key)) return resolve();
+    drawnWaiters.current.set(key, resolve);
+    // Never wait for ever: the move then reads the List as it stands.
+    window.setTimeout(() => {
+      if (drawnWaiters.current.get(key) === resolve) drawnWaiters.current.delete(key);
+      resolve();
+    }, 3000);
+  }), []);
+  useEffect(() => {
+    for (const [key, resolve] of drawnWaiters.current) {
+      if (!orderKeys(groups).includes(key)) continue;
+      drawnWaiters.current.delete(key);
+      resolve();
+    }
+  }, [groups]);
 
   /* CA-12 P4/P5: the session just added is scrolled to and outlined once; the row says "Adding…" until the write lands. */
   const [ringedSession, setRingedSession] = useState<{ key: string; n: number } | null>(null);
@@ -1816,17 +1838,19 @@ function SandboxPageBody() {
    * is scrolled to and outlined once.
    */
   const onAddSession = useCallback(
-    async function again(importId: string, workstream?: string): Promise<void> {
+    async function again(importId: string, workstream?: string): Promise<boolean> {
       setAdding((previous) => new Set(previous).add(importId));
       // CA-21 P7: the lane opens as soon as it is pressed; the count is all it needs of the chat to make a place for each prompt.
       const item = libraryRows.find((row) => row.id === importId);
       const head = { tool: item?.appKnown ? item.app : NO_APP, detail: item ? [item.model, item.date].filter(Boolean).join(" · ") : "", date: item?.date ?? "" };
       try {
         await insertSession({ kind: "import", importId, head, count: item?.promptCount ?? 0 }, workstream);
+        return true;
       } catch (cause) {
         // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
         console.error("[Sandbox] session not added", cause);
         sayFailed(cause, "Session not added", () => void again(importId, workstream));
+        return false;
       } finally {
         setAdding((previous) => {
           const next = new Set(previous);
@@ -1924,7 +1948,7 @@ function SandboxPageBody() {
    * in `place` (the end of a session from its menu; where it was dropped from Sources). Nothing is uploaded again.
    */
   const addSourceFileTile = useCallback(
-    async function again(fileId: string, place: FilePlace): Promise<BuildNode | null> {
+    async function again(fileId: string, place: FilePlace | { into: string }): Promise<BuildNode | null> {
       const source = tree.find((node) => node.id === fileId);
       const payload = (source?.payload ?? {}) as Record<string, unknown>;
       if (!source || typeof payload.media_id !== "string") return null;
@@ -1933,6 +1957,14 @@ function SandboxPageBody() {
         const id = await ensureBuild();
         const added: { node: BuildNode | null } = { node: null };
         await nodes.run(async () => {
+          // UX-02 P3: held over the middle of a step that takes files and let go, it is sent with that step, as a dropped file is.
+          if ("into" in place) {
+            const node = await addFile(id, nodes.current(), { title, media_id: payload.media_id as string, parentId: place.into });
+            motion.expect({ kind: "add", keys: [node.id] });
+            nodes.record(node.id, node);
+            added.node = node;
+            return;
+          }
           added.node = await writeFileTile(
             id,
             {
@@ -1954,7 +1986,7 @@ function SandboxPageBody() {
         return null;
       }
     },
-    [tree, ensureBuild, nodes, writeFileTile, queryClient],
+    [tree, ensureBuild, nodes, writeFileTile, queryClient, motion],
   );
 
   /** Files onto one prompt: each is added to the build and then listed as that prompt's input, in order. */
@@ -2521,6 +2553,27 @@ function SandboxPageBody() {
     setup: asStep("Added setup files", addSetup),
   };
 
+  /* UX-02 P3: a row of Sources dropped on the List. A file is written through P1's path (or inside the step it was let go over); a
+     session through the + path, then put where it was dropped by the same move a dragged session makes, in the same step, so one
+     Undo takes it out as the + add's does. Resolves whether it was written. */
+  const onAddFromSources = async (add: IncomingAdd): Promise<boolean> => {
+    if (add.kind === "add-file") return Boolean(await stepOf.sourceFile(add.fileId, { session: add.session, index: add.index }));
+    if (add.kind === "attach-file") return Boolean(await asStep((id: string) => `Attached a file to ${whatIs(id)}`, (into: string) => addSourceFileTile(add.fileId, { into }))(add.into));
+    const part = add.part || undefined;
+    return track(
+      `Added Session ${nextSessionNumber(part)}`,
+      async () => {
+        const ok = await onAddSession(add.libraryId, part);
+        if (ok && add.before) {
+          await sessionDrawn(add.libraryId);
+          await edits.onDrop(add.libraryId, add.before);
+        }
+        return ok;
+      },
+      { notice: true },
+    );
+  };
+
   /* UX-01 P1: the two links on an unsent prompt in the Publish checklist (see unsentAction.ts, loaded when one is pressed). */
   const onUnsentAction = useCallback(
     async (key: string, action: "add" | "discard") => {
@@ -2732,6 +2785,7 @@ function SandboxPageBody() {
             madeNames={madeByStep}
             onDropOnStep={(id, files) => void stepOf.dropOnStep(id, files)}
             onDropFiles={(files, paths, place) => void stepOf.dropped(files, paths, { place })}
+            onAddFromSources={onAddFromSources}
             onNest={stepOf.nest}
             onSetupPrompt={onSetupPrompt}
             canNest={canNest}
