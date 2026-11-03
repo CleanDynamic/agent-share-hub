@@ -1087,10 +1087,11 @@ function SandboxBody(props: SandboxViewProps) {
   };
   const onChecklistAction = (item: ChecklistItem, chosen?: ChecklistItem["action"]) => {
     const run = () => {
-      switch ((chosen ?? item.action)?.id) {
+      const id = (chosen ?? item.action)?.id;
+      switch (id) {
         case "add_unsent":
         case "discard_unsent":
-          return item.unsentKey ? latest.current.publish?.onUnsent?.(item.unsentKey, (chosen ?? item.action)?.id === "add_unsent" ? "add" : "discard") : undefined;
+          return item.unsentKey ? latest.current.publish?.onUnsent?.(item.unsentKey, id === "add_unsent" ? "add" : "discard") : undefined;
         case "add_cover":
           return openPost();
         case "add_title":

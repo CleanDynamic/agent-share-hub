@@ -29,7 +29,7 @@ describe("UX-01 P1: useUnsentPrompts", () => {
   it("clearing removes the stored entry", () => {
     const hook = renderHook(() => useUnsentPrompts("b1"));
     act(() => hook.result.current.set("s1", "x"));
-    act(() => hook.result.current.clear("s1"));
+    act(() => hook.result.current.set("s1", ""));
     expect(window.sessionStorage.getItem("ux-unsent:b1:s1")).toBeNull();
     expect(hook.result.current.entries()).toEqual([]);
   });

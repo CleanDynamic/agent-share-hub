@@ -127,7 +127,6 @@ import { NOTICE_ROOM, ReferenceNotice } from "./referencePieces";
 import { OfflineStrip, OtherTabStrip, Strips } from "./saveStrips";
 import { useConnectionWatch, useOffline, usePendingWrites, useReconnected } from "./usePendingWrites";
 import { useLeaveGuard } from "./useLeaveGuard";
-import { sendUnsentTile } from "./sendUnsentTile";
 import { UnsentContext, useUnsentPrompts } from "./useUnsentPrompts";
 import { useWriteGuard } from "./useWriteGuard";
 import type { LeaveWindow as LeaveWindowImpl } from "./saveWindows";
@@ -1677,17 +1676,15 @@ function SandboxPageBody() {
   const tileCount = useMemo(() => allTiles(orderOf(drawn)).length, [drawn]);
   /* UX-01 P1: the boxes with unsent text, each with its session's number. Session 1 before the build exists is the sentinel key. */
   const unsentBoxes = useMemo(() => {
-    const numberOf = (key: string): number | null => {
-      if (key.startsWith("agent:")) {
-        const step = steps.find((entry) => entry.id === key.slice("agent:".length));
-        const group = step ? groups.find((entry) => entry.stepNumbers.includes(step.number)) : null;
-        return group ? (sourceSessionRows.find((row) => row.key === groupKey(group))?.number ?? null) : null;
-      }
-      return sourceSessionRows.find((row) => row.key === key)?.number ?? (key === FIRST_SESSION_KEY ? 1 : null);
+    const numberOf = (key: string): number | undefined => {
+      const agent = key.startsWith("agent:") ? steps.find((step) => step.id === key.slice(6)) : null;
+      const owner = agent ? groups.find((group) => group.stepNumbers.includes(agent.number)) : null;
+      const session = owner ? groupKey(owner) : key;
+      return sourceSessionRows.find((row) => row.key === session)?.number ?? (key === FIRST_SESSION_KEY ? 1 : undefined);
     };
-    return unsent.entries().flatMap((entry) => {
-      const sessionNumber = numberOf(entry.key);
-      return sessionNumber === null ? [] : [{ sessionKey: entry.key, sessionNumber, text: entry.text }];
+    return unsent.entries().flatMap(({ key, text }) => {
+      const sessionNumber = numberOf(key);
+      return sessionNumber === undefined ? [] : [{ sessionKey: key, sessionNumber, text }];
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unsent.version, unsent.entries, sourceSessionRows, steps, groups]);
@@ -2446,30 +2443,27 @@ function SandboxPageBody() {
     setup: asStep("Added setup files", addSetup),
   };
 
-  /* UX-01 P1: the two links on an unsent prompt in the Publish checklist. Add as step tile sends it as the box's own button does,
-     as one step of the history, with the List told which tile is coming. Discard clears the box. */
+  /* UX-01 P1: the two links on an unsent prompt in the Publish checklist (see unsentAction.ts, loaded when one is pressed). */
   const onUnsentAction = useCallback(
     async (key: string, action: "add" | "discard") => {
-      const text = unsent.get(key);
-      if (action === "discard" || !text.trim()) return void unsent.clear(key);
-      if (key.startsWith("agent:")) {
-        if (await stepOf.agentPrompt(key.slice("agent:".length), text)) unsent.clear(key);
-        return;
-      }
       const row = sourceSessionRows.find((entry) => entry.key === key);
-      const saved = await sendUnsentTile({
+      const { runUnsentAction } = await import("./unsentAction");
+      await runUnsentAction({
+        unsent,
+        key,
+        action,
+        tool: row && row.tool !== NO_APP ? row.tool : null,
         track,
-        sentence: ADDED.prompt,
-        write: async (id) => {
-          let session: string | null = key;
-          if (key === FIRST_SESSION_KEY) {
+        addToAgent: stepOf.agentPrompt,
+        sessionFor: async (box) => {
+          if (box === FIRST_SESSION_KEY) {
             if (!buildId) await ensureBuild();
-            session = firstSession.current;
-          } else if (isLegacySession(key)) session = await claim(key);
-          return prompts.addNow({ text, tool: row && row.tool !== NO_APP ? row.tool : null, model: null, session, id });
+            return firstSession.current;
+          }
+          return isLegacySession(box) ? claim(box) : box;
         },
+        write: (input) => prompts.addNow(input),
       });
-      if (saved) unsent.clear(key);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [unsent, sourceSessionRows, track, buildId, ensureBuild, firstSession, claim, prompts],

@@ -20,42 +20,25 @@ export interface UnsentEntry {
 export interface UnsentStore {
   get: (key: string) => string;
   set: (key: string, text: string) => void;
-  clear: (key: string) => void;
   /** Move a box's text to another key (Session 1 before the build exists takes its real key). */
   rename: (from: string, to: string) => void;
-  /** Every box with text in it, in the order they were first typed in. */
+  /** Every box with text in it. */
   entries: () => UnsentEntry[];
   /** Changes on every write, so a reader re-renders. */
   version: number;
 }
 
-const read = (key: string): string | null => {
+/** Storage can be missing or throw (a private window, blocked site data): every use is wrapped, and the text then lives in memory only. */
+const safe = <T,>(run: () => T, fallback: T): T => {
   try {
-    return window.sessionStorage.getItem(key);
+    return run();
   } catch {
-    return null;
+    return fallback;
   }
 };
-const write = (key: string, value: string | null): void => {
-  try {
-    if (value === null) window.sessionStorage.removeItem(key);
-    else window.sessionStorage.setItem(key, value);
-  } catch {
-    /* no storage: the text lives in memory only */
-  }
-};
-const storedKeys = (): string[] => {
-  try {
-    const found: string[] = [];
-    for (let at = 0; at < window.sessionStorage.length; at += 1) {
-      const name = window.sessionStorage.key(at);
-      if (name) found.push(name);
-    }
-    return found;
-  } catch {
-    return [];
-  }
-};
+const read = (key: string): string | null => safe(() => window.sessionStorage.getItem(key), null);
+const write = (key: string, value: string | null): void => safe(() => (value === null ? window.sessionStorage.removeItem(key) : window.sessionStorage.setItem(key, value)), undefined);
+const storedKeys = (prefix: string): string[] => safe(() => Object.keys(window.sessionStorage).filter((name) => name.startsWith(prefix)), []);
 
 /** One token per tab, kept for reloads. */
 export function tabToken(): string {
@@ -72,50 +55,35 @@ export const unsentBuildKey = (buildId: string | null | undefined): string => bu
 export function useUnsentPrompts(buildId: string | null | undefined): UnsentStore {
   const buildKey = unsentBuildKey(buildId);
   const memory = useRef(new Map<string, string>());
-  const order = useRef<string[]>([]);
   const [version, setVersion] = useState(0);
   const bump = useCallback(() => setVersion((n) => n + 1), []);
   const lastBuildKey = useRef(buildKey);
-
-  const fullKey = (build: string, key: string) => `${PREFIX}${build}:${key}`;
+  const at = (build: string, key: string) => `${PREFIX}${build}:${key}`;
 
   /* The real id arrives: what was typed under `new:<token>` moves to it. */
   useEffect(() => {
     const was = lastBuildKey.current;
     if (was === buildKey) return;
     lastBuildKey.current = buildKey;
-    const from = `${PREFIX}${was}:`;
-    for (const name of storedKeys()) {
-      if (!name.startsWith(from)) continue;
+    const from = at(was, "");
+    for (const name of storedKeys(from)) {
       const value = read(name);
       write(name, null);
-      if (value !== null) write(fullKey(buildKey, name.slice(from.length)), value);
+      if (value !== null) write(at(buildKey, name.slice(from.length)), value);
     }
     bump();
   }, [buildKey, bump]);
 
-  const get = useCallback(
-    (key: string): string => {
-      const stored = read(fullKey(buildKey, key));
-      return stored ?? memory.current.get(`${buildKey}:${key}`) ?? "";
-    },
-    [buildKey],
-  );
+  const get = useCallback((key: string): string => read(at(buildKey, key)) ?? memory.current.get(`${buildKey}:${key}`) ?? "", [buildKey]);
   const set = useCallback(
     (key: string, text: string) => {
-      if (!order.current.includes(key)) order.current.push(key);
-      if (text) {
-        memory.current.set(`${buildKey}:${key}`, text);
-        write(fullKey(buildKey, key), text);
-      } else {
-        memory.current.delete(`${buildKey}:${key}`);
-        write(fullKey(buildKey, key), null);
-      }
+      if (text) memory.current.set(`${buildKey}:${key}`, text);
+      else memory.current.delete(`${buildKey}:${key}`);
+      write(at(buildKey, key), text || null);
       bump();
     },
     [buildKey, bump],
   );
-  const clear = useCallback((key: string) => set(key, ""), [set]);
   const rename = useCallback(
     (from: string, to: string) => {
       const text = get(from);
@@ -126,24 +94,16 @@ export function useUnsentPrompts(buildId: string | null | undefined): UnsentStor
     [get, set],
   );
   const entries = useCallback((): UnsentEntry[] => {
-    const prefix = fullKey(buildKey, "");
+    const prefix = at(buildKey, "");
     const found = new Map<string, string>();
-    for (const [name, text] of memory.current) if (name.startsWith(`${buildKey}:`) && text.trim()) found.set(name.slice(buildKey.length + 1), text);
-    for (const name of storedKeys()) {
-      if (!name.startsWith(prefix)) continue;
-      const text = read(name);
-      if (text && text.trim()) found.set(name.slice(prefix.length), text);
-    }
-    const rank = (key: string) => {
-      const at = order.current.indexOf(key);
-      return at === -1 ? Number.MAX_SAFE_INTEGER : at;
-    };
-    return [...found].map(([key, text]) => ({ key, text })).sort((a, b) => rank(a.key) - rank(b.key));
+    for (const [name, text] of memory.current) if (name.startsWith(`${buildKey}:`)) found.set(name.slice(buildKey.length + 1), text);
+    for (const name of storedKeys(prefix)) found.set(name.slice(prefix.length), read(name) ?? "");
+    return [...found].filter(([, text]) => text.trim()).map(([key, text]) => ({ key, text }));
     // `version` is read so the list is fresh on every write.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buildKey, version]);
 
-  return useMemo(() => ({ get, set, clear, rename, entries, version }), [get, set, clear, rename, entries, version]);
+  return useMemo(() => ({ get, set, rename, entries, version }), [get, set, rename, entries, version]);
 }
 
 export const UnsentContext = createContext<UnsentStore | null>(null);

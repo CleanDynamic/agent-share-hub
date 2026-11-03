@@ -24,7 +24,6 @@ export const LEAVE_COPY = {
   /** One line per session, up to three, then "and k more". */
   unsent: (session: number): string => `Unsent prompt in Session ${session}`,
   unsentMore: (more: number): string => `and ${more} more`,
-  unsentShown: 3,
 } as const;
 
 /** The footer: `--window-foot`, and a 1px `--hairline` rule on top. */
@@ -94,8 +93,8 @@ export function RecipeWindow({ open, onClose, title, note, buttons, testId, widt
 /** "Changes still saving": Leave (secondary), then Stay (primary). Stay is also what Escape does. */
 export function LeaveWindow({ open, count, unsent = [], onStay, onLeave }: { open: boolean; count: number; /** Session numbers of the boxes with unsent text. */ unsent?: readonly number[]; onStay: () => void; onLeave: () => void }) {
   const phone = useIsPhone();
-  const shown = unsent.slice(0, LEAVE_COPY.unsentShown);
-  const more = unsent.length - shown.length;
+  const shown = unsent.slice(0, 3);
+  const more = unsent.length - 3;
   return (
     <RecipeWindow
       open={open}
