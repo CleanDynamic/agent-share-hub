@@ -84,7 +84,7 @@ async function openRow() {
 }
 
 /** The page has loaded: the Add button is there (an empty build has no prompt box until Add › Prompt). */
-const field = () => screen.findByTestId("sandbox-add", undefined, { timeout: 10_000 });
+const field = () => screen.findByTestId("sandbox-build-head-row", undefined, { timeout: 10_000 });
 
 
 /** The draft with Session 1 = the one-prompt session and Session 2 = the 66-prompt one (folded). */
@@ -230,29 +230,16 @@ describe("CA-14 P5 · adding to the right session", () => {
     expect(positions().find((row) => row.type === "integration")?.payload).toMatchObject({ session: WAITING });
   });
 
-  it("the Add button asks which session when there are two, with the last one chosen, and one tap goes on", async () => {
+  // UX-02 P7: the Build header's Add, which asked "Add to which session?" with two or more, is gone; each session's own
+  // "+ Add step tile" adds to that session. (Its two tests here are retired with it.)
+  it("each session's Add step tile adds to that session", async () => {
     await twoSessions();
-    fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
+    // Session 2 is folded (it is long), so it draws no row; Session 1's adds to Session 1.
+    const first = document.querySelector(`[data-session-key="${WAITING}"]`) as HTMLElement;
+    fireEvent.keyDown(within(first).getByTestId("add-to-session"), { key: "Enter" });
     await chooseAdd(/^Prompt/);
-    const ask = await screen.findByRole("radiogroup", { name: "Add to which session?" });
-    const rows = within(ask).getAllByRole("radio");
-    expect(rows.map((row) => row.textContent)).toEqual(["Session 1 · Claude Code", "Session 2 · Claude Code"]);
-    expect(rows.map((row) => row.getAttribute("aria-checked"))).toEqual(["false", "true"]);
-    fireEvent.click(rows[1]);
-    // Session 2 was folded: it opens, and the box stands in it.
     const box = await screen.findByRole("textbox", { name: "Add a prompt" });
-    expect((document.querySelector(`[data-session-key="${LONG}"]`) as HTMLElement).contains(box)).toBe(true);
-  });
-
-  it("the Add button asks nothing with one session", async () => {
-    mount(`/compose/${DRAFT}`);
-    await field();
-    fireEvent.click(within(await openRow()).getByRole("listitem", { name: / 1 prompt$/ }));
-    await screen.findByRole("group", { name: /^Session 1 · / }, { timeout: 10_000 });
-    fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
-    await chooseAdd(/^Prompt/);
-    expect(screen.queryByRole("radiogroup", { name: "Add to which session?" })).toBeNull();
-    expect(await screen.findByRole("textbox", { name: "Add a prompt" })).toBeTruthy();
+    expect(first.contains(box)).toBe(true);
   });
 });
 
@@ -442,15 +429,13 @@ describe("CA-14 P2 · removing a session", () => {
 });
 
 describe("CA-14 P5 · the Add sheet on a phone", () => {
-  it("asks which session first, then lists the items", async () => {
+  // UX-02 P7: a session's own row opens the sheet; it knows its session, so the sheet lists the items at once.
+  it("a session's Add step tile lists the items at once", async () => {
     stubWidth(390);
     await twoSessions();
-    fireEvent.click(screen.getByTestId("sandbox-add"));
+    fireEvent.click(screen.getAllByTestId("add-to-session")[0]);
     const sheet = await screen.findByTestId("add-sheet");
-    const ask = within(sheet).getByRole("radiogroup", { name: "Add to which session?" });
-    expect(within(ask).getAllByRole("radio").map((row) => row.getAttribute("aria-checked"))).toEqual(["false", "true"]);
-    expect(within(sheet).queryByText("Agent")).toBeNull();
-    fireEvent.click(within(ask).getAllByRole("radio")[0]);
+    expect(within(sheet).queryByRole("radiogroup")).toBeNull();
     expect(await within(sheet).findByText("Agent")).toBeTruthy();
   });
 });

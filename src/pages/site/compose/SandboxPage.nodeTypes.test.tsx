@@ -57,7 +57,7 @@ describe("SV-03 P3 · node types on opening a draft", () => {
         </QueryClientProvider>
       </MemoryRouter>,
     );
-    await screen.findByTestId("sandbox-add", undefined, { timeout: 10_000 });
+    await screen.findByTestId("sandbox-build-head-row", undefined, { timeout: 10_000 });
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     expect(getNodeType).not.toHaveBeenCalled();

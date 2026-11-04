@@ -49,8 +49,16 @@ function projectRef(): string {
 }
 
 /** The composer on the seeded draft, signed in as the fake's maker, in Dusk. */
-async function open(page: Page, width = 1440, faults: Fault[] = [], height = 900) {
-  startAuditBackend({ schema: REPO_SCHEMA, seed, faults });
+async function open(page: Page, width = 1440, faults: Fault[] = [], height = 900, everyType = false) {
+  startAuditBackend({
+    schema: REPO_SCHEMA,
+    seed: (rows) => {
+      seed(rows);
+      // Every node type live: the Add menu with every entry (UX-02 P6's measure).
+      if (everyType) for (const type of rows.node_types ?? []) type.is_active = true;
+    },
+    faults,
+  });
   await page.setViewportSize({ width, height });
   const session = { access_token: "ux02", refresh_token: "ux02-refresh", token_type: "bearer", expires_in: 86400, expires_at: Math.floor(Date.now() / 1000) + 86400, user: { id: MAKER_ID, aud: "authenticated", role: "authenticated", email: "maker@example.test", app_metadata: {}, user_metadata: {}, created_at: "2026-08-01T00:00:00Z" } };
   await page.addInitScript(
@@ -299,5 +307,93 @@ test.describe("UX-02 P3 · drag from Sources onto the build", () => {
     await expect(page.getByText("brief.md not added")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId("incoming-slot")).toHaveCount(0, { timeout: 2_000 });
     expect(inSession(KEY.a)).toEqual([IDS.p1, IDS.p2]);
+  });
+});
+
+/* ── P6, P7: the Add step tile menu, and one way to add ── */
+
+/** The Add step tile menu of a session, opened from its row. */
+async function openRowMenu(page: Page, key: string) {
+  const row = session(page, key).getByTestId("add-to-session");
+  await row.scrollIntoViewIfNeeded();
+  await row.click();
+  const menu = page.getByRole("menu");
+  await expect(menu).toBeVisible();
+  return menu;
+}
+
+test.describe("UX-02 P6 · the Add step tile menu on the screen", () => {
+  for (const key of [KEY.a, KEY.c]) {
+    test(`opened from ${key === KEY.a ? "Session 1" : "the last session"} at 1280 by 720: inside the window, never over the header, in MenuContent`, async ({ page }) => {
+      await open(page, 1280, [], 720);
+      const menu = await openRowMenu(page, key);
+      const box = await menu.boundingBox();
+      const header = await page.locator("header").first().boundingBox();
+      if (!box || !header) throw new Error("no boxes");
+      expect(box.y).toBeGreaterThanOrEqual(header.y + header.height);
+      expect(box.y + box.height).toBeLessThanOrEqual(720);
+      expect(box.x + box.width).toBeLessThanOrEqual(1280);
+      // MenuContent is its container: Radix's content, with the composer's surface and the available height as its cap.
+      expect(await menu.getAttribute("data-radix-menu-content")).not.toBeNull();
+      expect(await menu.evaluate((el) => (el as HTMLElement).style.maxHeight)).toBe("var(--radix-dropdown-menu-content-available-height)");
+      const sizes = await menu.evaluate((el) => ({ client: el.clientHeight, scroll: el.scrollHeight }));
+      console.log(`UX-02 P6 measure (${key}): menu ${Math.round(box.height)} px tall, content ${sizes.scroll} px, scrolls: ${sizes.scroll > sizes.client + 1}`);
+      mkdirSync(SHOTS, { recursive: true });
+      await page.screenshot({ path: `${SHOTS}/p6-add-menu-${key === KEY.a ? "first" : "last"}-1280x720.png` });
+      // The menu scrolls here, so it has a field: focused as it opens, and the letters typed stay in it (the menu's type-ahead does not take them).
+      const field = menu.getByRole("searchbox", { name: "Find a step tile" });
+      await expect(field).toBeFocused();
+      await page.keyboard.type("tool");
+      await expect(field).toHaveValue("tool");
+      await expect(field).toBeFocused();
+      await expect(menu.getByRole("menuitem")).toHaveCount(1);
+    });
+  }
+});
+
+test("UX-02 P6 · measured at 1280 by 720 with every entry live, from Session 1", async ({ page }) => {
+  await open(page, 1280, [], 720, true);
+  const menu = await openRowMenu(page, KEY.a);
+  const box = await menu.boundingBox();
+  const sizes = await menu.evaluate((el) => ({ client: el.clientHeight, scroll: el.scrollHeight, entries: el.querySelectorAll('[role="menuitem"]').length }));
+  console.log(`UX-02 P6 measure (every entry live): menu ${Math.round(box?.height ?? 0)} px tall, content ${sizes.scroll} px, ${sizes.entries} entries, scrolls: ${sizes.scroll > sizes.client + 1}`);
+  expect(box && box.y + box.height).toBeLessThanOrEqual(720);
+  await page.screenshot({ path: `${SHOTS}/p6-add-menu-every-entry-1280x720.png` });
+});
+
+test.describe("UX-02 P7 · one way to add at each level", () => {
+  test("no Add in the Build header, and every entry it offered is reached from a session's add row", async ({ page }) => {
+    await open(page);
+    await expect(page.getByTestId("sandbox-add")).toHaveCount(0);
+    const menu = await openRowMenu(page, KEY.a);
+    const names = (await menu.getByRole("menuitem").allTextContents()).filter((name) => name !== "Deployment");
+    await page.keyboard.press("Escape");
+    expect(names[0]).toMatch(/^Prompt/);
+    for (const name of names) {
+      const entry = name.match(/^(Prompt|Agent|Tool|File|Code|Result|Check|Decision|Manual step|Approval|From Library|Dataset|Retrieval|System prompt|GitHub repository)/)?.[1];
+      if (!entry) continue;
+      const again = await openRowMenu(page, KEY.a);
+      const item = again.getByRole("menuitem", { name: new RegExp(`^${entry}`) });
+      if ((await item.getAttribute("aria-disabled")) === "true") {
+        // Listed while it cannot be added, saying why (Check on a build with nothing to check).
+        await expect(item).toContainText(/first|yet/);
+        await page.keyboard.press("Escape");
+        continue;
+      }
+      if (entry === "File") {
+        const chooser = page.waitForEvent("filechooser");
+        await item.click();
+        await chooser;
+        continue;
+      }
+      await item.click();
+      if (entry === "Prompt") {
+        await expect(page.getByRole("textbox", { name: "Add a prompt" })).toBeFocused();
+        continue;
+      }
+      await expect(page.getByRole("dialog").first(), entry).toBeVisible({ timeout: 10_000 });
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+    }
   });
 });

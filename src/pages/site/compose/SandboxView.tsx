@@ -22,11 +22,11 @@
    between `--hairline-module` dividers 28 wide. Build becomes a module (`flex: 999 1 560px`) holding its head, the
    Map's legend, the map well and its footer line. */
 
-import { deploymentMenuEntries, type DeploymentKind } from "@/lib/build/deployment";
+import { DEPLOYMENT_GROUP_HEAD, deploymentMenuEntries, type DeploymentKind } from "@/lib/build/deployment";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import * as Popover from "@radix-ui/react-popover";
 import { MoreHorizontal, X } from "lucide-react";
-import { Fragment, useCallback, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/brand/Button";
@@ -50,6 +50,7 @@ import { SaveLine } from "./SaveLine";
 import type { BuildFind } from "./useBuildFind";
 import { isUntitled, UNTITLED, type PublishKey, type SaveState } from "./composeModel";
 import { SandboxCard } from "./SandboxCard";
+import { addMenuLayout } from "./addMenuGroups";
 import type { CardField } from "./SandboxCard";
 import { MAP_AND_PANEL, MAP_COLUMN } from "./mapRecipes";
 import { BUILD_HEAD, TAB_ACTIONS, TAB_GROUP, TAB_ROW, tabStyle } from "./tabRowRecipes";
@@ -58,7 +59,7 @@ import { DetailsAside, useWindowSize } from "./DetailsAside";
 import type { DetailsPlan } from "./DetailsPanel";
 import { COMPOSER_PAD, HEAD_GAP, OVERLAY_WIDTH } from "./detailsRecipes";
 import { ORIGIN, frameOf, innerWidthOf } from "./detailsLayout";
-import { bareButton, menuItem, menuSurface, moduleStyle, text, tnum } from "./refinedStyles";
+import { bareButton, menuItem, menuSurface, moduleStyle, text, tnum, wellField } from "./refinedStyles";
 import type { PartLabels } from "@/lib/build/making";
 import type { ComposePublished, ComposeStatus } from "./ComposeView";
 import { type CardProps } from "./SandboxCard";
@@ -161,7 +162,6 @@ export interface SandboxViewProps extends CardProps {
   onAddPromptFocus?: () => boolean | void;
 
   /** CA-14 P5: the sessions Add can put a tile in, for the "Add to which session?" question. */
-  addTargets?: AddTargets;
   /** CA-14 P6: the View menu's two switches. Absent: no View menu. */
   viewOptions?: ViewMenuProps;
   /** CA-27 P1: Find in build. Absent: no button and no field. */
@@ -265,7 +265,7 @@ export const ADD_ITEMS: readonly { key: AddKey; name: string; line: string; read
   { key: "check", name: "Check", line: "Test of part of the build", ready: true },
   { key: "result", name: "Result", line: "Output the build produced", ready: true },
   /* SV-18: saved steps and sessions, copied in with their source. Listed after the twelve; it opens its own window. */
-  { key: "library", name: "From Library", line: "Steps and collections you saved", ready: true },
+  { key: "library", name: "From Library", line: "Step tiles and collections you saved", ready: true },
 ];
 
 /** CA-03 P5: the Add menu's own words. */
@@ -296,7 +296,7 @@ export function countsLine(counts: SandboxCounts): string {
   return parts.join(" · ");
 }
 
-export type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddDecision" | "decisionAvailable" | "onAddSystemPrompt" | "onAddDataset" | "onAddRepo" | "onAddRetrieval" | "retrievalAvailable" | "systemPromptAvailable" | "datasetAvailable" | "repoAvailable" | "onAddManual" | "onAddCode" | "onAddCheck" | "checkable" | "onAddFromLibrary" | "onWarmLibrary"> & {
+export type AddMenuProps = { /** UX-02 P6: the category of each node type, from the live registry; absent while it is read. */ nodeCategories?: Readonly<Record<string, string>> } & Pick<SandboxViewProps, "onAddFile" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddDecision" | "decisionAvailable" | "onAddSystemPrompt" | "onAddDataset" | "onAddRepo" | "onAddRetrieval" | "retrievalAvailable" | "systemPromptAvailable" | "datasetAvailable" | "repoAvailable" | "onAddManual" | "onAddCode" | "onAddCheck" | "checkable" | "onAddFromLibrary" | "onWarmLibrary"> & {
   /** SV-27 P7: whether a node type is live, for the Deployment group; each kind is ready only once its type is. */
   deploymentLive?: (type: string) => boolean;
   /** SV-27 P7: Add › Deployment › a kind. */
@@ -319,7 +319,29 @@ export interface AddEntry {
   movesFocus?: boolean;
   /** SV-18: the pointer or focus is on the item. */
   onWarm?: () => void;
+  /** UX-02 P6: the node type it creates (null: From Library), for its group; and whether that type is live (an entry that is not is left out). */
+  type: string | null;
+  live: boolean;
 }
+
+/** UX-02 P6: the node type each Add entry creates, read from its handler (`onAddAgentOrTeam`, `addFile`, `addCheckStep`…). Agent makes an `agent_config` or a `team`, both Configuration. */
+export const ADD_TYPE: Record<AddKey, string | null> = {
+  prompt: "prompt",
+  agent: "agent_config",
+  decision: "decision",
+  retrieval: "retrieval_config",
+  system_prompt: "system_prompt",
+  file: "document",
+  dataset: "dataset",
+  tool: "integration",
+  repo: "repo",
+  manual: "manual_step",
+  approval: "manual_step",
+  code: "code",
+  check: "eval_run",
+  result: "result",
+  library: null,
+};
 
 /** CA-13 P1: the line under Add › Decision while the database change is not live. */
 export const DECISION_OFF_LINE = "Not available yet";
@@ -332,18 +354,20 @@ export function addEntries(props: AddMenuProps): AddEntry[] {
 }
 
 /** SV-27 P7: the Deployment group, after the existing items; each kind ready once its node type is live (Front end already is). */
-const deploymentEntries = ({ deploymentLive, onAddDeployment, onWarmDeployment }: AddMenuProps): AddEntry[] => (deploymentLive ? deploymentMenuEntries(deploymentLive, onAddDeployment, onWarmDeployment, TILE_OFF_LINE) : []);
+const deploymentEntries = ({ deploymentLive, onAddDeployment, onWarmDeployment }: AddMenuProps): AddEntry[] =>
+  deploymentLive ? deploymentMenuEntries(deploymentLive, onAddDeployment, onWarmDeployment, TILE_OFF_LINE).map((entry) => ({ ...entry, type: entry.key.slice("deploy:".length), live: entry.line !== TILE_OFF_LINE })) : [];
 
 function tileEntries({ onAddFile, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddDecision, decisionAvailable = true, onAddSystemPrompt, onAddDataset, onAddRepo, onAddRetrieval, retrievalAvailable = false, systemPromptAvailable = false, datasetAvailable = false, repoAvailable = false, onAddManual, onAddCode, onAddCheck, checkable = false, onAddFromLibrary, onWarmLibrary }: AddMenuProps): AddEntry[] {
-  return ADD_ITEMS.map((item) => {
+  return ADD_ITEMS.map((raw): AddEntry => {
+    const item = { ...raw, type: ADD_TYPE[raw.key], live: true };
     if (item.key === "system_prompt" || item.key === "dataset" || item.key === "repo") {
       const live = item.key === "system_prompt" ? systemPromptAvailable : item.key === "dataset" ? datasetAvailable : repoAvailable;
       const handler = item.key === "system_prompt" ? onAddSystemPrompt : item.key === "dataset" ? onAddDataset : onAddRepo;
-      return { ...item, ready: live, line: live ? item.line : TILE_OFF_LINE, enabled: live && Boolean(handler), onSelect: handler };
+      return { ...item, live, line: live ? item.line : TILE_OFF_LINE, enabled: live && Boolean(handler), onSelect: handler };
     }
-    if (item.key === "retrieval") return { ...item, ready: retrievalAvailable, line: retrievalAvailable ? item.line : TILE_OFF_LINE, enabled: retrievalAvailable && Boolean(onAddRetrieval), onSelect: onAddRetrieval };
+    if (item.key === "retrieval") return { ...item, live: retrievalAvailable, line: retrievalAvailable ? item.line : TILE_OFF_LINE, enabled: retrievalAvailable && Boolean(onAddRetrieval), onSelect: onAddRetrieval };
     if (item.key === "decision") {
-      return { ...item, line: decisionAvailable ? item.line : DECISION_OFF_LINE, enabled: item.ready && decisionAvailable && Boolean(onAddDecision), onSelect: onAddDecision };
+      return { ...item, live: decisionAvailable, line: decisionAvailable ? item.line : DECISION_OFF_LINE, enabled: item.ready && decisionAvailable && Boolean(onAddDecision), onSelect: onAddDecision };
     }
     if (item.key === "check") {
       // Listed always; offered once the build has an agent, a team or code to check.
@@ -368,17 +392,22 @@ function tileEntries({ onAddFile, onAddPromptFocus, onAddTool, onAddResult, onAd
 
 /* ── the Add menu ── */
 
-function AddLabel({ name, line }: { name: string; line: string }) {
+/** UX-02 P6: an entry that cannot be added yet (Check) keeps its name in `--text-disabled` and its reason in `--text2`. */
+function AddLabel({ name, line, enabled = true }: { name: string; line: string; enabled?: boolean }) {
   return (
     <>
-      <span style={text(13, 500, t.text)}>{name}</span>
-      <span style={text(11.5, 400, t.label)}>{line}</span>
+      <span style={text(13, 500, enabled ? t.text : t.textDisabled)}>{name}</span>
+      <span style={text(11.5, 400, enabled ? t.label : t.text2)}>{line}</span>
     </>
   );
 }
 
+const MENU_RULE = { height: 1, margin: "4px 0", background: t.hairline } as const;
+
 const addItem = (enabled: boolean): CSSProperties => ({
   ...menuItem(enabled, false),
+  // UX-02 P6: a disabled entry says so in its colours, not by dimming.
+  filter: undefined,
   flexDirection: "column",
   alignItems: "flex-start",
   justifyContent: "center",
@@ -387,39 +416,19 @@ const addItem = (enabled: boolean): CSSProperties => ({
   padding: "6px 12px",
 });
 
-/** CA-14 P5: where a new tile goes. With two or more sessions, every Add item first asks "Add to which session?". */
+/** CA-14 P5: where a new step tile goes: a session's own "+ Add step tile" row names its session. */
 export interface AddTargets {
-  sessions?: readonly { key: string; label: string }[];
-  /** The session last added to: chosen by default, so a tap or Enter goes straight on. */
-  session?: string | null;
   /** Called, in the same tap, with the session chosen, just before the item runs. */
   onSession?: (key: string) => void;
 }
 
-export const ADD_ASK_COPY = { title: "Add to which session?", row: "Add tile" } as const;
+/** UX-02 P6: the field at the top of the menu. */
+export const ADD_SEARCH_COPY = { label: "Find a step tile", placeholder: "Find a step tile", none: "No step tile matches." } as const;
 
-/** The small list that asks "Add to which session?": one row per session, the default under the cursor. */
-function SessionAsk({ sessions, current, onPick, phone }: { sessions: readonly { key: string; label: string }[]; current: string | null; onPick: (key: string) => void; phone: boolean }) {
-  const chosen = sessions.some((entry) => entry.key === current) ? current : (sessions[sessions.length - 1]?.key ?? null);
-  return (
-    <div role="radiogroup" aria-label={ADD_ASK_COPY.title} data-testid="add-ask" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      {sessions.map((entry) => (
-        <button
-          key={entry.key}
-          type="button"
-          role="radio"
-          aria-checked={entry.key === chosen}
-          autoFocus={entry.key === chosen}
-          onClick={() => onPick(entry.key)}
-          style={{ ...menuItem(true, phone), ...bareButton, width: "100%", textAlign: "left", boxSizing: "border-box", gap: 8, ...(entry.key === chosen ? { background: t.selectedFill } : null) }}
-        >
-          <span style={{ width: 14, display: "inline-flex", flexShrink: 0 }}>{entry.key === chosen ? <Glyph name="check" size={14} /> : null}</span>
-          <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{entry.label}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
+/** UX-02 P6: two columns of entries in a group on a computer. */
+export const ADD_MENU_WIDTH = 520;
+
+export const ADD_ASK_COPY = { row: "Add step tile" } as const;
 
 /**
  * CA-10 (CA-09 F1, F2). On a computer, a dropdown that fits the screen (`MenuContent`, `menuSurface`) and is not
@@ -427,22 +436,15 @@ function SessionAsk({ sessions, current, onPick, phone }: { sessions: readonly {
  * straight back. A row that moves focus (Prompt) says so, and the menu then leaves focus where the row put it instead
  * of returning it to Add. On a phone, the same rows in a bottom sheet, 44pt each, under "Add".
  *
- * CA-14 P5: the same menu is the "+ Add tile" row at the end of a session (`variant: "row"`, `fixedSession`),
- * which already knows its session. The Add button at the top asks which session first when there are two or more
- * (`targets`): a small list on a computer, and the first screen of the sheet on a phone.
+ * CA-14 P5: the menu is the "+ Add step tile" row at the end of a session (`fixedSession`), which knows its session. UX-02 P7:
+ * it is the one way to add a step tile; the Build header's Add (and its "Add to which session?") is gone.
  */
-export function AddMenu({ phone, targets, variant = "button", fixedSession, ...props }: AddMenuProps & { phone: boolean; targets?: AddTargets; variant?: "button" | "row"; fixedSession?: string }) {
+export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps & { phone: boolean; targets?: AddTargets; fixedSession?: string }) {
   const [open, setOpen] = useState(false);
-  /** The item waiting for its session to be chosen (computer). */
-  const [asking, setAsking] = useState<AddEntry | null>(null);
-  /** The sheet's first screen asks for the session; the second lists the items (phone). */
-  const [picked, setPicked] = useState(false);
   /** Set by a row that moved focus, read once as the menu closes. */
   const moved = useRef(false);
   const addButton = useRef<HTMLButtonElement>(null);
   const rowTrigger = useInteractive<HTMLButtonElement>();
-  const askBox = useRef<HTMLDivElement>(null);
-  const ask = variant === "button" && (targets?.sessions?.length ?? 0) > 1;
   /* As the menu or sheet closes: focus stays where a row put it, or goes back to Add WITHOUT SCROLLING, so a row that
      scrolled the page to what it added (Result, Session) is not undone. A tap does not focus a button on an iPhone,
      so Add is named, not "whatever had focus before". */
@@ -455,15 +457,43 @@ export function AddMenu({ phone, targets, variant = "button", fixedSession, ...p
     addButton.current?.focus({ preventScroll: true });
   };
   const entries = addEntries(props);
+  /* UX-02 P6: at 1280 by 720 the grouped menu still scrolled (the report has the measure), so it has a field that finds an entry by
+     its name or its line, at once: no stagger and no swap. Focused when the menu opens; Down goes to the first entry, Enter runs it. */
+  const [query, setQuery] = useState("");
+  const search = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!open || phone) return;
+    // After the menu has taken focus itself (Radix focuses its content as it opens).
+    const frame = window.requestAnimationFrame(() => search.current?.focus());
+    return () => window.cancelAnimationFrame(frame);
+  }, [open, phone]);
+  const found = query.trim() ? entries.filter((item) => `${item.name} ${item.line}`.toLowerCase().includes(query.trim().toLowerCase())) : entries;
+  /* UX-02 P6: grouped by node-type category, from the live registry when it has been read, else the fallback table. */
+  const layout = addMenuLayout(found, props.nodeCategories);
+  /** Deployment is closed until opened, in place, at once. */
+  const [deployOpen, setDeployOpen] = useState(false);
   /** Run an item for a session: the session first, in the same tap. */
-  const run = (item: AddEntry, key?: string) => {
-    const session = key ?? fixedSession;
-    if (session) targets?.onSession?.(session);
+  const run = (item: AddEntry) => {
+    if (fixedSession) targets?.onSession?.(fixedSession);
     return item.onSelect?.();
   };
+  const desktopItem = (item: AddEntry) => (
+    <Menu.Item
+      key={item.key}
+      disabled={!item.enabled}
+      onPointerEnter={item.onWarm}
+      onFocus={item.onWarm}
+      onSelect={() => {
+        const result = run(item);
+        if (item.movesFocus && result === true) moved.current = true;
+      }}
+      style={addItem(item.enabled)}
+    >
+      <AddLabel name={item.name} line={item.line} enabled={item.enabled} />
+    </Menu.Item>
+  );
 
   const trigger = (
-    variant === "row" ? (
       <button
         ref={addButton}
         type="button"
@@ -495,9 +525,6 @@ export function AddMenu({ phone, targets, variant = "button", fixedSession, ...p
         </span>
         {ADD_ASK_COPY.row}
       </button>
-    ) : (
-      <MenuButton ref={addButton} label="Add" value="" data-testid="sandbox-add" {...(phone ? { "aria-haspopup": "dialog" as const, "aria-expanded": open, style: { height: 44 }, onClick: () => setOpen(true) } : null)} />
-    )
   );
 
   if (phone) {
@@ -513,116 +540,135 @@ export function AddMenu({ phone, targets, variant = "button", fixedSession, ...p
       closeNow(setOpen);
       if (item.onSelect?.() !== true) moved.current = false;
     };
-    const askFirst = ask && !picked;
     return (
       <>
         {trigger}
-        <BrandBottomSheet
-          open={open}
-          onOpenChange={(next) => {
-            setOpen(next);
-            if (!next) setPicked(false);
-          }}
-          title={askFirst ? ADD_ASK_COPY.title : variant === "row" ? ADD_ASK_COPY.row : "Add"}
-          onCloseAutoFocus={backToAdd}
-          data-testid="add-sheet"
-        >
-          {askFirst && targets?.sessions ? (
-            <SessionAsk
-              sessions={targets.sessions}
-              current={targets.session ?? null}
-              phone
-              onPick={(key) => {
-                targets.onSession?.(key);
-                setPicked(true);
-              }}
-            />
-          ) : (
-            entries.map((item) => (
-              <Fragment key={item.key}>
-                {item.group ? <p style={{ ...text(11.5, 500, t.label), margin: "12px 16px 4px" }}>{item.group}</p> : null}
-                <SheetRow name={item.name} line={item.line} disabled={!item.enabled} onSelect={() => choose(item)} />
-              </Fragment>
-            ))
+        <BrandBottomSheet open={open} onOpenChange={setOpen} title={ADD_ASK_COPY.row} onCloseAutoFocus={backToAdd} data-testid="add-sheet">
+          {(
+            /* UX-02 P6: the same groups, one column. */
+            <>
+              {layout.first ? <SheetRow name={layout.first.name} line={layout.first.line} disabled={!layout.first.enabled} onSelect={() => choose(layout.first as AddEntry)} /> : null}
+              {layout.groups.map((group) => (
+                <Fragment key={group.category}>
+                  <p style={{ ...text(11.5, 500, t.label), margin: "12px 16px 4px" }}>{group.head}</p>
+                  {group.entries.map((item) => (
+                    <SheetRow key={item.key} name={item.name} line={item.line} disabled={!item.enabled} onSelect={() => choose(item)} />
+                  ))}
+                </Fragment>
+              ))}
+              {layout.loose.map((item) => (
+                <SheetRow key={item.key} name={item.name} line={item.line} disabled={!item.enabled} onSelect={() => choose(item)} />
+              ))}
+              {layout.deployment.length > 0 ? <SheetRow name={DEPLOYMENT_GROUP_HEAD} line="" expanded={deployOpen} onSelect={() => setDeployOpen((open) => !open)} /> : null}
+              {deployOpen
+                ? layout.deployment.map((item) => <SheetRow key={item.key} inset name={item.name} line={item.line} disabled={!item.enabled} onSelect={() => choose(item)} />)
+                : null}
+              {layout.library ? <SheetRow name={layout.library.name} line={layout.library.line} disabled={!layout.library.enabled} onSelect={() => choose(layout.library as AddEntry)} /> : null}
+            </>
           )}
         </BrandBottomSheet>
       </>
     );
   }
 
+  /** The first entry the search leaves that can run. */
+  const firstFound = [layout.first, ...layout.groups.flatMap((group) => group.entries), ...layout.loose, ...layout.deployment, layout.library].find((item): item is AddEntry => Boolean(item?.enabled));
   const menu = (
-    <Menu.Root open={open} onOpenChange={setOpen} modal={false}>
+    <Menu.Root
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setQuery("");
+      }}
+      modal={false}
+    >
       <Menu.Trigger asChild>{trigger}</Menu.Trigger>
       <Menu.Portal>
-        <MenuContent align={variant === "row" ? "start" : "end"} sideOffset={6} style={menuSurface(280)} onCloseAutoFocus={asking ? (event) => event.preventDefault() : backToAdd}>
-          {entries.map((item) => {
-            return (
-              <Fragment key={item.key}>
-              {item.group ? <Menu.Label style={{ ...text(11.5, 500, t.label), padding: "8px 12px 4px" }}>{item.group}</Menu.Label> : null}
+        <MenuContent
+          align="start"
+          sideOffset={6}
+          style={menuSurface(ADD_MENU_WIDTH)}
+          onCloseAutoFocus={backToAdd}
+        >
+          <input
+            ref={search}
+            type="search"
+            aria-label={ADD_SEARCH_COPY.label}
+            placeholder={ADD_SEARCH_COPY.placeholder}
+            value={query}
+            autoComplete="off"
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowDown") {
+                event.preventDefault();
+                event.currentTarget.closest("[data-radix-menu-content]")?.querySelector<HTMLElement>('[role="menuitem"]:not([data-disabled])')?.focus();
+                return;
+              }
+              if (event.key === "Enter") {
+                event.preventDefault();
+                if (!firstFound) return;
+                const result = run(firstFound);
+                if (firstFound.movesFocus && result === true) moved.current = true;
+                setOpen(false);
+                setQuery("");
+                return;
+              }
+              // The menu's own type-ahead must not take the letters typed here; Escape still closes it.
+              if (event.key !== "Escape" && event.key !== "Tab") event.stopPropagation();
+            }}
+            style={{ ...wellField, height: 32, padding: "0 10px", marginBottom: 4, ...text(13, 400, t.text) }}
+          />
+          {firstFound ? null : <p style={{ ...text(12.5, 400, t.label), margin: 0, padding: "8px 12px" }}>{ADD_SEARCH_COPY.none}</p>}
+          {/* UX-02 P6: Prompt first, then the groups by category, the single entries, Deployment (closed until opened), From Library. */}
+          {layout.first ? desktopItem(layout.first) : null}
+          {layout.first && (layout.groups.length > 0 || layout.loose.length > 0) ? <Menu.Separator style={MENU_RULE} /> : null}
+          {layout.groups.map((group) => (
+            <Fragment key={group.category}>
+              <Menu.Label data-testid="add-group-head" style={{ ...text(11.5, 500, t.label), padding: "8px 12px 4px" }}>{group.head}</Menu.Label>
+              <div role="none" data-testid="add-group" data-head={group.head} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 4 }}>
+                {group.entries.map(desktopItem)}
+              </div>
+            </Fragment>
+          ))}
+          {layout.loose.length > 0 ? (
+            <div role="none" data-testid="add-loose" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 4 }}>
+              {layout.loose.map(desktopItem)}
+            </div>
+          ) : null}
+          {layout.deployment.length > 0 ? (
+            <>
               <Menu.Item
-                disabled={!item.enabled}
-                onPointerEnter={item.onWarm}
-                onFocus={item.onWarm}
-                onSelect={() => {
-                  if (ask) {
-                    setAsking(item);
-                    return;
-                  }
-                  const result = run(item);
-                  if (item.movesFocus && result === true) moved.current = true;
+                aria-expanded={deployOpen}
+                data-testid="add-deployment-group"
+                onSelect={(event) => {
+                  event.preventDefault();
+                  setDeployOpen((open) => !open);
                 }}
-                style={addItem(item.enabled)}
+                style={{ ...menuItem(true, false), ...text(11.5, 500, t.label), justifyContent: "space-between", gap: 8 }}
               >
-                <AddLabel name={item.name} line={item.line} />
+                <span>{DEPLOYMENT_GROUP_HEAD}</span>
+                <span aria-hidden="true" style={{ display: "inline-flex" }}>
+                  <Glyph name={deployOpen ? "chevd" : "chev"} size={16} />
+                </span>
               </Menu.Item>
-              </Fragment>
-            );
-          })}
+              {deployOpen || query.trim() ? (
+                <div role="none" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 4 }}>
+                  {layout.deployment.map(desktopItem)}
+                </div>
+              ) : null}
+            </>
+          ) : null}
+          {layout.library ? (
+            <>
+              <Menu.Separator style={MENU_RULE} />
+              {desktopItem(layout.library)}
+            </>
+          ) : null}
         </MenuContent>
       </Menu.Portal>
     </Menu.Root>
   );
-  if (!ask) return menu;
-  return (
-    <Popover.Root open={asking !== null} onOpenChange={(next) => !next && setAsking(null)}>
-      <Popover.Anchor asChild>
-        <span style={{ display: "inline-flex" }}>{menu}</span>
-      </Popover.Anchor>
-      <Popover.Portal>
-        <Popover.Content
-          align="end"
-          sideOffset={6}
-          collisionPadding={16}
-          aria-label={ADD_ASK_COPY.title}
-          onOpenAutoFocus={(event) => {
-            // The session last added to is under the cursor, so Enter goes straight on.
-            event.preventDefault();
-            askBox.current?.querySelector<HTMLElement>('[aria-checked="true"]')?.focus();
-          }}
-          onCloseAutoFocus={backToAdd}
-          style={{ ...menuSurface(300), zIndex: 52, padding: 4 }}
-        >
-          <p style={{ ...text(12, 500, t.text2), margin: 0, padding: "6px 12px 4px" }}>{ADD_ASK_COPY.title}</p>
-          <div ref={askBox}>
-          {targets?.sessions ? (
-            <SessionAsk
-              sessions={targets.sessions}
-              current={targets.session ?? null}
-              phone={false}
-              onPick={(key) => {
-                const item = asking;
-                setAsking(null);
-                if (!item) return;
-                const result = run(item, key);
-                if (item.movesFocus && result === true) moved.current = true;
-              }}
-            />
-          ) : null}
-          </div>
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
-  );
+  return menu;
 }
 
 /* ── View (CA-14 P6) ── */
@@ -1192,36 +1238,6 @@ function SandboxBody(props: SandboxViewProps) {
   const postNode = props.post ? guard("Post", props.post) : null;
   const mapNode = guard("Map", props.map ?? null);
 
-  const addMenu = (
-    <AddMenu
-      phone={phone}
-      targets={props.addTargets}
-      onAddFile={props.onAddFile}
-      onAddPromptFocus={props.onAddPromptFocus}
-      onAddTool={props.onAddTool}
-      onAddResult={props.onAddResult}
-      onAddAgent={props.onAddAgent}
-      onAddDecision={props.onAddDecision}
-      decisionAvailable={props.decisionAvailable}
-      onAddSystemPrompt={props.onAddSystemPrompt}
-      onAddDataset={props.onAddDataset}
-      onAddRetrieval={props.onAddRetrieval}
-      retrievalAvailable={props.retrievalAvailable}
-      onAddRepo={props.onAddRepo}
-      systemPromptAvailable={props.systemPromptAvailable}
-      datasetAvailable={props.datasetAvailable}
-      repoAvailable={props.repoAvailable}
-      onAddManual={props.onAddManual}
-      onAddCode={props.onAddCode}
-      onAddCheck={props.onAddCheck}
-      checkable={props.checkable}
-      onAddFromLibrary={props.onAddFromLibrary}
-      onWarmLibrary={props.onWarmLibrary}
-      deploymentLive={props.deploymentLive}
-      onAddDeployment={props.onAddDeployment}
-      onWarmDeployment={props.onWarmDeployment}
-    />
-  );
   const buildPanel = (
     <section
       ref={buildRef}
@@ -1264,13 +1280,11 @@ function SandboxBody(props: SandboxViewProps) {
             </Button>
             <span style={{ flexGrow: 1 }} />
             {props.viewOptions ? <ViewMenu phone view={props.viewOptions} /> : null}
-            {addMenu}
           </span>
         ) : null}
         {phone || !props.find?.open ? null : <FindField find={props.find} />}
         {phone || !props.find ? null : <FindButton find={props.find} />}
         {phone ? null : props.viewOptions ? <ViewMenu phone={false} view={props.viewOptions} /> : null}
-        {phone ? null : addMenu}
       </div>
       {lens === "list" ? props.sessionList : null}
       {guard("Build", props.emptyBuild ? <EmptyBuild {...props.emptyBuild} /> : (props.list ?? (listHint(phone) ? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{listHint(phone)}</p> : null)))}

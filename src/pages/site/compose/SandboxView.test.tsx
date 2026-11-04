@@ -9,7 +9,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sandboxViewProps } from "@/dev/fixtures/sandbox";
 
 import { SandboxView as SandboxView } from "./SandboxView";
-import { ADD_ITEMS, addEntries, countsLine, listHint, notSavedLine, type SandboxViewProps } from "./SandboxView";
+import { addMenuLayout } from "./addMenuGroups";
+import { AddMenu, type AddMenuProps, ADD_ITEMS, addEntries, countsLine, listHint, notSavedLine, type SandboxViewProps } from "./SandboxView";
 
 function stubWidth(px: number) {
   vi.stubGlobal("matchMedia", (query: string) => {
@@ -28,6 +29,11 @@ function view(over: Partial<SandboxViewProps> = {}) {
     </MemoryRouter>,
   );
   return props;
+}
+
+/** UX-02 P7: the Add step tile menu of a session, as each session's row draws it (the Build header's Add is gone). */
+function addRow(over: Partial<AddMenuProps> = {}, phone = false) {
+  render(<AddMenu phone={phone} fixedSession="s1" {...over} />);
 }
 
 beforeEach(() => {
@@ -147,8 +153,8 @@ describe("SandboxView on a phone", () => {
 describe("the Add menu (UI-P69)", () => {
   it("opens the Add dialog from Add › Agent", async () => {
     const onAddAgent = vi.fn();
-    view({ onAddAgent });
-    fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
+    addRow({ onAddAgent });
+    fireEvent.keyDown(screen.getByTestId("add-to-session"), { key: "Enter" });
     const item = await screen.findByRole("menuitem", { name: /^Agent/ });
     expect(item.getAttribute("aria-disabled")).not.toBe("true");
     fireEvent.click(item);
@@ -156,8 +162,8 @@ describe("the Add menu (UI-P69)", () => {
   });
 
   it("leaves Agent disabled when nothing opens the dialog", async () => {
-    view();
-    fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
+    addRow();
+    fireEvent.keyDown(screen.getByTestId("add-to-session"), { key: "Enter" });
     const item = await screen.findByRole("menuitem", { name: /^Agent/ });
     expect(item.getAttribute("aria-disabled")).toBe("true");
   });
@@ -165,7 +171,7 @@ describe("the Add menu (UI-P69)", () => {
 
 describe("the Add menu holds exactly 15 items, all enabled (UI-P70, CA-02 P7, CA-03 P5, CA-12 P4, SV-28 P4, SV-29 P2)", () => {
   it("enables every item once each has something to open", async () => {
-    view({
+    addRow({
       onAddCheck: vi.fn(),
       checkable: true,
       onAddFile: vi.fn(),
@@ -186,7 +192,7 @@ describe("the Add menu holds exactly 15 items, all enabled (UI-P70, CA-02 P7, CA
       repoAvailable: true,
       onAddFromLibrary: vi.fn(),
     });
-    fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
+    fireEvent.keyDown(screen.getByTestId("add-to-session"), { key: "Enter" });
     const items = await screen.findAllByRole("menuitem");
     expect(items).toHaveLength(15);
     expect(items[0].textContent).toBe("PromptMessage sent to a model");
@@ -195,8 +201,8 @@ describe("the Add menu holds exactly 15 items, all enabled (UI-P70, CA-02 P7, CA
   });
 
   it("lists Check disabled, saying why, when the build has nothing to check (CA-03 P5)", async () => {
-    view({ onAddCheck: vi.fn(), checkable: false });
-    fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
+    addRow({ onAddCheck: vi.fn(), checkable: false });
+    fireEvent.keyDown(screen.getByTestId("add-to-session"), { key: "Enter" });
     const check = await screen.findByRole("menuitem", { name: /^Check/ });
     expect(check.getAttribute("aria-disabled")).toBe("true");
     expect(check.textContent).toBe("CheckAdd an agent or code first");
@@ -204,28 +210,28 @@ describe("the Add menu holds exactly 15 items, all enabled (UI-P70, CA-02 P7, CA
 
   it("opens the code dialog from Add › Code, and leaves it disabled when nothing opens it", async () => {
     const onAddCode = vi.fn();
-    view({ onAddCode });
-    fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
+    addRow({ onAddCode });
+    fireEvent.keyDown(screen.getByTestId("add-to-session"), { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: /^Code/ }));
     expect(onAddCode).toHaveBeenCalled();
     cleanup();
-    view();
-    fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
+    addRow();
+    fireEvent.keyDown(screen.getByTestId("add-to-session"), { key: "Enter" });
     expect((await screen.findByRole("menuitem", { name: /^Code/ })).getAttribute("aria-disabled")).toBe("true");
   });
 
   it("opens the manual step dialog from Add › Manual step", async () => {
     const onAddManual = vi.fn();
-    view({ onAddManual });
-    fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
+    addRow({ onAddManual });
+    fireEvent.keyDown(screen.getByTestId("add-to-session"), { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: /Manual step/ }));
     expect(onAddManual).toHaveBeenCalled();
   });
 
   it("SV-28 P4: Add › Approval opens the same window for a gate, with its line", async () => {
     const onAddManual = vi.fn();
-    view({ onAddManual });
-    fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
+    addRow({ onAddManual });
+    fireEvent.keyDown(screen.getByTestId("add-to-session"), { key: "Enter" });
     const item = await screen.findByRole("menuitem", { name: /^Approval/ });
     expect(item.textContent).toBe("ApprovalA person approves before work continues");
     fireEvent.click(item);
@@ -301,11 +307,15 @@ describe("the refined look (UI-P93)", () => {
     expect(html).toContain("position:relative;display:block;padding:32px 34px 0");
   });
 
-  it("opens Add from a menu button with no icon of its own but the chevron", () => {
+  // UX-02 P7: one way to add at each level. The Build header's Add is gone, on a computer and on a phone; a step tile is added
+  // from its session's "+ Add step tile".
+  it("has no Add in the Build header, on a computer or a phone", () => {
     view();
-    const add = screen.getByTestId("sandbox-add");
-    expect(add.getAttribute("data-ui")).toBe("menu-button");
-    expect(add.textContent).toBe("Add");
+    expect(screen.queryByTestId("sandbox-add")).toBeNull();
+    cleanup();
+    stubWidth(390);
+    view();
+    expect(screen.queryByTestId("sandbox-add")).toBeNull();
   });
 });
 
@@ -450,8 +460,8 @@ describe("the post on a phone", () => {
 
 describe("CA-10 · the Add menu fits the screen and keeps the focus a row gives", () => {
   it("draws the menu no taller than Radix's available height, scrolling inside itself", async () => {
-    view({ onAddFile: vi.fn() });
-    fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
+    addRow({ onAddFile: vi.fn() });
+    fireEvent.keyDown(screen.getByTestId("add-to-session"), { key: "Enter" });
     const menu = await screen.findByRole("menu");
     expect(menu.style.maxHeight).toBe("var(--radix-dropdown-menu-content-available-height)");
     expect(menu.style.overflowY).toBe("auto");
@@ -465,8 +475,8 @@ describe("CA-10 · the Add menu fits the screen and keeps the focus a row gives"
       field.focus({ preventScroll: true });
       return true;
     });
-    view({ onAddPromptFocus });
-    fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
+    addRow({ onAddPromptFocus });
+    fireEvent.keyDown(screen.getByTestId("add-to-session"), { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: /^Prompt/ }));
     expect(onAddPromptFocus).toHaveBeenCalledTimes(1);
     expect(document.activeElement).toBe(field);
@@ -479,8 +489,8 @@ describe("CA-10 · the Add menu fits the screen and keeps the focus a row gives"
 
   it("a row that moves no focus leaves focus with Add as before", async () => {
     const onAddManual = vi.fn();
-    view({ onAddManual });
-    const add = screen.getByTestId("sandbox-add");
+    addRow({ onAddManual });
+    const add = screen.getByTestId("add-to-session");
     add.focus();
     fireEvent.keyDown(add, { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: /Manual step/ }));
@@ -502,16 +512,21 @@ describe("CA-10 · on a phone, Add opens as a bottom sheet", () => {
     onAddCode: vi.fn(),
   });
 
-  it("holds the same twelve items as 44pt rows under a plain Add heading, with a grab line", () => {
+  it("holds the same items as 44pt rows under its Add step tile heading, with a grab line", () => {
     stubWidth(390);
-    view({ ...all(), onAddPromptFocus: vi.fn() });
+    const props = { ...all(), onAddPromptFocus: vi.fn() };
+    addRow(props, true);
     expect(screen.queryByRole("menu")).toBeNull();
-    fireEvent.click(screen.getByTestId("sandbox-add"));
-    const sheet = screen.getByRole("dialog", { name: "Add" });
-    expect(within(sheet).getByRole("heading", { name: "Add" }).textContent).toBe("Add");
+    fireEvent.click(screen.getByTestId("add-to-session"));
+    const sheet = screen.getByRole("dialog", { name: "Add step tile" });
+    expect(within(sheet).getByRole("heading", { name: "Add step tile" }).textContent).toBe("Add step tile");
     expect(within(sheet).getByTestId("sheet-grab-line")).toBeTruthy();
-    const rows = within(within(sheet).getByRole("group", { name: "Add" })).getAllByRole("button");
-    expect(rows.map((row) => row.firstChild?.textContent)).toEqual(ADD_ITEMS.map((item) => item.name));
+    const rows = within(within(sheet).getByRole("group", { name: "Add step tile" })).getAllByRole("button");
+    // UX-02 P6: in the menu's groups (Prompt first, then by node-type category), one column; entries not live are left out.
+    const layout = addMenuLayout(addEntries(props), undefined);
+    const names = [layout.first, ...layout.groups.flatMap((group) => group.entries), ...layout.loose, layout.library].flatMap((item) => (item ? [item.name] : []));
+    expect(rows.map((row) => row.firstChild?.textContent)).toEqual(names);
+    expect(names[0]).toBe("Prompt");
     for (const row of rows) expect(row.style.minHeight).toBe("44px");
   });
 
@@ -521,15 +536,15 @@ describe("CA-10 · on a phone, Add opens as a bottom sheet", () => {
     document.body.appendChild(field);
     let sheetOpenAtFocus: boolean | null = null;
     const onAddPromptFocus = vi.fn(() => {
-      sheetOpenAtFocus = screen.queryByRole("dialog", { name: "Add" }) !== null;
+      sheetOpenAtFocus = screen.queryByRole("dialog", { name: "Add step tile" }) !== null;
       field.focus({ preventScroll: true });
       return true;
     });
-    view({ ...all(), onAddPromptFocus });
-    fireEvent.click(screen.getByTestId("sandbox-add"));
-    fireEvent.click(within(screen.getByRole("dialog", { name: "Add" })).getByRole("button", { name: /^Prompt/ }));
+    addRow({ ...all(), onAddPromptFocus }, true);
+    fireEvent.click(screen.getByTestId("add-to-session"));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Add step tile" })).getByRole("button", { name: /^Prompt/ }));
     expect(sheetOpenAtFocus).toBe(false);
-    expect(screen.queryByRole("dialog", { name: "Add" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "Add step tile" })).toBeNull();
     expect(document.activeElement).toBe(field);
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(document.activeElement).toBe(field);
@@ -539,21 +554,21 @@ describe("CA-10 · on a phone, Add opens as a bottom sheet", () => {
   it("any other row shuts the sheet, runs once, and gives focus back to Add", async () => {
     stubWidth(390);
     const props = all();
-    view({ ...props, onAddPromptFocus: vi.fn() });
-    fireEvent.click(screen.getByTestId("sandbox-add"));
-    fireEvent.click(within(screen.getByRole("dialog", { name: "Add" })).getByRole("button", { name: /^Tool/ }));
+    addRow({ ...props, onAddPromptFocus: vi.fn() }, true);
+    fireEvent.click(screen.getByTestId("add-to-session"));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Add step tile" })).getByRole("button", { name: /^Tool/ }));
     expect(props.onAddTool).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole("dialog", { name: "Add" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "Add step tile" })).toBeNull();
     await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(document.activeElement).toBe(screen.getByTestId("sandbox-add"));
+    expect(document.activeElement).toBe(screen.getByTestId("add-to-session"));
   });
 
   it("Escape closes it", () => {
     stubWidth(390);
-    view({ ...all(), onAddPromptFocus: vi.fn() });
-    fireEvent.click(screen.getByTestId("sandbox-add"));
-    fireEvent.keyDown(screen.getByRole("dialog", { name: "Add" }), { key: "Escape" });
-    expect(screen.queryByRole("dialog", { name: "Add" })).toBeNull();
+    addRow({ ...all(), onAddPromptFocus: vi.fn() }, true);
+    fireEvent.click(screen.getByTestId("add-to-session"));
+    fireEvent.keyDown(screen.getByRole("dialog", { name: "Add step tile" }), { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Add step tile" })).toBeNull();
   });
 });
 

@@ -66,8 +66,24 @@ export function mount(path: string, { faults = [], delays = [], keep = false, se
   );
 }
 
-/** The page has loaded: the Add button is there. CA-24 P2: an empty build has no prompt box until Add › Prompt. */
-export const field = () => screen.findByTestId("sandbox-add", undefined, { timeout: 10_000 });
+/** The page has loaded: the Build panel's head is there (UX-02 P7: the header's Add, which this waited for, is gone). CA-24 P2: an empty build has no prompt box until Add › Prompt. */
+export const field = () => screen.findByTestId("sandbox-build-head-row", undefined, { timeout: 10_000 });
+
+/**
+ * UX-02 P7: the Add step tile menu of the first session (the header's Add is gone): on an empty build, its "New empty session" first.
+ * On a computer resolves once the menu is open; on a phone with the sheet.
+ */
+export async function openAddRow(phone = false): Promise<HTMLElement> {
+  await waitFor(() => expect(screen.queryAllByTestId("add-to-session").length > 0 || screen.queryByTestId("empty-build-new")).toBeTruthy(), { timeout: 10_000 });
+  if (screen.queryAllByTestId("add-to-session").length === 0) fireEvent.click(screen.getByTestId("empty-build-new"));
+  const row = (await screen.findAllByTestId("add-to-session", undefined, { timeout: 10_000 }))[0];
+  if (phone) {
+    fireEvent.click(row);
+    return screen.findByTestId("add-sheet");
+  }
+  fireEvent.keyDown(row, { key: "Enter" });
+  return screen.findByRole("menu");
+}
 
 /** "Add a session", then "Add from your connected chats": the list. CA-24 P2: an empty build offers it in "Add your first session". */
 export async function openRow() {

@@ -40,7 +40,8 @@ async function open() {
   await mountCa20(() => undefined, { keep: true });
 }
 
-const openAdd = () => fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
+/** UX-02 P7: the first session's Add step tile (the header's Add is gone). */
+const openAdd = () => fireEvent.keyDown(screen.getAllByTestId("add-to-session")[0], { key: "Enter" });
 async function openWindow() {
   openAdd();
   fireEvent.click(await screen.findByRole("menuitem", { name: /From Library/ }));
@@ -70,7 +71,8 @@ describe("Add › From Library", () => {
     openAdd();
     const item = await screen.findByRole("menuitem", { name: /From Library/ });
     expect(item.getAttribute("aria-disabled")).not.toBe("true");
-    expect(item.textContent).toContain("Steps and collections you saved");
+    // UX-02 Words: step tiles.
+    expect(item.textContent).toContain("Step tiles and collections you saved");
   });
 
   it("lists the saved steps and sessions that fit the session, and no request, filter set or collection", async () => {

@@ -85,7 +85,7 @@ async function openRow() {
 }
 
 /** The page has loaded: the Add button is there (an empty build has no prompt box until Add › Prompt). */
-const field = () => screen.findByTestId("sandbox-add", undefined, { timeout: 10_000 });
+const field = () => screen.findByTestId("sandbox-build-head-row", undefined, { timeout: 10_000 });
 
 
 /** The draft with Session 1 = the one-prompt session and Session 2 = the 66-prompt one (folded). */

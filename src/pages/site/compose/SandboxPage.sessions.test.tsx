@@ -16,6 +16,7 @@ import { PG, REPO_SCHEMA, startAuditBackend, tableRows, type Delay, type Fault }
 import { toast } from "sonner";
 import { sessionsMetaOf } from "@/lib/build/making";
 
+import { openAddRow } from "./ca20Harness";
 import { SandboxPage } from "./SandboxPage";
 
 const DRAFT = "0d0d0d0d-0000-4000-8000-000000000003";
@@ -66,10 +67,10 @@ function mount(path: string, { faults = [], delays = [], keep = false }: { fault
 }
 
 
-/** CA-24 P2: Add › Prompt on an empty build brings the first session's prompt box in place of "Add your first session". */
+/** CA-24 P2: Add › Prompt on an empty build brings the first session's prompt box in place of "Add your first session". UX-02 P7: from a session's row. */
 async function openPromptBox() {
   await field();
-  fireEvent.keyDown(await screen.findByTestId("sandbox-add"), { key: "Enter" });
+  await openAddRow();
   fireEvent.click(await screen.findByRole("menuitem", { name: /^Prompt/ }));
   return screen.findByRole("textbox", { name: "Add a prompt" }, { timeout: 10_000 });
 }
@@ -126,7 +127,7 @@ async function openRow() {
 }
 
 /** The page has loaded: the Add button is there (an empty build has no prompt box until Add › Prompt). */
-const field = () => screen.findByTestId("sandbox-add", undefined, { timeout: 10_000 });
+const field = () => screen.findByTestId("sandbox-build-head-row", undefined, { timeout: 10_000 });
 
 /** CA-24 P2: Start a new session, from the empty build's "New empty session" or the Add a session row. */
 async function startNew() {
@@ -144,10 +145,10 @@ describe("CA-12 P4 · sessions leave Add; + Add a session", () => {
   it("the Add menu has no session items", async () => {
     mount(`/compose/${DRAFT}`);
     await field();
-    fireEvent.keyDown(await screen.findByTestId("sandbox-add"), { key: "Enter" });
+    // UX-02 P7: a session's Add step tile; P6: entries whose node type is not live are left out, and Deployment is closed.
+    await openAddRow();
     const items = (await screen.findAllByRole("menuitem")).map((item) => item.textContent ?? "");
-    // The fifteen tile items (SV-28 adds Approval, SV-29 Retrieval), then SV-27's Deployment group of ten.
-    expect(items).toHaveLength(25);
+    expect(items.length).toBeGreaterThan(5);
     expect(items.join(" ")).not.toMatch(/session/i);
   });
 

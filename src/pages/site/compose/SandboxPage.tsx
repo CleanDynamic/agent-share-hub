@@ -2258,7 +2258,7 @@ function SandboxPageBody() {
     [addOneFile, addSetup, takeResultFiles],
   );
 
-  /* CA-14 P5: what the Add items do, shared by the Add button at the top and each session's "+ Add tile". */
+  /* CA-14 P5: what the Add items do, in each session's "+ Add step tile" (UX-02 P7: the one way to add a step tile). */
   const addHandlers = {
     onAddFile: pickTile,
     onAddPromptFocus,
@@ -2283,6 +2283,8 @@ function SandboxPageBody() {
     onWarmLibrary: warmLibrary,
     // SV-27 P7: Add › Deployment. Each kind is ready once its node type is live; Front end is `live_app`, live already.
     deploymentLive,
+    // UX-02 P6: the Add menu's groups, from the live registry once it is read (the menu never waits for it: it has a fallback).
+    nodeCategories: nodeTypeList.length > 0 ? Object.fromEntries(nodeTypeList.map((type) => [type.key, type.category])) : undefined,
     onAddDeployment: setDeploymentOpen,
     onWarmDeployment: warmDeployment,
   };
@@ -2317,10 +2319,9 @@ function SandboxPageBody() {
     });
   };
   const sessionList = viewOptions.sessionList && jumpItems.length >= 2 ? <SessionJump items={jumpItems} current={inView} phone={phone} onJump={onJump} /> : null;
+  /* The build's sessions, for the selection bar's Move to… (UX-02 P7: the header's Add, which asked for one, is gone). */
   const addTargets = {
     sessions: sourceSessionRows.map((row) => ({ key: row.key, label: [`Session ${row.number} · ${row.tool}`, row.title].filter(Boolean).join(" · ") })),
-    session: currentSession,
-    onSession: aimAt,
   };
 
   /* ── CA-17 P4: the map of sessions ── */
@@ -2738,8 +2739,6 @@ function SandboxPageBody() {
           />
         }
         threadNote={thread.hold}
-        {...addHandlers}
-        addTargets={addTargets}
         find={phone ? undefined : find}
         viewOptions={{ sessionList: viewOptions.sessionList, sessionCount: jumpItems.length, onChange: setViewOptions, labels: partsModel ? { value: partsModel.labels, onChange: edits.onLabels } : undefined, onColours: () => referenceActions.setColoursOpen(true), fold: foldAll }}
         sessionList={sessionList}
@@ -2804,7 +2803,7 @@ function SandboxPageBody() {
             onAccept={(suggestion) => prompts.accept(suggestion.stepId, suggestion.use, steps)}
             onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}
             onAddPrompt={stepOf.prompt}
-            addToSession={(key) => <AddMenu phone={phone} variant="row" fixedSession={key} targets={{ onSession: aimAt }} {...addHandlers} />}
+            addToSession={(key) => <AddMenu phone={phone} fixedSession={key} targets={{ onSession: aimAt }} {...addHandlers} />}
             sessionOps={{ onTitle: edits.onTitle, onMove: edits.onMove, onRemove: (key) => actions.askRemoveSessions([key]), onMergeUp: edits.onMergeUp, onMoveToPart: partsModel ? edits.onMoveToPart : undefined, onWithAbove: partsModel ? edits.onWithAbove : undefined, onRetryImport: (key) => void onRetryImport(key), onOpen: edits.onSessionOpen }}
             onDropSession={edits.onDrop}
             parts={
