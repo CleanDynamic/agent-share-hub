@@ -63,7 +63,7 @@ function SpaceLink({ to, children }: { to: string; children: string }) {
   );
 }
 
-function BuildAttachment({ attachment }: { attachment: Extract<CardAttachment, { kind: "build" }> }) {
+function BuildAttachment({ attachment, onPickTile }: { attachment: Extract<CardAttachment, { kind: "build" }>; onPickTile?: (id: string) => void }) {
   return (
     <div>
       <div style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: radiusVar("r-card"), padding: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
@@ -73,7 +73,7 @@ function BuildAttachment({ attachment }: { attachment: Extract<CardAttachment, {
         </div>
         {attachment.plaque ? <Plaque build={attachment.plaque} size="row" /> : null}
       </div>
-      <StepStripTiles tiles={attachment.tiles} openLabel="Still open" margin="8px 0 0" />
+      <StepStripTiles tiles={attachment.tiles} openLabel="Still open" margin="8px 0 0" onPick={onPickTile} />
     </div>
   );
 }
@@ -87,8 +87,9 @@ function StepAttachment({ attachment }: { attachment: Extract<CardAttachment, { 
   );
 }
 
-function Attachment({ attachment }: { attachment: CardAttachment }) {
-  if (attachment.kind === "build") return <BuildAttachment attachment={attachment} />;
+/** One attachment as the card draws it. The New post window draws the same, with a way to mark a step of a build still open. */
+export function AttachmentView({ attachment, onPickTile }: { attachment: CardAttachment; onPickTile?: (id: string) => void }) {
+  if (attachment.kind === "build") return <BuildAttachment attachment={attachment} onPickTile={onPickTile} />;
   if (attachment.kind === "step") return <StepAttachment attachment={attachment} />;
   if (attachment.kind === "line") {
     return (
@@ -239,7 +240,7 @@ export function PostCard({ card, clamp = true, moderation, engagement }: PostCar
         {card.attachments.length > 0 ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
             {card.attachments.map((attachment) => (
-              <Attachment key={attachment.key} attachment={attachment} />
+              <AttachmentView key={attachment.key} attachment={attachment} />
             ))}
           </div>
         ) : null}

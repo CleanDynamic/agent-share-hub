@@ -108,7 +108,7 @@ const snapshotOf = (attachment: PostAttachment): Record<string, unknown> => atta
 const sourceOf = (snapshot: Record<string, unknown>): Record<string, unknown> => (snapshot.source && typeof snapshot.source === "object" ? (snapshot.source as Record<string, unknown>) : {});
 
 /** One attachment as the card draws it, or null when what it names cannot be read (it is then left out). */
-export function cardAttachment(post: Post, attachment: PostAttachment, work: CardWork, signed: ReadonlyMap<string, string>): CardAttachment | null {
+export function cardAttachment(post: Pick<Post, "id" | "stillOpen" | "aboutNodeId">, attachment: PostAttachment, work: CardWork, signed: ReadonlyMap<string, string>): CardAttachment | null {
   const key = `${post.id}:${attachment.position}`;
   const facts = attachment.buildId ? work.builds.get(attachment.buildId) : undefined;
   const nodes = attachment.buildId ? (work.nodes.get(attachment.buildId) ?? []) : [];

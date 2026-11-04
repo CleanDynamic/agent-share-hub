@@ -89,8 +89,10 @@ export function workNamedBy(posts: readonly Post[]): { builds: string[]; strips:
 }
 
 /** The work a page of posts names, in at most one round: builds, nodes and (only when needed) `making`, together. */
-export async function readCardWork(posts: readonly Post[]): Promise<CardWork> {
-  const named = workNamedBy(posts);
+export const readCardWork = (posts: readonly Post[]): Promise<CardWork> => readNamedWork(workNamedBy(posts));
+
+/** The same reads for work named directly (the New post window's attachments). */
+export async function readNamedWork(named: ReturnType<typeof workNamedBy>): Promise<CardWork> {
   if (named.builds.length === 0 && named.steps.length === 0) return NO_CARD_WORK;
 
   const buildsRead = named.builds.length

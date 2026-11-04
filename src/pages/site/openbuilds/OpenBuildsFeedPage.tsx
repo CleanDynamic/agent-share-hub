@@ -140,7 +140,7 @@ export default function OpenBuildsFeedPage() {
       </PageArrival>
       {win ? (
         <Suspense fallback={null}>
-          <PostingWindows window={win} onClose={() => setWin(null)} />
+          <PostingWindows window={win} onClose={() => setWin(null)} onReopen={setWin} />
         </Suspense>
       ) : null}
     </>

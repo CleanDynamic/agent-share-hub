@@ -176,7 +176,7 @@ export default function SpacePage() {
       )}
       {win ? (
         <Suspense fallback={null}>
-          <PostingWindows window={win} onClose={() => setWin(null)} />
+          <PostingWindows window={win} onClose={() => setWin(null)} onReopen={setWin} />
         </Suspense>
       ) : null}
     </>
