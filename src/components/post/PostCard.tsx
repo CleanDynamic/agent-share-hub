@@ -47,6 +47,8 @@ export interface PostCardProps {
   topic?: TopicEngagementRowProps;
   /** UX-07 P4: the Library's compact card: the head, the heading and the first attachment, nothing else. */
   compact?: boolean;
+  /** UX-07 P7: the reactions the topic's spaces switched on, a row under the engagement row. Absent: nothing. */
+  reactions?: ReactNode;
 }
 
 const plain: CSSProperties = { fontFamily: FIGTREE, margin: 0 };
@@ -169,7 +171,7 @@ function HideReason({ onHide, onCancel }: { onHide: (reason: string) => void; on
   );
 }
 
-export function PostCard({ card: full, clamp = true, page = false, renderTile, moderation, engagement, topic, compact = false }: PostCardProps) {
+export function PostCard({ card: full, clamp = true, page = false, renderTile, moderation, engagement, topic, compact = false, reactions }: PostCardProps) {
   // The compact card keeps the head, the heading and the first attachment (all of a topic's pictures are one attachment there).
   const card: PostCardData = compact
     ? { ...full, text: "", attachments: full.attachments.slice(0, 1), stillOpen: false, tags: [], closes: null, replies: null }
@@ -284,6 +286,7 @@ export function PostCard({ card: full, clamp = true, page = false, renderTile, m
 
         {topic && !compact ? <TopicEngagementRow {...topic} style={{ marginTop: 12, maxWidth: 520, justifyContent: "space-between", ...topic.style }} /> : null}
         {!topic && !compact && engagement && card.engagementBuild ? <EngagementRow variant="card" build={card.engagementBuild} counts={engagement.counts} liked={engagement.liked} saved={engagement.saved} style={{ marginTop: 12, maxWidth: 520, justifyContent: "space-between" }} /> : null}
+        {!compact && reactions ? reactions : null}
       </div>
     </article>
   );

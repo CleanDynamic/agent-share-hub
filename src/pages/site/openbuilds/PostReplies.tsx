@@ -44,6 +44,8 @@ export interface ReplyActions {
   branchHref: (replyId: string) => string;
   /** Part 4: `Add to a draft` for an attached step. Absent: not offered. */
   renderAddToDraft?: (step: StepSource) => ReactNode;
+  /** UX-07 P7: a reply's reaction row, under its actions. Absent or null: nothing. */
+  renderReactions?: (replyId: string) => ReactNode;
 }
 
 /** A text button: 12 `--text2`, no box, underlined at once under a fine pointer's hover. On a phone its hit area is 44 high. */
@@ -188,6 +190,7 @@ export function Reply({ reply, actions, last, box }: { reply: ReplyItem; actions
           {reply.step && actions.renderAddToDraft ? actions.renderAddToDraft(reply.step) : null}
           {reply.canPin || reply.canHide ? <ReplyMenu reply={reply} actions={actions} onAsk={() => setAsking(true)} /> : null}
         </div>
+        {actions.renderReactions?.(reply.id) ?? null}
         {asking ? (
           <HideReason
             onHide={(reason) => {
