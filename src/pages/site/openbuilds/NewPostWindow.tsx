@@ -30,6 +30,9 @@ import { postableKey } from "./spaceModel";
 
 export const EMPTY_SEND = "Write something or attach work.";
 
+/** A menu opened from inside the window stands above it (the window is 71). */
+const MENU_Z = 80;
+
 /** What a picked row attaches. */
 export function inputOf(work: LabelledWork): AttachmentInput {
   if (work.size === "build") return { kind: "build", buildId: work.buildId };
@@ -181,7 +184,7 @@ export function NewPostWindow({ spaceSlug, draft: restored, onClose, onReopen }:
         <DropdownMenuTrigger asChild>
           <PostControl aria-label={`Post to: ${names || "Everyone"}`}>{`Post to: ${names || "Everyone"}`}</PostControl>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
+        <DropdownMenuContent align="start" style={{ zIndex: MENU_Z }}>
           {postable.length === 0 ? <DropdownMenuItem disabled>No spaces to post in</DropdownMenuItem> : null}
           {postable.map((space) => (
             <DropdownMenuCheckboxItem key={space.id} checked={draft.spaceIds.includes(space.id)} onSelect={(event) => event.preventDefault()} onCheckedChange={() => toggleSpace(space.id)}>
@@ -253,7 +256,7 @@ export function NewPostWindow({ spaceSlug, draft: restored, onClose, onReopen }:
           <DropdownMenuTrigger asChild>
             <PostControl>+ Add</PostControl>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
+          <DropdownMenuContent align="start" style={{ zIndex: MENU_Z }}>
             {ADDABLE.filter((entry) => !draft.added.includes(entry.value) && (entry.value !== "reward" || rewardOk)).map((entry) => (
               <DropdownMenuItem key={entry.value} onSelect={() => addRow(entry.value)}>
                 {entry.label}

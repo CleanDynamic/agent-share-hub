@@ -231,7 +231,7 @@ export function SpaceWindow({ mode, slug, onClose }: { mode: "make" | "settings"
                 <DropdownMenuTrigger asChild>
                   <PostControl aria-label="Start from another space's settings">Choose a space</PostControl>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
+                <DropdownMenuContent align="start" style={{ zIndex: 80 }}>
                   {others.length === 0 ? <DropdownMenuItem disabled>No other spaces</DropdownMenuItem> : null}
                   {others.map((entry) => (
                     <DropdownMenuItem key={entry.id} onSelect={() => setDraft(copySettings(entry))}>

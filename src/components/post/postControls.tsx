@@ -14,6 +14,17 @@ import { PRIMARY, controlPaint } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
+/** The handlers a menu or popover trigger puts on its child (Radix opens on pointer down), kept: the control's own are added to them. */
+const incomingOf = (rest: ButtonHTMLAttributes<HTMLButtonElement>) => ({
+  onMouseEnter: rest.onMouseEnter as never,
+  onMouseLeave: rest.onMouseLeave as never,
+  onFocus: rest.onFocus as never,
+  onBlur: rest.onBlur as never,
+  onPointerDown: rest.onPointerDown as never,
+  onPointerUp: rest.onPointerUp as never,
+  onPointerCancel: rest.onPointerCancel as never,
+});
+
 const base: CSSProperties = {
   boxSizing: "border-box",
   display: "inline-flex",
@@ -41,7 +52,7 @@ interface ControlProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "st
 /** A control: a button, or a link when `to` is given. */
 export const PostControl = forwardRef<HTMLButtonElement, ControlProps>(function PostControl({ to, download, block, children, type = "button", ...rest }, ref) {
   const phone = useIsPhone();
-  const { state, handlers } = useInteractive<HTMLElement>({}, { disabled: rest.disabled });
+  const { state, handlers } = useInteractive<HTMLElement>(incomingOf(rest), { disabled: rest.disabled });
   const style: CSSProperties = { ...base, height: phone ? TOUCH_MIN : 32, padding: "0 12px", fontWeight: 400, color: t.text, width: block && phone ? "100%" : undefined, ...controlPaint(state), ...ring(state.focusVisible), ...(rest.disabled ? { opacity: 0.5, cursor: "default" } : null) };
   if (to) {
     return (
@@ -60,7 +71,7 @@ export const PostControl = forwardRef<HTMLButtonElement, ControlProps>(function 
 /** The view's one primary. */
 export const PostPrimary = forwardRef<HTMLButtonElement, ControlProps>(function PostPrimary({ to, download, block, children, type = "button", ...rest }, ref) {
   const phone = useIsPhone();
-  const { state, handlers } = useInteractive<HTMLElement>({}, { disabled: rest.disabled });
+  const { state, handlers } = useInteractive<HTMLElement>(incomingOf(rest), { disabled: rest.disabled });
   const style: CSSProperties = { ...base, ...PRIMARY, height: phone ? TOUCH_MIN : 32, padding: "0 12px", fontWeight: 500, width: block && phone ? "100%" : undefined, ...ring(state.focusVisible) };
   if (to) {
     return (

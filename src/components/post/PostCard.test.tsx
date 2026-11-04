@@ -1,10 +1,11 @@
 // UX-05 Part 1: the post card. Each attachment kind renders; one heading link per card; the replies strip is absent at zero.
 
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { PostCard } from "./PostCard";
+import { PostControl } from "./postControls";
 import { splitBody, type PostCardData } from "./postCardModel";
 
 const base: PostCardData = {
@@ -146,5 +147,22 @@ describe("splitBody", () => {
     const { heading, text } = splitBody(long);
     expect(heading.length).toBeLessThanOrEqual(140);
     expect(`${heading} ${text}`.replace(/\s+/g, " ")).toBe(long);
+  });
+});
+
+describe("PostControl", () => {
+  it("keeps the handlers a menu or popover trigger puts on it (Radix opens on pointer down), and adds its own", () => {
+    const onPointerDown = vi.fn();
+    const onClick = vi.fn();
+    render(
+      <PostControl onPointerDown={onPointerDown} onClick={onClick}>
+        Open
+      </PostControl>,
+    );
+    const button = screen.getByRole("button", { name: "Open" });
+    fireEvent.pointerDown(button);
+    fireEvent.click(button);
+    expect(onPointerDown).toHaveBeenCalledTimes(1);
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 });

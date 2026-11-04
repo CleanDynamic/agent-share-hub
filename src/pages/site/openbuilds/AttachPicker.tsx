@@ -58,7 +58,7 @@ export function AttachPicker({ userId, onPick }: { userId: string; onPick: (work
       <PopoverTrigger asChild>
         <PostControl aria-haspopup="dialog">Attach work</PostControl>
       </PopoverTrigger>
-      <PopoverContent align="start" style={{ width: 360, maxWidth: "calc(100vw - 32px)", padding: 12 }} aria-label="Attach work">
+      <PopoverContent align="start" style={{ width: 360, maxWidth: "calc(100vw - 32px)", padding: 12, zIndex: 80 }} aria-label="Attach work">
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <Segmented label="Size of work" items={SIZES} value={size} onChange={(value) => setSize(value as WorkSize)} size={28} fontSize={12} fullWidth />
           <input
