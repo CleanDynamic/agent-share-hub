@@ -72,8 +72,11 @@ export const SHARE_ORIGIN = "https://buildgallery.ai";
 /** The glyph, at the size the row draws it everywhere. */
 export const ENGAGEMENT_ICON_SIZE = 18;
 
+/** The icon in a compact row (the build page's post foot): 28 buttons round a 16 glyph. */
+export const COMPACT_ICON_SIZE = 16;
+
 /** The smallest a press target may be, in either direction: 44 drawn, 36 through the density table, 44 on a phone (the touch target). */
-const hitOf = (phone: boolean) => (phone ? 44 : 36);
+const hitOf = (phone: boolean, compact = false) => (phone ? 44 : compact ? 28 : 36);
 
 /** Padding plus border either side of a button's content: half of the 12 between pairs. */
 const PAD_INLINE = 6;
@@ -82,7 +85,7 @@ const PAD_INLINE = 6;
 const BORDER = 1;
 
 /** Top and bottom padding plus border that makes an 18px icon a full target. */
-const padBlockOf = (phone: boolean) => (hitOf(phone) - ENGAGEMENT_ICON_SIZE) / 2;
+const padBlockOf = (phone: boolean, compact = false) => (hitOf(phone, compact) - (compact ? COMPACT_ICON_SIZE : ENGAGEMENT_ICON_SIZE)) / 2;
 
 /** Between an icon and its count. */
 const ICON_TO_COUNT = 4;
@@ -111,6 +114,8 @@ export interface EngagementRowProps {
   variant: "card" | "page";
   /** Add the Rebuild link, with the build's rebuild count. Absent: Like, Comment, Save, and Share on a page. */
   withRebuild?: boolean;
+  /** The build page's foot under the posts (UX-03 follow-up P13): 28 icon buttons in `--text2`, counts only where there are some. */
+  compact?: boolean;
   /** Layout for where the row stands (a width cap, spreading the actions), applied over the row's own. */
   style?: CSSProperties;
 }
@@ -120,7 +125,7 @@ export type RowEngagement = Pick<EngagementRowProps, "counts" | "liked" | "saved
 
 type Pending = { liked?: boolean; saved?: boolean; likes?: number };
 
-export function EngagementRow({ build, counts, liked, saved, variant, withRebuild = false, style }: EngagementRowProps) {
+export function EngagementRow({ build, counts, liked, saved, variant, withRebuild = false, compact = false, style }: EngagementRowProps) {
   const { isLoggedIn } = useAuth();
   const phone = useIsPhone();
   const navigate = useNavigate();
@@ -277,16 +282,16 @@ export function EngagementRow({ build, counts, liked, saved, variant, withRebuil
       style={{
         display: "flex",
         alignItems: "center",
-        flexWrap: "wrap",
+        flexWrap: compact ? "nowrap" : "wrap",
         // The first icon lines up with the text above it; its hit area reaches
         // into the padding instead.
-        marginInlineStart: -PAD_INLINE,
+        marginInlineStart: compact ? 0 : -PAD_INLINE,
         ...(variant === "card" ? { marginTop: 6 } : null),
         ...style,
       }}
     >
       {actions.map(({ id, ...action }) => (
-        <Action key={id} phone={phone} {...action} />
+        <Action key={id} phone={phone} compact={compact} {...action} />
       ))}
     </div>
   );
@@ -324,14 +329,15 @@ interface ActionSpec {
   count?: number | null;
 }
 
-type ActionProps = Omit<ActionSpec, "id"> & { phone: boolean };
+type ActionProps = Omit<ActionSpec, "id"> & { phone: boolean; compact?: boolean };
 
 /** One tertiary action: the glyph, and its count where it has one. */
-function Action({ label, slot, glyph, onPress, href, pressed, count, phone }: ActionProps) {
+function Action({ label, slot, glyph, onPress, href, pressed, count, phone, compact = false }: ActionProps) {
   const { state, handlers } = useInteractive<HTMLButtonElement | HTMLAnchorElement>();
   const countId = useId();
   const active = pressed === true;
-  const hasCount = count !== undefined;
+  /* UX-03 Part 8's zero rule, in the compact foot: a count of nothing is not drawn. */
+  const hasCount = count !== undefined && !(compact && !count);
   const name = slot ?? label.toLowerCase();
 
   const style: CSSProperties = {
@@ -339,9 +345,9 @@ function Action({ label, slot, glyph, onPress, href, pressed, count, phone }: Ac
     alignItems: "center",
     justifyContent: "center",
     gap: ICON_TO_COUNT,
-    minWidth: hitOf(phone),
-    minHeight: hitOf(phone),
-    padding: `${padBlockOf(phone) - BORDER}px ${PAD_INLINE - BORDER}px`,
+    minWidth: hitOf(phone, compact),
+    minHeight: hitOf(phone, compact),
+    padding: `${padBlockOf(phone, compact) - BORDER}px ${compact ? 5 : PAD_INLINE - BORDER}px`,
     margin: 0,
     boxSizing: "border-box",
     // A press sinks to the well; at rest the border is there but clear.
@@ -369,7 +375,7 @@ function Action({ label, slot, glyph, onPress, href, pressed, count, phone }: Ac
           transition: feedback("color"),
         }}
       >
-        <Glyph name={glyph} size={ENGAGEMENT_ICON_SIZE} fill={active ? "currentColor" : "none"} />
+        <Glyph name={glyph} size={compact ? COMPACT_ICON_SIZE : ENGAGEMENT_ICON_SIZE} fill={active ? "currentColor" : "none"} />
       </span>
       {hasCount ? (
         <span

@@ -94,11 +94,13 @@ export interface GridTileProps {
    * drawn at its own shape in a box the cell's height, centred, and the cell cuts what overflows.
    */
   cover?: boolean;
+  /** UX-03 follow-up P13: the whole picture inside its cell, nothing cropped (`object-fit: contain`). */
+  contain?: boolean;
 }
 
 const fill: CSSProperties = { position: "absolute", inset: 0, width: "100%", height: "100%", display: "block", objectFit: "cover" };
 
-export function GridTile({ attrs, media, srcByPath, cellRatio, align, index, count, preview = null, reader = false, onAlt, children, badges = true, pictureStyle, cover = false }: GridTileProps) {
+export function GridTile({ attrs, media, srcByPath, cellRatio, align, index, count, preview = null, reader = false, onAlt, children, badges = true, pictureStyle, cover = false, contain = false }: GridTileProps) {
   const kind = tileKind(media, preview);
   const [loadedLength, setLoadedLength] = useState<number | null>(null);
   const alt = typeof attrs.alt === "string" ? attrs.alt : "";
@@ -148,6 +150,8 @@ export function GridTile({ attrs, media, srcByPath, cellRatio, align, index, cou
         />
       ) : kind === "video" && still ? (
         <img src={still} alt={label} {...loading} style={{ ...fill, ...pictureStyle }} />
+      ) : still && contain ? (
+        <img src={still} alt={label} {...loading} data-tile-img="" style={{ ...fill, objectFit: "contain", ...pictureStyle }} />
       ) : still ? (
         cover ? (
           <span data-tile-cover="" style={{ position: "absolute", top: 0, bottom: 0, left: "50%", transform: "translateX(-50%)", aspectRatio: String(cellRatio), overflow: "hidden" }}>

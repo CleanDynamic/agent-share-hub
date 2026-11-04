@@ -43,6 +43,8 @@ export interface PostBodyProps {
   realHeadings?: boolean;
   /** Right padding on the first text block, so a counter at the end of its line has room. */
   firstLineInset?: number;
+  /** The build page's thread (UX-03 follow-up P13): words at 13.5/22, a picture held to 220 tall on a well. */
+  compact?: boolean;
 }
 
 // The wire format is untrusted, so every read goes through these.
@@ -199,7 +201,7 @@ function renderBlock(node: Loose, ctx: Ctx, key: number, inset: number): ReactNo
       // CA-07: a post's pictures, one grid after its words. Captions stay in the saved data and are not drawn.
       return (
         <div key={key} data-post-pictures="" style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-          <PostMediaGrid pictures={childrenOf(node).filter((child) => child.type === "postMedia")} mediaById={props.mediaById} srcByPath={props.srcByPath} phone={props.phone} />
+          <PostMediaGrid pictures={childrenOf(node).filter((child) => child.type === "postMedia")} mediaById={props.mediaById} srcByPath={props.srcByPath} phone={props.phone} compact={props.compact} />
           <StepLine step={attrsOf(node).step} phone={Boolean(props.phone)} />
         </div>
       );
@@ -252,14 +254,16 @@ function StepLine({ step, phone }: { step: unknown; phone: boolean }) {
 const TEXT_BLOCKS = new Set(["paragraph", "heading"]);
 
 export function PostBody(props: PostBodyProps) {
-  const ctx: Ctx = { scale: postType(Boolean(props.phone)), props };
+  const base = postType(Boolean(props.phone));
+  const scale = props.compact ? { ...base, body: { ...base.body, fontSize: 13.5, lineHeight: "22px" }, small: { ...base.small, fontSize: 12.5, lineHeight: "20px" } } : base;
+  const ctx: Ctx = { scale, props };
   // CA-07: an old post's pictures, between the lines or in rows, are read as one grid at its end. Nothing is saved.
   const content = Array.isArray(props.post?.content) ? props.post.content : [];
   const blocks = toGrids({ type: "doc", content }).content.filter(isNode) as Loose[];
   const first = blocks[0];
 
   return (
-    <div data-post-body="" style={{ display: "flex", flexDirection: "column", gap: BLOCK_GAP }}>
+    <div data-post-body="" style={{ display: "flex", flexDirection: "column", gap: BLOCK_GAP, ...(props.compact ? { maxWidth: 680 } : null) }}>
       {blocks.map((node, index) =>
         renderBlock(node, ctx, index, index === 0 && typeof first.type === "string" && TEXT_BLOCKS.has(first.type) ? (props.firstLineInset ?? 0) : 0),
       )}

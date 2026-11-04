@@ -192,12 +192,24 @@ describe("PostThread", () => {
     expect(screen.getByText("Show more")).toBeInTheDocument();
   });
 
-  it("page: every post and its counter, no toggle", () => {
+  it("page: post 1 and the toggle; the toggle opens the rest at once and closes them again", () => {
     render(<Harness start="page" />);
-    expect(screen.queryByRole("button")).toBeNull();
+    const region = () => document.querySelector("[data-post-region]") as HTMLElement;
+    expect(region().getAttribute("data-post-region")).toBe("closed");
+    expect(region().style.transition).toBe("none");
+    expect(screen.queryByText("2 / 4")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Show more/ }));
+    expect(region().getAttribute("data-post-region")).toBe("open");
     expect(screen.getByText("2 / 4")).toBeInTheDocument();
     expect(screen.getByText("Post 4 words")).toBeInTheDocument();
-    expect(document.querySelector("[data-post-region]")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Show less" }));
+    expect(region().getAttribute("data-post-region")).toBe("closed");
+  });
+
+  it("page: the footer sits in the row with the toggle, and a single post has no toggle", () => {
+    render(<Harness start="page" />);
+    const foot = document.querySelector("[data-post-foot]") as HTMLElement;
+    expect(foot.querySelector("[data-post-toggle]")).not.toBeNull();
   });
 
   it("does not let the toggle's click reach a link around the thread", () => {
