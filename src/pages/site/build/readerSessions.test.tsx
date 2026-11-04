@@ -45,7 +45,7 @@ describe("a reader's session head", () => {
     const head = screen.getAllByTestId("reader-session-head")[0];
     expect(head.getAttribute("aria-label")).toBe("Session 1 · Claude");
     expect(within(head).getByTestId("session-title-text").textContent).toBe("Planning");
-    expect(within(head).getByText("12 Oct")).toBeTruthy();
+    expect(within(head).getByText(/12 Oct/)).toBeTruthy();
     expect(screen.queryAllByRole("textbox")).toHaveLength(0);
     expect(screen.queryByRole("button", { name: /options$/ })).toBeNull();
     expect(screen.queryByTestId("session-drag-handle")).toBeNull();
@@ -66,13 +66,11 @@ describe("a reader's session head", () => {
 });
 
 describe("folding", () => {
-  it("starts folded for the sessions the maker left folded, with the count before the date and nothing under the head", () => {
+  it("starts folded for the sessions the maker left folded, with the steps counted before the date and nothing under the head", () => {
     mount(view(KEYS.slice(0, 2), { sessions_collapsed: ["typed-b"] }));
     const heads = screen.getAllByTestId("reader-session-head");
     expect(within(heads[1]).getByRole("button", { name: "Expand Session 2" }).getAttribute("aria-expanded")).toBe("false");
-    // UX-03 P3: a reader counts steps.
-    expect(within(heads[1]).getByTestId("session-count").textContent).toBe("2 steps");
-    expect(within(heads[0]).queryByTestId("session-count")).toBeNull();
+    expect(within(heads[1]).getByTestId("session-count").textContent).toBe("2 steps · 13 Oct");
     const folded = document.querySelector('[data-reader-session="typed-b"]') as HTMLElement;
     expect(within(folded).queryAllByTestId("step-card")).toHaveLength(0);
     expect(within(document.querySelector('[data-reader-session="typed-a"]') as HTMLElement).getAllByTestId("step-card")).toHaveLength(2);
@@ -87,9 +85,17 @@ describe("folding", () => {
     expect(within(document.querySelector('[data-reader-session="typed-a"]') as HTMLElement).getAllByTestId("step-card")).toHaveLength(2);
   });
 
-  it("draws a 2px line down a session's tiles", () => {
+  it("draws a session as one module of rows, with no line down its steps and no module round a step", () => {
     mount(view(KEYS.slice(0, 2)));
-    expect(screen.getAllByTestId("session-line")).toHaveLength(2);
+    expect(screen.queryAllByTestId("session-line")).toHaveLength(0);
+    const sessions = Array.from(document.querySelectorAll<HTMLElement>("[data-reader-session]"));
+    expect(sessions).toHaveLength(2);
+    for (const session of sessions) {
+      expect(session.style.padding).toBe("16px 16px 4px");
+      for (const card of within(session).getAllByTestId("step-card")) {
+        expect(card.style.borderRadius).toBe("");
+      }
+    }
   });
 });
 
@@ -120,9 +126,9 @@ describe("a prompt's name on the build page", () => {
     mount({ ...rest, steps, counts: buildCounts(steps) });
     const first = document.querySelector('[data-step="1"]') as HTMLElement;
     const second = document.querySelector('[data-step="2"]') as HTMLElement;
-    expect(within(first).getByTestId("step-label").textContent).toBe("Step 1 · Prompt");
+    expect(within(first).getByRole("heading", { name: "Step 1 · Prompt" })).toBeTruthy();
     expect(within(first).queryByTestId("step-own-title")).toBeNull();
-    expect(within(second).getByTestId("step-label").textContent).toBe("Step 2 · Prompt");
+    expect(within(second).getByRole("heading", { name: "Step 2 · Prompt" })).toBeTruthy();
     expect(within(second).getByTestId("step-own-title").textContent).toBe("ccc");
   });
 });

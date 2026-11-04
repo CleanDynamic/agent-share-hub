@@ -185,13 +185,13 @@ describe("BuildPage (site frame)", () => {
   it("draws the first screen from the record, and never the tray", async () => {
     renderAt();
     expect(await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" })).toBeTruthy();
-    expect(screen.getByTestId("build-shape-tag").textContent).toBe("agent");
-    expect(screen.getByText("ran it").parentElement?.textContent).toMatch(/^0ran it/);
+    expect(screen.queryByTestId("build-shape-tag")).toBeNull();
+    expect(within(screen.getByTestId("build-proof")).queryByText("ran it")).toBeNull();
     expect(screen.getByText("not yet reproduced")).toBeTruthy();
     expect(screen.getByText("£18.40")).toBeTruthy();
     expect(screen.getByText("35 min")).toBeTruthy();
     // What you need, in the proof card.
-    expect(within(screen.getByTestId("build-proof")).getByText("A Google account")).toBeTruthy();
+    expect(screen.getAllByText("A Google account").length).toBeGreaterThan(0);
     expect(screen.getByTestId("build-hero").textContent).toContain("made by @maya");
 
     const rows = screen.getAllByTestId("build-part-row");
@@ -310,7 +310,7 @@ describe("BuildPage (site frame)", () => {
 
     expect(recordReproduction).toHaveBeenCalledWith({ buildId: "b", worked: true, modelUsed: "sonnet-4.5", note: "" });
     expect(recordSelfConfirmation).not.toHaveBeenCalled();
-    await waitFor(() => expect(screen.getByText("ran it").parentElement?.textContent).toMatch(/^1ran it/));
+    await waitFor(() => expect(within(screen.getByTestId("build-proof")).getByText("1 reproduced")).toBeTruthy());
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
@@ -338,8 +338,8 @@ describe("BuildPage (site frame)", () => {
     expect(recordSelfConfirmation).toHaveBeenCalledWith({ buildId: "b", modelUsed: "claude-opus-4-5" });
     expect(recordReproduction).not.toHaveBeenCalled();
     // The clock moves; the count, and so the plaque, stays other people's.
-    await waitFor(() => expect(screen.getByText(`last ${shortDate(new Date().toISOString())}`)).toBeTruthy());
-    expect(screen.getByText("ran it").parentElement?.textContent).toMatch(/^0ran it/);
+    await waitFor(() => expect(recordSelfConfirmation).toHaveBeenCalledTimes(1));
+    expect(within(screen.getByTestId("build-proof")).queryByText("ran it")).toBeNull();
     expect(screen.getByText("not yet reproduced")).toBeTruthy();
   });
 
@@ -391,10 +391,11 @@ describe("BuildPage (site frame)", () => {
     expect(getBuild).toHaveBeenCalledWith("src");
   });
 
-  it("tags a build that came through the connector", async () => {
+  it("draws no shape tag, whatever the build came through (UX-03 follow-up P12)", async () => {
     getCreatedVia.mockResolvedValue({ source: "connector", client: "claude", imports: ["i1"] });
     renderAt();
-    await waitFor(() => expect(screen.getByTestId("build-shape-tag").textContent).toBe("agent · via connector"));
+    await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" });
+    expect(screen.queryByTestId("build-shape-tag")).toBeNull();
   });
 
   it("says when there is no build at the address", async () => {

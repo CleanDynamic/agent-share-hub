@@ -157,7 +157,7 @@ describe("the build page (CA-04 P2)", () => {
     return { steps, results: readerResults(t), need: whatYouNeed(steps, t, null), counts: buildCounts(steps), map: readerMap(t, null), mapAvailable: false, onCopy: vi.fn(async () => true), resolveMedia: () => undefined, otherBody: () => null, focus: null };
   }
 
-  it("shows what a step sends with it indented 36 under its text, recursively", () => {
+  it("shows what a step sends with it under its text (not indented, now that a step is a row), recursively", () => {
     render(
       <MemoryRouter>
         <StepsList view={view()} phone={false} announce={() => undefined} />
@@ -166,7 +166,7 @@ describe("the build page (CA-04 P2)", () => {
     const card = screen.getAllByTestId("step-card")[1];
     const blocks = within(card).getAllByTestId("sent-with");
     expect(blocks).toHaveLength(2);
-    expect(blocks.map((block) => block.style.marginLeft)).toEqual(["36px", "36px"]);
+    expect(blocks.map((block) => block.style.marginLeft)).toEqual(["0px", "0px"]);
     expect(within(blocks[0]).getAllByText("Sent with prompt 2")).toHaveLength(1);
     expect(within(blocks[1]).getByText("menu.pdf")).toBeTruthy();
   });

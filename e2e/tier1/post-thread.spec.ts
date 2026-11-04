@@ -122,15 +122,21 @@ test("writes a two-post thread, publishes it, and it reads in the Gallery and on
   expect(signed).toBeGreaterThanOrEqual(2);
   expect(signed).toBeLessThanOrEqual(3);
 
-  // The build page: both posts, open, with no Show more.
+  // The build page: post 1 open, post 2 behind the toggle, which opens at once; Download and Lineage are in More.
   await page.goto(`/b2/${backend.build()?.slug}`);
   const hero = page.getByTestId("build-hero");
   await expect(hero).toBeVisible();
   await expect(page.getByRole("heading", { level: 1, name: "Weekend bakery site" })).toBeVisible();
   await expect(hero.getByText(FIRST)).toBeVisible();
+  await expect(hero.getByText(SECOND)).toBeHidden();
+  await hero.locator("[data-post-toggle]").click();
   await expect(hero.getByText(SECOND)).toBeVisible();
   await expect(hero.getByRole("img", { name: /^Picture/ })).toHaveCount(3);
-  await expect(hero.locator("[data-post-toggle]")).toHaveCount(0);
+  await expect(hero.getByTestId("build-shape-tag")).toHaveCount(0);
+  await page.getByRole("button", { name: "More actions" }).click();
+  await expect(page.getByRole("menuitem", { name: "Download the build" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Lineage" })).toBeVisible();
+  await page.keyboard.press("Escape");
   await expect(page.getByTestId("build-author-row")).toContainText("@audit");
   // Your own build offers no Follow.
   await expect(page.getByRole("button", { name: /^Follow/ })).toHaveCount(0);

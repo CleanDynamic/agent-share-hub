@@ -153,9 +153,20 @@ export function FileMark({ kind, size = 32 }: { kind: FileKind; size?: number })
 }
 
 /** The type mark, the file's name and size, and a preview: 4 lines of a text or code file, a thumbnail of a picture, the PDF mark for a PDF. */
-export function FileTileBody({ step, indent = 0, lean = false }: { step: Step; indent?: number; lean?: boolean }) {
+export function FileTileBody({ step, indent = 0, lean = false, plain = false }: { step: Step; indent?: number; lean?: boolean; /** UX-03 follow-up P14: the file's name once (Geist Mono 12.5), or its thumbnail and name for a picture, then the paste line; no type mark, type word or preview. */ plain?: boolean }) {
   const facts = step.fileFacts;
   if (!facts) return null;
+  if (plain) {
+    return (
+      <div data-testid="file-tile" style={{ display: "flex", flexDirection: "column", gap: 6, paddingLeft: indent, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          {facts.kind === "picture" && facts.mediaId ? <ManualThumb mediaId={facts.mediaId} size={48} /> : null}
+          <span data-testid="file-name" style={{ fontFamily: DM_MONO, fontSize: 12.5, fontWeight: 500, lineHeight: "normal", color: t.text, ...ellipsis }}>{facts.name}</span>
+        </div>
+        {step.text ? <span style={{ ...text(12, 400, t.label), overflowWrap: "anywhere" }}>{step.text}</span> : null}
+      </div>
+    );
+  }
   const size = formatSize(facts.size);
   return (
     <div data-testid="file-tile" style={{ display: "flex", flexDirection: "column", gap: 8, paddingLeft: indent, minWidth: 0 }}>

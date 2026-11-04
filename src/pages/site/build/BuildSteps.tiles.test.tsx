@@ -63,13 +63,10 @@ function page(nodes: NodeTree[]) {
 }
 
 const cards = () => screen.getAllByTestId("step-card");
-const byKind = (kind: string) => cards().find((card) => card.getAttribute("data-kind") === kind || card.querySelector(`[data-testid="${kind}-eyebrow"]`)) as HTMLElement;
-/** UX-03 P3: the type is said once, in the head ("Step 2 · Code"), and the rest of the composer's type line under it ("TypeScript · 1 line"). */
-const typeOf = (card: HTMLElement): string => {
-  const head = (card.querySelector('[data-testid="step-label"]')?.textContent ?? "").split(" · ").slice(1).join(" · ");
-  const rest = card.querySelector('[data-testid$="-eyebrow"]')?.textContent?.trim();
-  return rest ? `${head} · ${rest}` : head;
-};
+/** UX-03 follow-up P14: a step's head carries its type as a chip, so a kind is found by its chip. */
+const CHIP: Record<string, string> = { prompt: "Prompt", manual: "Manual step", code: "Code", check: "Check", tool: "Tool", system_prompt: "System prompt", dataset: "Dataset", repo: "GitHub repository", agent: "Agent", team: "Team", file: "File" };
+const chipOf = (card: Element) => card.querySelector('[data-ui="type-chip"]')?.textContent;
+const byKind = (kind: string) => cards().find((card) => card.getAttribute("data-kind") === kind || chipOf(card) === CHIP[kind]) as HTMLElement;
 const emptyRows = (card: HTMLElement) =>
   Array.from(card.children).filter((child) => !(child.textContent ?? "").trim() && !child.querySelector("svg, img, button, input, textarea, [role='img'], [data-mark], canvas, [aria-hidden]"));
 
@@ -78,29 +75,31 @@ describe("the build page, every kind with its optional details empty (CA-15 P12)
     page(bare());
     expect(cards().length).toBeGreaterThanOrEqual(10);
     for (const card of cards()) {
-      const name = card.querySelector("h3, h4")?.textContent ?? "";
-      expect(typeOf(card), `${name}: type`).toBeTruthy();
-      expect(name.trim(), "title").toBeTruthy();
+      const head = card.querySelector("h3, h4");
+      const name = head?.textContent ?? "";
+      expect(chipOf(card)?.trim(), `${name}: type chip`).toBeTruthy();
+      expect(head?.getAttribute("aria-label"), "head name").toMatch(/^Step \S+ · \S/);
       expect(emptyRows(card).map((row) => row.outerHTML.slice(0, 80)), `${name}: empty rows`).toEqual([]);
       // SV-30 P8: a Check with no evidence says `Stated, no artefact`; no other bare tile has a fact.
       const facts = within(card).queryByTestId("reader-facts");
-      if (card.getAttribute("data-kind") === "check") expect(facts?.textContent, `${name}: facts`).toContain("Stated, no artefact");
+      if (chipOf(card) === "Check") expect(facts?.textContent, `${name}: facts`).toContain("Stated, no artefact");
       else expect(facts, `${name}: facts`).toBeNull();
     }
   });
 
   it("says each kind as the composer says it", () => {
     page(bare());
-    const says = (kind: string) => typeOf(byKind(kind));
-    expect(says("prompt")).toBe("Prompt");
-    expect(says("manual")).toBe("Manual step · Another tool");
-    expect(says("code")).toBe("Code · TypeScript · 1 line");
-    expect(says("check")).toBe("Check");
-    expect(says("tool")).toBe("Tool");
-    expect(says("system_prompt")).toBe("System prompt · Applies to 1 prompt");
-    expect(says("dataset")).toBe("Dataset");
-    expect(says("repo")).toBe("GitHub repository");
-    expect(says("agent")).toBe("Agent · Opus 5.5");
+    // The chip says the kind; what the type line adds beyond it is one quiet line.
+    const says = (kind: string) => [chipOf(byKind(kind)), byKind(kind).querySelector('[data-testid$="-eyebrow"]')?.textContent ?? null];
+    expect(says("prompt")).toEqual(["Prompt", null]);
+    expect(says("manual")).toEqual(["Manual step", "Another tool"]);
+    expect(says("code")).toEqual(["Code", "TypeScript · 1 line"]);
+    expect(says("check")).toEqual(["Check", null]);
+    expect(says("tool")).toEqual(["Tool", null]);
+    expect(says("system_prompt")).toEqual(["System prompt", "Applies to 1 prompt"]);
+    expect(says("dataset")).toEqual(["Dataset", null]);
+    expect(says("repo")).toEqual(["GitHub repository", null]);
+    expect(says("agent")).toEqual(["Agent", "Opus 5.5"]);
   });
 
   it("draws the three new tiles from their own bodies", () => {

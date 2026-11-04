@@ -954,6 +954,12 @@ export function BuildPage() {
   const delta = source.data ? deltaLine(serialiseChangeSet(changeSet(source.data, record))) : null;
   const timeline = timelineFrom(record.events);
   const hasRebuilds = (rebuilds.data ?? []).length > 0;
+  /* UX-03 follow-up P14: a tab is drawn only when its panel has something to show. */
+  const stepTabsDrawn = stepTabs(hasRebuilds, {
+    events: record.events.some((event) => event.visibility !== "hidden"),
+    understand: Boolean(understandLayer?.approved),
+    broke: breakageRows(tree, record.events, nodeTypes).length > 0 || openGaps(tree, bountyByNode).length > 0,
+  });
   const loginBack = (to: string) => `/login?redirect=${encodeURIComponent(to)}`;
 
   /** A card on one of the page's walls: the gallery's own card, its picture signed with the rest. */
@@ -1256,8 +1262,8 @@ export function BuildPage() {
           ),
         }}
         viewer={{
-          tabs: reader ? stepTabs(hasRebuilds) : buildTabs(hasRebuilds),
-          tab: landTab(tab, stepsOn),
+          tabs: reader ? stepTabsDrawn : buildTabs(hasRebuilds),
+          tab: reader && !stepTabsDrawn.some((entry) => entry.value === landTab(tab, stepsOn)) ? "anatomy" : landTab(tab, stepsOn),
           onTabChange,
           mode,
           onModeChange,

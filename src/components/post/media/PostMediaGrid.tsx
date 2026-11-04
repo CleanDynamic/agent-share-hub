@@ -141,7 +141,12 @@ export interface PostMediaGridProps {
   mediaById: ReadonlyMap<string, GalleryMedia>;
   srcByPath: MediaSrcMap;
   phone?: boolean;
+  /** UX-03 follow-up P13: pictures at most 220 tall, whole, on a well (the build page's thread). */
+  compact?: boolean;
 }
+
+/** The tallest a picture is drawn in a compact thread. */
+export const COMPACT_HEIGHT = 220;
 
 /** Every sentence a reader's grid says. */
 export const READER_COPY = {
@@ -153,13 +158,55 @@ export const READER_COPY = {
 const WARNING_NAMES: Record<MediaWarning, string> = { nudity: "Nudity", violence: "Violence", sensitive: "Sensitive" };
 
 /** A reader's grid: the ALT badge opens the description, a flagged picture is covered, and (inside a MediaViewerProvider) a picture opens full screen. */
-export function PostMediaGrid({ pictures, mediaById, srcByPath }: PostMediaGridProps) {
+export function PostMediaGrid({ pictures, mediaById, srcByPath, compact = false }: PostMediaGridProps) {
   const attrs = pictures.map(mediaAttrsOf);
   const viewer = useMediaViewer();
   const [alt, setAlt] = useState<{ index: number; from: HTMLElement } | null>(null);
   if (attrs.length === 0) return null;
   const layout = gridLayout(sourcesOf(attrs, mediaById));
   const items = attrs.map((one) => ({ attrs: one, media: mediaById.get(one.mediaId) }));
+  if (compact) {
+    return (
+      <>
+        <div
+          role="group"
+          aria-label={gridLabel(attrs.length)}
+          data-post-media-grid=""
+          data-compact=""
+          data-count={attrs.length}
+          style={{
+            display: "flex",
+            gap: GRID_GAP,
+            height: COMPACT_HEIGHT,
+            maxHeight: COMPACT_HEIGHT,
+            width: "100%",
+            boxSizing: "border-box",
+            borderRadius: 8,
+            overflow: "hidden",
+            border: `1px solid ${t.moduleBorder}`,
+            background: t.well,
+          }}
+        >
+          {attrs.map((one, index) => (
+            <div key={index} data-grid-tile={index} style={{ position: "relative", flex: "1 1 0", minWidth: 0, overflow: "hidden" }}>
+              <ReaderTile
+                attrs={one}
+                media={items[index].media}
+                srcByPath={srcByPath}
+                cell={{ ratio: 1, align: "middle", area: {} }}
+                index={index}
+                count={attrs.length}
+                contain
+                onAlt={(from) => setAlt({ index, from })}
+                onOpen={viewer ? (from) => viewer({ items, index, srcByPath, returnTo: from }) : undefined}
+              />
+            </div>
+          ))}
+        </div>
+        <AltSheet alt={alt ? attrs[alt.index]?.alt ?? null : null} returnTo={alt?.from ?? null} onClose={() => setAlt(null)} />
+      </>
+    );
+  }
   return (
     <>
       <GridFrame
@@ -194,7 +241,9 @@ function ReaderTile({
   count,
   onAlt,
   onOpen,
+  contain = false,
 }: {
+  contain?: boolean;
   attrs: PostMediaAttrs;
   media: GalleryMedia | undefined;
   srcByPath: MediaSrcMap;
@@ -219,6 +268,7 @@ function ReaderTile({
       reader
       badges={!covered}
       onAlt={onAlt}
+      contain={contain}
       pictureStyle={covered ? { filter: "blur(28px)", transform: "scale(1.1)" } : undefined}
     >
       {covered ? (

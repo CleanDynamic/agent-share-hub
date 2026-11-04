@@ -1,11 +1,11 @@
-/* CA-16 P7: the build page's Classification section: a provenance dot on every value, and the Regulated area notice. Nothing
-   at all for a build that has no classification (P9): old builds read exactly as before. UX-03 P4: two groups by provenance,
-   each facet a label over its values in a grid, where it was three lines of text. */
+/* CA-16 P7: the build page's Classification section: three lines, one module of label and value rows (UX-03 follow-up P17), and the Regulated area
+   notice. Nothing at all for a build that has no classification (P9): old builds read exactly as before. */
 
-import type { CSSProperties, ReactNode } from "react";
+import { Fragment, type CSSProperties, type ReactNode } from "react";
 
-import { PROVENANCE_WORDS, ProvenanceDot } from "@/components/classify/ClassificationBits";
+import { Row } from "@/components/brand/Row";
 import { useIsPhone } from "@/components/shell/useMinWidth";
+import { SectionHead } from "@/components/vision/SectionHead";
 import { hasClassification, regulatedArea, shownValues } from "@/lib/classify/facets";
 import { REGULATED_NOTICE, labelFor } from "@/lib/classify/lines";
 import { FACET_LABEL, type Facet } from "@/lib/classify/taxonomy";
@@ -60,69 +60,24 @@ export function classificationRows(c: Classification): { key: string; facet: Fac
   ];
 }
 
-/** Facets a maker sets themselves. UX-03 P4: when one is empty the maker, on their own build, sees Not stated; a reader never does. */
-const MAKER_SET: readonly Facet[] = ["field", "task", "setting", "data", "age"];
-
-/** UX-03 P4: the two groups, by where a value came from, the maker's first. */
-type GroupKind = "stated" | "derived";
-const GROUP_TITLE: Record<GroupKind, string> = { stated: PROVENANCE_WORDS.reader.stated, derived: "Derived from the build" };
+/** Facets a maker sets themselves: on their own build, when they are empty the section says Not stated, rather than leaving a gap. */
 /** Where the maker fills in what they left empty. */
 export const OPEN_CLASSIFICATION = "Open Classification";
 
-/** One group's facets, in the section's order, each with only the values of that provenance. The maker's group keeps an empty facet they set. */
-function groupFacets(c: Classification, kind: GroupKind, withEmpty: boolean): { facet: Facet; values: Shown[] }[] {
-  return classificationRows(c)
-    .flat()
-    .flatMap((entry) => {
-      const values = entry.values.filter((value) => value.provenance === kind);
-      if (values.length > 0) return [{ facet: entry.facet, values }];
-      // Not stated: a facet the maker sets that holds nothing at all, in the maker's own view.
-      return withEmpty && kind === "stated" && MAKER_SET.includes(entry.facet) && entry.values.length === 0 ? [{ facet: entry.facet, values }] : [];
-    });
-}
+const MAKER_SET: readonly Facet[] = ["field", "task", "setting", "data", "age"];
 
-const facetStyle: CSSProperties = { display: "flex", flexDirection: "column", gap: 4, minWidth: 0, margin: 0 };
+/** What a derived value says to anyone who asks: in its tooltip and its accessible name. */
+export const DERIVED_NOTE = "Derived from the build";
 
-function Facet_({ facet, values }: { facet: Facet; values: Shown[] }) {
-  const empty = values.length === 0;
-  return (
-    <div data-facet={facet} style={facetStyle}>
-      <span style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: 1.4, color: t.label }}>{FACET_LABEL[facet]}</span>
-      <span style={{ display: "flex", flexWrap: "wrap", gap: "2px 12px", minWidth: 0, fontFamily: FIGTREE, fontSize: 12.5, lineHeight: 1.5 }}>
-        {empty ? (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: t.label }}>
-            <ProvenanceDot kind="none" />
-            Not stated
-          </span>
-        ) : (
-          values.map((value, index) => (
-            <span key={`${value.label}-${index}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, color: t.text, minWidth: 0, overflowWrap: "anywhere", fontFamily: facet === "stack" ? DM_MONO : undefined }}>
-              <ProvenanceDot kind={value.provenance} />
-              <ValueLabel value={value} />
-            </span>
-          ))
-        )}
-      </span>
-    </div>
-  );
-}
-
-function Group({ kind, facets, phone, editHref }: { kind: GroupKind; facets: { facet: Facet; values: Shown[] }[]; phone: boolean; editHref?: string }) {
-  const title = GROUP_TITLE[kind];
-  return (
-    <div role="group" aria-label={title} data-testid={`classification-${kind}`} style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
-      <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12.5, fontWeight: 500, lineHeight: 1.4, color: t.text2 }}>{title}</h3>
-      <div data-testid="classification-grid" style={{ display: "grid", gridTemplateColumns: `repeat(${phone ? 2 : 4}, minmax(0, 1fr))`, gap: "12px 24px" }}>
-        {facets.map((entry) => (
-          <Facet_ key={entry.facet} facet={entry.facet} values={entry.values} />
-        ))}
-      </div>
-      {editHref ? (
-        <PageLink to={editHref} data-testid="classification-open" style={{ alignSelf: "flex-start", fontFamily: FIGTREE, fontSize: 12.5, color: t.text2, textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line }}>
-          {OPEN_CLASSIFICATION}
-        </PageLink>
-      ) : null}
-    </div>
+/** One value: its words, or a link to Builds filtered by it (SV-25). A derived value carries where it came from; a stated one carries nothing extra. */
+function Value({ value }: { value: Shown }) {
+  const inner = <ValueLabel value={value} />;
+  return value.provenance === "derived" ? (
+    <span role="group" title={DERIVED_NOTE} aria-label={`${value.label}. ${DERIVED_NOTE}`}>
+      {inner}
+    </span>
+  ) : (
+    <span>{inner}</span>
   );
 }
 
@@ -139,21 +94,61 @@ function ValueLabel({ value }: { value: Shown }) {
 }
 
 /**
- * UX-03 P4: two groups, by provenance: Stated by the maker, then Derived from the build. A group with no values is not drawn,
- * and a reader never sees Not stated. `maker`: the build is the viewer's own, so the empty facets they set say Not stated, with
- * the way to the Classification window.
+ * UX-03 follow-up P17: Classification as one module of label and value rows. The head says how many facts it holds. The
+ * rows sit in two columns filled down then across (one column on a phone); each column's last row has no hairline. The
+ * maker, on their own build, also sees the empty maker-set facets as `Not stated`, after the facets that have values.
  */
-export function ClassificationSection({ classification, maker }: { classification: Classification | null | undefined; maker?: { editHref: string } }): ReactNode {
+export function ClassificationSection({ classification, maker }: { classification: Classification | null | undefined; /** The build is the viewer's own: the empty maker-set facets say Not stated, with the way to the Classification window. */ maker?: { editHref: string } }): ReactNode {
+  const own = Boolean(maker);
   const phone = useIsPhone();
   if (!classification || !hasClassification(classification)) return null;
-  const stated = groupFacets(classification, "stated", Boolean(maker));
-  const derived = groupFacets(classification, "derived", false);
-  const missing = Boolean(maker) && stated.some((entry) => entry.values.length === 0);
+  const all = classificationRows(classification).flat();
+  const withValues = all.filter((entry) => entry.values.length > 0);
+  const notStated = own ? all.filter((entry) => entry.values.length === 0 && MAKER_SET.includes(entry.facet)) : [];
+  const rows = [...withValues.map((entry) => ({ ...entry, empty: false })), ...notStated.map((entry) => ({ ...entry, empty: true }))];
+  const perColumn = phone ? rows.length : Math.ceil(rows.length / 2);
   return (
-    <section aria-label="Classification" data-testid="build-classification" style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
-      <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13.5, fontWeight: 500, color: t.text }}>Classification</h2>
-      {stated.length > 0 ? <Group kind="stated" facets={stated} phone={phone} editHref={missing ? maker?.editHref : undefined} /> : null}
-      {derived.length > 0 ? <Group kind="derived" facets={derived} phone={phone} /> : null}
+    <section aria-label="Classification" data-testid="build-classification" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+      <SectionHead headingLevel={2} title="Classification" meta={`${withValues.length} ${withValues.length === 1 ? "fact" : "facts"} about this build`} />
+      <div
+        style={{
+          ...moduleBox,
+          padding: "4px 16px",
+          display: "grid",
+          gridAutoFlow: "column",
+          gridTemplateRows: `repeat(${Math.max(perColumn, 1)}, auto)`,
+          gridTemplateColumns: phone ? "minmax(0, 1fr)" : "repeat(2, minmax(0, 1fr))",
+          columnGap: 32,
+        }}
+      >
+        {rows.map((entry, index) => (
+          <Row
+            key={entry.key}
+            inModule
+            label={<span data-facet={entry.facet}>{FACET_LABEL[entry.facet]}</span>}
+            value={
+              entry.empty ? (
+                <span style={{ color: t.label, fontWeight: 400 }}>Not stated</span>
+              ) : (
+                <span style={entry.facet === "stack" ? { fontFamily: DM_MONO } : undefined}>
+                  {entry.values.map((value, at) => (
+                    <Fragment key={`${value.label}-${at}`}>
+                      {at > 0 ? ", " : null}
+                      <Value value={value} />
+                    </Fragment>
+                  ))}
+                </span>
+              )
+            }
+            style={(index + 1) % perColumn === 0 || index === rows.length - 1 ? { borderBottom: 0 } : undefined}
+          />
+        ))}
+      </div>
+      {maker && notStated.length > 0 ? (
+        <PageLink to={maker.editHref} data-testid="classification-open" style={{ alignSelf: "flex-start", fontFamily: FIGTREE, fontSize: 12.5, color: t.text2, textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line }}>
+          {OPEN_CLASSIFICATION}
+        </PageLink>
+      ) : null}
       {regulatedArea(classification) ? (
         <p role="note" data-testid="regulated-notice" style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12.5, lineHeight: 1.5, color: t.text2 }}>
           {REGULATED_NOTICE}
@@ -162,3 +157,5 @@ export function ClassificationSection({ classification, maker }: { classificatio
     </section>
   );
 }
+
+const moduleBox: CSSProperties = { background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: 8, boxShadow: t.moduleShadow, boxSizing: "border-box", minWidth: 0 };

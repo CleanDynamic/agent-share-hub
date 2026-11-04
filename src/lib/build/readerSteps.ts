@@ -70,12 +70,14 @@ export type ReaderChat =
       model: string | null;
       /** The session's number in the build; null for prompts typed in by the maker. */
       session: number | null;
+      /** Its place among the sessions drawn, from the shared numbering (`sessionNumbers.ts`): set for typed sessions too. */
+      number: number;
       /** "3 Oct", or null when not known. */
       date: string | null;
       /** The session's start, as stored, for ranges. */
       startedAt: string | null;
       typed: boolean;
-      /** "New chat in ChatGPT". */
+      /** "Session 2 · ChatGPT", or "Session 2" with no harness (UX-03 follow-up P14). */
       headline: string;
       /** "GPT-6 Astra · session 1 · 3 Oct". */
       detail: string;
@@ -221,9 +223,17 @@ export interface NeedRow {
   download?: string | null;
   /** An "Other parts" row's node, so the page can open it. */
   id?: string;
+  /** UX-03 follow-up P16: what a Tools and models or Files row is, for its chip. Absent: a row with no chip. */
+  kind?: "harness" | "model" | "tool" | "file";
+  /** The model a harness was used with, when one was recorded. Never "model not recorded". */
+  model?: string | null;
+  /** "Steps 1, 2" or "Step 3": where it is used. */
+  where?: string;
   /** UX-03 P3: a file's steps, each a link to it on the page ("step 3", "agent 3.3"): the File step tile it sits in, else the steps that use it. */
   steps?: readonly { id: string; number: string; label: string }[];
 }
+
+const capital = (words: string): string => (words ? words.charAt(0).toUpperCase() + words.slice(1) : words);
 
 export type NeedKey = "tools" | "files" | "runs" | "accounts" | "time" | "other";
 
@@ -507,6 +517,9 @@ function setupOf(file: ReaderFile, context: Context, stepToolIds: readonly strin
 
 /* ── the chat each prompt starts or joins ── */
 
+/** The editor's name for a session: "Session 2 · Claude", or "Session 2" with no harness. */
+export const sessionHeadline = (number: number, tool: string | null | undefined): string => (tool ? `Session ${number} · ${tool}` : `Session ${number}`);
+
 function chatFor(step: Step, context: Context): ReaderChat | null {
   if (!isTop(step)) return null;
   const group = groupOfStep(context.groups, step);
@@ -532,10 +545,11 @@ function chatFor(step: Step, context: Context): ReaderChat | null {
     tool: group.tool,
     model: group.model,
     session: typed ? null : group.number,
+    number: group.number,
     date,
     startedAt,
     typed,
-    headline: group.tool ? `New chat in ${group.tool}` : "New chat",
+    headline: sessionHeadline(group.number, group.tool),
     detail,
     setup: context.setup.get(groupKey(group)) ?? [],
     ...(group.goal ? { goal: { line: goalLine(group.goal), reached: group.goal.reached === "reached" } } : null),
@@ -824,7 +838,13 @@ export function whatYouNeed(
   for (const [tool, entry] of byTool) {
     // A client with no label names no tool: the row is the model, with nothing to say about a tool.
     const model = entry.models.length > 0 ? join(entry.models) : "model not recorded";
-    tools.push({ title: tool, detail: [entry.named ? model : null, stepList(entry.steps)].filter(Boolean).join(" · ") });
+    tools.push({
+      title: tool,
+      detail: [entry.named ? model : null, stepList(entry.steps)].filter(Boolean).join(" · "),
+      kind: entry.named ? "harness" : "model",
+      model: entry.named && entry.models.length > 0 ? join(entry.models) : null,
+      where: capital(stepList(entry.steps)),
+    });
   }
 
   const byModel = new Map<string, string[]>();
@@ -834,11 +854,11 @@ export function whatYouNeed(
     const label = modelRunLine(modelName(step.model), step.modelRun);
     byModel.set(label, [...(byModel.get(label) ?? []), step.number]);
   }
-  for (const [model, numbers] of byModel) tools.push({ title: model, detail: stepList(numbers) });
+  for (const [model, numbers] of byModel) tools.push({ title: model, detail: stepList(numbers), kind: "model", where: capital(stepList(numbers)) });
 
   for (const tool of context.tools.values()) {
     const numbers = used.get(tool.id) ?? [];
-    const row: NeedRow = { title: tool.name, detail: numbers.length > 0 ? `tool · ${stepList(numbers)}` : "tool" };
+    const row: NeedRow = { title: tool.name, detail: numbers.length > 0 ? `tool · ${stepList(numbers)}` : "tool", kind: "tool", where: capital(stepList(numbers)) };
     if (tool.mcp) {
       const where = tool.mcp.runsAt === "web" ? "at a web address" : tool.mcp.runsAt === "local" ? "on your computer" : null;
       row.extra = ["MCP server", where, tool.mcp.signIn ? `sign in with your ${tool.name} account` : null].filter(Boolean).join(" · ");
@@ -878,14 +898,14 @@ export function whatYouNeed(
     // A file a step makes is made by running that step: it says where, and has no size and no download.
     if (file.madeIn) {
       const detail = [`Made in ${stepList([file.madeIn.number], false)}`, numbers.length > 0 ? `used in ${stepList(numbers)}` : null];
-      return { title: file.name, detail: detail.filter(Boolean).join(" · "), download: file.download };
+      return { title: file.name, detail: detail.filter(Boolean).join(" · "), download: file.download, kind: "file" as const };
     }
     // UX-03 P3: the list is a summary; each file links to its step. A File step tile is its own step; any other file, the steps that use it.
     const tile = context.byId.get(file.id);
     const own = tile?.number ? tile : context.all.find((step) => step.number && carries(step, file.id));
     const links = (own ? [{ id: own.id, number: own.number }] : (users.get(file.id) ?? [])).map((step) => ({ ...step, label: stepList([step.number], false) }));
-    if (links.length === 0) return { title: file.name, detail: [stepList(numbers), file.size].filter(Boolean).join(" · "), download: file.download };
-    return { title: file.name, detail: file.size ?? "", download: file.download, steps: links };
+    if (links.length === 0) return { title: file.name, detail: [stepList(numbers), file.size].filter(Boolean).join(" · "), download: file.download, kind: "file" as const };
+    return { title: file.name, detail: file.size ?? "", download: file.download, steps: links, kind: "file" as const };
   });
   if (files.length > 0) groups.push({ key: "files", label: "Files", rows: files });
 

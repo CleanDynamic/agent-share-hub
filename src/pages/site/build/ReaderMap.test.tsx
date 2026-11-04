@@ -85,7 +85,7 @@ describe("StepsList", () => {
     list();
     fireEvent.click(screen.getByRole("button", { name: "Map" }));
     expect(await screen.findByTestId("reader-map")).toBeTruthy();
-    expect(screen.getByText("click a session to see what joins it · Esc clears")).toBeTruthy();
+    expect(screen.getByText(/Click a session to see what joins it · Esc clears/)).toBeTruthy();
     expect(screen.getByTestId("map-panel").style.width).toBe("312px");
   });
 

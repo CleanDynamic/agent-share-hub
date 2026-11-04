@@ -3,7 +3,8 @@
 //
 // READ SIDE ONLY, AND CONTROLLED. `mode` is the parent's: "closed" shows post 1
 // and a toggle, "open" shows every post with the toggle reading "Show less", and
-// "page" (the build page) shows every post and no toggle. The toggle calls
+// "page" (the build page) shows post 1 and the same toggle, which it holds itself and which opens at once. In `page`
+// mode the toggle is at the left of one row under the posts, and `footer` (the engagement icons) at its right. The toggle calls
 // onOpen / onClose; a change of resetKey calls onClose when the thread is open,
 // so a recycled row does not show the next build's thread already unfolded.
 //
@@ -16,7 +17,7 @@
 // motion, and no fade. The posts below the first stay in the DOM while closed,
 // clipped and inert, because a layout transition needs its target laid out.
 
-import { useEffect, useId, useRef, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import { UNFOLD_MS } from "@/components/gallery/CardThread";
@@ -47,6 +48,8 @@ export interface PostThreadProps {
   resetKey?: string;
   /** The rest of the thread is on its way: the toggle reads "Loading…" and is disabled. */
   loading?: boolean;
+  /** `page` only: drawn at the right of the row under the posts, opposite the toggle. */
+  footer?: ReactNode;
   /** UX-03 P1: wraps the words of post 1's first heading (the feed post's link to its build). */
   headingLink?: (content: ReactNode) => ReactNode;
   /** UX-03 P9: Show more is about to be pressed: hovered on a fine pointer, or focused. The feed starts the rest of the thread. */
@@ -66,10 +69,13 @@ export function PostThread({
   phone = false,
   resetKey,
   loading = false,
+  footer,
   headingLink,
   onIntent,
 }: PostThreadProps) {
   const regionId = useId();
+  const page = mode === "page";
+  const [pageOpen, setPageOpen] = useState(false);
 
   // resetKey changing closes an open thread. Not on mount: the key it starts with is not a change.
   const lastKey = useRef(resetKey);
@@ -78,6 +84,7 @@ export function PostThread({
   useEffect(() => {
     if (lastKey.current === resetKey) return;
     lastKey.current = resetKey;
+    setPageOpen(false);
     if (mode === "open") close.current?.();
     // mode is read when the key changes, not a reason to run.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -87,12 +94,12 @@ export function PostThread({
 
   const [first, ...rest] = posts;
   const total = posts.length;
-  const foldable = mode !== "page" && total > 1;
-  const open = mode !== "closed";
+  const foldable = total > 1;
+  const open = page ? pageOpen : mode !== "closed";
   const counters = open && total > 1;
 
   const body = (post: Post, inset: number) => (
-    <PostBody post={post} mediaById={mediaById} srcByPath={srcByPath} phone={phone} firstLineInset={inset} />
+    <PostBody post={post} mediaById={mediaById} srcByPath={srcByPath} phone={phone} firstLineInset={inset} compact={page} />
   );
 
   const later = rest.map((post, index) => (
@@ -105,27 +112,23 @@ export function PostThread({
   return (
     <div data-post-thread="" data-thread-mode={mode} style={{ display: "flex", flexDirection: "column" }}>
       <div data-post={1}>
-        <PostBody post={first} mediaById={mediaById} srcByPath={srcByPath} phone={phone} firstLineInset={0} headingLink={headingLink} />
+        <PostBody post={first} mediaById={mediaById} srcByPath={srcByPath} phone={phone} firstLineInset={0} headingLink={headingLink} compact={page} />
       </div>
       {rest.length > 0 ? (
-        mode === "page" ? (
-          later
-        ) : (
-          <UnfoldRegion open={open} id={regionId}>
-            {later}
-          </UnfoldRegion>
-        )
+        <UnfoldRegion open={open} id={regionId} instant={page}>
+          {later}
+        </UnfoldRegion>
       ) : null}
-      {foldable ? (
-        <Toggle
-          open={open}
-          more={rest.length}
-          controls={regionId}
-          phone={phone}
-          loading={loading}
-          onPress={() => (open ? onClose?.() : onOpen?.())}
-          onIntent={open ? undefined : onIntent}
-        />
+      {page ? (
+        <div data-post-foot="" style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12, minWidth: 0 }}>
+          {foldable ? (
+            <Toggle open={open} more={rest.length} controls={regionId} phone={phone} loading={loading} plain onPress={() => setPageOpen((was) => !was)} onIntent={open ? undefined : onIntent} />
+          ) : null}
+          <span style={{ flexGrow: 1 }} />
+          {footer}
+        </div>
+      ) : foldable ? (
+        <Toggle open={open} more={rest.length} controls={regionId} phone={phone} loading={loading} onPress={() => (open ? onClose?.() : onOpen?.())} onIntent={open ? undefined : onIntent} />
       ) : null}
     </div>
   );
@@ -168,7 +171,7 @@ function Counter({ n, total, post, phone }: { n: number; total: number; post: Po
 }
 
 /** The grid-template-rows unfold; see the note at the top. */
-function UnfoldRegion({ open, id, children }: { open: boolean; id: string; children: React.ReactNode }) {
+function UnfoldRegion({ open, id, instant = false, children }: { open: boolean; id: string; instant?: boolean; children: React.ReactNode }) {
   return (
     <div
       id={id}
@@ -180,7 +183,7 @@ function UnfoldRegion({ open, id, children }: { open: boolean; id: string; child
       style={{
         display: "grid",
         gridTemplateRows: open ? "1fr" : "0fr",
-        transition: prefersReducedMotion() ? "none" : `grid-template-rows ${UNFOLD_MS}ms ${STANDARD}`,
+        transition: instant || prefersReducedMotion() ? "none" : `grid-template-rows ${UNFOLD_MS}ms ${STANDARD}`,
       }}
     >
       <div style={{ overflow: "hidden", minHeight: 0 }}>{children}</div>
@@ -195,9 +198,12 @@ function Toggle({
   controls,
   phone,
   loading,
+  plain = false,
   onPress,
   onIntent,
 }: {
+  /** The build page's: an underlined text button, 12/500, with no box. */
+  plain?: boolean;
   open: boolean;
   more: number;
   controls: string;
@@ -213,6 +219,36 @@ function Toggle({
     },
     onFocus: () => onIntent?.(),
   });
+  if (plain) {
+    return (
+      <button
+        type="button"
+        data-post-toggle=""
+        aria-expanded={open}
+        aria-controls={controls}
+        disabled={loading}
+        {...handlers}
+        onClick={onPress}
+        style={{
+          boxSizing: "border-box",
+          minHeight: phone ? 44 : 28,
+          padding: 0,
+          border: 0,
+          background: "transparent",
+          fontFamily: FIGTREE,
+          fontSize: 12,
+          fontWeight: 500,
+          color: loading ? t.text2 : t.text,
+          textDecoration: "underline",
+          textUnderlineOffset: 3,
+          cursor: loading ? "default" : "pointer",
+          ...ring(state.focusVisible),
+        }}
+      >
+        {loading ? "Loading…" : open ? "Show less" : `Show more · ${more === 1 ? "1 more post" : `${more} more posts`}`}
+      </button>
+    );
+  }
   return (
     <button
       type="button"

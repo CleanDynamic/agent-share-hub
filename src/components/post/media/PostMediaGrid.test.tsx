@@ -160,3 +160,16 @@ describe("PostBody", () => {
     expect(container.querySelector("figcaption")).toBeNull();
   });
 });
+
+describe("compact (the build page's thread, UX-03 follow-up P13)", () => {
+  it("holds a picture to 220 tall on a well, whole, with nothing cropped", () => {
+    const block = render(<PostMediaGrid pictures={[pic("a", { w: 1000, h: 3000 })]} mediaById={MEDIA} srcByPath={SIGNED} compact />).container.querySelector("[data-post-media-grid]") as HTMLElement;
+    expect(block.style.height).toBe("220px");
+    expect(block.style.maxHeight).toBe("220px");
+    expect(block.style.borderRadius).toBe("8px");
+    const img = block.querySelector("img") as HTMLElement;
+    expect(img.style.objectFit).toBe("contain");
+    const html = renderToStaticMarkup(<PostMediaGrid pictures={[pic("a")]} mediaById={MEDIA} srcByPath={SIGNED} compact />);
+    expect(html).toContain("border:1px solid var(--module-border);background:var(--well)");
+  });
+});

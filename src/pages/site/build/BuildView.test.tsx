@@ -61,12 +61,12 @@ describe("BuildView on a desktop", () => {
     expect(screen.getByTestId("build-need")).toBeTruthy();
   });
 
-  it("hangs the result window under the picture light, with the shape tag and the credit", () => {
+  it("hangs the result window under the picture light, with the credit and no shape tag", () => {
     mount(stepsProps());
     const hero = screen.getByTestId("build-hero");
     expect(within(hero).getByRole("img", { name: "Bakery homepage · Result" })).toBeTruthy();
     expect(hero.querySelector('[data-ui="picture-light"]')?.getAttribute("data-variant")).toBe("on");
-    expect(screen.getByTestId("build-shape-tag").textContent).toBe("agent · via connector");
+    expect(screen.queryByTestId("build-shape-tag")).toBeNull();
     expect(hero.textContent).toContain("Rebuilt from Inbox sorter by @kofi · made by @maya");
     expect(hero.textContent).toContain("Δ swapped model, added retry step");
     // No italics under the refined look.
@@ -99,25 +99,24 @@ describe("BuildView on a desktop", () => {
     expect(onRebuild).toHaveBeenCalledTimes(1);
   });
 
-  it("the reproduction column: the count, the plaque, the one primary, the details and completeness", () => {
+  it("the reproduction column: the state in the head, one plaque, a control action, no count row and no facts table (UX-03 follow-up P15)", () => {
     const onPress = vi.fn();
     const props = stepsProps();
     mount({ ...props, proof: { ...props.proof, action: { kind: "reproduce", onPress } } });
     const proof = screen.getByTestId("build-proof");
-    expect(proof.textContent).toContain("41ran it");
-    expect(proof.textContent).toContain("last 27 Sep");
-    expect(proof.querySelector('[data-ui="plaque"]')).not.toBeNull();
-    const primaries = document.querySelectorAll('[data-ui="button"][data-variant="primary"]');
-    expect(primaries).toHaveLength(1);
+    expect(within(proof).getByRole("heading", { level: 2, name: "Reproduction" })).toBeTruthy();
+    expect(proof.textContent).not.toContain("ran it");
+    expect(proof.querySelectorAll('[data-ui="plaque"]')).toHaveLength(1);
+    // Copy for AI is the page's only primary; the proof action is a control.
+    expect(document.querySelectorAll('[data-ui="button"][data-variant="primary"]')).toHaveLength(0);
     const action = within(proof).getByRole("button", { name: "I ran this and it worked" });
+    expect(action.getAttribute("data-variant")).toBe("secondary");
     expect(action.querySelector("svg")).toBeNull();
     fireEvent.click(action);
     expect(onPress).toHaveBeenCalledTimes(1);
-    // UX-03 P2: the reader's note says what their run records.
     expect(within(proof).getByText("Records the date, whether it worked and the model you used.")).toBeTruthy();
-    expect(proof.querySelectorAll('[data-ui="row"]')).toHaveLength(6);
-    const bar = within(screen.getByTestId("build-completeness")).getByRole("progressbar", { name: "Completeness" });
-    expect(bar.getAttribute("aria-valuenow")).toBe("86");
+    expect(proof.querySelectorAll('[data-ui="row"]')).toHaveLength(0);
+    expect(within(screen.getByTestId("build-completeness")).getByRole("progressbar", { name: "Completeness" }).getAttribute("aria-valuenow")).toBe("86");
   });
 
   it("UX-01 P3: the completeness module has one marker, Gallery, the rule that applies, and says it is private", () => {
@@ -125,8 +124,9 @@ describe("BuildView on a desktop", () => {
     mount({ ...props, proof: { ...props.proof, completeness: { score: 86, publishAt: 40, galleryAt: 70, next: null } } });
     const module = screen.getByTestId("build-completeness");
     expect(within(module).getByText("Visible to you only")).toBeTruthy();
-    expect(module.textContent).toContain("Gallery 70");
+    expect(module.textContent).toContain("of 100 · Gallery lists from 70");
     expect(module.textContent).not.toMatch(/Publish\s?\d/);
+    expect(within(module).getByRole("heading", { level: 2, name: "Completeness" })).toBeTruthy();
     const bar = within(module).getByRole("progressbar", { name: "Completeness" });
     expect(bar.getAttribute("aria-valuetext")).toBe("86 of 100. The gallery lists builds at 70 or above.");
   });
@@ -142,14 +142,15 @@ describe("BuildView on a desktop", () => {
   it("The build's tabs, then the steps; another tab keeps its own body", () => {
     const onTabChange = vi.fn();
     const props = stepsProps();
-    const { unmount } = mount({ ...props, viewer: { ...props.viewer, onTabChange } });
+    const all = stepTabs(false, { events: true, understand: true, broke: true });
+    const { unmount } = mount({ ...props, viewer: { ...props.viewer, tabs: all, onTabChange } });
     const tabs = within(screen.getByRole("tablist", { name: "Sections of this build" })).getAllByRole("tab");
-    expect(tabs.map((tab) => tab.textContent)).toEqual(["The build", "Watch it get built", "Understand it", "Where it broke"]);
+    expect(tabs.map((tab) => tab.textContent)).toEqual(["Steps", "Watch it get built", "Understand it", "Where it broke"]);
     fireEvent.click(tabs[1]);
     expect(onTabChange).toHaveBeenCalledWith("watch");
     unmount();
 
-    mount({ ...props, viewer: { ...props.viewer, tab: "watch", content: <p>the replay</p> } });
+    mount({ ...props, viewer: { ...props.viewer, tabs: all, tab: "watch", content: <p>the replay</p> } });
     expect(screen.getByText("the replay")).toBeTruthy();
     expect(screen.queryByTestId("build-steps")).toBeNull();
     expect(screen.getByTestId("build-need")).toBeTruthy();
@@ -190,7 +191,9 @@ describe("BuildView on a phone", () => {
     }
     // The dock is under the hero, not on it.
     expect(within(screen.getByTestId("build-hero")).queryByTestId("build-action-dock")).toBeNull();
-    expect(screen.getByRole("tablist", { name: "Sections of this build" })).toBeTruthy();
+    // Steps is the only tab: no tab bar, and the section's own h2 instead.
+    expect(screen.queryByRole("tablist")).toBeNull();
+    expect(screen.getByRole("heading", { level: 2, name: "Steps" })).toBeTruthy();
     expect(screen.queryByRole("group", { name: "How to look at the build" })).toBeNull();
   });
 });

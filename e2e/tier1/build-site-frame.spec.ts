@@ -89,12 +89,11 @@ test.describe("the first screen, with the sample build", () => {
     if (!isPhone(page)) await expect(page.getByTestId("build-hero").getByRole("group", { name: "Take this build" })).toBeVisible();
   });
 
-  test("puts one primary in the proof panel, and the six details under it", async ({ page }) => {
+  test("puts the proof action in the Reproduction section as a control, and the stated details in Details", async ({ page }) => {
     await openSample(page);
-    await expect(page.getByRole("button", { name: "I ran this and it worked" })).toBeVisible();
-    for (const label of ["Made for", "Made with", "Setup", "Monthly", "First result", "Needs"]) {
-      await expect(page.getByTestId("build-proof").getByText(label, { exact: true })).toBeVisible();
-    }
+    await expect(page.getByTestId("build-proof").getByRole("button", { name: "I ran this and it worked" })).toBeVisible();
+    await expect(page.getByTestId("build-proof").getByRole("heading", { level: 2, name: "Reproduction" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Details" })).toBeVisible();
   });
 
   test("names the sections: tabs in the viewer on a desktop, a sideways row of chips on a phone", async ({ page }) => {
