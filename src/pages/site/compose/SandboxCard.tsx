@@ -84,6 +84,7 @@ export type CardProps = Pick<
   | "onDetail"
   | "onGapSwitch"
   | "onTopicSourceSwitch"
+  | "onTopicSourceWanted"
 > & {
   /** CA-16: the classification, from the page. Absent: the Card shows only the title, the summary and the build details. */
   classification?: ClassificationCardData;

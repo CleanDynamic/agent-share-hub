@@ -151,6 +151,8 @@ export interface ComposeViewProps {
   onGapSwitch: (on: boolean) => void;
   /** UX-07 P6: Others can start topics from this build. Absent: the setting is not offered. */
   onTopicSourceSwitch?: (on: boolean) => void;
+  /** UX-07 P6: the Classification sheet opened, so the setting is read. */
+  onTopicSourceWanted?: () => void;
 }
 
 /* ── shared pieces ── */

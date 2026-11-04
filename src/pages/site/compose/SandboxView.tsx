@@ -1054,6 +1054,11 @@ function SandboxBody(props: SandboxViewProps) {
   const { status, published, save } = props;
 
   const [cardOpen, setCardOpen] = useState(false);
+  // UX-07 P6: the opt-out it draws is read once the sheet has been opened.
+  const { onTopicSourceWanted } = props;
+  useEffect(() => {
+    if (cardOpen) onTopicSourceWanted?.();
+  }, [cardOpen, onTopicSourceWanted]);
   const [cardField, setCardField] = useState<CardField | null>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);

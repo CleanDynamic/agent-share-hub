@@ -418,6 +418,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
     onDetail: details.setDetail,
     onGapSwitch: details.setGapOn,
     onTopicSourceSwitch: details.setAllowAsTopicSource,
+    onTopicSourceWanted: details.wantTopicSource,
   };
 
   return { viewProps, missing, build, tree: nodes.tree, compose, ensureBuild, firstSession, buildId, nodes, sessions, prompts, rehydrate };

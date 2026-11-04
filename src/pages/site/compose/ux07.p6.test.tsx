@@ -76,6 +76,10 @@ describe("UX-07 P6: the column", () => {
     const edit = vi.fn();
     const build = { id: "b1", cost_monthly: null, cost_setup: null, time_to_first_result: null } as unknown as Build;
     const { result } = renderHook(() => useComposeDetails({ build, hydrate: true, nodes, ensureBuild: () => Promise.resolve("b1"), edit }), { wrapper });
+    // Not read on the composer's open: only once the sheet that draws it has opened.
+    await Promise.resolve();
+    expect(read).not.toHaveBeenCalled();
+    act(() => result.current.wantTopicSource());
     await waitFor(() => expect(read).toHaveBeenCalled());
     expect(result.current.details.allowAsTopicSource).toBe(true);
     act(() => result.current.setAllowAsTopicSource(false));
@@ -87,6 +91,7 @@ describe("UX-07 P6: the column", () => {
     read.mockResolvedValue({ data: { allow_as_post_source: false }, error: null });
     const build = { id: "b2", cost_monthly: null, cost_setup: null, time_to_first_result: null } as unknown as Build;
     const { result } = renderHook(() => useComposeDetails({ build, hydrate: true, nodes, ensureBuild: () => Promise.resolve("b2"), edit: vi.fn() }), { wrapper });
+    act(() => result.current.wantTopicSource());
     await waitFor(() => expect(result.current.details.allowAsTopicSource).toBe(false));
   });
 

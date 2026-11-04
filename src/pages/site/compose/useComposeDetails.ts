@@ -10,7 +10,7 @@
    is deleted, and what was typed is kept here, so switching back on puts the
    same part back. */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -40,6 +40,8 @@ export interface ComposeDetailsState {
   setGapOn: (on: boolean) => void;
   /** UX-07 P6: writes builds.allow_as_post_source through the page's header edit. */
   setAllowAsTopicSource: (on: boolean) => void;
+  /** UX-07 P6: the sheet that draws the setting opened: read it. */
+  wantTopicSource: () => void;
   /** Write every pending edit now; resolves once the queue is empty. */
   flush: () => Promise<void>;
 }
@@ -198,10 +200,12 @@ export function useComposeDetails({
 
   /* UX-07 P6: the opt-out, read once per build that exists (a new draft is on), and written with the header's other fields. What
      the maker chose since leads, as with the title. */
+  // Read only once the Classification sheet, where the setting is drawn, has been opened: not one more request on the composer's open.
+  const [wanted, setWanted] = useState(false);
   const topicSource = useQuery({
     queryKey: ["build", "getTopicSourceSetting", build?.id ?? null],
     queryFn: () => getTopicSourceSetting(build!.id),
-    enabled: Boolean(build?.id) && hydrate,
+    enabled: wanted && Boolean(build?.id) && hydrate,
     staleTime: Infinity,
   });
   const [chosenTopicSource, setChosenTopicSource] = useState<{ buildId: string | null; on: boolean } | null>(null);
@@ -211,5 +215,8 @@ export function useComposeDetails({
     edit(topicSourcePatch(on));
   };
 
-  return { details: { ...details, allowAsTopicSource }, setDetail, setGapOn, setAllowAsTopicSource, flush };
+  // The same object while nothing in it changes: the page and its effects key on the details' identity (not a speed memo).
+  const shown = useMemo(() => ({ ...details, allowAsTopicSource }), [details, allowAsTopicSource]);
+
+  return { details: shown, setDetail, setGapOn, setAllowAsTopicSource, wantTopicSource: () => setWanted(true), flush };
 }
