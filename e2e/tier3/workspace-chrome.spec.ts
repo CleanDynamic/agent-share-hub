@@ -167,13 +167,13 @@ test.describe("the theme toggle inside the workspace", () => {
     const group = bar(page).getByRole("radiogroup", { name: "Theme" });
     await expect(group).toBeVisible();
 
-    await group.getByRole("radio", { name: "Dusk" }).click();
+    await group.getByRole("radio", { name: "Dark" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dusk");
     // Still here: a creator an hour into a build did not lose their workspace.
     await expect(bar(page)).toBeVisible();
     await expect(exit(page)).toBeVisible();
 
-    await group.getByRole("radio", { name: "Noon" }).click();
+    await group.getByRole("radio", { name: "Light" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "noon");
     await expect(bar(page)).toBeVisible();
   });

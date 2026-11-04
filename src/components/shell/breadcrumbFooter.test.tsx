@@ -128,13 +128,13 @@ describe("ThemeSegmented", () => {
         <ThemeSegmented />
       </ThemeProvider>,
     );
-    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(["Noon", "Dusk", "System"]);
+    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(["Light", "Dark", "System"]);
     act(() => {
-      fireEvent.click(screen.getByRole("button", { name: "Dusk" }));
+      fireEvent.click(screen.getByRole("button", { name: "Dark" }));
     });
     expect(window.localStorage.getItem("bg-theme")).toBe("dusk");
     expect(document.documentElement.dataset.theme).toBe("dusk");
-    expect(screen.getByRole("button", { name: "Dusk" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Dark" }).getAttribute("aria-pressed")).toBe("true");
     act(() => {
       fireEvent.click(screen.getByRole("button", { name: "System" }));
     });
@@ -177,16 +177,17 @@ describe("breadcrumb and footer under the refined look", () => {
     render(refinedFooter(false));
     expect(screen.getAllByRole("link").map((a) => a.textContent)).toEqual(["buildgallery", "About", "API docs", "Solvers", "Sign in"]);
     expect(screen.getByRole("button", { name: "Connect a tool" })).toBeTruthy();
-    expect(screen.getByRole("group", { name: "Theme" })).toBeTruthy();
+    // UX-03 P10: no theme control in the footer; the header's is the one.
+    expect(screen.queryByRole("group", { name: "Theme" })).toBeNull();
     expect(screen.getByText("© buildgallery")).toBeTruthy();
   });
 
-  it("the footer sits under a 1px --hairline with the gutter, links at 12.5 --text2 8px 20px apart, Theme at 26", () => {
+  it("the footer sits under a 1px --hairline with the gutter, links at 12.5 --text2 8px 20px apart, and no Theme control (UX-03 P10)", () => {
     const html = renderToStaticMarkup(refinedFooter(true));
     expect(html).toContain("border-top:1px solid var(--hairline);padding:12px clamp(16px, 4.6vw, 64px)");
     expect(html).toContain("gap:8px 20px");
     expect(html).toContain("font-size:12.5px;font-weight:400;color:var(--text2)");
-    expect(html).toMatch(/data-ui="segmented"[^>]*height:26px/);
+    expect(html).not.toContain('data-ui="segmented"');
     expect(html).toContain("font-size:12px;font-weight:400;color:var(--label)");
     expect(html).not.toContain("var(--header)");
   });

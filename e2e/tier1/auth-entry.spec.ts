@@ -116,10 +116,10 @@ test.describe("the visitor can choose their room before signing in", () => {
     const group = page.getByRole("radiogroup", { name: "Theme" });
     await expect(group).toBeVisible();
 
-    await group.getByRole("radio", { name: "Dusk" }).click();
+    await group.getByRole("radio", { name: "Dark" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dusk");
 
-    await group.getByRole("radio", { name: "Noon" }).click();
+    await group.getByRole("radio", { name: "Light" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "noon");
   });
 });

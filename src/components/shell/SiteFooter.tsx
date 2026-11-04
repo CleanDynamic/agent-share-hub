@@ -1,4 +1,4 @@
-// The site footer (UI-P18): lockup, five links, the theme control, the credit.
+// The site footer (UI-P18): lockup, five links, the credit. UX-03 P10: no theme control; the header's is the one.
 //
 // `<footer>` full width, 88px, a 1px `--header-border` top edge on `--header`
 // with NO blur (the header is the one blurred surface). The inner row is the
@@ -11,13 +11,12 @@
 // control take the drawn 16 and 32/11 and render them through the table. The
 // side gutters below 1328 keep the column's edges, as the header's do.
 
-import { memo, type CSSProperties, type ReactNode } from "react";
+import { memo, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useConnectorDialog } from "@/components/connect/ConnectorDialog";
 import { Lockup } from "@/components/brand/Lockup";
 import { useAuth } from "@/contexts/AuthContext";
-import { ThemeSegmented } from "@/components/theme/ThemeSegmented";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -29,17 +28,15 @@ export interface SiteFooterViewProps {
   onSignOut: () => void;
   /** "Connect a tool": opens the connector guide. */
   onConnect: () => void;
-  /** Defaults to the live `ThemeSegmented` (32, 11px). The compare page passes a static one. */
-  themeControl?: ReactNode;
 }
 
 /* UI-P87, refined: inside the surface, under a 1px `--hairline`, `12px <gutter>`, wrapping with `12px 24px` between
-   items: the lockup (15 / 13), the links at 12.5 `--text2` `8px 20px` apart, a spacer, the Theme segmented control at
-   26, and "© buildgallery" at 12 `--label`. The items, their order and their names are the current footer's. */
+   items: the lockup (15 / 13), the links at 12.5 `--text2` `8px 20px` apart, a spacer, and "© buildgallery" at 12
+   `--label`. The items, their order and their names are the current footer's; UX-03 P10 took out the Theme control. */
 const refinedLink: CSSProperties = { fontFamily: FIGTREE, fontSize: 12.5, fontWeight: 400, color: t.text2 };
 const refinedButtonLink: CSSProperties = { ...refinedLink, padding: 0, border: 0, background: "transparent", cursor: "pointer" };
 
-function RefinedSiteFooterView({ signedIn, onSignOut, onConnect, themeControl }: SiteFooterViewProps) {
+function RefinedSiteFooterView({ signedIn, onSignOut, onConnect }: SiteFooterViewProps) {
   return (
     <footer
       data-testid="site-footer"
@@ -71,7 +68,6 @@ function RefinedSiteFooterView({ signedIn, onSignOut, onConnect, themeControl }:
         )}
       </nav>
       <span style={{ flexGrow: 1 }} />
-      {themeControl ?? <ThemeSegmented size={26} fontSize={12} />}
       <span style={{ fontFamily: FIGTREE, fontSize: 12, fontWeight: 400, color: t.label }}>© buildgallery</span>
     </footer>
   );

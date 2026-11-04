@@ -79,13 +79,13 @@ describe("SignInView · desktop", () => {
     expect(screen.getByRole("radiogroup", { name: "Theme" })).toBeTruthy();
   });
 
-  it("offers the theme as a radio group of Noon, Dusk and System, the room asked for checked", () => {
+  it("offers the theme as a radio group of Light, Dark and System (UX-03 P10), the room asked for checked", () => {
     render(tree({ themeValue: "dusk" }));
     const group = screen.getByRole("radiogroup", { name: "Theme" });
     const radios = within(group).getAllByRole("radio");
-    expect(radios.map((radio) => radio.textContent)).toEqual(["Noon", "Dusk", "System"]);
-    expect(within(group).getByRole("radio", { name: "Dusk" }).getAttribute("aria-checked")).toBe("true");
-    expect(within(group).getByRole("radio", { name: "Noon" }).getAttribute("aria-checked")).toBe("false");
+    expect(radios.map((radio) => radio.textContent)).toEqual(["Light", "Dark", "System"]);
+    expect(within(group).getByRole("radio", { name: "Dark" }).getAttribute("aria-checked")).toBe("true");
+    expect(within(group).getByRole("radio", { name: "Light" }).getAttribute("aria-checked")).toBe("false");
   });
 });
 

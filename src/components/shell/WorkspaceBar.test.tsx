@@ -202,7 +202,7 @@ describe("WorkspaceBar — the right side", () => {
   it("carries the theme toggle, and changing rooms does not leave the workspace", () => {
     renderBar();
     const group = screen.getByRole("radiogroup", { name: "Theme" });
-    fireEvent.click(within(group).getByRole("radio", { name: "Dusk" }));
+    fireEvent.click(within(group).getByRole("radio", { name: "Dark" }));
 
     expect(document.documentElement.dataset.theme).toBe("dusk");
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe("dusk");

@@ -1368,6 +1368,7 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/ux03.firstPrompts.test.ts",
   "src/components/social/EngagementRow.tsx",
   "src/components/social/ux03.p8.test.tsx",
+  "src/components/theme/ux03.p10.test.tsx",
 ];
 
 /**
