@@ -19,16 +19,18 @@ vi.mock("@/lib/build/whereNext", async (original) => ({ ...(await original<typeo
 vi.mock("@/lib/build/drafts", () => ({ listDraftsWithSessions: async () => [] }));
 vi.mock("@/lib/build/signals", async (original) => ({ ...(await original<typeof import("@/lib/build/signals")>()), countLitToday: async () => 1, countReproducedToday: async () => 1, countRunsThisWeek: async () => 1, listMostReproduced: async () => [] }));
 vi.mock("@/lib/progress", async (original) => ({ ...(await original<typeof import("@/lib/progress")>()), getStreakDays: async () => [] }));
-vi.mock("@/lib/bounty", () => ({ OPEN_BOUNTIES_PAGE_SIZE: 20, listOpenBountyCards: async () => ({ cards: [], nextCursor: null }), myMeToo: async () => new Set(), toggleMeToo: vi.fn() }));
+const findRunByHandle = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/bounty", () => ({ findRunByHandle, myMeToo: async () => new Set(), toggleMeToo: vi.fn() }));
 vi.mock("@/components/gallery/cardMedia", async (original) => ({ ...(await original<typeof import("@/components/gallery/cardMedia")>()), useSignedMedia: () => new Map() }));
 const getGalleryBuildsByIds = vi.hoisted(() => vi.fn(async (ids: string[]) => ids.map((id) => ({ id, slug: id, title: id, nodes: [], media: [], models_used: [] }))));
 vi.mock("@/lib/build/gallery", async (original) => ({ ...(await original<typeof import("@/lib/build/gallery")>()), listGallery: async () => ({ builds: [], total: 0 }), getGalleryBuildsByIds }));
 const listPosts = vi.hoisted(() => vi.fn());
-vi.mock("@/lib/openbuilds", async (original) => ({ ...(await original<typeof import("@/lib/openbuilds")>()), listPosts }));
+vi.mock("@/lib/openbuilds", async (original) => ({ ...(await original<typeof import("@/lib/openbuilds")>()), listPosts, listPostableSpaces: async () => [], readNamedWork: async () => ({ builds: new Map(), nodes: new Map() }) }));
 const getBuildFeed = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/feed/getBuildFeed", async (original) => ({ ...(await original<typeof import("@/lib/feed/getBuildFeed")>()), getBuildFeed }));
 
 type Props = {
+  room: { onOpenRequest?: (run: { key: string; buildId: string; handle: string | null }) => void };
   requests: { status: string; data?: Array<{ id: string; title: string; detail: string }> };
   stillOpenScope?: string;
   feed: { status: string; items: Array<{ key: string; kind: string; build?: { id: string } }> };
@@ -201,5 +203,29 @@ describe("Home · UX-08 P3: Still open", () => {
     mount();
     await waitFor(() => expect(getBuildFeed).toHaveBeenCalled());
     expect(listPosts).not.toHaveBeenCalled();
+  });
+});
+
+describe("Home · UX-08 P2: a failed run opens the New post window, prefilled, and writes nothing", () => {
+  it("finds the run, opens the window with the build attached and the words in the box", async () => {
+    getBuildFeed.mockResolvedValue({ items: [], nextBefore: null });
+    findRunByHandle.mockResolvedValue({ id: "r1", buildId: "b1", worked: false, note: "", model: "opus-5.5" });
+    mount();
+    await waitFor(() => expect(seen.props?.room.onOpenRequest).toBeTruthy());
+    act(() => seen.props!.room.onOpenRequest!({ key: "r2", buildId: "b1", handle: "jay" }));
+    const box = (await screen.findByRole("textbox", undefined, { timeout: 5000 })) as HTMLTextAreaElement;
+    expect(findRunByHandle).toHaveBeenCalledWith("b1", "jay");
+    expect(box.value).toBe("Didn't work for me on Opus 5.5.\n\n");
+    expect(screen.getByText("New post")).toBeTruthy();
+  });
+
+  it("a run that worked opens nothing", async () => {
+    getBuildFeed.mockResolvedValue({ items: [], nextBefore: null });
+    findRunByHandle.mockResolvedValue({ id: "r1", buildId: "b1", worked: true, note: "", model: null });
+    mount();
+    await waitFor(() => expect(seen.props?.room.onOpenRequest).toBeTruthy());
+    act(() => seen.props!.room.onOpenRequest!({ key: "r2", buildId: "b1", handle: "jay" }));
+    await waitFor(() => expect(findRunByHandle).toHaveBeenCalled());
+    expect(screen.queryByText("New post")).toBeNull();
   });
 });
