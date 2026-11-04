@@ -1208,6 +1208,22 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/openRequest.ts",
   "src/lib/build/openTargets.ts",
 
+  // UX-06
+  "src/lib/openbuilds/cardWork.ts",
+  "src/lib/openbuilds/postPage.ts",
+  "src/lib/openbuilds/postPage.test.ts",
+  "src/pages/site/openbuilds/OpenBuildsFrame.tsx",
+  "src/pages/site/openbuilds/PostFrame.tsx",
+  "src/pages/site/openbuilds/PostPage.tsx",
+  "src/pages/site/openbuilds/PostPage.test.tsx",
+  "src/pages/site/openbuilds/PostReplies.tsx",
+  "src/pages/site/openbuilds/PostStepMenu.tsx",
+  "src/pages/site/openbuilds/PostView.tsx",
+  "src/pages/site/openbuilds/PostView.test.tsx",
+  "src/pages/site/openbuilds/postModel.ts",
+  "src/pages/site/openbuilds/postModel.test.ts",
+  "src/pages/site/openbuilds/postModel.fixtures.ts",
+
   // SV-23
   "src/lib/build/buildCounts.ts",
   "src/lib/build/buildCounts.test.ts",
@@ -1708,8 +1724,23 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
   },
   {
     rule: "spacing 10 is not in SPACE_REFINED",
-    text: `<DashedSlot key={tile.id} as="li" style={{ padding: "10px 12px" }}>`,
-    why: "SV-14: the OpenBuilds board pads the open strip tile 10 12, as the others.",
+    text: `<DashedSlot key={tile.id} as="li" style={{ padding: pressable ? 0 : "10px 12px" }}>`,
+    why: "SV-14: the OpenBuilds board pads the open strip tile 10 12, as the others (UX-06: none when the tile is pressable, whose button pads it).",
+  },
+  {
+    rule: "spacing 38 is not in SPACE_REFINED",
+    text: `<ol aria-label={\`Replies to \${reply.author.name}\`} style={{ margin: "8px 0 0 38px",`,
+    why: "UX-06: replies to a reply sit 38 in (the prompt names it).",
+  },
+  {
+    rule: "spacing 38 is not in SPACE_REFINED",
+    text: `expect(nested).toHaveStyle({ marginLeft: "38px",`,
+    why: "UX-06: the test of replies to a reply sitting 38 in.",
+  },
+  {
+    rule: "spacing 28 is not in SPACE_REFINED",
+    text: `<section aria-label="In this post" style={{ marginTop: space ? 28 : 0 }}>`,
+    why: "UX-06: the post page's side sections stand 28 apart, as OpenBuilds' SideSection sets them.",
   },
   {
     rule: "spacing 10 is not in SPACE_REFINED",

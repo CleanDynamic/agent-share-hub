@@ -6,6 +6,8 @@
 //   * readReplyDigests: the replies of all the page's roots in one request, folded to a strip per root.
 // Work copied from a draft carries its own snapshot and needs no read.
 
+import { toolName } from "@/lib/tools/registry";
+
 import { signEntryMedia } from "./media";
 import { listPosts, type ListPostsOptions, type PostsPage } from "./posts";
 import { db, AUTHOR_EMBED, postLayerError, unique, type Post } from "./types";
@@ -60,12 +62,19 @@ interface BuildRow {
   id: string;
   slug: string | null;
   title: string | null;
-  made_with: string | null;
+  /** UX-06: the database keeps a list of tools (text[]). */
+  made_with: string[] | string | null;
   status: string;
   reproduction_count: number | null;
   last_confirmed_at: string | null;
   last_confirmed_model: string | null;
   published_at: string | null;
+}
+
+/** UX-06: a build's harness from `made_with`: the first tool, by its name. */
+export function harnessOf(madeWith: BuildRow["made_with"]): string | null {
+  const first = Array.isArray(madeWith) ? madeWith.find((tool) => typeof tool === "string" && tool.trim()) : madeWith;
+  return first?.trim() ? (toolName(first) ?? first.trim()) : null;
 }
 
 /** The build ids a page of posts names by reference (a copy from a draft needs none), and the step ids to read. */
@@ -120,7 +129,7 @@ export async function readNamedWork(named: ReturnType<typeof workNamedBy>): Prom
 
   const facts = new Map<string, CardBuildFacts>();
   for (const row of (builds.data ?? []) as BuildRow[]) {
-    facts.set(row.id, { ...row, madeWith: row.made_with });
+    facts.set(row.id, { ...row, madeWith: harnessOf(row.made_with) });
   }
   for (const row of (making.data ?? []) as { id: string; making: unknown }[]) {
     const known = facts.get(row.id);

@@ -65,6 +65,45 @@ export function newWorld(): World {
   };
 }
 
+/** UX-06: give a post replies, as rows the database would hold. `build` attaches the world's build b1 (or another id) to a reply. */
+export function addReplies(world: World, rootId: string, replies: { id: string; parent?: string; body: string; author?: "me" | "kit"; build?: string; aboutNodeId?: string; minutesAgo: number }[]): void {
+  for (const entry of replies) {
+    const author = entry.author === "me" ? AUTHOR : KIT;
+    world.posts.push({
+      id: entry.id,
+      author_id: author.id,
+      parent_id: entry.parent ?? rootId,
+      root_id: rootId,
+      body: entry.body,
+      about_build_id: entry.aboutNodeId ? "b1" : null,
+      about_node_id: entry.aboutNodeId ?? null,
+      reward_gbp: null,
+      still_open: false,
+      tags: [],
+      closes_at: null,
+      pinned_by: null,
+      pinned_at: null,
+      hidden_by: null,
+      hidden_reason: null,
+      like_count: 0,
+      reply_count: 0,
+      created_at: new Date(Date.parse("2026-11-04T12:00:00Z") - entry.minutesAgo * 60_000).toISOString(),
+      updated_at: "2026-11-04T12:00:00Z",
+      author,
+      attachments: entry.build ? [{ position: 0, kind: "build", build_id: entry.build, node_id: null, part_key: null, session_key: null, media_path: null, media_kind: null, snapshot: null }] : [],
+      post_spaces: [],
+    });
+  }
+  const root = world.posts.find((post) => post.id === rootId);
+  if (root) root.reply_count = world.posts.filter((post) => post.root_id === rootId && post.parent_id !== null).length;
+}
+
+/** A post with its replies two levels deep, as getPost's one embedded read returns it. */
+function threadRow(world: World, post: Row, depth: number): Row {
+  const replies = depth >= 2 ? [] : world.posts.filter((entry) => entry.parent_id === post.id).sort((a, b) => a.created_at.localeCompare(b.created_at));
+  return { ...post, replies: replies.map((reply) => threadRow(world, reply, depth + 1)) };
+}
+
 const CORS = { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "*", "access-control-expose-headers": "content-range" };
 const b64 = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
 
@@ -157,6 +196,16 @@ export async function installWorld(page: Page, world: World, options: { signedIn
         });
         world.hold.armed = false;
         world.hold.release = null;
+      }
+      // UX-06: getPost's two reads, the post with its replies embedded, then the thread's (id, parent) pairs.
+      const one = filter(url, "id");
+      if (one?.startsWith("eq.") && select.includes("replies:")) {
+        const found = world.posts.find((post) => post.id === one.slice(3) && (options.signedIn || post.hidden_by === null));
+        return reply(route, found ? [threadRow(world, found, 0)] : []);
+      }
+      const root = filter(url, "root_id");
+      if (root?.startsWith("eq.") && select.startsWith("id, parent_id")) {
+        return reply(route, world.posts.filter((post) => post.root_id === root.slice(3)).map((post) => ({ id: post.id, parent_id: post.parent_id })));
       }
       if (url.searchParams.has("root_id")) return reply(route, []);
       let rows = world.posts.filter((post) => post.parent_id === null);

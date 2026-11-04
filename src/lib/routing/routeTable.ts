@@ -29,6 +29,7 @@ import {
   LibraryPlaceholder,
   OpenBuildsFeedPlaceholder,
   OpenBuildsPlaceholder,
+  PostPlaceholder,
   ProfilePlaceholder,
 } from "./placeholders";
 
@@ -189,6 +190,21 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
     },
     Placeholder: OpenBuildsFeedPlaceholder,
     frame: { board: "home" },
+  },
+  /* UX-06: a post's page, at the address UX-05 gave every post (/openbuilds/posts/:id redirects here). Round 1 is the post with
+     its replies; the rest needs the post's ids. Same key and function as PostPage. */
+  post: {
+    key: "post",
+    pattern: "/openbuilds/topics/:id",
+    signedIn: false,
+    load: () => import("@/pages/site/openbuilds/PostPage"),
+    prefetch: async ({ id }, queryClient) => {
+      if (!id) return;
+      const [lib, model] = await Promise.all([import("@/lib/openbuilds"), import("@/pages/site/openbuilds/postModel")]);
+      await queryClient.prefetchQuery({ queryKey: model.postPageKey(id), queryFn: () => lib.getPost(id), staleTime: LIST_STALE_MS });
+    },
+    Placeholder: PostPlaceholder,
+    frame: { board: true },
   },
   /* UX-05 P2: the requests page that /openbuilds was, unchanged, at its own address. */
   bountyRequests: {

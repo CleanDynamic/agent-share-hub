@@ -94,6 +94,8 @@ function TopicRedirect() {
 }
 const BountyRequests = lazy(ROUTE_TABLE.bountyRequests.load as () => Promise<{ default: React.ComponentType }>);
 const SpacePage = lazy(ROUTE_TABLE.space.load as () => Promise<{ default: React.ComponentType }>);
+// UX-06: a post's page.
+const PostPage = lazy(ROUTE_TABLE.post.load as () => Promise<{ default: React.ComponentType }>);
 const Solvers = lazy(() => import("./pages/Solvers"));
 // Solve route for a specific bounty.
 const BountySolveShowPage = lazy(() => import("./pages/BountySolveShowPage"));
@@ -503,6 +505,7 @@ const App = () => (
                 <Route path="/bounties" element={<KeepSearchRedirect to="/openbuilds/requests" />} />
                 <Route path="/openbuilds" element={<RouteBoundary><Bounties /></RouteBoundary>} />
                 <Route path="/openbuilds/posts/:id" element={<TopicRedirect />} />
+                <Route path="/openbuilds/topics/:id" element={<RouteBoundary><PostPage /></RouteBoundary>} />
                 <Route path="/openbuilds/requests" element={<RouteBoundary><BountyRequests /></RouteBoundary>} />
                 <Route path="/openbuilds/spaces/:slug" element={<RouteBoundary><SpacePage /></RouteBoundary>} />
                 {/* RC-P13 — the solvers board, lazy inside its own RouteBoundary
