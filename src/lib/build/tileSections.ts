@@ -354,6 +354,10 @@ const DECISION: readonly SectionDef[] = [
 ];
 
 const FILE: readonly SectionDef[] = [
+  /* UX-02 P9: a file's type, and for a File step tile where it stands: in the List, and on the published page. Read from the file,
+     never asked for, so neither is named as not set. */
+  S("type", "Type", "", (tile) => (tile.kind === "file" ? one("Type", tile.type) : null)),
+  S("place", "In the build", "", (tile) => (tile.kind === "file" && tile.place ? rows([["Position", `Session ${tile.place.session} · step tile ${tile.place.at}`], ["On the published page", `Step ${tile.place.step} · File`]]) : null)),
   S("from", "From", "Where the file came from", (tile) => (tile.kind === "file" ? rows([["From", tile.from], ["Size", tile.size]]) : null)),
   S("usedBy", "Used by", "The steps that take it in", usedByOf),
 ];
@@ -600,6 +604,9 @@ export function sectionsOf(kind: TileKind): readonly SectionDef[] {
   return BY_KIND[kind];
 }
 
+/** UX-02 P9: sections read from the tile, not asked for: never named as not set. */
+const READ_ONLY = new Set(["type", "place"]);
+
 /** What a tile holds, section by section, in order; an empty section is left out and named in `notSet`. */
 export function readSections(tile: DetailsView, build: BuildFacts): { sections: ReadSection[]; notSet: string[] } {
   const sections: ReadSection[] = [];
@@ -607,16 +614,11 @@ export function readSections(tile: DetailsView, build: BuildFacts): { sections: 
   for (const def of sectionsOf(tile.kind)) {
     const value = def.read(tile, build);
     if (value) sections.push({ key: def.key, label: def.label, value });
-    else notSet.push(def.label);
+    else if (!READ_ONLY.has(def.key)) notSet.push(def.label);
   }
   return { sections, notSet };
 }
 
-/** "Not set: Harness, Memory, Sample run. Edit to add them." Nothing when nothing is empty. */
-export function notSetLine(notSet: readonly string[]): string | null {
-  if (notSet.length === 0) return null;
-  return `Not set: ${notSet.join(", ")}. Edit to add them.`;
-}
 
 /* ── the head ── */
 

@@ -318,6 +318,13 @@ function sessionView(source: SourceSession, ctx: ViewContext): SessionView {
   };
 }
 
+/** UX-02 P9: what kind of file it is, from its name's extension, else its media type: "MD", "PDF", "text/csv". */
+export function fileTypeOf(name: string, mime: string | null): string | null {
+  const ext = /\.([a-z0-9]{1,8})$/i.exec(name)?.[1];
+  if (ext) return ext.toUpperCase();
+  return mime?.trim() || null;
+}
+
 function fileView(node: NodeTree, ctx: ViewContext): FileView {
   const payload = payloadOf(node);
   const mediaId = text(payload.media_id);
@@ -326,12 +333,18 @@ function fileView(node: NodeTree, ctx: ViewContext): FileView {
   // A file a step makes is made by running the step: it has nothing to download.
   const maker = madeByOf(node);
   const number = maker ? flatten(ctx.steps).find((step) => step.id === maker)?.number : undefined;
+  // UX-02 P9: a File step tile's place: its session and its place in it, and its step on the published page.
+  const step = ctx.steps.find((candidate) => candidate.id === node.id);
+  const group = step ? ctx.groups.find((candidate) => candidate.stepNumbers.includes(step.number)) : undefined;
+  const place = step && group ? { session: group.number, at: group.stepNumbers.indexOf(step.number) + 1, step: step.number } : null;
   return {
     kind: "file",
     id: node.id,
     name: text(payload.title) || "Untitled file",
     from: number ? `Made in step ${number}` : (source?.note ?? "added by you"),
     size: fileSize(facts?.bytes),
+    type: fileTypeOf(text(payload.title), text(payload.mime) || null),
+    place,
     canDownload: !maker && Boolean(mediaId || text(payload.url)),
     usedBy: usedBy(ctx.steps, { kind: "file", node_id: node.id }),
   };

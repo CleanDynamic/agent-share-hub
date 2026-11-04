@@ -24,7 +24,7 @@ import { Button } from "@/components/brand/Button";
 import { ChangedText } from "@/components/build/ChangedText";
 import { IconButton } from "@/components/brand/IconButton";
 import { changesLine, type ChangeRange } from "@/lib/build/changes";
-import { headOf, notSetLine, readSections, type BuildFacts, type ListItem, type ReadSection, type SectionValue } from "@/lib/build/tileSections";
+import { headOf, readSections, type BuildFacts, type ListItem, type ReadSection, type SectionValue } from "@/lib/build/tileSections";
 import { t } from "@/lib/theme/tokens";
 import { fullText } from "@/lib/theme/truncate";
 
@@ -191,6 +191,10 @@ export interface FileView {
   name: string;
   from: string;
   size: string | null;
+  /** UX-02 P9: what kind of file it is ("Markdown", "PDF"). */
+  type?: string | null;
+  /** UX-02 P9: a File step tile's place: its session's number, its place in it, and its step's number on the published page. */
+  place?: { session: number; at: number; step: string } | null;
   canDownload: boolean;
   usedBy: readonly GoesRow[];
 }
@@ -475,7 +479,9 @@ export interface DetailsPlan {
 }
 
 export const DETAILS_COPY = {
-  empty: "Select a tile or session to see it here.",
+  empty: "Select a step tile or session to see it here.",
+  /** UX-02 P9: in place of "Not set: …". */
+  addDetails: "Add details",
   edit: "Edit",
   copy: "Copy",
   copied: "Copied",
@@ -697,14 +703,34 @@ const nameOnly: BuildFacts = { ref: () => null };
 
 /** The sections a tile holds and what it leaves empty: what the panel and the layout both read. */
 export function detailsOf(view: DetailsView, build: BuildFacts = nameOnly) {
-  const { sections, notSet } = readSections(view, build);
-  return { head: headOf(view), sections, notSet, foot: notSetLine(notSet) };
+  const read = readSections(view, build);
+  /* UX-02 P9: a session's head already says its harness, model and date: Details does not say them again. */
+  const repeats = view.kind === "session" ? SESSION_HEAD_SECTIONS : null;
+  const sections = repeats ? read.sections.filter((section) => !repeats.has(section.key)) : read.sections;
+  const notSet = repeats ? read.notSet.filter((label) => !SESSION_HEAD_LABELS.has(label)) : read.notSet;
+  return { head: headOf(view), sections, notSet };
+}
+
+/** UX-02 P9: the sections a session's head already shows (its harness and model, its date). */
+const SESSION_HEAD_SECTIONS = new Set(["app", "date"]);
+const SESSION_HEAD_LABELS = new Set(["Harness and model", "Date"]);
+
+/** UX-02 P9: in place of "Not set: …": one control that opens the same window Edit opens. */
+function AddDetails({ onEdit }: { onEdit: () => void }) {
+  return (
+    <div data-testid="details-add" style={{ display: "flex" }}>
+      <Button variant="secondary" size={32} fontSize={13} onClick={onEdit}>
+        {DETAILS_COPY.addDetails}
+      </Button>
+    </div>
+  );
 }
 
 /* ── the panel ── */
 
 function Body({ view, plan, colour, build, onSelect, onEdit, onOpenPrompt }: { view: DetailsView; plan?: DetailsPlan; colour?: DetailsColour | null; build?: BuildFacts; onSelect?: (id: string) => void; onEdit?: () => void; onOpenPrompt?: (id: string) => void }) {
-  const { sections, foot } = detailsOf(view, build);
+  const { sections, notSet } = detailsOf(view, build);
+  const foot = notSet.length > 0 && onEdit ? <AddDetails onEdit={onEdit} /> : null;
   const id = view.kind === "session" ? view.key : view.id;
   const readAll = view.kind === "prompt" && onOpenPrompt ? () => onOpenPrompt(id) : undefined;
   const one = (section: ReadSection, first: boolean) => (
@@ -718,7 +744,7 @@ function Body({ view, plan, colour, build, onSelect, onEdit, onOpenPrompt }: { v
       <div style={COLUMN}>
         <DetailsHead view={view} colour={colour} onEdit={onEdit} />
         {sections.map((section, at) => one(section, at === 0))}
-        {foot ? <p data-testid="details-not-set" style={NOT_SET}>{foot}</p> : null}
+        {foot}
         {references(sections.length === 0 && !foot)}
       </div>
     );
@@ -730,12 +756,12 @@ function Body({ view, plan, colour, build, onSelect, onEdit, onOpenPrompt }: { v
         {sections.map((section) => (
           <div key={section.key} data-measure={section.key} style={FLOW}>{one(section, true)}</div>
         ))}
-        {foot ? <div data-measure="foot" style={FLOW}><p data-testid="details-not-set" style={NOT_SET}>{foot}</p></div> : null}
+        {foot ? <div data-measure="foot" style={FLOW}>{foot}</div> : null}
         {refs ? <div data-measure="references" data-trailing="true" style={FLOW}>{references(true)}</div> : null}
       </div>
     );
   }
-  const byKey = new Map<string, ReactNode>([["head", <DetailsHead key="head" view={view} colour={colour} onEdit={onEdit} />], ["foot", foot ? <p key="foot" data-testid="details-not-set" style={NOT_SET}>{foot}</p> : null]]);
+  const byKey = new Map<string, ReactNode>([["head", <DetailsHead key="head" view={view} colour={colour} onEdit={onEdit} />], ["foot", foot ? <div key="foot">{foot}</div> : null]]);
   return (
     <div data-testid="details-columns" style={{ display: "flex", alignItems: "flex-start", gap: 48 }}>
       {plan.columns.map((keys, at) => (
