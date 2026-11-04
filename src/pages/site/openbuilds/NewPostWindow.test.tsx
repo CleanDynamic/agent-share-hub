@@ -169,6 +169,17 @@ describe("NewPostWindow", () => {
     expect(await screen.findByRole("textbox", { name: "Post" })).toHaveValue("Kept words");
   });
 
+  it("shows an added picture in the post media grid, from the file itself, with a Remove for it", async () => {
+    vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: () => "blob:picture", revokeObjectURL: () => undefined }));
+    draw();
+    await screen.findByRole("dialog");
+    fireEvent.change(screen.getByLabelText("Choose an image or file"), { target: { files: [new File(["x"], "scorer.png", { type: "image/png" })] } });
+    expect(await screen.findByRole("group", { name: "1 picture" })).toHaveAttribute("data-post-media-grid", "");
+    expect(uploadEntryMedia).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Remove picture 1" }));
+    expect(screen.queryByRole("group", { name: "1 picture" })).toBeNull();
+  });
+
   it("uses no em dash in any copy", async () => {
     draw();
     await screen.findByRole("dialog");

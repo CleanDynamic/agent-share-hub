@@ -15,7 +15,7 @@ import { toast } from "sonner";
 
 import { SeoHead } from "@/components/SeoHead";
 import { PageArrival } from "@/components/shell/PageArrival";
-import { toCardData } from "@/components/post/postCardModel";
+import { toCardData, topicHref } from "@/components/post/postCardModel";
 import { useAuth } from "@/contexts/AuthContext";
 import { engagementFor, useEngagement } from "@/hooks/useEngagement";
 import { reportError } from "@/lib/errors/report";
@@ -95,7 +95,7 @@ export default function OpenBuildsFeedPage() {
   });
   const engagement = useEngagement(buildIds);
   const items = posts.map(({ post, extras }) => {
-    const card = toCardData(post, { work: extras.work, signed: extras.signed, digests: extras.digests, now, hrefOf: (target) => `/openbuilds/posts/${target.id}` });
+    const card = toCardData(post, { work: extras.work, signed: extras.signed, digests: extras.digests, now, hrefOf: (target) => topicHref(target.id) });
     return { card, engagement: card.engagementBuild ? engagementFor(engagement, card.engagementBuild.id) : undefined };
   });
 

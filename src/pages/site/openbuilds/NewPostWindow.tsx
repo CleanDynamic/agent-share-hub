@@ -10,7 +10,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { AttachmentView } from "@/components/post/PostCard";
+import { AttachmentView, PicturesBlock } from "@/components/post/PostCard";
 import { PostControl } from "@/components/post/postControls";
 import { cardAttachment, type CardAttachment } from "@/components/post/postCardModel";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -64,7 +64,11 @@ export function NewPostWindow({ spaceSlug, draft: restored, onClose, onReopen }:
   const [work, setWork] = useState<CardWork>(NO_CARD_WORK);
   const [notice, setNotice] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  // What the reader just added is shown from the file itself until it has an address of its own.
+  const [previews, setPreviews] = useState<Record<string, string>>({});
   const picked = useRef(restored !== undefined);
+  const urls = useRef<string[]>([]);
+  useEffect(() => () => urls.current.forEach((url) => URL.revokeObjectURL(url)), []);
   const file = useRef<HTMLInputElement>(null);
 
   // Opened from a space: that space is chosen. Once, and never over a choice the reader made.
@@ -145,6 +149,11 @@ export function NewPostWindow({ spaceSlug, draft: restored, onClose, onReopen }:
     try {
       const up = await uploadEntryMedia(picked);
       const input: AttachmentInput = { kind: "media", mediaPath: up.path, mediaKind: up.mediaKind };
+      if (up.mediaKind !== "file") {
+        const url = URL.createObjectURL(picked);
+        urls.current.push(url);
+        setPreviews((current) => ({ ...current, [up.path]: url }));
+      }
       setDraft((current) => ({ ...current, attachments: [...current.attachments, { key: keyOf(input), input, name: picked.name }] }));
     } catch (error) {
       reportError(error, { source: "openbuilds", context: "uploadEntryMedia" });
@@ -173,10 +182,14 @@ export function NewPostWindow({ spaceSlug, draft: restored, onClose, onReopen }:
 
   const open = { id: "new-post", stillOpen: draft.stillOpen, aboutNodeId: draft.openNodeId };
   const drawn = draft.attachments.map((attachment): { key: string; card: CardAttachment | null; build: boolean } => {
-    if (attachment.input.kind === "media") return { key: attachment.key, card: { kind: "file", key: attachment.key, name: attachment.name ?? "File", href: null }, build: false };
+    if (attachment.input.kind === "media") {
+      const input = attachment.input;
+      return { key: attachment.key, card: input.mediaKind === "file" ? { kind: "file", key: attachment.key, name: attachment.name ?? "File", href: null } : { kind: "picture", key: attachment.key, path: input.mediaPath, mediaKind: input.mediaKind, src: previews[input.mediaPath] ?? null }, build: false };
+    }
     return { key: attachment.key, card: cardAttachment(open, attachmentOf(attachment.input, 0), work, new Map()), build: attachment.input.kind === "build" };
   });
 
+  const pictures = drawn.flatMap(({ card }) => (card?.kind === "picture" ? [card] : []));
   const names = chosen.map((space) => space.name).join(", ");
   const body: ReactNode = (
     <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
@@ -221,8 +234,21 @@ export function NewPostWindow({ spaceSlug, draft: restored, onClose, onReopen }:
         <input ref={file} type="file" aria-label="Choose an image or file" hidden onChange={(event) => void addFile(event.target.files?.[0])} />
       </div>
 
+      {pictures.length > 0 ? (
+        <div>
+          <PicturesBlock pictures={pictures} />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+            {pictures.map((picture, index) => (
+              <PostControl key={picture.key} aria-label={`Remove picture ${index + 1}`} onClick={() => remove(picture.key)}>
+                {`Remove picture ${index + 1}`}
+              </PostControl>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {drawn.map(({ key, card, build }) =>
-        card ? (
+        card && card.kind !== "picture" ? (
           <div key={key}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
               <div style={{ flex: 1, minWidth: 0 }}>

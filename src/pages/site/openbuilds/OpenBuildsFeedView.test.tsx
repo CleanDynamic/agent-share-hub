@@ -20,7 +20,7 @@ export function atWidth(px: number) {
 
 const card = (id: string, extra: Partial<PostCardData> = {}): PostCardData => ({
   id,
-  to: `/openbuilds/posts/${id}`,
+  to: `/openbuilds/topics/${id}`,
   author: { id: "u1", name: "Sam Ellis", handle: "sam", avatarUrl: null },
   age: "2h",
   spaces: [{ slug: "claude-code", name: "Claude Code" }],

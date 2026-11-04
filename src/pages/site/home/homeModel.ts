@@ -169,6 +169,9 @@ export interface HomeWeek {
 /** UX-03 P6: how many of the maker's published builds "Your published builds" lists. Home's own; not the composer's GROUP_ROWS. */
 export const HOME_BUILD_ROWS = 5;
 
+/** Where Home's open requests go. The old list of requests, until UX-08 replaces the section with Still open topics: change it here, once. */
+export const OPEN_REQUESTS_HREF = "/openbuilds/requests";
+
 /** UX-03 P6: the maker's published builds, for the room when nothing else in it has anything to show. */
 export interface HomePublished {
   /** Every build the maker has published, counted in full. */

@@ -10,7 +10,7 @@ import { useLocation, useNavigate, useParams, useSearchParams } from "react-rout
 import { toast } from "sonner";
 
 import { SeoHead } from "@/components/SeoHead";
-import { toCardData } from "@/components/post/postCardModel";
+import { toCardData, topicHref } from "@/components/post/postCardModel";
 import { useAuth } from "@/contexts/AuthContext";
 import { engagementFor, useEngagement } from "@/hooks/useEngagement";
 import { reportError } from "@/lib/errors/report";
@@ -119,8 +119,8 @@ export default function SpacePage() {
   const handles = new Map((crowd.data?.moderators ?? []).map((person) => [person.id, person.handle]));
   const pages = feed.data?.pages ?? [];
   const posts = pages.flatMap((page) => page.posts.map((post) => ({ post, extras: page.extras })));
-  const view = space?.defaultView === "wall" ? "?view=wall" : "";
-  const contextFor = (extras: CardsPage["extras"]) => ({ work: extras.work, signed: extras.signed, digests: extras.digests, now, hrefOf: (target: { id: string }) => `/openbuilds/posts/${target.id}${view}`, moderator: () => moderator, handleOf: (id: string) => handles.get(id) ?? null });
+  const view = space?.defaultView === "wall" ? ("wall" as const) : ("thread" as const);
+  const contextFor = (extras: CardsPage["extras"]) => ({ work: extras.work, signed: extras.signed, digests: extras.digests, now, hrefOf: (target: { id: string }) => topicHref(target.id, { view }), moderator: () => moderator, handleOf: (id: string) => handles.get(id) ?? null });
   const buildIds = posts.flatMap(({ post, extras }) => {
     const id = toCardData(post, contextFor(extras)).engagementBuild?.id;
     return id ? [id] : [];

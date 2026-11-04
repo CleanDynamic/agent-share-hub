@@ -87,6 +87,11 @@ const BountyUpload = lazy(() => import("@/pages/BountyUpload"));
 const Bounties = lazy(ROUTE_TABLE.bounties.load as () => Promise<{ default: React.ComponentType }>);
 // RC-P13 — the solvers board, under the bounties board. Its own chunk.
 // UX-05 P2: the requests page that /openbuilds was, now at /openbuilds/requests.
+/** UX-05: /openbuilds/posts/:id was never a page; a topic is at /openbuilds/topics/:id. */
+function TopicRedirect() {
+  const { id = "" } = useParams();
+  return <KeepSearchRedirect to={`/openbuilds/topics/${id}`} />;
+}
 const BountyRequests = lazy(ROUTE_TABLE.bountyRequests.load as () => Promise<{ default: React.ComponentType }>);
 const SpacePage = lazy(ROUTE_TABLE.space.load as () => Promise<{ default: React.ComponentType }>);
 const Solvers = lazy(() => import("./pages/Solvers"));
@@ -497,6 +502,7 @@ const App = () => (
                     (CONTRACT §2.6). */}
                 <Route path="/bounties" element={<KeepSearchRedirect to="/openbuilds/requests" />} />
                 <Route path="/openbuilds" element={<RouteBoundary><Bounties /></RouteBoundary>} />
+                <Route path="/openbuilds/posts/:id" element={<TopicRedirect />} />
                 <Route path="/openbuilds/requests" element={<RouteBoundary><BountyRequests /></RouteBoundary>} />
                 <Route path="/openbuilds/spaces/:slug" element={<RouteBoundary><SpacePage /></RouteBoundary>} />
                 {/* RC-P13 — the solvers board, lazy inside its own RouteBoundary

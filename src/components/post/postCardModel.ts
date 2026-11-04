@@ -59,7 +59,7 @@ export type CardAttachment =
   | { kind: "build"; key: string; title: string; harness: string | null; steps: number; plaque: PlaqueBuild | null; tiles: StripTileData[]; to: string | null }
   | { kind: "step"; key: string; head: string; text: string }
   | { kind: "line"; key: string; text: string }
-  | { kind: "image"; key: string; src: string | null; alt: string }
+  | { kind: "picture"; key: string; path: string; mediaKind: "image" | "video"; src: string | null }
   | { kind: "file"; key: string; name: string; href: string | null };
 
 export interface PostCardData {
@@ -117,7 +117,7 @@ export function cardAttachment(post: Pick<Post, "id" | "stillOpen" | "aboutNodeI
   if (attachment.kind === "media") {
     const name = attachment.mediaPath?.split("/").pop() ?? "File";
     const src = attachment.mediaPath ? (signed.get(attachment.mediaPath) ?? null) : null;
-    return attachment.mediaKind === "image" ? { kind: "image", key, src, alt: "Picture on this post" } : { kind: "file", key, name, href: src };
+    return attachment.mediaKind === "image" || attachment.mediaKind === "video" ? { kind: "picture", key, path: attachment.mediaPath ?? "", mediaKind: attachment.mediaKind, src } : { kind: "file", key, name, href: src };
   }
 
   if (attachment.kind === "build") {
@@ -226,3 +226,9 @@ export function toCardData(post: Post, context: CardContext): PostCardData {
     engagementBuild: buildFacts?.slug && buildFacts.status !== "draft" ? { id: buildFacts.id, slug: buildFacts.slug, title: buildFacts.title ?? "", rebuild_count: null } : null,
   };
 }
+
+/** A topic's address (UX-06 draws the page). A reply opens its topic with the reply in view: `?reply=<reply id>`. */
+export const topicHref = (rootId: string, options: { replyId?: string; view?: "thread" | "wall" } = {}): string => {
+  const query = [...(options.view === "wall" ? ["view=wall"] : []), ...(options.replyId ? [`reply=${encodeURIComponent(options.replyId)}`] : [])].join("&");
+  return `/openbuilds/topics/${rootId}${query ? `?${query}` : ""}`;
+};

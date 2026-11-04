@@ -165,7 +165,7 @@ export function SpaceWindow({ mode, slug, onClose }: { mode: "make" | "settings"
       </div>
     ) : (
       <div>
-        <p style={SUBTITLE}>{locked ? "Only the person who made this space can change these." : "Only you and your moderators see this"}</p>
+        <p style={SUBTITLE}>{locked ? "Only the creator can change these." : "Only you and your moderators see this"}</p>
         <WhoCanPost value={draft.whoCanPost} onChange={(value) => set("whoCanPost", value)} disabled={locked} phone={phone} />
         {creator ? (
           <Row label="Moderators" id="space-moderators" group phone={phone} top>

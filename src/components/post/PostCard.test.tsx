@@ -6,11 +6,11 @@ import { describe, expect, it, vi } from "vitest";
 
 import { PostCard } from "./PostCard";
 import { PostControl } from "./postControls";
-import { splitBody, type PostCardData } from "./postCardModel";
+import { splitBody, topicHref, type PostCardData } from "./postCardModel";
 
 const base: PostCardData = {
   id: "p1",
-  to: "/openbuilds/posts/p1",
+  to: "/openbuilds/topics/p1",
   author: { id: "u1", name: "Sam Ellis", handle: "sam", avatarUrl: null },
   age: "2h",
   spaces: [
@@ -49,8 +49,8 @@ describe("PostCard", () => {
   });
 
   it("has one heading link to the post, and the replies strip as the only other link to it", () => {
-    draw({ replies: { count: 6, people: [{ id: "u2", name: "Kit", avatarUrl: null }], detail: "3 builds · latest from @kit 20m ago", to: "/openbuilds/posts/p1" } });
-    const toPost = screen.getAllByRole("link").filter((link) => link.getAttribute("href") === "/openbuilds/posts/p1");
+    draw({ replies: { count: 6, people: [{ id: "u2", name: "Kit", avatarUrl: null }], detail: "3 builds · latest from @kit 20m ago", to: "/openbuilds/topics/p1" } });
+    const toPost = screen.getAllByRole("link").filter((link) => link.getAttribute("href") === "/openbuilds/topics/p1");
     expect(toPost).toHaveLength(2);
     expect(screen.getAllByTestId("post-card-heading-link")).toHaveLength(1);
     const strip = screen.getByTestId("post-card-replies-strip");
@@ -61,7 +61,7 @@ describe("PostCard", () => {
   it("has no replies strip at zero replies", () => {
     draw();
     expect(screen.queryByTestId("post-card-replies-strip")).toBeNull();
-    expect(screen.getAllByRole("link").filter((link) => link.getAttribute("href") === "/openbuilds/posts/p1")).toHaveLength(1);
+    expect(screen.getAllByRole("link").filter((link) => link.getAttribute("href") === "/openbuilds/topics/p1")).toHaveLength(1);
   });
 
   it("draws a build with its harness, step count, and the still open step as a dashed slot", () => {
@@ -103,18 +103,28 @@ describe("PostCard", () => {
     expect(screen.getByText("Part B · 3 sessions")).toBeInTheDocument();
   });
 
-  it("draws a picture lazily in a box sized ahead, and a file with a Download control", () => {
+  it("draws pictures as a build's posts do: the post media grid, and a file with a Download control", () => {
     draw({
       attachments: [
-        { kind: "image", key: "i", src: "https://example.test/a.png", alt: "Picture on this post" },
+        { kind: "picture", key: "i", path: "entries/u1/a.png", mediaKind: "image", src: "https://example.test/a.png" },
+        { kind: "picture", key: "j", path: "entries/u1/b.png", mediaKind: "image", src: "https://example.test/b.png" },
         { kind: "file", key: "f", name: "scores.csv", href: "https://example.test/scores.csv" },
       ],
     });
-    const image = screen.getByRole("img", { name: "Picture on this post" });
-    expect(image).toHaveAttribute("loading", "lazy");
-    expect(image).toHaveAttribute("decoding", "async");
+    const grid = screen.getByRole("group", { name: "2 pictures" });
+    expect(grid).toHaveAttribute("data-post-media-grid", "");
+    expect(document.querySelectorAll("[data-post-media-grid]")).toHaveLength(1);
     expect(screen.getByText("scores.csv")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Download" })).toHaveAttribute("href", "https://example.test/scores.csv");
+  });
+
+  it("sets the heading at the feed card's title size, 13/500, and the author at 15/600", () => {
+    draw();
+    const heading = screen.getByRole("heading", { name: base.heading });
+    expect(heading.style.fontSize).toBe("13px");
+    expect(heading.style.fontWeight).toBe("500");
+    expect(screen.getByText("Sam Ellis").style.fontSize).toBe("15px");
+    expect(screen.getByText("Sam Ellis").style.fontWeight).toBe("600");
   });
 
   it("draws the properties: Still open, tags, and the closing date", () => {
@@ -164,5 +174,14 @@ describe("PostControl", () => {
     fireEvent.click(button);
     expect(onPointerDown).toHaveBeenCalledTimes(1);
     expect(onClick).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("topicHref", () => {
+  it("is /openbuilds/topics/<id>, with the reply in view for a reply, and the Wall when the space sets it", () => {
+    expect(topicHref("r1")).toBe("/openbuilds/topics/r1");
+    expect(topicHref("r1", { replyId: "x9" })).toBe("/openbuilds/topics/r1?reply=x9");
+    expect(topicHref("r1", { view: "wall" })).toBe("/openbuilds/topics/r1?view=wall");
+    expect(topicHref("r1", { view: "thread" })).toBe("/openbuilds/topics/r1");
   });
 });

@@ -134,7 +134,7 @@ describe("Settings", () => {
     user = { id: "u2" };
     getSpaceCrowd.mockResolvedValue(crowd("moderator"));
     draw({ mode: "settings", slug: "evals" });
-    expect(await screen.findByText("Only the person who made this space can change these.")).toBeInTheDocument();
+    expect(await screen.findByText("Only the creator can change these.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
     expect(screen.queryByRole("group", { name: "Moderators" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Start from another space's settings" })).toBeNull();

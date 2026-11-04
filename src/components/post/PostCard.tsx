@@ -2,14 +2,15 @@
 
    Pure: typed props (`PostCardData` from postCardModel), no fetching, no `useAuth()`, no router hooks but `Link`. Its head and
    body values are FeedPost's, copied (FeedPost's head is not a component of its own): a 40px author column and the content 12
-   apart, padding 20 0 16; the name 15/600 and `@handle · age` 14 `--label`; the heading in the post type's title (28, 24 on a
-   phone, 500, -0.03em). Only the heading and the replies strip are links to the post. */
+   apart, padding 20 0 16; the name 15/600 and `@handle · age` 14 `--label`; the heading at the card title size, 13/500. Only the heading and the replies strip are links to the post. */
 
 import { useState, type CSSProperties } from "react";
 
 import { Avatar } from "@/components/brand/Avatar";
+import type { GalleryMedia } from "@/lib/build";
+import { MediaViewerProvider } from "@/components/post/media/MediaViewer";
+import { PostMediaGrid } from "@/components/post/media/PostMediaGrid";
 import { Plaque } from "@/components/brand/Plaque";
-import { useIsPhone } from "@/components/shell/useMinWidth";
 import { EngagementRow, type RowEngagement } from "@/components/social/EngagementRow";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { DashedSlot } from "@/components/vision/DashedSlot";
@@ -22,7 +23,6 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { PostControl } from "./postControls";
-import { postType } from "./postType";
 import { repliesWords, type CardAttachment, type PostCardData } from "./postCardModel";
 
 /** What a moderator can do to a post, from its `···` menu. */
@@ -43,12 +43,12 @@ export interface PostCardProps {
 
 const plain: CSSProperties = { fontFamily: FIGTREE, margin: 0 };
 
-/** The post's heading: its type, underlined at once under hover (a fine pointer only). */
-function HeadingLink({ to, children, phone }: { to: string; children: string; phone: boolean }) {
+/** The post's heading at FeedPost's card title size, 13/500 (a topic and a build sit side by side as equals): underlined at once under hover (a fine pointer only). */
+function HeadingLink({ to, children }: { to: string; children: string }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   return (
-    <Link to={to} data-testid="post-card-heading-link" {...handlers} style={{ color: "inherit", textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: 4, ...ring(state.focusVisible) }}>
-      <h3 style={{ ...postType(phone).title, display: "inline", fontSize: postType(phone).title.fontSize }}>{children}</h3>
+    <Link to={to} data-testid="post-card-heading-link" {...handlers} style={{ color: t.text, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: 4, ...ring(state.focusVisible) }}>
+      <h3 style={{ ...plain, display: "inline", fontSize: 13, fontWeight: 500, lineHeight: 1.4 }}>{children}</h3>
     </Link>
   );
 }
@@ -88,20 +88,27 @@ function StepAttachment({ attachment }: { attachment: Extract<CardAttachment, { 
 }
 
 /** One attachment as the card draws it. The New post window draws the same, with a way to mark a step of a build still open. */
+/** A topic's pictures and videos, exactly as a build's posts draw them: the post media grid, opening full size in the viewer. Nothing here is drawn another way. */
+export function PicturesBlock({ pictures }: { pictures: readonly Extract<CardAttachment, { kind: "picture" }>[] }) {
+  const nodes = pictures.map((picture) => ({ type: "postMedia", attrs: { mediaId: picture.path, w: null, h: null, alt: "", crop: null, aspect: null, zoom: null, warn: [], width: 100, caption: "" } }));
+  const mediaById = new Map(
+    pictures.map((picture) => [picture.path, { id: picture.path, node_id: null, bucket: "build-media", path: picture.path, kind: picture.mediaKind, width: null, height: null, poster_path: null, duration: null, post_position: null, post_text: null } as unknown as GalleryMedia]),
+  );
+  const srcByPath = new Map(pictures.flatMap((picture) => (picture.src ? [[picture.path, picture.src] as const] : [])));
+  return (
+    <MediaViewerProvider>
+      <PostMediaGrid pictures={nodes} mediaById={mediaById} srcByPath={srcByPath} />
+    </MediaViewerProvider>
+  );
+}
+
 export function AttachmentView({ attachment, onPickTile }: { attachment: CardAttachment; onPickTile?: (id: string) => void }) {
   if (attachment.kind === "build") return <BuildAttachment attachment={attachment} onPickTile={onPickTile} />;
   if (attachment.kind === "step") return <StepAttachment attachment={attachment} />;
+  if (attachment.kind === "picture") return <PicturesBlock pictures={[attachment]} />;
   if (attachment.kind === "line") {
     return (
       <div style={{ ...tileBox, padding: "8px 10px", ...plain, fontSize: 12.5 }}>{attachment.text}</div>
-    );
-  }
-  if (attachment.kind === "image") {
-    // A box sized ahead, so nothing shifts when the picture arrives.
-    return (
-      <div style={{ aspectRatio: "16 / 9", maxHeight: 360, background: t.well, borderRadius: radiusVar("r-media"), overflow: "hidden" }}>
-        {attachment.src ? <img src={attachment.src} alt={attachment.alt} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : null}
-      </div>
     );
   }
   return (
@@ -155,7 +162,6 @@ function HideReason({ onHide, onCancel }: { onHide: (reason: string) => void; on
 }
 
 export function PostCard({ card, clamp = true, moderation, engagement }: PostCardProps) {
-  const phone = useIsPhone();
   const [asking, setAsking] = useState(false);
   const label = t.label;
   const name = card.author.name;
@@ -165,7 +171,7 @@ export function PostCard({ card, clamp = true, moderation, engagement }: PostCar
   if (card.hidden) {
     return (
       <article aria-label={card.heading} style={{ padding: "20px 0 16px", color: t.textDisabled }}>
-        <h3 style={{ ...postType(phone).title, color: t.textDisabled, fontSize: 16, letterSpacing: 0 }}>{card.heading}</h3>
+        <h3 style={{ ...plain, fontSize: 13, fontWeight: 500, lineHeight: 1.4, color: t.textDisabled }}>{card.heading}</h3>
         <div style={{ ...plain, fontSize: 12, color: label, marginTop: 4 }}>{`Hidden by ${card.hidden.by} · only moderators see this`}</div>
         {card.hidden.reason ? <div style={{ ...plain, fontSize: 12, color: label }}>{card.hidden.reason}</div> : null}
         {moderation ? (
@@ -216,7 +222,7 @@ export function PostCard({ card, clamp = true, moderation, engagement }: PostCar
           />
         ) : null}
 
-        <HeadingLink to={card.to} phone={phone}>
+        <HeadingLink to={card.to}>
           {card.heading || "Untitled post"}
         </HeadingLink>
 
@@ -239,9 +245,14 @@ export function PostCard({ card, clamp = true, moderation, engagement }: PostCar
 
         {card.attachments.length > 0 ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
-            {card.attachments.map((attachment) => (
-              <AttachmentView key={attachment.key} attachment={attachment} />
-            ))}
+            {card.attachments.map((attachment, index) => {
+              // All of a topic's pictures are one grid, where the first of them stands.
+              if (attachment.kind === "picture") {
+                const pictures = card.attachments.filter((entry): entry is Extract<CardAttachment, { kind: "picture" }> => entry.kind === "picture");
+                return pictures[0] === attachment ? <PicturesBlock key={attachment.key} pictures={pictures} /> : null;
+              }
+              return <AttachmentView key={attachment.key} attachment={attachment} />;
+            })}
           </div>
         ) : null}
 
