@@ -1,9 +1,11 @@
-/* CA-16 P7: the build page's Classification section: three lines, a provenance dot on every value, and the Regulated area
+/* CA-16 P7: the build page's Classification section: three lines, one module of label and value rows (UX-03 follow-up P17), and the Regulated area
    notice. Nothing at all for a build that has no classification (P9): old builds read exactly as before. */
 
-import type { CSSProperties, ReactNode } from "react";
+import { Fragment, type CSSProperties, type ReactNode } from "react";
 
-import { ProvenanceDot } from "@/components/classify/ClassificationBits";
+import { Row } from "@/components/brand/Row";
+import { useIsPhone } from "@/components/shell/useMinWidth";
+import { SectionHead } from "@/components/vision/SectionHead";
 import { hasClassification, regulatedArea, shownValues } from "@/lib/classify/facets";
 import { REGULATED_NOTICE, labelFor } from "@/lib/classify/lines";
 import { FACET_LABEL, type Facet } from "@/lib/classify/taxonomy";
@@ -58,31 +60,21 @@ export function classificationRows(c: Classification): { key: string; facet: Fac
   ];
 }
 
-/** Facets a maker sets themselves: when they are empty the section says Not stated, rather than leaving a gap. */
+/** Facets a maker sets themselves: on their own build, when they are empty the section says Not stated, rather than leaving a gap. */
 const MAKER_SET: readonly Facet[] = ["field", "task", "setting", "data", "age"];
 
-const lineStyle: CSSProperties = { display: "flex", flexWrap: "wrap", columnGap: 20, rowGap: 6, margin: 0, padding: 0, listStyle: "none" };
+/** What a derived value says to anyone who asks: in its tooltip and its accessible name. */
+export const DERIVED_NOTE = "Derived from the build";
 
-function Facet_({ facet, values }: { facet: Facet; values: Shown[] }) {
-  const empty = values.length === 0;
-  if (empty && !MAKER_SET.includes(facet)) return null;
-  return (
-    <li data-facet={facet} style={{ display: "inline-flex", alignItems: "baseline", flexWrap: "wrap", gap: "2px 8px", minWidth: 0, fontFamily: FIGTREE, fontSize: 12.5, lineHeight: 1.5 }}>
-      <span style={{ color: t.label }}>{FACET_LABEL[facet]}</span>
-      {empty ? (
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: t.label }}>
-          <ProvenanceDot kind="none" />
-          Not stated
-        </span>
-      ) : (
-        values.map((value, index) => (
-          <span key={`${value.label}-${index}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, color: t.text, fontFamily: facet === "stack" ? DM_MONO : undefined }}>
-            <ProvenanceDot kind={value.provenance} />
-            <ValueLabel value={value} />
-          </span>
-        ))
-      )}
-    </li>
+/** One value: its words, or a link to Builds filtered by it (SV-25). A derived value carries where it came from; a stated one carries nothing extra. */
+function Value({ value }: { value: Shown }) {
+  const inner = <ValueLabel value={value} />;
+  return value.provenance === "derived" ? (
+    <span role="group" title={DERIVED_NOTE} aria-label={`${value.label}. ${DERIVED_NOTE}`}>
+      {inner}
+    </span>
+  ) : (
+    <span>{inner}</span>
   );
 }
 
@@ -98,19 +90,56 @@ function ValueLabel({ value }: { value: Shown }) {
   );
 }
 
-export function ClassificationSection({ classification }: { classification: Classification | null | undefined }): ReactNode {
+/**
+ * UX-03 follow-up P17: Classification as one module of label and value rows. The head says how many facts it holds. The
+ * rows sit in two columns filled down then across (one column on a phone); each column's last row has no hairline. The
+ * maker, on their own build, also sees the empty maker-set facets as `Not stated`, after the facets that have values.
+ */
+export function ClassificationSection({ classification, own = false }: { classification: Classification | null | undefined; own?: boolean }): ReactNode {
+  const phone = useIsPhone();
   if (!classification || !hasClassification(classification)) return null;
-  const rows = classificationRows(classification);
+  const all = classificationRows(classification).flat();
+  const withValues = all.filter((entry) => entry.values.length > 0);
+  const notStated = own ? all.filter((entry) => entry.values.length === 0 && MAKER_SET.includes(entry.facet)) : [];
+  const rows = [...withValues.map((entry) => ({ ...entry, empty: false })), ...notStated.map((entry) => ({ ...entry, empty: true }))];
+  const perColumn = phone ? rows.length : Math.ceil(rows.length / 2);
   return (
-    <section aria-label="Classification" data-testid="build-classification" style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }}>
-      <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13.5, fontWeight: 500, color: t.text }}>Classification</h2>
-      {rows.map((line, index) => (
-        <ul key={index} style={lineStyle}>
-          {line.map((entry) => (
-            <Facet_ key={entry.key} facet={entry.facet} values={entry.values} />
-          ))}
-        </ul>
-      ))}
+    <section aria-label="Classification" data-testid="build-classification" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+      <SectionHead headingLevel={2} title="Classification" meta={`${withValues.length} ${withValues.length === 1 ? "fact" : "facts"} about this build`} />
+      <div
+        style={{
+          ...moduleBox,
+          padding: "4px 16px",
+          display: "grid",
+          gridAutoFlow: "column",
+          gridTemplateRows: `repeat(${Math.max(perColumn, 1)}, auto)`,
+          gridTemplateColumns: phone ? "minmax(0, 1fr)" : "repeat(2, minmax(0, 1fr))",
+          columnGap: 32,
+        }}
+      >
+        {rows.map((entry, index) => (
+          <Row
+            key={entry.key}
+            inModule
+            label={<span data-facet={entry.facet}>{FACET_LABEL[entry.facet]}</span>}
+            value={
+              entry.empty ? (
+                <span style={{ color: t.label, fontWeight: 400 }}>Not stated</span>
+              ) : (
+                <span style={entry.facet === "stack" ? { fontFamily: DM_MONO } : undefined}>
+                  {entry.values.map((value, at) => (
+                    <Fragment key={`${value.label}-${at}`}>
+                      {at > 0 ? ", " : null}
+                      <Value value={value} />
+                    </Fragment>
+                  ))}
+                </span>
+              )
+            }
+            style={(index + 1) % perColumn === 0 || index === rows.length - 1 ? { borderBottom: 0 } : undefined}
+          />
+        ))}
+      </div>
       {regulatedArea(classification) ? (
         <p role="note" data-testid="regulated-notice" style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12.5, lineHeight: 1.5, color: t.text2 }}>
           {REGULATED_NOTICE}
@@ -119,3 +148,5 @@ export function ClassificationSection({ classification }: { classification: Clas
     </section>
   );
 }
+
+const moduleBox: CSSProperties = { background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: 8, boxShadow: t.moduleShadow, boxSizing: "border-box", minWidth: 0 };

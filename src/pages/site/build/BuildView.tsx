@@ -63,7 +63,7 @@ import type {
   BuildViewerView,
   CompletenessView,
 } from "./buildModel";
-import { NeedPanel, StepsList } from "./BuildSteps";
+import { DetailsGroup, NeedPanel, StepsList } from "./BuildSteps";
 import { menuItem, menuSurface } from "../compose/refinedStyles";
 import { buildSummary } from "@/lib/build/buildSummary";
 import { buildPatterns, patternsLine } from "@/lib/build/patterns";
@@ -868,12 +868,15 @@ function ThreadHero({
   actions,
   phone,
   announce,
+  afterTitle,
 }: {
   hero: BuildHeroView;
   thread: BuildThreadView;
   actions: BuildActionsView;
   phone: boolean;
   announce: (text: string) => void;
+  /** A phone's page puts Reproduction between the action group and the post. */
+  afterTitle?: ReactNode;
 }) {
   const { maker } = hero;
   const { follow } = thread;
@@ -957,6 +960,8 @@ function ThreadHero({
         <ActionGroup actions={actions} phone={phone} announce={announce} />
       </div>
 
+      {afterTitle}
+
       <section data-testid="build-thread" aria-label="Post" style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
         <SectionHead headingLevel={2} title="Post" meta={total > 1 ? `1 of ${total} posts` : undefined} />
         <div data-testid="build-posts" style={{ minWidth: 0, maxWidth: 680 }}>
@@ -978,60 +983,50 @@ function ThreadHero({
 
 /* ── the reproduction column ── */
 
+/**
+ * UX-03 follow-up P18: Completeness for the maker. The head (`Completeness`, `Visible to you only`), then one module of
+ * padding 14, 10 apart: the score and the Gallery line, the bar with no tick, and the next step.
+ */
 function CompletenessModule({ completeness }: { completeness: CompletenessView }) {
-  /* UX-01 P3: publishing is not gated on completeness; it decides Gallery placement only. So the bar has one marker, Gallery. */
+  /* UX-01 P3: publishing is not gated on completeness; it decides Gallery placement only. */
   const { score, galleryAt, next } = completeness;
-  const ticks: StripedBarTick[] = [{ at: galleryAt, colour: t.label, label: `Gallery ${galleryAt}` }];
   return (
-    <div data-testid="build-completeness" style={{ ...moduleStyle, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-      <span data-testid="build-completeness-private" style={{ ...text(11, 400, t.label), marginBottom: -4 }}>
-        Visible to you only
-      </span>
-      <div style={{ display: "flex", alignItems: "baseline" }}>
-        <span style={{ ...text(13, 500, t.text), flexGrow: 1 }}>Completeness</span>
-        <span style={text(13, 500, t.text, tnum)}>
-          {score} <span style={{ color: t.label, fontWeight: 400 }}>/ 100</span>
-        </span>
+    <section data-testid="build-completeness" aria-label="Completeness" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+      <SectionHead headingLevel={2} title="Completeness" meta={<span data-testid="build-completeness-private">Visible to you only</span>} />
+      <div style={{ ...moduleStyle, padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 6, ...text(13, 400, t.label, tnum) }}>
+          <span style={text(13, 500, t.text, tnum)}>{score}</span>
+          <span>{`of 100 · Gallery lists from ${galleryAt}`}</span>
+        </div>
+        <StripedBar value={score} colour={t.evidence} height={11} label="Completeness" valueText={`${score} of 100. The gallery lists builds at ${galleryAt} or above.`} />
+        {next ? <p style={{ ...text(12, 400, t.text2), margin: 0 }}>Next: {next}.</p> : null}
       </div>
-      <StripedBar
-        value={score}
-        colour={t.evidence}
-        height={11}
-        ticks={ticks}
-        label="Completeness"
-        valueText={`${score} of 100. The gallery lists builds at ${galleryAt} or above.`}
-      />
-      {next ? (
-        <p style={{ ...text(12, 400, t.text2), margin: 0, paddingTop: 12, borderTop: `1px solid ${t.hairlineModule}` }}>Next: {next}.</p>
-      ) : null}
-    </div>
+    </section>
   );
 }
 
+/** A section of the right column: on the surface with no box, a hairline between sections and 28 above and below it (grammar 2, 7). */
+function SideSection({ first = false, last = false, children }: { first?: boolean; last?: boolean; children: ReactNode }) {
+  return <div style={{ paddingTop: first ? 0 : 28, paddingBottom: last ? 0 : 28, borderTop: first ? undefined : `1px solid ${t.hairline}`, minWidth: 0 }}>{children}</div>;
+}
+
+/**
+ * UX-03 follow-up P15: Reproduction. The head carries the state: the plaque, with its lamp and its own words, is the
+ * meta line, so the state and the count are said once. The action is a control, so `Copy for AI` is the page's only
+ * primary.
+ */
 function Proof({ proof, phone, now, inColumn = false }: { proof: BuildProofView; phone: boolean; now?: number; inColumn?: boolean }) {
-  const count = proof.build.reproduction_count ?? 0;
   const { action } = proof;
   const stacked = !useMinWidth(BETWEEN.stack);
   return (
-    <section data-testid="build-proof" aria-label="Reproduction" style={{ ...(phone || inColumn ? null : mainStyle(stacked, side)), display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <Eyebrow>Reproduction</Eyebrow>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-          <span style={{ ...figure, fontSize: 32, lineHeight: "normal", letterSpacing: "-0.03em", color: t.text }}>
-            {count.toLocaleString("en-GB")}
-          </span>
-          <span style={text(13, 400, t.text2)}>ran it</span>
-          <span style={{ flexGrow: 1 }} />
-          {proof.lastRun ? <span style={text(12, 400, t.label)}>last {proof.lastRun}</span> : null}
-        </div>
-        <Plaque build={proof.build} size="proof" wording={phone ? "short" : undefined} now={now} />
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <section data-testid="build-proof" aria-label="Reproduction" style={{ ...(phone || inColumn ? null : mainStyle(stacked, side)), display: "flex", flexDirection: "column", gap: 14 }}>
+      <SectionHead headingLevel={2} title="Reproduction" meta={<Plaque build={proof.build} size="row" now={now} />} />
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <Button
           data-testid="build-proof-action"
           data-action={action.kind}
-          variant="primary"
-          size={phone ? 48 : 36}
+          variant="secondary"
+          size={phone ? 48 : 32}
           fontSize={13}
           fullWidth
           disabled={action.pending}
@@ -1042,20 +1037,6 @@ function Proof({ proof, phone, now, inColumn = false }: { proof: BuildProofView;
         <p style={{ ...text(12, 400, t.text2), margin: 0, lineHeight: "18px" }}>{NOTE}</p>
       </div>
       {proof.writeError ? <RunFailed failure={proof.writeError} /> : null}
-      {proof.details.length > 0 ? (
-        <div style={{ ...moduleStyle, padding: "4px 16px" }}>
-          {proof.details.map((detail, index) => (
-            <Row
-              key={detail.label}
-              label={detail.label}
-              value={detail.value}
-              inModule
-              style={index === proof.details.length - 1 ? { borderBottom: 0 } : undefined}
-            />
-          ))}
-        </div>
-      ) : null}
-      {proof.completeness ? <CompletenessModule completeness={proof.completeness} /> : null}
     </section>
   );
 }
@@ -1102,7 +1083,7 @@ export function BuildPanel({
 }
 
 /** What you need, with the dialog an "Other parts" row opens its own body in. */
-function StepsNeed({ steps, phone, inColumn = false }: { steps: BuildStepsView; phone: boolean; inColumn?: boolean }) {
+function StepsNeed({ steps, phone, inColumn = false, details }: { steps: BuildStepsView; phone: boolean; inColumn?: boolean; details?: readonly { label: string; value: string }[] }) {
   const [open, setOpen] = useState<string | null>(null);
   const stacked = !useMinWidth(BETWEEN.stack);
   const row = open ? steps.need.flatMap((group) => group.rows).find((candidate) => candidate.id === open) : undefined;
@@ -1112,13 +1093,13 @@ function StepsNeed({ steps, phone, inColumn = false }: { steps: BuildStepsView; 
         phone
           ? { minWidth: 0 }
           : inColumn
-            ? /* Under the reproduction in the right column: full width of it, with a hairline on top. */
-              asideStyle(true, side)
+            ? /* In the right column: a section on the surface; its hairline is the column's. */
+              { minWidth: 0 }
             : /* Content-box, as the board: 340 of column, then its 32 of padding and the hairline; under 1024 it drops under The build. */
             asideStyle(stacked, { ...side, boxSizing: "content-box", paddingLeft: 32, borderLeft: `1px solid ${t.hairline}` })
       }
     >
-      <NeedPanel view={steps} onOpenOther={setOpen} />
+      <NeedPanel view={steps} onOpenOther={setOpen} details={details} />
       <AnatomyDialog open={Boolean(open)} onOpenChange={(next) => !next && setOpen(null)} title={row?.title ?? "Part"}>
         {open ? steps.otherBody(open) : null}
       </AnatomyDialog>
@@ -1144,21 +1125,33 @@ function DesktopBuild(props: BuildViewProps) {
           {stacked ? (
             <>
               <ThreadHero hero={hero} thread={hero.thread} actions={actions} phone={false} announce={announce} />
-              {props.classification}
               <Proof proof={proof} phone={false} now={now} />
               {steps ? <BuildPanel viewer={viewer} steps={steps} phone={false} announce={announce} /> : null}
-              {steps ? <StepsNeed steps={steps} phone={false} /> : null}
+              {steps ? <StepsNeed steps={steps} phone={false} details={proof.details} /> : null}
+              {props.classification}
+              {proof.completeness ? <CompletenessModule completeness={proof.completeness} /> : null}
             </>
           ) : (
             <>
-              <div style={{ ...wide(false), display: "flex", flexDirection: "column", gap: 32 }}>
+              <div style={{ ...wide(false), display: "flex", flexDirection: "column", gap: 48 }}>
                 <ThreadHero hero={hero} thread={hero.thread} actions={actions} phone={false} announce={announce} />
-                {props.classification}
                 {steps ? <BuildPanel viewer={viewer} steps={steps} phone={false} announce={announce} inColumn /> : null}
+                {props.classification}
               </div>
-              <div style={{ ...side, display: "flex", flexDirection: "column", gap: 32 }}>
-                <Proof proof={proof} phone={false} now={now} inColumn />
-                {steps ? <StepsNeed steps={steps} phone={false} inColumn /> : null}
+              <div data-testid="build-side" style={{ ...side, display: "flex", flexDirection: "column" }}>
+                <SideSection first last={!steps && !proof.completeness}>
+                  <Proof proof={proof} phone={false} now={now} inColumn />
+                </SideSection>
+                {steps ? (
+                  <SideSection last={!proof.completeness}>
+                    <StepsNeed steps={steps} phone={false} inColumn details={proof.details} />
+                  </SideSection>
+                ) : null}
+                {proof.completeness ? (
+                  <SideSection last>
+                    <CompletenessModule completeness={proof.completeness} />
+                  </SideSection>
+                ) : null}
               </div>
             </>
           )}
@@ -1166,7 +1159,21 @@ function DesktopBuild(props: BuildViewProps) {
       ) : (
         <div style={pair(stacked)}>
           <Hero hero={hero} actions={actions} proof={proof} phone={false} now={now} announce={announce} />
-          <Proof proof={proof} phone={false} now={now} />
+          <div style={{ ...side, display: "flex", flexDirection: "column" }}>
+            <SideSection first last={!proof.completeness}>
+              <Proof proof={proof} phone={false} now={now} inColumn />
+            </SideSection>
+            {steps ? null : (
+              <SideSection last={!proof.completeness}>
+                <DetailsGroup details={proof.details} />
+              </SideSection>
+            )}
+            {proof.completeness ? (
+              <SideSection last>
+                <CompletenessModule completeness={proof.completeness} />
+              </SideSection>
+            ) : null}
+          </div>
         </div>
       )}
       {props.classification && !hero.thread ? props.classification : null}
@@ -1174,7 +1181,7 @@ function DesktopBuild(props: BuildViewProps) {
         hero.thread ? null : (
           <div data-testid="build-second-row" style={pair(stacked)}>
             <BuildPanel viewer={viewer} steps={steps} phone={false} announce={announce} />
-            <StepsNeed steps={steps} phone={false} />
+            <StepsNeed steps={steps} phone={false} details={proof.details} />
           </div>
         )
       ) : (
@@ -1210,7 +1217,7 @@ function PhoneBuild(props: BuildViewProps) {
     lower = (
       <>
         <BuildPanel viewer={viewer} steps={steps} phone announce={announce} />
-        <StepsNeed steps={steps} phone />
+        <StepsNeed steps={steps} phone details={proof.details} />
       </>
     );
   } else {
@@ -1242,15 +1249,15 @@ function PhoneBuild(props: BuildViewProps) {
   return (
     <div data-testid="build-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 16, lineHeight: "normal", minWidth: 0 }}>
       {hero.thread ? (
-        <ThreadHero hero={hero} thread={hero.thread} actions={actions} phone announce={announce} />
+        <ThreadHero hero={hero} thread={hero.thread} actions={actions} phone announce={announce} afterTitle={<Proof proof={proof} phone now={now} />} />
       ) : (
         <>
           <Hero hero={hero} actions={actions} proof={proof} phone now={now} announce={announce} />
           <ActionDock actions={actions} phone announce={announce} />
         </>
       )}
-      <Proof proof={proof} phone now={now} />
-      {props.classification}
+      {hero.thread ? null : <Proof proof={proof} phone now={now} />}
+      {steps ? null : <DetailsGroup details={proof.details} />}
       {viewer.tabs.length < 2 && steps ? null : (
       <ScrollRow gap={6} label="Sections of this build" tablist>
         {viewer.tabs.map((tab) => (
@@ -1268,6 +1275,8 @@ function PhoneBuild(props: BuildViewProps) {
       </ScrollRow>
       )}
       {lower}
+      {props.classification}
+      {proof.completeness ? <CompletenessModule completeness={proof.completeness} /> : null}
       {region}
     </div>
   );

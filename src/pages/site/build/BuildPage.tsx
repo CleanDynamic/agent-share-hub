@@ -1152,7 +1152,7 @@ export function BuildPage() {
       <LiveRegion message={announcement} />
       <BuildView
         fit="content"
-        classification={<ClassificationSection classification={classification.data?.live ? classification.data.classification : null} />}
+        classification={<ClassificationSection own={viewerIsCreator} classification={classification.data?.live ? classification.data.classification : null} />}
         hero={{
           title: build.title,
           outcome: (build.outcome ?? "").trim(),

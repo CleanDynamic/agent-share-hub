@@ -35,7 +35,9 @@ describe("ClassificationSection", () => {
     expect(container.textContent).toBe("");
   });
 
-  it("has three lines: Field, Task, Setting; the AI build; Data and oversight with the practicalities", () => {
+  const rowOf = (section: HTMLElement, facet: string) => section.querySelector(`[data-facet='${facet}']`)?.closest('[data-ui="row"]') as HTMLElement | null;
+
+  it("keeps the three lines' order, drawn as one module of rows, and counts the facts it draws", () => {
     const rows = classificationRows(FULL);
     expect(rows.map((line) => line.map((entry) => entry.key))).toEqual([
       ["field", "task", "setting"],
@@ -44,7 +46,10 @@ describe("ClassificationSection", () => {
     ]);
     render(<ClassificationSection classification={FULL} />);
     const section = screen.getByRole("region", { name: "Classification" });
-    expect(within(section).getAllByRole("list")).toHaveLength(3);
+    expect(within(section).getByRole("heading", { level: 2, name: "Classification" })).toBeTruthy();
+    const drawn = section.querySelectorAll('[data-ui="row"]').length;
+    expect(within(section).getByText(`${drawn} facts about this build`)).toBeTruthy();
+    expect(section.querySelectorAll("[data-ui='section-head']")).toHaveLength(1);
     expect(within(section).getByText("Hybrid search")).toBeTruthy();
     expect(within(section).getByText("Sorting socks")).toBeTruthy();
     expect(within(section).getByText("Prompt chain")).toBeTruthy();
@@ -53,28 +58,32 @@ describe("ClassificationSection", () => {
     expect(within(section).getByText("Acme")).toBeTruthy();
   });
 
-  it("gives every value a provenance dot: Derived, Stated by the maker, or Not stated", () => {
+  it("draws no provenance dot; a derived value's name and tooltip say Derived from the build, a stated one carries nothing", () => {
     render(<ClassificationSection classification={FULL} />);
     const section = screen.getByRole("region", { name: "Classification" });
-    const dotIn = (facet: string) => within(section.querySelector(`[data-facet='${facet}']`) as HTMLElement).getAllByRole("img").map((dot) => dot.getAttribute("aria-label"));
-    expect(dotIn("built")).toEqual(["Derived"]);
-    expect(dotIn("field")).toEqual(["Stated by the maker"]);
-    expect(dotIn("skill")).toEqual(["Stated by the maker"]);
-    expect(section.querySelector("[data-facet='skill']")?.textContent).toContain("No coding");
-    expect(section.querySelector("[data-facet='skill']")?.textContent).not.toContain("Some setup");
-    const dot = section.querySelector("[data-facet='built'] [data-provenance]") as HTMLElement;
-    expect(dot.getAttribute("title")).toBe("Derived");
+    expect(section.querySelector("[data-provenance]")).toBeNull();
+    expect(screen.queryAllByRole("img")).toHaveLength(0);
+    const derived = within(rowOf(section, "built") as HTMLElement).getByRole("group");
+    expect(derived.getAttribute("aria-label")).toContain("Derived from the build");
+    expect(derived.getAttribute("title")).toBe("Derived from the build");
+    expect(within(rowOf(section, "field") as HTMLElement).queryByRole("group")).toBeNull();
+    expect(rowOf(section, "skill")?.textContent).toContain("No coding");
+    expect(rowOf(section, "skill")?.textContent).not.toContain("Some setup");
   });
 
-  it("says Not stated for what the maker sets and left empty, and leaves a derived gap out", () => {
-    render(<ClassificationSection classification={make({ derived: { built: { values: ["dataset"], from: [] } } })} />);
+  it("shows a reader no Not stated; the maker sees the empty maker-set facets after the ones with values", () => {
+    const sparse = make({ derived: { built: { values: ["dataset"], from: [] } } });
+    const { unmount } = render(<ClassificationSection classification={sparse} />);
+    expect(screen.queryByText("Not stated")).toBeNull();
+    unmount();
+    render(<ClassificationSection classification={sparse} own />);
     const section = screen.getByRole("region", { name: "Classification" });
-    for (const facet of ["field", "task", "setting", "data", "age"]) {
-      const item = section.querySelector(`[data-facet='${facet}']`) as HTMLElement;
-      expect(item.textContent).toContain("Not stated");
-      expect(within(item).getByRole("img").getAttribute("aria-label")).toBe("Not stated");
-    }
+    for (const facet of ["field", "task", "setting", "data", "age"]) expect(rowOf(section, facet)?.textContent).toContain("Not stated");
     expect(section.querySelector("[data-facet='technique']")).toBeNull();
+    const order = Array.from(section.querySelectorAll("[data-facet]")).map((node) => node.getAttribute("data-facet"));
+    expect(order[0]).toBe("built");
+    // The meta counts the facets that have values, not the Not stated rows.
+    expect(within(section).getByText("1 fact about this build")).toBeTruthy();
   });
 
   it("shows the Regulated area notice when the flag is true, and only then", () => {

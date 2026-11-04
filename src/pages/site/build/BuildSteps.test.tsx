@@ -194,36 +194,47 @@ describe("a file a step makes", () => {
     expect(within(second).queryByTestId("save-line")).toBeNull();
   });
 
-  it("What you need reads Made in step 1 with no Download", () => {
+  it("What you need lists a made file once, as a link to its step, with no Download", () => {
     render(
       <MemoryRouter initialEntries={[REFINED]}>
         <NeedPanel view={madeFileView()} onOpenOther={vi.fn()} />
       </MemoryRouter>,
     );
     const need = screen.getByTestId("build-need");
-    expect(within(need).getByText("Made in step 1 · used in step 2")).toBeTruthy();
+    const row = within(need).getAllByTestId("need-row").find((entry) => entry.querySelector('[data-ui="type-chip"]')?.textContent === "File") as HTMLElement;
+    expect(row.tagName).toBe("A");
+    expect(row.getAttribute("href")).toMatch(/#node-/);
     expect(within(need).queryByRole("link", { name: /Download/ })).toBeNull();
   });
 });
 
 describe("NeedPanel", () => {
-  it("lists tools with their marks at 28, files with Download, time, and says what Copy for AI copies", () => {
-    const onOpenOther = vi.fn();
+  it("lists tools and files as one list of chips with the steps they are used in; no subtitle, no footer note, no model not recorded", () => {
     render(
       <MemoryRouter initialEntries={[REFINED]}>
-        <NeedPanel view={view("list")} onOpenOther={onOpenOther} />
+        <NeedPanel view={view("list")} onOpenOther={vi.fn()} details={[{ label: "Made with", value: "ChatGPT" }, { label: "Made for", value: "Bakers" }, { label: "Setup", value: "—" }, { label: "First result", value: "35 min" }]} />
       </MemoryRouter>,
     );
     const need = screen.getByTestId("build-need");
-    expect(within(need).getByRole("heading", { name: "What you need" })).toBeTruthy();
-    expect(within(need).getByText("to repeat this build")).toBeTruthy();
-    const tools = within(need).getByRole("region", { name: "Tools and models" });
-    const marks = tools.querySelectorAll("[data-mark]");
-    expect(marks.length).toBeGreaterThan(0);
-    for (const mark of marks) expect((mark as HTMLElement).style.width).toBe("28px");
-    expect(within(need).getByRole("link", { name: "Download CLAUDE.md" })).toBeTruthy();
+    expect(within(need).getByRole("heading", { level: 2, name: "What you need" })).toBeTruthy();
+    expect(within(need).queryByText("to repeat this build")).toBeNull();
+    expect(need.textContent).not.toContain("Copy for AI copies");
+    expect(need.textContent).not.toContain("model not recorded");
+    const rows = within(need).getAllByTestId("need-row");
+    const chips = rows.map((row) => row.querySelector('[data-ui="type-chip"]')?.textContent);
+    expect(chips).toContain("Harness");
+    expect(chips).toContain("File");
+    const harness = rows.find((row) => row.querySelector('[data-ui="type-chip"]')?.textContent === "Harness") as HTMLElement;
+    expect(harness.textContent).toMatch(/Steps? \d/);
+    // A file row is a link to its step and has no Download; Download lives in the file's step.
+    expect(within(need).queryByRole("link", { name: "Download CLAUDE.md" })).toBeNull();
     expect(within(need).getByText("4 sessions over 3 days")).toBeTruthy();
-    expect(within(need).getByText("Copy for AI copies all 5 steps in order, with each new chat and paste-in written out.")).toBeTruthy();
+    // Details: stated rows only, without Made with, and without First result because Time is shown.
+    const detailsGroup = within(need).getByRole("region", { name: "Details" });
+    expect(detailsGroup.textContent).toContain("Made for");
+    expect(detailsGroup.textContent).not.toContain("Made with");
+    expect(detailsGroup.textContent).not.toContain("Setup");
+    expect(detailsGroup.textContent).not.toContain("First result");
   });
 });
 

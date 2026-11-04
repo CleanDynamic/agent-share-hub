@@ -223,7 +223,17 @@ export interface NeedRow {
   download?: string | null;
   /** An "Other parts" row's node, so the page can open it. */
   id?: string;
+  /** UX-03 follow-up P16: what a Tools and models or Files row is, for its chip. Absent: a row with no chip. */
+  kind?: "harness" | "model" | "tool" | "file";
+  /** The model a harness was used with, when one was recorded. Never "model not recorded". */
+  model?: string | null;
+  /** "Steps 1, 2" or "Step 3": where it is used. */
+  steps?: string;
+  /** A file's own step, so its row can link to it. */
+  stepId?: string;
 }
+
+const capital = (words: string): string => (words ? words.charAt(0).toUpperCase() + words.slice(1) : words);
 
 export type NeedKey = "tools" | "files" | "runs" | "accounts" | "time" | "other";
 
@@ -820,7 +830,13 @@ export function whatYouNeed(
   for (const [tool, entry] of byTool) {
     // A client with no label names no tool: the row is the model, with nothing to say about a tool.
     const model = entry.models.length > 0 ? join(entry.models) : "model not recorded";
-    tools.push({ title: tool, detail: [entry.named ? model : null, stepList(entry.steps)].filter(Boolean).join(" · ") });
+    tools.push({
+      title: tool,
+      detail: [entry.named ? model : null, stepList(entry.steps)].filter(Boolean).join(" · "),
+      kind: entry.named ? "harness" : "model",
+      model: entry.named && entry.models.length > 0 ? join(entry.models) : null,
+      steps: capital(stepList(entry.steps)),
+    });
   }
 
   const byModel = new Map<string, string[]>();
@@ -830,11 +846,11 @@ export function whatYouNeed(
     const label = modelRunLine(modelName(step.model), step.modelRun);
     byModel.set(label, [...(byModel.get(label) ?? []), step.number]);
   }
-  for (const [model, numbers] of byModel) tools.push({ title: model, detail: stepList(numbers) });
+  for (const [model, numbers] of byModel) tools.push({ title: model, detail: stepList(numbers), kind: "model", steps: capital(stepList(numbers)) });
 
   for (const tool of context.tools.values()) {
     const numbers = used.get(tool.id) ?? [];
-    const row: NeedRow = { title: tool.name, detail: numbers.length > 0 ? `tool · ${stepList(numbers)}` : "tool" };
+    const row: NeedRow = { title: tool.name, detail: numbers.length > 0 ? `tool · ${stepList(numbers)}` : "tool", kind: "tool", steps: capital(stepList(numbers)) };
     if (tool.mcp) {
       const where = tool.mcp.runsAt === "web" ? "at a web address" : tool.mcp.runsAt === "local" ? "on your computer" : null;
       row.extra = ["MCP server", where, tool.mcp.signIn ? `sign in with your ${tool.name} account` : null].filter(Boolean).join(" · ");
@@ -874,7 +890,8 @@ export function whatYouNeed(
     const detail = file.madeIn
       ? [`Made in ${stepList([file.madeIn.number], false)}`, numbers.length > 0 ? `used in ${stepList(numbers)}` : null]
       : [stepList(numbers), file.size];
-    return { title: file.name, detail: detail.filter(Boolean).join(" · "), download: file.download };
+    const own = context.all.find((step) => step.id === file.id)?.number;
+    return { title: file.name, detail: detail.filter(Boolean).join(" · "), download: file.download, kind: "file" as const, steps: capital(stepList(own ? [own] : numbers)), stepId: file.id };
   });
   if (files.length > 0) groups.push({ key: "files", label: "Files", rows: files });
 

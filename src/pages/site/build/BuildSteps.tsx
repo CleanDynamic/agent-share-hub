@@ -39,6 +39,9 @@ import { useResolvedTheme } from "@/contexts/ThemeContext";
 import { ChevronRight } from "lucide-react";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { Segmented } from "@/components/brand/Segmented";
+import { Row } from "@/components/brand/Row";
+import { Link } from "react-router-dom";
+import { MISSING } from "./buildModel";
 import { MediaFigure } from "@/components/build/MediaFigure";
 import { ChangedText } from "@/components/build/ChangedText";
 import { ASKS_FOR_LABEL, originLine } from "@/lib/build/promptOrigin";
@@ -227,6 +230,8 @@ export function useStepsList(view: BuildStepsView, phone: boolean) {
 export interface NeedPanelProps {
   view: BuildStepsView;
   onOpenOther: (id: string) => void;
+  /** The stated rows of the build's facts (`proofDetails`): Details, under the other groups. */
+  details?: readonly { label: string; value: string }[];
 }
 
 /** The Map is loaded when a reader first chooses it, and not before (UI-P74). UI-P91: its refined fork. */
@@ -1596,44 +1601,25 @@ function NeedGroupBlock({ group, onOpen }: { group: NeedGroup; onOpen: (row: Nee
   const more = group.rows.length - shown.length;
   return (
     <section aria-label={group.label} style={{ display: "flex", flexDirection: "column" }}>
-      <Eyebrow as="div" style={{ paddingBottom: 8, borderBottom: `1px solid ${t.hairline}` }}>
-        {group.label}
-      </Eyebrow>
+      <p style={{ ...text(12, 400, t.label), margin: 0, paddingBottom: 4 }}>{group.label}</p>
       {shown.map((row, index) => (
-        <div
-          key={`${row.title}:${index}`}
-          id={row.id ? needDomId(row.id) : undefined}
-          data-testid="need-row"
-          style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 48, padding: "6px 0", boxSizing: "border-box", borderBottom: `1px solid ${t.hairline}` }}
-        >
-          {group.key === "tools" && markFor({ tool: row.title, model: row.title }) !== null ? (
-            <span style={{ display: "inline-flex", color: t.text }}>
-              <ModelMark tool={row.title} model={row.title} size={28} />
-            </span>
-          ) : null}
-          <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
-            {row.id ? (
-              <button type="button" onClick={() => onOpen(row)} style={{ ...bareButton, ...text(13, 500, t.text) }}>
-                {row.title}
-              </button>
-            ) : (
-              <span style={{ ...text(13, 500, t.text), overflowWrap: "anywhere" }}>{row.title}</span>
-            )}
-            {row.detail ? <span style={text(11.5, 400, t.label)}>{row.detail}</span> : null}
-            {row.extra ? <span data-testid="need-extra" style={text(11.5, 400, t.label)}>{row.extra}</span> : null}
-          </div>
-          {group.key === "files" && row.download ? <DownloadButton href={row.download} name={row.title} /> : null}
+        <div key={`${row.title}:${index}`} id={row.id ? needDomId(row.id) : undefined} data-testid="need-row">
+          <Row
+            label={
+              row.id ? (
+                <button type="button" onClick={() => onOpen(row)} style={{ ...bareButton, ...text(12.5, 400, t.text2) }}>
+                  {row.title}
+                </button>
+              ) : (
+                <span style={{ overflowWrap: "anywhere" }}>{row.title}</span>
+              )
+            }
+            value={row.detail || undefined}
+            style={index === shown.length - 1 && more === 0 ? { borderBottom: 0 } : undefined}
+          />
+          {row.extra ? <span data-testid="need-extra" style={{ ...text(12, 400, t.label), display: "block", paddingBottom: 8 }}>{row.extra}</span> : null}
         </div>
       ))}
-      {group.note ? (
-        <div data-testid="need-note" style={{ display: "flex", flexDirection: "column", gap: 4, padding: "12px 0", borderBottom: `1px solid ${t.hairline}` }}>
-          <span style={text(12.5, 500, t.text)}>{group.note.title}</span>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-            <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", background: t.catBreakage, flexShrink: 0, marginTop: 6 }} />
-            <span style={{ ...text(12.5, 400, t.text), lineHeight: "18px" }}>{group.note.line}</span>
-          </div>
-        </div>
-      ) : null}
       {more > 0 ? (
         <button type="button" onClick={() => setAll(true)} style={{ ...bareButton, ...text(12.5, 500, t.text), padding: "8px 0 0", textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line }}>
           Show {more} more
@@ -1643,24 +1629,84 @@ function NeedGroupBlock({ group, onOpen }: { group: NeedGroup; onOpen: (row: Nee
   );
 }
 
-/** The column to the right of The build: tools and models, files, how it runs, time and other parts. */
-export function NeedPanel({ view, onOpenOther }: NeedPanelProps) {
-  const total = view.steps.length;
-  const single = total === 1 && !view.steps.some(isContainer);
+/** A quiet 12 `--label` line that names a group. */
+const groupName: CSSProperties = { ...text(12, 400, t.label), margin: 0 };
+
+/** Details: the build's stated facts as rows, under the other groups. Nothing when none is stated. Also drawn where the page has no steps. */
+export function DetailsGroup({ details }: { details: readonly { label: string; value: string }[] }) {
+  const stated = details.filter((row) => row.value !== MISSING);
+  if (stated.length === 0) return null;
+  return (
+    <section aria-label="Details" style={column(0)}>
+      <p style={{ ...groupName, paddingBottom: 4 }}>Details</p>
+      {stated.map((row, index) => (
+        <Row key={row.label} label={row.label} value={row.value} height={40} style={index === stated.length - 1 ? { borderBottom: 0 } : undefined} />
+      ))}
+    </section>
+  );
+}
+
+/** One row of the list of tools and files: a chip, the name, the model when one was recorded, and where it is used. */
+function ListRow({ row }: { row: NeedRow }) {
+  const file = row.kind === "file";
+  const chip = row.kind === "harness" ? "Harness" : row.kind === "model" ? "Model" : row.kind === "tool" ? "Tool" : row.kind === "file" ? "File" : null;
+  const body = (
+    <>
+      {chip ? <TypeChip>{chip}</TypeChip> : null}
+      <span style={file ? { fontFamily: DM_MONO, fontSize: 12.5, fontWeight: 500, color: t.text, overflowWrap: "anywhere" } : { ...text(13, 500, t.text), overflowWrap: "anywhere" }}>{row.title}</span>
+      {row.model ? <span style={{ ...text(13, 400, t.label), overflowWrap: "anywhere" }}>{`· ${row.model}`}</span> : null}
+      <span style={{ flexGrow: 1 }} />
+      {row.steps ? <span style={{ ...text(12, 400, t.label), whiteSpace: "nowrap" }}>{row.steps}</span> : null}
+    </>
+  );
+  const frame: CSSProperties = { display: "flex", alignItems: "center", gap: 8, minWidth: 0, color: "inherit", textDecoration: "none" };
+  return file && row.stepId ? (
+    <Link to={{ hash: `#node-${row.stepId}` }} data-testid="need-row" style={frame}>
+      {body}
+    </Link>
+  ) : (
+    <div data-testid="need-row" style={frame}>
+      {body}
+    </div>
+  );
+}
+
+/**
+ * UX-03 follow-up P16: what you need. The head (`What you need`, counts), then Tools and models and Files as one list, then
+ * the other groups and a Details group, each named by a 12 `--label` line over its rows.
+ */
+export function NeedPanel({ view, onOpenOther, details = [] }: NeedPanelProps) {
+  const listed = view.need.filter((group) => group.key === "tools" || group.key === "files");
+  const rest = view.need.filter((group) => group.key !== "tools" && group.key !== "files");
+  const list = listed.flatMap((group) => group.rows);
+  const harnesses = list.filter((row) => row.kind === "harness").length;
+  const models = list.filter((row) => row.kind === "model").length;
+  const files = list.filter((row) => row.kind === "file").length;
+  const count = (n: number, one: string, many = `${one}s`) => (n > 0 ? `${n} ${n === 1 ? one : many}` : null);
+  const meta = [count(harnesses, "harness", "harnesses"), count(models, "model"), count(files, "file"), count(list.length - harnesses - models - files, "other tool")].filter(Boolean).join(" · ");
+  const hasTime = view.need.some((group) => group.key === "time");
+  const stated = details.filter((row) => row.value !== MISSING && row.label !== "Made with" && !(hasTime && row.label === "First result"));
+  const notes = listed.flatMap((group) => (group.note ? [group.note] : []));
   return (
     <div data-testid="build-need" style={column(16)}>
-      <div style={column(4)}>
-        <h2 style={{ ...text(13.5, 500, t.text), margin: 0 }}>What you need</h2>
-        <p style={{ ...text(12, 400, t.text2), margin: 0 }}>to repeat this build</p>
-      </div>
-      {view.need.map((group) => (
+      <SectionHead headingLevel={2} title="What you need" meta={meta || undefined} />
+      {list.length > 0 ? (
+        <div data-testid="need-list" style={column(14)}>
+          {list.map((row, index) => (
+            <ListRow key={`${row.kind}:${row.title}:${index}`} row={row} />
+          ))}
+        </div>
+      ) : null}
+      {notes.map((note) => (
+        <div key={note.title} data-testid="need-note" style={column(4)}>
+          <span style={text(12.5, 500, t.text)}>{note.title}</span>
+          <span style={{ ...text(12.5, 400, t.text), lineHeight: "18px" }}>{note.line}</span>
+        </div>
+      ))}
+      {rest.map((group) => (
         <NeedGroupBlock key={group.key} group={group} onOpen={(row) => row.id && onOpenOther(row.id)} />
       ))}
-      <p style={{ ...text(12, 400, t.text2), margin: 0, lineHeight: "18px" }}>
-        {single
-          ? "One prompt, so there is no map. Map appears once a build has two sessions or an agent."
-          : `Copy for AI copies all ${total} ${total === 1 ? "step" : "steps"} in order, with each new chat and paste-in written out.`}
-      </p>
+      <DetailsGroup details={stated} />
     </div>
   );
 }

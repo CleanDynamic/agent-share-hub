@@ -99,24 +99,24 @@ describe("BuildView on a desktop", () => {
     expect(onRebuild).toHaveBeenCalledTimes(1);
   });
 
-  it("the reproduction column: the count, the plaque, the one primary, the details and completeness", () => {
+  it("the reproduction column: the state in the head, one plaque, a control action, no count row and no facts table (UX-03 follow-up P15)", () => {
     const onPress = vi.fn();
     const props = stepsProps();
     mount({ ...props, proof: { ...props.proof, action: { kind: "reproduce", onPress } } });
     const proof = screen.getByTestId("build-proof");
-    expect(proof.textContent).toContain("41ran it");
-    expect(proof.textContent).toContain("last 27 Sep");
-    expect(proof.querySelector('[data-ui="plaque"]')).not.toBeNull();
-    const primaries = document.querySelectorAll('[data-ui="button"][data-variant="primary"]');
-    expect(primaries).toHaveLength(1);
+    expect(within(proof).getByRole("heading", { level: 2, name: "Reproduction" })).toBeTruthy();
+    expect(proof.textContent).not.toContain("ran it");
+    expect(proof.querySelectorAll('[data-ui="plaque"]')).toHaveLength(1);
+    // Copy for AI is the page's only primary; the proof action is a control.
+    expect(document.querySelectorAll('[data-ui="button"][data-variant="primary"]')).toHaveLength(0);
     const action = within(proof).getByRole("button", { name: "I ran this and it worked" });
+    expect(action.getAttribute("data-variant")).toBe("secondary");
     expect(action.querySelector("svg")).toBeNull();
     fireEvent.click(action);
     expect(onPress).toHaveBeenCalledTimes(1);
     expect(within(proof).getByText("Your run relights the lamp and records the model you used.")).toBeTruthy();
-    expect(proof.querySelectorAll('[data-ui="row"]')).toHaveLength(6);
-    const bar = within(screen.getByTestId("build-completeness")).getByRole("progressbar", { name: "Completeness" });
-    expect(bar.getAttribute("aria-valuenow")).toBe("86");
+    expect(proof.querySelectorAll('[data-ui="row"]')).toHaveLength(0);
+    expect(within(screen.getByTestId("build-completeness")).getByRole("progressbar", { name: "Completeness" }).getAttribute("aria-valuenow")).toBe("86");
   });
 
   it("UX-01 P3: the completeness module has one marker, Gallery, the rule that applies, and says it is private", () => {
@@ -124,8 +124,9 @@ describe("BuildView on a desktop", () => {
     mount({ ...props, proof: { ...props.proof, completeness: { score: 86, publishAt: 40, galleryAt: 70, next: null } } });
     const module = screen.getByTestId("build-completeness");
     expect(within(module).getByText("Visible to you only")).toBeTruthy();
-    expect(module.textContent).toContain("Gallery 70");
+    expect(module.textContent).toContain("of 100 · Gallery lists from 70");
     expect(module.textContent).not.toMatch(/Publish\s?\d/);
+    expect(within(module).getByRole("heading", { level: 2, name: "Completeness" })).toBeTruthy();
     const bar = within(module).getByRole("progressbar", { name: "Completeness" });
     expect(bar.getAttribute("aria-valuetext")).toBe("86 of 100. The gallery lists builds at 70 or above.");
   });
