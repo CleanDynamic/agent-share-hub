@@ -37,6 +37,8 @@ export interface ComposeDetails {
   gapOn: boolean;
   /** "What's left open?" */
   gapProblem: string;
+  /** UX-07 P6: others can start topics from this build (builds.allow_as_post_source). Absent: on, the default. */
+  allowAsTopicSource?: boolean;
 }
 
 export type ComposeDetailKey = "symptom" | "resolution" | "costMonthly" | "costSetup" | "firstResult" | "gapProblem";

@@ -83,6 +83,7 @@ export type CardProps = Pick<
   | "details"
   | "onDetail"
   | "onGapSwitch"
+  | "onTopicSourceSwitch"
 > & {
   /** CA-16: the classification, from the page. Absent: the Card shows only the title, the summary and the build details. */
   classification?: ClassificationCardData;
@@ -117,7 +118,8 @@ function RefinedField({ id, label, right, children }: { id: string; label: strin
   );
 }
 
-function BountySwitch({ on, onChange, phone }: { on: boolean; onChange: (on: boolean) => void; phone: boolean }) {
+/** The Card's switch (the app's one switch look): Open a bounty, and UX-07's Others can start topics from this build. */
+function CardSwitch({ on, onChange, phone, label }: { on: boolean; onChange: (on: boolean) => void; phone: boolean; label: string }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <button
@@ -131,7 +133,7 @@ function BountySwitch({ on, onChange, phone }: { on: boolean; onChange: (on: boo
       <span aria-hidden="true" style={{ position: "relative", width: 36, height: 22, borderRadius: 12, background: on ? t.evidence : t.line, flexShrink: 0 }}>
         <span style={{ position: "absolute", top: 3, left: 3, width: 16, height: 16, borderRadius: 8, background: t.field, transform: on ? "translateX(14px)" : "none" }} />
       </span>
-      Open a bounty
+      {label}
     </button>
   );
 }
@@ -144,7 +146,11 @@ function NumberInput({ id, label, value, whole, phone, onChange }: { id: string;
   );
 }
 
-function BuildDetails({ phone, details, onChange, onGap }: { phone: boolean; details: ComposeDetails; onChange: (key: ComposeDetailKey, value: string) => void; onGap: (on: boolean) => void }) {
+/** UX-07 P6: the maker's opt-out, beside the build's other publish-time setting (Open a bounty). Never a checklist item. */
+export const TOPIC_SOURCE_LABEL = "Others can start topics from this build";
+export const TOPIC_SOURCE_NOTE = "Off removes the option for everyone else. Existing topics keep their link and credit.";
+
+function BuildDetails({ phone, details, onChange, onGap, onTopicSource }: { phone: boolean; details: ComposeDetails; onChange: (key: ComposeDetailKey, value: string) => void; onGap: (on: boolean) => void; onTopicSource?: (on: boolean) => void }) {
   const money = (value: string) => (value.trim() ? `£${value}` : "");
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
@@ -166,7 +172,7 @@ function BuildDetails({ phone, details, onChange, onGap }: { phone: boolean; det
         <NumberInput id="card-first-result-input" label="Time to first result (minutes)" value={details.firstResult} whole phone={phone} onChange={(value) => onChange("firstResult", value)} />
       </OptionalRow>
       <OptionalRow phone={phone} filledText name="Open a bounty" description="Leave one part open for someone else to solve" summary={details.gapOn ? (details.gapProblem.trim() ? details.gapProblem : "On") : ""}>
-        <BountySwitch on={details.gapOn} onChange={onGap} phone={phone} />
+        <CardSwitch on={details.gapOn} onChange={onGap} phone={phone} label="Open a bounty" />
         {details.gapOn ? (
           <>
             <RefinedField id="card-left-open" label="What is left open">
@@ -176,6 +182,14 @@ function BuildDetails({ phone, details, onChange, onGap }: { phone: boolean; det
           </>
         ) : null}
       </OptionalRow>
+      {onTopicSource ? (
+        <OptionalRow phone={phone} filledText name="Topics" description={TOPIC_SOURCE_LABEL} summary={details.allowAsTopicSource === false ? "Off" : ""}>
+          <CardSwitch on={details.allowAsTopicSource !== false} onChange={onTopicSource} phone={phone} label={TOPIC_SOURCE_LABEL} />
+          <p data-testid="topic-source-note" style={{ margin: 0, ...text(12, 400, t.label) }}>
+            {TOPIC_SOURCE_NOTE}
+          </p>
+        </OptionalRow>
+      ) : null}
     </div>
   );
 }
@@ -228,6 +242,7 @@ function CardBody(props: SandboxCardProps) {
         if (details[key] !== props.details[key]) props.onDetail(key, details[key]);
       }
       if (details.gapOn !== props.details.gapOn) props.onGapSwitch(details.gapOn);
+      if ((details.allowAsTopicSource ?? true) !== (props.details.allowAsTopicSource ?? true)) props.onTopicSourceSwitch?.(details.allowAsTopicSource ?? true);
       // SV-05 P7: a classification the maker changed that could not be written (its columns missing) keeps the window open
       // and says so. The title, the summary and the details are saved either way.
       const saved = data ? await data.onSave(draft) : null;
@@ -394,7 +409,7 @@ function CardBody(props: SandboxCardProps) {
               "Known issue, Build cost, Running cost per month, Time to first result, Open a bounty",
               "",
               undefined,
-              <BuildDetails phone={phone} details={details} onChange={(key, value) => setDetails((current) => ({ ...current, [key]: value }))} onGap={(on) => setDetails((current) => ({ ...current, gapOn: on }))} />,
+              <BuildDetails phone={phone} details={details} onChange={(key, value) => setDetails((current) => ({ ...current, [key]: value }))} onGap={(on) => setDetails((current) => ({ ...current, gapOn: on }))} onTopicSource={props.onTopicSourceSwitch ? (on) => setDetails((current) => ({ ...current, allowAsTopicSource: on })) : undefined} />,
             )}
           </OptionalRows>
         </div>

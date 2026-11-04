@@ -1452,6 +1452,8 @@ export const CA03_FILES: readonly string[] = [
   "src/components/notifications/ux07.p5.test.tsx",
   "src/pages/site/activity/activityModel.ts",
   "src/lib/notifications/resolveTarget.ts",
+  "src/lib/build/topicSource.ts",
+  "src/pages/site/compose/ux07.p6.test.tsx",
 ];
 
 /**

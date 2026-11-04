@@ -149,6 +149,8 @@ export interface ComposeViewProps {
   details: ComposeDetails;
   onDetail: (key: ComposeDetailKey, value: string) => void;
   onGapSwitch: (on: boolean) => void;
+  /** UX-07 P6: Others can start topics from this build. Absent: the setting is not offered. */
+  onTopicSourceSwitch?: (on: boolean) => void;
 }
 
 /* ── shared pieces ── */
