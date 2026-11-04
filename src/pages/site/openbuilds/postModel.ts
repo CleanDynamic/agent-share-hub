@@ -23,9 +23,6 @@ export type PostTab = "thread" | "wall";
 export const postPageKey = (id: string) => ["posts", "getPost", id] as const;
 export const postExtrasKey = (id: string, viewerId: string | null) => ["posts", "readPostExtras", id, viewerId] as const;
 
-/** The most columns Line up steps draws before its box scrolls sideways. */
-export const LINE_UP_SHOWN = 8;
-
 /* ── the address ── */
 
 export interface PostAddress {
@@ -365,7 +362,13 @@ export function lineUpOf(thread: PostThread, postBuildId: string | null, extras:
     });
 
   const rows: LineRow[] = [
-    { key: "post", name: "The post", author: null, cells: cellsOf(base, false), finished: !base.some((step) => step.open) },
+    {
+      key: "post",
+      name: "The post",
+      author: { id: thread.authorId, name: thread.author?.name?.trim() || thread.author?.handle || "Someone", handle: thread.author?.handle ?? null, avatarUrl: thread.author?.avatarUrl ?? null },
+      cells: cellsOf(base, false),
+      finished: !base.some((step) => step.open),
+    },
     ...rebuilds.map(({ reply, steps: row }) => ({
       key: reply.id,
       name: reply.author?.handle ? `@${reply.author.handle}` : reply.author?.name?.trim() || "Someone",

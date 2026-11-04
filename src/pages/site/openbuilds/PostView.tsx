@@ -72,6 +72,8 @@ export interface PostViewProps {
   replyBox?: { at: "foot" | string; node: ReactNode };
   /** Part 5: the Wall, drawn when `tab` is wall. */
   wall?: ReactNode;
+  /** Part 6: what the Wall puts on the switch's row (Line up steps). */
+  wallRow?: ReactNode;
   side: { space: PostSideSpace | null; rows: readonly PostSideRow[] };
 }
 
@@ -162,7 +164,10 @@ export function PostView(view: PostViewProps) {
 
       <div style={{ display: "flex", flexDirection: phone ? "column" : "row", alignItems: phone ? "stretch" : "center", justifyContent: "space-between", gap: 12, marginTop: 8, paddingBottom: 12, borderBottom: `1px solid ${t.hairline}` }}>
         <Segmented label="Show" items={items} value={tab} onChange={(value) => view.onTab(value as PostTab)} size={phone ? 50 : 32} fontSize={12} fullWidth={phone} />
-        <span style={{ ...label(12), alignSelf: phone ? "flex-end" : undefined }}>Oldest first</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 16, alignSelf: phone ? "flex-end" : undefined }}>
+          {tab === "wall" ? view.wallRow : null}
+          <span style={label(12)}>Oldest first</span>
+        </span>
       </div>
 
       {tab === "wall" ? (

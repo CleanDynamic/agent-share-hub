@@ -30,7 +30,7 @@ export interface PostWallProps {
   onReplyWithBuild: () => void;
   /** The reply box, when Reply with a build opened it. */
   box?: ReactNode;
-  /** Part 6: the Line up steps control and its table. */
+  /** Part 6: the Line up steps table, under the cards. */
   lineUp?: ReactNode;
 }
 
@@ -88,12 +88,12 @@ export function PostWall({ cards, onReply, onReplyWithBuild, box, lineUp }: Post
   const columns = useCardColumns();
   return (
     <div data-columns={columns}>
-      {lineUp}
       <ol aria-label="Builds in replies" style={{ margin: "24px 0 0", padding: 0, display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, alignItems: "start" }}>
         {cards.map((card) => (
           <Card key={card.replyId} card={card} onReply={onReply} />
         ))}
       </ol>
+      {lineUp}
       <div style={{ marginTop: 24, paddingTop: 16, borderTop: `1px solid ${t.hairline}` }}>
         {box ?? (
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>

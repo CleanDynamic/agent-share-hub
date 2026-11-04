@@ -30,7 +30,7 @@ vi.mock("@/lib/errors/report", () => ({ reportError: vi.fn() }));
 vi.mock("@/hooks/useEngagement", () => ({ useEngagement: () => ({ counts: {}, liked: new Set(), saved: new Set(), loaded: true }), engagementFor: () => ({ counts: null, liked: false, saved: false }) }));
 vi.mock("sonner", () => ({ toast: Object.assign(vi.fn(), { error: vi.fn() }) }));
 
-import { entry } from "./postModel.fixtures";
+import { attachment, entry } from "./postModel.fixtures";
 import PostPage from "./PostPage";
 
 const crowd = (role: "none" | "member" | "moderator") => ({
@@ -160,5 +160,51 @@ describe("the post page", () => {
     expect(screen.getAllByTestId("reply-box")).toHaveLength(1);
     expect(within(kit).getByTestId("reply-box")).toBeInTheDocument();
     expect(document.querySelectorAll('[data-visual-slot="btn-primary"]')).toHaveLength(1);
+  });
+
+  describe("Line up steps", () => {
+    const withBuilds = () =>
+      thread({
+        attachments: [attachment("build", { buildId: "b-post" })],
+        replies: Array.from({ length: 3 }, (_, n) => entry(`r${n}`, 60 - n, { attachments: [attachment("build", { buildId: `b-${n}` })] })),
+      });
+    const extrasWith = (rebuilds: number): PostPageExtras => {
+      const base = extras();
+      const card = (id: string) => ({ id, slug: id, title: id, madeWith: null, status: "published", reproduction_count: 0, last_confirmed_at: null, last_confirmed_model: null, published_at: null });
+      return {
+        ...base,
+        work: { builds: new Map(["b-post", "b-0", "b-1", "b-2"].map((id) => [id, card(id)])), nodes: new Map() },
+        facts: new Map(["b-0", "b-1", "b-2"].map((id, n) => [id, { id, slug: id, title: id, status: "published", creatorId: "x", parentBuildId: n < rebuilds ? "b-post" : null, sourceHandle: "sam" }])),
+      };
+    };
+    const at = (width: number) =>
+      vi.stubGlobal("matchMedia", (query: string) => ({ matches: width >= Number(/min-width:\s*(\d+)/.exec(query)?.[1] ?? 0), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
+
+    it("offers the checkbox on the Wall with two rebuilds of the post's build, and keeps it in the address", async () => {
+      getPost.mockResolvedValue(withBuilds());
+      readPostExtras.mockResolvedValue(extrasWith(2));
+      mount("/openbuilds/topics/p1?view=wall");
+      fireEvent.click(await screen.findByRole("checkbox", { name: "Line up steps" }));
+      await waitFor(() => expect(where).toBe("?view=wall&lineup=1"));
+      expect(await screen.findByRole("table", { name: /Where the builds differ/ })).toBeInTheDocument();
+    });
+
+    it("does not offer it with one rebuild", async () => {
+      getPost.mockResolvedValue(withBuilds());
+      readPostExtras.mockResolvedValue(extrasWith(1));
+      mount("/openbuilds/topics/p1?view=wall");
+      await screen.findAllByTestId("wall-card");
+      expect(screen.queryByRole("checkbox", { name: "Line up steps" })).toBeNull();
+    });
+
+    it("does not offer it below 760 wide, even from the address", async () => {
+      at(759);
+      getPost.mockResolvedValue(withBuilds());
+      readPostExtras.mockResolvedValue(extrasWith(2));
+      mount("/openbuilds/topics/p1?view=wall&lineup=1");
+      await screen.findAllByTestId("wall-card");
+      expect(screen.queryByRole("checkbox", { name: "Line up steps" })).toBeNull();
+      expect(screen.queryByRole("table")).toBeNull();
+    });
   });
 });

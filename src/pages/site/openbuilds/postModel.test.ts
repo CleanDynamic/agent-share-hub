@@ -7,7 +7,9 @@ import type { CardBuildFacts } from "@/lib/openbuilds/cardWork";
 import type { WallBuildFacts } from "@/lib/openbuilds/postPage";
 
 import { NOW, attachment, entry, postNodes, work } from "./postModel.fixtures";
-import { postSearch, wallCards, readPostAddress, repliesByStep, stepsOf, threadItems, threadOrder, type ThreadContext } from "./postModel";
+import type { LineStepRow } from "@/lib/openbuilds/postPage";
+
+import { lineUpOf, lineUpOffered, rebuildsInReplies, postSearch, wallCards, readPostAddress, repliesByStep, stepsOf, threadItems, threadOrder, type ThreadContext } from "./postModel";
 
 const labels = new Map(stepsOf(postNodes).map((step) => [step.id, step.label]));
 const context: ThreadContext = { work, signed: new Map(), liked: new Set(["b"]), now: NOW, stepLabels: labels, handleOf: (id) => (id === "maya-id" ? "maya" : null), canPin: false, canHide: false };
@@ -113,5 +115,74 @@ describe("the Wall's cards", () => {
   it("draws a build attached from a draft as in progress, with its sessions and when it was updated", () => {
     const ana = wallCards(thread, extras, NOW)[2];
     expect(ana).toMatchObject({ kind: "in-progress", title: "Ana's screener", line: "In progress · 2 sessions", updated: "updated 20m ago" });
+  });
+});
+
+/* ── Part 6: Line up steps ── */
+
+const row = (buildId: string, id: string, position: number, type: string, title: string, words: string, extra: Partial<LineStepRow> = {}): LineStepRow => ({
+  id,
+  build_id: buildId,
+  parent_id: null,
+  type,
+  title,
+  position,
+  is_gap: false,
+  tested: null,
+  setup: null,
+  step: null,
+  text: type === "prompt" ? words : null,
+  source: type === "code" ? words : null,
+  ...extra,
+});
+
+describe("Line up steps", () => {
+  const replies = [
+    entry("kit", 90, { attachments: [attachment("build", { buildId: "b-kit" })] }),
+    entry("ola", 80, { attachments: [attachment("build", { buildId: "b-ola" })] }),
+    entry("jo", 70, { attachments: [attachment("build", { buildId: "b-jo" })] }),
+    entry("new", 60, { attachments: [attachment("build", { buildId: "b-new" })] }),
+  ];
+  const thread = entry("p1", 200, { parentId: null, attachments: [attachment("build", { buildId: "b-post" })], replies });
+  const facts = new Map([
+    ["b-kit", { id: "b-kit", slug: "k", title: "k", status: "published", creatorId: "kit", parentBuildId: "b-post", sourceHandle: "sam" }],
+    ["b-ola", { id: "b-ola", slug: "o", title: "o", status: "published", creatorId: "ola", parentBuildId: "b-post", sourceHandle: "sam" }],
+    ["b-jo", { id: "b-jo", slug: "j", title: "j", status: "published", creatorId: "jo", parentBuildId: "b-post", sourceHandle: "sam" }],
+    ["b-new", { id: "b-new", slug: "n", title: "n", status: "published", creatorId: "x", parentBuildId: null, sourceHandle: null }],
+  ]);
+  const steps = new Map([
+    ["b-post", [row("b-post", "p1s", 0, "prompt", "Take the CV", "Read the CV."), row("b-post", "p2s", 1, "code", "Rubric", "score = 0"), row("b-post", "p3s", 2, "prompt", "Score", "Score it."), row("b-post", "p4s", 3, "prompt", "Summarise", "Sum up.")]],
+    // Kit changed Step 4's words; Ola changed Step 2 to a prompt and Step 4's words; Jo has Step 3 still open and changed Step 4.
+    ["b-kit", [row("b-kit", "k1", 0, "prompt", "Take the CV", "Read the CV."), row("b-kit", "k2", 1, "code", "Rubric", "score = 0"), row("b-kit", "k3", 2, "prompt", "Score", "Score it."), row("b-kit", "k4", 3, "prompt", "Summarise", "Sum up in three lines."), row("b-kit", "k5", 4, "prompt", "Email", "Send it.")]],
+    ["b-ola", [row("b-ola", "o1", 0, "prompt", "Take the CV", "Read the CV."), row("b-ola", "o2", 1, "prompt", "Rubric", "Ask for a score."), row("b-ola", "o3", 2, "prompt", "Score", "Score it."), row("b-ola", "o4", 3, "prompt", "Summarise", "Sum it up briefly.")]],
+    ["b-jo", [row("b-jo", "j1", 0, "prompt", "Take the CV", "Read the CV."), row("b-jo", "j2", 1, "code", "Rubric", "score = 0"), row("b-jo", "j3", 2, "prompt", "Score", "", { is_gap: true }), row("b-jo", "j4", 3, "prompt", "Summarise", "Other words.")]],
+  ]);
+
+  it("is offered only with two or more rebuilds of the post's build in replies", () => {
+    expect(rebuildsInReplies(thread, "b-post", facts).map((entry) => entry.buildId)).toEqual(["b-kit", "b-ola", "b-jo"]);
+    expect(lineUpOffered(3)).toBe(true);
+    expect(lineUpOffered(1)).toBe(false);
+    expect(rebuildsInReplies(thread, null, facts)).toEqual([]);
+  });
+
+  it("marks a step changed when its kind or its words differ from the post's build at the same number", () => {
+    const lineUp = lineUpOf(thread, "b-post", { steps, facts });
+    expect(lineUp.steps).toBe(5);
+    expect(lineUp.rows.map((entry) => entry.name)).toEqual(["The post", "@kit", "@ola", "@jo"]);
+    const changed = (name: string) => lineUp.rows.find((entry) => entry.name === name)!.cells.map((cell) => (cell === null ? "-" : cell.open ? "open" : cell.changed ? "x" : "."));
+    expect(changed("The post")).toEqual([".", ".", ".", ".", "-"]);
+    // A step the post's build does not have is a change.
+    expect(changed("@kit")).toEqual([".", ".", ".", "x", "x"]);
+    expect(changed("@ola")).toEqual([".", "x", ".", "x", "-"]);
+    expect(changed("@jo")).toEqual([".", ".", "open", "x", "-"]);
+  });
+
+  it("states one fact, from the finished builds only: the step changed by the most of them", () => {
+    expect(lineUpOf(thread, "b-post", { steps, facts }).sentence).toBe("2 of 2 finished builds changed Step 4.");
+  });
+
+  it("says nothing when no finished build changed a step", () => {
+    const same = new Map([...steps, ["b-kit", steps.get("b-post")!.map((entry) => ({ ...entry, build_id: "b-kit" }))], ["b-ola", steps.get("b-post")!.map((entry) => ({ ...entry, build_id: "b-ola" }))]]);
+    expect(lineUpOf(thread, "b-post", { steps: same, facts }).sentence).toBeNull();
   });
 });

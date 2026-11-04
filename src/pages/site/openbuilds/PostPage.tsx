@@ -19,6 +19,7 @@ import { PageArrival } from "@/components/shell/PageArrival";
 import { PostControl } from "@/components/post/postControls";
 import { splitBody, toCardData } from "@/components/post/postCardModel";
 import type { StripTileData } from "@/components/vision/StepStripTiles";
+import { useMinWidth } from "@/components/shell/useMinWidth";
 import { useAuth } from "@/contexts/AuthContext";
 import { engagementFor, useEngagement } from "@/hooks/useEngagement";
 import { reportError } from "@/lib/errors/report";
@@ -35,6 +36,7 @@ import { ReplyBox } from "./ReplyBox";
 import type { ReplyDraft } from "./sendReply";
 import { PostView, type PostSideRow } from "./PostView";
 import { PostWall } from "./PostWall";
+import { LineUpTable, LineUpToggle } from "./LineUpSteps";
 import {
   buildReplies,
   peopleReplying,
@@ -45,6 +47,9 @@ import {
   readPostAddress,
   repliesByStep,
   replyDraftTitle,
+  lineUpOf,
+  lineUpOffered,
+  rebuildsInReplies,
   wallCards,
   replyItem,
   threadItems,
@@ -101,6 +106,8 @@ export default function PostPage() {
   const [about, setAbout] = useState<ReplyDraft["about"]>(null);
   // Part 5: the Wall's Reply with a build opens a box of its own at the Wall's foot (the Thread is not drawn meanwhile).
   const [wallBox, setWallBox] = useState(false);
+  // Part 6: Line up steps is drawn only 760 wide and up.
+  const wide = useMinWidth(760);
 
   const signInTo = `/login?redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`;
   const signIn = () => navigate(signInTo);
@@ -234,6 +241,9 @@ export default function PostPage() {
     />
   );
 
+  // Part 6: offered only with two or more rebuilds of the post's build in replies, and only wide enough to read.
+  const lineUpShown = wide && shown !== null && lineUpOffered(rebuildsInReplies(shown, postBuild.buildId, data.facts).length);
+
   const heading = shown ? splitBody(shown.body).heading : "";
   // The box stands where it was asked for; under a reply that is no longer drawn, it goes back to the foot.
   const at = replyAt !== "foot" && drawnIds(items).includes(replyAt) ? replyAt : "foot";
@@ -288,8 +298,10 @@ export default function PostPage() {
             builds={builds}
             thread={{ items, filter }}
             replyBox={replyBox}
+            wallRow={lineUpShown ? <LineUpToggle on={address.lineUp} onChange={(on) => move({ lineUp: on })} /> : undefined}
             wall={
               <PostWall
+                lineUp={lineUpShown && address.lineUp ? <LineUpTable lineUp={lineUpOf(shown, postBuild.buildId, data)} /> : undefined}
                 cards={wallCards(shown, data, now)}
                 onReply={(replyId) => {
                   setReplyAt(replyId);
