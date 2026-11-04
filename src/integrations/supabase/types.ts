@@ -6730,6 +6730,10 @@ export type Database = {
       mark_depth_revealed: { Args: never; Returns: string }
       mark_welcome_xp_shown: { Args: never; Returns: string }
       model_key: { Args: { raw: string }; Returns: string }
+      post_attachment_owner: {
+        Args: { _build: string; _kind: string; _node: string; _session: string }
+        Returns: string
+      }
       post_spaces_allow_rewards: { Args: { _post: string }; Returns: boolean }
       posts_tags_ok: { Args: { tags: string[] }; Returns: boolean }
       rc_grant_xp: {
