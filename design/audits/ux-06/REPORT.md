@@ -66,3 +66,78 @@ nine commits and the files instead.
 - Part 6: Line up steps -> verified by: `lineUp.test.ts` (when it shows, the changed rule, the sentence), `LineUpSteps.test.tsx`
   (caption, header cells).
 - Part 7: the phone order and `openbuildsPost.budget.test.tsx` -> verified by: the budget test; Playwright at 390, no sideways scroll.
+
+## Report
+
+```
+UX-06 · The post page
+PASS, with the parts and checks below that are not done or not comparable
+Branch / PR: claude/ux-06-post-page
+Facts in this prompt that were wrong on disk:
+  - The address. The prompt says /openbuilds/posts/:id; UX-05 made every post's link /openbuilds/topics/:id (topicHref) and
+    redirects /openbuilds/posts/:id there. The page is at /openbuilds/topics/:id; both addresses open it. Before this branch,
+    every card in the feed linked to a page that did not exist (the "before" screenshots are the 404).
+  - Harness and Model lists are not in src/lib/build/: they are src/lib/tools/registry.ts (WORKSPACE_AI_TOOLS, isPickable,
+    fitsStep from src/lib/tools/modelRules.ts) and src/lib/models/registry.ts (offeredTextModels). The words come from
+    src/lib/build/harnessWords.ts (HARNESS_COPY.label, NO_HARNESS) and the session dialog's "Not named" for no model.
+  - "As Builds draws covers": no Builds view draws a cover on disk (Table, Maps, Classification). No Wall card has a picture area.
+  - "Update from draft ... replaces the snapshot": authenticated has SELECT and INSERT on post_attachments and no UPDATE policy
+    (20261107130000_ux04_posts.sql). Not built; see Questions.
+  - UX-05's report: PR #439's description holds only attribution lines and no report file was committed.
+  - builds.made_with is text[] on disk; UX-05's card read it as a string and called .trim() on it, which throws for any post with
+    a build attached. Fixed in P1 (harnessOf in src/lib/openbuilds/cardWork.ts), under a failing test first.
+Baseline → end: tests BASELINE → END (main already had 31 failing tests in 14 files, all in build, compose and lookRules; the same
+  31 fail at the end and no other)
+Compared boards: not comparable: UX-06 has no board (the prompt says no picture comes with it). Looks are ported from the tokens
+  and components the prompt names. Screenshots: design/audits/ux-06/{before,after}/post-{1440-noon,1440-dusk,390-dusk}-{thread,wall}.png
+Request rounds and requests for the page, before → after: before, no page (404). After, read from the code and the specs: round 1
+  getPost (two requests in a row, as UX-04 wrote it: the post with two levels of replies embedded, then the thread's edges); round 2,
+  readPostExtras, all at once: builds facts, the steps for Line up, the work the cards name (readCardWork: up to four requests in one
+  round), signed pictures, the reader's likes, and the space (four requests, readSpaceCrowd). Three rounds in all. getSpaceCrowd
+  (from a slug) would have taken up to three more in a row, so a one-round read by id was built (commit 6c6c731).
+  Not measured by npm run audit:pages: its harness (e2e/audit/support) has no OpenBuilds posts, so the page never reaches its ready
+  mark there. Adding posts to that harness is the follow-up; the page target would be maxRounds 3.
+Web Vitals against the last after numbers (LCP · CLS · INP proxy): not run (audit:perf measures the harness's pages, which do not
+  include this one); no other page's code changed but the card's harness reading and two optional props.
+Built but not live yet: none. Every section draws from live reads.
+Layers built only because a target failed: readSpaceCrowd (one round instead of getSpaceCrowd's up to three), counted from the code.
+Names that differed from this prompt: /openbuilds/posts/:id → /openbuilds/topics/:id; src/lib/build/ harness and model lists →
+  src/lib/tools/registry.ts, src/lib/models/registry.ts.
+Raw values without a token: none. Spacing outside the scale, allowed in lookRules with the reason: 38 (replies to a reply, the
+  prompt's number), 28 (between side sections, as OpenBuilds' SideSection), 10 12 (a pressable tile, as UX-05).
+Motion cut back after watching: none. The page adds no motion; the Thread and Wall switch changes the address with nothing
+  animating (the browser spec counts animations: zero).
+Dead code seen: none new.
+Lovable messages needed: none (no migration).
+Parts not done:
+  - Part 5, Update from draft in an in-progress card's ··· menu: no write path (no UPDATE policy on post_attachments).
+  - Part 5, covers on Wall cards: nothing on disk to draw them as.
+  - npm run audit:design, audit:pages, audit:perf, audit:themes, audit:contrast for this page: no board, and the audit harness has
+    no posts. Light and Dark were checked by eye in the screenshots.
+Questions for Miles:
+  1. Update from draft needs a migration: GRANT UPDATE (snapshot) on post_attachments to authenticated, with a policy letting a reply's
+     author replace the snapshot of their own reply's attachment, and the authorship trigger run on UPDATE too. Should UX-07 or a
+     data prompt write it?
+  2. Covers on the Wall: which component should draw them? The build page's hero draws a cover; the Builds views draw none.
+  3. A hidden reply leaves the Thread for everyone, moderators included (they can still see it in the database). Should moderators
+     see it greyed in place, as a hidden post in a space is?
+  4. Line up steps draws every step number as a column (eight fit the box, more scroll sideways). The prompt's "at most eight" could
+     also mean cap at eight columns; the safer reading draws them all.
+  5. The repo-wide npm run lint reports 1430 errors on main and on this branch alike; none are in files this branch touches.
+```
+
+## Checks run
+
+- `npx tsc --noEmit -p tsconfig.app.json`: clean (with `NODE_OPTIONS=--max-old-space-size=8192`; the default heap runs out).
+- `npm test`: see Baseline → end above.
+- `npm run lint`: 1430 errors and 529 warnings, the same count as main; 0 errors in this branch's files.
+- `npm run build`: builds. `scripts/check-size.mjs` fails on main and on this branch: first download 232.3 KB on main, 232.9 KB here
+  (+0.6 KB: the route entry and its Placeholder), composer chunk 123.5 KB on both. The budgets bind after SV-26.
+- Playwright `e2e/tier3/openbuilds-post.spec.ts` (8 specs) and UX-05's `openbuilds-spaces.spec.ts`: pass on desktop. The container's
+  Chromium is not the version the project's Playwright pins, so they ran through a local config that points at /opt/pw-browsers/chromium,
+  and Vite was started on 127.0.0.1 (the container has no IPv6).
+- tier1: see below.
+
+## What Miles needs to do
+
+Merge the pull request, then press Publish › Publish changes. No Lovable message: this prompt has no migration.

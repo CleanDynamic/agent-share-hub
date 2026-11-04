@@ -255,7 +255,7 @@ export async function installWorld(page: Page, world: World, options: { signedIn
         return reply(route, found ? [threadRow(world, found, 0)] : []);
       }
       const root = filter(url, "root_id");
-      if (root?.startsWith("eq.") && select.startsWith("id, parent_id")) {
+      if (root?.startsWith("eq.") && select.replace(/\s/g, "").startsWith("id,parent_id")) {
         return reply(route, world.posts.filter((post) => post.root_id === root.slice(3)).map((post) => ({ id: post.id, parent_id: post.parent_id })));
       }
       if (url.searchParams.has("root_id")) return reply(route, []);
