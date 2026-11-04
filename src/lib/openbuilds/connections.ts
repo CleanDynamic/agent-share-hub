@@ -17,13 +17,13 @@ const ABOUT_COUNT_LIMIT = 1000;
 export async function listPostsAbout(buildId: string): Promise<PostsAbout> {
   const [list, steps] = await Promise.all([
     db
-      .from("posts")
+      .from("openbuild_posts")
       .select(`${POST_COLUMNS}, ${AUTHOR_EMBED}, ${ATTACHMENTS_EMBED}`)
       .eq("about_build_id", buildId)
       .is("hidden_by", null)
       .order("created_at", { ascending: false })
       .limit(ABOUT_POSTS_LIMIT),
-    db.from("posts").select("about_node_id").eq("about_build_id", buildId).not("about_node_id", "is", null).is("hidden_by", null).limit(ABOUT_COUNT_LIMIT),
+    db.from("openbuild_posts").select("about_node_id").eq("about_build_id", buildId).not("about_node_id", "is", null).is("hidden_by", null).limit(ABOUT_COUNT_LIMIT),
   ]);
   if (list.error) throw postLayerError("listPostsAbout", list);
   if (steps.error) throw postLayerError("listPostsAbout", steps);
@@ -45,7 +45,7 @@ export async function listPostsBy(userId: string, options: { offset?: number; li
   const limit = pageLimit(options.limit);
   const from = Math.max(0, options.offset ?? 0);
   const response = await db
-    .from("posts")
+    .from("openbuild_posts")
     .select(`${POST_COLUMNS}, ${AUTHOR_EMBED}, ${ATTACHMENTS_EMBED}`)
     .eq("author_id", userId)
     .is("hidden_by", null)
@@ -63,9 +63,9 @@ export async function listPostsBy(userId: string, options: { offset?: number; li
 export async function countPostsStartedFrom(buildId: string): Promise<number> {
   const response = await db
     .from("post_attachments")
-    .select("post_id, posts!inner(parent_id)", { count: "estimated", head: true })
+    .select("post_id, openbuild_posts!inner(parent_id)", { count: "estimated", head: true })
     .eq("build_id", buildId)
-    .is("posts.parent_id", null);
+    .is("openbuild_posts.parent_id", null);
   if (response.error) throw postLayerError("countPostsStartedFrom", response);
   return response.count ?? 0;
 }

@@ -1,7 +1,7 @@
 -- UX-04 Part 4: likes and the reactions a space switches on.
 --
 -- post_likes follows build_likes (20261001180000): one row per (post, reader), readable wherever the post is, written and removed
--- only by the reader, and a stored count kept by trigger. build_likes keeps builds.like_count, so posts gets posts.like_count the
+-- only by the reader, and a stored count kept by trigger. build_likes keeps builds.like_count, so posts gets openbuild_posts.like_count the
 -- same way, and a read of a post's likes never has to count rows.
 --
 -- post_reactions are the extras a space can switch on (spaces.reactions): 'dislike' (no value) and 'rating' (1 to 5). One row per
@@ -28,11 +28,11 @@
 
 -- 1. post_likes ----------------------------------------------------------------------------------------------------------------
 
-ALTER TABLE public.posts
+ALTER TABLE public.openbuild_posts
   ADD COLUMN IF NOT EXISTS like_count integer NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS public.post_likes (
-  post_id    uuid        NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
+  post_id    uuid        NOT NULL REFERENCES public.openbuild_posts(id) ON DELETE CASCADE,
   user_id    uuid        NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   created_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (post_id, user_id)
@@ -48,10 +48,10 @@ SET search_path = public
 AS $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
-    UPDATE public.posts SET like_count = GREATEST(like_count + 1, 0) WHERE id = NEW.post_id;
+    UPDATE public.openbuild_posts SET like_count = GREATEST(like_count + 1, 0) WHERE id = NEW.post_id;
   ELSIF TG_OP = 'DELETE' THEN
     -- a like removed by the cascade from its post finds no post row here, which is right
-    UPDATE public.posts SET like_count = GREATEST(like_count - 1, 0) WHERE id = OLD.post_id;
+    UPDATE public.openbuild_posts SET like_count = GREATEST(like_count - 1, 0) WHERE id = OLD.post_id;
   END IF;
   RETURN NULL;
 END;
@@ -67,7 +67,7 @@ FOR EACH ROW EXECUTE FUNCTION public.sync_post_like_count();
 -- 2. post_reactions -----------------------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS public.post_reactions (
-  post_id    uuid        NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
+  post_id    uuid        NOT NULL REFERENCES public.openbuild_posts(id) ON DELETE CASCADE,
   user_id    uuid        NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   kind       text        NOT NULL,
   value      smallint    NULL,
@@ -90,7 +90,7 @@ AS $$
 DECLARE
   _root uuid;
 BEGIN
-  SELECT p.root_id INTO _root FROM public.posts p WHERE p.id = NEW.post_id;
+  SELECT p.root_id INTO _root FROM public.openbuild_posts p WHERE p.id = NEW.post_id;
   IF NOT FOUND THEN
     RETURN NEW; -- the foreign key refuses it
   END IF;
@@ -131,7 +131,7 @@ DROP POLICY IF EXISTS "Likes follow post readability" ON public.post_likes;
 CREATE POLICY "Likes follow post readability"
   ON public.post_likes FOR SELECT
   TO anon, authenticated
-  USING (EXISTS (SELECT 1 FROM public.posts p WHERE p.id = post_likes.post_id));
+  USING (EXISTS (SELECT 1 FROM public.openbuild_posts p WHERE p.id = post_likes.post_id));
 
 DROP POLICY IF EXISTS "Readers add their own post likes" ON public.post_likes;
 CREATE POLICY "Readers add their own post likes"
@@ -149,7 +149,7 @@ DROP POLICY IF EXISTS "Reactions follow post readability" ON public.post_reactio
 CREATE POLICY "Reactions follow post readability"
   ON public.post_reactions FOR SELECT
   TO anon, authenticated
-  USING (EXISTS (SELECT 1 FROM public.posts p WHERE p.id = post_reactions.post_id));
+  USING (EXISTS (SELECT 1 FROM public.openbuild_posts p WHERE p.id = post_reactions.post_id));
 
 DROP POLICY IF EXISTS "Readers add their own reactions" ON public.post_reactions;
 CREATE POLICY "Readers add their own reactions"
@@ -219,6 +219,6 @@ END;
 $$;
 
 COMMENT ON TABLE public.post_likes IS
-  'UX-04. One like per (post, reader). Readable wherever the post is; written and removed only by the reader. posts.like_count follows it by trigger.';
+  'UX-04. One like per (post, reader). Readable wherever the post is; written and removed only by the reader. openbuild_posts.like_count follows it by trigger.';
 COMMENT ON TABLE public.post_reactions IS
   'UX-04. The extra reactions a space switches on: dislike, or a rating from 1 to 5. One per (post, reader, kind).';

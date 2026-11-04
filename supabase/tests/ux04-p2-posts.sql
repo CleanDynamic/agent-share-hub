@@ -52,21 +52,21 @@ SELECT public.create_post(jsonb_build_object('body', 'depth 2', 'parent_id', :'d
 SELECT public.create_post(jsonb_build_object('body', 'depth 3', 'parent_id', :'d2')) AS d3 \gset
 
 -- 1
-SELECT pg_temp.expect('1a a root''s root_id is its own id', (SELECT root_id = id FROM public.posts WHERE id = :'root'));
+SELECT pg_temp.expect('1a a root''s root_id is its own id', (SELECT root_id = id FROM public.openbuild_posts WHERE id = :'root'));
 SELECT pg_temp.expect('1b a reply''s root_id is the root at depth 1, 2 and 3',
-  (SELECT count(*) FROM public.posts WHERE id IN (:'d1', :'d2', :'d3') AND root_id = :'root') = 3);
-INSERT INTO public.posts (author_id, parent_id, root_id, body) VALUES (:'member_id', :'d1', :'d3', 'tries to choose its root') RETURNING id AS forged \gset
-SELECT pg_temp.expect('1c a supplied root_id is overwritten', (SELECT root_id = :'root' FROM public.posts WHERE id = :'forged'));
+  (SELECT count(*) FROM public.openbuild_posts WHERE id IN (:'d1', :'d2', :'d3') AND root_id = :'root') = 3);
+INSERT INTO public.openbuild_posts (author_id, parent_id, root_id, body) VALUES (:'member_id', :'d1', :'d3', 'tries to choose its root') RETURNING id AS forged \gset
+SELECT pg_temp.expect('1c a supplied root_id is overwritten', (SELECT root_id = :'root' FROM public.openbuild_posts WHERE id = :'forged'));
 
 -- 2
 SELECT pg_temp.refused('2a a post written as someone else',
-  format($q$INSERT INTO public.posts (author_id, body) VALUES (%L, 'forged')$q$, :'creator_id'));
+  format($q$INSERT INTO public.openbuild_posts (author_id, body) VALUES (%L, 'forged')$q$, :'creator_id'));
 SELECT pg_temp.refused_with('2b a reply to a post that does not exist',
-  $q$INSERT INTO public.posts (author_id, parent_id, body) VALUES (auth.uid(), gen_random_uuid(), 'orphan')$q$, 'gone');
+  $q$INSERT INTO public.openbuild_posts (author_id, parent_id, body) VALUES (auth.uid(), gen_random_uuid(), 'orphan')$q$, 'gone');
 SELECT pg_temp.refused('2c a reply cannot be put in a space',
   format($q$INSERT INTO public.post_spaces (post_id, space_id) VALUES (%L, %L)$q$, :'d1', :'open_space'));
 SELECT pg_temp.refused('2d a post cannot arrive already hidden or pinned',
-  format($q$INSERT INTO public.posts (author_id, body, pinned_by) VALUES (%L, 'x', %L)$q$, :'member_id', :'member_id'));
+  format($q$INSERT INTO public.openbuild_posts (author_id, body, pinned_by) VALUES (%L, 'x', %L)$q$, :'member_id', :'member_id'));
 
 -- 3
 SELECT pg_temp.as_user(:'bystander_id');
@@ -88,61 +88,61 @@ SELECT pg_temp.refused('4a a reward is refused in a space without rewards',
 SELECT pg_temp.expect('4b a reward is allowed in a space with rewards',
   public.create_post(jsonb_build_object('body', 'bounty', 'reward_gbp', 10, 'space_ids', jsonb_build_array(:'open_space'))) IS NOT NULL);
 SELECT pg_temp.refused('4c a reward cannot be added by an edit where the space does not allow it',
-  format($q$UPDATE public.posts SET reward_gbp = 5 WHERE id = %L$q$, :'mroot'));
+  format($q$UPDATE public.openbuild_posts SET reward_gbp = 5 WHERE id = %L$q$, :'mroot'));
 SELECT pg_temp.refused('4d a reply cannot carry a reward',
   format($q$SELECT public.create_post(jsonb_build_object('body', 'r', 'reward_gbp', 5, 'parent_id', %L))$q$, :'root'));
 
 -- 5
 SELECT pg_temp.as_user(:'creator_id');
-SELECT pg_temp.affects('5a a moderator hides a reply', format($q$UPDATE public.posts SET hidden_by = %L, hidden_reason = 'off topic' WHERE id = %L$q$, :'creator_id', :'d1'), 1);
-SELECT pg_temp.expect('5b the moderator still reads it', EXISTS (SELECT 1 FROM public.posts WHERE id = :'d1'));
+SELECT pg_temp.affects('5a a moderator hides a reply', format($q$UPDATE public.openbuild_posts SET hidden_by = %L, hidden_reason = 'off topic' WHERE id = %L$q$, :'creator_id', :'d1'), 1);
+SELECT pg_temp.expect('5b the moderator still reads it', EXISTS (SELECT 1 FROM public.openbuild_posts WHERE id = :'d1'));
 SELECT pg_temp.as_user(:'bystander_id');
-SELECT pg_temp.expect('5c a bystander does not read it', NOT EXISTS (SELECT 1 FROM public.posts WHERE id = :'d1'));
+SELECT pg_temp.expect('5c a bystander does not read it', NOT EXISTS (SELECT 1 FROM public.openbuild_posts WHERE id = :'d1'));
 RESET ROLE; SET LOCAL ROLE anon;
-SELECT pg_temp.expect('5d a signed-out reader does not read it', NOT EXISTS (SELECT 1 FROM public.posts WHERE id = :'d1'));
+SELECT pg_temp.expect('5d a signed-out reader does not read it', NOT EXISTS (SELECT 1 FROM public.openbuild_posts WHERE id = :'d1'));
 SELECT pg_temp.as_user(:'member_id');
-SELECT pg_temp.expect('5e its author reads it', EXISTS (SELECT 1 FROM public.posts WHERE id = :'d1'));
+SELECT pg_temp.expect('5e its author reads it', EXISTS (SELECT 1 FROM public.openbuild_posts WHERE id = :'d1'));
 SELECT pg_temp.as_user(:'stranger_id');
-SELECT pg_temp.expect('5f the root''s author reads it', EXISTS (SELECT 1 FROM public.posts WHERE id = :'d1'));
+SELECT pg_temp.expect('5f the root''s author reads it', EXISTS (SELECT 1 FROM public.openbuild_posts WHERE id = :'d1'));
 SELECT pg_temp.as_user(:'creator_id');
-SELECT pg_temp.affects('5g the moderator unhides it', format($q$UPDATE public.posts SET hidden_by = NULL WHERE id = %L$q$, :'d1'), 1);
-SELECT pg_temp.expect('5h unhiding clears the reason', (SELECT hidden_reason IS NULL FROM public.posts WHERE id = :'d1'));
+SELECT pg_temp.affects('5g the moderator unhides it', format($q$UPDATE public.openbuild_posts SET hidden_by = NULL WHERE id = %L$q$, :'d1'), 1);
+SELECT pg_temp.expect('5h unhiding clears the reason', (SELECT hidden_reason IS NULL FROM public.openbuild_posts WHERE id = :'d1'));
 
 -- 6
 SELECT pg_temp.as_user(:'bystander_id');
-SELECT pg_temp.affects('6a a bystander cannot edit', format($q$UPDATE public.posts SET body = 'mine now' WHERE id = %L$q$, :'d2'), 0);
-SELECT pg_temp.affects('6b a bystander cannot hide', format($q$UPDATE public.posts SET hidden_by = %L WHERE id = %L$q$, :'bystander_id', :'d2'), 0);
-SELECT pg_temp.affects('6c a bystander cannot pin', format($q$UPDATE public.posts SET pinned_by = %L WHERE id = %L$q$, :'bystander_id', :'d2'), 0);
+SELECT pg_temp.affects('6a a bystander cannot edit', format($q$UPDATE public.openbuild_posts SET body = 'mine now' WHERE id = %L$q$, :'d2'), 0);
+SELECT pg_temp.affects('6b a bystander cannot hide', format($q$UPDATE public.openbuild_posts SET hidden_by = %L WHERE id = %L$q$, :'bystander_id', :'d2'), 0);
+SELECT pg_temp.affects('6c a bystander cannot pin', format($q$UPDATE public.openbuild_posts SET pinned_by = %L WHERE id = %L$q$, :'bystander_id', :'d2'), 0);
 SELECT pg_temp.as_user(:'stranger_id');
 SELECT pg_temp.refused_with('6d the root''s author cannot edit another user''s words',
-  format($q$UPDATE public.posts SET body = 'rewritten' WHERE id = %L$q$, :'d2'), 'Only the author can edit');
+  format($q$UPDATE public.openbuild_posts SET body = 'rewritten' WHERE id = %L$q$, :'d2'), 'Only the author can edit');
 SELECT pg_temp.as_user(:'member_id');
 SELECT pg_temp.refused_with('6e a reply''s author cannot hide their own reply',
-  format($q$UPDATE public.posts SET hidden_by = %L WHERE id = %L$q$, :'member_id', :'d2'), 'author or a moderator');
-SELECT pg_temp.affects('6f an author edits their own post', format($q$UPDATE public.posts SET body = 'edited' WHERE id = %L$q$, :'d2'), 1);
-SELECT pg_temp.expect('6g an edit moves updated_at', (SELECT updated_at > created_at FROM public.posts WHERE id = :'d2'));
+  format($q$UPDATE public.openbuild_posts SET hidden_by = %L WHERE id = %L$q$, :'member_id', :'d2'), 'author or a moderator');
+SELECT pg_temp.affects('6f an author edits their own post', format($q$UPDATE public.openbuild_posts SET body = 'edited' WHERE id = %L$q$, :'d2'), 1);
+SELECT pg_temp.expect('6g an edit moves updated_at', (SELECT updated_at > created_at FROM public.openbuild_posts WHERE id = :'d2'));
 SELECT pg_temp.refused_with('6h nobody changes a post''s author',
-  format($q$UPDATE public.posts SET author_id = %L WHERE id = %L$q$, :'stranger_id', :'d2'), 'author and place');
+  format($q$UPDATE public.openbuild_posts SET author_id = %L WHERE id = %L$q$, :'stranger_id', :'d2'), 'author and place');
 
 -- 7
 SELECT pg_temp.as_user(:'stranger_id');
-SELECT pg_temp.affects('7a the root''s author hides a reply under their post', format($q$UPDATE public.posts SET hidden_by = %L, hidden_reason = 'rude' WHERE id = %L$q$, :'stranger_id', :'d3'), 1);
-SELECT pg_temp.affects('7b and unhides it', format($q$UPDATE public.posts SET hidden_by = NULL WHERE id = %L$q$, :'d3'), 1);
+SELECT pg_temp.affects('7a the root''s author hides a reply under their post', format($q$UPDATE public.openbuild_posts SET hidden_by = %L, hidden_reason = 'rude' WHERE id = %L$q$, :'stranger_id', :'d3'), 1);
+SELECT pg_temp.affects('7b and unhides it', format($q$UPDATE public.openbuild_posts SET hidden_by = NULL WHERE id = %L$q$, :'d3'), 1);
 SELECT pg_temp.as_user(:'creator_id');
 SELECT pg_temp.refused_with('7c a moderator cannot pin as someone else',
-  format($q$UPDATE public.posts SET pinned_by = %L WHERE id = %L$q$, :'member_id', :'d2'), 'only as yourself');
-SELECT pg_temp.affects('7d a moderator pins', format($q$UPDATE public.posts SET pinned_by = %L WHERE id = %L$q$, :'creator_id', :'d2'), 1);
-SELECT pg_temp.expect('7e pinning stamps pinned_at', (SELECT pinned_at IS NOT NULL FROM public.posts WHERE id = :'d2'));
-SELECT pg_temp.affects('7f and unpins', format($q$UPDATE public.posts SET pinned_by = NULL WHERE id = %L$q$, :'d2'), 1);
-SELECT pg_temp.expect('7g unpinning clears pinned_at', (SELECT pinned_at IS NULL FROM public.posts WHERE id = :'d2'));
+  format($q$UPDATE public.openbuild_posts SET pinned_by = %L WHERE id = %L$q$, :'member_id', :'d2'), 'only as yourself');
+SELECT pg_temp.affects('7d a moderator pins', format($q$UPDATE public.openbuild_posts SET pinned_by = %L WHERE id = %L$q$, :'creator_id', :'d2'), 1);
+SELECT pg_temp.expect('7e pinning stamps pinned_at', (SELECT pinned_at IS NOT NULL FROM public.openbuild_posts WHERE id = :'d2'));
+SELECT pg_temp.affects('7f and unpins', format($q$UPDATE public.openbuild_posts SET pinned_by = NULL WHERE id = %L$q$, :'d2'), 1);
+SELECT pg_temp.expect('7g unpinning clears pinned_at', (SELECT pinned_at IS NULL FROM public.openbuild_posts WHERE id = :'d2'));
 
 -- 8. create_post is one transaction; the body rule is checked at commit
 SELECT pg_temp.as_user(:'member_id');
 SELECT pg_temp.refused_with('8a a post with no words and nothing attached',
-  $q$INSERT INTO public.posts (author_id, body) VALUES (auth.uid(), '   '); SET CONSTRAINTS ALL IMMEDIATE$q$, 'needs words');
+  $q$INSERT INTO public.openbuild_posts (author_id, body) VALUES (auth.uid(), '   '); SET CONSTRAINTS ALL IMMEDIATE$q$, 'needs words');
 SELECT public.create_post(jsonb_build_object(
   'body', '', 'space_ids', jsonb_build_array(:'open_space'), 'mention_ids', jsonb_build_array(:'bystander_id'),
-  'attachments', jsonb_build_array(jsonb_build_object('kind', 'media', 'media_path', :'member_id' || '/pic.png', 'media_kind', 'image')))) AS media_post \gset
+  'attachments', jsonb_build_array(jsonb_build_object('kind', 'media', 'media_path', 'entries/' || :'member_id' || '/pic.png', 'media_kind', 'image')))) AS media_post \gset
 SET CONSTRAINTS ALL IMMEDIATE;
 SELECT pg_temp.expect('8b an empty body is allowed with an attachment, and the spaces, attachment and mention arrive with it',
   (SELECT count(*) FROM public.post_spaces WHERE post_id = :'media_post') = 1
@@ -150,7 +150,7 @@ SELECT pg_temp.expect('8b an empty body is allowed with an attachment, and the s
   AND (SELECT count(*) FROM public.post_mentions WHERE post_id = :'media_post' AND user_id = :'bystander_id') = 1);
 SELECT pg_temp.refused('8c a refused attachment leaves no post behind',
   $q$SELECT public.create_post(jsonb_build_object('body', 'atomic', 'attachments', jsonb_build_array(jsonb_build_object('kind', 'media'))))$q$);
-SELECT pg_temp.expect('8d (nothing was written)', NOT EXISTS (SELECT 1 FROM public.posts WHERE body = 'atomic'));
+SELECT pg_temp.expect('8d (nothing was written)', NOT EXISTS (SELECT 1 FROM public.openbuild_posts WHERE body = 'atomic'));
 SELECT pg_temp.refused('8e only the author attaches to a post',
   format($q$INSERT INTO public.post_attachments (post_id, position, kind, media_path, media_kind) SELECT %L, 5, 'media', 'x/y.png', 'image'$q$, :'root'));
 

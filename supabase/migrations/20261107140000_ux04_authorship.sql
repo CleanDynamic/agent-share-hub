@@ -1,7 +1,7 @@
 -- UX-04 Part 3: the authorship rule, enforced where attachments are written.
 --
 -- THE RULE. Ask with anything, answer with your own.
---   * A REPLY may attach only work its author made. Media must sit under the author's own storage folder.
+--   * A REPLY may attach only work its author made. Media must sit under the author's own folder of the build-media bucket, entries/<author id>/ (20261107168000).
 --   * A ROOT POST may attach anyone's published work, unless that build's maker switched builds.allow_as_post_source off.
 --   * Nobody can attach someone else's draft, and attaching never makes a draft readable: work from the author's own draft is
 --     stored as the copy the client took (post_attachments.snapshot), and published work is referenced and carries no copy.
@@ -76,14 +76,14 @@ DECLARE
   _allow  boolean;
   _owner  uuid;
 BEGIN
-  SELECT p.author_id, p.parent_id INTO _author, _parent FROM public.posts p WHERE p.id = NEW.post_id;
+  SELECT p.author_id, p.parent_id INTO _author, _parent FROM public.openbuild_posts p WHERE p.id = NEW.post_id;
   IF NOT FOUND THEN
     RETURN NEW; -- the foreign key refuses it
   END IF;
 
   IF NEW.kind = 'media' THEN
-    IF split_part(NEW.media_path, '/', 1) <> _author::text THEN
-      RAISE EXCEPTION 'Media must sit in your own storage folder.';
+    IF split_part(NEW.media_path, '/', 1) <> 'entries' OR split_part(NEW.media_path, '/', 2) <> _author::text THEN
+      RAISE EXCEPTION 'Media must sit in your own folder.';
     END IF;
     RETURN NEW;
   END IF;
@@ -107,7 +107,7 @@ BEGIN
       RAISE EXCEPTION 'That work is not published, so it can''t be attached.';
     END IF;
     IF NOT _allow THEN
-      RAISE EXCEPTION 'This build''s maker doesn''t allow it to start posts.';
+      RAISE EXCEPTION 'This build''s maker doesn''t allow it to start topics.';
     END IF;
   END IF;
 

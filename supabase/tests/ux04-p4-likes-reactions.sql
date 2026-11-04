@@ -5,7 +5,7 @@
 --   2. a post in no space takes no extra reactions; a reply is judged by its root's spaces
 --   3. a post in two spaces takes a reaction only if both switched it on
 --   4. a rating is 1 to 5 and a dislike has no value; one reaction per kind per reader; a reader cannot react as someone else
---   5. a like is the reader's own, counts once on posts.like_count, and goes with an unlike
+--   5. a like is the reader's own, counts once on openbuild_posts.like_count, and goes with an unlike
 --   6. saved_items accepts a post and still refuses an unknown kind; a reader saves only as themselves
 --
 -- USAGE
@@ -78,12 +78,12 @@ SELECT pg_temp.refused('4f a reaction as someone else', format($q$INSERT INTO pu
 SELECT pg_temp.affects('5a a like', format($q$INSERT INTO public.post_likes (post_id, user_id) VALUES (%L, %L)$q$, :'p_plain', :'stranger_id'), 1);
 SELECT pg_temp.refused('5b a like as someone else', format($q$INSERT INTO public.post_likes (post_id, user_id) VALUES (%L, %L)$q$, :'p_plain', :'creator_id'));
 SELECT pg_temp.refused('5c one like per reader', format($q$INSERT INTO public.post_likes (post_id, user_id) VALUES (%L, %L)$q$, :'p_plain', :'stranger_id'));
-SELECT pg_temp.expect('5d the count follows', (SELECT like_count = 1 FROM public.posts WHERE id = :'p_plain'));
+SELECT pg_temp.expect('5d the count follows', (SELECT like_count = 1 FROM public.openbuild_posts WHERE id = :'p_plain'));
 SELECT pg_temp.as_user(:'creator_id');
 SELECT pg_temp.affects('5e a reader cannot remove someone else''s like', format($q$DELETE FROM public.post_likes WHERE post_id = %L$q$, :'p_plain'), 0);
 SELECT pg_temp.as_user(:'stranger_id');
 SELECT pg_temp.affects('5f an unlike', format($q$DELETE FROM public.post_likes WHERE post_id = %L AND user_id = auth.uid()$q$, :'p_plain'), 1);
-SELECT pg_temp.expect('5g and the count goes back', (SELECT like_count = 0 FROM public.posts WHERE id = :'p_plain'));
+SELECT pg_temp.expect('5g and the count goes back', (SELECT like_count = 0 FROM public.openbuild_posts WHERE id = :'p_plain'));
 
 -- 6
 SELECT pg_temp.affects('6a saved_items accepts a post',

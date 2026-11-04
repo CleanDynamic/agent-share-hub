@@ -1,74 +1,79 @@
--- UX-04 Part 6: Home's feed carries posts and every reply.
+-- UX-04 Part 6: Home's feed carries topics and every reply.
 --
 -- get_build_feed keeps its name and its arguments, (before, page_size, only_following), and keeps its four kinds exactly as
--- 20261001150000 (RC-P11) defines them: build, rebuild, repro_note, bounty. It gains two:
+-- 20261001150000 (RC-P11) defines them: build, rebuild, repro_note, bounty. It gains two (entries in code; topics and replies on screen):
 --
---   post          a root post. Following scope (only_following true): by the viewer, by someone the viewer follows, or in a space the
---                 viewer belongs to. Everyone scope (false): a root post in a space. Every space is readable by anyone, so this is
---                 every root post that has a space; it does not depend on who is asking.
---   reply_group   ONE item per root post, carrying the newest reply and the count of new replies. It appears when someone the viewer
---                 follows replies, or when anyone but the viewer replies under a root the viewer made. Every reply reaches Home this
---                 way, without a card per reply. FOLLOWING SCOPE ONLY: both reasons are about the viewer, and the Everyone scope does
---                 not wait for the viewer (UX-01 P5: its query key lost the viewer, so one answer is shared by all). A signed-out
---                 reader has no follows and no roots, so gets none.
+--   post          a topic. Everyone scope (only_following false): EVERY topic that is not hidden, in a space or in none, by anyone. It
+--                 is not based on following and does not depend on who is asking. Following scope (true): topics by the viewer, by
+--                 someone the viewer follows, or in a space the viewer belongs to, and only those.
+--   reply_group   ONE item per topic, carrying its newest reply and the topic's exact reply count. Every reply reaches Home this way,
+--                 without a card per reply. Everyone scope: any reply, so every conversation with a reply is there once. Following
+--                 scope: a reply by someone the viewer follows, a reply by anyone but the viewer under a topic the viewer made, or a
+--                 reply under one of the 50 newest topics of a space the viewer belongs to.
 --
--- "NEW" REPLIES. The server keeps no mark of what a reader last saw of a root (Home's seen mark is the browser's own, SV-10). The
--- count is therefore the replies by other people under that root newer than the viewer's own latest post in that thread, or all of
--- them when the viewer has none there (a root's author's own post is the root, so it counts from the root). It stops at 100. A real
--- per-root seen mark would be new tracking; it is not added (see the report).
+-- NEW REPLIES (reply_new_count). topic_reads (20261107166000) holds the time each reader last opened each topic. The count is the replies
+-- under the topic created after that time and not written by the reader, up to 100; with no row, nothing is new (0). The count is the
+-- READER'S, so it is null in the Everyone scope, whose answer is the same for everybody (UX-01 P5: its query key lost the viewer). The
+-- app asks for those counts with the reader's own read of topic_reads (src/lib/openbuilds, getNewReplyCounts).
 --
--- HIDDEN POSTS NEVER APPEAR, even to the people who can read them elsewhere: every leg says hidden_by IS NULL, and a reply_group of a
--- hidden root is dropped. A MUTED PERSON: no mute of a person exists on disk (the only is_muted columns belong to a conversation's
--- two sides), and none is added.
+-- REPLY COUNT. post_reply_count is openbuild_posts.reply_count (20261107164000), exact and kept by trigger. Zero is returned as 0; the
+-- page does not show it (UX-03 P8).
+--
+-- HIDDEN ENTRIES NEVER APPEAR, even to the people who can read them elsewhere: every leg says hidden_by IS NULL, and a reply_group of a
+-- hidden topic is dropped. BLOCKED AND MUTED PEOPLE: neither a block of a person (UX-15) nor a mute of a person exists on disk (the
+-- only is_muted columns belong to a conversation's two sides), and none is added; when UX-15 lands its filter belongs in the legs below.
 --
 -- THE FUNCTION'S ROW GROWS, so it is dropped and created again, as RC-P11 did, inside one transaction, with the grants re-issued.
 -- New columns are appended after the old ones; no old column is renamed, retyped or reordered. The joins to builds and profiles
--- become LEFT joins because a post row has no build; every old row still has one. post_body and reply_body are the first 1000
+-- become LEFT joins because a topic row has no build; every old row still has one. post_body and reply_body are the first 1000
 -- characters: a feed card is an excerpt, and 50 rows of 10000 characters is not a page.
 --
 -- THE GUARD (section 0) refuses to run unless the live function is RC-P11's, byte for byte: one overload of the three-argument
 -- signature, body md5 3d184c32586e1eb37bc54f930e529dd1, SQL, stable, security invoker, search_path "". If it has drifted, or RC-P11
 -- was never applied, this raises "UX-04:" and changes nothing, and the live text has to be read (L-P11-0) and this file regenerated.
--- The posts tables must exist (20261107130000 and the ones before it).
+-- The entry tables must exist (20261107130000 and the ones before it, reply_count and topic_reads included).
 --
 -- INDEXES, each justified by a leg below:
---   idx_posts_root_created   (root_id, created_at)         the replies of one root, in order: the count of new replies, the reply
---                                                           leg that starts from the viewer's own roots, and getPost (Part 7).
---   idx_posts_author_created (author_id, created_at DESC)  one person's newest posts: the author leg of both feeds, listPostsBy, and
---                                                           the cascade from profiles.
---   idx_post_spaces_space    (space_id, created_at DESC)   a space's newest root posts: the viewer's-spaces leg and listPosts. This
---                                                           needs post_spaces.created_at, a copy of the post's own time written
---                                                           with the row (they are inserted together), so a space is read in
---                                                           order without sorting every post it ever held.
---   idx_posts_roots_created  (created_at DESC) WHERE parent_id IS NULL AND hidden_by IS NULL
---                                                           the Everyone leg: newest root posts, stopping at the page size.
+--   idx_posts_root_created    (root_id, created_at)        the replies of one topic, in order: the new-reply count, the reply legs that
+--                                                          start from a topic, and getPost (Part 7).
+--   idx_posts_author_created  (author_id, created_at DESC) one person's newest entries: the author legs of both feeds, listPostsBy, and
+--                                                          the cascade from profiles.
+--   idx_post_spaces_space     (space_id, created_at DESC)  a space's newest topics: the viewer's-spaces legs and listPosts. This needs
+--                                                          post_spaces.created_at, a copy of the topic's own time written with the row
+--                                                          (they are inserted together), so a space is read in order without sorting
+--                                                          every topic it ever held.
+--   idx_posts_roots_created   (created_at DESC) WHERE parent_id IS NULL AND hidden_by IS NULL
+--                                                          the Everyone topic leg: newest topics, stopping at the page size.
+--   idx_posts_replies_created (created_at DESC) WHERE parent_id IS NOT NULL AND hidden_by IS NULL
+--                                                          the Everyone reply leg: newest replies, stopping at the limit.
 --
 -- Correct whether or not the indexes and the column exist. The function is replaced once: a SECOND RUN STOPS AT THE GUARD, harmlessly,
 -- because by then the live function is no longer RC-P11's.
 --
 -- EXPLAIN (ANALYZE, BUFFERS) to run once applied, with real ids. The whole function shows as one Function Scan, so the legs are
--- written out; <me> is a reader who follows people, belongs to a space and has made posts, <t> is now().
+-- written out; <me> is a reader who follows people, belongs to a space and has made topics.
 --   0. The whole call, both scopes:
 --      EXPLAIN (ANALYZE, BUFFERS) SELECT item_kind, item_at FROM public.get_build_feed(now(), 20, false);
 --      EXPLAIN (ANALYZE, BUFFERS) SELECT item_kind, item_at FROM public.get_build_feed(now(), 20, true);   -- as <me>
---      SHOULD SHOW: a Function Scan, Execution Time in the low tens of milliseconds, and no more than a few hundred shared buffers.
---   1. EVERYONE, the post leg:
---      EXPLAIN (ANALYZE, BUFFERS) SELECT p.id, p.created_at FROM public.posts p
---       WHERE p.parent_id IS NULL AND p.hidden_by IS NULL AND p.created_at < now()
---         AND EXISTS (SELECT 1 FROM public.post_spaces ps WHERE ps.post_id = p.id)
---       ORDER BY p.created_at DESC LIMIT 20;
---      SHOULD SHOW: an Index Scan on idx_posts_roots_created that stops at the limit, with an Index Only Scan on post_spaces_pkey
---      under a Semi Join (or a SubPlan probing the key), no Sort, no Seq Scan on posts or post_spaces.
---   2. FOLLOWING, the post leg by people (the viewer and those they follow):
+--      SHOULD SHOW: a Function Scan, Execution Time in the low tens of milliseconds, and no more than a few thousand shared buffers.
+--   1. EVERYONE, the topic leg:
+--      EXPLAIN (ANALYZE, BUFFERS) SELECT p.id, p.created_at FROM public.openbuild_posts p
+--       WHERE p.parent_id IS NULL AND p.hidden_by IS NULL AND p.created_at < now() ORDER BY p.created_at DESC LIMIT 20;
+--      SHOULD SHOW: an Index Scan on idx_posts_roots_created that stops at the limit, no Sort, no Seq Scan on openbuild_posts.
+--   1b. EVERYONE, the reply leg:
+--      EXPLAIN (ANALYZE, BUFFERS) SELECT r.id, r.root_id, r.created_at FROM public.openbuild_posts r
+--       WHERE r.parent_id IS NOT NULL AND r.hidden_by IS NULL AND r.created_at < now() ORDER BY r.created_at DESC LIMIT 80;
+--      SHOULD SHOW: an Index Scan on idx_posts_replies_created that stops at the limit, no Sort, no Seq Scan.
+--   2. FOLLOWING, the topic leg by people (the viewer and those they follow):
 --      EXPLAIN (ANALYZE, BUFFERS) SELECT x.id, x.created_at
 --        FROM (SELECT following_id AS id FROM public.follows WHERE follower_id = '<me>' UNION SELECT '<me>'::uuid) f
---        CROSS JOIN LATERAL (SELECT p.id, p.created_at FROM public.posts p
+--        CROSS JOIN LATERAL (SELECT p.id, p.created_at FROM public.openbuild_posts p
 --                             WHERE p.author_id = f.id AND p.parent_id IS NULL AND p.hidden_by IS NULL AND p.created_at < now()
 --                             ORDER BY p.created_at DESC LIMIT 20) x
 --       ORDER BY x.created_at DESC LIMIT 20;
 --      SHOULD SHOW: a Nested Loop with an Index Scan Backward on idx_posts_author_created per person, each stopping at its limit,
---      then one Sort of at most (people x 20) rows, no Seq Scan on posts.
---   3. FOLLOWING, the post leg by spaces:
+--      then one Sort of at most (people x 20) rows, no Seq Scan on openbuild_posts.
+--   3. FOLLOWING, the topic leg by spaces:
 --      EXPLAIN (ANALYZE, BUFFERS) SELECT ps.post_id, ps.created_at
 --        FROM public.space_members m
 --        CROSS JOIN LATERAL (SELECT s.post_id, s.created_at FROM public.post_spaces s
@@ -79,26 +84,33 @@
 --   4. FOLLOWING, the reply leg by people the viewer follows:
 --      EXPLAIN (ANALYZE, BUFFERS) SELECT x.id, x.root_id, x.created_at
 --        FROM public.follows f
---        CROSS JOIN LATERAL (SELECT r.id, r.root_id, r.created_at FROM public.posts r
+--        CROSS JOIN LATERAL (SELECT r.id, r.root_id, r.created_at FROM public.openbuild_posts r
 --                             WHERE r.author_id = f.following_id AND r.parent_id IS NOT NULL AND r.hidden_by IS NULL
 --                               AND r.created_at < now() ORDER BY r.created_at DESC LIMIT 80) x
 --       WHERE f.follower_id = '<me>' ORDER BY x.created_at DESC LIMIT 80;
 --      SHOULD SHOW: the follows primary key (or idx_follows_follower), then idx_posts_author_created per person, no Seq Scan.
---   5. FOLLOWING, the reply leg under the viewer's own roots:
---      EXPLAIN (ANALYZE, BUFFERS) SELECT r.id, r.root_id, r.created_at FROM public.posts root
---        JOIN public.posts r ON r.root_id = root.id
+--   5. FOLLOWING, the reply leg under the viewer's own topics:
+--      EXPLAIN (ANALYZE, BUFFERS) SELECT r.id, r.root_id, r.created_at FROM public.openbuild_posts root
+--        JOIN public.openbuild_posts r ON r.root_id = root.id
 --       WHERE root.author_id = '<me>' AND root.parent_id IS NULL AND r.parent_id IS NOT NULL AND r.hidden_by IS NULL
 --         AND r.author_id <> '<me>' AND r.created_at < now()
 --       ORDER BY r.created_at DESC LIMIT 80;
---      SHOULD SHOW: idx_posts_author_created for the viewer's roots, then idx_posts_root_created per root, no Seq Scan on posts. If
---      the viewer has thousands of roots this leg reads each of them; send the plan back.
---   6. The count of new replies for one root:
---      EXPLAIN (ANALYZE, BUFFERS) SELECT count(*) FROM (SELECT 1 FROM public.posts x WHERE x.root_id = '<a root>'
+--      SHOULD SHOW: idx_posts_author_created for the viewer's topics, then idx_posts_root_created per topic, no Seq Scan. If the
+--      viewer has thousands of topics this leg reads each of them; send the plan back.
+--   5b. FOLLOWING, the reply leg under a space's newest topics:
+--      EXPLAIN (ANALYZE, BUFFERS) SELECT r.id, r.root_id, r.created_at
+--        FROM public.space_members m
+--        CROSS JOIN LATERAL (SELECT s.post_id FROM public.post_spaces s WHERE s.space_id = m.space_id ORDER BY s.created_at DESC LIMIT 50) ps
+--        JOIN public.openbuild_posts r ON r.root_id = ps.post_id AND r.parent_id IS NOT NULL AND r.hidden_by IS NULL AND r.author_id <> '<me>'
+--       WHERE m.user_id = '<me>' AND r.created_at < now() ORDER BY r.created_at DESC LIMIT 80;
+--      SHOULD SHOW: idx_space_members_user, idx_post_spaces_space per space, idx_posts_root_created per topic, no Seq Scan.
+--   6. The new-reply count for one topic:
+--      EXPLAIN (ANALYZE, BUFFERS) SELECT count(*) FROM (SELECT 1 FROM public.openbuild_posts x WHERE x.root_id = '<a topic>'
 --        AND x.parent_id IS NOT NULL AND x.hidden_by IS NULL AND x.author_id <> '<me>'
---        AND x.created_at > coalesce((SELECT max(v.created_at) FROM public.posts v WHERE v.root_id = '<a root>' AND v.author_id = '<me>'), '-infinity')
+--        AND x.created_at > (SELECT t.seen_at FROM public.topic_reads t WHERE t.user_id = '<me>' AND t.root_id = '<a topic>')
 --        LIMIT 100) c;
---      SHOULD SHOW: an Index Scan on idx_posts_root_created, stopping at 100 rows, no Seq Scan.
---   If any plan shows a Seq Scan on posts or post_spaces once they hold more than a few thousand rows, send the plan back.
+--      SHOULD SHOW: an Index Scan on idx_posts_root_created and a primary key probe of topic_reads, stopping at 100 rows, no Seq Scan.
+--   If any plan shows a Seq Scan on openbuild_posts or post_spaces once they hold more than a few thousand rows, send the plan back.
 
 -- =============================================================================
 -- 0. The guard
@@ -108,8 +120,8 @@ DECLARE
   live      record;
   overloads int;
 BEGIN
-  IF to_regclass('public.posts') IS NULL OR to_regclass('public.post_spaces') IS NULL OR to_regclass('public.space_members') IS NULL THEN
-    RAISE EXCEPTION 'UX-04: the posts tables are not there; apply 20261107120000 to 20261107160000 first. Nothing was changed.';
+  IF to_regclass('public.openbuild_posts') IS NULL OR to_regclass('public.post_spaces') IS NULL OR to_regclass('public.space_members') IS NULL OR to_regclass('public.topic_reads') IS NULL THEN
+    RAISE EXCEPTION 'UX-04: the topic tables are not there; apply 20261107120000 to 20261107166000 first. Nothing was changed.';
   END IF;
 
   SELECT count(*) INTO overloads
@@ -140,10 +152,11 @@ $guard$;
 ALTER TABLE public.post_spaces
   ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
 
-CREATE INDEX IF NOT EXISTS idx_posts_root_created   ON public.posts (root_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_posts_author_created ON public.posts (author_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_posts_root_created   ON public.openbuild_posts (root_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_posts_author_created ON public.openbuild_posts (author_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_post_spaces_space    ON public.post_spaces (space_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_posts_roots_created  ON public.posts (created_at DESC) WHERE parent_id IS NULL AND hidden_by IS NULL;
+CREATE INDEX IF NOT EXISTS idx_posts_roots_created  ON public.openbuild_posts (created_at DESC) WHERE parent_id IS NULL AND hidden_by IS NULL;
+CREATE INDEX IF NOT EXISTS idx_posts_replies_created ON public.openbuild_posts (created_at DESC) WHERE parent_id IS NOT NULL AND hidden_by IS NULL;
 
 -- =============================================================================
 -- 2. Drop the three-argument signature, then create it again with the new columns
@@ -232,7 +245,7 @@ AS $$
         FROM (SELECT f.following_id AS id FROM followed f UNION SELECT (select auth.uid())) who
         CROSS JOIN LATERAL (
           SELECT p.id, p.created_at
-          FROM public.posts p
+          FROM public.openbuild_posts p
           WHERE p.author_id = who.id
             AND p.parent_id IS NULL
             AND p.hidden_by IS NULL
@@ -263,15 +276,14 @@ AS $$
         LIMIT (SELECT bounds.n FROM bounds)
       )
       UNION
-      -- everyone: a root post that is in a space
+      -- everyone: any topic that is not hidden, in a space or in none
       (
         SELECT p.id, p.created_at
-        FROM public.posts p
+        FROM public.openbuild_posts p
         WHERE NOT only_following
           AND p.parent_id IS NULL
           AND p.hidden_by IS NULL
           AND p.created_at < get_build_feed.before
-          AND EXISTS (SELECT 1 FROM public.post_spaces ps WHERE ps.post_id = p.id)
         ORDER BY p.created_at DESC
         LIMIT (SELECT bounds.n FROM bounds)
       )
@@ -293,7 +305,7 @@ AS $$
         FROM followed f
         CROSS JOIN LATERAL (
           SELECT r.id, r.root_id, r.created_at
-          FROM public.posts r
+          FROM public.openbuild_posts r
           WHERE r.author_id = f.following_id
             AND r.parent_id IS NOT NULL
             AND r.hidden_by IS NULL
@@ -310,14 +322,48 @@ AS $$
       -- anyone but the viewer replied under a root the viewer made
       (
         SELECT r.id, r.root_id, r.created_at
-        FROM public.posts root
-        JOIN public.posts r ON r.root_id = root.id
+        FROM public.openbuild_posts root
+        JOIN public.openbuild_posts r ON r.root_id = root.id
         WHERE only_following
           AND root.author_id = (select auth.uid())
           AND root.parent_id IS NULL
           AND r.parent_id IS NOT NULL
           AND r.hidden_by IS NULL
           AND r.author_id <> (select auth.uid())
+          AND r.created_at < get_build_feed.before
+        ORDER BY r.created_at DESC
+        LIMIT (SELECT bounds.n * 4 FROM bounds)
+      )
+      UNION ALL
+      -- anyone replied under one of the 50 newest topics of a space the viewer belongs to
+      (
+        SELECT r.id, r.root_id, r.created_at
+        FROM public.space_members m
+        CROSS JOIN LATERAL (
+          SELECT s.post_id
+          FROM public.post_spaces s
+          WHERE s.space_id = m.space_id
+          ORDER BY s.created_at DESC
+          LIMIT 50
+        ) ps
+        JOIN public.openbuild_posts r ON r.root_id = ps.post_id
+        WHERE only_following
+          AND m.user_id = (select auth.uid())
+          AND r.parent_id IS NOT NULL
+          AND r.hidden_by IS NULL
+          AND r.author_id <> (select auth.uid())
+          AND r.created_at < get_build_feed.before
+        ORDER BY r.created_at DESC
+        LIMIT (SELECT bounds.n * 4 FROM bounds)
+      )
+      UNION ALL
+      -- everyone: any reply
+      (
+        SELECT r.id, r.root_id, r.created_at
+        FROM public.openbuild_posts r
+        WHERE NOT only_following
+          AND r.parent_id IS NOT NULL
+          AND r.hidden_by IS NULL
           AND r.created_at < get_build_feed.before
         ORDER BY r.created_at DESC
         LIMIT (SELECT bounds.n * 4 FROM bounds)
@@ -491,7 +537,7 @@ AS $$
           NULL::INT       AS reply_new_count
         FROM post_hits h
         -- the last word on hidden: a post found by the space leg is checked here as well
-        WHERE EXISTS (SELECT 1 FROM public.posts p WHERE p.id = h.id AND p.hidden_by IS NULL)
+        WHERE EXISTS (SELECT 1 FROM public.openbuild_posts p WHERE p.id = h.id AND p.hidden_by IS NULL)
         ORDER BY h.created_at DESC
         LIMIT (SELECT bounds.n FROM bounds)
       )
@@ -515,24 +561,23 @@ AS $$
           NULL::UUID          AS gap_node_id,
           h.root_id           AS post_id,
           h.reply_id          AS reply_id,
-          (
+          CASE WHEN NOT only_following THEN NULL ELSE COALESCE((
             SELECT count(*)::INT
             FROM (
               SELECT 1
-              FROM public.posts x
+              FROM public.openbuild_posts x
               WHERE x.root_id = h.root_id
                 AND x.parent_id IS NOT NULL
                 AND x.hidden_by IS NULL
                 AND x.author_id <> (select auth.uid())
-                AND x.created_at > COALESCE(
-                  (SELECT max(v.created_at) FROM public.posts v WHERE v.root_id = h.root_id AND v.author_id = (select auth.uid())),
-                  '-infinity'::TIMESTAMPTZ
+                AND x.created_at > (
+                  SELECT t.seen_at FROM public.topic_reads t WHERE t.user_id = (select auth.uid()) AND t.root_id = h.root_id
                 )
               LIMIT 100
             ) counted
-          )                   AS reply_new_count
+          ), 0) END                   AS reply_new_count
         FROM reply_hits h
-        JOIN public.posts rt ON rt.id = h.root_id AND rt.hidden_by IS NULL
+        JOIN public.openbuild_posts rt ON rt.id = h.root_id AND rt.hidden_by IS NULL
         ORDER BY h.created_at DESC
         LIMIT (SELECT bounds.n FROM bounds)
       )
@@ -583,14 +628,7 @@ AS $$
     left(pr.body, 1000) AS post_body,
     pr.still_open  AS post_still_open,
     pr.reward_gbp  AS post_reward_gbp,
-    CASE WHEN page.post_id IS NULL THEN NULL ELSE (
-      SELECT count(*)::INT
-      FROM (
-        SELECT 1 FROM public.posts x
-        WHERE x.root_id = page.post_id AND x.parent_id IS NOT NULL AND x.hidden_by IS NULL
-        LIMIT 100
-      ) counted
-    ) END          AS post_reply_count,
+    pr.reply_count AS post_reply_count,
     page.reply_id,
     rr.created_at  AS reply_at,
     rr.author_id   AS reply_author_id,
@@ -612,11 +650,11 @@ AS $$
   LEFT JOIN public.build_nodes gn
     ON gn.id = page.gap_node_id
   -- the root post and its maker, and the newest reply and its maker
-  LEFT JOIN public.posts pr
+  LEFT JOIN public.openbuild_posts pr
     ON pr.id = page.post_id
   LEFT JOIN public.profiles pa
     ON pa.id = pr.author_id
-  LEFT JOIN public.posts rr
+  LEFT JOIN public.openbuild_posts rr
     ON rr.id = page.reply_id
   LEFT JOIN public.profiles ra
     ON ra.id = rr.author_id

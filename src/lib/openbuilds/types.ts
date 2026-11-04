@@ -129,7 +129,7 @@ export interface Post {
   attachments: PostAttachment[];
   /** A root post's spaces. Empty on a reply and on a post in none. */
   spaces: PostSpaceRef[];
-  /** Replies under it, at every depth. Zero where the read did not ask. */
+  /** Replies in the whole conversation, at every depth, not hidden: exact, kept by the database. A page does not show a zero (UX-03 P8). */
   replyCount: number;
 }
 
@@ -139,8 +139,8 @@ export interface PostThread extends Post {
 }
 
 export const POST_COLUMNS =
-  "id, author_id, parent_id, root_id, body, about_build_id, about_node_id, reward_gbp, still_open, tags, closes_at, pinned_by, pinned_at, hidden_by, hidden_reason, like_count, created_at, updated_at";
-export const AUTHOR_EMBED = "author:profiles!posts_author_id_fkey(id, username, display_name, avatar_url)";
+  "id, author_id, parent_id, root_id, body, about_build_id, about_node_id, reward_gbp, still_open, tags, closes_at, pinned_by, pinned_at, hidden_by, hidden_reason, like_count, reply_count, created_at, updated_at";
+export const AUTHOR_EMBED = "author:profiles!openbuild_posts_author_id_fkey(id, username, display_name, avatar_url)";
 export const ATTACHMENTS_EMBED =
   "attachments:post_attachments(position, kind, build_id, node_id, part_key, session_key, media_path, media_kind, snapshot)";
 export const SPACES_EMBED = "post_spaces(space:spaces(id, slug, name))";
@@ -174,12 +174,14 @@ export interface PostRow {
   hidden_by: string | null;
   hidden_reason: string | null;
   like_count: number | null;
+  /** On a topic's root entry: every reply in the conversation, not hidden. Zero elsewhere. */
+  reply_count?: number | null;
   created_at: string;
   updated_at: string;
   author?: { id: string; username: string | null; display_name: string | null; avatar_url: string | null } | null;
   attachments?: AttachmentRow[] | null;
   post_spaces?: { space: PostSpaceRef | null }[] | null;
-  /** posts!posts_root_id_fkey(count): the thread, the root itself included. */
+  /** openbuild_posts!openbuild_posts_root_id_fkey(count): the thread, the root itself included. */
   thread?: { count: number }[] | null;
   replies?: PostRow[] | null;
 }
@@ -220,8 +222,7 @@ export const toPost = (row: PostRow): Post => ({
     }))
     .sort((a, b) => a.position - b.position),
   spaces: (row.post_spaces ?? []).flatMap((link) => (link.space ? [link.space] : [])),
-  // The thread count includes the root; a reply's thread is not asked for.
-  replyCount: row.thread?.[0] ? Math.max(0, row.thread[0].count - 1) : 0,
+  replyCount: row.reply_count ?? 0,
 });
 
 /** The refusal from the database, or the failure of an operation. See the note at the top of the file. */

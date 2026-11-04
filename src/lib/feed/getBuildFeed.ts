@@ -93,7 +93,7 @@ export interface BuildFeedRow {
   post_body?: string | null;
   post_still_open?: boolean | null;
   post_reward_gbp?: number | string | null;
-  /** Replies under the post, counted up to 100. */
+  /** Replies in the whole conversation, exact (openbuild_posts.reply_count). */
   post_reply_count?: number | null;
   reply_id?: string | null;
   reply_at?: string | null;
@@ -102,7 +102,7 @@ export interface BuildFeedRow {
   reply_author_display?: string | null;
   reply_author_avatar?: string | null;
   reply_body?: string | null;
-  /** Replies new to the viewer, counted up to 100. */
+  /** Replies new to the viewer, counted up to 100; null in the Everyone scope. */
   reply_new_count?: number | null;
 }
 
@@ -214,7 +214,7 @@ export type FeedItem =
 /** A person on a post or a reply, from the columns the feed row carries. Same shape as FeedMaker. */
 export type PostFeedPerson = FeedMaker;
 
-/** UX-04: a root post. */
+/** UX-04: a topic. */
 export interface PostFeedItem {
   kind: "post";
   key: string;
@@ -227,12 +227,12 @@ export interface PostFeedItem {
   stillOpen: boolean;
   /** Pounds, or null for a post with no reward. */
   reward: number | string | null;
-  /** Replies under it, up to 100. */
+  /** Replies in the whole conversation, exact. A page does not show a zero. */
   replyCount: number;
 }
 
 /**
- * UX-04: every reply under one root post, as one item. The newest reply, and how many replies are new to the viewer (up to 100).
+ * UX-04: every reply under one topic, as one item. The newest reply, and how many replies are new to the viewer (up to 100).
  * `at` is the newest reply's time, so the group moves up the feed each time someone replies.
  */
 export interface ReplyGroupFeedItem {
@@ -242,7 +242,8 @@ export interface ReplyGroupFeedItem {
   postId: string;
   root: { author: PostFeedPerson; body: string; createdAt: string; replyCount: number };
   reply: { id: string; author: PostFeedPerson; body: string; at: string };
-  newReplyCount: number;
+  /** Replies after the reader's mark, up to 100; 0 with no mark. Null in the Everyone scope, whose answer is the same for everybody: ask getNewReplyCounts. */
+  newReplyCount: number | null;
 }
 
 export type PostFeedEntry = PostFeedItem | ReplyGroupFeedItem;
@@ -380,7 +381,7 @@ export function toPostFeedEntry(row: BuildFeedRow): PostFeedEntry | null {
         body: row.reply_body ?? "",
         at: row.reply_at ?? row.item_at,
       },
-      newReplyCount: row.reply_new_count ?? 0,
+      newReplyCount: row.reply_new_count ?? null,
     };
   }
 

@@ -90,26 +90,26 @@ BEGIN
     RETURN NULL;
   END IF;
 
-  SELECT p.author_id INTO _parent_author FROM public.posts p WHERE p.id = NEW.parent_id;
-  SELECT p.author_id INTO _root_author FROM public.posts p WHERE p.id = NEW.root_id;
+  SELECT p.author_id INTO _parent_author FROM public.openbuild_posts p WHERE p.id = NEW.parent_id;
+  SELECT p.author_id INTO _root_author FROM public.openbuild_posts p WHERE p.id = NEW.root_id;
 
   PERFORM public.rc_notify(
     _parent_author, NEW.author_id, 'post_reply', NULL, 'post', NEW.id,
-    CASE WHEN NEW.parent_id = NEW.root_id THEN 'replied to your post' ELSE 'replied to your reply' END
+    CASE WHEN NEW.parent_id = NEW.root_id THEN 'replied to your topic' ELSE 'replied to your reply' END
   );
 
   -- Once, and only if the root's author is someone the line above did not already tell.
   IF _root_author IS DISTINCT FROM _parent_author THEN
-    PERFORM public.rc_notify(_root_author, NEW.author_id, 'post_thread', NULL, 'post', NEW.id, 'replied in your thread');
+    PERFORM public.rc_notify(_root_author, NEW.author_id, 'post_thread', NULL, 'post', NEW.id, 'replied in your topic');
   END IF;
 
   RETURN NULL;
 END;
 $$;
 
-DROP TRIGGER IF EXISTS trg_rc_notify_post_reply ON public.posts;
+DROP TRIGGER IF EXISTS trg_rc_notify_post_reply ON public.openbuild_posts;
 CREATE TRIGGER trg_rc_notify_post_reply
-AFTER INSERT ON public.posts
+AFTER INSERT ON public.openbuild_posts
 FOR EACH ROW EXECUTE FUNCTION public.rc_notify_post_reply();
 
 -- 3. A mention ---------------------------------------------------------------------------------------------------------------
@@ -126,18 +126,18 @@ DECLARE
   _parent_author uuid;
   _root_author   uuid;
 BEGIN
-  SELECT p.author_id, p.parent_id INTO _author, _parent FROM public.posts p WHERE p.id = NEW.post_id;
+  SELECT p.author_id, p.parent_id INTO _author, _parent FROM public.openbuild_posts p WHERE p.id = NEW.post_id;
 
   -- A reply already told its parent's author and its root's author; they are not told a second time.
   IF _parent IS NOT NULL THEN
-    SELECT p.author_id INTO _parent_author FROM public.posts p WHERE p.id = _parent;
-    SELECT p.author_id INTO _root_author FROM public.posts p WHERE p.id = (SELECT q.root_id FROM public.posts q WHERE q.id = NEW.post_id);
+    SELECT p.author_id INTO _parent_author FROM public.openbuild_posts p WHERE p.id = _parent;
+    SELECT p.author_id INTO _root_author FROM public.openbuild_posts p WHERE p.id = (SELECT q.root_id FROM public.openbuild_posts q WHERE q.id = NEW.post_id);
     IF NEW.user_id IN (_parent_author, _root_author) THEN
       RETURN NULL;
     END IF;
   END IF;
 
-  PERFORM public.rc_notify(NEW.user_id, _author, 'post_mention', NULL, 'post', NEW.post_id, 'mentioned you in a post');
+  PERFORM public.rc_notify(NEW.user_id, _author, 'post_mention', NULL, 'post', NEW.post_id, 'mentioned you');
   RETURN NULL;
 END;
 $$;
@@ -158,8 +158,8 @@ AS $$
 DECLARE
   _author uuid;
 BEGIN
-  SELECT p.author_id INTO _author FROM public.posts p WHERE p.id = NEW.post_id;
-  PERFORM public.rc_notify(_author, NEW.user_id, 'post_like', NULL, 'post', NEW.post_id, 'liked your post');
+  SELECT p.author_id INTO _author FROM public.openbuild_posts p WHERE p.id = NEW.post_id;
+  PERFORM public.rc_notify(_author, NEW.user_id, 'post_like', NULL, 'post', NEW.post_id, CASE WHEN (SELECT q.parent_id FROM public.openbuild_posts q WHERE q.id = NEW.post_id) IS NULL THEN 'liked your topic' ELSE 'liked your reply' END);
   RETURN NULL;
 END;
 $$;
@@ -188,13 +188,13 @@ BEGIN
     RETURN NULL;
   END IF;
 
-  SELECT p.author_id, p.parent_id INTO _author, _parent FROM public.posts p WHERE p.id = NEW.post_id;
+  SELECT p.author_id, p.parent_id INTO _author, _parent FROM public.openbuild_posts p WHERE p.id = NEW.post_id;
   IF _parent IS NOT NULL THEN
     RETURN NULL;
   END IF;
 
   _owner := public.post_attachment_owner(NEW.kind, NEW.build_id, NEW.node_id, NEW.session_key);
-  PERFORM public.rc_notify(_owner, _author, 'post_started', NEW.build_id, 'post', NEW.post_id, 'started a post from your ' || NEW.kind);
+  PERFORM public.rc_notify(_owner, _author, 'post_started', NEW.build_id, 'post', NEW.post_id, 'started a topic from your ' || NEW.kind);
   RETURN NULL;
 END;
 $$;
@@ -216,16 +216,16 @@ BEGIN
   IF NEW.pinned_by IS NOT NULL AND OLD.pinned_by IS DISTINCT FROM NEW.pinned_by THEN
     PERFORM public.rc_notify(
       NEW.author_id, NEW.pinned_by, 'post_pinned', NULL, 'post', NEW.id,
-      CASE WHEN NEW.parent_id IS NULL THEN 'pinned your post' ELSE 'pinned your reply' END
+      CASE WHEN NEW.parent_id IS NULL THEN 'pinned your topic' ELSE 'pinned your reply' END
     );
   END IF;
   RETURN NULL;
 END;
 $$;
 
-DROP TRIGGER IF EXISTS trg_rc_notify_post_pinned ON public.posts;
+DROP TRIGGER IF EXISTS trg_rc_notify_post_pinned ON public.openbuild_posts;
 CREATE TRIGGER trg_rc_notify_post_pinned
-AFTER UPDATE OF pinned_by ON public.posts
+AFTER UPDATE OF pinned_by ON public.openbuild_posts
 FOR EACH ROW EXECUTE FUNCTION public.rc_notify_post_pinned();
 
 -- 7. Nobody calls them -----------------------------------------------------------------------------------------------------------

@@ -26,7 +26,7 @@ function builder(table: string) {
   const id = (builders += 1);
   const mine = () => calls.filter((call) => call.builder === id);
   const self: Record<string, unknown> = {};
-  for (const method of ["select", "insert", "update", "delete", "upsert", "eq", "neq", "in", "is", "not", "ilike", "order", "limit", "range", "single", "maybeSingle"]) {
+  for (const method of ["select", "insert", "update", "delete", "upsert", "eq", "neq", "in", "is", "not", "gt", "or", "ilike", "order", "limit", "range", "single", "maybeSingle"]) {
     self[method] = (...args: unknown[]) => {
       calls.push({ table, method, args, builder: id });
       return self;
@@ -68,6 +68,9 @@ import {
   leaveSpace,
   likePost,
   listAttachableWork,
+  getNewReplyCounts,
+  markTopicSeen,
+  entryMediaPath,
   listMySpaces,
   listPosts,
   listPostsAbout,
@@ -94,7 +97,7 @@ const postRow = (over: Record<string, unknown> = {}) => ({
   still_open: true, tags: ["mail"], closes_at: null, pinned_by: null, pinned_at: null, hidden_by: null, hidden_reason: null, like_count: 2,
   created_at: "2026-11-01T10:00:00Z", updated_at: "2026-11-01T10:00:00Z",
   author: { id: "u1", username: "maya", display_name: "Maya", avatar_url: null },
-  attachments: [], post_spaces: [{ space: { id: "s1", slug: "support", name: "Support" } }], thread: [{ count: 4 }], ...over,
+  attachments: [], post_spaces: [{ space: { id: "s1", slug: "support", name: "Support" } }], reply_count: 3, ...over,
 });
 const refusal = (message: string, code = "P0001") => ({ data: null, error: { code, message, details: "Failing row contains (secret words)" }, status: 400 });
 
@@ -192,35 +195,58 @@ describe("reading posts", () => {
   it("lists root posts that are not hidden, in a space, a page at a time", async () => {
     answer = () => ({ data: [postRow()], error: null });
     const page = await listPosts({ scope: "everyone", spaceId: "s1", stillOpen: true, offset: 20, limit: 1 });
-    expect(String(of("posts", "select")[0].args[0])).toContain("post_spaces!inner(");
-    expect(of("posts", "is").map((call) => call.args)).toEqual([["parent_id", null], ["hidden_by", null]]);
-    expect(of("posts", "eq").map((call) => call.args)).toEqual([["post_spaces.space_id", "s1"], ["still_open", true]]);
-    expect(of("posts", "range")[0].args).toEqual([20, 20]);
+    expect(String(of("openbuild_posts", "select")[0].args[0])).toContain("post_spaces!inner(");
+    expect(of("openbuild_posts", "is").map((call) => call.args)).toEqual([["parent_id", null], ["hidden_by", null]]);
+    expect(of("openbuild_posts", "eq").map((call) => call.args)).toEqual([["post_spaces.space_id", "s1"], ["still_open", true]]);
+    expect(of("openbuild_posts", "range")[0].args).toEqual([20, 20]);
     expect(page.posts[0]).toMatchObject({ id: "p1", rewardGbp: 25, replyCount: 3, likeCount: 2, spaces: [{ slug: "support" }], author: { handle: "maya" } });
     expect(page.next).toBe(21);
   });
 
   it("orders a space that pins first by pin, then by time", async () => {
     await listPosts({ scope: "everyone", spaceId: "s1", order: "pinned_first" });
-    expect(of("posts", "order").map((call) => call.args[0])).toEqual(["pinned_at", "created_at"]);
+    expect(of("openbuild_posts", "order").map((call) => call.args[0])).toEqual(["pinned_at", "created_at"]);
   });
 
-  it("reads the people a reader follows first, and includes the reader and posts in no space", async () => {
-    answer = (table) => (table === "follows" ? { data: [{ following_id: "u2" }, { following_id: "u3" }], error: null } : { data: [], error: null });
+  it("lists every topic for Everyone, in a space or in none", async () => {
+    answer = () => ({ data: [postRow({ post_spaces: [] })], error: null });
+    const page = await listPosts({ scope: "everyone" });
+    expect(String(of("openbuild_posts", "select")[0].args[0])).not.toContain("!inner");
+    expect(of("openbuild_posts", "in")).toHaveLength(0);
+    expect(page.posts[0].spaces).toEqual([]);
+  });
+
+  it("lists, for Following, the reader's own, the people they follow and the spaces they belong to, and no one else's", async () => {
+    answer = (table) =>
+      table === "follows" ? { data: [{ following_id: "u2" }, { following_id: "u3" }], error: null }
+      : table === "space_members" ? { data: [{ space_id: "s1" }], error: null }
+      : table === "post_spaces" ? { data: [{ post_id: "t9" }], error: null }
+      : { data: [], error: null };
     await listPosts({ scope: "following" });
     expect(of("follows", "limit")[0].args).toEqual([1000]);
-    expect(of("posts", "in")[0].args).toEqual(["author_id", ["me", "u2", "u3"]]);
-    expect(String(of("posts", "select")[0].args[0])).not.toContain("!inner");
+    expect(of("space_members", "eq")[0].args).toEqual(["user_id", "me"]);
+    expect(of("openbuild_posts", "or")[0].args[0]).toBe("author_id.in.(me,u2,u3),id.in.(t9)");
+  });
+
+  it("falls back to the people alone when the reader belongs to no space", async () => {
+    answer = (table) => (table === "follows" ? { data: [{ following_id: "u2" }], error: null } : { data: [], error: null });
+    await listPosts({ scope: "following" });
+    expect(of("openbuild_posts", "in")[0].args).toEqual(["author_id", ["me", "u2"]]);
     session = null;
     await expect(listPosts({ scope: "following" })).rejects.toThrow("Sign in to do that.");
   });
 
+  it("sorts a space that is most replied by the stored reply count, then by time", async () => {
+    await listPosts({ scope: "everyone", spaceId: "s1", order: "most_replied" });
+    expect(of("openbuild_posts", "order").map((call) => call.args[0])).toEqual(["reply_count", "created_at"]);
+  });
+
   it("reads a thread in two requests: two levels of replies with counts at every depth", async () => {
-    const reply2 = postRow({ id: "r2", parent_id: "r1", root_id: "p1", body: "deeper", thread: undefined });
-    const reply1 = postRow({ id: "r1", parent_id: "p1", root_id: "p1", body: "first", thread: undefined, replies: [reply2] });
+    const reply2 = postRow({ id: "r2", parent_id: "r1", root_id: "p1", body: "deeper", reply_count: 0 });
+    const reply1 = postRow({ id: "r1", parent_id: "p1", root_id: "p1", body: "first", reply_count: 0, replies: [reply2] });
     answer = (table) => {
-      if (table !== "posts") return { data: [], error: null };
-      const select = calls.filter((call) => call.method === "select" && call.table === "posts").length;
+      if (table !== "openbuild_posts") return { data: [], error: null };
+      const select = calls.filter((call) => call.method === "select" && call.table === "openbuild_posts").length;
       return select === 1
         ? { data: postRow({ replies: [reply1] }), error: null }
         : { data: [{ id: "r1", parent_id: "p1" }, { id: "r2", parent_id: "r1" }, { id: "r3", parent_id: "r2" }, { id: "r4", parent_id: "r3" }], error: null };
@@ -232,9 +258,9 @@ describe("reading posts", () => {
     expect(thread?.replyCount).toBe(4);
     expect(thread?.replies[0].replyCount).toBe(3);
     expect(thread?.replies[0].replies[0].replyCount).toBe(2);
-    expect(of("posts", "limit").map((call) => call.args)).toContainEqual([50, { referencedTable: "replies" }]);
-    expect(of("posts", "limit").map((call) => call.args)).toContainEqual([1000]);
-    expect(String(of("posts", "select")[0].args[0])).toContain("attachments:post_attachments(");
+    expect(of("openbuild_posts", "limit").map((call) => call.args)).toContainEqual([50, { referencedTable: "replies" }]);
+    expect(of("openbuild_posts", "limit").map((call) => call.args)).toContainEqual([1000]);
+    expect(String(of("openbuild_posts", "select")[0].args[0])).toContain("attachments:post_attachments(");
   });
 
   it("returns null for a post that is not there, after one request", async () => {
@@ -278,7 +304,7 @@ describe("writing posts", () => {
   });
 
   it("lets the authorship refusals reach the caller unchanged", async () => {
-    for (const message of ["A reply can attach only your own work.", "This build's maker doesn't allow it to start posts."]) {
+    for (const message of ["A reply can attach only your own work.", "This build's maker doesn't allow it to start topics."]) {
       rpcAnswer = refusal(message);
       const error = await createReply({ parentId: "p1", attachments: [{ kind: "media", mediaPath: "me/a.png", mediaKind: "image" }] }).catch((caught) => caught);
       expect(error).toBeInstanceOf(PostError);
@@ -292,7 +318,8 @@ describe("writing posts", () => {
     expect(error.message).toBe("createPost failed (23514)");
     expect(error.message).not.toContain("private");
     rpcAnswer = refusal("new row violates row-level security policy", "42501");
-    expect((await createPost({ body: "x", spaceIds: ["s1"] }).catch((caught) => caught)).message).toBe("You can't post there.");
+    expect((await createPost({ body: "x", spaceIds: ["s1"] }).catch((caught) => caught)).message).toBe("You can't start a topic there.");
+    expect((await createReply({ parentId: "p1" }).catch((caught) => caught)).message).toBe("You can't reply there.");
     session = null;
     await expect(createPost({ body: "x" })).rejects.toThrow("Sign in to do that.");
   });
@@ -300,9 +327,9 @@ describe("writing posts", () => {
   it("edits a post's own fields, and says it in words when nothing changed", async () => {
     answer = () => ({ data: [{ id: "p1" }], error: null });
     await editPost("p1", { body: "better", stillOpen: false });
-    expect(of("posts", "update")[0].args[0]).toEqual({ body: "better", still_open: false });
+    expect(of("openbuild_posts", "update")[0].args[0]).toEqual({ body: "better", still_open: false });
     answer = () => ({ data: [], error: null });
-    await expect(editPost("p1", { body: "mine now" })).rejects.toThrow("Only the author can edit a post.");
+    await expect(editPost("p1", { body: "mine now" })).rejects.toThrow("Only the author can edit a topic or reply.");
   });
 
   it("pins, unpins, hides and unhides as the signed-in user", async () => {
@@ -311,14 +338,14 @@ describe("writing posts", () => {
     await unpinPost("p1");
     await hidePost("p1", " off topic ");
     await unhidePost("p1");
-    expect(of("posts", "update").map((call) => call.args[0])).toEqual([
+    expect(of("openbuild_posts", "update").map((call) => call.args[0])).toEqual([
       { pinned_by: "me" },
       { pinned_by: null },
       { hidden_by: "me", hidden_reason: "off topic" },
       { hidden_by: null },
     ]);
     answer = () => ({ data: [], error: null });
-    await expect(hidePost("p1")).rejects.toThrow("Only the post's author or a moderator can do that.");
+    await expect(hidePost("p1")).rejects.toThrow("Only the topic's author or a moderator can do that.");
   });
 
   it("likes and unlikes as the signed-in user; liking twice is not an error", async () => {
@@ -343,6 +370,41 @@ describe("writing posts", () => {
   });
 });
 
+describe("what a reader has seen", () => {
+  it("marks a topic seen once a minute, and not again inside the minute", async () => {
+    expect(await markTopicSeen("t1", 1_000_000)).toBe(true);
+    expect(await markTopicSeen("t1", 1_030_000)).toBe(false);
+    expect(await markTopicSeen("t2", 1_030_000)).toBe(true);
+    expect(await markTopicSeen("t1", 1_061_000)).toBe(true);
+    expect(of("topic_reads", "upsert").map((call) => call.args)).toEqual([
+      [{ user_id: "me", root_id: "t1", seen_at: new Date(1_000_000).toISOString() }, { onConflict: "user_id,root_id" }],
+      [{ user_id: "me", root_id: "t2", seen_at: new Date(1_030_000).toISOString() }, { onConflict: "user_id,root_id" }],
+      [{ user_id: "me", root_id: "t1", seen_at: new Date(1_061_000).toISOString() }, { onConflict: "user_id,root_id" }],
+    ]);
+    session = null;
+    expect(await markTopicSeen("t9", 5_000_000)).toBe(false);
+  });
+
+  it("counts the new replies only for topics the reader has a mark on, from the mark, not by them", async () => {
+    answer = (table, own) =>
+      table === "topic_reads" ? { data: [{ root_id: "t1", seen_at: "2026-11-01T10:00:00Z" }], error: null }
+      : own.some((call) => call.method === "gt") ? { data: [{ id: "a" }, { id: "b" }], error: null }
+      : { data: [], error: null };
+    expect(await getNewReplyCounts(["t1", "t2", "t1"])).toEqual({ t1: 2 });
+    expect(of("openbuild_posts", "gt")[0].args).toEqual(["created_at", "2026-11-01T10:00:00Z"]);
+    expect(of("openbuild_posts", "neq")[0].args).toEqual(["author_id", "me"]);
+    expect(of("openbuild_posts", "limit")[0].args).toEqual([100]);
+    session = null;
+    expect(await getNewReplyCounts(["t1"])).toEqual({});
+  });
+});
+
+describe("media on topics and replies", () => {
+  it("goes in the build-media bucket under entries/<author id>/", () => {
+    expect(entryMediaPath("u1", ".PNG")).toMatch(/^entries\/u1\/[0-9a-f-]{36}\.png$/);
+  });
+});
+
 describe("where posts travel", () => {
   it("lists the posts about a build and counts them per step, in two requests started together", async () => {
     answer = (_table, own) =>
@@ -353,14 +415,14 @@ describe("where posts travel", () => {
     expect(requests()).toBe(2);
     expect(about.countsByStep).toEqual({ n1: 2, n2: 1 });
     expect(about.posts[0].aboutBuildId).toBe("b1");
-    expect(of("posts", "limit").map((call) => call.args[0])).toEqual([ABOUT_POSTS_LIMIT, 1000]);
+    expect(of("openbuild_posts", "limit").map((call) => call.args[0])).toEqual([ABOUT_POSTS_LIMIT, 1000]);
   });
 
   it("lists a person's posts and replies, newest first, a page at a time", async () => {
     answer = () => ({ data: [postRow(), postRow({ id: "r1", parent_id: "p0", root_id: "p0" })], error: null });
     const page = await listPostsBy("u1", { limit: 2 });
-    expect(of("posts", "eq")[0].args).toEqual(["author_id", "u1"]);
-    expect(of("posts", "order")[0].args).toEqual(["created_at", { ascending: false }]);
+    expect(of("openbuild_posts", "eq")[0].args).toEqual(["author_id", "u1"]);
+    expect(of("openbuild_posts", "order")[0].args).toEqual(["created_at", { ascending: false }]);
     expect(page.posts).toHaveLength(2);
     expect(page.next).toBe(2);
   });
@@ -369,7 +431,7 @@ describe("where posts travel", () => {
     answer = () => ({ data: null, error: null, count: 7 });
     expect(await countPostsStartedFrom("b1")).toBe(7);
     expect(of("post_attachments", "select")[0].args[1]).toEqual({ count: "estimated", head: true });
-    expect(of("post_attachments", "is")[0].args).toEqual(["posts.parent_id", null]);
+    expect(of("post_attachments", "is")[0].args).toEqual(["openbuild_posts.parent_id", null]);
   });
 });
 

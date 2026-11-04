@@ -184,6 +184,12 @@ describe("posts and reply groups in the feed (UX-04)", () => {
     expect(page.nextBefore).toBe("2026-11-01T10:00:00.000Z");
   });
 
+  it("carries no count of new replies for the Everyone scope, which is the same for everybody", async () => {
+    rpc.mockResolvedValue({ data: [groupRow({ reply_new_count: null })], error: null });
+    const page = await getBuildFeed({ pageSize: 20 });
+    expect(page.postItems[0]).toMatchObject({ kind: "reply_group", newReplyCount: null });
+  });
+
   it("maps a reply group to the newest reply and the count of new ones", async () => {
     rpc.mockResolvedValue({ data: [groupRow()], error: null });
     const page = await getBuildFeed({ pageSize: 20, onlyFollowing: true });

@@ -9,7 +9,7 @@
 --   6. your own draft needs the copy taken at attach time, and keeps it
 --   7. a rebuild counts as the rebuilder's own work
 --   8. where SV-16 names a contributor, the contributor made the step and the session, not the build's maker
---   9. media must sit under the author's own storage folder, on a reply and on a root post
+--   9. media must sit under entries/<author id>/, on a reply and on a root post
 --  10. a step that is not in the build named is refused
 --  11. a part is a group of sessions named by part_key, and is the build maker's
 --
@@ -67,10 +67,10 @@ SELECT pg_temp.expect('2 a reply with your own step',
 SELECT pg_temp.as_user(:'stranger_id');
 SELECT pg_temp.refused_with('3 a root post with an opted-out build',
   format($q$SELECT public.create_post(jsonb_build_object('body','q','attachments',jsonb_build_array(jsonb_build_object('kind','build','build_id',%L))))$q$, :'closed_b'),
-  'This build''s maker doesn''t allow it to start posts.');
+  'This build''s maker doesn''t allow it to start topics.');
 SELECT pg_temp.refused_with('3b nor through one of its steps',
   format($q$SELECT public.create_post(jsonb_build_object('body','q','attachments',jsonb_build_array(jsonb_build_object('kind','step','build_id',%L,'node_id',%L))))$q$, :'closed_b', :'closed_n'),
-  'doesn''t allow it to start posts');
+  'doesn''t allow it to start topics');
 SELECT public.create_post(jsonb_build_object('body','q','attachments',jsonb_build_array(
   jsonb_build_object('kind','build','build_id',:'open_b','snapshot','{"copied":"anyway"}'::jsonb)))) AS ok_post \gset
 SELECT pg_temp.expect('4 a root post with an allowed build, and no copy of published work',
@@ -113,13 +113,13 @@ SELECT pg_temp.refused_with('8e nor with the contributor''s session',
 -- 9. media
 SELECT pg_temp.as_user(:'stranger_id');
 SELECT pg_temp.refused_with('9a media in someone else''s folder, on a reply',
-  format($q$SELECT public.create_post(jsonb_build_object('body','r','parent_id',%L,'attachments',jsonb_build_array(jsonb_build_object('kind','media','media_path',%L,'media_kind','image'))))$q$, :'root', :'creator_id' || '/pic.png'),
-  'your own storage folder');
+  format($q$SELECT public.create_post(jsonb_build_object('body','r','parent_id',%L,'attachments',jsonb_build_array(jsonb_build_object('kind','media','media_path',%L,'media_kind','image'))))$q$, :'root', 'entries/' || :'creator_id' || '/pic.png'),
+  'your own folder');
 SELECT pg_temp.refused_with('9b media in someone else''s folder, on a root post',
-  format($q$SELECT public.create_post(jsonb_build_object('body','q','attachments',jsonb_build_array(jsonb_build_object('kind','media','media_path',%L,'media_kind','image'))))$q$, :'creator_id' || '/pic.png'),
-  'your own storage folder');
+  format($q$SELECT public.create_post(jsonb_build_object('body','q','attachments',jsonb_build_array(jsonb_build_object('kind','media','media_path',%L,'media_kind','image'))))$q$, 'entries/' || :'creator_id' || '/pic.png'),
+  'your own folder');
 SELECT pg_temp.expect('9c media in your own folder',
-  public.create_post(jsonb_build_object('body','r','parent_id',:'root','attachments',jsonb_build_array(jsonb_build_object('kind','media','media_path',:'stranger_id' || '/pic.png','media_kind','image')))) IS NOT NULL);
+  public.create_post(jsonb_build_object('body','r','parent_id',:'root','attachments',jsonb_build_array(jsonb_build_object('kind','media','media_path','entries/' || :'stranger_id' || '/pic.png','media_kind','image')))) IS NOT NULL);
 
 -- 11. a part is a group of sessions, named by part_key, and belongs to the build's maker
 SELECT pg_temp.as_user(:'creator_id');
@@ -133,6 +133,10 @@ SELECT pg_temp.refused('11c a part with no key', format($q$SELECT public.create_
 SELECT pg_temp.as_user(:'stranger_id');
 SELECT pg_temp.expect('11d a root post may start from someone''s part when the build allows it',
   public.create_post(jsonb_build_object('body','q','attachments',jsonb_build_array(jsonb_build_object('kind','part','build_id',:'open_b','part_key','ws-1')))) IS NOT NULL);
+
+SELECT pg_temp.refused_with('9d media outside the entries prefix, even in your own folder',
+  format($q$SELECT public.create_post(jsonb_build_object('body','q','attachments',jsonb_build_array(jsonb_build_object('kind','media','media_path',%L,'media_kind','image'))))$q$, :'stranger_id' || '/pic.png'),
+  'your own folder');
 
 -- 10
 SELECT pg_temp.refused_with('10 a step that is not in the build named',

@@ -40,10 +40,10 @@
 --
 -- EXPLAIN (ANALYZE, BUFFERS) to run once applied:
 --   1. The replies under one post, oldest first:
---      EXPLAIN (ANALYZE, BUFFERS) SELECT id FROM public.posts WHERE root_id = '<a root id>' ORDER BY created_at LIMIT 100;
+--      EXPLAIN (ANALYZE, BUFFERS) SELECT id FROM public.openbuild_posts WHERE root_id = '<a root id>' ORDER BY created_at LIMIT 100;
 --      SHOULD SHOW: an Index Scan on idx_posts_root_created (20261107170000), no Sort, no Seq Scan on posts.
 --   2. The posts about one build:
---      EXPLAIN (ANALYZE, BUFFERS) SELECT id FROM public.posts WHERE about_build_id = '<a build id>' LIMIT 100;
+--      EXPLAIN (ANALYZE, BUFFERS) SELECT id FROM public.openbuild_posts WHERE about_build_id = '<a build id>' LIMIT 100;
 --      SHOULD SHOW: an Index Scan or Bitmap Index Scan on idx_posts_about_build, no Seq Scan on posts.
 
 -- 1. The maker's opt-out ------------------------------------------------------------------------------------------------------
@@ -66,11 +66,11 @@ AS $$
      AND NOT EXISTS (SELECT 1 FROM unnest(tags) t WHERE t IS NULL OR char_length(t) NOT BETWEEN 1 AND 30);
 $$;
 
-CREATE TABLE IF NOT EXISTS public.posts (
+CREATE TABLE IF NOT EXISTS public.openbuild_posts (
   id              uuid          PRIMARY KEY DEFAULT gen_random_uuid(),
   author_id       uuid          NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  parent_id       uuid          NULL REFERENCES public.posts(id) ON DELETE CASCADE,
-  root_id         uuid          NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
+  parent_id       uuid          NULL REFERENCES public.openbuild_posts(id) ON DELETE CASCADE,
+  root_id         uuid          NOT NULL REFERENCES public.openbuild_posts(id) ON DELETE CASCADE,
   body            text          NOT NULL DEFAULT '',
   about_build_id  uuid          NULL REFERENCES public.builds(id) ON DELETE SET NULL,
   about_node_id   uuid          NULL REFERENCES public.build_nodes(id) ON DELETE SET NULL,
@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS public.posts (
 -- 3. post_spaces --------------------------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS public.post_spaces (
-  post_id  uuid NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
+  post_id  uuid NOT NULL REFERENCES public.openbuild_posts(id) ON DELETE CASCADE,
   space_id uuid NOT NULL REFERENCES public.spaces(id) ON DELETE CASCADE,
   PRIMARY KEY (post_id, space_id)
 );
@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS public.post_spaces (
 -- 4. post_attachments ---------------------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS public.post_attachments (
-  post_id      uuid     NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
+  post_id      uuid     NOT NULL REFERENCES public.openbuild_posts(id) ON DELETE CASCADE,
   position     smallint NOT NULL,
   kind         text     NOT NULL,
   build_id     uuid     NULL REFERENCES public.builds(id) ON DELETE CASCADE,
@@ -133,7 +133,7 @@ CREATE INDEX IF NOT EXISTS idx_post_attachments_node ON public.post_attachments 
 -- 5. post_mentions ------------------------------------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS public.post_mentions (
-  post_id uuid NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
+  post_id uuid NOT NULL REFERENCES public.openbuild_posts(id) ON DELETE CASCADE,
   user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   PRIMARY KEY (post_id, user_id)
 );
@@ -166,7 +166,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  SELECT EXISTS (SELECT 1 FROM public.posts r WHERE r.id = _root AND r.author_id = (select auth.uid()));
+  SELECT EXISTS (SELECT 1 FROM public.openbuild_posts r WHERE r.id = _root AND r.author_id = (select auth.uid()));
 $$;
 
 -- Spaces and their members are readable by everyone, so this needs no more than the caller's rights.
@@ -226,9 +226,9 @@ BEGIN
   IF NEW.parent_id IS NULL THEN
     NEW.root_id := NEW.id;
   ELSE
-    SELECT p.root_id INTO NEW.root_id FROM public.posts p WHERE p.id = NEW.parent_id;
+    SELECT p.root_id INTO NEW.root_id FROM public.openbuild_posts p WHERE p.id = NEW.parent_id;
     IF NOT FOUND THEN
-      RAISE EXCEPTION 'That post is gone.';
+      RAISE EXCEPTION 'That topic or reply is gone.';
     END IF;
   END IF;
   RETURN NEW;
@@ -245,7 +245,7 @@ DECLARE
   _uid uuid := (select auth.uid());
 BEGIN
   IF (NEW.author_id, NEW.parent_id, NEW.root_id, NEW.created_at) IS DISTINCT FROM (OLD.author_id, OLD.parent_id, OLD.root_id, OLD.created_at) THEN
-    RAISE EXCEPTION 'A post''s author and place cannot change.';
+    RAISE EXCEPTION 'The author and place of a topic or reply cannot change.';
   END IF;
 
   -- No signed-in user: the service role or an admin connection. Row level security does not apply to them either.
@@ -256,14 +256,14 @@ BEGIN
   IF (NEW.body, NEW.tags, NEW.about_build_id, NEW.about_node_id, NEW.reward_gbp, NEW.still_open, NEW.closes_at)
      IS DISTINCT FROM (OLD.body, OLD.tags, OLD.about_build_id, OLD.about_node_id, OLD.reward_gbp, OLD.still_open, OLD.closes_at) THEN
     IF _uid <> OLD.author_id THEN
-      RAISE EXCEPTION 'Only the author can edit a post.';
+      RAISE EXCEPTION 'Only the author can edit a topic or reply.';
     END IF;
     NEW.updated_at := clock_timestamp();
   END IF;
 
   IF (NEW.pinned_by, NEW.hidden_by, NEW.hidden_reason) IS DISTINCT FROM (OLD.pinned_by, OLD.hidden_by, OLD.hidden_reason) THEN
     IF NOT (public.viewer_owns_root(OLD.root_id) OR public.viewer_moderates_post(OLD.root_id)) THEN
-      RAISE EXCEPTION 'Only the post''s author or a moderator can pin or hide it.';
+      RAISE EXCEPTION 'Only the topic''s author or a moderator can pin or hide it.';
     END IF;
     IF (NEW.pinned_by IS DISTINCT FROM OLD.pinned_by AND NEW.pinned_by IS NOT NULL AND NEW.pinned_by <> _uid)
        OR (NEW.hidden_by IS DISTINCT FROM OLD.hidden_by AND NEW.hidden_by IS NOT NULL AND NEW.hidden_by <> _uid) THEN
@@ -290,7 +290,7 @@ SET search_path = public
 AS $$
 BEGIN
   IF btrim(NEW.body) = '' AND NOT EXISTS (SELECT 1 FROM public.post_attachments a WHERE a.post_id = NEW.id) THEN
-    RAISE EXCEPTION 'A post needs words or something attached.';
+    RAISE EXCEPTION 'A topic or reply needs words or something attached.';
   END IF;
   RETURN NULL;
 END;
@@ -310,43 +310,43 @@ REVOKE ALL ON FUNCTION public.post_spaces_allow_rewards(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.viewer_can_reply_in(uuid) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.post_spaces_allow_rewards(uuid) TO authenticated, service_role;
 
-DROP TRIGGER IF EXISTS trg_posts_set_root ON public.posts;
+DROP TRIGGER IF EXISTS trg_posts_set_root ON public.openbuild_posts;
 CREATE TRIGGER trg_posts_set_root
-BEFORE INSERT ON public.posts
+BEFORE INSERT ON public.openbuild_posts
 FOR EACH ROW EXECUTE FUNCTION public.posts_set_root();
 
-DROP TRIGGER IF EXISTS trg_posts_guard_update ON public.posts;
+DROP TRIGGER IF EXISTS trg_posts_guard_update ON public.openbuild_posts;
 CREATE TRIGGER trg_posts_guard_update
-BEFORE UPDATE ON public.posts
+BEFORE UPDATE ON public.openbuild_posts
 FOR EACH ROW EXECUTE FUNCTION public.posts_guard_update();
 
-DROP TRIGGER IF EXISTS trg_posts_need_body_or_attachment ON public.posts;
+DROP TRIGGER IF EXISTS trg_posts_need_body_or_attachment ON public.openbuild_posts;
 CREATE CONSTRAINT TRIGGER trg_posts_need_body_or_attachment
-AFTER INSERT OR UPDATE OF body ON public.posts
+AFTER INSERT OR UPDATE OF body ON public.openbuild_posts
 DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION public.posts_need_body_or_attachment();
 
 -- Foreign keys the cascades read, and the reads about a build.
-CREATE INDEX IF NOT EXISTS idx_posts_parent ON public.posts (parent_id) WHERE parent_id IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_posts_about_build ON public.posts (about_build_id) WHERE about_build_id IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_posts_about_node ON public.posts (about_node_id) WHERE about_node_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_posts_parent ON public.openbuild_posts (parent_id) WHERE parent_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_posts_about_build ON public.openbuild_posts (about_build_id) WHERE about_build_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_posts_about_node ON public.openbuild_posts (about_node_id) WHERE about_node_id IS NOT NULL;
 
 -- 8. Grants, then policies ----------------------------------------------------------------------------------------------------
 
-ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.openbuild_posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.post_spaces ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.post_attachments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.post_mentions ENABLE ROW LEVEL SECURITY;
 
-REVOKE ALL ON public.posts, public.post_spaces, public.post_attachments, public.post_mentions FROM anon, authenticated, service_role;
-GRANT SELECT ON public.posts, public.post_spaces, public.post_attachments, public.post_mentions TO anon;
-GRANT SELECT, INSERT, UPDATE ON public.posts TO authenticated;
+REVOKE ALL ON public.openbuild_posts, public.post_spaces, public.post_attachments, public.post_mentions FROM anon, authenticated, service_role;
+GRANT SELECT ON public.openbuild_posts, public.post_spaces, public.post_attachments, public.post_mentions TO anon;
+GRANT SELECT, INSERT, UPDATE ON public.openbuild_posts TO authenticated;
 GRANT SELECT, INSERT ON public.post_spaces, public.post_attachments, public.post_mentions TO authenticated;
-GRANT ALL ON public.posts, public.post_spaces, public.post_attachments, public.post_mentions TO service_role;
+GRANT ALL ON public.openbuild_posts, public.post_spaces, public.post_attachments, public.post_mentions TO service_role;
 
-DROP POLICY IF EXISTS "Anyone reads posts that are not hidden" ON public.posts;
+DROP POLICY IF EXISTS "Anyone reads posts that are not hidden" ON public.openbuild_posts;
 CREATE POLICY "Anyone reads posts that are not hidden"
-  ON public.posts FOR SELECT
+  ON public.openbuild_posts FOR SELECT
   TO anon, authenticated
   USING (
     hidden_by IS NULL
@@ -356,9 +356,9 @@ CREATE POLICY "Anyone reads posts that are not hidden"
   );
 
 -- root_id in the check is the one the trigger set: a reply is refused where its author may not post in any of the root's spaces.
-DROP POLICY IF EXISTS "Authors write their own posts" ON public.posts;
+DROP POLICY IF EXISTS "Authors write their own posts" ON public.openbuild_posts;
 CREATE POLICY "Authors write their own posts"
-  ON public.posts FOR INSERT
+  ON public.openbuild_posts FOR INSERT
   TO authenticated
   WITH CHECK (
     author_id = (select auth.uid())
@@ -368,9 +368,9 @@ CREATE POLICY "Authors write their own posts"
   );
 
 -- Which rows a user may update. Which COLUMNS is posts_guard_update's.
-DROP POLICY IF EXISTS "Authors edit, owners and moderators pin and hide" ON public.posts;
+DROP POLICY IF EXISTS "Authors edit, owners and moderators pin and hide" ON public.openbuild_posts;
 CREATE POLICY "Authors edit, owners and moderators pin and hide"
-  ON public.posts FOR UPDATE
+  ON public.openbuild_posts FOR UPDATE
   TO authenticated
   USING (
     author_id = (select auth.uid())
@@ -390,7 +390,7 @@ DROP POLICY IF EXISTS "Space rows follow their post" ON public.post_spaces;
 CREATE POLICY "Space rows follow their post"
   ON public.post_spaces FOR SELECT
   TO anon, authenticated
-  USING (EXISTS (SELECT 1 FROM public.posts p WHERE p.id = post_spaces.post_id));
+  USING (EXISTS (SELECT 1 FROM public.openbuild_posts p WHERE p.id = post_spaces.post_id));
 
 -- Only a root post, only by its author, only where they may post, and a reward only where the space allows one.
 DROP POLICY IF EXISTS "Authors put their root post in a space" ON public.post_spaces;
@@ -400,7 +400,7 @@ CREATE POLICY "Authors put their root post in a space"
   WITH CHECK (
     public.viewer_can_post_in(space_id)
     AND EXISTS (
-      SELECT 1 FROM public.posts p
+      SELECT 1 FROM public.openbuild_posts p
        WHERE p.id = post_spaces.post_id
          AND p.author_id = (select auth.uid())
          AND p.parent_id IS NULL
@@ -415,25 +415,25 @@ DROP POLICY IF EXISTS "Attachments follow their post" ON public.post_attachments
 CREATE POLICY "Attachments follow their post"
   ON public.post_attachments FOR SELECT
   TO anon, authenticated
-  USING (EXISTS (SELECT 1 FROM public.posts p WHERE p.id = post_attachments.post_id));
+  USING (EXISTS (SELECT 1 FROM public.openbuild_posts p WHERE p.id = post_attachments.post_id));
 
 DROP POLICY IF EXISTS "Authors attach to their own post" ON public.post_attachments;
 CREATE POLICY "Authors attach to their own post"
   ON public.post_attachments FOR INSERT
   TO authenticated
-  WITH CHECK (EXISTS (SELECT 1 FROM public.posts p WHERE p.id = post_attachments.post_id AND p.author_id = (select auth.uid())));
+  WITH CHECK (EXISTS (SELECT 1 FROM public.openbuild_posts p WHERE p.id = post_attachments.post_id AND p.author_id = (select auth.uid())));
 
 DROP POLICY IF EXISTS "Mentions follow their post" ON public.post_mentions;
 CREATE POLICY "Mentions follow their post"
   ON public.post_mentions FOR SELECT
   TO anon, authenticated
-  USING (EXISTS (SELECT 1 FROM public.posts p WHERE p.id = post_mentions.post_id));
+  USING (EXISTS (SELECT 1 FROM public.openbuild_posts p WHERE p.id = post_mentions.post_id));
 
 DROP POLICY IF EXISTS "Authors mention from their own post" ON public.post_mentions;
 CREATE POLICY "Authors mention from their own post"
   ON public.post_mentions FOR INSERT
   TO authenticated
-  WITH CHECK (EXISTS (SELECT 1 FROM public.posts p WHERE p.id = post_mentions.post_id AND p.author_id = (select auth.uid())));
+  WITH CHECK (EXISTS (SELECT 1 FROM public.openbuild_posts p WHERE p.id = post_mentions.post_id AND p.author_id = (select auth.uid())));
 
 -- 9. create_post --------------------------------------------------------------------------------------------------------------
 -- p: { parent_id?, body?, about_build_id?, about_node_id?, reward_gbp?, still_open?, tags?, closes_at?,
@@ -452,10 +452,10 @@ DECLARE
   _id  uuid;
 BEGIN
   IF _uid IS NULL THEN
-    RAISE EXCEPTION 'Sign in to post.';
+    RAISE EXCEPTION 'Sign in to start a topic or reply.';
   END IF;
 
-  INSERT INTO public.posts (author_id, parent_id, body, about_build_id, about_node_id, reward_gbp, still_open, tags, closes_at)
+  INSERT INTO public.openbuild_posts (author_id, parent_id, body, about_build_id, about_node_id, reward_gbp, still_open, tags, closes_at)
   VALUES (
     _uid,
     nullif(p ->> 'parent_id', '')::uuid,
@@ -490,7 +490,7 @@ $$;
 REVOKE ALL ON FUNCTION public.create_post(jsonb) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.create_post(jsonb) TO authenticated, service_role;
 
-COMMENT ON TABLE public.posts IS
+COMMENT ON TABLE public.openbuild_posts IS
   'UX-04. A post or, with a parent, a reply. root_id is the thread''s root (its own id for a root), set by trigger.';
 COMMENT ON TABLE public.post_attachments IS
   'UX-04. Work or media on a post. Published work is referenced; work from a draft is a copy in snapshot. The attachment trigger enforces who may attach what.';

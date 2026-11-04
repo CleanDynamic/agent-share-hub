@@ -76,7 +76,7 @@ export async function listAttachableWork(options: AttachableOptions): Promise<At
   const found: AttachableWork[] = [];
   const earlier = db
     .from("post_attachments")
-    .select("kind, build_id, node_id, part_key, session_key, build:builds(id, title, creator_id), post:posts!inner(author_id)")
+    .select("kind, build_id, node_id, part_key, session_key, build:builds(id, title, creator_id), post:openbuild_posts!inner(author_id)")
     .eq("post.author_id", userId)
     .eq("kind", size)
     .limit(PER_SOURCE);
