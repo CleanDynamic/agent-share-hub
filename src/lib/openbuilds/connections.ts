@@ -1,6 +1,6 @@
 // Where posts travel (UX-04 Part 7): the posts about a build, the posts by a person, and how many started from a build.
 
-import { AUTHOR_EMBED, ATTACHMENTS_EMBED, POST_COLUMNS, db, pageLimit, postLayerError, toPost, type Post, type PostRow } from "./types";
+import { AUTHOR_EMBED, ATTACHMENTS_EMBED, POST_COLUMNS, SPACES_EMBED, db, pageLimit, postLayerError, toPost, unique, type Post, type PostRow } from "./types";
 
 export interface PostsAbout {
   /** Posts and replies about the build or one of its steps, newest first. */
@@ -18,7 +18,7 @@ export async function listPostsAbout(buildId: string): Promise<PostsAbout> {
   const [list, steps] = await Promise.all([
     db
       .from("openbuild_posts")
-      .select(`${POST_COLUMNS}, ${AUTHOR_EMBED}, ${ATTACHMENTS_EMBED}`)
+      .select(`${POST_COLUMNS}, ${AUTHOR_EMBED}, ${ATTACHMENTS_EMBED}, ${SPACES_EMBED}`)
       .eq("about_build_id", buildId)
       .is("hidden_by", null)
       .order("created_at", { ascending: false })
@@ -68,4 +68,72 @@ export async function countPostsStartedFrom(buildId: string): Promise<number> {
     .is("openbuild_posts.parent_id", null);
   if (response.error) throw postLayerError("countPostsStartedFrom", response);
   return response.count ?? 0;
+}
+
+/* ── UX-07 Part 2: the build page's Discussed in OpenBuilds ── */
+
+export interface TopicsAbout {
+  /** Topics about the build or one of its steps, and topics started from it, once each, newest first. */
+  topics: Post[];
+  /** Topics about the build or its steps. */
+  aboutCount: number;
+  /** Replies about the build or its steps. */
+  replyCount: number;
+  /** Topics started from the build (a root post attaching it, or a part of it), exact up to ABOUT_POSTS_LIMIT. */
+  startedCount: number;
+  /** For each step with replies about it: how many, and the topic with the most of them. */
+  stepReplies: Map<string, { count: number; rootId: string }>;
+  /** Whether the maker lets other people start a topic from the build (builds.allow_as_post_source). */
+  allowsTopics: boolean;
+}
+
+/** The started-from read: root posts attaching the build, the post embedded with what a row names. */
+const STARTED_SELECT = `post_id, post:openbuild_posts!inner(${POST_COLUMNS}, ${AUTHOR_EMBED}, ${SPACES_EMBED})`;
+
+/** Replies about each step, and the topic that holds most of them. */
+export function stepRepliesOf(posts: readonly Post[]): Map<string, { count: number; rootId: string }> {
+  const byStep = new Map<string, Map<string, number>>();
+  for (const post of posts) {
+    if (!post.parentId || !post.aboutNodeId) continue;
+    const roots = byStep.get(post.aboutNodeId) ?? new Map<string, number>();
+    roots.set(post.rootId, (roots.get(post.rootId) ?? 0) + 1);
+    byStep.set(post.aboutNodeId, roots);
+  }
+  const out = new Map<string, { count: number; rootId: string }>();
+  for (const [step, roots] of byStep) {
+    let best: [string, number] | null = null;
+    let count = 0;
+    for (const entry of roots) {
+      count += entry[1];
+      if (!best || entry[1] > best[1]) best = entry;
+    }
+    if (best) out.set(step, { count, rootId: best[0] });
+  }
+  return out;
+}
+
+/** Everything the build page says about where the build is discussed: three requests, started together, one round. */
+export async function listTopicsAbout(buildId: string): Promise<TopicsAbout> {
+  const [about, started, allow] = await Promise.all([
+    listPostsAbout(buildId),
+    db.from("post_attachments").select(STARTED_SELECT).eq("build_id", buildId).is("post.parent_id", null).is("post.hidden_by", null).limit(ABOUT_POSTS_LIMIT),
+    db.from("builds").select("allow_as_post_source").eq("id", buildId).limit(1).maybeSingle(),
+  ]);
+  if (started.error) throw postLayerError("listTopicsAbout", started);
+  if (allow.error) throw postLayerError("listTopicsAbout", allow);
+
+  const startedPosts = ((started.data ?? []) as unknown as { post: PostRow | null }[]).flatMap((row) => (row.post ? [toPost(row.post)] : []));
+  const roots = about.posts.filter((post) => post.parentId === null);
+  const seen = new Set<string>();
+  const topics = [...roots, ...startedPosts]
+    .filter((post) => (seen.has(post.id) ? false : (seen.add(post.id), true)))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return {
+    topics,
+    aboutCount: roots.length,
+    replyCount: about.posts.length - roots.length,
+    startedCount: unique(startedPosts.map((post) => post.id)).length,
+    stepReplies: stepRepliesOf(about.posts),
+    allowsTopics: (allow.data as { allow_as_post_source?: boolean } | null)?.allow_as_post_source !== false,
+  };
 }

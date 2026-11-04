@@ -129,6 +129,11 @@ import { EmptyState } from "@/components/brand/EmptyState";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { BuildView, BuildViewFailed, BuildViewNotice, BuildViewSkeleton } from "./BuildView";
 import { ClassificationSection } from "@/components/build/ClassificationSection";
+import { DiscussedSection, discussedRowMeta } from "@/components/build/DiscussedSection";
+import { splitBody, topicHref } from "@/components/post/postCardModel";
+import { listTopicsAbout, type TopicsAbout } from "@/lib/openbuilds/connections";
+import { EMPTY_DRAFT } from "@/pages/site/openbuilds/sendPost";
+import { PostingWindows } from "@/pages/site/openbuilds/PostingWindows";
 import { getClassification } from "@/lib/classify/storage";
 import {
   askLabel,
@@ -549,9 +554,19 @@ export function BuildPage() {
     enabled: published && isLoggedIn,
     staleTime: 60_000,
   });
+  /* UX-07 P2: where the build is discussed in OpenBuilds, read with the build's other reads (no round of its own). */
+  const discussed = useQuery<TopicsAbout>({
+    queryKey: ["openbuilds", "listTopicsAbout", buildId],
+    queryFn: () => listTopicsAbout(buildId as string),
+    enabled: published,
+    staleTime: 60_000,
+  });
+  const [startingTopic, setStartingTopic] = useState(false);
+
   const connections = useMemo<BuildConnections>(
     () => ({
       usedIn: new Map([...(usedIn.data ?? [])].filter(([, n]) => n > 0)),
+      stepReplies: new Map([...(discussed.data?.stepReplies ?? [])].map(([step, entry]) => [step, { count: entry.count, to: `${topicHref(entry.rootId)}?step=${encodeURIComponent(step)}` }])),
       save:
         published && isLoggedIn && buildId
           ? {
@@ -578,7 +593,7 @@ export function BuildPage() {
           : null,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [usedIn.data, savedHere.data, published, isLoggedIn, buildId],
+    [usedIn.data, savedHere.data, discussed.data, published, isLoggedIn, buildId],
   );
 
   /* ── lookups ── */
@@ -1150,8 +1165,33 @@ export function BuildPage() {
         </div>
       ) : null}
       <LiveRegion message={announcement} />
+      {startingTopic ? (
+        <PostingWindows
+          window={{ kind: "post", draft: { ...EMPTY_DRAFT, attachments: [{ key: `build:${build.id}`, input: { kind: "build", buildId: build.id } }] } }}
+          onClose={() => {
+            setStartingTopic(false);
+            void queryClient.invalidateQueries({ queryKey: ["openbuilds", "listTopicsAbout", build.id] });
+          }}
+          onReopen={() => setStartingTopic(true)}
+        />
+      ) : null}
       <BuildView
         fit="content"
+        discussed={
+          discussed.data ? (
+            <DiscussedSection
+              counts={{ topics: discussed.data.aboutCount, replies: discussed.data.replyCount, started: discussed.data.startedCount }}
+              rows={discussed.data.topics.map((topic) => ({
+                id: topic.id,
+                heading: splitBody(topic.body).heading,
+                to: topicHref(topic.id),
+                meta: discussedRowMeta(topic.author?.handle ?? null, topic.spaces.map((space) => space.name), topic.replyCount),
+              }))}
+              isMaker={viewerIsCreator}
+              onStart={viewerIsCreator || discussed.data.allowsTopics ? () => (isLoggedIn ? setStartingTopic(true) : navigate(loginBack(`/b2/${build.slug}`))) : undefined}
+            />
+          ) : undefined
+        }
         classification={
           <ClassificationSection
             classification={classification.data?.live ? classification.data.classification : null}

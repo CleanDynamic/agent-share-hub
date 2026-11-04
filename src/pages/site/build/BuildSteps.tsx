@@ -51,7 +51,7 @@ import { PartWindow } from "@/components/build/PartWindow";
 import { drawBranches } from "@/components/build/BranchRows";
 import { LinkLines } from "@/components/build/LinkLines";
 import { HelperChips, ShapeChip, TraceLink } from "@/components/build/RuntimeChips";
-import { SaveMark, UsedInLine } from "@/components/build/ConnectionMarks";
+import { SaveMark, StepRepliesMark, UsedInLine } from "@/components/build/ConnectionMarks";
 import { CostStrip, TileCostLines } from "@/components/build/CostLines";
 import { callsOf } from "@/lib/build/decisionCopy";
 import { definesOf } from "@/lib/build/agentCode";
@@ -874,6 +874,7 @@ function StepHead({ entry, right, level = 4 }: { entry: ReaderStep; right?: Reac
         {/* CA-19 P5: a member of a named group says so, as in the List. */}
         <MemberLabel to={refTo({ kind: "node", id: step.id })} />
         <span style={{ flexGrow: 1 }} />
+        <StepRepliesMark id={step.id} />
         {right}
       </div>
       {showsTitle(entry) ? (

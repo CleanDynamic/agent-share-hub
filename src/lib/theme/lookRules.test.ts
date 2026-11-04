@@ -1442,6 +1442,9 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/home/ux07.p1.test.tsx",
   "src/pages/site/home/ux07.imports.test.ts",
   "src/lib/openbuilds/feedTopics.ts",
+  "src/components/build/DiscussedSection.tsx",
+  "src/components/build/ux07.p2.test.tsx",
+  "src/components/build/ConnectionMarks.tsx",
 ];
 
 /**

@@ -12,6 +12,8 @@ export interface BuildConnections {
   save: { isSaved: (kind: SaveKind, ref: string) => boolean; toggle: (kind: SaveKind, ref: string) => void } | null;
   /** Tile id -> the number of other builds with a tile that came from it. Only ids with a count above 0. */
   usedIn: ReadonlyMap<string, number>;
+  /** UX-07 P2: step id -> its replies in OpenBuilds and the topic holding most of them. Absent or missing: nothing drawn. */
+  stepReplies?: ReadonlyMap<string, { count: number; to: string }>;
 }
 
 const BuildConnectionsContext = createContext<BuildConnections | null>(null);

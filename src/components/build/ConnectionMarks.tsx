@@ -4,6 +4,7 @@ import { SaveItemMarker } from "@/components/social/SaveItemMarker";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 import { usedInText, useBuildConnections, type SaveKind } from "./BuildConnections";
+import { StepRepliesLink } from "./DiscussedSection";
 
 /** Save for a tile (a step), a part or a session. */
 export function SaveMark({ kind, id }: { kind: SaveKind; id: string }) {
@@ -21,4 +22,10 @@ export function UsedInLine({ id, indent = 0 }: { id: string; indent?: number }) 
       {usedInText(n)}
     </span>
   );
+}
+
+/** UX-07 P2: `2 replies` on a step's head, when it has replies in OpenBuilds. */
+export function StepRepliesMark({ id }: { id: string }) {
+  const replies = useBuildConnections()?.stepReplies?.get(id);
+  return replies ? <StepRepliesLink count={replies.count} to={replies.to} /> : null;
 }
