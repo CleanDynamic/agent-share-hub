@@ -6196,6 +6196,46 @@ export type Database = {
           },
         ]
       }
+      topic_reads: {
+        Row: {
+          root_id: string
+          seen_at: string
+          user_id: string
+        }
+        Insert: {
+          root_id: string
+          seen_at?: string
+          user_id: string
+        }
+        Update: {
+          root_id?: string
+          seen_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_reads_root_id_fkey"
+            columns: ["root_id"]
+            isOneToOne: false
+            referencedRelation: "openbuild_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_reads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "topic_reads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_badges: {
         Row: {
           badge_key: string
