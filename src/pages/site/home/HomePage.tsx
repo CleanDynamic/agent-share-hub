@@ -19,6 +19,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { SeoHead } from "@/components/SeoHead";
+import { topicHref } from "@/components/post/postCardModel";
 import { reportError } from "@/lib/errors/report";
 import { MEDIA_WIDTH } from "@/components/build/MediaFigure";
 import { rewardLabel } from "@/components/bounty/bountyDisplay";
@@ -38,7 +39,11 @@ import { attachSession } from "@/lib/build/sessions";
 import { countLitToday, countReproducedToday, countRunsThisWeek, listMostReproduced } from "@/lib/build/signals";
 import { getWhereNextForViewer } from "@/lib/build/whereNext";
 import { listActivityFor } from "@/lib/feed/activity";
-import { getBuildFeed, type FeedItem } from "@/lib/feed/getBuildFeed";
+import { getBuildFeed, type FeedItem, type PostFeedEntry } from "@/lib/feed/getBuildFeed";
+import { likePost, unlikePost } from "@/lib/openbuilds";
+import { readFeedTopics } from "@/lib/openbuilds/feedTopics";
+import { ReplyBox } from "@/pages/site/openbuilds/ReplyBox";
+import { replyDraftTitle } from "@/pages/site/openbuilds/postModel";
 import { getStreakDays } from "@/lib/progress";
 import { weekStartUtc, weeklyProgress } from "@/lib/progress/weekly";
 import { LIST_STALE_MS, SLOW_STALE_MS } from "@/lib/query/client";
@@ -47,6 +52,7 @@ import { draftMeta, draftRowTitle, isUntitled, promptLine, sessionDate, sessionS
 
 import { HomeLoadingView } from "./HomeFrame";
 import { HomeView, type HomeScope, type Loadable } from "./HomeView";
+import { feedTopicIds, homePostItemOf } from "./homeTopics";
 import {
   filterOf,
   firstScreenPosts,
@@ -163,6 +169,13 @@ export function HomePage() {
     return [...byKey.values()];
   }, [feedQuery.data]);
 
+  /* UX-07 P1: the topics and reply groups the feed carries, kept apart from the build items, newest first. */
+  const postEntries = useMemo(() => {
+    const byKey = new Map<string, PostFeedEntry>();
+    for (const page of feedQuery.data?.pages ?? []) for (const entry of page.postItems ?? []) byKey.set(entry.key, entry);
+    return [...byKey.values()];
+  }, [feedQuery.data]);
+
   const recorded = useRef(false);
   useEffect(() => {
     if (feedQuery.isSuccess && !recorded.current) {
@@ -170,8 +183,9 @@ export function HomePage() {
       writeHomeSeen(Date.now());
     }
   }, [feedQuery.isSuccess]);
-  const newCount = revealed ? 0 : newerThan(items, seenAt);
+  const newCount = revealed ? 0 : newerThan([...items, ...postEntries], seenAt);
   const shown = shownItems(items, seenAt, revealed);
+  const shownPosts = shownItems(postEntries, seenAt, revealed);
 
   /* ── round 1: the columns ── */
 
@@ -275,6 +289,47 @@ export function HomePage() {
     for (const row of read.data ?? []) details.set(row.id, { build: row, modelsUsed: row.models_used, classification: row.classifiedAs ?? null });
   }
   const firstScreenSettled = firstBatch.length === 0 || (postReads[0] !== undefined && !postReads[0].isPending);
+
+  /* ── round 2: what the topics' cards need beyond the feed rows (their spaces and attachments, the reader's likes) ── */
+
+  const topicIds = feedTopicIds(postEntries);
+  const topicKey = ["openbuilds", "readFeedTopics", topicIds.topics.join(","), topicIds.replies.join(","), userId] as const;
+  const topicReads = useQuery({
+    queryKey: topicKey,
+    queryFn: () => readFeedTopics(topicIds.topics, topicIds.replies),
+    enabled: topicIds.topics.length > 0 && !authLoading,
+    staleTime: STALE_MS,
+    placeholderData: keepPreviousData,
+  });
+  useEffect(() => {
+    if (topicReads.error) reportError(topicReads.error, { source: "home", context: "readFeedTopics" });
+  }, [topicReads.error]);
+
+  /* A like changes the card at once and asks the database after; a refusal puts it back and says so. */
+  const [likeShift, setLikeShift] = useState<Record<string, boolean>>({});
+  const onTopicLike = async (postId: string, on: boolean) => {
+    if (!userId) {
+      navigate(SIGN_IN);
+      return;
+    }
+    setLikeShift((current) => ({ ...current, [postId]: on }));
+    try {
+      await (on ? likePost(postId) : unlikePost(postId));
+      await qc.invalidateQueries({ queryKey: ["openbuilds", "readFeedTopics"] });
+    } catch (error) {
+      reportError(error, { source: "home", context: "likePost" });
+      toast.error("That didn't save. Try again.");
+    } finally {
+      setLikeShift((current) => {
+        const { [postId]: _done, ...rest } = current;
+        return rest;
+      });
+    }
+  };
+
+  /* The one reply box, under the topic it answers. */
+  const [replyAt, setReplyAt] = useState<string | null>(null);
+  const replyEntry = replyAt ? postEntries.find((entry) => entry.postId === replyAt) : undefined;
 
   /* ── round 2: engagement and Me too, for the ids the feed holds ── */
 
@@ -433,7 +488,15 @@ export function HomePage() {
           onFilterChange={onFilterChange}
           feed={{
             status: feedStatus,
-            items: shown.map((item) => homeItemOf(item, context)),
+            items: [
+              ...shown.map((item) => homeItemOf(item, context)),
+              ...shownPosts.map((entry) => {
+                const drawn = homePostItemOf(entry, topicReads.data, now);
+                if (drawn.kind !== "topic" || likeShift[drawn.postId] === undefined || likeShift[drawn.postId] === drawn.liked) return drawn;
+                const on = likeShift[drawn.postId];
+                return { ...drawn, liked: on, likes: Math.max(0, drawn.likes + (on ? 1 : -1)) };
+              }),
+            ].sort((a, b) => Date.parse(b.at) - Date.parse(a.at)),
             hasMore: feedQuery.hasNextPage,
             loadingMore: feedQuery.isFetchingNextPage,
             onMore: () => void feedQuery.fetchNextPage(),
@@ -445,6 +508,31 @@ export function HomePage() {
           srcByPath={srcByPath}
           onPostsNear={onPostsNear}
           onMeToo={(id) => void onMeToo(id)}
+          topics={{
+            onLike: (postId, on) => void onTopicLike(postId, on),
+            onReply: (postId) => setReplyAt((current) => (current === postId ? null : postId)),
+            box: replyEntry
+              ? {
+                  at: replyEntry.postId,
+                  node: (
+                    <ReplyBox
+                      pageId={replyEntry.postId}
+                      rootId={replyEntry.postId}
+                      parentId={replyEntry.postId}
+                      about={null}
+                      onRemoveAbout={() => undefined}
+                      signInTo={SIGN_IN}
+                      draftTitle={replyDraftTitle({ body: replyEntry.kind === "post" ? replyEntry.body : replyEntry.root.body })}
+                      onSent={() => {
+                        setReplyAt(null);
+                        toast("Replied.", { action: { label: "Open topic", onClick: () => navigate(topicHref(replyEntry.postId)) } });
+                        void qc.invalidateQueries({ queryKey: feedKey(scope, userId) });
+                      }}
+                    />
+                  ),
+                }
+              : null,
+          }}
           endCards={(endCards.data?.builds ?? []).map((build) => ({ id: build.id, title: build.title, href: `/b2/${build.slug}`, plaque: build, cover: { src: coverOf(build) } }))}
           room={{
             reproducedToday: reproduced.data ?? null,

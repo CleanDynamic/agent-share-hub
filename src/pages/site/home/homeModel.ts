@@ -16,6 +16,8 @@ import type { FeedItem, FeedItemKind } from "@/lib/feed/getBuildFeed";
 import type { StreakDayRow } from "@/lib/progress";
 import { weekStartUtc, type ChallengeProgress } from "@/lib/progress/weekly";
 
+import type { HomePostItem } from "./homeTopics";
+
 /* ── the feed's kind filter ── */
 
 /** UX-01 P5: the first feed page's query key. Everyone does not depend on the reader (`get_build_feed` reads `auth.uid()` only for follows), so its key carries no viewer and its request need not wait for the session check. Following is the reader's own, so it does. */
@@ -30,19 +32,21 @@ export const HOME_FILTERS: readonly { value: HomeFilter; label: string }[] = [
   { value: "builds", label: "Builds" },
   { value: "rebuilds", label: "Rebuilds" },
   { value: "notes", label: "Notes" },
-  { value: "asks", label: "Asks" },
+  // UX-07 P1: the fifth filter is Topics: the topics, the reply groups and the requests that came before them. Its address stays
+  // `?kind=asks`, so a link made before it still lands here.
+  { value: "asks", label: "Topics" },
 ];
 
-const KIND_OF_FILTER: Record<Exclude<HomeFilter, "all">, FeedItemKind> = {
-  builds: "build",
-  rebuilds: "rebuild",
-  notes: "repro_note",
-  asks: "bounty",
+const KINDS_OF_FILTER: Record<Exclude<HomeFilter, "all">, readonly HomeFeedItem["kind"][]> = {
+  builds: ["build"],
+  rebuilds: ["rebuild"],
+  notes: ["repro_note"],
+  asks: ["bounty", "topic", "reply_group"],
 };
 
 /** The filters act on what is loaded, on `kind`, and on nothing else. */
-export function matchesFilter(kind: FeedItemKind, filter: HomeFilter): boolean {
-  return filter === "all" || KIND_OF_FILTER[filter] === kind;
+export function matchesFilter(kind: FeedItemKind | HomePostItem["kind"], filter: HomeFilter): boolean {
+  return filter === "all" || KINDS_OF_FILTER[filter].includes(kind);
 }
 
 /** A filter from the address: anything else is All. */
@@ -121,7 +125,7 @@ export interface HomeAskPost {
   meToo: { count: number | null; pressed: boolean } | null;
 }
 
-export type HomeFeedItem = HomeBuildPost | HomeReproNote | HomeRebuildPost | HomeAskPost;
+export type HomeFeedItem = HomeBuildPost | HomeReproNote | HomeRebuildPost | HomeAskPost | HomePostItem;
 
 /* ── the columns' rows ── */
 

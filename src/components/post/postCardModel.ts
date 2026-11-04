@@ -233,3 +233,6 @@ export const topicHref = (rootId: string, options: { replyId?: string; view?: "t
   const query = [...(options.view === "wall" ? ["view=wall"] : []), ...(options.replyId ? [`reply=${encodeURIComponent(options.replyId)}`] : [])].join("&");
   return `/openbuilds/topics/${rootId}${query ? `?${query}` : ""}`;
 };
+
+/** UX-07: a reply in its topic, scrolled to on arrival (`#reply-<id>`, the id the Thread gives each reply). */
+export const replyHref = (rootId: string, replyId: string): string => `${topicHref(rootId)}#reply-${encodeURIComponent(replyId)}`;
