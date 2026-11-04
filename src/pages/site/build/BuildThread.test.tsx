@@ -84,7 +84,7 @@ afterEach(() => {
 });
 
 describe("the build page with a thread", () => {
-  it("shows the author row, the marks and every post open, with no well and no result window", () => {
+  it("shows the byline with a 20 avatar and no marks, and post 1 open behind a toggle, with no well, no result window and no shape tag", () => {
     mount(props());
     const hero = screen.getByTestId("build-hero");
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
@@ -92,17 +92,25 @@ describe("the build page with a thread", () => {
     const row = within(hero).getByTestId("build-author-row");
     expect(within(row).getByText("Maya Okafor")).toBeTruthy();
     expect(row.textContent).toContain("@maya · 6 Oct");
-    expect(row.querySelector("[data-made-with]")).not.toBeNull();
+    expect(row.querySelector("[data-made-with]")).toBeNull();
+    expect(row.querySelector('[data-ui="avatar"]')?.getAttribute("style") ?? row.innerHTML).toMatch(/20px/);
+    expect(screen.queryByTestId("build-shape-tag")).toBeNull();
 
-    for (const text of ["First I sorted the inbox by hand.", "Then I taught the agent the rules.", "It now clears forty a day."]) {
+    expect(within(hero).getByText("First I sorted the inbox by hand.")).toBeTruthy();
+    expect(hero.querySelector('[data-thread-mode="page"]')).not.toBeNull();
+    expect(hero.querySelector("[data-post-region]")?.getAttribute("data-post-region")).toBe("closed");
+    fireEvent.click(within(hero).getByRole("button", { name: /show more/i }));
+    for (const text of ["Then I taught the agent the rules.", "It now clears forty a day."]) {
       expect(within(hero).getByText(text)).toBeTruthy();
     }
-    expect(hero.querySelector('[data-thread-mode="page"]')).not.toBeNull();
-    expect(within(hero).queryByRole("button", { name: /show (more|less)/i })).toBeNull();
+    expect(hero.querySelector("[data-post-region]")?.getAttribute("data-post-region")).toBe("open");
+    expect(within(hero).getByRole("heading", { level: 2, name: "Post" })).toBeTruthy();
+    expect(within(hero).getByText("1 of 3 posts")).toBeTruthy();
 
     expect(within(hero).queryByRole("img", { name: /· Result$/ })).toBeNull();
     expect(hero.querySelector('[data-ui="picture-light"]')).toBeNull();
-    expect(screen.getByTestId("build-thread-line")).toBeTruthy();
+    expect(screen.queryByTestId("build-thread-line")).toBeNull();
+    expect(screen.queryByTestId("build-author-column")).toBeNull();
   });
 
   it("credits the other people who made tiles: two named, then how many more, and nothing when there are none", () => {
@@ -115,13 +123,27 @@ describe("the build page with a thread", () => {
     expect(screen.queryByTestId("build-contributors")).toBeNull();
   });
 
-  it("keeps the four actions and Follow by name, and Follow calls through", () => {
+  it("has one primary button, Rebuild, More, and a More menu with Download, Lineage and, on a rebuild, Compare", async () => {
+    const p = props({ rebuilt: true });
+    mount({ ...p, actions: { ...p.actions, compareTo: "/compare/inbox-triage" } });
+    const group = screen.getByRole("group", { name: "Take this build" });
+    expect(within(group).getAllByRole("button").map((button) => button.textContent ?? button.getAttribute("aria-label"))).toEqual(["Copy for AI", "Rebuild", ""]);
+    expect(within(group).getByRole("button", { name: "More actions" })).toBeTruthy();
+    expect(group.querySelectorAll('button[data-testid="build-copy-for-ai"]')).toHaveLength(1);
+    fireEvent.keyDown(within(group).getByRole("button", { name: "More actions" }), { key: "Enter" });
+    const items = (await screen.findAllByRole("menuitem")).map((entry) => entry.textContent);
+    expect(items).toEqual(expect.arrayContaining(["Download the build", "Lineage", "Compare with the original"]));
+    expect(items.indexOf("Download the build")).toBeLessThan(items.indexOf("Lineage"));
+    expect(screen.getByTestId("build-lineage").getAttribute("href")).toBe(p.actions.lineageTo);
+  });
+
+  it("keeps Copy for AI, Rebuild and Follow by name, and Follow calls through", () => {
     const onToggle = vi.fn();
     const p = props({ thread: threadView({ follow: { following: false, busy: false, onToggle } }) });
     mount(p);
     const dock = screen.getByRole("group", { name: "Take this build" });
-    expect(within(dock).getAllByRole("button").map((button) => button.textContent)).toEqual(["Copy for AI", "Download", "Rebuild"]);
-    expect(within(dock).getByRole("link", { name: "Lineage" }).getAttribute("href")).toBe(p.actions.lineageTo);
+    expect(within(dock).getByRole("button", { name: "Copy for AI" })).toBeTruthy();
+    expect(within(dock).getByRole("button", { name: "Rebuild" })).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Follow" }));
     expect(onToggle).toHaveBeenCalledTimes(1);
@@ -139,15 +161,19 @@ describe("the build page with a thread", () => {
     expect(screen.getByTestId("build-author-row")).toBeTruthy();
   });
 
-  it("puts the actions in the title block and the engagement row under the thread", () => {
+  it("puts the actions in the title block and the engagement row under the post, with no Rebuild in it", () => {
     mount(props());
     const title = screen.getByTestId("build-title-block");
     expect(within(title).getByRole("group", { name: "Take this build" })).toBeTruthy();
     const hero = screen.getByTestId("build-hero");
-    expect(hero.querySelector('a[href="/rebuild/inbox-triage"]')).not.toBeNull();
+    const engagement = within(hero).getByTestId("engagement-row");
+    expect(engagement.querySelector('[data-engagement-action="rebuild"]')).toBeNull();
+    expect(hero.querySelector('a[href="/rebuild/inbox-triage"]')).toBeNull();
+    const foot = hero.querySelector("[data-post-foot]") as HTMLElement;
+    expect(foot.contains(engagement)).toBe(true);
+    expect(foot.querySelector("[data-post-toggle]")).not.toBeNull();
     const posts = screen.getByTestId("build-posts");
-    const link = hero.querySelector('a[href="/rebuild/inbox-triage"]') as Element;
-    expect(posts.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(posts.contains(engagement)).toBe(true);
   });
 
   it("draws the credit line for a rebuild, and leaves it to the author row on an original", () => {

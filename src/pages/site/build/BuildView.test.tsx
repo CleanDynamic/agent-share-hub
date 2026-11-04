@@ -61,12 +61,12 @@ describe("BuildView on a desktop", () => {
     expect(screen.getByTestId("build-need")).toBeTruthy();
   });
 
-  it("hangs the result window under the picture light, with the shape tag and the credit", () => {
+  it("hangs the result window under the picture light, with the credit and no shape tag", () => {
     mount(stepsProps());
     const hero = screen.getByTestId("build-hero");
     expect(within(hero).getByRole("img", { name: "Bakery homepage · Result" })).toBeTruthy();
     expect(hero.querySelector('[data-ui="picture-light"]')?.getAttribute("data-variant")).toBe("on");
-    expect(screen.getByTestId("build-shape-tag").textContent).toBe("agent · via connector");
+    expect(screen.queryByTestId("build-shape-tag")).toBeNull();
     expect(hero.textContent).toContain("Rebuilt from Inbox sorter by @kofi · made by @maya");
     expect(hero.textContent).toContain("Δ swapped model, added retry step");
     // No italics under the refined look.
