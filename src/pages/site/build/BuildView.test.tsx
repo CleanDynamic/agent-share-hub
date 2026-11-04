@@ -113,7 +113,8 @@ describe("BuildView on a desktop", () => {
     expect(action.querySelector("svg")).toBeNull();
     fireEvent.click(action);
     expect(onPress).toHaveBeenCalledTimes(1);
-    expect(within(proof).getByText("Your run relights the lamp and records the model you used.")).toBeTruthy();
+    // UX-03 P2: the reader's note says what their run records.
+    expect(within(proof).getByText("Records the date, whether it worked and the model you used.")).toBeTruthy();
     expect(proof.querySelectorAll('[data-ui="row"]')).toHaveLength(6);
     const bar = within(screen.getByTestId("build-completeness")).getByRole("progressbar", { name: "Completeness" });
     expect(bar.getAttribute("aria-valuenow")).toBe("86");
@@ -171,7 +172,7 @@ describe("BuildView on a desktop", () => {
         <BuildView {...stepsProps()} />
       </MemoryRouter>,
     );
-    const first = html.slice(0, html.indexOf('data-testid="build-second-row"'));
+    const first = html.slice(0, html.indexOf('data-testid="build-steps-panel"'));
     expect(first).not.toContain("Sentient");
     expect(first).not.toContain("backdrop-filter");
     expect(first).not.toContain("lucide");
@@ -322,14 +323,14 @@ describe("Download, once the build has a session setup (CA-04 P4)", () => {
 });
 
 describe("the Classification section (CA-16 P7)", () => {
-  it("sits under the hero and above The build, on a desktop and on a phone", () => {
+  it("sits after The build (UX-03 P2), on a desktop and on a phone", () => {
     const section = <section aria-label="Classification" data-testid="build-classification" />;
     const { unmount } = mount(stepsProps("desktop", { classification: section }));
     const hero = screen.getByTestId("build-hero");
     const classification = screen.getByTestId("build-classification");
     const steps = screen.getByTestId("build-steps-panel");
-    expect(hero.compareDocumentPosition(classification) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(classification.compareDocumentPosition(steps) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(hero.compareDocumentPosition(steps) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(steps.compareDocumentPosition(classification) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     unmount();
     phone(true);
     mount(stepsProps("mobile", { classification: section }));

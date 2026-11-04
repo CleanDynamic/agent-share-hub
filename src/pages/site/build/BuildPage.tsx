@@ -1153,6 +1153,8 @@ export function BuildPage() {
           shape: build.shape,
           viaConnector: createdVia.data?.source === "connector",
           cover: coverNode,
+          // UX-03 P2: no cover media, no picture area. While the media is on its way, a build that names a cover keeps its ground.
+          hasCover: Boolean(coverStill) || (media.isPending && Boolean(build.cover_media_id || build.hero_node_id)),
           credit: {
             rebuiltFrom: build.source_title_at_fork?.trim()
               ? { title: build.source_title_at_fork.trim(), handle: build.source_handle_at_fork?.trim() || null }

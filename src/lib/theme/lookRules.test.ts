@@ -1356,6 +1356,8 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/libraryWindowModel.ts",
   "src/pages/site/compose/useBuildActions.tsx",
   "src/lib/build/publishChecklist.ts",
+  // UX-03
+  "src/pages/site/build/ux03.p2.test.tsx",
 ];
 
 /**
