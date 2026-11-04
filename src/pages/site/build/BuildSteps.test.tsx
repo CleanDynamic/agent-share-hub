@@ -211,7 +211,7 @@ describe("NeedPanel", () => {
   it("lists tools and files as one list of chips with the steps they are used in; no subtitle, no footer note, no model not recorded", () => {
     render(
       <MemoryRouter initialEntries={[REFINED]}>
-        <NeedPanel view={view("list")} onOpenOther={vi.fn()} details={[{ label: "Made with", value: "ChatGPT" }, { label: "Made for", value: "Bakers" }, { label: "Setup", value: "—" }, { label: "First result", value: "35 min" }]} />
+        <NeedPanel view={view("list")} onOpenOther={vi.fn()} details={[{ label: "Made with", value: "ChatGPT" }, { label: "Made for", value: "Bakers" }, { label: "Setup", value: "\u2014" }, { label: "First result", value: "35 min" }]} />
       </MemoryRouter>,
     );
     const need = screen.getByTestId("build-need");

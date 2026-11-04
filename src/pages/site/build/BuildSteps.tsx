@@ -284,7 +284,7 @@ const moduleStyle = (ringed: boolean): CSSProperties => ({
 });
 
 /** UX-03 follow-up P14: a step is a row in its session's module: a hairline above it and 14 above and below its content. */
-const rowStyle = (ringed: boolean, colour?: string): CSSProperties => ({
+const rowStyle = (ringed: boolean): CSSProperties => ({
   display: "flex",
   flexDirection: "column",
   gap: 6,
@@ -294,14 +294,14 @@ const rowStyle = (ringed: boolean, colour?: string): CSSProperties => ({
   minWidth: 0,
   /* A step a chip or an address named is ringed for 1.2s. */
   ...(ringed ? { boxShadow: t.selectedRing, borderRadius: 6 } : null),
-  /* A step the maker coloured (or that a named group colours) keeps it as the hairline above it. */
-  ...(colour && !ringed ? { borderTopColor: colour } : null),
 });
 
 /** A session: one module (grammar 2), padded `16px 16px 4px` so the last row sits evenly. A coloured session's outline is its colour. */
 const sessionModuleStyle = (colour: string | undefined): CSSProperties => ({
   background: t.module,
-  border: `1px solid ${colour ?? t.moduleBorder}`,
+  border: `1px solid ${t.moduleBorder}`,
+  /* A coloured session's colour is its outline in place of `--module-border` (partColour.ts). */
+  ...(colour ? outlineFor(colour) : null),
   borderRadius: 8,
   boxShadow: t.moduleShadow,
   padding: "16px 16px 4px",
@@ -894,7 +894,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
     /* CA-03 P5: how the build checked its work. Its answers and one status line; never the lamp, a reproduction
        count or the word for one. */
     return (
-      <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="check" style={{ ...rowStyle(ringed, step.colour) }}>
+      <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="check" style={{ ...rowStyle(ringed) }}>
         <StepHead entry={entry} right={<SaveMark kind="step" id={step.id} />} />
         <TypeRest step={step} indent={INDENT} />
         <CheckBlock check={step.check} style={{ paddingLeft: INDENT }} />
@@ -916,7 +916,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         data-testid="step-card"
         data-step={step.number}
         data-kind="decision"
-        style={{ ...rowStyle(ringed, step.colour) }}
+        style={{ ...rowStyle(ringed) }}
       >
         <StepHead
           entry={entry}
@@ -949,7 +949,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   if (step.kind === "retrieval" && step.retrieval) {
     /* SV-29 P2: a similarity search that finds candidates: what it indexes, how many it returns and its recall. */
     return (
-      <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="retrieval" style={{ ...rowStyle(ringed, step.colour) }}>
+      <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="retrieval" style={{ ...rowStyle(ringed) }}>
         <StepHead entry={entry} right={null} />
         <TypeRest step={step} indent={INDENT} />
         <RetrievalTileBody step={step} indent={INDENT} />
@@ -969,7 +969,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         data-testid="step-card"
         data-step={step.number}
         data-kind={step.kind}
-        style={{ ...rowStyle(ringed, step.colour) }}
+        style={{ ...rowStyle(ringed) }}
       >
         <StepHead entry={entry} right={step.kind === "file" && file ? <AttachDownload file={file} /> : null} />
         <TypeRest step={step} indent={INDENT} />
@@ -989,7 +989,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         data-testid="step-card"
         data-step={step.number}
         data-kind={step.kind}
-        style={{ ...rowStyle(ringed, step.colour) }}
+        style={{ ...rowStyle(ringed) }}
       >
         <StepHead entry={entry} right={<>{step.kind === "system_prompt" ? <CopyButton what={`step ${step.number}`} text={step.text} onCopy={view.onCopy} announce={announce} phone={phone} /> : null}<SaveMark kind="step" id={step.id} /></>} />
         <TypeRest step={step} indent={INDENT} />
@@ -1008,7 +1008,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         id={stepDomId(step.id)}
         data-testid="step-card"
         data-step={step.number}
-        style={{ ...rowStyle(ringed, step.colour) }}
+        style={{ ...rowStyle(ringed) }}
       >
         <StepHead entry={entry} right={null} />
         <TypeRest step={step} indent={INDENT} />
@@ -1028,7 +1028,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   }
 
   return (
-    <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={{ ...rowStyle(ringed, step.colour) }}>
+    <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={{ ...rowStyle(ringed) }}>
       <StepHead entry={entry} right={<><CopyButton what={`step ${step.number}`} text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} /><SaveMark kind="step" id={step.id} /></>} />
       <TypeRest step={step} indent={INDENT} />
       {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} style={{ paddingLeft: INDENT }} /> : null}

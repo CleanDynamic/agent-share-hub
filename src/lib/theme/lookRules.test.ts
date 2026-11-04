@@ -1538,8 +1538,12 @@ function spacingNumbers(value: string): number[] {
 }
 
 const SPACE_OK = new Set<number>([0, 1, ...SPACE_REFINED]);
+/* The build page follow-up (UX-03 P12 to P18) spends the README grammar's 10, 14 and 28: 14 above and below a step row and in a
+   completeness module, 10 between its parts, 28 round a side-column hairline. Only its two files may. */
+const GRAMMAR_SPACE = new Set<number>([10, 14, 28]);
+const GRAMMAR_FILES = /src\/pages\/site\/build\/(BuildSteps|BuildView)\.tsx$/;
 
-function spacingFindings(code: string): Finding[] {
+function spacingFindings(code: string, file = ""): Finding[] {
   const out: Finding[] = [];
   for (const match of every(SPACING_KEY, code)) {
     const start = (match.index ?? 0) + match[0].length;
@@ -1549,7 +1553,7 @@ function spacingFindings(code: string): Finding[] {
     if (!value) continue;
     const literal = value[0].replace(/^[\w.]+\s*\?/, "");
     if (/var\(|calc\(|clamp\(|%|auto|em\b|vw|vh/.test(literal)) continue;
-    const bad = spacingNumbers(literal).filter((n) => !SPACE_OK.has(n));
+    const bad = spacingNumbers(literal).filter((n) => !SPACE_OK.has(n) && !(GRAMMAR_FILES.test(file) && GRAMMAR_SPACE.has(n)));
     if (bad.length) out.push(found(`spacing ${bad.join(", ")} is not in SPACE_REFINED`, code, match.index ?? 0));
   }
   return out;
@@ -2272,7 +2276,7 @@ export function lookFindings(source: string, file = "snippet.tsx"): Finding[] {
   const code = stripComments(source);
   const out: Finding[] = [];
   for (const { rule, pattern } of FORBIDDEN) for (const match of every(pattern, code)) out.push(found(rule, code, match.index ?? 0));
-  out.push(...spacingFindings(code), ...componentFindings(code, file));
+  out.push(...spacingFindings(code, file), ...componentFindings(code, file));
   const recipe = RECIPE_FILES.some((name) => file.endsWith(name));
   return out.filter((finding) => !(recipe && (finding.rule.startsWith("spacing ") || finding.rule === "an outline other than ring()"))).filter((finding) => !ALLOWED.some((allowed) => allowed.rule === finding.rule && finding.text.includes(allowed.text)));
 }
