@@ -153,3 +153,35 @@ test("the Wall draws the builds in replies, and Reply with a build opens the pic
   await expect(wall.getByRole("button", { name: "Reply with a build" })).toHaveCount(0);
   await expect(page.locator('[data-visual-slot="btn-primary"]')).toHaveCount(1);
 });
+
+test("at 390 wide the page is one column with no sideways scroll, on the Thread and the Wall", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const world = newWorld();
+  world.posts[0].attachments = [{ position: 0, kind: "build", build_id: "b1", node_id: null, part_key: null, session_key: null, media_path: null, media_kind: null, snapshot: null }];
+  addReplies(world, "p1", [
+    { id: "r1", body: "I split the rubric into its own step, and here is a long line of words that has to wrap inside the phone's column.", minutesAgo: 50, build: "b1" },
+    { id: "r2", body: "Same here.", minutesAgo: 40, author: "me", aboutNodeId: "n2" },
+    { id: "r3", parent: "r1", body: "Which model did you score with?", minutesAgo: 30, author: "me" },
+  ]);
+  await installWorld(page, world, { signedIn: true });
+  await page.goto("/openbuilds/topics/p1");
+  await expect(page.getByRole("heading", { level: 1, name: "Post number 1" })).toBeVisible();
+
+  const sideways = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  await expect(page.getByTestId("openbuilds-post")).toHaveAttribute("data-layout", "one");
+  expect(await sideways()).toBeLessThanOrEqual(0);
+
+  // The switch spans the column at 44 high; the side column comes after the replies.
+  const show = page.getByRole("group", { name: "Show" });
+  const thread = page.getByRole("button", { name: /^Thread · / });
+  expect((await thread.boundingBox())?.height).toBe(44);
+  const column = await page.getByRole("region", { name: "Thread" }).boundingBox();
+  expect(Math.abs(((await show.boundingBox())?.width ?? 0) - (column?.width ?? 0))).toBeLessThanOrEqual(1);
+  const side = await page.getByRole("complementary", { name: "About this post" }).boundingBox();
+  expect(side!.y).toBeGreaterThan(column!.y + column!.height - 1);
+
+  await page.getByRole("button", { name: "Wall · 1 build" }).click();
+  await expect(page.getByTestId("wall-card")).toHaveCount(1);
+  expect(await sideways()).toBeLessThanOrEqual(0);
+  await expect(page.getByRole("checkbox", { name: "Line up steps" })).toHaveCount(0);
+});
