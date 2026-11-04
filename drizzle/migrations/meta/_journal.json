@@ -323,6 +323,13 @@
       "when": 1793808063179,
       "tag": "0045_ux04_authorship",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1793808192238,
+      "tag": "0046_ux04_notifications",
+      "breakpoints": true
     }
   ]
 }
