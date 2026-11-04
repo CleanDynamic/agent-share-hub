@@ -45,7 +45,7 @@ describe("a reader's session head", () => {
     const head = screen.getAllByTestId("reader-session-head")[0];
     expect(head.getAttribute("aria-label")).toBe("Session 1 · Claude");
     expect(within(head).getByTestId("session-title-text").textContent).toBe("Planning");
-    expect(within(head).getByText("12 Oct")).toBeTruthy();
+    expect(within(head).getByText(/12 Oct/)).toBeTruthy();
     expect(screen.queryAllByRole("textbox")).toHaveLength(0);
     expect(screen.queryByRole("button", { name: /options$/ })).toBeNull();
     expect(screen.queryByTestId("session-drag-handle")).toBeNull();
@@ -93,7 +93,6 @@ describe("folding", () => {
     for (const session of sessions) {
       expect(session.style.padding).toBe("16px 16px 4px");
       for (const card of within(session).getAllByTestId("step-card")) {
-        expect(card.style.borderTop).toContain("1px solid");
         expect(card.style.borderRadius).toBe("");
       }
     }

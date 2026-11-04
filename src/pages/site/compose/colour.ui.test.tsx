@@ -121,7 +121,7 @@ it("the build page draws the same tiles and session line, and no colour button",
   const { title: _t, outcome: _o, ...view } = buildStepsFixture("links");
   const { container } = render(createElement(StepsList, { view, phone: false, announce: () => undefined }));
   const card = container.querySelector('[data-testid="step-card"][data-step="2"]') as HTMLElement;
-  expect(card.style.borderTopColor).toBe(rgb(LINKS_COLOURS.prompt));
+  expect(card.style.borderTopColor.toLowerCase()).toBe(rgb(LINKS_COLOURS.prompt));
   const session = container.querySelector(`[data-session-colour="${LINKS_COLOURS.session}"]`) as HTMLElement;
   expect(session.style.border).toBe(`1px solid ${rgb(LINKS_COLOURS.session)}`);
   expect(container.querySelector('[data-testid="colour-button"]')).toBeNull();

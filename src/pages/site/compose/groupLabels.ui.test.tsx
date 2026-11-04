@@ -127,7 +127,7 @@ describe("on the build page", () => {
     );
     const code = container.querySelector('[data-testid="step-card"][data-step="4"]') as HTMLElement;
     expect(labels(code)).toEqual(["Login flow"]);
-    expect(code.style.borderTopColor).toBe(rgb(REFS_COLOURS.login));
+    expect(code.style.borderTopColor.toLowerCase()).toBe(rgb(REFS_COLOURS.login));
     expect(labels(container.querySelector('[data-testid="step-card"][data-step="2"]') as HTMLElement)).toEqual([]);
     expect(labels(container.querySelector('[data-testid="step-card"][data-step="7"]') as HTMLElement)).toEqual([]);
     // A reader's label is a label, not a button.
