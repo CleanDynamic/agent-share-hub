@@ -48,7 +48,8 @@ export function visionLibraryProps(state: DesignState = "populated"): LibraryVie
   return {
     head: { title: "Library", meta: empty ? "0 saved · 0 collections" : "64 saved · 5 collections" },
     kinds: {
-      items: LIBRARY_KINDS.map((kind, index) => ({ ...kind, count: empty ? 0 : KIND_COUNTS[index], href: `?kind=${kind.value}` })),
+      // The board draws the seven kinds it was made with; UX-07's Topics is not on it.
+      items: LIBRARY_KINDS.filter((kind) => kind.value !== "topics").map((kind, index) => ({ ...kind, count: empty ? 0 : KIND_COUNTS[index], href: `?kind=${kind.value}` })),
       value: "steps",
       onChange: noop,
     },

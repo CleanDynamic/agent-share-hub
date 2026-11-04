@@ -42,6 +42,7 @@ import { listActivityFor } from "@/lib/feed/activity";
 import { getBuildFeed, type FeedItem, type PostFeedEntry } from "@/lib/feed/getBuildFeed";
 import { likePost, unlikePost } from "@/lib/openbuilds";
 import { readFeedTopics } from "@/lib/openbuilds/feedTopics";
+import { saveItem, savedPostIds, unsaveItem } from "@/lib/library/savedItems";
 import { ReplyBox } from "@/pages/site/openbuilds/ReplyBox";
 import { replyDraftTitle } from "@/pages/site/openbuilds/postModel";
 import { getStreakDays } from "@/lib/progress";
@@ -327,6 +328,40 @@ export function HomePage() {
     }
   };
 
+  /* UX-07 P4: Save on a topic keeps it in the reader's Library (saved_items, kind 'post'); nobody else sees a save. */
+  const savedTopics = useQuery({
+    queryKey: ["library", "savedPostIds", userId, topicIds.topics.join(",")],
+    queryFn: () => savedPostIds(topicIds.topics),
+    enabled: userId !== null && topicIds.topics.length > 0,
+    staleTime: STALE_MS,
+    placeholderData: keepPreviousData,
+  });
+  const [saveShift, setSaveShift] = useState<Record<string, boolean>>({});
+  const isTopicSaved = (postId: string) => saveShift[postId] ?? savedTopics.data?.has(postId) ?? false;
+  const onTopicSave = async (postId: string, on: boolean) => {
+    if (!userId) {
+      navigate(SIGN_IN);
+      return;
+    }
+    setSaveShift((current) => ({ ...current, [postId]: on }));
+    try {
+      const existing = savedTopics.data?.get(postId);
+      if (on) await saveItem({ kind: "post", ref: postId });
+      else if (existing) await unsaveItem(existing);
+      await qc.invalidateQueries({ queryKey: ["library", "savedPostIds"] });
+      void qc.invalidateQueries({ queryKey: ["library", "listSavedItems"] });
+      void qc.invalidateQueries({ queryKey: ["library", "countSavedItems"] });
+    } catch (error) {
+      reportError(error, { source: "home", context: on ? "saveItem" : "unsaveItem" });
+      toast.error("That didn't save. Try again.");
+    } finally {
+      setSaveShift((current) => {
+        const { [postId]: _done, ...rest } = current;
+        return rest;
+      });
+    }
+  };
+
   /* The one reply box, under the topic it answers. */
   const [replyAt, setReplyAt] = useState<string | null>(null);
   const replyEntry = replyAt ? postEntries.find((entry) => entry.postId === replyAt) : undefined;
@@ -511,6 +546,7 @@ export function HomePage() {
           topics={{
             onLike: (postId, on) => void onTopicLike(postId, on),
             onReply: (postId) => setReplyAt((current) => (current === postId ? null : postId)),
+            save: { isSaved: isTopicSaved, onSave: (postId, on) => void onTopicSave(postId, on) },
             box: replyEntry
               ? {
                   at: replyEntry.postId,

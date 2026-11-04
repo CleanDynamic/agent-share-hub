@@ -45,6 +45,8 @@ export interface PostCardProps {
   engagement?: RowEngagement;
   /** UX-07: the topic's own Like, Reply and Save, drawn in the engagement row's place (Home, profiles). */
   topic?: TopicEngagementRowProps;
+  /** UX-07 P4: the Library's compact card: the head, the heading and the first attachment, nothing else. */
+  compact?: boolean;
 }
 
 const plain: CSSProperties = { fontFamily: FIGTREE, margin: 0 };
@@ -167,7 +169,11 @@ function HideReason({ onHide, onCancel }: { onHide: (reason: string) => void; on
   );
 }
 
-export function PostCard({ card, clamp = true, page = false, renderTile, moderation, engagement, topic }: PostCardProps) {
+export function PostCard({ card: full, clamp = true, page = false, renderTile, moderation, engagement, topic, compact = false }: PostCardProps) {
+  // The compact card keeps the head, the heading and the first attachment (all of a topic's pictures are one attachment there).
+  const card: PostCardData = compact
+    ? { ...full, text: "", attachments: full.attachments.slice(0, 1), stillOpen: false, tags: [], closes: null, replies: null }
+    : full;
   const [asking, setAsking] = useState(false);
   const label = t.label;
   const name = card.author.name;
@@ -276,8 +282,8 @@ export function PostCard({ card, clamp = true, page = false, renderTile, moderat
 
         {card.replies ? <RepliesStrip replies={card.replies} /> : null}
 
-        {topic ? <TopicEngagementRow {...topic} style={{ marginTop: 12, maxWidth: 520, justifyContent: "space-between", ...topic.style }} /> : null}
-        {!topic && engagement && card.engagementBuild ? <EngagementRow variant="card" build={card.engagementBuild} counts={engagement.counts} liked={engagement.liked} saved={engagement.saved} style={{ marginTop: 12, maxWidth: 520, justifyContent: "space-between" }} /> : null}
+        {topic && !compact ? <TopicEngagementRow {...topic} style={{ marginTop: 12, maxWidth: 520, justifyContent: "space-between", ...topic.style }} /> : null}
+        {!topic && !compact && engagement && card.engagementBuild ? <EngagementRow variant="card" build={card.engagementBuild} counts={engagement.counts} liked={engagement.liked} saved={engagement.saved} style={{ marginTop: 12, maxWidth: 520, justifyContent: "space-between" }} /> : null}
       </div>
     </article>
   );

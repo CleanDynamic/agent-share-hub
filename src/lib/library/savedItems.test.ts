@@ -216,7 +216,7 @@ describe("listSavedItems", () => {
 
   it("counts the kinds in one request", async () => {
     answer = () => ({ data: [{ kind: "step" }, { kind: "step" }, { kind: "session" }], error: null });
-    expect(await countSavedItems()).toEqual({ part: 0, session: 1, step: 2, request: 0, filter_set: 0, collection: 0 });
+    expect(await countSavedItems()).toEqual({ part: 0, session: 1, step: 2, request: 0, filter_set: 0, collection: 0, post: 0 });
     expect(calls.filter((call) => call.method === "request")).toHaveLength(1);
   });
 });

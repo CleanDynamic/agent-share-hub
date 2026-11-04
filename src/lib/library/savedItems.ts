@@ -30,9 +30,10 @@ import type { Build, NodeTree } from "@/lib/build/types";
 import { versionNow } from "./sourceVersions";
 import { SocialError, currentUserId, db, isDuplicate, signedOutError, socialError, uniqueIds } from "@/lib/social/types";
 
-export type SavedKind = "part" | "session" | "step" | "request" | "filter_set" | "collection";
+/** UX-07 P4: "post" is a saved topic, the kind the database allows for one (20261107150000_ux04_likes_reactions.sql). */
+export type SavedKind = "part" | "session" | "step" | "request" | "filter_set" | "collection" | "post";
 
-export const SAVED_KINDS: readonly SavedKind[] = ["part", "session", "step", "request", "filter_set", "collection"];
+export const SAVED_KINDS: readonly SavedKind[] = ["part", "session", "step", "request", "filter_set", "collection", "post"];
 
 /** The longest note saved_items.note accepts. */
 export const SAVED_NOTE_MAX = 2000;
@@ -265,7 +266,27 @@ async function snapshotFor(input: SaveItemInput): Promise<{ buildId: string | nu
     case "collection":
       if (!ref) throw invalid("saveItem", {});
       return { buildId: null, snapshot: input.snapshot ?? {} };
+    case "post": {
+      // UX-07 P4: a topic, kept with its heading and who started it, so the Library can name it if it is later hidden.
+      if (!ref) throw invalid("saveItem", {});
+      const response = await db.from("openbuild_posts").select("id, root_id, parent_id, body, author:profiles!openbuild_posts_author_id_fkey(username)").eq("id", ref).limit(1).maybeSingle();
+      if (response.error) throw socialError("saveItem", response);
+      const post = response.data as unknown as { id: string; root_id: string; body: string; author: { username: string | null } | null } | null;
+      if (!post) throw new SocialError("saveItem", "no_access");
+      const firstLine = post.body.trim().split("\n")[0]?.trim() ?? "";
+      return { buildId: null, snapshot: { title: firstLine.slice(0, 140), rootId: post.root_id, authorHandle: post.author?.username ?? null } };
+    }
   }
+}
+
+/** UX-07 P4: which of these topics the signed-in reader keeps: topic id to the saved item's id. One request; empty signed out. */
+export async function savedPostIds(postIds: readonly string[]): Promise<Map<string, string>> {
+  const ids = [...new Set(postIds.filter(Boolean))];
+  const userId = await currentUserId();
+  if (!userId || ids.length === 0) return new Map();
+  const response = await db.from("saved_items").select("id, ref").eq("user_id", userId).eq("kind", "post").in("ref", ids).limit(ids.length);
+  if (response.error) throw socialError("savedPostIds", response);
+  return new Map(((response.data ?? []) as { id: string; ref: string | null }[]).flatMap((row) => (row.ref ? [[row.ref, row.id] as const] : [])));
 }
 
 const SOURCE_KINDS: ReadonlySet<SavedKind> = new Set<SavedKind>(["step", "part", "session"]);

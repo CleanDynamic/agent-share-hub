@@ -44,3 +44,15 @@ export async function readFeedTopics(topicIds: readonly string[], replyIds: read
   const extras = await readCardExtras(posts);
   return { posts: new Map(posts.map((post) => [post.id, post])), extras, liked, newReplies };
 }
+
+export interface TopicCards {
+  posts: Map<string, Post>;
+  extras: CardExtras;
+}
+
+/** UX-07 P4: the topics a reader keeps, as their cards: the posts, then the work their attachments name. */
+export async function readTopicCards(ids: readonly string[]): Promise<TopicCards> {
+  const posts = await readPostsByIds(ids);
+  const extras = await readCardExtras(posts);
+  return { posts: new Map(posts.map((post) => [post.id, post])), extras };
+}
