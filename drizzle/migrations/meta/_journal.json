@@ -295,6 +295,13 @@
       "when": 1793531909996,
       "tag": "0041_sv27_agent_deployment",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1793807716076,
+      "tag": "0042_ux04_spaces",
+      "breakpoints": true
     }
   ]
 }
