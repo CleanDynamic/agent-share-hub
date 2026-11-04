@@ -316,6 +316,13 @@
       "when": 1793807979960,
       "tag": "0044_ux04_likes_reactions",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1793808063179,
+      "tag": "0045_ux04_authorship",
+      "breakpoints": true
     }
   ]
 }
