@@ -1152,13 +1152,21 @@ export function BuildPage() {
       <LiveRegion message={announcement} />
       <BuildView
         fit="content"
-        classification={<ClassificationSection own={viewerIsCreator} classification={classification.data?.live ? classification.data.classification : null} />}
+        classification={
+          <ClassificationSection
+            classification={classification.data?.live ? classification.data.classification : null}
+            // UX-03 P4: on their own build the maker sees what they left Not stated, and the way to fill it in.
+            maker={viewerIsCreator ? { editHref: `/compose/${build.id}` } : undefined}
+          />
+        }
         hero={{
           title: build.title,
           outcome: (build.outcome ?? "").trim(),
           shape: build.shape,
           viaConnector: createdVia.data?.source === "connector",
           cover: coverNode,
+          // UX-03 P2: no cover media, no picture area. While the media is on its way, a build that names a cover keeps its ground.
+          hasCover: Boolean(coverStill) || (media.isPending && Boolean(build.cover_media_id || build.hero_node_id)),
           credit: {
             rebuiltFrom: build.source_title_at_fork?.trim()
               ? { title: build.source_title_at_fork.trim(), handle: build.source_handle_at_fork?.trim() || null }

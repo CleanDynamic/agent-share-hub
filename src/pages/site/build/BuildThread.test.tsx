@@ -188,7 +188,8 @@ describe("the build page with a thread", () => {
   it("lays the thread and The build in one left column and the reproduction in the right", () => {
     screenIs("wide");
     mount(props());
-    const row = screen.getByTestId("build-thread-row");
+    // UX-03 P2: one layout with a thread or without.
+    const row = screen.getByTestId("build-main-row");
     expect(row.style.justifyContent).toBe("space-between");
     const [left, right] = Array.from(row.children) as HTMLElement[];
     expect(left.contains(screen.getByTestId("build-hero"))).toBe(true);
@@ -207,7 +208,9 @@ describe("the build page without a thread", () => {
     expect(within(hero).getByRole("group", { name: "Take this build" })).toBeTruthy();
     expect(screen.queryByTestId("build-thread")).toBeNull();
     expect(screen.queryByRole("button", { name: /^Follow/ })).toBeNull();
-    expect(screen.getByTestId("build-second-row")).toBeTruthy();
+    // UX-03 P2: the same two columns as a thread's: the hero, then The build, on the left; the reproduction on the right.
+    expect(screen.getByTestId("build-wide-column").contains(hero)).toBe(true);
+    expect(screen.getByTestId("build-side-column").contains(screen.getByTestId("build-proof"))).toBe(true);
   });
 });
 

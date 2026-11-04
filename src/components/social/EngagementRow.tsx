@@ -47,7 +47,7 @@
 // build; a press on this row must not follow it, so the row stops the click
 // from reaching the link and cancels the link's own navigation.
 
-import { useEffect, useId, useState, type CSSProperties, type MouseEvent } from "react";
+import { useEffect, useState, type CSSProperties, type MouseEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -231,6 +231,7 @@ export function EngagementRow({ build, counts, liked, saved, variant, withRebuil
     label: shownLiked ? "Unlike" : "Like",
     pressed: shownLiked,
     count: shownLikes,
+    noun: ["like", "likes"],
     onPress: toggleLike,
     glyph: "heart",
   };
@@ -238,6 +239,7 @@ export function EngagementRow({ build, counts, liked, saved, variant, withRebuil
     id: "comment",
     label: "Comment",
     count: counts?.comments ?? null,
+    noun: ["comment", "comments"],
     onPress: comment,
     glyph: "comment",
   };
@@ -253,8 +255,9 @@ export function EngagementRow({ build, counts, liked, saved, variant, withRebuil
   const rebuildAction: ActionSpec = {
     id: "rebuild",
     slot: "rebuild",
-    label: `Rebuild, ${rebuilds} ${rebuilds === 1 ? "rebuild" : "rebuilds"}`,
+    label: "Rebuild",
     count: rebuilds,
+    noun: ["rebuild", "rebuilds"],
     href: `/rebuild/${build.slug}`,
     glyph: "rebuild",
   };
@@ -327,18 +330,22 @@ interface ActionSpec {
   pressed?: boolean;
   /** Like, Comment and Rebuild only; null while the counts are on their way. */
   count?: number | null;
+  /** UX-03 P8: what the count counts, one and many, for the accessible name ("Like, 2 likes"). */
+  noun?: readonly [string, string];
 }
 
 type ActionProps = Omit<ActionSpec, "id"> & { phone: boolean; compact?: boolean };
 
 /** One tertiary action: the glyph, and its count where it has one. */
-function Action({ label, slot, glyph, onPress, href, pressed, count, phone, compact = false }: ActionProps) {
+function Action({ label, slot, glyph, onPress, href, pressed, count, noun, phone, compact = false }: ActionProps) {
   const { state, handlers } = useInteractive<HTMLButtonElement | HTMLAnchorElement>();
-  const countId = useId();
   const active = pressed === true;
   /* UX-03 Part 8's zero rule, in the compact foot: a count of nothing is not drawn. */
   const hasCount = count !== undefined && !(compact && !count);
   const name = slot ?? label.toLowerCase();
+  // UX-03 P8: a zero is not printed; a count above it is, and the name says it once ("Like, 2 likes").
+  const shown = typeof count === "number" && count > 0 ? count : null;
+  const accessibleName = shown !== null && noun ? `${label}, ${shown} ${shown === 1 ? noun[0] : noun[1]}` : label;
 
   const style: CSSProperties = {
     display: "inline-flex",
@@ -378,17 +385,22 @@ function Action({ label, slot, glyph, onPress, href, pressed, count, phone, comp
         <Glyph name={glyph} size={compact ? COMPACT_ICON_SIZE : ENGAGEMENT_ICON_SIZE} fill={active ? "currentColor" : "none"} />
       </span>
       {hasCount ? (
+        // UX-03 P8: the slot keeps two digits' width whether it holds a number or not, so the row does not shift when a Like
+        // takes a count from 0 to 1. The number appears at once.
         <span
-          id={countId}
+          data-engagement-count=""
+          aria-hidden="true"
           style={{
             fontFamily: DM_MONO,
             fontSize: 12,
             fontWeight: 400,
             lineHeight: 1.3,
+            minWidth: "2ch",
+            textAlign: "left",
             ...tabular,
           }}
         >
-          {count ?? ""}
+          {shown ?? ""}
         </span>
       ) : null}
     </>
@@ -396,7 +408,7 @@ function Action({ label, slot, glyph, onPress, href, pressed, count, phone, comp
 
   if (href !== undefined) {
     return (
-      <Link to={href} aria-label={label} data-engagement-action={name} {...handlers} style={style}>
+      <Link to={href} aria-label={accessibleName} data-engagement-action={name} {...handlers} style={style}>
         {content}
       </Link>
     );
@@ -405,9 +417,8 @@ function Action({ label, slot, glyph, onPress, href, pressed, count, phone, comp
   return (
     <button
       type="button"
-      aria-label={label}
+      aria-label={accessibleName}
       aria-pressed={pressed === undefined ? undefined : active}
-      aria-describedby={hasCount && count !== null ? countId : undefined}
       data-engagement-action={name}
       onClick={onPress}
       {...handlers}

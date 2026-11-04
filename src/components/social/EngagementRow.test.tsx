@@ -100,7 +100,8 @@ describe("withRebuild", () => {
     render(row());
     const actions = within(screen.getByTestId("engagement-row"));
     expect(actions.queryByRole("link")).toBeNull();
-    expect(actions.getAllByRole("button").map((button) => button.getAttribute("aria-label"))).toEqual([
+    // UX-03 P8: a name carries its count above zero ("Like, 24 likes"); the row's actions are their base names.
+    expect(actions.getAllByRole("button").map((button) => (button.getAttribute("aria-label") ?? "").replace(/, \d+ \w+$/, ""))).toEqual([
       "Like",
       "Comment",
       "Save",

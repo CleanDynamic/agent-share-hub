@@ -78,7 +78,7 @@ describe("SiteHeaderView", () => {
 
   it("names the theme control after the painted theme and toggles on click", () => {
     const p = header({ theme: "dusk" });
-    fireEvent.click(screen.getByRole("button", { name: "Theme: Dusk" }));
+    fireEvent.click(screen.getByRole("button", { name: "Theme: Dark" }));
     expect(p.onToggleTheme).toHaveBeenCalledTimes(1);
   });
 
@@ -126,7 +126,7 @@ describe("SiteHeaderView", () => {
       "Search builds",
       "New build",
       "Activity, 3 unread",
-      "Theme: Noon",
+      "Theme: Light",
       "Account",
     ]);
   });
@@ -169,7 +169,7 @@ describe("SiteHeaderView under the refined look", () => {
     expect(screen.getByRole("searchbox", { name: "Search builds" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "New build" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Activity, 3 unread" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Theme: Dusk" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Theme: Dark" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Account" })).toBeTruthy();
   });
 

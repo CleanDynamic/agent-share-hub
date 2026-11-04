@@ -135,7 +135,9 @@ describe("Classification: the sheet", () => {
     const names = ["Summary", "Field", "Task", "Setting", "Tools and stack", "Data handled", "Age suitability", "From the build", "Build details"];
     names.forEach((name, index) => expect(rows[index].startsWith(name), `${name} is row ${index + 1}`).toBe(true));
     expect(rows[0]).toContain("Finds the right policy.");
-    expect(rows[1]).toMatch(/Not set\d suggestions?$/);
+    // UX-03 P5: a closed row with suggestions offers its first one (and Accept, beside it) where it said "Not set" and the count.
+    expect(rows[1]).toMatch(/^Field\S/);
+    expect(rows[1]).not.toMatch(/Not set|suggestions?$/);
     expect(rows[3]).toMatch(/Not set0 suggestions$/);
     expect(rows[5]).toBe("Data handledNot set");
     expect(rows[6]).toBe("Age suitabilityNot set");
@@ -252,8 +254,8 @@ describe("Classification: acceptance", () => {
     const rows = within(card()).getAllByRole("button").filter((button) => button.hasAttribute("aria-expanded"));
     expect(rows.map((button) => button.getAttribute("aria-label") ?? button.textContent).length).toBeGreaterThanOrEqual(9);
     for (const button of rows) expect(button.getAttribute("aria-expanded")).toBe("false");
-    // the closed Field row says there are suggestions and that nothing is set
-    expect(row("Field").textContent).toMatch(/Not set\d suggestions?$/);
+    // the closed Field row offers its first suggestion (UX-03 P5), and nothing is set
+    expect(within(row("Field").closest("[data-testid='optional-field']") as HTMLElement).getByRole("button", { name: /^Accept .+ as Field$/ })).toBeTruthy();
 
     // a Field from a suggestion: nothing was pre-selected
     fireEvent.click(row("Field"));

@@ -17,6 +17,7 @@
 import { NO_HARNESS } from "@/lib/build/harnessWords";
 import { MemberLabel } from "@/pages/site/compose/groupLabels";
 import {
+  Fragment,
   Suspense,
   lazy,
   useState,
@@ -54,7 +55,7 @@ import { SaveMark, UsedInLine } from "@/components/build/ConnectionMarks";
 import { CostStrip, TileCostLines } from "@/components/build/CostLines";
 import { callsOf } from "@/lib/build/decisionCopy";
 import { definesOf } from "@/lib/build/agentCode";
-import { PromptName, CheckCasesBody, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReaderFacts, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TileFooter, ToolTileBody, DecisionTileBody, RetrievalTileBody } from "@/components/build/tileBodies";
+import { CheckCasesBody, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReaderFacts, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TileFooter, ToolTileBody, DecisionTileBody, RetrievalTileBody } from "@/components/build/tileBodies";
 import { footerFactsOf, resultTypeLine, typeLineOf } from "@/lib/build/tileLines";
 import { TypeChip } from "@/components/vision/TypeChip";
 import { SectionHead } from "@/components/vision/SectionHead";
@@ -338,34 +339,6 @@ function Chip({ children }: { children: ReactNode }) {
   return <span style={chipStyle}>{children}</span>;
 }
 
-/** The step's number in a 24 control tile, Geist Mono 11. */
-function NumberTile({ children, wide }: { children: ReactNode; wide?: boolean }) {
-  return (
-    <span
-      aria-hidden="true"
-      style={{
-        ...CONTROL,
-        flexShrink: 0,
-        minWidth: 24,
-        height: 24,
-        padding: wide ? "0 6px" : 0,
-        boxSizing: "border-box",
-        borderRadius: 6,
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: DM_MONO,
-        fontSize: 11,
-        lineHeight: "normal",
-        color: t.text,
-        ...tnum,
-      }}
-    >
-      {children}
-    </span>
-  );
-}
-
 /** A secondary 26 that is a link: Download. */
 function DownloadButton({ href, name, label = "Download" }: { href: string; name: string; label?: string }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
@@ -610,6 +583,29 @@ function SaveLines({ files, indent = INDENT }: { files: readonly ReaderFile[]; i
 /** A tile's kind as its row says it. */
 const TILE_KIND: Record<string, string> = { prompt: "Prompt", code: "Code", file: "File", manual: "Manual step", check: "Check", agent: "Agent", team: "Team", tool: "Tool", decision: "Decision" };
 
+/**
+ * UX-03 P3: one label per step. The head is "Step <n> · <Type>", `n` exactly as the step is numbered ("2", "3.1"), and the type
+ * the first words of the composer's type line. What the type line says after them ("Python · 12 lines") is `rest`, drawn under
+ * the head, so nothing is said twice.
+ */
+function stepHead(step: Step): { label: string; rest: string } {
+  const [kind, ...more] = typeLineOf(step).split(" · ");
+  const word = kind || TILE_KIND[step.kind] || step.kind;
+  return { label: step.number ? `Step ${step.number} · ${word}` : word, rest: more.join(" · ") };
+}
+
+/** UX-03 P3: the rest of the type line, under the head; nothing when the head already says it all. */
+function TypeRest({ step, indent }: { step: Step; indent: number }) {
+  const { rest } = stepHead(step);
+  // A file's body is its name, once: its kind and size are not said again.
+  if (!rest || step.kind === "file") return null;
+  return (
+    <div data-testid={`${step.kind}-eyebrow`} style={{ ...text(12, 400, t.label), paddingLeft: indent, overflowWrap: "anywhere" }}>
+      {rest}
+    </div>
+  );
+}
+
 /** What is sent with a step, indented 36 under its text as the paste-ins are, each able to hold more, indented again. */
 function SentWith({ entries, ctx }: { entries: readonly ReaderStep[]; ctx: Ctx }) {
   if (entries.length === 0) return null;
@@ -849,25 +845,30 @@ interface Ctx {
 }
 
 /** The chip's word for a step: its kind's name. */
-const kindWord = (step: Step): string => TILE_KIND[step.kind] ?? typeLineOf(step).split(" · ")[0];
 
-/** A title the maker gave, or one that names the thing (a repository, a tool, a dataset); not a generic "Prompt 1". A file's body is its name. */
-const GENERIC_DEFAULT = new Set(["prompt", "manual", "code", "check", "agent", "team"]);
-const showsTitle = (entry: ReaderStep): boolean => entry.step.kind !== "file" && Boolean(entry.title) && !(entry.isDefaultTitle && GENERIC_DEFAULT.has(entry.step.kind));
+/** UX-03 P3's rules for the name under a head: a prompt's generated title ("Prompt 3") and a file's default name are not said again. */
+const showsTitle = (entry: ReaderStep): boolean => {
+  if (!entry.title) return false;
+  const generated = entry.isDefaultTitle && entry.step.kind === "prompt" && entry.title === `Prompt ${entry.step.number}`;
+  const fileName = entry.isDefaultTitle && entry.step.kind === "file";
+  const generic = entry.isDefaultTitle && ["manual", "code", "check", "agent", "team"].includes(entry.step.kind);
+  return !(generated || fileName || generic);
+};
 
 /**
  * UX-03 follow-up P14: a step's head. `Step <n>` 13/500, its type as the grey mono chip, and its one action at the right.
- * Its accessible name is `Step <n> · <Type>`. A title the maker gave the step is the first line under it.
+ * Its accessible name is `Step <n> · <Type>` (UX-03 P3). The name under it is the title its maker typed, or what CA-12 P6
+ * named it from what it holds ("acme/shop").
  */
 function StepHead({ entry, right, level = 4 }: { entry: ReaderStep; right?: ReactNode; level?: 4 | 5 }) {
   const { step } = entry;
-  const word = kindWord(step);
+  const word = stepHead(step).label.split(" · ").pop() as string;
   const Heading = level === 4 ? "h4" : "h5";
   return (
     <>
       <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 28, minWidth: 0 }}>
-        <Heading aria-label={`Step ${step.number} · ${word}`} style={{ ...text(13, 500, t.text), margin: 0, display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-          <span>Step {step.number}</span>
+        <Heading data-testid="step-head" aria-label={`Step ${step.number} · ${word}`} style={{ ...text(13, 500, t.text), margin: 0, display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <span data-testid="step-label">Step {step.number}</span>
           <TypeChip>{word}</TypeChip>
         </Heading>
         {/* CA-19 P5: a member of a named group says so, as in the List. */}
@@ -884,18 +885,6 @@ function StepHead({ entry, right, level = 4 }: { entry: ReaderStep; right?: Reac
   );
 }
 
-/** What the type line says beyond the chip's word ("TypeScript · 42 lines"). Nothing for a file, whose body is its name. */
-function TypeDetail({ step }: { step: Step }) {
-  if (step.kind === "file") return null;
-  const rest = typeLineOf(step).split(" · ").slice(1).join(" · ");
-  if (!rest) return null;
-  return (
-    <div data-testid={`${step.kind}-eyebrow`} style={{ ...text(12, 400, t.label), overflowWrap: "anywhere" }}>
-      {rest}
-    </div>
-  );
-}
-
 function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   const { step } = entry;
   const { view, phone, announce } = ctx;
@@ -907,7 +896,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
     return (
       <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="check" style={{ ...rowStyle(ringed, step.colour) }}>
         <StepHead entry={entry} right={<SaveMark kind="step" id={step.id} />} />
-        <TypeDetail step={step} />
+        <TypeRest step={step} indent={INDENT} />
         <CheckBlock check={step.check} style={{ paddingLeft: INDENT }} />
         <ComparisonBlock check={step.check} indent={INDENT} />
         <EvalHarnessBlock check={step.check} indent={INDENT} />
@@ -947,7 +936,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
             ) : null
           }
         />
-        <TypeDetail step={step} />
+        <TypeRest step={step} indent={INDENT} />
         <DecisionTileBody step={step} indent={INDENT} />
         <TileCostLines step={step} audience="reader" groups={view.groups ?? []} indent={INDENT} />
         <UsedInLine id={step.id} indent={INDENT} />
@@ -962,7 +951,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
     return (
       <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="retrieval" style={{ ...rowStyle(ringed, step.colour) }}>
         <StepHead entry={entry} right={null} />
-        <TypeDetail step={step} />
+        <TypeRest step={step} indent={INDENT} />
         <RetrievalTileBody step={step} indent={INDENT} />
         <TileCostLines step={step} audience="reader" groups={view.groups ?? []} indent={INDENT} />
         <UsedInLine id={step.id} indent={INDENT} />
@@ -983,7 +972,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         style={{ ...rowStyle(ringed, step.colour) }}
       >
         <StepHead entry={entry} right={step.kind === "file" && file ? <AttachDownload file={file} /> : null} />
-        <TypeDetail step={step} />
+        <TypeRest step={step} indent={INDENT} />
         {step.kind === "tool" ? <ToolTileBody step={step} indent={INDENT} /> : <FileTileBody step={step} indent={INDENT} plain />}
         <ReaderFacts facts={entry.facts ?? []} indent={INDENT} />
         <TileFooter facts={footerFactsOf(step)} indent={INDENT} />
@@ -1003,7 +992,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         style={{ ...rowStyle(ringed, step.colour) }}
       >
         <StepHead entry={entry} right={<>{step.kind === "system_prompt" ? <CopyButton what={`step ${step.number}`} text={step.text} onCopy={view.onCopy} announce={announce} phone={phone} /> : null}<SaveMark kind="step" id={step.id} /></>} />
-        <TypeDetail step={step} />
+        <TypeRest step={step} indent={INDENT} />
         {step.kind === "system_prompt" ? <SystemPromptTileBody step={step} indent={INDENT} full /> : step.kind === "dataset" ? <DatasetTileBody step={step} indent={INDENT} /> : <RepoTileBody step={step} indent={INDENT} />}
         <ReaderFacts facts={entry.facts ?? []} indent={INDENT} />
         <TileFooter facts={footerFactsOf(step)} indent={INDENT} link={step.kind === "repo" && step.repo ? <OpenOnGitHub url={step.repo.url} /> : null} />
@@ -1022,7 +1011,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         style={{ ...rowStyle(ringed, step.colour) }}
       >
         <StepHead entry={entry} right={null} />
-        <TypeDetail step={step} />
+        <TypeRest step={step} indent={INDENT} />
         {step.gate ? <GateLine gate={step.gate} style={{ paddingLeft: INDENT }} /> : null}
         {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} style={{ paddingLeft: INDENT }} /> : null}
         <ManualTileBody step={step} indent={INDENT} picture={false} lean all />
@@ -1041,7 +1030,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   return (
     <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={{ ...rowStyle(ringed, step.colour) }}>
       <StepHead entry={entry} right={<><CopyButton what={`step ${step.number}`} text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} /><SaveMark kind="step" id={step.id} /></>} />
-      <TypeDetail step={step} />
+      <TypeRest step={step} indent={INDENT} />
       {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} style={{ paddingLeft: INDENT }} /> : null}
       {step.kind === "code" ? (
         <>
@@ -1167,7 +1156,7 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
           </>
         }
       />
-      <TypeDetail step={step} />
+      <TypeRest step={step} indent={INDENT} />
       {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} style={{ paddingLeft: INDENT }} /> : null}
       {line ? <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>{line}</div> : null}
       {team ? <TeamHead team={step} style={{ paddingLeft: INDENT }} /> : <AgentRules agent={step} style={{ paddingLeft: INDENT }} />}
@@ -1296,9 +1285,13 @@ function groupsOf(steps: readonly ReaderStep[], copy?: { onCopy: (text: string) 
   return groups;
 }
 
+/** UX-03 P3: the reader's words for a session with nothing in it (it was "No tiles yet", the composer's word). */
+const NO_STEPS_COPY = "No steps in this session";
+
 /**
- * CA-14 P1: a session of the maker's with no tile yet is drawn too, as its head and "No tiles yet", so the numbers a reader
- * sees run 1, 2, 3 with none missing. Each goes before the first session numbered after it.
+ * CA-14 P1: a session of the maker's with no tile yet is drawn too, as its head and NO_STEPS_COPY, so the numbers a reader
+ * sees run 1, 2, 3 with none missing. Each goes before the first session numbered after it. UX-03 P3: an empty session can no
+ * longer be published, so this is only for builds published before that; their numbers are not changed.
  */
 function withEmptySessions(groups: Group[], all: readonly SessionGroup[] | undefined): Group[] {
   const out = [...groups];
@@ -1649,6 +1642,9 @@ export function DetailsGroup({ details }: { details: readonly { label: string; v
 /** One row of the list of tools and files: a chip, the name, the model when one was recorded, and where it is used. */
 function ListRow({ row }: { row: NeedRow }) {
   const file = row.kind === "file";
+  /* A file's steps are links (UX-03 P3): its row goes to the first, and says them all. */
+  const stepsOfFile = row.steps ?? [];
+  const where = file ? (stepsOfFile.length > 0 ? `${stepsOfFile.length === 1 ? "Step" : "Steps"} ${stepsOfFile.map((step) => step.number).join(", ")}` : "") : row.where;
   const chip = row.kind === "harness" ? "Harness" : row.kind === "model" ? "Model" : row.kind === "tool" ? "Tool" : row.kind === "file" ? "File" : null;
   const body = (
     <>
@@ -1656,12 +1652,12 @@ function ListRow({ row }: { row: NeedRow }) {
       <span style={file ? { fontFamily: DM_MONO, fontSize: 12.5, fontWeight: 500, color: t.text, overflowWrap: "anywhere" } : { ...text(13, 500, t.text), overflowWrap: "anywhere" }}>{row.title}</span>
       {row.model ? <span style={{ ...text(13, 400, t.label), overflowWrap: "anywhere" }}>{`· ${row.model}`}</span> : null}
       <span style={{ flexGrow: 1 }} />
-      {row.steps ? <span style={{ ...text(12, 400, t.label), whiteSpace: "nowrap" }}>{row.steps}</span> : null}
+      {where ? <span style={{ ...text(12, 400, t.label), whiteSpace: "nowrap" }}>{where}</span> : null}
     </>
   );
   const frame: CSSProperties = { display: "flex", alignItems: "center", gap: 8, minWidth: 0, color: "inherit", textDecoration: "none" };
-  return file && row.stepId ? (
-    <Link to={{ hash: `#node-${row.stepId}` }} data-testid="need-row" style={frame}>
+  return file && stepsOfFile.length > 0 ? (
+    <Link to={{ hash: `#node-${stepsOfFile[0].id}` }} data-testid="need-row" style={frame}>
       {body}
     </Link>
   ) : (

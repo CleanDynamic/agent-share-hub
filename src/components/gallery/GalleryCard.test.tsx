@@ -290,7 +290,10 @@ describe("UI-P49, PT-04 — the row layout is the feed's post", () => {
     expect(screen.getByTestId("feed-author-name")).toHaveTextContent("Maria Silva");
     expect(screen.getByTestId("feed-author-name")).toHaveAttribute("href", "/profile/maria");
     expect(screen.getByText("@maria", { exact: false })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Invoice triage agent" })).toHaveAttribute("href", "/b2/a-build");
+    // UX-03 P1: the post's heading and the build line under it both link the build; the heading is the one in the tab order.
+    expect(screen.getByTestId("feed-post-heading-link")).toHaveAttribute("href", "/b2/a-build");
+    expect(screen.getByTestId("feed-build-title")).toHaveAttribute("href", "/b2/a-build");
+    expect(screen.getByTestId("feed-build-title")).toHaveAttribute("tabindex", "-1");
   });
 
   it("says what it was made with in marks, not words", () => {

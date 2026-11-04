@@ -120,6 +120,8 @@ export interface BuildHeroView {
   viaConnector: boolean;
   /** The picture: the resolved cover as an `<img>`, else a `CoverFallback`. Fills the hero. */
   cover: ReactNode;
+  /** UX-03 P2: the build has cover media. False: the hero is its title block only, with no picture area. Absent: it has one. */
+  hasCover?: boolean;
   credit: BuildCreditView;
   /** "Δ swapped model: …", or null when there is nothing worked out to say. */
   delta: string | null;
@@ -493,10 +495,10 @@ export function portableCost(build: Pick<DetailSource, "cost_setup" | "cost_mont
   return { setup: build.cost_setup, monthly: build.cost_monthly, currency: build.currency };
 }
 
-/** The six facts, in the wall label's order, with "—" for a fact the record does not state. */
+/** The six facts, in the wall label's order. UX-03 P2: a fact the record does not state is left out, so no row reads as a dash. */
 export function proofDetails(build: DetailSource, tree: readonly NodeTree[]): ProofDetailView[] {
   const cost = portableCost(build);
-  return [
+  const rows: ProofDetailView[] = [
     { label: "Made for", value: listText(build.made_for) ?? MISSING },
     { label: "Made with", value: listText(build.made_with) ?? MISSING },
     { label: "Setup", value: formatCost(cost, "setup") ?? MISSING },
@@ -504,6 +506,7 @@ export function proofDetails(build: DetailSource, tree: readonly NodeTree[]): Pr
     { label: "First result", value: formatFirstResult(build.time_to_first_result) ?? MISSING },
     { label: "Needs", value: needsLine(tree) ?? MISSING },
   ];
+  return rows.filter((row) => row.value !== MISSING);
 }
 
 /* ── the credit ── */

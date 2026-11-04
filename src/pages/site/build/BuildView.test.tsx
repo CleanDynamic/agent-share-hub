@@ -114,7 +114,7 @@ describe("BuildView on a desktop", () => {
     expect(action.querySelector("svg")).toBeNull();
     fireEvent.click(action);
     expect(onPress).toHaveBeenCalledTimes(1);
-    expect(within(proof).getByText("Your run relights the lamp and records the model you used.")).toBeTruthy();
+    expect(within(proof).getByText("Records the date, whether it worked and the model you used.")).toBeTruthy();
     expect(proof.querySelectorAll('[data-ui="row"]')).toHaveLength(0);
     expect(within(screen.getByTestId("build-completeness")).getByRole("progressbar", { name: "Completeness" }).getAttribute("aria-valuenow")).toBe("86");
   });
@@ -173,7 +173,7 @@ describe("BuildView on a desktop", () => {
         <BuildView {...stepsProps()} />
       </MemoryRouter>,
     );
-    const first = html.slice(0, html.indexOf('data-testid="build-second-row"'));
+    const first = html.slice(0, html.indexOf('data-testid="build-steps-panel"'));
     expect(first).not.toContain("Sentient");
     expect(first).not.toContain("backdrop-filter");
     expect(first).not.toContain("lucide");
@@ -231,7 +231,8 @@ describe("a check on the build page (CA-03 P5)", () => {
   it("draws it as a step: the test description, pass criteria, failure notes and its status", () => {
     mount(withSteps([check]));
     const card = screen.getAllByTestId("step-card").find((entry) => entry.getAttribute("data-kind") === "check")!;
-    expect(card.textContent).toContain("CheckPassed 13 of 14 runs");
+    // UX-03 P3: the type is said in the head, "Step <n> · Check".
+    expect(within(card).getByTestId("step-label").textContent).toMatch(/^Step \d+ · Check$/);
     expect(within(card).getByTestId("check-status").textContent).toBe("Passed 13 of 14 runs · since 12 Oct");
     expect(within(card).getAllByTestId("label-value").map((row) => row.textContent)).toEqual([
       "Test descriptionPlaces a test order for 2 sourdough loaves",
@@ -326,14 +327,14 @@ describe("Download, once the build has a session setup (CA-04 P4)", () => {
 });
 
 describe("the Classification section (CA-16 P7)", () => {
-  it("sits under the hero and above The build, on a desktop and on a phone", () => {
+  it("sits after The build (UX-03 P2), on a desktop and on a phone", () => {
     const section = <section aria-label="Classification" data-testid="build-classification" />;
     const { unmount } = mount(stepsProps("desktop", { classification: section }));
     const hero = screen.getByTestId("build-hero");
     const classification = screen.getByTestId("build-classification");
     const steps = screen.getByTestId("build-steps-panel");
-    expect(hero.compareDocumentPosition(classification) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(classification.compareDocumentPosition(steps) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(hero.compareDocumentPosition(steps) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(steps.compareDocumentPosition(classification) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     unmount();
     phone(true);
     mount(stepsProps("mobile", { classification: section }));

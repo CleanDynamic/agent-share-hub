@@ -1,4 +1,5 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { emptyClassification } from "@/lib/classify/facets";
@@ -76,7 +77,8 @@ describe("ClassificationSection", () => {
     const { unmount } = render(<ClassificationSection classification={sparse} />);
     expect(screen.queryByText("Not stated")).toBeNull();
     unmount();
-    render(<ClassificationSection classification={sparse} own />);
+    render(<MemoryRouter><ClassificationSection classification={sparse} maker={{ editHref: "/compose/b1" }} /></MemoryRouter>);
+    expect(screen.getByTestId("classification-open").getAttribute("href")).toBe("/compose/b1");
     const section = screen.getByRole("region", { name: "Classification" });
     for (const facet of ["field", "task", "setting", "data", "age"]) expect(rowOf(section, facet)?.textContent).toContain("Not stated");
     expect(section.querySelector("[data-facet='technique']")).toBeNull();

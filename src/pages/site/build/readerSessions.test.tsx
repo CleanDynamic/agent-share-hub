@@ -116,7 +116,7 @@ describe("the session list", () => {
 });
 
 describe("a prompt's name on the build page", () => {
-  it("is its place on the build, with a typed title next to it", () => {
+  it("is its step head (UX-03 P3), with a typed title under it", () => {
     const tree = [
       { ...prompt("x1", 0, "typed-a"), payload: { text: "ccc", session: "typed-a" } },
       { ...prompt("x2", 1, "typed-a"), title: "ccc", payload: { text: "ccc", session: "typed-a" } },
@@ -147,7 +147,7 @@ describe("what the build page keeps of builds.making", () => {
 });
 
 describe("a session with no tile yet", () => {
-  it("is drawn for a reader as its head and No steps yet, so the numbers run on without a gap", async () => {
+  it("is drawn for a reader as its head and No steps in this session (UX-03 P3), so the numbers run on without a gap", async () => {
     const { buildSteps, sessionGroups } = await import("@/lib/build/graph");
     const tree = [prompt("a-1", 0, "typed-a"), prompt("a-2", 1, "typed-a")];
     const emptyMeta = { "typed-c": meta["typed-c"], "typed-a": meta["typed-a"] };
@@ -158,6 +158,6 @@ describe("a session with no tile yet", () => {
     mount({ ...rest, steps, groups, counts: buildCounts(steps) });
     expect(screen.getAllByTestId("reader-session-head").map((head) => head.getAttribute("aria-label"))).toEqual(["Session 1 · Cursor", "Session 2 · Claude"]);
     const empty = document.querySelector('[data-reader-session="typed-c"]') as HTMLElement;
-    expect(within(empty).getByText("No steps yet")).toBeTruthy();
+    expect(within(empty).getByText("No steps in this session")).toBeTruthy();
   });
 });

@@ -37,11 +37,16 @@ export interface OptionalRowProps {
   titleCount?: string;
   /** CA-16b: a filled row's line is drawn in `--text` rather than `--label`. Absent: as it was. */
   filledText?: boolean;
+  /**
+   * UX-03 P5: the first suggestion, offered on the closed row while it holds nothing: its words in the line, and an Accept text
+   * button where the count is. Accepting does what choosing it inside the open row does. `name` is the button's accessible name.
+   */
+  accept?: { text: string; name: string; onAccept: () => void };
   children: ReactNode;
 }
 
 /** One closed-by-default row. */
-export function OptionalRow({ name, description, summary, forceOpen = false, phone = false, count, titleCount, filledText = false, children }: OptionalRowProps) {
+export function OptionalRow({ name, description, summary, forceOpen = false, phone = false, count, titleCount, filledText = false, accept, children }: OptionalRowProps) {
   const [open, setOpen] = useState(false);
   const uid = useId();
   const region = useRef<HTMLDivElement>(null);
@@ -61,11 +66,12 @@ export function OptionalRow({ name, description, summary, forceOpen = false, pho
   }, [open]);
 
   const inset = useModalInset();
+  const offer = accept && !filled && !open ? accept : null;
   const line = filledText && filled && !open ? summary : description;
   const value = !filledText && filled && !open ? summary : null;
 
   return (
-    <div data-testid="optional-field" data-open={open || undefined} data-filled={filled || undefined} style={OPTIONAL.row}>
+    <div data-testid="optional-field" data-open={open || undefined} data-filled={filled || undefined} style={{ ...OPTIONAL.row, position: "relative" }}>
       <button
         type="button"
         aria-expanded={open}
@@ -78,7 +84,7 @@ export function OptionalRow({ name, description, summary, forceOpen = false, pho
         }}
         {...handlers}
         data-ring-inset=""
-        style={{ ...OPTIONAL.summary(inset, state.hovered && inset > 0, phone), ...OPTIONAL.focus(state.focusVisible) }}
+        style={{ ...OPTIONAL.summary(inset, state.hovered && inset > 0, phone), ...(offer ? { paddingRight: inset + ACCEPT_ROOM } : null), ...OPTIONAL.focus(state.focusVisible) }}
       >
         <span style={{ display: "flex", flexDirection: "column", flexGrow: 1, minWidth: 0 }}>
           <span style={OPTIONAL.titleLine}>
@@ -91,11 +97,17 @@ export function OptionalRow({ name, description, summary, forceOpen = false, pho
               </span>
             ) : null}
           </span>
-          <span data-testid="optional-line" style={{ ...OPTIONAL.hint, ...ELLIPSIS, ...(filledText && filled && !open ? OPTIONAL.filledLine : null) }}>
-            {line}
-          </span>
+          {offer ? (
+            <span data-testid="optional-suggestion" style={{ ...OPTIONAL.hint, ...ELLIPSIS, ...OPTIONAL.filledLine }}>
+              {offer.text}
+            </span>
+          ) : (
+            <span data-testid="optional-line" style={{ ...OPTIONAL.hint, ...ELLIPSIS, ...(filledText && filled && !open ? OPTIONAL.filledLine : null) }}>
+              {line}
+            </span>
+          )}
         </span>
-        {count ? (
+        {offer ? null : count ? (
           <span data-testid="optional-row-count" style={OPTIONAL.value}>
             {count}
           </span>
@@ -108,12 +120,54 @@ export function OptionalRow({ name, description, summary, forceOpen = false, pho
           <Glyph name="chevd" size={14} />
         </span>
       </button>
+      {offer ? <AcceptButton offer={offer} right={inset + CHEVRON_ROOM} phone={phone} /> : null}
       {open ? (
         <div ref={region} id={`${uid}-region`} role="region" aria-labelledby={`${uid}-head`} style={OPTIONAL.body(inset)}>
           {children}
         </div>
       ) : null}
     </div>
+  );
+}
+
+/** UX-03 P5: the chevron and the gap before it, at the row's right; Accept sits left of them. */
+const CHEVRON_ROOM = 14 + 16;
+/** The room the row's words leave for Accept and the chevron. */
+const ACCEPT_ROOM = CHEVRON_ROOM + 64;
+
+/**
+ * UX-03 P5: Accept, a text button laid over the row's right side (a button cannot sit inside the row's own button). Underlined at
+ * once on hover, a fine pointer only; on a phone its hit area reaches 44.
+ */
+function AcceptButton({ offer, right, phone }: { offer: NonNullable<OptionalRowProps["accept"]>; right: number; phone: boolean }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  return (
+    <button
+      type="button"
+      aria-label={offer.name}
+      data-testid="optional-accept"
+      onClick={offer.onAccept}
+      {...handlers}
+      style={{
+        position: "absolute",
+        right,
+        top: "50%",
+        transform: "translateY(-50%)",
+        minHeight: phone ? 44 : 28,
+        padding: "0 8px",
+        border: 0,
+        borderRadius: 6,
+        background: "transparent",
+        cursor: "pointer",
+        ...OPTIONAL.title,
+        fontWeight: 500,
+        textDecoration: state.hovered ? "underline" : "none",
+        textUnderlineOffset: 3,
+        ...OPTIONAL.focus(state.focusVisible),
+      }}
+    >
+      Accept
+    </button>
   );
 }
 

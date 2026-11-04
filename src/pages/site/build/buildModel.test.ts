@@ -166,7 +166,7 @@ describe("the tree", () => {
 });
 
 describe("the proof's details", () => {
-  it("prints the six facts in order, with a dash for each one the record leaves out", () => {
+  it("prints the six facts in order, and none the record leaves out (UX-03 P2)", () => {
     const details = proofDetails(
       {
         made_for: ["finance ops"],
@@ -191,7 +191,7 @@ describe("the proof's details", () => {
       { made_for: null, made_with: [], cost_setup: null, cost_monthly: null, currency: null, time_to_first_result: null },
       [],
     );
-    expect(empty.every((detail) => detail.value === MISSING)).toBe(true);
+    expect(empty).toEqual([]);
   });
 });
 

@@ -73,7 +73,7 @@ import {
   connectedTools,
   draftEdited,
   draftSessions,
-  draftTitle,
+  draftRowTitle,
   draftsMeta,
   isUntitled,
   menuItems,
@@ -165,7 +165,7 @@ function DraftRow({
               textOverflow: "ellipsis",
             }}
           >
-            {draftTitle(draft.title)}
+            {draftRowTitle(draft)}
           </span>
           <span style={{ display: "block", fontSize: 12, color: t.label }}>{over ? "Drop to add this session" : draftSessions(draft)}</span>
         </span>

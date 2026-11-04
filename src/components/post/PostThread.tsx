@@ -25,7 +25,7 @@ import type { GalleryMedia } from "@/lib/build";
 import type { Post } from "@/lib/build/thread";
 import { useInteractive } from "@/lib/theme/interactive";
 import { ring } from "@/lib/theme/controls";
-import { prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
+import { hoverIsFine, prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
@@ -50,6 +50,10 @@ export interface PostThreadProps {
   loading?: boolean;
   /** `page` only: drawn at the right of the row under the posts, opposite the toggle. */
   footer?: ReactNode;
+  /** UX-03 P1: wraps the words of post 1's first heading (the feed post's link to its build). */
+  headingLink?: (content: ReactNode) => ReactNode;
+  /** UX-03 P9: Show more is about to be pressed: hovered on a fine pointer, or focused. The feed starts the rest of the thread. */
+  onIntent?: () => void;
 }
 
 /** Room kept at the end of a post's first line for its counter, "10 / 10" in 11px mono. */
@@ -66,6 +70,8 @@ export function PostThread({
   resetKey,
   loading = false,
   footer,
+  headingLink,
+  onIntent,
 }: PostThreadProps) {
   const regionId = useId();
   const page = mode === "page";
@@ -105,7 +111,9 @@ export function PostThread({
 
   return (
     <div data-post-thread="" data-thread-mode={mode} style={{ display: "flex", flexDirection: "column" }}>
-      <div data-post={1}>{body(first, 0)}</div>
+      <div data-post={1}>
+        <PostBody post={first} mediaById={mediaById} srcByPath={srcByPath} phone={phone} firstLineInset={0} headingLink={headingLink} compact={page} />
+      </div>
       {rest.length > 0 ? (
         <UnfoldRegion open={open} id={regionId} instant={page}>
           {later}
@@ -114,13 +122,13 @@ export function PostThread({
       {page ? (
         <div data-post-foot="" style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12, minWidth: 0 }}>
           {foldable ? (
-            <Toggle open={open} more={rest.length} controls={regionId} phone={phone} loading={loading} plain onPress={() => setPageOpen((was) => !was)} />
+            <Toggle open={open} more={rest.length} controls={regionId} phone={phone} loading={loading} plain onPress={() => setPageOpen((was) => !was)} onIntent={open ? undefined : onIntent} />
           ) : null}
           <span style={{ flexGrow: 1 }} />
           {footer}
         </div>
       ) : foldable ? (
-        <Toggle open={open} more={rest.length} controls={regionId} phone={phone} loading={loading} onPress={() => (open ? onClose?.() : onOpen?.())} />
+        <Toggle open={open} more={rest.length} controls={regionId} phone={phone} loading={loading} onPress={() => (open ? onClose?.() : onOpen?.())} onIntent={open ? undefined : onIntent} />
       ) : null}
     </div>
   );
@@ -192,6 +200,7 @@ function Toggle({
   loading,
   plain = false,
   onPress,
+  onIntent,
 }: {
   /** The build page's: an underlined text button, 12/500, with no box. */
   plain?: boolean;
@@ -201,8 +210,15 @@ function Toggle({
   phone: boolean;
   loading: boolean;
   onPress: () => void;
+  onIntent?: () => void;
 }) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  // UX-03 P9: hover counts only on a fine pointer (HOVER_QUERY), where it comes before a press; focus counts everywhere.
+  const { state, handlers } = useInteractive<HTMLButtonElement>({
+    onMouseEnter: () => {
+      if (hoverIsFine()) onIntent?.();
+    },
+    onFocus: () => onIntent?.(),
+  });
   if (plain) {
     return (
       <button

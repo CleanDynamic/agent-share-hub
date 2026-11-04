@@ -107,7 +107,8 @@ describe("the build page, every kind with its optional details empty (CA-15 P12)
     expect(within(byKind("system_prompt")).getByTestId("system-prompt-text").textContent).toBe("Write in plain English.");
     expect(within(byKind("dataset")).getByTestId("dataset-description").textContent).toBe("Support tickets");
     expect(within(byKind("repo")).getByRole("link", { name: "Open on GitHub" }).getAttribute("href")).toBe("https://github.com/acme/shop");
-    expect(byKind("repo").textContent).toContain("acme/shop");
+    // UX-03 P3: the head is "Step <n> · GitHub repository", and the repository's name is the step's name under it.
+    expect(byKind("repo").querySelector('[data-testid="step-own-title"]')?.textContent).toBe("acme/shop");
   });
 
   it("draws a system prompt's whole text, not two lines of it", () => {

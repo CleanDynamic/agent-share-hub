@@ -117,7 +117,10 @@ import { BOTTOM_ROW, dropped, HERO_ROW, heroRow, bottomRow, MOCK_ROWS, pair, Pro
 /** The phone shows this many parts before "Show n more parts". */
 export const PHONE_PARTS = 6;
 
-export const NOTE = "Your run relights the lamp and records the model you used.";
+/** UX-03 P2: under the reader's action, what `recordReproduction` writes. */
+export const READER_NOTE = "Records the date, whether it worked and the model you used.";
+/** UX-03 P2: under the maker's Re-confirm, what `recordSelfConfirmation` writes. */
+export const MAKER_NOTE = "Records the date and the model you used.";
 
 export const ACTION_LABEL: Record<ProofActionKind, string> = {
   reproduce: "I ran this and it worked",
@@ -666,6 +669,7 @@ function Hero({
   phone,
   now,
   announce,
+  inColumn = false,
 }: {
   hero: BuildHeroView;
   actions: BuildActionsView;
@@ -673,17 +677,24 @@ function Hero({
   phone: boolean;
   now?: number;
   announce: (text: string) => void;
+  /** UX-03 P2: inside the left column, which sizes it. */
+  inColumn?: boolean;
 }) {
   const stacked = !useMinWidth(BETWEEN.stack);
   const lamp = plaqueState(proof.build, now);
   const credit = <Credit credit={hero.credit} />;
+  // UX-03 P2: no cover media, no picture area: the title block alone, with the action dock in its row.
+  const pictured = hero.hasCover !== false;
   return (
     <section
       data-testid="build-hero"
+      data-pictured={pictured ? "true" : "false"}
       aria-label="The build"
-      style={{ ...moduleStyle, ...(phone ? null : wide(stacked)), padding: 0, overflow: "hidden" }}
+      style={{ ...moduleStyle, ...(phone || inColumn ? null : wide(stacked)), padding: 0, overflow: "hidden" }}
     >
+      {pictured ? (
       <div
+        data-testid="build-hero-picture"
         style={{
           position: "relative",
           height: 280,
@@ -699,7 +710,8 @@ function Hero({
         </ResultWindow>
         {phone ? null : <ActionDock actions={actions} phone={false} announce={announce} />}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 16, padding: 16 }}>
+      ) : null}
+      <div style={{ display: "flex", alignItems: pictured ? "center" : "flex-start", gap: 16, padding: 16 }}>
         <span
           aria-hidden="true"
           style={{
@@ -717,7 +729,7 @@ function Hero({
         >
           <Mark size={24} />
         </span>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, flexGrow: 1 }}>
           <h1 style={{ ...text(20, 500, t.text), margin: 0, letterSpacing: "-0.015em", overflowWrap: "anywhere" }}>{hero.title}</h1>
           <SummaryLine summary={hero.summary} />
           {hero.outcome ? (
@@ -726,6 +738,7 @@ function Hero({
           {hero.credit.madeBy || hero.credit.rebuiltFrom ? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{credit}</p> : null}
           {hero.delta ? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{hero.delta}</p> : null}
         </div>
+        {!pictured && !phone ? <ActionDock actions={actions} phone={false} announce={announce} inline /> : null}
       </div>
     </section>
   );
@@ -1034,7 +1047,7 @@ function Proof({ proof, phone, now, inColumn = false }: { proof: BuildProofView;
         >
           {action.pending ? "Recording…" : ACTION_LABEL[action.kind]}
         </Button>
-        <p style={{ ...text(12, 400, t.text2), margin: 0, lineHeight: "18px" }}>{NOTE}</p>
+        <p style={{ ...text(12, 400, t.text2), margin: 0, lineHeight: "18px" }}>{action.kind === "reconfirm" ? MAKER_NOTE : READER_NOTE}</p>
       </div>
       {proof.writeError ? <RunFailed failure={proof.writeError} /> : null}
     </section>
@@ -1115,76 +1128,58 @@ function DesktopBuild(props: BuildViewProps) {
   const stacked = tier === "stacked";
   const { announce, region } = useAnnouncer();
 
-  /* PT-08: with a thread the left column is the title block, the thread, the actions and, 32 under them, The build; the
-     right column is the reproduction and What you need. The two sit at the row's two edges. Stacked, the order is the
-     page's own: hero, reproduction, The build, What you need. */
+  /* UX-03 P2: one layout, with a thread or without: the left column is the title block (the thread's, or the hero), then The
+     build, then the classification; the right column is the reproduction, then What you need. The columns are independent, so
+     neither leaves space in the other. Stacked, the order is the phone's: title block, reproduction, The build, What you need,
+     classification. */
+  const title = hero.thread ? (
+    <ThreadHero hero={hero} thread={hero.thread} actions={actions} phone={false} announce={announce} />
+  ) : (
+    <Hero hero={hero} actions={actions} proof={proof} phone={false} now={now} announce={announce} inColumn />
+  );
   return (
     <div data-testid="build-view" data-viewport="desktop" style={{ display: "flex", flexDirection: "column", gap: 32, marginTop: 8, lineHeight: "normal" }}>
-      {hero.thread ? (
-        <div data-testid="build-thread-row" style={{ ...pair(stacked), justifyContent: "space-between" }}>
-          {stacked ? (
-            <>
-              <ThreadHero hero={hero} thread={hero.thread} actions={actions} phone={false} announce={announce} />
-              <Proof proof={proof} phone={false} now={now} />
-              {steps ? <BuildPanel viewer={viewer} steps={steps} phone={false} announce={announce} /> : null}
-              {steps ? <StepsNeed steps={steps} phone={false} details={proof.details} /> : null}
+      <div data-testid="build-main-row" style={{ ...pair(stacked), justifyContent: "space-between", alignItems: "flex-start" }}>
+        {stacked ? (
+          <>
+            {title}
+            <Proof proof={proof} phone={false} now={now} inColumn />
+            {steps ? <BuildPanel viewer={viewer} steps={steps} phone={false} announce={announce} inColumn /> : null}
+            {steps ? <StepsNeed steps={steps} phone={false} inColumn details={proof.details} /> : null}
+            {steps ? null : <DetailsGroup details={proof.details} />}
+            {props.classification}
+            {proof.completeness ? <CompletenessModule completeness={proof.completeness} /> : null}
+          </>
+        ) : (
+          <>
+            <div data-testid="build-wide-column" style={{ ...wide(false), display: "flex", flexDirection: "column", gap: 48 }}>
+              {title}
+              {steps ? <BuildPanel viewer={viewer} steps={steps} phone={false} announce={announce} inColumn /> : null}
               {props.classification}
-              {proof.completeness ? <CompletenessModule completeness={proof.completeness} /> : null}
-            </>
-          ) : (
-            <>
-              <div style={{ ...wide(false), display: "flex", flexDirection: "column", gap: 48 }}>
-                <ThreadHero hero={hero} thread={hero.thread} actions={actions} phone={false} announce={announce} />
-                {steps ? <BuildPanel viewer={viewer} steps={steps} phone={false} announce={announce} inColumn /> : null}
-                {props.classification}
-              </div>
-              <div data-testid="build-side" style={{ ...side, display: "flex", flexDirection: "column" }}>
-                <SideSection first last={!steps && !proof.completeness}>
-                  <Proof proof={proof} phone={false} now={now} inColumn />
+            </div>
+            <div data-testid="build-side-column" style={{ ...side, display: "flex", flexDirection: "column" }}>
+              <SideSection first last={!steps && !proof.completeness && !proof.details.length}>
+                <Proof proof={proof} phone={false} now={now} inColumn />
+              </SideSection>
+              {steps ? (
+                <SideSection last={!proof.completeness}>
+                  <StepsNeed steps={steps} phone={false} inColumn details={proof.details} />
                 </SideSection>
-                {steps ? (
-                  <SideSection last={!proof.completeness}>
-                    <StepsNeed steps={steps} phone={false} inColumn details={proof.details} />
-                  </SideSection>
-                ) : null}
-                {proof.completeness ? (
-                  <SideSection last>
-                    <CompletenessModule completeness={proof.completeness} />
-                  </SideSection>
-                ) : null}
-              </div>
-            </>
-          )}
-        </div>
-      ) : (
-        <div style={pair(stacked)}>
-          <Hero hero={hero} actions={actions} proof={proof} phone={false} now={now} announce={announce} />
-          <div style={{ ...side, display: "flex", flexDirection: "column" }}>
-            <SideSection first last={!proof.completeness}>
-              <Proof proof={proof} phone={false} now={now} inColumn />
-            </SideSection>
-            {steps ? null : (
-              <SideSection last={!proof.completeness}>
-                <DetailsGroup details={proof.details} />
-              </SideSection>
-            )}
-            {proof.completeness ? (
-              <SideSection last>
-                <CompletenessModule completeness={proof.completeness} />
-              </SideSection>
-            ) : null}
-          </div>
-        </div>
-      )}
-      {props.classification && !hero.thread ? props.classification : null}
-      {steps ? (
-        hero.thread ? null : (
-          <div data-testid="build-second-row" style={pair(stacked)}>
-            <BuildPanel viewer={viewer} steps={steps} phone={false} announce={announce} />
-            <StepsNeed steps={steps} phone={false} details={proof.details} />
-          </div>
-        )
-      ) : (
+              ) : (
+                <SideSection last={!proof.completeness}>
+                  <DetailsGroup details={proof.details} />
+                </SideSection>
+              )}
+              {proof.completeness ? (
+                <SideSection last>
+                  <CompletenessModule completeness={proof.completeness} />
+                </SideSection>
+              ) : null}
+            </div>
+          </>
+        )}
+      </div>
+      {steps ? null : (
         <div style={{ ...bottomRow(tier), gap: 16 }}>
           <div style={{ minHeight: 0 }}>
             <AnatomyPanel anatomy={anatomy} phone={false} onSelect={anatomy.onSelect} />

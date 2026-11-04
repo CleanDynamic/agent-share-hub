@@ -166,6 +166,19 @@ export interface HomeWeek {
   challenges: readonly HomeChallengeRow[];
 }
 
+/** UX-03 P6: how many of the maker's published builds "Your published builds" lists. Home's own; not the composer's GROUP_ROWS. */
+export const HOME_BUILD_ROWS = 5;
+
+/** UX-03 P6: the maker's published builds, for the room when nothing else in it has anything to show. */
+export interface HomePublished {
+  /** Every build the maker has published, counted in full. */
+  total: number;
+  /** How many of them anyone has reproduced; the meta line says "none reproduced yet" only at 0. */
+  reproduced: number;
+  /** The newest first, up to HOME_BUILD_ROWS. */
+  rows: readonly { id: string; title: string; href: string; slug: string; published: string }[];
+}
+
 export interface HomeChallengeRow {
   slug: string;
   title: string;

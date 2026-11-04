@@ -122,9 +122,10 @@ function RefinedTagline({ size }: { size: number }) {
 }
 
 /** One live count as a module: the words, then the number in tabular Geist Mono. */
-function CountModule({ label, value, unit }: { label: string; value: string; unit: string }) {
+function CountModule({ label, value, unit, testId }: { label: string; value: string; unit: string; testId: string }) {
   return (
     <div
+      data-testid={testId}
       style={{
         flex: "1 1 0",
         minWidth: 0,
@@ -146,14 +147,17 @@ function CountModule({ label, value, unit }: { label: string; value: string; uni
   );
 }
 
-function RefinedCounts({ reproducedToday, inGallery, countsFailed }: Pick<SignInViewProps, "reproducedToday" | "inGallery" | "countsFailed">) {
+/** UX-03 P8: a count of zero is not drawn, and when both are zero the row is not drawn. A count on its way keeps its place. */
+export function RefinedCounts({ reproducedToday, inGallery, countsFailed }: Pick<SignInViewProps, "reproducedToday" | "inGallery" | "countsFailed">) {
   const waiting = (reproducedToday === null || inGallery === null) && !countsFailed;
   const row = { display: "flex", gap: 12 } as const;
+  if (reproducedToday === 0 && inGallery === 0) return null;
   const placeholder = countsFailed ? null : <Skeleton height={92} radius={8} style={{ flex: "1 1 0" }} />;
   const counts = (
     <>
-      {reproducedToday === null ? placeholder : <CountModule label="Reproduced" value={reproducedToday.toLocaleString("en-GB")} unit="today" />}
-      {inGallery === null ? placeholder : <CountModule label="Hung" value={inGallery.toLocaleString("en-GB")} unit="builds" />}
+      {reproducedToday === null ? placeholder : reproducedToday > 0 ? <CountModule testId="signin-count-reproduced" label="Reproduced" value={reproducedToday.toLocaleString("en-GB")} unit="today" /> : null}
+      {/* The value is getGalleryStats().inGallery: the builds in the gallery. */}
+      {inGallery === null ? placeholder : inGallery > 0 ? <CountModule testId="signin-count-gallery" label="In the gallery" value={inGallery.toLocaleString("en-GB")} unit="builds" /> : null}
     </>
   );
   return waiting ? (

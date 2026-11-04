@@ -61,6 +61,9 @@ export function classificationRows(c: Classification): { key: string; facet: Fac
 }
 
 /** Facets a maker sets themselves: on their own build, when they are empty the section says Not stated, rather than leaving a gap. */
+/** Where the maker fills in what they left empty. */
+export const OPEN_CLASSIFICATION = "Open Classification";
+
 const MAKER_SET: readonly Facet[] = ["field", "task", "setting", "data", "age"];
 
 /** What a derived value says to anyone who asks: in its tooltip and its accessible name. */
@@ -95,7 +98,8 @@ function ValueLabel({ value }: { value: Shown }) {
  * rows sit in two columns filled down then across (one column on a phone); each column's last row has no hairline. The
  * maker, on their own build, also sees the empty maker-set facets as `Not stated`, after the facets that have values.
  */
-export function ClassificationSection({ classification, own = false }: { classification: Classification | null | undefined; own?: boolean }): ReactNode {
+export function ClassificationSection({ classification, maker }: { classification: Classification | null | undefined; /** The build is the viewer's own: the empty maker-set facets say Not stated, with the way to the Classification window. */ maker?: { editHref: string } }): ReactNode {
+  const own = Boolean(maker);
   const phone = useIsPhone();
   if (!classification || !hasClassification(classification)) return null;
   const all = classificationRows(classification).flat();
@@ -140,6 +144,11 @@ export function ClassificationSection({ classification, own = false }: { classif
           />
         ))}
       </div>
+      {maker && notStated.length > 0 ? (
+        <PageLink to={maker.editHref} data-testid="classification-open" style={{ alignSelf: "flex-start", fontFamily: FIGTREE, fontSize: 12.5, color: t.text2, textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line }}>
+          {OPEN_CLASSIFICATION}
+        </PageLink>
+      ) : null}
       {regulatedArea(classification) ? (
         <p role="note" data-testid="regulated-notice" style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12.5, lineHeight: 1.5, color: t.text2 }}>
           {REGULATED_NOTICE}

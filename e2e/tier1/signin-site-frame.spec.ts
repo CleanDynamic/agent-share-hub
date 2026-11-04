@@ -146,9 +146,9 @@ test.describe("the four pages draw in the bare frame", () => {
     await open(page, "/login", "noon");
     const group = page.getByRole("radiogroup", { name: "Theme" });
     await expect(group).toBeVisible();
-    await group.getByRole("radio", { name: "Dusk" }).click();
+    await group.getByRole("radio", { name: "Dark" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dusk");
-    await expect(group.getByRole("radio", { name: "Dusk" })).toHaveAttribute("aria-checked", "true");
+    await expect(group.getByRole("radio", { name: "Dark" })).toHaveAttribute("aria-checked", "true");
   });
 });
 

@@ -45,6 +45,8 @@ export interface PostBodyProps {
   firstLineInset?: number;
   /** The build page's thread (UX-03 follow-up P13): words at 13.5/22, a picture held to 220 tall on a well. */
   compact?: boolean;
+  /** UX-03 P1: wraps the words of the post's first heading (a feed post makes them the link to its build). Absent: plain. */
+  headingLink?: (content: ReactNode) => ReactNode;
 }
 
 // The wire format is untrusted, so every read goes through these.
@@ -147,7 +149,7 @@ function renderList(node: Loose, ctx: Ctx, key: number, nested: boolean): ReactN
   );
 }
 
-function renderBlock(node: Loose, ctx: Ctx, key: number, inset: number): ReactNode {
+function renderBlock(node: Loose, ctx: Ctx, key: number, inset: number, firstHeading = false): ReactNode {
   const { scale, props } = ctx;
   const pad: CSSProperties = inset ? { paddingRight: inset } : {};
 
@@ -165,7 +167,8 @@ function renderBlock(node: Loose, ctx: Ctx, key: number, inset: number): ReactNo
     case "heading": {
       const title = attrsOf(node).level === 1;
       const style = { ...(title ? scale.title : scale.heading), ...pad };
-      const content = renderInline(childrenOf(node));
+      const words = renderInline(childrenOf(node));
+      const content = firstHeading && props.headingLink ? props.headingLink(words) : words;
       if (props.realHeadings) {
         return title ? (
           <h2 key={key} style={style}>
@@ -261,11 +264,12 @@ export function PostBody(props: PostBodyProps) {
   const content = Array.isArray(props.post?.content) ? props.post.content : [];
   const blocks = toGrids({ type: "doc", content }).content.filter(isNode) as Loose[];
   const first = blocks[0];
+  const heading = blocks.findIndex((node) => node.type === "heading");
 
   return (
     <div data-post-body="" style={{ display: "flex", flexDirection: "column", gap: BLOCK_GAP, ...(props.compact ? { maxWidth: 680 } : null) }}>
       {blocks.map((node, index) =>
-        renderBlock(node, ctx, index, index === 0 && typeof first.type === "string" && TEXT_BLOCKS.has(first.type) ? (props.firstLineInset ?? 0) : 0),
+        renderBlock(node, ctx, index, index === 0 && typeof first.type === "string" && TEXT_BLOCKS.has(first.type) ? (props.firstLineInset ?? 0) : 0, index === heading),
       )}
     </div>
   );
