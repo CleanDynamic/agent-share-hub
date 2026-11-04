@@ -137,3 +137,22 @@ test.describe("UX-03 P1: a feed post opens its build", () => {
     expect(stops).toBe(1);
   });
 });
+
+test.describe("UX-03 P8: a count going from 0 to 1 moves nothing", () => {
+  test("the engagement icons keep their places when a Like takes the count from 0 to 1", async ({ page }) => {
+    const { item } = await openFeed(page);
+    await page.route(/\/rest\/v1\/build_likes/, (route) =>
+      route.request().method() === "POST" ? route.fulfill({ status: 201, contentType: "application/json", body: "[]" }) : route.fallback(),
+    );
+    const row = item.getByTestId("engagement-row");
+    await expect(row).toBeVisible();
+    const places = () => row.locator("[data-engagement-icon]").evaluateAll((icons) => icons.map((icon) => Math.round(icon.getBoundingClientRect().left)));
+    // The action's name follows its state: like, then unlike.
+    const like = row.locator('[data-engagement-action="like"], [data-engagement-action="unlike"]');
+    await expect(like.locator("[data-engagement-count]")).toHaveText("");
+    const before = await places();
+    await like.click();
+    await expect(like.locator("[data-engagement-count]")).toHaveText("1");
+    expect(await places()).toEqual(before);
+  });
+});
