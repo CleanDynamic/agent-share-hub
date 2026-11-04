@@ -76,7 +76,7 @@ export function newWorld(): World {
 }
 
 /** UX-06: give a post replies, as rows the database would hold. `build` attaches the world's build b1 (or another id) to a reply. */
-export function addReplies(world: World, rootId: string, replies: { id: string; parent?: string; body: string; author?: "me" | "kit"; build?: string; aboutNodeId?: string; minutesAgo: number }[]): void {
+export function addReplies(world: World, rootId: string, replies: { id: string; parent?: string; body: string; author?: "me" | "kit"; build?: string; step?: string; aboutNodeId?: string; minutesAgo: number }[]): void {
   for (const entry of replies) {
     const author = entry.author === "me" ? AUTHOR : KIT;
     world.posts.push({
@@ -100,7 +100,11 @@ export function addReplies(world: World, rootId: string, replies: { id: string; 
       created_at: new Date(Date.parse("2026-11-04T12:00:00Z") - entry.minutesAgo * 60_000).toISOString(),
       updated_at: "2026-11-04T12:00:00Z",
       author,
-      attachments: entry.build ? [{ position: 0, kind: "build", build_id: entry.build, node_id: null, part_key: null, session_key: null, media_path: null, media_kind: null, snapshot: null }] : [],
+      attachments: entry.build
+        ? [{ position: 0, kind: "build", build_id: entry.build, node_id: null, part_key: null, session_key: null, media_path: null, media_kind: null, snapshot: null }]
+        : entry.step
+          ? [{ position: 0, kind: "step", build_id: "b1", node_id: entry.step, part_key: null, session_key: null, media_path: null, media_kind: null, snapshot: null }]
+          : [],
       post_spaces: [],
     });
   }

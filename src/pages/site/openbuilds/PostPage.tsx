@@ -23,9 +23,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { engagementFor, useEngagement } from "@/hooks/useEngagement";
 import { reportError } from "@/lib/errors/report";
 import { getPost, hidePost, joinSpace, leaveSpace, likePost, pinPost, unlikePost, unpinPost, type PostThread } from "@/lib/openbuilds";
+import type { StepToCopy } from "@/lib/openbuilds/addToDraft";
 import { readPostExtras, type PostPageExtras } from "@/lib/openbuilds/postPage";
 import { usePageReady } from "@/lib/routing/pageReady";
 
+import { AddToDraftButton, AddToDraftSub } from "./AddToDraft";
 import { EmptyLine, LoadError } from "./OpenBuildsFeedParts";
 import { PostLoadingView } from "./PostFrame";
 import { PostStepMenu } from "./PostStepMenu";
@@ -204,6 +206,15 @@ export default function PostPage() {
       ]
     : [];
 
+  // A step of the post's build, to copy: read again from a published build, or taken from the copy a draft's build carries.
+  const copiedBuild = shown?.attachments.find((attachment) => attachment.kind === "build" && attachment.snapshot)?.snapshot ?? null;
+  const stepToCopy = (nodeId: string): StepToCopy | null => {
+    if (postBuild.buildId) return { kind: "published", buildId: postBuild.buildId, nodeId };
+    const children = Array.isArray(copiedBuild?.children) ? (copiedBuild.children as { id: string }[]) : [];
+    const child = children.find((entry) => entry.id === nodeId);
+    return child ? { kind: "copy", snapshot: { ...child, source: { ...((copiedBuild?.source as Record<string, unknown> | undefined) ?? {}), nodeId } } } : null;
+  };
+
   const renderTile = (tile: StripTileData, inner: ReactNode) => (
     <PostStepMenu
       tile={tile}
@@ -215,6 +226,7 @@ export default function PostPage() {
         move({ tab: "thread" });
       }}
       onShowReplies={() => move({ step: tile.id, reply: null })}
+      addToDraft={stepToCopy(tile.id) ? <AddToDraftSub step={stepToCopy(tile.id)!} /> : null}
     />
   );
 
@@ -281,6 +293,7 @@ export default function PostPage() {
               onPin: (replyId) => void moderate(replyId, (entry) => ({ ...entry, pinnedBy: viewerId, pinnedAt: new Date().toISOString() }), () => pinPost(replyId)),
               onUnpin: (replyId) => void moderate(replyId, (entry) => ({ ...entry, pinnedBy: null, pinnedAt: null }), () => unpinPost(replyId)),
               onHide: (replyId, reason) => void moderate(replyId, (entry) => ({ ...entry, hiddenBy: viewerId, hiddenReason: reason || null }), () => hidePost(replyId, reason || undefined)),
+              renderAddToDraft: (step) => <AddToDraftButton step={step} />,
               branchHref: (replyId) => `?${postSearch(params, { reply: replyId, step: null }, defaultView).toString()}`,
             }}
             side={{ space, rows: sideRows }}

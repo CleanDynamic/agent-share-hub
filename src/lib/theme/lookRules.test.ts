@@ -1235,6 +1235,10 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/openbuilds/replyDraft.ts",
   "src/lib/openbuilds/replyDraft.test.ts",
   "src/pages/site/openbuilds/StepTileEditor.tsx",
+  "src/lib/openbuilds/addToDraft.ts",
+  "src/lib/openbuilds/addToDraft.test.ts",
+  "src/pages/site/openbuilds/AddToDraft.tsx",
+  "src/pages/site/openbuilds/AddToDraft.test.tsx",
 
   // SV-23
   "src/lib/build/buildCounts.ts",
@@ -1788,6 +1792,11 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "no untouched shadcn",
     text: `import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem,`,
     why: "UX-05: Post to is a menu of checkboxes in the DropdownMenu OpenBuilds' Sort uses (the prompt names it).",
+  },
+  {
+    rule: "no untouched shadcn",
+    text: `import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub,`,
+    why: "UX-06: Add to a draft is a DropdownMenu (the prompt names it), and a sub-menu of the same inside a step's DropdownMenu.",
   },
   {
     rule: "spacing 10 is not in SPACE_REFINED",

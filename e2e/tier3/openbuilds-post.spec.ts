@@ -106,3 +106,24 @@ test("a step tile made in a reply is saved as a draft, and the draft is in Draft
   await page.goto("/drafts");
   await expect(page.getByText("Reply: Post number 1").first()).toBeVisible();
 });
+
+test("a reader adds someone's step from a reply to a draft and finds it in the composer", async ({ page }) => {
+  const world = newWorld();
+  addReplies(world, "p1", [{ id: "r1", body: "This is the rubric step I use.", minutesAgo: 30, step: "n2" }]);
+  world.builds.push({ id: "d-mine", slug: "my-screener", title: "My screener", status: "draft", creator_id: "00000000-0000-4000-8000-00000000beef", making: {}, made_with: [], reproduction_count: 0, session_count: 0, parent_build_id: null, updated_at: "2026-11-04T11:00:00Z", created_at: "2026-11-01T00:00:00Z" });
+  await installWorld(page, world, { signedIn: true });
+  await page.goto("/openbuilds/topics/p1");
+
+  const reply = page.getByTestId("reply").filter({ hasText: "This is the rubric step I use." });
+  await reply.getByRole("button", { name: "Add to a draft" }).click();
+  await page.getByRole("menuitem", { name: "My screener" }).click();
+  await expect(page.getByText("Added to My screener.")).toBeVisible();
+
+  // The copy is in the draft, credited to the step's source.
+  await expect.poll(() => world.nodes.filter((node) => node.build_id === "d-mine").length).toBe(1);
+  expect(world.nodes.find((node) => node.build_id === "d-mine")).toMatchObject({ type: "code", title: "Rubric", source_ref: { node_id: "n2", build_id: "b1", saved_item_id: null } });
+
+  await page.getByRole("button", { name: "Open draft" }).click();
+  await expect(page).toHaveURL(/\/compose\/d-mine$/);
+  await expect(page.getByText("Rubric").first()).toBeVisible();
+});

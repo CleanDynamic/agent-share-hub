@@ -11,6 +11,7 @@ import type { PlaqueBuild } from "@/components/brand/Plaque";
 import { cardAttachment, splitBody, type CardAttachment } from "@/components/post/postCardModel";
 import { kindOfNode, topSteps } from "@/lib/build/graph";
 import { REF_KIND } from "@/lib/build/postRefs";
+import type { StepToCopy } from "@/lib/openbuilds/addToDraft";
 import type { CardNode, CardWork } from "@/lib/openbuilds/cardWork";
 import type { LineStepRow, PostPageExtras, WallBuildFacts } from "@/lib/openbuilds/postPage";
 import type { Post, PostAttachment, PostThread } from "@/lib/openbuilds/types";
@@ -143,7 +144,7 @@ export interface ReplyItem {
 }
 
 /** Where a step to copy comes from: published (read again as it is now), or the copy a reply carries. */
-export type StepSource = { kind: "published"; buildId: string; nodeId: string; name: string } | { kind: "copy"; snapshot: Record<string, unknown>; name: string };
+export type StepSource = StepToCopy & { name: string };
 
 export interface ThreadContext {
   work: CardWork;
