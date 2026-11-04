@@ -22,7 +22,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 import { HomeColumns, useHomeLayout } from "@/pages/site/home/HomeFrame";
 
-import { EmptyLine, LoadError, PageHead } from "./OpenBuildsFeedFrame";
+import { EmptyLine, LoadError, PageHead } from "./OpenBuildsFeedParts";
 import type { FeedScope } from "./openBuildsFeedModel";
 
 export type FeedStatus = "loading" | "error" | "ready";

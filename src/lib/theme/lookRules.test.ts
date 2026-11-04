@@ -1171,6 +1171,7 @@ export const CA03_FILES: readonly string[] = [
   "src/components/vision/StepStripTiles.test.tsx",
   "src/pages/openbuilds.budget.test.tsx",
   "src/pages/site/openbuilds/OpenBuildsFeedFrame.tsx",
+  "src/pages/site/openbuilds/OpenBuildsFeedParts.tsx",
   "src/pages/site/openbuilds/OpenBuildsFeedPage.tsx",
   "src/pages/site/openbuilds/OpenBuildsFeedPage.test.tsx",
   "src/pages/site/openbuilds/OpenBuildsFeedView.tsx",

@@ -17,7 +17,8 @@ import { reportError } from "@/lib/errors/report";
 import { getSpaceCrowd, hidePost, joinSpace, listPostCards, pinPost, unhidePost, unpinPost, type CardsPage } from "@/lib/openbuilds";
 import { usePageReady } from "@/lib/routing/pageReady";
 
-import { EmptyLine, OpenBuildsFeedLoadingView } from "./OpenBuildsFeedFrame";
+import { OpenBuildsFeedLoadingView } from "./OpenBuildsFeedFrame";
+import { EmptyLine } from "./OpenBuildsFeedParts";
 import { FEED_PAGE, markSeen, mySpacesKey } from "./openBuildsFeedModel";
 import type { FeedItem } from "./OpenBuildsFeedView";
 import type { PostingWindow } from "./PostingWindows";

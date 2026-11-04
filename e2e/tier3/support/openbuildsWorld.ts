@@ -185,7 +185,12 @@ export async function installWorld(page: Page, world: World, options: { signedIn
       }
       const slug = filter(url, "slug");
       const ids = listOf(filter(url, "id"));
-      return reply(route, world.spaces.filter((space) => (slug ? space.slug === slug.slice(3) : ids.length ? ids.includes(space.id) : true)));
+      return reply(
+        route,
+        world.spaces
+          .filter((space) => (slug ? space.slug === slug.slice(3) : ids.length ? ids.includes(space.id) : true))
+          .map((space) => (select.includes("creator:profiles") ? { ...space, creator: { username: space.creator_id === ME.id ? ME.username : KIT.username } } : space)),
+      );
     }
 
     if (table === "space_members") {

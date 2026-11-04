@@ -10,7 +10,7 @@ import { TextTabs } from "@/components/vision/TextTabs";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
-import { EmptyLine, LoadError, PageHead } from "./OpenBuildsFeedFrame";
+import { EmptyLine, LoadError, PageHead } from "./OpenBuildsFeedParts";
 import { PostList, type FeedItem, type FeedStatus } from "./OpenBuildsFeedView";
 import { primaryFor, type SpaceTab } from "./spaceModel";
 

@@ -79,7 +79,7 @@ export interface BusySpace {
   recent: number;
 }
 
-/** The spaces with the most new posts this week, most first. Two reads in turn: the week's posts, then the winners' details. */
+/** The spaces with the most new posts this week, most first. Two reads in turn: the week's posts, then the winners' details (with their makers). */
 export async function listBusySpaces(options: { limit?: number; now?: number } = {}): Promise<BusySpace[]> {
   const limit = Math.max(1, Math.min(options.limit ?? 8, 20));
   const now = options.now ?? Date.now();
@@ -96,21 +96,18 @@ export async function listBusySpaces(options: { limit?: number; now?: number } =
   if (top.length === 0) return [];
   const ids = top.map(([id]) => id);
   const [spaces, members] = await Promise.all([
-    db.from("spaces").select(SPACE_COLUMNS).in("id", ids).limit(ids.length),
+    db.from("spaces").select(`${SPACE_COLUMNS}, creator:profiles!spaces_creator_id_fkey(username)`).in("id", ids).limit(ids.length),
     db.from("space_members").select("space_id").in("space_id", ids).limit(MEMBER_ROWS),
   ]);
   if (spaces.error) throw postLayerError("listBusySpaces", spaces);
   if (members.error) throw postLayerError("listBusySpaces", members);
-  const rows = (spaces.data ?? []) as SpaceRow[];
-  const creatorIds = unique(rows.map((row) => row.creator_id));
-  const creators = creatorIds.length ? await db.from("profiles").select("id, username").in("id", creatorIds).limit(creatorIds.length) : { data: [], error: null };
-  if (creators.error) throw postLayerError("listBusySpaces", creators);
-  const handleOf = new Map(((creators.data ?? []) as { id: string; username: string | null }[]).map((row) => [row.id, row.username]));
+  const rows = (spaces.data ?? []) as unknown as (SpaceRow & { creator?: { username: string | null } | null })[];
+  const handleOf = new Map(rows.map((row) => [row.id, row.creator?.username ?? null]));
   const memberCount = new Map<string, number>();
   for (const row of (members.data ?? []) as { space_id: string }[]) memberCount.set(row.space_id, (memberCount.get(row.space_id) ?? 0) + 1);
   return top.flatMap(([id, recent]) => {
     const row = rows.find((candidate) => candidate.id === id);
-    return row ? [{ space: toSpace(row), creatorHandle: handleOf.get(row.creator_id) ?? null, members: memberCount.get(id) ?? 0, recent }] : [];
+    return row ? [{ space: toSpace(row), creatorHandle: handleOf.get(row.id) ?? null, members: memberCount.get(id) ?? 0, recent }] : [];
   });
 }
 
