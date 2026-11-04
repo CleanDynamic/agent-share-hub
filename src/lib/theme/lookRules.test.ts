@@ -1456,6 +1456,7 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/ux07.p6.test.tsx",
   "src/pages/site/openbuilds/ReactionRow.tsx",
   "src/pages/site/openbuilds/ux07.p7.test.tsx",
+  "src/pages/ux07.budget.test.tsx",
 ];
 
 /**

@@ -55,3 +55,37 @@ test("Part 5: a reply notification opens its topic at that reply", async ({ page
   await expect(reply).toContainText("Reply number 12");
   await expect(reply).toBeInViewport();
 });
+
+test("Part 8: at 390, Home, a build page, a profile and Library do not scroll sideways, rows stay 44 high, and the reply box types at 16", async ({ page }) => {
+  const world = newWorld();
+  addReplies(world, "p2", [{ id: "r1", body: "I split the rubric into its own step, and it reads a lot better now on a phone.", minutesAgo: 20, aboutNodeId: "n1" }]);
+  world.posts.find((post) => post.id === "p1")!.about_build_id = "b1";
+  await page.setViewportSize({ width: 390, height: 844 });
+  await installWorld(page, world, { signedIn: true });
+  const sideways = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+
+  await page.goto("/");
+  const topic = page.getByRole("article", { name: "Post number 1" });
+  await expect(topic).toBeVisible();
+  expect(await sideways()).toBeLessThanOrEqual(0);
+  // The topic's row keeps 44-high targets on a phone.
+  for (const button of await topic.getByTestId("engagement-row").getByRole("button").all()) expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await topic.getByRole("button", { name: /^Reply/ }).click();
+  const field = page.getByTestId("home-reply-box").getByRole("textbox");
+  expect(await field.evaluate((node) => getComputedStyle(node).fontSize)).toBe("16px");
+  expect(await sideways()).toBeLessThanOrEqual(0);
+
+  await page.goto("/b2/resume-screener");
+  const discussed = page.getByRole("region", { name: "Discussed in OpenBuilds" });
+  await expect(discussed).toBeVisible();
+  for (const row of await discussed.getByRole("listitem").all()) expect((await row.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  expect(await sideways()).toBeLessThanOrEqual(0);
+
+  await page.goto("/profile/testviewer?tab=topics");
+  await expect(page.getByRole("tab", { name: /^Topics/ }).or(page.getByRole("tab", { name: "Topics" })).first()).toBeVisible();
+  expect(await sideways()).toBeLessThanOrEqual(0);
+
+  await page.goto("/library?kind=topics");
+  await expect(page.getByRole("link", { name: /^Topics/ }).or(page.getByRole("tab", { name: /^Topics/ })).first()).toBeVisible();
+  expect(await sideways()).toBeLessThanOrEqual(0);
+});
