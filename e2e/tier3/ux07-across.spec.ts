@@ -31,3 +31,27 @@ test("Part 1: a topic is replied to from Home, in place, and the reply is on the
   await expect(page.getByRole("heading", { level: 1, name: "Post number 1" })).toBeVisible();
   await expect(page.getByTestId("reply").getByText("Home says hello")).toBeVisible();
 });
+
+test("Part 5: a reply notification opens its topic at that reply", async ({ page }) => {
+  const world = newWorld();
+  // Enough replies that the one notified about starts below the first screen.
+  addReplies(
+    world,
+    "p1",
+    Array.from({ length: 12 }, (_, index) => ({ id: `r${index + 1}`, body: `Reply number ${index + 1}\nwith a second line\nand a third`, minutesAgo: 60 - index })),
+  );
+  world.notifications.push({ id: "nt1", recipient_id: "", actor_id: "00000000-0000-4000-8000-0000000000cc", notification_type: "post_reply", body: "replied to your topic", target_type: "post", target_id: "r12", content_id: null, project_id: null, collection_id: null, metadata: {}, is_read: false, read_at: null, created_at: "2026-11-04T11:59:00Z" });
+  world.notifications[0].recipient_id = (await import("../tier2/support/supabaseStub")).ME.id;
+  await installWorld(page, world, { signedIn: true });
+  await page.goto("/notifications");
+
+  // The Activity page's row (SV-20), unchanged: who, the fixed words, and the topic's heading.
+  const row = page.getByTestId("activity-row").filter({ hasText: "@kit replied to your topic" });
+  await expect(row).toContainText("Post number 1");
+  await expect(row).toHaveAttribute("href", "/openbuilds/topics/p1#reply-r12");
+  await row.click();
+  await expect(page).toHaveURL(/\/openbuilds\/topics\/p1#reply-r12$/);
+  const reply = page.locator("#reply-r12");
+  await expect(reply).toContainText("Reply number 12");
+  await expect(reply).toBeInViewport();
+});

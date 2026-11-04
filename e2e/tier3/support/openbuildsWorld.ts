@@ -20,6 +20,8 @@ export interface World {
   spaces: Row[];
   members: Row[];
   posts: Row[];
+  /** UX-07: the signed-in reader's notifications, as rc_notify writes them. */
+  notifications: Row[];
   created: { rpc: Row[]; spaces: Row[]; patches: Row[] };
   seq: number;
   /** Requests the feed made, for specs that look at what was asked. */
@@ -68,6 +70,7 @@ export function newWorld(): World {
     spaces: [claude],
     members: [{ space_id: claude.id, user_id: KIT.id, role: "moderator" }],
     posts: [post(1), post(2), post(3), post(4)],
+    notifications: [],
     created: { rpc: [], spaces: [], patches: [] },
     seq: 0,
     asked: [],
@@ -246,6 +249,18 @@ export async function installWorld(page: Page, world: World, options: { signedIn
       return reply(route, id, 200);
     }
 
+    // UX-07: the reader's notifications; opening one marks it read.
+    if (table === "notifications") {
+      if (method === "HEAD") return route.fulfill({ status: 200, headers: { ...CORS, "content-range": `0-0/${world.notifications.filter((row) => !row.is_read).length}` } });
+      if (method === "PATCH") {
+        const ids = listOf(filter(url, "id"));
+        for (const row of world.notifications) if (ids.length === 0 || ids.includes(row.id)) Object.assign(row, body());
+        return reply(route, []);
+      }
+      const rows = world.notifications.filter((row) => passes(row, url));
+      return reply(route, rows, 200, { "content-range": `0-${Math.max(0, rows.length - 1)}/${rows.length}` });
+    }
+
     // UX-07: Home's feed carries the world's topics, and a reply group for each topic with replies (its newest reply).
     if (table === "rpc/get_build_feed" && method === "POST") return reply(route, feedRows(world));
 
@@ -253,7 +268,8 @@ export async function installWorld(page: Page, world: World, options: { signedIn
       // UX-07: Home's second read, the feed's posts by their ids.
       const ids = listOf(filter(url, "id"));
       if (method === "GET" && filter(url, "id")?.startsWith("in.(") && ids.length) {
-        return reply(route, world.posts.filter((post) => ids.includes(post.id) && post.hidden_by === null));
+        const topicOf = (post: Row) => world.posts.find((entry) => entry.id === post.root_id);
+        return reply(route, world.posts.filter((post) => ids.includes(post.id) && post.hidden_by === null).map((post) => (select.includes("topic:") ? { ...post, topic: { body: topicOf(post)?.body ?? null } } : post)));
       }
       if (method === "PATCH") {
         const ids = listOf(filter(url, "id"));

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { replyHref, topicHref } from "@/components/post/postCardModel";
 import {
   BUILD_NOTIFICATION_KINDS,
   type BuildNotificationKind,
@@ -56,6 +57,12 @@ export function notificationHref(n: Notification): string | null {
       return n.build && n.target_id ? `/b2/${n.build.slug}#node-${n.target_id}` : null;
     case "collection":
       return n.target_id ? `/library/collections/${n.target_id}` : null;
+    // UX-07 P5: a topic opens at its page; a reply opens its topic at that reply.
+    case "post": {
+      const root = typeof n.target?.extra?.root_id === "string" ? n.target.extra.root_id : null;
+      if (!n.target_id || !root) return null;
+      return root === n.target_id ? topicHref(root) : replyHref(root, n.target_id);
+    }
     default:
       break;
   }
@@ -94,6 +101,22 @@ export function isBuildNotificationKind(kind: string): kind is BuildNotification
   return (BUILD_NOTIFICATION_KINDS as readonly string[]).includes(kind);
 }
 
+/** UX-07 P5: UX-04's kinds about topics and replies (20261107160000_ux04_notifications.sql), and the words each is written with. */
+export const POST_NOTIFICATION_MESSAGES = {
+  post_reply: "replied to your topic",
+  post_thread: "replied in your topic",
+  post_mention: "mentioned you",
+  post_like: "liked your topic",
+  post_pinned: "pinned your reply",
+  post_started: "started a topic from your build",
+} as const;
+
+export type PostNotificationKind = keyof typeof POST_NOTIFICATION_MESSAGES;
+
+export function isPostNotificationKind(kind: string): kind is PostNotificationKind {
+  return Object.prototype.hasOwnProperty.call(POST_NOTIFICATION_MESSAGES, kind);
+}
+
 /**
  * What a notification says after its actor's name. The nine build kinds say
  * their stored message; a direct message says so; anything else says its
@@ -102,6 +125,7 @@ export function isBuildNotificationKind(kind: string): kind is BuildNotification
 export function notificationMessage(n: Notification): string {
   const stored = n.body?.trim() ?? "";
   if (isBuildNotificationKind(n.kind)) return stored || BUILD_MESSAGES[n.kind];
+  if (isPostNotificationKind(n.kind)) return stored || POST_NOTIFICATION_MESSAGES[n.kind];
   if (n.kind === "message_received") return "sent you a message";
   return stored || "New notification";
 }
@@ -199,6 +223,26 @@ export async function resolveNotificationTargets(
         title: (row.text ?? "").slice(0, 80) || "Comment",
         slug: null,
         extra: { content_id: row.content_id },
+      });
+    }
+  }
+
+  // ---- UX-07 P5: a topic or a reply (openbuild_posts). Its topic's id is what its link needs; the heading names it.
+  if (byType.post?.size) {
+    const { data } = await supabase
+      .from("openbuild_posts" as never)
+      .select("id, root_id, body, topic:openbuild_posts!openbuild_posts_root_id_fkey(body)")
+      .in("id", Array.from(byType.post))
+      .limit(byType.post.size);
+    for (const row of ((data ?? []) as unknown) as { id: string; root_id: string; body: string | null; topic?: { body: string | null } | null }[]) {
+      // The topic's heading names the row, whether it is about the topic or a reply in it.
+      const words = row.topic?.body ?? row.body ?? "";
+      out.set(trackedRowKey("post", row.id), {
+        id: row.id,
+        type: "post",
+        title: words.trim().split("\n")[0]?.slice(0, 140) || null,
+        slug: null,
+        extra: { root_id: row.root_id },
       });
     }
   }

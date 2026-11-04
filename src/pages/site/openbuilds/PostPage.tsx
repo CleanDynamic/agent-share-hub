@@ -9,12 +9,13 @@
 
    Likes, pins and hides change the page at once and ask the database after; a refusal puts the page back and says so. */
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { SeoHead } from "@/components/SeoHead";
+import { centre } from "@/components/build/partNav";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { PostControl } from "@/components/post/postControls";
 import { splitBody, toCardData } from "@/components/post/postCardModel";
@@ -99,6 +100,18 @@ export default function PostPage() {
     if (extras.error) reportError(extras.error, { source: "openbuilds", context: "post-extras" });
   }, [post.error, extras.error]);
   usePageReady("post", !arriving && thread !== null);
+
+  /* UX-07 P5: `#reply-<id>` (a notification, a reply group on Home, a profile) brings that reply to the middle on arrival, once,
+     with the page's own scroll helper, as `#node-<id>` does on a build page. */
+  const scrolledTo = useRef<string | null>(null);
+  useEffect(() => {
+    const hash = decodeURIComponent(location.hash.replace(/^#/, ""));
+    if (arriving || !hash.startsWith("reply-") || scrolledTo.current === hash) return;
+    const element = document.getElementById(hash);
+    if (!element) return;
+    scrolledTo.current = hash;
+    centre(element);
+  });
 
   /* ── the one reply box: at the foot, or under the reply it answers; about a step or not ── */
 

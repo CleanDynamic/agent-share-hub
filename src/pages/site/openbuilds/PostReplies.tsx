@@ -25,6 +25,9 @@ import { FIGTREE } from "@/lib/theme/type";
 
 import type { ReplyItem, StepSource } from "./postModel";
 
+/** UX-07 P5: a reply's element id, the address's `#reply-<id>` (replyHref). */
+export const replyAnchor = (replyId: string): string => `reply-${replyId}`;
+
 /** A menu opened from the page stands above the page's own layers. */
 export const MENU_Z = 80;
 
@@ -203,7 +206,7 @@ export function Reply({ reply, actions, last, box }: { reply: ReplyItem; actions
   );
 
   return (
-    <li data-testid="reply" data-depth={reply.depth} style={{ listStyle: "none", padding: "16px 0", borderBottom: last ? "none" : `1px solid ${t.hairline}` }}>
+    <li id={replyAnchor(reply.id)} data-testid="reply" data-depth={reply.depth} style={{ listStyle: "none", padding: "16px 0", borderBottom: last ? "none" : `1px solid ${t.hairline}` }}>
       {pinned ? <div style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, padding: 16 }}>{content}</div> : content}
       {box?.at === reply.id ? <div style={{ marginTop: 16 }}>{box.node}</div> : null}
       {reply.children.length > 0 ? (

@@ -15,6 +15,8 @@ export {
 export {
   buildIdOf,
   isBuildNotificationKind,
+  isPostNotificationKind,
+  POST_NOTIFICATION_MESSAGES,
   notificationHref,
   notificationMessage,
   resolveNotificationBuilds,

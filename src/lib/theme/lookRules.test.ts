@@ -1449,6 +1449,9 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/profile/profileModel.ts",
   "src/pages/site/profile/ProfilePage.tsx",
   "src/lib/library/ux07.p4.test.tsx",
+  "src/components/notifications/ux07.p5.test.tsx",
+  "src/pages/site/activity/activityModel.ts",
+  "src/lib/notifications/resolveTarget.ts",
 ];
 
 /**

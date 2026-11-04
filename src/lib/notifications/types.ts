@@ -49,6 +49,8 @@ export type NotificationTargetType =
   // SV-20: a tile on a build page, and a collection a reader kept.
   | "node"
   | "collection"
+  // UX-04: a topic or a reply.
+  | "post"
   | null;
 
 /** RC-P19 — the build a notification is about, as the page names and links it. */
