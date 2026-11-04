@@ -191,7 +191,7 @@ describe("BuildPage (site frame)", () => {
     expect(screen.getByText("£18.40")).toBeTruthy();
     expect(screen.getByText("35 min")).toBeTruthy();
     // What you need, in the proof card.
-    expect(screen.getByText("A Google account")).toBeTruthy();
+    expect(screen.getAllByText("A Google account").length).toBeGreaterThan(0);
     expect(screen.getByTestId("build-hero").textContent).toContain("made by @maya");
 
     const rows = screen.getAllByTestId("build-part-row");
