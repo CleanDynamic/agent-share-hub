@@ -133,7 +133,7 @@ describe("PostCard", () => {
 
   it("uses no em dash in any copy it draws", () => {
     draw({ stillOpen: true, tags: ["a"], closes: "Closes 20 Nov", pinned: true, replies: { count: 1, people: [], detail: "latest from @kit 2m ago", to: "/x" } });
-    expect(document.body.textContent).not.toContain("—");
+    expect(document.body.textContent).not.toContain(String.fromCharCode(8212));
   });
 });
 

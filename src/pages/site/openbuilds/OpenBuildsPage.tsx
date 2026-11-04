@@ -192,7 +192,7 @@ export default function OpenBuildsPage() {
 
   const onMeToo = (bountyId: string, pressed: boolean, count: number) => {
     if (!viewerId) {
-      navigate(`/login?redirect=${encodeURIComponent(`/openbuilds?${params.toString()}`)}`);
+      navigate(`/login?redirect=${encodeURIComponent(`/openbuilds/requests?${params.toString()}`)}`);
       return;
     }
     setMeToo(bountyId, !pressed, Math.max(0, count + (pressed ? -1 : 1)));
@@ -214,7 +214,7 @@ export default function OpenBuildsPage() {
 
   const onOffer = (requestId: string) => {
     if (!viewerId) {
-      navigate(`/login?redirect=${encodeURIComponent(`/openbuilds?${params.toString()}`)}`);
+      navigate(`/login?redirect=${encodeURIComponent(`/openbuilds/requests?${params.toString()}`)}`);
       return;
     }
     setOffering(requestId);
@@ -324,7 +324,7 @@ export default function OpenBuildsPage() {
 
   return (
     <>
-      <SeoHead title="OpenBuilds · buildgallery" description="Published builds that take contributions: open steps to answer, with rewards." path="/openbuilds" />
+      <SeoHead title="OpenBuilds · buildgallery" description="Published builds that take contributions: open steps to answer, with rewards." path="/openbuilds/requests" />
       {/* Until the requests arrive the page draws the route's Placeholder itself, so the two are one shape whoever reads. */}
       <PageArrival loading={arriving} placeholder={<OpenBuildsLoadingView />}>
         {arriving ? <OpenBuildsLoadingView /> : <OpenBuildsView

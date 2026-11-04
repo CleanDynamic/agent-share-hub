@@ -76,7 +76,7 @@ const requests = (page: Page) => page.getByTestId("openbuilds-request");
 
 test("a page of requests shows each one's reward, step, build and maker", async ({ page }) => {
   await fakeBackend(page);
-  await page.goto("/openbuilds");
+  await page.goto("/openbuilds/requests");
 
   await expect(requests(page)).toHaveCount(20);
   const second = requests(page).nth(1);
@@ -89,14 +89,14 @@ test("a page of requests shows each one's reward, step, build and maker", async 
 
 test("a request with no reward says so", async ({ page }) => {
   await fakeBackend(page);
-  await page.goto("/openbuilds");
+  await page.goto("/openbuilds/requests");
 
   await expect(requests(page).first()).toContainText("No reward");
 });
 
 test("Show more adds the next page under the first", async ({ page }) => {
   const backend = await fakeBackend(page);
-  await page.goto("/openbuilds");
+  await page.goto("/openbuilds/requests");
   await expect(requests(page)).toHaveCount(20);
 
   await page.getByRole("button", { name: "Show more" }).click();
@@ -109,7 +109,7 @@ test("Show more adds the next page under the first", async ({ page }) => {
 
 test("no requests says so in one sentence, with one action", async ({ page }) => {
   await fakeBackend(page, { empty: true });
-  await page.goto("/openbuilds");
+  await page.goto("/openbuilds/requests");
 
   await expect(page.getByText("No open requests right now.")).toBeVisible();
   await expect(page.getByRole("link", { name: "Browse builds" })).toHaveAttribute("href", "/builds");
@@ -118,7 +118,7 @@ test("no requests says so in one sentence, with one action", async ({ page }) =>
 test("Answer goes to the request's solve page, and /bounties still lands here", async ({ page }) => {
   await fakeBackend(page);
   await page.goto("/bounties");
-  await expect(page).toHaveURL(/\/openbuilds$/);
+  await expect(page).toHaveURL(/\/openbuilds\/requests$/);
 
   await expect(requests(page).nth(2).getByRole("link", { name: "Answer" })).toHaveAttribute("href", `/openbuilds/${FIRST_PAGE[2].id}/solve`);
 });
@@ -126,7 +126,7 @@ test("Answer goes to the request's solve page, and /bounties still lands here", 
 test("at 390 the page does not scroll sideways", async ({ page }) => {
   await fakeBackend(page);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/openbuilds");
+  await page.goto("/openbuilds/requests");
   await expect(requests(page)).toHaveCount(20);
 
   const overflows = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);

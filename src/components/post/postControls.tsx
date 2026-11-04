@@ -61,7 +61,7 @@ export const PostControl = forwardRef<HTMLButtonElement, ControlProps>(function 
 export const PostPrimary = forwardRef<HTMLButtonElement, ControlProps>(function PostPrimary({ to, download, block, children, type = "button", ...rest }, ref) {
   const phone = useIsPhone();
   const { state, handlers } = useInteractive<HTMLElement>({}, { disabled: rest.disabled });
-  const style: CSSProperties = { ...base, ...PRIMARY, height: phone ? TOUCH_MIN : 32, padding: "0 14px", fontWeight: 500, width: block && phone ? "100%" : undefined, ...ring(state.focusVisible) };
+  const style: CSSProperties = { ...base, ...PRIMARY, height: phone ? TOUCH_MIN : 32, padding: "0 12px", fontWeight: 500, width: block && phone ? "100%" : undefined, ...ring(state.focusVisible) };
   if (to) {
     return (
       <Link to={to} download={download} data-visual-slot="btn-primary" {...handlers} style={style}>

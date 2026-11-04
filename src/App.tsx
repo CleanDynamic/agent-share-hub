@@ -86,6 +86,8 @@ const BountyUpload = lazy(() => import("@/pages/BountyUpload"));
 // adds (CONTRACT §2.6).
 const Bounties = lazy(ROUTE_TABLE.bounties.load as () => Promise<{ default: React.ComponentType }>);
 // RC-P13 — the solvers board, under the bounties board. Its own chunk.
+// UX-05 P2: the requests page that /openbuilds was, now at /openbuilds/requests.
+const BountyRequests = lazy(ROUTE_TABLE.bountyRequests.load as () => Promise<{ default: React.ComponentType }>);
 const Solvers = lazy(() => import("./pages/Solvers"));
 // Solve route for a specific bounty.
 const BountySolveShowPage = lazy(() => import("./pages/BountySolveShowPage"));
@@ -494,6 +496,7 @@ const App = () => (
                     (CONTRACT §2.6). */}
                 <Route path="/bounties" element={<KeepSearchRedirect to="/openbuilds" />} />
                 <Route path="/openbuilds" element={<RouteBoundary><Bounties /></RouteBoundary>} />
+                <Route path="/openbuilds/requests" element={<RouteBoundary><BountyRequests /></RouteBoundary>} />
                 {/* RC-P13 — the solvers board, lazy inside its own RouteBoundary
                     like the board it sits under (CONTRACT §2.6). */}
                 <Route path="/bounties/solvers" element={<RouteBoundary><Solvers /></RouteBoundary>} />

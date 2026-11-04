@@ -198,7 +198,7 @@ describe("model tests and the release check", () => {
     expect(words.title).toBe("Reproduce Call notes on Opus 5.5");
     expect(words.meta).toEqual(["Call notes", "@maya"]);
     const check = releaseCheckWords({ modelId: "opus-5-5", modelName: "Opus 5.5", releasedOn: "2026-10-26", works: 1, fails: 0, untested: 0, total: 1, nextSlug: null, bars: [{ s: "works", n: 1 }] }, Date.parse("2026-10-27T00:00:00Z"));
-    expect(check).toMatchObject({ model: "Opus 5.5", released: "released 1 day ago", to: "/openbuilds?type=model-tests", runTo: undefined });
+    expect(check).toMatchObject({ model: "Opus 5.5", released: "released 1 day ago", to: "/openbuilds/requests?type=model-tests", runTo: undefined });
   });
 });
 

@@ -384,7 +384,7 @@ export function releaseCheckWords(check: ReleaseCheck, now: number): ReleaseChec
     untested: check.untested,
     released: releasedWords(check.releasedOn, now),
     bars: releaseBars(check.bars),
-    to: "/openbuilds?type=model-tests",
+    to: "/openbuilds/requests?type=model-tests",
     runTo: check.nextSlug ? `/b2/${check.nextSlug}` : undefined,
   };
 }

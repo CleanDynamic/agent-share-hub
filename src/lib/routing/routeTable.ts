@@ -27,6 +27,7 @@ import {
   DraftsPlaceholder,
   HomePlaceholder,
   LibraryPlaceholder,
+  OpenBuildsFeedPlaceholder,
   OpenBuildsPlaceholder,
   ProfilePlaceholder,
 } from "./placeholders";
@@ -152,12 +153,40 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
     key: "bounties",
     pattern: SITE_NAV.bounties,
     signedIn: false,
+    load: () => import("@/pages/site/openbuilds/OpenBuildsFeedPage"),
+    /* UX-05 P2: the feed's first screen: the posts in the address's scope (their cards' extras are inside the read), the
+       reader's spaces and the busy spaces, started together. Same keys and functions as OpenBuildsFeedPage. */
+    prefetch: async (_params, queryClient, { userId }) => {
+      const [lib, model] = await Promise.all([import("@/lib/openbuilds"), import("@/pages/site/openbuilds/openBuildsFeedModel")]);
+      const here = window.location.pathname === SITE_NAV.bounties ? window.location.search : "";
+      const { scope, open } = model.readFeedAddress(new URLSearchParams(here), userId !== null);
+      await Promise.all([
+        queryClient.prefetchInfiniteQuery({
+          queryKey: model.feedKey(scope, open, userId),
+          initialPageParam: 0,
+          queryFn: ({ pageParam }) => lib.listPostCards({ scope: scope === "mine" ? "spaces" : "everyone", stillOpen: open || undefined, offset: pageParam, limit: model.FEED_PAGE }),
+          getNextPageParam: (last) => last.next ?? undefined,
+          staleTime: LIST_STALE_MS,
+          pages: 1,
+        }),
+        userId ? queryClient.prefetchQuery({ queryKey: model.mySpacesKey(userId), queryFn: lib.listMySpaces, staleTime: LIST_STALE_MS }) : undefined,
+        queryClient.prefetchQuery({ queryKey: model.busySpacesKey, queryFn: () => lib.listBusySpaces({ limit: 8 }), staleTime: SLOW_STALE_MS }),
+      ]);
+    },
+    Placeholder: OpenBuildsFeedPlaceholder,
+    frame: { board: "home" },
+  },
+  /* UX-05 P2: the requests page that /openbuilds was, unchanged, at its own address. */
+  bountyRequests: {
+    key: "bountyRequests",
+    pattern: "/openbuilds/requests",
+    signedIn: false,
     load: () => import("@/pages/site/openbuilds/OpenBuildsPage"),
     /* SV-14: the first screen's one round: the step requests in the address's sort (their own second round is inside the
        read), the top contributors, the model release check, the week's goal, and a signed-in reader's requests and record. Same keys and functions as
        OpenBuildsPage. On /openbuilds itself the sort follows the address; from a link elsewhere, Most needed. */
     prefetch: async (_params, queryClient, { userId }) => {
-      const here = window.location.pathname === SITE_NAV.bounties ? window.location.search : "";
+      const here = window.location.pathname === "/openbuilds/requests" ? window.location.search : "";
       const [bounty, modelChecks, reviews, { readAddress, sizeOfTab, stepRequestsKey, contributorsKey, releaseCheckKey, weekGoalKey, CONTRIBUTORS_SHOWN, CONTRIBUTORS_DAYS }] = await Promise.all([
         import("@/lib/bounty"),
         import("@/lib/bounty/modelChecks"),
