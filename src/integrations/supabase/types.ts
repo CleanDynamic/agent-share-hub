@@ -4746,14 +4746,17 @@ export type Database = {
       }
       post_spaces: {
         Row: {
+          created_at: string
           post_id: string
           space_id: string
         }
         Insert: {
+          created_at?: string
           post_id: string
           space_id: string
         }
         Update: {
+          created_at?: string
           post_id?: string
           space_id?: string
         }
@@ -6687,8 +6690,26 @@ export type Database = {
           made_for: string[]
           outcome: string
           parent_build_id: string
+          post_author_avatar: string
+          post_author_display: string
+          post_author_id: string
+          post_author_username: string
+          post_body: string
+          post_created_at: string
+          post_id: string
+          post_reply_count: number
+          post_reward_gbp: number
+          post_still_open: boolean
           rebuild_count: number
           rebuild_note: string
+          reply_at: string
+          reply_author_avatar: string
+          reply_author_display: string
+          reply_author_id: string
+          reply_author_username: string
+          reply_body: string
+          reply_id: string
+          reply_new_count: number
           repro_model: string
           repro_note: string
           repro_user_username: string
