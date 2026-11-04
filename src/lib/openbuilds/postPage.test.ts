@@ -38,7 +38,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 vi.mock("./media", () => ({ signEntryMedia: vi.fn(async () => new Map([["me/a.png", "https://signed/a.png"]])) }));
 
 import { readCardWork } from "./cardWork";
-import { flattenThread, listMyLikes, readPostExtras } from "./postPage";
+import { flattenThread, listMyLikes, readPostExtras, readSpaceCrowd } from "./postPage";
 import type { PostThread } from "./types";
 
 const reply = (id: string, extra: Partial<PostThread> = {}): PostThread => ({
@@ -131,5 +131,32 @@ describe("a build's harness", () => {
         : { data: [], error: null };
     const work = await readCardWork([reply("r1", { attachments: [buildAttachment("b-kit")] })]);
     expect(work.builds.get("b-kit")?.madeWith).toBe("Claude Code");
+  });
+});
+
+describe("the post's space", () => {
+  it("is read by the id the post carries, every read in the same round, with the reader's role", async () => {
+    let started = 0;
+    let answered = 0;
+    let startedBeforeAnyAnswer = 0;
+    answer = (table, own) => {
+      started += 1;
+      if (answered === 0) startedBeforeAnyAnswer = started;
+      queueMicrotask(() => (answered += 1));
+      if (table === "spaces") return { data: { id: "s1", slug: "claude-code", name: "Claude Code", description: "", rules: "", creator_id: "sam", who_can_post: "anyone", post_order: "newest", default_view: "wall", rewards_allowed: false, reactions: [], created_at: "", creator: { username: "sam" } }, error: null };
+      if (own.some((call) => call.method === "eq" && call.args[0] === "role")) return { data: [{ user_id: "ola", role: "moderator", profile: { username: "ola", display_name: "Ola", avatar_url: null } }], error: null };
+      if (own.some((call) => call.method === "eq" && call.args[0] === "user_id")) return { data: { user_id: "me" }, error: null };
+      return { data: null, error: null, count: 412 } as never;
+    };
+    const crowd = await readSpaceCrowd("s1", "me");
+    expect(startedBeforeAnyAnswer).toBe(4);
+    expect(crowd).toMatchObject({ space: { slug: "claude-code", defaultView: "wall" }, creator: { handle: "sam" }, moderators: [{ id: "ola", handle: "ola" }], members: 412, role: "member" });
+    expect(calls.filter((call) => call.table === "spaces" && call.method === "eq").map((call) => call.args)).toEqual([["id", "s1"]]);
+  });
+
+  it("makes the space's maker and its moderators moderators, and nobody signed in a reader", async () => {
+    answer = (table) => (table === "spaces" ? { data: { id: "s1", slug: "s", name: "S", description: "", rules: "", creator_id: "me", who_can_post: "anyone", post_order: "newest", default_view: "thread", rewards_allowed: false, reactions: [], created_at: "", creator: { username: "me" } }, error: null } : { data: [], error: null });
+    expect((await readSpaceCrowd("s1", "me"))?.role).toBe("moderator");
+    expect((await readSpaceCrowd("s1", null))?.role).toBe("none");
   });
 });
