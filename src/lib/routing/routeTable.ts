@@ -176,6 +176,20 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
     Placeholder: OpenBuildsFeedPlaceholder,
     frame: { board: "home" },
   },
+  /* UX-05 P3: a space's page. Round 1 is the space with its people; its posts need the space's id and order. */
+  space: {
+    key: "space",
+    pattern: "/openbuilds/spaces/:slug",
+    signedIn: false,
+    load: () => import("@/pages/site/openbuilds/SpacePage"),
+    prefetch: async ({ slug }, queryClient, { userId }) => {
+      if (!slug) return;
+      const [lib, model] = await Promise.all([import("@/lib/openbuilds"), import("@/pages/site/openbuilds/spaceModel")]);
+      await queryClient.prefetchQuery({ queryKey: model.spaceCrowdKey(slug, userId), queryFn: () => lib.getSpaceCrowd(slug, userId), staleTime: LIST_STALE_MS });
+    },
+    Placeholder: OpenBuildsFeedPlaceholder,
+    frame: { board: "home" },
+  },
   /* UX-05 P2: the requests page that /openbuilds was, unchanged, at its own address. */
   bountyRequests: {
     key: "bountyRequests",

@@ -150,7 +150,25 @@ function BusyThisWeek({ rows }: { rows: BusyRow[] }) {
   );
 }
 
-/** The list's body: the cards, the states, and Show more. */
+/** The cards, a hairline between, and Show more. */
+export function PostList({ items, more }: { items: FeedItem[]; more?: { loading: boolean; onMore: () => void } }) {
+  return (
+    <div>
+      {items.map((item, index) => (
+        <div key={item.card.id} style={{ borderTop: index === 0 ? "none" : `1px solid ${t.hairline}`, padding: "0 20px", contentVisibility: "auto", containIntrinsicSize: "auto 220px" }}>
+          <PostCard card={item.card} engagement={item.engagement} moderation={item.moderation} />
+        </div>
+      ))}
+      {more ? (
+        <div style={{ display: "flex", justifyContent: "center", padding: "20px 0", borderTop: `1px solid ${t.hairline}` }}>
+          <PostControl onClick={more.onMore}>{more.loading ? "Loading" : "Show more"}</PostControl>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** The list's body: the cards, the states. */
 function Posts({ view }: { view: OpenBuildsFeedViewProps }) {
   const { posts } = view;
   if (posts.status === "error") return <LoadError what="Posts didn't load." onRetry={posts.onRetry} />;
@@ -165,20 +183,7 @@ function Posts({ view }: { view: OpenBuildsFeedViewProps }) {
       </EmptyLine>
     );
   }
-  return (
-    <div>
-      {posts.items.map((item, index) => (
-        <div key={item.card.id} style={{ borderTop: index === 0 ? "none" : `1px solid ${t.hairline}`, padding: "0 20px", contentVisibility: "auto", containIntrinsicSize: "auto 220px" }}>
-          <PostCard card={item.card} engagement={item.engagement} moderation={item.moderation} />
-        </div>
-      ))}
-      {posts.more ? (
-        <div style={{ display: "flex", justifyContent: "center", padding: "20px 0", borderTop: `1px solid ${t.hairline}` }}>
-          <PostControl onClick={posts.more.onMore}>{posts.more.loading ? "Loading" : "Show more"}</PostControl>
-        </div>
-      ) : null}
-    </div>
-  );
+  return <PostList items={posts.items} more={posts.more} />;
 }
 
 const OPEN_ITEMS = [

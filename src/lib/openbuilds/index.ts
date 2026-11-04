@@ -6,5 +6,6 @@ export * from "./connections";
 export * from "./attachable";
 export * from "./media";
 export * from "./cardWork";
+export * from "./attachLabels";
 export * from "./spacesFeed";
 export type { AttachmentInput } from "./attach";
