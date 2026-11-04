@@ -23,10 +23,14 @@ vi.mock("@/lib/bounty", () => ({ OPEN_BOUNTIES_PAGE_SIZE: 20, listOpenBountyCard
 vi.mock("@/components/gallery/cardMedia", async (original) => ({ ...(await original<typeof import("@/components/gallery/cardMedia")>()), useSignedMedia: () => new Map() }));
 const getGalleryBuildsByIds = vi.hoisted(() => vi.fn(async (ids: string[]) => ids.map((id) => ({ id, slug: id, title: id, nodes: [], media: [], models_used: [] }))));
 vi.mock("@/lib/build/gallery", async (original) => ({ ...(await original<typeof import("@/lib/build/gallery")>()), listGallery: async () => ({ builds: [], total: 0 }), getGalleryBuildsByIds }));
+const listPosts = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/openbuilds", async (original) => ({ ...(await original<typeof import("@/lib/openbuilds")>()), listPosts }));
 const getBuildFeed = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/feed/getBuildFeed", async (original) => ({ ...(await original<typeof import("@/lib/feed/getBuildFeed")>()), getBuildFeed }));
 
 type Props = {
+  requests: { status: string; data?: Array<{ id: string; title: string; detail: string }> };
+  stillOpenScope?: string;
   feed: { status: string; items: Array<{ key: string; kind: string; build?: { id: string } }> };
   newCount: number;
   onShowNew: () => void;
@@ -82,6 +86,8 @@ beforeEach(() => {
   window.localStorage.clear();
   getGalleryBuildsByIds.mockClear();
   getBuildFeed.mockReset();
+  listPosts.mockReset();
+  listPosts.mockResolvedValue({ posts: [], next: null });
 });
 afterEach(() => {
   cleanup();
@@ -158,5 +164,42 @@ describe("Home · Me too", () => {
     await waitFor(() => expect(seen.props).not.toBeNull());
     act(() => seen.props!.onMeToo("q1"));
     await waitFor(() => expect(screen.getByTestId("login")).toBeTruthy());
+  });
+});
+
+describe("Home · UX-08 P3: Still open", () => {
+  const STILL = {
+    posts: [{ id: "p1", body: "Session 3 is missing", author: { handle: "maya" }, spaces: [{ name: "Claude Code" }], rewardGbp: null }],
+    next: null,
+  };
+
+  it("signed in: one read of the still-open topics in the reader's spaces, three at most, and no open-request read", async () => {
+    getBuildFeed.mockResolvedValue({ items: [], nextBefore: null });
+    listPosts.mockResolvedValue(STILL);
+    mount();
+    await waitFor(() => expect(seen.props?.requests.status).toBe("ready"));
+    expect(listPosts).toHaveBeenCalledTimes(1);
+    expect(listPosts).toHaveBeenCalledWith({ scope: "spaces", stillOpen: true, limit: 3 });
+    expect(seen.props?.stillOpenScope).toBe("spaces");
+    expect(seen.props?.requests.data?.[0]).toMatchObject({ id: "p1", title: "Session 3 is missing", detail: "@maya · in Claude Code" });
+  });
+
+  it("signed out: everyone's still-open topics", async () => {
+    auth.user = null;
+    getBuildFeed.mockResolvedValue({ items: [], nextBefore: null });
+    listPosts.mockResolvedValue(STILL);
+    mount();
+    await waitFor(() => expect(seen.props?.requests.status).toBe("ready"));
+    expect(listPosts).toHaveBeenCalledWith({ scope: "everyone", stillOpen: true, limit: 3 });
+    expect(seen.props?.stillOpenScope).toBe("everyone");
+  });
+
+  it("waits for the session check to say which, and asks once", async () => {
+    auth.user = null;
+    auth.loading = true;
+    getBuildFeed.mockResolvedValue({ items: [], nextBefore: null });
+    mount();
+    await waitFor(() => expect(getBuildFeed).toHaveBeenCalled());
+    expect(listPosts).not.toHaveBeenCalled();
   });
 });

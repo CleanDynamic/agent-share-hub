@@ -7,9 +7,11 @@
 import type { PlaqueBuild } from "@/components/brand/Plaque";
 import type { RowEngagement } from "@/components/social/EngagementRow";
 import { rewardLabel } from "@/components/bounty/bountyDisplay";
+import { rewardWords, splitBody, topicHref } from "@/components/post/postCardModel";
 import { canOpenFromRun } from "@/lib/bounty/runRequestRules";
 import type { GalleryBuild } from "@/lib/build/gallery";
 import type { WhereNextItem } from "@/lib/build/whereNext";
+import type { Post } from "@/lib/openbuilds";
 import type { Classification } from "@/lib/classify/types";
 import type { ActivityEvent } from "@/lib/feed/activity";
 import type { FeedItem, FeedItemKind } from "@/lib/feed/getBuildFeed";
@@ -173,8 +175,15 @@ export interface HomeWeek {
 /** UX-03 P6: how many of the maker's published builds "Your published builds" lists. Home's own; not the composer's GROUP_ROWS. */
 export const HOME_BUILD_ROWS = 5;
 
-/** Where Home's open requests go. The old list of requests, until UX-08 replaces the section with Still open topics: change it here, once. */
-export const OPEN_REQUESTS_HREF = "/openbuilds/requests";
+/** UX-08 P3: where Home's Still open section goes: OpenBuilds with the Still open filter on. */
+export const STILL_OPEN_HREF = "/openbuilds?open=1";
+
+/** UX-08 P3: the section shows this many topics. */
+export const STILL_OPEN_SHOWN = 3;
+
+/** UX-08 P3: the section's meta line: the reader's spaces, or all of OpenBuilds when nobody is signed in. */
+export const STILL_OPEN_META = { spaces: "In your spaces", everyone: "Across OpenBuilds" } as const;
+export type StillOpenScope = keyof typeof STILL_OPEN_META;
 
 /** UX-03 P6: the maker's published builds, for the room when nothing else in it has anything to show. */
 export interface HomePublished {
@@ -209,10 +218,25 @@ export interface HomeRunRow {
 export interface HomeRequestRow {
   id: string;
   title: string;
-  /** "Research brief · 5 days left". */
+  /** UX-08 P3: "@maya · in Claude Code". */
   detail: string;
   reward: string | null;
   href: string;
+}
+
+/** UX-08 P3: the still-open topics as Home's rows: the topic's heading, `@maya · in Claude Code`, and the reward when there is one. */
+export function stillOpenRows(posts: readonly Post[], limit: number = STILL_OPEN_SHOWN): HomeRequestRow[] {
+  return posts.slice(0, limit).map((post) => {
+    const by = post.author?.handle ? `@${post.author.handle}` : null;
+    const space = post.spaces[0]?.name;
+    return {
+      id: post.id,
+      title: splitBody(post.body).heading || "A topic",
+      detail: [by, space ? `in ${space}` : null].filter(Boolean).join(" · "),
+      reward: post.rewardGbp === null ? null : rewardWords(post.rewardGbp),
+      href: topicHref(post.id),
+    };
+  });
 }
 
 export interface HomeMostRunRow {

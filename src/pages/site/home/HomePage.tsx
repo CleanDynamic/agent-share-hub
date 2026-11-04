@@ -22,14 +22,14 @@ import { SeoHead } from "@/components/SeoHead";
 import { topicHref } from "@/components/post/postCardModel";
 import { reportError } from "@/lib/errors/report";
 import { MEDIA_WIDTH } from "@/components/build/MediaFigure";
-import { rewardLabel } from "@/components/bounty/bountyDisplay";
 import { coverMedia, feedMedia, stillFor, useSignedMedia, type CardMedia } from "@/components/gallery/cardMedia";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { useAuth } from "@/contexts/AuthContext";
 import { engagementFor, useEngagement } from "@/hooks/useEngagement";
 import { librarySessionsKey, useLibrarySessions } from "@/hooks/useLibrarySessions";
 import { useMyWeek } from "@/hooks/useProgressPage";
-import { findRunByHandle, listOpenBountyCards, myMeToo, OPEN_BOUNTIES_PAGE_SIZE, openRequestFromRun, toggleMeToo } from "@/lib/bounty";
+import { findRunByHandle, myMeToo, openRequestFromRun, toggleMeToo } from "@/lib/bounty";
+import { listPosts, postKey } from "@/lib/openbuilds";
 import { listPublishedBuildsByCreator } from "@/lib/build/builds";
 import { listDraftFirstPrompts, listDraftsWithSessions } from "@/lib/build/drafts";
 import { copyToClipboard } from "@/lib/deepLink";
@@ -67,15 +67,19 @@ import {
   type HomeRunRow,
   shownItems,
   sinceSection,
-  timeLeft,
   whereNextRows,
   writeHomeSeen,
   type HomeAskDetail,
   type HomeFilter,
   type HomePostDetail,
   HOME_BUILD_ROWS,
-  OPEN_REQUESTS_HREF,
+  STILL_OPEN_SHOWN,
+  stillOpenRows,
+  type StillOpenScope,
 } from "./homeModel";
+
+/** UX-08 P3: the open requests are no longer read on Home, so the old requests in the feed carry no extra detail. */
+const NO_ASKS: ReadonlyMap<string, HomeAskDetail> = new Map();
 
 const STALE_MS = LIST_STALE_MS;
 /** The headline counts are estimates; a minute is as fresh as they mean to be. */
@@ -210,15 +214,15 @@ export function HomePage() {
     staleTime: STALE_MS,
   });
 
-  /* The OpenBuilds board's own first page, on its own key: "Most needed first" is its asks by Me too. */
-  const requests = useInfiniteQuery({
-    queryKey: ["bounty-board"],
-    initialPageParam: null as string | null,
-    queryFn: ({ pageParam }) => listOpenBountyCards({ limit: OPEN_BOUNTIES_PAGE_SIZE, before: pageParam }),
-    getNextPageParam: (last) => last.nextCursor ?? undefined,
+  /* UX-08 P3: Still open: the topics still waiting for a piece, from the reader's spaces (everyone's when signed out). One request,
+     started with the rest of the first round; it waits only for the session check to say which. */
+  const stillOpenScope: StillOpenScope = signedIn ? "spaces" : "everyone";
+  const stillOpen = useQuery({
+    queryKey: postKey("listPosts", stillOpenScope, "stillOpen", STILL_OPEN_SHOWN),
+    queryFn: () => listPosts({ scope: stillOpenScope, stillOpen: true, limit: STILL_OPEN_SHOWN }),
+    enabled: signedIn !== null,
     staleTime: STALE_MS,
   });
-  const openCards = useMemo(() => requests.data?.pages[0]?.cards ?? [], [requests.data]);
 
   const endCards = useQuery({ queryKey: ["build", "listGallery", 2], queryFn: () => listGallery({ limit: 2 }), staleTime: STALE_MS });
 
@@ -379,12 +383,6 @@ export function HomePage() {
     staleTime: STALE_MS,
   });
 
-  const asks = useMemo(() => {
-    const out = new Map<string, HomeAskDetail>();
-    for (const card of openCards) out.set(card.bounty.id, { solutions: card.solutions, closesAt: card.bounty.closes_at, meTooCount: card.bounty.me_too_count ?? 0 });
-    return out;
-  }, [openCards]);
-
   /* SV-21: only when the maker presses it. The feed row has the build and the reproducer's handle, so the run is found now. */
   const onOpenRequest = async (run: HomeRunRow) => {
     if (!userId || !run.handle) return;
@@ -392,7 +390,7 @@ export function HomePage() {
       const found = await findRunByHandle(run.buildId, run.handle);
       if (!found) throw new Error("That run is not there any more");
       await openRequestFromRun({ runId: found.id, viewerId: userId });
-      toast("Request opened.", { action: { label: "See requests", onClick: () => navigate(OPEN_REQUESTS_HREF) } });
+      toast("Request opened.", { action: { label: "See requests", onClick: () => navigate("/openbuilds/requests") } });
     } catch (error) {
       reportError(error, { source: "home", context: "openRequestFromRun" });
       toast.error(error instanceof Error && error.message.startsWith("That run already") ? error.message : "Couldn't open a request from that run. Try again.");
@@ -456,7 +454,7 @@ export function HomePage() {
   const now = Date.now();
   const context = {
     details,
-    asks,
+    asks: NO_ASKS,
     // Drawn from the start, its counts filling in when they come, so the row does not push the feed down.
     engagement: (buildId: string) => engagementFor(engagement, buildId),
     meTooPressed: meToo.data ?? new Set<string>(),
@@ -587,18 +585,8 @@ export function HomePage() {
             runs: runRows(items, 3, userId),
             onOpenRequest: userId ? (run) => void onOpenRequest(run) : undefined,
           }}
-          requests={publicLoadable({ isLoading: requests.isLoading, error: requests.error, data: requests.data, refetch: requests.refetch }, () =>
-            [...openCards]
-              .sort((a, b) => (b.bounty.me_too_count ?? 0) - (a.bounty.me_too_count ?? 0))
-              .slice(0, 3)
-              .map((card) => ({
-                id: card.bounty.id,
-                title: (card.gapTitle ?? "").trim() || card.build.title,
-                detail: [card.build.title, timeLeft(card.bounty.closes_at, now)].filter(Boolean).join(" · "),
-                reward: rewardLabel(card.bounty.reward_gbp),
-                href: `/bounties/${card.bounty.id}/solve`,
-              })),
-          )}
+          requests={publicLoadable({ isLoading: stillOpen.isLoading || signedIn === null, error: stillOpen.error, data: stillOpen.data, refetch: stillOpen.refetch }, (page) => stillOpenRows(page.posts))}
+          stillOpenScope={stillOpenScope}
           mostRun={publicLoadable(mostRun, (rows) =>
             rows.map((row) => ({
               buildId: row.buildId,

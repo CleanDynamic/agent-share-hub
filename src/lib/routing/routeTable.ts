@@ -62,10 +62,10 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
     /* SV-10: the first screen's reads that need nothing else: the Everyone feed, the room's counts and lists, and a
        signed-in reader's drafts. Same keys and functions as HomePage. */
     prefetch: async (_params, queryClient, { userId }) => {
-      const [{ getBuildFeed }, signals, { listOpenBountyCards, OPEN_BOUNTIES_PAGE_SIZE }, { listDraftsWithSessions, listDraftFirstPrompts }, { weekStartUtc }, { listPublishedBuildsByCreator }, { HOME_BUILD_ROWS }] = await Promise.all([
+      const [{ getBuildFeed }, signals, { listPosts, postKey }, { listDraftsWithSessions, listDraftFirstPrompts }, { weekStartUtc }, { listPublishedBuildsByCreator }, { HOME_BUILD_ROWS, STILL_OPEN_SHOWN }] = await Promise.all([
         import("@/lib/feed/getBuildFeed"),
         import("@/lib/build/signals"),
-        import("@/lib/bounty"),
+        import("@/lib/openbuilds"),
         import("@/lib/build/drafts"),
         import("@/lib/progress/weekly"),
         import("@/lib/build/builds"),
@@ -89,13 +89,11 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
           queryFn: () => signals.listMostReproduced({ since: new Date(weekStart), limit: 3 }),
           staleTime: SLOW_STALE_MS,
         }),
-        queryClient.prefetchInfiniteQuery({
-          queryKey: ["bounty-board"],
-          initialPageParam: null as string | null,
-          queryFn: ({ pageParam }) => listOpenBountyCards({ limit: OPEN_BOUNTIES_PAGE_SIZE, before: pageParam }),
-          getNextPageParam: (last) => last.nextCursor ?? undefined,
+        // UX-08 P3: Still open (the topics still waiting for a piece), where the Open requests read was. Same key as HomePage.
+        queryClient.prefetchQuery({
+          queryKey: postKey("listPosts", userId ? "spaces" : "everyone", "stillOpen", STILL_OPEN_SHOWN),
+          queryFn: () => listPosts({ scope: userId ? "spaces" : "everyone", stillOpen: true, limit: STILL_OPEN_SHOWN }),
           staleTime: LIST_STALE_MS,
-          pages: 1,
         }),
         userId
           ? queryClient.prefetchQuery({ queryKey: ["build", "listDraftsWithSessions", userId], queryFn: () => listDraftsWithSessions(userId), staleTime: LIST_STALE_MS })

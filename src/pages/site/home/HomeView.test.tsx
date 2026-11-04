@@ -39,7 +39,7 @@ afterEach(() => vi.unstubAllGlobals());
 describe("HomeView · the three columns", () => {
   it("draws the studio, the feed and the room, each section under its own heading", () => {
     mount();
-    for (const name of ["Since you were last here", "Continue editing", "Your sessions", "Your week", "Open requests", "Most run this week", "Where next"]) {
+    for (const name of ["Since you were last here", "Continue editing", "Your sessions", "Your week", "Still open", "Most run this week", "Where next"]) {
       expect(screen.getByRole("heading", { level: 2, name })).toBeTruthy();
     }
     expect(screen.getByRole("complementary", { name: "Your studio" })).toBeTruthy();
@@ -55,7 +55,7 @@ describe("HomeView · the three columns", () => {
   it("links the section chevrons to their pages", () => {
     mount();
     expect(screen.getByRole("link", { name: "Open drafts" }).getAttribute("href")).toBe("/drafts");
-    expect(screen.getByRole("link", { name: "Open OpenBuilds" }).getAttribute("href")).toBe("/openbuilds/requests");
+    expect(screen.getByRole("link", { name: "Open OpenBuilds" }).getAttribute("href")).toBe("/openbuilds?open=1");
     expect(screen.getByRole("link", { name: "Open activity" }).getAttribute("href")).toBe("/notifications");
   });
 

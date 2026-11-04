@@ -61,7 +61,7 @@ describe("UX-03 P6: Home hides what has nothing to show", () => {
     mount(NOTHING);
     expect(headings(room())).toEqual(["Your published builds"]);
     expect(room().textContent).not.toContain("Reproduced today");
-    expect(room().textContent).not.toContain("No open requests right now.");
+    expect(room().textContent).not.toContain("Nothing is still open right now.");
     expect(room().textContent).not.toContain("Nothing run yet this week.");
     expect(room().textContent).not.toContain("Run a build this week and suggestions appear here.");
     const module = screen.getByRole("region", { name: "Your published builds" });
@@ -74,9 +74,9 @@ describe("UX-03 P6: Home hides what has nothing to show", () => {
     expect(screen.queryByRole("heading", { name: "Your week" })).toBeNull();
   });
 
-  it("with one open request, shows Open requests and not the published builds", () => {
+  it("with one still-open topic, shows Still open and not the published builds", () => {
     mount({ ...NOTHING, requests: { status: "ready", data: [{ id: "r1", title: "Make it work offline", detail: "Bakery site · 3 days left", reward: "£40", href: "/bounties/r1/solve" }] } });
-    expect(headings(room())).toEqual(["Open requests"]);
+    expect(headings(room())).toEqual(["Still open"]);
     expect(screen.queryByRole("region", { name: "Your published builds" })).toBeNull();
   });
 

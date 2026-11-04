@@ -81,7 +81,9 @@ import {
   type HomeWeek,
   type HomeWhereNextRow,
   type HomePublished,
-  OPEN_REQUESTS_HREF,
+  STILL_OPEN_HREF,
+  STILL_OPEN_META,
+  type StillOpenScope,
 } from "./homeModel";
 import type { HomeReplyGroup, HomeTopicPost } from "./homeTopics";
 
@@ -161,7 +163,10 @@ export interface HomeViewProps {
 
   /* The room */
   room: HomeRoom;
+  /** UX-08 P3: Still open. */
   requests: Loadable<readonly HomeRequestRow[]>;
+  /** UX-08 P3: whose topics `requests` holds: the reader's spaces (the default), or all of OpenBuilds when signed out. */
+  stillOpenScope?: StillOpenScope;
   mostRun: Loadable<readonly HomeMostRunRow[]>;
   whereNext: Loadable<readonly HomeWhereNextRow[]>;
   /** UX-03 P6: the maker's published builds, drawn in the room only when nothing else there has anything to show. Absent: none. */
@@ -906,15 +911,16 @@ export function RoomSection({ room, now }: { room: HomeRoom; now: number }) {
   );
 }
 
-export function RequestsSection({ requests }: { requests: HomeViewProps["requests"] }) {
-  if (requests.status === "loading") return <SectionBones rows={3} height={48} what="open requests" />;
+/** UX-08 P3: Still open: the topics that are still waiting for a piece, in the reader's spaces (or all of OpenBuilds when signed out). */
+export function RequestsSection({ requests, scope = "spaces" }: { requests: HomeViewProps["requests"]; scope?: StillOpenScope }) {
+  if (requests.status === "loading") return <SectionBones rows={3} height={48} what="still-open topics" />;
   return (
-    <section aria-label="Open requests">
+    <section aria-label="Still open">
       <div style={{ marginBottom: 8 }}>
-        <SectionHead title="Open requests" meta="Most needed first" to={OPEN_REQUESTS_HREF} openName="OpenBuilds" headingLevel={2} />
+        <SectionHead title="Still open" meta={STILL_OPEN_META[scope]} to={STILL_OPEN_HREF} openName="OpenBuilds" headingLevel={2} />
       </div>
       {requests.status === "error" ? (
-        <SectionFailure panel="Open requests" failure={requests} />
+        <SectionFailure panel="Still open" failure={requests} />
       ) : requests.status === "ready" && requests.data.length > 0 ? (
         requests.data.map((row, index) => (
           <Link key={row.id} to={row.href} data-testid="home-request-row" style={rowLink(index === requests.data.length - 1, { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, minHeight: 48 })}>
@@ -926,7 +932,7 @@ export function RequestsSection({ requests }: { requests: HomeViewProps["request
           </Link>
         ))
       ) : (
-        <EmptyState line="No open requests right now." action={undefined} />
+        <EmptyState line="Nothing is still open right now." action={undefined} />
       )}
     </section>
   );
@@ -1033,7 +1039,7 @@ export function PublishedSection({ published, onCopyLink }: { published: HomePub
 function Room(props: HomeViewProps) {
   const parts: ReactNode[] = [];
   if (roomShown(props.room)) parts.push(<RoomSection key="room" room={props.room} now={props.now} />);
-  if (listShown(props.requests)) parts.push(<RequestsSection key="requests" requests={props.requests} />);
+  if (listShown(props.requests)) parts.push(<RequestsSection key="requests" requests={props.requests} scope={props.stillOpenScope} />);
   if (listShown(props.mostRun)) parts.push(<MostRunSection key="most" mostRun={props.mostRun} />);
   if (props.whereNext.status !== "signed-out" && listShown(props.whereNext)) parts.push(<WhereNextSection key="next" whereNext={props.whereNext} />);
   // Nothing else to show, for a maker with published builds: those builds.
