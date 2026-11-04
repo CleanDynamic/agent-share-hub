@@ -106,7 +106,8 @@ Facts in this prompt that were wrong on disk:
   - Collections take no saved item of any kind from the UI (builds only), so topics in collections adds nothing.
   - Drafts imports src/pages/site/compose/referencePieces directly on main; Home reaches the folder through shared pieces.
   - tsc fails on main with one error (postPage.ts readSpaceCrowd cast, UX-06's); unchanged here.
-Baseline → end: tests 11241 → END_TOTAL (main: 31 failing in 14 files. End: END_FAILS, every one among main's 31. No new failure.)
+Baseline → end: tests 11241 → 11338 (main: 31 failing in 14 files. End: 29 failing in 12 files, every one among main's 31; two
+  compose tests that fail on main passed this run. No new failure.)
 Compared boards: not comparable: UX-07 has no board (the prompt says no picture comes with it). Looks come from the host pages'
   own pieces and tokens. Screenshots: design/audits/ux-07/{before,after}/{home,build,profile,library,notifications}-
   {1440-noon,1440-dusk,390-dusk}.png. The Library board's dev fixture keeps its seven kinds (Topics is not on the board).
@@ -119,6 +120,10 @@ Request rounds and requests for the page, before → after (read from the code; 
   - Profile Topics tab, when opened: two rounds (the page of posts, then their extras and the replies' topics together).
   - Library Topics kind: the kept list as before, then readTopicCards (the posts, then their work): two more rounds.
   - Post page: three rounds as UX-06 left it; the spaces' reactions and the thread's reactions are two more requests in round 2.
+  - Composer: no request more on its open. The opt-out is read (one request) when the Classification sheet is first opened.
+  - npm run audit:pages was not run: its harness (e2e/audit/support) has no OpenBuilds posts, so none of the reads above would
+    return anything there. The /b2/:slug claim (no extra round) is read from the code: listTopicsAbout is a query keyed on the build
+    id, enabled with the page's other reads by build id, and none of its three requests waits on another.
 Web Vitals against the last after numbers (LCP · CLS · INP proxy): not run (audit:perf measures the audit harness's pages, whose
   backend has no posts, so none of this branch's additions draw there).
 Built but not live yet: none. Every addition reads live data (the database objects are UX-04's).
@@ -149,7 +154,28 @@ Questions for Miles:
 
 ## Checks run
 
-CHECKS_PLACEHOLDER
+- `npx tsc --noEmit -p tsconfig.app.json` (with `NODE_OPTIONS=--max-old-space-size=8192`): one error, the same one main has
+  (`src/lib/openbuilds/postPage.ts`, `readSpaceCrowd`'s cast). None in this branch's lines.
+- `npm test`: 11338 tests, 29 failing in 12 files, every one among main's 31 (build, compose and lookRules files this branch does
+  not draw in). A first end run, made while the browser suite loaded the machine, showed three composer failures that main does not
+  have: the opt-out's read started with the composer and broke the legacy page's publish sheet (`BountySection.test.tsx`). Fixed in
+  a P6 follow-up commit (the read waits for the Classification sheet); the rerun is the line above.
+- `npm run lint`: 1430 errors, the same count as main; 534 warnings (main 529: the five are react-refresh notes on new files that
+  export a constant beside a component). No error on a line this branch wrote.
+- `npm run build`: builds. `scripts/check-size.mjs`: first download 233.1 KB (UX-06 left 232.9), composer chunk 123.7 KB (123.5).
+  Both over their budgets on main as well; the budgets bind after SV-26.
+- `npx playwright test e2e/tier1 --project=desktop --project=mobile`: 97 failed, 360 passed on main in this container (they read a
+  live backend whose schema is not the migrations'). The branch's failures are those 97 and four more that ran alongside the unit
+  suite; the four pass run alone (`card-images`, two `signin-site-frame`, `ux03-feed`, all mobile). Run through a local
+  Chromium path (`PW_CHROMIUM_PATH=/opt/pw-browsers/chromium`) against Vite on 127.0.0.1 (the container has no IPv6).
+- `npm run audit:motion`: fails on main in this container (frame gaps and long tasks: 22 of 33 moments over their thresholds,
+  recorded with `MOTION_STAGE` so every moment ran). On the branch 18 moments are over, every one of them among main's 22. Nothing
+  in the List changed; the Card's Topics row draws no motion.
+- Playwright `e2e/tier3/ux07-across.spec.ts` (Parts 1, 5 and 8) passes, with UX-05's and UX-06's tier3 specs.
+- The theme guard tests (`src/lib/theme/*.test.ts`) pass except main's lookRules findings in the build page's files; every file
+  this branch added or changed that the guard can hold is in `lookRules.test.ts` (`ProfileView.tsx` is not, as on main: its existing
+  spacing is outside the scale; the lines added to it use the scale).
+- The diff holds no em dash.
 
 ## What Miles needs to do
 
