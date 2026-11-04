@@ -69,8 +69,7 @@ describe("StepsList", () => {
     expect(screen.getByRole("group", { name: /^Session \d · Claude Code$/ }).querySelector('[data-mark="claudecode-color"]')).not.toBeNull();
     // No initial in a tile: the mark is the logo alone.
     expect(list.querySelector('[data-mark] span')).toBeNull();
-    expect(screen.getByText("4 sessions · 5 prompts · 1 file · 3–6 Oct")).toBeTruthy();
-    expect(screen.getByText("copy each step into the chat it names")).toBeTruthy();
+    expect(screen.getByText("4 sessions · 5 prompts · 1 file · 3–6 Oct · Copy each step into the chat it names")).toBeTruthy();
     expect(screen.getByText("Send in the same chat as step 4")).toBeTruthy();
     expect(screen.getByRole("group", { name: "How to look at the build" })).toBeTruthy();
   });

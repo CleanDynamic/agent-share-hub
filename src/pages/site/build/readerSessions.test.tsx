@@ -66,12 +66,11 @@ describe("a reader's session head", () => {
 });
 
 describe("folding", () => {
-  it("starts folded for the sessions the maker left folded, with the count before the date and nothing under the head", () => {
+  it("starts folded for the sessions the maker left folded, with the steps counted before the date and nothing under the head", () => {
     mount(view(KEYS.slice(0, 2), { sessions_collapsed: ["typed-b"] }));
     const heads = screen.getAllByTestId("reader-session-head");
     expect(within(heads[1]).getByRole("button", { name: "Expand Session 2" }).getAttribute("aria-expanded")).toBe("false");
-    expect(within(heads[1]).getByTestId("session-count").textContent).toBe("2 tiles");
-    expect(within(heads[0]).queryByTestId("session-count")).toBeNull();
+    expect(within(heads[1]).getByTestId("session-count").textContent).toBe("2 steps · 13 Oct");
     const folded = document.querySelector('[data-reader-session="typed-b"]') as HTMLElement;
     expect(within(folded).queryAllByTestId("step-card")).toHaveLength(0);
     expect(within(document.querySelector('[data-reader-session="typed-a"]') as HTMLElement).getAllByTestId("step-card")).toHaveLength(2);
@@ -86,9 +85,18 @@ describe("folding", () => {
     expect(within(document.querySelector('[data-reader-session="typed-a"]') as HTMLElement).getAllByTestId("step-card")).toHaveLength(2);
   });
 
-  it("draws a 2px line down a session's tiles", () => {
+  it("draws a session as one module of rows, with no line down its steps and no module round a step", () => {
     mount(view(KEYS.slice(0, 2)));
-    expect(screen.getAllByTestId("session-line")).toHaveLength(2);
+    expect(screen.queryAllByTestId("session-line")).toHaveLength(0);
+    const sessions = Array.from(document.querySelectorAll<HTMLElement>("[data-reader-session]"));
+    expect(sessions).toHaveLength(2);
+    for (const session of sessions) {
+      expect(session.style.padding).toBe("16px 16px 4px");
+      for (const card of within(session).getAllByTestId("step-card")) {
+        expect(card.style.borderTop).toContain("1px solid");
+        expect(card.style.borderRadius).toBe("");
+      }
+    }
   });
 });
 
@@ -119,10 +127,10 @@ describe("a prompt's name on the build page", () => {
     mount({ ...rest, steps, counts: buildCounts(steps) });
     const first = document.querySelector('[data-step="1"]') as HTMLElement;
     const second = document.querySelector('[data-step="2"]') as HTMLElement;
-    expect(within(first).getByTestId("prompt-place").textContent).toMatch(/^Prompt 1(?: · Session \d+)?$/);
-    expect(within(first).queryByTestId("prompt-own-title")).toBeNull();
-    expect(within(second).getByTestId("prompt-place").textContent).toMatch(/^Prompt 2(?: · Session \d+)?$/);
-    expect(within(second).getByTestId("prompt-own-title").textContent).toBe("ccc");
+    expect(within(first).getByRole("heading", { name: "Step 1 · Prompt" })).toBeTruthy();
+    expect(within(first).queryByTestId("step-own-title")).toBeNull();
+    expect(within(second).getByRole("heading", { name: "Step 2 · Prompt" })).toBeTruthy();
+    expect(within(second).getByTestId("step-own-title").textContent).toBe("ccc");
   });
 });
 
@@ -140,7 +148,7 @@ describe("what the build page keeps of builds.making", () => {
 });
 
 describe("a session with no tile yet", () => {
-  it("is drawn for a reader as its head and No tiles yet, so the numbers run on without a gap", async () => {
+  it("is drawn for a reader as its head and No steps yet, so the numbers run on without a gap", async () => {
     const { buildSteps, sessionGroups } = await import("@/lib/build/graph");
     const tree = [prompt("a-1", 0, "typed-a"), prompt("a-2", 1, "typed-a")];
     const emptyMeta = { "typed-c": meta["typed-c"], "typed-a": meta["typed-a"] };
@@ -151,6 +159,6 @@ describe("a session with no tile yet", () => {
     mount({ ...rest, steps, groups, counts: buildCounts(steps) });
     expect(screen.getAllByTestId("reader-session-head").map((head) => head.getAttribute("aria-label"))).toEqual(["Session 1 · Cursor", "Session 2 · Claude"]);
     const empty = document.querySelector('[data-reader-session="typed-c"]') as HTMLElement;
-    expect(within(empty).getByText("No tiles yet")).toBeTruthy();
+    expect(within(empty).getByText("No steps yet")).toBeTruthy();
   });
 });

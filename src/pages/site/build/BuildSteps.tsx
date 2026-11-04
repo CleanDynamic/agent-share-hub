@@ -278,7 +278,7 @@ const moduleStyle = (ringed: boolean): CSSProperties => ({
 });
 
 /** UX-03 follow-up P14: a step is a row in its session's module: a hairline above it and 14 above and below its content. */
-const rowStyle = (ringed: boolean): CSSProperties => ({
+const rowStyle = (ringed: boolean, colour?: string): CSSProperties => ({
   display: "flex",
   flexDirection: "column",
   gap: 6,
@@ -288,6 +288,8 @@ const rowStyle = (ringed: boolean): CSSProperties => ({
   minWidth: 0,
   /* A step a chip or an address named is ringed for 1.2s. */
   ...(ringed ? { boxShadow: t.selectedRing, borderRadius: 6 } : null),
+  /* A step the maker coloured (or that a named group colours) keeps it as the hairline above it. */
+  ...(colour && !ringed ? { borderTopColor: colour } : null),
 });
 
 /** A session: one module (grammar 2), padded `16px 16px 4px` so the last row sits evenly. A coloured session's outline is its colour. */
@@ -708,7 +710,7 @@ function ReaderSessionHead({ chat, fold }: { chat: SessionChat; fold: Fold }) {
       <div style={{ flexGrow: 1, minWidth: 0 }}>
         <h3 style={{ margin: 0, ...text(14, 500, t.text), lineHeight: 1.3, overflowWrap: "anywhere" }}>{chat.headline}</h3>
         <div style={{ marginTop: 2, ...text(12, 400, t.label), overflowWrap: "anywhere" }}>
-          {chat.title ? <span data-testid="session-title-text">{chat.title} · </span> : null}
+          {chat.title ? <><span data-testid="session-title-text">{chat.title}</span>{" · "}</> : null}
           <span data-testid="session-count">{[steps, chat.date].filter(Boolean).join(" · ")}</span>
         </div>
       </div>
@@ -844,6 +846,10 @@ interface Ctx {
 /** The chip's word for a step: its kind's name. */
 const kindWord = (step: Step): string => TILE_KIND[step.kind] ?? typeLineOf(step).split(" · ")[0];
 
+/** A title the maker gave, or one that names the thing (a repository, a tool, a dataset); not a generic "Prompt 1". A file's body is its name. */
+const GENERIC_DEFAULT = new Set(["prompt", "manual", "code", "check", "agent", "team"]);
+const showsTitle = (entry: ReaderStep): boolean => entry.step.kind !== "file" && Boolean(entry.title) && !(entry.isDefaultTitle && GENERIC_DEFAULT.has(entry.step.kind));
+
 /**
  * UX-03 follow-up P14: a step's head. `Step <n>` 13/500, its type as the grey mono chip, and its one action at the right.
  * Its accessible name is `Step <n> · <Type>`. A title the maker gave the step is the first line under it.
@@ -864,11 +870,11 @@ function StepHead({ entry, right, level = 4 }: { entry: ReaderStep; right?: Reac
         <span style={{ flexGrow: 1 }} />
         {right}
       </div>
-      {entry.isDefaultTitle ? null : (
+      {showsTitle(entry) ? (
         <span data-testid="step-own-title" style={{ ...text(13, 500, t.text), overflowWrap: "anywhere" }}>
           {entry.title}
         </span>
-      )}
+      ) : null}
     </>
   );
 }
@@ -894,7 +900,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
     /* CA-03 P5: how the build checked its work. Its answers and one status line; never the lamp, a reproduction
        count or the word for one. */
     return (
-      <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="check" style={{ ...rowStyle(ringed) }}>
+      <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="check" style={{ ...rowStyle(ringed, step.colour) }}>
         <StepHead entry={entry} right={<SaveMark kind="step" id={step.id} />} />
         <TypeDetail step={step} />
         <CheckBlock check={step.check} style={{ paddingLeft: INDENT }} />
@@ -916,7 +922,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         data-testid="step-card"
         data-step={step.number}
         data-kind="decision"
-        style={{ ...rowStyle(ringed) }}
+        style={{ ...rowStyle(ringed, step.colour) }}
       >
         <StepHead
           entry={entry}
@@ -949,7 +955,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   if (step.kind === "retrieval" && step.retrieval) {
     /* SV-29 P2: a similarity search that finds candidates: what it indexes, how many it returns and its recall. */
     return (
-      <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="retrieval" style={{ ...rowStyle(ringed) }}>
+      <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="retrieval" style={{ ...rowStyle(ringed, step.colour) }}>
         <StepHead entry={entry} right={null} />
         <TypeDetail step={step} />
         <RetrievalTileBody step={step} indent={INDENT} />
@@ -969,7 +975,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         data-testid="step-card"
         data-step={step.number}
         data-kind={step.kind}
-        style={{ ...rowStyle(ringed) }}
+        style={{ ...rowStyle(ringed, step.colour) }}
       >
         <StepHead entry={entry} right={step.kind === "file" && file ? <AttachDownload file={file} /> : null} />
         <TypeDetail step={step} />
@@ -989,7 +995,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         data-testid="step-card"
         data-step={step.number}
         data-kind={step.kind}
-        style={{ ...rowStyle(ringed) }}
+        style={{ ...rowStyle(ringed, step.colour) }}
       >
         <StepHead entry={entry} right={<>{step.kind === "system_prompt" ? <CopyButton what={`step ${step.number}`} text={step.text} onCopy={view.onCopy} announce={announce} phone={phone} /> : null}<SaveMark kind="step" id={step.id} /></>} />
         <TypeDetail step={step} />
@@ -1008,7 +1014,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         id={stepDomId(step.id)}
         data-testid="step-card"
         data-step={step.number}
-        style={{ ...rowStyle(ringed) }}
+        style={{ ...rowStyle(ringed, step.colour) }}
       >
         <StepHead entry={entry} right={null} />
         <TypeDetail step={step} />
@@ -1028,7 +1034,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   }
 
   return (
-    <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={{ ...rowStyle(ringed) }}>
+    <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={{ ...rowStyle(ringed, step.colour) }}>
       <StepHead entry={entry} right={<><CopyButton what={`step ${step.number}`} text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} /><SaveMark kind="step" id={step.id} /></>} />
       <TypeDetail step={step} />
       {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} style={{ paddingLeft: INDENT }} /> : null}

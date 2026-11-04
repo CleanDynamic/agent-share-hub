@@ -141,14 +141,15 @@ describe("BuildView on a desktop", () => {
   it("The build's tabs, then the steps; another tab keeps its own body", () => {
     const onTabChange = vi.fn();
     const props = stepsProps();
-    const { unmount } = mount({ ...props, viewer: { ...props.viewer, onTabChange } });
+    const all = stepTabs(false, { events: true, understand: true, broke: true });
+    const { unmount } = mount({ ...props, viewer: { ...props.viewer, tabs: all, onTabChange } });
     const tabs = within(screen.getByRole("tablist", { name: "Sections of this build" })).getAllByRole("tab");
-    expect(tabs.map((tab) => tab.textContent)).toEqual(["The build", "Watch it get built", "Understand it", "Where it broke"]);
+    expect(tabs.map((tab) => tab.textContent)).toEqual(["Steps", "Watch it get built", "Understand it", "Where it broke"]);
     fireEvent.click(tabs[1]);
     expect(onTabChange).toHaveBeenCalledWith("watch");
     unmount();
 
-    mount({ ...props, viewer: { ...props.viewer, tab: "watch", content: <p>the replay</p> } });
+    mount({ ...props, viewer: { ...props.viewer, tabs: all, tab: "watch", content: <p>the replay</p> } });
     expect(screen.getByText("the replay")).toBeTruthy();
     expect(screen.queryByTestId("build-steps")).toBeNull();
     expect(screen.getByTestId("build-need")).toBeTruthy();
@@ -189,7 +190,9 @@ describe("BuildView on a phone", () => {
     }
     // The dock is under the hero, not on it.
     expect(within(screen.getByTestId("build-hero")).queryByTestId("build-action-dock")).toBeNull();
-    expect(screen.getByRole("tablist", { name: "Sections of this build" })).toBeTruthy();
+    // Steps is the only tab: no tab bar, and the section's own h2 instead.
+    expect(screen.queryByRole("tablist")).toBeNull();
+    expect(screen.getByRole("heading", { level: 2, name: "Steps" })).toBeTruthy();
     expect(screen.queryByRole("group", { name: "How to look at the build" })).toBeNull();
   });
 });

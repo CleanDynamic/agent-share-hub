@@ -89,12 +89,12 @@ describe("readerSteps · a pasted chat given its tool (TF-13)", () => {
   const tree = () => [prompt("p1", 1, "Compare two laptops.", "s9")];
 
   it("reads 'New chat' until the tool is chosen", () => {
-    expect(readerSteps(tree(), pasted({}), media)[0].chat).toMatchObject({ kind: "new", tool: null, headline: "New chat" });
+    expect(readerSteps(tree(), pasted({}), media)[0].chat).toMatchObject({ kind: "new", tool: null, headline: "Session 1" });
   });
 
   it("reads 'New chat in Perplexity', with a tool that has a logo, once chosen", () => {
     const chat = readerSteps(tree(), pasted({ s9: "perplexity" }), media)[0].chat;
-    expect(chat).toMatchObject({ kind: "new", tool: "Perplexity", headline: "New chat in Perplexity" });
+    expect(chat).toMatchObject({ kind: "new", tool: "Perplexity", headline: "Session 1 · Perplexity" });
     expect(toolFor((chat as { tool: string }).tool)?.logo).toBe("perplexity-color");
   });
 });
@@ -103,8 +103,8 @@ describe("readerSteps · B1 the bakery", () => {
   const steps = readerSteps(bakery(), bakeryMaking, media);
 
   it("starts each session with a new chat", () => {
-    expect(steps[0].chat).toMatchObject({ kind: "new", headline: "New chat in ChatGPT", detail: "GPT-6 Astra · session 1 · 3 Oct" });
-    expect(steps[3].chat).toMatchObject({ kind: "new", headline: "New chat in Claude Code", detail: "Sonnet 5.5 · session 4 · 6 Oct" });
+    expect(steps[0].chat).toMatchObject({ kind: "new", headline: "Session 1 · ChatGPT", detail: "GPT-6 Astra · session 1 · 3 Oct" });
+    expect(steps[3].chat).toMatchObject({ kind: "new", headline: "Session 4 · Claude Code", detail: "Sonnet 5.5 · session 4 · 6 Oct" });
   });
   it("pastes in what an earlier step gave", () => {
     expect(steps[1].pasteIns).toEqual([{ stepId: "p1", number: "1", title: "Brand brief", text: "what step 1 gave you" }]);
@@ -304,7 +304,7 @@ describe("readerSteps · B4 and the edges", () => {
   it("a typed prompt is a new chat in its own tool, with no model recorded", () => {
     const tree = [prompt("p1", 1, "A fox in loose watercolour.", null, { title: "Fox poster", payload: { tool: "chatgpt" } })];
     const [step] = readerSteps(tree, { sessions: [], excluded_models: [] });
-    expect(step.chat).toMatchObject({ kind: "new", typed: true, headline: "New chat in ChatGPT", detail: "model not recorded · typed in by the maker" });
+    expect(step.chat).toMatchObject({ kind: "new", typed: true, headline: "Session 1 · ChatGPT", detail: "model not recorded · typed in by the maker" });
     const need = whatYouNeed([step], tree, { sessions: [], excluded_models: [] });
     expect(need).toEqual([{ key: "tools", label: "Tools and models", rows: [{ title: "ChatGPT", detail: "model not recorded · step 1" }] }]);
     expect(buildCounts([step])).toBe("1 prompt");
@@ -322,7 +322,7 @@ describe("readerSteps · B4 and the edges", () => {
     const tree = [prompt("p1", 1, "One.", "s1"), prompt("p2", 2, "Two.", "s1")];
     const old: Making = { sessions: [{ client: "claude", model: "claude-opus-5-5", prompts: 2, turns: 2 }], excluded_models: [] };
     const steps = readerSteps(tree, old);
-    expect(steps[0].chat).toMatchObject({ kind: "new", session: 1, headline: "New chat", detail: "model not recorded · session 1" });
+    expect(steps[0].chat).toMatchObject({ kind: "new", session: 1, headline: "Session 1", detail: "model not recorded · session 1" });
     expect(steps[1].chat).toMatchObject({ kind: "same", step: "1" });
   });
 

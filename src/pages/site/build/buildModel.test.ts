@@ -23,6 +23,7 @@ import {
   makerLabel,
   needsLine,
   openGaps,
+  stepTabs,
   partMeta,
   partsInOrder,
   proofDetails,
@@ -368,5 +369,16 @@ describe("a result's date", () => {
     expect(evidenceDate({ payload: {}, event_id: "e1", created_at: "2026-09-01T00:00:00Z" }, events)).toBe("12 Sep");
     expect(evidenceDate({ payload: {}, event_id: null, created_at: "2026-09-01T00:00:00Z" }, events)).toBe("1 Sep");
     expect(evidenceDate({ payload: {}, event_id: null, created_at: "" }, events)).toBeNull();
+  });
+});
+
+describe("stepTabs (UX-03 follow-up P14)", () => {
+  it("is Steps alone for a build with no events, no approved layer and no failures", () => {
+    expect(stepTabs(false).map((tab) => tab.label)).toEqual(["Steps"]);
+    expect(stepTabs(false)[0].value).toBe("anatomy");
+  });
+  it("adds each tab when its panel has something", () => {
+    expect(stepTabs(true, { events: true, understand: true, broke: true }).map((tab) => tab.label)).toEqual(["Steps", "Watch it get built", "Understand it", "Where it broke", "Rebuilds"]);
+    expect(stepTabs(false, { events: true }).map((tab) => tab.label)).toEqual(["Steps", "Watch it get built"]);
   });
 });
