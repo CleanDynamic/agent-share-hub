@@ -566,12 +566,14 @@ function StepHead({ entry, level = 3, size = 14 }: { entry: ReaderStep; level?: 
   const { label } = stepHead(entry.step);
   const Tag = level === 3 ? "h3" : "h4";
   const generated = entry.isDefaultTitle && entry.step.kind === "prompt" && entry.title === `Prompt ${entry.step.number}`;
+  // A file's body names it and says its kind, so its default name is not said again under the head.
+  const fileName = entry.isDefaultTitle && entry.step.kind === "file";
   return (
     <Tag data-testid="step-head" style={{ margin: 0, flexGrow: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2, letterSpacing: "-0.005em" }}>
       <span data-testid="step-label" style={{ ...text(size, 500, t.text), ...tnum, overflowWrap: "anywhere" }}>
         {label}
       </span>
-      {generated ? null : (
+      {generated || fileName ? null : (
         <span data-testid="step-own-title" data-default-title={entry.isDefaultTitle ? "true" : undefined} style={{ ...text(size - 0.5, 400, t.text2), overflowWrap: "anywhere" }}>
           {entry.title}
         </span>
@@ -940,7 +942,8 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder, ...colourEdge(step.colour, ringed) }}
       >
         <Title entry={entry} right={null} />
-        <TypeRest step={step} indent={INDENT} />
+        {/* A file's body says its kind and size; a tool's type line is said here. */}
+        {step.kind === "tool" ? <TypeRest step={step} indent={INDENT} /> : null}
         {step.kind === "tool" ? <ToolTileBody step={step} indent={INDENT} /> : <FileTileBody step={step} indent={INDENT} />}
         <ReaderFacts facts={entry.facts ?? []} indent={INDENT} />
         {step.kind === "file" && file?.download ? (
