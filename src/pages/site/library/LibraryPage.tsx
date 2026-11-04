@@ -61,9 +61,11 @@ import { listMySavedBuilds } from "@/lib/social";
 import { isStale } from "@/lib/build/signals";
 import { currentLines, diffLines, listSourceStates, savedLines } from "@/lib/library/sourceVersions";
 import { listActivityFor } from "@/lib/feed/activity";
+import { toCardData, topicHref } from "@/components/post/postCardModel";
+import { readTopicCards } from "@/lib/openbuilds/feedTopics";
 
 import { LibraryLoadingView } from "./LibraryFrame";
-import { LibraryView, type LibraryPreviewProps, type LibrarySelected, type PanelStatus } from "./LibraryView";
+import { LibraryView, type LibraryPreviewProps, type LibrarySelected, type LibraryTopic, type PanelStatus } from "./LibraryView";
 import {
   CHANGES_WINDOW_DAYS,
   LIBRARY_KINDS,
@@ -98,7 +100,7 @@ interface Shown {
   item?: LibrarySavedItem;
 }
 
-const ITEM_COLUMN: Record<LibraryKind, string> = { all: "Item", builds: "Build", parts: "Part", sessions: "Session", steps: "Step", requests: "Request", "filter-sets": "Filter set" };
+const ITEM_COLUMN: Record<LibraryKind, string> = { all: "Item", builds: "Build", parts: "Part", sessions: "Session", steps: "Step", requests: "Request", "filter-sets": "Filter set", topics: "Topic" };
 const COUNTED_KINDS = new Set(["part", "step", "session"]);
 
 const statusOf = (query: { isLoading: boolean; isError: boolean }): PanelStatus => (query.isLoading ? "loading" : query.isError ? "error" : "ready");
@@ -268,6 +270,45 @@ export default function LibraryPage() {
     entry.item ? savedItemRow(entry.item, usedIn.data ?? new Map(), now, sources.data) : savedBuildRow({ savedAt: entry.at, build: entry.build as GalleryBuild }, now),
   );
 
+  /* UX-07 P4: the Topics kind draws its kept topics as their cards: the topics read by id once the list is in. */
+  const topicRefs = kind === "topics" ? keptItems.flatMap((item) => (item.kind === "post" && item.ref ? [item.ref] : [])) : [];
+  const topicCards = useQuery({
+    queryKey: ["openbuilds", "readTopicCards", topicRefs.join(",")],
+    queryFn: () => readTopicCards(topicRefs),
+    enabled: topicRefs.length > 0,
+    placeholderData: keepPreviousData,
+    refetchOnWindowFocus: false,
+  });
+  useReported(topicCards.error, "library-topic-cards");
+  const unsaveTopic = async (savedItemId: string) => {
+    try {
+      await unsaveItem(savedItemId);
+    } catch (error) {
+      reportError(error, { source: "query", context: "unsaveItem" });
+      toast.error("Could not remove it from your Library");
+    } finally {
+      void qc.invalidateQueries({ queryKey: ["library", "listSavedItems"] });
+      void qc.invalidateQueries({ queryKey: ["library", "countSavedItems"] });
+      void qc.invalidateQueries({ queryKey: ["library", "savedPostIds"] });
+    }
+  };
+  const libraryTopics: LibraryTopic[] | undefined =
+    kind === "topics" && !openId
+      ? keptItems.flatMap((item) => {
+          if (item.kind !== "post" || !item.ref) return [];
+          const post = topicCards.data?.posts.get(item.ref);
+          const extras = topicCards.data?.extras;
+          return [
+            {
+              id: item.id,
+              card: post && extras ? toCardData(post, { work: extras.work, signed: extras.signed, digests: extras.digests, now, hrefOf: (entry) => topicHref(entry.id), strip: false }) : null,
+              title: itemTitle(item),
+              onUnsave: () => void unsaveTopic(item.id),
+            },
+          ];
+        })
+      : undefined;
+
   /* All saved shows the builds even when the kept items fail to load (reported by their own context). */
   const itemsStatus = statusOf(kept);
   const kindStatus: PanelStatus = openId || kind === "builds" ? statusOf(saved) : itemKind ? itemsStatus : saved.isLoading ? "loading" : saved.isError ? "error" : "ready";
@@ -387,12 +428,12 @@ export default function LibraryPage() {
 
   const total = saved.data?.pages[0]?.total ?? buildShown.length;
   const itemCounts = counts.data;
-  const keptTotal = itemCounts ? itemCounts.part + itemCounts.session + itemCounts.step + itemCounts.request + itemCounts.filter_set : 0;
+  const keptTotal = itemCounts ? itemCounts.part + itemCounts.session + itemCounts.step + itemCounts.request + itemCounts.filter_set + (itemCounts.post ?? 0) : 0;
   const countFor = (value: LibraryKind): number => {
     if (value === "builds") return total;
     if (value === "all") return total + keptTotal;
     const savedKind = savedKindOf(value);
-    return savedKind && itemCounts ? itemCounts[savedKind] : 0;
+    return savedKind && itemCounts ? (itemCounts[savedKind] ?? 0) : 0;
   };
   const savedByOf = (id: string | undefined) => savedByWords(id ? savedBy.data?.get(id) : undefined);
   const ownerName = owner.data?.displayName?.trim() || (owner.data?.username ? `@${owner.data.username}` : (handle ?? ""));
@@ -438,7 +479,8 @@ export default function LibraryPage() {
   };
 
   const chosenBuild = chosen?.build ?? null;
-  const chosenItem = chosen?.item ?? null;
+  // UX-07 P4: a saved topic is its own card in the list; it has no selected panel.
+  const chosenItem = chosen?.item && chosen.item.kind !== "post" ? chosen.item : null;
   const selected: LibrarySelected | null = chosenBuild
     ? {
         kind: "build",
@@ -572,6 +614,7 @@ export default function LibraryPage() {
           },
           itemColumn: openId ? "Build" : ITEM_COLUMN[kind],
           rows,
+          topics: libraryTopics,
           selected: selectedId,
           onSelect: (id) => move({ item: id }, true),
           more: moreAvailable ? { loading: moreLoading, onMore: loadMore } : undefined,

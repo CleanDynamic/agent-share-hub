@@ -18,6 +18,7 @@ import { getTitle, type NotificationCardData } from "@/components/notifications/
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   isBuildNotificationKind,
+  isPostNotificationKind,
   notificationHref,
   notificationMessage,
   type Notification,
@@ -74,7 +75,8 @@ function legacyCard(n: Notification): NotificationCardData {
 /** The row's sentence: who and what for the kinds this page knows; the stored message for any other. */
 function sentence(n: Notification, name: string | null): ReactNode {
   if (LEGACY_TITLED.has(n.kind)) return getTitle(legacyCard(n));
-  if (isBuildNotificationKind(n.kind) || n.kind === "message_received") {
+  // UX-07 P5: the kinds about topics and replies read as a build's do: who, then the stored words.
+  if (isBuildNotificationKind(n.kind) || isPostNotificationKind(n.kind) || n.kind === "message_received") {
     return (
       <>
         {name ? <span style={{ fontWeight: 600 }}>{name} </span> : null}

@@ -1437,6 +1437,26 @@ export const CA03_FILES: readonly string[] = [
   "src/components/social/EngagementRow.tsx",
   "src/components/social/ux03.p8.test.tsx",
   "src/components/theme/ux03.p10.test.tsx",
+  // UX-07
+  "src/pages/site/home/homeTopics.ts",
+  "src/pages/site/home/ux07.p1.test.tsx",
+  "src/pages/site/home/ux07.imports.test.ts",
+  "src/lib/openbuilds/feedTopics.ts",
+  "src/components/build/DiscussedSection.tsx",
+  "src/components/build/ux07.p2.test.tsx",
+  "src/components/build/ConnectionMarks.tsx",
+  "src/pages/site/profile/ux07.p3.test.tsx",
+  "src/pages/site/profile/profileModel.ts",
+  "src/pages/site/profile/ProfilePage.tsx",
+  "src/lib/library/ux07.p4.test.tsx",
+  "src/components/notifications/ux07.p5.test.tsx",
+  "src/pages/site/activity/activityModel.ts",
+  "src/lib/notifications/resolveTarget.ts",
+  "src/lib/build/topicSource.ts",
+  "src/pages/site/compose/ux07.p6.test.tsx",
+  "src/pages/site/openbuilds/ReactionRow.tsx",
+  "src/pages/site/openbuilds/ux07.p7.test.tsx",
+  "src/pages/ux07.budget.test.tsx",
 ];
 
 /**

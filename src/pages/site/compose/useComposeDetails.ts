@@ -11,11 +11,13 @@
    same part back. */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { SAVE_DEBOUNCE_MS } from "@/hooks/useComposeBuild";
 import type { Build, BuildPatch } from "@/lib/build";
 import { breakageFields, composerBreakage, composerGap, gapProblemText, saveBreakage, saveGap } from "@/lib/build/composeDetails";
+import { getTopicSourceSetting, topicSourcePatch } from "@/lib/build/topicSource";
 
 import { parseAmount } from "./composeModel";
 import type { ComposeDetailKey, ComposeDetails } from "./MoreDetails";
@@ -36,6 +38,8 @@ export interface ComposeDetailsState {
   details: ComposeDetails;
   setDetail: (key: ComposeDetailKey, value: string) => void;
   setGapOn: (on: boolean) => void;
+  /** UX-07 P6: writes builds.allow_as_post_source through the page's header edit. */
+  setAllowAsTopicSource: (on: boolean) => void;
   /** Write every pending edit now; resolves once the queue is empty. */
   flush: () => Promise<void>;
 }
@@ -192,5 +196,20 @@ export function useComposeDetails({
     schedule("gap", 0);
   };
 
-  return { details, setDetail, setGapOn, flush };
+  /* UX-07 P6: the opt-out, read once per build that exists (a new draft is on), and written with the header's other fields. What
+     the maker chose since leads, as with the title. */
+  const topicSource = useQuery({
+    queryKey: ["build", "getTopicSourceSetting", build?.id ?? null],
+    queryFn: () => getTopicSourceSetting(build!.id),
+    enabled: Boolean(build?.id) && hydrate,
+    staleTime: Infinity,
+  });
+  const [chosenTopicSource, setChosenTopicSource] = useState<{ buildId: string | null; on: boolean } | null>(null);
+  const allowAsTopicSource = chosenTopicSource && chosenTopicSource.buildId === (build?.id ?? null) ? chosenTopicSource.on : (topicSource.data ?? true);
+  const setAllowAsTopicSource = (on: boolean) => {
+    setChosenTopicSource({ buildId: build?.id ?? null, on });
+    edit(topicSourcePatch(on));
+  };
+
+  return { details: { ...details, allowAsTopicSource }, setDetail, setGapOn, setAllowAsTopicSource, flush };
 }

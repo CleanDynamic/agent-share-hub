@@ -290,6 +290,14 @@ export async function reactToPost(postId: string, reaction: PostReaction): Promi
   if (response.error) throw postLayerError("reactToPost", response);
 }
 
+/** UX-07 P7: take back the signed-in user's own reaction of a kind. Taking back one that is not there is not an error. */
+export async function removeReaction(postId: string, kind: PostReaction["kind"]): Promise<void> {
+  const userId = await currentUserId();
+  if (!userId) throw signedOut("removeReaction");
+  const response = await db.from("post_reactions").delete().eq("post_id", postId).eq("user_id", userId).eq("kind", kind);
+  if (response.error) throw postLayerError("removeReaction", response);
+}
+
 export { POSTS_PAGE_SIZE };
 
 /* ── what a reader has seen ── */

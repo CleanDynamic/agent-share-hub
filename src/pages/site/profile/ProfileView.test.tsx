@@ -123,7 +123,8 @@ describe("ProfileView on a desktop", () => {
     expect(within(screen.getByTestId("profile-stats")).queryAllByRole("progressbar")).toHaveLength(0);
   });
 
-  it("has the four tabs with their counts, and asks for another through the callback", () => {
+  // UX-07 P3: Topics is the fifth tab, its label alone (no count is read for it).
+  it("has the five tabs with their counts, and asks for another through the callback", () => {
     const onTab = vi.fn();
     const base = profileFixture();
     mount({ works: { ...base.works, onTab } });
@@ -133,6 +134,7 @@ describe("ProfileView on a desktop", () => {
       "Rebuilds 6",
       "Reproduced 48",
       "Collections 4",
+      "Topics",
     ]);
     expect(within(tabs).getByRole("tab", { name: "Builds 14" }).getAttribute("aria-selected")).toBe("true");
     fireEvent.click(within(tabs).getByRole("tab", { name: "Reproduced 48" }));
@@ -315,6 +317,7 @@ describe("ProfileView on a phone", () => {
       "Rebuilds 6",
       "Reproduced 48",
       "Collections 4",
+      "Topics",
     ]);
     fireEvent.click(within(row).getByRole("tab", { name: "Collections 4" }));
     expect(onTab).toHaveBeenCalledWith("collections");

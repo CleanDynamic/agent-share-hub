@@ -96,10 +96,12 @@ describe("the post page's second round", () => {
   it("starts every read together, names its columns and limits every list", async () => {
     let inFlight = 0;
     let most = 0;
-    answer = (table) => {
+    answer = (table, own) => {
       inFlight += 1;
       most = Math.max(most, inFlight);
       queueMicrotask(() => (inFlight -= 1));
+      // UX-07 P7: the spaces' switched-on reactions are a list read beside the crowd's one space.
+      if (table === "spaces" && !own.some((call) => call.method === "maybeSingle")) return { data: [{ id: "s1", reactions: [] }], error: null };
       if (table === "spaces") return { data: { id: "s1", slug: "claude-code", name: "Claude Code", description: "", rules: "", creator_id: "sam", who_can_post: "anyone", post_order: "newest", default_view: "thread", rewards_allowed: false, reactions: [], created_at: "2026-10-01T00:00:00Z" }, error: null };
       if (table === "builds") return { data: [{ id: "b-kit", slug: "kits", title: "Kit's", status: "published", creator_id: "kit", parent_build_id: "b-post", source_handle_at_fork: "sam" }], error: null };
       return { data: [], error: null };

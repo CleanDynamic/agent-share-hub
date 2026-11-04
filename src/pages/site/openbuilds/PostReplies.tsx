@@ -25,6 +25,9 @@ import { FIGTREE } from "@/lib/theme/type";
 
 import type { ReplyItem, StepSource } from "./postModel";
 
+/** UX-07 P5: a reply's element id, the address's `#reply-<id>` (replyHref). */
+export const replyAnchor = (replyId: string): string => `reply-${replyId}`;
+
 /** A menu opened from the page stands above the page's own layers. */
 export const MENU_Z = 80;
 
@@ -41,6 +44,8 @@ export interface ReplyActions {
   branchHref: (replyId: string) => string;
   /** Part 4: `Add to a draft` for an attached step. Absent: not offered. */
   renderAddToDraft?: (step: StepSource) => ReactNode;
+  /** UX-07 P7: a reply's reaction row, under its actions. Absent or null: nothing. */
+  renderReactions?: (replyId: string) => ReactNode;
 }
 
 /** A text button: 12 `--text2`, no box, underlined at once under a fine pointer's hover. On a phone its hit area is 44 high. */
@@ -135,11 +140,10 @@ function Attachments({ attachments }: { attachments: readonly CardAttachment[] }
   );
 }
 
-/** One reply, its actions, and (at the first level) its own replies. */
-export function Reply({ reply, actions, last, box }: { reply: ReplyItem; actions: ReplyActions; last: boolean; box?: { at: string; node: ReactNode } }) {
-  const [asking, setAsking] = useState(false);
+/** UX-07: a reply's anatomy (its author, words and attachments), with whatever sits under it: the Thread's actions, or nothing (Home's reply groups). */
+export function ReplyAnatomy({ reply, children }: { reply: ReplyItem; children?: ReactNode }) {
   const pinned = reply.pinnedBy !== null;
-  const content = (
+  return (
     <div style={{ display: "grid", gridTemplateColumns: "24px minmax(0, 1fr)", columnGap: 12 }}>
       <Avatar size={24} userId={reply.author.id} name={reply.author.name} src={reply.author.avatarUrl} />
       <div style={{ minWidth: 0 }}>
@@ -160,6 +164,18 @@ export function Reply({ reply, actions, last, box }: { reply: ReplyItem; actions
         </div>
         {reply.body ? <p style={{ ...plain, marginTop: 4, fontSize: 13, lineHeight: "20px", whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{reply.body}</p> : null}
         <Attachments attachments={reply.attachments} />
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/** One reply, its actions, and (at the first level) its own replies. */
+export function Reply({ reply, actions, last, box }: { reply: ReplyItem; actions: ReplyActions; last: boolean; box?: { at: string; node: ReactNode } }) {
+  const [asking, setAsking] = useState(false);
+  const pinned = reply.pinnedBy !== null;
+  const content = (
+    <ReplyAnatomy reply={reply}>
         <div role="group" aria-label={`Actions for ${reply.author.name}'s reply`} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 16, rowGap: 8, marginTop: 8 }}>
           <TextButton onClick={() => actions.onReply(reply.id)}>Reply</TextButton>
           <TextButton aria-pressed={reply.liked} onClick={() => actions.onLike(reply.id, !reply.liked)} style={reply.liked ? { color: t.text } : undefined}>
@@ -174,6 +190,7 @@ export function Reply({ reply, actions, last, box }: { reply: ReplyItem; actions
           {reply.step && actions.renderAddToDraft ? actions.renderAddToDraft(reply.step) : null}
           {reply.canPin || reply.canHide ? <ReplyMenu reply={reply} actions={actions} onAsk={() => setAsking(true)} /> : null}
         </div>
+        {actions.renderReactions?.(reply.id) ?? null}
         {asking ? (
           <HideReason
             onHide={(reason) => {
@@ -188,12 +205,11 @@ export function Reply({ reply, actions, last, box }: { reply: ReplyItem; actions
             <LinkText to={actions.branchHref(reply.id)} size={12.5} same>{`View ${reply.more} more ${reply.more === 1 ? "reply" : "replies"}`}</LinkText>
           </div>
         ) : null}
-      </div>
-    </div>
+    </ReplyAnatomy>
   );
 
   return (
-    <li data-testid="reply" data-depth={reply.depth} style={{ listStyle: "none", padding: "16px 0", borderBottom: last ? "none" : `1px solid ${t.hairline}` }}>
+    <li id={replyAnchor(reply.id)} data-testid="reply" data-depth={reply.depth} style={{ listStyle: "none", padding: "16px 0", borderBottom: last ? "none" : `1px solid ${t.hairline}` }}>
       {pinned ? <div style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, padding: 16 }}>{content}</div> : content}
       {box?.at === reply.id ? <div style={{ marginTop: 16 }}>{box.node}</div> : null}
       {reply.children.length > 0 ? (

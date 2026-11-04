@@ -26,6 +26,8 @@ import { FeedPost } from "@/components/gallery/FeedPost";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { EngagementRow } from "@/components/social/EngagementRow";
+import { PostCard } from "@/components/post/PostCard";
+import { ReplyAnatomy } from "@/pages/site/openbuilds/PostReplies";
 import { InnerTile } from "@/components/vision/InnerTile";
 import { PageFigure } from "@/components/vision/PageFigure";
 import { SectionChevron, SectionHead } from "@/components/vision/SectionHead";
@@ -81,6 +83,7 @@ import {
   type HomePublished,
   OPEN_REQUESTS_HREF,
 } from "./homeModel";
+import type { HomeReplyGroup, HomeTopicPost } from "./homeTopics";
 
 export type HomeScope = "following" | "everyone";
 
@@ -101,6 +104,16 @@ export interface HomeFeedProps {
   onRetry: () => void;
   /** The real error behind `status: "error"`; logged once by the panel, never shown. */
   error?: unknown;
+}
+
+/** UX-07 P1: a topic's Like, Reply and Save on Home. */
+export interface HomeTopicActions {
+  onLike: (postId: string, on: boolean) => void;
+  onReply: (postId: string) => void;
+  /** Part 4. Absent: Save is not offered. */
+  save?: { isSaved: (postId: string) => boolean; onSave: (postId: string, on: boolean) => void };
+  /** The open reply box and the topic it answers. */
+  box: { at: string; node: ReactNode } | null;
 }
 
 export interface HomeRoom {
@@ -141,6 +154,8 @@ export interface HomeViewProps {
   /** Build ids whose post came within a screen of view. */
   onPostsNear?: (buildIds: string[]) => void;
   onMeToo: (bountyId: string) => void;
+  /** UX-07 P1: what a topic's row does, and the one reply box (under the topic it answers). Absent: topics carry no row. */
+  topics?: HomeTopicActions;
   /** Two builds from Builds, under "You're up to date". */
   endCards: readonly HomeEndCard[];
 
@@ -667,6 +682,70 @@ export function AskItem({ item, now, onMeToo }: { item: HomeAskPost; now: number
   );
 }
 
+/** UX-07 P1: a topic is the post card, its Like, Reply and Save in the engagement row's place, and the reply box under it when open. */
+export function TopicItem({ item, actions }: { item: HomeTopicPost; actions?: HomeTopicActions }) {
+  return (
+    <FeedItemFrame height={260} data-kind="topic" data-testid="home-feed-item">
+      <div style={{ padding: "0 20px" }}>
+        <PostCard
+          card={item.card}
+          topic={
+            actions
+              ? {
+                  likes: item.likes,
+                  liked: item.liked,
+                  onLike: () => actions.onLike(item.postId, !item.liked),
+                  replies: item.replies,
+                  onReply: () => actions.onReply(item.postId),
+                  save: actions.save ? { saved: actions.save.isSaved(item.postId), onSave: () => actions.save!.onSave(item.postId, !actions.save!.isSaved(item.postId)) } : undefined,
+                }
+              : undefined
+          }
+        />
+        {actions?.box?.at === item.postId ? (
+          <div style={{ display: "grid", gridTemplateColumns: "40px minmax(0, 1fr)", columnGap: 12, paddingBottom: 16 }}>
+            <div data-testid="home-reply-box" style={{ gridColumn: 2, minWidth: 0 }}>
+              {actions.box.node}
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </FeedItemFrame>
+  );
+}
+
+/**
+ * UX-07 P1: every reply under one topic as one item. The topic's head and heading in compact form (avatar 24, the heading at the
+ * card title size), `3 new replies` in 12.5/500, then the newest reply in the post page's anatomy with its attachments. The head and
+ * the reply lead to the topic at that reply; the reply's own link is a second way in, kept out of the tab order.
+ */
+export function ReplyGroupItem({ item }: { item: HomeReplyGroup }) {
+  const name = item.topic.author.name;
+  const line = [atHandle(item.topic.author.handle), item.topic.age].filter(Boolean).join(" · ");
+  return (
+    <FeedItemFrame height={200} data-kind="reply_group" data-testid="home-feed-item">
+      <article aria-label={`${item.count} in ${item.topic.heading || "Untitled post"}`} style={{ padding: "20px 20px 16px" }}>
+        <PlainLink to={item.to} data-testid="home-reply-group-link" style={{ display: "grid", gridTemplateColumns: "24px minmax(0, 1fr)", columnGap: 12, color: t.text, textDecoration: "none" }}>
+          <Avatar size={24} userId={item.topic.author.id} name={name} src={item.topic.author.avatarUrl} />
+          <span style={{ display: "flex", alignItems: "baseline", gap: 6, minWidth: 0, whiteSpace: "nowrap" }}>
+            <span style={text(13, 500, t.text, { fontWeight: 600, lineHeight: "20px" })}>{name}</span>
+            <span style={{ ...text(12, 400, t.label, { lineHeight: "20px" }), ...ellipsis, minWidth: 0 }}>{line}</span>
+          </span>
+          <span style={{ gridColumn: 2, display: "block", marginTop: 4, ...text(13, 500, t.text, { lineHeight: 1.4 }), overflowWrap: "anywhere" }}>{item.topic.heading || "Untitled post"}</span>
+          <span data-testid="home-reply-group-count" style={{ gridColumn: 2, display: "block", marginTop: 8, ...text(12.5, 500, t.text2, { lineHeight: "20px" }) }}>
+            {item.count}
+          </span>
+        </PlainLink>
+        <div style={{ display: "grid", gridTemplateColumns: "24px minmax(0, 1fr)", columnGap: 12, marginTop: 8 }}>
+          <div style={{ gridColumn: 2, minWidth: 0 }}>
+            <ReplyAnatomy reply={item.reply} />
+          </div>
+        </div>
+      </article>
+    </FeedItemFrame>
+  );
+}
+
 export function FeedEnd({ cards, now }: { cards: readonly HomeEndCard[]; now: number }) {
   return (
     <div data-testid="home-feed-end">
@@ -719,6 +798,10 @@ function FeedBody(props: HomeViewProps) {
             <RebuildItem key={item.key} item={item} now={now} onNear={onPostsNear} />
           ) : item.kind === "bounty" ? (
             <AskItem key={item.key} item={item} now={now} onMeToo={onMeToo} />
+          ) : item.kind === "topic" ? (
+            <TopicItem key={item.key} item={item} actions={props.topics} />
+          ) : item.kind === "reply_group" ? (
+            <ReplyGroupItem key={item.key} item={item} />
           ) : (
             <NoteItem key={item.key} item={item} now={now} />
           ),

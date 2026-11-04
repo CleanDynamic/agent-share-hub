@@ -17,6 +17,7 @@
 import {
   BUILD_NOTIFICATION_KINDS,
   isBuildNotificationKind,
+  isPostNotificationKind,
   notificationHref,
   notificationMessage,
   type BuildNotificationKind,
@@ -176,6 +177,22 @@ export function activityRowOf(n: Notification, coverSrc: string | null): Activit
 
   let who: string;
   let detail: string | null = null;
+  if (isPostNotificationKind(n.kind)) {
+    // UX-07 P5: a topic or a reply: who, the fixed words, then the topic's heading (or, for a topic started from a build, the
+    // build's title). The row is the same row; it leads to the topic, at the reply where there is one.
+    return {
+      id: n.id,
+      kind: null,
+      at: n.created_at,
+      actor: { id: n.actor?.id ?? n.actor_id ?? n.id, name: n.actor?.display_name?.trim() || n.actor?.username?.trim() || "Someone", avatarUrl: n.actor?.avatar_url ?? null },
+      who: name ? `${name} ${message}` : capitalise(message),
+      title: n.kind === "post_started" ? n.build?.title?.trim() || null : n.target?.title?.trim() || null,
+      detail: null,
+      cover: n.kind === "post_started" && n.build ? { src: coverSrc, seed: n.build.id } : null,
+      unread: !n.is_read,
+      href: notificationHref(n),
+    };
+  }
   if (kind === null) {
     // No drawn kind: its stored message, which names its own actor — except a
     // direct message's, which is only the verb.

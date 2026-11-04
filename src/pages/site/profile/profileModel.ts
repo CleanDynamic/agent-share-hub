@@ -6,6 +6,9 @@
 
 import type { ReactNode } from "react";
 
+import { replyHref, splitBody, toCardData, topicHref, type PostCardData } from "@/components/post/postCardModel";
+import type { TopicsBy } from "@/lib/openbuilds/connections";
+
 import type { ActivityDay } from "@/components/brand/ActivityGrid";
 import type { RankTier } from "@/components/brand/RankRung";
 import { BADGES } from "@/components/trophies/badge-data";
@@ -158,14 +161,39 @@ export interface FiguresView {
 
 /* ── the works ── */
 
-export type WorksTab = "builds" | "rebuilds" | "reproduced" | "collections";
+/** UX-07 P3: a person's topics and replies as the Topics tab draws them, newest first as read. */
+export function profileTopicEntries(page: Pick<TopicsBy, "posts" | "roots" | "extras">, now: number): ProfileTopicEntry[] {
+  return page.posts.map((post) => {
+    const to = post.parentId ? replyHref(post.rootId, post.id) : topicHref(post.id);
+    const card = toCardData(post, { work: page.extras.work, signed: page.extras.signed, digests: page.extras.digests, now, hrefOf: () => to, strip: post.parentId === null });
+    const root = post.parentId ? page.roots.get(post.rootId) : undefined;
+    const heading = root ? splitBody(root.body).heading || "Untitled post" : "a topic";
+    return {
+      key: post.id,
+      card,
+      repliedTo: post.parentId ? { text: `Replied to ${root?.handle ? `@${root.handle} · ` : ""}${heading}`, to } : null,
+    };
+  });
+}
 
+export type WorksTab = "builds" | "rebuilds" | "reproduced" | "collections" | "topics";
+
+/** UX-07 P3: Topics after the existing tabs. Five is the most a profile carries. */
 export const WORKS_TABS: readonly { value: WorksTab; label: string }[] = [
   { value: "builds", label: "Builds" },
   { value: "rebuilds", label: "Rebuilds" },
   { value: "reproduced", label: "Reproduced" },
   { value: "collections", label: "Collections" },
+  { value: "topics", label: "Topics" },
 ];
+
+/** UX-07 P3: one entry of the Topics tab: a topic or a reply as the post card, a reply with the topic it answers above it. */
+export interface ProfileTopicEntry {
+  key: string;
+  card: PostCardData;
+  /** A reply's `Replied to @maya · <heading>`, linking to the reply. Null on a topic. */
+  repliedTo: { text: string; to: string } | null;
+}
 
 /** "?tab=" as the page reads it; anything unknown (the old "solutions" among it) is Builds. */
 export function worksTabOf(value: string | null | undefined): WorksTab {
@@ -207,6 +235,8 @@ export interface WorksView {
   errorKind?: "error" | "permission";
   cards: readonly WorkCard[];
   collections: readonly CollectionTileView[];
+  /** UX-07 P3: the Topics tab's entries. */
+  topics?: readonly ProfileTopicEntry[];
   hasMore: boolean;
   loadingMore: boolean;
   onMore: () => void;
@@ -230,6 +260,8 @@ export function emptyLine(tab: WorksTab, own: boolean): string {
       return own ? "You haven't reproduced a build yet." : "No builds reproduced yet.";
     case "collections":
       return own ? "You haven't made a collection yet." : "No public collections yet.";
+    case "topics":
+      return own ? "You haven't started or replied to a topic yet." : "No topics yet.";
   }
 }
 

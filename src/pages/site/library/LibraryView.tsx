@@ -10,6 +10,8 @@ import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { Plaque, PlaqueLamp, type PlaqueBuild } from "@/components/brand/Plaque";
+import { PostCard } from "@/components/post/PostCard";
+import type { PostCardData } from "@/components/post/postCardModel";
 import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
 import { ActiveFilterChip } from "@/components/vision/ActiveFilterChip";
 import { PageFigure, type FigurePart } from "@/components/vision/PageFigure";
@@ -93,9 +95,19 @@ export interface LibraryItemsProps {
   /** The first column's name: "Step", "Build". */
   itemColumn: string;
   rows: readonly LibraryRow[];
+  /** UX-07 P4: the Topics kind lists its saved topics as compact post cards, in place of the table. */
+  topics?: readonly LibraryTopic[];
   selected: string | null;
   onSelect: (id: string) => void;
   more?: { loading: boolean; onMore: () => void };
+}
+
+/** UX-07 P4: a saved topic: its compact card, or (once hidden or gone) the heading it was saved with. */
+export interface LibraryTopic {
+  id: string;
+  card: PostCardData | null;
+  title: string;
+  onUnsave: () => void;
 }
 
 export interface DiffLine {
@@ -389,6 +401,20 @@ function CollectionHeading({ heading }: { heading: LibraryCollectionHeading }) {
   );
 }
 
+/** UX-07 P4: saved topics, each the compact post card, then Remove from Library. */
+function TopicCards({ topics }: { topics: readonly LibraryTopic[] }) {
+  return (
+    <ol data-testid="library-topics" aria-label="Saved topics" style={{ listStyle: "none", margin: 0, padding: 0 }}>
+      {topics.map((topic, index) => (
+        <li key={topic.id} data-testid="library-topic" style={{ borderTop: index === 0 ? "none" : `1px solid ${t.hairline}`, paddingBottom: 12 }}>
+          {topic.card ? <PostCard card={topic.card} compact /> : <p style={{ margin: 0, padding: "20px 0 8px", fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>{topic.title || "A topic that is no longer shown"}</p>}
+          <LibraryTextButton onClick={topic.onUnsave}>Remove from Library</LibraryTextButton>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 export function LibraryItems(props: LibraryItemsProps) {
   const { heading, tabs, tab, onTab, controls, chips, sameAsBuilds, status, what, onRetry, empty, itemColumn, rows, selected, onSelect, more } = props;
   const usedIn = rows.some((row) => row.usedIn !== undefined);
@@ -396,6 +422,7 @@ export function LibraryItems(props: LibraryItemsProps) {
   if (status === "loading") body = <TableRowSkeletons count={7} />;
   else if (status === "error") body = <PanelError what={what} onRetry={onRetry} />;
   else if (rows.length === 0) body = <PanelEmpty empty={empty} testId="library-empty" />;
+  else if (props.topics) body = <TopicCards topics={props.topics} />;
   else {
     /* A phone scrolls the table inside its own box, never the page sideways. */
     body = (

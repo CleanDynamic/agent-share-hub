@@ -13,7 +13,7 @@ import { shortAgo } from "@/pages/site/home/homeModel";
 
 /* ── the kinds ── */
 
-export type LibraryKind = "all" | "builds" | "parts" | "sessions" | "steps" | "requests" | "filter-sets";
+export type LibraryKind = "all" | "builds" | "parts" | "sessions" | "steps" | "requests" | "filter-sets" | "topics";
 
 /** The board's order: All saved first, then each kind a reader can keep. */
 export const LIBRARY_KINDS: readonly { value: LibraryKind; label: string }[] = [
@@ -24,10 +24,12 @@ export const LIBRARY_KINDS: readonly { value: LibraryKind; label: string }[] = [
   { value: "steps", label: "Steps" },
   { value: "requests", label: "Requests" },
   { value: "filter-sets", label: "Filter sets" },
+  // UX-07 P4: saved topics, one more kind.
+  { value: "topics", label: "Topics" },
 ];
 
 /** The kinds with a source: a build is in build_saves, the rest are saved_items (SV-17). */
-export const LIVE_KINDS: readonly LibraryKind[] = ["all", "builds", "parts", "sessions", "steps", "requests", "filter-sets"];
+export const LIVE_KINDS: readonly LibraryKind[] = ["all", "builds", "parts", "sessions", "steps", "requests", "filter-sets", "topics"];
 
 /** The saved_items kind a Library kind lists, or null for All saved (which lists them all) and Builds (build_saves). */
 export function savedKindOf(kind: LibraryKind): SavedKind | null {
@@ -37,6 +39,7 @@ export function savedKindOf(kind: LibraryKind): SavedKind | null {
     case "steps": return "step";
     case "requests": return "request";
     case "filter-sets": return "filter_set";
+    case "topics": return "post";
     default: return null;
   }
 }
@@ -137,7 +140,7 @@ export function itemTitle(item: Pick<LibrarySavedItem, "kind" | "snapshot">): st
   return own || words;
 }
 
-const TYPE_WORD: Record<SavedKind, string> = { part: "Part", session: "Session", step: "Step", request: "Request", filter_set: "Filter set", collection: "Collection" };
+const TYPE_WORD: Record<SavedKind, string> = { part: "Part", session: "Session", step: "Step", request: "Request", filter_set: "Filter set", collection: "Collection", post: "Topic" };
 
 /** The row's Type: a step or part by its tile type ("Prompt", "Agent"), the rest by their kind. */
 export function itemType(item: LibrarySavedItem): string {

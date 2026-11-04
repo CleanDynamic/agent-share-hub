@@ -301,6 +301,38 @@ export function EngagementRow({ build, counts, liked, saved, variant, withRebuil
 }
 
 /**
+ * UX-07: the same row on a topic. Like and Save act on the topic itself, and the comment slot is Reply, with the topic's reply count.
+ * The caller does the writing (a topic's like and save are not a build's): the row draws what it is given, the same look, the same
+ * sizes, the same accessible names. Save, where offered, has no count: a save is the saver's alone (SV-17).
+ */
+export interface TopicEngagementRowProps {
+  likes: number;
+  liked: boolean;
+  onLike: () => void;
+  replies: number;
+  onReply: () => void;
+  /** Absent: Save is not offered. */
+  save?: { saved: boolean; onSave: () => void };
+  style?: CSSProperties;
+}
+
+export function TopicEngagementRow({ likes, liked, onLike, replies, onReply, save, style }: TopicEngagementRowProps) {
+  const phone = useIsPhone();
+  const actions: ActionSpec[] = [
+    { id: "like", label: liked ? "Unlike" : "Like", pressed: liked, count: likes, noun: ["like", "likes"], onPress: onLike, glyph: "heart" },
+    { id: "comment", slot: "comment", label: "Reply", count: replies, noun: ["reply", "replies"], onPress: onReply, glyph: "comment" },
+    ...(save ? [{ id: "save", label: save.saved ? "Unsave" : "Save", pressed: save.saved, onPress: save.onSave, glyph: "save" as const }] : []),
+  ];
+  return (
+    <div data-testid="engagement-row" data-variant="topic" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", marginInlineStart: -PAD_INLINE, marginTop: 6, ...style }}>
+      {actions.map(({ id, ...action }) => (
+        <Action key={id} phone={phone} {...action} />
+      ))}
+    </div>
+  );
+}
+
+/**
  * The page's comment box: scrolled to and focused. The comments section
  * (RC-P17) carries id="comments"; its composer is the first text field in it,
  * or, signed out, its sign-in link.

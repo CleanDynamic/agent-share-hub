@@ -24,6 +24,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePageReady } from "@/lib/routing/pageReady";
 import { keepPreviousData, useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { listTopicsBy } from "@/lib/openbuilds/connections";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { SeoHead } from "@/components/SeoHead";
@@ -69,6 +70,7 @@ import {
   marksView,
   sinceLabel,
   worksTabOf,
+  profileTopicEntries,
   type CollectionTileView,
   type FiguresView,
   type WorkCard,
@@ -232,7 +234,17 @@ export function ProfilePage() {
     refetchOnWindowFocus: false,
   });
 
-  const list = tab === "reproduced" ? reproducedList : tab === "collections" ? collectionsList : buildsList;
+  /* UX-07 P3: the person's topics and replies, read when the tab is open. */
+  const topicsList = useInfiniteQuery({
+    queryKey: ["openbuilds", "listTopicsBy", makerId],
+    enabled: Boolean(makerId) && tab === "topics",
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) => listTopicsBy(makerId as string, { offset: pageParam }),
+    getNextPageParam: (last) => last.next ?? undefined,
+    refetchOnWindowFocus: false,
+  });
+
+  const list = tab === "topics" ? topicsList : tab === "reproduced" ? reproducedList : tab === "collections" ? collectionsList : buildsList;
   const builds = useMemo(
     () => (tab === "collections" ? EMPTY_BUILDS : flatten(tab === "reproduced" ? reproducedList.data?.pages : buildsList.data?.pages)),
     [tab, buildsList.data, reproducedList.data],
@@ -332,11 +344,12 @@ export function ProfilePage() {
     tab,
     onTab,
     counts,
-    status: listError && (tab === "collections" ? collectionRows.length === 0 : builds.length === 0) ? "error" : list.isPending ? "loading" : "ready",
+    status: listError && (tab === "collections" ? collectionRows.length === 0 : tab === "topics" ? !topicsList.data : builds.length === 0) ? "error" : list.isPending ? "loading" : "ready",
     errorKind: listError && isPermissionError(listError) ? "permission" : "error",
     error: listError,
     cards,
     collections,
+    topics: (topicsList.data?.pages ?? []).flatMap((page) => profileTopicEntries(page, Date.now())),
     hasMore: Boolean(list.hasNextPage),
     loadingMore: list.isFetchingNextPage,
     onMore: () => void list.fetchNextPage(),

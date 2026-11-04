@@ -108,6 +108,8 @@ export interface BuildViewProps {
   steps?: BuildStepsView;
   /** CA-16 P7: the Classification section, drawn under the hero. Absent: nothing, and the page is exactly as it was. */
   classification?: ReactNode;
+  /** UX-07 P2: Discussed in OpenBuilds, drawn after the classification. Absent: nothing. */
+  discussed?: ReactNode;
 }
 
 export { BOTTOM_ROW, BuildViewSkeleton, dropped, HERO_ROW, heroRow, bottomRow, MOCK_ROWS, ProofSkeleton } from "./BuildViewSkeleton";
@@ -1148,6 +1150,7 @@ function DesktopBuild(props: BuildViewProps) {
             {steps ? <StepsNeed steps={steps} phone={false} inColumn details={proof.details} /> : null}
             {steps ? null : <DetailsGroup details={proof.details} />}
             {props.classification}
+      {props.discussed}
             {proof.completeness ? <CompletenessModule completeness={proof.completeness} /> : null}
           </>
         ) : (
@@ -1156,6 +1159,7 @@ function DesktopBuild(props: BuildViewProps) {
               {title}
               {steps ? <BuildPanel viewer={viewer} steps={steps} phone={false} announce={announce} inColumn /> : null}
               {props.classification}
+              {props.discussed}
             </div>
             <div data-testid="build-side-column" style={{ ...side, display: "flex", flexDirection: "column" }}>
               <SideSection first last={!steps && !proof.completeness && !proof.details.length}>
@@ -1271,6 +1275,7 @@ function PhoneBuild(props: BuildViewProps) {
       )}
       {lower}
       {props.classification}
+      {props.discussed}
       {proof.completeness ? <CompletenessModule completeness={proof.completeness} /> : null}
       {region}
     </div>

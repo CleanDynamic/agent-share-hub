@@ -20,6 +20,8 @@ export interface World {
   spaces: Row[];
   members: Row[];
   posts: Row[];
+  /** UX-07: the signed-in reader's notifications, as rc_notify writes them. */
+  notifications: Row[];
   created: { rpc: Row[]; spaces: Row[]; patches: Row[] };
   seq: number;
   /** Requests the feed made, for specs that look at what was asked. */
@@ -68,6 +70,7 @@ export function newWorld(): World {
     spaces: [claude],
     members: [{ space_id: claude.id, user_id: KIT.id, role: "moderator" }],
     posts: [post(1), post(2), post(3), post(4)],
+    notifications: [],
     created: { rpc: [], spaces: [], patches: [] },
     seq: 0,
     asked: [],
@@ -116,6 +119,20 @@ export function addReplies(world: World, rootId: string, replies: { id: string; 
 function threadRow(world: World, post: Row, depth: number): Row {
   const replies = depth >= 2 ? [] : world.posts.filter((entry) => entry.parent_id === post.id).sort((a, b) => a.created_at.localeCompare(b.created_at));
   return { ...post, replies: replies.map((reply) => threadRow(world, reply, depth + 1)) };
+}
+
+/** UX-07: the feed function's rows for the world's topics: a 'post' row each, and a 'reply_group' row for each with replies. */
+function feedRows(world: World): Row[] {
+  const person = (prefix: string, author: Row | undefined) => ({ [`${prefix}_id`]: author?.id ?? null, [`${prefix}_username`]: author?.username ?? null, [`${prefix}_display`]: author?.display_name ?? null, [`${prefix}_avatar`]: null });
+  const roots = world.posts.filter((post) => post.parent_id === null && post.hidden_by === null);
+  const rows: Row[] = [];
+  for (const root of roots) {
+    const base = { build_id: null, slug: null, title: null, post_id: root.id, post_created_at: root.created_at, ...person("post_author", root.author), post_body: root.body, post_still_open: root.still_open, post_reward_gbp: root.reward_gbp, post_reply_count: root.reply_count };
+    rows.push({ item_kind: "post", item_at: root.created_at, ...base });
+    const newest = world.posts.filter((post) => post.root_id === root.id && post.parent_id !== null).sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+    if (newest) rows.push({ item_kind: "reply_group", item_at: newest.created_at, ...base, reply_id: newest.id, reply_at: newest.created_at, ...person("reply_author", newest.author), reply_body: newest.body, reply_new_count: null });
+  }
+  return rows.sort((a, b) => b.item_at.localeCompare(a.item_at));
 }
 
 const CORS = { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "*", "access-control-expose-headers": "content-range" };
@@ -232,7 +249,28 @@ export async function installWorld(page: Page, world: World, options: { signedIn
       return reply(route, id, 200);
     }
 
+    // UX-07: the reader's notifications; opening one marks it read.
+    if (table === "notifications") {
+      if (method === "HEAD") return route.fulfill({ status: 200, headers: { ...CORS, "content-range": `0-0/${world.notifications.filter((row) => !row.is_read).length}` } });
+      if (method === "PATCH") {
+        const ids = listOf(filter(url, "id"));
+        for (const row of world.notifications) if (ids.length === 0 || ids.includes(row.id)) Object.assign(row, body());
+        return reply(route, []);
+      }
+      const rows = world.notifications.filter((row) => passes(row, url));
+      return reply(route, rows, 200, { "content-range": `0-${Math.max(0, rows.length - 1)}/${rows.length}` });
+    }
+
+    // UX-07: Home's feed carries the world's topics, and a reply group for each topic with replies (its newest reply).
+    if (table === "rpc/get_build_feed" && method === "POST") return reply(route, feedRows(world));
+
     if (table === "openbuild_posts") {
+      // UX-07: Home's second read, the feed's posts by their ids.
+      const ids = listOf(filter(url, "id"));
+      if (method === "GET" && filter(url, "id")?.startsWith("in.(") && ids.length) {
+        const topicOf = (post: Row) => world.posts.find((entry) => entry.id === post.root_id);
+        return reply(route, world.posts.filter((post) => ids.includes(post.id) && post.hidden_by === null).map((post) => (select.includes("topic:") ? { ...post, topic: { body: topicOf(post)?.body ?? null } } : post)));
+      }
       if (method === "PATCH") {
         const ids = listOf(filter(url, "id"));
         const patch = body() as Row;

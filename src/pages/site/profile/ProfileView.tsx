@@ -39,12 +39,15 @@ import { CardSkeleton, LoadingRegion, Skeleton } from "@/components/brand/Skelet
 import { Button } from "@/components/brand/Button";
 import { Stat } from "@/components/brand/Stat";
 import { UnderlineTabs } from "@/components/brand/UnderlineTabs";
+import { PostCard } from "@/components/post/PostCard";
 import { WallLabel } from "@/components/brand/WallLabel";
 import { ScrollRow } from "@/components/shell/ScrollRow";
 import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
 import { sideTrack, useIsPhone, useTierFit, useWidthTier, type WidthTier } from "@/components/shell/useMinWidth";
 import type { TrackId } from "@/lib/progress";
 import { r } from "@/lib/theme/radius";
+import { useInteractive } from "@/lib/theme/interactive";
+import { ring } from "@/lib/theme/controls";
 import { t } from "@/lib/theme/tokens";
 import { display, DM_MONO, FIGTREE, mono } from "@/lib/theme/type";
 
@@ -66,6 +69,7 @@ import {
   type FiguresView,
   type LevelView,
   type MarkView,
+  type ProfileTopicEntry,
   type WorksTab,
   type WorksView,
 } from "./profileModel";
@@ -412,7 +416,31 @@ const WORKS_NOUN: Record<WorksTab, string> = {
   rebuilds: "rebuilds",
   reproduced: "reproduced builds",
   collections: "collections",
+  topics: "topics",
 };
+
+/** UX-07 P3: the Topics tab: each topic or reply as the post card, newest first; a reply says which topic it answers, above it. */
+function TopicsList({ entries }: { entries: readonly ProfileTopicEntry[] }) {
+  return (
+    <ol data-testid="profile-topics" aria-label="Topics and replies" style={{ listStyle: "none", margin: 0, padding: 0 }}>
+      {entries.map((entry, index) => (
+        <li key={entry.key} data-testid="profile-topic" style={{ borderTop: index === 0 ? "none" : `1px solid ${t.hairline}`, paddingTop: entry.repliedTo ? 12 : 0 }}>
+          {entry.repliedTo ? <RepliedTo to={entry.repliedTo.to}>{entry.repliedTo.text}</RepliedTo> : null}
+          <PostCard card={entry.card} />
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function RepliedTo({ to, children }: { to: string; children: string }) {
+  const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  return (
+    <Link to={to} data-testid="profile-replied-to" {...handlers} style={{ display: "block", fontFamily: FIGTREE, fontSize: 12, lineHeight: "16px", color: t.label, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, overflowWrap: "anywhere", ...ring(state.focusVisible) }}>
+      {children}
+    </Link>
+  );
+}
 
 /** The desktop works grid's columns at each width tier (UI-P39): 4 from 1280, 3 to 1024, 2 below. */
 const WORKS_COLUMNS: Record<WidthTier, number> = { full: 4, split: 3, stacked: 2 };
@@ -448,8 +476,23 @@ function WorksBody({ works, isOwn, phone }: { works: WorksView; isOwn: boolean; 
   }
 
   const collections = works.tab === "collections";
-  const count = collections ? works.collections.length : works.cards.length;
+  const topics = works.tab === "topics";
+  const count = topics ? (works.topics?.length ?? 0) : collections ? works.collections.length : works.cards.length;
   if (count === 0) return <EmptyState line={emptyLine(works.tab, isOwn)} data-testid="profile-works-empty" />;
+  if (topics) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <TopicsList entries={works.topics ?? []} />
+        {works.hasMore ? (
+          <div>
+            <Button variant="secondary" size={phone ? 44 : 36} disabled={works.loadingMore} data-testid="profile-show-more" onClick={works.onMore}>
+              Show more
+            </Button>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>

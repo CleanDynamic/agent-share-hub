@@ -204,7 +204,8 @@ describe("Library", () => {
     await waitFor(() => expect(rowTitles()).toEqual(["Saved build 2", "Saved build 1"]));
     expect(screen.getByText("18 saved · 1 collection")).toBeInTheDocument();
     const kinds = within(screen.getByRole("navigation", { name: "Kinds" })).getAllByRole("link");
-    expect(kinds.map((link) => link.textContent)).toEqual(["All saved18", "Builds18", "Parts0", "Sessions0", "Steps0", "Requests0", "Filter sets0"]);
+    // UX-07 P4: saved topics are one more kind.
+    expect(kinds.map((link) => link.textContent)).toEqual(["All saved18", "Builds18", "Parts0", "Sessions0", "Steps0", "Requests0", "Filter sets0", "Topics0"]);
     expect(screen.getAllByTestId("library-row")[0]).toHaveAttribute("aria-selected", "true");
 
     fireEvent.click(screen.getByRole("button", { name: "Show more" }));

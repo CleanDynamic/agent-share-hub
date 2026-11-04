@@ -14,7 +14,7 @@ import { currentUserId } from "@/lib/social/types";
 import { readCardWork, type CardWork } from "./cardWork";
 import { signEntryMedia } from "./media";
 import type { SpaceCrowd } from "./spacesFeed";
-import { SPACE_COLUMNS, db, postLayerError, toSpace, unique, type Post, type PostThread, type SpaceRow } from "./types";
+import { SPACE_COLUMNS, db, postLayerError, toSpace, unique, type Post, type PostThread, type SpaceReaction, type SpaceRow } from "./types";
 
 /** The most top-level steps read per build for Line up steps. */
 const LINE_ROWS_PER_BUILD = 200;
@@ -68,7 +68,51 @@ export interface PostPageExtras {
   /** The posts the reader liked. Empty signed out. */
   liked: Set<string>;
   crowd: SpaceCrowd | null;
+  /** UX-07 P7: the extra reactions every one of the topic's spaces switched on (none for a topic in no space). Absent: none. */
+  reactionKinds?: SpaceReaction[];
+  /** UX-07 P7: each post's reactions, by its id. Read only when a kind is on. */
+  reactions?: Map<string, PostReactions>;
 }
+
+/** UX-07 P7: one post's dislikes and ratings, and the reader's own. */
+export interface PostReactions {
+  dislikes: number;
+  disliked: boolean;
+  ratings: number;
+  /** The mean of the ratings, or null with none. */
+  average: number | null;
+  /** The reader's own rating, 1 to 5. */
+  mine: number | null;
+}
+
+export const NO_REACTIONS: PostReactions = { dislikes: 0, disliked: false, ratings: 0, average: null, mine: null };
+
+/** The kinds every space switched on: a topic in several spaces shows a reaction only if all of them allow it. */
+export function enabledReactions(spaces: readonly { reactions: readonly SpaceReaction[] }[]): SpaceReaction[] {
+  if (spaces.length === 0) return [];
+  return (["dislike", "rating"] as const).filter((kind) => spaces.every((space) => space.reactions.includes(kind)));
+}
+
+/** The reaction rows folded per post. */
+export function foldReactions(rows: readonly { post_id: string; user_id: string; kind: string; value: number | null }[], viewerId: string | null): Map<string, PostReactions> {
+  const sums = new Map<string, { total: number } & PostReactions>();
+  for (const row of rows) {
+    const entry = sums.get(row.post_id) ?? { ...NO_REACTIONS, total: 0 };
+    if (row.kind === "dislike") {
+      entry.dislikes += 1;
+      if (row.user_id === viewerId) entry.disliked = true;
+    } else if (row.kind === "rating" && typeof row.value === "number") {
+      entry.ratings += 1;
+      entry.total += row.value;
+      if (row.user_id === viewerId) entry.mine = row.value;
+    }
+    sums.set(row.post_id, entry);
+  }
+  return new Map([...sums].map(([id, { total, ...entry }]) => [id, { ...entry, average: entry.ratings > 0 ? total / entry.ratings : null }]));
+}
+
+/** The most reaction rows one thread reads. */
+const REACTION_ROWS = 2000;
 
 const FACT_COLUMNS = "id, slug, title, status, creator_id, parent_build_id, source_handle_at_fork";
 const LINE_COLUMNS =
@@ -96,7 +140,8 @@ export async function readPostExtras(thread: PostThread, viewerId: string | null
   const media = posts.flatMap((post) => post.attachments.flatMap((attachment) => (attachment.kind === "media" && attachment.mediaPath ? [{ path: attachment.mediaPath, mediaKind: attachment.mediaKind ?? ("file" as const) }] : [])));
   const space = thread.spaces[0] ?? null;
 
-  const [work, signed, facts, steps, liked, crowd] = await Promise.all([
+  const spaceIds = thread.spaces.map((entry) => entry.id);
+  const [work, signed, facts, steps, liked, crowd, spaceReactions, reactionRows] = await Promise.all([
     readCardWork(posts),
     media.length ? signEntryMedia(media) : Promise.resolve(new Map<string, string>()),
     builds.length ? db.from("builds").select(FACT_COLUMNS).in("id", builds).limit(builds.length) : Promise.resolve({ data: [], error: null }),
@@ -105,8 +150,16 @@ export async function readPostExtras(thread: PostThread, viewerId: string | null
       : Promise.resolve({ data: [], error: null }),
     viewerId ? listMyLikes(posts.map((post) => post.id)) : Promise.resolve(new Set<string>()),
     space ? readSpaceCrowd(space.id, viewerId) : Promise.resolve(null),
+    // UX-07 P7: every space's switched-on reactions, and the thread's reactions, beside the rest: no round of their own.
+    spaceIds.length ? db.from("spaces").select("id, reactions").in("id", spaceIds).limit(spaceIds.length) : Promise.resolve({ data: [], error: null }),
+    spaceIds.length ? db.from("post_reactions").select("post_id, user_id, kind, value").in("post_id", posts.map((post) => post.id)).limit(REACTION_ROWS) : Promise.resolve({ data: [], error: null }),
   ]);
   if (facts.error) throw postLayerError("readPostExtras", facts);
+  if (spaceReactions.error) throw postLayerError("readPostExtras", spaceReactions);
+  if (reactionRows.error) throw postLayerError("readPostExtras", reactionRows);
+  const spaces = ((spaceReactions.data ?? []) as { id: string; reactions: SpaceReaction[] | null }[]).map((row) => ({ reactions: row.reactions ?? [] }));
+  // A space the reader cannot read counts as one that switched nothing on.
+  const reactionKinds = spaces.length === spaceIds.length ? enabledReactions(spaces) : [];
   if (steps.error) throw postLayerError("readPostExtras", steps);
 
   const factMap = new Map<string, WallBuildFacts>();
@@ -115,7 +168,8 @@ export async function readPostExtras(thread: PostThread, viewerId: string | null
   }
   const stepMap = new Map<string, LineStepRow[]>();
   for (const row of (steps.data ?? []) as LineStepRow[]) stepMap.set(row.build_id, [...(stepMap.get(row.build_id) ?? []), row]);
-  return { work, signed, facts: factMap, steps: stepMap, liked, crowd };
+  const reactions = reactionKinds.length ? foldReactions((reactionRows.data ?? []) as { post_id: string; user_id: string; kind: string; value: number | null }[], viewerId) : new Map<string, PostReactions>();
+  return { work, signed, facts: factMap, steps: stepMap, liked, crowd, reactionKinds, reactions };
 }
 
 

@@ -9,12 +9,13 @@
 
    Likes, pins and hides change the page at once and ask the database after; a refusal puts the page back and says so. */
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { SeoHead } from "@/components/SeoHead";
+import { centre } from "@/components/build/partNav";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { PostControl } from "@/components/post/postControls";
 import { splitBody, toCardData } from "@/components/post/postCardModel";
@@ -23,15 +24,16 @@ import { useMinWidth } from "@/components/shell/useMinWidth";
 import { useAuth } from "@/contexts/AuthContext";
 import { engagementFor, useEngagement } from "@/hooks/useEngagement";
 import { reportError } from "@/lib/errors/report";
-import { getPost, hidePost, joinSpace, leaveSpace, likePost, pinPost, unlikePost, unpinPost, type PostThread } from "@/lib/openbuilds";
+import { getPost, hidePost, joinSpace, leaveSpace, likePost, pinPost, reactToPost, removeReaction, unlikePost, unpinPost, type PostThread } from "@/lib/openbuilds";
 import type { StepToCopy } from "@/lib/openbuilds/addToDraft";
-import { readPostExtras, type PostPageExtras } from "@/lib/openbuilds/postPage";
+import { NO_REACTIONS, readPostExtras, type PostPageExtras } from "@/lib/openbuilds/postPage";
 import { usePageReady } from "@/lib/routing/pageReady";
 
 import { AddToDraftButton, AddToDraftSub } from "./AddToDraft";
 import { EmptyLine, LoadError } from "./OpenBuildsFeedParts";
 import { PostLoadingView } from "./PostFrame";
 import { PostStepMenu } from "./PostStepMenu";
+import { ReactionRow } from "./ReactionRow";
 import { ReplyBox } from "./ReplyBox";
 import type { ReplyDraft } from "./sendReply";
 import { PostView, type PostSideRow } from "./PostView";
@@ -100,6 +102,18 @@ export default function PostPage() {
   }, [post.error, extras.error]);
   usePageReady("post", !arriving && thread !== null);
 
+  /* UX-07 P5: `#reply-<id>` (a notification, a reply group on Home, a profile) brings that reply to the middle on arrival, once,
+     with the page's own scroll helper, as `#node-<id>` does on a build page. */
+  const scrolledTo = useRef<string | null>(null);
+  useEffect(() => {
+    const hash = decodeURIComponent(location.hash.replace(/^#/, ""));
+    if (arriving || !hash.startsWith("reply-") || scrolledTo.current === hash) return;
+    const element = document.getElementById(hash);
+    if (!element) return;
+    scrolledTo.current = hash;
+    centre(element);
+  });
+
   /* ── the one reply box: at the foot, or under the reply it answers; about a step or not ── */
 
   const [replyAt, setReplyAt] = useState<"foot" | string>("foot");
@@ -144,6 +158,42 @@ export default function PostPage() {
       refused(error, "likePost", "That didn't save. Try again.");
     }
   };
+
+  /* UX-07 P7: a dislike or a rating changes the row at once and asks the database after; a refusal puts it back and says the
+     database's words (a space that switched the kind off says so). */
+  const react = async (postId: string, change: { kind: "dislike"; on: boolean } | { kind: "rating"; value: 1 | 2 | 3 | 4 | 5 }) => {
+    if (!viewerId) return signIn();
+    const key = postExtrasKey(id, viewerId);
+    const was = qc.getQueryData<PostPageExtras>(key);
+    if (was) {
+      const reactions = new Map(was.reactions ?? []);
+      const entry = reactions.get(postId) ?? NO_REACTIONS;
+      if (change.kind === "dislike") reactions.set(postId, { ...entry, disliked: change.on, dislikes: Math.max(0, entry.dislikes + (change.on === entry.disliked ? 0 : change.on ? 1 : -1)) });
+      else {
+        const total = (entry.average ?? 0) * entry.ratings - (entry.mine ?? 0) + change.value;
+        const ratings = entry.ratings + (entry.mine === null ? 1 : 0);
+        reactions.set(postId, { ...entry, mine: change.value, ratings, average: total / ratings });
+      }
+      qc.setQueryData(key, { ...was, reactions });
+    }
+    try {
+      if (change.kind === "rating") await reactToPost(postId, { kind: "rating", value: change.value });
+      else await (change.on ? reactToPost(postId, { kind: "dislike" }) : removeReaction(postId, "dislike"));
+    } catch (error) {
+      if (was) qc.setQueryData(key, was);
+      refused(error, "reactToPost", "That didn't save. Try again.");
+    }
+  };
+  const reactionRow = (postId: string, what: "topic" | "reply") =>
+    data.reactionKinds?.length ? (
+      <ReactionRow
+        kinds={data.reactionKinds}
+        reactions={data.reactions?.get(postId) ?? NO_REACTIONS}
+        what={what}
+        onDislike={(on) => void react(postId, { kind: "dislike", on })}
+        onRate={(value) => void react(postId, { kind: "rating", value })}
+      />
+    ) : null;
 
   const moderate = async (postId: string, change: (entry: PostThread) => PostThread, write: () => Promise<void>) => {
     const undo = patch(postId, change);
@@ -292,6 +342,7 @@ export default function PostPage() {
             card={card}
             engagement={card.engagementBuild ? engagementFor(engagement, card.engagementBuild.id) : undefined}
             renderTile={renderTile}
+            reactions={reactionRow(shown.id, shown.parentId ? "reply" : "topic")}
             tab={address.tab}
             onTab={(tab) => move({ tab })}
             replies={shown.replyCount}
@@ -326,6 +377,7 @@ export default function PostPage() {
               onUnpin: (replyId) => void moderate(replyId, (entry) => ({ ...entry, pinnedBy: null, pinnedAt: null }), () => unpinPost(replyId)),
               onHide: (replyId, reason) => void moderate(replyId, (entry) => ({ ...entry, hiddenBy: viewerId, hiddenReason: reason || null }), () => hidePost(replyId, reason || undefined)),
               renderAddToDraft: (step) => <AddToDraftButton step={step} />,
+              renderReactions: (replyId) => reactionRow(replyId, "reply"),
               branchHref: (replyId) => `?${postSearch(params, { reply: replyId, step: null }, defaultView).toString()}`,
             }}
             side={{ space, rows: sideRows }}
