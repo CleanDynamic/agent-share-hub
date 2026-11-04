@@ -1,0 +1,288 @@
+/* UX-05 Part 1: the post card, used by every list of posts.
+
+   Pure: typed props (`PostCardData` from postCardModel), no fetching, no `useAuth()`, no router hooks but `Link`. Its head and
+   body values are FeedPost's, copied (FeedPost's head is not a component of its own): a 40px author column and the content 12
+   apart, padding 20 0 16; the name 15/600 and `@handle · age` 14 `--label`; the heading in the post type's title (28, 24 on a
+   phone, 500, -0.03em). Only the heading and the replies strip are links to the post. */
+
+import { useState, type CSSProperties } from "react";
+
+import { Avatar } from "@/components/brand/Avatar";
+import { Plaque } from "@/components/brand/Plaque";
+import { useIsPhone } from "@/components/shell/useMinWidth";
+import { EngagementRow, type RowEngagement } from "@/components/social/EngagementRow";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DashedSlot } from "@/components/vision/DashedSlot";
+import { StepStripTiles, tileBox } from "@/components/vision/StepStripTiles";
+import { PageLink as Link } from "@/lib/routing/PageLink";
+import { ring } from "@/lib/theme/controls";
+import { useInteractive } from "@/lib/theme/interactive";
+import { radiusVar } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+
+import { PostControl } from "./postControls";
+import { postType } from "./postType";
+import { repliesWords, type CardAttachment, type PostCardData } from "./postCardModel";
+
+/** What a moderator can do to a post, from its `···` menu. */
+export interface CardModeration {
+  onPin: () => void;
+  onUnpin: () => void;
+  onHide: (reason: string) => void;
+  onUnhide: () => void;
+}
+
+export interface PostCardProps {
+  card: PostCardData;
+  /** A list clamps the text to three lines; the post's own page does not. */
+  clamp?: boolean;
+  moderation?: CardModeration;
+  engagement?: RowEngagement;
+}
+
+const plain: CSSProperties = { fontFamily: FIGTREE, margin: 0 };
+
+/** The post's heading: its type, underlined at once under hover (a fine pointer only). */
+function HeadingLink({ to, children, phone }: { to: string; children: string; phone: boolean }) {
+  const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  return (
+    <Link to={to} data-testid="post-card-heading-link" {...handlers} style={{ color: "inherit", textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: 4, ...ring(state.focusVisible) }}>
+      <h3 style={{ ...postType(phone).title, display: "inline", fontSize: postType(phone).title.fontSize }}>{children}</h3>
+    </Link>
+  );
+}
+
+/** A link inside the head: a space's name in `--text2`, underlined under hover. */
+function SpaceLink({ to, children }: { to: string; children: string }) {
+  const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  return (
+    <Link to={to} {...handlers} style={{ color: t.text2, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: 4, ...ring(state.focusVisible) }}>
+      {children}
+    </Link>
+  );
+}
+
+function BuildAttachment({ attachment }: { attachment: Extract<CardAttachment, { kind: "build" }> }) {
+  return (
+    <div>
+      <div style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: radiusVar("r-card"), padding: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ ...plain, fontSize: 13, fontWeight: 500, overflowWrap: "anywhere" }}>{attachment.title}</div>
+          <div style={{ ...plain, fontSize: 12, color: t.label }}>{[attachment.harness ?? "Harness", attachment.steps > 0 ? `${attachment.steps} ${attachment.steps === 1 ? "step" : "steps"}` : null].filter(Boolean).join(" · ")}</div>
+        </div>
+        {attachment.plaque ? <Plaque build={attachment.plaque} size="row" /> : null}
+      </div>
+      <StepStripTiles tiles={attachment.tiles} openLabel="Still open" margin="8px 0 0" />
+    </div>
+  );
+}
+
+function StepAttachment({ attachment }: { attachment: Extract<CardAttachment, { kind: "step" }> }) {
+  return (
+    <div style={{ ...tileBox, padding: "8px 10px" }}>
+      <div style={{ ...plain, fontSize: 11.5, color: t.label }}>{attachment.head}</div>
+      <div style={{ fontFamily: DM_MONO, fontSize: 12, lineHeight: "18px", whiteSpace: "pre-wrap", overflowWrap: "anywhere", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{attachment.text}</div>
+    </div>
+  );
+}
+
+function Attachment({ attachment }: { attachment: CardAttachment }) {
+  if (attachment.kind === "build") return <BuildAttachment attachment={attachment} />;
+  if (attachment.kind === "step") return <StepAttachment attachment={attachment} />;
+  if (attachment.kind === "line") {
+    return (
+      <div style={{ ...tileBox, padding: "8px 10px", ...plain, fontSize: 12.5 }}>{attachment.text}</div>
+    );
+  }
+  if (attachment.kind === "image") {
+    // A box sized ahead, so nothing shifts when the picture arrives.
+    return (
+      <div style={{ aspectRatio: "16 / 9", maxHeight: 360, background: t.well, borderRadius: radiusVar("r-media"), overflow: "hidden" }}>
+        {attachment.src ? <img src={attachment.src} alt={attachment.alt} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : null}
+      </div>
+    );
+  }
+  return (
+    <div style={{ ...tileBox, padding: "8px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+      <span style={{ ...plain, fontSize: 12.5, overflowWrap: "anywhere" }}>{attachment.name}</span>
+      {attachment.href ? (
+        <PostControl to={attachment.href} download>
+          Download
+        </PostControl>
+      ) : null}
+    </div>
+  );
+}
+
+/** The `···` menu: moderators only. Hide asks for its reason in one field. */
+function ModerationMenu({ card, moderation, onAsk }: { card: PostCardData; moderation: CardModeration; onAsk: () => void }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <PostControl aria-label="Moderate this post">···</PostControl>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {card.pinned ? <DropdownMenuItem onSelect={moderation.onUnpin}>Unpin</DropdownMenuItem> : <DropdownMenuItem onSelect={moderation.onPin}>Pin</DropdownMenuItem>}
+        {card.hidden ? <DropdownMenuItem onSelect={moderation.onUnhide}>Unhide</DropdownMenuItem> : <DropdownMenuItem onSelect={onAsk}>Hide</DropdownMenuItem>}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function HideReason({ onHide, onCancel }: { onHide: (reason: string) => void; onCancel: () => void }) {
+  const [reason, setReason] = useState("");
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        onHide(reason.trim());
+      }}
+      style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8, flexWrap: "wrap" }}
+    >
+      <input
+        aria-label="Reason for hiding"
+        value={reason}
+        onChange={(event) => setReason(event.target.value)}
+        placeholder="Why is it hidden?"
+        style={{ flex: "1 1 200px", minWidth: 0, height: 32, boxSizing: "border-box", padding: "0 10px", borderRadius: radiusVar("r-control"), border: `1px solid ${t.controlBorder}`, background: t.well, color: t.text, fontFamily: FIGTREE, fontSize: 16 }}
+      />
+      <PostControl type="submit">Hide</PostControl>
+      <PostControl onClick={onCancel}>Cancel</PostControl>
+    </form>
+  );
+}
+
+export function PostCard({ card, clamp = true, moderation, engagement }: PostCardProps) {
+  const phone = useIsPhone();
+  const [asking, setAsking] = useState(false);
+  const label = t.label;
+  const name = card.author.name;
+  const meta = [card.author.handle ? `@${card.author.handle}` : null, card.age || null].filter(Boolean).join(" · ");
+
+  // A hidden post, seen by a moderator: its heading greyed, the line, and Unhide.
+  if (card.hidden) {
+    return (
+      <article aria-label={card.heading} style={{ padding: "20px 0 16px", color: t.textDisabled }}>
+        <h3 style={{ ...postType(phone).title, color: t.textDisabled, fontSize: 16, letterSpacing: 0 }}>{card.heading}</h3>
+        <div style={{ ...plain, fontSize: 12, color: label, marginTop: 4 }}>{`Hidden by ${card.hidden.by} · only moderators see this`}</div>
+        {card.hidden.reason ? <div style={{ ...plain, fontSize: 12, color: label }}>{card.hidden.reason}</div> : null}
+        {moderation ? (
+          <div style={{ marginTop: 8 }}>
+            <PostControl onClick={moderation.onUnhide}>Unhide</PostControl>
+          </div>
+        ) : null}
+      </article>
+    );
+  }
+
+  return (
+    <article
+      aria-label={card.heading}
+      style={{ display: "grid", gridTemplateColumns: "40px minmax(0, 1fr)", columnGap: 12, padding: "20px 0 16px", boxSizing: "border-box", width: "100%", color: t.text, fontFamily: FIGTREE }}
+    >
+      <div style={{ gridColumn: 1, width: 40 }}>
+        <Avatar size={40} userId={card.author.id} name={name} src={card.author.avatarUrl} />
+      </div>
+
+      <div style={{ gridColumn: 2, minWidth: 0 }}>
+        {/* Head: name, @handle · age · in spaces; the reward and Pinned at the right end. */}
+        <div style={{ display: "flex", alignItems: "baseline", gap: 6, minHeight: 24, marginBottom: 4 }}>
+          <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexWrap: "wrap", alignItems: "baseline", columnGap: 6 }}>
+            <span style={{ ...plain, fontSize: 15, fontWeight: 600, lineHeight: 1.4 }}>{name}</span>
+            <span style={{ ...plain, fontSize: 14, lineHeight: 1.4, color: label, whiteSpace: "pre-wrap" }}>
+              {meta}
+              {card.spaces.length > 0 ? " · in  " : ""}
+              {card.spaces.map((space, index) => (
+                <span key={space.slug}>
+                  {index > 0 ? ", " : ""}
+                  <SpaceLink to={`/openbuilds/spaces/${space.slug}`}>{space.name}</SpaceLink>
+                </span>
+              ))}
+            </span>
+          </div>
+          {card.pinned ? <span style={{ ...plain, flex: "none", fontSize: 12, color: label }}>Pinned</span> : null}
+          {card.reward ? <span style={{ ...plain, flex: "none", fontSize: 13, fontWeight: 500 }}>{card.reward}</span> : null}
+          {moderation ? <ModerationMenu card={card} moderation={moderation} onAsk={() => setAsking(true)} /> : null}
+        </div>
+        {asking && moderation ? (
+          <HideReason
+            onHide={(reason) => {
+              setAsking(false);
+              moderation.onHide(reason);
+            }}
+            onCancel={() => setAsking(false)}
+          />
+        ) : null}
+
+        <HeadingLink to={card.to} phone={phone}>
+          {card.heading || "Untitled post"}
+        </HeadingLink>
+
+        {card.text ? (
+          <p
+            style={{
+              ...plain,
+              marginTop: 8,
+              fontSize: 13,
+              lineHeight: "20px",
+              color: t.text2,
+              whiteSpace: "pre-wrap",
+              overflowWrap: "anywhere",
+              ...(clamp ? { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" } : null),
+            }}
+          >
+            {card.text}
+          </p>
+        ) : null}
+
+        {card.attachments.length > 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
+            {card.attachments.map((attachment) => (
+              <Attachment key={attachment.key} attachment={attachment} />
+            ))}
+          </div>
+        ) : null}
+
+        {card.stillOpen || card.tags.length > 0 || card.closes ? (
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px 12px", marginTop: 12 }}>
+            {card.stillOpen ? (
+              <DashedSlot style={{ height: 22, padding: "0 8px", display: "inline-flex", alignItems: "center", ...plain, fontSize: 12, color: t.text2 }}>Still open</DashedSlot>
+            ) : null}
+            {card.tags.length > 0 ? <span style={{ ...plain, fontSize: 12, color: label }}>{card.tags.map((tag) => `#${tag}`).join(" ")}</span> : null}
+            {card.closes ? <span style={{ ...plain, fontSize: 12, color: label }}>{card.closes}</span> : null}
+          </div>
+        ) : null}
+
+        {card.replies ? <RepliesStrip replies={card.replies} /> : null}
+
+        {engagement && card.engagementBuild ? <EngagementRow variant="card" build={card.engagementBuild} counts={engagement.counts} liked={engagement.liked} saved={engagement.saved} style={{ marginTop: 12, maxWidth: 520, justifyContent: "space-between" }} /> : null}
+      </div>
+    </article>
+  );
+}
+
+/** Lists only, hidden at zero replies: one link to the post. */
+function RepliesStrip({ replies }: { replies: NonNullable<PostCardData["replies"]> }) {
+  const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  return (
+    <Link
+      to={replies.to}
+      data-testid="post-card-replies-strip"
+      {...handlers}
+      style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8, minWidth: 0, boxSizing: "border-box", padding: "8px 12px", background: state.hovered ? t.controlOn : t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: radiusVar("r-card"), color: t.text, textDecoration: "none", ...ring(state.focusVisible) }}
+    >
+      {replies.people.length > 0 ? (
+        <span aria-hidden="true" style={{ display: "inline-flex", flexShrink: 0 }}>
+          {replies.people.map((person, index) => (
+            <Avatar key={person.id} size={20} userId={person.id} name={person.name} src={person.avatarUrl} style={{ marginLeft: index === 0 ? 0 : -6, boxShadow: `0 0 0 1px ${t.module}` }} />
+          ))}
+        </span>
+      ) : null}
+      <span style={{ ...plain, fontSize: 12.5, lineHeight: "20px", minWidth: 0 }}>
+        <span style={{ fontWeight: 500 }}>{repliesWords(replies.count)}</span>
+        {replies.detail ? <span style={{ color: t.text2, whiteSpace: "pre-wrap" }}>{`  · ${replies.detail} `}</span> : null}
+      </span>
+    </Link>
+  );
+}
