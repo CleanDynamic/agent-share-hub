@@ -1025,21 +1025,31 @@ function countGalleryBuilds(operation: string, lens: GalleryLens, now: number, f
 async function countGalleryBuildRows(operation: string, lens: GalleryLens, now: number, freshOnly: boolean, shape: BuildShape | undefined, reviews: boolean): Promise<number> {
   const unsolved = lens === "unsolved";
 
-  let query = supabase
-    .from("builds")
-    .select(unsolved ? "id, bounties!bounties_build_id_fkey!inner(id)" : "id", {
-      count: "estimated",
-      head: true,
-    })
-    .in("status", ["published", "gallery"])
-    .or(galleryPredicate());
+  // UX-08 P4: the Still open lens counts the builds with an open request or a still-open topic (`has_open_ask`); until the migration
+  // is applied it counts open requests alone, as before.
+  const read = async (withAsks: boolean) => {
+    let query = supabase
+      .from("builds")
+      .select(unsolved && !withAsks ? "id, bounties!bounties_build_id_fkey!inner(id)" : "id", {
+        count: "estimated",
+        head: true,
+      })
+      .in("status", ["published", "gallery"])
+      .or(galleryPredicate());
 
-  if (unsolved) query = query.eq("bounties.status", "open");
-  query = leaveOutReviews(applyLensFilters(query, lens, now), reviews);
-  if (freshOnly) query = query.gte("last_confirmed_at", freshSince(now));
-  if (shape) query = query.eq("shape", shape);
+    if (unsolved) query = withAsks ? (query as unknown as { eq: (column: string, value: boolean) => typeof query }).eq(ASK_FILTER, true) : query.eq("bounties.status", "open");
+    query = leaveOutReviews(applyLensFilters(query, lens, now), reviews);
+    if (freshOnly) query = query.gte("last_confirmed_at", freshSince(now));
+    if (shape) query = query.eq("shape", shape);
+    return query;
+  };
 
-  const { count, error } = await query;
+  let answer = await read(unsolved && !askColumnsMissing);
+  if (unsolved && !askColumnsMissing && answer.error && isMissingColumn(answer.error) && mentionsAskColumns(answer.error)) {
+    askColumnsMissing = true;
+    answer = await read(false);
+  }
+  const { count, error } = answer;
   if (error) throw buildLayerError(operation, error);
   return count ?? 0;
 }
@@ -1351,9 +1361,21 @@ const RUNS_PER_BUILD = 200;
 const BUILDS_COUNT_COLUMNS = "step_count, session_count";
 let countColumnsMissing = false;
 
-/** For tests: forget that the count columns were missing. */
+/**
+ * UX-08 P4: a build has an open ask when it has an open request OR a still-open topic that attaches it or is about it. The two
+ * counts are computed columns of `builds` (the UX-08 migration): `has_open_ask` filters, `still_open_topic_count` is read with the
+ * row, so both ride in the list's one request and the counts' one request each. Until the migration is applied they are missing:
+ * the read says so once (`isMissingColumn`), is made again as it was, and only open requests count.
+ */
+const ASK_COLUMNS = "still_open_topics:still_open_topic_count";
+const ASK_FILTER = "has_open_ask";
+let askColumnsMissing = false;
+const mentionsAskColumns = (error: unknown): boolean => /still_open_topic_count|has_open_ask/.test(JSON.stringify(error) ?? "");
+
+/** For tests: forget that the count columns and the ask columns were missing. */
 export const resetBuildsCountColumns = (): void => {
   countColumnsMissing = false;
+  askColumnsMissing = false;
 };
 
 /** One row of the Builds table. */
@@ -1372,7 +1394,7 @@ export interface BuildsTableBuild {
   classifiedAs?: Classification;
   /** profiles.username and display_name; null when the profile was not found. */
   maker: { handle: string | null; name: string | null } | null;
-  /** The open requests on the build: how many (up to BOUNTIES_PER_BUILD) and the largest reward offered. */
+  /** The open requests and still-open topics on the build: how many (requests up to BOUNTIES_PER_BUILD) and the largest request reward offered. */
   open: { count: number; reward: number | null };
   /** SV-23 P1: the stored counts; null until the composer has saved the build since they existed. */
   stepCount?: number | null;
@@ -1392,7 +1414,7 @@ export interface BuildsTableOptions {
   tool?: string;
   shapes?: readonly string[];
   pattern?: Pattern;
-  /** Only builds with an open request. The Open requests lens is the same filter. */
+  /** Only builds with an open request or a still-open topic (UX-08 P4). The Still open lens is the same filter. */
   openBounties?: boolean;
   query?: string;
   /** SV-23 P1: number filters on the stored counts. A build with no count is left out of a range on it. */
@@ -1464,6 +1486,8 @@ interface BuildsTableRow {
   build_reproductions?: { confirmed_at: string | null }[] | null;
   maker: { username: string | null; display_name: string | null } | null;
   bounties: { reward_gbp: number | null }[] | null;
+  /** UX-08 P4: still-open topics that attach the build or are about it; absent until the migration is applied. */
+  still_open_topics?: number | null;
 }
 
 function toBuildsTableBuild(row: BuildsTableRow, now: Date): BuildsTableBuild {
@@ -1482,7 +1506,7 @@ function toBuildsTableBuild(row: BuildsTableRow, now: Date): BuildsTableBuild {
     rebuildCount: Math.max(0, row.rebuild_count ?? 0),
     ...(hasClassification(read) ? { classifiedAs: read } : null),
     maker: row.maker ? { handle: row.maker.username ?? null, name: row.maker.display_name?.trim() || null } : null,
-    open: { count: (row.bounties ?? []).length, reward: rewards.length > 0 ? Math.max(...rewards) : null },
+    open: { count: (row.bounties ?? []).length + Math.max(0, row.still_open_topics ?? 0), reward: rewards.length > 0 ? Math.max(...rewards) : null },
     stepCount: typeof row.step_count === "number" ? row.step_count : null,
     sessionCount: typeof row.session_count === "number" ? row.session_count : null,
     runs: runsPerWeek((row.build_reproductions ?? []).map((run) => run.confirmed_at), now),
@@ -1508,14 +1532,14 @@ async function listBuildsTableRows(options: BuildsTableOptions, reviews: boolean
   const offset = Math.max(0, options.offset ?? 0);
   const lens: GalleryLens = GALLERY_LENSES.includes(options.lens as GalleryLens) ? (options.lens as GalleryLens) : "all";
   const openBounties = options.openBounties === true || lens === "unsolved";
-  const bounties = openBounties
-    ? "bounties!bounties_build_id_fkey!inner(reward_gbp, status)"
-    : "bounties!bounties_build_id_fkey(reward_gbp, status)";
   const search = await feedSearchClause(options.query, true);
   const now = new Date();
 
-  const request = async (withCounts: boolean) => {
-    const columns = `${withCounts ? `${BUILDS_TABLE_COLUMNS}, ${BUILDS_COUNT_COLUMNS}` : BUILDS_TABLE_COLUMNS}, ${RUNS_EMBED}`;
+  const request = async (withCounts: boolean, withAsks: boolean) => {
+    // UX-08 P4: with the ask columns, the open filter is `has_open_ask` (an open request or a still-open topic), so the embed is
+    // not joined inner; without them it is the open-request join as before.
+    const bounties = openBounties && !withAsks ? "bounties!bounties_build_id_fkey!inner(reward_gbp, status)" : "bounties!bounties_build_id_fkey(reward_gbp, status)";
+    const columns = `${withCounts ? `${BUILDS_TABLE_COLUMNS}, ${BUILDS_COUNT_COLUMNS}` : BUILDS_TABLE_COLUMNS}, ${RUNS_EMBED}${withAsks ? `, ${ASK_COLUMNS}` : ""}`;
     let query = (supabase as unknown as { from: (table: string) => { select: (columns: string, options: { count: "exact" }) => TableQuery } })
       .from("builds")
       .select(`${columns}, ${bounties}`, { count: "exact" })
@@ -1523,6 +1547,7 @@ async function listBuildsTableRows(options: BuildsTableOptions, reviews: boolean
       .or(galleryPredicate())
       .eq("bounties.status", "open")
       .gte("build_reproductions.confirmed_at", runsSince(now).toISOString());
+    if (openBounties && withAsks) query = query.eq(ASK_FILTER, true);
 
     const madeWith = madeWithSpellings(options.tool);
     if (madeWith.length > 0) query = query.overlaps("made_with", madeWith);
@@ -1558,11 +1583,18 @@ async function listBuildsTableRows(options: BuildsTableOptions, reviews: boolean
   };
 
   let withCounts = !countColumnsMissing;
-  let answer = await request(withCounts);
-  if (answer.error && withCounts && isMissingColumn(answer.error)) {
-    countColumnsMissing = true;
-    withCounts = false;
-    answer = await request(false);
+  let withAsks = !askColumnsMissing;
+  let answer = await request(withCounts, withAsks);
+  // A column that is not there yet: say so once and ask again without it. At most the two of them can be missing.
+  for (let again = 0; again < 2 && answer.error && isMissingColumn(answer.error); again += 1) {
+    if (withAsks && mentionsAskColumns(answer.error)) {
+      askColumnsMissing = true;
+      withAsks = false;
+    } else if (withCounts) {
+      countColumnsMissing = true;
+      withCounts = false;
+    } else break;
+    answer = await request(withCounts, withAsks);
   }
   const { data, error, count } = answer;
   if (error) throw buildLayerError("listBuildsTable", error);

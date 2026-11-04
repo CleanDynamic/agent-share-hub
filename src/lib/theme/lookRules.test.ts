@@ -1463,6 +1463,7 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/home/ux08.p3.test.tsx",
   "src/lib/routing/retiredRoutes.ts",
   "src/lib/routing/retiredRoutes.test.tsx",
+  "src/lib/build/ux08.p4.test.ts",
 ];
 
 /**
