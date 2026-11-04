@@ -1,5 +1,6 @@
 // Where posts travel (UX-04 Part 7): the posts about a build, the posts by a person, and how many started from a build.
 
+import { readCardExtras, type CardExtras } from "./cardWork";
 import { AUTHOR_EMBED, ATTACHMENTS_EMBED, POST_COLUMNS, SPACES_EMBED, db, pageLimit, postLayerError, toPost, unique, type Post, type PostRow } from "./types";
 
 export interface PostsAbout {
@@ -46,7 +47,7 @@ export async function listPostsBy(userId: string, options: { offset?: number; li
   const from = Math.max(0, options.offset ?? 0);
   const response = await db
     .from("openbuild_posts")
-    .select(`${POST_COLUMNS}, ${AUTHOR_EMBED}, ${ATTACHMENTS_EMBED}`)
+    .select(`${POST_COLUMNS}, ${AUTHOR_EMBED}, ${ATTACHMENTS_EMBED}, ${SPACES_EMBED}`)
     .eq("author_id", userId)
     .is("hidden_by", null)
     .order("created_at", { ascending: false })
@@ -136,4 +137,36 @@ export async function listTopicsAbout(buildId: string): Promise<TopicsAbout> {
     stepReplies: stepRepliesOf(about.posts),
     allowsTopics: (allow.data as { allow_as_post_source?: boolean } | null)?.allow_as_post_source !== false,
   };
+}
+
+/* ── UX-07 Part 3: a profile's Topics tab ── */
+
+export interface TopicRoot {
+  id: string;
+  handle: string | null;
+  body: string;
+}
+
+export interface TopicsBy extends PostsBy {
+  /** The topics the person's replies are in, by id: who started each and its words (for `Replied to @maya · <heading>`). */
+  roots: Map<string, TopicRoot>;
+  extras: CardExtras;
+}
+
+/** A person's topics and replies, newest first, with what their cards need: the page, then its extras and the replies' topics together. */
+export async function listTopicsBy(userId: string, options: { offset?: number; limit?: number } = {}): Promise<TopicsBy> {
+  const page = await listPostsBy(userId, options);
+  const rootIds = unique(page.posts.flatMap((post) => (post.parentId ? [post.rootId] : [])));
+  const [extras, roots] = await Promise.all([
+    readCardExtras(page.posts),
+    rootIds.length
+      ? db.from("openbuild_posts").select(`id, body, ${AUTHOR_EMBED}`).in("id", rootIds).limit(rootIds.length)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (roots.error) throw postLayerError("listTopicsBy", roots);
+  const byId = new Map<string, TopicRoot>();
+  for (const row of (roots.data ?? []) as unknown as { id: string; body: string; author: { username: string | null } | null }[]) {
+    byId.set(row.id, { id: row.id, handle: row.author?.username ?? null, body: row.body });
+  }
+  return { ...page, roots: byId, extras };
 }

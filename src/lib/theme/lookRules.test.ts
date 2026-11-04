@@ -1445,6 +1445,9 @@ export const CA03_FILES: readonly string[] = [
   "src/components/build/DiscussedSection.tsx",
   "src/components/build/ux07.p2.test.tsx",
   "src/components/build/ConnectionMarks.tsx",
+  "src/pages/site/profile/ux07.p3.test.tsx",
+  "src/pages/site/profile/profileModel.ts",
+  "src/pages/site/profile/ProfilePage.tsx",
 ];
 
 /**
