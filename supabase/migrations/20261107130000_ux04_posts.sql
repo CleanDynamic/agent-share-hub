@@ -115,9 +115,11 @@ CREATE TABLE IF NOT EXISTS public.post_attachments (
   CONSTRAINT post_attachments_position_check CHECK (position BETWEEN 0 AND 19),
   CONSTRAINT post_attachments_kind_check CHECK (kind IN ('build', 'part', 'session', 'step', 'media')),
   CONSTRAINT post_attachments_media_kind_check CHECK (media_kind IS NULL OR media_kind IN ('image', 'video', 'file')),
-  -- one check per kind says which columns it needs. A part is a tile with children (SV-17 keys it by node id), so it needs a node.
+  -- one check per kind says which columns it needs. A part is what the composer calls a part: a group of sessions, kept in
+  -- builds.making.workstreams under a key (src/lib/build/workstreams.ts), so it is named by part_key and not by a node. (SV-17's
+  -- saved "part" is a tile with children; that one is a step with children here and is attached as a step.)
   CONSTRAINT post_attachments_build_columns CHECK (kind <> 'build' OR (build_id IS NOT NULL AND node_id IS NULL AND session_key IS NULL AND media_path IS NULL)),
-  CONSTRAINT post_attachments_part_columns CHECK (kind <> 'part' OR (build_id IS NOT NULL AND node_id IS NOT NULL AND session_key IS NULL AND media_path IS NULL)),
+  CONSTRAINT post_attachments_part_columns CHECK (kind <> 'part' OR (build_id IS NOT NULL AND part_key IS NOT NULL AND node_id IS NULL AND session_key IS NULL AND media_path IS NULL)),
   CONSTRAINT post_attachments_step_columns CHECK (kind <> 'step' OR (build_id IS NOT NULL AND node_id IS NOT NULL AND session_key IS NULL AND media_path IS NULL)),
   CONSTRAINT post_attachments_session_columns CHECK (kind <> 'session' OR (build_id IS NOT NULL AND session_key IS NOT NULL AND node_id IS NULL AND media_path IS NULL)),
   CONSTRAINT post_attachments_media_columns CHECK (kind <> 'media' OR (media_path IS NOT NULL AND media_kind IS NOT NULL AND build_id IS NULL AND node_id IS NULL AND session_key IS NULL AND snapshot IS NULL)),

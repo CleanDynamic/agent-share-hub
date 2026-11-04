@@ -8,7 +8,8 @@
 --
 -- WHOSE WORK IS IT. Judged by the build's creator and, where SV-16 set one, by the contributor:
 --   build     builds.creator_id
---   part/step build_nodes.contributor_id where set, else builds.creator_id
+--   step      build_nodes.contributor_id where set, else builds.creator_id
+--   part      builds.creator_id (a part is a group of sessions kept in builds.making.workstreams; it has no contributor of its own)
 --   session   builds.making -> sessions_meta -> <session_key> -> contributor_id where set, else builds.creator_id
 -- A REBUILD COUNTS AS THE REBUILDER'S OWN WORK: it is a build whose creator is the rebuilder, so the rule above already says so.
 --
@@ -47,7 +48,7 @@ BEGIN
     RETURN NULL;
   END IF;
 
-  IF _kind IN ('part', 'step') AND _node IS NOT NULL THEN
+  IF _kind = 'step' AND _node IS NOT NULL THEN
     SELECT n.contributor_id INTO _owner FROM public.build_nodes n WHERE n.id = _node AND n.build_id = _build;
   ELSIF _kind = 'session' AND _session IS NOT NULL THEN
     _raw := _making -> 'sessions_meta' -> _session ->> 'contributor_id';

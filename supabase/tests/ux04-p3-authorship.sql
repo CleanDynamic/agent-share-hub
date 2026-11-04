@@ -11,6 +11,7 @@
 --   8. where SV-16 names a contributor, the contributor made the step and the session, not the build's maker
 --   9. media must sit under the author's own storage folder, on a reply and on a root post
 --  10. a step that is not in the build named is refused
+--  11. a part is a group of sessions named by part_key, and is the build maker's
 --
 -- USAGE
 --   psql "$DATABASE_URL" -v creator_id=<profiles.id> -v mod_id=<profiles.id> -v member_id=<profiles.id> \
@@ -119,6 +120,19 @@ SELECT pg_temp.refused_with('9b media in someone else''s folder, on a root post'
   'your own storage folder');
 SELECT pg_temp.expect('9c media in your own folder',
   public.create_post(jsonb_build_object('body','r','parent_id',:'root','attachments',jsonb_build_array(jsonb_build_object('kind','media','media_path',:'stranger_id' || '/pic.png','media_kind','image')))) IS NOT NULL);
+
+-- 11. a part is a group of sessions, named by part_key, and belongs to the build's maker
+SELECT pg_temp.as_user(:'creator_id');
+SELECT pg_temp.expect('11a the maker replies with their own part',
+  public.create_post(jsonb_build_object('body','r','parent_id',:'root','attachments',jsonb_build_array(jsonb_build_object('kind','part','build_id',:'open_b','part_key','ws-1')))) IS NOT NULL);
+SELECT pg_temp.as_user(:'member_id');
+SELECT pg_temp.refused_with('11b someone else cannot reply with it',
+  format($q$SELECT public.create_post(jsonb_build_object('body','r','parent_id',%L,'attachments',jsonb_build_array(jsonb_build_object('kind','part','build_id',%L,'part_key','ws-1'))))$q$, :'root', :'open_b'),
+  'A reply can attach only your own work.');
+SELECT pg_temp.refused('11c a part with no key', format($q$SELECT public.create_post(jsonb_build_object('body','r','attachments',jsonb_build_array(jsonb_build_object('kind','part','build_id',%L))))$q$, :'open_b'));
+SELECT pg_temp.as_user(:'stranger_id');
+SELECT pg_temp.expect('11d a root post may start from someone''s part when the build allows it',
+  public.create_post(jsonb_build_object('body','q','attachments',jsonb_build_array(jsonb_build_object('kind','part','build_id',:'open_b','part_key','ws-1')))) IS NOT NULL);
 
 -- 10
 SELECT pg_temp.refused_with('10 a step that is not in the build named',
