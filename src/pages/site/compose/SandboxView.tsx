@@ -109,6 +109,8 @@ export interface PublishPanel {
   prepare?: () => Promise<boolean>;
   /** What Confirm shows, read when it opens (the post's words are not state). */
   confirm: () => ConfirmInput;
+  /** UX-08 P1: the `In` control of the checklist's Opens on OpenBuilds group (where the still-open topics go). */
+  opensIn?: ReactNode;
   /** "Show" on the sessions with no app: choose them and scroll to the first. */
   onShowApps: (keys: readonly string[]) => void;
   /** UX-01 P1: an unsent prompt's links in the checklist: send it as a step tile, or discard it. */
@@ -1159,7 +1161,7 @@ function SandboxBody(props: SandboxViewProps) {
     window.setTimeout(run, 0);
   };
   const checklistWindow = props.publish ? (
-    <PublishChecklist open={checklistOpen} checklist={props.publish.checklist} onClose={() => setChecklistOpen(false)} onAction={onChecklistAction} onPublish={openConfirm} />
+    <PublishChecklist open={checklistOpen} checklist={props.publish.checklist} opensIn={props.publish.opensIn} onClose={() => setChecklistOpen(false)} onAction={onChecklistAction} onPublish={openConfirm} />
   ) : null;
   const confirmWindow = props.publish ? (
     <PublishConfirm open={confirming !== null} title={props.title.trim()} rows={confirming ?? []} onCancel={() => setConfirming(null)} onPublish={() => props.onPublish()} />

@@ -69,7 +69,7 @@ export function AskNextSessionRow({ label, partKey, open, phone, onOpen }: AskNe
       </div>
       <OpenRequestDialog
         open={asking}
-        title={OPEN_REQUEST_COPY.askNext(label)}
+        title={OPEN_REQUEST_COPY.titleNext(label)}
         onClose={() => setAsking(false)}
         onSubmit={(problem) => {
           setAsking(false);

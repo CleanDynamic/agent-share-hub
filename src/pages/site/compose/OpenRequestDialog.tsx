@@ -1,6 +1,6 @@
-/* SV-21: "Open as a request", asked in the composer. The maker says in a sentence what they want from someone else: a
-   session in place of the one they have, or the next session of a part. It marks the session or the part in the draft
-   (`open` in `making`); the request itself is filed when the build is published, and only for what is marked.
+/* SV-21, UX-08 P1: "Mark still open", asked in the composer. The maker says in a sentence what is missing: a session, the next
+   session of a part, or a step tile. It marks the piece in the draft (`open` in `making`, or `is_gap` on a step tile); the topic is
+   started on OpenBuilds when the build is published, and only for what is marked.
 
    PRESENTATIONAL. The caller writes. A real dialog (Radix): focus is trapped, Escape closes. */
 
@@ -22,21 +22,24 @@ import { OPEN_REQUEST_COPY } from "./openRequestCopy";
 export interface OpenRequestDialogProps {
   open: boolean;
   title: string;
+  /** UX-08 P1: what is already written, when the mark is being edited. */
+  initial?: string;
   onClose: () => void;
   /** Called with the problem, trimmed. */
   onSubmit: (problem: string) => void;
 }
 
-export function OpenRequestDialog({ open, title, onClose, onSubmit }: OpenRequestDialogProps) {
+export function OpenRequestDialog({ open, title, initial, onClose, onSubmit }: OpenRequestDialogProps) {
   const [problem, setProblem] = useState("");
   const [tried, setTried] = useState(false);
   const id = useId().replace(/[^a-zA-Z0-9_-]/g, "");
 
   useEffect(() => {
     if (open) {
-      setProblem("");
+      setProblem(initial ?? "");
       setTried(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- read when the window opens, not when the text it started from changes
   }, [open]);
 
   const empty = problem.trim() === "";

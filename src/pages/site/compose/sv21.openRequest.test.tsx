@@ -51,12 +51,12 @@ const openMenu = (name: string) => {
 };
 
 describe("a session's menu", () => {
-  it("opens the session as a request: the item asks what it is for, and the answer is passed with the session's key", async () => {
+  it("marks the session still open: the item asks what it is for, and the answer is passed with the session's key", async () => {
     const props = list();
     openMenu("Session 2 options");
-    fireEvent.click(await screen.findByRole("menuitem", { name: SESSION_HEAD_COPY.openAsRequest }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: OPEN_REQUEST_COPY.openSession(2) }));
     const dialog = await screen.findByTestId("open-request-dialog");
-    expect(within(dialog).getByRole("heading", { name: OPEN_REQUEST_COPY.openSession(2) })).toBeTruthy();
+    expect(within(dialog).getByRole("heading", { name: OPEN_REQUEST_COPY.titleSession(2) })).toBeTruthy();
     fireEvent.click(within(dialog).getByRole("button", { name: OPEN_REQUEST_COPY.submit }));
     expect(within(dialog).getByRole("alert").textContent).toBe(OPEN_REQUEST_COPY.empty);
     expect(props.sessionOps?.onOpen).not.toHaveBeenCalled();
@@ -74,7 +74,7 @@ describe("a session's menu", () => {
     const props = list({ dividers });
     expect(within(screen.getAllByTestId("session-head")[0]).getByTestId("session-open-request").textContent).toBe(SESSION_HEAD_COPY.requested);
     openMenu("Session 1 options");
-    expect(screen.queryByRole("menuitem", { name: SESSION_HEAD_COPY.openAsRequest })).toBeNull();
+    expect(screen.queryByRole("menuitem", { name: OPEN_REQUEST_COPY.openSession(1) })).toBeNull();
     fireEvent.click(await screen.findByRole("menuitem", { name: SESSION_HEAD_COPY.withdrawRequest }));
     expect(props.sessionOps?.onOpen).toHaveBeenCalledWith(first.key, null);
   });
@@ -83,7 +83,7 @@ describe("a session's menu", () => {
     list({ sessionOps: { onTitle: vi.fn(), onMove: vi.fn(), onRemove: vi.fn() } });
     openMenu("Session 1 options");
     await screen.findByRole("menuitem", { name: "Move up" });
-    expect(screen.queryByRole("menuitem", { name: SESSION_HEAD_COPY.openAsRequest })).toBeNull();
+    expect(screen.queryByRole("menuitem", { name: OPEN_REQUEST_COPY.openSession(1) })).toBeNull();
   });
 });
 
@@ -95,7 +95,7 @@ describe("the ghost row at the end of a part", () => {
     expect(rows.map((row) => row.getAttribute("data-slide-id"))).toEqual(["ask:ws-a", "ask:ws-b"]);
     fireEvent.click(within(rows[0]).getByRole("button", { name: "Ask for the next session in Part A" }));
     const dialog = await screen.findByTestId("open-request-dialog");
-    expect(within(dialog).getByRole("heading", { name: OPEN_REQUEST_COPY.askNext("Part A") })).toBeTruthy();
+    expect(within(dialog).getByRole("heading", { name: OPEN_REQUEST_COPY.titleNext("Part A") })).toBeTruthy();
     fireEvent.change(within(dialog).getByRole("textbox", { name: OPEN_REQUEST_COPY.label }), { target: { value: "Add the onboarding session" } });
     fireEvent.click(within(dialog).getByRole("button", { name: OPEN_REQUEST_COPY.submit }));
     expect(onOpen).toHaveBeenCalledWith("ws-a", "Add the onboarding session");

@@ -54,9 +54,8 @@ export const SESSION_HEAD_COPY = {
   colour: "Colour…",
   mergeUp: "Merge with the session above",
   moveToPart: "Move to part…",
-  openAsRequest: "Open as a request…",
-  withdrawRequest: "Take the request back",
-  requested: "Open as a request",
+  withdrawRequest: "Not still open",
+  requested: "Still open",
   sameStage: "Same stage as the session above",
   count: (n: number) => `${n} ${n === 1 ? "step tile" : "step tiles"}`,
   typedPast: (n: number) => `${n}/${SESSION_TITLE_MAX}`,
@@ -433,7 +432,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
                       </Row>
                     ) : (
                       <Row phone={phone} onSelect={() => setAsking(true)}>
-                        {SESSION_HEAD_COPY.openAsRequest}
+                        {OPEN_REQUEST_COPY.openSession(session.number)}
                       </Row>
                     )
                   ) : null}
@@ -462,7 +461,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
       {maker && ops?.onOpen ? (
         <OpenRequestDialog
           open={asking}
-          title={OPEN_REQUEST_COPY.openSession(session.number)}
+          title={OPEN_REQUEST_COPY.titleSession(session.number)}
           onClose={() => setAsking(false)}
           onSubmit={(problem) => {
             setAsking(false);

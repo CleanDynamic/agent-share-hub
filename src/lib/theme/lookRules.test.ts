@@ -1464,6 +1464,14 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/routing/retiredRoutes.ts",
   "src/lib/routing/retiredRoutes.test.tsx",
   "src/lib/build/ux08.p4.test.ts",
+  "src/pages/site/compose/StillOpenTile.tsx",
+  "src/pages/site/compose/StillOpenSpaces.tsx",
+  "src/pages/site/compose/stillOpenTopics.ts",
+  "src/pages/site/compose/ux08.p1.tile.test.tsx",
+  "src/pages/site/compose/ux08.p1.checklist.test.tsx",
+  "src/lib/openbuilds/stillOpen.ts",
+  "src/lib/openbuilds/stillOpenMarks.ts",
+  "src/lib/openbuilds/stillOpen.test.ts",
 ];
 
 /**

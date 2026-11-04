@@ -57,6 +57,8 @@ export interface ChecklistInput {
   unsent: readonly UnsentPrompt[];
   /** UX-03 P3: the sessions with no step tiles, in the List's order, each with its number. Each one is a required item. Absent: none. */
   empty?: readonly { key: string; number: number }[];
+  /** UX-08 P1: how many still-open marks publishing turns into topics on OpenBuilds. Absent or 0: no group. It never blocks Publish. */
+  opens?: number;
 }
 
 export interface UnsentPrompt {
@@ -79,6 +81,8 @@ export interface Checklist {
   canPublish: boolean;
   /** Pressing Publish on the page opens the checklist, not Confirm. */
   needed: boolean;
+  /** UX-08 P1: the topics publishing starts; 0 when none. Shown as a group under Required, whatever is open there. */
+  opens: number;
 }
 
 export const CHECKLIST_COPY = {
@@ -100,6 +104,10 @@ export const CHECKLIST_COPY = {
   /** How much of the unsent text the detail shows. */
   unsentDetail: 80,
   postText: "Post text",
+  /** UX-08 P1: the group under Required, and its one line. */
+  opensTitle: "Opens on OpenBuilds",
+  opensWords: (n: number): string => `This opens ${n} still-open ${n === 1 ? "topic" : "topics"}`,
+  opensIn: "In",
 } as const;
 
 const REQUIRED_WORDS: Record<PublishKey, { words: string; action: { id: ChecklistAction; label: string } }> = {
@@ -182,6 +190,7 @@ export function publishChecklist(input: ChecklistInput): Checklist {
     recommended.push({ key: `reminder-${at}`, section: "recommended", done: false, words: reminder.line, detail: null, action: { id: "go_to", label: CHECKLIST_COPY.goTo }, stepId: reminder.stepId }),
   );
 
+  const opens = Math.max(0, Math.floor(input.opens ?? 0));
   const openRequired = required.filter((item) => !item.done).length;
   const openRecommended = recommended.length;
   const line = [openRequired > 0 ? `${openRequired} required` : null, openRecommended > 0 ? `${openRecommended} recommended` : null].filter(Boolean).join(" · ");
@@ -193,7 +202,9 @@ export function publishChecklist(input: ChecklistInput): Checklist {
     line,
     note: openRequired > 0 ? `Complete ${plural(openRequired, "required item", "required items")} to publish` : null,
     canPublish: openRequired === 0,
-    needed: openRequired > 0 || openRecommended > 0,
+    // UX-08 P1: a build that opens topics opens the checklist, so the person can choose where they go; it blocks nothing.
+    needed: openRequired > 0 || openRecommended > 0 || opens > 0,
+    opens,
   };
 }
 

@@ -168,9 +168,28 @@ function Section({ label, items, onAction }: { label: string; items: readonly Ch
   );
 }
 
+/** UX-08 P1: the group under Required: one line, and the `In` control that applies to all of the topics. Never blocks Publish. */
+function OpensGroup({ count, control }: { count: number; control?: ReactNode }) {
+  return (
+    <section aria-label={CHECKLIST_COPY.opensTitle} data-testid="checklist-section-opens">
+      <h3 style={{ ...SECTION_LABEL, fontWeight: 400 }}>{CHECKLIST_COPY.opensTitle}</h3>
+      <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+        <li data-testid="checklist-opens" style={ROW}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
+            <span style={{ ...text(13, 400, t.text2), overflowWrap: "anywhere" }}>{CHECKLIST_COPY.opensWords(count)}</span>
+          </div>
+          {control ? <span style={{ flexShrink: 0 }}>{control}</span> : null}
+        </li>
+      </ul>
+    </section>
+  );
+}
+
 export interface PublishChecklistProps {
   open: boolean;
   checklist: Checklist;
+  /** UX-08 P1: the `In` control of the Opens on OpenBuilds group. */
+  opensIn?: ReactNode;
   onClose: () => void;
   /** An action was chosen. The window has already closed. */
   onAction: (item: ChecklistItem, action?: ChecklistItem["action"]) => void;
@@ -178,7 +197,7 @@ export interface PublishChecklistProps {
   onPublish: () => void;
 }
 
-export function PublishChecklist({ open, checklist, onClose, onAction, onPublish }: PublishChecklistProps) {
+export function PublishChecklist({ open, checklist, opensIn, onClose, onAction, onPublish }: PublishChecklistProps) {
   const phone = useIsPhone();
   const acted = useRef(false);
   const choose = (item: ChecklistItem) => {
@@ -206,6 +225,7 @@ export function PublishChecklist({ open, checklist, onClose, onAction, onPublish
             {checklist.line}
           </p>
           {showRequired ? <Section label={CHECKLIST_COPY.required} items={checklist.required} onAction={choose} /> : null}
+          {checklist.opens > 0 ? <OpensGroup count={checklist.opens} control={opensIn} /> : null}
           {checklist.recommended.length > 0 ? <Section label={CHECKLIST_COPY.recommended} items={checklist.recommended} onAction={choose} /> : null}
         </>
       }

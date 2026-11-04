@@ -76,6 +76,7 @@ import { postFacts, publishChecklist, unpublishFailure, type ConfirmInput } from
 import { classificationLines } from "@/lib/classify/lines";
 import { allTiles, orderOf } from "@/lib/build/buildSelection";
 import { useComposePage } from "./ComposePage";
+import { stillOpenMarksOf } from "@/lib/openbuilds/stillOpenMarks";
 import type { PreviewMaker } from "@/components/post/PostPreview";
 import type { PostTab as PostTabImpl } from "./PostTab";
 import { useComposeThread } from "./useComposeThread";
@@ -237,6 +238,7 @@ const LeaveWindow = lazyWindow<ComponentProps<typeof LeaveWindowImpl>>(() => imp
 /** SV-18: the Add from Library window is its own chunk, fetched on hover or focus of Add › From Library and at idle. */
 const AddFromLibrary = lazy(() => import("./AddFromLibrary"));
 /** SV-28 P7: Show setup prompt, its own chunk. */
+const StillOpenSpaces = lazy(() => import("./StillOpenSpaces").then((m) => ({ default: m.StillOpenSpaces })));
 const SetupPromptWindow = lazyWindow<ComponentProps<typeof SetupPromptWindowImpl>>(() => import("./SetupPromptWindow").then((m) => ({ default: m.SetupPromptWindow })), (p) => p.id !== null);
 
 /** SV-07 P2: what `insertSession` adds: a chat imported, an empty session started here, or a ready-made copy. */
@@ -263,7 +265,7 @@ function SandboxPageBody() {
   const announce = useAnnounce();
   /* CA-10 (CA-09 F10): the session library polls only while Sources is on screen (on a phone, while its sheet is open). */
   const [sourcesAnchor, sourcesOnScreen] = useOnScreen<HTMLDivElement>();
-  const { viewProps, missing, build, tree, ensureBuild, firstSession, nodes, sessions, prompts, compose, buildId, rehydrate } = useComposePage({ sessionsActive: sourcesOnScreen });
+  const { viewProps, missing, build, tree, ensureBuild, firstSession, nodes, sessions, prompts, compose, buildId, rehydrate, stillOpenSpaces } = useComposePage({ sessionsActive: sourcesOnScreen });
   usePageReady("composer", !buildId || Boolean(build));
   const navigate = useNavigate();
   /* CA-20: the build's one history: every change the maker makes is a step of it, CA-19's colour and link steps too. */
@@ -1212,6 +1214,11 @@ function SandboxPageBody() {
   /* CA-18: the tile whose own window is open (to change it), seen as Details sees it. */
   const [editId, setEditId] = useState<string | null>(null);
   /** SV-28 P7: the agent or team whose setup prompt is shown; copying it loads the assembler on the click. */
+  /* UX-08 P1: a step tile marked still open (`is_gap` and its problem text), or the mark taken off. */
+  const onStillOpen = (id: string, problem: string | null) => {
+    prompts.setStillOpen(id, problem);
+    afterWrite();
+  };
   const [promptFor, setPromptFor] = useState<string | null>(null);
   const copySetup = (text: string) => void navigator.clipboard?.writeText(text).then(() => buildHistory.notify("Setup prompt copied", { undo: false }), () => undefined);
   const onSetupPrompt = (id: string, how: "copy" | "show") =>
@@ -1720,6 +1727,10 @@ function SandboxPageBody() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unsent.version, unsent.entries, sourceSessionRows, steps, groups]);
+  /* UX-08 P1: the still-open marks publishing turns into topics, and the spaces the checklist's `In` control chose for them. */
+  const stillOpenCount = useMemo(() => stillOpenMarksOf(made, tree).length, [made, tree]);
+  const [stillOpenIn, setStillOpenIn] = useState<string[]>([]);
+  stillOpenSpaces.current = stillOpenIn;
   const checklist = useMemo(
     () =>
       publishChecklist({
@@ -1736,8 +1747,9 @@ function SandboxPageBody() {
         cardFilled: !classificationCard.live || hasClassification(classificationCard.stored),
         unsent: unsentBoxes,
         empty: emptyToPublish,
+        opens: stillOpenCount,
       }),
-    [missing, viewProps.title, viewProps.description, viewProps.cover?.kind, tileCount, runtimeFound, threadHold, appless, classificationCard.live, classificationCard.stored, unsentBoxes, emptyToPublish],
+    [stillOpenCount, missing, viewProps.title, viewProps.description, viewProps.cover?.kind, tileCount, runtimeFound, threadHold, appless, classificationCard.live, classificationCard.stored, unsentBoxes, emptyToPublish],
   );
   /* CA-25 P2: what Confirm lists, read when it opens: the post as it stands, and the parts, sessions, tiles and files. */
   const confirmInput = useCallback(
@@ -2726,7 +2738,11 @@ function SandboxPageBody() {
         onPublish={onPublish}
         onUnpublish={unpublish}
         publishedAt={build?.published_at}
-        publish={{ checklist, prepare: preparePublish, confirm: confirmInput, onShowApps: showApps, onUnsent: onUnsentAction, onRemoveSession: (key) => void edits.onRemoveSessions([key], "keep") }}
+        publish={{ checklist, opensIn: stillOpenCount > 0 ? (
+            <Suspense fallback={null}>
+              <StillOpenSpaces selected={stillOpenIn} onChange={setStillOpenIn} />
+            </Suspense>
+          ) : undefined, prepare: preparePublish, confirm: confirmInput, onShowApps: showApps, onUnsent: onUnsentAction, onRemoveSession: (key) => void edits.onRemoveSessions([key], "keep") }}
         post={
           <PostTab
             thread={thread}
@@ -2794,6 +2810,7 @@ function SandboxPageBody() {
             onAddFromSources={onAddFromSources}
             onNest={stepOf.nest}
             onSetupPrompt={onSetupPrompt}
+            onStillOpen={onStillOpen}
             canNest={canNest}
             onMoveToSession={edits.onMoveTile}
             onKeepSentWith={(suggestion) => {

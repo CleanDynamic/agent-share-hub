@@ -120,6 +120,7 @@ import { AddPartRow, AddSessionRow, type AddSessionRowProps } from "./AddSession
 import { WORKSTREAM_BODY, WORKSTREAM_FRAME, WORKSTREAM_GROUP } from "./workstreamRecipes";
 import { FramePieces } from "./framePieces";
 import { AskNextSessionRow } from "./AskNextSessionRow";
+import { StillOpenLine, useStillOpenTile } from "./StillOpenTile";
 import { WORKSTREAM_HEAD_COPY, WorkstreamHead, type WorkstreamHeadView, type WorkstreamOps } from "./WorkstreamHead";
 import { FLOATING_Z, ToolPicker } from "./ToolPicker";
 import { DragHandle, NestList, TAKES, useComposeDnd, useComposeDndHost, useNestTile, useTileNear } from "./listNest";
@@ -291,6 +292,8 @@ export interface BuildListProps {
    * `index` among the top-level steps. Resolves true once written. Absent: no handles, no drops, no buttons.
    */
   onNest?: (id: string, parentId: string | null, index: number) => Promise<boolean>;
+  /** UX-08 P1: mark a step tile still open with what is missing, or (null) take the mark off. Absent: the menu offers neither. */
+  onStillOpen?: (id: string, problem: string | null) => void;
   /** SV-28 P7: an agent's or a team's setup prompt, copied or shown. */
   onSetupPrompt?: (id: string, how: "copy" | "show") => void;
   /** CA-04 P2: whether a tile can go inside a step (`nestRefusal` says no to none of it). */
@@ -1045,7 +1048,9 @@ function useRename(step: Step, props: BuildListProps) {
 function TileMenu({ step, noun, index, last, props, rename }: { step: Step; noun: string; index: number; last: boolean; props: BuildListProps; rename: ReturnType<typeof useRename> }) {
   const { phone } = props;
   const can = useCanMove(step.id, index, last);
+  const still = useStillOpenTile(step, props.onStillOpen);
   return (
+    <>
     <Menu.Root>
       <Menu.Trigger asChild>
         <TileOptions label={`${noun} ${step.number} options`} phone={phone} onClick={(event) => event.stopPropagation()} />
@@ -1061,12 +1066,17 @@ function TileMenu({ step, noun, index, last, props, rename }: { step: Step; noun
           <MenuRow phone={phone} disabled={!can(1)} shortcut="moveDown" reason={moveReason("tile", 1, !can(1))} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
           <DuplicateRow step={step} phone={phone} />
           <ColourMenuRow step={step} phone={phone} anchor={() => cardOf(step.id)} />
+          {still.items.map((item) => (
+            <MenuRow key={item.key} phone={phone} onSelect={item.onSelect}>{item.label}</MenuRow>
+          ))}
           <UngroupRow step={step} phone={phone} />
           <SessionTileRows step={step} phone={phone} />
           <RemoveRow label={MENU_COPY.removeTile} phone={phone} shortcut={phone ? undefined : <span aria-hidden="true" style={COUNT}>{shortcutLabel("remove")}</span>} onSelect={() => props.onRemove(step.id)} />
         </MenuContent>
       </Menu.Portal>
     </Menu.Root>
+    {still.dialog}
+    </>
   );
 }
 
@@ -1084,6 +1094,7 @@ function TileHeader({ step, nest, phone, typeLine, typeTestId, title, menu }: { 
           {typeLine}
         </span>
         {title}
+        <StillOpenLine step={step} />
         {step.gate ? <GateLine gate={step.gate} /> : null}
         {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} /> : null}
       </div>
@@ -1203,8 +1214,10 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
   const cardRef = useCardRef(step.id, nest.setRef);
   const takesDrops = Boolean(props.fine && props.onDropOnStep);
   const carriesFiles = (event: DragEvent) => Array.from(event.dataTransfer?.types ?? []).includes("Files");
+  const still = useStillOpenTile(step, props.onStillOpen);
 
   return (
+    <>
     <div
       ref={cardRef}
       role="group"
@@ -1317,6 +1330,9 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
                 <MenuRow phone={phone} disabled={!can(1)} shortcut="moveDown" reason={moveReason("tile", 1, !can(1))} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
           <DuplicateRow step={step} phone={phone} />
                 <ColourMenuRow step={step} phone={phone} anchor={() => cardOf(step.id)} />
+                {still.items.map((item) => (
+                  <MenuRow key={item.key} phone={phone} onSelect={item.onSelect}>{item.label}</MenuRow>
+                ))}
           <UngroupRow step={step} phone={phone} />
               <SessionTileRows step={step} phone={phone} />
               <RemoveRow label={MENU_COPY.removeTile} phone={phone} shortcut={phone ? undefined : <span aria-hidden="true" style={COUNT}>{shortcutLabel("remove")}</span>} onSelect={() => props.onRemove(step.id)} />
@@ -1356,6 +1372,8 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         }
       />
     </div>
+    {still.dialog}
+    </>
   );
 }
 
