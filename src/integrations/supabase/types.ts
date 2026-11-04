@@ -5549,6 +5549,112 @@ export type Database = {
           },
         ]
       }
+      space_members: {
+        Row: {
+          created_at: string
+          invited: boolean
+          role: string
+          space_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          invited?: boolean
+          role?: string
+          space_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          invited?: boolean
+          role?: string
+          space_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_members_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "space_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spaces: {
+        Row: {
+          created_at: string
+          creator_id: string
+          default_view: string
+          description: string
+          id: string
+          name: string
+          post_order: string
+          reactions: string[]
+          rewards_allowed: boolean
+          rules: string
+          slug: string
+          who_can_post: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          default_view?: string
+          description?: string
+          id?: string
+          name: string
+          post_order?: string
+          reactions?: string[]
+          rewards_allowed?: boolean
+          rules?: string
+          slug: string
+          who_can_post?: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          default_view?: string
+          description?: string
+          id?: string
+          name?: string
+          post_order?: string
+          reactions?: string[]
+          rewards_allowed?: boolean
+          rules?: string
+          slug?: string
+          who_can_post?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spaces_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "spaces_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       streak_days: {
         Row: {
           date: string
