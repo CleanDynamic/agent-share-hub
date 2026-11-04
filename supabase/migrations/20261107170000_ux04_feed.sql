@@ -29,7 +29,9 @@
 -- characters: a feed card is an excerpt, and 50 rows of 10000 characters is not a page.
 --
 -- THE GUARD (section 0) refuses to run unless the live function is RC-P11's, byte for byte: one overload of the three-argument
--- signature, body md5 3d184c32586e1eb37bc54f930e529dd1, SQL, stable, security invoker, search_path "". If it has drifted, or RC-P11
+-- signature, body md5 3d184c32586e1eb37bc54f930e529dd1 (the file's text) or e875b8e2eccf017b5bb14d175d75c15d (the same text with
+-- its comment lines removed, which is what is live: Lovable stripped them when it applied RC-P11; read back 2026-11-04 and the code
+-- matched RC-P11 line for line), SQL, stable, security invoker, search_path "". If it has drifted, or RC-P11
 -- was never applied, this raises "UX-04:" and changes nothing, and the live text has to be read (L-P11-0) and this file regenerated.
 -- The entry tables must exist (20261107130000 and the ones before it, reply_count and topic_reads included).
 --
@@ -137,7 +139,7 @@ BEGIN
     FROM pg_proc p JOIN pg_language l ON l.oid = p.prolang
    WHERE p.oid = to_regprocedure('public.get_build_feed(timestamptz, integer, boolean)');
 
-  IF live.body_md5 <> '3d184c32586e1eb37bc54f930e529dd1'
+  IF live.body_md5 NOT IN ('3d184c32586e1eb37bc54f930e529dd1', 'e875b8e2eccf017b5bb14d175d75c15d')
      OR live.lanname <> 'sql' OR live.provolatile <> 's' OR live.prosecdef
      OR live.proconfig IS DISTINCT FROM ARRAY['search_path=""']::text[] THEN
     RAISE EXCEPTION 'UX-04: the live get_build_feed is not the definition in 20261001150000_rc_build_feed_following.sql (body md5 %, language %, volatility %, security definer %, config %). Nothing was changed. Read the live text and regenerate this migration from it.',
