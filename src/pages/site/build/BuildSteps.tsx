@@ -1451,7 +1451,7 @@ export function StepsList({ view, phone, announce, titled = false }: StepsListPr
         isContainer(entry) ? <ContainerCard key={entry.step.id} entry={entry} ctx={ctx} /> : <StepCard key={entry.step.id} entry={entry} ctx={ctx} />,
       );
     const body = run.groups.map((group, at) => {
-      if (at === 0 && chat && typeof group.head === "function") return group.entries.length === 0 ? <p key={group.key} style={{ ...text(13, 400, t.label), margin: 0, padding: "14px 0", borderTop: `1px solid ${t.hairlineModule}` }}>No steps yet</p> : <div key={group.key} style={column(0)}>{rows(group)}</div>;
+      if (at === 0 && chat && typeof group.head === "function") return group.entries.length === 0 ? <p key={group.key} style={{ ...text(13, 400, t.label), margin: 0, padding: "14px 0", borderTop: `1px solid ${t.hairlineModule}` }}>{NO_STEPS_COPY}</p> : <div key={group.key} style={column(0)}>{rows(group)}</div>;
       return (
         <div key={group.key} style={column(0)}>
           {typeof group.head === "function" ? group.head(null) : group.head}
@@ -1656,13 +1656,20 @@ function ListRow({ row }: { row: NeedRow }) {
     </>
   );
   const frame: CSSProperties = { display: "flex", alignItems: "center", gap: 8, minWidth: 0, color: "inherit", textDecoration: "none" };
+  /* CA-04 P5: a tool connected by MCP says so, in one more quiet line under its row. */
+  const extra = row.extra ? (
+    <span data-testid="need-extra" style={{ ...text(12, 400, t.label), overflowWrap: "anywhere" }}>
+      {row.extra}
+    </span>
+  ) : null;
   return file && stepsOfFile.length > 0 ? (
     <Link to={{ hash: `#node-${stepsOfFile[0].id}` }} data-testid="need-row" style={frame}>
       {body}
     </Link>
   ) : (
-    <div data-testid="need-row" style={frame}>
-      {body}
+    <div data-testid="need-row" style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+      <div style={frame}>{body}</div>
+      {extra}
     </div>
   );
 }

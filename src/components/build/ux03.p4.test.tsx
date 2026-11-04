@@ -23,36 +23,31 @@ const draw = (classification: Classification, maker?: { editHref: string }) =>
     </MemoryRouter>,
   );
 
-const group = (name: string) => screen.queryByRole("group", { name });
+const section = () => screen.getByRole("region", { name: "Classification" });
 
-describe("UX-03 P4: two groups by provenance", () => {
-  it("shows a reader with only derived values one group and no Not stated", () => {
+describe("UX-03 P4, as UX-03 follow-up P17 draws it: one module of rows", () => {
+  it("shows a reader with only derived values rows, and no Not stated and no group", () => {
     draw(DERIVED_ONLY);
-    const derived = group("Derived from the build");
-    expect(derived).not.toBeNull();
-    expect(group("Stated by the maker")).toBeNull();
-    expect(screen.getByRole("region", { name: "Classification" }).textContent).not.toContain("Not stated");
-    expect(within(derived as HTMLElement).getByText("What was built")).toBeTruthy();
-    expect(within(derived as HTMLElement).getByText("Techniques")).toBeTruthy();
+    expect(screen.queryByRole("group", { name: "Stated by the maker" })).toBeNull();
+    expect(section().textContent).not.toContain("Not stated");
+    expect(within(section()).getByText("What was built")).toBeTruthy();
+    expect(within(section()).getByText("Techniques")).toBeTruthy();
+    expect(within(section()).getByText("2 facts about this build")).toBeTruthy();
   });
 
-  it("puts each value under its provenance, the maker's first", () => {
+  it("draws each facet as a row, label at the left and values at the right, with no dot", () => {
     draw(BOTH);
-    const stated = group("Stated by the maker") as HTMLElement;
-    const derived = group("Derived from the build") as HTMLElement;
-    expect(within(stated).getByText("Hybrid search")).toBeTruthy();
-    expect(within(derived).getByText("Web app")).toBeTruthy();
-    expect(stated.compareDocumentPosition(derived) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    // A facet is its label above its values, in a grid of four columns on a desktop.
-    expect((stated.querySelector("[data-testid='classification-grid']") as HTMLElement).style.gridTemplateColumns).toBe("repeat(4, minmax(0, 1fr))");
+    expect(within(section()).getByText("Hybrid search")).toBeTruthy();
+    expect(within(section()).getByText("Web app")).toBeTruthy();
+    expect(section().querySelector("[data-provenance]")).toBeNull();
+    expect(section().querySelectorAll('[data-ui="row"]')).toHaveLength(2);
   });
 
   it("shows the maker, on their own build, Not stated for each empty facet they set, and where to fill it", () => {
     draw(DERIVED_ONLY, { editHref: "/compose/b1" });
-    const stated = group("Stated by the maker") as HTMLElement;
     for (const facet of ["field", "task", "setting", "data", "age"]) {
-      expect((stated.querySelector(`[data-facet='${facet}']`) as HTMLElement).textContent).toContain("Not stated");
+      expect((section().querySelector(`[data-facet='${facet}']`)?.closest('[data-ui="row"]') as HTMLElement).textContent).toContain("Not stated");
     }
-    expect(within(stated).getByRole("link", { name: "Open Classification" }).getAttribute("href")).toBe("/compose/b1");
+    expect(within(section()).getByRole("link", { name: "Open Classification" }).getAttribute("href")).toBe("/compose/b1");
   });
 });

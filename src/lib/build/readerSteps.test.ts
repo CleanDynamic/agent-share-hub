@@ -80,6 +80,9 @@ const bakery = (): NodeTree[] => [
   node("r1", { position: 8, type: "result", payload: { summary: "crumb-bakery.vercel.app", url: "https://crumb-bakery.vercel.app", uses: [{ kind: "output", node_id: "p5" }] } }),
 ];
 
+/** UX-03 follow-up P16 gave rows a kind, a model and where they are used, for the chips; these tests read the words. */
+const plain = <T extends { kind?: unknown; model?: unknown; where?: unknown }>(rows: readonly T[]) => rows.map(({ kind: _k, model: _m, where: _w, ...rest }) => rest);
+
 describe("readerSteps · a pasted chat given its tool (TF-13)", () => {
   const pasted = (tools: Record<string, string>): Making => ({
     excluded_models: [],
@@ -125,7 +128,7 @@ describe("readerSteps · B1 the bakery", () => {
   it("What you need: tools and models, files, time", () => {
     const need = whatYouNeed(steps, bakery(), bakeryMaking, media);
     expect(need.map((g) => g.key)).toEqual(["tools", "files", "time"]);
-    expect(need[0].rows).toEqual([
+    expect(plain(need[0].rows)).toEqual([
       { title: "ChatGPT", detail: "GPT-6 Astra · step 1" },
       { title: "Claude", detail: "Opus 5.5 · step 2" },
       { title: "Gemini 4 Argon", detail: "step 3" },
@@ -133,7 +136,7 @@ describe("readerSteps · B1 the bakery", () => {
       { title: "Vercel", detail: "an account" },
     ]);
     // UX-03 P3: the step is a link to it, and the size is the rest of the line.
-    expect(need[1].rows).toEqual([{ title: "CLAUDE.md", detail: "1.2 KB", download: "https://files.test/b/claude.md", steps: [expect.objectContaining({ number: "4", label: "step 4" })] }]);
+    expect(plain(need[1].rows)).toEqual([{ title: "CLAUDE.md", detail: "1.2 KB", download: "https://files.test/b/claude.md", steps: [expect.objectContaining({ number: "4", label: "step 4" })] }]);
     expect(need[2].rows).toEqual([{ title: "4 sessions over 3 days", detail: "3–6 Oct" }]);
   });
 
@@ -274,14 +277,14 @@ describe("readerSteps · B3 the team", () => {
   it("What you need: the columns row for row", () => {
     const need = whatYouNeed(steps, team(), teamMaking, media);
     expect(need.map((g) => g.key)).toEqual(["tools", "files", "runs"]);
-    expect(need[0].rows).toEqual([
+    expect(plain(need[0].rows)).toEqual([
       { title: "Claude Code", detail: "Opus 5.5 · steps 1–2" },
       { title: "Sonnet 5.5", detail: "agent 3.1" },
       { title: "Haiku 5.5", detail: "agents 3.2 and 3.4" },
       { title: "Opus 5.5", detail: "agent 3.3" },
       { title: "Web search", detail: "tool · agent 3.2" },
     ]);
-    expect(need[1].rows).toEqual([{ title: "template.md", detail: "0.8 KB", download: "https://files.test/b/template.md", steps: [expect.objectContaining({ number: "3.3", label: "agent 3.3" })] }]);
+    expect(plain(need[1].rows)).toEqual([{ title: "template.md", detail: "0.8 KB", download: "https://files.test/b/template.md", steps: [expect.objectContaining({ number: "3.3", label: "agent 3.3" })] }]);
     expect(need[2].rows).toEqual([{ title: "On a schedule", detail: "Mondays 07:00 · 6 agents a run" }]);
   });
   it("the heading", () => {
@@ -307,7 +310,7 @@ describe("readerSteps · B4 and the edges", () => {
     const [step] = readerSteps(tree, { sessions: [], excluded_models: [] });
     expect(step.chat).toMatchObject({ kind: "new", typed: true, headline: "Session 1 · ChatGPT", detail: "model not recorded · typed in by the maker" });
     const need = whatYouNeed([step], tree, { sessions: [], excluded_models: [] });
-    expect(need).toEqual([{ key: "tools", label: "Tools and models", rows: [{ title: "ChatGPT", detail: "model not recorded · step 1" }] }]);
+    expect(need.map((group) => ({ ...group, rows: plain(group.rows) }))).toEqual([{ key: "tools", label: "Tools and models", rows: [{ title: "ChatGPT", detail: "model not recorded · step 1" }] }]);
     expect(buildCounts([step])).toBe("1 prompt");
   });
 
@@ -386,7 +389,7 @@ describe("readerSteps · a file a step makes (TF-08)", () => {
 
   it("What you need says where a made file is made, with no download", () => {
     const rows = whatYouNeed(readerSteps(tree, null), tree, null).find((group) => group.key === "files")?.rows ?? [];
-    expect(rows.find((row) => row.title === "brand-guide.md")).toEqual({ title: "brand-guide.md", detail: "Made in step 1 · used in step 2", download: null });
+    expect(plain(rows.filter((row) => row.title === "brand-guide.md"))[0]).toEqual({ title: "brand-guide.md", detail: "Made in step 1 · used in step 2", download: null });
   });
 
   it("Copy for AI tells the maker to save it and the user to attach it, and leaves an added file's line alone", () => {

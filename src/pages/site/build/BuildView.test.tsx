@@ -232,7 +232,7 @@ describe("a check on the build page (CA-03 P5)", () => {
     mount(withSteps([check]));
     const card = screen.getAllByTestId("step-card").find((entry) => entry.getAttribute("data-kind") === "check")!;
     // UX-03 P3: the type is said in the head, "Step <n> · Check".
-    expect(within(card).getByTestId("step-label").textContent).toMatch(/^Step \d+ · Check$/);
+    expect(within(card).getByTestId("step-head").getAttribute("aria-label")).toMatch(/^Step \d+ · Check$/);
     expect(within(card).getByTestId("check-status").textContent).toBe("Passed 13 of 14 runs · since 12 Oct");
     expect(within(card).getAllByTestId("label-value").map((row) => row.textContent)).toEqual([
       "Test descriptionPlaces a test order for 2 sourdough loaves",

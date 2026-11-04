@@ -190,7 +190,7 @@ describe("UX-03 P3: one label per step", () => {
 
   it("heads each step Step <n> · <Type>, with the number exactly as given and no generated title", () => {
     drawPage(stepsView(tree(), {}));
-    const labels = screen.getAllByTestId("step-label").map((el) => el.textContent);
+    const labels = screen.getAllByTestId("step-head").map((el) => el.getAttribute("aria-label"));
     expect(labels).toContain("Step 1 · Prompt");
     expect(labels).toContain("Step 2 · Multi-agent team");
     expect(labels).toContain("Step 2.1 · Agent");
@@ -203,10 +203,14 @@ describe("UX-03 P3: one label per step", () => {
   it("draws a File step tile with its name and Download, and the Files list links to it", () => {
     drawPage(stepsView(tree(), {}));
     const tile = document.getElementById(`step-${IDS.file}`) as HTMLElement;
-    expect(within(tile).getByTestId("step-label").textContent).toBe("Step 3 · File");
+    expect(within(tile).getByTestId("step-head").getAttribute("aria-label")).toBe("Step 3 · File");
     expect(within(tile).getAllByText("brief.md").length).toBeGreaterThan(0);
     expect(within(tile).getByRole("link", { name: /Download/ })).toBeTruthy();
-    const files = screen.getByRole("region", { name: "Files" });
-    expect(within(files).getByRole("link", { name: "step 3" }).getAttribute("href")).toBe(`#step-${IDS.file}`);
+    // UX-03 follow-up P16: Files are rows of one list with Tools and models; a file row links to its step and has no Download.
+    const list = screen.getByTestId("need-list");
+    const link = within(list).getByRole("link");
+    expect(link.getAttribute("href")).toMatch(new RegExp(`#node-${IDS.file}$`));
+    expect(link.textContent).toContain("brief.md");
+    expect(within(list).queryByRole("link", { name: /Download/ })).toBeNull();
   });
 });
