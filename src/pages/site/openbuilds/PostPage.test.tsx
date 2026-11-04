@@ -24,7 +24,7 @@ vi.mock("@/lib/openbuilds/postPage", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/openbuilds/postPage")>()),
   readPostExtras: (thread: unknown, viewer: unknown) => readPostExtras(thread, viewer),
 }));
-vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user, loading: false, isLoggedIn: user !== null }) }));
+vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user, profile: null, loading: false, isLoggedIn: user !== null }) }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 vi.mock("@/lib/errors/report", () => ({ reportError: vi.fn() }));
 vi.mock("@/hooks/useEngagement", () => ({ useEngagement: () => ({ counts: {}, liked: new Set(), saved: new Set(), loaded: true }), engagementFor: () => ({ counts: null, liked: false, saved: false }) }));
@@ -146,5 +146,19 @@ describe("the post page", () => {
     fireEvent.click(screen.getByRole("button", { name: "Show all replies" }));
     await waitFor(() => expect(where).toBe(""));
     expect(screen.getAllByTestId("reply")).toHaveLength(2);
+  });
+
+  it("keeps one reply box open: at the foot, then under the reply whose Reply was pressed, then back at the foot", async () => {
+    mount();
+    await screen.findByRole("heading", { level: 1 });
+    expect(screen.getAllByTestId("reply-box")).toHaveLength(1);
+    const thread = screen.getByRole("region", { name: "Thread" });
+    expect(within(thread).queryAllByTestId("reply").some((reply) => within(reply).queryByTestId("reply-box"))).toBe(false);
+
+    const [kit] = screen.getAllByTestId("reply");
+    fireEvent.click(within(kit).getByRole("button", { name: "Reply" }));
+    expect(screen.getAllByTestId("reply-box")).toHaveLength(1);
+    expect(within(kit).getByTestId("reply-box")).toBeInTheDocument();
+    expect(document.querySelectorAll('[data-visual-slot="btn-primary"]')).toHaveLength(1);
   });
 });

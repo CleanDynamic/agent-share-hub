@@ -9,7 +9,7 @@
 
    Likes, pins and hides change the page at once and ask the database after; a refusal puts the page back and says so. */
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -29,6 +29,8 @@ import { usePageReady } from "@/lib/routing/pageReady";
 import { EmptyLine, LoadError } from "./OpenBuildsFeedParts";
 import { PostLoadingView } from "./PostFrame";
 import { PostStepMenu } from "./PostStepMenu";
+import { ReplyBox } from "./ReplyBox";
+import type { ReplyDraft } from "./sendReply";
 import { PostView, type PostSideRow } from "./PostView";
 import {
   buildReplies,
@@ -42,6 +44,7 @@ import {
   replyItem,
   threadItems,
   type PostTab,
+  type ReplyItem,
   type ThreadContext,
 } from "./postModel";
 
@@ -52,6 +55,9 @@ function patchThread(thread: PostThread, id: string, change: (post: PostThread) 
   if (thread.id === id) return change(thread);
   return { ...thread, replies: thread.replies.map((reply) => patchThread(reply, id, change)) };
 }
+
+/** The replies the Thread draws, at both levels. */
+const drawnIds = (items: readonly ReplyItem[]): string[] => items.flatMap((item) => [item.id, ...drawnIds(item.children)]);
 
 /** Replies a moderator hid are kept out of the Thread. */
 const withoutHidden = (thread: PostThread): PostThread => ({ ...thread, replies: thread.replies.filter((reply) => reply.hiddenBy === null).map(withoutHidden) });
@@ -84,7 +90,13 @@ export default function PostPage() {
   }, [post.error, extras.error]);
   usePageReady("post", !arriving && thread !== null);
 
-  const signIn = () => navigate(`/login?redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`);
+  /* ── the one reply box: at the foot, or under the reply it answers; about a step or not ── */
+
+  const [replyAt, setReplyAt] = useState<"foot" | string>("foot");
+  const [about, setAbout] = useState<ReplyDraft["about"]>(null);
+
+  const signInTo = `/login?redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`;
+  const signIn = () => navigate(signInTo);
   const move = (change: Parameters<typeof postSearch>[1]) => setParams(postSearch(params, change, defaultView), { replace: true });
 
   /* ── changes shown at once ── */
@@ -196,12 +208,38 @@ export default function PostPage() {
       tile={tile}
       inner={inner}
       replies={byStep.get(tile.id) ?? 0}
-      onReplyOn={() => move({ tab: "thread" })}
+      onReplyOn={() => {
+        setAbout({ buildId: postBuild.buildId, nodeId: tile.id, label: stepLabels.get(tile.id) ?? `${tile.number} · ${tile.kind}` });
+        setReplyAt("foot");
+        move({ tab: "thread" });
+      }}
       onShowReplies={() => move({ step: tile.id, reply: null })}
     />
   );
 
   const heading = shown ? splitBody(shown.body).heading : "";
+  // The box stands where it was asked for; under a reply that is no longer drawn, it goes back to the foot.
+  const at = replyAt !== "foot" && drawnIds(items).includes(replyAt) ? replyAt : "foot";
+  const replyBox = shown
+    ? {
+        at,
+        node: (
+          <ReplyBox
+            key={at}
+            pageId={id}
+            rootId={shown.rootId}
+            parentId={at === "foot" ? shown.id : at}
+            about={at === "foot" ? about : null}
+            onRemoveAbout={() => setAbout(null)}
+            signInTo={signInTo}
+            onSent={() => {
+              setReplyAt("foot");
+              setAbout(null);
+            }}
+          />
+        ),
+      }
+    : undefined;
   const space = crowd
     ? {
         name: crowd.space.name,
@@ -231,8 +269,12 @@ export default function PostPage() {
             replies={shown.replyCount}
             builds={builds}
             thread={{ items, filter }}
+            replyBox={replyBox}
             actions={{
-              onReply: () => undefined,
+              onReply: (replyId) => {
+                setReplyAt(replyId);
+                setAbout(null);
+              },
               onLike: (replyId, on) => void like(replyId, on),
               onPin: (replyId) => void moderate(replyId, (entry) => ({ ...entry, pinnedBy: viewerId, pinnedAt: new Date().toISOString() }), () => pinPost(replyId)),
               onUnpin: (replyId) => void moderate(replyId, (entry) => ({ ...entry, pinnedBy: null, pinnedAt: null }), () => unpinPost(replyId)),

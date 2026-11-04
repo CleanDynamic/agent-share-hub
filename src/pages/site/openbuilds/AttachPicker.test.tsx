@@ -10,7 +10,7 @@ vi.mock("@/lib/openbuilds", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/openbuilds")>()),
   listAttachableWork: (options: unknown) => listAttachableWork(options),
   labelAttachable: async (works: { label?: string; title: string; buildTitle: string; origin: string }[]) =>
-    works.map((work) => ({ ...work, label: work.origin === "others" ? `@kit · ${work.title}` : work.title, context: work.buildTitle })),
+    works.map((work) => ({ ...work, label: work.origin === "others" ? `@kit · ${work.title}` : work.title, context: work.buildTitle, handle: work.origin === "others" ? "kit" : null })),
 }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 
@@ -99,5 +99,51 @@ describe("AttachPicker", () => {
     listAttachableWork.mockResolvedValue([]);
     draw();
     expect(await screen.findByText("Nothing to attach at this size.")).toBeInTheDocument();
+  });
+});
+
+// UX-06 Part 2: the picker in a reply box. Someone else's work is listed but cannot be attached (the database refuses it in a
+// reply); its row offers Mention instead, which puts their @handle in the box.
+describe("AttachPicker in a reply", () => {
+  function drawReply(onPick = vi.fn(), onMention = vi.fn()) {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <AttachPicker userId="me" onPick={onPick} reply={{ onMention }} />
+      </QueryClientProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Attach work" }));
+    return { onPick, onMention };
+  }
+
+  it("lists other people's work as rows that cannot be chosen", async () => {
+    const { onPick } = drawReply();
+    const others = await screen.findByRole("region", { name: "Other people's" });
+    const row = within(others).getByText("@kit · Cover letter checker").closest('[aria-disabled="true"]') as HTMLElement;
+    expect(row).not.toBeNull();
+    expect(within(row).getByText("@kit · Cover letter checker")).toHaveStyle({ color: "var(--text-disabled)" });
+    fireEvent.click(within(row).getByText("@kit · Cover letter checker"));
+    expect(onPick).not.toHaveBeenCalled();
+  });
+
+  it("puts the maker's @handle in the box from Mention instead", async () => {
+    const { onPick, onMention } = drawReply();
+    const others = await screen.findByRole("region", { name: "Other people's" });
+    fireEvent.click(within(others).getByRole("button", { name: "Mention @kit instead" }));
+    expect(onMention).toHaveBeenCalledWith("kit");
+    expect(onPick).not.toHaveBeenCalled();
+  });
+
+  it("asks for other people's work too, so it can be listed", async () => {
+    drawReply();
+    await screen.findByRole("region", { name: "Other people's" });
+    expect(listAttachableWork).toHaveBeenCalledWith(expect.objectContaining({ forReply: false }));
+  });
+
+  it("still attaches the reader's own work", async () => {
+    const { onPick } = drawReply();
+    const drafts = await screen.findByRole("region", { name: "Your drafts" });
+    fireEvent.click(within(drafts).getByRole("button", { name: /Scorer draft/ }));
+    expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ title: "Scorer draft" }));
   });
 });

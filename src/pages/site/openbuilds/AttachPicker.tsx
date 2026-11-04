@@ -3,9 +3,13 @@
    A Segmented size switch (Build, Part, Session, Step), a search field, and the work in groups: Your drafts, Your published
    builds, Your posts and replies, Other people's (only builds whose makers allow it: the read asks for that). Rows are 36
    high, the name at the left and its context at the right in `--label`. It reads `listAttachableWork`, and names each row with
-   `labelAttachable` (the composer's labels for a draft, the reader's for published work, the maker's @handle on someone else's). */
+   `labelAttachable` (the composer's labels for a draft, the reader's for published work, the maker's @handle on someone else's).
 
-import { useState } from "react";
+   UX-06: IN A REPLY (`reply`), someone else's work is still listed, since a reader looks for it there, but a reply can carry only
+   the replier's own: each of those rows is `aria-disabled`, its name in `--text-disabled`, with `Mention instead` at its right,
+   which puts the maker's @handle in the box. `open` and `size` start the picker open at a size (the Wall's Reply with a build). */
+
+import { useState, type CSSProperties } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { Segmented } from "@/components/brand/Segmented";
@@ -26,6 +30,29 @@ const SIZES: readonly { value: WorkSize; label: string }[] = [
 
 export const attachableKey = (userId: string, size: WorkSize, query: string) => postKey("listAttachableWork", userId, size, query);
 
+const rowBox: CSSProperties = { boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, width: "100%", height: 36, padding: "0 8px", border: 0, borderRadius: 6, fontFamily: FIGTREE, fontSize: 13, textAlign: "left" };
+
+/** UX-06: someone else's work in a reply: shown, not choosable, with Mention instead. */
+function MentionRow({ work, onMention }: { work: LabelledWork; onMention: (handle: string) => void }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  return (
+    <div aria-disabled="true" style={{ ...rowBox, color: t.textDisabled, cursor: "default" }}>
+      <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: t.textDisabled }}>{work.label}</span>
+      {work.handle ? (
+        <button
+          type="button"
+          aria-label={`Mention @${work.handle} instead`}
+          onClick={() => onMention(work.handle ?? "")}
+          {...handlers}
+          style={{ flexShrink: 0, padding: 0, background: "none", border: 0, borderRadius: 4, fontFamily: FIGTREE, fontSize: 12, color: t.text2, cursor: "pointer", textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, ...ring(state.focusVisible) }}
+        >
+          Mention instead
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function Row({ work, onPick }: { work: LabelledWork; onPick: (work: LabelledWork) => void }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
@@ -33,7 +60,7 @@ function Row({ work, onPick }: { work: LabelledWork; onPick: (work: LabelledWork
       type="button"
       onClick={() => onPick(work)}
       {...handlers}
-      style={{ boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, width: "100%", height: 36, padding: "0 8px", background: state.hovered ? t.controlOn : "none", border: 0, borderRadius: 6, fontFamily: FIGTREE, fontSize: 13, color: t.text, textAlign: "left", cursor: "pointer", ...ring(state.focusVisible) }}
+      style={{ ...rowBox, background: state.hovered ? t.controlOn : "none", color: t.text, cursor: "pointer", ...ring(state.focusVisible) }}
     >
       <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{work.label}</span>
       {work.context ? <span style={{ flexShrink: 0, maxWidth: "45%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12, color: t.label }}>{work.context}</span> : null}
@@ -41,13 +68,24 @@ function Row({ work, onPick }: { work: LabelledWork; onPick: (work: LabelledWork
   );
 }
 
-export function AttachPicker({ userId, onPick }: { userId: string; onPick: (work: LabelledWork) => void }) {
-  const [open, setOpen] = useState(false);
-  const [size, setSize] = useState<WorkSize>("build");
+export interface AttachPickerProps {
+  userId: string;
+  onPick: (work: LabelledWork) => void;
+  /** UX-06: the picker in a reply box. */
+  reply?: { onMention: (handle: string) => void };
+  /** UX-06: start open, at this size. */
+  open?: boolean;
+  size?: WorkSize;
+}
+
+export function AttachPicker({ userId, onPick, reply, open: startOpen = false, size: startSize = "build" }: AttachPickerProps) {
+  const [open, setOpen] = useState(startOpen);
+  const [size, setSize] = useState<WorkSize>(startSize);
   const [query, setQuery] = useState("");
   const work = useQuery({
     queryKey: attachableKey(userId, size, query.trim()),
-    queryFn: async () => labelAttachable(await listAttachableWork({ userId, size, query: query.trim() || undefined })),
+    // A reply lists other people's work too (forReply false), to say it can only be mentioned.
+    queryFn: async () => labelAttachable(await listAttachableWork({ userId, size, query: query.trim() || undefined, ...(reply ? { forReply: false } : null) })),
     enabled: open,
     placeholderData: keepPreviousData,
   });
@@ -81,16 +119,27 @@ export function AttachPicker({ userId, onPick }: { userId: string; onPick: (work
               groups.map((group) => (
                 <section key={group.title} aria-label={group.title} style={{ paddingBottom: 8 }}>
                   <h4 style={{ margin: 0, padding: "8px 8px 4px", fontFamily: FIGTREE, fontSize: 11.5, fontWeight: 500, color: t.label }}>{group.title}</h4>
-                  {group.rows.map((row) => (
-                    <Row
-                      key={[row.size, row.buildId, row.nodeId, row.partKey, row.sessionKey].join("|")}
-                      work={row}
-                      onPick={(picked) => {
-                        setOpen(false);
-                        onPick(picked);
-                      }}
-                    />
-                  ))}
+                  {group.rows.map((row) =>
+                    reply && row.origin === "others" ? (
+                      <MentionRow
+                        key={[row.size, row.buildId, row.nodeId, row.partKey, row.sessionKey].join("|")}
+                        work={row}
+                        onMention={(handle) => {
+                          setOpen(false);
+                          reply.onMention(handle);
+                        }}
+                      />
+                    ) : (
+                      <Row
+                        key={[row.size, row.buildId, row.nodeId, row.partKey, row.sessionKey].join("|")}
+                        work={row}
+                        onPick={(picked) => {
+                          setOpen(false);
+                          onPick(picked);
+                        }}
+                      />
+                    ),
+                  )}
                 </section>
               ))
             )}

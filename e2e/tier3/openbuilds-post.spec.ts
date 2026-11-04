@@ -49,3 +49,27 @@ test("the old address opens the same page", async ({ page }) => {
   await expect(page).toHaveURL(/\/openbuilds\/topics\/p2$/);
   await expect(page.getByRole("heading", { level: 1, name: "Post number 2" })).toBeVisible();
 });
+
+test("a reader replies on a step of the post's build and sees the reply marked on that step", async ({ page }) => {
+  const world = newWorld();
+  world.posts[0].attachments = [{ position: 0, kind: "build", build_id: "b1", node_id: null, part_key: null, session_key: null, media_path: null, media_kind: null, snapshot: null }];
+  await installWorld(page, world, { signedIn: true });
+  await page.goto("/openbuilds/topics/p1");
+  await expect(page.getByRole("heading", { level: 1, name: "Post number 1" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Step 2 · Code, Rubric" }).click();
+  await page.getByRole("menuitem", { name: "Reply on this step" }).click();
+  const box = page.getByTestId("reply-box");
+  await expect(box.getByText("On Step 2 · Code")).toBeVisible();
+  await box.getByPlaceholder("Reply with words, work, or both").fill("Split the rubric into weights.");
+  await box.getByRole("button", { name: "Reply", exact: true }).click();
+
+  const reply = page.getByTestId("reply").filter({ hasText: "Split the rubric into weights." });
+  await expect(reply.getByTestId("reply-about")).toHaveText("Step 2 · Code");
+  expect(world.created.rpc.at(-1)).toMatchObject({ parent_id: "p1", about_node_id: "n2", body: "Split the rubric into weights." });
+  // Once the server answers, the page reads the thread again and the reply is still marked.
+  await expect.poll(() => world.posts.some((post) => post.parent_id === "p1" && post.about_node_id === "n2")).toBe(true);
+  await expect(reply.getByTestId("reply-about")).toHaveText("Step 2 · Code");
+  // The step now counts its reply.
+  await expect(page.getByRole("button", { name: "Step 2 · Code, Rubric, 1 reply" })).toBeVisible();
+});

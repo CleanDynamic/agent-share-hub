@@ -17,6 +17,8 @@ export interface LabelledWork extends AttachableWork {
   label: string;
   /** The row's context, at the right, in `--label`. */
   context: string;
+  /** UX-06: another maker's @handle (without the @), for Mention instead in a reply. Null for the reader's own. */
+  handle: string | null;
 }
 
 interface NodeRow {
@@ -53,25 +55,25 @@ export async function labelAttachable(works: readonly AttachableWork[]): Promise
   const handleOf = new Map(((people.data ?? []) as { id: string; username: string | null }[]).map((row) => [row.id, row.username]));
 
   return works.map((work) => {
-    const credit = work.origin === "others" ? handleOf.get(work.makerId) : null;
+    const credit = work.origin === "others" ? (handleOf.get(work.makerId) ?? null) : null;
     const named = (label: string) => (credit ? `@${credit} · ${label}` : label);
     const title = work.title.trim();
     const meta = sessionsMetaOf(makingOf.get(work.buildId));
 
-    if (work.size === "build") return { ...work, label: named(title || "Untitled build"), context: "" };
+    if (work.size === "build") return { ...work, handle: credit, label: named(title || "Untitled build"), context: "" };
 
     if (work.size === "part") {
       const stored = storedWorkstreamsOf(makingOf.get(work.buildId));
       const at = stored.findIndex((part) => part.key === work.partKey);
       const mark = at >= 0 ? workstreamLabel(at, partLabelsOf(makingOf.get(work.buildId))) : "Part";
-      return { ...work, label: named(title ? `${mark} · ${title}` : mark), context: work.buildTitle };
+      return { ...work, handle: credit, label: named(title ? `${mark} · ${title}` : mark), context: work.buildTitle };
     }
 
     if (work.size === "session") {
       const number = Object.keys(meta).indexOf(work.sessionKey ?? "") + 1;
       const tool = toolLabel(meta[work.sessionKey ?? ""]?.tool);
       const head = [number > 0 ? `Session ${number}` : "Session", tool].filter(Boolean).join(" · ");
-      return { ...work, label: named(title ? `${head} · ${title}` : head), context: work.buildTitle };
+      return { ...work, handle: credit, label: named(title ? `${head} · ${title}` : head), context: work.buildTitle };
     }
 
     // A step: its place among the build's top-level steps.
@@ -85,10 +87,10 @@ export async function labelAttachable(works: readonly AttachableWork[]): Promise
     if (work.origin === "draft") {
       const session = row?.session ? Object.keys(meta).indexOf(row.session) + 1 : 0;
       const head = at < 0 ? "Step" : kindKey === "prompt" ? promptPlace(String(number), session || null) : `${kind} ${number}`;
-      return { ...work, label: named(title ? `${head} · ${title}` : head), context: work.buildTitle };
+      return { ...work, handle: credit, label: named(title ? `${head} · ${title}` : head), context: work.buildTitle };
     }
     const head = at < 0 ? "Step" : `Step ${number} · ${kind}`;
-    return { ...work, label: named(title ? `${head} · ${title}` : head), context: work.buildTitle };
+    return { ...work, handle: credit, label: named(title ? `${head} · ${title}` : head), context: work.buildTitle };
   });
 }
 

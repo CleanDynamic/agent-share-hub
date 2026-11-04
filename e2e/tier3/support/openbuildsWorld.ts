@@ -153,12 +153,14 @@ export async function installWorld(page: Page, world: World, options: { signedIn
       const input = body().p as Row;
       world.created.rpc.push(input);
       const id = `new-${++world.seq}`;
-      const spaces = world.spaces.filter((space) => (input.space_ids as string[]).includes(space.id));
+      const spaces = world.spaces.filter((space) => ((input.space_ids as string[] | undefined) ?? []).includes(space.id));
+      // UX-06: a reply names its parent; it sits in the parent's thread.
+      const parent = input.parent_id ? world.posts.find((post) => post.id === input.parent_id) : null;
       world.posts.unshift({
         id,
         author_id: ME.id,
-        parent_id: null,
-        root_id: id,
+        parent_id: parent ? parent.id : null,
+        root_id: parent ? parent.root_id : id,
         body: input.body,
         about_build_id: input.about_build_id ?? null,
         about_node_id: input.about_node_id ?? null,
@@ -175,7 +177,7 @@ export async function installWorld(page: Page, world: World, options: { signedIn
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         author: AUTHOR,
-        attachments: ((input.attachments as Row[]) ?? []).map((attachment, position) => ({ position, kind: attachment.kind, build_id: attachment.build_id ?? null, node_id: attachment.node_id ?? null, part_key: attachment.part_key ?? null, session_key: attachment.session_key ?? null, media_path: null, media_kind: null, snapshot: null })),
+        attachments: ((input.attachments as Row[]) ?? []).map((attachment, position) => ({ position, kind: attachment.kind, build_id: attachment.build_id ?? null, node_id: attachment.node_id ?? null, part_key: attachment.part_key ?? null, session_key: attachment.session_key ?? null, media_path: null, media_kind: null, snapshot: attachment.snapshot ?? null })),
         post_spaces: spaces.map((space) => ({ space: { id: space.id, slug: space.slug, name: space.name } })),
       });
       return reply(route, id, 200);

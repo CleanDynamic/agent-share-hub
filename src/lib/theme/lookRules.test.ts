@@ -1223,6 +1223,14 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/openbuilds/postModel.ts",
   "src/pages/site/openbuilds/postModel.test.ts",
   "src/pages/site/openbuilds/postModel.fixtures.ts",
+  "src/lib/openbuilds/attachLabels.ts",
+  "src/pages/site/openbuilds/AttachPicker.tsx",
+  "src/pages/site/openbuilds/AttachPicker.test.tsx",
+  "src/pages/site/openbuilds/NewPostWindow.tsx",
+  "src/pages/site/openbuilds/ReplyBox.tsx",
+  "src/pages/site/openbuilds/ReplyBox.test.tsx",
+  "src/pages/site/openbuilds/sendPost.ts",
+  "src/pages/site/openbuilds/sendReply.ts",
 
   // SV-23
   "src/lib/build/buildCounts.ts",

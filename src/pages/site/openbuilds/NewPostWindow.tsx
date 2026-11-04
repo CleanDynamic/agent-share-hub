@@ -25,7 +25,7 @@ import { FIGTREE } from "@/lib/theme/type";
 import { FOOT_NOTE, FieldInput, HINT, RecipeButton, Row, areaStyle } from "../compose/modalRecipes";
 import { PublishFrame } from "../compose/PublishChecklist";
 import { AttachPicker } from "./AttachPicker";
-import { EMPTY_DRAFT, attachmentOf, hasContent, sendPost, type NewPostDraft } from "./sendPost";
+import { EMPTY_DRAFT, attachmentOf, hasContent, inputOf, sendPost, type NewPostDraft } from "./sendPost";
 import { postableKey } from "./spaceModel";
 
 export const EMPTY_SEND = "Write something or attach work.";
@@ -33,13 +33,8 @@ export const EMPTY_SEND = "Write something or attach work.";
 /** A menu opened from inside the window stands above it (the window is 71). */
 const MENU_Z = 80;
 
-/** What a picked row attaches. */
-export function inputOf(work: LabelledWork): AttachmentInput {
-  if (work.size === "build") return { kind: "build", buildId: work.buildId };
-  if (work.size === "part") return { kind: "part", buildId: work.buildId, partKey: work.partKey ?? "" };
-  if (work.size === "session") return { kind: "session", buildId: work.buildId, sessionKey: work.sessionKey ?? "" };
-  return { kind: "step", buildId: work.buildId, nodeId: work.nodeId ?? "" };
-}
+/** What a picked row attaches (UX-06 moved it to sendPost, which the reply box shares without the composer's recipes). */
+export { inputOf };
 
 const keyOf = (input: AttachmentInput): string => JSON.stringify(input);
 
