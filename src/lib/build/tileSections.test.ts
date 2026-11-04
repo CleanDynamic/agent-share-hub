@@ -15,7 +15,7 @@ import { AGENT_DIALOG_COPY } from "@/pages/site/compose/AddAgentDialog";
 import { MANUAL_DIALOG_COPY } from "@/pages/site/compose/AddManualStepDialog";
 import { FULL_PROMPT_COPY } from "@/components/build/FullPromptWindow";
 
-import { TILE_KINDS, notSetLine, readSections, sectionsOf, type TileKind } from "./tileSections";
+import { TILE_KINDS, readSections, sectionsOf, type TileKind } from "./tileSections";
 
 const labelsOf = (kind: TileKind) => sectionsOf(kind).map((section) => section.label);
 
@@ -71,7 +71,9 @@ describe("read", () => {
   it("returns null for every section an empty tile leaves empty, and names them", () => {
     for (const kind of TILE_KINDS) {
       const { sections, notSet } = readSections(tileView(kind, "empty"), buildFacts);
-      expect(sections.length + notSet.length, kind).toBe(sectionsOf(kind).length);
+      // UX-02 P9: a section read from the tile (a file's type and place) is never named as not set.
+      const readOnlyEmpty = sectionsOf(kind).filter((def) => ["type", "place"].includes(def.key) && !sections.some((section) => section.key === def.key)).length;
+      expect(sections.length + notSet.length + readOnlyEmpty, kind).toBe(sectionsOf(kind).length);
       expect(notSet.length, `${kind} has empty sections`).toBeGreaterThan(0);
       for (const section of sections) expect(section.value, `${kind}.${section.key}`).not.toBeNull();
     }
@@ -114,9 +116,11 @@ describe("read", () => {
   });
 });
 
-describe("the foot line", () => {
-  it("names what is empty once, and says nothing when nothing is", () => {
-    expect(notSetLine(["Harness", "Memory", "Sample run"])).toBe("Not set: Harness, Memory, Sample run. Edit to add them.");
-    expect(notSetLine([])).toBeNull();
+// UX-02 P9: the "Not set: … Edit to add them." line is gone (Details draws Add details in its place); what is empty is still named.
+describe("what is not set", () => {
+  it("is named once for each empty section a maker can fill, and never for what is read from the tile", () => {
+    const file = readSections(tileView("file", "empty"), buildFacts);
+    expect(file.notSet).not.toContain("Type");
+    expect(file.notSet).not.toContain("In the build");
   });
 });

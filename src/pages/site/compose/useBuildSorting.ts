@@ -35,6 +35,34 @@ export interface Held {
 /** The ids the drag handles carry. A tile's is its own id. */
 export const SESSION_DRAG = "sdrag:";
 export const WORKSTREAM_DRAG = "wdrag:";
+/** UX-02 P3: a row of Sources, held: a session that can be added (its library id) or a file of the build (its node id). They never match a node, session or part id. */
+export const SOURCE_SESSION_DRAG = "src-session:";
+export const SOURCE_FILE_DRAG = "src-file:";
+
+/** UX-02 P3: what a row of Sources says it is (`useDraggable`'s data). */
+export interface SourceDragData {
+  source: "session" | "file";
+  /** The library id of a session; the node id of a file. */
+  id: string;
+}
+
+/** The id an incoming file holds while it is held over the List: it is not a node yet. An incoming session holds its own key (its library id), the key it will have. */
+export const INCOMING_FILE = "incoming-file:";
+
+/** An item from outside the build, held over the List (UX-02 P3 Stage C). */
+export interface Incoming {
+  source: "session" | "file";
+  /** The library id, or the file's node id. */
+  id: string;
+}
+
+/** Where an incoming item was dropped, handed to the page to write. */
+export type IncomingAdd =
+  | { kind: "add-session"; libraryId: string; part: string; before: string | null }
+  | { kind: "add-file"; fileId: string; session: string; index: number }
+  | { kind: "attach-file"; fileId: string; into: string };
+
+export const isSourceDrag = (dragId: string): boolean => dragId.startsWith(SOURCE_SESSION_DRAG) || dragId.startsWith(SOURCE_FILE_DRAG);
 
 export function heldOf(dragId: string, model: MoveModel): Held | null {
   if (dragId.startsWith(SESSION_DRAG)) return { id: dragId.slice(SESSION_DRAG.length), type: "session" };
@@ -348,6 +376,12 @@ export interface SortingOptions {
   say: (line: string) => void;
   /** Where an element stands at rest, by its slide id: the List's animator (`ListMotion.restOf`). Without it, boxes are read as drawn. */
   restOf?: (slideId: string) => Box | null;
+  /** UX-02 P3: an item from Sources dropped on the List. Resolves true once written, false when it was not. Absent: the List takes nothing from outside. */
+  add?: (add: IncomingAdd) => Promise<boolean>;
+  /** UX-02 P3: whether a held file can go inside this tile (a dropped file attaches inside that step). */
+  takesFile?: (id: string) => boolean;
+  /** UX-02 P3: the polite line for an add from outside. */
+  addedLine?: (add: IncomingAdd) => string;
 }
 
 interface Drag {
@@ -357,6 +391,8 @@ interface Drag {
   send: string | null;
   html: string;
   size: { w: number; h: number };
+  /** UX-02 P3: an item from Sources, not yet in the build. Its held copy is its row's markup, taken at the start. */
+  incoming?: Incoming;
 }
 
 export interface Sorting {
@@ -386,6 +422,10 @@ export interface Sorting {
   show: (model: MoveModel, line: string, run: Promise<unknown> | void) => void;
   /** Everything is sliding back to where it was (Esc, a write that did not land): those slides take `SETTLE_MS`. Null otherwise. */
   settleMs: number | null;
+  /** UX-02 P3: the item from Sources held over the List, or last held: its size, for the slot the List draws for it. */
+  incoming: (Incoming & { held: Held; size: { w: number; h: number } }) | null;
+  /** Whether the held copy flies back to its place when let go: a tile, a session or a part does; a row of Sources disappears at once. */
+  settles: boolean;
 }
 
 /** A copy of an element's markup, without what must stay unique on the page. */
@@ -429,6 +469,10 @@ export function useBuildSorting(options: SortingOptions): Sorting {
   /** Putting back: the slides of the commits that follow take `SETTLE_MS`, as the held copy's own drop does. */
   const [settleMs, setSettleMs] = useState<number | null>(null);
   const timers = useRef<{ send?: number; open?: number; settle?: number; fade?: number; give?: number }>({});
+  /** UX-02 P3: the item from Sources held, or written and not yet in the data: what the List draws its slot from. */
+  const [incoming, setIncoming] = useState<Sorting["incoming"]>(null);
+  /** A row of Sources let go does not fly back to its row: its copy disappears at once. */
+  const [settles, setSettles] = useState(true);
   const candidate = useRef<{ send: string | null; open: string | null }>({ send: null, open: null });
 
   const clearTimers = () => {
@@ -448,7 +492,9 @@ export function useBuildSorting(options: SortingOptions): Sorting {
   useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    if (heldNow && live && drag) setSkeleton(measureSkeleton(root, heldNow, live, drag.start, optionsRef.current.names, leftEdge(), boxOf));
+    // UX-02 P3: an item from Sources that is not over the List has no place, and no slot.
+    if (heldNow && live && drag && drag.incoming && !spotOf(live, heldNow.id)) setSkeleton(null);
+    else if (heldNow && live && drag) setSkeleton(measureSkeleton(root, heldNow, live, drag.start, optionsRef.current.names, leftEdge(), boxOf));
     if (viaKeys.current && heldNow && drag && initial) {
       const own = root.querySelector<HTMLElement>(`${SELECTOR[heldNow.type]}[data-skel-id="${heldNow.id}"]`);
       if (own) {
@@ -465,7 +511,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
   useLayoutEffect(() => {
     const current = dragRef.current;
     const root = rootRef.current;
-    if (!current || !root || current.html !== "") return;
+    if (!current || !root || current.html !== "" || current.incoming) return;
     const element = root.querySelector<HTMLElement>(`${SELECTOR[current.held.type]}[data-skel-id="${current.held.id}"]`);
     if (!element) return;
     const box = element.getBoundingClientRect();
@@ -480,7 +526,29 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     const root = rootRef.current;
     if (!current || !root) return;
     const o = optionsRef.current;
-    const placement = placeAt(root, current.held, current.start, pointer.current, { canTake: o.canTake, collapsed: o.collapsed, boxOf });
+    // UX-02 P3: an item from Sources has a place only while the pointer is over the List; off it, the List is as it was, at once.
+    if (current.incoming) {
+      const box = drawnBox(root);
+      const { x, y } = pointer.current;
+      if (x < box.x || x > box.x + box.w || y < box.y || y > box.y + box.h) {
+        window.clearTimeout(timers.current.send);
+        candidate.current.send = null;
+        if (current.send || !sameModel(current.live, current.start)) set({ ...current, live: current.start, send: null });
+        return;
+      }
+    }
+    // UX-02 P3: a file from Sources that is already sent with a tile stays so while the pointer is anywhere on that tile: its slot has
+    // closed and the tile has moved up under the pointer, which must not take the target away again.
+    if (current.incoming && current.send) {
+      const target = root.querySelector(`[data-skel-kind="tile"][data-skel-id="${current.send}"]`);
+      const box = target ? boxOf(target) : null;
+      const { x, y } = pointer.current;
+      if (box && x >= box.x && x <= box.x + box.w && y >= box.y && y <= box.y + box.h) return;
+    }
+    const canTake = current.incoming ? (_held: string, id: string) => current.incoming?.source === "file" && Boolean(o.takesFile?.(id)) : o.canTake;
+    const found = placeAt(root, current.held, current.start, pointer.current, { canTake, collapsed: o.collapsed, boxOf });
+    // While it is over a tile that could take it, its slot stays where it was, so that tile does not move from under the pointer.
+    const placement = current.incoming && found.sendCandidate ? { ...found, model: current.live } : found;
     // The tile that could take the held one: held over for `DWELL_SEND_MS`, it becomes the target and the place leaves.
     if (placement.sendCandidate !== candidate.current.send) {
       window.clearTimeout(timers.current.send);
@@ -567,9 +635,12 @@ export function useBuildSorting(options: SortingOptions): Sorting {
 
   const onDragStart = (event: DragStartEvent) => {
     const o = optionsRef.current;
-    const held = heldOf(String(event.active.id), o.model);
+    const dragId = String(event.active.id);
+    if (isSourceDrag(dragId)) return startIncoming(event, dragId);
+    const held = heldOf(dragId, o.model);
     const root = rootRef.current;
     if (!held || !root) return;
+    setSettles(true);
     window.clearTimeout(timers.current.fade);
     window.clearTimeout(timers.current.settle);
     setSettleMs(null);
@@ -586,6 +657,52 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     setInitial(rect ? { left: rect.left, top: rect.top } : null);
     set(next);
     setSaid(pickedLine(held, o.model, o.names));
+  };
+
+  /**
+   * UX-02 P3: a row of Sources picked up. A session already in the build moves as its head would; a session to add and a file are
+   * incoming: not in the build's model, placed by the same pointer and boxes once over the List. The held copy is the row's own markup.
+   */
+  const startIncoming = (event: DragStartEvent, dragId: string) => {
+    const o = optionsRef.current;
+    const data = event.active.data.current as SourceDragData | undefined;
+    const row = document.querySelector<HTMLElement>(`[data-source-drag="${dragId}"]`);
+    if (!data || !row || !rootRef.current || !o.add) return;
+    const inBuild = data.source === "session" && Boolean(locate(o.model, data.id));
+    const held: Held = data.source === "session" ? { id: data.id, type: "session" } : { id: `${INCOMING_FILE}${data.id}`, type: "tile" };
+    window.clearTimeout(timers.current.fade);
+    window.clearTimeout(timers.current.settle);
+    setSettleMs(null);
+    viaKeys.current = (event.activatorEvent as Event | null)?.type === "keydown";
+    setKeyboardAt(null);
+    const from = point(event.activatorEvent as Event);
+    if (from) pointer.current = from;
+    const box = row.getBoundingClientRect();
+    const size = { w: box.width, h: box.height };
+    const source: Incoming | undefined = inBuild ? undefined : { source: data.source, id: data.id };
+    setSettles(inBuild);
+    setIncoming(source ? { ...source, held, size } : null);
+    setHidden(held.id);
+    setSkeletonShown(true);
+    setPending(null);
+    const rect = event.active.rect.current.initial;
+    setInitial(rect ? { left: rect.left, top: rect.top } : null);
+    set({ held, start: o.model, live: o.model, send: null, html: cloneHtml(row), size, ...(source ? { incoming: source } : null) });
+    setSaid(inBuild ? pickedLine(held, o.model, o.names) : `Picked up ${data.source === "session" ? "a session" : "a file"} from Sources.`);
+  };
+
+  /** An item from Sources let go off the List, or Escape: nothing is written, and the List is as it was at once. */
+  const dropIncoming = () => {
+    clearTimers();
+    dragRef.current = null;
+    setDrag(null);
+    setPending(null);
+    setSkeleton(null);
+    setSkeletonShown(false);
+    setHidden(null);
+    setIncoming(null);
+    setTick((value) => value + 1);
+    setSaid("Not added.");
   };
 
   /** The pointer is read from the window (`decide`), so scrolling while held keeps the place under it. */
@@ -623,7 +740,8 @@ export function useBuildSorting(options: SortingOptions): Sorting {
 
   const onDragCancel = () => {
     const current = dragRef.current;
-    if (current) putBack(current);
+    if (current?.incoming) dropIncoming();
+    else if (current) putBack(current);
   };
 
   /** Keep the new order showing until the data says the same; put everything back when it does not land. */
@@ -667,12 +785,14 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     if (pending && !drag && sameModel(pending.model, options.model)) {
       window.clearTimeout(timers.current.give);
       setPending(null);
+      setIncoming(null);
     }
   }, [options.model, pending, drag]);
 
   const onDragEnd = (_event: DragEndEvent) => {
     const current = dragRef.current;
     if (!current) return;
+    if (current.incoming) return endIncoming(current, current.incoming);
     clearTimers();
     const o = optionsRef.current;
     dragRef.current = null;
@@ -699,6 +819,72 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     setSaid(line);
     const run = o.commit({ held: current.held, write, move, start: current.start, end: current.live, sentence: line.replace(/\.$/, ""), line });
     hold(current.live, current.held, current.start, run, "Tile not moved");
+  };
+
+  /**
+   * UX-02 P3: an item from Sources dropped. Over a tile that takes it, a file goes inside that step; in a place, it is added there;
+   * anywhere else, nothing. The slot stays until the write lands; a write that does not land puts the List back as it was.
+   */
+  const endIncoming = (current: Drag, source: Incoming) => {
+    const o = optionsRef.current;
+    const spot = spotOf(current.live, current.held.id);
+    const add: IncomingAdd | null = current.send
+      ? { kind: "attach-file", fileId: source.id, into: current.send }
+      : !spot
+        ? null
+        : source.source === "file"
+          ? spot.session
+            ? { kind: "add-file", fileId: source.id, session: spot.session, index: spot.index }
+            : null
+          : { kind: "add-session", libraryId: source.id, part: spot.part ?? "", before: current.live.parts.find((part) => part.key === (spot.part ?? ""))?.sessions[spot.index + 1] ?? null };
+    if (!add || !o.add) return dropIncoming();
+    clearTimers();
+    dragRef.current = null;
+    setDrag(null);
+    setTick((value) => value + 1);
+    setSaid(o.addedLine?.(add) ?? "");
+    const run = o.add(add);
+    if (add.kind === "attach-file") {
+      setSkeleton(null);
+      setSkeletonShown(false);
+      setHidden(null);
+      setIncoming(null);
+      return;
+    }
+    fadeOut(SETTLE_MS);
+    setPending({ model: current.live, held: current.held });
+    const failed = source.source === "file" ? "File not added" : "Session not added";
+    void run.then(
+      (ok) => {
+        if (!ok) {
+          setSettleMs(SETTLE_MS);
+          setPending({ model: current.start, held: current.held });
+          setTick((value) => value + 1);
+          setSaid(failed);
+          window.setTimeout(() => {
+            setPending(null);
+            setIncoming(null);
+          }, SETTLE_MS + 50);
+          return;
+        }
+        // A file's tile has its own id, not the slot's: the slot goes as the tile is drawn. A session keeps its key, so its order shows until the data says the same.
+        if (source.source === "file") {
+          setPending(null);
+          setIncoming(null);
+          return;
+        }
+        window.clearTimeout(timers.current.give);
+        timers.current.give = window.setTimeout(() => {
+          setPending((now) => (now && now.model === current.live ? null : now));
+          setIncoming(null);
+        }, 400);
+      },
+      () => {
+        setPending(null);
+        setIncoming(null);
+        setSaid(failed);
+      },
+    );
   };
 
   const show = (model: MoveModel, line: string, run: Promise<unknown> | void) => {
@@ -739,6 +925,8 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     onDragCancel,
     show,
     settleMs: settleMs !== null && (pending !== null || drag !== null) ? settleMs : null,
+    incoming,
+    settles,
   };
 }
 

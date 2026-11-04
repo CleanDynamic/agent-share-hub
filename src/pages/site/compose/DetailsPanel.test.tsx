@@ -60,7 +60,8 @@ describe("nothing to type into", () => {
     for (const kind of TILE_KINDS) {
       cleanup();
       panel({ view: tileView(kind, "full") });
-      for (const name of [/^Remove/, /^Rename/, /^Add /, /^Colour for/, /^Save/, /^Use as cover/, /Take the goal off/]) expect(screen.queryByRole("button", { name }), `${kind} ${String(name)}`).toBeNull();
+      // UX-02 P9: Add details opens the same window as Edit; it changes nothing itself.
+      for (const name of [/^Remove/, /^Rename/, /^Add (?!details$)/, /^Colour for/, /^Save/, /^Use as cover/, /Take the goal off/]) expect(screen.queryByRole("button", { name }), `${kind} ${String(name)}`).toBeNull();
     }
   });
 });
@@ -119,19 +120,18 @@ describe("the sections", () => {
     expect(within(sections[7]).getByTestId("details-count").textContent).toBe("1 word a copier replaces");
   });
 
-  it("do not draw the empty ones, and the last line names them once", () => {
-    panel({ view: tileView("agent", "empty") });
-    const drawn = screen.getAllByTestId("details-section").map((section) => section.querySelector("h4")?.textContent);
-    const line = screen.getByTestId("details-not-set").textContent ?? "";
-    expect(line.startsWith("Not set: ")).toBe(true);
-    expect(line.endsWith(". Edit to add them.")).toBe(true);
-    for (const label of drawn) expect(line).not.toContain(label ?? "?");
-    expect(screen.getAllByTestId("details-not-set")).toHaveLength(1);
+  // UX-02 P9: in place of "Not set: … Edit to add them.", one Add details control that opens the window Edit opens.
+  it("do not draw the empty ones, and end with one Add details, which opens the editor", () => {
+    const props = panel({ view: tileView("agent", "empty") });
+    expect(screen.queryByText(/^Not set: /)).toBeNull();
+    expect(screen.getAllByTestId("details-add")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Add details" }));
+    expect(props.onEdit).toHaveBeenCalledTimes(1);
   });
 
-  it("have no line at the foot when nothing is empty", () => {
+  it("have no Add details when nothing is empty", () => {
     panel({ view: tileView("file", "full") });
-    expect(screen.queryByTestId("details-not-set")).toBeNull();
+    expect(screen.queryByTestId("details-add")).toBeNull();
   });
 
   it("show prose in full, a response in the quiet colour", () => {
@@ -211,9 +211,9 @@ describe("what it keeps: it reads or moves, it does not change", () => {
 });
 
 describe("nothing selected", () => {
-  it("says to select a tile or a session", () => {
+  it("says to select a step tile or a session", () => {
     panel({ view: null });
-    expect(screen.getByText("Select a tile or session to see it here.")).toBeTruthy();
-    expect(DETAILS_COPY.empty).toBe("Select a tile or session to see it here.");
+    expect(screen.getByText("Select a step tile or session to see it here.")).toBeTruthy();
+    expect(DETAILS_COPY.empty).toBe("Select a step tile or session to see it here.");
   });
 });

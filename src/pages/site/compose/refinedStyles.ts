@@ -129,6 +129,9 @@ export const tagStyle: CSSProperties = {
  */
 export const menuSurface = (width?: number): CSSProperties => ({
   zIndex: 50,
+  /* UX-02 P6: the cap below is the room Radix measured, so the padding and the border are inside it: a menu that reaches the cap
+     stays inside the window (with content-box sizing it stood 10px taller than its room, past the window's edge). */
+  boxSizing: "border-box",
   ...(width ? { width, maxWidth: "calc(100vw - 32px)" } : { minWidth: 180 }),
   maxHeight: "var(--radix-dropdown-menu-content-available-height)",
   overflowY: "auto",

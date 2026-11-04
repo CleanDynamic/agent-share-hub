@@ -212,7 +212,9 @@ describe("the composer", () => {
   it("has one live region of its own, and a notice and a save go through it", async () => {
     mountComposer(`/compose/${DRAFT}`);
     await screen.findByTestId("sandbox-status", undefined, { timeout: 10_000 });
-    const own = [...document.querySelectorAll("[aria-live]")].filter((el) => !el.closest('[aria-label^="Notifications"]'));
+    // UX-02 P3: the page's drag context (round Sources and the List) carries dnd-kit's own region, with the drag instructions the rows'
+    // grips point to; every announcement it could make is empty (DRAG_ACCESSIBILITY), so it says nothing and is not the page's.
+    const own = [...document.querySelectorAll("[aria-live]")].filter((el) => !el.closest('[aria-label^="Notifications"]') && !el.id.startsWith("DndLiveRegion"));
     expect(own).toHaveLength(1);
     expect(own[0]).toBe(region());
     expect(document.querySelector('[data-testid="reference-notice"][role="status"]')).toBeNull();

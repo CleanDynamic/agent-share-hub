@@ -76,7 +76,7 @@ describe("the List (CA-04 P2)", () => {
     expect(within(tiles[0]).queryAllByText("1").filter((node) => !node.closest('[data-testid="code-gutter"]'))).toHaveLength(0);
   });
 
-  it("CA-12 P6: 'Send with the step above' is a button with a join glyph; on a computer it shows while its tile is hovered or focused, on a phone always", () => {
+  it("CA-12 P6: 'Send with the step tile above' is a button with a join glyph; on a computer it shows while its tile is hovered or focused, on a phone always", () => {
     list(buildSteps(tree()));
     const second = screen.getByRole("group", { name: /^Prompt 2/ });
     const control = within(second).getAllByTestId("nest-control").find((c) => c.textContent === NEST_LIST_COPY.sendWithAbove) as HTMLElement;
@@ -99,7 +99,7 @@ describe("the List (CA-04 P2)", () => {
     expect(screen.getAllByTestId("drag-handle").map((handle) => handle.getAttribute("aria-label"))).toEqual(["Move Prompt 1", "Move Prompt 2", "Move order-form.tsx", "Move menu.pdf"]);
   });
 
-  it("moves without a pointer: Send with the step above, and Make it its own step, then says what happened", async () => {
+  it("moves without a pointer: Send with the step tile above, and Make it its own step, then says what happened", async () => {
     const props = list(buildSteps(tree()));
     const second = screen.getByRole("group", { name: /^Prompt 2/ });
     fireEvent.click(within(second).getAllByRole("button", { name: NEST_LIST_COPY.sendWithAbove })[0]);

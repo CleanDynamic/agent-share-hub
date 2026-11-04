@@ -12,6 +12,7 @@ import { ConnectorDialogProvider } from "@/components/connect/ConnectorDialog";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { REPO_SCHEMA, startAuditBackend } from "@/lib/build/__audit__/fakeSupabase";
 
+import { openAddRow } from "./ca20Harness";
 import { SandboxPage } from "./SandboxPage";
 
 function stubWidth(px: number) {
@@ -91,10 +92,11 @@ describe("CA-24 P2 · a new post is an empty build", () => {
     expect(screen.getByTestId("add-session-row")).toBeTruthy();
   });
 
-  it("Add › Prompt writes the first prompt: the panel gives way to the prompt box", async () => {
+  it("a new session's Add step tile › Prompt writes the first prompt: the panel gives way to the prompt box", async () => {
     mount("/compose/new");
     await screen.findByTestId("empty-build", undefined, { timeout: 10_000 });
-    fireEvent.keyDown(await screen.findByTestId("sandbox-add"), { key: "Enter" });
+    // UX-02 P7: the header's Add is gone; a step tile is added from a session's row, so the first session is started first.
+    await openAddRow();
     fireEvent.click(await screen.findByRole("menuitem", { name: /^Prompt/ }));
     await screen.findByRole("textbox", { name: "Add a prompt" });
     expect(screen.queryByTestId("empty-build")).toBeNull();

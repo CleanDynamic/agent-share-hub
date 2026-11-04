@@ -190,7 +190,7 @@ export function TraceControl({ id, extras, phone, onChange }: { id: string; extr
       key={`${id}:trace:${extras.traceUrl ?? ""}`}
       label={EXTRAS_COPY.trace}
       value={extras.traceUrl ?? ""}
-      placeholder="https://smith.langchain.com/…"
+      placeholder="e.g. https://smith.langchain.com/…"
       max={2000}
       phone={phone}
       onCommit={(value) => onChange({ ...extras, traceUrl: traceUrlOf(value) ?? undefined })}
@@ -411,7 +411,7 @@ export function CheckRunsField({ id, runs, phone, onChange }: { id: string; runs
         {drafts.map((row, index) => (
           <div key={index} data-testid="check-run" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, minWidth: 0 }}>
             <div style={{ width: 112, flexShrink: 0 }}>
-              <ExtrasInput label={`${RUNS_FIELD_COPY.date} of run ${index + 1}`} value={row.at} placeholder="2026-10-12" max={10} phone={phone} onCommit={(at) => { const next = drafts.map((d, i) => (i === index ? { ...d, at } : d)); setDrafts(next); commit(next); }} />
+              <ExtrasInput label={`${RUNS_FIELD_COPY.date} of run ${index + 1}`} value={row.at} placeholder="e.g. 2026-10-12" max={10} phone={phone} onCommit={(at) => { const next = drafts.map((d, i) => (i === index ? { ...d, at } : d)); setDrafts(next); commit(next); }} />
             </div>
             <div style={{ width: 56, flexShrink: 0 }}>
               <ExtrasInput label={`${RUNS_FIELD_COPY.passed} in run ${index + 1}`} value={row.passed} max={5} phone={phone} inputMode="numeric" onCommit={(passed) => { const next = drafts.map((d, i) => (i === index ? { ...d, passed } : d)); setDrafts(next); commit(next); }} />
@@ -437,9 +437,9 @@ export function CheckRunsField({ id, runs, phone, onChange }: { id: string; runs
             />
             {row.more ? (
               <div data-testid="check-run-more" style={{ flexBasis: "100%", display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-                <ExtrasInput label={`Run ID of run ${index + 1}`} value={row.id ?? ""} placeholder="main-prompt-v3" max={RUN_ID_MAX} phone={phone} onCommit={(value) => { const next = drafts.map((d, i) => (i === index ? { ...d, id: value } : d)); setDrafts(next); commit(next); }} />
-                <ExtrasInput label={`What run ${index + 1} changed`} value={row.changed ?? ""} placeholder="Answer only from the docs" max={RUN_CHANGED_MAX} phone={phone} onCommit={(value) => { const next = drafts.map((d, i) => (i === index ? { ...d, changed: value } : d)); setDrafts(next); commit(next); }} />
-                <ExtrasInput label={`Baseline run of run ${index + 1}`} value={row.vs ?? ""} placeholder="main-prompt-v2" max={RUN_ID_MAX} phone={phone} onCommit={(value) => { const next = drafts.map((d, i) => (i === index ? { ...d, vs: value } : d)); setDrafts(next); commit(next); }} />
+                <ExtrasInput label={`Run ID of run ${index + 1}`} value={row.id ?? ""} placeholder="e.g. main-prompt-v3" max={RUN_ID_MAX} phone={phone} onCommit={(value) => { const next = drafts.map((d, i) => (i === index ? { ...d, id: value } : d)); setDrafts(next); commit(next); }} />
+                <ExtrasInput label={`What run ${index + 1} changed`} value={row.changed ?? ""} placeholder="e.g. Answer only from the docs" max={RUN_CHANGED_MAX} phone={phone} onCommit={(value) => { const next = drafts.map((d, i) => (i === index ? { ...d, changed: value } : d)); setDrafts(next); commit(next); }} />
+                <ExtrasInput label={`Baseline run of run ${index + 1}`} value={row.vs ?? ""} placeholder="e.g. main-prompt-v2" max={RUN_ID_MAX} phone={phone} onCommit={(value) => { const next = drafts.map((d, i) => (i === index ? { ...d, vs: value } : d)); setDrafts(next); commit(next); }} />
                 {row.vs?.trim() ? (
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {(["fixed", "regressions", "nowFlaky", "stillFailing"] as const).map((key) => (
@@ -640,7 +640,7 @@ export function OutputsControl({ id, extras, phone, onChange }: { id: string; ex
           </div>
           {row.kind === "commit" ? (
             <div style={{ width: phone ? 140 : 112, flexShrink: 0 }}>
-              <ExtrasInput key={`${id}:o${index}b:${row.b}`} label={`SHA of output ${index + 1}`} value={row.b} placeholder="a1b2c3d" max={40} phone={phone} onCommit={(b) => commit(rows.map((other, at) => (at === index ? { ...other, b } : other)))} />
+              <ExtrasInput key={`${id}:o${index}b:${row.b}`} label={`SHA of output ${index + 1}`} value={row.b} placeholder="e.g. a1b2c3d" max={40} phone={phone} onCommit={(b) => commit(rows.map((other, at) => (at === index ? { ...other, b } : other)))} />
             </div>
           ) : null}
           <IconButton icon={X} glyph="x" boxed={false} label={`Remove output ${index + 1}`} size={26} onClick={() => commit(rows.filter((_, at) => at !== index))} />

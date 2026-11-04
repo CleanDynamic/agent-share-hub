@@ -206,7 +206,7 @@ export function MoreDetails({ phone, details, onDetail, onGapSwitch }: MoreDetai
                       <TextArea
                         id={`${id}-broke`}
                         value={details.symptom}
-                        placeholder="exiftool: command not found"
+                        placeholder="e.g. exiftool: command not found"
                         phone={phone}
                         onChange={(value) => onDetail("symptom", value)}
                       />
@@ -217,7 +217,7 @@ export function MoreDetails({ phone, details, onDetail, onGapSwitch }: MoreDetai
                       <TextArea
                         id={`${id}-fixed`}
                         value={details.resolution}
-                        placeholder="Install it first with brew install exiftool."
+                        placeholder="e.g. Install it first with brew install exiftool."
                         phone={phone}
                         onChange={(value) => onDetail("resolution", value)}
                       />

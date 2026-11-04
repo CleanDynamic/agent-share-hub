@@ -2523,10 +2523,10 @@ function heightOf(node: NodeTree): number {
 const holds = (node: NodeTree, id: string): boolean => (node.children ?? []).some((child) => child.id === id || holds(child, id));
 
 export const NEST_COPY = {
-  missing: "That tile is not in this build.",
+  missing: "That step tile is not in this build.",
   notATile: "Only a step or a file moves like that.",
   noParent: "That step is not in this build.",
-  cycle: "A tile can't go inside itself or anything it holds.",
+  cycle: "A step tile can't go inside itself or anything it holds.",
   result: "Nothing goes inside a result.",
   file: "Nothing goes inside a file.",
   agent: "An agent holds its own prompts only.",

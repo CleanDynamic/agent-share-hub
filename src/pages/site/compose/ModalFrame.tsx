@@ -40,6 +40,7 @@ import {
   IconSquare,
   MODAL_PAD,
   MODAL_WIDTH,
+  MissingFields,
   ModalInset,
   RecipeButton,
   Row,
@@ -48,6 +49,7 @@ import {
   bodyStyle,
   footerStyle,
   frameStyle,
+  missingSet,
 } from "./modalRecipes";
 
 export const MODAL_COPY = {
@@ -176,6 +178,8 @@ export function ModalForm({ phone, onSubmit, onCancel, missing, blocked = false,
       style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: "1 1 auto", fontSize: phone ? 16 : 13 }}
     >
       <ModalInset.Provider value={phone ? 0 : MODAL_PAD}>
+        {/* UX-02 P11: each field the footer names as required says so under itself too. */}
+        <MissingFields.Provider value={missingSet(missing)}>
         <div data-testid="modal-body" style={bodyStyle(phone)}>
           {children}
           {alert ? (
@@ -184,6 +188,7 @@ export function ModalForm({ phone, onSubmit, onCancel, missing, blocked = false,
             </div>
           ) : null}
         </div>
+        </MissingFields.Provider>
       </ModalInset.Provider>
       <div data-testid="modal-footer" style={footerStyle(phone)}>
         <span data-testid="modal-status" role="status" style={FOOT_NOTE}>

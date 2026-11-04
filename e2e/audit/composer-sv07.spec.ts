@@ -445,7 +445,7 @@ for (const size of SIZES) {
       await page.getByRole("menuitem", { name: /Part 1/ }).click();
       await page.getByRole("button", { name: /Start a new session/ }).click();
       await settled(page);
-      await page.getByText("No tiles yet").first().scrollIntoViewIfNeeded();
+      await page.getByText("No step tiles yet").first().scrollIntoViewIfNeeded();
       await shot("empty-session");
       await page.getByTestId("add-session-row").click();
       await page.getByRole("button", { name: /Add from your connected chats/ }).click();

@@ -32,25 +32,30 @@ import { DM_MONO } from "@/lib/theme/type";
 
 import { TextButton } from "./composeControls";
 import type { AddToPart } from "./AddSessionRow";
-import { MenuContent } from "./ComposeMenu";
+import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { MENU_COPY } from "@/lib/build/componentMenus";
 import { RemoveRow } from "./removePieces";
 import { useLeaving } from "./buildMotion";
 import { MotionBoundary, NO_SLIDE, useListMotion } from "./listMotion";
+import { DragHandle, useSourceDrag } from "./listNest";
 import { holdsFolder, readDrop } from "./dropFolders";
 import { SLIDE_ATTR } from "./flip";
 import { ToolMark } from "./refinedPieces";
-import { fullText } from "@/lib/theme/truncate";
-import { bareButton, ellipsis, menuItem, menuSurface, text, tnum } from "./refinedStyles";
+import { fullText, PREVIEW } from "@/lib/theme/truncate";
+import { bareButton, ellipsis, menuItem, menuSurface, text, tnum, wellField } from "./refinedStyles";
 import { libraryName, REMINDER_ROWS, REPEAT_COPY, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession, type SourceUnfinishedItem } from "./sourcesModel";
 
 /** CONCEPT §7: at most this many rows in any list, then one "Show {n} more". */
 export const GROUP_ROWS = 6;
 
 export const SOURCES_COPY = {
-  inBuild: "Sessions in this build",
-  files: "Files in this build",
-  yourSessions: "Your sessions",
+  /** UX-02 P8: two groups: what the build holds (its sessions, then its files), and what can be added. */
+  inBuild: "In this build",
+  available: "Available to add",
+  filter: "Filter sessions",
+  noMatch: "No session matches.",
+  addFiles: "Add files",
+  dropLine: "Or drop files anywhere on the build.",
   /** SV-05 P6: the text button beside a file a tool in the build reads. */
   addFile: "Add",
   stillArriving: "Still arriving",
@@ -59,7 +64,6 @@ export const SOURCES_COPY = {
   addThisTo: "Add this session to",
   lastPart: ", chosen last",
   showMoreSessions: "Show more sessions",
-  drop: "Drop sessions or files",
   noSessions: "No sessions yet.",
   noFiles: "No files yet.",
   connect: "Connect a tool",
@@ -100,9 +104,17 @@ export interface SourcesPanelProps {
   connectHref: string;
   /** CA-20 P2: "Remove file" in a file's menu. Absent: files have no menu. */
   onRemoveFile?: (id: string) => void;
+  /** UX-02 P2: "Add to session" in a file's menu: the file as a File step tile at the end of that session. */
+  onAddFileToSession?: (fileId: string, sessionKey: string) => void;
 }
 
 /* ── pieces ── */
+
+/** UX-02 P3 Stage B: the List's own grip at a row's start, drawn while the row is hovered or holds focus, at once. The only drag start. */
+function SourceGrip({ drag, label, phone }: { drag: ReturnType<typeof useSourceDrag>; label: string; phone: boolean }) {
+  if (!drag.on) return null;
+  return <DragHandle label={label} nest={drag} testId="source-drag-handle" phone={phone} />;
+}
 
 const rowLine: CSSProperties = { borderTop: `1px solid ${t.hairline}` };
 
@@ -206,9 +218,11 @@ function SessionRow({
   const [open, setOpen] = useState(false);
   const hasPrompts = session.prompts.length > 0;
   const toggle = useInteractive<HTMLButtonElement>();
+  const drag = useSourceDrag("session", session.key);
   return (
-    <div style={{ ...rowLine, padding: "6px 0" }}>
+    <div ref={drag.setRef} data-source-drag={drag.on ? drag.dragId : undefined} style={{ ...rowLine, padding: "6px 0" }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
+        <SourceGrip drag={drag} label={`Move Session ${session.number}`} phone={phone} />
         <button
           type="button"
           aria-expanded={open}
@@ -238,7 +252,7 @@ function SessionRow({
         <SelectButton selected={selectedId === session.key} onClick={() => onSelect(session.key)} minHeight={phone ? 44 : 40} style={{ alignItems: "flex-start", padding: "6px" }}>
           <ToolMark tool={session.tool} size={20} />
           <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-            <span {...fullText(`Session ${session.number} · ${session.tool}`)} style={{ ...text(13, 500, t.text), ...ellipsis }}>
+            <span {...fullText(`Session ${session.number} · ${session.tool}`)} style={{ ...text(13, 500, t.text), ...PREVIEW }}>
               {/* CA-06 P4: a coloured session's 7px dot before its name. */}
               {session.colour ? <ColourDot colour={session.colour} size={7} style={{ marginRight: 6, verticalAlign: "middle" }} /> : null}
               Session {session.number} · {session.tool}
@@ -261,9 +275,11 @@ function SessionRow({
   );
 }
 
-function FileRow({ file, phone, onRemove, leaving = false }: { file: SourceFile; phone: boolean; onRemove?: (id: string) => void; leaving?: boolean }) {
+function FileRow({ file, phone, sessions, onOpen, onAddToSession, onRemove, leaving = false }: { file: SourceFile; phone: boolean; sessions: readonly SourceSession[]; onOpen?: (id: string) => void; onAddToSession?: (id: string, sessionKey: string) => void; onRemove?: (id: string) => void; leaving?: boolean }) {
+  const drag = useSourceDrag("file", file.id);
   return (
-    <div data-file-id={file.id} {...{ [SLIDE_ATTR]: `file:${file.id}` }} aria-hidden={leaving || undefined} style={{ ...(leaving ? { pointerEvents: "none" } : null), ...rowLine, display: "flex", alignItems: "flex-start", gap: 8, minHeight: phone ? 44 : undefined, padding: "12px 0", boxSizing: "border-box" }}>
+    <div ref={drag.setRef} data-source-drag={drag.on ? drag.dragId : undefined} data-file-id={file.id} {...{ [SLIDE_ATTR]: `file:${file.id}` }} aria-hidden={leaving || undefined} style={{ ...(leaving ? { pointerEvents: "none" } : null), ...rowLine, display: "flex", alignItems: "flex-start", gap: 8, minHeight: phone ? 44 : undefined, padding: "12px 0", boxSizing: "border-box" }}>
+      <SourceGrip drag={drag} label={`Move ${file.name}`} phone={phone} />
       <span style={{ display: "inline-flex", color: t.label, flexShrink: 0 }}>
         <Glyph name="file" size={16} />
       </span>
@@ -271,7 +287,7 @@ function FileRow({ file, phone, onRemove, leaving = false }: { file: SourceFile;
         <span {...fullText(file.name)} style={{ ...text(13, 500, t.text), ...ellipsis }}>{file.name}</span>
         <span {...fullText(file.note)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{file.note}</span>
       </span>
-      {/* CA-20 P2: a file's menu ends with Remove file, like every other component's. */}
+      {/* CA-20 P2: a file's menu ends with Remove file, like every other component's. UX-02 P2: Open file and Add to session come first. */}
       {onRemove ? (
         <Menu.Root>
           <Menu.Trigger asChild>
@@ -279,6 +295,31 @@ function FileRow({ file, phone, onRemove, leaving = false }: { file: SourceFile;
           </Menu.Trigger>
           <Menu.Portal>
             <MenuContent align="end" sideOffset={4} style={menuSurface()}>
+              {onOpen ? (
+                <Menu.Item onSelect={() => onOpen(file.id)} style={menuItem(true, phone)}>
+                  {MENU_COPY.openFile}
+                </Menu.Item>
+              ) : null}
+              {onAddToSession && sessions.length > 0 ? (
+                <Menu.Sub>
+                  <Menu.SubTrigger style={{ ...menuItem(true, phone), justifyContent: "space-between", gap: 12 }}>
+                    <span>{MENU_COPY.addToSession}</span>
+                    <span aria-hidden="true" style={{ display: "inline-flex", color: t.label }}>
+                      <Glyph name="chev" size={16} />
+                    </span>
+                  </Menu.SubTrigger>
+                  <Menu.Portal>
+                    <MenuSubContent sideOffset={4} style={menuSurface()}>
+                      {/* Built as "Add this session to" builds its rows: one per session of the build, in order. */}
+                      {sessions.map((session) => (
+                        <Menu.Item key={session.key} onSelect={() => onAddToSession(file.id, session.key)} style={{ ...menuItem(true, phone), gap: 8 }}>
+                          <span style={{ flexGrow: 1, minWidth: 0 }}>{`Session ${session.number} · ${session.tool}`}</span>
+                        </Menu.Item>
+                      ))}
+                    </MenuSubContent>
+                  </Menu.Portal>
+                </Menu.Sub>
+              ) : null}
               <RemoveRow label={MENU_COPY.removeFile} phone={phone} onSelect={() => onRemove(file.id)} />
             </MenuContent>
           </Menu.Portal>
@@ -337,12 +378,16 @@ function AddToMenu({ item, parts, phone, onAdd, lastPart }: { item: SourceLibrar
 }
 
 function LibraryRow({ item, phone, onAdd, parts, lastPart }: { item: SourceLibraryItem; phone: boolean; onAdd: (id: string, part?: string) => void; parts?: readonly AddToPart[]; lastPart?: string }) {
+  const drag = useSourceDrag("session", item.id);
+  const movable = drag.on && !item.inThisDraft && !item.adding;
   return (
-    <div style={{ ...rowLine, display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : undefined, padding: "8px 0", boxSizing: "border-box" }}>
+    <div ref={drag.setRef} data-source-drag={movable ? drag.dragId : undefined} style={{ ...rowLine, display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : undefined, padding: "8px 0", boxSizing: "border-box" }}>
+      {movable ? <SourceGrip drag={drag} label={`Move ${libraryName(item)}`} phone={phone} /> : null}
       {/* SV-05 P3: the app's mark when the app is known; none when it is not. */}
       {item.appKnown ? <ToolMark tool={item.app} size={20} /> : <span aria-hidden="true" style={{ width: 20, flexShrink: 0 }} />}
       <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
-        <span {...fullText(libraryName(item))} style={{ ...text(13, 400, t.text2), ...ellipsis }}>{libraryName(item)}</span>
+        {/* UX-02 P8: a long name wraps to two lines before it is cut. */}
+        <span {...fullText(libraryName(item))} style={{ ...text(13, 400, t.text2), ...PREVIEW }}>{libraryName(item)}</span>
         <span {...fullText(item.line)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{item.line}</span>
         {item.alsoIn ? <span {...fullText(item.alsoIn)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{item.alsoIn}</span> : null}
         {item.sameAs ? <span data-testid="same-prompts" style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{REPEAT_COPY.sameAs(item.sameAs)}</span> : null}
@@ -390,72 +435,85 @@ function UnfinishedRow({ item, phone }: { item: SourceUnfinishedItem; phone: boo
   );
 }
 
-function DropZone({ fine, onDropFiles, onPick }: Pick<SourcesPanelProps, "fine" | "onDropFiles" | "onPick">) {
-  const [over, setOver] = useState(false);
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
-  const base: CSSProperties = {
-    boxSizing: "border-box",
-    width: "100%",
-    minHeight: 56,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "0 12px",
-    borderRadius: 6,
-    border: `1px dashed ${over ? t.text2 : t.line}`,
-    background: over ? t.well : "transparent",
-    textAlign: "center",
-    ...text(12.5, 400, t.text2),
-  };
-  const carriesFiles = (event: DragEvent) => Array.from(event.dataTransfer?.types ?? []).includes("Files");
-
-  if (!fine) {
-    return (
-      <button type="button" data-testid="sources-drop" onClick={onPick} {...handlers} style={{ ...base, cursor: "pointer", ...ring(state.focusVisible) }}>
-        {SOURCES_COPY.drop}
-      </button>
-    );
-  }
+/** UX-02 P8: the panel's foot: Add files opens the picker; on a computer, one line says a file can be dropped on the build too. */
+function AddFiles({ fine, phone, onPick }: Pick<SourcesPanelProps, "fine" | "phone" | "onPick">) {
   return (
-    <div
-      data-testid="sources-drop"
-      data-over={over ? "true" : undefined}
-      onDragEnter={(event) => {
-        if (!carriesFiles(event)) return;
-        event.preventDefault();
-        setOver(true);
-      }}
-      onDragOver={(event) => {
-        if (!carriesFiles(event)) return;
-        event.preventDefault();
-        event.dataTransfer.dropEffect = "copy";
-        setOver(true);
-      }}
-      onDragLeave={() => setOver(false)}
-      onDrop={(event) => {
-        if (!carriesFiles(event)) return;
-        event.preventDefault();
-        setOver(false);
-        // CA-04 P4: a folder is walked, so a skill's files keep their places.
-        if (holdsFolder(event.dataTransfer)) {
-          void readDrop(event.dataTransfer).then(({ files, paths }) => {
-            if (files.length > 0) onDropFiles(files, paths);
-          });
-          return;
-        }
-        const files = Array.from(event.dataTransfer.files);
-        if (files.length > 0) onDropFiles(files);
-      }}
-      style={base}
-    >
-      {SOURCES_COPY.drop}
+    <div data-testid="sources-add-files" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+      <TextButton onClick={onPick} target={phone} style={text(12.5, 500, t.text)}>
+        {SOURCES_COPY.addFiles}
+      </TextButton>
+      {fine ? <p style={{ ...text(11.5, 400, t.label), margin: 0 }}>{SOURCES_COPY.dropLine}</p> : null}
     </div>
+  );
+}
+
+/** UX-02 P8: Available to add, with a field that filters it once it holds more than a group's rows. */
+function AvailableGroup({ props, phone }: { props: SourcesPanelProps; phone: boolean }) {
+  const [query, setQuery] = useState("");
+  const { library } = props;
+  const wanted = query.trim().toLowerCase();
+  const shown = wanted ? library.filter((item) => `${libraryName(item)} ${item.line}`.toLowerCase().includes(wanted)) : library;
+  return (
+    <section aria-label={SOURCES_COPY.available} {...{ [SLIDE_ATTR]: `sources:${SOURCES_COPY.available}` }} style={group}>
+      <GroupHead name={SOURCES_COPY.available} count={library.length} hollow />
+      {library.length > GROUP_ROWS ? (
+        <input
+          type="search"
+          aria-label={SOURCES_COPY.filter}
+          placeholder={SOURCES_COPY.filter}
+          value={query}
+          autoComplete="off"
+          onChange={(event) => setQuery(event.target.value)}
+          style={{ ...wellField, height: phone ? 44 : 32, padding: "0 10px", marginBottom: 8, ...text(phone ? 16 : 13, 400, t.text) }}
+        />
+      ) : null}
+      {shown.length === 0 ? <p style={{ ...text(12.5, 400, t.label), margin: 0, padding: "8px 0" }}>{SOURCES_COPY.noMatch}</p> : null}
+      <Capped key={wanted} rows={shown} phone={phone} render={(item) => <LibraryRow key={item.id} item={item} phone={phone} onAdd={props.onAddSession} parts={props.parts} lastPart={props.lastPart} />} />
+      {props.libraryHasMore ? (
+        <div style={{ ...rowLine, paddingTop: 8 }}>
+          {props.libraryLoadingMore ? (
+            <LoadingRegion what="more sessions" data-testid="library-more-loading">
+              <LoadingBlocks kind="line" width={LIBRARY_MORE_WIDTH} />
+            </LoadingRegion>
+          ) : (
+            <TextButton onClick={() => props.onLibraryMore?.()} target={phone} style={text(12.5, 500, t.text2)}>
+              {SOURCES_COPY.showMoreSessions}
+            </TextButton>
+          )}
+        </div>
+      ) : null}
+    </section>
   );
 }
 
 /* ── the panel ── */
 
 const group: CSSProperties = { display: "flex", flexDirection: "column", minWidth: 0 };
+
+/** UX-02 P8: the whole panel takes a drop of files (the dashed box is gone): files of the build, as before. */
+function dropTarget(onDropFiles: SourcesPanelProps["onDropFiles"]) {
+  const carriesFiles = (event: DragEvent) => Array.from(event.dataTransfer?.types ?? []).includes("Files");
+  return {
+    onDragOver: (event: DragEvent<HTMLDivElement>) => {
+      if (!carriesFiles(event)) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "copy";
+    },
+    onDrop: (event: DragEvent<HTMLDivElement>) => {
+      if (!carriesFiles(event)) return;
+      event.preventDefault();
+      // CA-04 P4: a folder is walked, so a skill's files keep their places.
+      if (holdsFolder(event.dataTransfer)) {
+        void readDrop(event.dataTransfer).then(({ files, paths }) => {
+          if (files.length > 0) onDropFiles(files, paths);
+        });
+        return;
+      }
+      const files = Array.from(event.dataTransfer.files);
+      if (files.length > 0) onDropFiles(files);
+    },
+  };
+}
 
 export function SourcesPanel(props: SourcesPanelProps) {
   const { phone, fine, status, sessions, library } = props;
@@ -486,7 +544,7 @@ export function SourcesPanel(props: SourcesPanelProps) {
 
   return (
     <MotionBoundary motion={motion} slide={NO_SLIDE} when={releasing}>
-      <div ref={rootRef} data-testid="sources-panel" style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
+      <div ref={rootRef} data-testid="sources-panel" {...(fine ? dropTarget(props.onDropFiles) : null)} style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: phone ? "flex-end" : "flex-start", gap: 2, marginBottom: -8 }}>
           {/* On a phone the bottom sheet's own title is "Sources". */}
           {phone ? null : <h2 style={{ ...text(14, 500, t.text), margin: 0 }}>Sources</h2>}
@@ -503,46 +561,22 @@ export function SourcesPanel(props: SourcesPanelProps) {
           </div>
         ) : null}
 
-        {sessions.length > 0 ? (
+        {sessions.length > 0 || files.length > 0 || reminders.length > 0 ? (
           <section aria-label={SOURCES_COPY.inBuild} {...{ [SLIDE_ATTR]: `sources:${SOURCES_COPY.inBuild}` }} style={group}>
-            <GroupHead name={SOURCES_COPY.inBuild} count={sessions.length} />
+            <GroupHead name={SOURCES_COPY.inBuild} count={inBuild} />
             <Capped
               rows={sessions}
               phone={phone}
               render={(session) => <SessionRow key={session.key} session={session} phone={phone} selectedId={props.selectedId} onSelect={props.onSelect} />}
             />
-          </section>
-        ) : null}
-
-        {files.length > 0 || reminders.length > 0 ? (
-          <section aria-label={SOURCES_COPY.files} {...{ [SLIDE_ATTR]: `sources:${SOURCES_COPY.files}` }} style={group}>
-            <GroupHead name={SOURCES_COPY.files} count={files.length} />
-            <Capped rows={files} phone={phone} render={(file) => <FileRow key={file.id} file={file} phone={phone} onRemove={props.onRemoveFile} leaving={leaving.has(file.id)} />} />
+            <Capped rows={files} phone={phone} render={(file) => <FileRow key={file.id} file={file} phone={phone} sessions={sessions} onOpen={props.onSelect} onAddToSession={props.onAddFileToSession} onRemove={props.onRemoveFile} leaving={leaving.has(file.id)} />} />
             {reminders.map((reminder) => (
               <ReminderRow key={reminder.toolId} reminder={reminder} phone={phone} onPick={props.onPick} />
             ))}
           </section>
         ) : null}
 
-        {library.length > 0 ? (
-          <section aria-label={SOURCES_COPY.yourSessions} {...{ [SLIDE_ATTR]: `sources:${SOURCES_COPY.yourSessions}` }} style={group}>
-            <GroupHead name={SOURCES_COPY.yourSessions} count={library.length} hollow />
-            <Capped rows={library} phone={phone} render={(item) => <LibraryRow key={item.id} item={item} phone={phone} onAdd={props.onAddSession} parts={props.parts} lastPart={props.lastPart} />} />
-            {props.libraryHasMore ? (
-              <div style={{ ...rowLine, paddingTop: 8 }}>
-                {props.libraryLoadingMore ? (
-                  <LoadingRegion what="more sessions" data-testid="library-more-loading">
-                    <LoadingBlocks kind="line" width={LIBRARY_MORE_WIDTH} />
-                  </LoadingRegion>
-                ) : (
-                  <TextButton onClick={() => props.onLibraryMore?.()} target={phone} style={text(12.5, 500, t.text2)}>
-                    {SOURCES_COPY.showMoreSessions}
-                  </TextButton>
-                )}
-              </div>
-            ) : null}
-          </section>
-        ) : null}
+        {library.length > 0 ? <AvailableGroup props={props} phone={phone} /> : null}
 
         {(props.arriving ?? []).length > 0 ? (
           <section aria-label={SOURCES_COPY.stillArriving} {...{ [SLIDE_ATTR]: `sources:${SOURCES_COPY.stillArriving}` }} style={group}>
@@ -558,7 +592,7 @@ export function SourcesPanel(props: SourcesPanelProps) {
           </section>
         ) : null}
 
-        <DropZone fine={fine} onDropFiles={props.onDropFiles} onPick={props.onPick} />
+        <AddFiles fine={fine} phone={phone} onPick={props.onPick} />
       </div>
     </MotionBoundary>
   );

@@ -76,8 +76,8 @@ describe("CA-20 P1 · every greyed item has a reason", () => {
     await oneSession();
     fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 1 options" }), { key: "Enter" });
     await screen.findByRole("menuitem", { name: "Move up" });
-    expect(reasonOf("Move up")).toBe("Already the first tile");
-    expect(reasonOf("Move down")).toBe("Already the last tile");
+    expect(reasonOf("Move up")).toBe("Already the first step tile");
+    expect(reasonOf("Move down")).toBe("Already the last step tile");
     expect(reasonOf("Move to session…")).toBe("Only one session");
   });
 

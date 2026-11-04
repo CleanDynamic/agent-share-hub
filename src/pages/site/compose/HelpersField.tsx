@@ -179,7 +179,7 @@ export function HelpersField({ helpers, toolNames, decisions, phone, onChange, b
           {d.provider === "typed" ? <input aria-label="Provider name" type="text" value={d.typedProvider} maxLength={40} onChange={(e) => set({ typedProvider: e.target.value })} style={typedField(phone)} /> : null}
           {d.job === "summarize" ? (
             <>
-              <Field id="helper-model" label="Model" hint="As written"><input id="helper-model" type="text" value={d.model} maxLength={80} placeholder="openai:gpt-6-sol" onChange={(e) => set({ model: e.target.value })} style={typedField(phone)} /></Field>
+              <Field id="helper-model" label="Model" hint="As written"><input id="helper-model" type="text" value={d.model} maxLength={80} placeholder="e.g. openai:gpt-6-sol" onChange={(e) => set({ model: e.target.value })} style={typedField(phone)} /></Field>
               <Field id="helper-at" label="When the history reaches" hint="Percent of the context"><input id="helper-at" type="text" inputMode="numeric" value={d.at} placeholder="80" onChange={(e) => set({ at: e.target.value })} style={typedField(phone, { width: 96, ...tnum })} /></Field>
               <Field id="helper-keep" label="Keep the newest" hint="Percent"><input id="helper-keep" type="text" inputMode="numeric" value={d.keep} placeholder="10" onChange={(e) => set({ keep: e.target.value })} style={typedField(phone, { width: 96, ...tnum })} /></Field>
             </>

@@ -232,7 +232,7 @@ export function AgentRuntimeFields({ id, kind, phone, fields, harness, builtInCo
             label={COMPATIBLE_COPY.add}
             value=""
             max={60}
-            placeholder="GPT, Gemini"
+            placeholder="e.g. GPT, Gemini"
             phone={phone}
             onCommit={(typed) => {
               const added = typed.split(",").map((entry) => entry.trim()).filter(Boolean);
@@ -267,7 +267,7 @@ export function AgentRuntimeFields({ id, kind, phone, fields, harness, builtInCo
             label={ROUTING_COPY.router}
             value={shown.modelRouting?.router ?? ""}
             max={60}
-            placeholder="OpenRouter"
+            placeholder="e.g. OpenRouter"
             phone={phone}
             onCommit={(router) => write({ model_routing: router ? { mode: "router", router, ...(shown.modelRouting?.rule ? { rule: shown.modelRouting.rule } : null) } : null }, { modelRouting: router ? { mode: "router", router, rule: shown.modelRouting?.rule } : undefined })}
           />
@@ -304,7 +304,7 @@ export function AgentRuntimeFields({ id, kind, phone, fields, harness, builtInCo
           }}
         />
         {shown.approvalMode === "reviewer" ? (
-          <Typed label={APPROVALS_COPY.reviewer} value={shown.reviewerModel ?? ""} max={60} placeholder="Haiku 5.5" phone={phone} onCommit={(model) => write({ reviewer_model: model || null }, { reviewerModel: model || undefined })} />
+          <Typed label={APPROVALS_COPY.reviewer} value={shown.reviewerModel ?? ""} max={60} placeholder="e.g. Haiku 5.5" phone={phone} onCommit={(model) => write({ reviewer_model: model || null }, { reviewerModel: model || undefined })} />
         ) : null}
       </Field>
 
@@ -469,7 +469,7 @@ export function AgentTeamFields({ id, phone, mates, handoffs, rules, follows, on
         ))}
         {draftFollow ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <input type="text" aria-label={RULES_COPY.text} maxLength={RULE_TEXT_MAX} value={draftFollow.text} placeholder="GOV.UK style guide" onChange={(event) => setDraftFollow({ ...draftFollow, text: event.target.value })} style={typedField(phone, {})} />
+            <input type="text" aria-label={RULES_COPY.text} maxLength={RULE_TEXT_MAX} value={draftFollow.text} placeholder="e.g. GOV.UK style guide" onChange={(event) => setDraftFollow({ ...draftFollow, text: event.target.value })} style={typedField(phone, {})} />
             <input type="url" aria-label={RULES_COPY.url} value={draftFollow.url} placeholder="https://" onChange={(event) => setDraftFollow({ ...draftFollow, url: event.target.value })} style={typedField(phone, {})} />
             {draftFollow.url.trim() && !followUrl ? <span role="alert" style={{ fontSize: 12, color: t.text }}>{RULES_COPY.https}</span> : null}
             <span>

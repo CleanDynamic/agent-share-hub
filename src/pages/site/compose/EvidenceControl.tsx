@@ -122,7 +122,7 @@ export function EvidenceControl({
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {input("metric", EVIDENCE_COPY.metric, {
             max: MEASURE_METRIC_MAX,
-            placeholder: "Latency",
+            placeholder: "e.g. Latency",
           })}
           {input("unit", EVIDENCE_COPY.unit, {
             max: MEASURE_UNIT_MAX,

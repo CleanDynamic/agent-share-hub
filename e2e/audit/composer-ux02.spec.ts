@@ -1,0 +1,325 @@
+/* UX-02: the build editor, in a real browser on the real composer.
+
+     npx playwright test --config=playwright.audit.config.ts composer-ux02
+
+   The page runs on the jsdom tests' faked backend (`src/lib/build/__audit__/fakeSupabase.ts`), answered from Node, as the SV-07
+   recording does. The file store is not modelled there, so an upload is answered here. The draft is seeded with three sessions:
+   Session 1 (two prompts), Session 2 (one prompt), Session 3 (empty), and one source file, `brief.md`. */
+
+import { mkdirSync } from "node:fs";
+
+import { expect, test, type Locator, type Page } from "@playwright/test";
+
+import { tableRows } from "../../src/lib/build/__audit__/fakeSupabase";
+
+import { DRAFT, IDS, KEY, open, SOURCE_MEDIA, type Row } from "./support/ux02";
+
+/**
+ * A real file drop: a DataTransfer holding a file, dispatched on `target` at a point measured from `from` (default: the target) in
+ * the same task, so the layout cannot move between the measure and the drop. `at` is "middle", an offset from `from`'s top left, or
+ * `below`: that far under its bottom edge (negative: above it).
+ */
+async function dropFile(page: Page, target: Locator, at: "middle" | { dx: number; dy: number } | { dx: number; below: number } = "middle", options: { from?: Locator; name?: string; body?: string; type?: string } = {}) {
+  const { name = "notes.md", body = "# Notes\n\nWhat the poster says.", type = "text/markdown" } = options;
+  const on = await target.elementHandle();
+  const from = await (options.from ?? target).elementHandle();
+  await page.evaluate(
+    ([element, measured, where, fileName, text, mime]) => {
+      const box = (measured as Element).getBoundingClientRect();
+      const point = where === "middle" ? { x: box.left + box.width / 2, y: box.top + box.height / 2 } : { x: box.left + where.dx, y: "below" in where ? box.bottom + where.below : box.top + where.dy };
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([text], fileName, { type: mime }));
+      for (const kind of ["dragenter", "dragover", "drop"]) (element as Element).dispatchEvent(new DragEvent(kind, { dataTransfer: transfer, clientX: point.x, clientY: point.y, bubbles: true, cancelable: true }));
+    },
+    [on, from, at, name, body, type] as const,
+  );
+}
+
+const fileTiles = (name = "notes.md") => tableRows("build_nodes").filter((row) => row.build_id === DRAFT && row.type === "document" && (row.payload as Row).step === true && (row.payload as Row).title === name);
+const inSession = (key: string) =>
+  tableRows("build_nodes")
+    .filter((row) => row.build_id === DRAFT && row.parent_id === null && (row.payload as Row).session === key)
+    .sort((a, b) => Number(a.position) - Number(b.position))
+    .map((row) => row.id);
+const card = (page: Page, nodeId: string) => page.locator(`[data-node-id="${nodeId}"]`);
+const session = (page: Page, key: string) => page.locator(`[data-session-key="${key}"]`);
+
+test.describe("UX-02 P1 · a dropped file becomes a step tile", () => {
+  test("on a step tile: attached inside that step", async ({ page }) => {
+    await open(page);
+    await dropFile(page, card(page, IDS.p1), "middle");
+    await expect.poll(() => tableRows("build_nodes").filter((row) => row.parent_id === IDS.p1 && row.type === "document").length, { timeout: 15_000 }).toBe(1);
+    expect(fileTiles()).toHaveLength(0);
+  });
+
+  test("on Session 2's head: a File step tile at its end", async ({ page }) => {
+    await open(page);
+    await dropFile(page, session(page, KEY.b).getByTestId("session-head"), "middle");
+    await expect.poll(() => fileTiles().length, { timeout: 15_000 }).toBe(1);
+    await expect.poll(() => inSession(KEY.b)).toEqual([IDS.p3, fileTiles()[0].id]);
+    await expect(page.locator(`[data-node-id="${fileTiles()[0].id}"]`)).toBeVisible();
+  });
+
+  test("in the gap after a session's last tile: a File step tile there", async ({ page }) => {
+    await open(page);
+    // Just under Session 1's last tile, inside the session (its add row stands there).
+    await dropFile(page, page.getByTestId("build-list"), { dx: 40, below: 8 }, { from: card(page, IDS.p2) });
+    await expect.poll(() => fileTiles().length, { timeout: 15_000 }).toBe(1);
+    await expect.poll(() => inSession(KEY.a)).toEqual([IDS.p1, IDS.p2, fileTiles()[0].id]);
+  });
+
+  test("elsewhere on the List: a File step tile at the end of the current session", async ({ page }) => {
+    await open(page);
+    // The List's foot, under every session (the Add a session row).
+    await dropFile(page, page.getByTestId("build-list"), { dx: 10, below: -4 });
+    await expect.poll(() => fileTiles().length, { timeout: 15_000 }).toBe(1);
+    expect((fileTiles()[0].payload as Row).session).toBeTruthy();
+  });
+
+  test("on Sources: a source file, not a step tile", async ({ page }) => {
+    await open(page);
+    await dropFile(page, page.getByTestId("sources-panel"), "middle");
+    await expect.poll(() => tableRows("build_nodes").filter((row) => row.build_id === DRAFT && (row.payload as Row).title === "notes.md").length, { timeout: 15_000 }).toBe(1);
+    expect(fileTiles()).toHaveLength(0);
+  });
+
+  test("a chat export still goes to the intake", async ({ page }) => {
+    await open(page);
+    await dropFile(page, page.getByTestId("build-list"), "middle", { name: "conversations.json", body: JSON.stringify([{ mapping: {} }]), type: "application/json" });
+    await expect(page).toHaveURL(/\/compose\/start/, { timeout: 15_000 });
+  });
+});
+
+test.describe("UX-02 P2 · a source file has a way into a session", () => {
+  test("by the keys: open the menu, Add to session, Session 1, and a File step tile is there", async ({ page }) => {
+    await open(page);
+    const more = page.getByRole("button", { name: "brief.md options" });
+    await more.focus();
+    await page.keyboard.press("Enter");
+    await page.keyboard.press("ArrowDown");
+    await expect(page.getByRole("menuitem", { name: "Add to session" })).toBeFocused();
+    await page.keyboard.press("ArrowRight");
+    await expect(page.getByRole("menuitem", { name: /^Session 1 · / })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect.poll(() => fileTiles("brief.md").length, { timeout: 15_000 }).toBe(1);
+    await expect.poll(() => inSession(KEY.a)).toEqual([IDS.p1, IDS.p2, fileTiles("brief.md")[0].id]);
+  });
+});
+
+/* ── P3: drag from Sources ── */
+
+const SHOTS = "design/audits/composer/ux-02";
+/** The fake backend's waiting session: in Available to add. */
+const WAITING = "0e0e0e0e-0000-4000-8000-000000000001";
+const sourceRow = (page: Page, dragId: string) => page.locator(`[data-source-drag="${dragId}"]`);
+const listOrder = (page: Page) => page.getByTestId("build-list").locator("[data-session-key]").evaluateAll((els) => els.map((el) => el.getAttribute("data-session-key")));
+
+/** Pick a row of Sources up by its grip and carry it to `to` (a point, or the middle of a locator); `beforeUp` runs while it is held. */
+async function carry(page: Page, dragId: string, to: Locator | { x: number; y: number } | ((page: Page) => Promise<{ x: number; y: number }>), options: { hold?: number; beforeUp?: () => Promise<void>; up?: boolean } = {}) {
+  const row = sourceRow(page, dragId);
+  await row.scrollIntoViewIfNeeded();
+  await row.hover();
+  const grip = row.getByTestId("source-drag-handle");
+  await expect(grip).toHaveCSS("opacity", "1");
+  const from = await grip.boundingBox();
+  if (!from) throw new Error("no grip");
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2 + 10, from.y + from.height / 2, { steps: 3 });
+  const target = typeof to === "function" ? await to(page) : "x" in to ? to : await (async () => {
+    const box = await to.boundingBox();
+    if (!box) throw new Error("no target");
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  })();
+  await page.mouse.move(target.x, target.y, { steps: 12 });
+  // Once more where it is, after the List has slid apart under it.
+  const again = typeof to === "function" ? await to(page) : target;
+  await page.mouse.move(again.x, again.y, { steps: 2 });
+  if (options.hold) await page.waitForTimeout(options.hold);
+  await options.beforeUp?.();
+  if (options.up !== false) await page.mouse.up();
+}
+
+/** Between two boxes: the middle of the gap from `above`'s bottom to `below`'s top. */
+const between = (above: Locator, below: Locator, dx = 60) => async () => {
+  const a = await above.boundingBox();
+  const b = await below.boundingBox();
+  if (!a || !b) throw new Error("no boxes");
+  return { x: a.x + dx, y: (a.y + a.height + b.y) / 2 };
+};
+
+test.describe("UX-02 P3 · drag from Sources onto the build", () => {
+  test("B: a session row is picked up and dropped back on Sources with no write and no change", async ({ page }) => {
+    await open(page);
+    const before = { nodes: tableRows("build_nodes").length, sessions: tableRows("build_sessions").length, order: await listOrder(page) };
+    await carry(page, `src-session:${WAITING}`, page.getByTestId("sources-panel"), {
+      beforeUp: async () => {
+        await expect(page.getByTestId("held-copy")).toBeVisible();
+      },
+    });
+    await expect(page.getByTestId("held-copy")).toHaveCount(0, { timeout: 100 });
+    await page.waitForTimeout(400);
+    expect({ nodes: tableRows("build_nodes").length, sessions: tableRows("build_sessions").length, order: await listOrder(page) }).toEqual(before);
+  });
+
+  test("C: an Available session dragged between Sessions 1 and 2 is added there", async ({ page }) => {
+    // Tall enough that the place is clear of the window's edge, where the drag scrolls the page under the pointer.
+    await open(page, 1440, [], 1300);
+    mkdirSync(SHOTS, { recursive: true });
+    await carry(page, `src-session:${WAITING}`, between(session(page, KEY.a), session(page, KEY.b)), {
+      hold: 300,
+      beforeUp: async () => {
+        await expect(page.getByTestId("incoming-slot")).toHaveCount(1);
+        await page.screenshot({ path: `${SHOTS}/p3-held-session-1440.png` });
+      },
+    });
+    await expect.poll(() => listOrder(page), { timeout: 20_000 }).toEqual([KEY.a, WAITING, KEY.b, KEY.c]);
+    await expect.poll(() => tableRows("build_sessions").filter((row) => row.build_id === DRAFT).sort((x, y) => Number(x.position) - Number(y.position)).map((row) => row.session_key), { timeout: 10_000 }).toEqual([KEY.a, WAITING, KEY.b, KEY.c]);
+  });
+
+  test("C: a file row dragged into the gap after Session 1's first tile is a File step tile there", async ({ page }) => {
+    await open(page);
+    await carry(page, `src-file:${IDS.source}`, between(card(page, IDS.p1), card(page, IDS.p2)), {
+      hold: 200,
+      beforeUp: async () => {
+        await expect(page.getByTestId("incoming-slot")).toHaveCount(1);
+        await page.screenshot({ path: `${SHOTS}/p3-held-file-1440.png` });
+      },
+    });
+    await expect.poll(() => fileTiles("brief.md").length, { timeout: 15_000 }).toBe(1);
+    await expect.poll(() => inSession(KEY.a)).toEqual([IDS.p1, fileTiles("brief.md")[0].id, IDS.p2]);
+  });
+
+  test("C: a file row held on the middle of a step tile is attached inside it", async ({ page }) => {
+    await open(page);
+    // The middle of the tile as it stands once the List has made room: measured again after the first move.
+    const middle = async () => {
+      const box = await card(page, IDS.p1).boundingBox();
+      if (!box) throw new Error("no tile");
+      return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    };
+    await carry(page, `src-file:${IDS.source}`, middle, { hold: 900 });
+    await expect.poll(() => tableRows("build_nodes").filter((row) => row.parent_id === IDS.p1 && (row.payload as Row).media_id === SOURCE_MEDIA).length, { timeout: 15_000 }).toBe(1);
+    expect(fileTiles("brief.md")).toHaveLength(0);
+  });
+
+  test("C: Escape writes nothing, and the held copy is gone at once", async ({ page }) => {
+    await open(page);
+    const nodes = tableRows("build_nodes").length;
+    await carry(page, `src-file:${IDS.source}`, between(card(page, IDS.p1), card(page, IDS.p2)), { up: false });
+    await expect(page.getByTestId("held-copy")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("held-copy")).toHaveCount(0, { timeout: 100 });
+    await expect(page.getByTestId("incoming-slot")).toHaveCount(0);
+    await page.mouse.up();
+    await page.waitForTimeout(500);
+    expect(tableRows("build_nodes").length).toBe(nodes);
+  });
+
+  test("C: dropped outside the List, nothing is written and the held copy is gone at once", async ({ page }) => {
+    await open(page);
+    const nodes = tableRows("build_nodes").length;
+    const header = await page.getByTestId("sandbox-heading").boundingBox();
+    if (!header) throw new Error("no heading");
+    await carry(page, `src-file:${IDS.source}`, { x: header.x + 20, y: header.y + 10 });
+    await expect(page.getByTestId("held-copy")).toHaveCount(0, { timeout: 100 });
+    await page.waitForTimeout(500);
+    expect(tableRows("build_nodes").length).toBe(nodes);
+  });
+
+  test("C: with the add forced to fail, the build is as it was and the failure is said", async ({ page }) => {
+    await open(page, 1440, [{ method: "POST", path: /^\/rest\/v1\/build_nodes/, answer: { status: 500, body: { code: "XX000", message: "forced" } } }]);
+    await carry(page, `src-file:${IDS.source}`, between(card(page, IDS.p1), card(page, IDS.p2)), { hold: 200 });
+    await expect(page.getByText("brief.md not added")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("incoming-slot")).toHaveCount(0, { timeout: 2_000 });
+    expect(inSession(KEY.a)).toEqual([IDS.p1, IDS.p2]);
+  });
+});
+
+/* ── P6, P7: the Add step tile menu, and one way to add ── */
+
+/** The Add step tile menu of a session, opened from its row. */
+async function openRowMenu(page: Page, key: string) {
+  const row = session(page, key).getByTestId("add-to-session");
+  await row.scrollIntoViewIfNeeded();
+  await row.click();
+  const menu = page.getByRole("menu");
+  await expect(menu).toBeVisible();
+  return menu;
+}
+
+test.describe("UX-02 P6 · the Add step tile menu on the screen", () => {
+  for (const key of [KEY.a, KEY.c]) {
+    test(`opened from ${key === KEY.a ? "Session 1" : "the last session"} at 1280 by 720: inside the window, never over the header, in MenuContent`, async ({ page }) => {
+      await open(page, 1280, [], 720);
+      const menu = await openRowMenu(page, key);
+      const box = await menu.boundingBox();
+      const header = await page.locator("header").first().boundingBox();
+      if (!box || !header) throw new Error("no boxes");
+      expect(box.y).toBeGreaterThanOrEqual(header.y + header.height);
+      expect(box.y + box.height).toBeLessThanOrEqual(720);
+      expect(box.x + box.width).toBeLessThanOrEqual(1280);
+      // MenuContent is its container: Radix's content, with the composer's surface and the available height as its cap.
+      expect(await menu.getAttribute("data-radix-menu-content")).not.toBeNull();
+      expect(await menu.evaluate((el) => (el as HTMLElement).style.maxHeight)).toBe("var(--radix-dropdown-menu-content-available-height)");
+      const sizes = await menu.evaluate((el) => ({ client: el.clientHeight, scroll: el.scrollHeight }));
+      console.log(`UX-02 P6 measure (${key}): menu ${Math.round(box.height)} px tall, content ${sizes.scroll} px, scrolls: ${sizes.scroll > sizes.client + 1}`);
+      mkdirSync(SHOTS, { recursive: true });
+      await page.screenshot({ path: `${SHOTS}/p6-add-menu-${key === KEY.a ? "first" : "last"}-1280x720.png` });
+      // The menu scrolls here, so it has a field: focused as it opens, and the letters typed stay in it (the menu's type-ahead does not take them).
+      const field = menu.getByRole("searchbox", { name: "Find a step tile" });
+      await expect(field).toBeFocused();
+      await page.keyboard.type("tool");
+      await expect(field).toHaveValue("tool");
+      await expect(field).toBeFocused();
+      await expect(menu.getByRole("menuitem")).toHaveCount(1);
+    });
+  }
+});
+
+test("UX-02 P6 · measured at 1280 by 720 with every entry live, from Session 1", async ({ page }) => {
+  await open(page, 1280, [], 720, true);
+  const menu = await openRowMenu(page, KEY.a);
+  const box = await menu.boundingBox();
+  const sizes = await menu.evaluate((el) => ({ client: el.clientHeight, scroll: el.scrollHeight, entries: el.querySelectorAll('[role="menuitem"]').length }));
+  console.log(`UX-02 P6 measure (every entry live): menu ${Math.round(box?.height ?? 0)} px tall, content ${sizes.scroll} px, ${sizes.entries} entries, scrolls: ${sizes.scroll > sizes.client + 1}`);
+  expect(box && box.y + box.height).toBeLessThanOrEqual(720);
+  await page.screenshot({ path: `${SHOTS}/p6-add-menu-every-entry-1280x720.png` });
+});
+
+test.describe("UX-02 P7 · one way to add at each level", () => {
+  test("no Add in the Build header, and every entry it offered is reached from a session's add row", async ({ page }) => {
+    await open(page);
+    await expect(page.getByTestId("sandbox-add")).toHaveCount(0);
+    const menu = await openRowMenu(page, KEY.a);
+    const names = (await menu.getByRole("menuitem").allTextContents()).filter((name) => name !== "Deployment");
+    await page.keyboard.press("Escape");
+    expect(names[0]).toMatch(/^Prompt/);
+    for (const name of names) {
+      const entry = name.match(/^(Prompt|Agent|Tool|File|Code|Result|Check|Decision|Manual step|Approval|From Library|Dataset|Retrieval|System prompt|GitHub repository)/)?.[1];
+      if (!entry) continue;
+      const again = await openRowMenu(page, KEY.a);
+      const item = again.getByRole("menuitem", { name: new RegExp(`^${entry}`) });
+      if ((await item.getAttribute("aria-disabled")) === "true") {
+        // Listed while it cannot be added, saying why (Check on a build with nothing to check).
+        await expect(item).toContainText(/first|yet/);
+        await page.keyboard.press("Escape");
+        continue;
+      }
+      if (entry === "File") {
+        const chooser = page.waitForEvent("filechooser");
+        await item.click();
+        await chooser;
+        continue;
+      }
+      await item.click();
+      if (entry === "Prompt") {
+        await expect(page.getByRole("textbox", { name: "Add a prompt" })).toBeFocused();
+        continue;
+      }
+      await expect(page.getByRole("dialog").first(), entry).toBeVisible({ timeout: 10_000 });
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+    }
+  });
+});

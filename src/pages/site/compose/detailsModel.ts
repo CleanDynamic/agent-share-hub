@@ -60,16 +60,16 @@ export const RUNS_COPY = {
 /** CA-03 P3: the three always shown, then the two under "More ways it ran". Stored as before (`payload.runs.how`). */
 export const RUNS_CHOICES: readonly RunsChoice[] = [
   { how: "once", label: "When I asked", field: null, more: false },
-  { how: "schedule", label: "On a schedule", field: { kind: "text", label: "When", max: WHEN_DETAIL_MAX, placeholder: "Weekdays 07:30" }, more: false },
-  { how: "event", label: "When something happened", field: { kind: "text", label: "What happened", max: WHEN_DETAIL_MAX, placeholder: "a new supplier email" }, more: false },
-  { how: "until", label: "Again until a condition was met", field: { kind: "text", label: "The condition", max: UNTIL_DETAIL_MAX, placeholder: "until the review has no changes" }, more: true },
+  { how: "schedule", label: "On a schedule", field: { kind: "text", label: "When", max: WHEN_DETAIL_MAX, placeholder: "e.g. Weekdays 07:30" }, more: false },
+  { how: "event", label: "When something happened", field: { kind: "text", label: "What happened", max: WHEN_DETAIL_MAX, placeholder: "e.g. a new supplier email" }, more: false },
+  { how: "until", label: "Again until a condition was met", field: { kind: "text", label: "The condition", max: UNTIL_DETAIL_MAX, placeholder: "e.g. until the review has no changes" }, more: true },
   { how: "parallel", label: "Several at the same time", field: { kind: "count", label: "How many", min: RUNS_COUNT_MIN, max: RUNS_COUNT_MAX }, more: true },
   /* CA-04 P6: chosen for you when the session has a goal. */
   { how: "goal", label: "Until a goal was reached", field: null, more: true },
   { how: "script", label: "From a script or GitHub", field: { kind: "code", label: "The command or workflow", max: SCRIPT_DETAIL_MAX, placeholder: 'claude -p "Fix the failing tests"' }, more: true },
   /* SV-27 P5. */
-  { how: "background", label: "All the time, as a background service", field: { kind: "text", label: "What it listens for", max: BACKGROUND_DETAIL_MAX, placeholder: "messages on Telegram" }, more: true },
-  { how: "ongoing", label: "Keeps working on an ongoing goal", field: { kind: "text", label: "The goal", max: ONGOING_DETAIL_MAX, placeholder: "Keep my launch on track" }, more: true },
+  { how: "background", label: "All the time, as a background service", field: { kind: "text", label: "What it listens for", max: BACKGROUND_DETAIL_MAX, placeholder: "e.g. messages on Telegram" }, more: true },
+  { how: "ongoing", label: "Keeps working on an ongoing goal", field: { kind: "text", label: "The goal", max: ONGOING_DETAIL_MAX, placeholder: "e.g. Keep my launch on track" }, more: true },
 ];
 
 /** SV-27 P5: the help lines of How did it run?, and the channel picker's words. */

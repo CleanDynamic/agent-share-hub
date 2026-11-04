@@ -42,7 +42,9 @@
    bottom of the sheet. */
 
 import {
+  Children,
   createContext,
+  isValidElement,
   useContext,
   useRef,
   useState,
@@ -50,6 +52,7 @@ import {
   type CSSProperties,
   type InputHTMLAttributes,
   type KeyboardEvent,
+  type ReactElement,
   type ReactNode,
   type Ref,
   type TextareaHTMLAttributes,
@@ -74,6 +77,28 @@ export const MODAL_PAD = 20;
  * themselves); anywhere else (Details, a sheet) it is 0 and the rows sit in their container's own padding.
  */
 export const ModalInset = createContext(0);
+
+/** UX-02 P11: the labels of the required fields the window's footer names as not complete ("Required: Name, Text"). */
+export const MissingFields = createContext<ReadonlySet<string>>(new Set());
+/** The labels in a footer's missing line, one by one. */
+export const missingSet = (missing: string | null | undefined): ReadonlySet<string> => new Set((missing ?? "").split(", ").map((label) => label.trim()).filter(Boolean));
+
+export const FIELD_REQUIRED_COPY = "Required";
+
+/** UX-02 P11: under a field the footer names as required, the same words, at once: the modal's own error line, no motion. Not an
+ *  alert: the footer's status line already says it. */
+function FieldRequired({ label }: { label: string }) {
+  return useContext(MissingFields).has(label) ? <FieldRequiredLine /> : null;
+}
+
+/** The line itself, for a window that keeps its own footer (the Card's "Required: a title"). */
+export function FieldRequiredLine() {
+  return (
+    <span data-testid="field-required" style={type(12.5, 400, t.text, 18)}>
+      {FIELD_REQUIRED_COPY}
+    </span>
+  );
+}
 export const useModalInset = (): number => useContext(ModalInset);
 
 /* ── type ── */
@@ -238,7 +263,10 @@ export function Row({ label, id, group = false, hint, top = false, noRule = fals
       }}
     >
       {labelBlock}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>{children}</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+        {children}
+        <FieldRequired label={label} />
+      </div>
     </div>
   );
 }
@@ -254,6 +282,9 @@ export interface BlockProps {
 /** A full-width block: padding 14 20 16, a rule above. */
 export function Block({ label, noRule = false, testId, children }: BlockProps) {
   const inset = useModalInset();
+  // UX-02 P11: a block's field is named by its label, or by the BlockHead it starts with.
+  const head = Children.toArray(children).find((child): child is ReactElement<BlockHeadProps> => isValidElement(child) && child.type === BlockHead);
+  const named = label ?? head?.props.label;
   return (
     <div
       role={label ? "group" : undefined}
@@ -262,6 +293,7 @@ export function Block({ label, noRule = false, testId, children }: BlockProps) {
       style={{ display: "flex", flexDirection: "column", gap: 10, padding: `14px ${inset}px 16px`, minWidth: 0, ...(noRule ? null : rule()) }}
     >
       {children}
+      {named ? <FieldRequired label={named} /> : null}
     </div>
   );
 }

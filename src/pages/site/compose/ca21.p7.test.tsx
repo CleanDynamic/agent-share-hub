@@ -135,7 +135,7 @@ describe("when it cannot be added", () => {
 });
 
 describe("Start a new session", () => {
-  it("opens the lane and drops the head in, with no places for prompts, and shows 'Drop a tile here' until it is done", async () => {
+  it("opens the lane and drops the head in, with no places for prompts, and shows 'Drop a step tile here' until it is done", async () => {
     mount(`/compose/${DRAFT}`, { delays: [{ method: "PATCH", path: /^\/rest\/v1\/builds/, delayMs: 900 }] });
     await field();
     await startNewSession();

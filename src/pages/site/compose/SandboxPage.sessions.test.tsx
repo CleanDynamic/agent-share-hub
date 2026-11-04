@@ -16,6 +16,7 @@ import { PG, REPO_SCHEMA, startAuditBackend, tableRows, type Delay, type Fault }
 import { toast } from "sonner";
 import { sessionsMetaOf } from "@/lib/build/making";
 
+import { openAddRow } from "./ca20Harness";
 import { SandboxPage } from "./SandboxPage";
 
 const DRAFT = "0d0d0d0d-0000-4000-8000-000000000003";
@@ -66,10 +67,10 @@ function mount(path: string, { faults = [], delays = [], keep = false }: { fault
 }
 
 
-/** CA-24 P2: Add › Prompt on an empty build brings the first session's prompt box in place of "Add your first session". */
+/** CA-24 P2: Add › Prompt on an empty build brings the first session's prompt box in place of "Add your first session". UX-02 P7: from a session's row. */
 async function openPromptBox() {
   await field();
-  fireEvent.keyDown(await screen.findByTestId("sandbox-add"), { key: "Enter" });
+  await openAddRow();
   fireEvent.click(await screen.findByRole("menuitem", { name: /^Prompt/ }));
   return screen.findByRole("textbox", { name: "Add a prompt" }, { timeout: 10_000 });
 }
@@ -126,7 +127,7 @@ async function openRow() {
 }
 
 /** The page has loaded: the Add button is there (an empty build has no prompt box until Add › Prompt). */
-const field = () => screen.findByTestId("sandbox-add", undefined, { timeout: 10_000 });
+const field = () => screen.findByTestId("sandbox-build-head-row", undefined, { timeout: 10_000 });
 
 /** CA-24 P2: Start a new session, from the empty build's "New empty session" or the Add a session row. */
 async function startNew() {
@@ -144,10 +145,10 @@ describe("CA-12 P4 · sessions leave Add; + Add a session", () => {
   it("the Add menu has no session items", async () => {
     mount(`/compose/${DRAFT}`);
     await field();
-    fireEvent.keyDown(await screen.findByTestId("sandbox-add"), { key: "Enter" });
+    // UX-02 P7: a session's Add step tile; P6: entries whose node type is not live are left out, and Deployment is closed.
+    await openAddRow();
     const items = (await screen.findAllByRole("menuitem")).map((item) => item.textContent ?? "");
-    // The fifteen tile items (SV-28 adds Approval, SV-29 Retrieval), then SV-27's Deployment group of ten.
-    expect(items).toHaveLength(25);
+    expect(items.length).toBeGreaterThan(5);
     expect(items.join(" ")).not.toMatch(/session/i);
   });
 
@@ -198,7 +199,7 @@ describe("CA-12 P4 · sessions leave Add; + Add a session", () => {
 });
 
 describe("CA-12 P5 · adding a session", () => {
-  it("on a new post, a 66-prompt session replaces the empty Session 1: 66 tiles in it, folded to its head", async () => {
+  it("on a new post, a 66-prompt session replaces the empty Session 1: 66 step tiles in it, folded to its head", async () => {
     mount("/compose/new");
     await field();
     const picker = within(await openRow());
@@ -220,7 +221,7 @@ describe("CA-12 P5 · adding a session", () => {
     // The page (CA-14 P3): a long session starts folded: its head with the count before the date, and nothing under it.
     expect(await screen.findByRole("button", { name: "Expand Session 1" }, { timeout: 10_000 })).toBeTruthy();
     expect(screen.queryAllByTestId("step-card")).toHaveLength(0);
-    expect(screen.getByTestId("session-count").textContent).toBe("66 tiles");
+    expect(screen.getByTestId("session-count").textContent).toBe("66 step tiles");
   });
 
   it("opening it draws every tile and keeps it open", async () => {
@@ -285,15 +286,15 @@ describe("CA-12 P5 · adding a session", () => {
     expect(screen.getAllByTestId("session-head")).toHaveLength(1);
   });
 
-  it("Start a new session adds an empty Session 2 at once: No harness chosen, No tiles yet, kept in the table and the draft", async () => {
+  it("Start a new session adds an empty Session 2 at once: No harness chosen, No step tiles yet, kept in the table and the draft", async () => {
     mount(`/compose/${DRAFT}`);
     await field();
     fireEvent.click(within(await openRow()).getByRole("listitem", { name: / 1 prompt$/ }));
     await screen.findByRole("group", { name: /^Session 1 · / }, { timeout: 10_000 });
     await startNew();
     expect(await screen.findByRole("group", { name: "Session 2 · No harness chosen" }, { timeout: 10_000 })).toBeTruthy();
-    // CA-21 P7: until its skeleton fades it shows its place to drop; then "No tiles yet".
-    await waitFor(() => expect(screen.queryByText("No tiles yet") ?? screen.queryByText("Drop a tile here")).toBeTruthy());
+    // CA-21 P7: until its skeleton fades it shows its place to drop; then "No step tiles yet".
+    await waitFor(() => expect(screen.queryByText("No step tiles yet") ?? screen.queryByText("Drop a step tile here")).toBeTruthy());
     await waitFor(() => expect(tableRows("build_sessions").filter((row) => row.build_id === DRAFT)).toHaveLength(2), { timeout: 10_000 });
     const making = tableRows("builds").find((row) => row.id === DRAFT)?.making as { session_order?: string[] };
     expect(making.session_order).toHaveLength(2);

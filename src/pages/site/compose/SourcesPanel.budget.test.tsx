@@ -34,9 +34,10 @@ const libraryRows = (n: number): SourceLibraryItem[] => many(n, (at) => ({ id: `
 
 describe("Sources' choice budgets", () => {
   it.each([
-    ["Sessions in this build", { sessions: sessionRows(9) }, 9],
-    ["Files in this build", { files: fileRows(8) }, 8],
-    ["Your sessions", { library: libraryRows(10) }, 10],
+    // UX-02 P8: two groups: In this build (its sessions, then its files) and Available to add.
+    ["In this build", { sessions: sessionRows(9) }, 9],
+    ["In this build", { files: fileRows(8) }, 8],
+    ["Available to add", { library: libraryRows(10) }, 10],
   ] as const)("shows at most six rows in %s, then one Show more", (name, over, total) => {
     panel({ sessions: [], files: [], library: [], ...over });
     const group = screen.getByRole("region", { name });
@@ -50,9 +51,9 @@ describe("Sources' choice budgets", () => {
   });
 
   it("leaves out a group with nothing in it", () => {
-    panel({ files: [], library: [] });
-    expect(screen.queryByRole("region", { name: "Files in this build" })).toBeNull();
-    expect(screen.queryByRole("region", { name: "Your sessions" })).toBeNull();
+    panel({ sessions: [], files: [], reminders: [], library: [] });
+    expect(screen.queryByRole("region", { name: "In this build" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Available to add" })).toBeNull();
   });
 
   it("has no filled button and one add route per library session", () => {
@@ -90,14 +91,15 @@ describe("Sources' rows", () => {
 
   it("is a button that opens the picker without a fine pointer", () => {
     const props = panel({ fine: false });
-    fireEvent.click(screen.getByRole("button", { name: "Drop sessions or files" }));
+    // UX-02 P8: the dashed box is gone; Add files opens the picker.
+    fireEvent.click(screen.getByRole("button", { name: "Add files" }));
     expect(props.onPick).toHaveBeenCalled();
   });
 
   it("hands dropped files up on a fine pointer", () => {
     const props = panel();
     const file = new File(["x"], "menu.pdf", { type: "application/pdf" });
-    fireEvent.drop(screen.getByTestId("sources-drop"), { dataTransfer: { types: ["Files"], files: [file] } });
+    fireEvent.drop(screen.getByTestId("sources-panel"), { dataTransfer: { types: ["Files"], files: [file] } });
     expect(props.onDropFiles).toHaveBeenCalledWith([file]);
   });
 });

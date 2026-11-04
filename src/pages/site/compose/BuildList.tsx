@@ -122,9 +122,11 @@ import { FramePieces } from "./framePieces";
 import { AskNextSessionRow } from "./AskNextSessionRow";
 import { WORKSTREAM_HEAD_COPY, WorkstreamHead, type WorkstreamHeadView, type WorkstreamOps } from "./WorkstreamHead";
 import { FLOATING_Z, ToolPicker } from "./ToolPicker";
-import { DragHandle, NestList, TAKES, useNestTile, useTileNear } from "./listNest";
+import { DragHandle, NestList, TAKES, useComposeDnd, useComposeDndHost, useNestTile, useTileNear } from "./listNest";
 import { EmptyPlace, SkeletonLayer } from "./skeleton";
-import { useBuildSorting, viewOf, type Commit } from "./useBuildSorting";
+import { useBuildSorting, viewOf, type Commit, type IncomingAdd } from "./useBuildSorting";
+import { fileDropPlace, type DropBox, type FilePlace } from "@/lib/build/fileDrop";
+import { holdsFolder, readDrop } from "./dropFolders";
 import { SLIDE_ATTR } from "./flip";
 import { listRuns, type Run } from "./buildRuns";
 import { useBuildDirector } from "./buildDirector";
@@ -151,7 +153,7 @@ import {
 import { NO_APP, REPEAT_COPY, repeatedTiles, type SourceSession } from "./sourcesModel";
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { MENU_COPY, REASONS, moveReason } from "@/lib/build/componentMenus";
-import { canMove as canMoveIn, locate, moveBy, moveModelOf, type MoveModel, type MoveNames } from "@/lib/build/moveRules";
+import { canMove as canMoveIn, locate, moveBy, moveModelOf, spotOf, type MoveModel, type MoveNames } from "@/lib/build/moveRules";
 import { shortcutLabel, type ShortcutId } from "@/lib/build/shortcuts";
 import { COUNT } from "./modalRecipes";
 import { RemoveRow, useReason } from "./removePieces";
@@ -162,9 +164,12 @@ import { useBuildSelectionContext } from "./useBuildSelection";
 export const ADD_FLASH_MS = 1200;
 
 export const LIST_COPY = {
-  hint: "Click a tile to see its details · double-click to read all",
-  /** CA-10 (CA-09 F12): a phone has no double-click (the card's onDoubleClick is off there) and taps, not clicks. */
-  hintPhone: "Tap a tile to see its details",
+  /** UX-02 P5: the phone's one line; a computer has none (double-click is not a command, every tile shows its controls). */
+  hintPhone: "Tap a step tile to see its details",
+  /** UX-02 P5: a tile's visible ways to open and to change it, in place of the double-click. */
+  edit: "Edit…",
+  /** Product names keep their case: "Open GitHub repository". */
+  open: (noun: string) => `Open ${/^GitHub/.test(noun) ? noun : noun.charAt(0).toLowerCase() + noun.slice(1)}`,
   placeholder: "Paste or type a prompt…",
   /** CA-15 P10: the one link in a prompt tile's footer. */
   openPrompt: "Open prompt",
@@ -236,6 +241,10 @@ export interface BuildListProps {
   onAttach?: (id: string) => void;
   /** TF-06: files dropped on a prompt's card. Only with a fine pointer; absent: a card takes no drop. */
   onDropOnStep?: (id: string, files: File[]) => void;
+  /** UX-02 P3: a row of Sources dropped on the List (a session to add, a file as a File tile or inside a step). Resolves true once written. */
+  onAddFromSources?: (add: IncomingAdd) => Promise<boolean>;
+  /** UX-02 P1: files dropped anywhere else on the List: at the place under the pointer (a session's head or a gap), or null for the end of the current session. Only with a fine pointer. */
+  onDropFiles?: (files: File[], paths: string[] | undefined, place: FilePlace | null) => void;
   fine?: boolean;
   /** TF-08: "Add file name" selects the prompt and opens the Makes field in Details. Absent: the item is not shown. */
   onNameMade?: (id: string) => void;
@@ -565,8 +574,8 @@ function MentionedLine({ to, phone }: { to: string; phone: boolean }) {
 /* ── tiles inside tiles (CA-04 P2) ── */
 
 export const NEST_LIST_COPY = {
-  sendWithAbove: "Send with the step above",
-  ownStep: "Make it its own step",
+  sendWithAbove: "Send with the step tile above",
+  ownStep: "Make it its own step tile",
   copyTogether: "Copy together",
   sentWith: (label: string) => `Sent with ${label}`,
   nowSentWith: (name: string, label: string) => `${name} is now sent with ${label}.`,
@@ -817,7 +826,6 @@ const footRow = (indent: number): CSSProperties => ({
   minHeight: 22,
 });
 
-const wordsOf = (n: number) => `${n} ${n === 1 ? "word" : "words"}`;
 
 /* ── a session's head (SessionHead.tsx) and what sits under it ── */
 
@@ -976,7 +984,6 @@ function RenameField({ label, draft, placeholder, phone, onDraft, onFinish }: { 
       placeholder={placeholder}
       onChange={(event) => onDraft(event.target.value)}
       onClick={(event) => event.stopPropagation()}
-      onDoubleClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => {
         event.stopPropagation();
         if (event.key === "Enter") onFinish(true);
@@ -1045,6 +1052,7 @@ function TileMenu({ step, noun, index, last, props, rename }: { step: Step; noun
       </Menu.Trigger>
       <Menu.Portal>
         <MenuContent align="end" sideOffset={4} style={menuSurface()} onClick={(event) => event.stopPropagation()} onCloseAutoFocus={rename.onCloseAutoFocus}>
+          {props.onEditTile ? <MenuRow phone={phone} onSelect={() => props.onEditTile?.(step.id)}>{LIST_COPY.edit}</MenuRow> : null}
           <MenuRow phone={phone} onSelect={rename.ask}>Rename</MenuRow>
           <ConvertRows step={step} phone={phone} />
           <CopyTogetherRow step={step} phone={phone} />
@@ -1143,7 +1151,8 @@ function TileFoot({ step, props, link, facts, withGoes = true }: { step: Step; p
   return (
     <>
       <ExtraRow step={step} props={props} withGoes={withGoes} />
-      <TileFooter facts={facts ?? footerFactsOf(step, (id) => numberIn(props.steps, id))} link={link} extra={nest ? <NestButtons step={step} phone={props.phone} /> : null} indent={INDENT} />
+      {/* UX-02 P10: a prompt step tile in the composer does not show its word count. */}
+      <TileFooter facts={facts ?? footerFactsOf(step, (id) => numberIn(props.steps, id), { words: false })} link={link} extra={nest ? <NestButtons step={step} phone={props.phone} /> : null} indent={INDENT} />
     </>
   );
 }
@@ -1206,7 +1215,6 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
       tabIndex={0}
       {...focus.bind}
       onClick={() => props.onSelect(step.id)}
-      onDoubleClick={phone ? undefined : open}
       onKeyDown={onKeyDown}
       onDragEnter={takesDrops ? (event) => {
         if (!carriesFiles(event)) return;
@@ -1298,6 +1306,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
                   setRenaming(true);
                 }}
               >
+                {props.onEditTile ? <MenuRow phone={phone} onSelect={() => props.onEditTile?.(step.id)}>{LIST_COPY.edit}</MenuRow> : null}
                 <MenuRow phone={phone} onSelect={() => (renameNext.current = true)}>Rename</MenuRow>
                 <ConvertRows step={step} phone={phone} />
                 <MenuRow phone={phone} disabled={!open} reason={REASONS.readAll} onSelect={open}>Read all</MenuRow>
@@ -1536,7 +1545,6 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
       tabIndex={0}
       {...focus.bind}
       onClick={() => props.onSelect(step.id)}
-      onDoubleClick={props.phone ? undefined : () => props.onEditTile?.(step.id)}
       style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
     >
       <TileHeader
@@ -1639,7 +1647,9 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
             <FooterLink phone={phone} expanded={unfolded} onClick={() => setUnfolded((open) => !open)}>
               {unfolded ? (isTeam ? "Hide agents" : "Hide prompts") : isTeam ? "Show agents" : "Show prompts"}
             </FooterLink>
-          ) : null
+          ) : (
+            openLink(step, noun, props)
+          )
         }
       />
     </div>
@@ -1684,7 +1694,6 @@ function PlainCard({ step, index, last, props, noun, body, after, link, typeLine
       tabIndex={0}
       {...focus.bind}
       onClick={() => props.onSelect(step.id)}
-      onDoubleClick={props.phone ? undefined : () => props.onEditTile?.(step.id)}
       onKeyDown={(event) => {
         if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
           event.preventDefault();
@@ -1707,8 +1716,18 @@ function PlainCard({ step, index, last, props, noun, body, after, link, typeLine
       <MadeLine names={props.madeNames?.[step.id]} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
-      <TileFoot step={step} props={props} link={link} />
+      <TileFoot step={step} props={props} link={link ?? openLink(step, noun, props)} />
     </div>
+  );
+}
+
+/** UX-02 P5: "Open tool", "Open file": the tile's window, as the double-click opened it. The footer's one link, where it has no other. None where nothing opens. */
+function openLink(step: Step, noun: string, props: BuildListProps): ReactNode {
+  if (!props.onEditTile) return null;
+  return (
+    <FooterLink phone={props.phone} onClick={() => props.onEditTile?.(step.id)}>
+      {LIST_COPY.open(noun)}
+    </FooterLink>
   );
 }
 
@@ -1796,7 +1815,6 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
       tabIndex={0}
       {...focus.bind}
       onClick={() => props.onSelect(step.id)}
-      onDoubleClick={props.phone ? undefined : () => props.onEditTile?.(step.id)}
       onKeyDown={(event) => {
         if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
           event.preventDefault();
@@ -1831,7 +1849,9 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
             <FooterLink phone={phone} expanded={all} onClick={() => setAll((open) => !open)}>
               {all ? "Show fewer lines" : `Show all ${lines.toLocaleString("en-GB")} lines`}
             </FooterLink>
-          ) : null
+          ) : (
+            openLink(step, "Code", props)
+          )
         }
       />
     </div>
@@ -1864,7 +1884,6 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
       tabIndex={0}
       {...focus.bind}
       onClick={() => props.onSelect(step.id)}
-      onDoubleClick={props.phone ? undefined : () => props.onEditTile?.(step.id)}
       onKeyDown={(event) => {
         if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
           event.preventDefault();
@@ -1900,7 +1919,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
       ) : null}
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
-      <TileFoot step={step} props={props} />
+      <TileFoot step={step} props={props} link={openLink(step, "Check", props)} />
     </div>
   );
 }
@@ -1939,7 +1958,6 @@ function ResultCard({ result, selected, ringed = false, onSelect, onEdit }: { re
       {...focus.bind}
       aria-pressed={selected}
       onClick={() => onSelect(result.id)}
-      onDoubleClick={onEdit ? () => onEdit(result.id) : undefined}
       onKeyDown={(event) => {
         if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
           event.preventDefault();
@@ -1962,7 +1980,23 @@ function ResultCard({ result, selected, ringed = false, onSelect, onEdit }: { re
           {result.title}
         </span>
         <ResultTileBody facts={result.facts} />
-        <TileFooter facts={[resultHolds(result.facts) ? result.holds : null, result.from ? `from prompt ${result.from}` : null]} />
+        {/* UX-02 P5: a result has no menu: its one link opens its window, where it is read and changed. */}
+        <TileFooter
+          facts={[resultHolds(result.facts) ? result.holds : null, result.from ? `from prompt ${result.from}` : null]}
+          link={
+            onEdit ? (
+              <TextButton
+                style={FOOT_LINK}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onEdit(result.id);
+                }}
+              >
+                {LIST_COPY.open("result")}
+              </TextButton>
+            ) : null
+          }
+        />
       </div>
     </div>
   );
@@ -2147,10 +2181,30 @@ function AddPrompt({
 
 /** The tiles of a session: 16 in from its head, with the 2px line down their left, 8 in from their edge. */
 
+/** UX-02 P3: the stand-in an incoming file is drawn from while held: only its place matters, it is never seen. */
+const incomingStepOf = (id: string): Step => ({ id, kind: "file", number: id, title: null, defaultTitle: "", text: "", children: [] }) as unknown as Step;
+/** The same for an incoming session: a head with its key, never drawn. Sessions are drawn in number order, so it is numbered between its neighbours. */
+const incomingHeadOf = (key: string, number: number): SourceSession => ({ key, number, tool: "", detail: "", prompts: [] }) as unknown as SourceSession;
+/** Half way between the numbers of the sessions either side of `key` in the live order. */
+function incomingNumber(live: MoveModel, key: string, heads: ReadonlyMap<string, SourceSession>): number {
+  const order = live.parts.flatMap((part) => part.sessions);
+  const at = order.indexOf(key);
+  const before = order.slice(0, Math.max(0, at)).reverse().find((entry) => heads.has(entry));
+  const after = order.slice(at + 1).find((entry) => heads.has(entry));
+  if (before) return (heads.get(before) as SourceSession).number + 0.5;
+  if (after) return (heads.get(after) as SourceSession).number - 0.5;
+  return 0.5;
+}
+
+/** The slot an item from Sources holds while it is over the List: as tall as its row, hidden, measured like a held thing's own place. */
+function IncomingSlot({ kind, id, container, height }: { kind: "tile" | "session"; id: string; container: string; height: number }) {
+  return <div data-testid="incoming-slot" aria-hidden="true" data-skel-kind={kind} data-skel-id={id} data-skel-container={container} {...{ [SLIDE_ATTR]: `${kind}:${id}` }} style={{ height, minWidth: 0, visibility: "hidden", flexShrink: 0 }} />;
+}
+
 /** A tile's name in the List's lines, from the tiles by id. */
 const labelOf = (tiles: ReadonlyMap<string, Step>, id: string): string => {
   const tile = tiles.get(id);
-  return tile ? tileName(tile) : "that tile";
+  return tile ? tileName(tile) : "that step tile";
 };
 
 /** A session's head and its tiles, registered for the post's links by the session's key. */
@@ -2217,13 +2271,14 @@ export function BuildList(raw: BuildListProps) {
   const names: MoveNames = {
     tile: (id) => {
       const step = stepsById.get(id);
-      if (!step) return "that tile";
+      if (!step) return "that step tile";
       const word = tileName(step);
       return step.number && !step.filename ? word.charAt(0).toUpperCase() + word.slice(1) : word;
     },
     session: (key) => (headByKey.get(key) ? `Session ${(headByKey.get(key) as SourceSession).number}` : "that session"),
     part: (key) => base.parts?.parts.find((part) => part.view.key === key)?.view.label ?? "that part",
   };
+  const composeDnd = useComposeDnd();
   const sorting = useBuildSorting({
     model: baseModel,
     phone: base.phone,
@@ -2249,7 +2304,15 @@ export function BuildList(raw: BuildListProps) {
     sentLine: (id, parentId) => NEST_LIST_COPY.nowSentWith(labelOf(stepsById, id), labelOf(stepsById, parentId)),
     say: setSaid,
     restOf: motion.restOf,
+    add: base.onAddFromSources,
+    // A held file goes inside a step that takes a dropped file: a prompt (as a file dropped on its card is attached, P1).
+    takesFile: (id) => stepsById.get(id)?.kind === "prompt",
+    addedLine: (add) =>
+      add.kind === "attach-file" ? `Attached a file to ${names.tile(add.into)}.` : add.kind === "add-file" ? `Added a file to ${names.session(add.session)}.` : "Added a session.",
   });
+  /* UX-02 P3: inside the composer the drag context is the page's, round Sources and the List: the List hands it its drag state,
+     always, as a row of Sources can be dropped here even when nothing in the List can be moved. */
+  useComposeDndHost(composeDnd, sorting);
   /* CA-21 P6: Move up and Move down in the menus show the move at once, sliding; when the write does not land, they slide back. */
   const slid = (id: string, by: -1 | 1, run: (id: string, by: -1 | 1) => unknown) => {
     const result = moveBy(baseModel, id, by);
@@ -2270,7 +2333,12 @@ export function BuildList(raw: BuildListProps) {
       if (moved) outlineOnce(moved);
     });
   });
-  const shown = viewOf(base, sorting.live);
+  /* UX-02 P3: an item from Sources held over the List has a place in the live order; it is drawn there as a slot the size of its row
+     (a hidden socket, as a held tile's own element is), so the build slides apart for it and the skeleton says where. */
+  const fromSources = sorting.incoming && sorting.live && spotOf(sorting.live, sorting.incoming.held.id) ? sorting.incoming : null;
+  const incomingStep = fromSources?.source === "file" ? incomingStepOf(fromSources.held.id) : null;
+  const incomingHead = fromSources?.source === "session" && !headByKey.has(fromSources.id) && sorting.live ? incomingHeadOf(fromSources.id, incomingNumber(sorting.live, fromSources.id, headByKey)) : null;
+  const shown = viewOf(incomingStep || incomingHead ? { ...base, steps: incomingStep ? [...base.steps, incomingStep] : base.steps, emptySessions: incomingHead ? [...(base.emptySessions ?? []), incomingHead] : base.emptySessions } : base, sorting.live);
   const props: BuildListProps = {
     ...shown,
     onMove: (id, by) => slid(id, by, base.onMove),
@@ -2288,7 +2356,7 @@ export function BuildList(raw: BuildListProps) {
   const tiles = new Map(steps.flatMap(withSentWith).map((step) => [step.id, step]));
   const label = (id: string) => {
     const tile = tiles.get(id);
-    return tile ? tileName(tile) : "that tile";
+    return tile ? tileName(tile) : "that step tile";
   };
   const topOf = (id: string): Step | undefined => steps.find((step) => withSentWith(step).some((tile) => tile.id === id));
 
@@ -2358,6 +2426,7 @@ export function BuildList(raw: BuildListProps) {
   }
   /* Each top-level tile stands in a wrapper the page can find (to measure, to slide and to hide while it is held). */
   const placed = (step: Step) => {
+    if (incomingStep && step.id === incomingStep.id) return <IncomingSlot key={step.id} kind="tile" id={step.id} container={containerOfTile.get(step.id) ?? ""} height={fromSources?.size.h ?? 0} />;
     if (!nestOn) return card(step);
     const box = {
       "data-skel-kind": "tile",
@@ -2374,7 +2443,7 @@ export function BuildList(raw: BuildListProps) {
     );
   };
   const runs = listRuns(steps, props.dividers, props.emptySessions ?? []);
-  const arrival = useArrival({ arriving: base.arriving, landed: Boolean(base.arriving && runs.some((run) => run.head?.key === base.arriving?.key)), rootRef: sorting.rootRef, motion, onArrived: base.onArrived });
+  const arrival = useArrival({ arriving: base.arriving, landed: Boolean(base.arriving && runs.some((run) => run.head !== incomingHead && run.head?.key === base.arriving?.key)), rootRef: sorting.rootRef, motion, onArrived: base.onArrived });
   const containerOfTile = new Map(runs.flatMap((run) => (run.head ? run.steps.map((step) => [step.id, run.head?.key ?? ""] as const) : [])));
   const numberDigits = String(runs.reduce((most, run) => Math.max(most, run.head?.number ?? 0), 0)).length;
   const headOrder = runs.flatMap((run) => (run.head && !run.head.key.startsWith("typed-legacy-") ? [run.head.key] : []));
@@ -2401,6 +2470,7 @@ export function BuildList(raw: BuildListProps) {
         const isLastHead = inPart ? here === inPart.sessions.length - 1 : headed && headOrder.indexOf(run.head.key) === headOrder.length - 1;
         const emptyDraft = steps.length === 0 && at === 0;
         const promptHere = headed && (props.promptIn === key || emptyDraft);
+        if (incomingHead && key === incomingHead.key) return <IncomingSlot key={run.key} kind="session" id={key} container={inPart?.view.key ?? ""} height={fromSources?.size.h ?? 0} />;
         const sameStageAs = parts && inPart && key && here > 0 && parts.withAbove?.has(key) ? `Session ${numberByKey.get(inPart.sessions[here - 1]) ?? ""}`.trim() : undefined;
         return (
           <SessionRun key={run.key} head={run.head} phone={props.phone} first={at === 0 || inPart !== null} lit={Boolean(key && props.ringedSession?.key === key)} found={Boolean(key && props.find?.view.current === key)} part={inPart?.view.key} hidden={Boolean(key && sorting.hidden === key)}>
@@ -2434,7 +2504,7 @@ export function BuildList(raw: BuildListProps) {
                     <SessionLines session={sameStageAs ? { ...run.head, sameStageAs } : run.head} />
                     {drawBranches(run.steps, (step) => step, steps, placed)}
                     {/* SV-07 P6: an empty session looks one way, "No tiles yet" and "+ Add tile"; the dashed place shows only while a tile is dragged. */}
-                    {run.steps.length === 0 && !promptHere ? sorting.held && sorting.held.type !== "session" && sorting.held.type !== "part" ? <EmptyPlace words="Drop a tile here" /> : <p style={{ ...text(13, 400, t.label), margin: 0 }}>{SESSION_HEAD_COPY.noTiles}</p> : null}
+                    {run.steps.length === 0 && !promptHere ? sorting.held && sorting.held.type !== "session" && sorting.held.type !== "part" ? <EmptyPlace words="Drop a step tile here" /> : <p style={{ ...text(13, 400, t.label), margin: 0 }}>{SESSION_HEAD_COPY.noTiles}</p> : null}
                     {promptHere ? (
                       <AddPrompt
                         phone={props.phone}
@@ -2484,7 +2554,7 @@ export function BuildList(raw: BuildListProps) {
           {view.collapsed && !folding.parts.has(view.key) ? null : mine.length > 0 || (arrival.block && arrivingPart === view.key) ? (
             <>
               {mine.map((run) => drawRun(run, runs.indexOf(run), part))}
-              {arrival.block && base.arriving && arrivingPart === view.key ? <ArrivingBlock arriving={base.arriving} rootRef={sorting.rootRef} first={mine.length === 0} /> : null}
+              {arrival.block && base.arriving && arrivingPart === view.key && base.arriving.key !== incomingHead?.key ? <ArrivingBlock arriving={base.arriving} rootRef={sorting.rootRef} first={mine.length === 0} /> : null}
               {parts?.ops?.onOpen ? <AskNextSessionRow label={view.label} partKey={view.key} open={view.open} phone={props.phone} onOpen={parts.ops.onOpen} /> : null}
             </>
           ) : (
@@ -2509,12 +2579,59 @@ export function BuildList(raw: BuildListProps) {
     );
   };
   useRovingList(sorting.rootRef, props.onSelect);
+  /* UX-02 P1: files dropped on the List and not on a step that takes them (that step's card has handled the drop): a File tile at the
+     place under the pointer. The boxes are read once, at the drop. */
+  const takesFiles = Boolean(props.fine && props.onDropFiles);
+  const carriesFiles = (event: DragEvent) => Array.from(event.dataTransfer?.types ?? []).includes("Files");
+  const placeOfDrop = (point: { x: number; y: number }): FilePlace | null => {
+    const root = sorting.rootRef.current;
+    if (!root) return null;
+    const boxOf = (element: Element): DropBox => {
+      const r = element.getBoundingClientRect();
+      return { x: r.left, y: r.top, w: r.width, h: r.height };
+    };
+    const sessions = runs.flatMap((run) => {
+      if (!run.head || run.head.key.startsWith("typed-legacy-")) return [];
+      const element = root.querySelector(`[data-session-key="${run.head.key}"]`);
+      if (!element) return [];
+      const head = element.querySelector('[data-testid="session-head"]');
+      const tiles = run.steps.flatMap((step) => {
+        const card = element.querySelector(`[data-node-id="${step.id}"]`);
+        return card ? [{ id: step.id, box: boxOf(card) }] : [];
+      });
+      return [{ key: run.head.key, box: boxOf(element), head: head ? boxOf(head) : null, tiles }];
+    });
+    return fileDropPlace(point, sessions);
+  };
+  const fileDrop = takesFiles
+    ? {
+        onDragOver: (event: DragEvent<HTMLDivElement>) => {
+          if (!carriesFiles(event) || event.defaultPrevented) return;
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "copy";
+        },
+        onDrop: (event: DragEvent<HTMLDivElement>) => {
+          if (!carriesFiles(event) || event.defaultPrevented) return;
+          event.preventDefault();
+          const place = placeOfDrop({ x: event.clientX, y: event.clientY });
+          // CA-04 P4: a folder is walked, so a skill's files keep their places.
+          if (holdsFolder(event.dataTransfer)) {
+            void readDrop(event.dataTransfer).then(({ files, paths }) => {
+              if (files.length > 0) props.onDropFiles?.(files, paths, place);
+            });
+            return;
+          }
+          const files = Array.from(event.dataTransfer.files);
+          if (files.length > 0) props.onDropFiles?.(files, undefined, place);
+        },
+      }
+    : null;
   const list = (
     /* The global field rule makes a field inherit its size on a desktop (`font-size: inherit !important`), so the
      fields' type is set here, where they inherit it. */
-    <div ref={sorting.rootRef} data-testid="build-list" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13.5, ...(sorting.skeleton || arrival.skeleton || director.skeleton ? { position: "relative", isolation: "isolate" } : null) }}>
+    <div ref={sorting.rootRef} data-testid="build-list" {...fileDrop} style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13.5, ...(sorting.skeleton || arrival.skeleton || director.skeleton ? { position: "relative", isolation: "isolate" } : null) }}>
       {sorting.skeleton ? <SkeletonLayer skeleton={sorting.skeleton} shown={sorting.skeletonShown} /> : arrival.skeleton ? <SkeletonLayer skeleton={arrival.skeleton} shown={arrival.shown} fadeIn={arrival.fadeIn} opening={arrival.opening} fadeAfter={arrival.fadeAfter} onGone={arrival.gone} /> : director.skeleton ? <SkeletonLayer skeleton={director.skeleton} shown={director.shown} fadeAfter={FADE_AFTER_MS} onGone={director.gone} /> : null}
-      <p style={{ ...text(12, 400, t.label), margin: 0 }}>{props.phone ? LIST_COPY.hintPhone : LIST_COPY.hint}</p>
+      {props.phone ? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{LIST_COPY.hintPhone}</p> : null}
       {props.costGroups ? <CostStrip steps={steps} groups={props.costGroups} audience="maker" /> : null}
       {parts ? (
         <>
@@ -2524,11 +2641,11 @@ export function BuildList(raw: BuildListProps) {
       ) : (
         <>
           {runs.map((run, at) => drawRun(run, at))}
-          {arrival.block && base.arriving ? <ArrivingBlock arriving={base.arriving} rootRef={sorting.rootRef} first={runs.length === 0} /> : null}
+          {arrival.block && base.arriving && base.arriving.key !== incomingHead?.key ? <ArrivingBlock arriving={base.arriving} rootRef={sorting.rootRef} first={runs.length === 0} /> : null}
         </>
       )}
       {props.results.map((result) => (
-        <ResultCard key={result.id} result={result} selected={props.selectedId === result.id} ringed={props.ringedId === result.id} onSelect={props.onSelect} onEdit={props.phone ? undefined : props.onEditTile} />
+        <ResultCard key={result.id} result={result} selected={props.selectedId === result.id} ringed={props.ringedId === result.id} onSelect={props.onSelect} onEdit={props.onEditTile} />
       ))}
       {props.pendingAdd ? <PendingAddCard kind={props.pendingAdd} /> : null}
       {/* SV-07 P5: what the List says is heard through the page's one announcer, and the notice is the one thing seen. These

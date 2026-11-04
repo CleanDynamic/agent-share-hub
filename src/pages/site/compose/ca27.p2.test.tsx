@@ -12,7 +12,7 @@ import { NO_SHRINK, PREVIEW, PREVIEW_LINES, TITLE_LINE, fullText } from "@/lib/t
 
 import { LIST_COPY, clamp2 } from "./BuildList";
 import { SessionHead } from "./SessionHead";
-import { LIST_HINT, LIST_HINT_PHONE } from "./SandboxView";
+import { LIST_HINT_PHONE } from "./SandboxView";
 import { WorkstreamHead } from "./WorkstreamHead";
 import { PROMPT_TEXT, TILE_TITLE } from "./tileRecipes";
 import { ellipsis } from "./refinedStyles";
@@ -71,10 +71,10 @@ describe("the heads", () => {
 });
 
 describe("the words", () => {
-  it("Read all replaces Read all of it, in the hint as well", () => {
-    expect(LIST_HINT).toBe("Click a tile to see its details · double-click to read all");
-    expect(LIST_COPY.hint).toBe(LIST_HINT);
-    expect(LIST_HINT_PHONE).toBe("Tap a tile to see its details");
+  it("Read all replaces Read all of it", () => {
+    // UX-02 P5: the computer's hint line went with the double-click; the phone's says step tile.
+    expect(LIST_HINT_PHONE).toBe("Tap a step tile to see its details");
+    expect(LIST_COPY.hintPhone).toBe(LIST_HINT_PHONE);
     for (const file of ["src/pages/site/compose/BuildList.tsx", "src/pages/site/build/BuildSteps.tsx", "src/pages/site/compose/SandboxView.tsx"]) {
       const source = fs.readFileSync(path.resolve(__dirname, "../../../..", file), "utf8");
       expect(source, file).not.toMatch(/[Rr]ead all of it/);

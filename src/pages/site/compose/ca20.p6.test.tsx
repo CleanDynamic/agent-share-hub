@@ -36,7 +36,7 @@ describe("Recently removed", () => {
       .map((row) => row.session_key);
   const removeTile = async (name: string | RegExp) => {
     fireEvent.keyDown(screen.getByRole("button", { name }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove tile" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove step tile" }));
   };
   const openList = async () => {
     fireEvent.keyDown(screen.getByTestId("build-options"), { key: "Enter" });
@@ -145,7 +145,7 @@ describe("Recently removed", () => {
     fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Clear the build" }));
     await waitFor(() => expect(ids()).toEqual([]), { timeout: 20_000 });
     const window_ = await openList();
-    expect(within(window_).getAllByTestId("removed-row").map((row) => row.textContent)).toEqual(["The whole build · 3 sessions, 8 tiles, 1 fileJust nowRestore"]);
+    expect(within(window_).getAllByTestId("removed-row").map((row) => row.textContent)).toEqual(["The whole build · 3 sessions, 8 step tiles, 1 fileJust nowRestore"]);
     fireEvent.click(within(window_).getByRole("button", { name: "Restore The whole build" }));
     await waitFor(() => expect(ids()).toHaveLength(9), { timeout: 20_000 });
     expect(JSON.stringify(positions().map((row) => [row.id, row.parent_id, row.position, row.payload]).sort())).toBe(before);

@@ -130,11 +130,12 @@ describe("step cards", () => {
     expect(props.onDismiss).toHaveBeenCalledWith(props.suggestions[0]);
   });
 
-  it("opens the full prompt on double click and Enter, when it can", () => {
+  it("opens the full prompt from Open prompt and Enter, when it can", () => {
     const onOpenPrompt = vi.fn();
     list({ onOpenPrompt });
     const card = screen.getByRole("group", { name: /^Prompt 2:/ });
-    fireEvent.doubleClick(card);
+    // UX-02 P5: the footer's Open prompt, where a double click used to be.
+    fireEvent.click(within(card).getByRole("button", { name: "Open prompt" }));
     fireEvent.keyDown(card, { key: "Enter" });
     expect(onOpenPrompt).toHaveBeenCalledTimes(2);
     expect(onOpenPrompt).toHaveBeenCalledWith("p2");
@@ -575,7 +576,7 @@ describe("a manual step (UI-P70)", () => {
   it("has Rename, Move up, Move down and Remove tile, and no 'Read all'", async () => {
     const props = manualList();
     fireEvent.keyDown(screen.getByRole("button", { name: "Manual step 3 options" }), { key: "Enter" });
-    expect((await screen.findAllByRole("menuitem")).map((item) => item.textContent?.replace(/(Alt\+[↑↓]|Delete)$/, ""))).toEqual(["Rename", "Move up", "Move down", "Remove tile"]);
+    expect((await screen.findAllByRole("menuitem")).map((item) => item.textContent?.replace(/(Alt\+[↑↓]|Delete)$/, ""))).toEqual(["Rename", "Move up", "Move down", "Remove step tile"]);
     fireEvent.click(screen.getByRole("menuitem", { name: "Move up" }));
     expect(props.onMove).toHaveBeenCalledWith("m3", -1);
   });
@@ -583,7 +584,7 @@ describe("a manual step (UI-P70)", () => {
   it("removes, and cannot move up from the first step or down from the last", async () => {
     const props = manualList();
     fireEvent.keyDown(screen.getByRole("button", { name: "Manual step 3 options" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove tile" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove step tile" }));
     expect(props.onRemove).toHaveBeenCalledWith("m3");
     cleanup();
     const fixture = sandboxManualFixture().list;
@@ -654,7 +655,7 @@ describe("the refined look (UI-P93)", () => {
     list({ onAttach, onOpenPrompt: vi.fn() });
     fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 2 options" }), { key: "Enter" });
     const items = await screen.findAllByRole("menuitem");
-    expect(items.map((item) => item.textContent?.replace(/(Alt\+[↑↓]|Delete)$/, ""))).toEqual(["Rename", "Read all", "Attach a file", "Move up", "Move down", "Remove tile"]);
+    expect(items.map((item) => item.textContent?.replace(/(Alt\+[↑↓]|Delete)$/, ""))).toEqual(["Rename", "Read all", "Attach a file", "Move up", "Move down", "Remove step tile"]);
     fireEvent.click(screen.getByRole("menuitem", { name: "Attach a file" }));
     expect(onAttach).toHaveBeenCalledWith("p2");
   });
@@ -664,7 +665,7 @@ describe("the refined look (UI-P93)", () => {
     list({ onAttach: vi.fn(), onNameMade, onOpenPrompt: vi.fn() });
     fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 2 options" }), { key: "Enter" });
     const items = await screen.findAllByRole("menuitem");
-    expect(items.map((item) => item.textContent?.replace(/(Alt\+[↑↓]|Delete)$/, ""))).toEqual(["Rename", "Read all", "Attach a file", "Add file name", "Move up", "Move down", "Remove tile"]);
+    expect(items.map((item) => item.textContent?.replace(/(Alt\+[↑↓]|Delete)$/, ""))).toEqual(["Rename", "Read all", "Attach a file", "Add file name", "Move up", "Move down", "Remove step tile"]);
     expect(items.at(-1)?.getAttribute("data-tone")).toBe("danger");
     fireEvent.click(screen.getByRole("menuitem", { name: "Add file name" }));
     // CA-10: asked once the menu has let go of focus, so it cannot take it back from the field.

@@ -23,6 +23,7 @@ import { SESSION_TITLE_MAX } from "@/lib/build/making";
 import { MENU_COPY, REASONS, moveReason } from "@/lib/build/componentMenus";
 import { ring } from "@/lib/theme/controls";
 import { NO_SHRINK, TITLE_LINE, fullText } from "@/lib/theme/truncate";
+import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
@@ -42,11 +43,11 @@ import { useCrossfade } from "./buildMotion";
 
 export const SESSION_HEAD_COPY = {
   titlePlaceholder: "Add a title",
-  noTiles: "No tiles yet",
+  noTiles: "No step tiles yet",
   /** SV-05 P3: an import that wrote fewer tiles than its session has prompts. */
   imported: (have: number, of: number) => `${have} of ${of} prompts imported`,
   retry: "Retry",
-  addToThis: "+ Add tile",
+  addToThis: "+ Add step tile",
   moveUp: "Move up",
   moveDown: "Move down",
   edit: "Edit session…",
@@ -57,7 +58,7 @@ export const SESSION_HEAD_COPY = {
   withdrawRequest: "Take the request back",
   requested: "Open as a request",
   sameStage: "Same stage as the session above",
-  count: (n: number) => `${n} ${n === 1 ? "tile" : "tiles"}`,
+  count: (n: number) => `${n} ${n === 1 ? "step tile" : "step tiles"}`,
   typedPast: (n: number) => `${n}/${SESSION_TITLE_MAX}`,
 } as const;
 
@@ -134,12 +135,12 @@ function TitleField({ session, phone, onSave }: { session: SourceSession; phone:
   const [editing, setEditing] = useState(false);
   const field = useRef<HTMLInputElement>(null);
   const announce = useAnnounce();
-  /* The global field rule paints a field's fill with !important, which only an !important inline value outranks: the title
-     is a line of text until it is touched, so its fill is taken off here, and its border is transparent until hover or focus. */
-  const [hover, setHover] = useState(false);
+  /* UX-02 P4: drawn as the app's text field at rest, so it reads as one: `--field` (the global field rule paints its own fill with
+     !important, which only an !important inline value outranks), a 1px `--well-border` and the control radius, the same on hover;
+     the global field rule's focus ring, at once. */
   const setField = (element: HTMLInputElement | null) => {
     field.current = element;
-    element?.style.setProperty("background", "transparent", "important");
+    element?.style.setProperty("background-color", t.field, "important");
   };
   useEffect(() => {
     if (!editing) setDraft(saved);
@@ -185,8 +186,6 @@ function TitleField({ session, phone, onSave }: { session: SourceSession; phone:
         maxLength={SESSION_TITLE_MAX}
         autoComplete="off"
         onFocus={() => setEditing(true)}
-        onMouseEnter={() => setHover(true)}
-        onMouseLeave={() => setHover(false)}
         onBlur={finish}
         onChange={(event) => setDraft(event.target.value)}
         onKeyDown={onKeyDown}
@@ -195,8 +194,8 @@ function TitleField({ session, phone, onSave }: { session: SourceSession; phone:
           minWidth: 0,
           height: phone ? 36 : 28,
           boxSizing: "border-box",
-          borderColor: hover || editing ? t.line : "transparent",
-          borderRadius: 6,
+          border: `1px solid ${t.wellBorder}`,
+          borderRadius: r.control,
           padding: "0 6px",
           margin: "0 -6px",
           textOverflow: "ellipsis",
@@ -343,15 +342,6 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
           if (plain && (event.target as HTMLElement).closest("button, input, a, [role=menuitem]")) return;
           selection.clickHead(session.key, event);
         }}
-        onDoubleClick={
-          onEdit && maker && !phone
-            ? (event) => {
-                // A double click on a field, a button or a menu is that control's own.
-                if ((event.target as HTMLElement).closest("input, button, a, [role=menuitem]")) return;
-                onEdit();
-              }
-            : undefined
-        }
         style={{
           position: "relative",
           outline: "none",

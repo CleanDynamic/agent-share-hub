@@ -207,7 +207,7 @@ function PluginForm({ phone, onAdd }: { phone: boolean; onAdd: (plugin: { name: 
       </div>
       <Inline>
         <LabelText>Install line</LabelText>
-        <FieldInput phone={phone} mono width={300} aria-label="Plugin install line" maxLength={PLUGIN_INSTALL_MAX} placeholder="/plugin install review-kit@acme" value={install} onChange={(event) => setInstall(event.target.value)} />
+        <FieldInput phone={phone} mono width={300} aria-label="Plugin install line" maxLength={PLUGIN_INSTALL_MAX} placeholder="e.g. /plugin install review-kit@acme" value={install} onChange={(event) => setInstall(event.target.value)} />
       </Inline>
       <Inline>
         <RecipeButton

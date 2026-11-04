@@ -165,7 +165,7 @@ describe("on the page", () => {
     await waitFor(() => expect(top().slice(0, 2)).toEqual([IDS.p2, IDS.p1]), { timeout: 15_000 });
     await waitUndo("Moved Prompt 2 up");
     fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 2 options" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove tile" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove step tile" }));
     await waitFor(() => expect(ids()).not.toContain(IDS.p1), { timeout: 15_000 });
     await waitUndo("Removed Prompt 2");
     fireEvent.click(undoButton());
@@ -187,7 +187,7 @@ describe("on the page", () => {
     fireEvent.keyDown(await screen.findByRole("menuitem", { name: "Move to session…" }), { key: "ArrowRight" });
     fireEvent.click(await screen.findByRole("menuitem", { name: /^Session 2/ }));
     await waitFor(() => expect((nodeRow(IDS.p1)?.payload as { session?: string }).session).toBe(KEY_B), { timeout: 15_000 });
-    await waitUndo("Moved tile 1 to Session 2");
+    await waitUndo("Moved step tile 1 to Session 2");
     expect(screen.queryByTestId("notice-undo")).toBeNull();
     expect(document.querySelector("[data-sonner-toast]")).toBeNull();
   });
@@ -203,7 +203,8 @@ describe("Save in a tile's window", () => {
       seedCa20(rows);
       rows.build_nodes.push({ id: MANUAL, build_id: "0d0d0d0d-0000-4000-8000-000000000003", parent_id: null, position: 6, type: "manual_step", title: null, note: null, payload: { tool: "Figma", text: "Laid out the hero", session: KEY_B }, source_ref: null, event_id: null, is_gap: false, created_at: "2026-10-20T10:00:00Z" });
     });
-    fireEvent.doubleClick(screen.getByRole("group", { name: /^Manual step/ }));
+    // UX-02 P5: its footer's Open link, where a double click used to be.
+    fireEvent.click(within(screen.getByRole("group", { name: /^Manual step/ })).getByRole("button", { name: "Open manual step" }));
     const dialog = await screen.findByRole("dialog");
     const title = within(dialog).getByLabelText("Title");
     fireEvent.change(title, { target: { value: "Hero layout" } });
@@ -231,7 +232,7 @@ describe("a step whose undo fails", () => {
     const { render } = await import("@testing-library/react");
     render(<Toaster />);
     fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 2 options" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove tile" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove step tile" }));
     await waitFor(() => expect(positions().map((row) => row.id)).not.toContain(IDS.p2), { timeout: 15_000 });
     await waitFor(() => expect((screen.getByTestId("title-undo") as HTMLButtonElement).disabled).toBe(false));
     fireEvent.click(screen.getByTestId("title-undo"));

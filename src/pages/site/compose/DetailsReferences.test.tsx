@@ -235,16 +235,17 @@ describe("in Details", () => {
     <ThemeProvider>
       <GroupLabelsProvider making={referencesMaking}>
         <DetailsReferencesProvider value={value(over)}>
-          <DetailsPanel {...shapeDetailsProps("one-sitting", id, source)} phone={false} colour={{ what: id, colour: bare ? null : REFS_COLOURS.login, to: `node:${id}`, onPick: () => undefined }} />
+          <DetailsPanel {...shapeDetailsProps("one-sitting", id, source)} phone={false} onEdit={() => undefined} colour={{ what: id, colour: bare ? null : REFS_COLOURS.login, to: `node:${id}`, onPick: () => undefined }} />
         </DetailsReferencesProvider>
       </GroupLabelsProvider>
     </ThemeProvider>
   );
 
-  it("ends the panel: after its own sections and after the Not set line, with a rule above", () => {
+  it("ends the panel: after its own sections and after Add details, with a rule above", () => {
     render(details("rf-c4"));
     const panel = screen.getByTestId("details-panel");
-    const notSet = screen.getByTestId("details-not-set");
+    // UX-02 P9: Add details stands where the Not set line stood.
+    const notSet = screen.getByTestId("details-add");
     const refs = screen.getByTestId("details-refs");
     expect(notSet.compareDocumentPosition(refs) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(panel.lastElementChild?.contains(refs) || panel.querySelector('[data-testid="details-refs"]') === refs).toBe(true);

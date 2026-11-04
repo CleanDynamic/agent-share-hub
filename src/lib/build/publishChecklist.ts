@@ -112,7 +112,7 @@ export function publishChecklist(input: ChecklistInput): Checklist {
     if (key === "evidence") return input.cover === "video" ? "Video" : "Picture";
     if (key === "title") return input.title.trim();
     if (key === "outcome") return input.description.trim();
-    return plural(input.tiles, "tile", "tiles");
+    return plural(input.tiles, "step tile", "step tiles");
   };
   const required: ChecklistItem[] = PUBLISH_ORDER.map((key) => {
     const { words, action } = REQUIRED_WORDS[key];
@@ -212,7 +212,7 @@ export const CONFIRM_COPY = {
 
 export function confirmRows(input: ConfirmInput): ConfirmRow[] {
   const post = [plural(input.post.words, "word", "words"), input.post.links > 0 ? plural(input.post.links, "link", "links") : null].filter(Boolean).join(", ");
-  const build = [input.parts > 1 ? plural(input.parts, "part", "parts") : null, plural(input.sessions, "session", "sessions"), plural(input.tiles, "tile", "tiles")].filter(Boolean).join(", ");
+  const build = [input.parts > 1 ? plural(input.parts, "part", "parts") : null, plural(input.sessions, "session", "sessions"), plural(input.tiles, "step tile", "step tiles")].filter(Boolean).join(", ");
   const shown = input.files.slice(0, CONFIRM_COPY.filesShown).join(", ");
   const more = input.files.length - CONFIRM_COPY.filesShown;
   const files = input.files.length === 0 ? "None" : more > 0 ? `${shown} +${more}` : shown;

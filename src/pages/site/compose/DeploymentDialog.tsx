@@ -141,21 +141,21 @@ export function DeploymentDialog({ open, onOpenChange, kind, agents, forAgent = 
           {kind === "host" ? (
             <>
               <Pick id={id("machine")} label="Machine" value={str(payload.machine) || "other"} list={options(MACHINES)} phone={phone} onChange={(value) => set({ machine: value })} />
-              <Text id={id("name")} label={DEPLOYMENT_DIALOG_COPY.name} value={str(payload.name)} max={40} placeholder="Mac Mini" phone={phone} onChange={(value) => set({ name: value })} />
+              <Text id={id("name")} label={DEPLOYMENT_DIALOG_COPY.name} value={str(payload.name)} max={40} placeholder="e.g. Mac Mini" phone={phone} onChange={(value) => set({ name: value })} />
               <Toggle label="Always on" line="The host stays on, so the agent can answer at any time" checked={payload.always_on === true} onChange={(on) => set({ always_on: on })} />
             </>
           ) : null}
           {kind === "inference_server" ? (
             <>
-              {provider("Ollama")}
+              {provider("e.g. Ollama")}
               <Pick id={id("api")} label="API" value={str(payload.api) || "OpenAI-compatible"} list={SERVER_APIS.map((value) => ({ value, label: value === "other" ? "Other" : value }))} phone={phone} onChange={(value) => set({ api: value })} />
               <Pick id={id("reach")} label="Reach" value={str(payload.reach) || "this machine only"} list={options(REACHES)} phone={phone} onChange={(value) => set({ reach: value })} />
             </>
           ) : null}
           {kind === "memory" ? (
             <>
-              {provider("Letta")}
-              <Text id={id("keeps")} label="What it keeps" value={str(payload.keeps)} max={200} placeholder="Facts about clients and past conversations" phone={phone} onChange={(value) => set({ keeps: value })} />
+              {provider("e.g. Letta")}
+              <Text id={id("keeps")} label="What it keeps" value={str(payload.keeps)} max={200} placeholder="e.g. Facts about clients and past conversations" phone={phone} onChange={(value) => set({ keeps: value })} />
               <Pick id={id("lives")} label="Where it lives" value={str(payload.lives) || "cloud"} list={options(MEMORY_LIVES)} phone={phone} onChange={(value) => set({ lives: value })} />
               <Toggle label={DEPLOYMENT_DIALOG_COPY.tagged} line={DEPLOYMENT_DIALOG_COPY.taggedLine} checked={payload.tagged_by_agent === true} onChange={(on) => set({ tagged_by_agent: on })} />
               <Text id={id("review")} label={DEPLOYMENT_DIALOG_COPY.review} value={str(payload.review_after_days)} max={4} placeholder="90" phone={phone} numeric onChange={(value) => set({ review_after_days: value ? Number(value) : undefined })} />
@@ -165,7 +165,7 @@ export function DeploymentDialog({ open, onOpenChange, kind, agents, forAgent = 
             <>
               <span style={{ fontSize: 12, color: t.label }}>{DEPLOYMENT_DIALOG_COPY.kbHelp}</span>
               <Pick id={id("format")} label="Format" value={str(payload.format) || "markdown files"} list={options(KB_FORMATS)} phone={phone} onChange={(value) => set({ format: value })} />
-              <Text id={id("app")} label="App" value={str(payload.app)} max={60} placeholder="Obsidian" phone={phone} onChange={(value) => set({ app: value })} />
+              <Text id={id("app")} label="App" value={str(payload.app)} max={60} placeholder="e.g. Obsidian" phone={phone} onChange={(value) => set({ app: value })} />
               <Pick id={id("sync")} label="Sync" value={str(payload.sync) || "none"} list={options(KB_SYNCS)} phone={phone} onChange={(value) => set({ sync: value })} />
               <Pick id={id("written")} label="Written by" value={str(payload.written_by) || "the maker"} list={options(KB_WRITERS)} phone={phone} onChange={(value) => set({ written_by: value })} />
             </>
@@ -173,28 +173,28 @@ export function DeploymentDialog({ open, onOpenChange, kind, agents, forAgent = 
           {kind === "relay" ? (
             <>
               <span style={{ fontSize: 12, color: t.label }}>{DEPLOYMENT_DIALOG_COPY.relayHelp}</span>
-              <Text id={id("provider")} label={DEPLOYMENT_DIALOG_COPY.provider} value={str(payload.provider)} max={60} placeholder="Agent Tincan" phone={phone} onChange={(value) => set({ provider: value })} />
-              <Text id={id("network")} label="Network" value={str(payload.network)} max={60} placeholder="Tailscale" phone={phone} onChange={(value) => set({ network: value })} />
+              <Text id={id("provider")} label={DEPLOYMENT_DIALOG_COPY.provider} value={str(payload.provider)} max={60} placeholder="e.g. Agent Tincan" phone={phone} onChange={(value) => set({ provider: value })} />
+              <Text id={id("network")} label="Network" value={str(payload.network)} max={60} placeholder="e.g. Tailscale" phone={phone} onChange={(value) => set({ network: value })} />
               <Toggle label="Queues requests" line="Requests wait while an agent is offline" checked={payload.queues === true} onChange={(on) => set({ queues: on })} />
               <Pick id={id("identifies")} label="Identifies agents by" value={str(payload.identifies_by) || "network identity"} list={options(RELAY_IDENTIFIES)} phone={phone} onChange={(value) => set({ identifies_by: value })} />
             </>
           ) : null}
           {kind === "channel" ? (
             <>
-              {provider("Telegram")}
+              {provider("e.g. Telegram")}
               <Pick id={id("direction")} label="Direction" value={str(payload.direction) || "both"} list={options(CHANNEL_DIRECTIONS)} phone={phone} onChange={(value) => set({ direction: value })} />
               <Toggle label="Starts runs" line="A message here starts the agent" checked={payload.starts_runs === true} onChange={(on) => set({ starts_runs: on })} />
             </>
           ) : null}
           {kind === "voice" ? (
             <>
-              {provider("ElevenLabs")}
+              {provider("e.g. ElevenLabs")}
               <Pick id={id("mode")} label="Mode" value={str(payload.mode) || "tts"} list={VOICE_MODES.map((value) => ({ value, label: VOICE_MODE_LABEL[value] }))} phone={phone} onChange={(value) => set({ mode: value })} />
             </>
           ) : null}
           {kind === "monitoring" ? (
             <>
-              {provider("Grafana")}
+              {provider("e.g. Grafana")}
               <Field id={id("measures")} label="Measures" group>
                 {MEASURES.map((measure) => {
                   const measures = Array.isArray(payload.measures) ? (payload.measures as string[]) : [];
@@ -206,13 +206,13 @@ export function DeploymentDialog({ open, onOpenChange, kind, agents, forAgent = 
           ) : null}
           {kind === "billing" ? (
             <>
-              {provider("Stripe")}
+              {provider("e.g. Stripe")}
               <Pick id={id("model")} label="Model" value={str(payload.model) || "usage-based"} list={options(BILLING_MODELS)} phone={phone} onChange={(value) => set({ model: value })} />
-              {str(payload.model || "usage-based") === "usage-based" ? <Text id={id("unit")} label="Per" value={str(payload.unit)} max={20} placeholder="1M tokens" phone={phone} onChange={(value) => set({ unit: value })} /> : null}
+              {str(payload.model || "usage-based") === "usage-based" ? <Text id={id("unit")} label="Per" value={str(payload.unit)} max={20} placeholder="e.g. 1M tokens" phone={phone} onChange={(value) => set({ unit: value })} /> : null}
               <Pick id={id("charges")} label="Charges" value={str(payload.charges) || "the agent's users"} list={options(BILLING_CHARGES)} phone={phone} onChange={(value) => set({ charges: value })} />
             </>
           ) : null}
-          {kind === "front_end" ? <Text id={id("built")} label="Built with" value={str(payload.built_with)} max={60} placeholder="Claude Design" phone={phone} onChange={(value) => set({ built_with: value })} /> : null}
+          {kind === "front_end" ? <Text id={id("built")} label="Built with" value={str(payload.built_with)} max={60} placeholder="e.g. Claude Design" phone={phone} onChange={(value) => set({ built_with: value })} /> : null}
         </div>
       </ModalForm>
     </ModalShell>

@@ -244,7 +244,7 @@ describe("the notice, the buttons and the keys", () => {
     vi.useFakeTimers();
     const onDone = vi.fn();
     const { rerender } = render(<ReferenceNotice notice={{ sentence: "Added Session 2", n: 1 }} onUndo={() => undefined} onDone={onDone} />);
-    rerender(<ReferenceNotice notice={{ sentence: "Split Session 2 at tile 12", n: 2 }} onUndo={() => undefined} onDone={onDone} />);
+    rerender(<ReferenceNotice notice={{ sentence: "Split Session 2 at step tile 12", n: 2 }} onUndo={() => undefined} onDone={onDone} />);
     act(() => void vi.advanceTimersByTime(NOTICE_MS));
     expect(onDone).toHaveBeenCalledTimes(1);
     expect(onDone).toHaveBeenCalledWith(2);

@@ -39,9 +39,10 @@ const libraryRows = (n: number): SourceLibraryItem[] => many(n, (at) => ({ id: `
 
 describe("Sources' choice budgets", () => {
   it.each([
-    ["Sessions in this build", { sessions: sessionRows(9) }, 9],
-    ["Files in this build", { files: fileRows(8) }, 8],
-    ["Your sessions", { library: libraryRows(10) }, 10],
+    // UX-02 P8: two groups: In this build (its sessions, then its files) and Available to add.
+    ["In this build", { sessions: sessionRows(9) }, 9],
+    ["In this build", { files: fileRows(8) }, 8],
+    ["Available to add", { library: libraryRows(10) }, 10],
   ] as const)("shows at most six rows in %s, then one Show more", (name, over, total) => {
     panel({ sessions: [], files: [], library: [], ...over });
     const group = screen.getByRole("region", { name });
@@ -55,9 +56,9 @@ describe("Sources' choice budgets", () => {
   });
 
   it("leaves out a group with nothing in it", () => {
-    panel({ files: [], library: [] });
-    expect(screen.queryByRole("region", { name: "Files in this build" })).toBeNull();
-    expect(screen.queryByRole("region", { name: "Your sessions" })).toBeNull();
+    panel({ sessions: [], files: [], reminders: [], library: [] });
+    expect(screen.queryByRole("region", { name: "In this build" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Available to add" })).toBeNull();
   });
 
   it("has no filled button and one add route per library session", () => {
@@ -95,14 +96,15 @@ describe("Sources' rows", () => {
 
   it("is a button that opens the picker without a fine pointer", () => {
     const props = panel({ fine: false });
-    fireEvent.click(screen.getByRole("button", { name: "Drop sessions or files" }));
+    // UX-02 P8: the dashed box is gone; Add files opens the picker.
+    fireEvent.click(screen.getByRole("button", { name: "Add files" }));
     expect(props.onPick).toHaveBeenCalled();
   });
 
   it("hands dropped files up on a fine pointer", () => {
     const props = panel();
     const file = new File(["x"], "menu.pdf", { type: "application/pdf" });
-    fireEvent.drop(screen.getByTestId("sources-drop"), { dataTransfer: { types: ["Files"], files: [file] } });
+    fireEvent.drop(screen.getByTestId("sources-panel"), { dataTransfer: { types: ["Files"], files: [file] } });
     expect(props.onDropFiles).toHaveBeenCalledWith([file]);
   });
 });
@@ -110,9 +112,9 @@ describe("Sources' rows", () => {
 describe("the setup-file reminder", () => {
   const reminder = (toolId: string, name: string, file: string) => ({ toolId, line: `${name} reads ${file}`, file });
 
-  it("sits under Files in this build, and Add opens the file picker", () => {
+  it("sits under In this build, and Add opens the file picker", () => {
     const props = panel({ files: fileRows(1), reminders: [reminder("claude-code", "Claude Code", "CLAUDE.md")] });
-    const files = screen.getByRole("region", { name: "Files in this build" });
+    const files = screen.getByRole("region", { name: "In this build" });
     expect(within(files).getByText("Claude Code reads CLAUDE.md")).toBeTruthy();
     fireEvent.click(within(files).getByRole("button", { name: "Add CLAUDE.md" }));
     expect(props.onPick).toHaveBeenCalledTimes(1);
@@ -136,14 +138,14 @@ describe("the setup-file reminder", () => {
       files: [],
       reminders: [reminder("claude-code", "Claude Code", "CLAUDE.md"), reminder("codex", "Codex", "AGENTS.md"), reminder("cursor", "Cursor", ".cursor/rules/")],
     });
-    const files = screen.getByRole("region", { name: "Files in this build" });
+    const files = screen.getByRole("region", { name: "In this build" });
     expect(within(files).getAllByRole("button", { name: /^Add / })).toHaveLength(2);
     expect(within(files).queryByText("Cursor reads .cursor/rules/")).toBeNull();
   });
 
   it("goes when there are none", () => {
-    panel({ files: [], reminders: [] });
-    expect(screen.queryByRole("region", { name: "Files in this build" })).toBeNull();
+    panel({ sessions: [], files: [], reminders: [] });
+    expect(screen.queryByRole("region", { name: "In this build" })).toBeNull();
     expect(screen.queryByText(/ reads /)).toBeNull();
   });
 });
@@ -156,28 +158,29 @@ describe("the refined look (UI-P93)", () => {
       </MemoryRouter>,
     );
 
-  it("lists the three groups in order, each session with its tool's real mark and a toggle", () => {
+  it("lists the two groups in order, each session with its tool's real mark and a toggle", () => {
     panel();
-    expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["Sessions in this build", "Files in this build", "Your sessions"]);
-    const sessions = screen.getByRole("region", { name: "Sessions in this build" });
+    expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["In this build", "Available to add"]);
+    const sessions = screen.getByRole("region", { name: "In this build" });
     expect(within(sessions).getAllByRole("button", { name: /^Open session/ })).toHaveLength(3);
     expect(sessions.querySelectorAll("[data-mark]")).toHaveLength(3);
   });
 
-  it("has a 6px square per group (hollow for Your sessions), a boxed 26 Add session and a 56-high dashed drop zone", () => {
+  it("has a 6px square per group (hollow for Available to add), a boxed 26 Add session, and no dashed drop zone (UX-02 P8)", () => {
     panel();
     const add = screen.getAllByRole("button", { name: "Add session" })[0];
     expect(add.getAttribute("style")).toMatch(/width:\s*26px/);
     const html = markup();
     expect(html).toContain("width:6px;height:6px;box-sizing:border-box;border-radius:1px;background:transparent;border:1px solid var(--text2)");
-    expect(html).toMatch(/data-testid="sources-drop" style="[^"]*min-height:56px[^"]*border:1px dashed var\(--line\)/);
+    expect(html).not.toContain("dashed");
+    expect(html).toContain("Or drop files anywhere on the build.");
   });
 });
 
 describe("a file a step makes (TF-08)", () => {
-  it("is noted as made in step 2 in Files in this build", () => {
+  it("is noted as made in step 2 in In this build", () => {
     panel({ files: [{ id: "bg", name: "brand-guide.md", note: "made in step 2" }, { id: "f1", name: "menu.pdf", note: "added by you" }] });
-    const group = screen.getByRole("region", { name: "Files in this build" });
+    const group = screen.getByRole("region", { name: "In this build" });
     expect(within(group).getByText("brand-guide.md")).toBeTruthy();
     expect(within(group).getByText("made in step 2")).toBeTruthy();
     expect(within(group).getByText("added by you")).toBeTruthy();
