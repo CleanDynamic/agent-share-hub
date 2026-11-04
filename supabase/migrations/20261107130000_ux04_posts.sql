@@ -333,16 +333,16 @@ CREATE INDEX IF NOT EXISTS idx_posts_about_node ON public.openbuild_posts (about
 
 -- 8. Grants, then policies ----------------------------------------------------------------------------------------------------
 
-ALTER TABLE public.openbuild_posts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.post_spaces ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.post_attachments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.post_mentions ENABLE ROW LEVEL SECURITY;
-
 REVOKE ALL ON public.openbuild_posts, public.post_spaces, public.post_attachments, public.post_mentions FROM anon, authenticated, service_role;
 GRANT SELECT ON public.openbuild_posts, public.post_spaces, public.post_attachments, public.post_mentions TO anon;
 GRANT SELECT, INSERT, UPDATE ON public.openbuild_posts TO authenticated;
 GRANT SELECT, INSERT ON public.post_spaces, public.post_attachments, public.post_mentions TO authenticated;
 GRANT ALL ON public.openbuild_posts, public.post_spaces, public.post_attachments, public.post_mentions TO service_role;
+
+ALTER TABLE public.openbuild_posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.post_spaces ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.post_attachments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.post_mentions ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Anyone reads posts that are not hidden" ON public.openbuild_posts;
 CREATE POLICY "Anyone reads posts that are not hidden"

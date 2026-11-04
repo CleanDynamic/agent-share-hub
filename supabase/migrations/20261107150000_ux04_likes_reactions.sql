@@ -117,14 +117,14 @@ FOR EACH ROW EXECUTE FUNCTION public.check_post_reaction();
 
 -- 3. Grants, then policies ----------------------------------------------------------------------------------------------------
 
-ALTER TABLE public.post_likes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.post_reactions ENABLE ROW LEVEL SECURITY;
-
 REVOKE ALL ON public.post_likes, public.post_reactions FROM anon, authenticated, service_role;
 GRANT SELECT ON public.post_likes, public.post_reactions TO anon;
 GRANT SELECT, INSERT, DELETE ON public.post_likes TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.post_reactions TO authenticated;
 GRANT ALL ON public.post_likes, public.post_reactions TO service_role;
+
+ALTER TABLE public.post_likes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.post_reactions ENABLE ROW LEVEL SECURITY;
 
 -- Readable wherever the post is: the EXISTS runs under the reader's own policies on posts. No UPDATE policy on likes.
 DROP POLICY IF EXISTS "Likes follow post readability" ON public.post_likes;

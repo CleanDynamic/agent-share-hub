@@ -100,9 +100,6 @@ FOR EACH ROW EXECUTE FUNCTION public.spaces_add_creator_as_moderator();
 
 -- 4. Grants, then policies ---------------------------------------------------------------------------------------------------
 
-ALTER TABLE public.spaces ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.space_members ENABLE ROW LEVEL SECURITY;
-
 REVOKE ALL ON public.spaces FROM anon, authenticated, service_role;
 GRANT SELECT ON public.spaces TO anon;
 GRANT SELECT, INSERT, UPDATE ON public.spaces TO authenticated;
@@ -112,6 +109,9 @@ REVOKE ALL ON public.space_members FROM anon, authenticated, service_role;
 GRANT SELECT ON public.space_members TO anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.space_members TO authenticated;
 GRANT ALL ON public.space_members TO service_role;
+
+ALTER TABLE public.spaces ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.space_members ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Anyone reads spaces" ON public.spaces;
 CREATE POLICY "Anyone reads spaces"
