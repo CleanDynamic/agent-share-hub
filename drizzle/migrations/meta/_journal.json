@@ -344,6 +344,13 @@
       "when": 1793808337143,
       "tag": "0048_ux04_topic_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1793808410997,
+      "tag": "0049_ux04_entry_media",
+      "breakpoints": true
     }
   ]
 }
