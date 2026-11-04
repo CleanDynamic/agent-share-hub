@@ -630,6 +630,8 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
               </div>
             </Fragment>
           ))}
+          {/* The entries of groups of one stand apart from the last headed group, so none reads as its member. */}
+          {layout.loose.length > 0 && layout.groups.length > 0 ? <Menu.Separator style={MENU_RULE} /> : null}
           {layout.loose.length > 0 ? (
             <div role="none" data-testid="add-loose" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 4 }}>
               {layout.loose.map(desktopItem)}

@@ -7,6 +7,7 @@ import { readFileSync } from "node:fs";
 import { expect, type Page } from "@playwright/test";
 
 import { ACCESS_TOKEN, answer, MAKER_ID, REPO_SCHEMA, startAuditBackend, type Fault } from "../../../src/lib/build/__audit__/fakeSupabase";
+import { ADD_CATEGORY_FALLBACK } from "../../../src/pages/site/compose/addMenuGroups";
 
 const CORS = { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "*", "access-control-expose-headers": "content-range, content-profile" };
 export const DRAFT = "0d0d0d0d-0000-4000-8000-000000000003";
@@ -17,7 +18,16 @@ export const SOURCE_MEDIA = "0f1f1f1f-0000-4000-8000-000000000001";
 
 export type Row = Record<string, unknown>;
 
+/** The node types' categories as the seed migration has them (the fake's registry files every type under "process"). */
+function categorise(rows: Record<string, Row[]>) {
+  for (const type of rows.node_types ?? []) {
+    const category = ADD_CATEGORY_FALLBACK[String(type.key)];
+    if (category) type.category = category;
+  }
+}
+
 function seed(rows: Record<string, Row[]>) {
+  categorise(rows);
   const build = rows.builds.find((row) => row.id === DRAFT) as Row;
   build.title = "UX-02 draft";
   build.making = {
