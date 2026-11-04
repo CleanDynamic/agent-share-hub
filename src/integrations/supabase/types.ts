@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.4"
   }
   public: {
     Tables: {
@@ -4358,6 +4358,7 @@ export type Database = {
           hidden_by: string | null
           hidden_reason: string | null
           id: string
+          like_count: number
           parent_id: string | null
           pinned_at: string | null
           pinned_by: string | null
@@ -4377,6 +4378,7 @@ export type Database = {
           hidden_by?: string | null
           hidden_reason?: string | null
           id?: string
+          like_count?: number
           parent_id?: string | null
           pinned_at?: string | null
           pinned_by?: string | null
@@ -4396,6 +4398,7 @@ export type Database = {
           hidden_by?: string | null
           hidden_reason?: string | null
           id?: string
+          like_count?: number
           parent_id?: string | null
           pinned_at?: string | null
           pinned_by?: string | null
@@ -4572,6 +4575,46 @@ export type Database = {
           },
         ]
       }
+      post_likes: {
+        Row: {
+          created_at: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "openbuild_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_lineage: {
         Row: {
           created_at: string
@@ -4645,6 +4688,52 @@ export type Database = {
           },
           {
             foreignKeyName: "post_mentions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_reactions: {
+        Row: {
+          created_at: string
+          kind: string
+          post_id: string
+          user_id: string
+          value: number | null
+        }
+        Insert: {
+          created_at?: string
+          kind: string
+          post_id: string
+          user_id: string
+          value?: number | null
+        }
+        Update: {
+          created_at?: string
+          kind?: string
+          post_id?: string
+          user_id?: string
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "openbuild_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_reactions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
