@@ -132,7 +132,8 @@ describe("readerSteps · B1 the bakery", () => {
       { title: "Claude Code", detail: "Sonnet 5.5 · steps 4–5" },
       { title: "Vercel", detail: "an account" },
     ]);
-    expect(need[1].rows).toEqual([{ title: "CLAUDE.md", detail: "step 4 · 1.2 KB", download: "https://files.test/b/claude.md" }]);
+    // UX-03 P3: the step is a link to it, and the size is the rest of the line.
+    expect(need[1].rows).toEqual([{ title: "CLAUDE.md", detail: "1.2 KB", download: "https://files.test/b/claude.md", steps: [expect.objectContaining({ number: "4", label: "step 4" })] }]);
     expect(need[2].rows).toEqual([{ title: "4 sessions over 3 days", detail: "3–6 Oct" }]);
   });
 
@@ -280,7 +281,7 @@ describe("readerSteps · B3 the team", () => {
       { title: "Opus 5.5", detail: "agent 3.3" },
       { title: "Web search", detail: "tool · agent 3.2" },
     ]);
-    expect(need[1].rows).toEqual([{ title: "template.md", detail: "agent 3.3 · 0.8 KB", download: "https://files.test/b/template.md" }]);
+    expect(need[1].rows).toEqual([{ title: "template.md", detail: "0.8 KB", download: "https://files.test/b/template.md", steps: [expect.objectContaining({ number: "3.3", label: "agent 3.3" })] }]);
     expect(need[2].rows).toEqual([{ title: "On a schedule", detail: "Mondays 07:00 · 6 agents a run" }]);
   });
   it("the heading", () => {

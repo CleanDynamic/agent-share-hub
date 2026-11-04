@@ -1358,6 +1358,7 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/publishChecklist.ts",
   // UX-03
   "src/pages/site/build/ux03.p2.test.tsx",
+  "src/pages/site/compose/ux03.p3.test.tsx",
 ];
 
 /**
