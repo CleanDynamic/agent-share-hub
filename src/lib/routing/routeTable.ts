@@ -60,12 +60,14 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
     /* SV-10: the first screen's reads that need nothing else: the Everyone feed, the room's counts and lists, and a
        signed-in reader's drafts. Same keys and functions as HomePage. */
     prefetch: async (_params, queryClient, { userId }) => {
-      const [{ getBuildFeed }, signals, { listOpenBountyCards, OPEN_BOUNTIES_PAGE_SIZE }, { listDraftsWithSessions }, { weekStartUtc }] = await Promise.all([
+      const [{ getBuildFeed }, signals, { listOpenBountyCards, OPEN_BOUNTIES_PAGE_SIZE }, { listDraftsWithSessions }, { weekStartUtc }, { listPublishedBuildsByCreator }, { HOME_BUILD_ROWS }] = await Promise.all([
         import("@/lib/feed/getBuildFeed"),
         import("@/lib/build/signals"),
         import("@/lib/bounty"),
         import("@/lib/build/drafts"),
         import("@/lib/progress/weekly"),
+        import("@/lib/build/builds"),
+        import("@/pages/site/home/homeModel"),
       ]);
       const weekStart = weekStartUtc(new Date()).toISOString();
       await Promise.all([
@@ -95,6 +97,14 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
         }),
         userId
           ? queryClient.prefetchQuery({ queryKey: ["build", "listDraftsWithSessions", userId], queryFn: () => listDraftsWithSessions(userId), staleTime: LIST_STALE_MS })
+          : undefined,
+        // UX-03 P6: the maker's live builds, for the room when nothing else in it has anything to show.
+        userId
+          ? queryClient.prefetchQuery({
+              queryKey: ["build", "listPublishedBuildsByCreator", userId, HOME_BUILD_ROWS],
+              queryFn: () => listPublishedBuildsByCreator(userId, { limit: HOME_BUILD_ROWS }),
+              staleTime: LIST_STALE_MS,
+            })
           : undefined,
       ]);
     },

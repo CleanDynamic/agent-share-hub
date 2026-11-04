@@ -29,7 +29,10 @@ import { engagementFor, useEngagement } from "@/hooks/useEngagement";
 import { librarySessionsKey, useLibrarySessions } from "@/hooks/useLibrarySessions";
 import { useMyWeek } from "@/hooks/useProgressPage";
 import { findRunByHandle, listOpenBountyCards, myMeToo, OPEN_BOUNTIES_PAGE_SIZE, openRequestFromRun, toggleMeToo } from "@/lib/bounty";
+import { listPublishedBuildsByCreator } from "@/lib/build/builds";
 import { listDraftsWithSessions } from "@/lib/build/drafts";
+import { copyToClipboard } from "@/lib/deepLink";
+import { SHARE_ORIGIN } from "@/components/social/EngagementRow";
 import { getGalleryBuildsByIds, listGallery, type GalleryBuild, type GalleryMedia } from "@/lib/build/gallery";
 import { attachSession } from "@/lib/build/sessions";
 import { countLitToday, countReproducedToday, countRunsThisWeek, listMostReproduced } from "@/lib/build/signals";
@@ -63,6 +66,7 @@ import {
   type HomeAskDetail,
   type HomeFilter,
   type HomePostDetail,
+  HOME_BUILD_ROWS,
 } from "./homeModel";
 
 const STALE_MS = LIST_STALE_MS;
@@ -213,6 +217,13 @@ export function HomePage() {
   const streak = useQuery({
     queryKey: ["progress", "getStreakDays", userId, STREAK_LOOKBACK_DAYS],
     queryFn: () => getStreakDays(userId!, STREAK_LOOKBACK_DAYS),
+    enabled: userId !== null,
+    staleTime: STALE_MS,
+  });
+  /* UX-03 P6: the maker's live builds, for the room when nothing else in it has anything to show. Started with the rest of round 1. */
+  const published = useQuery({
+    queryKey: ["build", "listPublishedBuildsByCreator", userId, HOME_BUILD_ROWS],
+    queryFn: () => listPublishedBuildsByCreator(userId!, { limit: HOME_BUILD_ROWS }),
     enabled: userId !== null,
     staleTime: STALE_MS,
   });
@@ -465,6 +476,14 @@ export function HomePage() {
             })),
           )}
           whereNext={loadable(signedIn, whereNext, (next) => whereNextRows(next, (item) => stillFor(srcByPath, item.build.cover)))}
+          published={loadable(signedIn, published, (result) => ({
+            total: result.total,
+            reproduced: result.reproduced,
+            rows: result.rows.map((row) => ({ id: row.id, title: row.title, slug: row.slug, href: `/b2/${row.slug}`, published: row.published_at ? sessionDate(row.published_at, now) : "" })),
+          }))}
+          onCopyLink={(slug) =>
+            void copyToClipboard(`${SHARE_ORIGIN}/b2/${slug}`).then((copied) => toast(copied ? "Link copied" : "The link could not be copied."))
+          }
         />
       </PageArrival>
     </>
