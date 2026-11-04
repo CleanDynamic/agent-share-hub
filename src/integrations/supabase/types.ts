@@ -4362,6 +4362,7 @@ export type Database = {
           parent_id: string | null
           pinned_at: string | null
           pinned_by: string | null
+          reply_count: number
           reward_gbp: number | null
           root_id: string
           still_open: boolean
@@ -4382,6 +4383,7 @@ export type Database = {
           parent_id?: string | null
           pinned_at?: string | null
           pinned_by?: string | null
+          reply_count?: number
           reward_gbp?: number | null
           root_id: string
           still_open?: boolean
@@ -4402,6 +4404,7 @@ export type Database = {
           parent_id?: string | null
           pinned_at?: string | null
           pinned_by?: string | null
+          reply_count?: number
           reward_gbp?: number | null
           root_id?: string
           still_open?: boolean
