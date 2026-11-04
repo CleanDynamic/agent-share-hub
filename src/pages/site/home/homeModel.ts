@@ -211,7 +211,7 @@ export interface HomeRunRow {
   at: string;
   /** SV-21: the build the run is of, for opening a request from it. */
   buildId: string;
-  /** SV-21: the viewer made the build and the run did not work, so "Open a request from this run" is offered. */
+  /** SV-21: the viewer made the build and the run did not work, so "Start a topic from this run" is offered. */
   canRequest: boolean;
 }
 

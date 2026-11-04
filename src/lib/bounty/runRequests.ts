@@ -1,14 +1,11 @@
-// SV-21 P1: a request opened from a failed run.
+// SV-21 P1, UX-08 P2: finding the run a feed line stands for.
 //
-// A RUN IS A build_reproductions ROW. The database refuses a maker's own, so every run that did not work is someone else's,
-// and the maker is the only person it is offered to. The request is a Whole build request (no gap node: a run is about the
-// build, not a step) with the run's note as its problem and the run linked, so the board can say where it came from.
-//
-// NOTHING IS CREATED ON ITS OWN. These run when the maker presses "Open a request from this run", and not before.
+// A RUN IS A build_reproductions ROW. The database refuses a maker's own, so every run that did not work is someone else's, and
+// the maker is the only person it is offered to. UX-08 P2: it used to file a request from the run; it now opens the New post window
+// with the run in its words (`src/pages/site/home/runTopic.ts`), and nothing is written until the person presses Post.
 
 import { supabase } from "@/integrations/supabase/client";
-import { createBountyForGap } from "./bounties";
-import { bountyLayerError, type Bounty } from "./types";
+import { bountyLayerError } from "./types";
 
 /** A run as the request needs it. */
 export interface RunForRequest {
@@ -16,6 +13,8 @@ export interface RunForRequest {
   buildId: string;
   worked: boolean;
   note: string;
+  /** The model the run was made on (`model_used`), when it said. */
+  model: string | null;
 }
 
 interface RunRow {
@@ -23,6 +22,7 @@ interface RunRow {
   build_id: string;
   worked: boolean;
   note: string | null;
+  model_used: string | null;
 }
 
 interface Reads {
@@ -37,9 +37,9 @@ interface Reads {
 }
 
 const reads = supabase as unknown as Reads;
-const RUN_COLUMNS = "id, build_id, worked, note";
+const RUN_COLUMNS = "id, build_id, worked, note, model_used";
 
-const toRun = (row: RunRow): RunForRequest => ({ id: row.id, buildId: row.build_id, worked: row.worked, note: row.note?.trim() ?? "" });
+const toRun = (row: RunRow): RunForRequest => ({ id: row.id, buildId: row.build_id, worked: row.worked, note: row.note?.trim() ?? "", model: row.model_used?.trim() || null });
 
 /**
  * The run a feed line stands for, by its build and the reproducer's handle (the feed row carries those, not the run's id).
@@ -54,23 +54,4 @@ export async function findRunByHandle(buildId: string, handle: string): Promise<
     .maybeSingle();
   if (error) throw bountyLayerError("findRunByHandle", error);
   return data ? toRun(data as RunRow) : null;
-}
-
-/**
- * Open a request from a run that did not work. Refused, before anything is written: a run that is not there, a run that
- * worked, and a viewer who did not make the build. The database says the last again (the bounty insert policy admits only
- * the build's maker), so this is the sentence, not the guarantee.
- */
-export async function openRequestFromRun({ runId, viewerId }: { runId: string; viewerId: string }): Promise<Bounty> {
-  const { data: run, error: runError } = await reads.from("build_reproductions").select(RUN_COLUMNS).eq("id", runId).maybeSingle();
-  if (runError) throw bountyLayerError("openRequestFromRun (run)", runError);
-  if (!run) throw new Error("That run is not there any more");
-  const found = toRun(run as RunRow);
-  if (found.worked) throw new Error("That run worked, so there is nothing to ask for");
-
-  const { data: build, error: buildError } = await reads.from("builds").select("id, creator_id").eq("id", found.buildId).maybeSingle();
-  if (buildError) throw bountyLayerError("openRequestFromRun (build)", buildError);
-  if (!build || (build as { creator_id: string }).creator_id !== viewerId) throw new Error("Only the person who made the build can open a request from a run");
-
-  return createBountyForGap({ buildId: found.buildId, problem: found.note || null, fromRunId: found.id });
 }

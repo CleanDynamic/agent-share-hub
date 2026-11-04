@@ -13,7 +13,7 @@
    THE ADDRESS HOLDS THE TAB AND THE KIND (`?tab=following`, `?kind=notes`): the same page with new parameters, so the old
    items stay until the new arrive and nothing fades. A signed-out reader who asks for Following is sent to sign in. */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { keepPreviousData, useInfiniteQuery, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -28,8 +28,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { engagementFor, useEngagement } from "@/hooks/useEngagement";
 import { librarySessionsKey, useLibrarySessions } from "@/hooks/useLibrarySessions";
 import { useMyWeek } from "@/hooks/useProgressPage";
-import { findRunByHandle, myMeToo, openRequestFromRun, toggleMeToo } from "@/lib/bounty";
+import { findRunByHandle, myMeToo, toggleMeToo } from "@/lib/bounty";
 import { listPosts, postKey } from "@/lib/openbuilds";
+import type { PostingWindow } from "../openbuilds/PostingWindows";
+import { failedRunDraft } from "./runTopic";
 import { listPublishedBuildsByCreator } from "@/lib/build/builds";
 import { listDraftFirstPrompts, listDraftsWithSessions } from "@/lib/build/drafts";
 import { copyToClipboard } from "@/lib/deepLink";
@@ -79,6 +81,9 @@ import {
 } from "./homeModel";
 
 /** UX-08 P3: the open requests are no longer read on Home, so the old requests in the feed carry no extra detail. */
+/** UX-08 P2: the New post window loads when a failed run first opens it, not with the page. */
+const PostingWindows = lazy(() => import("../openbuilds/PostingWindows"));
+
 const NO_ASKS: ReadonlyMap<string, HomeAskDetail> = new Map();
 
 const STALE_MS = LIST_STALE_MS;
@@ -383,17 +388,19 @@ export function HomePage() {
     staleTime: STALE_MS,
   });
 
-  /* SV-21: only when the maker presses it. The feed row has the build and the reproducer's handle, so the run is found now. */
+  /* UX-08 P2: only when the maker presses it. The feed row has the build and the reproducer's handle, so the run is found now; the
+     New post window then opens with the run in its words, and nothing is written until Post is pressed. */
+  const [win, setWin] = useState<PostingWindow | null>(null);
   const onOpenRequest = async (run: HomeRunRow) => {
     if (!userId || !run.handle) return;
     try {
       const found = await findRunByHandle(run.buildId, run.handle);
       if (!found) throw new Error("That run is not there any more");
-      await openRequestFromRun({ runId: found.id, viewerId: userId });
-      toast("Request opened.", { action: { label: "See requests", onClick: () => navigate("/openbuilds/requests") } });
+      if (found.worked) throw new Error("That run worked, so there is nothing to start a topic about");
+      setWin({ kind: "post", draft: failedRunDraft({ buildId: found.buildId, model: found.model }) });
     } catch (error) {
-      reportError(error, { source: "home", context: "openRequestFromRun" });
-      toast.error(error instanceof Error && error.message.startsWith("That run already") ? error.message : "Couldn't open a request from that run. Try again.");
+      reportError(error, { source: "home", context: "failedRunTopic" });
+      toast.error("Couldn't start a topic from that run. Try again.");
     }
   };
 
@@ -607,6 +614,11 @@ export function HomePage() {
           }
         />
       </PageArrival>
+      {win ? (
+        <Suspense fallback={null}>
+          <PostingWindows window={win} onClose={() => setWin(null)} onReopen={setWin} />
+        </Suspense>
+      ) : null}
     </>
   );
 }

@@ -1196,7 +1196,7 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/bounty/openBuilds.test.ts",
   "src/lib/bounty/runRequestRules.ts",
   "src/lib/bounty/runRequests.ts",
-  "src/lib/bounty/runRequests.test.ts",
+  "src/lib/bounty/runRequestRules.test.ts",
   "src/lib/bounty/claims.ts",
   "src/lib/bounty/claims.test.ts",
   "src/lib/bounty/sessionOffers.ts",
@@ -1457,6 +1457,12 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/openbuilds/ReactionRow.tsx",
   "src/pages/site/openbuilds/ux07.p7.test.tsx",
   "src/pages/ux07.budget.test.tsx",
+  // UX-08
+  "src/pages/site/home/runTopic.ts",
+  "src/pages/site/home/ux08.p2.test.tsx",
+  "src/pages/site/home/ux08.p3.test.tsx",
+  "src/lib/routing/retiredRoutes.ts",
+  "src/lib/routing/retiredRoutes.test.tsx",
 ];
 
 /**
