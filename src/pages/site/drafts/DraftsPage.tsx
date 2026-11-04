@@ -35,13 +35,13 @@ import { useConnectorDialog } from "@/components/connect/ConnectorDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOnScreen } from "@/hooks/useOnScreen";
 import { librarySessionsKey, useLibrarySessions } from "@/hooks/useLibrarySessions";
-import { listDraftsWithSessions, listEmptyDraftIds, removeEmptyDrafts, type DraftListItem } from "@/lib/build/drafts";
+import { listDraftFirstPrompts, listDraftsWithSessions, listEmptyDraftIds, removeEmptyDrafts, type DraftListItem } from "@/lib/build/drafts";
 import { attachSession } from "@/lib/build/sessions";
 import { PageArrival } from "@/components/shell/PageArrival";
 
 import { DraftsLoadingView } from "./DraftsFrame";
 import { DraftsView } from "./DraftsView";
-import { draftTitle } from "./draftsModel";
+import { draftTitle, withFirstPrompts } from "./draftsModel";
 
 const STALE_MS = LIST_STALE_MS;
 
@@ -56,6 +56,13 @@ export function DraftsPage() {
   const draftsQuery = useQuery({
     queryKey: ["build", "listDraftsWithSessions", userId],
     queryFn: () => listDraftsWithSessions(userId),
+    enabled: userId !== null,
+    staleTime: STALE_MS,
+  });
+  /* UX-03 P7: the untitled drafts' first prompts, read beside the list, so a draft with no title is shown by its prompt. */
+  const promptsQuery = useQuery({
+    queryKey: ["build", "listDraftFirstPrompts", userId],
+    queryFn: () => listDraftFirstPrompts(userId),
     enabled: userId !== null,
     staleTime: STALE_MS,
   });
@@ -148,7 +155,7 @@ export function DraftsPage() {
           sessionsError={library.isLoadingError ? library.error : undefined}
           onRetrySessions={() => void library.refetch()}
           sessionsAnchor={sessionsAnchor}
-          drafts={draftsQuery.data ?? []}
+          drafts={withFirstPrompts(draftsQuery.data ?? [], promptsQuery.data)}
           sessions={library.data ?? []}
           moreSessions={library.hasMore ? { loading: library.loadingMore, onMore: library.fetchMore } : undefined}
           onAddToNew={addToNew}

@@ -5,6 +5,7 @@
    The relative time is the feed's own `shortAgo` ("17m", "2d"), not a new one. */
 
 import { NO_HARNESS } from "@/lib/build/harnessWords";
+import { hasTitle } from "@/lib/build/publish";
 import type { DraftListItem } from "@/lib/build/drafts";
 import type { SessionSummary } from "@/lib/build/sessions";
 import { shortAgo } from "@/pages/site/home/homeModel";
@@ -35,6 +36,22 @@ export function isUntitled(title: string | null | undefined): boolean {
 
 export function draftTitle(title: string | null | undefined): string {
   return isUntitled(title) ? UNTITLED : (title as string).trim();
+}
+
+/**
+ * UX-03 P7: what a draft's row says: its title, or, with none of its own (`hasTitle`), its first prompt's text on one line (the
+ * row cuts it with an ellipsis). Display only: never written to the draft's title, which the title rules read as untitled.
+ * A draft with no prompt keeps "Untitled build".
+ */
+/** UX-03 P7: the drafts with their first prompts put in, from `listDraftFirstPrompts`. While those are on their way, as they are. */
+export function withFirstPrompts(drafts: readonly DraftListItem[], prompts: ReadonlyMap<string, string> | undefined): DraftListItem[] {
+  return prompts ? drafts.map((draft) => ({ ...draft, firstPrompt: prompts.get(draft.id) ?? null })) : [...drafts];
+}
+
+export function draftRowTitle(draft: Pick<DraftListItem, "title" | "firstPrompt">): string {
+  if (hasTitle(draft.title)) return (draft.title as string).trim();
+  const prompt = (draft.firstPrompt ?? "").replace(/\s+/g, " ").trim();
+  return prompt || UNTITLED;
 }
 
 /** "2 sessions", "1 session", "No sessions". */

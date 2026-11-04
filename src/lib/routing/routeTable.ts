@@ -60,7 +60,7 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
     /* SV-10: the first screen's reads that need nothing else: the Everyone feed, the room's counts and lists, and a
        signed-in reader's drafts. Same keys and functions as HomePage. */
     prefetch: async (_params, queryClient, { userId }) => {
-      const [{ getBuildFeed }, signals, { listOpenBountyCards, OPEN_BOUNTIES_PAGE_SIZE }, { listDraftsWithSessions }, { weekStartUtc }, { listPublishedBuildsByCreator }, { HOME_BUILD_ROWS }] = await Promise.all([
+      const [{ getBuildFeed }, signals, { listOpenBountyCards, OPEN_BOUNTIES_PAGE_SIZE }, { listDraftsWithSessions, listDraftFirstPrompts }, { weekStartUtc }, { listPublishedBuildsByCreator }, { HOME_BUILD_ROWS }] = await Promise.all([
         import("@/lib/feed/getBuildFeed"),
         import("@/lib/build/signals"),
         import("@/lib/bounty"),
@@ -97,6 +97,9 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
         }),
         userId
           ? queryClient.prefetchQuery({ queryKey: ["build", "listDraftsWithSessions", userId], queryFn: () => listDraftsWithSessions(userId), staleTime: LIST_STALE_MS })
+          : undefined,
+        userId
+          ? queryClient.prefetchQuery({ queryKey: ["build", "listDraftFirstPrompts", userId], queryFn: () => listDraftFirstPrompts(userId), staleTime: LIST_STALE_MS })
           : undefined,
         // UX-03 P6: the maker's live builds, for the room when nothing else in it has anything to show.
         userId
@@ -222,12 +225,16 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
     load: () => import("@/pages/site/drafts/DraftsPage"),
     prefetch: async (_params, queryClient, { userId }) => {
       if (!userId) return;
-      const { listDraftsWithSessions } = await import("@/lib/build/drafts");
-      await queryClient.prefetchQuery({
-        queryKey: ["build", "listDraftsWithSessions", userId],
-        queryFn: () => listDraftsWithSessions(userId),
-        staleTime: LIST_STALE_MS,
-      });
+      const { listDraftsWithSessions, listDraftFirstPrompts } = await import("@/lib/build/drafts");
+      await Promise.all([
+        queryClient.prefetchQuery({
+          queryKey: ["build", "listDraftsWithSessions", userId],
+          queryFn: () => listDraftsWithSessions(userId),
+          staleTime: LIST_STALE_MS,
+        }),
+        // UX-03 P7: the untitled drafts' first prompts, beside the list.
+        queryClient.prefetchQuery({ queryKey: ["build", "listDraftFirstPrompts", userId], queryFn: () => listDraftFirstPrompts(userId), staleTime: LIST_STALE_MS }),
+      ]);
     },
     Placeholder: DraftsPlaceholder,
     frame: { board: true },

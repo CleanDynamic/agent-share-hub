@@ -30,7 +30,7 @@ import { librarySessionsKey, useLibrarySessions } from "@/hooks/useLibrarySessio
 import { useMyWeek } from "@/hooks/useProgressPage";
 import { findRunByHandle, listOpenBountyCards, myMeToo, OPEN_BOUNTIES_PAGE_SIZE, openRequestFromRun, toggleMeToo } from "@/lib/bounty";
 import { listPublishedBuildsByCreator } from "@/lib/build/builds";
-import { listDraftsWithSessions } from "@/lib/build/drafts";
+import { listDraftFirstPrompts, listDraftsWithSessions } from "@/lib/build/drafts";
 import { copyToClipboard } from "@/lib/deepLink";
 import { SHARE_ORIGIN } from "@/components/social/EngagementRow";
 import { getGalleryBuildsByIds, listGallery, type GalleryBuild, type GalleryMedia } from "@/lib/build/gallery";
@@ -43,7 +43,7 @@ import { getStreakDays } from "@/lib/progress";
 import { weekStartUtc, weeklyProgress } from "@/lib/progress/weekly";
 import { LIST_STALE_MS, SLOW_STALE_MS } from "@/lib/query/client";
 import { usePageReady } from "@/lib/routing/pageReady";
-import { draftMeta, draftTitle, isUntitled, promptLine, sessionDate, sessionSource } from "@/pages/site/drafts/draftsModel";
+import { draftMeta, draftRowTitle, isUntitled, promptLine, sessionDate, sessionSource } from "@/pages/site/drafts/draftsModel";
 
 import { HomeLoadingView } from "./HomeFrame";
 import { HomeView, type HomeScope, type Loadable } from "./HomeView";
@@ -209,6 +209,13 @@ export function HomePage() {
   const drafts = useQuery({
     queryKey: ["build", "listDraftsWithSessions", userId],
     queryFn: () => listDraftsWithSessions(userId),
+    enabled: userId !== null,
+    staleTime: STALE_MS,
+  });
+  /* UX-03 P7: the untitled drafts' first prompts, beside the drafts, so a draft with no title is shown by its prompt. */
+  const draftPrompts = useQuery({
+    queryKey: ["build", "listDraftFirstPrompts", userId],
+    queryFn: () => listDraftFirstPrompts(userId),
     enabled: userId !== null,
     staleTime: STALE_MS,
   });
@@ -393,7 +400,8 @@ export function HomePage() {
             rows: rows
               .filter((draft) => draft.sessionCount > 0)
               .slice(0, 3)
-              .map((draft) => ({ id: draft.id, title: draftTitle(draft.title), untitled: isUntitled(draft.title), meta: draftMeta(draft, now) })),
+              // UX-03 P7: an untitled draft is shown by its first prompt.
+              .map((draft) => ({ id: draft.id, title: draftRowTitle({ ...draft, firstPrompt: draftPrompts.data?.get(draft.id) ?? null }), untitled: isUntitled(draft.title), meta: draftMeta(draft, now) })),
           }))}
           sessions={loadable(signedIn, { isLoading: !library.data && !library.isLoadingError, error: library.isLoadingError ? library.error : null, data: library.data, refetch: library.refetch }, (rows) => ({
             total: rows.length,
