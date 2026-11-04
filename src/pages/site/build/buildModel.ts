@@ -68,18 +68,28 @@ export function buildTabs(hasRebuilds: boolean): { value: BuildTabKey; label: st
 
 /**
  * UI-P73 — the page's sections when the build page draws the steps (CONCEPT §6):
- * The build, Watch it get built, Understand it, Where it broke, Rebuilds (only
- * when there are some), at most five. The keys stay as they are, so `anatomy` is
+ * Steps, then Watch it get built, Understand it, Where it broke and Rebuilds, each only when its panel has something
+ * to show (UX-03 follow-up P14), at most five. The keys stay as they are, so `anatomy` is
  * The build and every link that set `run` still lands somewhere (`landTab`).
  */
-export function stepTabs(hasRebuilds: boolean): { value: BuildTabKey; label: string }[] {
+export function stepTabs(hasRebuilds: boolean, has: StepTabFacts = {}): { value: BuildTabKey; label: string }[] {
   return [
-    { value: "anatomy", label: "The build" },
-    { value: "watch", label: "Watch it get built" },
-    { value: "understand", label: "Understand it" },
-    { value: "broke", label: "Where it broke" },
+    { value: "anatomy", label: "Steps" },
+    ...(has.events ? [{ value: "watch" as const, label: "Watch it get built" }] : []),
+    ...(has.understand ? [{ value: "understand" as const, label: "Understand it" }] : []),
+    ...(has.broke ? [{ value: "broke" as const, label: "Where it broke" }] : []),
     ...(hasRebuilds ? [{ value: "rebuilds" as const, label: "Rebuilds" }] : []),
   ];
+}
+
+/** UX-03 follow-up P14: what the page knows about each panel. A tab is drawn only when its panel has something to show. */
+export interface StepTabFacts {
+  /** At least one kept (not hidden) event: Watch it get built. */
+  events?: boolean;
+  /** An approved understand layer: Understand it. */
+  understand?: boolean;
+  /** At least one recorded failure, or an open gap a reader can solve: Where it broke. */
+  broke?: boolean;
 }
 
 /** Where a tab lands: with the steps drawn, Run it yourself is The build. */

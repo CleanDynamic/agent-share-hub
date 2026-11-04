@@ -1081,9 +1081,11 @@ export function BuildPanel({
 }) {
   const onSteps = viewer.tab === "anatomy";
   const stacked = !useMinWidth(BETWEEN.stack);
+  /* UX-03 follow-up P14: with Steps the only tab there is no tab bar; the section draws its own head. */
+  const manyTabs = viewer.tabs.length > 1;
   return (
     <div data-testid="build-steps-panel" style={{ ...(phone || inColumn ? null : wide(stacked)), display: "flex", flexDirection: "column", gap: 16 }}>
-      {phone ? null : (
+      {phone || !manyTabs ? null : (
         <UnderlineTabs
           label="Sections of this build"
           fontSize={13}
@@ -1093,7 +1095,7 @@ export function BuildPanel({
         />
       )}
       <div role="tabpanel" id={BUILD_PANEL} aria-labelledby={`build-tab-${viewer.tab}`} style={{ minWidth: 0 }}>
-        {onSteps ? <StepsList view={steps} phone={phone} announce={announce} /> : viewer.content}
+        {onSteps ? <StepsList view={steps} phone={phone} announce={announce} titled={!manyTabs} /> : viewer.content}
       </div>
     </div>
   );
@@ -1249,6 +1251,7 @@ function PhoneBuild(props: BuildViewProps) {
       )}
       <Proof proof={proof} phone now={now} />
       {props.classification}
+      {viewer.tabs.length < 2 && steps ? null : (
       <ScrollRow gap={6} label="Sections of this build" tablist>
         {viewer.tabs.map((tab) => (
           <FilterChip
@@ -1263,6 +1266,7 @@ function PhoneBuild(props: BuildViewProps) {
           />
         ))}
       </ScrollRow>
+      )}
       {lower}
       {region}
     </div>

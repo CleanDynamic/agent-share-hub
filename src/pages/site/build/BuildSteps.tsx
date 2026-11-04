@@ -51,15 +51,17 @@ import { SaveMark, UsedInLine } from "@/components/build/ConnectionMarks";
 import { CostStrip, TileCostLines } from "@/components/build/CostLines";
 import { callsOf } from "@/lib/build/decisionCopy";
 import { definesOf } from "@/lib/build/agentCode";
-import { PromptName, CheckCasesBody, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReaderFacts, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TileFooter, ToolTileBody, DecisionTileBody, RetrievalTileBody, TypeLine } from "@/components/build/tileBodies";
-import { footerFactsOf, resultTypeLine } from "@/lib/build/tileLines";
+import { PromptName, CheckCasesBody, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReaderFacts, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TileFooter, ToolTileBody, DecisionTileBody, RetrievalTileBody } from "@/components/build/tileBodies";
+import { footerFactsOf, resultTypeLine, typeLineOf } from "@/lib/build/tileLines";
+import { TypeChip } from "@/components/vision/TypeChip";
+import { SectionHead } from "@/components/vision/SectionHead";
 import { focusable } from "@/components/build/partNav";
 import { flashOutline } from "@/components/post/RefLinks";
 import { borderFor, outlineFor } from "@/lib/theme/partColour";
-import { groupKey, groupKind, groupOfStep, promptPlace, shownGroups, type SessionGroup } from "@/lib/build/graph";
+import { groupKey, groupKind, groupOfStep, shownGroups, type SessionGroup } from "@/lib/build/graph";
 import { parseRefTo, refTo } from "@/lib/build/thread";
 import type { Step } from "@/lib/build/graph";
-import { shortDate } from "@/lib/build/readerSteps";
+import { sessionHeadline, shortDate } from "@/lib/build/readerSteps";
 import type { NeedGroup, NeedRow, ReaderFile, ReaderResult, ReaderStep } from "@/lib/build/readerSteps";
 import { markFor } from "@/lib/models/marks";
 import { ring } from "@/lib/theme/controls";
@@ -166,6 +168,8 @@ export interface StepsListProps {
   view: BuildStepsView;
   phone: boolean;
   announce: (text: string) => void;
+  /** No tab bar above: draw the section's own head, `Steps` as an h2 over `<counts> · <hint>`. With one, the meta line alone. */
+  titled?: boolean;
 }
 
 /**
@@ -241,8 +245,8 @@ const text = (px: number, weight: 400 | 500, color: string, extra: CSSProperties
 
 const tnum: CSSProperties = { fontVariantNumeric: "tabular-nums" };
 
-/** The indent that lines text up under a step's title: the 24 tile and its 12 gap. */
-const INDENT = 36;
+/** A step's parts used to be indented under its number tile. A step is now a row with its head above the text, so nothing is indented (UX-03 follow-up P14). */
+const INDENT = 0;
 
 const bareButton: CSSProperties = {
   appearance: "none",
@@ -271,6 +275,32 @@ const moduleStyle = (ringed: boolean): CSSProperties => ({
   minWidth: 0,
   /* A step a chip or an address named is the selected recipe for 1.2s: an edge and a ring, never a colour. */
   ...(ringed ? { borderColor: t.selectedEdge, boxShadow: t.selectedRing } : null),
+});
+
+/** UX-03 follow-up P14: a step is a row in its session's module: a hairline above it and 14 above and below its content. */
+const rowStyle = (ringed: boolean): CSSProperties => ({
+  display: "flex",
+  flexDirection: "column",
+  gap: 6,
+  padding: "14px 0",
+  borderTop: `1px solid ${t.hairlineModule}`,
+  boxSizing: "border-box",
+  minWidth: 0,
+  /* A step a chip or an address named is ringed for 1.2s. */
+  ...(ringed ? { boxShadow: t.selectedRing, borderRadius: 6 } : null),
+});
+
+/** A session: one module (grammar 2), padded `16px 16px 4px` so the last row sits evenly. A coloured session's outline is its colour. */
+const sessionModuleStyle = (colour: string | undefined): CSSProperties => ({
+  background: t.module,
+  border: `1px solid ${colour ?? t.moduleBorder}`,
+  borderRadius: 8,
+  boxShadow: t.moduleShadow,
+  padding: "16px 16px 4px",
+  boxSizing: "border-box",
+  display: "flex",
+  flexDirection: "column",
+  minWidth: 0,
 });
 
 const tileStyle: CSSProperties = {
@@ -341,7 +371,7 @@ function DownloadButton({ href, name, label = "Download" }: { href: string; name
       {...handlers}
       style={{
         ...controlPaint(state),
-        height: 26,
+        height: 28,
         boxSizing: "border-box",
         display: "inline-flex",
         alignItems: "center",
@@ -368,7 +398,6 @@ function CopyButton({ label = "Copy", what, text: words, onCopy, announce, phone
       size={phone ? 44 : 28}
       fontSize={12}
       aria-label={`${label} ${what}`}
-      style={phone ? undefined : { height: 26 }}
       onClick={async () => {
         if (await onCopy(words)) {
           confirm();
@@ -423,7 +452,7 @@ function StepText({ step, onRead, alone = false, indent = INDENT }: { step: Step
           ...text(13.5, 400, t.text),
           margin: 0,
           paddingLeft: indent,
-          lineHeight: "22px",
+          lineHeight: "21px",
           whiteSpace: "pre-wrap",
           overflowWrap: "anywhere",
           ...(long ? { display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" as const, overflow: "hidden" } : null),
@@ -660,44 +689,32 @@ interface Fold {
 }
 
 /**
- * CA-14 P2: a session's head as a reader sees it, the same line as the maker's without the maker's controls: a fold
- * arrow, the app's mark, "Session 1 · Claude", the title as plain text (nothing when there is none), the tile count only
- * while folded, and the date.
+ * A session's head as a reader sees it (UX-03 follow-up P14): the section-head recipe at module size. The title
+ * `Session <n> · <harness>` 14/500, the meta `<n> steps · <date>` 12 `--label` 2 under it (the maker's own title for the
+ * session leads the meta when there is one), and the fold at the top right as a 28 control with a chevron. The fold keeps
+ * its name, `aria-expanded` and `aria-controls`.
  */
 function ReaderSessionHead({ chat, fold }: { chat: SessionChat; fold: Fold }) {
   const marked = markFor({ tool: chat.tool, model: chat.model }) !== null;
-  const name = `Session ${chat.session}`;
+  const name = `Session ${chat.number}`;
+  const steps = `${fold.tiles} ${fold.tiles === 1 ? "step" : "steps"}`;
   return (
-    <div role="group" tabIndex={-1} aria-label={`${name} · ${chat.tool ?? NO_HARNESS}`} data-testid="reader-session-head" style={{ outline: "none", display: "flex", flexWrap: fold.phone ? "wrap" : "nowrap", alignItems: "center", columnGap: 8, rowGap: 4, minHeight: 44, minWidth: 0 }}>
-      <IconButton icon={ChevronRight} glyph={fold.folded ? "chev" : "chevd"} boxed={false} size={30} data-hit="" label={`${fold.folded ? "Expand" : "Collapse"} ${name}`} aria-expanded={!fold.folded} aria-controls={fold.controls} onClick={fold.toggle} />
+    <div role="group" tabIndex={-1} aria-label={`${name} · ${chat.tool ?? NO_HARNESS}`} data-testid="reader-session-head" style={{ outline: "none", display: "flex", alignItems: "flex-start", gap: 12, paddingBottom: 8, minWidth: 0 }}>
       {marked ? (
-        <span style={{ display: "inline-flex", color: t.text }}>
+        <span style={{ display: "inline-flex", color: t.text, flexShrink: 0 }}>
           <ModelMark tool={chat.tool} model={chat.model} size={20} />
         </span>
-      ) : (
-        <span aria-hidden="true" style={{ display: "inline-flex", width: 20, justifyContent: "center", color: t.label }}>
-          <Glyph name="layers" size={16} />
-        </span>
-      )}
-      <span style={{ ...text(15, 500, t.text), whiteSpace: "nowrap" }}>
-        {name}
-        {chat.tool ? ` · ${chat.tool}` : ""}
-      </span>
-      {chat.title ? (
-        <span data-testid="session-title-text" style={{ ...text(15, 400, t.text), minWidth: 0, flex: "1 1 120px", overflowWrap: "anywhere" }}>
-          {chat.title}
-        </span>
-      ) : (
-        <span style={{ flex: "1 1 0", minWidth: 0 }} />
-      )}
-      {fold.folded ? (
-        <span data-testid="session-count" style={{ ...text(13, 400, t.text2), fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
-          {fold.tiles} {fold.tiles === 1 ? "tile" : "tiles"}
-        </span>
       ) : null}
+      <div style={{ flexGrow: 1, minWidth: 0 }}>
+        <h3 style={{ margin: 0, ...text(14, 500, t.text), lineHeight: 1.3, overflowWrap: "anywhere" }}>{chat.headline}</h3>
+        <div style={{ marginTop: 2, ...text(12, 400, t.label), overflowWrap: "anywhere" }}>
+          {chat.title ? <span data-testid="session-title-text">{chat.title} · </span> : null}
+          <span data-testid="session-count">{[steps, chat.date].filter(Boolean).join(" · ")}</span>
+        </div>
+      </div>
       {chat.key ? <MemberLabel to={refTo({ kind: "session", id: chat.key })} /> : null}
       {chat.key ? <SaveMark kind="session" id={chat.key} /> : null}
-      {chat.date ? <span style={{ ...text(13, 400, t.label), whiteSpace: "nowrap" }}>{chat.date}</span> : null}
+      <IconButton icon={ChevronRight} glyph={fold.folded ? "chev" : "chevd"} size={28} data-hit="" label={`${fold.folded ? "Expand" : "Collapse"} ${name}`} aria-expanded={!fold.folded} aria-controls={fold.controls} onClick={fold.toggle} />
     </div>
   );
 }
@@ -730,7 +747,7 @@ function ChatHead({ chat, copy, fold }: { chat: SessionChat; copy?: { onCopy: (t
     <>
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
         <div style={{ flexGrow: 1, minWidth: 0 }}>
-          {fold && chat.session !== null ? (
+          {fold ? (
             <ReaderSessionHead chat={chat} fold={fold} />
           ) : (
             <Head detail={chat.detail} tool={chat.tool} model={chat.model}>
@@ -824,40 +841,49 @@ interface Ctx {
   read: (id: string) => void;
 }
 
-function Title({ entry, right, place }: { entry: ReaderStep; right: ReactNode; /** A prompt: its place on the build, before the maker's own title. */ place?: string }) {
+/** The chip's word for a step: its kind's name. */
+const kindWord = (step: Step): string => TILE_KIND[step.kind] ?? typeLineOf(step).split(" · ")[0];
+
+/**
+ * UX-03 follow-up P14: a step's head. `Step <n>` 13/500, its type as the grey mono chip, and its one action at the right.
+ * Its accessible name is `Step <n> · <Type>`. A title the maker gave the step is the first line under it.
+ */
+function StepHead({ entry, right, level = 4 }: { entry: ReaderStep; right?: ReactNode; level?: 4 | 5 }) {
+  const { step } = entry;
+  const word = kindWord(step);
+  const Heading = level === 4 ? "h4" : "h5";
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-      <NumberTile>{entry.step.number}</NumberTile>
-      {place ? (
-        <h3 data-default-title={entry.isDefaultTitle ? "true" : undefined} style={{ margin: 0, flexGrow: 1, minWidth: 0, letterSpacing: "-0.005em" }}>
-          <PromptName place={place} title={entry.isDefaultTitle ? null : entry.title} />
-        </h3>
-      ) : (
-        <h3
-          style={{
-            ...text(14, 500, entry.isDefaultTitle ? t.text2 : t.text),
-            margin: 0,
-            flexGrow: 1,
-            minWidth: 0,
-            letterSpacing: "-0.005em",
-            overflowWrap: "anywhere",
-          }}
-        >
+    <>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 28, minWidth: 0 }}>
+        <Heading aria-label={`Step ${step.number} · ${word}`} style={{ ...text(13, 500, t.text), margin: 0, display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <span>Step {step.number}</span>
+          <TypeChip>{word}</TypeChip>
+        </Heading>
+        {/* CA-19 P5: a member of a named group says so, as in the List. */}
+        <MemberLabel to={refTo({ kind: "node", id: step.id })} />
+        <span style={{ flexGrow: 1 }} />
+        {right}
+      </div>
+      {entry.isDefaultTitle ? null : (
+        <span data-testid="step-own-title" style={{ ...text(13, 500, t.text), overflowWrap: "anywhere" }}>
           {entry.title}
-        </h3>
+        </span>
       )}
-      {/* CA-19 P5: a member of a named group says so, as in the List. */}
-      <MemberLabel to={refTo({ kind: "node", id: entry.step.id })} />
-      {right}
-    </div>
+    </>
   );
 }
 
-/** The number of the session a prompt is in, when it is in a numbered one. */
-const readerSession = (groups: StepsListProps["view"]["groups"], step: Step): number | null => {
-  const group = groupOfStep(groups ?? [], step);
-  return group && groupKind(group) !== "legacy" ? group.number : null;
-};
+/** What the type line says beyond the chip's word ("TypeScript · 42 lines"). Nothing for a file, whose body is its name. */
+function TypeDetail({ step }: { step: Step }) {
+  if (step.kind === "file") return null;
+  const rest = typeLineOf(step).split(" · ").slice(1).join(" · ");
+  if (!rest) return null;
+  return (
+    <div data-testid={`${step.kind}-eyebrow`} style={{ ...text(12, 400, t.label), overflowWrap: "anywhere" }}>
+      {rest}
+    </div>
+  );
+}
 
 function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   const { step } = entry;
@@ -868,9 +894,9 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
     /* CA-03 P5: how the build checked its work. Its answers and one status line; never the lamp, a reproduction
        count or the word for one. */
     return (
-      <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="check" style={{ ...moduleStyle(ringed), ...colourEdge(step.colour, ringed) }}>
-        <Title entry={entry} right={<SaveMark kind="step" id={step.id} />} />
-        <TypeLine step={step} indent={INDENT} />
+      <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="check" style={{ ...rowStyle(ringed) }}>
+        <StepHead entry={entry} right={<SaveMark kind="step" id={step.id} />} />
+        <TypeDetail step={step} />
         <CheckBlock check={step.check} style={{ paddingLeft: INDENT }} />
         <ComparisonBlock check={step.check} indent={INDENT} />
         <EvalHarnessBlock check={step.check} indent={INDENT} />
@@ -890,9 +916,9 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         data-testid="step-card"
         data-step={step.number}
         data-kind="decision"
-        style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder, ...colourEdge(step.colour, ringed) }}
+        style={{ ...rowStyle(ringed) }}
       >
-        <Title
+        <StepHead
           entry={entry}
           right={
             view.setupPrompt ? (
@@ -900,7 +926,6 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
                 variant="secondary"
                 size={phone ? 44 : 28}
                 fontSize={12}
-                style={phone ? undefined : { height: 26 }}
                 onClick={async () => {
                   const words = await view.setupPrompt?.(step.id);
                   if (words && (await view.onCopy(words))) announce("Setup prompt copied");
@@ -911,7 +936,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
             ) : null
           }
         />
-        <TypeLine step={step} indent={INDENT} />
+        <TypeDetail step={step} />
         <DecisionTileBody step={step} indent={INDENT} />
         <TileCostLines step={step} audience="reader" groups={view.groups ?? []} indent={INDENT} />
         <UsedInLine id={step.id} indent={INDENT} />
@@ -924,9 +949,9 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   if (step.kind === "retrieval" && step.retrieval) {
     /* SV-29 P2: a similarity search that finds candidates: what it indexes, how many it returns and its recall. */
     return (
-      <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="retrieval" style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder, ...colourEdge(step.colour, ringed) }}>
-        <Title entry={entry} right={null} />
-        <TypeLine step={step} indent={INDENT} />
+      <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="retrieval" style={{ ...rowStyle(ringed) }}>
+        <StepHead entry={entry} right={null} />
+        <TypeDetail step={step} />
         <RetrievalTileBody step={step} indent={INDENT} />
         <TileCostLines step={step} audience="reader" groups={view.groups ?? []} indent={INDENT} />
         <UsedInLine id={step.id} indent={INDENT} />
@@ -944,17 +969,12 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         data-testid="step-card"
         data-step={step.number}
         data-kind={step.kind}
-        style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder, ...colourEdge(step.colour, ringed) }}
+        style={{ ...rowStyle(ringed) }}
       >
-        <Title entry={entry} right={null} />
-        <TypeLine step={step} indent={INDENT} />
-        {step.kind === "tool" ? <ToolTileBody step={step} indent={INDENT} /> : <FileTileBody step={step} indent={INDENT} />}
+        <StepHead entry={entry} right={step.kind === "file" && file ? <AttachDownload file={file} /> : null} />
+        <TypeDetail step={step} />
+        {step.kind === "tool" ? <ToolTileBody step={step} indent={INDENT} /> : <FileTileBody step={step} indent={INDENT} plain />}
         <ReaderFacts facts={entry.facts ?? []} indent={INDENT} />
-        {step.kind === "file" && file?.download ? (
-          <div style={{ paddingLeft: INDENT }}>
-            <AttachDownload file={file} />
-          </div>
-        ) : null}
         <TileFooter facts={footerFactsOf(step)} indent={INDENT} />
         <SentWith entries={entry.sentWith} ctx={ctx} />
       </article>
@@ -969,10 +989,10 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         data-testid="step-card"
         data-step={step.number}
         data-kind={step.kind}
-        style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder, ...colourEdge(step.colour, ringed) }}
+        style={{ ...rowStyle(ringed) }}
       >
-        <Title entry={entry} right={<>{step.kind === "system_prompt" ? <CopyButton what={`step ${step.number}`} text={step.text} onCopy={view.onCopy} announce={announce} phone={phone} /> : null}<SaveMark kind="step" id={step.id} /></>} />
-        <TypeLine step={step} indent={INDENT} />
+        <StepHead entry={entry} right={<>{step.kind === "system_prompt" ? <CopyButton what={`step ${step.number}`} text={step.text} onCopy={view.onCopy} announce={announce} phone={phone} /> : null}<SaveMark kind="step" id={step.id} /></>} />
+        <TypeDetail step={step} />
         {step.kind === "system_prompt" ? <SystemPromptTileBody step={step} indent={INDENT} full /> : step.kind === "dataset" ? <DatasetTileBody step={step} indent={INDENT} /> : <RepoTileBody step={step} indent={INDENT} />}
         <ReaderFacts facts={entry.facts ?? []} indent={INDENT} />
         <TileFooter facts={footerFactsOf(step)} indent={INDENT} link={step.kind === "repo" && step.repo ? <OpenOnGitHub url={step.repo.url} /> : null} />
@@ -988,10 +1008,10 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         id={stepDomId(step.id)}
         data-testid="step-card"
         data-step={step.number}
-        style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder, ...colourEdge(step.colour, ringed) }}
+        style={{ ...rowStyle(ringed) }}
       >
-        <Title entry={entry} right={null} />
-        <TypeLine step={step} indent={INDENT} />
+        <StepHead entry={entry} right={null} />
+        <TypeDetail step={step} />
         {step.gate ? <GateLine gate={step.gate} style={{ paddingLeft: INDENT }} /> : null}
         {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} style={{ paddingLeft: INDENT }} /> : null}
         <ManualTileBody step={step} indent={INDENT} picture={false} lean all />
@@ -1008,9 +1028,9 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   }
 
   return (
-    <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={{ ...moduleStyle(ringed), ...colourEdge(step.colour, ringed) }}>
-      <Title entry={entry} place={step.kind === "prompt" ? promptPlace(step.number, readerSession(view.groups, step)) : undefined} right={<><CopyButton what={`step ${step.number}`} text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} /><SaveMark kind="step" id={step.id} /></>} />
-      <TypeLine step={step} indent={INDENT} />
+    <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={{ ...rowStyle(ringed) }}>
+      <StepHead entry={entry} right={<><CopyButton what={`step ${step.number}`} text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} /><SaveMark kind="step" id={step.id} /></>} />
+      <TypeDetail step={step} />
       {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} style={{ paddingLeft: INDENT }} /> : null}
       {step.kind === "code" ? (
         <>
@@ -1048,23 +1068,14 @@ function InnerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         id={stepDomId(step.id)}
         data-testid="inner-card"
         data-step={step.number}
-        style={{
-          ...tileStyle,
-          padding: 12,
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-          ...colourEdge(instructions ? undefined : step.colour, ringed),
-          ...(ringed ? { borderColor: t.selectedEdge, boxShadow: t.selectedRing } : null),
-        }}
+        style={{ ...rowStyle(ringed), gap: 8 }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minWidth: 0 }}>
-          <NumberTile wide>{step.number}</NumberTile>
-          <h4 style={{ ...text(13.5, 500, entry.isDefaultTitle ? t.text2 : t.text), margin: 0 }}>{entry.title}</h4>
-          {!instructions && step.model ? <span style={text(12, 400, t.label)}>{modelOf(step)}</span> : null}
-          <span style={{ flexGrow: 1 }} />
-          <CopyButton label="Copy" what={`${step.number} ${entry.title}`} text={bracketed(step.text, step.changes)} onCopy={view.onCopy} announce={announce} phone={phone} />
-        </div>
+        <StepHead
+          entry={entry}
+          level={5}
+          right={<CopyButton label="Copy" what={`${step.number} ${entry.title}`} text={bracketed(step.text, step.changes)} onCopy={view.onCopy} announce={announce} phone={phone} />}
+        />
+        {!instructions && step.model ? <span style={text(12, 400, t.label)}>{modelOf(step)}</span> : null}
         {/* CA-03 P3: how it ran, one quiet line under it; "When I asked" shows nothing. */}
         {repeats ? <DotLine testId="runs-line">{entry.runs}</DotLine> : null}
         {/* CA-03 P7: an agent that reads content it doesn't control says so. */}
@@ -1115,31 +1126,37 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   const agents = entry.children.filter((child) => child.step.kind === "agent").length;
   const line = [team ? `${agents} ${agents === 1 ? "agent" : "agents"}, in this order` : null, entry.madeIn].filter(Boolean).join(" · ");
   return (
-    <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={{ ...moduleStyle(ctx.ringed === step.id), ...colourEdge(step.colour, ctx.ringed === step.id) }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", minWidth: 0 }}>
-        <NumberTile>{step.number}</NumberTile>
-        <h3 style={{ ...text(14, 500, entry.isDefaultTitle ? t.text2 : t.text), margin: 0, letterSpacing: "-0.005em" }}>{entry.title}</h3>
-        <span style={{ flexGrow: 1 }} />
-        <CopyButton label={team ? "Copy the team" : "Copy the agent"} what="" text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} />
-        {view.setupPrompt ? (
-          <Button
-            variant="secondary"
-            size={phone ? 44 : 28}
-            fontSize={12}
-            style={phone ? undefined : { height: 26 }}
-            disabled={!(step.text.trim() || step.teamInstructions || step.children.some((child) => child.kind === "agent" && child.text.trim()))}
-            title={step.text.trim() || step.teamInstructions || step.children.some((child) => child.kind === "agent" && child.text.trim()) ? undefined : "Add instructions first"}
-            onClick={async () => {
-              const words = await view.setupPrompt?.(step.id);
-              if (words && (await view.onCopy(words))) announce("Setup prompt copied");
-            }}
-          >
-            Copy setup prompt
-          </Button>
-        ) : null}
-        <SaveMark kind="step" id={step.id} />
-      </div>
-      <TypeLine step={step} indent={INDENT} />
+    <article
+      id={stepDomId(step.id)}
+      data-testid="step-card"
+      data-step={step.number}
+      style={{ ...tileStyle, padding: 12, display: "flex", flexDirection: "column", gap: 6, ...(ctx.ringed === step.id ? { borderColor: t.selectedEdge, boxShadow: t.selectedRing } : null) }}
+    >
+      <StepHead
+        entry={entry}
+        right={
+          <>
+            <CopyButton label={team ? "Copy the team" : "Copy the agent"} what="" text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} />
+            {view.setupPrompt ? (
+              <Button
+                variant="secondary"
+                size={phone ? 44 : 28}
+                fontSize={12}
+                disabled={!(step.text.trim() || step.teamInstructions || step.children.some((child) => child.kind === "agent" && child.text.trim()))}
+                title={step.text.trim() || step.teamInstructions || step.children.some((child) => child.kind === "agent" && child.text.trim()) ? undefined : "Add instructions first"}
+                onClick={async () => {
+                  const words = await view.setupPrompt?.(step.id);
+                  if (words && (await view.onCopy(words))) announce("Setup prompt copied");
+                }}
+              >
+                Copy setup prompt
+              </Button>
+            ) : null}
+            <SaveMark kind="step" id={step.id} />
+          </>
+        }
+      />
+      <TypeDetail step={step} />
       {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} style={{ paddingLeft: INDENT }} /> : null}
       {line ? <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>{line}</div> : null}
       {team ? <TeamHead team={step} style={{ paddingLeft: INDENT }} /> : <AgentRules agent={step} style={{ paddingLeft: INDENT }} />}
@@ -1153,7 +1170,7 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
       <SaveLines files={entry.makes} />
       <ReaderFacts facts={entry.facts ?? []} indent={INDENT} />
       <TileFooter facts={footerFactsOf(step)} indent={INDENT} />
-      <div style={{ marginLeft: INDENT, paddingLeft: 12, borderLeft: `1px solid ${t.hairlineModule}`, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", flexDirection: "column" }}>
         {entry.children.map((child) => (
           <InnerCard key={child.step.id} entry={child} ctx={ctx} />
         ))}
@@ -1242,14 +1259,14 @@ function groupsOf(steps: readonly ReaderStep[], copy?: { onCopy: (text: string) 
         key: `chat:${entry.step.id}`,
         // CA-04 P4: Setup at the head's end, when the session has one.
         head: (fold: Fold | null) =>
-          chat.setup?.length || chat.goal || chat.runsWhen || chat.facts || chat.together || chat.startedWith || (fold && chat.session !== null) ? (
+          chat.setup?.length || chat.goal || chat.runsWhen || chat.facts || chat.together || chat.startedWith || fold ? (
             <ChatHead chat={chat} copy={copy} fold={fold} />
           ) : (
             <Head detail={chat.detail} tool={chat.tool} model={chat.model}>
               {chat.headline}
             </Head>
           ),
-        ...(chat.session !== null ? { chat } : null),
+        chat,
         entries: [],
       });
     }
@@ -1282,10 +1299,11 @@ function withEmptySessions(groups: Group[], all: readonly SessionGroup[] | undef
       tool: group.tool,
       model: group.model,
       session: group.number,
+      number: group.number,
       date: shortDate(group.startedAt),
       startedAt: group.startedAt,
       typed: false,
-      headline: group.tool ? `New chat in ${group.tool}` : "New chat",
+      headline: sessionHeadline(group.number, group.tool),
       detail: "",
       setup: [],
       key,
@@ -1294,7 +1312,7 @@ function withEmptySessions(groups: Group[], all: readonly SessionGroup[] | undef
       collapsed: false,
       tiles: 0,
     };
-    const at = out.findIndex((entry) => entry.chat && entry.chat.session !== null && entry.chat.session > group.number);
+    const at = out.findIndex((entry) => entry.chat && entry.chat.number > group.number);
     out.splice(at < 0 ? out.length : at, 0, { key: `empty:${key}`, head: (fold: Fold | null) => (fold ? <ReaderSessionHead chat={chat} fold={fold} /> : null), entries: [], chat, session: key, ...(group.colour ? { colour: group.colour } : null) });
   }
   return out;
@@ -1313,14 +1331,15 @@ function sessionRuns(groups: readonly Group[]): { key: string; colour?: string; 
   return runs;
 }
 
-export function StepsList({ view, phone, announce }: StepsListProps) {
+export function StepsList({ view, phone, announce, titled = false }: StepsListProps) {
   const { steps, results } = view;
   const { lens, setLens, ringed, open, setOpen, go, raw, names, toolOf, flat, map } = useStepsList(view, phone);
   const ctx: Ctx = { view, phone, announce, ringed, go, read: setOpen };
+  const hint = map ? "Click a session to see what joins it · Esc clears" : headNote(steps).replace(/^./, (c) => c.toUpperCase());
+  const meta = [view.counts, hint].filter(Boolean).join(" · ");
 
   /* CA-14 P3: the sessions the maker left folded start folded; a reader can fold or open any of them, for this visit only. */
   const runs = sessionRuns(withEmptySessions(groupsOf(steps, { onCopy: view.onCopy, announce, phone }), view.groups));
-  const firstRun = runs[0];
   const [foldedKeys, setFolded] = useState<ReadonlySet<string>>(() => new Set(runs.flatMap((run) => run.groups.flatMap((group) => (group.chat?.collapsed ? [group.chat.key] : [])))));
   /* CA-17 P6: with two or more parts each part has its head, as in the composer, without its controls. */
   const theme = useResolvedTheme();
@@ -1333,8 +1352,8 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
   /* CA-14 P6: a build with three sessions or more has the session list for its readers; it costs them nothing, so it is always on. */
   const jumpItems = runs.flatMap((run) =>
     run.groups.flatMap((group) =>
-      group.chat && group.chat.session !== null
-        ? [{ key: group.chat.key, number: group.chat.session, label: group.chat.title ?? group.chat.tool ?? NO_HARNESS, ...(partsModel ? { group: partsModel.titles.get(partOfRun(run) ?? partsModel.list[0].view.key) } : null) }]
+      group.chat
+        ? [{ key: group.chat.key, number: group.chat.number, label: group.chat.title ?? group.chat.tool ?? NO_HARNESS, ...(partsModel ? { group: partsModel.titles.get(partOfRun(run) ?? partsModel.list[0].view.key) } : null) }]
         : [],
     ),
   );
@@ -1415,54 +1434,51 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
     else setPart(to);
   };
 
-  /** One session's run: its head and tiles, inside its colour's line when it has one. */
-  const drawRun = (run: (typeof runs)[number], inPart = false) => {
-          const drawn = run.groups.map((group, at) => {
-            const tiles = drawBranches(group.entries, (entry) => entry.step, steps.map((entry) => entry.step), (entry) =>
-              isContainer(entry) ? <ContainerCard key={entry.step.id} entry={entry} ctx={ctx} /> : <StepCard key={entry.step.id} entry={entry} ctx={ctx} />,
-            );
-            const chat = group.chat;
-            if (!chat || typeof group.head !== "function") {
-              return (
-                <div key={group.key} style={column(8)}>
-                  {typeof group.head === "function" ? group.head(null) : group.head}
-                  {tiles}
-                </div>
-              );
-            }
-            /* CA-14 P2, P3: a session is a container: its head, then its tiles 16 in with a 2px line down their left. */
-            const folded = foldedKeys.has(chat.key);
-            const controls = `reader-session-tiles-${chat.key}`;
-            const fold: Fold = { folded, toggle: () => toggleFold(chat.key), controls, tiles: chat.tiles, phone };
-            return (
-              <div key={group.key} data-reader-session={chat.key} style={{ ...column(4), ...(at > 0 || (run !== firstRun && !inPart) ? { marginTop: 16 } : null) }}>
-                {group.head(fold)}
-                <div id={controls} hidden={folded} style={{ position: "relative", ...column(8), marginLeft: 16 }}>
-                  {folded ? null : (
-                    <>
-                      <span aria-hidden="true" data-testid="session-line" style={{ position: "absolute", left: -8, top: 0, bottom: 0, width: 2, background: t.hairline }} />
-                      {group.entries.length === 0 ? <p style={{ ...text(13, 400, t.label), margin: 0 }}>No tiles yet</p> : tiles}
-                    </>
-                  )}
-                </div>
-              </div>
-            );
-          });
-          // CA-06 P4: a coloured session's head and tiles sit inside its line; any other is drawn as it always was.
-          return run.colour ? (
-            <div key={run.key} data-session-colour={run.colour} style={{ ...column(16), ...outlineFor(run.colour), padding: 12 }}>
-              {drawn}
-            </div>
-          ) : (
-            drawn
-          );
+  /**
+   * One session's run, drawn as ONE module (UX-03 follow-up P14): its head, then its steps as rows with a hairline above
+   * each. A coloured session's colour is the module's outline in place of `--module-border`. Steps that come before any
+   * session are drawn in a module of their own, with no head.
+   */
+  const drawRun = (run: (typeof runs)[number]) => {
+    const first = run.groups[0];
+    const chat = first?.chat;
+    const rows = (group: Group) =>
+      drawBranches(group.entries, (entry) => entry.step, steps.map((entry) => entry.step), (entry) =>
+        isContainer(entry) ? <ContainerCard key={entry.step.id} entry={entry} ctx={ctx} /> : <StepCard key={entry.step.id} entry={entry} ctx={ctx} />,
+      );
+    const body = run.groups.map((group, at) => {
+      if (at === 0 && chat && typeof group.head === "function") return group.entries.length === 0 ? <p key={group.key} style={{ ...text(13, 400, t.label), margin: 0, padding: "14px 0", borderTop: `1px solid ${t.hairlineModule}` }}>No steps yet</p> : <div key={group.key} style={column(0)}>{rows(group)}</div>;
+      return (
+        <div key={group.key} style={column(0)}>
+          {typeof group.head === "function" ? group.head(null) : group.head}
+          {rows(group)}
+        </div>
+      );
+    });
+    const folded = chat ? foldedKeys.has(chat.key) : false;
+    const controls = chat ? `reader-session-tiles-${chat.key}` : undefined;
+    const fold: Fold | null = chat ? { folded, toggle: () => toggleFold(chat.key), controls: controls as string, tiles: chat.tiles, phone } : null;
+    return (
+      <div
+        key={run.key}
+        data-reader-session={chat?.key}
+        data-session-colour={run.colour}
+        style={sessionModuleStyle(run.colour)}
+      >
+        {chat && typeof first.head === "function" ? first.head(fold) : null}
+        <div id={controls} hidden={folded} style={column(0)}>
+          {folded ? null : body}
+        </div>
+      </div>
+    );
   };
 
   return (
     <TeamLinesContext.Provider value={{ open: go, names, phone, steps: steps.flatMap((entry) => [entry.step, ...entry.step.children]) }}>
     <div data-testid="build-steps" style={column(16)}>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
-        {view.mapAvailable && !phone ? (
+      {titled ? <SectionHead headingLevel={2} title="Steps" meta={meta} /> : <p data-testid="steps-meta" style={{ ...text(12, 400, t.label), margin: 0 }}>{meta}</p>}
+      {view.mapAvailable && !phone ? (
+        <div>
           <Segmented<"list" | "map">
             label="How to look at the build"
             items={[
@@ -1474,15 +1490,8 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
             size={28}
             fontSize={12}
           />
-        ) : null}
-        <span style={text(12, 400, t.text2, tnum)}>{view.counts}</span>
-        {phone ? null : (
-          <>
-            <span style={{ flexGrow: 1 }} />
-            <span style={{ ...text(12, 400, t.label), textAlign: "right" }}>{map ? "click a session to see what joins it · Esc clears" : headNote(steps)}</span>
-          </>
-        )}
-      </div>
+        </div>
+      ) : null}
       <CostStrip steps={steps.map((entry) => entry.step)} groups={view.groups ?? []} audience="reader" />
       {!map && jumpItems.length >= 3 ? <SessionJump items={jumpItems} current={inView} phone={phone} onJump={(key) => jumpTo(headOf(key))} /> : null}
       {map ? (
@@ -1518,7 +1527,7 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
                     joins={neighbour?.view.label ?? ""}
                   />
                   <div id={`reader-workstream-${key}`} data-testid="workstream-body" hidden={closed} style={WORKSTREAM_BODY}>
-                    {closed ? null : mine.length > 0 ? mine.map((run) => drawRun(run, true)) : <p style={{ ...text(13, 400, t.label), margin: 0, padding: "4px 8px" }}>No sessions yet</p>}
+                    {closed ? null : mine.length > 0 ? mine.map((run) => drawRun(run)) : <p style={{ ...text(13, 400, t.label), margin: 0, padding: "4px 8px" }}>No sessions yet</p>}
                   </div>
                 </div>
               );

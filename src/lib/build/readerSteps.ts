@@ -70,12 +70,14 @@ export type ReaderChat =
       model: string | null;
       /** The session's number in the build; null for prompts typed in by the maker. */
       session: number | null;
+      /** Its place among the sessions drawn, from the shared numbering (`sessionNumbers.ts`): set for typed sessions too. */
+      number: number;
       /** "3 Oct", or null when not known. */
       date: string | null;
       /** The session's start, as stored, for ranges. */
       startedAt: string | null;
       typed: boolean;
-      /** "New chat in ChatGPT". */
+      /** "Session 2 · ChatGPT", or "Session 2" with no harness (UX-03 follow-up P14). */
       headline: string;
       /** "GPT-6 Astra · session 1 · 3 Oct". */
       detail: string;
@@ -505,6 +507,9 @@ function setupOf(file: ReaderFile, context: Context, stepToolIds: readonly strin
 
 /* ── the chat each prompt starts or joins ── */
 
+/** The editor's name for a session: "Session 2 · Claude", or "Session 2" with no harness. */
+export const sessionHeadline = (number: number, tool: string | null | undefined): string => (tool ? `Session ${number} · ${tool}` : `Session ${number}`);
+
 function chatFor(step: Step, context: Context): ReaderChat | null {
   if (!isTop(step)) return null;
   const group = groupOfStep(context.groups, step);
@@ -530,10 +535,11 @@ function chatFor(step: Step, context: Context): ReaderChat | null {
     tool: group.tool,
     model: group.model,
     session: typed ? null : group.number,
+    number: group.number,
     date,
     startedAt,
     typed,
-    headline: group.tool ? `New chat in ${group.tool}` : "New chat",
+    headline: sessionHeadline(group.number, group.tool),
     detail,
     setup: context.setup.get(groupKey(group)) ?? [],
     ...(group.goal ? { goal: { line: goalLine(group.goal), reached: group.goal.reached === "reached" } } : null),
