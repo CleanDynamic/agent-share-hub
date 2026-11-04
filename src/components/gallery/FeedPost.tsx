@@ -12,8 +12,10 @@
 // third row (build line, actions) is content only.
 //
 // WHAT IT SIGNS. Post 1's pictures arrive signed with the page's other card
-// media (feedMedia). The rest of the thread is fetched and signed once, when
-// the reader presses Show more, and the posts open after that. Every picture
+// media (feedMedia). The rest of the thread is fetched and signed once, as one
+// query (UX-03 P9): started when Show more is hovered on a fine pointer or
+// focused, so the press opens from the cache; a press with nothing fetched yet
+// shows Loading and opens when it lands. Every picture
 // reserves its height from its node's w and h, so nothing moves as pictures
 // arrive.
 //
@@ -82,6 +84,9 @@ type Phase = "closed" | "loading" | "open";
 type ThreadRow = GalleryMedia;
 
 const column: CSSProperties = { minWidth: 0 };
+
+/** UX-03 P9: how long the rest of a thread, fetched on intent, is kept: under the fifty minutes its signatures live. */
+const THREAD_STALE_MS = 40 * 60_000;
 
 export function FeedPost({
   build,
@@ -152,6 +157,26 @@ export function FeedPost({
   const asking = useRef(false);
   const client = useContext(QueryClientContext);
 
+  /* UX-03 P9: the rest of the thread, fetched and signed as one query, so hovering or focusing Show more can start it and the
+     press opens from the cache. Kept for less than a signature lives (signCardMedia's are kept fifty minutes). */
+  const restQuery = useMemo(
+    () => ({
+      queryKey: ["build", "getThreadMedia", build.id, CARD_THREAD_WIDTH] as const,
+      queryFn: async () => {
+        const rows = (await getThreadMedia(build.id)) as ThreadRow[];
+        const src = await signCardMedia(rows.map((row) => ({ ...row, slotWidth: CARD_THREAD_WIDTH })), client);
+        return { rows, src };
+      },
+      staleTime: THREAD_STALE_MS,
+    }),
+    [build.id, client],
+  );
+
+  const warm = useCallback(() => {
+    if (preview || rest || !threaded || !client) return;
+    void client.prefetchQuery(restQuery);
+  }, [preview, rest, threaded, client, restQuery]);
+
   const open = useCallback(async () => {
     if (asking.current || phase !== "closed") return;
     // A preview already holds every picture; there is nothing to ask for.
@@ -159,19 +184,24 @@ export function FeedPost({
       setPhase("open");
       return;
     }
+    // Asked for on intent and here already: open at once.
+    const ready = client?.getQueryData<{ rows: ThreadRow[]; src: MediaSrcMap }>(restQuery.queryKey);
+    if (ready) {
+      setRest(ready);
+      setPhase("open");
+      return;
+    }
     asking.current = true;
     setPhase("loading");
     try {
-      const rows = (await getThreadMedia(build.id)) as ThreadRow[];
-      const src = await signCardMedia(rows.map((row) => ({ ...row, slotWidth: CARD_THREAD_WIDTH })), client);
-      setRest({ rows, src });
+      setRest(client ? await client.fetchQuery(restQuery) : await restQuery.queryFn());
     } catch {
       // The posts still open; their pictures hold their reserved places.
     } finally {
       asking.current = false;
       setPhase("open");
     }
-  }, [build.id, phase, preview, rest, client]);
+  }, [phase, preview, rest, client, restQuery]);
 
   const close = useCallback(() => setPhase("closed"), []);
 
@@ -211,6 +241,7 @@ export function FeedPost({
       srcByPath={srcAll}
       mode={isOpen ? "open" : "closed"}
       onOpen={threaded ? () => void open() : undefined}
+      onIntent={threaded ? warm : undefined}
       onClose={close}
       loading={phase === "loading"}
       phone={phone}

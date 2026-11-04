@@ -24,7 +24,7 @@ import type { GalleryMedia } from "@/lib/build";
 import type { Post } from "@/lib/build/thread";
 import { useInteractive } from "@/lib/theme/interactive";
 import { ring } from "@/lib/theme/controls";
-import { prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
+import { hoverIsFine, prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
@@ -49,6 +49,8 @@ export interface PostThreadProps {
   loading?: boolean;
   /** UX-03 P1: wraps the words of post 1's first heading (the feed post's link to its build). */
   headingLink?: (content: ReactNode) => ReactNode;
+  /** UX-03 P9: Show more is about to be pressed: hovered on a fine pointer, or focused. The feed starts the rest of the thread. */
+  onIntent?: () => void;
 }
 
 /** Room kept at the end of a post's first line for its counter, "10 / 10" in 11px mono. */
@@ -65,6 +67,7 @@ export function PostThread({
   resetKey,
   loading = false,
   headingLink,
+  onIntent,
 }: PostThreadProps) {
   const regionId = useId();
 
@@ -121,6 +124,7 @@ export function PostThread({
           phone={phone}
           loading={loading}
           onPress={() => (open ? onClose?.() : onOpen?.())}
+          onIntent={open ? undefined : onIntent}
         />
       ) : null}
     </div>
@@ -192,6 +196,7 @@ function Toggle({
   phone,
   loading,
   onPress,
+  onIntent,
 }: {
   open: boolean;
   more: number;
@@ -199,8 +204,15 @@ function Toggle({
   phone: boolean;
   loading: boolean;
   onPress: () => void;
+  onIntent?: () => void;
 }) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  // UX-03 P9: hover counts only on a fine pointer (HOVER_QUERY), where it comes before a press; focus counts everywhere.
+  const { state, handlers } = useInteractive<HTMLButtonElement>({
+    onMouseEnter: () => {
+      if (hoverIsFine()) onIntent?.();
+    },
+    onFocus: () => onIntent?.(),
+  });
   return (
     <button
       type="button"
