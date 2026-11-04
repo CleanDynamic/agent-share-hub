@@ -30,43 +30,43 @@ describe("ThemeToggle", () => {
   it("is a labelled radio group of the three themes", () => {
     renderToggle();
     expect(within(group()).getAllByRole("radio").map((r) => r.textContent))
-      .toEqual(["Noon", "Dusk", "System"]);
+      .toEqual(["Light", "Dark", "System"]);
   });
 
   it("checks the current theme and only the current theme", () => {
     window.localStorage.setItem(THEME_STORAGE_KEY, "dusk");
     renderToggle();
-    expect(checked()).toBe("Dusk");
+    expect(checked()).toBe("Dark");
     expect(within(group()).getAllByRole("radio", { checked: false })).toHaveLength(2);
   });
 
   it("switches the theme, and the root element with it", () => {
     renderToggle();
-    fireEvent.click(option("Dusk"));
-    expect(checked()).toBe("Dusk");
+    fireEvent.click(option("Dark"));
+    expect(checked()).toBe("Dark");
     expect(document.documentElement.dataset.theme).toBe("dusk");
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe("dusk");
   });
 
   it("is one tab stop, with the checked option carrying it", () => {
     renderToggle();
-    expect(option("Noon").tabIndex).toBe(0);
-    expect(option("Dusk").tabIndex).toBe(-1);
+    expect(option("Light").tabIndex).toBe(0);
+    expect(option("Dark").tabIndex).toBe(-1);
     expect(option("System").tabIndex).toBe(-1);
 
     fireEvent.click(option("System"));
     expect(option("System").tabIndex).toBe(0);
-    expect(option("Noon").tabIndex).toBe(-1);
+    expect(option("Light").tabIndex).toBe(-1);
   });
 
   it("moves the selection with the arrow keys, and wraps", () => {
     renderToggle();
     fireEvent.keyDown(group(), { key: "ArrowRight" });
-    expect(checked()).toBe("Dusk");
+    expect(checked()).toBe("Dark");
     fireEvent.keyDown(group(), { key: "ArrowDown" });
     expect(checked()).toBe("System");
     fireEvent.keyDown(group(), { key: "ArrowRight" });
-    expect(checked()).toBe("Noon");
+    expect(checked()).toBe("Light");
     fireEvent.keyDown(group(), { key: "ArrowLeft" });
     expect(checked()).toBe("System");
   });
@@ -97,7 +97,7 @@ describe("ThemeToggle", () => {
 
   it("shows a visible focus ring while focused, and drops it on blur", () => {
     renderToggle();
-    const dusk = option("Dusk");
+    const dusk = option("Dark");
     expect(ringOf(dusk)).toEqual(NO_RING);
 
     act(() => dusk.focus());
@@ -110,10 +110,10 @@ describe("ThemeToggle", () => {
 
   it("carries the ring along an arrow-key move", () => {
     renderToggle();
-    act(() => option("Noon").focus());
+    act(() => option("Light").focus());
     fireEvent.keyDown(group(), { key: "ArrowRight" });
-    expect(option("Dusk")).toHaveFocus();
-    expect(ringOf(option("Dusk"))).toEqual(RING);
+    expect(option("Dark")).toHaveFocus();
+    expect(ringOf(option("Dark"))).toEqual(RING);
   });
 
   it("uses the ONE shared ring, not a second definition of its own", () => {

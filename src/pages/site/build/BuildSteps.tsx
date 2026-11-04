@@ -17,6 +17,7 @@
 import { NO_HARNESS } from "@/lib/build/harnessWords";
 import { MemberLabel } from "@/pages/site/compose/groupLabels";
 import {
+  Fragment,
   Suspense,
   lazy,
   useState,
@@ -51,12 +52,12 @@ import { SaveMark, UsedInLine } from "@/components/build/ConnectionMarks";
 import { CostStrip, TileCostLines } from "@/components/build/CostLines";
 import { callsOf } from "@/lib/build/decisionCopy";
 import { definesOf } from "@/lib/build/agentCode";
-import { PromptName, CheckCasesBody, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReaderFacts, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TileFooter, ToolTileBody, DecisionTileBody, RetrievalTileBody, TypeLine } from "@/components/build/tileBodies";
-import { footerFactsOf, resultTypeLine } from "@/lib/build/tileLines";
+import { CheckCasesBody, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReaderFacts, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TileFooter, ToolTileBody, DecisionTileBody, RetrievalTileBody } from "@/components/build/tileBodies";
+import { footerFactsOf, resultTypeLine, typeLineOf } from "@/lib/build/tileLines";
 import { focusable } from "@/components/build/partNav";
 import { flashOutline } from "@/components/post/RefLinks";
 import { borderFor, outlineFor } from "@/lib/theme/partColour";
-import { groupKey, groupKind, groupOfStep, promptPlace, shownGroups, type SessionGroup } from "@/lib/build/graph";
+import { groupKey, groupKind, shownGroups, type SessionGroup } from "@/lib/build/graph";
 import { parseRefTo, refTo } from "@/lib/build/thread";
 import type { Step } from "@/lib/build/graph";
 import { shortDate } from "@/lib/build/readerSteps";
@@ -299,34 +300,6 @@ const chipStyle: CSSProperties = {
 
 function Chip({ children }: { children: ReactNode }) {
   return <span style={chipStyle}>{children}</span>;
-}
-
-/** The step's number in a 24 control tile, Geist Mono 11. */
-function NumberTile({ children, wide }: { children: ReactNode; wide?: boolean }) {
-  return (
-    <span
-      aria-hidden="true"
-      style={{
-        ...CONTROL,
-        flexShrink: 0,
-        minWidth: 24,
-        height: 24,
-        padding: wide ? "0 6px" : 0,
-        boxSizing: "border-box",
-        borderRadius: 6,
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: DM_MONO,
-        fontSize: 11,
-        lineHeight: "normal",
-        color: t.text,
-        ...tnum,
-      }}
-    >
-      {children}
-    </span>
-  );
 }
 
 /** A secondary 26 that is a link: Download. */
@@ -574,6 +547,52 @@ function SaveLines({ files, indent = INDENT }: { files: readonly ReaderFile[]; i
 /** A tile's kind as its row says it. */
 const TILE_KIND: Record<string, string> = { prompt: "Prompt", code: "Code", file: "File", manual: "Manual step", check: "Check", agent: "Agent", team: "Team", tool: "Tool", decision: "Decision" };
 
+/**
+ * UX-03 P3: one label per step. The head is "Step <n> · <Type>", `n` exactly as the step is numbered ("2", "3.1"), and the type
+ * the first words of the composer's type line. What the type line says after them ("Python · 12 lines") is `rest`, drawn under
+ * the head, so nothing is said twice.
+ */
+function stepHead(step: Step): { label: string; rest: string } {
+  const [kind, ...more] = typeLineOf(step).split(" · ");
+  const word = kind || TILE_KIND[step.kind] || step.kind;
+  return { label: step.number ? `Step ${step.number} · ${word}` : word, rest: more.join(" · ") };
+}
+
+/**
+ * UX-03 P3: the step's head, and under it the step's name: the title its maker typed, or what CA-12 P6 named it from what it
+ * holds ("acme/shop", "brief.md"). A prompt's generated title, its place ("Prompt 3"), is the one name not shown: the head says it.
+ */
+function StepHead({ entry, level = 3, size = 14 }: { entry: ReaderStep; level?: 3 | 4; size?: number }) {
+  const { label } = stepHead(entry.step);
+  const Tag = level === 3 ? "h3" : "h4";
+  const generated = entry.isDefaultTitle && entry.step.kind === "prompt" && entry.title === `Prompt ${entry.step.number}`;
+  // A file's body names it and says its kind, so its default name is not said again under the head.
+  const fileName = entry.isDefaultTitle && entry.step.kind === "file";
+  return (
+    <Tag data-testid="step-head" style={{ margin: 0, flexGrow: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2, letterSpacing: "-0.005em" }}>
+      <span data-testid="step-label" style={{ ...text(size, 500, t.text), ...tnum, overflowWrap: "anywhere" }}>
+        {label}
+      </span>
+      {generated || fileName ? null : (
+        <span data-testid="step-own-title" data-default-title={entry.isDefaultTitle ? "true" : undefined} style={{ ...text(size - 0.5, 400, t.text2), overflowWrap: "anywhere" }}>
+          {entry.title}
+        </span>
+      )}
+    </Tag>
+  );
+}
+
+/** UX-03 P3: the rest of the type line, under the head; nothing when the head already says it all. */
+function TypeRest({ step, indent }: { step: Step; indent: number }) {
+  const { rest } = stepHead(step);
+  if (!rest) return null;
+  return (
+    <div data-testid={`${step.kind}-eyebrow`} style={{ ...text(12, 400, t.label), paddingLeft: indent, overflowWrap: "anywhere" }}>
+      {rest}
+    </div>
+  );
+}
+
 /** What is sent with a step, indented 36 under its text as the paste-ins are, each able to hold more, indented again. */
 function SentWith({ entries, ctx }: { entries: readonly ReaderStep[]; ctx: Ctx }) {
   if (entries.length === 0) return null;
@@ -692,7 +711,7 @@ function ReaderSessionHead({ chat, fold }: { chat: SessionChat; fold: Fold }) {
       )}
       {fold.folded ? (
         <span data-testid="session-count" style={{ ...text(13, 400, t.text2), fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
-          {fold.tiles} {fold.tiles === 1 ? "tile" : "tiles"}
+          {fold.tiles} {fold.tiles === 1 ? "step" : "steps"}
         </span>
       ) : null}
       {chat.key ? <MemberLabel to={refTo({ kind: "session", id: chat.key })} /> : null}
@@ -824,40 +843,16 @@ interface Ctx {
   read: (id: string) => void;
 }
 
-function Title({ entry, right, place }: { entry: ReaderStep; right: ReactNode; /** A prompt: its place on the build, before the maker's own title. */ place?: string }) {
+function Title({ entry, right }: { entry: ReaderStep; right: ReactNode }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-      <NumberTile>{entry.step.number}</NumberTile>
-      {place ? (
-        <h3 data-default-title={entry.isDefaultTitle ? "true" : undefined} style={{ margin: 0, flexGrow: 1, minWidth: 0, letterSpacing: "-0.005em" }}>
-          <PromptName place={place} title={entry.isDefaultTitle ? null : entry.title} />
-        </h3>
-      ) : (
-        <h3
-          style={{
-            ...text(14, 500, entry.isDefaultTitle ? t.text2 : t.text),
-            margin: 0,
-            flexGrow: 1,
-            minWidth: 0,
-            letterSpacing: "-0.005em",
-            overflowWrap: "anywhere",
-          }}
-        >
-          {entry.title}
-        </h3>
-      )}
+      <StepHead entry={entry} />
       {/* CA-19 P5: a member of a named group says so, as in the List. */}
       <MemberLabel to={refTo({ kind: "node", id: entry.step.id })} />
       {right}
     </div>
   );
 }
-
-/** The number of the session a prompt is in, when it is in a numbered one. */
-const readerSession = (groups: StepsListProps["view"]["groups"], step: Step): number | null => {
-  const group = groupOfStep(groups ?? [], step);
-  return group && groupKind(group) !== "legacy" ? group.number : null;
-};
 
 function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   const { step } = entry;
@@ -870,7 +865,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
     return (
       <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="check" style={{ ...moduleStyle(ringed), ...colourEdge(step.colour, ringed) }}>
         <Title entry={entry} right={<SaveMark kind="step" id={step.id} />} />
-        <TypeLine step={step} indent={INDENT} />
+        <TypeRest step={step} indent={INDENT} />
         <CheckBlock check={step.check} style={{ paddingLeft: INDENT }} />
         <ComparisonBlock check={step.check} indent={INDENT} />
         <EvalHarnessBlock check={step.check} indent={INDENT} />
@@ -911,7 +906,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
             ) : null
           }
         />
-        <TypeLine step={step} indent={INDENT} />
+        <TypeRest step={step} indent={INDENT} />
         <DecisionTileBody step={step} indent={INDENT} />
         <TileCostLines step={step} audience="reader" groups={view.groups ?? []} indent={INDENT} />
         <UsedInLine id={step.id} indent={INDENT} />
@@ -926,7 +921,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
     return (
       <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="retrieval" style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder, ...colourEdge(step.colour, ringed) }}>
         <Title entry={entry} right={null} />
-        <TypeLine step={step} indent={INDENT} />
+        <TypeRest step={step} indent={INDENT} />
         <RetrievalTileBody step={step} indent={INDENT} />
         <TileCostLines step={step} audience="reader" groups={view.groups ?? []} indent={INDENT} />
         <UsedInLine id={step.id} indent={INDENT} />
@@ -947,7 +942,8 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder, ...colourEdge(step.colour, ringed) }}
       >
         <Title entry={entry} right={null} />
-        <TypeLine step={step} indent={INDENT} />
+        {/* A file's body says its kind and size; a tool's type line is said here. */}
+        {step.kind === "tool" ? <TypeRest step={step} indent={INDENT} /> : null}
         {step.kind === "tool" ? <ToolTileBody step={step} indent={INDENT} /> : <FileTileBody step={step} indent={INDENT} />}
         <ReaderFacts facts={entry.facts ?? []} indent={INDENT} />
         {step.kind === "file" && file?.download ? (
@@ -972,7 +968,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder, ...colourEdge(step.colour, ringed) }}
       >
         <Title entry={entry} right={<>{step.kind === "system_prompt" ? <CopyButton what={`step ${step.number}`} text={step.text} onCopy={view.onCopy} announce={announce} phone={phone} /> : null}<SaveMark kind="step" id={step.id} /></>} />
-        <TypeLine step={step} indent={INDENT} />
+        <TypeRest step={step} indent={INDENT} />
         {step.kind === "system_prompt" ? <SystemPromptTileBody step={step} indent={INDENT} full /> : step.kind === "dataset" ? <DatasetTileBody step={step} indent={INDENT} /> : <RepoTileBody step={step} indent={INDENT} />}
         <ReaderFacts facts={entry.facts ?? []} indent={INDENT} />
         <TileFooter facts={footerFactsOf(step)} indent={INDENT} link={step.kind === "repo" && step.repo ? <OpenOnGitHub url={step.repo.url} /> : null} />
@@ -991,7 +987,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder, ...colourEdge(step.colour, ringed) }}
       >
         <Title entry={entry} right={null} />
-        <TypeLine step={step} indent={INDENT} />
+        <TypeRest step={step} indent={INDENT} />
         {step.gate ? <GateLine gate={step.gate} style={{ paddingLeft: INDENT }} /> : null}
         {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} style={{ paddingLeft: INDENT }} /> : null}
         <ManualTileBody step={step} indent={INDENT} picture={false} lean all />
@@ -1008,9 +1004,9 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   }
 
   return (
-    <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={{ ...moduleStyle(ringed), ...colourEdge(step.colour, ringed) }}>
-      <Title entry={entry} place={step.kind === "prompt" ? promptPlace(step.number, readerSession(view.groups, step)) : undefined} right={<><CopyButton what={`step ${step.number}`} text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} /><SaveMark kind="step" id={step.id} /></>} />
-      <TypeLine step={step} indent={INDENT} />
+    <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind={step.kind} style={{ ...moduleStyle(ringed), ...colourEdge(step.colour, ringed) }}>
+      <Title entry={entry} right={<><CopyButton what={`step ${step.number}`} text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} /><SaveMark kind="step" id={step.id} /></>} />
+      <TypeRest step={step} indent={INDENT} />
       {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} style={{ paddingLeft: INDENT }} /> : null}
       {step.kind === "code" ? (
         <>
@@ -1059,8 +1055,7 @@ function InnerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minWidth: 0 }}>
-          <NumberTile wide>{step.number}</NumberTile>
-          <h4 style={{ ...text(13.5, 500, entry.isDefaultTitle ? t.text2 : t.text), margin: 0 }}>{entry.title}</h4>
+          <StepHead entry={entry} level={4} size={13.5} />
           {!instructions && step.model ? <span style={text(12, 400, t.label)}>{modelOf(step)}</span> : null}
           <span style={{ flexGrow: 1 }} />
           <CopyButton label="Copy" what={`${step.number} ${entry.title}`} text={bracketed(step.text, step.changes)} onCopy={view.onCopy} announce={announce} phone={phone} />
@@ -1117,9 +1112,7 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   return (
     <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={{ ...moduleStyle(ctx.ringed === step.id), ...colourEdge(step.colour, ctx.ringed === step.id) }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", minWidth: 0 }}>
-        <NumberTile>{step.number}</NumberTile>
-        <h3 style={{ ...text(14, 500, entry.isDefaultTitle ? t.text2 : t.text), margin: 0, letterSpacing: "-0.005em" }}>{entry.title}</h3>
-        <span style={{ flexGrow: 1 }} />
+        <StepHead entry={entry} />
         <CopyButton label={team ? "Copy the team" : "Copy the agent"} what="" text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} />
         {view.setupPrompt ? (
           <Button
@@ -1139,7 +1132,7 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         ) : null}
         <SaveMark kind="step" id={step.id} />
       </div>
-      <TypeLine step={step} indent={INDENT} />
+      <TypeRest step={step} indent={INDENT} />
       {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} style={{ paddingLeft: INDENT }} /> : null}
       {line ? <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>{line}</div> : null}
       {team ? <TeamHead team={step} style={{ paddingLeft: INDENT }} /> : <AgentRules agent={step} style={{ paddingLeft: INDENT }} />}
@@ -1268,9 +1261,13 @@ function groupsOf(steps: readonly ReaderStep[], copy?: { onCopy: (text: string) 
   return groups;
 }
 
+/** UX-03 P3: the reader's words for a session with nothing in it (it was "No tiles yet", the composer's word). */
+const NO_STEPS_COPY = "No steps in this session";
+
 /**
- * CA-14 P1: a session of the maker's with no tile yet is drawn too, as its head and "No tiles yet", so the numbers a reader
- * sees run 1, 2, 3 with none missing. Each goes before the first session numbered after it.
+ * CA-14 P1: a session of the maker's with no tile yet is drawn too, as its head and NO_STEPS_COPY, so the numbers a reader
+ * sees run 1, 2, 3 with none missing. Each goes before the first session numbered after it. UX-03 P3: an empty session can no
+ * longer be published, so this is only for builds published before that; their numbers are not changed.
  */
 function withEmptySessions(groups: Group[], all: readonly SessionGroup[] | undefined): Group[] {
   const out = [...groups];
@@ -1441,7 +1438,7 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
                   {folded ? null : (
                     <>
                       <span aria-hidden="true" data-testid="session-line" style={{ position: "absolute", left: -8, top: 0, bottom: 0, width: 2, background: t.hairline }} />
-                      {group.entries.length === 0 ? <p style={{ ...text(13, 400, t.label), margin: 0 }}>No tiles yet</p> : tiles}
+                      {group.entries.length === 0 ? <p style={{ ...text(13, 400, t.label), margin: 0 }}>{NO_STEPS_COPY}</p> : tiles}
                     </>
                   )}
                 </div>
@@ -1604,7 +1601,22 @@ function NeedGroupBlock({ group, onOpen }: { group: NeedGroup; onOpen: (row: Nee
             ) : (
               <span style={{ ...text(13, 500, t.text), overflowWrap: "anywhere" }}>{row.title}</span>
             )}
-            {row.detail ? <span style={text(11.5, 400, t.label)}>{row.detail}</span> : null}
+            {row.steps && row.steps.length > 0 ? (
+              /* UX-03 P3: each file links to its step. */
+              <span data-testid="need-file-steps" style={text(11.5, 400, t.label)}>
+                {row.steps.map((step, at) => (
+                  <Fragment key={step.id}>
+                    {at > 0 ? ", " : null}
+                    <a href={`#${stepDomId(step.id)}`} style={{ color: t.text2, textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line }}>
+                      {step.label}
+                    </a>
+                  </Fragment>
+                ))}
+                {row.detail ? ` · ${row.detail}` : null}
+              </span>
+            ) : row.detail ? (
+              <span style={text(11.5, 400, t.label)}>{row.detail}</span>
+            ) : null}
             {row.extra ? <span data-testid="need-extra" style={text(11.5, 400, t.label)}>{row.extra}</span> : null}
           </div>
           {group.key === "files" && row.download ? <DownloadButton href={row.download} name={row.title} /> : null}

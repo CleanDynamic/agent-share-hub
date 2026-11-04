@@ -44,9 +44,15 @@ const list = (url: string, column: string): string[] | null => {
   return match ? match[1].split(",").map((value) => value.replace(/"/g, "")) : null;
 };
 
-export async function fakeThreadBackend(page: Page): Promise<ThreadBackend> {
-  let build: Row | null = null;
-  const media: Row[] = [];
+/** UX-03: a build to start with, already published, and its pictures. Absent: the backend starts empty, as PT-09's spec writes one. */
+export interface ThreadSeed {
+  build: Row;
+  media?: Row[];
+}
+
+export async function fakeThreadBackend(page: Page, seed?: ThreadSeed): Promise<ThreadBackend> {
+  let build: Row | null = seed ? { ...seed.build } : null;
+  const media: Row[] = seed?.media ? seed.media.map((row) => ({ ...row })) : [];
   const nodes: Row[] = [];
   const requests: ThreadBackend["requests"] = [];
   let nextMedia = 0;

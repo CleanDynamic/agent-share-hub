@@ -18,6 +18,8 @@ export interface DraftListItem {
   title: string;
   updatedAt: string;
   sessionCount: number;
+  /** UX-03 P7: the first prompt's text, for a draft with no title to be shown by (`listDraftFirstPrompts`). Never written to the title. */
+  firstPrompt?: string | null;
 }
 
 interface DraftRow {
@@ -56,6 +58,50 @@ export async function listDraftsWithSessions(creatorId: string | null | undefine
     updatedAt: draft.updated_at,
     sessionCount: typeof draft.session_count === "number" ? Math.max(0, draft.session_count) : 0,
   }));
+}
+
+// -----------------------------------------------------------------------------
+// First prompts (UX-03 P7)
+// -----------------------------------------------------------------------------
+//
+// A draft with no title of its own is shown by its first prompt. Read beside the drafts, not inside their read, so the two start
+// together (one round) and the drafts list is the same request it always was. Only the untitled drafts are asked about, and of
+// each only one row: its top-level prompt with the lowest position, and of that only the text.
+
+const UNTITLED_TITLES = ["", "Untitled build"];
+
+export const DRAFT_PROMPT_COLUMNS = "id, first_prompt:build_nodes!build_nodes_build_id_fkey(text:payload->>text)";
+
+interface DraftPromptQuery extends PromiseLike<{ data: { id: string; first_prompt?: { text: string | null }[] | null }[] | null; error: unknown }> {
+  eq: (column: string, value: string) => DraftPromptQuery;
+  in: (column: string, values: readonly string[]) => DraftPromptQuery;
+  is: (column: string, value: null) => DraftPromptQuery;
+  order: (column: string, options: { ascending: boolean; referencedTable?: string }) => DraftPromptQuery;
+  limit: (count: number, options?: { referencedTable: string }) => DraftPromptQuery;
+}
+
+/** UX-03 P7: each untitled draft's first prompt, by draft id. A draft with no prompt is not in the map. */
+export async function listDraftFirstPrompts(creatorId: string | null | undefined): Promise<Map<string, string>> {
+  if (!creatorId) return new Map();
+  const { data, error } = await (supabase as unknown as { from: (t: string) => { select: (columns: string) => DraftPromptQuery } })
+    .from("builds")
+    .select(DRAFT_PROMPT_COLUMNS)
+    .eq("creator_id", creatorId)
+    .eq("status", "draft")
+    .in("title", UNTITLED_TITLES)
+    .eq("first_prompt.type", "prompt")
+    .is("first_prompt.parent_id", null)
+    .order("updated_at", { ascending: false })
+    .order("position", { ascending: true, referencedTable: "first_prompt" })
+    .limit(1, { referencedTable: "first_prompt" })
+    .limit(DRAFTS_LIMIT);
+  if (error) throw buildLayerError("listDraftFirstPrompts", error);
+  const out = new Map<string, string>();
+  for (const row of data ?? []) {
+    const text = (row.first_prompt?.[0]?.text ?? "").trim();
+    if (text) out.set(row.id, text);
+  }
+  return out;
 }
 
 // -----------------------------------------------------------------------------

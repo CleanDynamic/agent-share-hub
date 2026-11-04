@@ -1700,6 +1700,12 @@ function SandboxPageBody() {
   /* CA-25: the Publish checklist's input. The sessions with no app are the ones a maker can still give one; a legacy session cannot be. */
   const appless = useMemo(() => sourceSessionRows.filter((row) => row.tool === NO_APP && !isLegacySession(row.key)).map((row) => ({ key: row.key, number: row.number })), [sourceSessionRows]);
   const tileCount = useMemo(() => allTiles(orderOf(drawn)).length, [drawn]);
+  /* UX-03 P3: the sessions the List draws empty are not published, so the build page's session numbers match the List's. A build
+     with no tile at all is already stopped by its Prompt item, and its one session is where the first prompt goes: none listed. */
+  const emptyToPublish = useMemo(
+    () => (tileCount === 0 ? [] : emptySessions.filter((row) => row.key !== FIRST_SESSION_KEY).map((row) => ({ key: row.key, number: row.number }))),
+    [tileCount, emptySessions],
+  );
   /* UX-01 P1: the boxes with unsent text, each with its session's number. Session 1 before the build exists is the sentinel key. */
   const unsentBoxes = useMemo(() => {
     const numberOf = (key: string): number | undefined => {
@@ -1729,8 +1735,9 @@ function SandboxPageBody() {
         // Until the database holds the classification, the Card cannot be filled: it is not asked for.
         cardFilled: !classificationCard.live || hasClassification(classificationCard.stored),
         unsent: unsentBoxes,
+        empty: emptyToPublish,
       }),
-    [missing, viewProps.title, viewProps.description, viewProps.cover?.kind, tileCount, runtimeFound, threadHold, appless, classificationCard.live, classificationCard.stored, unsentBoxes],
+    [missing, viewProps.title, viewProps.description, viewProps.cover?.kind, tileCount, runtimeFound, threadHold, appless, classificationCard.live, classificationCard.stored, unsentBoxes, emptyToPublish],
   );
   /* CA-25 P2: what Confirm lists, read when it opens: the post as it stands, and the parts, sessions, tiles and files. */
   const confirmInput = useCallback(
@@ -2719,7 +2726,7 @@ function SandboxPageBody() {
         onPublish={onPublish}
         onUnpublish={unpublish}
         publishedAt={build?.published_at}
-        publish={{ checklist, prepare: preparePublish, confirm: confirmInput, onShowApps: showApps, onUnsent: onUnsentAction }}
+        publish={{ checklist, prepare: preparePublish, confirm: confirmInput, onShowApps: showApps, onUnsent: onUnsentAction, onRemoveSession: (key) => void edits.onRemoveSessions([key], "keep") }}
         post={
           <PostTab
             thread={thread}

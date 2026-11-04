@@ -33,8 +33,9 @@ import { data as dataText } from "@/lib/theme/type";
    ──────────────────────────────────────────────────────────────────────────── */
 
 const OPTIONS: readonly { value: ThemeChoice; label: string }[] = [
-  { value: "noon", label: "Noon" },
-  { value: "dusk", label: "Dusk" },
+  // UX-03 P10: plain names. The stored values stay noon and dusk.
+  { value: "noon", label: "Light" },
+  { value: "dusk", label: "Dark" },
   { value: "system", label: "System" },
 ];
 

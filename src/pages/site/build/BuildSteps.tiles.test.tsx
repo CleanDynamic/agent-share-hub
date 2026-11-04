@@ -64,6 +64,12 @@ function page(nodes: NodeTree[]) {
 
 const cards = () => screen.getAllByTestId("step-card");
 const byKind = (kind: string) => cards().find((card) => card.getAttribute("data-kind") === kind || card.querySelector(`[data-testid="${kind}-eyebrow"]`)) as HTMLElement;
+/** UX-03 P3: the type is said once, in the head ("Step 2 · Code"), and the rest of the composer's type line under it ("TypeScript · 1 line"). */
+const typeOf = (card: HTMLElement): string => {
+  const head = (card.querySelector('[data-testid="step-label"]')?.textContent ?? "").split(" · ").slice(1).join(" · ");
+  const rest = card.querySelector('[data-testid$="-eyebrow"]')?.textContent?.trim();
+  return rest ? `${head} · ${rest}` : head;
+};
 const emptyRows = (card: HTMLElement) =>
   Array.from(card.children).filter((child) => !(child.textContent ?? "").trim() && !child.querySelector("svg, img, button, input, textarea, [role='img'], [data-mark], canvas, [aria-hidden]"));
 
@@ -73,19 +79,19 @@ describe("the build page, every kind with its optional details empty (CA-15 P12)
     expect(cards().length).toBeGreaterThanOrEqual(10);
     for (const card of cards()) {
       const name = card.querySelector("h3, h4")?.textContent ?? "";
-      expect(card.querySelector('[data-testid$="-eyebrow"]')?.textContent?.trim(), `${name}: type line`).toBeTruthy();
+      expect(typeOf(card), `${name}: type`).toBeTruthy();
       expect(name.trim(), "title").toBeTruthy();
       expect(emptyRows(card).map((row) => row.outerHTML.slice(0, 80)), `${name}: empty rows`).toEqual([]);
       // SV-30 P8: a Check with no evidence says `Stated, no artefact`; no other bare tile has a fact.
       const facts = within(card).queryByTestId("reader-facts");
-      if (card.querySelector('[data-testid="check-eyebrow"]')) expect(facts?.textContent, `${name}: facts`).toContain("Stated, no artefact");
+      if (card.getAttribute("data-kind") === "check") expect(facts?.textContent, `${name}: facts`).toContain("Stated, no artefact");
       else expect(facts, `${name}: facts`).toBeNull();
     }
   });
 
   it("says each kind as the composer says it", () => {
     page(bare());
-    const says = (kind: string) => byKind(kind).querySelector('[data-testid$="-eyebrow"]')?.textContent;
+    const says = (kind: string) => typeOf(byKind(kind));
     expect(says("prompt")).toBe("Prompt");
     expect(says("manual")).toBe("Manual step · Another tool");
     expect(says("code")).toBe("Code · TypeScript · 1 line");
@@ -102,7 +108,8 @@ describe("the build page, every kind with its optional details empty (CA-15 P12)
     expect(within(byKind("system_prompt")).getByTestId("system-prompt-text").textContent).toBe("Write in plain English.");
     expect(within(byKind("dataset")).getByTestId("dataset-description").textContent).toBe("Support tickets");
     expect(within(byKind("repo")).getByRole("link", { name: "Open on GitHub" }).getAttribute("href")).toBe("https://github.com/acme/shop");
-    expect(byKind("repo").querySelector("h3")?.textContent).toBe("acme/shop");
+    // UX-03 P3: the head is "Step <n> · GitHub repository", and the repository's name is the step's name under it.
+    expect(byKind("repo").querySelector('[data-testid="step-own-title"]')?.textContent).toBe("acme/shop");
   });
 
   it("draws a system prompt's whole text, not two lines of it", () => {

@@ -70,7 +70,8 @@ describe("folding", () => {
     mount(view(KEYS.slice(0, 2), { sessions_collapsed: ["typed-b"] }));
     const heads = screen.getAllByTestId("reader-session-head");
     expect(within(heads[1]).getByRole("button", { name: "Expand Session 2" }).getAttribute("aria-expanded")).toBe("false");
-    expect(within(heads[1]).getByTestId("session-count").textContent).toBe("2 tiles");
+    // UX-03 P3: a reader counts steps.
+    expect(within(heads[1]).getByTestId("session-count").textContent).toBe("2 steps");
     expect(within(heads[0]).queryByTestId("session-count")).toBeNull();
     const folded = document.querySelector('[data-reader-session="typed-b"]') as HTMLElement;
     expect(within(folded).queryAllByTestId("step-card")).toHaveLength(0);
@@ -109,7 +110,7 @@ describe("the session list", () => {
 });
 
 describe("a prompt's name on the build page", () => {
-  it("is its place on the build, with a typed title next to it", () => {
+  it("is its step head (UX-03 P3), with a typed title under it", () => {
     const tree = [
       { ...prompt("x1", 0, "typed-a"), payload: { text: "ccc", session: "typed-a" } },
       { ...prompt("x2", 1, "typed-a"), title: "ccc", payload: { text: "ccc", session: "typed-a" } },
@@ -119,10 +120,10 @@ describe("a prompt's name on the build page", () => {
     mount({ ...rest, steps, counts: buildCounts(steps) });
     const first = document.querySelector('[data-step="1"]') as HTMLElement;
     const second = document.querySelector('[data-step="2"]') as HTMLElement;
-    expect(within(first).getByTestId("prompt-place").textContent).toMatch(/^Prompt 1(?: · Session \d+)?$/);
-    expect(within(first).queryByTestId("prompt-own-title")).toBeNull();
-    expect(within(second).getByTestId("prompt-place").textContent).toMatch(/^Prompt 2(?: · Session \d+)?$/);
-    expect(within(second).getByTestId("prompt-own-title").textContent).toBe("ccc");
+    expect(within(first).getByTestId("step-label").textContent).toBe("Step 1 · Prompt");
+    expect(within(first).queryByTestId("step-own-title")).toBeNull();
+    expect(within(second).getByTestId("step-label").textContent).toBe("Step 2 · Prompt");
+    expect(within(second).getByTestId("step-own-title").textContent).toBe("ccc");
   });
 });
 
@@ -140,7 +141,7 @@ describe("what the build page keeps of builds.making", () => {
 });
 
 describe("a session with no tile yet", () => {
-  it("is drawn for a reader as its head and No tiles yet, so the numbers run on without a gap", async () => {
+  it("is drawn for a reader as its head and No steps in this session (UX-03 P3), so the numbers run on without a gap", async () => {
     const { buildSteps, sessionGroups } = await import("@/lib/build/graph");
     const tree = [prompt("a-1", 0, "typed-a"), prompt("a-2", 1, "typed-a")];
     const emptyMeta = { "typed-c": meta["typed-c"], "typed-a": meta["typed-a"] };
@@ -151,6 +152,6 @@ describe("a session with no tile yet", () => {
     mount({ ...rest, steps, groups, counts: buildCounts(steps) });
     expect(screen.getAllByTestId("reader-session-head").map((head) => head.getAttribute("aria-label"))).toEqual(["Session 1 · Cursor", "Session 2 · Claude"]);
     const empty = document.querySelector('[data-reader-session="typed-c"]') as HTMLElement;
-    expect(within(empty).getByText("No tiles yet")).toBeTruthy();
+    expect(within(empty).getByText("No steps in this session")).toBeTruthy();
   });
 });

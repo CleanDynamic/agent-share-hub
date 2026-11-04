@@ -1356,6 +1356,19 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/libraryWindowModel.ts",
   "src/pages/site/compose/useBuildActions.tsx",
   "src/lib/build/publishChecklist.ts",
+  // UX-03
+  "src/pages/site/build/ux03.p2.test.tsx",
+  "src/pages/site/compose/ux03.p3.test.tsx",
+  "src/components/build/ClassificationSection.tsx",
+  "src/components/build/ux03.p4.test.tsx",
+  "src/pages/site/compose/ux03.p5.test.tsx",
+  "src/pages/site/home/ux03.p6.test.tsx",
+  "src/lib/build/ux03.published.test.ts",
+  "src/pages/site/drafts/ux03.p7.test.tsx",
+  "src/lib/build/ux03.firstPrompts.test.ts",
+  "src/components/social/EngagementRow.tsx",
+  "src/components/social/ux03.p8.test.tsx",
+  "src/components/theme/ux03.p10.test.tsx",
 ];
 
 /**

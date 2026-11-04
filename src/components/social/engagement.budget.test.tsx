@@ -83,7 +83,9 @@ function providers(node: ReactElement): ReactElement {
   );
 }
 
-const names = (buttons: HTMLElement[]) => buttons.map((button) => button.getAttribute("aria-label"));
+/** UX-03 P8: an action's name carries its count above zero ("Like, 24 likes"); the budget counts the actions, so their base names. */
+const base = (name: string | null | undefined) => (name ?? "").replace(/, \d+ \w+$/, "");
+const names = (buttons: HTMLElement[]) => buttons.map((button) => base(button.getAttribute("aria-label")));
 
 describe("the engagement budgets", () => {
   it("a card carries exactly three actions: Like, Comment, Save", () => {
@@ -142,12 +144,12 @@ describe("the engagement budgets", () => {
     const heart = (doc: Document) => like(doc)?.querySelector("[data-engagement-icon]");
     const heartShape = (doc: Document) => heart(doc)?.querySelector("svg");
 
-    expect(like(quiet)?.getAttribute("aria-label")).toBe("Like");
+    expect(base(like(quiet)?.getAttribute("aria-label"))).toBe("Like");
     expect(like(quiet)?.getAttribute("aria-pressed")).toBe("false");
     expect(heartShape(quiet)?.getAttribute("fill")).toBe("none");
     expect(styleOf(like(quiet))).toContain("color:var(--text2)");
 
-    expect(like(liked)?.getAttribute("aria-label")).toBe("Unlike");
+    expect(base(like(liked)?.getAttribute("aria-label"))).toBe("Unlike");
     expect(like(liked)?.getAttribute("aria-pressed")).toBe("true");
     expect(heartShape(liked)?.getAttribute("fill")).toBe("currentColor");
     expect(styleOf(heart(liked))).toContain("color:var(--action)");

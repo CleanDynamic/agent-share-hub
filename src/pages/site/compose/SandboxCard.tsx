@@ -35,12 +35,12 @@ import { AGE_VALUES, FIELD_MAX, SETTING_MAX, TASK_MAX, pathOf, type Facet } from
 import { isCustomEntry, type Dispute, type Entry } from "@/lib/classify/types";
 
 import { CardPreview } from "./CardPreview";
-import { ClassificationPicker } from "./ClassificationPicker";
+import { ClassificationPicker, withPrimary } from "./ClassificationPicker";
 import { applyDraft, draftOf, type ClassificationCardData, type ClassificationDraft } from "./classificationCardModel";
 import { DESCRIPTION_MAX } from "./composeModel";
 import { MadeWithLine } from "./MadeWithLine";
 import { ModalShell } from "./ModalFrame";
-import { OptionalRow, OptionalRows } from "./OptionalRows";
+import { OptionalRow, OptionalRows, type OptionalRowProps } from "./OptionalRows";
 import { ChosenValue } from "./classificationPieces";
 import { LIVE_NEEDS_TITLE, refusesLiveTitle } from "@/lib/build/publish";
 import { Alert, BlockHead, Block, FOOT_NOTE, FieldRequiredLine, FieldArea, FieldInput, MODAL_PAD, ModalInset, RecipeButton, SegmentedField, footerStyle, useModalInset } from "./modalRecipes";
@@ -271,11 +271,19 @@ function CardBody(props: SandboxCardProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const row = (name: string, description: string, summaryText: string, count: string | undefined, body: ReactNode, extra: { forceOpen?: boolean } = {}) => (
-    <OptionalRow key={name} name={name} description={description} summary={summaryText} count={count} phone={phone} filledText forceOpen={extra.forceOpen}>
+  const row = (name: string, description: string, summaryText: string, count: string | undefined, body: ReactNode, extra: { forceOpen?: boolean; accept?: OptionalRowProps["accept"] } = {}) => (
+    <OptionalRow key={name} name={name} description={description} summary={summaryText} count={count} phone={phone} filledText forceOpen={extra.forceOpen} accept={extra.accept}>
       {body}
     </OptionalRow>
   );
+
+  /* UX-03 P5: a closed row offers its first suggestion; Accept adds it exactly as choosing it in the open row's picker does. */
+  const offer = (facet: SuggestFacet, label: string): OptionalRowProps["accept"] => {
+    const first = suggestions[facet][0];
+    if (!first) return undefined;
+    const next = [...draft[facet], { id: first.id }];
+    return { text: first.label, name: `Accept ${first.label} as ${label}`, onAccept: () => set(facet, facet === "task" ? withPrimary(next) : next) };
+  };
 
   return (
     <>
@@ -313,9 +321,9 @@ function CardBody(props: SandboxCardProps) {
             )}
             {data
               ? [
-                  row("Field", "Not set", entriesLine("field", draft.field), suggestionCount("field"), <ClassificationPicker id="card-field" facet="field" label="Field" entries={draft.field} max={FIELD_MAX} suggestions={suggestions.field} phone={phone} placeholder="Search fields" onChange={(next) => set("field", next)} />),
-                  row("Task", "Not set", entriesLine("task", draft.task), suggestionCount("task"), <ClassificationPicker id="card-task" facet="task" label="Task" entries={draft.task} max={TASK_MAX} primary suggestions={suggestions.task} phone={phone} placeholder="Search tasks" onChange={(next) => set("task", next)} />),
-                  row("Setting", "Not set", entriesLine("setting", draft.setting), suggestionCount("setting"), <ClassificationPicker id="card-setting" facet="setting" label="Setting" entries={draft.setting} max={SETTING_MAX} suggestions={suggestions.setting} phone={phone} placeholder="Search settings" onChange={(next) => set("setting", next)} />),
+                  row("Field", "Not set", entriesLine("field", draft.field), suggestionCount("field"), <ClassificationPicker id="card-field" facet="field" label="Field" entries={draft.field} max={FIELD_MAX} suggestions={suggestions.field} phone={phone} placeholder="Search fields" onChange={(next) => set("field", next)} />, { accept: offer("field", "Field") }),
+                  row("Task", "Not set", entriesLine("task", draft.task), suggestionCount("task"), <ClassificationPicker id="card-task" facet="task" label="Task" entries={draft.task} max={TASK_MAX} primary suggestions={suggestions.task} phone={phone} placeholder="Search tasks" onChange={(next) => set("task", next)} />, { accept: offer("task", "Task") }),
+                  row("Setting", "Not set", entriesLine("setting", draft.setting), suggestionCount("setting"), <ClassificationPicker id="card-setting" facet="setting" label="Setting" entries={draft.setting} max={SETTING_MAX} suggestions={suggestions.setting} phone={phone} placeholder="Search settings" onChange={(next) => set("setting", next)} />, { accept: offer("setting", "Setting") }),
                   row(
                     "Tools and stack",
                     "Not set",
@@ -332,8 +340,9 @@ function CardBody(props: SandboxCardProps) {
                       <ClassificationPicker id="card-stack" facet="stack" label="Tools and stack" entries={draft.stack} suggestions={suggestions.stack} phone={phone} placeholder="Add a tool, language or framework" onChange={(next) => set("stack", next)} />
                       <MadeWithLine phone={phone} chips={props.madeWith} hasSessions={props.madeWith.some((chip) => chip.kind !== "entry")} onToggle={props.onToggleMadeWith} onAdd={props.onAddMadeWith} />
                     </>,
+                    { accept: offer("stack", "Tools and stack") },
                   ),
-                  row("Data handled", "Not set", entriesLine("data", draft.data), undefined, <ClassificationPicker id="card-data" facet="data" label="Data handled" entries={draft.data} suggestions={suggestions.data} phone={phone} placeholder="Search data types" onChange={(next) => set("data", next)} />),
+                  row("Data handled", "Not set", entriesLine("data", draft.data), undefined, <ClassificationPicker id="card-data" facet="data" label="Data handled" entries={draft.data} suggestions={suggestions.data} phone={phone} placeholder="Search data types" onChange={(next) => set("data", next)} />, { accept: offer("data", "Data handled") }),
                   row(
                     "Age suitability",
                     "Not set",

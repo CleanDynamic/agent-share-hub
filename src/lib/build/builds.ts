@@ -418,6 +418,49 @@ export async function listDraftBuildsByCreator(
   return (data ?? []) as unknown as BuildListRow[];
 }
 
+/** UX-03 P6: what Home's "Your published builds" reads of each build. */
+export const PUBLISHED_LIST_COLUMNS = "id, slug, title, published_at, reproduction_count";
+
+export interface PublishedBuildRow {
+  id: string;
+  slug: string;
+  title: string;
+  published_at: string | null;
+  reproduction_count: number | null;
+}
+
+/** The statuses a build is live in. */
+const LIVE_STATUSES = ["published", "gallery"];
+
+/**
+ * UX-03 P6: a creator's live builds, newest published first, at most `limit`, with how many they have in all and how many of
+ * those anyone has reproduced. Two requests, started together: the rows with an exact count, and a head count of the reproduced.
+ */
+export async function listPublishedBuildsByCreator(
+  creatorId: string,
+  { limit }: { limit: number }
+): Promise<{ rows: PublishedBuildRow[]; total: number; reproduced: number }> {
+  const [list, reproduced] = await Promise.all([
+    supabase
+      .from("builds")
+      .select(PUBLISHED_LIST_COLUMNS, { count: "exact" })
+      .eq("creator_id", creatorId)
+      .in("status", LIVE_STATUSES)
+      .order("published_at", { ascending: false })
+      .limit(limit),
+    supabase
+      .from("builds")
+      .select("id", { count: "exact", head: true })
+      .eq("creator_id", creatorId)
+      .in("status", LIVE_STATUSES)
+      .gt("reproduction_count", 0),
+  ]);
+  if (list.error) throw buildLayerError("listPublishedBuildsByCreator", list.error);
+  if (reproduced.error) throw buildLayerError("listPublishedBuildsByCreator (reproduced)", reproduced.error);
+  const rows = (list.data ?? []) as unknown as PublishedBuildRow[];
+  return { rows, total: list.count ?? rows.length, reproduced: reproduced.count ?? 0 };
+}
+
 /** Delete a build. Nodes and events go with it — the FKs cascade. */
 export async function deleteBuild(id: string): Promise<void> {
   const { error } = await supabase.from("builds").delete().eq("id", id);

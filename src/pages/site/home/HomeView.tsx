@@ -78,6 +78,7 @@ import {
   type HomeSinceTone,
   type HomeWeek,
   type HomeWhereNextRow,
+  type HomePublished,
 } from "./homeModel";
 
 export type HomeScope = "following" | "everyone";
@@ -147,6 +148,10 @@ export interface HomeViewProps {
   requests: Loadable<readonly HomeRequestRow[]>;
   mostRun: Loadable<readonly HomeMostRunRow[]>;
   whereNext: Loadable<readonly HomeWhereNextRow[]>;
+  /** UX-03 P6: the maker's published builds, drawn in the room only when nothing else there has anything to show. Absent: none. */
+  published?: Loadable<HomePublished>;
+  /** UX-03 P6: Copy link on the newest published build. */
+  onCopyLink?: (slug: string) => void;
 }
 
 const DRAFTS = "/drafts";
@@ -324,6 +329,9 @@ function ChallengeBar({ done, target, title }: { done: number; target: number; t
   );
 }
 
+/** UX-03 P6: the week has progress to show: a streak, a day done, or a challenge started. */
+const weekHasProgress = (week: HomeWeek): boolean => week.streak > 0 || week.days.some((day) => day !== "none") || week.challenges.some((row) => row.done > 0);
+
 export function WeekSection({ week }: { week: HomeViewProps["week"] }) {
   if (week.status === "loading") return <SectionBones rows={3} height={40} what="your week" />;
   if (week.status === "signed-out") return null;
@@ -379,7 +387,8 @@ function Studio(props: HomeViewProps) {
   if (props.since) parts.push(<SinceSection key="since" meta={props.since.meta} rows={props.since.rows} now={props.now} />);
   parts.push(<ContinueSection key="drafts" drafts={props.drafts} />);
   parts.push(<SessionsSection key="sessions" sessions={props.sessions} onAdd={props.onAddSession} />);
-  parts.push(<WeekSection key="week" week={props.week} />);
+  // UX-03 P6: a week with nothing done yet is not drawn.
+  if (props.week.status !== "ready" || weekHasProgress(props.week.data)) parts.push(<WeekSection key="week" week={props.week} />);
   return (
     <>
       {parts.flatMap((part, index) => (index === 0 ? [part] : [<Rule key={`rule-${index}`} />, part]))}
@@ -778,7 +787,7 @@ export function RoomSection({ room, now }: { room: HomeRoom; now: number }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginTop: 16 }}>
           <InnerTile style={{ padding: 12 }}>
             <Figure value={room.litToday} lamp />
-            <div style={{ marginTop: 4, ...text(12, 400, t.label) }}>builds lit today</div>
+            <div style={{ marginTop: 4, ...text(12, 400, t.label) }}>builds confirmed in the last 24 hours</div>
           </InnerTile>
           <InnerTile style={{ padding: 12 }}>
             <Figure value={room.runsThisWeek} />
@@ -899,13 +908,55 @@ export function WhereNextSection({ whereNext }: { whereNext: HomeViewProps["wher
   );
 }
 
+/** UX-03 P6: a list module is drawn while it loads or fails, and once it holds at least one row. */
+const listShown = (value: Loadable<readonly unknown[]>): boolean => value.status === "loading" || value.status === "error" || (value.status === "ready" && value.data.length > 0);
+
+/** UX-03 P6: the room's figure and counts are drawn when one is above zero, a run is listed, or they could not be read. */
+const roomShown = (room: HomeRoom): boolean => Boolean(room.failure) || room.runs.length > 0 || [room.reproducedToday, room.litToday, room.runsThisWeek].some((value) => (value ?? 0) > 0);
+
+/** Every module of the room has answered, so whether it is empty is known. */
+const roomSettled = (props: HomeViewProps): boolean =>
+  [props.room.reproducedToday, props.room.litToday, props.room.runsThisWeek].every((value) => value !== null) &&
+  [props.requests, props.mostRun, props.whereNext].every((value) => value.status === "ready" || value.status === "signed-out");
+
+/**
+ * UX-03 P6: the maker's published builds, when nothing else in the room has anything to say: how many, the newest five with their
+ * dates, what a reproduction is, and the newest one's link to copy.
+ */
+export function PublishedSection({ published, onCopyLink }: { published: HomePublished; onCopyLink?: (slug: string) => void }) {
+  const newest = published.rows[0];
+  const meta = `${published.total} published${published.reproduced === 0 ? " · none reproduced yet" : ""}`;
+  return (
+    <section aria-label="Your published builds">
+      <div style={{ marginBottom: 8 }}>
+        <SectionHead title="Your published builds" meta={meta} headingLevel={2} />
+      </div>
+      {published.rows.map((row, index) => (
+        <Link key={row.id} to={row.href} data-testid="home-published-row" style={rowLink(index === published.rows.length - 1, { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, minHeight: 44 })}>
+          <span style={{ minWidth: 0, fontWeight: 500, ...ellipsis }}>{row.title}</span>
+          <span style={{ ...text(12, 400, t.label), whiteSpace: "nowrap" }}>{row.published}</span>
+        </Link>
+      ))}
+      <p style={{ ...text(12, 400, t.text2), margin: "12px 0 0", lineHeight: "18px" }}>A reproduction is recorded when another signed-in person runs your build and says whether it worked.</p>
+      {newest && onCopyLink ? (
+        <div style={{ marginTop: 12 }}>
+          <HomeControl onClick={() => onCopyLink(newest.slug)}>Copy link</HomeControl>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 function Room(props: HomeViewProps) {
-  const parts: ReactNode[] = [
-    <RoomSection key="room" room={props.room} now={props.now} />,
-    <RequestsSection key="requests" requests={props.requests} />,
-    <MostRunSection key="most" mostRun={props.mostRun} />,
-  ];
-  if (props.whereNext.status !== "signed-out") parts.push(<WhereNextSection key="next" whereNext={props.whereNext} />);
+  const parts: ReactNode[] = [];
+  if (roomShown(props.room)) parts.push(<RoomSection key="room" room={props.room} now={props.now} />);
+  if (listShown(props.requests)) parts.push(<RequestsSection key="requests" requests={props.requests} />);
+  if (listShown(props.mostRun)) parts.push(<MostRunSection key="most" mostRun={props.mostRun} />);
+  if (props.whereNext.status !== "signed-out" && listShown(props.whereNext)) parts.push(<WhereNextSection key="next" whereNext={props.whereNext} />);
+  // Nothing else to show, for a maker with published builds: those builds.
+  if (parts.length === 0 && roomSettled(props) && props.published?.status === "ready" && props.published.data.total > 0) {
+    parts.push(<PublishedSection key="published" published={props.published.data} onCopyLink={props.onCopyLink} />);
+  }
   return <>{parts.flatMap((part, index) => (index === 0 ? [part] : [<Rule key={`rule-${index}`} />, part]))}</>;
 }
 

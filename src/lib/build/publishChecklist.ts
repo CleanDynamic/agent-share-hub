@@ -13,7 +13,7 @@ import { canSucceedLater } from "@/lib/errors/code";
 
 import { postPlainText, splitThread, type ThreadDoc } from "./thread";
 
-export type ChecklistAction = "add_cover" | "add_title" | "add_description" | "add_prompt" | "go_to" | "show_apps" | "open_card" | "add_unsent" | "discard_unsent";
+export type ChecklistAction = "add_cover" | "add_title" | "add_description" | "add_prompt" | "go_to" | "show_apps" | "open_card" | "add_unsent" | "discard_unsent" | "remove_session";
 
 export interface ChecklistItem {
   /** `evidence`, `title`, `outcome`, `instruction_or_artefact`, `blocker-0`, `thread`, `apps`, `card`, `reminder-0`. */
@@ -29,6 +29,8 @@ export interface ChecklistItem {
   actions?: readonly { id: ChecklistAction; label: string }[];
   /** UX-01 P1: the prompt box this item is about: the session key, or `agent:<id>`. */
   unsentKey?: string;
+  /** UX-03 P3: `remove_session`: the key of the empty session to remove. */
+  sessionKey?: string;
   /** `go_to`: the step to scroll to and outline; null for the post, or for something about the whole build. */
   stepId?: string | null;
   /** `show_apps`: the keys of the sessions with no app. */
@@ -53,6 +55,8 @@ export interface ChecklistInput {
   cardFilled: boolean;
   /** UX-01 P1: text typed in a prompt box and not sent. Each one is a required item. */
   unsent: readonly UnsentPrompt[];
+  /** UX-03 P3: the sessions with no step tiles, in the List's order, each with its number. Each one is a required item. Absent: none. */
+  empty?: readonly { key: string; number: number }[];
 }
 
 export interface UnsentPrompt {
@@ -89,6 +93,10 @@ export const CHECKLIST_COPY = {
   addUnsent: "Add as step tile",
   discardUnsent: "Discard",
   unsentWords: (session: number): string => `Unsent prompt in Session ${session}`,
+  /** UX-03 P3: an empty session is not published, so the numbers on the build page match the composer's. */
+  emptyWords: (session: number): string => `Session ${session} has no step tiles`,
+  emptyDetail: "Empty sessions are not published",
+  removeSession: "Remove session",
   /** How much of the unsent text the detail shows. */
   unsentDetail: 80,
   postText: "Post text",
@@ -137,6 +145,17 @@ export function publishChecklist(input: ChecklistInput): Checklist {
       action: actions[0],
       actions,
       unsentKey: box.sessionKey,
+    });
+  }
+  for (const session of input.empty ?? []) {
+    required.push({
+      key: `empty-${session.key}`,
+      section: "required",
+      done: false,
+      words: CHECKLIST_COPY.emptyWords(session.number),
+      detail: CHECKLIST_COPY.emptyDetail,
+      action: { id: "remove_session", label: CHECKLIST_COPY.removeSession },
+      sessionKey: session.key,
     });
   }
   if (input.threadHold) {

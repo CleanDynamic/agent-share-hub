@@ -221,6 +221,8 @@ export interface NeedRow {
   download?: string | null;
   /** An "Other parts" row's node, so the page can open it. */
   id?: string;
+  /** UX-03 P3: a file's steps, each a link to it on the page ("step 3", "agent 3.3"): the File step tile it sits in, else the steps that use it. */
+  steps?: readonly { id: string; number: string; label: string }[];
 }
 
 export type NeedKey = "tools" | "files" | "runs" | "accounts" | "time" | "other";
@@ -774,9 +776,17 @@ function agentsPerRun(step: Step): number {
 
 /** Which steps use what: node id → step numbers, in step order. */
 function usedBy(all: readonly Step[]): Map<string, string[]> {
-  const out = new Map<string, string[]>();
+  return new Map([...usersOf(all)].map(([id, users]) => [id, users.map((user) => user.number)]));
+}
+
+/** UX-03 P3: whether a node was sent with this step, at any depth. */
+const carries = (step: Step, id: string): boolean => (step.sentWith ?? []).some((tile) => tile.id === id || carries(tile, id));
+
+/** UX-03 P3: the steps that use each node, with their ids, so a row can link to them. */
+function usersOf(all: readonly Step[]): Map<string, { id: string; number: string }[]> {
+  const out = new Map<string, { id: string; number: string }[]>();
   for (const step of all) {
-    for (const use of step.uses) out.set(use.node_id, [...(out.get(use.node_id) ?? []), step.number]);
+    for (const use of step.uses) out.set(use.node_id, [...(out.get(use.node_id) ?? []), { id: step.id, number: step.number }]);
   }
   return out;
 }
@@ -862,13 +872,20 @@ export function whatYouNeed(
   }
 
   /* Files */
+  const users = usersOf(context.all);
   const files: NeedRow[] = [...context.files.values()].map((file) => {
     const numbers = used.get(file.id) ?? [];
     // A file a step makes is made by running that step: it says where, and has no size and no download.
-    const detail = file.madeIn
-      ? [`Made in ${stepList([file.madeIn.number], false)}`, numbers.length > 0 ? `used in ${stepList(numbers)}` : null]
-      : [stepList(numbers), file.size];
-    return { title: file.name, detail: detail.filter(Boolean).join(" · "), download: file.download };
+    if (file.madeIn) {
+      const detail = [`Made in ${stepList([file.madeIn.number], false)}`, numbers.length > 0 ? `used in ${stepList(numbers)}` : null];
+      return { title: file.name, detail: detail.filter(Boolean).join(" · "), download: file.download };
+    }
+    // UX-03 P3: the list is a summary; each file links to its step. A File step tile is its own step; any other file, the steps that use it.
+    const tile = context.byId.get(file.id);
+    const own = tile?.number ? tile : context.all.find((step) => step.number && carries(step, file.id));
+    const links = (own ? [{ id: own.id, number: own.number }] : (users.get(file.id) ?? [])).map((step) => ({ ...step, label: stepList([step.number], false) }));
+    if (links.length === 0) return { title: file.name, detail: [stepList(numbers), file.size].filter(Boolean).join(" · "), download: file.download };
+    return { title: file.name, detail: file.size ?? "", download: file.download, steps: links };
   });
   if (files.length > 0) groups.push({ key: "files", label: "Files", rows: files });
 

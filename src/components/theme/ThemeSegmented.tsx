@@ -1,4 +1,4 @@
-// The theme control for the site frame's surfaces (UI-P18): Noon · Dusk · System.
+// The theme control for the site frame's surfaces (UI-P18): Light · Dark · System (UX-03 P10; the stored values stay noon and dusk).
 //
 // A `Segmented` bound to `ThemeContext`. It is the one theme control the footer,
 // the sign-in page and the phone's account sheet share, so a choice made on any
@@ -12,8 +12,8 @@ import { Segmented, type SegmentedFontSize, type SegmentedSize } from "@/compone
 import { useTheme, type ThemeChoice } from "@/contexts/ThemeContext";
 
 const ITEMS = [
-  { value: "noon", label: "Noon" },
-  { value: "dusk", label: "Dusk" },
+  { value: "noon", label: "Light" },
+  { value: "dusk", label: "Dark" },
   { value: "system", label: "System" },
 ] as const;
 

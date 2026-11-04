@@ -113,6 +113,8 @@ export interface PublishPanel {
   onShowApps: (keys: readonly string[]) => void;
   /** UX-01 P1: an unsent prompt's links in the checklist: send it as a step tile, or discard it. */
   onUnsent?: (key: string, action: "add" | "discard") => void;
+  /** UX-03 P3: Remove session on an empty session's item: the List's own history-tracked remove (`onRemoveSessions`, "keep"). */
+  onRemoveSession?: (key: string) => void;
 }
 
 export interface SandboxViewProps extends CardProps {
@@ -1148,6 +1150,8 @@ function SandboxBody(props: SandboxViewProps) {
           return goTo(item);
         case "show_apps":
           return latest.current.publish?.onShowApps(item.sessions ?? []);
+        case "remove_session":
+          return item.sessionKey ? latest.current.publish?.onRemoveSession?.(item.sessionKey) : undefined;
         case "open_card":
           return openCard(null);
       }

@@ -319,7 +319,7 @@ function RefinedSiteHeaderView({
         boxed={false}
         icon={theme === "dusk" ? Moon : Sun}
         glyph={theme === "dusk" ? "moon" : "sun"}
-        label={theme === "dusk" ? "Theme: Dusk" : "Theme: Noon"}
+        label={theme === "dusk" ? "Theme: Dark" : "Theme: Light"}
         onClick={onToggleTheme}
       />
 
