@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- a fake backend: the rows are whatever the page asks for. */
 // UX-05: a small in-memory backend for the OpenBuilds specs, answering PostgREST the way the pages ask.
 //
 // THE BACKEND IS FAKED (as bounties-board.spec.ts does): /rest/v1/, /auth/v1/, /storage/v1/ and /functions/v1/ are answered here, the
