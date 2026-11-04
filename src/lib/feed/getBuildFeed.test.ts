@@ -120,3 +120,144 @@ describe("the maker on every kind of item (UI-P27)", () => {
     expect(item.build).toMatchObject({ id: "b1", reproduction_count: 9, last_confirmed_at: "2026-09-18T10:00:00.000Z" });
   });
 });
+
+// UX-04 P6: the two kinds that carry posts, and the function that predates them.
+describe("posts and reply groups in the feed (UX-04)", () => {
+  const postRow = (over: Partial<BuildFeedRow> = {}): BuildFeedRow =>
+    row({
+      item_kind: "post",
+      item_at: "2026-11-01T10:00:00.000Z",
+      build_id: null as unknown as string,
+      slug: null as unknown as string,
+      title: null as unknown as string,
+      creator_id: null as unknown as string,
+      post_id: "p1",
+      post_created_at: "2026-11-01T10:00:00.000Z",
+      post_author_id: "u1",
+      post_author_username: "maya",
+      post_author_display: "Maya",
+      post_author_avatar: null,
+      post_body: "How do I route support mail?",
+      post_still_open: true,
+      post_reward_gbp: 25,
+      post_reply_count: 3,
+      ...over,
+    });
+
+  const groupRow = (over: Partial<BuildFeedRow> = {}): BuildFeedRow =>
+    postRow({
+      item_kind: "reply_group",
+      item_at: "2026-11-02T09:00:00.000Z",
+      reply_id: "r9",
+      reply_at: "2026-11-02T09:00:00.000Z",
+      reply_author_id: "u2",
+      reply_author_username: "kit",
+      reply_author_display: "Kit",
+      reply_author_avatar: null,
+      reply_body: "Try a label per sender.",
+      reply_new_count: 4,
+      ...over,
+    });
+
+  beforeEach(() => {
+    rpc.mockReset();
+  });
+
+  it("maps a post to a typed item", async () => {
+    rpc.mockResolvedValue({ data: [postRow()], error: null });
+    const page = await getBuildFeed({ pageSize: 1 });
+
+    expect(page.items).toEqual([]);
+    expect(page.postItems).toEqual([
+      {
+        kind: "post",
+        key: "post:p1:2026-11-01T10:00:00.000Z",
+        at: "2026-11-01T10:00:00.000Z",
+        postId: "p1",
+        author: { id: "u1", handle: "maya", name: "Maya", avatarUrl: null },
+        body: "How do I route support mail?",
+        stillOpen: true,
+        reward: 25,
+        replyCount: 3,
+      },
+    ]);
+    expect(page.nextBefore).toBe("2026-11-01T10:00:00.000Z");
+  });
+
+  it("carries no count of new replies for the Everyone scope, which is the same for everybody", async () => {
+    rpc.mockResolvedValue({ data: [groupRow({ reply_new_count: null })], error: null });
+    const page = await getBuildFeed({ pageSize: 20 });
+    expect(page.postItems[0]).toMatchObject({ kind: "reply_group", newReplyCount: null });
+  });
+
+  it("maps a reply group to the newest reply and the count of new ones", async () => {
+    rpc.mockResolvedValue({ data: [groupRow()], error: null });
+    const page = await getBuildFeed({ pageSize: 20, onlyFollowing: true });
+
+    expect(page.postItems).toEqual([
+      {
+        kind: "reply_group",
+        key: "reply_group:p1:2026-11-02T09:00:00.000Z",
+        at: "2026-11-02T09:00:00.000Z",
+        postId: "p1",
+        root: {
+          author: { id: "u1", handle: "maya", name: "Maya", avatarUrl: null },
+          body: "How do I route support mail?",
+          createdAt: "2026-11-01T10:00:00.000Z",
+          replyCount: 3,
+        },
+        reply: {
+          id: "r9",
+          author: { id: "u2", handle: "kit", name: "Kit", avatarUrl: null },
+          body: "Try a label per sender.",
+          at: "2026-11-02T09:00:00.000Z",
+        },
+        newReplyCount: 4,
+      },
+    ]);
+  });
+
+  it("keeps the old kinds and the new ones apart, in the order the function sent them", async () => {
+    rpc.mockResolvedValue({
+      data: [groupRow(), row({ item_at: "2026-11-01T12:00:00.000Z" }), postRow()],
+      error: null,
+    });
+    const page = await getBuildFeed({ pageSize: 20 });
+
+    expect(page.items.map((item) => item.kind)).toEqual(["build"]);
+    expect(page.postItems.map((item) => item.kind)).toEqual(["reply_group", "post"]);
+  });
+
+  it("still loads the old kinds when the function predates the new columns", async () => {
+    // The function before 20261107170000 returns rows without any post_* or reply_* key at all.
+    rpc.mockResolvedValue({
+      data: [row(), row({ item_kind: "bounty", bounty_id: "x1", bounty_reward_gbp: 150, item_at: "2026-09-19T10:00:00.000Z" })],
+      error: null,
+    });
+    const page = await getBuildFeed({ pageSize: 20 });
+
+    expect(page.items.map((item) => item.kind)).toEqual(["build", "bounty"]);
+    expect(page.postItems).toEqual([]);
+  });
+
+  it("drops a row of a kind it does not know, and a post row missing what the kind needs", async () => {
+    rpc.mockResolvedValue({
+      data: [
+        { ...row(), item_kind: "something_new" } as unknown as BuildFeedRow,
+        postRow({ post_id: null }),
+        groupRow({ reply_id: null }),
+        row(),
+      ],
+      error: null,
+    });
+    const page = await getBuildFeed({ pageSize: 20 });
+
+    expect(page.items).toHaveLength(1);
+    expect(page.postItems).toEqual([]);
+  });
+
+  it("still throws the layer's error when the call fails", async () => {
+    rpc.mockResolvedValue({ data: null, error: { message: "boom" } });
+    await expect(getBuildFeed()).rejects.toThrow(/getBuildFeed failed: boom/);
+  });
+});

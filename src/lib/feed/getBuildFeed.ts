@@ -34,6 +34,9 @@ export const FEED_PAGE_SIZE = 20;
 /** The four kinds of thing the feed carries. */
 export type FeedItemKind = "build" | "rebuild" | "repro_note" | "bounty";
 
+/** UX-04: the two kinds that carry posts. A function that predates 20261107170000 never returns them. */
+export type PostFeedItemKind = "post" | "reply_group";
+
 /**
  * One row of get_build_feed, exactly as the function declares it.
  *
@@ -42,7 +45,7 @@ export type FeedItemKind = "build" | "rebuild" | "repro_note" | "bounty";
  * rest of the app consumes.
  */
 export interface BuildFeedRow {
-  item_kind: FeedItemKind;
+  item_kind: FeedItemKind | PostFeedItemKind;
   item_at: string;
   build_id: string;
   slug: string;
@@ -76,6 +79,31 @@ export interface BuildFeedRow {
   bounty_id: string | null;
   bounty_reward_gbp: number | string | null;
   bounty_gap_title: string | null;
+  /**
+   * UX-04: the columns 20261107170000 appends. Optional, because the function before it does not return them: a row without them is
+   * an old-kind row and maps as it always did. Null on every row that is not a 'post' or a 'reply_group'.
+   */
+  post_id?: string | null;
+  post_created_at?: string | null;
+  post_author_id?: string | null;
+  post_author_username?: string | null;
+  post_author_display?: string | null;
+  post_author_avatar?: string | null;
+  /** The first 1000 characters. */
+  post_body?: string | null;
+  post_still_open?: boolean | null;
+  post_reward_gbp?: number | string | null;
+  /** Replies in the whole conversation, exact (openbuild_posts.reply_count). */
+  post_reply_count?: number | null;
+  reply_id?: string | null;
+  reply_at?: string | null;
+  reply_author_id?: string | null;
+  reply_author_username?: string | null;
+  reply_author_display?: string | null;
+  reply_author_avatar?: string | null;
+  reply_body?: string | null;
+  /** Replies new to the viewer, counted up to 100; null in the Everyone scope. */
+  reply_new_count?: number | null;
 }
 
 /**
@@ -183,8 +211,50 @@ export type FeedItem =
   | ReproNoteFeedItem
   | BountyFeedItem;
 
+/** A person on a post or a reply, from the columns the feed row carries. Same shape as FeedMaker. */
+export type PostFeedPerson = FeedMaker;
+
+/** UX-04: a topic. */
+export interface PostFeedItem {
+  kind: "post";
+  key: string;
+  /** The keyset cursor this row sits at: the post's created_at. */
+  at: string;
+  postId: string;
+  author: PostFeedPerson;
+  /** The first 1000 characters of the post's words; empty for a post that is only media or work. */
+  body: string;
+  stillOpen: boolean;
+  /** Pounds, or null for a post with no reward. */
+  reward: number | string | null;
+  /** Replies in the whole conversation, exact. A page does not show a zero. */
+  replyCount: number;
+}
+
+/**
+ * UX-04: every reply under one topic, as one item. The newest reply, and how many replies are new to the viewer (up to 100).
+ * `at` is the newest reply's time, so the group moves up the feed each time someone replies.
+ */
+export interface ReplyGroupFeedItem {
+  kind: "reply_group";
+  key: string;
+  at: string;
+  postId: string;
+  root: { author: PostFeedPerson; body: string; createdAt: string; replyCount: number };
+  reply: { id: string; author: PostFeedPerson; body: string; at: string };
+  /** Replies after the reader's mark, up to 100; 0 with no mark. Null in the Everyone scope, whose answer is the same for everybody: ask getNewReplyCounts. */
+  newReplyCount: number | null;
+}
+
+export type PostFeedEntry = PostFeedItem | ReplyGroupFeedItem;
+
 export interface BuildFeedPage {
   items: FeedItem[];
+  /**
+   * UX-04: the page's posts and reply groups, newest first, kept apart from `items` so that nothing which draws `items` has to know
+   * them. Empty when the function predates 20261107170000. Merge with `items` by `at` to draw one feed.
+   */
+  postItems: PostFeedEntry[];
   /**
    * The cursor for the next page, or null at the end of the feed.
    *
@@ -240,10 +310,21 @@ export async function getBuildFeed(
   if (error) throw buildLayerError("getBuildFeed", error);
 
   const rows = data ?? [];
-  const items = rows.map(toFeedItem);
+  const items: FeedItem[] = [];
+  const postItems: PostFeedEntry[] = [];
+  for (const row of rows) {
+    if (isPostKind(row.item_kind)) {
+      const entry = toPostFeedEntry(row);
+      if (entry) postItems.push(entry);
+    } else if (isOldKind(row.item_kind)) {
+      items.push(toFeedItem(row));
+    }
+    // A kind this build of the app does not know is left out rather than drawn as something it is not.
+  }
 
   return {
     items,
+    postItems,
     nextBefore:
       rows.length < pageSize ? null : rows[rows.length - 1]?.item_at ?? null,
   };
@@ -252,6 +333,60 @@ export async function getBuildFeed(
 // =============================================================================
 // The mapper
 // =============================================================================
+
+const isPostKind = (kind: string): kind is PostFeedItemKind => kind === "post" || kind === "reply_group";
+const isOldKind = (kind: string): kind is FeedItemKind =>
+  kind === "build" || kind === "rebuild" || kind === "repro_note" || kind === "bounty";
+
+const postPerson = (id: string | null | undefined, handle: string | null | undefined, name: string | null | undefined, avatar: string | null | undefined): PostFeedPerson => ({
+  id: id ?? "",
+  handle: handle ?? null,
+  name: name ?? null,
+  avatarUrl: avatar ?? null,
+});
+
+/**
+ * One 'post' or 'reply_group' row, as the thing Home draws. Null when the row lacks what the kind needs (a row from somewhere else):
+ * a half-built post is dropped, never drawn.
+ */
+export function toPostFeedEntry(row: BuildFeedRow): PostFeedEntry | null {
+  if (!row.post_id || !row.post_author_id) return null;
+  const author = postPerson(row.post_author_id, row.post_author_username, row.post_author_display, row.post_author_avatar);
+
+  if (row.item_kind === "post") {
+    return {
+      kind: "post",
+      key: `post:${row.post_id}:${row.item_at}`,
+      at: row.item_at,
+      postId: row.post_id,
+      author,
+      body: row.post_body ?? "",
+      stillOpen: row.post_still_open === true,
+      reward: row.post_reward_gbp ?? null,
+      replyCount: row.post_reply_count ?? 0,
+    };
+  }
+
+  if (row.item_kind === "reply_group") {
+    if (!row.reply_id || !row.reply_author_id) return null;
+    return {
+      kind: "reply_group",
+      key: `reply_group:${row.post_id}:${row.item_at}`,
+      at: row.item_at,
+      postId: row.post_id,
+      root: { author, body: row.post_body ?? "", createdAt: row.post_created_at ?? row.item_at, replyCount: row.post_reply_count ?? 0 },
+      reply: {
+        id: row.reply_id,
+        author: postPerson(row.reply_author_id, row.reply_author_username, row.reply_author_display, row.reply_author_avatar),
+        body: row.reply_body ?? "",
+        at: row.reply_at ?? row.item_at,
+      },
+      newReplyCount: row.reply_new_count ?? null,
+    };
+  }
+
+  return null;
+}
 
 /**
  * The build a card renders, assembled from one flat feed row.
