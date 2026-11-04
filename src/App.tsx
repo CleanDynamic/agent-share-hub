@@ -495,7 +495,7 @@ const App = () => (
                     a destination before RC-P12 fills it. Lazy, with the
                     Gallery's fallback, inside its own RouteBoundary
                     (CONTRACT §2.6). */}
-                <Route path="/bounties" element={<KeepSearchRedirect to="/openbuilds" />} />
+                <Route path="/bounties" element={<KeepSearchRedirect to="/openbuilds/requests" />} />
                 <Route path="/openbuilds" element={<RouteBoundary><Bounties /></RouteBoundary>} />
                 <Route path="/openbuilds/requests" element={<RouteBoundary><BountyRequests /></RouteBoundary>} />
                 <Route path="/openbuilds/spaces/:slug" element={<RouteBoundary><SpacePage /></RouteBoundary>} />

@@ -188,16 +188,17 @@ export async function installWorld(page: Page, world: World, options: { signedIn
     }
 
     if (table === "space_members") {
-      const spaceId = filter(url, "space_id")?.slice(3) ?? null;
+      const spaceIds = listOf(filter(url, "space_id"));
+      const spaceId = spaceIds[0] ?? null;
       const userId = filter(url, "user_id")?.slice(3) ?? null;
       if (method === "HEAD") return route.fulfill({ status: 200, headers: { ...CORS, "content-range": `0-0/${world.members.filter((member) => member.space_id === spaceId).length}` } });
-      if (select.startsWith("role, space:spaces")) {
+      if (select.includes("space:spaces")) {
         return reply(route, world.members.filter((member) => member.user_id === userId).map((member) => ({ role: member.role, space: world.spaces.find((space) => space.id === member.space_id) })));
       }
       if (select.includes("profile:profiles")) {
         return reply(route, world.members.filter((member) => member.space_id === spaceId && member.role === "moderator").map((member) => ({ user_id: member.user_id, role: member.role, profile: member.user_id === ME.id ? AUTHOR : KIT })));
       }
-      return reply(route, world.members.filter((member) => (!spaceId || member.space_id === spaceId) && (!userId || member.user_id === userId)));
+      return reply(route, world.members.filter((member) => (spaceIds.length === 0 || spaceIds.includes(member.space_id)) && (!userId || member.user_id === userId)));
     }
 
     if (table === "profiles") {

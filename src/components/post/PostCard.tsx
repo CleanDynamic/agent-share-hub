@@ -66,7 +66,7 @@ function SpaceLink({ to, children }: { to: string; children: string }) {
 function BuildAttachment({ attachment, onPickTile }: { attachment: Extract<CardAttachment, { kind: "build" }>; onPickTile?: (id: string) => void }) {
   return (
     <div>
-      <div style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: radiusVar("r-card"), padding: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+      <div style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: radiusVar("r-card"), padding: 16, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div style={{ minWidth: 0 }}>
           <div style={{ ...plain, fontSize: 13, fontWeight: 500, overflowWrap: "anywhere" }}>{attachment.title}</div>
           <div style={{ ...plain, fontSize: 12, color: t.label }}>{[attachment.harness ?? "Harness", attachment.steps > 0 ? `${attachment.steps} ${attachment.steps === 1 ? "step" : "steps"}` : null].filter(Boolean).join(" · ")}</div>
