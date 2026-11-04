@@ -149,7 +149,8 @@ export function cardAttachment(post: Pick<Post, "id" | "stillOpen" | "aboutNodeI
     const tops = topSteps(nodes.filter((candidate) => candidate.parent_id === null).map(nodeLike));
     const place = node ? tops.findIndex((candidate) => candidate.id === node.id) : -1;
     const payload = (snapshot.payload && typeof snapshot.payload === "object" ? snapshot.payload : {}) as Record<string, unknown>;
-    const text = node ? (node.text ?? node.title ?? "") : textOf(payload.text) || textOf(snapshot.note) || textOf(snapshot.title);
+    // UX-06: a copied code step keeps its lines in `payload.source`.
+    const text = node ? (node.text ?? node.title ?? "") : textOf(payload.text) || textOf(payload.source) || textOf(snapshot.note) || textOf(snapshot.title);
     return { kind: "step", key, head: `Step ${place >= 0 ? `${place + 1} · ` : "· "}${kind}`.replace("· · ", "· "), text };
   }
 

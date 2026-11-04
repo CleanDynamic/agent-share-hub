@@ -41,6 +41,7 @@ import {
   postSearch,
   readPostAddress,
   repliesByStep,
+  replyDraftTitle,
   replyItem,
   threadItems,
   type PostTab,
@@ -232,6 +233,7 @@ export default function PostPage() {
             about={at === "foot" ? about : null}
             onRemoveAbout={() => setAbout(null)}
             signInTo={signInTo}
+            draftTitle={replyDraftTitle(shown)}
             onSent={() => {
               setReplyAt("foot");
               setAbout(null);

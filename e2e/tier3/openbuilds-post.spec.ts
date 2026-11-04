@@ -73,3 +73,36 @@ test("a reader replies on a step of the post's build and sees the reply marked o
   // The step now counts its reply.
   await expect(page.getByRole("button", { name: "Step 2 · Code, Rubric, 1 reply" })).toBeVisible();
 });
+
+test("a step tile made in a reply is saved as a draft, and the draft is in Drafts", async ({ page }) => {
+  const world = newWorld();
+  await installWorld(page, world, { signedIn: true });
+  await page.goto("/openbuilds/topics/p1");
+  await expect(page.getByRole("heading", { level: 1, name: "Post number 1" })).toBeVisible();
+
+  const box = page.getByTestId("reply-box");
+  await box.getByRole("button", { name: "Make a step tile" }).click();
+  const editor = box.getByRole("region", { name: "Step tile" });
+  await expect(editor.getByText("Saved to Drafts")).toBeVisible();
+  await editor.getByLabel("Prompt").fill("Score each CV against the rubric, one line per criterion.");
+  await editor.getByRole("button", { name: "Harness: No harness chosen" }).click();
+  await page.getByRole("menuitemradio", { name: "Claude Code" }).click();
+  await expect(editor.getByRole("button", { name: "Harness: Claude Code" })).toBeVisible();
+  await box.getByRole("button", { name: "Reply", exact: true }).click();
+
+  const reply = page.getByTestId("reply").filter({ hasText: "Score each CV against the rubric" });
+  await expect(reply).toBeVisible();
+  await expect.poll(() => world.created.rpc.length).toBe(1);
+
+  // One draft, named after the post, with one session and the one tile; the reply attaches that tile.
+  const drafts = world.builds.filter((build) => build.status === "draft");
+  expect(drafts.map((build) => build.title)).toEqual(["Reply: Post number 1"]);
+  const tiles = world.nodes.filter((node) => node.build_id === drafts[0].id);
+  expect(tiles).toHaveLength(1);
+  expect(tiles[0]).toMatchObject({ type: "prompt", payload: { text: "Score each CV against the rubric, one line per criterion." } });
+  expect(world.sessions.filter((session) => session.build_id === drafts[0].id)).toHaveLength(1);
+  expect(world.created.rpc[0].attachments[0]).toMatchObject({ kind: "step", build_id: drafts[0].id, node_id: tiles[0].id });
+
+  await page.goto("/drafts");
+  await expect(page.getByText("Reply: Post number 1").first()).toBeVisible();
+});

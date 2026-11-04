@@ -1231,6 +1231,10 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/openbuilds/ReplyBox.test.tsx",
   "src/pages/site/openbuilds/sendPost.ts",
   "src/pages/site/openbuilds/sendReply.ts",
+  "src/components/post/postCardModel.ts",
+  "src/lib/openbuilds/replyDraft.ts",
+  "src/lib/openbuilds/replyDraft.test.ts",
+  "src/pages/site/openbuilds/StepTileEditor.tsx",
 
   // SV-23
   "src/lib/build/buildCounts.ts",

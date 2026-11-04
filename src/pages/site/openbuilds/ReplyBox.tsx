@@ -3,7 +3,9 @@
 
    `Avatar` 24, then the box: `On Step 4 · Prompt` with a Remove link when the reply is about a step, a textarea (16 on a phone)
    saying `Reply with words, work, or both`, the one attachment with Remove, then Attach work (UX-05's picker in reply mode: someone
-   else's work offers Mention instead), Add image or file, and Reply. Text or one attachment is enough.
+   else's work offers Mention instead), Add image or file, Make a step tile (Part 3: a small editor in the box; on Reply the build layer
+   makes one draft, `Reply: <heading>`, with one session and the tile, and the reply attaches that step), and Reply. Text or one
+   attachment is enough.
 
    Reply empties the box and the reply is in the Thread at once (`sendReply`); a refusal puts the content back and shows the
    database's words under the box, unchanged. Signed out, Reply goes to sign in and back. */
@@ -29,7 +31,10 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { AttachPicker } from "./AttachPicker";
+import { makeReplyDraft, replyTileInput, type ReplyStepTile } from "@/lib/openbuilds/replyDraft";
+
 import { EMPTY_REPLY, replyHasContent, sendReply, type ReplyDraft } from "./sendReply";
+import { StepTileEditor } from "./StepTileEditor";
 import { attachmentOf, inputOf } from "./sendPost";
 
 export const REPLY_PLACEHOLDER = "Reply with words, work, or both";
@@ -46,6 +51,8 @@ export interface ReplyBoxProps {
   onRemoveAbout: () => void;
   /** Where Reply goes signed out. */
   signInTo: string;
+  /** Part 3: what a step tile's draft is named: `Reply: <heading>`. */
+  draftTitle: string;
   /** Part 5: open with the picker showing builds (the Wall's Reply with a build). */
   pick?: WorkSize;
   /** After a reply is in the Thread (the box goes back to the foot). */
@@ -63,7 +70,9 @@ function RemoveLink({ onClick, label }: { onClick: () => void; label: string }) 
   );
 }
 
-export function ReplyBox({ pageId, rootId, parentId, about, onRemoveAbout, signInTo, pick, onSent }: ReplyBoxProps) {
+const EMPTY_TILE: ReplyStepTile = { kind: "prompt", text: "", tool: null, model: null };
+
+export function ReplyBox({ pageId, rootId, parentId, about, onRemoveAbout, signInTo, draftTitle, pick, onSent }: ReplyBoxProps) {
   const phone = useIsPhone();
   const qc = useQueryClient();
   const { user, profile } = useAuth();
@@ -73,6 +82,8 @@ export function ReplyBox({ pageId, rootId, parentId, about, onRemoveAbout, signI
   const [notice, setNotice] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
+  // Part 3: the step tile being made, or null. It is the reply's one attachment while it is open.
+  const [tile, setTile] = useState<ReplyStepTile | null>(null);
   const file = useRef<HTMLInputElement>(null);
   const area = useRef<HTMLTextAreaElement>(null);
   const field = useInteractive<HTMLTextAreaElement>();
@@ -85,6 +96,7 @@ export function ReplyBox({ pageId, rootId, parentId, about, onRemoveAbout, signI
 
   const attach = async (picked: LabelledWork) => {
     const input = inputOf(picked);
+    setTile(null);
     change({ attachment: { input } });
     try {
       const read = await readNamedWork(workNamedBy([{ attachments: [attachmentOf(input, 0)] } as unknown as Parameters<typeof workNamedBy>[0][number]]));
@@ -109,6 +121,7 @@ export function ReplyBox({ pageId, rootId, parentId, about, onRemoveAbout, signI
     try {
       const up = await uploadEntryMedia(picked);
       setPreview(up.mediaKind !== "file" ? URL.createObjectURL(picked) : null);
+      setTile(null);
       change({ attachment: { input: { kind: "media", mediaPath: up.path, mediaKind: up.mediaKind }, name: picked.name } });
     } catch (error) {
       reportError(error, { source: "openbuilds", context: "uploadEntryMedia" });
@@ -120,17 +133,33 @@ export function ReplyBox({ pageId, rootId, parentId, about, onRemoveAbout, signI
   };
 
   const send = async () => {
-    const sent: ReplyDraft = { ...draft, about };
+    const made = tile && tile.text.trim() ? tile : null;
+    // A step tile stands for the reply's one attachment until its draft is made.
+    const sent: ReplyDraft = { ...draft, about, ...(made ? { attachment: { input: { kind: "step", buildId: "pending", nodeId: "pending" } } } : null) };
     if (!replyHasContent(sent)) return setNotice(EMPTY_REPLY_SEND);
     setDraft(EMPTY_REPLY);
+    setTile(null);
     setNotice(null);
-    const refused = await sendReply({ qc, pageId, parentId, rootId, draft: sent, sender: { id: viewerId ?? "", handle: profile?.username ?? null, name: profile?.display_name ?? null, avatarUrl: profile?.avatar_url ?? null } });
+    const snapshot = made ? { type: made.kind, title: null, note: null, payload: made.kind === "code" ? { source: made.text } : { text: made.text }, source: { buildId: null, buildTitle: draftTitle, buildSlug: null, makerId: viewerId } } : null;
+    const refused = await sendReply({
+      qc,
+      pageId,
+      parentId,
+      rootId,
+      draft: sent,
+      sender: { id: viewerId ?? "", handle: profile?.username ?? null, name: profile?.display_name ?? null, avatarUrl: profile?.avatar_url ?? null },
+      snapshot,
+      attach: made ? async () => replyTileInput(await makeReplyDraft(draftTitle, made)) : undefined,
+    });
     if (refused) {
       // The content comes back as it was, with the words under the box.
-      setDraft((current) => (replyHasContent(current) ? current : { ...sent, about: null }));
+      setDraft((current) => (replyHasContent(current) ? current : { ...sent, attachment: made ? null : sent.attachment, about: null }));
+      if (made) setTile(made);
       setNotice(refused);
       return;
     }
+    // The draft the step tile made is in Drafts like any other.
+    if (made) void qc.invalidateQueries({ queryKey: ["build", "listDraftsWithSessions"] });
     onSent?.();
   };
 
@@ -169,6 +198,7 @@ export function ReplyBox({ pageId, rootId, parentId, about, onRemoveAbout, signI
           {...field.handlers}
           style={{ boxSizing: "border-box", width: "100%", minHeight: 64, padding: "8px 12px", borderRadius: r.control, border: `1px solid ${t.controlBorder}`, background: t.well, color: t.text, fontFamily: FIGTREE, fontSize: phone ? 16 : 13, lineHeight: "20px", resize: "vertical", outline: "none", ...ring(field.state.focusVisible) }}
         />
+        {tile ? <StepTileEditor tile={tile} onChange={setTile} idPrefix={`reply-tile-${parentId}`} /> : null}
         {drawn ? (
           <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
             <div style={{ flex: 1, minWidth: 0 }}>{drawn.kind === "picture" ? <PicturesBlock pictures={[drawn]} /> : <AttachmentView attachment={drawn} />}</div>
@@ -185,6 +215,16 @@ export function ReplyBox({ pageId, rootId, parentId, about, onRemoveAbout, signI
                 Add image or file
               </PostControl>
               <input ref={file} type="file" aria-label="Choose an image or file" hidden onChange={(event) => void addFile(event.target.files?.[0])} />
+              <PostControl
+                aria-pressed={tile !== null}
+                onClick={() => {
+                  if (tile) return setTile(null);
+                  change({ attachment: null });
+                  setTile(EMPTY_TILE);
+                }}
+              >
+                Make a step tile
+              </PostControl>
             </>
           ) : null}
           <span style={{ flexGrow: 1 }} />
