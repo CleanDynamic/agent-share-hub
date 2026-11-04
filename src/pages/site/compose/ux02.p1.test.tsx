@@ -100,7 +100,8 @@ describe("UX-02 P1 · a dropped file becomes a step tile", () => {
 
   it("dropped on Sources: a source file, not a step tile, as before", async () => {
     await mountCa20(seedCa20, { wide: true });
-    const zone = await screen.findByTestId("sources-drop", undefined, { timeout: 10_000 });
+    // UX-02 P8: the whole panel takes the drop.
+    const zone = await screen.findByTestId("sources-panel", undefined, { timeout: 10_000 });
     drop(zone, { x: 0, y: 0 });
     await waitFor(() => expect(tableRows("build_nodes").filter((row) => row.build_id === DRAFT && row.type === "document" && (row.payload as { title?: string }).title === "notes.md")).toHaveLength(1), { timeout: 10_000 });
     expect(fileTiles()).toHaveLength(0);

@@ -1012,12 +1012,9 @@ function DefaultSources() {
   const label = text(12, 500, t.text2);
   return (
     <>
-      <span style={label}>Sessions in this build</span>
-      <span style={label}>Files in this build</span>
-      <span style={label}>Your sessions</span>
-      <div style={{ minHeight: 56, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, border: `1px dashed ${t.line}`, ...text(12.5, 400, t.text2) }}>
-        Drop sessions or files
-      </div>
+      {/* UX-02 P8: Sources' two groups. */}
+      <span style={label}>In this build</span>
+      <span style={label}>Available to add</span>
     </>
   );
 }

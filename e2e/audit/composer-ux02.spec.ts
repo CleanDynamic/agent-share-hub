@@ -152,7 +152,7 @@ test.describe("UX-02 P1 · a dropped file becomes a step tile", () => {
 
   test("on Sources: a source file, not a step tile", async ({ page }) => {
     await open(page);
-    await dropFile(page, page.getByTestId("sources-drop"), "middle");
+    await dropFile(page, page.getByTestId("sources-panel"), "middle");
     await expect.poll(() => tableRows("build_nodes").filter((row) => row.build_id === DRAFT && (row.payload as Row).title === "notes.md").length, { timeout: 15_000 }).toBe(1);
     expect(fileTiles()).toHaveLength(0);
   });

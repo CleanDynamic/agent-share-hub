@@ -1338,6 +1338,7 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/refinedStyles.ts",
   "src/pages/site/compose/ux02.p6.test.tsx",
   "src/pages/site/compose/SandboxView.addMenu.budget.test.tsx",
+  "src/pages/site/compose/ux02.p8.test.tsx",
 ];
 
 /**
