@@ -1345,6 +1345,11 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/ux02.p9.test.tsx",
   "src/lib/build/tileLines.ts",
   "src/pages/site/compose/ux02.p10.test.tsx",
+  "src/pages/site/compose/modalRecipes.tsx",
+  "src/pages/site/compose/ModalFrame.tsx",
+  "src/pages/site/compose/SandboxCard.tsx",
+  "src/pages/site/compose/DeploymentDialog.tsx",
+  "src/pages/site/compose/ux02.p11.test.tsx",
 ];
 
 /**

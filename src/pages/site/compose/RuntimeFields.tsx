@@ -148,7 +148,7 @@ export function RuntimeFields({ id, runtime, phone, onRuntime, onReadHelpers }: 
               type="url"
               inputMode="url"
               value={trace}
-              placeholder="https://smith.langchain.com/…"
+              placeholder="e.g. https://smith.langchain.com/…"
               onChange={(e) => setTrace(e.target.value)}
               onBlur={() => {
                 const why = traceRefusal(trace);

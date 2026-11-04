@@ -43,7 +43,7 @@ import { ModalShell } from "./ModalFrame";
 import { OptionalRow, OptionalRows } from "./OptionalRows";
 import { ChosenValue } from "./classificationPieces";
 import { LIVE_NEEDS_TITLE, refusesLiveTitle } from "@/lib/build/publish";
-import { Alert, BlockHead, Block, FOOT_NOTE, FieldArea, FieldInput, MODAL_PAD, ModalInset, RecipeButton, SegmentedField, footerStyle, useModalInset } from "./modalRecipes";
+import { Alert, BlockHead, Block, FOOT_NOTE, FieldRequiredLine, FieldArea, FieldInput, MODAL_PAD, ModalInset, RecipeButton, SegmentedField, footerStyle, useModalInset } from "./modalRecipes";
 import { ReadFromBuild } from "./ReadFromBuild";
 import { text } from "./refinedStyles";
 import { type ComposeViewProps } from "./ComposeView";
@@ -150,10 +150,10 @@ function BuildDetails({ phone, details, onChange, onGap }: { phone: boolean; det
     <div style={{ display: "flex", flexDirection: "column" }}>
       <OptionalRow phone={phone} filledText name="Known issue" description="What broke and how it was fixed" summary={details.symptom}>
         <RefinedField id="card-problem" label="Problem">
-          <FieldArea id="card-problem" phone={phone} rows={2} value={details.symptom} placeholder="exiftool: command not found" onChange={(event) => onChange("symptom", event.target.value)} />
+          <FieldArea id="card-problem" phone={phone} rows={2} value={details.symptom} placeholder="e.g. exiftool: command not found" onChange={(event) => onChange("symptom", event.target.value)} />
         </RefinedField>
         <RefinedField id="card-fix" label="Fix">
-          <FieldArea id="card-fix" phone={phone} rows={2} value={details.resolution} placeholder="Install it first with brew install exiftool." onChange={(event) => onChange("resolution", event.target.value)} />
+          <FieldArea id="card-fix" phone={phone} rows={2} value={details.resolution} placeholder="e.g. Install it first with brew install exiftool." onChange={(event) => onChange("resolution", event.target.value)} />
         </RefinedField>
       </OptionalRow>
       <OptionalRow phone={phone} filledText name="Build cost (£)" description="What it cost to make" summary={money(details.costSetup)}>
@@ -286,8 +286,8 @@ function CardBody(props: SandboxCardProps) {
 
         <Block testId="card-title-block">
           <RefinedField id={CARD_FIELD_ID.title} label="Title" right="Required">
-            <FieldInput id={CARD_FIELD_ID.title} phone={phone} type="text" value={title} placeholder="Fox poster" autoComplete="off" onChange={(event) => setTitle(event.target.value)} />
-            {liveRefused ? <Alert>{LIVE_NEEDS_TITLE}</Alert> : null}
+            <FieldInput id={CARD_FIELD_ID.title} phone={phone} type="text" value={title} placeholder="e.g. Fox poster" autoComplete="off" onChange={(event) => setTitle(event.target.value)} />
+            {liveRefused ? <Alert>{LIVE_NEEDS_TITLE}</Alert> : !titleOk ? <FieldRequiredLine /> : null}
           </RefinedField>
         </Block>
 
@@ -305,7 +305,7 @@ function CardBody(props: SandboxCardProps) {
                   rows={2}
                   value={summary}
                   maxLength={DESCRIPTION_MAX}
-                  placeholder="Answers customer questions from the help centre using keyword and vector search together"
+                  placeholder="e.g. Answers customer questions from the help centre using keyword and vector search together"
                   onChange={(event) => setSummary(event.target.value)}
                 />
               </RefinedField>,

@@ -369,7 +369,7 @@ function TextPanel({
             id="compose-title"
             type="text"
             value={title}
-            placeholder="Fox poster"
+            placeholder="e.g. Fox poster"
             autoComplete="off"
             onChange={(event) => onTitle(event.target.value)}
             {...titleRing.handlers}

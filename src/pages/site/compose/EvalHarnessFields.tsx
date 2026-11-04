@@ -199,7 +199,7 @@ function RowsEditor({ rows, onChange, phone, tiles }: { rows: ComparisonRow[]; o
         <Panel key={at} label={`Row ${at + 1}`} padding="10px 14px 14px">
           <div style={PANEL_LIST} data-testid="comparison-row-editor">
             <SegmentedField<RowKind> label={`Kind of row ${at + 1}`} phone={phone} items={ROW_KINDS.map((value) => ({ value, label: ROW_KIND_LABEL[value] }))} value={draft.kind} onChange={(kind) => edit(at, { kind })} />
-            <FieldInput phone={phone} aria-label={`Label of row ${at + 1}`} maxLength={ROW_LABEL_MAX} value={draft.label} placeholder="Retrieval, then the decision model picks" onChange={(event) => edit(at, { label: event.target.value })} />
+            <FieldInput phone={phone} aria-label={`Label of row ${at + 1}`} maxLength={ROW_LABEL_MAX} value={draft.label} placeholder="e.g. Retrieval, then the decision model picks" onChange={(event) => edit(at, { label: event.target.value })} />
             {tiles.length > 0 ? (
               <OptionGrid<string> label={`Tiles that make up row ${at + 1}`} phone={phone} multiple columns={2} items={tiles.map((tile) => ({ value: tile.id, label: tile.label }))} chosen={draft.tiles} onPick={(id) => edit(at, { tiles: draft.tiles.includes(id) ? draft.tiles.filter((other) => other !== id) : [...draft.tiles, id] })} />
             ) : null}
@@ -215,7 +215,7 @@ function RowsEditor({ rows, onChange, phone, tiles }: { rows: ComparisonRow[]; o
             <EvidenceControl draft={draft.evidence} prefix={`Row ${at + 1}: `} phone={phone} onChange={(evidence) => edit(at, { evidence })} />
             <SegmentedField<Outcome | "none"> label={`Outcome of row ${at + 1}`} phone={phone} items={[{ value: "none", label: "Not decided" }, ...OUTCOMES_FOR[draft.kind].map((value) => ({ value, label: OUTCOME_LABEL[value] }))]} value={draft.outcome || "none"} onChange={(next) => edit(at, { outcome: next === "none" ? "" : next })} />
             {draft.outcome === "rejected" || draft.outcome === "ruled out" ? (
-              <FieldInput phone={phone} aria-label={`Why row ${at + 1} was ${draft.outcome}`} maxLength={ROW_REASON_MAX} value={draft.reason} placeholder="Over 2,000 times the cost" onChange={(event) => edit(at, { reason: event.target.value })} />
+              <FieldInput phone={phone} aria-label={`Why row ${at + 1} was ${draft.outcome}`} maxLength={ROW_REASON_MAX} value={draft.reason} placeholder="e.g. Over 2,000 times the cost" onChange={(event) => edit(at, { reason: event.target.value })} />
             ) : null}
             {drafts.length > 2 ? (
               <Inline>
@@ -258,14 +258,14 @@ export function comparisonFields({ extras, onChange, phone, comparing, choices }
       <SegmentedField<LabelledBy> label={EVAL_COPY.labelledBy} phone={phone} items={LABELLED_BY.map((value) => ({ value, label: LABELLED_BY_LABEL[value] }))} value={LABELLED_BY.includes(raw.labelled_by as LabelledBy) ? (raw.labelled_by as LabelledBy) : null} onChange={(next) => setTestSet({ labelled_by: next })} />
       <FieldInput phone={phone} mono width={NARROW.date} aria-label={EVAL_COPY.labelledAt} maxLength={7} value={typeof raw.labelled_at === "string" ? raw.labelled_at : ""} placeholder={EVAL_COPY.labelledAtHint} onChange={(event) => setTestSet({ labelled_at: event.target.value.replace(/[^0-9-]/g, "") })} />
       <SegmentedField<DrawnFrom> label={EVAL_COPY.drawnFrom} phone={phone} items={DRAWN_FROM.map((value) => ({ value, label: DRAWN_FROM_LABEL[value] }))} value={DRAWN_FROM.includes(raw.drawn_from as DrawnFrom) ? (raw.drawn_from as DrawnFrom) : null} onChange={(next) => setTestSet({ drawn_from: raw.drawn_from === next ? "" : next, ...(next !== "real_traffic" ? { trace_tag: "" } : null) })} />
-      {raw.drawn_from === "real_traffic" ? <FieldInput phone={phone} mono width={NARROW.value} aria-label={EVAL_COPY.traceTag} maxLength={TRACE_TAG_MAX} value={typeof raw.trace_tag === "string" ? raw.trace_tag : ""} placeholder="customer" onChange={(event) => setTestSet({ trace_tag: event.target.value })} /> : null}
-      <FieldInput phone={phone} mono aria-label={EVAL_COPY.file} maxLength={TEST_FILE_MAX} value={typeof raw.file === "string" ? raw.file : ""} placeholder="harness/goldens.json" onChange={(event) => setTestSet({ file: event.target.value })} />
+      {raw.drawn_from === "real_traffic" ? <FieldInput phone={phone} mono width={NARROW.value} aria-label={EVAL_COPY.traceTag} maxLength={TRACE_TAG_MAX} value={typeof raw.trace_tag === "string" ? raw.trace_tag : ""} placeholder="e.g. customer" onChange={(event) => setTestSet({ trace_tag: event.target.value })} /> : null}
+      <FieldInput phone={phone} mono aria-label={EVAL_COPY.file} maxLength={TEST_FILE_MAX} value={typeof raw.file === "string" ? raw.file : ""} placeholder="e.g. harness/goldens.json" onChange={(event) => setTestSet({ file: event.target.value })} />
     </OptionalField>,
     <OptionalField key="metric" name={EVAL_COPY.metric} description={EVAL_COPY.metricLine} summary={summaryOf(metric ? (metric.id === "custom" ? `${metric.name} (${metric.unit})` : METRIC_LABEL[metric.id]) : null)} phone={phone}>
       <SegmentedField<MetricId> label={EVAL_COPY.metric} phone={phone} items={metricChoices(choices.testedKind).map((value) => ({ value, label: METRIC_LABEL[value] }))} value={shownMetric.id} onChange={(id) => set("metric", id === "custom" ? { id, name: asRecord(extras.metric).name ?? "", unit: asRecord(extras.metric).unit ?? "" } : { id })} />
       {shownMetric.id === "custom" || asRecord(extras.metric).id === "custom" ? (
         <Inline>
-          <FieldInput phone={phone} aria-label={EVAL_COPY.customName} maxLength={CUSTOM_METRIC_MAX} value={String(asRecord(extras.metric).name ?? "")} placeholder="Tone match" onChange={(event) => set("metric", { ...asRecord(extras.metric), id: "custom", name: event.target.value })} />
+          <FieldInput phone={phone} aria-label={EVAL_COPY.customName} maxLength={CUSTOM_METRIC_MAX} value={String(asRecord(extras.metric).name ?? "")} placeholder="e.g. Tone match" onChange={(event) => set("metric", { ...asRecord(extras.metric), id: "custom", name: event.target.value })} />
           <FieldInput phone={phone} width={NARROW.date} aria-label={EVAL_COPY.customUnit} maxLength={CUSTOM_METRIC_MAX} value={String(asRecord(extras.metric).unit ?? "")} placeholder="points" onChange={(event) => set("metric", { ...asRecord(extras.metric), id: "custom", unit: event.target.value })} />
         </Inline>
       ) : null}
@@ -320,14 +320,14 @@ function FailureTypesEditor({ value, onChange, phone }: { value: unknown; onChan
       {rows.map((row, at) => (
         <Panel key={at} label={`Failure type ${at + 1}`} padding="10px 14px 14px">
           <div style={PANEL_LIST} data-testid="failure-type-editor">
-            <FieldInput phone={phone} aria-label={`Name of failure type ${at + 1}`} maxLength={FAILURE_NAME_MAX} value={row.name} placeholder="Wrong policy decision" onChange={(event) => edit(at, { name: event.target.value })} />
+            <FieldInput phone={phone} aria-label={`Name of failure type ${at + 1}`} maxLength={FAILURE_NAME_MAX} value={row.name} placeholder="e.g. Wrong policy decision" onChange={(event) => edit(at, { name: event.target.value })} />
             <Inline>
               <FieldInput phone={phone} mono width={NARROW.count} aria-label={`Cases that showed failure type ${at + 1}`} inputMode="numeric" maxLength={5} value={row.count} placeholder="5" onChange={(event) => edit(at, { count: digits(event.target.value) })} />
               <span>of</span>
               <FieldInput phone={phone} mono width={NARROW.count} aria-label={`Cases read for failure type ${at + 1}`} inputMode="numeric" maxLength={5} value={row.read} placeholder="20" onChange={(event) => edit(at, { read: digits(event.target.value) })} />
             </Inline>
             <PickMenu field label={`Where failure type ${at + 1} is fixed`} phone={phone} placeholder="Where it is fixed" value={row.fix_in || null} options={FIX_IN.map((value) => ({ value, label: FIX_IN_LABEL[value] }))} onChange={(fix_in) => edit(at, { fix_in })} />
-            {row.fix_in === "people" ? <FieldInput phone={phone} aria-label={`Note on failure type ${at + 1}`} maxLength={FAILURE_NOTE_MAX} value={row.note} placeholder="No help-centre page covers damaged items" onChange={(event) => edit(at, { note: event.target.value })} /> : null}
+            {row.fix_in === "people" ? <FieldInput phone={phone} aria-label={`Note on failure type ${at + 1}`} maxLength={FAILURE_NOTE_MAX} value={row.note} placeholder="e.g. No help-centre page covers damaged items" onChange={(event) => edit(at, { note: event.target.value })} /> : null}
             <Inline>
               <TextLink phone={phone} aria-label={`Remove failure type ${at + 1}`} onClick={() => push(rows.filter((_, i) => i !== at))}>
                 Remove
@@ -378,9 +378,9 @@ function GradersEditor({ value, onChange, phone, failureNames }: { value: unknow
       {rows.map((row, at) => (
         <Panel key={at} label={`Grader ${at + 1}`} padding="10px 14px 14px">
           <div style={PANEL_LIST} data-testid="grader-editor">
-            <FieldInput phone={phone} aria-label={`Name of grader ${at + 1}`} maxLength={GRADER_NAME_MAX} value={row.name} placeholder="Policy correct" onChange={(event) => edit(at, { name: event.target.value })} />
+            <FieldInput phone={phone} aria-label={`Name of grader ${at + 1}`} maxLength={GRADER_NAME_MAX} value={row.name} placeholder="e.g. Policy correct" onChange={(event) => edit(at, { name: event.target.value })} />
             <SegmentedField<GraderKind> label={`Kind of grader ${at + 1}`} phone={phone} items={GRADER_KINDS.map((value) => ({ value, label: GRADER_KIND_LABEL[value] }))} value={row.kind} onChange={(kind) => edit(at, { kind })} />
-            {row.kind === "llm_judge" ? <FieldArea phone={phone} rows={3} aria-label={`Criteria of grader ${at + 1}`} maxLength={CRITERIA_MAX} value={row.criteria} placeholder="Does the answer apply the policy the reference states?" onChange={(event) => edit(at, { criteria: event.target.value })} /> : null}
+            {row.kind === "llm_judge" ? <FieldArea phone={phone} rows={3} aria-label={`Criteria of grader ${at + 1}`} maxLength={CRITERIA_MAX} value={row.criteria} placeholder="e.g. Does the answer apply the policy the reference states?" onChange={(event) => edit(at, { criteria: event.target.value })} /> : null}
             <OptionGrid<Sees> label={`What grader ${at + 1} sees`} phone={phone} multiple columns={2} items={SEES.map((value) => ({ value, label: SEES_LABEL[value][0].toUpperCase() + SEES_LABEL[value].slice(1) }))} chosen={row.sees} onPick={(value) => edit(at, { sees: row.sees.includes(value) ? row.sees.filter((other) => other !== value) : SEES.filter((item) => item === value || row.sees.includes(item)) })} />
             <FieldInput phone={phone} mono width={NARROW.date} aria-label={`Threshold of grader ${at + 1}`} inputMode="decimal" maxLength={5} value={row.threshold} placeholder="0.7" onChange={(event) => edit(at, { threshold: decimal(event.target.value) })} />
             {failureNames.length > 0 ? <OptionGrid<string> label={`Failure types grader ${at + 1} covers`} phone={phone} multiple columns={2} items={failureNames.map((name) => ({ value: name, label: name }))} chosen={row.covers} onPick={(name) => edit(at, { covers: row.covers.includes(name) ? row.covers.filter((other) => other !== name) : [...row.covers, name] })} /> : null}
@@ -426,12 +426,12 @@ function GateEditor({ value, onChange, phone }: { value: unknown; onChange: (nex
   const setRejected = (next: { rule: string; why: string }[]) => emit({ rejected: next.length > 0 ? next : undefined });
   return (
     <div style={PANEL_LIST} data-testid="gate-editor">
-      <FieldInput phone={phone} aria-label="Where the gate runs" maxLength={GATE_RUNS_IN_MAX} value={String(raw.runs_in ?? "")} placeholder="GitHub Actions" onChange={(event) => emit({ runs_in: event.target.value })} />
+      <FieldInput phone={phone} aria-label="Where the gate runs" maxLength={GATE_RUNS_IN_MAX} value={String(raw.runs_in ?? "")} placeholder="e.g. GitHub Actions" onChange={(event) => emit({ runs_in: event.target.value })} />
       <PickMenu field label="When the gate runs" phone={phone} placeholder="When it runs" value={GATE_ON.includes(raw.on as GateOn) ? (raw.on as GateOn) : null} options={GATE_ON.map((value) => ({ value, label: GATE_ON_LABEL[value][0].toUpperCase() + GATE_ON_LABEL[value].slice(1) }))} onChange={(on) => emit({ on })} />
-      <FieldInput phone={phone} mono aria-label="Paths that start the gate" maxLength={GATE_PATHS_MAX} value={String(raw.paths ?? "")} placeholder="src/prompts/**" onChange={(event) => emit({ paths: event.target.value })} />
+      <FieldInput phone={phone} mono aria-label="Paths that start the gate" maxLength={GATE_PATHS_MAX} value={String(raw.paths ?? "")} placeholder="e.g. src/prompts/**" onChange={(event) => emit({ paths: event.target.value })} />
       <PickMenu field label="The gate's rule" phone={phone} placeholder="Its rule" value={GATE_RULES.includes(rule.kind as GateRuleKind) ? (rule.kind as GateRuleKind) : null} options={GATE_RULES.map((value) => ({ value, label: GATE_RULE_LABEL[value] }))} onChange={(kind) => emit({ rule: { kind } })} />
       {rule.kind === "pass_rate_below" ? <FieldInput phone={phone} mono width={NARROW.date} aria-label="Pass rate below" inputMode="decimal" maxLength={5} value={rule.value === undefined ? "" : String(rule.value)} placeholder="0.9" onChange={(event) => setRule({ value: event.target.value === "" ? undefined : Number(decimal(event.target.value)) })} /> : null}
-      {rule.kind === "custom" ? <FieldInput phone={phone} aria-label="Your rule" maxLength={GATE_CUSTOM_MAX} value={String(rule.text ?? "")} placeholder="Fails when the pass rate drops 5 points" onChange={(event) => setRule({ text: event.target.value })} /> : null}
+      {rule.kind === "custom" ? <FieldInput phone={phone} aria-label="Your rule" maxLength={GATE_CUSTOM_MAX} value={String(rule.text ?? "")} placeholder="e.g. Fails when the pass rate drops 5 points" onChange={(event) => setRule({ text: event.target.value })} /> : null}
       <Inline>
         <FieldInput phone={phone} mono width={NARROW.count} aria-label="Runs per check" inputMode="numeric" maxLength={2} value={raw.runs === undefined ? "" : String(raw.runs)} placeholder="3" onChange={(event) => emit({ runs: event.target.value === "" ? undefined : Number(digits(event.target.value)) })} />
         <span>runs</span>
@@ -448,8 +448,8 @@ function GateEditor({ value, onChange, phone }: { value: unknown; onChange: (nex
       </Inline>
       {rejected.map((entry, at) => (
         <div key={at} role="group" aria-label={`Dropped rule ${at + 1}`} style={PANEL_LIST}>
-          <FieldInput phone={phone} aria-label={`Rule ${at + 1} that was dropped`} maxLength={GATE_REJECTED_RULE_MAX} value={entry.rule} placeholder="Fail on any regression, one run" onChange={(event) => setRejected(rejected.map((other, i) => (i === at ? { ...other, rule: event.target.value } : other)))} />
-          <FieldInput phone={phone} aria-label={`Why rule ${at + 1} was dropped`} maxLength={GATE_REJECTED_WHY_MAX} value={entry.why} placeholder="A correct answer failed on judge noise." onChange={(event) => setRejected(rejected.map((other, i) => (i === at ? { ...other, why: event.target.value } : other)))} />
+          <FieldInput phone={phone} aria-label={`Rule ${at + 1} that was dropped`} maxLength={GATE_REJECTED_RULE_MAX} value={entry.rule} placeholder="e.g. Fail on any regression, one run" onChange={(event) => setRejected(rejected.map((other, i) => (i === at ? { ...other, rule: event.target.value } : other)))} />
+          <FieldInput phone={phone} aria-label={`Why rule ${at + 1} was dropped`} maxLength={GATE_REJECTED_WHY_MAX} value={entry.why} placeholder="e.g. A correct answer failed on judge noise." onChange={(event) => setRejected(rejected.map((other, i) => (i === at ? { ...other, why: event.target.value } : other)))} />
           <Inline>
             <TextLink phone={phone} aria-label={`Remove dropped rule ${at + 1}`} onClick={() => setRejected(rejected.filter((_, i) => i !== at))}>
               Remove
@@ -485,7 +485,7 @@ export function harnessFields({ extras, onChange, phone }: EvalFieldsProps): Rea
           <ModelPicker tool={null} anyWithoutTool value={typeof extras.judge_model === "string" ? extras.judge_model : null} onChange={(model) => set("judge_model", model)} phone={phone} field />
         </>
       ) : null}
-      <FieldInput phone={phone} aria-label="Framework" maxLength={FRAMEWORK_MAX} value={typeof extras.framework === "string" ? extras.framework : ""} placeholder="DeepEval" onChange={(event) => set("framework", event.target.value || null)} />
+      <FieldInput phone={phone} aria-label="Framework" maxLength={FRAMEWORK_MAX} value={typeof extras.framework === "string" ? extras.framework : ""} placeholder="e.g. DeepEval" onChange={(event) => set("framework", event.target.value || null)} />
     </OptionalField>,
     <OptionalField key="runs_per_case" name="Runs per case" titleCount={TAG} description={`1 to ${RUNS_PER_CASE_MAX}. Answers vary between runs`} summary={summaryOf(extras.runs_per_case === undefined ? null : String(extras.runs_per_case))} phone={phone}>
       <FieldInput phone={phone} mono width={NARROW.count} aria-label="Runs per case" inputMode="numeric" maxLength={2} value={extras.runs_per_case === undefined || extras.runs_per_case === null ? "" : String(extras.runs_per_case)} placeholder="3" onChange={(event) => set("runs_per_case", event.target.value === "" ? null : Number(digits(event.target.value)))} />

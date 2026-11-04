@@ -193,7 +193,7 @@ function OptionRow({ index, count, option, onChange, onRemove, onMove, phone, la
       >
         <Glyph name="grip" size={14} />
       </button>
-      <FieldInput phone={phone} mono aria-label={`${label} ${index + 1}`} value={option.key} maxLength={80} placeholder="billing" onChange={(e) => onChange({ ...option, key: e.target.value })} />
+      <FieldInput phone={phone} mono aria-label={`${label} ${index + 1}`} value={option.key} maxLength={80} placeholder="e.g. billing" onChange={(e) => onChange({ ...option, key: e.target.value })} />
       {count > 2 ? <IconSquare glyph="x" phone={phone} label={`Remove ${label.toLowerCase()} ${index + 1}`} onClick={onRemove} /> : <span />}
     </div>
   );
@@ -479,8 +479,8 @@ export function DecisionFields({ draft, onChange, phone, codeTiles, stepChoices,
             <FieldInput phone={phone} mono width={NARROW.date} aria-label={DECISION_COPY.labelSize} inputMode="numeric" value={pipe.labelSize} placeholder="6000" onChange={(e) => setPipe({ labelSize: e.target.value.replace(/[^0-9]/g, "") })} />
             <SegmentedField<LabelStructure> label="Structure" phone={phone} items={[{ value: "flat", label: DECISION_COPY.flat }, { value: "hierarchical", label: DECISION_COPY.hierarchical }]} value={pipe.labelStructure} onChange={(labelStructure) => setPipe({ labelStructure })} />
           </Inline>
-          <FieldInput phone={phone} aria-label={DECISION_COPY.labelName} maxLength={80} value={pipe.labelName} placeholder="Shopify product taxonomy" onChange={(e) => setPipe({ labelName: e.target.value })} />
-          <FieldInput phone={phone} mono width={NARROW.version} aria-label={DECISION_COPY.labelVersion} maxLength={40} value={pipe.labelVersion} placeholder="Sept 2026" onChange={(e) => setPipe({ labelVersion: e.target.value })} />
+          <FieldInput phone={phone} aria-label={DECISION_COPY.labelName} maxLength={80} value={pipe.labelName} placeholder="e.g. Shopify product taxonomy" onChange={(e) => setPipe({ labelName: e.target.value })} />
+          <FieldInput phone={phone} mono width={NARROW.version} aria-label={DECISION_COPY.labelVersion} maxLength={40} value={pipe.labelVersion} placeholder="e.g. Sept 2026" onChange={(e) => setPipe({ labelVersion: e.target.value })} />
         </OptionalField>
 
         <OptionalField name={DECISION_COPY.candidates} description={DECISION_COPY.candidatesLine} summary={summaryOf(stepLabel, pipe.candidatesK ? `top ${pipe.candidatesK}` : null)} forceOpen={open.pipeline} phone={phone}>
@@ -521,11 +521,11 @@ export function DecisionFields({ draft, onChange, phone, codeTiles, stepChoices,
             onChange={(next) => setPipe({ adaptation: next === pipe.adaptation ? "" : next })}
           />
           {pipe.adaptation === "few_shot" ? <Hint>{DECISION_COPY.fewShotHint}</Hint> : null}
-          {pipe.adaptation === "fine_tuned" ? <FieldInput phone={phone} mono aria-label={DECISION_COPY.baseModel} maxLength={80} value={pipe.baseModel} placeholder="gemma-3-4b" onChange={(e) => setPipe({ baseModel: e.target.value })} /> : null}
+          {pipe.adaptation === "fine_tuned" ? <FieldInput phone={phone} mono aria-label={DECISION_COPY.baseModel} maxLength={80} value={pipe.baseModel} placeholder="e.g. gemma-3-4b" onChange={(e) => setPipe({ baseModel: e.target.value })} /> : null}
         </OptionalField>
 
         <OptionalField name={DECISION_COPY.knownLimits} description={DECISION_COPY.knownLimitsLine} summary={summaryOf(pipe.limits)} forceOpen={open.pipeline} phone={phone}>
-          <FieldArea phone={phone} rows={3} aria-label={DECISION_COPY.knownLimits} value={pipe.limits} placeholder="Sequential narrowing over large label sets degrades accuracy" onChange={(e) => setPipe({ limits: e.target.value })} />
+          <FieldArea phone={phone} rows={3} aria-label={DECISION_COPY.knownLimits} value={pipe.limits} placeholder="e.g. Sequential narrowing over large label sets degrades accuracy" onChange={(e) => setPipe({ limits: e.target.value })} />
           <Hint>Up to {KNOWN_LIMITS_MAX} lines of {KNOWN_LIMIT_LINE_MAX} characters</Hint>
         </OptionalField>
 
@@ -536,8 +536,8 @@ export function DecisionFields({ draft, onChange, phone, codeTiles, stepChoices,
         <OptionalField name={DECISION_COPY.examples} description={DECISION_COPY.examplesLine} summary={examples.length > 0 ? `${examples.length} ${examples.length === 1 ? "example" : "examples"}` : null} forceOpen={open.examples} phone={phone}>
           {examples.map((example, at) => (
             <div key={at} role="group" aria-label={`Example ${at + 1}`} data-testid="decision-example" style={PANEL_LIST}>
-              <FieldInput phone={phone} aria-label={`${DECISION_COPY.exampleInput} of example ${at + 1}`} maxLength={EXAMPLE_TEXT_MAX} value={example.input} placeholder="I was charged twice" onChange={(e) => setExample(at, { input: e.target.value })} />
-              <FieldInput phone={phone} aria-label={`${DECISION_COPY.exampleOutput} of example ${at + 1}`} maxLength={EXAMPLE_TEXT_MAX} value={example.output} placeholder="team = billing" onChange={(e) => setExample(at, { output: e.target.value })} />
+              <FieldInput phone={phone} aria-label={`${DECISION_COPY.exampleInput} of example ${at + 1}`} maxLength={EXAMPLE_TEXT_MAX} value={example.input} placeholder="e.g. I was charged twice" onChange={(e) => setExample(at, { input: e.target.value })} />
+              <FieldInput phone={phone} aria-label={`${DECISION_COPY.exampleOutput} of example ${at + 1}`} maxLength={EXAMPLE_TEXT_MAX} value={example.output} placeholder="e.g. team = billing" onChange={(e) => setExample(at, { output: e.target.value })} />
               <TextLink phone={phone} onClick={() => set({ examples: examples.filter((_, i) => i !== at) })} aria-label={`Remove example ${at + 1}`}>
                 Remove
               </TextLink>
