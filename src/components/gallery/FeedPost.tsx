@@ -22,7 +22,7 @@
 // CoverFallback, so no item is empty.
 
 import { QueryClientContext } from "@tanstack/react-query";
-import { useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type ReactNode } from "react";
 import { IntentLink as Link } from "@/lib/routing/IntentLink";
 
 import { Avatar } from "@/components/brand/Avatar";
@@ -198,6 +198,12 @@ export function FeedPost({
   const age = shortAge(build.published_at, now);
 
 
+  /* UX-03 P1: the post opens its build. Its first heading is the link (the post's one tab stop for the build); a press on the
+     rest of the body goes through the overlay link under it. A preview links nowhere. */
+  const buildHref = preview ? null : `/b2/${build.slug}`;
+  const headed = buildHref !== null && (posts[0]?.content ?? []).some((node) => node.type === "heading");
+  const overlay = useRef<HTMLAnchorElement>(null);
+
   const thread = (
     <PostThread
       posts={posts}
@@ -209,6 +215,7 @@ export function FeedPost({
       loading={phase === "loading"}
       phone={phone}
       resetKey={build.id}
+      headingLink={headed && buildHref ? (words) => <HeadingLink to={buildHref}>{words}</HeadingLink> : undefined}
     />
   );
   return (
@@ -269,20 +276,38 @@ export function FeedPost({
       </div>
 
       {/* The post. */}
-      <div data-feed-post-body="" style={{ ...column, gridColumn: 2, gridRow: 2 }}>
-        {/* CA-07: the draft's pictures open full screen in Preview; a Gallery card is a link to the build instead. */}
-        {preview ? <MediaViewerProvider>{thread}</MediaViewerProvider> : thread}
-        {!threaded && !cover ? (
-          <div style={{ marginTop: 12, aspectRatio: "3 / 2", borderRadius: 6, overflow: "hidden" }}>
-            <CoverFallback seed={build.id} radius={0} />
-          </div>
+      <div data-feed-post-body="" style={{ ...column, gridColumn: 2, gridRow: 2, position: "relative" }}>
+        {buildHref ? (
+          <Link
+            ref={overlay}
+            to={buildHref}
+            tabIndex={-1}
+            aria-hidden="true"
+            data-feed-post-overlay=""
+            onClick={(event) => {
+              if (hasSelection()) event.preventDefault();
+            }}
+            style={{ position: "absolute", inset: 0 }}
+          />
         ) : null}
+        <div
+          style={{ position: "relative", minWidth: 0 }}
+          onClick={buildHref ? (event) => forwardToBuild(event, overlay.current) : undefined}
+        >
+          {/* CA-07: the draft's pictures open full screen in Preview; a Gallery card is a link to the build instead. */}
+          {preview ? <MediaViewerProvider>{thread}</MediaViewerProvider> : thread}
+          {!threaded && !cover ? (
+            <div style={{ marginTop: 12, aspectRatio: "3 / 2", borderRadius: 6, overflow: "hidden" }}>
+              <CoverFallback seed={build.id} radius={0} />
+            </div>
+          ) : null}
+        </div>
       </div>
 
       {/* The build line, then the actions. */}
       <div style={{ ...column, gridColumn: 2, gridRow: 3, marginTop: 12 }}>
         <div data-feed-build-line="" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: 12, rowGap: 6, minWidth: 0 }}>
-          <QuietLink to={preview ? null : `/b2/${build.slug}`} testId="feed-build-title" touch={phone} colour={t.text} style={{ fontSize: 13, fontWeight: 500, maxWidth: "100%", ...ellipsis }}>
+          <QuietLink to={buildHref} tabIndex={headed ? -1 : undefined} testId="feed-build-title" touch={phone} colour={t.text} style={{ fontSize: 13, fontWeight: 500, maxWidth: "100%", ...ellipsis }}>
             {title}
           </QuietLink>
           {lines.regulated ? <RegulatedTag /> : null}
@@ -326,6 +351,44 @@ export function FeedPost({
 
 const ellipsis: CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 };
 
+/** Words the reader has selected: a press that ends a selection is copying, not opening the build. */
+const hasSelection = (): boolean => (typeof window === "undefined" ? false : (window.getSelection()?.toString() ?? "") !== "");
+
+/** What keeps its own press inside a post's body: Show more, a link in the words, a picture's own control. */
+const OWN_PRESS = "a, button, input, textarea, select, label, summary, [role='button']";
+
+/**
+ * UX-03 P1: a press on the body's words or pictures opens the build, through the overlay link, so the router and the page's
+ * intent handling see one ordinary link press. The modifier keys go with it (a new tab stays a new tab).
+ */
+function forwardToBuild(event: ReactMouseEvent<HTMLDivElement>, link: HTMLAnchorElement | null) {
+  if (!link || event.defaultPrevented || event.button !== 0) return;
+  const target = event.target as Element | null;
+  if (target?.closest(OWN_PRESS) && event.currentTarget.contains(target.closest(OWN_PRESS))) return;
+  if (hasSelection()) return;
+  link.dispatchEvent(
+    new MouseEvent("click", { bubbles: true, cancelable: true, view: window, ctrlKey: event.ctrlKey, metaKey: event.metaKey, shiftKey: event.shiftKey, altKey: event.altKey, button: 0 }),
+  );
+}
+
+/** The post's first heading as the link to its build: the heading's own type, underlined at once on hover (a fine pointer only). */
+function HeadingLink({ to, children }: { to: string; children: ReactNode }) {
+  const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  return (
+    <Link
+      to={to}
+      data-testid="feed-post-heading-link"
+      {...handlers}
+      onClick={(event) => {
+        if (hasSelection()) event.preventDefault();
+      }}
+      style={{ color: "inherit", textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: 4, ...ring(state.focusVisible) }}
+    >
+      {children}
+    </Link>
+  );
+}
+
 /**
  * A link in the item's quiet type: t.text at rest, a step to t.text2 on hover, the
  * well under a press. With no address (a maker without a handle) it is plain text.
@@ -336,12 +399,15 @@ function QuietLink({
   style,
   testId,
   touch = false,
+  tabIndex,
   children,
 }: {
   to: string | null;
   colour: string;
   style?: CSSProperties;
   testId?: string;
+  /** UX-03 P1: -1 when the post's heading is already its tab stop for the build. */
+  tabIndex?: number;
   /** Below 768px: the link is a 44px target. */
   touch?: boolean;
   children: ReactNode;
@@ -360,6 +426,7 @@ function QuietLink({
     <Link
       to={to}
       data-testid={testId}
+      tabIndex={tabIndex}
       {...handlers}
       style={{
         ...base,

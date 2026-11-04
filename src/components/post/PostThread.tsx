@@ -16,7 +16,7 @@
 // motion, and no fade. The posts below the first stay in the DOM while closed,
 // clipped and inert, because a layout transition needs its target laid out.
 
-import { useEffect, useId, useRef, type CSSProperties } from "react";
+import { useEffect, useId, useRef, type CSSProperties, type ReactNode } from "react";
 
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import { UNFOLD_MS } from "@/components/gallery/CardThread";
@@ -47,6 +47,8 @@ export interface PostThreadProps {
   resetKey?: string;
   /** The rest of the thread is on its way: the toggle reads "Loading…" and is disabled. */
   loading?: boolean;
+  /** UX-03 P1: wraps the words of post 1's first heading (the feed post's link to its build). */
+  headingLink?: (content: ReactNode) => ReactNode;
 }
 
 /** Room kept at the end of a post's first line for its counter, "10 / 10" in 11px mono. */
@@ -62,6 +64,7 @@ export function PostThread({
   phone = false,
   resetKey,
   loading = false,
+  headingLink,
 }: PostThreadProps) {
   const regionId = useId();
 
@@ -98,7 +101,9 @@ export function PostThread({
 
   return (
     <div data-post-thread="" data-thread-mode={mode} style={{ display: "flex", flexDirection: "column" }}>
-      <div data-post={1}>{body(first, 0)}</div>
+      <div data-post={1}>
+        <PostBody post={first} mediaById={mediaById} srcByPath={srcByPath} phone={phone} firstLineInset={0} headingLink={headingLink} />
+      </div>
       {rest.length > 0 ? (
         mode === "page" ? (
           later
