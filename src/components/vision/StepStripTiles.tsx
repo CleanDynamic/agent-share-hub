@@ -42,7 +42,20 @@ function TileButton({ label, pressed, onPick, children }: { label: string; press
   );
 }
 
-export function StepStripTiles({ tiles, openLabel, margin = "16px 0 0", onPick }: { tiles: readonly StripTileData[]; openLabel?: string; margin?: string; onPick?: (id: string) => void }) {
+/** UX-06: `renderTile` puts a tile's content inside something of the caller's (the post page's step menu), padded as a pressable tile is. */
+export function StepStripTiles({
+  tiles,
+  openLabel,
+  margin = "16px 0 0",
+  onPick,
+  renderTile,
+}: {
+  tiles: readonly StripTileData[];
+  openLabel?: string;
+  margin?: string;
+  onPick?: (id: string) => void;
+  renderTile?: (tile: StripTileData, inner: ReactNode) => ReactNode;
+}) {
   const phone = useIsPhone();
   if (tiles.length === 0) return null;
   const columns = phone ? Math.min(tiles.length, 2) : tiles.length;
@@ -62,7 +75,10 @@ export function StepStripTiles({ tiles, openLabel, margin = "16px 0 0", onPick }
           </>
         );
         // With onPick a tile is a button: the composer's way to mark the step that is still open.
-        const content = onPick ? (
+        const pressable = Boolean(onPick || renderTile);
+        const content = renderTile ? (
+          renderTile(tile, inner)
+        ) : onPick ? (
           <TileButton label={`${head}, ${tile.title}`} pressed={tile.open} onPick={() => onPick(tile.id)}>
             {inner}
           </TileButton>
@@ -70,11 +86,11 @@ export function StepStripTiles({ tiles, openLabel, margin = "16px 0 0", onPick }
           inner
         );
         return tile.open ? (
-          <DashedSlot key={tile.id} as="li" style={{ padding: onPick ? 0 : "10px 12px" }}>
+          <DashedSlot key={tile.id} as="li" style={{ padding: pressable ? 0 : "10px 12px" }}>
             {content}
           </DashedSlot>
         ) : (
-          <li key={tile.id} style={onPick ? { ...tileBox, padding: 0 } : tileBox}>
+          <li key={tile.id} style={pressable ? { ...tileBox, padding: 0 } : tileBox}>
             {content}
           </li>
         );

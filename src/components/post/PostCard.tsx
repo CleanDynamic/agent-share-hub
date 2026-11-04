@@ -4,7 +4,7 @@
    body values are FeedPost's, copied (FeedPost's head is not a component of its own): a 40px author column and the content 12
    apart, padding 20 0 16; the name 15/600 and `@handle · age` 14 `--label`; the heading at the card title size, 13/500. Only the heading and the replies strip are links to the post. */
 
-import { useState, type CSSProperties } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 
 import { Avatar } from "@/components/brand/Avatar";
 import type { GalleryMedia } from "@/lib/build";
@@ -14,7 +14,7 @@ import { Plaque } from "@/components/brand/Plaque";
 import { EngagementRow, type RowEngagement } from "@/components/social/EngagementRow";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { DashedSlot } from "@/components/vision/DashedSlot";
-import { StepStripTiles, tileBox } from "@/components/vision/StepStripTiles";
+import { StepStripTiles, tileBox, type StripTileData } from "@/components/vision/StepStripTiles";
 import { PageLink as Link } from "@/lib/routing/PageLink";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -37,6 +37,10 @@ export interface PostCardProps {
   card: PostCardData;
   /** A list clamps the text to three lines; the post's own page does not. */
   clamp?: boolean;
+  /** UX-06: the post's own page: the heading is the page's `h1`, 20/500, and not a link; the text is never clamped. */
+  page?: boolean;
+  /** UX-06: what each step of an attached build is drawn inside (the post page's step menu). */
+  renderTile?: (tile: StripTileData, inner: ReactNode) => ReactNode;
   moderation?: CardModeration;
   engagement?: RowEngagement;
 }
@@ -63,7 +67,7 @@ function SpaceLink({ to, children }: { to: string; children: string }) {
   );
 }
 
-function BuildAttachment({ attachment, onPickTile }: { attachment: Extract<CardAttachment, { kind: "build" }>; onPickTile?: (id: string) => void }) {
+function BuildAttachment({ attachment, onPickTile, renderTile }: { attachment: Extract<CardAttachment, { kind: "build" }>; onPickTile?: (id: string) => void; renderTile?: PostCardProps["renderTile"] }) {
   return (
     <div>
       <div style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: radiusVar("r-card"), padding: 16, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
@@ -73,7 +77,7 @@ function BuildAttachment({ attachment, onPickTile }: { attachment: Extract<CardA
         </div>
         {attachment.plaque ? <Plaque build={attachment.plaque} size="row" /> : null}
       </div>
-      <StepStripTiles tiles={attachment.tiles} openLabel="Still open" margin="8px 0 0" onPick={onPickTile} />
+      <StepStripTiles tiles={attachment.tiles} openLabel="Still open" margin="8px 0 0" onPick={onPickTile} renderTile={renderTile} />
     </div>
   );
 }
@@ -102,8 +106,8 @@ export function PicturesBlock({ pictures }: { pictures: readonly Extract<CardAtt
   );
 }
 
-export function AttachmentView({ attachment, onPickTile }: { attachment: CardAttachment; onPickTile?: (id: string) => void }) {
-  if (attachment.kind === "build") return <BuildAttachment attachment={attachment} onPickTile={onPickTile} />;
+export function AttachmentView({ attachment, onPickTile, renderTile }: { attachment: CardAttachment; onPickTile?: (id: string) => void; renderTile?: PostCardProps["renderTile"] }) {
+  if (attachment.kind === "build") return <BuildAttachment attachment={attachment} onPickTile={onPickTile} renderTile={renderTile} />;
   if (attachment.kind === "step") return <StepAttachment attachment={attachment} />;
   if (attachment.kind === "picture") return <PicturesBlock pictures={[attachment]} />;
   if (attachment.kind === "line") {
@@ -161,7 +165,7 @@ function HideReason({ onHide, onCancel }: { onHide: (reason: string) => void; on
   );
 }
 
-export function PostCard({ card, clamp = true, moderation, engagement }: PostCardProps) {
+export function PostCard({ card, clamp = true, page = false, renderTile, moderation, engagement }: PostCardProps) {
   const [asking, setAsking] = useState(false);
   const label = t.label;
   const name = card.author.name;
@@ -222,9 +226,11 @@ export function PostCard({ card, clamp = true, moderation, engagement }: PostCar
           />
         ) : null}
 
-        <HeadingLink to={card.to}>
-          {card.heading || "Untitled post"}
-        </HeadingLink>
+        {page ? (
+          <h1 style={{ ...plain, fontSize: 20, fontWeight: 500, lineHeight: 1.3, letterSpacing: "-0.015em", overflowWrap: "anywhere" }}>{card.heading || "Untitled post"}</h1>
+        ) : (
+          <HeadingLink to={card.to}>{card.heading || "Untitled post"}</HeadingLink>
+        )}
 
         {card.text ? (
           <p
@@ -236,7 +242,7 @@ export function PostCard({ card, clamp = true, moderation, engagement }: PostCar
               color: t.text2,
               whiteSpace: "pre-wrap",
               overflowWrap: "anywhere",
-              ...(clamp ? { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" } : null),
+              ...(clamp && !page ? { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" } : null),
             }}
           >
             {card.text}
@@ -251,7 +257,7 @@ export function PostCard({ card, clamp = true, moderation, engagement }: PostCar
                 const pictures = card.attachments.filter((entry): entry is Extract<CardAttachment, { kind: "picture" }> => entry.kind === "picture");
                 return pictures[0] === attachment ? <PicturesBlock key={attachment.key} pictures={pictures} /> : null;
               }
-              return <AttachmentView key={attachment.key} attachment={attachment} />;
+              return <AttachmentView key={attachment.key} attachment={attachment} renderTile={renderTile} />;
             })}
           </div>
         ) : null}

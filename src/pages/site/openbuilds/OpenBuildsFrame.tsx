@@ -26,7 +26,7 @@ const TWO_MIN = 1001;
 const ROOT: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.text, fontVariantNumeric: "tabular-nums" };
 
 /** The page: the main column (48 between its groups) and the side column, each 64 above the footer. */
-export function OpenBuildsColumns({ main, side, testId = "openbuilds-page" }: { main: ReactNode; side: ReactNode; testId?: string }) {
+export function OpenBuildsColumns({ main, side, testId = "openbuilds-page", sideLabel = "Your work" }: { main: ReactNode; side: ReactNode; testId?: string; /** UX-06: the side column's name. */ sideLabel?: string }) {
   const two = useMinWidth(TWO_MIN);
   return (
     <div
@@ -35,7 +35,7 @@ export function OpenBuildsColumns({ main, side, testId = "openbuilds-page" }: { 
       style={{ ...ROOT, display: "grid", gridTemplateColumns: two ? "minmax(0, 1fr) 320px" : "minmax(0, 1fr)", columnGap: 72, rowGap: two ? undefined : 48 }}
     >
       <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 48, paddingBottom: two ? 64 : 0 }}>{main}</div>
-      <aside aria-label="Your work" style={{ minWidth: 0, display: "flex", flexDirection: "column", paddingBottom: 64 }}>
+      <aside aria-label={sideLabel} style={{ minWidth: 0, display: "flex", flexDirection: "column", paddingBottom: 64 }}>
         {side}
       </aside>
     </div>

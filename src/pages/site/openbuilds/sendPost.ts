@@ -7,7 +7,7 @@
 import type { InfiniteData, QueryClient, QueryKey } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import type { AttachmentInput, CardsPage, Post, PostAttachment, Space } from "@/lib/openbuilds";
+import type { AttachmentInput, CardsPage, LabelledWork, Post, PostAttachment, Space } from "@/lib/openbuilds";
 import { createPost, resolveMentionIds } from "@/lib/openbuilds";
 import type { CardWork } from "@/lib/openbuilds/cardWork";
 import { reportError } from "@/lib/errors/report";
@@ -48,6 +48,14 @@ export function fieldsOf(draft: NewPostDraft) {
     tags: draft.added.includes("tags") ? tagsOf(draft.tags) : [],
     closesAt: draft.added.includes("closes") ? closesIso(draft.closes) : null,
   };
+}
+
+/** What a picked row attaches. */
+export function inputOf(work: LabelledWork): AttachmentInput {
+  if (work.size === "build") return { kind: "build", buildId: work.buildId };
+  if (work.size === "part") return { kind: "part", buildId: work.buildId, partKey: work.partKey ?? "" };
+  if (work.size === "session") return { kind: "session", buildId: work.buildId, sessionKey: work.sessionKey ?? "" };
+  return { kind: "step", buildId: work.buildId, nodeId: work.nodeId ?? "" };
 }
 
 export const attachmentOf = (input: AttachmentInput, position: number): PostAttachment => ({

@@ -10,6 +10,7 @@ import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { LibraryLoadingView } from "@/pages/site/library/LibraryFrame";
 import { OpenBuildsLoadingView } from "@/pages/site/openbuilds/OpenBuildsFrame";
 import { OpenBuildsFeedLoadingView } from "@/pages/site/openbuilds/OpenBuildsFeedFrame";
+import { PostLoadingView } from "@/pages/site/openbuilds/PostFrame";
 import { BuildViewSkeleton } from "@/pages/site/build/BuildViewSkeleton";
 import { ComposeSkeleton } from "@/pages/site/compose/ComposeSkeleton";
 import { DraftsLoadingView } from "@/pages/site/drafts/DraftsFrame";
@@ -35,6 +36,8 @@ export const BuildsPlaceholder = BuildsLoadingView;
 export const OpenBuildsPlaceholder = OpenBuildsLoadingView;
 // UX-05 P2: the feed and the space page, which share a layout.
 export const OpenBuildsFeedPlaceholder = OpenBuildsFeedLoadingView;
+// UX-06: a post's page.
+export const PostPlaceholder = PostLoadingView;
 export const LibraryPlaceholder = LibraryLoadingView;
 // SV-04 P5: the page's own loading state, from its small frame module (no page code in the first download).
 export const DraftsPlaceholder = DraftsLoadingView;

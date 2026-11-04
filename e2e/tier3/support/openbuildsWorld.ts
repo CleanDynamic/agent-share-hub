@@ -13,6 +13,10 @@ import { ME, projectRef } from "../../tier2/support/supabaseStub";
 type Row = Record<string, any>;
 
 export interface World {
+  /** UX-06: builds, their tiles and sessions, as plain tables the build layer reads and writes. */
+  builds: Row[];
+  nodes: Row[];
+  sessions: Row[];
   spaces: Row[];
   members: Row[];
   posts: Row[];
@@ -55,6 +59,12 @@ export function newWorld(): World {
     ...extra,
   });
   return {
+    builds: [{ id: "b1", slug: "resume-screener", title: "Resume screener", made_with: ["claude-code"], status: "published", creator_id: ME.id, making: {}, reproduction_count: 0, last_confirmed_at: null, last_confirmed_model: null, published_at: "2026-10-01T00:00:00Z", allow_as_post_source: true, parent_build_id: null, source_handle_at_fork: null, updated_at: "2026-10-01T00:00:00Z", created_at: "2026-10-01T00:00:00Z", session_count: 0 }],
+    nodes: [
+      { id: "n1", build_id: "b1", parent_id: null, type: "prompt", title: "Take the CV", position: 0, is_gap: false, payload: { text: "Read the CV." }, source_ref: null, note: null },
+      { id: "n2", build_id: "b1", parent_id: null, type: "code", title: "Rubric", position: 1, is_gap: false, payload: { source: "score = 0" }, source_ref: null, note: null },
+    ],
+    sessions: [],
     spaces: [claude],
     members: [{ space_id: claude.id, user_id: KIT.id, role: "moderator" }],
     posts: [post(1), post(2), post(3), post(4)],
@@ -65,8 +75,86 @@ export function newWorld(): World {
   };
 }
 
+/** UX-06: give a post replies, as rows the database would hold. `build` attaches the world's build b1 (or another id) to a reply. */
+export function addReplies(world: World, rootId: string, replies: { id: string; parent?: string; body: string; author?: "me" | "kit"; build?: string; step?: string; aboutNodeId?: string; minutesAgo: number }[]): void {
+  for (const entry of replies) {
+    const author = entry.author === "me" ? AUTHOR : KIT;
+    world.posts.push({
+      id: entry.id,
+      author_id: author.id,
+      parent_id: entry.parent ?? rootId,
+      root_id: rootId,
+      body: entry.body,
+      about_build_id: entry.aboutNodeId ? "b1" : null,
+      about_node_id: entry.aboutNodeId ?? null,
+      reward_gbp: null,
+      still_open: false,
+      tags: [],
+      closes_at: null,
+      pinned_by: null,
+      pinned_at: null,
+      hidden_by: null,
+      hidden_reason: null,
+      like_count: 0,
+      reply_count: 0,
+      created_at: new Date(Date.parse("2026-11-04T12:00:00Z") - entry.minutesAgo * 60_000).toISOString(),
+      updated_at: "2026-11-04T12:00:00Z",
+      author,
+      attachments: entry.build
+        ? [{ position: 0, kind: "build", build_id: entry.build, node_id: null, part_key: null, session_key: null, media_path: null, media_kind: null, snapshot: null }]
+        : entry.step
+          ? [{ position: 0, kind: "step", build_id: "b1", node_id: entry.step, part_key: null, session_key: null, media_path: null, media_kind: null, snapshot: null }]
+          : [],
+      post_spaces: [],
+    });
+  }
+  const root = world.posts.find((post) => post.id === rootId);
+  if (root) root.reply_count = world.posts.filter((post) => post.root_id === rootId && post.parent_id !== null).length;
+}
+
+/** A post with its replies two levels deep, as getPost's one embedded read returns it. */
+function threadRow(world: World, post: Row, depth: number): Row {
+  const replies = depth >= 2 ? [] : world.posts.filter((entry) => entry.parent_id === post.id).sort((a, b) => a.created_at.localeCompare(b.created_at));
+  return { ...post, replies: replies.map((reply) => threadRow(world, reply, depth + 1)) };
+}
+
 const CORS = { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "*", "access-control-expose-headers": "content-range" };
 const b64 = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
+
+/** UX-06: whether a row passes the query's plain filters (eq, neq, in, is, ilike). Embedded filters (a.b) and `or` are left alone. */
+const passes = (row: Row, url: URL): boolean => {
+  for (const [key, value] of url.searchParams) {
+    if (["select", "order", "limit", "offset", "on_conflict", "columns", "or"].includes(key) || key.includes(".")) continue;
+    const cell = row[key];
+    if (value.startsWith("eq.") && String(cell) !== value.slice(3)) return false;
+    if (value.startsWith("neq.") && String(cell) === value.slice(4)) return false;
+    if (value.startsWith("in.(") && !value.slice(4, -1).split(",").includes(String(cell))) return false;
+    if (value === "is.null" && cell !== null && cell !== undefined) return false;
+    if (value.startsWith("ilike.") && !new RegExp(value.slice(6).replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/%/g, ".*"), "i").test(String(cell ?? ""))) return false;
+  }
+  return true;
+};
+
+/** A node as the build layer selects it: the json paths it names lifted out of the payload. */
+const nodeOut = (row: Row): Row => ({ ...row, tested: row.payload?.tested ?? null, setup: row.payload?.setup ?? null, step: row.payload?.step ?? null, text: row.payload?.text ?? null, source: row.payload?.source ?? null, session: row.payload?.session ?? null, contributor_id: row.contributor_id ?? null });
+
+/** Plain reads and writes on one of the world's tables. */
+function plainTable(world: World, rows: Row[], url: URL, method: string, body: any, prefix: string): Row[] {
+  if (method === "POST") {
+    const list = (Array.isArray(body) ? body : [body]) as Row[];
+    return list.map((input) => {
+      const known = input.id ? rows.find((row) => row.id === input.id) : undefined;
+      if (known) return Object.assign(known, input);
+      const row = { id: `${prefix}-${++world.seq}`, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...input };
+      rows.push(row);
+      return row;
+    });
+  }
+  const matched = rows.filter((row) => passes(row, url));
+  if (method === "PATCH") for (const row of matched) Object.assign(row, body, { updated_at: new Date().toISOString() });
+  if (method === "DELETE") for (const row of matched) rows.splice(rows.indexOf(row), 1);
+  return matched;
+}
 
 /** Pick `eq.`/`in.`/`is.` filters out of the query. */
 const filter = (url: URL, name: string): string | null => url.searchParams.get(name);
@@ -114,12 +202,14 @@ export async function installWorld(page: Page, world: World, options: { signedIn
       const input = body().p as Row;
       world.created.rpc.push(input);
       const id = `new-${++world.seq}`;
-      const spaces = world.spaces.filter((space) => (input.space_ids as string[]).includes(space.id));
+      const spaces = world.spaces.filter((space) => ((input.space_ids as string[] | undefined) ?? []).includes(space.id));
+      // UX-06: a reply names its parent; it sits in the parent's thread.
+      const parent = input.parent_id ? world.posts.find((post) => post.id === input.parent_id) : null;
       world.posts.unshift({
         id,
         author_id: ME.id,
-        parent_id: null,
-        root_id: id,
+        parent_id: parent ? parent.id : null,
+        root_id: parent ? parent.root_id : id,
         body: input.body,
         about_build_id: input.about_build_id ?? null,
         about_node_id: input.about_node_id ?? null,
@@ -136,7 +226,7 @@ export async function installWorld(page: Page, world: World, options: { signedIn
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         author: AUTHOR,
-        attachments: ((input.attachments as Row[]) ?? []).map((attachment, position) => ({ position, kind: attachment.kind, build_id: attachment.build_id ?? null, node_id: attachment.node_id ?? null, part_key: attachment.part_key ?? null, session_key: attachment.session_key ?? null, media_path: null, media_kind: null, snapshot: null })),
+        attachments: ((input.attachments as Row[]) ?? []).map((attachment, position) => ({ position, kind: attachment.kind, build_id: attachment.build_id ?? null, node_id: attachment.node_id ?? null, part_key: attachment.part_key ?? null, session_key: attachment.session_key ?? null, media_path: null, media_kind: null, snapshot: attachment.snapshot ?? null })),
         post_spaces: spaces.map((space) => ({ space: { id: space.id, slug: space.slug, name: space.name } })),
       });
       return reply(route, id, 200);
@@ -157,6 +247,16 @@ export async function installWorld(page: Page, world: World, options: { signedIn
         });
         world.hold.armed = false;
         world.hold.release = null;
+      }
+      // UX-06: getPost's two reads, the post with its replies embedded, then the thread's (id, parent) pairs.
+      const one = filter(url, "id");
+      if (one?.startsWith("eq.") && select.includes("replies:")) {
+        const found = world.posts.find((post) => post.id === one.slice(3) && (options.signedIn || post.hidden_by === null));
+        return reply(route, found ? [threadRow(world, found, 0)] : []);
+      }
+      const root = filter(url, "root_id");
+      if (root?.startsWith("eq.") && select.replace(/\s/g, "").startsWith("id,parent_id")) {
+        return reply(route, world.posts.filter((post) => post.root_id === root.slice(3)).map((post) => ({ id: post.id, parent_id: post.parent_id })));
       }
       if (url.searchParams.has("root_id")) return reply(route, []);
       let rows = world.posts.filter((post) => post.parent_id === null);
@@ -215,18 +315,24 @@ export async function installWorld(page: Page, world: World, options: { signedIn
     }
 
     if (table === "builds") {
-      return reply(route, [{ id: "b1", slug: "resume-screener", title: "Resume screener", made_with: "Claude Code", status: "published", creator_id: ME.id, making: {}, reproduction_count: 0, last_confirmed_at: null, last_confirmed_model: null, published_at: "2026-10-01T00:00:00Z", allow_as_post_source: true }]);
+      if (method === "POST") {
+        const made = plainTable(world, world.builds, url, method, { status: "draft", making: {}, made_with: [], reproduction_count: 0, session_count: 0, parent_build_id: null, ...body() }, "d");
+        return reply(route, made, 201);
+      }
+      // Embedded reads (a draft's first prompt) come back empty.
+      return reply(route, plainTable(world, world.builds, url, method, body(), "d").map((row) => ({ ...row, first_prompt: [] })));
     }
 
+    if (table === "build_sessions") return reply(route, plainTable(world, world.sessions, url, method, body(), "bs"), method === "POST" ? 201 : 200);
+
     if (table === "build_nodes") {
-      if (select.includes("contributor_id")) {
+      // The attach picker's steps, with their build embedded.
+      if (select.includes("contributor_id") && select.includes("build:builds")) {
         const mine = request.url().includes("build.creator_id=eq.");
         return reply(route, mine ? [{ id: "n2", build_id: "b1", title: "Rubric", contributor_id: null, build: { id: "b1", title: "Resume screener", status: "published", creator_id: ME.id, allow_as_post_source: true } }] : []);
       }
-      return reply(route, [
-        { id: "n1", build_id: "b1", parent_id: null, type: "prompt", title: "Take the CV", position: 0, is_gap: false, tested: null, setup: null, step: null, text: "Read the CV.", session: null },
-        { id: "n2", build_id: "b1", parent_id: null, type: "code", title: "Rubric", position: 1, is_gap: false, tested: null, setup: null, step: null, text: "score = 0", session: null },
-      ]);
+      const rows = plainTable(world, world.nodes, url, method, body(), "node");
+      return reply(route, rows.map(nodeOut), method === "POST" ? 201 : 200);
     }
 
     return reply(route, []);
