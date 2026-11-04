@@ -1239,6 +1239,8 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/openbuilds/addToDraft.test.ts",
   "src/pages/site/openbuilds/AddToDraft.tsx",
   "src/pages/site/openbuilds/AddToDraft.test.tsx",
+  "src/pages/site/openbuilds/PostWall.tsx",
+  "src/pages/site/openbuilds/PostWall.test.tsx",
 
   // SV-23
   "src/lib/build/buildCounts.ts",

@@ -34,6 +34,7 @@ import { PostStepMenu } from "./PostStepMenu";
 import { ReplyBox } from "./ReplyBox";
 import type { ReplyDraft } from "./sendReply";
 import { PostView, type PostSideRow } from "./PostView";
+import { PostWall } from "./PostWall";
 import {
   buildReplies,
   peopleReplying,
@@ -44,6 +45,7 @@ import {
   readPostAddress,
   repliesByStep,
   replyDraftTitle,
+  wallCards,
   replyItem,
   threadItems,
   type PostTab,
@@ -97,6 +99,8 @@ export default function PostPage() {
 
   const [replyAt, setReplyAt] = useState<"foot" | string>("foot");
   const [about, setAbout] = useState<ReplyDraft["about"]>(null);
+  // Part 5: the Wall's Reply with a build opens a box of its own at the Wall's foot (the Thread is not drawn meanwhile).
+  const [wallBox, setWallBox] = useState(false);
 
   const signInTo = `/login?redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`;
   const signIn = () => navigate(signInTo);
@@ -284,6 +288,22 @@ export default function PostPage() {
             builds={builds}
             thread={{ items, filter }}
             replyBox={replyBox}
+            wall={
+              <PostWall
+                cards={wallCards(shown, data, now)}
+                onReply={(replyId) => {
+                  setReplyAt(replyId);
+                  setAbout(null);
+                  move({ tab: "thread" });
+                }}
+                onReplyWithBuild={() => (viewerId ? setWallBox(true) : signIn())}
+                box={
+                  wallBox ? (
+                    <ReplyBox pageId={id} rootId={shown.rootId} parentId={shown.id} about={null} onRemoveAbout={() => undefined} signInTo={signInTo} draftTitle={replyDraftTitle(shown)} pick="build" onSent={() => setWallBox(false)} />
+                  ) : undefined
+                }
+              />
+            }
             actions={{
               onReply: (replyId) => {
                 setReplyAt(replyId);

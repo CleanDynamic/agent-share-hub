@@ -33,7 +33,7 @@ test("a post opens from the feed, and the Thread and the Wall switch in the addr
 
   await page.getByRole("button", { name: "Wall · 1 build" }).click();
   await expect(page).toHaveURL(/\/openbuilds\/topics\/p1\?view=wall$/);
-  await expect(page.getByRole("region", { name: "Wall" })).toBeAttached();
+  await expect(page.getByRole("region", { name: "Wall" }).getByTestId("wall-card")).toHaveCount(1);
   expect(await moving()).toBe(0);
 
   await page.getByRole("button", { name: /^Thread · / }).click();
@@ -126,4 +126,30 @@ test("a reader adds someone's step from a reply to a draft and finds it in the c
   await page.getByRole("button", { name: "Open draft" }).click();
   await expect(page).toHaveURL(/\/compose\/d-mine$/);
   await expect(page.getByText("Rubric").first()).toBeVisible();
+});
+
+test("the Wall draws the builds in replies, and Reply with a build opens the picker at Build", async ({ page }) => {
+  const world = newWorld();
+  addReplies(world, "p1", [
+    { id: "r1", body: "Mine, with the rubric split out.", minutesAgo: 50, build: "b1" },
+    { id: "r2", body: "Words only.", minutesAgo: 40 },
+  ]);
+  await installWorld(page, world, { signedIn: true });
+  await page.goto("/openbuilds/topics/p1?view=wall");
+
+  const wall = page.getByRole("region", { name: "Wall" });
+  const card = wall.getByTestId("wall-card");
+  await expect(card).toHaveCount(1);
+  await expect(card.getByRole("heading", { name: "Resume screener" })).toBeVisible();
+  await expect(card.getByText("Claude Code · new build")).toBeVisible();
+  await expect(card.getByRole("link", { name: "Open" })).toHaveAttribute("href", "/b2/resume-screener");
+
+  await expect(wall.getByText("Built something for this? Reply with a build.")).toBeVisible();
+  await wall.getByRole("button", { name: "Reply with a build" }).click();
+  const picker = page.getByRole("dialog", { name: "Attach work" });
+  await expect(picker).toBeVisible();
+  await expect(picker.getByRole("button", { name: "Build", pressed: true })).toBeVisible();
+  // The box took the way in's place and carries the one primary.
+  await expect(wall.getByRole("button", { name: "Reply with a build" })).toHaveCount(0);
+  await expect(page.locator('[data-visual-slot="btn-primary"]')).toHaveCount(1);
 });
