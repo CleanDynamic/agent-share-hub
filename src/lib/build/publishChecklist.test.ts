@@ -43,7 +43,7 @@ describe("publishChecklist required items", () => {
       [true, "Picture", undefined],
       [true, "Bakery homepage", undefined],
       [true, "A warm homepage for a bakery.", undefined],
-      [true, "18 tiles", undefined],
+      [true, "18 step tiles", undefined],
     ]);
     expect(out.canPublish).toBe(true);
     expect(out.note).toBeNull();
@@ -52,7 +52,7 @@ describe("publishChecklist required items", () => {
   it("reads a video cover, and one tile, in the singular", () => {
     const out = publishChecklist({ ...base, cover: "video", tiles: 1 });
     expect(out.required[0].detail).toBe("Video");
-    expect(out.required[3].detail).toBe("1 tile");
+    expect(out.required[3].detail).toBe("1 step tile");
     expect(publishChecklist({ ...base, missing: ["title"] }).note).toBe("Complete 1 required item to publish");
   });
 

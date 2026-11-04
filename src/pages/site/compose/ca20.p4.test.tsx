@@ -52,7 +52,7 @@ describe("Undo and Redo", () => {
   it("name the step in their tooltips, take it back and put it again", async () => {
     await mountCa20(seedCa20);
     fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 2 options" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove tile" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove step tile" }));
     await waitFor(() => expect(ids()).not.toContain(IDS.p2), { timeout: 15_000 });
     await waitFor(() => expect((undoButton() as HTMLButtonElement).disabled).toBe(false));
     expect(undoButton().getAttribute("title")?.replace(/ \([^)]*\)$/, "")).toBe("Undo: Removed Prompt 2");
@@ -72,7 +72,7 @@ describe("Undo and Redo", () => {
     fireEvent.click(await screen.findByRole("menuitem", { name: /^Session 3/ }));
     await waitFor(() => expect((nodeRow(IDS.p1)?.payload as { session?: string }).session).toBe(KEY_C), { timeout: 15_000 });
     expect(screen.queryByTestId("notice-undo")).toBeNull();
-    await waitFor(() => expect(undoButton().getAttribute("title")?.replace(/ \([^)]*\)$/, "")).toBe("Undo: Moved tile 1 to Session 3"));
+    await waitFor(() => expect(undoButton().getAttribute("title")?.replace(/ \([^)]*\)$/, "")).toBe("Undo: Moved step tile 1 to Session 3"));
     fireEvent.click(undoButton());
     await waitFor(() => expect((nodeRow(IDS.p1)?.payload as { session?: string }).session).toBe(KEY_A), { timeout: 15_000 });
     expect(positions().filter((row) => row.parent_id === null)[0].id).toBe(IDS.p1);

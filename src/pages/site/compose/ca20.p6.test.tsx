@@ -36,7 +36,7 @@ describe("Recently removed", () => {
       .map((row) => row.session_key);
   const removeTile = async (name: string | RegExp) => {
     fireEvent.keyDown(screen.getByRole("button", { name }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove tile" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove step tile" }));
   };
   const openList = async () => {
     fireEvent.keyDown(screen.getByTestId("build-options"), { key: "Enter" });

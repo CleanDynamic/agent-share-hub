@@ -1350,6 +1350,12 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/SandboxCard.tsx",
   "src/pages/site/compose/DeploymentDialog.tsx",
   "src/pages/site/compose/ux02.p11.test.tsx",
+  "src/pages/site/compose/DecisionFields.tsx",
+  "src/pages/site/compose/AddCodeDialog.tsx",
+  "src/pages/site/compose/useSessionEdits.ts",
+  "src/pages/site/compose/libraryWindowModel.ts",
+  "src/pages/site/compose/useBuildActions.tsx",
+  "src/lib/build/publishChecklist.ts",
 ];
 
 /**

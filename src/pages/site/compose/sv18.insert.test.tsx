@@ -91,7 +91,7 @@ describe("Add › From Library", () => {
     const before = tiles().length;
     const dialog = await openWindow();
     await pick(dialog, "Summary on one prompt");
-    expect(within(dialog).getByText(/Copied as a new prompt with its source\. @maya is credited on the tile, and their step will show used in 5 builds\./)).toBeTruthy();
+    expect(within(dialog).getByText(/Copied as a new prompt with its source\. @maya is credited on the step tile, and their step will show used in 5 builds\./)).toBeTruthy();
     fireEvent.click(within(dialog).getByRole("button", { name: "Insert" }));
     await waitFor(() => expect(tiles()).toHaveLength(before + 1), { timeout: 20_000 });
     const added = tiles().find((row) => (row.source_ref as { saved_item_id?: string } | null)?.saved_item_id === "si-prompt");

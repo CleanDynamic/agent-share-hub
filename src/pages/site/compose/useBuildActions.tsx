@@ -140,7 +140,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
       const removed: RemovedMeta = {
         kind: "tile",
         badge: tops.length === 1 ? tops[0].number : String(tops.length),
-        name: tops.length === 1 ? tileName(tops[0]) : `${tops.length} tiles`,
+        name: tops.length === 1 ? tileName(tops[0]) : `${tops.length} step tiles`,
         ...(inside && inside.count > 0 ? { detail: `${inside.count} ${inside.what === "agents" ? (inside.count === 1 ? "agent" : "agents") : inside.count === 1 ? "tile" : "tiles"}` } : null),
       };
       void history

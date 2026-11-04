@@ -102,7 +102,7 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
     fillChoice();
     expect(add().disabled).toBe(false);
     openRow("Calling code");
-    expect(screen.getByText("No Code tile linked")).toBeTruthy();
+    expect(screen.getByText("No Code step tile linked")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Add code" }));
     expect(onAddCode).toHaveBeenCalled();
   });

@@ -76,7 +76,7 @@ describe("the window", () => {
 
   it("says the footer sentence for the selected item and nothing when none is", () => {
     show();
-    expect(screen.getByText(/^Copied as a new prompt with its source\. @maya is credited on the tile, and their step will show used in 5 builds\.$/)).toBeInTheDocument();
+    expect(screen.getByText(/^Copied as a new prompt with its source\. @maya is credited on the step tile, and their step will show used in 5 builds\.$/)).toBeInTheDocument();
     cleanup();
     show({ selectedId: null });
     expect(screen.queryByText(/^Copied as a new/)).toBeNull();

@@ -574,8 +574,8 @@ function MentionedLine({ to, phone }: { to: string; phone: boolean }) {
 /* ── tiles inside tiles (CA-04 P2) ── */
 
 export const NEST_LIST_COPY = {
-  sendWithAbove: "Send with the step above",
-  ownStep: "Make it its own step",
+  sendWithAbove: "Send with the step tile above",
+  ownStep: "Make it its own step tile",
   copyTogether: "Copy together",
   sentWith: (label: string) => `Sent with ${label}`,
   nowSentWith: (name: string, label: string) => `${name} is now sent with ${label}.`,
@@ -2204,7 +2204,7 @@ function IncomingSlot({ kind, id, container, height }: { kind: "tile" | "session
 /** A tile's name in the List's lines, from the tiles by id. */
 const labelOf = (tiles: ReadonlyMap<string, Step>, id: string): string => {
   const tile = tiles.get(id);
-  return tile ? tileName(tile) : "that tile";
+  return tile ? tileName(tile) : "that step tile";
 };
 
 /** A session's head and its tiles, registered for the post's links by the session's key. */
@@ -2271,7 +2271,7 @@ export function BuildList(raw: BuildListProps) {
   const names: MoveNames = {
     tile: (id) => {
       const step = stepsById.get(id);
-      if (!step) return "that tile";
+      if (!step) return "that step tile";
       const word = tileName(step);
       return step.number && !step.filename ? word.charAt(0).toUpperCase() + word.slice(1) : word;
     },
@@ -2356,7 +2356,7 @@ export function BuildList(raw: BuildListProps) {
   const tiles = new Map(steps.flatMap(withSentWith).map((step) => [step.id, step]));
   const label = (id: string) => {
     const tile = tiles.get(id);
-    return tile ? tileName(tile) : "that tile";
+    return tile ? tileName(tile) : "that step tile";
   };
   const topOf = (id: string): Step | undefined => steps.find((step) => withSentWith(step).some((tile) => tile.id === id));
 
@@ -2504,7 +2504,7 @@ export function BuildList(raw: BuildListProps) {
                     <SessionLines session={sameStageAs ? { ...run.head, sameStageAs } : run.head} />
                     {drawBranches(run.steps, (step) => step, steps, placed)}
                     {/* SV-07 P6: an empty session looks one way, "No tiles yet" and "+ Add tile"; the dashed place shows only while a tile is dragged. */}
-                    {run.steps.length === 0 && !promptHere ? sorting.held && sorting.held.type !== "session" && sorting.held.type !== "part" ? <EmptyPlace words="Drop a tile here" /> : <p style={{ ...text(13, 400, t.label), margin: 0 }}>{SESSION_HEAD_COPY.noTiles}</p> : null}
+                    {run.steps.length === 0 && !promptHere ? sorting.held && sorting.held.type !== "session" && sorting.held.type !== "part" ? <EmptyPlace words="Drop a step tile here" /> : <p style={{ ...text(13, 400, t.label), margin: 0 }}>{SESSION_HEAD_COPY.noTiles}</p> : null}
                     {promptHere ? (
                       <AddPrompt
                         phone={props.phone}

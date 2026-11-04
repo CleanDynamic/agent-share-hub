@@ -85,7 +85,9 @@ describe("a tile's window and its Details share their sections (CA-18)", () => {
   it("every kind's list names the same sections whether Details draws them or leaves them empty", () => {
     for (const kind of TILE_KINDS) {
       const { sections, notSet } = readSections(tileView(kind, "full"), buildFacts);
-      expect([...sections.map((s) => s.label), ...notSet].sort(), kind).toEqual(sectionsOf(kind).map((s) => s.label).sort());
+      // UX-02 P9: a section read from the tile (a file's type and place) is never named as not set.
+      const readOnly = sectionsOf(kind).filter((s) => ["type", "place"].includes(s.key) && !sections.some((drawn) => drawn.key === s.key)).map((s) => s.label);
+      expect([...sections.map((s) => s.label), ...notSet, ...readOnly].sort(), kind).toEqual(sectionsOf(kind).map((s) => s.label).sort());
     }
   });
 });

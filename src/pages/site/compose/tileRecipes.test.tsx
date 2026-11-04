@@ -120,13 +120,14 @@ describe("each kind's tile as its board (CA-15b P3)", () => {
     }
   });
 
-  it("a prompt: its text, then the response line, then '48 words'-style facts and Open prompt", () => {
+  it("a prompt: its text, then the response line, then its facts (no word count, UX-02 P10) and Open prompt", () => {
     show(boardTiles());
     const prompt = tile("prompt");
     const reply = within(prompt).getByTestId("prompt-reply");
     expect(reply.textContent).toBe("Response Created the prompts for wave six.");
     expect(before(reply, within(prompt).getByTestId("tile-footer"))).toBe(true);
-    expect(within(prompt).getByTestId("tile-footer-facts").textContent).toBe("5 words");
+    // UX-02 P10: the composer's prompt tile has no word count; its other facts would stand here.
+    expect(within(prompt).queryByTestId("tile-footer-facts")?.textContent ?? "").toBe("");
     expect(within(prompt).getByRole("button", { name: "Open prompt" })).toBeTruthy();
   });
 

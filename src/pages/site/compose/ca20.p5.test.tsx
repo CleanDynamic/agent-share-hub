@@ -165,7 +165,7 @@ describe("on the page", () => {
     await waitFor(() => expect(top().slice(0, 2)).toEqual([IDS.p2, IDS.p1]), { timeout: 15_000 });
     await waitUndo("Moved Prompt 2 up");
     fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 2 options" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove tile" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove step tile" }));
     await waitFor(() => expect(ids()).not.toContain(IDS.p1), { timeout: 15_000 });
     await waitUndo("Removed Prompt 2");
     fireEvent.click(undoButton());
@@ -187,7 +187,7 @@ describe("on the page", () => {
     fireEvent.keyDown(await screen.findByRole("menuitem", { name: "Move to session…" }), { key: "ArrowRight" });
     fireEvent.click(await screen.findByRole("menuitem", { name: /^Session 2/ }));
     await waitFor(() => expect((nodeRow(IDS.p1)?.payload as { session?: string }).session).toBe(KEY_B), { timeout: 15_000 });
-    await waitUndo("Moved tile 1 to Session 2");
+    await waitUndo("Moved step tile 1 to Session 2");
     expect(screen.queryByTestId("notice-undo")).toBeNull();
     expect(document.querySelector("[data-sonner-toast]")).toBeNull();
   });
@@ -232,7 +232,7 @@ describe("a step whose undo fails", () => {
     const { render } = await import("@testing-library/react");
     render(<Toaster />);
     fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 2 options" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove tile" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove step tile" }));
     await waitFor(() => expect(positions().map((row) => row.id)).not.toContain(IDS.p2), { timeout: 15_000 });
     await waitFor(() => expect((screen.getByTestId("title-undo") as HTMLButtonElement).disabled).toBe(false));
     fireEvent.click(screen.getByTestId("title-undo"));

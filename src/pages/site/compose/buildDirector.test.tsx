@@ -246,7 +246,7 @@ describe("removing a session", () => {
     expect(document.querySelector(`[data-skel-kind="session"][data-skel-id="${first}"]`)).toBeNull();
   });
 
-  it("Keep the tiles (and a merge): only the head lifts; its tiles stay and slide into the session above", async () => {
+  it("Keep the step tiles (and a merge): only the head lifts; its tiles stay and slide into the session above", async () => {
     const props = base();
     const [, second] = sessionKeys(props);
     const { again } = mount(props);

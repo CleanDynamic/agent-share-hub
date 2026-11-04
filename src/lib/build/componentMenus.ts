@@ -29,8 +29,8 @@ export interface MenuItemSpec {
 export const REASONS = {
   firstSession: "Already the first session",
   lastSession: "Already the last session",
-  firstTile: "Already the first tile",
-  lastTile: "Already the last tile",
+  firstTile: "Already the first step tile",
+  lastTile: "Already the last step tile",
   firstPart: "Already the first part",
   lastPart: "Already the last part",
   onePart: "Only one part",
@@ -42,7 +42,7 @@ export const REASONS = {
   readAll: "Nothing more to read",
   startsAfter: "No sessions in other parts",
   selectTwo: "Select two or more to group",
-  noTiles: "It has no tiles",
+  noTiles: "It has no step tiles",
 } as const;
 
 /** The reason a move is greyed, or none when the move can be made. */
@@ -58,7 +58,7 @@ export const MENU_COPY = {
   convert: "Convert to…",
   selectAllInSession: "Select all in this session",
   ungroup: "Ungroup",
-  removeTile: "Remove tile",
+  removeTile: "Remove step tile",
   removeSession: "Remove session",
   removePart: "Remove part",
   removeFile: "Remove file",
@@ -99,7 +99,7 @@ export const REMOVE_COPY = {
   /** "Removed Session 2", "Removed Session 2 and its 3 tiles". */
   session: (number: number, tiles: number) => (tiles > 0 ? `Removed Session ${number} and its ${noun(tiles, "tile", "tiles")}` : `Removed Session ${number}`),
   /** "Removed Session 2. Its tiles moved to Session 1". */
-  sessionKept: (number: number, into: number) => `Removed Session ${number}. Its tiles moved to Session ${into}`,
+  sessionKept: (number: number, into: number) => `Removed Session ${number}. Its step tiles moved to Session ${into}`,
   /** "Removed Part B. Its sessions joined Part A". */
   part: (label: string, into: string) => `Removed ${label}. Its sessions joined ${into}`,
   partAlone: (label: string) => `Removed ${label}`,
@@ -109,7 +109,7 @@ export const REMOVE_COPY = {
     const parts = [sessions > 0 ? noun(sessions, "session", "sessions") : "", tiles > 0 ? noun(tiles, "tile", "tiles") : ""].filter(Boolean);
     return `Removed ${parts.join(" and ")}`;
   },
-  severalKept: (sessions: number, into: number) => `Removed ${noun(sessions, "session", "sessions")}. Their tiles moved to Session ${into}`,
+  severalKept: (sessions: number, into: number) => `Removed ${noun(sessions, "session", "sessions")}. Their step tiles moved to Session ${into}`,
   cleared: "Cleared the build",
 } as const;
 
@@ -122,7 +122,7 @@ export const SESSION_WINDOW_COPY = {
   /** "They have 5 tiles between them." */
   bodyMany: (tiles: number) => `They have ${noun(tiles, "tile", "tiles")} between them.`,
   cancel: "Cancel",
-  keep: "Keep the tiles",
+  keep: "Keep the step tiles",
   keepNone: "No other session to move them to",
   all: "Remove all",
 } as const;
