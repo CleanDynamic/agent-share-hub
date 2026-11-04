@@ -88,13 +88,14 @@ export function typeLineOf(step: Step): string {
 
 /**
  * The facts of a tile's footer, at most three, each only when it exists. `numberOf` gives another tile's number by its id,
- * where the caller knows the build (a decision's "Called from code 5").
+ * where the caller knows the build (a decision's "Called from code 5"). UX-02 P10: `words: false` leaves a prompt's word count
+ * out (the composer's List); the published page keeps it.
  */
-export function footerFactsOf(step: Step, numberOf?: (id: string) => number | string | undefined): string[] {
+export function footerFactsOf(step: Step, numberOf?: (id: string) => number | string | undefined, options: { words?: boolean } = {}): string[] {
   const facts: (string | null)[] = [];
   switch (step.kind) {
     case "prompt":
-      facts.push(counted(step.words, "word"), counted(variableNamesIn(step.text).length, "variable"));
+      facts.push(options.words === false ? null : counted(step.words, "word"), counted(variableNamesIn(step.text).length, "variable"));
       break;
     case "code":
       facts.push(step.tool ? `Generated with ${toolName(step.tool) ?? step.tool}` : null, step.model ? modelLabel(step.model) : null);

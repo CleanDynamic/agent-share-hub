@@ -826,7 +826,6 @@ const footRow = (indent: number): CSSProperties => ({
   minHeight: 22,
 });
 
-const wordsOf = (n: number) => `${n} ${n === 1 ? "word" : "words"}`;
 
 /* ── a session's head (SessionHead.tsx) and what sits under it ── */
 
@@ -1152,7 +1151,8 @@ function TileFoot({ step, props, link, facts, withGoes = true }: { step: Step; p
   return (
     <>
       <ExtraRow step={step} props={props} withGoes={withGoes} />
-      <TileFooter facts={facts ?? footerFactsOf(step, (id) => numberIn(props.steps, id))} link={link} extra={nest ? <NestButtons step={step} phone={props.phone} /> : null} indent={INDENT} />
+      {/* UX-02 P10: a prompt step tile in the composer does not show its word count. */}
+      <TileFooter facts={facts ?? footerFactsOf(step, (id) => numberIn(props.steps, id), { words: false })} link={link} extra={nest ? <NestButtons step={step} phone={props.phone} /> : null} indent={INDENT} />
     </>
   );
 }

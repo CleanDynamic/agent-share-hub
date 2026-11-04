@@ -1343,6 +1343,8 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/detailsView.ts",
   "src/lib/build/tileSections.ts",
   "src/pages/site/compose/ux02.p9.test.tsx",
+  "src/lib/build/tileLines.ts",
+  "src/pages/site/compose/ux02.p10.test.tsx",
 ];
 
 /**
