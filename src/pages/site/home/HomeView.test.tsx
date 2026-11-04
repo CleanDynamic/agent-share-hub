@@ -55,7 +55,7 @@ describe("HomeView · the three columns", () => {
   it("links the section chevrons to their pages", () => {
     mount();
     expect(screen.getByRole("link", { name: "Open drafts" }).getAttribute("href")).toBe("/drafts");
-    expect(screen.getByRole("link", { name: "Open OpenBuilds" }).getAttribute("href")).toBe("/openbuilds");
+    expect(screen.getByRole("link", { name: "Open OpenBuilds" }).getAttribute("href")).toBe("/openbuilds/requests");
     expect(screen.getByRole("link", { name: "Open activity" }).getAttribute("href")).toBe("/notifications");
   });
 

@@ -88,7 +88,7 @@ function Where() {
   return null;
 }
 
-function mount(path = "/openbuilds") {
+function mount(path = "/openbuilds/requests") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <HelmetProvider>
@@ -144,7 +144,7 @@ describe("OpenBuildsPage", () => {
   });
 
   it("starts every read at once, the requests in the address's sort, with the reader's marks", async () => {
-    mount("/openbuilds?sort=closing");
+    mount("/openbuilds/requests?sort=closing");
     await screen.findByTestId("openbuilds-request");
     expect(listStepRequests).toHaveBeenCalledWith({ sort: "closing", size: "all", offset: 0, viewerId: "me" });
     expect(listMyOpenRequests).toHaveBeenCalledWith("me");
@@ -281,7 +281,7 @@ describe("OpenBuildsPage", () => {
 
     it("draws the numbered sessions with the open one, says Unclaimed, and offers through a dialog that files the pick", async () => {
       listStepRequests.mockResolvedValue(sessionPage());
-      mount("/openbuilds?type=sessions");
+      mount("/openbuilds/requests?type=sessions");
       const request = await screen.findByTestId("openbuilds-request");
       expect(request).toHaveAttribute("data-kind", "session");
       expect(within(request).getByRole("heading", { name: "Session 2 · Deploy the worker to Vercel" })).toBeInTheDocument();
@@ -302,7 +302,7 @@ describe("OpenBuildsPage", () => {
     it("keeps the dialog open and says why when the offer fails", async () => {
       listStepRequests.mockResolvedValue(sessionPage());
       offerSession.mockRejectedValue(new Error("Someone else is already working on this request"));
-      mount("/openbuilds?type=sessions");
+      mount("/openbuilds/requests?type=sessions");
       fireEvent.click(within(await screen.findByTestId("openbuilds-request")).getByRole("button", { name: "Offer a session" }));
       const dialog = await screen.findByTestId("offer-session-dialog");
       fireEvent.click(within(dialog).getByRole("radio", { name: /Deploy/ }));
@@ -313,17 +313,17 @@ describe("OpenBuildsPage", () => {
     it("sends a signed-out reader to sign in instead of opening the dialog", async () => {
       user = null;
       listStepRequests.mockResolvedValue(sessionPage());
-      mount("/openbuilds?type=sessions");
+      mount("/openbuilds/requests?type=sessions");
       fireEvent.click(within(await screen.findByTestId("openbuilds-request")).getByRole("button", { name: "Offer a session" }));
       expect(screen.queryByTestId("offer-session-dialog")).toBeNull();
-      await waitFor(() => expect(where).toBe("?redirect=%2Fopenbuilds%3Ftype%3Dsessions"));
+      await waitFor(() => expect(where).toBe("?redirect=%2Fopenbuilds%2Frequests%3Ftype%3Dsessions"));
     });
 
     it("gives the request's maker Accept and Decline on each offer, and gives the offerer a line", async () => {
       const offer = { id: "o1", requestId: "q1", userId: "u9", handle: "kit", status: "offered", createdAt: "2026-11-01T00:00:00Z", session: { key: "i", model: "Opus 5.5", prompts: [1, 2, 3, 4, 5, 6] } };
       user = { id: "maker-1" };
       listStepRequests.mockResolvedValue(sessionPage([offer]));
-      mount("/openbuilds?type=sessions");
+      mount("/openbuilds/requests?type=sessions");
       const list = await screen.findByRole("list", { name: "Offered sessions" });
       expect(within(list).getByText("@kit offered a session · Opus 5.5 · 6 prompts")).toBeInTheDocument();
       fireEvent.click(within(list).getByRole("button", { name: "Accept into the build" }));
@@ -335,7 +335,7 @@ describe("OpenBuildsPage", () => {
     it("shows the offerer only their own line, without the two answers", async () => {
       const offer = { id: "o1", requestId: "q1", userId: "me", handle: "me", status: "offered", createdAt: "2026-11-01T00:00:00Z", session: { key: "i", model: null, prompts: [1] } };
       listStepRequests.mockResolvedValue(sessionPage([offer]));
-      mount("/openbuilds?type=sessions");
+      mount("/openbuilds/requests?type=sessions");
       const list = await screen.findByRole("list", { name: "Offered sessions" });
       expect(within(list).getByText("You offered a session · 1 prompt")).toBeInTheDocument();
       expect(within(list).queryByRole("button")).toBeNull();
@@ -372,7 +372,7 @@ describe("OpenBuildsPage", () => {
       ],
       nextOffset: null,
     });
-    mount("/openbuilds?type=briefs");
+    mount("/openbuilds/requests?type=briefs");
     const request = await screen.findByTestId("openbuilds-request");
     expect(listStepRequests).not.toHaveBeenCalled();
     expect(within(request).getByRole("heading", { name: "Book a dentist appointment" })).toBeInTheDocument();
@@ -410,7 +410,7 @@ describe("OpenBuildsPage", () => {
       ],
       nextOffset: null,
     });
-    mount("/openbuilds?type=model-tests");
+    mount("/openbuilds/requests?type=model-tests");
     const request = await screen.findByTestId("openbuilds-request");
     expect(listStepRequests).not.toHaveBeenCalled();
     expect(within(request).getByRole("heading", { name: "Reproduce Call notes on Opus 5.5" })).toBeInTheDocument();
@@ -423,7 +423,7 @@ describe("OpenBuildsPage", () => {
       reviews: [{ buildId: "b7", slug: "weekly", title: "Weekly report from Linear", maker: "luke", since: new Date(Date.now() - 8 * 3_600_000).toISOString(), runs: 3, failed: 1, stepComments: 4, requests: 1 }],
       nextOffset: null,
     });
-    mount("/openbuilds?type=reviews");
+    mount("/openbuilds/requests?type=reviews");
     const request = await screen.findByTestId("openbuilds-request");
     expect(listStepRequests).not.toHaveBeenCalled();
     expect(within(request).getByRole("heading", { name: "Weekly report from Linear" })).toBeInTheDocument();

@@ -21,6 +21,7 @@ import { InnerTile } from "@/components/vision/InnerTile";
 import { PageFigure, type FigurePart } from "@/components/vision/PageFigure";
 import { PlainRow } from "@/components/vision/PlainRow";
 import { SectionChevron, SectionHead } from "@/components/vision/SectionHead";
+import { StepStripTiles, tileBox } from "@/components/vision/StepStripTiles";
 import { TextTabs } from "@/components/vision/TextTabs";
 import { TypeChip } from "@/components/vision/TypeChip";
 import { PageLink as Link } from "@/lib/routing/PageLink";
@@ -296,33 +297,6 @@ export function ReleaseCheck({ model, works, total, fails, untested, released, b
 }
 
 /* ── requests ── */
-
-const tileBox: CSSProperties = { boxSizing: "border-box", minWidth: 0, background: t.tile, border: `1px solid ${t.tileBorder}`, borderRadius: r.control, padding: "10px 12px" };
-
-/** The build's top-level steps around the gap: "n · Type" over the title, the open one a dashed slot. */
-export function StepStripTiles({ tiles }: { tiles: readonly StripTile[] }) {
-  const phone = useIsPhone();
-  if (tiles.length === 0) return null;
-  const columns = phone ? Math.min(tiles.length, 2) : tiles.length;
-  return (
-    <ol aria-label="Steps" style={{ listStyle: "none", margin: "16px 0 0", padding: 0, display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 6 }}>
-      {tiles.map((tile) => {
-        const head = [tile.number, tile.kind].filter(Boolean).join(" · ");
-        return tile.open ? (
-          <DashedSlot key={tile.id} as="li" style={{ padding: "10px 12px" }}>
-            <div style={{ fontSize: 11.5, color: t.text }}>{head ? `${head} · open` : "Open"}</div>
-            <div style={{ fontSize: 12.5, color: t.text2, overflowWrap: "anywhere" }}>{tile.title}</div>
-          </DashedSlot>
-        ) : (
-          <li key={tile.id} style={tileBox}>
-            <div style={{ fontSize: 11.5, color: t.label }}>{head}</div>
-            <div style={{ fontSize: 12.5, overflowWrap: "anywhere" }}>{tile.title}</div>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
 
 /** The build a whole-build request is on: its title, then its maker and step count. */
 function BuildRow({ build }: Pick<BuildRequest, "build">) {

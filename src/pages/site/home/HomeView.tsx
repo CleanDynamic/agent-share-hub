@@ -79,6 +79,7 @@ import {
   type HomeWeek,
   type HomeWhereNextRow,
   type HomePublished,
+  OPEN_REQUESTS_HREF,
 } from "./homeModel";
 
 export type HomeScope = "following" | "everyone";
@@ -156,7 +157,6 @@ export interface HomeViewProps {
 
 const DRAFTS = "/drafts";
 const BUILDS = "/builds";
-const OPENBUILDS = "/openbuilds";
 const ACTIVITY = "/notifications";
 const SIGN_IN = "/login?redirect=/";
 
@@ -828,7 +828,7 @@ export function RequestsSection({ requests }: { requests: HomeViewProps["request
   return (
     <section aria-label="Open requests">
       <div style={{ marginBottom: 8 }}>
-        <SectionHead title="Open requests" meta="Most needed first" to={OPENBUILDS} openName="OpenBuilds" headingLevel={2} />
+        <SectionHead title="Open requests" meta="Most needed first" to={OPEN_REQUESTS_HREF} openName="OpenBuilds" headingLevel={2} />
       </div>
       {requests.status === "error" ? (
         <SectionFailure panel="Open requests" failure={requests} />

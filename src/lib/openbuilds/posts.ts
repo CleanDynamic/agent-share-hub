@@ -24,17 +24,19 @@ import {
   type SpaceOrder,
 } from "./types";
 
-export type PostScope = "everyone" | "following";
+export type PostScope = "everyone" | "following" | "spaces";
 
 export interface ListPostsOptions {
   /** One space's root posts. Without it, every root post that is in a space. */
   spaceId?: string;
-  /** everyone: every topic. following: the signed-in reader's own, the people they follow and the spaces they belong to. */
+  /** everyone: every topic. following: the signed-in reader's own, the people they follow and the spaces they belong to. spaces (UX-05): only topics in the spaces the reader belongs to. */
   scope: PostScope;
   /** Only posts still waiting for an answer. */
   stillOpen?: boolean;
   /** The space's order setting, read by the caller with getSpace. most_replied sorts by the topic's stored reply count. */
   order?: SpaceOrder;
+  /** UX-05: a moderator's read of a space: hidden topics come too (the database lets only moderators read them). */
+  includeHidden?: boolean;
   offset?: number;
   limit?: number;
 }
@@ -77,8 +79,21 @@ export async function listPosts(options: ListPostsOptions): Promise<PostsPage> {
     }
   }
 
-  let query = db.from("openbuild_posts").select(listSelect(Boolean(options.spaceId))).is("parent_id", null).is("hidden_by", null);
+  // UX-05: the spaces tab. The reader's spaces first; none means nothing to read.
+  let mySpaceIds: string[] | null = null;
+  if (options.scope === "spaces") {
+    const me = await currentUserId();
+    if (!me) throw signedOut("listPosts");
+    const member = await db.from("space_members").select("space_id").eq("user_id", me).limit(100);
+    if (member.error) throw postLayerError("listPosts", member);
+    mySpaceIds = unique(((member.data ?? []) as { space_id: string }[]).map((row) => row.space_id));
+    if (mySpaceIds.length === 0) return { posts: [], next: null };
+  }
+
+  let query = db.from("openbuild_posts").select(listSelect(Boolean(options.spaceId) || mySpaceIds !== null)).is("parent_id", null);
+  if (!options.includeHidden) query = query.is("hidden_by", null);
   if (options.spaceId) query = query.eq("post_spaces.space_id", options.spaceId);
+  if (mySpaceIds) query = query.in("post_spaces.space_id", mySpaceIds);
   if (authors) query = inMySpaces.length ? query.or(`author_id.in.(${authors.join(",")}),id.in.(${inMySpaces.join(",")})`) : query.in("author_id", authors);
   if (options.stillOpen) query = query.eq("still_open", true);
   if (options.order === "pinned_first") query = query.order("pinned_at", { ascending: false, nullsFirst: false });

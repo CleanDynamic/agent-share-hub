@@ -33,3 +33,19 @@ export async function uploadEntryMedia(file: File): Promise<UploadedEntryMedia> 
   if (error) throw new PostError("uploadEntryMedia", "uploadEntryMedia failed", null, null);
   return { path, mediaKind: kindOf(file.type) };
 }
+
+/** UX-05: signed addresses for the pictures and files on a page of posts, one per path, started together. A failed one is left out. */
+export async function signEntryMedia(items: readonly { path: string; mediaKind: "image" | "video" | "file" }[], width = 640): Promise<Map<string, string>> {
+  const { signedMediaUrl } = await import("@/lib/build/media");
+  const unique = [...new Map(items.map((item) => [item.path, item])).values()];
+  const signed = await Promise.all(
+    unique.map(async (item) => {
+      try {
+        return [item.path, await signedMediaUrl({ bucket: ENTRY_MEDIA_BUCKET, path: item.path, kind: item.mediaKind }, { width })] as const;
+      } catch {
+        return null;
+      }
+    }),
+  );
+  return new Map(signed.filter((entry): entry is readonly [string, string] => entry !== null));
+}

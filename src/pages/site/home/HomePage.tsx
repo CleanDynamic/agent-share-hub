@@ -67,6 +67,7 @@ import {
   type HomeFilter,
   type HomePostDetail,
   HOME_BUILD_ROWS,
+  OPEN_REQUESTS_HREF,
 } from "./homeModel";
 
 const STALE_MS = LIST_STALE_MS;
@@ -301,7 +302,7 @@ export function HomePage() {
       const found = await findRunByHandle(run.buildId, run.handle);
       if (!found) throw new Error("That run is not there any more");
       await openRequestFromRun({ runId: found.id, viewerId: userId });
-      toast("Request opened.", { action: { label: "See requests", onClick: () => navigate("/openbuilds") } });
+      toast("Request opened.", { action: { label: "See requests", onClick: () => navigate(OPEN_REQUESTS_HREF) } });
     } catch (error) {
       reportError(error, { source: "home", context: "openRequestFromRun" });
       toast.error(error instanceof Error && error.message.startsWith("That run already") ? error.message : "Couldn't open a request from that run. Try again.");
