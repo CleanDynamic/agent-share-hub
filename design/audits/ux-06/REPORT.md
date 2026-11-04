@@ -86,8 +86,8 @@ Facts in this prompt that were wrong on disk:
   - UX-05's report: PR #439's description holds only attribution lines and no report file was committed.
   - builds.made_with is text[] on disk; UX-05's card read it as a string and called .trim() on it, which throws for any post with
     a build attached. Fixed in P1 (harnessOf in src/lib/openbuilds/cardWork.ts), under a failing test first.
-Baseline → end: tests BASELINE → END (main already had 31 failing tests in 14 files, all in build, compose and lookRules; the same
-  31 fail at the end and no other)
+Baseline → end: tests 11092 → 11241 (main: 31 failing in 14 files, all in build, compose and lookRules, none touched here; at the
+  end 29 fail in 12 files, every one of them among main's 31. Two compose tests that failed on main passed this run. No new failure.)
 Compared boards: not comparable: UX-06 has no board (the prompt says no picture comes with it). Looks are ported from the tokens
   and components the prompt names. Screenshots: design/audits/ux-06/{before,after}/post-{1440-noon,1440-dusk,390-dusk}-{thread,wall}.png
 Request rounds and requests for the page, before → after: before, no page (404). After, read from the code and the specs: round 1
@@ -129,7 +129,7 @@ Questions for Miles:
 ## Checks run
 
 - `npx tsc --noEmit -p tsconfig.app.json`: clean (with `NODE_OPTIONS=--max-old-space-size=8192`; the default heap runs out).
-- `npm test`: see Baseline → end above.
+- `npm test`: 11241 tests, 29 failing, all already failing on main (see Baseline → end).
 - `npm run lint`: 1430 errors and 529 warnings, the same count as main; 0 errors in this branch's files.
 - `npm run build`: builds. `scripts/check-size.mjs` fails on main and on this branch: first download 232.3 KB on main, 232.9 KB here
   (+0.6 KB: the route entry and its Placeholder), composer chunk 123.5 KB on both. The budgets bind after SV-26.
