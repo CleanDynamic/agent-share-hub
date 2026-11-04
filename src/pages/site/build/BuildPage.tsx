@@ -1146,7 +1146,13 @@ export function BuildPage() {
       <LiveRegion message={announcement} />
       <BuildView
         fit="content"
-        classification={<ClassificationSection classification={classification.data?.live ? classification.data.classification : null} />}
+        classification={
+          <ClassificationSection
+            classification={classification.data?.live ? classification.data.classification : null}
+            // UX-03 P4: on their own build the maker sees what they left Not stated, and the way to fill it in.
+            maker={viewerIsCreator ? { editHref: `/compose/${build.id}` } : undefined}
+          />
+        }
         hero={{
           title: build.title,
           outcome: (build.outcome ?? "").trim(),

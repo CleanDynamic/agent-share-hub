@@ -1,4 +1,5 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { emptyClassification } from "@/lib/classify/facets";
@@ -44,7 +45,8 @@ describe("ClassificationSection", () => {
     ]);
     render(<ClassificationSection classification={FULL} />);
     const section = screen.getByRole("region", { name: "Classification" });
-    expect(within(section).getAllByRole("list")).toHaveLength(3);
+    // UX-03 P4: drawn as two groups by provenance, not three lines.
+    expect(within(section).getAllByRole("group").map((group) => group.getAttribute("aria-label"))).toEqual(["Stated by the maker", "Derived from the build"]);
     expect(within(section).getByText("Hybrid search")).toBeTruthy();
     expect(within(section).getByText("Sorting socks")).toBeTruthy();
     expect(within(section).getByText("Prompt chain")).toBeTruthy();
@@ -66,8 +68,12 @@ describe("ClassificationSection", () => {
     expect(dot.getAttribute("title")).toBe("Derived");
   });
 
-  it("says Not stated for what the maker sets and left empty, and leaves a derived gap out", () => {
-    render(<ClassificationSection classification={make({ derived: { built: { values: ["dataset"], from: [] } } })} />);
+  it("says Not stated, to the maker, for what they set and left empty, and leaves a derived gap out (UX-03 P4)", () => {
+    render(
+      <MemoryRouter>
+        <ClassificationSection classification={make({ derived: { built: { values: ["dataset"], from: [] } } })} maker={{ editHref: "/compose/b1" }} />
+      </MemoryRouter>,
+    );
     const section = screen.getByRole("region", { name: "Classification" });
     for (const facet of ["field", "task", "setting", "data", "age"]) {
       const item = section.querySelector(`[data-facet='${facet}']`) as HTMLElement;
