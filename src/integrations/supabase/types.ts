@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.4"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -1073,6 +1073,7 @@ export type Database = {
         Row: {
           agent_count: number | null
           ai_turn_count: number
+          allow_as_post_source: boolean
           classification: Json
           comment_count: number
           completeness: number | null
@@ -1132,6 +1133,7 @@ export type Database = {
         Insert: {
           agent_count?: number | null
           ai_turn_count?: number
+          allow_as_post_source?: boolean
           classification?: Json
           comment_count?: number
           completeness?: number | null
@@ -1191,6 +1193,7 @@ export type Database = {
         Update: {
           agent_count?: number | null
           ai_turn_count?: number
+          allow_as_post_source?: boolean
           classification?: Json
           comment_count?: number
           completeness?: number | null
@@ -4344,6 +4347,137 @@ export type Database = {
         }
         Relationships: []
       }
+      openbuild_posts: {
+        Row: {
+          about_build_id: string | null
+          about_node_id: string | null
+          author_id: string
+          body: string
+          closes_at: string | null
+          created_at: string
+          hidden_by: string | null
+          hidden_reason: string | null
+          id: string
+          parent_id: string | null
+          pinned_at: string | null
+          pinned_by: string | null
+          reward_gbp: number | null
+          root_id: string
+          still_open: boolean
+          tags: string[]
+          updated_at: string
+        }
+        Insert: {
+          about_build_id?: string | null
+          about_node_id?: string | null
+          author_id: string
+          body?: string
+          closes_at?: string | null
+          created_at?: string
+          hidden_by?: string | null
+          hidden_reason?: string | null
+          id?: string
+          parent_id?: string | null
+          pinned_at?: string | null
+          pinned_by?: string | null
+          reward_gbp?: number | null
+          root_id: string
+          still_open?: boolean
+          tags?: string[]
+          updated_at?: string
+        }
+        Update: {
+          about_build_id?: string | null
+          about_node_id?: string | null
+          author_id?: string
+          body?: string
+          closes_at?: string | null
+          created_at?: string
+          hidden_by?: string | null
+          hidden_reason?: string | null
+          id?: string
+          parent_id?: string | null
+          pinned_at?: string | null
+          pinned_by?: string | null
+          reward_gbp?: number | null
+          root_id?: string
+          still_open?: boolean
+          tags?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "openbuild_posts_about_build_id_fkey"
+            columns: ["about_build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "openbuild_posts_about_node_id_fkey"
+            columns: ["about_node_id"]
+            isOneToOne: false
+            referencedRelation: "build_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "openbuild_posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "openbuild_posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "openbuild_posts_hidden_by_fkey"
+            columns: ["hidden_by"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "openbuild_posts_hidden_by_fkey"
+            columns: ["hidden_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "openbuild_posts_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "openbuild_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "openbuild_posts_pinned_by_fkey"
+            columns: ["pinned_by"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "openbuild_posts_pinned_by_fkey"
+            columns: ["pinned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "openbuild_posts_root_id_fkey"
+            columns: ["root_id"]
+            isOneToOne: false
+            referencedRelation: "openbuild_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       perks: {
         Row: {
           description: string
@@ -4376,6 +4510,67 @@ export type Database = {
           track?: string
         }
         Relationships: []
+      }
+      post_attachments: {
+        Row: {
+          build_id: string | null
+          kind: string
+          media_kind: string | null
+          media_path: string | null
+          node_id: string | null
+          part_key: string | null
+          position: number
+          post_id: string
+          session_key: string | null
+          snapshot: Json | null
+        }
+        Insert: {
+          build_id?: string | null
+          kind: string
+          media_kind?: string | null
+          media_path?: string | null
+          node_id?: string | null
+          part_key?: string | null
+          position: number
+          post_id: string
+          session_key?: string | null
+          snapshot?: Json | null
+        }
+        Update: {
+          build_id?: string | null
+          kind?: string
+          media_kind?: string | null
+          media_path?: string | null
+          node_id?: string | null
+          part_key?: string | null
+          position?: number
+          post_id?: string
+          session_key?: string | null
+          snapshot?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_attachments_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_attachments_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "build_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_attachments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "openbuild_posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       post_lineage: {
         Row: {
@@ -4416,6 +4611,73 @@ export type Database = {
             columns: ["root_post_id"]
             isOneToOne: false
             referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_mentions: {
+        Row: {
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_mentions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "openbuild_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_mentions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_mentions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_spaces: {
+        Row: {
+          post_id: string
+          space_id: string
+        }
+        Insert: {
+          post_id: string
+          space_id: string
+        }
+        Update: {
+          post_id?: string
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_spaces_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "openbuild_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_spaces_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]
@@ -6266,6 +6528,7 @@ export type Database = {
           saved_by: number
         }[]
       }
+      create_post: { Args: { p: Json }; Returns: string }
       expire_import_sessions: { Args: never; Returns: number }
       gallery_facets: { Args: { thresholds?: Json }; Returns: Json }
       gallery_facets_base: { Args: { thresholds?: Json }; Returns: Json }
@@ -6378,6 +6641,8 @@ export type Database = {
       mark_depth_revealed: { Args: never; Returns: string }
       mark_welcome_xp_shown: { Args: never; Returns: string }
       model_key: { Args: { raw: string }; Returns: string }
+      post_spaces_allow_rewards: { Args: { _post: string }; Returns: boolean }
+      posts_tags_ok: { Args: { tags: string[] }; Returns: boolean }
       rc_grant_xp: {
         Args: {
           amount: number
@@ -6510,6 +6775,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      viewer_can_post_in: { Args: { _space: string }; Returns: boolean }
+      viewer_can_reply_in: { Args: { _root: string }; Returns: boolean }
+      viewer_moderates_post: { Args: { _root: string }; Returns: boolean }
+      viewer_owns_root: { Args: { _root: string }; Returns: boolean }
       works_on_model_counts: {
         Args: never
         Returns: {
