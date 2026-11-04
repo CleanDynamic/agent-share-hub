@@ -95,9 +95,9 @@ const noun = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : m
 export const REMOVE_COPY = {
   /** The notice after a tile goes: "Removed Prompt 3", "Removed Team 11 and its 3 agents". */
   tile: (name: string, inside?: { count: number; what: "agents" | "tiles" }) =>
-    inside && inside.count > 0 ? `Removed ${name} and its ${inside.what === "agents" ? noun(inside.count, "agent", "agents") : noun(inside.count, "tile", "tiles")}` : `Removed ${name}`,
+    inside && inside.count > 0 ? `Removed ${name} and its ${inside.what === "agents" ? noun(inside.count, "agent", "agents") : noun(inside.count, "step tile", "step tiles")}` : `Removed ${name}`,
   /** "Removed Session 2", "Removed Session 2 and its 3 tiles". */
-  session: (number: number, tiles: number) => (tiles > 0 ? `Removed Session ${number} and its ${noun(tiles, "tile", "tiles")}` : `Removed Session ${number}`),
+  session: (number: number, tiles: number) => (tiles > 0 ? `Removed Session ${number} and its ${noun(tiles, "step tile", "step tiles")}` : `Removed Session ${number}`),
   /** "Removed Session 2. Its tiles moved to Session 1". */
   sessionKept: (number: number, into: number) => `Removed Session ${number}. Its step tiles moved to Session ${into}`,
   /** "Removed Part B. Its sessions joined Part A". */
@@ -106,7 +106,7 @@ export const REMOVE_COPY = {
   file: (name: string) => `Removed ${name}`,
   /** Several at once: "Removed 2 sessions and 4 tiles". */
   several: (sessions: number, tiles: number) => {
-    const parts = [sessions > 0 ? noun(sessions, "session", "sessions") : "", tiles > 0 ? noun(tiles, "tile", "tiles") : ""].filter(Boolean);
+    const parts = [sessions > 0 ? noun(sessions, "session", "sessions") : "", tiles > 0 ? noun(tiles, "step tile", "step tiles") : ""].filter(Boolean);
     return `Removed ${parts.join(" and ")}`;
   },
   severalKept: (sessions: number, into: number) => `Removed ${noun(sessions, "session", "sessions")}. Their step tiles moved to Session ${into}`,
@@ -117,10 +117,10 @@ export const REMOVE_COPY = {
 export const SESSION_WINDOW_COPY = {
   title: (number: number) => `Remove Session ${number}?`,
   /** For several: "Remove 2 sessions and 1 tile?". */
-  titleMany: (sessions: number, tiles: number) => `Remove ${noun(sessions, "session", "sessions")}${tiles > 0 ? ` and ${noun(tiles, "tile", "tiles")}` : ""}?`,
-  body: (tiles: number) => `It has ${noun(tiles, "tile", "tiles")}.`,
+  titleMany: (sessions: number, tiles: number) => `Remove ${noun(sessions, "session", "sessions")}${tiles > 0 ? ` and ${noun(tiles, "step tile", "step tiles")}` : ""}?`,
+  body: (tiles: number) => `It has ${noun(tiles, "step tile", "step tiles")}.`,
   /** "They have 5 tiles between them." */
-  bodyMany: (tiles: number) => `They have ${noun(tiles, "tile", "tiles")} between them.`,
+  bodyMany: (tiles: number) => `They have ${noun(tiles, "step tile", "step tiles")} between them.`,
   cancel: "Cancel",
   keep: "Keep the step tiles",
   keepNone: "No other session to move them to",
@@ -139,12 +139,12 @@ export interface ClearCounts {
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
-/** "2 parts, 6 sessions, 18 tiles and 3 files", leaving out what is zero. */
+/** "2 parts, 6 sessions, 18 step tiles and 3 files", leaving out what is zero. */
 export function clearList(counts: ClearCounts): string {
   const parts = [
     counts.parts > 0 ? plural(counts.parts, "part", "parts") : "",
     counts.sessions > 0 ? plural(counts.sessions, "session", "sessions") : "",
-    counts.tiles > 0 ? plural(counts.tiles, "tile", "tiles") : "",
+    counts.tiles > 0 ? plural(counts.tiles, "step tile", "step tiles") : "",
     counts.files > 0 ? plural(counts.files, "file", "files") : "",
   ].filter(Boolean);
   if (parts.length <= 1) return parts.join("");

@@ -34,17 +34,17 @@ describe("the notice's sentences", () => {
   it("says what was removed in the words the prompt gives", () => {
     expect(REMOVE_COPY.tile("Prompt 3")).toBe("Removed Prompt 3");
     expect(REMOVE_COPY.tile("Team 11", { count: 3, what: "agents" })).toBe("Removed Team 11 and its 3 agents");
-    expect(REMOVE_COPY.tile("Prompt 3", { count: 1, what: "tiles" })).toBe("Removed Prompt 3 and its 1 tile");
-    expect(REMOVE_COPY.session(2, 3)).toBe("Removed Session 2 and its 3 tiles");
+    expect(REMOVE_COPY.tile("Prompt 3", { count: 1, what: "tiles" })).toBe("Removed Prompt 3 and its 1 step tile");
+    expect(REMOVE_COPY.session(2, 3)).toBe("Removed Session 2 and its 3 step tiles");
     expect(REMOVE_COPY.session(2, 0)).toBe("Removed Session 2");
     expect(REMOVE_COPY.sessionKept(2, 1)).toBe("Removed Session 2. Its step tiles moved to Session 1");
     expect(REMOVE_COPY.part("Part B", "Part A")).toBe("Removed Part B. Its sessions joined Part A");
     expect(REMOVE_COPY.file("orders.csv")).toBe("Removed orders.csv");
-    expect(REMOVE_COPY.several(2, 4)).toBe("Removed 2 sessions and 4 tiles");
+    expect(REMOVE_COPY.several(2, 4)).toBe("Removed 2 sessions and 4 step tiles");
     expect(SESSION_WINDOW_COPY.title(2)).toBe("Remove Session 2?");
-    expect(SESSION_WINDOW_COPY.body(3)).toBe("It has 3 tiles.");
-    expect(SESSION_WINDOW_COPY.titleMany(2, 1)).toBe("Remove 2 sessions and 1 tile?");
-    expect(SESSION_WINDOW_COPY.bodyMany(5)).toBe("They have 5 tiles between them.");
+    expect(SESSION_WINDOW_COPY.body(3)).toBe("It has 3 step tiles.");
+    expect(SESSION_WINDOW_COPY.titleMany(2, 1)).toBe("Remove 2 sessions and 1 step tile?");
+    expect(SESSION_WINDOW_COPY.bodyMany(5)).toBe("They have 5 step tiles between them.");
   });
 });
 
@@ -139,7 +139,7 @@ describe("a session", () => {
     await choose("Remove session");
     const dialog = await screen.findByRole("alertdialog");
     expect(within(dialog).getByText("Remove Session 2?")).toBeTruthy();
-    expect(within(dialog).getByText("It has 3 tiles.")).toBeTruthy();
+    expect(within(dialog).getByText("It has 3 step tiles.")).toBeTruthy();
     expect(within(dialog).getAllByRole("button").map((button) => button.textContent)).toEqual(["Cancel", "Keep the step tiles", "Remove all"]);
     expect(within(dialog).getByRole("button", { name: "Remove all" }).getAttribute("data-tone")).toBe("danger");
     fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
@@ -157,7 +157,7 @@ describe("a session", () => {
     fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Remove all" }));
     await waitFor(() => expect(ids()).toEqual([IDS.p1, IDS.p2]), { timeout: 15_000 });
     expect(sessionKeys()).toEqual([KEY_A, KEY_C]);
-    expect(await said("Removed Session 2 and its 3 tiles")).toBeTruthy();
+    expect(await said("Removed Session 2 and its 3 step tiles")).toBeTruthy();
     await undo();
     await waitFor(() => expect(ids()).toHaveLength(9), { timeout: 15_000 });
     expect(shape()).toEqual(before);
