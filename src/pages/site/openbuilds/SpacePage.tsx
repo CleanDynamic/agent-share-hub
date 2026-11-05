@@ -10,6 +10,7 @@ import { useLocation, useNavigate, useParams, useSearchParams } from "react-rout
 import { toast } from "sonner";
 
 import { SeoHead } from "@/components/SeoHead";
+import { useCrumbTitle } from "@/components/shell/useBreadcrumb";
 import { toCardData, topicHref } from "@/components/post/postCardModel";
 import { useAuth } from "@/contexts/AuthContext";
 import { engagementFor, useEngagement } from "@/hooks/useEngagement";
@@ -43,6 +44,8 @@ export default function SpacePage() {
 
   const crowd = useQuery({ queryKey: spaceCrowdKey(slug, viewerId), queryFn: () => getSpaceCrowd(slug, viewerId), enabled: !authLoading });
   const space = crowd.data?.space ?? null;
+  // UX-09 P6: the trail is OpenBuilds / <space name>.
+  useCrumbTitle(space ? space.name : crowd.isPending ? null : "Not found");
   const moderator = crowd.data?.role === "moderator";
 
   const feed = useInfiniteQuery({

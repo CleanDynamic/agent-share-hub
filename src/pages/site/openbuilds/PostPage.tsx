@@ -15,6 +15,8 @@ import { useLocation, useNavigate, useParams, useSearchParams } from "react-rout
 import { toast } from "sonner";
 
 import { SeoHead } from "@/components/SeoHead";
+import { crumbHeading } from "@/components/shell/breadcrumbTrail";
+import { useCrumbTitle } from "@/components/shell/useBreadcrumb";
 import { centre } from "@/components/build/partNav";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { PostControl } from "@/components/post/postControls";
@@ -221,6 +223,12 @@ export default function PostPage() {
   const shown = thread ? withoutHidden(thread) : null;
   const card = shown ? toCardData(shown, { work: data.work, signed: data.signed, digests: new Map(), now, hrefOf: () => location.pathname, strip: false }) : null;
   const engagement = useEngagement(card?.engagementBuild ? [card.engagementBuild.id] : []);
+  /* UX-09 P6: the trail is OpenBuilds / <first space> / <heading>, or OpenBuilds / <heading> in no space. */
+  const firstSpace = shown?.spaces[0];
+  useCrumbTitle(
+    shown ? crumbHeading(splitBody(shown.body).heading) || "Topic" : post.isPending ? null : "Not found",
+    firstSpace ? { label: firstSpace.name, href: `/openbuilds/spaces/${firstSpace.slug}` } : null,
+  );
 
   /* ── states ── */
 

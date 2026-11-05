@@ -17,6 +17,9 @@
      /compose/*                 Home / Drafts / {title}
      /openbuilds                Home / OpenBuilds
      /openbuilds/solvers        Home / OpenBuilds / Solvers
+     /openbuilds/spaces/:slug   Home / OpenBuilds / {space}                       (UX-09 P6)
+     /openbuilds/topics/:id     Home / OpenBuilds / {first space} / {heading}     (UX-09 P6; no space: Home / OpenBuilds / {heading})
+     /openbuilds/requests       Home / OpenBuilds / Older requests                (UX-09 P6)
      /profile/:handle           Home / {display name}
      /notifications             Home / Activity
      /connect                   Home / Connect a tool
@@ -38,9 +41,21 @@ const GALLERY: Crumb = { label: "Builds", href: SITE_NAV.gallery };
 const DRAFTS: Crumb = { label: "Drafts", href: SITE_NAV.drafts };
 const NEW_BUILD: Crumb = { label: "New build", href: SITE_NAV.create };
 
+const OPENBUILDS: Crumb = { label: "OpenBuilds", href: SITE_NAV.bounties };
+
 const here = (pathname: string, pattern: string) => matchPath({ path: pattern, end: true }, pathname);
 
-export function trailFor(pathname: string, title: string | null): Crumb[] {
+/** UX-09 P6: the longest a topic's heading runs in the trail. */
+export const CRUMB_HEADING_MAX = 40;
+
+/** A topic's heading for the trail: at most 40 characters, the last an ellipsis when it was cut. */
+export function crumbHeading(heading: string): string {
+  const clean = heading.replace(/\s+/g, " ").trim();
+  return clean.length <= CRUMB_HEADING_MAX ? clean : `${clean.slice(0, CRUMB_HEADING_MAX - 1).trimEnd()}…`;
+}
+
+/** `parent` is the crumb a page names between its section and itself: a topic's first space. */
+export function trailFor(pathname: string, title: string | null, parent: Crumb | null = null): Crumb[] {
   if (pathname === "/" || pathname === "") return [{ label: "Home" }];
   if (here(pathname, "/builds") || here(pathname, "/gallery")) return [HOME, { label: "Builds" }];
 
@@ -67,6 +82,9 @@ export function trailFor(pathname: string, title: string | null): Crumb[] {
     return [HOME, { label: "OpenBuilds", href: SITE_NAV.bounties }, { label: "Solvers" }];
   }
   if (here(pathname, "/openbuilds") || here(pathname, "/bounties")) return [HOME, { label: "OpenBuilds" }];
+  if (here(pathname, "/openbuilds/spaces/:slug")) return [HOME, OPENBUILDS, { label: title }];
+  if (here(pathname, "/openbuilds/topics/:id")) return [HOME, OPENBUILDS, ...(parent ? [parent] : []), { label: title }];
+  if (here(pathname, "/openbuilds/requests")) return [HOME, OPENBUILDS, { label: "Older requests" }];
 
   if (here(pathname, "/profile/:handle") || here(pathname, "/profile")) return [HOME, { label: title }];
   if (here(pathname, "/notifications")) return [HOME, { label: "Activity" }];
