@@ -617,6 +617,8 @@ export function tabReadsPart(tab: BuildTabKey): boolean {
 export interface CardView {
   key: string;
   render: (variant: "desktop" | "phone") => ReactNode;
+  /** UX-09 P2: a rebuild attached to a reply: the topic's author (no @) and the reply's address. */
+  madeInReply?: { handle: string; to: string };
 }
 
 /* ── Watch it get built ── */

@@ -1474,6 +1474,8 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/openbuilds/stillOpen.test.ts",
   // UX-09
   "src/pages/site/build/ux09.p1.test.tsx",
+  "src/pages/site/build/ux09.p2.test.tsx",
+  "src/lib/openbuilds/madeInReply.test.ts",
 ];
 
 /**

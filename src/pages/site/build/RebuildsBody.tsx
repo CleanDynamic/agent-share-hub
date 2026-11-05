@@ -9,12 +9,17 @@
    the empty sentence here is for the moment between a rebuild being withdrawn
    and the page reading that it was.
 
+   UX-09 P2: a rebuild attached to a reply says so after its card, in
+   `--label`: "Made in reply to @maya's topic", the last words a link to the
+   reply.
+
    PURE: the cards are drawn by the page (a real `GalleryCard`) or the fixture. */
 
 import { Network } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { EmptyState } from "@/components/brand/EmptyState";
+import { PageLink } from "@/lib/routing/PageLink";
 import { CardSkeleton, LoadingRegion } from "@/components/brand/Skeleton";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -56,6 +61,18 @@ function FamilyLink({ to, phone, label, testId = "build-rebuilds-family" }: { to
   );
 }
 
+function MadeInReplyLine({ handle, to }: { handle: string; to: string }) {
+  const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  return (
+    <p data-testid="build-rebuild-made-in-reply" style={{ margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 12, lineHeight: 1.5, color: t.label }}>
+      Made in reply to{" "}
+      <PageLink to={to} {...handlers} style={{ color: "inherit", textDecoration: "underline", textUnderlineOffset: 3, borderRadius: r.chip, ...ring(state.focusVisible) }}>
+        @{handle}&apos;s topic
+      </PageLink>
+    </p>
+  );
+}
+
 export function RebuildsBody({ rebuilds, phone = false }: { rebuilds: RebuildsBodyView; phone?: boolean }) {
   const { cards, loading, lineageTo, compareLinks } = rebuilds;
   const columns = phone ? "repeat(2, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))";
@@ -77,6 +94,7 @@ export function RebuildsBody({ rebuilds, phone = false }: { rebuilds: RebuildsBo
           {cards.map((card) => (
             <li key={card.key} data-testid="build-rebuild-card" style={{ minWidth: 0 }}>
               {card.render(phone ? "phone" : "desktop")}
+              {card.madeInReply ? <MadeInReplyLine {...card.madeInReply} /> : null}
             </li>
           ))}
         </ul>

@@ -130,8 +130,8 @@ import { PageArrival } from "@/components/shell/PageArrival";
 import { BuildView, BuildViewFailed, BuildViewNotice, BuildViewSkeleton } from "./BuildView";
 import { ClassificationSection } from "@/components/build/ClassificationSection";
 import { DiscussedSection, discussedRowMeta } from "@/components/build/DiscussedSection";
-import { splitBody, topicHref } from "@/components/post/postCardModel";
-import { listTopicsAbout, stillOpenTopicsByNode, type TopicsAbout } from "@/lib/openbuilds/connections";
+import { replyHref, splitBody, topicHref } from "@/components/post/postCardModel";
+import { listRebuildsMadeInReply, listTopicsAbout, stillOpenTopicsByNode, type TopicsAbout } from "@/lib/openbuilds/connections";
 import { EMPTY_DRAFT, type NewPostDraft } from "@/pages/site/openbuilds/sendPost";
 import { failedRunDraft } from "@/pages/site/home/runTopic";
 import { PostingWindows } from "@/pages/site/openbuilds/PostingWindows";
@@ -782,6 +782,14 @@ export function BuildPage() {
     staleTime: STALE_TIME,
     refetchOnWindowFocus: false,
   });
+  /* UX-09 P2: which of them were made in reply. Read by this build, so it starts with the cards (no round of its own). */
+  const madeInReply = useQuery({
+    queryKey: ["openbuilds", "listRebuildsMadeInReply", buildId],
+    queryFn: () => listRebuildsMadeInReply(buildId as string),
+    enabled: Boolean(buildId) && tab === "rebuilds",
+    staleTime: STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
 
   /* Where next asks for nothing until the reader comes within 400px of the page's foot. */
   const [footRef, nearFoot] = useNear();
@@ -1078,7 +1086,10 @@ export function BuildPage() {
           <RebuildsBody
             phone={phone}
             rebuilds={{
-              cards: (rebuildCards.data ?? []).map((card) => cardOf(card, "rebuild")),
+              cards: (rebuildCards.data ?? []).map((card) => {
+                const made = madeInReply.data?.get(card.id);
+                return { ...cardOf(card, "rebuild"), madeInReply: made ? { handle: made.handle, to: replyHref(made.rootId, made.replyId) } : undefined };
+              }),
               loading: rebuildCards.isPending,
               lineageTo: `/b2/${build.slug}/lineage`,
               // CA-13 P9: each rebuild can be set beside this one.
