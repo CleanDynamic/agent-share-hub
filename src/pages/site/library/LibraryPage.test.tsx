@@ -65,7 +65,7 @@ vi.mock("@/lib/library/savedItems", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/library/savedItems")>()),
   listSavedItems: (...args: unknown[]) => listSavedItems(...args),
   countSavedItems: (...args: unknown[]) => countSavedItems(...args),
-  savedItemsUsedIn: (...args: unknown[]) => savedItemsUsedIn(...args),
+  savedItemsUses: (...args: unknown[]) => savedItemsUsedIn(...args),
   collectionSavedBy: (...args: unknown[]) => collectionSavedBy(...args),
   updateSavedItemNote: (...args: unknown[]) => updateSavedItemNote(...args),
   unsaveItem: (...args: unknown[]) => unsaveItem(...args),
@@ -321,7 +321,7 @@ describe("Library", () => {
   it("lists the kept steps with Used in, the reader's note and a way to take it out", async () => {
     listSavedItems.mockResolvedValue({ items: [kept(1), kept(2, { snapshot: { type: "agent", title: "Clean-up agent", source: {} } })], next: null });
     countSavedItems.mockResolvedValue({ part: 0, session: 0, step: 2, request: 0, filter_set: 0, collection: 0 });
-    savedItemsUsedIn.mockResolvedValue(new Map([["si-1", 4]]));
+    savedItemsUsedIn.mockResolvedValue(new Map([["si-1", { builds: 4, topics: 0 }]]));
     renderAt("/library?kind=steps");
 
     await waitFor(() => expect(rowTitles()).toEqual(["Kept step 1", "Clean-up agent"]));

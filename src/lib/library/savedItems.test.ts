@@ -59,6 +59,8 @@ import {
   listSavedItems,
   saveItem,
   savedItemsUsedIn,
+  savedItemsUses,
+  usesTotal,
   sessionSnapshot,
   stepSnapshot,
   unsaveItem,
@@ -227,6 +229,25 @@ describe("Used in and saved by", () => {
     const used = await savedItemsUsedIn();
     expect(used.get("si-1")).toBe(3);
     expect(calls.filter((call) => call.table === "rpc")).toHaveLength(1);
+  });
+
+  it("UX-09 P4: a step attached to a reply raises Used in by one, in the same one request", async () => {
+    // One row per item and arm: the builds arm, then the topics arm (a topic, or a reply in it, attaching the step).
+    answer = () => ({ data: [{ saved_item_id: "si-1", builds: 2, topics: 0 }, { saved_item_id: "si-1", builds: 0, topics: 1 }], error: null });
+    const uses = await savedItemsUses();
+    expect(uses.get("si-1")).toEqual({ builds: 2, topics: 1 });
+    expect(usesTotal(uses).get("si-1")).toBe(3);
+    expect(calls.filter((call) => call.table === "rpc")).toHaveLength(1);
+  });
+
+  it("UX-09 P4: builds alone are still the builds, whichever arm comes last (the composer's used in n builds)", async () => {
+    answer = () => ({ data: [{ saved_item_id: "si-1", builds: 2, topics: 0 }, { saved_item_id: "si-1", builds: 0, topics: 4 }], error: null });
+    expect((await savedItemsUsedIn()).get("si-1")).toBe(2);
+  });
+
+  it("UX-09 P4: before the migration (no topics column) topics read as none", async () => {
+    answer = () => ({ data: [{ saved_item_id: "si-1", builds: 3 }], error: null });
+    expect((await savedItemsUses()).get("si-1")).toEqual({ builds: 3, topics: 0 });
   });
 
   it("reads saved by for collections in one request, and nothing for no ids", async () => {
