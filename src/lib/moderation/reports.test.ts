@@ -287,3 +287,43 @@ describe("isBuildHidden", () => {
     expect(requests()).toHaveLength(1);
   });
 });
+
+describe("UX-09 P8: reporting a topic or a reply", () => {
+  it("files the report with its own target type", async () => {
+    await reportTarget({ targetType: "openbuild_post", targetId: "post-1", reason: "spam" });
+    expect(requests()).toHaveLength(1);
+    expect(callOf("content_reports", "insert")?.args).toEqual([{ target_type: "openbuild_post", target_id: "post-1", reporter_id: "reader-1", reason: "spam", note: null }]);
+  });
+
+  it("names topic and reply targets in the queue in one more request, started with the others", async () => {
+    answer = (table) => {
+      if (table === "content_reports") {
+        return {
+          data: [reportRow("r1", { target_type: "openbuild_post", target_id: "p1" }), reportRow("r2", { target_type: "openbuild_post", target_id: "p2" }), reportRow("r3", { target_type: "openbuild_post", target_id: "gone" })],
+          error: null,
+          status: 200,
+        };
+      }
+      if (table === "openbuild_posts") {
+        return {
+          data: [
+            { id: "p1", root_id: "p1", parent_id: null, body: "Can anyone make the scorer faster?\nIt takes four seconds." },
+            { id: "p2", root_id: "p1", parent_id: "p1", body: "  Try   caching  " },
+          ],
+          error: null,
+        };
+      }
+      return { data: [], error: null };
+    };
+    const page = await listOpenReports();
+    expect(requestsTo("openbuild_posts")).toHaveLength(1);
+    expect(requestsTo("builds")).toHaveLength(0);
+    const select = callOf("openbuild_posts", "select")?.args[0] as string;
+    expect(select).toBe("id, root_id, parent_id, body");
+    expect(page.reports.map((report) => report.summary)).toEqual([
+      { text: "Topic: “Can anyone make the scorer faster?”", href: "/openbuilds/topics/p1" },
+      { text: "Reply: “Try caching”", href: "/openbuilds/topics/p1#reply-p2" },
+      { text: "A topic or reply that is no longer there", href: null },
+    ]);
+  });
+});

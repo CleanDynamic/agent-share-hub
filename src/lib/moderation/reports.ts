@@ -1,4 +1,4 @@
-// Reporting a build or a comment, and the admin's queue of reports (RC-P17b).
+// Reporting a build, a comment or (UX-09 P8) a topic or a reply, and the admin's queue of reports (RC-P17b).
 //
 // A report is one content_reports row per (target, reporter): a build or a
 // comment, a reason from five, an optional note of at most 500 characters. The
@@ -24,7 +24,8 @@ import {
   uniqueIds,
 } from "@/lib/social/types";
 
-export type ReportTargetType = "build" | "comment";
+/** UX-09 P8: `openbuild_post` is a topic or a reply (openbuild_posts), reported to the site's moderation, not the space's. */
+export type ReportTargetType = "build" | "comment" | "openbuild_post";
 export type ReportReason = "spam" | "broken" | "harmful" | "stolen" | "other";
 
 /** The five reasons, most likely first and "Something else" last ⟦hicks-law › Budgets: dialog⟧. */
@@ -54,7 +55,7 @@ export interface ReportTargetInput {
  * an error: the first report is still open, which is the state asked for.
  */
 export async function reportTarget(input: ReportTargetInput): Promise<void> {
-  const ids = input.targetType === "build" ? { buildId: input.targetId } : { commentId: input.targetId };
+  const ids = input.targetType === "build" ? { buildId: input.targetId } : input.targetType === "comment" ? { commentId: input.targetId } : {};
   const note = (input.note ?? "").trim();
   if (!REPORT_REASONS.some((reason) => reason.value === input.reason) || [...note].length > REPORT_NOTE_MAX) {
     throw new SocialError("reportTarget", "invalid", ids);
@@ -107,6 +108,13 @@ interface BuildSummaryRow {
   title: string | null;
 }
 
+interface PostSummaryRow {
+  id: string;
+  root_id: string;
+  parent_id: string | null;
+  body: string;
+}
+
 interface CommentSummaryRow {
   id: string;
   body: string;
@@ -151,8 +159,9 @@ export async function listOpenReports(options: ListOpenReportsOptions = {}): Pro
 
   const buildIds = uniqueIds(rows.filter((row) => row.target_type === "build").map((row) => row.target_id));
   const commentIds = uniqueIds(rows.filter((row) => row.target_type === "comment").map((row) => row.target_id));
+  const postIds = uniqueIds(rows.filter((row) => row.target_type === "openbuild_post").map((row) => row.target_id));
 
-  const [builds, comments] = await Promise.all([
+  const [builds, comments, posts] = await Promise.all([
     buildIds.length > 0
       ? db.from("builds").select("id, slug, title").in("id", buildIds).limit(buildIds.length)
       : Promise.resolve({ data: [], error: null, status: 200 }),
@@ -163,12 +172,18 @@ export async function listOpenReports(options: ListOpenReportsOptions = {}): Pro
           .in("id", commentIds)
           .limit(commentIds.length)
       : Promise.resolve({ data: [], error: null, status: 200 }),
+    // UX-09 P8: a topic or a reply, named by its first line.
+    postIds.length > 0
+      ? db.from("openbuild_posts").select("id, root_id, parent_id, body").in("id", postIds).limit(postIds.length)
+      : Promise.resolve({ data: [], error: null, status: 200 }),
   ]);
   if (builds.error) throw socialError("listOpenReports (builds)", builds);
   if (comments.error) throw socialError("listOpenReports (comments)", comments);
+  if (posts.error) throw socialError("listOpenReports (posts)", posts);
 
   const buildById = new Map(((builds.data ?? []) as BuildSummaryRow[]).map((row) => [row.id, row]));
   const commentById = new Map(((comments.data ?? []) as CommentSummaryRow[]).map((row) => [row.id, row]));
+  const postById = new Map(((posts.data ?? []) as PostSummaryRow[]).map((row) => [row.id, row]));
 
   const reports = rows.map((row): OpenReport => {
     const reporter = first(row.reporter);
@@ -178,6 +193,14 @@ export async function listOpenReports(options: ListOpenReportsOptions = {}): Pro
       summary = build
         ? { text: (build.title ?? "").trim() || "Untitled build", href: `/b2/${build.slug}` }
         : { text: "A build that is no longer there", href: null };
+    } else if (row.target_type === "openbuild_post") {
+      const post = postById.get(row.target_id);
+      const firstLine = (post?.body ?? "").trim().split("\n")[0] ?? "";
+      summary = post
+        ? post.parent_id === null
+          ? { text: `Topic: “${excerpt(firstLine)}”`, href: `/openbuilds/topics/${post.root_id}` }
+          : { text: `Reply: “${excerpt(firstLine)}”`, href: `/openbuilds/topics/${post.root_id}#reply-${post.id}` }
+        : { text: "A topic or reply that is no longer there", href: null };
     } else {
       const comment = commentById.get(row.target_id);
       const on = first(comment?.build);

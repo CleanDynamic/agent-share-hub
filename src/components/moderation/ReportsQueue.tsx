@@ -121,7 +121,7 @@ export function ReportsQueue() {
             >
               <div style={{ display: "flex", flexDirection: "column", gap: SPACE.xs, minWidth: 0, flex: "1 1 320px" }}>
                 <span style={{ ...eyebrow, color: t.text2 }}>
-                  {report.targetType === "build" ? "Build" : "Comment"} · {reasonLabel(report.reason)}
+                  {report.targetType === "build" ? "Build" : report.targetType === "comment" ? "Comment" : "OpenBuilds"} · {reasonLabel(report.reason)}
                 </span>
                 {report.summary.href ? (
                   <Link to={report.summary.href} style={{ ...body, color: t.text, overflowWrap: "anywhere" }}>
@@ -141,15 +141,18 @@ export function ReportsQueue() {
                 </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs }}>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={busy === report.id}
-                  onClick={() => setHiding(report)}
-                  style={SECONDARY}
-                >
-                  Hide
-                </Button>
+                {/* UX-09 P8: a topic or a reply is hidden by its space's moderators; here it is dismissed or followed to its page. */}
+                {report.targetType === "openbuild_post" ? null : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={busy === report.id}
+                    onClick={() => setHiding(report)}
+                    style={SECONDARY}
+                  >
+                    Hide
+                  </Button>
+                )}
                 <Button
                   type="button"
                   variant="ghost"

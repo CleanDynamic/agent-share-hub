@@ -170,3 +170,18 @@ describe("ReportsQueue", () => {
     expect(rows()).toHaveLength(1);
   });
 });
+
+describe("UX-09 P8: a topic's report in the queue", () => {
+  it("is labelled OpenBuilds, links to the topic, and offers Dismiss but not Hide (its space's moderators hide it)", async () => {
+    listOpenReports.mockResolvedValue({
+      reports: [report("r1", { targetType: "openbuild_post", targetId: "p1", summary: { text: "Topic: “Can anyone make the scorer faster?”", href: "/openbuilds/topics/p1" } })],
+      nextBefore: null,
+    });
+    renderQueue();
+    const [row] = await screen.findAllByTestId("report-row");
+    expect(row.textContent).toContain("OpenBuilds · Spam");
+    expect(within(row).getByRole("link", { name: "Topic: “Can anyone make the scorer faster?”" }).getAttribute("href")).toBe("/openbuilds/topics/p1");
+    expect(within(row).queryByRole("button", { name: "Hide" })).toBeNull();
+    expect(within(row).getByRole("button", { name: "Dismiss" })).toBeInTheDocument();
+  });
+});

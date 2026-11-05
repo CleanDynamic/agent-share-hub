@@ -29,6 +29,8 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 vi.mock("@/lib/errors/report", () => ({ reportError: vi.fn() }));
 vi.mock("@/hooks/useEngagement", () => ({ useEngagement: () => ({ counts: {}, liked: new Set(), saved: new Set(), loaded: true }), engagementFor: () => ({ counts: null, liked: false, saved: false }) }));
 vi.mock("sonner", () => ({ toast: Object.assign(vi.fn(), { error: vi.fn() }) }));
+const reportTarget = vi.fn(async (_input: unknown) => undefined);
+vi.mock("@/lib/moderation", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/moderation")>()), reportTarget: (input: unknown) => reportTarget(input) }));
 
 import { attachment, entry } from "./postModel.fixtures";
 import PostPage from "./PostPage";
@@ -113,10 +115,14 @@ describe("the post page", () => {
     expect(await screen.findByRole("heading", { level: 1 })).toBeInTheDocument();
   });
 
-  it("gives a reader who neither wrote the post nor moderates no reply menu", async () => {
+  it("gives a reader who neither wrote the post nor moderates no Pin or Hide (UX-09 P8: the menu holds Report alone)", async () => {
     mount();
     await screen.findByRole("heading", { level: 1 });
-    expect(screen.queryAllByRole("button", { name: "More for this reply" })).toHaveLength(0);
+    const [first] = screen.getAllByTestId("reply");
+    fireEvent.keyDown(within(first).getByRole("button", { name: "More for this reply" }), { key: "Enter" });
+    expect(await screen.findByRole("menuitem", { name: "Report" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Pin" })).toBeNull();
+    expect(screen.queryByRole("menuitem", { name: "Hide" })).toBeNull();
   });
 
   it("gives the post's author Pin but not Hide", async () => {
@@ -223,5 +229,50 @@ describe("UX-09 P1: #reply-box", () => {
     const box = await screen.findByTestId("reply-box");
     expect(box.id).toBe("reply-box");
     await waitFor(() => expect(document.activeElement).toBe(within(box).getByRole("textbox")));
+  });
+});
+
+describe("UX-09 P8: reporting a topic or a reply", () => {
+  beforeEach(() => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("min-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
+    user = { id: "me" };
+    getPost.mockReset().mockResolvedValue(thread());
+    readPostExtras.mockReset().mockResolvedValue(extras());
+    reportTarget.mockClear();
+    vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
+  });
+
+  it("a reader reports the topic, and the report is written with its target type", async () => {
+    mount();
+    await screen.findByRole("heading", { level: 1 });
+    fireEvent.keyDown(screen.getByRole("button", { name: "More for this topic" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Report" }));
+    const dialog = await screen.findByRole("dialog", { name: "Report this topic" });
+    fireEvent.click(within(dialog).getByRole("radio", { name: "Spam" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Send report" }));
+    await waitFor(() => expect(reportTarget).toHaveBeenCalledWith({ targetType: "openbuild_post", targetId: "p1", reason: "spam", note: "" }));
+  });
+
+  it("a reply is reported as a reply", async () => {
+    mount();
+    await screen.findByRole("heading", { level: 1 });
+    const [first] = screen.getAllByTestId("reply");
+    fireEvent.keyDown(within(first).getByRole("button", { name: "More for this reply" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Report" }));
+    expect(await screen.findByRole("dialog", { name: "Report this reply" })).toBeInTheDocument();
+  });
+
+  it("the author sees no Report on their own topic or reply", async () => {
+    user = { id: "sam" };
+    getPost.mockResolvedValue(thread({ replies: [entry("sam-reply", 60, { authorId: "sam" })] }));
+    mount();
+    await screen.findByRole("heading", { level: 1 });
+    // Their topic: no menu for a reader who is not a moderator of its space.
+    expect(screen.queryByRole("button", { name: "More for this topic" })).toBeNull();
+    // Their reply: Pin (they wrote the topic), no Report.
+    const [first] = screen.getAllByTestId("reply");
+    fireEvent.keyDown(within(first).getByRole("button", { name: "More for this reply" }), { key: "Enter" });
+    expect(await screen.findByRole("menuitem", { name: "Pin" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Report" })).toBeNull();
   });
 });

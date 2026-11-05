@@ -51,6 +51,7 @@ const reply = (id: string, extra: Partial<ReplyItem> = {}): ReplyItem => ({
   more: 0,
   canPin: false,
   canHide: false,
+  canReport: false,
   ...extra,
 });
 

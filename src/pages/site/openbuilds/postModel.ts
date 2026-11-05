@@ -138,6 +138,8 @@ export interface ReplyItem {
   more: number;
   canPin: boolean;
   canHide: boolean;
+  /** UX-09 P8: Report, for everyone but the reply's author. */
+  canReport: boolean;
 }
 
 /** Where a step to copy comes from: published (read again as it is now), or the copy a reply carries. */
@@ -155,6 +157,8 @@ export interface ThreadContext {
   /** The reader may pin (the post's author or a moderator) and hide (a moderator). */
   canPin: boolean;
   canHide: boolean;
+  /** UX-09 P8: the reader (null signed out), so a reply's author is not offered Report. Absent: Report is not offered. */
+  viewerId?: string | null;
 }
 
 const buildLinks = (attachment: PostAttachment, work: CardWork): ReplyItem["build"] => {
@@ -194,6 +198,7 @@ export function replyItem(reply: PostThread, depth: 0 | 1, context: ThreadContex
     more: depth === 1 ? reply.replyCount : 0,
     canPin: context.canPin,
     canHide: context.canHide,
+    canReport: context.viewerId !== undefined && reply.authorId !== context.viewerId,
   };
 }
 

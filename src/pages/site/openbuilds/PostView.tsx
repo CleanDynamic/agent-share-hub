@@ -56,6 +56,8 @@ export interface PostViewProps {
   engagement?: RowEngagement;
   /** UX-07 P7: the topic's reaction row, when its spaces switched one on. */
   reactions?: ReactNode;
+  /** UX-09 P8: Report in the topic's `···` menu (everyone but its author). */
+  onReport?: () => void;
   /** Each step of the post's build drawn inside its menu (the container's, since a menu item may read drafts). */
   renderTile?: (tile: StripTileData, inner: ReactNode) => ReactNode;
   tab: PostTab;
@@ -162,7 +164,7 @@ export function PostView(view: PostViewProps) {
         ))}
       </nav>
 
-      <PostCard card={view.card} page clamp={false} engagement={view.engagement} renderTile={view.renderTile} reactions={view.reactions} />
+      <PostCard card={view.card} page clamp={false} engagement={view.engagement} renderTile={view.renderTile} reactions={view.reactions} onReport={view.onReport} />
 
       <div style={{ display: "flex", flexDirection: phone ? "column" : "row", alignItems: phone ? "stretch" : "center", justifyContent: "space-between", gap: 12, marginTop: 8, paddingBottom: 12, borderBottom: `1px solid ${t.hairline}` }}>
         <Segmented label="Show" items={items} value={tab} onChange={(value) => view.onTab(value as PostTab)} size={phone ? 50 : 32} fontSize={12} fullWidth={phone} />

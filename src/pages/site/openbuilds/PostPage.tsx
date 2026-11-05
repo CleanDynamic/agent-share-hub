@@ -15,6 +15,7 @@ import { useLocation, useNavigate, useParams, useSearchParams } from "react-rout
 import { toast } from "sonner";
 
 import { SeoHead } from "@/components/SeoHead";
+import { ReportDialog } from "@/components/moderation/ReportDialog";
 import { crumbHeading } from "@/components/shell/breadcrumbTrail";
 import { useCrumbTitle } from "@/components/shell/useBreadcrumb";
 import { centre } from "@/components/build/partNav";
@@ -121,6 +122,9 @@ export default function PostPage() {
   /* ── the one reply box: at the foot, or under the reply it answers; about a step or not ── */
 
   const [replyAt, setReplyAt] = useState<"foot" | string>("foot");
+  /* UX-09 P8: the topic or reply being reported, in the site's report dialog. */
+  const [reporting, setReporting] = useState<{ type: "openbuild_post"; id: string; what: "topic" | "reply" } | null>(null);
+  const report = (postId: string, what: "topic" | "reply") => (viewerId ? setReporting({ type: "openbuild_post", id: postId, what }) : signIn());
   const [about, setAbout] = useState<ReplyDraft["about"]>(null);
   // Part 5: the Wall's Reply with a build opens a box of its own at the Wall's foot (the Thread is not drawn meanwhile).
   const [wallBox, setWallBox] = useState(false);
@@ -258,6 +262,7 @@ export default function PostPage() {
     handleOf: (userId) => handles.get(userId) ?? (thread && userId === thread.authorId ? thread.author?.handle ?? null : null),
     canPin: viewerId !== null && (moderator || thread?.authorId === viewerId),
     canHide: viewerId !== null && moderator,
+    viewerId,
   };
   const byStep = shown ? repliesByStep(shown) : new Map<string, number>();
   let items = shown ? threadItems(shown, context, address.step) : [];
@@ -353,6 +358,7 @@ export default function PostPage() {
             engagement={card.engagementBuild ? engagementFor(engagement, card.engagementBuild.id) : undefined}
             renderTile={renderTile}
             reactions={reactionRow(shown.id, shown.parentId ? "reply" : "topic")}
+            onReport={shown.authorId === viewerId ? undefined : () => report(shown.id, shown.parentId ? "reply" : "topic")}
             tab={address.tab}
             onTab={(tab) => move({ tab })}
             replies={shown.replyCount}
@@ -388,12 +394,14 @@ export default function PostPage() {
               onHide: (replyId, reason) => void moderate(replyId, (entry) => ({ ...entry, hiddenBy: viewerId, hiddenReason: reason || null }), () => hidePost(replyId, reason || undefined)),
               renderAddToDraft: (step) => <AddToDraftButton step={step} />,
               renderReactions: (replyId) => reactionRow(replyId, "reply"),
+              onReport: (replyId) => report(replyId, "reply"),
               branchHref: (replyId) => `?${postSearch(params, { reply: replyId, step: null }, defaultView).toString()}`,
             }}
             side={{ space, rows: sideRows }}
           />
         )}
       </PageArrival>
+      <ReportDialog target={reporting} onClose={() => setReporting(null)} />
     </>
   );
 }
