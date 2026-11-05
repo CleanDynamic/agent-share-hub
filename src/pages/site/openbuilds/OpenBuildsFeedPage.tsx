@@ -14,6 +14,7 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { SeoHead } from "@/components/SeoHead";
+import { OPENBUILDS_SEO } from "./openBuildsSeo";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { toCardData, topicHref } from "@/components/post/postCardModel";
 import { useAuth } from "@/contexts/AuthContext";
@@ -109,7 +110,7 @@ export default function OpenBuildsFeedPage() {
 
   return (
     <>
-      <SeoHead title="OpenBuilds · buildgallery" description="Post anything, reply with anything. Spaces are made and run by the people in them." path="/openbuilds" />
+      <SeoHead title={OPENBUILDS_SEO.title} description={OPENBUILDS_SEO.description} path="/openbuilds" />
       <PageArrival loading={arriving} placeholder={<OpenBuildsFeedLoadingView />}>
         {arriving ? (
           <OpenBuildsFeedLoadingView />

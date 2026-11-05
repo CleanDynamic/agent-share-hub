@@ -12,18 +12,6 @@
     "screen": "screens/vision/home.png"
   },
   {
-    "file": "reference/vision/dusk/openbuilds.html",
-    "kind": "vision",
-    "theme": "dusk",
-    "page": "openbuilds",
-    "width": 1440,
-    "height": 1699,
-    "title": "OpenBuilds \u00b7 Dusk \u00b7 vision",
-    "devPage": "/dev/kit/pages/vision-openbuilds",
-    "source": "reference/vision/source/OpenWork.dc.html",
-    "screen": "screens/vision/openbuilds.png"
-  },
-  {
     "file": "reference/vision/dusk/builds-table.html",
     "kind": "vision",
     "theme": "dusk",

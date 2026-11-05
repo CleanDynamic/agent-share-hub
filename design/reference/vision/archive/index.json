@@ -1,0 +1,15 @@
+[
+  {
+    "file": "reference/vision/archive/openbuilds.html",
+    "kind": "vision",
+    "theme": "dusk",
+    "page": "openbuilds",
+    "width": 1440,
+    "height": 1699,
+    "title": "OpenBuilds \u00b7 Dusk \u00b7 vision",
+    "devPage": "/dev/kit/pages/vision-openbuilds",
+    "source": "reference/vision/source/OpenWork.dc.html",
+    "screen": "screens/vision/openbuilds.png",
+    "retired": "UX-09 P10: the OpenBuilds page was redrawn by UX-04 to UX-08; this board no longer describes it, so audit:design no longer compares against it."
+  }
+]

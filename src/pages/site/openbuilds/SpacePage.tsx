@@ -10,6 +10,7 @@ import { useLocation, useNavigate, useParams, useSearchParams } from "react-rout
 import { toast } from "sonner";
 
 import { SeoHead } from "@/components/SeoHead";
+import { spaceSeo } from "./openBuildsSeo";
 import { useCrumbTitle } from "@/components/shell/useBreadcrumb";
 import { toCardData, topicHref } from "@/components/post/postCardModel";
 import { useAuth } from "@/contexts/AuthContext";
@@ -159,7 +160,7 @@ export default function SpacePage() {
 
   return (
     <>
-      <SeoHead title={`${space?.name ?? "Space"} · OpenBuilds`} description={space?.description || "A space on OpenBuilds."} path={`/openbuilds/spaces/${slug}`} />
+      <SeoHead {...spaceSeo(space)} path={`/openbuilds/spaces/${slug}`} />
       {arriving || !crowd.data || !space ? (
         <OpenBuildsFeedLoadingView />
       ) : (

@@ -38,6 +38,7 @@ import { PostLoadingView } from "./PostFrame";
 import { PostStepMenu } from "./PostStepMenu";
 import { ReactionRow } from "./ReactionRow";
 import { REPLY_BOX_ID, ReplyBox } from "./ReplyBox";
+import { topicSeo } from "./openBuildsSeo";
 import type { ReplyDraft } from "./sendReply";
 import { PostView, type PostSideRow } from "./PostView";
 import { PostWall } from "./PostWall";
@@ -309,7 +310,6 @@ export default function PostPage() {
   // Part 6: offered only with two or more rebuilds of the post's build in replies, and only wide enough to read.
   const lineUpShown = wide && shown !== null && lineUpOffered(rebuildsInReplies(shown, postBuild.buildId, data.facts).length);
 
-  const heading = shown ? splitBody(shown.body).heading : "";
   // The box stands where it was asked for; under a reply that is no longer drawn, it goes back to the foot.
   const at = replyAt !== "foot" && drawnIds(items).includes(replyAt) ? replyAt : "foot";
   const replyBox = shown
@@ -347,7 +347,7 @@ export default function PostPage() {
 
   return (
     <>
-      <SeoHead title={`${heading || "Post"} · OpenBuilds`} description={shown ? splitBody(shown.body).text.slice(0, 160) || heading : "A post on OpenBuilds."} path={`/openbuilds/topics/${id}`} />
+      <SeoHead {...topicSeo(shown)} path={`/openbuilds/topics/${id}`} />
       <PageArrival loading={arriving} placeholder={<PostLoadingView />}>
         {arriving || !shown || !card ? (
           <PostLoadingView />
