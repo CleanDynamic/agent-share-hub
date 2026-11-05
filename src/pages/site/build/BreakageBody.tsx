@@ -7,8 +7,12 @@
    opens the replay there.
 
    Then every gap still open, as a dashed breakage card: what is missing, the
-   reward when a bounty pays for it, and the one primary, "Solve it", which
-   opens that bounty's solve sheet.
+   reward when a bounty pays for it, and the one primary, "Reply" (UX-09 P1,
+   which renamed it): the still-open topic's reply box when the gap has one,
+   else that bounty's solve sheet, as before.
+
+   UX-09 P1: each row also has "Start a topic", the page's New post window with
+   the build attached and the row's step in the words.
 
    RESOLVED, NOT ALARMING. A breakage is the creator saying where it went wrong
    so the next person does not repeat it; the hue is spent on the dot and the
@@ -26,7 +30,7 @@ import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import type { BreakageBodyView, BreakageRowView, OpenGapView } from "./buildModel";
 
-function Row({ row, onOpenReplay }: { row: BreakageRowView; onOpenReplay?: (ordinal: number) => void }) {
+function Row({ row, onOpenReplay, onStartTopic }: { row: BreakageRowView; onOpenReplay?: (ordinal: number) => void; onStartTopic?: (row: BreakageRowView) => void }) {
   return (
     <li
       data-testid="build-breakage-row"
@@ -68,12 +72,18 @@ function Row({ row, onOpenReplay }: { row: BreakageRowView; onOpenReplay?: (ordi
           <span style={{ fontFamily: DM_MONO, fontSize: 10, color: t.label, lineHeight: "23px" }}>{row.span ?? "no step recorded"}</span>
         )}
         {row.attempts ? <span style={{ fontFamily: DM_MONO, fontSize: 10, color: t.label }}>{row.attempts}</span> : null}
+        {onStartTopic ? (
+          <Button variant="ghost" size={28} fontSize={11} aria-label={`Start a topic: ${row.name}`} onClick={() => onStartTopic(row)}>
+            Start a topic
+          </Button>
+        ) : null}
       </div>
     </li>
   );
 }
 
-function Gap({ gap, onSolve }: { gap: OpenGapView; onSolve?: (id: string) => void }) {
+function Gap({ gap, onSolve, onReply }: { gap: OpenGapView; onSolve?: (id: string) => void; onReply?: (topicId: string) => void }) {
+  const reply = gap.topicId && onReply ? () => onReply(gap.topicId as string) : gap.solvable && onSolve ? () => onSolve(gap.id) : null;
   return (
     <li
       data-testid="build-open-gap"
@@ -97,9 +107,9 @@ function Gap({ gap, onSolve }: { gap: OpenGapView; onSolve?: (id: string) => voi
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
         {gap.reward ? <span style={{ fontFamily: DM_MONO, fontSize: 12, color: t.catBreakage }}>{gap.reward}</span> : null}
-        {gap.solvable && onSolve ? (
-          <Button variant="primary" size={30} fontSize={12} aria-label={`Solve it: ${gap.title}`} onClick={() => onSolve(gap.id)}>
-            Solve it
+        {reply ? (
+          <Button variant="primary" size={30} fontSize={12} aria-label={`Reply: ${gap.title}`} onClick={reply}>
+            Reply
           </Button>
         ) : null}
       </div>
@@ -108,7 +118,7 @@ function Gap({ gap, onSolve }: { gap: OpenGapView; onSolve?: (id: string) => voi
 }
 
 export function BreakageBody({ breakage }: { breakage: BreakageBodyView }) {
-  const { rows, gaps, onOpenReplay, onSolve } = breakage;
+  const { rows, gaps, onOpenReplay, onSolve, onReply, onStartTopic } = breakage;
 
   if (rows.length === 0 && gaps.length === 0) {
     return (
@@ -129,7 +139,7 @@ export function BreakageBody({ breakage }: { breakage: BreakageBodyView }) {
           </p>
           <ol style={{ listStyle: "none", margin: 0, padding: 0 }}>
             {rows.map((row) => (
-              <Row key={row.key} row={row} onOpenReplay={onOpenReplay} />
+              <Row key={row.key} row={row} onOpenReplay={onOpenReplay} onStartTopic={onStartTopic} />
             ))}
           </ol>
         </div>
@@ -144,7 +154,7 @@ export function BreakageBody({ breakage }: { breakage: BreakageBodyView }) {
           </Eyebrow>
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
             {gaps.map((gap) => (
-              <Gap key={gap.id} gap={gap} onSolve={onSolve} />
+              <Gap key={gap.id} gap={gap} onSolve={onSolve} onReply={onReply} />
             ))}
           </ul>
         </div>

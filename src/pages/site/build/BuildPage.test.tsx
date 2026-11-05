@@ -541,21 +541,21 @@ describe("BuildPage (site frame) — the tab bodies, UI-P30", () => {
     expect(gap.textContent).toContain("Calendar-aware delegation");
     expect(gap.textContent).toContain("It cannot tell who to delegate to.");
     // No bounty pays for this gap, so there is nothing to solve through.
-    expect(within(gap).queryByRole("button", { name: /Solve it/ })).toBeNull();
+    expect(within(gap).queryByRole("button", { name: /^Reply/ })).toBeNull();
 
     fireEvent.click(within(rows[0]).getByRole("button", { name: "Watch step 3 in the replay" }));
     expect(within(viewer).getByRole("tab", { name: "Watch it get built" }).getAttribute("aria-selected")).toBe("true");
     expect(within(viewer).getByTestId("build-replay-current").textContent).toContain("Long threads came back archive.");
   });
 
-  it("opens a gap's bounty from Where it broke: its reward, and Solve it", async () => {
+  it("opens a gap's bounty from Where it broke: its reward, and Reply (UX-09 P1, Solve it before)", async () => {
     listBuildBounties.mockResolvedValue([
       { bounty: { id: "bounty-1", gap_node_id: "n4", status: "open", reward_gbp: 150, closes_at: null, me_too_count: 0 }, solutions: 0, meToo: false },
     ]);
     const viewer = await openTab("Where it broke");
     const gap = within(viewer).getByTestId("build-open-gap");
     await waitFor(() => expect(gap.textContent).toContain("£150"));
-    fireEvent.click(within(gap).getByRole("button", { name: "Solve it: Calendar-aware delegation" }));
+    fireEvent.click(within(gap).getByRole("button", { name: "Reply: Calendar-aware delegation" }));
     const sheet = await screen.findByRole("dialog", { name: "Solve" });
     expect(sheet.getAttribute("data-bounty-id")).toBe("bounty-1");
     expect(sheet.textContent).toBe("Solving Calendar-aware delegation");

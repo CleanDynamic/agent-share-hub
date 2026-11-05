@@ -356,8 +356,8 @@ describe("where it broke", () => {
     ];
     const bounties = new Map([["g1", { bounty: { id: "x", status: "open", reward_gbp: 150 }, solutions: 0, meToo: false }]]) as never;
     expect(openGaps(tree, bounties)).toEqual([
-      { id: "g1", title: "Delegation", problem: "Who to hand it to.", reward: "£150", solvable: true },
-      { id: "g2", title: "Calendar", problem: null, reward: null, solvable: false },
+      { id: "g1", title: "Delegation", problem: "Who to hand it to.", reward: "£150", solvable: true, topicId: null },
+      { id: "g2", title: "Calendar", problem: null, reward: null, solvable: false, topicId: null },
     ]);
   });
 });

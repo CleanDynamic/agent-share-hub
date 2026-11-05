@@ -131,8 +131,9 @@ import { BuildView, BuildViewFailed, BuildViewNotice, BuildViewSkeleton } from "
 import { ClassificationSection } from "@/components/build/ClassificationSection";
 import { DiscussedSection, discussedRowMeta } from "@/components/build/DiscussedSection";
 import { splitBody, topicHref } from "@/components/post/postCardModel";
-import { listTopicsAbout, type TopicsAbout } from "@/lib/openbuilds/connections";
-import { EMPTY_DRAFT } from "@/pages/site/openbuilds/sendPost";
+import { listTopicsAbout, stillOpenTopicsByNode, type TopicsAbout } from "@/lib/openbuilds/connections";
+import { EMPTY_DRAFT, type NewPostDraft } from "@/pages/site/openbuilds/sendPost";
+import { failedRunDraft } from "@/pages/site/home/runTopic";
 import { PostingWindows } from "@/pages/site/openbuilds/PostingWindows";
 import { getClassification } from "@/lib/classify/storage";
 import {
@@ -561,7 +562,9 @@ export function BuildPage() {
     enabled: published,
     staleTime: 60_000,
   });
-  const [startingTopic, setStartingTopic] = useState(false);
+  /* The New post window's content while it is open: the build attached (Start a topic about this build), or a breakage's words
+     too (UX-09 P1, Where it broke). */
+  const [startingTopic, setStartingTopic] = useState<NewPostDraft | null>(null);
 
   const connections = useMemo<BuildConnections>(
     () => ({
@@ -615,6 +618,8 @@ export function BuildPage() {
     return index;
   }, [bounties.data]);
   const gaps = useMemo(() => new Set(collectGaps(tree).map((node) => node.id)), [tree]);
+  /* UX-09 P1: the still-open topic about each gap, from the Discussed read the page already makes (no request of its own). */
+  const stillOpenTopics = stillOpenTopicsByNode(discussed.data?.topics ?? []);
 
   const understandLayer = layerOf(layers.data ?? [], "understand");
   const runLayer = layerOf(layers.data ?? [], "run");
@@ -1054,9 +1059,17 @@ export function BuildPage() {
           <BreakageBody
             breakage={{
               rows: breakageRows(tree, record.events, nodeTypes),
-              gaps: openGaps(tree, bountyByNode),
+              gaps: openGaps(tree, bountyByNode, stillOpenTopics),
               onOpenReplay: openReplayAt,
               onSolve: setSolving,
+              // UX-09 P1: Reply goes to the topic's reply box; Start a topic opens the window with the breakage's step in the words.
+              onReply: (topicId) => navigate(`${topicHref(topicId)}#reply-box`),
+              onStartTopic: published
+                ? (row) =>
+                    isLoggedIn
+                      ? setStartingTopic(failedRunDraft({ buildId: build.id, model: null, step: row.start !== null ? { number: String(row.start), nodeId: null } : null }))
+                      : navigate(loginBack(location.pathname))
+                : undefined,
             }}
           />
         );
@@ -1167,12 +1180,12 @@ export function BuildPage() {
       <LiveRegion message={announcement} />
       {startingTopic ? (
         <PostingWindows
-          window={{ kind: "post", draft: { ...EMPTY_DRAFT, attachments: [{ key: `build:${build.id}`, input: { kind: "build", buildId: build.id } }] } }}
+          window={{ kind: "post", draft: startingTopic }}
           onClose={() => {
-            setStartingTopic(false);
+            setStartingTopic(null);
             void queryClient.invalidateQueries({ queryKey: ["openbuilds", "listTopicsAbout", build.id] });
           }}
-          onReopen={() => setStartingTopic(true)}
+          onReopen={(win) => setStartingTopic(win.kind === "post" ? (win.draft ?? startingTopic) : startingTopic)}
         />
       ) : null}
       <BuildView
@@ -1188,7 +1201,7 @@ export function BuildPage() {
                 meta: discussedRowMeta(topic.author?.handle ?? null, topic.spaces.map((space) => space.name), topic.replyCount),
               }))}
               isMaker={viewerIsCreator}
-              onStart={viewerIsCreator || discussed.data.allowsTopics ? () => (isLoggedIn ? setStartingTopic(true) : navigate(loginBack(`/b2/${build.slug}`))) : undefined}
+              onStart={viewerIsCreator || discussed.data.allowsTopics ? () => (isLoggedIn ? setStartingTopic({ ...EMPTY_DRAFT, attachments: [{ key: `build:${build.id}`, input: { kind: "build", buildId: build.id } }] }) : navigate(loginBack(`/b2/${build.slug}`))) : undefined}
             />
           ) : undefined
         }

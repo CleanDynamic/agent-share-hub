@@ -871,6 +871,8 @@ export interface OpenGapView {
   reward: string | null;
   /** An open bounty to solve. */
   solvable: boolean;
+  /** UX-09 P1: the still-open topic about this gap, when there is one: Reply opens its reply box. */
+  topicId: string | null;
 }
 
 export interface BreakageBodyView {
@@ -878,6 +880,10 @@ export interface BreakageBodyView {
   gaps: readonly OpenGapView[];
   onOpenReplay?: (ordinal: number) => void;
   onSolve?: (gapId: string) => void;
+  /** UX-09 P1: Reply on a gap with a still-open topic: that topic's id. */
+  onReply?: (topicId: string) => void;
+  /** UX-09 P1: Start a topic on a breakage row. */
+  onStartTopic?: (row: BreakageRowView) => void;
 }
 
 /** One breakage as a row: the written-up part's symptom and resolution, else the step's own line. */
@@ -904,8 +910,10 @@ export function breakageRows(tree: NodeTree[], events: BuildEvent[], nodeTypes: 
 /**
  * Every gap still open, in record order. A gap an open bounty pays for carries
  * its reward and can be solved; one with no bounty is still a hole worth naming.
+ * UX-09 P1: `topicByNode` is the still-open topic about each gap (its id), when
+ * there is one.
  */
-export function openGaps(tree: readonly NodeTree[], bountyByNode: ReadonlyMap<string, BuildBounty>): OpenGapView[] {
+export function openGaps(tree: readonly NodeTree[], bountyByNode: ReadonlyMap<string, BuildBounty>, topicByNode: ReadonlyMap<string, string> = new Map()): OpenGapView[] {
   return collectGaps(tree).map((node) => {
     const entry = bountyByNode.get(node.id);
     const open = entry?.bounty.status === "open";
@@ -915,6 +923,7 @@ export function openGaps(tree: readonly NodeTree[], bountyByNode: ReadonlyMap<st
       problem: gapStatement(node) || null,
       reward: open ? rewardLabel(entry?.bounty.reward_gbp) : null,
       solvable: open,
+      topicId: topicByNode.get(node.id) ?? null,
     };
   });
 }

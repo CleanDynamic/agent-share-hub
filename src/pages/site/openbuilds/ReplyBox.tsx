@@ -39,6 +39,8 @@ import { attachmentOf, inputOf } from "./sendPost";
 
 export const REPLY_PLACEHOLDER = "Reply with words, work, or both";
 export const EMPTY_REPLY_SEND = "Write something or attach work.";
+/** UX-09 P1: the open reply box's id, so `#reply-box` opens it from another page. */
+export const REPLY_BOX_ID = "reply-box";
 
 export interface ReplyBoxProps {
   /** The post whose page this is. */
@@ -176,7 +178,8 @@ export function ReplyBox({ pageId, rootId, parentId, about, onRemoveAbout, signI
   const name = profile?.display_name?.trim() || profile?.username || "You";
 
   return (
-    <div data-testid="reply-box" style={{ display: "grid", gridTemplateColumns: "24px minmax(0, 1fr)", columnGap: 12 }}>
+    // UX-09 P1: `#reply-box` on a topic's address brings this box into view, with its field focused (Reply on a gap).
+    <div id={REPLY_BOX_ID} data-testid="reply-box" style={{ display: "grid", gridTemplateColumns: "24px minmax(0, 1fr)", columnGap: 12 }}>
       <Avatar size={24} userId={viewerId ?? "signed-out"} name={name} src={profile?.avatar_url ?? null} />
       <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
         {about ? (

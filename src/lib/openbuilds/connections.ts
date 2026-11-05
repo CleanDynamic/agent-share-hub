@@ -113,6 +113,15 @@ export function stepRepliesOf(posts: readonly Post[]): Map<string, { count: numb
   return out;
 }
 
+/** UX-09 P1: for each gap (a step tile marked still open), the newest still-open topic about it. From listTopicsAbout's topics. */
+export function stillOpenTopicsByNode(topics: readonly Post[]): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const topic of [...topics].sort((a, b) => b.createdAt.localeCompare(a.createdAt))) {
+    if (topic.parentId === null && topic.stillOpen && topic.aboutNodeId && !out.has(topic.aboutNodeId)) out.set(topic.aboutNodeId, topic.id);
+  }
+  return out;
+}
+
 /** Everything the build page says about where the build is discussed: three requests, started together, one round. */
 export async function listTopicsAbout(buildId: string): Promise<TopicsAbout> {
   const [about, started, allow] = await Promise.all([

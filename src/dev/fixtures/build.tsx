@@ -285,7 +285,7 @@ export function buildTabFixture(tab: BuildTabKey, viewport: "desktop" | "mobile"
                 ]
               : [],
             gaps: gap
-              ? [{ id: "sample-gap", title: gap[1], problem: "The tolerance is fixed at 2%; it should be a setting.", reward: gap[2].replace(/ ask$/, ""), solvable: true }]
+              ? [{ id: "sample-gap", title: gap[1], problem: "The tolerance is fixed at 2%; it should be a setting.", reward: gap[2].replace(/ ask$/, ""), solvable: true, topicId: null }]
               : [],
             onOpenReplay: noop,
             onSolve: noop,

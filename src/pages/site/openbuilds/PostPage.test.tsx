@@ -208,3 +208,20 @@ describe("the post page", () => {
     });
   });
 });
+
+describe("UX-09 P1: #reply-box", () => {
+  beforeEach(() => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("min-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
+    user = { id: "me" };
+    getPost.mockReset().mockResolvedValue(thread());
+    readPostExtras.mockReset().mockResolvedValue(extras());
+  });
+
+  it("opens the topic with the reply box's field focused (Reply on a gap)", async () => {
+    mount("/openbuilds/topics/p1#reply-box");
+    await screen.findByRole("heading", { level: 1 });
+    const box = await screen.findByTestId("reply-box");
+    expect(box.id).toBe("reply-box");
+    await waitFor(() => expect(document.activeElement).toBe(within(box).getByRole("textbox")));
+  });
+});

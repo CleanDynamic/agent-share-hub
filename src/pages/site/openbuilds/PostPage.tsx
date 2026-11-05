@@ -34,7 +34,7 @@ import { EmptyLine, LoadError } from "./OpenBuildsFeedParts";
 import { PostLoadingView } from "./PostFrame";
 import { PostStepMenu } from "./PostStepMenu";
 import { ReactionRow } from "./ReactionRow";
-import { ReplyBox } from "./ReplyBox";
+import { REPLY_BOX_ID, ReplyBox } from "./ReplyBox";
 import type { ReplyDraft } from "./sendReply";
 import { PostView, type PostSideRow } from "./PostView";
 import { PostWall } from "./PostWall";
@@ -112,6 +112,8 @@ export default function PostPage() {
     if (!element) return;
     scrolledTo.current = hash;
     centre(element);
+    // UX-09 P1: `#reply-box` (Reply on a gap, from the build page) also puts the cursor in the box.
+    if (hash === REPLY_BOX_ID) element.querySelector("textarea")?.focus({ preventScroll: true });
   });
 
   /* ── the one reply box: at the foot, or under the reply it answers; about a step or not ── */
