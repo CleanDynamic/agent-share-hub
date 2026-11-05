@@ -6,7 +6,7 @@
 
 import { NO_HARNESS } from "@/lib/build/harnessWords";
 import { hasTitle } from "@/lib/build/publish";
-import type { DraftListItem } from "@/lib/build/drafts";
+import type { DraftListItem, DraftTopic } from "@/lib/build/drafts";
 import type { SessionSummary } from "@/lib/build/sessions";
 import { shortAgo } from "@/pages/site/home/homeModel";
 
@@ -46,6 +46,16 @@ export function draftTitle(title: string | null | undefined): string {
 /** UX-03 P7: the drafts with their first prompts put in, from `listDraftFirstPrompts`. While those are on their way, as they are. */
 export function withFirstPrompts(drafts: readonly DraftListItem[], prompts: ReadonlyMap<string, string> | undefined): DraftListItem[] {
   return prompts ? drafts.map((draft) => ({ ...draft, firstPrompt: prompts.get(draft.id) ?? null })) : [...drafts];
+}
+
+/** UX-09 P3: the drafts with the topic each was made for, from `listDraftTopics`. While that is on its way, as they are. */
+export function withTopics(drafts: readonly DraftListItem[], topics: ReadonlyMap<string, DraftTopic> | undefined): DraftListItem[] {
+  return topics ? drafts.map((draft) => ({ ...draft, madeFor: topics.get(draft.id) ?? null })) : [...drafts];
+}
+
+/** UX-09 P3: "For @maya's topic", under a draft made in a reply. */
+export function draftForLine(draft: Pick<DraftListItem, "madeFor">): string | null {
+  return draft.madeFor ? `For @${draft.madeFor.handle}'s topic` : null;
 }
 
 export function draftRowTitle(draft: Pick<DraftListItem, "title" | "firstPrompt">): string {

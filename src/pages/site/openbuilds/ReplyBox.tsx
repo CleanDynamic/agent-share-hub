@@ -151,7 +151,7 @@ export function ReplyBox({ pageId, rootId, parentId, about, onRemoveAbout, signI
       draft: sent,
       sender: { id: viewerId ?? "", handle: profile?.username ?? null, name: profile?.display_name ?? null, avatarUrl: profile?.avatar_url ?? null },
       snapshot,
-      attach: made ? async () => replyTileInput(await makeReplyDraft(draftTitle, made)) : undefined,
+      attach: made ? async () => replyTileInput(await makeReplyDraft(draftTitle, made, rootId)) : undefined,
     });
     if (refused) {
       // The content comes back as it was, with the words under the box.

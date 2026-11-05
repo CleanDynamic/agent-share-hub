@@ -74,6 +74,7 @@ import {
   draftEdited,
   draftSessions,
   draftRowTitle,
+  draftForLine,
   draftsMeta,
   isUntitled,
   menuItems,
@@ -167,6 +168,12 @@ function DraftRow({
           >
             {draftRowTitle(draft)}
           </span>
+          {/* UX-09 P3: a draft made in a reply names its topic. Text, not a link: the whole row is the draft's link. */}
+          {draftForLine(draft) ? (
+            <span data-testid="draft-for-topic" style={{ display: "block", fontSize: 12, color: t.label }}>
+              {draftForLine(draft)}
+            </span>
+          ) : null}
           <span style={{ display: "block", fontSize: 12, color: t.label }}>{over ? "Drop to add this session" : draftSessions(draft)}</span>
         </span>
         <span style={{ fontSize: 12, color: t.label, whiteSpace: "nowrap" }}>{draftEdited(draft, now)}</span>

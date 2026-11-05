@@ -103,8 +103,12 @@ test("a step tile made in a reply is saved as a draft, and the draft is in Draft
   expect(world.sessions.filter((session) => session.build_id === drafts[0].id)).toHaveLength(1);
   expect(world.created.rpc[0].attachments[0]).toMatchObject({ kind: "step", build_id: drafts[0].id, node_id: tiles[0].id });
 
+  // UX-09 P3: the draft remembers its topic, and Drafts says so under its title.
+  await expect.poll(() => world.builds.find((build) => build.id === drafts[0].id)?.made_for_topic_id).toBe("p1");
+
   await page.goto("/drafts");
   await expect(page.getByText("Reply: Post number 1").first()).toBeVisible();
+  await expect(page.getByTestId("draft-for-topic")).toHaveText("For @kit's topic");
 });
 
 test("a reader adds someone's step from a reply to a draft and finds it in the composer", async ({ page }) => {

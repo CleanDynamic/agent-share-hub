@@ -20,6 +20,14 @@ export interface DraftListItem {
   sessionCount: number;
   /** UX-03 P7: the first prompt's text, for a draft with no title to be shown by (`listDraftFirstPrompts`). Never written to the title. */
   firstPrompt?: string | null;
+  /** UX-09 P3: the topic a draft made in a reply was made for, and its author's handle (`listDraftTopics`). */
+  madeFor?: DraftTopic | null;
+}
+
+export interface DraftTopic {
+  topicId: string;
+  /** The topic's author's handle, no @. */
+  handle: string;
 }
 
 interface DraftRow {
@@ -100,6 +108,49 @@ export async function listDraftFirstPrompts(creatorId: string | null | undefined
   for (const row of data ?? []) {
     const text = (row.first_prompt?.[0]?.text ?? "").trim();
     if (text) out.set(row.id, text);
+  }
+  return out;
+}
+
+// -----------------------------------------------------------------------------
+// The topic a draft was made for (UX-09 P3)
+// -----------------------------------------------------------------------------
+//
+// A step tile made inside a reply makes a draft that remembers its topic (builds.made_for_topic_id, 20261108120000). Read beside the
+// list, as the first prompts are, so the two start together and the list is the same request it always was. Until the migration is
+// applied the column is missing: that reads as no lines, not as an error.
+
+export const DRAFT_TOPIC_COLUMNS = "id, topic:openbuild_posts!builds_made_for_topic_id_fkey(id, author:profiles!openbuild_posts_author_id_fkey(username))";
+
+/** A missing column (42703) or a missing relationship (PGRST200): the migration is not applied yet. */
+const NOT_YET = new Set(["42703", "PGRST200", "PGRST204"]);
+
+type TopicAuthor = { username: string | null };
+interface DraftTopicQuery extends PromiseLike<{ data: { id: string; topic?: { id: string; author?: TopicAuthor | TopicAuthor[] | null } | null }[] | null; error: unknown }> {
+  eq: (column: string, value: string) => DraftTopicQuery;
+  not: (column: string, operator: string, value: null) => DraftTopicQuery;
+  limit: (count: number) => DraftTopicQuery;
+}
+
+/** UX-09 P3: each draft made in a reply, with its topic and the topic's author. One request; none signed out. */
+export async function listDraftTopics(creatorId: string | null | undefined): Promise<Map<string, DraftTopic>> {
+  if (!creatorId) return new Map();
+  const { data, error } = await (supabase as unknown as { from: (t: string) => { select: (columns: string) => DraftTopicQuery } })
+    .from("builds")
+    .select(DRAFT_TOPIC_COLUMNS)
+    .eq("creator_id", creatorId)
+    .eq("status", "draft")
+    .not("made_for_topic_id", "is", null)
+    .limit(DRAFTS_LIMIT);
+  if (error) {
+    if (NOT_YET.has(String((error as { code?: unknown }).code ?? ""))) return new Map();
+    throw buildLayerError("listDraftTopics", error);
+  }
+  const out = new Map<string, DraftTopic>();
+  for (const row of data ?? []) {
+    const author = row.topic?.author;
+    const handle = (Array.isArray(author) ? author[0] : author)?.username;
+    if (row.topic?.id && handle) out.set(row.id, { topicId: row.topic.id, handle });
   }
   return out;
 }

@@ -35,13 +35,13 @@ import { useConnectorDialog } from "@/components/connect/ConnectorDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOnScreen } from "@/hooks/useOnScreen";
 import { librarySessionsKey, useLibrarySessions } from "@/hooks/useLibrarySessions";
-import { listDraftFirstPrompts, listDraftsWithSessions, listEmptyDraftIds, removeEmptyDrafts, type DraftListItem } from "@/lib/build/drafts";
+import { listDraftFirstPrompts, listDraftTopics, listDraftsWithSessions, listEmptyDraftIds, removeEmptyDrafts, type DraftListItem } from "@/lib/build/drafts";
 import { attachSession } from "@/lib/build/sessions";
 import { PageArrival } from "@/components/shell/PageArrival";
 
 import { DraftsLoadingView } from "./DraftsFrame";
 import { DraftsView } from "./DraftsView";
-import { draftTitle, withFirstPrompts } from "./draftsModel";
+import { draftTitle, withFirstPrompts, withTopics } from "./draftsModel";
 
 const STALE_MS = LIST_STALE_MS;
 
@@ -63,6 +63,13 @@ export function DraftsPage() {
   const promptsQuery = useQuery({
     queryKey: ["build", "listDraftFirstPrompts", userId],
     queryFn: () => listDraftFirstPrompts(userId),
+    enabled: userId !== null,
+    staleTime: STALE_MS,
+  });
+  /* UX-09 P3: the topic each draft made in a reply was made for, read beside the list (the same round). */
+  const topicsQuery = useQuery({
+    queryKey: ["build", "listDraftTopics", userId],
+    queryFn: () => listDraftTopics(userId),
     enabled: userId !== null,
     staleTime: STALE_MS,
   });
@@ -155,7 +162,7 @@ export function DraftsPage() {
           sessionsError={library.isLoadingError ? library.error : undefined}
           onRetrySessions={() => void library.refetch()}
           sessionsAnchor={sessionsAnchor}
-          drafts={withFirstPrompts(draftsQuery.data ?? [], promptsQuery.data)}
+          drafts={withTopics(withFirstPrompts(draftsQuery.data ?? [], promptsQuery.data), topicsQuery.data)}
           sessions={library.data ?? []}
           moreSessions={library.hasMore ? { loading: library.loadingMore, onMore: library.fetchMore } : undefined}
           onAddToNew={addToNew}
