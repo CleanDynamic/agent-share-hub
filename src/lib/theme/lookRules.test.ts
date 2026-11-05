@@ -1493,6 +1493,9 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/messaging/topics.test.ts",
   "src/components/messages/TopicShareCard.tsx",
   "src/components/dm/MessageInputBar.topic.test.tsx",
+  "src/lib/moderation/siteHidden.ts",
+  "src/lib/moderation/siteHidden.test.ts",
+  "src/pages/site/openbuilds/SiteHiddenNotice.tsx",
 ];
 
 /**

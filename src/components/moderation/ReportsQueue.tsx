@@ -12,7 +12,7 @@
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useInfiniteQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -20,7 +20,9 @@ import { isPermissionError } from "@/lib/errors/permission";
 import {
   REPORT_REASONS,
   listOpenReports,
+  listSiteHiddenPosts,
   resolveReport,
+  unhideForSite,
   type OpenReport,
   type OpenReportsPage,
   type ReportAction,
@@ -32,6 +34,21 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, body, eyebrow, measure } from "@/lib/theme/type";
 
 export const REPORTS_QUEUE_KEY = "admin-open-reports";
+/** UX-09 Q5: the topics and replies the site hid, each with Unhide. */
+export const SITE_HIDDEN_KEY = ["moderation", "listSiteHiddenPosts"] as const;
+
+/** What Hide does to each kind of target, in the confirming dialog. */
+function hideWords(report: OpenReport | null): { title: string; description: string } {
+  if (report?.targetType === "comment") return { title: "Hide this comment?", description: "Only its author and admins will see it. Every open report on it closes." };
+  if (report?.targetType === "openbuild_post") {
+    const what = report.postKind === "reply" ? "reply" : "topic";
+    return {
+      title: `Hide this ${what}?`,
+      description: `It leaves every feed, space and search. Its author sees it was hidden by the site's moderators; only admins can unhide it. Every open report on it closes.`,
+    };
+  }
+  return { title: "Hide this build?", description: "Only its creator and admins will see it. Every open report on it closes." };
+}
 
 const SECONDARY = { background: "transparent", minHeight: 44 } as const;
 
@@ -51,6 +68,19 @@ export function ReportsQueue() {
   const [busy, setBusy] = useState<string | null>(null);
 
   const reports = queue.data?.pages.flatMap((page) => page.reports) ?? [];
+  const hidden = useQuery({ queryKey: SITE_HIDDEN_KEY, queryFn: () => listSiteHiddenPosts(), refetchOnWindowFocus: false });
+
+  const unhide = async (postId: string) => {
+    setBusy(postId);
+    try {
+      await unhideForSite(postId);
+      void queryClient.invalidateQueries({ queryKey: SITE_HIDDEN_KEY });
+    } catch (error) {
+      toast(isPermissionError(error) ? "You don't have access to this." : "Something went wrong.");
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const resolve = async (report: OpenReport, action: ReportAction) => {
     setBusy(report.id);
@@ -73,6 +103,7 @@ export function ReportsQueue() {
           : data,
       );
       setHiding(null);
+      if (action === "hide" && report.targetType === "openbuild_post") void queryClient.invalidateQueries({ queryKey: SITE_HIDDEN_KEY });
     } catch (error) {
       toast(isPermissionError(error) ? "You don't have access to this." : "Something went wrong.");
     } finally {
@@ -141,18 +172,16 @@ export function ReportsQueue() {
                 </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs }}>
-                {/* UX-09 P8: a topic or a reply is hidden by its space's moderators; here it is dismissed or followed to its page. */}
-                {report.targetType === "openbuild_post" ? null : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={busy === report.id}
-                    onClick={() => setHiding(report)}
-                    style={SECONDARY}
-                  >
-                    Hide
-                  </Button>
-                )}
+                {/* UX-09 Q5: the site's moderators hide a topic or a reply too, apart from its space's own hide. */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={busy === report.id || (report.targetType === "openbuild_post" && report.postKind === null)}
+                  onClick={() => setHiding(report)}
+                  style={SECONDARY}
+                >
+                  Hide
+                </Button>
                 <Button
                   type="button"
                   variant="ghost"
@@ -180,16 +209,49 @@ export function ReportsQueue() {
         </Button>
       ) : null}
 
+      {/* UX-09 Q5: what the site hid, newest first, each with Unhide. The report stays resolved. */}
+      {(hidden.data ?? []).length > 0 ? (
+        <section data-testid="site-hidden" aria-label="Hidden by the site" style={{ display: "flex", flexDirection: "column", gap: SPACE.sm, marginTop: SPACE.sm }}>
+          <h2 style={{ ...eyebrow, color: t.text2, margin: 0 }}>Hidden by the site</h2>
+          <ol style={{ listStyle: "none", margin: 0, padding: 0 }}>
+            {(hidden.data ?? []).map((entry, index) => (
+              <li
+                key={entry.id}
+                data-testid="site-hidden-row"
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: SPACE.sm,
+                  paddingBlock: SPACE.sm,
+                  borderTop: index === 0 ? undefined : `1px solid ${t.line}`,
+                }}
+              >
+                <div style={{ display: "flex", flexDirection: "column", gap: SPACE.xs, minWidth: 0, flex: "1 1 320px" }}>
+                  <span style={{ ...eyebrow, color: t.text2 }}>{entry.kind === "topic" ? "Topic" : "Reply"}</span>
+                  <Link to={entry.href} style={{ ...body, color: t.text, overflowWrap: "anywhere" }}>
+                    {`“${entry.text}”`}
+                  </Link>
+                  {entry.hiddenAt ? (
+                    <span style={{ fontFamily: DM_MONO, fontSize: 12, lineHeight: 1.3, color: t.text2 }}>
+                      Hidden <time dateTime={entry.hiddenAt}>{commentTime(entry.hiddenAt)}</time>
+                    </span>
+                  ) : null}
+                </div>
+                <Button type="button" variant="outline" disabled={busy === entry.id} onClick={() => void unhide(entry.id)} style={SECONDARY}>
+                  Unhide
+                </Button>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
+
       <Dialog open={hiding !== null} onOpenChange={(open) => (!open && busy === null ? setHiding(null) : undefined)}>
         <DialogContent data-testid="hide-dialog" style={{ maxWidth: 440 }}>
-          <DialogTitle style={{ ...body, fontSize: 18, fontWeight: 600 }}>
-            Hide this {hiding?.targetType === "comment" ? "comment" : "build"}?
-          </DialogTitle>
-          <DialogDescription style={{ ...body, color: t.text2 }}>
-            {hiding?.targetType === "comment"
-              ? "Only its author and admins will see it. Every open report on it closes."
-              : "Only its creator and admins will see it. Every open report on it closes."}
-          </DialogDescription>
+          <DialogTitle style={{ ...body, fontSize: 18, fontWeight: 600 }}>{hideWords(hiding).title}</DialogTitle>
+          <DialogDescription style={{ ...body, color: t.text2 }}>{hideWords(hiding).description}</DialogDescription>
           <div style={{ display: "flex", justifyContent: "flex-end", flexWrap: "wrap", gap: SPACE.xs }}>
             <Button type="button" variant="ghost" disabled={busy !== null} onClick={() => setHiding(null)} style={{ minHeight: 44 }}>
               Cancel

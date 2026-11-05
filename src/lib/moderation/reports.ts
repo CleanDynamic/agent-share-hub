@@ -84,6 +84,8 @@ export interface OpenReport {
   reporter: { username: string | null; displayName: string | null } | null;
   /** One line naming the target, and where it lives; null href when it is gone. */
   summary: { text: string; href: string | null };
+  /** UX-09 Q5: for an OpenBuilds target, whether it is a topic or a reply; null otherwise, or when it is gone. */
+  postKind: "topic" | "reply" | null;
 }
 
 export interface OpenReportsPage {
@@ -188,6 +190,7 @@ export async function listOpenReports(options: ListOpenReportsOptions = {}): Pro
   const reports = rows.map((row): OpenReport => {
     const reporter = first(row.reporter);
     let summary: OpenReport["summary"];
+    let postKind: OpenReport["postKind"] = null;
     if (row.target_type === "build") {
       const build = buildById.get(row.target_id);
       summary = build
@@ -195,6 +198,7 @@ export async function listOpenReports(options: ListOpenReportsOptions = {}): Pro
         : { text: "A build that is no longer there", href: null };
     } else if (row.target_type === "openbuild_post") {
       const post = postById.get(row.target_id);
+      postKind = post ? (post.parent_id === null ? "topic" : "reply") : null;
       const firstLine = (post?.body ?? "").trim().split("\n")[0] ?? "";
       summary = post
         ? post.parent_id === null
@@ -220,6 +224,7 @@ export async function listOpenReports(options: ListOpenReportsOptions = {}): Pro
       createdAt: row.created_at,
       reporter: reporter ? { username: reporter.username, displayName: reporter.display_name } : null,
       summary,
+      postKind,
     };
   });
 
@@ -228,7 +233,10 @@ export async function listOpenReports(options: ListOpenReportsOptions = {}): Pro
 
 export type ReportAction = "hide" | "dismiss";
 
-/** Close a report: hide its target, or leave it be. Admins only; anyone else gets no_access. */
+/**
+ * Close a report: hide its target, or leave it be. Admins only; anyone else gets no_access. UX-09 Q5: Hide on a topic or a reply is
+ * the site's hide (openbuild_posts.site_hidden_by), apart from its space's, and undone with unhideForSite.
+ */
 export async function resolveReport(reportId: string, action: ReportAction): Promise<void> {
   // The generated types do not know resolve_report yet: getBuildFeed.ts's cast.
   const response = await (

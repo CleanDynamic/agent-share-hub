@@ -1,11 +1,17 @@
-// UX-09: the three migrations, read as text. Each comes after the newest one there when it was written (UX-08's), never calls a bare
+// UX-09: the five migrations, read as text. Each comes after the newest one there when it was written (UX-08's), never calls a bare
 // auth.uid(), and keeps its function's search_path and grants.
 
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const DIR = "supabase/migrations";
-const FILES = ["20261108120000_ux09_made_for_topic.sql", "20261108130000_ux09_used_in_topics.sql", "20261108140000_ux09_report_topics.sql"];
+const FILES = [
+  "20261108120000_ux09_made_for_topic.sql",
+  "20261108130000_ux09_used_in_topics.sql",
+  "20261108140000_ux09_report_topics.sql",
+  "20261108150000_ux09_topic_messages.sql",
+  "20261108160000_ux09_site_hide_topics.sql",
+];
 const code = (file: string) => readFileSync(`${DIR}/${file}`, "utf8").replace(/--[^\n]*/g, "");
 
 describe("the UX-09 migrations", () => {
@@ -45,5 +51,33 @@ describe("the UX-09 migrations", () => {
     expect(text).toMatch(/NOT public\.is_admin\(_admin\)/);
     expect(text).toMatch(/REVOKE ALL ON FUNCTION public\.resolve_report\(uuid, text\) FROM PUBLIC, anon/);
     expect(text).not.toMatch(/openbuild_posts\s+SET/);
+  });
+
+  it("Q4: a message carries a topic in one nullable column; no thread, pin or policy changes", () => {
+    const text = code(FILES[3]);
+    expect(text).toMatch(/ADD COLUMN IF NOT EXISTS shared_post_id uuid NULL REFERENCES public\.openbuild_posts\(id\) ON DELETE SET NULL/);
+    expect(text).toMatch(/CREATE INDEX IF NOT EXISTS idx_dm_messages_shared_post[\s\S]*WHERE shared_post_id IS NOT NULL/);
+    expect(text).not.toMatch(/dm_threads|pinned_content_type|POLICY/);
+  });
+
+  it("Q5: the site's hide is apart from the space's, admins only, through (select auth.uid())", () => {
+    const text = code(FILES[4]);
+    expect(text).toMatch(/ADD COLUMN IF NOT EXISTS site_hidden_by uuid NULL REFERENCES public\.profiles\(id\) ON DELETE SET NULL/);
+    // Read: nobody but an admin reads what the site hid; the space's hide keeps its readers.
+    expect(text).toMatch(/site_hidden_by IS NULL\s+AND \(\s+hidden_by IS NULL/);
+    expect(text).toMatch(/OR \(select public\.is_admin\(\(select auth\.uid\(\)\)\)\)/);
+    // Write: an admin's update policy; the guard keeps each hide to its own side.
+    expect(text).toMatch(/CREATE POLICY "Site staff hide and unhide"[\s\S]*USING \(\(select public\.is_admin\(\(select auth\.uid\(\)\)\)\)\)/);
+    expect(text).toMatch(/IF NOT public\.is_admin\(_uid\) THEN\s+RAISE EXCEPTION 'Only the site''s moderators can hide or unhide this for the site\.'/);
+    expect(text).toMatch(/IF NOT \(public\.viewer_owns_root\(OLD\.root_id\) OR public\.viewer_moderates_post\(OLD\.root_id\)\) THEN/);
+    expect(text).toMatch(/AND site_hidden_by IS NULL\s+AND \(parent_id IS NULL OR public\.viewer_can_reply_in\(root_id\)\)/);
+    // resolve_report hides a topic or a reply for the site, and no longer refuses it.
+    expect(text).toMatch(/ELSIF _target_type = 'openbuild_post' THEN\s+[\s\S]*UPDATE public\.openbuild_posts SET site_hidden_by = _admin/);
+    expect(text).not.toMatch(/is hidden by its space''s moderators/);
+    // reply_count counts what neither side hid; the author's notice answers only about the caller.
+    expect(text).toMatch(/UPDATE OF hidden_by, site_hidden_by ON public\.openbuild_posts/);
+    expect(text).toMatch(/AND p\.author_id = \(select auth\.uid\(\)\)\s+AND p\.site_hidden_by IS NOT NULL/);
+    expect(text).toMatch(/REVOKE ALL ON FUNCTION public\.site_hidden_posts_of\(uuid\) FROM PUBLIC, anon/);
+    expect(text).toMatch(/GRANT EXECUTE ON FUNCTION public\.site_hidden_posts_of\(uuid\) TO authenticated/);
   });
 });

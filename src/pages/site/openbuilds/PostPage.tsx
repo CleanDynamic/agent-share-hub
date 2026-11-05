@@ -32,6 +32,8 @@ import type { StepToCopy } from "@/lib/openbuilds/addToDraft";
 import { NO_REACTIONS, readPostExtras, type PostPageExtras } from "@/lib/openbuilds/postPage";
 import { usePageReady } from "@/lib/routing/pageReady";
 import { openTopicThread, type TopicShareState } from "@/lib/messaging/topics";
+import { siteHiddenPostsOf } from "@/lib/moderation/siteHidden";
+import { SiteHiddenNotice } from "./SiteHiddenNotice";
 
 import { AddToDraftButton, AddToDraftSub } from "./AddToDraft";
 import { EmptyLine, LoadError } from "./OpenBuildsFeedParts";
@@ -95,6 +97,9 @@ export default function PostPage() {
   const thread = post.data ?? null;
   const extras = useQuery({ queryKey: postExtrasKey(id, viewerId), queryFn: () => readPostExtras(thread!, viewerId), enabled: thread !== null && !authLoading, placeholderData: keepPreviousData });
   const data = extras.data ?? EMPTY_EXTRAS;
+  /* UX-09 Q5: the reader's own entries here that the site's moderators hid (nobody else reads them). Started with the post, signed in only. */
+  const siteHidden = useQuery({ queryKey: ["moderation", "siteHiddenPostsOf", id, viewerId], queryFn: () => siteHiddenPostsOf(id), enabled: id.length > 0 && viewerId !== null && !authLoading });
+  const ownHidden = siteHidden.data ?? [];
   const crowd = data.crowd;
   const defaultView: PostTab = crowd?.space.defaultView === "wall" ? "wall" : "thread";
   const address = readPostAddress(params, defaultView);
@@ -258,6 +263,16 @@ export default function PostPage() {
     return <LoadError what="This post didn't load." onRetry={() => void post.refetch()} />;
   }
   if (!post.isPending && (thread === null || (thread.hiddenBy !== null && crowd?.role !== "moderator" && !extras.isPending))) {
+    // UX-09 Q5: the topic's own author, when the site hid it, is told so rather than told it isn't there.
+    if (thread === null && viewerId !== null && siteHidden.isPending) return <PostLoadingView />;
+    if (thread === null && ownHidden.length > 0) {
+      return (
+        <div style={{ padding: "24px 20px" }}>
+          <SiteHiddenNotice entries={ownHidden} />
+          <PostControl to="/openbuilds">Back to OpenBuilds</PostControl>
+        </div>
+      );
+    }
     return (
       <EmptyLine line="This post isn't available.">
         <PostControl to="/openbuilds">Back to OpenBuilds</PostControl>
@@ -369,54 +384,58 @@ export default function PostPage() {
         {arriving || !shown || !card ? (
           <PostLoadingView />
         ) : (
-          <PostView
-            crumbs={[{ label: "OpenBuilds", to: "/openbuilds" }, ...(crowd ? [{ label: crowd.space.name, to: `/openbuilds/spaces/${crowd.space.slug}` }] : [])]}
-            card={card}
-            engagement={card.engagementBuild ? engagementFor(engagement, card.engagementBuild.id) : undefined}
-            renderTile={renderTile}
-            reactions={reactionRow(shown.id, shown.parentId ? "reply" : "topic")}
-            onReport={shown.authorId === viewerId ? undefined : () => report(shown.id, shown.parentId ? "reply" : "topic")}
-            onMessage={shown.parentId !== null || shown.authorId === viewerId || !shown.author?.handle ? undefined : { label: `Message @${shown.author.handle}`, onSelect: () => void messageAuthor(shown) }}
-            tab={address.tab}
-            onTab={(tab) => move({ tab })}
-            replies={shown.replyCount}
-            builds={builds}
-            thread={{ items, filter }}
-            replyBox={replyBox}
-            wallRow={lineUpShown ? <LineUpToggle on={address.lineUp} onChange={(on) => move({ lineUp: on })} /> : undefined}
-            wall={
-              <PostWall
-                lineUp={lineUpShown && address.lineUp ? <LineUpTable lineUp={lineUpOf(shown, postBuild.buildId, data)} /> : undefined}
-                cards={wallCards(shown, data, now)}
-                onReply={(replyId) => {
+          <>
+            {/* UX-09 Q5: the reader's own replies here that the site's moderators hid. */}
+            <SiteHiddenNotice entries={ownHidden} />
+            <PostView
+              crumbs={[{ label: "OpenBuilds", to: "/openbuilds" }, ...(crowd ? [{ label: crowd.space.name, to: `/openbuilds/spaces/${crowd.space.slug}` }] : [])]}
+              card={card}
+              engagement={card.engagementBuild ? engagementFor(engagement, card.engagementBuild.id) : undefined}
+              renderTile={renderTile}
+              reactions={reactionRow(shown.id, shown.parentId ? "reply" : "topic")}
+              onReport={shown.authorId === viewerId ? undefined : () => report(shown.id, shown.parentId ? "reply" : "topic")}
+              onMessage={shown.parentId !== null || shown.authorId === viewerId || !shown.author?.handle ? undefined : { label: `Message @${shown.author.handle}`, onSelect: () => void messageAuthor(shown) }}
+              tab={address.tab}
+              onTab={(tab) => move({ tab })}
+              replies={shown.replyCount}
+              builds={builds}
+              thread={{ items, filter }}
+              replyBox={replyBox}
+              wallRow={lineUpShown ? <LineUpToggle on={address.lineUp} onChange={(on) => move({ lineUp: on })} /> : undefined}
+              wall={
+                <PostWall
+                  lineUp={lineUpShown && address.lineUp ? <LineUpTable lineUp={lineUpOf(shown, postBuild.buildId, data)} /> : undefined}
+                  cards={wallCards(shown, data, now)}
+                  onReply={(replyId) => {
+                    setReplyAt(replyId);
+                    setAbout(null);
+                    move({ tab: "thread" });
+                  }}
+                  onReplyWithBuild={() => (viewerId ? setWallBox(true) : signIn())}
+                  box={
+                    wallBox ? (
+                      <ReplyBox pageId={id} rootId={shown.rootId} parentId={shown.id} about={null} onRemoveAbout={() => undefined} signInTo={signInTo} draftTitle={replyDraftTitle(shown)} pick="build" onSent={() => setWallBox(false)} />
+                    ) : undefined
+                  }
+                />
+              }
+              actions={{
+                onReply: (replyId) => {
                   setReplyAt(replyId);
                   setAbout(null);
-                  move({ tab: "thread" });
-                }}
-                onReplyWithBuild={() => (viewerId ? setWallBox(true) : signIn())}
-                box={
-                  wallBox ? (
-                    <ReplyBox pageId={id} rootId={shown.rootId} parentId={shown.id} about={null} onRemoveAbout={() => undefined} signInTo={signInTo} draftTitle={replyDraftTitle(shown)} pick="build" onSent={() => setWallBox(false)} />
-                  ) : undefined
-                }
-              />
-            }
-            actions={{
-              onReply: (replyId) => {
-                setReplyAt(replyId);
-                setAbout(null);
-              },
-              onLike: (replyId, on) => void like(replyId, on),
-              onPin: (replyId) => void moderate(replyId, (entry) => ({ ...entry, pinnedBy: viewerId, pinnedAt: new Date().toISOString() }), () => pinPost(replyId)),
-              onUnpin: (replyId) => void moderate(replyId, (entry) => ({ ...entry, pinnedBy: null, pinnedAt: null }), () => unpinPost(replyId)),
-              onHide: (replyId, reason) => void moderate(replyId, (entry) => ({ ...entry, hiddenBy: viewerId, hiddenReason: reason || null }), () => hidePost(replyId, reason || undefined)),
-              renderAddToDraft: (step) => <AddToDraftButton step={step} />,
-              renderReactions: (replyId) => reactionRow(replyId, "reply"),
-              onReport: (replyId) => report(replyId, "reply"),
-              branchHref: (replyId) => `?${postSearch(params, { reply: replyId, step: null }, defaultView).toString()}`,
-            }}
-            side={{ space, rows: sideRows }}
-          />
+                },
+                onLike: (replyId, on) => void like(replyId, on),
+                onPin: (replyId) => void moderate(replyId, (entry) => ({ ...entry, pinnedBy: viewerId, pinnedAt: new Date().toISOString() }), () => pinPost(replyId)),
+                onUnpin: (replyId) => void moderate(replyId, (entry) => ({ ...entry, pinnedBy: null, pinnedAt: null }), () => unpinPost(replyId)),
+                onHide: (replyId, reason) => void moderate(replyId, (entry) => ({ ...entry, hiddenBy: viewerId, hiddenReason: reason || null }), () => hidePost(replyId, reason || undefined)),
+                renderAddToDraft: (step) => <AddToDraftButton step={step} />,
+                renderReactions: (replyId) => reactionRow(replyId, "reply"),
+                onReport: (replyId) => report(replyId, "reply"),
+                branchHref: (replyId) => `?${postSearch(params, { reply: replyId, step: null }, defaultView).toString()}`,
+              }}
+              side={{ space, rows: sideRows }}
+            />
+          </>
         )}
       </PageArrival>
       <ReportDialog target={reporting} onClose={() => setReporting(null)} />

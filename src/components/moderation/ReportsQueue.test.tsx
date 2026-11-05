@@ -18,10 +18,14 @@ vi.mock("sonner", () => ({ toast }));
 
 const listOpenReports = vi.fn();
 const resolveReport = vi.fn();
+const listSiteHiddenPosts = vi.fn();
+const unhideForSite = vi.fn();
 vi.mock("@/lib/moderation", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/moderation")>()),
   listOpenReports: (...args: unknown[]) => listOpenReports(...args),
   resolveReport: (...args: unknown[]) => resolveReport(...args),
+  listSiteHiddenPosts: (...args: unknown[]) => listSiteHiddenPosts(...args),
+  unhideForSite: (...args: unknown[]) => unhideForSite(...args),
 }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 
@@ -39,6 +43,7 @@ function report(id: string, over: Partial<OpenReport> = {}): OpenReport {
     createdAt: "2026-09-28T10:00:00.000Z",
     reporter: { username: "rae", displayName: "Rae" },
     summary: { text: "Invoice reader", href: "/b2/invoice-reader" },
+    postKind: null,
     ...over,
   };
 }
@@ -58,6 +63,7 @@ const rows = () => screen.queryAllByTestId("report-row");
 
 beforeEach(() => {
   vi.clearAllMocks();
+  listSiteHiddenPosts.mockResolvedValue([]);
 });
 
 describe("ReportsQueue", () => {
@@ -171,17 +177,54 @@ describe("ReportsQueue", () => {
   });
 });
 
-describe("UX-09 P8: a topic's report in the queue", () => {
-  it("is labelled OpenBuilds, links to the topic, and offers Dismiss but not Hide (its space's moderators hide it)", async () => {
-    listOpenReports.mockResolvedValue({
-      reports: [report("r1", { targetType: "openbuild_post", targetId: "p1", summary: { text: "Topic: “Can anyone make the scorer faster?”", href: "/openbuilds/topics/p1" } })],
-      nextBefore: null,
-    });
+describe("UX-09 P8, Q5: a topic's report in the queue", () => {
+  const topicReport = (over: Partial<OpenReport> = {}) =>
+    report("r1", { targetType: "openbuild_post", targetId: "p1", postKind: "topic", summary: { text: "Topic: “Can anyone make the scorer faster?”", href: "/openbuilds/topics/p1" }, ...over });
+
+  it("is labelled OpenBuilds, links to the topic, and offers Hide and Dismiss", async () => {
+    listOpenReports.mockResolvedValue({ reports: [topicReport()], nextBefore: null });
     renderQueue();
     const [row] = await screen.findAllByTestId("report-row");
     expect(row.textContent).toContain("OpenBuilds · Spam");
     expect(within(row).getByRole("link", { name: "Topic: “Can anyone make the scorer faster?”" }).getAttribute("href")).toBe("/openbuilds/topics/p1");
-    expect(within(row).queryByRole("button", { name: "Hide" })).toBeNull();
+    expect(within(row).getByRole("button", { name: "Hide" })).toBeEnabled();
     expect(within(row).getByRole("button", { name: "Dismiss" })).toBeInTheDocument();
+  });
+
+  it("hides a reply for the site after asking, and lists it under Hidden by the site", async () => {
+    listOpenReports.mockResolvedValue({ reports: [topicReport({ postKind: "reply", targetId: "x1", summary: { text: "Reply: “spam”", href: "/openbuilds/topics/p1#reply-x1" } })], nextBefore: null });
+    resolveReport.mockResolvedValue(undefined);
+    renderQueue();
+    await waitFor(() => expect(rows()).toHaveLength(1));
+    fireEvent.click(within(rows()[0]).getByRole("button", { name: "Hide" }));
+    const dialog = await screen.findByTestId("hide-dialog");
+    expect(within(dialog).getByRole("heading", { name: "Hide this reply?" })).toBeTruthy();
+    expect(dialog.textContent).toContain("hidden by the site's moderators");
+
+    listSiteHiddenPosts.mockResolvedValue([{ id: "x1", rootId: "p1", kind: "reply", text: "spam", hiddenAt: "2026-11-05T10:00:00.000Z", href: "/openbuilds/topics/p1#reply-x1" }]);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Hide it" }));
+    await waitFor(() => expect(resolveReport).toHaveBeenCalledWith("r1", "hide"));
+    await waitFor(() => expect(rows()).toHaveLength(0));
+    const hidden = await screen.findByRole("region", { name: "Hidden by the site" });
+    expect(within(hidden).getByRole("link", { name: "“spam”" }).getAttribute("href")).toBe("/openbuilds/topics/p1#reply-x1");
+  });
+
+  it("unhides from Hidden by the site", async () => {
+    listOpenReports.mockResolvedValue({ reports: [], nextBefore: null });
+    listSiteHiddenPosts.mockResolvedValue([{ id: "p9", rootId: "p9", kind: "topic", text: "A topic", hiddenAt: null, href: "/openbuilds/topics/p9" }]);
+    unhideForSite.mockResolvedValue(undefined);
+    renderQueue();
+    const [row] = await screen.findAllByTestId("site-hidden-row");
+    listSiteHiddenPosts.mockResolvedValue([]);
+    fireEvent.click(within(row).getByRole("button", { name: "Unhide" }));
+    await waitFor(() => expect(unhideForSite).toHaveBeenCalledWith("p9"));
+    await waitFor(() => expect(screen.queryByTestId("site-hidden-row")).toBeNull());
+  });
+
+  it("offers no Hide for a topic that is no longer there", async () => {
+    listOpenReports.mockResolvedValue({ reports: [topicReport({ postKind: null, summary: { text: "A topic or reply that is no longer there", href: null } })], nextBefore: null });
+    renderQueue();
+    const [row] = await screen.findAllByTestId("report-row");
+    expect(within(row).getByRole("button", { name: "Hide" })).toBeDisabled();
   });
 });

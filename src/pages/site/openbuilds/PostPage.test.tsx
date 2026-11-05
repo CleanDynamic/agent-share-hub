@@ -32,6 +32,8 @@ vi.mock("sonner", () => ({ toast: Object.assign(vi.fn(), { error: vi.fn() }) }))
 const reportTarget = vi.fn(async (_input: unknown) => undefined);
 const openTopicThread = vi.fn(async (_author: string) => "thread-9");
 vi.mock("@/lib/messaging/topics", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/messaging/topics")>()), openTopicThread: (author: string) => openTopicThread(author) }));
+const siteHiddenPostsOf = vi.fn(async (_id: string) => [] as { id: string; kind: "topic" | "reply"; heading: string }[]);
+vi.mock("@/lib/moderation/siteHidden", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/moderation/siteHidden")>()), siteHiddenPostsOf: (id: string) => siteHiddenPostsOf(id) }));
 vi.mock("@/lib/moderation", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/moderation")>()), reportTarget: (input: unknown) => reportTarget(input) }));
 
 import { attachment, entry } from "./postModel.fixtures";
@@ -312,5 +314,51 @@ describe("UX-09 Q4: Message the topic's author", () => {
     await screen.findByRole("heading", { level: 1 });
     expect(screen.queryByRole("button", { name: "More for this topic" })).toBeNull();
     expect(openTopicThread).not.toHaveBeenCalled();
+  });
+});
+
+describe("UX-09 Q5: the author of what the site hid is told", () => {
+  beforeEach(() => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("min-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
+    vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
+    user = { id: "me" };
+    getPost.mockReset().mockResolvedValue(thread());
+    readPostExtras.mockReset().mockResolvedValue(extras());
+    siteHiddenPostsOf.mockReset().mockResolvedValue([]);
+  });
+
+  it("a hidden topic says Hidden by the site's moderators to its author, with how reporting works", async () => {
+    getPost.mockResolvedValue(null);
+    siteHiddenPostsOf.mockResolvedValue([{ id: "p1", kind: "topic", heading: "Can anyone make the scorer faster?" }]);
+    mount();
+    const notice = await screen.findByTestId("site-hidden-notice");
+    expect(siteHiddenPostsOf).toHaveBeenCalledWith("p1");
+    expect(notice.textContent).toContain("Hidden by the site's moderators: your topic");
+    expect(notice.textContent).toContain("“Can anyone make the scorer faster?”");
+    expect(within(notice).getByRole("link", { name: "How reporting works" }).getAttribute("href")).toBe("/terms#reporting");
+    expect(screen.queryByText("This post isn't available.")).toBeNull();
+  });
+
+  it("a hidden reply is named above the topic it was in", async () => {
+    siteHiddenPostsOf.mockResolvedValue([{ id: "x1", kind: "reply", heading: "my reply" }]);
+    mount();
+    await screen.findByRole("heading", { level: 1 });
+    const notice = await screen.findByTestId("site-hidden-notice");
+    expect(notice.textContent).toContain("Hidden by the site's moderators: your reply");
+  });
+
+  it("anyone else is told only that the post isn't available", async () => {
+    getPost.mockResolvedValue(null);
+    mount();
+    expect(await screen.findByText("This post isn't available.")).toBeInTheDocument();
+    expect(screen.queryByTestId("site-hidden-notice")).toBeNull();
+  });
+
+  it("asks nothing signed out", async () => {
+    user = null;
+    getPost.mockResolvedValue(null);
+    mount();
+    expect(await screen.findByText("This post isn't available.")).toBeInTheDocument();
+    expect(siteHiddenPostsOf).not.toHaveBeenCalled();
   });
 });
