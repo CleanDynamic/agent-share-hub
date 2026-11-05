@@ -6883,6 +6883,7 @@ export type Database = {
         Returns: {
           builds: number
           saved_item_id: string
+          topics: number
         }[]
       }
       search_build_ids: {
