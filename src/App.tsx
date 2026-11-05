@@ -17,6 +17,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ConnectionBanner } from "@/components/ConnectionBanner";
 import { RouteBoundary } from "@/components/routing/RouteBoundary";
+import { OlderRequestsRoute } from "@/components/routing/OlderRequestsRoute";
 import { KeepSearchRedirect } from "@/components/routing/KeepSearchRedirect";
 import { SOLVERS_ADDRESSES, SOLVERS_LANDING } from "@/lib/routing/retiredRoutes";
 import { SearchRedirect } from "@/components/routing/SearchRedirect";
@@ -502,7 +503,7 @@ const App = () => (
                 <Route path="/openbuilds" element={<RouteBoundary><Bounties /></RouteBoundary>} />
                 <Route path="/openbuilds/posts/:id" element={<TopicRedirect />} />
                 <Route path="/openbuilds/topics/:id" element={<RouteBoundary><PostPage /></RouteBoundary>} />
-                <Route path="/openbuilds/requests" element={<RouteBoundary><BountyRequests /></RouteBoundary>} />
+                <Route path="/openbuilds/requests" element={<OlderRequestsRoute><RouteBoundary><BountyRequests /></RouteBoundary></OlderRequestsRoute>} />
                 <Route path="/openbuilds/spaces/:slug" element={<RouteBoundary><SpacePage /></RouteBoundary>} />
                 {SOLVERS_ADDRESSES.map((address) => (
                   <Route key={address} path={address} element={<KeepSearchRedirect to={SOLVERS_LANDING} />} />

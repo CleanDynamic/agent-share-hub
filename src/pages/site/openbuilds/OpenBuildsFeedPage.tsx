@@ -15,6 +15,7 @@ import { toast } from "sonner";
 
 import { SeoHead } from "@/components/SeoHead";
 import { OPENBUILDS_SEO } from "./openBuildsSeo";
+import { useOlderRequestsOpen } from "@/components/routing/OlderRequestsRoute";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { toCardData, topicHref } from "@/components/post/postCardModel";
 import { useAuth } from "@/contexts/AuthContext";
@@ -61,6 +62,8 @@ export default function OpenBuildsFeedPage() {
   const busy = useQuery({ queryKey: busySpacesKey, queryFn: () => listBusySpaces({ limit: 8 }) });
   const spaceIds = (mine.data ?? []).map((space) => space.id);
   const times = useQuery({ queryKey: recentTimesKey(spaceIds), queryFn: () => listRecentPostTimes(spaceIds), enabled: spaceIds.length > 0 });
+  // UX-09 Q3: not waited for; the link appears once a request is known to be open.
+  const olderRequests = useOlderRequestsOpen() === true;
 
   const arriving = authLoading || feed.isPending || (viewerId !== null && mine.isPending) || busy.isPending;
   useReported(feed.error, "openbuilds-feed");
@@ -136,6 +139,7 @@ export default function OpenBuildsFeedPage() {
               more: feed.hasNextPage ? { loading: feed.isFetchingNextPage, onMore: () => void feed.fetchNextPage() } : undefined,
             }}
             busy={busyRows}
+            olderRequests={olderRequests}
           />
         )}
       </PageArrival>
