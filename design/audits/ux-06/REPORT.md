@@ -136,7 +136,9 @@ Questions for Miles:
 - Playwright `e2e/tier3/openbuilds-post.spec.ts` (8 specs) and UX-05's `openbuilds-spaces.spec.ts`: pass on desktop. The container's
   Chromium is not the version the project's Playwright pins, so they ran through a local config that points at /opt/pw-browsers/chromium,
   and Vite was started on 127.0.0.1 (the container has no IPv6).
-- tier1: see below.
+- `npx playwright test e2e/tier1 --project=desktop --project=mobile`: 359 passed, 9 skipped (wide-layout on mobile), 0 failed.
+- UX-05's `openbuilds-spaces.spec.ts` failed once with a click timeout while the full unit suite ran beside it, and passed on every
+  run alone.
 
 ## What Miles needs to do
 
