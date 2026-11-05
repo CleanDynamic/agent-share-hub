@@ -357,3 +357,30 @@ Older requests needs nothing: it goes by itself the first time no request is ope
 - `python3 design/vision-kit.py --check`: 24 of 26 files match; `dusk/openbuilds.html` missing and `index.json` changed, as Part 10
   intends (see Questions 10). No test or CI step runs it.
 - The diff has no em dash.
+
+### Checks run for Miles' answers
+
+- `npx tsc --noEmit -p tsconfig.app.json`: clean.
+- `npm test`: 11557 tests (+65 on the report's 11492). The full run here failed 62 in 16 files, while the build and Playwright ran
+  beside it. Four of those files (`compose/{SandboxPage.add,ca20.p2,ca21.p7,ux02.p2}`) failed only on 5-second timeouts; run alone
+  they pass, here and at `e6593b7`. The other 12 files, run alone here and at `e6593b7`, fail the same 29 tests listed above. Nothing new.
+- New tests: `notifications/keys.test.ts`, `routing/OlderRequestsRoute.test.tsx`, `messaging/topics.test.ts`,
+  `dm/MessageInputBar.topic.test.tsx`, `moderation/siteHidden.test.ts`, and additions to `OpenBuildsFeedView.test.tsx`,
+  `PostPage.test.tsx` (Message @sam; the author's notice), `ReportsQueue.test.tsx` (Hide on a topic or reply, Unhide) and
+  `test/security/ux09Migrations.test.ts` (both new migrations).
+- Migrations 20261108150000 and 20261108160000, applied twice to a scratch Postgres 16 over the real UX-04 and UX-09 migrations,
+  with each role's reads and writes checked (Miles' answer 5 above).
+- `npm run build`: passes. `scripts/check-size.mjs`: first download 233.6 KB (233.3 before, budget 200; the Older requests check is
+  in the main bundle), composer chunk 124.5 KB (unchanged). Fails on its budgets, as on main.
+- `python3 design/vision-kit.py`, then `--check`: 23 of 23 files match and git shows no change under design/. Then
+  `npm run audit:design`: 31 comparisons, 14 passed, 10 skipped, 7 failed. The 7 are the refined boards above that fail on main in this
+  container. No vision board fails, and there is no `vision/dusk/openbuilds`. So it does not pass outright, but running the kit
+  changes nothing about it.
+- Playwright tier 3 (desktop): `openbuilds-post`, `openbuilds-spaces`, `bounties-board` (desktop and mobile, 12 passed; the empty
+  board test now expects the redirect to /openbuilds), `messages-build`, `reports`. Two fail, `messages-build.spec.ts:292` and
+  `reports.spec.ts:340`, and both fail the same way at `e6593b7`.
+- `npx playwright test e2e/tier1 --project=desktop --project=mobile`: 358 passed, 9 skipped, 99 failed, the same split as the report's
+  run above (wide-layout, backdrop, home and the other site-frame specs; none covers OpenBuilds, Messages or Reports).
+- `audit:pages` was not re-run: /openbuilds now makes one more request (the open-requests check, not waited for), so its baseline may
+  need 9 -> 10.
+- The diff has no em dash.
