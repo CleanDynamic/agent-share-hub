@@ -13,8 +13,9 @@ export interface FailedRun {
   buildId: string;
   /** `model_used` of the run, when it said. */
   model: string | null;
-  /** The step it failed at, when known: its number as the build page shows it, and its node. */
-  step?: { number: string; nodeId: string } | null;
+  /** The step it failed at, when known: its number as the build page shows it, and its node (null when the step is a replay step
+      with no step tile, as a breakage on Where it broke is: UX-09 P1). */
+  step?: { number: string; nodeId: string | null } | null;
 }
 
 /** "Didn't work for me at Step 3 on Opus 5.5." with whatever part is not known left out. */
@@ -32,9 +33,9 @@ export function failedRunDraft(run: FailedRun): NewPostDraft {
     body: `${failedRunLine(run)}\n\n`,
     spaceIds: [],
     attachments: [{ key: JSON.stringify(input), input }],
-    // Still open is marked only where there is a step to mark; the person can add it from + Add.
-    added: run.step ? ["open"] : [],
-    stillOpen: Boolean(run.step),
+    // Still open is marked only where there is a step tile to mark; the person can add it from + Add.
+    added: run.step?.nodeId ? ["open"] : [],
+    stillOpen: Boolean(run.step?.nodeId),
     openNodeId: run.step?.nodeId ?? null,
   };
 }

@@ -46,6 +46,8 @@ export interface ReplyActions {
   renderAddToDraft?: (step: StepSource) => ReactNode;
   /** UX-07 P7: a reply's reaction row, under its actions. Absent or null: nothing. */
   renderReactions?: (replyId: string) => ReactNode;
+  /** UX-09 P8: Report a reply (everyone but its author). Absent: not offered. */
+  onReport?: (replyId: string) => void;
 }
 
 /** A text button: 12 `--text2`, no box, underlined at once under a fine pointer's hover. On a phone its hit area is 44 high. */
@@ -89,7 +91,7 @@ export const TextButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTM
   );
 });
 
-/** The reply's `···` menu: Pin or Unpin for the post's author and moderators, Hide for moderators. */
+/** The reply's `···` menu: Pin or Unpin for the post's author and moderators, Hide for moderators, Report for everyone but its author. */
 function ReplyMenu({ reply, actions, onAsk }: { reply: ReplyItem; actions: ReplyActions; onAsk: () => void }) {
   return (
     <DropdownMenu>
@@ -97,8 +99,9 @@ function ReplyMenu({ reply, actions, onAsk }: { reply: ReplyItem; actions: Reply
         <TextButton aria-label="More for this reply">···</TextButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" style={{ zIndex: MENU_Z }}>
-        {reply.pinnedBy ? <DropdownMenuItem onSelect={() => actions.onUnpin(reply.id)}>Unpin</DropdownMenuItem> : <DropdownMenuItem onSelect={() => actions.onPin(reply.id)}>Pin</DropdownMenuItem>}
+        {reply.canPin ? reply.pinnedBy ? <DropdownMenuItem onSelect={() => actions.onUnpin(reply.id)}>Unpin</DropdownMenuItem> : <DropdownMenuItem onSelect={() => actions.onPin(reply.id)}>Pin</DropdownMenuItem> : null}
         {reply.canHide ? <DropdownMenuItem onSelect={onAsk}>Hide</DropdownMenuItem> : null}
+        {reply.canReport && actions.onReport ? <DropdownMenuItem onSelect={() => actions.onReport?.(reply.id)}>Report</DropdownMenuItem> : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -188,7 +191,7 @@ export function Reply({ reply, actions, last, box }: { reply: ReplyItem; actions
             </>
           ) : null}
           {reply.step && actions.renderAddToDraft ? actions.renderAddToDraft(reply.step) : null}
-          {reply.canPin || reply.canHide ? <ReplyMenu reply={reply} actions={actions} onAsk={() => setAsking(true)} /> : null}
+          {reply.canPin || reply.canHide || (reply.canReport && actions.onReport) ? <ReplyMenu reply={reply} actions={actions} onAsk={() => setAsking(true)} /> : null}
         </div>
         {actions.renderReactions?.(reply.id) ?? null}
         {asking ? (

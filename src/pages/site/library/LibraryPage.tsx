@@ -51,7 +51,8 @@ import {
   countSavedItems,
   listSavedItems,
   saveItem,
-  savedItemsUsedIn,
+  savedItemsUses,
+  usesTotal,
   unsaveItem,
   updateSavedItemNote,
   type LibrarySavedItem,
@@ -74,6 +75,7 @@ import {
   ageWords,
   changesFigure,
   countWords,
+  usedInWords,
   itemCopyText,
   itemDetail,
   itemTitle,
@@ -178,8 +180,9 @@ export default function LibraryPage() {
     refetchOnWindowFocus: false,
   });
   const usedIn = useQuery({
-    queryKey: ["library", "savedItemsUsedIn", viewerId],
-    queryFn: savedItemsUsedIn,
+    // UX-09 P4: builds and topics in the one request. The key keeps the composer's prefix, so its invalidation reaches this too.
+    queryKey: ["library", "savedItemsUsedIn", viewerId, "uses"],
+    queryFn: savedItemsUses,
     enabled: wantsItems && (itemKind === null || COUNTED_KINDS.has(itemKind)),
     refetchOnWindowFocus: false,
   });
@@ -267,7 +270,7 @@ export default function LibraryPage() {
   const shown: Shown[] =
     openId || kind === "builds" ? buildShown : itemKind ? itemShown : [...buildShown, ...itemShown].sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
   const rows = shown.map((entry) =>
-    entry.item ? savedItemRow(entry.item, usedIn.data ?? new Map(), now, sources.data) : savedBuildRow({ savedAt: entry.at, build: entry.build as GalleryBuild }, now),
+    entry.item ? savedItemRow(entry.item, usesTotal(usedIn.data ?? new Map()), now, sources.data) : savedBuildRow({ savedAt: entry.at, build: entry.build as GalleryBuild }, now),
   );
 
   /* UX-07 P4: the Topics kind draws its kept topics as their cards: the topics read by id once the list is in. */
@@ -466,7 +469,7 @@ export default function LibraryPage() {
       title: itemTitle(item),
       source: itemDetail(item),
       rows: [
-        ...(COUNTED_KINDS.has(item.kind) ? [{ label: "Used in", value: countWords(used ?? 0, "build") }] : []),
+        ...(COUNTED_KINDS.has(item.kind) ? [{ label: "Used in", value: usedInWords(used) }] : []),
         ...(source.buildTitle ? [{ label: "Source build", value: source.buildTitle }] : []),
         ...(typeof item.snapshot.model === "string" && item.snapshot.model ? [{ label: "Model", value: item.snapshot.model }] : []),
       ],

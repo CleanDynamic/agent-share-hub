@@ -49,6 +49,10 @@ export interface PostCardProps {
   compact?: boolean;
   /** UX-07 P7: the reactions the topic's spaces switched on, a row under the engagement row. Absent: nothing. */
   reactions?: ReactNode;
+  /** UX-09 P8: Report in the `···` menu, for everyone but the author. Absent: not offered. */
+  onReport?: () => void;
+  /** UX-09 Q4: "Message @maya" in the `···` menu: the reader's one direct thread with the author, the topic handed to it. */
+  onMessage?: { label: string; onSelect: () => void };
 }
 
 const plain: CSSProperties = { fontFamily: FIGTREE, margin: 0 };
@@ -133,16 +137,22 @@ export function AttachmentView({ attachment, onPickTile, renderTile }: { attachm
   );
 }
 
-/** The `···` menu: moderators only. Hide asks for its reason in one field. */
-function ModerationMenu({ card, moderation, onAsk }: { card: PostCardData; moderation: CardModeration; onAsk: () => void }) {
+/** The `···` menu: Pin and Hide for moderators (Hide asks for its reason in one field); UX-09 P8: Report for everyone but the author. */
+function ModerationMenu({ card, moderation, onAsk, onReport, onMessage }: { card: PostCardData; moderation?: CardModeration; onAsk: () => void; onReport?: () => void; onMessage?: PostCardProps["onMessage"] }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <PostControl aria-label="Moderate this post">···</PostControl>
+        <PostControl aria-label={moderation ? "Moderate this post" : "More for this topic"}>···</PostControl>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        {card.pinned ? <DropdownMenuItem onSelect={moderation.onUnpin}>Unpin</DropdownMenuItem> : <DropdownMenuItem onSelect={moderation.onPin}>Pin</DropdownMenuItem>}
-        {card.hidden ? <DropdownMenuItem onSelect={moderation.onUnhide}>Unhide</DropdownMenuItem> : <DropdownMenuItem onSelect={onAsk}>Hide</DropdownMenuItem>}
+        {moderation ? (
+          <>
+            {card.pinned ? <DropdownMenuItem onSelect={moderation.onUnpin}>Unpin</DropdownMenuItem> : <DropdownMenuItem onSelect={moderation.onPin}>Pin</DropdownMenuItem>}
+            {card.hidden ? <DropdownMenuItem onSelect={moderation.onUnhide}>Unhide</DropdownMenuItem> : <DropdownMenuItem onSelect={onAsk}>Hide</DropdownMenuItem>}
+          </>
+        ) : null}
+        {onMessage ? <DropdownMenuItem onSelect={onMessage.onSelect}>{onMessage.label}</DropdownMenuItem> : null}
+        {onReport ? <DropdownMenuItem onSelect={onReport}>Report</DropdownMenuItem> : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -171,7 +181,7 @@ function HideReason({ onHide, onCancel }: { onHide: (reason: string) => void; on
   );
 }
 
-export function PostCard({ card: full, clamp = true, page = false, renderTile, moderation, engagement, topic, compact = false, reactions }: PostCardProps) {
+export function PostCard({ card: full, clamp = true, page = false, renderTile, moderation, engagement, topic, compact = false, reactions, onReport, onMessage }: PostCardProps) {
   // The compact card keeps the head, the heading and the first attachment (all of a topic's pictures are one attachment there).
   const card: PostCardData = compact
     ? { ...full, text: "", attachments: full.attachments.slice(0, 1), stillOpen: false, tags: [], closes: null, replies: null }
@@ -224,7 +234,7 @@ export function PostCard({ card: full, clamp = true, page = false, renderTile, m
           </div>
           {card.pinned ? <span style={{ ...plain, flex: "none", fontSize: 12, color: label }}>Pinned</span> : null}
           {card.reward ? <span style={{ ...plain, flex: "none", fontSize: 13, fontWeight: 500 }}>{card.reward}</span> : null}
-          {moderation ? <ModerationMenu card={card} moderation={moderation} onAsk={() => setAsking(true)} /> : null}
+          {moderation || onReport || onMessage ? <ModerationMenu card={card} moderation={moderation} onAsk={() => setAsking(true)} onReport={onReport} onMessage={onMessage} /> : null}
         </div>
         {asking && moderation ? (
           <HideReason

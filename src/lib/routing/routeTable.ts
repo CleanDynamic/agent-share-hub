@@ -282,7 +282,7 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
     load: () => import("@/pages/site/drafts/DraftsPage"),
     prefetch: async (_params, queryClient, { userId }) => {
       if (!userId) return;
-      const { listDraftsWithSessions, listDraftFirstPrompts } = await import("@/lib/build/drafts");
+      const { listDraftsWithSessions, listDraftFirstPrompts, listDraftTopics } = await import("@/lib/build/drafts");
       await Promise.all([
         queryClient.prefetchQuery({
           queryKey: ["build", "listDraftsWithSessions", userId],
@@ -291,6 +291,8 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
         }),
         // UX-03 P7: the untitled drafts' first prompts, beside the list.
         queryClient.prefetchQuery({ queryKey: ["build", "listDraftFirstPrompts", userId], queryFn: () => listDraftFirstPrompts(userId), staleTime: LIST_STALE_MS }),
+        // UX-09 P3: the topic each draft made in a reply was made for, beside the list.
+        queryClient.prefetchQuery({ queryKey: ["build", "listDraftTopics", userId], queryFn: () => listDraftTopics(userId), staleTime: LIST_STALE_MS }),
       ]);
     },
     Placeholder: DraftsPlaceholder,

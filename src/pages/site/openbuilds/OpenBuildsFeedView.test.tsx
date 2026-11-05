@@ -57,6 +57,7 @@ const props = (extra: Partial<OpenBuildsFeedViewProps> = {}): OpenBuildsFeedView
   },
   posts: { status: "ready", onRetry: vi.fn(), items: [{ card: card("p1") }, { card: card("p2") }] },
   busy: [{ id: "b1", slug: "evals", name: "Evals", meta: "Made by @sam · 412 members", onJoin: vi.fn() }],
+  olderRequests: true,
   ...extra,
 });
 
@@ -95,6 +96,14 @@ describe("OpenBuildsFeedView", () => {
     expect(within(column).getByRole("button", { name: "Make a space" })).toBeInTheDocument();
     expect(within(column).getByRole("link", { name: "Older requests" })).toHaveAttribute("href", "/openbuilds/requests");
     expect(within(column).getByRole("link", { name: "Hiring tools" })).toHaveAttribute("href", "/openbuilds/spaces/hiring-tools");
+  });
+
+  it("UX-09 Q3: no Older requests once no request is open", () => {
+    atWidth(1440);
+    draw({ olderRequests: false });
+    const column = screen.getByRole("region", { name: "Your spaces" });
+    expect(within(column).queryByRole("link", { name: "Older requests" })).toBeNull();
+    expect(within(column).getAllByRole("link").map((link) => link.textContent)).toEqual(["All your spaces", "Claude Code3 new", "Hiring tools"]);
   });
 
   it("signed out: Sign in to join spaces, a Sign in control, no tabs", () => {

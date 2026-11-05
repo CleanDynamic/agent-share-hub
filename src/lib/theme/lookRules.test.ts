@@ -1472,6 +1472,30 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/openbuilds/stillOpen.ts",
   "src/lib/openbuilds/stillOpenMarks.ts",
   "src/lib/openbuilds/stillOpen.test.ts",
+  // UX-09
+  "src/pages/site/build/ux09.p1.test.tsx",
+  "src/pages/site/build/ux09.p2.test.tsx",
+  "src/lib/openbuilds/madeInReply.test.ts",
+  "src/pages/site/drafts/ux09.p3.test.tsx",
+  "src/lib/openbuilds/ux09.p3.madeFor.test.ts",
+  "src/pages/site/library/ux09.p4.test.ts",
+  "src/components/shell/ux09.p6.test.tsx",
+  "src/test/security/ux09Migrations.test.ts",
+  "src/pages/site/openbuilds/openBuildsSeo.ts",
+  "src/pages/site/openbuilds/ux09.p10.test.ts",
+  // UX-09, Miles' answers
+  "src/lib/notifications/keys.ts",
+  "src/lib/notifications/keys.test.ts",
+  "src/lib/bounty/openRequests.ts",
+  "src/components/routing/OlderRequestsRoute.tsx",
+  "src/components/routing/OlderRequestsRoute.test.tsx",
+  "src/lib/messaging/topics.ts",
+  "src/lib/messaging/topics.test.ts",
+  "src/components/messages/TopicShareCard.tsx",
+  "src/components/dm/MessageInputBar.topic.test.tsx",
+  "src/lib/moderation/siteHidden.ts",
+  "src/lib/moderation/siteHidden.test.ts",
+  "src/pages/site/openbuilds/SiteHiddenNotice.tsx",
 ];
 
 /**

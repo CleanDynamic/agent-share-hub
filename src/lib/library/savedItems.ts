@@ -399,13 +399,39 @@ export async function countSavedItems(): Promise<SavedCounts> {
   return counts;
 }
 
-/** For each saved part, step and session, the number of builds with a tile that came from it. One request. */
-export async function savedItemsUsedIn(): Promise<Map<string, number>> {
+export interface SavedItemUses {
+  /** Other builds with a tile from the item. */
+  builds: number;
+  /** UX-09 P4: topics that attach a saved step (the topic, or a reply in it). */
+  topics: number;
+}
+
+/**
+ * For each saved part, step and session: the builds with a tile from it, and (UX-09 P4) for a step the topics that attach it. One
+ * request. The function answers one row per item and arm, so the rows are added up; before 20261108130000 there is no topics column,
+ * which reads as none.
+ */
+export async function savedItemsUses(): Promise<Map<string, SavedItemUses>> {
   const userId = await currentUserId();
   if (!userId) return new Map();
   const response = await db.rpc("saved_items_used_in");
   if (response.error) throw socialError("savedItemsUsedIn", response);
-  return new Map(((response.data ?? []) as { saved_item_id: string; builds: number }[]).map((row) => [row.saved_item_id, Number(row.builds)]));
+  const out = new Map<string, SavedItemUses>();
+  for (const row of (response.data ?? []) as { saved_item_id: string; builds: number; topics?: number | null }[]) {
+    const held = out.get(row.saved_item_id) ?? { builds: 0, topics: 0 };
+    out.set(row.saved_item_id, { builds: held.builds + (Number(row.builds) || 0), topics: held.topics + (Number(row.topics) || 0) });
+  }
+  return out;
+}
+
+/** UX-09 P4: Library's Used in, builds and topics together. */
+export function usesTotal(uses: ReadonlyMap<string, SavedItemUses>): Map<string, number> {
+  return new Map([...uses].map(([id, use]) => [id, use.builds + use.topics]));
+}
+
+/** For each saved part, step and session, the number of builds with a tile that came from it. One request. */
+export async function savedItemsUsedIn(): Promise<Map<string, number>> {
+  return new Map([...(await savedItemsUses())].map(([id, use]) => [id, use.builds]));
 }
 
 /** For each of these collections that is public, how many other readers kept it. One request; none for no ids. */

@@ -1,4 +1,4 @@
-// "Report this build" / "Report this comment" (RC-P17b).
+// "Report this build" / "Report this comment" (RC-P17b) / "Report this topic" / "Report this reply" (UX-09 P8).
 //
 // THE EXISTING DIALOG (STATES.md row 17): --r-panel, overlay elevation and its
 // scrim, so the page recedes in both rooms and the dialog is the only figure
@@ -33,8 +33,8 @@ import { t } from "@/lib/theme/tokens";
 import { body, label as labelType } from "@/lib/theme/type";
 
 export interface ReportDialogProps {
-  /** What is being reported; null closes the dialog. */
-  target: { type: ReportTargetType; id: string } | null;
+  /** What is being reported; null closes the dialog. `what` names a topic or a reply (UX-09 P8: both are `openbuild_post`). */
+  target: { type: ReportTargetType; id: string; what?: "topic" | "reply" } | null;
   onClose: () => void;
 }
 
@@ -58,7 +58,7 @@ export function ReportDialog({ target, onClose }: ReportDialogProps) {
     setRefusal(null);
   }, [target?.type, target?.id]);
 
-  const title = target?.type === "comment" ? "Report this comment" : "Report this build";
+  const title = target?.type === "comment" ? "Report this comment" : target?.type === "openbuild_post" ? `Report this ${target.what ?? "topic"}` : "Report this build";
 
   const send = async () => {
     if (!target || !reason || sending) return;

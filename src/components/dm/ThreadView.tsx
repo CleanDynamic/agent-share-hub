@@ -14,8 +14,10 @@ import { displayContentType } from "@/lib/content-types";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ContentShareBubble, type ContentShareValue, type ReadState } from "@/components/messages/ContentShareBubble";
 import { BuildShareCard } from "@/components/messages/BuildShareCard";
+import { TopicShareCard } from "@/components/messages/TopicShareCard";
 import { cardMedia, useSignedMedia } from "@/components/gallery/cardMedia";
 import { getSharedBuilds } from "@/lib/messaging/builds";
+import { getSharedTopics } from "@/lib/messaging/topics";
 import { markContentViewed } from "@/lib/messaging";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { r } from "@/lib/theme/radius";
@@ -510,6 +512,17 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
   const sharedMedia = useMemo(() => [...(sharedBuilds?.values() ?? [])].flatMap(cardMedia), [sharedBuilds]);
   const sharedSrc = useSignedMedia(sharedMedia);
 
+  /* UX-09 Q4: the topics this page of messages carries, read once for all of them. */
+  const sharedTopicIds = useMemo(() => {
+    const carried = ((messages ?? []) as { shared_post_id?: string | null }[]).map((m) => m.shared_post_id);
+    return [...new Set(carried.filter((id): id is string => typeof id === "string"))];
+  }, [messages]);
+  const { data: sharedTopics } = useQuery({
+    queryKey: ["dm_shared_topics", threadId, sharedTopicIds],
+    queryFn: () => getSharedTopics(sharedTopicIds),
+    enabled: sharedTopicIds.length > 0,
+  });
+
   const reactionsByMessage = useMemo(() => {
     const map = new Map<string, any[]>();
     (allReactions ?? []).forEach((r: any) => {
@@ -972,6 +985,18 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
           // emptied does.
           const shared = msg.shared_build_id ? sharedBuilds?.get(msg.shared_build_id) : undefined;
           const words = msg.text_content || "";
+          // UX-09 Q4: a topic's card, then the note, as a build's is.
+          const topic = msg.shared_post_id ? sharedTopics?.get(msg.shared_post_id) : undefined;
+          if (topic) {
+            return (
+              <div data-testid="message-topic-share" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <TopicShareCard topic={topic} />
+                {words ? (
+                  <p className="whitespace-pre-wrap break-words text-sm leading-[1.4]">{linkifyText(words)}</p>
+                ) : null}
+              </div>
+            );
+          }
           if (shared) {
             return (
               <div data-testid="message-build-share" style={{ display: "flex", flexDirection: "column", gap: 8 }}>

@@ -1,4 +1,5 @@
 export * from "./types";
+export { NOTIFICATION_KEYS, isNotificationKey, type NotificationKey, type NotificationKeyName } from "./keys";
 export { insertNotification } from "./insertNotification";
 export { getNotifications } from "./getNotifications";
 export { markNotificationRead, markAllNotificationsRead } from "./markRead";

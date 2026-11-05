@@ -113,6 +113,15 @@ export function stepRepliesOf(posts: readonly Post[]): Map<string, { count: numb
   return out;
 }
 
+/** UX-09 P1: for each gap (a step tile marked still open), the newest still-open topic about it. From listTopicsAbout's topics. */
+export function stillOpenTopicsByNode(topics: readonly Post[]): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const topic of [...topics].sort((a, b) => b.createdAt.localeCompare(a.createdAt))) {
+    if (topic.parentId === null && topic.stillOpen && topic.aboutNodeId && !out.has(topic.aboutNodeId)) out.set(topic.aboutNodeId, topic.id);
+  }
+  return out;
+}
+
 /** Everything the build page says about where the build is discussed: three requests, started together, one round. */
 export async function listTopicsAbout(buildId: string): Promise<TopicsAbout> {
   const [about, started, allow] = await Promise.all([
@@ -137,6 +146,50 @@ export async function listTopicsAbout(buildId: string): Promise<TopicsAbout> {
     stepReplies: stepRepliesOf(about.posts),
     allowsTopics: (allow.data as { allow_as_post_source?: boolean } | null)?.allow_as_post_source !== false,
   };
+}
+
+/* ── UX-09 Part 2: the Rebuilds tab's rebuilds that were made in reply ── */
+
+/** The most attachments the Rebuilds tab reads: enough for its page of cards (REBUILDS_PAGE_SIZE) with room for more than one reply. */
+export const MADE_IN_REPLY_LIMIT = 100;
+
+export interface MadeInReply {
+  replyId: string;
+  rootId: string;
+  /** The topic's author's handle, no @. */
+  handle: string;
+}
+
+interface MadeInReplyRow {
+  build_id: string;
+  post: { id: string; root_id: string; created_at: string; root?: { author?: { username: string | null } | { username: string | null }[] | null } | null } | null;
+}
+
+/** Replies that attach a rebuild of the build, read by the source (builds.parent_build_id), so the read starts with the cards. */
+const MADE_IN_REPLY_SELECT =
+  "build_id, build:builds!inner(parent_build_id), post:openbuild_posts!inner(id, root_id, parent_id, hidden_by, created_at, root:openbuild_posts!openbuild_posts_root_id_fkey(author:profiles!openbuild_posts_author_id_fkey(username)))";
+
+/** For each rebuild of the build attached to a reply (as a build), the newest such reply and the topic's author. One request. */
+export async function listRebuildsMadeInReply(sourceBuildId: string): Promise<Map<string, MadeInReply>> {
+  const response = await db
+    .from("post_attachments")
+    .select(MADE_IN_REPLY_SELECT)
+    .eq("build.parent_build_id", sourceBuildId)
+    .eq("kind", "build")
+    .not("post.parent_id", "is", null)
+    .is("post.hidden_by", null)
+    .limit(MADE_IN_REPLY_LIMIT);
+  if (response.error) throw postLayerError("listRebuildsMadeInReply", response);
+  const out = new Map<string, MadeInReply & { at: string }>();
+  for (const row of (response.data ?? []) as unknown as MadeInReplyRow[]) {
+    const author = row.post?.root?.author;
+    const handle = (Array.isArray(author) ? author[0] : author)?.username;
+    if (!row.post || !handle) continue;
+    const held = out.get(row.build_id);
+    if (held && held.at >= row.post.created_at) continue;
+    out.set(row.build_id, { replyId: row.post.id, rootId: row.post.root_id, handle, at: row.post.created_at });
+  }
+  return new Map([...out].map(([id, { at: _at, ...made }]) => [id, made]));
 }
 
 /* ── UX-07 Part 3: a profile's Topics tab ── */

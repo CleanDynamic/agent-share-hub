@@ -1,4 +1,4 @@
-// Reporting a build or a comment, and the admin's queue of reports (RC-P17b).
+// Reporting a build, a comment or (UX-09 P8) a topic or a reply, and the admin's queue of reports (RC-P17b).
 //
 // A report is one content_reports row per (target, reporter): a build or a
 // comment, a reason from five, an optional note of at most 500 characters. The
@@ -24,7 +24,8 @@ import {
   uniqueIds,
 } from "@/lib/social/types";
 
-export type ReportTargetType = "build" | "comment";
+/** UX-09 P8: `openbuild_post` is a topic or a reply (openbuild_posts), reported to the site's moderation, not the space's. */
+export type ReportTargetType = "build" | "comment" | "openbuild_post";
 export type ReportReason = "spam" | "broken" | "harmful" | "stolen" | "other";
 
 /** The five reasons, most likely first and "Something else" last ⟦hicks-law › Budgets: dialog⟧. */
@@ -54,7 +55,7 @@ export interface ReportTargetInput {
  * an error: the first report is still open, which is the state asked for.
  */
 export async function reportTarget(input: ReportTargetInput): Promise<void> {
-  const ids = input.targetType === "build" ? { buildId: input.targetId } : { commentId: input.targetId };
+  const ids = input.targetType === "build" ? { buildId: input.targetId } : input.targetType === "comment" ? { commentId: input.targetId } : {};
   const note = (input.note ?? "").trim();
   if (!REPORT_REASONS.some((reason) => reason.value === input.reason) || [...note].length > REPORT_NOTE_MAX) {
     throw new SocialError("reportTarget", "invalid", ids);
@@ -83,6 +84,8 @@ export interface OpenReport {
   reporter: { username: string | null; displayName: string | null } | null;
   /** One line naming the target, and where it lives; null href when it is gone. */
   summary: { text: string; href: string | null };
+  /** UX-09 Q5: for an OpenBuilds target, whether it is a topic or a reply; null otherwise, or when it is gone. */
+  postKind: "topic" | "reply" | null;
 }
 
 export interface OpenReportsPage {
@@ -105,6 +108,13 @@ interface BuildSummaryRow {
   id: string;
   slug: string;
   title: string | null;
+}
+
+interface PostSummaryRow {
+  id: string;
+  root_id: string;
+  parent_id: string | null;
+  body: string;
 }
 
 interface CommentSummaryRow {
@@ -151,8 +161,9 @@ export async function listOpenReports(options: ListOpenReportsOptions = {}): Pro
 
   const buildIds = uniqueIds(rows.filter((row) => row.target_type === "build").map((row) => row.target_id));
   const commentIds = uniqueIds(rows.filter((row) => row.target_type === "comment").map((row) => row.target_id));
+  const postIds = uniqueIds(rows.filter((row) => row.target_type === "openbuild_post").map((row) => row.target_id));
 
-  const [builds, comments] = await Promise.all([
+  const [builds, comments, posts] = await Promise.all([
     buildIds.length > 0
       ? db.from("builds").select("id, slug, title").in("id", buildIds).limit(buildIds.length)
       : Promise.resolve({ data: [], error: null, status: 200 }),
@@ -163,21 +174,37 @@ export async function listOpenReports(options: ListOpenReportsOptions = {}): Pro
           .in("id", commentIds)
           .limit(commentIds.length)
       : Promise.resolve({ data: [], error: null, status: 200 }),
+    // UX-09 P8: a topic or a reply, named by its first line.
+    postIds.length > 0
+      ? db.from("openbuild_posts").select("id, root_id, parent_id, body").in("id", postIds).limit(postIds.length)
+      : Promise.resolve({ data: [], error: null, status: 200 }),
   ]);
   if (builds.error) throw socialError("listOpenReports (builds)", builds);
   if (comments.error) throw socialError("listOpenReports (comments)", comments);
+  if (posts.error) throw socialError("listOpenReports (posts)", posts);
 
   const buildById = new Map(((builds.data ?? []) as BuildSummaryRow[]).map((row) => [row.id, row]));
   const commentById = new Map(((comments.data ?? []) as CommentSummaryRow[]).map((row) => [row.id, row]));
+  const postById = new Map(((posts.data ?? []) as PostSummaryRow[]).map((row) => [row.id, row]));
 
   const reports = rows.map((row): OpenReport => {
     const reporter = first(row.reporter);
     let summary: OpenReport["summary"];
+    let postKind: OpenReport["postKind"] = null;
     if (row.target_type === "build") {
       const build = buildById.get(row.target_id);
       summary = build
         ? { text: (build.title ?? "").trim() || "Untitled build", href: `/b2/${build.slug}` }
         : { text: "A build that is no longer there", href: null };
+    } else if (row.target_type === "openbuild_post") {
+      const post = postById.get(row.target_id);
+      postKind = post ? (post.parent_id === null ? "topic" : "reply") : null;
+      const firstLine = (post?.body ?? "").trim().split("\n")[0] ?? "";
+      summary = post
+        ? post.parent_id === null
+          ? { text: `Topic: “${excerpt(firstLine)}”`, href: `/openbuilds/topics/${post.root_id}` }
+          : { text: `Reply: “${excerpt(firstLine)}”`, href: `/openbuilds/topics/${post.root_id}#reply-${post.id}` }
+        : { text: "A topic or reply that is no longer there", href: null };
     } else {
       const comment = commentById.get(row.target_id);
       const on = first(comment?.build);
@@ -197,6 +224,7 @@ export async function listOpenReports(options: ListOpenReportsOptions = {}): Pro
       createdAt: row.created_at,
       reporter: reporter ? { username: reporter.username, displayName: reporter.display_name } : null,
       summary,
+      postKind,
     };
   });
 
@@ -205,7 +233,10 @@ export async function listOpenReports(options: ListOpenReportsOptions = {}): Pro
 
 export type ReportAction = "hide" | "dismiss";
 
-/** Close a report: hide its target, or leave it be. Admins only; anyone else gets no_access. */
+/**
+ * Close a report: hide its target, or leave it be. Admins only; anyone else gets no_access. UX-09 Q5: Hide on a topic or a reply is
+ * the site's hide (openbuild_posts.site_hidden_by), apart from its space's, and undone with unhideForSite.
+ */
 export async function resolveReport(reportId: string, action: ReportAction): Promise<void> {
   // The generated types do not know resolve_report yet: getBuildFeed.ts's cast.
   const response = await (

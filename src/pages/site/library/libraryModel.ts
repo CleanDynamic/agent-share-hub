@@ -162,7 +162,8 @@ export function itemDetail(item: LibrarySavedItem): string | null {
   return parts.filter(Boolean).join(" · ") || null;
 }
 
-/** A saved item as a table row. Used in is the count of builds with a tile from it; absent for kinds that are not put in a build. */
+/** A saved item as a table row. Used in is the count of builds with a tile from it and (UX-09 P4) of topics that attach a saved step;
+    absent for kinds that are not put in a build. */
 export function savedItemRow(item: LibrarySavedItem, usedIn: ReadonlyMap<string, number>, now: number, sources: ReadonlyMap<string, SourceStatus> = new Map()): LibraryRow {
   const counted = item.kind === "part" || item.kind === "step" || item.kind === "session";
   return {
@@ -191,6 +192,12 @@ export const savedByWords = (count: number | undefined): string | null => (count
 export const privacyWord = (isPrivate: boolean) => (isPrivate ? "Private" : "Public");
 
 export const countWords = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/** UX-09 P4: the detail's Used in: "3 builds", and the topics that attach a saved step after it: "3 builds · 1 topic". */
+export function usedInWords(use: { builds: number; topics: number } | undefined): string {
+  const builds = countWords(use?.builds ?? 0, "build");
+  return use?.topics ? `${builds} · ${countWords(use.topics, "topic")}` : builds;
+}
 
 /* ── the address ── */
 

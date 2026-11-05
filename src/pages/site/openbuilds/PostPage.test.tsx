@@ -29,6 +29,12 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 vi.mock("@/lib/errors/report", () => ({ reportError: vi.fn() }));
 vi.mock("@/hooks/useEngagement", () => ({ useEngagement: () => ({ counts: {}, liked: new Set(), saved: new Set(), loaded: true }), engagementFor: () => ({ counts: null, liked: false, saved: false }) }));
 vi.mock("sonner", () => ({ toast: Object.assign(vi.fn(), { error: vi.fn() }) }));
+const reportTarget = vi.fn(async (_input: unknown) => undefined);
+const openTopicThread = vi.fn(async (_author: string) => "thread-9");
+vi.mock("@/lib/messaging/topics", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/messaging/topics")>()), openTopicThread: (author: string) => openTopicThread(author) }));
+const siteHiddenPostsOf = vi.fn(async (_id: string) => [] as { id: string; kind: "topic" | "reply"; heading: string }[]);
+vi.mock("@/lib/moderation/siteHidden", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/moderation/siteHidden")>()), siteHiddenPostsOf: (id: string) => siteHiddenPostsOf(id) }));
+vi.mock("@/lib/moderation", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/moderation")>()), reportTarget: (input: unknown) => reportTarget(input) }));
 
 import { attachment, entry } from "./postModel.fixtures";
 import PostPage from "./PostPage";
@@ -60,6 +66,12 @@ function Where() {
   return null;
 }
 
+/** UX-09 Q4: where Message @sam lands, and the topic it hands over. */
+function Arrived() {
+  const location = useLocation();
+  return <p data-testid="arrived">{`${location.pathname} ${JSON.stringify(location.state)}`}</p>;
+}
+
 function mount(path = "/openbuilds/topics/p1") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -68,6 +80,7 @@ function mount(path = "/openbuilds/topics/p1") {
         <MemoryRouter initialEntries={[path]}>
           <Routes>
             <Route path="/openbuilds/topics/:id" element={<><PostPage /><Where /></>} />
+            <Route path="/messages/:threadId" element={<Arrived />} />
           </Routes>
         </MemoryRouter>
       </QueryClientProvider>
@@ -113,10 +126,14 @@ describe("the post page", () => {
     expect(await screen.findByRole("heading", { level: 1 })).toBeInTheDocument();
   });
 
-  it("gives a reader who neither wrote the post nor moderates no reply menu", async () => {
+  it("gives a reader who neither wrote the post nor moderates no Pin or Hide (UX-09 P8: the menu holds Report alone)", async () => {
     mount();
     await screen.findByRole("heading", { level: 1 });
-    expect(screen.queryAllByRole("button", { name: "More for this reply" })).toHaveLength(0);
+    const [first] = screen.getAllByTestId("reply");
+    fireEvent.keyDown(within(first).getByRole("button", { name: "More for this reply" }), { key: "Enter" });
+    expect(await screen.findByRole("menuitem", { name: "Report" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Pin" })).toBeNull();
+    expect(screen.queryByRole("menuitem", { name: "Hide" })).toBeNull();
   });
 
   it("gives the post's author Pin but not Hide", async () => {
@@ -206,5 +223,142 @@ describe("the post page", () => {
       expect(screen.queryByRole("checkbox", { name: "Line up steps" })).toBeNull();
       expect(screen.queryByRole("table")).toBeNull();
     });
+  });
+});
+
+describe("UX-09 P1: #reply-box", () => {
+  beforeEach(() => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("min-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
+    user = { id: "me" };
+    getPost.mockReset().mockResolvedValue(thread());
+    readPostExtras.mockReset().mockResolvedValue(extras());
+  });
+
+  it("opens the topic with the reply box's field focused (Reply on a gap)", async () => {
+    mount("/openbuilds/topics/p1#reply-box");
+    await screen.findByRole("heading", { level: 1 });
+    const box = await screen.findByTestId("reply-box");
+    expect(box.id).toBe("reply-box");
+    await waitFor(() => expect(document.activeElement).toBe(within(box).getByRole("textbox")));
+  });
+});
+
+describe("UX-09 P8: reporting a topic or a reply", () => {
+  beforeEach(() => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("min-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
+    user = { id: "me" };
+    getPost.mockReset().mockResolvedValue(thread());
+    readPostExtras.mockReset().mockResolvedValue(extras());
+    reportTarget.mockClear();
+    vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
+  });
+
+  it("a reader reports the topic, and the report is written with its target type", async () => {
+    mount();
+    await screen.findByRole("heading", { level: 1 });
+    fireEvent.keyDown(screen.getByRole("button", { name: "More for this topic" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Report" }));
+    const dialog = await screen.findByRole("dialog", { name: "Report this topic" });
+    fireEvent.click(within(dialog).getByRole("radio", { name: "Spam" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Send report" }));
+    await waitFor(() => expect(reportTarget).toHaveBeenCalledWith({ targetType: "openbuild_post", targetId: "p1", reason: "spam", note: "" }));
+  });
+
+  it("a reply is reported as a reply", async () => {
+    mount();
+    await screen.findByRole("heading", { level: 1 });
+    const [first] = screen.getAllByTestId("reply");
+    fireEvent.keyDown(within(first).getByRole("button", { name: "More for this reply" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Report" }));
+    expect(await screen.findByRole("dialog", { name: "Report this reply" })).toBeInTheDocument();
+  });
+
+  it("the author sees no Report on their own topic or reply", async () => {
+    user = { id: "sam" };
+    getPost.mockResolvedValue(thread({ replies: [entry("sam-reply", 60, { authorId: "sam" })] }));
+    mount();
+    await screen.findByRole("heading", { level: 1 });
+    // Their topic: no menu for a reader who is not a moderator of its space.
+    expect(screen.queryByRole("button", { name: "More for this topic" })).toBeNull();
+    // Their reply: Pin (they wrote the topic), no Report.
+    const [first] = screen.getAllByTestId("reply");
+    fireEvent.keyDown(within(first).getByRole("button", { name: "More for this reply" }), { key: "Enter" });
+    expect(await screen.findByRole("menuitem", { name: "Pin" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Report" })).toBeNull();
+  });
+});
+
+describe("UX-09 Q4: Message the topic's author", () => {
+  beforeEach(() => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("min-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
+    vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
+    user = { id: "me" };
+    getPost.mockReset().mockResolvedValue(thread({ author: { id: "sam", handle: "sam", name: "Sam", avatarUrl: null } }));
+    readPostExtras.mockReset().mockResolvedValue(extras());
+    openTopicThread.mockClear();
+  });
+
+  it("opens the one direct thread with the author, the topic waiting in its message box", async () => {
+    mount();
+    await screen.findByRole("heading", { level: 1 });
+    fireEvent.keyDown(screen.getByRole("button", { name: "More for this topic" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Message @sam" }));
+    const arrived = await screen.findByTestId("arrived");
+    expect(openTopicThread).toHaveBeenCalledWith("sam");
+    expect(arrived.textContent).toBe(`/messages/thread-9 ${JSON.stringify({ shareTopic: { id: "p1", label: "Can anyone make the scorer faster?", subtitle: "@sam" } })}`);
+  });
+
+  it("is not offered to the topic's author", async () => {
+    user = { id: "sam" };
+    mount();
+    await screen.findByRole("heading", { level: 1 });
+    expect(screen.queryByRole("button", { name: "More for this topic" })).toBeNull();
+    expect(openTopicThread).not.toHaveBeenCalled();
+  });
+});
+
+describe("UX-09 Q5: the author of what the site hid is told", () => {
+  beforeEach(() => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("min-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
+    vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
+    user = { id: "me" };
+    getPost.mockReset().mockResolvedValue(thread());
+    readPostExtras.mockReset().mockResolvedValue(extras());
+    siteHiddenPostsOf.mockReset().mockResolvedValue([]);
+  });
+
+  it("a hidden topic says Hidden by the site's moderators to its author, with how reporting works", async () => {
+    getPost.mockResolvedValue(null);
+    siteHiddenPostsOf.mockResolvedValue([{ id: "p1", kind: "topic", heading: "Can anyone make the scorer faster?" }]);
+    mount();
+    const notice = await screen.findByTestId("site-hidden-notice");
+    expect(siteHiddenPostsOf).toHaveBeenCalledWith("p1");
+    expect(notice.textContent).toContain("Hidden by the site's moderators: your topic");
+    expect(notice.textContent).toContain("“Can anyone make the scorer faster?”");
+    expect(within(notice).getByRole("link", { name: "How reporting works" }).getAttribute("href")).toBe("/terms#reporting");
+    expect(screen.queryByText("This post isn't available.")).toBeNull();
+  });
+
+  it("a hidden reply is named above the topic it was in", async () => {
+    siteHiddenPostsOf.mockResolvedValue([{ id: "x1", kind: "reply", heading: "my reply" }]);
+    mount();
+    await screen.findByRole("heading", { level: 1 });
+    const notice = await screen.findByTestId("site-hidden-notice");
+    expect(notice.textContent).toContain("Hidden by the site's moderators: your reply");
+  });
+
+  it("anyone else is told only that the post isn't available", async () => {
+    getPost.mockResolvedValue(null);
+    mount();
+    expect(await screen.findByText("This post isn't available.")).toBeInTheDocument();
+    expect(screen.queryByTestId("site-hidden-notice")).toBeNull();
+  });
+
+  it("asks nothing signed out", async () => {
+    user = null;
+    getPost.mockResolvedValue(null);
+    mount();
+    expect(await screen.findByText("This post isn't available.")).toBeInTheDocument();
+    expect(siteHiddenPostsOf).not.toHaveBeenCalled();
   });
 });

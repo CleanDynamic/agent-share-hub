@@ -357,6 +357,14 @@ export async function installWorld(page: Page, world: World, options: { signedIn
         const made = plainTable(world, world.builds, url, method, { status: "draft", making: {}, made_with: [], reproduction_count: 0, session_count: 0, parent_build_id: null, ...body() }, "d");
         return reply(route, made, 201);
       }
+      // UX-09 P3: Drafts' read of the topic each draft was made for, with the topic's author.
+      if (select.includes("topic:openbuild_posts")) {
+        const made = world.builds.filter((build) => build.status === "draft" && build.made_for_topic_id);
+        return reply(route, made.map((build) => {
+          const topic = world.posts.find((post) => post.id === build.made_for_topic_id);
+          return { id: build.id, topic: topic ? { id: topic.id, author: topic.author_id === KIT.id ? { username: KIT.username } : { username: AUTHOR.username } } : null };
+        }));
+      }
       // Embedded reads (a draft's first prompt) come back empty.
       return reply(route, plainTable(world, world.builds, url, method, body(), "d").map((row) => ({ ...row, first_prompt: [] })));
     }
