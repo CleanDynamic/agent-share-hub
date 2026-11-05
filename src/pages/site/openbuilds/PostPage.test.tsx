@@ -30,6 +30,8 @@ vi.mock("@/lib/errors/report", () => ({ reportError: vi.fn() }));
 vi.mock("@/hooks/useEngagement", () => ({ useEngagement: () => ({ counts: {}, liked: new Set(), saved: new Set(), loaded: true }), engagementFor: () => ({ counts: null, liked: false, saved: false }) }));
 vi.mock("sonner", () => ({ toast: Object.assign(vi.fn(), { error: vi.fn() }) }));
 const reportTarget = vi.fn(async (_input: unknown) => undefined);
+const openTopicThread = vi.fn(async (_author: string) => "thread-9");
+vi.mock("@/lib/messaging/topics", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/messaging/topics")>()), openTopicThread: (author: string) => openTopicThread(author) }));
 vi.mock("@/lib/moderation", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/moderation")>()), reportTarget: (input: unknown) => reportTarget(input) }));
 
 import { attachment, entry } from "./postModel.fixtures";
@@ -62,6 +64,12 @@ function Where() {
   return null;
 }
 
+/** UX-09 Q4: where Message @sam lands, and the topic it hands over. */
+function Arrived() {
+  const location = useLocation();
+  return <p data-testid="arrived">{`${location.pathname} ${JSON.stringify(location.state)}`}</p>;
+}
+
 function mount(path = "/openbuilds/topics/p1") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -70,6 +78,7 @@ function mount(path = "/openbuilds/topics/p1") {
         <MemoryRouter initialEntries={[path]}>
           <Routes>
             <Route path="/openbuilds/topics/:id" element={<><PostPage /><Where /></>} />
+            <Route path="/messages/:threadId" element={<Arrived />} />
           </Routes>
         </MemoryRouter>
       </QueryClientProvider>
@@ -274,5 +283,34 @@ describe("UX-09 P8: reporting a topic or a reply", () => {
     fireEvent.keyDown(within(first).getByRole("button", { name: "More for this reply" }), { key: "Enter" });
     expect(await screen.findByRole("menuitem", { name: "Pin" })).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "Report" })).toBeNull();
+  });
+});
+
+describe("UX-09 Q4: Message the topic's author", () => {
+  beforeEach(() => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("min-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
+    vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
+    user = { id: "me" };
+    getPost.mockReset().mockResolvedValue(thread({ author: { id: "sam", handle: "sam", name: "Sam", avatarUrl: null } }));
+    readPostExtras.mockReset().mockResolvedValue(extras());
+    openTopicThread.mockClear();
+  });
+
+  it("opens the one direct thread with the author, the topic waiting in its message box", async () => {
+    mount();
+    await screen.findByRole("heading", { level: 1 });
+    fireEvent.keyDown(screen.getByRole("button", { name: "More for this topic" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Message @sam" }));
+    const arrived = await screen.findByTestId("arrived");
+    expect(openTopicThread).toHaveBeenCalledWith("sam");
+    expect(arrived.textContent).toBe(`/messages/thread-9 ${JSON.stringify({ shareTopic: { id: "p1", label: "Can anyone make the scorer faster?", subtitle: "@sam" } })}`);
+  });
+
+  it("is not offered to the topic's author", async () => {
+    user = { id: "sam" };
+    mount();
+    await screen.findByRole("heading", { level: 1 });
+    expect(screen.queryByRole("button", { name: "More for this topic" })).toBeNull();
+    expect(openTopicThread).not.toHaveBeenCalled();
   });
 });

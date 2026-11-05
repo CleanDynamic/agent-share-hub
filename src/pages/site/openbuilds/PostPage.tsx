@@ -31,6 +31,7 @@ import { getPost, hidePost, joinSpace, leaveSpace, likePost, pinPost, reactToPos
 import type { StepToCopy } from "@/lib/openbuilds/addToDraft";
 import { NO_REACTIONS, readPostExtras, type PostPageExtras } from "@/lib/openbuilds/postPage";
 import { usePageReady } from "@/lib/routing/pageReady";
+import { openTopicThread, type TopicShareState } from "@/lib/messaging/topics";
 
 import { AddToDraftButton, AddToDraftSub } from "./AddToDraft";
 import { EmptyLine, LoadError } from "./OpenBuildsFeedParts";
@@ -134,6 +135,22 @@ export default function PostPage() {
 
   const signInTo = `/login?redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`;
   const signIn = () => navigate(signInTo);
+
+  /* UX-09 Q4: "Message @maya": the reader's one direct thread with the author (found, or made once), opened with this topic waiting
+     in its message box as a card, as a build is shared. Nothing is sent until the reader sends it. */
+  const messageAuthor = async (entry: PostThread) => {
+    if (!viewerId) return signIn();
+    try {
+      const threadId = await openTopicThread(entry.authorId);
+      const state: TopicShareState = {
+        shareTopic: { id: entry.rootId, label: splitBody(entry.body).heading || "A topic", subtitle: entry.author?.handle ? `@${entry.author.handle}` : undefined },
+      };
+      navigate(`/messages/${threadId}`, { state });
+    } catch (error) {
+      reportError(error, { source: "openbuilds", context: "openTopicThread" });
+      toast.error("Couldn't open the conversation. Try again.");
+    }
+  };
   const move = (change: Parameters<typeof postSearch>[1]) => setParams(postSearch(params, change, defaultView), { replace: true });
 
   /* ── changes shown at once ── */
@@ -359,6 +376,7 @@ export default function PostPage() {
             renderTile={renderTile}
             reactions={reactionRow(shown.id, shown.parentId ? "reply" : "topic")}
             onReport={shown.authorId === viewerId ? undefined : () => report(shown.id, shown.parentId ? "reply" : "topic")}
+            onMessage={shown.parentId !== null || shown.authorId === viewerId || !shown.author?.handle ? undefined : { label: `Message @${shown.author.handle}`, onSelect: () => void messageAuthor(shown) }}
             tab={address.tab}
             onTab={(tab) => move({ tab })}
             replies={shown.replyCount}

@@ -7,7 +7,8 @@ import { toast } from "sonner";
 import { isPermissionError } from "@/lib/errors/permission";
 import { Camera, Image as ImageIcon, Mic, Smile, Heart, Send, X, Loader2, Square, AtSign } from "lucide-react";
 import { ThreadReferencePicker, type ReferenceItem } from "@/components/messages/ThreadReferencePicker";
-import { listShareableBuilds, sendBuildMessage } from "@/lib/messaging";
+import { isTopicShareState, listShareableBuilds, sendBuildMessage, sendTopicMessage } from "@/lib/messaging";
+import { useLocation, useNavigate } from "react-router-dom";
 // Aliased `tok`: this file already binds `t` twice in tight scopes (a
 // setTimeout handle and a MediaStreamTrack), and a token accessor that can
 // be shadowed is a trap for whoever edits those blocks next.
@@ -24,9 +25,10 @@ interface MessageInputBarProps {
   onMessageSent: () => void;
 }
 
-/** RC-P20: the build a message is about to carry, and what the chip calls it. */
+/** RC-P20: the build a message is about to carry, and what the chip calls it. UX-09 Q4: or a topic. */
 interface PendingShare {
-  buildId: string;
+  kind: "build" | "topic";
+  id: string;
   label: string;
   subtitle?: string;
 }
@@ -65,6 +67,17 @@ export function MessageInputBar({
   const [pickerError, setPickerError] = useState<unknown>(null);
   const [pickerAttempt, setPickerAttempt] = useState(0);
   const [pendingShare, setPendingShare] = useState<PendingShare | null>(null);
+
+  /* UX-09 Q4: "Message @maya" on a topic opens this thread with the topic handed over in the router state. It waits here as a card,
+     with an optional note, and goes when the reader sends, as a build does. The state is cleared so a reload does not add it again. */
+  const location = useLocation();
+  const navigate = useNavigate();
+  useEffect(() => {
+    const state = location.state as unknown;
+    if (!isTopicShareState(state)) return;
+    setPendingShare({ kind: "topic", id: state.shareTopic.id, label: state.shareTopic.label, subtitle: state.shareTopic.subtitle });
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
+  }, [location.state, location.pathname, location.search, navigate]);
   const atTriggerActiveRef = useRef<boolean>(false); // when picker opened via typing `@`
 
   const COMMON_EMOJIS = ["😀", "😂", "😍", "🤔", "👍", "🎉", "🔥", "💯", "😎", "🙌", "💪", "✨", "🚀", "❤️", "😊", "👏", "🤩", "😭", "🫡", "💀"];
@@ -123,7 +136,7 @@ export function MessageInputBar({
   };
 
   const handlePickerSelect = (item: ReferenceItem) => {
-    setPendingShare({ buildId: item.id, label: item.name, subtitle: item.subtitle });
+    setPendingShare({ kind: "build", id: item.id, label: item.name, subtitle: item.subtitle });
     // If opened via `@`, strip the `@query` token from the textarea
     if (atTriggerActiveRef.current) {
       setText((prev) => prev.replace(/@\S*$/, "").replace(/@$/, ""));
@@ -155,7 +168,8 @@ export function MessageInputBar({
     try {
       if (pendingShare) {
         try {
-          await sendBuildMessage(threadId, pendingShare.buildId, text.trim() || undefined);
+          if (pendingShare.kind === "topic") await sendTopicMessage(threadId, pendingShare.id, text.trim() || undefined);
+          else await sendBuildMessage(threadId, pendingShare.id, text.trim() || undefined);
         } catch (error) {
           // The build and the note stay, so the reader can send again. The
           // toast says why in the words STATES.md row 21 gives; the note is

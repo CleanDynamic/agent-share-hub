@@ -1483,6 +1483,16 @@ export const CA03_FILES: readonly string[] = [
   "src/test/security/ux09Migrations.test.ts",
   "src/pages/site/openbuilds/openBuildsSeo.ts",
   "src/pages/site/openbuilds/ux09.p10.test.ts",
+  // UX-09, Miles' answers
+  "src/lib/notifications/keys.ts",
+  "src/lib/notifications/keys.test.ts",
+  "src/lib/bounty/openRequests.ts",
+  "src/components/routing/OlderRequestsRoute.tsx",
+  "src/components/routing/OlderRequestsRoute.test.tsx",
+  "src/lib/messaging/topics.ts",
+  "src/lib/messaging/topics.test.ts",
+  "src/components/messages/TopicShareCard.tsx",
+  "src/components/dm/MessageInputBar.topic.test.tsx",
 ];
 
 /**

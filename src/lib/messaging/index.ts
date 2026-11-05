@@ -14,3 +14,12 @@ export {
   sendBuildMessage,
   type ShareableBuild,
 } from "./builds";
+// UX-09 Q4: a topic in a message, in the one direct thread between two people.
+export {
+  getSharedTopics,
+  isTopicShareState,
+  openTopicThread,
+  sendTopicMessage,
+  type SharedTopic,
+  type TopicShareState,
+} from "./topics";
