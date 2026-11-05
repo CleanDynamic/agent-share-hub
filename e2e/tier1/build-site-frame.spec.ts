@@ -222,7 +222,7 @@ test.describe("the other tabs, with the sample build (UI-P30)", () => {
     await openSampleTab(page, "tab=broke");
     await expect(page.getByTestId("build-viewer").getByRole("button", { name: "Run", exact: true })).toHaveCount(0);
     await expect(page.getByTestId("build-open-gap")).toContainText("£150");
-    await expect(page.getByRole("button", { name: /^Solve it/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Reply/ })).toBeVisible();
   });
 
   test("draws the rebuilds as cards, then the way to the family tree", async ({ page }) => {
