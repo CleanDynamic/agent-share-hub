@@ -1098,6 +1098,7 @@ export type Database = {
           like_count: number
           live_url: string | null
           made_for: string[] | null
+          made_for_topic_id: string | null
           made_with: string[] | null
           making: Json
           models_used: string[]
@@ -1158,6 +1159,7 @@ export type Database = {
           like_count?: number
           live_url?: string | null
           made_for?: string[] | null
+          made_for_topic_id?: string | null
           made_with?: string[] | null
           making?: Json
           models_used?: string[]
@@ -1218,6 +1220,7 @@ export type Database = {
           like_count?: number
           live_url?: string | null
           made_for?: string[] | null
+          made_for_topic_id?: string | null
           made_with?: string[] | null
           making?: Json
           models_used?: string[]
@@ -1284,6 +1287,13 @@ export type Database = {
             columns: ["hero_node_id"]
             isOneToOne: false
             referencedRelation: "build_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "builds_made_for_topic_id_fkey"
+            columns: ["made_for_topic_id"]
+            isOneToOne: false
+            referencedRelation: "openbuild_posts"
             referencedColumns: ["id"]
           },
           {
