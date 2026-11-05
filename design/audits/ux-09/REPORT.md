@@ -121,17 +121,96 @@ Two readings, the safer taken: Part 1's breakage rows (1), Drafts' line as text 
   gains `Report` for everyone but the reply's author (Pin is now drawn only for those who may pin). The dialog is the existing one,
   titled `Report this topic` or `Report this reply`. The admin queue names the target (`Topic: “...”` / `Reply: “...”`, linked) under
   `OpenBuilds · <reason>`, in one more request started with the others, and offers Dismiss. **Hide:** the posts guard lets only a topic's
-  author or a moderator of its space hide it; this branch doesn't widen that to admins. `resolve_report` refuses hiding a topic in
+  author or a moderator of its space hide it; this branch didn't widen that to admins (superseded by Miles' answer 5: admins now hide for the site, below). `resolve_report` refuses hiding a topic in
   words, and its old `ELSE` (which would have hidden a *comment* with the topic's id) is now `ELSIF 'comment'`. See Questions.
 - **Part 10** (`7b8a947`, `96a8922`). The board and its entry are in `design/reference/vision/archive/` (`openbuilds.html`,
   `index.json` with a `retired` note). `audit:design --list` now lists 7 vision boards and no `vision/dusk/openbuilds`. Titles through
   `openBuildsSeo.ts`. The baseline: `openbuilds 14 -> 9` (the only entry changed).
 
+## Miles' answers, applied
+
+Miles answered the questions below. Each answer is one commit on this branch, after the report commit (`e6593b7`).
+
+1. **Notification settings page** (Question 1). Not built here: UX-15 adds Settings › Notifications (`/settings/notifications`), one
+   switch per kind, read by rc_notify. This branch adds no notification kind of its own. `src/lib/notifications/keys.ts`
+   (`NOTIFICATION_KEYS`) lists every kind rc_notify writes, each a stable key, and `keys.test.ts` reads every migration and fails when
+   a kind passed to `rc_notify` or `rc_notify_savers` is missing from the list (`6198f3f`). The keys, for UX-15:
+
+   | key | who is told, and of what | since |
+   |---|---|---|
+   | `rebuilt` | a build of yours, or one you kept, was rebuilt | RC-P19 (SV-20 adds savers) |
+   | `published` | someone you follow published a build | RC-P19 |
+   | `reproduced` | a build of yours, or one you kept, was run | RC-P19 (SV-20 adds savers) |
+   | `comment` | someone commented on your build | RC-P19 |
+   | `reply` | someone replied to your comment on a build | RC-P19 |
+   | `like` | someone liked your build | RC-P19 |
+   | `solution` | an answer came to your request, or to one on a build you kept | RC-P19 (SV-20 adds savers) |
+   | `solved` | your answer to a request was accepted | RC-P19 |
+   | `follow` | someone followed you | RC-P19 |
+   | `post_reply` | someone replied to your topic or your reply | UX-04 |
+   | `post_thread` | someone replied in a topic you started | UX-04 |
+   | `post_mention` | someone mentioned you | UX-04 |
+   | `post_like` | someone liked your topic or your reply | UX-04 |
+   | `post_started` | someone started a topic from your build, part, session or step | UX-04 |
+   | `post_pinned` | your topic or reply was pinned | UX-04 |
+
+   Saved-item notifications (SV-20) reuse `rebuilt`, `reproduced` and `solution`; their `target_type` (`node`, `collection`) is what
+   tells them apart, so UX-15 can offer them as one switch each or fold them in. Direct messages (`message_received`) are written by
+   the client, not rc_notify, and are not in the list.
+2. **Build comments becoming replies** (Question 2). Not in this run. `build_comments` and everything about comments is unchanged.
+3. **Older requests retires itself** (Question 3, `0f23930`, `8ec019c`). `hasOpenRequests()` (`src/lib/bounty/openRequests.ts`) asks
+   for at most one `bounties` row with `status = 'open'`. While one exists, nothing changes. Once none does:
+   - the `Older requests` link under Your spaces on `/openbuilds` is not drawn (`OpenBuildsFeedView`'s `olderRequests`);
+   - `/openbuilds/requests` (and `/bounties`, which lands there) redirects to `/openbuilds` (`OlderRequestsRoute`, keeping the query
+     string);
+   - each request's own page (`/openbuilds/<id>/solve`, `/bounties/<id>/solve`) is a different route and is never redirected, so build
+     pages, Home and notifications still open it.
+   Nobody does anything by hand, and no request row is touched. A failed check keeps the link and the page: only a definite "none
+   open" retires them. The check does not hold up either page: the link appears when the answer comes, and the requests page renders
+   beside the check. One request more on `/openbuilds` (in round 1, not waited for).
+4. **Topics in Messages** (Question 4, `c9530d9`). Per-topic threads were not built in UX-09 (Part 7 stopped), so nothing had to be
+   changed back. Now: a topic's `···` menu has `Message @maya` (for a signed-in reader who is not the author; signed out it goes to
+   sign in). It opens or creates the one direct thread with her (`openTopicThread`, through the existing `createDirectThread`) and
+   opens it with the topic waiting in the message box as a chip, as a build waits after the `@` picker. The topic goes as a card with
+   the reader's note when they press Send (`sendTopicMessage`; the thread's preview says `Shared a topic`). Nothing is sent before
+   that. In the thread the card (`TopicShareCard`: `Topic`, the heading, `@maya`, one link to the topic) is drawn like a build's, and a
+   topic the reader can no longer read leaves the words alone. Migration `20261108150000_ux09_topic_messages.sql`: one nullable
+   column, `dm_messages.shared_post_id`, with a partial index. `dm_threads` and `pinned_content_type` are untouched.
+5. **Admins hide a reported topic or reply** (Question 5, `3dd8fd4`). Migration `20261108160000_ux09_site_hide_topics.sql`:
+   - a second hide, `openbuild_posts.site_hidden_by` and `site_hidden_at`, apart from the space's `hidden_by`. `posts_guard_update`
+     keeps each to its own side: only an admin sets or clears the site's (as themselves), and an admin acting as an admin cannot touch
+     the space's. Policies use `(select public.is_admin((select auth.uid())))`;
+   - the read policy: what the site hid is read by admins only. It is gone from every feed, space, list and search for everyone else,
+     its author and the space's moderators included (every read, the feed function among them, is SECURITY INVOKER);
+   - `reply_count` counts a reply that neither side hid;
+   - `resolve_report`'s Hide on a topic or a reply sets the site's hide and closes every open report on it as hidden (it no longer
+     refuses in words);
+   - `site_hidden_posts_of(topic)` returns the caller's own entries in that topic that the site hid, with their first line.
+   In Admin › Reports, a topic's or reply's row has `Hide` again; the dialog says `Hide this topic?` / `Hide this reply?` and what
+   happens. A list `Hidden by the site` under the queue shows each with `Unhide` (an admin's update of the column back to null; the
+   report stays resolved). Its author sees, on the topic's page, `Hidden by the site's moderators: your topic` (or `your reply`), the
+   first line they wrote, `Nobody else sees it now.` and `How reporting works`, linked to `/terms#reporting`.
+   Checked against a scratch Postgres 16, with the real UX-04 and UX-09 migrations over stub tables (applied twice): a non-admin's
+   `resolve_report` is refused; the admin's Hide sets the column, stamps the time, resolves the report and lowers `reply_count`; anon,
+   the author, the topic's author and the space's moderator then read 0 rows, the author's notice returns the reply and nobody
+   else's; the moderator's and the topic author's updates of the site's hide change nothing (0 rows); the admin cannot clear the space's
+   hide, cannot hide as someone else, cannot edit the words; Unhide clears both columns, restores `reply_count`, and anon reads it
+   again; an insert that sets `site_hidden_by` is refused.
+6. **`design/vision-kit.py`** (Question 10, `863038b`). The kit no longer carries the OpenBuilds board: `dusk/openbuilds.html`, its
+   source `OpenWork.dc.html`, its picture `screens/vision/openbuilds.png`, and its `index.json` entry (the kit's index is now the one on
+   disk). It has no profile board. It now writes 23 files; `--check`: 23 of 23 match. Running it changes nothing on disk, so it can
+   never write the board back. The archive (`design/reference/vision/archive/`) is unchanged. The source and the picture stay where
+   they are on disk, because the archive's `index.json` points at them. `audit:design` after running the kit: see Checks.
+
+Questions 6 to 9 of the report (Reply with it, the Drafts line as a link, a breakage as the topic's still-open step, retitling the
+requests page) were not answered and are still open; Question 9 matters less now, since the page retires itself.
+
 ## Report
 
 ```
 UX-09 · Connections and plumbing
-PASS, with Parts 5 and 7 stopped on false premises, Part 9 a question, and the checks below that are not done or not comparable
+PASS, with Part 5 stopped on a false premise, Part 9 left to UX-15 and Part 7 built from Miles' answers, and the checks below that
+  are not done or not comparable
 Branch / PR: claude/practical-newton-dh2e09 (no pull request opened)
 Facts in this prompt that were wrong on disk:
   - BreakageBody has no failed-run rows: its rows are recorded breakages, with a replay step and no model.
@@ -160,7 +239,9 @@ Request rounds and requests for the page, before → after:
   - Library: no new request (the same RPC returns one more column).
   - Topic page: no new request on arrival; the report queue gains one request (openbuild_posts by id), started with the others.
 Web Vitals against the last after numbers (LCP · CLS · INP proxy): not run (audit:perf was not run; see Checks).
-Built but not live yet: Drafts' For @maya's topic needs 20261108120000; Used in's topics needs 20261108130000; reporting a topic needs
+Built but not live yet: Message @maya needs 20261108150000 (until then Send says "Something went wrong." and the topic stays in the
+  box); the site's Hide of a topic or reply needs 20261108160000 (until then resolve_report refuses it, the queue says "Something went
+  wrong.", Hidden by the site lists nothing and no notice shows). Drafts' For @maya's topic needs 20261108120000; Used in's topics needs 20261108130000; reporting a topic needs
   20261108140000 (until then the insert is refused by the check and the dialog says it could not send). Each read works before its
   migration.
 Layers built only because a target failed: none.
@@ -189,6 +270,15 @@ Copy changed:
   - (new) dialog titles "Report this topic" / "Report this reply" · src/components/moderation/ReportDialog.tsx:61
   - (new) queue "OpenBuilds · <reason>", "Topic: “...”", "Reply: “...”", "A topic or reply that is no longer there" ·
     src/components/moderation/ReportsQueue.tsx:124, src/lib/moderation/reports.ts:201-203
+  - (new, Miles' answers) "Message @<handle>" · src/pages/site/openbuilds/PostPage.tsx (topic's ··· menu); "Topic" card ·
+    src/components/messages/TopicShareCard.tsx; thread preview "Shared a topic" · src/lib/messaging/topics.ts;
+    "Couldn't open the conversation. Try again." · PostPage.tsx
+  - (new, Miles' answers) "Hide this topic?" / "Hide this reply?", "It leaves every feed, space and search. Its author sees it was
+    hidden by the site's moderators; only admins can unhide it. Every open report on it closes.", "Hidden by the site", "Hidden
+    <time>", "Unhide" · src/components/moderation/ReportsQueue.tsx
+  - (new, Miles' answers) "Hidden by the site's moderators: your topic" / "...: your reply", "Nobody else sees it now.", "How
+    reporting works" · src/pages/site/openbuilds/SiteHiddenNotice.tsx
+  - (removed when no request is open) "Older requests" · src/pages/site/openbuilds/OpenBuildsFeedView.tsx
   - /openbuilds title "OpenBuilds · buildgallery" -> "OpenBuilds"; description "Post anything, reply with anything. Spaces are made and
     run by the people in them." -> "Start a topic with anything, reply with anything. Spaces are made and run by the people in them." ·
     src/pages/site/openbuilds/openBuildsSeo.ts:17-18
@@ -200,29 +290,24 @@ Lovable messages needed (send in this order):
   2. Apply supabase/migrations/20261108130000_ux09_used_in_topics.sql exactly as written. Change nothing else.
      Then run the EXPLAIN (ANALYZE, BUFFERS) statement in its header and paste the plan back.
   3. Apply supabase/migrations/20261108140000_ux09_report_topics.sql exactly as written. Change nothing else.
+  4. Apply supabase/migrations/20261108150000_ux09_topic_messages.sql exactly as written. Change nothing else.
+     Then run the EXPLAIN (ANALYZE, BUFFERS) statement in its header and paste the plan back.
+  5. Apply supabase/migrations/20261108160000_ux09_site_hide_topics.sql exactly as written. Change nothing else.
+     Then run the two EXPLAIN (ANALYZE, BUFFERS) statements in its header and paste the plans back.
 Parts not done:
   - Part 3, "Reply with it" in the publish toast: the composer has no publish success toast. The Playwright half "publishes the draft,
     and replies with it" is not done for the same reason.
   - Part 5, Search finds topics and spaces: HeaderSearch has no groups to add to (it submits to /builds?q=).
-  - Part 7, Messaging from a topic: dm_threads cannot pin a topic (pinned_content_id references content_items), and direct threads
-    are one per pair. Not built; see Questions.
-  - Part 9, Notification choices: no such page exists. Question below.
+  - Part 9, Notification choices: left to UX-15 (Miles' answer 1). The stable keys it will use are listed under Miles' answers.
+  - The Terms page: the author's notice links to /terms#reporting, but the app has no /terms route (SignupForm links /terms too),
+    so the link lands on Not found until a Terms page with a #reporting section exists. The address is one constant,
+    TERMS_REPORTING_HREF in src/lib/moderation/siteHidden.ts.
+  - No notification tells an author the site hid their topic or reply; they find out on its page. Say if one is wanted (it would be
+    a new rc_notify key, and probably not one a person can switch off).
   - Before and after screenshots of the build page (Where it broke, Rebuilds), Library, Messages and the report queue: the browser
     world has no build page, Library or queue. Covered by Vitest only.
   - audit:perf and audit:motion: not run (see Checks).
-Questions for Miles:
-  1. Notification choices (Part 9): no page lets a person choose which notifications they get (profiles.notification_preferences is
-     read by createNotification but nothing shows it). Should a settings page be built, with Replies to my topics, Mentions, Likes on
-     my topics, Pins and Topics started from my builds among its choices?
-  2. Should build comments (build_comments) later become replies? They are unchanged here.
-  3. Can Older requests be retired once no request is open? It stays as the one label for existing requests (and now has its trail).
-  4. Messaging from a topic (Part 7) needs a migration of its own: a nullable dm_threads.pinned_post_id referencing openbuild_posts
-     (as RC-P20 added pinned_build_id), 'openbuild_post' in the pinned_content_type check, and a decision on the thread: reuse the one
-     direct thread between the two people and pin the topic to it (moving any earlier pin), or a thread per topic and pair as bounty
-     threads are (a new dm_threads.type). Which?
-  5. Hiding a reported topic (Part 8): admins can't hide a topic today (the posts guard allows its author and its space's
-     moderators). Should resolve_report be able to hide a topic for the site's moderation (a change to posts_guard_update for admins),
-     or do admins only dismiss and tell the space's moderators?
+Questions for Miles (1 to 5 and 10 are answered: see "Miles' answers, applied"; still open):
   6. Part 3's Reply with it: should publishing a build show a success toast at all (it shows none today)? If so, Reply with it can
      join it for a draft made in a reply.
   7. Drafts' For @maya's topic is text inside the row's link. Should it be its own link (the row would need two links side by side,
@@ -231,14 +316,13 @@ Questions for Miles:
      Should a breakage written up as a part be markable as the topic's still-open step?
   9. The requests page (/openbuilds/requests) keeps its SeoHead "OpenBuilds · buildgallery" / "open steps to answer, with rewards".
      Retitle it "Older requests · OpenBuilds"?
- 10. design/vision-kit.py writes the OpenBuilds board back to dusk/ when it is run, and --check now reports it missing. Should the kit
-     drop the board, or should the archive be left to the kit?
 ```
 
 ## What Miles needs to do
 
 In order: (1) merge the pull request (none is open yet: ask for one, or open it from the branch `claude/practical-newton-dh2e09`);
-(2) press Publish › Publish changes; (3) send the three Lovable messages above, in order, and paste back the two EXPLAIN plans.
+(2) press Publish › Publish changes; (3) send the five Lovable messages above, in order, and paste back the five EXPLAIN plans.
+Older requests needs nothing: it goes by itself the first time no request is open.
 
 ## Checks run
 

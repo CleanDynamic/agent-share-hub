@@ -512,7 +512,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
   const sharedMedia = useMemo(() => [...(sharedBuilds?.values() ?? [])].flatMap(cardMedia), [sharedBuilds]);
   const sharedSrc = useSignedMedia(sharedMedia);
 
-  /* UX-09 Q4 — the topics this page of messages carries, read once for all of them. */
+  /* UX-09 Q4: the topics this page of messages carries, read once for all of them. */
   const sharedTopicIds = useMemo(() => {
     const carried = ((messages ?? []) as { shared_post_id?: string | null }[]).map((m) => m.shared_post_id);
     return [...new Set(carried.filter((id): id is string => typeof id === "string"))];
