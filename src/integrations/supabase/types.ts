@@ -6738,6 +6738,10 @@ export type Database = {
       }
       get_quest_state: { Args: { _user_id?: string }; Returns: Json }
       get_visible_surfaces: { Args: { _user_id?: string }; Returns: Json }
+      has_open_ask: {
+        Args: { b: Database["public"]["Tables"]["builds"]["Row"] }
+        Returns: boolean
+      }
       has_perk: { Args: { _slug: string; _user_id: string }; Returns: boolean }
       increment_content_view_count: {
         Args: { _content_id: string }
@@ -6918,6 +6922,10 @@ export type Database = {
       soft_delete_primitive_comment: {
         Args: { _comment_id: string }
         Returns: undefined
+      }
+      still_open_topic_count: {
+        Args: { b: Database["public"]["Tables"]["builds"]["Row"] }
+        Returns: number
       }
       sv01_lineage_visible: {
         Args: { _creator: string; _status: string; _visibility: string }

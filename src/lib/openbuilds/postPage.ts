@@ -182,7 +182,7 @@ export async function readSpaceCrowd(spaceId: string, viewerId: string | null): 
     viewerId ? db.from("space_members").select("user_id").eq("space_id", spaceId).eq("user_id", viewerId).limit(1).maybeSingle() : Promise.resolve({ data: null, error: null }),
   ]);
   for (const response of [found, moderators, count, mine]) if (response.error) throw postLayerError("readSpaceCrowd", response);
-  const row = found.data as (SpaceRow & { creator?: { username: string | null } | null }) | null;
+  const row = found.data as unknown as (SpaceRow & { creator?: { username: string | null } | null }) | null;
   if (!row) return null;
   const space = toSpace(row);
   type MemberRow = { user_id: string; profile?: { username: string | null; display_name: string | null; avatar_url: string | null } | null };
