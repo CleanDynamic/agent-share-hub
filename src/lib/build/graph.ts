@@ -44,7 +44,9 @@ import { PROMPT_TYPE, REPLY_MAX, swapMoves } from "./composePrompts";
 import { toolFor, toolName } from "@/lib/tools/registry";
 import { goalOf, LEGACY_SESSION_PREFIX, TYPED_SESSION_PREFIX, toolLabel, type MakingSession, type SessionGoal, type SessionMeta } from "./making";
 import { getNodeType } from "./nodeTypes";
+import { GAP_PROBLEM_KEY, gapProblem } from "./gaps";
 import { reorderNodes, upsertNode, type NodeMove } from "./nodes";
+import { OPEN_PROBLEM_MAX } from "./openRequest";
 import { buildLayerError, type BuildNode, type BuildNodeInsert, type NodeTree } from "./types";
 import { modelLabel } from "@/lib/models/registry";
 import { HEX_HINT, normaliseHex } from "@/lib/theme/partColour";
@@ -163,6 +165,8 @@ export interface Step {
   uses: Use[];
   /** Suggestions the maker dismissed, as "<kind>:<node_id>". */
   dismissed?: string[];
+  /** UX-08 P1: the maker marked the step tile still open (`is_gap`); what is missing, in their words (`payload.gap_problem`), "" when none were written. */
+  stillOpen?: string;
   children: Step[];
   /** A manual step's picture (its `media_id`), when it has one. */
   mediaId?: string | null;
@@ -989,6 +993,7 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     uses: usesOf(node),
     dismissed: dismissedOf(payload),
     children,
+    ...(node.is_gap ? { stillOpen: gapProblem(node.payload) } : null),
     ...(summary ? { summary: true as const } : null),
     ...(kind === "manual" ? { mediaId: stringOf(payload.media_id), lines: manualLinesOf(text), ...(where ? { where } : null) } : null),
     ...((kind === "prompt" || kind === "agent" || kind === "code") && modelRunOf(payload.modelRun) ? { modelRun: modelRunOf(payload.modelRun) as ModelRun } : null),
@@ -1444,6 +1449,23 @@ const withPayload = (node: BuildNode, payload: Payload): BuildNodeInsert => ({
   ...nodeRow(node),
   payload: payload as Json,
 });
+
+/**
+ * UX-08 P1: mark a step tile still open, with what is missing in the maker's words, or take the mark off (null). It is stored as the
+ * disk stores a gap: `is_gap` and `payload.gap_problem`; the rest of the payload is written back as it was read.
+ */
+export async function setStillOpen(node: BuildNode, problem: string | null): Promise<BuildNode> {
+  const payload = { ...payloadOf(node) };
+  if (problem === null) {
+    delete payload[GAP_PROBLEM_KEY];
+    return upsertNode({ ...withPayload(node, payload), is_gap: false });
+  }
+  const trimmed = problem.trim();
+  if (!trimmed) throw refuse("setStillOpen", "Say what's missing.");
+  if (trimmed.length > OPEN_PROBLEM_MAX) throw refuse("setStillOpen", `What's missing: ${OPEN_PROBLEM_MAX} characters max`);
+  payload[GAP_PROBLEM_KEY] = trimmed;
+  return upsertNode({ ...withPayload(node, payload), is_gap: true });
+}
 
 /** Name a step. Trimmed, at most 80 characters; an empty title saves as null. */
 export async function setStepTitle(node: BuildNode, title: string): Promise<BuildNode> {

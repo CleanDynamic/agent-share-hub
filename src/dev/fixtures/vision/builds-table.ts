@@ -149,7 +149,7 @@ export function visionBuildsTableProps(): BuildsViewProps {
       onMove: noop,
     },
     table: {
-      lenses: [{ value: "all", label: "All" }, { value: "proven", label: "Reproduced" }, { value: "rebuilt", label: "Rebuilt" }, { value: "unsolved", label: "Open requests" }],
+      lenses: [{ value: "all", label: "All" }, { value: "proven", label: "Reproduced" }, { value: "rebuilt", label: "Rebuilt" }, { value: "unsolved", label: "Still open" }],
       lens: "all",
       onLens: noop,
       sort: {

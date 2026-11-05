@@ -10,3 +10,4 @@ export * from "./attachLabels";
 export * from "./spacesFeed";
 export type { AttachmentInput } from "./attach";
 export * from "./feedTopics";
+export * from "./stillOpen";

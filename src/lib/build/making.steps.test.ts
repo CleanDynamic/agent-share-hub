@@ -132,7 +132,7 @@ describe("SV-21: a session or a part opened as a request", () => {
   });
 
   it("refuses a request with no words, and one that is too long", async () => {
-    await expect(setSessionOpen(DRAFT, "typed-s5", { problem: "   " })).rejects.toThrow(/Say what the request is for/);
+    await expect(setSessionOpen(DRAFT, "typed-s5", { problem: "   " })).rejects.toThrow(/Say what's missing/);
     await expect(setPartOpen(DRAFT, "ws-1", { problem: "x".repeat(501) })).rejects.toThrow(/500 characters/);
   });
 });

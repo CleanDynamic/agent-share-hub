@@ -117,7 +117,7 @@ describe("the Table", () => {
   it("draws the lens tabs, the active filters and Clear all", () => {
     const onClearAll = vi.fn();
     draw((p) => ({ ...p, table: { ...p.table!, onClearAll } }));
-    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["All", "Reproduced", "Rebuilt", "Open requests"]);
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["All", "Reproduced", "Rebuilt", "Still open"]);
     expect(screen.getByRole("button", { name: "Remove filter Field" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Clear all" }));
     expect(onClearAll).toHaveBeenCalled();

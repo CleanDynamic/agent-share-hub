@@ -39,7 +39,7 @@ afterEach(() => vi.unstubAllGlobals());
 describe("HomeView · the three columns", () => {
   it("draws the studio, the feed and the room, each section under its own heading", () => {
     mount();
-    for (const name of ["Since you were last here", "Continue editing", "Your sessions", "Your week", "Open requests", "Most run this week", "Where next"]) {
+    for (const name of ["Since you were last here", "Continue editing", "Your sessions", "Your week", "Still open", "Most run this week", "Where next"]) {
       expect(screen.getByRole("heading", { level: 2, name })).toBeTruthy();
     }
     expect(screen.getByRole("complementary", { name: "Your studio" })).toBeTruthy();
@@ -55,7 +55,7 @@ describe("HomeView · the three columns", () => {
   it("links the section chevrons to their pages", () => {
     mount();
     expect(screen.getByRole("link", { name: "Open drafts" }).getAttribute("href")).toBe("/drafts");
-    expect(screen.getByRole("link", { name: "Open OpenBuilds" }).getAttribute("href")).toBe("/openbuilds/requests");
+    expect(screen.getByRole("link", { name: "Open OpenBuilds" }).getAttribute("href")).toBe("/openbuilds?open=1");
     expect(screen.getByRole("link", { name: "Open activity" }).getAttribute("href")).toBe("/notifications");
   });
 
@@ -190,14 +190,14 @@ describe("HomeView · narrower windows", () => {
   });
 });
 
-describe("HomeView · a request from a failed run (SV-21)", () => {
+describe("HomeView · a topic from a failed run (SV-21, UX-08 P2)", () => {
   const base = visionHomeProps("populated");
   const runs = base.room.runs.map((run) => (run.worked ? run : { ...run, canRequest: true }));
 
   it("offers the button on a failed run the viewer may act on, and presses it with that run", () => {
     const onOpenRequest = vi.fn();
     mount({ room: { ...base.room, runs, onOpenRequest } });
-    const buttons = screen.getAllByRole("button", { name: "Open a request from this run" });
+    const buttons = screen.getAllByRole("button", { name: "Start a topic from this run" });
     expect(buttons).toHaveLength(1);
     fireEvent.click(buttons[0]);
     expect(onOpenRequest).toHaveBeenCalledWith(expect.objectContaining({ key: "r2", worked: false }));
@@ -205,8 +205,8 @@ describe("HomeView · a request from a failed run (SV-21)", () => {
 
   it("draws no button without a handler, or on a run the viewer may not act on", () => {
     mount({ room: { ...base.room, runs } });
-    expect(screen.queryByRole("button", { name: "Open a request from this run" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Start a topic from this run" })).toBeNull();
     mount({ room: { ...base.room, onOpenRequest: vi.fn() } });
-    expect(screen.queryByRole("button", { name: "Open a request from this run" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Start a topic from this run" })).toBeNull();
   });
 });

@@ -92,14 +92,13 @@ describe("SiteFooterView", () => {
       </MemoryRouter>,
     );
 
-  it("signed out: the four links, Sign in last", () => {
+  it("signed out: the links, Sign in last (UX-08 P5: no Solvers)", () => {
     footer(false);
     const links = screen.getAllByRole("link").map((a) => [a.textContent, a.getAttribute("href")]);
     expect(links).toEqual([
       ["buildgallery", "/"],
       ["About", "/about"],
       ["API docs", "/api-docs"],
-      ["Solvers", "/openbuilds/solvers"],
       ["Sign in", "/login"],
     ]);
   });
@@ -175,7 +174,7 @@ describe("breadcrumb and footer under the refined look", () => {
 
   it("the footer keeps its items, names and order", () => {
     render(refinedFooter(false));
-    expect(screen.getAllByRole("link").map((a) => a.textContent)).toEqual(["buildgallery", "About", "API docs", "Solvers", "Sign in"]);
+    expect(screen.getAllByRole("link").map((a) => a.textContent)).toEqual(["buildgallery", "About", "API docs", "Sign in"]);
     expect(screen.getByRole("button", { name: "Connect a tool" })).toBeTruthy();
     // UX-03 P10: no theme control in the footer; the header's is the one.
     expect(screen.queryByRole("group", { name: "Theme" })).toBeNull();

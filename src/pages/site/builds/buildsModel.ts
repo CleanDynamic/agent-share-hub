@@ -149,7 +149,7 @@ const OPEN_BY_DEFAULT = new Set(["field", "autonomy"]);
 
 /**
  * The live panel: the classification filters once their counts have answered, Tools and stack, Shape, Patterns once the
- * column is live, and Open requests. The board's number filters, Works on model and Last confirmed are SV-23's.
+ * column is live, and Still open. The board's number filters, Works on model and Last confirmed are SV-23's.
  */
 export function panelSections(state: PanelState): FilterSection[] {
   const isOpen = (id: string, holds: boolean) => holds || OPEN_BY_DEFAULT.has(id) || state.opened.has(id);
@@ -223,8 +223,8 @@ export function panelSections(state: PanelState): FilterSection[] {
   }
   sections.push(
     isOpen("open", state.open)
-      ? { kind: "word", id: "open", name: "Open requests", order: "az", options: [{ key: "open", label: "Has an open request", count: 0, checked: state.open }] }
-      : { kind: "closed", id: "open", name: "Open requests", value: state.open ? "Has one" : "Any" },
+      ? { kind: "word", id: "open", name: "Still open", order: "az", options: [{ key: "open", label: "Has a still-open topic", count: 0, checked: state.open }] }
+      : { kind: "closed", id: "open", name: "Still open", value: state.open ? "Has one" : "Any" },
   );
   return sections;
 }
@@ -241,7 +241,7 @@ export function liveCatalogue(classified: boolean, patterns: boolean, ranges = f
   groups.push({ name: "Proof", count: proof.length, items: proof.join(", ") });
   const structure = ["Shape", ...named(["steps", "sessions"]), ...(patterns ? ["Patterns"] : [])];
   groups.push({ name: "Structure", count: structure.length, items: structure.join(", ") });
-  groups.push({ name: "OpenBuilds", count: 1, items: "Open requests" });
+  groups.push({ name: "OpenBuilds", count: 1, items: "Still open" });
   return groups;
 }
 
@@ -263,7 +263,7 @@ export function activeChips(params: GalleryParams): TableChip[] {
   if (params.tool) chips.push({ key: "tool", name: "Tools", value: toolFor(params.tool)?.name ?? params.tool });
   for (const shape of params.shapes ?? []) chips.push({ key: `shape:${shape}`, name: "Shape", value: shapeWord(shape) });
   if (params.pattern) chips.push({ key: "pattern", name: "Patterns", value: PATTERN_LABEL[params.pattern] });
-  if (params.open) chips.push({ key: "open", name: "Open requests", value: "Has one" });
+  if (params.open) chips.push({ key: "open", name: "Still open", value: "Has one" });
   const model = params.model ? modelById(params.model) : null;
   if (model) chips.push({ key: "model", name: "Works on", value: model.name });
   if (params.within !== undefined) chips.push({ key: "within", name: "Last confirmed", value: WITHIN_WORDS(params.within) });
@@ -481,7 +481,7 @@ export function tableFooter(total: number | null, rows: readonly TableRowView[])
 
 /* ── the head and the lenses ── */
 
-export const LENS_LABEL: Record<GalleryLens, string> = { all: "All", proven: "Reproduced", rebuilt: "Rebuilt", unsolved: "Open requests" };
+export const LENS_LABEL: Record<GalleryLens, string> = { all: "All", proven: "Reproduced", rebuilt: "Rebuilt", unsolved: "Still open" };
 
 export const SORT_OPTIONS: readonly { value: GalleryFeedSort; label: string }[] = [
   { value: "reproduced", label: "Reproductions" },

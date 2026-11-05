@@ -85,12 +85,17 @@ describe("listBuildsTable", () => {
     expect(clause).toContain('made_with.ov.{"Claude Code"');
   });
 
-  it("joins the open asks inner for the Open requests lens and filter", async () => {
+  it("UX-08 P4: the Still open lens and filter read has_open_ask (an open request or a still-open topic), not an inner join", async () => {
     await listBuildsTable({ lens: "unsolved" });
-    expect(call("select")[0].args[0]).toContain("bounties!bounties_build_id_fkey!inner(");
+    expect(call("select")[0].args[0]).not.toContain("!inner(");
+    expect(call("select")[0].args[0]).toContain("still_open_topics:still_open_topic_count");
+    expect(call("eq")).toContainEqual({ method: "eq", args: ["has_open_ask", true] });
     calls = [];
     await listBuildsTable({ openBounties: true });
-    expect(call("select")[0].args[0]).toContain("!inner(");
+    expect(call("eq")).toContainEqual({ method: "eq", args: ["has_open_ask", true] });
+    calls = [];
+    await listBuildsTable();
+    expect(call("eq").map((entry) => entry.args[0])).not.toContain("has_open_ask");
   });
 
   it("reads the Reproduced lens as reproduced and fresh", async () => {

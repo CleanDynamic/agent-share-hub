@@ -61,6 +61,8 @@ import { useComposePrompts } from "./useComposePrompts";
 import { useComposeSessions } from "./useComposeSessions";
 import { DraftNotStartedError } from "./draftStart";
 import { errorLine } from "@/lib/errors/code";
+import { stillOpenMarksOf } from "@/lib/openbuilds/stillOpenMarks";
+import { STILL_OPEN_FAILED } from "./openRequestCopy";
 
 const coverKey = (buildId: string | undefined) => ["build", "getComposerCover", buildId] as const;
 
@@ -309,6 +311,9 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
   }, [nodes.tree]);
   const missing = useMemo(() => missingForPublish({ title, completeness: compose.completeness, hasPrompt }), [title, compose.completeness, hasPrompt]);
 
+  /* UX-08 P1: the spaces the publish checklist chose for the still-open topics (none by default); the page sets it, publish reads it. */
+  const stillOpenSpaces = useRef<readonly string[]>([]);
+
   const onPublish = async (): Promise<void> => {
     // What is still waiting to be written goes first, and is counted.
     await Promise.all([prompts.flush(), details.flush()]);
@@ -325,6 +330,14 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
         console.warn("[Compose] making stats not refreshed", cause);
       }
       await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(row.id) });
+      // UX-08 P1: the build is live; the still-open marks become topics now. A failure is a toast and never un-publishes.
+      const making = (row as { making?: unknown }).making ?? compose.build?.making;
+      if (stillOpenMarksOf(making, nodes.current()).length > 0) {
+        // Loaded now, not with the composer: most builds mark nothing.
+        void import("./stillOpenTopics")
+          .then((m) => m.sendStillOpenTopics({ buildId: row.id, making, tree: nodes.current(), spaceIds: stillOpenSpaces.current }))
+          .catch(() => toast.error(STILL_OPEN_FAILED));
+      }
     } catch (cause) {
       // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.error("[Compose] publish failed", cause);
@@ -420,7 +433,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
     onTopicSourceSwitch: details.setAllowAsTopicSource,
   };
 
-  return { viewProps, missing, build, tree: nodes.tree, compose, ensureBuild, firstSession, buildId, nodes, sessions, prompts, rehydrate };
+  return { viewProps, missing, build, tree: nodes.tree, compose, ensureBuild, firstSession, buildId, nodes, sessions, prompts, rehydrate, stillOpenSpaces };
 }
 
 export function ComposePage() {

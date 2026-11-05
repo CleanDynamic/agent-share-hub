@@ -18,6 +18,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ConnectionBanner } from "@/components/ConnectionBanner";
 import { RouteBoundary } from "@/components/routing/RouteBoundary";
 import { KeepSearchRedirect } from "@/components/routing/KeepSearchRedirect";
+import { SOLVERS_ADDRESSES, SOLVERS_LANDING } from "@/lib/routing/retiredRoutes";
 import { SearchRedirect } from "@/components/routing/SearchRedirect";
 import { CreatorRedirect } from "@/components/routing/CreatorRedirect";
 import { QUERY_DEFAULTS } from "@/lib/query/client";
@@ -85,7 +86,6 @@ const BountyUpload = lazy(() => import("@/pages/BountyUpload"));
 // RC-P05 — the Bounties board. Its own chunk, like every route the RC series
 // adds (CONTRACT §2.6).
 const Bounties = lazy(ROUTE_TABLE.bounties.load as () => Promise<{ default: React.ComponentType }>);
-// RC-P13 — the solvers board, under the bounties board. Its own chunk.
 // UX-05 P2: the requests page that /openbuilds was, now at /openbuilds/requests.
 /** UX-05: /openbuilds/posts/:id was never a page; a topic is at /openbuilds/topics/:id. */
 function TopicRedirect() {
@@ -96,7 +96,6 @@ const BountyRequests = lazy(ROUTE_TABLE.bountyRequests.load as () => Promise<{ d
 const SpacePage = lazy(ROUTE_TABLE.space.load as () => Promise<{ default: React.ComponentType }>);
 // UX-06: a post's page.
 const PostPage = lazy(ROUTE_TABLE.post.load as () => Promise<{ default: React.ComponentType }>);
-const Solvers = lazy(() => import("./pages/Solvers"));
 // Solve route for a specific bounty.
 const BountySolveShowPage = lazy(() => import("./pages/BountySolveShowPage"));
 // RC-P14 — a build's family of rebuilds, at /b2/:slug/lineage and, for the old
@@ -312,11 +311,8 @@ const App = () => (
                 <Route path="/content/:id" element={<ContentDetail />} />
                 <Route path="/b/:id" element={<ContentOrReblogRoute />} />
                 <Route path="/b/:id/thread" element={<ContentOrReblogRoute mode="thread" />} />
-                {/* RC-P13 — the legacy leaderboard ranked people against one
-                    legacy bounty post, and after the clear it reads nothing.
-                    Its address lands on the solvers board. The page file stays
-                    until the legacy bounty path is removed. */}
-                <Route path="/b/:id/leaderboard" element={<Navigate to="/openbuilds/solvers" replace />} />
+                {/* UX-08 P5: the solvers board and the legacy leaderboard (/b/:id/leaderboard) are retired: the three addresses
+                    land on OpenBuilds (see the routes with the other OpenBuilds addresses). */}
                 {/* RC-P14 — the old lineage address. It drew remix lineage; it
                     now lands on /b2/:slug/lineage when the slug names a build,
                     and says there is no build at it otherwise. */}
@@ -508,12 +504,11 @@ const App = () => (
                 <Route path="/openbuilds/topics/:id" element={<RouteBoundary><PostPage /></RouteBoundary>} />
                 <Route path="/openbuilds/requests" element={<RouteBoundary><BountyRequests /></RouteBoundary>} />
                 <Route path="/openbuilds/spaces/:slug" element={<RouteBoundary><SpacePage /></RouteBoundary>} />
-                {/* RC-P13 — the solvers board, lazy inside its own RouteBoundary
-                    like the board it sits under (CONTRACT §2.6). */}
-                <Route path="/bounties/solvers" element={<RouteBoundary><Solvers /></RouteBoundary>} />
+                {SOLVERS_ADDRESSES.map((address) => (
+                  <Route key={address} path={address} element={<KeepSearchRedirect to={SOLVERS_LANDING} />} />
+                ))}
                 {/* Solve route for a specific bounty, inside its own RouteBoundary. */}
                 <Route path="/bounties/:bountyId/solve" element={<RouteBoundary><BountySolveShowPage /></RouteBoundary>} />
-                <Route path="/openbuilds/solvers" element={<RouteBoundary><Solvers /></RouteBoundary>} />
                 <Route path="/openbuilds/:bountyId/solve" element={<RouteBoundary><BountySolveShowPage /></RouteBoundary>} />
                 <Route path="/import" element={<ImportPage />} />
                 {/* UI-P47: the composer. /compose/new and /compose/:buildId are children of ONE route on purpose: the first

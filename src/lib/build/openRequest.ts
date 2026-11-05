@@ -20,7 +20,7 @@ export function openOf(value: unknown): OpenRequest | null {
 /** Why an `open` cannot be saved, or null. Pure, so the composer can say no first. */
 export function openRefusal(open: OpenRequest | undefined): string | null {
   if (open === undefined) return null;
-  if (typeof open.problem !== "string" || !open.problem.trim()) return "Say what the request is for.";
-  if (open.problem.trim().length > OPEN_PROBLEM_MAX) return `A request: ${OPEN_PROBLEM_MAX} characters max`;
+  if (typeof open.problem !== "string" || !open.problem.trim()) return "Say what's missing.";
+  if (open.problem.trim().length > OPEN_PROBLEM_MAX) return `What's missing: ${OPEN_PROBLEM_MAX} characters max`;
   return null;
 }

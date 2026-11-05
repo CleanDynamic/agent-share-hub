@@ -94,8 +94,7 @@ describe("countGalleryLenses", () => {
     const counts: Record<string, number> = { all: 40, proven: 12, rebuilt: 5, unsolved: 7 };
     answer = (own) => {
       const gte = named(own, "gte");
-      const select = String(named(own, "select")[0][0]);
-      const lens = select.includes("bounties")
+      const lens = named(own, "eq").some((args) => args[0] === "has_open_ask")
         ? "unsolved"
         : gte.some((args) => args[0] === "reproduction_count")
           ? "proven"
@@ -138,9 +137,8 @@ describe("countGalleryLenses", () => {
       expect(counted.status).toEqual([["status", ["published", "gallery"]]]);
       expect(counted.or).toEqual(listed.or);
       expect(counted.gte).toEqual(listed.gte);
-      expect(counted.eq.find((args) => args[0] === "bounties.status")).toEqual(
-        lens === "unsolved" ? ["bounties.status", "open"] : undefined,
-      );
+      // UX-08 P4: the Still open lens counts builds with an open request or a still-open topic (`has_open_ask`), not an inner join.
+      expect(counted.eq.find((args) => args[0] === "has_open_ask")).toEqual(lens === "unsolved" ? ["has_open_ask", true] : undefined);
     }
   });
 
@@ -162,11 +160,11 @@ describe("countGalleryLenses", () => {
     ]);
   });
 
-  it("joins bounties inner under the unsolved lens only", async () => {
+  it("UX-08 P4: joins no bounties under any lens while has_open_ask is there", async () => {
     await countGalleryLenses();
     GALLERY_LENSES.forEach((lens: GalleryLens, index) => {
       const select = String(named(callsOf(index + 1), "select")[0][0]);
-      expect(select.includes("bounties!bounties_build_id_fkey!inner(id)")).toBe(lens === "unsolved");
+      expect(select).toBe("id");
     });
   });
 

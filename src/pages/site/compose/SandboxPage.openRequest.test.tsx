@@ -123,14 +123,14 @@ async function twoParts() {
   await screen.findAllByTestId("workstream-head", undefined, { timeout: 10_000 });
 }
 
-describe("SV-21 · opening as a request", () => {
+describe("SV-21, UX-08 P1 · marking a piece still open", () => {
   it("the ghost row marks the part with the problem, shows it, and takes it back", async () => {
     await twoParts();
     const [first] = storedWorkstreamsOf(draftRow()?.making);
     fireEvent.click(await screen.findByRole("button", { name: "Ask for the next session in Part 1" }));
     const dialog = await screen.findByTestId("open-request-dialog");
-    fireEvent.change(within(dialog).getByRole("textbox", { name: "What do you want?" }), { target: { value: "Add the onboarding session" } });
-    fireEvent.click(within(dialog).getByRole("button", { name: "Open request" }));
+    fireEvent.change(within(dialog).getByRole("textbox", { name: "What's missing" }), { target: { value: "Add the onboarding session" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Mark still open" }));
     await waitFor(() => expect(storedWorkstreamsOf(draftRow()?.making)[0].open).toEqual({ problem: "Add the onboarding session" }), { timeout: 15_000 });
     expect(openTargetsOf(draftRow()?.making)).toEqual([{ size: "part", key: first.key, problem: "Add the onboarding session" }]);
     const row = (await screen.findAllByTestId("ask-next-session"))[0];
@@ -143,10 +143,10 @@ describe("SV-21 · opening as a request", () => {
   it("a session's menu marks the session; a title written after it keeps the mark", async () => {
     await twoSessions();
     fireEvent.keyDown(screen.getByRole("button", { name: "Session 1 options" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Open as a request…" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Mark Session 1 still open" }));
     const dialog = await screen.findByTestId("open-request-dialog");
-    fireEvent.change(within(dialog).getByRole("textbox", { name: "What do you want?" }), { target: { value: "Deploy the worker" } });
-    fireEvent.click(within(dialog).getByRole("button", { name: "Open request" }));
+    fireEvent.change(within(dialog).getByRole("textbox", { name: "What's missing" }), { target: { value: "Deploy the worker" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Mark still open" }));
     await waitFor(() => expect(sessionsMetaOf(draftRow()?.making)[WAITING]?.open).toEqual({ problem: "Deploy the worker" }), { timeout: 15_000 });
     const head = await screen.findByRole("group", { name: /^Session 1 · / });
     expect(await within(head).findByTestId("session-open-request", undefined, { timeout: 10_000 })).toBeTruthy();
@@ -158,8 +158,33 @@ describe("SV-21 · opening as a request", () => {
     expect(sessionsMetaOf(draftRow()?.making)[WAITING]?.open).toEqual({ problem: "Deploy the worker" });
     // Taken back from the same menu.
     fireEvent.keyDown(screen.getByRole("button", { name: "Session 1 options" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Take the request back" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Not still open" }));
     await waitFor(() => expect(sessionsMetaOf(draftRow()?.making)[WAITING]?.open).toBeUndefined(), { timeout: 15_000 });
     expect(sessionsMetaOf(draftRow()?.making)[WAITING]?.title).toBe("Worker");
   });
 });
+
+describe("UX-08 P1 · a step tile marked still open", () => {
+  it("is stored as a gap (is_gap and its problem text), shown as Still open, edited and taken off", async () => {
+    await twoSessions();
+    const card = (await screen.findAllByTestId("step-card"))[0];
+    const tileId = card.getAttribute("data-tile-id") ?? card.getAttribute("data-node-id");
+    fireEvent.keyDown(within(card).getByRole("button", { name: /options$/ }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Mark still open" }));
+    const dialog = await screen.findByTestId("open-request-dialog");
+    fireEvent.change(within(dialog).getByRole("textbox", { name: "What's missing" }), { target: { value: "The retry logic" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Mark still open" }));
+    const gap = () => positions().find((row) => row.is_gap === true);
+    await waitFor(() => expect(gap()).toBeTruthy(), { timeout: 15_000 });
+    expect((gap()?.payload as Record<string, unknown>).gap_problem).toBe("The retry logic");
+    if (tileId) expect(gap()?.id).toBe(tileId);
+    await waitFor(() => expect(within((screen.getAllByTestId("step-card"))[0]).getByTestId("tile-still-open")).toBeTruthy(), { timeout: 10_000 });
+
+    // Taken off from the same menu.
+    fireEvent.keyDown(within(screen.getAllByTestId("step-card")[0]).getByRole("button", { name: /options$/ }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Not still open" }));
+    await waitFor(() => expect(gap()).toBeUndefined(), { timeout: 15_000 });
+    expect(positions().some((row) => (row.payload as Record<string, unknown>)?.gap_problem)).toBe(false);
+  });
+});
+

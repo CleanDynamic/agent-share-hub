@@ -156,7 +156,7 @@ export {
 export { validateBountyForPublish, type BountyValidationResult } from "./validateBountyForPublish";
 export { countMissingInStageGrids, type MissingCounts } from "./countMissing";
 export { canOpenFromRun, REQUEST_FROM_RUN_LABEL } from "./runRequestRules";
-export { findRunByHandle, openRequestFromRun, type RunForRequest } from "./runRequests";
+export { findRunByHandle, type RunForRequest } from "./runRequests";
 export { attachFork, claimDaysLeft, claimRequest, CLAIM_DAYS, listActiveClaims, listMyClaims, releaseClaim, type MyClaim, type RequestClaim } from "./claims";
 export { briefRefusal, comparePair, NO_GAPS, NOT_PUBLISHED } from "./briefRules";
 export { BRIEF_ANSWERS_KEPT, BRIEFS_PAGE_SIZE, listBriefs, publishBrief, setBrief, type BriefAnswerRecord, type BriefRecord, type BriefsPage } from "./briefs";
