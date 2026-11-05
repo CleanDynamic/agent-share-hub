@@ -107,12 +107,13 @@ test("Show more adds the next page under the first", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Show more" })).toHaveCount(0);
 });
 
-test("no requests says so in one sentence, with one action", async ({ page }) => {
+// UX-09 Q3: with no request open, Older requests retires itself: its address goes to /openbuilds.
+test("no open request: /openbuilds/requests goes to /openbuilds", async ({ page }) => {
   await fakeBackend(page, { empty: true });
   await page.goto("/openbuilds/requests");
 
-  await expect(page.getByText("No open requests right now.")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Browse builds" })).toHaveAttribute("href", "/builds");
+  await expect(page).toHaveURL(/\/openbuilds$/);
+  await expect(page.getByText("No open requests right now.")).toHaveCount(0);
 });
 
 test("Answer goes to the request's solve page, and /bounties still lands here", async ({ page }) => {
