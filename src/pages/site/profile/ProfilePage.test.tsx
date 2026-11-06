@@ -1,4 +1,4 @@
-// UX-10 — the profile's container: the first screen in one round (the profile, the side column and the feed's first page together),
+// UX-10: the profile's container: the first screen in one round (the profile, the side column and the feed's first page together),
 // Your progress for the owner only with the track written where it always was, a private profile closed, and nothing that can
 // award XP. The data layer is stubbed and its calls are counted.
 

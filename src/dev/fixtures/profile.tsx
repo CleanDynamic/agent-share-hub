@@ -1,4 +1,4 @@
-/* UX-10 — the profile's sample data, as `ProfileView` takes it: a head, a feed of each kind, and a side column.
+/* UX-10: the profile's sample data, as `ProfileView` takes it: a head, a feed of each kind, and a side column.
 
    DEV ONLY (imported from `src/pages/dev/**`, `src/dev/**` and tests alone). Builds come from Home's vision fixture (a build with
    its first post, and a rebuild), so the first post draws as Home draws it. Every name, number and sentence is sample content. */

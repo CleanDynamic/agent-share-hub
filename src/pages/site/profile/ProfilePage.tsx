@@ -1,4 +1,4 @@
-/* UX-10 — /profile/:handle (and /profile) in the site frame: the container.
+/* UX-10: /profile/:handle (and /profile) in the site frame: the container.
 
    Loads through `src/lib/` functions only, maps the results to `ProfileView`'s props and renders it. No Supabase call here.
 
@@ -144,7 +144,13 @@ export function ProfilePage() {
   const media = (() => {
     const rows: CardMedia[] = [];
     const seen = new Set<string>();
-    for (const build of builds) for (const row of feedMedia(build)) if (!seen.has(row.id)) (seen.add(row.id), rows.push(row));
+    for (const build of builds) {
+      for (const row of feedMedia(build)) {
+        if (seen.has(row.id)) continue;
+        seen.add(row.id);
+        rows.push(row);
+      }
+    }
     return rows;
   })();
   const srcByPath = useSignedMedia(media);
@@ -294,8 +300,8 @@ export function ProfilePage() {
         line="Profile not found"
         detail="The handle may have changed, or the link is broken."
         action={
-          <Button variant="secondary" size={36} onClick={() => navigate("/builds")}>
-            Back to Builds
+          <Button variant="secondary" size={36} onClick={() => navigate("/gallery")}>
+            Back to the gallery
           </Button>
         }
       />,

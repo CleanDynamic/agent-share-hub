@@ -1,4 +1,4 @@
-/* UI-P34, trimmed by UX-10 — what Your progress draws: the four tracks, the level, the XP line and the streak.
+/* UI-P34, trimmed by UX-10: what Your progress draws: the four tracks, the level, the XP line and the streak.
 
    NOTHING HERE FETCHES. UX-10 Part 10 retired the banner's eyebrow, the level ring, the stat boxes, the works tabs, the activity
    grid and the marks' tiers, and the functions only they used. */

@@ -1,4 +1,4 @@
-/* UX-10 — /dev/kit/pages/profile?theme=noon|dusk&viewport=desktop|mobile&state=…&own=1.
+/* UX-10: /dev/kit/pages/profile?theme=noon|dusk&viewport=desktop|mobile&state=…&own=1.
 
    `ProfileView` with the sample data, inside the frame `KitPages` draws: someone else's profile, or your own with `own=1`. The old
    UI-P34 board is archived (design/reference/archive/), so there is nothing to compare this against. */
