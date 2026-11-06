@@ -15,6 +15,188 @@ Parts not done: Part 2 and Part 3 done-whens, and Part 4's, are met in part only
 Questions for Miles: see below.
 ```
 
+## Follow-up after merge: Miles' five answers
+
+Branch restarted from main at `0f765a1` (UX-11 merged as #446). **This section supersedes the earlier text where they disagree** (Kept,
+unsure; Questions 1 to 8; Parts 2 to 4 done-whens). Commits: P1b, P4b, P3b.
+
+1. **`/content/:id` is read-only history for an old request (P3b).** It shows the title, what was asked (the article body), the
+   status as recorded (`Status: Open when it closed | Closed | Solved`), any accepted solution (the provenance panel, the byline, and
+   "View original"), and one line: "Requests have closed. Ask in OpenBuilds by starting a topic.", where "starting a topic" opens
+   the New topic window (`PostingWindows`, kind `post`). Gone from the page: submit, vote, accept, fork, manage, pause, extend
+   deadline, edit criteria, close, promote to blueprint, the discussion forum and its composer, the solver leaderboard, the
+   meta-bounty body and pledge, and the author's Edit (it opened the retired editor). Gone from the article body: the "Submit a
+   solution" button on missing stages and blocks (`SubmitSolutionButton`). `retiredSurfaces.test.tsx` passes unchanged (13 of 13).
+   Also fixed on the way: two `useMemo`s in `ContentDetail` sat after its early returns, so the first render with data used more hooks
+   than the loading one and React threw "Rendered more hooks". They are above the returns now. The new page test caught it.
+2. **Every form of `/upload/bounty` redirects to `/drafts` in one hop (P1b)**, with or without `?id=` (both rows are in
+   `retiredAddresses.test.tsx`). `BountyUploadShell`, `src/lib/bounty-legacy/` (the flag), the notice's bounty line and its e2e
+   spec are deleted. **How many old bounty drafts exist: I cannot count them from this session (no database access).** Run:
+   `select count(*) from content_items where post_type = 'bounty' and status = 'draft';` They stay untouched and cannot be opened.
+   Two loose ends: the legacy `/drafts/posts` page still routes a bounty draft's click to `/upload/bounty?id=`, which now bounces to
+   `/drafts`; `Upload.tsx` still maps type `bounty` to the same address.
+3. **UX-08 is on main** (`stillOpenMarks`, `Step.stillOpen`, `startStillOpenTopics`), so the removals went ahead (P4b): the "Open a
+   bounty" switch and its "What is left open" field on the Build Card and in More details, and the Inspector's Unsolved toggle with
+   its problem field. Behind them: `onGapSwitch`, `setGapOn`, the `gap` writer, `composerGap`, `saveGap`, `gapProblemText`,
+   `gapProblemPatch` and their tests. A gap node a maker already made stays in the build as a step marked still open. **One cost:**
+   a part marked Unsolved in a rebuild, which only the legacy composer opens, can no longer be un-marked there. Tests that prove
+   publishing, rebuild and `?from=` (`Publish`, `PublishSheet`, `RebuildSection`, `ComposeView`, `SandboxCard`, `ux07.p6`,
+   `Compose`) pass; `RebuildSection` fails alone on main too, as before.
+4. **`createBountyForGap` and `scripts/verify-bounty-flow.ts` are deleted.** The fixture is `src/test/oldRequest.ts`
+   (`insertOldRequest(tables, { status })` pushes a `bounties` row, its build, its gap node and its `content_items` row straight into
+   a table store; no newer columns). It feeds: `bounty.test.ts` (Older requests' `listOpenBounties` and an old request's `getBounty`),
+   `pages/site/build/oldRequestGap.test.tsx` (Where it broke, open and closed), and `pages/ContentDetail.oldRequest.test.tsx`
+   (`/content/:id`: 6 tests, including that no control that creates, manages, answers or accepts is on the page). No file under
+   `src/` now inserts into `bounties` or writes a `content_items` bounty row.
+5. **The 64 files that were already unreachable are left alone** (list below). Caused by this prompt and cleared in it:
+   `ui/scroll-area.tsx`, the meta-bounty, leaderboard, management, promote and discussion components, `lib/bounty-competition/` (all but
+   the `BlueprintAttributionBanner`), five `bounty-solver` files, `createBountyThread`, three notification triggers, and the exports
+   behind them. knip: files 0 -> 1 (`FollowButton`, as before), exports 729 -> 715, types 224 -> 223; nothing newly flagged.
+
+**Checks on the final tree.** `tsc` clean. Vitest 11,641 passed / 29 failed (baseline 11,705 / 31; 11,670 tests against 11,736); no
+new failing test. Lint on every changed file: only the `any`s that were already there. Build: JS **6,724,798 -> 6,526,605 bytes
+(-198,193, -2.9%)** against `72f55c9`, chunks 478 -> 464; `ContentDetail` alone -138,994. First download 235.2 -> 234.3 KB and
+composer 124.5 -> 124.2 KB, both still over budget as on main. **Not re-run this time:** `audit:pages`, `audit:design`, tier 1 and
+the screenshots (nothing a page's request count or board depends on changed; the first full audit is above).
+
+**Questions that remain.** (a) The loose end in 2: should the legacy `/drafts/posts` page stop listing bounty drafts? (b) Should an
+Unsolved part in a rebuild be un-markable somewhere? (c) The meta-bounty tables and `content_items.bounty_*` columns are now written
+by nothing and read only by this page: drop later? (d) `lib/bounty-solver` still holds the solve page's draft and submit functions
+(`/openbuilds/:id/solve` stays).
+
+### The 64 files unreachable before UX-11, by folder, with the last commit that touched each
+
+History in this repository was flattened, so most show the same commit. Test support files are included. `knip` does not report them,
+because tests import them.
+
+**`src/`**
+
+- `vite-env.d.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/components/`**
+
+- `BountyCard.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `FeedItem.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `FeedItemExpanded.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `FollowButton.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `ReblogCard.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `ReblogComposer.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `ReblogDetailView.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `TipsTab.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/components/auth/`**
+
+- `AuthCheckbox.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `AuthDivider.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/components/build/`**
+
+- `BuildHeader.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `BuildTabs.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `CreatedViaLine.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `PortableExport.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `RebuildTree.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `RebuildsTab.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `ReproductionAction.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `WhereNext.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `createdViaCopy.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/components/depth/`**
+
+- `DepthRevealModal.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/components/feed/`**
+
+- `BuildFeedItems.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/components/gallery/`**
+
+- `cardBodies.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/components/layout/`**
+
+- `LeftPanel.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `RightPanelExplore.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/components/notifications/`**
+
+- `NotificationCard.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `NotificationRow.tsx`: d4d94fa 2026-11-04 UX-07 P5: notifications about topics and replies, leading to the topic at the reply
+
+**`src/components/shell/`**
+
+- `NavSearch.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/components/trophies/`**
+
+- `badge-tile.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `pending-reveal-strip.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `showcase-strip.tsx`: 568f821 2026-10-31 SV-26 P2: account menu, bottom sheets, tooltip, sonner and helmet out of the first download
+
+**`src/dev/fixtures/vision/`**
+
+- `openbuilds.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/hooks/`**
+
+- `useDraftCount.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `useNavBadges.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/lib/bounty/`**
+
+- `legacyMeToo.ts`: bb31892 2026-10-31 SV-26 P5: keep the deliberate structured logs, no-console stays an error
+
+**`src/lib/build/`**
+
+- `buildUpdates.ts`: 237707c 2026-10-31 SV-27 P2: deployment tile types and changelog table
+- `buildsMapsTestSupport.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `deploymentNeeds.ts`: 2d0ce9a 2026-11-01 SV-28 P1 to P6: team instructions, handoffs, mentions, jobs, approval step, workspace, t...
+- `partnership.ts`: 7d12d73 2026-10-31 SV-27 P7: deployment in the composer
+
+**`src/lib/reblog/`**
+
+- `checkExcerptStillValid.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `getReblog.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `getReblogsByUser.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `index.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `realtime.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `updateReblog.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/lib/theme/`**
+
+- `shadcn.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/pages/site/compose/`**
+
+- `addMenuTestSupport.tsx`: 42f672c 2026-11-04 UX-02 P6, P7: the Add step tile menu, and one way to add
+- `ca20Fixture.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `ca20Harness.tsx`: 42f672c 2026-11-04 UX-02 P6, P7: the Add step tile menu, and one way to add
+- `ca21Harness.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `ca23.harness.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `ca26.menuHost.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `mapArtwork.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `motionStub.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `optionalKit.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `postTabKit.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `sv07Backend.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `sv07Harness.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `sv18.fixtures.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/pages/site/openbuilds/`**
+
+- `postModel.fixtures.ts`: 8f18c03 2026-11-04 UX-06 P1: the post page at /openbuilds/topics/:id, its Thread and side column
+
+**`src/pages/site/signin/`**
+
+- `signinTest.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/test/`**
+
+- `deno-globals.d.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `setup.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `tokenStyle.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+
 ## Part 0 · Baseline
 
 Pulled main at `72f55c9` (UX-10 merged as #445); the branch started there. `node_modules` was missing; `npm ci`. The
