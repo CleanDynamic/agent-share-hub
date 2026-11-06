@@ -63,7 +63,8 @@ Caps add up to 36,004, under 50,000 URLs, and at roughly 200 bytes a URL far und
 - `npm run build`: passes, and runs the sitemap script first.
 - Playwright `e2e/tier1/canonical.spec.ts` on the built site (`vite preview`), desktop and mobile: 4 of 4 pass (one canonical on `/about` and `/api-docs`, both `https://openbuilds.ai/...`, also `og:url`).
 - ESLint on the files I touched: the only errors are 2 `no-explicit-any` in `SeoHead.tsx:17`, which were there before.
-- Not run here: `audit:pages`, `audit:size`, `audit:perf`, `audit:themes`, `audit:contrast`, `audit:design`, the rest of tier1 (see the tier-1 line below if it finished), and the Deno tests in `supabase/functions/mcp/index.test.ts` (no Deno in the sandbox; I updated their expected addresses by hand). No page's markup, styling or bundle was changed beyond the address text.
+- Tier 1 (`e2e/tier1`, desktop then mobile, against `vite preview` of this branch): not finished when this was written. The desktop half had 28 failures against about 160 passes, all in the specs that draw a build, the home page or a profile from data (`build-site-frame`, `rebuild-site-frame`, `home-site-frame`, `profile-site-frame`, `post-thread`, `ux03-build`). This sandbox cannot reach Supabase, which those pages need; I did not get a clean-main comparison for them (a second run starved the first of CPU). Treat tier 1 as unverified: run it where the network works. The specs that do not need data (boot shell, signin, canonical) pass.
+- Not run here: `audit:pages`, `audit:size`, `audit:perf`, `audit:themes`, `audit:contrast`, `audit:design`, and the Deno tests in `supabase/functions/mcp/index.test.ts` (no Deno in the sandbox; I updated their expected addresses by hand). No page's markup, styling or bundle was changed beyond the address text.
 
 ## Dead code seen
 
