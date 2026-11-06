@@ -172,6 +172,14 @@ const record = {
 } as unknown as BuildRecord;
 
 const portable = toPortable(record, { origin: ORIGIN, exportedAt: EXPORTED_AT });
+
+// UX-13 P4: with no origin given, the Build File points at the one site address.
+it("a Build File made without an origin links to openbuilds.ai", () => {
+  const made = toPortable(record, { exportedAt: EXPORTED_AT });
+  expect(made.source_url).toBe("https://openbuilds.ai/b2/inbox-triage-agent-demo");
+  expect(JSON.stringify(made)).not.toMatch(/buildgallery\.ai|neoscaleai\.com/);
+});
+
 const json = JSON.stringify(portable, null, 2);
 
 const UUID_ANYWHERE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
