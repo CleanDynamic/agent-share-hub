@@ -19,8 +19,6 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { AuthButton } from "./AuthButton";
-import { AuthCheckbox } from "./AuthCheckbox";
-import { AuthDivider } from "./AuthDivider";
 import { AuthInput } from "./AuthInput";
 import { AuthShell } from "./AuthShell";
 import { OAuthButtons } from "./OAuthButtons";
@@ -186,24 +184,6 @@ describe("the two button treatments", () => {
   });
 });
 
-describe("AuthCheckbox", () => {
-  it("fills --action when checked and wells --recess when not", () => {
-    const box = (checked: boolean) =>
-      styleOf(
-        [
-          ...staticDoc(
-            <AuthCheckbox id="terms" checked={checked} onChange={() => {}} label="Terms" />,
-          ).querySelectorAll("div"),
-        ].find((div) => styleOf(div).includes("border-radius:var(--r-chip)")),
-      );
-
-    expect(box(true)).toContain("background:var(--action)");
-    expect(box(true)).toContain("color:var(--on-action)");
-    expect(box(false)).toContain("background:var(--recess)");
-    expect(box(false)).toContain("border-color:var(--line)");
-  });
-});
-
 /* ── targets a thumb can hit ──────────────────────────────────────────────────
    `critique-affordance` floors a touch target at 44×44, and WCAG 2.5.8 floors
    it at 24×24 for anything that is not a word inside a sentence. Three controls
@@ -230,23 +210,6 @@ describe("touch targets", () => {
     const reveal = doc.querySelector("button");
     expect(reveal?.getAttribute("tabindex")).toBeNull();
     expect(reveal?.getAttribute("aria-label")).toBe("Show password");
-  });
-
-  it("makes the checkbox's whole label the target", () => {
-    const doc = staticDoc(
-      <AuthCheckbox id="terms" checked={false} onChange={() => {}} label="Terms" />,
-    );
-    expect(styleOf(doc.querySelector("label"))).toContain("padding:6px 0");
-  });
-});
-
-describe("AuthDivider", () => {
-  it("rebuilds the card's ground rather than guessing an opaque colour", () => {
-    const doc = staticDoc(<AuthDivider text="or sign in with email" />);
-    expect(styleOf(doc.querySelector("span"))).toContain(
-      "background:linear-gradient(var(--glass), var(--glass)), var(--bg)",
-    );
-    expect(styleOf(doc.querySelector("div > div"))).toContain("background:var(--line)");
   });
 });
 
@@ -311,7 +274,7 @@ describe("the auth surface's sources", () => {
   );
 
   it("has every card in the folder under test", () => {
-    expect(files.length).toBeGreaterThanOrEqual(11);
+    expect(files.length).toBeGreaterThanOrEqual(9);
   });
 
   /* COMMENTS ARE STRIPPED FIRST, and that is the point rather than a loophole:
