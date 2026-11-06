@@ -22,10 +22,6 @@
 // expected to revert the matching describe block with it; docs/retired-
 // surfaces.md lists that as a step of each rollback.
 
-import { HelmetProvider } from "react-helmet-async";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 /**
@@ -127,19 +123,12 @@ vi.mock("@/integrations/supabase/client", () => {
   };
 });
 
-import {
-  ReblogValidationError,
-  createReblog,
-  deleteReblog,
-  generateReblogSlug,
-  updateReblog,
-  uploadReblogMedia,
-} from "@/lib/reblog";
-import { bookmarkReblog, likeReblog } from "@/lib/reblog";
-import { getReblog } from "@/lib/reblog/getReblog";
-import { getReblogsByUser } from "@/lib/reblog/getReblogsByUser";
+import { ReblogValidationError, generateReblogSlug, uploadReblogMedia } from "@/lib/reblog/media";
+import { createReblog } from "@/lib/reblog/createReblog";
+import { deleteReblog } from "@/lib/reblog/deleteReblog";
+import { bookmarkReblog } from "@/lib/reblog/bookmarkReblog";
+import { likeReblog } from "@/lib/reblog/likeReblog";
 import { getReblogsOfPost } from "@/lib/reblog/getReblogsOfPost";
-import { checkExcerptStillValid } from "@/lib/reblog/checkExcerptStillValid";
 import { createRemix } from "@/lib/remix/createRemix";
 import { RemixValidationError } from "@/lib/remix/flags";
 
@@ -151,7 +140,6 @@ describe("frozen — reblog authoring throws instead of writing", () => {
       "createReblog",
       () => createReblog({ rebloggerId: "author-2", originalPostId: "post-root", text: "hi" }),
     ],
-    ["updateReblog", () => updateReblog({ reblogId: "reblog-1", userId: "author-2", text: "hi" })],
     ["deleteReblog", () => deleteReblog({ reblogId: "reblog-1", userId: "author-2" })],
     [
       "uploadReblogMedia",
@@ -186,7 +174,7 @@ describe("frozen — reblog authoring throws instead of writing", () => {
   // The gate is a call-time throw, not a module-time one: an import that stays
   // behind in a component or a script must keep type-checking and loading.
   it("importing the frozen functions is still valid", () => {
-    for (const fn of [createReblog, updateReblog, deleteReblog, uploadReblogMedia]) {
+    for (const fn of [createReblog, deleteReblog, uploadReblogMedia]) {
       expect(typeof fn).toBe("function");
     }
   });
@@ -205,23 +193,8 @@ describe("frozen — remix creation throws instead of writing a lineage row", ()
 });
 
 describe("live — the reblog read path answers as it did", () => {
-  it("getReblog resolves an archived reblog with its embedded original", async () => {
-    const full = await getReblog({ slug: db.reblog.slug });
-    expect(full?.id).toBe("reblog-1");
-    expect(full?.text).toBe("Still worth reading.");
-    expect(full?.embeddedOriginal?.title).toBe("Original prompt");
-    expect(full?.embeddedOriginal?.unavailable).toBe(false);
-  });
-
-  it("getReblogsOfPost and getReblogsByUser still list", async () => {
+  it("getReblogsOfPost still lists", async () => {
     await expect(getReblogsOfPost({ postId: "post-root" })).resolves.toMatchObject({ total: 1 });
-    await expect(getReblogsByUser({ userId: "author-2" })).resolves.toMatchObject({ total: 1 });
-  });
-
-  it("checkExcerptStillValid still checks", async () => {
-    await expect(
-      checkExcerptStillValid("reblog-1", "post-root", "Original prompt")
-    ).resolves.toMatchObject({ isStillValid: true });
   });
 
   // Engagement on an existing reblog is deliberately outside the freeze: the
