@@ -15,6 +15,54 @@ Parts not done: Part 2 and Part 3 done-whens, and Part 4's, are met in part only
 Questions for Miles: see below.
 ```
 
+## Third follow-up: the remaining ~190 files, in six parts (Miles' decisions)
+
+**Status: the code is clear. The database drop is ready and still pending Miles' owner list.** This section supersedes the one below where they disagree.
+
+| Part | Commit | What |
+| --- | --- | --- |
+| a | Home | Home's run-request rules moved onto UX-08's "still open": `findRunByHandle`, `canStartTopicFromRun`, "Start a topic" from a run that did not work. The feed loses its `bounty` item kind; the `answer` activity kind goes. |
+| b | `7aa3a6aa` | Gallery and discover reads: no bounty embeds, filters or `bounty_*` columns. The Still open lens, filter and the Open column are `has_open_ask` / `still_open_topic_count`. `queryBlueprints` keeps its own small row type; `feed-card.tsx` deleted. |
+| c | `a9a3cee1` | The legacy upload editor loses bounty mode: picker cards, form branch, missing marks, inline solution markers, publish gate, `bountyMissing`. |
+| d | `252ef57f` | PublishMetadata: no bounty section, pre-flight, or missing-item counts; `BountyDetailsCard`, `validateBountyForPublish` deleted. |
+| e | `989cb0a3` | Notifications: `solution`, `solved`, `bounty_interaction` and the bounty targets retired (old rows keep their stored message, no badge). Migration `20261110140000_ux11_retire_request_notifications.sql` copies then removes those keys from `profiles.notification_preferences`. |
+| f | `3a923308` | Everything else: `lib/bounty`, `lib/bounty-solver` (nothing imported them), saved "request" kind (lists from its stored snapshot, cannot be saved), collection `bounty` kind, content-detail, Messages pinned bounty, maker figures (3, not 4), analytics "Still open" (from `still_open_topic_count`) instead of open bounties / solutions waiting, reblog / share / remix unions, `SITE_NAV.bounties` -> `openbuilds`, dev fixtures, `generate-ai-pdf`, e2e. |
+
+### Decisions applied
+1. Order and one commit per part, each with tsc clean and its tests passing. The drop migration is **not** in `supabase/migrations` (below).
+2. The clear-marks migration is unchanged: it clears only marks with no topic behind them.
+3. Tier 1 was re-run on main first (`t1-main.fail`, 100 failing lines on main); results for this tree are under "Checks" below.
+
+### The drop migration (`design/audits/ux-11/pending/20261110130000_ux11_drop_legacy_requests.sql`)
+Grep finds no live code reading `bounties`, `solutions` or `content_items.bounty_*`. **I did not move the file into `supabase/migrations`**, because it raises while `allowed_owners` is empty, and a migration that raises stops every migration queued behind it in Lovable. Send the owner list; I will add the insert and move the file in one commit.
+I applied all 190 migrations to a scratch Postgres 16 (Supabase roles stubbed) and ran both pending files on it. **That found three things the earlier version missed, now fixed in the file:**
+- `request_claims` and `request_offers` (SV-21) hang off `bounties` by foreign key; dropping `bounties` would have left them orphaned. They are now copied to the backup schema, counted for owners, and dropped, with their two trigger functions and the trigger on `builds`.
+- the materialized view `profile_stats` reads `content_items.bounty_status`, so the column drop failed. The view is rebuilt without its two bounty columns.
+- `has_open_ask`, `get_build_feed`, `maker_stats` and `maker_build_metrics` read the tables. They are redefined first (topics only; no request items; no `gaps_solved`; no `open_bounties` / `solutions_waiting`).
+On the scratch database (empty tables) both files apply, the drop is safe to run twice, and the header's dependency queries (functions, views, triggers, policies) return nothing. It was not run against data with real owners.
+
+### Checks (this run, final tree)
+- `tsc` clean. **Vitest 11,213 passed / 29 failed** (baseline 11,705 / 31); no failure that the baseline did not have. The 29 are the baseline's (`lookRules` 12, build-page and compose snapshots).
+- knip: **0 unused files**.
+- `audit:size`: total JavaScript **6,724,798 (original) -> 6,298,124 bytes, -426,674 (-6.3%)**; last report 6,366,482. First download 231.6 KB and composer 124.2 KB, both over budget exactly as on main.
+- Tier 1 Playwright, compared with main's run (`t1-main`, 100 failing, e.g. `wide-layout`, `backdrop`): mobile 180 passed, **no failure that main did not have**. Desktop: one failure main did not have, `signin-site-frame` "with ?redirect=/gallery lands on the gallery"; it passes on its own, so it is a flake. Nothing was fixed or changed for tier 1; the other failures are already failing on main.
+- `audit:pages`: 37 of 39 pass; the two failures are `report and targets` and `report and thresholds`, the same two that fail on main. Removing the `bounty-solve` page from the audit harness left the page count the audit measures as the live pages.
+- Lint: no new `no-unused-vars`; the `any` errors in the files I touched are the ones that were there.
+
+### Final grep (src, scripts, supabase/functions, e2e)
+`bounty`: 25 files, `solver`: all in tests, comments or retired-address redirects. Nothing live reads the database objects. Leftovers and why:
+- Retired-address redirects and their tests (`App.tsx`, `retiredRoutes.ts` incl. `SOLVERS_ADDRESSES`, `KeepSearchRedirect`, `retiredAddresses.test`): they exist to send old links home.
+- Tests that assert the words are gone (`gallery.test`, `buildsTable.test`, `galleryCounts.test`, `ux10.p10.test`, `ContentDetail.retired.test`).
+- Old migrations' tests (`sv20Migration`, `sv21Migration`): they read history.
+- `src/lib/build/__audit__/fakeSupabase.ts`: `profiles` still has `bounty_lifetime_*`, `bounty_solutions_*`, `is_trusted_solver` columns. The drop migration does not touch `profiles`; a decision for Miles.
+- `src/lib/library/savedItems.ts`, `sv18.fixtures.ts`: a kept request lists from its stored snapshot (`bountyId`).
+- `GapMarker` panel / card placements still carry reward, deadline, solution count and a primary action. No live page sets them (NodeCard uses the row placement); only the dev Kit does. Left for a design pass.
+- Badge catalogue (`solver`, `fixer` badges) and the XP reason `solution_accepted`: tied to `rc_badge_catalogue` and `user_badges` rows; removing them needs a migration and Miles' say.
+- `site_challenges` row `weekly-requests-closed` and its table: nothing reads it.
+- `src/integrations/supabase/types.ts` and `supabase/migrations/`: generated / history.
+- `e2e/audit/out/*`: generated output.
+"request" as a word is still everywhere in `src/` (HTTP requests, `OpenRequestDialog`, `request` tests); it is the OpenBuilds product's own word for starting a topic, not the old system.
+
 ## Second follow-up: remove the whole request / bounty system (Miles' new answers)
 
 **Status: PARTLY DONE. The code and the database are not both clear yet, and the database drop is deliberately held back.** Read "What is
