@@ -1,5 +1,4 @@
 import { Puzzle } from 'lucide-react';
-import { SubmitSolutionButton } from './SubmitSolutionButton';
 import { useBountyProvenance } from './BountyProvenanceContext';
 
 interface MissingStageBadgeProps {
@@ -93,9 +92,6 @@ export function MissingStageBadge({
       >
         {statusLabel} · {effectiveCount} solution{effectiveCount !== 1 ? 's' : ''}
       </span>
-      {slotId && ctx && effectiveStatus !== 'solved' ? (
-        <SubmitSolutionButton slotKind="stage" slotId={slotId} size="stage" />
-      ) : null}
     </div>
   );
 }

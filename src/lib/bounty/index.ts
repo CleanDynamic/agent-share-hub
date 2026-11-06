@@ -44,7 +44,6 @@ export {
   BOUNTY_COLUMNS,
   OPEN_BOUNTIES_PAGE_SIZE,
   closeBounty,
-  createBountyForGap,
   extendDeadline,
   getBounty,
   listBuildBounties,
@@ -53,7 +52,6 @@ export {
   bountyFacetsMadeWith,
   type BountyFacet,
   type BuildBounty,
-  type CreateBountyForGapInput,
   type ExtendDeadlineInput,
   type ListBuildBountiesOptions,
   type ListOpenBountiesOptions,
@@ -143,12 +141,8 @@ export {
 // held a bounty id, so NS-P46 did not move them and NS-P50 does not rewrite
 // them. They are surfaced here so a consumer of the new path does not have to
 // import half its data layer from the legacy folder.
+
 export { voteOnSolution } from "@/lib/bounty-solver/voteOnSolution";
-export {
-  getSolutionComments,
-  postSolutionComment,
-  type SolutionComment,
-} from "@/lib/bounty-solver/solutionComments";
 
 export { validateBountyForPublish, type BountyValidationResult } from "./validateBountyForPublish";
 export { countMissingInStageGrids, type MissingCounts } from "./countMissing";

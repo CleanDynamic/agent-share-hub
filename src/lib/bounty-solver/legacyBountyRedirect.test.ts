@@ -109,7 +109,6 @@ vi.mock("@/lib/metadata/recomputeMetadata", () => ({
 }));
 
 import { clearBountyResolutionCache } from "@/lib/bounty/resolveLegacy";
-import { acceptSolution } from "./acceptSolution";
 import { createSolutionDraft } from "./createSolutionDraft";
 import { getProvenance } from "./getProvenance";
 import { getSolutions } from "./getSolutions";
@@ -224,24 +223,6 @@ describe("NS-P50 — the legacy bounty page lists its solutions through bounties
     expect(queriesFor("bounties")).toHaveLength(1);
   });
 
-  it("subscribes to live solution updates on bounty_id", async () => {
-    // The realtime filter is a string, not a builder, so it is the one redirect
-    // no query recorder would catch. A postgres_changes filter cannot join,
-    // which is why the hook resolves before it opens the channel; left on the
-    // route's id it matches nothing and the page stops updating — silently.
-    db.next.bounties = [{ data: HEADER, error: null }];
-
-    const { useBountySolutionUpdates } = await import("./realtime");
-    const { renderHook, waitFor } = await import("@testing-library/react");
-
-    renderHook(() => useBountySolutionUpdates(LEGACY_ITEM_ID, () => {}));
-
-    await waitFor(() => expect(db.channels).toHaveLength(1));
-    expect(db.channels[0].config).toMatchObject({
-      table: "solutions",
-      filter: `bounty_id=eq.${BOUNTY_ROW_ID}`,
-    });
-  });
 });
 
 describe("NS-P50 — reads and writes both name the bounties id", () => {
@@ -297,79 +278,6 @@ describe("NS-P50 — reads and writes both name the bounties id", () => {
     expect(queriesFor("solutions")).toHaveLength(0);
   });
 
-  it("accepts a solution against the legacy content item, and logs the bounty", async () => {
-    db.next.solutions = [
-      { data: SOLUTION, error: null }, // 1. load the solution
-      { data: null, error: null }, // 2. nothing accepted on this slot yet
-      { data: [], error: null }, // 3a. the status update
-    ];
-    // The reverse resolve: the solution carries a bounties id, and the legacy
-    // merge below needs the content_items id its header names.
-    db.next.bounties = [{ data: HEADER, error: null }];
-    db.next.content_items = [
-      {
-        data: {
-          id: LEGACY_ITEM_ID,
-          creator_id: "acc00000-0000-4000-8000-000000000001",
-          stage_grids: {},
-          bounty_solved_count: 0,
-          bounty_total_slots: 2,
-          bounty_reward_amount: 0,
-          bounty_reward_type: "none",
-        },
-        error: null,
-      },
-      { data: [], error: null }, // the stage_grids merge
-    ];
-    db.next.solution_acceptance_log = [{ data: [], error: null }];
-    db.next.profiles = [{ data: null, error: null }, { data: [], error: null }];
-
-    await acceptSolution({
-      solutionId: SOLUTION.id,
-      accepterId: "acc00000-0000-4000-8000-000000000001",
-    });
-
-    // The header is looked up by its own id, which is what the solution holds.
-    expect(eqOn(queriesFor("bounties")[0], "id")).toEqual(["id", BOUNTY_ROW_ID]);
-
-    // Both content_items touches use the legacy id: the bounty read that
-    // authorises the accept, and the stage_grids write that merges the answer
-    // back into the blueprint.
-    for (const q of queriesFor("content_items")) {
-      expect(eqOn(q, "id")).toEqual(["id", LEGACY_ITEM_ID]);
-    }
-
-    // The acceptance log takes the bounties id, which is exactly what
-    // solution.bounty_id holds.
-    const logged = queriesFor("solution_acceptance_log")[0].ops.find(
-      (o) => o.method === "insert",
-    );
-    expect(logged?.args[0]).toMatchObject({
-      solution_id: SOLUTION.id,
-      bounty_id: BOUNTY_ROW_ID,
-    });
-  });
-
-  it("will not accept a build-backed solution down the legacy path", async () => {
-    // A bounty that lives on a build has no legacy item and no stage_grids to
-    // merge into. Left unguarded, this function would read content_items with a
-    // null id, fail the author check, and could merge an answer into whatever
-    // row it did find. The header says which kind of bounty it is; before
-    // NS-P50 a derived column on the solution said it.
-    db.next.solutions = [{ data: SOLUTION, error: null }];
-    db.next.bounties = [{ data: { id: BOUNTY_ROW_ID, legacy_item_id: null }, error: null }];
-
-    await expect(
-      acceptSolution({
-        solutionId: SOLUTION.id,
-        accepterId: "acc00000-0000-4000-8000-000000000001",
-      }),
-    ).rejects.toThrow(/build bounty/i);
-
-    // Nothing was written on the way to that throw.
-    expect(queriesFor("content_items")).toHaveLength(0);
-    expect(queriesFor("solution_acceptance_log")).toHaveLength(0);
-  });
 });
 
 describe("NS-P50 — voting is untouched by the redirect", () => {

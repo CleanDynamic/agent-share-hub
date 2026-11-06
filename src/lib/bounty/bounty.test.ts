@@ -103,18 +103,17 @@ vi.mock("@/lib/build/nodeTypes", () => ({
 import {
   acceptSolution,
   clearBountyResolutionCache,
-  createBountyForGap,
   getBounty,
   legacyItemForBounty,
   listOpenBounties,
   resolveBountyByLegacyItem,
   submitSolution,
 } from "./index";
+import { OLD_REQUEST, insertOldRequest, type OldRow } from "@/test/oldRequest";
 
 const BUILD_ID = "b111d000-0000-4000-8000-000000000001";
 const CREATOR_ID = "c9ea1000-0000-4000-8000-000000000001";
 const GAP_NODE_ID = "9a900000-0000-4000-8000-000000000001";
-const OTHER_NODE_ID = "9a900000-0000-4000-8000-000000000002";
 const BOUNTY_ID = "b0b0b0b0-0000-4000-8000-000000000001";
 const SOLVER_ID = "50fe0000-0000-4000-8000-000000000001";
 const SOLUTION_ID = "50100000-0000-4000-8000-000000000001";
@@ -162,77 +161,6 @@ beforeEach(() => {
   db.rpcCalls = [];
   db.rpcNext = [];
   clearBountyResolutionCache();
-});
-
-describe("createBountyForGap", () => {
-  it("files against the gap, with the build's creator as author", async () => {
-    db.next.builds = [{ data: { id: BUILD_ID, creator_id: CREATOR_ID }, error: null }];
-    db.next.build_nodes = [{ data: GAP_NODE, error: null }];
-    db.next.bounties = [{ data: OPEN_BOUNTY, error: null }];
-
-    const bounty = await createBountyForGap({
-      buildId: BUILD_ID,
-      nodeId: GAP_NODE_ID,
-      rewardGbp: 50,
-    });
-
-    expect(bounty.id).toBe(BOUNTY_ID);
-    const written = insertPayload(queriesFor("bounties")[0]);
-    expect(written).toMatchObject({
-      build_id: BUILD_ID,
-      gap_node_id: GAP_NODE_ID,
-      // Read from the build, never taken from the caller: NS-P45's INSERT
-      // policy only admits a row whose author owns the home it names.
-      author_id: CREATOR_ID,
-      status: "open",
-      reward_gbp: 50,
-    });
-    // A bounty on a build never carries a legacy home. bounties_one_home would
-    // reject a row with both, and a row with the wrong one renders on the wrong
-    // page.
-    expect(written.legacy_item_id ?? null).toBeNull();
-  });
-
-  it("refuses a node that is not a gap, and writes nothing", async () => {
-    db.next.builds = [{ data: { id: BUILD_ID, creator_id: CREATOR_ID }, error: null }];
-    db.next.build_nodes = [{ data: { ...GAP_NODE, is_gap: false }, error: null }];
-
-    await expect(
-      createBountyForGap({ buildId: BUILD_ID, nodeId: GAP_NODE_ID }),
-    ).rejects.toThrow(/not marked as a gap/i);
-
-    expect(queriesFor("bounties")).toHaveLength(0);
-  });
-
-  it("refuses a node that belongs to another build", async () => {
-    // The database would refuse this too — the gap trigger checks both facts —
-    // but "gap_node_id 9a9… is not a gap node of build b11…" is not a sentence
-    // to put in front of a creator, and the row would already have been sent.
-    db.next.builds = [{ data: { id: BUILD_ID, creator_id: CREATOR_ID }, error: null }];
-    db.next.build_nodes = [
-      { data: { ...GAP_NODE, id: OTHER_NODE_ID, build_id: "someone-elses-build" }, error: null },
-    ];
-
-    await expect(
-      createBountyForGap({ buildId: BUILD_ID, nodeId: OTHER_NODE_ID }),
-    ).rejects.toThrow(/different build/i);
-
-    expect(queriesFor("bounties")).toHaveLength(0);
-  });
-
-  it("says so plainly when the gap already has a bounty", async () => {
-    // idx_bounties_gap_unique is the guarantee; 23505 is what a creator who
-    // double-clicked would otherwise see.
-    db.next.builds = [{ data: { id: BUILD_ID, creator_id: CREATOR_ID }, error: null }];
-    db.next.build_nodes = [{ data: GAP_NODE, error: null }];
-    db.next.bounties = [
-      { data: null, error: { code: "23505", message: "duplicate key value" } },
-    ];
-
-    await expect(
-      createBountyForGap({ buildId: BUILD_ID, nodeId: GAP_NODE_ID }),
-    ).rejects.toThrow(/already has a bounty/i);
-  });
 });
 
 describe("submitSolution", () => {
@@ -585,5 +513,38 @@ describe("the legacy seam", () => {
     // both directions for the same pair.
     expect(await resolveBountyByLegacyItem(LEGACY_ITEM_ID)).toBe(BOUNTY_ID);
     expect(queriesFor("bounties")).toHaveLength(2);
+  });
+});
+
+/* UX-11: nothing can file a request now, so the rows these tests read are inserted directly by the old-request fixture
+   (src/test/oldRequest.ts), exactly as the old writers left them. Older requests reads them through listOpenBounties and
+   an old request's own page through getBounty. */
+describe("an old-style request, inserted directly", () => {
+  it("is listed on Older requests with its reward and status as they were recorded", async () => {
+    const tables: Record<string, OldRow[]> = {};
+    const { bounty } = insertOldRequest(tables);
+    db.next.bounties = [{ data: tables.bounties, error: null }];
+
+    const result = await listOpenBounties({ limit: 20 });
+
+    expect(result.bounties).toEqual([bounty]);
+    expect(result.bounties[0]).toMatchObject({ id: OLD_REQUEST.bountyId, status: "open", reward_gbp: 50, gap_node_id: OLD_REQUEST.gapNodeId });
+    expect(result.nextCursor).toBeNull();
+  });
+
+  it("opens as one record, with its build and the gap it hangs on", async () => {
+    const tables: Record<string, OldRow[]> = {};
+    const { bounty, build, gapNode } = insertOldRequest(tables, { status: "solved" });
+    db.next.bounties = [{ data: bounty, error: null }];
+    db.next.builds = [{ data: build, error: null }];
+    db.next.build_nodes = [{ data: gapNode, error: null }];
+    db.next.solutions = [{ data: [], error: null, count: 1 }, { data: [], error: null, count: 1 }];
+    db.next.bounty_discussion_comments = [{ data: [], error: null, count: 0 }];
+
+    const record = await getBounty(OLD_REQUEST.bountyId);
+
+    expect(record?.bounty).toMatchObject({ status: "solved", solved_at: "2026-09-02T09:00:00Z" });
+    expect(record?.build?.id).toBe(OLD_REQUEST.buildId);
+    expect(record?.gapNode?.id).toBe(OLD_REQUEST.gapNodeId);
   });
 });
