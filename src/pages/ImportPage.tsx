@@ -70,6 +70,7 @@ import {
   measure,
 } from "@/lib/theme/type";
 import { fade, feedback } from "@/lib/theme/motion";
+import { SITE_NAME } from "@/lib/site";
 
 /*  THE TWO KIT DOCUMENTS (BG-P24).
  *
@@ -528,7 +529,7 @@ export default function ImportPage() {
       }}
     >
       <Helmet>
-        <title>Import a build — buildgallery</title>
+        <title>{`Import a build · ${SITE_NAME}`}</title>
         <meta
           name="description"
           content="Paste one document into the chat where you built your thing. The AI writes it up as a Build File, and you drop that file here."

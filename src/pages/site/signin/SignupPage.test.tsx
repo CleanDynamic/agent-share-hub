@@ -63,7 +63,7 @@ const create = () => screen.getByRole("button", { name: /^Create account$/ });
 describe("the page", () => {
   it("is the join card: the title, no index, the switch on Join free", async () => {
     open();
-    await waitFor(() => expect(document.title).toBe("Join buildgallery"));
+    await waitFor(() => expect(document.title).toBe("Join · OpenBuilds.ai"));
     expect(screen.getByRole("link", { name: "Join free" }).getAttribute("aria-current")).toBe("page");
     expect(create()).toBeDisabled();
   });

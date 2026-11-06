@@ -801,7 +801,7 @@ export default function ContentDetail() {
         };
         return (
           <SeoHead
-            title={`${shellPost.title} — buildgallery`}
+            title={`${shellPost.title}`}
             description={shellPost.description || shellPost.title}
             path={`/b/${shellPost.slug}`}
             image={shellPost.coverUrl}

@@ -150,7 +150,7 @@ export function DraftsPage() {
 
   return (
     <>
-      <SeoHead title="Drafts — buildgallery" description="Builds in progress, and every session you have sent." path="/drafts" noIndex />
+      <SeoHead title="Drafts" description="Builds in progress, and every session you have sent." path="/drafts" noIndex />
       {/* SV-04 P5: the drafts fade in over their loading state, the route's Placeholder, when they land. */}
       <PageArrival loading={draftsStatus === "loading"} placeholder={<DraftsLoadingView />}>
         <DraftsView

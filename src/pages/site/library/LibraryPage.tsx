@@ -630,7 +630,7 @@ export default function LibraryPage() {
   return (
     <>
       <SeoHead
-        title={visiting ? `${ownerName}'s library · buildgallery` : "Library · buildgallery"}
+        title={visiting ? `${ownerName}'s library` : "Library"}
         description="Builds kept for later, and the collections they are kept in."
         path={base}
         noIndex

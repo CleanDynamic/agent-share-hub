@@ -1,9 +1,17 @@
 import { Helmet } from "react-helmet-async";
-import { siteUrl } from "@/lib/site";
+import { SITE_NAME, siteUrl } from "@/lib/site";
 
 // UX-13: the canonical and og:url always come from the one site address, so the
 // Lovable address and any preview canonicalise to openbuilds.ai.
-const SITE_NAME = "buildgallery";
+
+// UX-14: every title is `<page> · OpenBuilds.ai`, and the home page is the name alone.
+const TITLE_SUFFIX = ` · ${SITE_NAME}`;
+
+/** The title a page gets: the suffix once, and none when the title already is the site's name. */
+export function fullTitle(title: string): string {
+  if (title === SITE_NAME || title.endsWith(TITLE_SUFFIX)) return title;
+  return `${title}${TITLE_SUFFIX}`;
+}
 
 interface SeoHeadProps {
   title: string;
@@ -19,7 +27,7 @@ interface SeoHeadProps {
   twitterCreator?: string;
   /**
    * Optional Twitter @handle (without @) for twitter:site. Omitted unless
-   * passed: buildgallery has no account of its own to name (RC-P16b).
+   * passed: OpenBuilds.ai has no account of its own to name (RC-P16b).
    */
   twitterSite?: string;
   /** ISO date strings for article metadata. */
@@ -47,11 +55,12 @@ export function SeoHead({
   articleTags,
 }: SeoHeadProps) {
   const canonical = siteUrl(path);
+  const shownTitle = fullTitle(title);
   const jsonLdArray = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 
   return (
     <Helmet>
-      <title>{title}</title>
+      <title>{shownTitle}</title>
       <meta name="description" content={description} />
       <link rel="canonical" href={canonical} />
 
@@ -62,7 +71,7 @@ export function SeoHead({
       )}
 
       {/* Open Graph */}
-      <meta property="og:title" content={title} />
+      <meta property="og:title" content={shownTitle} />
       <meta property="og:description" content={description} />
       <meta property="og:type" content={ogType} />
       <meta property="og:url" content={canonical} />
@@ -77,7 +86,7 @@ export function SeoHead({
 
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={title} />
+      <meta name="twitter:title" content={shownTitle} />
       <meta name="twitter:description" content={description} />
       {twitterSite && <meta name="twitter:site" content={`@${twitterSite.replace(/^@/, "")}`} />}
       {image && <meta name="twitter:image" content={image} />}

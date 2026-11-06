@@ -54,7 +54,7 @@ describe("the pending card", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Check your inbox" })).toBeTruthy();
     expect(screen.getByText("ada@example.com")).toBeTruthy();
     expect(verifyEmailLink).not.toHaveBeenCalled();
-    await waitFor(() => expect(document.title).toBe("Verify your email — buildgallery"));
+    await waitFor(() => expect(document.title).toBe("Verify your email · OpenBuilds.ai"));
     expect(screen.queryByRole("link", { name: "Join free" })).toBeNull();
   });
 

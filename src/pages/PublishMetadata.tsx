@@ -32,6 +32,7 @@ import {
 } from "@/lib/notifications";
 import { toast as sonnerToast } from "sonner";
 import { reportError } from "@/lib/errors/report";
+import { SITE_NAME } from "@/lib/site";
 
 const buildPayload = (
   values: PublishFormValues,
@@ -335,8 +336,8 @@ export default function PublishMetadata() {
   useEffect(() => {
     if (!data) return;
     const title = (data.title || "Untitled").trim();
-    document.title = `Publish: ${title} · buildgallery`;
-    return () => { document.title = "buildgallery"; };
+    document.title = `Publish: ${title} · ${SITE_NAME}`;
+    return () => { document.title = SITE_NAME; };
   }, [data]);
 
   // Loading — skeleton mirrors the form layout

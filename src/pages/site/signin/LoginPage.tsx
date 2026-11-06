@@ -82,7 +82,7 @@ export function LoginPage() {
 
   return (
     <>
-      <SeoHead title="Sign in — buildgallery" description="Sign in to your buildgallery account." path="/login" noIndex />
+      <SeoHead title="Sign in" description="Sign in to your buildgallery account." path="/login" noIndex />
       <SignInShell mode="login">
         <LoginForm
           emailOrUsername={emailOrUsername}

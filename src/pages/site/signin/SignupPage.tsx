@@ -222,7 +222,7 @@ export function SignupPage() {
 
   return (
     <>
-      <SeoHead title="Join buildgallery" description="Create a free buildgallery account." path="/signup" noIndex />
+      <SeoHead title="Join" description="Create a free buildgallery account." path="/signup" noIndex />
       <SignInShell mode="signup">
         <SignupForm
           displayName={displayName}

@@ -49,7 +49,7 @@ export default function Analytics() {
   return (
     <>
       <SeoHead
-        title="Your Progress — openbuilds.ai"
+        title="Your Progress"
         description="Your level and XP, your builds' numbers, this week's challenges and your badges."
         path="/analytics"
       />

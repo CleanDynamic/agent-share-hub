@@ -8,7 +8,7 @@ export default function PrivacyPage() {
     <LegalPage
       name="privacy"
       text={privacy}
-      seoTitle="Privacy policy · OpenBuilds"
+      seoTitle="Privacy policy"
       description="What OpenBuilds collects about you, why, who else sees it, and how to use your rights."
       path="/privacy"
     />

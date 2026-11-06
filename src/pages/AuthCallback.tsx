@@ -53,7 +53,7 @@ export default function AuthCallback() {
   return (
     <>
       <SeoHead
-        title="Signing in — buildgallery"
+        title="Signing in"
         description="Completing sign-in."
         path="/auth/callback"
         noIndex

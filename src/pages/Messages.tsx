@@ -22,6 +22,7 @@ import { r } from "@/lib/theme/radius";
 import { uiTransition } from "@/lib/theme/controls";
 import { Skeleton } from "@/components/ui/skeleton";
 import { reportError } from "@/lib/errors/report";
+import { SITE_NAME } from "@/lib/site";
 
 function timeAgo(iso: string | null): string {
   if (!iso) return "";
@@ -152,9 +153,9 @@ export default function MessagesPage() {
 
   // Browser tab title
   useEffect(() => {
-    const title = totalUnread > 0 ? `(${totalUnread > 9 ? "9+" : totalUnread}) Messages — openbuilds.ai` : "Messages — openbuilds.ai";
+    const title = totalUnread > 0 ? `(${totalUnread > 9 ? "9+" : totalUnread}) Messages · ${SITE_NAME}` : `Messages · ${SITE_NAME}`;
     document.title = title;
-    return () => { document.title = "openbuilds.ai"; };
+    return () => { document.title = SITE_NAME; };
   }, [totalUnread]);
 
   // Fetch threads for the active tab
@@ -435,7 +436,7 @@ export default function MessagesPage() {
 
   return (
     <>
-      <SeoHead title="Messages" description="Your conversations on openbuilds.ai." path="/messages" />
+      <SeoHead title="Messages" description={`Your conversations on ${SITE_NAME}.`} path="/messages" />
       <div style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%" }}>
         <ShellHeader
           onBack={() => navigate(-1)}

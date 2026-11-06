@@ -62,7 +62,7 @@ describe("MobileHeaderView", () => {
 
   it("signed in: lockup, Search, Account", () => {
     const h = header(viewer);
-    expect(screen.getByRole("link", { name: "buildgallery home" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "OpenBuilds.ai home" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
     fireEvent.click(screen.getByRole("button", { name: "Account" }));
     expect(h.onSearchOpen).toHaveBeenCalled();
@@ -144,7 +144,7 @@ describe("phone chrome under the refined look", () => {
 
   it("the header is --frame, 48 high, no edge and no blur, with the lockup and icon buttons, names kept", () => {
     render(inRefined(<MobileHeaderView viewer={viewer} onSearchOpen={vi.fn()} onAccountOpen={vi.fn()} onSignIn={vi.fn()} />));
-    expect(screen.getByRole("link", { name: "buildgallery home" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "OpenBuilds.ai home" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Search" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Account" })).toBeTruthy();
     const html = renderToStaticMarkup(

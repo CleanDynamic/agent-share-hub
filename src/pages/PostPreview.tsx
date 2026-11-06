@@ -141,7 +141,7 @@ export default function PostPreviewPage() {
 
   return (
     <div className="py-0 px-0">
-      <SeoHead title="Preview — openbuilds.ai" description="Preview your draft post." path={`/upload/preview/${draftId}`} noIndex />
+      <SeoHead title="Preview" description="Preview your draft post." path={`/upload/preview/${draftId}`} noIndex />
 
       {/* Sticky top bar */}
       <div className="sticky top-0 z-30 h-[52px] flex items-center justify-between px-4 sm:px-6 border-b border-border bg-card">

@@ -178,7 +178,7 @@ export function ResetPasswordPage() {
   return (
     <>
       <SeoHead
-        title="Reset your password — buildgallery"
+        title="Reset your password"
         description="Reset your buildgallery account password."
         path="/reset-password"
         noIndex
