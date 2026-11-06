@@ -91,7 +91,7 @@ migration.
 - Lint: errors 1,419 -> 935, warnings 549 -> 531 (the deleted files' `any`s).
 - `audit:size`: total JavaScript **6,724,798 -> 6,366,482 bytes, -358,316 (-5.3%)**, chunks 478 -> 440. First download 235.2 -> 231.6 KB; composer
   124.5 -> 124.2 KB (both over budget, as on main).
-- `audit:pages`: see the line at the foot (run last, 14 minutes).
+- `audit:pages`: 37 of 39 pass; the two that fail are the two that fail on main, with the same words (`report and targets`: `library-saved` 10 requests; `page changes`: "Back landed 1331 px"). Cold request counts now / main run / baseline file: home 26/26/26, builds 16/18/17, builds-maps 17/19/18, builds-classification 18/16/17, openbuilds 7/10/9, library-saved 10/10/8, library-collections 8/5/9, drafts 6/8/10, composer 17/17/19, build 9/8/12, profile 17/17/17, followers 7/7/7, following 7/7/7. None went up beyond the one extra request the audit allows. `pageBaseline.json` is **unchanged**: no audited page was removed, and a run-to-run difference is not a change the rule allows me to write down.
 - Tier 1 Playwright: not re-run (stale on main, as measured earlier); the Playwright check of three old addresses
   (`e2e/tier3/retired-addresses.spec.ts`) is unchanged and was not re-run either.
 
