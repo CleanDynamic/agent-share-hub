@@ -86,6 +86,12 @@ export function trailFor(pathname: string, title: string | null, parent: Crumb |
   if (here(pathname, "/openbuilds/topics/:id")) return [HOME, OPENBUILDS, ...(parent ? [parent] : []), { label: title }];
   if (here(pathname, "/openbuilds/requests")) return [HOME, OPENBUILDS, { label: "Older requests" }];
 
+  // UX-10 P5b: @maya / Followers, after the site's leading Home.
+  const follows = here(pathname, "/profile/:handle/followers") ?? here(pathname, "/profile/:handle/following");
+  if (follows) {
+    const handle = follows.params.handle ?? "";
+    return [HOME, { label: `@${handle}`, href: `/profile/${handle}` }, { label: pathname.endsWith("/followers") ? "Followers" : "Following" }];
+  }
   if (here(pathname, "/profile/:handle") || here(pathname, "/profile")) return [HOME, { label: title }];
   if (here(pathname, "/notifications")) return [HOME, { label: "Activity" }];
   if (here(pathname, "/connect")) return [HOME, { label: "Connect a tool" }];

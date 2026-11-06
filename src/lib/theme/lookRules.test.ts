@@ -1520,6 +1520,12 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/profile/ProfileHead.tsx",
   "src/pages/site/profile/profileFeedModel.ts",
   "src/pages/site/profile/ux10.p5.test.tsx",
+  "src/lib/profile/followLists.ts",
+  "src/pages/site/profile/FollowListView.tsx",
+  "src/pages/site/profile/FollowListPage.tsx",
+  "src/pages/site/profile/ux10.p5b.test.tsx",
+  "src/components/shell/breadcrumbTrail.ts",
+  "src/lib/routing/routeTable.ts",
 ];
 
 /**

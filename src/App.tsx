@@ -127,6 +127,8 @@ const LineageSitePage = lazy(() => import("./pages/site/rebuild/LineagePage"));
 const CompareSitePage = lazy(() => import("./pages/site/compare/ComparePage"));
 // UI-P34: the Profile in the site frame; its own chunk, rendered directly.
 const ProfileSitePage = lazy(ROUTE_TABLE.profile.load as () => Promise<{ default: React.ComponentType }>);
+const FollowersSitePage = lazy(ROUTE_TABLE.followers.load as () => Promise<{ default: React.ComponentType }>);
+const FollowingSitePage = lazy(ROUTE_TABLE.following.load as () => Promise<{ default: React.ComponentType }>);
 // UI-P35: Activity in the site frame; its own chunk (it draws a chart), rendered directly.
 const ActivitySitePage = lazy(() => import("./pages/site/activity/ActivityPage"));
 // UI-P36: Sign in, Join, reset and verify in the entrance's frame; each its own chunk, rendered directly.
@@ -369,6 +371,9 @@ const App = () => (
                         </RouteBoundary>
                   }
                 />
+                {/* UX-10 P5b: a person's followers and the people they follow. */}
+                <Route path="/profile/:handle/followers" element={<RouteBoundary><FollowersSitePage /></RouteBoundary>} />
+                <Route path="/profile/:handle/following" element={<RouteBoundary><FollowingSitePage /></RouteBoundary>} />
                 <Route path="/library" element={<ProtectedRoute><LibraryPage /></ProtectedRoute>} />
                 <Route path="/library/collections/:collectionId" element={<CollectionDetailRoute />} />
                 <Route path="/library/:handle/collections/:collectionId" element={<CollectionDetailRoute />} />

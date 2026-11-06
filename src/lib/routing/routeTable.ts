@@ -354,7 +354,39 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
     },
     Placeholder: ProfilePlaceholder,
   },
+  /* UX-10 P5b: a person's followers and the people they follow. One round: the profile and the list's first page together. */
+  followers: {
+    key: "followers",
+    pattern: "/profile/:handle/followers",
+    signedIn: false,
+    load: () => import("@/pages/site/profile/FollowListPage").then((module) => ({ default: module.FollowersPage })),
+    prefetch: async ({ handle }, queryClient, { userId }) => prefetchFollows(handle, "followers", queryClient, userId),
+    Placeholder: ProfilePlaceholder,
+  },
+  following: {
+    key: "following",
+    pattern: "/profile/:handle/following",
+    signedIn: false,
+    load: () => import("@/pages/site/profile/FollowListPage").then((module) => ({ default: module.FollowingPage })),
+    prefetch: async ({ handle }, queryClient, { userId }) => prefetchFollows(handle, "following", queryClient, userId),
+    Placeholder: ProfilePlaceholder,
+  },
 };
+
+/** UX-10 P5b: the follow list's first screen: the profile and the list's first page, on the page's keys. */
+async function prefetchFollows(handle: string | undefined, which: "followers" | "following", queryClient: QueryClient, userId: string | null) {
+  if (!handle) return;
+  const [{ getProfileSummary }, { listProfileFollows }] = await Promise.all([import("@/lib/profile/getProfileSummary"), import("@/lib/profile/followLists")]);
+  await Promise.all([
+    queryClient.prefetchQuery({ queryKey: ["profile", "getProfileSummary", handle, userId], queryFn: () => getProfileSummary(handle, userId), staleTime: 60_000 }),
+    queryClient.prefetchInfiniteQuery({
+      queryKey: ["profile", "listProfileFollows", handle, which, userId],
+      queryFn: ({ pageParam }) => listProfileFollows(handle, which, pageParam as string | null),
+      initialPageParam: null as string | null,
+      staleTime: 60_000,
+    }),
+  ]);
+}
 
 export interface RouteMatch {
   entry: RouteEntry;
