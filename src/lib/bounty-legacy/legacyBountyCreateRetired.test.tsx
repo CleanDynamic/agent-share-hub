@@ -175,11 +175,11 @@ describe("live — a bounty draft already in progress still opens its editor", (
   });
 });
 
-// NS-P54 commit 2. Two helpers wrote an APPROVED content_items row — createMetaBounty a meta-bounty (deleted by UX-11),
-// promoteBountyToBlueprint a clone of a solved one — and both were frozen at their first statement. The claim is that they
+// NS-P54 commit 2. Two helpers wrote an APPROVED content_items row (createMetaBounty a meta-bounty, deleted by UX-11, and
+// promoteBountyToBlueprint a clone of a solved one), and both were frozen at their first statement. The claim is that they
 // REFUSE rather than fail: no query of any kind is built, so there is no
 // half-written row and no orphaned header behind the error.
-describe("frozen — the superseded bounty-competition helper", () => {
+describe("frozen: the superseded bounty-competition helper", () => {
   it("promoteBountyToBlueprint throws BOUNTY_RETIRED and writes nothing", async () => {
     const { promoteBountyToBlueprint } = await import(
       "@/lib/bounty-competition/promoteBountyToBlueprint"

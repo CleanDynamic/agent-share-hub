@@ -1,4 +1,4 @@
-// UX-11 P1 — three retired addresses, opened on the built site (`vite build && vite preview`), land where that thing lives
+// UX-11 P1: three retired addresses, opened on the built site (`vite build && vite preview`), land where that thing lives
 // now and keep their search string. The unit test (src/lib/routing/retiredAddresses.test.tsx) covers every address; this one
 // shows the real bundle follows it. The destinations are public pages, so nothing here needs a session or a backend: the
 // assertion is the address the browser ends on.
