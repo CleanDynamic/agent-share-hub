@@ -36,7 +36,7 @@ describe("the footer", () => {
     footer({ showPrivacy: true, showTerms: true });
     const links = screen.getAllByRole("link").map((a) => [a.textContent, a.getAttribute("href")]);
     expect(links).toEqual([
-      ["buildgallery", "/"],
+      ["OpenBuilds.ai", "/"],
       ["About", "/about"],
       ["API docs", "/api-docs"],
       ["Privacy", "/privacy"],

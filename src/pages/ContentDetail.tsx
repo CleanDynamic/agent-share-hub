@@ -43,7 +43,7 @@ import RemixButton from "@/components/remix/RemixButton";
 import { useLineageParent, useRemixCount } from "@/lib/remix/hooks";
 import { createRemix } from "@/lib/remix/createRemix";
 import { REMIX_CREATE_ENABLED } from "@/lib/remix/flags";
-import { SITE_URL, siteUrl } from "@/lib/site";
+import { SITE_NAME, SITE_URL, siteUrl } from "@/lib/site";
 import { scrollBehavior } from "@/lib/theme/motion";
 
 const NORMALIZE_TYPE = (raw?: string | null): "blueprint" | "blog" => (raw === "blog" ? "blog" : "blueprint");
@@ -784,7 +784,7 @@ export default function ContentDetail() {
           },
           publisher: {
             "@type": "Organization",
-            name: "buildgallery",
+            name: SITE_NAME,
             url: SITE_URL,
           },
           mainEntityOfPage: postUrl,
