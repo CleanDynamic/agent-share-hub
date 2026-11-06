@@ -39,3 +39,13 @@ describe("UX-13 P1 · site address", () => {
     expect(siteUrl("/builds?q=a&page=2#top")).toBe("https://openbuilds.ai/builds?q=a&page=2#top");
   });
 });
+
+describe("UX-14 P1 · the site's name", () => {
+  it("is exactly OpenBuilds.ai in the app and in the edge functions, and the two agree", async () => {
+    const app = await import("./site");
+    const edge = await import("../../supabase/functions/_shared/site");
+    expect(app.SITE_NAME).toBe("OpenBuilds.ai");
+    expect(edge.SITE_NAME).toBe("OpenBuilds.ai");
+    expect(edge.SITE_NAME).toBe(app.SITE_NAME);
+  });
+});
