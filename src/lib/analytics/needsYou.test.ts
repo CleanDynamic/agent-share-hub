@@ -32,8 +32,7 @@ function row(over: Partial<BuildStatRow>): BuildStatRow {
     runs: 1,
     worked: 1,
     failed_last_30_days: 0,
-    open_bounties: 0,
-    solutions_waiting: 0,
+    still_open: 0,
     ...over,
   };
 }
@@ -43,8 +42,8 @@ describe("needsYouReasons", () => {
     expect(needsYouReasons(row({}), NOW)).toEqual([]);
   });
 
-  it("names solutions waiting on an open bounty", () => {
-    expect(needsYouReasons(row({ solutions_waiting: 2 }), NOW)).toEqual([{ kind: "waiting", count: 2 }]);
+  it("names topics still open on the build", () => {
+    expect(needsYouReasons(row({ still_open: 2 }), NOW)).toEqual([{ kind: "open", count: 2 }]);
   });
 
   it("names a recent run that did not work, when nothing confirmed it working since", () => {
@@ -65,16 +64,16 @@ describe("needsYouReasons", () => {
 });
 
 describe("needsYou", () => {
-  it("puts the most pressing first: waiting, then failing, then stale; one line per build", () => {
+  it("puts the most pressing first: open, then failing, then stale; one line per build", () => {
     const builds = [
       row({ id: "stale", title: "Stale", worked: 9, last_confirmed_at: ago(300) }),
       row({ id: "fine", title: "Fine", worked: 8 }),
       row({ id: "failing", title: "Failing", worked: 7, failed_last_30_days: 2, last_confirmed_at: ago(60) }),
-      row({ id: "waiting", title: "Waiting", worked: 1, solutions_waiting: 1, last_confirmed_at: ago(300) }),
+      row({ id: "open", title: "Open", worked: 1, still_open: 1, last_confirmed_at: ago(300) }),
     ];
     const lines = needsYou(builds, NOW);
-    expect(lines.map((line) => line.build.id)).toEqual(["waiting", "failing", "stale"]);
-    expect(lines[0].reasons.map((reason) => reason.kind)).toEqual(["waiting", "stale"]);
+    expect(lines.map((line) => line.build.id)).toEqual(["open", "failing", "stale"]);
+    expect(lines[0].reasons.map((reason) => reason.kind)).toEqual(["open", "stale"]);
   });
 
   it("is empty when nothing needs the maker", () => {
@@ -84,8 +83,8 @@ describe("needsYou", () => {
 
 describe("reasonText", () => {
   it("says each reason in the page's words", () => {
-    expect(reasonText({ kind: "waiting", count: 3 })).toBe("3 solutions waiting");
-    expect(reasonText({ kind: "waiting", count: 1 })).toBe("1 solution waiting");
+    expect(reasonText({ kind: "open", count: 3 })).toBe("3 topics still open");
+    expect(reasonText({ kind: "open", count: 1 })).toBe("1 topic still open");
     expect(reasonText({ kind: "failing" })).toBe("a recent run did not work");
     expect(reasonText({ kind: "stale", since: "2026-03-13T10:00:00.000Z" })).toBe("not confirmed since 13 March 2026");
   });

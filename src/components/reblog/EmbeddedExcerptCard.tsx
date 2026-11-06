@@ -13,7 +13,7 @@ export interface Excerpt {
 export interface SourcePost {
   id: string;
   slug: string;
-  postType: "blueprint" | "blog" | "bounty";
+  postType: "blueprint" | "blog";
   title: string;
   authorDisplayName: string;
   authorHandle: string;
@@ -36,7 +36,6 @@ const POST_TYPE_STYLES: Record<
 > = {
   blueprint: { bg: "color-mix(in srgb, var(--action) 18%, transparent)", text: "var(--action)", label: "Blueprint" },
   blog: { bg: "color-mix(in srgb, var(--evidence) 18%, transparent)", text: "var(--evidence)", label: "Blog" },
-  bounty: { bg: "color-mix(in srgb, var(--lit) 18%, transparent)", text: "var(--lit)", label: "Bounty" },
 };
 
 function formatTimestamp(iso: string): string {

@@ -43,7 +43,6 @@ interface Author {
   stats: {
     blueprintCount: number;
     followerCount: number;
-    bountiesSolved: number;
   };
 }
 
@@ -652,8 +651,6 @@ export function ContentDetailShell({
                 <span>{author.stats.blueprintCount} blueprints</span>
                 <span>·</span>
                 <span>{formatCount(author.stats.followerCount)} followers</span>
-                <span>·</span>
-                <span>{author.stats.bountiesSolved} bounties solved</span>
               </div>
             </div>
           )}
@@ -693,7 +690,7 @@ export function ContentDetailShell({
               Want to publish on buildgallery?
             </div>
             <div style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--text2)" }}>
-              Share your blueprints, blogs, and bounties with the community.
+              Share your blueprints and blogs with the community.
             </div>
           </div>
           <a

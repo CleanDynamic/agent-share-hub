@@ -233,11 +233,6 @@ describe("the build line and the actions", () => {
     expect(screen.queryByTestId("rebuild-count")).toBeNull();
   });
 
-  it("follows the plaque with the open ask", () => {
-    renderRow(build({ bounties: [{ id: "x", reward_gbp: 120, status: "open" }] as GalleryBuild["bounties"] }));
-    expect(screen.getByTestId("feed-open-ask")).toHaveTextContent("1 part unsolved");
-  });
-
   it("draws the action row with Rebuild, capped at 520px and spread, only when handed engagement", () => {
     const { unmount } = renderRow(build());
     expect(screen.queryByTestId("engagement-row")).toBeNull();

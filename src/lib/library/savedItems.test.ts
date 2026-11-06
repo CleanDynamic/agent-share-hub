@@ -20,7 +20,6 @@ let answer: (table: string, own: Recorded[]) => Answer = () => ({ data: [], erro
 let session: { user: { id: string } } | null = { user: { id: "reader-1" } };
 let header: Record<string, unknown> | null = null;
 let tree: unknown[] = [];
-let bounty: Record<string, unknown> | null = null;
 
 function builder(table: string) {
   const id = (builders += 1);
@@ -79,8 +78,7 @@ beforeEach(() => {
   session = { user: { id: "reader-1" } };
   header = published;
   tree = [];
-  bounty = null;
-  answer = (table) => (table === "bounties" ? { data: bounty, error: null, status: 200 } : { data: [], error: null, status: 200 });
+  answer = () => ({ data: [], error: null, status: 200 });
 });
 
 describe("the snapshots", () => {

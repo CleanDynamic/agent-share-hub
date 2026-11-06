@@ -36,7 +36,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(NOW);
   calls.length = 0;
-  tables = { builds: [build()], build_saves: [], bounties: [], build_reproductions: [], solutions: [], profiles: [{ id: "u2", username: "kit", display_name: "Kit" }] };
+  tables = { builds: [build()], build_saves: [], build_reproductions: [], profiles: [{ id: "u2", username: "kit", display_name: "Kit" }] };
 });
 
 describe("listActivityFor", () => {
@@ -57,13 +57,6 @@ describe("listActivityFor", () => {
     expect(events.find((e) => e.kind === "rebuild")).toMatchObject({ role: "saver", buildId: "b9", rebuildId: "b2", rebuildSlug: "triage-2", rebuilder: { handle: "kit" } });
   });
 
-  it("returns a solution on a request the reader opened", async () => {
-    tables.bounties = [{ id: "q1", build_id: "b1" }];
-    tables.solutions = [{ id: "s1", bounty_id: "q1", solver_id: "u2", submitted_at: ago(1) }];
-    const events = await listActivityFor({ userId: "u1", since: SINCE });
-    expect(events.find((e) => e.kind === "answer")).toMatchObject({ id: "answer:s1", bountyId: "q1", buildId: "b1", solver: { handle: "kit" } });
-  });
-
   it("returns a build that went stale since `since`, and not one that was already stale", async () => {
     tables.builds = [build({ id: "fresh-then", last_confirmed_at: ago(121) }), build({ id: "old", slug: "old", last_confirmed_at: ago(300) })];
     // 121 days ago confirmed: stale now (>120), fresh two days ago (119). 300 days: stale at both times.
@@ -73,19 +66,16 @@ describe("listActivityFor", () => {
   });
 
   it("leaves out an event at or before `since`", async () => {
-    tables.bounties = [{ id: "q1", build_id: "b1" }];
     tables.build_reproductions = [{ id: "r1", build_id: "b1", user_id: "u2", confirmed_at: ago(3), model_used: null, worked: false, note: null }];
     await listActivityFor({ userId: "u1", since: SINCE });
     const read = calls.find((c) => c.table === "build_reproductions");
     expect(read?.filters).toContainEqual(["gt", "confirmed_at", SINCE]);
-    const solutions = calls.find((c) => c.table === "solutions");
-    expect(solutions?.filters).toContainEqual(["gt", "submitted_at", SINCE]);
   });
 
   it("starts every hop-2 read together, and reads nothing for a reader with no builds", async () => {
     tables.builds = [];
     expect(await listActivityFor({ userId: "u1", since: SINCE })).toEqual([]);
-    expect(calls.map((c) => c.table).sort()).toEqual(["build_saves", "bounties", "builds"].sort());
+    expect(calls.map((c) => c.table).sort()).toEqual(["build_saves", "builds"].sort());
   });
 
   it("savedOnly reads neither the reader's builds nor their requests, and leaves out a saved build they made", async () => {
@@ -97,7 +87,6 @@ describe("listActivityFor", () => {
     ];
     const events = await listActivityFor({ userId: "u1", since: SINCE, savedOnly: true });
     expect(events.map((e) => [e.id, e.role])).toEqual([["run:r1", "saver"]]);
-    expect(calls.some((c) => c.table === "bounties")).toBe(false);
     expect(calls.find((c) => c.table === "builds")?.filters).not.toContainEqual(["eq", "creator_id", "u1"]);
   });
 

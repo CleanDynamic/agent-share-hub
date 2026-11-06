@@ -20,7 +20,6 @@
 // changes, so changing a filter costs exactly one request.
 
 import { supabase } from "@/integrations/supabase/client";
-import type { Bounty } from "@/lib/bounty/types";
 import { MODEL_VERSIONS, modelById, modelKeysOf, normaliseModel, type Lab, type ModelVersion } from "@/lib/models/registry";
 import { TOOLS, toolFor } from "@/lib/tools/registry";
 import { isPattern, type Pattern } from "./patterns";
@@ -287,14 +286,6 @@ const MEDIA_PER_BUILD = 12;
 const GALLERY_MEDIA_KINDS = ["image", "video"] as const;
 
 /**
- * The pill says "bounty", not "bounties", and it takes the largest reward it
- * can see. Four rows per build is more than enough to find that and cheap
- * enough to be free; a build with more open asks than this has a page of its
- * own to show them on.
- */
-const BOUNTIES_PER_BUILD = 4;
-
-/**
  * The header columns a card reads. Explicit, because `*` on this table would
  * put monetisation and cost columns on the wire for every card that never
  * shows them.
@@ -337,37 +328,15 @@ const GALLERY_MEDIA_COLUMNS =
   "id, node_id, bucket, path, kind, width, height, poster_path, duration, post_position, post_text";
 
 /**
- * The bounty columns a card's pill reads (NS-P52).
- *
- * Three, because that is all a pill is: whether there is an open ask, and what
- * it pays. The gap it names, its deadline and its me-too count are the build
- * page's business — a card that carried them would put four columns per bounty
- * on the wire for a badge eight characters wide.
- */
-const GALLERY_BOUNTY_COLUMNS = "id, reward_gbp, status";
-
-/**
  * The select string, embeds and all.
  *
  * The !hint on build_nodes is required rather than decorative: builds carries
  * hero_node_id, so there are TWO foreign keys between builds and build_nodes
  * and PostgREST refuses an ambiguous embed. The hint names the one that means
  * "the nodes of this build".
- *
- * THE BOUNTY EMBED IS THE PILL, AND IT IS ONE QUERY (NS-P52). It rides in on
- * the request the cards already make, filtered to open rows by the
- * `bounties.status` clause in listGallery — so a grid of twenty-four cards
- * costs the same one request whether none of them carries an ask or all of
- * them do. `inner` is the same embed with the join made inner, which is what
- * turns "show me the pill" into "show me only the builds that have one"; it is
- * a second string rather than a flag because PostgREST reads the modifier out
- * of the select and there is nothing to toggle at runtime.
  */
-export function gallerySelect(openBountiesOnly: boolean): string {
-  const bounties = openBountiesOnly
-    ? `bounties!bounties_build_id_fkey!inner(${GALLERY_BOUNTY_COLUMNS})`
-    : `bounties!bounties_build_id_fkey(${GALLERY_BOUNTY_COLUMNS})`;
-  return `${GALLERY_BUILD_COLUMNS}, build_nodes!build_nodes_build_id_fkey(${GALLERY_NODE_COLUMNS}), build_media!build_media_build_id_fkey(${GALLERY_MEDIA_COLUMNS}), ${bounties}`;
+export function gallerySelect(): string {
+  return `${GALLERY_BUILD_COLUMNS}, build_nodes!build_nodes_build_id_fkey(${GALLERY_NODE_COLUMNS}), build_media!build_media_build_id_fkey(${GALLERY_MEDIA_COLUMNS})`;
 }
 
 /** The builder methods withCardEmbeds calls; every PostgREST filter builder has them. */
@@ -387,7 +356,7 @@ interface CardEmbedQuery {
  *
  * A card is the gallery's card only when it carries what the gallery's query
  * gives it: the nodes its body reads, the pictures it shows, the open ask on
- * its pill. Where next reads its rows with gallerySelect(false) and this, so a
+ * its pill. Where next reads its rows with gallerySelect() and this, so a
  * build looks the same at the foot of a build page as it does in the gallery
  * ⟦law-of-similarity⟧. The filters and caps are listGallery's own, key for
  * key; listGallery keeps its inline copy because its ORDER BY is locked
@@ -398,11 +367,9 @@ export function withCardEmbeds<Q>(query: Q, at = ""): Q {
   return (query as unknown as CardEmbedQuery)
     .in(`${at}build_nodes.type`, [...GALLERY_NODE_TYPES])
     .in(`${at}build_media.kind`, [...GALLERY_MEDIA_KINDS])
-    .eq(`${at}bounties.status`, "open")
     .order("position", { referencedTable: `${at}build_nodes`, ascending: true, nullsFirst: false })
     .limit(NODES_PER_BUILD, { referencedTable: `${at}build_nodes` })
-    .limit(MEDIA_PER_BUILD, { referencedTable: `${at}build_media` })
-    .limit(BOUNTIES_PER_BUILD, { referencedTable: `${at}bounties` }) as unknown as Q;
+    .limit(MEDIA_PER_BUILD, { referencedTable: `${at}build_media` }) as unknown as Q;
 }
 
 /**
@@ -427,16 +394,6 @@ export type GalleryNode = Pick<
   BuildNode,
   "id" | "type" | "title" | "payload" | "position" | "is_gap"
 >;
-
-/**
- * A card's bounty row: is there an open ask on this build, and what does it pay.
- *
- * `status` is on it even though every row that arrives is open, because the
- * filter that makes that true lives in the query and a shape that depended on
- * a caller remembering to apply it would be a shape that lies the first time
- * somebody forgets.
- */
-export type GalleryBounty = Pick<Bounty, "id" | "reward_gbp" | "status">;
 
 /**
  * A card's media row. Satisfies MediaRef, so mediaUrl takes it as it stands —
@@ -497,17 +454,6 @@ export interface GalleryBuild
   classifiedAs?: Classification;
   nodes: GalleryNode[];
   media: GalleryMedia[];
-  /**
-   * The open bounties on this build, when the caller's query asked for them.
-   *
-   * OPTIONAL, and the difference matters: an empty array means "asked, and
-   * there are none", while absent means "nobody asked" — which is the honest
-   * answer for a build assembled from a feed row that carried no bounty
-   * columns. A card renders the pill for the first case and nothing for the
-   * second, rather than announcing that a build has no ask on the strength of
-   * a question that was never put.
-   */
-  bounties?: GalleryBounty[];
 }
 
 /**
@@ -518,7 +464,7 @@ export interface GalleryBuild
  *   proven     reproduced at least once and confirmed working within
  *              STALE_AFTER_DAYS: "does it work?"
  *   rebuilt    rebuilt at least once: "can I build on it?"
- *   unsolved   carrying an open bounty: "where can I help?"
+ *   unsolved   has an open ask (a still-open topic about it): "where can I help?"
  *
  * A LENS FILTERS; IT NEVER REORDERS. Every lens reads the same ORDER BY below,
  * so a build keeps its place relative to its neighbours whichever lens is on.
@@ -541,14 +487,8 @@ export interface GalleryFilters {
    * omitted or empty is the gallery exactly as it was.
    */
   shapes?: string[];
-  /**
-   * Only builds carrying an open bounty (NS-P52).
-   *
-   * An AND with the other two, like they are with each other: made for
-   * lawyers, made with Claude, and asking for help. Additive — omitted or
-   * false is the gallery exactly as it was. The Unsolved lens sets it.
-   */
-  openBounties?: boolean;
+  /** Only builds with an open ask (the Still open lens's filter, beside another lens). */
+  stillOpen?: boolean;
   /**
    * The lens (RC-P10). An AND with the facets and the query. Omitted, or a
    * value that is not one of GALLERY_LENSES, is "all".
@@ -607,6 +547,12 @@ export interface GalleryPage {
 /** The one builder method applyLensFilters calls; every PostgREST filter builder has it. */
 interface LensQuery {
   gte(column: string, value: string | number): LensQuery;
+  eq(column: string, value: boolean): LensQuery;
+}
+
+/** Only builds with an open ask: `has_open_ask` is a computed column the generated types do not list. */
+function withAskFilter<Q>(query: Q): Q {
+  return (query as unknown as LensQuery).eq(ASK_FILTER, true) as unknown as Q;
 }
 
 /** The oldest last_confirmed_at that still counts as fresh: the window isStale reads. */
@@ -618,10 +564,9 @@ function freshSince(now: number): string {
  * What a lens adds to a gallery query, on top of the membership clauses.
  *
  * Shared by listGallery and the counts (countGalleryLenses, getGalleryStats),
- * so a lens' number and its page cannot drift apart. Unsolved adds nothing
- * here: it is the inner bounty embed in the select and the `bounties.status`
- * clause, which a caller applies with the select it builds (see
- * gallerySelect and countGalleryBuilds).
+ * so a lens' number and its page cannot drift apart. Unsolved is the builds
+ * with an open ask: `has_open_ask`, a computed column of `builds` (a still-open
+ * topic that attaches the build or is about it).
  */
 function applyLensFilters<Q>(query: Q, lens: GalleryLens, now: number = Date.now()): Q {
   const builder = query as unknown as LensQuery;
@@ -631,6 +576,9 @@ function applyLensFilters<Q>(query: Q, lens: GalleryLens, now: number = Date.now
   }
   if (lens === "rebuilt") {
     return builder.gte("rebuild_count", 1) as unknown as Q;
+  }
+  if (lens === "unsolved") {
+    return withAskFilter(query);
   }
   return query;
 }
@@ -666,14 +614,13 @@ async function listGalleryRows(options: ListGalleryOptions, reviews: boolean): P
   const lens: GalleryLens = GALLERY_LENSES.includes(options.lens as GalleryLens)
     ? (options.lens as GalleryLens)
     : "all";
-  // The Unsolved lens IS the open-bounty filter: it takes the existing branch
-  // below rather than a second copy of it.
-  const openBounties = options.openBounties === true || lens === "unsolved";
+  // Still open is a lens (applyLensFilters), and `stillOpen` asks for the same filter beside another lens.
+  const stillOpen = options.stillOpen === true && lens !== "unsolved";
   const search = normaliseQuery(options.query);
 
   let query = supabase
     .from("builds")
-    .select(`${gallerySelect(openBounties)}, classification`, { count: "exact" })
+    .select(`${gallerySelect()}, classification`, { count: "exact" })
     // Never drafts. The RLS policy would hand a creator their own back.
     .in("status", ["published", "gallery"]);
 
@@ -690,10 +637,8 @@ async function listGalleryRows(options: ListGalleryOptions, reviews: boolean): P
     // card, with an empty nodes array.
     .in("build_nodes.type", [...GALLERY_NODE_TYPES])
     .in("build_media.kind", [...GALLERY_MEDIA_KINDS])
-    // The same rule with the opposite consequence when the embed is inner: a
-    // build whose only bounty is solved keeps its card in the unfiltered
-    // gallery and loses it under the filter, which is what the filter means.
-    .eq("bounties.status", "open");
+    ;
+  if (stillOpen) query = withAskFilter(query);
 
   const madeFor = cleanList(options.madeFor);
   if (madeFor.length > 0) query = query.overlaps("made_for", madeFor);
@@ -725,7 +670,6 @@ async function listGalleryRows(options: ListGalleryOptions, reviews: boolean): P
     })
     .limit(NODES_PER_BUILD, { referencedTable: "build_nodes" })
     .limit(MEDIA_PER_BUILD, { referencedTable: "build_media" })
-    .limit(BOUNTIES_PER_BUILD, { referencedTable: "bounties" })
     .range(offset, offset + limit - 1);
 
   if (error) throw buildLayerError("listGallery", error);
@@ -751,14 +695,13 @@ function galleryPredicate(): string {
 
 /** The row as PostgREST returns it: embeds keyed by table name. */
 export interface GalleryRow
-  extends Omit<GalleryBuild, "nodes" | "media" | "bounties"> {
+  extends Omit<GalleryBuild, "nodes" | "media"> {
   build_nodes: GalleryNode[] | null;
   build_media: GalleryMedia[] | null;
-  bounties: GalleryBounty[] | null;
 }
 
 export function toGalleryBuild(row: GalleryRow): GalleryBuild {
-  const { build_nodes, build_media, bounties, ...header } = row;
+  const { build_nodes, build_media, ...header } = row;
   const asked = "classification" in header;
   const read = asked ? readClassification((header as { classification?: unknown }).classification) : null;
   delete (header as { classification?: unknown }).classification;
@@ -767,8 +710,6 @@ export function toGalleryBuild(row: GalleryRow): GalleryBuild {
     ...(read && hasClassification(read) ? { classifiedAs: read } : null),
     nodes: build_nodes ?? [],
     media: build_media ?? [],
-    // Always an array here, never absent: this query asked. See GalleryBuild.
-    bounties: bounties ?? [],
   };
 }
 
@@ -856,43 +797,31 @@ export async function getClassificationFacets(): Promise<ClassificationFacets> {
 }
 
 /**
- * How many gallery builds carry an open bounty (NS-P52).
+ * How many gallery builds have an open ask (a still-open topic about them or attaching them).
  *
- * ONE HEAD REQUEST, no rows. `head: true` asks PostgREST for the count and
- * nothing else, so the facet chip costs a count over the same predicate the
- * grid uses rather than a page of cards nobody rendered.
- *
- * EXACT, against this project's usual preference for estimates, and for the
- * reason NS-P50's bounty counts gave: an estimate comes from the planner's row
- * statistics, which are wrong by design for a filter this narrow — "gallery
- * builds with an open ask" is a handful of rows out of a table-wide estimate —
- * and a chip reading 4 above a grid of 7 is a bug report.
- *
- * Returns 0 rather than throwing when the count cannot be read: the chip is an
- * offer, and a gallery that failed to load because a badge could not be
- * numbered would be the wrong trade.
+ * ONE HEAD REQUEST, no rows, EXACT (a chip reading 4 above a grid of 7 is a bug report). Returns 0 rather than throwing when the
+ * count cannot be read: the chip is an offer, and a gallery that failed to load because a badge could not be numbered would be the
+ * wrong trade.
  */
-export async function countOpenBountyBuilds(): Promise<number> {
+export async function countStillOpenBuilds(): Promise<number> {
   try {
     return await withReviewFilter(async (reviews) => {
       const { count, error } = await leaveOutReviews(
-        supabase
-          .from("builds")
-          .select(`id, bounties!bounties_build_id_fkey!inner(id)`, {
-            count: "exact",
-            head: true,
-          })
-          .in("status", ["published", "gallery"])
-          .or(galleryPredicate())
-          .eq("bounties.status", "open"),
+        withAskFilter(
+          supabase
+            .from("builds")
+            .select("id", { count: "exact", head: true })
+            .in("status", ["published", "gallery"])
+            .or(galleryPredicate()),
+        ),
         reviews,
       );
-      if (error) throw buildLayerError("countOpenBountyBuilds", error);
+      if (error) throw buildLayerError("countStillOpenBuilds", error);
       return count ?? 0;
     });
   } catch (error) {
     // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
-    console.warn("[countOpenBountyBuilds] count unavailable", error);
+    console.warn("[countStillOpenBuilds] count unavailable", error);
     return 0;
   }
 }
@@ -990,7 +919,7 @@ export async function getFeaturedBuild(now: Date = new Date()): Promise<Featured
 
   // The card's own select, so the hero has the nodes and pictures a card has.
   const loaded = await withCardEmbeds(
-    supabase.from("builds").select(gallerySelect(false)).eq("id", id).limit(1),
+    supabase.from("builds").select(gallerySelect()).eq("id", id).limit(1),
   );
   if (loaded.error) throw buildLayerError("getFeaturedBuild (build)", loaded.error);
 
@@ -1012,7 +941,7 @@ export async function getFeaturedBuild(now: Date = new Date()): Promise<Featured
  * ESTIMATED, because PostgREST answers an estimated count with the exact one
  * until the table is large enough for the planner's figure to be close, so a
  * small gallery is counted exactly and a large one cheaply. Unsolved joins
- * bounties as countOpenBountyBuilds does.
+ * the open-ask filter as countStillOpenBuilds does.
  *
  * `freshOnly` adds the confirmed-within-STALE_AFTER_DAYS clause on its own,
  * without Proven's reproduction clause: the freshness figure getGalleryStats
@@ -1023,33 +952,15 @@ function countGalleryBuilds(operation: string, lens: GalleryLens, now: number, f
 }
 
 async function countGalleryBuildRows(operation: string, lens: GalleryLens, now: number, freshOnly: boolean, shape: BuildShape | undefined, reviews: boolean): Promise<number> {
-  const unsolved = lens === "unsolved";
-
-  // UX-08 P4: the Still open lens counts the builds with an open request or a still-open topic (`has_open_ask`); until the migration
-  // is applied it counts open requests alone, as before.
-  const read = async (withAsks: boolean) => {
-    let query = supabase
-      .from("builds")
-      .select(unsolved && !withAsks ? "id, bounties!bounties_build_id_fkey!inner(id)" : "id", {
-        count: "estimated",
-        head: true,
-      })
-      .in("status", ["published", "gallery"])
-      .or(galleryPredicate());
-
-    if (unsolved) query = withAsks ? (query as unknown as { eq: (column: string, value: boolean) => typeof query }).eq(ASK_FILTER, true) : query.eq("bounties.status", "open");
-    query = leaveOutReviews(applyLensFilters(query, lens, now), reviews);
-    if (freshOnly) query = query.gte("last_confirmed_at", freshSince(now));
-    if (shape) query = query.eq("shape", shape);
-    return query;
-  };
-
-  let answer = await read(unsolved && !askColumnsMissing);
-  if (unsolved && !askColumnsMissing && answer.error && isMissingColumn(answer.error) && mentionsAskColumns(answer.error)) {
-    askColumnsMissing = true;
-    answer = await read(false);
-  }
-  const { count, error } = answer;
+  let query = supabase
+    .from("builds")
+    .select("id", { count: "estimated", head: true })
+    .in("status", ["published", "gallery"])
+    .or(galleryPredicate());
+  query = leaveOutReviews(applyLensFilters(query, lens, now), reviews);
+  if (freshOnly) query = query.gte("last_confirmed_at", freshSince(now));
+  if (shape) query = query.eq("shape", shape);
+  const { count, error } = await query;
   if (error) throw buildLayerError(operation, error);
   return count ?? 0;
 }
@@ -1317,7 +1228,7 @@ export async function getGalleryBuildsByIds(ids: readonly string[]): Promise<Gal
   if (wanted.length === 0) return [];
 
   const { data, error } = await withFeedEmbeds(
-    feedTable("builds").select(`${gallerySelect(false)}, classification, models_used, like_count, comment_count`).in("id", wanted),
+    feedTable("builds").select(`${gallerySelect()}, classification, models_used, like_count, comment_count`).in("id", wanted),
   ).limit(wanted.length);
   if (error) throw buildLayerError("getGalleryBuildsByIds", error);
 
@@ -1364,18 +1275,15 @@ let countColumnsMissing = false;
 /**
  * UX-08 P4: a build has an open ask when it has an open request OR a still-open topic that attaches it or is about it. The two
  * counts are computed columns of `builds` (the UX-08 migration): `has_open_ask` filters, `still_open_topic_count` is read with the
- * row, so both ride in the list's one request and the counts' one request each. Until the migration is applied they are missing:
- * the read says so once (`isMissingColumn`), is made again as it was, and only open requests count.
+ * row, so both ride in the list's one request and the counts' one request each. They need the UX-08 migration
+ * (20261107180000), which this code now requires.
  */
 const ASK_COLUMNS = "still_open_topics:still_open_topic_count";
 const ASK_FILTER = "has_open_ask";
-let askColumnsMissing = false;
-const mentionsAskColumns = (error: unknown): boolean => /still_open_topic_count|has_open_ask/.test(JSON.stringify(error) ?? "");
 
-/** For tests: forget that the count columns and the ask columns were missing. */
+/** For tests: forget that the count columns were missing. */
 export const resetBuildsCountColumns = (): void => {
   countColumnsMissing = false;
-  askColumnsMissing = false;
 };
 
 /** One row of the Builds table. */
@@ -1394,8 +1302,8 @@ export interface BuildsTableBuild {
   classifiedAs?: Classification;
   /** profiles.username and display_name; null when the profile was not found. */
   maker: { handle: string | null; name: string | null } | null;
-  /** The open requests and still-open topics on the build: how many (requests up to BOUNTIES_PER_BUILD) and the largest request reward offered. */
-  open: { count: number; reward: number | null };
+  /** The still-open topics on the build (a topic that attaches it or is about it). */
+  open: { count: number };
   /** SV-23 P1: the stored counts; null until the composer has saved the build since they existed. */
   stepCount?: number | null;
   sessionCount?: number | null;
@@ -1414,8 +1322,8 @@ export interface BuildsTableOptions {
   tool?: string;
   shapes?: readonly string[];
   pattern?: Pattern;
-  /** Only builds with an open request or a still-open topic (UX-08 P4). The Still open lens is the same filter. */
-  openBounties?: boolean;
+  /** Only builds with a still-open topic (UX-08 P4). The Still open lens is the same filter. */
+  stillOpen?: boolean;
   query?: string;
   /** SV-23 P1: number filters on the stored counts. A build with no count is left out of a range on it. */
   ranges?: Partial<Record<RangeKey, NumberRange>>;
@@ -1485,14 +1393,12 @@ interface BuildsTableRow {
   session_count?: number | null;
   build_reproductions?: { confirmed_at: string | null }[] | null;
   maker: { username: string | null; display_name: string | null } | null;
-  bounties: { reward_gbp: number | null }[] | null;
-  /** UX-08 P4: still-open topics that attach the build or are about it; absent until the migration is applied. */
+  /** UX-08 P4: still-open topics that attach the build or are about it. */
   still_open_topics?: number | null;
 }
 
 function toBuildsTableBuild(row: BuildsTableRow, now: Date): BuildsTableBuild {
   const read = readClassification(row.classification);
-  const rewards = (row.bounties ?? []).map((bounty) => bounty.reward_gbp).filter((reward): reward is number => typeof reward === "number" && reward > 0);
   return {
     id: row.id,
     slug: row.slug,
@@ -1506,7 +1412,7 @@ function toBuildsTableBuild(row: BuildsTableRow, now: Date): BuildsTableBuild {
     rebuildCount: Math.max(0, row.rebuild_count ?? 0),
     ...(hasClassification(read) ? { classifiedAs: read } : null),
     maker: row.maker ? { handle: row.maker.username ?? null, name: row.maker.display_name?.trim() || null } : null,
-    open: { count: (row.bounties ?? []).length + Math.max(0, row.still_open_topics ?? 0), reward: rewards.length > 0 ? Math.max(...rewards) : null },
+    open: { count: Math.max(0, row.still_open_topics ?? 0) },
     stepCount: typeof row.step_count === "number" ? row.step_count : null,
     sessionCount: typeof row.session_count === "number" ? row.session_count : null,
     runs: runsPerWeek((row.build_reproductions ?? []).map((run) => run.confirmed_at), now),
@@ -1531,23 +1437,18 @@ async function listBuildsTableRows(options: BuildsTableOptions, reviews: boolean
   const limit = Math.max(1, Math.min(options.limit ?? BUILDS_TABLE_PAGE_SIZE, 100));
   const offset = Math.max(0, options.offset ?? 0);
   const lens: GalleryLens = GALLERY_LENSES.includes(options.lens as GalleryLens) ? (options.lens as GalleryLens) : "all";
-  const openBounties = options.openBounties === true || lens === "unsolved";
   const search = await feedSearchClause(options.query, true);
   const now = new Date();
 
-  const request = async (withCounts: boolean, withAsks: boolean) => {
-    // UX-08 P4: with the ask columns, the open filter is `has_open_ask` (an open request or a still-open topic), so the embed is
-    // not joined inner; without them it is the open-request join as before.
-    const bounties = openBounties && !withAsks ? "bounties!bounties_build_id_fkey!inner(reward_gbp, status)" : "bounties!bounties_build_id_fkey(reward_gbp, status)";
-    const columns = `${withCounts ? `${BUILDS_TABLE_COLUMNS}, ${BUILDS_COUNT_COLUMNS}` : BUILDS_TABLE_COLUMNS}, ${RUNS_EMBED}${withAsks ? `, ${ASK_COLUMNS}` : ""}`;
+  const request = async (withCounts: boolean) => {
+    const columns = `${withCounts ? `${BUILDS_TABLE_COLUMNS}, ${BUILDS_COUNT_COLUMNS}` : BUILDS_TABLE_COLUMNS}, ${RUNS_EMBED}, ${ASK_COLUMNS}`;
     let query = (supabase as unknown as { from: (table: string) => { select: (columns: string, options: { count: "exact" }) => TableQuery } })
       .from("builds")
-      .select(`${columns}, ${bounties}`, { count: "exact" })
+      .select(columns, { count: "exact" })
       .in("status", ["published", "gallery"])
       .or(galleryPredicate())
-      .eq("bounties.status", "open")
       .gte("build_reproductions.confirmed_at", runsSince(now).toISOString());
-    if (openBounties && withAsks) query = query.eq(ASK_FILTER, true);
+    if (options.stillOpen && lens !== "unsolved") query = withAskFilter(query);
 
     const madeWith = madeWithSpellings(options.tool);
     if (madeWith.length > 0) query = query.overlaps("made_with", madeWith);
@@ -1577,24 +1478,17 @@ async function listBuildsTableRows(options: BuildsTableOptions, reviews: boolean
     query = leaveOutReviews(applyLensFilters(query, lens), reviews);
 
     return (feedOrder(query as unknown as FeedQuery, options.sort ?? "reproduced") as unknown as TableQuery)
-      .limit(BOUNTIES_PER_BUILD, { referencedTable: "bounties" })
       .limit(RUNS_PER_BUILD, { referencedTable: "build_reproductions" })
       .range(offset, offset + limit - 1);
   };
 
   let withCounts = !countColumnsMissing;
-  let withAsks = !askColumnsMissing;
-  let answer = await request(withCounts, withAsks);
-  // A column that is not there yet: say so once and ask again without it. At most the two of them can be missing.
-  for (let again = 0; again < 2 && answer.error && isMissingColumn(answer.error); again += 1) {
-    if (withAsks && mentionsAskColumns(answer.error)) {
-      askColumnsMissing = true;
-      withAsks = false;
-    } else if (withCounts) {
-      countColumnsMissing = true;
-      withCounts = false;
-    } else break;
-    answer = await request(withCounts, withAsks);
+  let answer = await request(withCounts);
+  // The stored counts may not be there yet: say so once and ask again without them.
+  if (answer.error && withCounts && isMissingColumn(answer.error)) {
+    countColumnsMissing = true;
+    withCounts = false;
+    answer = await request(withCounts);
   }
   const { data, error, count } = answer;
   if (error) throw buildLayerError("listBuildsTable", error);

@@ -150,7 +150,7 @@ export const RC_COLLECTION_ITEMS: Row[] = [
   added_at: hoursAgo(3 + index * 10),
 }));
 
-/* ── One notification of each kind the database writes (RC-P19) ─────────────── */
+/* ── One notification of each kind the Activity page draws (RC-P19) ─────────────── */
 
 const NOTIFY: [string, string, string, number | null, string][] = [
   ["rebuilt", "rebuilt your build", "build", 13, MAYA.id],
@@ -159,8 +159,6 @@ const NOTIFY: [string, string, string, number | null, string][] = [
   ["comment", "commented on your build", "build_comment", 7, PRIYA.id],
   ["reply", "replied to your comment", "build_comment", 7, THEM.id],
   ["like", "liked your build", "build", 4, TOMAS.id],
-  ["solution", "posted a solution to your bounty", "bounty_build", 9, MAYA.id],
-  ["solved", "accepted your solution", "bounty_build", 6, PRIYA.id],
   ["follow", "started following you", "profile", null, THEM.id],
 ];
 

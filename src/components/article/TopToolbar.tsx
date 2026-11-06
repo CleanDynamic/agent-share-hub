@@ -677,8 +677,8 @@ function ToolbarGroup({ children }: { children: React.ReactNode }) {
 export interface TopToolbarProps {
   editor: Editor | null;
   onInsertBlock?: () => void;
-  /** 'blueprint' (default), 'blog', or 'bounty' — affects which buttons render. */
-  mode?: 'blueprint' | 'blog' | 'bounty' | 'solve';
+  /** 'blueprint' (default) or 'blog' — affects which buttons render. */
+  mode?: 'blueprint' | 'blog';
   /** Blog mode: open the @-Reference picker modal. */
   onOpenReference?: () => void;
 }

@@ -391,11 +391,9 @@ interface SchemaFormProps {
    * renders the values given and reports every edit, and nothing is written to
    * build_nodes at all.
    *
-   * NS-P52 needs it for the solve panel, where the same node type's form is
-   * filled in by a SOLVER against an empty payload. The node being answered
-   * belongs to somebody else and the answer is a solutions row, so a form that
-   * debounced its way into build_nodes would be writing a stranger's draft into
-   * a published build — and would be refused by policy while it tried.
+   * It is for a form filled in against a payload of its own, where a form that
+   * debounced its way into build_nodes would be writing into a build that is
+   * not the filler's — and would be refused by policy while it tried.
    */
   payload?: NodePayload;
   onPatchPayload?: (fields: NodePayload) => void;
@@ -491,7 +489,7 @@ interface SchemaFieldsProps {
 /**
  * The fields themselves: required first, optional behind a fold, nothing more.
  *
- * Exported because a caller outside the workspace — the solve panel — renders
+ * Exported because a caller outside the workspace renders
  * a type's form over a payload of its own. It knows nothing about where the
  * values come from or where they go, which is what makes it usable by both.
  */

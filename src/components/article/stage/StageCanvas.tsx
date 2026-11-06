@@ -44,7 +44,6 @@ import { ResourceBlockNode } from '../blocks/ResourceBlock';
 import { ToolBlockNode } from '../blocks/ToolBlock';
 import { WorkflowBlockNode } from '../blocks/WorkflowBlock';
 
-import { withBountyBlockHost } from '@/components/bounty/withBountyBlockHost';
 
 interface StageCanvasProps {
   stageId: string;
@@ -53,18 +52,18 @@ interface StageCanvasProps {
 }
 
 const nodeTypes = {
-  prompt: withBountyBlockHost(PromptBlockNode as any),
-  code: withBountyBlockHost(CodeBlockNode as any),
-  text: withBountyBlockHost(TextBlockNode as any),
-  agent: withBountyBlockHost(AgentBlockNode as any),
-  compare: withBountyBlockHost(CompareBlockNode as any),
-  heading: withBountyBlockHost(HeadingBlockNode as any),
-  model: withBountyBlockHost(ModelBlockNode as any),
-  note: withBountyBlockHost(NoteBlockNode as any),
-  result: withBountyBlockHost(ResultBlockNode as any),
-  resource: withBountyBlockHost(ResourceBlockNode as any),
-  tool: withBountyBlockHost(ToolBlockNode as any),
-  workflow: withBountyBlockHost(WorkflowBlockNode as any),
+  prompt: PromptBlockNode as any,
+  code: CodeBlockNode as any,
+  text: TextBlockNode as any,
+  agent: AgentBlockNode as any,
+  compare: CompareBlockNode as any,
+  heading: HeadingBlockNode as any,
+  model: ModelBlockNode as any,
+  note: NoteBlockNode as any,
+  result: ResultBlockNode as any,
+  resource: ResourceBlockNode as any,
+  tool: ToolBlockNode as any,
+  workflow: WorkflowBlockNode as any,
 };
 
 const BLOCK_TYPE_TO_NODE: Partial<Record<Block['type'], string>> = {

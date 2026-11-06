@@ -34,7 +34,6 @@ function payloadToMarkdown(p: CanonicalPostPayload): string {
 
   for (const stage of p.content.stages) {
     lines.push(`## Stage: ${stage.name}`);
-    if (stage.missingDescription) lines.push(`> Missing: ${stage.missingDescription}`);
     for (const b of stage.blocks) {
       lines.push(`### ${b.type}`);
       if (b.text) lines.push(b.text);

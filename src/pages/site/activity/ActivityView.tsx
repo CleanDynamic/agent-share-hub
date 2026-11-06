@@ -117,8 +117,6 @@ export interface ActivityViewProps {
 const TONE: Record<ActivityKind, string> = {
   reproduced: t.evidence,
   rebuilt: t.catAgents,
-  solution: t.action,
-  solved: t.litInk,
   published: t.litInk,
   comment: t.text2,
   reply: t.text2,

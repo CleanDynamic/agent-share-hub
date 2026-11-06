@@ -29,7 +29,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { engagementFor, useEngagement } from "@/hooks/useEngagement";
 import { librarySessionsKey, useLibrarySessions } from "@/hooks/useLibrarySessions";
 import { useMyWeek } from "@/hooks/useProgressPage";
-import { findRunByHandle, myMeToo, toggleMeToo } from "@/lib/bounty";
+import { findRunByHandle } from "./runLookup";
 import { listPosts, postKey } from "@/lib/openbuilds";
 import type { PostingWindow } from "../openbuilds/PostingWindows";
 import { failedRunDraft } from "./runTopic";
@@ -71,7 +71,6 @@ import {
   sinceSection,
   whereNextRows,
   writeHomeSeen,
-  type HomeAskDetail,
   type HomeFilter,
   type HomePostDetail,
   HOME_BUILD_ROWS,
@@ -80,11 +79,9 @@ import {
   type StillOpenScope,
 } from "./homeModel";
 
-/** UX-08 P3: the open requests are no longer read on Home, so the old requests in the feed carry no extra detail. */
 /** UX-08 P2: the New post window loads when a failed run first opens it, not with the page. */
 const PostingWindows = lazy(() => import("../openbuilds/PostingWindows"));
 
-const NO_ASKS: ReadonlyMap<string, HomeAskDetail> = new Map();
 
 const STALE_MS = LIST_STALE_MS;
 /** The headline counts are estimates; a minute is as fresh as they mean to be. */
@@ -380,18 +377,10 @@ export function HomePage() {
   const engagementIds = useMemo(() => items.filter((item) => item.kind === "build" || item.kind === "rebuild").map((item) => item.build.id), [items]);
   const engagement = useEngagement(engagementIds);
 
-  const askIds = useMemo(() => items.flatMap((item) => (item.kind === "bounty" && item.bountyId ? [item.bountyId] : [])), [items]);
-  const meToo = useQuery({
-    queryKey: ["bounty", "myMeToo", userId, askIds.join(",")],
-    queryFn: () => myMeToo(askIds, userId!),
-    enabled: userId !== null && askIds.length > 0,
-    staleTime: STALE_MS,
-  });
-
   /* UX-08 P2: only when the maker presses it. The feed row has the build and the reproducer's handle, so the run is found now; the
      New post window then opens with the run in its words, and nothing is written until Post is pressed. */
   const [win, setWin] = useState<PostingWindow | null>(null);
-  const onOpenRequest = async (run: HomeRunRow) => {
+  const onStartTopic = async (run: HomeRunRow) => {
     if (!userId || !run.handle) return;
     try {
       const found = await findRunByHandle(run.buildId, run.handle);
@@ -401,22 +390,6 @@ export function HomePage() {
     } catch (error) {
       reportError(error, { source: "home", context: "failedRunTopic" });
       toast.error("Couldn't start a topic from that run. Try again.");
-    }
-  };
-
-  const onMeToo = async (bountyId: string) => {
-    if (!userId) {
-      navigate(SIGN_IN);
-      return;
-    }
-    try {
-      await toggleMeToo({ bountyId, userId });
-    } catch (error) {
-      reportError(error, { source: "home", context: "toggleMeToo" });
-      toast.error("Couldn't save that. Try again.");
-    } finally {
-      void qc.invalidateQueries({ queryKey: ["bounty", "myMeToo"] });
-      void qc.invalidateQueries({ queryKey: ["bounty-board"] });
     }
   };
 
@@ -461,10 +434,8 @@ export function HomePage() {
   const now = Date.now();
   const context = {
     details,
-    asks: NO_ASKS,
     // Drawn from the start, its counts filling in when they come, so the row does not push the feed down.
     engagement: (buildId: string) => engagementFor(engagement, buildId),
-    meTooPressed: meToo.data ?? new Set<string>(),
   };
 
   /* The page arrives once, with the feed's first page; it never goes back to its loading state after that (a new tab
@@ -547,7 +518,6 @@ export function HomePage() {
           onShowNew={() => setRevealed(true)}
           srcByPath={srcByPath}
           onPostsNear={onPostsNear}
-          onMeToo={(id) => void onMeToo(id)}
           topics={{
             onLike: (postId, on) => void onTopicLike(postId, on),
             onReply: (postId) => setReplyAt((current) => (current === postId ? null : postId)),
@@ -590,7 +560,7 @@ export function HomePage() {
                 }
               : undefined,
             runs: runRows(items, 3, userId),
-            onOpenRequest: userId ? (run) => void onOpenRequest(run) : undefined,
+            onStartTopic: userId ? (run) => void onStartTopic(run) : undefined,
           }}
           requests={publicLoadable({ isLoading: stillOpen.isLoading || signedIn === null, error: stillOpen.error, data: stillOpen.data, refetch: stillOpen.refetch }, (page) => stillOpenRows(page.posts))}
           stillOpenScope={stillOpenScope}

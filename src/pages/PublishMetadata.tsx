@@ -24,7 +24,6 @@ import {
   type AutoDetectedMeta,
   type PostType,
 } from "@/components/publish/PublishMetadataForm";
-import { validateBountyForPublish } from "@/lib/bounty/validateBountyForPublish";
 import { recomputeDerivedBio } from "@/lib/profile/recomputeDerivedBio";
 import {
   notifyReferencesReceived,
@@ -51,22 +50,6 @@ const buildPayload = (
   } else {
     payload.prerequisites = values.prerequisites || null;
     payload.outcome = values.outcome || null;
-  }
-  if (postType === "bounty") {
-    payload.bounty_reward_type = values.bountyRewardType || null;
-    payload.bounty_reward_amount =
-      values.bountyRewardType === "cash" || values.bountyRewardType === "token"
-        ? values.bountyRewardAmount
-        : null;
-    payload.bounty_reward_currency =
-      values.bountyRewardType === "cash" || values.bountyRewardType === "token"
-        ? values.bountyRewardCurrency || null
-        : null;
-    payload.bounty_deadline = values.bountyDeadline
-      ? values.bountyDeadline.toISOString()
-      : null;
-    payload.bounty_acceptance_criteria =
-      values.bountyAcceptanceCriteria.trim() || null;
   }
   return payload;
 };
@@ -179,11 +162,6 @@ export default function PublishMetadata() {
       visibility: data.visibility || "public",
       slug: data.slug || "",
       topicCategory: data.blog_topic_category || "",
-      bountyRewardType: (data.bounty_reward_type as any) || "none",
-      bountyRewardAmount: data.bounty_reward_amount ?? null,
-      bountyRewardCurrency: data.bounty_reward_currency ?? null,
-      bountyDeadline: data.bounty_deadline ? new Date(data.bounty_deadline) : null,
-      bountyAcceptanceCriteria: data.bounty_acceptance_criteria || "",
     };
     lastSavedRef.current = JSON.stringify(buildPayload(serverValues, (data.post_type as PostType) ?? "blueprint"));
   }, [data]);
@@ -237,22 +215,6 @@ export default function PublishMetadata() {
       try {
         const slug = values.slug.trim().toLowerCase();
         const pt = postTypeRef.current;
-
-        // Bounty pre-flight: flush the latest values so the server-side row
-        // matches the form, then mirror the validate_bounty_publish trigger
-        // client-side. Surfaces every error as its own toast so the author
-        // can see the full list at once.
-        if (pt === "bounty") {
-          await writeNow(values);
-          const result = await validateBountyForPublish(contentItemId);
-          if (!result.isValid) {
-            for (const msg of result.errors) {
-              sonnerToast.error(msg);
-            }
-            setIsPublishing(false);
-            return;
-          }
-        }
 
         const updatePayload: Record<string, any> = {
           ...buildPayload(values, pt),
@@ -444,11 +406,6 @@ export default function PublishMetadata() {
     visibility: data.visibility || "public",
     slug: data.slug || "",
     topicCategory: data.blog_topic_category || "",
-    bountyRewardType: (data.bounty_reward_type as any) || "none",
-    bountyRewardAmount: data.bounty_reward_amount ?? null,
-    bountyRewardCurrency: data.bounty_reward_currency ?? null,
-    bountyDeadline: data.bounty_deadline ? new Date(data.bounty_deadline) : null,
-    bountyAcceptanceCriteria: data.bounty_acceptance_criteria || "",
   };
 
   const autoDetected: AutoDetectedMeta = {

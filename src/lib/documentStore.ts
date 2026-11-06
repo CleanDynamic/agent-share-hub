@@ -88,8 +88,8 @@ export interface DocumentState {
   stageOpen: Record<string, boolean>;
   selection: Selection;
   focusMode: FocusMode;
-  /** 'blueprint' (default — full editor with workspace), 'blog' (focus-only writing surface), 'bounty' (blueprint editor with amber bounty markers), or 'solve' (single-slot solution editor). */
-  editorMode: 'blueprint' | 'blog' | 'bounty' | 'solve';
+  /** 'blueprint' (default — full editor with workspace), 'blog' (focus-only writing surface). */
+  editorMode: 'blueprint' | 'blog';
   dirty: Set<string>;
   presence: Record<string, PresenceEntry>;
 
@@ -120,7 +120,7 @@ export interface DocumentState {
 
   setFocusMode: (mode: FocusMode) => void;
 
-  setEditorMode: (mode: 'blueprint' | 'blog' | 'bounty' | 'solve') => void;
+  setEditorMode: (mode: 'blueprint' | 'blog') => void;
 
   markDirty: (id: string) => void;
   clearDirty: (id: string) => void;

@@ -1,7 +1,7 @@
 // Shared types for the notifications data layer.
 
 /**
- * RC-P19 — the nine kinds the database writes about builds
+ * RC-P19 — the seven kinds the database writes about builds
  * (20261001200000_rc_build_notifications.sql). Their message is the stored
  * body: fixed text, never a reader's.
  */
@@ -12,8 +12,6 @@ export const BUILD_NOTIFICATION_KINDS = [
   "comment",
   "reply",
   "like",
-  "solution",
-  "solved",
   "follow",
 ] as const;
 
@@ -23,7 +21,6 @@ export type NotificationKind =
   | BuildNotificationKind
   | "reference_received"
   | "new_follower"
-  | "bounty_interaction"
   | "engagement"
   | "new_message"
   | "mention"
@@ -35,17 +32,15 @@ export type NotificationKind =
 export type NotificationTargetType =
   | "blueprint"
   | "blog"
-  | "bounty"
   | "stage"
   | "block"
   | "comment"
   | "message"
   | "thread"
   | "profile"
-  // RC-P19: a build, a comment on one, and a bounty on one.
+  // RC-P19: a build and a comment on one.
   | "build"
   | "build_comment"
-  | "bounty_build"
   // SV-20: a tile on a build page, and a collection a reader kept.
   | "node"
   | "collection"

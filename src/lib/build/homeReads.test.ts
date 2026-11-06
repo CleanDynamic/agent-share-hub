@@ -47,8 +47,8 @@ beforeEach(() => {
 describe("getGalleryBuildsByIds", () => {
   it("reads the posts in one request, with post_doc, the classification and the counts, in the order asked", async () => {
     rows.builds = [
-      { id: "b", title: "B", post_doc: { type: "doc", content: [] }, models_used: null, like_count: 3, comment_count: 1, build_nodes: [], build_media: [], bounties: [] },
-      { id: "a", title: "A", post_doc: null, models_used: ["claude"], build_nodes: [], build_media: [], bounties: [] },
+      { id: "b", title: "B", post_doc: { type: "doc", content: [] }, models_used: null, like_count: 3, comment_count: 1, build_nodes: [], build_media: [] },
+      { id: "a", title: "A", post_doc: null, models_used: ["claude"], build_nodes: [], build_media: [] },
     ];
     const out = await getGalleryBuildsByIds(["a", "b", "a", "gone"]);
 

@@ -28,6 +28,9 @@ interface ActivitySample {
 
 const sample = fixtures.activity as unknown as ActivitySample;
 
+/** UX-11: the sample still draws the two request kinds the board predates; the page no longer does. */
+const RETIRED = new Set(["solution", "solved"]);
+
 const UNIT_MS = { m: 60_000, h: 3_600_000, d: 86_400_000 } as const;
 
 /** "12m" → the instant that long before the moment the mockups were drawn. */
@@ -56,10 +59,11 @@ export function activityGroups(): ActivityGroup[] {
   let index = 0;
   return Object.entries(sample.groups).map(([day, rows]) => ({
     day: day as ActivityDay,
-    rows: rows.map(([kind, initials, who, title, detail, when, unread]): ActivityRow => {
+    rows: rows.flatMap(([kind, initials, who, title, detail, when, unread]): ActivityRow[] => {
       const sky = SKY[index] ?? null;
       const id = `sample-activity-${index++}`;
-      return {
+      if (RETIRED.has(kind)) return [];
+      return [{
         id,
         kind: kind as ActivityKind,
         at: atOf(when),
@@ -70,7 +74,7 @@ export function activityGroups(): ActivityGroup[] {
         cover: sky === null ? null : { src: null, seed: id, sky },
         unread,
         href: "#",
-      };
+      }];
     }),
   }));
 }
@@ -125,9 +129,9 @@ export function activityFixture(state: DesignState = "populated"): Omit<Activity
   return inState({
     now: FIXTURE_NOW.getTime(),
     list: { status: "ready", groups: activityGroups(), hasMore: false, loadingMore: false, onMore: noop, onRetry: noop },
-    unread: sample.unread,
+    unread: Object.values(sample.groups).flat().filter(([kind, , , , , , unread]) => unread && !RETIRED.has(kind)).length,
     live: true,
-    kindCounts: sample.kind_counts as KindCounts,
+    kindCounts: Object.fromEntries(Object.entries(sample.kind_counts).filter(([kind]) => !RETIRED.has(kind))) as unknown as KindCounts,
     peopleThisWeek: sample.ran_this_week,
     runs: { status: "ready", data: ACTIVITY_RUNS },
     onOpen: noop,

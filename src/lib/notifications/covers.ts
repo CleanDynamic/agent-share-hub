@@ -28,7 +28,7 @@ export async function resolveNotificationCovers(
   if (ids.length === 0) return out;
 
   const { data, error } = await withCardEmbeds(
-    supabase.from("builds").select(gallerySelect(false)).in("id", ids).limit(ids.length)
+    supabase.from("builds").select(gallerySelect()).in("id", ids).limit(ids.length)
   );
   if (error) throw buildLayerError("resolveNotificationCovers", error);
 

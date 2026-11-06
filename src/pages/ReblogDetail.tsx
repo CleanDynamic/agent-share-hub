@@ -17,7 +17,6 @@ import { FeedReblogAdapter, type FeedReblogRow } from "@/components/reblog/FeedR
 function mapPostType(t?: string | null): EmbeddedOriginalCardPost["postType"] {
   const x = (t ?? "").toLowerCase();
   if (x === "blog" || x === "discussion") return "blog";
-  if (x === "bounty") return "bounty";
   return "blueprint";
 }
 

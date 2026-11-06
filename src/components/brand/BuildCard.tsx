@@ -81,8 +81,6 @@ export interface BuildCardProps {
   plaqueTrailing?: ReactNode;
   /** Part categories present, in the order to show them. `breakage` is never one. */
   categories?: readonly string[];
-  /** "1 part unsolved · £120", when the build has an open ask. */
-  openAsk?: string | null;
   /** An open gap: the border goes dashed in `--cat-breakage`. */
   gap?: boolean;
   /** Frozen "now", for a fixture or a test. */
@@ -133,7 +131,6 @@ export function BuildCard({
   build,
   plaqueTrailing,
   categories = [],
-  openAsk,
   gap = false,
   now,
   media,
@@ -242,25 +239,6 @@ export function BuildCard({
                 <CategoryChip key={category} category={category} label={category} />
               ))}
             </div>
-          ) : null}
-
-          {openAsk ? (
-            <p
-              data-visual-slot="gap-marker"
-              data-testid="gallery-card-bounty"
-              data-gap-placement="card"
-              data-card-part="reward"
-              style={{
-                margin: 0,
-                fontFamily: DM_MONO,
-                fontSize: 10,
-                lineHeight: "normal",
-                color: t.catBreakage,
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              {openAsk}
-            </p>
           ) : null}
 
           {footer}

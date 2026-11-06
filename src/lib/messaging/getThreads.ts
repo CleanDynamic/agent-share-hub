@@ -22,7 +22,7 @@ interface GetThreadsResult {
  *  - 'primary': threads where the current user is a member AND the
  *               other party is followed by the current user, OR the
  *               current user initiated the thread (created_by = userId),
- *               OR thread type is group/bounty/blueprint.
+ *               OR thread type is group/blueprint.
  *  - 'requests': direct threads opened by a non-followed user
  *                (created_by ≠ userId AND other participant not followed).
  */
@@ -109,7 +109,7 @@ export async function getThreads({
   // 4. Partition by tab
   threads = threads.filter((t) => {
     if (t.type !== "direct") {
-      // group/bounty/blueprint always primary
+      // group/blueprint always primary
       return tab === "primary";
     }
     const other =
@@ -224,8 +224,6 @@ export async function getThreads({
           ? "🎯"
           : msg.shared_content_type === "block"
           ? "🧱"
-          : msg.shared_content_type === "bounty"
-          ? "💰"
           : msg.shared_content_type === "blog"
           ? "📝"
           : "🔗";

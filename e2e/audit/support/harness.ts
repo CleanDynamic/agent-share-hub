@@ -180,7 +180,6 @@ function buildRow(n: number, extra: Row = {}): Row {
         post_text: null,
       },
     ],
-    bounties: [],
     profiles: profile(n % 2 ? ME : THEM),
     ...extra,
   };
@@ -378,34 +377,6 @@ export const MEDIA: Row[] = [
   })),
 ];
 
-/** An open bounty on the gap node — the ask a solve page exists to answer. */
-export const BOUNTIES: Row[] = [
-  {
-    id: "44444444-0000-4000-8000-0000000000c1",
-    build_id: GAP_BUILD_ID,
-    node_id: "33333333-0000-4000-8000-0000000000n2",
-    status: "open",
-    reward_gbp: 150,
-    currency: "GBP",
-    deadline: ISO("2026-12-01"),
-    brief: "A retry policy that survives a rate limit without dropping a thread.",
-    solution_count: 2,
-    created_by: THEM.id,
-    created_at: ISO("2026-08-20"),
-  },
-];
-
-export const SOLUTIONS: Row[] = [1, 2].map((n) => ({
-  id: `44444444-0000-4000-8000-0000000000s${n}`,
-  bounty_id: BOUNTIES[0].id,
-  solver_id: n === 1 ? ME.id : THEM.id,
-  status: n === 1 ? "submitted" : "accepted",
-  body: "Back off exponentially and re-queue the thread rather than dropping it.",
-  vote_count: n * 3,
-  created_at: ISO("2026-09-01"),
-  profiles: profile(n === 1 ? ME : THEM),
-}));
-
 /** The legacy generation's record, which /content/:id still renders. */
 export const CONTENT_ITEMS: Row[] = [
   {
@@ -460,7 +431,7 @@ export const CONTENT_BLOCKS: Row[] = [
 export const NOTIFICATIONS: Row[] = [
   ["follow", "Maren started following you", false],
   ["reproduction", "Someone reproduced Inbox triage agent", false],
-  ["bounty_solution", "A solution arrived on your gap", true],
+  ["comment", "Someone commented on your build", true],
   ["comment", "Maren replied on your build", true],
 ].map(([kind, body, read], n) => ({
   id: `77777777-0000-4000-8000-00000000000${n}`,
@@ -551,8 +522,6 @@ const TABLES: Record<string, Row[]> = {
   build_events: EVENTS,
   build_media: MEDIA,
   node_types: NODE_TYPES,
-  bounties: BOUNTIES,
-  solutions: SOLUTIONS,
   content_items: CONTENT_ITEMS,
   content_blocks: CONTENT_BLOCKS,
   notifications: NOTIFICATIONS,
@@ -607,9 +576,6 @@ const BUILD_FEED_ROWS = BUILDS.map((b, n) => ({
   cover_kind: "image",
   cover_poster_path: null,
   repro_worked: null,
-  bounty_id: null,
-  bounty_reward_gbp: null,
-  bounty_gap_title: null,
 }));
 
 /** RPCs whose shape is an object rather than a list. */
@@ -909,18 +875,6 @@ export const ROUTES: AuditRoute[] = [
   { id: "notifications", path: "/notifications", auth: true },
   { id: "login", path: "/login" },
   { id: "signup", path: "/signup" },
-  {
-    id: "bounty-solve",
-    path: `/b2/${GAP_BUILD_SLUG}`,
-    auth: true,
-    after: async (page) => {
-      const open = page.getByTestId("solve-open").first();
-      if (await open.isVisible().catch(() => false)) {
-        await open.click().catch(() => {});
-        await page.waitForTimeout(600);
-      }
-    },
-  },
   /* THE FIFTEENTH ROUTE CURRENTLY CRASHES, AND THAT IS ITSELF A FINDING.
      `/content/:id` renders `ContentDetail.tsx`, which returns early at lines
      1476 and 1487 and then calls ten more `useMemo`/`useCallback` hooks from

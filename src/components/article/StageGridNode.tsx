@@ -3,9 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StageThumbnail, type ThumbnailBlock } from './stage/StageThumbnail';
 import { TemplatePicker } from './stage/TemplatePicker';
 import { useDocumentStore } from '@/lib/documentStore';
-import { toggleStageMissing } from '@/lib/bountyMissing';
-import { InlineSolutionMarker } from '@/components/bounty/InlineSolutionMarker';
-import { useBountyProvenance } from '@/components/bounty/BountyProvenanceContext';
 
 interface StageGridNodeProps {
   node: any;
@@ -28,8 +25,6 @@ export function StageGridNode({ node, updateAttributes, editor }: StageGridNodeP
   const connectionsMap = useDocumentStore((s) => s.connections);
   const updateStage = useDocumentStore((s) => s.updateStage);
   const openStageAction = useDocumentStore((s) => s.openStage);
-  const editorMode = useDocumentStore((s) => s.editorMode);
-  const isBounty = editorMode === 'bounty';
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerWithEmpty, setPickerWithEmpty] = useState(false);
@@ -118,10 +113,6 @@ export function StageGridNode({ node, updateAttributes, editor }: StageGridNodeP
     openStageAction(stageId);
   }, [stageId, openStageAction, editor]);
 
-  // Accepted-solution provenance for this stage (read view, in bounty)
-  const provenance = useBountyProvenance();
-  const acceptance = stageId ? provenance?.slotAcceptance[stageId] : undefined;
-
   const thumb = (
     <StageThumbnail
       stageNumber={stageNumber}
@@ -130,39 +121,13 @@ export function StageGridNode({ node, updateAttributes, editor }: StageGridNodeP
       connections={stageConnections}
       onOpen={handleOpen}
       onRename={editor?.isEditable ? handleRename : undefined}
-      isBounty={isBounty}
-      isMissing={Boolean(stageRecord?.is_missing)}
-      missingDescription={stageRecord?.missing_description ?? null}
-      stageId={stageId}
-      onToggleMissing={
-        isBounty && stageId && editor?.isEditable
-          ? () => { toggleStageMissing(stageId); }
-          : undefined
-      }
     />
   );
 
   return (
     <NodeViewWrapper data-stage-grid="" data-stage-id={stageId ?? undefined}>
       <div ref={wrapperRef}>
-        {acceptance && acceptance.solver ? (
-          <InlineSolutionMarker
-            kind="stage"
-            solver={{
-              id: acceptance.solver.id,
-              displayName: acceptance.solver.display_name || acceptance.solver.username || "Solver",
-              handle: acceptance.solver.username || acceptance.solver.id.slice(0, 8),
-              avatarUrl: acceptance.solver.avatar_url || "",
-              isTrustedSolver: !!acceptance.solver.is_trusted_solver,
-            }}
-            acceptedAt={formatRelativeShort(acceptance.acceptedAt)}
-            onViewOriginal={() => provenance?.onViewOriginalSolution?.(stageId!)}
-          >
-            {thumb}
-          </InlineSolutionMarker>
-        ) : (
-          thumb
-        )}
+        {thumb}
       </div>
       {stageId ? (
         <TemplatePicker

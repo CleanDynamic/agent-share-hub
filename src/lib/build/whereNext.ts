@@ -21,7 +21,7 @@
 // maker's name, which its row heading needs and the build page never reads.
 //
 // THE GALLERY'S CARD DATA (RC-P14c). Each row selects what a gallery card is
-// given — gallerySelect(false): the header columns plus the nodes its body
+// given — gallerySelect(): the header columns plus the nodes its body
 // reads, its pictures and its open ask, capped as listGallery caps them
 // (withCardEmbeds) — so a build looks the same here as in the gallery and on
 // Home ⟦law-of-similarity⟧. Until RC-P14c the rows carried the header columns
@@ -66,7 +66,7 @@ export interface WhereNext {
 }
 
 /** The card's select: the gallery's, with every open ask on the pill. */
-const CARD_SELECT = gallerySelect(false);
+const CARD_SELECT = gallerySelect();
 
 /**
  * The gallery's eligibility rule, written from the same exported thresholds:

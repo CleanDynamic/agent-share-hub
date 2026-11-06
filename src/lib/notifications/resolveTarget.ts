@@ -15,7 +15,7 @@ import {
    A notification about a build carries the build's id in metadata.build_id
    (rc_notify writes it there as well as in notifications.build_id, so this
    reads a column that exists whether or not 20261001200000 has been applied).
-   The bounty layer's own bounty_interaction rows carry it there too. Every
+   Every
    build on a page is named in ONE request ⟦neoscale-performance⟧. */
 
 /** The build a row is about, or null. */
@@ -41,7 +41,7 @@ export async function resolveNotificationBuilds(rows: NotificationRow[]): Promis
 
 /**
  * Where a notification leads, or null when it leads nowhere. A build target is
- * the build's page: build and bounty_build to /b2/<slug>, build_comment to its
+ * the build's page: build to /b2/<slug>, build_comment to its
  * comments (/b2/<slug>#comments), node to its tile (/b2/<slug>#node-<id>),
  * collection to the reader's collection page. A kind this page does not know leads
  * nowhere: it shows its stored message and nothing else.
@@ -49,7 +49,6 @@ export async function resolveNotificationBuilds(rows: NotificationRow[]): Promis
 export function notificationHref(n: Notification): string | null {
   switch (n.target_type) {
     case "build":
-    case "bounty_build":
       return n.build ? `/b2/${n.build.slug}` : null;
     case "build_comment":
       return n.build ? `/b2/${n.build.slug}#comments` : null;
@@ -77,8 +76,6 @@ export function notificationHref(n: Notification): string | null {
         (n.target_type === "thread" ? n.target_id : null);
       return thread ? `/messages/${thread}` : "/messages";
     }
-    case "bounty_interaction":
-      return n.build ? `/b2/${n.build.slug}` : null;
     default:
       return null;
   }
@@ -92,8 +89,6 @@ const BUILD_MESSAGES: Record<BuildNotificationKind, string> = {
   comment: "commented on your build",
   reply: "replied to your comment",
   like: "liked your build",
-  solution: "posted a solution to your bounty",
-  solved: "accepted your solution",
   follow: "started following you",
 };
 
@@ -118,7 +113,7 @@ export function isPostNotificationKind(kind: string): kind is PostNotificationKi
 }
 
 /**
- * What a notification says after its actor's name. The nine build kinds say
+ * What a notification says after its actor's name. The seven build kinds say
  * their stored message; a direct message says so; anything else says its
  * stored message, or that there is one.
  */
@@ -156,16 +151,15 @@ export async function resolveNotificationTargets(
     // RC-P19: builds are named by resolveNotificationBuilds, and a follow's
     // profile is its actor, whom the page already has.
     // SV-20: a node's build and a collection's id are all its link needs.
-    if (type === "build" || type === "build_comment" || type === "bounty_build" || type === "node" || type === "collection") continue;
+    if (type === "build" || type === "build_comment" || type === "node" || type === "collection") continue;
     if (type === "profile" && r.notification_type === "follow") continue;
     (byType[type] ??= new Set()).add(id);
   }
 
-  // ---- content_items covers blueprint/blog/bounty/stage (stage_grids embed)
+  // ---- content_items covers blueprint/blog/stage (stage_grids embed)
   const contentTypes: NonNullable<NotificationTargetType>[] = [
     "blueprint",
     "blog",
-    "bounty",
   ];
   const contentIds = new Set<string>();
   for (const t of contentTypes) byType[t]?.forEach((id) => contentIds.add(id));

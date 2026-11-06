@@ -61,9 +61,6 @@ function row(over: Partial<BuildFeedRow> = {}): BuildFeedRow {
     cover_kind: null,
     cover_poster_path: null,
     repro_worked: null,
-    bounty_id: null,
-    bounty_reward_gbp: null,
-    bounty_gap_title: null,
     ...over,
   };
 }
@@ -93,13 +90,13 @@ describe("matchesFilter", () => {
     expect(matchesFilter("rebuild", "rebuilds")).toBe(true);
     expect(matchesFilter("rebuild", "builds")).toBe(false);
     expect(matchesFilter("repro_note", "notes")).toBe(true);
-    expect(matchesFilter("bounty", "asks")).toBe(true);
-    expect(matchesFilter("bounty", "notes")).toBe(false);
+    expect(matchesFilter("topic", "asks")).toBe(true);
+    expect(matchesFilter("topic", "notes")).toBe(false);
   });
 });
 
 const DAY = 86_400_000;
-const none: HomeItemContext = { details: new Map(), asks: new Map(), engagement: () => undefined, meTooPressed: new Set() };
+const none: HomeItemContext = { details: new Map(), engagement: () => undefined };
 
 describe("the feed's items", () => {
   it("draws a note's runner, its model, and whether it worked; a model not said is left out", () => {
@@ -123,17 +120,6 @@ describe("the feed's items", () => {
     expect(item).toMatchObject({ kind: "rebuild", note: "Local model.", source: { title: "Call notes", handle: "maya" } });
   });
 
-  it("gives an ask its gap, reward and, when the open requests know it, its solutions, deadline and Me too", () => {
-    const feed = toFeedItem(row({ item_kind: "bounty", bounty_id: "q1", bounty_reward_gbp: 40, bounty_gap_title: "Handle paywalls" }));
-    expect(homeItemOf(feed, none)).toMatchObject({ kind: "bounty", title: "Handle paywalls", reward: "£40", solutions: null, closesAt: null, meToo: { count: null, pressed: false } });
-    const known = homeItemOf(feed, { ...none, asks: new Map([["q1", { solutions: 1, closesAt: "2026-10-05T12:00:00Z", meTooCount: 4 }]]), meTooPressed: new Set(["q1"]) });
-    expect(known).toMatchObject({ solutions: 1, closesAt: "2026-10-05T12:00:00Z", meToo: { count: 4, pressed: true } });
-  });
-
-  it("falls back to the build's title for an ask that names no gap", () => {
-    expect(homeItemOf(toFeedItem(row({ item_kind: "bounty", bounty_id: "q1" })), none)).toMatchObject({ title: "Invoice triage agent", reward: null });
-  });
-
   it("takes the latest runs from the feed's notes, newest first, at most three", () => {
     const notes = [1, 2, 3, 4].map((n) => toFeedItem(row({ item_kind: "repro_note", build_id: `b${n}`, item_at: `2026-09-30T1${n}:00:00Z`, repro_user_username: "kit", repro_worked: n !== 2 })));
     const runs = runRows([toFeedItem(row()), ...notes]);
@@ -144,12 +130,12 @@ describe("the feed's items", () => {
     ]);
   });
 
-  it("offers a request from a failed run to the build's maker only", () => {
+  it("offers a topic from a failed run to the build's maker only", () => {
     const failed = toFeedItem(row({ item_kind: "repro_note", repro_user_username: "kit", repro_worked: false }));
     const makerId = failed.kind === "repro_note" ? failed.maker.id : "";
-    expect(runRows([failed], 3, makerId)[0]).toMatchObject({ canRequest: true, buildId: "b1" });
-    expect(runRows([failed], 3, "someone-else")[0].canRequest).toBe(false);
-    expect(runRows([failed])[0].canRequest).toBe(false);
+    expect(runRows([failed], 3, makerId)[0]).toMatchObject({ canStartTopic: true, buildId: "b1" });
+    expect(runRows([failed], 3, "someone-else")[0].canStartTopic).toBe(false);
+    expect(runRows([failed])[0].canStartTopic).toBe(false);
   });
 
   it("counts the loaded items newer than the last visit, and none on a first visit", () => {
@@ -257,7 +243,6 @@ describe("sinceSection", () => {
       [
         { ...base, id: "run:1", kind: "run", runner: person, worked: false, model: "gpt-5", note: null },
         { ...base, id: "rebuild:2", kind: "rebuild", rebuildId: "b2", rebuildSlug: "call-notes-2", rebuildTitle: "On a local model", rebuilder: person },
-        { ...base, id: "answer:3", kind: "answer", bountyId: "q1", solutionId: "s1", solver: person },
         { ...base, id: "stale:b1", kind: "stale" },
       ],
       now - 2 * 86_400_000,
@@ -267,7 +252,6 @@ describe("sinceSection", () => {
     expect(section?.rows.map((row) => [row.tone, row.title, row.detail, row.href])).toEqual([
       ["failed", "@kit ran Call notes", "It didn't work on gpt-5", "/b2/call-notes"],
       ["rebuild", "@kit rebuilt Call notes", '"On a local model"', "/b2/call-notes-2"],
-      ["answer", "An answer to your request", "@kit · Call notes", "/bounties/q1/solve"],
       ["stale", "Call notes is out of date", "Not confirmed in a while", "/b2/call-notes"],
     ]);
   });

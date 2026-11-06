@@ -8,7 +8,7 @@
 // so it gets a sentence and a way on, never decoration. The sentence is the
 // panel's own words ("Nothing hung yet.", "No solutions yet."), written as the
 // state of the thing rather than as a scolding of the reader, and the way on is
-// the one place this panel can lead (the gallery, sign in, the open bounties).
+// the one place this panel can lead (the gallery, sign in, OpenBuilds).
 //
 // The button is drawn 36/13 (rendered 30/12), the secondary variant, because the
 // primary belongs to the page's one decision; on a phone it is 44 tall, the

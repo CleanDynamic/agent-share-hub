@@ -1,15 +1,14 @@
 import * as React from "react"
-import { Sparkles, PenLine, Trophy, Target, X, ChevronRight } from "lucide-react"
+import { Sparkles, PenLine, X, ChevronRight } from "lucide-react"
 import { feedback } from "@/lib/theme/motion";
 
-export type UploadContentType = "blueprint" | "blog" | "bounty" | "meta-bounty"
+export type UploadContentType = "blueprint" | "blog"
 
 interface UploadTypePickerProps {
   isOpen: boolean
   onClose: () => void
   variant: "desktop" | "mobile"
   onSelect: (type: UploadContentType) => void
-  mode?: "all" | "bounty"
 }
 
 const contentOptions: Array<{
@@ -35,22 +34,6 @@ const contentOptions: Array<{
     description:
       "Long-form writing with inline references to blueprints, stages, or blocks.",
   },
-  {
-    type: "bounty",
-    icon: Trophy,
-    iconColor: "var(--cat-breakage)",
-    title: "Bounty",
-    description:
-      "Post a partial blueprint and ask the community to fill in the gaps.",
-  },
-  {
-    type: "meta-bounty",
-    icon: Target,
-    iconColor: "var(--cat-agents)",
-    title: "Meta-bounty",
-    description:
-      "Spawn multiple linked bounties under one umbrella problem.",
-  },
 ]
 
 export function UploadTypePicker({
@@ -58,15 +41,9 @@ export function UploadTypePicker({
   onClose,
   variant,
   onSelect,
-  mode = "all",
 }: UploadTypePickerProps) {
-  const visibleOptions = React.useMemo(
-    () => (mode === "bounty"
-      ? contentOptions.filter((o) => o.type === "bounty" || o.type === "meta-bounty")
-      : contentOptions),
-    [mode],
-  )
-  const pickerTitle = mode === "bounty" ? "Start a bounty" : "What are you creating?"
+  const visibleOptions = contentOptions
+  const pickerTitle = "What are you creating?"
   const modalRef = React.useRef<HTMLDivElement>(null)
   const triggerRef = React.useRef<HTMLElement | null>(null)
   const [isAnimating, setIsAnimating] = React.useState(false)
@@ -128,7 +105,7 @@ export function UploadTypePicker({
         onClose()
         return
       }
-      if (variant === "desktop" && e.key >= "1" && e.key <= "4") {
+      if (variant === "desktop" && e.key >= "1" && e.key <= "2") {
         const index = parseInt(e.key) - 1
         if (visibleOptions[index]) {
           onSelect(visibleOptions[index].type)

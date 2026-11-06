@@ -48,7 +48,7 @@ const feedRow = {
   creator_id: ME.id, creator_username: ME.username, creator_display: ME.display_name, creator_avatar: null, reproduction_count: 0, rebuild_count: 0,
   parent_build_id: null, source_title_at_fork: null, source_handle_at_fork: null, rebuild_note: null, repro_note: null, repro_model: null,
   repro_user_username: null, status: "published", made_for: [], last_confirmed_at: null, last_confirmed_model: null, cover_bucket: null,
-  cover_path: null, cover_kind: null, cover_poster_path: null, repro_worked: null, bounty_id: null, bounty_reward_gbp: null, bounty_gap_title: null,
+  cover_path: null, cover_kind: null, cover_poster_path: null, repro_worked: null,
 };
 
 async function site(page: Page, width: number, thread: boolean) {

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- a fake backend: the rows are whatever the page asks for. */
 // UX-05: a small in-memory backend for the OpenBuilds specs, answering PostgREST the way the pages ask.
 //
-// THE BACKEND IS FAKED (as bounties-board.spec.ts does): /rest/v1/, /auth/v1/, /storage/v1/ and /functions/v1/ are answered here, the
+// THE BACKEND IS FAKED (as the other tier 3 specs do): /rest/v1/, /auth/v1/, /storage/v1/ and /functions/v1/ are answered here, the
 // realtime socket and the font CDN are silenced. State is shared by every page that installs the same world, so a second, signed-out
 // context sees what a signed-in one wrote. It cannot prove a policy: it models the one rule these specs lean on (a signed-out reader
 // never gets a hidden post) so the CLIENT's own filters are what is under test.

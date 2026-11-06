@@ -64,7 +64,7 @@ import { Pill } from "./Pill";
  *           row at the card's own 12px mono.
  *   header  on the build page, in the facts strip or the reproduction panel.
  *           A column, and the only size where the numeral steps up.
- *   row     in a list — a rebuilds tab, a solver's shortlist. One line that
+ *   row     in a list — a rebuilds tab, a shortlist. One line that
  *           never wraps and clips its freshness rather than growing.
  *   proof   the Build page's proof panel (UI-P29): the reference's 11px tag
  *           and 12px claim beside the reproduction orb, said in full.

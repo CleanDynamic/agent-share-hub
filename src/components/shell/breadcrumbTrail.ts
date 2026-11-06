@@ -38,7 +38,7 @@ const GALLERY: Crumb = { label: "Builds", href: SITE_NAV.gallery };
 const DRAFTS: Crumb = { label: "Drafts", href: SITE_NAV.drafts };
 const NEW_BUILD: Crumb = { label: "New build", href: SITE_NAV.create };
 
-const OPENBUILDS: Crumb = { label: "OpenBuilds", href: SITE_NAV.bounties };
+const OPENBUILDS: Crumb = { label: "OpenBuilds", href: SITE_NAV.openbuilds };
 
 const here = (pathname: string, pattern: string) => matchPath({ path: pattern, end: true }, pathname);
 
@@ -74,7 +74,7 @@ export function trailFor(pathname: string, title: string | null, parent: Crumb |
   if (here(pathname, "/drafts")) return [HOME, { label: "Drafts" }];
   if (here(pathname, "/compose/*")) return [HOME, DRAFTS, { label: title ?? "Untitled build" }];
 
-  if (here(pathname, "/openbuilds") || here(pathname, "/bounties")) return [HOME, { label: "OpenBuilds" }];
+  if (here(pathname, "/openbuilds")) return [HOME, { label: "OpenBuilds" }];
   if (here(pathname, "/openbuilds/spaces/:slug")) return [HOME, OPENBUILDS, { label: title }];
   if (here(pathname, "/openbuilds/topics/:id")) return [HOME, OPENBUILDS, ...(parent ? [parent] : []), { label: title }];
 

@@ -62,7 +62,6 @@ function buildStagesFromGrids(stageGrids: any): CanonicalStage[] {
     stageList.push({
       id: sid,
       name: s?.name ?? "",
-      missingDescription: s?.missing_description ?? null,
       blocks: stageBlocks,
       connections: stageConns,
     });
@@ -154,30 +153,6 @@ export async function recomputeCanonicalPayload(postId: string): Promise<Canonic
     current_version: post.current_version,
   };
 
-  const bountyMeta =
-    post.post_type === "bounty"
-      ? {
-          status: post.bounty_status,
-          deadline: post.bounty_deadline,
-          reward_type: post.bounty_reward_type,
-          reward_amount: post.bounty_reward_amount,
-          reward_currency: post.bounty_reward_currency,
-          acceptance_criteria: post.bounty_acceptance_criteria,
-          missing_stage_count: post.missing_stage_count,
-          missing_block_count: post.missing_block_count,
-        }
-      : undefined;
-
-  let acceptedSolutions: any[] | undefined;
-  if (post.post_type === "bounty") {
-    const { data: sols } = await (supabase as any)
-      .from("content_items")
-      .select("id, title, slug, creator_id, status")
-      .eq("fork_of_content_id", postId)
-      .eq("status", "approved");
-    acceptedSolutions = (sols ?? []) as any[];
-  }
-
   const a = (author.data ?? {}) as any;
   const handle = a.username ?? "";
   const payload: CanonicalPostPayload = {
@@ -188,8 +163,6 @@ export async function recomputeCanonicalPayload(postId: string): Promise<Canonic
       results,
       references: (refRows.data ?? []) as any[],
     },
-    bountyMeta,
-    acceptedSolutions,
     authorAttribution: {
       name: a.display_name ?? a.username ?? "Anonymous",
       handle,

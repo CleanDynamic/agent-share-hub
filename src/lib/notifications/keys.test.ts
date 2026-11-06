@@ -8,6 +8,9 @@ import { NOTIFICATION_KEYS, isNotificationKey } from "./keys";
 
 const DIR = "supabase/migrations";
 
+/** UX-11: kinds older migrations write that the request system took with it. Their rows stay; no switch is kept for them. */
+const RETIRED = new Set(["solution", "solved"]);
+
 /** The kind literal of every rc_notify(recipient, actor, 'kind', ...) and rc_notify_savers(build, actor, 'kind', ...) call. */
 function kindsWritten(): Set<string> {
   const kinds = new Set<string>();
@@ -24,12 +27,13 @@ describe("NOTIFICATION_KEYS", () => {
   it("names every kind a migration writes through rc_notify", () => {
     const written = kindsWritten();
     expect(written.size).toBeGreaterThanOrEqual(15);
-    expect([...written].filter((kind) => !isNotificationKey(kind))).toEqual([]);
+    expect([...written].filter((kind) => !isNotificationKey(kind) && !RETIRED.has(kind))).toEqual([]);
   });
 
   it("holds only kinds the database writes, each once", () => {
     const written = kindsWritten();
     expect(keys.filter((key) => !written.has(key))).toEqual([]);
+    for (const kind of RETIRED) expect(isNotificationKey(kind)).toBe(false);
     expect(new Set(keys).size).toBe(keys.length);
   });
 

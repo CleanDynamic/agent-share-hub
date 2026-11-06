@@ -58,7 +58,6 @@ const CARD: GalleryBuild = {
   source_handle_at_fork: null,
   nodes: [],
   media: [],
-  bounties: [],
 };
 
 const ENGAGEMENT = { counts: { likes: 24, comments: 5 }, liked: false, saved: false };

@@ -319,7 +319,7 @@ export const scrollBehavior = (): ScrollBehavior =>
 
 /* ── The attention ring ───────────────────────────────────────────────────────
    A one-shot "the thing you asked for is HERE" mark: a deep link landing, a
-   block reference jumping to its block, a bounty solve arriving.
+   block reference jumping to its block.
 
    AN OUTLINE, NOT A BOX-SHADOW. Every one of these was an animated `box-shadow`
    before BG-P32 — four separate hand-rolled versions of the same effect, three

@@ -175,20 +175,6 @@ export const visionHomeItems: HomeFeedItem[] = [
     worked: false,
   },
   {
-    kind: "bounty",
-    key: "bounty:paywalled",
-    at: hours(6),
-    maker: MIRA,
-    bountyId: "b-paywalled",
-    title: "Handle paywalled sources",
-    reward: "£40",
-    buildTitle: "Research brief agent",
-    buildHref: "/b2/research-brief",
-    solutions: 1,
-    closesAt: new Date(VISION_HOME_NOW + 5.5 * 86_400_000).toISOString(),
-    meToo: { count: 4, pressed: false },
-  },
-  {
     kind: "build",
     key: "build:gbngd",
     at: days(1),
@@ -216,7 +202,6 @@ export function visionHomeProps(state: DesignState = "populated"): HomeViewProps
         { key: "s1", tone: "worked", title: "@kit ran Call notes", detail: "It worked on opus-5.5", at: minutes(34) },
         { key: "s2", tone: "rebuild", title: "@dax rebuilt Call notes", detail: "\"Session 2 on a local model\"", at: hours(3) },
         { key: "s3", tone: "failed", title: "@jay ran Call notes", detail: "It didn't work on gpt-5", at: hours(5) },
-        { key: "s4", tone: "answer", title: "An answer to your step request", detail: "@mira · Handle paywalled sources", at: days(1) },
       ],
     },
     drafts: {
@@ -262,7 +247,6 @@ export function visionHomeProps(state: DesignState = "populated"): HomeViewProps
     newCount: 3,
     onShowNew: () => undefined,
     srcByPath: SRC,
-    onMeToo: () => undefined,
     endCards: [
       { id: "inbox-triage", title: "Inbox triage in one prompt", href: "/b2/inbox-triage", plaque: build("inbox-triage", "Inbox triage in one prompt", { reproduction_count: 31, last_confirmed_at: minutes(2), last_confirmed_model: "opus-5.5" }), cover: { src: null } },
       { id: "untitled", title: "Untitled build", href: "/b2/untitled", plaque: build("untitled", "Untitled build"), cover: { src: null } },
@@ -272,17 +256,17 @@ export function visionHomeProps(state: DesignState = "populated"): HomeViewProps
       litToday: 3,
       runsThisWeek: 62,
       runs: [
-        { key: "r1", worked: true, buildTitle: "Inbox triage", handle: "kit", href: "/b2/inbox-triage", at: minutes(2), buildId: "inbox-triage", canRequest: false },
-        { key: "r2", worked: false, buildTitle: "Research brief", handle: "jay", href: "/b2/research-brief", at: hours(5), buildId: "research-brief", canRequest: false },
-        { key: "r3", worked: true, buildTitle: "Call notes", handle: "kit", href: "/b2/call-notes", at: minutes(34), buildId: "call-notes", canRequest: false },
+        { key: "r1", worked: true, buildTitle: "Inbox triage", handle: "kit", href: "/b2/inbox-triage", at: minutes(2), buildId: "inbox-triage", canStartTopic: false },
+        { key: "r2", worked: false, buildTitle: "Research brief", handle: "jay", href: "/b2/research-brief", at: hours(5), buildId: "research-brief", canStartTopic: false },
+        { key: "r3", worked: true, buildTitle: "Call notes", handle: "kit", href: "/b2/call-notes", at: minutes(34), buildId: "call-notes", canStartTopic: false },
       ],
     },
     requests: {
       status: "ready",
       data: [
-        { id: "b1", title: "Handle paywalled sources", detail: "Research brief · 5 days left", reward: "£40", href: "/bounties/b1/solve" },
-        { id: "b2", title: "Speaker names from audio", detail: "Call notes · 9 days left", reward: "£35", href: "/bounties/b2/solve" },
-        { id: "b3", title: "Export to Keynote", detail: "Pitch deck · 2 weeks left", reward: "£25", href: "/bounties/b3/solve" },
+        { id: "b1", title: "Handle paywalled sources", detail: "Research brief · 5 days left", reward: "£40", href: "/openbuilds/topics/b1" },
+        { id: "b2", title: "Speaker names from audio", detail: "Call notes · 9 days left", reward: "£35", href: "/openbuilds/topics/b2" },
+        { id: "b3", title: "Export to Keynote", detail: "Pitch deck · 2 weeks left", reward: "£25", href: "/openbuilds/topics/b3" },
       ],
     },
     mostRun: {

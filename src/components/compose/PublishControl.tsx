@@ -42,7 +42,7 @@
 // they work rather than as news at the moment they try to post; a second, later
 // refusal painted onto the pill would be the same fact said twice.
 //
-// UX-11: THE SHEET NO LONGER FILES BOUNTIES. It used to price a draft's gaps and file them as bounty rows once the build was
+// UX-11: THE SHEET NO LONGER FILES REQUESTS. It used to price a draft's gaps and file them as request rows once the build was
 // live (NS-P51, SV-21). Asking now starts a topic from a step marked still open, in the composer (UX-08), so the sheet's
 // section, the filing step and the confirmation's outcome are gone, and nothing here writes after the publish.
 //

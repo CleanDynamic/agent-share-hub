@@ -414,7 +414,6 @@ const galleryCard = (id: string, title: string) => ({
   rebuild_note: null,
   nodes: [],
   media: [],
-  bounties: [],
 });
 
 async function openTab(name: string) {

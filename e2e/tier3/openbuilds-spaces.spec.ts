@@ -1,7 +1,7 @@
 // UX-05, in a real browser: the OpenBuilds feed, a space made and posted in, and a post hidden by a moderator.
 //
 // The backend is the in-memory world in support/openbuildsWorld.ts. It cannot prove a policy; it models the one rule these specs
-// lean on and leaves the client's own filters to be what is tested. The old requests page is covered by bounties-board.spec.ts.
+// lean on and leaves the client's own filters to be what is tested.
 
 import { expect, test } from "@playwright/test";
 

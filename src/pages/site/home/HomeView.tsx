@@ -32,7 +32,7 @@ import { InnerTile } from "@/components/vision/InnerTile";
 import { PageFigure } from "@/components/vision/PageFigure";
 import { SectionChevron, SectionHead } from "@/components/vision/SectionHead";
 import { TextTabs } from "@/components/vision/TextTabs";
-import { REQUEST_FROM_RUN_LABEL } from "@/lib/bounty/runRequestRules";
+import { START_TOPIC_FROM_RUN_LABEL } from "./runTopic";
 import { PageLink as Link } from "@/lib/routing/PageLink";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -63,7 +63,6 @@ import {
   solutionsLabel,
   weekMeta,
   weekSummary,
-  type HomeAskPost,
   type HomeBuildPost,
   type HomeCover,
   type HomeDraftRow,
@@ -126,8 +125,8 @@ export interface HomeRoom {
   failure?: PanelFailure;
   /** The latest runs: the feed's own notes. */
   runs: readonly HomeRunRow[];
-  /** SV-21: opens a request from a run that did not work. Absent: the button is not drawn. */
-  onOpenRequest?: (run: HomeRunRow) => void;
+  /** UX-08 P2: opens the New topic window from a run that did not work. Absent: the button is not drawn. */
+  onStartTopic?: (run: HomeRunRow) => void;
 }
 
 export interface HomeViewProps {
@@ -155,7 +154,6 @@ export interface HomeViewProps {
   srcByPath: MediaSrcMap;
   /** Build ids whose post came within a screen of view. */
   onPostsNear?: (buildIds: string[]) => void;
-  onMeToo: (bountyId: string) => void;
   /** UX-07 P1: what a topic's row does, and the one reply box (under the topic it answers). Absent: topics carry no row. */
   topics?: HomeTopicActions;
   /** Two builds from Builds, under "You're up to date". */
@@ -227,7 +225,7 @@ function Cover({ cover, height, width, eager = false }: { cover: HomeCover; heig
 
 /* ═════════ your studio ═════════ */
 
-const SINCE_DOT: Record<HomeSinceTone, string> = { worked: t.evidence, failed: t.catBreakage, rebuild: t.text2, answer: t.text, stale: t.lit };
+const SINCE_DOT: Record<HomeSinceTone, string> = { worked: t.evidence, failed: t.catBreakage, rebuild: t.text2, stale: t.lit };
 
 export function SinceSection({ meta, rows, now }: { meta: string; rows: readonly HomeSinceRow[]; now: number }) {
   return (
@@ -651,43 +649,6 @@ export function RebuildItem({ item, now, onNear }: { item: HomeRebuildPost; now:
   );
 }
 
-export function AskItem({ item, now, onMeToo }: { item: HomeAskPost; now: number; onMeToo: (bountyId: string) => void }) {
-  const handle = atHandle(item.maker.handle);
-  const age = shortAgo(item.at, now);
-  const facts = [item.solutions === null ? null : solutionsLabel(item.solutions), closesIn(item.closesAt, now) || null].filter(Boolean) as string[];
-  return (
-    <FeedItemFrame height={220} data-kind="bounty" data-testid="home-feed-item">
-      <article aria-label={item.title} style={{ display: "grid", gridTemplateColumns: "40px minmax(0, 1fr)", columnGap: 12, padding: "20px 20px 16px" }}>
-        <Avatar size={40} userId={item.maker.id} name={item.maker.name} hue={item.maker.hue} src={item.maker.avatarUrl} />
-        <div style={{ minWidth: 0 }}>
-          <AuthorRow name={item.maker.name} line={`${handle ? `${handle} ` : ""}opened a step request${age ? ` · ${age}` : ""}`} />
-          <div style={{ padding: 14, background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
-              <span style={text(14, 500, t.text)}>{item.title}</span>
-              {item.reward ? <span style={text(20, 500, t.text, { letterSpacing: "-0.015em" })}>{item.reward}</span> : null}
-            </div>
-            <div style={{ marginTop: 2, ...text(12, 400, t.label) }}>
-              on{" "}
-              <PlainLink to={item.buildHref} style={{ color: t.text2 }}>
-                {item.buildTitle}
-              </PlainLink>
-              {facts.map((fact) => ` · ${fact}`).join("")}
-            </div>
-            <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
-              <HomePrimary href={`/bounties/${item.bountyId}/solve`}>Solve it</HomePrimary>
-              {item.meToo ? (
-                <HomeControl pressed={item.meToo.pressed} onClick={() => onMeToo(item.bountyId)}>
-                  {item.meToo.count === null ? "Me too" : `Me too · ${item.meToo.count}`}
-                </HomeControl>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      </article>
-    </FeedItemFrame>
-  );
-}
-
 /** UX-07 P1: a topic is the post card, its Like, Reply and Save in the engagement row's place, and the reply box under it when open. */
 export function TopicItem({ item, actions }: { item: HomeTopicPost; actions?: HomeTopicActions }) {
   return (
@@ -779,7 +740,7 @@ export function FeedEnd({ cards, now }: { cards: readonly HomeEndCard[]; now: nu
 }
 
 function FeedBody(props: HomeViewProps) {
-  const { feed, filter, now, srcByPath, onPostsNear, onMeToo, scope, onScopeChange } = props;
+  const { feed, filter, now, srcByPath, onPostsNear, scope, onScopeChange } = props;
   if (feed.status === "loading") return <FeedBones />;
   if (feed.status === "error") return <ErrorState panel="The feed" onRetry={feed.onRetry} error={feed.error} data-testid="home-feed-error" style={{ padding: "16px 20px" }} />;
   if (feed.items.length === 0 && props.newCount === 0) {
@@ -802,8 +763,6 @@ function FeedBody(props: HomeViewProps) {
             <BuildItem key={item.key} item={item} srcByPath={srcByPath} now={now} onNear={onPostsNear} />
           ) : item.kind === "rebuild" ? (
             <RebuildItem key={item.key} item={item} now={now} onNear={onPostsNear} />
-          ) : item.kind === "bounty" ? (
-            <AskItem key={item.key} item={item} now={now} onMeToo={onMeToo} />
           ) : item.kind === "topic" ? (
             <TopicItem key={item.key} item={item} actions={props.topics} />
           ) : item.kind === "reply_group" ? (
@@ -899,9 +858,9 @@ export function RoomSection({ room, now }: { room: HomeRoom; now: number }) {
                 </span>
                 <span style={text(11.5, 400, t.label)}>{shortAgo(run.at, now)}</span>
               </Link>
-              {run.canRequest && room.onOpenRequest ? (
+              {run.canStartTopic && room.onStartTopic ? (
                 <div style={{ paddingBottom: 8 }}>
-                  <HomeControl onClick={() => room.onOpenRequest?.(run)}>{REQUEST_FROM_RUN_LABEL}</HomeControl>
+                  <HomeControl onClick={() => room.onStartTopic?.(run)}>{START_TOPIC_FROM_RUN_LABEL}</HomeControl>
                 </div>
               ) : null}
             </div>

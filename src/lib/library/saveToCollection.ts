@@ -15,11 +15,7 @@ async function buildCachedMeta(
   itemKind: CollectionItemKind,
   itemId: string
 ): Promise<Record<string, any>> {
-  if (
-    itemKind === "blueprint" ||
-    itemKind === "blog" ||
-    itemKind === "bounty"
-  ) {
+  if (itemKind === "blueprint" || itemKind === "blog") {
     const { data } = await supabase
       .from("content_items")
       .select("title, slug, cover_image_url, post_type, creator_id")

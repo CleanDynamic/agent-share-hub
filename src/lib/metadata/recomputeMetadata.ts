@@ -2,7 +2,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { extractBlockTypes } from "./extractBlockTypes";
 import { extractModels, extractTools } from "./extractModelsAndTools";
 import { extractStats, type ContentStats } from "./extractStats";
-import { countMissingInStageGrids } from "@/lib/bounty/countMissing";
 import { recomputeDerivedBio } from "@/lib/profile/recomputeDerivedBio";
 
 /**
@@ -64,7 +63,6 @@ export async function recomputeMetadata(contentItemId: string): Promise<void> {
 
   const postType = (row as { post_type: string | null }).post_type ?? "blueprint";
   const isBlog = postType === "blog";
-  const isBounty = postType === "bounty";
 
   // 2. Run extractors in parallel. Blog posts skip block-type detection.
   const [blockTypes, models, tools, stats] = await Promise.all([
@@ -83,12 +81,6 @@ export async function recomputeMetadata(contentItemId: string): Promise<void> {
     ),
   ]);
 
-  // Bounty-only: count missing stages/blocks straight from stage_grids JSONB.
-  // Blueprints/blogs naturally end up with 0/0.
-  const missing = isBounty
-    ? countMissingInStageGrids((row as { stage_grids?: unknown }).stage_grids)
-    : { stages: 0, blocks: 0, total: 0 };
-
   // 3. Build the update payload. For blog posts, force structural counts to 0.
   const payload = {
     block_types_used: blockTypes,
@@ -99,10 +91,6 @@ export async function recomputeMetadata(contentItemId: string): Promise<void> {
     stage_count: isBlog ? 0 : stats.stageCount,
     block_count: isBlog ? 0 : stats.blockCount,
     connection_count: isBlog ? 0 : stats.connectionCount,
-    missing_stage_count: missing.stages,
-    missing_block_count: missing.blocks,
-    // Bounty: total slots = sum of missing stages + missing blocks.
-    ...(isBounty ? { bounty_total_slots: missing.total } : {}),
     last_metadata_recompute_at: new Date().toISOString(),
   };
 

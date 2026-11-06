@@ -112,17 +112,7 @@ describe("the card", () => {
     expect(rebuilt.container.querySelector("[data-card-part='credit'] i")).not.toBeNull();
   });
 
-  it("puts the open ask last and dashes the border, and only then", () => {
-    const open = renderCard(
-      build({ nodes: [node({ type: "prompt" })] as GalleryBuild["nodes"], bounties: [{ id: "bo1", reward_gbp: 150, status: "open" }] }),
-    );
-    expect(parts(open.container)).toEqual(["title", "plaque", "chips", "reward"]);
-    expect(open.container.querySelector("[data-card-part='reward']")).toHaveTextContent("1 part unsolved · £150");
-    const edge = open.container.querySelector('[data-visual-slot="gallery-card"]') as HTMLElement;
-    expect(edge.style.borderStyle).toBe("dashed");
-    expect(edge.style.borderWidth).toBe("1.5px");
-    open.unmount();
-
+  it("draws a solid border and no open-ask line", () => {
     const plain = renderCard(build());
     expect((plain.container.querySelector('[data-visual-slot="gallery-card"]') as HTMLElement).style.borderStyle).toBe("solid");
     expect(plain.container.querySelector("[data-card-part='reward']")).toBeNull();
@@ -273,16 +263,15 @@ describe("UI-P49, PT-04 — the row layout is the feed's post", () => {
       </MemoryRouter>,
     );
 
-  it("keeps the order: author row, the post, the build line with its plaque and open ask", () => {
+  it("keeps the order: author row, the post, the build line with its plaque", () => {
     const { container } = renderRow(
-      build({ nodes: [node({ type: "prompt" })] as never, bounties: [{ id: "x", reward_gbp: 25, status: "open" }] }),
+      build({ nodes: [node({ type: "prompt" })] as never }),
     );
     const order = ["[data-feed-author-row]", "[data-feed-post-body]", "[data-feed-build-line]"].map((selector) => container.querySelector(selector));
     expect(order.every(Boolean)).toBe(true);
     expect(order[0]!.compareDocumentPosition(order[1]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(order[1]!.compareDocumentPosition(order[2]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(container.querySelector('[data-card-part="plaque"]')).not.toBeNull();
-    expect(screen.getByTestId("feed-open-ask")).toHaveTextContent("1 part unsolved");
   });
 
   it("puts the maker on top with a link to the profile, and links the build from its title", () => {

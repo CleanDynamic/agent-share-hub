@@ -63,7 +63,6 @@ function build(n: number): Row {
     source_handle_at_fork: null,
     build_nodes: [],
     build_media: [],
-    bounties: [],
   };
 }
 

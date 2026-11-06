@@ -11,8 +11,7 @@
 // ONE PART LEFT OPEN is one placed `gap` node, the first open one at the top
 // level: `is_gap = true`, `payload.problem` (required) and the problem's first
 // 80 characters as its title. Switching it off, or emptying the problem,
-// deletes it. A gap counts for nothing towards completeness (signals.ts); a
-// reward is added on Bounties after publishing.
+// deletes it. A gap counts for nothing towards completeness (signals.ts).
 
 import type { Json } from "@/integrations/supabase/types";
 import { nodeRow, placeTopNode } from "./composeCover";

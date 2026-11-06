@@ -5,8 +5,7 @@
 // ⟦better-layout › Order by importance⟧ ⟦critique-information-density ›
 // Content Prioritisation⟧, one line each, the most pressing first:
 //
-//   waiting   solutions are waiting on one of its open bounties: somebody
-//             did the work and is waiting for an answer
+//   open      topics are still open on it: somebody asked and is waiting for an answer
 //   failing   a run did not work within the last 30 days, and nothing has
 //             confirmed it working in that time
 //   stale     nobody has confirmed it working within STALE_AFTER_DAYS
@@ -30,7 +29,7 @@ export const RECENT_RUN_DAYS = 30;
 export const BUILD_TABLE_ORDER = "Most got working first, then the most recently confirmed.";
 
 export type NeedsYouReason =
-  | { kind: "waiting"; count: number }
+  | { kind: "open"; count: number }
   | { kind: "failing" }
   | { kind: "stale"; since: string | null };
 
@@ -39,7 +38,7 @@ export interface NeedsYouLine {
   reasons: NeedsYouReason[];
 }
 
-const URGENCY: Record<NeedsYouReason["kind"], number> = { waiting: 0, failing: 1, stale: 2 };
+const URGENCY: Record<NeedsYouReason["kind"], number> = { open: 0, failing: 1, stale: 2 };
 
 function within(value: string | null, days: number, now: number): boolean {
   if (!value) return false;
@@ -50,7 +49,7 @@ function within(value: string | null, days: number, now: number): boolean {
 /** Why this build needs its maker, most pressing first; empty when it does not. */
 export function needsYouReasons(build: BuildStatRow, now: number = Date.now()): NeedsYouReason[] {
   const reasons: NeedsYouReason[] = [];
-  if (build.solutions_waiting >= 1) reasons.push({ kind: "waiting", count: build.solutions_waiting });
+  if (build.still_open >= 1) reasons.push({ kind: "open", count: build.still_open });
   if (build.failed_last_30_days >= 1 && !within(build.last_confirmed_at, RECENT_RUN_DAYS, now)) {
     reasons.push({ kind: "failing" });
   }
@@ -81,8 +80,8 @@ export function formatDay(value: string): string {
 /** A reason, as its line says it. */
 export function reasonText(reason: NeedsYouReason): string {
   switch (reason.kind) {
-    case "waiting":
-      return `${reason.count} ${reason.count === 1 ? "solution" : "solutions"} waiting`;
+    case "open":
+      return `${reason.count} ${reason.count === 1 ? "topic" : "topics"} still open`;
     case "failing":
       return "a recent run did not work";
     case "stale":

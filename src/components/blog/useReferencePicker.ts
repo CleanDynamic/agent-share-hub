@@ -55,13 +55,13 @@ export function useReferenceCounts(isOpen: boolean) {
         .from('content_items')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'approved')
-        .in('post_type', ['blueprint', 'bounty']);
+        .eq('post_type', 'blueprint');
 
       const stageAggP = supabase
         .from('content_items')
         .select('stage_count')
         .eq('status', 'approved')
-        .in('post_type', ['blueprint', 'bounty']);
+        .eq('post_type', 'blueprint');
 
       const blocksP = supabase
         .from('content_blocks')
@@ -98,12 +98,8 @@ export function useReferenceResults(
     queryFn: async (): Promise<ResultItem[]> => {
       if (activeType === 'blueprints') {
         const out: BlueprintResult[] = [];
-        // Fetch blueprints + bounties: two passes (queryBlueprints scopes by single postType)
-        const [bp, bo] = await Promise.all([
-          queryBlueprints({ query: debounced, postType: 'blueprint', limit: 15 }),
-          queryBlueprints({ query: debounced, postType: 'bounty', limit: 5 }),
-        ]);
-        for (const r of [...bp.rows, ...bo.rows].slice(0, 20)) {
+        const bp = await queryBlueprints({ query: debounced, postType: 'blueprint', limit: 20 });
+        for (const r of bp.rows) {
           out.push({
             type: 'blueprint',
             id: r.id,

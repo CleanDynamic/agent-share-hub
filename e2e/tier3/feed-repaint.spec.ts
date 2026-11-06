@@ -98,16 +98,13 @@ function row(overrides: Row): Row {
     cover_kind: null,
     cover_poster_path: null,
     repro_worked: null,
-    bounty_id: null,
-    bounty_reward_gbp: null,
-    bounty_gap_title: null,
     ...overrides,
   };
 }
 
 /**
  * Twenty rows of deliberately unequal height: a reproduction strip is one line
- * on a recess, a bounty is a strip above a card, a build is a card. A list that
+ * on a recess, a build is a card. A list that
  * only ever held one shape would not exercise the thing being checked.
  */
 function page1(): Row[] {
@@ -132,16 +129,6 @@ function page1(): Row[] {
       source_title_at_fork: "Inbox triage agent",
       source_handle_at_fork: "amara",
       rebuild_note: "Swapped the classifier prompt and added a privilege check.",
-    }),
-    row({
-      item_kind: "bounty",
-      item_at: at(3),
-      build_id: "00000000-0000-4000-8000-000000000012",
-      slug: "retry-loop",
-      title: "Retry loop that gives up politely",
-      bounty_id: "bo1",
-      bounty_reward_gbp: 120,
-      bounty_gap_title: "The retry prompt",
     }),
   ];
   while (rows.length < 20) {
@@ -283,7 +270,6 @@ test.describe("the feed at four widths, in two themes", () => {
 
         await expect(page.getByTestId("feed-builds")).toBeVisible();
         await expect(page.getByTestId("feed-item-repro").first()).toBeVisible();
-        await expect(page.getByTestId("feed-item-bounty").first()).toBeVisible();
 
         // The feed column never overflows its own scroll region, whatever the
         // frame around it is doing. `.fs-page-body` hides overflow-x, so the
@@ -422,7 +408,7 @@ test("forty loaded items neither clip nor move under the reader", async ({ page 
   await page.goto("/?tab=everyone");
   await expect(page.getByTestId("feed-builds")).toBeVisible();
 
-  const items = page.getByTestId(/^feed-item-(build|rebuild|repro|bounty)$/);
+  const items = page.getByTestId(/^feed-item-(build|rebuild|repro)$/);
   await expect(items).toHaveCount(20);
 
   // The three kinds are three heights, which is the case a list of one shape

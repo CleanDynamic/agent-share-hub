@@ -6,7 +6,7 @@ import { matchRoute, ROUTE_TABLE } from "./routeTable";
 
 describe("the route table", () => {
   it("has an entry for every nav page, keyed by its SITE_NAV key, and each holds a load, a prefetch and a Placeholder", () => {
-    for (const key of ["home", "gallery", "bounties", "library", "drafts"] as const) {
+    for (const key of ["home", "gallery", "openbuilds", "library", "drafts"] as const) {
       const entry = ROUTE_TABLE[key];
       expect(entry, key).toBeDefined();
       expect(entry.key).toBe(key);
@@ -18,7 +18,7 @@ describe("the route table", () => {
 
   it("answers the addresses SITE_NAV holds, so a rename of a value changes only the value", () => {
     expect(matchRoute(SITE_NAV.gallery)?.entry.key).toBe("gallery");
-    expect(matchRoute(SITE_NAV.bounties)?.entry.key).toBe("bounties");
+    expect(matchRoute(SITE_NAV.openbuilds)?.entry.key).toBe("openbuilds");
     expect(matchRoute(SITE_NAV.library)?.entry.key).toBe("library");
     expect(matchRoute(SITE_NAV.drafts)?.entry.key).toBe("drafts");
     expect(matchRoute(SITE_NAV.home)?.entry.key).toBe("home");

@@ -179,7 +179,6 @@ export function resolvePostType(
     return post_type as PostType;
   }
   // Handle post_category values from the database
-  if (post_type === 'bounty') return 'discussion';
   if (post_type === 'blueprint') return LEGACY_TYPE_MAP[content_type ?? ''] ?? 'build';
   if (post_type === 'blog') return 'discussion';
   if (content_type && LEGACY_TYPE_MAP[content_type]) {
@@ -252,11 +251,6 @@ export const BLUEPRINT_CONTENT_TYPES = [
   'Agent Stack',
   'Failure Library',
   'Blog',
-] as const;
-
-export const BOUNTY_CONTENT_TYPES = [
-  'Open Question',
-  'Challenge',
 ] as const;
 
 /**

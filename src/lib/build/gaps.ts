@@ -12,9 +12,9 @@
 // The type of a node is what it IS — a set of model parameters, a dataset, a
 // result — and a creator who has not got the parameters right yet still has a
 // model_params node. Retyping would throw away the fields they had already
-// filled in, and it would leave a solver with no idea what shape the answer
-// takes, which is exactly what src/lib/bounty's submitSolution validates a
-// solution against: the GAP NODE'S OWN TYPE. So the flag goes on and the type
+// filled in, and it would leave an answerer with no idea what shape the answer
+// takes, which is exactly what an answer is checked
+// against: the GAP NODE'S OWN TYPE. So the flag goes on and the type
 // stays, and the 'gap' type remains what it always was — a node whose whole
 // content is a question, for a creator who wants to place one.
 //
@@ -73,10 +73,8 @@ export function gapProblem(payload: Json | null | undefined): string {
  * in, and the order the publish sheet lists them in.
  *
  * PLACED ONLY, because the tray is not part of the record. A node nobody has
- * put anywhere is not a hole in a build, and a bounty filed against one would
- * ask a stranger to solve something no reader can see. The bounty layer agrees
- * from its own side: acceptSolution substitutes the answer into the tree and
- * writes a milestone into the sequence, neither of which a tray node has.
+ * put anywhere is not a hole in a build, and a topic started about one would
+ * ask a stranger to answer something no reader can see.
  */
 export function collectGaps(tree: readonly NodeTree[]): NodeTree[] {
   const out: NodeTree[] = [];

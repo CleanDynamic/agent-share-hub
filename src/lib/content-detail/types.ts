@@ -10,7 +10,6 @@ export interface AuthorInfo {
   avatar_url: string | null;
   bio: string | null;
   derived_bio: string | null;
-  is_trusted_solver?: boolean;
 }
 
 export interface ViewerState {
@@ -32,12 +31,8 @@ export interface RelatedPost {
 export interface PostForViewer {
   post: any;
   author: AuthorInfo;
-  bountySolvers: AuthorInfo[];
   relatedPosts: RelatedPost[];
   viewer: ViewerState;
-  solutions?: any[];
-  discussionRoots?: any[];
-  provenance?: any[];
 }
 
 export interface CommentReactionSummary {
@@ -95,7 +90,6 @@ export interface CanonicalBlock {
 export interface CanonicalStage {
   id: string;
   name: string;
-  missingDescription?: string | null;
   blocks: CanonicalBlock[];
   connections: any[];
 }
@@ -108,8 +102,6 @@ export interface CanonicalPostPayload {
     results: ContentItemResult[];
     references: any[];
   };
-  bountyMeta?: Record<string, any>;
-  acceptedSolutions?: any[];
   authorAttribution: {
     name: string;
     handle: string;

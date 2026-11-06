@@ -92,7 +92,7 @@ describe("getFeaturedBuild", () => {
   it("returns the build with the most reproductions, with its count and outcome", async () => {
     reproductions = [...runs("a", 2), ...runs("b", 5), ...runs("c", 3)];
     candidates = [inGalleryBuild("a"), inGalleryBuild("b"), inGalleryBuild("c")];
-    card = { id: "b", slug: "b-build", title: "B", outcome: "  Turns a PDF into a podcast  ", build_nodes: null, build_media: null, bounties: null };
+    card = { id: "b", slug: "b-build", title: "B", outcome: "  Turns a PDF into a podcast  ", build_nodes: null, build_media: null };
 
     const featured = await getFeaturedBuild(NOW);
 

@@ -1,10 +1,10 @@
 /* UI-P35 — the Activity page's pure pieces: the kinds it draws a badge for, the
    days it groups by, the filter, and one notification as the row the view draws.
 
-   THE KINDS ARE THE ONES THE DATABASE WRITES. The reference draws nine, and all
-   nine are `BUILD_NOTIFICATION_KINDS` (RC-P19, 20261001200000): rc_notify writes
+   THE KINDS ARE THE ONES THE DATABASE WRITES. The reference draws seven, and all
+   seven are `BUILD_NOTIFICATION_KINDS` (RC-P19, 20261001200000): rc_notify writes
    them with the build in `metadata.build_id`. Older client-written kinds
-   (`new_follower`, `engagement`, `bounty_interaction`, messages, mentions,
+   (`new_follower`, `engagement`, messages, mentions,
    system notices) still show, with their stored message and no badge: they have
    no drawn kind, so none is invented for them.
 
@@ -32,8 +32,6 @@ export type ActivityKind = BuildNotificationKind;
 export const ACTIVITY_KINDS: readonly ActivityKind[] = [
   "reproduced",
   "rebuilt",
-  "solution",
-  "solved",
   "comment",
   "reply",
   "like",
@@ -45,7 +43,6 @@ export const ACTIVITY_KINDS: readonly ActivityKind[] = [
 export const PHONE_CHIPS: ReadonlyArray<{ kind: ActivityKind; label: string }> = [
   { kind: "reproduced", label: "Reproduced" },
   { kind: "rebuilt", label: "Rebuilt" },
-  { kind: "solution", label: "Solutions" },
   { kind: "comment", label: "Comments" },
   { kind: "follow", label: "Follows" },
 ];
@@ -120,8 +117,6 @@ export interface ActivityRow {
 const LEAD: Record<ActivityKind, string> = {
   reproduced: "ran",
   rebuilt: "rebuilt",
-  solution: "posted a solution to your bounty on",
-  solved: "accepted your solution on",
   comment: "commented on",
   reply: "replied to your comment on",
   like: "liked",
@@ -144,8 +139,6 @@ const FIXED: Record<ActivityKind, Readonly<Record<string, string | null>>> = {
   comment: { "commented on your build": null },
   reply: { "replied to your comment": null },
   like: { "liked your build": null },
-  solution: { "posted a solution to your bounty": null },
-  solved: { "accepted your solution": null },
   follow: { "started following you": null },
 };
 

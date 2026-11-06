@@ -4,7 +4,7 @@
 // ONE REQUEST EACH, WITH THE MAKER'S BUILDS EMBEDDED RATHER THAN LISTED. A maker
 // can have hundreds of builds and an `in.(id, id, …)` of them is a URL no proxy
 // accepts, so the reproductions are read through the build they belong to and
-// filtered on its creator (`!inner`, as the gallery's bounty embed is). Row level
+// filtered on its creator (`!inner`). Row level
 // security still decides what counts: a reproduction is readable when its build
 // is, so the numbers are the ones the reader could have counted for themselves.
 //

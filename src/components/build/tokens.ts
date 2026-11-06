@@ -6,7 +6,7 @@
 // REPOINTED, NOT REWRITTEN, AND NOT DELETED. Every export below used to be a
 // hex or a white-alpha string struck for a single dark room: `#08080C` ground,
 // `#E8571A` orange, `rgba(255,255,255,0.90)` ink. Roughly eighty files import
-// them — the whole build page, the whole compose workspace, the bounty panels
+// them — the whole build page, the whole compose workspace
 // and three routes — and repainting eighty files by hand is eighty chances to
 // miss one. So each constant KEEPS ITS NAME and changes its VALUE to the
 // `var(--token)` the two-theme system already publishes. One edit, and every

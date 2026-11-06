@@ -13,10 +13,9 @@ import ReblogComposeSheet, {
 import { createReblog } from "@/lib/reblog/createReblog";
 import { ReblogValidationError } from "@/lib/reblog/media";
 
-function classifyPostType(target: ReblogTargetInput): "Blueprint" | "Blog" | "Bounty" {
+function classifyPostType(target: ReblogTargetInput): "Blueprint" | "Blog" {
   const pt = (target.post_type ?? target.content_type ?? "").toLowerCase();
   if (pt === "blog" || pt === "discussion") return "Blog";
-  if (pt === "bounty") return "Bounty";
   return "Blueprint";
 }
 

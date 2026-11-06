@@ -28,13 +28,13 @@ import { FrameLink } from "./FrameLink";
 import { isActivityPath, SITE_NAV, sectionForPath } from "./siteNav";
 import { DOCK_PAD, DOCK_TILE_HEIGHT } from "./chromeSize";
 
-export type DockTileName = "home" | "gallery" | "new" | "bounties" | "activity";
+export type DockTileName = "home" | "gallery" | "new" | "openbuilds" | "activity";
 
 const TILES: readonly { name: DockTileName; label: string; href: string; icon: LucideIcon }[] = [
   { name: "home", label: "Home", href: SITE_NAV.home, icon: Home },
   { name: "gallery", label: "Builds", href: SITE_NAV.gallery, icon: ImageIcon },
   { name: "new", label: "New", href: SITE_NAV.create, icon: Plus },
-  { name: "bounties", label: "OpenBuilds", href: SITE_NAV.bounties, icon: Target },
+  { name: "openbuilds", label: "OpenBuilds", href: SITE_NAV.openbuilds, icon: Target },
   { name: "activity", label: "Activity", href: SITE_NAV.activity, icon: Bell },
 ];
 
@@ -153,7 +153,7 @@ function DockContainer() {
   const section = sectionForPath(pathname);
   const current: DockViewProps["current"] = isActivityPath(pathname)
     ? "activity"
-    : section === "home" || section === "gallery" || section === "bounties"
+    : section === "home" || section === "gallery" || section === "openbuilds"
       ? section
       : null;
   return <DockView current={current} unread={count} />;

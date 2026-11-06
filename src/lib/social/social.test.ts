@@ -182,8 +182,8 @@ describe("listMySavedBuilds", () => {
   it("is one request: the saves newest first, each with its build embedded, in save order (SV-03 P5)", async () => {
     answer = () => ({
       data: [
-        { created_at: "2026-09-02T00:00:00.000Z", build: { id: "build-2", build_nodes: [], build_media: [], bounties: [] } },
-        { created_at: "2026-09-01T00:00:00.000Z", build: { id: "build-1", build_nodes: [], build_media: [], bounties: [] } },
+        { created_at: "2026-09-02T00:00:00.000Z", build: { id: "build-2", build_nodes: [], build_media: [] } },
+        { created_at: "2026-09-01T00:00:00.000Z", build: { id: "build-1", build_nodes: [], build_media: [] } },
       ],
       error: null,
       status: 200,
@@ -203,7 +203,7 @@ describe("listMySavedBuilds", () => {
   it("leaves out a save whose build the reader can no longer read, and the cursor still moves past it", async () => {
     answer = () => ({
       data: [
-        { created_at: "2026-09-02T00:00:00.000Z", build: { id: "build-2", build_nodes: [], build_media: [], bounties: [] } },
+        { created_at: "2026-09-02T00:00:00.000Z", build: { id: "build-2", build_nodes: [], build_media: [] } },
         { created_at: "2026-09-01T00:00:00.000Z", build: null },
       ],
       error: null,

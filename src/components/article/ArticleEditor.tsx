@@ -70,8 +70,8 @@ interface ArticleEditorProps {
   saving?: boolean;
   publishing?: boolean;
   defaultDraftName?: string;
-  /** 'blueprint' (default) — full editor. 'blog' — pure writing surface. 'bounty' — blueprint editor with amber bounty markers. 'solve' — single-slot solver surface (chrome stripped, mounted by SolutionSubmissionShell). */
-  mode?: 'blueprint' | 'blog' | 'bounty' | 'solve';
+  /** 'blueprint' (default) — full editor. 'blog' — pure writing surface. */
+  mode?: 'blueprint' | 'blog';
 }
 
 export function ArticleEditor({
@@ -94,21 +94,7 @@ export function ArticleEditor({
   mode = 'blueprint',
 }: ArticleEditorProps) {
   const isBlog = mode === 'blog';
-  const isBounty = mode === 'bounty';
 
-  // Bounty publish gate: count missing stages + blocks live from the store.
-  const stagesMap = useDocumentStore((s) => s.stages);
-  const blocksMap = useDocumentStore((s) => s.blocks);
-  const missingBreakdown = useMemo(() => {
-    if (!isBounty) return { stages: 0, blocks: 0, total: 0 };
-    let stagesN = 0;
-    let blocksN = 0;
-    for (const s of Object.values(stagesMap)) if (s.is_missing) stagesN += 1;
-    for (const b of Object.values(blocksMap)) if (b.is_missing) blocksN += 1;
-    return { stages: stagesN, blocks: blocksN, total: stagesN + blocksN };
-  }, [isBounty, stagesMap, blocksMap]);
-  const missingItemCount = missingBreakdown.total;
-  const bountyPublishBlocked = isBounty && missingItemCount === 0;
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [draftNameInput, setDraftNameInput] = useState('');
   const [slashOpen, setSlashOpen] = useState(false);
@@ -352,29 +338,6 @@ export function ArticleEditor({
   useEffect(() => {
     setEditorMode(mode);
   }, [mode, setEditorMode]);
-
-  // Cmd/Ctrl + Shift + M — toggle missing on the currently-selected stage or
-  // block. Bounty mode only. Toast feedback comes from toggleStage/BlockMissing.
-  useEffect(() => {
-    if (!isBounty) return;
-    const handler = (e: KeyboardEvent) => {
-      const isCombo = (e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'm' || e.key === 'M');
-      if (!isCombo) return;
-      const sel = useDocumentStore.getState().selection;
-      const id = sel.ids[0];
-      if (!id) return;
-      if (sel.kind === 'stage') {
-        e.preventDefault();
-        // Lazy import avoids a top-level cycle with bountyMissing.
-        import('@/lib/bountyMissing').then((m) => m.toggleStageMissing(id));
-      } else if (sel.kind === 'block') {
-        e.preventDefault();
-        import('@/lib/bountyMissing').then((m) => m.toggleBlockMissing(id));
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [isBounty]);
 
   useEffect(() => {
     if (editor) {
@@ -996,80 +959,6 @@ export function ArticleEditor({
 
       {/* Post-type pill removed — CompactUploadHeader renders the chip. */}
 
-      {/* Bounty hint banner (only in bounty mode) */}
-      {isBounty ? (
-        <div
-          style={{
-            height: 32,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '0 4px',
-            borderBottom: '0.5px solid var(--line)',
-            marginBottom: 8,
-          }}
-        >
-          <Target size={14} color="var(--cat-breakage)" strokeWidth={1.8} />
-          <span style={{
-            flex: 1,
-            fontFamily: 'var(--font-ui)',
-            fontSize: 12,
-            fontWeight: 400,
-            color: 'var(--text2)',
-          }}>
-            Mark stages or blocks as &lsquo;missing&rsquo; to ask for help. Solvers reply once you publish.
-          </span>
-          {missingItemCount > 0 ? (
-            <span
-              title="Items currently marked as missing"
-              style={{
-                fontFamily: 'var(--font-ui)',
-                fontSize: 11,
-                fontWeight: 500,
-                color: 'var(--cat-breakage)',
-                background: 'var(--cat-breakage-fill)',
-                padding: '2px 8px',
-                borderRadius: 'var(--r-chip)',
-              }}
-            >
-              {missingBreakdown.stages} {missingBreakdown.stages === 1 ? 'stage' : 'stages'} · {missingBreakdown.blocks} {missingBreakdown.blocks === 1 ? 'block' : 'blocks'} marked as missing
-            </span>
-          ) : (
-            <span
-              style={{
-                fontFamily: 'var(--font-ui)',
-                fontSize: 11,
-                fontWeight: 500,
-                color: 'var(--text2)',
-                padding: '2px 8px',
-              }}
-            >
-              0 missing items — mark at least one to publish
-            </span>
-          )}
-          <button
-            type="button"
-            title="Bounty docs coming soon"
-            onClick={(e) => {
-              e.preventDefault();
-              toast('Bounty docs coming soon');
-            }}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              padding: 0,
-              cursor: 'pointer',
-              fontFamily: 'var(--font-ui)',
-              fontSize: 11,
-              fontWeight: 500,
-              color: 'var(--cat-breakage)',
-            }}
-          >
-            Learn more about bounties →
-          </button>
-        </div>
-      ) : null}
-
       <TopToolbar
         editor={editor}
         onInsertBlock={isBlog ? undefined : (() => handleQuickInsert('stage'))}
@@ -1092,32 +981,6 @@ export function ArticleEditor({
             className="tiptap-article"
             style={{ width: '100%' }}
           />
-          {isBounty &&
-          editor?.isEmpty &&
-          Object.keys(stagesMap).length === 0 &&
-          missingItemCount === 0 ? (
-            <div
-              aria-hidden="true"
-              style={{
-                position: 'absolute',
-                left: 0,
-                right: 0,
-                top: 80,
-                margin: '0 auto',
-                maxWidth: 520,
-                pointerEvents: 'none',
-                textAlign: 'center',
-                fontFamily: 'var(--font-ui)',
-                fontSize: 13,
-                fontWeight: 400,
-                color: 'var(--text2)',
-                lineHeight: 1.5,
-                padding: '0 24px',
-              }}
-            >
-              Bounties usually start with 1–3 stages where you outline what you have, then mark the gaps. Try inserting a stage with <code style={{ fontFamily: 'inherit', background: 'var(--recess)', padding: '1px 6px', borderRadius: 4, color: 'var(--text2)' }}>/</code>.
-            </div>
-          ) : null}
         </div>
       </TableContextMenu>
 
@@ -1235,8 +1098,7 @@ export function ArticleEditor({
             <button
               type="button"
               onClick={onPublish}
-              disabled={publishing || bountyPublishBlocked}
-              title={bountyPublishBlocked ? 'Mark at least one stage or block as missing to publish a bounty' : undefined}
+              disabled={publishing}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -1251,8 +1113,8 @@ export function ArticleEditor({
                 fontFamily: 'var(--font-ui)',
                 fontSize: 12,
                 fontWeight: 600,
-                cursor: (publishing || bountyPublishBlocked) ? 'not-allowed' : 'pointer',
-                opacity: bountyPublishBlocked ? 0.4 : (publishing ? 0.65 : 1),
+                cursor: publishing ? 'not-allowed' : 'pointer',
+                opacity: publishing ? 0.65 : 1,
               }}
             >
               <Send size={13} strokeWidth={1.8} />

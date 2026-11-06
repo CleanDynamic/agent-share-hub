@@ -8,7 +8,7 @@
 //
 // YOUR BUILDS is the maker's four figures, as on the profile, then one table
 // of eight columns: Build, Got working, Last confirmed, Rebuilds, Likes,
-// Comments, Saves, Open bounties. Numbers are DM Mono with tabular digits,
+// Comments, Saves, Still open. Numbers are DM Mono with tabular digits,
 // aligned to the trailing edge ⟦layout-grid⟧ ⟦buildgallery-theme › Type⟧;
 // Last confirmed is the Plaque's freshness wording, and a stale claim stays in
 // --text2 with the word "stale" written out, never a warning colour
@@ -57,11 +57,11 @@ export const BUILD_TABLE_COLUMNS = [
   "Likes",
   "Comments",
   "Saves",
-  "Open bounties",
+  "Still open",
 ] as const;
 
 /** The columns that hold numbers, aligned to the trailing edge. */
-const NUMERIC = new Set<string>(["Got working", "Rebuilds", "Likes", "Comments", "Saves", "Open bounties"]);
+const NUMERIC = new Set<string>(["Got working", "Rebuilds", "Likes", "Comments", "Saves", "Still open"]);
 
 const SECONDARY: CSSProperties = { background: "transparent", minHeight: 44 };
 
@@ -197,7 +197,7 @@ function BuildTable({ builds }: { builds: BuildStatRow[] }) {
               build.like_count,
               build.comment_count,
               build.save_count,
-              build.open_bounties,
+              build.still_open,
             ];
             return (
               <tr key={build.id} data-testid="build-stats-row" style={{ borderTop: `1px solid ${t.line}` }}>

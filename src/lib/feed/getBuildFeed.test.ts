@@ -47,9 +47,6 @@ function row(over: Partial<BuildFeedRow> = {}): BuildFeedRow {
     cover_kind: null,
     cover_poster_path: null,
     repro_worked: null,
-    bounty_id: null,
-    bounty_reward_gbp: null,
-    bounty_gap_title: null,
     ...over,
   };
 }
@@ -95,13 +92,9 @@ describe("getBuildFeed's following scope", () => {
 describe("the maker on every kind of item (UI-P27)", () => {
   const maker = { id: "c1", handle: "maya", name: "Maya", avatarUrl: null };
 
-  it("carries the build's maker on a build, a rebuild and a bounty", () => {
+  it("carries the build's maker on a build and a rebuild", () => {
     expect(toFeedItem(row())).toMatchObject({ kind: "build", maker });
     expect(toFeedItem(row({ item_kind: "rebuild", parent_build_id: "b0" }))).toMatchObject({ kind: "rebuild", maker });
-    expect(toFeedItem(row({ item_kind: "bounty", bounty_id: "x1", bounty_reward_gbp: 150 }))).toMatchObject({
-      kind: "bounty",
-      maker,
-    });
   });
 
   it("gives a reproduction note the build it is about, beside the reproducer's handle", () => {
@@ -231,12 +224,12 @@ describe("posts and reply groups in the feed (UX-04)", () => {
   it("still loads the old kinds when the function predates the new columns", async () => {
     // The function before 20261107170000 returns rows without any post_* or reply_* key at all.
     rpc.mockResolvedValue({
-      data: [row(), row({ item_kind: "bounty", bounty_id: "x1", bounty_reward_gbp: 150, item_at: "2026-09-19T10:00:00.000Z" })],
+      data: [row(), row({ item_kind: "rebuild", parent_build_id: "b0", item_at: "2026-09-19T10:00:00.000Z" })],
       error: null,
     });
     const page = await getBuildFeed({ pageSize: 20 });
 
-    expect(page.items.map((item) => item.kind)).toEqual(["build", "bounty"]);
+    expect(page.items.map((item) => item.kind)).toEqual(["build", "rebuild"]);
     expect(page.postItems).toEqual([]);
   });
 

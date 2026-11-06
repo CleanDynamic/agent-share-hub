@@ -133,7 +133,7 @@ export interface GapMarkerProps {
    *
    * Kept as a prop rather than fixed, because the three placements landed on
    * surfaces that already had established testids — `gap-panel` on the build
-   * page and `gallery-card-bounty` on a card — and a consolidation that
+   * page and `gallery-card-ask` on a card — and a consolidation that
    * silently renamed the selectors every spec uses would be a consolidation
    * that broke the suite for no reader's benefit.
    */
@@ -143,7 +143,7 @@ export interface GapMarkerProps {
    *
    * Absent on a build-level ask, which names no part — and then no chip
    * renders, because inventing a category to fill the slot would route the ask
-   * to the wrong solvers, which is the whole job the chip does.
+   * to the wrong readers, which is the whole job the chip does.
    */
   category?: string | null;
   /** The chip's words. The registry's label for the part's type. */
@@ -311,7 +311,7 @@ export function GapMarker({
           data-gap-eyebrow=""
           style={{ ...eyebrowText, color: state === "solved" ? t.evidence : t.catBreakage }}
         >
-          {state === "solved" ? "Solved" : "Open bounty"}
+          {state === "solved" ? "Answered" : "Still open"}
         </span>
         {chip}
       </div>

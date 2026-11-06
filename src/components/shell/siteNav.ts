@@ -8,7 +8,7 @@ export const SITE_NAV = {
   home: "/",
   /** The keys keep their old names so no caller breaks; SV-03's route table is keyed by them. */
   gallery: "/builds",
-  bounties: "/openbuilds",
+  openbuilds: "/openbuilds",
   library: "/library",
   drafts: "/drafts",
   /** The create route: AppShell's `upload` item, "New build". */
@@ -17,13 +17,13 @@ export const SITE_NAV = {
   profile: "/profile",
 } as const;
 
-export type PrimarySection = "home" | "gallery" | "bounties" | "library" | "drafts";
+export type PrimarySection = "home" | "gallery" | "openbuilds" | "library" | "drafts";
 
 /** The links in the header's primary nav, in order. Library is signed-in only, as in `allNavItems`. */
 export const PRIMARY_LINKS: readonly { key: PrimarySection; label: string; href: string; authOnly?: boolean }[] = [
   { key: "home", label: "Home", href: SITE_NAV.home },
   { key: "gallery", label: "Builds", href: SITE_NAV.gallery },
-  { key: "bounties", label: "OpenBuilds", href: SITE_NAV.bounties },
+  { key: "openbuilds", label: "OpenBuilds", href: SITE_NAV.openbuilds },
   { key: "library", label: "Library", href: SITE_NAV.library, authOnly: true },
   { key: "drafts", label: "Drafts", href: SITE_NAV.drafts, authOnly: true },
 ];
@@ -36,7 +36,7 @@ export const PRIMARY_LINKS: readonly { key: PrimarySection; label: string; href:
 export function sectionForPath(pathname: string): PrimarySection | null {
   if (pathname === "/" || pathname === "") return "home";
   if (isBuildsPath(pathname) || pathname.startsWith("/b2/") || pathname.startsWith("/rebuild/")) return "gallery";
-  if (isOpenBuildsPath(pathname) || pathname.startsWith("/openbuilds/") || pathname.startsWith("/bounties/")) return "bounties";
+  if (isOpenBuildsPath(pathname) || pathname.startsWith("/openbuilds/")) return "openbuilds";
   if (pathname === "/library" || pathname.startsWith("/library/")) return "library";
   if (pathname === "/drafts" || pathname.startsWith("/drafts/") || pathname.startsWith("/compose/")) return "drafts";
   return null;
@@ -48,7 +48,7 @@ export function isBuildsPath(pathname: string): boolean {
 }
 
 function isOpenBuildsPath(pathname: string): boolean {
-  return pathname === SITE_NAV.bounties || pathname === "/bounties";
+  return pathname === SITE_NAV.openbuilds;
 }
 
 /** True on the Activity page. */

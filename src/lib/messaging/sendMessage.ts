@@ -114,8 +114,6 @@ export async function sendContentShareMessage(
       ? "🎯"
       : contentType === "block"
       ? "🧱"
-      : contentType === "bounty"
-      ? "💰"
       : contentType === "blog"
       ? "📝"
       : "🔗";

@@ -43,7 +43,7 @@ describe("ActivityView on a desktop", () => {
     mount();
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(screen.getByRole("heading", { level: 1, name: "Activity" })).toBeTruthy();
-    const line = screen.getByText("3 unread · live");
+    const line = screen.getByText("2 unread · live");
     expect(line.querySelector('[data-ui="lamp-dot"]')).toBeTruthy();
     const mark = screen.getByRole("button", { name: "Mark all read" });
     expect(mark.getAttribute("data-variant")).toBe("secondary");
@@ -53,7 +53,7 @@ describe("ActivityView on a desktop", () => {
 
   it("drops 'live' and its lamp, and says Reconnecting, while the channel is down", () => {
     mount({ live: false });
-    expect(screen.getByText("3 unread").querySelector('[data-ui="lamp-dot"]')).toBeNull();
+    expect(screen.getByText("2 unread").querySelector('[data-ui="lamp-dot"]')).toBeNull();
     expect(screen.getByText("Reconnecting")).toBeTruthy();
     expect(screen.getByText("offline")).toBeTruthy();
   });
@@ -66,21 +66,19 @@ describe("ActivityView on a desktop", () => {
     expect(within(days[1]).getByRole("heading", { level: 2, name: "Yesterday" })).toBeTruthy();
 
     const rows = screen.getAllByTestId("activity-row");
-    expect(rows).toHaveLength(7);
+    expect(rows).toHaveLength(5);
     const unread = rows.filter((item) => item.getAttribute("data-unread") === "true");
-    expect(unread).toHaveLength(3);
+    expect(unread).toHaveLength(2);
     for (const row of unread) expect(row.querySelector('[data-ui="lamp-dot"]')).toBeTruthy();
     expect(screen.getAllByTestId("activity-badge").map((badge) => badge.getAttribute("data-kind"))).toEqual([
       "reproduced",
       "rebuilt",
-      "solution",
-      "solved",
       "comment",
       "follow",
       "published",
     ]);
-    // Six of the seven name a build, and hang its thumbnail in a frame.
-    expect(screen.getByTestId("activity-list").querySelectorAll('[data-ui="framed-work"]')).toHaveLength(6);
+    // Four of the five name a build, and hang its thumbnail in a frame.
+    expect(screen.getByTestId("activity-list").querySelectorAll('[data-ui="framed-work"]')).toHaveLength(4);
 
     const html = markup();
     expect(html).toContain("grid-template-columns:8px 28px minmax(0, 1fr) 48px 32px");
@@ -153,14 +151,14 @@ describe("ActivityView on a desktop", () => {
   it("counts and filters by kind in Show me, the pressed rows selected", () => {
     mount();
     const group = screen.getByRole("group", { name: "Show me" });
-    expect(within(group).getAllByRole("button")).toHaveLength(9);
+    expect(within(group).getAllByRole("button")).toHaveLength(7);
     expect(within(group).getByRole("button", { name: "reproduced 18" })).toBeTruthy();
     const rebuilt = within(group).getByRole("button", { name: /^rebuilt/ });
     fireEvent.click(rebuilt);
     expect(rebuilt.getAttribute("aria-pressed")).toBe("true");
     expect(kinds()).toEqual(["rebuilt"]);
     fireEvent.click(rebuilt);
-    expect(screen.getAllByTestId("activity-row")).toHaveLength(7);
+    expect(screen.getAllByTestId("activity-row")).toHaveLength(5);
   });
 
   it("draws the loading, error, empty, write-failed and more states in their own places", () => {
@@ -185,7 +183,7 @@ describe("ActivityView on a desktop", () => {
 
     const write = mount({ writeError: { onRetry } });
     expect(screen.getByTestId("activity-write-error").textContent).toContain("That didn't save.");
-    expect(screen.getAllByTestId("activity-row")).toHaveLength(7);
+    expect(screen.getAllByTestId("activity-row")).toHaveLength(5);
     write.unmount();
 
     const people = mount({ peopleThisWeek: null, peopleError: { onRetry } });
@@ -205,11 +203,11 @@ describe("ActivityView on a phone", () => {
     phone(true);
     const { container } = mount();
     expect(screen.getByTestId("activity-view").getAttribute("data-viewport")).toBe("mobile");
-    expect(screen.getByRole("heading", { level: 1, name: "3 unread" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "2 unread" })).toBeTruthy();
     const chips = screen.getAllByRole("button").filter((button) => button.getAttribute("data-ui") === "filter-chip");
-    expect(chips.map((chip) => chip.textContent)).toEqual(["All", "Reproduced18", "Rebuilt6", "Solutions4", "Comments11", "Follows7"]);
+    expect(chips.map((chip) => chip.textContent)).toEqual(["All", "Reproduced18", "Rebuilt6", "Comments11", "Follows7"]);
     expect(screen.getAllByTestId("activity-day")).toHaveLength(2);
-    expect(screen.getAllByTestId("activity-row")).toHaveLength(7);
+    expect(screen.getAllByTestId("activity-row")).toHaveLength(5);
     expect(screen.queryByTestId("activity-orbs")).toBeNull();
     expect(screen.queryByText("Show me")).toBeNull();
     expect(container.querySelector('[data-ui="chart-line"]')).toBeNull();
@@ -221,7 +219,7 @@ describe("ActivityView on a phone", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Rebuilt/ }));
     expect(kinds()).toEqual(["rebuilt"]);
     fireEvent.click(screen.getByRole("button", { name: /^All/ }));
-    expect(screen.getAllByTestId("activity-row")).toHaveLength(7);
+    expect(screen.getAllByTestId("activity-row")).toHaveLength(5);
     unmount();
 
     mount({ unread: 0 });

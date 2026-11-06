@@ -1,14 +1,11 @@
 /* UI-P14 — the Build cards section: fresh, rebuilt (credit and Δ), stale, never
    reproduced, and a gap, in the reference's own order and at its 280px column.
-   The two vacant frames (UI-P15) close the section: the reference's selected and
-   unselected bounty cards, at its 320px column.
 
    The cards are the pure `BuildCard` with the fixture builds' own pieces, so a
    comparison tests the card and not the database. */
 
 import { BuildCard, CardCredit, COVER_HEIGHT } from "@/components/brand/BuildCard";
 import { CoverFallback } from "@/components/brand/CoverFallback";
-import { VacantFrame } from "@/components/brand/VacantFrame";
 import { fixturePlaque, fixtures, FIXTURE_NOW, type FixtureBuild } from "@/dev/designFixtures";
 
 import { Example, Row, Section } from "./parts";
@@ -45,14 +42,9 @@ function Card({ build, rebuilt, gap }: { build: FixtureBuild; rebuilt?: boolean;
       now={FIXTURE_NOW.getTime()}
       categories={build.part_categories}
       gap={gap}
-      openAsk={gap && build.open_gap_reward_gbp ? `1 part unsolved · £${build.open_gap_reward_gbp}` : null}
     />
   );
 }
-
-/** The sample bounties' own cards: [build, part, category, £, closes in, solutions, me too, selected]. */
-const VACANT = fixtures.bounties.cards.slice(0, 2);
-const VACANT_WIDTH = 320;
 
 export function BuildCardsSection() {
   return (
@@ -69,30 +61,6 @@ export function BuildCardsSection() {
             <Card build={fixtures.builds[build - 1]} rebuilt={rebuilt} gap={gap} />
           </Example>
         ))}
-        {VACANT.map(([buildIndex, part, category, reward, closesIn, solutions, meToo, selected]) => {
-          const build = fixtures.builds[Number(buildIndex) - 1];
-          return (
-            <Example
-              key={build.id}
-              caption={selected ? "vacant frame · selected" : "vacant frame"}
-              style={{ width: VACANT_WIDTH }}
-            >
-              <VacantFrame
-                to={`/b2/${build.slug}`}
-                title={build.title}
-                cover={<CoverFallback seed={build.id} sky={build.cover_sky} radius={0} />}
-                part={String(part)}
-                category={String(category)}
-                categoryLabel={String(category)}
-                reward={`£${reward}`}
-                closesIn={String(closesIn)}
-                solutions={Number(solutions)}
-                meToo={Number(meToo)}
-                selected={Boolean(selected)}
-              />
-            </Example>
-          );
-        })}
       </Row>
     </Section>
   );

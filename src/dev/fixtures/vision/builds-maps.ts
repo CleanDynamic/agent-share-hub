@@ -68,7 +68,7 @@ function mapOf(sample: Sample, index: number): { build: BuildsTableBuild; map: B
       publishedAt: "2025-01-01T09:00:00Z",
       rebuildCount: 0,
       maker: { handle: maker, name: null },
-      open: { count: 0, reward: null },
+      open: { count: 0 },
     },
     map: { buildId: id, model },
   };

@@ -42,7 +42,7 @@ export interface ShareMenuProps {
   isOpen: boolean;
   onClose: () => void;
   anchorEl: HTMLElement | { getBoundingClientRect: () => DOMRect } | null;
-  contentType: "blueprint" | "stage" | "block" | "blog" | "bounty";
+  contentType: "blueprint" | "stage" | "block" | "blog";
   contentId: string;
   contentMeta: ShareContentMeta;
   userCollections: ShareCollection[];

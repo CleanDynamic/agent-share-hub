@@ -33,7 +33,7 @@ import { ContentBlockBuilder, emptyBlock, type ContentBlock, type BlockOrGroup, 
 import { WhatToExpectBuilder, emptyWteBlock, type WteBlock } from "@/components/WhatToExpectBuilder";
 import { DependencyPicker, type Dependency } from "@/components/DependencyPicker";
 import { DiscussionCompose } from "@/components/DiscussionCompose";
-import { BLUEPRINT_CONTENT_TYPES, BOUNTY_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, displayContentType, TOPICS, getPostType, getPrimaryTypeLabel } from "@/lib/content-types";
+import { BLUEPRINT_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, displayContentType, TOPICS, getPostType, getPrimaryTypeLabel } from "@/lib/content-types";
 import { CanvasShell } from '@/components/canvas/CanvasShell';
 import { useCanvasDocument } from '@/hooks/useCanvasDocument';
 /* SV-26 P3: the article editor (flow canvas, d3, tables) loads when its step opens. */
@@ -228,13 +228,12 @@ function defaultSubType(uploadType: string): string {
   switch (uploadType) {
     case 'blueprint': return 'build';
     case 'blog': return 'discussion';
-    case 'bounty': return 'build';
     default: return 'build';
   }
 }
 
 interface UploadProps {
-  mode?: 'blueprint' | 'blog' | 'bounty';
+  mode?: 'blueprint' | 'blog';
 }
 
 const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
@@ -248,7 +247,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
   // directly to the correct editor, so this inline chooser never renders.
   const [showTypeChooser, setShowTypeChooser] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [uploadType, setUploadType] = useState<"blog" | "single" | "bounty">("single");
+  const [uploadType, setUploadType] = useState<"blog" | "single">("single");
   const [isProjectMode, setIsProjectMode] = useState(false);
   const [contentBlocks, setContentBlocks] = useState<BlockOrGroup[]>([]);
   const [wteBlocks, setWteBlocks] = useState<WteBlock[]>([]);
@@ -318,11 +317,6 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
   const [draftLoading, setDraftLoading] = useState(!!draftId);
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(draftId || null);
   const [savingDraft, setSavingDraft] = useState(false);
-  // Bounty state
-  const [bountyTipGbp, setBountyTipGbp] = useState<number | null>(null);
-  const [bountyDeadlineDays, setBountyDeadlineDays] = useState<number | null>(null);
-  const [bountyGap, setBountyGap] = useState("");
-  const [bountyBlueprintRequired, setBountyBlueprintRequired] = useState(true);
   const [isRemixable, setIsRemixable] = useState(false);
   const [blueprintExpanded, setBlueprintExpanded] = useState(false);
   const [discussionThreads, setDiscussionThreads] = useState<string[]>(['']);
@@ -357,7 +351,6 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
   const watchedContentType = form.watch("content_type");
   const isAIToolsType = watchedContentType === "AI Tools (LLMs)";
   const isBlogType = uploadType === "blog";
-  const isBountyType = uploadType === "bounty";
   const watchedAiTools = form.watch("ai_tools");
   const isOtherSelected = watchedAiTools?.includes("Other");
   const watchedPostType = form.watch('post_type');
@@ -410,20 +403,15 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
 
         // Type-mode guard: if URL mode doesn't match the row's post_type, redirect.
         const rowPostType = (item as any).post_type as string | null;
-        const expected: 'blueprint' | 'blog' | 'bounty' =
-          mode === 'blog' ? 'blog' : mode === 'bounty' ? 'bounty' : 'blueprint';
-        const rowKind: 'blueprint' | 'blog' | 'bounty' =
-          rowPostType === 'blog' ? 'blog' : rowPostType === 'bounty' ? 'bounty' : 'blueprint';
+        const expected: 'blueprint' | 'blog' = mode === 'blog' ? 'blog' : 'blueprint';
+        const rowKind: 'blueprint' | 'blog' = rowPostType === 'blog' ? 'blog' : 'blueprint';
         if (rowKind !== expected) {
           const targetMap = {
             blog: '/upload/blog',
-            bounty: '/upload/bounty',
             blueprint: '/upload/blueprint',
           } as const;
           const target = targetMap[rowKind];
-          // /upload/bounty uses ?id=, others use ?draft=
-          const param = rowKind === 'bounty' ? 'id' : 'draft';
-          navigate(`${target}?${param}=${draftId}`, { replace: true });
+          navigate(`${target}?draft=${draftId}`, { replace: true });
           return;
         }
 
@@ -584,7 +572,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
 
   // ── Save Draft Logic ──
   // IMPORTANT: only write columns that actually exist on `content_items`
-  // and `content_blocks`. Sending removed columns (e.g. `bounty_*`,
+  // and `content_blocks`. Sending removed columns (e.g.
   // `post_category`, block canvas/agent/model fields) makes Supabase
   // reject the entire save with PGRST204 and the user loses everything.
   const saveDraft = useCallback(async (silent = false, draftName?: string): Promise<string | null> => {
@@ -662,7 +650,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
         use_instructions: values.use_instructions || null,
         what_to_expect: values.what_to_expect || null,
         what_to_expect_blocks: wteBlocksJsonb,
-        post_type: mode === 'blog' ? 'blog' : mode === 'bounty' ? 'bounty' : 'blueprint',
+        post_type: mode === 'blog' ? 'blog' : 'blueprint',
         other_tool_name: isOtherSelected && otherToolName.trim() ? otherToolName.trim() : null,
         custom_use_case_description: customUseCaseDesc.trim() || null,
         tool_url: toolUrl.trim() || null,
@@ -960,7 +948,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
     }
     const blocksToSave = canvasDoc.blocks;
     const submitFlatBlocks = flattenBlocks(contentBlocks);
-    if (!isBountyType && !isDiscussionSubmit && blocksToSave.length === 0 && submitFlatBlocks.length === 0) {
+    if (!isDiscussionSubmit && blocksToSave.length === 0 && submitFlatBlocks.length === 0) {
       toast({ title: "Add content", description: "Please add at least one content block.", variant: "destructive" });
       return;
     }
@@ -1007,7 +995,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
       const { data: insertedItem, error: insertError } = await supabase.from("content_items").insert({
         creator_id: user.id,
         title: values.title,
-        post_type: mode === 'blog' ? 'blog' : mode === 'bounty' ? 'bounty' : 'blueprint',
+        post_type: mode === 'blog' ? 'blog' : 'blueprint',
         content_type: values.content_type,
         description: finalDescription,
         difficulty: values.difficulty,
@@ -1028,14 +1016,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
         is_pwyw: actualPwywEnabled,
         custom_tags: customTags,
         topics: selectedTopics,
-        post_category: isBountyType ? "bounty" : isBlogType ? "blog" : "blueprint",
-        bounty_enabled: isBountyType ? bountyBlueprintRequired : false,
-        bounty_status: isBountyType ? "open" : null,
-        bounty_tip_gbp: isBountyType && bountyTipGbp !== null ? bountyTipGbp : null,
-        bounty_deadline: isBountyType && bountyDeadlineDays !== null
-          ? new Date(Date.now() + bountyDeadlineDays * 86400000).toISOString()
-          : null,
-        bounty_gap: isBountyType && bountyGap.trim() ? bountyGap.trim() : null,
+        post_category: isBlogType ? "blog" : "blueprint",
         is_remixable: isRemixable,
       } as any).select("id").single();
 
@@ -1471,7 +1452,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
             {/* Document header — stacked dropdown toggles (cover / title+desc / results). */}
             <div style={{ padding: '12px 20px 0', display: 'flex', justifyContent: 'center' }}>
               <CompactUploadHeader
-                postType={(mode as 'blueprint' | 'blog' | 'bounty') ?? 'blueprint'}
+                postType={(mode as 'blueprint' | 'blog') ?? 'blueprint'}
                 mode={(form.watch('post_type') as string | undefined)?.toUpperCase()}
                 title={form.watch('title') ?? ''}
                 description={form.watch('description') ?? ''}
@@ -1663,7 +1644,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
         )}
 
         {/* ─── Type chooser — shown initially, replaces step 1 ─── */}
-        {/* Three primary cards: Blueprints / Blogs / Bounties. */}
+        {/* Three primary cards: Blueprints / Blogs. */}
         {showTypeChooser && (() => {
           const goNext = () => {
             // Create a draft immediately so the canvas can start autosaving
@@ -1705,23 +1686,6 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                 setBlueprintExpanded(false);
                 setUploadType('blog');
                 form.setValue('post_type', 'discussion' as any);
-                goNext();
-              },
-            },
-            {
-              value: 'bounty',
-              title: 'Bounties',
-              accent: 'var(--cat-configuration)',
-              description: 'Post challenges for the community to solve, with rewards.',
-              bullets: [
-                'Request specific AI agent builds',
-                'Set difficulty and reward tiers',
-                'Review and accept community submissions',
-              ],
-              onClick: () => {
-                setBlueprintExpanded(false);
-                setUploadType('bounty');
-                form.setValue('post_type', 'build' as any);
                 goNext();
               },
             },
@@ -1947,292 +1911,10 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
             {/* Navigation handled by sticky bar */}
           </form>
         </Form>
-        ) : uploadType === "bounty" ? (
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-
-            {/* Bounty: Content Type */}
-            <FormField control={form.control} name="content_type" render={({ field }) => (
-              <FormItem className="space-y-1.5">
-                <FormLabel>Bounty type</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger className="bg-card border-border rounded-xl"><SelectValue placeholder="Select a type" /></SelectTrigger>
-                  </FormControl>
-                  <SelectContent className="bg-card border-border">
-                    <SelectItem value="Failure Library">Failure Library — Something that went wrong and why</SelectItem>
-                    <SelectItem value="Open Question">Open Question — A problem you haven't solved yet</SelectItem>
-                    <SelectItem value="Challenge">Challenge — A task you want the community to attempt</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )} />
-
-            {/* Bounty: Title */}
-            <FormField control={form.control} name="title" render={({ field }) => (
-              <FormItem className="space-y-0">
-                <FormControl>
-                  <Input
-                    placeholder="Describe your failure or challenge..."
-                    {...field}
-                    className="text-foreground"
-                    style={{
-                      fontSize: 18,
-                      fontWeight: 500,
-                      background: 'transparent',
-                      border: 'none',
-                      borderBottom: '1px solid var(--line)',
-                      borderRadius: 0,
-                      padding: '12px 0',
-                      color: 'var(--text)',
-                      outline: 'none',
-                    }}
-                    onFocus={e => (e.target as HTMLInputElement).style.borderBottomColor = 'var(--line)'}
-                    onBlur={e => (e.target as HTMLInputElement).style.borderBottomColor = 'var(--line)'}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-
-            {/* Bounty: Cover Image */}
-            <div className="space-y-1.5">
-              <Label>Cover image <span className="text-muted-foreground font-normal text-xs">(optional)</span></Label>
-              <p className="text-xs text-muted-foreground">Appears in the feed. 1200×630px recommended.</p>
-              {coverImagePreview ? (
-                <div className="relative">
-                  <img src={coverImagePreview} alt="Cover preview" className="w-full rounded-xl object-cover" style={{ maxHeight: 200 }} />
-                  <button type="button" onClick={() => { setCoverImageFile(null); setCoverImagePreview(null); }} className="absolute top-2 right-2 p-1 rounded-full bg-background/80 text-muted-foreground hover:text-foreground transition-colors">
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ) : (
-                <label
-                  className="flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors"
-                  style={{
-                    border: '1.5px dashed var(--line)',
-                    borderRadius: 12,
-                    height: 140,
-                    background: 'transparent',
-                  }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'var(--line)'; (e.currentTarget as HTMLLabelElement).style.background = 'var(--recess)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'var(--line)'; (e.currentTarget as HTMLLabelElement).style.background = 'transparent'; }}
-                >
-                  <ImagePlus style={{ width: 22, height: 22, color: 'var(--text2)' }} />
-                  <span style={{ fontSize: 12, color: 'var(--text2)' }}>Click to upload cover image (.jpg, .png, .webp — max 3MB)</span>
-                  <input type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    if (file.size > 3 * 1024 * 1024) { toast({ title: "File too large", description: "Cover image must be under 3MB.", variant: "destructive" }); return; }
-                    setCoverImageFile(file);
-                    setCoverImagePreview(URL.createObjectURL(file));
-                  }} />
-                </label>
-              )}
-            </div>
-
-            {/* Bounty: Description (relabeled) */}
-            <FormField control={form.control} name="description" render={({ field }) => (
-              <FormItem className="space-y-1.5">
-                <FormLabel>What happened / What's the problem?</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    placeholder="Be specific. What did you try? What went wrong? What have you already ruled out?"
-                    className="bg-card border-border rounded-xl"
-                    maxLength={500}
-                  />
-                </FormControl>
-                <FormDescription><span className="text-muted-foreground">{(field.value ?? "").length}/500</span></FormDescription>
-                <FormMessage />
-              </FormItem>
-            )} />
-
-            {/* Bounty: The Gap */}
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium">What does a good solution need to do? <span className="text-muted-foreground font-normal">(optional)</span></Label>
-              <div className="relative">
-                <Input
-                  value={bountyGap}
-                  onChange={(e) => setBountyGap(e.target.value.slice(0, 300))}
-                  placeholder="e.g. The fix must work in ChatGPT 3.5 free tier, requires no plugins, and can be set up in under 10 minutes."
-                  className="bg-card border-border rounded-xl pr-16"
-                  maxLength={300}
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">{bountyGap.length}/300</span>
-              </div>
-            </div>
-
-            {/* Bounty: Works with */}
-            <WorksWithPicker
-              value={form.watch("ai_tools") ?? []}
-              onChange={(tools) => form.setValue("ai_tools", tools)}
-              onSubmitToolClick={() => setSubmitToolOpen(true)}
-            />
-
-            {/* Bounty: Difficulty */}
-            <FormField control={form.control} name="difficulty" render={({ field }) => (
-              <FormItem className="space-y-1.5">
-                <FormLabel>Difficulty</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger className="bg-card border-border rounded-xl"><SelectValue placeholder="Select difficulty" /></SelectTrigger>
-                  </FormControl>
-                  <SelectContent className="bg-card border-border">
-                    {DIFFICULTIES.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )} />
-
-            {/* Bounty: Topics */}
-            <TopicsPicker
-              value={[...(form.watch("use_cases") ?? []), ...selectedTopics]}
-              onChange={(topics) => {
-                form.setValue("use_cases", topics);
-                setSelectedTopics(topics);
-              }}
-            />
-
-            {/* Bounty: Tags */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Tags (optional)</label>
-              <Input
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value.slice(0, 30))}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === ",") {
-                    e.preventDefault();
-                    const raw = tagInput.replace(/,/g, "").replace(/^#/, "").trim().toLowerCase().replace(/\s+/g, "-");
-                    if (raw && raw.length <= 30 && customTags.length < 10 && !customTags.includes(raw)) {
-                      setCustomTags([...customTags, raw]);
-                    }
-                    setTagInput("");
-                  }
-                }}
-                placeholder={customTags.length >= 10 ? "" : "Add a tag and press Enter..."}
-                disabled={customTags.length >= 10}
-                className="bg-card border-border rounded-full"
-                maxLength={30}
-              />
-              {customTags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {customTags.map((tag) => (
-                    <span key={tag} className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-2xl" style={{ backgroundColor: "var(--recess)", color: "var(--text2)" }}>
-                      #{tag}
-                      <button type="button" onClick={() => setCustomTags(customTags.filter((t) => t !== tag))} className="ml-0.5 hover:text-foreground transition-colors">×</button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Bounty Settings */}
-            <div className="border border-border rounded-xl p-5 bg-card space-y-4">
-              <h3 className="text-sm font-semibold text-foreground">Bounty Settings</h3>
-
-              {/* Tip */}
-              <div className="space-y-2">
-                <Label className="text-sm">Tip for solver (optional)</Label>
-                <div className="flex flex-wrap gap-2">
-                  {([null, 0.5, 1, 2, 5] as const).map((amt) => (
-                    <button
-                      key={String(amt)}
-                      type="button"
-                      onClick={() => setBountyTipGbp(amt)}
-                      className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                        bountyTipGbp === amt
-                          ? "bg-[var(--cat-artefact-fill)] text-[var(--cat-artefact)] border-[var(--cat-artefact)]"
-                          : "bg-card text-muted-foreground border-border hover:border-muted-foreground/40"
-                      }`}
-                    >
-                      {amt === null ? "No tip" : `£${amt}`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Deadline */}
-              <div className="space-y-2">
-                <Label className="text-sm">Close after</Label>
-                <div className="flex flex-wrap gap-2">
-                  {([null, 3, 7, 14, 30] as const).map((days) => (
-                    <button
-                      key={String(days)}
-                      type="button"
-                      onClick={() => setBountyDeadlineDays(days)}
-                      className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                        bountyDeadlineDays === days
-                          ? "bg-primary/15 text-primary border-primary/30"
-                          : "bg-card text-muted-foreground border-border hover:border-muted-foreground/40"
-                      }`}
-                    >
-                      {days === null ? "No deadline" : `${days} days`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Blueprint response required */}
-              <div className="flex items-center justify-between pt-2 border-t border-border">
-                <div>
-                  <p className="text-sm text-foreground">I need a Blueprint response</p>
-                  <p className="text-xs text-muted-foreground">When on, responses must be Blueprints. When off, free-text comments only.</p>
-                </div>
-                <Switch checked={bountyBlueprintRequired} onCheckedChange={setBountyBlueprintRequired} />
-              </div>
-            </div>
-
-            {/* Bounty: Monetisation */}
-            <div className="border border-border rounded-xl p-5 bg-card space-y-5">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground">Monetisation</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Optional — free by default</p>
-              </div>
-              <div className="space-y-4">
-                {(["free", "paid"] as const).map((type) => (
-                  <div key={type} className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-foreground">{type === "free" ? "Free" : "Paid (fixed price)"}</p>
-                      <p className="text-xs text-muted-foreground">{type === "free" ? "Anyone can view for free" : "Set a price in GBP"}</p>
-                    </div>
-                    <Switch
-                      checked={form.watch("monetisation_type") === type}
-                      onCheckedChange={(checked) => { if (checked) form.setValue("monetisation_type", type); }}
-                    />
-                  </div>
-                ))}
-                {form.watch("monetisation_type") === "paid" && (
-                  <FormField control={form.control} name="price_gbp" render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-foreground font-medium">£</span>
-                        <FormControl>
-                          <Input type="number" step="0.01" min="1" placeholder="4.99" className="bg-background border-border rounded-xl w-32" {...field} />
-                        </FormControl>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                )}
-              </div>
-            </div>
-
-            {/* Bounty: Co-authors */}
-            <CollabInvitePicker invitees={collabInvitees} onChange={setCollabInvitees} />
-
-            {/* Bounty: Dependencies */}
-            <DependencyPicker dependencies={dependencies} onChange={setDependencies} />
-
-            {/* Navigation handled by sticky bar */}
-          </form>
-        </Form>
         ) : (
         <>
           {/* Project toggle — compact chip */}
-          {!isBountyType && !isBlogType && (
+          {!isBlogType && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 8,
               marginBottom: 12,

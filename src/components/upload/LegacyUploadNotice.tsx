@@ -13,13 +13,6 @@ import type { ReactNode } from "react";
    Upload.tsx is not touched by this sequence, and reverting the commit that
    mounts this wrapper takes the banner off every upload route at once.
 
-   NS-P54 extends it to /bounty/new, and adds a second line for the two bounty
-   routes. Bounties are the one thing on this surface that is retired rather
-   than superseded-but-still-working: their creation is frozen behind
-   src/lib/bounty-legacy/flags.ts, so the line names where the ask lives now
-   rather than inviting the creator to finish here. The blueprint and blog
-   routes keep the original single-line copy, because they still create.
-
    BG-P28 REPAINTS IT AS INFORMATION, NOT AS AN ERROR. The banner was #E8571A —
    the old primary accent — at 6% on a 22% border, which on a light room reads
    as a warning strip across the top of a working editor. Nothing here is

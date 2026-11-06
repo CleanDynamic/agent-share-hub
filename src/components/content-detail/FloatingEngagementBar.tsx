@@ -6,7 +6,6 @@ import {
   Bookmark,
   Share2,
   Download,
-  Target,
   PenSquare,
   Users,
 } from "lucide-react";
@@ -39,7 +38,6 @@ interface FloatingEngagementBarProps {
   onBookmark: (anchorEl: HTMLButtonElement) => void;
   onShare: (anchorEl: HTMLButtonElement) => void;
   onExport: (anchorEl: HTMLButtonElement) => void;
-  onSubmitSolution?: () => void;
   onEdit?: () => void;
   onShowReblogsList?: () => void;
 }
@@ -160,7 +158,6 @@ export function FloatingEngagementBar({
   onBookmark,
   onShare,
   onExport,
-  onSubmitSolution,
   onEdit,
   onShowReblogsList,
 }: FloatingEngagementBarProps) {
@@ -197,7 +194,6 @@ export function FloatingEngagementBar({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onLike, onComment, onBookmark, onExport]);
 
-  const isBountyPost = post.postType === "bounty";
   const effectivelyVisible = isVisible || isHoveringBar;
 
   return (
@@ -304,18 +300,6 @@ export function FloatingEngagementBar({
       />
       </ActionXpHintDownload>
 
-      {isBountyPost && onSubmitSolution && (
-        <>
-          <Separator />
-          <ActionButton
-            icon={<Target size={16} />}
-            label="Submit"
-            customBackground="var(--cat-breakage-fill)"
-            customTextColor="var(--cat-breakage)"
-            onClick={onSubmitSolution}
-          />
-        </>
-      )}
       {isOwnPost && onEdit && (
         <>
           <Separator />

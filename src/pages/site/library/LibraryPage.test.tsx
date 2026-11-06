@@ -105,7 +105,6 @@ function card(n: number): GalleryBuild {
     source_handle_at_fork: null,
     nodes: [],
     media: [],
-    bounties: [],
   };
 }
 

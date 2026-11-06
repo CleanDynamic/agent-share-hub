@@ -8,8 +8,7 @@
 
    Then every gap still open, as a dashed breakage card: what is missing, the
    and the one primary, "Reply" (UX-09 P1,
-   which renamed it): the still-open topic's reply box when the gap has one,
-   else that bounty's solve sheet, as before.
+   which renamed it): the still-open topic's reply box when the gap has one.
 
    UX-09 P1: each row also has "Start a topic", the page's New post window with
    the build attached and the row's step in the words.

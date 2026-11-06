@@ -27,7 +27,6 @@ describe("trailFor", () => {
     ["/compose/new", ["Home", "Drafts", "Invoice triage agent"]],
     ["/compose/abc", ["Home", "Drafts", "Invoice triage agent"]],
     ["/openbuilds", ["Home", "OpenBuilds"]],
-    ["/bounties", ["Home", "OpenBuilds"]],
     ["/profile/maya", ["Home", "Invoice triage agent"]],
     ["/notifications", ["Home", "Activity"]],
     ["/library", ["Home", "Library"]],

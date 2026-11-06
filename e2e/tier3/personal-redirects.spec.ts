@@ -43,7 +43,6 @@ function profileRow(who: typeof ME | typeof THEM) {
     derived_bio: null,
     last_derived_at: null,
     is_private: false,
-    is_trusted_solver: false,
     is_admin: false,
   };
 }
@@ -72,7 +71,7 @@ async function fakeBackend(page: Page) {
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify([{ builds: 0, reproductions_received: 0, rebuilds_of_their_work: 0, gaps_solved: 0 }]),
+      body: JSON.stringify([{ builds: 0, reproductions_received: 0, rebuilds_of_their_work: 0 }]),
     }),
   );
   await page.route(/\/rest\/v1\/profiles\?/, (route) => {

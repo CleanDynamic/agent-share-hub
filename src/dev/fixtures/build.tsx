@@ -189,7 +189,6 @@ function sampleCard(b: FixtureBuild, size: "rebuild" | "wall"): CardView {
         delta={b.change_summary}
         build={fixturePlaque(b)}
         categories={b.part_categories}
-        openAsk={b.has_open_gap && b.open_gap_reward_gbp ? `1 part unsolved · £${b.open_gap_reward_gbp}` : null}
         gap={b.has_open_gap}
         now={now}
       />

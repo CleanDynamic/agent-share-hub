@@ -64,8 +64,6 @@ export interface FeedPostProps {
   patterns?: readonly Pattern[];
   /** CA-16 P6: the build's classification: two lines under the build line, and a Regulated area tag beside the title. Nothing when absent or empty. */
   classification?: Classification | null;
-  /** The open ask's line ("1 part unsolved · £120"), or null. Absent: none. */
-  openAsk?: string | null;
   /** The reader's share of the page's engagement. Absent: no action row. */
   engagement?: RowEngagement;
   now?: number;
@@ -98,7 +96,6 @@ export function FeedPost({
   plaqueBuild,
   patterns,
   classification,
-  openAsk = null,
   engagement,
   now,
   phone: phoneOverride,
@@ -350,14 +347,6 @@ export function FeedPost({
             <Plaque build={plaqueBuild} size="card" now={now} />
           ) : null}
           <PatternMarks patterns={patterns} />
-          {openAsk ? (
-            <span
-              data-testid="feed-open-ask"
-              style={{ fontFamily: DM_MONO, fontSize: 11, lineHeight: 1.3, color: t.text2, fontVariantNumeric: "tabular-nums" }}
-            >
-              {openAsk}
-            </span>
-          ) : null}
         </div>
         {lines.line1.length > 0 || lines.line2.length > 0 ? (
           <div style={{ marginTop: 6 }}>

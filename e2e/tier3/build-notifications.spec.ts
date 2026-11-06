@@ -24,8 +24,6 @@ const KINDS = [
   { kind: "comment", body: "commented on your build", targetType: "build_comment", build: 1, href: "/b2/build-1#comments" },
   { kind: "reply", body: "replied to your comment", targetType: "build_comment", build: 2, href: "/b2/build-2#comments" },
   { kind: "like", body: "liked your build", targetType: "build", build: 1, href: "/b2/build-1" },
-  { kind: "solution", body: "posted a solution to your bounty", targetType: "bounty_build", build: 3, href: "/b2/build-3" },
-  { kind: "solved", body: "accepted your solution", targetType: "bounty_build", build: 3, href: "/b2/build-3" },
   { kind: "follow", body: "started following you", targetType: "profile", build: null, href: `/profile/${THEM.username}` },
 ] as const;
 

@@ -1,19 +1,17 @@
 // SV-15: what others did with the reader's builds and saves, in one function.
 //
 // Home's "Since you were last here", Library's changes and (from SV-20) notifications all read `listActivityFor`, so
-// the three never disagree. Four kinds, newest first:
+// the three never disagree. Three kinds, newest first:
 //   run      a reproduction by someone else of a build the reader made or saved
 //   rebuild  a published build whose parent is one the reader made or saved
-//   answer   a solution, by someone else, on a request the reader opened
 //   stale    a build the reader made or saved that passed STALE_AFTER_DAYS since `since`
 // and, with `savedOnly` (the Library's changes), two about the reader's SAVED ITEMS below build size (SV-19):
 //   edited   a saved step, part or session whose source changed after `since` and after it was saved
 //   removed  a saved step, part or session whose source can no longer be read. Nothing records WHEN it went, so it is dated
 //            at the read: it stays in the list for as long as it is true, and Home (which does not pass `savedOnly`) never sees it.
-// (An answer on a request the reader SAVED waits for SV-17's saved requests.)
 //
 // THREE HOPS, each a set of parallel reads ⟦async-parallel⟧:
-//   1. what the reader owns: their builds, their saved builds, their requests
+//   1. what the reader owns: their builds, their saved builds
 //   2. what others did to those, one query per kind, on the ids from hop 1
 //   3. the handles of the people in hop 2, one read
 // `stale` costs no read: it is worked out from hop 1's rows with `isStale`.
@@ -21,11 +19,8 @@
 // THE INDEXES each read relies on:
 //   builds by creator            idx_builds_creator_status_updated (SV-03)
 //   build_saves by user          idx_build_saves_user_created
-//   bounties by author           idx_bounties_author (already live; SV-15's migration adds idx_bounties_author_created only
-//                                where no index leads with author_id)
 //   reproductions by build       idx_build_reproductions_build_confirmed
 //   rebuilds by parent           idx_builds_parent_build
-//   solutions by bounty          idx_solutions_bounty_slot_status
 // Private by design: every read is about the reader's own builds and saves, and RLS decides what they may see.
 
 import { STALE_AFTER_DAYS, isStale } from "@/lib/build/signals";
@@ -33,7 +28,7 @@ import type { SavedKind } from "@/lib/library/savedItems";
 import { listSourceStates, type SourceItem, type SourceStatus } from "@/lib/library/sourceVersions";
 import { db } from "@/lib/social/types";
 
-export type ActivityKind = "run" | "rebuild" | "answer" | "stale" | "edited" | "removed";
+export type ActivityKind = "run" | "rebuild" | "stale" | "edited" | "removed";
 
 /** Whose build it is to the reader: they made it, or they saved it. */
 export type ActivityRole = "maker" | "saver";
@@ -74,13 +69,6 @@ export interface RebuildActivity extends ActivityBase {
   rebuilder: ActivityPerson;
 }
 
-export interface AnswerActivity extends ActivityBase {
-  kind: "answer";
-  bountyId: string;
-  solutionId: string;
-  solver: ActivityPerson;
-}
-
 export interface StaleActivity extends ActivityBase {
   kind: "stale";
 }
@@ -91,7 +79,7 @@ export interface SavedItemActivity extends ActivityBase {
   item: { id: string; kind: SavedKind; snapshot: Record<string, unknown> };
 }
 
-export type ActivityEvent = RunActivity | RebuildActivity | AnswerActivity | StaleActivity | SavedItemActivity;
+export type ActivityEvent = RunActivity | RebuildActivity | StaleActivity | SavedItemActivity;
 
 export interface ListActivityArgs {
   userId: string;
@@ -139,13 +127,6 @@ interface RebuildRow {
   published_at: string | null;
 }
 
-interface SolutionRow {
-  id: string;
-  bounty_id: string;
-  solver_id: string;
-  submitted_at: string | null;
-}
-
 interface SavedItemRow extends SourceItem {
   snapshot: Record<string, unknown>;
 }
@@ -176,7 +157,7 @@ export async function listActivityFor({ userId, since, limit = DEFAULT_LIMIT, sa
   const now = Date.now();
 
   /* ── hop 1: what the reader owns ── */
-  const [mine, saves, bounties, kept] = await Promise.all([
+  const [mine, saves, kept] = await Promise.all([
     savedOnly ? NONE : db.from("builds").select(BUILD_COLUMNS).eq("creator_id", userId).neq("status", "draft").limit(OWN_LIMIT),
     db
       .from("build_saves")
@@ -184,7 +165,6 @@ export async function listActivityFor({ userId, since, limit = DEFAULT_LIMIT, sa
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(OWN_LIMIT),
-    savedOnly ? NONE : db.from("bounties").select("id, build_id").eq("author_id", userId).limit(OWN_LIMIT),
     savedOnly
       ? db.from("saved_items").select("id, kind, build_id, ref, snapshot, source_version").eq("user_id", userId).in("kind", ["step", "part", "session"]).limit(OWN_LIMIT)
       : NONE,
@@ -197,16 +177,13 @@ export async function listActivityFor({ userId, since, limit = DEFAULT_LIMIT, sa
     const build = first(save.build);
     if (build && !owned.has(build.id) && build.creator_id !== userId) owned.set(build.id, { build, role: "saver" });
   }
-  const bountyRows = rows<{ id: string; build_id: string | null }>(bounties);
   const buildIds = [...owned.keys()];
-  const bountyIds = bountyRows.map((row) => row.id);
-  const buildOfBounty = new Map(bountyRows.map((row) => [row.id, row.build_id]));
 
   /* ── hop 2: what others did to them, one query per kind ── */
   const keptRows = rows<{ id: string; kind: SavedKind; build_id: string | null; ref: string | null; snapshot: Record<string, unknown> | null; source_version: string | null }>(kept).map(
     (row): SavedItemRow => ({ id: row.id, kind: row.kind, buildId: row.build_id, ref: row.ref, snapshot: row.snapshot ?? {}, sourceVersion: row.source_version }),
   );
-  const [runs, rebuilds, answers, sources] = await Promise.all([
+  const [runs, rebuilds, sources] = await Promise.all([
     buildIds.length === 0
       ? NONE
       : db
@@ -228,24 +205,13 @@ export async function listActivityFor({ userId, since, limit = DEFAULT_LIMIT, sa
           .gt("published_at", sinceIso)
           .order("published_at", { ascending: false })
           .limit(EVENT_LIMIT),
-    bountyIds.length === 0
-      ? NONE
-      : db
-          .from("solutions")
-          .select("id, bounty_id, solver_id, submitted_at")
-          .in("bounty_id", bountyIds)
-          .neq("solver_id", userId)
-          .gt("submitted_at", sinceIso)
-          .order("submitted_at", { ascending: false })
-          .limit(EVENT_LIMIT),
     keptRows.length === 0 ? new Map<string, SourceStatus>() : listSourceStates(keptRows),
   ]);
   const runRows = rows<ReproRow>(runs);
   const rebuildRows = rows<RebuildRow>(rebuilds);
-  const solutionRows = rows<SolutionRow>(answers);
 
   /* ── hop 3: the people ── */
-  const personIds = [...new Set([...runRows.map((r) => r.user_id), ...rebuildRows.map((r) => r.creator_id), ...solutionRows.map((r) => r.solver_id)])];
+  const personIds = [...new Set([...runRows.map((r) => r.user_id), ...rebuildRows.map((r) => r.creator_id)])];
   const people = new Map<string, ActivityPerson>();
   if (personIds.length > 0) {
     for (const profile of rows<ProfileRow>(await db.from("profiles").select("id, username, display_name").in("id", personIds).limit(personIds.length))) {
@@ -270,12 +236,6 @@ export async function listActivityFor({ userId, since, limit = DEFAULT_LIMIT, sa
     const base = rebuild.parent_build_id ? about(rebuild.parent_build_id) : null;
     if (!base || !rebuild.published_at) continue;
     events.set(`rebuild:${rebuild.id}`, { ...base, id: `rebuild:${rebuild.id}`, kind: "rebuild", at: rebuild.published_at, rebuildId: rebuild.id, rebuildSlug: rebuild.slug, rebuildTitle: rebuild.title, rebuilder: person(rebuild.creator_id) });
-  }
-  for (const solution of solutionRows) {
-    const buildId = buildOfBounty.get(solution.bounty_id);
-    const base = buildId ? about(buildId) : null;
-    if (!base || !solution.submitted_at) continue;
-    events.set(`answer:${solution.id}`, { ...base, id: `answer:${solution.id}`, kind: "answer", at: solution.submitted_at, bountyId: solution.bounty_id, solutionId: solution.id, solver: person(solution.solver_id) });
   }
   // Stale: fresh at `since`, stale now. It happened when the last confirmation (or the publication) turned STALE_AFTER_DAYS old.
   for (const [buildId, { build }] of owned) {

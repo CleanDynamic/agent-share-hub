@@ -32,7 +32,7 @@ import {
 export const FEED_PAGE_SIZE = 20;
 
 /** The four kinds of thing the feed carries. */
-export type FeedItemKind = "build" | "rebuild" | "repro_note" | "bounty";
+export type FeedItemKind = "build" | "rebuild" | "repro_note";
 
 /** UX-04: the two kinds that carry posts. A function that predates 20261107170000 never returns them. */
 export type PostFeedItemKind = "post" | "reply_group";
@@ -75,10 +75,6 @@ export interface BuildFeedRow {
   cover_kind: string | null;
   cover_poster_path: string | null;
   repro_worked: boolean | null;
-  /** NS-P52. Null on every row that is not a bounty. */
-  bounty_id: string | null;
-  bounty_reward_gbp: number | string | null;
-  bounty_gap_title: string | null;
   /**
    * UX-04: the columns 20261107170000 appends. Optional, because the function before it does not return them: a row without them is
    * an old-kind row and maps as it always did. Null on every row that is not a 'post' or a 'reply_group'.
@@ -109,11 +105,6 @@ export interface BuildFeedRow {
 /**
  * The build's maker, as the function joins them. UI-P27: Home's visitors' book
  * names who did what, and the row already carries the answer.
- *
- * On a bounty row this is the build's maker, not the ask's author: the function
- * filters bounties by their author but selects the build's profile. They are the
- * same person whenever a maker opens an ask on their own build, which is the
- * only way the product lets one be opened today.
  */
 export interface FeedMaker {
   id: string;
@@ -182,34 +173,10 @@ export interface ReproNoteFeedItem {
   worked: boolean;
 }
 
-/**
- * An open bounty on a published build (NS-P52).
- *
- * A CARD, unlike the reproduction note beside it, and the difference is what
- * each one is about. A note is one person's sentence about somebody else's
- * build; a bounty is an invitation to work on the build itself, and a reader
- * deciding whether to take it on needs to see what the build IS. So it renders
- * as the gallery card with a red strip above it, rather than as a line.
- */
-export interface BountyFeedItem {
-  kind: "bounty";
-  key: string;
-  /** The keyset cursor this row sits at: bounties.created_at. */
-  at: string;
-  build: GalleryBuild;
-  maker: FeedMaker;
-  bountyId: string;
-  /** Pounds, or null for an unpriced ask — which is still a real bounty. */
-  reward: number | string | null;
-  /** The gap node's title. Null for a build-level ask that names no node. */
-  gapTitle: string | null;
-}
-
 export type FeedItem =
   | BuildFeedItem
   | RebuildFeedItem
-  | ReproNoteFeedItem
-  | BountyFeedItem;
+  | ReproNoteFeedItem;
 
 /** A person on a post or a reply, from the columns the feed row carries. Same shape as FeedMaker. */
 export type PostFeedPerson = FeedMaker;
@@ -275,7 +242,7 @@ export interface GetBuildFeedOptions {
   /** Capped at 50 inside the function, whatever is passed. */
   pageSize?: number;
   /**
-   * Only rows whose maker, reproducer or bounty author the signed-in reader
+   * Only rows whose maker, reproducer or topic author the signed-in reader
    * follows: Home's Following tab (RC-P11). Sent only when true, so every
    * other call is the same request it always was.
    */
@@ -336,7 +303,7 @@ export async function getBuildFeed(
 
 const isPostKind = (kind: string): kind is PostFeedItemKind => kind === "post" || kind === "reply_group";
 const isOldKind = (kind: string): kind is FeedItemKind =>
-  kind === "build" || kind === "rebuild" || kind === "repro_note" || kind === "bounty";
+  kind === "build" || kind === "rebuild" || kind === "repro_note";
 
 const postPerson = (id: string | null | undefined, handle: string | null | undefined, name: string | null | undefined, avatar: string | null | undefined): PostFeedPerson => ({
   id: id ?? "",
@@ -439,22 +406,6 @@ function toGalleryBuild(row: BuildFeedRow): GalleryBuild {
     source_handle_at_fork: row.source_handle_at_fork,
     nodes: [],
     media: coverRows(row),
-    // NS-P52. A 'bounty' row knows about exactly one ask — its own — so the
-    // card it renders carries that one and shows the pill. Every other kind of
-    // row was not asked the question, and `bounties` is left ABSENT rather than
-    // empty for them: an empty list would have the card assert that a build has
-    // no open ask on the strength of a query that never looked.
-    ...(row.item_kind === "bounty" && row.bounty_id
-      ? {
-          bounties: [
-            {
-              id: row.bounty_id,
-              reward_gbp: row.bounty_reward_gbp as number | null,
-              status: "open",
-            },
-          ],
-        }
-      : {}),
   };
 }
 
@@ -552,21 +503,6 @@ export function toFeedItem(row: BuildFeedRow): FeedItem {
       // NOT defaulted to true. A null here means the column did not arrive,
       // and "it worked" is not the thing to assume on somebody else's behalf.
       worked: row.repro_worked === true,
-    };
-  }
-
-  if (row.item_kind === "bounty") {
-    return {
-      kind: "bounty",
-      key: feedKey(row),
-      at: row.item_at,
-      build: toGalleryBuild(row),
-      maker: makerOf(row),
-      // The function admits no bounty row without an id; the fallback is for a
-      // row that arrived from somewhere else.
-      bountyId: row.bounty_id ?? "",
-      reward: row.bounty_reward_gbp,
-      gapTitle: row.bounty_gap_title,
     };
   }
 

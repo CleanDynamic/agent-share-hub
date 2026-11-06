@@ -259,37 +259,16 @@ export default function MessagesPage() {
       if (tt.pinned_content_id) {
         const { data: ci } = await supabase
           .from("content_items")
-          .select("id, title, slug, post_type, bounty_reward_amount, bounty_reward_currency, bounty_reward_type, bounty_status")
+          .select("id, title, slug, post_type")
           .eq("id", tt.pinned_content_id)
           .maybeSingle();
         if (ci) {
           const c = ci as any;
-          let rewardLabel: string | null = null;
-          if (tt.type === "bounty" && c.bounty_reward_amount) {
-            const cur = c.bounty_reward_currency || c.bounty_reward_type || "";
-            const symbol = cur === "GBP" ? "£" : cur === "USD" ? "$" : cur === "EUR" ? "€" : "";
-            rewardLabel = symbol
-              ? `${symbol}${c.bounty_reward_amount}`
-              : `${c.bounty_reward_amount} ${cur}`.trim();
-          }
-          let statusLabel: string | null = null;
-          if (tt.type === "bounty" && c.bounty_status) {
-            statusLabel =
-              c.bounty_status === "open"
-                ? "Open"
-                : c.bounty_status === "in_progress"
-                  ? "In progress"
-                  : c.bounty_status === "closed"
-                    ? "Closed"
-                    : c.bounty_status;
-          }
           pinnedContent = {
             id: c.id,
             type: (tt.pinned_content_type as string) || c.post_type || "blueprint",
             title: c.title,
             slug: c.slug ?? null,
-            rewardLabel,
-            statusLabel,
           };
         }
       }

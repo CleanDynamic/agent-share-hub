@@ -89,9 +89,6 @@ function threeBuilds() {
     cover_kind: null,
     cover_poster_path: null,
     repro_worked: null,
-    bounty_id: null,
-    bounty_reward_gbp: null,
-    bounty_gap_title: null,
   }));
 }
 

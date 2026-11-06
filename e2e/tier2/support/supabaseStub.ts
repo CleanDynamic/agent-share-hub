@@ -165,8 +165,7 @@ export const DEFAULT_THREAD_ID = "00000000-0000-4000-8000-00000000d001";
  * to the card without adding it here leaves it untested, and adding it here
  * without the card handling it turns the spec red.
  *
- * `kind` is the column the page reads as `notification_type`; the bounty
- * subkind travels in `metadata.sub`, which is where triggers.ts puts it.
+ * `kind` is the column the page reads as `notification_type`.
  */
 export const NOTIFICATION_SUBKINDS: {
   key: string;
@@ -180,13 +179,6 @@ export const NOTIFICATION_SUBKINDS: {
   { key: "engagement_like", kind: "engagement", metadata: { engagementType: "like" }, expect: "liked your" },
   { key: "engagement_repost", kind: "engagement", metadata: { engagementType: "repost" }, expect: "reposted your" },
   { key: "engagement_comment", kind: "engagement", metadata: { engagementType: "comment" }, expect: "commented on your" },
-  { key: "bounty_solution_submitted", kind: "bounty_interaction", metadata: { sub: "solution_submitted" }, expect: "submitted a solution" },
-  { key: "bounty_solution_accepted", kind: "bounty_interaction", metadata: { sub: "solution_accepted" }, expect: "solution was accepted" },
-  { key: "bounty_new_comment", kind: "bounty_interaction", metadata: { sub: "new_comment" }, expect: "New comment on your bounty" },
-  { key: "bounty_solver_overtaken", kind: "bounty_interaction", metadata: { sub: "bounty_solver_overtaken", previous_rank: 2, new_rank: 3 }, expect: "overtook your rank" },
-  { key: "meta_bounty_sub_spawned", kind: "bounty_interaction", metadata: { sub: "meta_bounty_sub_spawned", sub_title: "Spawned Sub" }, expect: "Spawned Sub" },
-  { key: "bounty_deadline_approaching", kind: "bounty_interaction", metadata: { sub: "bounty_deadline_approaching", hours_remaining: 6 }, expect: "Bounty deadline" },
-  { key: "bounty_promoted_to_blueprint", kind: "bounty_interaction", metadata: { sub: "bounty_promoted_to_blueprint", bounty_title: "Promoted Bounty" }, expect: "Promoted Bounty" },
   { key: "new_message", kind: "new_message", metadata: {}, expect: "New message from" },
   { key: "mention", kind: "mention", metadata: {}, expect: "mentioned you" },
   { key: "system", kind: "system", metadata: {}, expect: "A system notice" },

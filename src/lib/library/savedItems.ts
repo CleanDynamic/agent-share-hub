@@ -245,23 +245,9 @@ async function snapshotFor(input: SaveItemInput): Promise<{ buildId: string | nu
       if (snapshot.prompts.length === 0) throw invalid("saveItem", { buildId: build.id });
       return { buildId: build.id, snapshot: snapshot as unknown as Payload };
     }
-    case "request": {
-      if (!ref) throw invalid("saveItem", {});
-      const response = await db.from("bounties").select("id, build_id, gap_node_id, status, reward_gbp").eq("id", ref).limit(1).maybeSingle();
-      if (response.error) throw socialError("saveItem", response);
-      const bounty = response.data as { id: string; build_id: string | null; gap_node_id: string | null; status: string; reward_gbp: number | null } | null;
-      if (!bounty) throw new SocialError("saveItem", "no_access");
-      const build = bounty.build_id ? await readableBuild(bounty.build_id) : null;
-      const gap = build && bounty.gap_node_id ? findNode(await getNodeTree(build.id), bounty.gap_node_id) : null;
-      const snapshot: RequestSnapshot = {
-        bountyId: bounty.id,
-        status: bounty.status,
-        rewardGbp: bounty.reward_gbp,
-        gap: gap ? { type: gap.type, title: gap.title ?? null, payload: methodOf(asPayload(gap.payload)) } : null,
-        source: build ? sourceOf(build) : null,
-      };
-      return { buildId: build?.id ?? null, snapshot: snapshot as unknown as Payload };
-    }
+    case "request":
+      // UX-11: requests closed. A kept request still lists from its stored snapshot; none can be kept or refreshed any more.
+      throw invalid("saveItem", {});
     case "filter_set":
     case "collection":
       if (!ref) throw invalid("saveItem", {});

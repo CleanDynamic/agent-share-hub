@@ -15,8 +15,8 @@
 // taken, and so is the data: the cover is `coverMedia(build)` signed by the
 // page (`resolveCover()` first, the creator's own pick above everything), else
 // the `CoverFallback` sky seeded with the build id; the chips are the part
-// categories of the nodes the card's query already carries; the open ask is the
-// largest open bounty on it. Nothing here adds a request.
+// categories of the nodes the card's query already carries; a card draws no ask.
+// Nothing here adds a request.
 //
 // WHERE THE DESIGN OUTRUNS THE DATA, and what the card does instead:
 //
@@ -78,7 +78,6 @@ import {
   type GalleryBuild,
   type GalleryMedia,
 } from "@/lib/build";
-import { rewardLabel } from "@/components/bounty/bountyDisplay";
 import { CardThread, type CardLayout } from "./CardThread";
 import { coverMedia, mediaAlt, postMediaOf, stillFor, type MediaSrcMap } from "./cardMedia";
 import { EngagementRow, type RowEngagement } from "@/components/social/EngagementRow";
@@ -170,7 +169,6 @@ export function GalleryCard({
         plaqueBuild={plaqueBuild ?? build}
         patterns={patterns}
         classification={classification}
-        openAsk={openBounty(build)}
         engagement={engagement}
         now={now}
       />
@@ -198,7 +196,6 @@ function WallCard({
 }: Required<Pick<GalleryCardProps, "build" | "srcByPath" | "coverHeight">> &
   Pick<GalleryCardProps, "engagement" | "titleSize"> & { layout: CardLayout }) {
   const shape = (build.shape ?? "other") as BuildShape;
-  const bounty = openBounty(build);
 
   // postEntriesOf over rows the page already has; see postMediaOf. Memoised
   // because it sorts, and a feed re-renders its items on every scroll tick.
@@ -240,8 +237,6 @@ function WallCard({
       build={build}
       plaqueTrailing={<Rebuilds count={build.rebuild_count ?? 0} />}
       categories={partCategories(build.nodes)}
-      openAsk={bounty}
-      gap={Boolean(bounty)}
       footer={
         engagement ? (
           // RC-P16 — THE ENGAGEMENT ROW, the one addition CONTRACT §3.5
@@ -332,7 +327,6 @@ function RowCard({
   /* The title is drawn at 24 in the desktop column and 22 in a phone's; display() renders them 20 and 19. */
   const phone = useIsPhone();
 
-  const bounty = openBounty(build);
   const title = (build.title ?? "").trim() || "Untitled build";
   const outcome = (build.outcome ?? "").trim();
   const handle = (makerHandle ?? "").trim();
@@ -349,7 +343,6 @@ function RowCard({
         data-visual-slot="gallery-card"
         data-build-shape={build.shape ?? "other"}
         data-card-layout="row"
-        data-gap={bounty ? "" : undefined}
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
         style={{
@@ -364,9 +357,9 @@ function RowCard({
           borderRadius: r.card,
           boxShadow: t.shadowCard,
           color: t.text,
-          ...(bounty
-            ? gapEdge("card")
-            : { borderWidth: 1, borderStyle: "solid", borderColor: lit ? t.text2 : t.glassBorder }),
+          borderWidth: 1,
+          borderStyle: "solid",
+          borderColor: lit ? t.text2 : t.glassBorder,
           transition: feedback("border-color"),
         }}
       >
@@ -466,24 +459,6 @@ function RowCard({
             </div>
           ) : null}
 
-          {bounty ? (
-            <p
-              data-visual-slot="gap-marker"
-              data-testid="gallery-card-bounty"
-              data-gap-placement="card"
-              data-card-part="reward"
-              style={{
-                margin: 0,
-                fontFamily: DM_MONO,
-                fontSize: 11,
-                lineHeight: "normal",
-                color: t.catBreakage,
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              {bounty}
-            </p>
-          ) : null}
         </div>
       </article>
     </div>
@@ -533,40 +508,3 @@ function Rebuilds({ count }: { count: number }) {
   );
 }
 
-/* ────────────────────────────────────────────────────────────────────────────
-   The open ask
-   ──────────────────────────────────────────────────────────────────────────── */
-
-/**
- * "1 part unsolved · £120", or null (NS-P52, reworded by BG-P09's spec).
- *
- * The rows arrive on the card's own query, already filtered to open ones, so
- * this is a read rather than a fetch — see GALLERY_BOUNTY_COLUMNS. A build with
- * several open asks gets ONE line carrying the largest reward: the card is a
- * badge, not a board, and the biggest number is the one that decides whether a
- * reader clicks through to the rest.
- *
- * Null for a build with no open ask AND for one whose query never asked, which
- * is why `bounties` is optional on GalleryBuild rather than defaulted to empty.
- */
-function openBounty(build: GalleryBuild): string | null {
-  const open = (build.bounties ?? []).filter((row) => row.status === "open");
-  if (open.length === 0) return null;
-
-  let best: number | null = null;
-  for (const row of open) {
-    const amount =
-      typeof row.reward_gbp === "number" ? row.reward_gbp : Number(row.reward_gbp);
-    if (Number.isFinite(amount) && (best === null || amount > best)) best = amount;
-  }
-
-  // The theme's own words for this line: "1 part unsolved · £150". It replaces
-  // the "bounty · £120" pill NS-P52 put here, because a gap has to read as an
-  // INVITATION rather than as a badge — the build works, one piece is missing on
-  // purpose, and naming the missing piece is what says so. An unpriced ask keeps
-  // the invitation and drops the price: it is filed, it is on the board, and
-  // somebody can solve it, which is the position bountyDisplay.ts already takes.
-  const parts = open.length === 1 ? "1 part unsolved" : `${open.length} parts unsolved`;
-  const money = rewardLabel(best);
-  return money ? `${parts} · ${money}` : parts;
-}

@@ -76,47 +76,6 @@ async function fetchViewerState(post: any, viewerId?: string | null): Promise<Vi
   };
 }
 
-async function fetchBountyExtras(post: any) {
-  if (post?.post_type !== "bounty") {
-    return { bountySolvers: [] as AuthorInfo[], solutions: [], discussionRoots: [], provenance: [] };
-  }
-  // Solutions: any content_item with fork_of_content_id pointing here
-  const { data: solutions } = await (supabase as any)
-    .from("content_items")
-    .select("id, title, slug, creator_id, status, created_at")
-    .eq("fork_of_content_id", post.id)
-    .order("created_at", { ascending: false });
-
-  const solverIds = Array.from(
-    new Set(((solutions ?? []) as any[]).map((s) => s.creator_id).filter(Boolean)),
-  );
-  let bountySolvers: AuthorInfo[] = [];
-  if (solverIds.length > 0) {
-    const { data: profs } = await (supabase as any)
-      .from("profiles")
-      .select("id, username, display_name, avatar_url, bio, derived_bio")
-      .in("id", solverIds);
-    bountySolvers = (profs ?? []) as AuthorInfo[];
-  }
-
-  // Discussion roots: top-level primitive_comments anchored to the post
-  const { data: roots } = await (supabase as any)
-    .from("primitive_comments")
-    .select("id, author_id, body_text, created_at")
-    .eq("anchor_type", "post")
-    .eq("anchor_id", post.id)
-    .is("parent_comment_id", null)
-    .order("created_at", { ascending: false })
-    .limit(20);
-
-  return {
-    bountySolvers,
-    solutions: (solutions ?? []) as any[],
-    discussionRoots: (roots ?? []) as any[],
-    provenance: [], // placeholder for future provenance chain
-  };
-}
-
 export async function getPostForViewer({
   slug,
   viewerId,
@@ -146,11 +105,10 @@ export async function getPostForViewer({
   }
   if (!post) throw new Error(`Post not found: ${slug}`);
 
-  const [author, related, viewer, bounty] = await Promise.all([
+  const [author, related, viewer] = await Promise.all([
     fetchAuthor(post.creator_id),
     fetchRelated(post),
     fetchViewerState(post, viewerId),
-    fetchBountyExtras(post),
   ]);
 
   const result: PostForViewer = {
@@ -163,12 +121,8 @@ export async function getPostForViewer({
       bio: null,
       derived_bio: null,
     },
-    bountySolvers: bounty.bountySolvers,
     relatedPosts: related,
     viewer,
-    solutions: bounty.solutions,
-    discussionRoots: bounty.discussionRoots,
-    provenance: bounty.provenance,
   };
 
   cache.set(key, { value: result, at: Date.now() });

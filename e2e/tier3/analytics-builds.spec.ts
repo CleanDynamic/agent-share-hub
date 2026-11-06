@@ -14,7 +14,7 @@ const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")
 const DAY = 86_400_000;
 const ago = (days: number) => new Date(Date.now() - days * DAY).toISOString();
 
-/** Four builds: one healthy, one stale, one failing, one with solutions waiting. */
+/** Four builds: one healthy, one stale, one failing, one with topics still open. */
 const BUILDS = [
   { n: 1, title: "Invoice reader that files the totals", reproduction_count: 12, last_confirmed_at: ago(3), published_at: ago(60) },
   { n: 2, title: "Inbox triage agent", reproduction_count: 4, last_confirmed_at: ago(200), published_at: ago(300) },
@@ -32,13 +32,14 @@ const BUILDS = [
   like_count: 10 * b.n,
   comment_count: b.n,
   save_count: 2 * b.n,
+  still_open_topics: b.n === 4 ? 3 : b.n === 1 ? 1 : 0,
 }));
 
 const METRICS = [
-  { build_id: id(1), runs: 13, worked: 12, failed_last_30_days: 0, open_bounties: 1, solutions_waiting: 0 },
-  { build_id: id(2), runs: 4, worked: 4, failed_last_30_days: 0, open_bounties: 0, solutions_waiting: 0 },
-  { build_id: id(3), runs: 3, worked: 1, failed_last_30_days: 2, open_bounties: 0, solutions_waiting: 0 },
-  { build_id: id(4), runs: 0, worked: 0, failed_last_30_days: 0, open_bounties: 2, solutions_waiting: 3 },
+  { build_id: id(1), runs: 13, worked: 12, failed_last_30_days: 0 },
+  { build_id: id(2), runs: 4, worked: 4, failed_last_30_days: 0 },
+  { build_id: id(3), runs: 3, worked: 1, failed_last_30_days: 2 },
+  { build_id: id(4), runs: 0, worked: 0, failed_last_30_days: 0 },
 ];
 
 const wantsObject = (route: Route) => (route.request().headers()["accept"] ?? "").includes("pgrst.object");
@@ -90,8 +91,8 @@ async function fakeBackend(page: Page, { empty = false }: { empty?: boolean } = 
     stats.push(route.request().url());
     return json(route, [
       empty
-        ? { builds: 0, reproductions_received: 0, rebuilds_of_their_work: 0, gaps_solved: 0 }
-        : { builds: 4, reproductions_received: 17, rebuilds_of_their_work: 3, gaps_solved: 1 },
+        ? { builds: 0, reproductions_received: 0, rebuilds_of_their_work: 0 }
+        : { builds: 4, reproductions_received: 17, rebuilds_of_their_work: 3 },
     ]);
   });
   await page.route(/\/rest\/v1\/rpc\/maker_build_metrics/, (route) => {
@@ -124,7 +125,7 @@ test("the builds table has the eight columns, in order", async ({ page }) => {
     "Likes",
     "Comments",
     "Saves",
-    "Open bounties",
+    "Still open",
   ]);
   await expect(page.getByTestId("build-stats-row")).toHaveCount(4);
   await expect(page.getByTestId("build-stats-order")).toHaveText("Most got working first, then the most recently confirmed.");
@@ -146,7 +147,7 @@ test("needs you names the three reasons, one line per build", async ({ page }) =
   const lines = page.getByTestId("needs-you-line");
   await expect(lines).toHaveCount(3);
   await expect(lines.nth(0)).toContainText("Contract clause finder");
-  await expect(lines.nth(0)).toContainText("3 solutions waiting");
+  await expect(lines.nth(0)).toContainText("3 topics still open");
   await expect(lines.nth(1)).toContainText("a recent run did not work");
   await expect(lines.nth(2)).toContainText("not confirmed since");
 });

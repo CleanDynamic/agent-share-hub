@@ -25,7 +25,7 @@ export function listParamsOf(params: GalleryParams): BuildsTableOptions {
     tool: params.tool,
     shapes: params.shapes ?? [],
     pattern: params.pattern,
-    openBounties: params.open === true,
+    stillOpen: params.open === true,
     query: params.query ?? undefined,
     ranges: params.ranges,
     confirmedWithin: params.within,
@@ -349,7 +349,7 @@ export function tableRow(build: BuildsTableBuild, now: number, extras: readonly 
     confirmed: ago ? `${ago === "now" ? "just now" : `${ago} ago`}${model ? ` on ${model}` : ""}` : "",
     runs: build.runs ?? [],
     rebuilds: build.rebuildCount,
-    open: build.open.count === 0 ? "" : `${build.open.count} open${build.open.reward ? ` · £${build.open.reward}` : ""}`,
+    open: build.open.count === 0 ? "" : `${build.open.count} open`,
     cost: first("cost"),
     ...(extras.length > 0 ? { extra: Object.fromEntries(extras.map((id) => [id, id === "shape" ? shapeWord(build.shape) : first(id)])) } : null),
   };

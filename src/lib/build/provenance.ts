@@ -16,7 +16,7 @@
 // types.ts is generated from the live database and does not yet carry
 // created_via, so the two calls below go through ONE cast declared here rather
 // than an `as any` at each site — the same shape src/lib/build/imports.ts uses
-// for import_sessions, and src/lib/bounty/meToo.ts before it. If the two ever
+// for import_sessions. If the two ever
 // disagree, the migration (supabase/migrations/20260921130000_builds_
 // created_via.sql) is right.
 //

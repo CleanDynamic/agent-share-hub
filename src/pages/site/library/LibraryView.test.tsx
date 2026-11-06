@@ -77,7 +77,7 @@ describe("LibraryView", () => {
     view();
     const changes = screen.getByTestId("library-changes");
     expect(within(changes).getByText("6 changes")).toBeInTheDocument();
-    expect(within(changes).getAllByText(/EDITED|REMOVED|RUN|ANSWER/).map((chip) => chip.textContent)).toEqual(["EDITED", "REMOVED", "RUN", "ANSWER"]);
+    expect(within(changes).getAllByText(/EDITED|REMOVED|RUN|STALE/).map((chip) => chip.textContent)).toEqual(["EDITED", "REMOVED", "RUN", "STALE"]);
     expect(within(changes).getByRole("link", { name: "Open all changes" })).toBeInTheDocument();
     expect(markup).toContain("color:var(--cat-breakage)\">1 removed");
     expect(markup).toContain("color:var(--evidence)\">2 reproduced on Opus 5.5");

@@ -8,7 +8,7 @@
 // They are plain fields: a page prompt (SV-08 to SV-14) replaces them for its new page and nothing else here changes.
 //
 // This file is imported eagerly (App.tsx), so it holds no page code and no data code: `prefetch` imports what it reads when
-// it runs. `gallery` is `/builds` and `bounties` is `/openbuilds` (SV-02 kept the keys); a later rename changes a value.
+// it runs. `gallery` is `/builds` and `openbuilds` is `/openbuilds`.
 
 import type { QueryClient } from "@tanstack/react-query";
 import type { ComponentType } from "react";
@@ -148,16 +148,16 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
     Placeholder: BuildsPlaceholder,
     frame: { board: true },
   },
-  bounties: {
-    key: "bounties",
-    pattern: SITE_NAV.bounties,
+  openbuilds: {
+    key: "openbuilds",
+    pattern: SITE_NAV.openbuilds,
     signedIn: false,
     load: () => import("@/pages/site/openbuilds/OpenBuildsFeedPage"),
     /* UX-05 P2: the feed's first screen: the posts in the address's scope (their cards' extras are inside the read), the
        reader's spaces and the busy spaces, started together. Same keys and functions as OpenBuildsFeedPage. */
     prefetch: async (_params, queryClient, { userId }) => {
       const [lib, model] = await Promise.all([import("@/lib/openbuilds"), import("@/pages/site/openbuilds/openBuildsFeedModel")]);
-      const here = window.location.pathname === SITE_NAV.bounties ? window.location.search : "";
+      const here = window.location.pathname === SITE_NAV.openbuilds ? window.location.search : "";
       const { scope, open } = model.readFeedAddress(new URLSearchParams(here), userId !== null);
       await Promise.all([
         queryClient.prefetchInfiniteQuery({
