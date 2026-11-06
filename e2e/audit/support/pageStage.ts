@@ -5,7 +5,7 @@
 import type { Page } from "@playwright/test";
 
 import { SV_BUILD_SESSIONS, SV_DRAFTS, SV_IMPORT_SESSIONS, SV_SAVES } from "../fixtures/svPages";
-import { BUILDS, installStub, withSession, withTheme } from "./harness";
+import { BUILDS, PROFILES, installStub, withSession, withTheme } from "./harness";
 import { DB_DELAY_MS } from "./pageTargets";
 import { filterRows } from "./restFilter";
 
@@ -39,6 +39,8 @@ export async function stage(page: Page, options: { auth: boolean }, spans: Span[
   await page.route(/\/rest\/v1\/import_sessions(\?|$)/, answer(SV_IMPORT_SESSIONS));
   await page.route(/\/rest\/v1\/build_sessions(\?|$)/, answer(SV_BUILD_SESSIONS));
   await page.route(/\/rest\/v1\/build_saves(\?|$)/, answer(SV_SAVES(String(BUILDS[0].id))));
+  // UX-10: a profile read by its handle gets that profile, not every profile (a `.maybeSingle()` refuses two rows).
+  await page.route(/\/rest\/v1\/profiles(\?|$)/, answer(PROFILES));
 
   // Registered last, so it runs first: hold the request, then hand it to the handlers above.
   await page.route(/\/(rest|auth|functions)\/v1\//, async (route) => {

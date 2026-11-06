@@ -99,7 +99,7 @@ const profile = (who: typeof ME, extra: Row = {}): Row => ({
   ...extra,
 });
 
-const PROFILES: Row[] = [profile(ME), profile(THEM)];
+export const PROFILES: Row[] = [profile(ME), profile(THEM)];
 
 /** Three picture shapes, so an unreserved row of cards would come out uneven. */
 const SHAPES: Array<[number, number]> = [
