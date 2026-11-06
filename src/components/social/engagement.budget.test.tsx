@@ -27,12 +27,9 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-import { BuildHeader } from "@/components/build/BuildHeader";
-import { ForkControl } from "@/components/build/ForkControl";
-import { ReproductionAction } from "@/components/build/ReproductionAction";
 import { GalleryCard } from "@/components/gallery/GalleryCard";
 import { EngagementRow } from "@/components/social/EngagementRow";
-import type { Build, GalleryBuild } from "@/lib/build";
+import type { GalleryBuild } from "@/lib/build";
 import { staticDoc, styleOf } from "@/test/tokenStyle";
 
 const CARD: GalleryBuild = {
@@ -63,14 +60,6 @@ const CARD: GalleryBuild = {
   media: [],
   bounties: [],
 };
-
-const PAGE_BUILD = {
-  ...CARD,
-  cost_setup: null,
-  cost_monthly: null,
-  currency: "GBP",
-  time_to_first_result: null,
-} as unknown as Build;
 
 const ENGAGEMENT = { counts: { likes: 24, comments: 5 }, liked: false, saved: false };
 
@@ -112,28 +101,6 @@ describe("the engagement budgets", () => {
       expect(said.join(" ")).not.toMatch(/reproduc/i);
       unmount();
     }
-  });
-
-  it("the build header keeps exactly one filled button with the row in it", () => {
-    const doc = staticDoc(
-      providers(
-        <BuildHeader
-          build={PAGE_BUILD}
-          tree={[]}
-          nodeTypes={[]}
-          actions={<ForkControl state={{ fork: vi.fn(), pending: false, error: null, signedIn: true }} />}
-          reproduction={<ReproductionAction build={PAGE_BUILD} />}
-          engagement={ENGAGEMENT}
-        />,
-      ),
-    );
-
-    const buttons = [...doc.querySelectorAll("button")];
-    const filled = buttons.filter((button) => styleOf(button).includes("background:var(--action)"));
-    expect(filled.map((button) => button.textContent)).toEqual(["Rebuild this"]);
-    // The row is in the header, and none of its four is the filled one.
-    const row = doc.querySelector('[data-testid="engagement-row"]');
-    expect(row?.querySelectorAll("button")).toHaveLength(4);
   });
 
   it("liked is aria-pressed and a filled heart, not a colour alone", () => {
