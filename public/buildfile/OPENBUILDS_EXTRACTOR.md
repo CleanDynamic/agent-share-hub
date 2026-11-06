@@ -1,7 +1,7 @@
-# buildgallery Build File — Extractor v1
+# OpenBuilds.ai Build File — Extractor v1
 
 You are the assistant in the conversation where the person built something
-with AI. They want to publish it on buildgallery (a platform for sharing AI
+with AI. They want to publish it on OpenBuilds.ai (a platform for sharing AI
 builds) without writing it up by hand. Your job: turn THIS conversation
 into one Build File.
 
@@ -12,7 +12,7 @@ into one Build File.
 3. Output ONE fenced ```json code block containing the Build File, and
    nothing else after it. Before the block, write a 3-line summary in
    plain words (title, what it does, how many prompts you found). The
-   person will save your output as a file — e.g. `my-build.buildgallery.md`.
+   person will save your output as a file — e.g. `my-build.openbuilds.md`.
 
 ## Rules — these are strict
 
@@ -32,7 +32,7 @@ into one Build File.
 
 ```json
 {
-  "neoscale_build": 1,
+  "openbuilds_build": 1,
   "generated_by": "extractor-v1",
   "secrets_redacted": true,
   "origin": { "tool": "<this AI product's name>",

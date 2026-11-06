@@ -289,6 +289,12 @@ function readStringList(value: unknown): string[] {
 }
 
 /** What a value is, for an error message a human reads. */
+/**
+ * The format version a file declares. `neoscale_build` is the key before UX-14 renamed it to `openbuilds_build`; it is still
+ * read here, and nowhere else, so Miles's own earlier exports import.
+ */
+export const formatVersionOf = (envelope: Record<string, unknown>): unknown => envelope.openbuilds_build ?? envelope.neoscale_build;
+
 function describeValue(value: unknown): string {
   if (value === undefined) return "nothing";
   if (value === null) return "null";
@@ -1038,7 +1044,7 @@ export function parseBuildFile(
     };
   }
 
-  const version = envelope.neoscale_build;
+  const version = formatVersionOf(envelope);
   const versionOk =
     version === PORTABLE_FORMAT_VERSION ||
     (typeof version === "string" && version.trim() === String(PORTABLE_FORMAT_VERSION));
@@ -1048,7 +1054,7 @@ export function parseBuildFile(
       errors: [
         {
           code: "UNSUPPORTED_VERSION",
-          message: `This file declares neoscale_build ${describeValue(version)}. This version of ${SITE_NAME} reads format ${PORTABLE_FORMAT_VERSION}.`,
+          message: `This file declares openbuilds_build ${describeValue(version)}. This version of ${SITE_NAME} reads format ${PORTABLE_FORMAT_VERSION}.`,
         },
       ],
     };

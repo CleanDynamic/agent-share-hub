@@ -3,7 +3,7 @@ Extractor and kept every prompt exactly as you sent it.
 
 ```json
 {
-  "neoscale_build": 1,
+  "openbuilds_build": 1,
   "exported_at": "2026-08-20T11:30:00.000Z",
   "source_url": "https://openbuilds.ai/b2/invoice-chaser",
   "build": {

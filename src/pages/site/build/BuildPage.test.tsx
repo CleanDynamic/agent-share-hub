@@ -256,7 +256,7 @@ describe("BuildPage (site frame)", () => {
     await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" });
     fireEvent.click(screen.getByRole("button", { name: "Download" }));
     expect(click).toHaveBeenCalledTimes(1);
-    expect((click.mock.contexts[0] as HTMLAnchorElement).download).toBe("inbox-triage.neoscale.json");
+    expect((click.mock.contexts[0] as HTMLAnchorElement).download).toBe("inbox-triage.openbuilds.json");
   });
 
   it("sends a signed-out reader to sign in, for confirming and for rebuilding", async () => {
