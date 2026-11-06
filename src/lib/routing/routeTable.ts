@@ -342,15 +342,34 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
     pattern: ["/profile/:handle", SITE_NAV.profile],
     signedIn: false,
     load: () => import("@/pages/site/profile/ProfilePage"),
+    /* UX-10 P4: with a handle, the profile, its side column and its feed's first page start together, on the page's keys. The
+       feed opens on All here; a profile whose owner opens it on another filter reads that one when the page knows it. */
     prefetch: async ({ handle }, queryClient, { userId }) => {
       const lookup = handle ?? userId;
       if (!lookup) return;
-      const { getProfileSummary } = await import("@/lib/profile/getProfileSummary");
-      await queryClient.prefetchQuery({
-        queryKey: ["profile", "getProfileSummary", lookup, userId],
-        queryFn: () => getProfileSummary(lookup, userId),
-        staleTime: 60_000,
-      });
+      const [{ getProfileSummary }, { getProfileSide }, { getProfileFeed }] = await Promise.all([
+        import("@/lib/profile/getProfileSummary"),
+        import("@/lib/profile/profileSide"),
+        import("@/lib/profile/getProfileFeed"),
+      ]);
+      await Promise.all([
+        queryClient.prefetchQuery({
+          queryKey: ["profile", "getProfileSummary", lookup, userId],
+          queryFn: () => getProfileSummary(lookup, userId),
+          staleTime: 60_000,
+        }),
+        ...(handle
+          ? [
+              queryClient.prefetchQuery({ queryKey: ["profile", "getProfileSide", handle, userId], queryFn: () => getProfileSide(handle), staleTime: 60_000 }),
+              queryClient.prefetchInfiniteQuery({
+                queryKey: ["profile", "getProfileFeed", handle, "all", userId],
+                queryFn: ({ pageParam }) => getProfileFeed(handle, { filter: "all", cursor: pageParam as string | null }),
+                initialPageParam: null as string | null,
+                staleTime: 60_000,
+              }),
+            ]
+          : []),
+      ]);
     },
     Placeholder: ProfilePlaceholder,
   },
