@@ -34,7 +34,7 @@ export function AccountGateModal({ open, onOpenChange, contentId, mode }: Accoun
           </div>
           <h3 className="text-lg font-semibold text-foreground">Account required</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            You need a free account to {mode === "purchase" ? "purchase" : "subscribe to"} content on openbuilds.ai.
+            You need a free account to {mode === "purchase" ? "purchase" : "subscribe to"} content on OpenBuilds.ai.
           </p>
           <Button onClick={handleCreateAccount} className="w-full min-h-[44px]">
             Create free account

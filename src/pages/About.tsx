@@ -2,23 +2,24 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { SeoHead } from "@/components/SeoHead";
+import { SITE_NAME } from "@/lib/site";
 import { measure } from "@/lib/theme/type";
 
 const About = () => {
   return (
     <div className="py-16 px-6">
       <SeoHead
-        title="About openbuilds.ai"
+        title="About"
         description="The community hub for AI builders and curious humans. Free to browse. Every item reviewed before it goes live."
         path="/about"
       />
       <div className="mx-auto max-w-2xl space-y-12">
         {/* Main content */}
         <div className="space-y-6">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">About openbuilds.ai</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">About {SITE_NAME}</h1>
 
           <p className="text-sm text-muted-foreground leading-relaxed" style={measure}>
-            openbuilds.ai is the community hub for people who want to use AI — not just talk about it.
+            {SITE_NAME} is the community hub for people who want to use AI — not just talk about it.
             Like Football Manager tactics forums, we let experts share the AI setups they have already
             built so that anyone — technical or not — can download and use them immediately.
           </p>

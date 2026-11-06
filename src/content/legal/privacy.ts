@@ -9,7 +9,7 @@ export const privacy: LegalText = {
   lastUpdated: "2026-11-06",
   reviewed: PRIVACY_REVIEWED,
   intro:
-    "This explains what OpenBuilds collects about you, why, who else sees it, and what you can do about it. We have tried to say only what the site actually does.",
+    "This explains what OpenBuilds.ai collects about you, why, who else sees it, and what you can do about it. We have tried to say only what the site actually does.",
   sections: [
     {
       id: "who-we-are",
@@ -17,7 +17,7 @@ export const privacy: LegalText = {
       blocks: [
         {
           kind: "p",
-          text: "OpenBuilds (openbuilds.ai) is run by {{NEED: legal name of the business or person running the site}}. We decide what happens to your data and why, which makes us the controller under UK data protection law.",
+          text: "OpenBuilds.ai is run by {{NEED: legal name of the business or person running the site}}. We decide what happens to your data and why, which makes us the controller under UK data protection law.",
         },
         {
           kind: "list",
