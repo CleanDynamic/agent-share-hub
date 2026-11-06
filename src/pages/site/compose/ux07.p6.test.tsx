@@ -1,4 +1,4 @@
-// UX-07 P6: the maker's opt-out. In the Classification sheet's Build details, beside Open a bounty: the switch Others can start
+// UX-07 P6: the maker's opt-out. In the Classification sheet's Build details, beside the other details: the switch Others can start
 // topics from this build (on by default) and its note. It writes builds.allow_as_post_source through the build layer, and never
 // blocks publishing.
 
@@ -45,11 +45,11 @@ function mount(over: Partial<SandboxCardProps>) {
 }
 
 describe("UX-07 P6: the switch in the Card", () => {
-  it("sits in Build details beside Open a bounty, on by default, with its note, and Save writes it", async () => {
+  it("sits in Build details, on by default, with its note, and Save writes it", async () => {
     const onTopicSourceSwitch = vi.fn();
     mount({ onTopicSourceSwitch });
     fireEvent.click(row("Build details"));
-    expect(row("Open a bounty")).toBeTruthy();
+    expect(screen.queryByText("Open a bounty")).toBeNull();
     fireEvent.click(row("Topics"));
     const toggle = screen.getByRole("switch", { name: TOPIC_SOURCE_LABEL });
     expect(toggle.getAttribute("aria-checked")).toBe("true");

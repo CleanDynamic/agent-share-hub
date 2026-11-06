@@ -8,7 +8,6 @@ import {
   BUILD_TABS,
   MISSING,
   anatomySubtitle,
-  askLabel,
   breakageRows,
   buildTabs,
   clockLabel,
@@ -119,7 +118,6 @@ describe("words and numbers", () => {
     expect(formatMoney(5, null)).toBe("5");
     expect(formatMoney(5, "credits")).toBe("5 CREDITS");
     expect(formatMoney(null, "GBP")).toBeNull();
-    expect(askLabel(150)).toBe("£150 ask");
   });
 
   it("says the first result in minutes, then hours", () => {
@@ -348,16 +346,15 @@ describe("where it broke", () => {
     ]);
   });
 
-  it("lists every gap still open, with the reward and a way to solve it only where a bounty is open", () => {
+  it("lists every gap still open, with what is missing", () => {
     const tree = [
       node("g1", { is_gap: true, title: "Delegation", payload: { gap_problem: "Who to hand it to." } }),
       node("g2", { is_gap: true, title: "Calendar" }),
       node("n", { title: "Not a gap" }),
     ];
-    const bounties = new Map([["g1", { bounty: { id: "x", status: "open", reward_gbp: 150 }, solutions: 0, meToo: false }]]) as never;
-    expect(openGaps(tree, bounties)).toEqual([
-      { id: "g1", title: "Delegation", problem: "Who to hand it to.", reward: "£150", solvable: true, topicId: null },
-      { id: "g2", title: "Calendar", problem: null, reward: null, solvable: false, topicId: null },
+    expect(openGaps(tree)).toEqual([
+      { id: "g1", title: "Delegation", problem: "Who to hand it to.", topicId: null },
+      { id: "g2", title: "Calendar", problem: null, topicId: null },
     ]);
   });
 });

@@ -143,7 +143,7 @@ describe("Classification: the sheet", () => {
     expect(rows[6]).toBe("Age suitabilityNot set");
     expect(rows[7]).toMatch(/Web app/);
     expect(rows[7]).toMatch(/\d questions?$/);
-    expect(rows[8]).toContain("Known issue, Build cost, Running cost per month, Time to first result, Open a bounty");
+    expect(rows[8]).toContain("Known issue, Build cost, Running cost per month, Time to first result");
   });
 
   it("shows a set Field as its last two levels, and a set Task and Tools line as values", async () => {
@@ -215,11 +215,10 @@ describe("Classification: Build details", () => {
   it("renames the fields and keeps them where they were stored", async () => {
     live();
     const onDetail = vi.fn();
-    const onGapSwitch = vi.fn();
-    mount({ onDetail, onGapSwitch });
+    mount({ onDetail });
     await screen.findByTestId("sandbox-card");
     fireEvent.click(row("Build details"));
-    for (const name of ["Known issue", "Build cost (£)", "Running cost per month (£)", "Time to first result (minutes)", "Open a bounty"]) {
+    for (const name of ["Known issue", "Build cost (£)", "Running cost per month (£)", "Time to first result (minutes)"]) {
       expect(row(name).getAttribute("aria-expanded")).toBe("false");
     }
     expect(within(card()).queryByText("Monthly cost (£)")).toBeNull();
@@ -232,14 +231,12 @@ describe("Classification: Build details", () => {
     fireEvent.change(screen.getByRole("spinbutton", { name: "Running cost per month (£)" }), { target: { value: "5" } });
     fireEvent.click(row("Time to first result (minutes)"));
     fireEvent.change(screen.getByRole("spinbutton", { name: "Time to first result (minutes)" }), { target: { value: "20" } });
-    fireEvent.click(row("Open a bounty"));
-    fireEvent.click(screen.getByRole("switch", { name: "Open a bounty" }));
-    fireEvent.change(screen.getByLabelText("What is left open"), { target: { value: "The login" } });
+    // UX-11: no "Open a bounty" row any more.
+    expect(screen.queryByText("Open a bounty")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    await waitFor(() => expect(onGapSwitch).toHaveBeenCalled());
+    await waitFor(() => expect(onDetail).toHaveBeenCalled());
     const keys = Object.fromEntries(onDetail.mock.calls.map(([key, value]) => [key, value]));
-    expect(keys).toMatchObject({ symptom: "It broke", resolution: "I fixed it", costSetup: "12", costMonthly: "5", firstResult: "20", gapProblem: "The login" });
-    expect(onGapSwitch).toHaveBeenCalledWith(true);
+    expect(keys).toMatchObject({ symptom: "It broke", resolution: "I fixed it", costSetup: "12", costMonthly: "5", firstResult: "20" });
   });
 });
 

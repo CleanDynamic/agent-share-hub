@@ -122,7 +122,7 @@ test("both lists render, and nothing asks for the older post tables", async ({ p
   await expect(draftRows(page).nth(2)).toContainText("No sessions");
   await expect(sessionRows(page)).toHaveCount(4);
   await expect(sessionRows(page).first()).toContainText("Every morning at 7");
-  await expect(page.getByRole("link", { name: "Older post drafts" })).toHaveAttribute("href", "/drafts/posts");
+  await expect(page.getByRole("link", { name: "Older post drafts" })).toHaveCount(0);
 
   expect(backend.contentRequests).toEqual([]);
 });

@@ -863,7 +863,6 @@ export const CA03_FILES: readonly string[] = [
 
   // CA-27 P5 (HeaderSearch.tsx is not listed: its look, a 5 of padding and a lucide Search, is from before CA-27, which adds one line of behaviour to it)
   "e2e/audit/composer-ca27-shots.spec.ts",
-  "src/components/shell/NavSearch.tsx",
   "src/components/shell/headerSearch.slash.test.tsx",
 
   // CA-28 P0
@@ -1152,14 +1151,7 @@ export const CA03_FILES: readonly string[] = [
 
   // SV-14
   "src/lib/build/graph.ts",
-  "src/dev/fixtures/vision/openbuilds.ts",
   "src/pages/site/openbuilds/OpenBuildsFrame.tsx",
-  "src/pages/site/openbuilds/OpenBuildsView.tsx",
-  "src/pages/site/openbuilds/OpenBuildsView.test.tsx",
-  "src/pages/site/openbuilds/openBuildsModel.ts",
-  "src/pages/site/openbuilds/openBuildsModel.test.ts",
-  "src/pages/site/openbuilds/OpenBuildsPage.tsx",
-  "src/pages/site/openbuilds/OpenBuildsPage.test.tsx",
 
   // UX-05
   "src/components/post/PostCard.tsx",
@@ -1198,10 +1190,7 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/bounty/runRequestRules.test.ts",
   "src/lib/bounty/claims.ts",
   "src/lib/bounty/claims.test.ts",
-  "src/lib/bounty/sessionOffers.ts",
   "src/lib/bounty/sessionOffersRead.ts",
-  "src/lib/bounty/sessionOffers.test.ts",
-  "src/pages/site/openbuilds/OfferSessionDialog.tsx",
   "src/pages/site/compose/OpenRequestDialog.tsx",
   "src/pages/site/compose/AskNextSessionRow.tsx",
   "src/lib/build/openRequest.ts",
@@ -1313,14 +1302,11 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/drafts/DraftsView.behaviour.test.tsx",
   "src/pages/site/drafts/DraftsView.test.tsx",
   "src/pages/site/drafts/draftsModel.ts",
-  "src/pages/site/openbuilds/openBuildsModel.test.ts",
-  "src/pages/site/openbuilds/openBuildsModel.ts",
   "src/lib/build/harnessWords.ts",
   "src/lib/build/sv27.harness.test.ts",
   "src/lib/build/deployment.ts",
   "src/lib/build/fork.ts",
   "src/lib/build/duplicate.ts",
-  "src/lib/build/buildUpdates.ts",
   "src/lib/build/modelRun.ts",
   "src/pages/site/compose/ModelRunFields.tsx",
   "src/pages/site/compose/DetailsPanel.tsx",
@@ -1343,8 +1329,6 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/making.ts",
   "src/hooks/useNodeType.ts",
   "src/pages/site/compose/useComposePrompts.ts",
-  "src/lib/build/partnership.ts",
-  "src/lib/build/deploymentNeeds.ts",
   "src/lib/classify/derive.ts",
   "src/lib/build/deploymentCost.ts",
   "src/lib/build/compare.ts",
@@ -1484,9 +1468,6 @@ export const CA03_FILES: readonly string[] = [
   // UX-09, Miles' answers
   "src/lib/notifications/keys.ts",
   "src/lib/notifications/keys.test.ts",
-  "src/lib/bounty/openRequests.ts",
-  "src/components/routing/OlderRequestsRoute.tsx",
-  "src/components/routing/OlderRequestsRoute.test.tsx",
   "src/lib/messaging/topics.ts",
   "src/lib/messaging/topics.test.ts",
   "src/components/messages/TopicShareCard.tsx",

@@ -1,5 +1,4 @@
 import { Puzzle } from 'lucide-react';
-import { SubmitSolutionButton } from './SubmitSolutionButton';
 import { useBountyProvenance } from './BountyProvenanceContext';
 
 interface MissingBlockOverlayProps {
@@ -40,7 +39,6 @@ export function MissingBlockOverlay({
   const ctx = useBountyProvenance();
   const effectiveCount =
     solutionCount ?? (slotId ? ctx?.slotSolutionCounts[slotId] ?? 0 : 0);
-  const showCta = !!slotId && !!ctx && ctx.bountyStatus !== 'solved';
   const truncated =
     description && description.length > 40 ? `${description.slice(0, 40)}…` : description;
 
@@ -96,9 +94,6 @@ export function MissingBlockOverlay({
       >
         {effectiveCount} solution{effectiveCount !== 1 ? 's' : ''}
       </span>
-      {showCta ? (
-        <SubmitSolutionButton slotKind="block" slotId={slotId!} size="block" />
-      ) : null}
     </div>
   );
 }

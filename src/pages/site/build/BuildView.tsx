@@ -200,7 +200,7 @@ export function PartRow({
   onSelect: (id: string) => void;
 }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
-  const meta = part.gap ? (part.ask ?? "left open") : part.meta;
+  const meta = part.gap ? "left open" : part.meta;
 
   return (
     <button

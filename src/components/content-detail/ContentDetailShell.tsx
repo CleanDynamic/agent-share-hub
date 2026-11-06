@@ -14,7 +14,7 @@ import { feedback } from "@/lib/theme/motion";
 interface PostMeta {
   id: string;
   slug: string;
-  postType: "blueprint" | "blog" | "bounty";
+  postType: "blueprint" | "blog";
   title: string;
   description: string;
   coverUrl?: string;
@@ -26,13 +26,6 @@ interface PostMeta {
   stageCount?: number;
   blockCount?: number;
   connectionCount?: number;
-  bountyMeta?: {
-    reward: number;
-    daysLeft: number;
-    isSolved: boolean;
-    slotsTotal: number;
-    slotsFilled: number;
-  };
   derivedAuthorBio: string;
 }
 
@@ -45,7 +38,6 @@ interface Author {
   level: number;
   customBio?: string;
   derivedBio: string;
-  isTrustedSolver: boolean;
   isFollowing: boolean;
   isFollowedByCurrentUser: boolean;
   stats: {
@@ -60,7 +52,7 @@ export interface RelatedPostCardData {
   slug: string;
   title: string;
   coverUrl?: string;
-  postType: "blueprint" | "blog" | "bounty";
+  postType: "blueprint" | "blog";
   author: { displayName: string; avatarUrl: string };
   readingMinutes: number;
 }
@@ -68,7 +60,6 @@ export interface RelatedPostCardData {
 export interface ContentDetailShellProps {
   post: PostMeta;
   author: Author;
-  bountySolvers: unknown[];
   isOwnPost: boolean;
   relatedPosts: RelatedPostCardData[];
   onBack: () => void;
@@ -79,11 +70,7 @@ export interface ContentDetailShellProps {
   onScrollProgress?: (pct: number) => void;
   onScrollActivity?: () => void;
   resultsSlot?: React.ReactNode;
-  bountyExtrasSlot?: React.ReactNode;
   /** When provided, replaces the default byline (author row + follow button). */
-  bylineSlot?: React.ReactNode;
-  /** When provided, renders ABOVE the standard header (used for bounty competition header). */
-  headerSlot?: React.ReactNode;
   children?: React.ReactNode;
 }
 
@@ -106,22 +93,12 @@ function formatCount(n: number): string {
 const TYPE_COLOR: Record<PostMeta["postType"], string> = {
   blueprint: "var(--action)",
   blog: "var(--evidence)",
-  /* A bounty post is a GAP, and the gap hue is the one the markers and the
-     solve surfaces already use. Amber cannot carry a pill label at all. */
-  bounty: "var(--cat-breakage)",
 };
 
-function PostTypePill({
-  postType,
-  bountyMeta,
-}: {
-  postType: PostMeta["postType"];
-  bountyMeta?: PostMeta["bountyMeta"];
-}) {
+function PostTypePill({ postType }: { postType: PostMeta["postType"] }) {
   const labels: Record<PostMeta["postType"], { label: string; sub?: string }> = {
     blueprint: { label: "BLUEPRINT", sub: "BUILD" },
     blog: { label: "BLOG" },
-    bounty: { label: "BOUNTY" },
   };
   const cfg = labels[postType];
   const color = TYPE_COLOR[postType];
@@ -145,33 +122,6 @@ function PostTypePill({
           <span style={{ opacity: 0.6, marginLeft: 6 }}>| {cfg.sub}</span>
         )}
       </span>
-      {postType === "bounty" && bountyMeta?.isSolved && (
-        <span
-          style={{
-            fontFamily: "var(--font-ui)",
-            fontSize: 10,
-            fontWeight: 700,
-            color: "var(--evidence)",
-            background: "color-mix(in srgb, var(--evidence) 14%, transparent)",
-            border: "1px solid color-mix(in srgb, var(--evidence) 30%, transparent)",
-            padding: "3px 8px",
-            borderRadius: 4,
-          }}
-        >
-          SOLVED
-        </span>
-      )}
-      {postType === "bounty" && !bountyMeta?.isSolved && bountyMeta && (
-        <span
-          style={{
-            fontFamily: "var(--font-ui)",
-            fontSize: 11,
-            color: "var(--text2)",
-          }}
-        >
-          Open · {bountyMeta.slotsFilled} of {bountyMeta.slotsTotal} slots
-        </span>
-      )}
     </div>
   );
 }
@@ -280,9 +230,6 @@ export function ContentDetailShell({
   onScrollProgress,
   onScrollActivity,
   resultsSlot,
-  bountyExtrasSlot,
-  bylineSlot,
-  headerSlot,
   children,
 }: ContentDetailShellProps) {
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -437,9 +384,8 @@ export function ContentDetailShell({
 
       {/* POST HEADER REGION */}
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "32px 24px 0" }}>
-        {headerSlot}
         <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
-          <PostTypePill postType={post.postType} bountyMeta={post.bountyMeta} />
+          <PostTypePill postType={post.postType} />
           <span style={{ fontSize: 12, color: "var(--text2)", fontFamily: "var(--font-ui)" }}>
             {formatRelativeTime(post.publishedAt)}
           </span>
@@ -515,9 +461,6 @@ export function ContentDetailShell({
         )}
 
         {/* Byline */}
-        {bylineSlot ? (
-          <div style={{ marginBottom: 12 }}>{bylineSlot}</div>
-        ) : (
         <div
           style={{
             display: "flex",
@@ -574,7 +517,6 @@ export function ContentDetailShell({
             </button>
           )}
         </div>
-        )}
 
         {author.derivedBio && (
           <div
@@ -634,14 +576,6 @@ export function ContentDetailShell({
               </span>
             </>
           )}
-          {post.postType === "bounty" && post.bountyMeta && (
-            <>
-              <MetaSeparator />
-              <span>
-                Reward: ${post.bountyMeta.reward} · {post.bountyMeta.daysLeft} days left
-              </span>
-            </>
-          )}
         </div>
       </div>
 
@@ -655,7 +589,6 @@ export function ContentDetailShell({
       {/* ARTICLE BODY */}
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "0 24px 32px" }}>
         {children}
-        {post.postType === "bounty" && bountyExtrasSlot}
       </div>
 
       {/* AUTHOR INFO CARD */}
@@ -684,20 +617,6 @@ export function ContentDetailShell({
                   </span>
                   {author.isVerified && <BadgeCheck size={14} color="var(--evidence)" />}
                   <span style={{ fontSize: 11, color: "var(--text2)" }}>Lv.{author.level}</span>
-                  {author.isTrustedSolver && (
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        color: "var(--evidence)",
-                        background: "color-mix(in srgb, var(--evidence) 12%, transparent)",
-                        padding: "2px 6px",
-                        borderRadius: 4,
-                      }}
-                    >
-                      Trusted Solver
-                    </span>
-                  )}
                 </div>
                 <div style={{ fontSize: 12, color: "var(--text2)" }}>@{author.handle}</div>
               </div>
@@ -746,7 +665,7 @@ export function ContentDetailShell({
         <div style={{ maxWidth: 960, margin: "32px auto 0", padding: "0 24px" }}>
           <div style={{ marginBottom: 16 }}>
             <h3 style={{ fontFamily: "var(--font-ui)", fontSize: 16, fontWeight: 600, color: "var(--text)", margin: 0 }}>
-              Related {post.postType === "bounty" ? "bounties" : post.postType === "blog" ? "blogs" : "blueprints"}
+              Related {post.postType === "blog" ? "blogs" : "blueprints"}
             </h3>
             <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text2)", margin: "4px 0 0" }}>
               From similar topics or referencing this content

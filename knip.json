@@ -15,10 +15,6 @@
   ],
   "ignoreExportsUsedInFile": true,
   "ignore": [
-    "src/components/layout/LeftPanel.tsx",
-    "src/components/layout/RightPanelExplore.tsx",
-    "src/hooks/useDraftCount.ts",
-    "src/hooks/useNavBadges.ts",
     "src/pages/dev/VisionNotBuilt.tsx",
     "supabase/functions/**/*.test.ts"
   ]

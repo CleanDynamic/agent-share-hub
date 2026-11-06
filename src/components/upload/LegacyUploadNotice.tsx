@@ -34,7 +34,7 @@ import type { ReactNode } from "react";
    for anything below 18px; they are 400 now.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-export function LegacyUploadNotice({ bounty = false }: { bounty?: boolean }) {
+export function LegacyUploadNotice() {
   return (
     <div
       data-visual-slot="legacy-upload-notice"
@@ -68,15 +68,6 @@ export function LegacyUploadNotice({ bounty = false }: { bounty?: boolean }) {
           Blueprints are now built in the build workspace. This editor still
           saves and publishes — finish anything you have in progress here.
         </p>
-        {/* NS-P54. Only on the two bounty routes: the blueprint and blog
-            editors still create, and telling their creators about a retirement
-            that is not theirs would be noise. */}
-        {bounty && (
-          <p style={{ fontSize: 13, fontWeight: 400, color: "var(--text2)" }}>
-            Bounties are now part of publishing a build — mark a part unsolved
-            in the composer.
-          </p>
-        )}
       </div>
 
       <Link
@@ -109,19 +100,13 @@ export function LegacyUploadNotice({ bounty = false }: { bounty?: boolean }) {
  * and giving the page region flex:1/minHeight:0 leaves that chain intact — the
  * page still owns its scrolling, the banner stays put above it.
  */
-export function LegacyUploadRoute({
-  children,
-  bounty = false,
-}: {
-  children: ReactNode;
-  bounty?: boolean;
-}) {
+export function LegacyUploadRoute({ children }: { children: ReactNode }) {
   return (
     <div
       data-visual-slot="legacy-upload-route"
       style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}
     >
-      <LegacyUploadNotice bounty={bounty} />
+      <LegacyUploadNotice />
       <div style={{ flex: "1 1 auto", minHeight: 0 }}>{children}</div>
     </div>
   );

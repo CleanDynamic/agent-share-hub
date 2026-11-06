@@ -27,7 +27,7 @@
 // authenticated.
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join, sep } from "node:path";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const SEED_FUNCTIONS = ["seed-demo-data", "seed-ecosystem", "seed-new-posts", "update-seed-data"];
@@ -48,7 +48,6 @@ const PICKER_FILES = [
   join("src", "components", "upload", "UploadTypePicker.tsx"),
   join("src", "pages", "UploadTypeSelector.tsx"),
 ];
-const BOUNTY_LEGACY = join("src", "lib", "bounty-legacy") + sep;
 
 /** A migration's SQL with its comments removed, so prose about a statement is not taken for one. */
 function statements(file: string): string {
@@ -107,7 +106,6 @@ describe("RC decisions", () => {
   it("no new-build control opens a type picker", () => {
     const openers = sourceFiles("src")
       .filter((file) => !PICKER_FILES.includes(file))
-      .filter((file) => !file.startsWith(BOUNTY_LEGACY))
       .filter((file) => !/\.test\.tsx?$/.test(file))
       .filter((file) => readFileSync(file, "utf8").includes("openUploadTypePicker("));
     expect(openers).toEqual([]);

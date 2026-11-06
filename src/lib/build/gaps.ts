@@ -69,20 +69,6 @@ export function gapProblem(payload: Json | null | undefined): string {
 }
 
 /**
- * The payload patch that stores a problem statement, or clears it.
- *
- * A merge patch, for patchPayload — the key is set to null rather than deleted
- * when the creator empties the field, because the writer merges what it is
- * given into the payload as it stands and there is no "remove this key"
- * instruction in that contract. null reads back as "" through gapProblem,
- * which is what an empty field means.
- */
-export function gapProblemPatch(text: string): NodePayload {
-  const trimmed = text.trim();
-  return { [GAP_PROBLEM_KEY]: trimmed === "" ? null : text };
-}
-
-/**
  * Every PLACED node flagged as a gap, depth first — the order the record reads
  * in, and the order the publish sheet lists them in.
  *

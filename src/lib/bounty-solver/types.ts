@@ -69,12 +69,4 @@ export interface ThreadedBountyComment {
   isFromAcceptedSolver: boolean;
 }
 
-export type DiscussionFilter =
-  | "all"
-  | "from_author"
-  | "from_solvers"
-  | "mentions"
-  | "unread";
-
-export type DiscussionSort = "newest" | "oldest" | "most_reactions";
 export type SolutionsSort = "most_votes" | "newest" | "oldest" | "mine";

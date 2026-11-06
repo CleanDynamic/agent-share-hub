@@ -25,8 +25,6 @@ const gap = (over: Partial<OpenGapView> = {}): OpenGapView => ({
   id: "g1",
   title: "Auth for the second account",
   problem: null,
-  reward: null,
-  solvable: false,
   topicId: null,
   ...over,
 });
@@ -66,41 +64,30 @@ describe("UX-09 P1: Start a topic on each breakage row", () => {
 
 describe("UX-09 P1: a gap's Solve it is Reply", () => {
   it("no Solve it is left", () => {
-    render(<BreakageBody breakage={{ rows: [], gaps: [gap({ solvable: true }), gap({ id: "g2", topicId: "t-1" })], onSolve: vi.fn(), onReply: vi.fn() }} />);
+    render(<BreakageBody breakage={{ rows: [], gaps: [gap(), gap({ id: "g2", topicId: "t-1" })], onReply: vi.fn() }} />);
     expect(screen.queryByText("Solve it")).toBeNull();
     expect(screen.queryByRole("button", { name: /Solve it/ })).toBeNull();
   });
 
   it("a gap with a still-open topic replies in that topic", () => {
     const onReply = vi.fn();
-    const onSolve = vi.fn();
-    render(<BreakageBody breakage={{ rows: [], gaps: [gap({ topicId: "t-1", solvable: true })], onSolve, onReply }} />);
+    render(<BreakageBody breakage={{ rows: [], gaps: [gap({ topicId: "t-1" })], onReply }} />);
     const button = screen.getByRole("button", { name: "Reply: Auth for the second account" });
     expect(button.textContent).toBe("Reply");
     fireEvent.click(button);
     expect(onReply).toHaveBeenCalledWith("t-1");
-    expect(onSolve).not.toHaveBeenCalled();
-  });
-
-  it("a gap with only an old request still goes to its solve sheet", () => {
-    const onReply = vi.fn();
-    const onSolve = vi.fn();
-    render(<BreakageBody breakage={{ rows: [], gaps: [gap({ solvable: true })], onSolve, onReply }} />);
-    fireEvent.click(screen.getByRole("button", { name: "Reply: Auth for the second account" }));
-    expect(onSolve).toHaveBeenCalledWith("g1");
-    expect(onReply).not.toHaveBeenCalled();
   });
 
   it("a gap with neither draws no Reply", () => {
-    render(<BreakageBody breakage={{ rows: [], gaps: [gap()], onSolve: vi.fn(), onReply: vi.fn() }} />);
+    render(<BreakageBody breakage={{ rows: [], gaps: [gap()], onReply: vi.fn() }} />);
     expect(screen.queryByRole("button", { name: /^Reply/ })).toBeNull();
   });
 
   it("openGaps takes the still-open topic about the gap, newest given first", () => {
     const tree = [{ id: "g1", type: "step", title: "Auth", is_gap: true, payload: {}, children: [] }] as unknown as Parameters<typeof openGaps>[0];
-    const gaps = openGaps(tree, new Map(), new Map([["g1", "t-9"]]));
+    const gaps = openGaps(tree, new Map([["g1", "t-9"]]));
     expect(gaps[0]?.topicId).toBe("t-9");
-    expect(openGaps(tree, new Map())[0]?.topicId).toBeNull();
+    expect(openGaps(tree)[0]?.topicId).toBeNull();
   });
 });
 
