@@ -527,7 +527,7 @@ export function staleLayers(layers: BuildLayer[], hash: string | null): BuildLay
 // a fact about the build, and a creator on another machine being offered the
 // review again is the harmless side of the trade.
 
-const DECLINED_PREFIX = "neoscale.layer-review.declined.";
+const DECLINED_PREFIX = "openbuilds.layer-review.declined.";
 
 /** A hash that could not be computed still needs a stable key. */
 function declineValue(hash: string | null): string {
