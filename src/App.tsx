@@ -78,7 +78,6 @@ const LegacyDraftsPage = lazy(() => import("./pages/Drafts"));
 const PostPreviewPage = lazy(() => import("./pages/PostPreview"));
 const PublishMetadata = lazy(() => import("./pages/PublishMetadata"));
 const ContentEditPage = lazy(() => import("./pages/ContentEdit"));
-const BountyUpload = lazy(() => import("@/pages/BountyUpload"));
 
 // The gallery. Its own chunk: a reader who never opens it never pays for the
 // card bodies. Reachable from the primary navigation (RC-P05), directly, and
@@ -156,10 +155,6 @@ const legacyCompose = (
 // The Build File kit: two documents and the three steps that use them. Its
 // own chunk — the prose is only read by someone who came to import a build.
 const ImportPage = lazy(() => import("./pages/ImportPage"));
-// The conversion offer for one existing post. Its own chunk and its own route:
-// the affordance belongs on the creator's post page, and ContentDetail is on
-// the existing content path, which this rebuild does not edit.
-const ConvertPrompt = lazy(() => import("./components/build/ConvertPrompt"));
 // EX-P03 — the OAuth consent screen. Its own chunk: the backend's authorization
 // path points every third-party application here, but a reader who never
 // authorizes one should not carry the page, and nothing in the application links
@@ -292,15 +287,15 @@ const App = () => (
                 {/* RC-P05 — the old discovery addresses. Each one duplicated
                     the Gallery, so each now lands on it (hicks-law › Remedies
                     1 Remove); the addresses stay reachable so a bookmark is
-                    not a 404. /search carries its query across. The page
-                    files stay until RC-P29 deletes them. */}
-                <Route path="/browse" element={<Navigate to="/builds" replace />} />
-                <Route path="/discover" element={<Navigate to="/builds" replace />} />
-                <Route path="/discover-legacy" element={<Navigate to="/builds" replace />} />
-                <Route path="/recent" element={<Navigate to="/builds" replace />} />
-                <Route path="/fyp" element={<Navigate to="/builds" replace />} />
+                    not a 404. UX-11: they keep the search string and the hash,
+                    as /search does. */}
+                <Route path="/browse" element={<KeepSearchRedirect to="/builds" />} />
+                <Route path="/discover" element={<KeepSearchRedirect to="/builds" />} />
+                <Route path="/discover-legacy" element={<KeepSearchRedirect to="/builds" />} />
+                <Route path="/recent" element={<KeepSearchRedirect to="/builds" />} />
+                <Route path="/fyp" element={<KeepSearchRedirect to="/builds" />} />
                 <Route path="/search" element={<SearchRedirect />} />
-                <Route path="/category/:slug" element={<Navigate to="/builds" replace />} />
+                <Route path="/category/:slug" element={<KeepSearchRedirect to="/builds" />} />
                 {/* The previous publishing tool. Still registered, still
                     saving, still publishing — wrapped in a banner that names
                     it as previous and links to the replacement. No redirect:
@@ -386,7 +381,7 @@ const App = () => (
                 <Route path="/drafts/posts" element={<ProtectedRoute><LegacyDraftsPage /></ProtectedRoute>} />
                 <Route path="/upload/preview/:draftId" element={<ProtectedRoute><PostPreviewPage /></ProtectedRoute>} />
                 <Route path="/publish/:contentItemId" element={<ProtectedRoute><PublishMetadata /></ProtectedRoute>} />
-                <Route path="/feed" element={<Navigate to="/builds" replace />} />
+                <Route path="/feed" element={<KeepSearchRedirect to="/builds" />} />
                 {/* UI-P45 — /connect, in the frame. Public: it reads nothing and asks nobody to sign in. */}
                 <Route
                   path="/connect"
@@ -409,14 +404,9 @@ const App = () => (
                 <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
                 <Route path="/messages/:threadId" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
                 <Route path="/analytics" element={<RouteBoundary><ProtectedRoute><Analytics /></ProtectedRoute></RouteBoundary>} />
-                {/* NS-P54. The standalone bounty form, retired the same way
-                    the previous publishing tool was: the route stays
-                    registered so a bookmark is not a 404, the notice above it
-                    says where bounties live now, and the submit is frozen
-                    behind src/lib/bounty-legacy/flags.ts. ProtectedRoute stays
-                    outermost — a signed-out visitor still meets the login
-                    redirect, not a notice over one. */}
-                <Route path="/bounty/new" element={<ProtectedRoute><LegacyUploadRoute bounty><BountyUpload /></LegacyUploadRoute></ProtectedRoute>} />
+                {/* UX-11: the standalone bounty form (NS-P54 froze its submit) is gone. The address lands on the composer, where an ask
+                    is made by marking a step still open (UX-08). A signed-out visitor meets the composer's own login redirect. */}
+                <Route path="/bounty/new" element={<KeepSearchRedirect to="/compose/new" />} />
                 {WideDemo && (
                   <Route
                     path="/dev/wide"
@@ -516,6 +506,9 @@ const App = () => (
                 {/* Solve route for a specific bounty, inside its own RouteBoundary. */}
                 <Route path="/bounties/:bountyId/solve" element={<RouteBoundary><BountySolveShowPage /></RouteBoundary>} />
                 <Route path="/openbuilds/:bountyId/solve" element={<RouteBoundary><BountySolveShowPage /></RouteBoundary>} />
+                {/* UX-11: converting a post is authoring, and the composer has its own window for it (ConvertWindow). The old address lands
+                    on Drafts. It sits inside Layout because the redirect draws Drafts' placeholder, which needs the frame. */}
+                <Route path="/convert/:contentItemId" element={<KeepSearchRedirect to="/drafts" />} />
                 <Route path="/import" element={<ImportPage />} />
                 {/* UI-P47: the composer. /compose/new and /compose/:buildId are children of ONE route on purpose: the first
                     change makes the draft and replaces the URL, and React keeps the page (and the cursor in its field)
@@ -560,7 +553,6 @@ const App = () => (
               {/* UI-P47: /compose/start is the old intake (paste a transcript, a repo) as it always was. The composer
                   itself moved inside Layout (SV-04 P4). */}
               <Route path="/compose/start" element={<ComposeNew />} />
-              <Route path="/convert/:contentItemId" element={<ConvertPrompt />} />
               {/* ── EX-P03 — /oauth/consent.
 
                   OUT HERE FOR A DIFFERENT REASON THAN THE FOUR ABOVE. They are
