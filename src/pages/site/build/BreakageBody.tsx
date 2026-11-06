@@ -7,7 +7,7 @@
    opens the replay there.
 
    Then every gap still open, as a dashed breakage card: what is missing, the
-   reward when a bounty pays for it, and the one primary, "Reply" (UX-09 P1,
+   and the one primary, "Reply" (UX-09 P1,
    which renamed it): the still-open topic's reply box when the gap has one,
    else that bounty's solve sheet, as before.
 
@@ -82,8 +82,8 @@ function Row({ row, onOpenReplay, onStartTopic }: { row: BreakageRowView; onOpen
   );
 }
 
-function Gap({ gap, onSolve, onReply }: { gap: OpenGapView; onSolve?: (id: string) => void; onReply?: (topicId: string) => void }) {
-  const reply = gap.topicId && onReply ? () => onReply(gap.topicId as string) : gap.solvable && onSolve ? () => onSolve(gap.id) : null;
+function Gap({ gap, onReply }: { gap: OpenGapView; onReply?: (topicId: string) => void }) {
+  const reply = gap.topicId && onReply ? () => onReply(gap.topicId as string) : null;
   return (
     <li
       data-testid="build-open-gap"
@@ -106,7 +106,6 @@ function Gap({ gap, onSolve, onReply }: { gap: OpenGapView; onSolve?: (id: strin
         <p style={{ margin: 0, color: t.text2 }}>{gap.problem ?? "Left open on purpose: the build works without it."}</p>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-        {gap.reward ? <span style={{ fontFamily: DM_MONO, fontSize: 12, color: t.catBreakage }}>{gap.reward}</span> : null}
         {reply ? (
           <Button variant="primary" size={30} fontSize={12} aria-label={`Reply: ${gap.title}`} onClick={reply}>
             Reply
@@ -118,7 +117,7 @@ function Gap({ gap, onSolve, onReply }: { gap: OpenGapView; onSolve?: (id: strin
 }
 
 export function BreakageBody({ breakage }: { breakage: BreakageBodyView }) {
-  const { rows, gaps, onOpenReplay, onSolve, onReply, onStartTopic } = breakage;
+  const { rows, gaps, onOpenReplay, onReply, onStartTopic } = breakage;
 
   if (rows.length === 0 && gaps.length === 0) {
     return (
@@ -154,7 +153,7 @@ export function BreakageBody({ breakage }: { breakage: BreakageBodyView }) {
           </Eyebrow>
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
             {gaps.map((gap) => (
-              <Gap key={gap.id} gap={gap} onSolve={onSolve} onReply={onReply} />
+              <Gap key={gap.id} gap={gap} onReply={onReply} />
             ))}
           </ul>
         </div>
