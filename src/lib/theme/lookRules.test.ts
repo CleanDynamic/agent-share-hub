@@ -1504,6 +1504,14 @@ export const CA03_FILES: readonly string[] = [
   "src/components/post/media/cropStyle.ts",
   "src/components/post/media/ux10.p2.test.tsx",
   "src/components/post/media/postDialogSnapshot.test.tsx",
+  "src/lib/build/media.ts",
+  "src/lib/profile/pictures.ts",
+  "src/lib/profile/pictures.test.ts",
+  "src/lib/profile/avatarCrop.ts",
+  "src/components/brand/Avatar.tsx",
+  "src/components/brand/Avatar.ux10.test.tsx",
+  "src/pages/site/profile/useProfilePictures.tsx",
+  "src/pages/site/profile/useProfilePictures.test.tsx",
 ];
 
 /**
