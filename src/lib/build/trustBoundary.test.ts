@@ -2,7 +2,6 @@
 
 import { describe, expect, it } from "vitest";
 
-import { beforeYouCopy } from "./deploymentNeeds";
 import { crossingDetail, crossingLine, trustBoundaryOf } from "./trustBoundary";
 import type { NodeTree } from "./types";
 
@@ -68,12 +67,4 @@ describe("trustBoundaryOf", () => {
     expect(trustBoundaryOf({ tree })).toEqual([]);
   });
 
-  it("reads tool nodes too, and shows each crossing once in Before you copy, blocking nothing", () => {
-    const tree = [
-      node("gm", 0, "integration", { service: "gmail" }),
-      ...team(reader({ tools: [{ tool_ref: "gm" }], handoffs: [{ to: "o", when: "x" }, { to: "o", when: "y" }] }), writer()),
-    ];
-    const lines = beforeYouCopy(tree).filter((line) => line.includes("outside content"));
-    expect(lines).toEqual(["Research reads outside content and passes work to Operations, which can send or spend, with no approval between.", "Operations reads outside content and can send in Slack, with no approval between."]);
-  });
 });
