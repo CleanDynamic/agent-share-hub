@@ -97,8 +97,7 @@ export function composeViewProps(state: DesignState = "populated"): ComposeViewP
     onToggleMadeWith: noop,
     onAddMadeWith: noop,
 
-    details: { symptom: "", resolution: "", costMonthly: "", costSetup: "", firstResult: "", gapOn: false, gapProblem: "" },
+    details: { symptom: "", resolution: "", costMonthly: "", costSetup: "", firstResult: "" },
     onDetail: noop,
-    onGapSwitch: noop,
   };
 }

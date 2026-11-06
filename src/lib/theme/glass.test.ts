@@ -28,10 +28,6 @@ const IS_TEST = /\.(test|spec)\.tsx?$/;
  * only shrink.
  */
 const EXEMPT: Record<string, string> = {
-  "src/components/layout/RightPanelExplore.tsx":
-    "An externally-supplied visual shell (neoscale-ui RULE 3, code-review rule 5). " +
-    "Editing it is an automatic fail, so its blur is recorded rather than changed. " +
-    "It is one surface, on the Explore rail, and the sweep measures it every run.",
 };
 
 function walk(dir: string, out: string[] = []): string[] {

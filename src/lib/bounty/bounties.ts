@@ -10,7 +10,6 @@ import { BUILD_COLUMNS } from "@/lib/build/builds";
 import { countOpenBountyBuilds } from "@/lib/build/gallery";
 import { NODE_COLUMNS } from "@/lib/build/nodes";
 import type { Build, BuildNode } from "@/lib/build/types";
-import { isMissingColumn } from "@/lib/classify/storage";
 import { myMeToo } from "./meToo";
 import { countSolutionsByBounty } from "./solutions";
 import {
@@ -37,25 +36,6 @@ export const OPEN_BOUNTIES_PAGE_SIZE = 20;
 /** The board never hands back more than this in one call, whatever it asks for. */
 const OPEN_BOUNTIES_MAX = 100;
 
-export interface CreateBountyForGapInput {
-  buildId: string;
-  /**
-   * The gap node this bounty is the header for. Omit it for a build-level ask
-   * with no single node named — legal in the schema, and not solvable by node
-   * substitution, so acceptSolution refuses it.
-   */
-  nodeId?: string | null;
-  /** Cash reward in pounds. NUMERIC on the column — never a float literal. */
-  rewardGbp?: number | null;
-  closesAt?: string | null;
-  /** SV-21: what is wrong, in words, for a request that names no gap node (a request from a failed run). */
-  problem?: string | null;
-  /** SV-21: the `build_reproductions` row a request was opened from. */
-  fromRunId?: string | null;
-  /** SV-21: a request for a session or a part of the build, by its key in `making`. Names no gap node. */
-  target?: { size: "session" | "part"; key: string } | null;
-}
-
 export interface ListOpenBountiesOptions {
   limit?: number;
   /**
@@ -73,96 +53,6 @@ export interface OpenBountiesPage {
   bounties: Bounty[];
   /** Pass as `before` for the next page. Null when this page is the last one. */
   nextCursor: string | null;
-}
-
-/**
- * File a bounty against a gap in a build.
- *
- * REFUSED, in this order and before anything is written: a build that does not
- * exist, a node that belongs to another build, a node that is not a gap, and a
- * gap that already has a bounty. The first three are also enforced by
- * trg_bounties_gap_node_valid, which is the guarantee — this check is the
- * message, because "bounties.gap_node_id 4f… is not a gap node of build 9c…" is
- * not a sentence to put in front of a creator.
- *
- * author_id is the BUILD'S CREATOR, read here rather than taken from the
- * caller. NS-P45's INSERT policy only admits a row whose author owns the home
- * it names, so a caller-supplied author_id could only ever be the same value or
- * a rejected write, and reading it means one fewer thing a caller can get wrong.
- */
-export async function createBountyForGap({
-  buildId,
-  nodeId = null,
-  rewardGbp = null,
-  closesAt = null,
-  problem = null,
-  fromRunId = null,
-  target = null,
-}: CreateBountyForGapInput): Promise<Bounty> {
-  const { data: build, error: buildError } = await supabase
-    .from("builds")
-    .select("id, creator_id")
-    .eq("id", buildId)
-    .maybeSingle();
-  if (buildError) throw bountyLayerError("createBountyForGap (build)", buildError);
-  if (!build) {
-    throw new Error(`Build ${buildId} does not exist, so it cannot carry a bounty`);
-  }
-
-  if (nodeId) {
-    const { data: node, error: nodeError } = await supabase
-      .from("build_nodes")
-      .select("id, build_id, is_gap, title")
-      .eq("id", nodeId)
-      .maybeSingle();
-    if (nodeError) throw bountyLayerError("createBountyForGap (node)", nodeError);
-    if (!node) {
-      throw new Error(`Node ${nodeId} does not exist, so it cannot be a gap`);
-    }
-    if ((node as { build_id: string }).build_id !== buildId) {
-      throw new Error("That node belongs to a different build");
-    }
-    if (!(node as { is_gap: boolean }).is_gap) {
-      throw new Error(
-        `“${(node as { title: string | null }).title ?? "That node"}” is not marked as a gap, so there is nothing to ask for`,
-      );
-    }
-  }
-
-  // SV-21: written only when given, so a plain request never names a column the database may not have yet. The generated
-  // types do not know them until they are regenerated.
-  const columnsOfRun: object = {
-    ...(problem ? { problem } : null),
-    ...(fromRunId ? { from_run_id: fromRunId } : null),
-    ...(target ? { size: target.size, target_key: target.key } : null),
-  };
-
-  const { data, error } = await supabase
-    .from("bounties")
-    .insert({
-      build_id: buildId,
-      gap_node_id: nodeId,
-      author_id: (build as { creator_id: string }).creator_id,
-      status: "open",
-      reward_gbp: rewardGbp,
-      closes_at: closesAt,
-      ...columnsOfRun,
-    })
-    .select(BOUNTY_COLUMNS)
-    .single();
-
-  // 23505 is idx_bounties_gap_unique: one bounty per gap, which is a rule a
-  // creator can hit by double-clicking and deserves to hear in their own terms.
-  if (error) {
-    if ((error as { code?: string }).code === "23505") {
-      throw new Error(fromRunId ? "That run already has a request" : target ? `That ${target.size} already has a request` : "That gap already has a bounty on it");
-    }
-    if ((problem || fromRunId || target) && isMissingColumn(error)) {
-      throw new Error("Requests of this kind are not available yet");
-    }
-    throw bountyLayerError("createBountyForGap", error);
-  }
-  return data as Bounty;
 }
 
 /**

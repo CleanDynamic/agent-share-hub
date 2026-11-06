@@ -42,12 +42,12 @@ import { saveItem, savedInBuild, unsaveItem } from "@/lib/library/savedItems";
 import { reportError } from "@/lib/errors/report";
 import { CreditLine } from "@/components/build/CreditLine";
 import { useForkBuild } from "@/components/build/ForkControl";
-import { GapPanel, SolvedCredit } from "@/components/build/GapPanel";
 import { MEDIA_WIDTH, useMediaSrc, type ResolveMedia } from "@/components/build/MediaFigure";
 import { producedAt } from "@/components/build/Replay";
 import { getNodeCopyText, resolveRenderer } from "@/components/build/renderers";
 import { GalleryCard } from "@/components/gallery/GalleryCard";
 import { CARD_THREAD_WIDTH, cardMedia, useSignedMedia, type CardMedia } from "@/components/gallery/cardMedia";
+import { listHandles } from "@/lib/profile/handles";
 import { ReportDialog } from "@/components/moderation/ReportDialog";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { useCrumbTitle } from "@/components/shell/useBreadcrumb";
@@ -55,13 +55,6 @@ import { Comments } from "@/components/social/Comments";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { engagementFor, useEngagement } from "@/hooks/useEngagement";
-import {
-  listBuildBounties,
-  listSolutionBuilds,
-  listSolverHandles,
-  type BuildBounty,
-  type SolutionBuild,
-} from "@/lib/bounty";
 import {
   LAYER_BLURB,
   MINIMUM_PUBLISHABLE_SCORE,
@@ -137,7 +130,6 @@ import { failedRunDraft } from "@/pages/site/home/runTopic";
 import { PostingWindows } from "@/pages/site/openbuilds/PostingWindows";
 import { getClassification } from "@/lib/classify/storage";
 import {
-  askLabel,
   asMaking,
   breakageRows,
   buildTabs,
@@ -169,15 +161,6 @@ import { ResultFrame } from "./ResultFrame";
 import { RunDialog, type RunSubmission } from "./RunDialog";
 import { LayerSteps, RunBody } from "./RunBody";
 
-/**
- * The bounty's solve sheet, opened from "Solve it" on Where it broke. Lazy for
- * the reason GapPanel gives: it renders the gap type's whole form, and none of
- * that belongs in the chunk a reader downloads to read a build.
- */
-const SolvePanel = lazy(() =>
-  import("@/components/bounty/SolvePanel").then((module) => ({ default: module.SolvePanel })),
-);
-
 /** A build record does not change while a reader is looking at it. */
 const STALE_TIME = 60_000;
 
@@ -188,19 +171,6 @@ const recordKey = (slug: string) => ["build", "getBuildBySlug", slug] as const;
 /** Every placed node by id: what renderers resolve references through. */
 function indexTree(tree: readonly NodeTree[]): Map<string, BuildNode> {
   return new Map(partsInOrder(tree).map((node) => [node.id, node]));
-}
-
-/** The solver a bounty credited on this node (source_ref = {source: 'bounty', solver_id, …}). */
-function bountyRef(node: BuildNode, key: "solver_id" | "solution_build_id"): string | null {
-  const ref = node.source_ref;
-  if (!ref || typeof ref !== "object" || Array.isArray(ref)) return null;
-  const record = ref as Record<string, unknown>;
-  if (record.source !== "bounty") return null;
-  return typeof record[key] === "string" ? (record[key] as string) : null;
-}
-
-function idsIn(tree: readonly NodeTree[], key: "solver_id" | "solution_build_id"): string[] {
-  return [...new Set(partsInOrder(tree).map((node) => bountyRef(node, key)).filter((id): id is string => Boolean(id)))];
 }
 
 /** The creator's own words for the picture, else the node's title, else the build's. */
@@ -291,7 +261,6 @@ function PartContent({
   understand,
   resolveNode,
   resolveMedia,
-  footer,
 }: {
   node: BuildNode;
   nodeType: NodeType | undefined;
@@ -301,7 +270,6 @@ function PartContent({
   understand: BuildLayer | null;
   resolveNode: (id: string) => BuildNode | undefined;
   resolveMedia: ResolveMedia;
-  footer: ReactNode;
 }) {
   if (mode === "understand") {
     const steps = (understand?.content.steps ?? []).filter((step) => step.node_ref === node.id && step.body.trim());
@@ -317,7 +285,6 @@ function PartContent({
         ) : (
           <p style={{ margin: 0, color: t.text2 }}>There is no plain-language reading of this part yet.</p>
         )}
-        {footer}
       </div>
     );
   }
@@ -327,7 +294,6 @@ function PartContent({
     <div style={{ display: "flex", flexDirection: "column", gap: 7, minWidth: 0 }} data-node-id={node.id}>
       {/* A result says what it is and when before it shows itself (UI-P30). */}
       {nodeType?.category === "evidence" ? <ResultFrame date={evidenceDate(node, events)}>{body}</ResultFrame> : body}
-      {footer}
     </div>
   );
 }
@@ -436,14 +402,6 @@ export function BuildPage() {
     staleTime: STALE_TIME,
     refetchOnWindowFocus: false,
   });
-  const bounties = useQuery<BuildBounty[]>({
-    queryKey: ["bounty", "listBuildBounties", buildId, user?.id ?? null],
-    queryFn: () => listBuildBounties({ buildId: buildId as string, viewerId: user?.id ?? null }),
-    enabled: Boolean(buildId),
-    staleTime: STALE_TIME,
-    refetchOnWindowFocus: false,
-  });
-
   /* A rebuild's Δ needs its source's whole record: read once, only for a rebuild. */
   const sourceId = build?.source_title_at_fork ? build.parent_build_id : null;
   const source = useQuery<BuildRecord | null>({
@@ -454,14 +412,6 @@ export function BuildPage() {
     refetchOnWindowFocus: false,
   });
 
-  const solverIds = useMemo(() => idsIn(tree, "solver_id"), [tree]);
-  const solverHandles = useQuery<Map<string, string | null>>({
-    queryKey: ["bounty", "listSolverHandles", solverIds.join(",")],
-    queryFn: () => listSolverHandles(solverIds),
-    enabled: solverIds.length > 0,
-    staleTime: STALE_TIME,
-    refetchOnWindowFocus: false,
-  });
   /* SV-16: who else made tiles or sessions. The ids ride in the record; only their handles are looked up. */
   const contributorIds = useMemo(() => {
     const maker = build?.creator_id ?? "";
@@ -470,21 +420,12 @@ export function BuildPage() {
     return [...new Set([...byTiles, ...fromSessions])];
   }, [tree, build?.creator_id, build?.making]);
   const contributorHandles = useQuery<Map<string, string | null>>({
-    queryKey: ["bounty", "listSolverHandles", contributorIds.join(",")],
-    queryFn: () => listSolverHandles(contributorIds),
+    queryKey: ["profile", "listHandles", contributorIds.join(",")],
+    queryFn: () => listHandles(contributorIds),
     enabled: contributorIds.length > 0,
     staleTime: STALE_TIME,
     refetchOnWindowFocus: false,
   });
-  const solutionIds = useMemo(() => idsIn(tree, "solution_build_id"), [tree]);
-  const solutionBuilds = useQuery<Map<string, SolutionBuild>>({
-    queryKey: ["bounty", "listSolutionBuilds", solutionIds.join(",")],
-    queryFn: () => listSolutionBuilds(solutionIds),
-    enabled: solutionIds.length > 0,
-    staleTime: STALE_TIME,
-    refetchOnWindowFocus: false,
-  });
-
   const viewerIsCreator = Boolean(user && build && user.id === build.creator_id);
   /* CA-16 P7: the classification, read apart from the record (the columns may not exist yet: then there is nothing to show). */
   const classification = useQuery({
@@ -612,11 +553,6 @@ export function BuildPage() {
     },
     [mediaById, media.isPending],
   );
-  const bountyByNode = useMemo(() => {
-    const index = new Map<string, BuildBounty>();
-    for (const entry of bounties.data ?? []) if (entry.bounty.gap_node_id) index.set(entry.bounty.gap_node_id, entry);
-    return index;
-  }, [bounties.data]);
   const gaps = useMemo(() => new Set(collectGaps(tree).map((node) => node.id)), [tree]);
   /* UX-09 P1: the still-open topic about each gap, from the Discussed read the page already makes (no request of its own). */
   const stillOpenTopics = stillOpenTopicsByNode(discussed.data?.topics ?? []);
@@ -771,9 +707,6 @@ export function BuildPage() {
   /* ── UI-P30: the tab bodies' own reads, and what sits under the first screen ── */
 
   const phone = useIsPhone();
-  /** The gap whose bounty's solve sheet is open, from "Solve it" on Where it broke. */
-  const [solving, setSolving] = useState<string | null>(null);
-
   /* The rebuilds as cards, asked for once the tab is opened. */
   const rebuildCards = useQuery<GalleryBuild[]>({
     queryKey: ["build", "listRebuildCards", buildId],
@@ -875,14 +808,6 @@ export function BuildPage() {
     [build, viewerIsCreator, putHeader, say],
   );
 
-  const onBountyChanged = useCallback(
-    (change: "submitted" | "accepted" | "me_too") => {
-      void bounties.refetch();
-      if (change === "accepted") void queryClient.invalidateQueries({ queryKey: recordKey(slug) });
-    },
-    [bounties, queryClient, slug],
-  );
-
   /* OPTIMISTIC, as the profile page's Follow is: the button changes on the press, the write follows, and a refusal puts
      it back and says so. Nobody signed in goes to sign in and back. */
   const writeFollow = useCallback(
@@ -905,34 +830,6 @@ export function BuildPage() {
     // followKey is rebuilt from viewerId and makerId each render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [viewerId, makerId, navigate, location.pathname, queryClient, toast],
-  );
-
-  const renderFooter = useCallback(
-    (node: BuildNode): ReactNode => {
-      if (!build) return null;
-      const entry = bountyByNode.get(node.id);
-      if (entry && node.is_gap && entry.bounty.status === "open") {
-        return (
-          <GapPanel
-            node={node}
-            nodeType={typesByKey.get(node.type)}
-            build={build}
-            entry={entry}
-            resolveNode={resolveNode}
-            resolveMedia={resolveMedia}
-            onChanged={onBountyChanged}
-          />
-        );
-      }
-      const solver = bountyRef(node, "solver_id");
-      if (solver) {
-        const fromId = bountyRef(node, "solution_build_id");
-        const from = fromId ? (solutionBuilds.data?.get(fromId) ?? null) : null;
-        return <SolvedCredit handle={solverHandles.data?.get(solver) ?? null} build={from ? { slug: from.slug, title: from.title } : null} />;
-      }
-      return null;
-    },
-    [build, bountyByNode, typesByKey, resolveNode, resolveMedia, onBountyChanged, solutionBuilds.data, solverHandles.data],
   );
 
   /* ── the states ── */
@@ -966,7 +863,6 @@ export function BuildPage() {
 
   const parts: PartRowView[] = ordered.map((node, index) => {
     const nodeType = typesByKey.get(node.type);
-    const reward = bountyByNode.get(node.id)?.bounty;
     return {
       id: node.id,
       number: index + 1,
@@ -974,7 +870,6 @@ export function BuildPage() {
       category: nodeType?.category ?? node.type,
       meta: partMeta(node, nodeType),
       gap: gaps.has(node.id),
-      ask: reward && reward.status === "open" && typeof reward.reward_gbp === "number" ? askLabel(reward.reward_gbp) : null,
     };
   });
 
@@ -986,7 +881,7 @@ export function BuildPage() {
   const stepTabsDrawn = stepTabs(hasRebuilds, {
     events: record.events.some((event) => event.visibility !== "hidden"),
     understand: Boolean(understandLayer?.approved),
-    broke: breakageRows(tree, record.events, nodeTypes).length > 0 || openGaps(tree, bountyByNode).length > 0,
+    broke: breakageRows(tree, record.events, nodeTypes).length > 0 || openGaps(tree).length > 0,
   });
   const loginBack = (to: string) => `/login?redirect=${encodeURIComponent(to)}`;
 
@@ -1067,9 +962,8 @@ export function BuildPage() {
           <BreakageBody
             breakage={{
               rows: breakageRows(tree, record.events, nodeTypes),
-              gaps: openGaps(tree, bountyByNode, stillOpenTopics),
+              gaps: openGaps(tree, stillOpenTopics),
               onOpenReplay: openReplayAt,
-              onSolve: setSolving,
               // UX-09 P1: Reply goes to the topic's reply box; Start a topic opens the window with the breakage's step in the words.
               onReply: (topicId) => navigate(`${topicHref(topicId)}#reply-box`),
               onStartTopic: published
@@ -1109,7 +1003,6 @@ export function BuildPage() {
             understand={understandLayer}
             resolveNode={resolveNode}
             resolveMedia={resolveMedia}
-            footer={renderFooter(selected)}
           />
         ) : (
           <EmptyState line="This build has no parts yet." />
@@ -1141,9 +1034,6 @@ export function BuildPage() {
       }
     : undefined;
 
-  /* The bounty "Solve it" opened, when its gap still has one open. */
-  const solvingNode = solving ? nodesById.get(solving) : undefined;
-  const solvingEntry = solving ? bountyByNode.get(solving) : undefined;
   const nextPanels: WhereNextRowView[] = nextRows.map((row) => ({
     key: row.key,
     heading: row.heading,
@@ -1321,7 +1211,6 @@ export function BuildPage() {
               build={build}
               resolveNode={resolveNode}
               resolveMedia={resolveMedia}
-              renderFooter={renderFooter}
             />
           ),
         }}
@@ -1381,23 +1270,6 @@ export function BuildPage() {
         <div ref={footRef} data-testid="where-next-sentinel" aria-hidden="true" style={{ height: 1, marginTop: -12 }} />
       </LowerSections>
       <ReportDialog target={reporting} onClose={() => setReporting(null)} />
-      {solving && solvingNode && solvingEntry && solvingEntry.bounty.status === "open" ? (
-        <Suspense fallback={null}>
-          <SolvePanel
-            open
-            onOpenChange={(open) => {
-              if (!open) setSolving(null);
-            }}
-            bounty={solvingEntry.bounty}
-            build={build}
-            gapNode={solvingNode}
-            nodeType={typesByKey.get(solvingNode.type)}
-            resolveNode={resolveNode}
-            resolveMedia={resolveMedia}
-            onChanged={onBountyChanged}
-          />
-        </Suspense>
-      ) : null}
     </GroupLabelsProvider>
     </BuildConnectionsProvider>
   );

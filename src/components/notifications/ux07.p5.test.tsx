@@ -7,7 +7,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 
-import { NotificationRow } from "@/components/notifications/NotificationRow";
 import { activityFixture } from "@/dev/fixtures/activity";
 import { notificationHref, type Notification } from "@/lib/notifications";
 import { ActivityView } from "@/pages/site/activity/ActivityView";
@@ -43,36 +42,6 @@ const KINDS: [string, Notification, string, string][] = [
 ];
 
 describe("UX-07 P5: the kinds about topics and replies", () => {
-  it.each(KINDS)("draws %s with the existing row, leading to the topic", (_, notification, sentence, href) => {
-    render(
-      <MemoryRouter>
-        <NotificationRow notification={notification} onOpen={() => undefined} />
-      </MemoryRouter>,
-    );
-    const link = screen.getByTestId("notification");
-    expect(link.tagName).toBe("A");
-    expect(link.getAttribute("data-kind")).toBe(notification.kind);
-    expect(screen.getByTestId("notification-message").textContent).toBe(sentence);
-    expect(link.getAttribute("href")).toBe(href);
-  });
-
-  it("names the build a topic was started from", () => {
-    render(
-      <MemoryRouter>
-        <NotificationRow notification={KINDS[5][1]} onOpen={() => undefined} />
-      </MemoryRouter>,
-    );
-    expect(screen.getByTestId("notification-build").textContent).toBe("Resume screener");
-  });
-
-  it("says the fixed words when a row arrives without them", () => {
-    render(
-      <MemoryRouter>
-        <NotificationRow notification={{ ...KINDS[0][1], body: null }} onOpen={() => undefined} />
-      </MemoryRouter>,
-    );
-    expect(screen.getByTestId("notification-message").textContent).toBe("Maya Okafor replied to your topic");
-  });
 
   it("leads nowhere while the topic is unknown (hidden, or not yet resolved)", () => {
     expect(notificationHref({ ...KINDS[0][1], target: null })).toBeNull();

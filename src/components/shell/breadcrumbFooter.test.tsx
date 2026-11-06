@@ -24,7 +24,6 @@ describe("trailFor", () => {
     ["/rebuild/invoice", ["Home", "Builds", "Invoice triage agent", "Rebuild"]],
     ["/import", ["Home", "New build", "Import"]],
     ["/drafts", ["Home", "Drafts"]],
-    ["/drafts/posts", ["Home", "Drafts", "Older post drafts"]],
     ["/compose/new", ["Home", "Drafts", "Invoice triage agent"]],
     ["/compose/abc", ["Home", "Drafts", "Invoice triage agent"]],
     ["/openbuilds", ["Home", "OpenBuilds"]],

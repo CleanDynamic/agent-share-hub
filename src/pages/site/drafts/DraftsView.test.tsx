@@ -57,7 +57,7 @@ describe("DraftsView", () => {
     expect(screen.getAllByTestId("session-row")).toHaveLength(5);
     expect(screen.getByRole("heading", { name: "Continue editing" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Sessions" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Older post drafts/ }).getAttribute("href")).toBe("/drafts/posts");
+    expect(screen.queryByRole("link", { name: /Older post drafts/ })).toBeNull();
   });
 
   it("shows 'Untitled build' in --text2, and a real title in --text", () => {

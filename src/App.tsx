@@ -17,7 +17,6 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ConnectionBanner } from "@/components/ConnectionBanner";
 import { RouteBoundary } from "@/components/routing/RouteBoundary";
-import { OlderRequestsRoute } from "@/components/routing/OlderRequestsRoute";
 import { KeepSearchRedirect } from "@/components/routing/KeepSearchRedirect";
 import { SOLVERS_ADDRESSES, SOLVERS_LANDING } from "@/lib/routing/retiredRoutes";
 import { SearchRedirect } from "@/components/routing/SearchRedirect";
@@ -44,7 +43,6 @@ const QuotableSelectionProvider = lazy(() =>
 const Upload = lazy(() => import("./pages/Upload"));
 const UploadTypeSelector = lazy(() => import("./pages/UploadTypeSelector"));
 const BlogUpload = lazy(() => import("./pages/BlogUpload"));
-const BountyUploadShell = lazy(() => import("./pages/BountyUploadShell"));
 import { LegacyUploadRoute } from "@/components/upload/LegacyUploadNotice";
 const About = lazy(() => import("./pages/About"));
 const ContentDetail = lazy(() => import("./pages/ContentDetail"));
@@ -75,7 +73,6 @@ const ApiDocs = lazy(() => import("./pages/ApiDocs"));
 // UI-P46 — /drafts is the new page (builds and sessions); the old one, which reads
 // content_items and content_blocks, is routed at /drafts/posts unchanged.
 const DraftsPage = lazy(ROUTE_TABLE.drafts.load as () => Promise<{ default: React.ComponentType }>);
-const LegacyDraftsPage = lazy(() => import("./pages/Drafts"));
 const PostPreviewPage = lazy(() => import("./pages/PostPreview"));
 const PublishMetadata = lazy(() => import("./pages/PublishMetadata"));
 const ContentEditPage = lazy(() => import("./pages/ContentEdit"));
@@ -87,18 +84,14 @@ const ContentEditPage = lazy(() => import("./pages/ContentEdit"));
 // RC-P05 — the Bounties board. Its own chunk, like every route the RC series
 // adds (CONTRACT §2.6).
 const Bounties = lazy(ROUTE_TABLE.bounties.load as () => Promise<{ default: React.ComponentType }>);
-// UX-05 P2: the requests page that /openbuilds was, now at /openbuilds/requests.
 /** UX-05: /openbuilds/posts/:id was never a page; a topic is at /openbuilds/topics/:id. */
 function TopicRedirect() {
   const { id = "" } = useParams();
   return <KeepSearchRedirect to={`/openbuilds/topics/${id}`} />;
 }
-const BountyRequests = lazy(ROUTE_TABLE.bountyRequests.load as () => Promise<{ default: React.ComponentType }>);
 const SpacePage = lazy(ROUTE_TABLE.space.load as () => Promise<{ default: React.ComponentType }>);
 // UX-06: a post's page.
 const PostPage = lazy(ROUTE_TABLE.post.load as () => Promise<{ default: React.ComponentType }>);
-// Solve route for a specific bounty.
-const BountySolveShowPage = lazy(() => import("./pages/BountySolveShowPage"));
 // RC-P14 — a build's family of rebuilds, at /b2/:slug/lineage and, for the old
 // address, /b/:slug/lineage. Its own chunk, like every route the RC series adds.
 
@@ -307,7 +300,8 @@ const App = () => (
                 <Route path="/upload" element={<LegacyUploadRoute><UploadTypeSelector /></LegacyUploadRoute>} />
                 <Route path="/upload/blueprint" element={<LegacyUploadRoute><Upload /></LegacyUploadRoute>} />
                 <Route path="/upload/blog" element={<LegacyUploadRoute><BlogUpload /></LegacyUploadRoute>} />
-                <Route path="/upload/bounty" element={<LegacyUploadRoute bounty><BountyUploadShell /></LegacyUploadRoute>} />
+                {/* UX-11: every form of /upload/bounty, with or without ?id, lands on Drafts. Old bounty drafts stay in the database, unopened. */}
+                <Route path="/upload/bounty" element={<Navigate to="/drafts" replace />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/privacy" element={<PrivacySitePage />} />
                 <Route path="/terms" element={<TermsSitePage />} />
@@ -384,7 +378,7 @@ const App = () => (
                 {/* UI-P46 — the content path stays live (RULES §3). PublishMetadata,
                     PostPreview and MyUploads send people to /drafts for content_items
                     drafts, which the new page does not show; this is deliberate. */}
-                <Route path="/drafts/posts" element={<ProtectedRoute><LegacyDraftsPage /></ProtectedRoute>} />
+                <Route path="/drafts/posts" element={<Navigate to="/drafts" replace />} />
                 <Route path="/upload/preview/:draftId" element={<ProtectedRoute><PostPreviewPage /></ProtectedRoute>} />
                 <Route path="/publish/:contentItemId" element={<ProtectedRoute><PublishMetadata /></ProtectedRoute>} />
                 <Route path="/feed" element={<KeepSearchRedirect to="/builds" />} />
@@ -500,18 +494,17 @@ const App = () => (
                     a destination before RC-P12 fills it. Lazy, with the
                     Gallery's fallback, inside its own RouteBoundary
                     (CONTRACT §2.6). */}
-                <Route path="/bounties" element={<KeepSearchRedirect to="/openbuilds/requests" />} />
+                <Route path="/bounties" element={<KeepSearchRedirect to="/openbuilds" />} />
                 <Route path="/openbuilds" element={<RouteBoundary><Bounties /></RouteBoundary>} />
                 <Route path="/openbuilds/posts/:id" element={<TopicRedirect />} />
                 <Route path="/openbuilds/topics/:id" element={<RouteBoundary><PostPage /></RouteBoundary>} />
-                <Route path="/openbuilds/requests" element={<OlderRequestsRoute><RouteBoundary><BountyRequests /></RouteBoundary></OlderRequestsRoute>} />
+                <Route path="/openbuilds/requests" element={<KeepSearchRedirect to="/openbuilds" />} />
                 <Route path="/openbuilds/spaces/:slug" element={<RouteBoundary><SpacePage /></RouteBoundary>} />
                 {SOLVERS_ADDRESSES.map((address) => (
                   <Route key={address} path={address} element={<KeepSearchRedirect to={SOLVERS_LANDING} />} />
                 ))}
-                {/* Solve route for a specific bounty, inside its own RouteBoundary. */}
-                <Route path="/bounties/:bountyId/solve" element={<RouteBoundary><BountySolveShowPage /></RouteBoundary>} />
-                <Route path="/openbuilds/:bountyId/solve" element={<RouteBoundary><BountySolveShowPage /></RouteBoundary>} />
+                <Route path="/bounties/:bountyId/solve" element={<KeepSearchRedirect to="/openbuilds" />} />
+                <Route path="/openbuilds/:bountyId/solve" element={<KeepSearchRedirect to="/openbuilds" />} />
                 {/* UX-11: converting a post is authoring, and the composer has its own window for it (ConvertWindow). The old address lands
                     on Drafts. It sits inside Layout because the redirect draws Drafts' placeholder, which needs the frame. */}
                 <Route path="/convert/:contentItemId" element={<KeepSearchRedirect to="/drafts" />} />

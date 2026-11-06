@@ -21,7 +21,6 @@ const recordSelfConfirmation = vi.fn();
 const getBuildFamily = vi.fn().mockResolvedValue(null);
 const getWhereNext = vi.fn().mockResolvedValue({ rebuilds: [], sharedTool: null, fromMaker: [], makerName: null });
 const listRebuildCards = vi.fn().mockResolvedValue([]);
-const listBuildBounties = vi.fn().mockResolvedValue([]);
 const getCreatedVia = vi.fn().mockResolvedValue(null);
 const getThreadMedia = vi.fn().mockResolvedValue([]);
 const isFollowingMaker = vi.fn().mockResolvedValue(false);
@@ -53,17 +52,7 @@ vi.mock("@/lib/profile/follow", () => ({
 }));
 vi.mock("@/lib/profile/makerName", () => ({ getMakerName: vi.fn(async () => "Maya Okafor") }));
 vi.mock("@/lib/build/provenance", () => ({ getCreatedVia: (buildId: string) => getCreatedVia(buildId) }));
-vi.mock("@/lib/bounty", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/bounty")>()),
-  listBuildBounties: (input: unknown) => listBuildBounties(input),
-  listSolverHandles: vi.fn(async () => new Map()),
-  listSolutionBuilds: vi.fn(async () => new Map()),
-}));
-/* UI-P30 — the solve sheet is the bounty layer's own component; here it only has to open. */
-vi.mock("@/components/bounty/SolvePanel", () => ({
-  SolvePanel: ({ open, bounty, gapNode }: { open: boolean; bounty: { id: string }; gapNode: { title: string } }) =>
-    open ? <div role="dialog" aria-label="Solve" data-bounty-id={bounty.id}>{`Solving ${gapNode.title}`}</div> : null,
-}));
+vi.mock("@/lib/profile/handles", () => ({ listHandles: vi.fn(async () => new Map()) }));
 vi.mock("@/lib/build", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/build")>()),
   getBuildBySlug: (slug: string) => getBuildBySlug(slug),
@@ -171,7 +160,6 @@ beforeEach(() => {
   isBuildHidden.mockResolvedValue(false);
   getWhereNext.mockResolvedValue({ rebuilds: [], sharedTool: null, fromMaker: [], makerName: null });
   listRebuildCards.mockResolvedValue([]);
-  listBuildBounties.mockResolvedValue([]);
   auth.isLoggedIn = false;
   auth.userId = null;
   Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
@@ -540,25 +528,12 @@ describe("BuildPage (site frame) — the tab bodies, UI-P30", () => {
     const gap = within(viewer).getByTestId("build-open-gap");
     expect(gap.textContent).toContain("Calendar-aware delegation");
     expect(gap.textContent).toContain("It cannot tell who to delegate to.");
-    // No bounty pays for this gap, so there is nothing to solve through.
+    // Nothing has been started about this gap, so there is nothing to reply to.
     expect(within(gap).queryByRole("button", { name: /^Reply/ })).toBeNull();
 
     fireEvent.click(within(rows[0]).getByRole("button", { name: "Watch step 3 in the replay" }));
     expect(within(viewer).getByRole("tab", { name: "Watch it get built" }).getAttribute("aria-selected")).toBe("true");
     expect(within(viewer).getByTestId("build-replay-current").textContent).toContain("Long threads came back archive.");
-  });
-
-  it("opens a gap's bounty from Where it broke: its reward, and Reply (UX-09 P1, Solve it before)", async () => {
-    listBuildBounties.mockResolvedValue([
-      { bounty: { id: "bounty-1", gap_node_id: "n4", status: "open", reward_gbp: 150, closes_at: null, me_too_count: 0 }, solutions: 0, meToo: false },
-    ]);
-    const viewer = await openTab("Where it broke");
-    const gap = within(viewer).getByTestId("build-open-gap");
-    await waitFor(() => expect(gap.textContent).toContain("£150"));
-    fireEvent.click(within(gap).getByRole("button", { name: "Reply: Calendar-aware delegation" }));
-    const sheet = await screen.findByRole("dialog", { name: "Solve" });
-    expect(sheet.getAttribute("data-bounty-id")).toBe("bounty-1");
-    expect(sheet.textContent).toBe("Solving Calendar-aware delegation");
   });
 
   it("shows a result in its frame, with the evidence chip and the date it carries", async () => {

@@ -63,8 +63,6 @@ export interface OpenBuildsFeedViewProps {
   spaces: { status: FeedStatus; rows: FeedSpaceRow[]; onRetry: () => void };
   posts: { status: FeedStatus; items: FeedItem[]; onRetry: () => void; more?: { loading: boolean; onMore: () => void } };
   busy: BusyRow[];
-  /** UX-09 Q3: Older requests is offered only while a request is still open. */
-  olderRequests: boolean;
 }
 
 /* ── pieces ── */
@@ -121,11 +119,6 @@ function YourSpaces({ view }: { view: OpenBuildsFeedViewProps }) {
       <div>
         <PostControl onClick={view.onMakeSpace}>Make a space</PostControl>
       </div>
-      {view.olderRequests ? (
-        <Link to="/openbuilds/requests" style={{ ...rowText({ fontSize: 12.5, color: t.text2 }), textDecoration: "none" }}>
-          Older requests
-        </Link>
-      ) : null}
     </section>
   );
 }

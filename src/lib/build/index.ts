@@ -120,7 +120,7 @@ export {
   type ThreadProblemCode,
   type ThreadSource,
 } from "./thread";
-export { GAP_PROBLEM_KEY, collectGaps, gapProblem, gapProblemPatch } from "./gaps";
+export { GAP_PROBLEM_KEY, collectGaps, gapProblem } from "./gaps";
 export {
   EXACT_NODE_TYPE,
   SOURCE_BLOCK_COLUMNS,

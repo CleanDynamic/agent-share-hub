@@ -59,7 +59,6 @@ import {
   ControlButton,
   DraftsLayout,
   ListSection,
-  OlderDrafts,
   ROW,
   RowSkeletons,
   SESSION_SKELETON_ROWS,
@@ -553,7 +552,6 @@ export function DraftsView({
       continueSection={continueSection}
       sessionsSection={sessionsSection}
       connectedTools={tools.length > 0 ? <ConnectedTools tools={tools} onManage={onConnect} /> : null}
-      after={<OlderDrafts />}
     />
   );
 }

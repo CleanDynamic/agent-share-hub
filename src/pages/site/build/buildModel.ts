@@ -9,9 +9,7 @@ import type { ReactNode } from "react";
 import type { PartViewerMode } from "@/components/brand/PartViewer";
 import type { PlaqueBuild } from "@/components/brand/Plaque";
 import type { TimelineEvent } from "@/components/brand/Timeline";
-import { rewardLabel } from "@/components/bounty/bountyDisplay";
 import { collectBreakages, spanLabel, type BreakageEntry } from "@/components/build/BreakageView";
-import { gapStatement } from "@/components/build/GapPanel";
 import { asPayload, eventLead, payloadNumber, payloadText } from "@/components/build/eventDisplay";
 import { creatorLabel } from "@/components/build/rebuildDisplay";
 import { collectRunSequence, runSequenceText } from "@/components/build/RunView";
@@ -21,7 +19,6 @@ import { runtimeNeeds } from "@/lib/build/runtimeNeeds";
 import type { ResolveMedia } from "@/components/build/MediaFigure";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import type { RowEngagement } from "@/components/social/EngagementRow";
-import type { BuildBounty } from "@/lib/bounty";
 import type { Post } from "@/lib/build/thread";
 import type { PostRefsValue } from "@/components/post/RefLinks";
 import type { SessionGroup } from "@/lib/build/graph";
@@ -38,6 +35,7 @@ import {
   type NodeTree,
   type NodeType,
   type RebuildSummary,
+  gapProblem,
 } from "@/lib/build";
 import { mapOf, partLabelsOf, sessionOrderOf, sessionsCollapsedOf, sessionsMetaOf, storedWorkstreamsOf, type Making, type MakingSession } from "@/lib/build/making";
 import type { PortableCost } from "@/lib/build/portable";
@@ -222,8 +220,6 @@ export interface PartRowView {
   meta: string | null;
   /** Left open (`collectGaps()`): dashed breakage edge. */
   gap: boolean;
-  /** "£150 ask" for a gap with an open reward. */
-  ask: string | null;
 }
 
 export interface BuildAnatomyView {
@@ -474,8 +470,6 @@ export function partMeta(
   return kind || null;
 }
 
-/** "£150 ask". */
-export const askLabel = (rewardGbp: number): string => `${formatMoney(rewardGbp, "GBP")} ask`;
 
 /* ── the proof panel ── */
 
@@ -869,10 +863,6 @@ export interface OpenGapView {
   title: string;
   /** What is missing, in the creator's words. */
   problem: string | null;
-  /** "£150", when an open bounty rewards it. */
-  reward: string | null;
-  /** An open bounty to solve. */
-  solvable: boolean;
   /** UX-09 P1: the still-open topic about this gap, when there is one: Reply opens its reply box. */
   topicId: string | null;
 }
@@ -881,7 +871,6 @@ export interface BreakageBodyView {
   rows: readonly BreakageRowView[];
   gaps: readonly OpenGapView[];
   onOpenReplay?: (ordinal: number) => void;
-  onSolve?: (gapId: string) => void;
   /** UX-09 P1: Reply on a gap with a still-open topic: that topic's id. */
   onReply?: (topicId: string) => void;
   /** UX-09 P1: Start a topic on a breakage row. */
@@ -909,22 +898,27 @@ export function breakageRows(tree: NodeTree[], events: BuildEvent[], nodeTypes: 
   return collectBreakages(tree, events, nodeTypes).map((entry) => breakageRow(entry, spanLabel(entry)));
 }
 
+/** What a part left open says is missing, in the maker's words: the `gap_problem` key, else the part type's own `problem` field. */
+function gapStatement(node: BuildNode): string {
+  const flagged = gapProblem(node.payload).trim();
+  if (flagged) return flagged;
+  const payload = node.payload && typeof node.payload === "object" && !Array.isArray(node.payload) ? (node.payload as Record<string, unknown>) : {};
+  const typed = payload.problem;
+  return typeof typed === "string" ? typed.trim() : "";
+}
+
 /**
  * Every gap still open, in record order. A gap an open bounty pays for carries
  * its reward and can be solved; one with no bounty is still a hole worth naming.
  * UX-09 P1: `topicByNode` is the still-open topic about each gap (its id), when
  * there is one.
  */
-export function openGaps(tree: readonly NodeTree[], bountyByNode: ReadonlyMap<string, BuildBounty>, topicByNode: ReadonlyMap<string, string> = new Map()): OpenGapView[] {
+export function openGaps(tree: readonly NodeTree[], topicByNode: ReadonlyMap<string, string> = new Map()): OpenGapView[] {
   return collectGaps(tree).map((node) => {
-    const entry = bountyByNode.get(node.id);
-    const open = entry?.bounty.status === "open";
     return {
       id: node.id,
       title: (node.title ?? "").trim() || "Untitled part",
       problem: gapStatement(node) || null,
-      reward: open ? rewardLabel(entry?.bounty.reward_gbp) : null,
-      solvable: open,
       topicId: topicByNode.get(node.id) ?? null,
     };
   });

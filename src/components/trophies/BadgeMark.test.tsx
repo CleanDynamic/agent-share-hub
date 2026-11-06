@@ -10,20 +10,16 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { fireEvent, render, screen } from "@testing-library/react";
-import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
 
-import DepthRevealModal from "@/components/depth/DepthRevealModal";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { render, screen } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it } from "vitest";
+
 import { resolvedTheme } from "@/lib/theme/resolve";
 import type { TokenName } from "@/lib/theme/semantics";
 
 import { BADGES, type Badge, type Tier } from "./badge-data";
 import { BadgeMark, badgeLabel, badgePaint } from "./BadgeMark";
-import { BadgeTile } from "./badge-tile";
-import { PendingRevealStrip } from "./pending-reveal-strip";
-import { ShowcaseStrip } from "./showcase-strip";
 
 const TIERS: Tier[] = ["common", "rare", "highest"];
 const first = (tier: Tier): Badge => BADGES.find((badge) => badge.tier === tier)!;
@@ -191,117 +187,6 @@ describe("a tier is readable without its colour", () => {
   });
 });
 
-describe("the cabinet tile", () => {
-  it("is a button named by its mark, and selects its badge", () => {
-    const onSelect = vi.fn();
-    const badge = { ...BADGES[0], earned: true };
-    render(<BadgeTile badge={badge} onSelect={onSelect} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "First build, common badge" }));
-
-    expect(onSelect).toHaveBeenCalledWith(badge);
-  });
-
-  it("is named not yet earned when it is not", () => {
-    render(<BadgeTile badge={BADGES[3]} />);
-
-    expect(screen.getByRole("button", { name: "Proven, rare badge, not yet earned" })).toBeInTheDocument();
-  });
-
-  it("has no paint of its own, so there is one edge and the mark carries the tier", () => {
-    const button = dom(renderToStaticMarkup(<BadgeTile badge={first("rare")} />)).querySelector("button")!;
-    const s = style(button);
-
-    expect(s["background"]).toBe("none");
-    expect(s["border"]).toBe("0");
-    expect(button.querySelector('[role="img"]')).not.toBeNull();
-  });
-});
-
-describe("every surface that draws a badge spends the same paint", () => {
-  const earned: Badge[] = TIERS.map((tier) => ({ ...first(tier), earned: true }));
-
-  it("the showcase strip paints each tile as the mark does, at the chip radius, and names its tier", () => {
-    const strip = dom(
-      renderToStaticMarkup(
-        <TooltipProvider>
-          <ShowcaseStrip badges={earned} isOwnProfile={false} />
-        </TooltipProvider>,
-      ),
-    );
-    const tiles = [...strip.querySelectorAll('div[role="img"]')];
-
-    expect(tiles).toHaveLength(3);
-    tiles.forEach((tile, at) => {
-      expect(paintOf(tile)).toEqual(EARNED[earned[at].tier]);
-      expect(style(tile)["border-radius"]).toBe("var(--r-chip)");
-      expect(tile.getAttribute("aria-label")).toBe(badgeLabel(earned[at], true));
-    });
-  });
-
-  it("the auto-pinned showcase paints the same, and its button name carries the tier and the pin", () => {
-    const strip = dom(
-      renderToStaticMarkup(
-        <TooltipProvider>
-          <ShowcaseStrip badges={earned} isOwnProfile={false} autoPinned />
-        </TooltipProvider>,
-      ),
-    );
-    const buttons = [...strip.querySelectorAll("button")];
-
-    expect(buttons).toHaveLength(3);
-    buttons.forEach((button, at) => {
-      expect(paintOf(button)).toEqual(EARNED[earned[at].tier]);
-      expect(style(button)["border-radius"]).toBe("var(--r-chip)");
-      expect(button.getAttribute("aria-label")).toBe(`${badgeLabel(earned[at], true)}, auto-pinned`);
-    });
-  });
-
-  it("the empty showcase slots are the badges' shape", () => {
-    const strip = dom(
-      renderToStaticMarkup(
-        <TooltipProvider>
-          <ShowcaseStrip badges={[]} isOwnProfile autoPinned />
-        </TooltipProvider>,
-      ),
-    );
-    // The five empty slots are the only divs the strip hides from the accessibility tree; its icons are svgs.
-    const slots = [...strip.querySelectorAll('div[aria-hidden="true"]')];
-
-    expect(slots).toHaveLength(5);
-    for (const slot of slots) expect(style(slot)["border-radius"]).toBe("var(--r-chip)");
-  });
-
-  it("the reveal strip paints each well as the mark does and does not read a name twice", () => {
-    const strip = dom(renderToStaticMarkup(<PendingRevealStrip badges={earned} />));
-    const wells = [...strip.querySelectorAll('span[role="img"]')];
-
-    expect(wells).toHaveLength(3);
-    wells.forEach((well, at) => {
-      expect(paintOf(well)).toEqual(EARNED[earned[at].tier]);
-      expect(style(well)["border-radius"]).toBe("var(--r-chip)");
-      expect(well.getAttribute("aria-label")).toBe(badgeLabel(earned[at], true));
-      expect(well.nextElementSibling?.getAttribute("aria-hidden")).toBe("true");
-    });
-  });
-
-  it("the depth reveal draws a key in the catalogue as its badge, and any other key as a common one", () => {
-    render(
-      <DepthRevealModal
-        open
-        onClose={() => {}}
-        pendingBadges={[
-          { id: "row-1", badge_key: "well-proven", title: "Well proven", description: "a build of yours is run successfully by 10 other people" },
-          { id: "row-2", badge_key: "first-steps", title: "First Steps", description: "Completed the onboarding quest." },
-        ]}
-      />,
-    );
-
-    expect(screen.getByRole("img", { name: "Well proven, highest badge" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "First Steps, common badge" })).toBeInTheDocument();
-  });
-});
-
 describe("no badge uses a category hue or a tier colour", () => {
   it("in any mark, earned or not", () => {
     for (const badge of BADGES) {
@@ -316,16 +201,10 @@ describe("no badge uses a category hue or a tier colour", () => {
     const files = [
       "BadgeMark.tsx",
       "badge-data.ts",
-      "badge-tile.tsx",
-      "pending-reveal-strip.tsx",
-      "showcase-strip.tsx",
     ];
     for (const file of files) {
       expect(code(file), file).not.toMatch(/--cat-|\bt\.cat[A-Z]\w*|\bcat[A-Z]\w*\b|tierColorVar|--tier-|oklch\(|#[0-9a-f]{3,8}\b|rgba?\(/);
     }
-    // The reveal modal maps a key to a badge and must not reach for a hue either.
-    const reveal = readFileSync(join("src", "components", "depth", "DepthRevealModal.tsx"), "utf8");
-    expect(reveal).not.toMatch(/--cat-|\bt\.cat[A-Z]|tierColorVar|--tier-|oklch\(/);
   });
 });
 

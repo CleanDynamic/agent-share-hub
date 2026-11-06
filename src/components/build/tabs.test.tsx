@@ -11,17 +11,13 @@
 // on assignment. See src/test/tokenStyle.tsx.
 
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
 import { BreakageView } from "./BreakageView";
-import { BuildTabs } from "./BuildTabs";
-import { RebuildsTab } from "./RebuildsTab";
 import { Replay } from "./Replay";
 import type {
   Build,
   BuildEvent,
-  BuildNode,
   NodeTree,
   NodeType,
   RebuildSummary,
@@ -96,63 +92,6 @@ const rebuild: RebuildSummary = {
 
 const noResolve = () => undefined;
 const noMedia = () => null;
-
-/* ── the strip ──────────────────────────────────────────────────────────── */
-
-function tabs(active = "anatomy") {
-  return (
-    <BuildTabs active={active} watch={<p>watch</p>} broke={<p>broke</p>}>
-      <p>anatomy</p>
-    </BuildTabs>
-  );
-}
-
-describe("the tab strip", () => {
-  it("marks the current tab with an --action underline on --text", () => {
-    const doc = staticDoc(tabs());
-    const current = doc.querySelector('[aria-selected="true"]');
-
-    expect(current?.textContent).toContain("Anatomy");
-    expect(styleOf(current)).toContain("border-bottom:2px solid var(--action)");
-    expect(styleOf(current)).toContain("color:var(--text)");
-    // A fill would make the current tab a button among five labels.
-    expect(styleOf(current)).toContain("background:transparent");
-  });
-
-  it("gives every other tab the same 2px edge in transparent, so nothing shifts", () => {
-    const doc = staticDoc(tabs());
-    for (const tab of Array.from(doc.querySelectorAll('[role="tab"]'))) {
-      expect(styleOf(tab)).toContain("border-bottom:2px solid");
-    }
-    const quiet = doc.querySelector('[aria-selected="false"]');
-    expect(styleOf(quiet)).toContain("border-bottom:2px solid transparent");
-    expect(styleOf(quiet)).toContain("color:var(--text2)");
-  });
-
-  it("rules the strip with --line and keeps the tab order and names", () => {
-    const doc = staticDoc(tabs());
-    expect(styleOf(doc.querySelector('[role="tablist"]'))).toContain(
-      "border-bottom:1px solid var(--line)",
-    );
-    expect(
-      Array.from(doc.querySelectorAll('[role="tab"]')).map((tab) =>
-        tab.querySelector("span")?.textContent,
-      ),
-    ).toEqual(["Anatomy", "Watch it get built", "Where it broke"]);
-  });
-
-  it("keeps a disabled tab legible rather than greying it out of contrast", () => {
-    // Every tab that renders is live here, so the claim is about the ramp: the
-    // strip spends two text tokens and there is no third rung below them.
-    const doc = staticDoc(tabs());
-    for (const tab of Array.from(doc.querySelectorAll('[role="tab"]'))) {
-      const style = styleOf(tab);
-      expect(style.includes("color:var(--text)") || style.includes("color:var(--text2)")).toBe(
-        true,
-      );
-    }
-  });
-});
 
 /* ── watch it get built ─────────────────────────────────────────────────── */
 
@@ -285,44 +224,3 @@ describe("where it broke reads as resolved, not as an alarm", () => {
 });
 
 /* ── rebuilds ───────────────────────────────────────────────────────────── */
-
-describe("the rebuilds list", () => {
-  it("gives each row the credit's voice: who and when in mono on --text2", () => {
-    const doc = staticDoc(
-      <MemoryRouter>
-        <RebuildsTab rebuilds={[rebuild]} />
-      </MemoryRouter>,
-    );
-    const who = Array.from(doc.querySelectorAll("span")).find((span) =>
-      span.textContent?.startsWith("@nightowl"),
-    );
-
-    expect(styleOf(who)).toContain("Geist Mono");
-    expect(styleOf(who)).toContain("color:var(--text2)");
-    expect(styleOf(who)).toContain("font-variant-numeric:tabular-nums");
-  });
-
-  it("counts a descendant's own reproductions in --evidence when it has any", () => {
-    const doc = staticDoc(
-      <MemoryRouter>
-        <RebuildsTab rebuilds={[rebuild]} />
-      </MemoryRouter>,
-    );
-    const count = Array.from(doc.querySelectorAll("span")).find(
-      (span) => span.textContent === "2",
-    );
-    expect(styleOf(count)).toContain("color:var(--evidence)");
-    expect(styleOf(count)).toContain("font-variant-numeric:tabular-nums");
-  });
-
-  it("says nothing has happened rather than showing an empty shelf", () => {
-    const doc = staticDoc(
-      <MemoryRouter>
-        <RebuildsTab rebuilds={[]} />
-      </MemoryRouter>,
-    );
-    const message = doc.querySelector("p");
-    expect(message?.textContent).toBe("Nobody has rebuilt this yet.");
-    expect(styleOf(message)).toContain("color:var(--text2)");
-  });
-});

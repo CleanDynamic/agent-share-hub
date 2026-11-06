@@ -5,7 +5,6 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DEPLOYMENT_MOVE_REFUSAL, deploymentMoveRefusal, deploymentSectionMeta, deploymentTilesOf, groupDeployment } from "@/lib/build/deployment";
-import { partnershipLine, partnershipOf, partnershipRefusal } from "@/lib/build/partnership";
 import type { NodeTree } from "@/lib/build/types";
 
 import { DeploymentDialog } from "./DeploymentDialog";
@@ -133,16 +132,5 @@ describe("moves", () => {
     expect(deploymentMoveRefusal({ type: "host", payload: {} }, "session")).toBe(DEPLOYMENT_MOVE_REFUSAL);
     expect(deploymentMoveRefusal({ type: "prompt", payload: {} }, "deployment")).toBe("Deployment parts stay in Deployment");
     expect(deploymentMoveRefusal({ type: "host", payload: {} }, "deployment")).toBeNull();
-  });
-});
-
-describe("a paid partnership or vendor affiliation", () => {
-  it("reads both kinds and says each line", () => {
-    expect(partnershipOf({ partnership: { partner: "Example Partner", kind: "paid" } })).toEqual({ partner: "Example Partner", kind: "paid" });
-    expect(partnershipLine({ partner: "Example Partner", kind: "paid" })).toBe("Paid partnership with Example Partner");
-    expect(partnershipLine({ partner: "Example Co", kind: "works_for" })).toBe("Made by someone at Example Co");
-    expect(partnershipOf({ partnership: { partner: "", kind: "paid" } })).toBeNull();
-    expect(partnershipOf({})).toBeNull();
-    expect(partnershipRefusal({ partner: "x".repeat(61), kind: "paid" })).toMatch(/60/);
   });
 });

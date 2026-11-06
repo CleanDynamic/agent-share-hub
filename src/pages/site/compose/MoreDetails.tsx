@@ -34,20 +34,16 @@ export interface ComposeDetails {
   costSetup: string;
   /** Minutes. */
   firstResult: string;
-  gapOn: boolean;
-  /** "What's left open?" */
-  gapProblem: string;
   /** UX-07 P6: others can start topics from this build (builds.allow_as_post_source). Absent: on, the default. */
   allowAsTopicSource?: boolean;
 }
 
-export type ComposeDetailKey = "symptom" | "resolution" | "costMonthly" | "costSetup" | "firstResult" | "gapProblem";
+export type ComposeDetailKey = "symptom" | "resolution" | "costMonthly" | "costSetup" | "firstResult";
 
 export interface MoreDetailsProps {
   phone: boolean;
   details: ComposeDetails;
   onDetail: (key: ComposeDetailKey, value: string) => void;
-  onGapSwitch: (on: boolean) => void;
 }
 
 function TextArea({ id, value, placeholder, phone, onChange }: { id: string; value: string; placeholder: string; phone: boolean; onChange: (value: string) => void }) {
@@ -100,57 +96,6 @@ function NumberField({
   );
 }
 
-function Switch({ on, label, onChange, phone }: { on: boolean; label: string; onChange: (on: boolean) => void; phone: boolean }) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      onClick={() => onChange(!on)}
-      {...handlers}
-      style={{
-        alignSelf: "flex-start",
-        display: "flex",
-        alignItems: "center",
-        gap: 7,
-        minHeight: phone ? 44 : 36,
-        padding: "0 4px",
-        margin: "0 -4px",
-        border: 0,
-        borderRadius: r.control,
-        background: "transparent",
-        color: t.text,
-        fontFamily: FIGTREE,
-        fontSize: phone ? 14 : 13,
-        textAlign: "left",
-        cursor: "pointer",
-        ...ring(state.focusVisible),
-      }}
-    >
-      <span
-        aria-hidden="true"
-        style={{ position: "relative", width: 36, height: 22, borderRadius: 12, background: on ? t.evidence : t.line, flexShrink: 0 }}
-      >
-        <span
-          style={{
-            position: "absolute",
-            top: 3,
-            left: 3,
-            width: 16,
-            height: 16,
-            borderRadius: r.full,
-            background: t.field,
-            transform: on ? "translateX(14px)" : "none",
-            transition: move(),
-          }}
-        />
-      </span>
-      {label}
-    </button>
-  );
-}
-
 /** UI-P94: the refined disclosure, 32 high (44 on a phone). */
 function RefinedDisclosure({ open, controls, phone, onClick }: { open: boolean; controls: string | undefined; phone: boolean; onClick: () => void }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
@@ -186,10 +131,9 @@ function RefinedDisclosure({ open, controls, phone, onClick }: { open: boolean; 
   );
 }
 
-export function MoreDetails({ phone, details, onDetail, onGapSwitch }: MoreDetailsProps) {
+export function MoreDetails({ phone, details, onDetail }: MoreDetailsProps) {
   const [open, setOpen] = useState(false);
   const id = useId();
-  const gapRing = useRing<HTMLInputElement>();
   const row: CSSProperties = { display: "flex", flexWrap: "wrap", gap: 9 };
 
   return (
@@ -239,28 +183,6 @@ export function MoreDetails({ phone, details, onDetail, onGapSwitch }: MoreDetai
                   phone={phone}
                   onChange={(value) => onDetail("firstResult", value)}
                 />
-              </div>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                <Switch on={details.gapOn} label="Leave one part open for someone else to solve" phone={phone} onChange={onGapSwitch} />
-                {details.gapOn ? (
-                  <>
-                    <Field id={`${id}-open`} label="What's left open?">
-                      <input
-                        id={`${id}-open`}
-                        type="text"
-                        value={details.gapProblem}
-                        autoComplete="off"
-                        onChange={(event) => onDetail("gapProblem", event.target.value)}
-                        {...gapRing.handlers}
-                        style={{ ...fieldBase, height: phone ? 44 : 33, padding: "0 10px", fontSize: phone ? 16 : 14, ...gapRing.style }}
-                      />
-                    </Field>
-                    <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>
-                      Readers will see it as one part left open. You can add a reward on Bounties after publishing.
-                    </p>
-                  </>
-                ) : null}
               </div>
             </div>
           </Panel>

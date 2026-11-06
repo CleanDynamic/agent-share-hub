@@ -20,7 +20,6 @@ import { deleteNode, upsertNode } from "./nodes";
 import type { BuildNode, NodeTree } from "./types";
 
 export const BREAKAGE_TYPE = "breakage";
-export const GAP_TYPE = "gap";
 
 /** The most of a symptom or problem a title keeps. */
 export const DETAIL_TITLE_MAX = 80;
@@ -45,19 +44,9 @@ export function composerBreakage(tree: readonly NodeTree[]): NodeTree | null {
   return topLevel(tree, (node) => node.type === BREAKAGE_TYPE);
 }
 
-/** The composer's gap: the first open `gap` node at the top level. */
-export function composerGap(tree: readonly NodeTree[]): NodeTree | null {
-  return topLevel(tree, (node) => node.type === GAP_TYPE && node.is_gap);
-}
-
 /** "What broke" and "How you fixed it", as the node holds them. */
 export function breakageFields(node: Pick<BuildNode, "payload"> | null): { symptom: string; resolution: string } {
   return { symptom: textAt(node, "symptom"), resolution: textAt(node, "resolution") };
-}
-
-/** What a gap says is left open. */
-export function gapProblemText(node: Pick<BuildNode, "payload"> | null): string {
-  return textAt(node, "problem");
 }
 
 /** A title from a symptom or a problem: its first 80 characters. */
@@ -89,28 +78,4 @@ export async function saveBreakage({ buildId, tree, current, symptom, resolution
   const title = detailTitle(symptom);
   if (current) return upsertNode({ ...nodeRow(current), title, payload: payload as Json });
   return placeTopNode(buildId, tree, { type: BREAKAGE_TYPE, title, payload: payload as Json });
-}
-
-export interface GapInput {
-  buildId: string;
-  tree: readonly NodeTree[];
-  /** The composer's gap, when there is one. */
-  current: BuildNode | null;
-  problem: string;
-}
-
-/**
- * Write the part left open: create, update, or (when the problem is empty)
- * delete. Resolves with the node as it now stands, or null when there is none.
- */
-export async function saveGap({ buildId, tree, current, problem }: GapInput): Promise<BuildNode | null> {
-  if (!problem.trim()) {
-    if (current) await deleteNode(current.id);
-    return null;
-  }
-  const title = detailTitle(problem);
-  if (current) {
-    return upsertNode({ ...nodeRow(current), title, is_gap: true, payload: { ...payloadOf(current), problem } as Json });
-  }
-  return placeTopNode(buildId, tree, { type: GAP_TYPE, title, is_gap: true, payload: { problem } });
 }

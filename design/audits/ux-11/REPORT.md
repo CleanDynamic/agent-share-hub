@@ -15,6 +15,275 @@ Parts not done: Part 2 and Part 3 done-whens, and Part 4's, are met in part only
 Questions for Miles: see below.
 ```
 
+## Second follow-up: remove the whole request / bounty system (Miles' new answers)
+
+**Status: PARTLY DONE. The code and the database are not both clear yet, and the database drop is deliberately held back.** Read "What is
+left" before merging. This section supersedes the two before it where they disagree.
+
+### Step 0: the count (NOT DONE: no database access from this session)
+
+I cannot read the live database from here (no key, no connection), so I could not count the rows in each bounty-era table or in
+`content_items` where `post_type = 'bounty'`, or the distinct owners. **So the "if another real person owns a row, stop at 3c" rule is
+enforced by the database instead of by me:** `supabase/migrations/20261110120000_ux11_legacy_backup.sql` (safe to apply now, it only
+copies) creates the schema `legacy_backup_20261110`, and gives you the count with one query after it is applied:
+
+```
+select * from legacy_backup_20261110.owner_summary();                       -- rows and distinct owners, per table
+select user_id, array_agg(distinct table_name) from legacy_backup_20261110.owners() group by 1;   -- who they are
+```
+The drop migration (held back, below) will not run until `legacy_backup_20261110.allowed_owners` holds Miles' and his test accounts' ids
+and every owner of a row is in it. If any other real person owns a row it raises and stops, and Miles decides.
+
+### Done
+
+| Step | What | Commit subject |
+| --- | --- | --- |
+| 1 | `/drafts/posts` redirects to `/drafts` in one hop (test row added); the older post drafts page, its link and its breadcrumb are deleted | `P1c` |
+| 3a | The backup: `20261110120000_ux11_legacy_backup.sql` (17 tables, the bounty `content_items` rows, the bounty columns of every other row, the marked `build_nodes`, an owner count and an allow list). **Restore steps are in its header.** | `step 3a` |
+| 3b | `/openbuilds/requests`, `/openbuilds/:id/solve`, `/bounties/:id/solve`, `/bounties` redirect to `/openbuilds` (rows in `retiredAddresses.test.tsx`); `/content/:id` redirects a bounty content item to `/` and still shows blueprints and blogs (test: `ContentDetail.retired.test.tsx`); the Older requests page, its route, link and breadcrumb, the request page, the session-offer dialog, `SolvePanel`, `GapPanel`, the solutions reads and writes, the accept / vote / discussion libraries and components, the old-request fixture and its three tests are deleted | `P3 readers` x3 |
+| 3b | The build page loses the asks read, the solver credit, the gap panel, the solve sheet and the reward on a part and on a gap. Where it broke keeps its Still open list and its Reply. `listSolverHandles` (a profile lookup misnamed) became `lib/profile/handles.ts` | `P3 readers` |
+| 4 | The 64 unreachable files: **43 deleted in 11 commits, one per folder** (`src/components/layout` + `src/hooks`, `src/components`, `auth`, `build`, `depth` + `trophies`, `feed` + `gallery`, `notifications` + `shell`, `src/lib/build`, `src/lib/reblog`, then the readers above). Each deleted with the tests that tested only it; mixed tests were edited. | `P4 ...` |
+| 5 | knip reports **zero unused files**. Unreachable files from `src/main.tsx`: 64 -> 21, all kept (below). | |
+
+**Kept of the 64, and why (21 files, all fixtures a live test imports, or types):**
+`src/test/{setup.ts,tokenStyle.tsx,deno-globals.d.ts}`, `src/vite-env.d.ts`, `src/lib/theme/shadcn.ts` (the source `css-parity.test` checks `index.css` against),
+`src/lib/build/buildsMapsTestSupport.ts`, `src/pages/site/signin/signinTest.tsx`, `src/pages/site/openbuilds/postModel.fixtures.ts`,
+and in `src/pages/site/compose/`: `addMenuTestSupport.tsx`, `ca20Fixture.ts`, `ca20Harness.tsx`, `ca21Harness.tsx`, `ca23.harness.tsx`,
+`ca26.menuHost.tsx`, `mapArtwork.ts`, `motionStub.ts`, `optionalKit.ts`, `postTabKit.tsx`, `sv07Backend.ts`, `sv07Harness.tsx`,
+`sv18.fixtures.ts`. Not under /admin or /dev.
+
+### Held back on purpose (in `design/audits/ux-11/pending/`, NOT in `supabase/migrations`)
+
+- `20261110130000_ux11_drop_legacy_requests.sql` (3c): drops the 17 tables, 18 functions, the bounty `content_items` rows and every
+  `bounty_*` column. Its first statement refuses unless the backup exists with at least as many rows as live and every owner is in
+  `allowed_owners`. The dependency check and the `EXPLAIN` are in its header, and so is the Lovable message. **Applying it now would break
+  Home, Builds, the legacy upload editor and notifications**, because code still reads those columns (below).
+- `20261110125000_ux11_clear_open_marks.sql` (step 2): clears `is_gap` and `payload.gap_problem` on published builds' nodes that no
+  topic is about. **The Unsolved mark and UX-08's "still open" mark are the same two columns**, so the code that reads a mark cannot be deleted
+  without deleting UX-08's; only marks nothing in the new system stands behind can be cleared. The legacy composer's Unsolved
+  toggle and the Build Card's "Open a bounty" switch were already removed.
+
+### What is left (not done in this run), so the final proof is NOT met
+
+The final grep still finds `bounty` in **196 files** and `solver` in **95** under `src/` (not counting `integrations/supabase/types.ts`, which is
+generated), and 1 file each in `supabase/functions/`. Removing it means editing live pages, not deleting files, and I stopped rather than
+guess in them. By folder, non-test: `lib/bounty` (18: the run-request rules, me-too, claims, briefs, reviews and the rest, still used by Home),
+`lib/build` (9, `gallery.ts` and the feed), `components/brand` (8: `GapMarker`, `VacantFrame`, `CategoryChip`), `components/bounty` (8: the
+"missing slot" badges used by the legacy article viewer and editor), `src/pages` (5: `PublishMetadata`, `Upload`, `Messages`, the legacy
+upload), `lib/notifications` (5), `components/reblog` (5), `components/compose` (5), `lib/discover/queryBlueprints.ts` (29 matches),
+`components/feed-card.tsx` (22), `lib/profile`, `lib/library`, `lib/feed`, `lib/messaging`, `lib/moderation`, `lib/analytics`, `components/article`
+(the legacy editor's bounty mode), `components/publish/BountyDetailsCard.tsx`, and the theme.
+**What still reads the database** (from the code, non-test): `bounties` (`lib/bounty`), `solutions` and the satellites (`lib/bounty`,
+`lib/bounty-solver`), `content_items.bounty_*` (`queryBlueprints`, `feed-card`, `PublishMetadata`, `Upload`, `getCanonicalPayload`, `getBuildFeed`,
+`Messages`), `top_solvers`, and `openbuild_posts.reward_gbp`. Every one has to go before the drop migration can be applied.
+"request" is still in 389 files in `src/`; almost all are HTTP requests, the OpenBuilds product's own word (`listPosts`, "Start a topic")
+or tests. I did not rename `SITE_NAV.bounties` (the OpenBuilds nav key) or the `/b/:id/leaderboard`-style redirect constants (`SOLVERS_ADDRESSES`).
+`supabase/migrations/` and the generated types keep these names for ever (history); a clean grep there is not possible.
+The next run: Home's run-request rules and me-too (move what UX-08 needs to `lib/openbuilds`), the gallery and discover reads, the legacy
+upload editor's bounty mode and `PublishMetadata`, the article viewer's missing-slot machinery, the notification kinds, then the drop
+migration.
+
+### Checks (final tree)
+
+- `tsc` clean. **Vitest 11,323 passed / 30 failed** (baseline 11,705 / 31): one new failure was mine and is fixed in the last commit (the UX-10
+  migration "is the newest file" test, which my backup migration, newer than it, tripped); the rest are the baseline's. 383 fewer tests (the deleted code's own).
+- knip: **0 unused files**; exports 729 -> 717, types 224 -> 229 (six types in files whose users I deleted; listed by `knip`).
+- Lint: errors 1,419 -> 935, warnings 549 -> 531 (the deleted files' `any`s).
+- `audit:size`: total JavaScript **6,724,798 -> 6,366,482 bytes, -358,316 (-5.3%)**, chunks 478 -> 440. First download 235.2 -> 231.6 KB; composer
+  124.5 -> 124.2 KB (both over budget, as on main).
+- `audit:pages`: 37 of 39 pass; the two that fail are the two that fail on main, with the same words (`report and targets`: `library-saved` 10 requests; `page changes`: "Back landed 1331 px"). Cold request counts now / main run / baseline file: home 26/26/26, builds 16/18/17, builds-maps 17/19/18, builds-classification 18/16/17, openbuilds 7/10/9, library-saved 10/10/8, library-collections 8/5/9, drafts 6/8/10, composer 17/17/19, build 9/8/12, profile 17/17/17, followers 7/7/7, following 7/7/7. None went up beyond the one extra request the audit allows. `pageBaseline.json` is **unchanged**: no audited page was removed, and a run-to-run difference is not a change the rule allows me to write down.
+- Tier 1 Playwright: not re-run (stale on main, as measured earlier); the Playwright check of three old addresses
+  (`e2e/tier3/retired-addresses.spec.ts`) is unchanged and was not re-run either.
+
+### Questions for Miles
+
+1. Apply the backup migration, run the two owner queries, and send me the answer: the drop stays held until you do.
+2. Run the next prompt for the "what is left" list above (it is about 190 files of live code). Or tell me to split it by page.
+3. The Unsolved mark and "still open" are one column. Should the clear-marks migration also clear marks that have a topic, or only the
+   ones with none (as written)?
+
+## Follow-up after merge: Miles' five answers
+
+Branch restarted from main at `0f765a1` (UX-11 merged as #446). **This section supersedes the earlier text where they disagree** (Kept,
+unsure; Questions 1 to 8; Parts 2 to 4 done-whens). Commits: P1b, P4b, P3b.
+
+1. **`/content/:id` is read-only history for an old request (P3b).** It shows the title, what was asked (the article body), the
+   status as recorded (`Status: Open when it closed | Closed | Solved`), any accepted solution (the provenance panel, the byline, and
+   "View original"), and one line: "Requests have closed. Ask in OpenBuilds by starting a topic.", where "starting a topic" opens
+   the New topic window (`PostingWindows`, kind `post`). Gone from the page: submit, vote, accept, fork, manage, pause, extend
+   deadline, edit criteria, close, promote to blueprint, the discussion forum and its composer, the solver leaderboard, the
+   meta-bounty body and pledge, and the author's Edit (it opened the retired editor). Gone from the article body: the "Submit a
+   solution" button on missing stages and blocks (`SubmitSolutionButton`). `retiredSurfaces.test.tsx` passes unchanged (13 of 13).
+   Also fixed on the way: two `useMemo`s in `ContentDetail` sat after its early returns, so the first render with data used more hooks
+   than the loading one and React threw "Rendered more hooks". They are above the returns now. The new page test caught it.
+2. **Every form of `/upload/bounty` redirects to `/drafts` in one hop (P1b)**, with or without `?id=` (both rows are in
+   `retiredAddresses.test.tsx`). `BountyUploadShell`, `src/lib/bounty-legacy/` (the flag), the notice's bounty line and its e2e
+   spec are deleted. **How many old bounty drafts exist: I cannot count them from this session (no database access).** Run:
+   `select count(*) from content_items where post_type = 'bounty' and status = 'draft';` They stay untouched and cannot be opened.
+   Two loose ends: the legacy `/drafts/posts` page still routes a bounty draft's click to `/upload/bounty?id=`, which now bounces to
+   `/drafts`; `Upload.tsx` still maps type `bounty` to the same address.
+3. **UX-08 is on main** (`stillOpenMarks`, `Step.stillOpen`, `startStillOpenTopics`), so the removals went ahead (P4b): the "Open a
+   bounty" switch and its "What is left open" field on the Build Card and in More details, and the Inspector's Unsolved toggle with
+   its problem field. Behind them: `onGapSwitch`, `setGapOn`, the `gap` writer, `composerGap`, `saveGap`, `gapProblemText`,
+   `gapProblemPatch` and their tests. A gap node a maker already made stays in the build as a step marked still open. **One cost:**
+   a part marked Unsolved in a rebuild, which only the legacy composer opens, can no longer be un-marked there. Tests that prove
+   publishing, rebuild and `?from=` (`Publish`, `PublishSheet`, `RebuildSection`, `ComposeView`, `SandboxCard`, `ux07.p6`,
+   `Compose`) pass; `RebuildSection` fails alone on main too, as before.
+4. **`createBountyForGap` and `scripts/verify-bounty-flow.ts` are deleted.** The fixture is `src/test/oldRequest.ts`
+   (`insertOldRequest(tables, { status })` pushes a `bounties` row, its build, its gap node and its `content_items` row straight into
+   a table store; no newer columns). It feeds: `bounty.test.ts` (Older requests' `listOpenBounties` and an old request's `getBounty`),
+   `pages/site/build/oldRequestGap.test.tsx` (Where it broke, open and closed), and `pages/ContentDetail.oldRequest.test.tsx`
+   (`/content/:id`: 6 tests, including that no control that creates, manages, answers or accepts is on the page). No file under
+   `src/` now inserts into `bounties` or writes a `content_items` bounty row.
+5. **The 64 files that were already unreachable are left alone** (list below). Caused by this prompt and cleared in it:
+   `ui/scroll-area.tsx`, the meta-bounty, leaderboard, management, promote and discussion components, `lib/bounty-competition/` (all but
+   the `BlueprintAttributionBanner`), five `bounty-solver` files, `createBountyThread`, three notification triggers, and the exports
+   behind them. knip: files 0 -> 1 (`FollowButton`, as before), exports 729 -> 715, types 224 -> 223; nothing newly flagged.
+
+**Checks on the final tree.** `tsc` clean. Vitest 11,641 passed / 29 failed (baseline 11,705 / 31; 11,670 tests against 11,736); no
+new failing test. Lint on every changed file: only the `any`s that were already there. Build: JS **6,724,798 -> 6,526,605 bytes
+(-198,193, -2.9%)** against `72f55c9`, chunks 478 -> 464; `ContentDetail` alone -138,994. First download 235.2 -> 234.3 KB and
+composer 124.5 -> 124.2 KB, both still over budget as on main. **Not re-run this time:** `audit:pages`, `audit:design`, tier 1 and
+the screenshots (nothing a page's request count or board depends on changed; the first full audit is above).
+
+**Questions that remain.** (a) The loose end in 2: should the legacy `/drafts/posts` page stop listing bounty drafts? (b) Should an
+Unsolved part in a rebuild be un-markable somewhere? (c) The meta-bounty tables and `content_items.bounty_*` columns are now written
+by nothing and read only by this page: drop later? (d) `lib/bounty-solver` still holds the solve page's draft and submit functions
+(`/openbuilds/:id/solve` stays).
+
+### The 64 files unreachable before UX-11, by folder, with the last commit that touched each
+
+History in this repository was flattened, so most show the same commit. Test support files are included. `knip` does not report them,
+because tests import them.
+
+**`src/`**
+
+- `vite-env.d.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/components/`**
+
+- `BountyCard.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `FeedItem.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `FeedItemExpanded.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `FollowButton.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `ReblogCard.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `ReblogComposer.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `ReblogDetailView.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `TipsTab.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/components/auth/`**
+
+- `AuthCheckbox.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `AuthDivider.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/components/build/`**
+
+- `BuildHeader.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `BuildTabs.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `CreatedViaLine.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `PortableExport.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `RebuildTree.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `RebuildsTab.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `ReproductionAction.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `WhereNext.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `createdViaCopy.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/components/depth/`**
+
+- `DepthRevealModal.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/components/feed/`**
+
+- `BuildFeedItems.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/components/gallery/`**
+
+- `cardBodies.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/components/layout/`**
+
+- `LeftPanel.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `RightPanelExplore.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/components/notifications/`**
+
+- `NotificationCard.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `NotificationRow.tsx`: d4d94fa 2026-11-04 UX-07 P5: notifications about topics and replies, leading to the topic at the reply
+
+**`src/components/shell/`**
+
+- `NavSearch.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/components/trophies/`**
+
+- `badge-tile.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `pending-reveal-strip.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `showcase-strip.tsx`: 568f821 2026-10-31 SV-26 P2: account menu, bottom sheets, tooltip, sonner and helmet out of the first download
+
+**`src/dev/fixtures/vision/`**
+
+- `openbuilds.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/hooks/`**
+
+- `useDraftCount.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `useNavBadges.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/lib/bounty/`**
+
+- `legacyMeToo.ts`: bb31892 2026-10-31 SV-26 P5: keep the deliberate structured logs, no-console stays an error
+
+**`src/lib/build/`**
+
+- `buildUpdates.ts`: 237707c 2026-10-31 SV-27 P2: deployment tile types and changelog table
+- `buildsMapsTestSupport.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `deploymentNeeds.ts`: 2d0ce9a 2026-11-01 SV-28 P1 to P6: team instructions, handoffs, mentions, jobs, approval step, workspace, t...
+- `partnership.ts`: 7d12d73 2026-10-31 SV-27 P7: deployment in the composer
+
+**`src/lib/reblog/`**
+
+- `checkExcerptStillValid.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `getReblog.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `getReblogsByUser.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `index.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `realtime.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `updateReblog.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/lib/theme/`**
+
+- `shadcn.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/pages/site/compose/`**
+
+- `addMenuTestSupport.tsx`: 42f672c 2026-11-04 UX-02 P6, P7: the Add step tile menu, and one way to add
+- `ca20Fixture.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `ca20Harness.tsx`: 42f672c 2026-11-04 UX-02 P6, P7: the Add step tile menu, and one way to add
+- `ca21Harness.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `ca23.harness.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `ca26.menuHost.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `mapArtwork.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `motionStub.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `optionalKit.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `postTabKit.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `sv07Backend.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `sv07Harness.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `sv18.fixtures.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/pages/site/openbuilds/`**
+
+- `postModel.fixtures.ts`: 8f18c03 2026-11-04 UX-06 P1: the post page at /openbuilds/topics/:id, its Thread and side column
+
+**`src/pages/site/signin/`**
+
+- `signinTest.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+**`src/test/`**
+
+- `deno-globals.d.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `setup.ts`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+- `tokenStyle.tsx`: 929c0c1 2026-10-28 Re-ran EXPLAIN plans
+
+
 ## Part 0 · Baseline
 
 Pulled main at `72f55c9` (UX-10 merged as #445); the branch started there. `node_modules` was missing; `npm ci`. The

@@ -8,7 +8,6 @@ import type { CSSProperties } from "react";
 
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { LibraryLoadingView } from "@/pages/site/library/LibraryFrame";
-import { OpenBuildsLoadingView } from "@/pages/site/openbuilds/OpenBuildsFrame";
 import { OpenBuildsFeedLoadingView } from "@/pages/site/openbuilds/OpenBuildsFeedFrame";
 import { PostLoadingView } from "@/pages/site/openbuilds/PostFrame";
 import { BuildViewSkeleton } from "@/pages/site/build/BuildViewSkeleton";
@@ -33,7 +32,6 @@ function ListPlaceholder({ what, rows = 6, rowHeight = 52, title = true }: { wha
 // SV-10: the page's own loading state, from its small frame module.
 export const HomePlaceholder = HomeLoadingView;
 export const BuildsPlaceholder = BuildsLoadingView;
-export const OpenBuildsPlaceholder = OpenBuildsLoadingView;
 // UX-05 P2: the feed and the space page, which share a layout.
 export const OpenBuildsFeedPlaceholder = OpenBuildsFeedLoadingView;
 // UX-06: a post's page.

@@ -34,8 +34,7 @@ export function useUploadPicker() {
 //
 // meta-bounty is NOT repointed here. It is NS-P49's surface, it has no
 // reachable creation path today (`/upload?type=meta-bounty` re-opens this
-// picker), and the one library helper behind it is frozen rather than
-// rewired — see src/lib/bounty-legacy/flags.ts.
+// picker), and its one library helper was deleted by UX-11.
 const ROUTE_FOR_TYPE: Record<UploadContentType, string> = {
   blueprint: "/compose/new",
   blog: "/upload/blog",
