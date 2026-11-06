@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 import { useConnectorDialog } from "@/components/connect/ConnectorDialog";
 import { Lockup } from "@/components/brand/Lockup";
 import { useAuth } from "@/contexts/AuthContext";
+import { PRIVACY_REVIEWED, TERMS_REVIEWED } from "@/content/legal/reviewed";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -28,6 +29,9 @@ export interface SiteFooterViewProps {
   onSignOut: () => void;
   /** "Connect a tool": opens the connector guide. */
   onConnect: () => void;
+  /** UX-12 P3: a legal link appears only once its text has been reviewed (src/content/legal/reviewed.ts). */
+  showPrivacy?: boolean;
+  showTerms?: boolean;
 }
 
 /* UI-P87, refined: inside the surface, under a 1px `--hairline`, `12px <gutter>`, wrapping with `12px 24px` between
@@ -36,7 +40,7 @@ export interface SiteFooterViewProps {
 const refinedLink: CSSProperties = { fontFamily: FIGTREE, fontSize: 12.5, fontWeight: 400, color: t.text2 };
 const refinedButtonLink: CSSProperties = { ...refinedLink, padding: 0, border: 0, background: "transparent", cursor: "pointer" };
 
-function RefinedSiteFooterView({ signedIn, onSignOut, onConnect }: SiteFooterViewProps) {
+function RefinedSiteFooterView({ signedIn, onSignOut, onConnect, showPrivacy = false, showTerms = false }: SiteFooterViewProps) {
   return (
     <footer
       data-testid="site-footer"
@@ -55,6 +59,8 @@ function RefinedSiteFooterView({ signedIn, onSignOut, onConnect }: SiteFooterVie
       <nav aria-label="Footer" style={{ display: "flex", flexWrap: "wrap", gap: "8px 20px" }}>
         <FrameLink to="/about" style={refinedLink} hoverStyle={{ color: t.text }}>About</FrameLink>
         <FrameLink to="/api-docs" style={refinedLink} hoverStyle={{ color: t.text }}>API docs</FrameLink>
+        {showPrivacy ? <FrameLink to="/privacy" style={refinedLink} hoverStyle={{ color: t.text }}>Privacy</FrameLink> : null}
+        {showTerms ? <FrameLink to="/terms" style={refinedLink} hoverStyle={{ color: t.text }}>Terms</FrameLink> : null}
         <button type="button" onClick={onConnect} style={refinedButtonLink}>
           Connect a tool
         </button>
@@ -85,6 +91,8 @@ function SiteFooterContainer() {
     <SiteFooterView
       signedIn={isLoggedIn}
       onConnect={connector.open}
+      showPrivacy={PRIVACY_REVIEWED}
+      showTerms={TERMS_REVIEWED}
       onSignOut={async () => {
         await signOut();
         navigate("/");

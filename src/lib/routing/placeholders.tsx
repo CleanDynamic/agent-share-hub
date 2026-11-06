@@ -45,3 +45,5 @@ export const BuildPlaceholder = () => <BuildViewSkeleton />;
 // The profile's own skeleton lives in the profile page's chunk; importing it here would put that page into the first download.
 export const ProfilePlaceholder = () => <ListPlaceholder what="Profile" rowHeight={80} rows={4} />;
 export const ComposerPlaceholder = () => <ComposeSkeleton />;
+// UX-12 P2: a legal page is text in one column; the placeholder is that column's first lines.
+export const LegalPlaceholder = () => <ListPlaceholder what="Page" rows={8} rowHeight={20} />;

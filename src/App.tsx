@@ -64,7 +64,8 @@ const OnboardingProfile = lazy(() => import("./pages/OnboardingProfile"));
 
 const LibraryPage = lazy(ROUTE_TABLE.library.load as () => Promise<{ default: React.ComponentType }>);
 const CollectionDetailRoute = lazy(() => import("./pages/CollectionDetail"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+// UX-12 P5: the 404 page is the site's own now (src/pages/NotFound.tsx was Lovable's default).
+const NotFound = lazy(() => import("./pages/site/notfound/NotFoundPage"));
 
 const MessagesPage = lazy(() => import("./pages/Messages"));
 const CollectionDetail = lazy(() => import("./pages/CollectionDetail"));
@@ -131,6 +132,9 @@ const FollowingSitePage = lazy(ROUTE_TABLE.following.load as () => Promise<{ def
 // UI-P35: Activity in the site frame; its own chunk (it draws a chart), rendered directly.
 const ActivitySitePage = lazy(() => import("./pages/site/activity/ActivityPage"));
 // UI-P36: Sign in, Join, reset and verify in the entrance's frame; each its own chunk, rendered directly.
+// UX-12 P2: the legal pages, from the route table so the route and the prefetch share one import.
+const PrivacySitePage = lazy(ROUTE_TABLE.privacy.load as () => Promise<{ default: React.ComponentType }>);
+const TermsSitePage = lazy(ROUTE_TABLE.terms.load as () => Promise<{ default: React.ComponentType }>);
 const LoginSitePage = lazy(ROUTE_TABLE.login.load as () => Promise<{ default: React.ComponentType }>);
 const SignupSitePage = lazy(() => import("./pages/site/signin/SignupPage"));
 const ResetPasswordSitePage = lazy(() => import("./pages/site/signin/ResetPasswordPage"));
@@ -305,6 +309,8 @@ const App = () => (
                 <Route path="/upload/blog" element={<LegacyUploadRoute><BlogUpload /></LegacyUploadRoute>} />
                 <Route path="/upload/bounty" element={<LegacyUploadRoute bounty><BountyUploadShell /></LegacyUploadRoute>} />
                 <Route path="/about" element={<About />} />
+                <Route path="/privacy" element={<PrivacySitePage />} />
+                <Route path="/terms" element={<TermsSitePage />} />
                 <Route path="/api-docs" element={<ApiDocs />} />
                 <Route path="/content/:id" element={<ContentDetail />} />
                 <Route path="/b/:id" element={<ContentOrReblogRoute />} />
@@ -529,6 +535,8 @@ const App = () => (
                         </RouteBoundary>
                   }
                 />
+                {/* UX-12 P5: inside Layout, so a lost visitor gets the header, search and footer. */}
+                <Route path="*" element={<NotFound />} />
               </Route>
               {/* ── BG-P16 — the four authoring routes.
 
@@ -602,7 +610,6 @@ const App = () => (
                   }
                 />
               )}
-              <Route path="*" element={<NotFound />} />
             </Routes>
             </Suspense>
             </PageChangeProvider>

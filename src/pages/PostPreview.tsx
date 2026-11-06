@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { SeoHead } from "@/components/SeoHead";
+import { NotFoundHere } from "@/pages/site/notfound/NotFoundPage";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -132,12 +133,7 @@ export default function PostPreviewPage() {
 
   if (!draft) {
     return (
-      <div className="py-20 px-6 flex flex-col items-center gap-4 text-center">
-        <p className="text-sm text-muted-foreground">Draft not found.</p>
-        <Button variant="outline" size="sm" onClick={() => navigate("/drafts")}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Drafts
-        </Button>
-      </div>
+      <NotFoundHere sentence="If you were looking for a draft, it may have been published or deleted." />
     );
   }
 

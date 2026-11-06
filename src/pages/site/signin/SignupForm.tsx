@@ -17,6 +17,7 @@ import type { InputValidation } from "@/components/auth/AuthInput";
 import type { OAuthProvider } from "@/components/auth/OAuthButtons";
 import { PasswordStrengthMeter, type PasswordStrength } from "@/components/auth/PasswordStrengthMeter";
 import { t } from "@/lib/theme/tokens";
+import { FIGTREE } from "@/lib/theme/type";
 
 import { AuthCheck, AuthField, AuthForm, FieldMessage, OrRule, PrimaryAction, ProviderButtons } from "./AuthParts";
 
@@ -42,6 +43,10 @@ export interface SignupFormProps {
   onProvider: (provider: OAuthProvider) => void;
   loadingProvider: OAuthProvider | null;
   error?: string;
+  /** UX-12 P4: the line under the button, shown once both legal texts are reviewed. */
+  showLegalLine?: boolean;
+  /** Called as a Terms or Privacy link is followed, so the page can keep what was typed. */
+  onLeaveForLegal?: () => void;
 }
 
 /** A link that is told apart from the words around it by more than its colour. */
@@ -51,6 +56,9 @@ const LINK = {
   textUnderlineOffset: 4,
   textDecorationThickness: 1,
 } as const;
+
+/** The line under the button sits in `label` and its links keep the text's colour, told apart by their underline. */
+const LEGAL_LINK = { color: "inherit", textDecoration: "underline", textUnderlineOffset: 4, textDecorationThickness: 1 } as const;
 
 export function SignupForm({
   displayName,
@@ -73,6 +81,8 @@ export function SignupForm({
   onProvider,
   loadingProvider,
   error,
+  showLegalLine = false,
+  onLeaveForLegal,
 }: SignupFormProps) {
   return (
     <>
@@ -127,11 +137,11 @@ export function SignupForm({
         <div>
           <AuthCheck id="terms" checked={agreedToTerms} onChange={onAgreedToTermsChange}>
             I agree to the{" "}
-            <Link to="/terms" style={LINK}>
+            <Link to="/terms" style={LINK} onClick={onLeaveForLegal}>
               Terms of Service
             </Link>{" "}
             and{" "}
-            <Link to="/privacy" style={LINK}>
+            <Link to="/privacy" style={LINK} onClick={onLeaveForLegal}>
               Privacy Policy
             </Link>
           </AuthCheck>
@@ -140,6 +150,19 @@ export function SignupForm({
         <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText="Creating account...">
           Create account
         </PrimaryAction>
+        {showLegalLine ? (
+          <p data-testid="signup-legal-line" style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12, lineHeight: 1.4, color: t.label }}>
+            By creating an account you agree to the{" "}
+            <Link to="/terms" style={LEGAL_LINK} onClick={onLeaveForLegal}>
+              Terms
+            </Link>{" "}
+            and have read the{" "}
+            <Link to="/privacy" style={LEGAL_LINK} onClick={onLeaveForLegal}>
+              Privacy policy
+            </Link>
+            .
+          </p>
+        ) : null}
       </AuthForm>
     </>
   );

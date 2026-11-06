@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { NotFoundHere } from "@/pages/site/notfound/NotFoundPage";
 import { useAuth } from "@/contexts/AuthContext";
 import { SeoHead } from "@/components/SeoHead";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -270,12 +271,7 @@ export default function ContentEditPage() {
 
   if (!item) {
     return (
-      <div className="py-20 px-6 flex flex-col items-center gap-4 text-center">
-        <p className="text-sm text-muted-foreground">Content not found.</p>
-        <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Go back
-        </Button>
-      </div>
+      <NotFoundHere sentence="If you were looking for something to edit, it may have been deleted." />
     );
   }
 

@@ -1542,6 +1542,15 @@ export const CA03_FILES: readonly string[] = [
   "src/dev/fixtures/profile.tsx",
   "src/pages/dev/ProfileDemo.tsx",
   "src/pages/site/profile/profileModel.ts",
+  // UX-12
+  "src/pages/site/legal/LegalView.tsx",
+  "src/pages/site/legal/LegalPage.tsx",
+  "src/pages/site/legal/PrivacyPage.tsx",
+  "src/pages/site/legal/TermsPage.tsx",
+  "src/pages/site/notfound/NotFoundView.tsx",
+  "src/pages/site/notfound/NotFoundPage.tsx",
+  "src/pages/site/notfound/notFoundModel.ts",
+  "src/pages/site/signin/SignupForm.tsx",
 ];
 
 /**

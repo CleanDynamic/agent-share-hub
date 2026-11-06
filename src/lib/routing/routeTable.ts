@@ -26,6 +26,7 @@ import {
   ComposerPlaceholder,
   DraftsPlaceholder,
   HomePlaceholder,
+  LegalPlaceholder,
   LibraryPlaceholder,
   OpenBuildsFeedPlaceholder,
   OpenBuildsPlaceholder,
@@ -307,6 +308,23 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
     load: () => import("@/pages/site/signin/LoginPage"),
     prefetch: () => undefined,
     Placeholder: SignInFallback,
+  },
+  /* UX-12 P2: the two legal pages. Text only, so nothing is read: each is one chunk and no data request. */
+  privacy: {
+    key: "privacy",
+    pattern: "/privacy",
+    signedIn: false,
+    load: () => import("@/pages/site/legal/PrivacyPage"),
+    prefetch: () => undefined,
+    Placeholder: LegalPlaceholder,
+  },
+  terms: {
+    key: "terms",
+    pattern: "/terms",
+    signedIn: false,
+    load: () => import("@/pages/site/legal/TermsPage"),
+    prefetch: () => undefined,
+    Placeholder: LegalPlaceholder,
   },
   create: {
     key: "create",

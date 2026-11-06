@@ -6,6 +6,8 @@ Allow: /browse
 Allow: /creator/
 Allow: /u/
 Allow: /about
+Allow: /privacy
+Allow: /terms
 Disallow: /admin
 Disallow: /admin/login
 Disallow: /signup

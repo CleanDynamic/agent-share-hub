@@ -29,5 +29,8 @@ describe("the route table", () => {
     expect(matchRoute("/b2/some-build")).toMatchObject({ entry: { key: "build" }, params: { slug: "some-build" } });
     expect(matchRoute("/profile/maren")).toMatchObject({ entry: { key: "profile" }, params: { handle: "maren" } });
     expect(matchRoute("/about")).toBeNull();
+    // UX-12: the legal pages are in the table, text only, with nothing to prefetch.
+    expect(matchRoute("/privacy")?.entry.key).toBe("privacy");
+    expect(matchRoute("/terms")?.entry.key).toBe("terms");
   });
 });

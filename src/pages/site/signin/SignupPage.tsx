@@ -23,6 +23,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { checkUsernameAvailability } from "@/lib/auth/checkUsernameAvailability";
 import { startOAuthSignIn } from "@/lib/auth/oauth";
 import { signUpWithEmail } from "@/lib/auth/signUpWithEmail";
+import { PRIVACY_REVIEWED, TERMS_REVIEWED } from "@/content/legal/reviewed";
 
 import { signupCanSubmit } from "./authModel";
 import { SignInShell } from "./SignInShell";
@@ -30,13 +31,30 @@ import { SignupForm } from "./SignupForm";
 
 const EMAIL_REGEX = /^[^@]+@[^@]+\.[^@]+$/;
 
+/* UX-12 P4: the Terms and Privacy policy open in the same tab, so what has been typed is kept for the way back. Name, username
+   and email only (never the password, never the tick), in this tab's session storage, put there when a legal link is followed
+   and taken out again as soon as the form is back. */
+const DRAFT_KEY = "signup_draft";
+interface SavedDraft { displayName: string; username: string; email: string }
+function readSavedDraft(): SavedDraft | null {
+  try {
+    const raw = sessionStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const value = JSON.parse(raw) as Partial<SavedDraft>;
+    return { displayName: String(value.displayName ?? ""), username: String(value.username ?? ""), email: String(value.email ?? "") };
+  } catch {
+    return null;
+  }
+}
+
 export function SignupPage() {
   const navigate = useNavigate();
   const { isLoggedIn } = useAuth();
 
-  const [displayName, setDisplayName] = useState("");
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
+  const [saved] = useState(readSavedDraft);
+  const [displayName, setDisplayName] = useState(saved?.displayName ?? "");
+  const [username, setUsername] = useState(saved?.username ?? "");
+  const [email, setEmail] = useState(saved?.email ?? "");
   const [password, setPassword] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,6 +64,27 @@ export function SignupPage() {
   const [usernameValidation, setUsernameValidation] = useState<InputValidation>({ state: "idle" });
   const [emailValidation, setEmailValidation] = useState<InputValidation>({ state: "idle" });
   const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>("weak");
+
+  // Back from reading the Terms or Privacy policy: check what was kept, then let it go.
+  useEffect(() => {
+    if (!saved) return;
+    try {
+      sessionStorage.removeItem(DRAFT_KEY);
+    } catch {
+      /* storage is not available: nothing was kept either */
+    }
+    if (saved.username) handleUsernameChange(saved.username);
+    if (saved.email) handleEmailBlur();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const keepForLegal = () => {
+    try {
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ displayName, username, email }));
+    } catch {
+      /* the form is simply empty on the way back */
+    }
+  };
 
   // Already signed in — auth pages aren't for you.
   useEffect(() => {
@@ -220,6 +259,8 @@ export function SignupPage() {
           onProvider={handleProvider}
           loadingProvider={loadingProvider}
           error={error}
+          showLegalLine={TERMS_REVIEWED && PRIVACY_REVIEWED}
+          onLeaveForLegal={keepForLegal}
         />
       </SignInShell>
     </>
