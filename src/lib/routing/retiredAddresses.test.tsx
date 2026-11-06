@@ -23,6 +23,9 @@ const RETIRED: ReadonlyArray<readonly [string, string]> = [
   // The old bounty form and the old conversion page (UX-11 P1).
   ["/bounty/new", "/compose/new"],
   ["/convert/abc123", "/drafts"],
+  // Every form of the old bounty editor: with or without a draft id, it lands on Drafts (UX-11 follow-up).
+  ["/upload/bounty", "/drafts"],
+  ["/upload/bounty?id=draft-9", "/drafts"],
   // The older bounties and gallery addresses (SV-02).
   ["/bounties", "/openbuilds/requests"],
   ["/gallery", "/builds"],

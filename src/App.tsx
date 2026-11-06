@@ -44,7 +44,6 @@ const QuotableSelectionProvider = lazy(() =>
 const Upload = lazy(() => import("./pages/Upload"));
 const UploadTypeSelector = lazy(() => import("./pages/UploadTypeSelector"));
 const BlogUpload = lazy(() => import("./pages/BlogUpload"));
-const BountyUploadShell = lazy(() => import("./pages/BountyUploadShell"));
 import { LegacyUploadRoute } from "@/components/upload/LegacyUploadNotice";
 const About = lazy(() => import("./pages/About"));
 const ContentDetail = lazy(() => import("./pages/ContentDetail"));
@@ -303,7 +302,8 @@ const App = () => (
                 <Route path="/upload" element={<LegacyUploadRoute><UploadTypeSelector /></LegacyUploadRoute>} />
                 <Route path="/upload/blueprint" element={<LegacyUploadRoute><Upload /></LegacyUploadRoute>} />
                 <Route path="/upload/blog" element={<LegacyUploadRoute><BlogUpload /></LegacyUploadRoute>} />
-                <Route path="/upload/bounty" element={<LegacyUploadRoute bounty><BountyUploadShell /></LegacyUploadRoute>} />
+                {/* UX-11: every form of /upload/bounty, with or without ?id, lands on Drafts. Old bounty drafts stay in the database, unopened. */}
+                <Route path="/upload/bounty" element={<Navigate to="/drafts" replace />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/api-docs" element={<ApiDocs />} />
                 <Route path="/content/:id" element={<ContentDetail />} />
