@@ -1,7 +1,5 @@
 import * as React from 'react';
 import { Maximize2 } from 'lucide-react';
-import { BountyMoreMenu } from '@/components/bounty/BountyMoreMenu';
-import { MissingStageBadge } from '@/components/bounty/MissingStageBadge';
 import { feedback } from '@/lib/theme/motion';
 
 export type ThumbnailBlockType =
@@ -48,11 +46,6 @@ interface StageThumbnailProps {
   connections?: ThumbnailConnection[];
   onOpen?: () => void;
   onRename?: (name: string) => void;
-  /** Bounty mode UI affordances. Adds the ⋯ more-menu and missing badge swap. */
-  isBounty?: boolean;
-  isMissing?: boolean;
-  missingDescription?: string | null;
-  onToggleMissing?: () => void;
   stageId?: string | null;
 }
 
@@ -114,10 +107,6 @@ export function StageThumbnail({
   connections = [],
   onOpen,
   onRename,
-  isBounty = false,
-  isMissing = false,
-  missingDescription = null,
-  onToggleMissing,
   stageId = null,
 }: StageThumbnailProps) {
   const [hovered, setHovered] = React.useState(false);
@@ -211,8 +200,8 @@ export function StageThumbnail({
             width: 20,
             height: 20,
             borderRadius: '50%',
-            background: isBounty && isMissing ? 'color-mix(in srgb, var(--cat-breakage) 18%, transparent)' : 'color-mix(in srgb, var(--action) 14%, transparent)',
-            color: isBounty && isMissing ? 'var(--cat-breakage)' : 'var(--action)',
+            background: 'color-mix(in srgb, var(--action) 14%, transparent)',
+            color: 'var(--action)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -328,26 +317,8 @@ export function StageThumbnail({
         >
           <Maximize2 size={14} strokeWidth={1.8} />
         </button>
-
-        {/* Bounty more-menu (⋯) */}
-        {isBounty && onToggleMissing ? (
-          <div data-stop-open="true" style={{ flexShrink: 0 }}>
-            <BountyMoreMenu
-              isMissing={isMissing}
-              onToggleMissing={onToggleMissing}
-              triggerTitle={isMissing ? 'Stage marked as missing' : 'Stage actions'}
-            />
-          </div>
-        ) : null}
       </div>
 
-      {/* Body — when bounty + missing, replace preview/strip/list with MissingStageBadge */}
-      {isBounty && isMissing ? (
-        <div style={{ padding: 12, borderTop: '0.5px solid color-mix(in srgb, var(--cat-breakage) 18%, transparent)' }}>
-          <MissingStageBadge description={missingDescription} slotId={stageId} />
-        </div>
-      ) : (
-        <>
           {/* SPATIAL PREVIEW (mini-map) */}
           {blockCount > 0 ? (
             <SpatialPreview blocks={blocks} connections={connections} />
@@ -447,8 +418,6 @@ export function StageThumbnail({
               })}
             </div>
           ) : null}
-        </>
-      )}
     </div>
   );
 }

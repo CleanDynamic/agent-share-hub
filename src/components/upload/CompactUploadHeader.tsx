@@ -5,7 +5,7 @@ import type { CoverImage } from "@/types/blueprintMedia";
 import { scrollBehavior, feedback } from "@/lib/theme/motion";
 
 interface CompactUploadHeaderProps {
-  postType: "blueprint" | "blog" | "bounty";
+  postType: "blueprint" | "blog";
   mode?: string;
   title: string;
   description: string;
@@ -19,12 +19,11 @@ interface CompactUploadHeaderProps {
 }
 
 const POST_TYPE_STYLES: Record<
-  "blueprint" | "blog" | "bounty",
+  "blueprint" | "blog",
   { label: string; color: string; bg: string }
 > = {
   blueprint: { label: "BLUEPRINT", color: "var(--action)", bg: "color-mix(in srgb, var(--action) 14%, transparent)" },
   blog:      { label: "BLOG",      color: "var(--cat-data)", bg: "color-mix(in srgb, var(--cat-data) 14%, transparent)" },
-  bounty:    { label: "BOUNTY",    color: "var(--cat-configuration)", bg: "color-mix(in srgb, var(--cat-configuration) 14%, transparent)" },
 };
 
 export function CompactUploadHeader({
