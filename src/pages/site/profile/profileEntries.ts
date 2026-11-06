@@ -80,7 +80,7 @@ export function entryOf(item: ProfileFeedItem, context: EntryContext): FeedEntry
     }
     case "topic": {
       const card = toCardData(item.post, { ...context.extras, now: context.now, hrefOf: () => topicHref(item.post.id), strip: true });
-      return { kind: "topic", key: item.key, id: item.id, heading: card.heading || "Untitled post", pinned, card };
+      return { kind: "topic", key: item.key, id: item.id, heading: card.heading || "Untitled topic", pinned, card };
     }
     case "reply": {
       const to = replyHref(item.post.rootId, item.post.id);
