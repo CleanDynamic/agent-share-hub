@@ -1,108 +1,81 @@
-/* UI-P34 — /profile/:handle (and /profile) in the site frame: the container.
+/* UX-10: /profile/:handle (and /profile) in the site frame: the container.
 
-   Loads the Profile's data through `src/lib/` functions only, maps it to
-   `ProfileView`'s props and renders it. No Supabase call in this file. The legacy
-   page (`src/pages/Profile.tsx`) is not edited: `FrameRoute` picks one by the
-   `site_frame` flag.
+   Loads through `src/lib/` functions only, maps the results to `ProfileView`'s props and renders it. No Supabase call here.
 
-   EACH PANEL LOADS ON ITS OWN. A slow level never holds the banner back, and a
-   panel whose read fails says so in its own place — or, for the grid and the
-   marks, draws what it can and nothing false: a refused read is never drawn as
-   a start at zero.
+   THE FIRST SCREEN, ONE ROUND. With a handle in the address the profile, the side column's counts (get_profile_side) and the
+   feed's first page (get_profile_feed) start together; the route's prefetch starts the same three on the same keys. The feed's
+   cards are read inside getProfileFeed, one read per kind. At /profile (your own, no handle yet) the side and the feed wait for
+   the profile's handle. The page is ready when the head and the feed's first page are in.
 
-   WHAT IS READABLE FOR WHOM. The level, streak, activity and creator marks live
-   in tables their owner reads (`user_progress`, `streak_days`, `user_badges`).
-   On somebody else's profile they come back empty under row-level security; the
-   panels then draw the level and track the visible-surfaces function gives, no
-   XP, no streak and no marks, rather than inventing figures.
+   WHAT A VISITOR SEES is decided in the database: drafts, hidden replies, notes the owner keeps to themselves, a level they hide
+   and everything behind a private profile never arrive. Saves are never read.
 
-   THE TRACK. On your own profile the four tracks change through `setUserTrack`
-   (the first choice) and `respecTrack` (every switch after, behind the existing
-   confirmation, with its 30-day cooldown). Nothing here awards XP: the only writes are
-   follow, the track, and a message. */
+   REPORT is not offered on a profile: content_reports takes a build, a comment or a topic, not a person (UX-10 report).
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { usePageReady } from "@/lib/routing/pageReady";
+   WRITES: follow, a message, the track (as before), a picture or header (useProfilePictures), Customise profile's one Save, Pin
+   and Unpin, and a build's own display. None notifies anyone. Nothing here awards XP. */
+
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { keepPreviousData, useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
-import { listTopicsBy } from "@/lib/openbuilds/connections";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { SeoHead } from "@/components/SeoHead";
 import { Button } from "@/components/brand/Button";
 import { CoverFallback } from "@/components/brand/CoverFallback";
-import { GalleryCard } from "@/components/gallery/GalleryCard";
-import { cardMedia, coverMedia, mediaAlt, stillFor, useSignedMedia } from "@/components/gallery/cardMedia";
-import { EditProfileSheet } from "@/components/profile/EditProfileSheet";
+import { feedMedia, useSignedMedia, type CardMedia } from "@/components/gallery/cardMedia";
 import { MessageComposeModal } from "@/components/messages/MessageComposeModal";
+import { PageArrival } from "@/components/shell/PageArrival";
 import { useCrumbTitle } from "@/components/shell/useBreadcrumb";
 import RespecDialog from "@/components/skilltree/respec-dialog";
+import { BADGES } from "@/components/trophies/badge-data";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { engagementFor, useEngagement } from "@/hooks/useEngagement";
-import type { GalleryBuild } from "@/lib/build/gallery";
-import { isPermissionError } from "@/lib/errors/permission";
+import { listBuildMaps, type BuildMap } from "@/lib/build/buildsMaps";
+import { copyToClipboard } from "@/lib/deepLink";
 import { getCollections, type CollectionPreview } from "@/lib/library";
 import { createDirectThread, sendTextMessage } from "@/lib/messaging";
+import { listPins, pinToProfile, saveProfile, setBuildDisplay, unpinFromProfile, type ProfileDraft } from "@/lib/profile/customise";
 import { followMaker, unfollowMaker } from "@/lib/profile/follow";
-import { getMakerFigures } from "@/lib/profile/figures";
+import { getProfileFeed, PROFILE_FEED_PAGE, type ProfileFeedPage } from "@/lib/profile/getProfileFeed";
+import { getProfileSide } from "@/lib/profile/profileSide";
 import { getProfileProgress } from "@/lib/profile/profileProgress";
 import { getProfileSummary } from "@/lib/profile/getProfileSummary";
-import {
-  countMakerWorks,
-  listMakerBuilds,
-  listMakerReproducedBuilds,
-  type MakerBuildsCursor,
-  type MakerBuildsPage,
-  type ReproducedBuildsCursor,
-} from "@/lib/profile/makerBuilds";
-import { getStreakDays, respecTrack, setUserTrack, type TrackId } from "@/lib/progress";
+import { DEFAULT_SETTINGS, PINS_MAX, type FeedFilter, type Pin } from "@/lib/profile/settings";
+import { respecTrack, setUserTrack, type TrackId } from "@/lib/progress";
 import { getMyBadgeKeys } from "@/lib/progress/badges";
+import { usePageReady } from "@/lib/routing/pageReady";
 
-import { PageArrival } from "@/components/shell/PageArrival";
+import { CustomiseProfile } from "./CustomiseProfile";
+import type { FeedEntry } from "./ProfileFeed";
 import { ProfileLoadFailed, ProfileNotice, ProfileView, ProfileViewSkeleton } from "./ProfileView";
-import type { ProfileMakerView } from "./ProfileBanner";
-import {
-  ACTIVITY_DAYS,
-  BADGE_SLUGS,
-  activityDays,
-  buildsCount,
-  levelView,
-  marksView,
-  sinceLabel,
-  worksTabOf,
-  profileTopicEntries,
-  type CollectionTileView,
-  type FiguresView,
-  type WorkCard,
-  type WorksTab,
-  type WorksView,
-} from "./profileModel";
+import { entryOf } from "./profileEntries";
+import { emptyFeed, feedOptions, joinedLabel, metaParts, oneLineOf, othersLines, privateLine, recordParts, shownFilter, STANDING_LABEL } from "./profileFeedModel";
+import { TRACK_ITEMS, levelView, streakLine, xpLine } from "./profileModel";
+import { useProfilePictures } from "./useProfilePictures";
 
 /** A profile does not change while somebody is looking at it. */
 const STALE_MS = 60_000;
-/** Collections in one page of the Collections tab. */
-const COLLECTIONS_PAGE = 24;
+/** Collections drawn in the side column. */
+const COLLECTIONS_SHOWN = 4;
 /** The respec cooldown the database enforces. */
 const RESPEC_COOLDOWN_MS = 30 * 24 * 60 * 60 * 1000;
 
-const EMPTY_BUILDS: GalleryBuild[] = [];
+export const profileKeys = {
+  summary: (lookup: string | null, viewerId: string | null) => ["profile", "getProfileSummary", lookup, viewerId] as const,
+  side: (handle: string | null, viewerId: string | null) => ["profile", "getProfileSide", handle, viewerId] as const,
+  feed: (handle: string | null, filter: FeedFilter, viewerId: string | null) => ["profile", "getProfileFeed", handle, filter, viewerId] as const,
+};
 
-/** A list of build pages as one list of builds, one card for a build that appears twice. */
-function flatten(pages: ReadonlyArray<{ builds: GalleryBuild[] }> | undefined): GalleryBuild[] {
-  const seen = new Set<string>();
-  const out: GalleryBuild[] = [];
-  for (const page of pages ?? []) {
-    for (const build of page.builds) {
-      if (seen.has(build.id)) continue;
-      seen.add(build.id);
-      out.push(build);
-    }
-  }
-  return out.length > 0 ? out : EMPTY_BUILDS;
-}
+/** The feed's first page, as the page and the route's prefetch read it. */
+export const feedQuery = (handle: string, filter: FeedFilter) => ({
+  queryFn: ({ pageParam }: { pageParam: string | null }) => getProfileFeed(handle, { filter, cursor: pageParam }),
+  initialPageParam: null as string | null,
+  getNextPageParam: (last: ProfileFeedPage) => last.next ?? undefined,
+});
 
 export function ProfilePage() {
-  const { handle } = useParams<{ handle?: string }>();
+  const { handle: handleParam } = useParams<{ handle?: string }>();
   const { user, isLoggedIn, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -116,16 +89,16 @@ export function ProfilePage() {
   const [pendingTrack, setPendingTrack] = useState<TrackId | null>(null);
 
   /* Who we are looking at. No handle is your own profile, which needs a session. */
-  const lookup = handle ?? user?.id ?? null;
+  const lookup = handleParam ?? user?.id ?? null;
   const viewerId = user?.id ?? null;
 
   useEffect(() => {
-    if (!authLoading && !handle && !isLoggedIn) navigate("/login", { replace: true });
-  }, [authLoading, handle, isLoggedIn, navigate]);
+    if (!authLoading && !handleParam && !isLoggedIn) navigate("/login", { replace: true });
+  }, [authLoading, handleParam, isLoggedIn, navigate]);
 
-  /* ── who ── */
+  /* ── round one: the profile, its side column and the feed's first page, together ── */
 
-  const summaryKey = useMemo(() => ["profile", "getProfileSummary", lookup, viewerId] as const, [lookup, viewerId]);
+  const summaryKey = profileKeys.summary(lookup, viewerId);
   const summaryQuery = useQuery({
     queryKey: summaryKey,
     enabled: Boolean(lookup),
@@ -134,348 +107,181 @@ export function ProfilePage() {
     refetchOnWindowFocus: false,
   });
   const summary = summaryQuery.data ?? null;
-  const makerId = summary?.id ?? null;
+  const handle = handleParam ?? summary?.handle ?? null;
   const isOwn = Boolean(summary?.isOwnProfile);
+  const settings = summary?.settings ?? DEFAULT_SETTINGS;
+  const locked = Boolean(summary?.isPrivate && !isOwn && !summary?.isFollowing);
 
   useCrumbTitle(summary ? summary.displayName : summaryQuery.isPending ? null : summaryQuery.isError && !(summaryQuery.error instanceof Error && summaryQuery.error.message.startsWith("Profile not found")) ? "Profile" : "Not found");
 
-  /* ── the panels, each on its own ── */
+  const sideKey = profileKeys.side(handle, viewerId);
+  const sideQuery = useQuery({
+    queryKey: sideKey,
+    enabled: Boolean(handle) && !authLoading,
+    queryFn: () => getProfileSide(handle as string),
+    staleTime: STALE_MS,
+    refetchOnWindowFocus: false,
+  });
+  const side = sideQuery.data ?? null;
 
-  const figuresQuery = useQuery({
-    queryKey: ["profile", "getMakerFigures", makerId],
-    enabled: Boolean(makerId),
-    queryFn: () => getMakerFigures(makerId as string),
+  const filter = shownFilter(params.get("show"), settings.feedFilter, side?.counts ?? null);
+  const feedKey = profileKeys.feed(handle, filter, viewerId);
+  const feed = useInfiniteQuery({
+    queryKey: feedKey,
+    enabled: Boolean(handle) && !authLoading,
+    ...feedQuery(handle ?? "", filter),
+    staleTime: STALE_MS,
+    refetchOnWindowFocus: false,
+    // A new filter keeps the old cards until the new ones arrive; nothing fades.
+    placeholderData: keepPreviousData,
+  });
+  const items = useMemo(() => (feed.data?.pages ?? []).flatMap((page) => page.items), [feed.data]);
+  const extras = feed.data?.pages[0]?.extras;
+
+  /* ── what the cards need beyond the feed: pictures signed once, the engagement row, the Maps ── */
+
+  const builds = items.flatMap((item) => (item.kind === "build" ? [item.build] : []));
+  const media = (() => {
+    const rows: CardMedia[] = [];
+    const seen = new Set<string>();
+    for (const build of builds) {
+      for (const row of feedMedia(build)) {
+        if (seen.has(row.id)) continue;
+        seen.add(row.id);
+        rows.push(row);
+      }
+    }
+    return rows;
+  })();
+  const srcByPath = useSignedMedia(media);
+  const engagement = useEngagement(builds.map((build) => build.id));
+  const mapIds = builds.map((build) => build.id).sort().join(",");
+  const mapsQuery = useQuery({
+    queryKey: ["build", "listBuildMaps", mapIds],
+    enabled: mapIds.length > 0,
+    queryFn: () => listBuildMaps(mapIds.split(",")),
     staleTime: STALE_MS,
     refetchOnWindowFocus: false,
   });
-  const countsQuery = useQuery({
-    queryKey: ["profile", "countMakerWorks", makerId],
-    enabled: Boolean(makerId),
-    queryFn: () => countMakerWorks(makerId as string),
-    staleTime: STALE_MS,
-    refetchOnWindowFocus: false,
-  });
-  const progressKey = useMemo(() => ["profile", "getProfileProgress", makerId] as const, [makerId]);
+  const maps = new Map<string, BuildMap>((mapsQuery.data ?? []).map((map) => [map.buildId, map]));
+
+  /* ── your own profile: progress, marks, pins ── */
+
+  const makerId = summary?.id ?? null;
+  const progressKey = ["profile", "getProfileProgress", makerId] as const;
   const progressQuery = useQuery({
     queryKey: progressKey,
-    enabled: Boolean(makerId),
+    enabled: Boolean(makerId) && isOwn,
     queryFn: () => getProfileProgress(makerId as string),
     staleTime: STALE_MS,
     refetchOnWindowFocus: false,
   });
-  const streakQuery = useQuery({
-    queryKey: ["progress", "getStreakDays", makerId, ACTIVITY_DAYS],
-    enabled: Boolean(makerId),
-    queryFn: () => getStreakDays(makerId as string, ACTIVITY_DAYS),
-    staleTime: STALE_MS,
-    refetchOnWindowFocus: false,
-  });
+  /* user_badges is readable by its owner only: someone else's marks come back empty, so they are read on your own profile alone. */
   const marksQuery = useQuery({
     queryKey: ["progress", "getMyBadgeKeys", makerId],
-    enabled: Boolean(makerId),
-    queryFn: () => getMyBadgeKeys(makerId as string, BADGE_SLUGS),
+    enabled: Boolean(makerId) && isOwn,
+    queryFn: () => getMyBadgeKeys(makerId as string, BADGES.map((badge) => badge.id)),
+    staleTime: STALE_MS,
+    refetchOnWindowFocus: false,
+  });
+  const collectionsQuery = useQuery({
+    queryKey: ["library", "getCollections", makerId, viewerId, COLLECTIONS_SHOWN],
+    enabled: Boolean(makerId) && !locked,
+    queryFn: () => getCollections({ userId: makerId as string, viewerId, limit: COLLECTIONS_SHOWN + 1 }),
+    staleTime: STALE_MS,
+    refetchOnWindowFocus: false,
+  });
+  const pinsQuery = useQuery({
+    queryKey: ["profile", "listPins", makerId],
+    enabled: Boolean(makerId) && isOwn,
+    queryFn: () => listPins(makerId as string),
     staleTime: STALE_MS,
     refetchOnWindowFocus: false,
   });
 
-  /* The banner's picture is the cover of their most-reproduced build: the first of the gallery's order. */
-  const bannerQuery = useQuery({
-    queryKey: ["profile", "listMakerBuilds", makerId, "banner"],
-    enabled: Boolean(makerId),
-    queryFn: () => listMakerBuilds(makerId as string, { limit: 1 }),
-    staleTime: STALE_MS,
-    refetchOnWindowFocus: false,
-  });
-  const bannerBuild = bannerQuery.data?.builds[0] ?? null;
-
-  /* ── the works: the open tab's list, read when the tab is open ── */
-
-  const tab: WorksTab = worksTabOf(params.get("tab"));
-  const onTab = useCallback(
-    (next: WorksTab) => {
-      const nextParams = new URLSearchParams(params);
-      if (next === "builds") nextParams.delete("tab");
-      else nextParams.set("tab", next);
-      setParams(nextParams, { replace: false });
-    },
-    [params, setParams],
-  );
-
-  const buildsList = useInfiniteQuery({
-    queryKey: ["profile-builds", makerId, tab === "rebuilds" ? "rebuilds" : "builds"],
-    enabled: Boolean(makerId) && (tab === "builds" || tab === "rebuilds"),
-    initialPageParam: null as MakerBuildsCursor | null,
-    queryFn: ({ pageParam }): Promise<MakerBuildsPage<MakerBuildsCursor>> =>
-      listMakerBuilds(makerId as string, { rebuildsOnly: tab === "rebuilds", after: pageParam }),
-    getNextPageParam: (last) => last.next ?? undefined,
-    refetchOnWindowFocus: false,
-    // Builds to Rebuilds keeps the first list until the second arrives.
-    placeholderData: keepPreviousData,
-  });
-  const reproducedList = useInfiniteQuery({
-    queryKey: ["profile-builds", makerId, "reproduced"],
-    enabled: Boolean(makerId) && tab === "reproduced",
-    initialPageParam: null as ReproducedBuildsCursor | null,
-    queryFn: ({ pageParam }): Promise<MakerBuildsPage<ReproducedBuildsCursor>> =>
-      listMakerReproducedBuilds(makerId as string, { after: pageParam }),
-    getNextPageParam: (last) => last.next ?? undefined,
-    refetchOnWindowFocus: false,
-  });
-  const collectionsList = useInfiniteQuery({
-    queryKey: ["library", "getCollections", makerId, viewerId],
-    enabled: Boolean(makerId),
-    initialPageParam: 0,
-    queryFn: ({ pageParam }) =>
-      getCollections({ userId: makerId as string, viewerId, limit: COLLECTIONS_PAGE, offset: pageParam }),
-    getNextPageParam: (last, all) => {
-      const loaded = all.length * COLLECTIONS_PAGE;
-      return loaded < last.total ? loaded : undefined;
-    },
-    refetchOnWindowFocus: false,
-  });
-
-  /* UX-07 P3: the person's topics and replies, read when the tab is open. */
-  const topicsList = useInfiniteQuery({
-    queryKey: ["openbuilds", "listTopicsBy", makerId],
-    enabled: Boolean(makerId) && tab === "topics",
-    initialPageParam: 0,
-    queryFn: ({ pageParam }) => listTopicsBy(makerId as string, { offset: pageParam }),
-    getNextPageParam: (last) => last.next ?? undefined,
-    refetchOnWindowFocus: false,
-  });
-
-  const list = tab === "topics" ? topicsList : tab === "reproduced" ? reproducedList : tab === "collections" ? collectionsList : buildsList;
-  const builds = useMemo(
-    () => (tab === "collections" ? EMPTY_BUILDS : flatten(tab === "reproduced" ? reproducedList.data?.pages : buildsList.data?.pages)),
-    [tab, buildsList.data, reproducedList.data],
-  );
-
-  /* One signing pass for the cards on screen and the banner, one engagement call for the cards. */
-  const mediaRows = useMemo(() => [...builds, ...(bannerBuild ? [bannerBuild] : [])].flatMap(cardMedia), [builds, bannerBuild]);
-  const srcByPath = useSignedMedia(mediaRows);
-  const engagement = useEngagement(useMemo(() => builds.map((build) => build.id), [builds]));
-
-  /* ── mapped for the view ── */
-
-  const maker: ProfileMakerView | null = summary
-    ? (() => {
-        const media = bannerBuild ? coverMedia(bannerBuild) : null;
-        const src = bannerBuild ? stillFor(srcByPath, media) : null;
-        return {
-          id: summary.id,
-          name: summary.displayName,
-          handle: summary.handle,
-          bio: summary.customBio ?? summary.derivedBio ?? null,
-          place: summary.location,
-          since: sinceLabel(summary.joinedAt),
-          avatarUrl: summary.avatarUrl,
-          cover:
-            bannerBuild && src ? (
-              <img
-                src={src}
-                alt={mediaAlt(bannerBuild, media)}
-                decoding="async"
-                style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
-              />
-            ) : (
-              <CoverFallback seed={summary.id} radius={0} />
-            ),
-        };
-      })()
-    : null;
-
-  const level = progressQuery.data ? levelView(progressQuery.data) : null;
-
-  const figures: FiguresView | null = figuresQuery.data
-    ? {
-        buildsHung: figuresQuery.data.buildsHung,
-        reproducedByOthers: figuresQuery.data.reproducedByOthers,
-        rebuildsOfWork: figuresQuery.data.rebuildsOfWork,
-        bountiesSolved: figuresQuery.data.bountiesSolved,
-        bountyEarningsGbp: figuresQuery.data.bountyEarningsGbp,
-        // No creator-mark threshold is defined for any figure (`getCreatorMarks` reads earned rows, not targets), so no Stat draws a bar.
-      }
-    : null;
-
-  const collectionPages = collectionsList.data?.pages;
-  const collectionRows = useMemo(
-    () => (collectionPages ?? []).flatMap((page) => page.collections).filter((collection) => !collection.isDefault),
-    [collectionPages],
-  );
-  const defaultsSeen = (collectionPages ?? []).flatMap((page) => page.collections).length - collectionRows.length;
-  const collectionsTotal = collectionPages ? Math.max(0, collectionPages[0].total - defaultsSeen) : undefined;
-
-  const counts: WorksView["counts"] = {
-    builds: figuresQuery.data?.buildsHung,
-    rebuilds: countsQuery.data?.rebuilds,
-    reproduced: countsQuery.data?.reproduced,
-    collections: collectionsTotal,
+  const refreshProfile = () => {
+    void qc.invalidateQueries({ queryKey: ["profile"] });
   };
-
-  const cards: WorkCard[] = builds.map((build) => ({
-    key: build.id,
-    render: (variant) => (
-      <GalleryCard
-        build={build}
-        srcByPath={srcByPath}
-        engagement={engagementFor(engagement, build.id)}
-        coverHeight={variant === "phone" ? 90 : 86}
-        titleSize={17}
-      />
-    ),
-  }));
-
-  const collections: CollectionTileView[] = collectionRows.map((collection: CollectionPreview) => ({
-    key: collection.id,
-    to: isOwn ? `/library/collections/${collection.id}` : `/library/${summary?.handle ?? ""}/collections/${collection.id}`,
-    title: collection.name,
-    count: buildsCount(collection.itemCount),
-    covers: collection.coverItems.slice(0, 4).map((item) =>
-      item.cover_image_url ? (
-        <img key={item.id} src={item.cover_image_url} alt="" loading="lazy" decoding="async" style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }} />
-      ) : (
-        <CoverFallback key={item.id} seed={item.id} radius={0} />
-      ),
-    ),
-  }));
-
-  const listError = list.error;
-  const works: WorksView = {
-    tab,
-    onTab,
-    counts,
-    status: listError && (tab === "collections" ? collectionRows.length === 0 : tab === "topics" ? !topicsList.data : builds.length === 0) ? "error" : list.isPending ? "loading" : "ready",
-    errorKind: listError && isPermissionError(listError) ? "permission" : "error",
-    error: listError,
-    cards,
-    collections,
-    topics: (topicsList.data?.pages ?? []).flatMap((page) => profileTopicEntries(page, Date.now())),
-    hasMore: Boolean(list.hasNextPage),
-    loadingMore: list.isFetchingNextPage,
-    onMore: () => void list.fetchNextPage(),
-    onRetry: () => void list.refetch(),
-  };
-
-  const activity = streakQuery.data ? activityDays(streakQuery.data, new Date()) : null;
-
-  const marks = marksQuery.data ? marksView(marksQuery.data) : null;
-
-  /* A read that failed says so in its own panel — never as an empty grid or a start at zero — and the rest carry on. */
-  const failure = (query: { isError: boolean; data: unknown; error: unknown; refetch: () => unknown }) =>
-    query.isError && query.data === undefined ? { onRetry: () => void query.refetch(), error: query.error } : undefined;
-  const failed = {
-    level: failure(progressQuery),
-    figures: failure(figuresQuery),
-    activity: failure(streakQuery),
-    marks: failure(marksQuery),
-  };
+  const pictures = useProfilePictures({ onSaved: refreshProfile });
 
   /* ── follow ── */
 
-  const patchSummary = useCallback(
-    (following: boolean) =>
-      qc.setQueryData(summaryKey, (prev: typeof summary) =>
-        prev
-          ? {
-              ...prev,
-              isFollowing: following,
-              counts: { ...prev.counts, followers: Math.max(0, prev.counts.followers + (following ? 1 : -1)) },
-            }
-          : prev,
-      ),
-    [qc, summaryKey],
-  );
-
-  const writeFollow = useCallback(
-    async (following: boolean) => {
-      if (!summary || !viewerId) {
-        navigate("/login");
-        return;
-      }
-      setFollowBusy(true);
-      patchSummary(following);
-      try {
-        await (following ? followMaker(viewerId, summary.id) : unfollowMaker(viewerId, summary.id));
-      } catch {
-        void qc.invalidateQueries({ queryKey: summaryKey });
-        toast({ title: following ? "Could not follow" : "Could not unfollow", variant: "destructive" });
-      } finally {
-        setFollowBusy(false);
-      }
-    },
-    [summary, viewerId, navigate, patchSummary, qc, summaryKey, toast],
-  );
-
-  /* ── message ── */
-
-  const onMessage = useCallback(() => {
-    if (!summary) return;
-    if (!isLoggedIn) {
+  const writeFollow = async (following: boolean) => {
+    if (!summary || !viewerId) {
       navigate("/login");
       return;
     }
-    setComposeOpen(true);
-  }, [summary, isLoggedIn, navigate]);
+    setFollowBusy(true);
+    qc.setQueryData(summaryKey, (prev: typeof summary) =>
+      prev ? { ...prev, isFollowing: following, counts: { ...prev.counts, followers: Math.max(0, prev.counts.followers + (following ? 1 : -1)) } } : prev,
+    );
+    try {
+      await (following ? followMaker(viewerId, summary.id) : unfollowMaker(viewerId, summary.id));
+      // A private profile opens once followed.
+      if (summary.isPrivate) refreshProfile();
+    } catch {
+      void qc.invalidateQueries({ queryKey: summaryKey });
+      toast({ title: following ? "Could not follow" : "Could not unfollow", variant: "destructive" });
+    } finally {
+      setFollowBusy(false);
+    }
+  };
 
-  const onComposeSubmit = useCallback(
-    async (firstMessage: string) => {
-      if (!summary) return;
-      setComposeBusy(true);
-      try {
-        const threadId = await createDirectThread(summary.id);
-        if (firstMessage.trim()) await sendTextMessage(threadId, firstMessage.trim());
-        setComposeOpen(false);
-        navigate(`/messages/${threadId}`);
-      } catch (err) {
-        toast({
-          title: "Could not start conversation",
-          description: err instanceof Error ? err.message : String(err),
-          variant: "destructive",
-        });
-      } finally {
-        setComposeBusy(false);
-      }
-    },
-    [summary, navigate, toast],
-  );
+  /* ── message ── */
 
-  /* ── the track ── */
+  const onComposeSubmit = async (firstMessage: string) => {
+    if (!summary) return;
+    setComposeBusy(true);
+    try {
+      const threadId = await createDirectThread(summary.id);
+      if (firstMessage.trim()) await sendTextMessage(threadId, firstMessage.trim());
+      setComposeOpen(false);
+      navigate(`/messages/${threadId}`);
+    } catch (err) {
+      toast({ title: "Could not start conversation", description: err instanceof Error ? err.message : String(err), variant: "destructive" });
+    } finally {
+      setComposeBusy(false);
+    }
+  };
+
+  /* ── the track (Your progress) ── */
 
   const currentTrack = progressQuery.data?.track ?? null;
   const lastRespecAt = progressQuery.data?.lastRespecAt ?? null;
   const canRespec = !lastRespecAt || Date.now() - new Date(lastRespecAt).getTime() >= RESPEC_COOLDOWN_MS;
-  const nextRespecDate =
-    lastRespecAt && !canRespec ? new Date(new Date(lastRespecAt).getTime() + RESPEC_COOLDOWN_MS).toLocaleDateString("en-GB") : undefined;
+  const nextRespecDate = lastRespecAt && !canRespec ? new Date(new Date(lastRespecAt).getTime() + RESPEC_COOLDOWN_MS).toLocaleDateString("en-GB") : undefined;
+  const changeTrack = async (next: TrackId, switching: boolean) => {
+    try {
+      await (switching ? respecTrack(next) : setUserTrack(next));
+      await qc.invalidateQueries({ queryKey: progressKey });
+    } catch {
+      toast({ title: "Could not change your track", variant: "destructive" });
+    }
+  };
+  const onTrack = (next: TrackId) => {
+    if (!isOwn || next === currentTrack) return;
+    /* The first choice is free; every switch after it is confirmed, and has a cooldown. */
+    if (currentTrack === null) void changeTrack(next, false);
+    else setPendingTrack(next);
+  };
 
-  const changeTrack = useCallback(
-    async (next: TrackId, switching: boolean) => {
-      try {
-        await (switching ? respecTrack(next) : setUserTrack(next));
-        await qc.invalidateQueries({ queryKey: progressKey });
-      } catch {
-        toast({ title: "Could not change your track", variant: "destructive" });
-      }
-    },
-    [qc, progressKey, toast],
-  );
+  /* ── pins and a build's display ── */
 
-  const onTrack = useCallback(
-    (next: TrackId) => {
-      if (!isOwn || next === currentTrack) return;
-      /* The first choice is free; every switch after it is confirmed, and has a cooldown. */
-      if (currentTrack === null) void changeTrack(next, false);
-      else setPendingTrack(next);
-    },
-    [isOwn, currentTrack, changeTrack],
-  );
+  const pinOf = (entry: FeedEntry): Pin => ({ kind: entry.kind === "build" ? "build" : entry.kind, id: entry.id });
+  const pinWrite = async (write: () => Promise<void>, failed: string) => {
+    try {
+      await write();
+      refreshProfile();
+    } catch (error) {
+      toast({ title: failed, description: error instanceof Error ? error.message : undefined, variant: "destructive" });
+    }
+  };
 
-  usePageReady("profile", !authLoading && Boolean(lookup) && !summaryQuery.isPending);
+  /* ── usePageReady: the head and the first feed page ── */
 
-  /* ── the states ── */
-
-  /* No lookup yet is a session still arriving, or a signed-out reader on their way to /login. */
-  /* SV-04 P5: every state below goes through one arrival, so the profile fades in over its skeleton when it lands. */
   const waiting = authLoading || !lookup || summaryQuery.isPending;
+  usePageReady("profile", !waiting && (locked || !summary || !feed.isPending));
+
   const arrive = (node: ReactNode) => (
     <PageArrival loading={waiting} placeholder={<ProfileViewSkeleton />}>
       {node}
@@ -488,8 +294,7 @@ export function ProfilePage() {
   if (summaryQuery.isError && !summary && !missing) {
     return arrive(<ProfileLoadFailed onRetry={() => void summaryQuery.refetch()} error={summaryQuery.error} />);
   }
-
-  if (!summary || !maker) {
+  if (!summary || !handle) {
     return arrive(
       <ProfileNotice
         line="Profile not found"
@@ -499,60 +304,181 @@ export function ProfilePage() {
             Back to the gallery
           </Button>
         }
-      />
+      />,
     );
   }
+
+  /* ── mapped for the view ── */
+
+  const now = Date.now();
+  const maker = { id: summary.id, handle: summary.handle, name: summary.displayName, avatarUrl: summary.avatarUrl };
+  const entries = extras
+    ? items.map((item) =>
+        entryOf(item, {
+          maker,
+          ownerDisplay: settings.buildDisplay,
+          extras,
+          srcByPath,
+          engagement: (id) => engagementFor(engagement, id),
+          maps,
+          mapsFailed: mapsQuery.isError,
+          now,
+        }),
+      )
+    : [];
+  const pinnedCount = pinsQuery.data?.length ?? entries.filter((entry) => entry.pinned).length;
+  const links = (summary.links ?? []).length > 0 ? (summary.links ?? []) : summary.website?.startsWith("https://") ? [summary.website] : [];
+  const level = isOwn ? (progressQuery.data ? levelView(progressQuery.data) : null) : null;
+
+  const head = {
+    userId: summary.id,
+    name: summary.displayName,
+    handle: summary.handle,
+    avatarUrl: summary.avatarUrl,
+    avatarAlt: summary.avatarAlt ?? null,
+    header: summary.coverUrl ? { url: summary.coverUrl, crop: summary.bannerCrop ?? null, alt: summary.bannerAlt ?? null } : null,
+    meta: metaParts({ handle: summary.handle, place: summary.location, joined: joinedLabel(summary.joinedAt), followers: summary.counts.followers, following: summary.counts.following }),
+    level: isOwn ? (level?.level ?? side?.level ?? null) : (side?.level ?? null),
+    oneLine: oneLineOf(summary.customBio),
+    links,
+    record: side
+      ? recordParts(summary.handle, {
+          builds: side.counts.builds,
+          reproducedByOthers: side.reproducedByOthers,
+          rebuiltFrom: side.rebuiltFrom,
+          firstRebuildSlug: side.firstRebuildSlug,
+          topicsAndReplies: side.counts.topics + side.counts.replies,
+        })
+      : [],
+    isOwn,
+    privateLine: locked ? privateLine(summary.handle) : null,
+    following: Boolean(summary.isFollowing),
+    followBusy,
+    onFollow: () => void writeFollow(true),
+    onUnfollow: () => void writeFollow(false),
+    onMessage: () => (isLoggedIn ? setComposeOpen(true) : navigate("/login")),
+    onEdit: () => setEditOpen(true),
+    onCopyLink: () => {
+      void copyToClipboard(`${window.location.origin}/profile/${summary.handle}`).then((ok) => toast({ title: ok ? "Link copied" : "Could not copy the link" }));
+    },
+    onChangeHeader: (from: HTMLElement | null) => pictures.change("banner", from),
+    onChangePicture: (from: HTMLElement | null) => pictures.change("avatar", from),
+    uploading: pictures.uploading,
+  };
+
+  const onFilter = (next: FeedFilter) => {
+    const nextParams = new URLSearchParams(params);
+    if (next === settings.feedFilter) nextParams.delete("show");
+    else nextParams.set("show", next);
+    setParams(nextParams, { replace: false });
+  };
+
+  const collections = (collectionsQuery.data?.collections ?? []).filter((collection) => !collection.isDefault).slice(0, COLLECTIONS_SHOWN);
+
+  const viewProps = {
+    head,
+    feed: locked
+      ? null
+      : {
+          filter,
+          options: feedOptions(side?.counts ?? null),
+          onFilter,
+          entries,
+          status: (feed.isError && entries.length === 0 ? "error" : feed.isPending ? "loading" : "ready") as "error" | "loading" | "ready",
+          onRetry: () => void feed.refetch(),
+          empty: emptyFeed(filter, isOwn),
+          hasMore: Boolean(feed.hasNextPage),
+          loadingMore: feed.isFetchingNextPage,
+          onMore: () => void feed.fetchNextPage(),
+          isOwn,
+          canPin: pinnedCount < PINS_MAX,
+          onPin: (entry: FeedEntry) => void pinWrite(() => pinToProfile(summary.id, pinOf(entry)), "Could not pin"),
+          onUnpin: (entry: FeedEntry) => void pinWrite(() => unpinFromProfile(summary.id, pinOf(entry)), "Could not unpin"),
+          onDisplay: (buildId: string, display: "first_post" | "map") => void pinWrite(() => setBuildDisplay(buildId, display), "Could not change how it shows"),
+          now,
+        },
+    side: locked
+      ? null
+      : {
+          order: settings.sideSections,
+          about: summary.about ?? null,
+          worksIn: side?.worksIn ?? [],
+          spaces: (side?.spaces ?? []).map((space) => ({ slug: space.slug, name: space.name, standing: STANDING_LABEL[space.standing] })),
+          others: side ? othersLines(summary.handle, side) : [],
+          collections: collections.map((collection: CollectionPreview) => ({
+            key: collection.id,
+            to: isOwn ? `/library/collections/${collection.id}` : `/library/${summary.handle}/collections/${collection.id}`,
+            title: collection.name,
+            count: `${collection.itemCount.toLocaleString("en-GB")} ${collection.itemCount === 1 ? "build" : "builds"}`,
+            covers: collection.coverItems.slice(0, 4).map((item) =>
+              item.cover_image_url ? (
+                <img key={item.id} src={item.cover_image_url} alt="" loading="lazy" decoding="async" style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <CoverFallback key={item.id} seed={item.id} radius={0} />
+              ),
+            ),
+          })),
+          marks: BADGES.filter((badge) => marksQuery.data?.has(badge.id)).map((badge) => badge.name),
+          progress:
+            isOwn && level
+              ? {
+                  level: level.level,
+                  xpLine: xpLine(level),
+                  streak: level.streakDays > 0 ? streakLine(level, true) : null,
+                  track: currentTrack,
+                  tracks: TRACK_ITEMS,
+                  onTrack: (next: TrackId) => onTrack(next),
+                }
+              : null,
+        },
+  };
+
+  const draft: ProfileDraft = {
+    displayName: summary.displayName,
+    oneLine: summary.customBio ?? "",
+    location: summary.location ?? "",
+    links: summary.links ?? [],
+    about: summary.about ?? "",
+    settings,
+    pins: pinsQuery.data ?? entries.filter((entry) => entry.pinned).map(pinOf),
+  };
+  const pinLabels = new Map(entries.map((entry) => [`${pinOf(entry).kind}:${entry.id}`, entry.heading]));
 
   return arrive(
     <>
       <SeoHead
         title={`${summary.displayName} (@${summary.handle})`}
         description={summary.customBio ?? summary.derivedBio ?? `Profile of ${summary.displayName}`}
-        path={handle ? `/profile/${handle}` : "/profile"}
+        path={handleParam ? `/profile/${handleParam}` : "/profile"}
+        noIndex={locked}
       />
-      <ProfileView
-        fit="content"
-        maker={maker}
-        isOwn={isOwn}
-        following={Boolean(summary.isFollowing)}
-        followBusy={followBusy}
-        onFollow={() => void writeFollow(true)}
-        onUnfollow={() => void writeFollow(false)}
-        onMessage={onMessage}
-        onEdit={() => setEditOpen(true)}
-        level={level}
-        onTrack={isOwn ? onTrack : undefined}
-        figures={figures}
-        works={works}
-        activity={activity}
-        marks={marks}
-        failed={failed}
-      />
+      <ProfileView {...viewProps} />
 
-      {isOwn && viewerId ? (
-        <EditProfileSheet
-          open={editOpen}
-          onOpenChange={setEditOpen}
-          userId={viewerId}
-          initial={{
-            displayName: summary.displayName,
-            customBio: summary.customBio,
-            coverUrl: summary.coverUrl,
-            location: summary.location,
-            website: summary.website,
+      {isOwn ? pictures.element : null}
+      {isOwn && editOpen ? (
+        <CustomiseProfile
+          open
+          onClose={() => setEditOpen(false)}
+          initial={draft}
+          pinLabels={pinLabels}
+          pictures={{ avatar: { url: summary.avatarUrl }, header: { url: summary.coverUrl } }}
+          onPicture={(action, which, from) => {
+            if (action === "change") pictures.change(which, from);
+            else if (action === "remove") pictures.remove(which);
+            else {
+              const url = which === "avatar" ? summary.avatarUrl : summary.coverUrl;
+              if (url) pictures.recrop(which, { url, crop: which === "avatar" ? (summary.avatarCrop ?? null) : (summary.bannerCrop ?? null), alt: which === "avatar" ? (summary.avatarAlt ?? null) : (summary.bannerAlt ?? null) }, from);
+            }
           }}
-          onSaved={() => void qc.invalidateQueries({ queryKey: summaryKey })}
+          onSave={async (next) => {
+            await saveProfile(next);
+            refreshProfile();
+          }}
         />
       ) : null}
 
       {!isOwn ? (
-        <MessageComposeModal
-          open={composeOpen}
-          onOpenChange={setComposeOpen}
-          recipientLabel={summary.displayName ?? `@${summary.handle}`}
-          onSubmit={onComposeSubmit}
-          submitting={composeBusy}
-        />
+        <MessageComposeModal open={composeOpen} onOpenChange={setComposeOpen} recipientLabel={summary.displayName ?? `@${summary.handle}`} onSubmit={onComposeSubmit} submitting={composeBusy} />
       ) : null}
 
       {pendingTrack && currentTrack ? (
@@ -568,8 +494,9 @@ export function ProfilePage() {
           onCancel={() => setPendingTrack(null)}
         />
       ) : null}
-    </>
+    </>,
   );
 }
 
+export { PROFILE_FEED_PAGE };
 export default ProfilePage;

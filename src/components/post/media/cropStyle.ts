@@ -76,9 +76,25 @@ export function cropStyle(source: CropSource, cellRatio: number, align: "middle"
 export const ZOOM_STEP = 0.25;
 export const ZOOM_KEY_STEP = 0.1;
 
-/** The frame's width over height for a shape: the picture's own, 16:9 or 1:1. */
+/** The frame's width over height for a shape: the picture's own, 16:9, 1:1, or a profile header's 4:1 (UX-10 P2). */
 export function frameRatio(aspect: CropAspect, pictureRatio: number): number {
-  return aspect === "wide" ? 16 / 9 : aspect === "square" ? 1 : pictureRatio;
+  return aspect === "wide" ? 16 / 9 : aspect === "square" ? 1 : aspect === "header" ? 4 : pictureRatio;
+}
+
+/** UX-10 P2: the zoom a stored crop was made at, so recrop opens where it was left. 1 with no crop. */
+export function zoomOfCrop(crop: MediaCrop | null, pictureRatio: number, frame: number): number {
+  if (!crop || !(crop.w > 0)) return 1;
+  const whole = pictureRatio > frame ? frame / pictureRatio : 1;
+  return Math.min(3, Math.max(1, Math.round((whole / crop.w) * 100) / 100));
+}
+
+/**
+ * UX-10 P3: the style of an img showing a stored crop in a cell of the crop's own shape (a profile picture's square, a
+ * header's 4:1). The picture's pixel size is not needed: a crop whose shape is the cell's is the cell, so the size is the
+ * one that makes the crop that shape.
+ */
+export function cropInCell(crop: MediaCrop, cellRatio: number): CSSProperties {
+  return cropStyle({ w: (cellRatio * crop.h) / crop.w, h: 1, crop }, cellRatio);
 }
 
 export interface CropView {

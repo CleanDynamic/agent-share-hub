@@ -28,6 +28,12 @@ export const MEDIA_COLUMNS =
 
 export const BUILD_MEDIA_BUCKET = "build-media";
 
+/**
+ * UX-10 P3: a profile's pictures. Public-read, so Avatar shows one on every page without a signing round, and writable only
+ * under the owner's own `<user id>/` prefix (20260318185802). Nothing records them in a table: the profile row holds the URL.
+ */
+export const PROFILE_MEDIA_BUCKET = "profile-assets";
+
 /** Mirrors the bucket's file_size_limit, so the client refuses first. */
 export const MEDIA_MAX_BYTES = 25 * 1024 * 1024;
 
@@ -210,6 +216,25 @@ export function fileKindFor(file: Pick<File, "name" | "type">): FileKind {
   return { refused: `${shown} is not a kind of file that can be added.` };
 }
 
+/** UX-10 P3: a profile picture's owner: the same checks, probe and progress as a build's, into the profile bucket. */
+export interface ProfileUploadInput {
+  profileId: string;
+  file: File;
+  onProgress?: (fraction: number) => void;
+}
+
+/** UX-10 P3: what a profile upload stored: the object and its public URL, with the size the probe read. */
+export interface ProfileMedia {
+  bucket: string;
+  path: string;
+  url: string;
+  kind: MediaKind;
+  mime: string;
+  bytes: number;
+  width: number | null;
+  height: number | null;
+}
+
 /** The accepted mime types, for an <input accept> or a validation message. */
 export function acceptedMediaTypes(): string[] {
   return Object.keys(MIME_KINDS);
@@ -226,7 +251,48 @@ export function acceptedMediaTypes(): string[] {
  * again, because an object with no row is invisible to the application and
  * nothing will ever clean it up.
  */
-export async function uploadMedia({
+export async function uploadMedia(input: UploadMediaInput): Promise<BuildMedia>;
+export async function uploadMedia(input: ProfileUploadInput): Promise<ProfileMedia>;
+export async function uploadMedia(input: UploadMediaInput | ProfileUploadInput): Promise<BuildMedia | ProfileMedia> {
+  return "profileId" in input ? uploadProfileMedia(input) : uploadBuildMedia(input);
+}
+
+/** The size and type guards every upload runs before anything is written. */
+function checkedKind(file: File): { kind: MediaKind; mime: string } {
+  if (file.size > MEDIA_MAX_BYTES) {
+    throw buildLayerError(
+      "uploadMedia",
+      new Error(
+        `${file.name || "file"} is ${megabytes(file.size)}MB. The limit is ${megabytes(MEDIA_MAX_BYTES)}MB.`
+      )
+    );
+  }
+  const decided = fileKindFor(file);
+  if ("refused" in decided) {
+    throw buildLayerError("uploadMedia", new Error(decided.refused));
+  }
+  return decided;
+}
+
+/** UX-10 P3: one file into the profile bucket under the owner's id. No row: the profile keeps the URL. */
+async function uploadProfileMedia({ profileId, file, onProgress }: ProfileUploadInput): Promise<ProfileMedia> {
+  if (!file) throw buildLayerError("uploadMedia", new Error("no file given"));
+  if (!UUID_PATTERN.test(profileId)) {
+    throw buildLayerError("uploadMedia", new Error(`profileId is not a uuid: ${profileId}`));
+  }
+  const { kind, mime } = checkedKind(file);
+  const probe = await probeFile(file, kind);
+  const path = `${profileId}/${crypto.randomUUID()}.${extensionFor(file.name, mime)}`;
+
+  onProgress?.(0);
+  await putObject(path, file, mime, onProgress, PROFILE_MEDIA_BUCKET);
+  onProgress?.(1);
+
+  const { data } = supabase.storage.from(PROFILE_MEDIA_BUCKET).getPublicUrl(path);
+  return { bucket: PROFILE_MEDIA_BUCKET, path, url: data.publicUrl, kind, mime, bytes: file.size, width: probe.width, height: probe.height };
+}
+
+async function uploadBuildMedia({
   buildId,
   nodeId = null,
   file,
@@ -247,20 +313,7 @@ export async function uploadMedia({
     );
   }
 
-  if (file.size > MEDIA_MAX_BYTES) {
-    throw buildLayerError(
-      "uploadMedia",
-      new Error(
-        `${file.name || "file"} is ${megabytes(file.size)}MB — the limit is ${megabytes(MEDIA_MAX_BYTES)}MB`
-      )
-    );
-  }
-
-  const decided = fileKindFor(file);
-  if ("refused" in decided) {
-    throw buildLayerError("uploadMedia", new Error(decided.refused));
-  }
-  const { kind, mime } = decided;
+  const { kind, mime } = checkedKind(file);
 
   // Read before the write, so a probe that hangs costs nothing uploaded.
   const probe = await probeFile(file, kind);
@@ -529,15 +582,16 @@ async function putObject(
   path: string,
   file: File,
   mime: string,
-  onProgress?: (fraction: number) => void
+  onProgress?: (fraction: number) => void,
+  bucket: string = BUILD_MEDIA_BUCKET
 ): Promise<void> {
   if (onProgress && typeof XMLHttpRequest !== "undefined") {
-    const uploaded = await putObjectWithProgress(path, file, mime, onProgress);
+    const uploaded = await putObjectWithProgress(path, file, mime, onProgress, bucket);
     if (uploaded) return;
   }
 
   const { error } = await supabase.storage
-    .from(BUILD_MEDIA_BUCKET)
+    .from(bucket)
     .upload(path, file, {
       contentType: mime,
       cacheControl: "3600",
@@ -556,14 +610,15 @@ async function putObjectWithProgress(
   path: string,
   file: File,
   mime: string,
-  onProgress: (fraction: number) => void
+  onProgress: (fraction: number) => void,
+  bucket: string
 ): Promise<boolean> {
   const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as
     | string
     | undefined;
   if (!apiKey) return false;
 
-  const endpoint = objectEndpoint(path);
+  const endpoint = objectEndpoint(path, bucket);
   if (!endpoint) return false;
 
   const { data: sessionData } = await supabase.auth.getSession();
@@ -618,8 +673,8 @@ function storageErrorMessage(body: string, status: number): string {
  * to, derived from the SDK's own URL so the project host is never duplicated
  * in this module.
  */
-function objectEndpoint(path: string): string | null {
-  const { data } = supabase.storage.from(BUILD_MEDIA_BUCKET).getPublicUrl(path);
+function objectEndpoint(path: string, bucket: string = BUILD_MEDIA_BUCKET): string | null {
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
   const url = data?.publicUrl;
   if (!url || !url.includes("/object/public/")) return null;
   return url.replace("/object/public/", "/object/");

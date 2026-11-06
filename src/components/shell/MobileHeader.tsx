@@ -147,6 +147,8 @@ function MobileHeaderContainer() {
         }
       : null;
   const profileHref = viewer?.handle ? `/profile/${viewer.handle}` : SITE_NAV.profile;
+  // UX-10 P11: the reader's own profile link says it is the current page there.
+  const onOwnProfile = pathname === profileHref || pathname === SITE_NAV.profile;
 
   return (
     <>
@@ -162,7 +164,7 @@ function MobileHeaderContainer() {
       </LazyBottomSheet>
 
       <LazyBottomSheet open={accountOpen} onOpenChange={setAccountOpen} title="Account">
-        <Link to={profileHref} style={row} onClick={() => setAccountOpen(false)}>Profile</Link>
+        <Link to={profileHref} aria-current={onOwnProfile ? "page" : undefined} style={row} onClick={() => setAccountOpen(false)}>Profile</Link>
         <Link to={SITE_NAV.library} style={row} onClick={() => setAccountOpen(false)}>Library</Link>
         <Link to={SITE_NAV.drafts} style={row} onClick={() => setAccountOpen(false)}>Drafts</Link>
         <div style={{ padding: "4px 0" }}>

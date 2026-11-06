@@ -32,7 +32,12 @@ export const PAGE_TARGETS: PageTarget[] = [
   { key: "drafts", path: "/drafts", readyMark: "drafts", auth: true, maxRounds: 1 },
   { key: "composer", path: "/compose/{draft}", readyMark: "composer", auth: true, maxRounds: 2 },
   { key: "build", path: "/b2/{build}", readyMark: "build", auth: true, maxRounds: null },
-  { key: "profile", path: "/profile/{maker}", readyMark: "profile", auth: true, maxRounds: null },
+  /* UX-10: the profile, its side column and its feed's rows together; then each kind's cards (builds: one request, and their own
+     display choices beside it). Topics and replies add a third round for their cards' extras, which this harness's feed has none of. */
+  { key: "profile", path: "/profile/{maker}", readyMark: "profile", auth: true, maxRounds: 2 },
+  /* UX-10 P5b: the profile and the list's first page, with the follow states in it, together: one round. */
+  { key: "profile-followers", path: "/profile/{maker}/followers", readyMark: "followers", auth: true, maxRounds: 1 },
+  { key: "profile-following", path: "/profile/{maker}/following", readyMark: "following", auth: true, maxRounds: 1 },
 ];
 
 /** Every database request is answered this many milliseconds late. */

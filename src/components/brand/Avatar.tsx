@@ -15,6 +15,8 @@
 
 import type { CSSProperties } from "react";
 
+import { cropInCell } from "@/components/post/media/cropStyle";
+import { cropFromUrl } from "@/lib/profile/avatarCrop";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -33,8 +35,13 @@ export interface AvatarProps {
   name: string;
   /** Force a hue, 0 to 5. The dev fixtures pass `avatar_hue`. */
   hue?: number;
-  /** A profile image. It replaces the initials and fills the circle. */
+  /**
+   * A profile image. It replaces the initials and fills the circle. UX-10 P3: a URL that carries a crop (`#crop=x,y,w,h`, as
+   * saveProfileImage writes it) shows that crop, on every surface; without one the picture fills the circle centred, as before.
+   */
   src?: string | null;
+  /** UX-10 P3: the picture's ALT (`avatar_alt`); "" where the name sits beside it. Absent: the name, as before. */
+  alt?: string;
   style?: CSSProperties;
 }
 
@@ -54,7 +61,7 @@ export function avatarHue(userId: string, hue?: number): string {
   return AVATAR_HUES[hashSeed(userId) % AVATAR_HUES.length];
 }
 
-export function Avatar({ size, name, src, style }: AvatarProps) {
+export function Avatar({ size, name, src, alt, style }: AvatarProps) {
   /* UI-P87: the refined look draws the size it is given (the header's 26); the density table is the current look's. */
   const box = size;
   const circle: CSSProperties = {
@@ -65,12 +72,21 @@ export function Avatar({ size, name, src, style }: AvatarProps) {
     ...style,
   };
 
+  const crop = cropFromUrl(src);
+  if (src && crop) {
+    return (
+      <span data-ui="avatar" data-cropped="" style={{ ...circle, position: "relative", display: "block", overflow: "hidden" }}>
+        <img src={src} alt={alt ?? name} width={box} height={box} style={cropInCell(crop, 1)} />
+      </span>
+    );
+  }
+
   if (src) {
     return (
       <img
         data-ui="avatar"
         src={src}
-        alt={name}
+        alt={alt ?? name}
         width={box}
         height={box}
         style={{ ...circle, display: "block", objectFit: "cover" }}
