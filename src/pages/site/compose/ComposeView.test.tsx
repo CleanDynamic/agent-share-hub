@@ -31,7 +31,6 @@ function view(over: Partial<ComposeViewProps> = {}) {
     onSessionsOpen: vi.fn(),
     onToggleMadeWith: vi.fn(),
     onDetail: vi.fn(),
-    onGapSwitch: vi.fn(),
     ...over,
   });
   render(
@@ -207,19 +206,9 @@ describe("ComposeView", () => {
     expect(base.onDetail).toHaveBeenCalledWith("symptom", "exiftool: command not found");
     fireEvent.change(screen.getByLabelText("First result in (minutes)"), { target: { value: "25" } });
     expect(base.onDetail).toHaveBeenCalledWith("firstResult", "25");
-    const sw = screen.getByRole("switch", { name: "Leave one part open for someone else to solve" });
-    expect(sw.getAttribute("aria-checked")).toBe("false");
-    fireEvent.click(sw);
-    expect(base.onGapSwitch).toHaveBeenCalledWith(true);
+    // UX-11: asking happens by marking a step still open, so the Build Card no longer offers to leave one part open.
+    expect(screen.queryByRole("switch", { name: "Leave one part open for someone else to solve" })).toBeNull();
     expect(screen.queryByLabelText("What's left open?")).toBeNull();
-  });
-
-  it("asks what is left open once the switch is on", () => {
-    view({ details: { ...composeViewProps().details, gapOn: true } });
-    fireEvent.click(screen.getByRole("button", { name: /More details/ }));
-    expect(screen.getByRole("switch").getAttribute("aria-checked")).toBe("true");
-    expect(screen.getByLabelText("What's left open?")).toBeTruthy();
-    expect(screen.getByText("Readers will see it as one part left open. You can add a reward on Bounties after publishing.")).toBeTruthy();
   });
 
   it("offers images and video only, and no glass", () => {

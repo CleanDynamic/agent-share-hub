@@ -16,7 +16,7 @@ import { toast } from "sonner";
 
 import { SAVE_DEBOUNCE_MS } from "@/hooks/useComposeBuild";
 import type { Build, BuildPatch } from "@/lib/build";
-import { breakageFields, composerBreakage, composerGap, gapProblemText, saveBreakage, saveGap } from "@/lib/build/composeDetails";
+import { breakageFields, composerBreakage, saveBreakage } from "@/lib/build/composeDetails";
 import { getTopicSourceSetting, topicSourcePatch } from "@/lib/build/topicSource";
 
 import { parseAmount } from "./composeModel";
@@ -24,7 +24,7 @@ import type { ComposeDetailKey, ComposeDetails } from "./MoreDetails";
 import { rowOf, type ComposeNodes } from "./useComposeNodes";
 import { sayFailed } from "./draftStart";
 
-const EMPTY: ComposeDetails = { symptom: "", resolution: "", costMonthly: "", costSetup: "", firstResult: "", gapOn: false, gapProblem: "" };
+const EMPTY: ComposeDetails = { symptom: "", resolution: "", costMonthly: "", costSetup: "", firstResult: "" };
 
 const amount = (value: number | null | undefined) => (typeof value === "number" ? String(value) : "");
 
@@ -37,7 +37,6 @@ const failed = (line: string) => (cause: unknown) => {
 export interface ComposeDetailsState {
   details: ComposeDetails;
   setDetail: (key: ComposeDetailKey, value: string) => void;
-  setGapOn: (on: boolean) => void;
   /** UX-07 P6: writes builds.allow_as_post_source through the page's header edit. */
   setAllowAsTopicSource: (on: boolean) => void;
   /** Write every pending edit now; resolves once the queue is empty. */
@@ -82,14 +81,11 @@ export function useComposeDetails({
     hydratedFor.current = build.id;
     if (!hydrate) return;
     const breakage = composerBreakage(nodes.tree);
-    const gap = composerGap(nodes.tree);
     const next: ComposeDetails = {
       ...breakageFields(breakage),
       costMonthly: amount(build.cost_monthly),
       costSetup: amount(build.cost_setup),
       firstResult: amount(build.time_to_first_result),
-      gapOn: gap !== null,
-      gapProblem: gapProblemText(gap),
     };
     detailsRef.current = next;
     setDetails(next);
@@ -113,27 +109,10 @@ export function useComposeDetails({
     [run, currentTree, record],
   );
 
-  const writeGap = useCallback(
-    () =>
-      run(async () => {
-        const { gapOn, gapProblem } = detailsRef.current;
-        const problem = gapOn ? gapProblem : "";
-        const found = composerGap(currentTree());
-        if (!found && !problem.trim()) return;
-        const current = found ? rowOf(found) : null;
-        if (current && gapProblemText(current) === problem) return;
-        const buildId = await latest.current.ensureBuild();
-        const node = await saveGap({ buildId, tree: currentTree(), current, problem });
-        if (node) record(node.id, node);
-        else if (current) record(current.id, null);
-      }),
-    [run, currentTree, record],
-  );
+  const writers = { breakage: writeBreakage } as const;
+  const lines = { breakage: "Breakage not saved" } as const;
 
-  const writers = { breakage: writeBreakage, gap: writeGap } as const;
-  const lines = { breakage: "Breakage not saved", gap: "Open part not saved" } as const;
-
-  const schedule = (which: "breakage" | "gap", wait = SAVE_DEBOUNCE_MS) => {
+  const schedule = (which: keyof typeof writers, wait = SAVE_DEBOUNCE_MS) => {
     const timer = timers.current.get(which);
     if (timer !== undefined) window.clearTimeout(timer);
     timers.current.set(
@@ -176,9 +155,6 @@ export function useComposeDetails({
       case "resolution":
         schedule("breakage");
         return;
-      case "gapProblem":
-        schedule("gap");
-        return;
       case "costMonthly":
       case "costSetup":
       case "firstResult": {
@@ -189,11 +165,6 @@ export function useComposeDetails({
         return;
       }
     }
-  };
-
-  const setGapOn = (on: boolean) => {
-    update({ gapOn: on });
-    schedule("gap", 0);
   };
 
   /* UX-07 P6: the opt-out, read once per build that exists (a new draft is on), and written with the header's other fields. What
@@ -211,5 +182,5 @@ export function useComposeDetails({
     edit(topicSourcePatch(on));
   };
 
-  return { details: { ...details, allowAsTopicSource }, setDetail, setGapOn, setAllowAsTopicSource, flush };
+  return { details: { ...details, allowAsTopicSource }, setDetail, setAllowAsTopicSource, flush };
 }

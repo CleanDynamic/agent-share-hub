@@ -148,7 +148,6 @@ export interface ComposeViewProps {
   /* ── UI-P48: More details ── */
   details: ComposeDetails;
   onDetail: (key: ComposeDetailKey, value: string) => void;
-  onGapSwitch: (on: boolean) => void;
   /** UX-07 P6: Others can start topics from this build. Absent: the setting is not offered. */
   onTopicSourceSwitch?: (on: boolean) => void;
 }
@@ -551,7 +550,7 @@ export function ComposeView(props: ComposeViewProps) {
       onAdd={props.onAddMadeWith}
     />
   );
-  const moreDetails = <MoreDetails phone={phone} details={props.details} onDetail={props.onDetail} onGapSwitch={props.onGapSwitch} />;
+  const moreDetails = <MoreDetails phone={phone} details={props.details} onDetail={props.onDetail} />;
 
   const body = (
     <div

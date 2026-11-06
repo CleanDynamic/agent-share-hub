@@ -43,7 +43,6 @@ export function sandboxViewProps(which: SandboxFixture = "fox", state: DesignSta
     onAddMadeWith: noop,
     details: base.details,
     onDetail: noop,
-    onGapSwitch: noop,
 
     save: "saved",
     onRetrySave: noop,

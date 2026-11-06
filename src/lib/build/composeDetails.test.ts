@@ -12,7 +12,7 @@ vi.mock("./nodes", () => ({
   reorderNodes: vi.fn(),
 }));
 
-import { composerBreakage, composerGap, detailTitle, saveBreakage, saveGap } from "./composeDetails";
+import { composerBreakage, detailTitle, saveBreakage } from "./composeDetails";
 import type { BuildNode, NodeTree } from "./types";
 
 const BUILD = "33333333-0000-4000-8000-000000000003";
@@ -43,16 +43,9 @@ beforeEach(() => {
 });
 
 describe("finding the composer's parts", () => {
-  it("takes the first breakage at the top level, and the first open gap", () => {
-    const tree = [
-      node({ id: "b2", position: 4 }),
-      node({ id: "b1", position: 2 }),
-      node({ id: "solved", position: 1, type: "gap", is_gap: false }),
-      node({ id: "open", position: 3, type: "gap", is_gap: true }),
-    ];
+  it("takes the first breakage at the top level", () => {
+    const tree = [node({ id: "b2", position: 4 }), node({ id: "b1", position: 2 })];
     expect(composerBreakage(tree)?.id).toBe("b1");
-    expect(composerGap(tree)?.id).toBe("open");
-    expect(composerGap([node({ type: "gap", is_gap: false })])).toBeNull();
   });
 });
 
@@ -88,21 +81,7 @@ describe("where it broke", () => {
   });
 });
 
-describe("one part left open", () => {
-  it("is a placed gap node: flagged, the problem in its payload, its first 80 characters as the title", async () => {
-    const problem = "HEIC files from older iPhones lose their capture date when the script converts them to JPEG first.";
-    await saveGap({ buildId: BUILD, tree: [], current: null, problem });
-    const row = upsertNode.mock.calls[0][0];
-    expect(row).toMatchObject({ type: "gap", is_gap: true, parent_id: null, position: 1, payload: { problem } });
-    expect(row.title).toBe(problem.slice(0, 80).trimEnd());
-    expect(row.title.length).toBeLessThanOrEqual(80);
-  });
-
-  it("is deleted when it is emptied", async () => {
-    await saveGap({ buildId: BUILD, tree: [], current: node({ id: "g", type: "gap", is_gap: true }) as BuildNode, problem: "" });
-    expect(deleteNode).toHaveBeenCalledWith("g");
-  });
-
+describe("titles", () => {
   it("keeps a title to 80 characters", () => {
     expect(detailTitle(`  ${"a".repeat(100)}  `)).toBe("a".repeat(80));
   });

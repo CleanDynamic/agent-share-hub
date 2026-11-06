@@ -429,7 +429,6 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
     onAddMadeWith: sessions.addMadeWith,
     details: details.details,
     onDetail: details.setDetail,
-    onGapSwitch: details.setGapOn,
     onTopicSourceSwitch: details.setAllowAsTopicSource,
   };
 
