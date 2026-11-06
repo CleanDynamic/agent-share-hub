@@ -109,7 +109,6 @@ import {
   resolveBountyByLegacyItem,
   submitSolution,
 } from "./index";
-import { OLD_REQUEST, insertOldRequest, type OldRow } from "@/test/oldRequest";
 
 const BUILD_ID = "b111d000-0000-4000-8000-000000000001";
 const CREATOR_ID = "c9ea1000-0000-4000-8000-000000000001";
@@ -513,38 +512,5 @@ describe("the legacy seam", () => {
     // both directions for the same pair.
     expect(await resolveBountyByLegacyItem(LEGACY_ITEM_ID)).toBe(BOUNTY_ID);
     expect(queriesFor("bounties")).toHaveLength(2);
-  });
-});
-
-/* UX-11: nothing can file a request now, so the rows these tests read are inserted directly by the old-request fixture
-   (src/test/oldRequest.ts), exactly as the old writers left them. Older requests reads them through listOpenBounties and
-   an old request's own page through getBounty. */
-describe("an old-style request, inserted directly", () => {
-  it("is listed on Older requests with its reward and status as they were recorded", async () => {
-    const tables: Record<string, OldRow[]> = {};
-    const { bounty } = insertOldRequest(tables);
-    db.next.bounties = [{ data: tables.bounties, error: null }];
-
-    const result = await listOpenBounties({ limit: 20 });
-
-    expect(result.bounties).toEqual([bounty]);
-    expect(result.bounties[0]).toMatchObject({ id: OLD_REQUEST.bountyId, status: "open", reward_gbp: 50, gap_node_id: OLD_REQUEST.gapNodeId });
-    expect(result.nextCursor).toBeNull();
-  });
-
-  it("opens as one record, with its build and the gap it hangs on", async () => {
-    const tables: Record<string, OldRow[]> = {};
-    const { bounty, build, gapNode } = insertOldRequest(tables, { status: "solved" });
-    db.next.bounties = [{ data: bounty, error: null }];
-    db.next.builds = [{ data: build, error: null }];
-    db.next.build_nodes = [{ data: gapNode, error: null }];
-    db.next.solutions = [{ data: [], error: null, count: 1 }, { data: [], error: null, count: 1 }];
-    db.next.bounty_discussion_comments = [{ data: [], error: null, count: 0 }];
-
-    const record = await getBounty(OLD_REQUEST.bountyId);
-
-    expect(record?.bounty).toMatchObject({ status: "solved", solved_at: "2026-09-02T09:00:00Z" });
-    expect(record?.build?.id).toBe(OLD_REQUEST.buildId);
-    expect(record?.gapNode?.id).toBe(OLD_REQUEST.gapNodeId);
   });
 });

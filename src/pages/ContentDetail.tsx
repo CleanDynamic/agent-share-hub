@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { Navigate, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { reportError } from "@/lib/errors/report";
@@ -36,14 +36,6 @@ import {
 import { CommentDrawerProvider } from "@/components/content-detail/CommentDrawerContext";
 import type { ThreadedComment } from "@/lib/content-detail/types";
 import { supabase } from "@/integrations/supabase/client";
-import { getProvenance, getSolutions } from "@/lib/bounty-solver";
-import { ClosedRequestLine } from "@/components/bounty/ClosedRequestLine";
-import { PostingWindows, type PostingWindow } from "@/pages/site/openbuilds/PostingWindows";
-import { BountyProvenanceProvider } from "@/components/bounty/BountyProvenanceContext";
-import { BountyByline, type SolverInfo } from "@/components/bounty/BountyByline";
-import { ProvenanceOverview } from "@/components/bounty/ProvenanceOverview";
-import { OriginalSolutionDialog } from "@/components/bounty/OriginalSolutionDialog";
-import { BlueprintAttributionBanner } from "@/components/bounty-competition/BlueprintAttributionBanner";
 import { ReblogsListModal } from "@/components/reblog/ReblogsListModal";
 import AttributionChip from "@/components/remix/AttributionChip";
 import DescendantBadge from "@/components/remix/DescendantBadge";
@@ -53,11 +45,10 @@ import { createRemix } from "@/lib/remix/createRemix";
 import { REMIX_CREATE_ENABLED } from "@/lib/remix/flags";
 import { scrollBehavior } from "@/lib/theme/motion";
 
-const NORMALIZE_TYPE = (raw?: string | null): "blueprint" | "blog" | "bounty" => {
-  if (raw === "blog") return "blog";
-  if (raw === "bounty") return "bounty";
-  return "blueprint";
-};
+const NORMALIZE_TYPE = (raw?: string | null): "blueprint" | "blog" => (raw === "blog" ? "blog" : "blueprint");
+
+/** UX-11: requests (post_type "bounty") are gone; their address goes home. */
+const isRetiredType = (raw?: string | null): boolean => raw === "bounty";
 
 export default function ContentDetail() {
   const { id } = useParams<{ id: string }>();
@@ -111,84 +102,6 @@ export default function ContentDetail() {
     [post]
   );
 
-  // ─── An old request: read-only history (UX-11) ───
-  const isBounty = postType === "bounty";
-  const spawnedFromMetaId = isBounty
-    ? ((post as any)?.bounty_meta_parent_id as string | null) ?? null
-    : null;
-  const { data: provenanceData } = useQuery({
-    queryKey: ["bounty_provenance", post?.id],
-    queryFn: () => getProvenance(post!.id as string),
-    enabled: !!post?.id && isBounty,
-  });
-  /* Read only for the accepted solution's original (the dialog under "View original"). */
-  const { data: solutionsData } = useQuery({
-    queryKey: ["bounty_solutions", post?.id, user?.id ?? null],
-    queryFn: () => getSolutions({ bountyId: post!.id as string, slotId: "all", sort: "most_votes", viewerId: user?.id ?? null }),
-    enabled: !!post?.id && isBounty,
-  });
-  const [win, setWin] = useState<PostingWindow | null>(null);
-
-  const bountyStatus: "open" | "closed" | "solved" = useMemo(() => {
-    const raw = (post as any)?.bounty_status as string | undefined;
-    if (raw === "solved" || (post as any)?.bounty_solved_at) return "solved";
-    if (raw === "closed") return "closed";
-    return "open";
-  }, [post]);
-
-  const slotSolutionCounts = useMemo(() => {
-    const out: Record<string, number> = {};
-    for (const s of solutionsData?.solutions ?? []) {
-      out[s.slot_id] = (out[s.slot_id] ?? 0) + 1;
-    }
-    return out;
-  }, [solutionsData]);
-
-  const slotAcceptance = useMemo(() => {
-    const out: Record<string, { solver: any; acceptedAt: string; slotKind: "stage" | "block"; solutionId?: string }> = {};
-    for (const e of provenanceData?.acceptedSolvers ?? []) {
-      out[e.slotId] = {
-        solver: e.user,
-        acceptedAt: e.acceptedAt,
-        slotKind: e.slotKind,
-      };
-    }
-    // Also attach solutionId from solutions table where status = accepted
-    for (const s of solutionsData?.solutions ?? []) {
-      if (s.status === "accepted" && out[s.slot_id]) {
-        out[s.slot_id].solutionId = s.id;
-      }
-    }
-    return out;
-  }, [provenanceData, solutionsData]);
-
-  const [bylineExpanded, setBylineExpanded] = useState(false);
-  const [originalDialog, setOriginalDialog] = useState<{
-    slotId: string;
-    slotKind: "stage" | "block";
-    original: any;
-    current: any;
-  } | null>(null);
-  const handleViewOriginalSolution = useCallback(
-    async (slotId: string) => {
-      const acc = slotAcceptance[slotId];
-      if (!acc) return;
-      const sol = (solutionsData?.solutions ?? []).find(
-        (s) => s.slot_id === slotId && s.status === "accepted"
-      );
-      const grids = ((post as any)?.stage_grids ?? {}) as any;
-      const current =
-        acc.slotKind === "stage" ? grids?.stages?.[slotId] : grids?.blocks?.[slotId];
-      setOriginalDialog({
-        slotId,
-        slotKind: acc.slotKind,
-        original: sol?.content_payload ?? null,
-        current,
-      });
-    },
-    [slotAcceptance, solutionsData, post]
-  );
-
   const shellPost = useMemo(() => {
     if (!post) return null;
     const tagsRaw = (post as any).custom_tags || (post as any).tags || [];
@@ -210,16 +123,6 @@ export default function ContentDetail() {
       stageCount: canvasDoc.stages?.length ?? 0,
       blockCount: canvasDoc.blocks?.length ?? 0,
       connectionCount: (canvasDoc as any).connections?.length ?? 0,
-      bountyMeta:
-        postType === "bounty"
-          ? {
-              reward: ((post as any).bounty_reward as number) ?? 0,
-              daysLeft: 0,
-              isSolved: !!(post as any).bounty_solved_at,
-              slotsTotal: ((post as any).bounty_slots_total as number) ?? 1,
-              slotsFilled: ((post as any).bounty_slots_filled as number) ?? 0,
-            }
-          : undefined,
       derivedAuthorBio: (author?.derived_bio as string) ?? "",
     };
   }, [post, postType, canvasDoc.stages, canvasDoc.blocks, author?.derived_bio]);
@@ -235,7 +138,6 @@ export default function ContentDetail() {
       level: 1,
       customBio: author.bio || undefined,
       derivedBio: author.derived_bio || "",
-      isTrustedSolver: !!author.is_trusted_solver,
       isFollowing: data?.viewer.isFollowing ?? false,
       isFollowedByCurrentUser: data?.viewer.isFollowing ?? false,
       stats: {
@@ -776,34 +678,6 @@ export default function ContentDetail() {
     navigate(`/upload/${t}?draft=${post.id}`);
   }, [navigate, post]);
 
-  /* UX-11: these two were declared after the early returns below, so the first render with data used more hooks than the loading
-     one and React threw. They sit before them now. */
-  // Build SolverInfo[] for byline + provenance overview
-  const solversInfo: SolverInfo[] = useMemo(() => {
-    const accepted = provenanceData?.acceptedSolvers ?? [];
-    return accepted
-      .filter((e) => !!e.user)
-      .map((e) => ({
-        id: e.user!.id,
-        displayName: e.user!.display_name || e.user!.username || "Solver",
-        handle: e.user!.username || e.user!.id.slice(0, 8),
-        avatarUrl: e.user!.avatar_url || "",
-        slotName: e.slotName || `${e.slotKind}`,
-        acceptedAt: relativeShort(e.acceptedAt),
-        isTrustedSolver: !!e.user!.is_trusted_solver,
-      }));
-  }, [provenanceData]);
-
-  const bountyAuthorMeta = useMemo(() => {
-    if (!shellAuthor) return null;
-    return {
-      id: shellAuthor.id,
-      displayName: shellAuthor.displayName,
-      handle: shellAuthor.handle,
-      avatarUrl: shellAuthor.avatarUrl,
-    };
-  }, [shellAuthor]);
-
   if (isLoading) {
     return (
       <div className="p-8 max-w-3xl mx-auto space-y-4">
@@ -814,6 +688,8 @@ export default function ContentDetail() {
       </div>
     );
   }
+
+  if (isRetiredType((post as any)?.post_type)) return <Navigate to="/" replace />;
 
   if (error || !post || !shellPost || !shellAuthor) {
     return (
@@ -862,32 +738,6 @@ export default function ContentDetail() {
     }
   }
 
-  // Spawned-from-meta attribution banner (for spawned bounties)
-  if (spawnedFromMetaId) {
-    bodyNode = (
-      <>
-        <SpawnedFromMetaBanner parentId={spawnedFromMetaId} />
-        {bodyNode}
-      </>
-    );
-  }
-
-  // Promoted-from-bounty attribution banner — permanent on blueprints that
-  // were promoted from a solved bounty. Click → opens the original bounty in
-  // a new tab. Cannot be dismissed.
-  const promotedFromBountyId =
-    postType === "blueprint"
-      ? ((post as any)?.fork_of_content_id as string | null) ?? null
-      : null;
-  if (promotedFromBountyId) {
-    bodyNode = (
-      <>
-        <BlueprintAttributionBanner bountyId={promotedFromBountyId} />
-        {bodyNode}
-      </>
-    );
-  }
-
   // Wrap body in a quotable surface so the QuotableSelectionOverlay can
   // resolve excerpt source post + block ids from text selections.
   if (post && bodyNode) {
@@ -912,73 +762,13 @@ export default function ContentDetail() {
     );
   }
 
-  const bountyByline =
-    isBounty && bountyAuthorMeta ? (
-      <BountyByline
-        bountyAuthor={bountyAuthorMeta}
-        solvers={solversInfo}
-        isExpanded={bylineExpanded}
-        onToggleExpand={() => setBylineExpanded((v) => !v)}
-        onViewProvenance={() => {
-          const el = document.querySelector("[data-provenance-overview]") as HTMLElement | null;
-          el?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
-        }}
-        onAuthorClick={(authorId) => navigate(`/profile/${shellAuthor?.handle || authorId}`)}
-      />
-    ) : null;
-
-  /* The accepted solutions, as history: who was credited for which part. Nothing here can be changed from this page. */
-  const bountyExtras =
-    isBounty && solversInfo.length > 0 && bountyAuthorMeta ? (
-      <div data-provenance-overview>
-        <ProvenanceOverview
-          bountyAuthor={{
-            ...bountyAuthorMeta,
-            postedAt: relativeShort(
-              ((post as any)?.published_at as string) ||
-                ((post as any)?.created_at as string) ||
-                new Date().toISOString()
-            ),
-          }}
-          solvers={solversInfo}
-          onSolverClick={(id) => {
-            const s = solversInfo.find((x) => x.id === id);
-            navigate(`/profile/${s?.handle || id}`);
-          }}
-          onLearnMore={() => navigate("/about/provenance")}
-        />
-      </div>
-    ) : null;
-
-  /* Its status as recorded, and the one line that says where asking happens now. */
-  const bountyHeaderNode = isBounty ? (
-    <ClosedRequestLine status={bountyStatus} onStartTopic={() => setWin({ kind: "post" })} />
-  ) : null;
-
   return (
     <CommentDrawerProvider value={drawerContextValue}>
-      <BountyProvenanceProvider
-        value={{
-          bountySlug: shellPost.slug,
-          bountyId: shellPost.id,
-          bountyStatus,
-          slotSolutionCounts,
-          slotAcceptance,
-          bountyAuthor: provenanceData?.bountyAuthor ?? null,
-          acceptedSolvers: provenanceData?.acceptedSolvers ?? [],
-          onViewOriginalSolution: handleViewOriginalSolution,
-        }}
-      >
       {(() => {
         const SITE = (import.meta as any).env?.VITE_SITE_URL || "https://neoscaleai.com";
         const postUrl = `${SITE}/b/${shellPost.slug}`;
         const authorUrl = shellAuthor?.handle ? `${SITE}/u/${shellAuthor.handle}` : `${SITE}/profile`;
-        const schemaType =
-          shellPost.postType === "bounty"
-            ? "Question"
-            : shellPost.postType === "blueprint"
-            ? "TechArticle"
-            : "Article";
+        const schemaType = shellPost.postType === "blueprint" ? "TechArticle" : "Article";
         const articleLd: Record<string, any> = {
           "@context": "https://schema.org",
           "@type": schemaType,
@@ -1000,12 +790,6 @@ export default function ContentDetail() {
           mainEntityOfPage: postUrl,
           keywords: (shellPost.tags ?? []).join(", "),
         };
-        if (shellPost.postType === "bounty") {
-          articleLd.answerCount = (data?.bountySolvers ?? []).length;
-          articleLd.acceptedAnswer = (post as any)?.bounty_solved_at
-            ? { "@type": "Answer", text: "Accepted solution available" }
-            : undefined;
-        }
         const breadcrumbLd = {
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
@@ -1034,7 +818,6 @@ export default function ContentDetail() {
       <ContentDetailShell
         post={shellPost}
         author={shellAuthor}
-        bountySolvers={data?.bountySolvers ?? []}
         isOwnPost={isOwnPost}
         relatedPosts={relatedPosts}
         onBack={() => navigate(-1)}
@@ -1062,9 +845,6 @@ export default function ContentDetail() {
             postSlug={shellPost.slug}
           />
         }
-        bountyExtrasSlot={bountyExtras}
-        headerSlot={bountyHeaderNode}
-        bylineSlot={bountyByline}
       >
         {bodyNode}
       </ContentDetailShell>
@@ -1086,7 +866,7 @@ export default function ContentDetail() {
         onBookmark={handleBookmark}
         onShare={handleShare}
         onExport={handleExport}
-        onEdit={isOwnPost && !isBounty ? handleEdit : undefined}
+        onEdit={isOwnPost ? handleEdit : undefined}
         onShowReblogsList={() => setReblogsModalOpen(true)}
       />
       <AIExportMenu
@@ -1133,55 +913,7 @@ export default function ContentDetail() {
           postId={(post as any)?.id}
         />
       )}
-      {originalDialog && (
-        <OriginalSolutionDialog
-          open={!!originalDialog}
-          onClose={() => setOriginalDialog(null)}
-          original={originalDialog.original}
-          current={originalDialog.current}
-          slotKind={originalDialog.slotKind}
-          slotId={originalDialog.slotId}
-        />
-      )}
-      <PostingWindows window={win} onClose={() => setWin(null)} onReopen={setWin} />
-      </BountyProvenanceProvider>
     </CommentDrawerProvider>
-  );
-}
-
-function SpawnedFromMetaBanner({ parentId }: { parentId: string }) {
-  const navigate = useNavigate();
-  const { data } = useQuery({
-    queryKey: ["spawned_from_meta", parentId],
-    queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from("content_items")
-        .select("id, title")
-        .eq("id", parentId)
-        .single();
-      return data as { id: string; title: string } | null;
-    },
-    enabled: !!parentId,
-  });
-  if (!data) return null;
-  return (
-    <div
-      onClick={() => navigate(`/content/${parentId}`)}
-      style={{
-        background: "color-mix(in srgb, var(--cat-agents) 8%, transparent)",
-        border: "1px solid color-mix(in srgb, var(--cat-agents) 25%, transparent)",
-        borderRadius: 8,
-        padding: "8px 12px",
-        marginBottom: 16,
-        fontFamily: "var(--font-ui)",
-        fontSize: 12,
-        color: "var(--text)",
-        cursor: "pointer",
-      }}
-    >
-      Spawned from meta-bounty:{" "}
-      <span style={{ color: "var(--cat-agents)", fontWeight: 600 }}>{data.title}</span>
-    </div>
   );
 }
 
@@ -1197,7 +929,7 @@ function RemixLineageRow({
   isRemixable: boolean;
   isOwnPost: boolean;
   remixerId: string | null;
-  onRemixed: (draftId: string, postType: "blueprint" | "blog" | "bounty") => void;
+  onRemixed: (draftId: string, postType: "blueprint" | "blog") => void;
 }) {
   const { data: parent } = useLineageParent(postId);
   const { data: remixCount = 0 } = useRemixCount(postId);
@@ -1232,7 +964,7 @@ function RemixLineageRow({
             onRemix={async () => {
               try {
                 const res = await createRemix({ sourcePostId: postId, remixerId: remixerId! });
-                onRemixed(res.draftId, res.postType);
+                onRemixed(res.draftId, res.postType === "blog" ? "blog" : "blueprint");
               } catch (err) {
                 reportError(err, { source: "content-detail", context: "remix", route: window.location.pathname });
               }
@@ -1242,17 +974,4 @@ function RemixLineageRow({
       )}
     </div>
   );
-}
-
-function relativeShort(iso: string): string {
-  try {
-    const d = new Date(iso);
-    const diff = Date.now() - d.getTime();
-    const day = 86400_000;
-    if (diff < day) return "today";
-    if (diff < 7 * day) return `${Math.floor(diff / day)}d ago`;
-    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  } catch {
-    return "";
-  }
 }
