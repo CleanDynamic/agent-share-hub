@@ -77,7 +77,7 @@ beforeEach(() => {
 describe("WorkspaceBar — the exit", () => {
   it("reads as the wordmark and is reachable by its destination's name", () => {
     renderBar();
-    expect(exit()).toHaveTextContent("buildgallery");
+    expect(exit()).toHaveTextContent("OpenBuilds.ai");
     expect(screen.getByLabelText("Back to the gallery")).toBe(exit());
   });
 

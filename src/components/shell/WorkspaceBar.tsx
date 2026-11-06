@@ -70,6 +70,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { SENTIENT, FIGTREE, eyebrow, label as labelType } from "@/lib/theme/type";
+import { SITE_NAME } from "@/lib/site";
 
 /**
  * The bar's height, in pixels.
@@ -335,7 +336,7 @@ function ExitControl({ exit }: { exit: WorkspaceExit }) {
               whiteSpace: "nowrap",
             }}
           >
-            buildgallery
+            {SITE_NAME}
           </span>
         </Link>
       </TooltipTrigger>

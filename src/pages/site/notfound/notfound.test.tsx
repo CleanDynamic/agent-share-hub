@@ -66,7 +66,7 @@ describe("the page", () => {
   it("is noindex and titled", async () => {
     page("/nope");
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(document.title).toBe("Page not found · OpenBuilds");
+    expect(document.title).toBe("Page not found · OpenBuilds.ai");
     expect(document.querySelector('meta[name="robots"]')?.getAttribute("content")).toBe("noindex, nofollow");
   });
 
