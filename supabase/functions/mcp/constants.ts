@@ -42,6 +42,8 @@ export const CONNECTOR_STATEMENT =
   "you to review on buildgallery; it never publishes, never edits or deletes " +
   "anything you already have, and never reads the content of a build.";
 
+import { SITE_URL } from "../_shared/site.ts";
+
 /**
  * The verbatim instruction. Word for word from the contract; it appears in the
  * server instructions and at the head of every tool description, and is not
@@ -53,11 +55,8 @@ export const VERBATIM_INSTRUCTION =
   "shorten, tidy or omit anything. If you can read the conversation from a " +
   "file or transcript on disk, send that rather than reproducing it from memory.";
 
-/**
- * The host the manual writes as buildgallery.ai. Until the custom domain is
- * connected it is the Lovable one; this is the only place the substitution lives.
- */
-const PUBLIC_HOST = "agent-share-hub.lovable.app";
+/** The site's host, from the one site address (_shared/site.ts), as the tools name it. */
+const PUBLIC_HOST = new URL(SITE_URL).host;
 
 /** The Drafts page: where an import waits for its creator, as the tools name it. */
 export const DRAFTS_URL = `${PUBLIC_HOST}/drafts`;

@@ -1,8 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { corsHeaders as corsFor } from "../_shared/cors.ts";
 import { publicClient } from "../_shared/publicRead.ts";
+import { SITE_URL } from "../_shared/site.ts";
 
-const SITE = Deno.env.get("PUBLIC_SITE_URL") ?? "https://neoscaleai.com";
+const SITE = SITE_URL;
 
 serve(async (req) => {
   // A public read: every origin may read the answer.

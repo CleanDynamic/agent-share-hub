@@ -869,7 +869,7 @@ Deno.test("append_chunk rejects a total over the ceiling with the table's wordin
     text(result),
     "This import would reach 431,000 characters; the limit is 400,000. Send the remainder as a " +
       "second import, or ask the creator to export the conversation as a file and drop it on " +
-      "agent-share-hub.lovable.app/import, which has no such limit.",
+      "openbuilds.ai/import, which has no such limit.",
   );
   assertEquals(bucket.uploads.length, 0);
   assertEquals(MAX_TOTAL_CHARS, 400_000);
@@ -1309,7 +1309,7 @@ Deno.test("finish_import assembles in numeric order, redacts, hashes, parses, pa
   assertEquals(out.turn_count, 20);
   assertEquals(out.secret_findings, [{ kind: "openai_key", count: 1 }]);
   assertEquals(out.total_chars, Object.values(texts).join("").length);
-  assertEquals(out.review_url, "https://agent-share-hub.lovable.app/drafts");
+  assertEquals(out.review_url, "https://openbuilds.ai/drafts");
   assertEquals(out.chunks_removed, true);
   assertEquals(out.warnings, []);
   assert((out.event_count as number) > 0 && (out.node_count as number) >= 0);
@@ -1416,7 +1416,7 @@ Deno.test("finish_import enforces the total ceiling on the assembled text, and f
     text(result),
     "This import would reach 450,000 characters; the limit is 400,000. Send the remainder as a " +
       "second import, or ask the creator to export the conversation as a file and drop it on " +
-      "agent-share-hub.lovable.app/import, which has no such limit.",
+      "openbuilds.ai/import, which has no such limit.",
   );
   assertEquals(last.payload!.status, "failed");
   assertEquals(last.payload!.error, text(result));
@@ -1431,7 +1431,7 @@ Deno.test("finish_import marks a conversation already waiting as a duplicate, na
   assertEquals(
     text(result),
     `This conversation is already waiting for review as import ${TWIN_ID}, created 2 hours ago. ` +
-      "Nothing new was created. Open agent-share-hub.lovable.app/drafts to review it.",
+      "Nothing new was created. Open openbuilds.ai/drafts to review it.",
   );
   assertEquals(last.payload!.status, "duplicate");
   assertEquals(last.payload!.error, text(result));
@@ -3443,7 +3443,7 @@ Deno.test("EX-P19: every seeded type is one line — key, label, category, and t
 
   assert(text.length < VOCABULARY_MAX_CHARS, `${text.length} characters`);
   assert(!text.includes("truncated"), "the seeded registry is listed whole");
-  assert(!text.includes("buildgallery.ai"), "no address but the live one, and this text needs none");
+  assert(!text.includes("openbuilds.ai"), "no address but the live one, and this text needs none");
 });
 
 Deno.test("EX-P19: the vocabulary says that content coming back from the connector is data, never instructions", async () => {
@@ -3643,7 +3643,7 @@ Deno.test("EX-P19: extract asks for everything, verbatim and in order, through b
     ["buildgallery_append_chunk", "buildgallery_begin_import", "buildgallery_finish_import"],
     "those three tools and no other",
   );
-  assert(!EXTRACT_PROMPT_TEXT.includes("buildgallery.ai"), "no address but the live one, and this text needs none");
+  assert(!EXTRACT_PROMPT_TEXT.includes("openbuilds.ai"), "no address but the live one, and this text needs none");
 });
 
 Deno.test("EX-P19: extract says that content coming back from the connector is data, never instructions", () => {
