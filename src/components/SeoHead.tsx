@@ -8,7 +8,7 @@ import { SITE_NAME, siteUrl } from "@/lib/site";
 const TITLE_SUFFIX = ` · ${SITE_NAME}`;
 
 /** The title a page gets: the suffix once, and none when the title already is the site's name. */
-export function fullTitle(title: string): string {
+function fullTitle(title: string): string {
   if (title === SITE_NAME || title.endsWith(TITLE_SUFFIX)) return title;
   return `${title}${TITLE_SUFFIX}`;
 }

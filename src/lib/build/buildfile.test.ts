@@ -242,7 +242,7 @@ describe("parseBuildFile — input repair", () => {
   });
 });
 
-describe("parseBuildFile — the older key (UX-14)", () => {
+describe("parseBuildFile: the older key (UX-14)", () => {
   it("still reads a file that carries neoscale_build, so Miles's earlier exports import", () => {
     const older = envelope();
     delete older.openbuilds_build;
