@@ -27,8 +27,6 @@ vi.mock("@/hooks/useUnreadMessages", () => ({ useUnreadMessages: () => ({ displa
 vi.mock("@/hooks/useUnreadNotifications", () => ({
   useUnreadNotifications: () => ({ display: null, count: 0 }),
 }));
-vi.mock("@/hooks/useDraftCount", () => ({ useDraftCount: () => ({ display: "" }) }));
-vi.mock("@/hooks/useNavBadges", () => ({ useNavBadges: () => ({ hasUnseenSaves: false }) }));
 vi.mock("@/hooks/useBreakpoint", () => ({ useBreakpoint: () => "xl" }));
 vi.mock("@/hooks/useProgress", () => ({
   useProgress: () => ({ level: 1, xpInLevel: 0, xpForNext: 100, progress: { xp_total: 0 } }),

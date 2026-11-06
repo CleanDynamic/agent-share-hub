@@ -190,8 +190,6 @@ describe("the focus ring", () => {
 describe("the legacy pill tokens", () => {
   // Every remaining reference, by file and by count. Nothing may be added.
   const EXEMPT: Record<string, number> = {
-    "src/components/layout/LeftPanel.tsx": 1,
-    "src/components/layout/RightPanelExplore.tsx": 2,
   };
 
   /* Built fresh per use, never shared. A /g regex carries `lastIndex` between
