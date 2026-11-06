@@ -25,6 +25,7 @@ import { signInWithEmailOrUsername } from "@/lib/auth/signInWithEmailOrUsername"
 import { loginCanSubmit } from "./authModel";
 import { LoginForm } from "./LoginForm";
 import { SignInShell } from "./SignInShell";
+import { SITE_NAME } from "@/lib/site";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -82,7 +83,7 @@ export function LoginPage() {
 
   return (
     <>
-      <SeoHead title="Sign in" description="Sign in to your buildgallery account." path="/login" noIndex />
+      <SeoHead title="Sign in" description={`Sign in to your ${SITE_NAME} account.`} path="/login" noIndex />
       <SignInShell mode="login">
         <LoginForm
           emailOrUsername={emailOrUsername}

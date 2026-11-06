@@ -29,6 +29,7 @@ import { resolvePostAuthRoute } from "@/lib/auth/postAuthRoute";
 import { readEmailLink } from "./authModel";
 import { LinkChecking } from "./ResetForms";
 import { SignInShell } from "./SignInShell";
+import { SITE_NAME } from "@/lib/site";
 
 const RESEND_COOLDOWN_SECONDS = 45;
 
@@ -119,7 +120,7 @@ export function VerifyEmailPage() {
     <>
       <SeoHead
         title="Verify your email"
-        description="Verify your buildgallery account email."
+        description={`Verify your ${SITE_NAME} account email.`}
         path="/verify-email"
         noIndex
       />

@@ -58,7 +58,7 @@ describe("the gate", () => {
     open();
     await waitFor(() => expect(document.title).toBe("Sign in · OpenBuilds.ai"));
     expect(document.querySelector('meta[name="robots"]')?.getAttribute("content")).toContain("noindex");
-    expect(screen.getByText("buildgallery", { exact: true })).toBeTruthy();
+    expect(screen.getByText("OpenBuilds.ai", { exact: true })).toBeTruthy();
     expect(screen.getByRole("heading", { level: 1, name: "Every AI build, hung with its proof." })).toBeTruthy();
   });
 });

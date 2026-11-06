@@ -69,7 +69,7 @@ describe("AuthShell", () => {
   it("sets the wordmark in the display face at 28, clear of its floor", () => {
     const doc = shell("noon");
     const wordmark = [...doc.querySelectorAll("span")].find(
-      (span) => span.textContent === "buildgallery",
+      (span) => span.textContent === "OpenBuilds.ai",
     );
     expect(wordmark).toBeTruthy();
     const style = styleOf(wordmark);

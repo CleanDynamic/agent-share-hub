@@ -29,6 +29,7 @@ import { onPasswordRecovery, requestPasswordReset, setNewPassword } from "@/lib/
 import { readEmailLink, resetConfirmCanSubmit, resetRequestCanSubmit } from "./authModel";
 import { LinkChecking, ResetConfirmForm, ResetLinkError, ResetRequestForm, ResetSent } from "./ResetForms";
 import { SignInShell } from "./SignInShell";
+import { SITE_NAME } from "@/lib/site";
 
 const EMAIL_REGEX = /^[^@]+@[^@]+\.[^@]+$/;
 
@@ -179,7 +180,7 @@ export function ResetPasswordPage() {
     <>
       <SeoHead
         title="Reset your password"
-        description="Reset your buildgallery account password."
+        description={`Reset your ${SITE_NAME} account password.`}
         path="/reset-password"
         noIndex
       />

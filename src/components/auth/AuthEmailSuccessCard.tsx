@@ -5,6 +5,7 @@ import { AuthButton } from "./AuthButton";
 import { prefersReducedMotion } from "@/lib/theme/controls";
 import { t } from "@/lib/theme/tokens";
 import { cardTitle, FIGTREE } from "@/lib/theme/type";
+import { SITE_NAME } from "@/lib/site";
 
 interface AuthEmailSuccessCardProps {
   onContinue: () => void;
@@ -63,12 +64,12 @@ export function AuthEmailSuccessCard({ onContinue }: AuthEmailSuccessCardProps) 
         }}
       >
         Your email is confirmed and your account is active. Continue and
-        buildgallery picks up where you left off.
+        {SITE_NAME} picks up where you left off.
       </p>
 
       <div style={{ width: "100%", marginTop: "12px" }}>
         <AuthButton type="button" onClick={onContinue}>
-          Continue to buildgallery
+          Continue to {SITE_NAME}
         </AuthButton>
       </div>
     </div>
