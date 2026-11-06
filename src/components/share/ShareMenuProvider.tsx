@@ -17,7 +17,7 @@ import { useEverOpened, useLoadAtIdle } from "@/lib/routing/lazyHost";
 const loadHost = () => import("./ShareMenuHost");
 const ShareMenuHost = lazy(loadHost);
 
-export type ShareableType = "blueprint" | "stage" | "block" | "blog" | "bounty";
+export type ShareableType = "blueprint" | "stage" | "block" | "blog";
 
 export interface OpenShareMenuArgs {
   contentType: ShareableType;

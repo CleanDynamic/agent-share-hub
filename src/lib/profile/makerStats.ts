@@ -1,9 +1,8 @@
-// A maker's four figures, in one request (RC-P21).
+// A maker's three figures, in one request (RC-P21; UX-11 took the fourth, gaps solved, with the request system).
 //
-// A MAKER'S STANDING IS FOUR FIGURES ⟦critique-information-density › Content
+// A MAKER'S STANDING IS THREE FIGURES ⟦critique-information-density › Content
 // Prioritisation⟧: what they built, how many times other people got it
-// working, how many times other people rebuilt it, and how many gaps they
-// solved. maker_stats counts all four in the database and answers in one round
+// working, and how many times other people rebuilt it. maker_stats counts all three in the database and answers in one round
 // trip ⟦neoscale-performance⟧ (supabase/migrations/20261001220000_rc_maker_stats.sql),
 // under the caller's own row-level security, so a figure never counts a row
 // the reader could not read for themselves.
@@ -15,7 +14,7 @@
 //
 // WHY THE ROW TYPE IS HAND-WRITTEN: maker_stats is newer than the generated
 // types in src/integrations/supabase/types.ts, so the call is made through the
-// same narrow cast src/lib/bounty/solvers.ts uses for top_solvers.
+// same narrow cast the other late-arriving functions use.
 
 import { supabase } from "@/integrations/supabase/client";
 
@@ -26,8 +25,6 @@ export interface MakerStats {
   reproductionsReceived: number;
   /** Published builds by other people that name one of theirs as the parent. */
   rebuildsOfTheirWork: number;
-  /** Their accepted solutions on bounties that live on a build. */
-  gapsSolved: number;
 }
 
 /** One row of maker_stats, exactly as the migration's RETURNS TABLE declares it. */
@@ -36,7 +33,6 @@ interface MakerStatsRow {
   builds: number | string | null;
   reproductions_received: number | string | null;
   rebuilds_of_their_work: number | string | null;
-  gaps_solved: number | string | null;
 }
 
 /** What maker_stats answers for a maker nothing can be counted for. */
@@ -44,7 +40,6 @@ export const NO_MAKER_STATS: MakerStats = {
   builds: 0,
   reproductionsReceived: 0,
   rebuildsOfTheirWork: 0,
-  gapsSolved: 0,
 };
 
 /** The failure of getMakerStats: the user id, and nothing a reader wrote. */
@@ -71,7 +66,7 @@ function toCount(value: number | string | null | undefined): number {
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
 }
 
-/** The four figures for `userId`, in one request. */
+/** The three figures for `userId`, in one request. */
 export async function getMakerStats(userId: string): Promise<MakerStats> {
   const { data, error, status } = await (
     supabase.rpc as unknown as (
@@ -95,6 +90,5 @@ export async function getMakerStats(userId: string): Promise<MakerStats> {
     builds: toCount(row.builds),
     reproductionsReceived: toCount(row.reproductions_received),
     rebuildsOfTheirWork: toCount(row.rebuilds_of_their_work),
-    gapsSolved: toCount(row.gaps_solved),
   };
 }

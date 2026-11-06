@@ -908,8 +908,7 @@ function gapStatement(node: BuildNode): string {
 }
 
 /**
- * Every gap still open, in record order. A gap an open bounty pays for carries
- * its reward and can be solved; one with no bounty is still a hole worth naming.
+ * Every gap still open, in record order. A gap with no topic is still a hole worth naming.
  * UX-09 P1: `topicByNode` is the still-open topic about each gap (its id), when
  * there is one.
  */

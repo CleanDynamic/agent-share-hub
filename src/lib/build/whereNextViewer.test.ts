@@ -93,7 +93,7 @@ const VIEWER = "viewer-1";
 const NOW = "2026-10-01T12:00:00Z"; // a Thursday; the week began 2026-09-28
 
 function card(id: string, over: Record<string, unknown> = {}) {
-  return { id, slug: `slug-${id}`, title: `Build ${id}`, creator_id: "maker-1", build_nodes: null, build_media: null, bounties: null, ...over };
+  return { id, slug: `slug-${id}`, title: `Build ${id}`, creator_id: "maker-1", build_nodes: null, build_media: null, ...over };
 }
 
 function source(id: string, over: Record<string, unknown> = {}) {

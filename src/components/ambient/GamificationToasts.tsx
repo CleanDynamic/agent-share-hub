@@ -175,7 +175,7 @@ export default function GamificationToasts() {
     };
   }, [user?.id, push]);
 
-  // Custom event bus for PostXpFootnote (e.g. bounty solution submit)
+  // Custom event bus for PostXpFootnote
   useEffect(() => {
     const onPostXp = (e: Event) => {
       const detail = (e as CustomEvent).detail || {};

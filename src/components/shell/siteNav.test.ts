@@ -9,7 +9,7 @@ describe("PRIMARY_LINKS", () => {
     expect(PRIMARY_LINKS).toEqual([
       { key: "home", label: "Home", href: "/" },
       { key: "gallery", label: "Builds", href: "/builds" },
-      { key: "bounties", label: "OpenBuilds", href: "/openbuilds" },
+      { key: "openbuilds", label: "OpenBuilds", href: "/openbuilds" },
       { key: "library", label: "Library", href: "/library", authOnly: true },
       { key: "drafts", label: "Drafts", href: "/drafts", authOnly: true },
     ]);
@@ -19,7 +19,7 @@ describe("PRIMARY_LINKS", () => {
     expect(PRIMARY_LINKS.map((link) => link.href)).toEqual([
       SITE_NAV.home,
       SITE_NAV.gallery,
-      SITE_NAV.bounties,
+      SITE_NAV.openbuilds,
       SITE_NAV.library,
       SITE_NAV.drafts,
     ]);
@@ -34,12 +34,7 @@ describe("sectionForPath", () => {
     ["/b2/invoice-triage", "gallery"],
     ["/b2/invoice-triage/lineage", "gallery"],
     ["/rebuild/invoice-triage", "gallery"],
-    ["/openbuilds", "bounties"],
-    ["/openbuilds/solvers", "bounties"],
-    ["/openbuilds/abc/solve", "bounties"],
-    ["/bounties", "bounties"],
-    ["/bounties/solvers", "bounties"],
-    ["/bounties/abc/solve", "bounties"],
+    ["/openbuilds", "openbuilds"],
     ["/library", "library"],
     ["/drafts", "drafts"],
     ["/drafts/posts", "drafts"],

@@ -35,10 +35,9 @@ interface NodeCardProps {
   /**
    * Whatever the page wants to hang under this node (NS-P52).
    *
-   * The gap panel on a node with an open bounty, the solver's credit on one a
-   * bounty has filled — and nothing at all on the great majority of nodes. It
+   * The gap panel on a node still open — and nothing at all on the great majority of nodes. It
    * arrives as a rendered child rather than as data because this card must go
-   * on knowing nothing about bounties: it draws a node, and the page decides
+   * on knowing nothing about topics: it draws a node, and the page decides
    * what else is true about that node.
    */
   footer?: ReactNode;

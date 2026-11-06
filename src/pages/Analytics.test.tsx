@@ -32,7 +32,7 @@ const recorded = vi.hoisted(() => ({ requests: [] as string[] }));
 const answers = vi.hoisted(() => ({
   builds: { data: [] as unknown[], error: null as unknown, status: 200 },
   metrics: { data: [] as unknown[], error: null as unknown, status: 200 },
-  figures: { data: [{ builds: 0, reproductions_received: 0, rebuilds_of_their_work: 0, gaps_solved: 0 }] as unknown[], error: null as unknown, status: 200 },
+  figures: { data: [{ builds: 0, reproductions_received: 0, rebuilds_of_their_work: 0 }] as unknown[], error: null as unknown, status: 200 },
 }));
 
 vi.mock("@/integrations/supabase/client", () => {
@@ -85,12 +85,13 @@ function build(n: number, over: Record<string, unknown> = {}) {
     like_count: 10 * n,
     comment_count: n,
     save_count: 2 * n,
+    still_open_topics: n === 4 ? 3 : 0,
     ...over,
   };
 }
 
 function metrics(n: number, over: Record<string, unknown> = {}) {
-  return { build_id: `build-${n}`, runs: 5 - n, worked: 5 - n, failed_last_30_days: 0, open_bounties: 0, solutions_waiting: 0, ...over };
+  return { build_id: `build-${n}`, runs: 5 - n, worked: 5 - n, failed_last_30_days: 0, ...over };
 }
 
 function renderPage() {
@@ -111,7 +112,7 @@ beforeEach(() => {
   answers.builds = { data: [], error: null, status: 200 };
   answers.metrics = { data: [], error: null, status: 200 };
   answers.figures = {
-    data: [{ builds: 0, reproductions_received: 0, rebuilds_of_their_work: 0, gaps_solved: 0 }],
+    data: [{ builds: 0, reproductions_received: 0, rebuilds_of_their_work: 0 }],
     error: null,
     status: 200,
   };
@@ -136,7 +137,7 @@ describe("Analytics on builds", () => {
 
     const table = await screen.findByTestId("build-stats-table");
     const headers = within(table).getAllByRole("columnheader").map((cell) => cell.textContent);
-    expect(headers).toEqual(["Build", "Got working", "Last confirmed", "Rebuilds", "Likes", "Comments", "Saves", "Open bounties"]);
+    expect(headers).toEqual(["Build", "Got working", "Last confirmed", "Rebuilds", "Likes", "Comments", "Saves", "Still open"]);
 
     const firstRow = within(table).getAllByTestId("build-stats-row")[0];
     const cells = within(firstRow).getAllByRole("cell");
@@ -179,14 +180,14 @@ describe("Analytics on builds", () => {
       build(3, { last_confirmed_at: ago(45) }),
       build(4, { last_confirmed_at: null, reproduction_count: 0, published_at: ago(5) }),
     ];
-    answers.metrics.data = [metrics(1), metrics(2), metrics(3, { failed_last_30_days: 2 }), metrics(4, { solutions_waiting: 3, open_bounties: 1 })];
+    answers.metrics.data = [metrics(1), metrics(2), metrics(3, { failed_last_30_days: 2 }), metrics(4)];
     renderPage();
 
     const section = await screen.findByTestId("needs-you");
     expect(within(section).getByRole("heading", { name: "Needs you" })).toBeTruthy();
     const lines = within(section).getAllByTestId("needs-you-line").map((line) => line.textContent);
     expect(lines).toHaveLength(3);
-    expect(lines[0]).toBe("Build 43 solutions waiting");
+    expect(lines[0]).toBe("Build 43 topics still open");
     expect(lines[1]).toBe("Build 3a recent run did not work");
     expect(lines[2]).toMatch(/^Build 2not confirmed since \d{1,2} \w+ \d{4}$/);
   });
@@ -209,7 +210,7 @@ describe("Analytics on builds", () => {
     const action = within(empty).getByRole("link", { name: "New build" });
     expect(action.getAttribute("href")).toBe("/compose/new");
     expect(action.getAttribute("data-visual-slot")).toBe("btn-secondary");
-    expect(screen.getAllByTestId("maker-figure")).toHaveLength(4);
+    expect(screen.getAllByTestId("maker-figure")).toHaveLength(3);
   });
 
   it("says a refused read is a refusal, never an empty table", async () => {

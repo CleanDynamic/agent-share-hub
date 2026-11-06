@@ -62,7 +62,6 @@ const SHARED: Row = {
       post_text: null,
     },
   ],
-  bounties: [],
 };
 
 /** Fifteen published builds of the reader's own, and ten saves: 25 to offer, 20 shown. */

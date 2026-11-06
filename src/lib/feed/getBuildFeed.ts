@@ -105,11 +105,6 @@ export interface BuildFeedRow {
 /**
  * The build's maker, as the function joins them. UI-P27: Home's visitors' book
  * names who did what, and the row already carries the answer.
- *
- * On a bounty row this is the build's maker, not the ask's author: the function
- * filters bounties by their author but selects the build's profile. They are the
- * same person whenever a maker opens an ask on their own build, which is the
- * only way the product lets one be opened today.
  */
 export interface FeedMaker {
   id: string;
@@ -247,7 +242,7 @@ export interface GetBuildFeedOptions {
   /** Capped at 50 inside the function, whatever is passed. */
   pageSize?: number;
   /**
-   * Only rows whose maker, reproducer or bounty author the signed-in reader
+   * Only rows whose maker, reproducer or topic author the signed-in reader
    * follows: Home's Following tab (RC-P11). Sent only when true, so every
    * other call is the same request it always was.
    */

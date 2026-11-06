@@ -254,7 +254,6 @@ function sampleBuild(over: Partial<GalleryBuild> = {}): GalleryBuild {
     source_handle_at_fork: null,
     nodes: [],
     media: [],
-    bounties: [],
     ...over,
   } as GalleryBuild;
 }
@@ -340,14 +339,6 @@ function cardSamples() {
         title: "A tall one, framed",
         media: postOf([{ width: 1000, height: 3000 }]),
       }),
-    },
-    {
-      label: "open bounty",
-      build: sampleBuild({
-        title: "Works, except for the retry prompt",
-        media: postOf([{ width: 1600, height: 1000 }]),
-        bounties: [{ id: "kit-bo", reward_gbp: 150, status: "open" }],
-      } as Partial<GalleryBuild>),
     },
     {
       label: "never reproduced · stale · rebuilt",

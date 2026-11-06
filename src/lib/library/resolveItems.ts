@@ -3,7 +3,7 @@ import { gallerySelect, toGalleryBuild, withCardEmbeds, type GalleryBuild, type 
 import { db, socialError, uniqueIds } from "@/lib/social/types";
 import type { CollectionItemKind, SavedItem } from "./types";
 
-const CONTENT_KINDS: CollectionItemKind[] = ["blueprint", "blog", "bounty"];
+const CONTENT_KINDS: CollectionItemKind[] = ["blueprint", "blog"];
 
 type Resolved = Pick<SavedItem, "title" | "slug" | "cover_image_url" | "author" | "stats" | "build">;
 
@@ -57,7 +57,7 @@ export async function resolveSavedItems(
     }
   }
 
-  // ---- content_items: blueprint / blog / bounty
+  // ---- content_items: blueprint / blog
   const contentIds = new Set<string>();
   for (const k of CONTENT_KINDS) byKind[k]?.forEach((id) => contentIds.add(id));
 

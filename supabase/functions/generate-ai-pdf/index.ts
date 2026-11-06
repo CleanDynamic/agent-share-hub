@@ -226,8 +226,6 @@ async function buildPdf(payload: any): Promise<Uint8Array> {
   const meta = payload.meta ?? {};
   const author = payload.authorAttribution ?? {};
   const content = payload.content ?? { prose: [], stages: [], results: [], references: [] };
-  const bountyMeta = payload.bountyMeta;
-  const accepted = payload.acceptedSolutions ?? [];
 
   const doc = await PDFDocument.create();
   doc.setTitle(meta.title ?? "NeoScale post");
@@ -279,13 +277,6 @@ async function buildPdf(payload: any): Promise<Uint8Array> {
   drawMetaRow(c, "Reading minutes", meta.estimated_reading_minutes);
   drawMetaRow(c, "Stages", (content.stages ?? []).length);
   drawMetaRow(c, "Blocks", (content.stages ?? []).reduce((a: number, s: any) => a + (s.blocks?.length ?? 0), 0));
-
-  if (bountyMeta) {
-    drawMetaRow(c, "Bounty status", bountyMeta.status);
-    drawMetaRow(c, "Bounty deadline", bountyMeta.deadline);
-    drawMetaRow(c, "Bounty reward", `${bountyMeta.reward_amount ?? ""} ${bountyMeta.reward_currency ?? ""} (${bountyMeta.reward_type ?? ""})`);
-    drawMetaRow(c, "Acceptance criteria", bountyMeta.acceptance_criteria);
-  }
 
   // Prose body
   if ((content.prose ?? []).length > 0) {
@@ -371,17 +362,6 @@ async function buildPdf(payload: any): Promise<Uint8Array> {
     drawSectionHeader(c, "References");
     for (const r of content.references) {
       drawText(c, `• ${r.title} — /b/${r.slug ?? r.id}`, { font, size: 10, indent: 8 });
-    }
-  }
-
-  // Accepted solutions (bounty)
-  if (accepted.length > 0) {
-    newPage(c);
-    drawSectionHeader(c, "Accepted solutions");
-    for (const sol of accepted) {
-      drawText(c, `▸ ${sol.title ?? "Solution"}`, { font: bold, size: 11 });
-      drawText(c, `Solution post: /b/${sol.slug ?? sol.id}`, { font, size: 9, indent: 8, color: GREY });
-      c.y -= 4;
     }
   }
 

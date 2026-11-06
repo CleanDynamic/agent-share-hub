@@ -2,7 +2,7 @@
 //
 // THREE REQUESTS, TOGETHER ⟦neoscale-performance⟧: the maker's published
 // builds (at most 50, their counts on the row), maker_build_metrics for the
-// same builds (runs, 30-day failures, open bounties, solutions waiting), and
+// same builds (runs, 30-day failures, still-open topics), and
 // getMakerStats for the four figures. The builds are read in exactly the order
 // and with exactly the cap maker_build_metrics uses (the gallery's: most
 // reproduced, then last confirmed, then published, then id; 50), so the two
@@ -29,7 +29,7 @@ const db = supabase as unknown as SupabaseClient;
 export const BUILD_STATS_LIMIT = 50;
 
 const BUILD_STATS_COLUMNS =
-  "id, slug, title, reproduction_count, last_confirmed_at, last_confirmed_model, published_at, rebuild_count, like_count, comment_count, save_count";
+  "id, slug, title, reproduction_count, last_confirmed_at, last_confirmed_model, published_at, rebuild_count, like_count, comment_count, save_count, still_open_topics:still_open_topic_count";
 
 /** One published build, with everything the analytics page says about it. */
 export interface BuildStatRow {
@@ -50,9 +50,8 @@ export interface BuildStatRow {
   worked: number;
   /** Runs that did not work within the last 30 days. */
   failed_last_30_days: number;
-  open_bounties: number;
-  /** Submitted solutions waiting on this build's open bounties. */
-  solutions_waiting: number;
+  /** Topics still open on this build (UX-08: still_open_topic_count). */
+  still_open: number;
 }
 
 export interface MyBuildStats {
@@ -72,6 +71,7 @@ interface BuildRow {
   like_count: number | null;
   comment_count: number | null;
   save_count: number | null;
+  still_open_topics: number | null;
 }
 
 interface MetricsRow {
@@ -79,8 +79,6 @@ interface MetricsRow {
   runs: number | string | null;
   worked: number | string | null;
   failed_last_30_days: number | string | null;
-  open_bounties: number | string | null;
-  solutions_waiting: number | string | null;
 }
 
 /** The failure of getMyBuildStats: identifiers, a code and a status. */
@@ -168,8 +166,7 @@ export async function getMyBuildStats(): Promise<MyBuildStats> {
         runs: count(m?.runs),
         worked: count(m?.worked),
         failed_last_30_days: count(m?.failed_last_30_days),
-        open_bounties: count(m?.open_bounties),
-        solutions_waiting: count(m?.solutions_waiting),
+        still_open: count(row.still_open_topics),
       };
     }),
   };

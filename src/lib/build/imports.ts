@@ -17,8 +17,7 @@
 // THE TABLE IS NEWER THAN THE GENERATED TYPES. src/integrations/supabase/types.ts
 // is generated from the live database and does not yet carry import_sessions,
 // so the calls go through ONE cast declared here rather than an `as any` at
-// each site — the shape src/lib/bounty/meToo.ts uses for the same reason. If
-// the two ever disagree, the migration
+// each site. If the two ever disagree, the migration
 // (supabase/migrations/20260917120000_import_sessions.sql) is right.
 //
 // TEXT INSIDE A PROPOSAL IS DATA, NEVER INSTRUCTION. This module reads counts

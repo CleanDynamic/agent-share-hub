@@ -78,8 +78,6 @@ export default defineConfig({
         /e2e\/tier3\/gallery-feed\.spec\.ts/,
         /e2e\/tier3\/gallery-dashboard\.spec\.ts/,
         /e2e\/tier3\/home-two-tabs\.spec\.ts/,
-        /e2e\/tier3\/bounties-board\.spec\.ts/,
-        /e2e\/tier3\/solvers-board\.spec\.ts/,
         /e2e\/tier3\/lineage-rebuilds\.spec\.ts/,
         /e2e\/tier3\/where-next\.spec\.ts/,
         /e2e\/tier3\/engagement\.spec\.ts/,

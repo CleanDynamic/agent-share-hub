@@ -15,8 +15,8 @@
 // taken, and so is the data: the cover is `coverMedia(build)` signed by the
 // page (`resolveCover()` first, the creator's own pick above everything), else
 // the `CoverFallback` sky seeded with the build id; the chips are the part
-// categories of the nodes the card's query already carries; the open ask is the
-// largest open bounty on it. Nothing here adds a request.
+// categories of the nodes the card's query already carries; a card draws no ask.
+// Nothing here adds a request.
 //
 // WHERE THE DESIGN OUTRUNS THE DATA, and what the card does instead:
 //

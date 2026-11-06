@@ -257,7 +257,7 @@ test.describe("the backdrop canvas is created once", () => {
       await expect(page.getByTestId("site-frame")).toBeVisible();
     };
     // /rebuild/:slug and the entrance bring their own SiteFrame.
-    for (const path of ["/bounties", "/rebuild/no-such-build", "/gallery", "/login", "/gallery"]) await go(path);
+    for (const path of ["/openbuilds", "/rebuild/no-such-build", "/gallery", "/login", "/gallery"]) await go(path);
     const { width } = page.viewportSize()!;
     await page.setViewportSize({ width: width < 768 ? 1024 : 600, height: 800 });
     await page.setViewportSize({ width, height: 800 });

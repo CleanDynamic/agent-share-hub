@@ -134,7 +134,7 @@ describe("listBuildsTable", () => {
 });
 
 describe("the stored counts (SV-23 P1)", () => {
-  const rows = [{ id: "a", slug: "a", title: "A", shape: "app", made_with: [], reproduction_count: 1, rebuild_count: 0, step_count: 12, session_count: 2, maker: null, bounties: [] }];
+  const rows = [{ id: "a", slug: "a", title: "A", shape: "app", made_with: [], reproduction_count: 1, rebuild_count: 0, step_count: 12, session_count: 2, maker: null }];
 
   it("reads them in the list's own select, and says they are live", async () => {
     response = { data: rows, error: null, count: 1 };
@@ -223,7 +223,7 @@ describe("the proof (SV-23 P2)", () => {
     const now = new Date();
     const thisWeek = new Date(now.getTime() - 60_000).toISOString();
     response = {
-      data: [{ id: "a", slug: "a", title: "A", shape: "app", made_with: [], reproduction_count: 2, rebuild_count: 0, maker: null, bounties: [], build_reproductions: [{ confirmed_at: thisWeek }, { confirmed_at: thisWeek }] }],
+      data: [{ id: "a", slug: "a", title: "A", shape: "app", made_with: [], reproduction_count: 2, rebuild_count: 0, maker: null, build_reproductions: [{ confirmed_at: thisWeek }, { confirmed_at: thisWeek }] }],
       error: null,
       count: 1,
     };

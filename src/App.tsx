@@ -81,9 +81,9 @@ const ContentEditPage = lazy(() => import("./pages/ContentEdit"));
 // card bodies. Reachable from the primary navigation (RC-P05), directly, and
 // from the publish confirmation.
 
-// RC-P05 — the Bounties board. Its own chunk, like every route the RC series
+// RC-P05 — the OpenBuilds board. Its own chunk, like every route the RC series
 // adds (CONTRACT §2.6).
-const Bounties = lazy(ROUTE_TABLE.bounties.load as () => Promise<{ default: React.ComponentType }>);
+const OpenBuildsPage = lazy(ROUTE_TABLE.openbuilds.load as () => Promise<{ default: React.ComponentType }>);
 /** UX-05: /openbuilds/posts/:id was never a page; a topic is at /openbuilds/topics/:id. */
 function TopicRedirect() {
   const { id = "" } = useParams();
@@ -490,12 +490,12 @@ const App = () => (
                         </RouteBoundary>
                   }
                 />
-                {/* RC-P05 — the Bounties board's address, so the navigation has
+                {/* RC-P05 — the OpenBuilds board's address, so the navigation has
                     a destination before RC-P12 fills it. Lazy, with the
                     Gallery's fallback, inside its own RouteBoundary
                     (CONTRACT §2.6). */}
                 <Route path="/bounties" element={<KeepSearchRedirect to="/openbuilds" />} />
-                <Route path="/openbuilds" element={<RouteBoundary><Bounties /></RouteBoundary>} />
+                <Route path="/openbuilds" element={<RouteBoundary><OpenBuildsPage /></RouteBoundary>} />
                 <Route path="/openbuilds/posts/:id" element={<TopicRedirect />} />
                 <Route path="/openbuilds/topics/:id" element={<RouteBoundary><PostPage /></RouteBoundary>} />
                 <Route path="/openbuilds/requests" element={<KeepSearchRedirect to="/openbuilds" />} />

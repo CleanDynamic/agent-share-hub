@@ -17,7 +17,7 @@ import { assertRemixCreateEnabled } from "./flags";
 export async function createRemix(args: {
   sourcePostId: string;
   remixerId: string;
-}): Promise<{ draftId: string; postType: "blueprint" | "blog" | "bounty" }> {
+}): Promise<{ draftId: string; postType: "blueprint" | "blog" }> {
   assertRemixCreateEnabled();
   const { sourcePostId, remixerId } = args;
 
@@ -30,8 +30,7 @@ export async function createRemix(args: {
   if (srcErr || !src) throw srcErr ?? new Error("Source post not found");
   if (!src.is_remixable) throw new Error("This post does not allow remixing.");
 
-  const postType: "blueprint" | "blog" | "bounty" =
-    src.post_type === "blog" ? "blog" : src.post_type === "bounty" ? "bounty" : "blueprint";
+  const postType: "blueprint" | "blog" = src.post_type === "blog" ? "blog" : "blueprint";
 
   // Clone a minimal set of fields into a new draft
   const draftPayload: any = {

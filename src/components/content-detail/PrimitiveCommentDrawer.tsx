@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
-export type AnchorType = "post" | "stage" | "block" | "slide" | "solution" | "reblog";
+export type AnchorType = "post" | "stage" | "block" | "slide" | "reblog";
 export type ReactionType = "thumbsup" | "lightbulb" | "heart" | "eyes";
 
 export interface CommentReactions {
@@ -36,7 +36,7 @@ export interface CommentAuthor {
   displayName: string;
   handle: string;
   avatarUrl?: string;
-  role?: "author" | "trusted_solver" | null;
+  role?: "author" | null;
 }
 
 export interface Comment {
@@ -76,18 +76,11 @@ export interface SlideAnchorPreview {
   total: number;
   thumbnailUrl?: string;
 }
-export interface SolutionAnchorPreview {
-  type: "solution";
-  solverHandle: string;
-  solverAvatarUrl?: string;
-  contentPreview: string;
-}
 export type AnchorPreview =
   | BlockAnchorPreview
   | StageAnchorPreview
   | PostAnchorPreview
-  | SlideAnchorPreview
-  | SolutionAnchorPreview;
+  | SlideAnchorPreview;
 
 export interface PostOptions {
   mentions?: string[];
@@ -191,13 +184,7 @@ function AnchorIndicator({
       </div>
     );
   }
-  const p = anchorPreview as SolutionAnchorPreview;
-  return (
-    <div style={pillStyle}>
-      <Target size={11} color="var(--cat-breakage)" />
-      <span style={textStyle}>Solution by @{p.solverHandle}</span>
-    </div>
-  );
+  return null;
 }
 
 function AnchorPreviewStrip({
@@ -269,23 +256,6 @@ function AnchorPreviewStrip({
     ) : (
       <div style={{ height: 60, borderRadius: 4, background: "var(--recess)" }} />
     );
-  } else {
-    const p = anchorPreview as SolutionAnchorPreview;
-    body = (
-      <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-        {p.solverAvatarUrl && (
-          <img src={p.solverAvatarUrl} alt="" style={{ width: 22, height: 22, borderRadius: "50%" }} />
-        )}
-        <div>
-          <div style={{ fontSize: 11, color: "var(--cat-breakage)", fontWeight: 500 }}>
-            @{p.solverHandle}
-          </div>
-          <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 2 }}>
-            {p.contentPreview}
-          </div>
-        </div>
-      </div>
-    );
   }
 
   return (
@@ -298,10 +268,9 @@ function AnchorPreviewStrip({
   );
 }
 
-function RolePill({ role }: { role: "author" | "trusted_solver" }) {
+function RolePill({ role }: { role: "author" }) {
   const map = {
     author: { bg: "var(--cat-breakage-fill)", text: "var(--cat-breakage)", label: "Author" },
-    trusted_solver: { bg: "var(--cat-evidence-fill)", text: "var(--cat-evidence)", label: "Trusted Solver" },
   };
   const c = map[role];
   return (
@@ -595,7 +564,6 @@ function EmptyState({ anchorType }: { anchorType: AnchorType }) {
     stage: "stage",
     block: "block",
     slide: "slide",
-    solution: "solution",
     reblog: "reblog",
   };
   return (

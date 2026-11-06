@@ -85,7 +85,6 @@ export async function fakeThreadBackend(page: Page, seed?: ThreadSeed): Promise<
       ...build,
       build_nodes: nodes.map((node) => ({ id: node.id, type: node.type, title: node.title, payload: node.payload, position: node.position, parent_id: null })),
       build_media: media.filter((row) => row.build_id === build?.id),
-      bounties: [],
       maker: { username: ME.username, display_name: ME.display_name, avatar_url: null },
     };
 

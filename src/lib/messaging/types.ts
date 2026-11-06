@@ -1,11 +1,10 @@
-export type ThreadType = "direct" | "group" | "bounty" | "blueprint";
+export type ThreadType = "direct" | "group" | "blueprint";
 export type MessageKind = "text" | "content-share" | "system";
 export type SharedContentType =
   | "blueprint"
   | "stage"
   | "block"
   | "blog"
-  | "bounty"
   | "project"
   | "collection"
   | string;

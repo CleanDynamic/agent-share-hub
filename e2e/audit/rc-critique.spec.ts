@@ -44,13 +44,10 @@ import { expect, test, type Page, type Route } from "@playwright/test";
 import { ME, THEM, THEMES, installStub, withSession, withTheme } from "./support/harness";
 import { filterRows } from "./support/restFilter";
 import {
-  RC_BOUNTY_SOLUTIONS,
   RC_FACETS,
   RC_FEED_ROWS,
   RC_FIXTURE_SLUG,
   RC_MAKERS,
-  RC_OPEN_BOUNTIES,
-  RC_SOLVERS,
   coverPng,
   rebuildTreeRows,
 } from "./fixtures/rcBuilds";
@@ -265,13 +262,10 @@ async function servePhase4(page: Page, { admin }: { admin: boolean }) {
   await page.route(/\/rest\/v1\/build_nodes(\?|$)/, table(NODE_ROWS));
   await page.route(/\/rest\/v1\/build_media(\?|$)/, table(MEDIA_ROWS));
   await page.route(/\/rest\/v1\/build_events(\?|$)/, table([]));
-  await page.route(/\/rest\/v1\/bounties(\?|$)/, table(RC_OPEN_BOUNTIES));
-  await page.route(/\/rest\/v1\/solutions(\?|$)/, table(RC_BOUNTY_SOLUTIONS));
   await page.route(/\/rest\/v1\/profiles(\?|$)/, table(peopleFor(admin)));
   await page.route(/\/rest\/v1\/follows(\?|$)/, table(FOLLOWS));
   await page.route(/\/rest\/v1\/rpc\/get_build_feed/, (route) => rpc(route, RC_FEED_ROWS.slice(0, 20)));
   await page.route(/\/rest\/v1\/rpc\/gallery_facets/, (route) => rpc(route, RC_FACETS));
-  await page.route(/\/rest\/v1\/rpc\/top_solvers/, (route) => rpc(route, RC_SOLVERS));
   await page.route(/\/rest\/v1\/rpc\/rebuild_tree/, (route) =>
     rpc(route, rebuildTreeRows(String((route.request().postDataJSON() ?? {}).root ?? ""))),
   );

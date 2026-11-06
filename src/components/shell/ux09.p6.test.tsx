@@ -12,7 +12,7 @@ const OPENBUILDS = { label: "OpenBuilds", href: "/openbuilds" };
 
 describe("UX-09 P6: OpenBuilds is the section", () => {
   it.each(["/openbuilds/spaces/claude-code", "/openbuilds/topics/p1", "/openbuilds/requests", "/openbuilds"])("%s is OpenBuilds", (path) => {
-    expect(sectionForPath(path)).toBe("bounties");
+    expect(sectionForPath(path)).toBe("openbuilds");
   });
 });
 

@@ -8,7 +8,7 @@
 // COLOUR IS MEANING, so it is chosen by what the bar measures and never by taste:
 //   --lit        progress, XP and goals
 //   --evidence   proof and freshness
-//   --action     money and bounties
+//   --action     money
 //   --cat-agents rebuilds
 //
 // LIGHT, NEVER TYPE, AND NEVER ALONE. A bar is a picture of a number that is

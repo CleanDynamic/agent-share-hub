@@ -236,7 +236,7 @@ export function PanelsSection() {
         </Example>
         <Example caption="striped bar · action">
           <div style={{ width: 200 }}>
-            <StripedBar value={50} colour={t.action} height={9} label="Bounty funded" />
+            <StripedBar value={50} colour={t.action} height={9} label="Request funded" />
           </div>
         </Example>
       </Row>

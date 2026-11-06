@@ -1,7 +1,7 @@
 /* UI-P31 — /rebuild/:slug in the site frame: the container.
 
    THE ADDRESS NAMES THE SOURCE, as it always has: the build page's Rebuild tile
-   (and a bounty, a shared link) points here with the slug of the build to
+   (and a shared link) points here with the slug of the build to
    rebuild. What changes is what a reader finds. The old door forked at once and
    handed over to the workspace; this page shows the rebuild as a decision —
    where it sits in the family, what it changed, whether it can hang — with the

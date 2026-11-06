@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const loads = vi.hoisted(() => ({ home: vi.fn(async () => ({})), gallery: vi.fn(async () => ({})), drafts: vi.fn(async () => ({})), library: vi.fn(async () => ({})), build: vi.fn(async () => ({})), create: vi.fn(async () => ({})), bounties: vi.fn(async () => ({})) }));
+const loads = vi.hoisted(() => ({ home: vi.fn(async () => ({})), gallery: vi.fn(async () => ({})), drafts: vi.fn(async () => ({})), library: vi.fn(async () => ({})), build: vi.fn(async () => ({})), create: vi.fn(async () => ({})), openbuilds: vi.fn(async () => ({})) }));
 vi.mock("./routeTable", () => ({ ROUTE_TABLE: Object.fromEntries(Object.entries(loads).map(([key, load]) => [key, { load }])) }));
 
 import { loadChunksWhenIdle, resetIdleLoad, startIdleLoad } from "./idleLoad";
@@ -28,7 +28,7 @@ describe("idle loading", () => {
     markPageReady("home");
     vi.advanceTimersByTime(50);
     for (const key of ["home", "gallery", "drafts", "library", "build", "create"] as const) expect(loads[key], key).toHaveBeenCalledTimes(1);
-    expect(loads.bounties).not.toHaveBeenCalled();
+    expect(loads.openbuilds).not.toHaveBeenCalled();
     stop();
   });
 

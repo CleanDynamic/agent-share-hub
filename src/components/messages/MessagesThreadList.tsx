@@ -40,7 +40,7 @@ import { data as dataType, label as labelType, tabular } from "@/lib/theme/type"
 import { uiTransition } from "@/lib/theme/controls";
 import { Skeleton } from "@/components/ui/skeleton";
 
-type ThreadType = "direct" | "group" | "bounty" | "blueprint";
+type ThreadType = "direct" | "group" | "blueprint";
 type ContentType = "blueprint" | "stage" | "block";
 
 interface LastMessage {
@@ -119,14 +119,13 @@ function TypePill({ type }: { type: ThreadType }) {
 
   // The three legacy badge hues are retired. Each type resolves into a part
   // category instead, through `categoryFill`, which hands back a ground and a
-  // hue already measured against each other in both rooms: a bounty is a gap,
-  // a blueprint is instructions, and a group is not a part category at all, so
-  // it takes the fallback pair.
+  // hue already measured against each other in both rooms: a blueprint is
+  // instructions, and a group is not a part category at all, so it takes the
+  // fallback pair. A thread of a retired type (an old request thread) is drawn as a group.
   const config = {
     group: { label: "Group", ...categoryFill("narrative") },
-    bounty: { label: "Bounty", ...categoryFill("breakage") },
     blueprint: { label: "Blueprint", ...categoryFill("instruction") },
-  }[type];
+  }[type] ?? { label: "Group", ...categoryFill("narrative") };
 
   return (
     <span

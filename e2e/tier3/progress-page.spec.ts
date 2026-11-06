@@ -6,7 +6,7 @@
 // silenced, and a signed-in maker is a session put in storage. user_progress
 // answers 412 XP at level 3, xp_events this week's two runs and one accepted
 // solution, user_badges four held badges, and builds with its two functions a
-// maker whose one build has solutions waiting, so every section draws. Every
+// maker whose one build has topics still open, so every section draws. Every
 // other table answers empty, and every request the page makes, the frame's
 // included, is recorded.
 
@@ -32,11 +32,12 @@ const BUILDS = [
   like_count: 4,
   comment_count: 1,
   save_count: 2,
+  still_open_topics: b.n === 2 ? 3 : 0,
 }));
 
 const METRICS = [
-  { build_id: id(1), runs: 13, worked: 12, failed_last_30_days: 0, open_bounties: 0, solutions_waiting: 0 },
-  { build_id: id(2), runs: 0, worked: 0, failed_last_30_days: 0, open_bounties: 1, solutions_waiting: 3 },
+  { build_id: id(1), runs: 13, worked: 12, failed_last_30_days: 0 },
+  { build_id: id(2), runs: 0, worked: 0, failed_last_30_days: 0 },
 ];
 
 /** The tables and functions of the features XP-DESIGN.md parks, and of the old panels RC-P27 unmounted. */
@@ -47,7 +48,6 @@ const PARKED = [
   "challenge_history",
   "streak_days",
   "creator_marks",
-  "solver_leaderboard_cache",
   "rpc/get_visible_surfaces",
   "rpc/get_quest_state",
   "rpc/claim_challenge",
@@ -131,7 +131,7 @@ async function fakeBackend(page: Page, { theme = "noon" }: { theme?: "noon" | "d
     json(route, ["founder", "first-build", "runner", "well-proven"].map((badge_key) => ({ badge_key }))),
   );
   await page.route(/\/rest\/v1\/rpc\/maker_stats/, (route) =>
-    json(route, [{ builds: 2, reproductions_received: 12, rebuilds_of_their_work: 0, gaps_solved: 1 }]),
+    json(route, [{ builds: 2, reproductions_received: 12, rebuilds_of_their_work: 0 }]),
   );
   await page.route(/\/rest\/v1\/rpc\/maker_build_metrics/, (route) => json(route, METRICS));
   await page.route(/\/rest\/v1\/builds\?/, (route) =>

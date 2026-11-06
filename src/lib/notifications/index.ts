@@ -23,8 +23,7 @@ export {
   resolveNotificationBuilds,
   resolveNotificationTargets,
 } from "./resolveTarget";
-// RC-P19: notifyNewFollower, notifyBountySolutionSubmitted and
-// notifyBountySolutionAccepted went — the database writes those events now.
+// RC-P19: notifyNewFollower went — the database writes that event now.
 export {
   notifyEngagement,
   notifyMentions,

@@ -46,7 +46,7 @@ export function NotFoundView({ path, onHome, sentence }: NotFoundViewProps) {
       </Button>
       <nav aria-label="Where to go" style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "8px 20px" }}>
         <PageLink to={SITE_NAV.gallery} style={quiet}>Browse builds</PageLink>
-        <PageLink to={SITE_NAV.bounties} style={quiet}>OpenBuilds</PageLink>
+        <PageLink to={SITE_NAV.openbuilds} style={quiet}>OpenBuilds</PageLink>
       </nav>
       {path ? (
         <code data-testid="not-found-path" style={{ fontFamily: DM_MONO, fontSize: 12, fontWeight: 400, color: t.label, overflowWrap: "anywhere" }}>

@@ -1,9 +1,9 @@
-// A maker's standing: four figures, under the profile header (RC-P21).
+// A maker's standing: three figures, under the profile header (RC-P21).
 //
-// FOUR FIGURES AND NOTHING ELSE IN THE ROW ⟦critique-information-density ›
+// THREE FIGURES AND NOTHING ELSE IN THE ROW ⟦critique-information-density ›
 // Content Prioritisation; Scanning Patterns⟧: what they built, how many times
-// other people got it working, how many times other people rebuilt it, and
-// how many gaps they solved. Follower counts are not standing and are not
+// other people got it working, and how many times other people rebuilt it.
+// Follower counts are not standing and are not
 // here; the header's own strip keeps them.
 //
 // EACH FIGURE SITS 8 ABOVE ITS LABEL AND THE FIGURES ARE 40 APART
@@ -21,7 +21,7 @@
 //
 // Loading is the final layout with --recess blocks where the numbers go
 // (STATES.md row 20); a refusal or failure is its one sentence and a secondary
-// "Try again" (row 21), never four zeros that were not measured.
+// "Try again" (row 21), never three zeros that were not measured.
 
 import { Button } from "@/components/ui/button";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
@@ -37,7 +37,6 @@ export const MAKER_FIGURE_LABELS = [
   "builds",
   "got working by others",
   "rebuilt by others",
-  "gaps solved",
 ] as const;
 
 /** DM Mono 22 sets a 26px line; the loading block holds exactly that. */
@@ -51,7 +50,7 @@ export interface MakerFiguresProps {
 }
 
 function valuesOf(stats: MakerStats): readonly number[] {
-  return [stats.builds, stats.reproductionsReceived, stats.rebuildsOfTheirWork, stats.gapsSolved];
+  return [stats.builds, stats.reproductionsReceived, stats.rebuildsOfTheirWork];
 }
 
 export function MakerFigures({ stats, loading, error, onRetry }: MakerFiguresProps) {
@@ -86,7 +85,7 @@ export function MakerFigures({ stats, loading, error, onRetry }: MakerFiguresPro
         listStyle: "none",
         padding: 0,
         display: "grid",
-        gridTemplateColumns: phone ? "repeat(2, minmax(0, 1fr))" : "repeat(4, auto)",
+        gridTemplateColumns: phone ? "repeat(2, minmax(0, 1fr))" : "repeat(3, auto)",
         justifyContent: "start",
         columnGap: SPACE.lg,
         rowGap: SPACE.lg,

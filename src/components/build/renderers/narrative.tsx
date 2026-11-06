@@ -1,8 +1,8 @@
 // narrative — note, decision, breakage, prerequisite, gap.
 //
 // Two of these five carry the red: breakage, which is what went wrong and how
-// it was fixed, and gap, which is what is still wrong. The gap card is the
-// bounty primitive — it is read by someone deciding whether to take the
+// it was fixed, and gap, which is what is still wrong. The gap card is read
+// by someone deciding whether to take the
 // problem on, so it states the problem, what has already been tried and what
 // would count as solved, and it reads as an invitation rather than a warning.
 

@@ -79,8 +79,8 @@ const DAY = 86_400_000;
 const ago = (days: number) => new Date(Date.now() - days * DAY).toISOString();
 const NOW = new Date().toISOString();
 
-/** A published build; build 4 has solutions waiting, so NEEDS YOU has a line. */
-function build(n: number) {
+/** A published build; build 4 has topics still open, so NEEDS YOU has a line. */
+function build(n: number, open = 0) {
   return {
     id: `build-${n}`,
     slug: `build-${n}`,
@@ -93,15 +93,14 @@ function build(n: number) {
     like_count: 10 * n,
     comment_count: n,
     save_count: 2 * n,
+    still_open_topics: open,
   };
 }
-const metrics = (n: number, waiting = 0) => ({
+const metrics = (n: number) => ({
   build_id: `build-${n}`,
   runs: 5 - n,
   worked: 5 - n,
   failed_last_30_days: 0,
-  open_bounties: waiting ? 1 : 0,
-  solutions_waiting: waiting,
 });
 
 const PROGRESS = { xp_total: 412, level: 3 }; // level 3 starts at 243 and level 4 at 485
@@ -111,7 +110,7 @@ const WEEK = [
   { reason: "solution_accepted", source_id: "s-31", created_at: NOW },
 ];
 const HELD = ["founder", "first-build", "runner", "well-proven"];
-const FIGURES = { builds: 2, reproductions_received: 7, rebuilds_of_their_work: 3, gaps_solved: 1 };
+const FIGURES = { builds: 2, reproductions_received: 7, rebuilds_of_their_work: 3 };
 
 /** The tables and functions of the features XP-DESIGN.md parks, and of the old panels RC-P27 unmounted. */
 const PARKED = [
@@ -137,8 +136,8 @@ function answerAll({ needsYou = true }: { needsYou?: boolean } = {}) {
     user_progress: { data: PROGRESS, error: null, status: 200 },
     xp_events: { data: WEEK, error: null, status: 200 },
     user_badges: { data: HELD.map((badge_key) => ({ badge_key })), error: null, status: 200 },
-    builds: { data: [build(1), build(4)], error: null, status: 200 },
-    "rpc:maker_build_metrics": { data: [metrics(1), metrics(4, needsYou ? 3 : 0)], error: null, status: 200 },
+    builds: { data: [build(1), build(4, needsYou ? 3 : 0)], error: null, status: 200 },
+    "rpc:maker_build_metrics": { data: [metrics(1), metrics(4)], error: null, status: 200 },
     "rpc:maker_stats": { data: [FIGURES], error: null, status: 200 },
   };
 }
@@ -184,8 +183,8 @@ function staticPage(): HTMLElement {
   client.setQueryData(["progress.week", USER], WEEK);
   client.setQueryData(["progress.badges", USER], new Set(HELD));
   client.setQueryData([MY_BUILD_STATS_KEY, USER], {
-    builds: [build(1), build(4)].map((row, index) => ({ ...row, ...metrics(index === 0 ? 1 : 4, index === 0 ? 0 : 3) })),
-    figures: { builds: 2, reproductionsReceived: 7, rebuildsOfTheirWork: 3, gapsSolved: 1 },
+    builds: [build(1), build(4, 3)].map((row, index) => ({ ...row, ...metrics(index === 0 ? 1 : 4), still_open: index === 0 ? 0 : 3 })),
+    figures: { builds: 2, reproductionsReceived: 7, rebuildsOfTheirWork: 3 },
   });
   const host = document.createElement("div");
   host.innerHTML = renderToStaticMarkup(

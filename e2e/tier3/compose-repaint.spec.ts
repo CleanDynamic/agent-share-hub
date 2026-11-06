@@ -328,7 +328,7 @@ test.describe("the tree's unsolved row", () => {
       expect(breakage).not.toBe("");
 
       // NEVER RECOLOURED RED. A gap on an agent config is still configuration,
-      // and that is what routes it to the right solvers.
+      // and that is what routes it to the right place.
       await expect(gapRow.getByText("Agent config")).toBeVisible();
 
       // An ordinary row beside it is solid, so "dashed" means something.

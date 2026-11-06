@@ -1,11 +1,11 @@
 import * as React from "react";
-import { ArrowLeft, Search, Settings, ChevronDown, ChevronUp, FileText, Coins, Users, Pin } from "lucide-react";
+import { ArrowLeft, Search, Settings, ChevronDown, ChevronUp, FileText, Users, Pin } from "lucide-react";
 import { t as tok, tokenAlpha } from "@/lib/theme/tokens";
 import { r } from "@/lib/theme/radius";
 import { categoryFill } from "@/lib/theme/category";
 import { uiTransition } from "@/lib/theme/controls";
 
-export type ConversationThreadType = "direct" | "group" | "bounty" | "blueprint";
+export type ConversationThreadType = "direct" | "group" | "blueprint";
 
 export interface ConversationHeaderThread {
   id: string;
@@ -16,13 +16,9 @@ export interface ConversationHeaderThread {
   memberCount: number;
   pinnedContent?: {
     id: string;
-    type: "bounty" | "blueprint" | string;
+    type: "blueprint" | string;
     title: string;
     slug: string | null;
-    /** Bounty reward summary, e.g. "£250" or "100 credits" */
-    rewardLabel?: string | null;
-    /** Bounty status badge, e.g. "Open", "In progress" */
-    statusLabel?: string | null;
   } | null;
 }
 
@@ -95,15 +91,14 @@ function PinnedContextStrip({
   const pinned = thread.pinnedContent;
   if (!pinned) return null;
 
-  const isBounty = thread.type === "bounty";
-  // The two accents resolve into part categories, as the type pills in the
-  // thread list do: a bounty is a gap, a blueprint thread is instructions.
+  // The accent resolves into a part category, as the type pill in the
+  // thread list does: a blueprint thread is instructions.
   // categoryFill hands back a ground and a hue measured against each other.
-  const catFill = categoryFill(isBounty ? "breakage" : "instruction");
+  const catFill = categoryFill("instruction");
   const accent = catFill.color;
   const accentBg = catFill.background;
   const accentBorder = catFill.color;
-  const Icon = isBounty ? Coins : FileText;
+  const Icon = FileText;
 
   return (
     <div
@@ -134,7 +129,7 @@ function PinnedContextStrip({
               color: accent,
             }}
           >
-            {isBounty ? "Pinned bounty" : "Pinned blueprint"}
+            Pinned blueprint
           </span>
         </div>
         {collapsed ? (
@@ -170,37 +165,6 @@ function PinnedContextStrip({
               >
                 {pinned.title}
               </p>
-              {(pinned.rewardLabel || pinned.statusLabel) && (
-                <div className="flex items-center gap-2 mt-0.5">
-                  {pinned.rewardLabel && (
-                    <span
-                      style={{
-                        fontFamily: "var(--font-ui)",
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: accent,
-                      }}
-                    >
-                      {pinned.rewardLabel}
-                    </span>
-                  )}
-                  {pinned.statusLabel && (
-                    <span
-                      style={{
-                        fontFamily: "var(--font-ui)",
-                        fontSize: 10,
-                        fontWeight: 500,
-                        color: "var(--text2)",
-                        padding: "1px 6px",
-                        borderRadius: "var(--r-chip)",
-                        background: "var(--recess)",
-                      }}
-                    >
-                      {pinned.statusLabel}
-                    </span>
-                  )}
-                </div>
-              )}
             </div>
             <button
               onClick={onOpenPinnedContent}
@@ -216,7 +180,7 @@ function PinnedContextStrip({
                 whiteSpace: "nowrap",
               }}
             >
-              View {isBounty ? "bounty" : "blueprint"} →
+              View blueprint →
             </button>
           </div>
         </div>
@@ -232,7 +196,7 @@ export function ConversationHeader({
   onSettings,
   onOpenPinnedContent,
 }: ConversationHeaderProps) {
-  const showPinned = thread.type === "bounty" || thread.type === "blueprint";
+  const showPinned = thread.type === "blueprint";
   const storageKey = `pinned-context-collapsed:${thread.id}`;
 
   const [collapsed, setCollapsed] = React.useState<boolean>(() => {

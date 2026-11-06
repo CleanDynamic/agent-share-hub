@@ -42,7 +42,6 @@ function galleryRow(n: number): Row {
     source_handle_at_fork: null,
     build_nodes: [],
     build_media: [],
-    bounties: [],
   };
 }
 
@@ -54,7 +53,6 @@ const PAGE_BUILD: Row = {
   ...FIRST,
   build_nodes: undefined,
   build_media: undefined,
-  bounties: undefined,
   cost_setup: null,
   cost_monthly: null,
   currency: "GBP",

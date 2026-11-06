@@ -60,7 +60,7 @@ beforeEach(() => {
 });
 
 describe("the frame has no right rail (RC-P06)", () => {
-  it.each(["/", "/library", "/drafts", "/gallery", "/b2/example", "/bounties"])(
+  it.each(["/", "/library", "/drafts", "/gallery", "/b2/example"])(
     "renders nothing named Explore and no right-hand slot on %s",
     (path) => {
       renderAt(path);

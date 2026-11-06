@@ -516,80 +516,11 @@ test.describe("the two extension sections", () => {
         await token(page, "--recess")
       );
     });
-
-    test(`shows the bounty section for a gap-carrying draft on ${theme}`, async ({ page }) => {
-      await page.setViewportSize({ width: 1400, height: 1000 });
-      await openSheet(page, theme, "gaps");
-
-      const section = page.getByTestId("bounty-section");
-      await expect(section).toBeVisible();
-
-      const row = page.getByTestId("bounty-gap-row").first();
-      await expect(row).toBeVisible();
-
-      // THE EDGE IS DASHED AND IT IS BREAKAGE. Solid says "this is what it
-      // is"; dashed says "this is where something goes".
-      await expect(row).toHaveCSS("border-left-style", "dashed");
-      await expect(row).toHaveCSS("border-left-color", await token(page, "--cat-breakage"));
-
-      // The shared marker in its row placement, with the part's TRUE category
-      // on the chip — never recoloured red.
-      const marker = row.locator('[data-visual-slot="gap-marker"]');
-      await expect(marker).toHaveAttribute("data-gap-placement", "row");
-      await expect(marker).toContainText("Agent config");
-
-      // A reward and an optional deadline, on the kit's field paint.
-      await expect(row.getByTestId("bounty-reward-input")).toHaveCSS(
-        "background-color",
-        await token(page, "--recess")
-      );
-      await expect(row.getByTestId("bounty-deadline-input")).toBeVisible();
-
-      // And the one switch, which is the kit's.
-      const skip = page.getByTestId("bounty-skip");
-      await expect(skip).toHaveAttribute("role", "switch");
-      await expect(skip).toHaveAttribute("aria-checked", "false");
-      await skip.click();
-      await expect(skip).toHaveAttribute("aria-checked", "true");
-    });
   }
 });
 
 test.describe("the sections at phone width", () => {
   for (const theme of THEMES) {
-    /**
-     * The gap row grew in BG-P24: a tick, the shared marker (a category chip, a
-     * state tag and sometimes a reward tag) and the part's title, where before
-     * it was a tick, one pill and the title. At 390px inside a one-column sheet
-     * that is more than fits on a line — and NOTHING STRUCTURAL WAS CHANGED TO
-     * absorb it. The row's own `min-width: 0` on the title and its existing
-     * ellipsis already do the job: the title gives way, the tags stay whole,
-     * and nothing scrolls sideways. This is the assertion that says so, and it
-     * is why no `flex-wrap` was added to an element that had none.
-     */
-    test(`fits the richer bounty rows at 390 without overflowing on ${theme}`, async ({ page }) => {
-      await page.setViewportSize({ width: 390, height: 844 });
-      await openSheet(page, theme, "gaps");
-
-      await expect(page.getByTestId("bounty-section")).toBeVisible();
-
-      const overflow = await page.evaluate(
-        () => document.documentElement.scrollWidth - document.documentElement.clientWidth
-      );
-      expect(overflow).toBeLessThanOrEqual(1);
-
-      // And nothing inside the sheet is wider than the sheet itself.
-      const widest = await page.evaluate(() => {
-        const sheet = document.querySelector('[data-testid="publish-sheet"]') as HTMLElement;
-        const limit = sheet.getBoundingClientRect().width;
-        let worst = 0;
-        for (const el of Array.from(sheet.querySelectorAll("*"))) {
-          worst = Math.max(worst, (el as HTMLElement).getBoundingClientRect().width - limit);
-        }
-        return worst;
-      });
-      expect(widest).toBeLessThanOrEqual(1);
-    });
   }
 });
 

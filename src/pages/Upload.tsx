@@ -1644,7 +1644,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
         )}
 
         {/* ─── Type chooser — shown initially, replaces step 1 ─── */}
-        {/* Three primary cards: Blueprints / Blogs / Bounties. */}
+        {/* Three primary cards: Blueprints / Blogs. */}
         {showTypeChooser && (() => {
           const goNext = () => {
             // Create a draft immediately so the canvas can start autosaving

@@ -79,7 +79,6 @@ const CARD = {
   source_handle_at_fork: null,
   nodes: [],
   media: [],
-  bounties: [],
 } as GalleryBuild;
 
 const COLLECTION = {

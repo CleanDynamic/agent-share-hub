@@ -63,6 +63,7 @@ function buildRow(id: string, over: Record<string, unknown> = {}) {
     like_count: 4,
     comment_count: 2,
     save_count: 5,
+    still_open_topics: 0,
     ...over,
   };
 }
@@ -73,7 +74,7 @@ beforeEach(() => {
   buildsAnswer = { data: [], error: null, status: 200 };
   for (const key of Object.keys(rpcAnswers)) delete rpcAnswers[key];
   rpcAnswers.maker_stats = {
-    data: [{ builds: 2, reproductions_received: 7, rebuilds_of_their_work: 1, gaps_solved: 0 }],
+    data: [{ builds: 2, reproductions_received: 7, rebuilds_of_their_work: 1 }],
     error: null,
     status: 200,
   };
@@ -108,15 +109,15 @@ describe("getMyBuildStats", () => {
   it("puts each build's metrics on its row, and zeros on a row the metrics did not answer", async () => {
     buildsAnswer = { data: [buildRow("a"), buildRow("b")], error: null, status: 200 };
     rpcAnswers.maker_build_metrics = {
-      data: [{ build_id: "a", runs: "5", worked: 4, failed_last_30_days: 1, open_bounties: 2, solutions_waiting: 3 }],
+      data: [{ build_id: "a", runs: "5", worked: 4, failed_last_30_days: 1 }],
       error: null,
       status: 200,
     };
 
     const stats = await getMyBuildStats();
-    expect(stats.figures).toEqual({ builds: 2, reproductionsReceived: 7, rebuildsOfTheirWork: 1, gapsSolved: 0 });
-    expect(stats.builds[0]).toMatchObject({ id: "a", runs: 5, worked: 4, failed_last_30_days: 1, open_bounties: 2, solutions_waiting: 3, like_count: 4, save_count: 5 });
-    expect(stats.builds[1]).toMatchObject({ id: "b", runs: 0, worked: 0, failed_last_30_days: 0, open_bounties: 0, solutions_waiting: 0 });
+    expect(stats.figures).toEqual({ builds: 2, reproductionsReceived: 7, rebuildsOfTheirWork: 1 });
+    expect(stats.builds[0]).toMatchObject({ id: "a", runs: 5, worked: 4, failed_last_30_days: 1, like_count: 4, save_count: 5 });
+    expect(stats.builds[1]).toMatchObject({ id: "b", runs: 0, worked: 0, failed_last_30_days: 0, still_open: 0 });
   });
 
   it("says a refused read is a refusal, and names the maker's id and nothing a reader wrote", async () => {

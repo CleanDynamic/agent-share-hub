@@ -19,7 +19,6 @@ vi.mock("@/lib/content-detail", async (importOriginal) => ({
     author: { id: "c9ea1000-0000-4000-8000-000000000001", username: "maya", display_name: "Maya", avatar_url: null },
     viewer: { isFollowing: false },
     relatedPosts: [],
-    bountySolvers: [],
   }),
   recordPostView: vi.fn(),
   recordReadingProgress: vi.fn(),
@@ -34,8 +33,8 @@ vi.mock("@/components/article/ArticleViewer", () => ({ ArticleViewer: () => <p>w
 vi.mock("@/components/canvas/StageTimeline", () => ({ StageTimeline: () => null }));
 vi.mock("@/components/content-detail/ResultsViewerSection", () => ({ ResultsViewerSection: () => null }));
 vi.mock("@/components/content-detail/FloatingEngagementBar", () => ({
-  FloatingEngagementBar: (props: { onSubmitSolution?: unknown; onEdit?: unknown }) => (
-    <div data-testid="engagement-bar" data-submit={String(Boolean(props.onSubmitSolution))} data-edit={String(Boolean(props.onEdit))} />
+  FloatingEngagementBar: (props: { onEdit?: unknown }) => (
+    <div data-testid="engagement-bar" data-edit={String(Boolean(props.onEdit))} />
   ),
 }));
 vi.mock("@/components/content-detail/AIExportMenu", () => ({ AIExportMenu: () => null }));

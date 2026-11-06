@@ -1,5 +1,5 @@
 /* Handles for a set of people, by id: one read for the page rather than one per row. A person whose profile is gone, or who has no
-   username, maps to null. (It was `listSolverHandles` in the bounty layer; the build page's contributors are its only reader.) */
+   username, maps to null. (The build page's contributors are its only reader.) */
 
 import { supabase } from "@/integrations/supabase/client";
 

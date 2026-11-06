@@ -83,7 +83,7 @@ export default function ContentDetail() {
   const { data: authorStats } = useQuery({
     queryKey: ["author_stats", author?.id],
     queryFn: async () => {
-      if (!author?.id) return { followerCount: 0, blueprintCount: 0, bountiesSolved: 0 };
+      if (!author?.id) return { followerCount: 0, blueprintCount: 0 };
       const [{ count: followers }, { count: blueprints }] = await Promise.all([
         (supabase as any).from("follows").select("*", { count: "exact", head: true }).eq("followed_id", author.id),
         (supabase as any).from("content_items").select("*", { count: "exact", head: true }).eq("creator_id", author.id).eq("status", "approved"),
@@ -91,7 +91,6 @@ export default function ContentDetail() {
       return {
         followerCount: followers ?? 0,
         blueprintCount: blueprints ?? 0,
-        bountiesSolved: 0,
       };
     },
     enabled: !!author?.id,
@@ -143,7 +142,6 @@ export default function ContentDetail() {
       stats: {
         blueprintCount: authorStats?.blueprintCount ?? 0,
         followerCount: authorStats?.followerCount ?? 0,
-        bountiesSolved: authorStats?.bountiesSolved ?? 0,
       },
     };
   }, [author, data?.viewer.isFollowing, authorStats]);
@@ -483,8 +481,6 @@ export default function ContentDetail() {
         role:
           c.author?.id && post && c.author.id === (post as any).creator_id
             ? "author"
-            : c.author?.is_trusted_solver
-            ? "trusted_solver"
             : null,
       },
       body: c.bodyText || "",
@@ -707,8 +703,7 @@ export default function ContentDetail() {
   if (postType === "blog") {
     bodyNode = <BlogView item={post as any} />;
   } else {
-    // blueprint or bounty — same article body renderer, with bounty using
-    // existing renderers (Phase 5 missing-slot static badges remain).
+    // blueprint — the article body renderer.
     if (!canvasDoc.loading && (post as any).article_body) {
       bodyNode = (
         <ArticleViewer

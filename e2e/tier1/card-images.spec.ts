@@ -14,7 +14,7 @@ const ROW = {
   reproduction_count: 3, rebuild_count: 0, parent_build_id: null, source_title_at_fork: null, source_handle_at_fork: null, rebuild_note: null,
   repro_note: null, repro_model: null, repro_user_username: null, status: "published", made_for: null, last_confirmed_at: null,
   last_confirmed_model: null, cover_bucket: "build-media", cover_path: "c1/cover.png", cover_kind: "image", cover_poster_path: null,
-  repro_worked: null, bounty_id: null, bounty_reward_gbp: null, bounty_gap_title: null,
+  repro_worked: null,
 };
 
 test("Home's second visit signs no picture again and fetches none again", async ({ page }) => {

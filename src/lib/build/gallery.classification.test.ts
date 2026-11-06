@@ -35,7 +35,7 @@ describe("listGallery", () => {
 });
 
 describe("toGalleryBuild", () => {
-  const base = { id: "b1", build_nodes: [], build_media: [], bounties: [] } as unknown as GalleryRow;
+  const base = { id: "b1", build_nodes: [], build_media: [] } as unknown as GalleryRow;
 
   it("reads a classification that came with the row, and keeps no raw column on the card", () => {
     const built = toGalleryBuild({ ...base, classification: { version: 1, declared: { field: [{ id: "ai-ml" }] } } } as unknown as GalleryRow);

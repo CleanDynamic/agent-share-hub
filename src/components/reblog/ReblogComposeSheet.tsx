@@ -36,7 +36,7 @@ export interface ReblogUser {
 export interface OriginalPost {
   id: string
   slug: string
-  postType: "Blueprint" | "Blog" | "Bounty"
+  postType: "Blueprint" | "Blog"
   title: string
   description?: string
   authorDisplayName: string
@@ -73,7 +73,6 @@ export interface ReblogComposeSheetProps {
 const POST_TYPE_COLOURS: Record<string, string> = {
   Blueprint: "var(--action)",
   Blog: "var(--evidence)",
-  Bounty: "var(--cat-breakage)",
 }
 
 function Avatar({
@@ -851,7 +850,7 @@ function ComposeBody({
           sourcePost={{
             id: originalPost.id,
             slug: originalPost.slug,
-            postType: (originalPost.postType.toLowerCase() as "blueprint" | "blog" | "bounty"),
+            postType: (originalPost.postType.toLowerCase() as "blueprint" | "blog"),
             title: originalPost.title,
             authorDisplayName: originalPost.authorDisplayName,
             authorHandle: originalPost.authorHandle.replace(/^@/, ""),

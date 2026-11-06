@@ -5,8 +5,7 @@
 // as addresses: a bookmark, a shared link or an old tab lands on /gallery,
 // and /search carries its words across as /gallery?q=. The unit tests beside
 // the nav prove what the navigation offers; this proves what the old
-// addresses do in a real browser, and that /bounties — the new third home —
-// renders.
+// addresses do in a real browser.
 //
 // BOTH PROJECTS. The mobile project runs this file as well as tier 1
 // (playwright.config.ts), because below 768px the app mounts different chrome
@@ -17,8 +16,8 @@
 // e2e/audit/rc-baseline.spec.ts; the realtime socket and the font CDN are
 // stubbed too.
 //
-// SELECTORS ARE ROLES AND NAMES: the Gallery's page heading, and the Bounties
-// page's; and one exact text, "Discover", which must not be there.
+// SELECTORS ARE ROLES AND NAMES: the Gallery's page heading;
+// and one exact text, "Discover", which must not be there.
 
 import { expect, test, type Page, type Route } from "@playwright/test";
 
@@ -100,10 +99,4 @@ test("/search with no query lands on the gallery", async ({ page }) => {
   await page.goto("/search");
   await expectGallery(page, /\/gallery$/);
 });
-
-test("/bounties shows the Bounties heading", async ({ page }) => {
-  await page.goto("/bounties");
-  await expect(page.getByRole("heading", { level: 1, name: "Bounties" })).toBeVisible({
-    timeout: PAGE_READY_MS,
-  });
 });

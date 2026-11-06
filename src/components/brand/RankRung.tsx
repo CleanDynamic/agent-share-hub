@@ -11,7 +11,7 @@
 // can tell a rare thing from a common one by whether it has a ground, in either
 // room, with the colour-blind and the grey-scale alike.
 //
-// `RankRung` is the numbered square of a ranked list ("Top solvers"): the rank in
+// `RankRung` is the numbered square of a ranked list ("Top makers"): the rank in
 // Sentient at 16 / 18 / 22 for 28 / 32 / 40px. The reference draws the 28px rank
 // at 16px; Sentient has a 17px floor in this system (`type.display`), so it is
 // 17 here. `MarkTile` is the same ladder at 46px with a trophy for a creator

@@ -4,8 +4,8 @@
 // THE BACKEND IS FAKED (CONTRACT §7): /rest/v1/, /auth/v1/, /storage/v1/ and
 // /functions/v1/ are answered here, the realtime socket and the font CDN are
 // silenced, and a signed-in reader is a session put in storage. profiles
-// answers the maker and the reader, rpc/maker_stats the four figures (and is
-// counted), builds the tabs' cards, solutions the solved gaps. Nothing reaches
+// answers the maker and the reader, rpc/maker_stats the three figures (and is
+// counted), builds the tabs' cards. Nothing reaches
 // the network.
 
 import { expect, test, type Page, type Route } from "@playwright/test";
@@ -44,7 +44,6 @@ function card(n: number, creator: string, extra: Row = {}): Row {
     source_handle_at_fork: null,
     build_nodes: [],
     build_media: [],
-    bounties: [],
     ...extra,
   };
 }
@@ -78,13 +77,12 @@ function profileRow(who: typeof ME | typeof THEM): Row {
     derived_bio: null,
     last_derived_at: null,
     is_private: false,
-    is_trusted_solver: false,
     is_admin: false,
   };
 }
 
 interface Backend {
-  /** How many times the four figures were asked for. */
+  /** How many times the three figures were asked for. */
   makerStatsCalls: () => number;
 }
 
@@ -114,8 +112,8 @@ async function fakeBackend(page: Page, { empty = false }: { empty?: boolean } = 
   await page.route(/\/rest\/v1\/rpc\/maker_stats/, (route) => {
     makerStats += 1;
     const body = empty
-      ? [{ builds: 0, reproductions_received: 0, rebuilds_of_their_work: 0, gaps_solved: 0 }]
-      : [{ builds: 3, reproductions_received: 1204, rebuilds_of_their_work: 7, gaps_solved: 2 }];
+      ? [{ builds: 0, reproductions_received: 0, rebuilds_of_their_work: 0 }]
+      : [{ builds: 3, reproductions_received: 1204, rebuilds_of_their_work: 7 }];
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
   });
   await page.route(/\/rest\/v1\/profiles\?/, (route) => {
@@ -138,9 +136,6 @@ async function fakeBackend(page: Page, { empty = false }: { empty?: boolean } = 
     }
     return json(route, [1, 2, 3].map((n) => card(n, creator)));
   });
-  await page.route(/\/rest\/v1\/solutions\?/, (route) =>
-    json(route, empty ? [] : [{ id: id(700), accepted_at: "2026-09-20T10:00:00.000Z", bounty: { build_id: id(9) } }]),
-  );
 
   return { makerStatsCalls: () => makerStats };
 }
@@ -174,28 +169,28 @@ async function rowChoices(page: Page): Promise<string[]> {
     .evaluateAll((elements) => elements.map((element) => (element.textContent ?? "").trim()));
 }
 
-test("your own profile offers four tabs: Builds, Rebuilds, Solutions and Drafts", async ({ page }) => {
+test("your own profile offers three tabs: Builds, Rebuilds and Drafts", async ({ page }) => {
   await fakeBackend(page);
   await page.goto("/profile");
 
-  expect(await rowChoices(page)).toEqual(["Builds", "Rebuilds", "Solutions", "Drafts"]);
+  expect(await rowChoices(page)).toEqual(["Builds", "Rebuilds", "Drafts"]);
   await expect(tabRow(page).getByRole("link", { name: "Drafts" })).toHaveAttribute("href", "/drafts");
 });
 
-test("someone else's profile offers three tabs: Builds, Rebuilds and Solutions", async ({ page }) => {
+test("someone else's profile offers two tabs: Builds and Rebuilds", async ({ page }) => {
   await fakeBackend(page);
   await page.goto(`/profile/${THEM.username}`);
 
-  expect(await rowChoices(page)).toEqual(["Builds", "Rebuilds", "Solutions"]);
+  expect(await rowChoices(page)).toEqual(["Builds", "Rebuilds"]);
 });
 
-test("the four figures come from one maker_stats request", async ({ page }) => {
+test("the three figures come from one maker_stats request", async ({ page }) => {
   const backend = await fakeBackend(page);
   await page.goto(`/profile/${THEM.username}`);
 
-  await expect(figures(page)).toHaveCount(4);
-  await expect(page.getByTestId("maker-figure-value")).toHaveText(["3", "1,204", "7", "2"]);
-  await expect(figures(page)).toContainText(["builds", "got working by others", "rebuilt by others", "gaps solved"]);
+  await expect(figures(page)).toHaveCount(3);
+  await expect(page.getByTestId("maker-figure-value")).toHaveText(["3", "1,204", "7"]);
+  await expect(figures(page)).toContainText(["builds", "got working by others", "rebuilt by others"]);
   // The tabs' cards have landed, so every request the page makes on load has been made.
   await expect(page.getByTestId("profile-card")).toHaveCount(3);
   expect(backend.makerStatsCalls()).toBe(1);
@@ -209,9 +204,6 @@ test("each tab shows the gallery's cards for its builds", async ({ page }) => {
   await tabRow(page).getByRole("tab", { name: "Rebuilds" }).click();
   await expect(page).toHaveURL(/[?&]tab=rebuilds/);
   await expect(page.getByTestId("profile-card")).toHaveCount(1);
-  await tabRow(page).getByRole("tab", { name: "Solutions" }).click();
-  await expect(page.getByTestId("profile-card")).toHaveCount(1);
-  await expect(page.getByTestId("profile-card")).toContainText(TITLES[2]);
 });
 
 test("the header holds exactly one filled button: Follow on someone else's profile", async ({ page }) => {
@@ -244,11 +236,6 @@ test("your own empty profile says so in each tab, with a way on", async ({ page 
 
   await tabRow(page).getByRole("tab", { name: "Rebuilds" }).click();
   await expect(page.getByTestId("profile-empty-rebuilds")).toHaveText("No rebuilds yet.");
-
-  await tabRow(page).getByRole("tab", { name: "Solutions" }).click();
-  const solutions = page.getByTestId("profile-empty-solutions");
-  await expect(solutions).toContainText("No solved gaps yet.");
-  await expect(solutions.getByRole("link", { name: "See open bounties" })).toHaveAttribute("href", "/bounties");
 });
 
 test("someone else's empty profile says so, and offers no action", async ({ page }) => {
@@ -259,11 +246,6 @@ test("someone else's empty profile says so, and offers no action", async ({ page
   await expect(builds).toHaveText("Nothing published yet.");
   await expect(builds.getByRole("link")).toHaveCount(0);
   await expect(builds.getByRole("button")).toHaveCount(0);
-
-  await tabRow(page).getByRole("tab", { name: "Solutions" }).click();
-  const solutions = page.getByTestId("profile-empty-solutions");
-  await expect(solutions).toHaveText("No solved gaps yet.");
-  await expect(solutions.getByRole("link")).toHaveCount(0);
 });
 
 test("at 390 the figures sit two by two and the page does not scroll sideways", async ({ page }) => {

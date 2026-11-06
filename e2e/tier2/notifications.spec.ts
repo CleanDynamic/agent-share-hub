@@ -3,8 +3,7 @@
 // WHY. BG-P26 repaints the notification row to "one row treatment for every
 // subkind" and its acceptance 4 asks for every subkind to be enumerated and
 // shown to render. NotificationCard branches fifteen ways — seven top-level
-// kinds, three engagement types and seven bounty subkinds carried in
-// `metadata.sub` — and a repaint that unifies the row treatment is exactly the
+// kinds and three engagement types — and a repaint that unifies the row treatment is exactly the
 // kind of change that can quietly drop one branch's copy. Enumerating them in a
 // report proves nothing a month later; enumerating them in a spec does.
 //
@@ -14,9 +13,6 @@
 // and not asserted, which is the failure mode this file is meant to prevent,
 // and it is visible in one place rather than spread across fifteen tests.
 //
-// `meta_bounty_sub_spawned` gets its own named test as well as its place in the
-// loop, because BG-P26's pre-flight check 3 calls it out by name.
-
 import { expect, test, type Page } from "@playwright/test";
 import {
   DAY_HEADINGS,
@@ -71,15 +67,6 @@ test.describe("the stream", () => {
     await page.goto("/notifications");
 
     await expect(page.getByText(/otherparty|Other Party/).first()).toBeVisible();
-  });
-
-  test("renders the meta_bounty_sub_spawned subkind specifically", async ({ page }) => {
-    // Named separately because BG-P26's pre-flight names it: it is the newest
-    // subkind and the one most likely to be missed by a row rewrite.
-    await installSupabaseStub(page, notificationsSeed());
-    await page.goto("/notifications");
-
-    await expect(page.getByText(/Spawned Sub/).first()).toBeVisible();
   });
 });
 

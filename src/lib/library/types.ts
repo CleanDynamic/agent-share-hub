@@ -7,7 +7,7 @@ import type { GalleryBuild } from "@/lib/build/gallery";
  * .build_id, 20261001180000); the five legacy kinds stay in the type until
  * RC-P30 retires them.
  */
-export type CollectionItemKind = "build" | "blueprint" | "blog" | "bounty" | "stage" | "block";
+export type CollectionItemKind = "build" | "blueprint" | "blog" | "stage" | "block";
 
 export interface CollectionRow {
   id: string;

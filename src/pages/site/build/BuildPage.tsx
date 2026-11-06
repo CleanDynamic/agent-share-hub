@@ -18,8 +18,7 @@
                       anatomy's part (evidence in its result frame), the replay
                       with its scrubber and "Rebuild from here", the run sequence
                       and its words, the understand layer, the breakages and the
-                      gaps still open ("Solve it" opens that bounty's solve
-                      sheet), the rebuilds as build cards
+                      gaps still open ("Reply" opens that topic's reply box), the rebuilds as build cards
      under it         the comments and where next, each a glass panel (UI-P30);
                       where next asks for nothing until the reader nears it */
 

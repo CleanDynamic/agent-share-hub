@@ -6,7 +6,7 @@
 //  - `website`    → profiles.website_url
 //  - `userId`     → content_items.creator_id
 //  - "published"  → status = 'approved'
-//  - block_references / bookmarks / bounty_solutions tables don't exist;
+//  - block_references / bookmarks tables don't exist;
 //    references are derived from blog_referenced_post_ids + fork_of_content_id,
 //    bookmarks come from user_library + collection_items.
 
@@ -23,8 +23,6 @@ export interface ProfileSummary {
   avatarUrl: string | null;
   coverUrl: string | null;
   isVerified: boolean;
-  /** profiles.is_trusted_solver: the header's Trusted solver chip. */
-  isTrustedSolver?: boolean;
   isPrivate: boolean;
   level: ProfileLevel;
   derivedBio: string | null;
@@ -62,21 +60,8 @@ export interface AuthorStats {
   totalViews: number;
   blueprintsCount: number;
   referencesReceived: number;
-  bountiesSolved: number;
-  bountiesPosted: number;
   avgReadingMinutes: number;
   blockTypeDistribution: BlockTypeBreakdown[];
-  // Bounty solver stats (Phase 5)
-  bountySolutionsAccepted: number;
-  bountySolutionsSubmitted: number;
-  bountySolverAcceptanceRate: number | null;
-  bountyTotalRewardEarned: number;
-  isTrustedSolver: boolean;
-  // Phase 6 — competition surface tags.
-  /** Distinct number of bounties this user has submitted any solution to. */
-  bountiesSubmittedToCount: number;
-  /** Distinct number of meta-bounties this user has pledged to. */
-  metaBountyPledgesCount: number;
 }
 
 export interface Primitive {

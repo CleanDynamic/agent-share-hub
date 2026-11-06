@@ -34,7 +34,7 @@ beforeEach(() => {
 describe("getMakerStats", () => {
   it("asks maker_stats once, by the maker's id, for all four figures", async () => {
     rpcAnswer = {
-      data: [{ builds: 4, reproductions_received: 3, rebuilds_of_their_work: 2, gaps_solved: 1 }],
+      data: [{ builds: 4, reproductions_received: 3, rebuilds_of_their_work: 2 }],
       error: null,
       status: 200,
     };
@@ -43,14 +43,13 @@ describe("getMakerStats", () => {
       builds: 4,
       reproductionsReceived: 3,
       rebuildsOfTheirWork: 2,
-      gapsSolved: 1,
     });
     expect(calls).toEqual([{ fn: "maker_stats", params: { uid: MAKER } }]);
   });
 
   it("reads bigint figures that arrive as strings, and never a negative or a fraction", async () => {
     rpcAnswer = {
-      data: [{ builds: "12", reproductions_received: "9007199254740993", rebuilds_of_their_work: -1, gaps_solved: null }],
+      data: [{ builds: "12", reproductions_received: "9007199254740993", rebuilds_of_their_work: -1 }],
       error: null,
       status: 200,
     };
@@ -59,7 +58,6 @@ describe("getMakerStats", () => {
     expect(stats.builds).toBe(12);
     expect(stats.reproductionsReceived).toBeGreaterThan(9_000_000_000_000_000);
     expect(stats.rebuildsOfTheirWork).toBe(0);
-    expect(stats.gapsSolved).toBe(0);
   });
 
   it("answers zeros when the function returns no row", async () => {

@@ -4,7 +4,7 @@
    kinds, OpenBuilds' tabs) and changes nothing in the spec.
 
    The tour starts on Home, opened by address, and follows the nav's links (SV-02's names), never the redirects from
-   /gallery and /bounties. Each step is one input and the page it ends on:
+   /gallery. Each step is one input and the page it ends on:
      nav       the primary nav link with this name;
      click     the first element inside the page area matching this selector;
      account   the account menu, then the item with this name;

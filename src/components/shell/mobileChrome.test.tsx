@@ -30,7 +30,7 @@ describe("DockView", () => {
       "dock-tile-home",
       "dock-tile-gallery",
       "dock-tile-new",
-      "dock-tile-bounties",
+      "dock-tile-openbuilds",
       "dock-tile-activity",
     ]);
     expect(tiles.map((a) => a.getAttribute("href"))).toEqual(["/", "/builds", "/compose/new", "/openbuilds", "/notifications"]);

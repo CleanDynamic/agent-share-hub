@@ -6,7 +6,7 @@ const UUID_RX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const PROFILE_COLUMNS =
-  "id, username, display_name, avatar_url, banner_url, bio, website_url, location, follower_count, following_count, created_at, is_verified, level, derived_bio, last_derived_at, is_private, is_trusted_solver, avatar_crop, banner_crop, avatar_alt, banner_alt, about, links, profile_settings";
+  "id, username, display_name, avatar_url, banner_url, bio, website_url, location, follower_count, following_count, created_at, is_verified, level, derived_bio, last_derived_at, is_private, avatar_crop, banner_crop, avatar_alt, banner_alt, about, links, profile_settings";
 
 /** The profile row as PROFILE_COLUMNS reads it, with the reader's follow when one was asked for. */
 interface ProfileRow {
@@ -25,7 +25,6 @@ interface ProfileRow {
   level: ProfileLevel | null;
   derived_bio: string | null;
   is_private: boolean | null;
-  is_trusted_solver: boolean | null;
   avatar_crop: unknown;
   banner_crop: unknown;
   avatar_alt: string | null;
@@ -76,9 +75,6 @@ export async function getProfileSummary(
     avatarUrl: profile.avatar_url ?? null,
     coverUrl: profile.banner_url ?? null,
     isVerified: !!profile.is_verified,
-    // RC-P21: the header's Trusted solver chip, on the request the page
-    // already makes, rather than the legacy author-stats reads it rode on.
-    isTrustedSolver: !!profile.is_trusted_solver,
     isPrivate: !!profile.is_private,
     level: profile.level ?? "reader",
     domain: null,

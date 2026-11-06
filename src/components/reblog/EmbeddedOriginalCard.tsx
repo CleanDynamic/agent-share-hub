@@ -6,7 +6,7 @@ import { feedback } from "@/lib/theme/motion";
 export interface EmbeddedOriginalCardPost {
   id: string;
   slug: string;
-  postType: "blueprint" | "blog" | "bounty";
+  postType: "blueprint" | "blog";
   title: string;
   description?: string;
   authorDisplayName: string;
@@ -16,12 +16,6 @@ export interface EmbeddedOriginalCardPost {
   coverUrl?: string;
   blueprintMeta?: { stageCount: number; blockCount: number };
   blogMeta?: { readingMinutes: number };
-  bountyMeta?: {
-    rewardAmount: number;
-    rewardCurrency: string;
-    deadline: string;
-    status: "open" | "solved";
-  };
 }
 
 export interface EmbeddedOriginalCardProps {
@@ -34,12 +28,11 @@ const PILL_COLORS: Record<
   EmbeddedOriginalCardPost["postType"],
   { color: string; bg: string }
 > = {
-  /* BG-P18. Three more of the retired content-type colours. A post type is not
-     a part category and carries no hue, so all three resolve to the kit's
+  /* BG-P18. Two more of the retired content-type colours. A post type is not
+     a part category and carries no hue, so both resolve to the kit's
      neutral chip pair — `--text2` on `--recess`, measured in both themes. */
   blueprint: { color: "var(--text2)", bg: "var(--recess)" },
   blog: { color: "var(--text2)", bg: "var(--recess)" },
-  bounty: { color: "var(--text2)", bg: "var(--recess)" },
 };
 
 function formatDate(dateStr: string): string {
@@ -89,15 +82,6 @@ function MetaRow({
   } else if (post.postType === "blog" && post.blogMeta) {
     items.push(`${post.blogMeta.readingMinutes} min read`);
     items.push(`published ${formatDate(post.publishedAt)}`);
-  } else if (post.postType === "bounty" && post.bountyMeta) {
-    if (post.bountyMeta.status === "solved") {
-      items.push("Solved");
-    } else {
-      items.push(
-        `${post.bountyMeta.rewardAmount} ${post.bountyMeta.rewardCurrency}`
-      );
-      items.push(formatDate(post.bountyMeta.deadline));
-    }
   } else {
     items.push(`published ${formatDate(post.publishedAt)}`);
   }

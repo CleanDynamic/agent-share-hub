@@ -172,7 +172,6 @@ describe("resolveNotificationCovers", () => {
     cover_media_id: null,
     build_nodes: [],
     build_media: [],
-    bounties: [],
     ...over,
   });
 

@@ -39,7 +39,7 @@ interface AnatomyTreeProps {
    *
    * Passed straight through to NodeCard's footer. The tree does not look at
    * what comes back and has no opinion about which nodes get one — that is the
-   * page's, which is the only layer that knows what bounties exist.
+   * page's, which is the only layer that knows what is still open.
    */
   renderFooter?: (node: BuildNode) => ReactNode;
   partComments?: PartComments;
