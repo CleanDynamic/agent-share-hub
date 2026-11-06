@@ -615,6 +615,10 @@ const BUILD_FEED_ROWS = BUILDS.map((b, n) => ({
 /** RPCs whose shape is an object rather than a list. */
 const RPCS: Record<string, unknown> = {
   get_build_feed: BUILD_FEED_ROWS,
+  /* UX-10: the profile's feed (its builds, newest first), its side column and its follow lists. */
+  get_profile_feed: BUILD_FEED_ROWS.slice(0, 6).map((row) => ({ kind: "build", id: row.build_id, created_at: row.item_at, pinned_position: null })),
+  get_profile_side: { builds: 6, topics: 0, replies: 0, notes: 0, reproduced_by_others: 3, rebuilt_from: 1, first_rebuild_slug: null, steps_added: 0, topics_started: 0, level: null, works_in: ["Claude"], spaces: [] },
+  list_profile_follows: [],
   gallery_facets: {
     roles: [
       { value: "founder", count: 6, label: null, logo_url: null },

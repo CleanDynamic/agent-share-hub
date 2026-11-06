@@ -5,6 +5,7 @@
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useEffect, useRef, type CSSProperties } from "react";
+import { useLocation } from "react-router-dom";
 
 import { PageLink } from "@/lib/routing/PageLink";
 import { MENU_ITEM_CLASS } from "@/lib/theme/controls";
@@ -33,6 +34,9 @@ export function AccountMenu({ viewer, onSignOut, avatarSize = 34, defaultOpen = 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const profileHref = viewer.handle ? `/profile/${viewer.handle}` : SITE_NAV.profile;
+  // UX-10 P11: the reader's own profile link says it is the current page there.
+  const { pathname } = useLocation();
+  const onOwnProfile = pathname === profileHref || pathname === SITE_NAV.profile;
   const item: CSSProperties = {
     display: "flex",
     alignItems: "center",
@@ -71,7 +75,7 @@ export function AccountMenu({ viewer, onSignOut, avatarSize = 34, defaultOpen = 
           }}
         >
           <DropdownMenu.Item asChild className={MENU_ITEM_CLASS}>
-            <PageLink to={profileHref} style={item}>Profile</PageLink>
+            <PageLink to={profileHref} aria-current={onOwnProfile ? "page" : undefined} style={item}>Profile</PageLink>
           </DropdownMenu.Item>
           <DropdownMenu.Item asChild className={MENU_ITEM_CLASS}>
             <PageLink to={SITE_NAV.library} style={item}>Library</PageLink>

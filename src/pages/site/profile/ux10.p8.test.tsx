@@ -30,7 +30,7 @@ const draft = (over: Partial<ProfileDraft> = {}): ProfileDraft => ({
 });
 
 function mount(initial: ProfileDraft = draft()) {
-  const onSave = vi.fn(async () => undefined);
+  const onSave = vi.fn(async (_next: ProfileDraft) => undefined);
   const onClose = vi.fn();
   render(
     <MemoryRouter>

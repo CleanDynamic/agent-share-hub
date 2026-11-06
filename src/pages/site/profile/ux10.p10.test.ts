@@ -45,12 +45,12 @@ describe("the retired profile", () => {
 });
 
 describe("the new copy", () => {
-  const shown = [
+  const shown: string[] = [
     ...Object.values(HEAD_COPY),
-    ...Object.values(FEED_COPY).filter((value): value is string => typeof value === "string"),
+    ...(Object.values(FEED_COPY) as unknown[]).filter((value): value is string => typeof value === "string"),
     ...Object.values(SIDE_TITLES),
     ...FEED_OPTIONS.map((option) => option.label),
-    ...Object.values(CUSTOMISE_COPY).flatMap((value) => (typeof value === "string" ? [value] : Object.values(value))),
+    ...(Object.values(CUSTOMISE_COPY) as unknown[]).flatMap((value) => (typeof value === "string" ? [value] : Object.values(value as Record<string, string>))),
   ];
 
   it("never says request, bounty, claim, solver, solve, answer, fork, component, hung, XP or rarity, and has no em dash", () => {
