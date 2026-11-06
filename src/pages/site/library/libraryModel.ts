@@ -77,7 +77,7 @@ export interface LibraryRow {
   lastUsed: string;
 }
 
-export type ChangeTag = "EDITED" | "REMOVED" | "RUN" | "ANSWER" | "REBUILD" | "STALE";
+export type ChangeTag = "EDITED" | "REMOVED" | "RUN" | "REBUILD" | "STALE";
 
 export interface LibraryChange {
   id: string;
@@ -258,8 +258,6 @@ export function libraryChanges(events: readonly ActivityEvent[], now: number): L
           return { id: event.id, tag: "RUN", item: event.buildTitle, detail: `${event.worked ? "worked" : "didn't work"}${event.model ? ` on ${event.model}` : ""} · ${handleOf(event.runner)}`, age };
         case "rebuild":
           return { id: event.id, tag: "REBUILD", item: event.buildTitle, detail: `rebuilt by ${handleOf(event.rebuilder)}`, age };
-        case "answer":
-          return { id: event.id, tag: "ANSWER", item: event.buildTitle, detail: `${handleOf(event.solver)} answered your saved request`, age };
         case "stale":
           return { id: event.id, tag: "STALE", item: event.buildTitle, detail: "not confirmed in a while", age };
         case "edited":
@@ -276,7 +274,6 @@ export function changesFigure(rows: readonly LibraryChange[]): { figure: string;
   const parts: { text: string; tone?: "evidence" | "lit" }[] = [];
   if (count("RUN")) parts.push({ text: `${count("RUN")} run`, tone: "evidence" });
   if (count("REBUILD")) parts.push({ text: `${count("REBUILD")} rebuilt` });
-  if (count("ANSWER")) parts.push({ text: `${count("ANSWER")} answered` });
   if (count("STALE")) parts.push({ text: `${count("STALE")} out of date`, tone: "lit" });
   return { figure: `${rows.length} ${rows.length === 1 ? "change" : "changes"}`, parts: [{ text: `Last ${CHANGES_WINDOW_DAYS} days` }, ...parts] };
 }

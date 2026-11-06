@@ -39,3 +39,9 @@ export function failedRunDraft(run: FailedRun): NewPostDraft {
     openNodeId: run.step?.nodeId ?? null,
   };
 }
+
+export const START_TOPIC_FROM_RUN_LABEL = "Start a topic from this run";
+
+/** Whether the viewer is offered the button on a run: they made the build and the run did not work. */
+export const canStartTopicFromRun = (run: { worked: boolean }, buildMakerId: string | null | undefined, viewerId: string | null | undefined): boolean =>
+  !run.worked && !!viewerId && viewerId === buildMakerId;

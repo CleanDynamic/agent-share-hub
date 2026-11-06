@@ -85,10 +85,9 @@ describe("UX-07 P1: the Topics filter", () => {
     expect(HOME_FILTERS.find((item) => item.value === "notes")?.label).toBe("Notes");
   });
 
-  it("matches topics, reply groups and the existing requests, and nothing else", () => {
+  it("matches topics and reply groups, and nothing else", () => {
     expect(matchesFilter("topic", "asks")).toBe(true);
     expect(matchesFilter("reply_group", "asks")).toBe(true);
-    expect(matchesFilter("bounty", "asks")).toBe(true);
     expect(matchesFilter("build", "asks")).toBe(false);
     expect(matchesFilter("repro_note", "asks")).toBe(false);
     expect(matchesFilter("topic", "builds")).toBe(false);
@@ -160,6 +159,6 @@ describe("UX-07 P1: the two kinds of item", () => {
     mount({ filter: "asks", feed: feedOf([homePostItemOf(TOPIC, READ, NOW), ...visionHomeProps("populated").feed.items]) });
     const kinds = screen.getAllByTestId("home-feed-item").map((node) => node.getAttribute("data-kind"));
     expect(kinds.length).toBeGreaterThan(0);
-    expect(kinds.every((kind) => kind === "topic" || kind === "reply_group" || kind === "bounty")).toBe(true);
+    expect(kinds.every((kind) => kind === "topic" || kind === "reply_group")).toBe(true);
   });
 });

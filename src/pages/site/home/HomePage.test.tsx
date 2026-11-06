@@ -1,6 +1,6 @@
 // SV-10: the Home container. The feed's tab keeps the old items until the new arrive (SV-03 P7); items newer than the
 // last visit wait behind the pill; post_doc is read for the first screen's posts as the feed answers, and for the rest
-// in one request per batch as they come near; a signed-out reader's Me too asks them to sign in.
+// in one request per batch as they come near; 
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -20,7 +20,7 @@ vi.mock("@/lib/build/drafts", () => ({ listDraftsWithSessions: async () => [] })
 vi.mock("@/lib/build/signals", async (original) => ({ ...(await original<typeof import("@/lib/build/signals")>()), countLitToday: async () => 1, countReproducedToday: async () => 1, countRunsThisWeek: async () => 1, listMostReproduced: async () => [] }));
 vi.mock("@/lib/progress", async (original) => ({ ...(await original<typeof import("@/lib/progress")>()), getStreakDays: async () => [] }));
 const findRunByHandle = vi.hoisted(() => vi.fn());
-vi.mock("@/lib/bounty", () => ({ findRunByHandle, myMeToo: async () => new Set(), toggleMeToo: vi.fn() }));
+vi.mock("./runLookup", () => ({ findRunByHandle }));
 vi.mock("@/components/gallery/cardMedia", async (original) => ({ ...(await original<typeof import("@/components/gallery/cardMedia")>()), useSignedMedia: () => new Map() }));
 const getGalleryBuildsByIds = vi.hoisted(() => vi.fn(async (ids: string[]) => ids.map((id) => ({ id, slug: id, title: id, nodes: [], media: [], models_used: [] }))));
 vi.mock("@/lib/build/gallery", async (original) => ({ ...(await original<typeof import("@/lib/build/gallery")>()), listGallery: async () => ({ builds: [], total: 0 }), getGalleryBuildsByIds }));
@@ -30,7 +30,7 @@ const getBuildFeed = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/feed/getBuildFeed", async (original) => ({ ...(await original<typeof import("@/lib/feed/getBuildFeed")>()), getBuildFeed }));
 
 type Props = {
-  room: { onOpenRequest?: (run: { key: string; buildId: string; handle: string | null }) => void };
+  room: { onStartTopic?: (run: { key: string; buildId: string; handle: string | null }) => void };
   requests: { status: string; data?: Array<{ id: string; title: string; detail: string }> };
   stillOpenScope?: string;
   feed: { status: string; items: Array<{ key: string; kind: string; build?: { id: string } }> };
@@ -38,7 +38,6 @@ type Props = {
   onShowNew: () => void;
   onScopeChange: (scope: "everyone" | "following") => void;
   onPostsNear: (ids: string[]) => void;
-  onMeToo: (id: string) => void;
 };
 const seen: { props: Props | null } = { props: null };
 vi.mock("./HomeView", () => ({
@@ -64,7 +63,7 @@ const row = (id: string, at: string, over: Partial<BuildFeedRow> = {}) =>
     creator_username: "maya", creator_display: null, creator_avatar: null, reproduction_count: 0, rebuild_count: 0, parent_build_id: null,
     source_title_at_fork: null, source_handle_at_fork: null, rebuild_note: null, repro_note: null, repro_model: null, repro_user_username: null,
     status: "published", made_for: null, last_confirmed_at: null, last_confirmed_model: null, cover_bucket: null, cover_path: null, cover_kind: null,
-    cover_poster_path: null, repro_worked: null, bounty_id: null, bounty_reward_gbp: null, bounty_gap_title: null, ...over,
+    cover_poster_path: null, repro_worked: null, ...over,
   });
 
 function mount() {
@@ -158,17 +157,6 @@ describe("Home · post_doc only where it is seen", () => {
   });
 });
 
-describe("Home · Me too", () => {
-  it("sends a signed-out reader to sign in", async () => {
-    auth.user = null;
-    getBuildFeed.mockResolvedValue({ items: [], nextBefore: null });
-    mount();
-    await waitFor(() => expect(seen.props).not.toBeNull());
-    act(() => seen.props!.onMeToo("q1"));
-    await waitFor(() => expect(screen.getByTestId("login")).toBeTruthy());
-  });
-});
-
 describe("Home · UX-08 P3: Still open", () => {
   const STILL = {
     posts: [{ id: "p1", body: "Session 3 is missing", author: { handle: "maya" }, spaces: [{ name: "Claude Code" }], rewardGbp: null }],
@@ -211,8 +199,8 @@ describe("Home · UX-08 P2: a failed run opens the New post window, prefilled, a
     getBuildFeed.mockResolvedValue({ items: [], nextBefore: null });
     findRunByHandle.mockResolvedValue({ id: "r1", buildId: "b1", worked: false, note: "", model: "opus-5.5" });
     mount();
-    await waitFor(() => expect(seen.props?.room.onOpenRequest).toBeTruthy());
-    act(() => seen.props!.room.onOpenRequest!({ key: "r2", buildId: "b1", handle: "jay" }));
+    await waitFor(() => expect(seen.props?.room.onStartTopic).toBeTruthy());
+    act(() => seen.props!.room.onStartTopic!({ key: "r2", buildId: "b1", handle: "jay" }));
     const box = (await screen.findByRole("textbox", undefined, { timeout: 5000 })) as HTMLTextAreaElement;
     expect(findRunByHandle).toHaveBeenCalledWith("b1", "jay");
     expect(box.value).toBe("Didn't work for me on Opus 5.5.\n\n");
@@ -223,8 +211,8 @@ describe("Home · UX-08 P2: a failed run opens the New post window, prefilled, a
     getBuildFeed.mockResolvedValue({ items: [], nextBefore: null });
     findRunByHandle.mockResolvedValue({ id: "r1", buildId: "b1", worked: true, note: "", model: null });
     mount();
-    await waitFor(() => expect(seen.props?.room.onOpenRequest).toBeTruthy());
-    act(() => seen.props!.room.onOpenRequest!({ key: "r2", buildId: "b1", handle: "jay" }));
+    await waitFor(() => expect(seen.props?.room.onStartTopic).toBeTruthy());
+    act(() => seen.props!.room.onStartTopic!({ key: "r2", buildId: "b1", handle: "jay" }));
     await waitFor(() => expect(findRunByHandle).toHaveBeenCalled());
     expect(screen.queryByText("New post")).toBeNull();
   });

@@ -24,7 +24,7 @@ export const visionLibraryChanges: LibraryChange[] = [
   { id: "ch1", tag: "EDITED", item: "Summary on one prompt", detail: "1 line changed", age: "2d" },
   { id: "ch2", tag: "REMOVED", item: "Tone checker agent", detail: "build unpublished, your snapshot kept", age: "3d" },
   { id: "ch3", tag: "RUN", item: "Account research brief", detail: "worked on Opus 5.5 · @dax", age: "5h" },
-  { id: "ch4", tag: "ANSWER", item: "Step 4 · Paywalled sources", detail: "@kit answered your saved request", age: "1d" },
+  { id: "ch4", tag: "STALE", item: "Account research brief", detail: "not confirmed in a while", age: "1d" },
 ];
 
 const STATES: Record<string, ItemState> = { Same: "same", Edited: "edited", Removed: "removed", Stale: "stale" };

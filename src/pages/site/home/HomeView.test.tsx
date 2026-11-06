@@ -105,11 +105,10 @@ describe("HomeView · the feed", () => {
   it("draws every kind of item the board draws, in order", () => {
     mount();
     const kinds = screen.getAllByTestId("home-feed-item").map((item) => item.getAttribute("data-kind"));
-    expect(kinds).toEqual(["build", "repro_note", "rebuild", "repro_note", "bounty", "build"]);
+    expect(kinds).toEqual(["build", "repro_note", "rebuild", "repro_note", "build"]);
     expect(screen.getByText(", and it worked on opus-5.5")).toBeTruthy();
     expect(screen.getByText(", and it didn’t work")).toBeTruthy();
     expect(screen.getByText("Rebuilt from")).toBeTruthy();
-    expect(screen.getByText(/1 solution · closes in 5 days/)).toBeTruthy();
   });
 
   it("keeps an off-screen item out of the renderer's way with an intrinsic size", () => {
@@ -126,16 +125,6 @@ describe("HomeView · the feed", () => {
     unmount();
     mount({ newCount: 0 });
     expect(screen.queryByTestId("home-new-pill")).toBeNull();
-  });
-
-  it("solves an ask by its own page and marks Me too", () => {
-    const onMeToo = vi.fn();
-    mount({ onMeToo });
-    expect(screen.getByRole("link", { name: "Solve it" }).getAttribute("href")).toBe("/bounties/b-paywalled/solve");
-    const meToo = screen.getByRole("button", { name: "Me too · 4" });
-    expect(meToo.getAttribute("aria-pressed")).toBe("false");
-    fireEvent.click(meToo);
-    expect(onMeToo).toHaveBeenCalledWith("b-paywalled");
   });
 
   it("ends with You're up to date and two builds, or Show more while there is more", () => {
@@ -192,21 +181,21 @@ describe("HomeView · narrower windows", () => {
 
 describe("HomeView · a topic from a failed run (SV-21, UX-08 P2)", () => {
   const base = visionHomeProps("populated");
-  const runs = base.room.runs.map((run) => (run.worked ? run : { ...run, canRequest: true }));
+  const runs = base.room.runs.map((run) => (run.worked ? run : { ...run, canStartTopic: true }));
 
   it("offers the button on a failed run the viewer may act on, and presses it with that run", () => {
-    const onOpenRequest = vi.fn();
-    mount({ room: { ...base.room, runs, onOpenRequest } });
+    const onStartTopic = vi.fn();
+    mount({ room: { ...base.room, runs, onStartTopic } });
     const buttons = screen.getAllByRole("button", { name: "Start a topic from this run" });
     expect(buttons).toHaveLength(1);
     fireEvent.click(buttons[0]);
-    expect(onOpenRequest).toHaveBeenCalledWith(expect.objectContaining({ key: "r2", worked: false }));
+    expect(onStartTopic).toHaveBeenCalledWith(expect.objectContaining({ key: "r2", worked: false }));
   });
 
   it("draws no button without a handler, or on a run the viewer may not act on", () => {
     mount({ room: { ...base.room, runs } });
     expect(screen.queryByRole("button", { name: "Start a topic from this run" })).toBeNull();
-    mount({ room: { ...base.room, onOpenRequest: vi.fn() } });
+    mount({ room: { ...base.room, onStartTopic: vi.fn() } });
     expect(screen.queryByRole("button", { name: "Start a topic from this run" })).toBeNull();
   });
 });

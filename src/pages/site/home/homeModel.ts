@@ -6,9 +6,8 @@
 
 import type { PlaqueBuild } from "@/components/brand/Plaque";
 import type { RowEngagement } from "@/components/social/EngagementRow";
-import { rewardLabel } from "@/components/bounty/bountyDisplay";
 import { rewardWords, splitBody, topicHref } from "@/components/post/postCardModel";
-import { canOpenFromRun } from "@/lib/bounty/runRequestRules";
+import { canStartTopicFromRun } from "./runTopic";
 import type { GalleryBuild } from "@/lib/build/gallery";
 import type { WhereNextItem } from "@/lib/build/whereNext";
 import type { Post } from "@/lib/openbuilds";
@@ -34,7 +33,7 @@ export const HOME_FILTERS: readonly { value: HomeFilter; label: string }[] = [
   { value: "builds", label: "Builds" },
   { value: "rebuilds", label: "Rebuilds" },
   { value: "notes", label: "Notes" },
-  // UX-07 P1: the fifth filter is Topics: the topics, the reply groups and the requests that came before them. Its address stays
+  // UX-07 P1: the fifth filter is Topics: the topics and the reply groups. Its address stays
   // `?kind=asks`, so a link made before it still lands here.
   { value: "asks", label: "Topics" },
 ];
@@ -43,7 +42,7 @@ const KINDS_OF_FILTER: Record<Exclude<HomeFilter, "all">, readonly HomeFeedItem[
   builds: ["build"],
   rebuilds: ["rebuild"],
   notes: ["repro_note"],
-  asks: ["bounty", "topic", "reply_group"],
+  asks: ["topic", "reply_group"],
 };
 
 /** The filters act on what is loaded, on `kind`, and on nothing else. */
@@ -109,29 +108,11 @@ export interface HomeRebuildPost {
   engagement?: RowEngagement;
 }
 
-export interface HomeAskPost {
-  kind: "bounty";
-  key: string;
-  at: string;
-  maker: HomePerson;
-  bountyId: string;
-  /** The gap's title, or the build's when the ask names no gap. */
-  title: string;
-  /** "£40", or null for an unpriced ask. */
-  reward: string | null;
-  buildTitle: string;
-  buildHref: string;
-  /** Known only when the ask is among the open requests read. */
-  solutions: number | null;
-  closesAt: string | null;
-  meToo: { count: number | null; pressed: boolean } | null;
-}
-
-export type HomeFeedItem = HomeBuildPost | HomeReproNote | HomeRebuildPost | HomeAskPost | HomePostItem;
+export type HomeFeedItem = HomeBuildPost | HomeReproNote | HomeRebuildPost | HomePostItem;
 
 /* ── the columns' rows ── */
 
-export type HomeSinceTone = "worked" | "failed" | "rebuild" | "answer" | "stale";
+export type HomeSinceTone = "worked" | "failed" | "rebuild" | "stale";
 
 export interface HomeSinceRow {
   key: string;
@@ -212,7 +193,7 @@ export interface HomeRunRow {
   /** SV-21: the build the run is of, for opening a request from it. */
   buildId: string;
   /** SV-21: the viewer made the build and the run did not work, so "Start a topic from this run" is offered. */
-  canRequest: boolean;
+  canStartTopic: boolean;
 }
 
 export interface HomeRequestRow {
@@ -283,10 +264,6 @@ export function sinceRowOf(event: ActivityEvent): HomeSinceRow {
     case "rebuild": {
       const who = atHandle(event.rebuilder.handle) ?? event.rebuilder.name;
       return { ...base, tone: "rebuild", title: `${who} rebuilt ${event.buildTitle}`, detail: `"${event.rebuildTitle}"`, href: `/b2/${event.rebuildSlug}` };
-    }
-    case "answer": {
-      const who = atHandle(event.solver.handle) ?? event.solver.name;
-      return { ...base, tone: "answer", title: "An answer to your request", detail: `${who} · ${event.buildTitle}`, href: `/bounties/${event.bountyId}/solve` };
     }
     case "stale":
       return { ...base, tone: "stale", title: `${event.buildTitle} is out of date`, detail: "Not confirmed in a while" };
@@ -378,18 +355,9 @@ export interface HomePostDetail {
   classification: Classification | null;
 }
 
-/** What the open requests read knows about an ask. */
-export interface HomeAskDetail {
-  solutions: number;
-  closesAt: string | null;
-  meTooCount: number;
-}
-
 export interface HomeItemContext {
   details: ReadonlyMap<string, HomePostDetail>;
-  asks: ReadonlyMap<string, HomeAskDetail>;
   engagement: (buildId: string) => RowEngagement | undefined;
-  meTooPressed: ReadonlySet<string>;
 }
 
 /** One feed row as the item Home draws. */
@@ -409,24 +377,6 @@ export function homeItemOf(item: FeedItem, context: HomeItemContext): HomeFeedIt
       model: (item.model ?? "").trim() || null,
       note: item.note,
       worked: item.worked,
-    };
-  }
-
-  if (item.kind === "bounty") {
-    const ask = context.asks.get(item.bountyId);
-    return {
-      kind: "bounty",
-      key: item.key,
-      at: item.at,
-      maker: personOf(item.maker),
-      bountyId: item.bountyId,
-      title: (item.gapTitle ?? "").trim() || build.title,
-      reward: item.reward === null || item.reward === undefined ? null : rewardLabel(item.reward),
-      buildTitle: build.title,
-      buildHref: href,
-      solutions: ask ? ask.solutions : null,
-      closesAt: ask ? ask.closesAt : null,
-      meToo: item.bountyId ? { count: ask ? ask.meTooCount : null, pressed: context.meTooPressed.has(item.bountyId) } : null,
     };
   }
 
@@ -463,7 +413,7 @@ export function runRows(items: readonly FeedItem[], limit = 3, viewerId: string 
   const out: HomeRunRow[] = [];
   for (const item of items) {
     if (item.kind !== "repro_note") continue;
-    out.push({ key: item.key, worked: item.worked, buildTitle: item.title, handle: item.handle, href: `/b2/${item.slug}`, at: item.at, buildId: item.buildId, canRequest: canOpenFromRun(item, item.maker.id, viewerId) });
+    out.push({ key: item.key, worked: item.worked, buildTitle: item.title, handle: item.handle, href: `/b2/${item.slug}`, at: item.at, buildId: item.buildId, canStartTopic: canStartTopicFromRun(item, item.maker.id, viewerId) });
     if (out.length === limit) break;
   }
   return out;
