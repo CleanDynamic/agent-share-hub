@@ -863,7 +863,6 @@ export const CA03_FILES: readonly string[] = [
 
   // CA-27 P5 (HeaderSearch.tsx is not listed: its look, a 5 of padding and a lucide Search, is from before CA-27, which adds one line of behaviour to it)
   "e2e/audit/composer-ca27-shots.spec.ts",
-  "src/components/shell/NavSearch.tsx",
   "src/components/shell/headerSearch.slash.test.tsx",
 
   // CA-28 P0

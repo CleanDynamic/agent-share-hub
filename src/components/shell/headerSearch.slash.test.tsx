@@ -5,7 +5,6 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { HeaderSearch } from "./HeaderSearch";
-import { NavSearch } from "./NavSearch";
 
 afterEach(cleanup);
 
@@ -13,7 +12,6 @@ const press = () => fireEvent.keyDown(document.body, { key: "/" });
 
 describe.each([
   ["HeaderSearch", () => <HeaderSearch onSubmit={() => undefined} />],
-  ["NavSearch", () => <NavSearch />],
 ])("%s", (_name, make) => {
   it("takes the focus on /", () => {
     render(<MemoryRouter>{make()}</MemoryRouter>);
