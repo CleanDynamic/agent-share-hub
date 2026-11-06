@@ -105,12 +105,14 @@ describe("robots.txt and the sitemap", () => {
     expect(robots).toMatch(/^Allow: \/privacy$/m);
     expect(robots).toMatch(/^Allow: \/terms$/m);
   });
-  it("list both in the generator and in public/sitemap.xml", () => {
-    const generator = read("scripts/generate-sitemap.js");
+  // UX-13 P3: the sitemap lists a legal page once its text is reviewed (the shared module holds the list, and
+  // src/test/sitemap.test.ts holds its flags equal to reviewed.ts); until then neither page is in public/sitemap.xml.
+  it("are in the sitemap's list, and in public/sitemap.xml when reviewed", () => {
+    const module = read("supabase/functions/_shared/sitemap.js");
     const xml = read("public/sitemap.xml");
-    for (const page of ["/privacy", "/terms"]) {
-      expect(generator).toContain(`path: "${page}"`);
-      expect(xml).toMatch(new RegExp(`<loc>https://[^<]+${page}</loc>`));
+    for (const [page, reviewed] of [["/privacy", PRIVACY_REVIEWED], ["/terms", TERMS_REVIEWED]] as const) {
+      expect(module).toContain(`path: "${page}"`);
+      expect(new RegExp(`<loc>https://[^<]+${page}</loc>`).test(xml)).toBe(reviewed);
     }
   });
 });

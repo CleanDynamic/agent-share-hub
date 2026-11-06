@@ -2,7 +2,7 @@
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { buildSitemap, CAPS, loadSitemapRows, MAX_URLS_PER_FILE, readPages, STATIC_PAGES } from "../../supabase/functions/_shared/sitemap.js";
+import { buildSitemap, CAPS, LEGAL_PAGES, loadSitemapRows, MAX_URLS_PER_FILE, readPages, STATIC_PAGES } from "../../supabase/functions/_shared/sitemap.js";
 
 const site = (path = "") => `https://openbuilds.ai/${path.replace(/^\/+/, "")}`;
 const locs = (xml: string) => [...xml.matchAll(/<loc>([^<]*)<\/loc>/g)].map((m) => m[1]);
@@ -92,6 +92,25 @@ describe("UX-13 P3 · buildSitemap", () => {
   it("also splits on size", () => {
     const out = buildSitemap({ builds: [{ slug: "a", status: "published" }, { slug: "b", status: "published" }] }, site, { maxBytesPerFile: 600 });
     expect(out.parts.length).toBeGreaterThan(1);
+  });
+});
+
+describe("UX-13 P3 · the legal pages", () => {
+  it("are listed exactly when their text is reviewed, and the flags here match src/content/legal/reviewed.ts", () => {
+    const source = readFileSync("src/content/legal/reviewed.ts", "utf8");
+    const flag = (name: string) => new RegExp(`export const ${name} = true;`).test(source);
+    expect(LEGAL_PAGES.find((l) => l.path === "/privacy")?.reviewed).toBe(flag("PRIVACY_REVIEWED"));
+    expect(LEGAL_PAGES.find((l) => l.path === "/terms")?.reviewed).toBe(flag("TERMS_REVIEWED"));
+  });
+
+  it("appear in the sitemap when a flag is true", () => {
+    LEGAL_PAGES[0].reviewed = true;
+    try {
+      expect(locs(buildSitemap({}, site).xml)).toContain(site("/privacy"));
+      expect(locs(buildSitemap({}, site).xml)).not.toContain(site("/terms"));
+    } finally {
+      LEGAL_PAGES[0].reviewed = false;
+    }
   });
 });
 

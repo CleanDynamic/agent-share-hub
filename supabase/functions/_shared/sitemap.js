@@ -21,15 +21,24 @@ export const PAGE_SIZE = 1000;
 export const CAPS = { builds: 20000, legacy: 5000, profiles: 10000, spaces: 1000 };
 
 /**
- * Pages that always exist and anybody may read. /privacy and /terms are left out until
- * their text is reviewed (their drafts still hold {{NEED: ...}} placeholders), and
- * /library is signed-in only. Add them here when that changes.
+ * Pages that always exist and anybody may read. /library is signed-in only, so it is not here.
  */
 export const STATIC_PAGES = [
   { path: "/", changefreq: "daily", priority: "1.0" },
   { path: "/builds", changefreq: "daily", priority: "0.9" },
   { path: "/openbuilds", changefreq: "daily", priority: "0.8" },
   { path: "/about", changefreq: "monthly", priority: "0.4" },
+];
+
+/**
+ * The legal pages are listed once their text is reviewed. The flags are copies of
+ * PRIVACY_REVIEWED and TERMS_REVIEWED in src/content/legal/reviewed.ts (an edge function
+ * cannot import from src); src/test/sitemap.test.ts fails when the two differ, so flipping
+ * one without the other cannot ship.
+ */
+export const LEGAL_PAGES = [
+  { path: "/privacy", reviewed: false, changefreq: "yearly", priority: "0.2" },
+  { path: "/terms", reviewed: false, changefreq: "yearly", priority: "0.2" },
 ];
 
 const LIVE_BUILD = new Set(["published", "gallery"]);
@@ -94,7 +103,7 @@ export function buildSitemap(rows, siteUrl, options = {}) {
     counts[kind] += 1;
   };
 
-  for (const p of STATIC_PAGES) add("static", p.path, null, p.changefreq, p.priority);
+  for (const p of [...STATIC_PAGES, ...LEGAL_PAGES.filter((l) => l.reviewed)]) add("static", p.path, null, p.changefreq, p.priority);
 
   const buildSlugs = new Set();
   for (const b of (rows.builds ?? []).slice(0, caps.builds)) {
