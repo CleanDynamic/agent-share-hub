@@ -142,7 +142,7 @@ Deno.test("EX-P16 monitor: a failed finish is logged once and reported once, wit
   const event = eventOf(r.posts[0].body);
   assertEquals(event.level, "error");
   assertEquals(event.platform, "javascript");
-  assertEquals(event.logger, "buildgallery-mcp-server");
+  assertEquals(event.logger, "openbuilds-mcp-server");
   assertEquals(event.release, ENV.deployment_id);
   assertEquals(event.timestamp, Date.parse("2026-09-23T12:00:00Z") / 1000);
   assertEquals(event.message, "finish_import failed at routing: source_only");
@@ -203,7 +203,7 @@ Deno.test("EX-P16 monitor: the envelope goes to the DSN's own endpoint, with its
   assertEquals(
     r.posts[0].url,
     `https://o4508.ingest.us.sentry.io/api/4509/envelope/?sentry_version=7&sentry_key=${PUBLIC_KEY}` +
-      `&sentry_client=buildgallery-mcp-server%2F${SERVER_VERSION}`,
+      `&sentry_client=openbuilds-mcp-server%2F${SERVER_VERSION}`,
   );
   // The DSN itself is never written to the log.
   assert(!r.lines.some((l) => l.line.includes(PUBLIC_KEY)), "the DSN stays out of the log");
@@ -435,7 +435,7 @@ Deno.test("EX-P16 monitor: sentryTarget derives Sentry's envelope endpoint, and 
   assertEquals(
     sentryTarget(DSN)?.url,
     `https://o4508.ingest.us.sentry.io/api/4509/envelope/?sentry_version=7&sentry_key=${PUBLIC_KEY}` +
-      `&sentry_client=buildgallery-mcp-server%2F${SERVER_VERSION}`,
+      `&sentry_client=openbuilds-mcp-server%2F${SERVER_VERSION}`,
   );
   assertStringIncludes(sentryTarget(`${DSN}/`)!.url, "/api/4509/envelope/?", "a trailing slash is tolerated");
   assertStringIncludes(
@@ -597,7 +597,7 @@ Deno.test("EX-P16 monitor: compute() times a synchronous step, and the duration 
 Deno.test("EX-P16 monitor: unhandled reports carry where, who, which import and the error's class", async () => {
   const r = recorder();
   await r.monitor.unhandled({
-    where: "buildgallery_append_chunk",
+    where: "openbuilds_append_chunk",
     user_id: USER,
     import_id: IMPORT,
     error: errorFacts(new TypeError(HOSTILE)),
@@ -607,7 +607,7 @@ Deno.test("EX-P16 monitor: unhandled reports carry where, who, which import and 
   assertNothingLeft(r, "an unhandled report");
   assertEquals(r.parsed()[0], {
     mcp: "unhandled",
-    where: "buildgallery_append_chunk",
+    where: "openbuilds_append_chunk",
     user_id: USER,
     import_id: IMPORT,
     error_name: "TypeError",
@@ -619,10 +619,10 @@ Deno.test("EX-P16 monitor: unhandled reports carry where, who, which import and 
   });
   const event = eventOf(r.posts[0].body);
   assertEquals(event.level, "error");
-  assertEquals(event.message, "Unhandled error in buildgallery_append_chunk (TypeError)");
-  assertEquals(event.tags.where, "buildgallery_append_chunk");
+  assertEquals(event.message, "Unhandled error in openbuilds_append_chunk (TypeError)");
+  assertEquals(event.tags.where, "openbuilds_append_chunk");
   assertEquals(event.tags.import_id, IMPORT);
   assertEquals(event.user, { id: USER });
   assertEquals(event.contexts?.trace.trace_id, "4bf92f3577b34da6a3ce929d0e0e4736");
-  assertEquals(event.fingerprint, ["unhandled", "buildgallery_append_chunk", "TypeError"]);
+  assertEquals(event.fingerprint, ["unhandled", "openbuilds_append_chunk", "TypeError"]);
 });
