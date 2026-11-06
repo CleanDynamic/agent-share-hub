@@ -74,4 +74,4 @@ Disallow: /notifications
 Disallow: /library
 Disallow: /profile
 
-Sitemap: https://neoscaleai.com/sitemap.xml
+Sitemap: https://openbuilds.ai/sitemap.xml
