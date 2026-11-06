@@ -19,6 +19,8 @@ const STATIC_ROUTES = [
   { path: "/", changefreq: "weekly", priority: "1.0" },
   { path: "/browse", changefreq: "daily", priority: "0.9" },
   { path: "/about", changefreq: "monthly", priority: "0.4" },
+  { path: "/privacy", changefreq: "yearly", priority: "0.2" },
+  { path: "/terms", changefreq: "yearly", priority: "0.2" },
 ];
 
 async function generateSitemap() {
