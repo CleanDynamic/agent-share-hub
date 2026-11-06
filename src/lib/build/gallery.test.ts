@@ -65,12 +65,13 @@ import { STALE_AFTER_DAYS } from "@/lib/build/signals";
 const of = (method: string) => calls.filter((entry) => entry.method === method);
 const requests = () => of("request");
 
-/** The filters a lens may add: every `gte`, and whether the bounty embed is inner. */
+/** The filters a lens may add: every `gte`, and whether the open-ask filter (`has_open_ask`) is on. */
 function lensFilters() {
   const select = of("select")[0]?.args[0] as string;
   return {
     gte: of("gte").map((entry) => entry.args),
-    innerBounties: select.includes("bounties!bounties_build_id_fkey!inner("),
+    openAsk: of("eq").some((entry) => entry.args[0] === "has_open_ask" && entry.args[1] === true),
+    bountyEmbed: select.includes("bounties"),
   };
 }
 
@@ -86,7 +87,7 @@ describe("the gallery's lenses", () => {
 
   it("adds nothing under All", async () => {
     await listGallery({ lens: "all" });
-    expect(lensFilters()).toEqual({ gte: [], innerBounties: false });
+    expect(lensFilters()).toEqual({ gte: [], openAsk: false, bountyEmbed: false });
   });
 
   it("adds reproduced-at-least-once and confirmed within the stale window under Proven", async () => {
@@ -106,30 +107,30 @@ describe("the gallery's lenses", () => {
         ["reproduction_count", 1],
         ["last_confirmed_at", cutoff],
       ],
-      innerBounties: false,
+      openAsk: false, bountyEmbed: false,
     });
   });
 
   it("adds rebuilt-at-least-once under Rebuilt", async () => {
     await listGallery({ lens: "rebuilt" });
-    expect(lensFilters()).toEqual({ gte: [["rebuild_count", 1]], innerBounties: false });
+    expect(lensFilters()).toEqual({ gte: [["rebuild_count", 1]], openAsk: false, bountyEmbed: false });
   });
 
-  it("takes the existing open-bounty branch under Unsolved, and no other filter", async () => {
+  it("filters on has_open_ask under Unsolved, and no other filter", async () => {
     await listGallery({ lens: "unsolved" });
     const unsolved = lensFilters();
 
     calls = [];
-    await listGallery({ openBounties: true });
-    const openBounties = lensFilters();
+    await listGallery({ stillOpen: true });
+    const stillOpen = lensFilters();
 
-    expect(unsolved).toEqual({ gte: [], innerBounties: true });
-    expect(unsolved).toEqual(openBounties);
+    expect(unsolved).toEqual({ gte: [], openAsk: true, bountyEmbed: false });
+    expect(unsolved).toEqual(stillOpen);
   });
 
   it("reads a lens it has no name for as All", async () => {
     await listGallery({ lens: "trending" as GalleryLens });
-    expect(lensFilters()).toEqual({ gte: [], innerBounties: false });
+    expect(lensFilters()).toEqual({ gte: [], openAsk: false, bountyEmbed: false });
   });
 
   it("never reorders: every lens sends the same ORDER BY", async () => {

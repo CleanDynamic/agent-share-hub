@@ -1059,7 +1059,7 @@ export async function listRebuildCards(
   const { data, error } = await withCardEmbeds(
     supabase
       .from("builds")
-      .select(gallerySelect(false))
+      .select(gallerySelect())
       .eq("parent_build_id", buildId)
       .in("status", [...PUBLISHED_STATUSES])
       .order("created_at", { ascending: false })

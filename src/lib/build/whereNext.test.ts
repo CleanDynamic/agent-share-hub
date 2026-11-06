@@ -167,7 +167,7 @@ describe("the cards where next reads (RC-P14c)", () => {
 
     for (const id of [1, 2, 3]) {
       const own = callsOf(id);
-      expect(String(own.find((call) => call.method === "select")?.args[0]).startsWith(gallerySelect(false))).toBe(true);
+      expect(String(own.find((call) => call.method === "select")?.args[0]).startsWith(gallerySelect())).toBe(true);
       expect(embedCalls(own)).toEqual(galleryEmbeds);
     }
   });

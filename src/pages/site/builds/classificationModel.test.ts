@@ -12,7 +12,7 @@ import { DEFAULT_FACETS, FACET_CHOICE_KEY, cardOf, readFacetChoice, writeFacetCh
 
 const build = (classifiedAs?: Classification): BuildsTableBuild => ({
   id: "b1", slug: "b1", title: "Call notes", shape: "workflow", madeWith: [], reproductionCount: 6, lastConfirmedAt: "2026-10-20T09:00:00Z", lastConfirmedModel: null,
-  publishedAt: "2025-01-01T09:00:00Z", rebuildCount: 0, maker: { handle: "maya", name: null }, open: { count: 0, reward: null }, ...(classifiedAs ? { classifiedAs } : null),
+  publishedAt: "2025-01-01T09:00:00Z", rebuildCount: 0, maker: { handle: "maya", name: null }, open: { count: 0 }, ...(classifiedAs ? { classifiedAs } : null),
 });
 
 const NOW = Date.parse("2026-10-26T12:00:00Z");

@@ -60,7 +60,7 @@ describe("listRebuildCards", () => {
 
     expect(calls.filter((call) => call.method === "request")).toHaveLength(1);
     expect(calls[0].table).toBe("builds");
-    expect(calls.find((call) => call.method === "select")?.args[0]).toBe(gallerySelect(false));
+    expect(calls.find((call) => call.method === "select")?.args[0]).toBe(gallerySelect());
     expect(calls.find((call) => call.method === "eq" && call.args[0] === "parent_build_id")?.args).toEqual([
       "parent_build_id",
       "build-1",
@@ -73,12 +73,12 @@ describe("listRebuildCards", () => {
     expect(rowLimits()).toEqual([REBUILDS_PAGE_SIZE]);
   });
 
-  it("carries the card's embeds: its nodes, its pictures and its open ask", async () => {
+  it("carries the card's embeds: its nodes, and its pictures", async () => {
     await listRebuildCards("build-1");
     const embedded = calls.filter(
       (call) => (call.method === "in" || call.method === "eq") && String(call.args[0]).includes("."),
     );
-    expect(embedded.map((call) => call.args[0])).toEqual(["build_nodes.type", "build_media.kind", "bounties.status"]);
+    expect(embedded.map((call) => call.args[0])).toEqual(["build_nodes.type", "build_media.kind"]);
   });
 
   it("caps a larger ask at the page size and never asks for fewer than one", async () => {
@@ -98,14 +98,13 @@ describe("listRebuildCards", () => {
           title: "Rebuild one",
           build_nodes: [{ id: "n1", type: "prompt", title: "P", payload: {}, position: 0, is_gap: false }],
           build_media: null,
-          bounties: [{ id: "b1", reward_gbp: 50, status: "open" }],
         },
       ],
       error: null,
     };
     const cards = await listRebuildCards("build-1");
     expect(cards).toHaveLength(1);
-    expect(cards[0]).toMatchObject({ id: "r1", nodes: [{ id: "n1" }], media: [], bounties: [{ id: "b1" }] });
+    expect(cards[0]).toMatchObject({ id: "r1", nodes: [{ id: "n1" }], media: [] });
     expect(cards[0]).not.toHaveProperty("build_nodes");
   });
 

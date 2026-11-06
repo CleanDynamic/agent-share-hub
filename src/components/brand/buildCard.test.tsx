@@ -48,12 +48,11 @@ describe("BuildCard", () => {
     expect(html).not.toMatch(/backdrop|blur/i);
   });
 
-  it("orders the lamp, the cover with its tag, the title, the credit and Δ, the plaque, the chips and the ask", () => {
+  it("orders the lamp, the cover with its tag, the title, the credit and Δ, the plaque, and the chips", () => {
     const html = markup({
       credit: <CardCredit rebuiltFrom="Inbox sorter" by="@maya" />,
       delta: "swapped model",
       categories: ["instruction", "data"],
-      openAsk: "1 part unsolved · £400",
     });
     const at = (needle: string) => html.indexOf(needle);
     const order = [
@@ -65,7 +64,6 @@ describe("BuildCard", () => {
       "Δ swapped model",
       'data-ui="plaque"',
       'data-card-part="chips"',
-      'data-testid="gallery-card-bounty"',
     ].map(at);
     expect(order.every((n) => n >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
@@ -90,12 +88,6 @@ describe("BuildCard", () => {
     const html = markup({ categories: ["breakage", "evidence"] });
     expect(html).not.toContain('data-category="breakage"');
     expect(html).toContain('data-category="evidence"');
-  });
-
-  it("says the open ask in 10px mono --cat-breakage", () => {
-    const html = markup({ openAsk: "2 parts unsolved · £400" });
-    expect(html).toMatch(/Geist Mono.*font-size:10px;line-height:normal;color:var\(--cat-breakage\)/);
-    expect(html).toContain("2 parts unsolved · £400");
   });
 
   it("turns the border into 1.5px dashed --cat-breakage for a gap, and changes nothing else about the card's colour", () => {

@@ -52,45 +52,19 @@ beforeEach(() => {
 
 describe("UX-08 P4 · the Table", () => {
   it("a build with only a still-open topic is in the lens, and shows 1 in Open", async () => {
-    response = { data: [{ ...BUILD, bounties: [], still_open_topics: 1 }], error: null, count: 1 };
+    response = { data: [{ ...BUILD, still_open_topics: 1 }], error: null, count: 1 };
     const page = await listBuildsTable({ lens: "unsolved" });
     expect(call("from")).toHaveLength(1);
     expect(call("eq")).toContainEqual({ method: "eq", args: ["has_open_ask", true] });
     expect(page.total).toBe(1);
-    expect(page.builds[0].open).toEqual({ count: 1, reward: null });
+    expect(page.builds[0].open).toEqual({ count: 1 });
   });
 
-  it("an open request and two still-open topics count three, in the one request", async () => {
-    response = { data: [{ ...BUILD, bounties: [{ reward_gbp: 25 }], still_open_topics: 2 }], error: null, count: 1 };
-    const page = await listBuildsTable({ openBounties: true });
+  it("two still-open topics count two, in the one request, with the filter beside another lens", async () => {
+    response = { data: [{ ...BUILD, still_open_topics: 2 }], error: null, count: 1 };
+    const page = await listBuildsTable({ stillOpen: true });
     expect(call("from")).toHaveLength(1);
-    expect(page.builds[0].open).toEqual({ count: 3, reward: 25 });
-  });
-
-  it("a build with only an open request still counts as before", async () => {
-    response = { data: [{ ...BUILD, bounties: [{ reward_gbp: 40 }], still_open_topics: 0 }], error: null, count: 1 };
-    const page = await listBuildsTable({ lens: "unsolved" });
-    expect(page.builds[0].open).toEqual({ count: 1, reward: 40 });
-  });
-
-  it("before the migration: reads again with the open-request join, says so once, and does not ask again", async () => {
-    queue = [
-      { data: [], error: { code: "42703", message: "column builds.has_open_ask does not exist" }, count: null },
-      { data: [{ ...BUILD, bounties: [{ reward_gbp: null }] }], error: null, count: 1 },
-    ];
-    const page = await listBuildsTable({ lens: "unsolved" });
-    const asked = call("select").map((entry) => entry.args[0] as string);
-    expect(asked).toHaveLength(2);
-    expect(asked[0]).toContain("still_open_topic_count");
-    expect(asked[1]).not.toContain("still_open_topic_count");
-    expect(asked[1]).toContain("bounties!bounties_build_id_fkey!inner(");
-    expect(page.builds[0].open.count).toBe(1);
-
-    calls = [];
-    await listBuildsTable({ lens: "unsolved" });
-    expect(call("select")).toHaveLength(1);
-    expect(call("select")[0].args[0]).toContain("!inner(");
-    expect(call("eq").map((entry) => entry.args[0])).not.toContain("has_open_ask");
+    expect(page.builds[0].open).toEqual({ count: 2 });
   });
 });
 
@@ -102,18 +76,5 @@ describe("UX-08 P4 · the lens counts", () => {
     expect(call("eq").filter((entry) => entry.args[0] === "has_open_ask")).toHaveLength(1);
     expect(call("select").filter((entry) => String(entry.args[0]).includes("!inner"))).toHaveLength(0);
     expect(counts.unsolved).toBe(4);
-  });
-
-  it("before the migration: the Still open lens is counted by open requests, as it was", async () => {
-    response = { data: [], error: null, count: 2 };
-    queue = [
-      { data: [], error: null, count: 9 },
-      { data: [], error: null, count: 9 },
-      { data: [], error: null, count: 9 },
-      { data: [], error: { code: "42703", message: "column builds.has_open_ask does not exist" }, count: null },
-    ];
-    const counts = await countGalleryLenses();
-    expect(counts.unsolved).toBe(2);
-    expect(call("select").some((entry) => String(entry.args[0]).includes("bounties!bounties_build_id_fkey!inner(id)"))).toBe(true);
   });
 });

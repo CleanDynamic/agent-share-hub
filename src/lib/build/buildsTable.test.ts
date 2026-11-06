@@ -55,12 +55,12 @@ describe("listBuildsTable", () => {
     expect(call("from").map((entry) => entry.args[0])).toEqual(["builds"]);
     const select = call("select")[0].args[0] as string;
     expect(select).toContain("maker:profiles!builds_creator_id_fkey(username, display_name)");
-    expect(select).toContain("bounties!bounties_build_id_fkey(reward_gbp, status)");
+    expect(select).toContain("still_open_topics:still_open_topic_count");
+    expect(select).not.toContain("bounties");
     expect(select).toContain("classification");
     for (const heavy of ["build_nodes", "build_media", "post_doc"]) expect(select).not.toContain(heavy);
     expect(call("select")[0].args[1]).toEqual({ count: "exact" });
     expect(call("in")).toContainEqual({ method: "in", args: ["status", ["published", "gallery"]] });
-    expect(call("eq")).toContainEqual({ method: "eq", args: ["bounties.status", "open"] });
   });
 
   it("orders by reproductions by default, then newest, then id", async () => {
@@ -91,7 +91,7 @@ describe("listBuildsTable", () => {
     expect(call("select")[0].args[0]).toContain("still_open_topics:still_open_topic_count");
     expect(call("eq")).toContainEqual({ method: "eq", args: ["has_open_ask", true] });
     calls = [];
-    await listBuildsTable({ openBounties: true });
+    await listBuildsTable({ stillOpen: true });
     expect(call("eq")).toContainEqual({ method: "eq", args: ["has_open_ask", true] });
     calls = [];
     await listBuildsTable();
@@ -115,7 +115,7 @@ describe("listBuildsTable", () => {
           id: "b1", slug: "inbox", title: "Inbox triage", shape: "prompt", made_with: ["Claude Code"], reproduction_count: 3,
           last_confirmed_at: "2026-10-20T00:00:00Z", last_confirmed_model: "claude-opus-5-5", published_at: "2026-09-01T00:00:00Z",
           rebuild_count: 1, classification: { declared: { field: [{ id: "education" }] } }, maker: { username: "kit", display_name: " Kit " },
-          bounties: [{ reward_gbp: 40 }, { reward_gbp: null }],
+          still_open_topics: 2,
         },
       ],
       error: null,
@@ -123,7 +123,7 @@ describe("listBuildsTable", () => {
     };
     const page = await listBuildsTable();
     expect(page.total).toBe(1);
-    expect(page.builds[0]).toMatchObject({ title: "Inbox triage", madeWith: ["Claude Code"], reproductionCount: 3, maker: { handle: "kit", name: "Kit" }, open: { count: 2, reward: 40 } });
+    expect(page.builds[0]).toMatchObject({ title: "Inbox triage", madeWith: ["Claude Code"], reproductionCount: 3, maker: { handle: "kit", name: "Kit" }, open: { count: 2 } });
     expect(page.builds[0].classifiedAs?.declared.field).toEqual([{ id: "education" }]);
   });
 

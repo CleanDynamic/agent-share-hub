@@ -10,7 +10,7 @@ type Resolved = Pick<SavedItem, "title" | "slug" | "cover_image_url" | "author" 
 /**
  * RC-P18 — the builds behind a list of collection items, as the gallery's own
  * card reads them: GALLERY_BUILD_COLUMNS and the card's embeds
- * (gallerySelect(false) with withCardEmbeds, as where next and the saved list
+ * (gallerySelect() with withCardEmbeds, as where next and the saved list
  * read theirs), in ONE `.in` request for the whole list ⟦neoscale-performance⟧.
  * A build the reader can no longer read (a draft again, or hidden) is absent.
  * Errors carry the operation, code and status only.
@@ -19,7 +19,7 @@ export async function resolveBuildItems(buildIds: readonly string[]): Promise<Ma
   const ids = uniqueIds(buildIds);
   if (ids.length === 0) return new Map();
 
-  const response = await withCardEmbeds(db.from("builds").select(gallerySelect(false)).in("id", ids).limit(ids.length));
+  const response = await withCardEmbeds(db.from("builds").select(gallerySelect()).in("id", ids).limit(ids.length));
   if (response.error) throw socialError("resolveBuildItems", response);
 
   return new Map(

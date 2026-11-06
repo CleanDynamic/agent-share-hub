@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface DiscoverFilterParams {
   query?: string;
-  postType?: "blueprint" | "blog" | "bounty";
+  postType?: "blueprint" | "blog";
   blockTypes?: string[];
   models?: string[];
   tools?: string[];
@@ -18,7 +18,6 @@ export interface DiscoverFilterParams {
   domain?: string;
   difficulty?: string;
   length?: "quick" | "medium" | "deep";
-  bountyStatus?: "open" | "closed" | "solved";
   timeRange?: "24h" | "week" | "month" | "3months" | "all";
   sort?: "recent" | "engaged" | "referenced" | "newest";
   limit?: number;
@@ -118,7 +117,6 @@ export function applyParentFilters(
     qb = qb.gte("estimated_reading_minutes", 5).lte("estimated_reading_minutes", 15);
   else if (params.length === "deep") qb = qb.gt("estimated_reading_minutes", 15);
 
-  if (params.bountyStatus) qb = qb.eq("bounty_status", params.bountyStatus);
 
   if (params.timeRange && params.timeRange !== "all") {
     const ms: Record<string, number> = {

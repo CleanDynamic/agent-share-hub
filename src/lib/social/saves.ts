@@ -7,7 +7,7 @@
 // THE LIBRARY'S "SAVED" LIST (RC-P18) reads listMySavedBuilds: newest save
 // first, keyset on the save's created_at ⟦supabase-postgres-best-practices ›
 // references/data-pagination.md⟧, each build as the gallery's own card reads
-// it — gallerySelect(false) with withCardEmbeds, as where next reads its rows —
+// it — gallerySelect() with withCardEmbeds, as where next reads its rows —
 // so a saved build looks the same in the Library as in the Gallery. One
 // request a page (SV-03 P5): the saves, each with its build embedded. The first
 // page also counts the reader's saves (SV-09: "n saved"), exactly, in the same
@@ -92,7 +92,7 @@ export async function listMySavedBuilds(options: ListMySavedBuildsOptions = {}):
   let savesQuery = withCardEmbeds(
     db
       .from("build_saves")
-      .select(`created_at, build:builds!build_saves_build_id_fkey(${gallerySelect(false)})`, options.before ? undefined : { count: "exact" })
+      .select(`created_at, build:builds!build_saves_build_id_fkey(${gallerySelect()})`, options.before ? undefined : { count: "exact" })
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(limit),

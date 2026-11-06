@@ -45,7 +45,6 @@ function Card({ build, rebuilt, gap }: { build: FixtureBuild; rebuilt?: boolean;
       now={FIXTURE_NOW.getTime()}
       categories={build.part_categories}
       gap={gap}
-      openAsk={gap && build.open_gap_reward_gbp ? `1 part unsolved · £${build.open_gap_reward_gbp}` : null}
     />
   );
 }

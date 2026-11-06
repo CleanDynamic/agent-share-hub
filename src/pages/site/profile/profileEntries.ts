@@ -44,7 +44,7 @@ export function tableBuildOf(build: GalleryPostBuild, maker: EntryContext["maker
     rebuildCount: build.rebuild_count ?? 0,
     ...(build.classifiedAs ? { classifiedAs: build.classifiedAs } : null),
     maker: { handle: maker.handle, name: maker.name },
-    open: { count: 0, reward: null },
+    open: { count: 0 },
   };
 }
 

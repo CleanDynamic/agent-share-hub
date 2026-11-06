@@ -7,7 +7,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { BUILD_COLUMNS } from "@/lib/build/builds";
-import { countOpenBountyBuilds } from "@/lib/build/gallery";
+import { countStillOpenBuilds } from "@/lib/build/gallery";
 import { NODE_COLUMNS } from "@/lib/build/nodes";
 import type { Build, BuildNode } from "@/lib/build/types";
 import { myMeToo } from "./meToo";
@@ -565,7 +565,7 @@ const POOL_SOLUTIONS_CHUNK = 100;
 export interface OpenBountyPool {
   /** The sum of the open bounties' rewards, in whole pounds. */
   poolGbp: number;
-  /** Gallery builds carrying an open ask: countOpenBountyBuilds. */
+  /** Gallery builds carrying an open ask: countStillOpenBuilds. */
   open: number;
   /** Submitted and accepted solutions across the open bounties. */
   solutions: number;
@@ -590,7 +590,7 @@ export interface OpenBountyPool {
  */
 export async function getOpenBountyPool(): Promise<OpenBountyPool> {
   const [open, rewards] = await Promise.all([
-    countOpenBountyBuilds(),
+    countStillOpenBuilds(),
     supabase.from("bounties").select("id, reward_gbp").eq("status", "open").limit(OPEN_POOL_LIMIT),
   ]);
 
