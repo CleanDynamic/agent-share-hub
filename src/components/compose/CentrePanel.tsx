@@ -23,7 +23,6 @@
 import { useMemo, useState } from "react";
 import { GitBranch, ListOrdered } from "lucide-react";
 import type { ComposeBuild } from "@/hooks/useComposeBuild";
-import type { Bounty } from "@/lib/bounty";
 import type { NodeTreatment } from "@/hooks/useRebuildDiff";
 import {
   FONT_STACK,
@@ -54,8 +53,6 @@ interface CentrePanelProps {
   drag: NodeDrag;
   /** The rebuild treatment for the anatomy's rows. Null on an ordinary draft. */
   rebuildNodes?: Map<string, NodeTreatment> | null;
-  /** The asks already filed, by gap node id. Empty on a build with none. */
-  bountyNodes?: Map<string, Bounty> | null;
 }
 
 export function CentrePanel({
@@ -63,7 +60,6 @@ export function CentrePanel({
   compose,
   drag,
   rebuildNodes,
-  bountyNodes,
 }: CentrePanelProps) {
   const [view, setView] = useState<CentreView>("anatomy");
   /** Once true it stays true: leaving the tab must not throw the query away and
@@ -169,7 +165,6 @@ export function CentrePanel({
           onSelect={compose.setSelectedNodeId}
           drag={drag}
           rebuildNodes={rebuildNodes}
-          bountyNodes={bountyNodes}
         />
       </div>
 

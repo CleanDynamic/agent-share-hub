@@ -16,7 +16,6 @@
      /drafts/posts              Home / Drafts / Older post drafts
      /compose/*                 Home / Drafts / {title}
      /openbuilds                Home / OpenBuilds
-     /openbuilds/solvers        Home / OpenBuilds / Solvers
      /openbuilds/spaces/:slug   Home / OpenBuilds / {space}                       (UX-09 P6)
      /openbuilds/topics/:id     Home / OpenBuilds / {first space} / {heading}     (UX-09 P6; no space: Home / OpenBuilds / {heading})
      /openbuilds/requests       Home / OpenBuilds / Older requests                (UX-09 P6)
@@ -78,9 +77,6 @@ export function trailFor(pathname: string, title: string | null, parent: Crumb |
   if (here(pathname, "/drafts/posts")) return [HOME, DRAFTS, { label: "Older post drafts" }];
   if (here(pathname, "/compose/*")) return [HOME, DRAFTS, { label: title ?? "Untitled build" }];
 
-  if (here(pathname, "/openbuilds/solvers") || here(pathname, "/bounties/solvers")) {
-    return [HOME, { label: "OpenBuilds", href: SITE_NAV.bounties }, { label: "Solvers" }];
-  }
   if (here(pathname, "/openbuilds") || here(pathname, "/bounties")) return [HOME, { label: "OpenBuilds" }];
   if (here(pathname, "/openbuilds/spaces/:slug")) return [HOME, OPENBUILDS, { label: title }];
   if (here(pathname, "/openbuilds/topics/:id")) return [HOME, OPENBUILDS, ...(parent ? [parent] : []), { label: title }];

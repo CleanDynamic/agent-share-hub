@@ -50,7 +50,6 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { data as dataText, eyebrow } from "@/lib/theme/type";
 import type { RebuildDiff } from "@/hooks/useRebuildDiff";
-import type { BuildBounties } from "@/hooks/useBuildBounties";
 import type {
   Build,
   BuildPatch,
@@ -155,12 +154,6 @@ interface ComposeTopBarProps {
    * was here before NS-P38.
    */
   rebuild?: RebuildDiff;
-  /**
-   * The asks already filed on this build, passed straight to PublishControl for
-   * the publish sheet's bounty section (NS-P51). Absent on a caller that has
-   * not read them, which renders the sheet exactly as it was before.
-   */
-  bounties?: BuildBounties;
 }
 
 function SaveState({
@@ -417,7 +410,6 @@ export function ComposeTopBar({
   publishError,
   onFocusRequirement,
   rebuild,
-  bounties,
 }: ComposeTopBarProps) {
   // The count waits for the diff rather than guessing at it. A rebuild whose
   // source is still loading — or has been unpublished since the fork — shows no
@@ -517,7 +509,6 @@ export function ComposeTopBar({
         publishError={publishError}
         onFocusRequirement={onFocusRequirement}
         rebuild={rebuild}
-        bounties={bounties}
       />
         </>
       }

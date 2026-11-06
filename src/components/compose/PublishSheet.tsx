@@ -289,9 +289,9 @@ export interface PublishSheetProps {
   /**
    * EXTENSION SLOT — rendered between the checklist and the primary action.
    *
-   * Nothing is passed today. NS-P39 (the rebuild variant) and NS-P51 (the
-   * bounty option) hang their own sections here so that neither has to reopen
-   * this file's layout to add one.
+   * The rebuild variant (NS-P39) hangs its section here, so it does not have to
+   * reopen this file's layout to add one. (NS-P51's bounty option hung one too
+   * until UX-11 removed it.)
    */
   sections?: ReactNode;
   /**

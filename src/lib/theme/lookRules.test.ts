@@ -1153,7 +1153,6 @@ export const CA03_FILES: readonly string[] = [
   // SV-14
   "src/lib/build/graph.ts",
   "src/dev/fixtures/vision/openbuilds.ts",
-  "src/pages/dev/VisionOpenBuilds.tsx",
   "src/pages/site/openbuilds/OpenBuildsFrame.tsx",
   "src/pages/site/openbuilds/OpenBuildsView.tsx",
   "src/pages/site/openbuilds/OpenBuildsView.test.tsx",
