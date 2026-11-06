@@ -88,3 +88,5 @@ The site sets no cookies of its own. No analytics or advertising script is loade
 ## Placeholders Part 3 needs
 
 Controller name, postal address, privacy contact email, ICO registration, each AI provider's data terms, the safeguard for transfers, Supabase backup retention, retention periods, minimum age, appeal route and contact, liability wording, whether staff read messages.
+
+<!-- live-payment: no -->
