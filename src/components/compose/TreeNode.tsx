@@ -29,7 +29,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { NodeTree, NodeType } from "@/lib/build";
-import type { Bounty } from "@/lib/bounty";
 import type { NodeTreatment } from "@/hooks/useRebuildDiff";
 import { prefersReducedMotion } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
@@ -109,52 +108,6 @@ function TreatmentPill({ treatment }: { treatment: NodeTreatment }) {
       }}
     >
       {pill}
-    </span>
-  );
-}
-
-/**
- * The marker on a gap that somebody has been asked to fill (NS-P51).
- *
- * EVIDENCE, BESIDE THE BREAKAGE, and the pair is the whole point. The red rule down the
- * left of the row is the hole; this is the ask on it, and teal is what the
- * platform already spends on the actionable half of a gap — the same colour the
- * public page's gap renderer uses for "Solve this and the build is finished".
- * A second red mark would say the same thing twice and read as a warning about
- * the bounty rather than as the bounty.
- *
- * It says "bounty" whatever the reward, because an unpriced bounty is a real
- * one. The amount, and whether the ask is still open, are in the title.
- */
-function BountyPill({ bounty }: { bounty: Bounty }) {
-  const priced =
-    bounty.reward_gbp !== null && bounty.reward_gbp !== undefined
-      ? `£${bounty.reward_gbp}`
-      : "no reward";
-  const solved = bounty.status !== "open";
-
-  return (
-    <span
-      data-testid="bounty-node-pill"
-      data-bounty-status={bounty.status}
-      title={`This gap has a bounty on it — ${bounty.status}, ${priced}.`}
-      style={{
-        ...dataType,
-        flexShrink: 0,
-        fontSize: 10,
-        padding: "1px 4px",
-        // --r-chip. Nothing is a pill, whatever this one is called.
-        borderRadius: r.chip,
-        background: t.evidenceFill,
-        color: t.text,
-        borderWidth: 1,
-        borderStyle: "solid",
-        borderColor: t.evidence,
-        opacity: solved ? 0.6 : 1,
-        whiteSpace: "nowrap",
-      }}
-    >
-      bounty
     </span>
   );
 }
@@ -240,15 +193,6 @@ interface TreeNodeProps {
    * creator has not touched.
    */
   rebuildNodes?: Map<string, NodeTreatment> | null;
-  /**
-   * Gap node id -> the ask filed against it, from useBuildBounties.
-   *
-   * Absent while the read is open and on a build that carries none, and the row
-   * then looks exactly as it did before NS-P51. Passed as the whole map rather
-   * than a boolean so the pill can say what kind of ask it is without a second
-   * prop being threaded down here every time it learns something new.
-   */
-  bountyNodes?: Map<string, Bounty> | null;
 }
 
 export function TreeNode({
@@ -260,7 +204,6 @@ export function TreeNode({
   onSelect,
   drag,
   rebuildNodes,
-  bountyNodes,
 }: TreeNodeProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -282,7 +225,6 @@ export function TreeNode({
     ? (rebuildNodes.get(node.id) ?? "inherited")
     : null;
 
-  const bounty = bountyNodes?.get(node.id) ?? null;
 
   // The selected treatment wins over the gap treatment: a creator who has just
   // clicked a row needs to see which row that was more than they need the flag.
@@ -415,7 +357,6 @@ export function TreeNode({
           </span>
         </button>
 
-        {bounty ? <BountyPill bounty={bounty} /> : null}
 
         {treatment ? <TreatmentPill treatment={treatment} /> : null}
 
