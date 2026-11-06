@@ -161,7 +161,7 @@ describe("a private profile you don't follow", () => {
 });
 
 describe("nothing here awards XP", () => {
-  it("the page and its pieces never call award_xp or awardXp", () => {
+  it("the page and its pieces never call the XP award, under either spelling", () => {
     for (const file of ["ProfilePage.tsx", "ProfileHead.tsx", "ProfileFeed.tsx", "ProfileSide.tsx", "CustomiseProfile.tsx", "useProfilePictures.tsx"]) {
       expect(readFileSync(`src/pages/site/profile/${file}`, "utf8"), file).not.toMatch(/award_?xp/i);
     }
