@@ -1,5 +1,8 @@
 // Tier 3 — legacy bounty creation is retired (NS-P54).
 //
+// UX-11: /bounty/new and createMetaBounty are deleted; /bounty/new redirects (src/lib/routing/retiredAddresses.test.tsx).
+// What remains here is the gate, /upload/bounty and promoteBountyToBlueprint.
+//
 // TWO CLAIMS, pulling in opposite directions, which is why they are asserted in
 // one file: nothing may CREATE a `content_items` bounty any more, and a bounty
 // draft already in progress must still be FINISHABLE. A freeze that took the
@@ -88,7 +91,6 @@ vi.mock("./Upload", () => ({
   ),
 }));
 
-import BountyUpload from "@/pages/BountyUpload";
 import BountyUploadShell from "@/pages/BountyUploadShell";
 import { LegacyUploadRoute } from "@/components/upload/LegacyUploadNotice";
 import { UploadPickerProvider, useUploadPicker } from "@/contexts/UploadPickerContext";
@@ -119,66 +121,6 @@ describe("frozen — the gate itself", () => {
     expect((thrown as LegacyBountyValidationError).code).toBe("BOUNTY_RETIRED");
     expect((thrown as LegacyBountyValidationError).message).toBe(BOUNTY_RETIRED_MESSAGE);
     expect(BOUNTY_RETIRED_MESSAGE).toMatch(/mark a part unsolved in the composer/);
-  });
-});
-
-describe("frozen — /bounty/new", () => {
-  function renderRoute() {
-    return render(
-      <MemoryRouter initialEntries={["/bounty/new"]}>
-        <Routes>
-          <Route
-            path="/bounty/new"
-            element={
-              <LegacyUploadRoute bounty>
-                <BountyUpload />
-              </LegacyUploadRoute>
-            }
-          />
-        </Routes>
-      </MemoryRouter>
-    );
-  }
-
-  it("carries the notice, the bounty line and a way into the composer", () => {
-    renderRoute();
-    expect(screen.getByText("Previous publishing tool")).toBeTruthy();
-    expect(
-      screen.getByText(/Bounties are now part of publishing a build/)
-    ).toBeTruthy();
-    const cta = screen.getByRole("link", { name: "Open the build workspace" });
-    expect(cta.getAttribute("href")).toBe("/compose/new");
-  });
-
-  // THE ACCEPTANCE CRITERION. The form is walked end to end by a signed-in
-  // creator with every field the submit button waits for, and the submit writes
-  // nothing.
-  it("walks the whole form and still creates no content_items row", async () => {
-    renderRoute();
-
-    fireEvent.change(
-      screen.getByPlaceholderText(/I need a prompt that rewrites my emails/),
-      { target: { value: "A prompt that summarises release notes" } }
-    );
-    fireEvent.click(screen.getByText("A Prompt"));
-    fireEvent.click(screen.getByRole("button", { name: /Continue/ }));
-
-    fireEvent.change(screen.getByPlaceholderText(/Give context/), {
-      target: { value: "Shipping weekly and writing the notes by hand." },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /Continue/ }));
-
-    fireEvent.change(screen.getByPlaceholderText("50"), { target: { value: "50" } });
-    fireEvent.click(screen.getByRole("button", { name: /Post Bounty/ }));
-
-    await waitFor(() =>
-      expect(screen.getByTestId("legacy-bounty-retired")).toBeTruthy()
-    );
-    expect(
-      screen.getByTestId("legacy-bounty-retired").textContent
-    ).toContain("This form no longer posts bounties.");
-    // Not "the insert failed" — the insert was never attempted.
-    expect(db.inserts).toEqual([]);
   });
 });
 
@@ -233,32 +175,11 @@ describe("live — a bounty draft already in progress still opens its editor", (
   });
 });
 
-// NS-P54 commit 2. Both helpers wrote an APPROVED content_items row —
-// createMetaBounty a meta-bounty, promoteBountyToBlueprint a clone of a solved
-// one — and both are frozen at their first statement. The claim is that they
+// NS-P54 commit 2. Two helpers wrote an APPROVED content_items row — createMetaBounty a meta-bounty (deleted by UX-11),
+// promoteBountyToBlueprint a clone of a solved one — and both were frozen at their first statement. The claim is that they
 // REFUSE rather than fail: no query of any kind is built, so there is no
 // half-written row and no orphaned header behind the error.
-describe("frozen — the superseded bounty-competition helpers", () => {
-  it("createMetaBounty throws BOUNTY_RETIRED and writes nothing", async () => {
-    const { createMetaBounty } = await import(
-      "@/lib/bounty-competition/createMetaBounty"
-    );
-
-    await expect(
-      createMetaBounty({
-        authorId: "creator-1",
-        title: "One umbrella, four holes",
-        subBountyDefinitions: [{ title: "Citation checker", targetAmount: 120 }],
-      })
-    ).rejects.toMatchObject({
-      name: "LegacyBountyValidationError",
-      code: "BOUNTY_RETIRED",
-      message: BOUNTY_RETIRED_MESSAGE,
-    });
-
-    expect(db.inserts).toEqual([]);
-  });
-
+describe("frozen — the superseded bounty-competition helper", () => {
   it("promoteBountyToBlueprint throws BOUNTY_RETIRED and writes nothing", async () => {
     const { promoteBountyToBlueprint } = await import(
       "@/lib/bounty-competition/promoteBountyToBlueprint"
