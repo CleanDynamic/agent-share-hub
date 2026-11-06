@@ -195,18 +195,6 @@ export function DraftsHeading() {
   );
 }
 
-export function OlderDrafts() {
-  return (
-    <Link
-      to="/drafts/posts"
-      data-hit=""
-      style={{ alignSelf: "flex-start", fontFamily: FIGTREE, fontSize: 12, color: t.text2, textDecoration: "underline", textDecorationColor: t.line, textUnderlineOffset: 3 }}
-    >
-      Older post drafts
-    </Link>
-  );
-}
-
 /** A section: its head, then what it holds. */
 export function ListSection({ label, head, children }: { label: string; head: ReactNode; children: ReactNode }) {
   return (
@@ -224,14 +212,12 @@ export function DraftsLayout({
   continueSection,
   sessionsSection,
   connectedTools,
-  after,
 }: {
   onConnect: () => void;
   continueSection: ReactNode;
   sessionsSection: ReactNode;
   /** The tile below the sessions: absent when no tool is known. */
   connectedTools: ReactNode;
-  after: ReactNode;
 }) {
   const wide = useMinWidth(TWO_COLUMNS_MIN);
   return (
@@ -256,7 +242,6 @@ export function DraftsLayout({
           {connectedTools}
         </div>
       </div>
-      <div style={{ marginTop: 32, display: "flex", flexDirection: "column", gap: 8 }}>{after}</div>
     </div>
   );
 }
@@ -295,7 +280,6 @@ export function DraftsLoadingView() {
         </ListSection>
       }
       connectedTools={null}
-      after={<OlderDrafts />}
     />
   );
 }

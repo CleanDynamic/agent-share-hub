@@ -73,7 +73,6 @@ const ApiDocs = lazy(() => import("./pages/ApiDocs"));
 // UI-P46 — /drafts is the new page (builds and sessions); the old one, which reads
 // content_items and content_blocks, is routed at /drafts/posts unchanged.
 const DraftsPage = lazy(ROUTE_TABLE.drafts.load as () => Promise<{ default: React.ComponentType }>);
-const LegacyDraftsPage = lazy(() => import("./pages/Drafts"));
 const PostPreviewPage = lazy(() => import("./pages/PostPreview"));
 const PublishMetadata = lazy(() => import("./pages/PublishMetadata"));
 const ContentEditPage = lazy(() => import("./pages/ContentEdit"));
@@ -378,7 +377,7 @@ const App = () => (
                 {/* UI-P46 — the content path stays live (RULES §3). PublishMetadata,
                     PostPreview and MyUploads send people to /drafts for content_items
                     drafts, which the new page does not show; this is deliberate. */}
-                <Route path="/drafts/posts" element={<ProtectedRoute><LegacyDraftsPage /></ProtectedRoute>} />
+                <Route path="/drafts/posts" element={<Navigate to="/drafts" replace />} />
                 <Route path="/upload/preview/:draftId" element={<ProtectedRoute><PostPreviewPage /></ProtectedRoute>} />
                 <Route path="/publish/:contentItemId" element={<ProtectedRoute><PublishMetadata /></ProtectedRoute>} />
                 <Route path="/feed" element={<KeepSearchRedirect to="/builds" />} />

@@ -24,6 +24,7 @@ const RETIRED: ReadonlyArray<readonly [string, string]> = [
   ["/bounty/new", "/compose/new"],
   ["/convert/abc123", "/drafts"],
   // Every form of the old bounty editor: with or without a draft id, it lands on Drafts (UX-11 follow-up).
+  ["/drafts/posts", "/drafts"],
   ["/upload/bounty", "/drafts"],
   ["/upload/bounty?id=draft-9", "/drafts"],
   // The older bounties and gallery addresses (SV-02).
