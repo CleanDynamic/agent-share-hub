@@ -32,7 +32,8 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { postEntriesOf, type GalleryMedia } from "@/lib/build";
 import { MEDIA_WIDTH } from "@/components/build/MediaFigure";
-import { BODY_HEIGHT } from "./cardBodies";
+/** A card body's height in the gallery grid (it was cardBodies.BODY_HEIGHT). */
+const BODY_HEIGHT = 168;
 import { CARD_THREAD_WIDTH } from "./cardMedia";
 import {
   CardThread,
