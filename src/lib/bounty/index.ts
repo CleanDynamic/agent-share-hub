@@ -22,7 +22,6 @@
 //     by its own id and never touch a bounty id, so the repoint never reached
 //     them and a second copy here would be a second copy of working code.
 //
-//   * validateBountyForPublish and countMissingInStageGrids are the legacy
 //     publish validators. They read content_items and are exported here because
 //     they have always lived in this folder, not because they are part of the
 //     new path.
@@ -144,8 +143,6 @@ export {
 
 export { voteOnSolution } from "@/lib/bounty-solver/voteOnSolution";
 
-export { validateBountyForPublish, type BountyValidationResult } from "./validateBountyForPublish";
-export { countMissingInStageGrids, type MissingCounts } from "./countMissing";
 export { attachFork, claimDaysLeft, claimRequest, CLAIM_DAYS, listActiveClaims, listMyClaims, releaseClaim, type MyClaim, type RequestClaim } from "./claims";
 export { briefRefusal, comparePair, NO_GAPS, NOT_PUBLISHED } from "./briefRules";
 export { BRIEF_ANSWERS_KEPT, BRIEFS_PAGE_SIZE, listBriefs, publishBrief, setBrief, type BriefAnswerRecord, type BriefRecord, type BriefsPage } from "./briefs";
