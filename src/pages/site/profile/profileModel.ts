@@ -17,9 +17,6 @@ export const TRACK_ITEMS: readonly { value: TrackId; label: string }[] = [
   { value: "explorer", label: "Explorer" },
 ];
 
-export const trackLabel = (track: TrackId | null): string | null =>
-  TRACK_ITEMS.find((item) => item.value === track)?.label ?? null;
-
 export interface LevelView {
   level: number;
   /** The ring: how far through this level, 0 to 100. */
@@ -78,10 +75,6 @@ export function levelView(progress: {
 export function xpLine(view: LevelView): string | null {
   if (view.xp === null || view.xpNext === null) return null;
   return `${formatCount(view.xp)} / ${formatCount(view.xpNext)} xp`;
-}
-
-export function remainingLine(view: LevelView): string | null {
-  return view.remaining === null ? null : `${formatCount(view.remaining)} to level ${view.level + 1}`;
 }
 
 /** "12-day streak · best 31"; the phone's line is the first half. */

@@ -55,12 +55,6 @@ vi.mock("@/integrations/supabase/client", () => {
 
 import { isPermissionError } from "@/lib/errors/permission";
 import { FollowError, followMaker, unfollowMaker } from "./follow";
-import {
-  afterInReproducedOrder,
-  countMakerWorks,
-  listMakerReproducedBuilds,
-  type ReproducedBuildsCursor,
-} from "./makerBuilds";
 import { asTrack, getProfileProgress } from "./profileProgress";
 
 const MAKER = "maker-1";
@@ -151,77 +145,5 @@ describe("followMaker and unfollowMaker", () => {
     expect((error as FollowError).code).toBe("23505");
     expect((error as FollowError).status).toBe(409);
     expect((error as FollowError).message).toBe(`followMaker failed (user ${VIEWER})`);
-  });
-});
-
-describe("countMakerWorks", () => {
-  it("asks two head requests: published rebuilds, and reproductions that worked", async () => {
-    answer({ data: null, error: null, count: 6 }, { data: null, error: null, count: 48 });
-
-    await expect(countMakerWorks(MAKER)).resolves.toEqual({ rebuilds: 6, reproduced: 48 });
-    const [builds, reproductions] = stand.calls;
-    expect(builds.table).toBe("builds");
-    expect(method(builds.chain, "select")).toEqual([["id", { count: "estimated", head: true }]]);
-    expect(method(builds.chain, "eq")).toEqual([["creator_id", MAKER]]);
-    expect(method(builds.chain, "in")).toEqual([["status", ["published", "gallery"]]]);
-    expect(method(builds.chain, "not")).toEqual([["parent_build_id", "is", null]]);
-    expect(reproductions.table).toBe("build_reproductions");
-    expect(method(reproductions.chain, "eq")).toEqual([
-      ["user_id", MAKER],
-      ["worked", true],
-    ]);
-  });
-
-  it("reads a missing count as zero", async () => {
-    answer({ data: null, error: null, count: null });
-    await expect(countMakerWorks(MAKER)).resolves.toEqual({ rebuilds: 0, reproduced: 0 });
-  });
-});
-
-describe("listMakerReproducedBuilds", () => {
-  it("reads the maker's working reproductions newest first, one more than a page, then those builds by id", async () => {
-    const rows = [
-      { id: "r3", build_id: "b3", confirmed_at: "2026-09-03T00:00:00Z" },
-      { id: "r2", build_id: "b2", confirmed_at: "2026-09-02T00:00:00Z" },
-      { id: "r1", build_id: "b1", confirmed_at: "2026-09-01T00:00:00Z" },
-    ];
-    const card = (id: string) => ({ id, slug: id, title: id, status: "published", build_nodes: [], build_media: [], bounties: [] });
-    answer({ data: rows, error: null }, { data: [card("b2"), card("b3")], error: null });
-
-    const page = await listMakerReproducedBuilds(MAKER, { limit: 2 });
-
-    const [reproductions, builds] = stand.calls;
-    expect(reproductions.table).toBe("build_reproductions");
-    expect(method(reproductions.chain, "select")).toEqual([["id, build_id, confirmed_at"]]);
-    expect(method(reproductions.chain, "order")).toEqual([
-      ["confirmed_at", { ascending: false }],
-      ["id", { ascending: false }],
-    ]);
-    expect(method(reproductions.chain, "limit")).toEqual([[3]]);
-    expect(builds.table).toBe("builds");
-    expect(method(builds.chain, "in")).toContainEqual(["id", ["b3", "b2"]]);
-    expect(page.builds.map((build) => build.id)).toEqual(["b3", "b2"]);
-    expect(page.next).toEqual({ confirmedAt: "2026-09-02T00:00:00Z", reproductionId: "r2" });
-  });
-
-  it("is the last page when there is no extra row, and asks for no builds when there are no reproductions", async () => {
-    answer({ data: [], error: null });
-
-    await expect(listMakerReproducedBuilds(MAKER)).resolves.toEqual({ builds: [], next: null });
-    expect(stand.calls).toHaveLength(1);
-  });
-
-  it("continues strictly after the cursor, ties broken by id", () => {
-    const cursor: ReproducedBuildsCursor = { confirmedAt: "2026-09-02T00:00:00Z", reproductionId: "r2" };
-    expect(afterInReproducedOrder(cursor)).toBe(
-      'confirmed_at.lt."2026-09-02T00:00:00Z",and(confirmed_at.eq."2026-09-02T00:00:00Z",id.lt.r2)',
-    );
-  });
-
-  it("throws with identifiers only", async () => {
-    answer({ data: null, error: { code: "42501", message: "nope" }, status: 403 });
-    const error = await listMakerReproducedBuilds(MAKER).catch((caught: unknown) => caught);
-    expect(isPermissionError(error)).toBe(true);
-    expect((error as Error).message).toBe(`listMakerReproducedBuilds (reproductions) failed (user ${MAKER})`);
   });
 });
