@@ -21,7 +21,7 @@ import { UnderlineTabs } from "@/components/brand/UnderlineTabs";
 import { stillFor } from "@/components/gallery/cardMedia";
 import { landedKey, setPictureAttrs, type EditRequest, type PictureHost } from "@/components/post/editor/pictures";
 import { limitText } from "@/lib/build/postMedia";
-import { ALT_MAX, mediaAttrsOf, MEDIA_WARNINGS, ZOOM_MAX, ZOOM_MIN, type CropAspect, type MediaWarning, type PostMediaAttrs } from "@/lib/build/thread";
+import { ALT_MAX, mediaAttrsOf, MEDIA_WARNINGS, NO_MEDIA_EDITS, ZOOM_MAX, ZOOM_MIN, type CropAspect, type MediaCrop, type MediaWarning, type PostMediaAttrs } from "@/lib/build/thread";
 import { ring } from "@/lib/theme/controls";
 import { CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
@@ -29,7 +29,7 @@ import { FIGTREE } from "@/lib/theme/type";
 import { Field } from "@/pages/site/compose/composeControls";
 import { dialogTitle, text, windowStyle } from "@/pages/site/compose/refinedStyles";
 
-import { centreOf, croppedRatio, cropFor, cropStyle, dragView, frameRatio, storedCrop, ZOOM_KEY_STEP, ZOOM_STEP, type CropView } from "./cropStyle";
+import { centreOf, croppedRatio, cropFor, cropStyle, dragView, frameRatio, storedCrop, zoomOfCrop, ZOOM_KEY_STEP, ZOOM_STEP, type CropView } from "./cropStyle";
 import { tileKind, type TileKind } from "./GridTile";
 import { THIRDS_LINE } from "./shade";
 
@@ -43,7 +43,9 @@ export const EDIT_COPY = {
   tabs: { crop: "Crop", alt: "ALT", warn: "Content warning" } as Record<EditTab, string>,
   noCrop: "GIFs and videos can't be cropped",
   frame: "Crop area. Drag or use the arrow keys to move the picture, plus and minus to zoom.",
-  shapes: { original: "Original", wide: "Wide", square: "Square" } as Record<CropAspect, string>,
+  shapes: { original: "Original", wide: "Wide", square: "Square", header: "Header" } as Record<CropAspect, string>,
+  /** UX-10 P2: the line beside a shape the dialog offers alone. */
+  only: { square: "Only shape for a profile picture", header: "Only shape for a header" } as Partial<Record<CropAspect, string>>,
   zoom: "Zoom",
   zoomOut: "Zoom out",
   zoomIn: "Zoom in",
@@ -60,7 +62,10 @@ const FRAME_MAX_HEIGHT = 360;
 const PREVIEW_MAX_HEIGHT = 200;
 const THUMB = 44;
 
-const SHAPE_GLYPHS: Record<CropAspect, GlyphName> = { original: "image", wide: "shapeWide", square: "shapeSquare" };
+const SHAPE_GLYPHS: Record<CropAspect, GlyphName> = { original: "image", wide: "shapeWide", square: "shapeSquare", header: "shapeWide" };
+
+/** The shapes a post offers. UX-10 P2: a profile picture offers square alone, a header the header alone. */
+export const POST_ASPECTS: readonly CropAspect[] = ["original", "wide", "square"];
 
 /** IconButton asks for a lucide icon as well as a glyph; the glyph is what is drawn. */
 const NO_ICON = (() => null) as unknown as ComponentProps<typeof IconButton>["icon"];
@@ -112,19 +117,49 @@ export function patchOf(item: Pick<Item, "attrs" | "kind" | "ratio">, draft: Dra
   return Object.keys(patch).length > 0 ? patch : null;
 }
 
+/** UX-10 P2: one picture that is not in a post (a profile picture or header): its file, its size and what is stored on it. */
+export interface PictureSource {
+  still: string;
+  /** The file's pixel size, or null when not known. */
+  width: number | null;
+  height: number | null;
+  crop: MediaCrop | null;
+  alt: string;
+  /** Where focus goes back to when the dialog closes. */
+  returnTo: HTMLElement | null;
+}
+
+/** What Save hands back for a picture that is not in a post: the crop (null when it was never cropped) and the ALT. */
+export interface PictureEdit {
+  crop: MediaCrop | null;
+  alt: string;
+}
+
 export interface EditMediaDialogProps {
   request: EditRequest | null;
   editor: Editor | null;
-  host: PictureHost;
+  host?: PictureHost;
   phone: boolean;
   onClose: () => void;
+  /** UX-10 P2: the shapes to offer. Default: a post's three. With one, it is shown fixed. */
+  aspects?: readonly CropAspect[];
+  /** UX-10 P2: the Content warning tab. Default true. */
+  showWarning?: boolean;
+  /** UX-10 P2: a circle guide inside the square frame (a profile picture). */
+  round?: boolean;
+  /** UX-10 P2: edit this one picture instead of a post's grid; `request`, `editor` and `host` are then not used. */
+  picture?: PictureSource | null;
+  onSave?: (edit: PictureEdit) => void;
+  /** UX-10 P2: a quiet text button on the left of the footer, `Remove picture` or `Remove header`. */
+  remove?: { label: string; onRemove: () => void };
 }
 
-export function EditMediaDialog({ request, editor, host, phone, onClose }: EditMediaDialogProps) {
-  const open = Boolean(request && editor);
+export function EditMediaDialog({ request, editor, host, phone, onClose, aspects = POST_ASPECTS, showWarning = true, round = false, picture = null, onSave, remove }: EditMediaDialogProps) {
+  const open = Boolean(request && editor && host) || Boolean(picture);
   // Kept past the close: the request is gone by the time focus goes back.
   const returnTo = useRef<HTMLElement | null>(null);
   if (request) returnTo.current = request.returnTo;
+  if (picture) returnTo.current = picture.returnTo;
   return (
     <Dialog.Root open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
       <Dialog.Portal>
@@ -142,7 +177,11 @@ export function EditMediaDialog({ request, editor, host, phone, onClose }: EditM
               : { position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 51, ...windowStyle(600) }
           }
         >
-          {request && editor ? <Body key={`${request.gridPos}-${request.index}-${request.tab}`} request={request} editor={editor} host={host} phone={phone} onClose={onClose} /> : null}
+          {picture ? (
+            <PictureBody picture={picture} phone={phone} aspects={aspects} showWarning={showWarning} round={round} onClose={onClose} onSave={onSave} remove={remove} />
+          ) : request && editor && host ? (
+            <Body key={`${request.gridPos}-${request.index}-${request.tab}`} request={request} editor={editor} host={host} phone={phone} onClose={onClose} />
+          ) : null}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
@@ -227,6 +266,80 @@ function Body({ request, editor, host, phone, onClose }: { request: EditRequest;
   );
 }
 
+/**
+ * UX-10 P2: the dialog for one picture that is not in a post. The same tabs, frame and fields as a post's; the shapes and the
+ * warning tab come from the caller; Save hands back the crop and the ALT rather than writing to an editor.
+ */
+function PictureBody({
+  picture,
+  phone,
+  aspects,
+  showWarning,
+  round,
+  onClose,
+  onSave,
+  remove,
+}: {
+  picture: PictureSource;
+  phone: boolean;
+  aspects: readonly CropAspect[];
+  showWarning: boolean;
+  round: boolean;
+  onClose: () => void;
+  onSave?: (edit: PictureEdit) => void;
+  remove?: EditMediaDialogProps["remove"];
+}) {
+  const aspect = aspects[0] ?? "original";
+  const ratio = croppedRatio({ w: picture.width, h: picture.height, crop: null });
+  const item: Item = {
+    attrs: { mediaId: "", width: 100, w: picture.width, h: picture.height, alt: picture.alt, caption: "", ...NO_MEDIA_EDITS, crop: picture.crop, aspect },
+    kind: "image",
+    ratio,
+    still: picture.still,
+  };
+  const [draft, setDraft] = useState<Draft>(() => ({ ...draftOf(item.attrs), aspect, zoom: zoomOfCrop(picture.crop, ratio, frameRatio(aspect, ratio)) }));
+  const [tab, setTab] = useState<EditTab>("crop");
+  const ids = useId();
+  const change = (patch: Partial<Draft>) => setDraft((one) => ({ ...one, ...patch }));
+
+  const save = () => {
+    const patch = patchOf(item, draft);
+    onSave?.({ crop: patch && "crop" in patch ? (patch.crop ?? null) : picture.crop, alt: patch?.alt ?? picture.alt });
+    onClose();
+  };
+
+  const tabs = [
+    { value: "crop" as const, label: EDIT_COPY.tabs.crop, glyph: "crop" as const, id: `${ids}-crop`, controls: `${ids}-panel` },
+    { value: "alt" as const, label: EDIT_COPY.tabs.alt, id: `${ids}-alt`, controls: `${ids}-panel` },
+    ...(showWarning ? [{ value: "warn" as const, label: EDIT_COPY.tabs.warn, glyph: "flag" as const, id: `${ids}-warn`, controls: `${ids}-panel` }] : []),
+  ];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <IconButton icon={NO_ICON} glyph="larr" label={EDIT_COPY.back} size={30} boxed={false} onClick={onClose} />
+        <Dialog.Title style={{ ...dialogTitle, margin: 0, flex: "1 1 auto" }}>{EDIT_COPY.titles[tab]}</Dialog.Title>
+        <Button size={phone ? 44 : 32} onClick={save}>
+          {EDIT_COPY.save}
+        </Button>
+      </div>
+      <UnderlineTabs<EditTab> label="Edit" value={tab} onChange={setTab} tabs={tabs} />
+      <div id={`${ids}-panel`} role="tabpanel" aria-labelledby={`${ids}-${tab}`} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {tab === "crop" ? <CropTab item={item} draft={draft} change={(patch) => change({ ...patch, cropped: true })} phone={phone} aspects={aspects} round={round} /> : null}
+        {tab === "alt" ? <AltTab item={item} draft={draft} change={change} phone={phone} id={`${ids}-alt-field`} /> : null}
+        {tab === "warn" && showWarning ? <WarnTab item={item} draft={draft} change={change} phone={phone} /> : null}
+      </div>
+      {remove ? (
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <Button variant="ghost" size={phone ? 44 : 32} onClick={remove.onRemove}>
+            {remove.label}
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function Thumb({ item, at, count, current, onPick }: { item: Item; at: number; count: number; current: boolean; onPick: () => void }) {
   const [focus, setFocus] = useState(false);
   return (
@@ -271,7 +384,7 @@ function Contained({ item }: { item: Item }) {
   );
 }
 
-function CropTab({ item, draft, change, phone }: { item: Item; draft: Draft; change: (patch: Partial<Draft>) => void; phone: boolean }) {
+function CropTab({ item, draft, change, phone, aspects = POST_ASPECTS, round = false }: { item: Item; draft: Draft; change: (patch: Partial<Draft>) => void; phone: boolean; aspects?: readonly CropAspect[]; round?: boolean }) {
   const frame = frameRatio(draft.aspect, item.ratio);
   const view: CropView = { ratio: item.ratio, frame, zoom: draft.zoom, cx: draft.cx, cy: draft.cy };
   const crop = cropFor(view);
@@ -354,16 +467,24 @@ function CropTab({ item, draft, change, phone }: { item: Item; draft: Draft; cha
           {line({ left: "66.667%", top: 0, bottom: 0, width: 1 })}
           {line({ top: "33.333%", left: 0, right: 0, height: 1 })}
           {line({ top: "66.667%", left: 0, right: 0, height: 1 })}
+          {round ? (
+            <span
+              aria-hidden="true"
+              data-round-guide=""
+              style={{ position: "absolute", inset: 0, borderRadius: "50%", border: `2px solid ${t.text}`, boxShadow: `0 0 0 ${FRAME_MAX_HEIGHT}px ${t.scrim}`, pointerEvents: "none" }}
+            />
+          ) : null}
         </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
         <div role="group" aria-label="Shape" style={{ display: "inline-flex", gap: 2, padding: 2, borderRadius: 6, background: t.segTrack, border: `1px solid ${t.segBorder}` }}>
-          {(["original", "wide", "square"] as const).map((aspect) => (
+          {aspects.map((aspect) => (
             <ShapeButton
               key={aspect}
               aspect={aspect}
               pressed={draft.aspect === aspect}
               phone={phone}
+              fixed={aspects.length === 1}
               onPress={() => {
                 const nextFrame = frameRatio(aspect, item.ratio);
                 const next = cropFor({ ...view, frame: nextFrame });
@@ -372,6 +493,11 @@ function CropTab({ item, draft, change, phone }: { item: Item; draft: Draft; cha
             />
           ))}
         </div>
+        {aspects.length === 1 && EDIT_COPY.only[aspects[0]] ? (
+          <span data-only-shape="" style={text(12, 400, t.label)}>
+            {EDIT_COPY.only[aspects[0]]}
+          </span>
+        ) : null}
         <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 200px" }}>
           <IconButton icon={NO_ICON} glyph="zoomOut" label={EDIT_COPY.zoomOut} size={28} disabled={draft.zoom <= ZOOM_MIN} onClick={() => zoomTo(draft.zoom - ZOOM_STEP)} />
           <div style={{ flex: "1 1 auto" }}>
@@ -396,7 +522,7 @@ function CropTab({ item, draft, change, phone }: { item: Item; draft: Draft; cha
   );
 }
 
-function ShapeButton({ aspect, pressed, phone, onPress }: { aspect: CropAspect; pressed: boolean; phone: boolean; onPress: () => void }) {
+function ShapeButton({ aspect, pressed, phone, onPress, fixed = false }: { aspect: CropAspect; pressed: boolean; phone: boolean; onPress: () => void; fixed?: boolean }) {
   const [focus, setFocus] = useState(false);
   const side = phone ? 44 : 28;
   return (
@@ -405,8 +531,9 @@ function ShapeButton({ aspect, pressed, phone, onPress }: { aspect: CropAspect; 
       aria-label={EDIT_COPY.shapes[aspect]}
       title={EDIT_COPY.shapes[aspect]}
       aria-pressed={pressed}
+      aria-disabled={fixed || undefined}
       data-shape-button={aspect}
-      onClick={onPress}
+      onClick={fixed ? undefined : onPress}
       onFocus={(event) => setFocus(event.currentTarget.matches(":focus-visible"))}
       onBlur={() => setFocus(false)}
       style={{

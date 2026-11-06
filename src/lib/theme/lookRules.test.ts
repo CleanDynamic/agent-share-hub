@@ -1496,6 +1496,14 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/moderation/siteHidden.ts",
   "src/lib/moderation/siteHidden.test.ts",
   "src/pages/site/openbuilds/SiteHiddenNotice.tsx",
+  // UX-10
+  "src/lib/profile/settings.ts",
+  "src/lib/profile/settings.test.ts",
+  "src/test/security/ux10Migration.test.ts",
+  "src/lib/build/thread.ts",
+  "src/components/post/media/cropStyle.ts",
+  "src/components/post/media/ux10.p2.test.tsx",
+  "src/components/post/media/postDialogSnapshot.test.tsx",
 ];
 
 /**

@@ -37,8 +37,8 @@ export const CAPTION_MAX = 200;
 export const ALT_MAX = 1000;
 /** The smallest crop, as a fraction of the original, either way. */
 export const CROP_MIN = 0.01;
-/** What Crop media can set the shape to. */
-export const CROP_ASPECTS = ["original", "wide", "square"] as const;
+/** What Crop media can set the shape to. UX-10 P2: `header` (4:1) is a profile's header; a post never offers it. */
+export const CROP_ASPECTS = ["original", "wide", "square", "header"] as const;
 export type CropAspect = (typeof CROP_ASPECTS)[number];
 /** The warnings a maker can put on a picture. */
 export const MEDIA_WARNINGS = ["nudity", "violence", "sensitive"] as const;
