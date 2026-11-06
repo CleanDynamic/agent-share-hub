@@ -4,7 +4,7 @@ Build File written against a newer envelope than this site can read.
 {
   "neoscale_build": 2,
   "exported_at": "2026-08-22T14:00:00.000Z",
-  "source_url": "https://neoscaleai.com/b2/from-the-future",
+  "source_url": "https://openbuilds.ai/b2/from-the-future",
   "build": {
     "title": "A build from a newer format",
     "outcome": "Should be refused in plain language, not imported half-way.",

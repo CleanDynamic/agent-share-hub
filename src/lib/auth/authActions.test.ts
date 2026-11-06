@@ -126,7 +126,7 @@ describe("signUpWithEmail", () => {
     password: "Abcdefghij1!x",
     displayName: "Ada Lovelace",
     username: "ada_l",
-    emailRedirectTo: "https://buildgallery.ai/verify-email",
+    emailRedirectTo: "https://openbuilds.ai/verify-email",
   };
 
   it("sends the metadata the handle_new_user trigger reads, in snake case", async () => {
@@ -139,7 +139,7 @@ describe("signUpWithEmail", () => {
       password: "Abcdefghij1!x",
       options: {
         data: { display_name: "Ada Lovelace", username: "ada_l" },
-        emailRedirectTo: "https://buildgallery.ai/verify-email",
+        emailRedirectTo: "https://openbuilds.ai/verify-email",
       },
     });
   });
@@ -173,9 +173,9 @@ describe("signUpWithEmail", () => {
 describe("requestPasswordReset", () => {
   it("asks for the link to land on the page it names, and says whether it was accepted", async () => {
     resetPasswordForEmail.mockResolvedValueOnce({ error: null });
-    await expect(requestPasswordReset("ada@example.com", "https://buildgallery.ai/reset-password")).resolves.toBe(true);
+    await expect(requestPasswordReset("ada@example.com", "https://openbuilds.ai/reset-password")).resolves.toBe(true);
     expect(resetPasswordForEmail).toHaveBeenCalledWith("ada@example.com", {
-      redirectTo: "https://buildgallery.ai/reset-password",
+      redirectTo: "https://openbuilds.ai/reset-password",
     });
 
     resetPasswordForEmail.mockResolvedValueOnce({ error: { message: "nope" } });

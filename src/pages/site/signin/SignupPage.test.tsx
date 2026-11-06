@@ -147,7 +147,7 @@ describe("the username", () => {
   it("shows the address it will have", () => {
     open();
     type("username", "ada_l");
-    expect(screen.getByText("buildgallery.ai/profile/ada_l")).toBeTruthy();
+    expect(screen.getByText("openbuilds.ai/profile/ada_l")).toBeTruthy();
   });
 
   it("lets a newer key supersede an older check that comes back late", async () => {

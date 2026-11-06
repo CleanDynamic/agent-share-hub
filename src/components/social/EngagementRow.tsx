@@ -59,15 +59,13 @@ import { isPermissionError } from "@/lib/errors/permission";
 import { SocialError, likeBuild, saveBuild, unlikeBuild, unsaveBuild, type EngagementCounts } from "@/lib/social";
 import { Glyph, type GlyphName } from "@/components/brand/Glyph";
 import { useIsPhone } from "@/components/shell/useMinWidth";
+import { siteUrl } from "@/lib/site";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { feedback, scrollBehavior } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, tabular } from "@/lib/theme/type";
-
-/** Where a shared link points. Canonical, whatever address the reader is on. */
-export const SHARE_ORIGIN = "https://buildgallery.ai";
 
 /** The glyph, at the size the row draws it everywhere. */
 export const ENGAGEMENT_ICON_SIZE = 18;
@@ -212,7 +210,7 @@ export function EngagementRow({ build, counts, liked, saved, variant, withRebuil
   };
 
   const share = async () => {
-    const url = `${SHARE_ORIGIN}/b2/${build.slug}`;
+    const url = siteUrl(`/b2/${build.slug}`);
     if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
       try {
         await navigator.share({ title: build.title, url });

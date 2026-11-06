@@ -5,7 +5,7 @@ see exactly what I ran.
 {
   "neoscale_build": 1,
   "exported_at": "2026-08-21T09:15:00.000Z",
-  "source_url": "https://neoscaleai.com/b2/inbox-summariser",
+  "source_url": "https://openbuilds.ai/b2/inbox-summariser",
   "build": {
     "title": "Inbox summariser",
     "outcome": "Summarises the morning inbox into five bullets.",

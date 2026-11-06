@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { SeoHead } from "@/components/SeoHead";
 import { topicHref } from "@/components/post/postCardModel";
 import { reportError } from "@/lib/errors/report";
+import { siteUrl } from "@/lib/site";
 import { MEDIA_WIDTH } from "@/components/build/MediaFigure";
 import { coverMedia, feedMedia, stillFor, useSignedMedia, type CardMedia } from "@/components/gallery/cardMedia";
 import { PageArrival } from "@/components/shell/PageArrival";
@@ -35,7 +36,6 @@ import { failedRunDraft } from "./runTopic";
 import { listPublishedBuildsByCreator } from "@/lib/build/builds";
 import { listDraftFirstPrompts, listDraftsWithSessions } from "@/lib/build/drafts";
 import { copyToClipboard } from "@/lib/deepLink";
-import { SHARE_ORIGIN } from "@/components/social/EngagementRow";
 import { getGalleryBuildsByIds, listGallery, type GalleryBuild, type GalleryMedia } from "@/lib/build/gallery";
 import { attachSession } from "@/lib/build/sessions";
 import { countLitToday, countReproducedToday, countRunsThisWeek, listMostReproduced } from "@/lib/build/signals";
@@ -482,7 +482,7 @@ export function HomePage() {
   return (
     <>
       <SeoHead
-        title="buildgallery.ai: The AI Agent Tactics Forum"
+        title="openbuilds.ai: The AI Agent Tactics Forum"
         description="Download AI assistants, blueprints and workflows. Works with ChatGPT, Claude, Gemini and any AI tool."
         path="/"
       />
@@ -610,7 +610,7 @@ export function HomePage() {
             rows: result.rows.map((row) => ({ id: row.id, title: row.title, slug: row.slug, href: `/b2/${row.slug}`, published: row.published_at ? sessionDate(row.published_at, now) : "" })),
           }))}
           onCopyLink={(slug) =>
-            void copyToClipboard(`${SHARE_ORIGIN}/b2/${slug}`).then((copied) => toast(copied ? "Link copied" : "The link could not be copied."))
+            void copyToClipboard(siteUrl(`/b2/${slug}`)).then((copied) => toast(copied ? "Link copied" : "The link could not be copied."))
           }
         />
       </PageArrival>
