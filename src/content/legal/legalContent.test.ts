@@ -11,7 +11,7 @@ import { NEED_PATTERN, textsOf, type LegalText } from "./types";
 
 const INVENTORY = fs.readFileSync(path.resolve(__dirname, "../../../design/legal/data-inventory.md"), "utf8");
 const KEBAB = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-const BANNED = [/—/, /herein/i, /hereinafter/i, /\bthe service\b/i];
+const BANNED = [new RegExp(String.fromCharCode(0x2014)), /herein/i, /hereinafter/i, /\bthe service\b/i];
 
 const texts: Array<[string, LegalText]> = [
   ["privacy", privacy],
