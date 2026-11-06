@@ -59,7 +59,7 @@ function Block({ block }: { block: LegalBlock }) {
   }
   if (block.kind === "list") {
     return (
-      <ul style={{ ...body, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}>
+      <ul style={{ ...body, paddingLeft: 20, listStyle: "disc", display: "flex", flexDirection: "column", gap: 6 }}>
         {block.items.map((item, index) => (
           <li key={index}><Inline text={item} /></li>
         ))}
@@ -93,7 +93,7 @@ function Block({ block }: { block: LegalBlock }) {
 function Contents({ text }: { text: LegalText }) {
   const phone = useIsPhone();
   const list = (
-    <ol style={{ ...body, margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}>
+    <ol style={{ ...body, margin: 0, paddingLeft: 20, listStyle: "decimal", display: "flex", flexDirection: "column", gap: 6 }}>
       {text.sections.map((section) => (
         <li key={section.id}>
           <a href={anchorOf(section.id)} style={link}>{section.heading}</a>

@@ -535,6 +535,8 @@ const App = () => (
                         </RouteBoundary>
                   }
                 />
+                {/* UX-12 P5: inside Layout, so a lost visitor gets the header, search and footer. */}
+                <Route path="*" element={<NotFound />} />
               </Route>
               {/* ── BG-P16 — the four authoring routes.
 
@@ -608,7 +610,6 @@ const App = () => (
                   }
                 />
               )}
-              <Route path="*" element={<NotFound />} />
             </Routes>
             </Suspense>
             </PageChangeProvider>
