@@ -1512,6 +1512,8 @@ export const CA03_FILES: readonly string[] = [
   "src/components/brand/Avatar.ux10.test.tsx",
   "src/pages/site/profile/useProfilePictures.tsx",
   "src/pages/site/profile/useProfilePictures.test.tsx",
+  "src/lib/profile/getProfileFeed.ts",
+  "src/lib/profile/getProfileFeed.test.ts",
 ];
 
 /**
