@@ -109,7 +109,7 @@ const record = {
     status: "published",
     made_for: ["founder", "operations manager"],
     made_with: ["Claude Opus 4.5", "Gmail API"],
-    live_url: "https://inbox-triage.demo.neoscaleai.com",
+    live_url: "https://inbox-triage.demo.openbuilds.ai",
     repo_url: "https://github.com/neoscale-demo/inbox-triage-agent",
     hero_node_id: id.liveApp,
     cost_setup: 0,
@@ -122,7 +122,7 @@ const record = {
   },
   tree: [
     node({ id: id.liveApp, type: "live_app", title: "The running agent", position: 0, note: "Sign in with a Google account.",
-      payload: { url: "https://inbox-triage.demo.neoscaleai.com", credentials_note: "Google sign-in with read scopes." } }),
+      payload: { url: "https://inbox-triage.demo.openbuilds.ai", credentials_note: "Google sign-in with read scopes." } }),
     node({ id: id.agent, type: "agent_config", title: "Triage agent configuration", position: 1,
       payload: {
         system_prompt: "You triage a professional inbox.\nYou never send.",
@@ -172,6 +172,14 @@ const record = {
 } as unknown as BuildRecord;
 
 const portable = toPortable(record, { origin: ORIGIN, exportedAt: EXPORTED_AT });
+
+// UX-13 P4: with no origin given, the Build File points at the one site address.
+it("a Build File made without an origin links to openbuilds.ai", () => {
+  const made = toPortable(record, { exportedAt: EXPORTED_AT });
+  expect(made.source_url).toBe("https://openbuilds.ai/b2/inbox-triage-agent-demo");
+  expect(JSON.stringify(made)).not.toMatch(/buildgallery\.ai|neoscaleai\.com/);
+});
+
 const json = JSON.stringify(portable, null, 2);
 
 const UUID_ANYWHERE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
@@ -191,7 +199,7 @@ describe("toPortable", () => {
       shape: "app",
       made_for: ["founder", "operations manager"],
       made_with: ["Claude Opus 4.5", "Gmail API"],
-      live_url: "https://inbox-triage.demo.neoscaleai.com",
+      live_url: "https://inbox-triage.demo.openbuilds.ai",
       repo_url: "https://github.com/neoscale-demo/inbox-triage-agent",
       cost: { setup: 0, monthly: 18.4, currency: "GBP" },
       time_to_first_result: 35,

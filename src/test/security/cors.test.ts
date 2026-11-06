@@ -26,6 +26,23 @@ describe("SV-01 P5: CORS", () => {
     }
   });
 
+  it("allows openbuilds.ai and www, and refuses the old domains and look-alikes (UX-13)", () => {
+    for (const origin of ["https://openbuilds.ai", "https://www.openbuilds.ai"]) {
+      expect(corsHeaders(req(origin))["Access-Control-Allow-Origin"]).toBe(origin);
+    }
+    for (const origin of [
+      "https://buildgallery.ai",
+      "https://www.buildgallery.ai",
+      "https://neoscaleai.com",
+      "https://openbuilds.ai.evil.example",
+      "https://openbuilds.ai@evil.example",
+      "http://openbuilds.ai",
+    ]) {
+      expect(corsHeaders(req(origin))["Access-Control-Allow-Origin"], origin).toBeUndefined();
+    }
+    expect(ALLOWED_ORIGINS.some((o) => /buildgallery|neoscale/.test(o))).toBe(false);
+  });
+
   it("answers every origin only when asked to (a public read)", () => {
     expect(corsHeaders(req("https://evil.example"), { open: true })["Access-Control-Allow-Origin"]).toBe("*");
   });
@@ -35,7 +52,7 @@ describe("SV-01 P5: CORS", () => {
   });
 
   it("answers errors as { error } with the status", async () => {
-    const res = fail(req("https://buildgallery.ai"), 418, "No");
+    const res = fail(req("https://openbuilds.ai"), 418, "No");
     expect(res.status).toBe(418);
     expect(await res.json()).toEqual({ error: "No" });
   });
@@ -74,5 +91,15 @@ describe("SV-01 P5: every function uses the helper", () => {
       readdirSync(join(FUNCTIONS, dir)).some((file) => /\.ts$/.test(file) && /Access-Control-Allow-Origin/.test(readFileSync(join(FUNCTIONS, dir, file), "utf8"))),
     );
     expect(offenders).toEqual([]);
+  });
+});
+
+describe("UX-13 P2: the edge functions' site address", () => {
+  it("is openbuilds.ai and joins paths with one slash", async () => {
+    const { SITE_URL, siteUrl } = await import("../../../supabase/functions/_shared/site.ts");
+    expect(SITE_URL).toBe("https://openbuilds.ai");
+    expect(siteUrl("/b2/x?y=1#z")).toBe("https://openbuilds.ai/b2/x?y=1#z");
+    expect(siteUrl("b2/x")).toBe("https://openbuilds.ai/b2/x");
+    expect(siteUrl("")).toBe("https://openbuilds.ai/");
   });
 });

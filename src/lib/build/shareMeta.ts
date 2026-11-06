@@ -11,9 +11,6 @@
 /** The longest description a result or a preview shows whole, "…" included. */
 export const SHARE_DESCRIPTION_MAX = 155;
 
-/** Where every build's canonical address lives. */
-export const SITE_ORIGIN = "https://buildgallery.ai";
-
 /**
  * `text` in at most `max` characters: whole when it fits, otherwise cut back
  * to the last word boundary that leaves room for "…", and never mid-word

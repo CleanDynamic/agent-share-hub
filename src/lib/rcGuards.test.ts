@@ -118,8 +118,9 @@ describe("RC decisions", () => {
   });
 
   // RC-P16b: a shared link and a search result are most people's first sight
-  // of the site, and they said neoscaleai.com and @neoscaleai.
-  it("index.html and SeoHead name buildgallery, not neoscaleai.com", () => {
+  // of the site, and they said the old name. UX-13: the address is openbuilds.ai,
+  // read from src/lib/site.ts; the shown name is still buildgallery until UX-14.
+  it("index.html and SeoHead name buildgallery, not the old neoscale name", () => {
     const html = readFileSync("index.html", "utf8");
     const seoHead = readFileSync(join("src", "components", "SeoHead.tsx"), "utf8");
     for (const [name, text] of [["index.html", html], ["SeoHead.tsx", seoHead]] as const) {
@@ -127,7 +128,7 @@ describe("RC decisions", () => {
     }
     expect(html).toContain('<meta property="og:site_name" content="buildgallery" />');
     expect(html).not.toContain("twitter:site");
-    expect(seoHead).toContain('"https://buildgallery.ai"');
+    expect(seoHead).toContain("siteUrl(path)");
     expect(seoHead).toContain('const SITE_NAME = "buildgallery";');
   });
 

@@ -5,7 +5,7 @@ Extractor and kept every prompt exactly as you sent it.
 {
   "neoscale_build": 1,
   "exported_at": "2026-08-20T11:30:00.000Z",
-  "source_url": "https://neoscaleai.com/b2/invoice-chaser",
+  "source_url": "https://openbuilds.ai/b2/invoice-chaser",
   "build": {
     "title": "Invoice chaser that reads the inbox",
     "outcome": "Chases unpaid invoices from a Gmail label and logs every reply to a sheet.",

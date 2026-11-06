@@ -43,6 +43,7 @@ import RemixButton from "@/components/remix/RemixButton";
 import { useLineageParent, useRemixCount } from "@/lib/remix/hooks";
 import { createRemix } from "@/lib/remix/createRemix";
 import { REMIX_CREATE_ENABLED } from "@/lib/remix/flags";
+import { SITE_URL, siteUrl } from "@/lib/site";
 import { scrollBehavior } from "@/lib/theme/motion";
 
 const NORMALIZE_TYPE = (raw?: string | null): "blueprint" | "blog" => (raw === "blog" ? "blog" : "blueprint");
@@ -765,9 +766,8 @@ export default function ContentDetail() {
   return (
     <CommentDrawerProvider value={drawerContextValue}>
       {(() => {
-        const SITE = (import.meta as any).env?.VITE_SITE_URL || "https://neoscaleai.com";
-        const postUrl = `${SITE}/b/${shellPost.slug}`;
-        const authorUrl = shellAuthor?.handle ? `${SITE}/u/${shellAuthor.handle}` : `${SITE}/profile`;
+        const postUrl = siteUrl(`/b/${shellPost.slug}`);
+        const authorUrl = siteUrl(shellAuthor?.handle ? `/u/${shellAuthor.handle}` : "/profile");
         const schemaType = shellPost.postType === "blueprint" ? "TechArticle" : "Article";
         const articleLd: Record<string, any> = {
           "@context": "https://schema.org",
@@ -785,7 +785,7 @@ export default function ContentDetail() {
           publisher: {
             "@type": "Organization",
             name: "buildgallery",
-            url: SITE,
+            url: SITE_URL,
           },
           mainEntityOfPage: postUrl,
           keywords: (shellPost.tags ?? []).join(", "),
@@ -794,8 +794,8 @@ export default function ContentDetail() {
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
           itemListElement: [
-            { "@type": "ListItem", position: 1, name: "Home", item: SITE },
-            { "@type": "ListItem", position: 2, name: "Browse", item: `${SITE}/browse` },
+            { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+            { "@type": "ListItem", position: 2, name: "Browse", item: siteUrl("/browse") },
             { "@type": "ListItem", position: 3, name: shellPost.title, item: postUrl },
           ],
         };

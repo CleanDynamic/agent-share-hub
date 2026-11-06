@@ -4,6 +4,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z, readBody } from "../_shared/body.ts";
+import { siteUrl } from "../_shared/site.ts";
 import { getCaller } from "../_shared/caller.ts";
 import { fail, json, preflight } from "../_shared/cors.ts";
 import { mayExport } from "./access.ts";
@@ -244,7 +245,7 @@ async function buildPdf(payload: any): Promise<Uint8Array> {
 
   // Top strip
   c.page.drawText("NEOSCALE AI-PDF", { x: MARGIN, y: c.y - 10, size: 10, font: c.bold, color: BLACK });
-  const url = `neoscale.ai/b/${meta.slug ?? meta.id ?? ""}`;
+  const url = siteUrl(`/b/${meta.slug ?? meta.id ?? ""}`).replace(/^https?:\/\//, "");
   const urlW = c.font.widthOfTextAtSize(url, 9);
   c.page.drawText(sanitize(url), { x: A4.w - MARGIN - urlW, y: c.y - 10, size: 9, font: c.font, color: GREY });
   c.y -= 24;
@@ -413,7 +414,7 @@ async function buildReblogPdf(reblog: any, original: any, reblogger: any, origin
   const c: Cursor = { doc, page, y: A4.h - MARGIN, font, bold, mono };
 
   c.page.drawText("NEOSCALE AI-PDF • REBLOG", { x: MARGIN, y: c.y - 10, size: 10, font: c.bold, color: BLACK });
-  const url = `neoscale.ai/b/${reblog.slug ?? reblog.id ?? ""}`;
+  const url = siteUrl(`/b/${reblog.slug ?? reblog.id ?? ""}`).replace(/^https?:\/\//, "");
   const urlW = c.font.widthOfTextAtSize(url, 9);
   c.page.drawText(sanitize(url), { x: A4.w - MARGIN - urlW, y: c.y - 10, size: 9, font: c.font, color: GREY });
   c.y -= 24;
@@ -449,7 +450,7 @@ async function buildReblogPdf(reblog: any, original: any, reblogger: any, origin
     drawMetaRow(c, "Original author", `${originalAuthor?.display_name ?? "Anonymous"}${originalAuthor?.username ? ` (@${originalAuthor.username})` : ""}`);
     drawMetaRow(c, "Post type", original.post_type ?? "blueprint");
     drawMetaRow(c, "Published", original.created_at);
-    drawMetaRow(c, "Original URL", `https://neoscale.ai/b/${original.slug ?? original.id}`);
+    drawMetaRow(c, "Original URL", siteUrl(`/b/${original.slug ?? original.id}`));
     if (original.description) {
       c.y -= 4;
       drawText(c, original.description, { font, size: 10, color: GREY });

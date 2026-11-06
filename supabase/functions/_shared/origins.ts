@@ -2,11 +2,16 @@
 // addresses a buyer may be sent back to after Stripe. One list, read by cors.ts
 // and by the checkout functions, so the two can never disagree.
 //
+// UX-13: buildgallery.ai and neoscaleai.com were removed. Nobody here owns
+// either domain, so whoever bought one could call these functions from a
+// browser and be a Stripe return address. Only addresses the project controls
+// belong in this list.
+//
 // Pure TypeScript with no imports, so Deno and the repo's Vitest run both load it.
 
 export const ALLOWED_ORIGINS: readonly string[] = [
-  "https://buildgallery.ai",
-  "https://www.buildgallery.ai",
+  "https://openbuilds.ai",
+  "https://www.openbuilds.ai",
   // The Lovable published domain, until the custom domain is the only one.
   "https://agent-share-hub.lovable.app",
   // This project's Lovable preview (the id is the one in index.html's og:image).
@@ -21,8 +26,8 @@ export function isAllowedOrigin(origin: string | null | undefined): boolean {
 
 /**
  * True when `url` is an absolute http(s) address on an allowed origin. The URL
- * is parsed, not prefix-matched, so `https://buildgallery.ai.evil.example` and
- * `https://buildgallery.ai@evil.example` are both refused.
+ * is parsed, not prefix-matched, so `https://openbuilds.ai.evil.example` and
+ * `https://openbuilds.ai@evil.example` are both refused.
  */
 export function isAllowedReturnUrl(url: string): boolean {
   let parsed: URL;

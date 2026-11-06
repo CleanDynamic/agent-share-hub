@@ -1,8 +1,8 @@
 import { Helmet } from "react-helmet-async";
+import { siteUrl } from "@/lib/site";
 
-// RC-P16b: the site is buildgallery.ai. VITE_SITE_URL still overrides the
-// host, for a preview deploy that should canonicalise to itself.
-const SITE_URL = import.meta.env.VITE_SITE_URL || "https://buildgallery.ai";
+// UX-13: the canonical and og:url always come from the one site address, so the
+// Lovable address and any preview canonicalise to openbuilds.ai.
 const SITE_NAME = "buildgallery";
 
 interface SeoHeadProps {
@@ -46,7 +46,7 @@ export function SeoHead({
   articleAuthor,
   articleTags,
 }: SeoHeadProps) {
-  const canonical = `${SITE_URL}${path}`;
+  const canonical = siteUrl(path);
   const jsonLdArray = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 
   return (

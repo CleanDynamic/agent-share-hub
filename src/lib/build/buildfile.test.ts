@@ -104,7 +104,7 @@ function envelope(overrides: Record<string, unknown> = {}): Record<string, unkno
   return {
     neoscale_build: PORTABLE_FORMAT_VERSION,
     exported_at: "2026-08-27T09:00:00.000Z",
-    source_url: "https://neoscaleai.com/b2/a-build",
+    source_url: "https://openbuilds.ai/b2/a-build",
     build: { title: "A build", outcome: "It works" },
     nodes: [],
     events: [],
@@ -632,7 +632,7 @@ describe("parseBuildFile — provenance", () => {
       tool: "extractor-v1",
       session_hint: "a chat export",
       exported_at: "2026-08-27T09:00:00.000Z",
-      source_url: "https://neoscaleai.com/b2/a-build",
+      source_url: "https://openbuilds.ai/b2/a-build",
     });
   });
 
@@ -834,7 +834,7 @@ describe("a genuine site export", () => {
 
   it("round-trips through toPortable with zero warnings and matching counts", () => {
     const portable = toPortable(RECORD, {
-      origin: "https://neoscaleai.com",
+      origin: "https://openbuilds.ai",
       exportedAt: new Date("2026-08-27T09:00:00.000Z"),
     });
 
@@ -853,7 +853,7 @@ describe("a genuine site export", () => {
     // A site export names no generating tool, so provenance falls back.
     expect(result.meta.generated_by).toBeNull();
     expect(result.proposal.nodes[0].source_ref.source).toBe("buildfile");
-    expect(result.meta.origin.source_url).toBe("https://neoscaleai.com/b2/the-demo-build");
+    expect(result.meta.origin.source_url).toBe("https://openbuilds.ai/b2/the-demo-build");
 
     // The tree's shape survives in the local_ids, which are the export's paths.
     expect(result.proposal.nodes.map((item) => item.local_id)).toEqual([
@@ -890,7 +890,7 @@ describe("a genuine site export", () => {
 
   it("round-trips a fenced export the same way", () => {
     const portable = toPortable(RECORD, {
-      origin: "https://neoscaleai.com",
+      origin: "https://openbuilds.ai",
       exportedAt: new Date("2026-08-27T09:00:00.000Z"),
     });
     const file = `Here is the build.\n\n\`\`\`json\n${JSON.stringify(portable)}\n\`\`\`\n\nEnjoy.`;

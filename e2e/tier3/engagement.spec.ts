@@ -247,7 +247,7 @@ test("Share copies the build's link when the device has no share sheet", async (
 
   await expect(page.getByText("Link copied")).toBeVisible();
   const copied = await page.evaluate(() => (window as unknown as { __copied: string[] }).__copied);
-  expect(copied).toEqual([`https://buildgallery.ai/b2/${FIRST.slug}`]);
+  expect(copied).toEqual([`https://openbuilds.ai/b2/${FIRST.slug}`]);
 });
 
 test("a gallery page of twelve cards asks three engagement questions signed in", async ({ page }) => {

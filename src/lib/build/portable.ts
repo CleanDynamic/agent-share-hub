@@ -27,6 +27,7 @@
 // open product question, and publishing it now would foreclose the versioning
 // choices before the first fork has ever been exported.
 
+import { SITE_URL } from "@/lib/site";
 import type {
   Build,
   BuildEvent,
@@ -95,20 +96,7 @@ export interface PortableOptions {
 
 // --- origin ------------------------------------------------------------------
 
-const CONFIGURED_SITE_URL = String(import.meta.env?.VITE_SITE_URL ?? "").replace(/\/+$/, "");
-const DEFAULT_SITE_URL = "https://neoscaleai.com";
 const SUPABASE_URL = String(import.meta.env?.VITE_SUPABASE_URL ?? "").replace(/\/+$/, "");
-
-/**
- * The configured site URL wins over the window's origin on purpose: a file
- * exported from a preview deployment or a dev server should still point a
- * reader at the published build, not at localhost.
- */
-function defaultOrigin(): string {
-  if (CONFIGURED_SITE_URL) return CONFIGURED_SITE_URL;
-  if (typeof window !== "undefined" && window.location?.origin) return window.location.origin;
-  return DEFAULT_SITE_URL;
-}
 
 // --- identifiers -------------------------------------------------------------
 
@@ -320,7 +308,7 @@ function portableEvents(events: BuildEvent[], context: Context): PortableEvent[]
  * reader is looking at.
  */
 export function toPortable(record: BuildRecord, options: PortableOptions = {}): PortableBuild {
-  const origin = (options.origin ?? defaultOrigin()).replace(/\/+$/, "");
+  const origin = (options.origin ?? SITE_URL).replace(/\/+$/, "");
   const pathById = new Map<string, string>();
   indexPaths(record.tree, "", pathById);
 

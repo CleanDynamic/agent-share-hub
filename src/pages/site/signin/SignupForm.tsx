@@ -16,6 +16,7 @@ import { Link } from "react-router-dom";
 import type { InputValidation } from "@/components/auth/AuthInput";
 import type { OAuthProvider } from "@/components/auth/OAuthButtons";
 import { PasswordStrengthMeter, type PasswordStrength } from "@/components/auth/PasswordStrengthMeter";
+import { siteUrl } from "@/lib/site";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -104,7 +105,7 @@ export function SignupForm({
           value={username}
           onChange={(value) => onUsernameChange(value.toLowerCase())}
           placeholder="username"
-          helperText={username ? `buildgallery.ai/profile/${username}` : undefined}
+          helperText={username ? siteUrl(`/profile/${username}`).replace(/^https?:\/\//, "") : undefined}
           validation={usernameValidation}
           required
           autoComplete="username"

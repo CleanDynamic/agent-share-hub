@@ -13,8 +13,8 @@ import type { PaymentDeps, SaleItem } from "../../../supabase/functions/_shared/
 const ID = "7b2f1c1e-3b6a-4f77-9d52-0f2c8b1b9a11";
 const CREATOR = "11111111-2222-4333-8444-555555555555";
 const BUYER = "99999999-8888-4777-8666-555555555555";
-const OK = "https://buildgallery.ai/content/x?payment=success";
-const BACK = "https://buildgallery.ai/content/x";
+const OK = "https://openbuilds.ai/content/x?payment=success";
+const BACK = "https://openbuilds.ai/content/x";
 
 const paid: SaleItem = {
   id: ID, title: "A paid build", creator_id: CREATOR, status: "approved", monetisation_type: "paid",
@@ -34,7 +34,7 @@ function deps(item: SaleItem | null, user: string | null = null) {
   return { d, createSession };
 }
 
-const post = (body: unknown, origin = "https://buildgallery.ai") =>
+const post = (body: unknown, origin = "https://openbuilds.ai") =>
   new Request("https://fn.test/x", { method: "POST", headers: { "content-type": "application/json", origin }, body: JSON.stringify(body) });
 
 const unit = (call: Record<string, unknown>) =>
@@ -70,8 +70,8 @@ describe("SV-01 P3: the price comes from the database", () => {
 describe("SV-01 P3: return addresses", () => {
   it.each([
     ["a foreign address", "https://evil.example/steal"],
-    ["a lookalike host", "https://buildgallery.ai.evil.example/x"],
-    ["a credential trick", "https://buildgallery.ai@evil.example/x"],
+    ["a lookalike host", "https://openbuilds.ai.evil.example/x"],
+    ["a credential trick", "https://openbuilds.ai@evil.example/x"],
     ["a javascript address", "javascript:alert(1)"],
     ["not an address", "/relative"],
   ])("refuses %s as success_url with 400 naming the field", async (_name, url) => {
@@ -83,10 +83,15 @@ describe("SV-01 P3: return addresses", () => {
   });
 
   it("accepts the allowed origins and nothing else", () => {
-    expect(isAllowedReturnUrl("https://buildgallery.ai/a")).toBe(true);
+    expect(isAllowedReturnUrl("https://openbuilds.ai/a")).toBe(true);
     expect(isAllowedReturnUrl("http://localhost:8080/a")).toBe(true);
     expect(isAllowedReturnUrl("https://agent-share-hub.lovable.app/a?b=1")).toBe(true);
-    expect(isAllowedReturnUrl("http://buildgallery.ai/a")).toBe(false);
+    expect(isAllowedReturnUrl("http://openbuilds.ai/a")).toBe(false);
+    expect(isAllowedReturnUrl("https://www.openbuilds.ai/a")).toBe(true);
+    // UX-13: the old domains are not ours; whoever buys one must not become a return address.
+    expect(isAllowedReturnUrl("https://buildgallery.ai/a")).toBe(false);
+    expect(isAllowedReturnUrl("https://www.buildgallery.ai/a")).toBe(false);
+    expect(isAllowedReturnUrl("https://neoscaleai.com/a")).toBe(false);
     expect(isAllowedReturnUrl("https://evil.example")).toBe(false);
   });
 

@@ -223,9 +223,9 @@ describe("AuthField", () => {
   });
 
   it("shows the state of the check at the right of the box, and a helper line under it", () => {
-    const { container, rerender } = show(field({ validation: { state: "checking" }, helperText: "buildgallery.ai/profile/ada" }));
+    const { container, rerender } = show(field({ validation: { state: "checking" }, helperText: "openbuilds.ai/profile/ada" }));
     expect(container.querySelector("svg.animate-spin")).not.toBeNull();
-    expect(screen.getByText("buildgallery.ai/profile/ada")).toBeTruthy();
+    expect(screen.getByText("openbuilds.ai/profile/ada")).toBeTruthy();
     rerender(inRouter(field({ validation: { state: "valid" } })));
     expect(container.querySelector("svg.animate-spin")).toBeNull();
     expect(container.querySelectorAll("svg")).toHaveLength(2);
@@ -450,7 +450,7 @@ describe("SignupForm", () => {
     expect(onUsernameChange).toHaveBeenCalledWith("ada_l");
     expect(screen.queryByText(/buildgallery\.ai\/profile\//)).toBeNull();
     rerender(inRouter(<SignupForm {...signup({ username: "ada_l" })} />));
-    expect(screen.getByText("buildgallery.ai/profile/ada_l")).toBeTruthy();
+    expect(screen.getByText("openbuilds.ai/profile/ada_l")).toBeTruthy();
   });
 
   it("shows the checks under the field they are about", () => {

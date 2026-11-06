@@ -130,7 +130,7 @@ INSERT INTO public.builds (
   'published',
   ARRAY['founder','operations manager','solo consultant'],
   ARRAY['Claude Opus 4.5','Gmail API','Supabase','Vercel'],
-  'https://inbox-triage.demo.neoscaleai.com',
+  'https://inbox-triage.demo.openbuilds.ai',
   'https://github.com/neoscale-demo/inbox-triage-agent',
   0,
   18.40,
@@ -271,7 +271,7 @@ VALUES
 (:'ev8'::uuid, :'build_id'::uuid, 18, '2026-08-15T17:02:00Z', 'deploy', 4,
  'Putting it in front of a real inbox', 'kept', '{
    "text": "Deployed to Vercel behind Google sign-in. Running on my own inbox daily since.",
-   "url": "https://inbox-triage.demo.neoscaleai.com"
+   "url": "https://inbox-triage.demo.openbuilds.ai"
  }'::jsonb);
 
 -- =============================================================================
@@ -287,7 +287,7 @@ VALUES
  'The running agent',
  'Sign in with a Google account. It reads, it never sends — drafts land in your drafts folder.',
  :'ev8'::uuid, false, '{
-   "url": "https://inbox-triage.demo.neoscaleai.com",
+   "url": "https://inbox-triage.demo.openbuilds.ai",
    "embeddable": false,
    "credentials_note": "Google sign-in with read and compose scopes. Revoke it from your Google account permissions page at any time."
  }'::jsonb, NULL),

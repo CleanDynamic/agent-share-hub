@@ -1,10 +1,11 @@
 User-agent: *
 Allow: /
 Allow: /b/
+Allow: /b2/
 Allow: /content/
-Allow: /browse
-Allow: /creator/
-Allow: /u/
+Allow: /builds
+Allow: /openbuilds
+Allow: /profile/
 Allow: /about
 Allow: /privacy
 Allow: /terms
@@ -18,9 +19,11 @@ Disallow: /drafts
 Disallow: /messages
 Disallow: /notifications
 Disallow: /library
+Disallow: /compose
+Disallow: /import
 Disallow: /saved
 Disallow: /my-uploads
 Disallow: /profile
 Disallow: /feed
 
-Sitemap: https://neoscaleai.com/sitemap.xml
+Sitemap: https://openbuilds.ai/sitemap.xml

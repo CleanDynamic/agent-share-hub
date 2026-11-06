@@ -229,7 +229,7 @@ const SEEDED_APP: CompletenessSource = {
   cost_setup: 0,
   cost_monthly: 18.4,
   time_to_first_result: 35,
-  live_url: "https://inbox-triage.demo.neoscaleai.com",
+  live_url: "https://inbox-triage.demo.openbuilds.ai",
   repo_url: "https://github.com/neoscale-demo/inbox-triage-agent",
 };
 
