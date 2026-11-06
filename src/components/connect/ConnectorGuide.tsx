@@ -36,6 +36,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { SITE_NAME } from "@/lib/site";
 
 export type GuideStep = 1 | 2 | 3;
 
@@ -58,11 +59,11 @@ const STEP_LABELS = ["Add the connector", "Send a session", "Use it in a build"]
 
 const PHRASES = [
   {
-    say: "put this conversation on buildgallery",
+    say: `put this conversation on ${SITE_NAME}`,
     line: "Sends the whole conversation to Sessions on your Drafts page.",
   },
   {
-    say: "what drafts do I have on buildgallery?",
+    say: `what drafts do I have on ${SITE_NAME}?`,
     line: "Lists your drafts, most recently worked on first.",
   },
   {
@@ -71,7 +72,7 @@ const PHRASES = [
   },
   {
     say: "did my last session arrive?",
-    line: "Checks whether your most recent session reached buildgallery.",
+    line: `Checks whether your most recent session reached ${SITE_NAME}.`,
   },
 ] as const;
 
@@ -93,7 +94,7 @@ const TOOL_COPY: Record<ConnectorTool, ToolCopy> = {
     code: CONNECTOR_URL,
     codeLabel: ADDRESS_LABEL,
     after: [
-      "Claude sends you to buildgallery's consent page. Sign in if it asks, then choose Allow.",
+      `Claude sends you to ${SITE_NAME}'s consent page. Sign in if it asks, then choose Allow.`,
       "On a Team or Enterprise plan, an owner has to add the connector for your organisation before members can connect to it.",
     ],
   },
@@ -109,13 +110,13 @@ const TOOL_COPY: Record<ConnectorTool, ToolCopy> = {
     ],
     code: CONNECTOR_URL,
     codeLabel: ADDRESS_LABEL,
-    after: ["When ChatGPT connects, it sends you to buildgallery to sign in and choose Allow."],
+    after: [`When ChatGPT connects, it sends you to ${SITE_NAME} to sign in and choose Allow.`],
   },
   Cursor: {
     before: ["Add it in Cursor's MCP settings as a server with this address:"],
     code: CONNECTOR_URL,
     codeLabel: ADDRESS_LABEL,
-    after: ["When Cursor connects, it sends you to buildgallery to sign in and choose Allow."],
+    after: [`When Cursor connects, it sends you to ${SITE_NAME} to sign in and choose Allow.`],
   },
 };
 

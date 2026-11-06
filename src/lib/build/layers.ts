@@ -36,6 +36,7 @@ import type { Json, Tables, TablesUpdate } from "@/integrations/supabase/types";
 // and is not worth a rename across nine modules.
 import { buildLayerError } from "./types";
 import type { NodeTree } from "./types";
+import { SITE_NAME } from "@/lib/site";
 
 // -----------------------------------------------------------------------------
 // Shapes
@@ -81,7 +82,7 @@ export const LAYER_COLUMNS =
  * never presented as the creator's own words, and this is what says so.
  */
 export const LAYER_ATTRIBUTION =
-  "Written by buildgallery from this build’s record, reviewed by the creator.";
+  `Written by ${SITE_NAME} from this build’s record, reviewed by the creator.`;
 
 export const LAYER_TITLE: Record<Layer, string> = {
   run: "Run it",

@@ -19,6 +19,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { SITE_NAME } from "@/lib/site";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -768,7 +769,7 @@ function CuratorsTab() {
         recipient_id: app.user_id,
         actor_id: null,
         notification_type: "curator_approved",
-        metadata: { message: "You are now a buildgallery Curator. Start recommending content." },
+        metadata: { message: `You are now a ${SITE_NAME} Curator. Start recommending content.` },
       });
     },
     onSuccess: (_d, app) => {

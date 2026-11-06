@@ -85,6 +85,7 @@ import { fieldStyle, prefersReducedMotion, hoverIsFine } from "@/lib/theme/contr
 import { r } from "@/lib/theme/radius";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { body, data as dataType, eyebrow, label as labelType } from "@/lib/theme/type";
+import { SITE_NAME } from "@/lib/site";
 
 /**
  * The copy, held as constants because it is the design.
@@ -94,7 +95,7 @@ import { body, data as dataType, eyebrow, label as labelType } from "@/lib/theme
  * a named constant to lose it rather than quietly reword a string in place.
  */
 const DROP_HEADLINE = "Show what you made — drop a screenshot or video, or browse";
-const DROP_SUBLINE = "This becomes the first picture of your post, everywhere on buildgallery.";
+const DROP_SUBLINE = `This becomes the first picture of your post, everywhere on ${SITE_NAME}.`;
 const ADD_HEADLINE = "Add another picture or video";
 /**
  * The description's question, asked ONCE.

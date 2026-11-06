@@ -19,7 +19,7 @@ There are no XP sources for likes, comments, saves, follows, logins or streaks.
 Keep the existing curve: level = floor((xp/75)^(1/1.7)) + 1.
 
 ## Reset
-Every user's xp_total and level return to 0 and 1 on deploy. xp_events is copied to rc_backup, then emptied. One in-app note, shown once per user: "Progress has been reset to match how buildgallery works now: XP comes from builds others get working."
+Every user's xp_total and level return to 0 and 1 on deploy. xp_events is copied to rc_backup, then emptied. One in-app note, shown once per user: "Progress has been reset to match how OpenBuilds.ai works now: XP comes from builds others get working."
 
 ## Badges (the complete catalogue; tier after the dash)
 - first-build "First build" — publish a build — common

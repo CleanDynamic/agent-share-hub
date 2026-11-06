@@ -16,6 +16,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE, display } from "@/lib/theme/type";
 
 import { ConnectorGuide, type GuideStep } from "./ConnectorGuide";
+import { SITE_NAME } from "@/lib/site";
 
 /** The guide and its state, mounted only while the dialog or sheet is open. */
 function GuideState({ onDone, gutter }: { onDone: () => void; gutter?: number }) {
@@ -90,7 +91,7 @@ export default function ConnectorDialogView({ open, onOpenChange }: ConnectorDia
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <Eyebrow>Connector</Eyebrow>
               <Dialog.Title style={{ ...display(28), margin: 0, color: t.text }}>
-                Send your sessions to buildgallery
+                Send your sessions to {SITE_NAME}
               </Dialog.Title>
             </div>
             <Dialog.Close asChild>

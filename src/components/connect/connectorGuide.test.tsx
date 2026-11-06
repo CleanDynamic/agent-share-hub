@@ -27,7 +27,7 @@ describe("ConnectorGuide step 1", () => {
   it("is the whole command for Claude Code, and it has no guide link", () => {
     const { container } = guide(1, "Claude Code");
     expect(container.querySelector("code")?.textContent).toBe(CLAUDE_CODE_COMMAND);
-    expect(CLAUDE_CODE_COMMAND).toBe(`claude mcp add --transport http buildgallery ${CONNECTOR_URL}`);
+    expect(CLAUDE_CODE_COMMAND).toBe(`claude mcp add --transport http openbuilds ${CONNECTOR_URL}`);
     expect(screen.queryByRole("link")).toBeNull();
   });
 

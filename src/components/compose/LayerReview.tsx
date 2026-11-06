@@ -61,6 +61,7 @@ import {
   titleText,
 } from "@/components/build/tokens";
 import { workspaceCard, workspacePanel } from "@/components/shell/WorkspaceBar";
+import { SITE_NAME } from "@/lib/site";
 
 /** Below this the two layers cannot sit beside each other, so they stack. */
 const TWO_COLUMN_MIN = 900;
@@ -472,7 +473,7 @@ export function LayerReview({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Review what buildgallery wrote about this build"
+      aria-label={`Review what ${SITE_NAME} wrote about this build`}
       style={{
         position: "fixed",
         inset: 0,
@@ -500,7 +501,7 @@ export function LayerReview({
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <h2 style={{ ...headingText, margin: 0 }}>
-            buildgallery wrote two readings of your record.
+            {SITE_NAME} wrote two readings of your record.
           </h2>
           <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
             Change any line, or take neither. Nothing here is shown to a reader

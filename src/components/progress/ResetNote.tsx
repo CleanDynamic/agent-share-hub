@@ -28,10 +28,11 @@ import { r } from "@/lib/theme/radius";
 import { SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 import { body, measure } from "@/lib/theme/type";
+import { SITE_NAME } from "@/lib/site";
 
 /** XP-DESIGN.md › Reset, word for word. A test holds the two together. */
 export const RESET_NOTE_TEXT =
-  "Progress has been reset to match how buildgallery works now: XP comes from builds others get working.";
+  `Progress has been reset to match how ${SITE_NAME} works now: XP comes from builds others get working.`;
 
 /** Where the browser remembers that the note has been read. */
 export const RESET_NOTE_KEY = "bg-xp-reset-note-seen";
