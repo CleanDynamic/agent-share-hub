@@ -564,7 +564,8 @@ export function BuildItem({ item, srcByPath, now, onNear }: { item: HomeBuildPos
   );
 }
 
-export function NoteItem({ item, now }: { item: HomeReproNote; now: number }) {
+/** UX-10 P6: the profile passes its own first line (`Reproduced @kit's Podcast clipper on Opus 5.5: it worked`); Home passes none. */
+export function NoteItem({ item, now, heading }: { item: HomeReproNote; now: number; heading?: ReactNode }) {
   const handle = atHandle(item.runner.handle) ?? "Someone";
   return (
     <FeedItemFrame height={80} data-kind="repro_note" data-testid="home-feed-item">
@@ -573,7 +574,7 @@ export function NoteItem({ item, now }: { item: HomeReproNote; now: number }) {
           <Avatar size={28} userId={item.runner.id} name={item.runner.name} hue={item.runner.hue} src={item.runner.avatarUrl} />
         </span>
         <div style={{ minWidth: 0 }}>
-          <div>
+          {heading ? <div>{heading}</div> : <div>
             <span style={{ fontWeight: 500 }}>{handle}</span> <span style={{ color: t.text2 }}>ran</span>{" "}
             <PlainLink to={item.href} style={{ fontWeight: 500 }}>
               {item.buildTitle}
@@ -586,7 +587,7 @@ export function NoteItem({ item, now }: { item: HomeReproNote; now: number }) {
                 {item.model ? <span style={{ color: t.text2 }}>{` on ${item.model}`}</span> : null}
               </>
             )}
-          </div>
+          </div>}
           {item.note ? (
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4, ...text(12, 400, t.text2) }}>
               {item.worked ? <LampBar width={8} /> : null}

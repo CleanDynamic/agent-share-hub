@@ -54,7 +54,8 @@ export interface ProfileHeadProps {
   onMessage: () => void;
   onEdit: () => void;
   onCopyLink: () => void;
-  onReport: () => void;
+  /** Report in `···`. Absent: not offered (no report flow takes a person yet; see the UX-10 report). */
+  onReport?: () => void;
   onChangeHeader?: (from: HTMLElement | null) => void;
   onChangePicture?: (from: HTMLElement | null) => void;
   /** "Uploading 40%" beside the picture or on the header while an upload runs. */
@@ -139,7 +140,7 @@ export function ProfileHead(props: ProfileHeadProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onSelect={props.onCopyLink}>{HEAD_COPY.copyLink}</DropdownMenuItem>
-            <DropdownMenuItem onSelect={props.onReport}>{HEAD_COPY.report}</DropdownMenuItem>
+            {props.onReport ? <DropdownMenuItem onSelect={props.onReport}>{HEAD_COPY.report}</DropdownMenuItem> : null}
           </DropdownMenuContent>
         </DropdownMenu>
       )}

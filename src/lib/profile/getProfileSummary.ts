@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/social/types";
 import { parseCrop, parseProfileSettings } from "./settings";
 import type { ProfileSummary, ProfileLevel } from "./types";
 
@@ -10,7 +11,8 @@ const UUID_RX =
  */
 async function resolveProfile(userIdOrHandle: string) {
   const looksLikeId = UUID_RX.test(userIdOrHandle);
-  const query = supabase
+  // UX-10: through the untyped client, since the generated types predate the profile's new columns (20261109120000).
+  const query = db
     .from("profiles")
     .select(
       "id, username, display_name, avatar_url, banner_url, bio, website_url, location, follower_count, following_count, created_at, is_verified, level, derived_bio, last_derived_at, is_private, is_trusted_solver, avatar_crop, banner_crop, avatar_alt, banner_alt, about, links, profile_settings"

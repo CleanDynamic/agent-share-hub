@@ -23,7 +23,7 @@ import { HOME_FILTERS } from "@/pages/site/home/homeModel";
 import { homePostItemOf } from "@/pages/site/home/homeTopics";
 import { ReactionRow } from "@/pages/site/openbuilds/ReactionRow";
 import { ReplyBox } from "@/pages/site/openbuilds/ReplyBox";
-import { WORKS_TABS } from "@/pages/site/profile/profileModel";
+import { FEED_OPTIONS } from "@/pages/site/profile/profileFeedModel";
 
 beforeEach(() =>
   vi.stubGlobal("matchMedia", (query: string) => {
@@ -59,8 +59,8 @@ describe("UX-07 P8: the counts", () => {
     expect(within(screen.getByRole("group", { name: "Kind" })).getAllByRole("button")).toHaveLength(5);
   });
 
-  it("keeps a profile's tabs at five or fewer", () => {
-    expect(WORKS_TABS.length).toBeLessThanOrEqual(5);
+  it("keeps a profile's filter at five or fewer (UX-10: the works tabs became the feed's filter)", () => {
+    expect(FEED_OPTIONS.length).toBeLessThanOrEqual(5);
   });
 });
 
