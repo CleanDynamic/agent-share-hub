@@ -1547,6 +1547,9 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/legal/LegalPage.tsx",
   "src/pages/site/legal/PrivacyPage.tsx",
   "src/pages/site/legal/TermsPage.tsx",
+  "src/pages/site/notfound/NotFoundView.tsx",
+  "src/pages/site/notfound/NotFoundPage.tsx",
+  "src/pages/site/notfound/notFoundModel.ts",
   "src/pages/site/signin/SignupForm.tsx",
 ];
 

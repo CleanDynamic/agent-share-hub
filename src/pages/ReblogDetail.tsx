@@ -1,5 +1,6 @@
 "use client";
 
+import { NotFoundHere } from "@/pages/site/notfound/NotFoundPage";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Repeat2, Play, FileDown, Loader2 } from "lucide-react";
@@ -109,12 +110,7 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
   }
   if (notFound || !row) {
     return (
-      <div className="p-8 text-center text-muted-foreground">
-        <p>Reblog not found.</p>
-        <Link to="/" className="text-[var(--evidence)] underline mt-2 inline-block">
-          Go home
-        </Link>
-      </div>
+      <NotFoundHere sentence="If you were looking for a reblog, it may have been deleted." />
     );
   }
 

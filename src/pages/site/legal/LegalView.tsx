@@ -19,9 +19,7 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE, measure } from "@/lib/theme/type";
 
-import { anchorOf, formatLastUpdated, piecesOf } from "./legalModel";
-
-export const DRAFT_NOTICE = "This is a draft and has not been reviewed yet.";
+import { anchorOf, DRAFT_NOTICE, formatLastUpdated, piecesOf } from "./legalModel";
 
 const body: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, fontWeight: 400, lineHeight: "20px", color: t.text, margin: 0 };
 const link: CSSProperties = { color: t.text, textDecoration: "underline", textUnderlineOffset: 4, textDecorationThickness: 1 };

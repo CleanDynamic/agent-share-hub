@@ -11,8 +11,8 @@ import { beforeAll, describe, expect, it } from "vitest";
 import type { LegalText } from "@/content/legal/types";
 
 import { LegalPage } from "./LegalPage";
-import { LegalView, DRAFT_NOTICE } from "./LegalView";
-import { formatLastUpdated, hashTarget, piecesOf } from "./legalModel";
+import { LegalView } from "./LegalView";
+import { DRAFT_NOTICE, formatLastUpdated, hashTarget, piecesOf } from "./legalModel";
 
 const fixture = (reviewed: boolean, extra = ""): LegalText => ({
   title: "Fixture policy",

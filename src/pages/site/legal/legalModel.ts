@@ -28,6 +28,8 @@ export function piecesOf(text: string): Piece[] {
   return out;
 }
 
+export const DRAFT_NOTICE = "This is a draft and has not been reviewed yet.";
+
 /** The address that scrolls to a section. */
 export const anchorOf = (id: string): string => `#${id}`;
 

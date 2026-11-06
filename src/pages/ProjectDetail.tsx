@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
+import { NotFoundHere } from "@/pages/site/notfound/NotFoundPage";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -313,12 +314,7 @@ const ProjectDetail = () => {
 
   if (!project || error) {
     return (
-      <div className="py-20 px-6 flex flex-col items-center gap-4 text-center">
-        <p className="text-sm text-muted-foreground">Project not found.</p>
-        <Button variant="outline" size="sm" asChild>
-          <Link to="/browse"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Browse</Link>
-        </Button>
-      </div>
+      <NotFoundHere sentence="If you were looking for a project, it may have been removed." />
     );
   }
 

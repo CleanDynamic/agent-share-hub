@@ -64,7 +64,8 @@ const OnboardingProfile = lazy(() => import("./pages/OnboardingProfile"));
 
 const LibraryPage = lazy(ROUTE_TABLE.library.load as () => Promise<{ default: React.ComponentType }>);
 const CollectionDetailRoute = lazy(() => import("./pages/CollectionDetail"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+// UX-12 P5: the 404 page is the site's own now (src/pages/NotFound.tsx was Lovable's default).
+const NotFound = lazy(() => import("./pages/site/notfound/NotFoundPage"));
 
 const MessagesPage = lazy(() => import("./pages/Messages"));
 const CollectionDetail = lazy(() => import("./pages/CollectionDetail"));
