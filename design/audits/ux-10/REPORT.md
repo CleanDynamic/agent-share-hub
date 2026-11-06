@@ -5,7 +5,8 @@ UX-10 · The profile is a feed
 PASS, with the parts and checks listed under "Parts not done" and "Checks" not met in full
 Branch / PR: claude/ux-10-profile-feed-hudrpi (the branch the session gives; the prompt allows it)
 Facts in this prompt that were wrong on disk: see "Assumptions" (14 of them)
-Baseline → end: tests 11,526 passed / 31 failed (main) → see "Checks"
+Baseline → end: Vitest 11,526 passed / 31 failed (main) → 11,700 passed / 36 failed in one full run under load, every failure main's or
+  a timeout that passes alone, plus one guard this branch tripped and then fixed (see Checks)
 Compared boards: not comparable: the old profile board is already in design/reference/archive/ (UI-P99) and the prompt brings no new one
 Request rounds and requests for the page, before → after:
   profile             first visit 2 rounds* → 2 rounds, 6 requests; cold 11 → 17 requests (baseline updated, see Checks)
@@ -155,7 +156,10 @@ exist before the page could draw them.
 
 - **Type check**: clean. **Lint** on every changed file: no errors (warnings are the existing fast-refresh ones).
   `getProfileSummary.ts` lost its `as any` reads: the row is typed.
-- **Vitest**: see the final numbers in the PR description; every new test passes; the failures are main's 31.
+- **Vitest**, full run (tier 1 running on the same machine at the time): 11,700 passed, 36 failed. 29 of the 36 are on main's list of
+  31 (the other two of main's passed this time). The 7 others: `rcGuards.test.ts` (no client file may name the XP function; this
+  branch's page test said it in a test's title: reworded, passes), and six composer tests (`SandboxPage.sessions`, `ca20.p5`,
+  `ca26.p3` twice, `ca27.p3`, `referenceActions.ui`) that time out under load and pass when run alone. Every UX-10 test passes.
 - **Build**: passes.
 - **`audit:pages`** (profile, followers, following, 3 runs): rounds met (2, 1, 1). Two fixes on the way: the audit's world answered a
   profile read by its handle with every profile, so `.maybeSingle()` refused two rows and the old profile had **never loaded** in the
@@ -164,7 +168,13 @@ exist before the page could draw them.
   The feed's requests: one `get_profile_feed`, then for builds two (`getGalleryBuildsByIds` and `build_profile_display`), for topics
   and replies one then two (posts, then their extras and the replies' topics), for notes one. That is **more than 1 + kinds**: the
   display choice and the posts' extras are each one more. Not built smaller (see Questions).
-- **tier 1** (desktop and mobile): see the PR description for the result.
+- **tier 1** (desktop and mobile): 361 passed, 96 failed, 9 skipped. The same eight spec files run on main fail 92 of the same tests
+  (wide-layout 56, backdrop 18, home 9, build 5, post-thread 4, auth-entry 1, ux03-build 1, profile 2). Four failed here and not in that
+  main run: `profile-site-frame` "says the profile is not there… a way to the gallery" and `build-site-frame` "says there is no build
+  at an address that names none", each on desktop and mobile. Both press a button that goes to `/gallery` and expect to see `/gallery`,
+  which redirects to `/builds` (SV-02): a race. Run again on main, the profile one failed (two of two, then one of two) and the build
+  one failed both ways round (this branch's specs against main's server, and main's specs against this branch's server). Not caused
+  here; the specs need `/builds`. The profile's frame and no-scroll checks pass at 390, 768, 1024, 1280 and 1440 in both themes.
 - **Not run**: `audit:design` (no board), `audit:perf`, `audit:themes`, `audit:contrast`. Light and Dark were checked by the
   screenshots only. **Playwright for Parts 3, 5b, 6, 8 and 11** (setting a picture on a test account, opening the lists from the meta
   line, scrolling two pages, changing the filter and seeing it on the profile): not written. The repo's browser worlds have no
