@@ -25,7 +25,7 @@ import { TypeChip } from "@/components/vision/TypeChip";
 import { PageLink as Link } from "@/lib/routing/PageLink";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE, display } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import type { OthersLine } from "./profileFeedModel";
 
@@ -134,7 +134,7 @@ function CollectionTile({ tile }: { tile: SideCollection }) {
         ))}
       </div>
       <div style={{ padding: "0 4px 4px", display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-        <h3 style={{ ...display(13), margin: 0, color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tile.title}</h3>
+        <h3 style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, lineHeight: 1.3, margin: 0, color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tile.title}</h3>
         <div style={{ fontFamily: FIGTREE, fontSize: 11, lineHeight: "normal", color: t.text2 }}>{tile.count}</div>
       </div>
     </Link>
@@ -251,8 +251,9 @@ function Progress({ progress }: { progress: ProgressView }) {
         {progress.xpLine ? <span>{progress.xpLine}</span> : null}
         {progress.streak ? <span>{progress.streak}</span> : null}
       </div>
-      <div style={{ marginTop: 12 }}>
-        <Segmented<TrackValue> label="Track" semantics="radio" items={progress.tracks} value={progress.track ?? ("" as TrackValue)} onChange={progress.onTrack} fullWidth />
+      {/* The four tracks need about 260 of the column's 248: the picker runs into the module's padding rather than past its edge. */}
+      <div style={{ marginTop: 12, marginLeft: -12, marginRight: -12 }}>
+        <Segmented<TrackValue> label="Track" semantics="radio" items={progress.tracks} value={progress.track ?? ("" as TrackValue)} onChange={progress.onTrack} fullWidth compact fontSize={11} />
       </div>
     </section>
   );

@@ -46,9 +46,6 @@ export interface ProfileSummary {
   counts: {
     followers: number;
     following: number;
-    blueprints: number;
-    blogs: number;
-    bounties: number;
   };
   isOwnProfile: boolean;
   isFollowing: boolean | null;

@@ -43,7 +43,7 @@ export function ProfileView({ head, feed, side }: ProfileViewProps) {
             {feed ? <ProfileFeed {...feed} /> : null}
           </div>
         ) : (
-          <div style={{ display: "flex", alignItems: "flex-start", gap: COLUMN_GAP, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: COLUMN_GAP, minWidth: 0 }}>
             <div style={{ flex: `1 1 ${FEED_COLUMN}px`, maxWidth: FEED_COLUMN, minWidth: 0 }}>{feed ? <ProfileFeed {...feed} /> : null}</div>
             {side ? <ProfileSide {...side} /> : <div style={{ width: SIDE_WIDTH, flex: "none" }} />}
           </div>

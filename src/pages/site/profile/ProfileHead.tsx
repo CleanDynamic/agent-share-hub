@@ -173,7 +173,7 @@ export function ProfileHead(props: ProfileHeadProps) {
       </div>
       <div style={{ padding: `0 ${inset}px ${inset}px` }}>
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 12, marginTop: -size / 2 }}>
+          <div style={{ position: "relative", display: "flex", alignItems: "flex-end", gap: 12, marginTop: -size / 2 }}>
             <Avatar size={size} userId={props.userId} name={props.name} src={props.avatarUrl} alt={props.avatarAlt ?? ""} style={{ boxShadow: `0 0 0 4px ${t.surface}` }} />
             {isOwn && props.onChangePicture ? (
               <PostControl onClick={(event) => props.onChangePicture?.(event.currentTarget)}>

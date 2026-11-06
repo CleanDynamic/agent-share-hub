@@ -1,4 +1,3 @@
-import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/social/types";
 import { parseCrop, parseProfileSettings } from "./settings";
 import type { ProfileSummary, ProfileLevel } from "./types";
@@ -6,22 +5,25 @@ import type { ProfileSummary, ProfileLevel } from "./types";
 const UUID_RX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+const PROFILE_COLUMNS =
+  "id, username, display_name, avatar_url, banner_url, bio, website_url, location, follower_count, following_count, created_at, is_verified, level, derived_bio, last_derived_at, is_private, is_trusted_solver, avatar_crop, banner_crop, avatar_alt, banner_alt, about, links, profile_settings";
+
 /**
- * Resolve a user id or @handle to the profile row.
+ * Resolve a user id or @handle to the profile row. UX-10: with a reader, whether they follow this person comes in the same
+ * request (the follows row embedded, filtered to the reader), so the profile is one round, not two.
  */
-async function resolveProfile(userIdOrHandle: string) {
+async function resolveProfile(userIdOrHandle: string, viewerId: string | null) {
   const looksLikeId = UUID_RX.test(userIdOrHandle);
   // UX-10: through the untyped client, since the generated types predate the profile's new columns (20261109120000).
-  const query = db
+  let query = db
     .from("profiles")
-    .select(
-      "id, username, display_name, avatar_url, banner_url, bio, website_url, location, follower_count, following_count, created_at, is_verified, level, derived_bio, last_derived_at, is_private, is_trusted_solver, avatar_crop, banner_crop, avatar_alt, banner_alt, about, links, profile_settings"
-    )
+    .select((viewerId ? `${PROFILE_COLUMNS}, viewer_follow:follows!follows_following_id_fkey(id)` : PROFILE_COLUMNS) as string)
     .limit(1);
+  if (viewerId) query = query.eq("viewer_follow.follower_id", viewerId).limit(1, { referencedTable: "viewer_follow" });
 
-  const { data, error } = await (looksLikeId
+  const { data, error } = await ((looksLikeId
     ? query.eq("id", userIdOrHandle).maybeSingle()
-    : query.ilike("username", userIdOrHandle.replace(/^@/, "")).maybeSingle());
+    : query.ilike("username", userIdOrHandle.replace(/^@/, "")).maybeSingle()) as unknown as Promise<{ data: Record<string, any> | null; error: unknown }>);
 
   if (error) throw error;
   return data;
@@ -31,33 +33,14 @@ export async function getProfileSummary(
   userIdOrHandle: string,
   viewerId: string | null
 ): Promise<ProfileSummary> {
-  const profile = await resolveProfile(userIdOrHandle);
+  const profile = await resolveProfile(userIdOrHandle, viewerId);
   if (!profile) {
     throw new Error(`Profile not found: ${userIdOrHandle}`);
   }
 
   const isOwnProfile = !!viewerId && viewerId === profile.id;
+  const viewerFollows = Array.isArray((profile as any).viewer_follow) && (profile as any).viewer_follow.length > 0;
 
-  // Stats matview + follow check in parallel.
-  const [statsRes, followRes] = await Promise.all([
-    (supabase as any)
-      .from("profile_stats")
-      .select(
-        "blueprints_count, blogs_count, bounties_posted"
-      )
-      .eq("user_id", profile.id)
-      .maybeSingle(),
-    !isOwnProfile && viewerId
-      ? supabase
-          .from("follows")
-          .select("id")
-          .eq("follower_id", viewerId)
-          .eq("following_id", profile.id)
-          .maybeSingle()
-      : Promise.resolve({ data: null, error: null } as const),
-  ]);
-
-  const stats = (statsRes as any)?.data ?? {};
 
   return {
     id: profile.id,
@@ -88,11 +71,8 @@ export async function getProfileSummary(
     counts: {
       followers: profile.follower_count ?? 0,
       following: profile.following_count ?? 0,
-      blueprints: Number(stats.blueprints_count ?? 0),
-      blogs: Number(stats.blogs_count ?? 0),
-      bounties: Number(stats.bounties_posted ?? 0),
     },
     isOwnProfile,
-    isFollowing: isOwnProfile ? null : !!(followRes as any)?.data,
+    isFollowing: isOwnProfile ? null : viewerFollows,
   };
 }

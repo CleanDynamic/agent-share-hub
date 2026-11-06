@@ -170,9 +170,10 @@ export function ProfilePage() {
     staleTime: STALE_MS,
     refetchOnWindowFocus: false,
   });
+  /* user_badges is readable by its owner only: someone else's marks come back empty, so they are read on your own profile alone. */
   const marksQuery = useQuery({
     queryKey: ["progress", "getMyBadgeKeys", makerId],
-    enabled: Boolean(makerId) && !locked,
+    enabled: Boolean(makerId) && isOwn,
     queryFn: () => getMyBadgeKeys(makerId as string, BADGES.map((badge) => badge.id)),
     staleTime: STALE_MS,
     refetchOnWindowFocus: false,
