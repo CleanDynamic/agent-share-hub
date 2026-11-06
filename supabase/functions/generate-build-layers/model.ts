@@ -30,6 +30,7 @@
 // =============================================================================
 
 import type { Layer, Step } from "./types.ts";
+import { SITE_NAME } from "../_shared/site.ts";
 
 export type Provider = "lovable" | "anthropic" | "openai";
 
@@ -96,7 +97,7 @@ export function missingKeyMessage(env: (name: string) => string | undefined): st
 // --- prompts -----------------------------------------------------------------
 
 const SYSTEM_PROMPT = [
-  "You write the explanation layers that sit on top of a NeoScale build record.",
+  `You write the explanation layers that sit on top of an ${SITE_NAME} build record.`,
   "",
   "A build record is a typed tree of nodes plus the ordered sequence of events",
   "that produced it. You are given a compact description of one. Everything you",

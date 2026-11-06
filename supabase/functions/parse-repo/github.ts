@@ -43,6 +43,7 @@ import {
   type RepoSnapshot,
   type SkippedFile,
 } from "./snapshot.ts";
+import { SITE_NAME } from "../_shared/site.ts";
 
 const API_ROOT = "https://api.github.com";
 
@@ -133,7 +134,7 @@ function headers(): HeadersInit {
   const token = Deno.env.get("GITHUB_TOKEN") ?? Deno.env.get("GITHUB_API_TOKEN");
   const base: Record<string, string> = {
     Accept: "application/vnd.github.v3+json",
-    "User-Agent": "NeoScale",
+    "User-Agent": SITE_NAME,
     "X-GitHub-Api-Version": "2022-11-28",
   };
   if (token && token.trim()) base.Authorization = `Bearer ${token.trim()}`;

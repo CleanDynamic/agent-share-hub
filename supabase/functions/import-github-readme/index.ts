@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { z, readBody } from "../_shared/body.ts";
 import { fail, json, preflight } from "../_shared/cors.ts";
 import { githubApiUrl, parseGithubUrl } from "./github.ts";
+import { SITE_NAME } from "../_shared/site.ts";
 
 const Body = z.object({ url: z.string({ required_error: "Required" }).min(1, "Required").max(2048) });
 
@@ -22,7 +23,7 @@ serve(async (req) => {
     const { owner, repo } = target;
 
     const ghRes = await fetch(githubApiUrl(target), {
-      headers: { Accept: "application/vnd.github.v3+json", "User-Agent": "NeoScale" },
+      headers: { Accept: "application/vnd.github.v3+json", "User-Agent": SITE_NAME },
     });
 
     if (!ghRes.ok) {

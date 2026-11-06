@@ -4,6 +4,7 @@ import { getCaller } from "../_shared/caller.ts";
 import { z, readBody, returnUrl } from "../_shared/body.ts";
 import { fail, json, preflight } from "../_shared/cors.ts";
 import { isAllowedOrigin } from "../_shared/origins.ts";
+import { SITE_NAME } from "../_shared/site.ts";
 
 // The browser sends both addresses; when it does not, they are built from the
 // caller's origin, and only if that origin is on the list.
@@ -69,7 +70,7 @@ Deno.serve(async (req) => {
           price_data: {
             currency: "gbp",
             unit_amount: Math.round(project.package_price_gbp * 100),
-            product_data: { name: `Full project unlock: ${project.title} on NeoScale AI` },
+            product_data: { name: `Full project unlock: ${project.title} on ${SITE_NAME}` },
           },
           quantity: 1,
         },
