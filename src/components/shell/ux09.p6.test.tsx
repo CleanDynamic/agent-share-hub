@@ -32,10 +32,6 @@ describe("UX-09 P6: the trails", () => {
     expect(trailFor("/openbuilds/topics/p1", "A topic")).toEqual([{ label: "Home", href: "/" }, OPENBUILDS, { label: "A topic" }]);
   });
 
-  it("the old list: OpenBuilds / Older requests", () => {
-    expect(trailFor("/openbuilds/requests", null)).toEqual([{ label: "Home", href: "/" }, OPENBUILDS, { label: "Older requests" }]);
-  });
-
   it("a heading is cut to 40 characters", () => {
     const long = "Can anyone make the CV scorer run in under a second on a laptop?";
     expect(crumbHeading(long)).toHaveLength(40);

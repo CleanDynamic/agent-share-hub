@@ -1151,14 +1151,7 @@ export const CA03_FILES: readonly string[] = [
 
   // SV-14
   "src/lib/build/graph.ts",
-  "src/dev/fixtures/vision/openbuilds.ts",
   "src/pages/site/openbuilds/OpenBuildsFrame.tsx",
-  "src/pages/site/openbuilds/OpenBuildsView.tsx",
-  "src/pages/site/openbuilds/OpenBuildsView.test.tsx",
-  "src/pages/site/openbuilds/openBuildsModel.ts",
-  "src/pages/site/openbuilds/openBuildsModel.test.ts",
-  "src/pages/site/openbuilds/OpenBuildsPage.tsx",
-  "src/pages/site/openbuilds/OpenBuildsPage.test.tsx",
 
   // UX-05
   "src/components/post/PostCard.tsx",
@@ -1197,10 +1190,7 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/bounty/runRequestRules.test.ts",
   "src/lib/bounty/claims.ts",
   "src/lib/bounty/claims.test.ts",
-  "src/lib/bounty/sessionOffers.ts",
   "src/lib/bounty/sessionOffersRead.ts",
-  "src/lib/bounty/sessionOffers.test.ts",
-  "src/pages/site/openbuilds/OfferSessionDialog.tsx",
   "src/pages/site/compose/OpenRequestDialog.tsx",
   "src/pages/site/compose/AskNextSessionRow.tsx",
   "src/lib/build/openRequest.ts",
@@ -1312,8 +1302,6 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/drafts/DraftsView.behaviour.test.tsx",
   "src/pages/site/drafts/DraftsView.test.tsx",
   "src/pages/site/drafts/draftsModel.ts",
-  "src/pages/site/openbuilds/openBuildsModel.test.ts",
-  "src/pages/site/openbuilds/openBuildsModel.ts",
   "src/lib/build/harnessWords.ts",
   "src/lib/build/sv27.harness.test.ts",
   "src/lib/build/deployment.ts",
@@ -1480,9 +1468,6 @@ export const CA03_FILES: readonly string[] = [
   // UX-09, Miles' answers
   "src/lib/notifications/keys.ts",
   "src/lib/notifications/keys.test.ts",
-  "src/lib/bounty/openRequests.ts",
-  "src/components/routing/OlderRequestsRoute.tsx",
-  "src/components/routing/OlderRequestsRoute.test.tsx",
   "src/lib/messaging/topics.ts",
   "src/lib/messaging/topics.test.ts",
   "src/components/messages/TopicShareCard.tsx",

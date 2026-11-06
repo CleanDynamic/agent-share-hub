@@ -17,7 +17,6 @@
      /openbuilds                Home / OpenBuilds
      /openbuilds/spaces/:slug   Home / OpenBuilds / {space}                       (UX-09 P6)
      /openbuilds/topics/:id     Home / OpenBuilds / {first space} / {heading}     (UX-09 P6; no space: Home / OpenBuilds / {heading})
-     /openbuilds/requests       Home / OpenBuilds / Older requests                (UX-09 P6)
      /profile/:handle           Home / {display name}
      /notifications             Home / Activity
      /connect                   Home / Connect a tool
@@ -78,7 +77,6 @@ export function trailFor(pathname: string, title: string | null, parent: Crumb |
   if (here(pathname, "/openbuilds") || here(pathname, "/bounties")) return [HOME, { label: "OpenBuilds" }];
   if (here(pathname, "/openbuilds/spaces/:slug")) return [HOME, OPENBUILDS, { label: title }];
   if (here(pathname, "/openbuilds/topics/:id")) return [HOME, OPENBUILDS, ...(parent ? [parent] : []), { label: title }];
-  if (here(pathname, "/openbuilds/requests")) return [HOME, OPENBUILDS, { label: "Older requests" }];
 
   // UX-10 P5b: @maya / Followers, after the site's leading Home.
   const follows = here(pathname, "/profile/:handle/followers") ?? here(pathname, "/profile/:handle/following");
