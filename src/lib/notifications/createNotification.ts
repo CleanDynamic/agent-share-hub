@@ -57,7 +57,7 @@ export async function createNotification(
     metadata,
     // Maintain legacy quick-link columns when caller supplied a content target.
     content_id:
-      targetType === "blueprint" || targetType === "blog" || targetType === "bounty"
+      targetType === "blueprint" || targetType === "blog"
         ? targetId
         : null,
   };

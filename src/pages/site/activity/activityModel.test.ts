@@ -119,9 +119,9 @@ describe("the days", () => {
 });
 
 describe("the kinds and the filter", () => {
-  it("draws the nine kinds the database writes, once each", () => {
+  it("draws the seven kinds the database writes, once each", () => {
     expect([...ACTIVITY_KINDS].sort()).toEqual([...BUILD_NOTIFICATION_KINDS].sort());
-    expect(new Set(ACTIVITY_KINDS).size).toBe(9);
+    expect(new Set(ACTIVITY_KINDS).size).toBe(7);
   });
 
   it("gives the phone one chip for each kind it names, all of them drawn", () => {

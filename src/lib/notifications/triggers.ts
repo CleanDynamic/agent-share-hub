@@ -31,7 +31,6 @@ function silent<T>(p: Promise<T>): Promise<T | null> {
 
 function postTypeToTargetType(postType?: string | null): NotificationTargetType {
   if (postType === "blog") return "blog";
-  if (postType === "bounty") return "bounty";
   return "blueprint";
 }
 
@@ -311,69 +310,6 @@ export function notifyReferencesReceived(args: {
       );
       return null;
     })()
-  );
-}
-
-// ────────────────────────────────────────────────────────────
-// 8. BOUNTY interactions — a solution posted and a solution accepted are
-//    written by the database since RC-P19 (the 'solution' and 'solved'
-//    kinds); the two client calls went.
-// ────────────────────────────────────────────────────────────
-
-// ────────────────────────────────────────────────────────────
-// 8b. BOUNTY competition events (Phase 8 — competition surfacing)
-//      Subkinds:
-//        - bounty_solver_overtaken
-//        - meta_bounty_sub_spawned
-//        - bounty_deadline_approaching
-//        - bounty_promoted_to_blueprint
-//      All four use kind='bounty_interaction' so the existing notification
-//      stream picks them up automatically; the subkind lives in metadata.sub
-//      so card renderers can branch on it.
-// ────────────────────────────────────────────────────────────
-
-export type BountyCompetitionSubkind =
-  | "bounty_solver_overtaken"
-  | "meta_bounty_sub_spawned"
-  | "bounty_deadline_approaching"
-  | "bounty_promoted_to_blueprint";
-
-/**
- * Fires once per submitter when a bounty is < 24h from its deadline. Caller
- * is responsible for de-duping so each submitter is only nudged once per
- * bounty-deadline-window.
- */
-export function notifyBountyDeadlineApproaching(args: {
-  bountyId: string;
-  /** Recipients — typically every distinct solver who has submitted. */
-  submitterIds: string[];
-  hoursRemaining: number;
-}) {
-  return silent(
-    (async () => {
-      const recipients = Array.from(new Set(args.submitterIds)).filter(Boolean);
-      if (recipients.length === 0) return null;
-      const post = await getPostMeta(args.bountyId);
-      if (!post) return null;
-      await Promise.all(
-        recipients.map((rid) =>
-          createNotification({
-            recipientId: rid,
-            kind: "bounty_interaction",
-            actorId: null,
-            targetType: "bounty",
-            targetId: args.bountyId,
-            body: `Bounty '${post.title}' closes in ~${Math.max(1, Math.round(args.hoursRemaining))}h`,
-            metadata: {
-              sub: "bounty_deadline_approaching" satisfies BountyCompetitionSubkind,
-              bounty_title: post.title,
-              hours_remaining: args.hoursRemaining,
-            },
-          }),
-        ),
-      );
-      return null;
-    })(),
   );
 }
 

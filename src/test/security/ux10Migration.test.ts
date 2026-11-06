@@ -9,9 +9,9 @@ const raw = () => readFileSync(`${DIR}/${FILE}`, "utf8");
 const code = () => raw().replace(/--[^\n]*/g, "");
 
 describe("the UX-10 migration", () => {
-  it("comes after UX-09's, and no migration between them and the UX-11 backup is missing", () => {
+  it("comes after UX-09's, and no migration between them and the UX-11 migrations is missing", () => {
     const files = readdirSync(DIR).filter((name) => name.endsWith(".sql")).sort();
-    expect(files.slice(files.indexOf(FILE) + 1)).toEqual(["20261110120000_ux11_legacy_backup.sql"]);
+    expect(files.slice(files.indexOf(FILE) + 1)).toEqual(["20261110120000_ux11_legacy_backup.sql", "20261110140000_ux11_retire_request_notifications.sql"]);
     expect(FILE > "20261108160000_ux09_site_hide_topics.sql").toBe(true);
   });
 

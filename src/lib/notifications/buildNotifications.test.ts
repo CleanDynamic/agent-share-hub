@@ -1,7 +1,7 @@
 // RC-P19 — reading build notifications.
 //
 // The claims: a page's builds are named in one request however many rows
-// there are; each target leads where it should (a build and a bounty's build
+// there are; each target leads where it should (a build
 // to /b2/<slug>, a comment to its comments, a follow to the follower); a row
 // says its stored message; and a kind nobody knows neither crashes nor links.
 
@@ -123,11 +123,8 @@ describe("getNotifications", () => {
 });
 
 describe("notificationHref", () => {
-  it("leads a build and a bounty's build to the build, a comment to its comments", () => {
+  it("leads a build to the build, a comment to its comments", () => {
     expect(notificationHref(notification())).toBe("/b2/invoice-reader");
-    expect(notificationHref(notification({ kind: "solved", target_type: "bounty_build", target_id: "bounty-1" }))).toBe(
-      "/b2/invoice-reader",
-    );
     expect(notificationHref(notification({ kind: "reply", target_type: "build_comment", target_id: "comment-1" }))).toBe(
       "/b2/invoice-reader#comments",
     );
@@ -157,7 +154,7 @@ describe("notificationHref", () => {
 
 describe("notificationMessage", () => {
   it("says each build kind's stored message", () => {
-    expect(BUILD_NOTIFICATION_KINDS).toHaveLength(9);
+    expect(BUILD_NOTIFICATION_KINDS).toHaveLength(7);
     expect(notificationMessage(notification({ kind: "reproduced", body: "ran your build and it did not work" }))).toBe(
       "ran your build and it did not work",
     );
