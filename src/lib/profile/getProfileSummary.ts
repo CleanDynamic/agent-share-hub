@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { parseCrop, parseProfileSettings } from "./settings";
 import type { ProfileSummary, ProfileLevel } from "./types";
 
 const UUID_RX =
@@ -12,7 +13,7 @@ async function resolveProfile(userIdOrHandle: string) {
   const query = supabase
     .from("profiles")
     .select(
-      "id, username, display_name, avatar_url, banner_url, bio, website_url, location, follower_count, following_count, created_at, is_verified, level, derived_bio, last_derived_at, is_private, is_trusted_solver"
+      "id, username, display_name, avatar_url, banner_url, bio, website_url, location, follower_count, following_count, created_at, is_verified, level, derived_bio, last_derived_at, is_private, is_trusted_solver, avatar_crop, banner_crop, avatar_alt, banner_alt, about, links, profile_settings"
     )
     .limit(1);
 
@@ -74,6 +75,14 @@ export async function getProfileSummary(
     joinedAt: profile.created_at,
     location: profile.location ?? null,
     website: (profile as any).website_url ?? null,
+    // UX-10 P1: the profile's own columns (20261109120000).
+    bannerCrop: parseCrop((profile as any).banner_crop),
+    avatarCrop: parseCrop((profile as any).avatar_crop),
+    avatarAlt: (profile as any).avatar_alt ?? null,
+    bannerAlt: (profile as any).banner_alt ?? null,
+    about: (profile as any).about ?? null,
+    links: Array.isArray((profile as any).links) ? ((profile as any).links as string[]) : [],
+    settings: parseProfileSettings((profile as any).profile_settings),
     counts: {
       followers: profile.follower_count ?? 0,
       following: profile.following_count ?? 0,

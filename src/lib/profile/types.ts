@@ -10,6 +10,10 @@
 //    references are derived from blog_referenced_post_ids + fork_of_content_id,
 //    bookmarks come from user_library + collection_items.
 
+import type { MediaCrop } from "@/lib/build/thread";
+
+import type { ProfileSettings } from "./settings";
+
 export type ProfileLevel = "reader" | "builder" | "creator" | "curator";
 
 export interface ProfileSummary {
@@ -28,6 +32,14 @@ export interface ProfileSummary {
   joinedAt: string;
   location: string | null;
   website: string | null;
+  /** UX-10: the header's and the picture's stored crops and ALT, the About, up to three links, and the profile's settings. */
+  bannerCrop?: MediaCrop | null;
+  avatarCrop?: MediaCrop | null;
+  avatarAlt?: string | null;
+  bannerAlt?: string | null;
+  about?: string | null;
+  links?: string[];
+  settings?: ProfileSettings;
   // Optional self-reported domain (used for visitor "Match" banner). Falls back
   // to derivedBio heuristics if not present.
   domain: string | null;

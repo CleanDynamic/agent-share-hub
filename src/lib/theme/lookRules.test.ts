@@ -1514,6 +1514,12 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/profile/useProfilePictures.test.tsx",
   "src/lib/profile/getProfileFeed.ts",
   "src/lib/profile/getProfileFeed.test.ts",
+  "src/lib/profile/getProfileSummary.ts",
+  "src/lib/profile/types.ts",
+  "src/lib/profile/profileSide.ts",
+  "src/pages/site/profile/ProfileHead.tsx",
+  "src/pages/site/profile/profileFeedModel.ts",
+  "src/pages/site/profile/ux10.p5.test.tsx",
 ];
 
 /**
