@@ -80,14 +80,6 @@ export interface BountyAnalytics {
   activityTimeline: ActivityEvent[];
 }
 
-export interface SubBountyDefinitionInput {
-  title: string;
-  description?: string | null;
-  targetAmount: number;
-  spawnThresholdPct?: number; // default 100
-  acceptanceCriteria?: string | null;
-}
-
 export interface SubBountyState {
   id: string;
   title: string;

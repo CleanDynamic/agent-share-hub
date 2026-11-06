@@ -127,19 +127,13 @@ export {
   SOURCE_ITEM_COLUMNS,
   blockLabel,
   blockTitle,
-  convertContentItem,
   detectLanguage,
   detectSteps,
-  findConversion,
   mapBlock,
   parseModelParams,
   parseTable,
-  planConversion,
-  readSource,
   type ConversionCounts,
-  type ConversionPlan,
   type ConversionSource,
-  type NodePlan,
   type SourceBlock,
   type SourceItem,
 } from "./convert";
@@ -156,7 +150,6 @@ export {
   clearNodeTypeCache,
   getFieldsFor,
   getNodeType,
-  getNodeTypes,
 } from "./nodeTypes";
 export {
   MAX_RAW_TEXT_CHARS,

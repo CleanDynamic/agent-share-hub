@@ -47,7 +47,6 @@ export {
   createBountyForGap,
   extendDeadline,
   getBounty,
-  listBountiesForBuild,
   listBuildBounties,
   listOpenBounties,
   listOpenBountyCards,
@@ -100,10 +99,8 @@ export {
 // The solvers board (RC-P13): the people whose solutions were accepted on
 // bounties that live on a build, from top_solvers.
 export {
-  TOP_SOLVERS_LIMIT,
   listTopSolvers,
   type ListTopSolversOptions,
-  type Solver,
 } from "./solvers";
 
 // OpenBuilds (SV-14): the step requests with their steps strips, the reader's requests and record.
