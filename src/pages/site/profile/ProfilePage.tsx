@@ -46,6 +46,9 @@ import { respecTrack, setUserTrack, type TrackId } from "@/lib/progress";
 import { getMyBadgeKeys } from "@/lib/progress/badges";
 import { usePageReady } from "@/lib/routing/pageReady";
 
+import { BlockDialog, type BlockTarget } from "@/components/block/BlockDialog";
+import { BLOCK_COPY, blockKeys, blockStateOf, unblockUser } from "@/lib/settings/blocks";
+
 import { CustomiseProfile } from "./CustomiseProfile";
 import type { FeedEntry } from "./ProfileFeed";
 import { ProfileLoadFailed, ProfileNotice, ProfileView, ProfileViewSkeleton } from "./ProfileView";
@@ -82,7 +85,8 @@ export function ProfilePage() {
   const qc = useQueryClient();
   const [params, setParams] = useSearchParams();
 
-  const [editOpen, setEditOpen] = useState(false);
+  // UX-15 P5: Settings › Privacy links to /profile?customise=1; Customise profile opens on arrival at one's own profile.
+  const [editOpen, setEditOpen] = useState(() => params.get("customise") === "1");
   const [composeOpen, setComposeOpen] = useState(false);
   const [composeBusy, setComposeBusy] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
@@ -110,7 +114,18 @@ export function ProfilePage() {
   const handle = handleParam ?? summary?.handle ?? null;
   const isOwn = Boolean(summary?.isOwnProfile);
   const settings = summary?.settings ?? DEFAULT_SETTINGS;
-  const locked = Boolean(summary?.isPrivate && !isOwn && !summary?.isFollowing);
+  /* UX-15 P5: where this pair stands. A signed-in reader of someone else's profile asks once the profile has said who it is; a blocked
+     pair reads like a private profile: the head and one sentence, and no feed. */
+  const blockQuery = useQuery({
+    queryKey: blockKeys.state(viewerId, summary?.id ?? null),
+    enabled: Boolean(viewerId && summary?.id && !isOwn),
+    queryFn: () => blockStateOf(viewerId as string, summary?.id as string),
+    staleTime: STALE_MS,
+    refetchOnWindowFocus: false,
+  });
+  const blocked = blockQuery.data === "by_me" || blockQuery.data === "by_them" ? blockQuery.data : null;
+  const [blocking, setBlocking] = useState<BlockTarget | null>(null);
+  const locked = Boolean((summary?.isPrivate && !isOwn && !summary?.isFollowing) || blocked);
 
   useCrumbTitle(summary ? summary.displayName : summaryQuery.isPending ? null : summaryQuery.isError && !(summaryQuery.error instanceof Error && summaryQuery.error.message.startsWith("Profile not found")) ? "Profile" : "Not found");
 
@@ -351,7 +366,15 @@ export function ProfilePage() {
         })
       : [],
     isOwn,
-    privateLine: locked ? privateLine(summary.handle) : null,
+    privateLine: blocked === "by_me" ? BLOCK_COPY.youBlocked(summary.handle) : blocked === "by_them" ? BLOCK_COPY.cannotSee(summary.handle) : locked ? privateLine(summary.handle) : null,
+    blocked,
+    onBlock: viewerId ? () => setBlocking({ id: summary.id, handle: summary.handle }) : undefined,
+    onUnblock: () => {
+      if (!viewerId) return;
+      void unblockUser(viewerId, summary.id)
+        .then(() => qc.invalidateQueries({ predicate: (query) => ["settings", "feed", "profile", "openbuilds", "posts", "post", "notifications", "messages"].includes(String(query.queryKey[0])) }))
+        .catch(() => toast({ title: "Couldn't unblock them. Try again." }));
+    },
     following: Boolean(summary.isFollowing),
     followBusy,
     onFollow: () => void writeFollow(true),
@@ -453,6 +476,7 @@ export function ProfilePage() {
         noIndex={locked}
       />
       <ProfileView {...viewProps} />
+      <BlockDialog target={blocking} viewerId={viewerId} onClose={() => setBlocking(null)} />
 
       {isOwn ? pictures.element : null}
       {isOwn && editOpen ? (

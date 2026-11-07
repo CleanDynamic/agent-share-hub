@@ -56,6 +56,11 @@ export interface ProfileHeadProps {
   onCopyLink: () => void;
   /** Report in `···`. Absent: not offered (no report flow takes a person yet; see the UX-10 report). */
   onReport?: () => void;
+  /** UX-15 P5: `Block @maya` in `···`, for someone else's profile. Absent: not offered. */
+  onBlock?: () => void;
+  /** UX-15 P5: where the pair stands. `by_me`: Unblock replaces Follow and Message. `by_them`: no actions, and no reason given. */
+  blocked?: "by_me" | "by_them" | null;
+  onUnblock?: () => void;
   onChangeHeader?: (from: HTMLElement | null) => void;
   onChangePicture?: (from: HTMLElement | null) => void;
   /** "Uploading 40%" beside the picture or on the header while an upload runs. */
@@ -69,6 +74,8 @@ export const HEAD_COPY = {
   more: "More for this profile",
   copyLink: "Copy link",
   report: "Report",
+  block: "Block",
+  unblock: "Unblock",
   edit: "Edit profile",
   changeHeader: "Change header",
   changePicture: "Change picture",
@@ -121,6 +128,18 @@ export function ProfileHead(props: ProfileHeadProps) {
 
   const actions = isOwn ? (
     <PostControl onClick={props.onEdit}>{HEAD_COPY.edit}</PostControl>
+  ) : props.blocked === "by_them" ? null : props.blocked === "by_me" ? (
+    <>
+      <PostControl onClick={props.onUnblock}>{HEAD_COPY.unblock}</PostControl>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <PostControl aria-label={HEAD_COPY.more}>···</PostControl>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={props.onCopyLink}>{HEAD_COPY.copyLink}</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
   ) : (
     <>
       {following ? (
@@ -141,6 +160,7 @@ export function ProfileHead(props: ProfileHeadProps) {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onSelect={props.onCopyLink}>{HEAD_COPY.copyLink}</DropdownMenuItem>
             {props.onReport ? <DropdownMenuItem onSelect={props.onReport}>{HEAD_COPY.report}</DropdownMenuItem> : null}
+            {props.onBlock ? <DropdownMenuItem onSelect={props.onBlock}>{`${HEAD_COPY.block} @${props.handle}`}</DropdownMenuItem> : null}
           </DropdownMenuContent>
         </DropdownMenu>
       )}

@@ -3,16 +3,20 @@
    are pure and tested on their own. */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { blockKeys, listBlocks, unblockUser, type BlockedPerson } from "@/lib/settings/blocks";
+import { loadIsPrivate, setIsPrivate } from "@/lib/settings/privacySettings";
 import { loadNotificationPreferences, setNotificationPreference } from "@/lib/settings/notificationSettings";
 import { type NotificationPreferences, type PreferenceKey } from "@/lib/settings/notificationPrefs";
 import { changeEmail, changePassword, hasPassword, linkProvider, loadAccount, signOutEverywhere, unlinkMethod } from "@/lib/settings/account";
 
 import { AccountView } from "./AccountView";
 import { NotificationsView } from "./NotificationsView";
+import { PrivacyView } from "./PrivacyView";
 import { SectionError, SectionLoading } from "./SettingParts";
 
 const STALE_MS = 60_000;
@@ -74,4 +78,56 @@ export function NotificationsSection() {
   if (prefs.isError) return <SectionError title="Notifications" onRetry={() => void prefs.refetch()} />;
   if (!prefs.data) return <SectionLoading title="Notifications" rows={4} />;
   return <NotificationsView prefs={prefs.data} onToggle={(changed, on) => write.mutate({ key: changed, on })} />;
+}
+
+export function PrivacySection() {
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
+  const queryClient = useQueryClient();
+  const [busy, setBusy] = useState<ReadonlySet<string>>(new Set());
+  const privateKey = ["settings", "loadIsPrivate", userId] as const;
+  /* Both reads need only the reader, so they go together: one round. */
+  const isPrivate = useQuery({ queryKey: privateKey, queryFn: () => loadIsPrivate(userId!), enabled: !!userId, staleTime: STALE_MS });
+  const blocks = useQuery({ queryKey: blockKeys.list, queryFn: () => listBlocks(), enabled: !!userId, staleTime: STALE_MS });
+
+  const togglePrivate = useMutation({
+    mutationFn: (on: boolean) => setIsPrivate(userId!, on),
+    onMutate: async (on) => {
+      await queryClient.cancelQueries({ queryKey: privateKey });
+      const before = queryClient.getQueryData<boolean>(privateKey);
+      queryClient.setQueryData(privateKey, on);
+      return { before };
+    },
+    onError: (_error, _on, context) => {
+      queryClient.setQueryData(privateKey, context?.before);
+      toast(NOT_SAVED);
+    },
+    onSuccess: () => {
+      toast(SAVED);
+      void queryClient.invalidateQueries({ queryKey: ["profile"] });
+    },
+  });
+
+  const unblock = async (person: BlockedPerson) => {
+    if (!userId) return;
+    setBusy((current) => new Set(current).add(person.id));
+    try {
+      await unblockUser(userId, person.id);
+      queryClient.setQueryData<BlockedPerson[]>(blockKeys.list, (current) => (current ?? []).filter((one) => one.id !== person.id));
+      void queryClient.invalidateQueries({ predicate: (query) => ["feed", "profile", "openbuilds", "posts", "post", "notifications", "messages"].includes(String(query.queryKey[0])) || query.queryKey[1] === "listBlockedIds" || query.queryKey[1] === "blockStateOf" });
+      toast("Unblocked.");
+    } catch {
+      toast(NOT_SAVED);
+    } finally {
+      setBusy((current) => {
+        const next = new Set(current);
+        next.delete(person.id);
+        return next;
+      });
+    }
+  };
+
+  if (isPrivate.isError || blocks.isError) return <SectionError title="Privacy and blocking" onRetry={() => { void isPrivate.refetch(); void blocks.refetch(); }} />;
+  if (isPrivate.data === undefined || !blocks.data) return <SectionLoading title="Privacy and blocking" />;
+  return <PrivacyView isPrivate={isPrivate.data} onTogglePrivate={(on) => togglePrivate.mutate(on)} blocked={blocks.data} onUnblock={(person) => void unblock(person)} busy={busy} />;
 }

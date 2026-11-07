@@ -23,6 +23,8 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
+import { BLOCK_COPY, isCollapsed } from "@/lib/settings/blocks";
+
 import type { ReplyItem, StepSource } from "./postModel";
 
 /** UX-07 P5: a reply's element id, the address's `#reply-<id>` (replyHref). */
@@ -48,6 +50,10 @@ export interface ReplyActions {
   renderReactions?: (replyId: string) => ReactNode;
   /** UX-09 P8: Report a reply (everyone but its author). Absent: not offered. */
   onReport?: (replyId: string) => void;
+  /** UX-15 P5: "Block @maya" in a reply's `···` (everyone but its author). Absent: not offered. */
+  onBlock?: (replyId: string) => void;
+  /** UX-15 P5: the people the reader blocked. Their replies collapse to one row; the thread around them reads as before. */
+  blockedAuthors?: ReadonlySet<string>;
 }
 
 /** A text button: 12 `--text2`, no box, underlined at once under a fine pointer's hover. On a phone its hit area is 44 high. */
@@ -102,6 +108,7 @@ function ReplyMenu({ reply, actions, onAsk }: { reply: ReplyItem; actions: Reply
         {reply.canPin ? reply.pinnedBy ? <DropdownMenuItem onSelect={() => actions.onUnpin(reply.id)}>Unpin</DropdownMenuItem> : <DropdownMenuItem onSelect={() => actions.onPin(reply.id)}>Pin</DropdownMenuItem> : null}
         {reply.canHide ? <DropdownMenuItem onSelect={onAsk}>Hide</DropdownMenuItem> : null}
         {reply.canReport && actions.onReport ? <DropdownMenuItem onSelect={() => actions.onReport?.(reply.id)}>Report</DropdownMenuItem> : null}
+        {reply.canReport && actions.onBlock && reply.author.handle ? <DropdownMenuItem onSelect={() => actions.onBlock?.(reply.id)}>{BLOCK_COPY.action(reply.author.handle)}</DropdownMenuItem> : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -173,11 +180,18 @@ export function ReplyAnatomy({ reply, children }: { reply: ReplyItem; children?:
   );
 }
 
+const NO_ONE: ReadonlySet<string> = new Set();
+
 /** One reply, its actions, and (at the first level) its own replies. */
 export function Reply({ reply, actions, last, box }: { reply: ReplyItem; actions: ReplyActions; last: boolean; box?: { at: string; node: ReactNode } }) {
   const [asking, setAsking] = useState(false);
   const pinned = reply.pinnedBy !== null;
-  const content = (
+  const collapsed = isCollapsed(reply.author.id, actions.blockedAuthors ?? NO_ONE);
+  const content = collapsed ? (
+    <p data-testid="reply-collapsed" style={{ ...plain, fontSize: 12, lineHeight: "20px", color: t.label }}>
+      {BLOCK_COPY.collapsedReply}
+    </p>
+  ) : (
     <ReplyAnatomy reply={reply}>
         <div role="group" aria-label={`Actions for ${reply.author.name}'s reply`} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 16, rowGap: 8, marginTop: 8 }}>
           <TextButton onClick={() => actions.onReply(reply.id)}>Reply</TextButton>
@@ -191,7 +205,7 @@ export function Reply({ reply, actions, last, box }: { reply: ReplyItem; actions
             </>
           ) : null}
           {reply.step && actions.renderAddToDraft ? actions.renderAddToDraft(reply.step) : null}
-          {reply.canPin || reply.canHide || (reply.canReport && actions.onReport) ? <ReplyMenu reply={reply} actions={actions} onAsk={() => setAsking(true)} /> : null}
+          {reply.canPin || reply.canHide || (reply.canReport && (actions.onReport || actions.onBlock)) ? <ReplyMenu reply={reply} actions={actions} onAsk={() => setAsking(true)} /> : null}
         </div>
         {actions.renderReactions?.(reply.id) ?? null}
         {asking ? (
@@ -213,7 +227,7 @@ export function Reply({ reply, actions, last, box }: { reply: ReplyItem; actions
 
   return (
     <li id={replyAnchor(reply.id)} data-testid="reply" data-depth={reply.depth} style={{ listStyle: "none", padding: "16px 0", borderBottom: last ? "none" : `1px solid ${t.hairline}` }}>
-      {pinned ? <div style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, padding: 16 }}>{content}</div> : content}
+      {pinned && !collapsed ? <div style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, padding: 16 }}>{content}</div> : content}
       {box?.at === reply.id ? <div style={{ marginTop: 16 }}>{box.node}</div> : null}
       {reply.children.length > 0 ? (
         <ol aria-label={`Replies to ${reply.author.name}`} style={{ margin: "8px 0 0 38px", padding: "0 0 0 12px", borderLeft: `1px solid ${t.hairline}` }}>

@@ -15,7 +15,9 @@ import { useLocation, useNavigate, useParams, useSearchParams } from "react-rout
 import { toast } from "sonner";
 
 import { SeoHead } from "@/components/SeoHead";
+import { BlockDialog, type BlockTarget } from "@/components/block/BlockDialog";
 import { ReportDialog } from "@/components/moderation/ReportDialog";
+import { BLOCK_COPY, blockKeys, listBlockedIds } from "@/lib/settings/blocks";
 import { crumbHeading } from "@/components/shell/breadcrumbTrail";
 import { useCrumbTitle } from "@/components/shell/useBreadcrumb";
 import { centre } from "@/components/build/partNav";
@@ -132,6 +134,11 @@ export default function PostPage() {
   /* UX-09 P8: the topic or reply being reported, in the site's report dialog. */
   const [reporting, setReporting] = useState<{ type: "openbuild_post"; id: string; what: "topic" | "reply" } | null>(null);
   const report = (postId: string, what: "topic" | "reply") => (viewerId ? setReporting({ type: "openbuild_post", id: postId, what }) : signIn());
+  /* UX-15 P5: Block in the `···`, and the replies of the people the reader blocked, collapsed. The ids are the reader's own rows; they
+     are read beside the thread (they need only the reader), so the page takes no extra round. */
+  const [blocking, setBlocking] = useState<BlockTarget | null>(null);
+  const blockedQuery = useQuery({ queryKey: blockKeys.ids(viewerId), queryFn: () => listBlockedIds(), enabled: Boolean(viewerId), staleTime: 60_000 });
+  const blockedAuthors: ReadonlySet<string> = new Set(blockedQuery.data ?? []);
   const [about, setAbout] = useState<ReplyDraft["about"]>(null);
   // Part 5: the Wall's Reply with a build opens a box of its own at the Wall's foot (the Thread is not drawn meanwhile).
   const [wallBox, setWallBox] = useState(false);
@@ -395,6 +402,7 @@ export default function PostPage() {
               reactions={reactionRow(shown.id, shown.parentId ? "reply" : "topic")}
               onReport={shown.authorId === viewerId ? undefined : () => report(shown.id, shown.parentId ? "reply" : "topic")}
               onMessage={shown.parentId !== null || shown.authorId === viewerId || !shown.author?.handle ? undefined : { label: `Message @${shown.author.handle}`, onSelect: () => void messageAuthor(shown) }}
+              onBlock={!viewerId || shown.authorId === viewerId || !shown.author?.handle ? undefined : { label: BLOCK_COPY.action(shown.author.handle), onSelect: () => setBlocking({ id: shown.authorId, handle: shown.author!.handle! }) }}
               tab={address.tab}
               onTab={(tab) => move({ tab })}
               replies={shown.replyCount}
@@ -431,6 +439,13 @@ export default function PostPage() {
                 renderAddToDraft: (step) => <AddToDraftButton step={step} />,
                 renderReactions: (replyId) => reactionRow(replyId, "reply"),
                 onReport: (replyId) => report(replyId, "reply"),
+                onBlock: viewerId
+                  ? (replyId) => {
+                      const found = findReply(items, replyId);
+                      if (found?.author.handle) setBlocking({ id: found.author.id, handle: found.author.handle });
+                    }
+                  : undefined,
+                blockedAuthors,
                 branchHref: (replyId) => `?${postSearch(params, { reply: replyId, step: null }, defaultView).toString()}`,
               }}
               side={{ space, rows: sideRows }}
@@ -439,6 +454,17 @@ export default function PostPage() {
         )}
       </PageArrival>
       <ReportDialog target={reporting} onClose={() => setReporting(null)} />
+      <BlockDialog target={blocking} viewerId={viewerId} onClose={() => setBlocking(null)} />
     </>
   );
+}
+
+/** A reply anywhere in the drawn thread, by id. */
+function findReply(items: readonly ReplyItem[], id: string): ReplyItem | null {
+  for (const item of items) {
+    if (item.id === id) return item;
+    const inside = findReply(item.children, id);
+    if (inside) return inside;
+  }
+  return null;
 }

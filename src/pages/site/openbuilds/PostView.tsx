@@ -60,6 +60,8 @@ export interface PostViewProps {
   onReport?: () => void;
   /** UX-09 Q4: "Message @maya" in the topic's `···` menu (everyone but its author). */
   onMessage?: { label: string; onSelect: () => void };
+  /** UX-15 P5: `Block @maya` in the topic's `···`. Absent: not offered. */
+  onBlock?: { label: string; onSelect: () => void };
   /** Each step of the post's build drawn inside its menu (the container's, since a menu item may read drafts). */
   renderTile?: (tile: StripTileData, inner: ReactNode) => ReactNode;
   tab: PostTab;
@@ -166,7 +168,7 @@ export function PostView(view: PostViewProps) {
         ))}
       </nav>
 
-      <PostCard card={view.card} page clamp={false} engagement={view.engagement} renderTile={view.renderTile} reactions={view.reactions} onReport={view.onReport} onMessage={view.onMessage} />
+      <PostCard card={view.card} page clamp={false} engagement={view.engagement} renderTile={view.renderTile} reactions={view.reactions} onReport={view.onReport} onMessage={view.onMessage} onBlock={view.onBlock} />
 
       <div style={{ display: "flex", flexDirection: phone ? "column" : "row", alignItems: phone ? "stretch" : "center", justifyContent: "space-between", gap: 12, marginTop: 8, paddingBottom: 12, borderBottom: `1px solid ${t.hairline}` }}>
         <Segmented label="Show" items={items} value={tab} onChange={(value) => view.onTab(value as PostTab)} size={phone ? 50 : 32} fontSize={12} fullWidth={phone} />
