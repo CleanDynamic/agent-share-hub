@@ -1559,6 +1559,7 @@ export const CA03_FILES: readonly string[] = [
   "src/content/legal/privacy.ts",
   "src/lib/settings/apps.ts",
   "src/pages/site/settings/settings.p7.test.tsx",
+  "src/pages/site/settings/settings.p8.test.tsx",
 ];
 
 /**
