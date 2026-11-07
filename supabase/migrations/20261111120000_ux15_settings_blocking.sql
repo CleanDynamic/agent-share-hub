@@ -20,6 +20,8 @@
 --      catalogue, so a table this file has never heard of is handled too).
 --   9. openbuild_posts.removed_at, author_id nullable, FK ON DELETE SET NULL, and posts_guard_update lets a removed reply lose its
 --      author. (A reply keeps its place in the thread; its author is gone.)
+--  11. data_exports, data_export_wait_seconds() and data_export_done(): the export function's once-an-hour limit, held where the person
+--      cannot reset it; list_account_objects(uid): the files a person uploaded, for the delete function (service_role only).
 --  10. get_build_feed, profile_reader_view (behind get_profile_feed and get_profile_side) and search_build_ids hide a blocked person
 --      both ways. Each is patched from its LIVE definition with exact text replacement and a count; if the live text is not what this
 --      file expects the migration stops with nothing changed.
@@ -55,6 +57,10 @@
 --   3. rc_notify's two new reads:
 --      EXPLAIN (ANALYZE, BUFFERS) SELECT 1 FROM public.profiles p WHERE p.id = '<a user>' AND p.notification_preferences -> 'post_like' = 'false'::jsonb;
 --      SHOULD SHOW: an Index Scan on profiles_pkey, one row.
+--   5. The delete function's file list (run as the table owner; it scans storage.objects once per call):
+--      EXPLAIN (ANALYZE, BUFFERS) SELECT o.bucket_id, o.name FROM storage.objects o WHERE o.owner_id = '<a user>' OR o.owner = '<a user>'::uuid LIMIT 1000;
+--      SHOULD SHOW: an Index Scan or Bitmap Or on storage's owner indexes if it has them; a Seq Scan is acceptable here because the
+--      function runs once per deleted account, and the plan tells Miles whether that is a second or a minute on the live table.
 --   4. The block list page:
 --      EXPLAIN (ANALYZE, BUFFERS) SELECT blocked_id, created_at FROM public.user_blocks WHERE blocker_id = '<me>' ORDER BY created_at DESC LIMIT 100;
 --      SHOULD SHOW: an Index Scan on user_blocks_pkey (blocker_id leads), a Sort on a handful of rows.
@@ -613,3 +619,67 @@ $$;
 
 REVOKE ALL ON FUNCTION public.delete_account_rows(uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.delete_account_rows(uuid) TO service_role;
+
+-- 10. The data export: once an hour, and the files a person owns -----------------------------------------------------------------
+
+-- The export function runs as the person (RLS applies to every read). The hourly limit has to live where the person cannot reset
+-- it, so the last export is a row they cannot write: two functions read and set it for the caller only.
+CREATE TABLE IF NOT EXISTS public.data_exports (
+  user_id          uuid        PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
+  last_exported_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.data_exports ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.data_exports FROM PUBLIC, anon, authenticated;
+GRANT ALL ON public.data_exports TO service_role;
+
+-- Seconds until the caller may export again; 0 when they may now.
+CREATE OR REPLACE FUNCTION public.data_export_wait_seconds()
+RETURNS integer
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT coalesce(
+    (SELECT greatest(0, ceil(extract(epoch FROM (d.last_exported_at + interval '1 hour' - now())))::int)
+       FROM public.data_exports d WHERE d.user_id = (select auth.uid())),
+    0)
+$$;
+
+-- Called by the function after a file was built, so a failed build does not cost the person an hour.
+CREATE OR REPLACE FUNCTION public.data_export_done()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  IF (select auth.uid()) IS NULL THEN
+    RAISE EXCEPTION 'Sign in to download your data.';
+  END IF;
+  INSERT INTO public.data_exports (user_id, last_exported_at) VALUES ((select auth.uid()), now())
+  ON CONFLICT (user_id) DO UPDATE SET last_exported_at = excluded.last_exported_at;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.data_export_wait_seconds(), public.data_export_done() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.data_export_wait_seconds(), public.data_export_done() TO authenticated;
+
+-- The files a person uploaded, in any bucket, up to a thousand at a time (the delete function calls it until it returns nothing, so a
+-- retry finishes the job). storage.objects names its uploader in owner_id (text); older rows carry owner (uuid).
+CREATE OR REPLACE FUNCTION public.list_account_objects(_uid uuid)
+RETURNS TABLE (bucket_id text, name text)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT o.bucket_id::text, o.name::text
+    FROM storage.objects o
+   WHERE o.owner_id = _uid::text OR o.owner = _uid
+   LIMIT 1000
+$$;
+
+REVOKE ALL ON FUNCTION public.list_account_objects(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.list_account_objects(uuid) TO service_role;

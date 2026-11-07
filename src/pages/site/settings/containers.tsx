@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { DATA_COPY, deleteMyAccount, prepareExport, saveFile } from "@/lib/settings/data";
 import { blockKeys, listBlocks, unblockUser, type BlockedPerson } from "@/lib/settings/blocks";
 import { loadIsPrivate, setIsPrivate } from "@/lib/settings/privacySettings";
 import { loadNotificationPreferences, setNotificationPreference } from "@/lib/settings/notificationSettings";
@@ -15,6 +16,7 @@ import { type NotificationPreferences, type PreferenceKey } from "@/lib/settings
 import { changeEmail, changePassword, hasPassword, linkProvider, loadAccount, signOutEverywhere, unlinkMethod } from "@/lib/settings/account";
 
 import { AccountView } from "./AccountView";
+import { DataView } from "./DataView";
 import { NotificationsView } from "./NotificationsView";
 import { PrivacyView } from "./PrivacyView";
 import { SectionError, SectionLoading } from "./SettingParts";
@@ -130,4 +132,23 @@ export function PrivacySection() {
   if (isPrivate.isError || blocks.isError) return <SectionError title="Privacy and blocking" onRetry={() => { void isPrivate.refetch(); void blocks.refetch(); }} />;
   if (isPrivate.data === undefined || !blocks.data) return <SectionLoading title="Privacy and blocking" />;
   return <PrivacyView isPrivate={isPrivate.data} onTogglePrivate={(on) => togglePrivate.mutate(on)} blocked={blocks.data} onUnblock={(person) => void unblock(person)} busy={busy} />;
+}
+
+export function DataSection() {
+  const { profile } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  return (
+    <DataView
+      username={profile?.username ?? null}
+      onPrepare={prepareExport}
+      onSave={saveFile}
+      onDelete={async (typed) => {
+        await deleteMyAccount(typed);
+        queryClient.clear();
+        navigate("/", { replace: true });
+        toast(DATA_COPY.accountDeleted);
+      }}
+    />
+  );
 }

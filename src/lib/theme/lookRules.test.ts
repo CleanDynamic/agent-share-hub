@@ -1552,6 +1552,11 @@ export const CA03_FILES: readonly string[] = [
   "src/components/block/BlockDialog.tsx",
   "src/pages/site/settings/settings.p5.test.tsx",
   "src/components/shell/navBudget.test.tsx",
+  "src/lib/settings/data.ts",
+  "src/pages/site/settings/settings.p6.test.tsx",
+  "src/test/security/ux15Delete.test.ts",
+  "src/test/security/ux15Export.test.ts",
+  "src/content/legal/privacy.ts",
 ];
 
 /**
