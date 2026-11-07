@@ -1,4 +1,4 @@
-// SV-26 P2: the header's account menu (Profile, Library, Drafts, Sign out), moved out of `SiteHeader` unchanged so it and
+// SV-26 P2: the header's account menu (Profile, Library, Drafts, Settings, Sign out), moved out of `SiteHeader` unchanged so it and
 // `@radix-ui/react-dropdown-menu` load apart from the first page. A signed-out reader never loads it; a signed-in one
 // loads it at idle, or on hover, focus or press of the account button, whichever comes first (`SiteHeader`'s
 // `LazyAccountMenu`).
@@ -82,6 +82,10 @@ export function AccountMenu({ viewer, onSignOut, avatarSize = 34, defaultOpen = 
           </DropdownMenu.Item>
           <DropdownMenu.Item asChild className={MENU_ITEM_CLASS}>
             <PageLink to={SITE_NAV.drafts} style={item}>Drafts</PageLink>
+          </DropdownMenu.Item>
+          {/* UX-15: Settings, between the profile's items and Sign out. */}
+          <DropdownMenu.Item asChild className={MENU_ITEM_CLASS}>
+            <PageLink to={SITE_NAV.settings} aria-current={pathname === SITE_NAV.settings || pathname.startsWith(`${SITE_NAV.settings}/`) ? "page" : undefined} style={item}>Settings</PageLink>
           </DropdownMenu.Item>
           <DropdownMenu.Separator style={{ height: 1, margin: "4px 4px", background: t.line }} />
           <DropdownMenu.Item asChild className={MENU_ITEM_CLASS}>

@@ -28,7 +28,7 @@ describe("the account menu, loaded apart", () => {
       </MemoryRouter>,
     );
     const menu = screen.getByRole("menu");
-    expect([...menu.querySelectorAll("a, button")].map((el) => el.textContent)).toEqual(["Profile", "Library", "Drafts", "Sign out"]);
+    expect([...menu.querySelectorAll("a, button")].map((el) => el.textContent)).toEqual(["Profile", "Library", "Drafts", "Settings", "Sign out"]);
   });
 });
 

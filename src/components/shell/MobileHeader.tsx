@@ -10,8 +10,7 @@
 //
 // `MobileHeaderView` is pure (callbacks in, a bar out); `MobileHeader` owns the
 // two sheets, the route and the account. The account sheet is Profile, Library, Drafts,
-// the theme control (Noon · Dusk · System) and Sign out. There is no Settings
-// row: the app has no settings route to send it to.
+// the theme control (Noon · Dusk · System) and Sign out. UX-15 added Settings after Drafts.
 
 import { Search } from "lucide-react";
 import { memo, useState, type CSSProperties } from "react";
@@ -167,6 +166,8 @@ function MobileHeaderContainer() {
         <Link to={profileHref} aria-current={onOwnProfile ? "page" : undefined} style={row} onClick={() => setAccountOpen(false)}>Profile</Link>
         <Link to={SITE_NAV.library} style={row} onClick={() => setAccountOpen(false)}>Library</Link>
         <Link to={SITE_NAV.drafts} style={row} onClick={() => setAccountOpen(false)}>Drafts</Link>
+        {/* UX-15: Settings, before the theme control and Sign out. */}
+        <Link to={SITE_NAV.settings} aria-current={pathname === SITE_NAV.settings || pathname.startsWith(`${SITE_NAV.settings}/`) ? "page" : undefined} style={row} onClick={() => setAccountOpen(false)}>Settings</Link>
         <div style={{ padding: "4px 0" }}>
           <ThemeSegmented size={36} fontSize={11} />
         </div>

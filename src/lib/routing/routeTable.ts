@@ -31,6 +31,7 @@ import {
   OpenBuildsFeedPlaceholder,
   PostPlaceholder,
   ProfilePlaceholder,
+  SettingsPlaceholder,
 } from "./placeholders";
 
 export type RouteParams = Record<string, string | undefined>;
@@ -263,6 +264,16 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
     load: () => import("@/pages/site/signin/LoginPage"),
     prefetch: () => undefined,
     Placeholder: SignInFallback,
+  },
+  /* UX-15 P2: Settings. One chunk for the list and all six sections; a signed-in page, so nothing is started for a signed-out
+     reader. Each section reads its own data once its view is on screen (at most two rounds), so there is nothing to start early. */
+  settings: {
+    key: "settings",
+    pattern: [SITE_NAV.settings, `${SITE_NAV.settings}/:section`],
+    signedIn: true,
+    load: () => import("@/pages/site/settings/SettingsPage"),
+    prefetch: () => undefined,
+    Placeholder: SettingsPlaceholder,
   },
   /* UX-12 P2: the two legal pages. Text only, so nothing is read: each is one chunk and no data request. */
   privacy: {

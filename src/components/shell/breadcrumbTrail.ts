@@ -20,9 +20,13 @@
      /profile/:handle           Home / {display name}
      /notifications             Home / Activity
      /connect                   Home / Connect a tool
-     /library                   Home / Library                                   */
+     /library                   Home / Library
+     /settings                  Home / Settings                                  (UX-15)
+     /settings/:section         Home / Settings / {section}                      (UX-15)  */
 
 import { matchPath } from "react-router-dom";
+
+import { sectionLabel, sectionOf } from "@/lib/settings/sections";
 
 import { SITE_NAV } from "./siteNav";
 
@@ -88,6 +92,11 @@ export function trailFor(pathname: string, title: string | null, parent: Crumb |
   if (here(pathname, "/notifications")) return [HOME, { label: "Activity" }];
   if (here(pathname, "/connect")) return [HOME, { label: "Connect a tool" }];
   if (here(pathname, "/library")) return [HOME, { label: "Library" }];
+  // UX-15: Settings / <section>. A section that does not exist is the list.
+  const settings = here(pathname, "/settings/:section");
+  const section = settings ? sectionOf(settings.params.section) : null;
+  if (section) return [HOME, { label: "Settings", href: SITE_NAV.settings }, { label: sectionLabel(section) }];
+  if (here(pathname, "/settings") || settings) return [HOME, { label: "Settings" }];
 
   return [{ label: "Home" }];
 }

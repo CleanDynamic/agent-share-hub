@@ -73,6 +73,8 @@ const ApiDocs = lazy(() => import("./pages/ApiDocs"));
 // UI-P46 — /drafts is the new page (builds and sessions); the old one, which reads
 // content_items and content_blocks, is routed at /drafts/posts unchanged.
 const DraftsPage = lazy(ROUTE_TABLE.drafts.load as () => Promise<{ default: React.ComponentType }>);
+// UX-15: Settings, its own chunk.
+const SettingsPage = lazy(ROUTE_TABLE.settings.load as () => Promise<{ default: React.ComponentType }>);
 const PostPreviewPage = lazy(() => import("./pages/PostPreview"));
 const PublishMetadata = lazy(() => import("./pages/PublishMetadata"));
 const ContentEditPage = lazy(() => import("./pages/ContentEdit"));
@@ -401,6 +403,9 @@ const App = () => (
                     </ProtectedRoute>
                   }
                 />
+                {/* UX-15 P2: Settings, signed in only. An unknown section shows the list (the page redirects). */}
+                <Route path="/settings" element={<ProtectedRoute><RouteBoundary><SettingsPage /></RouteBoundary></ProtectedRoute>} />
+                <Route path="/settings/:section" element={<ProtectedRoute><RouteBoundary><SettingsPage /></RouteBoundary></ProtectedRoute>} />
                 <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
                 <Route path="/messages/:threadId" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
                 <Route path="/analytics" element={<RouteBoundary><ProtectedRoute><Analytics /></ProtectedRoute></RouteBoundary>} />

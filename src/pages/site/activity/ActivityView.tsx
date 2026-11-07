@@ -688,6 +688,7 @@ function DesktopActivity(props: ActivityViewProps) {
                 </>
               )}
             </p>
+            <NotificationSettingsLink />
           </div>
           <Button variant="secondary" size={28} fontSize={12} data-testid="activity-mark-all" disabled={!unread} onClick={onMarkAllRead}>
             Mark all read
@@ -738,6 +739,7 @@ function PhoneActivity(props: ActivityViewProps) {
           <h1 style={text(20, 500, t.text, { margin: 0, letterSpacing: "-0.015em" })}>
             {unread === null ? "Activity" : unreadHeading(unread)}
           </h1>
+          <NotificationSettingsLink />
         </div>
         {unread ? (
           <Button variant="secondary" size={44} fontSize={13} data-testid="activity-mark-all" onClick={onMarkAllRead}>
@@ -762,6 +764,18 @@ function PhoneActivity(props: ActivityViewProps) {
       {writeError ? <WriteFailed failure={writeError} /> : null}
       <ActivityList list={list} chosen={chosen} now={now} phone onOpen={onOpen} />
     </div>
+  );
+}
+
+/* UX-15 P2: the quiet way to Settings from here. */
+function NotificationSettingsLink() {
+  return (
+    <FrameLink
+      to="/settings/notifications"
+      style={text(12, 400, t.label, { textDecoration: "underline", textUnderlineOffset: 3, textDecorationThickness: 1, alignSelf: "flex-start" })}
+    >
+      Notification settings
+    </FrameLink>
   );
 }
 

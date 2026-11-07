@@ -1524,6 +1524,23 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/notfound/NotFoundPage.tsx",
   "src/pages/site/notfound/notFoundModel.ts",
   "src/pages/site/signin/SignupForm.tsx",
+  // UX-15
+  "src/lib/settings/sections.ts",
+  "src/lib/settings/sections.test.ts",
+  "src/lib/settings/notificationPrefs.ts",
+  "src/lib/settings/notificationPrefs.test.ts",
+  "src/pages/site/settings/SettingParts.tsx",
+  "src/pages/site/settings/SettingsFrame.tsx",
+  "src/pages/site/settings/SettingsPage.tsx",
+  "src/pages/site/settings/AccountView.tsx",
+  "src/pages/site/settings/NotificationsView.tsx",
+  "src/pages/site/settings/PrivacyView.tsx",
+  "src/pages/site/settings/AppsView.tsx",
+  "src/pages/site/settings/DataView.tsx",
+  "src/pages/site/settings/AppearanceView.tsx",
+  "src/pages/site/settings/settings.p2.test.tsx",
+  "src/pages/site/activity/ActivityView.tsx",
+  "src/components/shell/siteNav.ts",
 ];
 
 /**
