@@ -6,11 +6,14 @@
 
 import type { CSSProperties, ReactNode } from "react";
 
+import { Button } from "@/components/brand/Button";
+import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { SectionHead } from "@/components/vision/SectionHead";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
+import { FieldMessage } from "@/pages/site/signin/AuthParts";
 
 export const sectionTitle: CSSProperties = {
   margin: 0,
@@ -81,5 +84,64 @@ export function Note({ children, role }: { children: ReactNode; role?: "status" 
     <p role={role} style={{ margin: 0, fontSize: 12, fontWeight: 400, lineHeight: 1.4, color: t.label }}>
       {children}
     </p>
+  );
+}
+
+/** A question asked once, in place: the sentence, then the confirming button and Cancel. Used by the actions the prompt says confirm once. */
+export function ConfirmInline({
+  message,
+  confirmLabel,
+  onConfirm,
+  onCancel,
+  busy = false,
+  error,
+}: {
+  message: ReactNode;
+  confirmLabel: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  busy?: boolean;
+  error?: string | null;
+}) {
+  return (
+    <div role="group" aria-label="Confirm" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <span style={{ fontSize: 13, fontWeight: 400, lineHeight: "20px", color: t.text }}>{message}</span>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <Button variant="secondary" size={32} fontSize={12} disabled={busy} onClick={onConfirm}>
+          {confirmLabel}
+        </Button>
+        <Button variant="ghost" size={32} fontSize={12} disabled={busy} onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
+      {error ? <FieldMessage>{error}</FieldMessage> : null}
+    </div>
+  );
+}
+
+/** While a section's data is on its way: the title and bones the size of its groups. */
+export function SectionLoading({ title, rows = 3 }: { title: string; rows?: number }) {
+  return (
+    <SectionPage title={title}>
+      <LoadingRegion what={title.toLowerCase()} announce style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        {Array.from({ length: rows }, (_, index) => (
+          <Skeleton key={index} height={96} radius={8} />
+        ))}
+      </LoadingRegion>
+    </SectionPage>
+  );
+}
+
+/** A read that failed: one sentence and Retry. */
+export function SectionError({ title, onRetry }: { title: string; onRetry: () => void }) {
+  return (
+    <SectionPage title={title}>
+      <div role="alert" style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 13, color: t.text }}>Couldn&apos;t load this. Try again.</span>
+        <Button variant="secondary" size={32} fontSize={12} onClick={onRetry}>
+          Retry
+        </Button>
+      </div>
+    </SectionPage>
   );
 }

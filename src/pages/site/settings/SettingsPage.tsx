@@ -8,18 +8,18 @@ import { useIsPhone } from "@/components/shell/useMinWidth";
 import { usePageReady } from "@/lib/routing/pageReady";
 import { sectionOf, settingsPath, type SectionKey } from "@/lib/settings/sections";
 
-import { AccountView } from "./AccountView";
 import { AppearanceView } from "./AppearanceView";
 import { AppsView } from "./AppsView";
 import { DataView } from "./DataView";
 import { NotificationsView } from "./NotificationsView";
 import { PrivacyView } from "./PrivacyView";
+import { AccountSection } from "./containers";
 import { SettingsFrame } from "./SettingsFrame";
 
 function SectionBody({ section }: { section: SectionKey }) {
   switch (section) {
     case "account":
-      return <AccountView />;
+      return <AccountSection />;
     case "notifications":
       return <NotificationsView />;
     case "privacy":

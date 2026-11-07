@@ -1541,6 +1541,10 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/settings/settings.p2.test.tsx",
   "src/pages/site/activity/ActivityView.tsx",
   "src/components/shell/siteNav.ts",
+  "src/lib/settings/account.ts",
+  "src/lib/settings/useAction.ts",
+  "src/pages/site/settings/containers.tsx",
+  "src/pages/site/settings/settings.p3.test.tsx",
 ];
 
 /**
