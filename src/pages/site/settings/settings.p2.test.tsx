@@ -1,5 +1,6 @@
 // UX-15 P2: the routes, the unknown section, aria-current, the phone list and the three entry points.
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -9,7 +10,17 @@ vi.mock("@/components/shell/useMinWidth", async (original) => ({
   ...(await original<typeof import("@/components/shell/useMinWidth")>()),
   useIsPhone: () => phone.on,
 }));
-vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: vi.fn(), auth: {}, from: vi.fn() } }));
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: {
+    rpc: vi.fn(async () => ({ data: [], error: null })),
+    auth: {
+      getUser: vi.fn(async () => ({ data: { user: { email: "ada@example.com" } }, error: null })),
+      getUserIdentities: vi.fn(async () => ({ data: { identities: [] }, error: null })),
+    },
+    from: vi.fn(),
+  },
+}));
+vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: { id: "u1" }, profile: { username: "ada" } }) }));
 
 import { AccountMenu } from "@/components/shell/AccountMenu";
 import { trailFor } from "@/components/shell/breadcrumbTrail";
@@ -26,12 +37,14 @@ function Where() {
 }
 function mount(path: string) {
   return render(
-    <MemoryRouter initialEntries={[path]}>
-      <Routes>
-        <Route path="/settings" element={<><SettingsPage /><Where /></>} />
-        <Route path="/settings/:section" element={<><SettingsPage /><Where /></>} />
-      </Routes>
-    </MemoryRouter>,
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <MemoryRouter initialEntries={[path]}>
+        <Routes>
+          <Route path="/settings" element={<><SettingsPage /><Where /></>} />
+          <Route path="/settings/:section" element={<><SettingsPage /><Where /></>} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
@@ -70,9 +83,9 @@ describe("on a desktop", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Privacy and blocking" })).toBeTruthy();
   });
 
-  it("shows the first section beside the list at /settings", () => {
+  it("shows the first section beside the list at /settings", async () => {
     mount("/settings");
-    expect(screen.getByRole("heading", { level: 1, name: "Account" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "Account" })).toBeTruthy();
     expect(within(screen.getByRole("navigation", { name: "Settings" })).getByRole("link", { name: "Account" }).getAttribute("aria-current")).toBe("page");
   });
 
