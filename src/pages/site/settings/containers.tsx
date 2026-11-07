@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { listApps, revokeApp } from "@/lib/settings/apps";
 import { DATA_COPY, deleteMyAccount, prepareExport, saveFile } from "@/lib/settings/data";
 import { blockKeys, listBlocks, unblockUser, type BlockedPerson } from "@/lib/settings/blocks";
 import { loadIsPrivate, setIsPrivate } from "@/lib/settings/privacySettings";
@@ -16,6 +17,7 @@ import { type NotificationPreferences, type PreferenceKey } from "@/lib/settings
 import { changeEmail, changePassword, hasPassword, linkProvider, loadAccount, signOutEverywhere, unlinkMethod } from "@/lib/settings/account";
 
 import { AccountView } from "./AccountView";
+import { AppsView } from "./AppsView";
 import { DataView } from "./DataView";
 import { NotificationsView } from "./NotificationsView";
 import { PrivacyView } from "./PrivacyView";
@@ -148,6 +150,23 @@ export function DataSection() {
         queryClient.clear();
         navigate("/", { replace: true });
         toast(DATA_COPY.accountDeleted);
+      }}
+    />
+  );
+}
+
+export function AppsSection() {
+  const queryClient = useQueryClient();
+  const apps = useQuery({ queryKey: ["settings", "listApps"], queryFn: listApps, staleTime: STALE_MS });
+  if (apps.isError) return <SectionError title="Connected apps" onRetry={() => void apps.refetch()} />;
+  if (!apps.data) return <SectionLoading title="Connected apps" rows={2} />;
+  return (
+    <AppsView
+      apps={apps.data.state === "listed" ? apps.data.apps : null}
+      onRevoke={async (app) => {
+        await revokeApp(app.clientId);
+        await queryClient.invalidateQueries({ queryKey: ["settings", "listApps"] });
+        toast("Access revoked.");
       }}
     />
   );

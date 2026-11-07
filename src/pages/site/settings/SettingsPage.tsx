@@ -9,8 +9,7 @@ import { usePageReady } from "@/lib/routing/pageReady";
 import { sectionOf, settingsPath, type SectionKey } from "@/lib/settings/sections";
 
 import { AppearanceView } from "./AppearanceView";
-import { AppsView } from "./AppsView";
-import { AccountSection, DataSection, NotificationsSection, PrivacySection } from "./containers";
+import { AccountSection, AppsSection, DataSection, NotificationsSection, PrivacySection } from "./containers";
 import { SettingsFrame } from "./SettingsFrame";
 
 function SectionBody({ section }: { section: SectionKey }) {
@@ -22,7 +21,7 @@ function SectionBody({ section }: { section: SectionKey }) {
     case "privacy":
       return <PrivacySection />;
     case "apps":
-      return <AppsView />;
+      return <AppsSection />;
     case "data":
       return <DataSection />;
     case "appearance":

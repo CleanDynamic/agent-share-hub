@@ -1557,6 +1557,8 @@ export const CA03_FILES: readonly string[] = [
   "src/test/security/ux15Delete.test.ts",
   "src/test/security/ux15Export.test.ts",
   "src/content/legal/privacy.ts",
+  "src/lib/settings/apps.ts",
+  "src/pages/site/settings/settings.p7.test.tsx",
 ];
 
 /**
