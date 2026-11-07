@@ -36,6 +36,7 @@ import type { Json, Tables, TablesUpdate } from "@/integrations/supabase/types";
 // and is not worth a rename across nine modules.
 import { buildLayerError } from "./types";
 import type { NodeTree } from "./types";
+import { SITE_NAME } from "@/lib/site";
 
 // -----------------------------------------------------------------------------
 // Shapes
@@ -81,7 +82,7 @@ export const LAYER_COLUMNS =
  * never presented as the creator's own words, and this is what says so.
  */
 export const LAYER_ATTRIBUTION =
-  "Written by buildgallery from this build’s record, reviewed by the creator.";
+  `Written by ${SITE_NAME} from this build’s record, reviewed by the creator.`;
 
 export const LAYER_TITLE: Record<Layer, string> = {
   run: "Run it",
@@ -526,7 +527,7 @@ export function staleLayers(layers: BuildLayer[], hash: string | null): BuildLay
 // a fact about the build, and a creator on another machine being offered the
 // review again is the harmless side of the trade.
 
-const DECLINED_PREFIX = "neoscale.layer-review.declined.";
+const DECLINED_PREFIX = "openbuilds.layer-review.declined.";
 
 /** A hash that could not be computed still needs a stable key. */
 function declineValue(hash: string | null): string {

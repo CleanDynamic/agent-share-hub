@@ -21,7 +21,7 @@ import { toast } from "sonner";
 import { SeoHead } from "@/components/SeoHead";
 import { topicHref } from "@/components/post/postCardModel";
 import { reportError } from "@/lib/errors/report";
-import { siteUrl } from "@/lib/site";
+import { SITE_NAME, siteUrl } from "@/lib/site";
 import { MEDIA_WIDTH } from "@/components/build/MediaFigure";
 import { coverMedia, feedMedia, stillFor, useSignedMedia, type CardMedia } from "@/components/gallery/cardMedia";
 import { PageArrival } from "@/components/shell/PageArrival";
@@ -453,7 +453,7 @@ export function HomePage() {
   return (
     <>
       <SeoHead
-        title="openbuilds.ai: The AI Agent Tactics Forum"
+        title={SITE_NAME}
         description="Download AI assistants, blueprints and workflows. Works with ChatGPT, Claude, Gemini and any AI tool."
         path="/"
       />

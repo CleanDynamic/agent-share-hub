@@ -5,6 +5,9 @@
 // Pure TypeScript with no imports, so Deno and the repo's Vitest run both load it.
 // PUBLIC_SITE_URL is a Supabase Edge Function secret; outside Deno there is none.
 
+// UX-14: the site is called OpenBuilds.ai. Every shown use of the name reads this.
+export const SITE_NAME = "OpenBuilds.ai";
+
 const DEFAULT_SITE_URL = "https://openbuilds.ai";
 
 function readEnv(): string | undefined {

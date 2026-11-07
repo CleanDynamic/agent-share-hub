@@ -2695,7 +2695,7 @@ function SandboxPageBody() {
         <BuildActionsContext.Provider value={actions}>
           <BuildSelectionContext.Provider value={selection}>
     <>
-      <SeoHead title="Compose · buildgallery" description="Write your build." path="/compose" noIndex />
+      <SeoHead title="Compose" description="Write your build." path="/compose" noIndex />
       <input
         ref={picker}
         type="file"

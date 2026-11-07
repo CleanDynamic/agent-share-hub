@@ -23,11 +23,11 @@ const WIDTHS = [
 ] as const;
 
 const CONNECTOR_URL = "https://zybdotagjwektucfdkri.supabase.co/functions/v1/mcp";
-const CLAUDE_CODE_COMMAND = `claude mcp add --transport http buildgallery ${CONNECTOR_URL}`;
+const CLAUDE_CODE_COMMAND = `claude mcp add --transport http openbuilds ${CONNECTOR_URL}`;
 
 const SENTENCES = [
-  "put this conversation on buildgallery",
-  "what drafts do I have on buildgallery?",
+  "put this conversation on OpenBuilds.ai",
+  "what drafts do I have on OpenBuilds.ai?",
   "add this conversation to my [title] draft",
   "did my last session arrive?",
 ] as const;
@@ -136,7 +136,7 @@ test.describe("UI-P45 — the footer opens the guide as a dialog", () => {
     await opener.focus();
     await opener.press("Enter");
 
-    const dialog = page.getByRole("dialog", { name: "Send your sessions to buildgallery" });
+    const dialog = page.getByRole("dialog", { name: "Send your sessions to OpenBuilds.ai" });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByText(CONNECTOR_URL, { exact: true })).toBeVisible();
 

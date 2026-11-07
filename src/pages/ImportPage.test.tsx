@@ -85,7 +85,7 @@ import ImportPage from "./ImportPage";
 const PLANTED_KEY = "sk-abcdefghijklmnopqrstuvwx";
 
 const ENVELOPE = {
-  neoscale_build: 1,
+  openbuilds_build: 1,
   generated_by: "extractor-v1",
   exported_at: "2026-08-27T09:00:00.000Z",
   origin: { tool: "extractor-v1", session_hint: "Claude, 27 Aug" },
@@ -105,7 +105,7 @@ const ENVELOPE = {
   ],
 };
 
-function fileOf(body: string, name = "NEOSCALE_BUILD.json"): File {
+function fileOf(body: string, name = "OPENBUILDS_BUILD.json"): File {
   return new File([body], name, { type: "application/json" });
 }
 
@@ -138,14 +138,14 @@ async function drop(file: File) {
   await Promise.resolve();
 }
 
-const EXTRACTOR_BODY = "# buildgallery Build File — Extractor v1\n\nRules — these are strict\n";
-const COMPILER_BODY = "# buildgallery Build File — Compiler v1\n\nEach source file becomes one PHASE.\n";
+const EXTRACTOR_BODY = "# OpenBuilds.ai Build File — Extractor v1\n\nRules — these are strict\n";
+const COMPILER_BODY = "# OpenBuilds.ai Build File — Compiler v1\n\nEach source file becomes one PHASE.\n";
 
 let written: string[] = [];
 
 function serve(url: string): string | null {
-  if (url.endsWith("/buildfile/BUILDGALLERY_EXTRACTOR.md")) return EXTRACTOR_BODY;
-  if (url.endsWith("/buildfile/BUILDGALLERY_COMPILER.md")) return COMPILER_BODY;
+  if (url.endsWith("/buildfile/OPENBUILDS_EXTRACTOR.md")) return EXTRACTOR_BODY;
+  if (url.endsWith("/buildfile/OPENBUILDS_COMPILER.md")) return COMPILER_BODY;
   return null;
 }
 
@@ -222,11 +222,9 @@ describe("/import", () => {
     renderPage();
 
     const link = screen.getByTestId("download-extractor");
-    // The buildgallery-named document is what the page offers. The
-    // NEOSCALE-named path still serves the identical bytes for anyone holding
-    // the old URL — see buildfileDocuments.test.ts.
-    expect(link).toHaveAttribute("href", "/buildfile/BUILDGALLERY_EXTRACTOR.md");
-    expect(link).toHaveAttribute("download", "BUILDGALLERY_EXTRACTOR.md");
+    // The OpenBuilds-named document is the only one: see buildfileDocuments.test.ts.
+    expect(link).toHaveAttribute("href", "/buildfile/OPENBUILDS_EXTRACTOR.md");
+    expect(link).toHaveAttribute("download", "OPENBUILDS_EXTRACTOR.md");
   });
 
   it("shows the drop target as a live target", () => {
@@ -357,7 +355,7 @@ describe("/import", () => {
   it("refuses a version it cannot read, in words rather than a code", async () => {
     renderPage();
 
-    await drop(fileOf(JSON.stringify({ ...ENVELOPE, neoscale_build: 2 })));
+    await drop(fileOf(JSON.stringify({ ...ENVELOPE, openbuilds_build: 2 })));
 
     const refusal = await screen.findByTestId("import-error");
     expect(refusal).toHaveTextContent(

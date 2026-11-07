@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { colourAlpha } from "@/lib/theme/tokens";
 import { feedback } from "@/lib/theme/motion";
+import { SITE_NAME } from "@/lib/site";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface PostMeta {
@@ -687,7 +688,7 @@ export function ContentDetailShell({
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 16 }}>
           <div>
             <div style={{ fontFamily: "var(--font-ui)", fontSize: 16, fontWeight: 600, color: "var(--text)" }}>
-              Want to publish on buildgallery?
+              Want to publish on {SITE_NAME}?
             </div>
             <div style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--text2)" }}>
               Share your blueprints and blogs with the community.

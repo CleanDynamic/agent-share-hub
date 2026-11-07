@@ -13,13 +13,14 @@
 // keeps 1.1× the drawn size — the header's mark is still 23 beside an 18px word.
 //
 // A LINK HOME NAMES ITSELF. The mark is `aria-hidden` and the word is the whole
-// visible label, but "buildgallery" alone says nothing about where the link
-// goes, so a lockup given `to` is a link whose accessible name is "buildgallery
+// visible label, but "OpenBuilds.ai" alone says nothing about where the link
+// goes, so a lockup given `to` is a link whose accessible name is "OpenBuilds.ai
 // home". Without `to` it is a plain row and says nothing about itself.
 
 import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 
+import { SITE_NAME } from "@/lib/site";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -43,13 +44,13 @@ function RefinedLockup({ size, color = t.text, to, markSize = Math.round(size * 
     <>
       <Mark size={markSize} />
       <span style={{ fontFamily: FIGTREE, fontSize: size, fontWeight: 600, letterSpacing: "-0.02em", lineHeight: "normal" }}>
-        buildgallery
+        {SITE_NAME}
       </span>
     </>
   );
   if (to) {
     return (
-      <Link data-ui="lockup" to={to} aria-label="buildgallery home" style={row}>
+      <Link data-ui="lockup" to={to} aria-label={`${SITE_NAME} home`} style={row}>
         {content}
       </Link>
     );

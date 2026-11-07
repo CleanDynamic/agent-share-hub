@@ -34,6 +34,7 @@ import {
   MAX_BUILDFILE_CHARS,
   buildFileParsed,
   extractEnvelope,
+  formatVersionOf,
   parseBuildFile,
   type BuildFileError,
   type BuildFileErrorCode,
@@ -134,7 +135,7 @@ export function declaredVersion(raw: string | null): string | null {
   try {
     const envelope = extractEnvelope(raw);
     if (!envelope || typeof envelope !== "object" || Array.isArray(envelope)) return null;
-    const version = (envelope as Record<string, unknown>).neoscale_build;
+    const version = formatVersionOf(envelope as Record<string, unknown>);
     if (typeof version === "number") return String(version);
     if (typeof version === "string" && version.trim()) return version.trim();
     return null;

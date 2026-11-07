@@ -62,6 +62,7 @@ import {
   FIGTREE,
   measure,
 } from "@/lib/theme/type";
+import { SITE_NAME } from "@/lib/site";
 
 /** The chip's own padding, matching `CategoryChip`: a label, not a target. */
 const CHIP_PAD = "2px 8px";
@@ -111,7 +112,7 @@ function Notice({
           textUnderlineOffset: "3px",
         }}
       >
-        Go to buildgallery
+        Go to {SITE_NAME}
       </Link>
     </div>
   );
@@ -224,8 +225,8 @@ export default function OAuthConsent() {
      else and expires for the person it does mean something to. */
   const head = (
     <SeoHead
-      title="Authorize an application — buildgallery"
-      description="Approve or deny an application asking for access to your buildgallery account."
+      title="Authorize an application"
+      description={`Approve or deny an application asking for access to your ${SITE_NAME} account.`}
       path="/oauth/consent"
       noIndex
     />
@@ -247,7 +248,7 @@ export default function OAuthConsent() {
         {head}
         <Notice title="Nothing to authorize">
           This page answers a request from an application that wants access to
-          your buildgallery account. It was opened without one, so there is
+          your {SITE_NAME} account. It was opened without one, so there is
           nothing here to allow or deny.
         </Notice>
       </AuthShell>
@@ -322,7 +323,7 @@ export default function OAuthConsent() {
       {head}
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <h1 style={{ ...cardTitle, margin: 0, color: t.text }}>
-          {applicationName} wants access to your account
+          {applicationName} wants access to your {SITE_NAME} account
         </h1>
 
         {/* The account the grant will act as. From `useAuth()` — the session is
@@ -334,7 +335,7 @@ export default function OAuthConsent() {
 
         <p style={{ ...bodyType, ...measure, margin: 0, color: t.text }}>
           This will let {applicationName} upload conversations to your
-          buildgallery account as waiting imports for you to review. It cannot
+          {SITE_NAME} account as waiting imports for you to review. It cannot
           publish anything, and it cannot change or delete anything you have
           already made.
         </p>

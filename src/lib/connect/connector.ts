@@ -16,7 +16,7 @@
 export const CONNECTOR_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mcp`;
 
 /** The one line Claude Code needs. Built from the address, never retyped. */
-export const CLAUDE_CODE_COMMAND = "claude mcp add --transport http buildgallery " + CONNECTOR_URL;
+export const CLAUDE_CODE_COMMAND = "claude mcp add --transport http openbuilds " + CONNECTOR_URL;
 
 export const CONNECTOR_TOOLS = ["Claude", "Claude Code", "ChatGPT", "Cursor"] as const;
 

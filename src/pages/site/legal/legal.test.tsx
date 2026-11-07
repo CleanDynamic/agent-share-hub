@@ -104,7 +104,7 @@ describe("LegalPage", () => {
     render(
       <HelmetProvider>
         <MemoryRouter initialEntries={["/privacy#second-part"]}>
-          <LegalPage name="privacy" text={text} seoTitle="Privacy policy · OpenBuilds" description="d" path="/privacy" />
+          <LegalPage name="privacy" text={text} seoTitle="Privacy policy" description="d" path="/privacy" />
         </MemoryRouter>
       </HelmetProvider>,
     );
@@ -112,7 +112,7 @@ describe("LegalPage", () => {
   it("sets noindex while a draft and index once reviewed, with the title", async () => {
     const { unmount } = page(fixture(false));
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(document.title).toBe("Privacy policy · OpenBuilds");
+    expect(document.title).toBe("Privacy policy · OpenBuilds.ai");
     expect(document.querySelector('meta[name="robots"]')?.getAttribute("content")).toBe("noindex, nofollow");
     unmount();
     page(fixture(true));

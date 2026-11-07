@@ -274,8 +274,8 @@ export function PublishMetadataForm({
   };
 
   const slugPreview = state.slug.trim()
-    ? `neoscale.ai/${authorUsername}/${state.slug.trim().toLowerCase()}`
-    : `neoscale.ai/${authorUsername}/your-slug-here`;
+    ? `openbuilds.ai/${authorUsername}/${state.slug.trim().toLowerCase()}`
+    : `openbuilds.ai/${authorUsername}/your-slug-here`;
 
   const isUpdate = publishLabel === "Update";
 

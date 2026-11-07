@@ -2,6 +2,9 @@
 // share link and Build File link is built from this, never from a literal.
 // VITE_SITE_URL overrides it for a preview deploy that should point at itself.
 
+// UX-14: the site is called OpenBuilds.ai. Every shown use of the name reads this.
+export const SITE_NAME = "OpenBuilds.ai";
+
 const DEFAULT_SITE_URL = "https://openbuilds.ai";
 
 const fromEnv = (import.meta.env?.VITE_SITE_URL as string | undefined)?.trim();

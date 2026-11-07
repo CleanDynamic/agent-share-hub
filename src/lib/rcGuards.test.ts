@@ -119,17 +119,17 @@ describe("RC decisions", () => {
 
   // RC-P16b: a shared link and a search result are most people's first sight
   // of the site, and they said the old name. UX-13: the address is openbuilds.ai,
-  // read from src/lib/site.ts; the shown name is still buildgallery until UX-14.
-  it("index.html and SeoHead name buildgallery, not the old neoscale name", () => {
+  // read from src/lib/site.ts; the shown name is OpenBuilds.ai (UX-14).
+  it("index.html and SeoHead name OpenBuilds.ai, not the old names", () => {
     const html = readFileSync("index.html", "utf8");
     const seoHead = readFileSync(join("src", "components", "SeoHead.tsx"), "utf8");
     for (const [name, text] of [["index.html", html], ["SeoHead.tsx", seoHead]] as const) {
       expect(text.match(/neoscale/gi) ?? [], name).toEqual([]);
     }
-    expect(html).toContain('<meta property="og:site_name" content="buildgallery" />');
+    expect(html).toContain('<meta property="og:site_name" content="OpenBuilds.ai" />');
     expect(html).not.toContain("twitter:site");
     expect(seoHead).toContain("siteUrl(path)");
-    expect(seoHead).toContain('const SITE_NAME = "buildgallery";');
+    expect(seoHead).toContain("SITE_NAME");
   });
 
   // RC-P25: "stale" is decided in SQL as well as in signals.ts, because the

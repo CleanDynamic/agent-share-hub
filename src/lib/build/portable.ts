@@ -1,7 +1,7 @@
 // The portable build file: one record, one JSON object, nothing installation-
 // specific left in it.
 //
-// This is what carries a build out of NeoScale and into any AI tool. Two
+// This is what carries a build out of OpenBuilds.ai and into any AI tool. Two
 // exports produce it: toPortable turns a loaded BuildRecord into the envelope,
 // and toMarkdown turns that envelope into a document a language model can act
 // on without being told what the shape means.
@@ -78,7 +78,7 @@ export interface PortableEvent {
 }
 
 export interface PortableBuild {
-  neoscale_build: number;
+  openbuilds_build: number;
   exported_at: string;
   /** Absolute /b2/<slug> URL, so the file says where it came from. */
   source_url: string;
@@ -319,7 +319,7 @@ export function toPortable(record: BuildRecord, options: PortableOptions = {}): 
   };
 
   return {
-    neoscale_build: PORTABLE_FORMAT_VERSION,
+    openbuilds_build: PORTABLE_FORMAT_VERSION,
     exported_at: (options.exportedAt ?? new Date()).toISOString(),
     source_url: `${origin}/b2/${record.build.slug}`,
     build: portableHeader(record.build),

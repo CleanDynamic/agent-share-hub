@@ -14,13 +14,13 @@ describe("UX-09 P10: titles", () => {
   });
 
   it("a space: <name> · OpenBuilds, with its description", () => {
-    expect(spaceSeo({ name: "Claude Code", description: "Work made with Claude Code" })).toEqual({ title: "Claude Code · OpenBuilds", description: "Work made with Claude Code" });
+    expect(spaceSeo({ name: "Claude Code", description: "Work made with Claude Code" })).toEqual({ title: "Claude Code · OpenBuilds.ai", description: "Work made with Claude Code" });
   });
 
   it("a topic: <heading> · OpenBuilds, with the first 150 characters of its text", () => {
     const text = "x".repeat(200);
     const seo = topicSeo({ body: `Can anyone make the scorer faster?\n${text}` });
-    expect(seo.title).toBe("Can anyone make the scorer faster? · OpenBuilds");
+    expect(seo.title).toBe("Can anyone make the scorer faster? · OpenBuilds.ai");
     expect(seo.description).toBe("x".repeat(150));
     // No text: the heading stands in.
     expect(topicSeo({ body: "Just a heading" }).description).toBe("Just a heading");

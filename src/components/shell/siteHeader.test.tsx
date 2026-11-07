@@ -117,7 +117,7 @@ describe("SiteHeaderView", () => {
       document.querySelectorAll<HTMLElement>("a[href], button, input"),
     ).map((el) => el.getAttribute("aria-label") ?? el.textContent);
     expect(focusable).toEqual([
-      "buildgallery home",
+      "OpenBuilds.ai home",
       "Home",
       "Builds",
       "OpenBuilds",

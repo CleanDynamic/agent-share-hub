@@ -1,4 +1,5 @@
 import { SeoHead } from "@/components/SeoHead";
+import { SITE_NAME } from "@/lib/site";
 
 const BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/public-api`;
 
@@ -36,11 +37,11 @@ const endpoints = [
 export default function ApiDocs() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-12">
-      <SeoHead title="API Documentation — openbuilds.ai" description="Public API documentation for the buildgallery Blueprint library." path="/api-docs" />
+      <SeoHead title="API Documentation" description={`Public API documentation for the ${SITE_NAME} Blueprint library.`} path="/api-docs" />
 
-      <h1 className="text-2xl font-bold text-foreground mb-2">buildgallery Public API</h1>
+      <h1 className="text-2xl font-bold text-foreground mb-2">{SITE_NAME} Public API</h1>
       <p className="text-sm text-muted-foreground mb-8">
-        Read-only access to the buildgallery Blueprint library. No authentication required. Rate limited to 60 requests per minute per IP.
+        Read-only access to the {SITE_NAME} Blueprint library. No authentication required. Rate limited to 60 requests per minute per IP.
       </p>
 
       <div className="mb-6 p-4 rounded-xl border border-border bg-card">

@@ -1428,7 +1428,7 @@ export function ContentBlockViewer({
     await supabase.from("ad_impressions").insert({ content_id: contentId, user_id: user?.id ?? null, shown_at: new Date().toISOString() });
   }, [contentId]);
 
-  const guestAdKey = `neoscale_page_ad_shown_${contentId}`;
+  const guestAdKey = `openbuilds_page_ad_shown_${contentId}`;
   const guestPageAdShown = () => sessionStorage.getItem(guestAdKey) === "true";
   const markGuestPageAd = () => sessionStorage.setItem(guestAdKey, "true");
 

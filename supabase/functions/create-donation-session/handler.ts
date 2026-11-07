@@ -5,6 +5,7 @@
 import { z, readBody, returnUrl } from "../_shared/body.ts";
 import { fail, json, preflight } from "../_shared/cors.ts";
 import { MIN_PENCE, PWYW_CEILING_PENCE } from "../_shared/payments.ts";
+import { SITE_NAME } from "../_shared/site.ts";
 
 const Body = z.object({
   creator_id: z.string({ required_error: "Required" }).uuid(),
@@ -41,7 +42,7 @@ export function createDonationHandler(deps: DonationDeps) {
             price_data: {
               currency: "gbp",
               unit_amount: amount_pence,
-              product_data: { name: `Tip for ${name || "a creator"} on NeoScale AI`, metadata: { creator_id } },
+              product_data: { name: `Tip for ${name || "a creator"} on ${SITE_NAME}`, metadata: { creator_id } },
             },
             quantity: 1,
           },

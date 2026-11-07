@@ -50,6 +50,7 @@ import type {
 } from "./intake";
 import { PORTABLE_FORMAT_VERSION } from "./portable";
 import type { FieldDef, NodeType } from "./types";
+import { SITE_NAME } from "@/lib/site";
 
 // =============================================================================
 // Limits
@@ -288,6 +289,12 @@ function readStringList(value: unknown): string[] {
 }
 
 /** What a value is, for an error message a human reads. */
+/**
+ * The format version a file declares. `neoscale_build` is the key before UX-14 renamed it to `openbuilds_build`; it is still
+ * read here, and nowhere else, so Miles's own earlier exports import.
+ */
+export const formatVersionOf = (envelope: Record<string, unknown>): unknown => envelope.openbuilds_build ?? envelope.neoscale_build;
+
 function describeValue(value: unknown): string {
   if (value === undefined) return "nothing";
   if (value === null) return "null";
@@ -778,7 +785,7 @@ function proposeNode(
       context,
       "UNKNOWN_TYPE",
       declared
-        ? `${where}: "${declared}" is not a type this buildgallery knows. It was imported as a note and the type name kept in the title.`
+        ? `${where}: "${declared}" is not a type ${SITE_NAME} knows. It was imported as a note and the type name kept in the title.`
         : `${where}: no type was given. It was imported as a note.`
     );
     // The name survives in the title rather than being thrown away: it is the
@@ -922,7 +929,7 @@ function proposeEvent(
       context,
       "UNKNOWN_EVENT_KIND",
       declaredKind
-        ? `Event ${ordinal}: "${declaredKind}" is not a kind this buildgallery records. It was imported as a note.`
+        ? `Event ${ordinal}: "${declaredKind}" is not a kind ${SITE_NAME} records. It was imported as a note.`
         : `Event ${ordinal}: no kind was given. It was imported as a note.`
     );
   }
@@ -937,7 +944,7 @@ function proposeEvent(
       warn(
         context,
         "UNKNOWN_VISIBILITY",
-        `Event ${ordinal}: "${declaredVisibility}" is not a visibility this buildgallery records. It was imported as ${DEFAULT_EVENT_VISIBILITY}.`
+        `Event ${ordinal}: "${declaredVisibility}" is not a visibility ${SITE_NAME} records. It was imported as ${DEFAULT_EVENT_VISIBILITY}.`
       );
     }
   }
@@ -1037,7 +1044,7 @@ export function parseBuildFile(
     };
   }
 
-  const version = envelope.neoscale_build;
+  const version = formatVersionOf(envelope);
   const versionOk =
     version === PORTABLE_FORMAT_VERSION ||
     (typeof version === "string" && version.trim() === String(PORTABLE_FORMAT_VERSION));
@@ -1047,7 +1054,7 @@ export function parseBuildFile(
       errors: [
         {
           code: "UNSUPPORTED_VERSION",
-          message: `This file declares neoscale_build ${describeValue(version)}. This version of buildgallery reads format ${PORTABLE_FORMAT_VERSION}.`,
+          message: `This file declares openbuilds_build ${describeValue(version)}. This version of ${SITE_NAME} reads format ${PORTABLE_FORMAT_VERSION}.`,
         },
       ],
     };

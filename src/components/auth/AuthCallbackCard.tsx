@@ -4,6 +4,7 @@ import { AuthButton } from "./AuthButton";
 import { r } from "@/lib/theme/radius";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { cardTitle, FIGTREE } from "@/lib/theme/type";
+import { SITE_NAME } from "@/lib/site";
 
 interface AuthCallbackCardProps {
   state: "pending" | "failed";
@@ -57,7 +58,7 @@ export function AuthCallbackCard({
           <p style={bodyStyle}>
             We&apos;re confirming your account with{" "}
             {provider ? providerNames[provider] : "your provider"}. This takes a
-            moment, and buildgallery opens on its own when it&apos;s done.
+            moment, and {SITE_NAME} opens on its own when it&apos;s done.
           </p>
         </>
       ) : (

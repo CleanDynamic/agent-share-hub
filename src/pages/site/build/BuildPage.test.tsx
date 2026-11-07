@@ -256,7 +256,7 @@ describe("BuildPage (site frame)", () => {
     await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" });
     fireEvent.click(screen.getByRole("button", { name: "Download" }));
     expect(click).toHaveBeenCalledTimes(1);
-    expect((click.mock.contexts[0] as HTMLAnchorElement).download).toBe("inbox-triage.neoscale.json");
+    expect((click.mock.contexts[0] as HTMLAnchorElement).download).toBe("inbox-triage.openbuilds.json");
   });
 
   it("sends a signed-out reader to sign in, for confirming and for rebuilding", async () => {
@@ -510,7 +510,7 @@ describe("BuildPage (site frame) — the tab bodies, UI-P30", () => {
     const viewer = await openTab("Run it yourself");
     fireEvent.click(await within(viewer).findByRole("button", { name: "In words" }));
     expect(within(viewer).getByTestId("layer-attribution").textContent).toBe(
-      "Written by buildgallery from this build’s record, reviewed by the creator.",
+      "Written by OpenBuilds.ai from this build’s record, reviewed by the creator.",
     );
     expect(within(viewer).getByTestId("build-layer-step").textContent).toContain("Paste the prompt");
     fireEvent.click(within(viewer).getByRole("button", { name: "Triage system prompt in the anatomy →" }));

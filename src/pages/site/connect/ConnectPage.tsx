@@ -10,6 +10,7 @@ import type { GuideStep } from "@/components/connect/ConnectorGuide";
 import type { ConnectorTool } from "@/lib/connect/connector";
 
 import { ConnectView } from "./ConnectView";
+import { SITE_NAME } from "@/lib/site";
 
 export default function ConnectPage() {
   const [step, setStep] = useState<GuideStep>(1);
@@ -18,8 +19,8 @@ export default function ConnectPage() {
   return (
     <>
       <SeoHead
-        title="Connect a tool — buildgallery"
-        description="Add the buildgallery connector to Claude, Claude Code, ChatGPT or Cursor, then send a conversation to your Drafts page."
+        title="Connect a tool"
+        description={`Add the ${SITE_NAME} connector to Claude, Claude Code, ChatGPT or Cursor, then send a conversation to your Drafts page.`}
         path="/connect"
       />
       <ConnectView

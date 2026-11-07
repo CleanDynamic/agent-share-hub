@@ -216,7 +216,7 @@ describe("the thread editor", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "This becomes the first picture of your post, everywhere on buildgallery."
+        "This becomes the first picture of your post, everywhere on OpenBuilds.ai."
       )
     ).toBeInTheDocument();
     // Four is the ceiling and the header says so from the start.

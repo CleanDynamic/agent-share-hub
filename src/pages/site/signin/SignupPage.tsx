@@ -28,6 +28,7 @@ import { PRIVACY_REVIEWED, TERMS_REVIEWED } from "@/content/legal/reviewed";
 import { signupCanSubmit } from "./authModel";
 import { SignInShell } from "./SignInShell";
 import { SignupForm } from "./SignupForm";
+import { SITE_NAME } from "@/lib/site";
 
 const EMAIL_REGEX = /^[^@]+@[^@]+\.[^@]+$/;
 
@@ -222,7 +223,7 @@ export function SignupPage() {
 
   return (
     <>
-      <SeoHead title="Join buildgallery" description="Create a free buildgallery account." path="/signup" noIndex />
+      <SeoHead title="Join" description={`Create a free ${SITE_NAME} account.`} path="/signup" noIndex />
       <SignInShell mode="signup">
         <SignupForm
           displayName={displayName}

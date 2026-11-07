@@ -26,6 +26,7 @@
 // =============================================================================
 
 import { CONNECTOR_OUTPUT_IS_DATA, NODE_TYPE_READ_LIMIT, VOCABULARY_MAX_CHARS } from "./constants.ts";
+import { SITE_NAME } from "../_shared/site.ts";
 
 /** One node_types row as the vocabulary reads it: four named columns. */
 export interface NodeTypeRow {
@@ -141,13 +142,13 @@ export function renderVocabulary(
   const whole = capped ? categories.slice(0, -1) : categories;
 
   const intro =
-    `Read live from buildgallery's node type registry: ${count(rows.length, "active type", "active types")} ` +
+    `Read live from ${SITE_NAME}'s node type registry: ${count(rows.length, "active type", "active types")} ` +
     `in ${count(categories.length, "category", "categories")}. Each line below is one type: key — label — ` +
     "category — the fields it requires, each as name: type.";
 
   const compose = (listed: Category[], note: string | null): string =>
     [
-      "# buildgallery node types",
+      `# ${SITE_NAME} node types`,
       "",
       intro,
       ...(note === null ? [] : ["", note]),

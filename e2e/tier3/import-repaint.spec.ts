@@ -66,7 +66,7 @@ const NODE_TYPES = [
 /** A valid Build File, small enough to read and complete enough to parse. */
 const VALID_BUILD_FILE = JSON.stringify(
   {
-    neoscale_build: 1,
+    openbuilds_build: 1,
     generated_by: "extractor-v1",
     secrets_redacted: true,
     origin: { tool: "Claude", session_hint: "A chat", exported_at: "2026-09-01T10:00:00Z" },
@@ -278,7 +278,7 @@ test.describe("a dropped file still parses, reviews and can be materialised", ()
       await openImport(page, theme);
 
       await page.getByTestId("import-file-input").setInputFiles({
-        name: "my-build.buildgallery.md",
+        name: "my-build.openbuilds.md",
         mimeType: "text/markdown",
         buffer: Buffer.from(`\`\`\`json\n${VALID_BUILD_FILE}\n\`\`\`\n`),
       });
@@ -342,7 +342,7 @@ test.describe("a dropped file still parses, reviews and can be materialised", ()
         "Use sk-test-ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 to call it."
       );
       await page.getByTestId("import-file-input").setInputFiles({
-        name: "leaky.buildgallery.md",
+        name: "leaky.openbuilds.md",
         mimeType: "text/markdown",
         buffer: Buffer.from(`\`\`\`json\n${withSecret}\n\`\`\`\n`),
       });
@@ -360,55 +360,30 @@ test.describe("a dropped file still parses, reviews and can be materialised", ()
   }
 });
 
-test.describe("both document names serve", () => {
+test.describe("the Build File documents serve", () => {
   /**
-   * The page offers the buildgallery-named documents, and the NEOSCALE-named
-   * paths still answer with the identical bytes — because a creator who
-   * bookmarked one, downloaded one or pasted one into a chat months ago is
-   * holding the old URL.
+   * UX-14: the documents are OPENBUILDS_*.md and the older names are gone.
    *
    * Asserted over HTTP rather than over the filesystem (which
    * src/lib/build/buildfileDocuments.test.ts does) because SERVING is the
    * claim: a file that exists but is shadowed by the SPA fallback would pass
    * a filesystem check and hand a creator index.html.
    */
-  const PAIRS = [
-    ["/buildfile/BUILDGALLERY_EXTRACTOR.md", "/buildfile/NEOSCALE_EXTRACTOR.md"],
-    ["/buildfile/BUILDGALLERY_COMPILER.md", "/buildfile/NEOSCALE_COMPILER.md"],
-  ] as const;
-
-  for (const [current, retired] of PAIRS) {
-    test(`serves ${current} and keeps ${retired} serving it`, async ({ request }) => {
-      const now = await request.get(current);
-      expect(now.ok()).toBe(true);
-      const body = await now.text();
-      expect(body).toContain("buildgallery");
+  for (const path of ["/buildfile/OPENBUILDS_EXTRACTOR.md", "/buildfile/OPENBUILDS_COMPILER.md"]) {
+    test(`serves ${path}`, async ({ request }) => {
+      const res = await request.get(path);
+      expect(res.ok()).toBe(true);
+      const body = await res.text();
+      expect(body).toContain("OpenBuilds.ai");
       // Markdown, not the application's own HTML shell.
       expect(body.startsWith("<!DOCTYPE")).toBe(false);
-
-      const old = await request.get(retired);
-      expect(old.ok()).toBe(true);
-      expect(await old.text()).toBe(body);
     });
   }
 
-  test("the format key is untouched in what is actually served", async ({ request }) => {
-    // `neoscale_build` is a PARSED IDENTIFIER, not a word: every Build File in
-    // the wild declares it, and renaming it would refuse all of them. The
-    // rename is of the filename and the prose, and stops there.
-    for (const path of [
-      "/buildfile/BUILDGALLERY_EXTRACTOR.md",
-      "/buildfile/NEOSCALE_EXTRACTOR.md",
-    ]) {
-      const body = await (await request.get(path)).text();
-      expect(body).toContain('"neoscale_build": 1');
-      // ...and no other trace of the old name anywhere a person reads.
-      const prose = body
-        .split("\n")
-        .filter((line) => !line.includes("neoscale_build"))
-        .join("\n");
-      expect(prose.toLowerCase()).not.toContain("neoscale");
-    }
+  test("the extractor tells a chatbot to write the new key, and names no older product", async ({ request }) => {
+    const body = await (await request.get("/buildfile/OPENBUILDS_EXTRACTOR.md")).text();
+    expect(body).toContain('"openbuilds_build": 1');
+    expect(body.toLowerCase()).not.toMatch(/neoscale|buildgallery/);
   });
 });
 

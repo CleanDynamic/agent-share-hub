@@ -320,7 +320,7 @@ const ProjectDetail = () => {
 
   return (
     <div className="py-6 sm:py-10 px-4 sm:px-6">
-      <SeoHead title={`${project.title} — openbuilds.ai`} description={project.description} path={`/project/${project.id}`} />
+      <SeoHead title={`${project.title}`} description={project.description} path={`/project/${project.id}`} />
       <div className="mx-auto max-w-4xl">
         {/* 1. Back button */}
         <button onClick={() => navigate(-1)} className="inline-flex items-center text-[13px] text-muted-foreground hover:text-foreground mb-3 transition-colors cursor-pointer">

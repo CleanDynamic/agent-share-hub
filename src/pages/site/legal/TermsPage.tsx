@@ -8,7 +8,7 @@ export default function TermsPage() {
     <LegalPage
       name="terms"
       text={terms}
-      seoTitle="Terms · OpenBuilds"
+      seoTitle="Terms"
       description="The rules for using OpenBuilds, what others can do with your public builds, and how to report a problem."
       path="/terms"
     />

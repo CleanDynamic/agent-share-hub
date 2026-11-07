@@ -186,8 +186,8 @@ const UUID_ANYWHERE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 
 describe("toPortable", () => {
   it("stamps the format version and an absolute source url", () => {
-    expect(portable.neoscale_build).toBe(1);
-    expect(portable.neoscale_build).toBe(PORTABLE_FORMAT_VERSION);
+    expect(portable.openbuilds_build).toBe(1);
+    expect(portable.openbuilds_build).toBe(PORTABLE_FORMAT_VERSION);
     expect(portable.source_url).toBe(`${ORIGIN}/b2/inbox-triage-agent-demo`);
     expect(portable.exported_at).toBe("2026-08-23T10:00:00.000Z");
   });
@@ -270,7 +270,7 @@ describe("toPortable", () => {
 
   it("parses back, which is what the downloaded file has to do", () => {
     const parsed = JSON.parse(json);
-    expect(parsed.neoscale_build).toBe(1);
+    expect(parsed.openbuilds_build).toBe(1);
     expect(parsed.nodes[1].children[0].children[0].title).toBe("Per-email classify call");
   });
 });

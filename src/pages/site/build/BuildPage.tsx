@@ -187,7 +187,7 @@ function downloadPortable(record: BuildRecord) {
   const objectUrl = typeof URL.createObjectURL === "function" ? URL.createObjectURL(blob) : null;
   const anchor = document.createElement("a");
   anchor.href = objectUrl ?? `data:application/json;charset=utf-8,${encodeURIComponent(json)}`;
-  anchor.download = `${record.build.slug}.neoscale.json`;
+  anchor.download = `${record.build.slug}.openbuilds.json`;
   anchor.rel = "noopener";
   document.body.appendChild(anchor);
   anchor.click();

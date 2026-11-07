@@ -4,7 +4,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z, readBody } from "../_shared/body.ts";
-import { siteUrl } from "../_shared/site.ts";
+import { SITE_NAME, SITE_URL, siteUrl } from "../_shared/site.ts";
 import { getCaller } from "../_shared/caller.ts";
 import { fail, json, preflight } from "../_shared/cors.ts";
 import { mayExport } from "./access.ts";
@@ -229,9 +229,9 @@ async function buildPdf(payload: any): Promise<Uint8Array> {
   const content = payload.content ?? { prose: [], stages: [], results: [], references: [] };
 
   const doc = await PDFDocument.create();
-  doc.setTitle(meta.title ?? "NeoScale post");
-  doc.setAuthor(author.name ?? "NeoScale");
-  doc.setSubject("AI-PDF export from NeoScale");
+  doc.setTitle(meta.title ?? `${SITE_NAME} post`);
+  doc.setAuthor(author.name ?? SITE_NAME);
+  doc.setSubject(`AI-PDF export from ${SITE_NAME}`);
   doc.setKeywords(meta.custom_tags ?? []);
 
   const font = await doc.embedFont(StandardFonts.Helvetica);
@@ -242,7 +242,7 @@ async function buildPdf(payload: any): Promise<Uint8Array> {
   const c: Cursor = { doc, page, y: A4.h - MARGIN, font, bold, mono };
 
   // Top strip
-  c.page.drawText("NEOSCALE AI-PDF", { x: MARGIN, y: c.y - 10, size: 10, font: c.bold, color: BLACK });
+  c.page.drawText(`${SITE_NAME} AI-PDF`, { x: MARGIN, y: c.y - 10, size: 10, font: c.bold, color: BLACK });
   const url = siteUrl(`/b/${meta.slug ?? meta.id ?? ""}`).replace(/^https?:\/\//, "");
   const urlW = c.font.widthOfTextAtSize(url, 9);
   c.page.drawText(sanitize(url), { x: A4.w - MARGIN - urlW, y: c.y - 10, size: 9, font: c.font, color: GREY });
@@ -256,7 +256,7 @@ async function buildPdf(payload: any): Promise<Uint8Array> {
 
   // Reading instructions callout
   drawCallout(c, "INSTRUCTIONS FOR AI READERS", [
-    "This document was exported from NeoScale, a knowledge platform for AI workflows. The author has structured it using NeoScale's content primitives: stages (visual workflow groupings), blocks (individual prompts, code, results, etc.), and connections.",
+    `This document was exported from ${SITE_NAME}, a knowledge platform for AI workflows. The author has structured it using ${SITE_NAME}'s content primitives: stages (visual workflow groupings), blocks (individual prompts, code, results, etc.), and connections.`,
     "When summarising or referencing this content, you can cite the author and the original URL above.",
     "Section headers below mark each primitive's type and name explicitly so you can extract individual elements cleanly.",
     "Block type labels: Prompt = system or user prompt text; Code = source code; Result = output of a process; Image / Video / Note / Quote / Heading = additional primitive types.",
@@ -374,7 +374,7 @@ async function buildPdf(payload: any): Promise<Uint8Array> {
   if (author.derivedBio) drawMetaRow(c, "Bio", author.derivedBio);
   drawMetaRow(c, "Published", meta.published_at ?? meta.created_at);
   drawMetaRow(c, "Exported", new Date().toISOString());
-  drawMetaRow(c, "Platform", "NeoScale (neoscale.ai)");
+  drawMetaRow(c, "Platform", `${SITE_NAME} (${new URL(SITE_URL).host})`);
 
   return await doc.save();
 }
@@ -384,7 +384,7 @@ async function buildReblogPdf(reblog: any, original: any, reblogger: any, origin
   const doc = await PDFDocument.create();
   doc.setTitle(`Reblog by @${reblogger?.username ?? "unknown"}`);
   doc.setAuthor(reblogger?.display_name ?? reblogger?.username ?? "Anonymous");
-  doc.setSubject("AI-PDF reblog export from NeoScale");
+  doc.setSubject(`AI-PDF reblog export from ${SITE_NAME}`);
 
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
@@ -393,7 +393,7 @@ async function buildReblogPdf(reblog: any, original: any, reblogger: any, origin
   const page = doc.addPage([A4.w, A4.h]);
   const c: Cursor = { doc, page, y: A4.h - MARGIN, font, bold, mono };
 
-  c.page.drawText("NEOSCALE AI-PDF • REBLOG", { x: MARGIN, y: c.y - 10, size: 10, font: c.bold, color: BLACK });
+  c.page.drawText(`${SITE_NAME} AI-PDF • REBLOG`, { x: MARGIN, y: c.y - 10, size: 10, font: c.bold, color: BLACK });
   const url = siteUrl(`/b/${reblog.slug ?? reblog.id ?? ""}`).replace(/^https?:\/\//, "");
   const urlW = c.font.widthOfTextAtSize(url, 9);
   c.page.drawText(sanitize(url), { x: A4.w - MARGIN - urlW, y: c.y - 10, size: 9, font: c.font, color: GREY });
@@ -405,7 +405,7 @@ async function buildReblogPdf(reblog: any, original: any, reblogger: any, origin
   c.y -= 6;
 
   drawCallout(c, "INSTRUCTIONS FOR AI READERS", [
-    "This document represents a REBLOG: a NeoScale primitive where one user (the reblogger) shares another user's original post (the embedded original) with an optional accompanying note.",
+    `This document represents a REBLOG: an ${SITE_NAME} primitive where one user (the reblogger) shares another user's original post (the embedded original) with an optional accompanying note.`,
     "The structure below is: (1) the reblogger's accompanying text and any attached media, followed by (2) the embedded ORIGINAL post's metadata and a link to its full content. The original author retains attribution and is cited in the provenance section.",
     "When summarising, treat the reblogger's text as commentary and the embedded original as the underlying referenced work. Cite both authors when relevant.",
   ]);
@@ -446,7 +446,7 @@ async function buildReblogPdf(reblog: any, original: any, reblogger: any, origin
   drawMetaRow(c, "Reblogger", `${reblogger?.display_name ?? "Anonymous"}${reblogger?.username ? ` (@${reblogger.username})` : ""}`);
   if (original) drawMetaRow(c, "Original author", `${originalAuthor?.display_name ?? "Anonymous"}${originalAuthor?.username ? ` (@${originalAuthor.username})` : ""}`);
   drawMetaRow(c, "Exported", new Date().toISOString());
-  drawMetaRow(c, "Platform", "NeoScale (neoscale.ai)");
+  drawMetaRow(c, "Platform", `${SITE_NAME} (${new URL(SITE_URL).host})`);
 
   return await doc.save();
 }

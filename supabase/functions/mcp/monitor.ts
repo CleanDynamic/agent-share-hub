@@ -148,8 +148,11 @@ const READER_ID = /^[a-z][a-z0-9_-]{0,31}$/;
 const ERROR_NAME = /^[A-Z][A-Za-z0-9_]{0,63}$/;
 /** An error's code: a SQLSTATE ("23505"), a PostgREST code ("PGRST116"), "BGCAP", a JSON-RPC number. */
 const ERROR_CODE = /^-?[A-Z0-9_]{1,40}$/;
-/** Where an unhandled error happened: a tool's name, or the request itself. */
-const WHERE = /^(?:buildgallery_[a-z_]{1,40}|request)$/;
+/**
+ * Where an unhandled error happened: a tool's name, or the request itself. The node-types resource keeps its
+ * name `buildgallery_node_types` (UX-14 renamed the tools, not the resource), so it is named here too.
+ */
+const WHERE = /^(?:openbuilds_[a-z_]{1,40}|buildgallery_node_types|request)$/;
 /** What the platform puts in SB_REGION, SB_EXECUTION_ID, DENO_DEPLOYMENT_ID. No dots, so never a JWT. */
 const PLATFORM_VALUE = /^[A-Za-z0-9_-]{1,128}$/;
 

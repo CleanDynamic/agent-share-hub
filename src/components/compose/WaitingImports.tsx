@@ -26,6 +26,7 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { data as dataText } from "@/lib/theme/type";
 import { feedback } from "@/lib/theme/motion";
+import { SITE_NAME } from "@/lib/site";
 
 /** The six clients the connector admits, as a creator would name them. */
 const TOOL_NAMES: Record<string, string> = {
@@ -219,7 +220,7 @@ export function WaitingImports({
       </div>
 
       <span style={{ ...bodyText, fontSize: 12, color: t.text2 }}>
-        Sent from a chat through the buildgallery connector. Nothing is saved to a
+        Sent from a chat through the {SITE_NAME} connector. Nothing is saved to a
         build until you have looked at it and chosen what to keep.
       </span>
 

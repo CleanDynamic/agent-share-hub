@@ -261,10 +261,10 @@ test.describe("BG-P15 — the moved pages' own content survived the move", () =>
     // because the live backend it reached never answered in time; against the
     // fake backend above it answers at once.
     await page.getByTestId("import-file-input").setInputFiles({
-      name: "valid.neoscale.md",
+      name: "valid.openbuilds.md",
       mimeType: "text/markdown",
       buffer: Buffer.from("# A build\n\nOutcome: it works.\n"),
     });
-    await expect(page.getByText("valid.neoscale.md", { exact: true })).toBeVisible();
+    await expect(page.getByText("valid.openbuilds.md", { exact: true })).toBeVisible();
   });
 });

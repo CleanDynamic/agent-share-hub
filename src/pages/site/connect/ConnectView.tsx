@@ -8,6 +8,7 @@ import { ConnectorGuide, type ConnectorGuideProps } from "@/components/connect/C
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE, display } from "@/lib/theme/type";
+import { SITE_NAME } from "@/lib/site";
 
 export type ConnectViewProps = Omit<ConnectorGuideProps, "doneLabel" | "gutter">;
 
@@ -20,7 +21,7 @@ export function ConnectView(props: ConnectViewProps) {
           Connect a tool
         </h1>
         <p style={{ fontFamily: FIGTREE, fontSize: 14, lineHeight: 1.5, margin: 0, color: t.text2 }}>
-          Send the chats you build in to buildgallery, then turn them into builds.
+          Send the chats you build in to {SITE_NAME}, then turn them into builds.
         </p>
       </div>
       <Panel surface="plain" padding="0">

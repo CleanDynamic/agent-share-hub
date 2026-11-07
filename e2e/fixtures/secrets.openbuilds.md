@@ -3,7 +3,7 @@ see exactly what I ran.
 
 ```json
 {
-  "neoscale_build": 1,
+  "openbuilds_build": 1,
   "exported_at": "2026-08-21T09:15:00.000Z",
   "source_url": "https://openbuilds.ai/b2/inbox-summariser",
   "build": {

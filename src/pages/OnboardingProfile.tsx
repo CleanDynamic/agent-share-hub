@@ -13,6 +13,7 @@ import { elevation } from "@/lib/theme/elevation";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { cardTitle, FIGTREE } from "@/lib/theme/type";
+import { SITE_NAME } from "@/lib/site";
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
@@ -164,8 +165,8 @@ export default function OnboardingProfile() {
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4">
       <SeoHead
-        title="Complete your profile — buildgallery"
-        description="Finish setting up your buildgallery account."
+        title="Complete your profile"
+        description={`Finish setting up your ${SITE_NAME} account.`}
         path="/onboarding/profile"
         noIndex
       />

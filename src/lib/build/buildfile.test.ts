@@ -23,12 +23,15 @@
 // disagreement between two modules in this repository rather than a fault in
 // the creator's input.
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
   MAX_BUILDFILE_NODES,
   buildFileRefused,
   extractEnvelope,
+  formatVersionOf,
   parseBuildFile,
   scanForSecrets,
   type BuildFileEventPayload,
@@ -102,7 +105,7 @@ const REGISTRY: NodeType[] = [
 
 function envelope(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    neoscale_build: PORTABLE_FORMAT_VERSION,
+    openbuilds_build: PORTABLE_FORMAT_VERSION,
     exported_at: "2026-08-27T09:00:00.000Z",
     source_url: "https://openbuilds.ai/b2/a-build",
     build: { title: "A build", outcome: "It works" },
@@ -163,7 +166,7 @@ function codes(result: BuildFileResult): string[] {
 
 describe("extractEnvelope", () => {
   it("reads a bare JSON object", () => {
-    expect(extractEnvelope('{"neoscale_build": 1}')).toEqual({ neoscale_build: 1 });
+    expect(extractEnvelope('{"openbuilds_build": 1}')).toEqual({ openbuilds_build: 1 });
   });
 
   it("reads the object out of a fenced block with prose on both sides", () => {
@@ -172,14 +175,14 @@ describe("extractEnvelope", () => {
       "one breakage, and I have left the API key out of it.",
       "",
       "```json",
-      '{ "neoscale_build": 1, "build": { "title": "Fenced" } }',
+      '{ "openbuilds_build": 1, "build": { "title": "Fenced" } }',
       "```",
       "",
       "Paste that into buildgallery's import page.",
     ].join("\n");
 
     expect(extractEnvelope(file)).toEqual({
-      neoscale_build: 1,
+      openbuilds_build: 1,
       build: { title: "Fenced" },
     });
   });
@@ -190,7 +193,7 @@ describe("extractEnvelope", () => {
       "not json at all",
       "```",
       "```json",
-      '{ "neoscale_build": 1, "picked": "second" }',
+      '{ "openbuilds_build": 1, "picked": "second" }',
       "```",
     ].join("\n");
 
@@ -198,7 +201,7 @@ describe("extractEnvelope", () => {
   });
 
   it("refuses a file past the character cap before parsing it", () => {
-    const huge = `{"neoscale_build":1,"pad":"${"x".repeat(2_000_001)}"}`;
+    const huge = `{"openbuilds_build":1,"pad":"${"x".repeat(2_000_001)}"}`;
     expect(() => extractEnvelope(huge)).toThrow(/limit is 2,000,000/);
   });
 
@@ -210,7 +213,7 @@ describe("extractEnvelope", () => {
 describe("parseBuildFile — input repair", () => {
   it("strips trailing commas and reports the repair", () => {
     const file = `{
-      "neoscale_build": 1,
+      "openbuilds_build": 1,
       "build": { "title": "Sloppy", "outcome": "Still works", },
       "nodes": [
         { "type": "prompt", "title": "Ask", "payload": { "text": "Do the thing", }, },
@@ -229,7 +232,7 @@ describe("parseBuildFile — input repair", () => {
     // The keys and the first value are curly because a model wrote them that
     // way. The apostrophe in the second value is content and must survive.
     const file =
-      '{ “neoscale_build”: 1, “build”: { “title”: “Curly” },' +
+      '{ “openbuilds_build”: 1, “build”: { “title”: “Curly” },' +
       ' "nodes": [ { "type": "note", "payload": { "body": "it doesn’t break" } } ] }';
 
     const result = expectOk(parse(file));
@@ -239,9 +242,31 @@ describe("parseBuildFile — input repair", () => {
   });
 });
 
+describe("parseBuildFile: the older key (UX-14)", () => {
+  it("still reads a file that carries neoscale_build, so Miles's earlier exports import", () => {
+    const older = envelope();
+    delete older.openbuilds_build;
+    older.neoscale_build = PORTABLE_FORMAT_VERSION;
+    expect(parse(older).ok).toBe(true);
+  });
+
+  it("reads the key from the saved fixtures: the new files, the version 2 file, and the one old-key file", () => {
+    const version = (name: string) => formatVersionOf(extractEnvelope(readFileSync(join("e2e", "fixtures", name), "utf8")) as Record<string, unknown>);
+    expect(version("valid.openbuilds.md")).toBe(1);
+    expect(version("secrets.openbuilds.md")).toBe(1);
+    expect(version("version-2.openbuilds.md")).toBe(2);
+    expect(version("valid.neoscale-key.md")).toBe(1);
+  });
+
+  it("names the new key when the version is wrong", () => {
+    const errors = expectRefused(parse(envelope({ openbuilds_build: 2 })));
+    expect(errors[0].message).toContain("openbuilds_build");
+  });
+});
+
 describe("parseBuildFile — refusals", () => {
   it("refuses a version this code cannot read, naming the value", () => {
-    const errors = expectRefused(parse(envelope({ neoscale_build: 2 })));
+    const errors = expectRefused(parse(envelope({ openbuilds_build: 2 })));
     expect(errors[0].code).toBe("UNSUPPORTED_VERSION");
     expect(errors[0].message).toContain("2");
   });
@@ -282,7 +307,7 @@ describe("parseBuildFile — refusals", () => {
     const head = '{"type":"note","payload":{},"children":[';
     const leaf = '{"type":"note","payload":{}}';
     const deep = head.repeat(20_000) + leaf + "]}".repeat(20_000);
-    const file = `{"neoscale_build":1,"build":{"title":"Deep"},"nodes":[${deep}],"events":[]}`;
+    const file = `{"openbuilds_build":1,"build":{"title":"Deep"},"nodes":[${deep}],"events":[]}`;
 
     const errors = expectRefused(parse(file));
     expect(errors[0].code).toBe("TOO_MANY_NODES");
@@ -309,7 +334,7 @@ describe("parseBuildFile — refusals", () => {
     const leaf = '{"type":"note","payload":{}}';
     const depth = 1_500;
     const deep = head.repeat(depth) + leaf + "]}".repeat(depth);
-    const file = `{"neoscale_build":1,"build":{"title":"Deep"},"nodes":[${deep}],"events":[]}`;
+    const file = `{"openbuilds_build":1,"build":{"title":"Deep"},"nodes":[${deep}],"events":[]}`;
 
     const result = expectOk(parse(file));
     expect(result.meta.counts.nodes).toBe(depth + 1);
@@ -344,7 +369,7 @@ describe("parseBuildFile — refusals", () => {
 describe("parseBuildFile — the happy path", () => {
   it("turns a valid extractor file into a proposal with the counts it declares", () => {
     const file = JSON.stringify({
-      neoscale_build: 1,
+      openbuilds_build: 1,
       generated_by: "extractor-v1",
       exported_at: "2026-08-27T09:00:00.000Z",
       origin: { tool: "extractor-v1", session_hint: "Claude, 27 Aug" },

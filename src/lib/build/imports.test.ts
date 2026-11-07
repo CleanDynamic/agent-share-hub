@@ -411,7 +411,7 @@ describe("claimImport into an existing draft", () => {
     getBuildHeader.mockResolvedValueOnce(null);
 
     await expect(claimImport(IMPORT_ID, proposal, selections, INTO_DRAFT)).rejects.toThrow(
-      "No draft with that id belongs to this account. Call buildgallery_list_drafts to see the " +
+      "No draft with that id belongs to this account. Call openbuilds_list_drafts to see the " +
         "available drafts, or omit target_build_id to create a new build.",
     );
     expect(createBuild).not.toHaveBeenCalled();

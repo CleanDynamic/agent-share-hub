@@ -322,7 +322,7 @@ describe("the run sequence", () => {
   it("offers the run layer in words, naming the parts that still resolve, under its attribution", () => {
     const layer = { content: { steps: [{ n: 1, title: " Paste it ", body: "Into a chat.", node_ref: "s" }, { n: 2, title: "Then", body: "", node_ref: "gone" }] } };
     const words = layerSteps(layer as never, (id) => (id === "s" ? (tree[1] as never) : undefined));
-    expect(words.attribution).toMatch(/^Written by buildgallery/);
+    expect(words.attribution).toMatch(/^Written by OpenBuilds.ai/);
     expect(words.steps).toEqual([
       { n: 1, title: "Paste it", body: "Into a chat.", part: { id: "s", title: "The prompt" } },
       { n: 2, title: "Then", body: "", part: null },

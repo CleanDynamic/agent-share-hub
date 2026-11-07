@@ -3,7 +3,7 @@
 // =============================================================================
 // One function: redactSecrets(text). A string in, a string and a tally out.
 //
-// This runs once, inside buildgallery_finish_import, on the assembled text of
+// This runs once, inside openbuilds_finish_import, on the assembled text of
 // a conversation, BEFORE the intake reader or anything else reads it. Whatever
 // it finds is replaced in place with [REDACTED:<kind>] and reported only as a
 // kind and a count. No part of a matched value survives — not a prefix, not a

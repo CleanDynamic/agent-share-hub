@@ -23,6 +23,7 @@ import { FIGTREE } from "@/lib/theme/type";
 
 import { FrameLink } from "./FrameLink";
 import { SITE_NAV } from "./siteNav";
+import { SITE_NAME } from "@/lib/site";
 
 export interface SiteFooterViewProps {
   signedIn: boolean;
@@ -73,7 +74,7 @@ function RefinedSiteFooterView({ signedIn, onSignOut, onConnect, showPrivacy = f
         )}
       </nav>
       <span style={{ flexGrow: 1 }} />
-      <span style={{ fontFamily: FIGTREE, fontSize: 12, fontWeight: 400, color: t.label }}>© buildgallery</span>
+      <span style={{ fontFamily: FIGTREE, fontSize: 12, fontWeight: 400, color: t.label }}>© {SITE_NAME}</span>
     </footer>
   );
 }

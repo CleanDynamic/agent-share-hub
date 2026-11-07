@@ -58,13 +58,18 @@ describe("Lockup", () => {
     expect(container.querySelector("a")).toBeNull();
   });
 
-  it("names a link home 'buildgallery home'", () => {
+  it("draws the site's name, OpenBuilds.ai, as its word", () => {
+    const { container } = render(<Lockup size={21} />);
+    expect(container.textContent).toBe("OpenBuilds.ai");
+  });
+
+  it("names a link home 'OpenBuilds.ai home'", () => {
     const { getByRole } = render(
       <MemoryRouter>
         <Lockup size={21} to="/" />
       </MemoryRouter>,
     );
-    const link = getByRole("link", { name: "buildgallery home" });
+    const link = getByRole("link", { name: "OpenBuilds.ai home" });
     expect(link.getAttribute("href")).toBe("/");
   });
 });

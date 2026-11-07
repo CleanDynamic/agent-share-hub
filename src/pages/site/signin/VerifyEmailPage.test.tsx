@@ -54,7 +54,7 @@ describe("the pending card", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Check your inbox" })).toBeTruthy();
     expect(screen.getByText("ada@example.com")).toBeTruthy();
     expect(verifyEmailLink).not.toHaveBeenCalled();
-    await waitFor(() => expect(document.title).toBe("Verify your email — buildgallery"));
+    await waitFor(() => expect(document.title).toBe("Verify your email · OpenBuilds.ai"));
     expect(screen.queryByRole("link", { name: "Join free" })).toBeNull();
   });
 
@@ -208,14 +208,14 @@ describe("Continue", () => {
     auth.session = { user: { id: "u-1" } };
     resolvePostAuthRoute.mockResolvedValue("/onboarding/profile");
     const where = await reach();
-    fireEvent.click(screen.getByRole("button", { name: "Continue to buildgallery" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue to OpenBuilds.ai" }));
     await waitFor(() => expect(where.at()).toBe("/onboarding/profile"));
     expect(resolvePostAuthRoute).toHaveBeenCalledWith("u-1");
   });
 
   it("goes to sign in when there is no session", async () => {
     const where = await reach();
-    fireEvent.click(screen.getByRole("button", { name: "Continue to buildgallery" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue to OpenBuilds.ai" }));
     await waitFor(() => expect(where.at()).toBe("/login"));
     expect(resolvePostAuthRoute).not.toHaveBeenCalled();
   });

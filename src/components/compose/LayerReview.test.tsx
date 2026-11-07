@@ -177,7 +177,7 @@ async function confirmInSheet() {
 }
 
 function review() {
-  return screen.getByRole("dialog", { name: /Review what buildgallery wrote/i });
+  return screen.getByRole("dialog", { name: /Review what OpenBuilds.ai wrote/i });
 }
 
 /** The patches updateBuild was called with, ignoring the completeness autosave. */
@@ -218,7 +218,7 @@ describe("the review pass", () => {
     renderCompose();
     await pressPublish();
 
-    const dialog = await screen.findByRole("dialog", { name: /Review what buildgallery wrote/i });
+    const dialog = await screen.findByRole("dialog", { name: /Review what OpenBuilds.ai wrote/i });
     // Every step is editable where it stands, so they are fields, not text.
     expect(await screen.findByDisplayValue("Paste the prompt")).toBeTruthy();
     expect(screen.getByDisplayValue("Open a new chat and paste it.")).toBeTruthy();
@@ -232,7 +232,7 @@ describe("the review pass", () => {
 
     // The reader-facing promise is on the screen the creator approves from.
     expect(screen.getByTestId("layer-attribution").textContent).toContain(
-      "Written by buildgallery"
+      "Written by OpenBuilds.ai"
     );
   });
 
@@ -277,7 +277,7 @@ describe("the review pass", () => {
 
     // Straight to the confirmation. No "are you sure", no reason field.
     await screen.findByRole("dialog", { name: /Your build is live/i });
-    expect(screen.queryByRole("dialog", { name: /Review what buildgallery wrote/i })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: /Review what OpenBuilds.ai wrote/i })).toBeNull();
   });
 
   // ACCEPTANCE 5
@@ -390,7 +390,7 @@ describe("the review pass", () => {
     fireEvent.keyDown(window, { key: "Escape" });
 
     await waitFor(() =>
-      expect(screen.queryByRole("dialog", { name: /Review what buildgallery wrote/i })).toBeNull()
+      expect(screen.queryByRole("dialog", { name: /Review what OpenBuilds.ai wrote/i })).toBeNull()
     );
     expect(publishPatches()).toHaveLength(0);
     expect(commitLayerReview).not.toHaveBeenCalled();

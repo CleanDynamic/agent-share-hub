@@ -2,11 +2,13 @@
 //
 // A shared link is most people's first sight of a build
 // ⟦aesthetic-usability › Where It Applies: First impressions⟧, so the page
-// names itself: "<title> — buildgallery", and a description a preview can hold
+// names itself: "<title> · OpenBuilds.ai", and a description a preview can hold
 // whole. The description is the build's outcome, cut at a word boundary to 155
 // characters with "…" when it had to be cut; a build with no outcome says who
 // made it and how many people have reproduced it instead, which is the fact the
 // plaque leads with.
+
+import { SITE_NAME } from "@/lib/site";
 
 /** The longest description a result or a preview shows whole, "…" included. */
 export const SHARE_DESCRIPTION_MAX = 155;
@@ -41,8 +43,8 @@ export function shareDescription({ outcome, makerName, reproductionCount }: Shar
   return cutAtWord(`A build by ${by}, reproduced ${n} ${n === 1 ? "time" : "times"}.`);
 }
 
-/** "<title> — buildgallery". */
+/** "<title> · OpenBuilds.ai". */
 export function shareTitle(title: string | null | undefined): string {
   const text = (title ?? "").trim() || "Untitled build";
-  return `${text} — buildgallery`;
+  return `${text} · ${SITE_NAME}`;
 }

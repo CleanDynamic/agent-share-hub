@@ -38,7 +38,7 @@ const NotFoundPage = () => {
 
   return (
     <>
-      <SeoHead title="Page not found · OpenBuilds" description="This page isn't here." path={location.pathname} noIndex />
+      <SeoHead title="Page not found" description="This page isn't here." path={location.pathname} noIndex />
       <NotFoundView path={location.pathname} onHome={onHome} />
     </>
   );

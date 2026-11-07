@@ -75,7 +75,7 @@ const STATUS_EXPIRED = "expired";
  * one situation has one sentence wherever it is met.
  */
 const ERR_DRAFT_NOT_FOUND =
-  "No draft with that id belongs to this account. Call buildgallery_list_drafts to see the " +
+  "No draft with that id belongs to this account. Call openbuilds_list_drafts to see the " +
   "available drafts, or omit target_build_id to create a new build.";
 const ERR_TARGET_PUBLISHED =
   "That build is published, and the connector only adds to drafts. Choose a draft, or omit " +

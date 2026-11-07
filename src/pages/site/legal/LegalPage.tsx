@@ -14,7 +14,7 @@ import { hashTarget } from "./legalModel";
 export interface LegalPageProps {
   name: "privacy" | "terms";
   text: LegalText;
-  /** `Privacy policy · OpenBuilds` */
+  /** `Privacy policy` */
   seoTitle: string;
   description: string;
   path: string;

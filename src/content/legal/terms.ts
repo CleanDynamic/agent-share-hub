@@ -10,7 +10,7 @@ export const terms: LegalText = {
   lastUpdated: "2026-11-06",
   reviewed: TERMS_REVIEWED,
   intro:
-    "These are the rules for using OpenBuilds. They are short on purpose. If something here is unclear, email us and we will explain it.",
+    "These are the rules for using OpenBuilds.ai. They are short on purpose. If something here is unclear, email us and we will explain it.",
   sections: [
     {
       id: "who-we-are-and-agreeing",
@@ -18,7 +18,7 @@ export const terms: LegalText = {
       blocks: [
         {
           kind: "p",
-          text: "OpenBuilds (openbuilds.ai) is run by {{NEED: legal name of the business or person running the site}}, at {{NEED: postal address}}. By using the site or creating an account, you agree to these terms. If you don't agree, please don't use the site.",
+          text: "OpenBuilds.ai is run by {{NEED: legal name of the business or person running the site}}, at {{NEED: postal address}}. By using the site or creating an account, you agree to these terms. If you don't agree, please don't use the site.",
         },
       ],
     },
@@ -43,7 +43,7 @@ export const terms: LegalText = {
       blocks: [
         {
           kind: "p",
-          text: "You own what you make. To run the site, you give OpenBuilds a licence to host, show, copy, resize and send your content. The licence is worldwide and free, and it lasts for as long as your content is on the site. After you delete something, copies can stay in backups for a short time.",
+          text: "You own what you make. To run the site, you give OpenBuilds.ai a licence to host, show, copy, resize and send your content. The licence is worldwide and free, and it lasts for as long as your content is on the site. After you delete something, copies can stay in backups for a short time.",
         },
         {
           kind: "p",
@@ -140,7 +140,7 @@ export const terms: LegalText = {
         },
         {
           kind: "p",
-          text: "Reproduced means another person said it worked for them. It does not mean OpenBuilds checked it. Run anything at your own risk, and read code before you run it.",
+          text: "Reproduced means another person said it worked for them. It does not mean OpenBuilds.ai checked it. Run anything at your own risk, and read code before you run it.",
         },
       ],
     },
@@ -154,7 +154,7 @@ export const terms: LegalText = {
         },
         {
           kind: "p",
-          text: "Beyond that, OpenBuilds is free to use, and we are not responsible for losses that were not a foreseeable result of our breaking these terms, or for what other people post. {{NEED: confirm liability wording with a reviewer}}",
+          text: "Beyond that, OpenBuilds.ai is free to use, and we are not responsible for losses that were not a foreseeable result of our breaking these terms, or for what other people post. {{NEED: confirm liability wording with a reviewer}}",
         },
       ],
     },

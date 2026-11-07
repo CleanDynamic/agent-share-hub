@@ -2,7 +2,7 @@
 //
 // WHAT THIS GUARDS. /compose/new, /compose/:buildId, /rebuild/:slug and
 // /convert/:contentItemId each had their own outer container and their own way
-// out — a "← buildgallery" text link on compose, "← Back to the build" on
+// out — a "← OpenBuilds.ai" text link on compose, "← Back to the build" on
 // rebuild, "← Back to the post" on convert, and on the intake route nothing at
 // all. They now share one WorkspaceBar. The claims that matter are about the
 // chrome, and the two that cannot be made in jsdom are made here: the bar's
@@ -99,7 +99,7 @@ test.describe("the exit", () => {
     await openKit(page, "noon");
     const control = exit(page);
     await expect(control).toBeVisible();
-    await expect(control).toContainText("buildgallery");
+    await expect(control).toContainText("OpenBuilds.ai");
     await expect(control).toHaveAttribute("href", "/gallery");
 
     const paint = await control.evaluate((el) => {

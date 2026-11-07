@@ -261,7 +261,7 @@ export function ActivityPage() {
 
   return (
     <>
-      <SeoHead title="Activity — buildgallery" description="What happened to your builds." path="/notifications" noIndex />
+      <SeoHead title="Activity" description="What happened to your builds." path="/notifications" noIndex />
       <LiveRegion message={announcement} />
       <ActivityView
         now={now}

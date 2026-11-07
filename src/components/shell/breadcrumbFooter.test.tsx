@@ -92,7 +92,7 @@ describe("SiteFooterView", () => {
     footer(false);
     const links = screen.getAllByRole("link").map((a) => [a.textContent, a.getAttribute("href")]);
     expect(links).toEqual([
-      ["buildgallery", "/"],
+      ["OpenBuilds.ai", "/"],
       ["About", "/about"],
       ["API docs", "/api-docs"],
       ["Sign in", "/login"],
@@ -170,11 +170,11 @@ describe("breadcrumb and footer under the refined look", () => {
 
   it("the footer keeps its items, names and order", () => {
     render(refinedFooter(false));
-    expect(screen.getAllByRole("link").map((a) => a.textContent)).toEqual(["buildgallery", "About", "API docs", "Sign in"]);
+    expect(screen.getAllByRole("link").map((a) => a.textContent)).toEqual(["OpenBuilds.ai", "About", "API docs", "Sign in"]);
     expect(screen.getByRole("button", { name: "Connect a tool" })).toBeTruthy();
     // UX-03 P10: no theme control in the footer; the header's is the one.
     expect(screen.queryByRole("group", { name: "Theme" })).toBeNull();
-    expect(screen.getByText("© buildgallery")).toBeTruthy();
+    expect(screen.getByText("© OpenBuilds.ai")).toBeTruthy();
   });
 
   it("the footer sits under a 1px --hairline with the gutter, links at 12.5 --text2 8px 20px apart, and no Theme control (UX-03 P10)", () => {
