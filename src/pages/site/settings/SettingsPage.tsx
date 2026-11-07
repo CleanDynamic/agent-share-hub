@@ -11,9 +11,8 @@ import { sectionOf, settingsPath, type SectionKey } from "@/lib/settings/section
 import { AppearanceView } from "./AppearanceView";
 import { AppsView } from "./AppsView";
 import { DataView } from "./DataView";
-import { NotificationsView } from "./NotificationsView";
 import { PrivacyView } from "./PrivacyView";
-import { AccountSection } from "./containers";
+import { AccountSection, NotificationsSection } from "./containers";
 import { SettingsFrame } from "./SettingsFrame";
 
 function SectionBody({ section }: { section: SectionKey }) {
@@ -21,7 +20,7 @@ function SectionBody({ section }: { section: SectionKey }) {
     case "account":
       return <AccountSection />;
     case "notifications":
-      return <NotificationsView />;
+      return <NotificationsSection />;
     case "privacy":
       return <PrivacyView />;
     case "apps":

@@ -1545,6 +1545,8 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/settings/useAction.ts",
   "src/pages/site/settings/containers.tsx",
   "src/pages/site/settings/settings.p3.test.tsx",
+  "src/lib/settings/notificationSettings.ts",
+  "src/pages/site/settings/settings.p4.test.tsx",
 ];
 
 /**
