@@ -66,8 +66,6 @@
 --      EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM public.list_profile_follows('<a handle>', 'followers', NULL, 30);
 --      SHOULD SHOW: an Index Scan on idx_follows_following_created that stops at the limit, no Sort of every follower.
 
-BEGIN;
-
 -- 1. The profile's columns ------------------------------------------------------------------------------------------------------
 
 ALTER TABLE public.profiles
@@ -527,5 +525,3 @@ GRANT EXECUTE ON FUNCTION public.get_profile_feed(text, text, timestamptz, int) 
 GRANT EXECUTE ON FUNCTION public.get_profile_side(text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.list_profile_follows(text, text, timestamptz, int) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.profile_reader_view(text) TO anon, authenticated;
-
-COMMIT;
