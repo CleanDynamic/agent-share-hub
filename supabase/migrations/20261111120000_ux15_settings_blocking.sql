@@ -78,11 +78,11 @@ CREATE TABLE IF NOT EXISTS public.user_blocks (
 -- The primary key serves blocker_id; this serves the other direction and the cascade.
 CREATE INDEX IF NOT EXISTS idx_user_blocks_blocked ON public.user_blocks (blocked_id, blocker_id);
 
-ALTER TABLE public.user_blocks ENABLE ROW LEVEL SECURITY;
-
 REVOKE ALL ON public.user_blocks FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT, DELETE ON public.user_blocks TO authenticated;
 GRANT ALL ON public.user_blocks TO service_role;
+
+ALTER TABLE public.user_blocks ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Blockers read their own blocks" ON public.user_blocks;
 CREATE POLICY "Blockers read their own blocks"
@@ -551,9 +551,9 @@ CREATE TABLE IF NOT EXISTS public.account_deletions (
   completed_at timestamptz NULL
 );
 
-ALTER TABLE public.account_deletions ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.account_deletions FROM PUBLIC, anon, authenticated;
 GRANT ALL ON public.account_deletions TO service_role;
+ALTER TABLE public.account_deletions ENABLE ROW LEVEL SECURITY;
 COMMENT ON TABLE public.account_deletions IS
   'UX-15. Evidence that a deletion request was honoured. Written only by the delete-my-account function (service role). No policy: no client reads it. user_id has no foreign key because the user is gone.';
 
@@ -629,9 +629,9 @@ CREATE TABLE IF NOT EXISTS public.data_exports (
   last_exported_at timestamptz NOT NULL DEFAULT now()
 );
 
-ALTER TABLE public.data_exports ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.data_exports FROM PUBLIC, anon, authenticated;
 GRANT ALL ON public.data_exports TO service_role;
+ALTER TABLE public.data_exports ENABLE ROW LEVEL SECURITY;
 
 -- Seconds until the caller may export again; 0 when they may now.
 CREATE OR REPLACE FUNCTION public.data_export_wait_seconds()
