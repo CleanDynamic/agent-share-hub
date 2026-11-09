@@ -925,6 +925,32 @@ export type Database = {
           },
         ]
       }
+      build_profile_display: {
+        Row: {
+          build_id: string
+          display: string
+          updated_at: string
+        }
+        Insert: {
+          build_id: string
+          display: string
+          updated_at?: string
+        }
+        Update: {
+          build_id?: string
+          display?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "build_profile_display_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: true
+            referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       build_reproductions: {
         Row: {
           build_id: string
@@ -4907,10 +4933,54 @@ export type Database = {
           },
         ]
       }
+      profile_pins: {
+        Row: {
+          created_at: string
+          item_id: string
+          item_kind: string
+          position: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          item_id: string
+          item_kind: string
+          position: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          item_id?: string
+          item_kind?: string
+          position?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_pins_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "profile_pins_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
+          about: string | null
           account_type: string
+          avatar_alt: string | null
+          avatar_crop: Json | null
           avatar_url: string | null
+          banner_alt: string | null
+          banner_crop: Json | null
           banner_url: string | null
           bio: string | null
           bounty_lifetime_acceptances: number
@@ -4937,8 +5007,10 @@ export type Database = {
           joined_at: string
           last_derived_at: string | null
           level: string
+          links: string[]
           location: string | null
           notification_preferences: Json
+          profile_settings: Json
           stripe_account_id: string | null
           subscription_price_id: string | null
           twitter_handle: string | null
@@ -4948,8 +5020,13 @@ export type Database = {
           website_url: string | null
         }
         Insert: {
+          about?: string | null
           account_type?: string
+          avatar_alt?: string | null
+          avatar_crop?: Json | null
           avatar_url?: string | null
+          banner_alt?: string | null
+          banner_crop?: Json | null
           banner_url?: string | null
           bio?: string | null
           bounty_lifetime_acceptances?: number
@@ -4976,8 +5053,10 @@ export type Database = {
           joined_at?: string
           last_derived_at?: string | null
           level?: string
+          links?: string[]
           location?: string | null
           notification_preferences?: Json
+          profile_settings?: Json
           stripe_account_id?: string | null
           subscription_price_id?: string | null
           twitter_handle?: string | null
@@ -4987,8 +5066,13 @@ export type Database = {
           website_url?: string | null
         }
         Update: {
+          about?: string | null
           account_type?: string
+          avatar_alt?: string | null
+          avatar_crop?: Json | null
           avatar_url?: string | null
+          banner_alt?: string | null
+          banner_crop?: Json | null
           banner_url?: string | null
           bio?: string | null
           bounty_lifetime_acceptances?: number
@@ -5015,8 +5099,10 @@ export type Database = {
           joined_at?: string
           last_derived_at?: string | null
           level?: string
+          links?: string[]
           location?: string | null
           notification_preferences?: Json
+          profile_settings?: Json
           stripe_account_id?: string | null
           subscription_price_id?: string | null
           twitter_handle?: string | null
@@ -6746,6 +6832,21 @@ export type Database = {
           title: string
         }[]
       }
+      get_profile_feed: {
+        Args: {
+          p_cursor?: string
+          p_filter?: string
+          p_limit?: number
+          p_username: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          kind: string
+          pinned_position: number
+        }[]
+      }
+      get_profile_side: { Args: { p_username: string }; Returns: Json }
       get_quest_state: { Args: { _user_id?: string }; Returns: Json }
       get_visible_surfaces: { Args: { _user_id?: string }; Returns: Json }
       has_open_ask: {
@@ -6785,6 +6886,23 @@ export type Database = {
           search: string
         }[]
       }
+      list_profile_follows: {
+        Args: {
+          p_cursor?: string
+          p_limit?: number
+          p_username: string
+          p_which: string
+        }
+        Returns: {
+          avatar_url: string
+          bio: string
+          display_name: string
+          followed_at: string
+          reader_follows: boolean
+          user_id: string
+          username: string
+        }[]
+      }
       maker_build_metrics: {
         Args: { uid: string }
         Returns: {
@@ -6814,6 +6932,24 @@ export type Database = {
       }
       post_spaces_allow_rewards: { Args: { _post: string }; Returns: boolean }
       posts_tags_ok: { Args: { tags: string[] }; Returns: boolean }
+      profile_crop_ok: { Args: { c: Json }; Returns: boolean }
+      profile_level_of: { Args: { p_user: string }; Returns: number }
+      profile_links_ok: { Args: { l: string[] }; Returns: boolean }
+      profile_notes_shown: {
+        Args: { follows: boolean; notes_visible: string; own: boolean }
+        Returns: boolean
+      }
+      profile_reader_view: {
+        Args: { p_username: string }
+        Returns: {
+          follows: boolean
+          level_visible: string
+          notes_visible: string
+          own: boolean
+          user_id: string
+        }[]
+      }
+      profile_settings_ok: { Args: { s: Json }; Returns: boolean }
       rc_grant_xp: {
         Args: {
           amount: number
@@ -6878,6 +7014,7 @@ export type Database = {
         Returns: undefined
       }
       respec_track: { Args: { _track: string }; Returns: string }
+      save_profile: { Args: { p: Json }; Returns: undefined }
       saved_items_used_in: {
         Args: never
         Returns: {
