@@ -12,6 +12,7 @@ import { Button } from "@/components/brand/Button";
 import { Checkbox } from "@/components/brand/Checkbox";
 import { Segmented } from "@/components/brand/Segmented";
 import { SectionHead } from "@/components/vision/SectionHead";
+import { PageLink } from "@/lib/routing/PageLink";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import type { ProfileDraft } from "@/lib/profile/customise";
 import {
@@ -70,6 +71,7 @@ export const CUSTOMISE_COPY = {
   notes: "Notes in your feed",
   level: "Your level",
   saves: "Your saves are always private.",
+  morePrivacy: "More privacy settings",
   reset: "Reset to default",
   cancel: "Cancel",
   save: "Save",
@@ -309,6 +311,10 @@ export function CustomiseProfile({ open, onClose, initial, pinLabels, pictures, 
         <Row label={CUSTOMISE_COPY.level} id={`${ids}-level`} group hint={CUSTOMISE_COPY.saves} phone={phone}>
           <Segmented<LevelVisible> label={CUSTOMISE_COPY.level} semantics="radio" items={LEVEL_ITEMS} value={draft.settings.levelVisible} onChange={(levelVisible) => settings({ levelVisible })} />
         </Row>
+        {/* UX-15 P2: private profile and blocking live in Settings. */}
+        <PageLink to="/settings/privacy" style={{ ...FOOT_NOTE, color: t.label, textDecoration: "underline", textUnderlineOffset: 3, textDecorationThickness: 1, alignSelf: "flex-start" }}>
+          {CUSTOMISE_COPY.morePrivacy}
+        </PageLink>
       </Group>
     </div>
   );

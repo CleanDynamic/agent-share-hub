@@ -37,6 +37,8 @@ export const PAGE_TARGETS: PageTarget[] = [
   { key: "profile", path: "/profile/{maker}", readyMark: "profile", auth: true, maxRounds: 2 },
   /* UX-10 P5b: the profile and the list's first page, with the follow states in it, together: one round. */
   { key: "profile-followers", path: "/profile/{maker}/followers", readyMark: "followers", auth: true, maxRounds: 1 },
+  /* UX-15: Settings. Each section reads its own data once on screen: Account two reads in one round, Privacy two in one round. */
+  { key: "settings", path: "/settings/privacy", readyMark: "settings", auth: true, maxRounds: 2 },
   { key: "profile-following", path: "/profile/{maker}/following", readyMark: "following", auth: true, maxRounds: 1 },
 ];
 

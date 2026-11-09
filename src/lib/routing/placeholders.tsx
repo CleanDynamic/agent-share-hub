@@ -45,3 +45,5 @@ export const ProfilePlaceholder = () => <ListPlaceholder what="Profile" rowHeigh
 export const ComposerPlaceholder = () => <ComposeSkeleton />;
 // UX-12 P2: a legal page is text in one column; the placeholder is that column's first lines.
 export const LegalPlaceholder = () => <ListPlaceholder what="Page" rows={8} rowHeight={20} />;
+// UX-15: Settings is a list of rows: a title and the rows of one section.
+export const SettingsPlaceholder = () => <ListPlaceholder what="Settings" rows={5} rowHeight={56} />;

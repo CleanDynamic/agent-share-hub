@@ -15,6 +15,8 @@ export const SITE_NAV = {
   create: "/compose/new",
   activity: "/notifications",
   profile: "/profile",
+  /** UX-15: the account's settings. Signed-in only; reached from the account menu, not the primary nav. */
+  settings: "/settings",
 } as const;
 
 export type PrimarySection = "home" | "gallery" | "openbuilds" | "library" | "drafts";

@@ -87,3 +87,12 @@ verify_jwt = true
 # discovery. Removing that middleware opens the door; removing this line only
 # breaks discovery.
 verify_jwt = false
+
+[functions.export-my-data]
+# UX-15 P6. True: it reads only the caller's own rows, under their own token, and refuses a call with no user.
+verify_jwt = true
+
+[functions.delete-my-account]
+# UX-15 P6. True: the gateway rejects an unauthenticated call before the code runs; the code then reads the id from the verified
+# token and uses the service role only for storage, the delete helper, the deletion log and auth.admin.deleteUser.
+verify_jwt = true

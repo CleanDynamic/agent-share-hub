@@ -53,6 +53,8 @@ export interface PostCardProps {
   onReport?: () => void;
   /** UX-09 Q4: "Message @maya" in the `···` menu: the reader's one direct thread with the author, the topic handed to it. */
   onMessage?: { label: string; onSelect: () => void };
+  /** UX-15 P5: "Block @maya" in the `···` menu, for everyone but the author. Asks once (the page's BlockDialog). Absent: not offered. */
+  onBlock?: { label: string; onSelect: () => void };
 }
 
 const plain: CSSProperties = { fontFamily: FIGTREE, margin: 0 };
@@ -138,7 +140,7 @@ export function AttachmentView({ attachment, onPickTile, renderTile }: { attachm
 }
 
 /** The `···` menu: Pin and Hide for moderators (Hide asks for its reason in one field); UX-09 P8: Report for everyone but the author. */
-function ModerationMenu({ card, moderation, onAsk, onReport, onMessage }: { card: PostCardData; moderation?: CardModeration; onAsk: () => void; onReport?: () => void; onMessage?: PostCardProps["onMessage"] }) {
+function ModerationMenu({ card, moderation, onAsk, onReport, onMessage, onBlock }: { card: PostCardData; moderation?: CardModeration; onAsk: () => void; onReport?: () => void; onMessage?: PostCardProps["onMessage"]; onBlock?: PostCardProps["onBlock"] }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -153,6 +155,7 @@ function ModerationMenu({ card, moderation, onAsk, onReport, onMessage }: { card
         ) : null}
         {onMessage ? <DropdownMenuItem onSelect={onMessage.onSelect}>{onMessage.label}</DropdownMenuItem> : null}
         {onReport ? <DropdownMenuItem onSelect={onReport}>Report</DropdownMenuItem> : null}
+        {onBlock ? <DropdownMenuItem onSelect={onBlock.onSelect}>{onBlock.label}</DropdownMenuItem> : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -181,7 +184,7 @@ function HideReason({ onHide, onCancel }: { onHide: (reason: string) => void; on
   );
 }
 
-export function PostCard({ card: full, clamp = true, page = false, renderTile, moderation, engagement, topic, compact = false, reactions, onReport, onMessage }: PostCardProps) {
+export function PostCard({ card: full, clamp = true, page = false, renderTile, moderation, engagement, topic, compact = false, reactions, onReport, onMessage, onBlock }: PostCardProps) {
   // The compact card keeps the head, the heading and the first attachment (all of a topic's pictures are one attachment there).
   const card: PostCardData = compact
     ? { ...full, text: "", attachments: full.attachments.slice(0, 1), stillOpen: false, tags: [], closes: null, replies: null }
@@ -234,7 +237,7 @@ export function PostCard({ card: full, clamp = true, page = false, renderTile, m
           </div>
           {card.pinned ? <span style={{ ...plain, flex: "none", fontSize: 12, color: label }}>Pinned</span> : null}
           {card.reward ? <span style={{ ...plain, flex: "none", fontSize: 13, fontWeight: 500 }}>{card.reward}</span> : null}
-          {moderation || onReport || onMessage ? <ModerationMenu card={card} moderation={moderation} onAsk={() => setAsking(true)} onReport={onReport} onMessage={onMessage} /> : null}
+          {moderation || onReport || onMessage || onBlock ? <ModerationMenu card={card} moderation={moderation} onAsk={() => setAsking(true)} onReport={onReport} onMessage={onMessage} onBlock={onBlock} /> : null}
         </div>
         {asking && moderation ? (
           <HideReason

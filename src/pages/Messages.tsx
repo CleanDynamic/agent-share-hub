@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { MessageSquare, Loader2, Search, X, Pin, BellOff, LogOut, ExternalLink } from "lucide-react";
+import { MessageSquare, Loader2, Search, X, Pin, BellOff, LogOut, ExternalLink, UserX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { SeoHead } from "@/components/SeoHead";
@@ -22,6 +22,8 @@ import { r } from "@/lib/theme/radius";
 import { uiTransition } from "@/lib/theme/controls";
 import { Skeleton } from "@/components/ui/skeleton";
 import { reportError } from "@/lib/errors/report";
+import { BlockDialog, type BlockTarget } from "@/components/block/BlockDialog";
+import { BLOCK_COPY } from "@/lib/settings/blocks";
 import { SITE_NAME } from "@/lib/site";
 
 function timeAgo(iso: string | null): string {
@@ -206,6 +208,8 @@ export default function MessagesPage() {
   // pinned content lookup. Powers ConversationHeader.
   const activeThreadId = routeThreadId ?? null;
   const [settingsOpen, setSettingsOpen] = useState(false);
+  /* UX-15 P5: Block in a direct thread's menu. */
+  const [blocking, setBlocking] = useState<BlockTarget | null>(null);
   const [searchInThreadOpen, setSearchInThreadOpen] = useState(false);
   const [inThreadQuery, setInThreadQuery] = useState("");
 
@@ -610,6 +614,15 @@ export default function MessagesPage() {
                 <BellOff size={14} className="text-muted-foreground" />
                 {activeThreadInfo.isMutedForMe ? "Unmute" : "Mute notifications"}
               </button>
+              {activeThreadInfo.type === "direct" && activeThreadInfo.otherUser?.id && activeThreadInfo.otherUser?.username ? (
+                <button
+                  onClick={() => setBlocking({ id: activeThreadInfo.otherUser.id, handle: activeThreadInfo.otherUser.username })}
+                  className="flex items-center gap-2 w-full px-2 py-2 rounded-md text-sm hover:bg-white/5 transition-colors"
+                >
+                  <UserX size={14} className="text-muted-foreground" />
+                  {BLOCK_COPY.action(activeThreadInfo.otherUser.username)}
+                </button>
+              ) : null}
               {activeThreadInfo.headerThread.pinnedContent && (
                 <button
                   onClick={() => { setSettingsOpen(false); openPinnedContent(); }}
@@ -632,6 +645,8 @@ export default function MessagesPage() {
           )}
         </SheetContent>
       </Sheet>
+
+      <BlockDialog target={blocking} viewerId={user.id} onClose={() => setBlocking(null)} onBlocked={() => setSettingsOpen(false)} />
 
       <ComposeModal
         open={composeOpen}

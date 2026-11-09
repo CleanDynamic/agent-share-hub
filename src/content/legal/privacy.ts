@@ -193,8 +193,8 @@ export const privacy: LegalText = {
           kind: "table",
           head: ["What", "How long"],
           rows: [
-            ["Account and profile", "Until your account is closed. {{NEED: retention period after closing}}"],
-            ["Builds, drafts, topics, replies and comments", "Until you delete them or close your account."],
+            ["Account and profile", "Until you delete your account in Settings › Your data. They leave the site at once."],
+            ["Builds, drafts, topics, replies and comments", "Until you delete them or delete your account."],
             ["Messages", "Until they are deleted. {{NEED: retention period}}"],
             ["Imports sent from your AI tool and not yet reviewed", "They are marked as expired after 7 days. {{NEED: when expired imports are deleted}}"],
             ["Reports", "{{NEED: retention period}}"],
@@ -204,7 +204,7 @@ export const privacy: LegalText = {
         },
         {
           kind: "p",
-          text: "When you delete something, it leaves the site at once. Copies can stay in backups for {{NEED: Supabase backup retention}} before they are overwritten.",
+          text: "When you delete something, or your whole account, it leaves the site at once. Deleting is immediate apart from backups: copies can stay in backups for {{NEED: Supabase backup retention}} before they are overwritten.",
         },
       ],
     },
@@ -227,7 +227,7 @@ export const privacy: LegalText = {
         },
         {
           kind: "p",
-          text: "To use any of these, email {{NEED: privacy contact email}}. There is no button for deleting your account or downloading your data yet, so please ask by email. We will answer within one month.",
+          text: "You can download your data and delete your account yourself, in Settings › Your data. For anything else, or if you would rather ask, email {{NEED: privacy contact email}}. We will answer within one month.",
         },
         {
           kind: "p",

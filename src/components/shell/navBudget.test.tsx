@@ -19,7 +19,7 @@ import { SiteHeaderView } from "./SiteHeader";
 
    UI-P46 moved the budget to the site frame's real chrome (the rail these tests
    used to count is gone): Drafts joins the header after Library, and the
-   account sheet lists Profile, Library, Drafts. "Make: New build, Drafts" is
+   account sheet lists Profile, Library, Drafts (UX-15 added Settings). "Make: New build, Drafts" is
    the hicks-law group — the header's New build button and its Drafts link sit
    together — so the signed-in header is five links and one button, and the dock
    stays at five tiles.
@@ -107,7 +107,7 @@ describe("navigation budgets (hicks-law › Budgets)", () => {
     expect(screen.getByRole("searchbox", { name: "Search builds" })).toBeInTheDocument();
   });
 
-  it("the phone's account sheet lists Profile, Library and Drafts, then Sign out", async () => {
+  it("the phone's account sheet lists Profile, Library, Drafts and Settings, then Sign out", async () => {
     authState.isLoggedIn = true;
     authState.profile = { display_name: "Ada Lovelace", username: "ada", avatar_url: null };
     authState.user = { id: "u1", email: "ada@example.com" };
@@ -121,11 +121,13 @@ describe("navigation budgets (hicks-law › Budgets)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Account" }));
     // SV-26 P2: the sheet's code loads on first open (LazyBottomSheet).
     const sheet = await screen.findByRole("dialog", { name: "Account" });
-    expect(within(sheet).getAllByRole("link").map((a) => a.textContent)).toEqual(["Profile", "Library", "Drafts"]);
+    expect(within(sheet).getAllByRole("link").map((a) => a.textContent)).toEqual(["Profile", "Library", "Drafts", "Settings"]);
     expect(within(sheet).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual([
       "/profile/ada",
       "/library",
       "/drafts",
+      // UX-15: Settings joins the account sheet (the owner asked for it; the primary nav is unchanged).
+      "/settings",
     ]);
   });
 });
