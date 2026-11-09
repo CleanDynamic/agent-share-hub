@@ -393,6 +393,13 @@
       "when": 1793981344925,
       "tag": "0055_ux11_legacy_backup",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1794268021082,
+      "tag": "0056_ux10_profile_feed",
+      "breakpoints": true
     }
   ]
 }
