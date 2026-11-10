@@ -13,7 +13,6 @@ import type { DetailsHandlers, DetailsView } from "./DetailsPanel";
 import type { GoesRow, InputOption, MakesRow, UseRow } from "./detailsModel";
 import { Block, BlockHead, FieldInput, FileButton, FileLine, Hint, Inline, LabelText, PANEL_LIST, PickerFieldButton, RecipeButton, Row, SegmentedField, Tag, TagList, TextLink } from "./modalRecipes";
 import { harnessTool, modelMenu } from "@/lib/tools/modelRules";
-import { t } from "@/lib/theme/tokens";
 
 import { ModelPicker } from "./ModelPicker";
 import { ModelRunFields } from "./ModelRunFields";
@@ -73,10 +72,10 @@ export function UsesBlock({ id, rows: initial, options: initialOptions, phone, h
         ))}
       </div>
       {options.length === 0 && !handlers.onAttach ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <PickerFieldButton value={null} placeholder={EDIT_COPY.addInput} phone={phone} disabled aria-label={EDIT_COPY.addInput} style={{ cursor: "default", filter: t.dimFilter, flex: "1 1 160px" }} />
+        <Inline>
+          <PickerFieldButton value={null} placeholder={EDIT_COPY.addInput} phone={phone} disabled aria-label={EDIT_COPY.addInput} />
           <Hint>{EDIT_COPY.noInputs}</Hint>
-        </div>
+        </Inline>
       ) : (
         <PickMenu<string>
           label={EDIT_COPY.addInput}
