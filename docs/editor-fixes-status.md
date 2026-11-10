@@ -37,16 +37,16 @@ Note: 21 distinct names are listed for 31 failed tests. Names that repeat across
 
 | Item | Prompt | Status | Files changed | Evidence |
 |---|---|---|---|---|
-| F1 | 1 | not started | | |
-| F2 | 1 | not started | | |
-| F3 | 1 | not started | | |
-| F4 | 1 | not started | | |
-| F5 | 1 | not started | | |
-| F6 | 1 | not started | | |
-| F7 | 1 | not started | | |
-| F8 | 1 | not started | | |
-| F9 | 1 | not started | | |
-| F10 | 1 | not started | | |
+| F1 | 1 | blocked | src/components/compose/useBuildFileDrop.ts, useBuildFileDrop.test.tsx | Done: dragover highlight withheld only when every item has a non-accepted MIME type (`couldBeBuildFile`); test `useBuildFileDrop.test.tsx > refuses a.docx…` asserts message `a.docx is not one of .md, .json, .txt.` and state `failed`. NOT done: the refusal is drawn by `BuildFileIntake.tsx` RefusalPanel (role="alert", no timeout, replaces the page body) — needs role="status", 4s minimum, drop-point placement; that file is not on the Prompt 1 list. Asked in report. |
+| F2 | 1 | done | src/pages/site/compose/BuildList.tsx, BuildList.nest.test.tsx | `move` in BuildList.tsx: after Make it its own step, `showOwnStep` selects the tile, `scrollToShow(..., {align:"nearest"})`, `outlineOnce` (reduced-motion handled inside it). Index was already parent+1 (`after`). Test: BuildList.nest.test.tsx expects onNest("c1", null, 2) and onSelect("c1"). |
+| F3 | 1 | done | src/pages/site/compose/BuildList.tsx | Footer "Open file" was already a button (TextButton via FooterLink) opening the tile window. Added `userSelect: none` to FooterLink; FileCard now opens non-picture stored files in a new tab (`openFileInTab`); pictures keep the tile window. Not covered by a unit test; not checked in a browser (see report). |
+| F4 | 1 | already fixed | (none) | DetailsPanel.tsx AddDetails uses the same `onEdit` as Edit and is only rendered when `notSet.length > 0`. Focus-in-first-field is the Edit window's own behaviour; the 400ms timing was not measured. |
+| F5 | 1 | already fixed | (none) | ClassificationPicker.tsx Suggestion onAdd → `add({id})`; chosen row has Remove, suggestion hidden once chosen. Test: ClassificationPicker.test.tsx "adds one on press". |
+| F6 | 1 | done | src/pages/site/compose/editKit.tsx, ModelPicker.tsx | UsesBlock: with no options and no attach, disabled "Add input" with `EDIT_COPY.noInputs` ("No other step tiles yet") beside it. ModelPicker pick-tool state: disabled button now has `MODEL_PICKER_COPY.pickToolReason` beside it. Menus already opened on click otherwise. |
+| F7 | 1 | done | src/pages/site/compose/SourcesPanel.tsx | FileRow name/note is now a SelectButton: click calls onOpen (select) and scrolls the tile with scrollToShow nearest. Drag starts only from the grip (`SourceGrip`, existing). |
+| F8 | 1 | done | src/components/build/tileBodies.tsx, BuildList.tsx | FileTileBody gets optional `onPreview`; the thumbnail is then a button (aria-label "Preview <name>") that opens the tile window. File name spans have cursor default. |
+| F9 | 1 | done | src/components/post/editor/PostToolbar.tsx | Eye button is 36 (desktop) / 44 (phone) square, already with a hover state. Added `previewOpen` prop → aria-pressed, and a title naming what it shows or hides. PostTab.tsx does not pass `previewOpen` yet (not on the list). |
+| F10 | 1 | done | src/pages/site/compose/SandboxCard.tsx, SandboxCard.test.tsx | SandboxCard guards onOpenChange: when any field differs from open, Escape/outside/close square shows an in-dialog Keep editing / Discard changes choice. useLeaveGuard is router-only, not reused. Tests: `F10 · closing Classification with changes`. |
 | F11 | 2 | not started | | |
 | F12 | 2 | not started | | |
 | F13 | 2 | not started | | |

@@ -251,7 +251,9 @@ describe("the toolbar", () => {
       // CA-07: the + is round and 32; every other tool is 36.
       const side = button.getAttribute("aria-label") === "Add another post" ? 32 : DESKTOP_TOOL_SIZE;
       expect([button.style.width, button.style.height]).toEqual([`${side}px`, `${side}px`]);
-      expect(button.getAttribute("title")).toBe(button.getAttribute("aria-label"));
+      // F9: the eye's title names what it shows or hides; every other button's title is its label.
+      if (button.getAttribute("aria-label") === "Preview") expect(button.getAttribute("title")).toMatch(/preview|looks in the Gallery/i);
+      else expect(button.getAttribute("title")).toBe(button.getAttribute("aria-label"));
     }
     expect(DESKTOP_TOOL_SIZE).toBe(36);
     expect(within(toolbar()).getByRole("button", { name: "Text size" }).textContent).toBe("Aa");

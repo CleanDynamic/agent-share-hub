@@ -22,6 +22,7 @@ import { typeLineOf } from "@/lib/build/tileLines";
 import { CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { TextButton } from "@/pages/site/compose/composeControls";
+import { r } from "@/lib/theme/radius";
 import { ManualThumb } from "@/pages/site/compose/ManualThumb";
 import { Quiet, ToolMark } from "@/pages/site/compose/refinedPieces";
 import { FindHit } from "./FindHit";
@@ -153,15 +154,31 @@ export function FileMark({ kind, size = 32 }: { kind: FileKind; size?: number })
 }
 
 /** The type mark, the file's name and size, and a preview: 4 lines of a text or code file, a thumbnail of a picture, the PDF mark for a PDF. */
-export function FileTileBody({ step, indent = 0, lean = false, plain = false }: { step: Step; indent?: number; lean?: boolean; /** UX-03 follow-up P14: the file's name once (Geist Mono 12.5), or its thumbnail and name for a picture, then the paste line; no type mark, type word or preview. */ plain?: boolean }) {
+export function FileTileBody({ step, indent = 0, lean = false, plain = false, onPreview }: { step: Step; indent?: number; lean?: boolean; /** UX-03 follow-up P14: the file's name once (Geist Mono 12.5), or its thumbnail and name for a picture, then the paste line; no type mark, type word or preview. */ plain?: boolean; /** F8: where the file's thumbnail is a button, what it opens: the preview. Absent: the thumbnail is a picture only. */ onPreview?: () => void }) {
   const facts = step.fileFacts;
   if (!facts) return null;
+  const thumb = (mediaId: string, size: number) =>
+    onPreview ? (
+      <button
+        type="button"
+        aria-label={`Preview ${facts.name}`}
+        onClick={(event) => {
+          event.stopPropagation();
+          onPreview();
+        }}
+        style={{ appearance: "none", background: "none", border: 0, padding: 0, margin: 0, cursor: "pointer", display: "inline-flex", flexShrink: 0, borderRadius: r.control, alignSelf: "flex-start" }}
+      >
+        <ManualThumb mediaId={mediaId} size={size} />
+      </button>
+    ) : (
+      <ManualThumb mediaId={mediaId} size={size} />
+    );
   if (plain) {
     return (
       <div data-testid="file-tile" style={{ display: "flex", flexDirection: "column", gap: 6, paddingLeft: indent, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-          {facts.kind === "picture" && facts.mediaId ? <ManualThumb mediaId={facts.mediaId} size={48} /> : null}
-          <span data-testid="file-name" style={{ fontFamily: DM_MONO, fontSize: 12.5, fontWeight: 500, lineHeight: "normal", color: t.text, ...ellipsis }}>{facts.name}</span>
+          {facts.kind === "picture" && facts.mediaId ? thumb(facts.mediaId, 48) : null}
+          <span data-testid="file-name" style={{ cursor: "default", fontFamily: DM_MONO, fontSize: 12.5, fontWeight: 500, lineHeight: "normal", color: t.text, ...ellipsis }}>{facts.name}</span>
         </div>
         {step.text ? <span style={{ ...text(12, 400, t.label), overflowWrap: "anywhere" }}>{step.text}</span> : null}
       </div>
@@ -173,12 +190,12 @@ export function FileTileBody({ step, indent = 0, lean = false, plain = false }: 
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
         <FileMark kind={facts.kind} />
         <span style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
-          <span style={{ ...text(13.5, 500, t.text), ...ellipsis }}>{facts.name}</span>
+          <span style={{ cursor: "default", ...text(13.5, 500, t.text), ...ellipsis }}>{facts.name}</span>
           {lean ? null : <Quiet>{[FILE_WORD[facts.kind], size].filter(Boolean).join(" · ")}</Quiet>}
         </span>
       </div>
       {facts.kind === "picture" && facts.mediaId ? (
-        <ManualThumb mediaId={facts.mediaId} size={96} />
+        thumb(facts.mediaId, 96)
       ) : (facts.kind === "text" || facts.kind === "code" || facts.kind === "spreadsheet") && facts.preview.length > 0 ? (
         <CodeLines text={facts.preview.join("\n")} maxLines={lean ? 2 : 4} hideToggle={lean} testId="file-preview" label={`${facts.name} preview`} />
       ) : null}

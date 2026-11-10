@@ -41,6 +41,8 @@ export const MODEL_PICKER_COPY = {
   /** CA-03: the button while no model is chosen. */
   choose: "Select a model",
   pickToolFirst: "Select a tool first",
+  /** F6: shown beside the disabled button, so the reason is not only in its accessible name. */
+  pickToolReason: "Select a tool first, then pick its model",
   noModel: "No model",
   other: "Other model…",
   otherField: "Other model",
@@ -98,8 +100,18 @@ export function ModelPicker({ tool, value, onChange, phone, allowNone = true, na
   if (menu.state === "none") return null;
   if (menu.state === "hidden") return <span style={quiet}>{menu.note}</span>;
   if (menu.state === "pick-tool") {
-    if (field) return <PickerFieldButton value={null} placeholder={placeholder} phone={phone} disabled aria-label={MODEL_PICKER_COPY.pickToolFirst} style={{ cursor: "default", filter: t.dimFilter }} />;
-    return <MenuButton label={placeholder} value="" disabled aria-label={MODEL_PICKER_COPY.pickToolFirst} style={{ ...buttonStyle, cursor: "default", filter: t.dimFilter }} />;
+    const why = <span data-testid="model-reason" style={quiet}>{MODEL_PICKER_COPY.pickToolReason}</span>;
+    const off = field ? (
+      <PickerFieldButton value={null} placeholder={placeholder} phone={phone} disabled aria-label={MODEL_PICKER_COPY.pickToolFirst} style={{ cursor: "default", filter: t.dimFilter }} />
+    ) : (
+      <MenuButton label={placeholder} value="" disabled aria-label={MODEL_PICKER_COPY.pickToolFirst} style={{ ...buttonStyle, cursor: "default", filter: t.dimFilter }} />
+    );
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0, ...(block || field ? { display: "flex", flexWrap: "wrap" } : null) }}>
+        {off}
+        {why}
+      </span>
+    );
   }
 
   const openChange = (next: boolean) => {

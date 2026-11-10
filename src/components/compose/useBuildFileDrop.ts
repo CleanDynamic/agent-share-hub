@@ -122,6 +122,19 @@ function draggingFiles(transfer: DataTransfer | null): boolean {
   return Array.from(types as ArrayLike<string>).includes("Files");
 }
 
+/** F1: the MIME types a browser reports for the accepted extensions. A .md often arrives with no type at all. */
+const BUILD_FILE_MIME_TYPES = ["text/plain", "text/markdown", "text/x-markdown", "application/json"];
+
+/**
+ * F1: during dragover a browser exposes each item's MIME type but not its name. The highlight is withheld only when every dragged
+ * file has a type that cannot be an accepted one; an empty or ambiguous type shows it. Nothing else is guessed from.
+ */
+export function couldBeBuildFile(transfer: DataTransfer | null): boolean {
+  const items = transfer?.items ? Array.from(transfer.items).filter((item) => item.kind === "file") : [];
+  if (items.length === 0) return true;
+  return items.some((item) => item.type === "" || BUILD_FILE_MIME_TYPES.includes(item.type.toLowerCase()));
+}
+
 /**
  * The version the refused file declared, for the plain-language line.
  *
@@ -325,7 +338,7 @@ export function useBuildFileDrop(options: UseBuildFileDropOptions = {}): BuildFi
     }
 
     const onDragEnter = (event: DragEvent) => {
-      if (!draggingFiles(event.dataTransfer)) return;
+      if (!draggingFiles(event.dataTransfer) || !couldBeBuildFile(event.dataTransfer)) return;
       depth.current += 1;
       setDragging(true);
     };
@@ -338,7 +351,7 @@ export function useBuildFileDrop(options: UseBuildFileDropOptions = {}): BuildFi
     };
 
     const onDragLeave = (event: DragEvent) => {
-      if (!draggingFiles(event.dataTransfer)) return;
+      if (!draggingFiles(event.dataTransfer) || !couldBeBuildFile(event.dataTransfer)) return;
       depth.current = Math.max(0, depth.current - 1);
       if (depth.current === 0) setDragging(false);
     };

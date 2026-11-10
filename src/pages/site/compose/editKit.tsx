@@ -11,8 +11,9 @@ import { MADE_FILE_NAME_MAX, TITLE_MAX, type RuntimePatch } from "@/lib/build/gr
 
 import type { DetailsHandlers, DetailsView } from "./DetailsPanel";
 import type { GoesRow, InputOption, MakesRow, UseRow } from "./detailsModel";
-import { Block, BlockHead, FieldInput, FileButton, FileLine, Hint, Inline, LabelText, PANEL_LIST, RecipeButton, Row, SegmentedField, Tag, TagList, TextLink } from "./modalRecipes";
+import { Block, BlockHead, FieldInput, FileButton, FileLine, Hint, Inline, LabelText, PANEL_LIST, PickerFieldButton, RecipeButton, Row, SegmentedField, Tag, TagList, TextLink } from "./modalRecipes";
 import { harnessTool, modelMenu } from "@/lib/tools/modelRules";
+import { t } from "@/lib/theme/tokens";
 
 import { ModelPicker } from "./ModelPicker";
 import { ModelRunFields } from "./ModelRunFields";
@@ -25,6 +26,8 @@ import { withRuntimePatch } from "./runtimeView";
 export const EDIT_COPY = {
   uses: "Uses",
   addInput: "Add input",
+  /** F6: shown beside "Add input" while there is nothing it could take. */
+  noInputs: "No other step tiles yet",
   attach: "File from computer",
   makes: "Makes",
   nameFile: "Add file name",
@@ -69,15 +72,22 @@ export function UsesBlock({ id, rows: initial, options: initialOptions, phone, h
           <FileLine key={keyOf(row)} name={nameOf(row)} removeLabel={`Remove ${row.label}`} onRemove={() => remove(row)} phone={phone} />
         ))}
       </div>
-      <PickMenu<string>
-        label={EDIT_COPY.addInput}
-        placeholder={EDIT_COPY.addInput}
-        value={null}
-        phone={phone}
-        field
-        onChange={add}
-        options={[...(handlers.onAttach ? [{ value: ATTACH, label: EDIT_COPY.attach }] : []), ...options.map((option) => ({ value: option.key, label: option.sub ? `${option.label} · ${option.sub}` : option.label }))]}
-      />
+      {options.length === 0 && !handlers.onAttach ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <PickerFieldButton value={null} placeholder={EDIT_COPY.addInput} phone={phone} disabled aria-label={EDIT_COPY.addInput} style={{ cursor: "default", filter: t.dimFilter, flex: "1 1 160px" }} />
+          <Hint>{EDIT_COPY.noInputs}</Hint>
+        </div>
+      ) : (
+        <PickMenu<string>
+          label={EDIT_COPY.addInput}
+          placeholder={EDIT_COPY.addInput}
+          value={null}
+          phone={phone}
+          field
+          onChange={add}
+          options={[...(handlers.onAttach ? [{ value: ATTACH, label: EDIT_COPY.attach }] : []), ...options.map((option) => ({ value: option.key, label: option.sub ? `${option.label} · ${option.sub}` : option.label }))]}
+        />
+      )}
     </Block>
   );
 }

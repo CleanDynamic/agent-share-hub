@@ -23,7 +23,7 @@
    there; Setting replaces "Who it's for", and `made_for` is no longer written. Made with stays, inside Tools and stack:
    it is how a maker takes a model out of the list the sessions gave. */
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -187,8 +187,21 @@ const entriesLine = (facet: Facet, entries: readonly Entry[]): string =>
     .map((entry) => (isCustomEntry(entry) ? entry.custom : facet === "field" ? pathOf(entry.id, facet).split(" \u203A ").slice(-2).join(" \u203A ") : labelFor(facet, entry.id)))
     .join(", ");
 
-function CardBody(props: SandboxCardProps) {
-  const { phone, classification: data } = props;
+/** F10: what the card and its shell share about leaving: whether anything changed, and whether the keep-or-discard choice is showing. */
+interface CloseGuard {
+  dirty: { current: boolean };
+  asking: boolean;
+  keep: () => void;
+}
+
+export const CLOSE_COPY = {
+  question: "Keep your changes?",
+  keep: "Keep editing",
+  discard: "Discard changes",
+} as const;
+
+function CardBody(props: SandboxCardProps & { guard: CloseGuard }) {
+  const { phone, classification: data, guard } = props;
   const [title, setTitle] = useState(props.title);
   const [summary, setSummary] = useState(props.description);
   const [details, setDetails] = useState<ComposeDetails>(props.details);
@@ -198,6 +211,14 @@ function CardBody(props: SandboxCardProps) {
   const [saving, setSaving] = useState(false);
   const [notSaved, setNotSaved] = useState(false);
   const pad = useModalInset();
+  /* F10: any field that differs from its value when the window opened. */
+  const changed = title !== props.title || summary !== props.description || JSON.stringify(draft) !== opened || JSON.stringify(details) !== JSON.stringify(props.details);
+  useEffect(() => {
+    guard.dirty.current = changed;
+    return () => {
+      guard.dirty.current = false;
+    };
+  }, [changed, guard.dirty]);
 
   const stored = data?.stored ?? null;
   const candidate = useMemo(() => (data ? applyDraft(stored, data.derived, draft) : null), [data, stored, draft]);
@@ -402,6 +423,19 @@ function CardBody(props: SandboxCardProps) {
         </div>
       </div>
 
+      {guard.asking ? (
+        <div data-testid="card-close-choice" role="alertdialog" aria-label={CLOSE_COPY.question} style={{ ...footerStyle(phone), borderTop: `1px solid ${t.hairlineModule}` }}>
+          <span role="status" style={FOOT_NOTE}>
+            {CLOSE_COPY.question}
+          </span>
+          <RecipeButton phone={phone} onClick={guard.keep}>
+            {CLOSE_COPY.keep}
+          </RecipeButton>
+          <RecipeButton variant="primary" phone={phone} onClick={() => props.onOpenChange(false)}>
+            {CLOSE_COPY.discard}
+          </RecipeButton>
+        </div>
+      ) : null}
       <div data-testid="card-footer" style={footerStyle(phone)}>
         <span data-testid="card-required" role="status" style={FOOT_NOTE}>
           {notSaved ? NOT_SAVED_LINE : titleOk ? "Required fields complete" : "Required: a title"}
@@ -418,11 +452,26 @@ function CardBody(props: SandboxCardProps) {
 }
 
 export function SandboxCard(props: SandboxCardProps) {
+  const dirty = useRef(false);
+  const [asking, setAsking] = useState(false);
+  /* F10: a click outside, Escape or the close square asks first when something changed; Cancel, Discard and a finished Save close at once. */
+  const request = (next: boolean) => {
+    if (!next && dirty.current) {
+      setAsking(true);
+      return;
+    }
+    setAsking(false);
+    props.onOpenChange(next);
+  };
+  useEffect(() => {
+    if (!props.open) setAsking(false);
+  }, [props.open]);
+  const guard: CloseGuard = { dirty, asking, keep: () => setAsking(false) };
   return (
-    <ModalShell open={props.open} onOpenChange={props.onOpenChange} title={CLASSIFICATION_CARD} subtitle={CARD_SUBTITLE} width={560} testId="sandbox-card">
+    <ModalShell open={props.open} onOpenChange={request} title={CLASSIFICATION_CARD} subtitle={CARD_SUBTITLE} width={560} testId="sandbox-card">
       {/* SV-05 P7: the same 20 inset as every other window's body, as ModalForm gives it (none on a phone). */}
       <ModalInset.Provider value={props.phone ? 0 : MODAL_PAD}>
-        <CardBody {...props} />
+        <CardBody {...props} guard={guard} />
       </ModalInset.Provider>
     </ModalShell>
   );
