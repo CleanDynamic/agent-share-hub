@@ -409,3 +409,33 @@ describe("UX-01 P2: a live build's title", () => {
     expect(within(dialog).queryByText("A published build needs a title.")).toBeNull();
   });
 });
+
+describe("F10 · closing Classification with changes", () => {
+  it("asks to keep or discard when Escape is pressed after the title changed, and stays open", async () => {
+    live();
+    const { onOpenChange } = mount();
+    await screen.findByTestId("sandbox-card");
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Policy finder" } });
+    fireEvent.keyDown(screen.getByLabelText("Title"), { key: "Escape" });
+    const choice = await screen.findByTestId("card-close-choice");
+    expect(within(choice).getByRole("button", { name: "Keep editing" })).toBeTruthy();
+    expect(within(choice).getByRole("button", { name: "Discard changes" })).toBeTruthy();
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(screen.getByTestId("sandbox-card")).toBeTruthy();
+    // Keep editing closes the question, not the window; Discard closes the window.
+    fireEvent.click(within(choice).getByRole("button", { name: "Keep editing" }));
+    expect(screen.queryByTestId("card-close-choice")).toBeNull();
+    fireEvent.keyDown(screen.getByLabelText("Title"), { key: "Escape" });
+    fireEvent.click(within(await screen.findByTestId("card-close-choice")).getByRole("button", { name: "Discard changes" }));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("closes at once on Escape when nothing changed", async () => {
+    live();
+    const { onOpenChange } = mount();
+    await screen.findByTestId("sandbox-card");
+    fireEvent.keyDown(screen.getByLabelText("Title"), { key: "Escape" });
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
+    expect(screen.queryByTestId("card-close-choice")).toBeNull();
+  });
+});

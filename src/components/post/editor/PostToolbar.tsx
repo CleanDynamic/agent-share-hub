@@ -39,6 +39,9 @@ import type { InsertPicture } from "./SlashMenu";
 export const POST_FULL_TITLE = `A post holds ${MAX_POST_PICTURES} pictures`;
 
 /** A phone's button is 44 square: the touch size. */
+/** F9: the eye's title: what it shows, or hides. */
+const PREVIEW_COPY = { show: "Show how this post looks in the Gallery", hide: "Hide the Gallery preview" } as const;
+
 export const TOOL_SIZE = 44;
 /** A desktop's button is 36 square, its glyph 18 (CA-07). */
 export const DESKTOP_TOOL_SIZE = 36;
@@ -477,6 +480,7 @@ export function PostToolbar({
   onInsertPicture,
   notice,
   onPreview,
+  previewOpen,
   onReference,
   referenceOpen = false,
 }: {
@@ -487,6 +491,8 @@ export function PostToolbar({
   notice: (sentence: string) => void;
   /** Opens the draft as the Gallery will draw it. Absent: no Preview button. */
   onPreview?: () => void;
+  /** F9: whether the preview is showing: the eye reads pressed and its title says it hides it. Absent: the eye is a plain action. */
+  previewOpen?: boolean;
   /** CA-06 P2, CA-19 P3: the link panel of the build's groups, parts, sessions and tiles. Absent: no reference button. */
   onReference?: () => void;
   /** CA-19 P3: the link panel is open, and the button shows pressed. */
@@ -557,7 +563,7 @@ export function PostToolbar({
           ) : null}
         </div>
         {onPreview ? (
-          <ToolButton label="Preview" size={size} onClick={onPreview}>
+          <ToolButton label="Preview" title={previewOpen ? PREVIEW_COPY.hide : PREVIEW_COPY.show} size={size} pressed={previewOpen} onClick={onPreview}>
             <Icon lucide={Eye} size={TOOL_GLYPH} />
           </ToolButton>
         ) : null}

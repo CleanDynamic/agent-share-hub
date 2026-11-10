@@ -40,6 +40,7 @@ import { MotionBoundary, NO_SLIDE, useListMotion } from "./listMotion";
 import { DragHandle, useSourceDrag } from "./listNest";
 import { holdsFolder, readDrop } from "./dropFolders";
 import { SLIDE_ATTR } from "./flip";
+import { scrollToShow } from "./pageScroll";
 import { ToolMark } from "./refinedPieces";
 import { fullText, PREVIEW } from "@/lib/theme/truncate";
 import { bareButton, ellipsis, menuItem, menuSurface, text, tnum, wellField } from "./refinedStyles";
@@ -275,18 +276,28 @@ function SessionRow({
   );
 }
 
-function FileRow({ file, phone, sessions, onOpen, onAddToSession, onRemove, leaving = false }: { file: SourceFile; phone: boolean; sessions: readonly SourceSession[]; onOpen?: (id: string) => void; onAddToSession?: (id: string, sessionKey: string) => void; onRemove?: (id: string) => void; leaving?: boolean }) {
+function FileRow({ file, phone, sessions, selected = false, onOpen, onAddToSession, onRemove, leaving = false }: { file: SourceFile; phone: boolean; selected?: boolean; sessions: readonly SourceSession[]; onOpen?: (id: string) => void; onAddToSession?: (id: string, sessionKey: string) => void; onRemove?: (id: string) => void; leaving?: boolean }) {
   const drag = useSourceDrag("file", file.id);
+  const select = (id: string) => {
+    onOpen?.(id);
+    window.requestAnimationFrame(() => {
+      const tile = document.querySelector<HTMLElement>(`[data-node-id="${id}"]`);
+      if (tile) scrollToShow(tile, { align: "nearest" });
+    });
+  };
   return (
     <div ref={drag.setRef} data-source-drag={drag.on ? drag.dragId : undefined} data-file-id={file.id} {...{ [SLIDE_ATTR]: `file:${file.id}` }} aria-hidden={leaving || undefined} style={{ ...(leaving ? { pointerEvents: "none" } : null), ...rowLine, display: "flex", alignItems: "flex-start", gap: 8, minHeight: phone ? 44 : undefined, padding: "12px 0", boxSizing: "border-box" }}>
       <SourceGrip drag={drag} label={`Move ${file.name}`} phone={phone} />
-      <span style={{ display: "inline-flex", color: t.label, flexShrink: 0 }}>
-        <Glyph name="file" size={16} />
-      </span>
-      <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
-        <span {...fullText(file.name)} style={{ ...text(13, 500, t.text), ...ellipsis }}>{file.name}</span>
-        <span {...fullText(file.note)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{file.note}</span>
-      </span>
+      {/* F7: the row is one button: a click selects the file and scrolls to its tile. A drag starts only from the grip at its start. */}
+      <SelectButton selected={selected} onClick={() => select(file.id)} minHeight={phone ? 44 : 30} style={{ alignItems: "flex-start", textAlign: "left" }}>
+        <span style={{ display: "inline-flex", color: t.label, flexShrink: 0 }}>
+          <Glyph name="file" size={16} />
+        </span>
+        <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
+          <span {...fullText(file.name)} style={{ ...text(13, 500, t.text), ...ellipsis }}>{file.name}</span>
+          <span {...fullText(file.note)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{file.note}</span>
+        </span>
+      </SelectButton>
       {/* CA-20 P2: a file's menu ends with Remove file, like every other component's. UX-02 P2: Open file and Add to session come first. */}
       {onRemove ? (
         <Menu.Root>
@@ -569,7 +580,7 @@ export function SourcesPanel(props: SourcesPanelProps) {
               phone={phone}
               render={(session) => <SessionRow key={session.key} session={session} phone={phone} selectedId={props.selectedId} onSelect={props.onSelect} />}
             />
-            <Capped rows={files} phone={phone} render={(file) => <FileRow key={file.id} file={file} phone={phone} sessions={sessions} onOpen={props.onSelect} onAddToSession={props.onAddFileToSession} onRemove={props.onRemoveFile} leaving={leaving.has(file.id)} />} />
+            <Capped rows={files} phone={phone} render={(file) => <FileRow key={file.id} file={file} phone={phone} sessions={sessions} selected={props.selectedId === file.id} onOpen={props.onSelect} onAddToSession={props.onAddFileToSession} onRemove={props.onRemoveFile} leaving={leaving.has(file.id)} />} />
             {reminders.map((reminder) => (
               <ReminderRow key={reminder.toolId} reminder={reminder} phone={phone} onPick={props.onPick} />
             ))}

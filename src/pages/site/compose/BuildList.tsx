@@ -107,6 +107,7 @@ import {
 } from "./buildListModel";
 import { TextButton } from "./composeControls";
 import { CODE_COPY, firstLines, lineCount, looksLikeCode } from "./codeModel";
+import { getMediaById, signedMediaUrl } from "@/lib/build/media";
 import { ManualThumb } from "./ManualThumb";
 import { OutsideWarning } from "./OutsideWarning";
 import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
@@ -133,6 +134,7 @@ import { listRuns, type Run } from "./buildRuns";
 import { useBuildDirector } from "./buildDirector";
 import { foldShut, useFoldMotion } from "./foldMotion";
 import { outlineOnce } from "./buildMotion";
+import { scrollToShow } from "./pageScroll";
 import { FADE_AFTER_MS, FOLD } from "@/lib/build/buildMotion";
 import { ListMotionContext, MotionBoundary, NO_SLIDE, useListMotion, type SlideOptions } from "./listMotion";
 import { prefersReducedMotion } from "@/lib/theme/motion";
@@ -1122,7 +1124,7 @@ function FooterLink({ phone, onClick, expanded, children }: { phone: boolean; on
     <TextButton
       target={phone}
       aria-expanded={expanded}
-      style={FOOT_LINK}
+      style={{ ...FOOT_LINK, userSelect: "none" }}
       onClick={(event) => {
         event.stopPropagation();
         onClick();
@@ -1807,8 +1809,28 @@ function RepoCard({ step, index, last, props }: { step: Step; index: number; las
 }
 
 /** CA-12 P8: a file as a tile: its mark and name, and a short preview; its type and size are in its type line. */
+/** F3: "Open file": a picture opens in the tile's window; any other stored file opens in a new tab (the tab is opened in the click, then pointed at the signed link). */
+function openFileInTab(mediaId: string) {
+  const tab = window.open("about:blank", "_blank");
+  if (tab) tab.opener = null;
+  void getMediaById(mediaId)
+    .then((media) => (media ? signedMediaUrl(media, { width: "original" }) : null))
+    .then((url) => {
+      if (url && tab) tab.location.href = url;
+      else tab?.close();
+    })
+    .catch(() => tab?.close());
+}
+
 function FileCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
-  return <PlainCard step={step} index={index} last={last} props={props} noun="File" body={(indent) => <FileTileBody step={step} lean indent={indent} />} />;
+  const facts = step.fileFacts;
+  const own = facts && facts.kind !== "picture" && facts.mediaId ? facts.mediaId : null;
+  const link = own ? (
+    <FooterLink phone={props.phone} onClick={() => openFileInTab(own)}>
+      {LIST_COPY.open("File")}
+    </FooterLink>
+  ) : undefined;
+  return <PlainCard step={step} index={index} last={last} props={props} noun="File" link={link} body={(indent) => <FileTileBody step={step} lean indent={indent} onPreview={props.onEditTile ? () => props.onEditTile?.(step.id) : undefined} />} />;
 }
 
 /** CA-02 P7: lines of code, as a module like a manual step's: its type line (language and length), then its first 3 lines in a mono well. */
@@ -2378,9 +2400,26 @@ export function BuildList(raw: BuildListProps) {
   };
   const topOf = (id: string): Step | undefined => steps.find((step) => withSentWith(step).some((tile) => tile.id === id));
 
+  /** F2: the tile that became its own step is the selection, scrolled to (nearest) and ringed once; the ring honours reduced motion. */
+  const showOwnStep = (id: string) => {
+    props.onSelect(id);
+    let tries = 0;
+    const find = () => {
+      const card = cardOf(id);
+      if (!card) {
+        if (tries++ < 10) window.requestAnimationFrame(find);
+        return;
+      }
+      scrollToShow(card, { align: "nearest" });
+      outlineOnce(card);
+    };
+    window.requestAnimationFrame(find);
+  };
   const move = (id: string, parentId: string | null, index: number) => {
     void props.onNest?.(id, parentId, index).then((done) => {
-      if (done) setSaid(parentId ? NEST_LIST_COPY.nowSentWith(label(id), label(parentId)) : NEST_LIST_COPY.nowOwnStep(label(id)));
+      if (!done) return;
+      setSaid(parentId ? NEST_LIST_COPY.nowSentWith(label(id), label(parentId)) : NEST_LIST_COPY.nowOwnStep(label(id)));
+      if (!parentId) showOwnStep(id);
     });
   };
   const nest: ListNest | null = nestOn
