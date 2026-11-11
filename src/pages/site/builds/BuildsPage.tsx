@@ -38,7 +38,7 @@ import { SeoHead } from "@/components/SeoHead";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { useAuth } from "@/contexts/AuthContext";
 import { reportError } from "@/lib/errors/report";
-import { effectiveOrder, moved, orderedBy, placed, withCalculation, withColumns, withHeight, withOpened, withOrder, type BuildsLayout } from "@/lib/build/buildsLayout";
+import { effectiveOrder, moved, orderedBy, placed, withCalculation, withColumns, withHeight, withOrder, type BuildsLayout } from "@/lib/build/buildsLayout";
 import { createFilterSet, deleteFilterSet, getFilterSet, joinFilterSet, leaveFilterSet, listMyFilterSets, renameFilterSet, saveFilterSetLayout, setFilterSetPublic, type FilterSet, type FilterSetDetail } from "@/lib/build/filterSets";
 import { GALLERY_LENSES, countGalleryLenses, getClassificationFacets, getCountSpread, getGalleryFacets, getWorksOnModelCounts, getGalleryStats, listBuildsTable, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
 import { RANGE_KEYS, type RangeKey } from "@/lib/build/galleryRanges";
@@ -48,7 +48,7 @@ import { usePageReady } from "@/lib/routing/pageReady";
 import { t } from "@/lib/theme/tokens";
 
 import { BuildsControl, BuildsLoadingView, ClassificationLoadingView, MapsLoadingView, text } from "./BuildsFrame";
-import { BuildsFiltersView, type BuildsFiltersViewProps, type SavedSetsProps } from "./BuildsFiltersView";
+import type { BuildsFiltersViewProps, SavedSetsProps } from "./BuildsFiltersView";
 import { BuildsView, statParts } from "./BuildsView";
 import {
   LENS_LABEL,
@@ -64,7 +64,6 @@ import {
   columnsMenu,
   footerCalculations,
   listParamsOf,
-  liveCatalogue,
   nextTableOffset,
   panelSections,
   tableFooter,
@@ -214,7 +213,6 @@ export default function BuildsPage() {
     open: params.open === true,
     counts: classified ? (classification.data?.counts ?? {}) : null,
     patterns: patternsLive ? (facets.data?.patterns ?? []) : null,
-    opened: new Set(layout.opened),
     orders,
     ranges: params.ranges,
     spread: countsLive ? (spread.data ?? null) : null,
@@ -226,8 +224,7 @@ export default function BuildsPage() {
   /* The filters in the reader's order. The ones drawn open are what a move steps through. */
   const orderedSections = orderedBy(sections, layout.order);
   const sectionIds = sections.map((section) => section.id);
-  const openIds = orderedSections.filter((section) => section.kind !== "closed").map((section) => section.id);
-  const rangesLive = countsLive && Boolean(spread.data);
+  const openIds = orderedSections.map((section) => section.id);
   const count = total ?? builds.length;
   /* BF-01 P2: with a filter on, the head says how many of the published builds match; the meta line then drops "Of n published". */
   const filtered = activeCount(params) > 0 && Boolean(stats.data);
@@ -308,14 +305,12 @@ export default function BuildsPage() {
       activeCount: activeCount(params),
       savedSets,
       sections: orderedSections,
-      catalogue: { total: liveCatalogue(classified, patternsLive, rangesLive, Boolean(worksOn.data)).reduce((sum, group) => sum + group.count, 0), groups: liveCatalogue(classified, patternsLive, rangesLive, Boolean(worksOn.data)) },
       onRange: (sectionId, value) => {
         if ((RANGE_KEYS as readonly string[]).includes(sectionId)) navigate(galleryHref(withRange(params, sectionId as RangeKey, value)), { preventScrollReset: true, replace: true });
       },
       onToggleOption: (sectionId, key) => go(toggled(params, sectionId, key)),
       onToggleSegment: (sectionId, key) => go(toggled(params, sectionId, key)),
       onOrder: (sectionId, order) => setOrders((current) => ({ ...current, [sectionId]: order })),
-      onOpenClosed: (sectionId) => update((current) => withOpened(current, sectionId)),
       onMove: (sectionId, direction) => update((current) => withOrder(current, moved(effectiveOrder(sectionIds, current.order), openIds, sectionId, direction))),
       onDrop: (sectionId, index) => update((current) => withOrder(current, placed(effectiveOrder(sectionIds, current.order), openIds, sectionId, index))),
       heights: layout.heights,
@@ -360,7 +355,7 @@ export default function BuildsPage() {
             chips={activeChips(params)}
             onRemoveChip={(key) => go(withoutChip(params, key))}
             onClearAll={() => go(clearedFilters(params))}
-            panel={<BuildsFiltersView {...filters} />}
+            filters={filters}
             direction={direction}
             onDirection={setDirection}
             buildsLabel={buildsLabel}
@@ -393,7 +388,7 @@ export default function BuildsPage() {
             chips={activeChips(params)}
             onRemoveChip={(key) => go(withoutChip(params, key))}
             onClearAll={() => go(clearedFilters(params))}
-            panel={<BuildsFiltersView {...filters} />}
+            filters={filters}
             facets={shownFacets}
             onFacets={onFacets}
             cards={builds.map((build) => cardOf(build, shownFacets, valueHref, now))}

@@ -41,10 +41,11 @@ function draw(change: (props: BuildsViewProps) => BuildsViewProps = (p) => p) {
   );
 }
 
-/** BF-06: the page with its Filters dialog open, where the panel now is. */
-function drawFilters(change?: (props: BuildsViewProps) => BuildsViewProps) {
+/** BF-06: the page with its Filters dialog open, where the panel now is. BF-07: on the group named, Classification first. */
+function drawFilters(change?: (props: BuildsViewProps) => BuildsViewProps, group?: string) {
   const drawn = draw(change);
   fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+  if (group) fireEvent.click(screen.getByRole("button", { name: new RegExp(`^${group}`) }));
   return drawn;
 }
 
@@ -60,7 +61,7 @@ describe("the filter panel", () => {
 
   it("draws a number filter as two sliders that move with the keyboard and say what they hold", () => {
     const onRange = vi.fn();
-    drawFilters((p) => ({ ...p, filters: { ...p.filters, onRange } }));
+    drawFilters((p) => ({ ...p, filters: { ...p.filters, onRange } }), "Proof");
     const from = screen.getByRole("slider", { name: "Reproductions from" });
     expect(from.getAttribute("aria-valuetext")).toBe("3 or more");
     expect(screen.getByRole("slider", { name: "Reproductions to" }).getAttribute("aria-valuetext")).toBe("40 or more");
@@ -71,14 +72,14 @@ describe("the filter panel", () => {
 
   it("names each grip, and moves a filter from its menu without a pointer", () => {
     const onMove = vi.fn();
-    drawFilters((p) => ({ ...p, filters: { ...p.filters, onMove } }));
-    const grip = screen.getByRole("button", { name: "Move Reproductions" });
+    drawFilters((p) => ({ ...p, filters: { ...p.filters, onMove } }), "Proof");
+    const grip = screen.getByRole("button", { name: "Move Works on model" });
     fireEvent.keyDown(grip, { key: "Enter" });
     fireEvent.click(screen.getByRole("menuitem", { name: "Move down" }));
-    expect(onMove).toHaveBeenCalledWith("reproductions", "down");
-    fireEvent.keyDown(screen.getByRole("button", { name: "Move Reproductions" }), { key: "Enter" });
+    expect(onMove).toHaveBeenCalledWith("model", "down");
+    fireEvent.keyDown(screen.getByRole("button", { name: "Move Works on model" }), { key: "Enter" });
     fireEvent.click(screen.getByRole("menuitem", { name: "Move up" }));
-    expect(onMove).toHaveBeenLastCalledWith("reproductions", "up");
+    expect(onMove).toHaveBeenLastCalledWith("model", "up");
   });
 
   it("leaves out the move there is no room for", () => {
@@ -95,7 +96,7 @@ describe("the filter panel", () => {
   });
 
   it("hides the histogram from screen readers and gives the group its words", () => {
-    drawFilters();
+    drawFilters(undefined, "Proof");
     expect(screen.getByRole("group", { name: "Reproductions, 3 or more" })).toBeTruthy();
   });
 
@@ -108,13 +109,6 @@ describe("the filter panel", () => {
     expect(onToggleSegment).toHaveBeenCalledWith("autonomy", "fully-autonomous");
     expect(within(autonomy).getByRole("button", { name: "AI suggests and you approve" }).getAttribute("aria-pressed")).toBe("true");
   });
-
-  it("lists the catalogue by group in the one boxed tile", () => {
-    drawFilters();
-    expect(screen.getByText("Classification · 15")).toBeTruthy();
-    expect(screen.getByText("People · 3")).toBeTruthy();
-  });
-
 });
 
 describe("the Table", () => {
@@ -214,7 +208,7 @@ describe("the updating state", () => {
 
 describe("dragging a filter by its grip", () => {
   const rects: Record<string, number> = {};
-  const centres = [["field", 100], ["reproductions", 300], ["model", 500], ["steps", 700]] as const;
+  const centres = [["field", 100], ["autonomy", 300], ["stack", 500], ["task", 700]] as const;
 
   beforeEach(() => {
     (window as unknown as { PointerEvent: unknown }).PointerEvent = class extends MouseEvent {};
@@ -233,7 +227,7 @@ describe("dragging a filter by its grip", () => {
 
   it("wraps each open filter so a drag can move it, and only where a drop is wanted", () => {
     drawn();
-    expect(slots().map((slot) => slot.dataset.filterSlot)).toEqual(expect.arrayContaining(["field", "reproductions"]));
+    expect(slots().map((slot) => slot.dataset.filterSlot)).toEqual(expect.arrayContaining(["field", "autonomy"]));
     expect(screen.getByTestId("builds-filters").querySelectorAll("[data-filter-slot]").length).toBeGreaterThan(2);
   });
 
@@ -253,11 +247,11 @@ describe("dragging a filter by its grip", () => {
 
   it("drops a filter at the top when it is dragged above the rest", () => {
     const onDrop = drawn();
-    const grip = screen.getByRole("button", { name: "Move Works on model" });
-    fireEvent.pointerDown(grip, { clientY: 500, button: 0 });
+    const grip = screen.getByRole("button", { name: "Move Task" });
+    fireEvent.pointerDown(grip, { clientY: 700, button: 0 });
     fireEvent.pointerMove(grip, { clientY: 0 });
     fireEvent.pointerUp(grip, { clientY: 0 });
-    expect(onDrop).toHaveBeenCalledWith("model", 0);
+    expect(onDrop).toHaveBeenCalledWith("task", 0);
   });
 
   it("opens the grip's menu when the press never moved, and drops nothing", () => {

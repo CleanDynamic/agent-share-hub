@@ -4,7 +4,7 @@
    The page has no filter column here (the board differs from the Table's), so this draws the whole page: the Table's own
    head (BF-03) with its sentence and the view switch, one row (Filters with the active count, the direction switch,
    "n with a Map"), the Table's chip row (BF-04: every chip and Clear all) and the grid. Filters opens the one Filters dialog
-   (BF-06) with the Table's own panel, given as `panel`, so the filters are the Table's, kept across views.
+   (BF-06) with the Table's own panel, given as `filters`, so the filters are the Table's, kept across views.
 
    WHERE THINGS ARE comes from the composer's layout (`layoutSessionMap`), turned into the well's 400 x 220 space by
    `mapsModel.ts`; this view only draws what it is given. Positions are percentages of the well's width and its height, so
@@ -26,7 +26,7 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { BuildsControl, BuildsHead, FiltersButton, UpdatingStatus, ViewSwitch, ellipsis, hitArea, text, useCardColumns } from "./BuildsFrame";
-import { BuildsFiltersDialog } from "./BuildsFiltersDialog";
+import { BuildsFilters, type BuildsFiltersViewProps } from "./BuildsFiltersView";
 import { ActiveFilters, RowLamp, type TableChip } from "./BuildsTableView";
 
 /** The well, in the board's own units. */
@@ -104,8 +104,9 @@ export interface BuildsMapsViewProps {
   chips: readonly TableChip[];
   onRemoveChip: (key: string) => void;
   onClearAll: () => void;
-  /** The Table's filter panel, drawn in the Filters dialog (BF-06). */
-  panel?: ReactNode;
+  /** The Table's filters, drawn in the Filters dialog (BF-06). BF-07: the props, not a drawn panel, since the dialog holds the
+      name search the panel reads. Absent: Filters is disabled. */
+  filters?: BuildsFiltersViewProps;
   direction: MapsDirection;
   onDirection: (direction: MapsDirection) => void;
   /** The page's count label ("18 builds", "3 of 18 builds"), the head's figure; and how many have a Map (null until the Maps are read). */
@@ -226,7 +227,7 @@ export function MapCard({ card, direction, index }: { card: MapCardView; directi
 const MAPS_PARTS = [{ text: "Each build's Map: one box per session, one line where a tile in one session uses something from another." }];
 
 export default function BuildsMapsView(props: BuildsMapsViewProps) {
-  const { view, hrefFor, onViewIntent, activeCount, chips, onRemoveChip, onClearAll, panel, direction, onDirection, buildsLabel, withMap, cards, onMore, loadingMore, empty, notice, updating } = props;
+  const { view, hrefFor, onViewIntent, activeCount, chips, onRemoveChip, onClearAll, filters, direction, onDirection, buildsLabel, withMap, cards, onMore, loadingMore, empty, notice, updating } = props;
   const [open, setOpen] = useState(false);
   const columns = useCardColumns();
   return (
@@ -234,7 +235,7 @@ export default function BuildsMapsView(props: BuildsMapsViewProps) {
       <BuildsHead figure={buildsLabel} parts={MAPS_PARTS} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
 
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 16 }}>
-        <FiltersButton activeCount={activeCount} disabled={!panel} onClick={() => setOpen(true)} />
+        <FiltersButton activeCount={activeCount} disabled={!filters} onClick={() => setOpen(true)} />
         <span style={{ flex: 1 }} />
         <Segmented<MapsDirection>
           label="Map direction"
@@ -254,11 +255,7 @@ export default function BuildsMapsView(props: BuildsMapsViewProps) {
 
       <ActiveFilters chips={chips} onRemove={onRemoveChip} onClearAll={onClearAll} />
 
-      {panel ? (
-        <BuildsFiltersDialog open={open} onOpenChange={setOpen}>
-          {panel}
-        </BuildsFiltersDialog>
-      ) : null}
+      {filters ? <BuildsFilters {...filters} open={open} onOpenChange={setOpen} /> : null}
 
       {notice ? <div style={{ marginTop: 24 }}>{notice}</div> : null}
 

@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 
 import { visionBuildsClassificationProps } from "@/dev/fixtures/vision/builds-classification";
+import { visionBuildsTableProps } from "@/dev/fixtures/vision/builds-table";
 import type { Facet } from "@/lib/classify/taxonomy";
 
 import BuildsClassificationView, { type BuildsClassificationViewProps } from "./BuildsClassificationView";
@@ -206,16 +207,16 @@ describe("Facets shown", () => {
 describe("Filters", () => {
   /* BF-06 P3 (E5): the panel is in the one Filters dialog, never drawn above the cards. */
   it("pressing Filters opens the dialog and does not draw the panel inline", () => {
-    draw((p) => ({ ...p, panel: <p>The filter panel</p> }));
-    expect(screen.queryByText("The filter panel")).toBeNull();
+    draw((p) => ({ ...p, filters: visionBuildsTableProps().filters }));
+    expect(screen.queryByTestId("builds-filters")).toBeNull();
     const before = screen.getByTestId("builds-cards").previousElementSibling;
     fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
-    expect(within(screen.getByRole("dialog", { name: "Filters" })).getByText("The filter panel")).toBeTruthy();
+    expect(within(screen.getByRole("dialog", { name: "Filters" })).getByTestId("builds-filters")).toBeTruthy();
     expect(screen.getByTestId("builds-cards").previousElementSibling).toBe(before);
   });
 
   it("the Filters button is the shared FiltersButton with the active count", () => {
-    draw((p) => ({ ...p, activeCount: 3, panel: <p>The filter panel</p> }));
+    draw((p) => ({ ...p, activeCount: 3, filters: visionBuildsTableProps().filters }));
     const button = screen.getByRole("button", { name: "Filters, 3 on" });
     expect(button.getAttribute("aria-haspopup")).toBe("dialog");
     expect(button.textContent).toBe("Filters3");

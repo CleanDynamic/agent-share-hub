@@ -84,7 +84,7 @@ export function visionBuildsMapsProps(over: Partial<BuildsMapsViewProps> = {}): 
     chips: table.table?.chips ?? [],
     onRemoveChip: noop,
     onClearAll: noop,
-    panel: undefined,
+    filters: undefined,
     direction: "horizontal",
     onDirection: noop,
     buildsLabel: "18 builds",

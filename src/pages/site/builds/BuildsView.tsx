@@ -10,8 +10,7 @@ import { STALE_AFTER_DAYS } from "@/lib/build/signals";
 import { t } from "@/lib/theme/tokens";
 
 import { BuildsColumns, BuildsHead, ViewSwitch } from "./BuildsFrame";
-import { BuildsFiltersDialog } from "./BuildsFiltersDialog";
-import { BuildsFiltersView, type BuildsFiltersViewProps } from "./BuildsFiltersView";
+import { BuildsFilters, type BuildsFiltersViewProps } from "./BuildsFiltersView";
 import { BuildsTableView, type BuildsTableViewProps } from "./BuildsTableView";
 
 export interface BuildsStats {
@@ -60,9 +59,7 @@ export function BuildsView({ figure, parts, view, hrefFor, onViewIntent, filters
         head={<BuildsHead figure={figure} parts={parts} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />}
         main={table ? <BuildsTableView {...table} activeCount={filters.activeCount} onOpenFilters={() => setOpen(true)} updating={updating} /> : other}
       />
-      <BuildsFiltersDialog open={open} onOpenChange={setOpen}>
-        <BuildsFiltersView {...filters} />
-      </BuildsFiltersDialog>
+      <BuildsFilters {...filters} open={open} onOpenChange={setOpen} />
     </>
   );
 }

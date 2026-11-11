@@ -12,7 +12,7 @@ import { modelById, modelLabel } from "@/lib/models/registry";
 import { toolFor } from "@/lib/tools/registry";
 import { shortAgo } from "@/pages/site/home/homeModel";
 
-import type { CatalogueGroup, FilterSection, RangeSection, WordOption, WordOrder } from "./BuildsFiltersView";
+import type { FilterGroup, FilterSection, RangeSection, WordOption, WordOrder } from "./BuildsFiltersView";
 import { CALC_KINDS, type CalcKind, type Calculation } from "@/lib/build/buildsLayout";
 
 import { ALL_COLUMNS, COLUMN_NAME, type CalculationOption, type ColumnId, type ColumnsMenu, type ExtraColumnId, type TableCalculation, type TableChip, type TableFooterView, type TableRowView, type TableTool } from "./BuildsTableView";
@@ -67,8 +67,8 @@ export function facetOptions(facet: Facet, counts: Record<string, number>, chose
 
 const keysOf = (facets: readonly string[], facet: Facet) => facets.filter((key) => key.startsWith(`${facet}:`));
 
-/** What a closed filter says it holds: "Any", the one value, or "n chosen". */
-function heldValue(facet: Facet, facets: readonly string[]): string {
+/** What a filter says it holds: "Any", the one value, or "n chosen". */
+export function heldValue(facet: Facet, facets: readonly string[]): string {
   const keys = keysOf(facets, facet);
   if (keys.length === 0) return "Any";
   if (keys.length > 1) return `${keys.length} chosen`;
@@ -82,8 +82,6 @@ export interface PanelState {
   open: boolean;
   counts: Record<string, number> | null;
   patterns: readonly { value: Pattern; count: number }[] | null;
-  /** The filters opened on this visit, beyond those opened by default and by holding a value. */
-  opened: ReadonlySet<string>;
   orders: Readonly<Record<string, PanelOrder>>;
   /** SV-23: the number filters, drawn once their spread has answered (the stored counts are live). */
   ranges?: Partial<Record<RangeKey, NumberRange>>;
@@ -118,12 +116,13 @@ export function histogramOf(counts: ReadonlyMap<number, number> | undefined, cap
 }
 
 /** One number filter: the histogram, the slider's two ends and the range in words. */
-function rangeSection(key: RangeKey, spread: CountSpread, range: NumberRange | undefined): RangeSection {
+function rangeSection(key: RangeKey, spread: CountSpread, range: NumberRange | undefined, group: FilterGroup): RangeSection {
   const { cap, name } = RANGE_FILTERS[key];
   return {
     kind: "range",
     id: key,
     name,
+    group,
     valueText: range ? rangeWords(range) : "Any",
     histogram: histogramOf(spread[key], cap, range),
     min: 0,
@@ -144,105 +143,55 @@ export function withRange(params: GalleryParams, key: RangeKey, value: readonly 
   return { ...params, ranges: Object.keys(ranges).length > 0 ? ranges : undefined };
 }
 
-/** Field and Autonomy are open by default, as the board draws them; a filter holding a value is open. */
-const OPEN_BY_DEFAULT = new Set(["field", "autonomy"]);
-
 /**
- * The live panel: the classification filters once their counts have answered, Tools and stack, Shape, Patterns once the
- * column is live, and Still open. The board's number filters, Works on model and Last confirmed are SV-23's.
+ * The live panel, every filter drawn in its group: the classification filters once their counts have answered, the proof (the
+ * number filters once their spread has answered, Works on model once its counts have), Shape, Steps and Sessions, Patterns once
+ * the column is live, and Still open.
  */
 export function panelSections(state: PanelState): FilterSection[] {
-  const isOpen = (id: string, holds: boolean) => holds || OPEN_BY_DEFAULT.has(id) || state.opened.has(id);
   const sections: FilterSection[] = [];
   if (state.counts) {
     const counts = state.counts;
     for (const facet of [...PANEL_FACETS.slice(0, 9), "stack" as Facet, ...PANEL_FACETS.slice(9)]) {
-      const chosen = keysOf(state.facets, facet);
       const name = FACET_LABEL[facet];
-      if (!isOpen(facet, chosen.length > 0)) {
-        sections.push({ kind: "closed", id: facet, name, value: heldValue(facet, state.facets) });
-        continue;
-      }
       if (facet === "autonomy") {
+        const chosen = keysOf(state.facets, facet);
         sections.push({
           kind: "scale",
           id: facet,
           name,
+          group: "Classification",
           segments: panelValues(facet).map((value) => ({ key: `${facet}:${value.id}`, label: value.label, on: chosen.includes(`${facet}:${value.id}`) })),
           endLabels: [panelValues(facet)[0].label, panelValues(facet).at(-1)!.label],
         });
         continue;
       }
       const order: WordOrder = SCALE_FACETS.includes(facet) ? "scale" : (state.orders[facet] ?? "az");
-      sections.push({ kind: "word", id: facet, name, order, options: facetOptions(facet, counts, state.facets, order === "scale" ? "az" : order) });
+      sections.push({ kind: "word", id: facet, name, group: "Classification", order, options: facetOptions(facet, counts, state.facets, order === "scale" ? "az" : order) });
     }
   }
-  const rangeSections = (keys: readonly RangeKey[]) => {
+  const rangeSections = (keys: readonly RangeKey[], group: FilterGroup) => {
     if (!state.spread) return;
-    for (const key of keys) {
-      const range = state.ranges?.[key];
-      if (isOpen(key, range !== undefined)) sections.push(rangeSection(key, state.spread, range));
-      else sections.push({ kind: "closed", id: key, name: RANGE_FILTERS[key].name, value: "Any" });
-    }
+    for (const key of keys) sections.push(rangeSection(key, state.spread, state.ranges?.[key], group));
   };
   /* SV-23 P2, the proof: Reproductions, Works on model, Last confirmed, Confirmed or stale, Rebuilds, Likes. */
-  rangeSections(["reproductions"]);
+  rangeSections(["reproductions"], "Proof");
   if (state.worksOn) {
     const chosen = state.model ? modelById(state.model) : null;
-    if (isOpen("model", chosen !== null)) {
-      const options = state.worksOn.map((entry) => ({ key: entry.model.id, label: entry.model.name, count: entry.builds, checked: entry.model.id === state.model }));
-      if (chosen && !options.some((option) => option.checked)) options.push({ key: chosen.id, label: chosen.name, count: 0, checked: true });
-      sections.push({ kind: "word", id: "model", name: "Works on model", order: "count", options });
-    } else sections.push({ kind: "closed", id: "model", name: "Works on model", value: "Any" });
+    const options = state.worksOn.map((entry) => ({ key: entry.model.id, label: entry.model.name, count: entry.builds, checked: entry.model.id === state.model }));
+    if (chosen && !options.some((option) => option.checked)) options.push({ key: chosen.id, label: chosen.name, count: 0, checked: true });
+    sections.push({ kind: "word", id: "model", name: "Works on model", group: "Proof", order: "count", options });
   }
-  sections.push(
-    isOpen("within", state.within !== undefined)
-      ? { kind: "word", id: "within", name: "Last confirmed", order: "scale", options: CONFIRMED_WITHIN.map((days) => ({ key: `within:${days}`, label: WITHIN_WORDS(days), checked: state.within === days })) }
-      : { kind: "closed", id: "within", name: "Last confirmed", value: "Any" },
-  );
-  sections.push(
-    isOpen("state", state.confirmState !== undefined)
-      ? { kind: "word", id: "state", name: "Confirmed or stale", order: "scale", options: (["confirmed", "stale"] as const).map((entry) => ({ key: `state:${entry}`, label: STATE_WORDS[entry].option, checked: state.confirmState === entry })) }
-      : { kind: "closed", id: "state", name: "Confirmed or stale", value: state.confirmState ? STATE_WORDS[state.confirmState].chip : "Any" },
-  );
-  rangeSections(["rebuilds", "likes"]);
-  const shapeOpen = isOpen("shape", state.shapes.length > 0);
-  sections.push(
-    shapeOpen
-      ? { kind: "word", id: "shape", name: "Shape", order: "az", options: GALLERY_SHAPES.map((shape) => ({ key: shape, label: shapeWord(shape), count: 0, checked: state.shapes.includes(shape) })) }
-      : { kind: "closed", id: "shape", name: "Shape", value: state.shapes.length === 1 ? shapeWord(state.shapes[0]) : state.shapes.length > 1 ? `${state.shapes.length} chosen` : "Any" },
-  );
-  rangeSections(["steps", "sessions"]);
+  sections.push({ kind: "word", id: "within", name: "Last confirmed", group: "Proof", order: "scale", options: CONFIRMED_WITHIN.map((days) => ({ key: `within:${days}`, label: WITHIN_WORDS(days), checked: state.within === days })) });
+  sections.push({ kind: "word", id: "state", name: "Confirmed or stale", group: "Proof", order: "scale", options: (["confirmed", "stale"] as const).map((entry) => ({ key: `state:${entry}`, label: STATE_WORDS[entry].option, checked: state.confirmState === entry })) });
+  rangeSections(["rebuilds", "likes"], "Proof");
+  sections.push({ kind: "word", id: "shape", name: "Shape", group: "Structure", order: "az", options: GALLERY_SHAPES.map((shape) => ({ key: shape, label: shapeWord(shape), count: 0, checked: state.shapes.includes(shape) })) });
+  rangeSections(["steps", "sessions"], "Structure");
   if (state.patterns) {
-    const patternOpen = isOpen("pattern", state.pattern !== undefined);
-    sections.push(
-      patternOpen
-        ? { kind: "word", id: "pattern", name: "Patterns", order: "count", options: state.patterns.map((entry) => ({ key: entry.value, label: PATTERN_LABEL[entry.value], count: entry.count, checked: state.pattern === entry.value })) }
-        : { kind: "closed", id: "pattern", name: "Patterns", value: state.pattern ? PATTERN_LABEL[state.pattern] : "Any" },
-    );
+    sections.push({ kind: "word", id: "pattern", name: "Patterns", group: "Structure", order: "count", options: state.patterns.map((entry) => ({ key: entry.value, label: PATTERN_LABEL[entry.value], count: entry.count, checked: state.pattern === entry.value })) });
   }
-  sections.push(
-    isOpen("open", state.open)
-      ? { kind: "word", id: "open", name: "Still open", order: "az", options: [{ key: "open", label: "Has a still-open topic", count: 0, checked: state.open }] }
-      : { kind: "closed", id: "open", name: "Still open", value: state.open ? "Has one" : "Any" },
-  );
+  sections.push({ kind: "word", id: "open", name: "Still open", group: "OpenBuilds", order: "az", options: [{ key: "open", label: "Has a still-open topic", count: 0, checked: state.open }] });
   return sections;
-}
-
-/** The catalogue on the live page: only the filters that work, by group. */
-export function liveCatalogue(classified: boolean, patterns: boolean, ranges = false, models = false): CatalogueGroup[] {
-  const groups: CatalogueGroup[] = [];
-  if (classified) {
-    const names = [...PANEL_FACETS.slice(0, 9), "stack" as Facet, ...PANEL_FACETS.slice(9)].map((facet) => FACET_LABEL[facet]);
-    groups.push({ name: "Classification", count: names.length, items: names.join(", ") });
-  }
-  const named = (keys: readonly RangeKey[]) => (ranges ? keys.map((key) => RANGE_FILTERS[key].name) : []);
-  const proof = [...named(["reproductions"]), ...(models ? ["Works on model"] : []), "Last confirmed", "Confirmed or stale", ...named(["rebuilds", "likes"])];
-  groups.push({ name: "Proof", count: proof.length, items: proof.join(", ") });
-  const structure = ["Shape", ...named(["steps", "sessions"]), ...(patterns ? ["Patterns"] : [])];
-  groups.push({ name: "Structure", count: structure.length, items: structure.join(", ") });
-  groups.push({ name: "OpenBuilds", count: 1, items: "Still open" });
-  return groups;
 }
 
 /** "App", "Workflow": a shape as a word. */

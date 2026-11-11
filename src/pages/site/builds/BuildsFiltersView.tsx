@@ -20,18 +20,24 @@ import { Checkbox } from "@/components/brand/Checkbox";
 import { Glyph } from "@/components/brand/Glyph";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { InnerTile } from "@/components/vision/InnerTile";
 import { HEIGHT_MAX, HEIGHT_MIN, HEIGHT_STEP } from "@/lib/build/buildsLayout";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
+import { WELL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
+import { FIGTREE } from "@/lib/theme/type";
 
+import { BuildsFiltersDialog } from "./BuildsFiltersDialog";
 import { BuildsControl, BuildsTextButton, text } from "./BuildsFrame";
 import { heightAfterKey, useFilterDrag, useListResize, type GripDrag } from "./filterDrag";
 import { DeleteSetDialog, SetNameDialog } from "./SetDialogs";
 
 /* ── props ── */
+
+/** BF-07 (A3): the dialog's groups, in the order they are listed. A filter's `group` is one of them. */
+export const FILTER_GROUPS = ["Classification", "Proof", "Structure", "OpenBuilds"] as const;
+export type FilterGroup = (typeof FILTER_GROUPS)[number];
 
 export type WordOrder = "az" | "count" | "scale";
 
@@ -47,6 +53,8 @@ export interface WordSection {
   kind: "word";
   id: string;
   name: string;
+  /** BF-07 (A3): the dialog's group the filter is listed in. */
+  group: FilterGroup;
   /** "az" or "count" shows the A–Z · Count pair; "scale" shows "Scale order" and keeps the taxonomy's order. */
   order: WordOrder;
   options: readonly WordOption[];
@@ -56,6 +64,7 @@ export interface RangeSection {
   kind: "range";
   id: string;
   name: string;
+  group: FilterGroup;
   /** "3 or more", "5 to 30". */
   valueText: string;
   /** Bars from 0 to 1, left to right, and whether each is inside the chosen range. */
@@ -74,19 +83,12 @@ export interface ScaleSection {
   kind: "scale";
   id: string;
   name: string;
+  group: FilterGroup;
   segments: readonly { key: string; label: string; on: boolean }[];
   endLabels: readonly [string, string];
 }
 
-export interface ClosedSection {
-  kind: "closed";
-  id: string;
-  name: string;
-  /** "Any", or the chosen value. */
-  value: string;
-}
-
-export type FilterSection = WordSection | RangeSection | ScaleSection | ClosedSection;
+export type FilterSection = WordSection | RangeSection | ScaleSection;
 
 export interface SavedSetRow {
   id: string;
@@ -124,25 +126,17 @@ export interface SavedSetsProps {
   onDelete?: (id: string) => void | Promise<void>;
 }
 
-export interface CatalogueGroup {
-  name: string;
-  count: number;
-  /** The filters in the group, as one sentence. */
-  items: string;
-}
-
 export interface BuildsFiltersViewProps {
   activeCount: number;
   onAdd?: () => void;
   /** Absent: the section is not drawn. */
   savedSets?: SavedSetsProps;
+  /** Every filter, each in its group, in the order drawn. */
   sections: readonly FilterSection[];
-  catalogue?: { total: number; groups: readonly CatalogueGroup[] };
   onToggleOption: (sectionId: string, key: string) => void;
   onOrder?: (sectionId: string, order: "az" | "count") => void;
   onRange?: (sectionId: string, value: readonly [number, number]) => void;
   onToggleSegment?: (sectionId: string, key: string) => void;
-  onOpenClosed?: (sectionId: string) => void;
   /** Absent: no grips, because filters cannot be moved. A grip opens a menu with Move up and Move down. */
   onMove?: (sectionId: string, direction: "up" | "down") => void;
   /** SV-24 P2: a filter dragged by its grip was dropped here: its place among the filters drawn open. Absent: no drag. */
@@ -155,7 +149,7 @@ export interface BuildsFiltersViewProps {
 
 /* ── pieces ── */
 
-const rule: CSSProperties = { padding: "20px 0", borderTop: `1px solid ${t.hairline}` };
+const rule: CSSProperties = { padding: "16px 0", borderTop: `1px solid ${t.hairline}` };
 const name12: CSSProperties = text(12.5, 500, t.text);
 const small = (color: string): CSSProperties => text(12, 400, color);
 
@@ -402,14 +396,14 @@ function ResizeHandle({ name, list, height, onResize }: { name: string; list: Re
   );
 }
 
-function WordFilter({ section, onToggle, onOrder, move, height, onResize }: { section: WordSection; onToggle: (key: string) => void; onOrder?: (order: "az" | "count") => void; move: Moving; height?: number; onResize?: (px: number) => void }) {
+function WordFilter({ section, label, onToggle, onOrder, move, height, onResize }: { section: WordSection; label?: string; onToggle: (key: string) => void; onOrder?: (order: "az" | "count") => void; move: Moving; height?: number; onResize?: (px: number) => void }) {
   const list = useRef<HTMLDivElement>(null);
   return (
     <section aria-label={section.name} style={rule}>
       <SectionHead
         name={section.name}
         move={move}
-        right={section.order === "scale" ? <span style={small(t.label)}>Scale order</span> : <OrderPair order={section.order} onOrder={onOrder} />}
+        right={label ? <span style={small(t.label)}>{label}</span> : section.order === "scale" ? <span style={small(t.label)}>Scale order</span> : <OrderPair order={section.order} onOrder={onOrder} />}
       />
       <div style={onResize ? { position: "relative" } : undefined}>
         <div ref={list} role="group" aria-label={`${section.name} values`} style={{ ...(height ? { maxHeight: height, overflowY: "auto" } : null), marginTop: 10 }}>
@@ -435,7 +429,7 @@ function Histogram({ bars, height }: { bars: RangeSection["histogram"]; height: 
   );
 }
 
-function RangeFilter({ section, onChange, move }: { section: RangeSection; onChange?: (value: readonly [number, number]) => void; move: Moving }) {
+function RangeFilter({ section, label, onChange, move }: { section: RangeSection; label?: string; onChange?: (value: readonly [number, number]) => void; move: Moving }) {
   const [low, high] = section.value;
   // BF-05 (G3): the thumb is a 24 by 24 transparent hit area holding the 12px dot. The shared focus outline is drawn inside the
   // round thumb (`data-ring-inset`, 4px in), so it circles the dot and not the hit area; the dot keeps its own halo.
@@ -447,7 +441,7 @@ function RangeFilter({ section, onChange, move }: { section: RangeSection; onCha
   };
   return (
     <section aria-label={section.name} style={rule}>
-      <SectionHead name={section.name} move={move} right={<span style={small(t.text2)}>{section.valueText}</span>} />
+      <SectionHead name={section.name} move={move} right={label ? <span style={small(t.label)}>{label}</span> : <span style={small(t.text2)}>{section.valueText}</span>} />
       <div role="group" aria-label={`${section.name}, ${section.valueText}`}>
         <Histogram bars={section.histogram} height={section.bare ? 28 : 32} />
         {section.bare ? null : (
@@ -500,11 +494,11 @@ function Segment({ label, on, onClick }: { label: string; on: boolean; onClick: 
   );
 }
 
-function ScaleFilter({ section, onToggle, move }: { section: ScaleSection; onToggle?: (key: string) => void; move: Moving }) {
+function ScaleFilter({ section, label, onToggle, move }: { section: ScaleSection; label?: string; onToggle?: (key: string) => void; move: Moving }) {
   const chosen = section.segments.filter((segment) => segment.on).map((segment) => segment.label).join(", ");
   return (
     <section aria-label={section.name} style={rule}>
-      <SectionHead name={section.name} move={move} right={<span style={small(t.label)}>Scale order</span>} />
+      <SectionHead name={section.name} move={move} right={<span style={small(t.label)}>{label ?? "Scale order"}</span>} />
       <div role="group" aria-label={`${section.name}: ${chosen || "any"}`} style={{ marginTop: 14, display: "grid", gridTemplateColumns: `repeat(${section.segments.length}, minmax(0, 1fr))`, gap: 2 }}>
         {section.segments.map((segment) => (
           <Segment key={segment.key} label={segment.label} on={segment.on} onClick={() => onToggle?.(segment.key)} />
@@ -518,87 +512,151 @@ function ScaleFilter({ section, onToggle, move }: { section: ScaleSection; onTog
   );
 }
 
-/* ── closed filters ── */
+/* ── the panel ── */
 
-function ClosedRow({ section, onOpen }: { section: ClosedSection; onOpen?: () => void }) {
+/** A filter holds a value: a value ticked, a range off its ends, a step of a scale chosen. */
+export function holdsValue(section: FilterSection): boolean {
+  if (section.kind === "word") return section.options.some((option) => option.checked);
+  if (section.kind === "scale") return section.segments.some((segment) => segment.on);
+  return section.value[0] !== section.min || section.value[1] !== section.max;
+}
+
+/** A group's button: its name, and on the right how many of its filters hold a value ("2 on"), or how many it has. */
+function GroupButton({ name, sections, current, onChoose }: { name: string; sections: readonly FilterSection[]; current: boolean; onChoose: () => void }) {
+  const phone = useIsPhone();
   const { state, handlers } = useInteractive<HTMLButtonElement>();
+  const on = sections.filter(holdsValue).length;
   return (
     <button
       type="button"
-      onClick={onOpen}
+      aria-current={current ? "true" : undefined}
+      onClick={onChoose}
       {...handlers}
-      style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", minHeight: 44, background: "none", border: 0, borderBottom: `1px solid ${t.hairline}`, padding: "0 0 0 24px", cursor: "pointer", ...text(12.5, 400, state.hovered ? t.text : t.text2), ...ring(state.focusVisible) }}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
+        flex: phone ? "none" : undefined,
+        width: phone ? undefined : "100%",
+        minHeight: phone ? 44 : 36,
+        padding: "0 10px",
+        borderRadius: r.control,
+        border: `1px solid ${current ? t.selectedEdge : "transparent"}`,
+        background: current ? t.selectedFill : "none",
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+        ...text(12.5, current ? 500 : 400, current || state.hovered ? t.text : t.text2),
+        ...ring(state.focusVisible),
+      }}
     >
-      <span style={{ flex: 1, textAlign: "left" }}>{section.name}</span>
-      <span style={small(t.label)}>{section.value}</span>
-      <Glyph name="chev" size={10} />
+      <span>{name}</span>
+      <span style={small(t.label)}>{on > 0 ? `${on} on` : sections.length}</span>
     </button>
   );
 }
 
-/* ── the catalogue ── */
-
-function Catalogue({ total, groups }: { total: number; groups: readonly CatalogueGroup[] }) {
-  return (
-    <InnerTile as="section" style={{ marginTop: 24, padding: 16 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <h3 style={{ ...name12, margin: 0 }}>Add a filter</h3>
-        <span style={small(t.label)}>{total}</span>
-      </div>
-      {groups.map((group) => (
-        <div key={group.name} style={{ marginTop: 14 }}>
-          <div style={text(12, 400, t.label)}>{`${group.name} · ${group.count}`}</div>
-          <div style={{ ...text(12, 400, t.text2), marginTop: 2 }}>{group.items}</div>
-        </div>
-      ))}
-    </InnerTile>
-  );
+export interface BuildsFiltersBodyProps extends BuildsFiltersViewProps {
+  /** BF-07: the name search, typed in the dialog's header. Empty: the chosen group is drawn. */
+  search?: string;
 }
 
-/* ── the panel ── */
-
-export function BuildsFiltersView(props: BuildsFiltersViewProps) {
-  const { activeCount, onAdd, savedSets, sections, catalogue, onToggleOption, onOrder, onRange, onToggleSegment, onOpenClosed, onMove, onDrop, heights, onResize } = props;
+/** The body of the dialog: the groups on the left (a row that scrolls sideways on a phone), the chosen group's filters on the
+    right, or, while a name is searched, every filter whose name holds it, each labelled with its group. */
+export function BuildsFiltersView(props: BuildsFiltersBodyProps) {
+  const { activeCount, onAdd, savedSets, sections, onToggleOption, onOrder, onRange, onToggleSegment, onMove, onDrop, heights, onResize, search = "" } = props;
+  const phone = useIsPhone();
   const container = useRef<HTMLDivElement>(null);
   const gripFor = useFilterDrag(container, onDrop);
-  const open = sections.filter((section) => section.kind !== "closed");
-  const closed = sections.filter((section): section is ClosedSection => section.kind === "closed");
+  const groups = FILTER_GROUPS.filter((group) => sections.some((section) => section.group === group));
+  const [chosen, setChosen] = useState<FilterGroup | null>(null);
+  const group = chosen !== null && groups.includes(chosen) ? chosen : (groups[0] ?? null);
+  const query = search.trim().toLowerCase();
+  const shown = query ? sections.filter((section) => section.name.toLowerCase().includes(query)) : sections.filter((section) => section.group === group);
   return (
     <div ref={container} data-testid="builds-filters">
       <FiltersHead activeCount={activeCount} onAdd={onAdd} />
       {savedSets ? <SavedSets {...savedSets} /> : null}
-      {open.map((section, at) => {
-        const move: Moving = {
-          onMove: onMove ? (direction) => onMove(section.id, direction) : undefined,
-          drag: gripFor?.(section.id),
-          place: { first: at === 0, last: at === open.length - 1 },
-        };
-        const resize = onResize ? (px: number) => onResize(section.id, px) : undefined;
-        let drawn: ReactNode = null;
-        if (section.kind === "word") {
-          drawn = <WordFilter section={section} onToggle={(key) => onToggleOption(section.id, key)} onOrder={onOrder ? (order) => onOrder(section.id, order) : undefined} move={move} height={heights?.[section.id]} onResize={resize} />;
-        } else if (section.kind === "range") {
-          drawn = <RangeFilter section={section} onChange={onRange ? (value) => onRange(section.id, value) : undefined} move={move} />;
-        } else if (section.kind === "scale") {
-          drawn = <ScaleFilter section={section} onToggle={onToggleSegment ? (key) => onToggleSegment(section.id, key) : undefined} move={move} />;
-        }
-        /* The wrapper is what a drag moves; it is drawn only where a drag is. */
-        return onDrop ? (
-          <div key={section.id} data-filter-slot={section.id}>
-            {drawn}
-          </div>
-        ) : (
-          <Fragment key={section.id}>{drawn}</Fragment>
-        );
-      })}
-      {closed.length > 0 ? (
-        <section aria-label="More filters" style={{ borderTop: `1px solid ${t.hairline}` }}>
-          {closed.map((section) => (
-            <ClosedRow key={section.id} section={section} onOpen={onOpenClosed ? () => onOpenClosed(section.id) : undefined} />
+      <div style={{ display: "grid", gridTemplateColumns: phone ? "minmax(0, 1fr)" : "200px minmax(0, 1fr)", columnGap: 24, rowGap: 12, alignItems: "start" }}>
+        <div role="group" aria-label="Filter groups" style={phone ? { display: "flex", gap: 4, overflowX: "auto" } : { display: "flex", flexDirection: "column", gap: 2, position: "sticky", top: 0 }}>
+          {groups.map((name) => (
+            <GroupButton key={name} name={name} sections={sections.filter((section) => section.group === name)} current={!query && name === group} onChoose={() => setChosen(name)} />
           ))}
-        </section>
-      ) : null}
-      {catalogue ? <Catalogue total={catalogue.total} groups={catalogue.groups} /> : null}
+        </div>
+        <div style={{ minWidth: 0 }}>
+          {query && shown.length === 0 ? <p style={{ ...text(12.5, 400, t.text2), margin: 0, padding: "16px 0" }}>No filter has that name.</p> : null}
+          {shown.map((section, at) => {
+            const move: Moving = {
+              onMove: onMove ? (direction) => onMove(section.id, direction) : undefined,
+              drag: gripFor?.(section.id),
+              place: { first: at === 0, last: at === shown.length - 1 },
+            };
+            const resize = onResize ? (px: number) => onResize(section.id, px) : undefined;
+            const label = query ? section.group : undefined;
+            let drawn: ReactNode = null;
+            if (section.kind === "word") {
+              drawn = <WordFilter section={section} label={label} onToggle={(key) => onToggleOption(section.id, key)} onOrder={onOrder ? (order) => onOrder(section.id, order) : undefined} move={move} height={heights?.[section.id]} onResize={resize} />;
+            } else if (section.kind === "range") {
+              drawn = <RangeFilter section={section} label={label} onChange={onRange ? (value) => onRange(section.id, value) : undefined} move={move} />;
+            } else {
+              drawn = <ScaleFilter section={section} label={label} onToggle={onToggleSegment ? (key) => onToggleSegment(section.id, key) : undefined} move={move} />;
+            }
+            /* The wrapper is what a drag moves; it is drawn only where a drag is. */
+            return onDrop ? (
+              <div key={section.id} data-filter-slot={section.id}>
+                {drawn}
+              </div>
+            ) : (
+              <Fragment key={section.id}>{drawn}</Fragment>
+            );
+          })}
+        </div>
+      </div>
     </div>
+  );
+}
+
+/** BF-07: the Filters dialog with the panel in it, and the name search in its header. The search is held here, where both the
+    header and the body reach it, and is cleared when the dialog closes. */
+export function BuildsFilters({ open, onOpenChange, ...props }: BuildsFiltersViewProps & { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const [search, setSearch] = useState("");
+  const close = (next: boolean) => {
+    if (!next) setSearch("");
+    onOpenChange(next);
+  };
+  return (
+    <BuildsFiltersDialog open={open} onOpenChange={close} headerExtra={<FilterSearch value={search} onChange={setSearch} />}>
+      <BuildsFiltersView {...props} search={search} />
+    </BuildsFiltersDialog>
+  );
+}
+
+/** Find a filter: a field 36 high (44 and 16px type on a phone), in the well's paint. */
+function FilterSearch({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const phone = useIsPhone();
+  const { state, handlers } = useInteractive<HTMLInputElement>();
+  return (
+    <input
+      type="search"
+      aria-label="Find a filter"
+      placeholder="Find a filter"
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      {...handlers}
+      style={{
+        ...WELL,
+        boxSizing: "border-box",
+        width: "100%",
+        maxWidth: 280,
+        minWidth: 0,
+        height: phone ? 44 : 36,
+        padding: "0 10px",
+        borderRadius: r.control,
+        fontFamily: FIGTREE,
+        fontSize: phone ? 16 : 13,
+        color: t.text,
+        ...ring(state.focusVisible),
+      }}
+    />
   );
 }

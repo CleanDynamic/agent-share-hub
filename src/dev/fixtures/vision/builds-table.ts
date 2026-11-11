@@ -5,7 +5,7 @@
    letter tiles are the real marks of the tools they stand for. */
 
 import { statParts, type BuildsViewProps } from "@/pages/site/builds/BuildsView";
-import type { CatalogueGroup, FilterSection, WordOption } from "@/pages/site/builds/BuildsFiltersView";
+import type { FilterSection, WordOption } from "@/pages/site/builds/BuildsFiltersView";
 import { COLUMN_ORDER, type BuildsTableViewProps, type TableRowView } from "@/pages/site/builds/BuildsTableView";
 
 const noop = () => undefined;
@@ -23,6 +23,7 @@ export const visionBuildsSections: FilterSection[] = [
     kind: "word",
     id: "field",
     name: "Field",
+    group: "Classification",
     order: "az",
     options: words([["AI and machine learning", 14, false], ["Education", 9, false], ["Finance", 11, false], ["Marketing", 18, false], ["Sales", 22, true], ["Software development", 31, false]]),
   },
@@ -30,6 +31,7 @@ export const visionBuildsSections: FilterSection[] = [
     kind: "range",
     id: "reproductions",
     name: "Reproductions",
+    group: "Proof",
     valueText: "3 or more",
     histogram: bars([22, 18, 14, 12, 10, 9, 8, 7, 6, 5, 5, 4, 4, 3, 3, 2, 2, 2, 1, 1], 2, 19),
     min: 0,
@@ -42,6 +44,7 @@ export const visionBuildsSections: FilterSection[] = [
     kind: "word",
     id: "model",
     name: "Works on model",
+    group: "Proof",
     order: "count",
     options: words([["Sonnet 4.5", 44, false], ["Opus 5.5", 31, true], ["GPT-5", 27, false], ["Gemini 3.5 Pro", 12, false]]),
   },
@@ -49,6 +52,7 @@ export const visionBuildsSections: FilterSection[] = [
     kind: "range",
     id: "steps",
     name: "Steps",
+    group: "Structure",
     valueText: "5 to 30",
     histogram: bars([3, 6, 9, 12, 14, 13, 12, 10, 9, 8, 7, 6, 5, 4, 3, 3, 2, 2, 1, 1], 2, 12),
     min: 0,
@@ -62,6 +66,7 @@ export const visionBuildsSections: FilterSection[] = [
     kind: "scale",
     id: "autonomy",
     name: "Autonomy",
+    group: "Classification",
     segments: [
       { key: "you-do-each-step", label: "You do each step", on: false },
       { key: "ai-suggests-and-you-approve", label: "AI suggests and you approve", on: true },
@@ -70,19 +75,15 @@ export const visionBuildsSections: FilterSection[] = [
     ],
     endLabels: ["You do each step", "Fully autonomous"],
   },
-  ...[["stack", "Tools and stack", "Claude Code"], ["task", "Task", "Any"], ["built", "What was built", "Any"], ["technique", "Techniques", "Any"], ["confirmed", "Last confirmed", "Any"], ["cost", "Cost to run", "Any"]].map(
-    ([id, name, value]) => ({ kind: "closed" as const, id, name, value }),
-  ),
+  /* BF-07: every filter is drawn in its group; the board's closed rows are checklists. */
+  { kind: "word", id: "stack", name: "Tools and stack", group: "Classification", order: "count", options: words([["Claude Code", 34, true], ["Cursor", 21, false], ["n8n", 9, false]]) },
+  { kind: "word", id: "task", name: "Task", group: "Classification", order: "az", options: words([["Drafting", 12, false], ["Research", 8, false]]) },
+  { kind: "word", id: "built", name: "What was built", group: "Classification", order: "az", options: words([["Automation workflow", 9, false], ["Configured assistant", 6, false]]) },
+  { kind: "word", id: "technique", name: "Techniques", group: "Classification", order: "az", options: [] },
+  { kind: "word", id: "within", name: "Last confirmed", group: "Proof", order: "scale", options: [["Within 7 days", false], ["Within 30 days", false], ["Within 90 days", false]].map(([label, checked]) => ({ key: String(label), label: String(label), checked: Boolean(checked) })) },
+  { kind: "word", id: "cost", name: "Cost to run", group: "Classification", order: "scale", options: words([["Free plans are enough", 14, false], ["Needs a paid plan", 6, false]]) },
+  { kind: "word", id: "open", name: "Still open", group: "OpenBuilds", order: "az", options: words([["Has a still-open topic", 3, false]]) },
 ];
-
-export const visionBuildsCatalogue: CatalogueGroup[] = [
-  ["Classification", 15, "Field, Task, Setting, What was built, Role of AI, Techniques, Modality, Build method, Autonomy, Tools and stack, Data handled, Human oversight, Age suitability, Skill needed, Cost to run"],
-  ["Proof", 6, "Reproductions, Works on model, Last confirmed, Confirmed or stale, Rebuilds, Likes"],
-  ["Structure", 8, "Shape, Steps, Sessions, Parts, Agents, Patterns, Tile categories, Completeness"],
-  ["OpenBuilds", 3, "Open requests, Request type, Reward"],
-  ["Lineage", 2, "Rebuilt from, Original build"],
-  ["People", 3, "Maker, People you follow, Contributors"],
-].map(([name, count, items]) => ({ name: name as string, count: count as number, items: items as string }));
 
 const TOOL = { C: "claude-code", G: "gemini", S: "replit", L: "lovable", N: "n8n", Z: "zapier" } as const;
 const NAME: Record<string, string> = { "claude-code": "Claude Code", gemini: "Gemini", replit: "Replit", lovable: "Lovable", n8n: "n8n", zapier: "Zapier" };
@@ -140,12 +141,10 @@ export function visionBuildsTableProps(): BuildsViewProps {
         onSaveCurrent: noop,
       },
       sections: visionBuildsSections,
-      catalogue: { total: 37, groups: visionBuildsCatalogue },
       onToggleOption: noop,
       onOrder: noop,
       onRange: noop,
       onToggleSegment: noop,
-      onOpenClosed: noop,
       onMove: noop,
     },
     table: {

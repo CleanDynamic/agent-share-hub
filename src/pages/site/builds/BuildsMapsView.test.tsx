@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 
 import { visionBuildsMapsProps } from "@/dev/fixtures/vision/builds-maps";
+import { visionBuildsTableProps } from "@/dev/fixtures/vision/builds-table";
 
 import type { BuildsTableBuild } from "@/lib/build/gallery";
 import { sessionMapModel } from "@/lib/build/sessionMap";
@@ -116,16 +117,16 @@ describe("the page", () => {
 
   /* BF-06 P3 (E5, X1): the panel is in the one Filters dialog, never drawn above the cards. */
   it("pressing Filters opens the dialog and does not draw the panel inline", () => {
-    draw({ panel: <p>The Table's filters</p> });
-    expect(screen.queryByText("The Table's filters")).toBeNull();
+    draw({ filters: visionBuildsTableProps().filters });
+    expect(screen.queryByTestId("builds-filters")).toBeNull();
     const before = screen.getByTestId("builds-cards").previousElementSibling;
     fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
-    expect(within(screen.getByRole("dialog", { name: "Filters" })).getByText("The Table's filters")).toBeTruthy();
+    expect(within(screen.getByRole("dialog", { name: "Filters" })).getByTestId("builds-filters")).toBeTruthy();
     expect(screen.getByTestId("builds-cards").previousElementSibling).toBe(before);
   });
 
   it("the Filters button is the shared FiltersButton with the active count", () => {
-    draw({ panel: <p>The Table's filters</p> });
+    draw({ filters: visionBuildsTableProps().filters });
     const button = screen.getByRole("button", { name: "Filters, 6 on" });
     expect(button.getAttribute("aria-haspopup")).toBe("dialog");
     expect(button.textContent).toBe("Filters6");

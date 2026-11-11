@@ -10,7 +10,6 @@ import { useDesignTheme } from "@/dev/useDesignTheme";
 import { SiteFrameView } from "@/components/shell/SiteFrame";
 import type { Facet } from "@/lib/classify/taxonomy";
 import BuildsClassificationView from "@/pages/site/builds/BuildsClassificationView";
-import { BuildsFiltersView } from "@/pages/site/builds/BuildsFiltersView";
 import { DEFAULT_FACETS } from "@/pages/site/builds/classificationModel";
 
 import { devChrome } from "./frameChrome";
@@ -40,7 +39,7 @@ export default function VisionBuildsClassification({ viewport = "desktop", state
       style={{ width: viewport === "mobile" ? 390 : 1440 }}
     >
       <SiteFrameView viewport={viewport} fit="board" board {...devChrome({ theme, current: "gallery", trail: [{ label: "Home", href: "/" }, { label: "Builds" }], dockCurrent: null })}>
-        <BuildsClassificationView {...visionBuildsClassificationProps({ facets, onFacets: setFacets, panel: <BuildsFiltersView {...visionClassificationPanel()} /> })} />
+        <BuildsClassificationView {...visionBuildsClassificationProps({ facets, onFacets: setFacets, filters: visionClassificationPanel() })} />
       </SiteFrameView>
     </div>
   );

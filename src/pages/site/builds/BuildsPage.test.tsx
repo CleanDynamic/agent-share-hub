@@ -81,9 +81,10 @@ function renderAt(path: string) {
 
 /** BF-06: the filters are in a dialog the Filters button opens; Done closes it. Behind an open dialog the page is hidden
     from assistive technology, so a test that reads the table or the chips closes it first. */
-async function openFilters() {
+async function openFilters(group?: string) {
   fireEvent.click(await screen.findByRole("button", { name: /^Filters/ }, { timeout: 4000 }));
   await screen.findByRole("dialog", { name: "Filters" });
+  if (group) fireEvent.click(await screen.findByRole("button", { name: new RegExp(`^${group}`) }));
 }
 function closeFilters() {
   fireEvent.click(screen.getByRole("button", { name: "Done" }));
@@ -197,11 +198,12 @@ describe("BuildsPage", () => {
     await waitFor(() => expect(address).toBe("/builds?sort=rebuilt"));
   });
 
-  it("opens a closed filter in place", async () => {
+  // BF-07 (A5): every filter is drawn in its group; none is a closed row to open first.
+  it("draws every filter of a group, with nothing to open first", async () => {
     renderAt("/builds");
     await openFilters();
-    fireEvent.click(await screen.findByRole("button", { name: /^Task\s*Any/ }));
-    expect(screen.getByRole("region", { name: "Task" })).toBeTruthy();
+    expect(await screen.findByRole("region", { name: "Task" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /^Task\s*Any/ })).toBeNull();
   });
 
   it("shows one line and one action when nothing matches", async () => {
@@ -228,27 +230,27 @@ describe("BuildsPage", () => {
       renderAt("/builds");
       await screen.findByRole("link", { name: "Build 1" });
       expect(screen.queryByRole("columnheader", { name: "Steps" })).toBeNull();
-      expect(screen.queryByRole("button", { name: /^Steps/ })).toBeNull();
+      await openFilters("Structure");
+      expect(screen.queryByRole("region", { name: "Steps" })).toBeNull();
     });
 
-    it("draws the columns, the median in the footer and a closed filter for each range once they are live", async () => {
+    it("draws the columns, the median in the footer and a filter for each range once they are live", async () => {
       getCountSpread.mockResolvedValue(SPREAD);
       listBuildsTable.mockResolvedValue({ countsLive: true, builds: [counted(1, 4, 1), counted(2, 12, 3), counted(3, null, 0)], total: 3 });
       renderAt("/builds");
       expect(await screen.findByRole("columnheader", { name: "Steps" })).toBeTruthy();
       expect(screen.getByRole("columnheader", { name: "Sessions" })).toBeTruthy();
       expect(screen.getByText("Median 8 steps")).toBeTruthy();
-      await openFilters();
-      expect(await screen.findByRole("button", { name: /^Steps\s*Any/ })).toBeTruthy();
-      expect(screen.getByRole("button", { name: /^Sessions\s*Any/ })).toBeTruthy();
+      await openFilters("Structure");
+      expect(await screen.findByRole("region", { name: "Steps" })).toBeTruthy();
+      expect(screen.getByRole("region", { name: "Sessions" })).toBeTruthy();
     });
 
     it("writes a range to the address, replacing the entry so dragging leaves one step in history, and the list follows", async () => {
       getCountSpread.mockResolvedValue(SPREAD);
       listBuildsTable.mockResolvedValue({ countsLive: true, builds: [counted(1, 4, 1)], total: 1 });
       renderAt("/builds");
-      await openFilters();
-      fireEvent.click(await screen.findByRole("button", { name: /^Steps\s*Any/ }));
+      await openFilters("Structure");
       const from = await screen.findByRole("slider", { name: "Steps from" });
       from.focus();
       fireEvent.keyDown(from, { key: "ArrowRight" });
@@ -262,7 +264,7 @@ describe("BuildsPage", () => {
       getCountSpread.mockResolvedValue(SPREAD);
       listBuildsTable.mockResolvedValue({ countsLive: true, builds: [counted(1, 6, 1)], total: 1 });
       renderAt("/builds?sessions=2-");
-      await openFilters();
+      await openFilters("Structure");
       expect(await screen.findByRole("slider", { name: "Sessions from" })).toBeTruthy();
       expect(screen.getByRole("group", { name: "Sessions, 2 or more" })).toBeTruthy();
       closeFilters();
@@ -284,14 +286,12 @@ describe("BuildsPage", () => {
 
     it("offers Last confirmed and Confirmed or stale from the columns that exist, and writes the choice to the address", async () => {
       renderAt("/builds");
-      await openFilters();
-      fireEvent.click(await screen.findByRole("button", { name: /^Last confirmed\s*Any/ }));
-      fireEvent.click(screen.getByRole("checkbox", { name: /Within 30 days/ }));
+      await openFilters("Proof");
+      fireEvent.click(await screen.findByRole("checkbox", { name: /Within 30 days/ }));
       await waitFor(() => expect(address).toBe("/builds?within=30"));
       await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ confirmedWithin: 30 })));
       fireEvent.click(screen.getByRole("checkbox", { name: /Within 30 days/ }));
       await waitFor(() => expect(address).toBe("/builds"));
-      fireEvent.click(screen.getByRole("button", { name: /^Confirmed or stale\s*Any/ }));
       fireEvent.click(screen.getByRole("checkbox", { name: /Stale, not confirmed in 120 days/ }));
       await waitFor(() => expect(address).toBe("/builds?state=stale"));
       await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ confirmedState: "stale" })));
@@ -304,9 +304,8 @@ describe("BuildsPage", () => {
       getWorksOnModelCounts.mockResolvedValue([{ model: OPUS, builds: 18 }]);
       listBuildsTable.mockResolvedValue({ countsLive: true, builds: [build(1)], total: 1 });
       renderAt("/builds");
-      await openFilters();
-      fireEvent.click(await screen.findByRole("button", { name: /^Works on model\s*Any/ }));
-      fireEvent.click(screen.getByRole("checkbox", { name: /Opus 5.5/ }));
+      await openFilters("Proof");
+      fireEvent.click(await screen.findByRole("checkbox", { name: /Opus 5.5/ }));
       await waitFor(() => expect(address).toBe("/builds?model=opus-5-5"));
       await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ worksOn: "opus-5-5" })));
       closeFilters();
@@ -318,8 +317,9 @@ describe("BuildsPage", () => {
       getWorksOnModelCounts.mockResolvedValue([{ model: OPUS, builds: 18 }]);
       renderAt("/builds");
       await screen.findByRole("link", { name: "Build 1" });
-      expect(screen.queryByRole("button", { name: /^Works on model/ })).toBeNull();
-      expect(screen.queryByRole("button", { name: /^Reproductions\s*Any/ })).toBeNull();
+      await openFilters("Proof");
+      expect(screen.queryByRole("region", { name: "Works on model" })).toBeNull();
+      expect(screen.queryByRole("region", { name: "Reproductions" })).toBeNull();
     });
   });
 });
@@ -434,25 +434,21 @@ describe("SV-24 P2: the reader's layout", () => {
     const first = renderAt("/builds");
     await screen.findByRole("link", { name: "Build 1" });
     await openFilters();
-    expect(sectionNames().slice(0, 2)).toEqual(["Field", "Autonomy"]);
+    expect(sectionNames().slice(0, 2)).toEqual(["Field", "Task"]);
     fireEvent.keyDown(screen.getByRole("button", { name: "Move Field" }), { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Move down" }));
-    await waitFor(() => expect(sectionNames().slice(0, 2)).toEqual(["Autonomy", "Field"]));
-    /* The filters that are closed rows keep their places: Autonomy takes Field's slot, and Field the one Autonomy had. */
-    expect(stored().order[0]).toBe("autonomy");
-    expect(stored().order.indexOf("field")).toBeGreaterThan(stored().order.indexOf("task"));
+    await waitFor(() => expect(sectionNames().slice(0, 2)).toEqual(["Task", "Field"]));
+    expect(stored().order.slice(0, 2)).toEqual(["task", "field"]);
     first.unmount();
     renderAt("/builds");
     await screen.findByRole("link", { name: "Build 1" });
     await openFilters();
-    expect(sectionNames().slice(0, 2)).toEqual(["Autonomy", "Field"]);
+    expect(sectionNames().slice(0, 2)).toEqual(["Task", "Field"]);
   });
 
-  it("keeps a filter opened, and a checklist's height, for the next visit", async () => {
+  it("keeps a checklist's height for the next visit", async () => {
     renderAt("/builds");
     await openFilters();
-    fireEvent.click(await screen.findByRole("button", { name: /^Task\s*Any/ }).catch(() => screen.findByRole("button", { name: /^Setting\s*Any/ })));
-    expect(stored().opened).toHaveLength(1);
     fireEvent.keyDown(screen.getByRole("separator", { name: "Resize Field" }), { key: "End" });
     await waitFor(() => expect(stored().heights).toEqual({ field: 480 }));
   });
@@ -518,7 +514,7 @@ describe("SV-24 P2: the reader's layout", () => {
     renderAt(`/builds?set=${SET_ID}`);
     await screen.findByRole("link", { name: "Build 1" });
     await openFilters();
-    expect(sectionNames().slice(0, 2)).toEqual(["Field", "Autonomy"]);
+    expect(sectionNames().slice(0, 2)).toEqual(["Field", "Task"]);
     fireEvent.keyDown(screen.getByRole("button", { name: "Move Field" }), { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Move down" }));
     await waitFor(() => expect(stored()).not.toBeNull());

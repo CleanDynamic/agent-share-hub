@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 
 import { parseGalleryParams } from "@/lib/build/galleryParams";
 
-import { activeChips, histogramOf, liveCatalogue, medianOf, panelSections, tableFooter, toggled, withRange, withoutChip } from "./buildsModel";
+import { activeChips, histogramOf, medianOf, panelSections, tableFooter, toggled, withRange, withoutChip } from "./buildsModel";
 import type { RangeSection } from "./BuildsFiltersView";
 
 const params = (search: string) => parseGalleryParams(new URLSearchParams(search));
-const STATE = { facets: [], shapes: [], open: false, counts: null, patterns: null, opened: new Set<string>(), orders: {} };
+const STATE = { facets: [], shapes: [], open: false, counts: null, patterns: null, orders: {} };
 
 describe("histogramOf", () => {
   it("makes twelve bars, the tallest full height, with the cap's builds in the last", () => {
@@ -60,10 +60,10 @@ describe("the chip and the panel", () => {
     expect(panelSections({ ...STATE, spread: null }).some((section) => section.id === "steps")).toBe(false);
   });
 
-  it("draws a range closed, or open with its value in words once chosen", () => {
+  it("draws a range with Any at rest, and its value in words once chosen", () => {
     const spread = { steps: new Map([[4, 3]]), sessions: new Map([[1, 3]]) };
-    const closed = panelSections({ ...STATE, spread }).find((section) => section.id === "steps");
-    expect(closed).toMatchObject({ kind: "closed", value: "Any" });
+    const rest = panelSections({ ...STATE, spread }).find((section) => section.id === "steps");
+    expect(rest).toMatchObject({ kind: "range", group: "Structure", valueText: "Any", value: [0, 60] });
     const open = panelSections({ ...STATE, spread, ranges: { steps: { min: 5, max: 30 } } }).find((section) => section.id === "steps") as RangeSection;
     expect(open).toMatchObject({ kind: "range", valueText: "5 to 30", value: [5, 30], min: 0, max: 60 });
     expect(open.describe(5, "min")).toBe("5 or more");
@@ -126,10 +126,27 @@ describe("the proof (SV-23 P2)", () => {
     expect(withoutChip(chosen, "within").state).toBe("stale");
   });
 
-  it("lists in the catalogue only the filters that work", () => {
-    const names = (groups: ReturnType<typeof liveCatalogue>, group: string) => groups.find((entry) => entry.name === group)?.items;
-    expect(names(liveCatalogue(true, false), "Proof")).toBe("Last confirmed, Confirmed or stale");
-    expect(names(liveCatalogue(true, false, true, true), "Proof")).toBe("Reproductions, Works on model, Last confirmed, Confirmed or stale, Rebuilds, Likes");
-    expect(names(liveCatalogue(true, true, true, true), "Structure")).toBe("Shape, Steps, Sessions, Patterns");
+});
+
+/* ── BF-07 P1 (A3) ── */
+
+describe("the groups", () => {
+  const ALL = { ...STATE, counts: { "field:education": 2 }, patterns: [], spread: { reproductions: new Map(), rebuilds: new Map(), likes: new Map(), steps: new Map(), sessions: new Map() }, worksOn: [] };
+
+  it("every section carries its group, and the groups are Classification, Proof, Structure and OpenBuilds in that order", () => {
+    const sections = panelSections(ALL);
+    const groups = sections.map((section) => section.group);
+    expect([...new Set(groups)]).toEqual(["Classification", "Proof", "Structure", "OpenBuilds"]);
+    const of = (group: string) => sections.filter((section) => section.group === group).map((section) => section.id);
+    expect(of("Classification")).toHaveLength(15);
+    expect(of("Classification")).toContain("stack");
+    expect(of("Proof")).toEqual(["reproductions", "model", "within", "state", "rebuilds", "likes"]);
+    expect(of("Structure")).toEqual(["shape", "steps", "sessions", "pattern"]);
+    expect(of("OpenBuilds")).toEqual(["open"]);
+  });
+
+  it('no section is of kind "closed"', () => {
+    expect(panelSections(ALL).every((section) => ["word", "range", "scale"].includes(section.kind))).toBe(true);
+    expect(panelSections(ALL).find((section) => section.id === "autonomy")?.kind).toBe("scale");
   });
 });
