@@ -1,5 +1,5 @@
 /* SV-13: the Classification view of Builds, pure: each build's classification as a card, every value saying where it came
-   from and linking to the Table filtered by it. The board is `design/reference/vision/dusk/builds-classification.html`.
+   from and linking to this view filtered by it. The board is `design/reference/vision/dusk/builds-classification.html`.
 
    Like Maps, the board has no filter column, so this draws the whole page: the head with its sentence and the view
    switch, one row (Filters with the active count, "Facets shown n of 15", and the key on the right) and the grid. Filters

@@ -5,7 +5,7 @@
    "stated"; the board tells the two apart, so a correction is read from `disputes` here. A derived facet whose tile ids
    were not kept reads "derived" and never "from 0 tiles". A facet with nothing in it has no source.
 
-   WHAT LINKS. A value from a list links to the Table filtered by it (`field:<id>`); the maker's own words have no id to
+   WHAT LINKS. A value from a list links to the page filtered by it (`field:<id>`), in the view the reader is on; the maker's own words have no id to
    filter by and are plain text. Where a link goes is the page's to say (`hrefOf`), so this knows no address.
 
    WHICH FACETS. The 15 facets in the taxonomy's order, the board's eight by default. The choice is the viewer's, kept in
@@ -28,7 +28,7 @@ export const ALL_FACETS: readonly Facet[] = FACETS;
 
 export interface ClassValueView {
   label: string;
-  /** The Table filtered by it; null for the maker's own words. */
+  /** The page filtered by it, in the view the reader is on; null for the maker's own words. */
   href: string | null;
 }
 

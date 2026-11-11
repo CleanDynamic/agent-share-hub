@@ -1,6 +1,6 @@
 // SV-13 P1: what a Classification card says. The claims: a derived value with three source tiles reads "from 3 tiles"; a
-// declared value reads "stated"; a facet in `disputes` reads "corrected"; a value links to the Table with its facet key in
-// the address; blocked storage falls back to the default eight without throwing.
+// declared value reads "stated"; a facet in `disputes` reads "corrected"; a value links to the page filtered by its facet key, in
+// the view the reader is on; blocked storage falls back to the default eight without throwing.
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 

@@ -10,7 +10,7 @@
 
    ONE LOAD FOR EVERY VIEW. The same builds are passed to the view the address names: the Table here, Maps and
    Classification as their own chunks (`buildsViews.ts`). Classification makes no read of its own: the list carries each
-   build's classification, and a value links to this page as the Table with that facet added.
+   build's classification, and a value links to this page, filtered in the view the reader is on, with that facet added.
 
    SV-23 P1: Steps and Sessions (the columns and their range filters) are drawn once the list carries the stored counts
    (`countsLive`) and their spread has answered; the median steps sits in the footer. The spread is read in the same round.
@@ -343,8 +343,8 @@ export default function BuildsPage() {
     />
   );
 
-  /* A value's link: the Table (no `view`) with the value's facet key added to the filters. */
-  const valueHref = (key: string) => galleryHref({ ...params, view: undefined, facets: [...new Set([...(params.facets ?? []), key])] });
+  /* A value's link: the page as it is (the view the reader is on) with the value's facet key added to the filters. */
+  const valueHref = (key: string) => galleryHref({ ...params, facets: [...new Set([...(params.facets ?? []), key])] });
 
   const mapsPage =
     view === "maps" ? (
