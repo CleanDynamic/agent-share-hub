@@ -126,8 +126,9 @@ describe("Group, with the reference bridge", () => {
 
   it("Ctrl G groups the chosen tiles in one step with one notice, and Undo takes the group away", async () => {
     await mountCa20(seedCa20);
-    fireEvent.click(screen.getByText("Add the order form"), { ctrlKey: true });
-    fireEvent.click(screen.getByText("Read the orders"), { ctrlKey: true });
+    // F42: the prompt's words are its title and its preview: either is the tile.
+    fireEvent.click(screen.getAllByText("Add the order form")[0], { ctrlKey: true });
+    fireEvent.click(screen.getAllByText("Read the orders")[0], { ctrlKey: true });
     fireEvent.keyDown(document.body, { key: "g", ctrlKey: true });
     await waitFor(() => expect((draftRow()?.making as { reference_groups: unknown[] }).reference_groups).toHaveLength(2), { timeout: 15_000 });
     expect(await screen.findByText("Grouped 2 components")).toBeTruthy();

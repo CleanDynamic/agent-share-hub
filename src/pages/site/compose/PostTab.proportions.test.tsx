@@ -157,7 +157,9 @@ describe("the character ring", () => {
     const toolbar = screen.getByTestId("post-toolbar");
     const ring = within(toolbar).getByTestId("character-ring");
     expect(ring.previousElementSibling?.getAttribute("aria-label")).toBe("Preview");
-    expect((ring.nextElementSibling?.nextElementSibling as HTMLElement).getAttribute("aria-hidden")).toBe("true");
+    // F54: the ring's visible label, its spoken line, then the divider.
+    expect(ring.nextElementSibling?.getAttribute("data-testid")).toBe("character-ring-label");
+    expect((ring.nextElementSibling?.nextElementSibling?.nextElementSibling as HTMLElement).getAttribute("aria-hidden")).toBe("true");
     focusAt(editor, 0);
     expect(within(toolbar).getByTestId("character-ring").getAttribute("aria-label")).toBe("990 characters left. Pictures do not count.");
     focusAt(editor, 2);

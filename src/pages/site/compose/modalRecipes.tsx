@@ -423,12 +423,19 @@ export interface FieldInputProps extends Omit<InputHTMLAttributes<HTMLInputEleme
   ref?: Ref<HTMLInputElement>;
 }
 
+/**
+ * F31: a placeholder is an example, never a value: it is drawn in `--label`, a step dimmer than the `--text` the maker types, in
+ * both themes. `::placeholder` cannot be set inline, so the one generated utility that spends the token does it (as ui/input.tsx).
+ */
+export const PLACEHOLDER_CLASS = "placeholder:text-[color:var(--label)]";
+
 /** A field: 32 tall, the well, radius 8 (44 and 16px on a phone). */
 export function FieldInput({ phone, mono = false, width, onFocus, onBlur, type: kind = "text", ...rest }: FieldInputProps) {
   const focus = useFocused<HTMLInputElement>(onFocus, onBlur);
   return (
     <input
       type={kind}
+      className={PLACEHOLDER_CLASS}
       {...rest}
       data-focused={focus.focused || undefined}
       onFocus={focus.onFocus}
@@ -451,6 +458,7 @@ export function FieldArea({ phone, rows, mono = false, onFocus, onBlur, ...rest 
   return (
     <textarea
       rows={rows}
+      className={PLACEHOLDER_CLASS}
       {...rest}
       data-focused={focus.focused || undefined}
       onFocus={focus.onFocus}
@@ -866,6 +874,10 @@ export const OPTIONAL = {
   hint: { ...type(12.5, 400, t.label, 17), marginTop: 1 } as CSSProperties,
   /** CA-16b's card: a filled row's line in `--text`. */
   filledLine: { color: t.text } as CSSProperties,
+  /** F20: the line and, beside it, the suggested chip. */
+  lineRow: { display: "flex", alignItems: "center", gap: 8, minWidth: 0 } as CSSProperties,
+  /** F20: a suggestion on a closed row: the dashed edge a suggestion chip has, never the look of a value. */
+  suggestedChip: { ...type(12, 400, t.text2, 16), display: "inline-block", padding: "2px 8px", borderRadius: 7, borderWidth: 1, borderStyle: "dashed", borderColor: t.segOnBorder, background: "transparent", ...ELLIPSIS } as CSSProperties,
   value: { ...COUNT, maxWidth: "45%", overflow: "hidden", textOverflow: "ellipsis" } as CSSProperties,
   chevron: (open: boolean): CSSProperties => ({ display: "inline-flex", flexShrink: 0, color: t.label, transform: open ? "rotate(180deg)" : "none" }),
   body: (inset: number): CSSProperties => ({ display: "flex", flexDirection: "column", gap: 8, padding: `2px ${inset}px 14px`, minWidth: 0 }),

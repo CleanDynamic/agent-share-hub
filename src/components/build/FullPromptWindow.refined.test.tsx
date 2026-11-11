@@ -67,7 +67,7 @@ describe("the refined window does what the window does", () => {
     expect(screen.getByText("19 words")).toBeTruthy();
     expect(screen.getByText("Output of 2 · Prompt 2")).toBeTruthy();
     expect(screen.getByText("Esc Close · ← → Previous or next prompt")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    fireEvent.click(screen.getByTestId("prompt-close"));
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(props.onClose).toHaveBeenCalledTimes(2);
   });
@@ -95,7 +95,8 @@ describe("the refined window as the board draws it", () => {
     expect(dialog.style.width).toBe("640px");
     expect(dialog.style.borderRadius).toBe("12px");
     expect(dialog.style.overflow).toBe("hidden");
-    expect(dialog.style.maxHeight).toBe("calc(100dvh - 80px)");
+    // F38: pinned at 48 from the top, with the same room under it.
+    expect(dialog.style.maxHeight).toBe("calc(100dvh - 96px)");
   });
 
   it("heads with the title, one grey line, and square 28 Previous, Next and Close", () => {
@@ -121,13 +122,14 @@ describe("the refined window as the board draws it", () => {
     expect(screen.queryByTestId("full-prompt-fade")).toBeNull();
   });
 
-  it("draws Copy prompt as a small secondary 28 with no icon, and Done as the one primary, 32 high", () => {
+  it("draws Copy prompt as a small secondary 28 with no icon, and Close as the one primary, 32 high", () => {
     open("p3");
     const copy = screen.getByRole("button", { name: "Copy prompt" });
     expect(copy.getAttribute("data-variant")).toBe("secondary");
     expect(copy.style.height).toBe("28px");
     expect(copy.querySelector("svg")).toBeNull();
-    const done = screen.getByRole("button", { name: "Done" });
+    const done = screen.getByTestId("prompt-close");
+    expect(done.textContent).toBe("Close");
     expect(done.getAttribute("data-variant")).toBe("primary");
     expect(done.style.height).toBe("32px");
     expect(within(screen.getByRole("dialog")).getAllByRole("button").filter((button) => button.getAttribute("data-variant") === "primary")).toHaveLength(1);

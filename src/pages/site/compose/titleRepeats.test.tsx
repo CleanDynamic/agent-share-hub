@@ -37,7 +37,7 @@ describe("the List", () => {
     );
   };
 
-  it("calls a prompt by its place, with a typed title next to it (CA-14 P8 is replaced: nothing is hidden)", () => {
+  it("calls a prompt by its title alone, the typed one or its default (F42: the place is the badge; nothing is hidden)", () => {
     list([
       step({ id: "a", number: "1", title: null, defaultTitle: "Prompt 1", text: "ccc" }),
       step({ id: "b", number: "2", title: "ccc", defaultTitle: "Prompt 2", text: "ccc" }),
@@ -45,12 +45,11 @@ describe("the List", () => {
     ]);
     const first = screen.getByRole("group", { name: /^Prompt 1:/ });
     expect(within(first).queryByTestId("title-hidden")).toBeNull();
-    expect(within(first).getByTestId("prompt-place").textContent).toBe("Step 1");
-    expect(within(first).queryByTestId("prompt-own-title")).toBeNull();
+    expect(within(first).getByRole("heading", { level: 3 }).textContent).toBe("Prompt 1");
+    expect(within(first).queryByTestId("prompt-place")).toBeNull();
     const second = screen.getByRole("group", { name: /^Prompt 2:/ });
-    expect(within(second).getByTestId("prompt-place").textContent).toBe("Step 2");
-    expect(within(second).getByTestId("prompt-own-title").textContent).toBe("ccc");
-    expect(within(screen.getByRole("group", { name: /^Prompt 3:/ })).queryByTestId("prompt-own-title")).toBeNull();
+    expect(within(second).getByRole("heading", { level: 3 }).textContent).toBe("ccc");
+    expect(within(screen.getByRole("group", { name: /^Prompt 3:/ })).getByRole("heading", { level: 3 }).textContent).toBe("Prompt 3");
   });
 
 });

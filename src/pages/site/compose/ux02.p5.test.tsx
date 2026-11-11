@@ -68,8 +68,9 @@ describe("UX-02 P5 · every step tile type has a visible open control and a visi
   it.each(TYPES)("%s", (kind, open) => {
     const props = list([make({ id: "x1", number: "1", kind, text: "A thing", title: "A thing", sessionId: "s1" })]);
     const card = screen.getAllByTestId("step-card")[0];
-    // Open: a visible link in its footer.
-    fireEvent.click(within(card).getByRole("button", { name: open }));
+    // Open: a visible link in its footer; F17 (D8): a prompt opens from a double click, or Edit in the right panel.
+    if (kind === "prompt") fireEvent.doubleClick(card);
+    else fireEvent.click(within(card).getByRole("button", { name: open }));
     expect(kind === "prompt" ? props.onOpenPrompt : props.onEditTile).toHaveBeenCalledWith("x1");
     // Edit: its ··· menu's Edit.
     fireEvent.keyDown(within(card).getByRole("button", { name: /options$/ }), { key: "Enter" });
@@ -92,14 +93,14 @@ describe("UX-02 P5 · every step tile type has a visible open control and a visi
   });
 });
 
-describe("UX-02 P5 · nothing answers a double click", () => {
-  it("no element in the List or a session's head has an onDoubleClick", () => {
+describe("UX-02 P5 · nothing answers a double click but a prompt tile (F17, D8)", () => {
+  it("no element in the List or a session's head has an onDoubleClick, but the prompt tiles", () => {
     const base = sandboxListProps("bakery");
     const kinds = TYPES.map(([kind], at) => make({ id: `t${at}`, number: String(at + 1), kind, text: "A thing", title: "A thing", sessionId: "s1" }));
     list([...(base.steps as Step[]), ...kinds], { dividers: base.dividers, sessionOps: { onTitle: vi.fn(), onMove: vi.fn(), onRemove: vi.fn(), onMergeUp: vi.fn() }, results: [{ id: "r1", title: "Done", holds: "a link", facts: { link: null, mediaIds: [], file: null, model: null }, from: null }] });
     const all = [...screen.getByTestId("build-list").querySelectorAll("*")];
     expect(screen.getAllByTestId("session-head").length).toBeGreaterThan(0);
-    expect(all.filter((element) => typeof reactProps(element).onDoubleClick === "function").map((element) => element.outerHTML.slice(0, 80))).toEqual([]);
+    expect(all.filter((element) => typeof reactProps(element).onDoubleClick === "function" && element.getAttribute("data-kind") !== "prompt").map((element) => element.outerHTML.slice(0, 80))).toEqual([]);
   });
 
   it("the computer's hint line is gone; the phone's says step tile", () => {

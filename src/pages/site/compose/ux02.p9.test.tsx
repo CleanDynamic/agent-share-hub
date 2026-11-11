@@ -48,8 +48,9 @@ describe("UX-02 P9 · a selected File step tile", () => {
   it("says its type, its place in the List and on the published page", () => {
     const view = { ...tileView("file", "full"), type: "MD", place: { session: 2, at: 3, step: "5" } } as DetailsView;
     panel(view);
-    const type = screen.getAllByTestId("details-section").find((section) => section.querySelector("h4")?.textContent === "Type") as HTMLElement;
-    expect(within(type).getByText("MD")).toBeTruthy();
+    // F46: one section headed File: Type, Size and Added by.
+    const file = screen.getAllByTestId("details-section").find((section) => section.querySelector("h4")?.textContent === "File") as HTMLElement;
+    expect(within(file).getByText("MD")).toBeTruthy();
     const place = screen.getAllByTestId("details-section").find((section) => section.querySelector("h4")?.textContent === "In the build") as HTMLElement;
     expect(within(place).getByText("Session 2")).toBeTruthy();
     expect(within(place).getByText("Step 5 · File")).toBeTruthy();

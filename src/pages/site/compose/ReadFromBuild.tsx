@@ -35,8 +35,14 @@ export interface ReadFromBuildProps {
   onDismiss: (questionId: string) => void;
   onSource?: (tileId: string) => void;
   onAction?: (action: QuestionAction, question: GapQuestion) => void;
+  /** F27: Tools and stack is its own row; its line here is a button that opens that row rather than its values again. */
+  onOpenStack?: () => void;
   now?: () => string;
 }
+
+export const READ_COPY = {
+  openStack: "Edit in Tools and stack",
+} as const;
 
 const link: CSSProperties = { ...bareButton, ...text(12, 400, t.text2), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line, borderRadius: 4 };
 
@@ -95,7 +101,7 @@ function DisputeForm({ facet, phone, current, onApply, onCancel }: { facet: Face
   );
 }
 
-export function ReadFromBuild({ classification, questions, phone, onDispute, onDismiss, onSource, onAction, now = () => new Date().toISOString() }: ReadFromBuildProps) {
+export function ReadFromBuild({ classification, questions, phone, onDispute, onDismiss, onSource, onAction, onOpenStack, now = () => new Date().toISOString() }: ReadFromBuildProps) {
   const [editing, setEditing] = useState<Facet | null>(null);
 
   return (
@@ -129,16 +135,26 @@ export function ReadFromBuild({ classification, questions, phone, onDispute, onD
           const disputed = classification.disputes[facet];
           const name = FACET_LABEL[facet];
           const labels = shown.values.map((id) => labelFor(facet, id));
+          /* F27: Tools and stack has its own row above; here its line is a button to that row, not its values again. */
+          const stackLink = facet === "stack" && onOpenStack ? onOpenStack : null;
           return (
             <li key={facet} data-facet={facet} style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 0", borderBottom: `1px solid ${t.hairlineModule}` }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 8, flexWrap: "wrap" }}>
                 <span style={{ ...text(12.5, 500, t.text), flex: "0 0 124px", minWidth: 0 }}>{name}</span>
-                <span style={{ ...text(12.5, 400, labels.length > 0 ? t.text : t.label), flex: "1 1 120px", minWidth: 0, overflowWrap: "anywhere" }}>{labels.length > 0 ? labels.join(", ") : "Not stated"}</span>
-                <ProvenanceDot kind={shown.provenance} viewer="maker" showWord />
+                {stackLink ? (
+                  <LinkButton phone={phone} onClick={stackLink}>
+                    {READ_COPY.openStack}
+                  </LinkButton>
+                ) : (
+                  <>
+                    <span style={{ ...text(12.5, 400, labels.length > 0 ? t.text : t.label), flex: "1 1 120px", minWidth: 0, overflowWrap: "anywhere" }}>{labels.length > 0 ? labels.join(", ") : "Not stated"}</span>
+                    <ProvenanceDot kind={shown.provenance} viewer="maker" showWord />
+                  </>
+                )}
               </div>
               {disputed ? <p style={{ margin: 0, ...text(12, 400, t.text2) }}>{`Reason: ${disputed.reason}`}</p> : null}
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", minHeight: 0 }}>
-                {from.length > 0 && !disputed ? (
+                {from.length > 0 && !disputed && !stackLink ? (
                   <LinkButton label={`Source of ${name}`} phone={phone} onClick={() => onSource?.(from[0])}>
                     Source
                   </LinkButton>

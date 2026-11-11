@@ -937,6 +937,27 @@ export function previewOf(textValue: string, count = 4): string[] {
   return lines;
 }
 
+/**
+ * F19: a tile's preview as plain words: no heading marks (##), no bold (** or __), no backticks, no list markers, and the lines
+ * joined by single spaces. "## Plan\n**Bold** and `code`" is "Plan Bold and code". Pure; not a markdown parser.
+ */
+export function plainPreview(textValue: string): string {
+  return textValue
+    .replace(/^[ \t]*`{3,}.*$/gm, "")
+    .replace(/^[ \t]*#{1,6}[ \t]+/gm, "")
+    .replace(/^[ \t]*(?:[-*+]|\d+[.)])[ \t]+/gm, "")
+    .replace(/(\*\*|__)(.+?)\1/g, "$2")
+    .replace(/`+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** F42: a prompt with no title of its own is called by its first eight words, as plain words; "Prompt 3" only when it has none. */
+export function promptTitleOf(textValue: string, number: string): string {
+  const words = plainPreview(textValue).split(" ").filter(Boolean).slice(0, 8);
+  return words.length > 0 ? words.join(" ") : `Prompt ${number}`;
+}
+
 /** CA-12 P8: a file tile's facts, from its payload. */
 function fileFactsOf(payload: Payload): FileTileFacts {
   const name = stringOf(payload.title)?.trim() ?? "Untitled file";
@@ -969,10 +990,10 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
                   ? (stringOf(payload.description) ?? "")
                   : (stringOf(payload.text) ?? "");
   // CA-12 P6: named from what it holds, never by repeating its number.
-  // A prompt is called by its place on the build until its maker names it: "Prompt 3". SV-07 P7: Claude Code's summary of an
-  // earlier session is a Summary tile, "Summary of an earlier chat".
+  // F42: a prompt is called by its first eight words until its maker names it (its place is the number badge, its session is
+  // not repeated). SV-07 P7: Claude Code's summary of an earlier session is a Summary tile, "Summary of an earlier chat".
   const summary = kind === "prompt" && isSummaryPayload(payload);
-  const defaultTitle = summary ? SUMMARY_COPY.title : kind === "prompt" ? `Prompt ${number}` : defaultTitleFor(kind, payload);
+  const defaultTitle = summary ? SUMMARY_COPY.title : kind === "prompt" ? promptTitleOf(text, number) : defaultTitleFor(kind, payload);
   const import_ = isRecord(node.source_ref) ? node.source_ref.import_session_id : undefined;
   const tool = kind === "tool" ? stringOf(payload.service) : stringOf(payload.tool);
   const where = kind === "manual" ? manualWhereOf(payload) : null;

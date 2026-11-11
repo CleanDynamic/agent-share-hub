@@ -56,7 +56,8 @@ describe("the row", () => {
   it("is a text button with a plus, no dashed outline, 36 tall", () => {
     mount();
     const row = screen.getByTestId("add-session-row");
-    expect(row.textContent).toBe("Add a session");
+    // F55: "Add session", the plus its icon.
+    expect(row.textContent).toBe("Add session");
     expect(row.querySelector("svg")).toBeTruthy();
     const style = row.getAttribute("style") ?? "";
     expect(style).toMatch(/height:\s*36px/);
@@ -65,7 +66,7 @@ describe("the row", () => {
 
   it("is disabled while a session is being added, and keeps its words (SV-07 P5: no Adding…)", () => {
     mount({ adding: true });
-    expect(screen.getByTestId("add-session-row").textContent).toBe("Add a session");
+    expect(screen.getByTestId("add-session-row").textContent).toBe("Add session");
     expect((screen.getByTestId("add-session-row") as HTMLButtonElement).disabled).toBe(true);
   });
 });

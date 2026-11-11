@@ -11,7 +11,7 @@
 
 import { NO_HARNESS } from "@/lib/build/harnessWords";
 import { sessionDetailLines, sessionFactsLine, togetherLine } from "@/lib/build/sessionFacts";
-import { FILE_TYPE, groupKey, groupKind, madeByOf, shownGroups, stepTitle, type SessionGroup, type Step } from "@/lib/build/graph";
+import { FILE_TYPE, groupKey, groupKind, madeByOf, plainPreview, shownGroups, stepTitle, type SessionGroup, type Step } from "@/lib/build/graph";
 import { detectExportSource } from "@/lib/build/lovable";
 import { goalLine, toolLabel } from "@/lib/build/making";
 import type { SessionSummary, UnfinishedSession } from "@/lib/build/sessions";
@@ -29,6 +29,8 @@ export interface SourcePrompt {
   title: string;
   /** The title is the default one, drawn in `--text2`. */
   isDefault: boolean;
+  /** F53: the prompt's first six words, cut at the end with an ellipsis when it has more. Absent (a hand-made fixture): its title. */
+  words?: string;
 }
 
 export interface SourceSession {
@@ -150,6 +152,32 @@ export const UNTITLED_SESSION = "Untitled session";
 /** SV-05 P3: what a library row is called: its first prompt, never the model alone. */
 export const libraryName = (item: Pick<SourceLibraryItem, "name" | "firstPrompt">): string => item.name ?? (item.firstPrompt || UNTITLED_SESSION);
 
+/**
+ * F48: what a session's Length line counts. An imported session's turns (and its Summary tiles) as the build read them; a
+ * session typed here, with no import to count, its own prompt tiles, so every session that holds a prompt has the line.
+ */
+export function runOf(group: Pick<SessionGroup, "run">, prompts: number): SessionGroup["run"] {
+  if (group.run?.messages) return group.run;
+  return prompts > 0 ? { ...group.run, messages: prompts } : group.run;
+}
+
+/** F53: the first `count` words of a prompt as plain words, with an ellipsis when it has more. */
+export function firstWords(text: string, count: number): string {
+  const words = plainPreview(text).split(" ").filter(Boolean);
+  return words.length > count ? `${words.slice(0, count).join(" ")}…` : words.join(" ");
+}
+
+/**
+ * F63: a name too long for its row, cut in the middle so its ending stays: "Screenshot 2026…09.41.12.png". Names of `max`
+ * characters or fewer are as they are. The full name goes in the row's title.
+ */
+export function middleCut(name: string, max = 28): string {
+  if (name.length <= max) return name;
+  const tail = Math.floor((max - 1) / 2) - 1;
+  const head = max - 1 - tail;
+  return `${name.slice(0, head).trimEnd()}…${name.slice(name.length - tail).trimStart()}`;
+}
+
 /** CA-14 P5: what an unknown client reads as. */
 export const UNKNOWN_APP = "Unknown app";
 
@@ -268,13 +296,14 @@ export function sourceSessions(
       ...(group.title ? { title: group.title } : null),
       ...(group.open ? { open: group.open.problem } : null),
       ...(factsOf(group, "maker") ? { facts: factsOf(group, "maker") as string } : null),
-      ...(sessionDetailLines({ extras: group.extras, run: group.run }, "maker").length > 0 ? { lines: sessionDetailLines({ extras: group.extras, run: group.run }, "maker") } : null),
+      ...(sessionDetailLines({ extras: group.extras, run: runOf(group, mine.length) }, "maker").length > 0 ? { lines: sessionDetailLines({ extras: group.extras, run: runOf(group, mine.length) }, "maker") } : null),
       ...(togetherLine(group.extras, (other) => groups.find((candidate) => groupKey(candidate) === other)?.number) ? { together: togetherLine(group.extras, (other) => groups.find((candidate) => groupKey(candidate) === other)?.number) as string } : null),
       prompts: mine.map((step) => ({
         id: step.id,
         number: step.number,
         title: stepTitle(step),
         isDefault: step.title === null,
+        words: firstWords(step.text, 6),
       })),
     };
   });

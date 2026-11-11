@@ -235,7 +235,8 @@ describe("Add a part", () => {
     const session = screen.getByTestId("add-session-row");
     const part = screen.getByTestId("add-part-row");
     expect(session.nextElementSibling).toBe(part);
-    expect(part.textContent).toBe("Add a part");
+    // F55.
+    expect(part.textContent).toBe("Add part");
     expect(part.getAttribute("style")).toBe(session.getAttribute("style"));
     fireEvent.click(part);
     expect(onAddPart).toHaveBeenCalledTimes(1);

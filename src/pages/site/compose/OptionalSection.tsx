@@ -12,7 +12,7 @@
    focus). Opened from the keyboard, focus moves to the first field; closing leaves it on the row.
 
    Motion (`buildMotion.tsx`; transform and opacity, `clip-path` for the frame; never height):
-     opening  the frame grows over `BASE` with its centre held still (`resizeFrame`); `OPTIONAL_DROP_AFTER` after the press each field
+     opening  the frame grows over `BASE` from its pinned top edge, nothing above it moving (`resizeFrame`, F38); `OPTIONAL_DROP_AFTER` after the press each field
               falls 20 and fades in over 240, top first, 60 apart (closer for more than 6, over 300 at most);
      closing  the fields lift out (rise 8, fade, `OPTIONAL_LIFT`, last first, `OPTIONAL_LIFT_STAGGER` apart), then the frame closes
               over `BASE`;
@@ -141,7 +141,7 @@ export function OptionalSection({ children, bleed = 0 }: OptionalSectionProps) {
 
   const frameOf = (): HTMLElement | null => section.current?.closest<HTMLElement>('[role="dialog"]') ?? null;
   const fieldsOf = (): HTMLElement[] => [...(region.current?.querySelectorAll<HTMLElement>('[data-testid="optional-field"]') ?? [])];
-  /** The window's own motion, when it has a frame that centres: not on a phone, where the sheet grows from its bottom edge. */
+  /** The window's own motion, when it has a frame pinned at its top (F38): not on a phone, where the sheet grows from its bottom edge. */
   const framed = (): { frame: HTMLElement; parts: ReturnType<typeof frameParts> } | null => {
     const frame = frameOf();
     return frame && !phone ? { frame, parts: frameParts(frame) } : null;

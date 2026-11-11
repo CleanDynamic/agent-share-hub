@@ -206,3 +206,20 @@ describe("CA-24 P1 · Sources loading more", () => {
     expect(screen.getByText("Loading more sessions")).toBeTruthy();
   });
 });
+
+describe("F51, F52, F53: every row ends the same way", () => {
+  it("F51: one trailing slot on every row: + to add, a tick named In this build, a file's menu", () => {
+    panel({ onRemoveFile: vi.fn() } as Partial<SourcesPanelProps>);
+    const sources = document.body;
+    const trails = within(sources).getAllByTestId("source-trail");
+    expect(new Set(trails.map((trail) => trail.style.width))).toEqual(new Set(["30px"]));
+    expect(within(sources).getAllByRole("img", { name: "In this build" }).length).toBeGreaterThan(0);
+    expect(within(sources).queryByText("In this draft")).toBeNull();
+  });
+
+  it("F53: a nested prompt shows its number and the start of its words", () => {
+    panel();
+    fireEvent.click(screen.getByRole("button", { name: "Open session 1" }));
+    expect(screen.getByText("Step 1")).toBeTruthy();
+  });
+});

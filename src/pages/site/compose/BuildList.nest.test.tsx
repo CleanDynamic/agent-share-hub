@@ -199,14 +199,15 @@ describe("Details (CA-04 P2)", () => {
 });
 
 describe("CA-12 P12: what came back", () => {
-  it("shows a prompt's reply as one line starting with Response, and Open prompt reads all of it (CA-15 P10)", () => {
+  it("shows a prompt's reply as one line starting with Response; the prompt window reads all of it (CA-15 P10, F17)", () => {
     const steps = buildSteps([node("p1", "prompt", { text: "Plan the page.", reply: "First line\nSecond line\nThird line" }, 1)]);
     const props = list(steps, { onOpenPrompt: vi.fn() });
     const reply = screen.getByTestId("prompt-reply");
     expect(reply.textContent).toBe("Response First line Second line Third line");
     expect(reply.style.whiteSpace).toBe("nowrap");
     expect(within(reply).queryByRole("button", { name: "Read all" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Open prompt" })).toBeTruthy();
+    // F17: the window opens from Edit in the right panel or a double click, not a footer link.
+    expect(screen.queryByRole("button", { name: "Open prompt" })).toBeNull();
     void props;
   });
 

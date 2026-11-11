@@ -29,39 +29,41 @@ import { linesOf } from "@/lib/build/tileExtras";
 
 import { ChoiceGrid } from "./ChoiceGrid";
 import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from "./ModalFrame";
-import { Block, BlockHead, FieldArea, FieldInput, Hint, Inline, MODAL_WIDTH, NARROW, Row } from "./modalRecipes";
+import { Block, BlockHead, FieldArea, FieldInput, Hint, Inline, LabelText, MODAL_WIDTH, NARROW } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 
 export const DATASET_DIALOG_COPY = {
   title: "Add a dataset",
   subtitle: "Data for training, evaluation or retrieval",
   name: "Name",
-  namePlaceholder: "Customer support tickets",
+  /* F31: every example says it is one, and a number field has no example: its unit stands beside it. */
+  namePlaceholder: "e.g. Customer support tickets",
   description: "Description",
-  descriptionPlaceholder: "1,200 anonymised support tickets from 2025, labelled by team",
+  descriptionPlaceholder: "e.g. 1,200 anonymised support tickets from 2025, labelled by team",
   use: "Use",
   format: "Format",
-  formatPlaceholder: "CSV",
+  formatPlaceholder: "e.g. CSV",
   records: "Record count",
-  recordsPlaceholder: "1200",
+  recordsUnit: "records",
   columns: "Columns",
   columnsLine: "One per line",
-  columnsPlaceholder: "ticket_id\nsubject\nteam",
+  columnsPlaceholder: "e.g. ticket_id\nsubject\nteam",
   source: "Source",
-  sourcePlaceholder: "Exported from the helpdesk",
+  sourcePlaceholder: "e.g. Exported from the helpdesk",
   sample: "Sample records",
   sampleLine: "5 max, one per line",
-  samplePlaceholder: "4821, Charged twice, billing",
+  samplePlaceholder: "e.g. 4821, Charged twice, billing",
   licence: "Licence",
-  licencePlaceholder: "CC BY 4.0",
+  licencePlaceholder: "e.g. CC BY 4.0",
   chunking: "Chunking",
   chunkingLine: "Split method and embedding model",
   strategy: "Chunk strategy",
-  strategyPlaceholder: "By paragraph",
+  strategyPlaceholder: "e.g. By paragraph",
   size: "Chunk size",
   overlap: "Chunk overlap",
+  chunkUnit: "tokens",
   embedding: "Embedding model",
-  embeddingPlaceholder: "text-embedding-3-small",
+  embeddingPlaceholder: "e.g. text-embedding-3-small",
   add: "Add",
   cancel: "Cancel",
 } as const;
@@ -139,9 +141,11 @@ function Form({ onAdd, onCancel, phone, current, edit }: Pick<AddDatasetDialogPr
 
   return (
     <ModalForm phone={phone} onSubmit={submit} onCancel={onCancel} missing={missing} blocked={Boolean(tooMany)} alert={tooMany} addLabel={edit ? MODAL_COPY.save : undefined}>
-      <Row id={`${uid}-name`} label={DATASET_DIALOG_COPY.name} noRule phone={phone}>
+      {/* F33: the label above the field, as every other field here. */}
+      <Block noRule>
+        <BlockHead label={DATASET_DIALOG_COPY.name} htmlFor={`${uid}-name`} />
         <FieldInput phone={phone} id={`${uid}-name`} value={name} maxLength={TITLE_MAX} placeholder={DATASET_DIALOG_COPY.namePlaceholder} onChange={(event) => setName(event.target.value)} />
-      </Row>
+      </Block>
 
       <Block>
         <BlockHead label={DATASET_DIALOG_COPY.description} htmlFor={`${uid}-description`} count={`${description.length} / ${DATASET_DESCRIPTION_MAX}`} />
@@ -159,7 +163,10 @@ function Form({ onAdd, onCancel, phone, current, edit }: Pick<AddDatasetDialogPr
         </OptionalField>
 
         <OptionalField name={DATASET_DIALOG_COPY.records} summary={summaryOf(records ? Number(records).toLocaleString("en-GB") : null)} phone={phone}>
-          <FieldInput phone={phone} mono width={NARROW.value} aria-label={DATASET_DIALOG_COPY.records} inputMode="numeric" maxLength={12} value={records} placeholder={DATASET_DIALOG_COPY.recordsPlaceholder} onChange={(event) => setRecords(digits(event.target.value))} />
+          <Inline>
+            <FieldInput phone={phone} mono width={NARROW.value} aria-label={DATASET_DIALOG_COPY.records} inputMode="numeric" maxLength={12} value={records} onChange={(event) => setRecords(digits(event.target.value))} />
+            <LabelText>{DATASET_DIALOG_COPY.recordsUnit}</LabelText>
+          </Inline>
         </OptionalField>
 
         <OptionalField name={DATASET_DIALOG_COPY.columns} description={DATASET_DIALOG_COPY.columnsLine} summary={summaryOf(columnLines)} phone={phone}>
@@ -181,12 +188,21 @@ function Form({ onAdd, onCancel, phone, current, edit }: Pick<AddDatasetDialogPr
 
         {retrieval ? (
           <OptionalField name={DATASET_DIALOG_COPY.chunking} description={DATASET_DIALOG_COPY.chunkingLine} summary={summaryOf(strategy, size ? `size ${size}` : null, overlap ? `overlap ${overlap}` : null, embedding)} phone={phone}>
-            <FieldInput phone={phone} aria-label={DATASET_DIALOG_COPY.strategy} maxLength={DATASET_CHUNK_STRATEGY_MAX} value={strategy} placeholder={DATASET_DIALOG_COPY.strategyPlaceholder} onChange={(event) => setStrategy(event.target.value)} />
+            <BlockHead label={DATASET_DIALOG_COPY.strategy} htmlFor={`${uid}-strategy`} />
+            <FieldInput phone={phone} id={`${uid}-strategy`} maxLength={DATASET_CHUNK_STRATEGY_MAX} value={strategy} placeholder={DATASET_DIALOG_COPY.strategyPlaceholder} onChange={(event) => setStrategy(event.target.value)} />
+            {/* F31, F33: each number has its label above and its unit beside it, and no example. */}
+            <BlockHead label={DATASET_DIALOG_COPY.size} htmlFor={`${uid}-size`} />
             <Inline>
-              <FieldInput phone={phone} mono width={NARROW.date} aria-label={DATASET_DIALOG_COPY.size} inputMode="numeric" maxLength={7} value={size} placeholder="512" onChange={(event) => setSize(digits(event.target.value))} />
-              <FieldInput phone={phone} mono width={NARROW.date} aria-label={DATASET_DIALOG_COPY.overlap} inputMode="numeric" maxLength={7} value={overlap} placeholder="64" onChange={(event) => setOverlap(digits(event.target.value))} />
+              <FieldInput phone={phone} mono width={NARROW.date} id={`${uid}-size`} inputMode="numeric" maxLength={7} value={size} onChange={(event) => setSize(digits(event.target.value))} />
+              <LabelText>{DATASET_DIALOG_COPY.chunkUnit}</LabelText>
             </Inline>
-            <FieldInput phone={phone} aria-label={DATASET_DIALOG_COPY.embedding} maxLength={DATASET_EMBEDDING_MAX} value={embedding} placeholder={DATASET_DIALOG_COPY.embeddingPlaceholder} onChange={(event) => setEmbedding(event.target.value)} />
+            <BlockHead label={DATASET_DIALOG_COPY.overlap} htmlFor={`${uid}-overlap`} />
+            <Inline>
+              <FieldInput phone={phone} mono width={NARROW.date} id={`${uid}-overlap`} inputMode="numeric" maxLength={7} value={overlap} onChange={(event) => setOverlap(digits(event.target.value))} />
+              <LabelText>{DATASET_DIALOG_COPY.chunkUnit}</LabelText>
+            </Inline>
+            <BlockHead label={DATASET_DIALOG_COPY.embedding} htmlFor={`${uid}-embedding`} />
+            <FieldInput phone={phone} id={`${uid}-embedding`} maxLength={DATASET_EMBEDDING_MAX} value={embedding} placeholder={DATASET_DIALOG_COPY.embeddingPlaceholder} onChange={(event) => setEmbedding(event.target.value)} />
           </OptionalField>
         ) : null}
       </OptionalSection>

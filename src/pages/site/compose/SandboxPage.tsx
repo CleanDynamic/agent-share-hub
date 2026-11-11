@@ -252,6 +252,9 @@ const fallbackMeta = (group: Parameters<typeof groupKind>[0] & { tool?: string |
   groupKind(group ?? { sessionId: key }) === "typed" ? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() } : { tool: null, date: "" };
 const latestOf = (a: Date | null | undefined, b: Date | null | undefined): Date | null => (a && b ? (a.getTime() >= b.getTime() ? a : b) : (a ?? b ?? null));
 
+/** F16: the notice after a prompt is added from the composer. */
+const COMPOSER_ADDED_COPY = { prompt: "Prompt added" } as const;
+
 /** The page, with its one announcer around it (CA-26 P4). */
 export function SandboxPage() {
   return (
@@ -2582,7 +2585,8 @@ function SandboxPageBody() {
     return track(sentence, async () => prompts.move(id, by)).then(() => setSessionSaid(said));
   };
   const stepOf = {
-    prompt: asStep(ADDED.prompt, onAddPrompt),
+    // F16: a prompt added from the composer says "Prompt added" with Undo (the history's notice, six seconds).
+    prompt: (input: Parameters<typeof onAddPrompt>[0]) => track(ADDED.prompt, () => onAddPrompt(input), { notice: COMPOSER_ADDED_COPY.prompt }),
     agent: asStep(ADDED.agent, onAddAgentOrTeam),
     decision: asStep(ADDED.decision, onAddDecision),
     manual: asStep(ADDED.manual, onAddManual),
