@@ -2,7 +2,7 @@
    from and linking to this view filtered by it. The board is `design/reference/vision/dusk/builds-classification.html`.
 
    Like Maps, the board has no filter column, so this draws the whole page: the head with its sentence and the view
-   switch, one row (Filters with the active count, "Facets shown n of 15"), the key to the small labels (BF-04: its own line, directly above the grid) and the grid. Filters
+   switch, one row (Filters with the active count, "Facets shown n of 15"), the Table's chip row (BF-04), the key to the small labels (BF-04: its own line, directly above the grid) and the grid. Filters
    opens the Table's own panel, given as `panel`. Facets shown opens a checklist of the 15 facets; the choice is the
    page's (`facets`, `onFacets`), and the last facet cannot be unchecked.
 
@@ -25,7 +25,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { BuildsControl, BuildsHead, UpdatingStatus, ViewSwitch, ellipsis, text, useCardColumns } from "./BuildsFrame";
-import { RowLamp } from "./BuildsTableView";
+import { ActiveFilters, RowLamp, type TableChip } from "./BuildsTableView";
 import { ALL_FACETS, type ClassCardView, type ClassRowView, type ClassValueView } from "./classificationModel";
 
 export interface BuildsClassificationViewProps {
@@ -35,6 +35,10 @@ export interface BuildsClassificationViewProps {
   /** "18 builds". */
   buildsLabel: string;
   activeCount: number;
+  /** BF-04 (X3): every active filter, drawn as the Table draws them, under the toolbar. */
+  chips: readonly TableChip[];
+  onRemoveChip: (key: string) => void;
+  onClearAll: () => void;
   /** The Table's filter panel, drawn under the row when Filters is open. */
   panel?: ReactNode;
   /** The facets shown, and a change to them. */
@@ -169,7 +173,7 @@ function FacetChooser({ facets, onFacets }: Pick<BuildsClassificationViewProps, 
 const CLASSIFICATION_PARTS = [{ text: "Classification of each build" }, { text: "select a value to filter by it" }];
 
 export default function BuildsClassificationView(props: BuildsClassificationViewProps) {
-  const { view, hrefFor, onViewIntent, buildsLabel, activeCount, panel, facets, onFacets, cards, onMore, loadingMore, empty, updating } = props;
+  const { view, hrefFor, onViewIntent, buildsLabel, activeCount, chips, onRemoveChip, onClearAll, panel, facets, onFacets, cards, onMore, loadingMore, empty, updating } = props;
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [facetsOpen, setFacetsOpen] = useState(false);
   const columns = useCardColumns();
@@ -188,6 +192,8 @@ export default function BuildsClassificationView(props: BuildsClassificationView
         </BuildsControl>
         <UpdatingStatus updating={updating} />
       </div>
+
+      <ActiveFilters chips={chips} onRemove={onRemoveChip} onClearAll={onClearAll} />
 
       {filtersOpen && panel ? <div style={{ marginTop: 24, maxWidth: 256 }}>{panel}</div> : null}
       {facetsOpen ? (

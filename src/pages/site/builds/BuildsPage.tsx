@@ -359,6 +359,7 @@ export default function BuildsPage() {
             activeCount={activeCount(params)}
             chips={activeChips(params)}
             onRemoveChip={(key) => go(withoutChip(params, key))}
+            onClearAll={() => go(clearedFilters(params))}
             panel={<BuildsFiltersView {...filters} collapsed={false} />}
             direction={direction}
             onDirection={setDirection}
@@ -389,6 +390,9 @@ export default function BuildsPage() {
             onViewIntent={prefetchView}
             buildsLabel={buildsLabel}
             activeCount={activeCount(params)}
+            chips={activeChips(params)}
+            onRemoveChip={(key) => go(withoutChip(params, key))}
+            onClearAll={() => go(clearedFilters(params))}
             panel={<BuildsFiltersView {...filters} collapsed={false} />}
             facets={shownFacets}
             onFacets={onFacets}

@@ -260,7 +260,8 @@ function LensRow({ lenses, lens, onLens, sort, columnsLabel, columnsMenu, updati
 
 /* ── the active filters ── */
 
-function ActiveFilters({ chips, onRemove, onClearAll }: { chips: readonly TableChip[]; onRemove: (key: string) => void; onClearAll: () => void }) {
+/** BF-04 (X3): the one chip row, drawn by the Table, Maps and Classification alike. */
+export function ActiveFilters({ chips, onRemove, onClearAll }: { chips: readonly TableChip[]; onRemove: (key: string) => void; onClearAll: () => void }) {
   if (chips.length === 0) return null;
   return (
     <div role="group" aria-label="Active filters" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 16 }}>

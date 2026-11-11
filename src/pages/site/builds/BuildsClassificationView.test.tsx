@@ -146,6 +146,30 @@ describe("BF-04 an unclassified card", () => {
   });
 });
 
+describe("BF-04 the chip row", () => {
+  it("active filters are drawn as chips with Clear all under the toolbar", () => {
+    const onClearAll = vi.fn();
+    draw((p) => ({ ...p, onClearAll }));
+    const row = screen.getByRole("group", { name: "Active filters" });
+    expect(within(row).getAllByRole("button", { name: /^Remove filter/ })).toHaveLength(6);
+    expect(screen.getByRole("button", { name: /Facets shown/ }).parentElement?.nextElementSibling).toBe(row);
+    fireEvent.click(within(row).getByRole("button", { name: "Clear all" }));
+    expect(onClearAll).toHaveBeenCalledTimes(1);
+  });
+
+  it("removing a chip calls onRemoveChip with its key", () => {
+    const onRemoveChip = vi.fn();
+    draw((p) => ({ ...p, onRemoveChip }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove filter Field" }));
+    expect(onRemoveChip).toHaveBeenCalledWith("Field");
+  });
+
+  it("no active filter draws no chip row", () => {
+    draw((p) => ({ ...p, chips: [], activeCount: 0 }));
+    expect(screen.queryByRole("group", { name: "Active filters" })).toBeNull();
+  });
+});
+
 describe("Facets shown", () => {
   const open = () => fireEvent.click(screen.getByRole("button", { name: /Facets shown/ }));
 

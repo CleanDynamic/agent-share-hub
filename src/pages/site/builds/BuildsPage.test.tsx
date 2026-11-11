@@ -582,6 +582,22 @@ describe("BF-02 one Clear all", () => {
     await waitFor(() => expect(address).toBe("/builds?lens=rebuilt&sort=newest"));
   });
 
+  for (const view of ["maps", "classification"] as const) {
+    it(`Classification and Maps: Clear all keeps the view and drops every filter (${view})`, async () => {
+      renderAt(`/builds?view=${view}&lens=rebuilt&f=field%3Alaw&open=1&within=30&sort=newest&q=notes&set=${SET}`);
+      const chips = await screen.findByRole("group", { name: "Active filters" });
+      fireEvent.click(within(chips).getByRole("button", { name: "Clear all" }));
+      await waitFor(() => expect(address).toBe(`/builds?view=${view}&lens=rebuilt&sort=newest`));
+    });
+
+    it(`removing a chip in ${view} drops only that filter and keeps the view`, async () => {
+      renderAt(`/builds?view=${view}&f=field%3Alaw&open=1`);
+      const chips = await screen.findByRole("group", { name: "Active filters" });
+      fireEvent.click(within(chips).getByRole("button", { name: /^Remove filter Still open/ }));
+      await waitFor(() => expect(address).toBe(`/builds?view=${view}&f=field%3Alaw`));
+    });
+  }
+
   for (const view of [undefined, "maps", "classification"] as const) {
     const on = view ? `view=${view}&` : "";
     const where = view ?? "table";

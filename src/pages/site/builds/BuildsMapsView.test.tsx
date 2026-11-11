@@ -87,10 +87,20 @@ describe("the page", () => {
     expect(skipped(cards()[0])).toBeUndefined();
   });
 
-  it("draws the first four filters and says how many more", () => {
-    draw();
-    expect(screen.getAllByRole("button", { name: /^Remove filter/ })).toHaveLength(4);
-    expect(screen.getByText("+ 2 more")).toBeTruthy();
+  it("six active filters draw six chips and Clear all, and no \"+ n more\"", () => {
+    const onClearAll = vi.fn();
+    draw({ onClearAll });
+    const row = screen.getByRole("group", { name: "Active filters" });
+    expect(within(row).getAllByRole("button", { name: /^Remove filter/ })).toHaveLength(6);
+    expect(screen.queryByText(/\+ \d+ more/)).toBeNull();
+    fireEvent.click(within(row).getByRole("button", { name: "Clear all" }));
+    expect(onClearAll).toHaveBeenCalledTimes(1);
+  });
+
+  it("no active filter draws no chip row", () => {
+    draw({ chips: [], activeCount: 0 });
+    expect(screen.queryByRole("group", { name: "Active filters" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Clear all" })).toBeNull();
   });
 
   it("reports a removed filter and a chosen direction", () => {
