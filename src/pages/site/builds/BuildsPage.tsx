@@ -215,6 +215,9 @@ export default function BuildsPage() {
   const openIds = orderedSections.filter((section) => section.kind !== "closed").map((section) => section.id);
   const rangesLive = countsLive && Boolean(spread.data);
   const count = total ?? builds.length;
+  /* BF-01 P2: with a filter on, the head says how many of the published builds match; the meta line then drops "Of n published". */
+  const filtered = activeCount(params) > 0 && Boolean(stats.data);
+  const buildsLabel = filtered && stats.data ? `${count} of ${stats.data.inGallery} ${stats.data.inGallery === 1 ? "build" : "builds"}` : `${count} ${count === 1 ? "build" : "builds"}`;
 
   /* ── saved filter sets (SV-24 P1) ── */
 
@@ -364,7 +367,7 @@ export default function BuildsPage() {
             view={view}
             hrefFor={hrefFor}
             onViewIntent={prefetchView}
-            buildsLabel={`${count} ${count === 1 ? "build" : "builds"}`}
+            buildsLabel={buildsLabel}
             activeCount={activeCount(params)}
             panel={<BuildsFiltersView {...filters} collapsed={false} />}
             facets={shownFacets}
@@ -385,8 +388,8 @@ export default function BuildsPage() {
 
   const page = (
     <BuildsView
-      figure={`${count} ${count === 1 ? "build" : "builds"}`}
-      parts={stats.data ? statParts({ published: stats.data.inGallery, runsThisWeek: stats.data.reproducedThisWeek, freshPct: stats.data.freshPct }) : [{ text: " " }]}
+      figure={buildsLabel}
+      parts={stats.data ? statParts({ published: stats.data.inGallery, runsThisWeek: stats.data.reproducedThisWeek, freshPct: stats.data.freshPct, filtered }) : [{ text: " " }]}
       view={view}
       hrefFor={hrefFor}
       onViewIntent={prefetchView}

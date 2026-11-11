@@ -4,6 +4,7 @@
 // read is one sentence and Retry, and is reported. The data layer is stubbed at src/lib/build/gallery.
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Children, isValidElement, type CSSProperties, type ReactElement, type ReactNode } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -48,8 +49,11 @@ vi.mock("@/lib/build/gallery", async (importOriginal) => ({
 }));
 
 import { emptyClassification } from "@/lib/classify/facets";
+import { AUTONOMY_VALUES } from "@/lib/classify/taxonomy";
+import { t } from "@/lib/theme/tokens";
 
 import BuildsPage from "./BuildsPage";
+import { statParts } from "./BuildsView";
 
 const build = (n: number) => ({
   id: `b${n}`, slug: `b${n}`, title: `Build ${n}`, shape: "app", madeWith: ["Claude Code"], reproductionCount: n, lastConfirmedAt: null, lastConfirmedModel: null,
@@ -480,3 +484,34 @@ describe("SV-24 P2: the reader's layout", () => {
   });
 });
 
+
+describe("BF-01 the head line", () => {
+  it('with no filter the head reads "2 builds" and its meta line starts "Of 2 published"', async () => {
+    getGalleryStats.mockResolvedValue({ inGallery: 2, reproducedThisWeek: 0, weeklyGoal: null, freshPct: 50 });
+    renderAt("/builds");
+    const head = await screen.findByRole("heading", { level: 1, name: /^2 builds/ });
+    await waitFor(() => expect(head.textContent).toMatch(/^2 buildsOf 2 published/));
+  });
+
+  it('with a filter on, the head reads "1 of 2 builds" and the meta line has no "Of 2 published" part', async () => {
+    listBuildsTable.mockResolvedValue({ builds: [build(1)], total: 1 });
+    getGalleryStats.mockResolvedValue({ inGallery: 2, reproducedThisWeek: 0, weeklyGoal: null, freshPct: 50 });
+    renderAt(`/builds?f=${encodeURIComponent(`autonomy:${AUTONOMY_VALUES[0].id}`)}`);
+    const head = await screen.findByRole("heading", { level: 1, name: /^1 of 2 builds/ });
+    await waitFor(() => expect(head.textContent).toContain("this week"));
+    expect(head.textContent).not.toContain("published");
+  });
+
+  it("the reproductions clause is in the evidence colour only when the number is above zero", async () => {
+    /* jsdom drops a `color: var(...)` from inline style, so the colour is read from the element statParts returns. */
+    const runsSpan = (runsThisWeek: number) => {
+      const fragment = statParts({ published: 2, runsThisWeek, freshPct: 50 })[1].text as ReactElement<{ children: ReactNode }>;
+      return Children.toArray(fragment.props.children).find((child) => isValidElement(child) && (child.props as Record<string, unknown>)["data-testid"] === "stat-runs") as ReactElement<{ style: CSSProperties }>;
+    };
+    expect(runsSpan(0).props.style.color).toBe(t.text2);
+    expect(runsSpan(3).props.style.color).toBe(t.evidence);
+    getGalleryStats.mockResolvedValue({ inGallery: 2, reproducedThisWeek: 0, weeklyGoal: null, freshPct: 50 });
+    renderAt("/builds");
+    expect((await screen.findByTestId("stat-runs")).textContent).toBe("0 reproductions");
+  });
+});

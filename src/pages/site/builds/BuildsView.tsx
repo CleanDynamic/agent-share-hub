@@ -17,16 +17,18 @@ export interface BuildsStats {
   published: number;
   runsThisWeek: number;
   freshPct: number;
+  /** BF-01 P2: a filter is on, so the figure already says "n of published" and the first part is left out. */
+  filtered?: boolean;
 }
 
-/** "Of 120 published · 214 reproductions this week · 78% confirmed in the last 120 days", the runs in `--evidence`. */
-export function statParts({ published, runsThisWeek, freshPct }: BuildsStats): FigurePart[] {
+/** "Of 120 published · 214 reproductions this week · 78% confirmed in the last 120 days", the runs in `--evidence` when above zero. */
+export function statParts({ published, runsThisWeek, freshPct, filtered }: BuildsStats): FigurePart[] {
   return [
-    { text: `Of ${published} published` },
+    ...(filtered ? [] : [{ text: `Of ${published} published` }]),
     {
       text: (
         <>
-          <span style={{ color: t.evidence }}>{`${runsThisWeek} ${runsThisWeek === 1 ? "reproduction" : "reproductions"}`}</span> this week
+          <span data-testid="stat-runs" style={{ color: runsThisWeek > 0 ? t.evidence : t.text2 }}>{`${runsThisWeek} ${runsThisWeek === 1 ? "reproduction" : "reproductions"}`}</span> this week
         </>
       ),
     },
