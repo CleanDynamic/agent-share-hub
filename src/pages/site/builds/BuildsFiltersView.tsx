@@ -305,9 +305,9 @@ function WordFilter({ section, label, onToggle }: { section: WordSection; label?
         right={<span style={small(t.label)}>{label ?? section.value}</span>}
       />
       {section.options.length === 0 ? (
-        <p style={{ ...text(12, 400, t.label), margin: "10px 0 0" }}>No builds have a value yet.</p>
+        <p style={{ ...text(12, 400, t.label), margin: "8px 0 0" }}>No builds have a value yet.</p>
       ) : (
-        <div role="group" aria-label={`${section.name} values`} style={{ marginTop: 10 }}>
+        <div role="group" aria-label={`${section.name} values`} style={{ marginTop: 8 }}>
           {section.options.map((option) => (
             <OptionRow key={option.key} option={option} onToggle={() => onToggle(option.key)} />
           ))}
