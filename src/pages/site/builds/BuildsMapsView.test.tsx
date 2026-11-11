@@ -221,3 +221,25 @@ describe("BF-01 the lamp", () => {
     expect(within(cards()[1]).getByRole("img", { name: /Confirmed in the last|Stale/ })).toBeTruthy();
   });
 });
+
+/* ── BF-02 P1 (C2) ── */
+
+describe("the updating state", () => {
+  it("updating: the card grid is aria-busy, at half opacity, and a status says Updating", () => {
+    draw({ updating: true });
+    const grid = screen.getByTestId("builds-cards");
+    expect(grid.getAttribute("aria-busy")).toBe("true");
+    expect(grid.style.opacity).toBe("0.5");
+    expect(grid.style.transition).toBe("");
+    expect(screen.getByRole("status").textContent).toBe("Updating");
+    expect((screen.getByRole("heading", { level: 1 }) as HTMLElement).style.opacity).toBe("0.5");
+  });
+
+  it("not updating: aria-busy is false, opacity is not set, and the status is present and empty", () => {
+    draw({ updating: false });
+    const grid = screen.getByTestId("builds-cards");
+    expect(grid.getAttribute("aria-busy")).toBe("false");
+    expect(grid.style.opacity).toBe("");
+    expect(screen.getByRole("status").textContent).toBe("");
+  });
+});

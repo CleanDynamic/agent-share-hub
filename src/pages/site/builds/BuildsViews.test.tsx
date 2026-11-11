@@ -175,6 +175,39 @@ describe("the Table", () => {
   });
 });
 
+/* ── BF-02 P1 (C2) ── */
+
+describe("the updating state", () => {
+  function table(updating: boolean) {
+    return render(
+      <MemoryRouter>
+        <BuildsTableView {...visionBuildsTableProps().table!} updating={updating} />
+      </MemoryRouter>,
+    );
+  }
+
+  it("updating: the table region is aria-busy, its body is at half opacity, and a status says Updating", () => {
+    const { container } = table(true);
+    expect(screen.getByRole("region", { name: "Builds table" }).getAttribute("aria-busy")).toBe("true");
+    const body = container.querySelector("tbody") as HTMLElement;
+    expect(body.style.opacity).toBe("0.5");
+    expect(body.style.transition).toBe("");
+    expect(screen.getByRole("status").textContent).toBe("Updating");
+  });
+
+  it("not updating: aria-busy is false, opacity is not set, and the status is present and empty", () => {
+    const { container } = table(false);
+    expect(screen.getByRole("region", { name: "Builds table" }).getAttribute("aria-busy")).toBe("false");
+    expect((container.querySelector("tbody") as HTMLElement).style.opacity).toBe("");
+    expect(screen.getByRole("status").textContent).toBe("");
+  });
+
+  it("updating: the head's number is drawn at half opacity, as old as the rows", () => {
+    draw((p) => ({ ...p, updating: true }));
+    expect((screen.getByRole("heading", { level: 1 }) as HTMLElement).style.opacity).toBe("0.5");
+  });
+});
+
 /* ── SV-24 P2 ── */
 
 describe("dragging a filter by its grip", () => {

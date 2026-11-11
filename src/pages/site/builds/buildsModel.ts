@@ -310,6 +310,11 @@ export function toggled(params: GalleryParams, sectionId: string, key: string): 
 /** How many values the filters hold, for "n active". */
 export const activeCount = (params: GalleryParams): number => activeChips(params).filter((chip) => chip.key !== "q").length;
 
+/** BF-02 (X2): what Clear all leaves: the lens, the view and the sort. Every filter, the query and the open set go. */
+export function clearedFilters(params: GalleryParams): GalleryParams {
+  return { lens: params.lens, madeFor: [], madeWith: [], query: null, view: params.view, sort: params.sort };
+}
+
 /** SV-12: the Maps view draws this many builds at a time, and reads their Maps in one request. */
 export const MAPS_PAGE = 24;
 

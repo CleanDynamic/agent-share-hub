@@ -148,10 +148,10 @@ export function ViewSwitch({ view, hrefFor, onIntent }: { view: GalleryViewMode;
 }
 
 /** "n builds", its meta line, and the view switch on the right. */
-export function BuildsHead({ figure, parts, switcher }: { figure: ReactNode; parts: readonly FigurePart[]; switcher: ReactNode }) {
+export function BuildsHead({ figure, parts, switcher, updating }: { figure: ReactNode; parts: readonly FigurePart[]; switcher: ReactNode; updating?: boolean }) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
-      <h1 style={{ margin: 0, fontSize: "inherit", fontWeight: "inherit" }}>
+      <h1 style={{ margin: 0, fontSize: "inherit", fontWeight: "inherit", ...(updating ? { opacity: 0.5 } : null) }}>
         <PageFigure figure={figure} parts={parts} />
       </h1>
       {switcher}
@@ -161,11 +161,11 @@ export function BuildsHead({ figure, parts, switcher }: { figure: ReactNode; par
 
 /** SV-12: the Maps page's head: "Builds" 20/500, the sentence in `--text2`, and the view switch. (The board differs from
     the Table's head here, and the board wins.) */
-export function MapsHead({ switcher }: { switcher: ReactNode }) {
+export function MapsHead({ switcher, updating }: { switcher: ReactNode; updating?: boolean }) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 16 }}>
       <div>
-        <h1 style={{ margin: 0, ...text(20, 500, t.text), lineHeight: 1.2, letterSpacing: "-0.015em" }}>Builds</h1>
+        <h1 style={{ margin: 0, ...text(20, 500, t.text), lineHeight: 1.2, letterSpacing: "-0.015em", ...(updating ? { opacity: 0.5 } : null) }}>Builds</h1>
         <p style={{ margin: "4px 0 0", ...text(13, 400, t.text2) }}>Each build's Map: one box per session, one line where a tile in one session uses something from another.</p>
       </div>
       {switcher}
@@ -174,15 +174,24 @@ export function MapsHead({ switcher }: { switcher: ReactNode }) {
 }
 
 /** SV-13: the Classification page's head: "n builds" 20/500, its sentence in `--text2`, and the view switch. */
-export function ClassificationHead({ figure, switcher }: { figure: string; switcher: ReactNode }) {
+export function ClassificationHead({ figure, switcher, updating }: { figure: string; switcher: ReactNode; updating?: boolean }) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
       <div>
-        <h1 style={{ margin: 0, ...text(20, 500, t.text), lineHeight: 1.2, letterSpacing: "-0.015em" }}>{figure}</h1>
+        <h1 style={{ margin: 0, ...text(20, 500, t.text), lineHeight: 1.2, letterSpacing: "-0.015em", ...(updating ? { opacity: 0.5 } : null) }}>{figure}</h1>
         <p style={{ margin: "4px 0 0", ...text(13, 400, t.text2) }}>Classification of each build · select a value to filter by it</p>
       </div>
       {switcher}
     </div>
+  );
+}
+
+/** BF-02 (C2): always mounted, so a screen reader hears "Updating" come and go. */
+export function UpdatingStatus({ updating }: { updating?: boolean }) {
+  return (
+    <span role="status" style={{ ...text(12, 400, t.label), alignSelf: "center" }}>
+      {updating ? "Updating" : ""}
+    </span>
   );
 }
 

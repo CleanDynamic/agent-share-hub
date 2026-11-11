@@ -35,7 +35,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 
-import { BuildsControl, BuildsTextButton, TABLE_ROW, ellipsis, text } from "./BuildsFrame";
+import { BuildsControl, BuildsTextButton, TABLE_ROW, UpdatingStatus, ellipsis, text } from "./BuildsFrame";
 
 /* ── props ── */
 
@@ -183,6 +183,8 @@ export interface BuildsTableViewProps {
   loadingMore?: boolean;
   /** One line shown instead of the table when the filters match nothing. */
   empty?: ReactNode;
+  /** BF-02 (C2): the rows are the last address's, kept until the new page lands. */
+  updating?: boolean;
 }
 
 /* ── the lens row ── */
@@ -237,11 +239,12 @@ function ColumnsChooser({ label, menu }: { label: string; menu: ColumnsMenu }) {
   );
 }
 
-function LensRow({ lenses, lens, onLens, sort, columnsLabel, columnsMenu }: Pick<BuildsTableViewProps, "lenses" | "lens" | "onLens" | "sort" | "columnsLabel" | "columnsMenu">) {
+function LensRow({ lenses, lens, onLens, sort, columnsLabel, columnsMenu, updating }: Pick<BuildsTableViewProps, "lenses" | "lens" | "onLens" | "sort" | "columnsLabel" | "columnsMenu" | "updating">) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12, borderBottom: `1px solid ${t.hairline}` }}>
       <TextTabs tabs={lenses} value={lens} onChange={onLens} label="Lens" rule={false} />
       <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
+        <UpdatingStatus updating={updating} />
         <SortMenu sort={sort} />
         {columnsLabel && columnsMenu ? (
           <ColumnsChooser label={columnsLabel} menu={columnsMenu} />
@@ -533,15 +536,15 @@ function Footer({ columns, footer }: { columns: readonly ColumnId[]; footer: Tab
 /* ── the table ── */
 
 export function BuildsTableView(props: BuildsTableViewProps) {
-  const { lenses, lens, onLens, sort, columnsLabel, columnsMenu, chips, onRemoveChip, onClearAll, columns, rows, sortColumn, sortableBy, footer, onMore, loadingMore, empty } = props;
+  const { lenses, lens, onLens, sort, columnsLabel, columnsMenu, chips, onRemoveChip, onClearAll, columns, rows, sortColumn, sortableBy, footer, onMore, loadingMore, empty, updating } = props;
   return (
     <div data-testid="builds-table">
-      <LensRow lenses={lenses} lens={lens} onLens={onLens} sort={sort} columnsLabel={columnsLabel} columnsMenu={columnsMenu} />
+      <LensRow lenses={lenses} lens={lens} onLens={onLens} sort={sort} columnsLabel={columnsLabel} columnsMenu={columnsMenu} updating={updating} />
       <ActiveFilters chips={chips} onRemove={onRemoveChip} onClearAll={onClearAll} />
       {rows.length === 0 && empty ? (
         <div style={{ marginTop: 20 }}>{empty}</div>
       ) : (
-        <div role="region" aria-label="Builds table" tabIndex={0} style={{ marginTop: 20, overflowX: "auto" }}>
+        <div role="region" aria-label="Builds table" aria-busy={updating === true} tabIndex={0} style={{ marginTop: 20, overflowX: "auto" }}>
           <table style={{ width: "100%", minWidth: 1000, borderCollapse: "collapse", ...text(12.5, 400, t.text) }}>
             <thead>
               <tr>
@@ -557,7 +560,7 @@ export function BuildsTableView(props: BuildsTableViewProps) {
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody style={updating ? { opacity: 0.5 } : undefined}>
               {rows.map((row, index) => (
                 <Row key={row.id} row={row} columns={columns} index={index} />
               ))}
