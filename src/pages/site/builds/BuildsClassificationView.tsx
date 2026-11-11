@@ -2,7 +2,7 @@
    from and linking to this view filtered by it. The board is `design/reference/vision/dusk/builds-classification.html`.
 
    Like Maps, the board has no filter column, so this draws the whole page: the head with its sentence and the view
-   switch, one row (Filters with the active count, "Facets shown n of 15", and the key on the right) and the grid. Filters
+   switch, one row (Filters with the active count, "Facets shown n of 15"), the key to the small labels (BF-04: its own line, directly above the grid) and the grid. Filters
    opens the Table's own panel, given as `panel`. Facets shown opens a checklist of the 15 facets; the choice is the
    page's (`facets`, `onFacets`), and the last facet cannot be unchecked.
 
@@ -180,10 +180,6 @@ export default function BuildsClassificationView(props: BuildsClassificationView
           <span style={{ color: t.label }}>Facets shown</span>
           <span>{`${facets.length} of ${ALL_FACETS.length}`}</span>
         </BuildsControl>
-        <span style={{ flex: 1 }} />
-        <span style={text(12, 400, t.label)}>
-          Under each facet: <span style={{ color: t.text2 }}>from n tiles</span>, <span style={{ color: t.text2 }}>stated</span> by the maker, or <span style={{ color: t.text2 }}>corrected</span> by the maker
-        </span>
         <UpdatingStatus updating={updating} />
       </div>
 
@@ -194,10 +190,15 @@ export default function BuildsClassificationView(props: BuildsClassificationView
         </div>
       ) : null}
 
+      <p data-testid="classification-key" style={{ ...text(12, 400, t.label), margin: "16px 0 0" }}>
+        Under each facet: <span style={{ color: t.text2 }}>from n tiles</span>, <span style={{ color: t.text2 }}>derived</span> when the tiles were not kept, <span style={{ color: t.text2 }}>stated</span> by the maker, or{" "}
+        <span style={{ color: t.text2 }}>corrected</span> by the maker
+      </p>
+
       {cards.length === 0 && empty ? (
-        <div style={{ marginTop: 32 }}>{empty}</div>
+        <div style={{ marginTop: 16 }}>{empty}</div>
       ) : (
-        <div data-testid="builds-cards" aria-busy={updating === true} style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, alignItems: "start", marginTop: 32, paddingBottom: onMore ? 24 : 64, ...(updating ? { opacity: 0.5 } : null) }}>
+        <div data-testid="builds-cards" aria-busy={updating === true} style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, alignItems: "start", marginTop: 16, paddingBottom: onMore ? 24 : 64, ...(updating ? { opacity: 0.5 } : null) }}>
           {cards.map((card, index) => (
             <ClassificationCard key={card.id} card={card} index={index} />
           ))}

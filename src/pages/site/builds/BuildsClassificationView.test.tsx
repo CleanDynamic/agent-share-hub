@@ -106,6 +106,29 @@ describe("BF-04 values that can be pressed", () => {
   });
 });
 
+describe("BF-04 the key", () => {
+  it("names all four sources: from n tiles, derived, stated, corrected", () => {
+    draw();
+    const key = screen.getByTestId("classification-key");
+    for (const word of ["from n tiles", "derived", "stated", "corrected"]) expect(within(key).getByText(word)).toBeTruthy();
+  });
+
+  it("is the element directly before the card grid", () => {
+    draw();
+    expect(screen.getByTestId("classification-key").nextElementSibling).toBe(screen.getByTestId("builds-cards"));
+  });
+
+  it("is directly before the empty state when there are no cards", () => {
+    draw((p) => ({ ...p, cards: [], empty: <p>Nothing here</p> }));
+    expect(screen.getByTestId("classification-key").nextElementSibling?.textContent).toBe("Nothing here");
+  });
+
+  it("is not in the toolbar beside Filters", () => {
+    draw();
+    expect(screen.getByRole("button", { name: /Facets shown/ }).parentElement?.contains(screen.getByTestId("classification-key"))).toBe(false);
+  });
+});
+
 describe("Facets shown", () => {
   const open = () => fireEvent.click(screen.getByRole("button", { name: /Facets shown/ }));
 
