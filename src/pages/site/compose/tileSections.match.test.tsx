@@ -74,6 +74,8 @@ describe("a tile's window and its Details share their sections (CA-18)", () => {
     cleanup();
     const base = sandboxListProps("bakery");
     render(<FullPromptWindow steps={base.steps} openId="p3" mode="maker" onClose={vi.fn()} onTitle={vi.fn()} onReply={vi.fn()} onExtras={vi.fn()} onText={vi.fn()} details={() => ({ ...view, id: "p3" })} handlers={handlers() as never} />);
+    // F36: the model is drawn once, in the window's own Model section, so Model settings holds nothing here and Optional starts closed.
+    openOptional();
     // CA-28: a session's extras are the window's own Optional fields, one each, in the window's words.
     const inWindow = drawn.map((label) => SESSION_EXTRAS_AS[label] ?? label);
     const at = positions(screen.getByRole("dialog"), inWindow);

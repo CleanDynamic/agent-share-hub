@@ -12,6 +12,7 @@ import { MADE_FILE_NAME_MAX, TITLE_MAX, type RuntimePatch } from "@/lib/build/gr
 import type { DetailsHandlers, DetailsView } from "./DetailsPanel";
 import type { GoesRow, InputOption, MakesRow, UseRow } from "./detailsModel";
 import { Block, BlockHead, FieldInput, FileButton, FileLine, Hint, Inline, LabelText, PANEL_LIST, PickerFieldButton, RecipeButton, Row, SegmentedField, Tag, TagList, TextLink } from "./modalRecipes";
+import { modelLabel } from "@/lib/models/registry";
 import { harnessTool, modelMenu } from "@/lib/tools/modelRules";
 
 import { ModelPicker } from "./ModelPicker";
@@ -198,16 +199,20 @@ export function MakesBlock({ id, rows: initial, phone, handlers }: { id: string;
 }
 
 /** Goes into: where its work goes. Derived from the build, so it is read here, never changed. */
-export function GoesBlock({ rows, label = EDIT_COPY.goesInto }: { rows: readonly GoesRow[]; label?: string }) {
-  if (rows.length === 0) return null;
+export function GoesBlock({ rows, label = EDIT_COPY.goesInto, empty }: { rows: readonly GoesRow[]; label?: string; /** F36: said in the block's place when nothing uses it; absent, the block is left out. */ empty?: string }) {
+  if (rows.length === 0 && !empty) return null;
   return (
     <Block label={label} testId="edit-goes-into">
-      <BlockHead label={label} count={EDIT_COPY.count(rows.length, "tile", "tiles")} />
-      <TagList label={label}>
-        {rows.map((row) => (
-          <Tag key={row.id}>{row.label}</Tag>
-        ))}
-      </TagList>
+      <BlockHead label={label} count={rows.length > 0 ? EDIT_COPY.count(rows.length, "tile", "tiles") : undefined} />
+      {rows.length === 0 ? (
+        <Hint testId="edit-goes-into-empty">{empty}</Hint>
+      ) : (
+        <TagList label={label}>
+          {rows.map((row) => (
+            <Tag key={row.id}>{row.label}</Tag>
+          ))}
+        </TagList>
+      )}
     </Block>
   );
 }
@@ -418,24 +423,41 @@ export type PromptEditHandlers = Pick<DetailsHandlers, "onModel" | "onModelRun" 
 export const PROMPT_EDIT_COPY = {
   model: "Model",
   noSession: "No session to read the model from",
+  /** F37: a prompt inside a session, with no model of its own, reads the session's. */
+  fromSession: (model: string) => `From session: ${model}`,
+  /** F36: Used by, when nothing uses the prompt yet. */
+  notUsed: "Not used by any step yet",
 } as const;
 
+/** F37: the session a prompt sits in: its tool and model, read from the build's groups. Absent: the prompt has no session. */
+export interface PromptSession {
+  tool: string | null;
+  model: string | null;
+}
+
 /**
- * What the prompt window adds for a prompt the maker can change (CA-18 P2): Model (a prompt typed here names its own), How it
- * was run (a model on the maker's own computer, or with open weights), Uses, Makes and Goes into. The window saves as it goes, so
- * these call their handlers as they are used, as Details did.
+ * What the prompt window adds for a prompt the maker can change (CA-18 P2): Model (a prompt typed here names its own; one in a
+ * session reads the session's until it names one, F37), How it was run (a model on the maker's own computer, or with open
+ * weights), Uses, Makes and Goes into. The window saves as it goes, so these call their handlers as they are used, as Details did.
  */
-export function PromptEdits({ view, handlers, phone }: { view: Extract<DetailsView, { kind: "prompt" }>; handlers: PromptEditHandlers; phone: boolean }) {
+export function PromptEdits({ view, handlers, phone, session }: { view: Extract<DetailsView, { kind: "prompt" }>; handlers: PromptEditHandlers; phone: boolean; session?: PromptSession | null }) {
   const [openModel, setOpenModel] = useState(0);
+  const tool = view.tool ?? session?.tool ?? null;
+  const fromSession = !view.model && session?.model ? session.model : null;
+  const asksModel = modelMenu(harnessTool(tool)).state !== "hidden" && modelMenu(harnessTool(tool)).state !== "none";
   return (
     <>
-      {view.typed ? (
-        <Row id={`${view.id}-model`} label={PROMPT_EDIT_COPY.model} group phone={phone}>
-          <ModelPicker tool={view.tool ?? null} value={view.model} onChange={(model) => handlers.onModel(view.id, model)} phone={phone} name="Model" openSignal={openModel} anyWithoutTool field />
-          {!view.model && modelMenu(harnessTool(view.tool)).state !== "hidden" && modelMenu(harnessTool(view.tool)).state !== "none" ? <Hint>{PROMPT_EDIT_COPY.noSession}</Hint> : null}
-          <PairNote tool={view.tool} model={view.model} phone={phone} onChange={() => setOpenModel((n) => n + 1)} onRemove={() => handlers.onModel(view.id, null)} />
-        </Row>
-      ) : null}
+      {/* F33: the label above the control, as every field in the window; F36: the one Model section. */}
+      <Block label={PROMPT_EDIT_COPY.model}>
+        <BlockHead label={PROMPT_EDIT_COPY.model} />
+        <ModelPicker tool={tool} value={view.model} onChange={(model) => handlers.onModel(view.id, model)} phone={phone} name="Model" openSignal={openModel} anyWithoutTool field />
+        {fromSession ? (
+          <Hint testId="model-from-session">{PROMPT_EDIT_COPY.fromSession(modelLabel(fromSession))}</Hint>
+        ) : !view.model && !session && asksModel ? (
+          <Hint>{PROMPT_EDIT_COPY.noSession}</Hint>
+        ) : null}
+        <PairNote tool={tool} model={view.model} phone={phone} onChange={() => setOpenModel((n) => n + 1)} onRemove={() => handlers.onModel(view.id, null)} />
+      </Block>
       {view.modelRun && handlers.onModelRun ? (
         <Block label="How it was run" testId="edit-model-run">
           <ModelRunFields id={view.id} run={view.modelRun.run} hosts={view.modelRun.hosts} phone={phone} onChange={(run) => handlers.onModelRun?.(view.id, run)} />
@@ -443,7 +465,7 @@ export function PromptEdits({ view, handlers, phone }: { view: Extract<DetailsVi
       ) : null}
       <UsesBlock id={view.id} rows={view.uses} options={view.options} phone={phone} handlers={handlers} />
       <MakesBlock id={view.id} rows={view.makes} phone={phone} handlers={handlers} />
-      <GoesBlock rows={view.goesInto} />
+      <GoesBlock rows={view.goesInto} empty={PROMPT_EDIT_COPY.notUsed} />
     </>
   );
 }

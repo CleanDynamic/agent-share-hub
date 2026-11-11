@@ -319,3 +319,41 @@ describe("Add › GitHub repository", () => {
     expect(props.onAdd).toHaveBeenLastCalledWith(expect.objectContaining({ pin: { kind: "tag", value: "v1.4.2" } }));
   });
 });
+
+describe("F31, F33 and F34 · Add a dataset's form conventions", () => {
+  const renderDataset = () => render(<AddDatasetDialog open onOpenChange={vi.fn()} onAdd={vi.fn()} />);
+  it("F31: every example says e.g., placeholders sit in --label, and the number fields have a unit instead", () => {
+    renderDataset();
+    for (const name of ["Name", "Description", "Format", "Source", "Licence"]) {
+      if (["Format", "Source", "Licence"].includes(name)) openRow(name);
+      const field = screen.getByLabelText(name) as HTMLInputElement;
+      expect(field.placeholder, name).toMatch(/^e\.g\. /);
+      expect(field.className).toContain("placeholder:text-[color:var(--label)]");
+    }
+    openRow("Record count");
+    const records = screen.getByLabelText("Record count") as HTMLInputElement;
+    expect(records.placeholder).toBe("");
+    expect(records.parentElement?.textContent).toBe("records");
+  });
+
+  it("F33: the Name label sits above its field, as Description's does", () => {
+    renderDataset();
+    const name = screen.getByLabelText("Name");
+    const label = screen.getByText("Name", { selector: "label" });
+    expect(label.compareDocumentPosition(name) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(label.parentElement?.parentElement).toBe(name.parentElement);
+    expect(screen.queryByTestId("field-row")).toBeNull();
+  });
+
+  it("F34: each Use option is a toggle with aria-pressed, and the chosen one is filled, not a well", () => {
+    renderDataset();
+    const option = screen.getByRole("button", { name: "Evaluation" });
+    expect(option.getAttribute("aria-pressed")).toBe("false");
+    expect(option.style.boxShadow).toBe("");
+    fireEvent.click(option);
+    expect(option.getAttribute("aria-pressed")).toBe("true");
+    // The selected recipe (its fill, edge and ring), never the well a text field sits in. jsdom keeps the ring, not a var() fill.
+    expect(option.style.boxShadow).toBe("var(--selected-ring)");
+    expect((screen.getByLabelText("Name") as HTMLInputElement).style.boxShadow).toBe("var(--well-shadow)");
+  });
+});

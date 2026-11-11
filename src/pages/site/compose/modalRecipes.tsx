@@ -423,12 +423,19 @@ export interface FieldInputProps extends Omit<InputHTMLAttributes<HTMLInputEleme
   ref?: Ref<HTMLInputElement>;
 }
 
+/**
+ * F31: a placeholder is an example, never a value: it is drawn in `--label`, a step dimmer than the `--text` the maker types, in
+ * both themes. `::placeholder` cannot be set inline, so the one generated utility that spends the token does it (as ui/input.tsx).
+ */
+export const PLACEHOLDER_CLASS = "placeholder:text-[color:var(--label)]";
+
 /** A field: 32 tall, the well, radius 8 (44 and 16px on a phone). */
 export function FieldInput({ phone, mono = false, width, onFocus, onBlur, type: kind = "text", ...rest }: FieldInputProps) {
   const focus = useFocused<HTMLInputElement>(onFocus, onBlur);
   return (
     <input
       type={kind}
+      className={PLACEHOLDER_CLASS}
       {...rest}
       data-focused={focus.focused || undefined}
       onFocus={focus.onFocus}
@@ -451,6 +458,7 @@ export function FieldArea({ phone, rows, mono = false, onFocus, onBlur, ...rest 
   return (
     <textarea
       rows={rows}
+      className={PLACEHOLDER_CLASS}
       {...rest}
       data-focused={focus.focused || undefined}
       onFocus={focus.onFocus}

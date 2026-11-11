@@ -212,8 +212,8 @@ describe("each modal as its board (CA-15b P2)", () => {
     mount(<FullPromptWindow steps={buildSteps([node])} openId="p1" mode="maker" onTitle={() => {}} onReply={() => {}} onExtras={() => {}} onText={() => {}} onClose={() => {}} />);
     const window = screen.getByTestId("full-prompt-window");
     expect(within(window).getByRole("button", { name: "Rename prompt" })).toBeTruthy();
-    expect(within(window).getByRole("button", { name: /^Close/ })).toBeTruthy();
-    expect(inOrder(window.textContent ?? "", ["Prompt", "3 words", "Copy prompt", "Response", "0 of 4,000 characters", "Optional", "2 fields", "Esc Close · ← → Previous or next prompt", "Done"])).toEqual([]);
+    expect(within(window).getByRole("button", { name: "Close" })).toBeTruthy();
+    expect(inOrder(window.textContent ?? "", ["Prompt", "3 words", "Copy prompt", "Response", "0 of 4,000 characters", "Optional", "2 fields", "Esc Close · ← → Previous or next prompt", "Close"])).toEqual([]);
     expect(optionalRows()).toEqual([
       ["Model settings", ""],
       ["Variables", "Format: {company name}"],
