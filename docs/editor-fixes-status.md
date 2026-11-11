@@ -56,15 +56,15 @@ Note: 21 distinct names are listed for 31 failed tests. Names that repeat across
 | F17 | 6 | not started | | |
 | F18 | 12 | not started | | |
 | F19 | 6 | not started | | |
-| F20 | 3 | not started | | |
-| F21 | 3 | not started | | |
-| F22 | 3 | not started | | |
-| F23 | 3 | not started | | |
-| F24 | 3 | not started | | |
-| F25 | 3 | not started | | |
-| F26 | 3 | not started | | |
-| F27 | 3 | not started | | |
-| F28 | 3 | not started | | |
+| F20 | 3 | done | src/pages/site/compose/OptionalRows.tsx, modalRecipes.tsx (`OPTIONAL.lineRow`, `OPTIONAL.suggestedChip`), SandboxCard.test.tsx, ux03.p5.test.tsx | An unset row's line reads its description ("Not set") and, beside it, `optional-suggested-chip` ("Suggested: <label>", dashed `t.segOnBorder` edge, `t.text2`); the value in `t.text` only once filled. Test `SandboxCard.test.tsx > F20 to F28 > F20: an unset row reads Not set with a dashed Suggested chip beside it`. Seen on /dev/kit/pages/classification in dusk, exhibition and mobile. |
+| F21 | 3 | done | src/pages/site/compose/OptionalRows.tsx | `line` and `value` no longer carry `!open` (OptionalRows.tsx, `const line = filledText && filled ? summary : description`). Test `F21: an open row's header still says its value`. |
+| F22 | 3 | done | src/pages/site/compose/OptionalRows.tsx (`undo` prop, `AcceptButton` takes an action), SandboxCard.tsx (`undo` state by row name, `undoOf`, `openOne`) | Accept stores the row's entries, sets the value, the row stays closed; `optional-undo` ("Undo", name "Undo <row>") stands where Accept stood until the row opens (`openOne` clears it) or the window closes (CardBody unmounts). Test `F22: Accept sets the value and leaves the row closed; Undo stands where Accept stood and puts the row back`. Seen on the dev page: accepted → "Government and public sector › Policy", Undo → "Not set" with the chip back. |
+| F23 | 3 | done | src/pages/site/compose/SandboxCard.tsx, OptionalRows.tsx | "From the build" no longer passed in the count slot of Tools and stack or From the build (both now `suggestionCount` / the question count or undefined). The per-row `paddingRight: inset + ACCEPT_ROOM` (the differing right padding, on any row with an offer, the Task row among them) is gone: a fixed `ACTION_ROOM` spacer sits between the count and the chevron, so every row is label, value, count, chevron with one padding. Test `F23: every row ends the same way` (one distinct `padding` across all row heads). |
+| F24 | 3 | done | src/pages/site/compose/SandboxCard.tsx | `suggestionCount` returns `undefined` at 0. Test `names the rows in the board's order` now expects `SettingNot set`. |
+| F25 | 3 | done | src/pages/site/compose/ModalFrame.tsx (`MODAL_TOP = 48`) | Desktop `Dialog.Content`: `top: 48`, `transform: translateX(-50%)`, `maxHeight: calc(100dvh - 96px)`; header and footer are `flexShrink: 0`, the body scrolls (`card-body` overflowY auto). Phone sheet untouched. Test `F25: the window is pinned 48 from the top and its body scrolls inside`. Dev page, dusk and exhibition at 1440×900: opened Field, Task, Setting one after another; dialog top 48 and close button at (951, 69) throughout. |
+| F26 | 3 | done | src/pages/site/compose/SandboxCard.tsx | `attempted` state, set in `onSave` when the title is empty; `FieldRequiredLine` drawn only when `attempted && !titleOk`. "Required" beside the label and the footer line unchanged. Because Save is disabled with no title (existing test), Enter in the Title field now calls `onSave`, which is the one way to attempt a save with an empty title — see the question in the Prompt 3 report. Test `F26: Required beside the label and in the footer stay; the line under the field waits for a save attempt`. |
+| F27 | 3 | done | src/pages/site/compose/ReadFromBuild.tsx (`onOpenStack`, `READ_COPY.openStack`), SandboxCard.tsx | DERIVED_FACETS includes `stack`, so the From the build list repeated the Tools and stack values. That row now draws the facet name and a text button "Edit in Tools and stack" that opens the row (`openOne("Tools and stack")`). Test `F27: Tools and stack is one row; From the build offers a button that opens it instead of its values`. |
+| F28 | 3 | done | src/pages/site/compose/OptionalRows.tsx (`open`/`onOpenChange`), SandboxCard.tsx (`openRow`) | `OptionalRow` takes `open` and `onOpenChange`; given, its own state is unused and `forceOpen` still opens it. CardBody holds `openRow` (the one name) and passes it to every row of the Optional section. Build details' inner rows and the prompt window's rows keep their own state. Tests `F28: one row open at a time: opening Task closes Field` and `F28: a row passed forceOpen stays open when another opens`. |
 | F29 | 4 | not started | | |
 | F30 | 4 | not started | | |
 | F31 | 4 | not started | | |

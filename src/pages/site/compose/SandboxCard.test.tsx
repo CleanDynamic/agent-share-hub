@@ -135,10 +135,10 @@ describe("Classification: the sheet", () => {
     const names = ["Summary", "Field", "Task", "Setting", "Tools and stack", "Data handled", "Age suitability", "From the build", "Build details"];
     names.forEach((name, index) => expect(rows[index].startsWith(name), `${name} is row ${index + 1}`).toBe(true));
     expect(rows[0]).toContain("Finds the right policy.");
-    // UX-03 P5: a closed row with suggestions offers its first one (and Accept, beside it) where it said "Not set" and the count.
-    expect(rows[1]).toMatch(/^Field\S/);
-    expect(rows[1]).not.toMatch(/Not set|suggestions?$/);
-    expect(rows[3]).toMatch(/Not set0 suggestions$/);
+    // F20: a closed row with suggestions and no value reads Not set, then its first suggestion as a chip, then the count (F23).
+    expect(rows[1]).toMatch(/^FieldNot setSuggested: .+\d suggestions?$/);
+    // F24: a count of 0 shows nothing.
+    expect(rows[3]).toBe("SettingNot set");
     expect(rows[5]).toBe("Data handledNot set");
     expect(rows[6]).toBe("Age suitabilityNot set");
     expect(rows[7]).toMatch(/Web app/);
@@ -208,6 +208,121 @@ describe("Classification: the sheet", () => {
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
     expect(onTitle).toHaveBeenCalledWith("Policy finder");
     expect(onDescription).toHaveBeenCalledWith("Finds it fast.");
+  });
+});
+
+describe("F20 to F28 · the Optional rows of the Classification", () => {
+  it("F20: an unset row reads Not set with a dashed Suggested chip beside it, and no solid value", async () => {
+    live();
+    mount();
+    await screen.findByTestId("sandbox-card");
+    const field = row("Field").closest("[data-testid='optional-field']") as HTMLElement;
+    expect(within(field).getByTestId("optional-line").textContent).toBe("Not set");
+    const chip = within(field).getByTestId("optional-suggested-chip");
+    expect(chip.textContent).toMatch(/^Suggested: \S/);
+    expect(chip.style.borderStyle).toBe("dashed");
+    expect(within(field).queryByTestId("optional-value")).toBeNull();
+  });
+
+  it("F21: an open row's header still says its value", async () => {
+    live();
+    mount();
+    await screen.findByTestId("sandbox-card");
+    fireEvent.click(row("Summary"));
+    expect(row("Summary").getAttribute("aria-expanded")).toBe("true");
+    expect(row("Summary").textContent).toContain("Finds the right policy.");
+  });
+
+  it("F22: Accept sets the value and leaves the row closed; Undo stands where Accept stood and puts the row back", async () => {
+    live();
+    mount();
+    await screen.findByTestId("sandbox-card");
+    const box = () => row("Field").closest("[data-testid='optional-field']") as HTMLElement;
+    const first = within(box()).getByTestId("optional-suggested-chip").textContent?.replace(/^Suggested: /, "") ?? "";
+    fireEvent.click(within(box()).getByRole("button", { name: `Accept ${first} as Field` }));
+    expect(row("Field").getAttribute("aria-expanded")).toBe("false");
+    expect(within(box()).getByTestId("optional-line").textContent).toContain(first);
+    expect(within(box()).queryByTestId("optional-suggested-chip")).toBeNull();
+    const undo = within(box()).getByRole("button", { name: "Undo Field" });
+    expect(undo.textContent).toBe("Undo");
+    expect(undo.getAttribute("data-testid")).toBe("optional-undo");
+    fireEvent.click(undo);
+    expect(within(box()).getByTestId("optional-line").textContent).toBe("Not set");
+    expect(within(box()).getByTestId("optional-suggested-chip")).toBeTruthy();
+    expect(within(box()).queryByRole("button", { name: "Undo Field" })).toBeNull();
+    // Undo goes once the row is opened.
+    fireEvent.click(within(box()).getByRole("button", { name: `Accept ${first} as Field` }));
+    fireEvent.click(row("Field"));
+    expect(within(box()).queryByRole("button", { name: "Undo Field" })).toBeNull();
+    fireEvent.click(row("Field"));
+    expect(within(box()).queryByRole("button", { name: "Undo Field" })).toBeNull();
+  });
+
+  it("F23: every row ends the same way: the count slot never says From the build, and every row has the same padding", async () => {
+    live();
+    mount();
+    await screen.findByTestId("sandbox-card");
+    const heads = within(card()).getAllByRole("button").filter((button) => button.hasAttribute("aria-expanded"));
+    const paddings = new Set(heads.map((head) => head.style.padding));
+    expect(paddings.size).toBe(1);
+    for (const head of heads) expect(within(head).queryByTestId("optional-row-count")?.textContent ?? "").not.toBe("From the build");
+  });
+
+  it("F25: the window is pinned 48 from the top and its body scrolls inside", async () => {
+    live();
+    mount();
+    const sheet = await screen.findByTestId("sandbox-card");
+    expect(sheet.style.top).toBe("48px");
+    expect(sheet.style.transform).toBe("translateX(-50%)");
+    expect(sheet.style.maxHeight).toBe("calc(100dvh - 96px)");
+    expect(screen.getByTestId("card-body").style.overflowY).toBe("auto");
+  });
+
+  it("F26: Required beside the label and in the footer stay; the line under the field waits for a save attempt", async () => {
+    live();
+    mount();
+    await screen.findByTestId("sandbox-card");
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "" } });
+    expect(screen.getByText("Required")).toBeTruthy();
+    expect(screen.getByTestId("card-required").textContent).toBe("Required: a title");
+    expect(screen.queryByTestId("field-required")).toBeNull();
+    fireEvent.keyDown(screen.getByLabelText("Title"), { key: "Enter" });
+    expect(screen.getByTestId("field-required")).toBeTruthy();
+  });
+
+  it("F27: Tools and stack is one row; From the build offers a button that opens it instead of its values", async () => {
+    live();
+    mount();
+    await screen.findByTestId("sandbox-card");
+    fireEvent.click(row("From the build"));
+    const stack = card().querySelector("[data-facet='stack']") as HTMLElement;
+    expect(within(stack).getByRole("button", { name: "Edit in Tools and stack" })).toBeTruthy();
+    expect(within(stack).queryByText("Not stated")).toBeNull();
+    fireEvent.click(within(stack).getByRole("button", { name: "Edit in Tools and stack" }));
+    expect(row("Tools and stack").getAttribute("aria-expanded")).toBe("true");
+    expect(row("From the build").getAttribute("aria-expanded")).toBe("false");
+    expect(within(card()).getAllByText("Tools and stack").length).toBeGreaterThan(0);
+  });
+
+  it("F28: one row open at a time: opening Task closes Field", async () => {
+    live();
+    mount();
+    await screen.findByTestId("sandbox-card");
+    fireEvent.click(row("Field"));
+    expect(row("Field").getAttribute("aria-expanded")).toBe("true");
+    fireEvent.click(row("Task"));
+    expect(row("Task").getAttribute("aria-expanded")).toBe("true");
+    expect(row("Field").getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("F28: a row passed forceOpen stays open when another opens", async () => {
+    live();
+    mount({ field: "summary" });
+    await screen.findByTestId("sandbox-card");
+    await waitFor(() => expect(row("Summary").getAttribute("aria-expanded")).toBe("true"));
+    fireEvent.click(row("Field"));
+    expect(row("Field").getAttribute("aria-expanded")).toBe("true");
+    expect(row("Summary").getAttribute("aria-expanded")).toBe("true");
   });
 });
 

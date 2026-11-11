@@ -107,8 +107,10 @@ describe("UX-03 P5: accept a suggestion in one action", () => {
     await screen.findByTestId("sandbox-card");
     const field = rowBox("Field");
     expect(row("Field").getAttribute("aria-expanded")).toBe("false");
-    const first = within(field).getByTestId("optional-suggestion").textContent ?? "";
+    // F20: the suggestion is a chip beside Not set, never the look of a value.
+    const first = within(field).getByTestId("optional-suggested-chip").textContent?.replace(/^Suggested: /, "") ?? "";
     expect(first).not.toBe("");
+    expect(within(field).getByTestId("optional-line").textContent).toBe("Not set");
     expect(within(field).getByRole("button", { name: `Accept ${first} as Field` }).textContent).toBe("Accept");
     // Opened, the row's picker offers that same suggestion first.
     fireEvent.click(row("Field"));
@@ -122,7 +124,7 @@ describe("UX-03 P5: accept a suggestion in one action", () => {
     updateBuild.mockResolvedValue({});
     mount();
     await screen.findByTestId("sandbox-card");
-    const first = within(rowBox("Field")).getByTestId("optional-suggestion").textContent ?? "";
+    const first = within(rowBox("Field")).getByTestId("optional-suggested-chip").textContent?.replace(/^Suggested: /, "") ?? "";
     fireEvent.click(within(rowBox("Field")).getByRole("button", { name: `Accept ${first} as Field` }));
     expect(row("Field").getAttribute("aria-expanded")).toBe("false");
     expect(row("Field").textContent).toContain(first);
