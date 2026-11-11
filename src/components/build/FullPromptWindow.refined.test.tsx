@@ -95,7 +95,8 @@ describe("the refined window as the board draws it", () => {
     expect(dialog.style.width).toBe("640px");
     expect(dialog.style.borderRadius).toBe("12px");
     expect(dialog.style.overflow).toBe("hidden");
-    expect(dialog.style.maxHeight).toBe("calc(100dvh - 80px)");
+    // F38: pinned at 48 from the top, with the same room under it.
+    expect(dialog.style.maxHeight).toBe("calc(100dvh - 96px)");
   });
 
   it("heads with the title, one grey line, and square 28 Previous, Next and Close", () => {
