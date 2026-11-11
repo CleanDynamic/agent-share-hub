@@ -276,6 +276,8 @@ function SessionRow({
             ...bareButton,
             width: phone ? size.touch : size.control,
             height: phone ? size.touch : size.control,
+            /* F81: 8 clear of the row button before it. */
+            marginLeft: space[2],
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",

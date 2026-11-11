@@ -32,7 +32,7 @@ import { DragHandle, useNestSession, useNestSessionDrag } from "./listNest";
 import { ImportingTag } from "./ImportingPieces";
 import { ToolMark } from "./refinedPieces";
 import { menuItem, menuSurface, text, tnum } from "./refinedStyles";
-import { SESSION_META, SESSION_NAME } from "./tileRecipes";
+import { SESSION_META, SESSION_NAME, textLinkBox } from "./tileRecipes";
 import { NO_APP, type SourceSession } from "./sourcesModel";
 import { OPEN_REQUEST_COPY } from "./openRequestCopy";
 import { OpenRequestWindow as OpenRequestDialog } from "./composerWindows";
@@ -309,7 +309,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
           </TextButton>
         ) : null}
         {session.setupCount && onOpenSetup ? (
-          <TextButton target={phone} style={{ ...text(12, 500, t.text2), flexShrink: 0 }} aria-label={`Setup of session ${session.number}: ${session.setupCount}`} onClick={() => onOpenSetup(session.key)}>
+          <TextButton target={phone} style={{ ...textLinkBox(phone), ...text(12, 500, t.text2), flexShrink: 0 }} aria-label={`Setup of session ${session.number}: ${session.setupCount}`} onClick={() => onOpenSetup(session.key)}>
             {`Setup ${session.setupCount}`}
           </TextButton>
         ) : null}

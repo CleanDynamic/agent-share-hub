@@ -861,7 +861,8 @@ export const OPTIONAL = {
   header: (inset: number): CSSProperties => ({ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: space[3], padding: `${space[3]}px ${inset}px` }),
   heading: { ...STRONG_LABEL, margin: 0 } as CSSProperties,
   count: COUNT,
-  row: { ...rule(t.hairline), minWidth: 0 } as CSSProperties,
+  /** F81: each row's head button sits space[1] inside its rules, so two heads are 8 apart. */
+  row: { ...rule(t.hairline), minWidth: 0, padding: `${space[1]}px 0` } as CSSProperties,
   summary: (inset: number, hovered: boolean, phone: boolean): CSSProperties => ({
     appearance: "none",
     border: 0,
