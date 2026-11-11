@@ -69,7 +69,7 @@ import { LoadingRegion } from "@/components/brand/Skeleton";
 import { LoadingBlocks } from "./LoadingBlocks";
 import { MAP_LOADING_ROWS } from "./loadingBlocks";
 import { ToolMark } from "./refinedPieces";
-import { RecipeButton } from "./modalRecipes";
+import { RecipeButton, iconButtonSide } from "./modalRecipes";
 import { menuItem, menuSurface } from "./refinedStyles";
 import { size } from "@/lib/theme/space";
 
@@ -133,7 +133,7 @@ function MapOptionsMenu({ controls }: { controls: MapControls }) {
   return (
     <Menu.Root modal={false}>
       <Menu.Trigger asChild>
-        <IconButton icon={MoreHorizontal} glyph="more" label={MAP_COPY.options} size={26} />
+        <IconButton style={iconButtonSide()} icon={MoreHorizontal} glyph="more" label={MAP_COPY.options} size={26} />
       </Menu.Trigger>
       <Menu.Portal>
         <MenuContent align="end" sideOffset={4} style={menuSurface(220)}>
@@ -385,7 +385,7 @@ export function SessionMapColumn({ model, direction: wanted, selected, onSelect,
               ]}
             />
           ) : null}
-          <IconButton icon={Maximize2} glyph="fit" label={MAP_COPY.fit} size={26} aria-pressed={fit} onClick={() => setFit((on) => !on)} />
+          <IconButton style={iconButtonSide()} icon={Maximize2} glyph="fit" label={MAP_COPY.fit} size={26} aria-pressed={fit} onClick={() => setFit((on) => !on)} />
           {controls ? <MapOptionsMenu controls={controls} /> : null}
         </div>
       </div>

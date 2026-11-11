@@ -80,7 +80,7 @@ import { PanelBoundary, type PanelName } from "./PanelBoundary";
 import { EmptyBuild, type EmptyBuildProps } from "./EmptyBuild";
 import { scrollBehavior } from "@/lib/theme/motion";
 import { size, space } from "@/lib/theme/space";
-import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT } from "./modalRecipes";
+import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT, iconButtonSide } from "./modalRecipes";
 import { r } from "@/lib/theme/radius";
 
 export type SandboxLens = "list" | "map";
@@ -923,7 +923,7 @@ function BuildActionsMenu({ previewTo }: { previewTo: string | null }) {
   return (
     <Menu.Root modal={false}>
       <Menu.Trigger asChild>
-        <IconButton icon={MoreHorizontal} glyph="more" label={BUILD_ACTIONS.label} size={28} data-testid="build-actions" data-hit="" />
+        <IconButton style={iconButtonSide()} icon={MoreHorizontal} glyph="more" label={BUILD_ACTIONS.label} size={28} data-testid="build-actions" data-hit="" />
       </Menu.Trigger>
       <Menu.Portal>
         <MenuContent align="end" sideOffset={6} style={menuSurface(160)}>
@@ -1011,7 +1011,7 @@ function SourcesFrame({
       {titled || overlay ? (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
           {titled ? <PanelTitle>Sources</PanelTitle> : <span />}
-          {overlay ? <IconButton icon={X} glyph="x" boxed={false} label="Close sources" size={26} onClick={onClose} /> : null}
+          {overlay ? <IconButton style={iconButtonSide()} icon={X} glyph="x" boxed={false} label="Close sources" size={26} onClick={onClose} /> : null}
         </div>
       ) : null}
       {children}

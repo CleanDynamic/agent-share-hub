@@ -82,7 +82,7 @@ import type { RunFacts, SessionExtras } from "@/lib/build/sessionFacts";
 import type { SessionGoal } from "@/lib/build/making";
 import type { SetupLoaded, SetupPlugin } from "@/lib/build/setup";
 import { Swap } from "./buildMotion";
-import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT } from "./modalRecipes";
+import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT, iconButtonSide } from "./modalRecipes";
 
 export interface InputsView {
   /** CA-04 P2, a tile inside another: "Sent with prompt 2", which its eyebrow says in place of its number. */
@@ -616,7 +616,7 @@ function CopyButton({ text: words }: { text: string }) {
   useEffect(() => () => window.clearTimeout(timer.current), []);
   return (
     <>
-      <IconButton
+      <IconButton style={iconButtonSide()}
         icon={Copy}
         label={DETAILS_COPY.copy}
         size={26}

@@ -45,7 +45,7 @@ import { TextButton } from "@/pages/site/compose/composeControls";
 import { EYEBROW, text, tnum } from "@/pages/site/compose/refinedStyles";
 import { size, space } from "@/lib/theme/space";
 import { r } from "@/lib/theme/radius";
-import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT } from "@/pages/site/compose/modalRecipes";
+import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT, iconButtonSide } from "@/pages/site/compose/modalRecipes";
 
 export const PART_WINDOW_COPY = {
   copyCode: "Copy code",
@@ -588,7 +588,7 @@ export function PartWindow(props: PartWindowProps) {
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <Dialog.Title style={{ ...EYEBROW, margin: 0, flexGrow: 1 }}>{eyebrow}</Dialog.Title>
             <Dialog.Close asChild>
-              <IconButton icon={X} glyph="x" label="Close" size={28} />
+              <IconButton style={iconButtonSide(phone)} icon={X} glyph="x" label="Close" size={28} />
             </Dialog.Close>
           </div>
           <h2 ref={heading} tabIndex={-1} style={{ ...text(18, 500, t.text), margin: 0, letterSpacing: "-0.015em", overflowWrap: "anywhere", outline: "none" }}>

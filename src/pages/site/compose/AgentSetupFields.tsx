@@ -45,7 +45,7 @@ import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker"
 import { PickMenu } from "./PickMenu";
 import { chipStyle, text, typedArea } from "./refinedStyles";
 import { ToolPicker } from "./ToolPicker";
-import { FieldInput, Hint, IconSquare, PICKER_ROW, RemovableTag, Row, Tag, TagList, TextLink } from "./modalRecipes";
+import { FieldInput, Hint, IconSquare, PICKER_ROW, RemovableTag, Row, Tag, TagList, TextLink, iconButtonSide } from "./modalRecipes";
 
 export const AGENT_SETUP_COPY = {
   /** SV-27 P1: was Host platform; `payload.harness` is unchanged. */
@@ -269,7 +269,7 @@ export function useAgentSetupFields({ value, onChange, phone, inBuild, openMainM
                       label={AGENT_SETUP_COPY.removeTool(name)}
                       size={26}
                       onClick={() => onChange({ ...value, tools: value.tools.filter((other) => other !== entry) })}
-                      style={{ width: phone ? 44 : 20, height: phone ? 44 : 20, color: t.label }}
+                      style={{ width: phone ? 44 : 20, height: phone ? 44 : 20, color: t.label, ...iconButtonSide(phone) }}
                     />
                   </span>
                 );
@@ -443,7 +443,7 @@ export function useAgentSetupFields({ value, onChange, phone, inBuild, openMainM
                   label={AGENT_SETUP_COPY.removeModel(index + 1)}
                   size={26}
                   onClick={() => onChange({ ...value, models: value.models.filter((_, i) => i !== index) })}
-                  style={{ width: removeSide, height: removeSide, flexShrink: 0 }}
+                  style={{ width: removeSide, height: removeSide, flexShrink: 0, ...iconButtonSide(phone) }}
                 />
               ) : null}
             </div>

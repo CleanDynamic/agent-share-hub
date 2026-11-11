@@ -47,6 +47,7 @@ import {
 } from "./mapRecipes";
 import { ToolMark } from "./refinedPieces";
 import { size } from "@/lib/theme/space";
+import { iconButtonSide } from "./modalRecipes";
 
 export const PANEL_COPY = {
   openInBuild: "Open in the build",
@@ -146,7 +147,7 @@ function SelectedPanel({ model, session, onOpenInBuild, onOpenTile, theme }: { m
           {/* CA-19 P5: a session in a named group says so under its head line. */}
           <MemberLabel to={refTo({ kind: "session", id: session.key })} testId="panel-group-label" />
         </div>
-        {onOpenInBuild ? <IconButton icon={ChevronRight} glyph="chev" label={PANEL_COPY.openInBuild} size={26} onClick={() => onOpenInBuild(session.key)} /> : null}
+        {onOpenInBuild ? <IconButton style={iconButtonSide()} icon={ChevronRight} glyph="chev" label={PANEL_COPY.openInBuild} size={26} onClick={() => onOpenInBuild(session.key)} /> : null}
       </div>
       {uses.length + usedBy.length > 0 ? (
         <div data-testid="panel-sessions" style={PANEL_ROWS}>

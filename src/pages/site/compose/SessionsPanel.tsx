@@ -49,7 +49,7 @@ import { fieldBase } from "./composeFields";
 import { addPromptLabel, MADE_WITH_ENTRY_MAX, promptDragData } from "./composeModel";
 import { PROMPT_DRAG_TYPE } from "./PromptsPanel";
 import { size } from "@/lib/theme/space";
-import { BUTTON_PAD } from "./modalRecipes";
+import { BUTTON_PAD, iconButtonSide } from "./modalRecipes";
 
 /** The desktop header is 64px tall; the panel sticks 24px under it. */
 const STICKY_TOP = 64 + 24;
@@ -280,7 +280,7 @@ function PromptItem({
         <IconButton
           icon={Plus}
           size={phone ? 38 : 30}
-          style={phone ? { width: 44, height: 44 } : undefined}
+          style={{ ...phone ? { width: 44, height: 44 } : undefined, ...iconButtonSide(phone) }}
           label={addPromptLabel(prompt.text)}
           onClick={() => onAdd(sessionId, prompt.ordinal)}
         />

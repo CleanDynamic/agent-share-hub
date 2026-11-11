@@ -23,9 +23,10 @@ import { t } from "@/lib/theme/tokens";
 
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { ModalShell } from "./ModalFrame";
-import { COUNT, MODAL_PAD, ModalInset, RecipeButton, bodyStyle, footerStyle } from "./modalRecipes";
+import { COUNT, MODAL_PAD, ModalInset, RecipeButton, bodyStyle, footerStyle, iconButtonSide } from "./modalRecipes";
 import { menuItem, menuSurface } from "./refinedStyles";
 import { Badge, BlockTitle, ConfirmDialog, DANGER, ELLIPSIS, GAP, GhostIcon, InnerPanel, SortableRows, SquareSwatch, UndoRedo, words } from "./referencePieces";
+import { r } from "@/lib/theme/radius";
 
 export const COLOURS_COPY = {
   title: "Colours",
@@ -104,7 +105,7 @@ function GroupMenu({ group, others, onOpen, onMerge, onDelete, onOpenChange }: {
   return (
     <Menu.Root onOpenChange={onOpenChange} modal={false}>
       <Menu.Trigger asChild>
-        <GhostIcon glyph="more" label={COLOURS_COPY.menu(groupName(group))} size={26} />
+        <GhostIcon glyph="more" label={COLOURS_COPY.menu(groupName(group))} style={{ ...iconButtonSide(), borderRadius: r.control }} />
       </Menu.Trigger>
       <Menu.Portal>
         <MenuContent align="end" sideOffset={4} style={{ ...menuSurface(200), zIndex: 80 }}>

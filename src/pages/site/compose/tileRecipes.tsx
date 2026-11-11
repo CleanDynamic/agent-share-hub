@@ -78,7 +78,7 @@ export interface TileOptionsProps extends Omit<ButtonHTMLAttributes<HTMLButtonEl
 /** The options button: 26 square, transparent, radius 6, the `more` glyph in `--label`; hover the control and `--text`. */
 export function TileOptions({ label, phone = false, style, ...rest }: TileOptionsProps) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
-  const side = phone ? 44 : 26;
+  const side = phone ? size.touch : size.controlSmall;
   return (
     <button
       type="button"
@@ -92,7 +92,7 @@ export function TileOptions({ label, phone = false, style, ...rest }: TileOption
         width: side,
         height: side,
         padding: 0,
-        borderRadius: 6,
+        borderRadius: r.control,
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",

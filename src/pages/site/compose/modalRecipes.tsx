@@ -183,7 +183,7 @@ export interface IconSquareProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
 /** 28 square, radius 7, the control recipe, a 14 glyph in `--text2` (44 on a phone). */
 export function IconSquare({ glyph, label, phone = false, style, ...rest }: IconSquareProps) {
   const { state, handlers } = useInteractive<HTMLButtonElement>({}, { disabled: rest.disabled });
-  const side = phone ? 44 : 28;
+  const side = phone ? size.touch : size.control;
   return (
     <button
       type="button"
@@ -198,7 +198,7 @@ export function IconSquare({ glyph, label, phone = false, style, ...rest }: Icon
         padding: 0,
         flexShrink: 0,
         boxSizing: "border-box",
-        borderRadius: 7,
+        borderRadius: r.control,
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
@@ -743,6 +743,8 @@ export const smallButtonStyle = (phone: boolean, state: { hovered?: boolean; pre
   ...type(12.5, 500, t.text),
 });
 
+/** S6: the shared IconButton (components/brand) stops at 30 square; in the build editor an icon button is 32 square, 44 on a phone. */
+export const iconButtonSide = (phone = false): CSSProperties => ({ width: phone ? size.touch : size.control, height: phone ? size.touch : size.control });
 /** S1 to S4: the shared Button (components/brand) pads 0 16 above 28; in the build editor every button is 32 high and padded 0 space[3]. */
 export const BUTTON_PAD: CSSProperties = { padding: `0 ${space[3]}px` };
 /** S1 to S4: a button the editor drew at 28 is 32 now and keeps its 12.5 label (the shared Button sets 13 above 28). */

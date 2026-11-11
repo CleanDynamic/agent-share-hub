@@ -41,6 +41,7 @@ import { RemoveRow, useReason } from "./removePieces";
 import { useBuildSelectionContext } from "./useBuildSelection";
 import { useCrossfade } from "./buildMotion";
 import { size } from "@/lib/theme/space";
+import { iconButtonSide } from "./modalRecipes";
 
 export const SESSION_HEAD_COPY = {
   titlePlaceholder: "Add a title",
@@ -372,7 +373,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
         }}
       >
         {drop.overForSession ? <span data-testid="session-drop-line" aria-hidden="true" style={{ position: "absolute", left: 0, right: 0, top: -6, height: 2, background: t.text2 }} /> : null}
-        <IconButton
+        <IconButton style={iconButtonSide(phone)}
           icon={ChevronRight}
           glyph={collapsed ? "chev" : "chevd"}
           boxed={false}
@@ -401,7 +402,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
             </span>
             <Menu.Root>
               <Menu.Trigger asChild>
-                <IconButton icon={MoreHorizontal} glyph="more" boxed={false} data-hit="" label={`Session ${session.number} options`} size={30} />
+                <IconButton style={iconButtonSide(phone)} icon={MoreHorizontal} glyph="more" boxed={false} data-hit="" label={`Session ${session.number} options`} size={30} />
               </Menu.Trigger>
               <Menu.Portal>
                 <MenuContent align="end" sideOffset={4} style={menuSurface()}>

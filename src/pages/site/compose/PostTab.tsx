@@ -39,7 +39,7 @@ import { useResolvedTheme } from "@/contexts/ThemeContext";
 import { refLookup, shownName, type RefEntry, type RefGroup } from "@/lib/build/postRefs";
 import { extraLinks, insertLinked, LINK_RULES_COPY, linkOf, linkRanges, linkWords, postAt, rangeRefusal, removeExtraLinks, trimRange, unlinkAt } from "@/lib/build/linkRules";
 import { NOTICE_COPY } from "@/lib/build/referenceHistory";
-import { TextLink } from "./modalRecipes";
+import { TextLink, iconButtonSide } from "./modalRecipes";
 import { DANGER, PAD, words as pieceWords } from "./referencePieces";
 import { TextButton } from "./composeControls";
 import { useHistoryKeys, type LinkEdit, type ReferenceHistoryControls } from "./useReferenceHistory";
@@ -572,7 +572,7 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
                 setRemoveHeld(false);
                 removePost(editor, removeFor);
               }}
-              style={{ position: "absolute", right: 0, top: removeTop }}
+              style={{ position: "absolute", right: 0, top: removeTop, ...iconButtonSide(phone) }}
             />
           ) : null}
           <input

@@ -48,6 +48,8 @@ import { bareButton, ellipsis, menuItem, menuSurface, text, tnum, wellField } fr
 import { libraryName, middleCut, REMINDER_ROWS, REPEAT_COPY, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession, type SourceUnfinishedItem } from "./sourcesModel";
 import { size } from "@/lib/theme/space";
 import { textLinkBox } from "./tileRecipes";
+import { r } from "@/lib/theme/radius";
+import { iconButtonSide } from "./modalRecipes";
 
 /** F63: a library row's name wraps to two lines (PREVIEW) before it is cut, so it may run longer than a file's. */
 const LIBRARY_NAME_MAX = 60;
@@ -261,13 +263,13 @@ function SessionRow({
           {...toggle.handlers}
           style={{
             ...bareButton,
-            width: phone ? 44 : 20,
-            height: phone ? 44 : 32,
+            width: phone ? size.touch : size.control,
+            height: phone ? size.touch : size.control,
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
             color: t.label,
-            borderRadius: 4,
+            borderRadius: r.control,
             cursor: hasPrompts ? "pointer" : "default",
             filter: hasPrompts ? undefined : t.dimFilter,
             flexShrink: 0,
@@ -336,7 +338,7 @@ function FileRow({ file, phone, sessions, selected = false, onOpen, onAddToSessi
       {onRemove ? (
         <Menu.Root>
           <Menu.Trigger asChild>
-            <IconButton icon={MoreHorizontal} glyph="more" boxed={false} data-hit="" label={`${file.name} options`} size={30} />
+            <IconButton style={iconButtonSide(phone)} icon={MoreHorizontal} glyph="more" boxed={false} data-hit="" label={`${file.name} options`} size={30} />
           </Menu.Trigger>
           <Menu.Portal>
             <MenuContent align="end" sideOffset={4} style={menuSurface()}>
@@ -397,7 +399,7 @@ function AddToMenu({ item, parts, phone, onAdd, lastPart }: { item: SourceLibrar
   return (
     <Menu.Root modal={false}>
       <Menu.Trigger asChild>
-        <IconButton icon={Plus} glyph="plus" label="Add session" size={26} disabled={item.adding} />
+        <IconButton style={iconButtonSide(phone)} icon={Plus} glyph="plus" label="Add session" size={26} disabled={item.adding} />
       </Menu.Trigger>
       <Menu.Portal>
         <MenuContent align="end" sideOffset={4} style={menuSurface()}>
@@ -446,7 +448,7 @@ function LibraryRow({ item, phone, onAdd, parts, lastPart }: { item: SourceLibra
         ) : parts && parts.length >= 2 ? (
           <AddToMenu item={item} parts={parts} phone={phone} onAdd={onAdd} lastPart={lastPart} />
         ) : (
-          <IconButton icon={Plus} glyph="plus" label="Add session" size={26} disabled={item.adding} onClick={() => onAdd(item.id)} />
+          <IconButton style={iconButtonSide(phone)} icon={Plus} glyph="plus" label="Add session" size={26} disabled={item.adding} onClick={() => onAdd(item.id)} />
         )}
       </TrailSlot>
     </div>
@@ -463,7 +465,7 @@ function PlusToWords() {
   return (
     <span data-testid="plus-to-words" style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "flex-end", flexShrink: 0 }}>
       <span aria-hidden="true" data-testid="plus-leaving" style={{ position: "absolute", right: 0, opacity: on ? 0 : 1, transition: fade(PLUS_OUT_MS), pointerEvents: "none" }}>
-        <IconButton icon={Plus} glyph="plus" label="Add session" size={26} disabled />
+        <IconButton style={iconButtonSide()} icon={Plus} glyph="plus" label="Add session" size={26} disabled />
       </span>
       {/* F51: the + gives way to the tick a row in the build shows. */}
       <span style={{ display: "inline-flex", opacity: on ? 1 : 0, transition: fade(WORDS_IN_MS) }}>

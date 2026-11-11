@@ -32,6 +32,7 @@ import { RemoveRow, useReason } from "./removePieces";
 import { WORKSTREAM_STARTS } from "./workstreamRecipes";
 import { useCrossfade } from "./buildMotion";
 import { size } from "@/lib/theme/space";
+import { iconButtonSide } from "./modalRecipes";
 
 export const WORKSTREAM_HEAD_COPY = {
   namePlaceholder: "Add a name",
@@ -320,7 +321,7 @@ export function WorkstreamHead(props: WorkstreamHeadProps) {
         {maker ? (
           <Menu.Root>
             <Menu.Trigger asChild>
-              <IconButton icon={MoreHorizontal} glyph="more" boxed={false} data-hit="" label={`${part.label} options`} size={30} />
+              <IconButton style={iconButtonSide(phone)} icon={MoreHorizontal} glyph="more" boxed={false} data-hit="" label={`${part.label} options`} size={30} />
             </Menu.Trigger>
             <Menu.Portal>
               <MenuContent align="end" sideOffset={4} style={menuSurface()}>
@@ -329,7 +330,7 @@ export function WorkstreamHead(props: WorkstreamHeadProps) {
             </Menu.Portal>
           </Menu.Root>
         ) : null}
-        <IconButton
+        <IconButton style={iconButtonSide(phone)}
           icon={ChevronRight}
           glyph={part.collapsed ? "chev" : "chevd"}
           boxed={false}

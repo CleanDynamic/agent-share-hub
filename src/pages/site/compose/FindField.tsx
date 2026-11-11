@@ -18,10 +18,12 @@ import { DM_MONO } from "@/lib/theme/type";
 import { bareButton, text } from "./refinedStyles";
 import type { BuildFind } from "./useBuildFind";
 import { size } from "@/lib/theme/space";
+import { iconButtonSide } from "./modalRecipes";
+import { r } from "@/lib/theme/radius";
 
 /** Find in build: the ghost button before View. */
 export function FindButton({ find }: { find: Pick<BuildFind, "show"> }) {
-  return <IconButton icon={Search} glyph="search" boxed={false} label={FIND_COPY.button} size={28} data-testid="find-button" onClick={find.show} />;
+  return <IconButton style={iconButtonSide()} icon={Search} glyph="search" boxed={false} label={FIND_COPY.button} size={28} data-testid="find-button" onClick={find.show} />;
 }
 
 const FIELD: CSSProperties = {
@@ -50,7 +52,7 @@ function Tiny({ label, color, rotate, children, onClick }: { label: string; colo
       data-hit=""
       onClick={onClick}
       {...handlers}
-      style={{ ...bareButton, width: 20, height: 20, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 4, color: state.hovered ? t.text : color, ...ring(state.focusVisible), ...(rotate ? { transform: "rotate(180deg)" } : null) }}
+      style={{ ...bareButton, width: size.controlSmall, height: size.controlSmall, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: r.control, color: state.hovered ? t.text : color, ...ring(state.focusVisible), ...(rotate ? { transform: "rotate(180deg)" } : null) }}
     >
       {children}
     </button>
