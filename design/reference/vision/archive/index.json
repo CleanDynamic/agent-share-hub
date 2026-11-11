@@ -11,5 +11,44 @@
     "source": "reference/vision/source/archive/OpenWork.dc.html",
     "screen": "screens/vision/openbuilds.png",
     "retired": "UX-09 P10: the OpenBuilds page was redrawn by UX-04 to UX-08; this board no longer describes it, so audit:design no longer compares against it."
+  },
+  {
+    "file": "reference/vision/archive/builds-table.html",
+    "kind": "vision",
+    "theme": "dusk",
+    "page": "builds-table",
+    "width": 1440,
+    "height": 2144,
+    "title": "Builds \u00b7 Table \u00b7 Dusk \u00b7 vision",
+    "devPage": "/dev/kit/pages/vision-builds-table",
+    "source": "reference/vision/source/Builds.dc.html",
+    "screen": "screens/vision/builds-table.png",
+    "retired": "BF-00: the Builds boards drew the old filter rail. The BF series design spec replaces them, so audit:design no longer compares against this board."
+  },
+  {
+    "file": "reference/vision/archive/builds-maps.html",
+    "kind": "vision",
+    "theme": "dusk",
+    "page": "builds-maps",
+    "width": 1440,
+    "height": 995,
+    "title": "Builds \u00b7 Maps \u00b7 Dusk \u00b7 vision",
+    "devPage": "/dev/kit/pages/vision-builds-maps",
+    "source": "reference/vision/source/BuildsMaps.dc.html",
+    "screen": "screens/vision/builds-maps.png",
+    "retired": "BF-00: the Builds boards drew the old filter rail. The BF series design spec replaces them, so audit:design no longer compares against this board."
+  },
+  {
+    "file": "reference/vision/archive/builds-classification.html",
+    "kind": "vision",
+    "theme": "dusk",
+    "page": "builds-classification",
+    "width": 1440,
+    "height": 1451,
+    "title": "Builds \u00b7 Classification \u00b7 Dusk \u00b7 vision",
+    "devPage": "/dev/kit/pages/vision-builds-classification",
+    "source": "reference/vision/source/BuildsClassification.dc.html",
+    "screen": "screens/vision/builds-classification.png",
+    "retired": "BF-00: the Builds boards drew the old filter rail. The BF series design spec replaces them, so audit:design no longer compares against this board."
   }
 ]
