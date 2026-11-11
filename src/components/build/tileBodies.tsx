@@ -29,7 +29,7 @@ import { Quiet, ToolMark } from "@/pages/site/compose/refinedPieces";
 import { FindHit } from "./FindHit";
 import { ellipsis, text, tnum } from "@/pages/site/compose/refinedStyles";
 import { DM_MONO } from "@/lib/theme/type";
-import { BODY_LINE, DATA_LINE, FOOT_FACTS, FOOT_LINK as FOOT_LINK_STYLE, LINK_ADDRESS, LINK_CARD, MORE_COUNT, PICTURE, PICTURES, RESPONSE_LINE, RESPONSE_WORD, STEPS, TILE_FOOT, VARIABLE } from "@/pages/site/compose/tileRecipes";
+import { BODY_LINE, DATA_LINE, FOOT_FACTS, FOOT_LINK as FOOT_LINK_STYLE, TEXT_LINK_BOX, LINK_ADDRESS, LINK_CARD, MORE_COUNT, PICTURE, PICTURES, RESPONSE_LINE, RESPONSE_WORD, STEPS, TILE_FOOT, VARIABLE } from "@/pages/site/compose/tileRecipes";
 import { size } from "@/lib/theme/space";
 
 export const TILE_COPY = {
@@ -284,7 +284,7 @@ export function ReplyBlock({ reply, onRead, indent = 0, lean = false }: { reply:
       <p style={{ ...text(13, 400, t.text2), margin: 0, lineHeight: "20px", overflowWrap: "anywhere", whiteSpace: "pre-wrap", ...clamp(2) }}>{reply}</p>
       {more && onRead ? (
         <div>
-          <TextButton underline onClick={onRead} style={text(12, 500, t.text2)}>
+          <TextButton underline onClick={onRead} style={{ ...TEXT_LINK_BOX, ...text(12, 500, t.text2) }}>
             {TILE_COPY.readAll}
           </TextButton>
         </div>
@@ -603,7 +603,7 @@ export function ReaderFacts({ facts, indent = 0 }: { facts: readonly ReaderFact[
 /** "Open on GitHub", the one link of a repository's footer. It opens in a new tab and never selects the tile. */
 export function OpenOnGitHub({ url }: { url: string }) {
   return (
-    <a href={url} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()} style={{ ...FOOT_LINK_STYLE, borderRadius: 4 }}>
+    <a href={url} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()} style={{ ...TEXT_LINK_BOX, ...FOOT_LINK_STYLE }}>
       Open on GitHub
     </a>
   );

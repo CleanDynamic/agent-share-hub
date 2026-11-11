@@ -111,6 +111,9 @@ export function TileOptions({ label, phone = false, style, ...rest }: TileOption
 export const TILE_BODY: CSSProperties = { display: "flex", flexDirection: "column", gap: 8, paddingLeft: TILE_INDENT, minWidth: 0 };
 export const TILE_FOOT: CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", columnGap: 12, minHeight: 20, minWidth: 0 };
 export const FOOT_FACTS: CSSProperties = { fontFamily: DM_MONO, fontSize: 11.5, lineHeight: "18px", color: t.label, fontVariantNumeric: "tabular-nums", flexGrow: 1, ...ellipsis };
+/** S5: a text link button, 24 high, padded 0 space[1], gap space[1]. On a phone a TextButton's `target` gives it 44 instead (`textLinkBox(true)` is empty). */
+export const TEXT_LINK_BOX: CSSProperties = { display: "inline-flex", alignItems: "center", gap: space[1], minHeight: size.controlSmall, padding: `0 ${space[1]}px`, boxSizing: "border-box", borderRadius: r.control };
+export const textLinkBox = (phone: boolean): CSSProperties => (phone ? {} : TEXT_LINK_BOX);
 export const FOOT_LINK: CSSProperties = { ...type(12, 500, t.text2), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: tokenAlpha("label", 0.5) };
 
 /* ── what a tile holds ── */

@@ -47,6 +47,7 @@ import { fullText, PREVIEW } from "@/lib/theme/truncate";
 import { bareButton, ellipsis, menuItem, menuSurface, text, tnum, wellField } from "./refinedStyles";
 import { libraryName, middleCut, REMINDER_ROWS, REPEAT_COPY, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession, type SourceUnfinishedItem } from "./sourcesModel";
 import { size } from "@/lib/theme/space";
+import { textLinkBox } from "./tileRecipes";
 
 /** F63: a library row's name wraps to two lines (PREVIEW) before it is cut, so it may run longer than a file's. */
 const LIBRARY_NAME_MAX = 60;
@@ -181,7 +182,7 @@ function Capped<T>({ rows, render, phone }: { rows: readonly T[]; render: (row: 
       {shown.map(render)}
       {hidden > 0 ? (
         <div style={{ ...rowLine, paddingTop: 8 }}>
-          <TextButton onClick={() => setAll(true)} target={phone} style={text(12.5, 500, t.text2)}>
+          <TextButton onClick={() => setAll(true)} target={phone} style={{ ...textLinkBox(phone), ...text(12.5, 500, t.text2) }}>
             Show {hidden} more
           </TextButton>
         </div>
@@ -384,7 +385,7 @@ function ReminderRow({ reminder, phone, onPick }: { reminder: SourceReminder; ph
       <span data-testid="reminder-line" style={{ ...text(12.5, 400, t.text2), flex: "1 1 auto", minWidth: 0, whiteSpace: "normal", overflowWrap: "normal", wordBreak: "normal" }}>
         {reminder.line}
       </span>
-      <TextButton onClick={onPick} target={phone} aria-label={`Add ${reminder.file}`} style={{ ...text(12.5, 500, t.text), whiteSpace: "nowrap", flexShrink: 0 }}>
+      <TextButton onClick={onPick} target={phone} aria-label={`Add ${reminder.file}`} style={{ ...textLinkBox(phone), ...text(12.5, 500, t.text), whiteSpace: "nowrap", flexShrink: 0 }}>
         {SOURCES_COPY.addFile}
       </TextButton>
     </div>
@@ -489,7 +490,7 @@ function UnfinishedRow({ item, phone }: { item: SourceUnfinishedItem; phone: boo
 function AddFiles({ fine, phone, onPick }: Pick<SourcesPanelProps, "fine" | "phone" | "onPick">) {
   return (
     <div data-testid="sources-add-files" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
-      <TextButton onClick={onPick} target={phone} style={text(12.5, 500, t.text)}>
+      <TextButton onClick={onPick} target={phone} style={{ ...textLinkBox(phone), ...text(12.5, 500, t.text) }}>
         {SOURCES_COPY.addFiles}
       </TextButton>
       {fine ? <p style={{ ...text(11.5, 400, t.label), margin: 0 }}>{SOURCES_COPY.dropLine}</p> : null}
@@ -526,7 +527,7 @@ function AvailableGroup({ props, phone }: { props: SourcesPanelProps; phone: boo
               <LoadingBlocks kind="line" width={LIBRARY_MORE_WIDTH} />
             </LoadingRegion>
           ) : (
-            <TextButton onClick={() => props.onLibraryMore?.()} target={phone} style={text(12.5, 500, t.text2)}>
+            <TextButton onClick={() => props.onLibraryMore?.()} target={phone} style={{ ...textLinkBox(phone), ...text(12.5, 500, t.text2) }}>
               {SOURCES_COPY.showMoreSessions}
             </TextButton>
           )}

@@ -111,7 +111,7 @@ import { OutsideWarning } from "./OutsideWarning";
 import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
 import { CHECK_COPY, DotLine, Quiet, ToolMark } from "./refinedPieces";
 import { AgentRules, GateLine, JobLine, MentionText, TeamHead, TeamLinesContext, WaitsLine, mentionTeam } from "@/components/build/teamLines";
-import { FOOT_LINK, LIST_BOX, MarkedName, listRow, NumberBadge, RESPONSE_WORD, RUN, SESSION_META, SmallCodeWell, TILE_EYEBROW, TILE_HEAD, TILE_INDENT, TILE_TEXT, TILE_TITLE, TileOptions, tileStyle as tileCard } from "./tileRecipes";
+import { FOOT_LINK, LIST_BOX, TEXT_LINK_BOX, textLinkBox, MarkedName, listRow, NumberBadge, RESPONSE_WORD, RUN, SESSION_META, SmallCodeWell, TILE_EYEBROW, TILE_HEAD, TILE_INDENT, TILE_TEXT, TILE_TITLE, TileOptions, tileStyle as tileCard } from "./tileRecipes";
 
 /** CA-15b: a tile's body and foot sit 34 in, under its title. */
 const INDENT = TILE_INDENT;
@@ -160,7 +160,7 @@ import { COUNT, BUTTON_PAD, BUTTON_PAD_SMALL_TEXT } from "./modalRecipes";
 import { RemoveRow, useReason } from "./removePieces";
 import { useBuildActionsContext } from "./useBuildActions";
 import { useBuildSelectionContext } from "./useBuildSelection";
-import { size } from "@/lib/theme/space";
+import { size, space } from "@/lib/theme/space";
 import { r } from "@/lib/theme/radius";
 
 /** CA-10: how long the add field is ringed after Add › Prompt reaches it. */
@@ -566,7 +566,7 @@ function MentionedLine({ to, phone }: { to: string; phone: boolean }) {
           <TextButton
             target={phone}
             underline
-            style={text(12, 500, t.text2)}
+            style={{ ...textLinkBox(phone), ...text(12, 500, t.text2) }}
             onClick={(event) => {
               event.stopPropagation();
               onBack(to);
@@ -638,7 +638,7 @@ function NestButtons({ step, phone }: { step: Step; phone: boolean }) {
     <span ref={ref} data-testid="nest-control" style={{ display: "inline-flex", opacity: shown ? 1 : 0 }}>
       <TextButton
         target={phone}
-        style={{ ...text(12, 500, t.text2), display: "inline-flex", alignItems: "center", gap: 4 }}
+        style={{ ...textLinkBox(phone), ...text(12, 500, t.text2), display: "inline-flex", alignItems: "center", gap: space[1] }}
         onClick={(event) => {
           event.stopPropagation();
           if (own) nest.move(step.id, null, nest.after(step.id));
@@ -800,7 +800,7 @@ function SentWithSuggestions({ step, props }: { step: Step; props: BuildListProp
                   <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={12} onClick={() => props.onKeepSentWith?.(suggestion)}>
                     {SENT_WITH_COPY.accept}
                   </Button>
-                  <TextButton target={phone} style={text(12, 500, t.text2)} onClick={() => props.onIgnoreSentWith?.(suggestion.stepId, suggestion.key)}>
+                  <TextButton target={phone} style={{ ...textLinkBox(phone), ...text(12, 500, t.text2) }} onClick={() => props.onIgnoreSentWith?.(suggestion.stepId, suggestion.key)}>
                     {SENT_WITH_COPY.ignore}
                   </TextButton>
                 </span>
@@ -908,7 +908,7 @@ function Suggestion({ label, onAccept, onDismiss }: { label: string; onAccept: (
           event.stopPropagation();
           onDismiss();
         }}
-        style={{ ...text(11.5, 400, t.text2), height: 20, padding: "0 4px", flexShrink: 0 }}
+        style={{ ...TEXT_LINK_BOX, ...text(11.5, 400, t.text2), flexShrink: 0 }}
       >
         Dismiss
       </TextButton>
@@ -1128,7 +1128,7 @@ function FooterLink({ phone, onClick, expanded, children }: { phone: boolean; on
     <TextButton
       target={phone}
       aria-expanded={expanded}
-      style={{ ...FOOT_LINK, userSelect: "none" }}
+      style={{ ...FOOT_LINK, ...textLinkBox(phone), userSelect: "none" }}
       onClick={(event) => {
         event.stopPropagation();
         onClick();
@@ -1480,7 +1480,7 @@ function AgentPromptField({ agent, props, onDone }: { agent: Step; props: BuildL
         style={{ ...wellField, resize: "none", padding: 12, fontSize: props.phone ? 16 : 13.5 }}
       />
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
-        <TextButton onClick={cancel} target={props.phone} style={text(12.5, 500, t.text2)}>
+        <TextButton onClick={cancel} target={props.phone} style={{ ...textLinkBox(props.phone), ...text(12.5, 500, t.text2) }}>
           Cancel
         </TextButton>
         <Button style={props.phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="primary" size={props.phone ? 44 : 32} fontSize={12} aria-label="Add prompt to this agent" data-testid="agent-prompt-add" disabled={!text_.trim() || busy} onClick={() => void submit()}>
@@ -1630,7 +1630,7 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
                     <TextButton
                       target={props.phone}
                       aria-expanded={open}
-                      style={text(12.5, 500, t.text2)}
+                      style={{ ...textLinkBox(props.phone), ...text(12.5, 500, t.text2) }}
                       onClick={(event) => {
                         event.stopPropagation();
                         setOpenAgent(open ? null : child.id);
@@ -2023,7 +2023,7 @@ function ResultCard({ result, selected, ringed = false, onSelect, onEdit }: { re
           link={
             onEdit ? (
               <TextButton
-                style={FOOT_LINK}
+                style={{ ...TEXT_LINK_BOX, ...FOOT_LINK }}
                 onClick={(event) => {
                   event.stopPropagation();
                   onEdit(result.id);
@@ -2620,7 +2620,7 @@ export function BuildList(raw: BuildListProps) {
               {parts?.ops ? (
                 <TextButton
                   target={props.phone}
-                  style={text(13, 500, t.text2)}
+                  style={{ ...textLinkBox(props.phone), ...text(13, 500, t.text2) }}
                   onClick={() => {
                     setAddFor((current) => ({ part: view.key, n: (current?.n ?? 0) + 1 }));
                     parts.onAddSession?.(view.key);

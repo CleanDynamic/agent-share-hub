@@ -66,6 +66,7 @@ import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 import { size, space } from "@/lib/theme/space";
 import { r } from "@/lib/theme/radius";
+import { TEXT_LINK_BOX } from "./tileRecipes";
 
 /* ── sizes ── */
 
@@ -761,7 +762,8 @@ export function TextLink({ children, onClick, phone = false, disabled, ...aria }
         appearance: "none",
         background: "none",
         border: 0,
-        padding: phone ? "12px 0" : 0,
+        ...TEXT_LINK_BOX,
+        minHeight: phone ? size.touch : size.controlSmall,
         alignSelf: "flex-start",
         ...type(12.5, 400, state.hovered ? t.text : t.text2),
         textDecoration: "underline",

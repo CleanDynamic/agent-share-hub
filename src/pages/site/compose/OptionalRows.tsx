@@ -23,7 +23,8 @@ import { useInteractive } from "@/lib/theme/interactive";
 
 import { ELLIPSIS, ModalInset, OPTIONAL, useModalInset } from "./modalRecipes";
 import { OPTIONAL_COPY } from "./OptionalSection";
-import { size } from "@/lib/theme/space";
+import { size, space } from "@/lib/theme/space";
+import { r } from "@/lib/theme/radius";
 
 export interface OptionalRowProps {
   /** The field's name: "Failure notes". */
@@ -177,10 +178,10 @@ function AcceptButton({ action, right, phone }: { action: { name: string; label:
         right,
         top: "50%",
         transform: "translateY(-50%)",
-        minHeight: phone ? 44 : 28,
-        padding: "0 8px",
+        minHeight: phone ? size.touch : size.controlSmall,
+        padding: `0 ${space[1]}px`,
         border: 0,
-        borderRadius: 6,
+        borderRadius: r.control,
         background: "transparent",
         cursor: "pointer",
         ...OPTIONAL.title,
