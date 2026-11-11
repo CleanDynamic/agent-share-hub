@@ -176,7 +176,6 @@ export function panelSections(state: PanelState): FilterSection[] {
           name,
           group: "Classification",
           segments: panelValues(facet).map((value) => ({ key: `${facet}:${value.id}`, label: value.label, on: chosen.includes(`${facet}:${value.id}`) })),
-          endLabels: [panelValues(facet)[0].label, panelValues(facet).at(-1)!.label],
         });
         continue;
       }

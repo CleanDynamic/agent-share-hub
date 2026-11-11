@@ -75,7 +75,6 @@ export const visionBuildsSections: FilterSection[] = [
       { key: "ai-acts-with-approval-gates", label: "AI acts with approval gates", on: true },
       { key: "fully-autonomous", label: "Fully autonomous", on: false },
     ],
-    endLabels: ["You do each step", "Fully autonomous"],
   },
   /* BF-07: every filter is drawn in its group; the board's closed rows are checklists. */
   { kind: "word", id: "stack", name: "Tools and stack", group: "Classification", order: "count", value: "Claude Code", options: words([["Claude Code", 34, true], ["Cursor", 21, false], ["n8n", 9, false]]) },

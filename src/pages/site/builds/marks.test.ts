@@ -62,9 +62,6 @@ describe("G1: marks a reader must see reach 3:1", () => {
   // Hairline-like decoration only. A mark a reader must see to understand or use a control is `--label` or `--selected-edge`.
   const LINE_ALLOWED = [
     { file: "BuildsTableView.tsx", has: "value === 0 ? t.line", why: "an empty week is a tick on a baseline; the chart has a text summary and BF-01 shows a dash when every week is empty" },
-    { file: "BuildsFiltersView.tsx", has: "state.focusVisible ? t.line : \"transparent\"", why: "the resize handle's rule, drawn only while focused; the focus ring is the mark" },
-    { file: "BuildsFiltersView.tsx", has: "color: t.line, cursor: \"grab\"", why: "the grip; BF-07 deletes it (BF-15 checks it is gone)" },
-    { file: "BuildsFiltersView.tsx", has: "on ? t.text : t.line", why: "the Autonomy segment; BF-09 deletes it (BF-15 checks it is gone)" },
     { file: "BuildsMapsView.tsx", has: "stroke={t.line}", why: "the Map's own drawing, which BF-05 does not change" },
   ] as const;
 

@@ -93,7 +93,6 @@ test.describe("/builds filters", () => {
   // neighbours goes in ALLOWED with the reason. A link that is a word inside a sentence is the exception the rule
   // allows; there is none on these pages today.
   const ALLOWED: readonly { name: RegExp; why: string }[] = [
-    { name: /^button "(You do each step|AI suggests and you approve|AI acts with approval gates|Fully autonomous)"/, why: "the Autonomy segments are 18 high and BF-09 deletes them" },
     { name: /^button "All" /, why: "the lens tab is the shared TextTabs, 16 wide on its own label; shared controls are measured and reported, not edited here" },
   ];
 

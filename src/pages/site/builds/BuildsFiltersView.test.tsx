@@ -3,6 +3,7 @@
 // search finds a filter in any group, and nothing is left of the old rail's catalogue tile.
 
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -10,7 +11,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 
 import { visionBuildsTableProps } from "@/dev/fixtures/vision/builds-table";
 
-import { BuildsFilters, type BuildsFiltersViewProps } from "./BuildsFiltersView";
+import { BuildsFilters, BuildsFiltersView, type BuildsFiltersViewProps } from "./BuildsFiltersView";
 
 beforeEach(() => {
   // Radix's slider measures its thumbs; jsdom has no ResizeObserver.
@@ -163,5 +164,51 @@ describe("one order control", () => {
     /* The head says what the filter holds: Sales once on the right of the name, and once as its ticked value. */
     expect(within(screen.getByRole("region", { name: "Field" })).getAllByText("Sales")).toHaveLength(2);
     expect(within(screen.getByRole("region", { name: "Task" })).getByText("Any")).toBeTruthy();
+  });
+});
+
+/* ── BF-09 P1 (A9) ── */
+
+describe("Autonomy", () => {
+  const LABELS = ["You do each step", "AI suggests and you approve", "AI acts with approval gates", "Fully autonomous"];
+  const autonomy = () => within(screen.getByRole("region", { name: "Autonomy" }));
+
+  it("Autonomy draws one button per value, each showing its label, in scale order", () => {
+    draw();
+    expect(autonomy().getAllByRole("button").map((button) => button.textContent)).toEqual(LABELS);
+  });
+
+  it("a pressed value has aria-pressed true and the selected look", () => {
+    draw();
+    expect(autonomy().getByRole("button", { name: "AI suggests and you approve" }).getAttribute("aria-pressed")).toBe("true");
+    expect(autonomy().getByRole("button", { name: "You do each step" }).getAttribute("aria-pressed")).toBe("false");
+    // jsdom drops a `var()` from background and border, so the look is read from the markup React writes.
+    const markup = renderToStaticMarkup(
+      <MemoryRouter>
+        <BuildsFiltersView {...visionBuildsTableProps().filters} />
+      </MemoryRouter>,
+    );
+    const pressed = markup.match(/<button[^>]*aria-pressed="true"[^>]*>AI suggests and you approve<\/button>/)?.[0] ?? "";
+    expect(pressed).toContain("background:var(--selected-fill)");
+    expect(pressed).toContain("border:1px solid var(--selected-edge)");
+    const off = markup.match(/<button[^>]*aria-pressed="false"[^>]*>You do each step<\/button>/)?.[0] ?? "";
+    expect(off).toContain("border:1px solid var(--label)");
+  });
+
+  it("each button is at least 36 high", () => {
+    draw();
+    for (const button of autonomy().getAllByRole("button")) expect(button.style.minHeight).toBe("36px");
+  });
+
+  it("pressing one calls onToggleSegment with its key", () => {
+    const onToggleSegment = vi.fn();
+    draw((p) => ({ ...p, onToggleSegment }));
+    fireEvent.click(autonomy().getByRole("button", { name: "Fully autonomous" }));
+    expect(onToggleSegment).toHaveBeenCalledWith("autonomy", "fully-autonomous");
+  });
+
+  it("the two end labels under the old bar are gone", () => {
+    draw();
+    for (const label of ["You do each step", "Fully autonomous"]) expect(autonomy().getAllByText(label)).toHaveLength(1);
   });
 });

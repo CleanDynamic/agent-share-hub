@@ -83,7 +83,6 @@ export interface ScaleSection {
   name: string;
   group: FilterGroup;
   segments: readonly { key: string; label: string; on: boolean }[];
-  endLabels: readonly [string, string];
 }
 
 export type FilterSection = WordSection | RangeSection | ScaleSection;
@@ -384,35 +383,42 @@ function RangeFilter({ section, label, onChange }: { section: RangeSection; labe
 
 /* ── a scale filter ── */
 
-function Segment({ label, on, onClick }: { label: string; on: boolean; onClick: () => void }) {
+/** BF-09 (A9): one value of a scale, named: a button 36 high, its label wrapping, pressed in the selected look. */
+function ScaleButton({ label, on, onClick }: { label: string; on: boolean; onClick: () => void }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <button
       type="button"
       aria-pressed={on}
-      aria-label={label}
       onClick={onClick}
       {...handlers}
-      style={{ height: 18, margin: "-6px 0", padding: 0, background: "none", border: 0, display: "flex", alignItems: "center", cursor: "pointer", ...ring(state.focusVisible) }}
+      style={{
+        boxSizing: "border-box",
+        minHeight: 36,
+        padding: "6px 8px",
+        borderRadius: r.control,
+        ...(on ? { background: t.selectedFill, border: `1px solid ${t.selectedEdge}` } : { background: "none", border: `1px solid ${t.label}` }),
+        ...text(12.5, on ? 500 : 400, on ? t.text : t.text2, { lineHeight: "16px", textAlign: "center" }),
+        whiteSpace: "normal",
+        cursor: "pointer",
+        ...ring(state.focusVisible),
+      }}
     >
-      <span style={{ display: "block", width: "100%", height: 6, borderRadius: 2, background: on ? t.text : t.line }} />
+      {label}
     </button>
   );
 }
 
 function ScaleFilter({ section, label, onToggle }: { section: ScaleSection; label?: string; onToggle?: (key: string) => void }) {
+  const phone = useIsPhone();
   const chosen = section.segments.filter((segment) => segment.on).map((segment) => segment.label).join(", ");
   return (
     <section aria-label={section.name} style={rule}>
       <SectionHead name={section.name} right={<span style={small(t.label)}>{label ?? "Scale order"}</span>} />
-      <div role="group" aria-label={`${section.name}: ${chosen || "any"}`} style={{ marginTop: 14, display: "grid", gridTemplateColumns: `repeat(${section.segments.length}, minmax(0, 1fr))`, gap: 2 }}>
+      <div role="group" aria-label={`${section.name}: ${chosen || "any"}`} style={{ marginTop: 12, display: "grid", gridTemplateColumns: `repeat(${phone ? 2 : section.segments.length}, minmax(0, 1fr))`, gap: 4 }}>
         {section.segments.map((segment) => (
-          <Segment key={segment.key} label={segment.label} on={segment.on} onClick={() => onToggle?.(segment.key)} />
+          <ScaleButton key={segment.key} label={segment.label} on={segment.on} onClick={() => onToggle?.(segment.key)} />
         ))}
-      </div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, ...text(12, 400, t.label) }}>
-        <span>{section.endLabels[0]}</span>
-        <span>{section.endLabels[1]}</span>
       </div>
     </section>
   );
