@@ -25,7 +25,7 @@ import { toolFor, type StepKey, type ToolList } from "@/lib/tools/registry";
 import { menuSurface, text, wellField } from "./refinedStyles";
 import { PickerChevron, pickerFieldStyle, smallButtonStyle } from "./modalRecipes";
 import { pickerRows, TYPED_TOOL_MAX, type PickerRow } from "./toolPickerModel";
-import { size } from "@/lib/theme/space";
+import { size, space } from "@/lib/theme/space";
 
 export interface ToolPickerProps {
   /** A tool id, a typed name, or null. */
@@ -258,7 +258,7 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
               setActive(0);
             }}
             onKeyDown={onKeyDown}
-            style={{ ...wellField, width: "100%", boxSizing: "border-box", height: phone ? 44 : 32, padding: "0 10px", fontSize: phone ? 16 : 13 }}
+            style={{ ...wellField, width: "100%", boxSizing: "border-box", height: phone ? size.touch : size.control, padding: `0 ${space[3]}px`, fontSize: phone ? 16 : 13 }}
           />
           <div id={`${uid}-list`} role="listbox" aria-label={label} style={{ maxHeight: 320, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
             {rows.map((row, index) =>

@@ -48,7 +48,7 @@ import { TextButton } from "./composeControls";
 import { fieldBase } from "./composeFields";
 import { addPromptLabel, MADE_WITH_ENTRY_MAX, promptDragData } from "./composeModel";
 import { PROMPT_DRAG_TYPE } from "./PromptsPanel";
-import { size } from "@/lib/theme/space";
+import { size, space } from "@/lib/theme/space";
 import { BUTTON_PAD, iconButtonSide } from "./modalRecipes";
 
 /** The desktop header is 64px tall; the panel sticks 24px under it. */
@@ -147,7 +147,7 @@ function AddModel({ session, phone, onSetModel }: { session: ComposeSession; pho
     setOther("");
   };
 
-  const control: CSSProperties = { ...fieldBase, height: phone ? 44 : 33, padding: "0 7px", fontSize: phone ? 16 : 14 };
+  const control: CSSProperties = { ...fieldBase, height: phone ? size.touch : size.control, padding: `0 ${space[3]}px`, fontSize: phone ? 16 : 14 };
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>

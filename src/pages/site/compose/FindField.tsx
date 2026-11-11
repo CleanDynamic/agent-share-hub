@@ -17,7 +17,7 @@ import { DM_MONO } from "@/lib/theme/type";
 
 import { bareButton, text } from "./refinedStyles";
 import type { BuildFind } from "./useBuildFind";
-import { size } from "@/lib/theme/space";
+import { size, space } from "@/lib/theme/space";
 import { iconButtonSide } from "./modalRecipes";
 import { r } from "@/lib/theme/radius";
 
@@ -29,17 +29,15 @@ export function FindButton({ find }: { find: Pick<BuildFind, "show"> }) {
 const FIELD: CSSProperties = {
   flex: "0 1 300px",
   minWidth: 200,
-  height: 34,
-  /* The row it opens in is 28 high: the field stands 3 over its top and its foot (its margin box is 26), so nothing under the row moves. */
-  margin: "-4px 0",
+  height: size.control,
   boxSizing: "border-box",
   display: "flex",
   alignItems: "center",
-  gap: 8,
-  padding: "0 10px",
+  gap: space[2],
+  padding: `0 ${space[3]}px`,
   background: t.well,
   border: `1px solid ${t.hairlineModule}`,
-  borderRadius: 8,
+  borderRadius: r.control,
 };
 
 /** A 20 square button inside the field. */

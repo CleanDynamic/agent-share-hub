@@ -638,7 +638,7 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
               // The menu's own type-ahead must not take the letters typed here; Escape still closes it.
               if (event.key !== "Escape" && event.key !== "Tab") event.stopPropagation();
             }}
-            style={{ ...wellField, height: 32, padding: "0 10px", marginBottom: 4, ...text(13, 400, t.text) }}
+            style={{ ...wellField, height: size.control, padding: `0 ${space[3]}px`, marginBottom: space[1], ...text(13, 400, t.text) }}
           />
           {firstFound ? null : <p style={{ ...text(12.5, 400, t.label), margin: 0, padding: "8px 12px" }}>{ADD_SEARCH_COPY.none}</p>}
           {/* UX-02 P6, F40: the five first; then, under More types (open in place, or while a search runs), the groups by category,

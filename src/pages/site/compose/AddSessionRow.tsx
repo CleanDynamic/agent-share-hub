@@ -185,7 +185,7 @@ function ChatList({ props, close, back, part }: { props: AddSessionRowProps; clo
         value={query}
         autoComplete="off"
         onChange={(event) => setQuery(event.target.value)}
-        style={{ ...wellField, height: phone ? 44 : 32, padding: "0 10px", fontSize: phone ? 16 : 13 }}
+        style={{ ...wellField, height: phone ? size.touch : size.control, padding: `0 ${space[3]}px`, fontSize: phone ? 16 : 13 }}
       />
       <div role="list" aria-label={ADD_SESSION_COPY.yours} style={{ display: "flex", flexDirection: "column", gap: 0, minHeight: 0, ...(phone ? { flex: "1 1 auto" } : { maxHeight: 340 }), overflowY: "auto", overscrollBehavior: "contain" }}>
         {library.length === 0 ? (

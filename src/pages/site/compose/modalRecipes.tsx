@@ -380,9 +380,9 @@ export const fieldStyle = (phone: boolean, extra: CSSProperties = {}): CSSProper
   ...WELL,
   boxSizing: "border-box",
   width: "100%",
-  height: phone ? 44 : 32,
-  padding: "0 10px",
-  borderRadius: 8,
+  height: phone ? size.touch : size.control,
+  padding: `0 ${space[3]}px`,
+  borderRadius: r.control,
   ...type(phone ? 16 : 13, 400, t.text),
   ...extra,
 });

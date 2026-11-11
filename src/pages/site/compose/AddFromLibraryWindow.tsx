@@ -25,6 +25,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { IconSquare, RecipeButton } from "./modalRecipes";
+import { space, size } from "@/lib/theme/space";
 
 export type LibraryTab = "steps" | "collections";
 export type LibraryVersion = "saved" | "current";
@@ -169,7 +170,7 @@ function SearchField({ label, value, phone, onChange }: { label: string; value: 
       value={value}
       onChange={(event) => onChange(event.target.value)}
       {...handlers}
-      style={{ boxSizing: "border-box", width: "100%", height: phone ? 44 : 32, padding: "0 10px", background: t.well, border: `1px solid ${t.wellBorder}`, borderRadius: 6, color: t.text, fontFamily: FIGTREE, fontSize: phone ? 16 : 13, ...ring(state.focusVisible) }}
+      style={{ boxSizing: "border-box", width: "100%", height: phone ? size.touch : size.control, padding: `0 ${space[3]}px`, background: t.well, border: `1px solid ${t.wellBorder}`, borderRadius: 6, color: t.text, fontFamily: FIGTREE, fontSize: phone ? 16 : 13, ...ring(state.focusVisible) }}
     />
   );
 }

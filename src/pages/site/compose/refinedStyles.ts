@@ -84,7 +84,7 @@ export const tileStyle: CSSProperties = {
 /** The well recipe for a field. The global field rule already paints `--recess`, which is `--well` under refined. */
 export const wellField: CSSProperties = {
   ...WELL,
-  borderRadius: 6,
+  borderRadius: r.control,
   boxSizing: "border-box",
   width: "100%",
   /* No inline `outline`: the global field rule is `outline: none` at rest and rings the field on :focus-visible, and an
@@ -170,8 +170,8 @@ export const dialogTitle: CSSProperties = { ...text(15, 500, t.text), margin: "0
 /** CA-03: a field you type in, on the well: 30 high (44 on a phone), 13 (16 on a phone, so iOS does not zoom). */
 export const typedField = (phone: boolean, extra: CSSProperties = {}): CSSProperties => ({
   ...wellField,
-  height: phone ? 44 : 30,
-  padding: "0 8px",
+  height: phone ? size.touch : size.control,
+  padding: `0 ${space[3]}px`,
   fontSize: phone ? 16 : 13,
   ...extra,
 });

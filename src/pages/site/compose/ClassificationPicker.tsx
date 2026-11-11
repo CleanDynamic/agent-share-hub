@@ -27,7 +27,7 @@ import { bareButton, ellipsis, menuItem, menuSurface, text, wellField } from "./
 import { MenuContent } from "./ComposeMenu";
 import { FLOATING_Z } from "./ToolPicker";
 import { ChosenValue, Matched, SuggestedRow, Suggestion, ownEntryRow, typeaheadList, typeaheadNote, typeaheadRow } from "./classificationPieces";
-import { size } from "@/lib/theme/space";
+import { size, space } from "@/lib/theme/space";
 
 export const OWN_ENTRY_NOTE = "Shown on the build. Reviewed before listing.";
 export const AT_LIMIT = "Limit reached";
@@ -217,7 +217,7 @@ export function ClassificationPicker({ id, facet, label, entries, onChange, max,
           }}
           onKeyDown={onKeyDown}
           {...inputHandlers}
-          style={{ ...wellField, height: phone ? 44 : 32, padding: "0 12px", ...text(phone ? 16 : 13, 400, t.text), ...(atLimit ? { filter: t.dimFilter } : null), ...(typing ? { borderColor: t.focusRing, boxShadow: `0 0 0 2px ${t.focusRing}` } : ring(inputState.focusVisible)) }}
+          style={{ ...wellField, height: phone ? size.touch : size.control, padding: `0 ${space[3]}px`, ...text(phone ? 16 : 13, 400, t.text), ...(atLimit ? { filter: t.dimFilter } : null), ...(typing ? { borderColor: t.focusRing, boxShadow: `0 0 0 2px ${t.focusRing}` } : ring(inputState.focusVisible)) }}
         />
         {open ? (
           <ul id={listId} role="listbox" aria-label={`${label}, matches`} style={typeaheadList}>

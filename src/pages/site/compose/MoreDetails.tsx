@@ -24,7 +24,7 @@ import { FIGTREE } from "@/lib/theme/type";
 
 import { Field } from "./composeControls";
 import { fieldBase, useRing } from "./composeFields";
-import { size } from "@/lib/theme/space";
+import { size, space } from "@/lib/theme/space";
 
 export interface ComposeDetails {
   /** "What broke". */
@@ -90,7 +90,7 @@ function NumberField({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           {...focus.handlers}
-          style={{ ...fieldBase, height: phone ? 44 : 33, padding: "0 9px", fontSize: phone ? 16 : 14, ...focus.style }}
+          style={{ ...fieldBase, height: phone ? size.touch : size.control, padding: `0 ${space[3]}px`, fontSize: phone ? 16 : 14, ...focus.style }}
         />
       </Field>
     </div>

@@ -29,7 +29,7 @@ import { FLOATING_Z } from "./ToolPicker";
 import { menuItem, menuSurface, text, wellField } from "./refinedStyles";
 import { MenuContent } from "./ComposeMenu";
 import { PickerFieldButton } from "./modalRecipes";
-import { size } from "@/lib/theme/space";
+import { size, space } from "@/lib/theme/space";
 
 /** The longest model name a maker can type. */
 export const MODEL_TYPED_MAX = 40;
@@ -183,7 +183,7 @@ export function ModelPicker({ tool, value, onChange, phone, allowNone = true, na
                   }
                   event.stopPropagation();
                 }}
-                style={{ ...wellField, height: phone ? 44 : 30, padding: "0 8px", fontSize: phone ? 16 : 13 }}
+                style={{ ...wellField, height: phone ? size.touch : size.control, padding: `0 ${space[3]}px`, fontSize: phone ? 16 : 13 }}
               />
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                 <TextButton onClick={() => setTyping(false)} target={phone} style={text(12.5, 500, t.text2)}>

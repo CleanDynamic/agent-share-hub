@@ -178,7 +178,7 @@ function AddEntry({ phone, onAdd }: { phone: boolean; onAdd: (name: string) => v
               maxLength={MADE_WITH_ENTRY_MAX}
               autoComplete="off"
               onChange={(event) => setName(event.target.value)}
-              style={{ ...fieldBase, height: phone ? 44 : 33, padding: "0 7px", fontSize: phone ? 16 : 14 }}
+              style={{ ...fieldBase, height: phone ? size.touch : size.control, padding: `0 ${space[3]}px`, fontSize: phone ? 16 : 14 }}
             />
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <Button style={BUTTON_PAD} type="submit" size={phone ? 44 : 32} fontSize={13} disabled={!name.trim()}>

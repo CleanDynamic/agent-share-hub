@@ -46,7 +46,7 @@ import { ToolMark } from "./refinedPieces";
 import { fullText, PREVIEW } from "@/lib/theme/truncate";
 import { bareButton, ellipsis, menuItem, menuSurface, text, tnum, wellField } from "./refinedStyles";
 import { libraryName, middleCut, REMINDER_ROWS, REPEAT_COPY, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession, type SourceUnfinishedItem } from "./sourcesModel";
-import { size } from "@/lib/theme/space";
+import { size, space } from "@/lib/theme/space";
 import { textLinkBox } from "./tileRecipes";
 import { r } from "@/lib/theme/radius";
 import { iconButtonSide } from "./modalRecipes";
@@ -517,7 +517,7 @@ function AvailableGroup({ props, phone }: { props: SourcesPanelProps; phone: boo
           value={query}
           autoComplete="off"
           onChange={(event) => setQuery(event.target.value)}
-          style={{ ...wellField, height: phone ? 44 : 32, padding: "0 10px", marginBottom: 8, ...text(phone ? 16 : 13, 400, t.text) }}
+          style={{ ...wellField, height: phone ? size.touch : size.control, padding: `0 ${space[3]}px`, marginBottom: space[2], ...text(phone ? 16 : 13, 400, t.text) }}
         />
       ) : null}
       {shown.length === 0 ? <p style={{ ...text(12.5, 400, t.label), margin: 0, padding: "8px 0" }}>{SOURCES_COPY.noMatch}</p> : null}
