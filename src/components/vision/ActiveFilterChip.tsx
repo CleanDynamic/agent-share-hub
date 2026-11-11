@@ -2,8 +2,8 @@
 
    The prompt calls this `FilterChip`; that name is the toggle in `components/brand/FilterChip.tsx`, which other pages
    use, so this one is `ActiveFilterChip`. The control recipe at height 26, radius 6, 12px: the key in `--label`, the
-   value in `--text`, and an 18px remove button named "Remove filter <key>". On a phone the remove button's hit area
-   reaches 44px by padding with a matching negative margin. */
+   value in `--text`, and an 18px remove button named "Remove filter <key>". Its hit area reaches 24px (44px on a phone) by padding with a
+   matching negative margin, so the drawn button and the chip do not change. */
 
 import { Glyph } from "@/components/brand/Glyph";
 import { useIsPhone } from "@/components/shell/useMinWidth";
@@ -25,6 +25,8 @@ export interface ActiveFilterChipProps {
 
 export function ActiveFilterChip({ name, value, onRemove }: ActiveFilterChipProps) {
   const phone = useIsPhone();
+  // The drawn button stays 18; its hit area is 24 (WCAG 2.5.8), or 44 on a phone, by padding with a matching negative margin.
+  const hit = phone ? TOUCH_MIN : 24;
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <span
@@ -55,8 +57,8 @@ export function ActiveFilterChip({ name, value, onRemove }: ActiveFilterChipProp
           boxSizing: "content-box",
           width: 18,
           height: 18,
-          padding: phone ? (TOUCH_MIN - 18) / 2 : 0,
-          margin: phone ? (18 - TOUCH_MIN) / 2 : 0,
+          padding: (hit - 18) / 2,
+          margin: (18 - hit) / 2,
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",

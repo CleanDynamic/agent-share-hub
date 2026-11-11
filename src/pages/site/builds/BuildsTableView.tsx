@@ -35,7 +35,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 
-import { BuildsControl, BuildsTextButton, TABLE_ROW, UpdatingStatus, ellipsis, text } from "./BuildsFrame";
+import { BuildsControl, BuildsTextButton, TABLE_ROW, UpdatingStatus, ellipsis, hitArea, text } from "./BuildsFrame";
 
 /* ── props ── */
 
@@ -287,7 +287,7 @@ export function RowLamp({ lit }: { lit: boolean }) {
   );
 }
 
-const th = (right: boolean, last: boolean): React.CSSProperties => ({ ...text(11.5, 400, t.label), padding: last ? "0 0 10px" : "0 12px 10px 0", borderBottom: `1px solid ${t.hairline}`, textAlign: right ? "right" : "left", verticalAlign: "bottom", whiteSpace: "nowrap" });
+const th = (right: boolean, last: boolean): React.CSSProperties => ({ ...text(12, 400, t.label), padding: last ? "0 0 10px" : "0 12px 10px 0", borderBottom: `1px solid ${t.hairline}`, textAlign: right ? "right" : "left", verticalAlign: "bottom", whiteSpace: "nowrap" });
 const td = (right: boolean, last: boolean): React.CSSProperties => ({ padding: last ? 0 : "0 12px 0 0", height: TABLE_ROW, textAlign: right ? "right" : "left", whiteSpace: "nowrap" });
 
 function ColumnHead({ id, last, sorted, sortValue, onSort }: { id: ColumnId; last: boolean; sorted: { ascending: boolean } | null; sortValue?: string; onSort: (value: string) => void }) {
@@ -301,7 +301,7 @@ function ColumnHead({ id, last, sorted, sortValue, onSort }: { id: ColumnId; las
           type="button"
           onClick={() => onSort(sortValue)}
           {...handlers}
-          style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: 0, padding: 0, font: "inherit", color: state.hovered ? t.text : "inherit", cursor: "pointer", borderRadius: r.chip, ...ring(state.focusVisible) }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: 0, ...hitArea(2), font: "inherit", color: state.hovered ? t.text : "inherit", cursor: "pointer", borderRadius: r.chip, ...ring(state.focusVisible) }}
         >
           {HEAD[id]}
           {sorted ? <span aria-hidden="true">{sorted.ascending ? "↑" : "↓"}</span> : null}
@@ -318,8 +318,11 @@ function ColumnHead({ id, last, sorted, sortValue, onSort }: { id: ColumnId; las
 function ToolMark({ tool }: { tool: TableTool }) {
   const { state, handlers } = useInteractive<HTMLSpanElement>();
   return (
-    <span role="img" aria-label={tool.name} title={tool.name} tabIndex={0} {...handlers} style={{ position: "relative", width: 16, height: 16, borderRadius: r.chip, background: t.tile, display: "inline-grid", placeItems: "center", ...ring(state.focusVisible) }}>
-      <ModelMark tool={tool.id} size={14} />
+    // BF-05 (G3): the focusable span is a 24 by 24 hit area with a -4 margin, so the row keeps its footprint; the 16px tile inside is what is drawn and what the focus ring circles.
+    <span role="img" aria-label={tool.name} title={tool.name} tabIndex={0} {...handlers} style={{ boxSizing: "content-box", width: 16, height: 16, padding: 4, margin: -4, display: "inline-grid", placeItems: "center" }}>
+      <span style={{ position: "relative", width: 16, height: 16, borderRadius: r.chip, background: t.tile, display: "inline-grid", placeItems: "center", ...ring(state.focusVisible) }}>
+        <ModelMark tool={tool.id} size={14} />
+      </span>
     </span>
   );
 }
@@ -351,10 +354,10 @@ function BuildCell({ row }: { row: TableRowView }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   return (
     <span style={{ display: "block", minWidth: 200 }}>
-      <Link to={row.href} {...handlers} style={{ display: "block", maxWidth: 220, ...ellipsis, ...text(12.5, 500, state.hovered ? t.text2 : t.text), textDecoration: "none", borderRadius: r.chip, ...ring(state.focusVisible) }}>
+      <Link to={row.href} {...handlers} style={{ display: "block", maxWidth: 220, ...ellipsis, ...hitArea(2), ...text(13, 500, state.hovered ? t.text2 : t.text), textDecoration: "none", borderRadius: r.chip, ...ring(state.focusVisible) }}>
         {row.title}
       </Link>
-      <span style={text(11.5, 400, t.label)}>@{row.maker}</span>
+      <span style={text(12, 400, t.label)}>@{row.maker}</span>
     </span>
   );
 }
@@ -441,7 +444,7 @@ function AddCalculation({ footer }: { footer: TableFooterView }) {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <BuildsTextButton size={11.5} color={t.text2}>
+          <BuildsTextButton size={12} color={t.text2}>
             Add a calculation
           </BuildsTextButton>
         </DropdownMenuTrigger>
@@ -458,7 +461,7 @@ function AddCalculation({ footer }: { footer: TableFooterView }) {
     );
   }
   return footer.onCalculate ? (
-    <BuildsTextButton size={11.5} color={t.text2} onClick={footer.onCalculate}>
+    <BuildsTextButton size={12} color={t.text2} onClick={footer.onCalculate}>
       Add a calculation
     </BuildsTextButton>
   ) : null;
@@ -470,9 +473,9 @@ function CalculationCell({ footer }: { footer: TableFooterView }) {
     <span style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "4px 16px" }}>
       <AddCalculation footer={footer} />
       {(footer.calculations ?? []).map((calculation) => (
-        <span key={calculation.key} style={{ display: "inline-flex", alignItems: "baseline", gap: 4, ...text(11.5, 400, t.label) }}>
+        <span key={calculation.key} style={{ display: "inline-flex", alignItems: "baseline", gap: 4, ...text(12, 400, t.label) }}>
           {calculation.text}
-          <BuildsTextButton size={11.5} aria-label={`Remove ${calculation.text}`} onClick={calculation.onRemove}>
+          <BuildsTextButton size={12} aria-label={`Remove ${calculation.text}`} onClick={calculation.onRemove}>
             ×
           </BuildsTextButton>
         </span>
@@ -483,7 +486,7 @@ function CalculationCell({ footer }: { footer: TableFooterView }) {
 
 function Footer({ columns, footer }: { columns: readonly ColumnId[]; footer: TableFooterView }) {
   const cells: ReactNode[] = [];
-  const small = { ...text(11.5, 400, t.label), padding: "12px 12px 0 0" };
+  const small = { ...text(12, 400, t.label), padding: "12px 12px 0 0" };
   const skip = new Set<ColumnId>();
   const hasCalculations = Boolean(footer.onCalculate || footer.calculate);
   columns.forEach((id, position) => {
@@ -546,7 +549,7 @@ export function BuildsTableView(props: BuildsTableViewProps) {
         <div style={{ marginTop: 20 }}>{empty}</div>
       ) : (
         <div role="region" aria-label="Builds table" aria-busy={updating === true} tabIndex={0} style={{ marginTop: 20, overflowX: "auto" }}>
-          <table style={{ width: "100%", minWidth: 1000, borderCollapse: "collapse", ...text(12.5, 400, t.text) }}>
+          <table style={{ width: "100%", minWidth: 1000, borderCollapse: "collapse", ...text(13, 400, t.text) }}>
             <thead>
               <tr>
                 {columns.map((id, position) => (

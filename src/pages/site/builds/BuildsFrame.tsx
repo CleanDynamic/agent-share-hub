@@ -119,7 +119,7 @@ function ViewSegment({ view, current, href, onIntent }: { view: GalleryViewMode;
           alignItems: "center",
           padding: "0 12px",
           borderRadius: r.chip,
-          border: `1px solid ${current ? t.controlBorder : "transparent"}`,
+          border: `1px solid ${current ? t.selectedEdge : "transparent"}`,
           background: current ? t.control : "transparent",
           fontFamily: FIGTREE,
           fontSize: 12.5,
@@ -215,12 +215,18 @@ export const BuildsControl = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<
   );
 });
 
+/** BF-05 (G3): a pointer target reaches 24px by growing its hit area, never its drawn size: padding with a matching
+    negative margin, so nothing around it moves. `by` is the padding on each side of the line. */
+export const hitArea = (by: number): CSSProperties => ({ padding: `${by}px 0`, margin: `${-by}px 0` });
+
 /** A text button: "Clear all", "Save current", "Add a calculation". Takes a ref and a button's props, so a menu's trigger can be one. */
-export const BuildsTextButton = forwardRef<HTMLButtonElement, Omit<ButtonHTMLAttributes<HTMLButtonElement>, "color"> & { size?: 11.5 | 12 | 12.5; color?: string }>(function BuildsTextButton(
+export const BuildsTextButton = forwardRef<HTMLButtonElement, Omit<ButtonHTMLAttributes<HTMLButtonElement>, "color"> & { size?: 12 | 12.5; color?: string }>(function BuildsTextButton(
   { children, size = 12, color = t.label, ...rest },
   ref,
 ) {
   const { state, handlers } = useInteractive<HTMLButtonElement>(rest);
+  // One character (the calculation's remove, ×) is 8px wide: its hit area is 24 wide, with the extra taken back by the margin.
+  const single = typeof children === "string" && children.length === 1;
   return (
     <button
       ref={ref}
@@ -230,7 +236,7 @@ export const BuildsTextButton = forwardRef<HTMLButtonElement, Omit<ButtonHTMLAtt
       style={{
         background: "none",
         border: 0,
-        padding: 0,
+        ...(single ? { boxSizing: "border-box", minWidth: 24, textAlign: "center", padding: "2px 8px", margin: "-2px -8px" } : { padding: "2px", margin: "-2px" }),
         borderRadius: r.chip,
         fontFamily: FIGTREE,
         fontSize: size,
