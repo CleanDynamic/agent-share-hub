@@ -145,6 +145,19 @@ describe("the stored counts (SV-23 P1)", () => {
     expect(page.builds[0]).toMatchObject({ stepCount: 12, sessionCount: 2 });
   });
 
+  /* BF-03 P3 (D3): session_count defaults to 0 and an older writer filled it, so it is trusted only beside a step_count. */
+  it("a row whose step_count is null has no session count, whatever session_count holds", async () => {
+    response = { data: [{ ...rows[0], step_count: null, session_count: 1 }], error: null, count: 1 };
+    const page = await listBuildsTable();
+    expect(page.builds[0]).toMatchObject({ stepCount: null, sessionCount: null });
+  });
+
+  it("a row with both counts written keeps both", async () => {
+    response = { data: [{ ...rows[0], step_count: 4, session_count: 3 }], error: null, count: 1 };
+    const page = await listBuildsTable();
+    expect(page.builds[0]).toMatchObject({ stepCount: 4, sessionCount: 3 });
+  });
+
   it("filters a range on the stored column, from and to", async () => {
     await listBuildsTable({ ranges: { steps: { min: 5, max: 30 }, sessions: { min: 2 } } });
     expect(gteOnBuild()).toEqual([
