@@ -55,6 +55,11 @@ function panelValues(facet: Facet) {
 
 export type PanelOrder = "az" | "count";
 
+/** A checklist's values in the chosen order: most builds first (then by name), or by name. */
+function inOrder(options: WordOption[], order: PanelOrder): WordOption[] {
+  return order === "count" ? options.sort((a, b) => (b.count ?? 0) - (a.count ?? 0) || a.label.localeCompare(b.label)) : options.sort((a, b) => a.label.localeCompare(b.label));
+}
+
 /** One facet's checklist: every value with a build or chosen, in the chosen order (scales keep theirs). */
 export function facetOptions(facet: Facet, counts: Record<string, number>, chosen: readonly string[], order: PanelOrder): WordOption[] {
   const options = panelValues(facet)
@@ -62,7 +67,7 @@ export function facetOptions(facet: Facet, counts: Record<string, number>, chose
     .filter((option) => option.count > 0 || chosen.includes(option.key))
     .map((option) => ({ ...option, checked: chosen.includes(option.key) }));
   if (SCALE_FACETS.includes(facet)) return options;
-  return order === "count" ? options.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)) : options.sort((a, b) => a.label.localeCompare(b.label));
+  return inOrder(options, order);
 }
 
 const keysOf = (facets: readonly string[], facet: Facet) => facets.filter((key) => key.startsWith(`${facet}:`));
@@ -82,7 +87,8 @@ export interface PanelState {
   open: boolean;
   counts: Record<string, number> | null;
   patterns: readonly { value: Pattern; count: number }[] | null;
-  orders: Readonly<Record<string, PanelOrder>>;
+  /** BF-07 (A7): one order for every checklist that is not a scale. */
+  order: PanelOrder;
   /** SV-23: the number filters, drawn once their spread has answered (the stored counts are live). */
   ranges?: Partial<Record<RangeKey, NumberRange>>;
   spread?: CountSpread | null;
@@ -166,8 +172,8 @@ export function panelSections(state: PanelState): FilterSection[] {
         });
         continue;
       }
-      const order: WordOrder = SCALE_FACETS.includes(facet) ? "scale" : (state.orders[facet] ?? "az");
-      sections.push({ kind: "word", id: facet, name, group: "Classification", order, options: facetOptions(facet, counts, state.facets, order === "scale" ? "az" : order) });
+      const order: WordOrder = SCALE_FACETS.includes(facet) ? "scale" : state.order;
+      sections.push({ kind: "word", id: facet, name, group: "Classification", order, value: heldValue(facet, state.facets), options: facetOptions(facet, counts, state.facets, order === "scale" ? "az" : order) });
     }
   }
   const rangeSections = (keys: readonly RangeKey[], group: FilterGroup) => {
@@ -180,17 +186,19 @@ export function panelSections(state: PanelState): FilterSection[] {
     const chosen = state.model ? modelById(state.model) : null;
     const options = state.worksOn.map((entry) => ({ key: entry.model.id, label: entry.model.name, count: entry.builds, checked: entry.model.id === state.model }));
     if (chosen && !options.some((option) => option.checked)) options.push({ key: chosen.id, label: chosen.name, count: 0, checked: true });
-    sections.push({ kind: "word", id: "model", name: "Works on model", group: "Proof", order: "count", options });
+    sections.push({ kind: "word", id: "model", name: "Works on model", group: "Proof", order: state.order, value: chosen?.name ?? "Any", options: inOrder(options, state.order) });
   }
-  sections.push({ kind: "word", id: "within", name: "Last confirmed", group: "Proof", order: "scale", options: CONFIRMED_WITHIN.map((days) => ({ key: `within:${days}`, label: WITHIN_WORDS(days), checked: state.within === days })) });
-  sections.push({ kind: "word", id: "state", name: "Confirmed or stale", group: "Proof", order: "scale", options: (["confirmed", "stale"] as const).map((entry) => ({ key: `state:${entry}`, label: STATE_WORDS[entry].option, checked: state.confirmState === entry })) });
+  sections.push({ kind: "word", id: "within", name: "Last confirmed", group: "Proof", order: "scale", value: state.within !== undefined ? WITHIN_WORDS(state.within) : "Any", options: CONFIRMED_WITHIN.map((days) => ({ key: `within:${days}`, label: WITHIN_WORDS(days), checked: state.within === days })) });
+  sections.push({ kind: "word", id: "state", name: "Confirmed or stale", group: "Proof", order: "scale", value: state.confirmState ? STATE_WORDS[state.confirmState].chip : "Any", options: (["confirmed", "stale"] as const).map((entry) => ({ key: `state:${entry}`, label: STATE_WORDS[entry].option, checked: state.confirmState === entry })) });
   rangeSections(["rebuilds", "likes"], "Proof");
-  sections.push({ kind: "word", id: "shape", name: "Shape", group: "Structure", order: "az", options: GALLERY_SHAPES.map((shape) => ({ key: shape, label: shapeWord(shape), count: 0, checked: state.shapes.includes(shape) })) });
+  const shapeValue = state.shapes.length === 1 ? shapeWord(state.shapes[0]) : state.shapes.length > 1 ? `${state.shapes.length} chosen` : "Any";
+  sections.push({ kind: "word", id: "shape", name: "Shape", group: "Structure", order: state.order, value: shapeValue, options: inOrder(GALLERY_SHAPES.map((shape) => ({ key: shape, label: shapeWord(shape), count: 0, checked: state.shapes.includes(shape) })), state.order) });
   rangeSections(["steps", "sessions"], "Structure");
   if (state.patterns) {
-    sections.push({ kind: "word", id: "pattern", name: "Patterns", group: "Structure", order: "count", options: state.patterns.map((entry) => ({ key: entry.value, label: PATTERN_LABEL[entry.value], count: entry.count, checked: state.pattern === entry.value })) });
+    const options = state.patterns.map((entry) => ({ key: entry.value, label: PATTERN_LABEL[entry.value], count: entry.count, checked: state.pattern === entry.value }));
+    sections.push({ kind: "word", id: "pattern", name: "Patterns", group: "Structure", order: state.order, value: state.pattern ? PATTERN_LABEL[state.pattern] : "Any", options: inOrder(options, state.order) });
   }
-  sections.push({ kind: "word", id: "open", name: "Still open", group: "OpenBuilds", order: "az", options: [{ key: "open", label: "Has a still-open topic", count: 0, checked: state.open }] });
+  sections.push({ kind: "word", id: "open", name: "Still open", group: "OpenBuilds", order: "az", value: state.open ? "Has one" : "Any", options: [{ key: "open", label: "Has a still-open topic", count: 0, checked: state.open }] });
   /* BF-07 (A4, A5): within each group a checklist with nothing to choose follows the rest. Nothing else reorders, and nothing a
      reader does moves a filter: holding a value is not a place. */
   const empty = (section: FilterSection) => (section.kind === "word" && section.options.length === 0 ? 1 : 0);

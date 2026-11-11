@@ -55,7 +55,7 @@ describe("groups and a name search", () => {
   });
 
   it('typing "conf" in Find a filter shows Last confirmed and Confirmed or stale only, each labelled with its group, and no group is current', () => {
-    draw((p) => ({ ...p, sections: [...p.sections, { kind: "word", id: "state", name: "Confirmed or stale", group: "Proof", order: "scale", options: [] }] }));
+    draw((p) => ({ ...p, sections: [...p.sections, { kind: "word", id: "state", name: "Confirmed or stale", group: "Proof", order: "scale", value: "Any", options: [] }] }));
     fireEvent.change(screen.getByRole("searchbox", { name: "Find a filter" }), { target: { value: "conf" } });
     expect(shownNames()).toEqual(["Last confirmed", "Confirmed or stale"]);
     for (const name of ["Last confirmed", "Confirmed or stale"]) expect(within(screen.getByRole("region", { name })).getByText("Proof")).toBeTruthy();
@@ -138,5 +138,30 @@ describe("no reordering", () => {
     expect(within(panel).getByText("6 active")).toBeTruthy();
     expect(panel.textContent).not.toMatch(/drag|reorder/i);
     expect(panel.querySelector("[data-filter-slot]")).toBeNull();
+  });
+});
+
+/* ── BF-07 P4 (A7) ── */
+
+describe("one order control", () => {
+  it('the dialog header has one control, "Order values", with Most builds and A to Z; Most builds is pressed at first', () => {
+    const onOrder = vi.fn();
+    draw((p) => ({ ...p, onOrder }));
+    const order = screen.getByRole("group", { name: "Order values" });
+    expect(within(order).getAllByRole("button").map((button) => button.textContent)).toEqual(["Most builds", "A to Z"]);
+    expect(within(order).getByRole("button", { name: "Most builds" }).getAttribute("aria-pressed")).toBe("true");
+    expect(within(order).getByRole("button", { name: "A to Z" }).getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(within(order).getByRole("button", { name: "A to Z" }));
+    expect(onOrder).toHaveBeenCalledWith("az");
+    expect(screen.getAllByRole("group", { name: "Order values" })).toHaveLength(1);
+  });
+
+  it("no checklist draws its own order pair", () => {
+    draw();
+    expect(screen.queryByRole("button", { name: "A–Z" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Count" })).toBeNull();
+    /* The head says what the filter holds: Sales once on the right of the name, and once as its ticked value. */
+    expect(within(screen.getByRole("region", { name: "Field" })).getAllByText("Sales")).toHaveLength(2);
+    expect(within(screen.getByRole("region", { name: "Task" })).getByText("Any")).toBeTruthy();
   });
 });

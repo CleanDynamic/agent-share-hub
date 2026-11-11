@@ -8,7 +8,7 @@ import { activeChips, histogramOf, medianOf, panelSections, tableFooter, toggled
 import type { RangeSection } from "./BuildsFiltersView";
 
 const params = (search: string) => parseGalleryParams(new URLSearchParams(search));
-const STATE = { facets: [], shapes: [], open: false, counts: null, patterns: null, orders: {} };
+const STATE = { facets: [], shapes: [], open: false, counts: null, patterns: null, order: "count" as const };
 
 describe("histogramOf", () => {
   it("makes twelve bars, the tallest full height, with the cap's builds in the last", () => {
@@ -174,5 +174,29 @@ describe("fixed places", () => {
     expect(field).toMatchObject({ kind: "word", group: "Classification" });
     expect(Object.keys(field!).sort()).toEqual(Object.keys(task!).sort());
     expect(sections.filter((section) => section.id === "field")).toHaveLength(1);
+  });
+});
+
+/* ── BF-07 P4 (A7) ── */
+
+describe("one order", () => {
+  const counts = { "field:education": 2, "field:law": 9, "field:agriculture": 4, "cost:needs-a-paid-plan": 3, "cost:free-plans-are-enough": 1 };
+
+  it("choosing A to Z orders every checklist by name; scales keep their own order", () => {
+    const labels = (order: "az" | "count", id: string) => (panelSections({ ...STATE, counts, order }).find((section) => section.id === id) as unknown as { options: { label: string }[] }).options.map((option) => option.label);
+    const byName = labels("az", "field");
+    expect(byName).toEqual([...byName].sort((a, b) => a.localeCompare(b)));
+    const byCount = labels("count", "field");
+    expect(byCount[0]).toMatch(/^Law/);
+    expect(labels("az", "cost")).toEqual(labels("count", "cost"));
+    expect(labels("az", "cost")[0]).toMatch(/^Free plans/);
+    expect(panelSections({ ...STATE, counts, order: "az" }).find((section) => section.id === "cost")).toMatchObject({ order: "scale" });
+  });
+
+  it("each checklist carries what it holds, for the right of its name", () => {
+    const sections = panelSections({ ...STATE, counts, facets: ["field:law"], within: 30 });
+    expect(sections.find((section) => section.id === "field")).toMatchObject({ value: expect.stringMatching(/^Law/) });
+    expect(sections.find((section) => section.id === "within")).toMatchObject({ value: "Within 30 days" });
+    expect(sections.find((section) => section.id === "shape")).toMatchObject({ value: "Any" });
   });
 });

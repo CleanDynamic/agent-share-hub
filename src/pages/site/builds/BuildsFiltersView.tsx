@@ -50,8 +50,10 @@ export interface WordSection {
   name: string;
   /** BF-07 (A3): the dialog's group the filter is listed in. */
   group: FilterGroup;
-  /** "az" or "count" shows the A–Z · Count pair; "scale" shows "Scale order" and keeps the taxonomy's order. */
+  /** "az" or "count": the dialog's one order control (BF-07); "scale" keeps the taxonomy's order. */
   order: WordOrder;
+  /** BF-07 (A7): what the filter holds, on the right of its name: "Any", the one value or "n chosen". */
+  value: string;
   options: readonly WordOption[];
 }
 
@@ -129,7 +131,9 @@ export interface BuildsFiltersViewProps {
   /** Every filter, each in its group, in the order drawn. */
   sections: readonly FilterSection[];
   onToggleOption: (sectionId: string, key: string) => void;
-  onOrder?: (sectionId: string, order: "az" | "count") => void;
+  /** BF-07 (A7): one order for every checklist, chosen in the dialog's header. */
+  order: "az" | "count";
+  onOrder: (order: "az" | "count") => void;
   onRange?: (sectionId: string, value: readonly [number, number]) => void;
   onToggleSegment?: (sectionId: string, key: string) => void;
 }
@@ -271,20 +275,6 @@ function SavedSets({ rows, onSaveCurrent, open, onRename, onTogglePublic, onDele
 
 /* ── a word filter ── */
 
-function OrderPair({ order, onOrder }: { order: "az" | "count"; onOrder?: (order: "az" | "count") => void }) {
-  return (
-    <span style={small(t.label)}>
-      <BuildsTextButton aria-pressed={order === "az"} color={order === "az" ? t.text : t.label} onClick={() => onOrder?.("az")}>
-        A–Z
-      </BuildsTextButton>
-      <span aria-hidden="true" style={{ color: t.label }}> · </span>
-      <BuildsTextButton aria-pressed={order === "count"} color={order === "count" ? t.text : t.label} onClick={() => onOrder?.("count")}>
-        Count
-      </BuildsTextButton>
-    </span>
-  );
-}
-
 function OptionRow({ option, onToggle }: { option: WordOption; onToggle: () => void }) {
   return (
     <label style={{ display: "grid", gridTemplateColumns: "14px 1fr auto", columnGap: 10, alignItems: "center", minHeight: 30, cursor: "pointer", ...text(12.5, 400, option.checked ? t.text : t.text2) }}>
@@ -295,12 +285,12 @@ function OptionRow({ option, onToggle }: { option: WordOption; onToggle: () => v
   );
 }
 
-function WordFilter({ section, label, onToggle, onOrder }: { section: WordSection; label?: string; onToggle: (key: string) => void; onOrder?: (order: "az" | "count") => void }) {
+function WordFilter({ section, label, onToggle }: { section: WordSection; label?: string; onToggle: (key: string) => void }) {
   return (
     <section aria-label={section.name} style={rule}>
       <SectionHead
         name={section.name}
-        right={label ? <span style={small(t.label)}>{label}</span> : section.order === "scale" ? <span style={small(t.label)}>Scale order</span> : <OrderPair order={section.order} onOrder={onOrder} />}
+        right={<span style={small(t.label)}>{label ?? section.value}</span>}
       />
       {section.options.length === 0 ? (
         <p style={{ ...text(12, 400, t.label), margin: "10px 0 0" }}>No builds have a value yet.</p>
@@ -462,7 +452,7 @@ export interface BuildsFiltersBodyProps extends BuildsFiltersViewProps {
 /** The body of the dialog: the groups on the left (a row that scrolls sideways on a phone), the chosen group's filters on the
     right, or, while a name is searched, every filter whose name holds it, each labelled with its group. */
 export function BuildsFiltersView(props: BuildsFiltersBodyProps) {
-  const { activeCount, onAdd, savedSets, sections, onToggleOption, onOrder, onRange, onToggleSegment, search = "" } = props;
+  const { activeCount, onAdd, savedSets, sections, onToggleOption, onRange, onToggleSegment, search = "" } = props;
   const phone = useIsPhone();
   const groups = FILTER_GROUPS.filter((group) => sections.some((section) => section.group === group));
   const [chosen, setChosen] = useState<FilterGroup | null>(null);
@@ -483,7 +473,7 @@ export function BuildsFiltersView(props: BuildsFiltersBodyProps) {
           {query && shown.length === 0 ? <p style={{ ...text(12.5, 400, t.text2), margin: 0, padding: "16px 0" }}>No filter has that name.</p> : null}
           {shown.map((section) => {
             const label = query ? section.group : undefined;
-            if (section.kind === "word") return <WordFilter key={section.id} section={section} label={label} onToggle={(key) => onToggleOption(section.id, key)} onOrder={onOrder ? (order) => onOrder(section.id, order) : undefined} />;
+            if (section.kind === "word") return <WordFilter key={section.id} section={section} label={label} onToggle={(key) => onToggleOption(section.id, key)} />;
             if (section.kind === "range") return <RangeFilter key={section.id} section={section} label={label} onChange={onRange ? (value) => onRange(section.id, value) : undefined} />;
             return <ScaleFilter key={section.id} section={section} label={label} onToggle={onToggleSegment ? (key) => onToggleSegment(section.id, key) : undefined} />;
           })}
@@ -502,9 +492,35 @@ export function BuildsFilters({ open, onOpenChange, ...props }: BuildsFiltersVie
     onOpenChange(next);
   };
   return (
-    <BuildsFiltersDialog open={open} onOpenChange={close} headerExtra={<FilterSearch value={search} onChange={setSearch} />}>
+    <BuildsFiltersDialog
+      open={open}
+      onOpenChange={close}
+      headerExtra={
+        <>
+          <FilterSearch value={search} onChange={setSearch} />
+          <OrderValues order={props.order} onOrder={props.onOrder} />
+        </>
+      }
+    >
       <BuildsFiltersView {...props} search={search} />
     </BuildsFiltersDialog>
+  );
+}
+
+/** BF-07 (A7): how every checklist is ordered, Most builds or A to Z; the one pressed is in `--text`. */
+function OrderValues({ order, onOrder }: { order: "az" | "count"; onOrder: (order: "az" | "count") => void }) {
+  const choices = [
+    { value: "count", label: "Most builds" },
+    { value: "az", label: "A to Z" },
+  ] as const;
+  return (
+    <div role="group" aria-label="Order values" style={{ display: "flex", alignItems: "center", gap: 12, flex: "none" }}>
+      {choices.map((choice) => (
+        <BuildsTextButton key={choice.value} aria-pressed={order === choice.value} color={order === choice.value ? t.text : t.label} onClick={() => onOrder(choice.value)}>
+          {choice.label}
+        </BuildsTextButton>
+      ))}
+    </div>
   );
 }
 

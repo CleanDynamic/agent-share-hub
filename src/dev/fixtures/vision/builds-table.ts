@@ -24,7 +24,8 @@ export const visionBuildsSections: FilterSection[] = [
     id: "field",
     name: "Field",
     group: "Classification",
-    order: "az",
+    order: "count",
+    value: "Sales",
     options: words([["AI and machine learning", 14, false], ["Education", 9, false], ["Finance", 11, false], ["Marketing", 18, false], ["Sales", 22, true], ["Software development", 31, false]]),
   },
   {
@@ -46,6 +47,7 @@ export const visionBuildsSections: FilterSection[] = [
     name: "Works on model",
     group: "Proof",
     order: "count",
+    value: "Opus 5.5",
     options: words([["Sonnet 4.5", 44, false], ["Opus 5.5", 31, true], ["GPT-5", 27, false], ["Gemini 3.5 Pro", 12, false]]),
   },
   {
@@ -76,13 +78,13 @@ export const visionBuildsSections: FilterSection[] = [
     endLabels: ["You do each step", "Fully autonomous"],
   },
   /* BF-07: every filter is drawn in its group; the board's closed rows are checklists. */
-  { kind: "word", id: "stack", name: "Tools and stack", group: "Classification", order: "count", options: words([["Claude Code", 34, true], ["Cursor", 21, false], ["n8n", 9, false]]) },
-  { kind: "word", id: "task", name: "Task", group: "Classification", order: "az", options: words([["Drafting", 12, false], ["Research", 8, false]]) },
-  { kind: "word", id: "built", name: "What was built", group: "Classification", order: "az", options: words([["Automation workflow", 9, false], ["Configured assistant", 6, false]]) },
-  { kind: "word", id: "technique", name: "Techniques", group: "Classification", order: "az", options: [] },
-  { kind: "word", id: "within", name: "Last confirmed", group: "Proof", order: "scale", options: [["Within 7 days", false], ["Within 30 days", false], ["Within 90 days", false]].map(([label, checked]) => ({ key: String(label), label: String(label), checked: Boolean(checked) })) },
-  { kind: "word", id: "cost", name: "Cost to run", group: "Classification", order: "scale", options: words([["Free plans are enough", 14, false], ["Needs a paid plan", 6, false]]) },
-  { kind: "word", id: "open", name: "Still open", group: "OpenBuilds", order: "az", options: words([["Has a still-open topic", 3, false]]) },
+  { kind: "word", id: "stack", name: "Tools and stack", group: "Classification", order: "count", value: "Claude Code", options: words([["Claude Code", 34, true], ["Cursor", 21, false], ["n8n", 9, false]]) },
+  { kind: "word", id: "task", name: "Task", group: "Classification", order: "count", value: "Any", options: words([["Drafting", 12, false], ["Research", 8, false]]) },
+  { kind: "word", id: "built", name: "What was built", group: "Classification", order: "count", value: "Any", options: words([["Automation workflow", 9, false], ["Configured assistant", 6, false]]) },
+  { kind: "word", id: "technique", name: "Techniques", group: "Classification", order: "count", value: "Any", options: [] },
+  { kind: "word", id: "within", name: "Last confirmed", group: "Proof", order: "scale", value: "Any", options: [["Within 7 days", false], ["Within 30 days", false], ["Within 90 days", false]].map(([label, checked]) => ({ key: String(label), label: String(label), checked: Boolean(checked) })) },
+  { kind: "word", id: "cost", name: "Cost to run", group: "Classification", order: "scale", value: "Any", options: words([["Free plans are enough", 14, false], ["Needs a paid plan", 6, false]]) },
+  { kind: "word", id: "open", name: "Still open", group: "OpenBuilds", order: "az", value: "Any", options: words([["Has a still-open topic", 3, false]]) },
 ];
 
 const TOOL = { C: "claude-code", G: "gemini", S: "replit", L: "lovable", N: "n8n", Z: "zapier" } as const;
@@ -142,6 +144,7 @@ export function visionBuildsTableProps(): BuildsViewProps {
       },
       sections: visionBuildsSections,
       onToggleOption: noop,
+      order: "count",
       onOrder: noop,
       onRange: noop,
       onToggleSegment: noop,

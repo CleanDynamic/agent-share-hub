@@ -123,8 +123,8 @@ export default function BuildsPage() {
   const go = (next: GalleryParams) => navigate(galleryHref(next), { preventScrollReset: true });
   const hrefFor = (next: GalleryViewMode) => galleryHref({ ...params, view: next === "table" ? undefined : next });
 
-  /* The panel's own, for the visit: how each checklist is ordered. Which filters are open is the layout's. */
-  const [orders, setOrders] = useState<Record<string, PanelOrder>>({});
+  /* The panel's own, for the visit: how every checklist is ordered (BF-07: one order for all, most builds first). */
+  const [order, setOrder] = useState<PanelOrder>("count");
   /* Maps: which way the Map is drawn, kept for the visit. */
   const [direction, setDirection] = useState<MapsDirection>("horizontal");
   /* Maps: how many of the loaded builds are drawn; each 24 are one read. */
@@ -212,7 +212,7 @@ export default function BuildsPage() {
     open: params.open === true,
     counts: classified ? (classification.data?.counts ?? {}) : null,
     patterns: patternsLive ? (facets.data?.patterns ?? []) : null,
-    orders,
+    order,
     ranges: params.ranges,
     spread: countsLive ? (spread.data ?? null) : null,
     within: params.within,
@@ -305,7 +305,8 @@ export default function BuildsPage() {
       },
       onToggleOption: (sectionId, key) => go(toggled(params, sectionId, key)),
       onToggleSegment: (sectionId, key) => go(toggled(params, sectionId, key)),
-      onOrder: (sectionId, order) => setOrders((current) => ({ ...current, [sectionId]: order })),
+      order,
+      onOrder: setOrder,
   };
 
   const onMoreMaps = () => {
