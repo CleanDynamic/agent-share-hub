@@ -10,6 +10,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 
 import { visionBuildsTableProps } from "@/dev/fixtures/vision/builds-table";
 
+import { BuildsTableView, type ColumnId, type TableRowView } from "./BuildsTableView";
 import { BuildsView, type BuildsViewProps } from "./BuildsView";
 
 /** A wide window: every min-width query matches, so the two columns are drawn. */
@@ -374,3 +375,55 @@ describe("the Sort menu", () => {
   });
 });
 
+
+/* ── BF-01 ── */
+
+/** A row with nothing set: no counts, no words, no runs, no tools. */
+const blankRow: TableRowView = {
+  id: "blank", href: "#", title: "Blank build", maker: "kit", built: "", field: "", tools: [], steps: null, sessions: null,
+  reproductions: 0, lit: false, confirmed: "", runs: [], rebuilds: 0, open: "", cost: "",
+};
+
+function drawTable(rows: readonly TableRowView[], columns?: readonly ColumnId[]) {
+  const table = visionBuildsTableProps().table!;
+  return render(
+    <MemoryRouter>
+      <BuildsTableView {...table} rows={rows} columns={columns ?? table.columns} />
+    </MemoryRouter>,
+  );
+}
+
+/** The cell of a column in the first body row. */
+function cellIn(column: string): HTMLElement {
+  const heads = screen.getAllByRole("columnheader");
+  const at = heads.findIndex((head) => head.textContent?.replace(/[↑↓]/g, "").trim() === column);
+  const row = screen.getAllByRole("row").find((tr) => tr.closest("tbody"))!;
+  return within(row).getAllByRole("cell")[at];
+}
+
+describe("BF-01 empty values", () => {
+  it("a row with no steps, sessions, field, what was built, confirmed, open and cost shows the empty mark in each of those cells", () => {
+    drawTable([blankRow]);
+    for (const column of ["Steps", "Sessions", "Field", "What was built", "Confirmed", "Open", "Cost to run"]) {
+      const mark = within(cellIn(column)).getByTestId("empty-value");
+      expect(mark.querySelector('[aria-hidden="true"]')?.textContent).toBe("\u2013");
+      expect(within(mark).getByText("no value")).toBeTruthy();
+    }
+  });
+
+  it("a real zero is a zero", () => {
+    drawTable([blankRow]);
+    for (const column of ["Reproductions", "Rebuilds"]) {
+      const cell = cellIn(column);
+      expect(cell.textContent).toContain("0");
+      expect(within(cell).queryByTestId("empty-value")).toBeNull();
+    }
+  });
+
+  it("no cell in the table is blank", () => {
+    const table = visionBuildsTableProps().table!;
+    drawTable([{ ...blankRow, extra: {} }], [...table.columns, "shape", "task"]);
+    const row = screen.getAllByRole("row").find((tr) => tr.closest("tbody"))!;
+    for (const cell of within(row).getAllByRole("cell")) expect(cell.textContent?.trim()).not.toBe("");
+  });
+});

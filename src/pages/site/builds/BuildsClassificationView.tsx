@@ -15,6 +15,7 @@ import { Link } from "react-router-dom";
 
 import { Checkbox } from "@/components/brand/Checkbox";
 import { LampBar } from "@/components/brand/LampDot";
+import { Empty } from "@/components/vision/Empty";
 import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
 import type { GalleryViewMode } from "@/lib/build/galleryParams";
 import { FACET_LABEL, type Facet } from "@/lib/classify/taxonomy";
@@ -85,7 +86,7 @@ function FacetRow({ row }: { row: ClassRowView }) {
       </dt>
       <dd style={{ margin: 0, ...text(12.5, 400, t.text), lineHeight: "18px" }}>
         {row.values.length === 0 ? (
-          <span style={{ color: t.label }}>None</span>
+          <Empty />
         ) : (
           row.values.map((value, index) => (
             <span key={`${value.label}-${index}`}>

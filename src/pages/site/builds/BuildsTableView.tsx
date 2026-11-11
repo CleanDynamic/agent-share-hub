@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ActiveFilterChip } from "@/components/vision/ActiveFilterChip";
+import { Empty } from "@/components/vision/Empty";
 import type { CalcKind } from "@/lib/build/buildsLayout";
 import { TextTabs, type TextTab } from "@/components/vision/TextTabs";
 import { ring } from "@/lib/theme/controls";
@@ -313,6 +314,7 @@ function ToolMarks({ tools }: { tools: readonly TableTool[] }) {
 }
 
 function RunBars({ runs }: { runs: readonly number[] }) {
+  if (runs.every((value) => value === 0)) return <Empty />;
   const max = Math.max(1, ...runs);
   const summary = `Runs per week over 12 weeks, oldest first: ${runs.join(", ")}`;
   return (
@@ -341,15 +343,15 @@ function cellOf(id: ColumnId, row: TableRowView): ReactNode {
     case "build":
       return <BuildCell row={row} />;
     case "built":
-      return row.built;
+      return row.built || <Empty />;
     case "field":
-      return row.field;
+      return row.field || <Empty />;
     case "tools":
-      return <ToolMarks tools={row.tools} />;
+      return row.tools.length > 0 ? <ToolMarks tools={row.tools} /> : <Empty />;
     case "steps":
-      return row.steps ?? "·";
+      return row.steps ?? <Empty />;
     case "sessions":
-      return row.sessions ?? "·";
+      return row.sessions ?? <Empty />;
     case "reproductions":
       return (
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
@@ -358,17 +360,17 @@ function cellOf(id: ColumnId, row: TableRowView): ReactNode {
         </span>
       );
     case "confirmed":
-      return row.confirmed;
+      return row.confirmed || <Empty />;
     case "runs":
       return <RunBars runs={row.runs} />;
     case "rebuilds":
       return row.rebuilds;
     case "open":
-      return row.open || "·";
+      return row.open || <Empty />;
     case "cost":
-      return row.cost;
+      return row.cost || <Empty />;
     default:
-      return row.extra?.[id] ?? "";
+      return row.extra?.[id] || <Empty />;
   }
 }
 

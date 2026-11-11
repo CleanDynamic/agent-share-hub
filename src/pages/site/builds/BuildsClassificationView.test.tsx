@@ -67,9 +67,11 @@ describe("a card", () => {
     expect(links.length).toBeGreaterThan(0);
   });
 
-  it("says None where a facet holds nothing", () => {
-    draw((p) => ({ ...p, cards: [{ ...p.cards[0], rows: p.cards[0].rows.map((row) => ({ ...row, source: "", values: [] })) }] }));
-    expect(screen.getAllByText("None")).toHaveLength(8);
+  it("a facet with no value shows the empty mark, not the word None", () => {
+    draw((p) => ({ ...p, cards: [{ ...p.cards[0], rows: p.cards[0].rows.map((row, index) => ({ ...row, values: index === 0 ? [] : row.values })) }] }));
+    const card = within(screen.getByTestId("classification-card"));
+    expect(card.getAllByTestId("empty-value")).toHaveLength(1);
+    expect(card.queryByText("None")).toBeNull();
   });
 });
 
