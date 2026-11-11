@@ -14,9 +14,8 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { Checkbox } from "@/components/brand/Checkbox";
-import { LampBar } from "@/components/brand/LampDot";
-import { Empty } from "@/components/vision/Empty";
 import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
+import { Empty } from "@/components/vision/Empty";
 import type { GalleryViewMode } from "@/lib/build/galleryParams";
 import { FACET_LABEL, type Facet } from "@/lib/classify/taxonomy";
 import { ring } from "@/lib/theme/controls";
@@ -26,6 +25,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { BuildsControl, ClassificationHead, ViewSwitch, ellipsis, text, useCardColumns } from "./BuildsFrame";
+import { RowLamp } from "./BuildsTableView";
 import { ALL_FACETS, type ClassCardView, type ClassRowView, type ClassValueView } from "./classificationModel";
 
 export interface BuildsClassificationViewProps {
@@ -124,7 +124,7 @@ export function ClassificationCard({ card, index }: { card: ClassCardView; index
             {card.reproductions}
             <VisuallyHidden> reproduced</VisuallyHidden>
           </span>
-          <LampBar dim={!card.lit} />
+          {card.reproductions > 0 ? <RowLamp lit={card.lit} /> : null}
         </span>
       </div>
       <dl style={{ margin: "16px 0 0" }}>

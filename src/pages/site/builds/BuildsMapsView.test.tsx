@@ -212,3 +212,12 @@ describe("an empty page", () => {
     expect(screen.queryAllByTestId("map-card")).toHaveLength(0);
   });
 });
+
+describe("BF-01 the lamp", () => {
+  it("a card with no reproductions draws no lamp", () => {
+    const base = visionBuildsMapsProps();
+    draw({ cards: base.cards.map((card, index) => (index === 0 ? { ...card, reproductions: 0, reproduced: "0 reproduced", lit: false } : card)) });
+    expect(within(cards()[0]).queryByRole("img", { name: /Confirmed in the last|Stale/ })).toBeNull();
+    expect(within(cards()[1]).getByRole("img", { name: /Confirmed in the last|Stale/ })).toBeTruthy();
+  });
+});

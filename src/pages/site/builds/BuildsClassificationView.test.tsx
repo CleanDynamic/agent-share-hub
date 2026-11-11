@@ -125,3 +125,12 @@ describe("more builds", () => {
     expect(onMore).toHaveBeenCalled();
   });
 });
+
+describe("BF-01 the lamp", () => {
+  it("a card with no reproductions draws no lamp", () => {
+    draw((p) => ({ ...p, cards: p.cards.map((card, index) => (index === 0 ? { ...card, reproductions: 0, lit: false } : card)) }));
+    const all = screen.getAllByTestId("classification-card");
+    expect(within(all[0]).queryByRole("img", { name: /Confirmed in the last|Stale/ })).toBeNull();
+    expect(within(all[1]).getByRole("img", { name: /Confirmed in the last|Stale/ })).toBeTruthy();
+  });
+});

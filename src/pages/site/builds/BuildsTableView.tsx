@@ -10,7 +10,7 @@
    region a keyboard can reach. Rows past the first screen are skipped until near (`content-visibility`). No motion: rows
    change at once. */
 
-import type { ReactNode } from "react";
+import { cloneElement, type ReactElement, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { LampBar } from "@/components/brand/LampDot";
@@ -29,6 +29,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ActiveFilterChip } from "@/components/vision/ActiveFilterChip";
 import { Empty } from "@/components/vision/Empty";
 import type { CalcKind } from "@/lib/build/buildsLayout";
+import { STALE_AFTER_DAYS } from "@/lib/build/signals";
 import { TextTabs, type TextTab } from "@/components/vision/TextTabs";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -273,6 +274,16 @@ function ActiveFilters({ chips, onRemove, onClearAll }: { chips: readonly TableC
 
 /* ── cells ── */
 
+/** BF-01 P4 (C10): the lamp, named. Lit: confirmed within the window; dim: gone stale. Drawn only where there is a reproduction. */
+export function RowLamp({ lit }: { lit: boolean }) {
+  const name = lit ? `Confirmed in the last ${STALE_AFTER_DAYS} days` : `Stale: not confirmed in ${STALE_AFTER_DAYS} days`;
+  return (
+    <span role="img" aria-label={name} title={name} style={{ display: "inline-flex" }}>
+      <LampBar dim={!lit} />
+    </span>
+  );
+}
+
 const th = (right: boolean, last: boolean): React.CSSProperties => ({ ...text(11.5, 400, t.label), padding: last ? "0 0 10px" : "0 12px 10px 0", borderBottom: `1px solid ${t.hairline}`, textAlign: right ? "right" : "left", verticalAlign: "bottom", whiteSpace: "nowrap" });
 const td = (right: boolean, last: boolean): React.CSSProperties => ({ padding: last ? 0 : "0 12px 0 0", height: TABLE_ROW, textAlign: right ? "right" : "left", whiteSpace: "nowrap" });
 
@@ -356,7 +367,7 @@ function cellOf(id: ColumnId, row: TableRowView): ReactNode {
       return (
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
           {row.reproductions}
-          <LampBar dim={!row.lit} />
+          {row.reproductions > 0 ? <RowLamp lit={row.lit} /> : null}
         </span>
       );
     case "confirmed":
@@ -392,6 +403,22 @@ function Row({ row, columns, index }: { row: TableRowView; columns: readonly Col
 }
 
 /* ── the footer ── */
+
+/** BF-01 P4: what the two lamps mean, the last thing in the footer. */
+function LampKey() {
+  return (
+    <span style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 8, ...text(12, 400, t.label) }}>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+        <RowLamp lit />
+        <span>{`confirmed in the last ${STALE_AFTER_DAYS} days`}</span>
+      </span>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+        <RowLamp lit={false} />
+        <span>stale</span>
+      </span>
+    </span>
+  );
+}
 
 function span(columns: readonly ColumnId[], from: ColumnId, group: readonly ColumnId[]): number {
   return group.filter((id) => columns.includes(id) && columns.indexOf(id) >= columns.indexOf(from)).length;
@@ -477,6 +504,11 @@ function Footer({ columns, footer }: { columns: readonly ColumnId[]; footer: Tab
   });
   /* With Confirmed off the button has no cell of its own: it sits in a row under the footer, the width of the table. */
   const apart = hasCalculations && !columns.includes("confirmed");
+  /* The key goes last in the footer's final cell: the row under it when the calculations sit apart, else the last cell. */
+  if (!apart) {
+    const last = cells[cells.length - 1] as ReactElement<{ children?: ReactNode }>;
+    cells[cells.length - 1] = cloneElement(last, undefined, last.props.children, <LampKey key="key" />);
+  }
   return (
     <tfoot>
       <tr>{cells}</tr>
@@ -484,6 +516,7 @@ function Footer({ columns, footer }: { columns: readonly ColumnId[]; footer: Tab
         <tr>
           <td colSpan={columns.length} style={{ padding: "8px 0 0" }}>
             <CalculationCell footer={footer} />
+            <LampKey />
           </td>
         </tr>
       ) : null}

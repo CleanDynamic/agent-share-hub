@@ -183,6 +183,7 @@ export function cardOf(build: BuildsTableBuild, map: BuildMap | undefined, now: 
     maker: build.maker?.handle ?? null,
     summary: !map && failed ? "Map not loaded" : mapSummary(model),
     reproduced: `${row.reproductions} reproduced`,
+    reproductions: row.reproductions,
     lit: row.lit,
     sessions: model?.sessions.length ?? 0,
     words: !map && failed ? `${row.title}: the Map did not load.` : mapWords(row.title, model),

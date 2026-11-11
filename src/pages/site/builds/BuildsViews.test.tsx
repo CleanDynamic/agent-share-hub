@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 
 import { visionBuildsTableProps } from "@/dev/fixtures/vision/builds-table";
+import { STALE_AFTER_DAYS } from "@/lib/build/signals";
 
 import { ALL_COLUMNS, BuildsTableView, type ColumnId, type TableRowView } from "./BuildsTableView";
 import { BuildsView, type BuildsViewProps } from "./BuildsView";
@@ -441,5 +442,38 @@ describe("BF-01 headers on one line", () => {
     const button = within(screen.getByRole("columnheader", { name: /Reproductions/ })).getByRole("button");
     expect(button.style.display).toBe("inline-flex");
     expect(button.textContent).toBe("Reproductions↓");
+  });
+});
+
+describe("BF-01 the lamp", () => {
+  const lit = `Confirmed in the last ${STALE_AFTER_DAYS} days`;
+  const dim = `Stale: not confirmed in ${STALE_AFTER_DAYS} days`;
+  const bodyRow = () => screen.getAllByRole("row").find((tr) => tr.closest("tbody"))!;
+
+  it("a build with no reproductions shows 0 and no lamp", () => {
+    drawTable([blankRow]);
+    expect(cellIn("Reproductions").textContent).toBe("0");
+    expect(within(bodyRow()).queryByRole("img", { name: lit })).toBeNull();
+    expect(within(bodyRow()).queryByRole("img", { name: dim })).toBeNull();
+  });
+
+  it(`a lit lamp is named "Confirmed in the last 120 days"`, () => {
+    drawTable([{ ...blankRow, reproductions: 5, lit: true }]);
+    const lamp = within(bodyRow()).getByRole("img", { name: lit });
+    expect(lamp.getAttribute("title")).toBe(lit);
+  });
+
+  it(`a dim lamp is named "Stale: not confirmed in 120 days"`, () => {
+    drawTable([{ ...blankRow, reproductions: 5, lit: false }]);
+    expect(within(bodyRow()).getByRole("img", { name: dim })).toBeTruthy();
+  });
+
+  it("the footer carries the key: a lit lamp with its words and a dim lamp with its words", () => {
+    drawTable([blankRow]);
+    const foot = screen.getAllByRole("rowgroup").find((group) => group.tagName === "TFOOT")!;
+    expect(within(foot).getByRole("img", { name: lit })).toBeTruthy();
+    expect(within(foot).getByRole("img", { name: dim })).toBeTruthy();
+    expect(within(foot).getByText(`confirmed in the last ${STALE_AFTER_DAYS} days`)).toBeTruthy();
+    expect(within(foot).getByText("stale")).toBeTruthy();
   });
 });
