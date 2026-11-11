@@ -224,7 +224,8 @@ export function DragHandle({ label, nest, testId = "drag-handle", phone }: { lab
     },
     [setActivator],
   );
-  if (!nest.on) return null;
+  /* F72: a tile that cannot move keeps the handle's 16 wide slot, so its badge and title stand on the same edges as every other tile's. */
+  if (!nest.on) return <span aria-hidden="true" data-testid={`${testId}-slot`} style={{ width: size.icon, flexShrink: 0 }} />;
   return (
     <button
       type="button"
