@@ -1149,6 +1149,9 @@ export const CA03_FILES: readonly string[] = [
   "src/dev/fixtures/vision/builds-classification.ts",
   "src/pages/dev/VisionBuildsClassification.tsx",
 
+  // BF-01
+  "src/components/vision/Empty.tsx",
+
   // SV-14
   "src/lib/build/graph.ts",
   "src/pages/site/openbuilds/OpenBuildsFrame.tsx",

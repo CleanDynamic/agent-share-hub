@@ -16,7 +16,6 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
-import { LampBar } from "@/components/brand/LampDot";
 import { Segmented } from "@/components/brand/Segmented";
 import { Skeleton } from "@/components/brand/Skeleton";
 import { ActiveFilterChip } from "@/components/vision/ActiveFilterChip";
@@ -28,7 +27,7 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { BuildsControl, MapsHead, ViewSwitch, ellipsis, text, useCardColumns } from "./BuildsFrame";
-import type { TableChip } from "./BuildsTableView";
+import { RowLamp, type TableChip } from "./BuildsTableView";
 
 /** The well, in the board's own units. */
 export const WELL_W = 400;
@@ -83,6 +82,8 @@ export interface MapCardView {
   summary: string;
   /** "6 reproduced". */
   reproduced: string;
+  /** BF-01 P4: the same count as a number: the lamp is drawn only above zero. */
+  reproductions: number;
   lit: boolean;
   /** How many sessions the build has: fewer than two is "One session. A Map needs two." */
   sessions: number;
@@ -204,7 +205,7 @@ export function MapCard({ card, direction, index }: { card: MapCardView; directi
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flex: "none" }}>
           <span style={text(12.5, 400, t.text2)}>{card.reproduced}</span>
-          <LampBar dim={!card.lit} />
+          {card.reproductions > 0 ? <RowLamp lit={card.lit} /> : null}
         </span>
       </div>
     </article>

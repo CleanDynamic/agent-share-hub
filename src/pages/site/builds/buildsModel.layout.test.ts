@@ -98,7 +98,7 @@ describe("the calculations", () => {
     const added = [{ column: "steps", kind: "sum" as const }, { column: "cost", kind: "common" as const }, { column: "skill", kind: "common" as const }];
     const entries = footerCalculations(added, ["build", "steps", "cost"], rows, () => undefined);
     expect(entries.map((entry) => entry.text)).toEqual(["Sum, Steps 14", "Most common, Cost to run Free"]);
-    expect(footerCalculations([{ column: "steps", kind: "median" }], ["build", "steps"], [row({ steps: null })], () => undefined)[0].text).toBe("Median, Steps ·");
+    expect(footerCalculations([{ column: "steps", kind: "median" }], ["build", "steps"], [row({ steps: null })], () => undefined)[0].text).toBe("Median, Steps –");
   });
 
   it("make the menu from the drawn columns that can have one, with the ones added ticked", () => {

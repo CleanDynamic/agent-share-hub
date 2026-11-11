@@ -437,7 +437,7 @@ export function footerCalculations(calculations: readonly Calculation[], chosen:
     .filter((calculation) => chosen.includes(calculation.column as ColumnId) && CALC_KINDS.includes(calculation.kind))
     .map((calculation) => {
       const text = `${CALC_WORD[calculation.kind]}, ${COLUMN_NAME[calculation.column as ColumnId]}`;
-      return { key: `${calculation.column}:${calculation.kind}`, text: `${text} ${calculate(calculation, rows) ?? "·"}`, onRemove: () => onRemove(calculation) };
+      return { key: `${calculation.column}:${calculation.kind}`, text: `${text} ${calculate(calculation, rows) ?? "–"}`, onRemove: () => onRemove(calculation) };
     });
 }
 

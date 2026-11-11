@@ -67,9 +67,11 @@ describe("a card", () => {
     expect(links.length).toBeGreaterThan(0);
   });
 
-  it("says None where a facet holds nothing", () => {
-    draw((p) => ({ ...p, cards: [{ ...p.cards[0], rows: p.cards[0].rows.map((row) => ({ ...row, source: "", values: [] })) }] }));
-    expect(screen.getAllByText("None")).toHaveLength(8);
+  it("a facet with no value shows the empty mark, not the word None", () => {
+    draw((p) => ({ ...p, cards: [{ ...p.cards[0], rows: p.cards[0].rows.map((row, index) => ({ ...row, values: index === 0 ? [] : row.values })) }] }));
+    const card = within(screen.getByTestId("classification-card"));
+    expect(card.getAllByTestId("empty-value")).toHaveLength(1);
+    expect(card.queryByText("None")).toBeNull();
   });
 });
 
@@ -121,5 +123,14 @@ describe("more builds", () => {
     draw((p) => ({ ...p, onMore }));
     fireEvent.click(screen.getByRole("button", { name: "Show more builds" }));
     expect(onMore).toHaveBeenCalled();
+  });
+});
+
+describe("BF-01 the lamp", () => {
+  it("a card with no reproductions draws no lamp", () => {
+    draw((p) => ({ ...p, cards: p.cards.map((card, index) => (index === 0 ? { ...card, reproductions: 0, lit: false } : card)) }));
+    const all = screen.getAllByTestId("classification-card");
+    expect(within(all[0]).queryByRole("img", { name: /Confirmed in the last|Stale/ })).toBeNull();
+    expect(within(all[1]).getByRole("img", { name: /Confirmed in the last|Stale/ })).toBeTruthy();
   });
 });

@@ -10,12 +10,11 @@
    region a keyboard can reach. Rows past the first screen are skipped until near (`content-visibility`). No motion: rows
    change at once. */
 
-import type { ReactNode } from "react";
+import { cloneElement, type ReactElement, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { LampBar } from "@/components/brand/LampDot";
 import { ModelMark } from "@/components/brand/ModelMark";
-import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
 import { Checkbox } from "@/components/brand/Checkbox";
 import {
   DropdownMenu,
@@ -27,7 +26,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ActiveFilterChip } from "@/components/vision/ActiveFilterChip";
+import { Empty } from "@/components/vision/Empty";
 import type { CalcKind } from "@/lib/build/buildsLayout";
+import { STALE_AFTER_DAYS } from "@/lib/build/signals";
 import { TextTabs, type TextTab } from "@/components/vision/TextTabs";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -272,7 +273,17 @@ function ActiveFilters({ chips, onRemove, onClearAll }: { chips: readonly TableC
 
 /* ── cells ── */
 
-const th = (right: boolean, last: boolean): React.CSSProperties => ({ ...text(11.5, 400, t.label), padding: last ? "0 0 10px" : "0 12px 10px 0", borderBottom: `1px solid ${t.hairline}`, textAlign: right ? "right" : "left", verticalAlign: "bottom" });
+/** BF-01 P4 (C10): the lamp, named. Lit: confirmed within the window; dim: gone stale. Drawn only where there is a reproduction. */
+export function RowLamp({ lit }: { lit: boolean }) {
+  const name = lit ? `Confirmed in the last ${STALE_AFTER_DAYS} days` : `Stale: not confirmed in ${STALE_AFTER_DAYS} days`;
+  return (
+    <span role="img" aria-label={name} title={name} style={{ display: "inline-flex" }}>
+      <LampBar dim={!lit} />
+    </span>
+  );
+}
+
+const th = (right: boolean, last: boolean): React.CSSProperties => ({ ...text(11.5, 400, t.label), padding: last ? "0 0 10px" : "0 12px 10px 0", borderBottom: `1px solid ${t.hairline}`, textAlign: right ? "right" : "left", verticalAlign: "bottom", whiteSpace: "nowrap" });
 const td = (right: boolean, last: boolean): React.CSSProperties => ({ padding: last ? 0 : "0 12px 0 0", height: TABLE_ROW, textAlign: right ? "right" : "left", whiteSpace: "nowrap" });
 
 function ColumnHead({ id, last, sorted, sortValue, onSort }: { id: ColumnId; last: boolean; sorted: { ascending: boolean } | null; sortValue?: string; onSort: (value: string) => void }) {
@@ -286,10 +297,10 @@ function ColumnHead({ id, last, sorted, sortValue, onSort }: { id: ColumnId; las
           type="button"
           onClick={() => onSort(sortValue)}
           {...handlers}
-          style={{ background: "none", border: 0, padding: 0, font: "inherit", color: state.hovered ? t.text : "inherit", cursor: "pointer", borderRadius: r.chip, ...ring(state.focusVisible) }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: 0, padding: 0, font: "inherit", color: state.hovered ? t.text : "inherit", cursor: "pointer", borderRadius: r.chip, ...ring(state.focusVisible) }}
         >
           {HEAD[id]}
-          {sorted ? <span aria-hidden="true"> {sorted.ascending ? "↑" : "↓"}</span> : null}
+          {sorted ? <span aria-hidden="true">{sorted.ascending ? "↑" : "↓"}</span> : null}
         </button>
       ) : (
         HEAD[id]
@@ -298,21 +309,29 @@ function ColumnHead({ id, last, sorted, sortValue, onSort }: { id: ColumnId; las
   );
 }
 
-/** A tool's mark: the real logo from the registry in the board's 16px tile, and its name for a screen reader. */
+/** A tool's mark: the real logo from the registry in the board's 16px tile. BF-01 P5 (C11): a keyboard can reach it, and
+    it names its tool to a screen reader and, on hover, in its title. No shared tooltip is used on a site page. */
+function ToolMark({ tool }: { tool: TableTool }) {
+  const { state, handlers } = useInteractive<HTMLSpanElement>();
+  return (
+    <span role="img" aria-label={tool.name} title={tool.name} tabIndex={0} {...handlers} style={{ position: "relative", width: 16, height: 16, borderRadius: r.chip, background: t.tile, display: "inline-grid", placeItems: "center", ...ring(state.focusVisible) }}>
+      <ModelMark tool={tool.id} size={14} />
+    </span>
+  );
+}
+
 function ToolMarks({ tools }: { tools: readonly TableTool[] }) {
   return (
     <span style={{ display: "inline-flex", gap: 4, verticalAlign: "middle" }}>
       {tools.map((tool) => (
-        <span key={tool.id} title={tool.name} style={{ position: "relative", width: 16, height: 16, borderRadius: r.chip, background: t.tile, display: "inline-grid", placeItems: "center" }}>
-          <ModelMark tool={tool.id} size={14} />
-          <VisuallyHidden>{tool.name}</VisuallyHidden>
-        </span>
+        <ToolMark key={tool.id} tool={tool} />
       ))}
     </span>
   );
 }
 
 function RunBars({ runs }: { runs: readonly number[] }) {
+  if (runs.every((value) => value === 0)) return <Empty />;
   const max = Math.max(1, ...runs);
   const summary = `Runs per week over 12 weeks, oldest first: ${runs.join(", ")}`;
   return (
@@ -341,34 +360,34 @@ function cellOf(id: ColumnId, row: TableRowView): ReactNode {
     case "build":
       return <BuildCell row={row} />;
     case "built":
-      return row.built;
+      return row.built || <Empty />;
     case "field":
-      return row.field;
+      return row.field || <Empty />;
     case "tools":
-      return <ToolMarks tools={row.tools} />;
+      return row.tools.length > 0 ? <ToolMarks tools={row.tools} /> : <Empty />;
     case "steps":
-      return row.steps ?? "·";
+      return row.steps ?? <Empty />;
     case "sessions":
-      return row.sessions ?? "·";
+      return row.sessions ?? <Empty />;
     case "reproductions":
       return (
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
           {row.reproductions}
-          <LampBar dim={!row.lit} />
+          {row.reproductions > 0 ? <RowLamp lit={row.lit} /> : null}
         </span>
       );
     case "confirmed":
-      return row.confirmed;
+      return row.confirmed || <Empty />;
     case "runs":
       return <RunBars runs={row.runs} />;
     case "rebuilds":
       return row.rebuilds;
     case "open":
-      return row.open || "·";
+      return row.open || <Empty />;
     case "cost":
-      return row.cost;
+      return row.cost || <Empty />;
     default:
-      return row.extra?.[id] ?? "";
+      return row.extra?.[id] || <Empty />;
   }
 }
 
@@ -390,6 +409,22 @@ function Row({ row, columns, index }: { row: TableRowView; columns: readonly Col
 }
 
 /* ── the footer ── */
+
+/** BF-01 P4: what the two lamps mean, the last thing in the footer. */
+function LampKey() {
+  return (
+    <span style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 8, ...text(12, 400, t.label) }}>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+        <RowLamp lit />
+        <span>{`confirmed in the last ${STALE_AFTER_DAYS} days`}</span>
+      </span>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+        <RowLamp lit={false} />
+        <span>stale</span>
+      </span>
+    </span>
+  );
+}
 
 function span(columns: readonly ColumnId[], from: ColumnId, group: readonly ColumnId[]): number {
   return group.filter((id) => columns.includes(id) && columns.indexOf(id) >= columns.indexOf(from)).length;
@@ -475,6 +510,11 @@ function Footer({ columns, footer }: { columns: readonly ColumnId[]; footer: Tab
   });
   /* With Confirmed off the button has no cell of its own: it sits in a row under the footer, the width of the table. */
   const apart = hasCalculations && !columns.includes("confirmed");
+  /* The key goes last in the footer's final cell: the row under it when the calculations sit apart, else the last cell. */
+  if (!apart) {
+    const last = cells[cells.length - 1] as ReactElement<{ children?: ReactNode }>;
+    cells[cells.length - 1] = cloneElement(last, undefined, last.props.children, <LampKey key="key" />);
+  }
   return (
     <tfoot>
       <tr>{cells}</tr>
@@ -482,6 +522,7 @@ function Footer({ columns, footer }: { columns: readonly ColumnId[]; footer: Tab
         <tr>
           <td colSpan={columns.length} style={{ padding: "8px 0 0" }}>
             <CalculationCell footer={footer} />
+            <LampKey />
           </td>
         </tr>
       ) : null}

@@ -9,7 +9,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 
 import { visionBuildsTableProps } from "@/dev/fixtures/vision/builds-table";
+import { STALE_AFTER_DAYS } from "@/lib/build/signals";
 
+import { ALL_COLUMNS, BuildsTableView, type ColumnId, type TableRowView } from "./BuildsTableView";
 import { BuildsView, type BuildsViewProps } from "./BuildsView";
 
 /** A wide window: every min-width query matches, so the two columns are drawn. */
@@ -374,3 +376,132 @@ describe("the Sort menu", () => {
   });
 });
 
+
+/* ── BF-01 ── */
+
+/** A row with nothing set: no counts, no words, no runs, no tools. */
+const blankRow: TableRowView = {
+  id: "blank", href: "#", title: "Blank build", maker: "kit", built: "", field: "", tools: [], steps: null, sessions: null,
+  reproductions: 0, lit: false, confirmed: "", runs: [], rebuilds: 0, open: "", cost: "",
+};
+
+function drawTable(rows: readonly TableRowView[], columns?: readonly ColumnId[]) {
+  const table = visionBuildsTableProps().table!;
+  return render(
+    <MemoryRouter>
+      <BuildsTableView {...table} rows={rows} columns={columns ?? table.columns} />
+    </MemoryRouter>,
+  );
+}
+
+/** The cell of a column in the first body row. */
+function cellIn(column: string): HTMLElement {
+  const heads = screen.getAllByRole("columnheader");
+  const at = heads.findIndex((head) => head.textContent?.replace(/[↑↓]/g, "").trim() === column);
+  const row = screen.getAllByRole("row").find((tr) => tr.closest("tbody"))!;
+  return within(row).getAllByRole("cell")[at];
+}
+
+describe("BF-01 empty values", () => {
+  it("a row with no steps, sessions, field, what was built, confirmed, open and cost shows the empty mark in each of those cells", () => {
+    drawTable([blankRow]);
+    for (const column of ["Steps", "Sessions", "Field", "What was built", "Confirmed", "Open", "Cost to run"]) {
+      const mark = within(cellIn(column)).getByTestId("empty-value");
+      expect(mark.querySelector('[aria-hidden="true"]')?.textContent).toBe("\u2013");
+      expect(within(mark).getByText("no value")).toBeTruthy();
+    }
+  });
+
+  it("a real zero is a zero", () => {
+    drawTable([blankRow]);
+    for (const column of ["Reproductions", "Rebuilds"]) {
+      const cell = cellIn(column);
+      expect(cell.textContent).toContain("0");
+      expect(within(cell).queryByTestId("empty-value")).toBeNull();
+    }
+  });
+
+  it("no cell in the table is blank", () => {
+    const table = visionBuildsTableProps().table!;
+    drawTable([{ ...blankRow, extra: {} }], [...table.columns, "shape", "task"]);
+    const row = screen.getAllByRole("row").find((tr) => tr.closest("tbody"))!;
+    for (const cell of within(row).getAllByRole("cell")) expect(cell.textContent?.trim()).not.toBe("");
+  });
+});
+
+describe("BF-01 headers on one line", () => {
+  it("every column head has white-space nowrap", () => {
+    drawTable([blankRow], ALL_COLUMNS);
+    const heads = screen.getAllByRole("columnheader");
+    expect(heads).toHaveLength(24);
+    for (const head of heads) expect(head.style.whiteSpace).toBe("nowrap");
+  });
+
+  it("the sort arrow is inside the same inline-flex as the name", () => {
+    drawTable([blankRow]);
+    const button = within(screen.getByRole("columnheader", { name: /Reproductions/ })).getByRole("button");
+    expect(button.style.display).toBe("inline-flex");
+    expect(button.textContent).toBe("Reproductions↓");
+  });
+});
+
+describe("BF-01 the lamp", () => {
+  const lit = `Confirmed in the last ${STALE_AFTER_DAYS} days`;
+  const dim = `Stale: not confirmed in ${STALE_AFTER_DAYS} days`;
+  const bodyRow = () => screen.getAllByRole("row").find((tr) => tr.closest("tbody"))!;
+
+  it("a build with no reproductions shows 0 and no lamp", () => {
+    drawTable([blankRow]);
+    expect(cellIn("Reproductions").textContent).toBe("0");
+    expect(within(bodyRow()).queryByRole("img", { name: lit })).toBeNull();
+    expect(within(bodyRow()).queryByRole("img", { name: dim })).toBeNull();
+  });
+
+  it(`a lit lamp is named "Confirmed in the last 120 days"`, () => {
+    drawTable([{ ...blankRow, reproductions: 5, lit: true }]);
+    const lamp = within(bodyRow()).getByRole("img", { name: lit });
+    expect(lamp.getAttribute("title")).toBe(lit);
+  });
+
+  it(`a dim lamp is named "Stale: not confirmed in 120 days"`, () => {
+    drawTable([{ ...blankRow, reproductions: 5, lit: false }]);
+    expect(within(bodyRow()).getByRole("img", { name: dim })).toBeTruthy();
+  });
+
+  it("the footer carries the key: a lit lamp with its words and a dim lamp with its words", () => {
+    drawTable([blankRow]);
+    const foot = screen.getAllByRole("rowgroup").find((group) => group.tagName === "TFOOT")!;
+    expect(within(foot).getByRole("img", { name: lit })).toBeTruthy();
+    expect(within(foot).getByRole("img", { name: dim })).toBeTruthy();
+    expect(within(foot).getByText(`confirmed in the last ${STALE_AFTER_DAYS} days`)).toBeTruthy();
+    expect(within(foot).getByText("stale")).toBeTruthy();
+  });
+});
+
+describe("BF-01 tools and runs", () => {
+  it("a build with no runs in twelve weeks shows the empty mark in Runs", () => {
+    for (const runs of [[], Array.from({ length: 12 }, () => 0)]) {
+      const { unmount } = drawTable([{ ...blankRow, runs }]);
+      expect(within(cellIn("Runs, 12 weeks")).getByTestId("empty-value")).toBeTruthy();
+      expect(screen.queryByRole("img", { name: /^Runs per week/ })).toBeNull();
+      unmount();
+    }
+  });
+
+  it("a build with runs still draws twelve bars with their summary", () => {
+    drawTable([{ ...blankRow, runs: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2] }]);
+    const summary = screen.getByRole("img", { name: "Runs per week over 12 weeks, oldest first: 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2" });
+    expect(summary.querySelectorAll('[aria-hidden="true"]').length).toBe(12);
+  });
+
+  it("each tool mark can be focused and names its tool", () => {
+    const tools = [{ id: "claude-code", name: "Claude Code" }, { id: "cursor", name: "Cursor" }];
+    drawTable([{ ...blankRow, tools }]);
+    for (const tool of tools) {
+      const mark = within(cellIn("Tools")).getByRole("img", { name: tool.name });
+      expect(mark.tabIndex).toBe(0);
+      mark.focus();
+      expect(document.activeElement).toBe(mark);
+    }
+  });
+});
