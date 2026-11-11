@@ -344,3 +344,39 @@ describe("countBuildsTable", () => {
     expect(named(callsOf(2), "gte").some((args) => args[0] === "step_count")).toBe(false);
   });
 });
+
+/* ── BF-08 P3 (C1) ── */
+
+describe("countGalleryLenses and the filters", () => {
+  beforeEach(() => {
+    resetBuildsCountColumns();
+    resetReviewColumn();
+  });
+
+  it("countGalleryLenses with no filter asks four estimated counts, as before", async () => {
+    await countGalleryLenses({ facets: [], shapes: [], stillOpen: false });
+    const selects = calls.filter((call) => call.method === "select").map((call) => call.args);
+    expect(selects).toHaveLength(4);
+    for (const args of selects) expect(args[1]).toEqual({ count: "estimated", head: true });
+  });
+
+  it("countGalleryLenses with a filter asks four exact counts, each with the list's filters and its own lens", async () => {
+    answer = (own) => ({ count: named(own, "eq").some((args) => args[0] === "has_open_ask") ? 1 : 5, error: null });
+    const result = await countGalleryLenses({ facets: ["field:law"], shapes: ["agent"] });
+    expect(result).toEqual({ all: 5, proven: 5, rebuilt: 5, unsolved: 1 });
+    for (let id = 1; id <= 4; id += 1) {
+      const own = callsOf(id);
+      expect(named(own, "select")[0][1]).toEqual({ count: "exact", head: true });
+      expect(named(own, "overlaps")).toContainEqual(["facets", ["field:law"]]);
+      expect(named(own, "in")).toContainEqual(["shape", ["agent"]]);
+    }
+    expect(named(callsOf(2), "gte").map((args) => args[0])).toContain("reproduction_count");
+    expect(named(callsOf(3), "gte").map((args) => args[0])).toContain("rebuild_count");
+  });
+
+  it("the Still open lens with the Still open filter on applies the ask filter once", async () => {
+    await countGalleryLenses({ stillOpen: true });
+    const asks = (id: number) => named(callsOf(id), "eq").filter((args) => args[0] === "has_open_ask").length;
+    expect([asks(1), asks(2), asks(3), asks(4)]).toEqual([1, 1, 1, 1]);
+  });
+});

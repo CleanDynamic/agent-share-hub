@@ -42,7 +42,7 @@ vi.mock("@/lib/build/gallery", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/build/gallery")>()),
   listBuildsTable: (...args: unknown[]) => listBuildsTable(...args),
   getGalleryStats: () => getGalleryStats(),
-  countGalleryLenses: () => countGalleryLenses(),
+  countGalleryLenses: (...args: unknown[]) => countGalleryLenses(...args),
   getClassificationFacets: () => getClassificationFacets(),
   getGalleryFacets: () => getGalleryFacets(),
   getCountSpread: () => getCountSpread(),
@@ -53,6 +53,8 @@ vi.mock("@/lib/build/gallery", async (importOriginal) => ({
 import { emptyClassification } from "@/lib/classify/facets";
 import { AUTONOMY_VALUES } from "@/lib/classify/taxonomy";
 import { t } from "@/lib/theme/tokens";
+
+import { hasFilters } from "@/lib/build/gallery";
 
 import BuildsPage from "./BuildsPage";
 import { statParts } from "./BuildsView";
@@ -780,5 +782,28 @@ describe("BF-08 draft and Apply", () => {
     expect(countBuildsTable).toHaveBeenCalledWith(expect.objectContaining({ ranges: { steps: { min: 1 } } }));
     expect(address).toBe("/builds");
     expect(entries).toHaveLength(1);
+  });
+});
+
+/* ── BF-08 P3 (C1) ── */
+
+describe("BF-08 lens counts follow the filters", () => {
+  it("with a filter on, the All tab's number equals the number of rows the list reports", async () => {
+    listBuildsTable.mockResolvedValue({ builds: [build(1)], total: 1 });
+    countGalleryLenses.mockImplementation(async (filters?: { facets?: string[] }) => ((filters?.facets?.length ?? 0) > 0 ? { all: 1, proven: 1, rebuilt: 0, unsolved: 0 } : { all: 2, proven: 1, rebuilt: 0, unsolved: 0 }));
+    renderAt("/builds?f=field%3Alaw");
+    await screen.findByRole("heading", { level: 1, name: /^1 / });
+    await waitFor(() => expect(screen.getByRole("tab", { name: /^All/ }).textContent).toBe("All1"));
+    expect(countGalleryLenses).toHaveBeenCalledWith(expect.objectContaining({ facets: ["field:law"] }));
+  });
+
+  it("with no filter, the lens counts are asked once and with the unfiltered key", async () => {
+    renderAt("/builds");
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(countGalleryLenses).toHaveBeenCalledTimes(1);
+    const [filters] = countGalleryLenses.mock.calls[0];
+    expect(hasFilters(filters)).toBe(false);
+    expect(filters).not.toHaveProperty("lens");
+    expect(filters).not.toHaveProperty("sort");
   });
 });

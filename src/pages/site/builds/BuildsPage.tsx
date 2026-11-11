@@ -63,6 +63,7 @@ import {
   columnsLabel,
   columnsMenu,
   footerCalculations,
+  lensCountParams,
   listParamsOf,
   nextTableOffset,
   panelSections,
@@ -147,7 +148,10 @@ export default function BuildsPage() {
     staleTime: LIST_STALE_MS,
   });
   const stats = useQuery({ queryKey: ["build", "getGalleryStats"], queryFn: getGalleryStats, staleTime: SLOW_STALE_MS });
-  const lensCounts = useQuery({ queryKey: ["build", "countGalleryLenses"], queryFn: countGalleryLenses, staleTime: SLOW_STALE_MS });
+  /* BF-08 (C1): the lens counts follow the filters (exact while one is on, so a tab's number is the list's); the old numbers stay
+     until the new arrive. */
+  const lensFilters = lensCountParams(params);
+  const lensCounts = useQuery({ queryKey: ["build", "countGalleryLenses", lensFilters], queryFn: () => countGalleryLenses(lensFilters), placeholderData: keepPreviousData, staleTime: SLOW_STALE_MS });
   const classification = useQuery({ queryKey: ["build", "getClassificationFacets"], queryFn: getClassificationFacets, staleTime: SLOW_STALE_MS });
   const facets = useQuery({ queryKey: ["build", "getGalleryFacets"], queryFn: getGalleryFacets, staleTime: SLOW_STALE_MS });
   const spread = useQuery({ queryKey: ["build", "getCountSpread"], queryFn: getCountSpread, staleTime: SLOW_STALE_MS });

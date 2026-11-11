@@ -1,6 +1,6 @@
 /* SV-11: Builds' words and shapes, pure: what the list is asked for, and how a row, a filter and the head are put. */
 
-import { BUILDS_TABLE_PAGE_SIZE, GALLERY_SHAPES, type BuildsTableBuild, type CountSpread, type WorksOnModelCount, type BuildsTableOptions, type BuildsTablePage, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
+import { BUILDS_TABLE_PAGE_SIZE, GALLERY_SHAPES, hasFilters, type LensCountFilters, type BuildsTableBuild, type CountSpread, type WorksOnModelCount, type BuildsTableOptions, type BuildsTablePage, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
 import { CONFIRMED_WITHIN, DEFAULT_GALLERY_SORT, type ConfirmedState, type ConfirmedWithin, type GalleryParams } from "@/lib/build/galleryParams";
 import { RANGE_FILTERS, RANGE_KEYS, rangeWords, type NumberRange, type RangeKey } from "@/lib/build/galleryRanges";
 import { PATTERN_LABEL, type Pattern } from "@/lib/build/patterns";
@@ -34,6 +34,14 @@ export function listParamsOf(params: GalleryParams): BuildsTableOptions {
     sort: params.sort ?? DEFAULT_GALLERY_SORT,
   };
 }
+
+/** BF-08 (C1): what the lens counts are asked with: the list's filters, without the lens and the sort. */
+export function lensCountParams(params: GalleryParams): LensCountFilters {
+  const { lens: _lens, sort: _sort, ...filters } = listParamsOf(params);
+  return filters;
+}
+
+export { hasFilters };
 
 /** The next page's offset, or none when the last page was short. */
 export function nextTableOffset(last: BuildsTablePage, pages: readonly BuildsTablePage[]): number | undefined {

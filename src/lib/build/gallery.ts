@@ -965,11 +965,39 @@ async function countGalleryBuildRows(operation: string, lens: GalleryLens, now: 
   return count ?? 0;
 }
 
+/** BF-08: the Table's filters, without the lens, the sort and the page: what the lens counts follow. */
+export type LensCountFilters = Omit<BuildsTableOptions, "lens" | "sort" | "offset" | "limit">;
+
+/** BF-08: any of the Table's filters (or the search) holds a value. */
+export function hasFilters(options: LensCountFilters | undefined): boolean {
+  if (!options) return false;
+  const ranges = Object.values(options.ranges ?? {}).some((range) => range && (range.min !== undefined || range.max !== undefined));
+  return (
+    (options.facets?.length ?? 0) > 0 ||
+    Boolean(options.tool) ||
+    (options.shapes?.length ?? 0) > 0 ||
+    Boolean(options.pattern) ||
+    options.stillOpen === true ||
+    Boolean(options.query?.trim()) ||
+    ranges ||
+    options.confirmedWithin !== undefined ||
+    options.confirmedState !== undefined ||
+    Boolean(options.worksOn)
+  );
+}
+
 /**
  * How many gallery builds each lens holds, for the numbers on the lens row.
  * One head request per lens, sent together.
+ *
+ * BF-08 (C1): with a filter on, each lens is counted with the Table's filters (`countBuildsTable`, exact), so a lens' number is
+ * the number of rows the list reports under it. With none, the four estimated counts, as before.
  */
-export async function countGalleryLenses(): Promise<Record<GalleryLens, number>> {
+export async function countGalleryLenses(filters?: LensCountFilters): Promise<Record<GalleryLens, number>> {
+  if (hasFilters(filters)) {
+    const counts = await Promise.all(GALLERY_LENSES.map((lens) => countBuildsTable({ ...filters, lens })));
+    return Object.fromEntries(GALLERY_LENSES.map((lens, index) => [lens, counts[index]])) as Record<GalleryLens, number>;
+  }
   const now = Date.now();
   const counts = await Promise.all(
     GALLERY_LENSES.map((lens) => countGalleryBuilds("countGalleryLenses", lens, now)),
