@@ -41,7 +41,8 @@ export const WORKSTREAM_HEAD_COPY = {
   moveDown: "Move down",
   count: (n: number) => `${n} ${n === 1 ? "session" : "sessions"}`,
   empty: "No sessions yet",
-  addHere: "+ Add a session to this part",
+  /** F55: one of the three add controls: Add step, Add session, Add part. */
+  addHere: "Add session",
   startsLine: (after: string) => `Starts after ${after}`,
   sameStage: (session: string) => `Same stage as ${session}`,
 } as const;

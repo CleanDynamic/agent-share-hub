@@ -528,10 +528,10 @@ describe("CA-10 · on a phone, Add opens as a bottom sheet", () => {
     addRow(props, true);
     expect(screen.queryByRole("menu")).toBeNull();
     fireEvent.click(screen.getByTestId("add-to-session"));
-    const sheet = screen.getByRole("dialog", { name: "Add step tile" });
-    expect(within(sheet).getByRole("heading", { name: "Add step tile" }).textContent).toBe("Add step tile");
+    const sheet = screen.getByRole("dialog", { name: "Add step" });
+    expect(within(sheet).getByRole("heading", { name: "Add step" }).textContent).toBe("Add step");
     expect(within(sheet).getByTestId("sheet-grab-line")).toBeTruthy();
-    const rows = within(within(sheet).getByRole("group", { name: "Add step tile" })).getAllByRole("button");
+    const rows = within(within(sheet).getByRole("group", { name: "Add step" })).getAllByRole("button");
     // UX-02 P6, F40: the five first, then More types (closed), then From Library; opened, the groups by node-type category, one column.
     const layout = addMenuLayout(addEntries(props), undefined);
     const first = [...layout.primary.map((item) => item.name), "More types", ...(layout.library ? [layout.library.name] : [])];
@@ -539,7 +539,7 @@ describe("CA-10 · on a phone, Add opens as a bottom sheet", () => {
     expect(first[0]).toBe("Prompt");
     for (const row of rows) expect(row.style.minHeight).toBe("44px");
     fireEvent.click(within(sheet).getByRole("button", { name: /^More types/ }));
-    const opened = within(within(sheet).getByRole("group", { name: "Add step tile" })).getAllByRole("button");
+    const opened = within(within(sheet).getByRole("group", { name: "Add step" })).getAllByRole("button");
     const names = [...layout.primary, ...layout.groups.flatMap((group) => group.entries), ...layout.loose, layout.library].flatMap((item) => (item ? [item.name] : []));
     expect(opened.map((row) => row.firstChild?.textContent).filter((name) => name !== "More types")).toEqual(names);
   });
@@ -550,15 +550,15 @@ describe("CA-10 · on a phone, Add opens as a bottom sheet", () => {
     document.body.appendChild(field);
     let sheetOpenAtFocus: boolean | null = null;
     const onAddPromptFocus = vi.fn(() => {
-      sheetOpenAtFocus = screen.queryByRole("dialog", { name: "Add step tile" }) !== null;
+      sheetOpenAtFocus = screen.queryByRole("dialog", { name: "Add step" }) !== null;
       field.focus({ preventScroll: true });
       return true;
     });
     addRow({ ...all(), onAddPromptFocus }, true);
     fireEvent.click(screen.getByTestId("add-to-session"));
-    fireEvent.click(within(screen.getByRole("dialog", { name: "Add step tile" })).getByRole("button", { name: /^Prompt/ }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Add step" })).getByRole("button", { name: /^Prompt/ }));
     expect(sheetOpenAtFocus).toBe(false);
-    expect(screen.queryByRole("dialog", { name: "Add step tile" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "Add step" })).toBeNull();
     expect(document.activeElement).toBe(field);
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(document.activeElement).toBe(field);
@@ -570,9 +570,9 @@ describe("CA-10 · on a phone, Add opens as a bottom sheet", () => {
     const props = all();
     addRow({ ...props, onAddPromptFocus: vi.fn() }, true);
     fireEvent.click(screen.getByTestId("add-to-session"));
-    fireEvent.click(within(screen.getByRole("dialog", { name: "Add step tile" })).getByRole("button", { name: /^Tool/ }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Add step" })).getByRole("button", { name: /^Tool/ }));
     expect(props.onAddTool).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole("dialog", { name: "Add step tile" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "Add step" })).toBeNull();
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(document.activeElement).toBe(screen.getByTestId("add-to-session"));
   });
@@ -581,8 +581,8 @@ describe("CA-10 · on a phone, Add opens as a bottom sheet", () => {
     stubWidth(390);
     addRow({ ...all(), onAddPromptFocus: vi.fn() }, true);
     fireEvent.click(screen.getByTestId("add-to-session"));
-    fireEvent.keyDown(screen.getByRole("dialog", { name: "Add step tile" }), { key: "Escape" });
-    expect(screen.queryByRole("dialog", { name: "Add step tile" })).toBeNull();
+    fireEvent.keyDown(screen.getByRole("dialog", { name: "Add step" }), { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Add step" })).toBeNull();
   });
 });
 

@@ -37,7 +37,7 @@ describe("SV-07 P6 · an empty session looks one way", () => {
     const started = ((making() as { session_order: string[] }).session_order ?? [])[1];
     const session = document.querySelector(`[data-session-key="${started}"]`) as HTMLElement;
     expect(within(session).getByText("No step tiles yet")).toBeTruthy();
-    expect(within(session).getByRole("button", { name: /Add step tile/ })).toBeTruthy();
+    expect(within(session).getByRole("button", { name: /Add step/ })).toBeTruthy();
   });
 });
 

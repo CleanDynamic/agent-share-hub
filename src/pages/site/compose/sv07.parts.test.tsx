@@ -92,7 +92,8 @@ describe("SV-07 P3 · closed parts", () => {
     await addChatTo("Part 2", CHATS[1].name);
     await settled(2);
     fireEvent.click(screen.getByRole("button", { name: /Show sources/ }));
-    const add = (await screen.findAllByRole("button", { name: "Add session" })).find((button) => !(button as HTMLButtonElement).disabled) as HTMLElement;
+    // F55: the List's row also reads Add session now; this is Sources' +.
+    const add = (await within(await screen.findByTestId("sources-panel")).findAllByRole("button", { name: "Add session" })).find((button) => !(button as HTMLButtonElement).disabled) as HTMLElement;
     fireEvent.pointerDown(add, { button: 0, ctrlKey: false });
     fireEvent.keyDown(add, { key: "Enter" });
     const marked = await screen.findByRole("menuitem", { name: /Part 2.*chosen last/ });

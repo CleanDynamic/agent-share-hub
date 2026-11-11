@@ -86,7 +86,8 @@ describe("UX-02 P6 · the Add step tile menu", () => {
 
   it("says step tile on its row", () => {
     openAddMenu(everyEntry());
-    expect(screen.getByTestId("add-to-session").textContent).toBe("Add step tile");
+    // F55: the word is step (F58's glossary).
+    expect(screen.getByTestId("add-to-session").textContent).toBe("Add step");
   });
 
   it("has a field, focused as it opens, that finds entries by name and line at once", async () => {

@@ -28,8 +28,9 @@ import { draftNote, groupLibrary, openingWords, REPEAT_COPY, type SourceLibraryI
 import { FLOATING_Z } from "./ToolPicker";
 
 export const ADD_SESSION_COPY = {
-  row: "Add a session",
-  addPart: "Add a part",
+  /** F55: the three add controls read Add step, Add session, Add part; the plus is their icon. */
+  row: "Add session",
+  addPart: "Add part",
   title: "Add a session",
   startNew: "Start a new session",
   startNewLine: "An empty one at the end. Pick its app later.",

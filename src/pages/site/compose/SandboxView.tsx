@@ -432,7 +432,8 @@ export const ADD_SEARCH_COPY = { label: "Find a step tile", placeholder: "Find a
 /** UX-02 P6: two columns of entries in a group on a computer. */
 export const ADD_MENU_WIDTH = 520;
 
-export const ADD_ASK_COPY = { row: "Add step tile" } as const;
+/** F55: "Add step" (the glossary's word, F58); the plus is the icon beside it. */
+export const ADD_ASK_COPY = { row: "Add step" } as const;
 /** F40: the row the other types sit under, opened in place. */
 export const ADD_MORE_COPY = { row: "More types" } as const;
 
