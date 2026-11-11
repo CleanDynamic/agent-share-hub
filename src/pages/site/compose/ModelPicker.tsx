@@ -98,7 +98,8 @@ export function ModelPicker({ tool, value, onChange, phone, allowNone = true, na
   }, [openSignal, opens]);
 
   const word = name ?? MODEL_PICKER_COPY.model;
-  const buttonStyle: CSSProperties = { maxWidth: "100%", ...(phone ? { height: 44 } : null), ...(block ? { width: "100%", justifyContent: "space-between" } : null) };
+  /* S14: the shared MenuButton draws 28 high, padded 0 8 0 12; in the editor a select is 32, 0 space[3], gap space[2]. */
+  const buttonStyle: CSSProperties = { maxWidth: "100%", height: phone ? size.touch : size.control, padding: `0 ${space[3]}px`, gap: space[2], ...(block ? { width: "100%", justifyContent: "space-between" } : null) };
 
   if (menu.state === "none") return null;
   if (menu.state === "hidden") return <span style={quiet}>{menu.note}</span>;

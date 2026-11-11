@@ -26,6 +26,7 @@ import { menuSurface, text, wellField } from "./refinedStyles";
 import { PickerChevron, pickerFieldStyle, smallButtonStyle } from "./modalRecipes";
 import { pickerRows, TYPED_TOOL_MAX, type PickerRow } from "./toolPickerModel";
 import { size, space } from "@/lib/theme/space";
+import { r } from "@/lib/theme/radius";
 
 export interface ToolPickerProps {
   /** A tool id, a typed name, or null. */
@@ -187,13 +188,13 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
     ...(trigger.state.hovered ? CONTROL_HOVER : null),
     display: "inline-flex",
     alignItems: "center",
-    gap: 8,
+    gap: space[2],
     boxSizing: "border-box",
     maxWidth: "100%",
     minWidth: 0,
-    height: phone ? 44 : 32,
-    padding: "0 10px",
-    borderRadius: 6,
+    height: phone ? size.touch : size.control,
+    padding: `0 ${space[3]}px`,
+    borderRadius: r.control,
     cursor: "pointer",
     textAlign: "left",
     ...text(13, 400, value ? t.text : t.text2),
