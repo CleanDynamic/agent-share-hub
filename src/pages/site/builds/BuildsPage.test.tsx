@@ -467,11 +467,11 @@ describe("SV-24 P2: the reader's layout", () => {
   it("chooses the Table's columns from the Columns chooser, and keeps them", async () => {
     listBuildsTable.mockResolvedValue({ countsLive: true, builds: [{ ...build(1), classifiedAs: { ...emptyClassification(), derived: { skill: { values: ["no-coding"] } } } }], total: 1 });
     renderAt("/builds");
-    fireEvent.click(await screen.findByRole("button", { name: "Columns: 12 of 24" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Columns: 12 of 28" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "Skill" }));
     expect(await screen.findByRole("columnheader", { name: "Skill" })).toBeTruthy();
     expect(screen.getByText("No coding")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Columns: 13 of 24" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Columns: 13 of 28" })).toBeTruthy();
     fireEvent.click(screen.getByRole("checkbox", { name: "Rebuilds" }));
     await waitFor(() => expect(screen.queryByRole("columnheader", { name: "Rebuilds" })).toBeNull());
     expect(stored().columns).toContain("skill");
@@ -483,7 +483,7 @@ describe("SV-24 P2: the reader's layout", () => {
 
   it("offers no Steps or Sessions column until the list carries the stored counts", async () => {
     renderAt("/builds");
-    fireEvent.click(await screen.findByRole("button", { name: "Columns: 10 of 22" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Columns: 10 of 25" }));
     expect(screen.queryByRole("checkbox", { name: "Steps" })).toBeNull();
     expect(screen.getByRole("checkbox", { name: "Shape" })).toBeTruthy();
   });

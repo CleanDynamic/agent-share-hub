@@ -15,7 +15,7 @@ import { STALE_AFTER_DAYS } from "@/lib/build/signals";
 import { ALL_COLUMNS, BuildsTableView, type ColumnId, type TableRowView } from "./BuildsTableView";
 import { BuildsView, type BuildsViewProps } from "./BuildsView";
 import { FiltersButton } from "./BuildsFrame";
-import { tableRow } from "./buildsModel";
+import { chosenColumns, columnsLabel, columnsMenu, tableRow } from "./buildsModel";
 
 /** A wide window: every min-width query matches, so the two columns are drawn. */
 beforeEach(() => {
@@ -320,7 +320,7 @@ describe("BF-01 headers on one line", () => {
   it("every column head has white-space nowrap", () => {
     drawTable([blankRow], ALL_COLUMNS);
     const heads = screen.getAllByRole("columnheader");
-    expect(heads).toHaveLength(24);
+    expect(heads).toHaveLength(28);
     for (const head of heads) expect(head.style.whiteSpace).toBe("nowrap");
   });
 
@@ -488,5 +488,18 @@ describe("the open set on the Filters button", () => {
     draw((p) => ({ ...p, filters: { ...p.filters, activeCount: 2 }, table: { ...p.table!, setName: "Sales on Claude Code" } }));
     const button = screen.getByRole("button", { name: "Filters, 2 on, set Sales on Claude Code" });
     expect(Array.from(button.children).map((child) => child.textContent)).toEqual(["Filters", "2", "· Sales on Claude Code"]);
+  });
+});
+
+/* ── BF-10 P2 ── */
+
+describe("the four new columns in the chooser", () => {
+  it("the chooser offers 28 columns when the counts are live", () => {
+    const columns = chosenColumns(null, true);
+    draw((p) => ({ ...p, table: { ...p.table!, columnsLabel: columnsLabel(columns, true), columnsMenu: columnsMenu(columns, true, vi.fn()) } }));
+    fireEvent.click(screen.getByRole("button", { name: "Columns: 12 of 28" }));
+    const group = screen.getByRole("group", { name: "Columns" });
+    expect(within(group).getAllByRole("checkbox")).toHaveLength(28);
+    for (const name of ["Works on model", "Likes", "Patterns", "Published"]) expect(within(group).getByRole("checkbox", { name })).toBeTruthy();
   });
 });

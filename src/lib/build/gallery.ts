@@ -1282,6 +1282,8 @@ export const BUILDS_TABLE_PAGE_SIZE = 50;
  */
 const BUILDS_TABLE_COLUMNS =
   "id, slug, title, shape, made_with, reproduction_count, last_confirmed_at, last_confirmed_model, published_at, rebuild_count, classification, " +
+  // BF-10: Likes and Patterns, columns older than the UX-08 migration this read already needs.
+  "like_count, patterns, " +
   "maker:profiles!builds_creator_id_fkey(username, display_name)";
 
 /**
@@ -1297,7 +1299,8 @@ const RUNS_PER_BUILD = 200;
  * request. Until the SV-23 migration is applied the columns are missing: the read says so once (`isMissingColumn`), is made again
  * without them, and `countsLive` on the page is false, so the page draws no Steps or Sessions and offers no range.
  */
-const BUILDS_COUNT_COLUMNS = "step_count, session_count";
+/** BF-10: Works on model reads `worked_models`, SV-23 P2's, so it is asked with the stored counts and goes with them. */
+const BUILDS_COUNT_COLUMNS = "step_count, session_count, worked_models";
 let countColumnsMissing = false;
 
 /**
@@ -1337,6 +1340,11 @@ export interface BuildsTableBuild {
   sessionCount?: number | null;
   /** SV-23 P2: runs in each of the last twelve calendar weeks, oldest first. */
   runs?: number[];
+  /** BF-10: the Likes, Patterns and Works on model columns. `workedModels` holds model_key() strings; absent when the list was
+      read without the stored counts. Optional, since other pages (Profile) make rows of this shape without them. */
+  likeCount?: number;
+  patterns?: string[];
+  workedModels?: string[];
 }
 
 export interface BuildsTableOptions {
@@ -1419,6 +1427,9 @@ interface BuildsTableRow {
   classification?: unknown;
   step_count?: number | null;
   session_count?: number | null;
+  like_count?: number | null;
+  patterns?: string[] | null;
+  worked_models?: string[] | null;
   build_reproductions?: { confirmed_at: string | null }[] | null;
   maker: { username: string | null; display_name: string | null } | null;
   /** UX-08 P4: still-open topics that attach the build or are about it. */
@@ -1446,6 +1457,9 @@ function toBuildsTableBuild(row: BuildsTableRow, now: Date): BuildsTableBuild {
     // step_count written) has a session count to trust; any other shows the empty mark, as its steps do.
     sessionCount: typeof row.step_count === "number" && typeof row.session_count === "number" ? row.session_count : null,
     runs: runsPerWeek((row.build_reproductions ?? []).map((run) => run.confirmed_at), now),
+    likeCount: Math.max(0, row.like_count ?? 0),
+    patterns: row.patterns ?? [],
+    ...(Array.isArray(row.worked_models) ? { workedModels: row.worked_models } : null),
   };
 }
 

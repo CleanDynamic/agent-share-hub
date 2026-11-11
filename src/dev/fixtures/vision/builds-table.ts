@@ -125,6 +125,14 @@ export const visionBuildsRows: TableRowView[] = DATA.map((d, index) => ({
   rebuilds: d[11],
   open: d[12],
   cost: d[13],
+  /* BF-10: values for the four new columns, so the dev page can draw all 28. */
+  extra: {
+    works: index % 3 === 0 ? "Opus 5.5, GPT-5 + 1" : index % 3 === 1 ? "Opus 5.5" : "",
+    likes: String(d[7] * 2),
+    patterns: index % 2 === 0 ? "Uses a router" : "",
+    published: `${index + 2}w ago`,
+  },
+  likes: d[7] * 2,
 }));
 
 export function visionBuildsTableProps(): BuildsViewProps {

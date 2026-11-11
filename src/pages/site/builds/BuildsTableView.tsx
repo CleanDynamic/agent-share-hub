@@ -28,6 +28,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ActiveFilterChip } from "@/components/vision/ActiveFilterChip";
 import { Empty } from "@/components/vision/Empty";
 import type { CalcKind } from "@/lib/build/buildsLayout";
+import { RANGE_FILTERS } from "@/lib/build/galleryRanges";
 import { STALE_AFTER_DAYS } from "@/lib/build/signals";
 import { TextTabs, type TextTab } from "@/components/vision/TextTabs";
 import { ring } from "@/lib/theme/controls";
@@ -42,14 +43,15 @@ import { BuildsControl, BuildsTextButton, FiltersButton, TABLE_ROW, UpdatingStat
 /** The board's twelve columns. */
 export type BoardColumnId = "build" | "built" | "field" | "tools" | "steps" | "sessions" | "reproductions" | "confirmed" | "runs" | "rebuilds" | "open" | "cost";
 
-/** SV-24 P2: the twelve more the Columns chooser offers, 24 in all: Shape and the classification facets that are not already a column. */
-export type ExtraColumnId = "shape" | "task" | "setting" | "role" | "technique" | "modality" | "method" | "autonomy" | "data" | "oversight" | "age" | "skill";
+/** SV-24 P2: the twelve more the Columns chooser offers, 24 in all: Shape and the classification facets that are not already a column.
+    BF-10: and four more, 28: Works on model, Likes, Patterns (each a filter with no column till now) and Published (Newest's). */
+export type ExtraColumnId = "shape" | "task" | "setting" | "role" | "technique" | "modality" | "method" | "autonomy" | "data" | "oversight" | "age" | "skill" | "works" | "likes" | "patterns" | "published";
 
 export type ColumnId = BoardColumnId | ExtraColumnId;
 
 export const COLUMN_ORDER: readonly ColumnId[] = ["build", "built", "field", "tools", "steps", "sessions", "reproductions", "confirmed", "runs", "rebuilds", "open", "cost"];
 
-export const EXTRA_COLUMNS: readonly ExtraColumnId[] = ["shape", "task", "setting", "role", "technique", "modality", "method", "autonomy", "data", "oversight", "age", "skill"];
+export const EXTRA_COLUMNS: readonly ExtraColumnId[] = ["shape", "task", "setting", "role", "technique", "modality", "method", "autonomy", "data", "oversight", "age", "skill", "works", "likes", "patterns", "published"];
 
 /** Every column, the extras after the board's twelve (so the footer's groups stay together). */
 export const ALL_COLUMNS: readonly ColumnId[] = [...COLUMN_ORDER, ...EXTRA_COLUMNS];
@@ -79,10 +81,14 @@ export const COLUMN_NAME: Record<ColumnId, string> = {
   oversight: "Oversight",
   age: "Age",
   skill: "Skill",
+  works: "Works on model",
+  likes: RANGE_FILTERS.likes.name,
+  patterns: "Patterns",
+  published: "Published",
 };
 const HEAD = COLUMN_NAME;
 
-const RIGHT: ReadonlySet<ColumnId> = new Set(["steps", "sessions", "reproductions", "rebuilds"]);
+const RIGHT: ReadonlySet<ColumnId> = new Set(["steps", "sessions", "reproductions", "rebuilds", "likes"]);
 
 export interface TableTool {
   id: string;
@@ -110,6 +116,9 @@ export interface TableRowView {
   cost: string;
   /** SV-24 P2: the extra columns' values; absent where the dev page draws only the board's twelve. */
   extra?: Readonly<Partial<Record<ExtraColumnId, string>>>;
+  /** BF-10: the Likes number, and the lists Works on model and Patterns are joined from, for the footer's calculations. */
+  likes?: number;
+  lists?: Readonly<Partial<Record<"works" | "patterns", readonly string[]>>>;
 }
 
 export interface SortOption {

@@ -307,6 +307,18 @@ export function tableRow(build: BuildsTableBuild, now: number, extras: readonly 
   }
   const ago = build.lastConfirmedAt ? shortAgo(build.lastConfirmedAt, now) : "";
   const model = modelLabel(build.lastConfirmedModel);
+  /* BF-10: the four columns the filters had without one. */
+  const works = [...new Set((build.workedModels ?? []).map(modelLabel).filter(Boolean))];
+  const patterns = (build.patterns ?? []).map((pattern) => PATTERN_LABEL[pattern as Pattern] ?? pattern);
+  const published = build.publishedAt ? agoWords(shortAgo(build.publishedAt, now)) : "";
+  const extraOf = (id: ExtraColumnId): string => {
+    if (id === "shape") return shapeWord(build.shape);
+    if (id === "works") return works.length === 0 ? "" : `${works.slice(0, 2).join(", ")}${works.length > 2 ? ` + ${works.length - 2}` : ""}`;
+    if (id === "likes") return String(build.likeCount ?? 0);
+    if (id === "patterns") return patterns.join(", ");
+    if (id === "published") return published;
+    return first(id);
+  };
   return {
     id: build.id,
     href: `/b2/${build.slug}`,
@@ -319,14 +331,19 @@ export function tableRow(build: BuildsTableBuild, now: number, extras: readonly 
     sessions: build.sessionCount ?? null,
     reproductions: build.reproductionCount,
     lit: build.reproductionCount > 0 && !isStale({ last_confirmed_at: build.lastConfirmedAt, published_at: build.publishedAt }, now),
-    confirmed: ago ? `${ago === "now" ? "just now" : `${ago} ago`}${model ? ` on ${model}` : ""}` : "",
+    confirmed: ago ? `${agoWords(ago)}${model ? ` on ${model}` : ""}` : "",
     runs: build.runs ?? [],
     rebuilds: build.rebuildCount,
     open: build.open.count === 0 ? "" : `${build.open.count} open`,
     cost: first("cost"),
-    ...(extras.length > 0 ? { extra: Object.fromEntries(extras.map((id) => [id, id === "shape" ? shapeWord(build.shape) : first(id)])) } : null),
+    ...(extras.length > 0 ? { extra: Object.fromEntries(extras.map((id) => [id, extraOf(id)])) } : null),
+    likes: build.likeCount ?? 0,
+    lists: { works, patterns },
   };
 }
+
+/** "2d ago", "just now": a short age as the Table writes it. */
+const agoWords = (ago: string): string => (ago === "now" ? "just now" : ago ? `${ago} ago` : "");
 
 /** The live columns: the board's, less Steps and Sessions, which wait for the stored counts. */
 export const LIVE_COLUMNS: readonly ColumnId[] = ["build", "built", "field", "tools", "reproductions", "confirmed", "runs", "rebuilds", "open", "cost"];
@@ -338,9 +355,9 @@ export function columnsFor(countsLive: boolean): readonly ColumnId[] {
 
 /* ── the columns the reader chose (SV-24 P2) ── */
 
-/** The columns the chooser offers: all 24, less Steps and Sessions until the list carries the stored counts. */
+/** The columns the chooser offers: all 28, less Steps, Sessions and Works on model until the list carries the stored counts. */
 export function availableColumns(countsLive: boolean): ColumnId[] {
-  return ALL_COLUMNS.filter((id) => countsLive || (id !== "steps" && id !== "sessions"));
+  return ALL_COLUMNS.filter((id) => countsLive || (id !== "steps" && id !== "sessions" && id !== "works"));
 }
 
 /** The columns drawn: the default twelve, or the ones the reader kept, always with Build, always in the table's own order. */
@@ -371,6 +388,7 @@ const NUMBERS: Partial<Record<ColumnId, (row: TableRowView) => number | null>> =
   sessions: (row) => row.sessions,
   reproductions: (row) => row.reproductions,
   rebuilds: (row) => row.rebuilds,
+  likes: (row) => row.likes ?? null,
 };
 
 const WORDS: Partial<Record<ColumnId, (row: TableRowView) => string[]>> = {
@@ -379,6 +397,9 @@ const WORDS: Partial<Record<ColumnId, (row: TableRowView) => string[]>> = {
   tools: (row) => row.tools.map((tool) => tool.name),
   cost: (row) => [row.cost],
   ...Object.fromEntries((["shape", "task", "setting", "role", "technique", "modality", "method", "autonomy", "data", "oversight", "age", "skill"] as const).map((id) => [id, (row: TableRowView) => [row.extra?.[id] ?? ""]])),
+  /* BF-10: a list's own values, not the joined cell. */
+  works: (row) => [...(row.lists?.works ?? [])],
+  patterns: (row) => [...(row.lists?.patterns ?? [])],
 };
 
 export const CALC_WORD: Record<CalcKind, string> = { sum: "Sum", median: "Median", common: "Most common" };
