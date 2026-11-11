@@ -44,7 +44,7 @@ import { CodeLines } from "@/components/code/CodeLines";
 import { SHAPE_HOW_LABEL, shapeFragment, type OutputShape } from "@/lib/build/answerShape";
 import { addRange, bracketed, changesLine, rangeAt, removeRange, type ChangeRange } from "@/lib/build/changes";
 import { REPLY_MAX } from "@/lib/build/composePrompts";
-import { groupKind, groupOfStep, promptNumbersOf, stepLabel, stepTitle, TITLE_MAX, type SessionGroup, type Step } from "@/lib/build/graph";
+import { groupKind, groupOfStep, isCountedPrompt, promptNumbersOf, stepLabel, stepTitle, TITLE_MAX, type SessionGroup, type Step } from "@/lib/build/graph";
 import { EFFORTS, EFFORT_LABEL, SETTINGS_INSTRUCTIONS_MAX, VARIABLE_DESCRIPTION_MAX, markVariable, variablesFor, type Effort, type PromptSettings } from "@/lib/build/tileExtras";
 import { modelLabel } from "@/lib/models/registry";
 import { t } from "@/lib/theme/tokens";
@@ -188,7 +188,7 @@ function bodyFacts(props: FullPromptWindowProps, step: Step, prompts: readonly S
 
   const group = groupOfStep(groups, step);
   // CA-04 P1: a session holds every kind of step; "prompt 2 of 3" counts its prompts.
-  const sessionPrompts = group ? promptNumbersOf(group, steps) : [];
+  const sessionPrompts = group ? promptNumbersOf(group, steps).filter((number) => { const found = steps.find((candidate) => candidate.number === number); return Boolean(found) && isCountedPrompt(found as Step); }) : [];
   const inSession = sessionPrompts.indexOf(step.number) + 1;
   const tool = group?.tool ?? step.tool;
   // CA-15 P2: the model's own row is Model settings (`payload.settings.model`, else `payload.model`, else the session's).

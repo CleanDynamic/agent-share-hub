@@ -1424,6 +1424,13 @@ export function groupOfStep(groups: readonly SessionGroup[], step: Pick<Step, "n
 export const promptNumbersOf = (group: Pick<SessionGroup, "stepNumbers">, steps: readonly Pick<Step, "number" | "kind">[]): string[] =>
   group.stepNumbers.filter((number) => steps.find((step) => step.number === number)?.kind === "prompt");
 
+/**
+ * F57: the one rule for counting a prompt: a step shown as a prompt step. An agent's `:instructions` prompt and a Summary tile are
+ * not counted; a system prompt is a step of its own kind, so it is not a prompt either. The Build line, Details and the prompt
+ * window's "of N" all count through this.
+ */
+export const isCountedPrompt = (step: Pick<Step, "kind" | "id" | "summary">): boolean => step.kind === "prompt" && !step.summary && !step.id.endsWith(":instructions");
+
 /** Every step, parents before their children. */
 function flattenSteps(steps: readonly Step[]): Step[] {
   return steps.flatMap((step) => [step, ...flattenSteps(step.children)]);

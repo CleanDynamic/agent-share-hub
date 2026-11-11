@@ -9,7 +9,7 @@ vi.mock("@/integrations/supabase/client", async () => (await import("@/lib/build
 
 import { DETAILS_COPY } from "./DetailsPanel";
 import { harnessAfter, harnessBefore, mountCa20, openAddRow } from "./ca20Harness";
-import { IDS, seedCa20 } from "./ca20Fixture";
+import { IDS, KEY_A, seedCa20 } from "./ca20Fixture";
 
 vi.setConfig({ testTimeout: 40_000 });
 
@@ -103,5 +103,40 @@ describe("one identifier for a step (F56)", () => {
     // Sources.
     const sources = await sourcesOpen();
     expect(within(sources).getByText("Step 4").closest("button")?.textContent).toBe("Step 4Prompt 4");
+  });
+});
+
+/** F57: Session 1 holds three prompts, a system prompt, one agent (with its `:instructions` prompt) and a Summary tile. */
+function seedCount(rows: Record<string, Record<string, unknown>[]>) {
+  seedCa20(rows);
+  const drop = new Set([IDS.p4, IDS.team, IDS.g2, IDS.g3, IDS.file]);
+  rows.build_nodes = rows.build_nodes.filter((row) => !drop.has(row.id as string));
+  for (const row of rows.build_nodes) {
+    row.parent_id = null;
+    if (row.id === IDS.g1) row.position = 10;
+    row.payload = { ...(row.payload as object), session: KEY_A };
+  }
+  const base = { build_id: rows.build_nodes[0].build_id, parent_id: null, note: null, source_ref: null, event_id: null, is_gap: false, created_at: "2026-10-20T10:00:00Z" };
+  rows.build_nodes.push(
+    { ...base, id: "0c1c1c1c-0000-4000-8000-000000000091", position: 20, type: "system_prompt", title: "Brand voice", payload: { step: true, text: "Write in a calm tone.", scope: "all", session: KEY_A } },
+    { ...base, id: "0c1c1c1c-0000-4000-8000-000000000092", position: 21, type: "prompt", title: null, payload: { text: "This session is being continued from a previous conversation that ran out of context.", session: KEY_A } },
+  );
+}
+
+describe("one prompt count (F57)", () => {
+  it("the Build line, Details and the prompt window's \"of N\" give the same number", async () => {
+    await mountCa20(seedCount);
+    // The Build line.
+    await waitFor(() => expect(screen.getByTestId("sandbox-counts").textContent).toMatch(/ 3 prompts/));
+    // The prompt window, on Session 1's second prompt.
+    fireEvent.click(within(card(/^Prompt 2:/)).getByRole("button", { name: "Open prompt" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByTestId("full-prompt-line").textContent).toMatch(/^Step 2 · 2 of 3 in Session 1/);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
+    // Details, on the session.
+    fireEvent.click(screen.getByRole("button", { name: "Show sources" }));
+    const sources = await screen.findByRole("region", { name: "Sources" });
+    fireEvent.click(await within(sources).findByText("Session 1 · Claude Code"));
+    await waitFor(() => expect(panel().textContent).toContain("3 of 3"));
   });
 });

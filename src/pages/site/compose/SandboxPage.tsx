@@ -39,7 +39,7 @@ import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import type { BuildNode } from "@/lib/build/types";
 import { evalChoicesOf } from "@/lib/build/comparison";
 import { afterForIndex, type FilePlace } from "@/lib/build/fileDrop";
-import { addFile, placeStepAfter, topSteps, buildSteps, fileKindOf, previewOf, canCheck, resultFactsOf, resultHoldsWord, FILE_TYPE, groupKey, nestRefusal, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, testedStepOf, TOOL_TYPE, usesOf, type ResultInput, type Step } from "@/lib/build/graph";
+import { addFile, placeStepAfter, topSteps, buildSteps, fileKindOf, previewOf, canCheck, resultFactsOf, resultHoldsWord, FILE_TYPE, groupKey, isCountedPrompt, nestRefusal, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, testedStepOf, TOOL_TYPE, usesOf, type ResultInput, type Step } from "@/lib/build/graph";
 import { toolFor } from "@/lib/tools/registry";
 import { addWrittenPrompt } from "@/lib/build/composePrompts";
 import { addSetupFile, addSetupPlugin, addSetupRule, addSetupServer, addSetupWorkflow, isSetupPayload, needsText, routeSetupFiles, setNotShared, setupItemsOf, type DroppedFile, type SetupDraft } from "@/lib/build/setup";
@@ -381,8 +381,8 @@ function SandboxPageBody() {
     const all = flatten(steps);
     const next: SandboxCounts = {
       sessions: shownGroups(groups).length,
-      // SV-07 P7: a Summary tile is no prompt.
-      prompts: all.filter((step) => step.kind === "prompt" && !step.summary).length,
+      // F57: counted by the one rule (`isCountedPrompt`): no Summary tile, no agent's instructions.
+      prompts: all.filter(isCountedPrompt).length,
       files: tree.filter((node) => node.type === FILE_TYPE && !isSetupPayload(node.payload)).length,
     };
     return { counts: next, hasAgent: all.some((step) => step.kind === "agent" || step.kind === "team"), sessionCount: shownGroups(groups).length, steps, groups };

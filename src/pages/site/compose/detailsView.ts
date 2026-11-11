@@ -11,6 +11,7 @@ import {
   groupKey,
   groupKind,
   groupOfStep,
+  isCountedPrompt,
   shownGroups,
   madeByOf,
   madeFilesOf,
@@ -262,7 +263,7 @@ function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
 function sessionView(source: SourceSession, ctx: ViewContext): SessionView {
   const group = ctx.groups.find((candidate) => groupKey(candidate) === source.key);
   const real = !source.key.startsWith("typed-");
-  const mine = flatten(ctx.steps).filter((step) => step.kind === "prompt" && !step.summary && !step.id.endsWith(":instructions") && (real ? step.sessionId === source.key : source.prompts.some((p) => p.id === step.id)));
+  const mine = flatten(ctx.steps).filter((step) => isCountedPrompt(step) && (real ? step.sessionId === source.key : source.prompts.some((p) => p.id === step.id)));
 
   let checklist: ChecklistRow[];
   let total: number | null;
