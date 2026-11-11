@@ -19,6 +19,10 @@
    src/lib/theme/type.ts spends them. Theme-independent, so they are not in the theme blocks and css-parity does not
    count them. */
 :root {
+  /* F68, S40: the build editor's spacing and size steps; `space` and `size` in src/lib/theme/space.ts hold the same numbers. */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px; --space-12: 48px; --space-16: 64px;
+  --size-icon-small: 12px; --size-icon: 16px; --size-tag: 20px; --size-control-small: 24px; --size-control: 32px; --size-row: 48px; --size-row-large: 56px; --size-touch: 44px;
+
   --font-ui: 'Geist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-display: 'Geist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-data: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;

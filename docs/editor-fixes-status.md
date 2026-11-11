@@ -104,7 +104,7 @@ Note: 21 distinct names are listed for 31 failed tests. Names that repeat across
 | F65 | 11 | not started | | |
 | F66 | 7 | done | src/pages/site/compose/SessionHead.tsx | Same change as F50 (the quiet title at rest, the field on focus). |
 | F67 | 12 | not started | | |
-| F68 | 9 | not started | | |
+| F68 | 9 | done (step 3 not applied) | src/index.css, src/lib/theme/space.ts, src/lib/theme/space.test.ts | `--space-1` to `--space-16` and `--size-icon-small` to `--size-touch` on `:root` (index.css); `space` and `size` in space.ts, with a one-line note above SPACE, SPACE_COMPACT and SPACE_REFINED. Test `space.test.ts > the build editor's steps (F68, S40)`. Step 3: no file imports `CONTROL_SIZE` but controls.ts, yet `menuItemStyle` (used by ui/dropdown-menu.tsx, ui/select.tsx, canvas/BlockContextMenu.tsx, share/ShareMenu.tsx, content-detail/PrimitiveCommentDrawer.tsx) reads it, and controls.test.ts ties it to `CONTROL_CLASS` (src/components/ui button, input, select, tabs, checkbox, badge, switch, radio-group, textarea, dropdown-menu): all outside the editor, so the values are unchanged, as the prompt says. Step 4: radius.ts untouched. Nothing reads the new tokens yet, so the dev kit page cannot move. |
 | F69 | 11 | not started | | |
 | F70 | 12 | not started | | |
 | F71 | 12 | not started | | |
@@ -174,4 +174,4 @@ Note: 21 distinct names are listed for 31 failed tests. Names that repeat across
 | S37 | 12 | not started | | |
 | S38 | 11 | not started | | |
 | S39 | 10 | not started | | |
-| S40 | 9 | not started | | |
+| S40 | 9 | done | src/index.css, src/lib/theme/space.ts | As F68: the size tokens `size.*` / `--size-*`. |
