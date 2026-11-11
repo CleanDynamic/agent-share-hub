@@ -61,10 +61,10 @@ async function startFromSources(label: RegExp = /1 prompt$/, delays: typeof SLOW
 }
 
 describe("pressing a session in Sources", () => {
-  it("turns its + into 'In this draft' at once, and says what is being added", async () => {
+  it("turns its + into the In this build tick at once (F51), and says what is being added", async () => {
     await startFromSources();
     await screen.findByTestId("plus-to-words");
-    expect(screen.getByTestId("plus-to-words").textContent).toContain("In this draft");
+    expect(within(screen.getByTestId("plus-to-words")).getByRole("img", { name: "In this build" })).toBeTruthy();
     await waitFor(() => expect(line()).toMatch(/^Adding .* as Session 1…$/));
     await finished();
   });

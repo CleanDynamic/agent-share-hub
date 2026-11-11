@@ -4,7 +4,8 @@ import type { SessionGroup, Step } from "@/lib/build/graph";
 import type { SessionSummary } from "@/lib/build/sessions";
 import type { BuildNode } from "@/lib/build/types";
 
-import { alsoInLine, isChatExport, looksLikeChatExport, librarySources, projectFileReminders, sourceFiles, sourceSessions, unfinishedSources } from "./sourcesModel";
+import { jumpItemsOf } from "@/components/build/SessionJump";
+import { alsoInLine, firstWords, middleCut, runOf, isChatExport, looksLikeChatExport, librarySources, projectFileReminders, sourceFiles, sourceSessions, unfinishedSources } from "./sourcesModel";
 
 const step = (over: Partial<Step>): Step => ({
   id: "n1", kind: "prompt", number: "1", title: null, defaultTitle: "Prompt 1", text: "x", words: 1, model: null, sessionId: null, tool: null, runs: null, uses: [], children: [], ...over,
@@ -180,5 +181,35 @@ describe("projectFileReminders", () => {
   it("lists a tool once however many sessions it has, and at most two rows", () => {
     expect(projectFileReminders(tools("Claude Code", "Claude Code"), [])).toHaveLength(1);
     expect(projectFileReminders(tools("Claude Code", "Codex", "Cursor", "GitHub Copilot"), []).map((r) => r.toolId)).toEqual(["claude-code", "codex"]);
+  });
+});
+
+describe("F48, F49, F53, F63", () => {
+  it("F63: cuts a long name in the middle, so its ending shows", () => {
+    expect(middleCut("Screenshot 2026-11-03 at 09.41.12.png")).toBe("Screenshot 2026…09.41.12.png");
+    expect(middleCut("menu.pdf")).toBe("menu.pdf");
+    expect(middleCut("a".repeat(28))).toBe("a".repeat(28));
+    expect(middleCut("a".repeat(40)).length).toBe(28);
+  });
+
+  it("F53: the first six words, plain, with an ellipsis when there are more", () => {
+    expect(firstWords("## Plan **the** homepage copy for the bakery today", 6)).toBe("Plan the homepage copy for the…");
+    expect(firstWords("Fix the layout", 6)).toBe("Fix the layout");
+  });
+
+  it("F48: a session typed here counts its prompts for its Length line; an import keeps its turns", () => {
+    expect(runOf({}, 3)).toEqual({ messages: 3 });
+    expect(runOf({ run: { compactions: 1 } }, 2)).toEqual({ compactions: 1, messages: 2 });
+    expect(runOf({ run: { messages: 12 } }, 2)).toEqual({ messages: 12 });
+    expect(runOf({}, 0)).toBeUndefined();
+  });
+
+  it("F49: every tab reads number, harness, date, with no stray separator", () => {
+    const items = jumpItemsOf([
+      { key: "a", number: 1, tool: "Claude", date: "3 Mar" },
+      { key: "b", number: 2, tool: "Cursor", date: "" },
+      { key: "c", number: 3, tool: "Claude" },
+    ]);
+    expect(items.map((item) => `${item.number} ${item.label}`)).toEqual(["1 Claude · 3 Mar", "2 Cursor", "3 Claude"]);
   });
 });
