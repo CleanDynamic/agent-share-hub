@@ -58,6 +58,7 @@ import {
   activeChips,
   activeCount,
   calculationOptions,
+  clearedFilters,
   chosenColumns,
   columnsLabel,
   columnsMenu,
@@ -96,6 +97,17 @@ function MapsError({ onRetry }: { onRetry: () => void }) {
     <div role="alert" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
       <p style={{ ...text(13, 400, t.text), margin: 0 }}>Maps didn't load.</p>
       <BuildsControl onClick={onRetry}>Retry</BuildsControl>
+    </div>
+  );
+}
+
+/** BF-02 (X2): one line and one action when the list is empty. With a filter on, Clear all; with none, on a lens other than All,
+    Show all builds; on All with nothing at all, the line alone. */
+function NoMatches({ filtered, onClear, onShowAll }: { filtered: boolean; onClear: () => void; onShowAll?: () => void }) {
+  return (
+    <div data-testid="builds-empty" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, paddingBlock: 16 }}>
+      <p style={{ ...text(13, 400, t.text2), margin: 0 }}>{filtered ? "No builds match these filters." : "No builds here yet."}</p>
+      {filtered ? <BuildsControl onClick={onClear}>Clear all</BuildsControl> : onShowAll ? <BuildsControl onClick={onShowAll}>Show all builds</BuildsControl> : null}
     </div>
   );
 }
@@ -321,6 +333,16 @@ export default function BuildsPage() {
     writeFacetChoice(next);
   };
 
+  /* BF-02 (X2): one empty state for the three views. Clear all clears the filters only; with none on, a lens with nothing in it
+     offers the way back to every build. */
+  const noMatches = (
+    <NoMatches
+      filtered={activeCount(params) > 0 || params.query !== null}
+      onClear={() => go(clearedFilters(params))}
+      onShowAll={params.lens === "all" ? undefined : () => go({ ...clearedFilters(params), lens: "all" })}
+    />
+  );
+
   /* A value's link: the Table (no `view`) with the value's facet key added to the filters. */
   const valueHref = (key: string) => galleryHref({ ...params, view: undefined, facets: [...new Set([...(params.facets ?? []), key])] });
 
@@ -346,12 +368,7 @@ export default function BuildsPage() {
             failed={mapsFailed}
             notice={mapsFailed ? <MapsError onRetry={() => maps.forEach((entry) => entry.isError && void entry.refetch())} /> : undefined}
             now={now}
-            empty={
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, paddingBlock: 16 }}>
-                <p style={{ ...text(13, 400, t.text2), margin: 0 }}>No builds match these filters.</p>
-                <BuildsControl onClick={() => go({ lens: "all", madeFor: [], madeWith: [], query: null, view: params.view })}>Clear all</BuildsControl>
-              </div>
-            }
+            empty={noMatches}
             onMore={mapsShown < builds.length || list.hasNextPage ? onMoreMaps : undefined}
             loadingMore={list.isFetchingNextPage}
             updating={updating}
@@ -376,12 +393,7 @@ export default function BuildsPage() {
             facets={shownFacets}
             onFacets={onFacets}
             cards={builds.map((build) => cardOf(build, shownFacets, valueHref, now))}
-            empty={
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, paddingBlock: 16 }}>
-                <p style={{ ...text(13, 400, t.text2), margin: 0 }}>No builds match these filters.</p>
-                <BuildsControl onClick={() => go({ lens: "all", madeFor: [], madeWith: [], query: null, view: params.view })}>Clear all</BuildsControl>
-              </div>
-            }
+            empty={noMatches}
             onMore={list.hasNextPage ? () => void list.fetchNextPage() : undefined}
             loadingMore={list.isFetchingNextPage}
             updating={updating}
@@ -407,7 +419,7 @@ export default function BuildsPage() {
               sort: { value: sort, options: SORT_OPTIONS, onChange: (value) => go({ ...params, sort: value as GalleryFeedSort }) },
               chips: activeChips(params),
               onRemoveChip: (key) => go(withoutChip(params, key)),
-              onClearAll: () => go({ lens: params.lens, madeFor: [], madeWith: [], query: null, view: params.view, sort: params.sort }),
+              onClearAll: () => go(clearedFilters(params)),
               columns,
               columnsLabel: columnsLabel(columns, countsLive),
               columnsMenu: columnsMenu(
@@ -432,12 +444,7 @@ export default function BuildsPage() {
               },
               onMore: list.hasNextPage ? () => void list.fetchNextPage() : undefined,
               loadingMore: list.isFetchingNextPage,
-              empty: (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, paddingBlock: 16 }}>
-                  <p style={{ ...text(13, 400, t.text2), margin: 0 }}>No builds match these filters.</p>
-                  <BuildsControl onClick={() => go({ lens: "all", madeFor: [], madeWith: [], query: null, view: params.view })}>Clear all</BuildsControl>
-                </div>
-              ),
+              empty: noMatches,
             }
           : null
       }

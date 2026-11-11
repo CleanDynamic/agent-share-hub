@@ -5,7 +5,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Children, isValidElement, type CSSProperties, type ReactElement, type ReactNode } from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -554,5 +554,49 @@ describe("BF-02 the updating state", () => {
     expect(await screen.findByRole("link", { name: "Build 2" })).toBeTruthy();
     expect(screen.getByRole("region", { name: "Builds table" }).getAttribute("aria-busy")).toBe("false");
     expect(screen.queryByText("Updating")).toBeNull();
+  });
+});
+
+describe("BF-02 one Clear all", () => {
+  const SET = "0f8fad5b-d9cb-469f-a165-70867728950e";
+
+  it("Clear all in the chip row keeps the lens and the sort and drops every filter and the open set", async () => {
+    renderAt(`/builds?lens=rebuilt&f=field%3Alaw&open=1&within=30&sort=newest&q=notes&set=${SET}`);
+    const chips = await screen.findByRole("group", { name: "Active filters" });
+    fireEvent.click(within(chips).getByRole("button", { name: "Clear all" }));
+    await waitFor(() => expect(address).toBe("/builds?lens=rebuilt&sort=newest"));
+  });
+
+  for (const view of [undefined, "maps", "classification"] as const) {
+    const on = view ? `view=${view}&` : "";
+    const where = view ?? "table";
+
+    it(`empty state with filters on (${where}): the button is Clear all, and it keeps the lens and the sort`, async () => {
+      listBuildsTable.mockResolvedValue({ builds: [], total: 0 });
+      renderAt(`/builds?${on}lens=rebuilt&sort=newest&f=field%3Alaw`);
+      const empty = await screen.findByTestId("builds-empty");
+      expect(within(empty).getByText("No builds match these filters.")).toBeTruthy();
+      expect(within(empty).queryByRole("button", { name: "Show all builds" })).toBeNull();
+      fireEvent.click(within(empty).getByRole("button", { name: "Clear all" }));
+      await waitFor(() => expect(address).toBe(`/builds?${on}lens=rebuilt&sort=newest`));
+    });
+
+    it(`empty state with no filter on a lens other than All (${where}): the sentence is "No builds here yet." and the button is Show all builds, which opens /builds with the same view`, async () => {
+      listBuildsTable.mockResolvedValue({ builds: [], total: 0 });
+      renderAt(`/builds?${on}lens=rebuilt`);
+      const empty = await screen.findByTestId("builds-empty");
+      expect(within(empty).getByText("No builds here yet.")).toBeTruthy();
+      expect(within(empty).queryByRole("button", { name: "Clear all" })).toBeNull();
+      fireEvent.click(within(empty).getByRole("button", { name: "Show all builds" }));
+      await waitFor(() => expect(address).toBe(view ? `/builds?view=${view}` : "/builds"));
+    });
+  }
+
+  it("empty state with no filter on All: the sentence and no button, since there is nothing to show instead", async () => {
+    listBuildsTable.mockResolvedValue({ builds: [], total: 0 });
+    renderAt("/builds");
+    const empty = await screen.findByTestId("builds-empty");
+    expect(within(empty).getByText("No builds here yet.")).toBeTruthy();
+    expect(within(empty).queryByRole("button")).toBeNull();
   });
 });
