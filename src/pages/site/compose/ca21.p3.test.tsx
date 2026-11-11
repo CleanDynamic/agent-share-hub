@@ -99,7 +99,7 @@ describe("holding a tile over another session", () => {
     const { props } = mountList({ onMoveToSession: vi.fn(() => Promise.resolve(false)) });
     const first = await toSecondSession();
     await press("Space");
-    await waitFor(() => expect(said()).toBe("Tile not moved"));
+    await waitFor(() => expect(said()).toBe("Step not moved"));
     expect(props.onMoveToSession).toHaveBeenCalled();
     await waitFor(() => expect(tile(first).getAttribute("data-skel-container")).toBe(keys()[0]));
   });
@@ -192,9 +192,9 @@ describe("the two half-second holds, by the pointer", () => {
     const box = target.getBoundingClientRect();
     move(150, box.y + box.height / 2);
     act(() => void vi.advanceTimersByTime(499));
-    expect(said()).not.toMatch(/^Send with/);
+    expect(said()).not.toMatch(/^Attach to/);
     act(() => void vi.advanceTimersByTime(10));
-    expect(said()).toMatch(/^Send with Prompt/);
+    expect(said()).toMatch(/^Attach to Prompt/);
     // The place leaves while it is the target: the held tile is out of every session.
     expect(target.getAttribute("data-skel-id")).toBe(ids[2]);
     vi.useRealTimers();
@@ -211,6 +211,6 @@ describe("the two half-second holds, by the pointer", () => {
     const box = tile(ids[2]).getBoundingClientRect();
     move(150, box.y + 4);
     act(() => void vi.advanceTimersByTime(1000));
-    expect(said()).not.toMatch(/^Send with/);
+    expect(said()).not.toMatch(/^Attach to/);
   });
 });

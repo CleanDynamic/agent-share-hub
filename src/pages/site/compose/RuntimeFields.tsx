@@ -19,6 +19,7 @@ import { HelpersField } from "./HelpersField";
 import { PickMenu } from "./PickMenu";
 import type { RuntimeView } from "./runtimeView";
 import { text, typedArea, typedField } from "./refinedStyles";
+import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT } from "./modalRecipes";
 
 function AnswerShapeField({ shape, schemaFiles, phone, onChange }: { shape: OutputShape | null; schemaFiles: readonly string[]; phone: boolean; onChange: (next: OutputShape | null) => void }) {
   const uid = useId();
@@ -62,8 +63,8 @@ function AnswerShapeField({ shape, schemaFiles, phone, onChange }: { shape: Outp
           </Field>
           {error ? <span role="alert" style={text(12.5, 400, t.text)}>{error}</span> : null}
           <div style={{ display: "flex", gap: 8 }}>
-            <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={save}>Save the answer shape</Button>
-            {shape ? <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => { onChange(null); setD({ how: "json-schema" }); }}>Remove</Button> : null}
+            <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={12} onClick={save}>Save the answer shape</Button>
+            {shape ? <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={12} onClick={() => { onChange(null); setD({ how: "json-schema" }); }}>Remove</Button> : null}
           </div>
         </div>
       ) : null}
@@ -93,14 +94,14 @@ function ReadFromCode({ codeTiles, definedIn, phone, onRead }: { codeTiles: read
       <h3 style={{ ...text(12.5, 500, t.text), margin: 0 }}>Read the helpers from code</h3>
       {mine.map((tile) => (
         <div key={tile.id}>
-          <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => run(tile.source)}>Read from {tile.label}</Button>
+          <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={12} onClick={() => run(tile.source)}>Read from {tile.label}</Button>
         </div>
       ))}
       <Field id={`${uid}-paste`} label="create_deep_agent(...) call">
         <textarea id={`${uid}-paste`} rows={3} value={pasted} onChange={(e) => setPasted(e.target.value)} style={typedArea(phone, { fontFamily: "var(--font-data)", fontSize: phone ? 16 : 12 })} />
       </Field>
       <div>
-        <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} disabled={!pasted.trim()} onClick={() => run(pasted)}>Read</Button>
+        <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={12} disabled={!pasted.trim()} onClick={() => run(pasted)}>Read</Button>
       </div>
       {said ? <span role="status" style={text(12, 400, t.text2)}>{said}</span> : null}
     </section>
@@ -138,7 +139,7 @@ export function RuntimeFields({ id, runtime, phone, onRuntime, onReadHelpers }: 
                 ))}
               </div>
             ) : (
-              <span style={text(12, 400, t.label)}>No Code tile linked</span>
+              <span style={text(12, 400, t.label)}>No Code step linked</span>
             )}
           </Field>
           {onReadHelpers ? <ReadFromCode codeTiles={agent.codeTiles} definedIn={agent.definedIn} phone={phone} onRead={(read) => onReadHelpers(id, read)} /> : null}

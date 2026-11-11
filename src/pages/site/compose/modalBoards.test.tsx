@@ -113,7 +113,7 @@ describe("each modal as its board (CA-15b P2)", () => {
   it("Add code", () => {
     mount(<AddCodeDialog open onOpenChange={() => {}} onAdd={() => {}} seed={"const a = 1;\nconst b = 2;"} />);
     header("Add code", "Source code as used");
-    expect(inOrder(screen.getByTestId("modal-body").textContent ?? "", ["Code", "2 lines", "Upload files", "Each file becomes its own step tile", "Language", "Optional", "2 fields"])).toEqual([]);
+    expect(inOrder(screen.getByTestId("modal-body").textContent ?? "", ["Code", "2 lines", "Upload files", "Each file becomes its own step", "Language", "Optional", "2 fields"])).toEqual([]);
     // The language field shows the language's name, guessed from the code until it is chosen.
     expect(screen.getByRole("button", { name: "Language" }).textContent).toMatch(/^(TypeScript|JavaScript)$/);
     expect(optionalRows()).toEqual([
@@ -154,8 +154,8 @@ describe("each modal as its board (CA-15b P2)", () => {
     expect(optionalRows()).toEqual([
       ["Option descriptions", ""],
       ["Import request and response", "From JSON, curl or Python"],
-      ["Calling code", "Code step tile that sends the request"],
-      ["Input", "Another step tile's output, or sample text"],
+      ["Calling code", "Code step that sends the request"],
+      ["Input", "Another step's output, or sample text"],
       ["Recorded answer", "One real answer"],
       /* SV-29 P1. */
       ["Label set", "Every label a decision could output"],
@@ -213,7 +213,7 @@ describe("each modal as its board (CA-15b P2)", () => {
     const window = screen.getByTestId("full-prompt-window");
     expect(within(window).getByRole("button", { name: "Rename prompt" })).toBeTruthy();
     expect(within(window).getByRole("button", { name: "Close" })).toBeTruthy();
-    expect(inOrder(window.textContent ?? "", ["Prompt", "3 words", "Copy prompt", "Response", "0 of 4,000 characters", "Optional", "2 fields", "Esc Close · ← → Previous or next prompt", "Close"])).toEqual([]);
+    expect(inOrder(window.textContent ?? "", ["Prompt", "3 words", "Copy prompt", "Response", "0 / 4,000", "Optional", "2 fields", "Esc Close · ← → Previous or next prompt", "Close"])).toEqual([]);
     expect(optionalRows()).toEqual([
       ["Model settings", ""],
       ["Variables", "Format: {company name}"],

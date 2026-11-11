@@ -169,7 +169,7 @@ describe("the refined look (UI-P93)", () => {
   it("has a 6px square per group (hollow for Available to add), a boxed 26 Add session, and no dashed drop zone (UX-02 P8)", () => {
     panel();
     const add = screen.getAllByRole("button", { name: "Add session" })[0];
-    expect(add.getAttribute("style")).toMatch(/width:\s*26px/);
+    expect(add.getAttribute("style")).toMatch(/width:\s*32px/); // S6
     const html = markup();
     expect(html).toContain("width:6px;height:6px;box-sizing:border-box;border-radius:1px;background:transparent;border:1px solid var(--text2)");
     expect(html).not.toContain("dashed");

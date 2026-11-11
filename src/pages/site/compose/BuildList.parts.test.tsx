@@ -78,7 +78,7 @@ describe("two parts", () => {
     expect(groups).toHaveLength(2);
     const style = groups[0].getAttribute("style") ?? "";
     // SV-06 P4: the outline is drawn in three pieces inside the group, and the group's padding takes the 1px the border took.
-    expect(style).toContain("padding: 11px");
+    expect(style).toContain("padding: 13px"); // S30: space[3] and the frame's 1px
     expect(style).toContain("gap: 8px");
     const top = groups[0].querySelector(':scope > [data-frame-piece="top"]')?.getAttribute("style") ?? "";
     const bottom = groups[0].querySelector(':scope > [data-frame-piece="bottom"]')?.getAttribute("style") ?? "";

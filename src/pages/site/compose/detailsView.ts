@@ -78,7 +78,7 @@ export interface ViewContext {
 const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [step, ...flatten(step.children), ...flatten(step.sentWith ?? [])]);
 
 /** CA-04 P2: what a tile inside another says in its eyebrow. */
-const insideOf = (step: Step) => (step.inside ? { sentWithLine: `Sent with ${step.inside.label}` } : null);
+const insideOf = (step: Step) => (step.inside ? { sentWithLine: `Attached to ${step.inside.label}` } : null);
 
 /** A node at any depth. */
 const findNode = (tree: readonly NodeTree[], id: string): NodeTree | null => {

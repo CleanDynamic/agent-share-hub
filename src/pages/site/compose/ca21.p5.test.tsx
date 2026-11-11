@@ -85,7 +85,7 @@ describe("dragging by the keys", () => {
     stubLayout();
     mountList();
     const handle = screen.getAllByTestId("drag-handle")[0];
-    expect(document.body.textContent).toContain("Press Space to pick up the step tile");
+    expect(document.body.textContent).toContain("Press Space to pick up the step");
     await pickUp(handle);
     expect(screen.getByTestId("nest-said").getAttribute("aria-live")).toBeNull();
   });

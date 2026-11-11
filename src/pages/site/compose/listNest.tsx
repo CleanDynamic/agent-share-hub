@@ -21,6 +21,8 @@ import { t } from "@/lib/theme/tokens";
 
 import { bareButton } from "./refinedStyles";
 import { SESSION_DRAG, SOURCE_FILE_DRAG, SOURCE_SESSION_DRAG, WORKSTREAM_DRAG, type Held, type Sorting } from "./useBuildSorting";
+import { size } from "@/lib/theme/space";
+import { r } from "@/lib/theme/radius";
 
 /** Where a held tile is dropped. */
 export type NestTarget = { kind: "tile"; id: string } | { kind: "gap"; index: number } | { kind: "session"; key: string } | { kind: "workstream"; key: string };
@@ -98,7 +100,7 @@ export function useGrabbingCursor(holding: boolean) {
 export const DRAG_ACCESSIBILITY = {
   // The line under the build is the polite announcement (`sorting.said`): these say nothing of their own.
   announcements: { onDragStart: () => "", onDragOver: () => "", onDragEnd: () => "", onDragCancel: () => "" },
-  screenReaderInstructions: { draggable: "Press Space to pick up the step tile, the arrow keys to move it, and Space again to drop it. Escape puts it back." },
+  screenReaderInstructions: { draggable: "Press Space to pick up the step, the arrow keys to move it, and Space again to drop it. Escape puts it back." },
 };
 
 export interface DndHost {
@@ -222,7 +224,8 @@ export function DragHandle({ label, nest, testId = "drag-handle", phone }: { lab
     },
     [setActivator],
   );
-  if (!nest.on) return null;
+  /* F72: a tile that cannot move keeps the handle's 16 wide slot, so its badge and title stand on the same edges as every other tile's. */
+  if (!nest.on) return <span aria-hidden="true" data-testid={`${testId}-slot`} style={{ width: size.icon, flexShrink: 0 }} />;
   return (
     <button
       type="button"
@@ -239,21 +242,21 @@ export function DragHandle({ label, nest, testId = "drag-handle", phone }: { lab
       onBlur={handlers.onBlur}
       style={{
         ...bareButton,
-        width: 18,
-        height: state?.phone ? 44 : 22,
+        width: state?.phone ? size.touch : size.icon,
+        height: state?.phone ? size.touch : size.controlSmall,
         flexShrink: 0,
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
         color: t.label,
-        borderRadius: 4,
+        borderRadius: r.chip,
         opacity: near || nest.held ? 1 : 0,
         cursor: nest.held ? "grabbing" : "grab",
         touchAction: "none",
         ...ring(interactive.focusVisible),
       }}
     >
-      <Glyph name="grip" size={16} />
+      <Glyph name="grip" size={size.icon} />
     </button>
   );
 }

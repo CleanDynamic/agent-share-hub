@@ -94,8 +94,8 @@ describe("sourceFiles and librarySources", () => {
     expect(rows.map((r) => [r.id, r.inThisDraft, r.alsoIn, r.adding])).toEqual([
       ["1", false, null, true],
       ["2", true, null, false],
-      ["3", false, "Also in 2 drafts", false],
-      ["4", false, "Also in 1 draft", false],
+      ["3", false, "Also in 2 builds", false],
+      ["4", false, "Also in 1 build", false],
     ]);
     // SV-05 P3: the line starts with the app (No harness chosen when it is not known), then the model, the day and the count.
     expect(rows[0]).toMatchObject({ label: "Opus 5.5", line: expect.stringMatching(/ · Opus 5\.5 · 1 Mar · 2 prompts$/) });
@@ -109,9 +109,9 @@ describe("sourceFiles and librarySources", () => {
 
   it("says where else a session is, not counting this draft", () => {
     expect(alsoInLine(["b"], "b")).toBeNull();
-    expect(alsoInLine(["b", "c"], "b")).toBe("Also in 1 draft");
-    expect(alsoInLine(["b", "c", "d"], "b")).toBe("Also in 2 drafts");
-    expect(alsoInLine(["c"], null)).toBe("Also in 1 draft");
+    expect(alsoInLine(["b", "c"], "b")).toBe("Also in 1 build");
+    expect(alsoInLine(["b", "c", "d"], "b")).toBe("Also in 2 builds");
+    expect(alsoInLine(["c"], null)).toBe("Also in 1 build");
   });
 
   it("splits imports that are not sessions yet into Still arriving and Didn't finish", () => {

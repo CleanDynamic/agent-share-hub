@@ -45,7 +45,7 @@ describe("UX-03 P3: an empty session is a required publish item", () => {
     expect(item).toMatchObject({
       section: "required",
       done: false,
-      words: "Session 3 has no step tiles",
+      words: "Session 3 has no steps",
       detail: "Empty sessions are not published",
       action: { id: "remove_session", label: "Remove session" },
       sessionKey: "typed-c",
@@ -54,7 +54,7 @@ describe("UX-03 P3: an empty session is a required publish item", () => {
     expect(list.note).toBe("Complete 1 required item to publish");
   });
 
-  it("is not there when every session has a step tile", () => {
+  it("is not there when every session has a step", () => {
     const list = publishChecklist({ ...BASE, empty: [] });
     expect(list.required.some((entry) => entry.action?.id === "remove_session")).toBe(false);
     expect(list.canPublish).toBe(true);
@@ -70,10 +70,10 @@ describe("UX-03 P3: an empty session is a required publish item", () => {
     expect(order()).toEqual([KEY_A, KEY_B, KEY_C]);
     fireEvent.click(screen.getByRole("button", { name: "Publish" }));
     const window = await screen.findByTestId("publish-checklist");
-    expect(within(window).getByText("Session 3 has no step tiles")).toBeTruthy();
+    expect(within(window).getByText("Session 3 has no steps")).toBeTruthy();
     expect(within(window).getByText("Empty sessions are not published")).toBeTruthy();
     expect((screen.getByTestId("checklist-publish") as HTMLButtonElement).disabled).toBe(true);
-    fireEvent.click(within(window).getByRole("button", { name: "Remove session: Session 3 has no step tiles" }));
+    fireEvent.click(within(window).getByRole("button", { name: "Remove session: Session 3 has no steps" }));
     await waitFor(() => expect(order()).toEqual([KEY_A, KEY_B]), { timeout: 15_000 });
     const undoButton = await screen.findByTestId("notice-undo", undefined, { timeout: 15_000 });
     expect(await screen.findByText(/^Removed Session 3\./, undefined, { timeout: 15_000 })).toBeTruthy();
@@ -105,7 +105,7 @@ const node = (id: string, position: number, type: string, payload: Row, parent: 
   created_at: "2026-10-20T10:00:00Z",
 });
 
-/** Two sessions: two prompts, the second with a prompt sent with it; then a prompt and a File step tile. */
+/** Two sessions: two prompts, the second with a prompt sent with it; then a prompt and a File step. */
 function seedParity(rows: Record<string, Row[]>) {
   const build = rows.builds.find((row) => row.id === DRAFT) as Row;
   build.title = "UX-03 parity";
@@ -200,7 +200,7 @@ describe("UX-03 P3: one label per step", () => {
     expect(screen.getAllByTestId("step-own-title").map((el) => el.textContent)).toEqual(expect.arrayContaining(["Poster team", "Copywriter"]));
   });
 
-  it("draws a File step tile with its name and Download, and the Files list links to it", () => {
+  it("draws a File step with its name and Download, and the Files list links to it", () => {
     drawPage(stepsView(tree(), {}));
     const tile = document.getElementById(`step-${IDS.file}`) as HTMLElement;
     expect(within(tile).getByTestId("step-label").textContent).toBe("Step 3 · File");

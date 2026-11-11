@@ -34,17 +34,17 @@ describe("the notice's sentences", () => {
   it("says what was removed in the words the prompt gives", () => {
     expect(REMOVE_COPY.tile("Prompt 3")).toBe("Removed Prompt 3");
     expect(REMOVE_COPY.tile("Team 11", { count: 3, what: "agents" })).toBe("Removed Team 11 and its 3 agents");
-    expect(REMOVE_COPY.tile("Prompt 3", { count: 1, what: "tiles" })).toBe("Removed Prompt 3 and its 1 step tile");
-    expect(REMOVE_COPY.session(2, 3)).toBe("Removed Session 2 and its 3 step tiles");
+    expect(REMOVE_COPY.tile("Prompt 3", { count: 1, what: "tiles" })).toBe("Removed Prompt 3 and its 1 step");
+    expect(REMOVE_COPY.session(2, 3)).toBe("Removed Session 2 and its 3 steps");
     expect(REMOVE_COPY.session(2, 0)).toBe("Removed Session 2");
-    expect(REMOVE_COPY.sessionKept(2, 1)).toBe("Removed Session 2. Its step tiles moved to Session 1");
+    expect(REMOVE_COPY.sessionKept(2, 1)).toBe("Removed Session 2. Its steps moved to Session 1");
     expect(REMOVE_COPY.part("Part B", "Part A")).toBe("Removed Part B. Its sessions joined Part A");
     expect(REMOVE_COPY.file("orders.csv")).toBe("Removed orders.csv");
-    expect(REMOVE_COPY.several(2, 4)).toBe("Removed 2 sessions and 4 step tiles");
+    expect(REMOVE_COPY.several(2, 4)).toBe("Removed 2 sessions and 4 steps");
     expect(SESSION_WINDOW_COPY.title(2)).toBe("Remove Session 2?");
-    expect(SESSION_WINDOW_COPY.body(3)).toBe("It has 3 step tiles.");
-    expect(SESSION_WINDOW_COPY.titleMany(2, 1)).toBe("Remove 2 sessions and 1 step tile?");
-    expect(SESSION_WINDOW_COPY.bodyMany(5)).toBe("They have 5 step tiles between them.");
+    expect(SESSION_WINDOW_COPY.body(3)).toBe("It has 3 steps.");
+    expect(SESSION_WINDOW_COPY.titleMany(2, 1)).toBe("Remove 2 sessions and 1 step?");
+    expect(SESSION_WINDOW_COPY.bodyMany(5)).toBe("They have 5 steps between them.");
   });
 });
 
@@ -55,9 +55,9 @@ describe("a tile", () => {
     const row = { ...nodeRow(IDS.p2) };
     await openMenu("Prompt 2 options");
     const items = screen.getAllByRole("menuitem");
-    expect(items.at(-1)?.textContent).toMatch(/^Remove step tile(Delete)?$/);
+    expect(items.at(-1)?.textContent).toMatch(/^Remove step(Delete)?$/);
     expect(items.at(-1)?.getAttribute("data-tone")).toBe("danger");
-    await choose("Remove step tile");
+    await choose("Remove step");
     expect(screen.queryByRole("alertdialog")).toBeNull();
     await waitFor(() => expect(ids()).not.toContain(IDS.p2), { timeout: 15_000 });
     expect(await said("Removed Prompt 2")).toBeTruthy();
@@ -71,7 +71,7 @@ describe("a tile", () => {
     await mountCa20(seedCa20);
     const before = shape();
     await openMenu(/^Team 3 options/);
-    await choose("Remove step tile");
+    await choose("Remove step");
     await waitFor(() => expect(ids()).not.toContain(IDS.team), { timeout: 15_000 });
     expect(ids()).not.toContain(IDS.g1);
     expect(ids()).not.toContain(IDS.g3);
@@ -88,7 +88,7 @@ describe("a tile", () => {
     const used = JSON.stringify(nodeRow(IDS.p4)?.payload);
     // Prompt 4 makes orders.csv; Prompt 5 uses it.
     await openMenu("Prompt 4 options");
-    await choose("Remove step tile");
+    await choose("Remove step");
     await waitFor(() => expect(ids()).not.toContain(IDS.p3), { timeout: 15_000 });
     expect(ids()).not.toContain(IDS.file);
     expect(JSON.stringify(nodeRow(IDS.p4)?.payload)).not.toContain(IDS.file);
@@ -139,8 +139,8 @@ describe("a session", () => {
     await choose("Remove session");
     const dialog = await screen.findByRole("alertdialog");
     expect(within(dialog).getByText("Remove Session 2?")).toBeTruthy();
-    expect(within(dialog).getByText("It has 3 step tiles.")).toBeTruthy();
-    expect(within(dialog).getAllByRole("button").map((button) => button.textContent)).toEqual(["Cancel", "Keep the step tiles", "Remove all"]);
+    expect(within(dialog).getByText("It has 3 steps.")).toBeTruthy();
+    expect(within(dialog).getAllByRole("button").map((button) => button.textContent)).toEqual(["Cancel", "Keep the steps", "Remove all"]);
     expect(within(dialog).getByRole("button", { name: "Remove all" }).getAttribute("data-tone")).toBe("danger");
     fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
@@ -157,7 +157,7 @@ describe("a session", () => {
     fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Remove all" }));
     await waitFor(() => expect(ids()).toEqual([IDS.p1, IDS.p2]), { timeout: 15_000 });
     expect(sessionKeys()).toEqual([KEY_A, KEY_C]);
-    expect(await said("Removed Session 2 and its 3 step tiles")).toBeTruthy();
+    expect(await said("Removed Session 2 and its 3 steps")).toBeTruthy();
     await undo();
     await waitFor(() => expect(ids()).toHaveLength(9), { timeout: 15_000 });
     expect(shape()).toEqual(before);
@@ -165,34 +165,34 @@ describe("a session", () => {
     expect(sessionsMetaOf(draftRow()?.making)[KEY_B]).toEqual(meta);
   });
 
-  it("Keep the step tiles moves them to the end of the session above, then removes it", async () => {
+  it("Keep the steps moves them to the end of the session above, then removes it", async () => {
     await mountCa20(seedCa20);
     await openMenu("Session 2 options");
     await choose("Remove session");
-    fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Keep the step tiles" }));
+    fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Keep the steps" }));
     await waitFor(() => expect(sessionKeys()).toEqual([KEY_A, KEY_C]), { timeout: 15_000 });
     // Nothing was removed: every tile is in Session 1 now, after its own.
     expect(ids()).toHaveLength(9);
     const tiles = [IDS.p1, IDS.p2, IDS.team, IDS.p3, IDS.p4];
     expect(tiles.every((id) => (nodeRow(id)?.payload as { session?: string }).session === KEY_A)).toBe(true);
     expect(positions().filter((row) => row.parent_id === null).map((row) => row.id)).toEqual([IDS.p1, IDS.p2, IDS.team, IDS.p3, IDS.p4, IDS.file]);
-    expect(await said("Removed Session 2. Its step tiles moved to Session 1")).toBeTruthy();
+    expect(await said("Removed Session 2. Its steps moved to Session 1")).toBeTruthy();
     await undo();
     await waitFor(() => expect(sessionKeys()).toEqual([KEY_A, KEY_B, KEY_C]), { timeout: 15_000 });
     expect((nodeRow(IDS.p3)?.payload as { session?: string }).session).toBe(KEY_B);
   });
 
-  it("Keep the step tiles on the first session moves them to the start of the one below", async () => {
+  it("Keep the steps on the first session moves them to the start of the one below", async () => {
     await mountCa20(seedCa20);
     await openMenu("Session 1 options");
     await choose("Remove session");
-    fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Keep the step tiles" }));
+    fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Keep the steps" }));
     await waitFor(() => expect(sessionKeys()).toEqual([KEY_B, KEY_C]), { timeout: 15_000 });
     expect(ids()).toHaveLength(9);
     const top = positions().filter((row) => row.parent_id === null);
     expect(top.map((row) => row.id)).toEqual([IDS.p1, IDS.p2, IDS.team, IDS.p3, IDS.p4, IDS.file]);
     expect([IDS.p1, IDS.p2, IDS.team, IDS.p3, IDS.p4].every((id) => (nodeRow(id)?.payload as { session?: string }).session === KEY_B)).toBe(true);
-    expect(await said("Removed Session 1. Its step tiles moved to Session 1")).toBeTruthy();
+    expect(await said("Removed Session 1. Its steps moved to Session 1")).toBeTruthy();
   });
 });
 
@@ -203,7 +203,7 @@ describe("groups and the post's links", () => {
     await mountCa20(seedCa20);
     expect(linked()).toContain(`node:${IDS.p1}`);
     await openMenu("Prompt 1 options");
-    await choose("Remove step tile");
+    await choose("Remove step");
     await waitFor(() => expect(ids()).not.toContain(IDS.p1), { timeout: 15_000 });
     // The size rule: the group of two is down to one, so it ends and the one left keeps its colour.
     await waitFor(() => expect(referenceGroupsOf(draftRow()?.making)).toEqual([]), { timeout: 15_000 });

@@ -51,6 +51,7 @@ import { MadeWithLine } from "./MadeWithLine";
 import { MoreDetails, type ComposeDetailKey, type ComposeDetails } from "./MoreDetails";
 import { PromptsPanel, type ComposePromptRow, type PromptFocus } from "./PromptsPanel";
 import { SessionsPanel, type ComposeSession } from "./SessionsPanel";
+import { space, size } from "@/lib/theme/space";
 
 export type { ComposeDetailKey, ComposeDetails } from "./MoreDetails";
 export type { ComposePromptRow, PromptFocus } from "./PromptsPanel";
@@ -409,7 +410,7 @@ function TextPanel({
             autoComplete="off"
             onChange={(event) => onAudience(event.target.value)}
             {...forRing.handlers}
-            style={{ ...fieldBase, height: 33, padding: "0 10px", fontSize: phone ? 16 : 14, ...forRing.style }}
+            style={{ ...fieldBase, height: size.control, padding: `0 ${space[3]}px`, fontSize: phone ? 16 : 14, ...forRing.style }}
           />
           <datalist id="compose-audience-options">
             {audienceOptions.map((option) => (

@@ -161,7 +161,7 @@ describe("addSessionToBuild", () => {
   it("refuses a session that is already in the draft, and writes nothing more", async () => {
     startAuditBackend({ schema: REPO_SCHEMA });
     await addSessionToBuild(WAITING, { kind: "existing", buildId: DRAFT });
-    await expect(addSessionToBuild(WAITING, { kind: "existing", buildId: DRAFT })).rejects.toThrow(/already in this draft/);
+    await expect(addSessionToBuild(WAITING, { kind: "existing", buildId: DRAFT })).rejects.toThrow(/already in this build/);
     expect(nodesOf(DRAFT)).toHaveLength(1);
     expect(sessionRows(DRAFT)).toHaveLength(1);
   });

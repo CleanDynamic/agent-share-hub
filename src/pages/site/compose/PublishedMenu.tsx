@@ -28,7 +28,7 @@ export const PUBLISHED_COPY = {
   copyFailed: "Link not copied",
   unpublish: "Unpublish…",
   unpublishTitle: (title: string): string => `Unpublish ${title}?`,
-  unpublishBody: "The link stops working. The draft stays.",
+  unpublishBody: "The link stops working. The build stays a draft.",
   cancel: "Cancel",
   confirm: "Unpublish",
 } as const;

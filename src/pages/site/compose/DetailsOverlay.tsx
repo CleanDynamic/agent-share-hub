@@ -19,6 +19,7 @@ import { t } from "@/lib/theme/tokens";
 
 import { OVERLAY_EDGE, OVERLAY_FOOT_COPY, OVERLAY_FOOT_PAD, OVERLAY_PANEL_PAD, OVERLAY_WIDTH, TABLET_MAX } from "./detailsRecipes";
 import { text } from "./refinedStyles";
+import { iconButtonSide } from "./modalRecipes";
 
 /** What a click on the content must not take as "edit": the controls inside it. */
 const CONTROLS = "button, a, input, select, textarea, [role='button'], [role='menuitem']";
@@ -135,7 +136,7 @@ export function DetailsOverlay({ selectedKey, left, touch, onEdit, children }: D
         } satisfies CSSProperties}
       >
         <div style={{ display: "flex", justifyContent: "flex-end", flex: "0 0 auto" }}>
-          <IconButton icon={X} glyph="x" boxed={false} label="Close details" size={26} onClick={close} />
+          <IconButton style={iconButtonSide()} icon={X} glyph="x" boxed={false} label="Close details" size={26} onClick={close} />
         </div>
         <ClickToEdit onEdit={onEdit} phone={false} touch={touch} panel>
           {children}

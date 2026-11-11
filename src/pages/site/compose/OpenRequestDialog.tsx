@@ -18,6 +18,7 @@ import { FIGTREE, display } from "@/lib/theme/type";
 
 export { OPEN_REQUEST_COPY } from "./openRequestCopy";
 import { OPEN_REQUEST_COPY } from "./openRequestCopy";
+import { iconButtonSide } from "./modalRecipes";
 
 export interface OpenRequestDialogProps {
   open: boolean;
@@ -79,7 +80,7 @@ export function OpenRequestDialog({ open, title, initial, onClose, onSubmit }: O
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
               <Dialog.Title style={{ ...display(22), margin: 0, color: t.text }}>{title}</Dialog.Title>
               <Dialog.Close asChild>
-                <IconButton icon={X} label="Close" size={38} />
+                <IconButton style={iconButtonSide()} icon={X} label="Close" size={38} />
               </Dialog.Close>
             </div>
             <Dialog.Description style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: t.text2 }}>{OPEN_REQUEST_COPY.description}</Dialog.Description>

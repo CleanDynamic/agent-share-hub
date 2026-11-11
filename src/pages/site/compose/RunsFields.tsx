@@ -275,7 +275,7 @@ export function RunsGroup({ view, phone, onRuns, onAgentNotes }: { view: AgentVi
                 style={typedField(phone)}
               />
             </FieldBlock>
-            <span style={{ ...quiet(), ...tnum, marginTop: -2 }}>
+            <span style={{ ...quiet(), ...tnum }}>
               {condition.length} / {room}
             </span>
             <div role="group" aria-labelledby={`${ids}-most`} style={{ display: "flex", flexDirection: "column", gap: 6 }}>

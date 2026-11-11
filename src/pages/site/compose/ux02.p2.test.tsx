@@ -53,7 +53,7 @@ describe("UX-02 P2 · the file's menu", () => {
     expect(items).toEqual(["Open file", "Add to session", "Remove file"]);
   });
 
-  it("Open file selects the file, as selecting a step tile does", () => {
+  it("Open file selects the file, as selecting a step does", () => {
     const props = panel();
     openMenu("brief.md options");
     fireEvent.click(screen.getByRole("menuitem", { name: "Open file" }));
@@ -82,7 +82,7 @@ describe("UX-02 P2 · Add to session on the composer", () => {
   beforeEach(harnessBefore);
   afterEach(harnessAfter);
 
-  it("writes a File step tile at the end of that session, with the same stored file, labelled an add", async () => {
+  it("writes a File step at the end of that session, with the same stored file, labelled an add", async () => {
     const SOURCE = "0c1c1c1c-0000-4000-8000-000000000099";
     await mountCa20(
       (rows) => {

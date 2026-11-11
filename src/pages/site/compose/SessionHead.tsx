@@ -32,7 +32,7 @@ import { DragHandle, useNestSession, useNestSessionDrag } from "./listNest";
 import { ImportingTag } from "./ImportingPieces";
 import { ToolMark } from "./refinedPieces";
 import { menuItem, menuSurface, text, tnum } from "./refinedStyles";
-import { SESSION_META, SESSION_NAME } from "./tileRecipes";
+import { SESSION_META, SESSION_NAME, textLinkBox } from "./tileRecipes";
 import { NO_APP, type SourceSession } from "./sourcesModel";
 import { OPEN_REQUEST_COPY } from "./openRequestCopy";
 import { OpenRequestWindow as OpenRequestDialog } from "./composerWindows";
@@ -40,10 +40,12 @@ import { ToolPicker } from "./ToolPicker";
 import { RemoveRow, useReason } from "./removePieces";
 import { useBuildSelectionContext } from "./useBuildSelection";
 import { useCrossfade } from "./buildMotion";
+import { size } from "@/lib/theme/space";
+import { iconButtonSide } from "./modalRecipes";
 
 export const SESSION_HEAD_COPY = {
   titlePlaceholder: "Add a title",
-  noTiles: "No step tiles yet",
+  noTiles: "No steps yet",
   /** SV-05 P3: an import that wrote fewer tiles than its session has prompts. */
   imported: (have: number, of: number) => `${have} of ${of} prompts imported`,
   retry: "Retry",
@@ -60,7 +62,7 @@ export const SESSION_HEAD_COPY = {
   withdrawRequest: "Not still open",
   requested: "Still open",
   sameStage: "Same stage as the session above",
-  count: (n: number) => `${n} ${n === 1 ? "step tile" : "step tiles"}`,
+  count: (n: number) => `${n} ${n === 1 ? "step" : "steps"}`,
   typedPast: (n: number) => `${n}/${SESSION_TITLE_MAX}`,
 } as const;
 
@@ -307,7 +309,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
           </TextButton>
         ) : null}
         {session.setupCount && onOpenSetup ? (
-          <TextButton target={phone} style={{ ...text(12, 500, t.text2), flexShrink: 0 }} aria-label={`Setup of session ${session.number}: ${session.setupCount}`} onClick={() => onOpenSetup(session.key)}>
+          <TextButton target={phone} style={{ ...textLinkBox(phone), ...text(12, 500, t.text2), flexShrink: 0 }} aria-label={`Setup of session ${session.number}: ${session.setupCount}`} onClick={() => onOpenSetup(session.key)}>
             {`Setup ${session.setupCount}`}
           </TextButton>
         ) : null}
@@ -371,7 +373,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
         }}
       >
         {drop.overForSession ? <span data-testid="session-drop-line" aria-hidden="true" style={{ position: "absolute", left: 0, right: 0, top: -6, height: 2, background: t.text2 }} /> : null}
-        <IconButton
+        <IconButton style={iconButtonSide(phone)}
           icon={ChevronRight}
           glyph={collapsed ? "chev" : "chevd"}
           boxed={false}
@@ -384,7 +386,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
         />
         {session.tool === NO_APP ? (
           <span aria-hidden="true" style={{ display: "inline-flex", width: 20, height: 20, alignItems: "center", justifyContent: "center", color: t.label, flexShrink: 0 }}>
-            <Glyph name="layers" size={16} />
+            <Glyph name="layers" size={size.icon} />
           </span>
         ) : (
           <ToolMark tool={session.tool} size={20} />
@@ -400,7 +402,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
             </span>
             <Menu.Root>
               <Menu.Trigger asChild>
-                <IconButton icon={MoreHorizontal} glyph="more" boxed={false} data-hit="" label={`Session ${session.number} options`} size={30} />
+                <IconButton style={iconButtonSide(phone)} icon={MoreHorizontal} glyph="more" boxed={false} data-hit="" label={`Session ${session.number} options`} size={30} />
               </Menu.Trigger>
               <Menu.Portal>
                 <MenuContent align="end" sideOffset={4} style={menuSurface()}>
@@ -505,7 +507,7 @@ function SameStageRow({ part, phone, onChange }: { part: SessionPartInfo; phone:
       <Menu.CheckboxItem checked={part.withAbove && !part.firstInPart} disabled={part.firstInPart} onCheckedChange={onChange} style={{ ...menuItem(!part.firstInPart, phone), gap: 8 }} {...why.props}>
         <span style={{ width: 16, display: "inline-flex" }}>
           <Menu.ItemIndicator>
-            <Glyph name="check" size={16} />
+            <Glyph name="check" size={size.icon} />
           </Menu.ItemIndicator>
         </span>
         {SESSION_HEAD_COPY.sameStage}

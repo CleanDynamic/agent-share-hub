@@ -60,7 +60,7 @@ describe("the row", () => {
     expect(row.textContent).toBe("Add session");
     expect(row.querySelector("svg")).toBeTruthy();
     const style = row.getAttribute("style") ?? "";
-    expect(style).toMatch(/height:\s*36px/);
+    expect(style).toMatch(/height:\s*32px/); // S4
     expect(style).not.toMatch(/dashed/);
   });
 
@@ -121,8 +121,8 @@ describe("the list", () => {
   it("says where each is: this draft, or how many drafts", () => {
     mount();
     const list = within(openList());
-    expect(list.getByRole("listitem", { name: /Old one/ }).textContent).toContain("In this draft");
-    expect(list.getByRole("listitem", { name: /Also elsewhere/ }).textContent).toContain("In 2 drafts");
+    expect(list.getByRole("listitem", { name: /Old one/ }).textContent).toContain("In this build");
+    expect(list.getByRole("listitem", { name: /Also elsewhere/ }).textContent).toContain("In 2 builds");
     expect((list.getByRole("listitem", { name: /Old one/ }) as HTMLButtonElement).disabled).toBe(true);
   });
 
@@ -169,9 +169,9 @@ describe("the model", () => {
     expect(openingWords(null)).toBe("");
   });
   it("says where a session is", () => {
-    expect(draftNote({ inThisDraft: true, draftCount: 1 })).toBe("In this draft");
-    expect(draftNote({ inThisDraft: false, draftCount: 1 })).toBe("In 1 draft");
-    expect(draftNote({ inThisDraft: true, draftCount: 3 })).toBe("In 3 drafts");
+    expect(draftNote({ inThisDraft: true, draftCount: 1 })).toBe("In this build");
+    expect(draftNote({ inThisDraft: false, draftCount: 1 })).toBe("In 1 build");
+    expect(draftNote({ inThisDraft: true, draftCount: 3 })).toBe("In 3 builds");
     expect(draftNote({ inThisDraft: false, draftCount: 0 })).toBeNull();
   });
   it("filters by every word", () => {

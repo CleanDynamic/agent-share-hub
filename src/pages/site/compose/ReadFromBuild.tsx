@@ -22,6 +22,7 @@ import { t } from "@/lib/theme/tokens";
 
 import { PickMenu } from "./PickMenu";
 import { bareButton, text, typedField } from "./refinedStyles";
+import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT } from "./modalRecipes";
 
 export const CONFIRMED_FREE = "Confirmed free";
 
@@ -90,10 +91,10 @@ function DisputeForm({ facet, phone, current, onApply, onCancel }: { facet: Face
         style={field}
       />
       <div style={{ display: "flex", gap: 8 }}>
-        <Button type="submit" size={phone ? 44 : 30} fontSize={13} disabled={!value || !(reason.trim() || free)}>
+        <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} type="submit" size={phone ? 44 : 32} fontSize={13} disabled={!value || !(reason.trim() || free)}>
           Use this value
         </Button>
-        <Button variant="ghost" size={phone ? 44 : 30} fontSize={13} onClick={onCancel}>
+        <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="ghost" size={phone ? 44 : 32} fontSize={13} onClick={onCancel}>
           Cancel
         </Button>
       </div>
@@ -114,10 +115,10 @@ export function ReadFromBuild({ classification, questions, phone, onDispute, onD
               <li key={question.id} style={{ display: "flex", flexDirection: "column", gap: 6, padding: 12, borderRadius: 6, background: t.tile, border: `1px solid ${t.tileBorder}` }}>
                 <p style={{ margin: 0, ...text(13, 400, t.text), lineHeight: "20px" }}>{question.text}</p>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <Button variant="secondary" size={phone ? 44 : 28} fontSize={13} onClick={() => onAction?.(question.action, question)}>
+                  <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={13} onClick={() => onAction?.(question.action, question)}>
                     {question.actionLabel}
                   </Button>
-                  <Button variant="ghost" size={phone ? 44 : 28} fontSize={13} onClick={() => onDismiss(question.id)}>
+                  <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="ghost" size={phone ? 44 : 32} fontSize={13} onClick={() => onDismiss(question.id)}>
                     Dismiss
                   </Button>
                 </div>

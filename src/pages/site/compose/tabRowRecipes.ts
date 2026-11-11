@@ -3,6 +3,7 @@
 
 import type { CSSProperties } from "react";
 
+import { size, space } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -11,23 +12,27 @@ export const TAB_ROW: CSSProperties = {
   alignItems: "flex-end",
   flexWrap: "nowrap",
   boxSizing: "border-box",
-  height: 44,
-  padding: "0 22px",
+  height: size.touch,
+  padding: `0 ${space[6]}px`,
   borderBottomWidth: 1,
   borderBottomStyle: "solid",
   borderBottomColor: t.hairline,
   minWidth: 0,
 };
 
-export const TAB_GROUP: CSSProperties = { display: "flex", alignItems: "flex-end", gap: 22, minWidth: 0 };
+export const TAB_GROUP: CSSProperties = { display: "flex", alignItems: "flex-end", gap: space[6], minWidth: 0 };
 
-/** A tab: 13 `--text2`; 13 of room under its text, where the selected one draws its line. */
+/** S33: a tab, 32 high, padded 0 space[2], its words centred; 13 `--text2`; the selected one draws its line along its foot. */
 export const tabStyle = (selected: boolean): CSSProperties => ({
   appearance: "none",
   background: "none",
   border: 0,
   margin: 0,
-  padding: "0 0 13px",
+  display: "inline-flex",
+  alignItems: "center",
+  boxSizing: "border-box",
+  height: size.control,
+  padding: `0 ${space[2]}px`,
   cursor: "pointer",
   fontFamily: FIGTREE,
   fontSize: 13,
@@ -38,8 +43,8 @@ export const tabStyle = (selected: boolean): CSSProperties => ({
   boxShadow: selected ? `inset 0 -1.5px 0 ${t.text}` : "none",
 });
 
-/** Card, Preview and Publish: 28 tall, 8 apart, 9 above the rule. */
-export const TAB_ACTIONS: CSSProperties = { display: "flex", alignItems: "center", gap: 8, marginLeft: "auto", marginBottom: 9, flexShrink: 0 };
+/** Classification, Preview and Publish: 32 tall, space[2] apart, on the rule as the tabs are. */
+export const TAB_ACTIONS: CSSProperties = { display: "flex", alignItems: "center", gap: space[2], marginLeft: "auto", flexShrink: 0 };
 
 /** The draft's title and its status line, at the top of the List's Build column: the line 3 under the title. */
-export const BUILD_HEAD: CSSProperties = { display: "flex", flexDirection: "column", gap: 3, minWidth: 0 };
+export const BUILD_HEAD: CSSProperties = { display: "flex", flexDirection: "column", gap: space[1], minWidth: 0 };

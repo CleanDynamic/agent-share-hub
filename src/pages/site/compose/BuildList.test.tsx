@@ -570,7 +570,7 @@ describe("a manual step (UI-P70)", () => {
   it("has Rename, Move up, Move down and Remove tile, and no 'Read all'", async () => {
     const props = manualList();
     fireEvent.keyDown(screen.getByRole("button", { name: "Manual step 3 options" }), { key: "Enter" });
-    expect((await screen.findAllByRole("menuitem")).map((item) => item.textContent?.replace(/(Alt\+[↑↓]|Delete)$/, ""))).toEqual(["Rename", "Move up", "Move down", "Remove step tile"]);
+    expect((await screen.findAllByRole("menuitem")).map((item) => item.textContent?.replace(/(Alt\+[↑↓]|Delete)$/, ""))).toEqual(["Rename", "Move up", "Move down", "Remove step"]);
     fireEvent.click(screen.getByRole("menuitem", { name: "Move up" }));
     expect(props.onMove).toHaveBeenCalledWith("m3", -1);
   });
@@ -578,7 +578,7 @@ describe("a manual step (UI-P70)", () => {
   it("removes, and cannot move up from the first step or down from the last", async () => {
     const props = manualList();
     fireEvent.keyDown(screen.getByRole("button", { name: "Manual step 3 options" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove step tile" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove step" }));
     expect(props.onRemove).toHaveBeenCalledWith("m3");
     cleanup();
     const fixture = sandboxManualFixture().list;
@@ -620,13 +620,13 @@ describe("the refined look (UI-P93)", () => {
     expect(heads.map((head) => Boolean(head.querySelector("[data-mark]")))).toEqual([true, true, true]);
     const html = markup();
     expect(html).toMatch(/data-selected="true"[^>]*style="[^"]*background:var\(--selected-fill\);border:1px solid var\(--selected-edge\)/);
-    expect(html).toContain("padding-left:34px");
+    expect(html).toContain("padding-left:24px"); // S28
   });
 
   it("draws a suggestion as a dashed chip with Accept as a 20-high control and Dismiss as text", () => {
     list();
     const accept = screen.getByRole("button", { name: "Accept" });
-    expect(accept.getAttribute("style")).toMatch(/height:\s*20px/);
+    expect(accept.getAttribute("style")).toMatch(/height:\s*24px/); // F81
     expect(screen.getByRole("button", { name: "Dismiss" }).getAttribute("data-variant")).toBeNull();
     expect(markup()).toContain("height:28px;padding:0 4px 0 8px;box-sizing:border-box;border-radius:6px;border:1px dashed var(--line)");
   });
@@ -649,7 +649,7 @@ describe("the refined look (UI-P93)", () => {
     list({ onAttach, onOpenPrompt: vi.fn() });
     fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 2 options" }), { key: "Enter" });
     const items = await screen.findAllByRole("menuitem");
-    expect(items.map((item) => item.textContent?.replace(/(Alt\+[↑↓]|Delete)$/, ""))).toEqual(["Rename", "Read all", "Attach a file", "Move up", "Move down", "Remove step tile"]);
+    expect(items.map((item) => item.textContent?.replace(/(Alt\+[↑↓]|Delete)$/, ""))).toEqual(["Rename", "Read all", "Attach a file", "Move up", "Move down", "Remove step"]);
     fireEvent.click(screen.getByRole("menuitem", { name: "Attach a file" }));
     expect(onAttach).toHaveBeenCalledWith("p2");
   });
@@ -659,7 +659,7 @@ describe("the refined look (UI-P93)", () => {
     list({ onAttach: vi.fn(), onNameMade, onOpenPrompt: vi.fn() });
     fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 2 options" }), { key: "Enter" });
     const items = await screen.findAllByRole("menuitem");
-    expect(items.map((item) => item.textContent?.replace(/(Alt\+[↑↓]|Delete)$/, ""))).toEqual(["Rename", "Read all", "Attach a file", "Add file name", "Move up", "Move down", "Remove step tile"]);
+    expect(items.map((item) => item.textContent?.replace(/(Alt\+[↑↓]|Delete)$/, ""))).toEqual(["Rename", "Read all", "Attach a file", "Add file name", "Move up", "Move down", "Remove step"]);
     expect(items.at(-1)?.getAttribute("data-tone")).toBe("danger");
     fireEvent.click(screen.getByRole("menuitem", { name: "Add file name" }));
     // CA-10: asked once the menu has let go of focus, so it cannot take it back from the field.

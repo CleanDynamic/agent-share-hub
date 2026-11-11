@@ -36,7 +36,7 @@ describe("a session", () => {
     const cards = screen.getAllByTestId("step-card").length;
     await pickUp(sessionGrip(1));
     expect(screen.getAllByTestId("step-card")).toHaveLength(cards);
-    expect(said()).toMatch(/^Picked up Session 1 and its \d+ tiles?\. Part 1, 1 of 2\.$/);
+    expect(said()).toMatch(/^Picked up Session 1 and its \d+ steps?\. Part 1, 1 of 2\.$/);
     const numbers = screen.getAllByTestId("skeleton-rail").map((rail) => within(rail).getAllByTestId("skeleton-number").map((n) => n.textContent));
     expect(numbers).toEqual([["1", "2"], ["1"]]);
   });

@@ -46,6 +46,8 @@ import {
   TIMELINE_SIDE,
 } from "./mapRecipes";
 import { ToolMark } from "./refinedPieces";
+import { size } from "@/lib/theme/space";
+import { iconButtonSide } from "./modalRecipes";
 
 export const PANEL_COPY = {
   openInBuild: "Open in the build",
@@ -53,7 +55,7 @@ export const PANEL_COPY = {
   usedBy: "Used by",
   whatJoins: "What joins them",
   inThisSession: "In this session",
-  tilesNote: (n: number) => `${n} ${n === 1 ? "tile" : "tiles"}, shown here and not on the map`,
+  tilesNote: (n: number) => `${n} ${n === 1 ? "step" : "steps"}, shown here and not on the map`,
   connections: (n: number) => `${n} ${n === 1 ? "connection" : "connections"}`,
   parts: "Parts",
   partsNote: (n: number, labels: "letters" | "numbers") => `${n} ${n === 1 ? "part" : "parts"} · labelled with ${labels}`,
@@ -145,7 +147,7 @@ function SelectedPanel({ model, session, onOpenInBuild, onOpenTile, theme }: { m
           {/* CA-19 P5: a session in a named group says so under its head line. */}
           <MemberLabel to={refTo({ kind: "session", id: session.key })} testId="panel-group-label" />
         </div>
-        {onOpenInBuild ? <IconButton icon={ChevronRight} glyph="chev" label={PANEL_COPY.openInBuild} size={26} onClick={() => onOpenInBuild(session.key)} /> : null}
+        {onOpenInBuild ? <IconButton style={iconButtonSide()} icon={ChevronRight} glyph="chev" label={PANEL_COPY.openInBuild} size={26} onClick={() => onOpenInBuild(session.key)} /> : null}
       </div>
       {uses.length + usedBy.length > 0 ? (
         <div data-testid="panel-sessions" style={PANEL_ROWS}>
@@ -173,7 +175,7 @@ function SelectedPanel({ model, session, onOpenInBuild, onOpenTile, theme }: { m
                 <span style={TIMELINE_SIDE}>{connection.side}</span>
               </div>
               <div style={TIMELINE_LINE2}>
-                <ToolMark tool={connection.other.app} size={16} />
+                <ToolMark tool={connection.other.app} size={size.icon} />
                 <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{`${connection.tile.what} · Session ${connection.other.number}`}</span>
               </div>
             </div>
@@ -246,7 +248,7 @@ function NothingSelected({ model, theme }: { model: SessionMapModel; theme: "noo
                 const session = byKey.get(key);
                 return session ? (
                   <span key={key} style={TIMELINE_SESSION}>
-                    <ToolMark tool={session.app} size={16} />
+                    <ToolMark tool={session.app} size={size.icon} />
                     {sessionTitle(session)}
                   </span>
                 ) : null;

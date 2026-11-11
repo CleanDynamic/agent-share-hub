@@ -26,6 +26,8 @@ import { ToolMark } from "./refinedPieces";
 import { bareButton, ellipsis, menuItem, menuSurface, text, tnum, wellField } from "./refinedStyles";
 import { draftNote, groupLibrary, openingWords, REPEAT_COPY, type SourceLibraryItem } from "./sourcesModel";
 import { FLOATING_Z } from "./ToolPicker";
+import { size, space } from "@/lib/theme/space";
+import { r } from "@/lib/theme/radius";
 
 export const ADD_SESSION_COPY = {
   /** F55: the three add controls read Add step, Add session, Add part; the plus is their icon. */
@@ -44,7 +46,7 @@ export const ADD_SESSION_COPY = {
   searchPlaceholder: "Search by app, date or first prompt",
   none: "No session matches.",
   empty: "No sessions yet.",
-  inThisDraft: "In this draft",
+  inThisDraft: "In this build",
   more: "Show more sessions",
 } as const;
 
@@ -90,7 +92,7 @@ export interface AddSessionRowProps {
   openFor?: { part: string; n: number } | null;
 }
 
-const rowButton: CSSProperties = { ...bareButton, display: "flex", alignItems: "center", gap: 8, width: "100%", textAlign: "left", boxSizing: "border-box", borderRadius: 6 };
+const rowButton: CSSProperties = { ...bareButton, display: "flex", alignItems: "center", gap: space[2], width: "100%", textAlign: "left", boxSizing: "border-box", borderRadius: r.control };
 
 /** One of the two choices at the top. */
 function Choice({ title, line, onPick, phone, forward = false }: { title: string; line: string; onPick: () => void; phone: boolean; forward?: boolean }) {
@@ -100,15 +102,15 @@ function Choice({ title, line, onPick, phone, forward = false }: { title: string
       type="button"
       onClick={onPick}
       {...handlers}
-      style={{ ...rowButton, minHeight: phone ? 56 : 52, padding: "6px 8px", cursor: "pointer", ...(state.hovered ? { background: t.controlOn } : null), ...ring(state.focusVisible) }}
+      style={{ ...rowButton, minHeight: phone ? size.rowLarge : size.row, padding: `${space[2]}px ${space[2]}px`, cursor: "pointer", ...(state.hovered ? { background: t.controlOn } : null), ...ring(state.focusVisible) }}
     >
-      <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
+      <span style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0, flexGrow: 1 }}>
         <span style={text(13, 500, t.text)}>{title}</span>
         <span style={text(11, 400, t.label)}>{line}</span>
       </span>
       {forward ? (
         <span aria-hidden="true" style={{ color: t.label, display: "inline-flex" }}>
-          <Glyph name="chev" size={16} />
+          <Glyph name="chev" size={size.icon} />
         </span>
       ) : null}
     </button>
@@ -135,7 +137,7 @@ function PickRow({ item, phone, onPick }: { item: SourceLibraryItem; phone: bool
         ...rowButton,
         height: PICK_ROW_HEIGHT,
         flexShrink: 0,
-        padding: "8px 8px",
+        padding: `${space[2]}px ${space[2]}px`,
         cursor: here ? "default" : "pointer",
         ...(here ? { filter: t.dimFilter } : null),
         ...(state.hovered && !here ? { background: t.controlOn } : null),
@@ -146,11 +148,11 @@ function PickRow({ item, phone, onPick }: { item: SourceLibraryItem; phone: bool
         <ToolMark tool={item.app} size={20} />
       ) : (
         <span aria-hidden="true" style={{ display: "inline-flex", width: 20, height: 20, alignItems: "center", justifyContent: "center", color: t.label, flexShrink: 0 }}>
-          <Glyph name="layers" size={16} />
+          <Glyph name="layers" size={size.icon} />
         </span>
       )}
-      <span style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, flexGrow: 1, overflow: "hidden" }}>
-        <span style={{ display: "flex", alignItems: "baseline", gap: 8, minWidth: 0, height: 20, overflow: "hidden" }}>
+      <span style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0, flexGrow: 1, overflow: "hidden" }}>
+        <span style={{ display: "flex", alignItems: "baseline", gap: space[2], minWidth: 0, height: 20, overflow: "hidden" }}>
           <span style={{ ...text(13, 500, t.text), whiteSpace: "nowrap", flexShrink: 0, maxWidth: "45%", ...ellipsis }}>{item.app}</span>
           {opening ? <span style={{ ...text(13, 400, t.text2), ...ellipsis, minWidth: 0 }}>{opening}</span> : null}
         </span>
@@ -168,8 +170,8 @@ function ChatList({ props, close, back, part }: { props: AddSessionRowProps; clo
   const shown = useMemo(() => filterSessions(library, query), [library, query]);
   const groups = useMemo(() => groupLibrary(shown, props.now ?? Date.now()), [shown, props.now]);
   return (
-    <div data-testid="add-session-picker" style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0, ...(phone ? { height: "calc(100dvh - 180px)", minHeight: 240 } : null) }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <div data-testid="add-session-picker" style={{ display: "flex", flexDirection: "column", gap: space[2], minWidth: 0, ...(phone ? { height: "calc(100dvh - 180px)", minHeight: 240 } : null) }}>
+      <div style={{ display: "flex", alignItems: "center", gap: space[2] }}>
         <TextButton target={phone} onClick={back} style={text(13, 500, t.text2)}>
           {ADD_SESSION_COPY.back}
         </TextButton>
@@ -183,17 +185,17 @@ function ChatList({ props, close, back, part }: { props: AddSessionRowProps; clo
         value={query}
         autoComplete="off"
         onChange={(event) => setQuery(event.target.value)}
-        style={{ ...wellField, height: phone ? 44 : 32, padding: "0 10px", fontSize: phone ? 16 : 13 }}
+        style={{ ...wellField, height: phone ? size.touch : size.control, padding: `0 ${space[3]}px`, fontSize: phone ? 16 : 13 }}
       />
       <div role="list" aria-label={ADD_SESSION_COPY.yours} style={{ display: "flex", flexDirection: "column", gap: 0, minHeight: 0, ...(phone ? { flex: "1 1 auto" } : { maxHeight: 340 }), overflowY: "auto", overscrollBehavior: "contain" }}>
         {library.length === 0 ? (
-          <p style={{ ...text(13, 400, t.text2), margin: 0, padding: "8px 0" }}>{ADD_SESSION_COPY.empty}</p>
+          <p style={{ ...text(13, 400, t.text2), margin: 0, padding: `${space[2]}px 0` }}>{ADD_SESSION_COPY.empty}</p>
         ) : shown.length === 0 ? (
-          <p style={{ ...text(13, 400, t.text2), margin: 0, padding: "8px 0" }}>{ADD_SESSION_COPY.none}</p>
+          <p style={{ ...text(13, 400, t.text2), margin: 0, padding: `${space[2]}px 0` }}>{ADD_SESSION_COPY.none}</p>
         ) : (
           groups.map((group) => (
             <div key={group.label} role="group" aria-label={group.label} style={{ display: "flex", flexDirection: "column" }}>
-              <h4 style={{ ...text(11, 500, t.label), margin: 0, padding: "8px 8px 4px", flexShrink: 0 }}>{group.label}</h4>
+              <h4 style={{ ...text(11, 500, t.label), margin: 0, padding: `${space[2]}px ${space[2]}px ${space[1]}px`, flexShrink: 0 }}>{group.label}</h4>
               {group.items.map((item) => (
                 <PickRow
                   key={item.id}
@@ -210,7 +212,7 @@ function ChatList({ props, close, back, part }: { props: AddSessionRowProps; clo
           ))
         )}
         {props.hasMore ? (
-          <div style={{ padding: "8px 8px" }}>
+          <div style={{ padding: `${space[2]}px ${space[2]}px` }}>
             <TextButton onClick={() => props.onMore?.()} target={phone} disabled={props.loadingMore} style={text(13, 500, t.text2)}>
               {props.loadingMore ? "Loading…" : ADD_SESSION_COPY.more}
             </TextButton>
@@ -224,7 +226,7 @@ function ChatList({ props, close, back, part }: { props: AddSessionRowProps; clo
 /** CA-17 P3: "Add to", a menu button showing the chosen part's colour dot and title; choosing one changes where both choices add. */
 function AddToField({ parts, chosen, onChoose, phone }: { parts: readonly AddToPart[]; chosen: AddToPart; onChoose: (key: string) => void; phone: boolean }) {
   return (
-    <div data-testid="add-to" style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 8px 8px" }}>
+    <div data-testid="add-to" style={{ display: "flex", alignItems: "center", gap: space[2], padding: `${space[1]}px ${space[2]}px ${space[2]}px` }}>
       <Menu.Root modal={false}>
         <Menu.Trigger asChild>
           <MenuButton label={ADD_SESSION_COPY.addTo} value={chosen.title} lead={<ColourDot colour={chosen.colour} />} data-testid="add-to-button" style={phone ? { height: 44 } : undefined} />
@@ -232,11 +234,11 @@ function AddToField({ parts, chosen, onChoose, phone }: { parts: readonly AddToP
         <Menu.Portal>
           <Menu.Content align="start" sideOffset={4} style={{ ...menuSurface(), zIndex: FLOATING_Z + 1 }}>
             {parts.map((part) => (
-              <Menu.Item key={part.key} onSelect={() => onChoose(part.key)} style={{ ...menuItem(true, phone), gap: 8 }}>
+              <Menu.Item key={part.key} onSelect={() => onChoose(part.key)} style={{ ...menuItem(true, phone), gap: space[2] }}>
                 <ColourDot colour={part.colour} />
                 <span style={{ flexGrow: 1 }}>{part.title}</span>
                 <span aria-hidden="true" style={{ width: 16, display: "inline-flex" }}>
-                  {part.key === chosen.key ? <Glyph name="check" size={16} /> : null}
+                  {part.key === chosen.key ? <Glyph name="check" size={size.icon} /> : null}
                 </span>
               </Menu.Item>
             ))}
@@ -254,7 +256,7 @@ function PickerBody({ props, close, initial }: { props: AddSessionRowProps; clos
   const chosen = parts ? (parts.find((part) => part.key === picked) ?? parts[parts.length - 1]) : null;
   if (view === "list") return <ChatList props={props} close={close} back={() => setView("choices")} part={chosen?.key} />;
   return (
-    <div data-testid="add-session-choices" style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+    <div data-testid="add-session-choices" style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0 }}>
       {parts && chosen ? <AddToField parts={parts} chosen={chosen} onChoose={setPicked} phone={props.phone} /> : null}
       <Choice
         phone={props.phone}
@@ -277,12 +279,12 @@ const addRowStyle = (hovered: boolean, focusVisible: boolean, adding: boolean): 
     display: "flex",
     alignItems: "center",
     justifyContent: "flex-start",
-    gap: 8,
+    gap: space[2],
     width: "100%",
-    height: 36,
+    height: size.control,
     boxSizing: "border-box",
-    padding: "0 8px",
-    borderRadius: 6,
+    padding: `0 ${space[3]}px`,
+    borderRadius: r.control,
     ...text(13, 500, t.text2),
     cursor: adding ? "default" : "pointer",
     ...(hovered && !adding ? { background: t.controlOn } : null),
@@ -295,7 +297,7 @@ export function AddPartRow({ phone: _phone, adding, onAdd }: { phone: boolean; a
   return (
     <button type="button" data-testid="add-part-row" {...{ [SLIDE_ATTR]: "add:part" }} data-hit="" disabled={adding} onClick={onAdd} {...trigger.handlers} style={addRowStyle(trigger.state.hovered, trigger.state.focusVisible, adding)}>
       <span aria-hidden="true" style={{ display: "inline-flex" }}>
-        <Glyph name="plus" size={16} />
+        <Glyph name="plus" size={size.icon} />
       </span>
       {ADD_SESSION_COPY.addPart}
     </button>
@@ -336,7 +338,7 @@ function OpenBelow({ id, label, onClose, back, children }: { id: string; label: 
 }
 
 /** The panel's look: a menu's surface, at the column's width, in the flow. */
-const OPEN_BELOW: CSSProperties = { boxSizing: "border-box", width: "100%", minWidth: 0, padding: 8, borderRadius: 8, background: t.window, border: `1px solid ${t.windowBorder}`, boxShadow: t.windowShadow, color: t.text };
+const OPEN_BELOW: CSSProperties = { boxSizing: "border-box", width: "100%", minWidth: 0, padding: space[2], borderRadius: r.card, background: t.window, border: `1px solid ${t.windowBorder}`, boxShadow: t.windowShadow, color: t.text };
 
 /**
  * CA-24 P2: the list of connected chats, opened straight onto its list (Add a session, then Add from your connected chats),
@@ -390,7 +392,7 @@ export function AddSessionRow(props: AddSessionRowProps) {
   const content = (
     <>
       <span aria-hidden="true" style={{ display: "inline-flex" }}>
-        <Glyph name="plus" size={16} />
+        <Glyph name="plus" size={size.icon} />
       </span>
       {ADD_SESSION_COPY.row}
     </>

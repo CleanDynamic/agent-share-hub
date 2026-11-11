@@ -41,7 +41,7 @@ export const CODE_DIALOG_COPY = {
   writtenWithLine: "Tool and model",
   writtenWithTool: "Generated with",
   upload: "Upload files",
-  uploadLine: "Each file becomes its own step tile",
+  uploadLine: "Each file becomes its own step",
   lines: (n: number) => `${n} ${n === 1 ? "line" : "lines"}`,
   selectTool: "Select a tool",
   remove: (name: string) => `Remove ${name}`,

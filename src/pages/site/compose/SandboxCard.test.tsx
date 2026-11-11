@@ -106,7 +106,7 @@ describe("Classification: the sheet", () => {
     mount();
     const sheet = await screen.findByTestId("sandbox-card");
     expect(sheet.style.width).toBe("560px");
-    expect(sheet.style.borderRadius).toBe("12px");
+    expect(sheet.style.borderRadius).toBe("var(--r-window)"); // S31
     expect(sheet.style.boxShadow).toBe("var(--window-shadow)");
     const title = screen.getByRole("heading", { name: "Classification" });
     expect(title.style.fontSize).toBe("15px");
@@ -491,7 +491,7 @@ describe("SV-05 P7 · the window's inset", () => {
     mount({ phone: false });
     await screen.findByTestId("sandbox-card");
     const preview = screen.getByTestId("card-body").firstElementChild as HTMLElement;
-    expect(preview.style.padding).toBe("0px 20px 16px");
+    expect(preview.style.padding).toBe("0px 24px 16px"); // S31
     cleanup();
     live();
     mount({ phone: true });

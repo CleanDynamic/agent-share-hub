@@ -12,6 +12,7 @@ import { t } from "@/lib/theme/tokens";
 
 import { Field, TextButton } from "./composeControls";
 import { text, tnum, typedField } from "./refinedStyles";
+import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT } from "./modalRecipes";
 
 export const COST_COPY = { build: "Build cost", run: "Running cost", save: "Save", clear: "Clear" } as const;
 
@@ -89,7 +90,7 @@ export function CostFields({ kind, value, phone, onChange, volume, onVolume }: {
     setError(null);
     onChange(made.value);
   };
-  const size = phone ? 44 : 28;
+  const size = phone ? 44 : 32;
   return (
     <section aria-label={label} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <TextButton target={phone} onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-controls={`${uid}-body`} style={{ ...text(12.5, 500, t.text), alignSelf: "flex-start" }}>
@@ -120,8 +121,8 @@ export function CostFields({ kind, value, phone, onChange, volume, onVolume }: {
           <Segmented<"run" | "maker"> label="Where the figures came from" size={phone ? 50 : 32} fontSize={13} items={[{ value: "run", label: "From the run" }, { value: "maker", label: "Maker's figure" }]} value={d.source} onChange={(source) => set({ source })} />
           {error ? <span role="alert" style={text(12.5, 400, t.text)}>{error}</span> : null}
           <div style={{ display: "flex", gap: 8 }}>
-            <Button variant="secondary" size={size} fontSize={12} onClick={save}>{COST_COPY.save}</Button>
-            {value ? <Button variant="secondary" size={size} fontSize={12} onClick={() => { setD(draftOf(null)); onChange(null); }}>{COST_COPY.clear}</Button> : null}
+            <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={size} fontSize={12} onClick={save}>{COST_COPY.save}</Button>
+            {value ? <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={size} fontSize={12} onClick={() => { setD(draftOf(null)); onChange(null); }}>{COST_COPY.clear}</Button> : null}
           </div>
         </div>
       ) : null}

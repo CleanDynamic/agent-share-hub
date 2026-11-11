@@ -137,7 +137,7 @@ export function referenceGroupsRefusal(groups: readonly ReferenceGroup[]): strin
     if (group.notes !== undefined && group.notes.length > GROUP_NOTES_MAX) return `Notes: ${GROUP_NOTES_MAX.toLocaleString("en-US")} characters max`;
     if (group.members.length < GROUP_MIN_MEMBERS) return "2 components min";
     for (const member of group.members) {
-      if (!isMemberRef(member)) return "A group holds parts, sessions and tiles only.";
+      if (!isMemberRef(member)) return "A group holds parts, sessions and steps only.";
       if (taken.has(member)) return "Component: one group max";
       taken.add(member);
     }

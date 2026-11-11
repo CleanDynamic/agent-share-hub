@@ -436,7 +436,7 @@ function SandboxPageBody() {
     }
     const at = all.findIndex((step) => step.id === clash.key);
     const step = all[at];
-    return { name: step ? tileName(step) : "Tile", badge: step?.number ? String(step.number) : "T", rank: at < 0 ? 9000 : 2000 + at };
+    return { name: step ? tileName(step) : "Step", badge: step?.number ? String(step.number) : "T", rank: at < 0 ? 9000 : 2000 + at };
   };
 
   /* The tools this build uses, read once: its steps' own and its sessions' (TF-02). The tool picker lists them first. */
@@ -2576,7 +2576,7 @@ function SandboxPageBody() {
     };
     const sentence = movedStep(whatIs(id), by);
     const said = movedLine(result.move, names);
-    if (write.kind === "tile" && write.session) return edits.onMoveTile(id, write.session, { order: write.atEnd, sentence, said, failed: "Tile not moved" });
+    if (write.kind === "tile" && write.session) return edits.onMoveTile(id, write.session, { order: write.atEnd, sentence, said, failed: "Step not moved" });
     if (write.kind === "nested" && write.parent !== undefined && write.index !== undefined) {
       const parent = write.parent;
       const index = write.index;

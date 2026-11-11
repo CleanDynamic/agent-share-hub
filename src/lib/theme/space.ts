@@ -50,6 +50,7 @@
  * chosen as "sm" survives a redesign that moves what sm measures; a gap chosen
  * as 16 does not.
  */
+// The build editor uses `space`.
 export const SPACE = {
   /**
    * 8 — inside one object. The gap between an icon and its label, a chip and
@@ -115,6 +116,7 @@ export const isSpaceStep = (value: number): boolean => SPACE_STEPS.includes(valu
  * xl 46, 2xl 69, 3xl 95. The names keep their jobs — xs is still "inside one
  * object", lg still "between distinct blocks" — only the distances are tighter.
  */
+// The build editor uses `space`.
 export const SPACE_COMPACT = {
   xs: 6,
   sm: 12,
@@ -146,6 +148,7 @@ export const isCompactStep = (value: number): boolean => SPACE_COMPACT_STEPS.inc
  * scale: how a refined module's padding relates to the gap beside it is for the
  * boards to say, not this file.
  */
+// The build editor uses `space`.
 export const SPACE_REFINED = [2, 4, 6, 8, 12, 16, 20, 24, 32, 40, 48, 64] as const;
 
 /** True when `value` is one of the twelve refined steps. */
@@ -217,3 +220,9 @@ export function assertPadding(padding: number, gap: number): string | null {
   }
   return null;
 }
+
+/** F68, S40: the build editor's spacing steps, in pixels. `--space-1` to `--space-16` in index.css hold the same values. */
+export const space = { 1: 4, 2: 8, 3: 12, 4: 16, 6: 24, 8: 32, 12: 48, 16: 64 } as const;
+
+/** F68, S40: the build editor's sizes, in pixels. `--size-*` in index.css hold the same values. */
+export const size = { iconSmall: 12, icon: 16, tag: 20, controlSmall: 24, control: 32, row: 48, rowLarge: 56, touch: 44 } as const;

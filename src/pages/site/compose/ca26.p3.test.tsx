@@ -56,7 +56,7 @@ function problems(root: ParentNode = document): string[] {
       const card = el.closest<HTMLElement>('[data-testid="step-card"], [data-testid="sent-with-tile"]');
       if (card && el !== card) {
         const group = (card.getAttribute("aria-label") ?? "").split(":")[0].trim();
-        const named = name.toLowerCase().includes(group.toLowerCase()) || /^(make it|send with|add )/i.test(name);
+        const named = name.toLowerCase().includes(group.toLowerCase()) || /^(make it|attach to|add )/i.test(name);
         if (!named) out.push(`does not name its tile (${group}): ${where}`);
       }
       for (const [selector, pattern] of Object.entries(ITEMS)) {

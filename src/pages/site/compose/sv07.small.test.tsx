@@ -19,14 +19,14 @@ beforeEach(setUp);
 afterEach(tearDown);
 
 describe("SV-07 P6 · an empty session looks one way", () => {
-  it("a session started here reads No step tiles yet with + Add step tile from the moment it lands, never the dashed drop place", async () => {
+  it("a session started here reads No steps yet with + Add step from the moment it lands, never the dashed drop place", async () => {
     mount(SLOW);
     fireEvent.click(screen.getByTestId("empty-build-chats"));
     await pickChat(CHATS[0].name);
     await settled(1);
     let dashed = false;
     const observer = new MutationObserver(() => {
-      if (screen.queryByText("Drop a step tile here")) dashed = true;
+      if (screen.queryByText("Drop a step here")) dashed = true;
     });
     observer.observe(document.body, { subtree: true, childList: true, characterData: true });
     fireEvent.click(screen.getByTestId("add-session-row"));
@@ -36,7 +36,7 @@ describe("SV-07 P6 · an empty session looks one way", () => {
     expect(dashed).toBe(false);
     const started = ((making() as { session_order: string[] }).session_order ?? [])[1];
     const session = document.querySelector(`[data-session-key="${started}"]`) as HTMLElement;
-    expect(within(session).getByText("No step tiles yet")).toBeTruthy();
+    expect(within(session).getByText("No steps yet")).toBeTruthy();
     expect(within(session).getByRole("button", { name: /Add step/ })).toBeTruthy();
   });
 });

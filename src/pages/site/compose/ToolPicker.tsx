@@ -25,6 +25,8 @@ import { toolFor, type StepKey, type ToolList } from "@/lib/tools/registry";
 import { menuSurface, text, wellField } from "./refinedStyles";
 import { PickerChevron, pickerFieldStyle, smallButtonStyle } from "./modalRecipes";
 import { pickerRows, TYPED_TOOL_MAX, type PickerRow } from "./toolPickerModel";
+import { size, space } from "@/lib/theme/space";
+import { r } from "@/lib/theme/radius";
 
 export interface ToolPickerProps {
   /** A tool id, a typed name, or null. */
@@ -186,13 +188,13 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
     ...(trigger.state.hovered ? CONTROL_HOVER : null),
     display: "inline-flex",
     alignItems: "center",
-    gap: 8,
+    gap: space[2],
     boxSizing: "border-box",
     maxWidth: "100%",
     minWidth: 0,
-    height: phone ? 44 : 32,
-    padding: "0 10px",
-    borderRadius: 6,
+    height: phone ? size.touch : size.control,
+    padding: `0 ${space[3]}px`,
+    borderRadius: r.control,
     cursor: "pointer",
     textAlign: "left",
     ...text(13, 400, value ? t.text : t.text2),
@@ -220,7 +222,7 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
     <Popover.Root open={open} onOpenChange={openChange}>
       <Popover.Trigger asChild>
         <button type="button" aria-label={label} aria-haspopup="listbox" aria-describedby={`${uid}-value`} {...trigger.handlers} style={triggerStyle}>
-          {value ? <ModelMark tool={chosen ? chosen.id : value} size={16} /> : null}
+          {value ? <ModelMark tool={chosen ? chosen.id : value} size={size.icon} /> : null}
           <span id={`${uid}-value`} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
             {shown}
           </span>
@@ -257,7 +259,7 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
               setActive(0);
             }}
             onKeyDown={onKeyDown}
-            style={{ ...wellField, width: "100%", boxSizing: "border-box", height: phone ? 44 : 32, padding: "0 10px", fontSize: phone ? 16 : 13 }}
+            style={{ ...wellField, width: "100%", boxSizing: "border-box", height: phone ? size.touch : size.control, padding: `0 ${space[3]}px`, fontSize: phone ? 16 : 13 }}
           />
           <div id={`${uid}-list`} role="listbox" aria-label={label} style={{ maxHeight: 320, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
             {rows.map((row, index) =>
@@ -281,7 +283,7 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
                   onClick={() => pick(row)}
                   style={rowStyle(row)}
                 >
-                  {row.kind === "tool" ? <ModelMark tool={row.tool.id} size={16} /> : null}
+                  {row.kind === "tool" ? <ModelMark tool={row.tool.id} size={size.icon} /> : null}
                   {row.kind === "tool" && row.line ? (
                     <span style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0, padding: "4px 0" }}>
                       <span>{rowName(row, noneLabel, list, code?.label)}</span>

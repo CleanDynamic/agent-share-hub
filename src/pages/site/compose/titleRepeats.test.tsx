@@ -55,11 +55,11 @@ describe("the List", () => {
 });
 
 describe("the hint", () => {
-  // UX-02 P5: a computer has no hint line; the phone's says step tile.
-  it("says step tile on a phone, never click there, and a computer has none", () => {
-    expect(LIST_COPY.hintPhone).toBe("Tap a step tile to see its details");
+  // UX-02 P5: a computer has no hint line; the phone's says step.
+  it("says step on a phone, never click there, and a computer has none", () => {
+    expect(LIST_COPY.hintPhone).toBe("Tap a step to see its details");
     expect(LIST_HINT_PHONE).toBe(LIST_COPY.hintPhone);
-    expect(listHint(true)).toBe("Tap a step tile to see its details");
+    expect(listHint(true)).toBe("Tap a step to see its details");
     expect(listHint(false)).toBeNull();
   });
 });

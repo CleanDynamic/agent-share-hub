@@ -34,6 +34,7 @@ import {
   EMPTY_RULE,
   emptyDrop,
 } from "./emptyBuildRecipes";
+import { size } from "@/lib/theme/space";
 
 export interface EmptyBuildProps {
   phone: boolean;
@@ -64,7 +65,7 @@ function Row({ name, detail, onClick, disabled, testId }: { name: string; detail
         {detail ? <span style={EMPTY_DETAIL}>{detail}</span> : null}
       </span>
       <span aria-hidden="true" style={EMPTY_CHEVRON}>
-        <Glyph name="chev" size={16} />
+        <Glyph name="chev" size={size.icon} />
       </span>
     </button>
   );

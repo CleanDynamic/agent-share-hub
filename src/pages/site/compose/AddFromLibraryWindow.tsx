@@ -25,6 +25,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { IconSquare, RecipeButton } from "./modalRecipes";
+import { space, size } from "@/lib/theme/space";
 
 export type LibraryTab = "steps" | "collections";
 export type LibraryVersion = "saved" | "current";
@@ -102,7 +103,7 @@ export interface AddFromLibraryWindowProps {
 const line = (size: number, weight: 400 | 500, color: string, height?: number): CSSProperties => ({ fontFamily: FIGTREE, fontSize: size, fontWeight: weight, color, ...(height ? { lineHeight: `${height}px` } : null) });
 
 const TITLE_STYLE: CSSProperties = { ...line(14, 500, t.text), margin: 0, lineHeight: 1.3 };
-const SUB_STYLE: CSSProperties = { ...line(12, 400, t.label), margin: "2px 0 0" };
+const SUB_STYLE: CSSProperties = { ...line(12, 400, t.label), margin: `${space[1]}px 0 0` };
 
 /** The rows that match the search: its words are all in the title or the detail. Pure. */
 export function matchingRows(rows: readonly LibraryWindowRow[], query: string): LibraryWindowRow[] {
@@ -169,7 +170,7 @@ function SearchField({ label, value, phone, onChange }: { label: string; value: 
       value={value}
       onChange={(event) => onChange(event.target.value)}
       {...handlers}
-      style={{ boxSizing: "border-box", width: "100%", height: phone ? 44 : 32, padding: "0 10px", background: t.well, border: `1px solid ${t.wellBorder}`, borderRadius: 6, color: t.text, fontFamily: FIGTREE, fontSize: phone ? 16 : 13, ...ring(state.focusVisible) }}
+      style={{ boxSizing: "border-box", width: "100%", height: phone ? size.touch : size.control, padding: `0 ${space[3]}px`, background: t.well, border: `1px solid ${t.wellBorder}`, borderRadius: 6, color: t.text, fontFamily: FIGTREE, fontSize: phone ? 16 : 13, ...ring(state.focusVisible) }}
     />
   );
 }

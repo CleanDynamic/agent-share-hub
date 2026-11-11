@@ -69,8 +69,9 @@ import { LoadingRegion } from "@/components/brand/Skeleton";
 import { LoadingBlocks } from "./LoadingBlocks";
 import { MAP_LOADING_ROWS } from "./loadingBlocks";
 import { ToolMark } from "./refinedPieces";
-import { RecipeButton } from "./modalRecipes";
+import { RecipeButton, iconButtonSide } from "./modalRecipes";
 import { menuItem, menuSurface } from "./refinedStyles";
+import { size } from "@/lib/theme/space";
 
 export const MAP_COPY = {
   directionLabel: "Map direction",
@@ -82,7 +83,7 @@ export const MAP_COPY = {
   remove: "Remove map",
   shown: "Shown on build page",
   notShown: "Not on build page",
-  legend: "A line means a tile in the later session uses something from the earlier one.",
+  legend: "A line means a step in the later session uses something from the earlier one.",
   selectedPath: "Selected path",
   noMap: "No map for this build.",
   noMapBody: "A map shows how the sessions connect across parts and stages. It is built from the sessions you already have.",
@@ -132,7 +133,7 @@ function MapOptionsMenu({ controls }: { controls: MapControls }) {
   return (
     <Menu.Root modal={false}>
       <Menu.Trigger asChild>
-        <IconButton icon={MoreHorizontal} glyph="more" label={MAP_COPY.options} size={26} />
+        <IconButton style={iconButtonSide()} icon={MoreHorizontal} glyph="more" label={MAP_COPY.options} size={26} />
       </Menu.Trigger>
       <Menu.Portal>
         <MenuContent align="end" sideOffset={4} style={menuSurface(220)}>
@@ -144,7 +145,7 @@ function MapOptionsMenu({ controls }: { controls: MapControls }) {
           >
             <span style={{ width: 16, display: "inline-flex" }}>
               <Menu.ItemIndicator>
-                <Glyph name="check" size={16} />
+                <Glyph name="check" size={size.icon} />
               </Menu.ItemIndicator>
             </span>
             {MAP_COPY.showOnBuildPage}
@@ -384,7 +385,7 @@ export function SessionMapColumn({ model, direction: wanted, selected, onSelect,
               ]}
             />
           ) : null}
-          <IconButton icon={Maximize2} glyph="fit" label={MAP_COPY.fit} size={26} aria-pressed={fit} onClick={() => setFit((on) => !on)} />
+          <IconButton style={iconButtonSide()} icon={Maximize2} glyph="fit" label={MAP_COPY.fit} size={26} aria-pressed={fit} onClick={() => setFit((on) => !on)} />
           {controls ? <MapOptionsMenu controls={controls} /> : null}
         </div>
       </div>

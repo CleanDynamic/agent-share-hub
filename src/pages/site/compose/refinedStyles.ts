@@ -12,6 +12,8 @@ import { SELECTED, WELL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { TITLE_LINE } from "@/lib/theme/truncate";
 import { FIGTREE } from "@/lib/theme/type";
+import { space, size } from "@/lib/theme/space";
+import { r } from "@/lib/theme/radius";
 
 /* ── type ── */
 
@@ -82,7 +84,7 @@ export const tileStyle: CSSProperties = {
 /** The well recipe for a field. The global field rule already paints `--recess`, which is `--well` under refined. */
 export const wellField: CSSProperties = {
   ...WELL,
-  borderRadius: 6,
+  borderRadius: r.control,
   boxSizing: "border-box",
   width: "100%",
   /* No inline `outline`: the global field rule is `outline: none` at rest and rings the field on :focus-visible, and an
@@ -95,10 +97,10 @@ export const chipStyle: CSSProperties = {
   ...tileStyle,
   display: "inline-flex",
   alignItems: "center",
-  gap: 6,
-  height: 22,
-  padding: "0 8px",
-  borderRadius: 4,
+  gap: space[2],
+  height: size.tag,
+  padding: `0 ${space[2]}px`,
+  borderRadius: r.chip,
   ...text(11.5, 400, t.text),
   whiteSpace: "nowrap",
   maxWidth: "100%",
@@ -110,11 +112,11 @@ export const chipStyle: CSSProperties = {
 export const tagStyle: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
-  gap: 6,
-  height: 20,
-  padding: "0 6px",
+  gap: space[2],
+  height: size.tag,
+  padding: `0 ${space[2]}px`,
   boxSizing: "border-box",
-  borderRadius: 4,
+  borderRadius: r.chip,
   background: t.tagFill,
   ...text(11.5, 400, t.text2),
   whiteSpace: "nowrap",
@@ -136,8 +138,8 @@ export const menuSurface = (width?: number): CSSProperties => ({
   maxHeight: "var(--radix-dropdown-menu-content-available-height)",
   overflowY: "auto",
   overscrollBehavior: "contain",
-  padding: 4,
-  borderRadius: 8,
+  padding: space[1],
+  borderRadius: r.window,
   background: t.window,
   border: `1px solid ${t.windowBorder}`,
   boxShadow: t.windowShadow,
@@ -168,8 +170,8 @@ export const dialogTitle: CSSProperties = { ...text(15, 500, t.text), margin: "0
 /** CA-03: a field you type in, on the well: 30 high (44 on a phone), 13 (16 on a phone, so iOS does not zoom). */
 export const typedField = (phone: boolean, extra: CSSProperties = {}): CSSProperties => ({
   ...wellField,
-  height: phone ? 44 : 30,
-  padding: "0 8px",
+  height: phone ? size.touch : size.control,
+  padding: `0 ${space[3]}px`,
   fontSize: phone ? 16 : 13,
   ...extra,
 });
@@ -177,8 +179,8 @@ export const typedField = (phone: boolean, extra: CSSProperties = {}): CSSProper
 /** CA-03: a well you type several lines in: the same, growing with its rows. */
 export const typedArea = (phone: boolean, extra: CSSProperties = {}): CSSProperties => ({
   ...wellField,
-  ...(phone ? { minHeight: 44 } : null),
-  padding: "6px 8px",
+  minHeight: space[16],
+  padding: `${space[2]}px ${space[3]}px`,
   fontSize: phone ? 16 : 13,
   lineHeight: "20px",
   resize: "vertical",
@@ -188,9 +190,9 @@ export const typedArea = (phone: boolean, extra: CSSProperties = {}): CSSPropert
 export const menuItem = (enabled: boolean, phone: boolean): CSSProperties => ({
   display: "flex",
   alignItems: "center",
-  minHeight: phone ? 44 : 32,
-  padding: "0 12px",
-  borderRadius: 6,
+  minHeight: phone ? size.touch : size.control,
+  padding: `0 ${space[3]}px`,
+  borderRadius: r.control,
   ...text(13, 400, t.text),
   cursor: enabled ? "pointer" : "default",
   filter: enabled ? undefined : t.dimFilter,

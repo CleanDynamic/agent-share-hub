@@ -39,6 +39,7 @@ import {
   measure,
 } from "@/lib/theme/type";
 import { categoryFill } from "@/lib/theme/category";
+import { space } from "@/lib/theme/space";
 
 interface RunViewProps {
   tree: NodeTree[];
@@ -219,7 +220,7 @@ function Checklist({ prerequisites }: { prerequisites: Prerequisite[] }) {
               style={{
                 width: 13,
                 height: 13,
-                marginTop: 3,
+                marginTop: space[1],
                 flexShrink: 0,
                 borderRadius: 3,
                 border: `1px solid ${t.evidence}`,

@@ -17,7 +17,7 @@ import { modelLabel } from "@/lib/models/registry";
 
 import { APPROVAL_MODES, agentFieldsOf, type ApprovalMode, type Sandbox } from "./agentFields";
 import { deploymentTilesOf, providerName, type DeploymentTile } from "./deployment";
-import { buildSteps, type Step } from "./graph";
+import { buildSteps, type Step, wordCount } from "./graph";
 import { FIELD_WORDS, harnessEntry, notCarriedLine, skillFolder, type HarnessEntry } from "./harnessMap";
 import { precisionWord } from "./modelRun";
 import { hasPipelineSetup, pipelineSections } from "./pipelineSetup";
@@ -56,7 +56,8 @@ export const SETUP_PROMPT_COPY = {
   show: "Show setup prompt",
   needsInstructions: "Add instructions first",
   title: "Setup prompt",
-  characters: (n: number) => `${n.toLocaleString("en-GB")} characters`,
+  /** F60: a length counts words. */
+  words: (text: string) => { const n = wordCount(text); return `${n.toLocaleString("en-GB")} ${n === 1 ? "word" : "words"}`; },
 } as const;
 
 type Raw = Record<string, unknown>;

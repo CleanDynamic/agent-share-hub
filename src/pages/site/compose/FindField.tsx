@@ -17,26 +17,27 @@ import { DM_MONO } from "@/lib/theme/type";
 
 import { bareButton, text } from "./refinedStyles";
 import type { BuildFind } from "./useBuildFind";
+import { size, space } from "@/lib/theme/space";
+import { iconButtonSide } from "./modalRecipes";
+import { r } from "@/lib/theme/radius";
 
 /** Find in build: the ghost button before View. */
 export function FindButton({ find }: { find: Pick<BuildFind, "show"> }) {
-  return <IconButton icon={Search} glyph="search" boxed={false} label={FIND_COPY.button} size={28} data-testid="find-button" onClick={find.show} />;
+  return <IconButton style={iconButtonSide()} icon={Search} glyph="search" boxed={false} label={FIND_COPY.button} size={28} data-testid="find-button" onClick={find.show} />;
 }
 
 const FIELD: CSSProperties = {
   flex: "0 1 300px",
   minWidth: 200,
-  height: 34,
-  /* The row it opens in is 28 high: the field stands 3 over its top and its foot (its margin box is 26), so nothing under the row moves. */
-  margin: "-4px 0",
+  height: size.control,
   boxSizing: "border-box",
   display: "flex",
   alignItems: "center",
-  gap: 8,
-  padding: "0 10px",
+  gap: space[2],
+  padding: `0 ${space[3]}px`,
   background: t.well,
   border: `1px solid ${t.hairlineModule}`,
-  borderRadius: 8,
+  borderRadius: r.control,
 };
 
 /** A 20 square button inside the field. */
@@ -49,7 +50,7 @@ function Tiny({ label, color, rotate, children, onClick }: { label: string; colo
       data-hit=""
       onClick={onClick}
       {...handlers}
-      style={{ ...bareButton, width: 20, height: 20, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 4, color: state.hovered ? t.text : color, ...ring(state.focusVisible), ...(rotate ? { transform: "rotate(180deg)" } : null) }}
+      style={{ ...bareButton, width: size.controlSmall, height: size.controlSmall, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: r.control, color: state.hovered ? t.text : color, ...ring(state.focusVisible), ...(rotate ? { transform: "rotate(180deg)" } : null) }}
     >
       {children}
     </button>
@@ -60,7 +61,7 @@ export function FindField({ find }: { find: BuildFind }) {
   return (
     <div role="search" data-testid="find-field" style={FIELD}>
       <span style={{ display: "inline-flex", flexShrink: 0, color: t.label }}>
-        <Glyph name="search" size={14} />
+        <Glyph name="search" size={size.icon} />
       </span>
       <input
         ref={find.inputRef}
@@ -81,13 +82,13 @@ export function FindField({ find }: { find: BuildFind }) {
         </span>
       ) : null}
       <Tiny label={FIND_COPY.previous} color={t.text2} rotate onClick={() => find.move(-1)}>
-        <Glyph name="chevd" size={14} />
+        <Glyph name="chevd" size={size.icon} />
       </Tiny>
       <Tiny label={FIND_COPY.next} color={t.text2} onClick={() => find.move(1)}>
-        <Glyph name="chevd" size={14} />
+        <Glyph name="chevd" size={size.icon} />
       </Tiny>
       <Tiny label={FIND_COPY.close} color={t.label} onClick={find.close}>
-        <Glyph name="x" size={14} />
+        <Glyph name="x" size={size.icon} />
       </Tiny>
     </div>
   );

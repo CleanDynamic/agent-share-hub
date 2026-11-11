@@ -48,6 +48,8 @@ import { TextButton } from "./composeControls";
 import { fieldBase } from "./composeFields";
 import { addPromptLabel, MADE_WITH_ENTRY_MAX, promptDragData } from "./composeModel";
 import { PROMPT_DRAG_TYPE } from "./PromptsPanel";
+import { size, space } from "@/lib/theme/space";
+import { BUTTON_PAD, iconButtonSide } from "./modalRecipes";
 
 /** The desktop header is 64px tall; the panel sticks 24px under it. */
 const STICKY_TOP = 64 + 24;
@@ -145,7 +147,7 @@ function AddModel({ session, phone, onSetModel }: { session: ComposeSession; pho
     setOther("");
   };
 
-  const control: CSSProperties = { ...fieldBase, height: phone ? 44 : 33, padding: "0 7px", fontSize: phone ? 16 : 14 };
+  const control: CSSProperties = { ...fieldBase, height: phone ? size.touch : size.control, padding: `0 ${space[3]}px`, fontSize: phone ? 16 : 14 };
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
@@ -199,7 +201,7 @@ function AddModel({ session, phone, onSetModel }: { session: ComposeSession; pho
               />
             ) : null}
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <Button type="submit" size={phone ? 44 : 36} fontSize={13} disabled={!value}>
+              <Button style={BUTTON_PAD} type="submit" size={phone ? 44 : 32} fontSize={13} disabled={!value}>
                 Save
               </Button>
             </div>
@@ -278,7 +280,7 @@ function PromptItem({
         <IconButton
           icon={Plus}
           size={phone ? 38 : 30}
-          style={phone ? { width: 44, height: 44 } : undefined}
+          style={{ ...phone ? { width: 44, height: 44 } : undefined, ...iconButtonSide(phone) }}
           label={addPromptLabel(prompt.text)}
           onClick={() => onAdd(sessionId, prompt.ordinal)}
         />
@@ -348,7 +350,7 @@ function SessionSection({
         </span>
         <ChevronDown
           aria-hidden="true"
-          size={16}
+          size={size.icon}
           strokeWidth={1.6}
           color="var(--text2)"
           style={{ ...quiet, marginLeft: "auto", marginRight: 6, flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: move() }}

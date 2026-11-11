@@ -93,7 +93,7 @@ describe("the refined window as the board draws it", () => {
     open("p3");
     const dialog = screen.getByTestId("full-prompt-window");
     expect(dialog.style.width).toBe("640px");
-    expect(dialog.style.borderRadius).toBe("12px");
+    expect(dialog.style.borderRadius).toBe("var(--r-window)"); // S31
     expect(dialog.style.overflow).toBe("hidden");
     // F38: pinned at 48 from the top, with the same room under it.
     expect(dialog.style.maxHeight).toBe("calc(100dvh - 96px)");
@@ -105,8 +105,8 @@ describe("the refined window as the board draws it", () => {
     expect(line.style.fontSize).toBe("13px");
     for (const name of [/^Previous prompt/, /^Next prompt/, "Close"]) {
       const button = screen.getByRole("button", { name });
-      expect(button.style.width).toBe("28px");
-      expect(button.style.height).toBe("28px");
+      expect(button.style.width).toBe("32px"); // S6
+      expect(button.style.height).toBe("32px");
     }
     expect(screen.getByRole("button", { name: "Rename prompt" })).toBeTruthy();
   });
@@ -126,7 +126,7 @@ describe("the refined window as the board draws it", () => {
     open("p3");
     const copy = screen.getByRole("button", { name: "Copy prompt" });
     expect(copy.getAttribute("data-variant")).toBe("secondary");
-    expect(copy.style.height).toBe("28px");
+    expect(copy.style.height).toBe("32px"); // S2
     expect(copy.querySelector("svg")).toBeNull();
     const done = screen.getByTestId("prompt-close");
     expect(done.textContent).toBe("Close");

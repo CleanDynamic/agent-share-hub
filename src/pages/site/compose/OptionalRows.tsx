@@ -23,6 +23,8 @@ import { useInteractive } from "@/lib/theme/interactive";
 
 import { ELLIPSIS, ModalInset, OPTIONAL, useModalInset } from "./modalRecipes";
 import { OPTIONAL_COPY } from "./OptionalSection";
+import { size, space } from "@/lib/theme/space";
+import { r } from "@/lib/theme/radius";
 
 export interface OptionalRowProps {
   /** The field's name: "Failure notes". */
@@ -140,7 +142,7 @@ export function OptionalRow({ name, description, summary, forceOpen = false, pho
         ) : null}
         {action ? <span aria-hidden="true" style={{ width: ACTION_ROOM, flexShrink: 0 }} /> : null}
         <span aria-hidden="true" style={OPTIONAL.chevron(open)}>
-          <Glyph name="chevd" size={14} />
+          <Glyph name="chevd" size={size.icon} />
         </span>
       </button>
       {action ? <AcceptButton action={action} right={inset + CHEVRON_ROOM} phone={phone} /> : null}
@@ -176,10 +178,10 @@ function AcceptButton({ action, right, phone }: { action: { name: string; label:
         right,
         top: "50%",
         transform: "translateY(-50%)",
-        minHeight: phone ? 44 : 28,
-        padding: "0 8px",
+        minHeight: phone ? size.touch : size.controlSmall,
+        padding: `0 ${space[1]}px`,
         border: 0,
-        borderRadius: 6,
+        borderRadius: r.control,
         background: "transparent",
         cursor: "pointer",
         ...OPTIONAL.title,

@@ -5,16 +5,17 @@ import { describe, expect, it, vi } from "vitest";
 
 import { chiefOfStaffTree } from "@/dev/fixtures/deployment/chief-of-staff";
 import { setupPromptOf } from "@/lib/build/setupPrompt";
+import { wordCount } from "@/lib/build/graph";
 
 import { SetupPromptWindow } from "./SetupPromptWindow";
 
 describe("SetupPromptWindow", () => {
-  it("shows the text, its character count, Rebuild in, and copies the same text", () => {
+  it("shows the text, its word count (F60), Rebuild in, and copies the same text", () => {
     const onCopy = vi.fn();
     render(<SetupPromptWindow id="cs-t1" tree={chiefOfStaffTree} name="Agency team" onCopy={onCopy} onClose={() => undefined} />);
     const text = setupPromptOf("cs-t1", { tree: chiefOfStaffTree }, "claude-code").text;
     expect(screen.getByTestId("setup-prompt-text").textContent).toBe(text);
-    expect(screen.getByTestId("setup-prompt-count").textContent).toBe(`${text.length.toLocaleString("en-GB")} characters`);
+    expect(screen.getByTestId("setup-prompt-count").textContent).toBe(`${wordCount(text).toLocaleString("en-GB")} words`);
     expect(screen.getByRole("button", { name: "Rebuild in" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Copy setup prompt" }));
     expect(onCopy).toHaveBeenCalledWith(text);

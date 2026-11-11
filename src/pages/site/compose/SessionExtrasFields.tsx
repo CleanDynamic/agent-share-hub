@@ -32,6 +32,8 @@ import { Field, TextButton } from "./composeControls";
 import { menuItem, menuSurface, text, typedArea, typedField } from "./refinedStyles";
 import { FLOATING_Z } from "./ToolPicker";
 import { MenuContent } from "./ComposeMenu";
+import { size } from "@/lib/theme/space";
+import { iconButtonSide } from "./modalRecipes";
 
 export const EXTRAS_COPY = {
   cost: "What it cost",
@@ -306,7 +308,7 @@ export function TogetherControl({ extras, others, phone, onTogether }: { extras:
             >
               <span style={{ width: 14, display: "inline-flex" }}>
                 <Menu.ItemIndicator>
-                  <Glyph name="check" size={14} />
+                  <Glyph name="check" size={size.icon} />
                 </Menu.ItemIndicator>
               </span>
               {other.label}
@@ -423,7 +425,7 @@ export function CheckRunsField({ id, runs, phone, onChange }: { id: string; runs
             <TextButton target={phone} style={text(12, 500, t.text2)} onClick={() => edit(index, { more: !row.more })}>
               {row.more ? "Fewer" : "More"}
             </TextButton>
-            <IconButton
+            <IconButton style={iconButtonSide(phone)}
               icon={X}
               glyph="x"
               boxed={false}
@@ -643,7 +645,7 @@ export function OutputsControl({ id, extras, phone, onChange }: { id: string; ex
               <ExtrasInput key={`${id}:o${index}b:${row.b}`} label={`SHA of output ${index + 1}`} value={row.b} placeholder="e.g. a1b2c3d" max={40} phone={phone} onCommit={(b) => commit(rows.map((other, at) => (at === index ? { ...other, b } : other)))} />
             </div>
           ) : null}
-          <IconButton icon={X} glyph="x" boxed={false} label={`Remove output ${index + 1}`} size={26} onClick={() => commit(rows.filter((_, at) => at !== index))} />
+          <IconButton style={iconButtonSide(phone)} icon={X} glyph="x" boxed={false} label={`Remove output ${index + 1}`} size={26} onClick={() => commit(rows.filter((_, at) => at !== index))} />
         </div>
       ))}
       {wrong ? <span style={text(12, 400, t.text2)}>{wrong}</span> : null}

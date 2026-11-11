@@ -57,7 +57,7 @@ describe("on the build page", () => {
   it("the title row's tooltips carry the keys once there is a step", async () => {
     await mountCa20(seedCa20);
     fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 2 options" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove step tile" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove step" }));
     await waitFor(() => expect(ids()).not.toContain(IDS.p2), { timeout: 15_000 });
     await waitFor(() => expect(screen.getByTestId("title-undo").getAttribute("title")).toMatch(/^Undo: Removed Prompt 2 \((⌘Z|Ctrl\+Z)\)$/));
   });
@@ -65,7 +65,7 @@ describe("on the build page", () => {
   it("Ctrl Z undoes the last step, and Ctrl Y does it again", async () => {
     await mountCa20(seedCa20);
     fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 2 options" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove step tile" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove step" }));
     await waitFor(() => expect(ids()).not.toContain(IDS.p2), { timeout: 15_000 });
     press("z", { ctrlKey: true });
     await waitFor(() => expect(ids()).toContain(IDS.p2), { timeout: 15_000 });
