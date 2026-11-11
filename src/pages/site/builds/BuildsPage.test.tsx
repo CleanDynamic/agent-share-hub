@@ -853,3 +853,62 @@ describe("BF-09 Save current", () => {
     expect(button.disabled).toBe(false);
   });
 });
+
+describe("BF-11 filters become columns", () => {
+  const stored = () => JSON.parse(localStorage.getItem("builds:layout:v1") ?? "null");
+  const autonomy = `autonomy:${AUTONOMY_VALUES[0].id}`;
+
+  it("filtering by Autonomy draws an Autonomy column; removing the chip removes it", async () => {
+    renderAt(`/builds?f=${encodeURIComponent(autonomy)}`);
+    expect(await screen.findByRole("columnheader", { name: /^Autonomy/ })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Remove filter Autonomy" }));
+    await waitFor(() => expect(address).toBe("/builds"));
+    await waitFor(() => expect(screen.queryByRole("columnheader", { name: /^Autonomy/ })).toBeNull());
+    expect(stored()).toBeNull();
+  });
+
+  it("a column the reader ticked stays when its filter is removed", async () => {
+    localStorage.setItem("builds:layout:v1", JSON.stringify({ columns: ["build", "field", "autonomy"], calculations: [] }));
+    renderAt(`/builds?f=${encodeURIComponent(autonomy)}`);
+    expect(await screen.findByRole("columnheader", { name: /^Autonomy/ })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Remove filter Autonomy" }));
+    await waitFor(() => expect(address).toBe("/builds"));
+    expect(screen.getByRole("columnheader", { name: /^Autonomy/ })).toBeTruthy();
+  });
+
+  it("opening /builds?view=classification and pressing a value, then choosing Table, shows that value's column", async () => {
+    localStorage.setItem("builds:layout:v1", JSON.stringify({ columns: ["build", "reproductions"], calculations: [] }));
+    listBuildsTable.mockResolvedValue({ builds: [{ ...build(1), classifiedAs: { ...emptyClassification(), declared: { ...emptyClassification().declared, field: [{ id: "education" }] } } }], total: 1 });
+    renderAt("/builds?view=classification");
+    fireEvent.click(await screen.findByRole("link", { name: "Education" }));
+    await waitFor(() => expect(address).toBe("/builds?view=classification&f=field%3Aeducation"));
+    fireEvent.click(within(screen.getByRole("navigation", { name: "View" })).getByRole("link", { name: "Table" }));
+    await waitFor(() => expect(address).toBe("/builds?f=field%3Aeducation"));
+    expect(await screen.findByRole("columnheader", { name: /^Field/ })).toBeTruthy();
+    expect(stored().columns).toEqual(["build", "reproductions"]);
+  });
+
+  it('the dialog\'s footer has "Add a column for each filter", ticked; unticking it and applying draws only the reader\'s columns, and the choice is kept', async () => {
+    renderAt(`/builds?f=${encodeURIComponent(autonomy)}`);
+    expect(await screen.findByRole("columnheader", { name: /^Autonomy/ })).toBeTruthy();
+    await openFilters();
+    const box = screen.getByRole("checkbox", { name: "Add a column for each filter" }) as HTMLInputElement;
+    expect(box.checked).toBe(true);
+    fireEvent.click(box);
+    expect((screen.getByRole("checkbox", { name: "Add a column for each filter" }) as HTMLInputElement).checked).toBe(false);
+    expect(stored().filterColumns).toBe(false);
+    closeFilters();
+    await waitFor(() => expect(screen.queryByRole("columnheader", { name: /^Autonomy/ })).toBeNull());
+    expect(address).toBe(`/builds?f=${encodeURIComponent(autonomy)}`);
+  });
+
+  it("the Columns label counts the reader's own columns", async () => {
+    renderAt(`/builds?f=${encodeURIComponent(autonomy)}&shape=agent`);
+    expect(await screen.findByRole("columnheader", { name: /^Autonomy/ })).toBeTruthy();
+    const button = screen.getByRole("button", { name: "Columns: 10 of 25" });
+    fireEvent.click(button);
+    const added = screen.getByRole("checkbox", { name: "Autonomy, from a filter" }) as HTMLInputElement;
+    expect(added.checked).toBe(true);
+    expect(added.disabled).toBe(true);
+  });
+});

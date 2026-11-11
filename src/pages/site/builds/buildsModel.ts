@@ -367,6 +367,52 @@ export function chosenColumns(saved: readonly string[] | null, countsLive: boole
   return availableColumns(countsLive).filter((id) => id === "build" || wanted.has(id));
 }
 
+/* ── BF-11 (B1): a filter that holds a value draws its column, worked out from the address on every render, never stored ── */
+
+/** The column each filter's value is shown in. */
+export const FILTER_COLUMN: Record<string, ColumnId> = {
+  ...Object.fromEntries(PANEL_FACETS.map((facet) => [facet, facet as ColumnId])),
+  stack: "tools",
+  reproductions: "reproductions",
+  rebuilds: "rebuilds",
+  likes: "likes",
+  steps: "steps",
+  sessions: "sessions",
+  model: "works",
+  within: "confirmed",
+  state: "confirmed",
+  shape: "shape",
+  pattern: "patterns",
+  open: "open",
+};
+
+/** One id per filter that holds a value, from the parameters `activeChips` reads, the search left out. */
+export function activeFilterIds(params: GalleryParams): string[] {
+  const ids: string[] = (params.facets ?? []).map((key) => key.slice(0, key.indexOf(":")));
+  if (params.tool) ids.push("stack");
+  if ((params.shapes ?? []).length > 0) ids.push("shape");
+  if (params.pattern) ids.push("pattern");
+  if (params.open) ids.push("open");
+  if (params.model) ids.push("model");
+  if (params.within !== undefined) ids.push("within");
+  if (params.state) ids.push("state");
+  for (const key of RANGE_KEYS) if (params.ranges?.[key]) ids.push(key);
+  return [...new Set(ids)];
+}
+
+/** The columns of the filters that hold a value. */
+export function filteredColumns(params: GalleryParams): ColumnId[] {
+  return [...new Set(activeFilterIds(params).flatMap((id) => (FILTER_COLUMN[id] ? [FILTER_COLUMN[id]] : [])))];
+}
+
+/** The columns drawn: the reader's own, then, with the setting on, each filtered column that is available and not already
+    there, in the table's own order. */
+export function drawnColumns(chosen: readonly ColumnId[], filtered: readonly ColumnId[], on: boolean, countsLive: boolean): ColumnId[] {
+  if (!on) return [...chosen];
+  const added = new Set(filtered.filter((id) => !chosen.includes(id)));
+  return [...chosen, ...availableColumns(countsLive).filter((id) => added.has(id))];
+}
+
 /** "12 of 24". */
 export const columnsLabel = (chosen: readonly ColumnId[], countsLive: boolean): string => `${chosen.length} of ${availableColumns(countsLive).length}`;
 
@@ -381,10 +427,17 @@ const COLUMN_GROUPS: readonly (readonly [ColumnGroup, readonly ColumnId[]])[] = 
 ];
 export const COLUMN_GROUP = Object.fromEntries(COLUMN_GROUPS.flatMap(([group, ids]) => ids.map((id) => [id, group]))) as Record<ColumnId, ColumnGroup>;
 
-/** The chooser's checklist, by group. */
-export function columnsMenu(chosen: readonly ColumnId[], countsLive: boolean, onToggle: (id: ColumnId) => void, onReset?: () => void): ColumnsMenu {
+/** The chooser's checklist, by group. BF-11 (B1): a column drawn only because a filter holds a value is on and locked, and says so. */
+export function columnsMenu(chosen: readonly ColumnId[], countsLive: boolean, onToggle: (id: ColumnId) => void, onReset?: () => void, fromFilters: readonly ColumnId[] = []): ColumnsMenu {
   const offered = new Set(availableColumns(countsLive));
-  const options = COLUMN_GROUPS.flatMap(([group, ids]) => ids.filter((id) => offered.has(id)).map((id) => ({ id, name: COLUMN_NAME[id], group, on: chosen.includes(id), ...(id === "build" ? { locked: true } : null) })));
+  const options = COLUMN_GROUPS.flatMap(([group, ids]) =>
+    ids
+      .filter((id) => offered.has(id))
+      .map((id) => {
+        const fromFilter = !chosen.includes(id) && fromFilters.includes(id);
+        return { id, name: COLUMN_NAME[id], group, on: chosen.includes(id) || fromFilter, ...(id === "build" || fromFilter ? { locked: true } : null), ...(fromFilter ? { fromFilter } : null) };
+      }),
+  );
   return { options, onToggle, onReset };
 }
 

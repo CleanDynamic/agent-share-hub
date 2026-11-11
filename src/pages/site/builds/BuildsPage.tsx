@@ -38,7 +38,7 @@ import { SeoHead } from "@/components/SeoHead";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { useAuth } from "@/contexts/AuthContext";
 import { reportError } from "@/lib/errors/report";
-import { isEmptyLayout, withCalculation, withColumns, type BuildsLayout } from "@/lib/build/buildsLayout";
+import { isEmptyLayout, withCalculation, withColumns, withFilterColumns, type BuildsLayout } from "@/lib/build/buildsLayout";
 import { createFilterSet, deleteFilterSet, getFilterSet, joinFilterSet, leaveFilterSet, listMyFilterSets, renameFilterSet, saveFilterSetLayout, setFilterSetPublic, type FilterSet, type FilterSetDetail } from "@/lib/build/filterSets";
 import { GALLERY_LENSES, countBuildsTable, countGalleryLenses, getClassificationFacets, getCountSpread, getGalleryFacets, getWorksOnModelCounts, getGalleryStats, listBuildsTable, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
 import { RANGE_KEYS, type RangeKey } from "@/lib/build/galleryRanges";
@@ -62,6 +62,8 @@ import {
   chosenColumns,
   columnsLabel,
   columnsMenu,
+  drawnColumns,
+  filteredColumns,
   footerCalculations,
   lensCountParams,
   listParamsOf,
@@ -202,7 +204,10 @@ export default function BuildsPage() {
 
   const total = list.data?.pages[0]?.total ?? null;
   const countsLive = list.data?.pages[0]?.countsLive === true;
-  const columns = chosenColumns(layout.columns, countsLive);
+  /* BF-11 (B1): the reader's own columns, then the column of each filter that holds a value, worked out from the address on
+     every render: a filter set by the dialog, a value's link, a saved set or Back all draw the same. Nothing is stored. */
+  const chosen = chosenColumns(layout.columns, countsLive);
+  const columns = drawnColumns(chosen, filteredColumns(params), layout.filterColumns, countsLive);
   const extras = columns.filter((id): id is ExtraColumnId => (EXTRA_COLUMNS as readonly string[]).includes(id));
   const rows = builds.map((build) => tableRow(build, now, extras));
   const calculationChoices = calculationOptions(layout.calculations, columns);
@@ -346,6 +351,9 @@ export default function BuildsPage() {
       },
       order,
       onOrder: setOrder,
+      /* BF-11 (B1): a layout setting, applied at once; the draft is not touched. */
+      addColumns: layout.filterColumns,
+      onAddColumns: (on) => update((current) => withFilterColumns(current, on)),
   };
 
   const onMoreMaps = () => {
@@ -454,12 +462,13 @@ export default function BuildsPage() {
               onRemoveChip: (key) => go(withoutChip(params, key)),
               onClearAll: () => go(clearedFilters(params)),
               columns,
-              columnsLabel: columnsLabel(columns, countsLive),
+              columnsLabel: columnsLabel(chosen, countsLive),
               columnsMenu: columnsMenu(
-                columns,
+                chosen,
                 countsLive,
                 (id) => update((current) => withColumns(current, toggledColumns(chosenColumns(current.columns, countsLive), id))),
                 layout.columns === null ? undefined : () => update((current) => withColumns(current, null)),
+                columns.filter((id) => !chosen.includes(id)),
               ),
               rows,
               sortColumn: SORT_COLUMN[sort] ? { id: SORT_COLUMN[sort]!, ascending: false } : null,

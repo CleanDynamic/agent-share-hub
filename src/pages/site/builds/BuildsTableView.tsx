@@ -164,7 +164,7 @@ export interface CalculationOption {
 
 export interface ColumnsMenu {
   /** BF-10 (C9): `group` heads the options under it; options of a group come together. */
-  options: readonly { id: ColumnId; name: string; group?: string; on: boolean; locked?: boolean }[];
+  options: readonly { id: ColumnId; name: string; group?: string; on: boolean; locked?: boolean; fromFilter?: boolean }[];
   onToggle: (id: ColumnId) => void;
   /** Back to the default twelve; drawn only while the columns are not. */
   onReset?: () => void;
@@ -252,8 +252,12 @@ function ColumnsChooser({ label, menu }: { label: string; menu: ColumnsMenu }) {
               {group.name ? <div style={{ ...text(12, 400, t.label), margin: `${at === 0 ? 0 : 12}px 0 4px` }}>{group.name}</div> : null}
               {group.options.map((option) => (
                 <label key={option.id} style={{ display: "grid", gridTemplateColumns: "16px 1fr", columnGap: 10, alignItems: "center", minHeight: 32, cursor: option.locked ? "default" : "pointer", ...text(12.5, 400, option.on ? t.text : t.text2) }}>
-                  <Checkbox checked={option.on} disabled={option.locked} onChange={() => menu.onToggle(option.id)} />
-                  <span>{option.name}</span>
+                  <Checkbox checked={option.on} disabled={option.locked} label={option.fromFilter ? `${option.name}, from a filter` : undefined} onChange={() => menu.onToggle(option.id)} />
+                  <span>
+                    {option.name}
+                    {/* BF-11 (B1): drawn because a filter holds a value; it goes when the filter does. */}
+                    {option.fromFilter ? <span style={{ color: t.label }}>, from a filter</span> : null}
+                  </span>
                 </label>
               ))}
             </div>

@@ -1165,6 +1165,11 @@ export const CA03_FILES: readonly string[] = [
   // BF-09
   "src/pages/site/builds/SetDialogs.test.tsx",
 
+  // BF-11
+  "src/pages/site/builds/buildsModel.filterColumns.test.ts",
+  "src/lib/build/buildsLayout.ts",
+  "src/lib/build/buildsLayout.test.ts",
+
   // SV-14
   "src/lib/build/graph.ts",
   "src/pages/site/openbuilds/OpenBuildsFrame.tsx",
