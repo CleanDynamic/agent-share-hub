@@ -1,4 +1,4 @@
-// UX-02 P5: double-click is not a command. Every step tile type shows a way to open it and a way to change it, by role and name, and
+// UX-02 P5: double-click is not a command. Every step type shows a way to open it and a way to change it, by role and name, and
 // nothing in the List or a session's head answers a double click: read from the props React rendered on each element.
 
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
@@ -41,7 +41,7 @@ function list(steps: Step[], over: Partial<BuildListProps> = {}) {
   return props;
 }
 
-/** Every step tile type, with the name its footer's open link carries. */
+/** Every step type, with the name its footer's open link carries. */
 const TYPES: [Step["kind"], string][] = [
   ["prompt", "Open prompt"],
   ["agent", "Open agent"],
@@ -64,7 +64,7 @@ const reactProps = (element: Element): Record<string, unknown> => {
   return key ? ((element as unknown as Record<string, Record<string, unknown>>)[key] ?? {}) : {};
 };
 
-describe("UX-02 P5 · every step tile type has a visible open control and a visible edit control", () => {
+describe("UX-02 P5 · every step type has a visible open control and a visible edit control", () => {
   it.each(TYPES)("%s", (kind, open) => {
     const props = list([make({ id: "x1", number: "1", kind, text: "A thing", title: "A thing", sessionId: "s1" })]);
     const card = screen.getAllByTestId("step-card")[0];
@@ -103,11 +103,11 @@ describe("UX-02 P5 · nothing answers a double click but a prompt tile (F17, D8)
     expect(all.filter((element) => typeof reactProps(element).onDoubleClick === "function" && element.getAttribute("data-kind") !== "prompt").map((element) => element.outerHTML.slice(0, 80))).toEqual([]);
   });
 
-  it("the computer's hint line is gone; the phone's says step tile", () => {
+  it("the computer's hint line is gone; the phone's says step", () => {
     list([make({ id: "x1", number: "1", kind: "tool", text: "Gmail", title: "Gmail" })]);
     expect(screen.queryByText(/double-click/)).toBeNull();
     cleanup();
     list([make({ id: "x1", number: "1", kind: "tool", text: "Gmail", title: "Gmail" })], { phone: true });
-    expect(screen.getByText("Tap a step tile to see its details")).toBeTruthy();
+    expect(screen.getByText("Tap a step to see its details")).toBeTruthy();
   });
 });

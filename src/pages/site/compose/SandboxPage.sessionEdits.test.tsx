@@ -18,7 +18,7 @@ import { SandboxPage } from "./SandboxPage";
 
 const DRAFT = "0d0d0d0d-0000-4000-8000-000000000003";
 
-// A page behind supabase-js with 66 tiles written takes longer than the default.
+// A page behind supabase-js with 66 steps written takes longer than the default.
 vi.setConfig({ testTimeout: 30_000 });
 
 function stubWidth(px: number) {
@@ -114,7 +114,7 @@ describe("CA-14 P3 · folding a session", () => {
     fireEvent.click(screen.getByRole("button", { name: "Collapse Session 1" }));
     await waitFor(() => expect(tableRows("build_sessions").find((row) => row.session_key === WAITING)?.collapsed).toBe(true), { timeout: 10_000 });
     expect((draftRow()?.making as { sessions_collapsed?: string[] }).sessions_collapsed).toContain(WAITING);
-    expect(screen.getAllByTestId("session-count").map((count) => count.textContent)).toEqual(["1 step tile", "66 step tiles"]);
+    expect(screen.getAllByTestId("session-count").map((count) => count.textContent)).toEqual(["1 step", "66 steps"]);
     fireEvent.click(screen.getByRole("button", { name: "Expand Session 1" }));
     await waitFor(() => expect(tableRows("build_sessions").find((row) => row.session_key === WAITING)?.collapsed).toBe(false), { timeout: 10_000 });
     expect((draftRow()?.making as { sessions_collapsed?: string[] }).sessions_collapsed ?? []).not.toContain(WAITING);
@@ -157,7 +157,7 @@ describe("CA-14 P4 · moving a session", () => {
     expect(tiles.slice(0, 66).every((row) => (row.source_ref as { import_session_id?: string }).import_session_id === LONG)).toBe(true);
     // Numbered by the new order, and said politely.
     expect(await screen.findByText("Session 2 moved to 1.", undefined, { timeout: 10_000 })).toBeTruthy();
-    await waitFor(() => expect(screen.getAllByTestId("session-count")[0].textContent).toBe("66 step tiles"), { timeout: 10_000 });
+    await waitFor(() => expect(screen.getAllByTestId("session-count")[0].textContent).toBe("66 steps"), { timeout: 10_000 });
     expect(screen.getByRole("button", { name: "Expand Session 1" })).toBeTruthy();
   });
 
@@ -183,7 +183,7 @@ const positions = () =>
     .sort((a, b) => Number(a.position) - Number(b.position));
 
 describe("CA-14 P5 · adding to the right session", () => {
-  it("has no prompt box at the foot and no Adding to picker; every open session ends with + Add step tile", async () => {
+  it("has no prompt box at the foot and no Adding to picker; every open session ends with + Add step", async () => {
     await twoSessions();
     expect(screen.queryByTestId("adding-to")).toBeNull();
     expect(screen.queryByTestId("add-prompt")).toBeNull();
@@ -231,8 +231,8 @@ describe("CA-14 P5 · adding to the right session", () => {
   });
 
   // UX-02 P7: the Build header's Add, which asked "Add to which session?" with two or more, is gone; each session's own
-  // "+ Add step tile" adds to that session. (Its two tests here are retired with it.)
-  it("each session's Add step tile adds to that session", async () => {
+  // "+ Add step" adds to that session. (Its two tests here are retired with it.)
+  it("each session's Add step adds to that session", async () => {
     await twoSessions();
     // Session 2 is folded (it is long), so it draws no row; Session 1's adds to Session 1.
     const first = document.querySelector(`[data-session-key="${WAITING}"]`) as HTMLElement;
@@ -404,13 +404,13 @@ describe("CA-14 P5 · Move to session", () => {
 });
 
 describe("CA-14 P2 · removing a session", () => {
-  it("asks first (CA-20 P2: Cancel, Keep the step tiles, Remove all), removes the session with its tiles, and puts them back from Undo", async () => {
+  it("asks first (CA-20 P2: Cancel, Keep the steps, Remove all), removes the session with its tiles, and puts them back from Undo", async () => {
     await twoSessions();
     fireEvent.keyDown(screen.getByRole("button", { name: "Session 1 options" }), { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Remove session" }));
     const dialog = await screen.findByRole("alertdialog");
     expect(within(dialog).getByText("Remove Session 1?")).toBeTruthy();
-    expect(within(dialog).getByText("It has 1 step tile.")).toBeTruthy();
+    expect(within(dialog).getByText("It has 1 step.")).toBeTruthy();
     // Nothing has gone yet.
     expect(positions()).toHaveLength(67);
     fireEvent.click(within(dialog).getByRole("button", { name: "Remove all" }));
@@ -419,7 +419,7 @@ describe("CA-14 P2 · removing a session", () => {
     expect(sessionsMetaOf(draftRow()?.making)[WAITING]).toBeUndefined();
     expect(screen.getAllByTestId("session-head")).toHaveLength(1);
     expect(await screen.findByRole("group", { name: /^Session 1 · / })).toBeTruthy();
-    expect(await screen.findByText("Removed Session 1 and its 1 step tile")).toBeTruthy();
+    expect(await screen.findByText("Removed Session 1 and its 1 step")).toBeTruthy();
     fireEvent.click(await screen.findByTestId("notice-undo"));
     await waitFor(() => expect(positions()).toHaveLength(67), { timeout: 15_000 });
     await waitFor(() => expect(sessionsOf()).toHaveLength(2), { timeout: 15_000 });
@@ -430,7 +430,7 @@ describe("CA-14 P2 · removing a session", () => {
 
 describe("CA-14 P5 · the Add sheet on a phone", () => {
   // UX-02 P7: a session's own row opens the sheet; it knows its session, so the sheet lists the items at once.
-  it("a session's Add step tile lists the items at once", async () => {
+  it("a session's Add step lists the items at once", async () => {
     stubWidth(390);
     await twoSessions();
     fireEvent.click(screen.getAllByTestId("add-to-session")[0]);

@@ -57,7 +57,7 @@ describe("a move from the menu", () => {
     mountList({ onMove: vi.fn(() => Promise.resolve(false)) });
     const [first, second] = tileIds();
     await moveDown("Prompt 1 options");
-    await waitFor(() => expect(said()).toBe("Tile not moved"));
+    await waitFor(() => expect(said()).toBe("Step not moved"));
     await waitFor(() => expect(tileIds().slice(0, 2)).toEqual([first, second]));
   });
 

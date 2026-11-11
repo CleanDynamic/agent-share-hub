@@ -40,7 +40,7 @@ describe("CA-28 P2 · Classification", () => {
   });
 
   it("ends the Clear the build body with 'the Classification stay.'", () => {
-    expect(CLEAR_COPY.body({ parts: 0, sessions: 3, tiles: 8, files: 1 })).toBe("Removes 3 sessions, 8 step tiles and 1 file, with their colours, groups and links. The title, the post's words and the Classification stay.");
+    expect(CLEAR_COPY.body({ parts: 0, sessions: 3, tiles: 8, files: 1 })).toBe("Removes 3 sessions, 8 steps and 1 file, with their colours, groups and links. The title, the post's words and the Classification stay.");
   });
 
   it("the title row button reads Classification, is named Classification, opens a window titled Classification, and its Save is the step 'Saved the Classification'", async () => {

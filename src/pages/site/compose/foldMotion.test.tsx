@@ -88,7 +88,7 @@ describe("folding a session", () => {
     const [first] = keys(props);
     const { again } = mount(props);
     again({ ...props, collapsed: new Set([first]) });
-    expect(document.querySelector(`[data-session-key="${first}"] [data-testid="session-count"]`)?.textContent).toMatch(/tiles?$/);
+    expect(document.querySelector(`[data-session-key="${first}"] [data-testid="session-count"]`)?.textContent).toMatch(/steps?$/);
   });
 });
 

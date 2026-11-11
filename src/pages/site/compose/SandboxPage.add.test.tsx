@@ -70,7 +70,7 @@ function mount(path: string, faults: Fault[] = []) {
 
 const field = () => screen.getByRole("textbox", { name: "Add a prompt" });
 
-/** UX-02 P7: Add is a session's "+ Add step tile" (the header's Add is gone); on a new post, its first session is started first. */
+/** UX-02 P7: Add is a session's "+ Add step" (the header's Add is gone); on a new post, its first session is started first. */
 async function openAdd(phone: boolean) {
   const opened = await openAddRow(phone);
   return phone ? within(opened) : null;
@@ -191,7 +191,7 @@ describe.each([
 });
 
 describe("CA-10 · a new post whose draft cannot be made says so once (CA-08 F6)", () => {
-  // UX-02 P7: a step tile is added from a session's row, so on a new post the first write that makes the draft is the session's.
+  // UX-02 P7: a step is added from a session's row, so on a new post the first write that makes the draft is the session's.
   it("New empty session on /compose/new, with the draft refused: exactly one toast", async () => {
     stubWidth(1280);
     const said = vi.spyOn(toast, "error");
@@ -199,7 +199,7 @@ describe("CA-10 · a new post whose draft cannot be made says so once (CA-08 F6)
     fireEvent.click(await screen.findByTestId("empty-build-new", undefined, { timeout: 10_000 }));
     await waitFor(() => expect(said).toHaveBeenCalled(), { timeout: 5_000 });
     await act(() => new Promise((resolve) => setTimeout(resolve, 300)));
-    expect(said.mock.calls.map(([line]) => line)).toEqual(["Draft not started"]);
+    expect(said.mock.calls.map(([line]) => line)).toEqual(["Build not started"]);
   });
 });
 

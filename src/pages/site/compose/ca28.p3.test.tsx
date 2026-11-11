@@ -127,7 +127,7 @@ describe("the verbs, as {Thing} not {past participle}", () => {
     },
     {
       name: "rename a tile",
-      line: "Tile not renamed",
+      line: "Step not renamed",
       fail: () => graph.setStepTitle.mockRejectedValue(new Error("down")),
       run: async (api) => api.rename("ag1", "New name"),
       calls: () => graph.setStepTitle.mock.calls.length,

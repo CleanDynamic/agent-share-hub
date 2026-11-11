@@ -31,7 +31,7 @@ function view(over: Partial<SandboxViewProps> = {}) {
   return props;
 }
 
-/** UX-02 P7: the Add step tile menu of a session, as each session's row draws it (the Build header's Add is gone). */
+/** UX-02 P7: the Add step menu of a session, as each session's row draws it (the Build header's Add is gone). */
 function addRow(over: Partial<AddMenuProps> = {}, phone = false) {
   render(<AddMenu phone={phone} fixedSession="s1" {...over} />);
 }
@@ -316,8 +316,8 @@ describe("the refined look (UI-P93)", () => {
     expect(html).toContain("position:relative;display:block;padding:32px 34px 0");
   });
 
-  // UX-02 P7: one way to add at each level. The Build header's Add is gone, on a computer and on a phone; a step tile is added
-  // from its session's "+ Add step tile".
+  // UX-02 P7: one way to add at each level. The Build header's Add is gone, on a computer and on a phone; a step is added
+  // from its session's "+ Add step".
   it("has no Add in the Build header, on a computer or a phone", () => {
     view();
     expect(screen.queryByTestId("sandbox-add")).toBeNull();
@@ -522,7 +522,7 @@ describe("CA-10 · on a phone, Add opens as a bottom sheet", () => {
     onAddCode: vi.fn(),
   });
 
-  it("holds the same items as 44pt rows under its Add step tile heading, with a grab line", () => {
+  it("holds the same items as 44pt rows under its Add step heading, with a grab line", () => {
     stubWidth(390);
     const props = { ...all(), onAddPromptFocus: vi.fn() };
     addRow(props, true);
@@ -588,12 +588,12 @@ describe("CA-10 · on a phone, Add opens as a bottom sheet", () => {
 
 describe("CA-10 · words on a phone (CA-09 F12)", () => {
   it("never says click or double-click on a phone", () => {
-    expect(listHint(true)).toBe("Tap a step tile to see its details");
+    expect(listHint(true)).toBe("Tap a step to see its details");
     // UX-02 P5: a computer has no hint line.
     expect(listHint(false)).toBeNull();
     stubWidth(390);
     view({ list: undefined, lens: "list" });
-    expect(screen.getByText("Tap a step tile to see its details")).toBeTruthy();
+    expect(screen.getByText("Tap a step to see its details")).toBeTruthy();
     expect(screen.queryByText(/click/i)).toBeNull();
   });
 });

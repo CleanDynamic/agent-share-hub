@@ -57,7 +57,7 @@ const boxes = () => [...document.querySelectorAll<HTMLElement>('[data-skel-kind=
 const cards = () => document.querySelectorAll('[data-testid="step-card"]').length;
 
 describe("windowing", () => {
-  it("starts at 60 tiles", () => expect(WINDOW_FROM).toBe(60));
+  it("starts at 60 steps", () => expect(WINDOW_FROM).toBe(60));
 
   it("draws every tile of a smaller build, as it always did", async () => {
     await mount(40);

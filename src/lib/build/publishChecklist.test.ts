@@ -43,7 +43,7 @@ describe("publishChecklist required items", () => {
       [true, "Picture", undefined],
       [true, "Bakery homepage", undefined],
       [true, "A warm homepage for a bakery.", undefined],
-      [true, "18 step tiles", undefined],
+      [true, "18 steps", undefined],
     ]);
     expect(out.canPublish).toBe(true);
     expect(out.note).toBeNull();
@@ -52,7 +52,7 @@ describe("publishChecklist required items", () => {
   it("reads a video cover, and one tile, in the singular", () => {
     const out = publishChecklist({ ...base, cover: "video", tiles: 1 });
     expect(out.required[0].detail).toBe("Video");
-    expect(out.required[3].detail).toBe("1 step tile");
+    expect(out.required[3].detail).toBe("1 step");
     expect(publishChecklist({ ...base, missing: ["title"] }).note).toBe("Complete 1 required item to publish");
   });
 
@@ -121,7 +121,7 @@ describe("UX-01 P1: unsent prompts", () => {
     const item = out.required.find((entry) => entry.key === "unsent-s2");
     expect(item).toMatchObject({ section: "required", done: false, words: "Unsent prompt in Session 2", unsentKey: "s2" });
     expect(item?.detail).toBe("x".repeat(80));
-    expect(item?.actions?.map((action) => action.label)).toEqual(["Add as step tile", "Discard"]);
+    expect(item?.actions?.map((action) => action.label)).toEqual(["Add as step", "Discard"]);
     expect(out.canPublish).toBe(false);
     expect(out.openRequired).toBe(1);
   });

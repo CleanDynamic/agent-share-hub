@@ -21,7 +21,7 @@ import { SandboxPage } from "./SandboxPage";
 
 const DRAFT = "0d0d0d0d-0000-4000-8000-000000000003";
 
-// A page behind supabase-js with 66 tiles written takes longer than the default.
+// A page behind supabase-js with 66 steps written takes longer than the default.
 vi.setConfig({ testTimeout: 30_000 });
 
 function stubWidth(px: number) {
@@ -145,7 +145,7 @@ describe("CA-12 P4 · sessions leave Add; + Add a session", () => {
   it("the Add menu has no session items", async () => {
     mount(`/compose/${DRAFT}`);
     await field();
-    // UX-02 P7: a session's Add step tile; P6: entries whose node type is not live are left out, and Deployment is closed.
+    // UX-02 P7: a session's Add step; P6: entries whose node type is not live are left out, and Deployment is closed.
     await openAddRow();
     const items = (await screen.findAllByRole("menuitem")).map((item) => item.textContent ?? "");
     expect(items.length).toBeGreaterThan(5);
@@ -160,7 +160,7 @@ describe("CA-12 P4 · sessions leave Add; + Add a session", () => {
     expect(rows).toHaveLength(3);
     expect(rows.map((row) => row.getAttribute("aria-label"))).toEqual([
       "Claude Code, A waiting session., 9 Oct · 1 prompt",
-      "Claude, A session in a draft., 8 Oct · 1 prompt, In 1 draft",
+      "Claude, A session in a draft., 8 Oct · 1 prompt, In 1 build",
       "Claude Code, Prompt 1 of the long session., 1 Oct · 66 prompts",
     ]);
     expect(document.body.textContent).not.toMatch(/expired/i);
@@ -194,12 +194,12 @@ describe("CA-12 P4 · sessions leave Add; + Add a session", () => {
     fireEvent.click(within(await openRow()).getAllByRole("listitem")[0]);
     await waitFor(() => expect(said).toHaveBeenCalled(), { timeout: 5_000 });
     await act(() => new Promise((resolve) => setTimeout(resolve, 300)));
-    expect(said.mock.calls.map(([line]) => line)).toEqual(["Draft not started"]);
+    expect(said.mock.calls.map(([line]) => line)).toEqual(["Build not started"]);
   });
 });
 
 describe("CA-12 P5 · adding a session", () => {
-  it("on a new post, a 66-prompt session replaces the empty Session 1: 66 step tiles in it, folded to its head", async () => {
+  it("on a new post, a 66-prompt session replaces the empty Session 1: 66 steps in it, folded to its head", async () => {
     mount("/compose/new");
     await field();
     const picker = within(await openRow());
@@ -221,7 +221,7 @@ describe("CA-12 P5 · adding a session", () => {
     // The page (CA-14 P3): a long session starts folded: its head with the count before the date, and nothing under it.
     expect(await screen.findByRole("button", { name: "Expand Session 1" }, { timeout: 10_000 })).toBeTruthy();
     expect(screen.queryAllByTestId("step-card")).toHaveLength(0);
-    expect(screen.getByTestId("session-count").textContent).toBe("66 step tiles");
+    expect(screen.getByTestId("session-count").textContent).toBe("66 steps");
   });
 
   it("opening it draws every tile and keeps it open", async () => {
@@ -253,12 +253,12 @@ describe("CA-12 P5 · adding a session", () => {
     expect(tableRows("build_nodes").filter((row) => row.build_id === DRAFT)).toHaveLength(67);
   });
 
-  it("a session already in this draft shows In this draft and cannot be added again", async () => {
+  it("a session already in this build shows In this build and cannot be added again", async () => {
     mount(`/compose/${DRAFT}`);
     await field();
     fireEvent.click(within(await openRow()).getByRole("listitem", { name: / 1 prompt$/ }));
     await screen.findByRole("group", { name: /^Session 1 · / }, { timeout: 10_000 });
-    const again = within(await openRow()).getByRole("listitem", { name: /In this draft$/ }) as HTMLButtonElement;
+    const again = within(await openRow()).getByRole("listitem", { name: /In this build$/ }) as HTMLButtonElement;
     expect(again.disabled).toBe(true);
   });
 
@@ -270,7 +270,7 @@ describe("CA-12 P5 · adding a session", () => {
     cleanup();
     mount("/compose/0d0d0d0d-0000-4000-8000-000000000004", { keep: true });
     await field();
-    const row = within(await openRow()).getByRole("listitem", { name: /66 prompts, In 1 draft$/ });
+    const row = within(await openRow()).getByRole("listitem", { name: /66 prompts, In 1 build$/ });
     fireEvent.click(row);
     await waitFor(() => expect(tableRows("build_nodes").filter((node) => node.build_id === "0d0d0d0d-0000-4000-8000-000000000004")).toHaveLength(66), { timeout: 15_000 });
     expect(tableRows("build_nodes").filter((node) => node.build_id === DRAFT)).toHaveLength(66);
@@ -286,15 +286,15 @@ describe("CA-12 P5 · adding a session", () => {
     expect(screen.getAllByTestId("session-head")).toHaveLength(1);
   });
 
-  it("Start a new session adds an empty Session 2 at once: No harness chosen, No step tiles yet, kept in the table and the draft", async () => {
+  it("Start a new session adds an empty Session 2 at once: No harness chosen, No steps yet, kept in the table and the draft", async () => {
     mount(`/compose/${DRAFT}`);
     await field();
     fireEvent.click(within(await openRow()).getByRole("listitem", { name: / 1 prompt$/ }));
     await screen.findByRole("group", { name: /^Session 1 · / }, { timeout: 10_000 });
     await startNew();
     expect(await screen.findByRole("group", { name: "Session 2 · No harness chosen" }, { timeout: 10_000 })).toBeTruthy();
-    // CA-21 P7: until its skeleton fades it shows its place to drop; then "No step tiles yet".
-    await waitFor(() => expect(screen.queryByText("No step tiles yet") ?? screen.queryByText("Drop a step tile here")).toBeTruthy());
+    // CA-21 P7: until its skeleton fades it shows its place to drop; then "No steps yet".
+    await waitFor(() => expect(screen.queryByText("No steps yet") ?? screen.queryByText("Drop a step here")).toBeTruthy());
     await waitFor(() => expect(tableRows("build_sessions").filter((row) => row.build_id === DRAFT)).toHaveLength(2), { timeout: 10_000 });
     const making = tableRows("builds").find((row) => row.id === DRAFT)?.making as { session_order?: string[] };
     expect(making.session_order).toHaveLength(2);

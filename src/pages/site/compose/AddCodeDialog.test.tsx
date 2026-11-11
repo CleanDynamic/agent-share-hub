@@ -64,7 +64,7 @@ describe("Add › Code (CA-02 P7)", () => {
     expect(screen.getByTestId("optional-count").textContent).toBe("2 fields");
     expect(screen.queryByLabelText("File path")).toBeNull();
     expect(fieldNames()).toEqual(["File path", "Generated with"]);
-    expect(screen.getByText("Each file becomes its own step tile")).toBeTruthy();
+    expect(screen.getByText("Each file becomes its own step")).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/File name|Written with|optional/);
   });
 
