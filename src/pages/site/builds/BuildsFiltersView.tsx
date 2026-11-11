@@ -433,7 +433,7 @@ function Histogram({ bars, height }: { bars: RangeSection["histogram"]; height: 
   return (
     <div aria-hidden="true" style={{ display: "flex", alignItems: "flex-end", gap: 2, height, marginTop: 14 }}>
       {bars.map((bar, index) => (
-        <span key={index} style={{ flex: 1, height: `${Math.round(bar.height * 100)}%`, borderRadius: 1, background: bar.inRange ? t.label : t.line }} />
+        <span key={index} style={{ flex: 1, height: `${Math.round(bar.height * 100)}%`, borderRadius: 1, background: bar.inRange ? t.text : t.label }} />
       ))}
     </div>
   );
@@ -461,7 +461,7 @@ function RangeFilter({ section, onChange, move }: { section: RangeSection; onCha
           onValueChange={(value) => onChange?.([value[0], value[1]])}
           style={{ position: "relative", display: "flex", alignItems: "center", height: 14, marginTop: 4, touchAction: "none", userSelect: "none" }}
         >
-          <SliderPrimitive.Track style={{ position: "relative", flexGrow: 1, height: 2, borderRadius: 1, background: t.line }}>
+          <SliderPrimitive.Track style={{ position: "relative", flexGrow: 1, height: 2, borderRadius: 1, background: t.label }}>
             <SliderPrimitive.Range style={{ position: "absolute", height: "100%", borderRadius: 1, background: t.text }} />
           </SliderPrimitive.Track>
           <SliderPrimitive.Thumb aria-label={`${section.name} from`} aria-valuetext={section.describe(low, "min")} style={thumb} onFocus={(e) => focus(e, true)} onBlur={(e) => focus(e, false)} />

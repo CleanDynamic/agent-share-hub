@@ -119,7 +119,7 @@ function ViewSegment({ view, current, href, onIntent }: { view: GalleryViewMode;
           alignItems: "center",
           padding: "0 12px",
           borderRadius: r.chip,
-          border: `1px solid ${current ? t.controlBorder : "transparent"}`,
+          border: `1px solid ${current ? t.selectedEdge : "transparent"}`,
           background: current ? t.control : "transparent",
           fontFamily: FIGTREE,
           fontSize: 12.5,
