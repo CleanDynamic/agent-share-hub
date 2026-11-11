@@ -40,6 +40,7 @@ export const visionBuildsSections: FilterSection[] = [
     value: [3, 40],
     describe: (value, end) => (end === "min" ? `${value} or more` : value >= 40 ? "40 or more" : `up to ${value}`),
     endLabels: ["0", "40+"],
+    counted: 164,
   },
   {
     kind: "word",
@@ -63,6 +64,7 @@ export const visionBuildsSections: FilterSection[] = [
     describe: (value, end) => (end === "min" ? `from ${value}` : `to ${value}`),
     endLabels: ["0", "40+"],
     bare: true,
+    counted: 132,
   },
   {
     kind: "scale",

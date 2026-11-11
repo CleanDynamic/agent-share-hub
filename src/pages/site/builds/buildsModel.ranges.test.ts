@@ -200,3 +200,15 @@ describe("one order", () => {
     expect(sections.find((section) => section.id === "shape")).toMatchObject({ value: "Any" });
   });
 });
+
+/* ── BF-09 P2 (A10) ── */
+
+describe("how many builds a range counts", () => {
+  it("a range section carries how many builds were counted", () => {
+    const spread = { steps: new Map([[2, 4], [12, 9], [60, 1]]), sessions: new Map() };
+    const sections = panelSections({ ...STATE, spread });
+    expect(sections.find((section) => section.id === "steps")).toMatchObject({ kind: "range", counted: 14 });
+    expect(sections.find((section) => section.id === "sessions")).toMatchObject({ kind: "range", counted: 0 });
+    expect(sections.find((section) => section.id === "likes")).toMatchObject({ kind: "range", counted: 0 });
+  });
+});

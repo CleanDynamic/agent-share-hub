@@ -75,6 +75,8 @@ export interface RangeSection {
   endLabels: readonly [string, string];
   /** The board's Steps: the histogram alone, 28 high, with no slider under it. */
   bare?: boolean;
+  /** BF-09 (A10): how many builds the histogram counts; under five it is not drawn. */
+  counted: number;
 }
 
 export interface ScaleSection {
@@ -344,7 +346,8 @@ function RangeFilter({ section, label, onChange }: { section: RangeSection; labe
     <section aria-label={section.name} style={rule}>
       <SectionHead name={section.name} right={label ? <span style={small(t.label)}>{label}</span> : <span style={small(t.text2)}>{section.valueText}</span>} />
       <div role="group" aria-label={`${section.name}, ${section.valueText}`}>
-        <Histogram bars={section.histogram} height={section.bare ? 28 : 32} />
+        {/* BF-09 (A10): with fewer than five builds counted the bars say nothing; the slider and the fields stay. */}
+        {section.counted >= 5 ? <Histogram bars={section.histogram} height={section.bare ? 28 : 32} /> : null}
         {section.bare ? null : (
         <>
         <SliderPrimitive.Root
@@ -370,14 +373,79 @@ function RangeFilter({ section, label, onChange }: { section: RangeSection; labe
             <span aria-hidden="true" style={dot} />
           </SliderPrimitive.Thumb>
         </SliderPrimitive.Root>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, ...text(12, 400, t.label) }}>
-          <span>{section.endLabels[0]}</span>
-          <span>{section.endLabels[1]}</span>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginTop: 8 }}>
+          <RangeField
+            label="At least"
+            value={low === section.min ? "" : String(low)}
+            placeholder={section.endLabels[0]}
+            min={section.min}
+            max={section.max}
+            onCommit={(typed) => onChange?.([typed === null ? section.min : Math.min(clampTo(typed, section.min, section.max), high), high])}
+          />
+          <RangeField
+            label="At most"
+            value={high === section.max ? "" : String(high)}
+            placeholder={section.endLabels[1]}
+            min={section.min}
+            max={section.max}
+            onCommit={(typed) => onChange?.([low, typed === null ? section.max : Math.max(clampTo(typed, section.min, section.max), low)])}
+          />
         </div>
         </>
         )}
       </div>
     </section>
+  );
+}
+
+const clampTo = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
+
+/** BF-09 (A10): one end of a range, typed. It holds its own text while focused and commits on Enter and on leaving: a whole
+    number (held to the filter's bounds and the other end by the caller), or nothing, which is no limit on that end. */
+function RangeField({ label, value, placeholder, min, max, onCommit }: { label: string; value: string; placeholder: string; min: number; max: number; onCommit: (typed: number | null) => void }) {
+  const phone = useIsPhone();
+  const [typing, setTyping] = useState<string | null>(null);
+  const { state, handlers } = useInteractive<HTMLInputElement>({ onBlur: () => commit() });
+  const commit = () => {
+    if (typing === null) return;
+    const parsed = Number.parseInt(typing.trim(), 10);
+    setTyping(null);
+    onCommit(typing.trim() === "" || Number.isNaN(parsed) ? null : parsed);
+  };
+  return (
+    <label style={{ display: "inline-flex", alignItems: "center", gap: 8, ...text(12, 400, t.label) }}>
+      {label}
+      <input
+        type="number"
+        inputMode="numeric"
+        min={min}
+        max={max}
+        step={1}
+        value={typing ?? value}
+        placeholder={placeholder}
+        onFocus={() => setTyping(value)}
+        onChange={(event) => setTyping(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            commit();
+          }
+        }}
+        {...handlers}
+        style={{
+          ...WELL,
+          boxSizing: "border-box",
+          width: 72,
+          height: phone ? 44 : 32,
+          padding: "0 8px",
+          borderRadius: r.control,
+          fontFamily: FIGTREE,
+          fontSize: phone ? 16 : 13,
+          color: t.text,
+          ...ring(state.focusVisible),
+        }}
+      />
+    </label>
   );
 }
 

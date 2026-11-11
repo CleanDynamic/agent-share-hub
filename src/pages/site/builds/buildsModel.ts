@@ -139,6 +139,7 @@ function rangeSection(key: RangeKey, spread: CountSpread, range: NumberRange | u
     group,
     valueText: range ? rangeWords(range) : "Any",
     histogram: histogramOf(spread[key], cap, range),
+    counted: [...(spread[key]?.values() ?? [])].reduce((sum, builds) => sum + builds, 0),
     min: 0,
     max: cap,
     value: [range?.min ?? 0, range?.max ?? cap],

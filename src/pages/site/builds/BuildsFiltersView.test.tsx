@@ -2,7 +2,7 @@
 // (`BuildsFilters`). The claims: the filters are listed by group, a group says how many of its filters hold a value, a name
 // search finds a filter in any group, and nothing is left of the old rail's catalogue tile.
 
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -210,5 +210,69 @@ describe("Autonomy", () => {
   it("the two end labels under the old bar are gone", () => {
     draw();
     for (const label of ["You do each step", "Fully autonomous"]) expect(autonomy().getAllByText(label)).toHaveLength(1);
+  });
+});
+
+/* ── BF-09 P2 (A10) ── */
+
+describe("number fields", () => {
+  /** Proof's Reproductions: 0 to 40, chosen 3 to no limit, 164 counted. */
+  const reproductions = (onRange = vi.fn(), change: (props: BuildsFiltersViewProps) => BuildsFiltersViewProps = (p) => p) => {
+    draw((p) => change({ ...p, onRange }));
+    fireEvent.click(screen.getByRole("button", { name: /^Proof/ }));
+    return { onRange, region: within(screen.getByRole("region", { name: "Reproductions" })) };
+  };
+
+  it('a range filter has two number fields, "At least" and "At most", showing the range, empty for no limit', () => {
+    const { region } = reproductions();
+    const least = region.getByRole("spinbutton", { name: "At least" }) as HTMLInputElement;
+    const most = region.getByRole("spinbutton", { name: "At most" }) as HTMLInputElement;
+    expect(least.value).toBe("3");
+    expect(most.value).toBe("");
+    expect(most.placeholder).toBe("40+");
+    expect(least.placeholder).toBe("0");
+  });
+
+  it("typing 3 in At least and pressing Enter calls onChange with [3, max]", () => {
+    const { onRange, region } = reproductions(vi.fn(), (p) => ({ ...p, sections: p.sections.map((section) => (section.kind === "range" && section.id === "reproductions" ? { ...section, value: [0, 40] as const } : section)) }));
+    const least = region.getByRole("spinbutton", { name: "At least" });
+    fireEvent.focus(least);
+    fireEvent.change(least, { target: { value: "3" } });
+    fireEvent.keyDown(least, { key: "Enter" });
+    expect(onRange).toHaveBeenCalledWith("reproductions", [3, 40]);
+  });
+
+  it("clearing At least and leaving the field calls onChange with [0, <high>]", () => {
+    const { onRange, region } = reproductions(vi.fn(), (p) => ({ ...p, sections: p.sections.map((section) => (section.kind === "range" && section.id === "reproductions" ? { ...section, value: [3, 20] as const } : section)) }));
+    const least = region.getByRole("spinbutton", { name: "At least" });
+    fireEvent.focus(least);
+    fireEvent.change(least, { target: { value: "" } });
+    fireEvent.blur(least);
+    expect(onRange).toHaveBeenCalledWith("reproductions", [0, 20]);
+  });
+
+  it("a value above the cap is held to the cap; a low above the high is held to the high", () => {
+    const { onRange, region } = reproductions(vi.fn(), (p) => ({ ...p, sections: p.sections.map((section) => (section.kind === "range" && section.id === "reproductions" ? { ...section, value: [3, 20] as const } : section)) }));
+    const most = region.getByRole("spinbutton", { name: "At most" });
+    fireEvent.focus(most);
+    fireEvent.change(most, { target: { value: "99" } });
+    fireEvent.keyDown(most, { key: "Enter" });
+    expect(onRange).toHaveBeenLastCalledWith("reproductions", [3, 40]);
+    const least = region.getByRole("spinbutton", { name: "At least" });
+    fireEvent.focus(least);
+    fireEvent.change(least, { target: { value: "30" } });
+    fireEvent.keyDown(least, { key: "Enter" });
+    expect(onRange).toHaveBeenLastCalledWith("reproductions", [20, 20]);
+  });
+
+  it("with fewer than five builds counted the histogram is not drawn; the slider and fields are", () => {
+    const { region } = reproductions(vi.fn(), (p) => ({ ...p, sections: p.sections.map((section) => (section.kind === "range" ? { ...section, counted: 4 } : section)) }));
+    const group = region.getByRole("group", { name: /^Reproductions,/ });
+    expect(group.querySelector('[aria-hidden="true"] > span')).toBeNull();
+    expect(region.getAllByRole("slider")).toHaveLength(2);
+    expect(region.getByRole("spinbutton", { name: "At least" })).toBeTruthy();
+    cleanup();
+    const drawn = reproductions();
+    expect(drawn.region.getByRole("group", { name: /^Reproductions,/ }).querySelectorAll('[aria-hidden="true"] > span').length).toBeGreaterThan(0);
   });
 });
