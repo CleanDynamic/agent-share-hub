@@ -28,16 +28,15 @@ export interface SessionJumpItem {
 }
 
 /**
- * SV-05 P1: what each chip says after its number: the session's app, and its day when another session has the same app,
- * "Claude · 25 Sep". The items keep the order given, the List's.
+ * SV-05 P1, F49: what each chip says after its number: the session's harness, then its day, "Claude · 25 Sep", for every
+ * session. The items keep the order given, the List's.
  */
 export function jumpItemsOf(rows: readonly { key: string; number: number; tool: string; date?: string; group?: string }[]): SessionJumpItem[] {
-  const seen = new Map<string, number>();
-  for (const row of rows) seen.set(row.tool, (seen.get(row.tool) ?? 0) + 1);
   return rows.map((row) => ({
     key: row.key,
     number: row.number,
-    label: (seen.get(row.tool) ?? 0) > 1 && row.date ? `${row.tool} · ${row.date}` : row.tool,
+    // F49: every tab reads number, harness, date; a missing value leaves no gap and no separator.
+    label: [row.tool, row.date].filter(Boolean).join(" · "),
     ...(row.group ? { group: row.group } : null),
   }));
 }

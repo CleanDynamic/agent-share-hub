@@ -47,7 +47,10 @@ export const SESSION_HEAD_COPY = {
   /** SV-05 P3: an import that wrote fewer tiles than its session has prompts. */
   imported: (have: number, of: number) => `${have} of ${of} prompts imported`,
   retry: "Retry",
-  addToThis: "+ Add step tile",
+  /** F55: the word is "step"; the icon shows the plus. */
+  addToThis: "Add step",
+  /** F48: a session with no harness: a button that opens the harness choice. */
+  chooseHarness: "Choose harness",
   moveUp: "Move up",
   moveDown: "Move down",
   edit: "Edit session…",
@@ -137,9 +140,12 @@ function TitleField({ session, phone, onSave }: { session: SourceSession; phone:
   /* UX-02 P4: drawn as the app's text field at rest, so it reads as one: `--field` (the global field rule paints its own fill with
      !important, which only an !important inline value outranks), a 1px `--well-border` and the control radius, the same on hover;
      the global field rule's focus ring, at once. */
+  /* F50, F66: with no title and no focus, quiet words: no border, no fill, as wide as the words; a click or keyboard focus
+     makes it the field, 32 high. */
+  const quiet = !editing && draft === "";
   const setField = (element: HTMLInputElement | null) => {
     field.current = element;
-    element?.style.setProperty("background-color", t.field, "important");
+    element?.style.setProperty("background-color", quiet ? "transparent" : t.field, "important");
   };
   useEffect(() => {
     if (!editing) setDraft(saved);
@@ -173,7 +179,7 @@ function TitleField({ session, phone, onSave }: { session: SourceSession; phone:
     if (past) announce(SESSION_HEAD_COPY.typedPast(draft.length));
   }, [past, draft.length, announce]);
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0, flex: phone ? "1 1 100%" : "1 1 120px" }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0, flex: quiet ? "0 1 auto" : phone ? "1 1 100%" : "1 1 120px" }}>
       <input
         ref={setField}
         type="text"
@@ -183,6 +189,8 @@ function TitleField({ session, phone, onSave }: { session: SourceSession; phone:
         value={draft}
         title={draft || undefined}
         maxLength={SESSION_TITLE_MAX}
+        size={quiet ? SESSION_HEAD_COPY.titlePlaceholder.length : undefined}
+        data-quiet={quiet ? "true" : undefined}
         autoComplete="off"
         onFocus={() => setEditing(true)}
         onBlur={finish}
@@ -191,12 +199,14 @@ function TitleField({ session, phone, onSave }: { session: SourceSession; phone:
         style={{
           flex: "1 1 auto",
           minWidth: 0,
-          height: phone ? 36 : 28,
+          // F50: 32 high once it is a field (36 on a phone, as before).
+          height: phone ? 36 : 32,
           boxSizing: "border-box",
-          border: `1px solid ${t.wellBorder}`,
+          border: `1px solid ${quiet ? "transparent" : t.wellBorder}`,
           borderRadius: r.control,
           padding: "0 6px",
           margin: "0 -6px",
+          ...(quiet ? { flex: "0 0 auto", width: "auto", fieldSizing: "content", cursor: "text" } : null),
           textOverflow: "ellipsis",
           userSelect: "text",
           ...text(15, 400, t.text),
@@ -259,7 +269,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
         ·
       </span>
       {session.tool === NO_APP && onPickApp && maker ? (
-        <ToolPicker quiet label={`Pick a harness for session ${session.number}`} placeholder={NO_APP} value={null} onChange={(tool) => onPickApp(session.key, tool)} inBuild={inBuild} allowNone={false} phone={phone} step="session" />
+        <ToolPicker small label={`Pick a harness for session ${session.number}`} placeholder={SESSION_HEAD_COPY.chooseHarness} value={null} onChange={(tool) => onPickApp(session.key, tool)} inBuild={inBuild} allowNone={false} phone={phone} step="session" />
       ) : (
         <span style={{ whiteSpace: "nowrap", ...(session.tool === NO_APP ? { color: t.text2 } : null) }}><FindHit text={session.tool} /></span>
       )}
@@ -283,7 +293,8 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
             {SESSION_HEAD_COPY.count(tiles)}
           </span>
         ) : null}
-        {session.date ? <span style={quiet(t.label)}>{session.date}</span> : null}
+        {/* F50: the date at the right, at least 12 from what stands before it (the row's 8 and 4 more). */}
+        {session.date ? <span data-testid="session-date" style={{ ...quiet(t.label), marginLeft: "auto", paddingLeft: 4 }}>{session.date}</span> : null}
         {session.open ? (
           <span data-testid="session-open-request" {...fullText(session.open)} style={{ ...quiet(t.lit), ...TITLE_LINE, maxWidth: 240 }}>
             {SESSION_HEAD_COPY.requested}
@@ -382,7 +393,8 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
         {importing ? <ImportingTag /> : null}
         {phone ? <div data-testid="session-head-meta" style={{ order: 3, flex: "1 1 100%", display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 8, rowGap: 4, minWidth: 0, paddingLeft: 40 }}>{metaRow}</div> : metaRow}
         {maker ? (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, flexShrink: 0, marginLeft: "auto", order: phone ? 2 : undefined }}>
+          // F50: with a date, the date takes the free room (its own auto margin), so the controls follow it at the right.
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, flexShrink: 0, marginLeft: session.date && !phone ? undefined : "auto", order: phone ? 2 : undefined }}>
             <span style={{ visibility: handleShown ? "visible" : "hidden", display: "inline-flex" }}>
               <DragHandle label={`Move Session ${session.number}`} nest={drag} testId="session-drag-handle" />
             </span>
