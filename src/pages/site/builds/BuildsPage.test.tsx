@@ -37,20 +37,24 @@ const getClassificationFacets = vi.fn();
 const getGalleryFacets = vi.fn();
 const getCountSpread = vi.fn();
 const getWorksOnModelCounts = vi.fn();
+const countBuildsTable = vi.fn();
 vi.mock("@/lib/build/gallery", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/build/gallery")>()),
   listBuildsTable: (...args: unknown[]) => listBuildsTable(...args),
   getGalleryStats: () => getGalleryStats(),
-  countGalleryLenses: () => countGalleryLenses(),
+  countGalleryLenses: (...args: unknown[]) => countGalleryLenses(...args),
   getClassificationFacets: () => getClassificationFacets(),
   getGalleryFacets: () => getGalleryFacets(),
   getCountSpread: () => getCountSpread(),
   getWorksOnModelCounts: () => getWorksOnModelCounts(),
+  countBuildsTable: (...args: unknown[]) => countBuildsTable(...args),
 }));
 
 import { emptyClassification } from "@/lib/classify/facets";
 import { AUTONOMY_VALUES } from "@/lib/classify/taxonomy";
 import { t } from "@/lib/theme/tokens";
+
+import { hasFilters } from "@/lib/build/gallery";
 
 import BuildsPage from "./BuildsPage";
 import { statParts } from "./BuildsView";
@@ -61,9 +65,12 @@ const build = (n: number) => ({
 });
 
 let address = "";
+/** BF-08: every history entry the page has been on, by its key, to count the navigations. */
+let entries: string[] = [];
 function Where() {
   const location = useLocation();
   address = `${location.pathname}${location.search}`;
+  if (!entries.includes(location.key)) entries.push(location.key);
   return null;
 }
 
@@ -79,7 +86,23 @@ function renderAt(path: string) {
   );
 }
 
+/** BF-06: the filters are in a dialog the Filters button opens; Done closes it. Behind an open dialog the page is hidden
+    from assistive technology, so a test that reads the table or the chips closes it first. */
+async function openFilters(group?: string) {
+  fireEvent.click(await screen.findByRole("button", { name: /^Filters/ }, { timeout: 4000 }));
+  await screen.findByRole("dialog", { name: "Filters" });
+  if (group) fireEvent.click(await screen.findByRole("button", { name: new RegExp(`^${group}`) }));
+}
+function closeFilters() {
+  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+}
+/** BF-08: the dialog's choices are a draft; Apply writes them to the address once and closes it. */
+function applyFilters() {
+  fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+}
+
 beforeEach(() => {
+  entries = [];
   globalThis.ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} } as unknown as typeof ResizeObserver;
   window.matchMedia = ((query: string) => ({ matches: query.includes("min-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined, addListener: () => undefined, removeListener: () => undefined, onchange: null, dispatchEvent: () => false })) as unknown as typeof window.matchMedia;
   report.mockReset();
@@ -97,6 +120,8 @@ beforeEach(() => {
   getCountSpread.mockResolvedValue(null);
   getWorksOnModelCounts.mockReset();
   getWorksOnModelCounts.mockResolvedValue(null);
+  countBuildsTable.mockReset();
+  countBuildsTable.mockResolvedValue(1);
   auth.user = null;
   localStorage.clear();
   for (const fn of Object.values(sets)) fn.mockReset();
@@ -165,9 +190,11 @@ describe("BuildsPage", () => {
     expect(within(screen.getByRole("navigation", { name: "View" })).getByRole("link", { name: "Classification" }).getAttribute("aria-current")).toBe("page");
   });
 
-  it("writes a checked value to the address, and the list follows it", async () => {
+  it("writes a checked value to the address on Apply, and the list follows it", async () => {
     renderAt("/builds");
+    await openFilters();
     fireEvent.click(await screen.findByRole("checkbox", { name: /Education/ }));
+    applyFilters();
     await waitFor(() => expect(address).toBe("/builds?f=field%3Aeducation"));
     await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ facets: ["field:education"] })));
   });
@@ -186,10 +213,12 @@ describe("BuildsPage", () => {
     await waitFor(() => expect(address).toBe("/builds?sort=rebuilt"));
   });
 
-  it("opens a closed filter in place", async () => {
+  // BF-07 (A5): every filter is drawn in its group; none is a closed row to open first.
+  it("draws every filter of a group, with nothing to open first", async () => {
     renderAt("/builds");
-    fireEvent.click(await screen.findByRole("button", { name: /^Task\s*Any/ }));
-    expect(screen.getByRole("region", { name: "Task" })).toBeTruthy();
+    await openFilters();
+    expect(await screen.findByRole("region", { name: "Task" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /^Task\s*Any/ })).toBeNull();
   });
 
   it("shows one line and one action when nothing matches", async () => {
@@ -216,28 +245,31 @@ describe("BuildsPage", () => {
       renderAt("/builds");
       await screen.findByRole("link", { name: "Build 1" });
       expect(screen.queryByRole("columnheader", { name: "Steps" })).toBeNull();
-      expect(screen.queryByRole("button", { name: /^Steps/ })).toBeNull();
+      await openFilters("Structure");
+      expect(screen.queryByRole("region", { name: "Steps" })).toBeNull();
     });
 
-    it("draws the columns, the median in the footer and a closed filter for each range once they are live", async () => {
+    it("draws the columns, the median in the footer and a filter for each range once they are live", async () => {
       getCountSpread.mockResolvedValue(SPREAD);
       listBuildsTable.mockResolvedValue({ countsLive: true, builds: [counted(1, 4, 1), counted(2, 12, 3), counted(3, null, 0)], total: 3 });
       renderAt("/builds");
       expect(await screen.findByRole("columnheader", { name: "Steps" })).toBeTruthy();
       expect(screen.getByRole("columnheader", { name: "Sessions" })).toBeTruthy();
       expect(screen.getByText("Median 8 steps")).toBeTruthy();
-      expect(await screen.findByRole("button", { name: /^Steps\s*Any/ })).toBeTruthy();
-      expect(screen.getByRole("button", { name: /^Sessions\s*Any/ })).toBeTruthy();
+      await openFilters("Structure");
+      expect(await screen.findByRole("region", { name: "Steps" })).toBeTruthy();
+      expect(screen.getByRole("region", { name: "Sessions" })).toBeTruthy();
     });
 
-    it("writes a range to the address, replacing the entry so dragging leaves one step in history, and the list follows", async () => {
+    it("writes a range to the address on Apply, and the list follows", async () => {
       getCountSpread.mockResolvedValue(SPREAD);
       listBuildsTable.mockResolvedValue({ countsLive: true, builds: [counted(1, 4, 1)], total: 1 });
       renderAt("/builds");
-      fireEvent.click(await screen.findByRole("button", { name: /^Steps\s*Any/ }));
+      await openFilters("Structure");
       const from = await screen.findByRole("slider", { name: "Steps from" });
       from.focus();
       fireEvent.keyDown(from, { key: "ArrowRight" });
+      applyFilters();
       await waitFor(() => expect(address).toBe("/builds?steps=1-"));
       await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ ranges: { steps: { min: 1 } } })));
       expect(await screen.findByRole("button", { name: "Remove filter Steps" })).toBeTruthy();
@@ -247,8 +279,10 @@ describe("BuildsPage", () => {
       getCountSpread.mockResolvedValue(SPREAD);
       listBuildsTable.mockResolvedValue({ countsLive: true, builds: [counted(1, 6, 1)], total: 1 });
       renderAt("/builds?sessions=2-");
+      await openFilters("Structure");
       expect(await screen.findByRole("slider", { name: "Sessions from" })).toBeTruthy();
       expect(screen.getByRole("group", { name: "Sessions, 2 or more" })).toBeTruthy();
+      closeFilters();
       fireEvent.click(screen.getByRole("button", { name: "Remove filter Sessions" }));
       await waitFor(() => expect(address).toBe("/builds"));
     });
@@ -267,14 +301,15 @@ describe("BuildsPage", () => {
 
     it("offers Last confirmed and Confirmed or stale from the columns that exist, and writes the choice to the address", async () => {
       renderAt("/builds");
-      fireEvent.click(await screen.findByRole("button", { name: /^Last confirmed\s*Any/ }));
-      fireEvent.click(screen.getByRole("checkbox", { name: /Within 30 days/ }));
+      await openFilters("Proof");
+      fireEvent.click(await screen.findByRole("checkbox", { name: /Within 30 days/ }));
+      applyFilters();
       await waitFor(() => expect(address).toBe("/builds?within=30"));
       await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ confirmedWithin: 30 })));
+      await openFilters("Proof");
       fireEvent.click(screen.getByRole("checkbox", { name: /Within 30 days/ }));
-      await waitFor(() => expect(address).toBe("/builds"));
-      fireEvent.click(screen.getByRole("button", { name: /^Confirmed or stale\s*Any/ }));
       fireEvent.click(screen.getByRole("checkbox", { name: /Stale, not confirmed in 120 days/ }));
+      applyFilters();
       await waitFor(() => expect(address).toBe("/builds?state=stale"));
       await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ confirmedState: "stale" })));
       expect(await screen.findByRole("button", { name: "Remove filter Confirmed or stale" })).toBeTruthy();
@@ -285,8 +320,9 @@ describe("BuildsPage", () => {
       getWorksOnModelCounts.mockResolvedValue([{ model: OPUS, builds: 18 }]);
       listBuildsTable.mockResolvedValue({ countsLive: true, builds: [build(1)], total: 1 });
       renderAt("/builds");
-      fireEvent.click(await screen.findByRole("button", { name: /^Works on model\s*Any/ }));
-      fireEvent.click(screen.getByRole("checkbox", { name: /Opus 5.5/ }));
+      await openFilters("Proof");
+      fireEvent.click(await screen.findByRole("checkbox", { name: /Opus 5.5/ }));
+      applyFilters();
       await waitFor(() => expect(address).toBe("/builds?model=opus-5-5"));
       await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ worksOn: "opus-5-5" })));
       expect(await screen.findByRole("button", { name: "Remove filter Works on" })).toBeTruthy();
@@ -297,8 +333,9 @@ describe("BuildsPage", () => {
       getWorksOnModelCounts.mockResolvedValue([{ model: OPUS, builds: 18 }]);
       renderAt("/builds");
       await screen.findByRole("link", { name: "Build 1" });
-      expect(screen.queryByRole("button", { name: /^Works on model/ })).toBeNull();
-      expect(screen.queryByRole("button", { name: /^Reproductions\s*Any/ })).toBeNull();
+      await openFilters("Proof");
+      expect(screen.queryByRole("region", { name: "Works on model" })).toBeNull();
+      expect(screen.queryByRole("region", { name: "Reproductions" })).toBeNull();
     });
   });
 });
@@ -319,7 +356,7 @@ describe("SV-24 P1: saved filter sets", () => {
     auth.user = { id: "reader-1" };
     sets.listMyFilterSets.mockResolvedValue([mine, { ...mine, id: "9d6f3a42-1c52-4e0e-9a3c-6d2f1f4a9c11", name: "Sales", search: "f=field%3Asales", isPublic: true }]);
     renderAt("/builds?view=maps");
-    fireEvent.click(await screen.findByRole("button", { name: /Filters/ }, { timeout: 4000 }));
+    await openFilters("Saved");
     const link = await screen.findByRole("link", { name: /Stale agents/ });
     expect(link.getAttribute("href")).toBe(`/builds?view=maps&shape=agent&state=stale&set=${SET_ID}`);
     expect(screen.getByRole("link", { name: /Sales/ }).textContent).toContain("Public");
@@ -337,7 +374,7 @@ describe("SV-24 P1: saved filter sets", () => {
     auth.user = { id: "reader-1" };
     sets.createFilterSet.mockResolvedValue(mine);
     renderAt("/builds?view=maps&f=field%3Alaw&sort=newest");
-    fireEvent.click(await screen.findByRole("button", { name: /Filters/ }, { timeout: 4000 }));
+    await openFilters("Saved");
     fireEvent.click(await screen.findByRole("button", { name: "Save current" }));
     fireEvent.change(await screen.findByLabelText("Name"), { target: { value: "Law, newest" } });
     fireEvent.click(screen.getByRole("checkbox", { name: /Public/ }));
@@ -351,6 +388,7 @@ describe("SV-24 P1: saved filter sets", () => {
     sets.listMyFilterSets.mockResolvedValue([mine]);
     sets.renameFilterSet.mockResolvedValue("Old agents");
     renderAt("/builds");
+    await openFilters("Saved");
     fireEvent.keyDown(await screen.findByRole("button", { name: "More for Stale agents" }), { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Rename" }));
     const field = await screen.findByLabelText("Name");
@@ -366,6 +404,7 @@ describe("SV-24 P1: saved filter sets", () => {
     sets.getFilterSet.mockResolvedValue({ ...mine, mine: true, members: 0, member: false });
     sets.deleteFilterSet.mockResolvedValue(undefined);
     renderAt(`/builds?shape=agent&state=stale&set=${SET_ID}`);
+    await openFilters("Saved");
     fireEvent.keyDown(await screen.findByRole("button", { name: "More for Stale agents" }), { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Delete" }));
     expect(sets.deleteFilterSet).not.toHaveBeenCalled();
@@ -380,6 +419,7 @@ describe("SV-24 P1: saved filter sets", () => {
     sets.getFilterSet.mockResolvedValue({ ...group, mine: false, members: 12, member: false });
     sets.joinFilterSet.mockResolvedValue(undefined);
     renderAt(`/builds?set=${SET_ID}`);
+    await openFilters("Saved");
     expect(await screen.findByText("Group · 12 members")).toBeTruthy();
     sets.getFilterSet.mockResolvedValue({ ...group, mine: false, members: 13, member: true });
     fireEvent.click(screen.getByRole("button", { name: "Join Sales agents" }));
@@ -391,7 +431,9 @@ describe("SV-24 P1: saved filter sets", () => {
   it("reports a failed save and tells the reader, and the window stays open to try again", async () => {
     auth.user = { id: "reader-1" };
     sets.createFilterSet.mockRejectedValue(new Error("nope"));
-    renderAt("/builds");
+    // BF-09 (F1): there must be something to save.
+    renderAt("/builds?f=field%3Alaw");
+    await openFilters("Saved");
     fireEvent.click(await screen.findByRole("button", { name: "Save current" }));
     fireEvent.change(await screen.findByLabelText("Name"), { target: { value: "x" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -405,38 +447,31 @@ describe("SV-24 P2: the reader's layout", () => {
   const sectionNames = () => Array.from(screen.getByTestId("builds-filters").querySelectorAll("section[aria-label]")).map((node) => node.getAttribute("aria-label")).filter((name) => name !== "Saved filter sets");
   const stored = () => JSON.parse(localStorage.getItem("builds:layout:v1") ?? "null");
 
-  it("moves a filter from its grip's menu, keeps the order in this browser, and finds it there on the next visit", async () => {
+  // BF-07 (A6): the filters have fixed places; there is no order, nothing opened and no height to keep.
+  it("draws the filters in their fixed places on every visit, and keeps nothing about them", async () => {
     const first = renderAt("/builds");
     await screen.findByRole("link", { name: "Build 1" });
-    expect(sectionNames().slice(0, 2)).toEqual(["Field", "Autonomy"]);
-    fireEvent.keyDown(screen.getByRole("button", { name: "Move Field" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Move down" }));
-    await waitFor(() => expect(sectionNames().slice(0, 2)).toEqual(["Autonomy", "Field"]));
-    /* The filters that are closed rows keep their places: Autonomy takes Field's slot, and Field the one Autonomy had. */
-    expect(stored().order[0]).toBe("autonomy");
-    expect(stored().order.indexOf("field")).toBeGreaterThan(stored().order.indexOf("task"));
+    await openFilters();
+    const before = sectionNames();
+    expect(before.slice(0, 2)).toEqual(["Field", "Autonomy"]);
+    fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
+    expect(sectionNames()).toEqual(before);
+    expect(stored()).toBeNull();
     first.unmount();
     renderAt("/builds");
     await screen.findByRole("link", { name: "Build 1" });
-    expect(sectionNames().slice(0, 2)).toEqual(["Autonomy", "Field"]);
-  });
-
-  it("keeps a filter opened, and a checklist's height, for the next visit", async () => {
-    renderAt("/builds");
-    fireEvent.click(await screen.findByRole("button", { name: /^Task\s*Any/ }).catch(() => screen.findByRole("button", { name: /^Setting\s*Any/ })));
-    expect(stored().opened).toHaveLength(1);
-    fireEvent.keyDown(screen.getByRole("separator", { name: "Resize Field" }), { key: "End" });
-    await waitFor(() => expect(stored().heights).toEqual({ field: 480 }));
+    await openFilters();
+    expect(sectionNames()).toEqual(before);
   });
 
   it("chooses the Table's columns from the Columns chooser, and keeps them", async () => {
     listBuildsTable.mockResolvedValue({ countsLive: true, builds: [{ ...build(1), classifiedAs: { ...emptyClassification(), derived: { skill: { values: ["no-coding"] } } } }], total: 1 });
     renderAt("/builds");
-    fireEvent.click(await screen.findByRole("button", { name: "Columns: 12 of 24" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Columns: 12 of 28" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "Skill" }));
     expect(await screen.findByRole("columnheader", { name: "Skill" })).toBeTruthy();
     expect(screen.getByText("No coding")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Columns: 13 of 24" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Columns: 13 of 28" })).toBeTruthy();
     fireEvent.click(screen.getByRole("checkbox", { name: "Rebuilds" }));
     await waitFor(() => expect(screen.queryByRole("columnheader", { name: "Rebuilds" })).toBeNull());
     expect(stored().columns).toContain("skill");
@@ -448,7 +483,7 @@ describe("SV-24 P2: the reader's layout", () => {
 
   it("offers no Steps or Sessions column until the list carries the stored counts", async () => {
     renderAt("/builds");
-    fireEvent.click(await screen.findByRole("button", { name: "Columns: 10 of 22" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Columns: 10 of 25" }));
     expect(screen.queryByRole("checkbox", { name: "Steps" })).toBeNull();
     expect(screen.getByRole("checkbox", { name: "Shape" })).toBeTruthy();
   });
@@ -468,30 +503,31 @@ describe("SV-24 P2: the reader's layout", () => {
 
   it("keeps the layout in the reader's own open set, and not in the browser", async () => {
     auth.user = { id: "reader-1" };
-    const own = { id: SET_ID, name: "Mine", search: "shape=agent", isPublic: false, ownerId: "reader-1", layout: { order: ["autonomy"], opened: [], heights: {}, columns: null, calculations: [] }, mine: true, members: 0, member: false };
+    const own = { id: SET_ID, name: "Mine", search: "shape=agent", isPublic: false, ownerId: "reader-1", layout: { columns: null, calculations: [] }, mine: true, members: 0, member: false };
     sets.getFilterSet.mockResolvedValue(own);
     sets.listMyFilterSets.mockResolvedValue([own]);
     sets.saveFilterSetLayout.mockResolvedValue(undefined);
     renderAt(`/builds?shape=agent&set=${SET_ID}`);
     await screen.findByRole("link", { name: "Build 1" });
-    await waitFor(() => expect(sectionNames().slice(0, 2)).toEqual(["Autonomy", "Field"]));
-    fireEvent.keyDown(screen.getByRole("button", { name: "Move Autonomy" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Move down" }));
-    await waitFor(() => expect(sectionNames().slice(0, 2)).toEqual(["Field", "Autonomy"]));
+    await waitFor(() => expect(sets.getFilterSet).toHaveBeenCalled());
+    fireEvent.click(await screen.findByRole("button", { name: /^Columns:/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Skill" }));
+    expect(await screen.findByRole("columnheader", { name: "Skill" })).toBeTruthy();
     await waitFor(() => expect(sets.saveFilterSetLayout).toHaveBeenCalledTimes(1), { timeout: 3000 });
-    expect(sets.saveFilterSetLayout).toHaveBeenCalledWith(SET_ID, "shape=agent", expect.objectContaining({ order: expect.arrayContaining(["field", "autonomy"]) }));
+    expect(sets.saveFilterSetLayout).toHaveBeenCalledWith(SET_ID, "shape=agent", expect.objectContaining({ columns: expect.arrayContaining(["skill"]) }));
     expect(stored()).toBeNull();
   });
 
   it("keeps the layout in the browser when the open set is someone else's", async () => {
     auth.user = { id: "reader-1" };
-    sets.getFilterSet.mockResolvedValue({ id: SET_ID, name: "Theirs", search: "", isPublic: true, ownerId: "maker-9", layout: { order: ["autonomy"], opened: [], heights: {}, columns: null, calculations: [] }, mine: false, members: 3, member: false });
+    sets.getFilterSet.mockResolvedValue({ id: SET_ID, name: "Theirs", search: "", isPublic: true, ownerId: "maker-9", layout: { columns: null, calculations: [] }, mine: false, members: 3, member: false });
     renderAt(`/builds?set=${SET_ID}`);
     await screen.findByRole("link", { name: "Build 1" });
-    expect(sectionNames().slice(0, 2)).toEqual(["Field", "Autonomy"]);
-    fireEvent.keyDown(screen.getByRole("button", { name: "Move Field" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Move down" }));
+    await waitFor(() => expect(sets.getFilterSet).toHaveBeenCalled());
+    fireEvent.click(await screen.findByRole("button", { name: /^Columns:/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Skill" }));
     await waitFor(() => expect(stored()).not.toBeNull());
+    expect(stored().columns).toContain("skill");
     expect(sets.saveFilterSetLayout).not.toHaveBeenCalled();
   });
 });
@@ -545,7 +581,9 @@ describe("BF-02 the updating state", () => {
     expect(screen.getByRole("region", { name: "Builds table" }).getAttribute("aria-busy")).toBe("false");
     const next = held();
     listBuildsTable.mockReturnValueOnce(next.answer);
+    await openFilters();
     fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
+    applyFilters();
     await waitFor(() => expect(address).toBe("/builds?f=field%3Aeducation"));
     await waitFor(() => expect(screen.getByRole("region", { name: "Builds table" }).getAttribute("aria-busy")).toBe("true"));
     expect(screen.getByRole("link", { name: "Build 1" })).toBeTruthy();
@@ -629,5 +667,189 @@ describe("BF-02 one Clear all", () => {
     const empty = await screen.findByTestId("builds-empty");
     expect(within(empty).getByText("No builds here yet.")).toBeTruthy();
     expect(within(empty).queryByRole("button")).toBeNull();
+  });
+});
+
+/* ── BF-08 P2 (A2) ── */
+
+describe("BF-08 draft and Apply", () => {
+  it("ticking values in the dialog does not change the address or ask for the list", async () => {
+    renderAt("/builds?sort=newest");
+    await screen.findByRole("link", { name: "Build 1" });
+    const asked = listBuildsTable.mock.calls.length;
+    await openFilters();
+    fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Law/ }));
+    expect((screen.getByRole("checkbox", { name: /Education/ }) as HTMLInputElement).checked).toBe(true);
+    await waitFor(() => expect(countBuildsTable).toHaveBeenCalled());
+    expect(address).toBe("/builds?sort=newest");
+    expect(listBuildsTable).toHaveBeenCalledTimes(asked);
+    expect(entries).toHaveLength(1);
+  });
+
+  it("the footer says how many builds will match the draft", async () => {
+    countBuildsTable.mockResolvedValue(4);
+    renderAt("/builds");
+    await openFilters();
+    const status = within(screen.getByRole("dialog", { name: "Filters" })).getByRole("status");
+    expect(status.textContent).toBe("2 builds match");
+    fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
+    await waitFor(() => expect(status.textContent).toBe("4 builds match"));
+    expect(countBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ facets: ["field:education"] }));
+  });
+
+  it("Apply navigates once with every draft filter, keeps the view and the sort, and closes the dialog", async () => {
+    renderAt("/builds?view=classification&sort=newest");
+    await screen.findByTestId("builds-classification");
+    const asked = listBuildsTable.mock.calls.length;
+    await openFilters();
+    fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Law/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^Proof/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Within 30 days/ }));
+    applyFilters();
+    await waitFor(() => expect(new URLSearchParams(address.split("?")[1]).getAll("f")).toEqual(["field:education", "field:law"]));
+    const query = new URLSearchParams(address.split("?")[1]);
+    expect([query.get("view"), query.get("sort"), query.get("within")]).toEqual(["classification", "newest", "30"]);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(entries).toHaveLength(2);
+    await waitFor(() => expect(listBuildsTable).toHaveBeenCalledTimes(asked + 1));
+  });
+
+  it("Cancel, Close and Escape discard the draft", async () => {
+    renderAt("/builds");
+    await screen.findByRole("link", { name: "Build 1" });
+    for (const close of [
+      () => closeFilters(),
+      () => fireEvent.click(screen.getByRole("button", { name: "Close" })),
+      () => fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" }),
+    ]) {
+      await openFilters();
+      fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
+      close();
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+      await openFilters();
+      expect((screen.getByRole("checkbox", { name: /Education/ }) as HTMLInputElement).checked).toBe(false);
+      closeFilters();
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    }
+    expect(address).toBe("/builds");
+  });
+
+  it("reopening after Apply starts from the applied filters", async () => {
+    renderAt("/builds");
+    await openFilters();
+    fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
+    applyFilters();
+    await waitFor(() => expect(address).toBe("/builds?f=field%3Aeducation"));
+    await openFilters();
+    expect((screen.getByRole("checkbox", { name: /Education/ }) as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole("button", { name: "Apply" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("Clear all in the dialog clears the draft only; the address changes on Apply", async () => {
+    renderAt("/builds?f=field%3Alaw&sort=newest");
+    await openFilters();
+    const dialog = screen.getByRole("dialog", { name: "Filters" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Clear all" }));
+    expect((screen.getByRole("checkbox", { name: /Law/ }) as HTMLInputElement).checked).toBe(false);
+    expect(address).toBe("/builds?f=field%3Alaw&sort=newest");
+    applyFilters();
+    await waitFor(() => expect(address).toBe("/builds?sort=newest"));
+  });
+
+  it("with no change, Apply is disabled", async () => {
+    renderAt("/builds");
+    await openFilters();
+    expect((screen.getByRole("button", { name: "Apply" }) as HTMLButtonElement).disabled).toBe(true);
+    /* Nothing changed: the dialog says the page's own total and asks for no count (the first screen is as it was). */
+    expect(countBuildsTable).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
+    expect((screen.getByRole("button", { name: "Apply" }) as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
+    expect((screen.getByRole("button", { name: "Apply" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("dragging a range handle updates the address of nothing and asks for one count when the handle is let go", async () => {
+    getCountSpread.mockResolvedValue({ steps: new Map([[2, 4]]), sessions: new Map() });
+    listBuildsTable.mockResolvedValue({ countsLive: true, builds: [build(1)], total: 1 });
+    renderAt("/builds");
+    await openFilters("Structure");
+    const from = await screen.findByRole("slider", { name: "Steps from" });
+    from.focus();
+    // A key press is a change and a commit at once, as a handle let go is.
+    fireEvent.keyDown(from, { key: "ArrowRight" });
+    await waitFor(() => expect(countBuildsTable).toHaveBeenCalledTimes(1));
+    expect(countBuildsTable).toHaveBeenCalledWith(expect.objectContaining({ ranges: { steps: { min: 1 } } }));
+    expect(address).toBe("/builds");
+    expect(entries).toHaveLength(1);
+  });
+});
+
+/* ── BF-08 P3 (C1) ── */
+
+describe("BF-08 lens counts follow the filters", () => {
+  it("with a filter on, the All tab's number equals the number of rows the list reports", async () => {
+    listBuildsTable.mockResolvedValue({ builds: [build(1)], total: 1 });
+    countGalleryLenses.mockImplementation(async (filters?: { facets?: string[] }) => ((filters?.facets?.length ?? 0) > 0 ? { all: 1, proven: 1, rebuilt: 0, unsolved: 0 } : { all: 2, proven: 1, rebuilt: 0, unsolved: 0 }));
+    renderAt("/builds?f=field%3Alaw");
+    await screen.findByRole("heading", { level: 1, name: /^1 / });
+    await waitFor(() => expect(screen.getByRole("tab", { name: /^All/ }).textContent).toBe("All1"));
+    expect(countGalleryLenses).toHaveBeenCalledWith(expect.objectContaining({ facets: ["field:law"] }));
+  });
+
+  it("with no filter, the lens counts are asked once and with the unfiltered key", async () => {
+    renderAt("/builds");
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(countGalleryLenses).toHaveBeenCalledTimes(1);
+    const [filters] = countGalleryLenses.mock.calls[0];
+    expect(hasFilters(filters)).toBe(false);
+    expect(filters).not.toHaveProperty("lens");
+    expect(filters).not.toHaveProperty("sort");
+  });
+});
+
+/* ── BF-09 P4 (F1) ── */
+
+describe("BF-09 Save current", () => {
+  const saveCurrent = async () => {
+    await openFilters("Saved");
+    return screen.findByRole("button", { name: "Save current" }) as Promise<HTMLButtonElement>;
+  };
+
+  beforeEach(() => {
+    auth.user = { id: "reader-1" };
+  });
+
+  it('Save current is disabled when no filter is on and the layout is the default, and a line under it says "Choose a filter or change the columns first."', async () => {
+    renderAt("/builds");
+    const button = await saveCurrent();
+    expect(button.disabled).toBe(true);
+    const line = screen.getByText("Choose a filter or change the columns first.");
+    expect(button.getAttribute("aria-describedby")).toBe(line.id);
+  });
+
+  it('Save current is disabled while the draft differs from what is applied, and the line says "Apply your changes first."', async () => {
+    renderAt("/builds?f=field%3Alaw");
+    await openFilters();
+    fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^Saved/ }));
+    const button = (await screen.findByRole("button", { name: "Save current" })) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    expect(screen.getByText("Apply your changes first.")).toBeTruthy();
+  });
+
+  it("Save current is enabled with a filter on", async () => {
+    renderAt("/builds?f=field%3Alaw");
+    const button = await saveCurrent();
+    expect(button.disabled).toBe(false);
+    expect(button.getAttribute("aria-describedby")).toBeNull();
+  });
+
+  it("Save current is enabled with a changed layout and no filter", async () => {
+    localStorage.setItem("builds:layout:v1", JSON.stringify({ columns: ["build", "skill"], calculations: [] }));
+    renderAt("/builds");
+    const button = await saveCurrent();
+    expect(button.disabled).toBe(false);
   });
 });

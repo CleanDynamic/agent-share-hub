@@ -16,6 +16,7 @@ import { Link } from "react-router-dom";
 import { LampBar } from "@/components/brand/LampDot";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { Checkbox } from "@/components/brand/Checkbox";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -28,6 +29,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ActiveFilterChip } from "@/components/vision/ActiveFilterChip";
 import { Empty } from "@/components/vision/Empty";
 import type { CalcKind } from "@/lib/build/buildsLayout";
+import { RANGE_FILTERS } from "@/lib/build/galleryRanges";
 import { STALE_AFTER_DAYS } from "@/lib/build/signals";
 import { TextTabs, type TextTab } from "@/components/vision/TextTabs";
 import { ring } from "@/lib/theme/controls";
@@ -35,21 +37,22 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 
-import { BuildsControl, BuildsTextButton, TABLE_ROW, UpdatingStatus, ellipsis, hitArea, text } from "./BuildsFrame";
+import { BuildsControl, BuildsTextButton, FiltersButton, TABLE_ROW, UpdatingStatus, ellipsis, hitArea, text } from "./BuildsFrame";
 
 /* ── props ── */
 
 /** The board's twelve columns. */
 export type BoardColumnId = "build" | "built" | "field" | "tools" | "steps" | "sessions" | "reproductions" | "confirmed" | "runs" | "rebuilds" | "open" | "cost";
 
-/** SV-24 P2: the twelve more the Columns chooser offers, 24 in all: Shape and the classification facets that are not already a column. */
-export type ExtraColumnId = "shape" | "task" | "setting" | "role" | "technique" | "modality" | "method" | "autonomy" | "data" | "oversight" | "age" | "skill";
+/** SV-24 P2: the twelve more the Columns chooser offers, 24 in all: Shape and the classification facets that are not already a column.
+    BF-10: and four more, 28: Works on model, Likes, Patterns (each a filter with no column till now) and Published (Newest's). */
+export type ExtraColumnId = "shape" | "task" | "setting" | "role" | "technique" | "modality" | "method" | "autonomy" | "data" | "oversight" | "age" | "skill" | "works" | "likes" | "patterns" | "published";
 
 export type ColumnId = BoardColumnId | ExtraColumnId;
 
 export const COLUMN_ORDER: readonly ColumnId[] = ["build", "built", "field", "tools", "steps", "sessions", "reproductions", "confirmed", "runs", "rebuilds", "open", "cost"];
 
-export const EXTRA_COLUMNS: readonly ExtraColumnId[] = ["shape", "task", "setting", "role", "technique", "modality", "method", "autonomy", "data", "oversight", "age", "skill"];
+export const EXTRA_COLUMNS: readonly ExtraColumnId[] = ["shape", "task", "setting", "role", "technique", "modality", "method", "autonomy", "data", "oversight", "age", "skill", "works", "likes", "patterns", "published"];
 
 /** Every column, the extras after the board's twelve (so the footer's groups stay together). */
 export const ALL_COLUMNS: readonly ColumnId[] = [...COLUMN_ORDER, ...EXTRA_COLUMNS];
@@ -79,10 +82,14 @@ export const COLUMN_NAME: Record<ColumnId, string> = {
   oversight: "Oversight",
   age: "Age",
   skill: "Skill",
+  works: "Works on model",
+  likes: RANGE_FILTERS.likes.name,
+  patterns: "Patterns",
+  published: "Published",
 };
 const HEAD = COLUMN_NAME;
 
-const RIGHT: ReadonlySet<ColumnId> = new Set(["steps", "sessions", "reproductions", "rebuilds"]);
+const RIGHT: ReadonlySet<ColumnId> = new Set(["steps", "sessions", "reproductions", "rebuilds", "likes"]);
 
 export interface TableTool {
   id: string;
@@ -110,6 +117,9 @@ export interface TableRowView {
   cost: string;
   /** SV-24 P2: the extra columns' values; absent where the dev page draws only the board's twelve. */
   extra?: Readonly<Partial<Record<ExtraColumnId, string>>>;
+  /** BF-10: the Likes number, and the lists Works on model and Patterns are joined from, for the footer's calculations. */
+  likes?: number;
+  lists?: Readonly<Partial<Record<"works" | "patterns", readonly string[]>>>;
 }
 
 export interface SortOption {
@@ -153,7 +163,8 @@ export interface CalculationOption {
 }
 
 export interface ColumnsMenu {
-  options: readonly { id: ColumnId; name: string; on: boolean; locked?: boolean }[];
+  /** BF-10 (C9): `group` heads the options under it; options of a group come together. */
+  options: readonly { id: ColumnId; name: string; group?: string; on: boolean; locked?: boolean }[];
   onToggle: (id: ColumnId) => void;
   /** Back to the default twelve; drawn only while the columns are not. */
   onReset?: () => void;
@@ -185,6 +196,11 @@ export interface BuildsTableViewProps {
   empty?: ReactNode;
   /** BF-02 (C2): the rows are the last address's, kept until the new page lands. */
   updating?: boolean;
+  /** BF-06 (A1): how many filters hold a value, for the Filters button, and the press that opens the dialog. */
+  activeCount: number;
+  onOpenFilters: () => void;
+  /** BF-09 (A8): the open saved set's name, on the Filters button. */
+  setName?: string;
 }
 
 /* ── the lens row ── */
@@ -211,8 +227,17 @@ function SortMenu({ sort }: { sort: BuildsTableViewProps["sort"] }) {
   );
 }
 
-/** The Columns chooser: a checklist of every column in a popover. Build is always on. */
+/** The Columns chooser: a checklist of every column in a popover, by group. Build is always on. BF-10 (C9): it opens to the left of
+    its button, so the column a tick adds is not under it. On a phone there is no room to its left (Radix kept it there, 18px off
+    the screen at 412 wide), so it opens under the button. */
 function ColumnsChooser({ label, menu }: { label: string; menu: ColumnsMenu }) {
+  const phone = useIsPhone();
+  const groups: { name: string | undefined; options: ColumnsMenu["options"][number][] }[] = [];
+  for (const option of menu.options) {
+    const last = groups.at(-1);
+    if (last && last.name === option.group) last.options.push(option);
+    else groups.push({ name: option.group, options: [option] });
+  }
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -220,13 +245,18 @@ function ColumnsChooser({ label, menu }: { label: string; menu: ColumnsMenu }) {
           <span style={{ color: t.label }}>Columns</span> {label}
         </BuildsControl>
       </PopoverTrigger>
-      <PopoverContent align="end" sideOffset={6} style={{ width: 320, maxWidth: "calc(100vw - 28px)", padding: 16 }}>
-        <div role="group" aria-label="Columns" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", columnGap: 16 }}>
-          {menu.options.map((option) => (
-            <label key={option.id} style={{ display: "grid", gridTemplateColumns: "16px 1fr", columnGap: 10, alignItems: "center", minHeight: 32, cursor: option.locked ? "default" : "pointer", ...text(12.5, 400, option.on ? t.text : t.text2) }}>
-              <Checkbox checked={option.on} disabled={option.locked} onChange={() => menu.onToggle(option.id)} />
-              <span>{option.name}</span>
-            </label>
+      <PopoverContent side={phone ? "bottom" : "left"} align={phone ? "end" : "start"} sideOffset={6} collisionPadding={14} style={{ width: 240, maxWidth: "calc(100vw - 28px)", maxHeight: "min(560px, calc(100dvh - 120px), var(--radix-popover-content-available-height))", overflowY: "auto", padding: 16 }}>
+        <div role="group" aria-label="Columns">
+          {groups.map((group, at) => (
+            <div key={group.name ?? at} role={group.name ? "group" : undefined} aria-label={group.name}>
+              {group.name ? <div style={{ ...text(12, 400, t.label), margin: `${at === 0 ? 0 : 12}px 0 4px` }}>{group.name}</div> : null}
+              {group.options.map((option) => (
+                <label key={option.id} style={{ display: "grid", gridTemplateColumns: "16px 1fr", columnGap: 10, alignItems: "center", minHeight: 32, cursor: option.locked ? "default" : "pointer", ...text(12.5, 400, option.on ? t.text : t.text2) }}>
+                  <Checkbox checked={option.on} disabled={option.locked} onChange={() => menu.onToggle(option.id)} />
+                  <span>{option.name}</span>
+                </label>
+              ))}
+            </div>
           ))}
         </div>
         {menu.onReset ? (
@@ -239,12 +269,13 @@ function ColumnsChooser({ label, menu }: { label: string; menu: ColumnsMenu }) {
   );
 }
 
-function LensRow({ lenses, lens, onLens, sort, columnsLabel, columnsMenu, updating }: Pick<BuildsTableViewProps, "lenses" | "lens" | "onLens" | "sort" | "columnsLabel" | "columnsMenu" | "updating">) {
+function LensRow({ lenses, lens, onLens, sort, columnsLabel, columnsMenu, updating, activeCount, onOpenFilters, setName }: Pick<BuildsTableViewProps, "lenses" | "lens" | "onLens" | "sort" | "columnsLabel" | "columnsMenu" | "updating" | "activeCount" | "onOpenFilters" | "setName">) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12, borderBottom: `1px solid ${t.hairline}` }}>
       <TextTabs tabs={lenses} value={lens} onChange={onLens} label="Lens" rule={false} />
       <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
         <UpdatingStatus updating={updating} />
+        <FiltersButton activeCount={activeCount} setName={setName} onClick={onOpenFilters} />
         <SortMenu sort={sort} />
         {columnsLabel && columnsMenu ? (
           <ColumnsChooser label={columnsLabel} menu={columnsMenu} />
@@ -540,15 +571,15 @@ function Footer({ columns, footer }: { columns: readonly ColumnId[]; footer: Tab
 /* ── the table ── */
 
 export function BuildsTableView(props: BuildsTableViewProps) {
-  const { lenses, lens, onLens, sort, columnsLabel, columnsMenu, chips, onRemoveChip, onClearAll, columns, rows, sortColumn, sortableBy, footer, onMore, loadingMore, empty, updating } = props;
+  const { lenses, lens, onLens, sort, columnsLabel, columnsMenu, chips, onRemoveChip, onClearAll, columns, rows, sortColumn, sortableBy, footer, onMore, loadingMore, empty, updating, activeCount, onOpenFilters, setName } = props;
   return (
     <div data-testid="builds-table">
-      <LensRow lenses={lenses} lens={lens} onLens={onLens} sort={sort} columnsLabel={columnsLabel} columnsMenu={columnsMenu} updating={updating} />
+      <LensRow lenses={lenses} lens={lens} onLens={onLens} sort={sort} columnsLabel={columnsLabel} columnsMenu={columnsMenu} updating={updating} activeCount={activeCount} onOpenFilters={onOpenFilters} setName={setName} />
       <ActiveFilters chips={chips} onRemove={onRemoveChip} onClearAll={onClearAll} />
       {rows.length === 0 && empty ? (
         <div style={{ marginTop: 20 }}>{empty}</div>
       ) : (
-        <div role="region" aria-label="Builds table" aria-busy={updating === true} tabIndex={0} style={{ marginTop: 20, overflowX: "auto" }}>
+        <div role="region" aria-label="Builds table" aria-busy={updating === true} tabIndex={0} style={{ marginTop: 20, overflowX: "auto", scrollbarWidth: "thin", scrollbarColor: `${t.label} transparent` }}>
           <table style={{ width: "100%", minWidth: 1000, borderCollapse: "collapse", ...text(13, 400, t.text) }}>
             <thead>
               <tr>

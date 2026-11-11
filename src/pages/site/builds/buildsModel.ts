@@ -1,6 +1,6 @@
 /* SV-11: Builds' words and shapes, pure: what the list is asked for, and how a row, a filter and the head are put. */
 
-import { BUILDS_TABLE_PAGE_SIZE, GALLERY_SHAPES, type BuildsTableBuild, type CountSpread, type WorksOnModelCount, type BuildsTableOptions, type BuildsTablePage, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
+import { BUILDS_TABLE_PAGE_SIZE, GALLERY_SHAPES, hasFilters, type LensCountFilters, type BuildsTableBuild, type CountSpread, type WorksOnModelCount, type BuildsTableOptions, type BuildsTablePage, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
 import { CONFIRMED_WITHIN, DEFAULT_GALLERY_SORT, type ConfirmedState, type ConfirmedWithin, type GalleryParams } from "@/lib/build/galleryParams";
 import { RANGE_FILTERS, RANGE_KEYS, rangeWords, type NumberRange, type RangeKey } from "@/lib/build/galleryRanges";
 import { PATTERN_LABEL, type Pattern } from "@/lib/build/patterns";
@@ -12,7 +12,7 @@ import { modelById, modelLabel } from "@/lib/models/registry";
 import { toolFor } from "@/lib/tools/registry";
 import { shortAgo } from "@/pages/site/home/homeModel";
 
-import type { CatalogueGroup, FilterSection, RangeSection, WordOption, WordOrder } from "./BuildsFiltersView";
+import { FILTER_GROUPS, type FilterGroup, type FilterSection, type RangeSection, type WordOption, type WordOrder } from "./BuildsFiltersView";
 import { CALC_KINDS, type CalcKind, type Calculation } from "@/lib/build/buildsLayout";
 
 import { ALL_COLUMNS, COLUMN_NAME, type CalculationOption, type ColumnId, type ColumnsMenu, type ExtraColumnId, type TableCalculation, type TableChip, type TableFooterView, type TableRowView, type TableTool } from "./BuildsTableView";
@@ -35,6 +35,14 @@ export function listParamsOf(params: GalleryParams): BuildsTableOptions {
   };
 }
 
+/** BF-08 (C1): what the lens counts are asked with: the list's filters, without the lens and the sort. */
+export function lensCountParams(params: GalleryParams): LensCountFilters {
+  const { lens: _lens, sort: _sort, ...filters } = listParamsOf(params);
+  return filters;
+}
+
+export { hasFilters };
+
 /** The next page's offset, or none when the last page was short. */
 export function nextTableOffset(last: BuildsTablePage, pages: readonly BuildsTablePage[]): number | undefined {
   return last.builds.length === BUILDS_TABLE_PAGE_SIZE ? pages.length * BUILDS_TABLE_PAGE_SIZE : undefined;
@@ -55,6 +63,11 @@ function panelValues(facet: Facet) {
 
 export type PanelOrder = "az" | "count";
 
+/** A checklist's values in the chosen order: most builds first (then by name), or by name. */
+function inOrder(options: WordOption[], order: PanelOrder): WordOption[] {
+  return order === "count" ? options.sort((a, b) => (b.count ?? 0) - (a.count ?? 0) || a.label.localeCompare(b.label)) : options.sort((a, b) => a.label.localeCompare(b.label));
+}
+
 /** One facet's checklist: every value with a build or chosen, in the chosen order (scales keep theirs). */
 export function facetOptions(facet: Facet, counts: Record<string, number>, chosen: readonly string[], order: PanelOrder): WordOption[] {
   const options = panelValues(facet)
@@ -62,13 +75,13 @@ export function facetOptions(facet: Facet, counts: Record<string, number>, chose
     .filter((option) => option.count > 0 || chosen.includes(option.key))
     .map((option) => ({ ...option, checked: chosen.includes(option.key) }));
   if (SCALE_FACETS.includes(facet)) return options;
-  return order === "count" ? options.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)) : options.sort((a, b) => a.label.localeCompare(b.label));
+  return inOrder(options, order);
 }
 
 const keysOf = (facets: readonly string[], facet: Facet) => facets.filter((key) => key.startsWith(`${facet}:`));
 
-/** What a closed filter says it holds: "Any", the one value, or "n chosen". */
-function heldValue(facet: Facet, facets: readonly string[]): string {
+/** What a filter says it holds: "Any", the one value, or "n chosen". */
+export function heldValue(facet: Facet, facets: readonly string[]): string {
   const keys = keysOf(facets, facet);
   if (keys.length === 0) return "Any";
   if (keys.length > 1) return `${keys.length} chosen`;
@@ -82,9 +95,8 @@ export interface PanelState {
   open: boolean;
   counts: Record<string, number> | null;
   patterns: readonly { value: Pattern; count: number }[] | null;
-  /** The filters opened on this visit, beyond those opened by default and by holding a value. */
-  opened: ReadonlySet<string>;
-  orders: Readonly<Record<string, PanelOrder>>;
+  /** BF-07 (A7): one order for every checklist that is not a scale. */
+  order: PanelOrder;
   /** SV-23: the number filters, drawn once their spread has answered (the stored counts are live). */
   ranges?: Partial<Record<RangeKey, NumberRange>>;
   spread?: CountSpread | null;
@@ -118,14 +130,16 @@ export function histogramOf(counts: ReadonlyMap<number, number> | undefined, cap
 }
 
 /** One number filter: the histogram, the slider's two ends and the range in words. */
-function rangeSection(key: RangeKey, spread: CountSpread, range: NumberRange | undefined): RangeSection {
+function rangeSection(key: RangeKey, spread: CountSpread, range: NumberRange | undefined, group: FilterGroup): RangeSection {
   const { cap, name } = RANGE_FILTERS[key];
   return {
     kind: "range",
     id: key,
     name,
+    group,
     valueText: range ? rangeWords(range) : "Any",
     histogram: histogramOf(spread[key], cap, range),
+    counted: [...(spread[key]?.values() ?? [])].reduce((sum, builds) => sum + builds, 0),
     min: 0,
     max: cap,
     value: [range?.min ?? 0, range?.max ?? cap],
@@ -144,105 +158,59 @@ export function withRange(params: GalleryParams, key: RangeKey, value: readonly 
   return { ...params, ranges: Object.keys(ranges).length > 0 ? ranges : undefined };
 }
 
-/** Field and Autonomy are open by default, as the board draws them; a filter holding a value is open. */
-const OPEN_BY_DEFAULT = new Set(["field", "autonomy"]);
-
 /**
- * The live panel: the classification filters once their counts have answered, Tools and stack, Shape, Patterns once the
- * column is live, and Still open. The board's number filters, Works on model and Last confirmed are SV-23's.
+ * The live panel, every filter drawn in its group: the classification filters once their counts have answered, the proof (the
+ * number filters once their spread has answered, Works on model once its counts have), Shape, Steps and Sessions, Patterns once
+ * the column is live, and Still open.
  */
 export function panelSections(state: PanelState): FilterSection[] {
-  const isOpen = (id: string, holds: boolean) => holds || OPEN_BY_DEFAULT.has(id) || state.opened.has(id);
   const sections: FilterSection[] = [];
   if (state.counts) {
     const counts = state.counts;
     for (const facet of [...PANEL_FACETS.slice(0, 9), "stack" as Facet, ...PANEL_FACETS.slice(9)]) {
-      const chosen = keysOf(state.facets, facet);
       const name = FACET_LABEL[facet];
-      if (!isOpen(facet, chosen.length > 0)) {
-        sections.push({ kind: "closed", id: facet, name, value: heldValue(facet, state.facets) });
-        continue;
-      }
       if (facet === "autonomy") {
+        const chosen = keysOf(state.facets, facet);
         sections.push({
           kind: "scale",
           id: facet,
           name,
+          group: "Classification",
           segments: panelValues(facet).map((value) => ({ key: `${facet}:${value.id}`, label: value.label, on: chosen.includes(`${facet}:${value.id}`) })),
-          endLabels: [panelValues(facet)[0].label, panelValues(facet).at(-1)!.label],
         });
         continue;
       }
-      const order: WordOrder = SCALE_FACETS.includes(facet) ? "scale" : (state.orders[facet] ?? "az");
-      sections.push({ kind: "word", id: facet, name, order, options: facetOptions(facet, counts, state.facets, order === "scale" ? "az" : order) });
+      const order: WordOrder = SCALE_FACETS.includes(facet) ? "scale" : state.order;
+      sections.push({ kind: "word", id: facet, name, group: "Classification", order, value: heldValue(facet, state.facets), options: facetOptions(facet, counts, state.facets, order === "scale" ? "az" : order) });
     }
   }
-  const rangeSections = (keys: readonly RangeKey[]) => {
+  const rangeSections = (keys: readonly RangeKey[], group: FilterGroup) => {
     if (!state.spread) return;
-    for (const key of keys) {
-      const range = state.ranges?.[key];
-      if (isOpen(key, range !== undefined)) sections.push(rangeSection(key, state.spread, range));
-      else sections.push({ kind: "closed", id: key, name: RANGE_FILTERS[key].name, value: "Any" });
-    }
+    for (const key of keys) sections.push(rangeSection(key, state.spread, state.ranges?.[key], group));
   };
   /* SV-23 P2, the proof: Reproductions, Works on model, Last confirmed, Confirmed or stale, Rebuilds, Likes. */
-  rangeSections(["reproductions"]);
+  rangeSections(["reproductions"], "Proof");
   if (state.worksOn) {
     const chosen = state.model ? modelById(state.model) : null;
-    if (isOpen("model", chosen !== null)) {
-      const options = state.worksOn.map((entry) => ({ key: entry.model.id, label: entry.model.name, count: entry.builds, checked: entry.model.id === state.model }));
-      if (chosen && !options.some((option) => option.checked)) options.push({ key: chosen.id, label: chosen.name, count: 0, checked: true });
-      sections.push({ kind: "word", id: "model", name: "Works on model", order: "count", options });
-    } else sections.push({ kind: "closed", id: "model", name: "Works on model", value: "Any" });
+    const options = state.worksOn.map((entry) => ({ key: entry.model.id, label: entry.model.name, count: entry.builds, checked: entry.model.id === state.model }));
+    if (chosen && !options.some((option) => option.checked)) options.push({ key: chosen.id, label: chosen.name, count: 0, checked: true });
+    sections.push({ kind: "word", id: "model", name: "Works on model", group: "Proof", order: state.order, value: chosen?.name ?? "Any", options: inOrder(options, state.order) });
   }
-  sections.push(
-    isOpen("within", state.within !== undefined)
-      ? { kind: "word", id: "within", name: "Last confirmed", order: "scale", options: CONFIRMED_WITHIN.map((days) => ({ key: `within:${days}`, label: WITHIN_WORDS(days), checked: state.within === days })) }
-      : { kind: "closed", id: "within", name: "Last confirmed", value: "Any" },
-  );
-  sections.push(
-    isOpen("state", state.confirmState !== undefined)
-      ? { kind: "word", id: "state", name: "Confirmed or stale", order: "scale", options: (["confirmed", "stale"] as const).map((entry) => ({ key: `state:${entry}`, label: STATE_WORDS[entry].option, checked: state.confirmState === entry })) }
-      : { kind: "closed", id: "state", name: "Confirmed or stale", value: state.confirmState ? STATE_WORDS[state.confirmState].chip : "Any" },
-  );
-  rangeSections(["rebuilds", "likes"]);
-  const shapeOpen = isOpen("shape", state.shapes.length > 0);
-  sections.push(
-    shapeOpen
-      ? { kind: "word", id: "shape", name: "Shape", order: "az", options: GALLERY_SHAPES.map((shape) => ({ key: shape, label: shapeWord(shape), count: 0, checked: state.shapes.includes(shape) })) }
-      : { kind: "closed", id: "shape", name: "Shape", value: state.shapes.length === 1 ? shapeWord(state.shapes[0]) : state.shapes.length > 1 ? `${state.shapes.length} chosen` : "Any" },
-  );
-  rangeSections(["steps", "sessions"]);
+  sections.push({ kind: "word", id: "within", name: "Last confirmed", group: "Proof", order: "scale", value: state.within !== undefined ? WITHIN_WORDS(state.within) : "Any", options: CONFIRMED_WITHIN.map((days) => ({ key: `within:${days}`, label: WITHIN_WORDS(days), checked: state.within === days })) });
+  sections.push({ kind: "word", id: "state", name: "Confirmed or stale", group: "Proof", order: "scale", value: state.confirmState ? STATE_WORDS[state.confirmState].chip : "Any", options: (["confirmed", "stale"] as const).map((entry) => ({ key: `state:${entry}`, label: STATE_WORDS[entry].option, checked: state.confirmState === entry })) });
+  rangeSections(["rebuilds", "likes"], "Proof");
+  const shapeValue = state.shapes.length === 1 ? shapeWord(state.shapes[0]) : state.shapes.length > 1 ? `${state.shapes.length} chosen` : "Any";
+  sections.push({ kind: "word", id: "shape", name: "Shape", group: "Structure", order: state.order, value: shapeValue, options: inOrder(GALLERY_SHAPES.map((shape) => ({ key: shape, label: shapeWord(shape), count: 0, checked: state.shapes.includes(shape) })), state.order) });
+  rangeSections(["steps", "sessions"], "Structure");
   if (state.patterns) {
-    const patternOpen = isOpen("pattern", state.pattern !== undefined);
-    sections.push(
-      patternOpen
-        ? { kind: "word", id: "pattern", name: "Patterns", order: "count", options: state.patterns.map((entry) => ({ key: entry.value, label: PATTERN_LABEL[entry.value], count: entry.count, checked: state.pattern === entry.value })) }
-        : { kind: "closed", id: "pattern", name: "Patterns", value: state.pattern ? PATTERN_LABEL[state.pattern] : "Any" },
-    );
+    const options = state.patterns.map((entry) => ({ key: entry.value, label: PATTERN_LABEL[entry.value], count: entry.count, checked: state.pattern === entry.value }));
+    sections.push({ kind: "word", id: "pattern", name: "Patterns", group: "Structure", order: state.order, value: state.pattern ? PATTERN_LABEL[state.pattern] : "Any", options: inOrder(options, state.order) });
   }
-  sections.push(
-    isOpen("open", state.open)
-      ? { kind: "word", id: "open", name: "Still open", order: "az", options: [{ key: "open", label: "Has a still-open topic", count: 0, checked: state.open }] }
-      : { kind: "closed", id: "open", name: "Still open", value: state.open ? "Has one" : "Any" },
-  );
-  return sections;
-}
-
-/** The catalogue on the live page: only the filters that work, by group. */
-export function liveCatalogue(classified: boolean, patterns: boolean, ranges = false, models = false): CatalogueGroup[] {
-  const groups: CatalogueGroup[] = [];
-  if (classified) {
-    const names = [...PANEL_FACETS.slice(0, 9), "stack" as Facet, ...PANEL_FACETS.slice(9)].map((facet) => FACET_LABEL[facet]);
-    groups.push({ name: "Classification", count: names.length, items: names.join(", ") });
-  }
-  const named = (keys: readonly RangeKey[]) => (ranges ? keys.map((key) => RANGE_FILTERS[key].name) : []);
-  const proof = [...named(["reproductions"]), ...(models ? ["Works on model"] : []), "Last confirmed", "Confirmed or stale", ...named(["rebuilds", "likes"])];
-  groups.push({ name: "Proof", count: proof.length, items: proof.join(", ") });
-  const structure = ["Shape", ...named(["steps", "sessions"]), ...(patterns ? ["Patterns"] : [])];
-  groups.push({ name: "Structure", count: structure.length, items: structure.join(", ") });
-  groups.push({ name: "OpenBuilds", count: 1, items: "Still open" });
-  return groups;
+  sections.push({ kind: "word", id: "open", name: "Still open", group: "OpenBuilds", order: "az", value: state.open ? "Has one" : "Any", options: [{ key: "open", label: "Has a still-open topic", count: 0, checked: state.open }] });
+  /* BF-07 (A4, A5): within each group a checklist with nothing to choose follows the rest. Nothing else reorders, and nothing a
+     reader does moves a filter: holding a value is not a place. */
+  const empty = (section: FilterSection) => (section.kind === "word" && section.options.length === 0 ? 1 : 0);
+  return sections.sort((a, b) => FILTER_GROUPS.indexOf(a.group) - FILTER_GROUPS.indexOf(b.group) || empty(a) - empty(b));
 }
 
 /** "App", "Workflow": a shape as a word. */
@@ -339,6 +307,18 @@ export function tableRow(build: BuildsTableBuild, now: number, extras: readonly 
   }
   const ago = build.lastConfirmedAt ? shortAgo(build.lastConfirmedAt, now) : "";
   const model = modelLabel(build.lastConfirmedModel);
+  /* BF-10: the four columns the filters had without one. */
+  const works = [...new Set((build.workedModels ?? []).map(modelLabel).filter(Boolean))];
+  const patterns = (build.patterns ?? []).map((pattern) => PATTERN_LABEL[pattern as Pattern] ?? pattern);
+  const published = build.publishedAt ? agoWords(shortAgo(build.publishedAt, now)) : "";
+  const extraOf = (id: ExtraColumnId): string => {
+    if (id === "shape") return shapeWord(build.shape);
+    if (id === "works") return works.length === 0 ? "" : `${works.slice(0, 2).join(", ")}${works.length > 2 ? ` + ${works.length - 2}` : ""}`;
+    if (id === "likes") return String(build.likeCount ?? 0);
+    if (id === "patterns") return patterns.join(", ");
+    if (id === "published") return published;
+    return first(id);
+  };
   return {
     id: build.id,
     href: `/b2/${build.slug}`,
@@ -351,14 +331,19 @@ export function tableRow(build: BuildsTableBuild, now: number, extras: readonly 
     sessions: build.sessionCount ?? null,
     reproductions: build.reproductionCount,
     lit: build.reproductionCount > 0 && !isStale({ last_confirmed_at: build.lastConfirmedAt, published_at: build.publishedAt }, now),
-    confirmed: ago ? `${ago === "now" ? "just now" : `${ago} ago`}${model ? ` on ${model}` : ""}` : "",
+    confirmed: ago ? `${agoWords(ago)}${model ? ` on ${model}` : ""}` : "",
     runs: build.runs ?? [],
     rebuilds: build.rebuildCount,
     open: build.open.count === 0 ? "" : `${build.open.count} open`,
     cost: first("cost"),
-    ...(extras.length > 0 ? { extra: Object.fromEntries(extras.map((id) => [id, id === "shape" ? shapeWord(build.shape) : first(id)])) } : null),
+    ...(extras.length > 0 ? { extra: Object.fromEntries(extras.map((id) => [id, extraOf(id)])) } : null),
+    likes: build.likeCount ?? 0,
+    lists: { works, patterns },
   };
 }
+
+/** "2d ago", "just now": a short age as the Table writes it. */
+const agoWords = (ago: string): string => (ago === "now" ? "just now" : ago ? `${ago} ago` : "");
 
 /** The live columns: the board's, less Steps and Sessions, which wait for the stored counts. */
 export const LIVE_COLUMNS: readonly ColumnId[] = ["build", "built", "field", "tools", "reproductions", "confirmed", "runs", "rebuilds", "open", "cost"];
@@ -370,9 +355,9 @@ export function columnsFor(countsLive: boolean): readonly ColumnId[] {
 
 /* ── the columns the reader chose (SV-24 P2) ── */
 
-/** The columns the chooser offers: all 24, less Steps and Sessions until the list carries the stored counts. */
+/** The columns the chooser offers: all 28, less Steps, Sessions and Works on model until the list carries the stored counts. */
 export function availableColumns(countsLive: boolean): ColumnId[] {
-  return ALL_COLUMNS.filter((id) => countsLive || (id !== "steps" && id !== "sessions"));
+  return ALL_COLUMNS.filter((id) => countsLive || (id !== "steps" && id !== "sessions" && id !== "works"));
 }
 
 /** The columns drawn: the default twelve, or the ones the reader kept, always with Build, always in the table's own order. */
@@ -385,9 +370,22 @@ export function chosenColumns(saved: readonly string[] | null, countsLive: boole
 /** "12 of 24". */
 export const columnsLabel = (chosen: readonly ColumnId[], countsLive: boolean): string => `${chosen.length} of ${availableColumns(countsLive).length}`;
 
-/** The chooser's checklist. */
+/** BF-10 (C9): the chooser's groups, the dialog's four after Identity, each in the order it lists its columns. */
+export type ColumnGroup = "Identity" | "Classification" | "Proof" | "Structure" | "OpenBuilds";
+const COLUMN_GROUPS: readonly (readonly [ColumnGroup, readonly ColumnId[]])[] = [
+  ["Identity", ["build", "published"]],
+  ["Classification", ["built", "field", "tools", "cost", "task", "setting", "role", "technique", "modality", "method", "autonomy", "data", "oversight", "age", "skill"]],
+  ["Proof", ["reproductions", "works", "confirmed", "runs", "rebuilds", "likes"]],
+  ["Structure", ["shape", "steps", "sessions", "patterns"]],
+  ["OpenBuilds", ["open"]],
+];
+export const COLUMN_GROUP = Object.fromEntries(COLUMN_GROUPS.flatMap(([group, ids]) => ids.map((id) => [id, group]))) as Record<ColumnId, ColumnGroup>;
+
+/** The chooser's checklist, by group. */
 export function columnsMenu(chosen: readonly ColumnId[], countsLive: boolean, onToggle: (id: ColumnId) => void, onReset?: () => void): ColumnsMenu {
-  return { options: availableColumns(countsLive).map((id) => ({ id, name: COLUMN_NAME[id], on: chosen.includes(id), ...(id === "build" ? { locked: true } : null) })), onToggle, onReset };
+  const offered = new Set(availableColumns(countsLive));
+  const options = COLUMN_GROUPS.flatMap(([group, ids]) => ids.filter((id) => offered.has(id)).map((id) => ({ id, name: COLUMN_NAME[id], group, on: chosen.includes(id), ...(id === "build" ? { locked: true } : null) })));
+  return { options, onToggle, onReset };
 }
 
 /** The chosen columns with one turned on or off. Build stays. */
@@ -403,6 +401,7 @@ const NUMBERS: Partial<Record<ColumnId, (row: TableRowView) => number | null>> =
   sessions: (row) => row.sessions,
   reproductions: (row) => row.reproductions,
   rebuilds: (row) => row.rebuilds,
+  likes: (row) => row.likes ?? null,
 };
 
 const WORDS: Partial<Record<ColumnId, (row: TableRowView) => string[]>> = {
@@ -411,6 +410,9 @@ const WORDS: Partial<Record<ColumnId, (row: TableRowView) => string[]>> = {
   tools: (row) => row.tools.map((tool) => tool.name),
   cost: (row) => [row.cost],
   ...Object.fromEntries((["shape", "task", "setting", "role", "technique", "modality", "method", "autonomy", "data", "oversight", "age", "skill"] as const).map((id) => [id, (row: TableRowView) => [row.extra?.[id] ?? ""]])),
+  /* BF-10: a list's own values, not the joined cell. */
+  works: (row) => [...(row.lists?.works ?? [])],
+  patterns: (row) => [...(row.lists?.patterns ?? [])],
 };
 
 export const CALC_WORD: Record<CalcKind, string> = { sum: "Sum", median: "Median", common: "Most common" };

@@ -109,7 +109,7 @@ export function visionBuildsClassificationProps(over: Partial<BuildsClassificati
     chips: visionBuildsTableProps().table?.chips ?? [],
     onRemoveChip: noop,
     onClearAll: noop,
-    panel: undefined,
+    filters: undefined,
     facets: DEFAULT_FACETS,
     onFacets: noop,
     cards: SAMPLES.map(buildOf).map(({ build, regulated }) => {

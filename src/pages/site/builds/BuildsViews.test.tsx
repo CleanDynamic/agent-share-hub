@@ -2,18 +2,20 @@
 // number filters are keyboard-operable sliders with words, grips are named, sortable heads say aria-sort, the charts
 // have words and their bars are hidden, and a pure view takes everything through props.
 
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 
-import { visionBuildsTableProps } from "@/dev/fixtures/vision/builds-table";
+import { visionBuildsTableProps, visionBuildsTableViewProps } from "@/dev/fixtures/vision/builds-table";
 import { STALE_AFTER_DAYS } from "@/lib/build/signals";
 
 import { ALL_COLUMNS, BuildsTableView, type ColumnId, type TableRowView } from "./BuildsTableView";
 import { BuildsView, type BuildsViewProps } from "./BuildsView";
-import { tableRow } from "./buildsModel";
+import { FiltersButton } from "./BuildsFrame";
+import { chosenColumns, columnsLabel, columnsMenu, tableRow } from "./buildsModel";
 
 /** A wide window: every min-width query matches, so the two columns are drawn. */
 beforeEach(() => {
@@ -39,10 +41,18 @@ function draw(change: (props: BuildsViewProps) => BuildsViewProps = (p) => p) {
   );
 }
 
+/** BF-06: the page with its Filters dialog open, where the panel now is. BF-07: on the group named, Classification first. */
+function drawFilters(change?: (props: BuildsViewProps) => BuildsViewProps, group?: string) {
+  const drawn = draw(change);
+  fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+  if (group) fireEvent.click(screen.getByRole("button", { name: new RegExp(`^${group}`) }));
+  return drawn;
+}
+
 describe("the filter panel", () => {
   it("draws a checklist as checkboxes with their labels, and reports a toggle", () => {
     const onToggleOption = vi.fn();
-    draw((p) => ({ ...p, filters: { ...p.filters, onToggleOption } }));
+    drawFilters((p) => ({ ...p, filters: { ...p.filters, onToggleOption } }));
     const sales = screen.getByRole("checkbox", { name: /Sales/ }) as HTMLInputElement;
     expect(sales.checked).toBe(true);
     fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
@@ -51,7 +61,7 @@ describe("the filter panel", () => {
 
   it("draws a number filter as two sliders that move with the keyboard and say what they hold", () => {
     const onRange = vi.fn();
-    draw((p) => ({ ...p, filters: { ...p.filters, onRange } }));
+    drawFilters((p) => ({ ...p, filters: { ...p.filters, onRange } }), "Proof");
     const from = screen.getByRole("slider", { name: "Reproductions from" });
     expect(from.getAttribute("aria-valuetext")).toBe("3 or more");
     expect(screen.getByRole("slider", { name: "Reproductions to" }).getAttribute("aria-valuetext")).toBe("40 or more");
@@ -60,59 +70,19 @@ describe("the filter panel", () => {
     expect(onRange).toHaveBeenCalledWith("reproductions", [4, 40]);
   });
 
-  it("names each grip, and moves a filter from its menu without a pointer", () => {
-    const onMove = vi.fn();
-    draw((p) => ({ ...p, filters: { ...p.filters, onMove } }));
-    const grip = screen.getByRole("button", { name: "Move Reproductions" });
-    fireEvent.keyDown(grip, { key: "Enter" });
-    fireEvent.click(screen.getByRole("menuitem", { name: "Move down" }));
-    expect(onMove).toHaveBeenCalledWith("reproductions", "down");
-    fireEvent.keyDown(screen.getByRole("button", { name: "Move Reproductions" }), { key: "Enter" });
-    fireEvent.click(screen.getByRole("menuitem", { name: "Move up" }));
-    expect(onMove).toHaveBeenLastCalledWith("reproductions", "up");
-  });
-
-  it("leaves out the move there is no room for", () => {
-    draw((p) => ({ ...p, filters: { ...p.filters, onMove: vi.fn() } }));
-    const open = within(screen.getByTestId("builds-filters")).getAllByRole("button", { name: /^Move / });
-    fireEvent.keyDown(open[0], { key: "Enter" });
-    expect(screen.getByRole("menuitem", { name: "Move up" }).getAttribute("aria-disabled")).toBe("true");
-    expect(screen.getByRole("menuitem", { name: "Move down" }).getAttribute("aria-disabled")).toBeNull();
-  });
-
-  it("draws no grips when filters cannot be moved yet", () => {
-    draw((p) => ({ ...p, filters: { ...p.filters, onMove: undefined } }));
-    expect(screen.queryByRole("button", { name: /^Move / })).toBeNull();
-  });
-
   it("hides the histogram from screen readers and gives the group its words", () => {
-    draw();
+    drawFilters(undefined, "Proof");
     expect(screen.getByRole("group", { name: "Reproductions, 3 or more" })).toBeTruthy();
   });
 
   it("keeps a scale in the taxonomy's order, says so, and toggles a segment", () => {
     const onToggleSegment = vi.fn();
-    draw((p) => ({ ...p, filters: { ...p.filters, onToggleSegment } }));
+    drawFilters((p) => ({ ...p, filters: { ...p.filters, onToggleSegment } }));
     const autonomy = screen.getByRole("region", { name: "Autonomy" });
     expect(within(autonomy).getByText("Scale order")).toBeTruthy();
     fireEvent.click(within(autonomy).getByRole("button", { name: "Fully autonomous" }));
     expect(onToggleSegment).toHaveBeenCalledWith("autonomy", "fully-autonomous");
     expect(within(autonomy).getByRole("button", { name: "AI suggests and you approve" }).getAttribute("aria-pressed")).toBe("true");
-  });
-
-  it("lists the catalogue by group in the one boxed tile", () => {
-    draw();
-    expect(screen.getByText("Classification · 15")).toBeTruthy();
-    expect(screen.getByText("People · 3")).toBeTruthy();
-  });
-
-  it("closes to its heads on a narrow page until opened", () => {
-    window.matchMedia = ((query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined, addListener: () => undefined, removeListener: () => undefined, onchange: null, dispatchEvent: () => false })) as unknown as typeof window.matchMedia;
-    draw();
-    expect(screen.getByText("Filters")).toBeTruthy();
-    expect(screen.queryByRole("checkbox")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Show filters" }));
-    expect(screen.getAllByRole("checkbox").length).toBeGreaterThan(0);
   });
 });
 
@@ -182,7 +152,7 @@ describe("the updating state", () => {
   function table(updating: boolean) {
     return render(
       <MemoryRouter>
-        <BuildsTableView {...visionBuildsTableProps().table!} updating={updating} />
+        <BuildsTableView {...visionBuildsTableViewProps()} updating={updating} />
       </MemoryRouter>,
     );
   }
@@ -210,123 +180,6 @@ describe("the updating state", () => {
 });
 
 /* ── SV-24 P2 ── */
-
-describe("dragging a filter by its grip", () => {
-  const rects: Record<string, number> = {};
-  const centres = [["field", 100], ["reproductions", 300], ["model", 500], ["steps", 700]] as const;
-
-  beforeEach(() => {
-    (window as unknown as { PointerEvent: unknown }).PointerEvent = class extends MouseEvent {};
-    for (const [id, centre] of centres) rects[id] = centre;
-    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
-      const centre = rects[this.dataset.filterSlot ?? ""] ?? 10_000;
-      return { top: centre - 50, height: 100, bottom: centre + 50, left: 0, right: 0, width: 0, x: 0, y: centre - 50, toJSON: () => ({}) };
-    });
-  });
-
-  const drawn = (onDrop = vi.fn()) => {
-    draw((p) => ({ ...p, filters: { ...p.filters, onMove: vi.fn(), onDrop } }));
-    return onDrop;
-  };
-  const slots = () => Array.from(document.querySelectorAll<HTMLElement>("[data-filter-slot]"));
-
-  it("wraps each open filter so a drag can move it, and only where a drop is wanted", () => {
-    drawn();
-    expect(slots().map((slot) => slot.dataset.filterSlot)).toEqual(expect.arrayContaining(["field", "reproductions"]));
-    expect(screen.getByTestId("builds-filters").querySelectorAll("[data-filter-slot]").length).toBeGreaterThan(2);
-  });
-
-  it("drops a filter after the ones its centre passed, moving only the dragged filter meanwhile", async () => {
-    const onDrop = drawn();
-    const grip = screen.getByRole("button", { name: "Move Field" });
-    fireEvent.pointerDown(grip, { clientY: 100, button: 0 });
-    fireEvent.pointerMove(grip, { clientY: 420 });
-    await new Promise((resolve) => requestAnimationFrame(resolve));
-    const dragged = slots().find((slot) => slot.dataset.filterSlot === "field") as HTMLElement;
-    expect(dragged.style.transform).toBe("translateY(320px)");
-    expect(slots().filter((slot) => slot !== dragged).every((slot) => slot.style.transform === "")).toBe(true);
-    fireEvent.pointerUp(grip, { clientY: 420 });
-    expect(onDrop.mock.calls).toEqual([["field", 1]]);
-    expect(dragged.style.transform).toBe("");
-  });
-
-  it("drops a filter at the top when it is dragged above the rest", () => {
-    const onDrop = drawn();
-    const grip = screen.getByRole("button", { name: "Move Works on model" });
-    fireEvent.pointerDown(grip, { clientY: 500, button: 0 });
-    fireEvent.pointerMove(grip, { clientY: 0 });
-    fireEvent.pointerUp(grip, { clientY: 0 });
-    expect(onDrop).toHaveBeenCalledWith("model", 0);
-  });
-
-  it("opens the grip's menu when the press never moved, and drops nothing", () => {
-    const onDrop = drawn();
-    const grip = screen.getByRole("button", { name: "Move Field" });
-    fireEvent.pointerDown(grip, { clientY: 100, button: 0 });
-    fireEvent.pointerUp(grip, { clientY: 101 });
-    expect(onDrop).not.toHaveBeenCalled();
-    expect(screen.getByRole("menuitem", { name: "Move down" })).toBeTruthy();
-  });
-
-  it("puts a filter back, and drops nothing, when the drag is cancelled", () => {
-    const onDrop = drawn();
-    const grip = screen.getByRole("button", { name: "Move Field" });
-    fireEvent.pointerDown(grip, { clientY: 100, button: 0 });
-    fireEvent.pointerMove(grip, { clientY: 400 });
-    fireEvent.pointerCancel(grip);
-    expect(onDrop).not.toHaveBeenCalled();
-    expect((slots().find((slot) => slot.dataset.filterSlot === "field") as HTMLElement).style.transform).toBe("");
-  });
-});
-
-describe("resizing a checklist", () => {
-  it("draws no handle unless resizing is wanted", () => {
-    draw();
-    expect(screen.queryByRole("separator")).toBeNull();
-  });
-
-  it("gives a checklist a handle that says its height and moves from the keyboard", () => {
-    const onResize = vi.fn();
-    draw((p) => ({ ...p, filters: { ...p.filters, onResize, heights: { field: 200 } } }));
-    const handle = screen.getByRole("separator", { name: "Resize Field" });
-    expect(handle.getAttribute("aria-valuenow")).toBe("200");
-    expect(handle.getAttribute("aria-valuetext")).toBe("200 pixels tall");
-    expect(handle.getAttribute("tabindex")).toBe("0");
-    fireEvent.keyDown(handle, { key: "ArrowDown" });
-    expect(onResize).toHaveBeenLastCalledWith("field", 224);
-    fireEvent.keyDown(handle, { key: "ArrowUp" });
-    expect(onResize).toHaveBeenLastCalledWith("field", 176);
-    fireEvent.keyDown(handle, { key: "Home" });
-    expect(onResize).toHaveBeenLastCalledWith("field", 96);
-    fireEvent.keyDown(handle, { key: "End" });
-    expect(onResize).toHaveBeenLastCalledWith("field", 480);
-    fireEvent.keyDown(handle, { key: "Tab" });
-    expect(onResize).toHaveBeenCalledTimes(4);
-  });
-
-  it("limits a checklist to the height it was given, scrolling inside it", () => {
-    draw((p) => ({ ...p, filters: { ...p.filters, onResize: vi.fn(), heights: { field: 200 } } }));
-    const list = screen.getByRole("group", { name: "Field values" });
-    expect(list.style.maxHeight).toBe("200px");
-    expect(list.style.overflowY).toBe("auto");
-  });
-
-  it("reports the height once, on release, and writes the list's height meanwhile", () => {
-    (window as unknown as { PointerEvent: unknown }).PointerEvent = class extends MouseEvent {};
-    const onResize = vi.fn();
-    draw((p) => ({ ...p, filters: { ...p.filters, onResize, heights: { field: 200 } } }));
-    const list = screen.getByRole("group", { name: "Field values" });
-    vi.spyOn(list, "getBoundingClientRect").mockReturnValue({ height: 200, top: 0, bottom: 200, left: 0, right: 0, width: 0, x: 0, y: 0, toJSON: () => ({}) });
-    const handle = screen.getByRole("separator", { name: "Resize Field" });
-    fireEvent.pointerDown(handle, { clientY: 300, button: 0 });
-    fireEvent.pointerMove(handle, { clientY: 340 });
-    fireEvent.pointerMove(handle, { clientY: 380 });
-    expect(onResize).not.toHaveBeenCalled();
-    fireEvent.pointerUp(handle, { clientY: 380 });
-    expect(onResize).toHaveBeenCalledTimes(1);
-    expect(onResize).toHaveBeenCalledWith("field", 280);
-  });
-});
 
 describe("the Columns chooser", () => {
   const options = [
@@ -420,7 +273,7 @@ const blankRow: TableRowView = {
 };
 
 function drawTable(rows: readonly TableRowView[], columns?: readonly ColumnId[]) {
-  const table = visionBuildsTableProps().table!;
+  const table = visionBuildsTableViewProps();
   return render(
     <MemoryRouter>
       <BuildsTableView {...table} rows={rows} columns={columns ?? table.columns} />
@@ -467,7 +320,7 @@ describe("BF-01 headers on one line", () => {
   it("every column head has white-space nowrap", () => {
     drawTable([blankRow], ALL_COLUMNS);
     const heads = screen.getAllByRole("columnheader");
-    expect(heads).toHaveLength(24);
+    expect(heads).toHaveLength(28);
     for (const head of heads) expect(head.style.whiteSpace).toBe("nowrap");
   });
 
@@ -561,5 +414,135 @@ describe("the stored counts", () => {
     const never = { id: "n", slug: "n", title: "Never counted", shape: "", madeWith: [], reproductionCount: 0, lastConfirmedAt: null, lastConfirmedModel: null, publishedAt: null, rebuildCount: 0, maker: null, open: { count: 0 }, stepCount: null, sessionCount: null };
     drawTable([tableRow(never, Date.parse("2026-11-10T12:00:00Z"))]);
     for (const column of ["Steps", "Sessions"]) expect(within(cellIn(column)).getByTestId("empty-value")).toBeTruthy();
+  });
+});
+
+/* ── BF-06 P1 (A1, G4) ── */
+
+describe("the Filters button", () => {
+  it('FiltersButton: with no filter on it reads "Filters" in the control look', () => {
+    render(<FiltersButton activeCount={0} />);
+    const button = screen.getByRole("button", { name: "Filters" });
+    expect(button.textContent).toBe("Filters");
+    expect(button.getAttribute("aria-pressed")).toBeNull();
+    expect(button.getAttribute("aria-haspopup")).toBe("dialog");
+    // jsdom drops a `var()` from background and border, so the look is read from the markup React writes.
+    expect(renderToStaticMarkup(<FiltersButton activeCount={0} />)).not.toContain("var(--selected-fill)");
+  });
+
+  it('FiltersButton: with three on it reads "Filters 3", is drawn in the selected look, and its name is "Filters, 3 on"', () => {
+    render(<FiltersButton activeCount={3} />);
+    const button = screen.getByRole("button", { name: "Filters, 3 on" });
+    expect(button.textContent).toBe("Filters3");
+    const markup = renderToStaticMarkup(<FiltersButton activeCount={3} />);
+    expect(markup).toContain("background:var(--selected-fill)");
+    expect(markup).toContain("border:1px solid var(--selected-edge)");
+  });
+});
+
+/* ── BF-06 P2 (A1, C5a, C13) ── */
+
+describe("the Table without the rail", () => {
+  it("the Table page has no Filters aside", () => {
+    draw();
+    expect(screen.queryByRole("complementary", { name: "Filters" })).toBeNull();
+    expect(screen.queryByTestId("builds-filters")).toBeNull();
+  });
+
+  it("the lens row holds Filters, then Sort, then Columns", () => {
+    draw();
+    const filters = screen.getByRole("button", { name: /^Filters/ });
+    const row = filters.parentElement as HTMLElement;
+    const names = within(row).getAllByRole("button").map((button) => (button.getAttribute("aria-label") ?? button.textContent ?? "").replace(/\s+/g, " ").trim());
+    expect(names).toEqual(["Filters, 6 on", "Sort: Reproductions", "Columns 12 of 24"]);
+  });
+
+  it("pressing Filters opens the dialog with the filter panel in it; closing it returns focus to the button", async () => {
+    draw();
+    const button = screen.getByRole("button", { name: /^Filters/ });
+    button.focus();
+    fireEvent.click(button);
+    const dialog = screen.getByRole("dialog", { name: "Filters" });
+    expect(within(dialog).getByTestId("builds-filters")).toBeTruthy();
+    expect(within(dialog).getByRole("checkbox", { name: /Sales/ })).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(button));
+  });
+
+  it("the table region has a thin scrollbar", () => {
+    // jsdom drops scrollbar-width from an inline style, so it is read from the markup React writes.
+    const markup = renderToStaticMarkup(
+      <MemoryRouter>
+        <BuildsTableView {...visionBuildsTableViewProps()} />
+      </MemoryRouter>,
+    );
+    expect(markup).toMatch(/aria-label="Builds table"[^>]*style="[^"]*scrollbar-width:thin/);
+  });
+});
+
+/* ── BF-09 P3 (A8) ── */
+
+describe("the open set on the Filters button", () => {
+  it('with a set open, the Filters button on the page reads "Filters 2 · <set name>"', () => {
+    draw((p) => ({ ...p, filters: { ...p.filters, activeCount: 2 }, table: { ...p.table!, setName: "Sales on Claude Code" } }));
+    const button = screen.getByRole("button", { name: "Filters, 2 on, set Sales on Claude Code" });
+    expect(Array.from(button.children).map((child) => child.textContent)).toEqual(["Filters", "2", "· Sales on Claude Code"]);
+  });
+});
+
+/* ── BF-10 P2 ── */
+
+describe("the four new columns in the chooser", () => {
+  it("the chooser offers 28 columns when the counts are live", () => {
+    const columns = chosenColumns(null, true);
+    draw((p) => ({ ...p, table: { ...p.table!, columnsLabel: columnsLabel(columns, true), columnsMenu: columnsMenu(columns, true, vi.fn()) } }));
+    fireEvent.click(screen.getByRole("button", { name: "Columns: 12 of 28" }));
+    const group = screen.getByRole("group", { name: "Columns" });
+    expect(within(group).getAllByRole("checkbox")).toHaveLength(28);
+    for (const name of ["Works on model", "Likes", "Patterns", "Published"]) expect(within(group).getByRole("checkbox", { name })).toBeTruthy();
+  });
+});
+
+/* ── BF-10 P3 (C9) ── */
+
+describe("the grouped chooser", () => {
+  const openChooser = (onReset?: () => void) => {
+    const columns = chosenColumns(null, true);
+    draw((p) => ({ ...p, table: { ...p.table!, columnsLabel: columnsLabel(columns, true), columnsMenu: columnsMenu(columns, true, vi.fn(), onReset) } }));
+    fireEvent.click(screen.getByRole("button", { name: /^Columns:/ }));
+    return within(screen.getByRole("group", { name: "Columns" }));
+  };
+  const namesIn = (group: string) => within(screen.getByRole("group", { name: group })).getAllByRole("checkbox").map((box) => box.closest("label")?.textContent);
+
+  it("the chooser groups its columns under Identity, Classification, Proof, Structure and OpenBuilds, in that order", () => {
+    const chooser = openChooser();
+    expect(chooser.getAllByRole("group").map((group) => group.getAttribute("aria-label"))).toEqual(["Identity", "Classification", "Proof", "Structure", "OpenBuilds"]);
+  });
+
+  // The names are today's: BF-10 Part 1 (one set of names) stopped at A5, so Confirmed, Open and Tools keep theirs.
+  it("Identity holds Build (locked) and Published; Proof holds Reproductions, Works on model, Confirmed, Runs, 12 weeks, Rebuilds and Likes; Structure holds Shape, Steps, Sessions and Patterns; OpenBuilds holds Open; Classification holds the fifteen facets", () => {
+    openChooser();
+    expect(namesIn("Identity")).toEqual(["Build", "Published"]);
+    expect((within(screen.getByRole("group", { name: "Identity" })).getByRole("checkbox", { name: "Build" }) as HTMLInputElement).disabled).toBe(true);
+    expect(namesIn("Proof")).toEqual(["Reproductions", "Works on model", "Confirmed", "Runs, 12 weeks", "Rebuilds", "Likes"]);
+    expect(namesIn("Structure")).toEqual(["Shape", "Steps", "Sessions", "Patterns"]);
+    expect(namesIn("OpenBuilds")).toEqual(["Open"]);
+    expect(namesIn("Classification")).toHaveLength(15);
+    expect(namesIn("Classification")).toEqual(expect.arrayContaining(["What was built", "Field", "Tools", "Cost to run", "Autonomy", "Skill"]));
+  });
+
+  it("the popover opens to the left of its button", () => {
+    openChooser();
+    const content = screen.getByRole("dialog");
+    expect(content.getAttribute("data-side")).toBe("left");
+    expect(content.getAttribute("data-align")).toBe("start");
+  });
+
+  it("Back to the default columns is still offered once the columns differ", () => {
+    const onReset = vi.fn();
+    openChooser(onReset);
+    fireEvent.click(screen.getByRole("button", { name: "Back to the default columns" }));
+    expect(onReset).toHaveBeenCalled();
   });
 });

@@ -2,8 +2,9 @@
 
    THE ADDRESS IS THE STATE. The view, the lens, the filters, the sort and the query are read from the address
    (`parseGalleryParams`) on every render and written back with `galleryHref`; nothing is copied into state. A change is
-   the same page with new parameters: the old rows stay until the new arrive, and nothing fades. Which filters are open
-   and how a checklist is ordered are the panel's own, kept for the visit.
+   the same page with new parameters: the old rows stay until the new arrive, and nothing fades. How a checklist is
+   ordered is the panel's own, kept for the visit. BF-08: what is chosen in the Filters dialog is a draft (`draft`), counted
+   while it differs from the address, and written to the address once, by Apply.
 
    ONE ROUND. The Table's first page, the stats, the lens counts and both facet reads start together; the first screen
    needs nothing after them. The classifications and the makers come in the list's own select (`listBuildsTable`).
@@ -24,9 +25,8 @@
    only when the address names one. A set is opened with the same view the reader is on. Saving, renaming, making public and
    deleting write, then the lists are read again; Library is kept in step by the data layer.
 
-   SV-24 P2: THE LAYOUT IS THE READER'S (`buildsLayout.ts`, `useBuildsLayout`): the filters' order (dragged by the grip, or Move up
-   and Move down from its menu), which are open, a checklist's height, the Table's columns (the Columns chooser, 12 of 24) and the
-   footer's calculations (sum, median, most common, from the rows loaded: no request). It is kept in the open filter set when the
+   SV-24 P2: THE LAYOUT IS THE READER'S (`buildsLayout.ts`, `useBuildsLayout`): the Table's columns (the Columns chooser, 12 of 24)
+   and the footer's calculations (sum, median, most common, from the rows loaded: no request). It is kept in the open filter set when the
    reader made it, and in this browser otherwise. */
 
 import { Suspense, useEffect, useState } from "react";
@@ -38,9 +38,9 @@ import { SeoHead } from "@/components/SeoHead";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { useAuth } from "@/contexts/AuthContext";
 import { reportError } from "@/lib/errors/report";
-import { effectiveOrder, moved, orderedBy, placed, withCalculation, withColumns, withHeight, withOpened, withOrder, type BuildsLayout } from "@/lib/build/buildsLayout";
+import { isEmptyLayout, withCalculation, withColumns, type BuildsLayout } from "@/lib/build/buildsLayout";
 import { createFilterSet, deleteFilterSet, getFilterSet, joinFilterSet, leaveFilterSet, listMyFilterSets, renameFilterSet, saveFilterSetLayout, setFilterSetPublic, type FilterSet, type FilterSetDetail } from "@/lib/build/filterSets";
-import { GALLERY_LENSES, countGalleryLenses, getClassificationFacets, getCountSpread, getGalleryFacets, getWorksOnModelCounts, getGalleryStats, listBuildsTable, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
+import { GALLERY_LENSES, countBuildsTable, countGalleryLenses, getClassificationFacets, getCountSpread, getGalleryFacets, getWorksOnModelCounts, getGalleryStats, listBuildsTable, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
 import { RANGE_KEYS, type RangeKey } from "@/lib/build/galleryRanges";
 import { galleryHref, parseGalleryParams, type GalleryParams, type GalleryViewMode } from "@/lib/build/galleryParams";
 import { LIST_STALE_MS, SLOW_STALE_MS } from "@/lib/query/client";
@@ -48,7 +48,7 @@ import { usePageReady } from "@/lib/routing/pageReady";
 import { t } from "@/lib/theme/tokens";
 
 import { BuildsControl, BuildsLoadingView, ClassificationLoadingView, MapsLoadingView, text } from "./BuildsFrame";
-import { BuildsFiltersView, type BuildsFiltersViewProps, type SavedSetsProps } from "./BuildsFiltersView";
+import type { BuildsFiltersViewProps, SavedSetsProps } from "./BuildsFiltersView";
 import { BuildsView, statParts } from "./BuildsView";
 import {
   LENS_LABEL,
@@ -63,8 +63,8 @@ import {
   columnsLabel,
   columnsMenu,
   footerCalculations,
+  lensCountParams,
   listParamsOf,
-  liveCatalogue,
   nextTableOffset,
   panelSections,
   tableFooter,
@@ -125,8 +125,11 @@ export default function BuildsPage() {
   const go = (next: GalleryParams) => navigate(galleryHref(next), { preventScrollReset: true });
   const hrefFor = (next: GalleryViewMode) => galleryHref({ ...params, view: next === "table" ? undefined : next });
 
-  /* The panel's own, for the visit: how each checklist is ordered. Which filters are open is the layout's. */
-  const [orders, setOrders] = useState<Record<string, PanelOrder>>({});
+  /* The panel's own, for the visit: how every checklist is ordered (BF-07: one order for all, most builds first). */
+  const [order, setOrder] = useState<PanelOrder>("count");
+  /* BF-08 (A2): the dialog's choices, a draft until Apply; null while nothing is chosen. The panel draws `shown`. */
+  const [draft, setDraft] = useState<GalleryParams | null>(null);
+  const shown = draft ?? params;
   /* Maps: which way the Map is drawn, kept for the visit. */
   const [direction, setDirection] = useState<MapsDirection>("horizontal");
   /* Maps: how many of the loaded builds are drawn; each 24 are one read. */
@@ -145,7 +148,10 @@ export default function BuildsPage() {
     staleTime: LIST_STALE_MS,
   });
   const stats = useQuery({ queryKey: ["build", "getGalleryStats"], queryFn: getGalleryStats, staleTime: SLOW_STALE_MS });
-  const lensCounts = useQuery({ queryKey: ["build", "countGalleryLenses"], queryFn: countGalleryLenses, staleTime: SLOW_STALE_MS });
+  /* BF-08 (C1): the lens counts follow the filters (exact while one is on, so a tab's number is the list's); the old numbers stay
+     until the new arrive. */
+  const lensFilters = lensCountParams(params);
+  const lensCounts = useQuery({ queryKey: ["build", "countGalleryLenses", lensFilters], queryFn: () => countGalleryLenses(lensFilters), placeholderData: keepPreviousData, staleTime: SLOW_STALE_MS });
   const classification = useQuery({ queryKey: ["build", "getClassificationFacets"], queryFn: getClassificationFacets, staleTime: SLOW_STALE_MS });
   const facets = useQuery({ queryKey: ["build", "getGalleryFacets"], queryFn: getGalleryFacets, staleTime: SLOW_STALE_MS });
   const spread = useQuery({ queryKey: ["build", "getCountSpread"], queryFn: getCountSpread, staleTime: SLOW_STALE_MS });
@@ -208,26 +214,20 @@ export default function BuildsPage() {
   const classified = classification.data?.live === true;
   const patternsLive = facets.data?.patternsLive === true;
   const sections = panelSections({
-    facets: params.facets ?? [],
-    shapes: params.shapes ?? [],
-    pattern: params.pattern,
-    open: params.open === true,
+    facets: shown.facets ?? [],
+    shapes: shown.shapes ?? [],
+    pattern: shown.pattern,
+    open: shown.open === true,
     counts: classified ? (classification.data?.counts ?? {}) : null,
     patterns: patternsLive ? (facets.data?.patterns ?? []) : null,
-    opened: new Set(layout.opened),
-    orders,
-    ranges: params.ranges,
+    order,
+    ranges: shown.ranges,
     spread: countsLive ? (spread.data ?? null) : null,
-    within: params.within,
-    confirmState: params.state,
-    model: params.model,
+    within: shown.within,
+    confirmState: shown.state,
+    model: shown.model,
     worksOn: countsLive ? (worksOn.data ?? null) : null,
   });
-  /* The filters in the reader's order. The ones drawn open are what a move steps through. */
-  const orderedSections = orderedBy(sections, layout.order);
-  const sectionIds = sections.map((section) => section.id);
-  const openIds = orderedSections.filter((section) => section.kind !== "closed").map((section) => section.id);
-  const rangesLive = countsLive && Boolean(spread.data);
   const count = total ?? builds.length;
   /* BF-01 P2: with a filter on, the head says how many of the published builds match; the meta line then drops "Of n published". */
   const filtered = activeCount(params) > 0 && Boolean(stats.data);
@@ -255,11 +255,22 @@ export default function BuildsPage() {
     }
   };
 
+  /* BF-08 (A2): the draft is dirty when its filters are not the applied ones. */
+  const filtersOf = (of: GalleryParams) => galleryHref({ ...of, view: undefined, set: undefined });
+  const dirty = draft !== null && filtersOf(draft) !== filtersOf(params);
+  /* BF-09 (F1): Save current saves the applied address and the layout, so there must be one of them to save, and no draft
+     waiting to be applied. */
+  const somethingToSave = activeCount(params) > 0 || params.query !== null || !isEmptyLayout(layout);
+  const canSave = !dirty && somethingToSave;
+  const saveHint = dirty ? "Apply your changes first." : somethingToSave ? undefined : "Choose a filter or change the columns first.";
+
   const savedSets: SavedSetsProps | undefined =
     userId === null
       ? undefined
       : {
           rows: (mySets.data ?? []).map((set) => ({ id: set.id, name: set.name, href: setHref(set), isPublic: set.isPublic, note: set.isPublic ? "Public" : undefined, current: params.set === set.id })),
+          canSave,
+          saveHint,
           onSaveCurrent: (name, isPublic) =>
             attempt("createFilterSet", "Couldn't save the filter set.", async () => {
               const set = await createFilterSet({ name, search: currentSearch, isPublic });
@@ -304,22 +315,37 @@ export default function BuildsPage() {
             : undefined,
         };
 
+  /* BF-08 (A2): only while the draft is dirty is the count asked, so the first screen is as it was; with nothing changed the
+     dialog says the page's own total. */
+  const draftCount = useQuery({
+    queryKey: ["build", "countBuildsTable", listParamsOf(draft ?? params)],
+    queryFn: () => countBuildsTable(listParamsOf(draft as GalleryParams)),
+    enabled: dirty,
+    placeholderData: keepPreviousData,
+    staleTime: LIST_STALE_MS,
+  });
+
   const filters: BuildsFiltersViewProps = {
-      activeCount: activeCount(params),
+      activeCount: activeCount(shown),
       savedSets,
-      sections: orderedSections,
-      catalogue: { total: liveCatalogue(classified, patternsLive, rangesLive, Boolean(worksOn.data)).reduce((sum, group) => sum + group.count, 0), groups: liveCatalogue(classified, patternsLive, rangesLive, Boolean(worksOn.data)) },
+      sections,
       onRange: (sectionId, value) => {
-        if ((RANGE_KEYS as readonly string[]).includes(sectionId)) navigate(galleryHref(withRange(params, sectionId as RangeKey, value)), { preventScrollReset: true, replace: true });
+        if ((RANGE_KEYS as readonly string[]).includes(sectionId)) setDraft(withRange(shown, sectionId as RangeKey, value));
       },
-      onToggleOption: (sectionId, key) => go(toggled(params, sectionId, key)),
-      onToggleSegment: (sectionId, key) => go(toggled(params, sectionId, key)),
-      onOrder: (sectionId, order) => setOrders((current) => ({ ...current, [sectionId]: order })),
-      onOpenClosed: (sectionId) => update((current) => withOpened(current, sectionId)),
-      onMove: (sectionId, direction) => update((current) => withOrder(current, moved(effectiveOrder(sectionIds, current.order), openIds, sectionId, direction))),
-      onDrop: (sectionId, index) => update((current) => withOrder(current, placed(effectiveOrder(sectionIds, current.order), openIds, sectionId, index))),
-      heights: layout.heights,
-      onResize: (sectionId, height) => update((current) => withHeight(current, sectionId, height)),
+      onToggleOption: (sectionId, key) => setDraft(toggled(shown, sectionId, key)),
+      onToggleSegment: (sectionId, key) => setDraft(toggled(shown, sectionId, key)),
+      dirty,
+      matchCount: dirty ? (draftCount.data ?? null) : total,
+      onOpen: () => setDraft(null),
+      onCancel: () => setDraft(null),
+      onClear: () => setDraft(clearedFilters(shown)),
+      /* One navigation for every choice. The open set's marker goes: the filters are no longer that set's. */
+      onApply: () => {
+        if (draft) go({ ...draft, view: params.view, sort: params.sort, set: undefined });
+        setDraft(null);
+      },
+      order,
+      onOrder: setOrder,
   };
 
   const onMoreMaps = () => {
@@ -360,7 +386,8 @@ export default function BuildsPage() {
             chips={activeChips(params)}
             onRemoveChip={(key) => go(withoutChip(params, key))}
             onClearAll={() => go(clearedFilters(params))}
-            panel={<BuildsFiltersView {...filters} collapsed={false} />}
+            filters={filters}
+            setName={openDetail?.name}
             direction={direction}
             onDirection={setDirection}
             buildsLabel={buildsLabel}
@@ -393,7 +420,8 @@ export default function BuildsPage() {
             chips={activeChips(params)}
             onRemoveChip={(key) => go(withoutChip(params, key))}
             onClearAll={() => go(clearedFilters(params))}
-            panel={<BuildsFiltersView {...filters} collapsed={false} />}
+            filters={filters}
+            setName={openDetail?.name}
             facets={shownFacets}
             onFacets={onFacets}
             cards={builds.map((build) => cardOf(build, shownFacets, valueHref, now))}
@@ -419,6 +447,7 @@ export default function BuildsPage() {
           ? {
               lenses: GALLERY_LENSES.map((lens) => ({ value: lens, label: LENS_LABEL[lens], count: lensCounts.data?.[lens] })),
               lens: params.lens,
+              setName: openDetail?.name,
               onLens: (lens) => go({ ...params, lens: lens as GalleryLens }),
               sort: { value: sort, options: SORT_OPTIONS, onChange: (value) => go({ ...params, sort: value as GalleryFeedSort }) },
               chips: activeChips(params),

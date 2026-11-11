@@ -965,11 +965,39 @@ async function countGalleryBuildRows(operation: string, lens: GalleryLens, now: 
   return count ?? 0;
 }
 
+/** BF-08: the Table's filters, without the lens, the sort and the page: what the lens counts follow. */
+export type LensCountFilters = Omit<BuildsTableOptions, "lens" | "sort" | "offset" | "limit">;
+
+/** BF-08: any of the Table's filters (or the search) holds a value. */
+export function hasFilters(options: LensCountFilters | undefined): boolean {
+  if (!options) return false;
+  const ranges = Object.values(options.ranges ?? {}).some((range) => range && (range.min !== undefined || range.max !== undefined));
+  return (
+    (options.facets?.length ?? 0) > 0 ||
+    Boolean(options.tool) ||
+    (options.shapes?.length ?? 0) > 0 ||
+    Boolean(options.pattern) ||
+    options.stillOpen === true ||
+    Boolean(options.query?.trim()) ||
+    ranges ||
+    options.confirmedWithin !== undefined ||
+    options.confirmedState !== undefined ||
+    Boolean(options.worksOn)
+  );
+}
+
 /**
  * How many gallery builds each lens holds, for the numbers on the lens row.
  * One head request per lens, sent together.
+ *
+ * BF-08 (C1): with a filter on, each lens is counted with the Table's filters (`countBuildsTable`, exact), so a lens' number is
+ * the number of rows the list reports under it. With none, the four estimated counts, as before.
  */
-export async function countGalleryLenses(): Promise<Record<GalleryLens, number>> {
+export async function countGalleryLenses(filters?: LensCountFilters): Promise<Record<GalleryLens, number>> {
+  if (hasFilters(filters)) {
+    const counts = await Promise.all(GALLERY_LENSES.map((lens) => countBuildsTable({ ...filters, lens })));
+    return Object.fromEntries(GALLERY_LENSES.map((lens, index) => [lens, counts[index]])) as Record<GalleryLens, number>;
+  }
   const now = Date.now();
   const counts = await Promise.all(
     GALLERY_LENSES.map((lens) => countGalleryBuilds("countGalleryLenses", lens, now)),
@@ -1254,6 +1282,8 @@ export const BUILDS_TABLE_PAGE_SIZE = 50;
  */
 const BUILDS_TABLE_COLUMNS =
   "id, slug, title, shape, made_with, reproduction_count, last_confirmed_at, last_confirmed_model, published_at, rebuild_count, classification, " +
+  // BF-10: Likes and Patterns, columns older than the UX-08 migration this read already needs.
+  "like_count, patterns, " +
   "maker:profiles!builds_creator_id_fkey(username, display_name)";
 
 /**
@@ -1269,7 +1299,8 @@ const RUNS_PER_BUILD = 200;
  * request. Until the SV-23 migration is applied the columns are missing: the read says so once (`isMissingColumn`), is made again
  * without them, and `countsLive` on the page is false, so the page draws no Steps or Sessions and offers no range.
  */
-const BUILDS_COUNT_COLUMNS = "step_count, session_count";
+/** BF-10: Works on model reads `worked_models`, SV-23 P2's, so it is asked with the stored counts and goes with them. */
+const BUILDS_COUNT_COLUMNS = "step_count, session_count, worked_models";
 let countColumnsMissing = false;
 
 /**
@@ -1309,6 +1340,11 @@ export interface BuildsTableBuild {
   sessionCount?: number | null;
   /** SV-23 P2: runs in each of the last twelve calendar weeks, oldest first. */
   runs?: number[];
+  /** BF-10: the Likes, Patterns and Works on model columns. `workedModels` holds model_key() strings; absent when the list was
+      read without the stored counts. Optional, since other pages (Profile) make rows of this shape without them. */
+  likeCount?: number;
+  patterns?: string[];
+  workedModels?: string[];
 }
 
 export interface BuildsTableOptions {
@@ -1391,6 +1427,9 @@ interface BuildsTableRow {
   classification?: unknown;
   step_count?: number | null;
   session_count?: number | null;
+  like_count?: number | null;
+  patterns?: string[] | null;
+  worked_models?: string[] | null;
   build_reproductions?: { confirmed_at: string | null }[] | null;
   maker: { username: string | null; display_name: string | null } | null;
   /** UX-08 P4: still-open topics that attach the build or are about it. */
@@ -1418,6 +1457,9 @@ function toBuildsTableBuild(row: BuildsTableRow, now: Date): BuildsTableBuild {
     // step_count written) has a session count to trust; any other shows the empty mark, as its steps do.
     sessionCount: typeof row.step_count === "number" && typeof row.session_count === "number" ? row.session_count : null,
     runs: runsPerWeek((row.build_reproductions ?? []).map((run) => run.confirmed_at), now),
+    likeCount: Math.max(0, row.like_count ?? 0),
+    patterns: row.patterns ?? [],
+    ...(Array.isArray(row.worked_models) ? { workedModels: row.worked_models } : null),
   };
 }
 
@@ -1435,6 +1477,42 @@ export function listBuildsTable(options: BuildsTableOptions = {}): Promise<Build
   return withReviewFilter((reviews) => listBuildsTableRows(options, reviews));
 }
 
+/**
+ * BF-08: the Table's filters, between the base query and the lens: what the list applies and what its counts apply, so a count
+ * cannot drift from the rows. `search` is the feed's clause for the query, worked out (awaited) before the request.
+ */
+function applyTableFilters(query: TableQuery, options: BuildsTableOptions, context: { lens: GalleryLens; now: Date; withCounts: boolean; search: string | null }): TableQuery {
+  const { lens, now, withCounts, search } = context;
+  if (options.stillOpen && lens !== "unsolved") query = withAskFilter(query);
+
+  const madeWith = madeWithSpellings(options.tool);
+  if (madeWith.length > 0) query = query.overlaps("made_with", madeWith);
+  const shapes = cleanShapes(options.shapes ? [...options.shapes] : undefined);
+  if (shapes.length > 0) query = query.in("shape", shapes);
+  if (options.pattern) query = query.contains("patterns", [options.pattern]);
+  // A second `or` is an AND with the first: PostgREST ANDs repeated filters.
+  for (const [facet, keys] of facetGroups(options.facets ?? [])) {
+    query = facet === "stack" ? query.or(stackClause(keys)) : query.overlaps("facets", keys);
+  }
+  if (search) query = query.or(search);
+  // SV-23 P1: a range reads its stored column, so it is only asked while the columns are there.
+  if (withCounts) {
+    for (const key of RANGE_KEYS) {
+      const range = options.ranges?.[key];
+      if (range?.min !== undefined) query = query.gte(RANGE_FILTERS[key].column, range.min);
+      if (range?.max !== undefined) query = query.lte(RANGE_FILTERS[key].column, range.max);
+    }
+  }
+  // SV-23 P2: the proof. Last confirmed and Confirmed or stale read `last_confirmed_at` of builds that have been run.
+  if (options.confirmedWithin !== undefined) query = query.gte("last_confirmed_at", confirmedCutoff(options.confirmedWithin, now));
+  if (options.confirmedState === "confirmed") query = query.gte("reproduction_count", 1).gte("last_confirmed_at", confirmedCutoff(STALE_AFTER_DAYS, now));
+  if (options.confirmedState === "stale") query = query.gte("reproduction_count", 1).lt("last_confirmed_at", confirmedCutoff(STALE_AFTER_DAYS, now));
+  // Works on model: `worked_models` holds model_key() of each model a run worked on; any spelling of the chosen version matches.
+  const worksOn = withCounts && options.worksOn ? modelById(options.worksOn) : null;
+  if (worksOn) query = query.overlaps("worked_models", modelKeysOf(worksOn));
+  return query;
+}
+
 async function listBuildsTableRows(options: BuildsTableOptions, reviews: boolean): Promise<BuildsTablePage> {
   const limit = Math.max(1, Math.min(options.limit ?? BUILDS_TABLE_PAGE_SIZE, 100));
   const offset = Math.max(0, options.offset ?? 0);
@@ -1450,33 +1528,7 @@ async function listBuildsTableRows(options: BuildsTableOptions, reviews: boolean
       .in("status", ["published", "gallery"])
       .or(galleryPredicate())
       .gte("build_reproductions.confirmed_at", runsSince(now).toISOString());
-    if (options.stillOpen && lens !== "unsolved") query = withAskFilter(query);
-
-    const madeWith = madeWithSpellings(options.tool);
-    if (madeWith.length > 0) query = query.overlaps("made_with", madeWith);
-    const shapes = cleanShapes(options.shapes ? [...options.shapes] : undefined);
-    if (shapes.length > 0) query = query.in("shape", shapes);
-    if (options.pattern) query = query.contains("patterns", [options.pattern]);
-    // A second `or` is an AND with the first: PostgREST ANDs repeated filters.
-    for (const [facet, keys] of facetGroups(options.facets ?? [])) {
-      query = facet === "stack" ? query.or(stackClause(keys)) : query.overlaps("facets", keys);
-    }
-    if (search) query = query.or(search);
-    // SV-23 P1: a range reads its stored column, so it is only asked while the columns are there.
-    if (withCounts) {
-      for (const key of RANGE_KEYS) {
-        const range = options.ranges?.[key];
-        if (range?.min !== undefined) query = query.gte(RANGE_FILTERS[key].column, range.min);
-        if (range?.max !== undefined) query = query.lte(RANGE_FILTERS[key].column, range.max);
-      }
-    }
-    // SV-23 P2: the proof. Last confirmed and Confirmed or stale read `last_confirmed_at` of builds that have been run.
-    if (options.confirmedWithin !== undefined) query = query.gte("last_confirmed_at", confirmedCutoff(options.confirmedWithin, now));
-    if (options.confirmedState === "confirmed") query = query.gte("reproduction_count", 1).gte("last_confirmed_at", confirmedCutoff(STALE_AFTER_DAYS, now));
-    if (options.confirmedState === "stale") query = query.gte("reproduction_count", 1).lt("last_confirmed_at", confirmedCutoff(STALE_AFTER_DAYS, now));
-    // Works on model: `worked_models` holds model_key() of each model a run worked on; any spelling of the chosen version matches.
-    const worksOn = withCounts && options.worksOn ? modelById(options.worksOn) : null;
-    if (worksOn) query = query.overlaps("worked_models", modelKeysOf(worksOn));
+    query = applyTableFilters(query, options, { lens, now, withCounts, search });
     query = leaveOutReviews(applyLensFilters(query, lens), reviews);
 
     return (feedOrder(query as unknown as FeedQuery, options.sort ?? "reproduced") as unknown as TableQuery)
@@ -1496,6 +1548,42 @@ async function listBuildsTableRows(options: BuildsTableOptions, reviews: boolean
   if (error) throw buildLayerError("listBuildsTable", error);
 
   return { countsLive: withCounts, builds: ((data ?? []) as BuildsTableRow[]).map((row) => toBuildsTableBuild(row, now)), total: typeof count === "number" ? count : null };
+}
+
+/**
+ * BF-08: how many builds the Table's filters match, as one exact head request: the list's base, its filters
+ * (`applyTableFilters`), its lens and its review filter, with no rows and no runs. Exact, because the number is shown in full
+ * beside the list's own exact total (the dialog's "n builds match", the lens counts while a filter is on). Asked again
+ * without the stored counts when they are missing, as the list is.
+ */
+export function countBuildsTable(options: BuildsTableOptions = {}): Promise<number> {
+  return withReviewFilter((reviews) => countBuildsTableRows(options, reviews));
+}
+
+async function countBuildsTableRows(options: BuildsTableOptions, reviews: boolean): Promise<number> {
+  const lens: GalleryLens = GALLERY_LENSES.includes(options.lens as GalleryLens) ? (options.lens as GalleryLens) : "all";
+  const search = await feedSearchClause(options.query, true);
+  const now = new Date();
+
+  const request = (withCounts: boolean) => {
+    let query = (supabase as unknown as { from: (table: string) => { select: (columns: string, options: { count: "exact"; head: true }) => TableQuery } })
+      .from("builds")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["published", "gallery"])
+      .or(galleryPredicate());
+    query = applyTableFilters(query, options, { lens, now, withCounts, search });
+    return leaveOutReviews(applyLensFilters(query, lens), reviews);
+  };
+
+  let withCounts = !countColumnsMissing;
+  let answer = await request(withCounts);
+  if (answer.error && withCounts && isMissingColumn(answer.error)) {
+    countColumnsMissing = true;
+    withCounts = false;
+    answer = await request(withCounts);
+  }
+  if (answer.error) throw buildLayerError("countBuildsTable", answer.error);
+  return answer.count ?? 0;
 }
 
 /**

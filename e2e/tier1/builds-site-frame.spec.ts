@@ -21,18 +21,21 @@ async function open(page: Page, viewport?: number, theme: (typeof THEMES)[number
   if (viewport) await page.setViewportSize({ width: viewport, height: 900 });
   await page.goto(path);
   await expect(page.getByTestId("site-frame")).toBeVisible();
-  // The page, or its loading state while the read is out: both draw the head, the switch and the filter column.
+  // The page, or its loading state while the read is out: both draw the head and the switch.
   await expect(page.locator('main#main [data-testid="builds-page"], main#main [data-testid="builds-loading"]').first()).toBeVisible();
 }
 
 test.describe("/builds in the site frame", () => {
-  test("draws one h1, the view switch and the filters inside <main>", async ({ page }) => {
+  // BF-06 (A1): the filters are a dialog the Filters button opens; there is no rail.
+  test("draws one h1, the view switch and the Filters button inside <main>", async ({ page }) => {
     await open(page);
     await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
     const views = page.getByRole("navigation", { name: "View" });
     for (const name of ["Table", "Maps", "Classification"]) await expect(views.getByRole("link", { name })).toBeVisible();
     await expect(views.getByRole("link", { name: "Table" })).toHaveAttribute("aria-current", "page");
-    await expect(page.getByRole("complementary", { name: "Filters" })).toBeVisible();
+    await expect(page.getByRole("complementary", { name: "Filters" })).toHaveCount(0);
+    // The loading state (nothing answers the reads here) draws no controls; the page itself draws the Filters button.
+    if (await page.getByTestId("builds-page").isVisible()) await expect(page.locator("main#main").getByRole("button", { name: /^Filters/ })).toBeVisible();
   });
 
   test("writes the view to the address and reads it back", async ({ page }) => {

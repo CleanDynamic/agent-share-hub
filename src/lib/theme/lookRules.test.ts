@@ -1152,6 +1152,19 @@ export const CA03_FILES: readonly string[] = [
   // BF-01
   "src/components/vision/Empty.tsx",
 
+  // BF-06
+  "src/pages/site/builds/BuildsFiltersDialog.tsx",
+  "src/pages/site/builds/BuildsFiltersDialog.test.tsx",
+
+  // BF-07
+  "src/pages/site/builds/BuildsFiltersView.test.tsx",
+
+  // BF-08
+  "src/lib/routing/galleryPrefetch.test.ts",
+
+  // BF-09
+  "src/pages/site/builds/SetDialogs.test.tsx",
+
   // SV-14
   "src/lib/build/graph.ts",
   "src/pages/site/openbuilds/OpenBuildsFrame.tsx",
@@ -1251,7 +1264,6 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/buildsLayout.ts",
   "src/lib/build/buildsLayout.test.ts",
   "src/pages/site/builds/SetDialogs.tsx",
-  "src/pages/site/builds/filterDrag.ts",
   "src/pages/site/builds/useBuildsLayout.ts",
   "src/pages/site/builds/useBuildsLayout.test.tsx",
   "src/pages/site/builds/buildsModel.layout.test.ts",

@@ -13,8 +13,42 @@ async function answerWithNoRows(page: Page) {
   );
 }
 
-async function open(page: Page, path = "/builds") {
-  await answerWithNoRows(page);
+/** BF-06: twelve builds for the list read, every one with each column the default Table draws filled, so the table is as
+    wide as a real one; every other read has no rows. The list is the one read that selects `slug`. */
+async function answerWithBuilds(page: Page) {
+  const now = Date.now();
+  const rows = Array.from({ length: 12 }, (_, at) => ({
+    id: `b${at}`,
+    slug: `b${at}`,
+    title: ["Lead scoring from CRM notes", "Call notes that write themselves", "Proposal writer with pricing"][at % 3],
+    shape: "workflow",
+    made_with: ["Claude Code", "Cursor", "n8n"],
+    reproduction_count: 12 + at,
+    last_confirmed_at: new Date(now - (at + 1) * 86_400_000).toISOString(),
+    last_confirmed_model: "opus-5-5",
+    published_at: new Date(now - 90 * 86_400_000).toISOString(),
+    rebuild_count: 3,
+    classification: { declared: { field: [{ id: "medicine" }] }, derived: { built: { values: ["browser-extension"] }, cost: { values: ["extra-usage-10-to-50-a-month"] } } },
+    maker: { username: `maker${at}`, display_name: null },
+    step_count: 14 + at,
+    session_count: 3,
+    still_open_topics: 2,
+    build_reproductions: [{ confirmed_at: new Date(now - 3 * 86_400_000).toISOString() }],
+  }));
+  await page.route(/\/rest\/v1\//, (route) => {
+    const url = new URL(route.request().url());
+    const list = url.pathname.endsWith("/builds") && (url.searchParams.get("select") ?? "").includes("slug");
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers: { "content-range": list ? `0-11/${rows.length}` : "*/0" },
+      body: list ? JSON.stringify(rows) : "[]",
+    });
+  });
+}
+
+async function open(page: Page, path = "/builds", answer: (page: Page) => Promise<void> = answerWithNoRows) {
+  await answer(page);
   await page.addInitScript(() => {
     try {
       window.localStorage.setItem("bg-theme", "noon");
@@ -59,10 +93,7 @@ test.describe("/builds filters", () => {
   // neighbours goes in ALLOWED with the reason. A link that is a word inside a sentence is the exception the rule
   // allows; there is none on these pages today.
   const ALLOWED: readonly { name: RegExp; why: string }[] = [
-    { name: /^button "Move /, why: "the grip is 16 by 20 and BF-07 deletes it" },
-    { name: /^button "(You do each step|AI suggests and you approve|AI acts with approval gates|Fully autonomous)"/, why: "the Autonomy segments are 18 high and BF-09 deletes them" },
     { name: /^button "All" /, why: "the lens tab is the shared TextTabs, 16 wide on its own label; shared controls are measured and reported, not edited here" },
-    { name: /^div "Resize /, why: "a drag handle 8 high between a list and the next section: 24 would cover the last rows and the next head, so it stays and is reported" },
   ];
 
   async function smallTargets(page: Page) {
@@ -118,4 +149,108 @@ test.describe("/builds filters", () => {
       expect(small).toEqual([]);
     });
   }
+
+  /* ── BF-06 P2 (A1, C5a, C13) ── */
+
+  test("desktop at 1440 by 900: the default table does not scroll sideways", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "desktop project only");
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open(page, "/builds", answerWithBuilds);
+    const region = page.getByRole("region", { name: "Builds table" });
+    await expect(region).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Steps" })).toBeVisible();
+    const widths = await region.evaluate((el) => ({ scroll: el.scrollWidth, client: el.clientWidth, columns: el.querySelectorAll("th").length }));
+    // eslint-disable-next-line no-console
+    console.log(`Builds table at 1440: scrollWidth ${widths.scroll}, clientWidth ${widths.client}, ${widths.columns} columns`);
+    expect(widths.scroll).toBeLessThanOrEqual(widths.client);
+  });
+
+  // BF-08 put Cancel and Apply in the footer in place of Done.
+  test("mobile: Filters opens a full screen dialog, and Cancel closes it", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "mobile project only");
+    await open(page, "/builds", answerWithBuilds);
+    await page.getByRole("button", { name: /^Filters/ }).click();
+    const dialog = page.getByRole("dialog", { name: "Filters" });
+    await expect(dialog).toBeVisible();
+    const box = await dialog.boundingBox();
+    const viewport = page.viewportSize()!;
+    expect(Math.round(box!.x)).toBe(0);
+    expect(Math.round(box!.y)).toBe(0);
+    expect(Math.round(box!.width)).toBe(viewport.width);
+    expect(Math.abs(box!.height - viewport.height)).toBeLessThanOrEqual(1);
+    await dialog.getByRole("button", { name: "Cancel" }).click();
+    await expect(dialog).toBeHidden();
+  });
+
+  test("desktop: with the dialog open, Tab stays inside it and Escape returns focus to Filters", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "desktop project only");
+    await open(page, "/builds", answerWithBuilds);
+    const button = page.getByRole("button", { name: /^Filters/ });
+    await button.focus();
+    await page.keyboard.press("Enter");
+    const dialog = page.getByRole("dialog", { name: "Filters" });
+    await expect(dialog).toBeVisible();
+    for (let step = 0; step < 40; step += 1) {
+      await page.keyboard.press("Tab");
+      expect(await dialog.evaluate((el) => el.contains(document.activeElement))).toBe(true);
+    }
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(button).toBeFocused();
+  });
+
+  /* ── BF-06 P3 (E5, X1) ── */
+
+  for (const [label, path, card] of [
+    ["Classification", "/builds?view=classification", "classification-card"],
+    ["Maps", "/builds?view=maps", "map-card"],
+  ] as const) {
+    test(`${label}: opening Filters does not move the first card`, async ({ page }) => {
+      await open(page, path, answerWithBuilds);
+      const first = page.getByTestId(card).first();
+      await expect(first).toBeVisible();
+      const before = await first.boundingBox();
+      await page.getByRole("button", { name: /^Filters/ }).click();
+      await expect(page.getByRole("dialog", { name: "Filters" })).toBeVisible();
+      const after = await first.boundingBox();
+      for (const key of ["x", "y", "width", "height"] as const) expect(Math.abs(after![key] - before![key])).toBeLessThanOrEqual(1);
+    });
+  }
+
+  /* ── BF-10 P3 (C9) ── */
+
+  test("ticking a column in the chooser shows its head while the chooser is still open, and the chooser does not cover it", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "desktop project only");
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open(page, "/builds", answerWithBuilds);
+    await page.getByRole("button", { name: /^Columns:/ }).click();
+    const chooser = page.getByRole("dialog").filter({ has: page.getByRole("group", { name: "Columns" }) });
+    await expect(chooser).toBeVisible();
+    await chooser.getByRole("checkbox", { name: "Shape" }).check();
+    const head = page.getByRole("columnheader", { name: "Shape" });
+    await expect(head).toBeVisible();
+    await expect(chooser).toBeVisible();
+    await head.scrollIntoViewIfNeeded();
+    const [a, b] = [await head.boundingBox(), await chooser.boundingBox()];
+    // eslint-disable-next-line no-console
+    console.log(`Shape head ${JSON.stringify(a)}, chooser ${JSON.stringify(b)}`);
+    const overlaps = a!.x < b!.x + b!.width && b!.x < a!.x + a!.width && a!.y < b!.y + b!.height && b!.y < a!.y + a!.height;
+    expect(overlaps).toBe(false);
+  });
+
+  test("phone at 390: the chooser stays on the screen", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "mobile project only");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page, "/builds", answerWithBuilds);
+    await page.getByRole("button", { name: /^Columns:/ }).click();
+    const chooser = page.getByRole("dialog").filter({ has: page.getByRole("group", { name: "Columns" }) });
+    await expect(chooser).toBeVisible();
+    const box = (await chooser.boundingBox())!;
+    const viewport = page.viewportSize()!;
+    // eslint-disable-next-line no-console
+    console.log(`phone chooser ${JSON.stringify(box)} in ${viewport.width} x ${viewport.height}, side ${await chooser.getAttribute("data-side")}`);
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
+    expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
+  });
 });

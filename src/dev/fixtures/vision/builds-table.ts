@@ -5,8 +5,8 @@
    letter tiles are the real marks of the tools they stand for. */
 
 import { statParts, type BuildsViewProps } from "@/pages/site/builds/BuildsView";
-import type { CatalogueGroup, FilterSection, WordOption } from "@/pages/site/builds/BuildsFiltersView";
-import { COLUMN_ORDER, type TableRowView } from "@/pages/site/builds/BuildsTableView";
+import type { FilterSection, WordOption } from "@/pages/site/builds/BuildsFiltersView";
+import { COLUMN_ORDER, type BuildsTableViewProps, type TableRowView } from "@/pages/site/builds/BuildsTableView";
 
 const noop = () => undefined;
 
@@ -23,13 +23,16 @@ export const visionBuildsSections: FilterSection[] = [
     kind: "word",
     id: "field",
     name: "Field",
-    order: "az",
+    group: "Classification",
+    order: "count",
+    value: "Sales",
     options: words([["AI and machine learning", 14, false], ["Education", 9, false], ["Finance", 11, false], ["Marketing", 18, false], ["Sales", 22, true], ["Software development", 31, false]]),
   },
   {
     kind: "range",
     id: "reproductions",
     name: "Reproductions",
+    group: "Proof",
     valueText: "3 or more",
     histogram: bars([22, 18, 14, 12, 10, 9, 8, 7, 6, 5, 5, 4, 4, 3, 3, 2, 2, 2, 1, 1], 2, 19),
     min: 0,
@@ -37,18 +40,22 @@ export const visionBuildsSections: FilterSection[] = [
     value: [3, 40],
     describe: (value, end) => (end === "min" ? `${value} or more` : value >= 40 ? "40 or more" : `up to ${value}`),
     endLabels: ["0", "40+"],
+    counted: 164,
   },
   {
     kind: "word",
     id: "model",
     name: "Works on model",
+    group: "Proof",
     order: "count",
+    value: "Opus 5.5",
     options: words([["Sonnet 4.5", 44, false], ["Opus 5.5", 31, true], ["GPT-5", 27, false], ["Gemini 3.5 Pro", 12, false]]),
   },
   {
     kind: "range",
     id: "steps",
     name: "Steps",
+    group: "Structure",
     valueText: "5 to 30",
     histogram: bars([3, 6, 9, 12, 14, 13, 12, 10, 9, 8, 7, 6, 5, 4, 3, 3, 2, 2, 1, 1], 2, 12),
     min: 0,
@@ -57,32 +64,29 @@ export const visionBuildsSections: FilterSection[] = [
     describe: (value, end) => (end === "min" ? `from ${value}` : `to ${value}`),
     endLabels: ["0", "40+"],
     bare: true,
+    counted: 132,
   },
   {
     kind: "scale",
     id: "autonomy",
     name: "Autonomy",
+    group: "Classification",
     segments: [
       { key: "you-do-each-step", label: "You do each step", on: false },
       { key: "ai-suggests-and-you-approve", label: "AI suggests and you approve", on: true },
       { key: "ai-acts-with-approval-gates", label: "AI acts with approval gates", on: true },
       { key: "fully-autonomous", label: "Fully autonomous", on: false },
     ],
-    endLabels: ["You do each step", "Fully autonomous"],
   },
-  ...[["stack", "Tools and stack", "Claude Code"], ["task", "Task", "Any"], ["built", "What was built", "Any"], ["technique", "Techniques", "Any"], ["confirmed", "Last confirmed", "Any"], ["cost", "Cost to run", "Any"]].map(
-    ([id, name, value]) => ({ kind: "closed" as const, id, name, value }),
-  ),
+  /* BF-07: every filter is drawn in its group; the board's closed rows are checklists. */
+  { kind: "word", id: "stack", name: "Tools and stack", group: "Classification", order: "count", value: "Claude Code", options: words([["Claude Code", 34, true], ["Cursor", 21, false], ["n8n", 9, false]]) },
+  { kind: "word", id: "task", name: "Task", group: "Classification", order: "count", value: "Any", options: words([["Drafting", 12, false], ["Research", 8, false]]) },
+  { kind: "word", id: "built", name: "What was built", group: "Classification", order: "count", value: "Any", options: words([["Automation workflow", 9, false], ["Configured assistant", 6, false]]) },
+  { kind: "word", id: "technique", name: "Techniques", group: "Classification", order: "count", value: "Any", options: [] },
+  { kind: "word", id: "within", name: "Last confirmed", group: "Proof", order: "scale", value: "Any", options: [["Within 7 days", false], ["Within 30 days", false], ["Within 90 days", false]].map(([label, checked]) => ({ key: String(label), label: String(label), checked: Boolean(checked) })) },
+  { kind: "word", id: "cost", name: "Cost to run", group: "Classification", order: "scale", value: "Any", options: words([["Free plans are enough", 14, false], ["Needs a paid plan", 6, false]]) },
+  { kind: "word", id: "open", name: "Still open", group: "OpenBuilds", order: "az", value: "Any", options: words([["Has a still-open topic", 3, false]]) },
 ];
-
-export const visionBuildsCatalogue: CatalogueGroup[] = [
-  ["Classification", 15, "Field, Task, Setting, What was built, Role of AI, Techniques, Modality, Build method, Autonomy, Tools and stack, Data handled, Human oversight, Age suitability, Skill needed, Cost to run"],
-  ["Proof", 6, "Reproductions, Works on model, Last confirmed, Confirmed or stale, Rebuilds, Likes"],
-  ["Structure", 8, "Shape, Steps, Sessions, Parts, Agents, Patterns, Tile categories, Completeness"],
-  ["OpenBuilds", 3, "Open requests, Request type, Reward"],
-  ["Lineage", 2, "Rebuilt from, Original build"],
-  ["People", 3, "Maker, People you follow, Contributors"],
-].map(([name, count, items]) => ({ name: name as string, count: count as number, items: items as string }));
 
 const TOOL = { C: "claude-code", G: "gemini", S: "replit", L: "lovable", N: "n8n", Z: "zapier" } as const;
 const NAME: Record<string, string> = { "claude-code": "Claude Code", gemini: "Gemini", replit: "Replit", lovable: "Lovable", n8n: "n8n", zapier: "Zapier" };
@@ -121,6 +125,14 @@ export const visionBuildsRows: TableRowView[] = DATA.map((d, index) => ({
   rebuilds: d[11],
   open: d[12],
   cost: d[13],
+  /* BF-10: values for the four new columns, so the dev page can draw all 28. */
+  extra: {
+    works: index % 3 === 0 ? "Opus 5.5, GPT-5 + 1" : index % 3 === 1 ? "Opus 5.5" : "",
+    likes: String(d[7] * 2),
+    patterns: index % 2 === 0 ? "Uses a router" : "",
+    published: `${index + 2}w ago`,
+  },
+  likes: d[7] * 2,
 }));
 
 export function visionBuildsTableProps(): BuildsViewProps {
@@ -138,15 +150,20 @@ export function visionBuildsTableProps(): BuildsViewProps {
           { id: "s2", name: "Works on Opus 5.5, no code", count: 18, href: "#" },
         ],
         onSaveCurrent: noop,
+        canSave: true,
       },
       sections: visionBuildsSections,
-      catalogue: { total: 37, groups: visionBuildsCatalogue },
       onToggleOption: noop,
+      order: "count",
       onOrder: noop,
+      dirty: true,
+      matchCount: 18,
+      onApply: noop,
+      onCancel: noop,
+      onClear: noop,
+      onOpen: noop,
       onRange: noop,
       onToggleSegment: noop,
-      onOpenClosed: noop,
-      onMove: noop,
     },
     table: {
       lenses: [{ value: "all", label: "All" }, { value: "proven", label: "Reproduced" }, { value: "rebuilt", label: "Rebuilt" }, { value: "unsolved", label: "Still open" }],
@@ -168,4 +185,10 @@ export function visionBuildsTableProps(): BuildsViewProps {
       footer: { count: "18 builds", mostCommon: "Most common · Sales, Claude Code", median: "Median 11 steps", total: "Total 214", onCalculate: noop },
     },
   };
+}
+
+/** BF-06: the Table drawn on its own, with the Filters button the page's view gives it. */
+export function visionBuildsTableViewProps(): BuildsTableViewProps {
+  const { table, filters } = visionBuildsTableProps();
+  return { ...table!, activeCount: filters.activeCount, onOpenFilters: noop };
 }

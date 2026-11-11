@@ -37,6 +37,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 import { getCountSpread, getWorksOnModelCounts, listBuildsTable, resetBuildsCountColumns, stackClause } from "@/lib/build/gallery";
+import { MODEL_VERSIONS, modelKeysOf, modelLabel } from "@/lib/models/registry";
 
 const call = (method: string) => calls.filter((entry) => entry.method === method);
 /** The `gte` filters on the build's own columns (the runs window on the embedded runs is its own claim). */
@@ -304,5 +305,35 @@ describe("getWorksOnModelCounts", () => {
       ["sonnet-5-5", 9],
       ["opus-5-5", 4],
     ]);
+  });
+});
+
+/* ── BF-10 P2 ── */
+
+describe("the four new columns' data", () => {
+  const row = { id: "a", slug: "a", title: "A", shape: "app", made_with: [], reproduction_count: 1, rebuild_count: 0, maker: null };
+
+  it("a row carries its likes, its patterns and the models it worked on", async () => {
+    const key = modelKeysOf(MODEL_VERSIONS[0])[0];
+    response = { data: [{ ...row, step_count: 3, session_count: 1, like_count: 4, patterns: ["router"], worked_models: [key] }], error: null, count: 1 };
+    const page = await listBuildsTable();
+    const select = call("select")[0].args[0] as string;
+    expect(select).toContain("like_count, patterns");
+    expect(select).toContain("step_count, session_count, worked_models");
+    expect(call("select")).toHaveLength(1);
+    expect(page.builds[0]).toMatchObject({ likeCount: 4, patterns: ["router"], workedModels: [key] });
+    expect(modelLabel(key)).toBe(MODEL_VERSIONS[0].name);
+  });
+
+  it("a row read without the stored counts has no worked models", async () => {
+    queue = [
+      { data: [], error: { code: "42703", message: "column builds.worked_models does not exist" }, count: null },
+      { data: [{ ...row, like_count: 2, patterns: null }], error: null, count: 1 },
+    ];
+    const page = await listBuildsTable();
+    expect(call("select")[1].args[0]).not.toContain("worked_models");
+    expect(page.countsLive).toBe(false);
+    expect(page.builds[0].workedModels).toBeUndefined();
+    expect(page.builds[0]).toMatchObject({ likeCount: 2, patterns: [] });
   });
 });

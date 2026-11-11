@@ -138,6 +138,8 @@ export function SetNameDialog({
   }, [open, initialName]);
 
   const ready = name.trim().length > 0 && !busy;
+  /* BF-09 (F2): with no name, a line under the field says why Save is off, and both describe themselves by it. */
+  const hint = name.trim().length === 0;
   const submit = async () => {
     if (!ready) return;
     setBusy(true);
@@ -179,6 +181,9 @@ export function SetNameDialog({
         <input
           id="set-name"
           type="text"
+          // A5: the dialog's first focusable is Close; the field is what the reader came to fill.
+          autoFocus
+          aria-describedby={hint ? "set-name-hint" : undefined}
           value={name}
           maxLength={SET_NAME_MAX}
           autoComplete="off"
@@ -197,6 +202,11 @@ export function SetNameDialog({
             ...ring(state.focusVisible),
           }}
         />
+        {hint ? (
+          <p id="set-name-hint" style={{ margin: "6px 0 0", fontSize: 12, color: t.label }}>
+            Give it a name to save.
+          </p>
+        ) : null}
         {askPublic ? (
           <label
             style={{
@@ -238,6 +248,7 @@ export function SetNameDialog({
             size={44}
             fontSize={14}
             disabled={!ready}
+            aria-describedby={hint ? "set-name-hint" : undefined}
           >
             {busy ? "Saving" : submitLabel}
           </Button>

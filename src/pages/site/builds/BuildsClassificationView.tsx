@@ -3,7 +3,7 @@
 
    Like Maps, the board has no filter column, so this draws the whole page: the head with its sentence and the view
    switch, one row (Filters with the active count, "Facets shown n of 15"), the Table's chip row (BF-04), the key to the small labels (BF-04: its own line, directly above the grid) and the grid. Filters
-   opens the Table's own panel, given as `panel`. Facets shown opens a checklist of the 15 facets; the choice is the
+   opens the one Filters dialog (BF-06) with the Table's own panel, given as `filters`. Facets shown opens a checklist of the 15 facets; the choice is the
    page's (`facets`, `onFacets`), and the last facet cannot be unchecked.
 
    A card is a module: title, "@maker · Shape", the reproductions and the lamp, then one row per facet shown: its name and
@@ -24,7 +24,8 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
-import { BuildsControl, BuildsHead, UpdatingStatus, ViewSwitch, ellipsis, hitArea, text, useCardColumns } from "./BuildsFrame";
+import { BuildsControl, BuildsHead, FiltersButton, UpdatingStatus, ViewSwitch, ellipsis, hitArea, text, useCardColumns } from "./BuildsFrame";
+import { BuildsFilters, type BuildsFiltersViewProps } from "./BuildsFiltersView";
 import { ActiveFilters, RowLamp, type TableChip } from "./BuildsTableView";
 import { ALL_FACETS, type ClassCardView, type ClassRowView, type ClassValueView } from "./classificationModel";
 
@@ -39,8 +40,11 @@ export interface BuildsClassificationViewProps {
   chips: readonly TableChip[];
   onRemoveChip: (key: string) => void;
   onClearAll: () => void;
-  /** The Table's filter panel, drawn under the row when Filters is open. */
-  panel?: ReactNode;
+  /** BF-09 (A8): the open saved set's name, on the Filters button. */
+  setName?: string;
+  /** The Table's filters, drawn in the Filters dialog (BF-06). BF-07: the props, not a drawn panel, since the dialog holds the
+      name search the panel reads. Absent: Filters is disabled. */
+  filters?: BuildsFiltersViewProps;
   /** The facets shown, and a change to them. */
   facets: readonly Facet[];
   onFacets: (facets: readonly Facet[]) => void;
@@ -175,7 +179,7 @@ function FacetChooser({ facets, onFacets }: Pick<BuildsClassificationViewProps, 
 const CLASSIFICATION_PARTS = [{ text: "Classification of each build" }, { text: "select a value to filter by it" }];
 
 export default function BuildsClassificationView(props: BuildsClassificationViewProps) {
-  const { view, hrefFor, onViewIntent, buildsLabel, activeCount, chips, onRemoveChip, onClearAll, panel, facets, onFacets, cards, onMore, loadingMore, empty, updating } = props;
+  const { view, hrefFor, onViewIntent, buildsLabel, activeCount, chips, onRemoveChip, onClearAll, filters, setName, facets, onFacets, cards, onMore, loadingMore, empty, updating } = props;
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [facetsOpen, setFacetsOpen] = useState(false);
   const columns = useCardColumns();
@@ -184,10 +188,7 @@ export default function BuildsClassificationView(props: BuildsClassificationView
       <BuildsHead figure={buildsLabel} parts={CLASSIFICATION_PARTS} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
 
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 16px", marginTop: 24 }}>
-        <BuildsControl aria-expanded={panel ? filtersOpen : undefined} disabled={!panel} onClick={() => setFiltersOpen((value) => !value)}>
-          <span style={{ color: t.label }}>Filters</span>
-          {activeCount > 0 ? <span>{activeCount}</span> : null}
-        </BuildsControl>
+        <FiltersButton activeCount={activeCount} setName={setName} disabled={!filters} onClick={() => setFiltersOpen(true)} />
         <BuildsControl aria-expanded={facetsOpen} onClick={() => setFacetsOpen((value) => !value)}>
           <span style={{ color: t.label }}>Facets shown</span>
           <span>{`${facets.length} of ${ALL_FACETS.length}`}</span>
@@ -197,7 +198,7 @@ export default function BuildsClassificationView(props: BuildsClassificationView
 
       <ActiveFilters chips={chips} onRemove={onRemoveChip} onClearAll={onClearAll} />
 
-      {filtersOpen && panel ? <div style={{ marginTop: 24, maxWidth: 256 }}>{panel}</div> : null}
+      {filters ? <BuildsFilters {...filters} open={filtersOpen} onOpenChange={setFiltersOpen} /> : null}
       {facetsOpen ? (
         <div style={{ marginTop: 16 }}>
           <FacetChooser facets={facets} onFacets={onFacets} />
