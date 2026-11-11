@@ -73,7 +73,8 @@ describe("SV-07 P6 · what can be selected", () => {
     expect((within(head).getByTestId("session-title") as HTMLElement).style.userSelect).toBe("text");
     expect(screen.getByTestId("sandbox-counts").style.userSelect).toBe("none");
     // The prompt's own words are text to copy: nothing above them says otherwise.
-    const words = await waitFor(() => screen.getByText(/Make the poster for the bakery/));
+    // F42: its first words are also its title; the text is the last of them.
+    const words = await waitFor(() => screen.getAllByText(/Make the poster for the bakery/).at(-1) as HTMLElement);
     for (let at: HTMLElement | null = words; at && at !== document.body; at = at.parentElement) {
       if (at === head) break;
       expect(at.style.userSelect, at.getAttribute("data-testid") ?? at.tagName).not.toBe("none");

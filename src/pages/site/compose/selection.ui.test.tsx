@@ -17,6 +17,8 @@ const card = (name: RegExp) => screen.getByRole("group", { name });
 const panel = () => screen.getByTestId("details-panel");
 const panelTitle = () => within(panel()).getByRole("heading", { level: 3 }).textContent;
 const panelLine = () => within(panel()).getByTestId("details-line").textContent;
+/** F42: a tile's title, as its heading draws it. */
+const tileTitle = (name: RegExp) => within(card(name)).getByRole("heading", { level: 3 }).textContent;
 
 /** Sources, opened from its rail, with Session 2 open. */
 async function sourcesOpen() {
@@ -34,9 +36,10 @@ describe("the right panel shows the selection (F14)", () => {
   it("selects tile A, then tile B: the panel's title is B's", async () => {
     await mountCa20(seedCa20);
     fireEvent.click(card(/^Prompt 1:/));
-    await waitFor(() => expect(panelTitle()).toBe("Prompt 1"));
+    await waitFor(() => expect(panelTitle()).toBe(tileTitle(/^Prompt 1:/)));
     fireEvent.click(card(/^Prompt 2:/));
-    await waitFor(() => expect(panelTitle()).toBe("Prompt 2"));
+    await waitFor(() => expect(panelTitle()).toBe(tileTitle(/^Prompt 2:/)));
+    expect(tileTitle(/^Prompt 2:/)).not.toBe(tileTitle(/^Prompt 1:/));
   });
 
   it("with nothing selected it says one line, from its COPY object", async () => {
@@ -60,9 +63,9 @@ describe("one selection rule (F11, F12)", () => {
     expect(scrolled).toContainEqual({ id: IDS.p3, options: { block: "nearest" } });
   });
 
-  it('"Open prompt" selects the prompt it opens', async () => {
+  it("a double click on a prompt selects the prompt it opens (F17)", async () => {
     await mountCa20(seedCa20);
-    fireEvent.click(within(card(/^Prompt 2:/)).getByRole("button", { name: "Open prompt" }));
+    fireEvent.doubleClick(card(/^Prompt 2:/));
     await waitFor(() => expect(card(/^Prompt 2:/).getAttribute("data-selected")).toBe("true"));
     expect(await screen.findByRole("dialog")).toBeTruthy();
   });
@@ -107,20 +110,20 @@ describe("undo after adding from the composer (F16)", () => {
 describe("one identifier for a step (F56)", () => {
   it("a build of two sessions: the tile, the panel, the prompt window and Sources all say Step 4 for the same step", async () => {
     await mountCa20(seedCa20);
-    // The tile.
-    expect(within(card(/^Prompt 4:/)).getByTestId("prompt-place").textContent).toBe("Step 4");
+    // The tile: its number badge (F42: the title is the title alone).
+    expect(within(card(/^Prompt 4:/)).getByTestId("number-badge").textContent).toBe("4");
     // The panel.
     fireEvent.click(card(/^Prompt 4:/));
     await waitFor(() => expect(panelLine()).toMatch(/^Step 4 · Session 2/));
     // The prompt window: its title, and the one grey line with the position in the session as secondary text.
-    fireEvent.click(within(card(/^Prompt 4:/)).getByRole("button", { name: "Open prompt" }));
+    fireEvent.doubleClick(card(/^Prompt 4:/));
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByTestId("prompt-place").textContent).toBe("Step 4");
     expect(within(dialog).getByTestId("full-prompt-line").textContent).toMatch(/^Step 4 · 1 of 2 in Session 2/);
     fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
     // Sources.
     const sources = await sourcesOpen();
-    expect(within(sources).getByText("Step 4").closest("button")?.textContent).toBe("Step 4Prompt 4");
+    expect(within(sources).getByText("Step 4").closest("button")?.textContent).toBe(`Step 4${tileTitle(/^Prompt 4:/)}`);
   });
 });
 
@@ -147,7 +150,7 @@ describe("one prompt count (F57)", () => {
     // The Build line.
     await waitFor(() => expect(screen.getByTestId("sandbox-counts").textContent).toMatch(/ 3 prompts/));
     // The prompt window, on Session 1's second prompt.
-    fireEvent.click(within(card(/^Prompt 2:/)).getByRole("button", { name: "Open prompt" }));
+    fireEvent.doubleClick(card(/^Prompt 2:/));
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByTestId("full-prompt-line").textContent).toMatch(/^Step 2 · 2 of 3 in Session 1/);
     fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));

@@ -77,42 +77,25 @@ describe("session dividers", () => {
 });
 
 describe("step cards", () => {
-  it("calls a prompt by its step, 'Step 1', with a typed title next to it (CA-15 follow-up)", () => {
-    list();
+  it("F42: heads a prompt with its badge, its type line and its title alone: the typed one, else its first eight words", () => {
+    const props = list();
     const card = (name: RegExp) => screen.getByRole("group", { name });
     const quiet = within(card(/^Prompt 2:/)).getByRole("heading", { level: 3 });
     const named = within(card(/^Prompt 1:/)).getByRole("heading", { level: 3 });
-    expect(within(quiet).getByTestId("prompt-place").textContent).toBe("Step 2");
-    expect(within(quiet).queryByTestId("prompt-own-title")).toBeNull();
+    const second = props.steps.find((step) => step.id === "p2");
+    expect(quiet.textContent).toBe(second?.defaultTitle);
     expect(quiet.getAttribute("data-default-title")).toBe("true");
-    expect(within(named).getByTestId("prompt-place").textContent).toBe("Step 1");
-    expect(within(named).getByTestId("prompt-own-title").textContent).toBe("Homepage copy");
+    expect(within(card(/^Prompt 2:/)).queryByTestId("prompt-place")).toBeNull();
+    expect(named.textContent).toBe("Homepage copy");
     expect(named.getAttribute("data-default-title")).toBeNull();
-    expect(within(named).getByTestId("prompt-name").getAttribute("style")).toMatch(/font-weight:\s*500/);
+    expect(within(card(/^Prompt 1:/)).getByText("1", { selector: "*" })).toBeTruthy();
   });
 
-  it("edits the title on the tile itself: the pencil opens a field for the typed title, Enter saves it, and an empty one puts the place back", () => {
-    const props = list();
+  it("F17: a prompt tile has no pencil and no Open prompt link; Rename stays in its menu", () => {
+    list({ onOpenPrompt: vi.fn() });
     const tile = screen.getByRole("group", { name: /^Prompt 2:/ });
-    fireEvent.click(within(tile).getByRole("button", { name: "Rename prompt 2" }));
-    const field = within(tile).getByRole("textbox", { name: "Title of prompt 2" }) as HTMLInputElement;
-    expect(field.value).toBe("");
-    fireEvent.change(field, { target: { value: "Menu copy" } });
-    fireEvent.keyDown(field, { key: "Enter" });
-    expect(props.onRename).toHaveBeenCalledWith("p2", "Menu copy");
-  });
-
-  it("has Open prompt as the footer link, only when the prompt can be opened, and it opens that prompt without selecting the tile (CA-15 P10)", () => {
-    list();
-    expect(screen.queryByText("Open prompt")).toBeNull();
-    cleanup();
-    const onOpenPrompt = vi.fn();
-    const props = list({ onOpenPrompt });
-    const link = within(screen.getByRole("group", { name: /^Prompt 2:/ })).getByRole("button", { name: "Open prompt" });
-    expect(link.closest('[data-testid="tile-footer"]')).toBeTruthy();
-    fireEvent.click(link);
-    expect(onOpenPrompt).toHaveBeenCalledWith("p2");
-    expect(props.onSelect).not.toHaveBeenCalled();
+    expect(within(tile).queryByRole("button", { name: "Rename prompt 2" })).toBeNull();
+    expect(within(tile).queryByRole("button", { name: "Open prompt" })).toBeNull();
     expect(isClamped({ scrollHeight: 42, clientHeight: 42 })).toBe(false);
     expect(isClamped({ scrollHeight: 63, clientHeight: 42 })).toBe(true);
   });
@@ -130,15 +113,25 @@ describe("step cards", () => {
     expect(props.onDismiss).toHaveBeenCalledWith(props.suggestions[0]);
   });
 
-  it("opens the full prompt from Open prompt and Enter, when it can", () => {
+  it("F17: a click selects a prompt; a double click and Enter open it, when it can", () => {
     const onOpenPrompt = vi.fn();
-    list({ onOpenPrompt });
+    const props = list({ onOpenPrompt });
     const card = screen.getByRole("group", { name: /^Prompt 2:/ });
-    // UX-02 P5: the footer's Open prompt, where a double click used to be.
-    fireEvent.click(within(card).getByRole("button", { name: "Open prompt" }));
+    fireEvent.click(card);
+    expect(props.onSelect).toHaveBeenCalledWith("p2");
+    expect(onOpenPrompt).not.toHaveBeenCalled();
+    fireEvent.doubleClick(card);
     fireEvent.keyDown(card, { key: "Enter" });
     expect(onOpenPrompt).toHaveBeenCalledTimes(2);
     expect(onOpenPrompt).toHaveBeenCalledWith("p2");
+  });
+
+  it("F19: a prompt's preview is plain words", () => {
+    const base = sandboxListProps("bakery");
+    const steps = base.steps.map((step) => (step.id === "p2" ? { ...step, text: "## Plan\n**Bold** and `code`", changes: [] } : step));
+    list({ steps });
+    const card = screen.getByRole("group", { name: /^Prompt 2:/ });
+    expect(within(card).getByText("Plan Bold and code")).toBeTruthy();
   });
 
   it("renames in place: Enter saves, Esc cancels", async () => {

@@ -15,6 +15,7 @@ import { decisionHeadline, decisionLines, expectedLine } from "@/lib/build/decis
 import { decisionPipelineLines } from "@/lib/build/pipelineFields";
 import { recallSource, retrievalDetails, retrievalLine } from "@/lib/build/retrieval";
 import { formatSize } from "@/lib/build/readerSteps";
+import { fileSize } from "@/pages/site/compose/detailsModel";
 import { REPO_USAGE_LABEL } from "@/lib/build/sourceTiles";
 import { splitVariables } from "@/lib/build/tileExtras";
 import type { ReaderFact } from "@/lib/build/readerFacts";
@@ -184,16 +185,22 @@ export function FileTileBody({ step, indent = 0, lean = false, plain = false, on
       </div>
     );
   }
-  const size = formatSize(facts.size);
+  const size = fileSize(facts.size);
+  const shows = facts.kind === "picture" ? Boolean(facts.mediaId) : (facts.kind === "text" || facts.kind === "code" || facts.kind === "spreadsheet") && facts.preview.length > 0;
+  // F43: a list tile with no preview and no note has no body: its title and type line say it all.
+  if (lean && !shows && !step.text) return null;
   return (
     <div data-testid="file-tile" style={{ display: "flex", flexDirection: "column", gap: 8, paddingLeft: indent, minWidth: 0 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-        <FileMark kind={facts.kind} />
-        <span style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
-          <span style={{ cursor: "default", ...text(13.5, 500, t.text), ...ellipsis }}>{facts.name}</span>
-          {lean ? null : <Quiet>{[FILE_WORD[facts.kind], size].filter(Boolean).join(" · ")}</Quiet>}
-        </span>
-      </div>
+      {/* F43: in a list tile (`lean`) the name is the tile's title and its type and size are its type line: not printed again. */}
+      {lean ? null : (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <FileMark kind={facts.kind} />
+          <span style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
+            <span style={{ cursor: "default", ...text(13.5, 500, t.text), ...ellipsis }}>{facts.name}</span>
+            <Quiet>{[FILE_WORD[facts.kind], size].filter(Boolean).join(" · ")}</Quiet>
+          </span>
+        </div>
+      )}
       {facts.kind === "picture" && facts.mediaId ? (
         thumb(facts.mediaId, 96)
       ) : (facts.kind === "text" || facts.kind === "code" || facts.kind === "spreadsheet") && facts.preview.length > 0 ? (

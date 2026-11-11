@@ -52,8 +52,7 @@ import { HelperChips, ShapeChip } from "@/components/build/RuntimeChips";
 import { CostStrip, TileCostLines } from "@/components/build/CostLines";
 import { callsOf } from "@/lib/build/decisionCopy";
 import { definesOf } from "@/lib/build/agentCode";
-import { PromptName, MANUAL_LEAN_LINES, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TILE_COPY, TileFooter, DecisionTileBody, RetrievalTileBody, ToolTileBody, triggerLine } from "@/components/build/tileBodies";
-import { GlyphButton } from "./ModalFrame";
+import { MANUAL_LEAN_LINES, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TILE_COPY, TileFooter, DecisionTileBody, RetrievalTileBody, ToolTileBody, triggerLine } from "@/components/build/tileBodies";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { SUMMARY_COPY } from "@/lib/build/summaryTurn";
 import { ASKS_FOR_LABEL, originLine } from "@/lib/build/promptOrigin";
@@ -77,7 +76,7 @@ import { MenuButton } from "@/components/brand/MenuButton";
 import { Pill } from "@/components/brand/Pill";
 import type { SessionGroup, Step } from "@/lib/build/graph";
 import { footerFactsOf, resultTypeLine, typeLineOf } from "@/lib/build/tileLines";
-import { checkHistoryLine, checkStatus, resultHolds, sentWithLabel, stepLabel, stepRunsLabel, stepTitle, TOOL_TYPE, withSentWith } from "@/lib/build/graph";
+import { checkHistoryLine, checkStatus, plainPreview, resultHolds, sentWithLabel, stepRunsLabel, stepTitle, TOOL_TYPE, withSentWith } from "@/lib/build/graph";
 import { ChangedText } from "@/components/build/ChangedText";
 import { copyTogether } from "@/lib/build/copyTogether";
 import { codeInPrompt, SENT_WITH_COPY, type CodeSuggestion } from "@/lib/build/sentWithSuggest";
@@ -1185,8 +1184,6 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
   const isDefault = step.title === null;
   const { alsoIn: repeated } = useContext(ListRefsContext);
   const alsoIn = repeated?.get(step.id);
-  // SV-07 P7: a Summary tile is called what it is, never by a prompt's place.
-  const place = step.summary ? SUMMARY_COPY.title : stepLabel(step.number);
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState("");
   const [over, setOver] = useState(false);
@@ -1232,6 +1229,8 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
       tabIndex={0}
       {...focus.bind}
       onClick={() => props.onSelect(step.id)}
+      // F17: a click selects; a double click opens the prompt window, as Edit in the right panel does.
+      onDoubleClick={open}
       onKeyDown={onKeyDown}
       onDragEnter={takesDrops ? (event) => {
         if (!carriesFiles(event)) return;
@@ -1278,21 +1277,11 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
           renaming ? (
             <RenameField label={`Title of prompt ${step.number}`} draft={draft} placeholder={step.defaultTitle} phone={phone} onDraft={setDraft} onFinish={finish} />
           ) : (
-            /* A prompt is called by its place on the build; the maker's own title sits next to it, and the pencil edits it here. */
-            <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
-              <h3 data-default-title={isDefault ? "true" : undefined} title={[place, step.title].filter(Boolean).join(" ")} style={{ margin: 0, minWidth: 0, letterSpacing: "-0.005em" }}>
-                <PromptName place={place} title={step.title} />
-              </h3>
-              <GlyphButton
-                glyph="pencil"
-                label={`Rename prompt ${step.number}`}
-                phone={phone}
-                onClick={() => {
-                  setDraft(step.title ?? "");
-                  setRenaming(true);
-                }}
-              />
-            </div>
+            /* F42: the title alone, as every tile's (F44): the maker's own, else the first eight words; the place is the badge. F17: no
+               pencil; Rename is in the menu and in the prompt window. */
+            <h3 data-default-title={isDefault ? "true" : undefined} title={title} style={{ ...TILE_TITLE, ...(isDefault ? { color: t.text2 } : null) }}>
+              <FindHit text={title} />
+            </h3>
           )
         }
         menu={
@@ -1355,7 +1344,8 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         ref={textRef}
         style={{ ...text(13.5, 400, t.text), lineHeight: "21px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }}
       >
-        <ChangedText text={step.text} changes={step.changes} />
+        {/* F19: plain words; a prompt with marked changes keeps its text as written, so the marks stay on their words. */}
+        <ChangedText text={step.changes?.length ? step.text : plainPreview(step.text)} changes={step.changes} />
       </p>
       {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} lean /> : null}
       {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
@@ -1368,7 +1358,8 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         step={step}
         props={props}
         link={
-          open ? (
+          /* F17 (D8): a prompt tile has no footer link (Edit in the right panel, or a double click, opens it); a Summary tile keeps its one footer action (F44). */
+          open && step.summary ? (
             <FooterLink phone={phone} onClick={open}>
               {LIST_COPY.openPrompt}
             </FooterLink>
