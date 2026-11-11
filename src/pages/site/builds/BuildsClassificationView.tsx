@@ -104,6 +104,8 @@ function FacetRow({ row }: { row: ClassRowView }) {
 }
 
 export function ClassificationCard({ card, index }: { card: ClassCardView; index: number }) {
+  /* BF-04 (E4): a build with nothing in any shown facet is one sentence, not rows that each say nothing. */
+  const blank = card.rows.every((row) => row.values.length === 0);
   return (
     <article
       data-testid="classification-card"
@@ -112,7 +114,7 @@ export function ClassificationCard({ card, index }: { card: ClassCardView; index
         border: `1px solid ${t.moduleBorder}`,
         borderRadius: r.card,
         padding: 16,
-        ...(index >= FIRST_SCREEN_CARDS ? { contentVisibility: "auto", containIntrinsicSize: `auto ${cardHeight(card.rows.length)}px` } : null),
+        ...(index >= FIRST_SCREEN_CARDS ? { contentVisibility: "auto", containIntrinsicSize: `auto ${cardHeight(blank ? 1 : card.rows.length)}px` } : null),
       }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
@@ -130,11 +132,15 @@ export function ClassificationCard({ card, index }: { card: ClassCardView; index
           {card.reproductions > 0 ? <RowLamp lit={card.lit} /> : null}
         </span>
       </div>
-      <dl style={{ margin: "16px 0 0" }}>
-        {card.rows.map((row) => (
-          <FacetRow key={row.facet} row={row} />
-        ))}
-      </dl>
+      {blank ? (
+        <p style={{ ...text(12.5, 400, t.label), margin: "16px 0 0" }}>Not classified yet</p>
+      ) : (
+        <dl style={{ margin: "16px 0 0" }}>
+          {card.rows.map((row) => (
+            <FacetRow key={row.facet} row={row} />
+          ))}
+        </dl>
+      )}
     </article>
   );
 }

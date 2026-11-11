@@ -129,6 +129,23 @@ describe("BF-04 the key", () => {
   });
 });
 
+describe("BF-04 an unclassified card", () => {
+  it('a card whose shown facets are all empty says "Not classified yet" once and draws no facet rows', () => {
+    draw((p) => ({ ...p, cards: [{ ...p.cards[0], rows: p.cards[0].rows.map((row) => ({ ...row, source: "", values: [] })) }] }));
+    const card = within(screen.getByTestId("classification-card"));
+    expect(card.getAllByText("Not classified yet")).toHaveLength(1);
+    expect(card.queryAllByRole("term")).toHaveLength(0);
+    expect(card.queryAllByTestId("empty-value")).toHaveLength(0);
+  });
+
+  it("a card with one value among empty facets draws every row as before", () => {
+    draw((p) => ({ ...p, cards: [{ ...p.cards[0], rows: p.cards[0].rows.map((row, index) => ({ ...row, values: index === 0 ? [{ label: "Education", href: null }] : [] })) }] }));
+    const card = within(screen.getByTestId("classification-card"));
+    expect(card.getAllByRole("term")).toHaveLength(8);
+    expect(card.queryByText("Not classified yet")).toBeNull();
+  });
+});
+
 describe("Facets shown", () => {
   const open = () => fireEvent.click(screen.getByRole("button", { name: /Facets shown/ }));
 
