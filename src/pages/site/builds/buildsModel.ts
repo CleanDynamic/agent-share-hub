@@ -244,6 +244,52 @@ export function activeChips(params: GalleryParams): TableChip[] {
   return chips;
 }
 
+/* ── a filter's column (BF-11, B1) ── */
+
+/** The column each filter of the panel is about: a facet its own, Tools and stack the Tools column, the proof and structure
+    filters the column that shows what they test. Last confirmed and Confirmed or stale share Confirmed. */
+export const FILTER_COLUMN: Record<string, ColumnId> = {
+  ...(Object.fromEntries((["field", "task", "setting", "built", "role", "technique", "modality", "method", "autonomy", "data", "oversight", "age", "skill", "cost"] as const).map((facet) => [facet, facet])) as Record<string, ColumnId>),
+  stack: "tools",
+  reproductions: "reproductions",
+  rebuilds: "rebuilds",
+  likes: "likes",
+  steps: "steps",
+  sessions: "sessions",
+  model: "works",
+  within: "confirmed",
+  state: "confirmed",
+  shape: "shape",
+  pattern: "patterns",
+  open: "open",
+};
+
+/** The filters that hold a value, one id each, from the parameters `activeChips` reads, without the search. */
+export function activeFilterIds(params: GalleryParams): string[] {
+  const ids: string[] = (params.facets ?? []).map((key) => key.slice(0, key.indexOf(":")));
+  if (params.tool) ids.push("stack");
+  if ((params.shapes ?? []).length > 0) ids.push("shape");
+  if (params.pattern) ids.push("pattern");
+  if (params.open) ids.push("open");
+  if (params.model) ids.push("model");
+  if (params.within !== undefined) ids.push("within");
+  if (params.state) ids.push("state");
+  for (const key of RANGE_KEYS) if (params.ranges?.[key]) ids.push(key);
+  return [...new Set(ids)];
+}
+
+/** The columns of the filters that hold a value, each once. Worked out from the address on every render: nothing is stored. */
+export function filteredColumns(params: GalleryParams): ColumnId[] {
+  return [...new Set(activeFilterIds(params).flatMap((id) => (FILTER_COLUMN[id] ? [FILTER_COLUMN[id]] : [])))];
+}
+
+/** The columns drawn: the reader's, then each filtered one that is available and not already there, in the table's own order. */
+export function drawnColumns(chosen: readonly ColumnId[], filtered: readonly ColumnId[], on: boolean, countsLive: boolean): ColumnId[] {
+  if (!on) return [...chosen];
+  const added = new Set(filtered.filter((id) => !chosen.includes(id)));
+  return [...chosen, ...availableColumns(countsLive).filter((id) => added.has(id))];
+}
+
 /** The address without the chip's value. */
 export function withoutChip(params: GalleryParams, key: string): GalleryParams {
   if (key.startsWith("f:")) return { ...params, facets: (params.facets ?? []).filter((entry) => entry !== key.slice(2)) };
@@ -381,10 +427,18 @@ const COLUMN_GROUPS: readonly (readonly [ColumnGroup, readonly ColumnId[]])[] = 
 ];
 export const COLUMN_GROUP = Object.fromEntries(COLUMN_GROUPS.flatMap(([group, ids]) => ids.map((id) => [id, group]))) as Record<ColumnId, ColumnGroup>;
 
-/** The chooser's checklist, by group. */
-export function columnsMenu(chosen: readonly ColumnId[], countsLive: boolean, onToggle: (id: ColumnId) => void, onReset?: () => void): ColumnsMenu {
+/** The chooser's checklist, by group. BF-11: a column drawn only because a filter holds a value is on and locked, and its name
+    says so: it goes when the filter does. */
+export function columnsMenu(chosen: readonly ColumnId[], countsLive: boolean, onToggle: (id: ColumnId) => void, onReset?: () => void, filtered: readonly ColumnId[] = []): ColumnsMenu {
   const offered = new Set(availableColumns(countsLive));
-  const options = COLUMN_GROUPS.flatMap(([group, ids]) => ids.filter((id) => offered.has(id)).map((id) => ({ id, name: COLUMN_NAME[id], group, on: chosen.includes(id), ...(id === "build" ? { locked: true } : null) })));
+  const options = COLUMN_GROUPS.flatMap(([group, ids]) =>
+    ids
+      .filter((id) => offered.has(id))
+      .map((id) => {
+        const fromFilter = !chosen.includes(id) && filtered.includes(id);
+        return { id, name: fromFilter ? `${COLUMN_NAME[id]}, from a filter` : COLUMN_NAME[id], group, on: chosen.includes(id) || fromFilter, ...(id === "build" || fromFilter ? { locked: true } : null) };
+      }),
+  );
   return { options, onToggle, onReset };
 }
 

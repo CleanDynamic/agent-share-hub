@@ -3,7 +3,7 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { EMPTY_LAYOUT, LAYOUT_KEY, isEmptyLayout, parseLayout, readStoredLayout, withCalculation, withColumns, writeStoredLayout } from "./buildsLayout";
+import { EMPTY_LAYOUT, LAYOUT_KEY, isEmptyLayout, parseLayout, readStoredLayout, withCalculation, withColumns, withFilterColumns, writeStoredLayout } from "./buildsLayout";
 
 afterEach(() => {
   localStorage.clear();
@@ -31,8 +31,24 @@ describe("parseLayout", () => {
 
   it("buildsLayout: parseLayout ignores order, opened and heights from an older layout and keeps columns and calculations", () => {
     const layout = parseLayout({ order: ["field", "task"], opened: ["task"], heights: { field: 200 }, columns: ["build", "skill"], calculations: [{ column: "steps", kind: "median" }] });
-    expect(layout).toEqual({ columns: ["build", "skill"], calculations: [{ column: "steps", kind: "median" }] });
-    expect(Object.keys(layout).sort()).toEqual(["calculations", "columns"]);
+    expect(layout).toEqual({ columns: ["build", "skill"], calculations: [{ column: "steps", kind: "median" }], filterColumns: true });
+    expect(Object.keys(layout).sort()).toEqual(["calculations", "columns", "filterColumns"]);
+  });
+
+  /* ── BF-11 (B1) ── */
+
+  it("filterColumns is true by default, false only when the stored value is exactly false", () => {
+    expect(EMPTY_LAYOUT.filterColumns).toBe(true);
+    expect(parseLayout({}).filterColumns).toBe(true);
+    for (const raw of [true, 0, "false", null, undefined]) expect(parseLayout({ filterColumns: raw }).filterColumns).toBe(true);
+    expect(parseLayout({ filterColumns: false }).filterColumns).toBe(false);
+    expect(withFilterColumns(EMPTY_LAYOUT, false).filterColumns).toBe(false);
+    expect(withFilterColumns(withFilterColumns(EMPTY_LAYOUT, false), true)).toEqual(EMPTY_LAYOUT);
+  });
+
+  it("a layout that differs only by filterColumns being false is not empty", () => {
+    expect(isEmptyLayout(withFilterColumns(EMPTY_LAYOUT, false))).toBe(false);
+    expect(isEmptyLayout(withFilterColumns(EMPTY_LAYOUT, true))).toBe(true);
   });
 
   it("buildsLayout: a layout with only old keys is empty", () => {
@@ -53,7 +69,7 @@ describe("the browser's copy", () => {
 
   it("reads an older copy, holding the filters' order, without it", () => {
     localStorage.setItem(LAYOUT_KEY, JSON.stringify({ order: ["field"], opened: [], heights: { task: 240 }, columns: null, calculations: [{ column: "reproductions", kind: "sum" }] }));
-    expect(readStoredLayout()).toEqual({ columns: null, calculations: [{ column: "reproductions", kind: "sum" }] });
+    expect(readStoredLayout()).toEqual({ columns: null, calculations: [{ column: "reproductions", kind: "sum" }], filterColumns: true });
   });
 
   it("reads nothing when the stored text is broken, and a failing store is not an error", () => {

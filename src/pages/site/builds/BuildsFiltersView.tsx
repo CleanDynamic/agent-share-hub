@@ -153,6 +153,9 @@ export interface BuildsFiltersViewProps {
   onOpen: () => void;
   onRange?: (sectionId: string, value: readonly [number, number]) => void;
   onToggleSegment?: (sectionId: string, key: string) => void;
+  /** BF-11 (B1): a filter that holds a value adds its column. A layout setting, not part of the draft: it applies at once. Absent: not drawn. */
+  addColumns?: boolean;
+  onAddColumns?: (on: boolean) => void;
 }
 
 /* ── pieces ── */
@@ -621,20 +624,29 @@ export function BuildsFilters({ open, onOpenChange, ...props }: BuildsFiltersVie
           <OrderValues order={props.order} onOrder={props.onOrder} />
         </>
       }
-      footer={<FiltersFooter matchCount={props.matchCount} dirty={props.dirty} onClear={props.onClear} onCancel={() => close(false)} onApply={apply} />}
+      footer={<FiltersFooter matchCount={props.matchCount} dirty={props.dirty} addColumns={props.addColumns} onAddColumns={props.onAddColumns} onClear={props.onClear} onCancel={() => close(false)} onApply={apply} />}
     >
       <BuildsFiltersView {...props} search={search} />
     </BuildsFiltersDialog>
   );
 }
 
-/** BF-08 (A2): how many builds the draft matches, then Clear all, Cancel and Apply (the dialog's one primary). */
-function FiltersFooter({ matchCount, dirty, onClear, onCancel, onApply }: { matchCount: number | null; dirty: boolean; onClear: () => void; onCancel: () => void; onApply: () => void }) {
+/** BF-08 (A2): how many builds the draft matches, then Clear all, Cancel and Apply (the dialog's one primary). BF-11 (B1): beside
+    the count, whether each filter adds its column, which applies at once. */
+function FiltersFooter({ matchCount, dirty, addColumns, onAddColumns, onClear, onCancel, onApply }: { matchCount: number | null; dirty: boolean; addColumns?: boolean; onAddColumns?: (on: boolean) => void; onClear: () => void; onCancel: () => void; onApply: () => void }) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-      <span role="status" style={text(12.5, 400, t.text2)}>
-        {matchCount === null ? "" : `${matchCount} ${matchCount === 1 ? "build matches" : "builds match"}`}
-      </span>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 16px" }}>
+        <span role="status" style={text(12.5, 400, t.text2)}>
+          {matchCount === null ? "" : `${matchCount} ${matchCount === 1 ? "build matches" : "builds match"}`}
+        </span>
+        {addColumns !== undefined && onAddColumns ? (
+          <label style={{ display: "inline-flex", alignItems: "center", gap: 8, minHeight: 32, cursor: "pointer", ...text(12.5, 400, t.text2) }}>
+            <Checkbox checked={addColumns} onChange={(event) => onAddColumns(event.currentTarget.checked)} />
+            Add a column for each filter
+          </label>
+        ) : null}
+      </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <BuildsTextButton onClick={onClear}>Clear all</BuildsTextButton>
         <BuildsControl onClick={onCancel}>Cancel</BuildsControl>

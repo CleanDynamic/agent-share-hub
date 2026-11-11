@@ -853,3 +853,61 @@ describe("BF-09 Save current", () => {
     expect(button.disabled).toBe(false);
   });
 });
+
+describe("BF-11 a filter's column", () => {
+  const AUTONOMY = AUTONOMY_VALUES[0];
+  const stored = () => JSON.parse(localStorage.getItem("builds:layout:v1") ?? "null");
+  const autonomyHead = () => screen.queryByRole("columnheader", { name: /^Autonomy/ });
+
+  it("filtering by Autonomy draws an Autonomy column; removing the chip removes it", async () => {
+    renderAt(`/builds?f=autonomy%3A${AUTONOMY.id}`);
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(autonomyHead()).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Remove filter Autonomy" }));
+    await waitFor(() => expect(address).toBe("/builds"));
+    await waitFor(() => expect(autonomyHead()).toBeNull());
+    expect(stored()).toBeNull();
+  });
+
+  it("a column the reader ticked stays when its filter is removed", async () => {
+    localStorage.setItem("builds:layout:v1", JSON.stringify({ columns: ["build", "field", "autonomy"], calculations: [] }));
+    renderAt(`/builds?f=autonomy%3A${AUTONOMY.id}`);
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(autonomyHead()).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Remove filter Autonomy" }));
+    await waitFor(() => expect(address).toBe("/builds"));
+    expect(autonomyHead()).toBeTruthy();
+  });
+
+  it("opening /builds?view=classification and pressing a value, then choosing Table, shows that value's column", async () => {
+    listBuildsTable.mockResolvedValue({ builds: [{ ...build(1), classifiedAs: { ...emptyClassification(), derived: { autonomy: { values: [AUTONOMY.id], from: [] } } } }], total: 1 });
+    renderAt("/builds?view=classification");
+    fireEvent.click(await screen.findByRole("link", { name: AUTONOMY.label }));
+    await waitFor(() => expect(new URLSearchParams(address.split("?")[1]).getAll("f")).toEqual([`autonomy:${AUTONOMY.id}`]));
+    fireEvent.click(within(screen.getByRole("navigation", { name: "View" })).getByRole("link", { name: "Table" }));
+    expect(await screen.findByRole("columnheader", { name: /^Autonomy/ })).toBeTruthy();
+    expect(stored()).toBeNull();
+  });
+
+  it('the dialog\'s footer has "Add a column for each filter", ticked; unticking it and applying draws only the reader\'s columns, and the choice is kept', async () => {
+    renderAt(`/builds?f=autonomy%3A${AUTONOMY.id}`);
+    await screen.findByRole("link", { name: "Build 1" });
+    await openFilters();
+    const box = screen.getByRole("checkbox", { name: "Add a column for each filter" }) as HTMLInputElement;
+    expect(box.checked).toBe(true);
+    fireEvent.click(box);
+    expect((screen.getByRole("checkbox", { name: "Add a column for each filter" }) as HTMLInputElement).checked).toBe(false);
+    expect(stored().filterColumns).toBe(false);
+    closeFilters();
+    await waitFor(() => expect(autonomyHead()).toBeNull());
+    expect(address).toBe(`/builds?f=autonomy%3A${AUTONOMY.id}`);
+  });
+
+  it("the Columns label counts the reader's own columns", async () => {
+    renderAt(`/builds?f=autonomy%3A${AUTONOMY.id}&shape=agent`);
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(autonomyHead()).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: /^Shape/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Columns: 10 of 25" })).toBeTruthy();
+  });
+});
