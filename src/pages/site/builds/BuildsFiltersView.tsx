@@ -10,7 +10,7 @@
    screen readers and the group carries the words; a scale is a row of buttons with `aria-pressed`. Focus rings stay. */
 
 import * as SliderPrimitive from "@radix-ui/react-slider";
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useId, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/brand/Button";
@@ -116,6 +116,10 @@ export interface OpenSetView {
 
 export interface SavedSetsProps {
   rows: readonly SavedSetRow[];
+  /** BF-09 (F1): there is something to save: a filter or a changed layout, applied. */
+  canSave: boolean;
+  /** Why Save current is off, under the heading. */
+  saveHint?: string;
   /** Rejects when it could not save. */
   onSaveCurrent: (name: string, isPublic: boolean) => void | Promise<void>;
   open?: OpenSetView;
@@ -240,16 +244,24 @@ function OpenSetLine({ open }: { open: OpenSetView }) {
   );
 }
 
-function SavedSets({ rows, onSaveCurrent, open, onRename, onTogglePublic, onDelete }: SavedSetsProps) {
+function SavedSets({ rows, canSave, saveHint, onSaveCurrent, open, onRename, onTogglePublic, onDelete }: SavedSetsProps) {
   const [naming, setNaming] = useState<"save" | SavedSetRow | null>(null);
+  const hintId = useId();
   const [deleting, setDeleting] = useState<SavedSetRow | null>(null);
   const sets = open && !rows.some((row) => row.id === open.id) ? [{ id: open.id, name: open.name, href: "", note: undefined, current: true } as SavedSetRow] : [];
   return (
     <section aria-label="Saved filter sets" style={rule}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
         <h3 style={{ ...name12, margin: 0 }}>Saved filter sets</h3>
-        <BuildsTextButton onClick={() => setNaming("save")}>Save current</BuildsTextButton>
+        <BuildsTextButton disabled={!canSave} aria-describedby={saveHint ? hintId : undefined} onClick={() => setNaming("save")}>
+          Save current
+        </BuildsTextButton>
       </div>
+      {saveHint ? (
+        <p id={hintId} style={{ ...text(12, 400, t.label), margin: "2px 0 0" }}>
+          {saveHint}
+        </p>
+      ) : null}
       <div style={{ marginTop: 6 }}>
         {rows.map((row) => (
           <SavedSetLink

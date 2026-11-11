@@ -1162,6 +1162,9 @@ export const CA03_FILES: readonly string[] = [
   // BF-08
   "src/lib/routing/galleryPrefetch.test.ts",
 
+  // BF-09
+  "src/pages/site/builds/SetDialogs.test.tsx",
+
   // SV-14
   "src/lib/build/graph.ts",
   "src/pages/site/openbuilds/OpenBuildsFrame.tsx",

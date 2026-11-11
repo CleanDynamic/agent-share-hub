@@ -142,6 +142,7 @@ export function visionBuildsTableProps(): BuildsViewProps {
           { id: "s2", name: "Works on Opus 5.5, no code", count: 18, href: "#" },
         ],
         onSaveCurrent: noop,
+        canSave: true,
       },
       sections: visionBuildsSections,
       onToggleOption: noop,

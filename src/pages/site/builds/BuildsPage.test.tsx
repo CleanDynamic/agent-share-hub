@@ -431,7 +431,8 @@ describe("SV-24 P1: saved filter sets", () => {
   it("reports a failed save and tells the reader, and the window stays open to try again", async () => {
     auth.user = { id: "reader-1" };
     sets.createFilterSet.mockRejectedValue(new Error("nope"));
-    renderAt("/builds");
+    // BF-09 (F1): there must be something to save.
+    renderAt("/builds?f=field%3Alaw");
     await openFilters("Saved");
     fireEvent.click(await screen.findByRole("button", { name: "Save current" }));
     fireEvent.change(await screen.findByLabelText("Name"), { target: { value: "x" } });
@@ -805,5 +806,50 @@ describe("BF-08 lens counts follow the filters", () => {
     expect(hasFilters(filters)).toBe(false);
     expect(filters).not.toHaveProperty("lens");
     expect(filters).not.toHaveProperty("sort");
+  });
+});
+
+/* ── BF-09 P4 (F1) ── */
+
+describe("BF-09 Save current", () => {
+  const saveCurrent = async () => {
+    await openFilters("Saved");
+    return screen.findByRole("button", { name: "Save current" }) as Promise<HTMLButtonElement>;
+  };
+
+  beforeEach(() => {
+    auth.user = { id: "reader-1" };
+  });
+
+  it('Save current is disabled when no filter is on and the layout is the default, and a line under it says "Choose a filter or change the columns first."', async () => {
+    renderAt("/builds");
+    const button = await saveCurrent();
+    expect(button.disabled).toBe(true);
+    const line = screen.getByText("Choose a filter or change the columns first.");
+    expect(button.getAttribute("aria-describedby")).toBe(line.id);
+  });
+
+  it('Save current is disabled while the draft differs from what is applied, and the line says "Apply your changes first."', async () => {
+    renderAt("/builds?f=field%3Alaw");
+    await openFilters();
+    fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^Saved/ }));
+    const button = (await screen.findByRole("button", { name: "Save current" })) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    expect(screen.getByText("Apply your changes first.")).toBeTruthy();
+  });
+
+  it("Save current is enabled with a filter on", async () => {
+    renderAt("/builds?f=field%3Alaw");
+    const button = await saveCurrent();
+    expect(button.disabled).toBe(false);
+    expect(button.getAttribute("aria-describedby")).toBeNull();
+  });
+
+  it("Save current is enabled with a changed layout and no filter", async () => {
+    localStorage.setItem("builds:layout:v1", JSON.stringify({ columns: ["build", "skill"], calculations: [] }));
+    renderAt("/builds");
+    const button = await saveCurrent();
+    expect(button.disabled).toBe(false);
   });
 });

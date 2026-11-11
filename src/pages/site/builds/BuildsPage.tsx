@@ -38,7 +38,7 @@ import { SeoHead } from "@/components/SeoHead";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { useAuth } from "@/contexts/AuthContext";
 import { reportError } from "@/lib/errors/report";
-import { withCalculation, withColumns, type BuildsLayout } from "@/lib/build/buildsLayout";
+import { isEmptyLayout, withCalculation, withColumns, type BuildsLayout } from "@/lib/build/buildsLayout";
 import { createFilterSet, deleteFilterSet, getFilterSet, joinFilterSet, leaveFilterSet, listMyFilterSets, renameFilterSet, saveFilterSetLayout, setFilterSetPublic, type FilterSet, type FilterSetDetail } from "@/lib/build/filterSets";
 import { GALLERY_LENSES, countBuildsTable, countGalleryLenses, getClassificationFacets, getCountSpread, getGalleryFacets, getWorksOnModelCounts, getGalleryStats, listBuildsTable, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
 import { RANGE_KEYS, type RangeKey } from "@/lib/build/galleryRanges";
@@ -255,11 +255,22 @@ export default function BuildsPage() {
     }
   };
 
+  /* BF-08 (A2): the draft is dirty when its filters are not the applied ones. */
+  const filtersOf = (of: GalleryParams) => galleryHref({ ...of, view: undefined, set: undefined });
+  const dirty = draft !== null && filtersOf(draft) !== filtersOf(params);
+  /* BF-09 (F1): Save current saves the applied address and the layout, so there must be one of them to save, and no draft
+     waiting to be applied. */
+  const somethingToSave = activeCount(params) > 0 || params.query !== null || !isEmptyLayout(layout);
+  const canSave = !dirty && somethingToSave;
+  const saveHint = dirty ? "Apply your changes first." : somethingToSave ? undefined : "Choose a filter or change the columns first.";
+
   const savedSets: SavedSetsProps | undefined =
     userId === null
       ? undefined
       : {
           rows: (mySets.data ?? []).map((set) => ({ id: set.id, name: set.name, href: setHref(set), isPublic: set.isPublic, note: set.isPublic ? "Public" : undefined, current: params.set === set.id })),
+          canSave,
+          saveHint,
           onSaveCurrent: (name, isPublic) =>
             attempt("createFilterSet", "Couldn't save the filter set.", async () => {
               const set = await createFilterSet({ name, search: currentSearch, isPublic });
@@ -304,10 +315,8 @@ export default function BuildsPage() {
             : undefined,
         };
 
-  /* BF-08 (A2): the draft is dirty when its filters are not the applied ones. Only then is the count asked, so the first screen is
-     as it was; with nothing changed the dialog says the page's own total. */
-  const filtersOf = (of: GalleryParams) => galleryHref({ ...of, view: undefined, set: undefined });
-  const dirty = draft !== null && filtersOf(draft) !== filtersOf(params);
+  /* BF-08 (A2): only while the draft is dirty is the count asked, so the first screen is as it was; with nothing changed the
+     dialog says the page's own total. */
   const draftCount = useQuery({
     queryKey: ["build", "countBuildsTable", listParamsOf(draft ?? params)],
     queryFn: () => countBuildsTable(listParamsOf(draft as GalleryParams)),
