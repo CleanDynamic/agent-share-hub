@@ -798,14 +798,14 @@ export function Tag({ children, testId }: { children: ReactNode; testId?: string
 export function RemovableTag({ children, removeLabel, onRemove, phone }: { children: ReactNode; removeLabel: string; onRemove: () => void; phone: boolean }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
-    <span role="listitem" style={{ ...CONTROL, boxSizing: "border-box", display: "inline-flex", alignItems: "center", gap: 2, height: phone ? 44 : 24, padding: "0 2px 0 8px", borderRadius: 5, ...type(12.5, 400, t.text), whiteSpace: "nowrap", maxWidth: "100%" }}>
+    <span role="listitem" style={{ ...CONTROL, boxSizing: "border-box", display: "inline-flex", alignItems: "center", height: phone ? size.touch : size.controlSmall, padding: `0 0 0 ${space[2]}px`, borderRadius: r.chip, ...type(12.5, 400, t.text), whiteSpace: "nowrap", maxWidth: "100%" }}>
       <span style={ELLIPSIS}>{children}</span>
       <button
         type="button"
         aria-label={removeLabel}
         onClick={onRemove}
         {...handlers}
-        style={{ appearance: "none", background: "none", border: 0, padding: 0, width: phone ? 40 : 20, height: phone ? 40 : 20, display: "inline-flex", alignItems: "center", justifyContent: "center", color: state.hovered ? t.text : t.label, cursor: "pointer", borderRadius: 4, ...ring(state.focusVisible) }}
+        style={{ appearance: "none", background: "none", border: 0, padding: 0, width: phone ? size.touch : size.controlSmall, height: phone ? size.touch : size.controlSmall, display: "inline-flex", alignItems: "center", justifyContent: "center", color: state.hovered ? t.text : t.label, cursor: "pointer", borderRadius: 4, ...ring(state.focusVisible) }}
       >
         <Glyph name="x" size={size.iconSmall} />
       </button>

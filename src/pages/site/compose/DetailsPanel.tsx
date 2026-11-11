@@ -522,7 +522,7 @@ function LinkItem({ item, onSelect }: { item: ListItem; onSelect?: (id: string) 
   const id = item.id;
   if (id && onSelect) {
     return (
-      <button type="button" data-testid="details-link" onClick={() => onSelect(id)} style={{ ...LIST_ROW, ...LINK_ROW }}>
+      <button type="button" data-testid="details-link" data-hit="" onClick={() => onSelect(id)} style={{ ...LIST_ROW, ...LINK_ROW }}>
         <ItemBody item={item} />
       </button>
     );

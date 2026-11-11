@@ -883,6 +883,7 @@ function Suggestion({ label, onAccept, onDismiss }: { label: string; onAccept: (
       <span style={{ ...ellipsis, minWidth: 0 }}>{label}</span>
       <button
         type="button"
+        data-hit=""
         {...accept.handlers}
         onClick={(event) => {
           event.stopPropagation();
@@ -891,10 +892,10 @@ function Suggestion({ label, onAccept, onDismiss }: { label: string; onAccept: (
         style={{
           ...CONTROL,
           ...(accept.state.hovered ? { background: t.controlOn } : null),
-          height: 20,
-          padding: "0 8px",
+          height: size.controlSmall,
+          padding: `0 ${space[2]}px`,
           boxSizing: "border-box",
-          borderRadius: 4,
+          borderRadius: r.chip,
           ...text(11.5, 500, t.text),
           cursor: "pointer",
           flexShrink: 0,
@@ -949,11 +950,12 @@ function UsesRow({
           <button
             key={suggestionKey(use)}
             type="button"
+            data-hit=""
             onClick={(event) => {
               event.stopPropagation();
               props.onSelect(use.node_id);
             }}
-            style={{ ...chipStyle, cursor: "pointer" }}
+            style={{ ...chipStyle, minHeight: size.controlSmall, cursor: "pointer" }}
           >
             {label}
           </button>
