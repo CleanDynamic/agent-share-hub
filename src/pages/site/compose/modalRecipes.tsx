@@ -64,6 +64,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { CONTROL, PRIMARY, SELECTED, WELL, controlPaint } from "@/lib/theme/refinedControl";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { size } from "@/lib/theme/space";
 
 /* ── sizes ── */
 
@@ -206,7 +207,7 @@ export function IconSquare({ glyph, label, phone = false, style, ...rest }: Icon
         ...style,
       }}
     >
-      <Glyph name={glyph} size={14} />
+      <Glyph name={glyph} size={size.icon} />
     </button>
   );
 }
@@ -490,7 +491,7 @@ export const pickerFieldStyle = (phone: boolean, state: { hovered?: boolean }, e
 export function PickerChevron() {
   return (
     <span aria-hidden="true" style={{ display: "inline-flex", flexShrink: 0, marginLeft: "auto", color: t.label }}>
-      <Glyph name="chevd" size={14} />
+      <Glyph name="chevd" size={size.icon} />
     </span>
   );
 }
@@ -794,7 +795,7 @@ export function RemovableTag({ children, removeLabel, onRemove, phone }: { child
         {...handlers}
         style={{ appearance: "none", background: "none", border: 0, padding: 0, width: phone ? 40 : 20, height: phone ? 40 : 20, display: "inline-flex", alignItems: "center", justifyContent: "center", color: state.hovered ? t.text : t.label, cursor: "pointer", borderRadius: 4, ...ring(state.focusVisible) }}
       >
-        <Glyph name="x" size={12} />
+        <Glyph name="x" size={size.iconSmall} />
       </button>
     </span>
   );

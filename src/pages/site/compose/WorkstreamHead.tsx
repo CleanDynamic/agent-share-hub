@@ -31,6 +31,7 @@ import { MENU_COPY, moveReason } from "@/lib/build/componentMenus";
 import { RemoveRow, useReason } from "./removePieces";
 import { WORKSTREAM_STARTS } from "./workstreamRecipes";
 import { useCrossfade } from "./buildMotion";
+import { size } from "@/lib/theme/space";
 
 export const WORKSTREAM_HEAD_COPY = {
   namePlaceholder: "Add a name",
@@ -195,7 +196,7 @@ function PartMenuRows({ props, colour, remove }: { props: WorkstreamHeadProps; c
               {startsAfterChoices.map((choice) => (
                 <Row key={choice.key} phone={phone} onSelect={() => ops.onStartsAfter(part.key, choice.key)}>
                   <span aria-hidden="true" style={{ width: 16, display: "inline-flex", marginRight: 8 }}>
-                    {part.startsAfter === choice.key ? <Glyph name="check" size={16} /> : null}
+                    {part.startsAfter === choice.key ? <Glyph name="check" size={size.icon} /> : null}
                   </span>
                   {choice.label}
                 </Row>
@@ -203,7 +204,7 @@ function PartMenuRows({ props, colour, remove }: { props: WorkstreamHeadProps; c
               {startsAfterChoices.length > 0 ? <Menu.Separator style={{ height: 1, margin: "4px 0", background: t.hairline }} /> : null}
               <Row phone={phone} onSelect={() => ops.onStartsAfter(part.key, null)}>
                 <span aria-hidden="true" style={{ width: 16, display: "inline-flex", marginRight: 8 }}>
-                  {part.startsAfter ? null : <Glyph name="check" size={16} />}
+                  {part.startsAfter ? null : <Glyph name="check" size={size.icon} />}
                 </span>
                 {WORKSTREAM_HEAD_COPY.startsAfterNone}
               </Row>

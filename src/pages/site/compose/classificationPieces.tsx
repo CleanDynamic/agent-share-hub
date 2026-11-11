@@ -14,6 +14,7 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { ellipsis, text } from "./refinedStyles";
+import { size } from "@/lib/theme/space";
 
 /** The edge of a chosen value and of a selected segment. */
 export const SEG_ON_BORDER = t.segOnBorder;
@@ -87,7 +88,7 @@ export function ChosenValue({
           ...ring(remove.state.focusVisible),
         }}
       >
-        <Glyph name="x" size={10} />
+        <Glyph name="x" size={size.iconSmall} />
       </button>
       )}
     </li>

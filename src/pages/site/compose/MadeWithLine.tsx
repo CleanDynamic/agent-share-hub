@@ -35,6 +35,7 @@ import { FIGTREE } from "@/lib/theme/type";
 import { TextButton } from "./composeControls";
 import { fieldBase } from "./composeFields";
 import { MADE_WITH_ENTRY_MAX, type MadeWithChip } from "./composeModel";
+import { size } from "@/lib/theme/space";
 
 export interface MadeWithLineProps {
   phone: boolean;
@@ -67,7 +68,7 @@ function RefinedChip({ chip }: { chip: MadeWithChip }) {
     <span data-testid="made-with-chip" data-on={chip.on ? "true" : "false"} style={{ display: "inline-flex" }}>
       {out ? (
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 22, boxSizing: "border-box", padding: "0 8px 0 6px", borderRadius: 4, background: t.tagFill, color: t.onTag, fontFamily: FIGTREE, fontSize: 11.5, fontWeight: 500, lineHeight: 1, whiteSpace: "nowrap" }}>
-          <ModelMark {...marks} size={14} />
+          <ModelMark {...marks} size={size.icon} />
           {chip.tool ? `${chip.tool} · ` : null}
           <s style={{ color: t.text2 }}>{chip.model}</s>
           <span style={VISUALLY_HIDDEN}> (left out)</span>
@@ -119,7 +120,7 @@ function Toggle({ chip, phone, onToggle }: { chip: MadeWithChip; phone: boolean;
           border: `1.5px solid ${chip.on ? t.text : t.line}`,
         }}
       >
-        {chip.on ? <Check size={12} strokeWidth={2.4} color="var(--field)" /> : null}
+        {chip.on ? <Check size={size.iconSmall} strokeWidth={2.4} color="var(--field)" /> : null}
       </span>
       {chip.label}
     </button>

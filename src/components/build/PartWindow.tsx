@@ -43,6 +43,7 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 import { TextButton } from "@/pages/site/compose/composeControls";
 import { EYEBROW, text, tnum } from "@/pages/site/compose/refinedStyles";
+import { size } from "@/lib/theme/space";
 
 export const PART_WINDOW_COPY = {
   copyCode: "Copy code",
@@ -402,7 +403,7 @@ function HelperBody({ helper, decisionName }: { helper: Helper; decisionName: (i
   return (
     <div data-testid="helper-body" style={{ ...WELL, padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
       <span style={{ ...text(13.5, 500, t.text), display: "flex", alignItems: "center", gap: 8 }}>
-        <ToolMark tool={markTool(helper.provider, helper.job)} size={14} />
+        <ToolMark tool={markTool(helper.provider, helper.job)} size={size.icon} />
         {helperChip(helper, decisionName)}
         <span style={text(12, 400, t.label)}>{providerLabel(helper.provider)}</span>
       </span>

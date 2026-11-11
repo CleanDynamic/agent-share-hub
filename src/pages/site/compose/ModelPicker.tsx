@@ -29,6 +29,7 @@ import { FLOATING_Z } from "./ToolPicker";
 import { menuItem, menuSurface, text, wellField } from "./refinedStyles";
 import { MenuContent } from "./ComposeMenu";
 import { PickerFieldButton } from "./modalRecipes";
+import { size } from "@/lib/theme/space";
 
 /** The longest model name a maker can type. */
 export const MODEL_TYPED_MAX = 40;
@@ -135,7 +136,7 @@ export function ModelPicker({ tool, value, onChange, phone, allowNone = true, na
     <Menu.RadioItem key={key} value={saved} style={{ ...menuItem(true, phone), gap: 6 }}>
       <span style={{ width: 14, display: "inline-flex" }}>
         <Menu.ItemIndicator>
-          <Glyph name="check" size={14} />
+          <Glyph name="check" size={size.icon} />
         </Menu.ItemIndicator>
       </span>
       {label}

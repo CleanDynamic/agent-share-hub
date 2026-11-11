@@ -40,6 +40,7 @@ import { ToolPicker } from "./ToolPicker";
 import { RemoveRow, useReason } from "./removePieces";
 import { useBuildSelectionContext } from "./useBuildSelection";
 import { useCrossfade } from "./buildMotion";
+import { size } from "@/lib/theme/space";
 
 export const SESSION_HEAD_COPY = {
   titlePlaceholder: "Add a title",
@@ -384,7 +385,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
         />
         {session.tool === NO_APP ? (
           <span aria-hidden="true" style={{ display: "inline-flex", width: 20, height: 20, alignItems: "center", justifyContent: "center", color: t.label, flexShrink: 0 }}>
-            <Glyph name="layers" size={16} />
+            <Glyph name="layers" size={size.icon} />
           </span>
         ) : (
           <ToolMark tool={session.tool} size={20} />
@@ -505,7 +506,7 @@ function SameStageRow({ part, phone, onChange }: { part: SessionPartInfo; phone:
       <Menu.CheckboxItem checked={part.withAbove && !part.firstInPart} disabled={part.firstInPart} onCheckedChange={onChange} style={{ ...menuItem(!part.firstInPart, phone), gap: 8 }} {...why.props}>
         <span style={{ width: 16, display: "inline-flex" }}>
           <Menu.ItemIndicator>
-            <Glyph name="check" size={16} />
+            <Glyph name="check" size={size.icon} />
           </Menu.ItemIndicator>
         </span>
         {SESSION_HEAD_COPY.sameStage}

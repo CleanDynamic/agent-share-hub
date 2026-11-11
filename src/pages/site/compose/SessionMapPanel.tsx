@@ -46,6 +46,7 @@ import {
   TIMELINE_SIDE,
 } from "./mapRecipes";
 import { ToolMark } from "./refinedPieces";
+import { size } from "@/lib/theme/space";
 
 export const PANEL_COPY = {
   openInBuild: "Open in the build",
@@ -173,7 +174,7 @@ function SelectedPanel({ model, session, onOpenInBuild, onOpenTile, theme }: { m
                 <span style={TIMELINE_SIDE}>{connection.side}</span>
               </div>
               <div style={TIMELINE_LINE2}>
-                <ToolMark tool={connection.other.app} size={16} />
+                <ToolMark tool={connection.other.app} size={size.icon} />
                 <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{`${connection.tile.what} · Session ${connection.other.number}`}</span>
               </div>
             </div>
@@ -246,7 +247,7 @@ function NothingSelected({ model, theme }: { model: SessionMapModel; theme: "noo
                 const session = byKey.get(key);
                 return session ? (
                   <span key={key} style={TIMELINE_SESSION}>
-                    <ToolMark tool={session.app} size={16} />
+                    <ToolMark tool={session.app} size={size.icon} />
                     {sessionTitle(session)}
                   </span>
                 ) : null;

@@ -24,6 +24,7 @@ import { FIGTREE } from "@/lib/theme/type";
 
 import { Field } from "./composeControls";
 import { fieldBase, useRing } from "./composeFields";
+import { size } from "@/lib/theme/space";
 
 export interface ComposeDetails {
   /** "What broke". */
@@ -124,7 +125,7 @@ function RefinedDisclosure({ open, controls, phone, onClick }: { open: boolean; 
         ...ring(state.focusVisible),
       }}
     >
-      <Glyph name={open ? "chevd" : "chev"} size={16} color={t.label} />
+      <Glyph name={open ? "chevd" : "chev"} size={size.icon} color={t.label} />
       More details
       <span style={{ color: t.text2, fontWeight: 400, whiteSpace: "pre" }}> (optional)</span>
     </button>

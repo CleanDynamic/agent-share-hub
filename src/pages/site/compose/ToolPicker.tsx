@@ -25,6 +25,7 @@ import { toolFor, type StepKey, type ToolList } from "@/lib/tools/registry";
 import { menuSurface, text, wellField } from "./refinedStyles";
 import { PickerChevron, pickerFieldStyle, smallButtonStyle } from "./modalRecipes";
 import { pickerRows, TYPED_TOOL_MAX, type PickerRow } from "./toolPickerModel";
+import { size } from "@/lib/theme/space";
 
 export interface ToolPickerProps {
   /** A tool id, a typed name, or null. */
@@ -220,7 +221,7 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
     <Popover.Root open={open} onOpenChange={openChange}>
       <Popover.Trigger asChild>
         <button type="button" aria-label={label} aria-haspopup="listbox" aria-describedby={`${uid}-value`} {...trigger.handlers} style={triggerStyle}>
-          {value ? <ModelMark tool={chosen ? chosen.id : value} size={16} /> : null}
+          {value ? <ModelMark tool={chosen ? chosen.id : value} size={size.icon} /> : null}
           <span id={`${uid}-value`} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
             {shown}
           </span>
@@ -281,7 +282,7 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
                   onClick={() => pick(row)}
                   style={rowStyle(row)}
                 >
-                  {row.kind === "tool" ? <ModelMark tool={row.tool.id} size={16} /> : null}
+                  {row.kind === "tool" ? <ModelMark tool={row.tool.id} size={size.icon} /> : null}
                   {row.kind === "tool" && row.line ? (
                     <span style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0, padding: "4px 0" }}>
                       <span>{rowName(row, noneLabel, list, code?.label)}</span>

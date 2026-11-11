@@ -71,6 +71,7 @@ import { MAP_LOADING_ROWS } from "./loadingBlocks";
 import { ToolMark } from "./refinedPieces";
 import { RecipeButton } from "./modalRecipes";
 import { menuItem, menuSurface } from "./refinedStyles";
+import { size } from "@/lib/theme/space";
 
 export const MAP_COPY = {
   directionLabel: "Map direction",
@@ -144,7 +145,7 @@ function MapOptionsMenu({ controls }: { controls: MapControls }) {
           >
             <span style={{ width: 16, display: "inline-flex" }}>
               <Menu.ItemIndicator>
-                <Glyph name="check" size={16} />
+                <Glyph name="check" size={size.icon} />
               </Menu.ItemIndicator>
             </span>
             {MAP_COPY.showOnBuildPage}

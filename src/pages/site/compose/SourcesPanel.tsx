@@ -46,6 +46,7 @@ import { ToolMark } from "./refinedPieces";
 import { fullText, PREVIEW } from "@/lib/theme/truncate";
 import { bareButton, ellipsis, menuItem, menuSurface, text, tnum, wellField } from "./refinedStyles";
 import { libraryName, middleCut, REMINDER_ROWS, REPEAT_COPY, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession, type SourceUnfinishedItem } from "./sourcesModel";
+import { size } from "@/lib/theme/space";
 
 /** F63: a library row's name wraps to two lines (PREVIEW) before it is cut, so it may run longer than a file's. */
 const LIBRARY_NAME_MAX = 60;
@@ -138,7 +139,7 @@ function TrailSlot({ phone, children }: { phone: boolean; children?: ReactNode }
 function InBuildTick() {
   return (
     <span role="img" aria-label={SOURCES_COPY.inBuild} title={SOURCES_COPY.inBuild} data-testid="source-in-build" style={{ display: "inline-flex", color: t.label }}>
-      <Glyph name="check" size={16} />
+      <Glyph name="check" size={size.icon} />
     </span>
   );
 }
@@ -273,7 +274,7 @@ function SessionRow({
           }}
         >
           <span style={{ display: "inline-flex", transform: open ? "rotate(90deg)" : undefined }}>
-            <Glyph name="chev" size={16} />
+            <Glyph name="chev" size={size.icon} />
           </span>
         </button>
         <SelectButton selected={selectedId === session.key} onClick={() => onSelect(session.key)} minHeight={phone ? 44 : 40} style={{ alignItems: "flex-start", padding: "6px" }}>
@@ -321,7 +322,7 @@ function FileRow({ file, phone, sessions, selected = false, onOpen, onAddToSessi
       {/* F7: the row is one button: a click selects the file and scrolls to its tile. A drag starts only from the grip at its start. */}
       <SelectButton selected={selected} onClick={() => select(file.id)} minHeight={phone ? 44 : 30} style={{ alignItems: "flex-start", textAlign: "left" }}>
         <span style={{ display: "inline-flex", color: t.label, flexShrink: 0 }}>
-          <Glyph name="file" size={16} />
+          <Glyph name="file" size={size.icon} />
         </span>
         <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
           {/* F63: a long name is cut in the middle, so its ending shows; all of it is in the title. */}
@@ -348,7 +349,7 @@ function FileRow({ file, phone, sessions, selected = false, onOpen, onAddToSessi
                   <Menu.SubTrigger style={{ ...menuItem(true, phone), justifyContent: "space-between", gap: 12 }}>
                     <span>{MENU_COPY.addToSession}</span>
                     <span aria-hidden="true" style={{ display: "inline-flex", color: t.label }}>
-                      <Glyph name="chev" size={16} />
+                      <Glyph name="chev" size={size.icon} />
                     </span>
                   </Menu.SubTrigger>
                   <Menu.Portal>
@@ -408,7 +409,7 @@ function AddToMenu({ item, parts, phone, onAdd, lastPart }: { item: SourceLibrar
               {part.key === lastPart ? (
                 <span style={{ display: "inline-flex" }}>
                   <span aria-hidden="true" style={{ display: "inline-flex" }}>
-                    <Glyph name="check" size={16} />
+                    <Glyph name="check" size={size.icon} />
                   </span>
                   <span style={VISUALLY_HIDDEN}>{SOURCES_COPY.lastPart}</span>
                 </span>

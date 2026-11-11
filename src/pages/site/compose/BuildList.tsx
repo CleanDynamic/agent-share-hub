@@ -160,6 +160,8 @@ import { COUNT } from "./modalRecipes";
 import { RemoveRow, useReason } from "./removePieces";
 import { useBuildActionsContext } from "./useBuildActions";
 import { useBuildSelectionContext } from "./useBuildSelection";
+import { size } from "@/lib/theme/space";
+import { r } from "@/lib/theme/radius";
 
 /** CA-10: how long the add field is ringed after Add › Prompt reaches it. */
 export const ADD_FLASH_MS = 1200;
@@ -643,7 +645,7 @@ function NestButtons({ step, phone }: { step: Step; phone: boolean }) {
           else if (above) nest.move(step.id, above.id, Number.MAX_SAFE_INTEGER);
         }}
       >
-        <Icon size={12} strokeWidth={1.6} aria-hidden="true" />
+        <Icon size={size.icon} strokeWidth={1.6} aria-hidden="true" />
         {own ? NEST_LIST_COPY.ownStep : NEST_LIST_COPY.sendWithAbove}
       </TextButton>
     </span>
@@ -1972,7 +1974,7 @@ function PendingAddCard({ kind }: { kind: PendingAdd }) {
         aria-hidden="true"
         style={{ width: 24, height: 24, borderRadius: 6, background: t.evidenceFill, color: t.evidence, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
       >
-        <Glyph name="check" size={14} />
+        <Glyph name="check" size={size.icon} />
       </span>
       <div role="status" style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
         <Quiet>{PENDING_ADD_COPY[kind].eyebrow}</Quiet>
@@ -2005,7 +2007,7 @@ function ResultCard({ result, selected, ringed = false, onSelect, onEdit }: { re
         aria-hidden="true"
         style={{ width: 24, height: 24, borderRadius: 6, background: t.evidenceFill, color: t.evidence, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
       >
-        <Glyph name="check" size={14} />
+        <Glyph name="check" size={size.icon} />
       </span>
       <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
         <span data-testid="result-eyebrow" style={{ ...text(11.5, 400, t.label), ...ellipsis }}>

@@ -37,6 +37,7 @@ import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 import { dropIn, liftOut, useCrossfade, useHeld } from "./buildMotion";
 import { BAR_AIR, PHONE_BARS_BOTTOM } from "./composeChrome";
 import { GROUP_TITLE, NOTE, RecipeButton, SUBTITLE, footerStyle, frameStyle } from "./modalRecipes";
+import { size as sizes } from "@/lib/theme/space";
 
 /* ── type ── */
 
@@ -176,7 +177,7 @@ export function GhostIcon({ glyph, label, phone = false, size = 28, pressed = fa
         ...style,
       }}
     >
-      <Glyph name={glyph} size={14} />
+      <Glyph name={glyph} size={sizes.icon} />
     </button>
   );
 }
@@ -393,7 +394,7 @@ function SortableItem({ row, height }: { row: SortableRow; height: number }) {
       {...listeners}
       style={{ appearance: "none", background: "none", border: 0, padding: 0, width: 16, height: 28, display: "inline-flex", alignItems: "center", justifyContent: "center", color: t.label, cursor: "grab", flexShrink: 0, touchAction: "none" }}
     >
-      <Glyph name="grip" size={14} />
+      <Glyph name="grip" size={sizes.icon} />
     </button>
   );
   return (

@@ -20,6 +20,7 @@ import { t } from "@/lib/theme/tokens";
 
 import { FOOT_NOTE, RecipeButton, TITLE, footerStyle, frameStyle } from "./modalRecipes";
 import { text } from "./refinedStyles";
+import { size } from "@/lib/theme/space";
 
 /** The window the three Publish windows share: a title, a body, a footer. A phone gets the bottom sheet. */
 export function PublishFrame({
@@ -99,7 +100,7 @@ function Circle({ done }: { done: boolean }) {
         ...(done ? { background: t.text, color: t.well } : { border: `1.5px solid ${t.textDisabled}` }),
       }}
     >
-      {done ? <Glyph name="check" size={10} /> : null}
+      {done ? <Glyph name="check" size={size.iconSmall} /> : null}
     </span>
   );
 }

@@ -57,6 +57,7 @@ import {
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 import { PickMenu } from "./PickMenu";
 import { ToolPicker } from "./ToolPicker";
+import { size } from "@/lib/theme/space";
 
 const NONE = "__none__";
 
@@ -191,7 +192,7 @@ function OptionRow({ index, count, option, onChange, onRemove, onMove, phone, la
         onKeyDown={onKey}
         style={GRIP}
       >
-        <Glyph name="grip" size={14} />
+        <Glyph name="grip" size={size.icon} />
       </button>
       <FieldInput phone={phone} mono aria-label={`${label} ${index + 1}`} value={option.key} maxLength={80} placeholder="e.g. billing" onChange={(e) => onChange({ ...option, key: e.target.value })} />
       {count > 2 ? <IconSquare glyph="x" phone={phone} label={`Remove ${label.toLowerCase()} ${index + 1}`} onClick={onRemove} /> : <span />}
@@ -212,7 +213,7 @@ function QuestionEditor({ q, index, onChange, onRemove, phone, provider, canRemo
     <Panel label={DECISION_COPY.question(index + 1)} padding="10px 14px 14px">
       <div style={PANEL_HEAD}>
         <span aria-hidden="true" style={GRIP}>
-          <Glyph name="grip" size={14} />
+          <Glyph name="grip" size={size.icon} />
         </span>
         <span style={PANEL_TITLE}>{DECISION_COPY.question(index + 1)}</span>
         {canRemove ? <IconSquare glyph="x" phone={phone} label={DECISION_COPY.removeQuestion(index + 1)} onClick={onRemove} /> : null}

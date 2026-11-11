@@ -79,6 +79,7 @@ import { ComposeArrival } from "./ComposeSkeleton";
 import { PanelBoundary, type PanelName } from "./PanelBoundary";
 import { EmptyBuild, type EmptyBuildProps } from "./EmptyBuild";
 import { scrollBehavior } from "@/lib/theme/motion";
+import { size } from "@/lib/theme/space";
 
 export type SandboxLens = "list" | "map";
 
@@ -532,7 +533,7 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
         }}
       >
         <span aria-hidden="true" style={{ display: "inline-flex" }}>
-          <Glyph name="plus" size={16} />
+          <Glyph name="plus" size={size.icon} />
         </span>
         {ADD_ASK_COPY.row}
       </button>
@@ -658,7 +659,7 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
             >
               <span>{ADD_MORE_COPY.row}</span>
               <span aria-hidden="true" style={{ display: "inline-flex" }}>
-                <Glyph name={showMore ? "chevd" : "chev"} size={16} />
+                <Glyph name={showMore ? "chevd" : "chev"} size={size.icon} />
               </span>
             </Menu.Item>
           ) : null}
@@ -690,7 +691,7 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
               >
                 <span>{DEPLOYMENT_GROUP_HEAD}</span>
                 <span aria-hidden="true" style={{ display: "inline-flex" }}>
-                  <Glyph name={deployOpen ? "chevd" : "chev"} size={16} />
+                  <Glyph name={deployOpen ? "chevd" : "chev"} size={size.icon} />
                 </span>
               </Menu.Item>
               {deployOpen || query.trim() ? (
@@ -765,7 +766,7 @@ function SessionListSheetRow({ view }: { view: ViewMenuProps }) {
         {...why.props}
         style={{ ...bareButton, ...menuItem(!reason, true), width: "100%", gap: 8, textAlign: "left" }}
       >
-        <span style={{ width: 16, display: "inline-flex" }}>{view.sessionList ? <Glyph name="check" size={16} /> : null}</span>
+        <span style={{ width: 16, display: "inline-flex" }}>{view.sessionList ? <Glyph name="check" size={size.icon} /> : null}</span>
         {VIEW_COPY.sessionList}
       </button>
       {why.note}
@@ -782,7 +783,7 @@ function SessionListMenuRow({ view }: { view: ViewMenuProps }) {
       <Menu.CheckboxItem checked={view.sessionList} disabled={Boolean(reason)} onCheckedChange={(next) => view.onChange({ sessionList: next })} onSelect={(event) => event.preventDefault()} style={{ ...menuItem(!reason, false), gap: 8 }} {...why.props}>
         <span style={{ width: 16, display: "inline-flex" }}>
           <Menu.ItemIndicator>
-            <Glyph name="check" size={16} />
+            <Glyph name="check" size={size.icon} />
           </Menu.ItemIndicator>
         </span>
         {VIEW_COPY.sessionList}
@@ -968,7 +969,7 @@ function RailButton({ glyph, label, count, onClick }: { glyph: "panel" | "layers
         ...ring(state.focusVisible),
       }}
     >
-      <Glyph name={glyph} size={16} />
+      <Glyph name={glyph} size={size.icon} />
       {counted ? <span style={{ ...text(10.5, 500, "inherit"), ...tnum }}>{count}</span> : null}
     </button>
   );

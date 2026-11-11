@@ -21,6 +21,7 @@ import { t } from "@/lib/theme/tokens";
 
 import { bareButton } from "./refinedStyles";
 import { SESSION_DRAG, SOURCE_FILE_DRAG, SOURCE_SESSION_DRAG, WORKSTREAM_DRAG, type Held, type Sorting } from "./useBuildSorting";
+import { size } from "@/lib/theme/space";
 
 /** Where a held tile is dropped. */
 export type NestTarget = { kind: "tile"; id: string } | { kind: "gap"; index: number } | { kind: "session"; key: string } | { kind: "workstream"; key: string };
@@ -253,7 +254,7 @@ export function DragHandle({ label, nest, testId = "drag-handle", phone }: { lab
         ...ring(interactive.focusVisible),
       }}
     >
-      <Glyph name="grip" size={16} />
+      <Glyph name="grip" size={size.icon} />
     </button>
   );
 }

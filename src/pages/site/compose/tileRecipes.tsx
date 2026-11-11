@@ -14,6 +14,7 @@ import { PREVIEW, TITLE_LINE } from "@/lib/theme/truncate";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { useCrossfade } from "./buildMotion";
+import { size } from "@/lib/theme/space";
 
 const type = (px: number, weight: 400 | 500, color: string, line?: number): CSSProperties => ({ fontFamily: FIGTREE, fontSize: px, fontWeight: weight, lineHeight: line ? `${line}px` : "normal", color });
 const ellipsis = TITLE_LINE;
@@ -100,7 +101,7 @@ export function TileOptions({ label, phone = false, style, ...rest }: TileOption
         ...style,
       }}
     >
-      <Glyph name="more" size={14} />
+      <Glyph name="more" size={size.icon} />
     </button>
   );
 }

@@ -48,6 +48,7 @@ import { TextButton } from "./composeControls";
 import { fieldBase } from "./composeFields";
 import { addPromptLabel, MADE_WITH_ENTRY_MAX, promptDragData } from "./composeModel";
 import { PROMPT_DRAG_TYPE } from "./PromptsPanel";
+import { size } from "@/lib/theme/space";
 
 /** The desktop header is 64px tall; the panel sticks 24px under it. */
 const STICKY_TOP = 64 + 24;
@@ -348,7 +349,7 @@ function SessionSection({
         </span>
         <ChevronDown
           aria-hidden="true"
-          size={16}
+          size={size.icon}
           strokeWidth={1.6}
           color="var(--text2)"
           style={{ ...quiet, marginLeft: "auto", marginRight: 6, flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: move() }}

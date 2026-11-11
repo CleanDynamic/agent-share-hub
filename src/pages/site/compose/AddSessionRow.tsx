@@ -26,6 +26,7 @@ import { ToolMark } from "./refinedPieces";
 import { bareButton, ellipsis, menuItem, menuSurface, text, tnum, wellField } from "./refinedStyles";
 import { draftNote, groupLibrary, openingWords, REPEAT_COPY, type SourceLibraryItem } from "./sourcesModel";
 import { FLOATING_Z } from "./ToolPicker";
+import { size } from "@/lib/theme/space";
 
 export const ADD_SESSION_COPY = {
   /** F55: the three add controls read Add step, Add session, Add part; the plus is their icon. */
@@ -108,7 +109,7 @@ function Choice({ title, line, onPick, phone, forward = false }: { title: string
       </span>
       {forward ? (
         <span aria-hidden="true" style={{ color: t.label, display: "inline-flex" }}>
-          <Glyph name="chev" size={16} />
+          <Glyph name="chev" size={size.icon} />
         </span>
       ) : null}
     </button>
@@ -146,7 +147,7 @@ function PickRow({ item, phone, onPick }: { item: SourceLibraryItem; phone: bool
         <ToolMark tool={item.app} size={20} />
       ) : (
         <span aria-hidden="true" style={{ display: "inline-flex", width: 20, height: 20, alignItems: "center", justifyContent: "center", color: t.label, flexShrink: 0 }}>
-          <Glyph name="layers" size={16} />
+          <Glyph name="layers" size={size.icon} />
         </span>
       )}
       <span style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, flexGrow: 1, overflow: "hidden" }}>
@@ -236,7 +237,7 @@ function AddToField({ parts, chosen, onChoose, phone }: { parts: readonly AddToP
                 <ColourDot colour={part.colour} />
                 <span style={{ flexGrow: 1 }}>{part.title}</span>
                 <span aria-hidden="true" style={{ width: 16, display: "inline-flex" }}>
-                  {part.key === chosen.key ? <Glyph name="check" size={16} /> : null}
+                  {part.key === chosen.key ? <Glyph name="check" size={size.icon} /> : null}
                 </span>
               </Menu.Item>
             ))}
@@ -295,7 +296,7 @@ export function AddPartRow({ phone: _phone, adding, onAdd }: { phone: boolean; a
   return (
     <button type="button" data-testid="add-part-row" {...{ [SLIDE_ATTR]: "add:part" }} data-hit="" disabled={adding} onClick={onAdd} {...trigger.handlers} style={addRowStyle(trigger.state.hovered, trigger.state.focusVisible, adding)}>
       <span aria-hidden="true" style={{ display: "inline-flex" }}>
-        <Glyph name="plus" size={16} />
+        <Glyph name="plus" size={size.icon} />
       </span>
       {ADD_SESSION_COPY.addPart}
     </button>
@@ -390,7 +391,7 @@ export function AddSessionRow(props: AddSessionRowProps) {
   const content = (
     <>
       <span aria-hidden="true" style={{ display: "inline-flex" }}>
-        <Glyph name="plus" size={16} />
+        <Glyph name="plus" size={size.icon} />
       </span>
       {ADD_SESSION_COPY.row}
     </>

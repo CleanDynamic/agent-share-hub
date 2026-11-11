@@ -32,6 +32,7 @@ import { Field, TextButton } from "./composeControls";
 import { menuItem, menuSurface, text, typedArea, typedField } from "./refinedStyles";
 import { FLOATING_Z } from "./ToolPicker";
 import { MenuContent } from "./ComposeMenu";
+import { size } from "@/lib/theme/space";
 
 export const EXTRAS_COPY = {
   cost: "What it cost",
@@ -306,7 +307,7 @@ export function TogetherControl({ extras, others, phone, onTogether }: { extras:
             >
               <span style={{ width: 14, display: "inline-flex" }}>
                 <Menu.ItemIndicator>
-                  <Glyph name="check" size={14} />
+                  <Glyph name="check" size={size.icon} />
                 </Menu.ItemIndicator>
               </span>
               {other.label}

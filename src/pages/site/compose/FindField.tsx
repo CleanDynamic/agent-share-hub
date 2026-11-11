@@ -17,6 +17,7 @@ import { DM_MONO } from "@/lib/theme/type";
 
 import { bareButton, text } from "./refinedStyles";
 import type { BuildFind } from "./useBuildFind";
+import { size } from "@/lib/theme/space";
 
 /** Find in build: the ghost button before View. */
 export function FindButton({ find }: { find: Pick<BuildFind, "show"> }) {
@@ -60,7 +61,7 @@ export function FindField({ find }: { find: BuildFind }) {
   return (
     <div role="search" data-testid="find-field" style={FIELD}>
       <span style={{ display: "inline-flex", flexShrink: 0, color: t.label }}>
-        <Glyph name="search" size={14} />
+        <Glyph name="search" size={size.icon} />
       </span>
       <input
         ref={find.inputRef}
@@ -81,13 +82,13 @@ export function FindField({ find }: { find: BuildFind }) {
         </span>
       ) : null}
       <Tiny label={FIND_COPY.previous} color={t.text2} rotate onClick={() => find.move(-1)}>
-        <Glyph name="chevd" size={14} />
+        <Glyph name="chevd" size={size.icon} />
       </Tiny>
       <Tiny label={FIND_COPY.next} color={t.text2} onClick={() => find.move(1)}>
-        <Glyph name="chevd" size={14} />
+        <Glyph name="chevd" size={size.icon} />
       </Tiny>
       <Tiny label={FIND_COPY.close} color={t.label} onClick={find.close}>
-        <Glyph name="x" size={14} />
+        <Glyph name="x" size={size.icon} />
       </Tiny>
     </div>
   );

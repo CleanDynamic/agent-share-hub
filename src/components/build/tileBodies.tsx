@@ -30,6 +30,7 @@ import { FindHit } from "./FindHit";
 import { ellipsis, text, tnum } from "@/pages/site/compose/refinedStyles";
 import { DM_MONO } from "@/lib/theme/type";
 import { BODY_LINE, DATA_LINE, FOOT_FACTS, FOOT_LINK as FOOT_LINK_STYLE, LINK_ADDRESS, LINK_CARD, MORE_COUNT, PICTURE, PICTURES, RESPONSE_LINE, RESPONSE_WORD, STEPS, TILE_FOOT, VARIABLE } from "@/pages/site/compose/tileRecipes";
+import { size } from "@/lib/theme/space";
 
 export const TILE_COPY = {
   deployed: "Deployed app",
@@ -229,7 +230,7 @@ export function ManualTileBody({ step, indent = 0, picture = true, lean = false,
     <div data-testid="manual-tile" style={{ display: "flex", flexDirection: "column", gap: 6, paddingLeft: indent, minWidth: 0 }}>
       {lean ? null : (
         <div data-testid="manual-where" style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-          {where?.kind === "app" ? <ToolMark tool={markName} size={14} /> : null}
+          {where?.kind === "app" ? <ToolMark tool={markName} size={size.icon} /> : null}
           <span style={{ ...text(12.5, 500, t.text2), ...ellipsis }}>{label}</span>
           {site && site !== label ? <Quiet>{site}</Quiet> : null}
         </div>

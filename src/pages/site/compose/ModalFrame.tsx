@@ -51,6 +51,7 @@ import {
   frameStyle,
   missingSet,
 } from "./modalRecipes";
+import { size as sizes } from "@/lib/theme/space";
 
 export const MODAL_COPY = {
   close: "Close",
@@ -237,7 +238,7 @@ export function GlyphButton({ glyph, label, onClick, phone = false, size = 20 }:
         ...ring(state.focusVisible),
       }}
     >
-      <Glyph name={glyph} size={12} />
+      <Glyph name={glyph} size={sizes.icon} />
     </button>
   );
 }
