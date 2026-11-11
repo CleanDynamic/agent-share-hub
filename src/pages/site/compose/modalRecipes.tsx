@@ -64,7 +64,8 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { CONTROL, PRIMARY, SELECTED, WELL, controlPaint } from "@/lib/theme/refinedControl";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
-import { size } from "@/lib/theme/space";
+import { size, space } from "@/lib/theme/space";
+import { r } from "@/lib/theme/radius";
 
 /* ── sizes ── */
 
@@ -775,7 +776,7 @@ export function Tag({ children, testId }: { children: ReactNode; testId?: string
   return (
     <span
       data-testid={testId}
-      style={{ ...CONTROL, boxSizing: "border-box", display: "inline-flex", alignItems: "center", flexShrink: 0, height: 22, padding: "0 7px", borderRadius: 5, fontFamily: DM_MONO, fontSize: 11, lineHeight: "normal", color: t.text2, whiteSpace: "nowrap" }}
+      style={{ ...CONTROL, boxSizing: "border-box", display: "inline-flex", alignItems: "center", flexShrink: 0, height: size.tag, padding: `0 ${space[2]}px`, borderRadius: r.chip, fontFamily: DM_MONO, fontSize: 11, lineHeight: "normal", color: t.text2, whiteSpace: "nowrap" }}
     >
       {children}
     </span>
@@ -878,7 +879,7 @@ export const OPTIONAL = {
   /** F20: the line and, beside it, the suggested chip. */
   lineRow: { display: "flex", alignItems: "center", gap: 8, minWidth: 0 } as CSSProperties,
   /** F20: a suggestion on a closed row: the dashed edge a suggestion chip has, never the look of a value. */
-  suggestedChip: { ...type(12, 400, t.text2, 16), display: "inline-block", padding: "2px 8px", borderRadius: 7, borderWidth: 1, borderStyle: "dashed", borderColor: t.segOnBorder, background: "transparent", ...ELLIPSIS } as CSSProperties,
+  suggestedChip: { ...type(12, 400, t.text2, 16), display: "inline-block", boxSizing: "border-box", height: size.controlSmall, lineHeight: `${size.controlSmall - 2}px`, padding: `0 ${space[2]}px`, borderRadius: r.chip, borderWidth: 1, borderStyle: "dashed", borderColor: t.segOnBorder, background: "transparent", ...ELLIPSIS } as CSSProperties,
   value: { ...COUNT, maxWidth: "45%", overflow: "hidden", textOverflow: "ellipsis" } as CSSProperties,
   chevron: (open: boolean): CSSProperties => ({ display: "inline-flex", flexShrink: 0, color: t.label, transform: open ? "rotate(180deg)" : "none" }),
   body: (inset: number): CSSProperties => ({ display: "flex", flexDirection: "column", gap: 8, padding: `2px ${inset}px 14px`, minWidth: 0 }),

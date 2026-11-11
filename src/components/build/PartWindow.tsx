@@ -43,7 +43,8 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 import { TextButton } from "@/pages/site/compose/composeControls";
 import { EYEBROW, text, tnum } from "@/pages/site/compose/refinedStyles";
-import { size } from "@/lib/theme/space";
+import { size, space } from "@/lib/theme/space";
+import { r } from "@/lib/theme/radius";
 
 export const PART_WINDOW_COPY = {
   copyCode: "Copy code",
@@ -112,10 +113,10 @@ const WELL: CSSProperties = { background: t.well, border: `1px solid ${t.wellBor
 const factTag: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
-  height: 22,
-  padding: "0 8px",
+  height: size.tag,
+  padding: `0 ${space[2]}px`,
   boxSizing: "border-box",
-  borderRadius: 4,
+  borderRadius: r.chip,
   background: t.tagFill,
   ...text(11.5, 500, t.onTag),
   lineHeight: 1,

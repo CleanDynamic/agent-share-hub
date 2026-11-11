@@ -12,6 +12,8 @@ import { SELECTED, WELL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { TITLE_LINE } from "@/lib/theme/truncate";
 import { FIGTREE } from "@/lib/theme/type";
+import { space, size } from "@/lib/theme/space";
+import { r } from "@/lib/theme/radius";
 
 /* ── type ── */
 
@@ -95,10 +97,10 @@ export const chipStyle: CSSProperties = {
   ...tileStyle,
   display: "inline-flex",
   alignItems: "center",
-  gap: 6,
-  height: 22,
-  padding: "0 8px",
-  borderRadius: 4,
+  gap: space[2],
+  height: size.tag,
+  padding: `0 ${space[2]}px`,
+  borderRadius: r.chip,
   ...text(11.5, 400, t.text),
   whiteSpace: "nowrap",
   maxWidth: "100%",
@@ -110,11 +112,11 @@ export const chipStyle: CSSProperties = {
 export const tagStyle: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
-  gap: 6,
-  height: 20,
-  padding: "0 6px",
+  gap: space[2],
+  height: size.tag,
+  padding: `0 ${space[2]}px`,
   boxSizing: "border-box",
-  borderRadius: 4,
+  borderRadius: r.chip,
   background: t.tagFill,
   ...text(11.5, 400, t.text2),
   whiteSpace: "nowrap",

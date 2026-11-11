@@ -14,7 +14,8 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { ellipsis, text } from "./refinedStyles";
-import { size } from "@/lib/theme/space";
+import { size, space } from "@/lib/theme/space";
+import { r } from "@/lib/theme/radius";
 
 /** The edge of a chosen value and of a selected segment. */
 export const SEG_ON_BORDER = t.segOnBorder;
@@ -47,12 +48,12 @@ export function ChosenValue({
     position: "relative",
     display: "inline-flex",
     alignItems: "center",
-    gap: 4,
-    minHeight: phone ? 44 : 28,
+    gap: space[1],
+    minHeight: phone ? size.touch : size.controlSmall,
     maxWidth: "100%",
     boxSizing: "border-box",
-    padding: readOnly ? "0 10px" : "0 6px 0 10px",
-    borderRadius: 7,
+    padding: readOnly ? `0 ${space[2]}px` : `0 0 0 ${space[2]}px`,
+    borderRadius: r.chip,
     background: own ? "transparent" : t.controlOn,
     borderWidth: 1,
     borderStyle: own ? "dashed" : "solid",
@@ -71,9 +72,8 @@ export function ChosenValue({
         {...remove.handlers}
         style={{
           appearance: "none",
-          width: phone ? 44 : 18,
-          height: phone ? 44 : 18,
-          margin: phone ? "0 -6px 0 0" : 0,
+          width: phone ? size.touch : size.controlSmall,
+          height: phone ? size.touch : size.controlSmall,
           padding: 0,
           flexShrink: 0,
           boxSizing: "border-box",
@@ -81,7 +81,7 @@ export function ChosenValue({
           alignItems: "center",
           justifyContent: "center",
           border: `1px solid ${remove.state.hovered ? SEG_ON_BORDER : "transparent"}`,
-          borderRadius: 4,
+          borderRadius: r.chip,
           background: "transparent",
           cursor: "pointer",
           color: remove.state.hovered ? t.text : t.text2,
@@ -123,11 +123,11 @@ export function Suggestion({ label, name, title, phone, onAdd }: { label: string
           appearance: "none",
           display: "inline-flex",
           alignItems: "center",
-          gap: 5,
-          minHeight: phone ? 44 : 26,
-          padding: "0 9px",
+          gap: space[1],
+          minHeight: phone ? size.touch : size.controlSmall,
+          padding: `0 ${space[2]}px`,
           boxSizing: "border-box",
-          borderRadius: 7,
+          borderRadius: r.chip,
           background: "transparent",
           borderWidth: 1,
           borderStyle: "dashed",

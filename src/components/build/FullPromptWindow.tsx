@@ -86,6 +86,8 @@ import { PromptEdits, type PromptEditHandlers } from "@/pages/site/compose/editK
 import { JobFields, agentOfPrompt } from "./JobFields";
 import { FromPostNote } from "./PartWindow";
 import { PromptName } from "./tileBodies";
+import { space, size } from "@/lib/theme/space";
+import { r } from "@/lib/theme/radius";
 
 export type FullPromptMode = "maker" | "reader";
 
@@ -239,11 +241,11 @@ const FOOT_NOTE_WORD: CSSProperties = { ...FOOT_NOTE, flexGrow: 0, flexShrink: 0
 const refChip: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
-  gap: 6,
-  height: 22,
-  padding: "0 8px",
+  gap: space[2],
+  height: size.tag,
+  padding: `0 ${space[2]}px`,
   boxSizing: "border-box",
-  borderRadius: 4,
+  borderRadius: r.chip,
   background: t.tile,
   border: `1px solid ${t.tileBorder}`,
   ...geist(11.5, 400, t.text),
