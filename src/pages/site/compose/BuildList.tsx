@@ -1479,7 +1479,7 @@ function AgentPromptField({ agent, props, onDone }: { agent: Step; props: BuildL
             void submit();
           }
         }}
-        style={{ ...wellField, resize: "none", padding: 12, fontSize: props.phone ? 16 : 13.5 }}
+        style={{ ...wellField, resize: "none", minHeight: space[16], padding: `${space[2]}px ${space[3]}px`, fontSize: props.phone ? 16 : 13.5 }}
       />
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
         <TextButton onClick={cancel} target={props.phone} style={{ ...textLinkBox(props.phone), ...text(12.5, 500, t.text2) }}>
@@ -2184,7 +2184,7 @@ function AddPrompt({
             void submit();
           }
         }}
-        style={{ ...wellField, resize: "none", padding: 12, fontSize: phone ? 16 : 13.5 }}
+        style={{ ...wellField, resize: "none", minHeight: space[16], padding: `${space[2]}px ${space[3]}px`, fontSize: phone ? 16 : 13.5 }}
       />
       {offerCode ? (
         <div data-testid="keep-as-code" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
