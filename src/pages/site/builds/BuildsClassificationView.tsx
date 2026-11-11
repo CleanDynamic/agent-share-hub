@@ -24,7 +24,7 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
-import { BuildsControl, ClassificationHead, ViewSwitch, ellipsis, text, useCardColumns } from "./BuildsFrame";
+import { BuildsControl, ClassificationHead, UpdatingStatus, ViewSwitch, ellipsis, text, useCardColumns } from "./BuildsFrame";
 import { RowLamp } from "./BuildsTableView";
 import { ALL_FACETS, type ClassCardView, type ClassRowView, type ClassValueView } from "./classificationModel";
 
@@ -45,6 +45,8 @@ export interface BuildsClassificationViewProps {
   onMore?: () => void;
   loadingMore?: boolean;
   empty?: ReactNode;
+  /** BF-02 (C2): the cards are the last address's, kept until the new page lands. */
+  updating?: boolean;
 }
 
 const ROOT: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.text, fontVariantNumeric: "tabular-nums" };
@@ -158,13 +160,13 @@ function FacetChooser({ facets, onFacets }: Pick<BuildsClassificationViewProps, 
 }
 
 export default function BuildsClassificationView(props: BuildsClassificationViewProps) {
-  const { view, hrefFor, onViewIntent, buildsLabel, activeCount, panel, facets, onFacets, cards, onMore, loadingMore, empty } = props;
+  const { view, hrefFor, onViewIntent, buildsLabel, activeCount, panel, facets, onFacets, cards, onMore, loadingMore, empty, updating } = props;
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [facetsOpen, setFacetsOpen] = useState(false);
   const columns = useCardColumns();
   return (
     <div data-testid="builds-classification" style={ROOT}>
-      <ClassificationHead figure={buildsLabel} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
+      <ClassificationHead figure={buildsLabel} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
 
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 16px", marginTop: 24 }}>
         <BuildsControl aria-expanded={panel ? filtersOpen : undefined} disabled={!panel} onClick={() => setFiltersOpen((value) => !value)}>
@@ -179,6 +181,7 @@ export default function BuildsClassificationView(props: BuildsClassificationView
         <span style={text(12, 400, t.label)}>
           Under each facet: <span style={{ color: t.text2 }}>from n tiles</span>, <span style={{ color: t.text2 }}>stated</span> by the maker, or <span style={{ color: t.text2 }}>corrected</span> by the maker
         </span>
+        <UpdatingStatus updating={updating} />
       </div>
 
       {filtersOpen && panel ? <div style={{ marginTop: 24, maxWidth: 256 }}>{panel}</div> : null}
@@ -191,7 +194,7 @@ export default function BuildsClassificationView(props: BuildsClassificationView
       {cards.length === 0 && empty ? (
         <div style={{ marginTop: 32 }}>{empty}</div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, alignItems: "start", marginTop: 32, paddingBottom: onMore ? 24 : 64 }}>
+        <div data-testid="builds-cards" aria-busy={updating === true} style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, alignItems: "start", marginTop: 32, paddingBottom: onMore ? 24 : 64, ...(updating ? { opacity: 0.5 } : null) }}>
           {cards.map((card, index) => (
             <ClassificationCard key={card.id} card={card} index={index} />
           ))}

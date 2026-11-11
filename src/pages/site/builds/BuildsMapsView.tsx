@@ -26,7 +26,7 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
-import { BuildsControl, MapsHead, ViewSwitch, ellipsis, text, useCardColumns } from "./BuildsFrame";
+import { BuildsControl, MapsHead, UpdatingStatus, ViewSwitch, ellipsis, text, useCardColumns } from "./BuildsFrame";
 import { RowLamp, type TableChip } from "./BuildsTableView";
 
 /** The well, in the board's own units. */
@@ -115,6 +115,8 @@ export interface BuildsMapsViewProps {
   empty?: ReactNode;
   /** One sentence and Retry, above the grid, when the Maps did not load. */
   notice?: ReactNode;
+  /** BF-02 (C2): the cards are the last address's, kept until the new page lands. */
+  updating?: boolean;
 }
 
 const ROOT: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.text, fontVariantNumeric: "tabular-nums" };
@@ -215,14 +217,14 @@ export function MapCard({ card, direction, index }: { card: MapCardView; directi
 /* ── the page ── */
 
 export default function BuildsMapsView(props: BuildsMapsViewProps) {
-  const { view, hrefFor, onViewIntent, activeCount, chips, onRemoveChip, panel, direction, onDirection, buildsLabel, withMap, cards, onMore, loadingMore, empty, notice } = props;
+  const { view, hrefFor, onViewIntent, activeCount, chips, onRemoveChip, panel, direction, onDirection, buildsLabel, withMap, cards, onMore, loadingMore, empty, notice, updating } = props;
   const [open, setOpen] = useState(false);
   const columns = useCardColumns();
   const shown = chips.slice(0, 4);
   const rest = chips.length - shown.length;
   return (
     <div data-testid="builds-maps" style={ROOT}>
-      <MapsHead switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
+      <MapsHead updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
 
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 16 }}>
         <BuildsControl aria-expanded={panel ? open : undefined} disabled={!panel} onClick={() => setOpen((value) => !value)}>
@@ -250,6 +252,7 @@ export default function BuildsMapsView(props: BuildsMapsViewProps) {
           {buildsLabel}
           {withMap !== null ? ` · ${withMap} with a Map` : ""}
         </span>
+        <UpdatingStatus updating={updating} />
       </div>
 
       {open && panel ? <div style={{ marginTop: 24, maxWidth: 256 }}>{panel}</div> : null}
@@ -259,7 +262,7 @@ export default function BuildsMapsView(props: BuildsMapsViewProps) {
       {cards.length === 0 && empty ? (
         <div style={{ marginTop: 32 }}>{empty}</div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, marginTop: 32, paddingBottom: onMore ? 24 : 64 }}>
+        <div data-testid="builds-cards" aria-busy={updating === true} style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, marginTop: 32, paddingBottom: onMore ? 24 : 64, ...(updating ? { opacity: 0.5 } : null) }}>
           {cards.map((card, index) => (
             <MapCard key={card.id} card={card} direction={direction} index={index} />
           ))}

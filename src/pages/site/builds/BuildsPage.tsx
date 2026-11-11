@@ -189,6 +189,8 @@ export default function BuildsPage() {
   const rows = builds.map((build) => tableRow(build, now, extras));
   const calculationChoices = calculationOptions(layout.calculations, columns);
   const loading = list.isLoading;
+  /* BF-02 (C2): the rows on screen are the last address's until the new page lands. They stay, and say so. */
+  const updating = list.isPlaceholderData;
   usePageReady("builds", !loading && (view !== "maps" || mapsSettled));
 
   const classified = classification.data?.live === true;
@@ -352,6 +354,7 @@ export default function BuildsPage() {
             }
             onMore={mapsShown < builds.length || list.hasNextPage ? onMoreMaps : undefined}
             loadingMore={list.isFetchingNextPage}
+            updating={updating}
           />
         </Suspense>
       )
@@ -381,6 +384,7 @@ export default function BuildsPage() {
             }
             onMore={list.hasNextPage ? () => void list.fetchNextPage() : undefined}
             loadingMore={list.isFetchingNextPage}
+            updating={updating}
           />
         </Suspense>
       )
@@ -438,6 +442,7 @@ export default function BuildsPage() {
           : null
       }
       other={list.error && !list.data ? <TableError onRetry={() => void list.refetch()} /> : null}
+      updating={updating}
     />
   );
 

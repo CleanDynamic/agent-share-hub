@@ -515,3 +515,44 @@ describe("BF-01 the head line", () => {
     expect((await screen.findByTestId("stat-runs")).textContent).toBe("0 reproductions");
   });
 });
+
+describe("BF-02 the updating state", () => {
+  /** A list answer held back until the test lets it go. */
+  function held() {
+    let release: (value: unknown) => void = () => undefined;
+    const answer = new Promise((resolve) => (release = resolve));
+    return { answer, release };
+  }
+
+  it("changing a filter: the old rows stay, marked as updating, until the new page lands", async () => {
+    renderAt("/builds");
+    expect(await screen.findByRole("link", { name: "Build 2" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Builds table" }).getAttribute("aria-busy")).toBe("false");
+    const next = held();
+    listBuildsTable.mockReturnValueOnce(next.answer);
+    fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
+    await waitFor(() => expect(address).toBe("/builds?f=field%3Aeducation"));
+    await waitFor(() => expect(screen.getByRole("region", { name: "Builds table" }).getAttribute("aria-busy")).toBe("true"));
+    expect(screen.getByRole("link", { name: "Build 1" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Build 2" })).toBeTruthy();
+    expect(screen.getByText("Updating")).toBeTruthy();
+    next.release({ builds: [build(1)], total: 1 });
+    await waitFor(() => expect(screen.queryByRole("link", { name: "Build 2" })).toBeNull());
+    expect(screen.getByRole("link", { name: "Build 1" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Builds table" }).getAttribute("aria-busy")).toBe("false");
+    expect(screen.queryByText("Updating")).toBeNull();
+  });
+
+  it("the first load is the loading view, not the updating state", async () => {
+    const first = held();
+    listBuildsTable.mockReturnValueOnce(first.answer);
+    renderAt("/builds");
+    expect(await screen.findByTestId("builds-loading")).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "Builds table" })).toBeNull();
+    expect(screen.queryByText("Updating")).toBeNull();
+    first.release({ builds: [build(1), build(2)], total: 2 });
+    expect(await screen.findByRole("link", { name: "Build 2" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Builds table" }).getAttribute("aria-busy")).toBe("false");
+    expect(screen.queryByText("Updating")).toBeNull();
+  });
+});

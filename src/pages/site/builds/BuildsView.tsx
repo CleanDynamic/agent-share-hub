@@ -46,15 +46,17 @@ export interface BuildsViewProps {
   /** The Table's props, or what stands in its place (its error). Maps and Classification draw their own pages. */
   table: BuildsTableViewProps | null;
   other?: ReactNode;
+  /** BF-02 (C2): the figure and the rows are the last address's, kept until the new page lands. */
+  updating?: boolean;
 }
 
-export function BuildsView({ figure, parts, view, hrefFor, onViewIntent, filters, table, other }: BuildsViewProps) {
+export function BuildsView({ figure, parts, view, hrefFor, onViewIntent, filters, table, other, updating }: BuildsViewProps) {
   const two = useBuildsTwoColumns();
   const [open, setOpen] = useState(false);
   return (
     <BuildsColumns
       two={two}
-      head={<BuildsHead figure={figure} parts={parts} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />}
+      head={<BuildsHead figure={figure} parts={parts} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />}
       filters={
         <>
           {two ? null : (
@@ -67,7 +69,7 @@ export function BuildsView({ figure, parts, view, hrefFor, onViewIntent, filters
           <BuildsFiltersView {...filters} collapsed={!two && !open} />
         </>
       }
-      main={table ? <BuildsTableView {...table} /> : other}
+      main={table ? <BuildsTableView {...table} updating={updating} /> : other}
     />
   );
 }
