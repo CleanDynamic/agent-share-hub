@@ -7,6 +7,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildFacts, tileView } from "@/dev/fixtures/detailsKinds";
 import { TILE_KINDS } from "@/lib/build/tileSections";
+import type { Step } from "@/lib/build/graph";
+import { typeLineOf } from "@/lib/build/tileLines";
+import type { NodeTree } from "@/lib/build/types";
+import { fileSize } from "./detailsModel";
+import { resolveView } from "./detailsView";
 
 import { BuildAnnouncer } from "./BuildAnnouncer";
 import { DETAILS_COPY, DetailsPanel, type DetailsPanelProps, type DetailsView } from "./DetailsPanel";
@@ -227,5 +232,39 @@ describe("nothing selected", () => {
     expect(screen.getByRole("heading", { level: 3 }).textContent).toBe("Tile B");
     view.rerender(<DetailsPanel {...props} view={null} />);
     expect(screen.getByText(DETAILS_COPY.empty)).toBeTruthy();
+  });
+});
+
+describe("F45 to F47: a file in the right panel", () => {
+  it("F47: one action in the head's place: Open for a file, Edit for a prompt", () => {
+    const onEdit = vi.fn();
+    panel({ view: tileView("file", "full"), onEdit });
+    const open = screen.getByTestId("details-action");
+    expect(open.textContent).toBe("Open");
+    fireEvent.click(open);
+    expect(onEdit).toHaveBeenCalledTimes(1);
+    cleanup();
+    panel({ view: tileView("prompt", "full"), onEdit });
+    expect(screen.getByTestId("details-action").textContent).toBe("Edit");
+  });
+
+  it("F46: one section headed File, with Type, Size and Added by", () => {
+    panel({ view: { ...tileView("file", "full"), type: "PDF", size: "212 KB", from: "added by you" } as DetailsView });
+    const file = screen.getAllByTestId("details-section").find((section) => section.querySelector("h4")?.textContent === "File") as HTMLElement;
+    expect(within(file).getByText("Type")).toBeTruthy();
+    expect(within(file).getByText("Size")).toBeTruthy();
+    expect(within(file).getByText("Added by")).toBeTruthy();
+    expect(screen.getAllByTestId("details-section").map((section) => section.querySelector("h4")?.textContent)).not.toContain("From");
+  });
+
+  it("F45: the same byte count reads the same on the tile and in the panel", () => {
+    for (const bytes of [12, 1500, 217_088, 3_400_000]) {
+      const step = { kind: "file", fileFacts: { kind: "pdf", name: "menu.pdf", size: bytes, preview: [], mediaId: null } } as unknown as Step;
+      const size = fileSize(bytes) as string;
+      expect(typeLineOf(step).endsWith(` · ${size}`)).toBe(true);
+      const node = { id: "f1", parent_id: null, type: "document", title: "menu.pdf", payload: { title: "menu.pdf", media_id: "m1" }, children: [] } as unknown as NodeTree;
+      const view = resolveView({ steps: [], groups: [], tree: [node], sources: [], sourceFiles: [], promptsState: () => ({ prompts: [], error: false }), intoResult: new Set<string>(), media: () => ({ bytes }), selectedId: "f1" } as unknown as Parameters<typeof resolveView>[0]);
+      expect(view).toMatchObject({ kind: "file", size });
+    }
   });
 });

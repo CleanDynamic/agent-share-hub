@@ -33,7 +33,8 @@ describe("UX-02 P10 · no word count on prompt step tiles", () => {
     const footer = within(screen.getAllByTestId("step-card")[0]).getByTestId("tile-footer");
     expect(footer.textContent).not.toMatch(/\bwords?\b/);
     expect(footer.textContent).toContain("2 variables");
-    expect(within(footer).getByRole("button", { name: "Open prompt" })).toBeTruthy();
+    // F17: no Open prompt link on a prompt tile.
+    expect(within(footer).queryByRole("button", { name: "Open prompt" })).toBeNull();
   });
 
   it("the published page still counts words: the shared footer is unchanged", () => {

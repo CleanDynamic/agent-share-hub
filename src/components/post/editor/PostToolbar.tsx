@@ -41,6 +41,8 @@ export const POST_FULL_TITLE = `A post holds ${MAX_POST_PICTURES} pictures`;
 /** A phone's button is 44 square: the touch size. */
 /** F9: the eye's title: what it shows, or hides. */
 const PREVIEW_COPY = { show: "Show how this post looks in the Gallery", hide: "Hide the Gallery preview" } as const;
+/** F54: the visible words beside the two icons that are not a text editor's usual ones: the target (a link to a part of the build) and the ring. */
+export const TOOLBAR_COPY = { reference: "Reference", ring: "Characters left" } as const;
 
 export const TOOL_SIZE = 44;
 /** A desktop's button is 36 square, its glyph 18 (CA-07). */
@@ -215,6 +217,7 @@ export function CharacterRing({ left }: { left: number }) {
       data-ink={over ? "breakage" : "text2"}
       role="img"
       aria-label={`${left} characters left. Pictures do not count.`}
+      title={`${left} characters left. Pictures do not count.`}
       style={{ position: "relative", width: RING_SIZE, height: RING_SIZE, flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
     >
       <svg width={RING_SIZE} height={RING_SIZE} viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`} aria-hidden="true" style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)" }}>
@@ -237,6 +240,10 @@ export function CharacterRing({ left }: { left: number }) {
         </span>
       ) : null}
     </span>
+    {/* F54: the ring says in words what it counts; its name already says the number. */}
+    <span aria-hidden="true" data-testid="character-ring-label" style={{ fontFamily: FIGTREE, fontSize: 12, fontWeight: 400, lineHeight: 1, color: t.label, whiteSpace: "nowrap", flex: "none" }}>
+      {TOOLBAR_COPY.ring}
+    </span>
     <span role="status" aria-live="polite" data-testid="character-ring-said">
       <VisuallyHidden>{said}</VisuallyHidden>
     </span>
@@ -256,9 +263,12 @@ function ToolButton({
   open = false,
   disabled = false,
   onClick,
+  text,
   children,
 }: {
   label: string;
+  /** F54: a visible word after the icon, for an icon a reader may not know. */
+  text?: string;
   /** The tooltip, when it is not the label. */
   title?: string;
   size: number;
@@ -288,10 +298,11 @@ function ToolButton({
       onClick={onClick}
       {...handlers}
       style={{
-        width: size,
+        width: text ? "auto" : size,
         height: size,
         flex: "none",
-        padding: 0,
+        padding: text ? "0 8px" : 0,
+        gap: text ? 6 : undefined,
         boxSizing: "border-box",
         borderRadius: 6,
         display: "inline-flex",
@@ -310,6 +321,7 @@ function ToolButton({
       }}
     >
       {children}
+      {text ? <span style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, lineHeight: 1, whiteSpace: "nowrap" }}>{text}</span> : null}
     </button>
   );
 }
@@ -556,7 +568,7 @@ export function PostToolbar({
             <span style={{ ...letter, fontWeight: 500 }}>Aa</span>
           </ToolButton>
           {onReference ? (
-            <ToolButton label={LINK_PANEL_COPY.button} size={size} expanded={referenceOpen} open={referenceOpen} onClick={run(onReference)}>
+            <ToolButton label={LINK_PANEL_COPY.button} text={TOOLBAR_COPY.reference} size={size} expanded={referenceOpen} open={referenceOpen} onClick={run(onReference)}>
               {/* The board draws the target at 16, a size under its neighbours. */}
               <Glyph name="reference" size={16} />
             </ToolButton>

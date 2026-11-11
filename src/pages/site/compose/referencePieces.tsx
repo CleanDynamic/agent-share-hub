@@ -231,6 +231,7 @@ export function ReferenceNotice({ notice: given, onUndo, onDone, phone = false }
     <div
       ref={box}
       data-testid="reference-notice"
+      role="status"
       style={{
         position: "fixed",
         // Centred by its margins, not a transform, so the drop and the lift own its transform.

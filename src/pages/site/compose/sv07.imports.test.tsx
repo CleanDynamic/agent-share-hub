@@ -9,7 +9,7 @@ vi.mock("@/integrations/supabase/client", async () => (await import("@/lib/build
 
 import { draftTitleOf } from "@/lib/build/addSession";
 import { convertRow, targetsOf } from "@/lib/build/duplicate";
-import { buildSteps, sessionGroups } from "@/lib/build/graph";
+import { buildSteps, promptTitleOf, sessionGroups } from "@/lib/build/graph";
 import { isSummaryPayload, SUMMARY_COPY } from "@/lib/build/summaryTurn";
 import { typeLineOf } from "@/lib/build/tileLines";
 import type { BuildNode, NodeTree } from "@/lib/build/types";
@@ -62,7 +62,8 @@ describe("SV-07 P7 · Claude Code's summary", () => {
     expect(isSummaryPayload(plan.row?.payload)).toBe(false);
     const [step] = buildSteps([{ ...node("n1", 0, SUMMARY), payload: plan.row?.payload } as unknown as NodeTree]);
     expect(step.summary).toBeUndefined();
-    expect(step.defaultTitle).toBe("Prompt 1");
+    // F42: an untitled prompt is called by its first eight words.
+    expect(step.defaultTitle).toBe(promptTitleOf(SUMMARY, "1"));
     // An ordinary prompt still offers only the other two.
     expect(targetsOf(node("n2", 1, "Make the menu") as unknown as BuildNode)).toEqual(["agent", "manual"]);
   });

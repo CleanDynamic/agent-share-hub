@@ -210,6 +210,16 @@ function CardBody(props: SandboxCardProps & { guard: CloseGuard }) {
   const [opened] = useState(() => JSON.stringify(draft));
   const [saving, setSaving] = useState(false);
   const [notSaved, setNotSaved] = useState(false);
+  /** F26: the line under Title is drawn only once a save was tried with no title. */
+  const [attempted, setAttempted] = useState(false);
+  /** F28 (D4): the one Optional row open, by its name; the section holds it, not the rows. */
+  const [openRow, setOpenRow] = useState<string | null>(null);
+  /** F22: what a row held before Accept, by the row's name, until that row opens or the window closes. */
+  const [undo, setUndo] = useState<Partial<Record<string, Entry[]>>>({});
+  const openOne = (name: string | null) => {
+    setOpenRow(name);
+    if (name) setUndo((current) => ({ ...current, [name]: undefined }));
+  };
   const pad = useModalInset();
   /* F10: any field that differs from its value when the window opened. */
   const changed = title !== props.title || summary !== props.description || JSON.stringify(draft) !== opened || JSON.stringify(details) !== JSON.stringify(props.details);
@@ -242,6 +252,7 @@ function CardBody(props: SandboxCardProps & { guard: CloseGuard }) {
   const titleOk = title.trim() !== "" && !liveRefused;
 
   const onSave = async () => {
+    if (!titleOk) setAttempted(true);
     if (!titleOk || saving) return;
     setSaving(true);
     try {
@@ -276,7 +287,8 @@ function CardBody(props: SandboxCardProps & { guard: CloseGuard }) {
     : "";
   const open = (field: CardField) => props.field === field;
 
-  const suggestionCount = (facet: SuggestFacet) => plural(suggestions[facet].length, "suggestion", "suggestions");
+  /* F24: nothing where there is nothing to count. */
+  const suggestionCount = (facet: SuggestFacet) => (suggestions[facet].length > 0 ? plural(suggestions[facet].length, "suggestion", "suggestions") : undefined);
 
   /* Landing on a field a missing item names: the row opens itself, then the field takes focus. */
   useEffect(() => {
@@ -294,18 +306,39 @@ function CardBody(props: SandboxCardProps & { guard: CloseGuard }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const row = (name: string, description: string, summaryText: string, count: string | undefined, body: ReactNode, extra: { forceOpen?: boolean; accept?: OptionalRowProps["accept"] } = {}) => (
-    <OptionalRow key={name} name={name} description={description} summary={summaryText} count={count} phone={phone} filledText forceOpen={extra.forceOpen} accept={extra.accept}>
+  /* F28: opening a row closes the one that was open; a row with `forceOpen` stays open on its own. */
+  const row = (name: string, description: string, summaryText: string, count: string | undefined, body: ReactNode, extra: { forceOpen?: boolean; accept?: OptionalRowProps["accept"]; undo?: OptionalRowProps["undo"] } = {}) => (
+    <OptionalRow key={name} name={name} description={description} summary={summaryText} count={count} phone={phone} filledText forceOpen={extra.forceOpen} accept={extra.accept} undo={extra.undo} open={openRow === name} onOpenChange={(next) => openOne(next ? name : null)}>
       {body}
     </OptionalRow>
   );
 
-  /* UX-03 P5: a closed row offers its first suggestion; Accept adds it exactly as choosing it in the open row's picker does. */
+  /* UX-03 P5: a closed row offers its first suggestion; Accept adds it exactly as choosing it in the open row's picker does.
+     F22: Accept remembers what the row held, and Undo puts it back. */
   const offer = (facet: SuggestFacet, label: string): OptionalRowProps["accept"] => {
     const first = suggestions[facet][0];
     if (!first) return undefined;
-    const next = [...draft[facet], { id: first.id }];
-    return { text: first.label, name: `Accept ${first.label} as ${label}`, onAccept: () => set(facet, facet === "task" ? withPrimary(next) : next) };
+    const before = draft[facet];
+    const next = [...before, { id: first.id }];
+    return {
+      text: first.label,
+      name: `Accept ${first.label} as ${label}`,
+      onAccept: () => {
+        setUndo((current) => ({ ...current, [label]: before }));
+        set(facet, facet === "task" ? withPrimary(next) : next);
+      },
+    };
+  };
+  const undoOf = (facet: SuggestFacet, label: string): OptionalRowProps["undo"] => {
+    const before = undo[label];
+    if (!before) return undefined;
+    return {
+      name: `Undo ${label}`,
+      onUndo: () => {
+        set(facet, before);
+        setUndo((current) => ({ ...current, [label]: undefined }));
+      },
+    };
   };
 
   return (
@@ -317,8 +350,20 @@ function CardBody(props: SandboxCardProps & { guard: CloseGuard }) {
 
         <Block testId="card-title-block">
           <RefinedField id={CARD_FIELD_ID.title} label="Title" right="Required">
-            <FieldInput id={CARD_FIELD_ID.title} phone={phone} type="text" value={title} placeholder="e.g. Fox poster" autoComplete="off" onChange={(event) => setTitle(event.target.value)} />
-            {liveRefused ? <Alert>{LIVE_NEEDS_TITLE}</Alert> : !titleOk ? <FieldRequiredLine /> : null}
+            <FieldInput
+              id={CARD_FIELD_ID.title}
+              phone={phone}
+              type="text"
+              value={title}
+              placeholder="e.g. Fox poster"
+              autoComplete="off"
+              onChange={(event) => setTitle(event.target.value)}
+              // F26: Enter in the title is a save attempt; with no title it draws the line under the field.
+              onKeyDown={(event) => {
+                if (event.key === "Enter") void onSave();
+              }}
+            />
+            {liveRefused ? <Alert>{LIVE_NEEDS_TITLE}</Alert> : attempted && !titleOk ? <FieldRequiredLine /> : null}
           </RefinedField>
         </Block>
 
@@ -344,14 +389,14 @@ function CardBody(props: SandboxCardProps & { guard: CloseGuard }) {
             )}
             {data
               ? [
-                  row("Field", "Not set", entriesLine("field", draft.field), suggestionCount("field"), <ClassificationPicker id="card-field" facet="field" label="Field" entries={draft.field} max={FIELD_MAX} suggestions={suggestions.field} phone={phone} placeholder="Search fields" onChange={(next) => set("field", next)} />, { accept: offer("field", "Field") }),
-                  row("Task", "Not set", entriesLine("task", draft.task), suggestionCount("task"), <ClassificationPicker id="card-task" facet="task" label="Task" entries={draft.task} max={TASK_MAX} primary suggestions={suggestions.task} phone={phone} placeholder="Search tasks" onChange={(next) => set("task", next)} />, { accept: offer("task", "Task") }),
-                  row("Setting", "Not set", entriesLine("setting", draft.setting), suggestionCount("setting"), <ClassificationPicker id="card-setting" facet="setting" label="Setting" entries={draft.setting} max={SETTING_MAX} suggestions={suggestions.setting} phone={phone} placeholder="Search settings" onChange={(next) => set("setting", next)} />, { accept: offer("setting", "Setting") }),
+                  row("Field", "Not set", entriesLine("field", draft.field), suggestionCount("field"), <ClassificationPicker id="card-field" facet="field" label="Field" entries={draft.field} max={FIELD_MAX} suggestions={suggestions.field} phone={phone} placeholder="Search fields" onChange={(next) => set("field", next)} />, { accept: offer("field", "Field"), undo: undoOf("field", "Field") }),
+                  row("Task", "Not set", entriesLine("task", draft.task), suggestionCount("task"), <ClassificationPicker id="card-task" facet="task" label="Task" entries={draft.task} max={TASK_MAX} primary suggestions={suggestions.task} phone={phone} placeholder="Search tasks" onChange={(next) => set("task", next)} />, { accept: offer("task", "Task"), undo: undoOf("task", "Task") }),
+                  row("Setting", "Not set", entriesLine("setting", draft.setting), suggestionCount("setting"), <ClassificationPicker id="card-setting" facet="setting" label="Setting" entries={draft.setting} max={SETTING_MAX} suggestions={suggestions.setting} phone={phone} placeholder="Search settings" onChange={(next) => set("setting", next)} />, { accept: offer("setting", "Setting"), undo: undoOf("setting", "Setting") }),
                   row(
                     "Tools and stack",
                     "Not set",
                     stackLine,
-                    suggestions.stack.length === 0 && derivedStack.length > 0 ? "From the build" : suggestionCount("stack"),
+                    suggestionCount("stack"),
                     <>
                       {derivedStack.length > 0 ? (
                         <ul aria-label="Tools and stack, from the build" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -363,9 +408,9 @@ function CardBody(props: SandboxCardProps & { guard: CloseGuard }) {
                       <ClassificationPicker id="card-stack" facet="stack" label="Tools and stack" entries={draft.stack} suggestions={suggestions.stack} phone={phone} placeholder="Add a tool, language or framework" onChange={(next) => set("stack", next)} />
                       <MadeWithLine phone={phone} chips={props.madeWith} hasSessions={props.madeWith.some((chip) => chip.kind !== "entry")} onToggle={props.onToggleMadeWith} onAdd={props.onAddMadeWith} />
                     </>,
-                    { accept: offer("stack", "Tools and stack") },
+                    { accept: offer("stack", "Tools and stack"), undo: undoOf("stack", "Tools and stack") },
                   ),
-                  row("Data handled", "Not set", entriesLine("data", draft.data), undefined, <ClassificationPicker id="card-data" facet="data" label="Data handled" entries={draft.data} suggestions={suggestions.data} phone={phone} placeholder="Search data types" onChange={(next) => set("data", next)} />, { accept: offer("data", "Data handled") }),
+                  row("Data handled", "Not set", entriesLine("data", draft.data), undefined, <ClassificationPicker id="card-data" facet="data" label="Data handled" entries={draft.data} suggestions={suggestions.data} phone={phone} placeholder="Search data types" onChange={(next) => set("data", next)} />, { accept: offer("data", "Data handled"), undo: undoOf("data", "Data handled") }),
                   row(
                     "Age suitability",
                     "Not set",
@@ -384,7 +429,7 @@ function CardBody(props: SandboxCardProps & { guard: CloseGuard }) {
                     "From the build",
                     "Not set",
                     readLine,
-                    questions.length > 0 ? plural(questions.length, "question", "questions") : "From the build",
+                    questions.length > 0 ? plural(questions.length, "question", "questions") : undefined,
                     candidate ? (
                       <ReadFromBuild
                         classification={candidate}
@@ -399,6 +444,7 @@ function CardBody(props: SandboxCardProps & { guard: CloseGuard }) {
                           })
                         }
                         onDismiss={(id) => setDraft((current) => ({ ...current, dismissed: [...current.dismissed, id] }))}
+                        onOpenStack={() => openOne("Tools and stack")}
                         onSource={(id) => {
                           data.onSelectSource?.(id);
                           props.onOpenChange(false);

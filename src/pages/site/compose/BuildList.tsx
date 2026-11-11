@@ -26,7 +26,7 @@
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import * as Popover from "@radix-ui/react-popover";
-import { ArrowUp, Link as JoinIcon, Unlink as SplitIcon } from "lucide-react";
+import { Link as JoinIcon, Unlink as SplitIcon } from "lucide-react";
 import {
   createContext,
   useCallback,
@@ -52,8 +52,7 @@ import { HelperChips, ShapeChip } from "@/components/build/RuntimeChips";
 import { CostStrip, TileCostLines } from "@/components/build/CostLines";
 import { callsOf } from "@/lib/build/decisionCopy";
 import { definesOf } from "@/lib/build/agentCode";
-import { PromptName, MANUAL_LEAN_LINES, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TILE_COPY, TileFooter, DecisionTileBody, RetrievalTileBody, ToolTileBody, triggerLine } from "@/components/build/tileBodies";
-import { GlyphButton } from "./ModalFrame";
+import { MANUAL_LEAN_LINES, DatasetTileBody, FileTileBody, ManualTileBody, OpenOnGitHub, ReplyBlock, RepoTileBody, ResultTileBody, SystemPromptTileBody, TILE_COPY, TileFooter, DecisionTileBody, RetrievalTileBody, ToolTileBody, triggerLine } from "@/components/build/tileBodies";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { SUMMARY_COPY } from "@/lib/build/summaryTurn";
 import { ASKS_FOR_LABEL, originLine } from "@/lib/build/promptOrigin";
@@ -73,12 +72,11 @@ import { REF_KIND } from "@/lib/build/postRefs";
 import { borderFor, outlineFor } from "@/lib/theme/partColour";
 import { refTo } from "@/lib/build/thread";
 import { Glyph } from "@/components/brand/Glyph";
-import { IconButton } from "@/components/brand/IconButton";
 import { MenuButton } from "@/components/brand/MenuButton";
 import { Pill } from "@/components/brand/Pill";
 import type { SessionGroup, Step } from "@/lib/build/graph";
 import { footerFactsOf, resultTypeLine, typeLineOf } from "@/lib/build/tileLines";
-import { checkHistoryLine, checkStatus, resultHolds, sentWithLabel, stepLabel, stepRunsLabel, stepTitle, TOOL_TYPE, withSentWith } from "@/lib/build/graph";
+import { checkHistoryLine, checkStatus, plainPreview, resultHolds, sentWithLabel, stepRunsLabel, stepTitle, TOOL_TYPE, withSentWith } from "@/lib/build/graph";
 import { ChangedText } from "@/components/build/ChangedText";
 import { copyTogether } from "@/lib/build/copyTogether";
 import { codeInPrompt, SENT_WITH_COPY, type CodeSuggestion } from "@/lib/build/sentWithSuggest";
@@ -173,7 +171,11 @@ export const LIST_COPY = {
   edit: "Edit…",
   /** Product names keep their case: "Open GitHub repository". */
   open: (noun: string) => `Open ${/^GitHub/.test(noun) ? noun : noun.charAt(0).toLowerCase() + noun.slice(1)}`,
-  placeholder: "Paste or type a prompt…",
+  /** F15: the composer's field says what it does; the agent's field the same, for its agent. */
+  placeholder: "Add a prompt to this session",
+  placeholderAgent: "Add a prompt to this agent",
+  /** F15: the composer's one button, in words; Enter still adds. */
+  add: "Add",
   /** CA-15 P10: the one link in a prompt tile's footer. */
   openPrompt: "Open prompt",
   /** CA-03 P5: a check's eyebrow. */
@@ -1182,8 +1184,6 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
   const isDefault = step.title === null;
   const { alsoIn: repeated } = useContext(ListRefsContext);
   const alsoIn = repeated?.get(step.id);
-  // SV-07 P7: a Summary tile is called what it is, never by a prompt's place.
-  const place = step.summary ? SUMMARY_COPY.title : stepLabel(step.number);
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState("");
   const [over, setOver] = useState(false);
@@ -1229,6 +1229,8 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
       tabIndex={0}
       {...focus.bind}
       onClick={() => props.onSelect(step.id)}
+      // F17: a click selects; a double click opens the prompt window, as Edit in the right panel does.
+      onDoubleClick={open}
       onKeyDown={onKeyDown}
       onDragEnter={takesDrops ? (event) => {
         if (!carriesFiles(event)) return;
@@ -1275,21 +1277,11 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
           renaming ? (
             <RenameField label={`Title of prompt ${step.number}`} draft={draft} placeholder={step.defaultTitle} phone={phone} onDraft={setDraft} onFinish={finish} />
           ) : (
-            /* A prompt is called by its place on the build; the maker's own title sits next to it, and the pencil edits it here. */
-            <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
-              <h3 data-default-title={isDefault ? "true" : undefined} title={[place, step.title].filter(Boolean).join(" ")} style={{ margin: 0, minWidth: 0, letterSpacing: "-0.005em" }}>
-                <PromptName place={place} title={step.title} />
-              </h3>
-              <GlyphButton
-                glyph="pencil"
-                label={`Rename prompt ${step.number}`}
-                phone={phone}
-                onClick={() => {
-                  setDraft(step.title ?? "");
-                  setRenaming(true);
-                }}
-              />
-            </div>
+            /* F42: the title alone, as every tile's (F44): the maker's own, else the first eight words; the place is the badge. F17: no
+               pencil; Rename is in the menu and in the prompt window. */
+            <h3 data-default-title={isDefault ? "true" : undefined} title={title} style={{ ...TILE_TITLE, ...(isDefault ? { color: t.text2 } : null) }}>
+              <FindHit text={title} />
+            </h3>
           )
         }
         menu={
@@ -1352,7 +1344,8 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         ref={textRef}
         style={{ ...text(13.5, 400, t.text), lineHeight: "21px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }}
       >
-        <ChangedText text={step.text} changes={step.changes} />
+        {/* F19: plain words; a prompt with marked changes keeps its text as written, so the marks stay on their words. */}
+        <ChangedText text={step.changes?.length ? step.text : plainPreview(step.text)} changes={step.changes} />
       </p>
       {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} lean /> : null}
       {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
@@ -1365,7 +1358,8 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         step={step}
         props={props}
         link={
-          open ? (
+          /* F17 (D8): a prompt tile has no footer link (Edit in the right panel, or a double click, opens it); a Summary tile keeps its one footer action (F44). */
+          open && step.summary ? (
             <FooterLink phone={phone} onClick={open}>
               {LIST_COPY.openPrompt}
             </FooterLink>
@@ -1470,7 +1464,7 @@ function AgentPromptField({ agent, props, onDone }: { agent: Step; props: BuildL
         aria-label={`Add a prompt to agent ${agent.number}`}
         rows={2}
         value={text_}
-        placeholder={LIST_COPY.placeholder}
+        placeholder={LIST_COPY.placeholderAgent}
         onChange={(event) => setText(event.target.value)}
         onKeyDown={(event) => {
           if (event.key === "Escape") {
@@ -1487,7 +1481,9 @@ function AgentPromptField({ agent, props, onDone }: { agent: Step; props: BuildL
         <TextButton onClick={cancel} target={props.phone} style={text(12.5, 500, t.text2)}>
           Cancel
         </TextButton>
-        <IconButton icon={ArrowUp} glyph="up" label="Add prompt to this agent" size={28} disabled={!text_.trim() || busy} onClick={() => void submit()} />
+        <Button variant="primary" size={props.phone ? 44 : 28} fontSize={12} aria-label="Add prompt to this agent" data-testid="agent-prompt-add" disabled={!text_.trim() || busy} onClick={() => void submit()}>
+          {LIST_COPY.add}
+        </Button>
       </div>
     </div>
   );
@@ -2196,10 +2192,13 @@ function AddPrompt({
       ) : null}
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
         <ToolPicker label={`Prompt tool · ${toolLabel ?? "pick a tool"}`} value={tool} onChange={changeTool} inBuild={inBuild} allowNone phone={phone} step="prompt" />
-        {/* CA-03: this row has no field label, so the model menu keeps the word "model" while empty. */}
-        {redirect ? null : <ModelPicker tool={tool} value={model} onChange={setModel} phone={phone} placeholder={MODEL_PICKER_COPY.model} />}
+        {/* CA-03: this row has no field label, so the model menu says it is the model while empty (F41: "Model"); chosen, it shows the model's name. */}
+        {redirect ? null : <ModelPicker tool={tool} value={model} onChange={setModel} phone={phone} placeholder={MODEL_PICKER_COPY.label} />}
         <span style={{ flexGrow: 1 }} />
-        <IconButton icon={ArrowUp} glyph="up" label="Add prompt" size={28} disabled={!value.trim() || busy || redirect} onClick={() => void submit()} style={phone ? { width: 44, height: 44 } : undefined} />
+        {/* F15 (D3): the add is a button in words, not an arrow. */}
+        <Button variant="primary" size={phone ? 44 : 28} fontSize={12} data-testid="composer-add" disabled={!value.trim() || busy || redirect} onClick={() => void submit()}>
+          {LIST_COPY.add}
+        </Button>
       </div>
       {redirect && known ? (
         <div data-testid="add-as-agent" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>

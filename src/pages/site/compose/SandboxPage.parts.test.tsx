@@ -140,7 +140,8 @@ describe("CA-17 P2 · Add a part", () => {
     const heads = screen.getAllByTestId("workstream-head");
     expect(heads.map((head) => within(head).getByTestId("workstream-count").textContent)).toEqual(["2 sessions", "0 sessions"]);
     expect(screen.getByTestId("workstream-empty").textContent).toContain("No sessions yet");
-    expect(screen.getByRole("button", { name: "+ Add a session to this part" })).toBeTruthy();
+    // F55: "Add session" in an empty part too.
+    expect(within(screen.getByTestId("workstream-empty")).getByRole("button", { name: "Add session" })).toBeTruthy();
   });
 
   it("from many adds one at the end, up to 26", async () => {

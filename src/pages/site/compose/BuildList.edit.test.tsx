@@ -89,9 +89,10 @@ describe("a tile's own window, from its visible controls (CA-18, UX-02 P5)", () 
     expect(props.onEditTile).toHaveBeenCalledTimes(2);
   });
 
-  it("a prompt opens its prompt window from Open prompt, as it did", () => {
+  it("a prompt opens its prompt window from a double click (F17: no Open prompt link)", () => {
     const props = list([make({ id: "p1", number: "1", kind: "prompt", text: "Write it", sessionId: "s1" })]);
-    fireEvent.click(within(screen.getAllByTestId("step-card")[0]).getByRole("button", { name: "Open prompt" }));
+    expect(within(screen.getAllByTestId("step-card")[0]).queryByRole("button", { name: "Open prompt" })).toBeNull();
+    fireEvent.doubleClick(screen.getAllByTestId("step-card")[0]);
     expect(props.onOpenPrompt).toHaveBeenCalledWith("p1");
   });
 

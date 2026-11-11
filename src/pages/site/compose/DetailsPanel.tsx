@@ -484,6 +484,8 @@ export const DETAILS_COPY = {
   /** UX-02 P9: in place of "Not set: …". */
   addDetails: "Add details",
   edit: "Edit",
+  /** F47: a file's action in the head, where Edit stands for the rest. */
+  open: "Open",
   copy: "Copy",
   copied: "Copied",
   copyFailed: "Text not copied",
@@ -669,7 +671,6 @@ function MemberGroupLine({ to }: { to: string }) {
 /** The head: the tool's mark, the title and the modal's header line (a colour dot before it when set), Edit at the right. */
 export function DetailsHead({ view, colour, onEdit }: { view: DetailsView; colour?: DetailsColour | null; onEdit?: () => void }) {
   const head = headOf(view);
-  const editable = view.kind !== "file";
   return (
     <header data-testid="details-head" style={{ ...HEAD_ROW, marginBottom: HEAD_BELOW }}>
       {head.tool || view.kind === "prompt" || view.kind === "session" ? (
@@ -688,9 +689,10 @@ export function DetailsHead({ view, colour, onEdit }: { view: DetailsView; colou
         {/* CA-19 P5: a member of a named group: "In Login flow", under the header line. */}
         {colour?.to ? <MemberGroupLine to={colour.to} /> : null}
       </div>
-      {onEdit && editable ? (
-        <Button variant="secondary" size={28} fontSize={12} onClick={onEdit} style={EDIT_BUTTON}>
-          {DETAILS_COPY.edit}
+      {/* F47: one action, in the same place for every object: Open for a file (its window, with the preview), Edit for the rest. */}
+      {onEdit ? (
+        <Button variant="secondary" size={28} fontSize={12} onClick={onEdit} style={EDIT_BUTTON} data-testid="details-action">
+          {view.kind === "file" ? DETAILS_COPY.open : DETAILS_COPY.edit}
         </Button>
       ) : null}
     </header>

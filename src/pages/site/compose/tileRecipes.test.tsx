@@ -120,15 +120,14 @@ describe("each kind's tile as its board (CA-15b P3)", () => {
     }
   });
 
-  it("a prompt: its text, then the response line, then its facts (no word count, UX-02 P10) and Open prompt", () => {
+  it("a prompt: its text, then the response line; no word count (UX-02 P10) and no Open prompt (F17)", () => {
     show(boardTiles());
     const prompt = tile("prompt");
     const reply = within(prompt).getByTestId("prompt-reply");
     expect(reply.textContent).toBe("Response Created the prompts for wave six.");
-    expect(before(reply, within(prompt).getByTestId("tile-footer"))).toBe(true);
-    // UX-02 P10: the composer's prompt tile has no word count; its other facts would stand here.
+    // UX-02 P10: the composer's prompt tile has no word count; F17: and no footer link, so with no facts it has no footer.
     expect(within(prompt).queryByTestId("tile-footer-facts")?.textContent ?? "").toBe("");
-    expect(within(prompt).getByRole("button", { name: "Open prompt" })).toBeTruthy();
+    expect(within(prompt).queryByRole("button", { name: "Open prompt" })).toBeNull();
   });
 
   it("a tool: its app's mark before its name, what it did in the body", () => {

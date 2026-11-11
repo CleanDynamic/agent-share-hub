@@ -60,6 +60,27 @@ describe("the collapse arrow", () => {
 });
 
 describe("the title", () => {
+  it("F50, F66: with no title and no focus, quiet words with no border, as wide as the words; focused, a field 32 high", () => {
+    list();
+    const field = within(head(1)).getByRole("textbox", { name: "Title of Session 1" }) as HTMLInputElement;
+    expect(field.placeholder).toBe("Add a title");
+    expect(field.getAttribute("data-quiet")).toBe("true");
+    expect(field.style.border).toMatch(/transparent/);
+    expect(field.size).toBe("Add a title".length);
+    act(() => field.focus());
+    expect(field.getAttribute("data-quiet")).toBeNull();
+    expect(field.style.height).toBe("32px");
+    act(() => field.blur());
+    expect(field.getAttribute("data-quiet")).toBe("true");
+  });
+
+  it("F50: the date stands at the right, 12 from what is before it", () => {
+    list();
+    const date = within(head(1)).getByTestId("session-date");
+    expect(date.style.marginLeft).toBe("auto");
+    expect(date.style.paddingLeft).toBe("4px");
+  });
+
   it("is a field with a placeholder, saved on Enter and on blur, and put back by Esc", () => {
     const props = list();
     const field = within(head(1)).getByRole("textbox", { name: "Title of Session 1" }) as HTMLInputElement;
@@ -168,12 +189,13 @@ describe("colour", () => {
 });
 
 describe("the app", () => {
-  it("is a text button that opens the app picker while a session has none", () => {
+  it("F48: is a button reading Choose harness that opens the harness picker while a session has none", () => {
     const base = sandboxListProps("bakery");
     const [[number, first], ...rest] = [...base.dividers.entries()];
     list({ dividers: new Map([[number, { ...first, tool: "No harness chosen" }], ...rest]), onPickApp: vi.fn() });
     const pick = within(head(1)).getByRole("button", { name: "Pick a harness for session 1" });
-    expect(pick.textContent).toBe("No harness chosen");
+    expect(pick.textContent).toBe("Choose harness");
+    expect(pick.style.textDecoration).not.toBe("underline");
   });
 });
 

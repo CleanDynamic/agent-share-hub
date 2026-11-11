@@ -1,6 +1,6 @@
 // CA-28 P4: the Optional section's motion, with recorded animations and a frame whose height depends on what is drawn in it.
-// The window is centred (top 50%, translate -50%), so a frame that changes height keeps its centre by itself; what the section animates
-// is the old height to the new, with transforms and clip-path only: growing 200 ms, the fields falling in from 100 ms, closing in reverse.
+// F38: the window's top edge is pinned (F25), so a frame that changes height keeps its top edge by itself; what the section animates
+// is the old height to the new, at the bottom edge, with transforms and clip-path only: growing 200 ms, the fields falling in from 100 ms, closing in reverse.
 
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -118,27 +118,22 @@ const settleAll = async () => {
 };
 
 describe("the section's motion: opening", () => {
-  it("grows the frame over BASE in STANDARD, with its centre held: the clip opens from the old height, the header and body move up and the footer down, by half the difference", async () => {
+  it("grows the frame over BASE in STANDARD from its pinned top edge (F38): the clip opens at the bottom from the old height, only the footer moves, by the whole difference", async () => {
     window_(3);
     await press();
     const growth = animationsOf(frame());
     expect(growth).toHaveLength(1);
     const old = EMPTY;
     const now = EMPTY + 3 * PER_FIELD;
-    const half = (now - old) / 2;
-    // Clip: from half off each end (the old height) to nothing (and the shadow's room), duration 200.
+    const change = now - old;
+    // Clip: the bottom cut by the difference (the old height) to nothing (and the shadow's room), duration 200; the top never cut.
     expect(growth[0].options).toMatchObject({ duration: BASE, easing: STANDARD, fill: "none" });
-    expect(growth[0].keyframes[0].clipPath).toMatch(new RegExp(`^inset\\(${half}px -\\d+px ${half}px -\\d+px round 12px\\)$`));
+    expect(growth[0].keyframes[0].clipPath).toMatch(new RegExp(`^inset\\(-\\d+px -\\d+px ${change}px -\\d+px round 12px\\)$`));
     expect(String(growth[0].keyframes[1].clipPath)).toMatch(/^inset\(-\d+px -\d+px -\d+px -\d+px round 12px\)$/);
-    // The three parts, by half the difference: the top ones down to start with (so they move up), the footer up.
-    expect(animationsOf(screen.getByTestId("modal-header"))[0].keyframes).toEqual([{ transform: `translateY(${half}px)` }, { transform: "none" }]);
-    expect(animationsOf(screen.getByTestId("modal-body"))[0].keyframes).toEqual([{ transform: `translateY(${half}px)` }, { transform: "none" }]);
-    expect(animationsOf(screen.getByTestId("modal-footer"))[0].keyframes).toEqual([{ transform: `translateY(${-half}px)` }, { transform: "none" }]);
-    // The centre of what is shown, at the start: the new frame's top edge plus the cut, and its bottom edge less the cut.
-    const top = CENTRE - now / 2 + half;
-    const bottom = CENTRE + now / 2 - half;
-    expect(Math.abs((top + bottom) / 2 - CENTRE)).toBeLessThan(1);
-    expect(bottom - top).toBe(old);
+    // The header and the body stay where they are; the footer starts up by the whole difference.
+    expect(animationsOf(screen.getByTestId("modal-header"))).toHaveLength(0);
+    expect(animationsOf(screen.getByTestId("modal-body"))).toHaveLength(0);
+    expect(animationsOf(screen.getByTestId("modal-footer"))[0].keyframes).toEqual([{ transform: `translateY(${-change}px)` }, { transform: "none" }]);
     // Nothing animated is a layout property.
     for (const entry of played) {
       const keys = [...new Set(entry.keyframes.flatMap((frame) => Object.keys(frame)))].filter((key) => key !== "offset" && key !== "easing");
@@ -201,14 +196,14 @@ describe("the section's motion: closing", () => {
     // The frame waits for the lift.
     expect(animationsOf(frame())).toHaveLength(0);
     expect(fieldEls()).toHaveLength(3);
-    // Then both edges move in about the fixed centre, and the fields leave the layout.
+    // Then the bottom edge moves up to the pinned top's new height (F38), and the fields leave the layout.
     await settleAll();
     const shrink = animationsOf(frame());
     expect(shrink).toHaveLength(1);
     expect(shrink[0].options).toMatchObject({ duration: BASE, easing: STANDARD, fill: "forwards" });
-    const half = (3 * PER_FIELD) / 2;
-    expect(shrink[0].keyframes[1].clipPath).toMatch(new RegExp(`^inset\\(${half}px `));
-    expect(animationsOf(screen.getByTestId("modal-footer"))[0].keyframes).toEqual([{ transform: "none" }, { transform: `translateY(${-half}px)` }]);
+    const change = 3 * PER_FIELD;
+    expect(shrink[0].keyframes[1].clipPath).toMatch(new RegExp(`^inset\\(-\\d+px -\\d+px ${change}px `));
+    expect(animationsOf(screen.getByTestId("modal-footer"))[0].keyframes).toEqual([{ transform: "none" }, { transform: `translateY(${-change}px)` }]);
     await settleAll();
     expect(fieldEls()).toHaveLength(0);
     expect(toggle().getAttribute("aria-expanded")).toBe("false");
@@ -252,7 +247,7 @@ describe("the section's motion: pressing again mid-motion", () => {
     expect(fieldEls()).toHaveLength(3);
     const growth = animationsOf(frame()).filter((entry) => entry.state === "running");
     expect(growth).toHaveLength(1);
-    expect(growth[0].keyframes[0].clipPath).toMatch(new RegExp(`^inset\\(${(3 * PER_FIELD) / 2}px `));
+    expect(growth[0].keyframes[0].clipPath).toMatch(new RegExp(`^inset\\(-\\d+px -\\d+px ${3 * PER_FIELD}px `));
   });
 });
 

@@ -80,6 +80,7 @@ import {
 } from "@/pages/site/compose/modalRecipes";
 
 import type { PromptView } from "@/pages/site/compose/DetailsPanel";
+import { MODAL_TOP } from "@/pages/site/compose/ModalFrame";
 import { PromptEdits, type PromptEditHandlers } from "@/pages/site/compose/editKit";
 
 import { JobFields, agentOfPrompt } from "./JobFields";
@@ -126,13 +127,19 @@ export const FULL_PROMPT_COPY = {
   hint: "Esc Close · ← → Previous or next prompt",
   copied: "Copied",
   copy: "Copy prompt",
-  done: "Done",
+  /** F30 (D5): the window writes on every change, so its one button closes it, and "Saved" stands beside it after each write. */
+  close: "Close",
+  /** The footer button's accessible name: the header's square is already "Close". */
+  closeWindow: "Close window",
+  saved: "Saved",
+  previous: "Previous prompt",
+  next: "Next prompt",
   before: "Before you send it",
   readerChanges: "A reader changes this",
   keepAsWritten: "Keep as written",
   prompt: "Prompt",
   response: "Response",
-  titlePlaceholder: "Welcome email",
+  titlePlaceholder: "Add a title",
   rename: "Rename prompt",
   modelSettings: "Model settings",
   model: "Model",
@@ -216,12 +223,15 @@ function bodyFacts(props: FullPromptWindowProps, step: Step, prompts: readonly S
   });
   const goesInto = all.filter((candidate) => candidate.id !== step.id && candidate.uses.some((use) => use.kind === "output" && use.node_id === step.id));
   const before = uses.flatMap((use) => (use.paste ? [use.paste] : []));
-  return { previous, next, place, name, instructions, tool, model, line, uses, goesInto, before };
+  return { previous, next, place, name, instructions, tool, model, line, uses, goesInto, before, group };
 }
 
 /* ── the refined look (UI-P94) ── */
 
 const geist = (size: number, weight: 400 | 500, color: string): CSSProperties => ({ fontFamily: FIGTREE, fontSize: size, fontWeight: weight, lineHeight: "normal", color });
+
+/** F30: "Saved", beside Close: the footer's note without the room the hint takes. */
+const FOOT_NOTE_WORD: CSSProperties = { ...FOOT_NOTE, flexGrow: 0, flexShrink: 0 };
 
 
 /** A reference: the tile's fill and edge, 22 high, radius 4, 11.5. */
@@ -402,7 +412,7 @@ function ReadLine({ label, children }: { label: string; children: ReactNode }) {
 }
 
 /** CA-15 P2: the Optional section of a prompt: Model settings and Variables. A reader sees only the rows that hold something. */
-function PromptOptional({ props, step, tool, model, phone, picked, onMarked }: { props: FullPromptWindowProps; step: Step; tool: string | null; model: string | null; phone: boolean; picked: ChangeRange | null; onMarked: () => void }) {
+function PromptOptional({ props, step, tool, model, phone, picked, onMarked, modelElsewhere = false }: { props: FullPromptWindowProps; step: Step; tool: string | null; model: string | null; phone: boolean; picked: ChangeRange | null; onMarked: () => void; /** F36: the window draws its Model section above (`PromptEdits`), so Model settings does not draw the model again. */ modelElsewhere?: boolean }) {
   const { mode, onExtras, onText } = props;
   const maker = mode === "maker" && Boolean(onExtras);
   const settings: PromptSettings = step.settings ?? { model: "", effort: "default", instructions: "" };
@@ -410,9 +420,9 @@ function PromptOptional({ props, step, tool, model, phone, picked, onMarked }: {
   const [described, setDescribed] = useState<Record<string, string>>({});
   const variables = variablesFor(step.text, step.variables ?? []);
   const effortHeld = settings.effort !== "default";
-  const modelHeld = Boolean(model);
+  const modelHeld = Boolean(model) && !modelElsewhere;
   const settingsHeld = modelHeld || effortHeld || Boolean(settings.instructions);
-  const shownModel = model ? modelLabel(model) : null;
+  const shownModel = model && !modelElsewhere ? modelLabel(model) : null;
   const settingsLine = summaryOf(shownModel, effortHeld ? `${EFFORT_LABEL[settings.effort]} effort` : null, settings.instructions);
   const variablesLine = summaryOf(variables.map((variable) => `{${variable.name}}`));
   const saveSettings = (patch: Partial<PromptSettings>) => onExtras?.(step.id, { settings: { ...settings, ...patch } });
@@ -456,7 +466,7 @@ function PromptOptional({ props, step, tool, model, phone, picked, onMarked }: {
     <OptionalSection>
       {agent && onExtras ? <JobFields step={step} agent={agent} names={props.names ?? {}} phone={phone} onExtras={onExtras} /> : null}
       <OptionalField name={FULL_PROMPT_COPY.modelSettings} summary={settingsLine} phone={phone}>
-        <ModelPicker tool={tool} value={model} onChange={(next) => saveSettings({ model: next ?? "" })} phone={phone} field />
+        {modelElsewhere ? null : <ModelPicker tool={tool} value={model} onChange={(next) => saveSettings({ model: next ?? "" })} phone={phone} field />}
         <SegmentedField<Effort> label={FULL_PROMPT_COPY.effort} phone={phone} items={EFFORTS.map((effort) => ({ value: effort, label: EFFORT_LABEL[effort] }))} value={settings.effort} onChange={(effort) => saveSettings({ effort })} />
         <FieldArea
           phone={phone}
@@ -473,18 +483,20 @@ function PromptOptional({ props, step, tool, model, phone, picked, onMarked }: {
       </OptionalField>
       <OptionalField name={FULL_PROMPT_COPY.variables} description={FULL_PROMPT_COPY.variablesLine} summary={variablesLine} phone={phone}>
         {variables.length === 0 ? <Count>{FULL_PROMPT_COPY.noVariablesCount}</Count> : null}
+        {/* F33: each variable's label above its field. */}
         {variables.map((variable) => (
-          <Row key={variable.name} id={`variable-${step.id}-${variable.name}`} label={`{${variable.name}}`} noRule phone={phone}>
+          <div key={variable.name} style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+            <BlockHead label={`{${variable.name}}`} htmlFor={`variable-${step.id}-${variable.name}`} />
             <FieldInput
               phone={phone}
               id={`variable-${step.id}-${variable.name}`}
               maxLength={VARIABLE_DESCRIPTION_MAX}
               value={described[variable.name] ?? variable.description}
-              placeholder="The customer's first name"
+              placeholder="e.g. The customer's first name"
               onChange={(event) => setDescribed((now) => ({ ...now, [variable.name]: event.target.value }))}
               onBlur={() => saveVariables(described)}
             />
-          </Row>
+          </div>
         ))}
         <Inline>
           <RecipeButton
@@ -510,12 +522,30 @@ function PromptOptional({ props, step, tool, model, phone, picked, onMarked }: {
   );
 }
 
-/** A square 28 control for the header: Previous and Next. */
-function NavSquare({ glyph, label, onClick, phone }: { glyph: "larr" | "rarr"; label: string; onClick: () => void; phone: boolean }) {
-  return <IconSquare glyph={glyph} label={label} phone={phone} onClick={onClick} />;
+/** A square 28 control for the header: Previous and Next. F35: both are always drawn; the one with no neighbour is disabled. */
+function NavSquare({ glyph, label, onClick, phone, disabled = false }: { glyph: "larr" | "rarr"; label: string; onClick: () => void; phone: boolean; disabled?: boolean }) {
+  return <IconSquare glyph={glyph} label={label} phone={phone} onClick={onClick} disabled={disabled} aria-disabled={disabled || undefined} />;
 }
 
-function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowProps; step: Step; prompts: readonly Step[]; phone: boolean }) {
+/** F30: the same handlers, each also marking the window as saved; the window writes as it goes, and the footer says so. */
+function saving<H extends Record<string, unknown>>(handlers: H, mark: () => void): H {
+  const out: Record<string, unknown> = {};
+  for (const key of Object.keys(handlers)) {
+    const fn = handlers[key];
+    out[key] = typeof fn === "function" ? (...args: unknown[]) => { const result = (fn as (...a: unknown[]) => unknown)(...args); mark(); return result; } : fn;
+  }
+  return out as H;
+}
+
+function RefinedBody({ props: given, step, prompts, phone }: { props: FullPromptWindowProps; step: Step; prompts: readonly Step[]; phone: boolean }) {
+  /* F30: every write (the title, the text, the reply, a change, the extras, the edits) marks the window saved. */
+  const [saved, setSaved] = useState(false);
+  const mark = () => setSaved(true);
+  const props: FullPromptWindowProps = {
+    ...given,
+    ...saving({ onTitle: given.onTitle, onChanges: given.onChanges, onReply: given.onReply, onExtras: given.onExtras, onText: given.onText }, mark),
+    ...(given.handlers ? { handlers: saving(given.handlers, mark) } : null),
+  };
   const { mode, onTitle, onClose, onNavigate, onChanges, onReply, onText } = props;
   const [said, say] = useAnnouncer();
   /** CA-05 P1: what is selected in the text (or the caret), while the maker can mark words. */
@@ -523,7 +553,7 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
   const existing = rangeAt(step.changes ?? [], picked ?? { start: -1, end: -1 });
   const markable = mode === "maker" && onChanges && !isInstructions(step) && picked !== null && (existing !== null || picked.end > picked.start);
   const textRef = useRef<HTMLDivElement>(null);
-  const { previous, next, place, name, instructions, tool, model, line, uses, goesInto, before } = bodyFacts(props, step, prompts);
+  const { previous, next, place, name, instructions, tool, model, line, uses, goesInto, before, group } = bodyFacts(props, step, prompts);
 
   // Opening puts focus on the text box.
   useEffect(() => {
@@ -559,8 +589,8 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
           </p>
         </div>
         <div style={HEADER_ICONS}>
-          {onNavigate && previous ? <NavSquare glyph="larr" phone={phone} label={`Previous prompt: ${stepTitle(previous)}`} onClick={() => onNavigate(previous.id)} /> : null}
-          {onNavigate && next ? <NavSquare glyph="rarr" phone={phone} label={`Next prompt: ${stepTitle(next)}`} onClick={() => onNavigate(next.id)} /> : null}
+          {onNavigate ? <NavSquare glyph="larr" phone={phone} label={previous ? `${FULL_PROMPT_COPY.previous}: ${stepTitle(previous)}` : FULL_PROMPT_COPY.previous} disabled={!previous} onClick={() => previous && onNavigate(previous.id)} /> : null}
+          {onNavigate ? <NavSquare glyph="rarr" phone={phone} label={next ? `${FULL_PROMPT_COPY.next}: ${stepTitle(next)}` : FULL_PROMPT_COPY.next} disabled={!next} onClick={() => next && onNavigate(next.id)} /> : null}
           <Dialog.Close asChild>
             <IconSquare glyph="x" label="Close" phone={phone} />
           </Dialog.Close>
@@ -598,7 +628,9 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
           {maker && !isInstructions(step) && step.kind === "prompt" && props.details && props.handlers ? (
             (() => {
               const view = props.details?.(step.id);
-              return view ? <PromptEdits key={`edits-${step.id}`} view={view} handlers={props.handlers as PromptEditHandlers} phone={phone} /> : null;
+              // F37: the session the prompt sits in, so Model can read the session's model; a legacy group of typed prompts is no session.
+              const session = group && groupKind(group) !== "legacy" ? { tool: group.tool ?? null, model: group.model ?? null } : null;
+              return view ? <PromptEdits key={`edits-${step.id}`} view={view} handlers={props.handlers as PromptEditHandlers} phone={phone} session={session} /> : null;
             })()
           ) : null}
           {extras ? (
@@ -638,14 +670,17 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
               ))}
             </Block>
           ) : null}
-          {!isInstructions(step) && step.kind === "prompt" ? <PromptOptional key={`optional-${step.id}`} props={props} step={step} tool={tool} model={model} phone={phone} picked={picked} onMarked={() => setPicked(null)} /> : null}
+          {!isInstructions(step) && step.kind === "prompt" ? <PromptOptional key={`optional-${step.id}`} props={props} step={step} tool={tool} model={model} phone={phone} picked={picked} onMarked={() => setPicked(null)} modelElsewhere={Boolean(maker && props.details && props.handlers)} /> : null}
         </div>
       </ModalInset.Provider>
       <div data-testid="modal-footer" style={{ ...footerStyle(phone), ...(phone ? { paddingBottom: "calc(12px + env(safe-area-inset-bottom))", marginTop: "auto" } : null) }}>
         {props.fromPost && props.onBackToPost ? <FromPostNote onBack={props.onBackToPost} phone={phone} /> : null}
         <span style={FOOT_NOTE}>{phone ? null : FULL_PROMPT_COPY.hint}</span>
-        <RecipeButton variant="primary" phone={phone} onClick={onClose}>
-          {FULL_PROMPT_COPY.done}
+        <span role="status" data-testid="prompt-saved" style={FOOT_NOTE_WORD}>
+          {saved ? FULL_PROMPT_COPY.saved : null}
+        </span>
+        <RecipeButton variant="primary" phone={phone} data-testid="prompt-close" aria-label={FULL_PROMPT_COPY.closeWindow} onClick={onClose}>
+          {FULL_PROMPT_COPY.close}
         </RecipeButton>
       </div>
       <span hidden data-testid="full-prompt-place">{place}</span>
@@ -687,8 +722,8 @@ export function FullPromptWindow(props: FullPromptWindowProps) {
             zIndex: 61,
             ...(phone
               ? { inset: 0, boxSizing: "border-box", overflowY: "auto", padding: "16px 16px 0", background: t.window, color: t.text, fontFamily: FIGTREE }
-              : /* CA-15b: the frame recipe, 640 wide, at most the window less 80, centred. */
-                { top: "50%", left: "50%", transform: "translate(-50%, -50%)", ...frameStyle(MODAL_WIDTH.wide) }),
+              : /* CA-15b: the frame recipe, 640 wide. F38: its top edge pinned at 48 as ModalShell's (F25), so a section that opens moves nothing above it. */
+                { top: MODAL_TOP, left: "50%", transform: "translateX(-50%)", ...frameStyle(MODAL_WIDTH.wide), maxHeight: `calc(100dvh - ${MODAL_TOP * 2}px)` }),
           }}
         >
           {step ? (

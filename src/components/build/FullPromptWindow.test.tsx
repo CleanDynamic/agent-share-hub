@@ -52,19 +52,29 @@ describe("moving between prompts", () => {
     expect(props.onNavigate).toHaveBeenLastCalledWith("p2");
   });
 
-  it("leaves out the previous button at the first prompt, and the arrows do nothing there", () => {
+  // F35: both arrows are always drawn, in the same place; the one with no neighbour is disabled.
+  it("disables the previous button at the first prompt, and the arrows do nothing there", () => {
     const props = open("p1");
-    expect(screen.queryByRole("button", { name: /^Previous prompt/ })).toBeNull();
-    expect(screen.getByRole("button", { name: /^Next prompt/ })).toBeTruthy();
+    const previous = screen.getByRole("button", { name: "Previous prompt" }) as HTMLButtonElement;
+    expect(previous.disabled).toBe(true);
+    expect((screen.getByRole("button", { name: /^Next prompt/ }) as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(previous);
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowLeft" });
     expect(props.onNavigate).not.toHaveBeenCalled();
   });
 
-  it("leaves out the next button at the last prompt", () => {
+  it("disables the next button at the last prompt, and neither arrow moves between prompts", () => {
     const prompts = windowPrompts(list.steps);
     open(prompts[prompts.length - 1].id);
-    expect(screen.queryByRole("button", { name: /^Next prompt/ })).toBeNull();
-    expect(screen.getByRole("button", { name: /^Previous prompt/ })).toBeTruthy();
+    expect((screen.getByRole("button", { name: "Next prompt" }) as HTMLButtonElement).disabled).toBe(true);
+    const previous = screen.getByRole("button", { name: /^Previous prompt/ });
+    expect((previous as HTMLButtonElement).disabled).toBe(false);
+    const icons = Array.from(previous.parentElement?.children ?? []);
+    expect(icons.map((icon) => icon.getAttribute("aria-label")?.split(":")[0])).toEqual(["Previous prompt", "Next prompt", "Close"]);
+    cleanup();
+    open("p1");
+    const again = Array.from(screen.getByRole("button", { name: "Previous prompt" }).parentElement?.children ?? []);
+    expect(again.map((icon) => icon.getAttribute("aria-label")?.split(":")[0])).toEqual(["Previous prompt", "Next prompt", "Close"]);
   });
 
   it("does not move while the title field has focus", () => {
@@ -89,7 +99,7 @@ describe("the title", () => {
   it("saves an empty title as the default (an empty string, which the page turns back into the default)", () => {
     const props = open("p3");
     const field = screen.getByLabelText("Title") as HTMLInputElement;
-    expect(field.placeholder).toBe("Welcome email");
+    expect(field.placeholder).toBe("Add a title"); // F32
     expect(screen.getByTestId("prompt-place").textContent).toMatch(/^Step 3$/);
     fireEvent.change(field, { target: { value: "" } });
     fireEvent.blur(field);
@@ -150,9 +160,11 @@ describe("the window", () => {
     await waitFor(() => expect(screen.getAllByRole("status").some((el) => el.textContent === "Copied")).toBe(true));
   });
 
-  it("closes with Done and with Close, and stays shut for an id that is not a prompt", () => {
+  it("closes with the footer's Close and the header's Close, and stays shut for an id that is not a prompt", () => {
     const props = open("p3");
-    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    // F30 (D5): the window writes as it goes, so its one button is Close, not Done.
+    expect(screen.queryByRole("button", { name: "Done" })).toBeNull();
+    fireEvent.click(screen.getByTestId("prompt-close"));
     expect(props.onClose).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(props.onClose).toHaveBeenCalledTimes(2);

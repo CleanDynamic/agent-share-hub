@@ -77,7 +77,7 @@ describe("on the build page", () => {
     await mountCa20(seedCa20);
     press("s", { ctrlKey: true });
     expect(await screen.findByText("Saved")).toBeTruthy();
-    fireEvent.click(screen.getByText("Add the order form"));
+    fireEvent.click(screen.getAllByText("Add the order form")[0]);
     const before = ids().length;
     press("d", { ctrlKey: true });
     await waitFor(() => expect(ids().length).toBe(before + 1), { timeout: 15_000 });
@@ -85,7 +85,7 @@ describe("on the build page", () => {
 
   it("Delete removes the chosen tile and leaves a field's keys alone", async () => {
     await mountCa20(seedCa20);
-    fireEvent.click(screen.getByText("Add the order form"));
+    fireEvent.click(screen.getAllByText("Add the order form")[0]);
     const field = document.createElement("input");
     document.body.appendChild(field);
     fireEvent.keyDown(field, { key: "Delete" });

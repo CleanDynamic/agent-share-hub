@@ -45,7 +45,10 @@ import { scrollToShow } from "./pageScroll";
 import { ToolMark } from "./refinedPieces";
 import { fullText, PREVIEW } from "@/lib/theme/truncate";
 import { bareButton, ellipsis, menuItem, menuSurface, text, tnum, wellField } from "./refinedStyles";
-import { libraryName, REMINDER_ROWS, REPEAT_COPY, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession, type SourceUnfinishedItem } from "./sourcesModel";
+import { libraryName, middleCut, REMINDER_ROWS, REPEAT_COPY, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession, type SourceUnfinishedItem } from "./sourcesModel";
+
+/** F63: a library row's name wraps to two lines (PREVIEW) before it is cut, so it may run longer than a file's. */
+const LIBRARY_NAME_MAX = 60;
 
 /** CONCEPT §7: at most this many rows in any list, then one "Show {n} more". */
 export const GROUP_ROWS = 6;
@@ -113,9 +116,31 @@ export interface SourcesPanelProps {
 /* ── pieces ── */
 
 /** UX-02 P3 Stage B: the List's own grip at a row's start, drawn while the row is hovered or holds focus, at once. The only drag start. */
-function SourceGrip({ drag, label, phone }: { drag: ReturnType<typeof useSourceDrag>; label: string; phone: boolean }) {
+function SourceGrip({ drag, label, phone, still = false }: { drag: ReturnType<typeof useSourceDrag>; label: string; phone: boolean; /** F52: a row that cannot move keeps the grip's room, so every row starts at one edge. */ still?: boolean }) {
   if (!drag.on) return null;
+  if (still) return <span aria-hidden="true" data-testid="source-grip-room" style={{ width: GRIP_ROOM, flexShrink: 0 }} />;
   return <DragHandle label={label} nest={drag} testId="source-drag-handle" phone={phone} />;
+}
+
+/** F52: the grip's width (DragHandle's 18). */
+const GRIP_ROOM = 18;
+
+/** F51: every row's one trailing slot, the same width and place: "+", the tick, or a file's "…" menu. */
+function TrailSlot({ phone, children }: { phone: boolean; children?: ReactNode }) {
+  return (
+    <span data-testid="source-trail" style={{ width: phone ? 44 : 30, minHeight: phone ? 44 : 26, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0, alignSelf: "center" }}>
+      {children}
+    </span>
+  );
+}
+
+/** F51: a row already in the build: a tick, named "In this build". */
+function InBuildTick() {
+  return (
+    <span role="img" aria-label={SOURCES_COPY.inBuild} title={SOURCES_COPY.inBuild} data-testid="source-in-build" style={{ display: "inline-flex", color: t.label }}>
+      <Glyph name="check" size={16} />
+    </span>
+  );
 }
 
 const rowLine: CSSProperties = { borderTop: `1px solid ${t.hairline}` };
@@ -262,13 +287,17 @@ function SessionRow({
             <span {...fullText(session.detail)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{session.detail}</span>
           </span>
         </SelectButton>
+        <TrailSlot phone={phone}>
+          <InBuildTick />
+        </TrailSlot>
       </div>
       {open ? (
         <div style={{ marginLeft: 22, display: "flex", flexDirection: "column", gap: 2, paddingTop: 4 }}>
           {session.prompts.map((prompt) => (
             <SelectButton key={prompt.id} selected={selectedId === prompt.id} onClick={() => onSelect(prompt.id)} minHeight={phone ? 44 : 30}>
-              <span style={{ fontFamily: DM_MONO, fontSize: 10.5, color: t.label, ...tnum }}>{stepLabel(prompt.number)}</span>
-              <span {...fullText(prompt.title)} style={{ ...text(12.5, prompt.isDefault ? 400 : 500, prompt.isDefault ? t.text2 : t.text), ...ellipsis }}>{prompt.title}</span>
+              <span style={{ fontFamily: DM_MONO, fontSize: 10.5, color: t.label, ...tnum, flexShrink: 0 }}>{stepLabel(prompt.number)}</span>
+              {/* F53: the number, then the prompt's first six words, cut at the end. */}
+              <span {...fullText(prompt.words ?? prompt.title)} style={{ ...text(12.5, 400, t.text), ...ellipsis }}>{prompt.words ?? prompt.title}</span>
             </SelectButton>
           ))}
         </div>
@@ -295,11 +324,13 @@ function FileRow({ file, phone, sessions, selected = false, onOpen, onAddToSessi
           <Glyph name="file" size={16} />
         </span>
         <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
-          <span {...fullText(file.name)} style={{ ...text(13, 500, t.text), ...ellipsis }}>{file.name}</span>
+          {/* F63: a long name is cut in the middle, so its ending shows; all of it is in the title. */}
+          <span title={file.name} style={{ ...text(13, 500, t.text), ...ellipsis }}>{middleCut(file.name)}</span>
           <span {...fullText(file.note)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{file.note}</span>
         </span>
       </SelectButton>
       {/* CA-20 P2: a file's menu ends with Remove file, like every other component's. UX-02 P2: Open file and Add to session come first. */}
+      <TrailSlot phone={phone}>
       {onRemove ? (
         <Menu.Root>
           <Menu.Trigger asChild>
@@ -337,6 +368,7 @@ function FileRow({ file, phone, sessions, selected = false, onOpen, onAddToSessi
           </Menu.Portal>
         </Menu.Root>
       ) : null}
+      </TrailSlot>
     </div>
   );
 }
@@ -394,25 +426,27 @@ function LibraryRow({ item, phone, onAdd, parts, lastPart }: { item: SourceLibra
   const movable = drag.on && !item.inThisDraft && !item.adding;
   return (
     <div ref={drag.setRef} data-source-drag={movable ? drag.dragId : undefined} style={{ ...rowLine, display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : undefined, padding: "8px 0", boxSizing: "border-box" }}>
-      {movable ? <SourceGrip drag={drag} label={`Move ${libraryName(item)}`} phone={phone} /> : null}
+      <SourceGrip drag={drag} label={`Move ${libraryName(item)}`} phone={phone} still={!movable} />
       {/* SV-05 P3: the app's mark when the app is known; none when it is not. */}
       {item.appKnown ? <ToolMark tool={item.app} size={20} /> : <span aria-hidden="true" style={{ width: 20, flexShrink: 0 }} />}
       <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
         {/* UX-02 P8: a long name wraps to two lines before it is cut. */}
-        <span {...fullText(libraryName(item))} style={{ ...text(13, 400, t.text2), ...PREVIEW }}>{libraryName(item)}</span>
+        <span title={libraryName(item)} style={{ ...text(13, 400, t.text2), ...PREVIEW }}>{middleCut(libraryName(item), LIBRARY_NAME_MAX)}</span>
         <span {...fullText(item.line)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{item.line}</span>
         {item.alsoIn ? <span {...fullText(item.alsoIn)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{item.alsoIn}</span> : null}
         {item.sameAs ? <span data-testid="same-prompts" style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{REPEAT_COPY.sameAs(item.sameAs)}</span> : null}
       </span>
-      {item.inThisDraft ? (
-        <span style={{ ...text(11.5, 400, t.label), flexShrink: 0 }}>{SOURCES_COPY.inThisDraft}</span>
-      ) : item.adding ? (
-        <PlusToWords />
-      ) : parts && parts.length >= 2 ? (
-        <AddToMenu item={item} parts={parts} phone={phone} onAdd={onAdd} lastPart={lastPart} />
-      ) : (
-        <IconButton icon={Plus} glyph="plus" label="Add session" size={26} disabled={item.adding} onClick={() => onAdd(item.id)} />
-      )}
+      <TrailSlot phone={phone}>
+        {item.inThisDraft ? (
+          <InBuildTick />
+        ) : item.adding ? (
+          <PlusToWords />
+        ) : parts && parts.length >= 2 ? (
+          <AddToMenu item={item} parts={parts} phone={phone} onAdd={onAdd} lastPart={lastPart} />
+        ) : (
+          <IconButton icon={Plus} glyph="plus" label="Add session" size={26} disabled={item.adding} onClick={() => onAdd(item.id)} />
+        )}
+      </TrailSlot>
     </div>
   );
 }
@@ -429,7 +463,10 @@ function PlusToWords() {
       <span aria-hidden="true" data-testid="plus-leaving" style={{ position: "absolute", right: 0, opacity: on ? 0 : 1, transition: fade(PLUS_OUT_MS), pointerEvents: "none" }}>
         <IconButton icon={Plus} glyph="plus" label="Add session" size={26} disabled />
       </span>
-      <span style={{ ...text(11.5, 400, t.label), opacity: on ? 1 : 0, transition: fade(WORDS_IN_MS) }}>{SOURCES_COPY.inThisDraft}</span>
+      {/* F51: the + gives way to the tick a row in the build shows. */}
+      <span style={{ display: "inline-flex", opacity: on ? 1 : 0, transition: fade(WORDS_IN_MS) }}>
+        <InBuildTick />
+      </span>
     </span>
   );
 }
