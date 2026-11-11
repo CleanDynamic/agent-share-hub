@@ -103,7 +103,7 @@ export interface AddFromLibraryWindowProps {
 const line = (size: number, weight: 400 | 500, color: string, height?: number): CSSProperties => ({ fontFamily: FIGTREE, fontSize: size, fontWeight: weight, color, ...(height ? { lineHeight: `${height}px` } : null) });
 
 const TITLE_STYLE: CSSProperties = { ...line(14, 500, t.text), margin: 0, lineHeight: 1.3 };
-const SUB_STYLE: CSSProperties = { ...line(12, 400, t.label), margin: "2px 0 0" };
+const SUB_STYLE: CSSProperties = { ...line(12, 400, t.label), margin: `${space[1]}px 0 0` };
 
 /** The rows that match the search: its words are all in the title or the detail. Pure. */
 export function matchingRows(rows: readonly LibraryWindowRow[], query: string): LibraryWindowRow[] {

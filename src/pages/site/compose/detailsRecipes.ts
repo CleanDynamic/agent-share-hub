@@ -30,7 +30,7 @@ export const COLUMN: CSSProperties = { display: "flex", flexDirection: "column",
 /* ── the head ── */
 
 export const HEAD_ROW: CSSProperties = { display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0 };
-export const HEAD_MARK: CSSProperties = { marginTop: 1, flexShrink: 0 };
+export const HEAD_MARK: CSSProperties = { flexShrink: 0 };
 export const HEAD_TEXT: CSSProperties = { display: "flex", flexDirection: "column", flexGrow: 1, minWidth: 0 };
 export const HEAD_TITLE: CSSProperties = { ...type(15, 500, t.text, 22), margin: 0, ...TITLE_LINE };
 export const HEAD_LINE: CSSProperties = { ...type(12.5, 400, t.text2, 18), margin: 0, display: "flex", alignItems: "center", gap: 8, overflowWrap: "anywhere" };

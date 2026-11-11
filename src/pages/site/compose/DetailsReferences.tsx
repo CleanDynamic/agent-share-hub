@@ -120,7 +120,7 @@ export function ColourReferences({ section, value, first = false, clamp }: { sec
             <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
               <SquareSwatch colour={section.colour} size={10} />
               <span style={words(13, 500, t.text)}>{COPY.single}</span>
-              <span style={{ ...data(11.5, t.label), marginLeft: -4 }}>{` · ${section.colour.toUpperCase()}`}</span>
+              <span style={data(11.5, t.label)}>{` · ${section.colour.toUpperCase()}`}</span>
             </span>
             {section.linked ? <LinkedBlock linked={section.linked} colour={section.colour} number="" label top={REFS_BLOCK_ABOVE} onGoTo={value.onGoTo} /> : null}
             {section.alsoUsedBy.length > 0 ? <span data-testid="details-refs-also" style={{ ...SMALL_LABEL, marginTop: REFS_BLOCK_ABOVE }}>{alsoUsedByLine(section.alsoUsedBy)}</span> : null}
@@ -139,7 +139,7 @@ export function ColourReferences({ section, value, first = false, clamp }: { sec
           <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
             <SquareSwatch colour={group.colour} size={10} />
             <span data-testid="details-refs-name" style={{ ...words(13, 500, group.name ? ink : t.text2), ...ELLIPSIS }}>{group.name ?? COPY.noName}</span>
-            <span style={{ ...words(12.5, 400, t.label), whiteSpace: "nowrap", marginLeft: -4, flexGrow: 1 }}>{` · ${COPY.components(group.members.length)}`}</span>
+            <span style={{ ...words(12.5, 400, t.label), whiteSpace: "nowrap", flexGrow: 1 }}>{` · ${COPY.components(group.members.length)}`}</span>
             {value.onOpenGroup ? (
               <Button variant="secondary" size={32} fontSize={12} onClick={() => value.onOpenGroup?.(group.id)} style={{ flexShrink: 0, ...BUTTON_PAD_SMALL_TEXT }}>
                 {COPY.openGroup}

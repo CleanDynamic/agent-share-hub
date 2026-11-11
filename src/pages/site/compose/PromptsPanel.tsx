@@ -204,7 +204,7 @@ function PromptRow({
             display: "block",
             width: "100%",
             boxSizing: "border-box",
-            margin: "1px 0 0",
+            margin: 0,
             padding: 0,
             borderRadius: 4,
             color: t.text,

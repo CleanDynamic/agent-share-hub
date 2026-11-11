@@ -59,6 +59,7 @@ import {
   tabular,
 } from "@/lib/theme/type";
 import { feedback } from "@/lib/theme/motion";
+import { space } from "@/lib/theme/space";
 
 /** One event per this many milliseconds while playing. */
 export const PLAY_INTERVAL_MS = 1500;
@@ -520,7 +521,7 @@ export function Replay({
           {markers.size > 0 ? (
             <div
               data-visual-slot="build-replay-divergences"
-              style={{ display: "flex", gap: 2, minWidth: 320, marginBottom: 3 }}
+              style={{ display: "flex", gap: space[1], minWidth: 320, marginBottom: space[1] }}
             >
               {events.map((event, index) => {
                 const here = markers.get(index);

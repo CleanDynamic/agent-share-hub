@@ -99,7 +99,7 @@ export function ChosenValue({
 export function SuggestedRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <ul aria-label={label} style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
-      <li aria-hidden="true" style={{ fontFamily: DM_MONO, fontSize: 11.5, lineHeight: "normal", color: t.label, marginRight: 2 }}>
+      <li aria-hidden="true" style={{ fontFamily: DM_MONO, fontSize: 11.5, lineHeight: "normal", color: t.label }}>
         Suggested
       </li>
       {children}
