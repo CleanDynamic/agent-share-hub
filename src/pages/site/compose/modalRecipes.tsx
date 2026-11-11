@@ -73,7 +73,7 @@ import { TEXT_LINK_BOX } from "./tileRecipes";
 export const MODAL_WIDTH = { standard: 560, wide: 640 } as const;
 
 /** The side padding every row, block and optional row carries inside a modal. */
-export const MODAL_PAD = 20;
+export const MODAL_PAD = space[6];
 
 /**
  * How far a row pads itself in from the window's edges. A modal's form provides 20 (its rows run edge to edge and pad
@@ -115,7 +115,7 @@ const type = (px: number, weight: 400 | 500, color: string, line?: number): CSSP
 });
 
 export const TITLE: CSSProperties = { ...type(15, 500, t.text, 20), margin: 0 };
-export const SUBTITLE: CSSProperties = { ...type(13, 400, t.text2, 18), margin: "4px 0 0" };
+export const SUBTITLE: CSSProperties = { ...type(13, 400, t.text2, 18), margin: `${space[1]}px 0 0` };
 export const LABEL: CSSProperties = type(13, 400, t.text2, 18);
 export const STRONG_LABEL: CSSProperties = type(13, 500, t.text, 18);
 export const HINT: CSSProperties = type(12, 400, t.label, 16);
@@ -140,7 +140,7 @@ export const frameStyle = (width: number): CSSProperties => ({
   flexDirection: "column",
   overflow: "hidden",
   padding: 0,
-  borderRadius: 12,
+  borderRadius: r.window,
   background: t.window,
   border: `1px solid ${t.windowBorder}`,
   boxShadow: t.windowShadow,
@@ -148,9 +148,9 @@ export const frameStyle = (width: number): CSSProperties => ({
   fontFamily: FIGTREE,
 });
 
-export const HEADER: CSSProperties = { display: "flex", alignItems: "flex-start", gap: 12, padding: "20px 20px 18px", flexShrink: 0 };
+export const HEADER: CSSProperties = { display: "flex", alignItems: "flex-start", gap: space[3], padding: `${space[4]}px ${space[6]}px`, flexShrink: 0 };
 export const HEADER_TEXT: CSSProperties = { display: "flex", flexDirection: "column", flexGrow: 1, minWidth: 0 };
-export const HEADER_ICONS: CSSProperties = { display: "flex", alignItems: "center", gap: 6, flexShrink: 0 };
+export const HEADER_ICONS: CSSProperties = { display: "flex", alignItems: "center", gap: space[2], flexShrink: 0 };
 
 /** The middle: every row and block pads itself, so the body has none; it scrolls on a computer. */
 export const bodyStyle = (phone: boolean): CSSProperties =>
@@ -159,13 +159,13 @@ export const bodyStyle = (phone: boolean): CSSProperties =>
 export const footerStyle = (phone: boolean): CSSProperties => ({
   display: "flex",
   alignItems: "center",
-  gap: 8,
+  gap: space[2],
   flexShrink: 0,
   ...rule(),
   background: t.windowFoot,
   ...(phone
-    ? { position: "sticky", bottom: 0, padding: "12px 0", marginTop: 12, flexWrap: "wrap", zIndex: 1 }
-    : { padding: "14px 20px" }),
+    ? { position: "sticky", bottom: 0, padding: `${space[3]}px 0`, marginTop: space[3], flexWrap: "wrap", zIndex: 1 }
+    : { padding: `${space[4]}px ${space[6]}px` }),
 });
 
 /** The footer's note, at the left: it takes the room the buttons leave. */
@@ -257,16 +257,16 @@ export function Row({ label, id, group = false, hint, top = false, noRule = fals
       style={{
         display: "grid",
         gridTemplateColumns: phone ? "minmax(0, 1fr)" : "148px minmax(0, 1fr)",
-        columnGap: 16,
-        rowGap: 6,
+        columnGap: space[4],
+        rowGap: space[2],
         alignItems: top || phone ? "start" : "center",
-        padding: `12px ${inset}px`,
+        padding: `${space[3]}px ${inset}px`,
         minWidth: 0,
         ...(noRule ? null : rule()),
       }}
     >
       {labelBlock}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: space[2], minWidth: 0 }}>
         {children}
         <FieldRequired label={label} />
       </div>
@@ -293,7 +293,7 @@ export function Block({ label, noRule = false, testId, children }: BlockProps) {
       role={label ? "group" : undefined}
       aria-label={label}
       data-testid={testId}
-      style={{ display: "flex", flexDirection: "column", gap: 10, padding: `14px ${inset}px 16px`, minWidth: 0, ...(noRule ? null : rule()) }}
+      style={{ display: "flex", flexDirection: "column", gap: space[3], padding: `${space[4]}px ${inset}px`, minWidth: 0, ...(noRule ? null : rule()) }}
     >
       {children}
       {named ? <FieldRequired label={named} /> : null}
@@ -320,7 +320,7 @@ export interface BlockHeadProps {
 export function BlockHead({ label, htmlFor, id, heading = false, count, countTestId, children }: BlockHeadProps) {
   const style = heading ? GROUP_TITLE : STRONG_LABEL;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 28, minWidth: 0 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: space[3], minHeight: 28, minWidth: 0 }}>
       {htmlFor ? (
         <label id={id} htmlFor={htmlFor} style={{ ...style, flexGrow: 1, minWidth: 0 }}>
           {label}
@@ -366,7 +366,7 @@ export function Count({ children, testId, style }: { children: ReactNode; testId
 export function GroupHeading({ children, id }: { children: ReactNode; id?: string }) {
   const inset = useModalInset();
   return (
-    <div style={{ padding: `16px ${inset}px 4px`, ...rule() }}>
+    <div style={{ padding: `${space[4]}px ${inset}px ${space[1]}px`, ...rule() }}>
       <h3 id={id} style={GROUP_TITLE}>
         {children}
       </h3>
@@ -519,7 +519,7 @@ export function PickerFieldButton({ value, placeholder, phone, open, style, ...r
 }
 
 /** A picker field with something beside it (a model and its "Primary" tag): the field takes the room, 8 apart. */
-export const PICKER_ROW: CSSProperties = { display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto auto", alignItems: "center", gap: 8, minWidth: 0 };
+export const PICKER_ROW: CSSProperties = { display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto auto", alignItems: "center", gap: space[2], minWidth: 0 };
 
 /* ── segmented ── */
 
@@ -635,7 +635,7 @@ export function OptionGrid<V extends string>({ label, items, chosen, onPick, pho
       aria-label={bare ? undefined : label}
       data-testid="choice-grid"
       data-multiple={multiple || undefined}
-      style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: 6, minWidth: 0 }}
+      style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: space[2], minWidth: 0 }}
     >
       {items.map((item) => (
         <OptionButton key={item.value} label={item.label} chosen={chosen.includes(item.value)} disabled={item.disabled} phone={phone} onPick={() => onPick(item.value)} />
@@ -805,7 +805,7 @@ export function RemovableTag({ children, removeLabel, onRemove, phone }: { child
         aria-label={removeLabel}
         onClick={onRemove}
         {...handlers}
-        style={{ appearance: "none", background: "none", border: 0, padding: 0, width: phone ? size.touch : size.controlSmall, height: phone ? size.touch : size.controlSmall, display: "inline-flex", alignItems: "center", justifyContent: "center", color: state.hovered ? t.text : t.label, cursor: "pointer", borderRadius: 4, ...ring(state.focusVisible) }}
+        style={{ appearance: "none", background: "none", border: 0, padding: 0, width: phone ? size.touch : size.controlSmall, height: phone ? size.touch : size.controlSmall, display: "inline-flex", alignItems: "center", justifyContent: "center", color: state.hovered ? t.text : t.label, cursor: "pointer", borderRadius: r.chip, ...ring(state.focusVisible) }}
       >
         <Glyph name="x" size={size.iconSmall} />
       </button>
@@ -816,7 +816,7 @@ export function RemovableTag({ children, removeLabel, onRemove, phone }: { child
 /** A list of chosen names, wrapping, 6 apart. */
 export function TagList({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div role="list" aria-label={label} style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+    <div role="list" aria-label={label} style={{ display: "flex", flexWrap: "wrap", gap: space[2] }}>
       {children}
     </div>
   );
@@ -825,7 +825,7 @@ export function TagList({ label, children }: { label: string; children: ReactNod
 /** One line of plain words beside a file it names: its name and a Remove text link. */
 export function FileLine({ name, removeLabel, onRemove, phone }: { name: string; removeLabel: string; onRemove: () => void; phone: boolean }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: space[3], minWidth: 0 }}>
       <span style={{ ...BODY_TEXT, ...ELLIPSIS, flexShrink: 1 }}>{name}</span>
       <TextLink onClick={onRemove} phone={phone} aria-label={removeLabel}>
         Remove
@@ -855,10 +855,10 @@ export function StatusLine({ children, strong = false }: { children: ReactNode; 
 /* ── the optional section (drawn by OptionalSection.tsx) ── */
 
 export const OPTIONAL = {
-  section: { display: "flex", flexDirection: "column", minWidth: 0, paddingBottom: 4, ...rule() } as CSSProperties,
+  section: { display: "flex", flexDirection: "column", minWidth: 0, paddingBottom: space[1], ...rule() } as CSSProperties,
   /** CA-16b's `bleed`: the section reaches the window's edges from a body padded `bleed`. */
-  sectionAt: (bleed: number): CSSProperties => ({ display: "flex", flexDirection: "column", minWidth: 0, paddingBottom: 4, ...rule(), ...(bleed ? { margin: `0 -${bleed}px` } : null) }),
-  header: (inset: number): CSSProperties => ({ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, padding: `14px ${inset}px 6px` }),
+  sectionAt: (bleed: number): CSSProperties => ({ display: "flex", flexDirection: "column", minWidth: 0, paddingBottom: space[1], ...rule(), ...(bleed ? { margin: `0 -${bleed}px` } : null) }),
+  header: (inset: number): CSSProperties => ({ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: space[3], padding: `${space[3]}px ${inset}px` }),
   heading: { ...STRONG_LABEL, margin: 0 } as CSSProperties,
   count: COUNT,
   row: { ...rule(t.hairline), minWidth: 0 } as CSSProperties,
@@ -875,31 +875,31 @@ export const OPTIONAL = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 16,
-    minHeight: phone ? 44 : undefined,
-    padding: `10px ${inset}px`,
+    gap: space[4],
+    minHeight: size.rowLarge,
+    padding: `${space[2]}px ${inset}px`,
     background: hovered ? t.tile : "transparent",
   }),
   /** Focus: a 2px outline inset by 2, so the row's own edges never cut it. */
   focus: (visible: boolean): CSSProperties => (visible ? { outline: `2px solid ${t.focusRing}`, outlineOffset: -2 } : { outline: "none" }),
   title: type(13, 400, t.text, 18),
-  titleLine: { display: "flex", alignItems: "baseline", gap: 6, minWidth: 0 } as CSSProperties,
-  hint: { ...type(12.5, 400, t.label, 17), marginTop: 1 } as CSSProperties,
+  titleLine: { display: "flex", alignItems: "baseline", gap: space[2], minWidth: 0 } as CSSProperties,
+  hint: type(12.5, 400, t.label, 17),
   /** CA-16b's card: a filled row's line in `--text`. */
   filledLine: { color: t.text } as CSSProperties,
   /** F20: the line and, beside it, the suggested chip. */
-  lineRow: { display: "flex", alignItems: "center", gap: 8, minWidth: 0 } as CSSProperties,
+  lineRow: { display: "flex", alignItems: "center", gap: space[2], minWidth: 0 } as CSSProperties,
   /** F20: a suggestion on a closed row: the dashed edge a suggestion chip has, never the look of a value. */
   suggestedChip: { ...type(12, 400, t.text2, 16), display: "inline-block", boxSizing: "border-box", height: size.controlSmall, lineHeight: `${size.controlSmall - 2}px`, padding: `0 ${space[2]}px`, borderRadius: r.chip, borderWidth: 1, borderStyle: "dashed", borderColor: t.segOnBorder, background: "transparent", ...ELLIPSIS } as CSSProperties,
   value: { ...COUNT, maxWidth: "45%", overflow: "hidden", textOverflow: "ellipsis" } as CSSProperties,
   chevron: (open: boolean): CSSProperties => ({ display: "inline-flex", flexShrink: 0, color: t.label, transform: open ? "rotate(180deg)" : "none" }),
-  body: (inset: number): CSSProperties => ({ display: "flex", flexDirection: "column", gap: 8, padding: `2px ${inset}px 14px`, minWidth: 0 }),
+  body: (inset: number): CSSProperties => ({ display: "flex", flexDirection: "column", gap: space[2], padding: `0 ${inset}px ${space[4]}px`, minWidth: 0 }),
   /** CA-28: the toggle row's right side: the count, then the chevron. */
-  tail: { display: "inline-flex", alignItems: "center", gap: 8 } as CSSProperties,
+  tail: { display: "inline-flex", alignItems: "center", gap: space[2] } as CSSProperties,
   /** CA-28: a field shown directly in the section: its label and hint, then its input, as the required fields are. */
   fieldHead: { display: "flex", flexDirection: "column", gap: 2, minWidth: 0 } as CSSProperties,
-  fieldLabelLine: { display: "flex", alignItems: "baseline", gap: 6, minWidth: 0 } as CSSProperties,
-  fieldBody: { display: "flex", flexDirection: "column", minWidth: 0, gap: 8 } as CSSProperties,
+  fieldLabelLine: { display: "flex", alignItems: "baseline", gap: space[2], minWidth: 0 } as CSSProperties,
+  fieldBody: { display: "flex", flexDirection: "column", minWidth: 0, gap: space[2] } as CSSProperties,
   /** CA-28: the region the fields are drawn in. */
   region: { display: "flex", flexDirection: "column", minWidth: 0 } as CSSProperties,
   /** CA-28: the toggle's own fill, width and box; it takes the summary's, the header's and the focus ring. */
@@ -908,7 +908,7 @@ export const OPTIONAL = {
 
 /* ── panels ── */
 
-export const PANEL: CSSProperties = { background: t.surface, border: `1px solid ${t.hairlineModule}`, borderRadius: 10, minWidth: 0 };
+export const PANEL: CSSProperties = { background: t.surface, border: `1px solid ${t.hairlineModule}`, borderRadius: r.panel, minWidth: 0 };
 
 /** A panel: `--surface`, a hairline edge, radius 10. */
 export function Panel({ children, label, testId, padding = 0 }: { children: ReactNode; label?: string; testId?: string; padding?: number | string }) {
@@ -923,10 +923,10 @@ export function Panel({ children, label, testId, padding = 0 }: { children: Reac
 export const GROW: CSSProperties = { flex: "1 1 0", minWidth: 0 };
 
 /** A panel's head: the grip, its title at 13/500, and a button at the right. */
-export const PANEL_HEAD: CSSProperties = { display: "grid", gridTemplateColumns: "16px minmax(0, 1fr) auto", alignItems: "center", gap: 8, minHeight: 28, paddingBottom: 6 };
+export const PANEL_HEAD: CSSProperties = { display: "grid", gridTemplateColumns: "16px minmax(0, 1fr) auto", alignItems: "center", gap: space[2], minHeight: 28, paddingBottom: space[2] };
 export const PANEL_TITLE: CSSProperties = type(13, 500, t.text, 18);
 /** A list inside a panel or a row: a column, 8 apart. */
-export const PANEL_LIST: CSSProperties = { display: "flex", flexDirection: "column", gap: 8, minWidth: 0 };
+export const PANEL_LIST: CSSProperties = { display: "flex", flexDirection: "column", gap: space[2], minWidth: 0 };
 
 /** A question field row inside a panel: a 96 label column, gap 12, padding 10 0, a hairline above. */
 export function QuestionRow({ label, id, group = false, top = false, first = false, phone, children }: { label: string; id: string; group?: boolean; top?: boolean; first?: boolean; phone: boolean; children?: ReactNode }) {
@@ -934,7 +934,7 @@ export function QuestionRow({ label, id, group = false, top = false, first = fal
     <div
       role={group ? "group" : undefined}
       aria-labelledby={group ? id : undefined}
-      style={{ display: "grid", gridTemplateColumns: phone ? "minmax(0, 1fr)" : "96px minmax(0, 1fr)", columnGap: 12, rowGap: 6, alignItems: top || phone ? "start" : "center", padding: "10px 0", minWidth: 0, ...(first ? null : rule(t.hairline)) }}
+      style={{ display: "grid", gridTemplateColumns: phone ? "minmax(0, 1fr)" : "96px minmax(0, 1fr)", columnGap: space[3], rowGap: space[2], alignItems: top || phone ? "start" : "center", padding: `${space[3]}px 0`, minWidth: 0, ...(first ? null : rule(t.hairline)) }}
     >
       {group ? (
         <span id={id} style={{ ...LABEL, paddingTop: top && !phone ? 7 : 0 }}>
@@ -945,19 +945,19 @@ export function QuestionRow({ label, id, group = false, top = false, first = fal
           {label}
         </label>
       )}
-      {children !== undefined ? <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>{children}</div> : <span />}
+      {children !== undefined ? <div style={{ display: "flex", flexDirection: "column", gap: space[2], minWidth: 0 }}>{children}</div> : <span />}
     </div>
   );
 }
 
 /** An option row: a 16 grip, a 120 key, the description, a 28 remove; gap 8. */
-export const optionRowStyle = (phone: boolean): CSSProperties => ({ display: "grid", gridTemplateColumns: phone ? "44px minmax(0, 1fr) minmax(0, 1fr) 44px" : "16px 120px minmax(0, 1fr) 28px", gap: 8, alignItems: "center", minWidth: 0 });
+export const optionRowStyle = (phone: boolean): CSSProperties => ({ display: "grid", gridTemplateColumns: phone ? "44px minmax(0, 1fr) minmax(0, 1fr) 44px" : "16px 120px minmax(0, 1fr) 28px", gap: space[2], alignItems: "center", minWidth: 0 });
 
 /** CA-28: an option row once its description has moved into Optional: a 16 grip, the key across the rest, a 28 remove; gap 8. */
 /** CA-28: one option's description in the Option descriptions field: its key at the left (120), the description across the rest. */
-export const optionDescribeRowStyle = (phone: boolean): CSSProperties => ({ display: "grid", gridTemplateColumns: phone ? "minmax(0, 1fr)" : "120px minmax(0, 1fr)", gap: 8, alignItems: "center", minWidth: 0 });
+export const optionDescribeRowStyle = (phone: boolean): CSSProperties => ({ display: "grid", gridTemplateColumns: phone ? "minmax(0, 1fr)" : "120px minmax(0, 1fr)", gap: space[2], alignItems: "center", minWidth: 0 });
 
-export const optionKeyRowStyle = (phone: boolean): CSSProperties => ({ display: "grid", gridTemplateColumns: phone ? "44px minmax(0, 1fr) 44px" : "16px minmax(0, 1fr) 28px", gap: 8, alignItems: "center", minWidth: 0 });
+export const optionKeyRowStyle = (phone: boolean): CSSProperties => ({ display: "grid", gridTemplateColumns: phone ? "44px minmax(0, 1fr) 44px" : "16px minmax(0, 1fr) 28px", gap: space[2], alignItems: "center", minWidth: 0 });
 
 /** The grip that drags an option, 16 wide. */
 export const GRIP: CSSProperties = { appearance: "none", background: "none", border: 0, padding: 0, height: 28, display: "inline-flex", alignItems: "center", justifyContent: "center", color: t.label, cursor: "grab" };
@@ -970,7 +970,7 @@ export function FactList({ children }: { children: ReactNode }) {
 /** A fact row: space-between, padding 9 14, a hairline between rows; the key `--text2`, the value in the data face. */
 export function FactRow({ label, children, first = false, testId }: { label: string; children: ReactNode; first?: boolean; testId?: string }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 16, padding: "9px 14px", minWidth: 0, ...(first ? null : rule(t.hairline)) }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: space[4], padding: `${space[2]}px ${space[4]}px`, minWidth: 0, ...(first ? null : rule(t.hairline)) }}>
       <dt style={type(13, 400, t.text2, 18)}>{label}</dt>
       <dd data-testid={testId} style={{ margin: 0, fontFamily: DM_MONO, fontSize: 12.5, lineHeight: "18px", color: t.text, textAlign: "right", overflowWrap: "anywhere", minWidth: 0 }}>
         {children}
@@ -1002,7 +1002,7 @@ export function DropZone({ words, button, accept, multiple = false, onFiles, pho
         event.preventDefault();
         onFiles(event.dataTransfer.files);
       }}
-      style={{ ...WELL, border: `1px dashed ${t.segOnBorder}`, borderRadius: 10, boxSizing: "border-box", height: 148, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: 12 }}
+      style={{ ...WELL, border: `1px dashed ${t.segOnBorder}`, borderRadius: r.panel, boxSizing: "border-box", height: 148, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: space[3], padding: space[3] }}
     >
       <span style={type(13, 400, t.text2, 18)}>{words}</span>
       <RecipeButton small phone={phone} onClick={() => input.current?.click()}>
@@ -1053,12 +1053,12 @@ export function FileButton({ children, accept, multiple = false, onFiles, phone,
 
 /** A panel's content: a column, 12 apart. */
 export function PanelBody({ children }: { children: ReactNode }) {
-  return <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>{children}</div>;
+  return <div style={{ display: "flex", flexDirection: "column", gap: space[3], minWidth: 0 }}>{children}</div>;
 }
 
 /** Two things at either end of one line. */
 export function Spread({ children }: { children: ReactNode }) {
-  return <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", minWidth: 0 }}>{children}</div>;
+  return <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: space[3], flexWrap: "wrap", minWidth: 0 }}>{children}</div>;
 }
 
 /** Plain label words beside a control ("passed out of"): 13 `--text2`. */

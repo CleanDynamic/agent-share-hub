@@ -48,6 +48,8 @@ import { ReadFromBuild } from "./ReadFromBuild";
 import { text } from "./refinedStyles";
 import { type ComposeViewProps } from "./ComposeView";
 import { type ComposeDetailKey, type ComposeDetails } from "./MoreDetails";
+import { space } from "@/lib/theme/space";
+import { r } from "@/lib/theme/radius";
 
 /** Where the Card opens: the field a missing item names. */
 export type CardField = "cover" | "title" | "summary" | "audience";
@@ -110,7 +112,7 @@ const plural = (n: number, one: string, many: string): string => `${n} ${n === 1
 /** A field: the recipe's block head (the label, and what sits on its right) over the control, 8 apart. */
 function RefinedField({ id, label, right, children }: { id: string; label: string; right?: ReactNode; children: ReactNode }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: space[2], minWidth: 0 }}>
       <BlockHead label={label} htmlFor={id} count={right} />
       {children}
     </div>
@@ -127,10 +129,10 @@ function CardSwitch({ on, onChange, phone, label }: { on: boolean; onChange: (on
       aria-checked={on}
       onClick={() => onChange(!on)}
       {...handlers}
-      style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 32, padding: "0 4px", margin: "0 -4px", border: 0, borderRadius: 6, background: "transparent", cursor: "pointer", ...text(13, 400, t.text), ...ring(state.focusVisible) }}
+      style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: space[2], minHeight: phone ? 44 : 32, padding: `0 ${space[1]}px`, margin: "0 -4px", border: 0, borderRadius: r.control, background: "transparent", cursor: "pointer", ...text(13, 400, t.text), ...ring(state.focusVisible) }}
     >
-      <span aria-hidden="true" style={{ position: "relative", width: 36, height: 22, borderRadius: 12, background: on ? t.evidence : t.line, flexShrink: 0 }}>
-        <span style={{ position: "absolute", top: 3, left: 3, width: 16, height: 16, borderRadius: 8, background: t.field, transform: on ? "translateX(14px)" : "none" }} />
+      <span aria-hidden="true" style={{ position: "relative", width: 36, height: 22, borderRadius: r.window, background: on ? t.evidence : t.line, flexShrink: 0 }}>
+        <span style={{ position: "absolute", top: 3, left: 3, width: 16, height: 16, borderRadius: r.card, background: t.field, transform: on ? "translateX(14px)" : "none" }} />
       </span>
       {label}
     </button>
@@ -399,7 +401,7 @@ function CardBody(props: SandboxCardProps & { guard: CloseGuard }) {
                     suggestionCount("stack"),
                     <>
                       {derivedStack.length > 0 ? (
-                        <ul aria-label="Tools and stack, from the build" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", gap: 6 }}>
+                        <ul aria-label="Tools and stack, from the build" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", gap: space[2] }}>
                           {derivedStack.map((id) => (
                             <ChosenValue key={id} label={labelFor("stack", id)} phone={phone} removeLabel={`From the build: ${labelFor("stack", id)}`} onRemove={() => undefined} readOnly />
                           ))}
@@ -416,7 +418,7 @@ function CardBody(props: SandboxCardProps & { guard: CloseGuard }) {
                     "Not set",
                     draft.age ? labelFor("age", draft.age) : "",
                     undefined,
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: space[3], flexWrap: "wrap" }}>
                       <SegmentedField label="Age suitability" items={AGE_VALUES.map((value) => ({ value: value.id, label: value.label }))} value={draft.age} phone={phone} onChange={(value) => set("age", value)} />
                       {draft.age ? (
                         <button type="button" onClick={() => set("age", null)} style={{ border: 0, background: "none", cursor: "pointer", minHeight: phone ? 44 : 24, ...text(12, 400, t.text2), textDecoration: "underline" }}>
