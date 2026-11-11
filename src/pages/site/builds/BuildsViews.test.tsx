@@ -10,7 +10,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 
 import { visionBuildsTableProps } from "@/dev/fixtures/vision/builds-table";
 
-import { BuildsTableView, type ColumnId, type TableRowView } from "./BuildsTableView";
+import { ALL_COLUMNS, BuildsTableView, type ColumnId, type TableRowView } from "./BuildsTableView";
 import { BuildsView, type BuildsViewProps } from "./BuildsView";
 
 /** A wide window: every min-width query matches, so the two columns are drawn. */
@@ -425,5 +425,21 @@ describe("BF-01 empty values", () => {
     drawTable([{ ...blankRow, extra: {} }], [...table.columns, "shape", "task"]);
     const row = screen.getAllByRole("row").find((tr) => tr.closest("tbody"))!;
     for (const cell of within(row).getAllByRole("cell")) expect(cell.textContent?.trim()).not.toBe("");
+  });
+});
+
+describe("BF-01 headers on one line", () => {
+  it("every column head has white-space nowrap", () => {
+    drawTable([blankRow], ALL_COLUMNS);
+    const heads = screen.getAllByRole("columnheader");
+    expect(heads).toHaveLength(24);
+    for (const head of heads) expect(head.style.whiteSpace).toBe("nowrap");
+  });
+
+  it("the sort arrow is inside the same inline-flex as the name", () => {
+    drawTable([blankRow]);
+    const button = within(screen.getByRole("columnheader", { name: /Reproductions/ })).getByRole("button");
+    expect(button.style.display).toBe("inline-flex");
+    expect(button.textContent).toBe("Reproductions↓");
   });
 });
