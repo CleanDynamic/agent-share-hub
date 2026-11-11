@@ -174,7 +174,7 @@ describe("a change while another is running", () => {
     const tiles = document.getElementById(`session-tiles-${first}`) as HTMLElement;
     expect(tiles.hidden).toBe(false);
     expect(tiles.style.height).toBe("");
-    expect(tiles.style.marginTop).toBe("10px"); // the run's own, put back
+    expect(tiles.style.marginTop).toBe("0px"); // the run's own (S30: none), put back
   });
 
   it("an unfold, then a fold at once: the session ends folded", async () => {

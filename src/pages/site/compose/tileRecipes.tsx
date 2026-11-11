@@ -30,7 +30,7 @@ export const SESSION_NAME: CSSProperties = type(13, 500, t.text, 18);
 /** The session's facts after its name, 8 apart: 12.5 `--label`. */
 export const SESSION_META: CSSProperties = type(12.5, 400, t.label, 18);
 /** The run: the Length line and the session's tiles, space[3] apart (S30), at the column's edge (S29: no inset, no rule). */
-export const RUN: CSSProperties = { display: "flex", flexDirection: "column", gap: space[3], minWidth: 0 };
+export const RUN: CSSProperties = { display: "flex", flexDirection: "column", gap: space[3], minWidth: 0, marginTop: 0 };
 
 /* ── the tile ── */
 

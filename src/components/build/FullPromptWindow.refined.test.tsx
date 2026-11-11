@@ -93,7 +93,7 @@ describe("the refined window as the board draws it", () => {
     open("p3");
     const dialog = screen.getByTestId("full-prompt-window");
     expect(dialog.style.width).toBe("640px");
-    expect(dialog.style.borderRadius).toBe("12px");
+    expect(dialog.style.borderRadius).toBe("var(--r-window)"); // S31
     expect(dialog.style.overflow).toBe("hidden");
     // F38: pinned at 48 from the top, with the same room under it.
     expect(dialog.style.maxHeight).toBe("calc(100dvh - 96px)");

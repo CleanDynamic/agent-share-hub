@@ -101,15 +101,15 @@ Note: 21 distinct names are listed for 31 failed tests. Names that repeat across
 | F62 | 12 | not started | | |
 | F63 | 7 | done | src/pages/site/compose/sourcesModel.ts (`middleCut`), SourcesPanel.tsx, sourcesModel.test.ts | File names over 28 characters (library names over 60, which wrap to two lines first) are cut in the middle so the ending shows; the full name is the `title`. Test `F63: cuts a long name in the middle` ("Screenshot 2026-11-03 at 09.41.12.png" → "Screenshot 2026…09.41.12.png"). |
 | F64 | 12 | not started | | |
-| F65 | 11 | not started | | |
+| F65 | 11 | done | as S19 | Row heights one value (48) where they were 46, 52, 59, 63. |
 | F66 | 7 | done | src/pages/site/compose/SessionHead.tsx | Same change as F50 (the quiet title at rest, the field on focus). |
 | F67 | 12 | not started | | |
 | F68 | 9 | done (step 3 not applied) | src/index.css, src/lib/theme/space.ts, src/lib/theme/space.test.ts | `--space-1` to `--space-16` and `--size-icon-small` to `--size-touch` on `:root` (index.css); `space` and `size` in space.ts, with a one-line note above SPACE, SPACE_COMPACT and SPACE_REFINED. Test `space.test.ts > the build editor's steps (F68, S40)`. Step 3: no file imports `CONTROL_SIZE` but controls.ts, yet `menuItemStyle` (used by ui/dropdown-menu.tsx, ui/select.tsx, canvas/BlockContextMenu.tsx, share/ShareMenu.tsx, content-detail/PrimitiveCommentDrawer.tsx) reads it, and controls.test.ts ties it to `CONTROL_CLASS` (src/components/ui button, input, select, tabs, checkbox, badge, switch, radio-group, textarea, dropdown-menu): all outside the editor, so the values are unchanged, as the prompt says. Step 4: radius.ts untouched. Nothing reads the new tokens yet, so the dev kit page cannot move. |
-| F69 | 11 | not started | | |
+| F69 | 11 | done | as S30 | Sessions 32 apart (was 16), parts 24 (was 35). |
 | F70 | 12 | not started | | |
 | F71 | 12 | not started | | |
-| F72 | 11 | not started | | |
-| F73 | 11 | not started | | |
+| F72 | 11 | done | as S28 | Four edges: 0, 16, 40, 72 (+1 for the tile's edge). |
+| F73 | 11 | done | as S24, S25 | Tile padding 12 ≤ the 12 gap between tiles. |
 | F74 | 12 | not started | | |
 | F75 | 12 | not started | | |
 | F76 | 12 | not started | | |
@@ -153,25 +153,25 @@ Note: 21 distinct names are listed for 31 failed tests. Names that repeat across
 | S16 | 10 | done | classificationPieces.tsx (Suggestion, chosen chip), modalRecipes.tsx (OPTIONAL.suggestedChip) | Suggestion chips 24 (44 phone), 0 space[2], gap space[1], r.chip; the chosen chip the same, its remove button 24 (44 phone), no -6 phone margin. The uses row's dashed suggestion in BuildList stays 28: it holds a 24 Accept. |
 | S17 | 10 | done | tileRecipes.tsx (NumberBadge) | 24 high, min width 24, 0 space[1], r.chip, no top margin. Measured: 24h, padding 0 4, r 4. Test `tileRecipes.test.tsx > number badge 24 high…`. |
 | S18 | 10 | not present | (none) | No agent avatar in tileBodies.tsx. The only 20-square radius-5 mark is AppMark (tileRecipes.tsx:133) on tool and repository titles; not changed. |
-| S19 | 11 | not started | | |
-| S20 | 11 | not started | | |
-| S21 | 11 | not started | | |
-| S22 | 11 | not started | | |
-| S23 | 11 | not started | | |
-| S24 | 11 | not started | | |
-| S25 | 11 | not started | | |
-| S26 | 11 | not started | | |
-| S27 | 11 | not started | | |
-| S28 | 11 | not started | | |
-| S29 | 11 | not started | | |
-| S30 | 11 | not started | | |
-| S31 | 11 | not started | | |
-| S32 | 11 | not started | | |
-| S33 | 11 | not started | | |
+| S19 | 11 | done | src/pages/site/compose/SourcesPanel.tsx, AddSessionRow.tsx | Rows at least 48 (size.row; 44 phone), padded space[2], icon to text space[2], title to meta line space[1]. Nested one-line prompt rows not changed to 32 (they hold a SelectButton sized by S19's rule; see report). |
+| S20 | 11 | done | as S19 | Row paddings 6/12 → space[2]/space[3]; line gap 2 → space[1]. |
+| S21 | 11 | done | as S19 | Add a session rows min 48 (56 on a phone, size.rowLarge). |
+| S22 | 11 | blocked | (none) | Icons at 24 and text at 48 cannot hold on a session row while its 32 open/close toggle (S6) stands between the grip and the app mark; moving the toggle is a structure change. File rows were not re-laid. Question in the Prompt 11 report. |
+| S23 | 11 | done | src/pages/site/compose/modalRecipes.tsx (OPTIONAL) | Optional header space[3] space[6]; rows min 56, space[2] space[6], gap space[4]. Measured in Classification: row 56h, padding 8 24. |
+| S24 | 11 | done | src/pages/site/compose/tileRecipes.tsx (tileStyle) | Tile padding space[3] space[4], blocks space[2], r.panel. Measured: padding 12 16, radius 10. |
+| S25 | 11 | done | tileRecipes.tsx (RUN) | Tiles space[3] apart; padding 12 ≤ gap 12. Measured: 12, 12, 12. |
+| S26 | 11 | done | tileRecipes.tsx (LINK_CARD, FOUND_LINE, code well, LIST_BOX), src/components/build/tileBodies.tsx | Nested cards space[2] space[3], r.card. The composer card in AddSessionRow takes the same through the mapping. |
+| S27 | 11 | done | tileRecipes.tsx (TILE_HEAD) | Header gap space[2]. |
+| S28 | 11 | done | tileRecipes.tsx (TILE_INDENT = space[6]), listNest.tsx | Body and footer indent space[6]. Measured from the Build column: tile 0, handle 16 (17 with the 1px edge), badge 41, title 73. A tile that cannot move keeps the handle's 16 slot. |
+| S29 | 11 | done | tileRecipes.tsx (RUN) | The run's 14 padding and 1px rule are gone. |
+| S30 | 11 | done | BuildList.tsx, workstreamRecipes.ts | Head to Length line space[2] (measured 8); Length to first tile and tile to tile space[3] (12); sessions space[8] (measured 32); parts space[6]. Build heading to list not changed (in SandboxView's Build column head, not measured). |
+| S31 | 11 | done | modalRecipes.tsx (MODAL_PAD, HEADER, footerStyle, blocks), ModalFrame.tsx, SandboxCard.tsx | Side padding space[6], header and footer space[4] top and bottom, r.window. Measured: head 16 24, foot 16 24, radius 12. |
+| S32 | 11 | done | refinedStyles.ts (menuSurface, menuItem), SandboxView.tsx (addItem) | Shell padding space[1], r.window; entries min 48, space[2] space[3]. |
+| S33 | 11 | done | src/pages/site/compose/tabRowRecipes.ts | Tabs 32, padding 0 space[2], no bottom padding. Measured: 32h, 0 8. |
 | S34 | 12 | not started | | |
 | S35 | 12 | not started | | |
-| S36 | 11 | not started | | |
+| S36 | 11 | done (heading gap 24) | SourcesPanel.tsx | Groups space[6] apart, label to first row space[2], the -8 margin is gone. The heading to the first group is now the panel's one gap, 24, not 16: a second value needs a wrapper or an offset (question in the report). |
 | S37 | 12 | not started | | |
-| S38 | 11 | not started | | |
+| S38 | 11 | done (some kept) | DetailsReferences, classificationPieces, AddFromLibraryWindow, PromptsPanel, detailsRecipes, RunsFields, Replay, RunView, FindField, SourcesPanel, tileRecipes, modalRecipes, tabRowRecipes | Removed: see the commit 'S38 negative margins and nudges' and the Prompt 11 report. Kept with reasons: composeControls TextButton phone target (shared outside the editor), MadeWithLine and SessionsPanel phone targets (same pattern), SkipToBuild sr-only -1, AddFromLibraryWindow -1 hairline and the selected row's bleed, modalRecipes sectionAt bleed, SandboxView find band -6, WorkstreamHead/ToolPicker/SessionHead '0 -6px' (hover backdrop; removing moves the text 6). |
 | S39 | 10 | done | as F81 | Header actions 32 (SandboxView Classification, Publish). Neighbour spacing not measured for every pair (see report). |
 | S40 | 9 | done | src/index.css, src/lib/theme/space.ts | As F68: the size tokens `size.*` / `--size-*`. |

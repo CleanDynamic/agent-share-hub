@@ -81,7 +81,7 @@ describe("Add › Check", () => {
   it("draws Runs as a panel with the pass rate in mono and a 6px bar filled to it", () => {
     open();
     const panel = screen.getByTestId("check-runs").children[1] as HTMLElement;
-    expect(getComputedStyle(panel).borderRadius).toBe("10px");
+    expect(getComputedStyle(panel).borderRadius).toBe("var(--r-panel)");
         expect(screen.getByTestId("check-rate").textContent).toBe("");
     type("Passed", "3");
     type("Total", "4");

@@ -27,11 +27,13 @@ afterEach(() => {
 
 describe("the tile recipes (CA-15b P3)", () => {
   it("tile: --module, radius 10, padding 14 16, gap 8", () => {
-    expect(tileStyle()).toMatchObject({ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: 10, padding: "14px 16px", gap: 8 });
+    expect(tileStyle()).toMatchObject({ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: "var(--r-panel)", padding: "12px 16px", gap: 8 }); // S24
   });
 
   it("run: gap 10, padded 14 from a hairline down the left", () => {
-    expect(RUN).toMatchObject({ gap: 10, paddingLeft: 14, borderLeft: `1px solid ${t.hairlineModule}` });
+    expect(RUN).toMatchObject({ gap: 12 }); // S25, S29: no inset, no rule
+    expect(RUN).not.toHaveProperty("paddingLeft");
+    expect(RUN).not.toHaveProperty("borderLeft");
   });
 
   it("number badge 24 high, radius r.chip (S17); options button 26 square, radius 6, a 16 glyph (S8)", () => {
@@ -49,8 +51,8 @@ describe("the tile recipes (CA-15b P3)", () => {
   });
 
   it("body and foot sit 34 in; the foot is at least 20 tall", () => {
-    expect(TILE_INDENT).toBe(34);
-    expect(TILE_FOOT).toMatchObject({ justifyContent: "space-between", minHeight: 20 });
+    expect(TILE_INDENT).toBe(24); // S28
+    expect(TILE_FOOT).toMatchObject({ justifyContent: "space-between", minHeight: 24 });
   });
 
   it("small code well: a 28 gutter, 12/18, three lines", () => {

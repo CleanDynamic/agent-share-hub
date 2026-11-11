@@ -279,11 +279,12 @@ describe("the refined look (UI-P93)", () => {
     expect(list.getAttribute("aria-pressed")).toBe("true");
     expect(list.getAttribute("style")).toContain("font-weight: 500");
     expect(list.getAttribute("style")).toContain("font-size: 13px");
-    expect(list.getAttribute("style")).toContain("padding: 0px 0px 13px");
+    expect(list.getAttribute("style")).toContain("padding: 0px 8px"); // S33
+    expect(list.getAttribute("style")).toContain("height: 32px");
     expect(list.getAttribute("style")).toContain("inset 0 -1.5px 0");
     expect(map.getAttribute("style")).toContain("font-weight: 400");
     expect(map.getAttribute("style")).not.toContain("inset");
-    expect(screen.getByTestId("sandbox-tabs").getAttribute("style")).toContain("gap: 22px");
+    expect(screen.getByTestId("sandbox-tabs").getAttribute("style")).toContain("gap: 24px");
     fireEvent.click(map);
   });
 
