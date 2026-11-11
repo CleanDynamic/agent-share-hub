@@ -117,7 +117,7 @@ Note: 21 distinct names are listed for 31 failed tests. Names that repeat across
 | F78 | 13 | not started | | |
 | F79 | 13 | not started | | |
 | F80 | 14 | not started | | |
-| F81 | 10 | not started | | |
+| F81 | 10 | done | BuildList.tsx, DetailsPanel.tsx, modalRecipes.tsx (RemovableTag) | Desktop targets ≥ 24 (uses-row Accept and chips, removable tag's remove); data-hit (UI-P38: 44×44 on a touch screen) on controls with no phone flag; the rest already take phone ? 44. |
 | F82 | 13 | not started | | |
 | F83 | 14 | not started | | |
 | F84 | 14 | not started | | |
@@ -135,24 +135,24 @@ Note: 21 distinct names are listed for 31 failed tests. Names that repeat across
 | F96 | 14 | not started | | |
 | F97 | 14 | not started | | |
 | F98 | 14 | not started | | |
-| S1 | 10 | not started | | |
-| S2 | 10 | not started | | |
-| S3 | 10 | not started | | |
-| S4 | 10 | not started | | |
-| S5 | 10 | not started | | |
-| S6 | 10 | not started | | |
-| S7 | 10 | not started | | |
-| S8 | 10 | not started | | |
-| S9 | 10 | not started | | |
-| S10 | 10 | not started | | |
-| S11 | 10 | not started | | |
-| S12 | 10 | not started | | |
-| S13 | 10 | not started | | |
-| S14 | 10 | not started | | |
-| S15 | 10 | not started | | |
-| S16 | 10 | not started | | |
-| S17 | 10 | not started | | |
-| S18 | 10 | not started | | |
+| S1 | 10 | done | src/pages/site/compose/modalRecipes.tsx (RecipeButton, smallButtonStyle, BUTTON_PAD, BUTTON_PAD_SMALL_TEXT), the editor's <Button> calls (SandboxView, BuildList, DetailsPanel, DetailsReferences, RuntimeFields, ReadFromBuild, SessionsPanel, MadeWithLine, HelpersField, CostFields, PartWindow, FullPromptWindow), detailsRecipes.ts | Buttons 32 (44 phone), padding 0 space[3], gap space[2], r.control; a former 28 keeps its 12.5 label. Header Classification and Publish: 32 (SandboxView.tsx). Measured on /dev/kit/pages/sandbox (dusk and exhibition, 1440): Classification dialog and prompt dialog buttons 32h, padding 0 12, radius 6 (r.control); icon buttons 32 square; inputs 32h, 0 12, r 6; prompt text 8 12, r 6. Test `modalRecipes.test.tsx > buttons: 32 tall, radius r.control…`. "New build" is not in the editor folders (site header): not changed. |
+| S2 | 10 | done | as S1 | Dialog toolbar buttons (RecipeButton small, Copy prompt) and footers: 32, 0 12, r.control. Measured on /dev/kit/pages/sandbox (dusk and exhibition, 1440): Classification dialog and prompt dialog buttons 32h, padding 0 12, radius 6 (r.control); icon buttons 32 square; inputs 32h, 0 12, r 6; prompt text 8 12, r 6. |
+| S3 | 10 | done | as S1 | Dialog footer buttons (RecipeButton) radius 8 → r.control. Measured on /dev/kit/pages/sandbox (dusk and exhibition, 1440): Classification dialog and prompt dialog buttons 32h, padding 0 12, radius 6 (r.control); icon buttons 32 square; inputs 32h, 0 12, r 6; prompt text 8 12, r 6. |
+| S4 | 10 | done | src/pages/site/compose/AddSessionRow.tsx (addRowStyle), SandboxView.tsx (add-to-session) | Add step, Add a session, Add a part rows: 32, 0 space[3], gap space[2], r.control (were 36, 0 8). |
+| S5 | 10 | done | src/pages/site/compose/tileRecipes.tsx (TEXT_LINK_BOX, textLinkBox), modalRecipes.tsx (TextLink), OptionalRows.tsx (Accept/Undo), BuildList.tsx, SourcesPanel.tsx, src/components/build/tileBodies.tsx | Text links 24 high (44 phone), padding 0 space[1], gap space[1]. TextButton (composeControls.tsx) itself unchanged: post/media/EditMediaDialog, post/RefLinks and brand/ColourPicker use it. DetailsPanel draws its links through tileBodies/LINK_ROW rows (rows are S19). |
+| S6 | 10 | done | modalRecipes.tsx (IconSquare, iconButtonSide), the editor's <IconButton> calls (16 files), ColoursWindow.tsx, SourcesPanel.tsx, FindField.tsx | Icon buttons 32 square (44 phone), r.control; the shared IconButton stops at 30, so calls pass iconButtonSide(phone). Find field's inner buttons 24 (they sit inside a 32 field). Measured: prompt dialog 4 icon buttons 32; Classification 1 at 32. |
+| S7 | 10 | done | tileRecipes.tsx (TileOptions), listNest.tsx (grip) | Tile options 24 square, r.control (44 phone); drag handle 16 by 24 (44 phone), r.chip. Measured: options 24. |
+| S8 | 10 | done | 30 files (Glyph size → size.icon / size.iconSmall) | Every Glyph 16, 12 in a badge, chip or checkbox. ToolMark/ModelMark accept 14/16/20/24 only: marks inside chips stay 14; ToolMark 20/24 are app marks, not icons. Test `tileRecipes.test.tsx`, `modalRecipes.test.tsx` (16 glyph). |
+| S9 | 10 | done | modalRecipes.tsx (fieldStyle), refinedStyles.ts (typedField, wellField), SourcesPanel, AddSessionRow, FindField, ModelPicker, ClassificationPicker, SandboxView, ToolPicker, SessionsPanel, AddFromLibraryWindow, MoreDetails, MadeWithLine, ComposeView | Inputs 32 (44 phone), 0 space[3], r.control. Measured on /dev/kit/pages/sandbox (dusk and exhibition, 1440): Classification dialog and prompt dialog buttons 32h, padding 0 12, radius 6 (r.control); icon buttons 32 square; inputs 32h, 0 12, r 6; prompt text 8 12, r 6. |
+| S10 | 10 | done | as S9 | Dialog inputs (FieldInput → fieldStyle) radius 8 → r.control, padding 10 → 12. Measured on /dev/kit/pages/sandbox (dusk and exhibition, 1440): Classification dialog and prompt dialog buttons 32h, padding 0 12, radius 6 (r.control); icon buttons 32 square; inputs 32h, 0 12, r 6; prompt text 8 12, r 6. |
+| S11 | 10 | done | as S9 | Page inputs (typedField 30/0 8 → 32/0 12). Session title input left to F50. |
+| S12 | 10 | done | modalRecipes.tsx (areaStyle), refinedStyles.ts (typedArea), BuildList.tsx (composer) | Textareas padding space[2] space[3], min 64, r.control. Measured: prompt text 8 12 r 6; composer 64h 8 12. |
+| S13 | 10 | done | modalRecipes.tsx (Segment, OptionButton), MadeWithLine.tsx | Toggle options 32 (44 phone), 0 space[3], r.control; the segmented track keeps its 2px inset, radius r.card. |
+| S14 | 10 | done | modalRecipes.tsx (pickerFieldStyle), ToolPicker.tsx, ModelPicker.tsx | Selects 32, 0 space[3], gap space[2], r.control (the shared MenuButton draws 28; the editor passes its size). |
+| S15 | 10 | done | MadeWithLine, modalRecipes (Tag), referencePieces (Badge, reference chip), refinedStyles (chipStyle, tagStyle), ImportingPieces, PartWindow, FullPromptWindow | Tags 20, 0 space[2], r.chip. Test `modalRecipes.test.tsx > text link and tag`. |
+| S16 | 10 | done | classificationPieces.tsx (Suggestion, chosen chip), modalRecipes.tsx (OPTIONAL.suggestedChip) | Suggestion chips 24 (44 phone), 0 space[2], gap space[1], r.chip; the chosen chip the same, its remove button 24 (44 phone), no -6 phone margin. The uses row's dashed suggestion in BuildList stays 28: it holds a 24 Accept. |
+| S17 | 10 | done | tileRecipes.tsx (NumberBadge) | 24 high, min width 24, 0 space[1], r.chip, no top margin. Measured: 24h, padding 0 4, r 4. Test `tileRecipes.test.tsx > number badge 24 high…`. |
+| S18 | 10 | not present | (none) | No agent avatar in tileBodies.tsx. The only 20-square radius-5 mark is AppMark (tileRecipes.tsx:133) on tool and repository titles; not changed. |
 | S19 | 11 | not started | | |
 | S20 | 11 | not started | | |
 | S21 | 11 | not started | | |
@@ -173,5 +173,5 @@ Note: 21 distinct names are listed for 31 failed tests. Names that repeat across
 | S36 | 11 | not started | | |
 | S37 | 12 | not started | | |
 | S38 | 11 | not started | | |
-| S39 | 10 | not started | | |
+| S39 | 10 | done | as F81 | Header actions 32 (SandboxView Classification, Publish). Neighbour spacing not measured for every pair (see report). |
 | S40 | 9 | done | src/index.css, src/lib/theme/space.ts | As F68: the size tokens `size.*` / `--size-*`. |

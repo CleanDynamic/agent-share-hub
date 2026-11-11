@@ -626,7 +626,7 @@ describe("the refined look (UI-P93)", () => {
   it("draws a suggestion as a dashed chip with Accept as a 20-high control and Dismiss as text", () => {
     list();
     const accept = screen.getByRole("button", { name: "Accept" });
-    expect(accept.getAttribute("style")).toMatch(/height:\s*20px/);
+    expect(accept.getAttribute("style")).toMatch(/height:\s*24px/); // F81
     expect(screen.getByRole("button", { name: "Dismiss" }).getAttribute("data-variant")).toBeNull();
     expect(markup()).toContain("height:28px;padding:0 4px 0 8px;box-sizing:border-box;border-radius:6px;border:1px dashed var(--line)");
   });

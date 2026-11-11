@@ -60,7 +60,7 @@ describe("the row", () => {
     expect(row.textContent).toBe("Add session");
     expect(row.querySelector("svg")).toBeTruthy();
     const style = row.getAttribute("style") ?? "";
-    expect(style).toMatch(/height:\s*36px/);
+    expect(style).toMatch(/height:\s*32px/); // S4
     expect(style).not.toMatch(/dashed/);
   });
 

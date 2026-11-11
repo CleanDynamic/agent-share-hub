@@ -45,8 +45,8 @@ describe("the tag", () => {
   it("is 20 tall, padding 0 7, radius 5, the control recipe, the data face 10.5 in --text2", () => {
     const html = renderToStaticMarkup(<ImportingTag />);
     expect(html).toContain("height:20px");
-    expect(html).toContain("padding:0 7px");
-    expect(html).toContain("border-radius:5px");
+    expect(html).toContain("padding:0 8px"); // S15
+    expect(html).toContain("border-radius:var(--r-chip)");
     expect(html).toContain("background:var(--control);border:1px solid var(--control-border)");
     expect(html).toContain("font-size:10.5px");
     expect(html).toContain("color:var(--text2)");

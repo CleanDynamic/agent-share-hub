@@ -263,7 +263,7 @@ describe("the refined look (UI-P93)", () => {
     expect(screen.getByRole("heading", { level: 1 }).getAttribute("style")).toMatch(/font-size:\s*20px/);
     const publish = screen.getByRole("button", { name: "Publish" });
     expect(publish.getAttribute("data-variant")).toBe("primary");
-    expect(publish.getAttribute("style")).toMatch(/height:\s*28px/);
+    expect(publish.getAttribute("style")).toMatch(/height:\s*32px/); // S1
     const card = screen.getByRole("button", { name: "Classification" });
     expect(card.getAttribute("data-variant")).toBe("secondary");
     expect(card.textContent).toBe("Classification");

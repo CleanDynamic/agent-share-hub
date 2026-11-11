@@ -43,8 +43,8 @@ describe("the tile recipes (CA-15b P3)", () => {
     expect(badge).toContain("font-size:11px");
     render(<TileOptions label="Prompt 3 options" />);
     const options = screen.getByRole("button", { name: "Prompt 3 options" });
-    expect(options.style.width).toBe("26px");
-    expect(options.style.borderRadius).toBe("6px");
+    expect(options.style.width).toBe("24px"); // S7
+    expect(options.style.borderRadius).toBe("var(--r-control)");
     expect(options.querySelector("svg")?.getAttribute("width")).toBe("16");
   });
 
