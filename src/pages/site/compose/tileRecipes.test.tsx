@@ -34,16 +34,18 @@ describe("the tile recipes (CA-15b P3)", () => {
     expect(RUN).toMatchObject({ gap: 10, paddingLeft: 14, borderLeft: `1px solid ${t.hairlineModule}` });
   });
 
-  it("number badge 22 square, radius 5; options button 26 square, radius 6, a 14 glyph", () => {
+  it("number badge 24 high, radius r.chip (S17); options button 26 square, radius 6, a 16 glyph (S8)", () => {
     const badge = renderToStaticMarkup(<NumberBadge>3</NumberBadge>);
-    expect(badge).toContain("height:22px");
-    expect(badge).toContain("border-radius:5px");
+    expect(badge).toContain("height:24px");
+    expect(badge).toContain("min-width:24px");
+    expect(badge).toContain("border-radius:var(--r-chip)");
+    expect(badge).not.toContain("margin-top");
     expect(badge).toContain("font-size:11px");
     render(<TileOptions label="Prompt 3 options" />);
     const options = screen.getByRole("button", { name: "Prompt 3 options" });
     expect(options.style.width).toBe("26px");
     expect(options.style.borderRadius).toBe("6px");
-    expect(options.querySelector("svg")?.getAttribute("width")).toBe("14");
+    expect(options.querySelector("svg")?.getAttribute("width")).toBe("16");
   });
 
   it("body and foot sit 34 in; the foot is at least 20 tall", () => {

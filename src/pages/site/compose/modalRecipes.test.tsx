@@ -43,12 +43,12 @@ describe("the modal recipes (CA-15b P1)", () => {
     expect(frameStyle(640).width).toBe(640);
   });
 
-  it("icon button: 28 square, radius 7, the control recipe, a 14 glyph", () => {
+  it("icon button: 28 square, radius 7, the control recipe, a 16 glyph (S8)", () => {
     render(<IconSquare glyph="x" label="Close" />);
     const button = screen.getByRole("button", { name: "Close" });
     expect(styleOf(button)).toMatchObject({ width: "28px", height: "28px", borderRadius: "7px" });
     expect(html(<IconSquare glyph="x" label="Close" />)).toContain(`background:${t.control}`);
-    expect(button.querySelector("svg")?.getAttribute("width")).toBe("14");
+    expect(button.querySelector("svg")?.getAttribute("width")).toBe("16");
   });
 
   it("row: a 148 label column, gap 16, padding 12 20 inside a modal, a rule above", () => {
