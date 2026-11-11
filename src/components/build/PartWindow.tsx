@@ -541,7 +541,7 @@ export function PartWindow(props: PartWindowProps) {
   }, [shown, props.open]);
 
   const eyebrow = step
-    ? [`${REF_KIND[step.kind] ?? "Prompt"}${step.number ? ` ${step.number}` : ""}`, step.inside ? `sent with ${step.inside.label}` : null].filter(Boolean).join(" · ")
+    ? [`${REF_KIND[step.kind] ?? "Prompt"}${step.number ? ` ${step.number}` : ""}`, step.inside ? `attached to ${step.inside.label}` : null].filter(Boolean).join(" · ")
     : group
       ? `Session ${group.number}`
       : "";

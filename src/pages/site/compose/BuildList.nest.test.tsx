@@ -70,8 +70,8 @@ describe("the List (CA-04 P2)", () => {
     list(buildSteps(tree()));
     const tiles = screen.getAllByTestId("sent-with-tile");
     expect(tiles.map((tile) => tile.getAttribute("data-kind"))).toEqual(["code", "file"]);
-    expect(within(tiles[0]).getAllByText("Sent with prompt 2")).toHaveLength(1);
-    expect(within(tiles[1]).getByText("Sent with order-form.tsx")).toBeTruthy();
+    expect(within(tiles[0]).getAllByText("Attached to prompt 2")).toHaveLength(1);
+    expect(within(tiles[1]).getByText("Attached to order-form.tsx")).toBeTruthy();
     // CA-11: a code tile's own line numbers are in the page now, so "no number" means no step number beside them.
     expect(within(tiles[0]).queryAllByText("1").filter((node) => !node.closest('[data-testid="code-gutter"]'))).toHaveLength(0);
   });
@@ -104,7 +104,7 @@ describe("the List (CA-04 P2)", () => {
     const second = screen.getByRole("group", { name: /^Prompt 2/ });
     fireEvent.click(within(second).getAllByRole("button", { name: NEST_LIST_COPY.sendWithAbove })[0]);
     expect(props.onNest).toHaveBeenCalledWith("p2", "p1", Number.MAX_SAFE_INTEGER);
-    await waitFor(() => expect(screen.getByTestId("nest-said").textContent).toBe("prompt 2 is now sent with prompt 1."));
+    await waitFor(() => expect(screen.getByTestId("nest-said").textContent).toBe("prompt 2 is now attached to prompt 1."));
     const [code] = screen.getAllByTestId("sent-with-tile");
     fireEvent.click(within(code).getAllByRole("button", { name: NEST_LIST_COPY.ownStep }).at(-1) as HTMLElement);
     expect(props.onNest).toHaveBeenLastCalledWith("c1", null, 2);
@@ -193,8 +193,8 @@ describe("Details (CA-04 P2)", () => {
     const t = tree();
     const steps = buildSteps(t);
     const ctx = { steps, groups: [], tree: t, sources: [], sourceFiles: [], promptsState: () => ({ prompts: [], error: false }), intoResult: new Set<string>(), media: () => undefined };
-    expect(resolveView({ ...ctx, selectedId: "c1" })).toMatchObject({ kind: "code", id: "c1", sentWithLine: "Sent with prompt 2", filename: "order-form.tsx" });
-    expect(resolveView({ ...ctx, selectedId: "f1" })).toMatchObject({ kind: "file", id: "f1", name: "menu.pdf", sentWithLine: "Sent with order-form.tsx" });
+    expect(resolveView({ ...ctx, selectedId: "c1" })).toMatchObject({ kind: "code", id: "c1", sentWithLine: "Attached to prompt 2", filename: "order-form.tsx" });
+    expect(resolveView({ ...ctx, selectedId: "f1" })).toMatchObject({ kind: "file", id: "f1", name: "menu.pdf", sentWithLine: "Attached to order-form.tsx" });
   });
 });
 

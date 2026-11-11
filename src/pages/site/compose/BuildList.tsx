@@ -586,8 +586,8 @@ export const NEST_LIST_COPY = {
   sendWithAbove: "Attach to the step above",
   ownStep: "Make it its own step",
   copyTogether: "Copy together",
-  sentWith: (label: string) => `Sent with ${label}`,
-  nowSentWith: (name: string, label: string) => `${name} is now sent with ${label}.`,
+  sentWith: (label: string) => `Attached to ${label}`,
+  nowSentWith: (name: string, label: string) => `${name} is now attached to ${label}.`,
   nowOwnStep: (name: string) => `${name} is now its own step.`,
   nowIn: (name: string, session: string) => `${name} is now in ${session}.`,
   copied: (name: string) => `Copied ${name} together.`,
@@ -685,7 +685,7 @@ const tileName = (step: Step) => sentWithLabel(step);
 const gripName = (step: Step) => {
   const label = sentWithLabel(step);
   if ((step.kind === "code" || step.kind === "file") && step.filename) return label;
-  if (!step.number && step.inside) return `${REF_KIND[step.kind] ?? "Prompt"} sent with ${step.inside.label}`;
+  if (!step.number && step.inside) return `${REF_KIND[step.kind] ?? "Prompt"} attached to ${step.inside.label}`;
   return label.charAt(0).toUpperCase() + label.slice(1);
 };
 
@@ -703,7 +703,7 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
     <div
       ref={cardRef}
       role="group"
-      aria-label={`${kind} sent with ${step.inside?.label ?? "a step"}: ${stepTitle(step)}`}
+      aria-label={`${kind} attached to ${step.inside?.label ?? "a step"}: ${stepTitle(step)}`}
       data-testid="sent-with-tile"
       data-kind={step.kind}
       data-skel-kind="nested"
