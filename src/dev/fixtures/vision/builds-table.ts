@@ -6,7 +6,7 @@
 
 import { statParts, type BuildsViewProps } from "@/pages/site/builds/BuildsView";
 import type { CatalogueGroup, FilterSection, WordOption } from "@/pages/site/builds/BuildsFiltersView";
-import { COLUMN_ORDER, type TableRowView } from "@/pages/site/builds/BuildsTableView";
+import { COLUMN_ORDER, type BuildsTableViewProps, type TableRowView } from "@/pages/site/builds/BuildsTableView";
 
 const noop = () => undefined;
 
@@ -168,4 +168,10 @@ export function visionBuildsTableProps(): BuildsViewProps {
       footer: { count: "18 builds", mostCommon: "Most common · Sales, Claude Code", median: "Median 11 steps", total: "Total 214", onCalculate: noop },
     },
   };
+}
+
+/** BF-06: the Table drawn on its own, with the Filters button the page's view gives it. */
+export function visionBuildsTableViewProps(): BuildsTableViewProps {
+  const { table, filters } = visionBuildsTableProps();
+  return { ...table!, activeCount: filters.activeCount, onOpenFilters: noop };
 }

@@ -1,6 +1,6 @@
-/* SV-11: the Builds page, pure: the head with its view switch, the filter column and the chosen view's column. The live
-   page (`BuildsPage`) and the dev page (`vision-builds-table`) both draw from this, so the board is compared against the
-   page itself. Below 1000 the columns stack, the filters first and closed to their heads until opened. */
+/* SV-11: the Builds page, pure: the head with its view switch and the chosen view under it. The live page (`BuildsPage`)
+   and the dev page (`vision-builds-table`) both draw from this. BF-06 (A1): the filters are a dialog, opened by the
+   Filters button in the Table's lens row; the Table has the page's width. */
 
 import { useState, type ReactNode } from "react";
 
@@ -9,7 +9,8 @@ import type { GalleryViewMode } from "@/lib/build/galleryParams";
 import { STALE_AFTER_DAYS } from "@/lib/build/signals";
 import { t } from "@/lib/theme/tokens";
 
-import { BuildsColumns, BuildsControl, BuildsHead, ViewSwitch, useBuildsTwoColumns } from "./BuildsFrame";
+import { BuildsColumns, BuildsHead, ViewSwitch } from "./BuildsFrame";
+import { BuildsFiltersDialog } from "./BuildsFiltersDialog";
 import { BuildsFiltersView, type BuildsFiltersViewProps } from "./BuildsFiltersView";
 import { BuildsTableView, type BuildsTableViewProps } from "./BuildsTableView";
 
@@ -43,33 +44,25 @@ export interface BuildsViewProps {
   hrefFor: (view: GalleryViewMode) => string;
   onViewIntent?: (view: GalleryViewMode) => void;
   filters: BuildsFiltersViewProps;
-  /** The Table's props, or what stands in its place (its error). Maps and Classification draw their own pages. */
-  table: BuildsTableViewProps | null;
+  /** The Table's props, or what stands in its place (its error). Maps and Classification draw their own pages. The view
+      gives the Table its way to open the filters. */
+  table: Omit<BuildsTableViewProps, "onOpenFilters" | "activeCount"> | null;
   other?: ReactNode;
   /** BF-02 (C2): the figure and the rows are the last address's, kept until the new page lands. */
   updating?: boolean;
 }
 
 export function BuildsView({ figure, parts, view, hrefFor, onViewIntent, filters, table, other, updating }: BuildsViewProps) {
-  const two = useBuildsTwoColumns();
   const [open, setOpen] = useState(false);
   return (
-    <BuildsColumns
-      two={two}
-      head={<BuildsHead figure={figure} parts={parts} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />}
-      filters={
-        <>
-          {two ? null : (
-            <div style={{ marginBottom: 12 }}>
-              <BuildsControl aria-expanded={open} onClick={() => setOpen((value) => !value)}>
-                {open ? "Hide filters" : "Show filters"}
-              </BuildsControl>
-            </div>
-          )}
-          <BuildsFiltersView {...filters} collapsed={!two && !open} />
-        </>
-      }
-      main={table ? <BuildsTableView {...table} updating={updating} /> : other}
-    />
+    <>
+      <BuildsColumns
+        head={<BuildsHead figure={figure} parts={parts} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />}
+        main={table ? <BuildsTableView {...table} activeCount={filters.activeCount} onOpenFilters={() => setOpen(true)} updating={updating} /> : other}
+      />
+      <BuildsFiltersDialog open={open} onOpenChange={setOpen}>
+        <BuildsFiltersView {...filters} />
+      </BuildsFiltersDialog>
+    </>
   );
 }

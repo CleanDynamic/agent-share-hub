@@ -1,10 +1,10 @@
-/* SV-11: the Builds page's frame, in a small module of its own: the two columns, the head with its view switch, the
+/* SV-11: the Builds page's frame, in a small module of its own: the column, the head with its view switch, the
    controls the views share, and the page as it stands while it loads (`BuildsLoadingView`, the route table's Placeholder
    and the page's own loading state), so the Placeholder carries none of the page's code (the filters, the table).
 
-   The board is `design/reference/vision/dusk/builds-table.html`. The surface and its padding belong to the site frame
-   (`board`); what is here starts at the page head. Columns `256px minmax(0, 1fr)`, 56 apart, 40 under the head; below
-   1000 one column, the filters first and closed to their heads.
+   BF-06 (A1, C5a): the filter rail is gone. The surface and its padding belong to the site frame (`board`); what is here
+   starts at the page head, and the Table has the whole width under it, 40 below. The filters are a dialog that the Filters
+   button opens (`BuildsFiltersDialog`), the same in all three views.
 
    THE VIEW IS IN THE ADDRESS (`?view=maps`). Each segment of the switch is a link to the same page with the new view, so
    the old content stays until the new arrives, and pointing at one fetches that view's code. */
@@ -23,13 +23,6 @@ import { r } from "@/lib/theme/radius";
 import { controlPaint } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
-
-/** Two columns from 1001; one below. */
-const TWO_COLUMNS_MIN = 1001;
-
-export function useBuildsTwoColumns(): boolean {
-  return useMinWidth(TWO_COLUMNS_MIN);
-}
 
 /** Cards in three columns, two below 1100, one below 760 (Maps and Classification). */
 export function useCardColumns(): 1 | 2 | 3 {
@@ -57,28 +50,16 @@ export const ellipsis: CSSProperties = { whiteSpace: "nowrap", overflow: "hidden
 /** The boards' root: Geist 13 on a 20px line, numbers tabular. */
 const ROOT: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.text, fontVariantNumeric: "tabular-nums" };
 
-/* ── the columns ── */
+/* ── the column ── */
 
-export function BuildsColumns({ two, head, filters, main, testId = "builds-page" }: { two: boolean; head: ReactNode; filters: ReactNode; main: ReactNode; testId?: string }) {
+/** The head, then the view's own content in one column 40 below it. */
+export function BuildsColumns({ head, main, testId = "builds-page" }: { head: ReactNode; main: ReactNode; testId?: string }) {
   return (
-    <div data-testid={testId} data-layout={two ? "two" : "one"} style={{ ...ROOT, paddingBottom: 64 }}>
+    <div data-testid={testId} style={{ ...ROOT, paddingBottom: 64 }}>
       {head}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: two ? "256px minmax(0, 1fr)" : "minmax(0, 1fr)",
-          columnGap: 56,
-          rowGap: 40,
-          marginTop: 40,
-        }}
-      >
-        <aside aria-label="Filters" style={{ minWidth: 0 }}>
-          {filters}
-        </aside>
-        <section aria-label="Builds" style={{ minWidth: 0 }}>
-          {main}
-        </section>
-      </div>
+      <section aria-label="Builds" style={{ minWidth: 0, marginTop: 40 }}>
+        {main}
+      </section>
     </div>
   );
 }
@@ -279,22 +260,6 @@ export function TableRowSkeletons({ count }: { count: number }) {
   );
 }
 
-/** The filter column while it loads: its head and closed rows 44 high. */
-function FilterSkeletons() {
-  return (
-    <div aria-hidden="true">
-      <div style={{ paddingBottom: 20 }}>
-        <div style={text(14, 500, t.text, { lineHeight: 1.3 })}>Filters</div>
-      </div>
-      {Array.from({ length: 6 }, (_, index) => (
-        <div key={index} style={{ display: "flex", alignItems: "center", height: 44, borderTop: `1px solid ${t.hairline}` }}>
-          <Skeleton width="50%" height={12} radius={4} />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 /** The view the address names, and the address of each view, read without the page's address module (which brings the
     data layer with it). The page writes the same `view` parameter through `galleryHref`. */
 export function viewOfSearch(search: string): GalleryViewMode {
@@ -311,10 +276,9 @@ function viewHref(pathname: string, search: string, view: GalleryViewMode): stri
 }
 
 /** Builds as it stands before its list arrives: the route table's Placeholder for /builds, and the page's own loading
-    state. The head and the column frames are drawn; the filters and the table are blocks. The switch is drawn from the
-    address, so it is where it will be. */
+    state. The head and the lens row are drawn; the table is blocks. The switch is drawn from the address, so it is where
+    it will be. */
 export function BuildsLoadingView() {
-  const two = useBuildsTwoColumns();
   const { pathname, search } = useLocation();
   const view = viewOfSearch(search);
   const hrefFor = (next: GalleryViewMode) => viewHref(pathname, search, next);
@@ -323,10 +287,8 @@ export function BuildsLoadingView() {
   return (
     <LoadingRegion what="builds" announce>
       <BuildsColumns
-        two={two}
         testId="builds-loading"
         head={<BuildsHead figure="Builds" parts={[{ text: " " }]} switcher={<ViewSwitch view={view} hrefFor={hrefFor} />} />}
-        filters={<FilterSkeletons />}
         main={
           <>
             <div style={{ height: 36, borderBottom: `1px solid ${t.hairline}` }} />

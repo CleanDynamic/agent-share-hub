@@ -151,8 +151,6 @@ export interface BuildsFiltersViewProps {
   heights?: Readonly<Record<string, number>>;
   /** Absent: no resize handles. */
   onResize?: (sectionId: string, height: number) => void;
-  /** Below 1000 the panel is closed to its heads. */
-  collapsed?: boolean;
 }
 
 /* ── pieces ── */
@@ -227,11 +225,9 @@ function SectionHead({ name, move, right }: { name: string; move: Moving; right:
 
 function FiltersHead({ activeCount, onAdd }: { activeCount: number; onAdd?: () => void }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, paddingBottom: 20 }}>
-      <div>
-        <h2 style={{ ...text(14, 500, t.text), margin: 0, lineHeight: 1.3 }}>Filters</h2>
-        <p style={{ ...text(12, 400, t.label), margin: "2px 0 0", lineHeight: "normal" }}>{activeCount} active · drag to reorder</p>
-      </div>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "16px 0" }}>
+      {/* BF-06: the dialog's title says Filters. */}
+      <p style={{ ...text(12, 400, t.label), margin: 0, lineHeight: "normal" }}>{activeCount} active · drag to reorder</p>
       {onAdd ? <BuildsControl onClick={onAdd}>Add</BuildsControl> : null}
     </div>
   );
@@ -562,7 +558,7 @@ function Catalogue({ total, groups }: { total: number; groups: readonly Catalogu
 /* ── the panel ── */
 
 export function BuildsFiltersView(props: BuildsFiltersViewProps) {
-  const { activeCount, onAdd, savedSets, sections, catalogue, onToggleOption, onOrder, onRange, onToggleSegment, onOpenClosed, onMove, onDrop, heights, onResize, collapsed = false } = props;
+  const { activeCount, onAdd, savedSets, sections, catalogue, onToggleOption, onOrder, onRange, onToggleSegment, onOpenClosed, onMove, onDrop, heights, onResize } = props;
   const container = useRef<HTMLDivElement>(null);
   const gripFor = useFilterDrag(container, onDrop);
   const open = sections.filter((section) => section.kind !== "closed");
@@ -570,43 +566,39 @@ export function BuildsFiltersView(props: BuildsFiltersViewProps) {
   return (
     <div ref={container} data-testid="builds-filters">
       <FiltersHead activeCount={activeCount} onAdd={onAdd} />
-      {collapsed ? null : (
-        <>
-          {savedSets ? <SavedSets {...savedSets} /> : null}
-          {open.map((section, at) => {
-            const move: Moving = {
-              onMove: onMove ? (direction) => onMove(section.id, direction) : undefined,
-              drag: gripFor?.(section.id),
-              place: { first: at === 0, last: at === open.length - 1 },
-            };
-            const resize = onResize ? (px: number) => onResize(section.id, px) : undefined;
-            let drawn: ReactNode = null;
-            if (section.kind === "word") {
-              drawn = <WordFilter section={section} onToggle={(key) => onToggleOption(section.id, key)} onOrder={onOrder ? (order) => onOrder(section.id, order) : undefined} move={move} height={heights?.[section.id]} onResize={resize} />;
-            } else if (section.kind === "range") {
-              drawn = <RangeFilter section={section} onChange={onRange ? (value) => onRange(section.id, value) : undefined} move={move} />;
-            } else if (section.kind === "scale") {
-              drawn = <ScaleFilter section={section} onToggle={onToggleSegment ? (key) => onToggleSegment(section.id, key) : undefined} move={move} />;
-            }
-            /* The wrapper is what a drag moves; it is drawn only where a drag is. */
-            return onDrop ? (
-              <div key={section.id} data-filter-slot={section.id}>
-                {drawn}
-              </div>
-            ) : (
-              <Fragment key={section.id}>{drawn}</Fragment>
-            );
-          })}
-          {closed.length > 0 ? (
-            <section aria-label="More filters" style={{ borderTop: `1px solid ${t.hairline}` }}>
-              {closed.map((section) => (
-                <ClosedRow key={section.id} section={section} onOpen={onOpenClosed ? () => onOpenClosed(section.id) : undefined} />
-              ))}
-            </section>
-          ) : null}
-          {catalogue ? <Catalogue total={catalogue.total} groups={catalogue.groups} /> : null}
-        </>
-      )}
+      {savedSets ? <SavedSets {...savedSets} /> : null}
+      {open.map((section, at) => {
+        const move: Moving = {
+          onMove: onMove ? (direction) => onMove(section.id, direction) : undefined,
+          drag: gripFor?.(section.id),
+          place: { first: at === 0, last: at === open.length - 1 },
+        };
+        const resize = onResize ? (px: number) => onResize(section.id, px) : undefined;
+        let drawn: ReactNode = null;
+        if (section.kind === "word") {
+          drawn = <WordFilter section={section} onToggle={(key) => onToggleOption(section.id, key)} onOrder={onOrder ? (order) => onOrder(section.id, order) : undefined} move={move} height={heights?.[section.id]} onResize={resize} />;
+        } else if (section.kind === "range") {
+          drawn = <RangeFilter section={section} onChange={onRange ? (value) => onRange(section.id, value) : undefined} move={move} />;
+        } else if (section.kind === "scale") {
+          drawn = <ScaleFilter section={section} onToggle={onToggleSegment ? (key) => onToggleSegment(section.id, key) : undefined} move={move} />;
+        }
+        /* The wrapper is what a drag moves; it is drawn only where a drag is. */
+        return onDrop ? (
+          <div key={section.id} data-filter-slot={section.id}>
+            {drawn}
+          </div>
+        ) : (
+          <Fragment key={section.id}>{drawn}</Fragment>
+        );
+      })}
+      {closed.length > 0 ? (
+        <section aria-label="More filters" style={{ borderTop: `1px solid ${t.hairline}` }}>
+          {closed.map((section) => (
+            <ClosedRow key={section.id} section={section} onOpen={onOpenClosed ? () => onOpenClosed(section.id) : undefined} />
+          ))}
+        </section>
+      ) : null}
+      {catalogue ? <Catalogue total={catalogue.total} groups={catalogue.groups} /> : null}
     </div>
   );
 }

@@ -13,8 +13,42 @@ async function answerWithNoRows(page: Page) {
   );
 }
 
-async function open(page: Page, path = "/builds") {
-  await answerWithNoRows(page);
+/** BF-06: twelve builds for the list read, every one with each column the default Table draws filled, so the table is as
+    wide as a real one; every other read has no rows. The list is the one read that selects `slug`. */
+async function answerWithBuilds(page: Page) {
+  const now = Date.now();
+  const rows = Array.from({ length: 12 }, (_, at) => ({
+    id: `b${at}`,
+    slug: `b${at}`,
+    title: ["Lead scoring from CRM notes", "Call notes that write themselves", "Proposal writer with pricing"][at % 3],
+    shape: "workflow",
+    made_with: ["Claude Code", "Cursor", "n8n"],
+    reproduction_count: 12 + at,
+    last_confirmed_at: new Date(now - (at + 1) * 86_400_000).toISOString(),
+    last_confirmed_model: "opus-5-5",
+    published_at: new Date(now - 90 * 86_400_000).toISOString(),
+    rebuild_count: 3,
+    classification: { declared: { field: [{ id: "medicine" }] }, derived: { built: { values: ["browser-extension"] }, cost: { values: ["extra-usage-10-to-50-a-month"] } } },
+    maker: { username: `maker${at}`, display_name: null },
+    step_count: 14 + at,
+    session_count: 3,
+    still_open_topics: 2,
+    build_reproductions: [{ confirmed_at: new Date(now - 3 * 86_400_000).toISOString() }],
+  }));
+  await page.route(/\/rest\/v1\//, (route) => {
+    const url = new URL(route.request().url());
+    const list = url.pathname.endsWith("/builds") && (url.searchParams.get("select") ?? "").includes("slug");
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers: { "content-range": list ? `0-11/${rows.length}` : "*/0" },
+      body: list ? JSON.stringify(rows) : "[]",
+    });
+  });
+}
+
+async function open(page: Page, path = "/builds", answer: (page: Page) => Promise<void> = answerWithNoRows) {
+  await answer(page);
   await page.addInitScript(() => {
     try {
       window.localStorage.setItem("bg-theme", "noon");
@@ -118,4 +152,52 @@ test.describe("/builds filters", () => {
       expect(small).toEqual([]);
     });
   }
+
+  /* ── BF-06 P2 (A1, C5a, C13) ── */
+
+  test("desktop at 1440 by 900: the default table does not scroll sideways", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "desktop project only");
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open(page, "/builds", answerWithBuilds);
+    const region = page.getByRole("region", { name: "Builds table" });
+    await expect(region).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Steps" })).toBeVisible();
+    const widths = await region.evaluate((el) => ({ scroll: el.scrollWidth, client: el.clientWidth, columns: el.querySelectorAll("th").length }));
+    // eslint-disable-next-line no-console
+    console.log(`Builds table at 1440: scrollWidth ${widths.scroll}, clientWidth ${widths.client}, ${widths.columns} columns`);
+    expect(widths.scroll).toBeLessThanOrEqual(widths.client);
+  });
+
+  test("mobile: Filters opens a full screen dialog, and Done closes it", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "mobile project only");
+    await open(page, "/builds", answerWithBuilds);
+    await page.getByRole("button", { name: /^Filters/ }).click();
+    const dialog = page.getByRole("dialog", { name: "Filters" });
+    await expect(dialog).toBeVisible();
+    const box = await dialog.boundingBox();
+    const viewport = page.viewportSize()!;
+    expect(Math.round(box!.x)).toBe(0);
+    expect(Math.round(box!.y)).toBe(0);
+    expect(Math.round(box!.width)).toBe(viewport.width);
+    expect(Math.abs(box!.height - viewport.height)).toBeLessThanOrEqual(1);
+    await dialog.getByRole("button", { name: "Done" }).click();
+    await expect(dialog).toBeHidden();
+  });
+
+  test("desktop: with the dialog open, Tab stays inside it and Escape returns focus to Filters", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "desktop project only");
+    await open(page, "/builds", answerWithBuilds);
+    const button = page.getByRole("button", { name: /^Filters/ });
+    await button.focus();
+    await page.keyboard.press("Enter");
+    const dialog = page.getByRole("dialog", { name: "Filters" });
+    await expect(dialog).toBeVisible();
+    for (let step = 0; step < 40; step += 1) {
+      await page.keyboard.press("Tab");
+      expect(await dialog.evaluate((el) => el.contains(document.activeElement))).toBe(true);
+    }
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(button).toBeFocused();
+  });
 });

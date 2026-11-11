@@ -360,7 +360,7 @@ export default function BuildsPage() {
             chips={activeChips(params)}
             onRemoveChip={(key) => go(withoutChip(params, key))}
             onClearAll={() => go(clearedFilters(params))}
-            panel={<BuildsFiltersView {...filters} collapsed={false} />}
+            panel={<BuildsFiltersView {...filters} />}
             direction={direction}
             onDirection={setDirection}
             buildsLabel={buildsLabel}
@@ -393,7 +393,7 @@ export default function BuildsPage() {
             chips={activeChips(params)}
             onRemoveChip={(key) => go(withoutChip(params, key))}
             onClearAll={() => go(clearedFilters(params))}
-            panel={<BuildsFiltersView {...filters} collapsed={false} />}
+            panel={<BuildsFiltersView {...filters} />}
             facets={shownFacets}
             onFacets={onFacets}
             cards={builds.map((build) => cardOf(build, shownFacets, valueHref, now))}

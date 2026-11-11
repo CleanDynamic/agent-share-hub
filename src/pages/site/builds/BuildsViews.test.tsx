@@ -2,14 +2,14 @@
 // number filters are keyboard-operable sliders with words, grips are named, sortable heads say aria-sort, the charts
 // have words and their bars are hidden, and a pure view takes everything through props.
 
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 
-import { visionBuildsTableProps } from "@/dev/fixtures/vision/builds-table";
+import { visionBuildsTableProps, visionBuildsTableViewProps } from "@/dev/fixtures/vision/builds-table";
 import { STALE_AFTER_DAYS } from "@/lib/build/signals";
 
 import { ALL_COLUMNS, BuildsTableView, type ColumnId, type TableRowView } from "./BuildsTableView";
@@ -41,10 +41,17 @@ function draw(change: (props: BuildsViewProps) => BuildsViewProps = (p) => p) {
   );
 }
 
+/** BF-06: the page with its Filters dialog open, where the panel now is. */
+function drawFilters(change?: (props: BuildsViewProps) => BuildsViewProps) {
+  const drawn = draw(change);
+  fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+  return drawn;
+}
+
 describe("the filter panel", () => {
   it("draws a checklist as checkboxes with their labels, and reports a toggle", () => {
     const onToggleOption = vi.fn();
-    draw((p) => ({ ...p, filters: { ...p.filters, onToggleOption } }));
+    drawFilters((p) => ({ ...p, filters: { ...p.filters, onToggleOption } }));
     const sales = screen.getByRole("checkbox", { name: /Sales/ }) as HTMLInputElement;
     expect(sales.checked).toBe(true);
     fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
@@ -53,7 +60,7 @@ describe("the filter panel", () => {
 
   it("draws a number filter as two sliders that move with the keyboard and say what they hold", () => {
     const onRange = vi.fn();
-    draw((p) => ({ ...p, filters: { ...p.filters, onRange } }));
+    drawFilters((p) => ({ ...p, filters: { ...p.filters, onRange } }));
     const from = screen.getByRole("slider", { name: "Reproductions from" });
     expect(from.getAttribute("aria-valuetext")).toBe("3 or more");
     expect(screen.getByRole("slider", { name: "Reproductions to" }).getAttribute("aria-valuetext")).toBe("40 or more");
@@ -64,7 +71,7 @@ describe("the filter panel", () => {
 
   it("names each grip, and moves a filter from its menu without a pointer", () => {
     const onMove = vi.fn();
-    draw((p) => ({ ...p, filters: { ...p.filters, onMove } }));
+    drawFilters((p) => ({ ...p, filters: { ...p.filters, onMove } }));
     const grip = screen.getByRole("button", { name: "Move Reproductions" });
     fireEvent.keyDown(grip, { key: "Enter" });
     fireEvent.click(screen.getByRole("menuitem", { name: "Move down" }));
@@ -75,7 +82,7 @@ describe("the filter panel", () => {
   });
 
   it("leaves out the move there is no room for", () => {
-    draw((p) => ({ ...p, filters: { ...p.filters, onMove: vi.fn() } }));
+    drawFilters((p) => ({ ...p, filters: { ...p.filters, onMove: vi.fn() } }));
     const open = within(screen.getByTestId("builds-filters")).getAllByRole("button", { name: /^Move / });
     fireEvent.keyDown(open[0], { key: "Enter" });
     expect(screen.getByRole("menuitem", { name: "Move up" }).getAttribute("aria-disabled")).toBe("true");
@@ -83,18 +90,18 @@ describe("the filter panel", () => {
   });
 
   it("draws no grips when filters cannot be moved yet", () => {
-    draw((p) => ({ ...p, filters: { ...p.filters, onMove: undefined } }));
+    drawFilters((p) => ({ ...p, filters: { ...p.filters, onMove: undefined } }));
     expect(screen.queryByRole("button", { name: /^Move / })).toBeNull();
   });
 
   it("hides the histogram from screen readers and gives the group its words", () => {
-    draw();
+    drawFilters();
     expect(screen.getByRole("group", { name: "Reproductions, 3 or more" })).toBeTruthy();
   });
 
   it("keeps a scale in the taxonomy's order, says so, and toggles a segment", () => {
     const onToggleSegment = vi.fn();
-    draw((p) => ({ ...p, filters: { ...p.filters, onToggleSegment } }));
+    drawFilters((p) => ({ ...p, filters: { ...p.filters, onToggleSegment } }));
     const autonomy = screen.getByRole("region", { name: "Autonomy" });
     expect(within(autonomy).getByText("Scale order")).toBeTruthy();
     fireEvent.click(within(autonomy).getByRole("button", { name: "Fully autonomous" }));
@@ -103,19 +110,11 @@ describe("the filter panel", () => {
   });
 
   it("lists the catalogue by group in the one boxed tile", () => {
-    draw();
+    drawFilters();
     expect(screen.getByText("Classification · 15")).toBeTruthy();
     expect(screen.getByText("People · 3")).toBeTruthy();
   });
 
-  it("closes to its heads on a narrow page until opened", () => {
-    window.matchMedia = ((query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined, addListener: () => undefined, removeListener: () => undefined, onchange: null, dispatchEvent: () => false })) as unknown as typeof window.matchMedia;
-    draw();
-    expect(screen.getByText("Filters")).toBeTruthy();
-    expect(screen.queryByRole("checkbox")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Show filters" }));
-    expect(screen.getAllByRole("checkbox").length).toBeGreaterThan(0);
-  });
 });
 
 describe("the Table", () => {
@@ -184,7 +183,7 @@ describe("the updating state", () => {
   function table(updating: boolean) {
     return render(
       <MemoryRouter>
-        <BuildsTableView {...visionBuildsTableProps().table!} updating={updating} />
+        <BuildsTableView {...visionBuildsTableViewProps()} updating={updating} />
       </MemoryRouter>,
     );
   }
@@ -227,7 +226,7 @@ describe("dragging a filter by its grip", () => {
   });
 
   const drawn = (onDrop = vi.fn()) => {
-    draw((p) => ({ ...p, filters: { ...p.filters, onMove: vi.fn(), onDrop } }));
+    drawFilters((p) => ({ ...p, filters: { ...p.filters, onMove: vi.fn(), onDrop } }));
     return onDrop;
   };
   const slots = () => Array.from(document.querySelectorAll<HTMLElement>("[data-filter-slot]"));
@@ -283,13 +282,13 @@ describe("dragging a filter by its grip", () => {
 
 describe("resizing a checklist", () => {
   it("draws no handle unless resizing is wanted", () => {
-    draw();
+    drawFilters();
     expect(screen.queryByRole("separator")).toBeNull();
   });
 
   it("gives a checklist a handle that says its height and moves from the keyboard", () => {
     const onResize = vi.fn();
-    draw((p) => ({ ...p, filters: { ...p.filters, onResize, heights: { field: 200 } } }));
+    drawFilters((p) => ({ ...p, filters: { ...p.filters, onResize, heights: { field: 200 } } }));
     const handle = screen.getByRole("separator", { name: "Resize Field" });
     expect(handle.getAttribute("aria-valuenow")).toBe("200");
     expect(handle.getAttribute("aria-valuetext")).toBe("200 pixels tall");
@@ -307,7 +306,7 @@ describe("resizing a checklist", () => {
   });
 
   it("limits a checklist to the height it was given, scrolling inside it", () => {
-    draw((p) => ({ ...p, filters: { ...p.filters, onResize: vi.fn(), heights: { field: 200 } } }));
+    drawFilters((p) => ({ ...p, filters: { ...p.filters, onResize: vi.fn(), heights: { field: 200 } } }));
     const list = screen.getByRole("group", { name: "Field values" });
     expect(list.style.maxHeight).toBe("200px");
     expect(list.style.overflowY).toBe("auto");
@@ -316,7 +315,7 @@ describe("resizing a checklist", () => {
   it("reports the height once, on release, and writes the list's height meanwhile", () => {
     (window as unknown as { PointerEvent: unknown }).PointerEvent = class extends MouseEvent {};
     const onResize = vi.fn();
-    draw((p) => ({ ...p, filters: { ...p.filters, onResize, heights: { field: 200 } } }));
+    drawFilters((p) => ({ ...p, filters: { ...p.filters, onResize, heights: { field: 200 } } }));
     const list = screen.getByRole("group", { name: "Field values" });
     vi.spyOn(list, "getBoundingClientRect").mockReturnValue({ height: 200, top: 0, bottom: 200, left: 0, right: 0, width: 0, x: 0, y: 0, toJSON: () => ({}) });
     const handle = screen.getByRole("separator", { name: "Resize Field" });
@@ -422,7 +421,7 @@ const blankRow: TableRowView = {
 };
 
 function drawTable(rows: readonly TableRowView[], columns?: readonly ColumnId[]) {
-  const table = visionBuildsTableProps().table!;
+  const table = visionBuildsTableViewProps();
   return render(
     <MemoryRouter>
       <BuildsTableView {...table} rows={rows} columns={columns ?? table.columns} />
@@ -586,5 +585,46 @@ describe("the Filters button", () => {
     const markup = renderToStaticMarkup(<FiltersButton activeCount={3} />);
     expect(markup).toContain("background:var(--selected-fill)");
     expect(markup).toContain("border:1px solid var(--selected-edge)");
+  });
+});
+
+/* ── BF-06 P2 (A1, C5a, C13) ── */
+
+describe("the Table without the rail", () => {
+  it("the Table page has no Filters aside", () => {
+    draw();
+    expect(screen.queryByRole("complementary", { name: "Filters" })).toBeNull();
+    expect(screen.queryByTestId("builds-filters")).toBeNull();
+  });
+
+  it("the lens row holds Filters, then Sort, then Columns", () => {
+    draw();
+    const filters = screen.getByRole("button", { name: /^Filters/ });
+    const row = filters.parentElement as HTMLElement;
+    const names = within(row).getAllByRole("button").map((button) => (button.getAttribute("aria-label") ?? button.textContent ?? "").replace(/\s+/g, " ").trim());
+    expect(names).toEqual(["Filters, 6 on", "Sort: Reproductions", "Columns 12 of 24"]);
+  });
+
+  it("pressing Filters opens the dialog with the filter panel in it; closing it returns focus to the button", async () => {
+    draw();
+    const button = screen.getByRole("button", { name: /^Filters/ });
+    button.focus();
+    fireEvent.click(button);
+    const dialog = screen.getByRole("dialog", { name: "Filters" });
+    expect(within(dialog).getByTestId("builds-filters")).toBeTruthy();
+    expect(within(dialog).getByRole("checkbox", { name: /Sales/ })).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Done" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(button));
+  });
+
+  it("the table region has a thin scrollbar", () => {
+    // jsdom drops scrollbar-width from an inline style, so it is read from the markup React writes.
+    const markup = renderToStaticMarkup(
+      <MemoryRouter>
+        <BuildsTableView {...visionBuildsTableViewProps()} />
+      </MemoryRouter>,
+    );
+    expect(markup).toMatch(/aria-label="Builds table"[^>]*style="[^"]*scrollbar-width:thin/);
   });
 });

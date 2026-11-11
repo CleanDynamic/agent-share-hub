@@ -39,7 +39,7 @@ export default function VisionBuildsMaps({ viewport = "desktop", state = "popula
       style={{ width: viewport === "mobile" ? 390 : 1440 }}
     >
       <SiteFrameView viewport={viewport} fit="board" board {...devChrome({ theme, current: "gallery", trail: [{ label: "Home", href: "/" }, { label: "Builds" }], dockCurrent: null })}>
-        <BuildsMapsView {...visionBuildsMapsProps({ direction, onDirection: setDirection, panel: <BuildsFiltersView {...visionBuildsTableProps().filters} collapsed={false} /> })} />
+        <BuildsMapsView {...visionBuildsMapsProps({ direction, onDirection: setDirection, panel: <BuildsFiltersView {...visionBuildsTableProps().filters} /> })} />
       </SiteFrameView>
     </div>
   );
