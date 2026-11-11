@@ -85,8 +85,10 @@ export interface MapCardView {
   /** BF-01 P4: the same count as a number: the lamp is drawn only above zero. */
   reproductions: number;
   lit: boolean;
-  /** How many sessions the build has: fewer than two is "One session. A Map needs two." */
+  /** How many sessions the build has: none is "No sessions yet", one is "One session. A Map needs two." */
   sessions: number;
+  /** BF-03 (D2): the Map was not read; the card says so in its summary and the well says nothing. */
+  failed: boolean;
   /** The Map in words, for the drawing's group: "Session 1, Transcribe, is used by session 2 ...". */
   words: string;
   /** Null while this build's Map is still arriving. */
@@ -129,7 +131,7 @@ const pct = (value: number, of: number): string => `${Math.round((value / of) * 
 
 /* ── one Map ── */
 
-function Well({ drawing, single, words }: { drawing: MapDrawing | null; single: boolean; words: string }) {
+function Well({ drawing, note, words }: { drawing: MapDrawing | null; note?: string; words: string }) {
   const { state, handlers } = useInteractive<HTMLDivElement>();
   const scrolls = drawing !== null && (drawing.width > WELL_W || drawing.height > WELL_H);
   const [w, h] = drawing ? [drawing.width, drawing.height] : [WELL_W, WELL_H];
@@ -173,7 +175,7 @@ function Well({ drawing, single, words }: { drawing: MapDrawing | null; single: 
               <span style={{ display: "block", ...ellipsis, fontFamily: DM_MONO, fontSize: 10, lineHeight: "13px", color: t.label }}>{box.meta}</span>
             </span>
           ))}
-          {single ? <span style={{ position: "absolute", left: 0, right: 0, bottom: 14, textAlign: "center", ...text(11.5, 400, t.label) }}>One session. A Map needs two.</span> : null}
+          {note ? <span style={{ position: "absolute", left: 0, right: 0, bottom: 14, textAlign: "center", ...text(11.5, 400, t.label) }}>{note}</span> : null}
         </div>
       ) : (
         <div aria-hidden="true" style={{ position: "absolute", inset: 0, padding: 16, display: "flex", flexDirection: "column", gap: 12, justifyContent: "center" }}>
@@ -197,7 +199,11 @@ export function MapCard({ card, direction, index }: { card: MapCardView; directi
         ...(index >= FIRST_SCREEN_CARDS ? { contentVisibility: "auto", containIntrinsicSize: `auto ${CARD_HEIGHT}px` } : null),
       }}
     >
-      <Well drawing={card.drawings ? card.drawings[direction] : null} single={card.drawings !== null && card.sessions < 2} words={card.words} />
+      <Well
+        drawing={card.drawings ? card.drawings[direction] : null}
+        note={card.drawings === null || card.failed ? undefined : card.sessions === 0 ? "No sessions yet" : card.sessions === 1 ? "One session. A Map needs two." : undefined}
+        words={card.words}
+      />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginTop: 10 }}>
         <span style={{ minWidth: 0 }}>
           <Link to={card.href} style={{ display: "block", ...ellipsis, ...text(13, 500, t.text), textDecoration: "none", borderRadius: r.chip }}>
