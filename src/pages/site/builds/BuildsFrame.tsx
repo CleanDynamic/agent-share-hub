@@ -181,7 +181,7 @@ export function UpdatingStatus({ updating }: { updating?: boolean }) {
 
 /** A control at the board's 28 (44 on a phone): Add, Sort, Columns. Takes a ref and the rest of a button's props, so a
     menu's trigger can be one. */
-export const BuildsControl = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement>>(function BuildsControl({ children, ...rest }, ref) {
+export const BuildsControl = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { selected?: boolean }>(function BuildsControl({ children, selected = false, ...rest }, ref) {
   const phone = useIsPhone();
   /* A menu's trigger hands this its own pointer and focus handlers: they are chained, not replaced (a Radix menu opens on pointer down). */
   const { state, handlers } = useInteractive<HTMLButtonElement>(rest);
@@ -206,12 +206,24 @@ export const BuildsControl = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<
         color: t.text,
         whiteSpace: "nowrap",
         cursor: "pointer",
-        ...controlPaint(state),
+        ...(selected ? { background: t.selectedFill, border: `1px solid ${t.selectedEdge}` } : controlPaint(state)),
         ...ring(state.focusVisible),
       }}
     >
       {children}
     </button>
+  );
+});
+
+/** BF-06 (A1, G4): the one Filters button of Table, Maps and Classification. The word, then the count when a filter is on;
+    with one on it is drawn in the selected look (not the primary: Apply is the dialog's one primary). It opens a dialog. */
+export const FiltersButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { activeCount: number }>(function FiltersButton({ activeCount, ...rest }, ref) {
+  const on = activeCount > 0;
+  return (
+    <BuildsControl ref={ref} aria-haspopup="dialog" aria-label={on ? `Filters, ${activeCount} on` : "Filters"} {...rest} selected={on}>
+      <span style={on ? { color: t.text, fontWeight: 500 } : { color: t.label }}>Filters</span>
+      {on ? <span style={{ color: t.text }}>{activeCount}</span> : null}
+    </BuildsControl>
   );
 });
 

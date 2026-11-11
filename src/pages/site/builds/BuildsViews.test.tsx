@@ -3,6 +3,7 @@
 // have words and their bars are hidden, and a pure view takes everything through props.
 
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -13,6 +14,7 @@ import { STALE_AFTER_DAYS } from "@/lib/build/signals";
 
 import { ALL_COLUMNS, BuildsTableView, type ColumnId, type TableRowView } from "./BuildsTableView";
 import { BuildsView, type BuildsViewProps } from "./BuildsView";
+import { FiltersButton } from "./BuildsFrame";
 import { tableRow } from "./buildsModel";
 
 /** A wide window: every min-width query matches, so the two columns are drawn. */
@@ -561,5 +563,28 @@ describe("the stored counts", () => {
     const never = { id: "n", slug: "n", title: "Never counted", shape: "", madeWith: [], reproductionCount: 0, lastConfirmedAt: null, lastConfirmedModel: null, publishedAt: null, rebuildCount: 0, maker: null, open: { count: 0 }, stepCount: null, sessionCount: null };
     drawTable([tableRow(never, Date.parse("2026-11-10T12:00:00Z"))]);
     for (const column of ["Steps", "Sessions"]) expect(within(cellIn(column)).getByTestId("empty-value")).toBeTruthy();
+  });
+});
+
+/* ── BF-06 P1 (A1, G4) ── */
+
+describe("the Filters button", () => {
+  it('FiltersButton: with no filter on it reads "Filters" in the control look', () => {
+    render(<FiltersButton activeCount={0} />);
+    const button = screen.getByRole("button", { name: "Filters" });
+    expect(button.textContent).toBe("Filters");
+    expect(button.getAttribute("aria-pressed")).toBeNull();
+    expect(button.getAttribute("aria-haspopup")).toBe("dialog");
+    // jsdom drops a `var()` from background and border, so the look is read from the markup React writes.
+    expect(renderToStaticMarkup(<FiltersButton activeCount={0} />)).not.toContain("var(--selected-fill)");
+  });
+
+  it('FiltersButton: with three on it reads "Filters 3", is drawn in the selected look, and its name is "Filters, 3 on"', () => {
+    render(<FiltersButton activeCount={3} />);
+    const button = screen.getByRole("button", { name: "Filters, 3 on" });
+    expect(button.textContent).toBe("Filters3");
+    const markup = renderToStaticMarkup(<FiltersButton activeCount={3} />);
+    expect(markup).toContain("background:var(--selected-fill)");
+    expect(markup).toContain("border:1px solid var(--selected-edge)");
   });
 });
