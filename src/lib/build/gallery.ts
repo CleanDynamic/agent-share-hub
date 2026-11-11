@@ -1435,6 +1435,42 @@ export function listBuildsTable(options: BuildsTableOptions = {}): Promise<Build
   return withReviewFilter((reviews) => listBuildsTableRows(options, reviews));
 }
 
+/**
+ * BF-08: the Table's filters, between the base query and the lens: what the list applies and what its counts apply, so a count
+ * cannot drift from the rows. `search` is the feed's clause for the query, worked out (awaited) before the request.
+ */
+function applyTableFilters(query: TableQuery, options: BuildsTableOptions, context: { lens: GalleryLens; now: Date; withCounts: boolean; search: string | null }): TableQuery {
+  const { lens, now, withCounts, search } = context;
+  if (options.stillOpen && lens !== "unsolved") query = withAskFilter(query);
+
+  const madeWith = madeWithSpellings(options.tool);
+  if (madeWith.length > 0) query = query.overlaps("made_with", madeWith);
+  const shapes = cleanShapes(options.shapes ? [...options.shapes] : undefined);
+  if (shapes.length > 0) query = query.in("shape", shapes);
+  if (options.pattern) query = query.contains("patterns", [options.pattern]);
+  // A second `or` is an AND with the first: PostgREST ANDs repeated filters.
+  for (const [facet, keys] of facetGroups(options.facets ?? [])) {
+    query = facet === "stack" ? query.or(stackClause(keys)) : query.overlaps("facets", keys);
+  }
+  if (search) query = query.or(search);
+  // SV-23 P1: a range reads its stored column, so it is only asked while the columns are there.
+  if (withCounts) {
+    for (const key of RANGE_KEYS) {
+      const range = options.ranges?.[key];
+      if (range?.min !== undefined) query = query.gte(RANGE_FILTERS[key].column, range.min);
+      if (range?.max !== undefined) query = query.lte(RANGE_FILTERS[key].column, range.max);
+    }
+  }
+  // SV-23 P2: the proof. Last confirmed and Confirmed or stale read `last_confirmed_at` of builds that have been run.
+  if (options.confirmedWithin !== undefined) query = query.gte("last_confirmed_at", confirmedCutoff(options.confirmedWithin, now));
+  if (options.confirmedState === "confirmed") query = query.gte("reproduction_count", 1).gte("last_confirmed_at", confirmedCutoff(STALE_AFTER_DAYS, now));
+  if (options.confirmedState === "stale") query = query.gte("reproduction_count", 1).lt("last_confirmed_at", confirmedCutoff(STALE_AFTER_DAYS, now));
+  // Works on model: `worked_models` holds model_key() of each model a run worked on; any spelling of the chosen version matches.
+  const worksOn = withCounts && options.worksOn ? modelById(options.worksOn) : null;
+  if (worksOn) query = query.overlaps("worked_models", modelKeysOf(worksOn));
+  return query;
+}
+
 async function listBuildsTableRows(options: BuildsTableOptions, reviews: boolean): Promise<BuildsTablePage> {
   const limit = Math.max(1, Math.min(options.limit ?? BUILDS_TABLE_PAGE_SIZE, 100));
   const offset = Math.max(0, options.offset ?? 0);
@@ -1450,33 +1486,7 @@ async function listBuildsTableRows(options: BuildsTableOptions, reviews: boolean
       .in("status", ["published", "gallery"])
       .or(galleryPredicate())
       .gte("build_reproductions.confirmed_at", runsSince(now).toISOString());
-    if (options.stillOpen && lens !== "unsolved") query = withAskFilter(query);
-
-    const madeWith = madeWithSpellings(options.tool);
-    if (madeWith.length > 0) query = query.overlaps("made_with", madeWith);
-    const shapes = cleanShapes(options.shapes ? [...options.shapes] : undefined);
-    if (shapes.length > 0) query = query.in("shape", shapes);
-    if (options.pattern) query = query.contains("patterns", [options.pattern]);
-    // A second `or` is an AND with the first: PostgREST ANDs repeated filters.
-    for (const [facet, keys] of facetGroups(options.facets ?? [])) {
-      query = facet === "stack" ? query.or(stackClause(keys)) : query.overlaps("facets", keys);
-    }
-    if (search) query = query.or(search);
-    // SV-23 P1: a range reads its stored column, so it is only asked while the columns are there.
-    if (withCounts) {
-      for (const key of RANGE_KEYS) {
-        const range = options.ranges?.[key];
-        if (range?.min !== undefined) query = query.gte(RANGE_FILTERS[key].column, range.min);
-        if (range?.max !== undefined) query = query.lte(RANGE_FILTERS[key].column, range.max);
-      }
-    }
-    // SV-23 P2: the proof. Last confirmed and Confirmed or stale read `last_confirmed_at` of builds that have been run.
-    if (options.confirmedWithin !== undefined) query = query.gte("last_confirmed_at", confirmedCutoff(options.confirmedWithin, now));
-    if (options.confirmedState === "confirmed") query = query.gte("reproduction_count", 1).gte("last_confirmed_at", confirmedCutoff(STALE_AFTER_DAYS, now));
-    if (options.confirmedState === "stale") query = query.gte("reproduction_count", 1).lt("last_confirmed_at", confirmedCutoff(STALE_AFTER_DAYS, now));
-    // Works on model: `worked_models` holds model_key() of each model a run worked on; any spelling of the chosen version matches.
-    const worksOn = withCounts && options.worksOn ? modelById(options.worksOn) : null;
-    if (worksOn) query = query.overlaps("worked_models", modelKeysOf(worksOn));
+    query = applyTableFilters(query, options, { lens, now, withCounts, search });
     query = leaveOutReviews(applyLensFilters(query, lens), reviews);
 
     return (feedOrder(query as unknown as FeedQuery, options.sort ?? "reproduced") as unknown as TableQuery)
