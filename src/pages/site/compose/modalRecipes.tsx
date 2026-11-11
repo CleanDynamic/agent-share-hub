@@ -391,9 +391,10 @@ export const areaStyle = (phone: boolean, rows: number, extra: CSSProperties = {
   ...WELL,
   boxSizing: "border-box",
   width: "100%",
-  minHeight: rows * 20 + 20,
-  padding: "9px 10px",
-  borderRadius: 8,
+  /* S12: at least 64; otherwise its rows of 20, the padding and the 1px edges. */
+  minHeight: Math.max(space[16], rows * 20 + 2 * space[2] + 2),
+  padding: `${space[2]}px ${space[3]}px`,
+  borderRadius: r.control,
   resize: "vertical",
   ...type(phone ? 16 : 13, 400, t.text, 20),
   ...extra,

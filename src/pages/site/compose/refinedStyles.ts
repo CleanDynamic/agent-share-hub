@@ -179,8 +179,8 @@ export const typedField = (phone: boolean, extra: CSSProperties = {}): CSSProper
 /** CA-03: a well you type several lines in: the same, growing with its rows. */
 export const typedArea = (phone: boolean, extra: CSSProperties = {}): CSSProperties => ({
   ...wellField,
-  ...(phone ? { minHeight: 44 } : null),
-  padding: "6px 8px",
+  minHeight: space[16],
+  padding: `${space[2]}px ${space[3]}px`,
   fontSize: phone ? 16 : 13,
   lineHeight: "20px",
   resize: "vertical",
