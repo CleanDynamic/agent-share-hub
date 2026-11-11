@@ -143,14 +143,26 @@ describe("BuildsPage", () => {
     expect(getClassificationFacets).toHaveBeenCalledTimes(1);
   });
 
-  it("links a Classification value to the Table with that facet added, and the view dropped", async () => {
+  const withEducation = () =>
     listBuildsTable.mockResolvedValue({ builds: [{ ...build(1), classifiedAs: { ...emptyClassification(), declared: { ...emptyClassification().declared, field: [{ id: "education" }] } } }], total: 1 });
+
+  it("Classification: a value's link keeps view=classification and adds the facet", async () => {
+    withEducation();
     renderAt("/builds?view=classification&f=field%3Alaw");
     const link = await screen.findByRole("link", { name: "Education" });
-    expect(link.getAttribute("href")).toBe("/builds?f=field%3Alaw&f=field%3Aeducation");
-    fireEvent.click(link);
-    await waitFor(() => expect(address).toBe("/builds?f=field%3Alaw&f=field%3Aeducation"));
-    expect(await screen.findByTestId("builds-page")).toBeTruthy();
+    const query = new URLSearchParams((link.getAttribute("href") ?? "").split("?")[1]);
+    expect(query.get("view")).toBe("classification");
+    expect(query.getAll("f")).toEqual(["field:law", "field:education"]);
+  });
+
+  it("Classification: pressing a value leaves the reader on Classification with the cards filtered", async () => {
+    withEducation();
+    renderAt("/builds?view=classification&f=field%3Alaw");
+    fireEvent.click(await screen.findByRole("link", { name: "Education" }));
+    await waitFor(() => expect(address).toBe("/builds?view=classification&f=field%3Alaw&f=field%3Aeducation"));
+    await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ facets: ["field:law", "field:education"] })));
+    expect(screen.getByTestId("builds-classification")).toBeTruthy();
+    expect(within(screen.getByRole("navigation", { name: "View" })).getByRole("link", { name: "Classification" }).getAttribute("aria-current")).toBe("page");
   });
 
   it("writes a checked value to the address, and the list follows it", async () => {
@@ -569,6 +581,22 @@ describe("BF-02 one Clear all", () => {
     fireEvent.click(within(chips).getByRole("button", { name: "Clear all" }));
     await waitFor(() => expect(address).toBe("/builds?lens=rebuilt&sort=newest"));
   });
+
+  for (const view of ["maps", "classification"] as const) {
+    it(`Classification and Maps: Clear all keeps the view and drops every filter (${view})`, async () => {
+      renderAt(`/builds?view=${view}&lens=rebuilt&f=field%3Alaw&open=1&within=30&sort=newest&q=notes&set=${SET}`);
+      const chips = await screen.findByRole("group", { name: "Active filters" });
+      fireEvent.click(within(chips).getByRole("button", { name: "Clear all" }));
+      await waitFor(() => expect(address).toBe(`/builds?view=${view}&lens=rebuilt&sort=newest`));
+    });
+
+    it(`removing a chip in ${view} drops only that filter and keeps the view`, async () => {
+      renderAt(`/builds?view=${view}&f=field%3Alaw&open=1`);
+      const chips = await screen.findByRole("group", { name: "Active filters" });
+      fireEvent.click(within(chips).getByRole("button", { name: /^Remove filter Still open/ }));
+      await waitFor(() => expect(address).toBe(`/builds?view=${view}&f=field%3Alaw`));
+    });
+  }
 
   for (const view of [undefined, "maps", "classification"] as const) {
     const on = view ? `view=${view}&` : "";

@@ -2,8 +2,8 @@
    session uses something from another, part labels. The board is `design/reference/vision/dusk/builds-maps.html`.
 
    The page has no filter column here (the board differs from the Table's), so this draws the whole page: the Table's own
-   head (BF-03) with its sentence and the view switch, one row (Filters with the active count, the first four chips, the
-   direction switch, "n with a Map") and the grid. Filters opens the Table's own panel, given as `panel`, so the filters are the
+   head (BF-03) with its sentence and the view switch, one row (Filters with the active count, the direction switch,
+   "n with a Map"), the Table's chip row (BF-04: every chip and Clear all) and the grid. Filters opens the Table's own panel, given as `panel`, so the filters are the
    Table's, kept across views.
 
    WHERE THINGS ARE comes from the composer's layout (`layoutSessionMap`), turned into the well's 400 x 220 space by
@@ -18,7 +18,6 @@ import { Link } from "react-router-dom";
 
 import { Segmented } from "@/components/brand/Segmented";
 import { Skeleton } from "@/components/brand/Skeleton";
-import { ActiveFilterChip } from "@/components/vision/ActiveFilterChip";
 import type { GalleryViewMode } from "@/lib/build/galleryParams";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -27,7 +26,7 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { BuildsControl, BuildsHead, UpdatingStatus, ViewSwitch, ellipsis, text, useCardColumns } from "./BuildsFrame";
-import { RowLamp, type TableChip } from "./BuildsTableView";
+import { ActiveFilters, RowLamp, type TableChip } from "./BuildsTableView";
 
 /** The well, in the board's own units. */
 export const WELL_W = 400;
@@ -100,9 +99,10 @@ export interface BuildsMapsViewProps {
   hrefFor: (view: GalleryViewMode) => string;
   onViewIntent?: (view: GalleryViewMode) => void;
   activeCount: number;
-  /** Every active filter; the first four are drawn and the rest are "+ n more". */
+  /** Every active filter, drawn as the Table draws them. */
   chips: readonly TableChip[];
   onRemoveChip: (key: string) => void;
+  onClearAll: () => void;
   /** The Table's filter panel, drawn under the row when Filters is open. */
   panel?: ReactNode;
   direction: MapsDirection;
@@ -225,11 +225,9 @@ export function MapCard({ card, direction, index }: { card: MapCardView; directi
 const MAPS_PARTS = [{ text: "Each build's Map: one box per session, one line where a tile in one session uses something from another." }];
 
 export default function BuildsMapsView(props: BuildsMapsViewProps) {
-  const { view, hrefFor, onViewIntent, activeCount, chips, onRemoveChip, panel, direction, onDirection, buildsLabel, withMap, cards, onMore, loadingMore, empty, notice, updating } = props;
+  const { view, hrefFor, onViewIntent, activeCount, chips, onRemoveChip, onClearAll, panel, direction, onDirection, buildsLabel, withMap, cards, onMore, loadingMore, empty, notice, updating } = props;
   const [open, setOpen] = useState(false);
   const columns = useCardColumns();
-  const shown = chips.slice(0, 4);
-  const rest = chips.length - shown.length;
   return (
     <div data-testid="builds-maps" style={ROOT}>
       <BuildsHead figure={buildsLabel} parts={MAPS_PARTS} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
@@ -239,10 +237,6 @@ export default function BuildsMapsView(props: BuildsMapsViewProps) {
           Filters
           {activeCount > 0 ? <span style={{ color: t.label }}>{activeCount}</span> : null}
         </BuildsControl>
-        {shown.map((chip) => (
-          <ActiveFilterChip key={chip.key} name={chip.name} value={chip.value} onRemove={() => onRemoveChip(chip.key)} />
-        ))}
-        {rest > 0 ? <span style={text(12, 400, t.label)}>{`+ ${rest} more`}</span> : null}
         <span style={{ flex: 1 }} />
         <Segmented<MapsDirection>
           label="Map direction"
@@ -259,6 +253,8 @@ export default function BuildsMapsView(props: BuildsMapsViewProps) {
         {withMap !== null ? <span style={text(12, 400, t.label)}>{`${withMap} with a Map`}</span> : null}
         <UpdatingStatus updating={updating} />
       </div>
+
+      <ActiveFilters chips={chips} onRemove={onRemoveChip} onClearAll={onClearAll} />
 
       {open && panel ? <div style={{ marginTop: 24, maxWidth: 256 }}>{panel}</div> : null}
 

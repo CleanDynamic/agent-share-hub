@@ -1,13 +1,13 @@
 /* SV-13: the Classification view of Builds, pure: each build's classification as a card, every value saying where it came
-   from and linking to the Table filtered by it. The board is `design/reference/vision/dusk/builds-classification.html`.
+   from and linking to this view filtered by it. The board is `design/reference/vision/dusk/builds-classification.html`.
 
    Like Maps, the board has no filter column, so this draws the whole page: the head with its sentence and the view
-   switch, one row (Filters with the active count, "Facets shown n of 15", and the key on the right) and the grid. Filters
+   switch, one row (Filters with the active count, "Facets shown n of 15"), the Table's chip row (BF-04), the key to the small labels (BF-04: its own line, directly above the grid) and the grid. Filters
    opens the Table's own panel, given as `panel`. Facets shown opens a checklist of the 15 facets; the choice is the
    page's (`facets`, `onFacets`), and the last facet cannot be unchecked.
 
    A card is a module: title, "@maker · Shape", the reproductions and the lamp, then one row per facet shown: its name and
-   source in a 112 column and the values as links. A value is a real link, underlined on hover with no fade. Cards past
+   source in a 112 column and the values as links. A value is a real link, underlined dotted at rest and solid on hover with no fade. Cards past
    the first screen are skipped by the browser until they come near (`content-visibility`). */
 
 import { useState, type CSSProperties, type ReactNode } from "react";
@@ -25,7 +25,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { BuildsControl, BuildsHead, UpdatingStatus, ViewSwitch, ellipsis, text, useCardColumns } from "./BuildsFrame";
-import { RowLamp } from "./BuildsTableView";
+import { ActiveFilters, RowLamp, type TableChip } from "./BuildsTableView";
 import { ALL_FACETS, type ClassCardView, type ClassRowView, type ClassValueView } from "./classificationModel";
 
 export interface BuildsClassificationViewProps {
@@ -35,6 +35,10 @@ export interface BuildsClassificationViewProps {
   /** "18 builds". */
   buildsLabel: string;
   activeCount: number;
+  /** BF-04 (X3): every active filter, drawn as the Table draws them, under the toolbar. */
+  chips: readonly TableChip[];
+  onRemoveChip: (key: string) => void;
+  onClearAll: () => void;
   /** The Table's filter panel, drawn under the row when Filters is open. */
   panel?: ReactNode;
   /** The facets shown, and a change to them. */
@@ -56,7 +60,7 @@ const FIRST_SCREEN_CARDS = 6;
 /** A card's height: its head and padding, and a row with its source line is 55 (54 and a hairline). */
 const cardHeight = (rows: number): number => 32 + 38 + 16 + rows * 55;
 
-/** A value: `--text`, underlined on hover with no fade; the maker's own words are plain text. */
+/** A value: `--text`, underlined dotted at rest and solid on hover with no fade (BF-04 E2); the maker's own words are plain text. */
 function ValueLink({ value }: { value: ClassValueView }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   if (value.href === null) return <span>{value.label}</span>;
@@ -67,7 +71,8 @@ function ValueLink({ value }: { value: ClassValueView }) {
       {...handlers}
       style={{
         color: t.text,
-        textDecoration: state.hovered ? "underline" : "none",
+        textDecorationLine: "underline",
+        textDecorationStyle: state.hovered ? "solid" : "dotted",
         textDecorationColor: t.label,
         textUnderlineOffset: 3,
         borderRadius: r.chip,
@@ -103,6 +108,8 @@ function FacetRow({ row }: { row: ClassRowView }) {
 }
 
 export function ClassificationCard({ card, index }: { card: ClassCardView; index: number }) {
+  /* BF-04 (E4): a build with nothing in any shown facet is one sentence, not rows that each say nothing. */
+  const blank = card.rows.every((row) => row.values.length === 0);
   return (
     <article
       data-testid="classification-card"
@@ -111,7 +118,7 @@ export function ClassificationCard({ card, index }: { card: ClassCardView; index
         border: `1px solid ${t.moduleBorder}`,
         borderRadius: r.card,
         padding: 16,
-        ...(index >= FIRST_SCREEN_CARDS ? { contentVisibility: "auto", containIntrinsicSize: `auto ${cardHeight(card.rows.length)}px` } : null),
+        ...(index >= FIRST_SCREEN_CARDS ? { contentVisibility: "auto", containIntrinsicSize: `auto ${cardHeight(blank ? 1 : card.rows.length)}px` } : null),
       }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
@@ -129,11 +136,15 @@ export function ClassificationCard({ card, index }: { card: ClassCardView; index
           {card.reproductions > 0 ? <RowLamp lit={card.lit} /> : null}
         </span>
       </div>
-      <dl style={{ margin: "16px 0 0" }}>
-        {card.rows.map((row) => (
-          <FacetRow key={row.facet} row={row} />
-        ))}
-      </dl>
+      {blank ? (
+        <p style={{ ...text(12.5, 400, t.label), margin: "16px 0 0" }}>Not classified yet</p>
+      ) : (
+        <dl style={{ margin: "16px 0 0" }}>
+          {card.rows.map((row) => (
+            <FacetRow key={row.facet} row={row} />
+          ))}
+        </dl>
+      )}
     </article>
   );
 }
@@ -162,7 +173,7 @@ function FacetChooser({ facets, onFacets }: Pick<BuildsClassificationViewProps, 
 const CLASSIFICATION_PARTS = [{ text: "Classification of each build" }, { text: "select a value to filter by it" }];
 
 export default function BuildsClassificationView(props: BuildsClassificationViewProps) {
-  const { view, hrefFor, onViewIntent, buildsLabel, activeCount, panel, facets, onFacets, cards, onMore, loadingMore, empty, updating } = props;
+  const { view, hrefFor, onViewIntent, buildsLabel, activeCount, chips, onRemoveChip, onClearAll, panel, facets, onFacets, cards, onMore, loadingMore, empty, updating } = props;
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [facetsOpen, setFacetsOpen] = useState(false);
   const columns = useCardColumns();
@@ -179,12 +190,10 @@ export default function BuildsClassificationView(props: BuildsClassificationView
           <span style={{ color: t.label }}>Facets shown</span>
           <span>{`${facets.length} of ${ALL_FACETS.length}`}</span>
         </BuildsControl>
-        <span style={{ flex: 1 }} />
-        <span style={text(12, 400, t.label)}>
-          Under each facet: <span style={{ color: t.text2 }}>from n tiles</span>, <span style={{ color: t.text2 }}>stated</span> by the maker, or <span style={{ color: t.text2 }}>corrected</span> by the maker
-        </span>
         <UpdatingStatus updating={updating} />
       </div>
+
+      <ActiveFilters chips={chips} onRemove={onRemoveChip} onClearAll={onClearAll} />
 
       {filtersOpen && panel ? <div style={{ marginTop: 24, maxWidth: 256 }}>{panel}</div> : null}
       {facetsOpen ? (
@@ -193,10 +202,15 @@ export default function BuildsClassificationView(props: BuildsClassificationView
         </div>
       ) : null}
 
+      <p data-testid="classification-key" style={{ ...text(12, 400, t.label), margin: "16px 0 0" }}>
+        Under each facet: <span style={{ color: t.text2 }}>from n tiles</span>, <span style={{ color: t.text2 }}>derived</span> when the tiles were not kept, <span style={{ color: t.text2 }}>stated</span> by the maker, or{" "}
+        <span style={{ color: t.text2 }}>corrected</span> by the maker
+      </p>
+
       {cards.length === 0 && empty ? (
-        <div style={{ marginTop: 32 }}>{empty}</div>
+        <div style={{ marginTop: 16 }}>{empty}</div>
       ) : (
-        <div data-testid="builds-cards" aria-busy={updating === true} style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, alignItems: "start", marginTop: 32, paddingBottom: onMore ? 24 : 64, ...(updating ? { opacity: 0.5 } : null) }}>
+        <div data-testid="builds-cards" aria-busy={updating === true} style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, alignItems: "start", marginTop: 16, paddingBottom: onMore ? 24 : 64, ...(updating ? { opacity: 0.5 } : null) }}>
           {cards.map((card, index) => (
             <ClassificationCard key={card.id} card={card} index={index} />
           ))}

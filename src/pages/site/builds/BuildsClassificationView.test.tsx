@@ -75,6 +75,101 @@ describe("a card", () => {
   });
 });
 
+describe("BF-04 values that can be pressed", () => {
+  const drawValues = () =>
+    draw((p) => ({
+      ...p,
+      cards: [{ ...p.cards[0], rows: [{ ...p.cards[0].rows[0], values: [{ label: "Education", href: "/builds?f=field%3Aeducation" }, { label: "Own words", href: null }] }] }],
+    }));
+
+  it("a value with a link is underlined at rest", () => {
+    drawValues();
+    const link = screen.getByRole("link", { name: "Education" });
+    expect(link.style.textDecorationLine).toBe("underline");
+    expect(link.style.textDecorationStyle).toBe("dotted");
+  });
+
+  it("a hovered value draws the underline solid, where hover is a fine pointer", () => {
+    const base = window.matchMedia;
+    window.matchMedia = ((query: string) => ({ ...base(query), matches: true })) as unknown as typeof window.matchMedia;
+    drawValues();
+    const link = screen.getByRole("link", { name: "Education" });
+    fireEvent.mouseEnter(link);
+    expect(link.style.textDecorationStyle).toBe("solid");
+  });
+
+  it("a value with no link is plain text", () => {
+    drawValues();
+    const word = screen.getByText("Own words");
+    expect(word.tagName).toBe("SPAN");
+    expect(word.style.textDecorationLine).toBe("");
+  });
+});
+
+describe("BF-04 the key", () => {
+  it("names all four sources: from n tiles, derived, stated, corrected", () => {
+    draw();
+    const key = screen.getByTestId("classification-key");
+    for (const word of ["from n tiles", "derived", "stated", "corrected"]) expect(within(key).getByText(word)).toBeTruthy();
+  });
+
+  it("is the element directly before the card grid", () => {
+    draw();
+    expect(screen.getByTestId("classification-key").nextElementSibling).toBe(screen.getByTestId("builds-cards"));
+  });
+
+  it("is directly before the empty state when there are no cards", () => {
+    draw((p) => ({ ...p, cards: [], empty: <p>Nothing here</p> }));
+    expect(screen.getByTestId("classification-key").nextElementSibling?.textContent).toBe("Nothing here");
+  });
+
+  it("is not in the toolbar beside Filters", () => {
+    draw();
+    expect(screen.getByRole("button", { name: /Facets shown/ }).parentElement?.contains(screen.getByTestId("classification-key"))).toBe(false);
+  });
+});
+
+describe("BF-04 an unclassified card", () => {
+  it('a card whose shown facets are all empty says "Not classified yet" once and draws no facet rows', () => {
+    draw((p) => ({ ...p, cards: [{ ...p.cards[0], rows: p.cards[0].rows.map((row) => ({ ...row, source: "", values: [] })) }] }));
+    const card = within(screen.getByTestId("classification-card"));
+    expect(card.getAllByText("Not classified yet")).toHaveLength(1);
+    expect(card.queryAllByRole("term")).toHaveLength(0);
+    expect(card.queryAllByTestId("empty-value")).toHaveLength(0);
+  });
+
+  it("a card with one value among empty facets draws every row as before", () => {
+    draw((p) => ({ ...p, cards: [{ ...p.cards[0], rows: p.cards[0].rows.map((row, index) => ({ ...row, values: index === 0 ? [{ label: "Education", href: null }] : [] })) }] }));
+    const card = within(screen.getByTestId("classification-card"));
+    expect(card.getAllByRole("term")).toHaveLength(8);
+    expect(card.queryByText("Not classified yet")).toBeNull();
+  });
+});
+
+describe("BF-04 the chip row", () => {
+  it("active filters are drawn as chips with Clear all under the toolbar", () => {
+    const onClearAll = vi.fn();
+    draw((p) => ({ ...p, onClearAll }));
+    const row = screen.getByRole("group", { name: "Active filters" });
+    expect(within(row).getAllByRole("button", { name: /^Remove filter/ })).toHaveLength(6);
+    expect(screen.getByRole("button", { name: /Facets shown/ }).parentElement?.nextElementSibling).toBe(row);
+    fireEvent.click(within(row).getByRole("button", { name: "Clear all" }));
+    expect(onClearAll).toHaveBeenCalledTimes(1);
+  });
+
+  it("removing a chip calls onRemoveChip with its key", () => {
+    const onRemoveChip = vi.fn();
+    draw((p) => ({ ...p, onRemoveChip }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove filter Field" }));
+    expect(onRemoveChip).toHaveBeenCalledWith("Field");
+  });
+
+  it("no active filter draws no chip row", () => {
+    draw((p) => ({ ...p, chips: [], activeCount: 0 }));
+    expect(screen.queryByRole("group", { name: "Active filters" })).toBeNull();
+  });
+});
+
 describe("Facets shown", () => {
   const open = () => fireEvent.click(screen.getByRole("button", { name: /Facets shown/ }));
 
