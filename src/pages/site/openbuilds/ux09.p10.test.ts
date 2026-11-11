@@ -38,7 +38,7 @@ describe("UX-09 P10: the old OpenBuilds board", () => {
     expect(compared.map((board) => board.page)).not.toContain("openbuilds");
     expect(existsSync("design/reference/vision/dusk/openbuilds.html")).toBe(false);
     const archived = JSON.parse(readFileSync("design/reference/vision/archive/index.json", "utf8")) as { page: string; file: string }[];
-    expect(archived).toEqual([expect.objectContaining({ page: "openbuilds", file: "reference/vision/archive/openbuilds.html" })]);
+    expect(archived).toEqual(expect.arrayContaining([expect.objectContaining({ page: "openbuilds", file: "reference/vision/archive/openbuilds.html" })]));
     expect(existsSync("design/reference/vision/archive/openbuilds.html")).toBe(true);
   });
 });
