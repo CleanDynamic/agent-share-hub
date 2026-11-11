@@ -562,7 +562,7 @@ export function SegmentedField<V extends string>({ label, items, value, onChange
       data-ui="segmented"
       data-testid={testId}
       onKeyDown={onKeyDown}
-      style={{ display: "flex", flexWrap: "wrap", gap: 2, padding: 2, boxSizing: "border-box", width: "100%", minWidth: 0, background: t.segTrack, border: `1px solid ${t.segBorder}`, borderRadius: 8 }}
+      style={{ display: "flex", flexWrap: "wrap", gap: 2, padding: 2, boxSizing: "border-box", width: "100%", minWidth: 0, background: t.segTrack, border: `1px solid ${t.segBorder}`, borderRadius: r.card }}
     >
       {items.map((item) => (
         <Segment key={item.value} item={item} current={item.value === value} tabStop={item.value === stop} phone={phone} onPick={() => onChange(item.value)} />
@@ -585,9 +585,9 @@ function Segment<V extends string>({ item, current, tabStop, phone, onPick }: { 
       style={{
         flex: "1 1 0",
         boxSizing: "border-box",
-        height: phone ? 40 : 28,
-        padding: "0 10px",
-        borderRadius: 6,
+        height: phone ? size.touch : size.control,
+        padding: `0 ${space[3]}px`,
+        borderRadius: r.control,
         border: "1px solid transparent",
         background: "transparent",
         whiteSpace: "nowrap",
@@ -659,10 +659,10 @@ function OptionButton({ label, chosen, disabled, phone, onPick }: { label: strin
         display: "block",
         width: "100%",
         minWidth: 0,
-        height: phone ? 44 : 32,
-        padding: "0 10px",
+        height: phone ? size.touch : size.control,
+        padding: `0 ${space[3]}px`,
         textAlign: "left",
-        borderRadius: 8,
+        borderRadius: r.control,
         background: "transparent",
         border: `1px solid ${t.windowBorder}`,
         ...type(12.5, 400, t.text2),

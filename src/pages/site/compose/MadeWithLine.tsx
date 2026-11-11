@@ -92,9 +92,9 @@ function Toggle({ chip, phone, onToggle }: { chip: MadeWithChip; phone: boolean;
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 6,
-        height: phone ? 44 : 30,
-        padding: "0 9px",
+        gap: space[2],
+        height: phone ? size.touch : size.control,
+        padding: `0 ${space[3]}px`,
         borderRadius: r.control,
         border: `1px solid ${state.hovered ? t.text2 : t.line}`,
         background: t.field,
