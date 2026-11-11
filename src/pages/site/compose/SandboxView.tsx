@@ -409,7 +409,7 @@ function AddLabel({ name, line, enabled = true }: { name: string; line: string; 
   );
 }
 
-const MENU_RULE = { height: 1, margin: "4px 0", background: t.hairline } as const;
+const MENU_RULE = { height: 1, margin: `${space[1]}px 0`, background: t.hairline } as const;
 
 const addItem = (enabled: boolean): CSSProperties => ({
   ...menuItem(enabled, false),
@@ -418,9 +418,10 @@ const addItem = (enabled: boolean): CSSProperties => ({
   flexDirection: "column",
   alignItems: "flex-start",
   justifyContent: "center",
-  gap: 2,
-  minHeight: 44,
-  padding: "6px 12px",
+  gap: space[1],
+  minHeight: size.row,
+  padding: `${space[2]}px ${space[3]}px`,
+  borderRadius: r.control,
 });
 
 /** CA-14 P5: where a new step tile goes: a session's own "+ Add step tile" row names its session. */
