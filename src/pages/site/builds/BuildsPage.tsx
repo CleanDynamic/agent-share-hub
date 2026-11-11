@@ -2,8 +2,8 @@
 
    THE ADDRESS IS THE STATE. The view, the lens, the filters, the sort and the query are read from the address
    (`parseGalleryParams`) on every render and written back with `galleryHref`; nothing is copied into state. A change is
-   the same page with new parameters: the old rows stay until the new arrive, and nothing fades. Which filters are open
-   and how a checklist is ordered are the panel's own, kept for the visit.
+   the same page with new parameters: the old rows stay until the new arrive, and nothing fades. How a checklist is
+   ordered is the panel's own, kept for the visit.
 
    ONE ROUND. The Table's first page, the stats, the lens counts and both facet reads start together; the first screen
    needs nothing after them. The classifications and the makers come in the list's own select (`listBuildsTable`).
@@ -24,9 +24,8 @@
    only when the address names one. A set is opened with the same view the reader is on. Saving, renaming, making public and
    deleting write, then the lists are read again; Library is kept in step by the data layer.
 
-   SV-24 P2: THE LAYOUT IS THE READER'S (`buildsLayout.ts`, `useBuildsLayout`): the filters' order (dragged by the grip, or Move up
-   and Move down from its menu), which are open, a checklist's height, the Table's columns (the Columns chooser, 12 of 24) and the
-   footer's calculations (sum, median, most common, from the rows loaded: no request). It is kept in the open filter set when the
+   SV-24 P2: THE LAYOUT IS THE READER'S (`buildsLayout.ts`, `useBuildsLayout`): the Table's columns (the Columns chooser, 12 of 24)
+   and the footer's calculations (sum, median, most common, from the rows loaded: no request). It is kept in the open filter set when the
    reader made it, and in this browser otherwise. */
 
 import { Suspense, useEffect, useState } from "react";
@@ -38,7 +37,7 @@ import { SeoHead } from "@/components/SeoHead";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { useAuth } from "@/contexts/AuthContext";
 import { reportError } from "@/lib/errors/report";
-import { effectiveOrder, moved, orderedBy, placed, withCalculation, withColumns, withHeight, withOrder, type BuildsLayout } from "@/lib/build/buildsLayout";
+import { withCalculation, withColumns, type BuildsLayout } from "@/lib/build/buildsLayout";
 import { createFilterSet, deleteFilterSet, getFilterSet, joinFilterSet, leaveFilterSet, listMyFilterSets, renameFilterSet, saveFilterSetLayout, setFilterSetPublic, type FilterSet, type FilterSetDetail } from "@/lib/build/filterSets";
 import { GALLERY_LENSES, countGalleryLenses, getClassificationFacets, getCountSpread, getGalleryFacets, getWorksOnModelCounts, getGalleryStats, listBuildsTable, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
 import { RANGE_KEYS, type RangeKey } from "@/lib/build/galleryRanges";
@@ -221,10 +220,6 @@ export default function BuildsPage() {
     model: params.model,
     worksOn: countsLive ? (worksOn.data ?? null) : null,
   });
-  /* The filters in the reader's order. The ones drawn open are what a move steps through. */
-  const orderedSections = orderedBy(sections, layout.order);
-  const sectionIds = sections.map((section) => section.id);
-  const openIds = orderedSections.map((section) => section.id);
   const count = total ?? builds.length;
   /* BF-01 P2: with a filter on, the head says how many of the published builds match; the meta line then drops "Of n published". */
   const filtered = activeCount(params) > 0 && Boolean(stats.data);
@@ -304,17 +299,13 @@ export default function BuildsPage() {
   const filters: BuildsFiltersViewProps = {
       activeCount: activeCount(params),
       savedSets,
-      sections: orderedSections,
+      sections,
       onRange: (sectionId, value) => {
         if ((RANGE_KEYS as readonly string[]).includes(sectionId)) navigate(galleryHref(withRange(params, sectionId as RangeKey, value)), { preventScrollReset: true, replace: true });
       },
       onToggleOption: (sectionId, key) => go(toggled(params, sectionId, key)),
       onToggleSegment: (sectionId, key) => go(toggled(params, sectionId, key)),
       onOrder: (sectionId, order) => setOrders((current) => ({ ...current, [sectionId]: order })),
-      onMove: (sectionId, direction) => update((current) => withOrder(current, moved(effectiveOrder(sectionIds, current.order), openIds, sectionId, direction))),
-      onDrop: (sectionId, index) => update((current) => withOrder(current, placed(effectiveOrder(sectionIds, current.order), openIds, sectionId, index))),
-      heights: layout.heights,
-      onResize: (sectionId, height) => update((current) => withHeight(current, sectionId, height)),
   };
 
   const onMoreMaps = () => {

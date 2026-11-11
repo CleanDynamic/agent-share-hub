@@ -126,3 +126,17 @@ describe("fixed places, and nothing empty", () => {
     expect(shownNames()).toEqual(before);
   });
 });
+
+/* ── BF-07 P3 (A6) ── */
+
+describe("no reordering", () => {
+  it('no filter has a Move button, and the head says "<n> active" with no mention of dragging', () => {
+    draw();
+    expect(screen.queryAllByRole("button", { name: /^Move / })).toHaveLength(0);
+    expect(screen.queryByRole("separator")).toBeNull();
+    const panel = screen.getByTestId("builds-filters");
+    expect(within(panel).getByText("6 active")).toBeTruthy();
+    expect(panel.textContent).not.toMatch(/drag|reorder/i);
+    expect(panel.querySelector("[data-filter-slot]")).toBeNull();
+  });
+});

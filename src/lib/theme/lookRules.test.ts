@@ -1258,7 +1258,6 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/buildsLayout.ts",
   "src/lib/build/buildsLayout.test.ts",
   "src/pages/site/builds/SetDialogs.tsx",
-  "src/pages/site/builds/filterDrag.ts",
   "src/pages/site/builds/useBuildsLayout.ts",
   "src/pages/site/builds/useBuildsLayout.test.tsx",
   "src/pages/site/builds/buildsModel.layout.test.ts",

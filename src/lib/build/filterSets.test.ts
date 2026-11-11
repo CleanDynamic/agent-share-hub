@@ -47,7 +47,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 vi.mock("@/lib/library/savedItems", () => ({ saveItem }));
 
 import { SocialError } from "@/lib/social/types";
-import { EMPTY_LAYOUT, withHeight } from "./buildsLayout";
+import { EMPTY_LAYOUT, withColumns } from "./buildsLayout";
 import { cleanSetName, createFilterSet, deleteFilterSet, filterSetHref, getFilterSet, joinFilterSet, listGroups, listMyFilterSets, queryOf, renameFilterSet, saveFilterSetLayout, setFilterSetPublic } from "./filterSets";
 
 const row = (over: Record<string, unknown> = {}) => ({ id: "fs-1", name: "Stale agents", query: { search: "shape=agent&state=stale" }, is_public: false, user_id: "reader-1", ...over });
@@ -62,10 +62,10 @@ beforeEach(() => {
 
 describe("listing the reader's sets", () => {
   it("is one request for the reader's own rows, newest first, with a limit", async () => {
-    answer = () => ({ data: [row(), row({ id: "fs-2", name: "Sales", query: { search: "f=field%3Asales", layout: { order: ["task"] } }, is_public: true })] });
+    answer = () => ({ data: [row(), row({ id: "fs-2", name: "Sales", query: { search: "f=field%3Asales", layout: { columns: ["build", "task"] } }, is_public: true })] });
     const sets = await listMyFilterSets();
     expect(sets.map((set) => [set.id, set.name, set.search, set.isPublic])).toEqual([["fs-1", "Stale agents", "shape=agent&state=stale", false], ["fs-2", "Sales", "f=field%3Asales", true]]);
-    expect(sets[1].layout?.order).toEqual(["task"]);
+    expect(sets[1].layout?.columns).toEqual(["build", "task"]);
     expect(calls.filter((call) => call.method === "select")).toHaveLength(1);
     expect(calls).toContainEqual({ table: "filter_sets", method: "eq", args: ["user_id", "reader-1"] });
     expect(calls.find((call) => call.method === "limit")?.args).toEqual([50]);
@@ -101,9 +101,9 @@ describe("one set", () => {
 describe("making a set", () => {
   it("tidies the name, keeps the search and the layout, and keeps it in Library too", async () => {
     answer = (table) => (table === "filter_sets" ? { data: row({ name: "Sales agents", query: { search: "f=field%3Asales" } }) } : {});
-    const set = await createFilterSet({ name: "  Sales   agents ", search: "?f=field%3Asales", layout: withHeight(EMPTY_LAYOUT, "field", 200) });
+    const set = await createFilterSet({ name: "  Sales   agents ", search: "?f=field%3Asales", layout: withColumns(EMPTY_LAYOUT, ["build", "field"]) });
     const insert = calls.find((call) => call.method === "insert");
-    expect(insert?.args[0]).toEqual({ user_id: "reader-1", name: "Sales agents", query: { search: "f=field%3Asales", layout: { ...EMPTY_LAYOUT, heights: { field: 200 } } }, is_public: false });
+    expect(insert?.args[0]).toEqual({ user_id: "reader-1", name: "Sales agents", query: { search: "f=field%3Asales", layout: { ...EMPTY_LAYOUT, columns: ["build", "field"] } }, is_public: false });
     expect(saveItem).toHaveBeenCalledWith({ kind: "filter_set", ref: set.id, snapshot: { name: "Sales agents", query: "f=field%3Asales" } });
   });
 
@@ -156,8 +156,8 @@ describe("changing and removing", () => {
   });
 
   it("keeps the layout in the set with the search beside it, because the column is replaced whole", async () => {
-    await saveFilterSetLayout("fs-1", "shape=agent", withHeight(EMPTY_LAYOUT, "task", 240));
-    expect(calls.find((call) => call.method === "update")?.args[0]).toEqual({ query: { search: "shape=agent", layout: { ...EMPTY_LAYOUT, heights: { task: 240 } } } });
+    await saveFilterSetLayout("fs-1", "shape=agent", withColumns(EMPTY_LAYOUT, ["build", "task"]));
+    expect(calls.find((call) => call.method === "update")?.args[0]).toEqual({ query: { search: "shape=agent", layout: { ...EMPTY_LAYOUT, columns: ["build", "task"] } } });
   });
 
   it("deletes the set and Library's copy", async () => {

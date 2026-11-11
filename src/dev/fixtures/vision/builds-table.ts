@@ -145,7 +145,6 @@ export function visionBuildsTableProps(): BuildsViewProps {
       onOrder: noop,
       onRange: noop,
       onToggleSegment: noop,
-      onMove: noop,
     },
     table: {
       lenses: [{ value: "all", label: "All" }, { value: "proven", label: "Reproduced" }, { value: "rebuilt", label: "Rebuilt" }, { value: "unsolved", label: "Still open" }],

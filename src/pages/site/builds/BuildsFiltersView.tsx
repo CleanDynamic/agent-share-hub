@@ -1,26 +1,22 @@
-/* SV-11: the Builds filter panel, pure: typed props, no fetching, no router hooks. The board is
-   `design/reference/vision/dusk/builds-table.html`; the panel is quiet (series README, Visual grammar 2): sections on the
-   surface with a hairline above each, and one boxed tile, "Add a filter".
+/* SV-11: the Builds filter panel, pure: typed props, no fetching, no router hooks. BF-06 put it in the Filters dialog; BF-07
+   lists it by group: the groups on the left, the chosen group's filters on the right, every filter always drawn in a fixed
+   place (a checklist with nothing to choose follows the rest of its group), and a name search across all of them.
 
    Each kind of section is its own component, defined at module level. A section that is not live on the page is not
    given to the view (SV-11 Part 3), so the dev page draws every one and the live page the ones that work.
 
    REAL CONTROLS. A checklist is checkboxes with their labels; a number filter is a two-handle slider, each handle
    keyboard operable (arrows, Page Up and Down, Home and End) with `aria-valuetext`; the histogram is hidden from
-   screen readers and the group carries the words; a scale is a row of buttons with `aria-pressed`; each grip is a
-   button named "Move <filter>" that opens a menu with Move up and Move down, and drags the filter where a drop is wanted
-   (SV-24 P2: `filterDrag.ts`); a checklist can be given a height with a handle, a separator with its value that the arrow
-   keys, Page Up and Down, Home and End move. Focus rings stay. */
+   screen readers and the group carries the words; a scale is a row of buttons with `aria-pressed`. Focus rings stay. */
 
 import * as SliderPrimitive from "@radix-ui/react-slider";
-import { Fragment, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type RefObject } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { Checkbox } from "@/components/brand/Checkbox";
 import { Glyph } from "@/components/brand/Glyph";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { HEIGHT_MAX, HEIGHT_MIN, HEIGHT_STEP } from "@/lib/build/buildsLayout";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
@@ -30,7 +26,6 @@ import { FIGTREE } from "@/lib/theme/type";
 
 import { BuildsFiltersDialog } from "./BuildsFiltersDialog";
 import { BuildsControl, BuildsTextButton, text } from "./BuildsFrame";
-import { heightAfterKey, useFilterDrag, useListResize, type GripDrag } from "./filterDrag";
 import { DeleteSetDialog, SetNameDialog } from "./SetDialogs";
 
 /* ── props ── */
@@ -137,14 +132,6 @@ export interface BuildsFiltersViewProps {
   onOrder?: (sectionId: string, order: "az" | "count") => void;
   onRange?: (sectionId: string, value: readonly [number, number]) => void;
   onToggleSegment?: (sectionId: string, key: string) => void;
-  /** Absent: no grips, because filters cannot be moved. A grip opens a menu with Move up and Move down. */
-  onMove?: (sectionId: string, direction: "up" | "down") => void;
-  /** SV-24 P2: a filter dragged by its grip was dropped here: its place among the filters drawn open. Absent: no drag. */
-  onDrop?: (sectionId: string, index: number) => void;
-  /** SV-24 P2: a checklist's height in px, where the reader set one. */
-  heights?: Readonly<Record<string, number>>;
-  /** Absent: no resize handles. */
-  onResize?: (sectionId: string, height: number) => void;
 }
 
 /* ── pieces ── */
@@ -153,62 +140,9 @@ const rule: CSSProperties = { padding: "16px 0", borderTop: `1px solid ${t.hairl
 const name12: CSSProperties = text(12.5, 500, t.text);
 const small = (color: string): CSSProperties => text(12, 400, color);
 
-/** Where a filter stands among those drawn open, so the menu can leave out a move there is no room for. */
-export interface GripPlace {
-  first: boolean;
-  last: boolean;
-}
-
-/** The faint grip. A button named "Move <filter>": pressed and let go it opens a menu with Move up and Move down (so a filter moves
-    without a pointer), dragged it moves the filter (`onDrop`). Keyboard: Enter, Space or the arrow opens the menu. */
-function Grip({ name, onMove, drag, place }: { name: string; onMove?: (direction: "up" | "down") => void; drag?: GripDrag; place?: GripPlace }) {
-  const [menu, setMenu] = useState(false);
-  /* The press handlers go through the hook so it chains them: spread after, it would replace them. */
-  const { state, handlers } = useInteractive<HTMLButtonElement>({
-    onPointerDown: drag?.onPointerDown,
-    onPointerUp: (event) => {
-      if (drag?.onPointerUp(event)) setMenu(true);
-    },
-    onPointerCancel: drag?.onPointerCancel,
-  });
-  if (!onMove) return <span aria-hidden="true" style={{ width: 16, height: 20, flexShrink: 0 }} />;
-  return (
-    <DropdownMenu open={menu} onOpenChange={setMenu}>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          aria-label={`Move ${name}`}
-          onPointerMove={drag?.onPointerMove}
-          {...handlers}
-          style={{ width: 16, height: 20, flexShrink: 0, display: "grid", placeItems: "center", background: "none", border: 0, padding: 0, color: t.line, cursor: "grab", touchAction: drag ? "none" : undefined, ...ring(state.focusVisible) }}
-        >
-          <svg width="8" height="12" viewBox="0 0 8 12" aria-hidden="true">
-            {[2, 6, 10].flatMap((y) => [2, 6].map((x) => <circle key={`${x}-${y}`} cx={x} cy={y} r="1" fill="currentColor" />))}
-          </svg>
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" sideOffset={4}>
-        <DropdownMenuItem disabled={place?.first} onSelect={() => onMove("up")}>
-          Move up
-        </DropdownMenuItem>
-        <DropdownMenuItem disabled={place?.last} onSelect={() => onMove("down")}>
-          Move down
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-interface Moving {
-  onMove?: (direction: "up" | "down") => void;
-  drag?: GripDrag;
-  place?: GripPlace;
-}
-
-function SectionHead({ name, move, right }: { name: string; move: Moving; right: ReactNode }) {
+function SectionHead({ name, right }: { name: string; right: ReactNode }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <Grip name={name} onMove={move.onMove} drag={move.drag} place={move.place} />
       <h3 style={{ ...name12, margin: 0, flex: 1 }}>{name}</h3>
       {right}
     </div>
@@ -221,7 +155,7 @@ function FiltersHead({ activeCount, onAdd }: { activeCount: number; onAdd?: () =
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "16px 0" }}>
       {/* BF-06: the dialog's title says Filters. */}
-      <p style={{ ...text(12, 400, t.label), margin: 0, lineHeight: "normal" }}>{activeCount} active · drag to reorder</p>
+      <p style={{ ...text(12, 400, t.label), margin: 0, lineHeight: "normal" }}>{`${activeCount} active`}</p>
       {onAdd ? <BuildsControl onClick={onAdd}>Add</BuildsControl> : null}
     </div>
   );
@@ -361,61 +295,21 @@ function OptionRow({ option, onToggle }: { option: WordOption; onToggle: () => v
   );
 }
 
-/** The handle under a checklist: drag it, or focus it and use the keys. Invisible at rest (the panel keeps the board's look); a line
-    shows while it is focused. A separator with a value, the pattern for a pane that can be resized. */
-function ResizeHandle({ name, list, height, onResize }: { name: string; list: RefObject<HTMLDivElement | null>; height?: number; onResize: (px: number) => void }) {
-  const phone = useIsPhone();
-  const drag = useListResize(list, onResize);
-  const { state, handlers } = useInteractive<HTMLDivElement>({ onPointerDown: drag.onPointerDown, onPointerUp: drag.onPointerUp, onPointerCancel: drag.onPointerCancel });
-  const now = height ?? (list.current ? Math.round(list.current.getBoundingClientRect().height) : HEIGHT_MAX);
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    /* The height is read from the list when it was never set; the step is from that. */
-    const base = height ?? (list.current ? Math.round(list.current.getBoundingClientRect().height) : HEIGHT_MAX);
-    const next = heightAfterKey(event.key, base, HEIGHT_STEP);
-    if (next === null) return;
-    event.preventDefault();
-    onResize(next);
-  };
-  return (
-    <div
-      role="separator"
-      aria-orientation="horizontal"
-      aria-label={`Resize ${name}`}
-      aria-valuemin={HEIGHT_MIN}
-      aria-valuemax={HEIGHT_MAX}
-      aria-valuenow={now}
-      aria-valuetext={`${now} pixels tall`}
-      tabIndex={0}
-      onKeyDown={onKeyDown}
-      onPointerMove={drag.onPointerMove}
-      {...handlers}
-      style={{ position: "absolute", left: 0, right: 0, bottom: phone ? -12 : -4, height: phone ? 24 : 8, cursor: "ns-resize", touchAction: "none", display: "flex", alignItems: "center", ...ring(state.focusVisible) }}
-    >
-      <span aria-hidden="true" style={{ flex: 1, height: 1, background: state.focusVisible ? t.line : "transparent" }} />
-    </div>
-  );
-}
-
-function WordFilter({ section, label, onToggle, onOrder, move, height, onResize }: { section: WordSection; label?: string; onToggle: (key: string) => void; onOrder?: (order: "az" | "count") => void; move: Moving; height?: number; onResize?: (px: number) => void }) {
-  const list = useRef<HTMLDivElement>(null);
+function WordFilter({ section, label, onToggle, onOrder }: { section: WordSection; label?: string; onToggle: (key: string) => void; onOrder?: (order: "az" | "count") => void }) {
   return (
     <section aria-label={section.name} style={rule}>
       <SectionHead
         name={section.name}
-        move={move}
         right={label ? <span style={small(t.label)}>{label}</span> : section.order === "scale" ? <span style={small(t.label)}>Scale order</span> : <OrderPair order={section.order} onOrder={onOrder} />}
       />
       {section.options.length === 0 ? (
         <p style={{ ...text(12, 400, t.label), margin: "10px 0 0" }}>No builds have a value yet.</p>
       ) : (
-      <div style={onResize ? { position: "relative" } : undefined}>
-        <div ref={list} role="group" aria-label={`${section.name} values`} style={{ ...(height ? { maxHeight: height, overflowY: "auto" } : null), marginTop: 10 }}>
+        <div role="group" aria-label={`${section.name} values`} style={{ marginTop: 10 }}>
           {section.options.map((option) => (
             <OptionRow key={option.key} option={option} onToggle={() => onToggle(option.key)} />
           ))}
         </div>
-        {onResize ? <ResizeHandle name={section.name} list={list} height={height} onResize={onResize} /> : null}
-      </div>
       )}
     </section>
   );
@@ -433,7 +327,7 @@ function Histogram({ bars, height }: { bars: RangeSection["histogram"]; height: 
   );
 }
 
-function RangeFilter({ section, label, onChange, move }: { section: RangeSection; label?: string; onChange?: (value: readonly [number, number]) => void; move: Moving }) {
+function RangeFilter({ section, label, onChange }: { section: RangeSection; label?: string; onChange?: (value: readonly [number, number]) => void }) {
   const [low, high] = section.value;
   // BF-05 (G3): the thumb is a 24 by 24 transparent hit area holding the 12px dot. The shared focus outline is drawn inside the
   // round thumb (`data-ring-inset`, 4px in), so it circles the dot and not the hit area; the dot keeps its own halo.
@@ -445,7 +339,7 @@ function RangeFilter({ section, label, onChange, move }: { section: RangeSection
   };
   return (
     <section aria-label={section.name} style={rule}>
-      <SectionHead name={section.name} move={move} right={label ? <span style={small(t.label)}>{label}</span> : <span style={small(t.text2)}>{section.valueText}</span>} />
+      <SectionHead name={section.name} right={label ? <span style={small(t.label)}>{label}</span> : <span style={small(t.text2)}>{section.valueText}</span>} />
       <div role="group" aria-label={`${section.name}, ${section.valueText}`}>
         <Histogram bars={section.histogram} height={section.bare ? 28 : 32} />
         {section.bare ? null : (
@@ -498,11 +392,11 @@ function Segment({ label, on, onClick }: { label: string; on: boolean; onClick: 
   );
 }
 
-function ScaleFilter({ section, label, onToggle, move }: { section: ScaleSection; label?: string; onToggle?: (key: string) => void; move: Moving }) {
+function ScaleFilter({ section, label, onToggle }: { section: ScaleSection; label?: string; onToggle?: (key: string) => void }) {
   const chosen = section.segments.filter((segment) => segment.on).map((segment) => segment.label).join(", ");
   return (
     <section aria-label={section.name} style={rule}>
-      <SectionHead name={section.name} move={move} right={<span style={small(t.label)}>{label ?? "Scale order"}</span>} />
+      <SectionHead name={section.name} right={<span style={small(t.label)}>{label ?? "Scale order"}</span>} />
       <div role="group" aria-label={`${section.name}: ${chosen || "any"}`} style={{ marginTop: 14, display: "grid", gridTemplateColumns: `repeat(${section.segments.length}, minmax(0, 1fr))`, gap: 2 }}>
         {section.segments.map((segment) => (
           <Segment key={segment.key} label={segment.label} on={segment.on} onClick={() => onToggle?.(segment.key)} />
@@ -568,17 +462,15 @@ export interface BuildsFiltersBodyProps extends BuildsFiltersViewProps {
 /** The body of the dialog: the groups on the left (a row that scrolls sideways on a phone), the chosen group's filters on the
     right, or, while a name is searched, every filter whose name holds it, each labelled with its group. */
 export function BuildsFiltersView(props: BuildsFiltersBodyProps) {
-  const { activeCount, onAdd, savedSets, sections, onToggleOption, onOrder, onRange, onToggleSegment, onMove, onDrop, heights, onResize, search = "" } = props;
+  const { activeCount, onAdd, savedSets, sections, onToggleOption, onOrder, onRange, onToggleSegment, search = "" } = props;
   const phone = useIsPhone();
-  const container = useRef<HTMLDivElement>(null);
-  const gripFor = useFilterDrag(container, onDrop);
   const groups = FILTER_GROUPS.filter((group) => sections.some((section) => section.group === group));
   const [chosen, setChosen] = useState<FilterGroup | null>(null);
   const group = chosen !== null && groups.includes(chosen) ? chosen : (groups[0] ?? null);
   const query = search.trim().toLowerCase();
   const shown = query ? sections.filter((section) => section.name.toLowerCase().includes(query)) : sections.filter((section) => section.group === group);
   return (
-    <div ref={container} data-testid="builds-filters">
+    <div data-testid="builds-filters">
       <FiltersHead activeCount={activeCount} onAdd={onAdd} />
       {savedSets ? <SavedSets {...savedSets} /> : null}
       <div style={{ display: "grid", gridTemplateColumns: phone ? "minmax(0, 1fr)" : "200px minmax(0, 1fr)", columnGap: 24, rowGap: 12, alignItems: "start" }}>
@@ -589,30 +481,11 @@ export function BuildsFiltersView(props: BuildsFiltersBodyProps) {
         </div>
         <div style={{ minWidth: 0 }}>
           {query && shown.length === 0 ? <p style={{ ...text(12.5, 400, t.text2), margin: 0, padding: "16px 0" }}>No filter has that name.</p> : null}
-          {shown.map((section, at) => {
-            const move: Moving = {
-              onMove: onMove ? (direction) => onMove(section.id, direction) : undefined,
-              drag: gripFor?.(section.id),
-              place: { first: at === 0, last: at === shown.length - 1 },
-            };
-            const resize = onResize ? (px: number) => onResize(section.id, px) : undefined;
+          {shown.map((section) => {
             const label = query ? section.group : undefined;
-            let drawn: ReactNode = null;
-            if (section.kind === "word") {
-              drawn = <WordFilter section={section} label={label} onToggle={(key) => onToggleOption(section.id, key)} onOrder={onOrder ? (order) => onOrder(section.id, order) : undefined} move={move} height={heights?.[section.id]} onResize={resize} />;
-            } else if (section.kind === "range") {
-              drawn = <RangeFilter section={section} label={label} onChange={onRange ? (value) => onRange(section.id, value) : undefined} move={move} />;
-            } else {
-              drawn = <ScaleFilter section={section} label={label} onToggle={onToggleSegment ? (key) => onToggleSegment(section.id, key) : undefined} move={move} />;
-            }
-            /* The wrapper is what a drag moves; it is drawn only where a drag is. */
-            return onDrop ? (
-              <div key={section.id} data-filter-slot={section.id}>
-                {drawn}
-              </div>
-            ) : (
-              <Fragment key={section.id}>{drawn}</Fragment>
-            );
+            if (section.kind === "word") return <WordFilter key={section.id} section={section} label={label} onToggle={(key) => onToggleOption(section.id, key)} onOrder={onOrder ? (order) => onOrder(section.id, order) : undefined} />;
+            if (section.kind === "range") return <RangeFilter key={section.id} section={section} label={label} onChange={onRange ? (value) => onRange(section.id, value) : undefined} />;
+            return <ScaleFilter key={section.id} section={section} label={label} onToggle={onToggleSegment ? (key) => onToggleSegment(section.id, key) : undefined} />;
           })}
         </div>
       </div>

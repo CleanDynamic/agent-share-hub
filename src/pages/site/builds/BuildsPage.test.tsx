@@ -430,27 +430,22 @@ describe("SV-24 P2: the reader's layout", () => {
   const sectionNames = () => Array.from(screen.getByTestId("builds-filters").querySelectorAll("section[aria-label]")).map((node) => node.getAttribute("aria-label")).filter((name) => name !== "Saved filter sets");
   const stored = () => JSON.parse(localStorage.getItem("builds:layout:v1") ?? "null");
 
-  it("moves a filter from its grip's menu, keeps the order in this browser, and finds it there on the next visit", async () => {
+  // BF-07 (A6): the filters have fixed places; there is no order, nothing opened and no height to keep.
+  it("draws the filters in their fixed places on every visit, and keeps nothing about them", async () => {
     const first = renderAt("/builds");
     await screen.findByRole("link", { name: "Build 1" });
     await openFilters();
-    expect(sectionNames().slice(0, 2)).toEqual(["Field", "Autonomy"]);
-    fireEvent.keyDown(screen.getByRole("button", { name: "Move Field" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Move down" }));
-    await waitFor(() => expect(sectionNames().slice(0, 2)).toEqual(["Autonomy", "Field"]));
-    expect(stored().order.slice(0, 2)).toEqual(["autonomy", "field"]);
+    const before = sectionNames();
+    expect(before.slice(0, 2)).toEqual(["Field", "Autonomy"]);
+    fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
+    await waitFor(() => expect(address).toBe("/builds?f=field%3Aeducation"));
+    expect(sectionNames()).toEqual(before);
+    expect(stored()).toBeNull();
     first.unmount();
     renderAt("/builds");
     await screen.findByRole("link", { name: "Build 1" });
     await openFilters();
-    expect(sectionNames().slice(0, 2)).toEqual(["Autonomy", "Field"]);
-  });
-
-  it("keeps a checklist's height for the next visit", async () => {
-    renderAt("/builds");
-    await openFilters();
-    fireEvent.keyDown(screen.getByRole("separator", { name: "Resize Field" }), { key: "End" });
-    await waitFor(() => expect(stored().heights).toEqual({ field: 480 }));
+    expect(sectionNames()).toEqual(before);
   });
 
   it("chooses the Table's columns from the Columns chooser, and keeps them", async () => {
@@ -492,32 +487,31 @@ describe("SV-24 P2: the reader's layout", () => {
 
   it("keeps the layout in the reader's own open set, and not in the browser", async () => {
     auth.user = { id: "reader-1" };
-    const own = { id: SET_ID, name: "Mine", search: "shape=agent", isPublic: false, ownerId: "reader-1", layout: { order: ["autonomy"], opened: [], heights: {}, columns: null, calculations: [] }, mine: true, members: 0, member: false };
+    const own = { id: SET_ID, name: "Mine", search: "shape=agent", isPublic: false, ownerId: "reader-1", layout: { columns: null, calculations: [] }, mine: true, members: 0, member: false };
     sets.getFilterSet.mockResolvedValue(own);
     sets.listMyFilterSets.mockResolvedValue([own]);
     sets.saveFilterSetLayout.mockResolvedValue(undefined);
     renderAt(`/builds?shape=agent&set=${SET_ID}`);
     await screen.findByRole("link", { name: "Build 1" });
-    await openFilters();
-    await waitFor(() => expect(sectionNames().slice(0, 2)).toEqual(["Autonomy", "Field"]));
-    fireEvent.keyDown(screen.getByRole("button", { name: "Move Autonomy" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Move down" }));
-    await waitFor(() => expect(sectionNames().slice(0, 2)).toEqual(["Field", "Autonomy"]));
+    await waitFor(() => expect(sets.getFilterSet).toHaveBeenCalled());
+    fireEvent.click(await screen.findByRole("button", { name: /^Columns:/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Skill" }));
+    expect(await screen.findByRole("columnheader", { name: "Skill" })).toBeTruthy();
     await waitFor(() => expect(sets.saveFilterSetLayout).toHaveBeenCalledTimes(1), { timeout: 3000 });
-    expect(sets.saveFilterSetLayout).toHaveBeenCalledWith(SET_ID, "shape=agent", expect.objectContaining({ order: expect.arrayContaining(["field", "autonomy"]) }));
+    expect(sets.saveFilterSetLayout).toHaveBeenCalledWith(SET_ID, "shape=agent", expect.objectContaining({ columns: expect.arrayContaining(["skill"]) }));
     expect(stored()).toBeNull();
   });
 
   it("keeps the layout in the browser when the open set is someone else's", async () => {
     auth.user = { id: "reader-1" };
-    sets.getFilterSet.mockResolvedValue({ id: SET_ID, name: "Theirs", search: "", isPublic: true, ownerId: "maker-9", layout: { order: ["autonomy"], opened: [], heights: {}, columns: null, calculations: [] }, mine: false, members: 3, member: false });
+    sets.getFilterSet.mockResolvedValue({ id: SET_ID, name: "Theirs", search: "", isPublic: true, ownerId: "maker-9", layout: { columns: null, calculations: [] }, mine: false, members: 3, member: false });
     renderAt(`/builds?set=${SET_ID}`);
     await screen.findByRole("link", { name: "Build 1" });
-    await openFilters();
-    expect(sectionNames().slice(0, 2)).toEqual(["Field", "Autonomy"]);
-    fireEvent.keyDown(screen.getByRole("button", { name: "Move Field" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Move down" }));
+    await waitFor(() => expect(sets.getFilterSet).toHaveBeenCalled());
+    fireEvent.click(await screen.findByRole("button", { name: /^Columns:/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Skill" }));
     await waitFor(() => expect(stored()).not.toBeNull());
+    expect(stored().columns).toContain("skill");
     expect(sets.saveFilterSetLayout).not.toHaveBeenCalled();
   });
 });
