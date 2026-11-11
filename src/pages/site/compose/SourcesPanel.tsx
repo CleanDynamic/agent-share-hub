@@ -65,7 +65,7 @@ export const SOURCES_COPY = {
   addFile: "Add",
   stillArriving: "Still arriving",
   didntFinish: "Didn't finish",
-  inThisDraft: "In this draft",
+  inThisDraft: "In this build",
   addThisTo: "Add this session to",
   lastPart: ", chosen last",
   showMoreSessions: "Show more sessions",

@@ -166,7 +166,7 @@ export const ADD_FLASH_MS = 1200;
 
 export const LIST_COPY = {
   /** UX-02 P5: the phone's one line; a computer has none (double-click is not a command, every tile shows its controls). */
-  hintPhone: "Tap a step tile to see its details",
+  hintPhone: "Tap a step to see its details",
   /** UX-02 P5: a tile's visible ways to open and to change it, in place of the double-click. */
   edit: "Edit…",
   /** Product names keep their case: "Open GitHub repository". */
@@ -581,8 +581,8 @@ function MentionedLine({ to, phone }: { to: string; phone: boolean }) {
 /* ── tiles inside tiles (CA-04 P2) ── */
 
 export const NEST_LIST_COPY = {
-  sendWithAbove: "Send with the step tile above",
-  ownStep: "Make it its own step tile",
+  sendWithAbove: "Attach to the step above",
+  ownStep: "Make it its own step",
   copyTogether: "Copy together",
   sentWith: (label: string) => `Sent with ${label}`,
   nowSentWith: (name: string, label: string) => `${name} is now sent with ${label}.`,
@@ -2242,7 +2242,7 @@ function IncomingSlot({ kind, id, container, height }: { kind: "tile" | "session
 /** A tile's name in the List's lines, from the tiles by id. */
 const labelOf = (tiles: ReadonlyMap<string, Step>, id: string): string => {
   const tile = tiles.get(id);
-  return tile ? tileName(tile) : "that step tile";
+  return tile ? tileName(tile) : "that step";
 };
 
 /** A session's head and its tiles, registered for the post's links by the session's key. */
@@ -2309,7 +2309,7 @@ export function BuildList(raw: BuildListProps) {
   const names: MoveNames = {
     tile: (id) => {
       const step = stepsById.get(id);
-      if (!step) return "that step tile";
+      if (!step) return "that step";
       const word = tileName(step);
       return step.number && !step.filename ? word.charAt(0).toUpperCase() + word.slice(1) : word;
     },
@@ -2326,7 +2326,7 @@ export function BuildList(raw: BuildListProps) {
     onOpen: (key) => base.onToggleCollapsed?.(key, false),
     commit: (commit: Commit) => {
       const write = commit.write;
-      if (write.kind === "tile" && write.session) return base.onMoveToSession?.(commit.held.id, write.session, { order: write.atEnd, sentence: commit.sentence, notice: true, failed: "Tile not moved" });
+      if (write.kind === "tile" && write.session) return base.onMoveToSession?.(commit.held.id, write.session, { order: write.atEnd, sentence: commit.sentence, notice: true, failed: "Step not moved" });
       if (write.kind === "nested" && write.parent !== undefined && write.index !== undefined) return base.onNest?.(write.id, write.parent, write.index);
       if (write.kind === "session") {
         if (write.toPart) return write.before ? base.onDropSession?.(write.id, write.before) : base.onDropOnWorkstream?.(write.id, write.toPart);
@@ -2394,7 +2394,7 @@ export function BuildList(raw: BuildListProps) {
   const tiles = new Map(steps.flatMap(withSentWith).map((step) => [step.id, step]));
   const label = (id: string) => {
     const tile = tiles.get(id);
-    return tile ? tileName(tile) : "that step tile";
+    return tile ? tileName(tile) : "that step";
   };
   const topOf = (id: string): Step | undefined => steps.find((step) => withSentWith(step).some((tile) => tile.id === id));
 
@@ -2559,7 +2559,7 @@ export function BuildList(raw: BuildListProps) {
                     <SessionLines session={sameStageAs ? { ...run.head, sameStageAs } : run.head} />
                     {drawBranches(run.steps, (step) => step, steps, placed)}
                     {/* SV-07 P6: an empty session looks one way, "No tiles yet" and "+ Add tile"; the dashed place shows only while a tile is dragged. */}
-                    {run.steps.length === 0 && !promptHere ? sorting.held && sorting.held.type !== "session" && sorting.held.type !== "part" ? <EmptyPlace words="Drop a step tile here" /> : <p style={{ ...text(13, 400, t.label), margin: 0 }}>{SESSION_HEAD_COPY.noTiles}</p> : null}
+                    {run.steps.length === 0 && !promptHere ? sorting.held && sorting.held.type !== "session" && sorting.held.type !== "part" ? <EmptyPlace words="Drop a step here" /> : <p style={{ ...text(13, 400, t.label), margin: 0 }}>{SESSION_HEAD_COPY.noTiles}</p> : null}
                     {promptHere ? (
                       <AddPrompt
                         phone={props.phone}

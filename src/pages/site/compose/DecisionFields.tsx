@@ -77,14 +77,14 @@ export const DECISION_COPY = {
   pasteLine: "From JSON, curl or Python",
   pastePlaceholder: "JSON request and response, curl, or Python",
   import: "Import",
-  readCode: "Read from a Code step tile",
+  readCode: "Read from a Code step",
   callingCode: "Calling code",
-  callingCodeLine: "Code step tile that sends the request",
-  noCode: "No Code step tile linked",
+  callingCodeLine: "Code step that sends the request",
+  noCode: "No Code step linked",
   addCode: "Add code",
   input: "Input",
-  inputLine: "Another step tile's output, or sample text",
-  fromStep: "Another step tile's output",
+  inputLine: "Another step's output, or sample text",
+  fromStep: "Another step's output",
   fromText: "Sample text",
   state: "Sample text",
   statePlaceholder: "Customer: I was charged twice for my order.",
@@ -441,7 +441,7 @@ export function DecisionFields({ draft, onChange, phone, codeTiles, stepChoices,
         <OptionalField name={DECISION_COPY.input} description={DECISION_COPY.inputLine} summary={draft.reads === "step" ? summaryOf(stepChoices.find((choice) => choice.id === draft.stateFrom)?.label) : summaryOf(firstLineOf(draft.stateSample, 80))} forceOpen={open.input} phone={phone}>
           <SegmentedField<"step" | "paste"> label={DECISION_COPY.input} phone={phone} items={[{ value: "step", label: DECISION_COPY.fromStep, disabled: stepChoices.length === 0 }, { value: "paste", label: DECISION_COPY.fromText }]} value={draft.reads} onChange={(reads) => set({ reads })} />
           {draft.reads === "step" ? (
-            <PickMenu field label="Step tile it reads" phone={phone} placeholder="Select a step tile" value={draft.stateFrom} options={stepChoices.map((choice) => ({ value: choice.id, label: choice.label }))} onChange={(next) => set({ stateFrom: next })} />
+            <PickMenu field label="Step it reads" phone={phone} placeholder="Select a step" value={draft.stateFrom} options={stepChoices.map((choice) => ({ value: choice.id, label: choice.label }))} onChange={(next) => set({ stateFrom: next })} />
           ) : (
             <>
               <FieldArea phone={phone} rows={3} aria-label={DECISION_COPY.state} value={draft.stateSample} maxLength={STATE_SAMPLE_MAX} placeholder={DECISION_COPY.statePlaceholder} onChange={(e) => set({ stateSample: e.target.value })} />

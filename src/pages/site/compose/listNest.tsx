@@ -98,7 +98,7 @@ export function useGrabbingCursor(holding: boolean) {
 export const DRAG_ACCESSIBILITY = {
   // The line under the build is the polite announcement (`sorting.said`): these say nothing of their own.
   announcements: { onDragStart: () => "", onDragOver: () => "", onDragEnd: () => "", onDragCancel: () => "" },
-  screenReaderInstructions: { draggable: "Press Space to pick up the step tile, the arrow keys to move it, and Space again to drop it. Escape puts it back." },
+  screenReaderInstructions: { draggable: "Press Space to pick up the step, the arrow keys to move it, and Space again to drop it. Escape puts it back." },
 };
 
 export interface DndHost {

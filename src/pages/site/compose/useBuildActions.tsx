@@ -140,8 +140,8 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
       const removed: RemovedMeta = {
         kind: "tile",
         badge: tops.length === 1 ? tops[0].number : String(tops.length),
-        name: tops.length === 1 ? tileName(tops[0]) : `${tops.length} step tiles`,
-        ...(inside && inside.count > 0 ? { detail: `${inside.count} ${inside.what === "agents" ? (inside.count === 1 ? "agent" : "agents") : inside.count === 1 ? "step tile" : "step tiles"}` } : null),
+        name: tops.length === 1 ? tileName(tops[0]) : `${tops.length} steps`,
+        ...(inside && inside.count > 0 ? { detail: `${inside.count} ${inside.what === "agents" ? (inside.count === 1 ? "agent" : "agents") : inside.count === 1 ? "step" : "steps"}` } : null),
       };
       void history
         .track(
@@ -347,7 +347,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
       kind: "build",
       badge: { glyph: "layers" },
       name: REMOVED_COPY.whole,
-      detail: [clearCounts.sessions > 0 ? `${clearCounts.sessions} ${clearCounts.sessions === 1 ? "session" : "sessions"}` : "", clearCounts.tiles > 0 ? `${clearCounts.tiles} ${clearCounts.tiles === 1 ? "step tile" : "step tiles"}` : "", clearCounts.files > 0 ? `${clearCounts.files} ${clearCounts.files === 1 ? "file" : "files"}` : ""].filter(Boolean).join(", "),
+      detail: [clearCounts.sessions > 0 ? `${clearCounts.sessions} ${clearCounts.sessions === 1 ? "session" : "sessions"}` : "", clearCounts.tiles > 0 ? `${clearCounts.tiles} ${clearCounts.tiles === 1 ? "step" : "steps"}` : "", clearCounts.files > 0 ? `${clearCounts.files} ${clearCounts.files === 1 ? "file" : "files"}` : ""].filter(Boolean).join(", "),
     };
     await history
       .track(

@@ -301,7 +301,7 @@ async function writeSession({ buildId, sessionKey: importId, model, prompts, isN
       isNew ? Promise.resolve({}) : readMaking(buildId),
     ]);
     if (rows.some((existing) => existing.sessionKey === importId) || hasSession(tree, importId)) {
-      throw buildLayerError("addSessionToBuild", new Error("That session is already in this draft."));
+      throw buildLayerError("addSessionToBuild", new Error("That session is already in this build."));
     }
     // CA-17 P3: the part it joins, when the build has parts. An empty Session 1 in another part is left alone.
     const part = isNew ? undefined : defaultWorkstream(making, workstream);
@@ -446,7 +446,7 @@ export async function addSessionCopy(buildId: string, copy: SessionCopy, workstr
   if (!isTypedSession(copy.key)) throw buildLayerError("addSessionCopy", new Error("A copied session is a session made here."));
   const [rows, tree, making] = await Promise.all([listBuildSessionRows(buildId), getNodeTree(buildId), readMaking(buildId)]);
   if (rows.some((existing) => existing.sessionKey === copy.key) || hasSession(tree, copy.key)) {
-    throw buildLayerError("addSessionCopy", new Error("That session is already in this draft."));
+    throw buildLayerError("addSessionCopy", new Error("That session is already in this build."));
   }
   const part = defaultWorkstream(making, workstream);
   const from = nextTopPosition(tree);

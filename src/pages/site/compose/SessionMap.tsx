@@ -82,7 +82,7 @@ export const MAP_COPY = {
   remove: "Remove map",
   shown: "Shown on build page",
   notShown: "Not on build page",
-  legend: "A line means a tile in the later session uses something from the earlier one.",
+  legend: "A line means a step in the later session uses something from the earlier one.",
   selectedPath: "Selected path",
   noMap: "No map for this build.",
   noMapBody: "A map shows how the sessions connect across parts and stages. It is built from the sessions you already have.",

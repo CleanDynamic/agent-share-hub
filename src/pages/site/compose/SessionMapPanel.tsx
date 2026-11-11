@@ -53,7 +53,7 @@ export const PANEL_COPY = {
   usedBy: "Used by",
   whatJoins: "What joins them",
   inThisSession: "In this session",
-  tilesNote: (n: number) => `${n} ${n === 1 ? "tile" : "tiles"}, shown here and not on the map`,
+  tilesNote: (n: number) => `${n} ${n === 1 ? "step" : "steps"}, shown here and not on the map`,
   connections: (n: number) => `${n} ${n === 1 ? "connection" : "connections"}`,
   parts: "Parts",
   partsNote: (n: number, labels: "letters" | "numbers") => `${n} ${n === 1 ? "part" : "parts"} · labelled with ${labels}`,

@@ -43,7 +43,7 @@ import { useCrossfade } from "./buildMotion";
 
 export const SESSION_HEAD_COPY = {
   titlePlaceholder: "Add a title",
-  noTiles: "No step tiles yet",
+  noTiles: "No steps yet",
   /** SV-05 P3: an import that wrote fewer tiles than its session has prompts. */
   imported: (have: number, of: number) => `${have} of ${of} prompts imported`,
   retry: "Retry",
@@ -60,7 +60,7 @@ export const SESSION_HEAD_COPY = {
   withdrawRequest: "Not still open",
   requested: "Still open",
   sameStage: "Same stage as the session above",
-  count: (n: number) => `${n} ${n === 1 ? "step tile" : "step tiles"}`,
+  count: (n: number) => `${n} ${n === 1 ? "step" : "steps"}`,
   typedPast: (n: number) => `${n}/${SESSION_TITLE_MAX}`,
 } as const;
 

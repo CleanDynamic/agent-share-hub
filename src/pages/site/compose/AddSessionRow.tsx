@@ -44,7 +44,7 @@ export const ADD_SESSION_COPY = {
   searchPlaceholder: "Search by app, date or first prompt",
   none: "No session matches.",
   empty: "No sessions yet.",
-  inThisDraft: "In this draft",
+  inThisDraft: "In this build",
   more: "Show more sessions",
 } as const;
 

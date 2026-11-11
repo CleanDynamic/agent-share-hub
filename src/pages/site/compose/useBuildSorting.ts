@@ -320,7 +320,7 @@ export function pickedLine(held: Held, model: MoveModel, names: MoveNames): stri
   const spot = spotOf(model, held.id);
   if (!spot) return "";
   const at = `${spot.index + 1} of ${spot.count}`;
-  if (held.type === "session") return `Picked up ${names.session(held.id)} and its ${plural(model.tiles[held.id]?.length ?? 0, "tile", "tiles")}. ${spot.part ? names.part(spot.part) : "The build"}, ${at}.`;
+  if (held.type === "session") return `Picked up ${names.session(held.id)} and its ${plural(model.tiles[held.id]?.length ?? 0, "step", "steps")}. ${spot.part ? names.part(spot.part) : "The build"}, ${at}.`;
   if (held.type === "part") return `Picked up ${names.part(held.id)} and its ${plural(model.parts.find((part) => part.key === held.id)?.sessions.length ?? 0, "session", "sessions")}. The build, ${at}.`;
   if (held.type === "nested") return `Picked up ${names.tile(held.id)}. ${names.tile(spot.parent ?? "")}, ${at}.`;
   return `Picked up ${names.tile(held.id)}. ${spot.session ? names.session(spot.session) : "The build"}, ${at}.`;
@@ -562,7 +562,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
           const now = dragRef.current;
           if (!now || candidate.current.send !== target) return;
           set({ ...now, send: target, live: withoutTile(now.start, now.held.id) });
-          setSaid(`Send with ${optionsRef.current.names.tile(target)}`);
+          setSaid(`Attach to ${optionsRef.current.names.tile(target)}`);
         }, DWELL_SEND_MS);
       }
     }
@@ -803,7 +803,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     if (current.send) {
       const target = current.send;
       setSaid(o.sentLine(current.held.id, target));
-      hold(withoutTile(current.start, current.held.id), current.held, current.start, o.send(current.held.id, target), "Tile not moved");
+      hold(withoutTile(current.start, current.held.id), current.held, current.start, o.send(current.held.id, target), "Step not moved");
       return;
     }
     const write = writeOf(current.start, current.live, current.held.id);
@@ -818,7 +818,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     const line = movedLine(move, o.names);
     setSaid(line);
     const run = o.commit({ held: current.held, write, move, start: current.start, end: current.live, sentence: line.replace(/\.$/, ""), line });
-    hold(current.live, current.held, current.start, run, "Tile not moved");
+    hold(current.live, current.held, current.start, run, "Step not moved");
   };
 
   /**
@@ -892,7 +892,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     const start = optionsRef.current.model;
     if (line) setSaid(line);
     setTick((value) => value + 1);
-    hold(model, null, start, run, "Tile not moved");
+    hold(model, null, start, run, "Step not moved");
   };
 
   // Focus stays on the moved thing after a drag by the keys, with the existing focus ring, scrolled into view.

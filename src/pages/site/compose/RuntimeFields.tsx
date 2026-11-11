@@ -138,7 +138,7 @@ export function RuntimeFields({ id, runtime, phone, onRuntime, onReadHelpers }: 
                 ))}
               </div>
             ) : (
-              <span style={text(12, 400, t.label)}>No Code tile linked</span>
+              <span style={text(12, 400, t.label)}>No Code step linked</span>
             )}
           </Field>
           {onReadHelpers ? <ReadFromCode codeTiles={agent.codeTiles} definedIn={agent.definedIn} phone={phone} onRead={(read) => onReadHelpers(id, read)} /> : null}

@@ -29,8 +29,8 @@ export interface MenuItemSpec {
 export const REASONS = {
   firstSession: "Already the first session",
   lastSession: "Already the last session",
-  firstTile: "Already the first step tile",
-  lastTile: "Already the last step tile",
+  firstTile: "Already the first step",
+  lastTile: "Already the last step",
   firstPart: "Already the first part",
   lastPart: "Already the last part",
   onePart: "Only one part",
@@ -38,11 +38,11 @@ export const REASONS = {
   onePartOfSession: "Only one part",
   noSessionAbove: "No session above it in this part",
   sessionList: "Shows once the build has two or more sessions",
-  preview: "Preview opens once the draft is saved",
+  preview: "Preview opens once the build is saved",
   readAll: "Nothing more to read",
   startsAfter: "No sessions in other parts",
   selectTwo: "Select two or more to group",
-  noTiles: "It has no step tiles",
+  noTiles: "It has no steps",
 } as const;
 
 /** The reason a move is greyed, or none when the move can be made. */
@@ -58,7 +58,7 @@ export const MENU_COPY = {
   convert: "Convert to…",
   selectAllInSession: "Select all in this session",
   ungroup: "Ungroup",
-  removeTile: "Remove step tile",
+  removeTile: "Remove step",
   removeSession: "Remove session",
   removePart: "Remove part",
   removeFile: "Remove file",
@@ -95,21 +95,21 @@ const noun = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : m
 export const REMOVE_COPY = {
   /** The notice after a tile goes: "Removed Prompt 3", "Removed Team 11 and its 3 agents". */
   tile: (name: string, inside?: { count: number; what: "agents" | "tiles" }) =>
-    inside && inside.count > 0 ? `Removed ${name} and its ${inside.what === "agents" ? noun(inside.count, "agent", "agents") : noun(inside.count, "step tile", "step tiles")}` : `Removed ${name}`,
+    inside && inside.count > 0 ? `Removed ${name} and its ${inside.what === "agents" ? noun(inside.count, "agent", "agents") : noun(inside.count, "step", "steps")}` : `Removed ${name}`,
   /** "Removed Session 2", "Removed Session 2 and its 3 tiles". */
-  session: (number: number, tiles: number) => (tiles > 0 ? `Removed Session ${number} and its ${noun(tiles, "step tile", "step tiles")}` : `Removed Session ${number}`),
+  session: (number: number, tiles: number) => (tiles > 0 ? `Removed Session ${number} and its ${noun(tiles, "step", "steps")}` : `Removed Session ${number}`),
   /** "Removed Session 2. Its tiles moved to Session 1". */
-  sessionKept: (number: number, into: number) => `Removed Session ${number}. Its step tiles moved to Session ${into}`,
+  sessionKept: (number: number, into: number) => `Removed Session ${number}. Its steps moved to Session ${into}`,
   /** "Removed Part B. Its sessions joined Part A". */
   part: (label: string, into: string) => `Removed ${label}. Its sessions joined ${into}`,
   partAlone: (label: string) => `Removed ${label}`,
   file: (name: string) => `Removed ${name}`,
   /** Several at once: "Removed 2 sessions and 4 tiles". */
   several: (sessions: number, tiles: number) => {
-    const parts = [sessions > 0 ? noun(sessions, "session", "sessions") : "", tiles > 0 ? noun(tiles, "step tile", "step tiles") : ""].filter(Boolean);
+    const parts = [sessions > 0 ? noun(sessions, "session", "sessions") : "", tiles > 0 ? noun(tiles, "step", "steps") : ""].filter(Boolean);
     return `Removed ${parts.join(" and ")}`;
   },
-  severalKept: (sessions: number, into: number) => `Removed ${noun(sessions, "session", "sessions")}. Their step tiles moved to Session ${into}`,
+  severalKept: (sessions: number, into: number) => `Removed ${noun(sessions, "session", "sessions")}. Their steps moved to Session ${into}`,
   cleared: "Cleared the build",
 } as const;
 
@@ -117,12 +117,12 @@ export const REMOVE_COPY = {
 export const SESSION_WINDOW_COPY = {
   title: (number: number) => `Remove Session ${number}?`,
   /** For several: "Remove 2 sessions and 1 tile?". */
-  titleMany: (sessions: number, tiles: number) => `Remove ${noun(sessions, "session", "sessions")}${tiles > 0 ? ` and ${noun(tiles, "step tile", "step tiles")}` : ""}?`,
-  body: (tiles: number) => `It has ${noun(tiles, "step tile", "step tiles")}.`,
+  titleMany: (sessions: number, tiles: number) => `Remove ${noun(sessions, "session", "sessions")}${tiles > 0 ? ` and ${noun(tiles, "step", "steps")}` : ""}?`,
+  body: (tiles: number) => `It has ${noun(tiles, "step", "steps")}.`,
   /** "They have 5 tiles between them." */
-  bodyMany: (tiles: number) => `They have ${noun(tiles, "step tile", "step tiles")} between them.`,
+  bodyMany: (tiles: number) => `They have ${noun(tiles, "step", "steps")} between them.`,
   cancel: "Cancel",
-  keep: "Keep the step tiles",
+  keep: "Keep the steps",
   keepNone: "No other session to move them to",
   all: "Remove all",
 } as const;
@@ -144,7 +144,7 @@ export function clearList(counts: ClearCounts): string {
   const parts = [
     counts.parts > 0 ? plural(counts.parts, "part", "parts") : "",
     counts.sessions > 0 ? plural(counts.sessions, "session", "sessions") : "",
-    counts.tiles > 0 ? plural(counts.tiles, "step tile", "step tiles") : "",
+    counts.tiles > 0 ? plural(counts.tiles, "step", "steps") : "",
     counts.files > 0 ? plural(counts.files, "file", "files") : "",
   ].filter(Boolean);
   if (parts.length <= 1) return parts.join("");

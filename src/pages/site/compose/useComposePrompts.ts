@@ -486,7 +486,7 @@ export function useComposePrompts({
     if (!id) return;
     // Every pending text first: a reorder rewrites the rows it reads.
     for (const pending of [...timers.current.keys()]) flushKey(pending);
-    void attempt("Tile not moved", async () => {
+    void attempt("Step not moved", async () => {
       const build = latest.current.buildId;
       if (!build) return;
       // CA-21 P1: every kind of tile swaps with the step next to it, whatever either is.
@@ -642,7 +642,7 @@ export function useComposePrompts({
       undefined,
     );
 
-  const rename = (id: string, title: string) => void writeStep(id, "Tile not renamed", (node) => setStepTitle(node, title));
+  const rename = (id: string, title: string) => void writeStep(id, "Step not renamed", (node) => setStepTitle(node, title));
   const setChanges = (id: string, ranges: readonly ChangeRange[]) =>
     void writeStep(id, "Words not saved", (node) => setPromptChanges(node, ranges));
   const setReply = (id: string, reply: string) =>
@@ -682,7 +682,7 @@ export function useComposePrompts({
   const setStillOpenOf = (id: string, problem: string | null) => void writeStep(id, "Still open not saved", (node) => setStillOpen(node, problem));
 
   const removeInside = (id: string) => {
-    void attempt("Tile not removed", async () => {
+    void attempt("Step not removed", async () => {
       await dropMadeFiles(id);
       await deleteNode(id);
       nodes.record(id, null);
@@ -908,14 +908,14 @@ export function useComposePrompts({
     }, null);
 
   const setSessionOf = (id: string, session: string | null) =>
-    void writeStep(id, "Tile not moved", (node) => setStepSession(node, session));
+    void writeStep(id, "Step not moved", (node) => setStepSession(node, session));
 
   const nest = (id: string, parentId: string | null, index: number) =>
     attempt(
       (cause) => {
         // A refusal is one of the guards' own sentences; anything else is said once.
         const said = cause instanceof Error ? Object.values(NEST_COPY).find((line) => cause.message.includes(line)) : undefined;
-        return said ?? "Tile not moved";
+        return said ?? "Step not moved";
       },
       async () => {
         const build = latest.current.buildId;
@@ -930,7 +930,7 @@ export function useComposePrompts({
     );
 
   const keepSentWith = ({ stepId, source, language, filename }: CodeSuggestion) =>
-    void attempt("Tile not kept inside", async () => {
+    void attempt("Step not kept inside", async () => {
       const build = latest.current.buildId;
       if (!build) return;
       const created = await addCode(build, nodes.current(), { source, language, filename, parentId: stepId });

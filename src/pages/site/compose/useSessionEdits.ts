@@ -98,7 +98,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   const applyLayout = useCallback(
     async (change: { order: string[]; reassign?: ReadonlyMap<string, string>; atEnd?: string[]; meta?: Record<string, SessionMeta | null>; dropKeys?: string[] }) => {
       const { buildId, made, nodes } = latest.current;
-      if (!buildId) throw new Error("That draft is not saved yet.");
+      if (!buildId) throw new Error("That build is not saved yet.");
       await nodes.run(async () => {
       const entries = { ...sessionsMetaOf(made) };
       for (const [key, value] of Object.entries(change.meta ?? {})) {
@@ -267,7 +267,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   const applyParts = useCallback(
     async (plan: (making: unknown) => WorkstreamChange | null, onWritten?: () => void): Promise<WorkstreamChange | null> => {
       const { buildId, nodes } = latest.current;
-      if (!buildId) throw new Error("That draft is not saved yet.");
+      if (!buildId) throw new Error("That build is not saved yet.");
       let applied: WorkstreamChange | null = null;
       await nodes.run(async () => {
         // SV-07 P1: the change is worked out from `making` as it stands inside the write's own step.
@@ -534,7 +534,7 @@ export function useSessionEdits(input: SessionEditsInput) {
             Object.assign(removedMeta, {
               badge: removing.length === 1 ? `S${numberOf(removing[0])}` : "S",
               name: removing.length === 1 ? `Session ${numberOf(removing[0])}` : `${removing.length} sessions`,
-              ...(count > 0 ? { detail: `${count} ${count === 1 ? "tile" : "tiles"}${mode === "keep" ? ", kept" : ""}` } : null),
+              ...(count > 0 ? { detail: `${count} ${count === 1 ? "step" : "steps"}${mode === "keep" ? ", kept" : ""}` } : null),
             });
 
             if (mode === "keep") {
@@ -655,7 +655,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   const onMoveTile = useCallback(
     async (id: string, key: string, options: { order?: readonly string[]; sentence?: string; said?: string; notice?: boolean; failed?: string } = {}): Promise<boolean> => {
       let ok = false;
-      await guard(options.failed ?? "Tile not moved", async () => {
+      await guard(options.failed ?? "Step not moved", async () => {
         const target = await stable(key);
         if (!target) return;
         const { steps, groups } = latest.current;
@@ -675,7 +675,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** CA-20 P3: "Move to…" on the selection bar: several tiles to the end of one session, as one step. */
   const onMoveTiles = useCallback(
     async (ids: readonly string[], key: string): Promise<void> => {
-      await guard("Tiles not moved", async () => {
+      await guard("Steps not moved", async () => {
         const target = await stable(key);
         if (!target) return;
         const { steps, groups } = latest.current;
@@ -684,7 +684,7 @@ export function useSessionEdits(input: SessionEditsInput) {
         if (top.length === 0) return;
         const keys = orderKeys(groups).filter((entry) => !isLegacySession(entry)).concat(target).filter((entry, at, all) => all.indexOf(entry) === at);
         const number = groups.find((entry) => groupKey(entry) === key)?.number ?? "";
-        await track(`Moved ${top.length === 1 ? "a step tile" : `${top.length} step tiles`} to Session ${number}`, () => applyLayout({ order: keys, reassign: new Map(top.map((id) => [id, target])), atEnd: top }));
+        await track(`Moved ${top.length === 1 ? "a step" : `${top.length} steps`} to Session ${number}`, () => applyLayout({ order: keys, reassign: new Map(top.map((id) => [id, target])), atEnd: top }));
       });
     },
     [applyLayout, guard, stable, track],

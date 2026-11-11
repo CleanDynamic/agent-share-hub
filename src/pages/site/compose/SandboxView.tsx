@@ -269,7 +269,7 @@ export const ADD_ITEMS: readonly { key: AddKey; name: string; line: string; read
   { key: "check", name: "Check", line: "Test of part of the build", ready: true },
   { key: "result", name: "Result", line: "Output the build produced", ready: true },
   /* SV-18: saved steps and sessions, copied in with their source. Listed after the twelve; it opens its own window. */
-  { key: "library", name: "From Library", line: "Step tiles and collections you saved", ready: true },
+  { key: "library", name: "From Library", line: "Steps and collections you saved", ready: true },
 ];
 
 /** CA-03 P5: the Add menu's own words. */
@@ -284,7 +284,7 @@ export function notSavedLine(problem: SaveFailure): string {
 }
 
 /** CA-10 (CA-09 F12): a phone has no double-click and taps, not clicks. UX-02 P5: a computer has no hint line (double-click is not a command). */
-export const LIST_HINT_PHONE = "Tap a step tile to see its details";
+export const LIST_HINT_PHONE = "Tap a step to see its details";
 export const listHint = (phone: boolean): string | null => (phone ? LIST_HINT_PHONE : null);
 
 /** The columns start this far under the title row. */
@@ -427,7 +427,7 @@ export interface AddTargets {
 }
 
 /** UX-02 P6: the field at the top of the menu. */
-export const ADD_SEARCH_COPY = { label: "Find a step tile", placeholder: "Find a step tile", none: "No step tile matches." } as const;
+export const ADD_SEARCH_COPY = { label: "Find a step", placeholder: "Find a step", none: "No step matches." } as const;
 
 /** UX-02 P6: two columns of entries in a group on a computer. */
 export const ADD_MENU_WIDTH = 520;

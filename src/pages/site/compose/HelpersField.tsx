@@ -209,7 +209,7 @@ export function HelpersField({ helpers, toolNames, decisions, phone, onChange, b
           ) : null}
           {d.job === "decide" ? (
             <Field id="helper-decision" label="Decision" group>
-              {decisions.length ? <PickMenu label="Decision it calls" phone={phone} placeholder="Select a decision" value={d.decision || null} options={decisions.map((x) => ({ value: x.id, label: x.label }))} onChange={(decision) => set({ decision })} /> : <span style={text(12, 400, t.label)}>Needs a Decision tile</span>}
+              {decisions.length ? <PickMenu label="Decision it calls" phone={phone} placeholder="Select a decision" value={d.decision || null} options={decisions.map((x) => ({ value: x.id, label: x.label }))} onChange={(decision) => set({ decision })} /> : <span style={text(12, 400, t.label)}>Needs a Decision step</span>}
             </Field>
           ) : null}
           <label style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 24 }}>

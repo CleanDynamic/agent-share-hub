@@ -59,7 +59,7 @@ export const PART_WINDOW_COPY = {
   runs: "Runs",
   starts: "Trigger",
   cases: "Test cases",
-  tiles: "Its tiles",
+  tiles: "Its steps",
   setup: (n: number) => `Setup · ${n} ${n === 1 ? "item" : "items"}`,
   nothing: "Nothing written yet",
   calledFrom: "Calling code",

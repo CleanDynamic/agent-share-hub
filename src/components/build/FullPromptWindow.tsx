@@ -148,7 +148,8 @@ export const FULL_PROMPT_COPY = {
   variables: "Variables",
   variablesLine: "Format: {company name}",
   noVariablesCount: "No variables yet",
-  replyCount: (n: number) => `${n.toLocaleString("en-GB")} of ${REPLY_MAX.toLocaleString("en-GB")} characters`,
+  wordCount: (n: number) => `${n.toLocaleString("en-GB")} ${n === 1 ? "word" : "words"}`,
+  replyCount: (n: number) => `${n.toLocaleString("en-GB")} / ${REPLY_MAX.toLocaleString("en-GB")}`,
   markVariable: "Mark selection as a variable",
   noVariables: "No {variables} written in this prompt yet.",
 } as const;
@@ -600,7 +601,7 @@ function RefinedBody({ props: given, step, prompts, phone }: { props: FullPrompt
       <ModalInset.Provider value={phone ? 0 : MODAL_PAD}>
         <div data-testid="modal-body" style={bodyStyle(phone)}>
           <Block noRule>
-            <BlockHead label={FULL_PROMPT_COPY.prompt} id={`prompt-label-${step.id}`} count={`${step.words} words`}>
+            <BlockHead label={FULL_PROMPT_COPY.prompt} id={`prompt-label-${step.id}`} count={FULL_PROMPT_COPY.wordCount(step.words)}>
               {markable ? (
                 <RecipeButton
                   small
