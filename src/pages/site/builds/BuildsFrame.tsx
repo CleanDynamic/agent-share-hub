@@ -129,7 +129,14 @@ function ViewSegment({ view, current, href, onIntent }: { view: GalleryViewMode;
           whiteSpace: "nowrap",
         }}
       >
-        {VIEW_LABEL[view]}
+        {/* BF-03 (D1): the label holds the width of its 500 weight, so the switch is as wide on every view and no segment
+            moves under the pointer when the current one changes. */}
+        <span style={{ display: "inline-grid" }}>
+          <span style={{ gridArea: "1 / 1" }}>{VIEW_LABEL[view]}</span>
+          <span aria-hidden="true" style={{ gridArea: "1 / 1", fontWeight: 500, visibility: "hidden" }}>
+            {VIEW_LABEL[view]}
+          </span>
+        </span>
       </span>
     </Link>
   );
@@ -147,40 +154,15 @@ export function ViewSwitch({ view, hrefFor, onIntent }: { view: GalleryViewMode;
   );
 }
 
-/** "n builds", its meta line, and the view switch on the right. */
+/** "n builds", its meta line, and the view switch on the right: the one head of Table, Maps and Classification (BF-03 D1), so
+    the title and the switch stand in the same place on every view. The h1 holds the number only; the meta line sits under it. */
 export function BuildsHead({ figure, parts, switcher, updating }: { figure: ReactNode; parts: readonly FigurePart[]; switcher: ReactNode; updating?: boolean }) {
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
-      <h1 style={{ margin: 0, fontSize: "inherit", fontWeight: "inherit", ...(updating ? { opacity: 0.5 } : null) }}>
-        <PageFigure figure={figure} parts={parts} />
-      </h1>
-      {switcher}
-    </div>
-  );
-}
-
-/** SV-12: the Maps page's head: "Builds" 20/500, the sentence in `--text2`, and the view switch. (The board differs from
-    the Table's head here, and the board wins.) */
-export function MapsHead({ switcher, updating }: { switcher: ReactNode; updating?: boolean }) {
-  return (
-    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 16 }}>
-      <div>
-        <h1 style={{ margin: 0, ...text(20, 500, t.text), lineHeight: 1.2, letterSpacing: "-0.015em", ...(updating ? { opacity: 0.5 } : null) }}>Builds</h1>
-        <p style={{ margin: "4px 0 0", ...text(13, 400, t.text2) }}>Each build's Map: one box per session, one line where a tile in one session uses something from another.</p>
-      </div>
-      {switcher}
-    </div>
-  );
-}
-
-/** SV-13: the Classification page's head: "n builds" 20/500, its sentence in `--text2`, and the view switch. */
-export function ClassificationHead({ figure, switcher, updating }: { figure: string; switcher: ReactNode; updating?: boolean }) {
-  return (
-    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
-      <div>
-        <h1 style={{ margin: 0, ...text(20, 500, t.text), lineHeight: 1.2, letterSpacing: "-0.015em", ...(updating ? { opacity: 0.5 } : null) }}>{figure}</h1>
-        <p style={{ margin: "4px 0 0", ...text(13, 400, t.text2) }}>Classification of each build · select a value to filter by it</p>
-      </div>
+    <div data-testid="builds-head" style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+      <PageFigure
+        figure={<h1 style={{ margin: 0, fontSize: "inherit", fontWeight: "inherit", lineHeight: "inherit", letterSpacing: "inherit", ...(updating ? { opacity: 0.5 } : null) }}>{figure}</h1>}
+        parts={parts}
+      />
       {switcher}
     </div>
   );
@@ -349,7 +331,7 @@ export function MapsLoadingView({ hrefFor }: { hrefFor: (view: GalleryViewMode) 
   return (
     <LoadingRegion what="builds" announce>
       <div data-testid="builds-loading" style={{ ...ROOT, paddingBottom: 64 }}>
-        <MapsHead switcher={<ViewSwitch view="maps" hrefFor={hrefFor} />} />
+        <BuildsHead figure="Builds" parts={[{ text: " " }]} switcher={<ViewSwitch view="maps" hrefFor={hrefFor} />} />
         <div style={{ height: 28, marginTop: 16 }} />
         <div style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, marginTop: 32 }} aria-hidden="true">
           {Array.from({ length: columns * 2 }, (_, index) => (
@@ -376,7 +358,7 @@ export function ClassificationLoadingView({ hrefFor }: { hrefFor: (view: Gallery
   return (
     <LoadingRegion what="builds" announce>
       <div data-testid="builds-loading" style={{ ...ROOT, paddingBottom: 64 }}>
-        <ClassificationHead figure="Builds" switcher={<ViewSwitch view="classification" hrefFor={hrefFor} />} />
+        <BuildsHead figure="Builds" parts={[{ text: " " }]} switcher={<ViewSwitch view="classification" hrefFor={hrefFor} />} />
         <div style={{ height: 28, marginTop: 24 }} />
         <div style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, alignItems: "start", marginTop: 32 }} aria-hidden="true">
           {Array.from({ length: columns * 2 }, (_, index) => (

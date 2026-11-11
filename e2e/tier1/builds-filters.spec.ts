@@ -35,4 +35,23 @@ test.describe("/builds filters", () => {
     await expect(views.getByRole("link")).toHaveCount(3);
     for (const name of ["Table", "Maps", "Classification"]) await expect(views.getByRole("link", { name })).toBeVisible();
   });
+
+  // BF-03 P1 (D1): one head on every view, so the switch stays under the pointer.
+  test("the view switch does not move between Table, Maps and Classification", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "desktop project only");
+    await open(page);
+    await expect(page.getByTestId("builds-table")).toBeVisible();
+    const views = page.getByRole("navigation", { name: "View" });
+    const table = await views.boundingBox();
+    await views.getByRole("link", { name: "Maps" }).click();
+    await expect(page.getByTestId("builds-maps")).toBeVisible();
+    const maps = await views.boundingBox();
+    await views.getByRole("link", { name: "Classification" }).click();
+    await expect(page.getByTestId("builds-classification")).toBeVisible();
+    const classification = await views.boundingBox();
+    for (const box of [maps, classification]) {
+      expect(Math.abs(box!.y - table!.y)).toBeLessThanOrEqual(1);
+      expect(Math.abs(box!.x - table!.x)).toBeLessThanOrEqual(1);
+    }
+  });
 });

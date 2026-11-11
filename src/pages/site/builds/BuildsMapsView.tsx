@@ -1,9 +1,9 @@
 /* SV-12: the Maps view of Builds, pure: each build's Map, read only. One box per session, one line wherever a tile in one
    session uses something from another, part labels. The board is `design/reference/vision/dusk/builds-maps.html`.
 
-   The page has no filter column here (the board differs from the Table's), so this draws the whole page: the head with
-   its sentence and the view switch, one row (Filters with the active count, the first four chips, the direction switch,
-   "n builds · n with a Map") and the grid. Filters opens the Table's own panel, given as `panel`, so the filters are the
+   The page has no filter column here (the board differs from the Table's), so this draws the whole page: the Table's own
+   head (BF-03) with its sentence and the view switch, one row (Filters with the active count, the first four chips, the
+   direction switch, "n with a Map") and the grid. Filters opens the Table's own panel, given as `panel`, so the filters are the
    Table's, kept across views.
 
    WHERE THINGS ARE comes from the composer's layout (`layoutSessionMap`), turned into the well's 400 x 220 space by
@@ -26,7 +26,7 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
-import { BuildsControl, MapsHead, UpdatingStatus, ViewSwitch, ellipsis, text, useCardColumns } from "./BuildsFrame";
+import { BuildsControl, BuildsHead, UpdatingStatus, ViewSwitch, ellipsis, text, useCardColumns } from "./BuildsFrame";
 import { RowLamp, type TableChip } from "./BuildsTableView";
 
 /** The well, in the board's own units. */
@@ -105,7 +105,7 @@ export interface BuildsMapsViewProps {
   panel?: ReactNode;
   direction: MapsDirection;
   onDirection: (direction: MapsDirection) => void;
-  /** "18 builds", and how many of them have a Map (null until the Maps are read). */
+  /** The page's count label ("18 builds", "3 of 18 builds"), the head's figure; and how many have a Map (null until the Maps are read). */
   buildsLabel: string;
   withMap: number | null;
   cards: readonly MapCardView[];
@@ -216,6 +216,8 @@ export function MapCard({ card, direction, index }: { card: MapCardView; directi
 
 /* ── the page ── */
 
+const MAPS_PARTS = [{ text: "Each build's Map: one box per session, one line where a tile in one session uses something from another." }];
+
 export default function BuildsMapsView(props: BuildsMapsViewProps) {
   const { view, hrefFor, onViewIntent, activeCount, chips, onRemoveChip, panel, direction, onDirection, buildsLabel, withMap, cards, onMore, loadingMore, empty, notice, updating } = props;
   const [open, setOpen] = useState(false);
@@ -224,7 +226,7 @@ export default function BuildsMapsView(props: BuildsMapsViewProps) {
   const rest = chips.length - shown.length;
   return (
     <div data-testid="builds-maps" style={ROOT}>
-      <MapsHead updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
+      <BuildsHead figure={buildsLabel} parts={MAPS_PARTS} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
 
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 16 }}>
         <BuildsControl aria-expanded={panel ? open : undefined} disabled={!panel} onClick={() => setOpen((value) => !value)}>
@@ -248,10 +250,7 @@ export default function BuildsMapsView(props: BuildsMapsViewProps) {
           value={direction}
           onChange={onDirection}
         />
-        <span style={text(12, 400, t.label)}>
-          {buildsLabel}
-          {withMap !== null ? ` · ${withMap} with a Map` : ""}
-        </span>
+        {withMap !== null ? <span style={text(12, 400, t.label)}>{`${withMap} with a Map`}</span> : null}
         <UpdatingStatus updating={updating} />
       </div>
 

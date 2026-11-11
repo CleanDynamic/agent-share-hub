@@ -489,7 +489,9 @@ describe("BF-01 the head line", () => {
   it('with no filter the head reads "2 builds" and its meta line starts "Of 2 published"', async () => {
     getGalleryStats.mockResolvedValue({ inGallery: 2, reproducedThisWeek: 0, weeklyGoal: null, freshPct: 50 });
     renderAt("/builds");
-    const head = await screen.findByRole("heading", { level: 1, name: /^2 builds/ });
+    await screen.findByRole("heading", { level: 1, name: "2 builds" });
+    /* BF-03: the h1 holds the number only; the meta line is under it in the one head. */
+    const head = screen.getByTestId("builds-head");
     await waitFor(() => expect(head.textContent).toMatch(/^2 buildsOf 2 published/));
   });
 
@@ -497,7 +499,8 @@ describe("BF-01 the head line", () => {
     listBuildsTable.mockResolvedValue({ builds: [build(1)], total: 1 });
     getGalleryStats.mockResolvedValue({ inGallery: 2, reproducedThisWeek: 0, weeklyGoal: null, freshPct: 50 });
     renderAt(`/builds?f=${encodeURIComponent(`autonomy:${AUTONOMY_VALUES[0].id}`)}`);
-    const head = await screen.findByRole("heading", { level: 1, name: /^1 of 2 builds/ });
+    await screen.findByRole("heading", { level: 1, name: "1 of 2 builds" });
+    const head = screen.getByTestId("builds-head");
     await waitFor(() => expect(head.textContent).toContain("this week"));
     expect(head.textContent).not.toContain("published");
   });

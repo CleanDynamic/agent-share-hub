@@ -362,7 +362,7 @@ export default function BuildsPage() {
             panel={<BuildsFiltersView {...filters} collapsed={false} />}
             direction={direction}
             onDirection={setDirection}
-            buildsLabel={`${count} ${count === 1 ? "build" : "builds"}`}
+            buildsLabel={buildsLabel}
             builds={mapBuilds}
             maps={maps.flatMap((entry) => entry.data ?? [])}
             failed={mapsFailed}
