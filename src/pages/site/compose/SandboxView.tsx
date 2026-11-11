@@ -289,7 +289,7 @@ export const listHint = (phone: boolean): string | null => (phone ? LIST_HINT_PH
 
 /** The columns start this far under the title row. */
 const COLUMNS_TOP = 32;
-export const DETAILS_EMPTY = "Select a prompt, session or file to see it here.";
+export const DETAILS_EMPTY = "Select a step to see its details";
 
 /** "3 sessions · 12 prompts · 2 files", leaving out any zero. */
 export function countsLine(counts: SandboxCounts): string {

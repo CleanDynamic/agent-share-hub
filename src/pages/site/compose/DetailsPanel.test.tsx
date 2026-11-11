@@ -9,7 +9,7 @@ import { buildFacts, tileView } from "@/dev/fixtures/detailsKinds";
 import { TILE_KINDS } from "@/lib/build/tileSections";
 
 import { BuildAnnouncer } from "./BuildAnnouncer";
-import { DETAILS_COPY, DetailsPanel, type DetailsPanelProps } from "./DetailsPanel";
+import { DETAILS_COPY, DetailsPanel, type DetailsPanelProps, type DetailsView } from "./DetailsPanel";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
@@ -88,7 +88,7 @@ describe("the head", () => {
     panel();
     const head = screen.getByTestId("details-head");
     expect(within(head).getByRole("heading", { name: "Fix the mobile layout" })).toBeTruthy();
-    expect(screen.getByTestId("details-line").textContent).toBe("Session 2 · Claude Code · Sonnet 5.5 · 4 Mar · prompt 3 of 4");
+    expect(screen.getByTestId("details-line").textContent).toBe("Step 3 · Session 2 · Claude Code · Sonnet 5.5 · 4 Mar");
   });
 
   it("draws a default title quiet, marked", () => {
@@ -211,9 +211,21 @@ describe("what it keeps: it reads or moves, it does not change", () => {
 });
 
 describe("nothing selected", () => {
-  it("says to select a step tile or a session", () => {
+  it("says one line, to select a step", () => {
     panel({ view: null });
-    expect(screen.getByText("Select a step tile or session to see it here.")).toBeTruthy();
-    expect(DETAILS_COPY.empty).toBe("Select a step tile or session to see it here.");
+    expect(screen.getByText("Select a step to see its details")).toBeTruthy();
+    expect(DETAILS_COPY.empty).toBe("Select a step to see its details");
+  });
+
+  it("shows tile B's title after tile A's, and the line again when the selection is cleared (F14)", () => {
+    const a = { ...tileView("prompt", "full"), id: "a", title: "Tile A", defaultTitle: "Prompt 1" } as DetailsView;
+    const b = { ...tileView("prompt", "full"), id: "b", title: "Tile B", defaultTitle: "Prompt 2" } as DetailsView;
+    const props = baseProps();
+    const view = render(<DetailsPanel {...props} view={a} />);
+    expect(screen.getByRole("heading", { level: 3 }).textContent).toBe("Tile A");
+    view.rerender(<DetailsPanel {...props} view={b} />);
+    expect(screen.getByRole("heading", { level: 3 }).textContent).toBe("Tile B");
+    view.rerender(<DetailsPanel {...props} view={null} />);
+    expect(screen.getByText(DETAILS_COPY.empty)).toBeTruthy();
   });
 });

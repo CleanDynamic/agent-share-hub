@@ -1233,7 +1233,10 @@ export function withSentWith(step: Step): Step[] {
 }
 
 /** The title the maker typed, else the default. */
-/** A prompt's name by its place on the build: "Prompt 3 · Session 2", or "Prompt 3" when it is in no numbered session. The maker's own title, if any, is drawn next to it. */
+/** F56: the one identifier of a step: its position in the build, "Step 11". The tile, Details, the prompt window and Sources all say it this way. */
+export const stepLabel = (number: string): string => `Step ${number}`;
+
+/** A prompt's name by its place on the build: "Prompt 3 · Session 2", or "Prompt 3" when it is in no numbered session. Only the Open Builds attach labels still use it (F56 left them out: not a file this prompt may touch). */
 export function promptPlace(number: string, sessionNumber: number | null | undefined): string {
   return sessionNumber ? `Prompt ${number} · Session ${sessionNumber}` : `Prompt ${number}`;
 }

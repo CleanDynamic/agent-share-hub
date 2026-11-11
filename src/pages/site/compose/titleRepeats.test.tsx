@@ -45,10 +45,10 @@ describe("the List", () => {
     ]);
     const first = screen.getByRole("group", { name: /^Prompt 1:/ });
     expect(within(first).queryByTestId("title-hidden")).toBeNull();
-    expect(within(first).getByTestId("prompt-place").textContent).toMatch(/^Prompt 1/);
+    expect(within(first).getByTestId("prompt-place").textContent).toBe("Step 1");
     expect(within(first).queryByTestId("prompt-own-title")).toBeNull();
     const second = screen.getByRole("group", { name: /^Prompt 2:/ });
-    expect(within(second).getByTestId("prompt-place").textContent).toMatch(/^Prompt 2/);
+    expect(within(second).getByTestId("prompt-place").textContent).toBe("Step 2");
     expect(within(second).getByTestId("prompt-own-title").textContent).toBe("ccc");
     expect(within(screen.getByRole("group", { name: /^Prompt 3:/ })).queryByTestId("prompt-own-title")).toBeNull();
   });

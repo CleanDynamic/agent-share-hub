@@ -163,7 +163,7 @@ describe("Details", () => {
   it("the empty line crossfades the same way", async () => {
     const view = render(<DetailsPanel {...props(null)} />);
     view.rerender(<DetailsPanel {...props(tileView("prompt", "full"))} />);
-    expect(document.body.textContent).toContain("Select a step tile or session to see it here.");
+    expect(document.body.textContent).toContain("Select a step to see its details");
     await passes(FAST);
     expect(kindShown()).toBe("prompt");
   });

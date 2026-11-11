@@ -25,8 +25,9 @@ describe("on the build page", () => {
     await screen.findByTestId("find-field");
     const input = screen.getByTestId("find-input") as HTMLInputElement;
     await waitFor(() => expect(document.activeElement).toBe(input));
+    // F56: the h3 is now the step's identifier ("Step 1"), which Find does not read; the word comes from the tile's own text.
     const first = document.querySelector('[data-testid="step-card"]');
-    const word = (first?.querySelector("h3")?.textContent ?? "").split(/\s+/).find((piece) => piece.length > 3) ?? "Prompt";
+    const word = (first?.querySelector("p")?.textContent ?? "").split(/\s+/).find((piece) => piece.length > 3) ?? "Prompt";
     fireEvent.change(input, { target: { value: word } });
     await waitFor(() => expect(screen.getByTestId("find-count").textContent).toMatch(/^1 of \d+$/));
     fireEvent.keyDown(input, { key: "Escape" });

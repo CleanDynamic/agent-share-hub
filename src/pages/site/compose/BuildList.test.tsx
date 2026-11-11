@@ -77,15 +77,15 @@ describe("session dividers", () => {
 });
 
 describe("step cards", () => {
-  it("calls a prompt by its place on the build, 'Prompt 1 · Session 1', with a typed title next to it (CA-15 follow-up)", () => {
+  it("calls a prompt by its step, 'Step 1', with a typed title next to it (CA-15 follow-up)", () => {
     list();
     const card = (name: RegExp) => screen.getByRole("group", { name });
     const quiet = within(card(/^Prompt 2:/)).getByRole("heading", { level: 3 });
     const named = within(card(/^Prompt 1:/)).getByRole("heading", { level: 3 });
-    expect(within(quiet).getByTestId("prompt-place").textContent).toMatch(/^Prompt 2 · Session \d+$/);
+    expect(within(quiet).getByTestId("prompt-place").textContent).toBe("Step 2");
     expect(within(quiet).queryByTestId("prompt-own-title")).toBeNull();
     expect(quiet.getAttribute("data-default-title")).toBe("true");
-    expect(within(named).getByTestId("prompt-place").textContent).toMatch(/^Prompt 1 · Session \d+$/);
+    expect(within(named).getByTestId("prompt-place").textContent).toBe("Step 1");
     expect(within(named).getByTestId("prompt-own-title").textContent).toBe("Homepage copy");
     expect(named.getAttribute("data-default-title")).toBeNull();
     expect(within(named).getByTestId("prompt-name").getAttribute("style")).toMatch(/font-weight:\s*500/);

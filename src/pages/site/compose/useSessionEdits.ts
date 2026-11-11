@@ -639,7 +639,7 @@ export function useSessionEdits(input: SessionEditsInput) {
             const reassign = new Map(plan.tail.map((step) => [step.id, key]));
             await applyLayout({ order: insertedAfter(keys, key, plan.from), reassign, meta });
             const tile = steps.find((step) => step.id === stepId);
-            return `Split Session ${group?.number ?? ""} at step tile ${tile?.number ?? ""}`.replace("  ", " ");
+            return `Split Session ${group?.number ?? ""} at step ${tile?.number ?? ""}`.replace("  ", " ");
           },
           true,
         ),
@@ -662,7 +662,7 @@ export function useSessionEdits(input: SessionEditsInput) {
         const step = steps.find((entry) => entry.id === id);
         const keys = orderKeys(groups).filter((entry) => !isLegacySession(entry)).concat(target).filter((entry, at, all) => all.indexOf(entry) === at);
         const number = groups.find((entry) => groupKey(entry) === key)?.number ?? "";
-        const sentence = options.sentence ?? `Moved ${step ? `step tile ${step.number}` : "the step tile"} to Session ${number}`;
+        const sentence = options.sentence ?? `Moved ${step ? `step ${step.number}` : "the step"} to Session ${number}`;
         await track(sentence, () => applyLayout({ order: keys, reassign: new Map([[id, target]]), atEnd: options.order ? [...options.order] : [id] }), options.notice ?? false);
         if (options.said) latest.current.say(options.said);
         ok = true;

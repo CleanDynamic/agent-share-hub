@@ -44,7 +44,7 @@ import { CodeLines } from "@/components/code/CodeLines";
 import { SHAPE_HOW_LABEL, shapeFragment, type OutputShape } from "@/lib/build/answerShape";
 import { addRange, bracketed, changesLine, rangeAt, removeRange, type ChangeRange } from "@/lib/build/changes";
 import { REPLY_MAX } from "@/lib/build/composePrompts";
-import { groupKind, groupOfStep, promptNumbersOf, promptPlace, stepTitle, TITLE_MAX, type SessionGroup, type Step } from "@/lib/build/graph";
+import { groupKind, groupOfStep, promptNumbersOf, stepLabel, stepTitle, TITLE_MAX, type SessionGroup, type Step } from "@/lib/build/graph";
 import { EFFORTS, EFFORT_LABEL, SETTINGS_INSTRUCTIONS_MAX, VARIABLE_DESCRIPTION_MAX, markVariable, variablesFor, type Effort, type PromptSettings } from "@/lib/build/tileExtras";
 import { modelLabel } from "@/lib/models/registry";
 import { t } from "@/lib/theme/tokens";
@@ -195,13 +195,12 @@ function bodyFacts(props: FullPromptWindowProps, step: Step, prompts: readonly S
   const model = step.settings?.model || step.model || group?.model || null;
   const dated = group ? groupKind(group) !== "legacy" : false;
   const when = dated && group ? longDate(group.startedAt) : "";
-  /** CA-15 P2: one grey line, "Session 1 · Claude · 7 Oct 2026 · Prompt 1 of 3 in session". */
-  const name = promptPlace(step.number, dated && group ? group.number : null);
+  /** F56: the title is the step's identifier, "Step 11". CA-15 P2, F56: one grey line, "Step 11 · 8 of 20 in Session 2 · Claude · 7 Oct 2026"; the position in the session is said here and nowhere else. */
+  const name = stepLabel(step.number);
   const line = [
-    dated && group ? `Session ${group.number}` : null,
+    group && inSession > 0 ? `${name} · ${inSession} of ${sessionPrompts.length} in ${dated ? `Session ${group.number}` : "session"}` : name,
     tool,
     when || null,
-    group && inSession > 0 ? `Prompt ${inSession} of ${sessionPrompts.length} in session` : `Prompt ${place} of ${prompts.length}`,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -547,9 +546,7 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
         <div style={HEADER_TEXT}>
           {maker && onTitle ? (
             <>
-              <Dialog.Title style={VISUALLY_HIDDEN}>
-                Prompt {step.number} of {prompts.length}
-              </Dialog.Title>
+              <Dialog.Title style={VISUALLY_HIDDEN}>{name}</Dialog.Title>
               <RefinedTitleField key={step.id} step={step} place={name} onTitle={onTitle} phone={phone} />
             </>
           ) : (

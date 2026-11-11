@@ -13,9 +13,9 @@ import {
   groupOfStep,
   shownGroups,
   madeByOf,
-  promptPlace as placeOfPrompt,
   madeFilesOf,
   RESULT_TYPE,
+  stepLabel,
   stepTitle,
   TOOL_TYPE,
   toolConnectionOf,
@@ -37,7 +37,6 @@ import {
   inputOptions,
   insideCounts,
   makesRows,
-  promptPlace,
   sessionNumberOf,
   textLabel,
   inputRows,
@@ -122,7 +121,6 @@ function promptView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
   const inSession = Boolean(group) && groupKind(group as SessionGroup) !== "legacy";
   const model = step.model ? modelLabel(step.model) : null;
   const when = inSession && group ? shortDate(group.startedAt) : "";
-  const place = promptPlace(step, ctx.steps);
   // SV-27 P4: the build's Host tiles, for Where and the line's GPUs.
   const hosts = runHostsOf(ctx.tree);
   const runHost = step.modelRun?.host ? (hosts.find((entry) => entry.id === step.modelRun?.host) ?? null) : null;
@@ -134,9 +132,9 @@ function promptView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
     title: step.title,
     defaultTitle: step.defaultTitle,
     editable: !instructions,
-    ...(instructions ? null : { place: placeOfPrompt(step.number, inSession && number ? number : null) }),
+    ...(instructions ? null : { place: stepLabel(step.number) }),
     sessionLine: instructions ? "Instructions" : typed && !inSession ? (tool ?? "Prompt") : [number ? `Session ${number}` : "Session", tool].filter(Boolean).join(" · "),
-    detailLine: instructions ? "" : [model ? modelRunLine(model, step.modelRun, { host: runHost }) : null, when, place].filter(Boolean).join(" · "),
+    detailLine: instructions ? "" : [model ? modelRunLine(model, step.modelRun, { host: runHost }) : null, when].filter(Boolean).join(" · "),
     typed,
     model,
     // CA-02 P8: the tool a typed prompt names, as saved, for its model menu and the note on a pair that breaks the rules.
