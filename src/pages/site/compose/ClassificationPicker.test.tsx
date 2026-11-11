@@ -137,9 +137,22 @@ describe("ClassificationPicker: chips, suggestions and limits", () => {
     const onEntries = vi.fn();
     render(<Harness facet="task" label="Task" primary max={3} initial={withPrimary([{ id: "create.writing" }, { id: "find.literature-review" }])} onEntries={onEntries} />);
     expect(screen.getAllByText("Primary")).toHaveLength(1);
-    fireEvent.click(screen.getByRole("button", { name: "Options for Literature review" }));
+    fireEvent.keyDown(screen.getByRole("button", { name: "Options for Literature review" }), { key: "Enter" });
     fireEvent.click(screen.getByRole("menuitem", { name: "Make primary" }));
     expect(onEntries).toHaveBeenCalledWith([{ id: "find.literature-review", primary: true }, { id: "create.writing" }]);
+  });
+
+  it("F39: the chip menu behaves as the other menus: Enter and ArrowDown open it, Escape closes it", () => {
+    render(<Harness facet="task" label="Task" primary max={3} initial={withPrimary([{ id: "create.writing" }, { id: "find.literature-review" }])} />);
+    const trigger = screen.getByRole("button", { name: "Options for Literature review" });
+    expect(trigger.getAttribute("aria-haspopup")).toBe("menu");
+    fireEvent.keyDown(trigger, { key: "Enter" });
+    const menu = screen.getByRole("menu", { name: "Options for Literature review" });
+    expect(within(menu).getByRole("menuitem", { name: "Make primary" })).toBeTruthy();
+    fireEvent.keyDown(menu, { key: "Escape" });
+    expect(screen.queryByRole("menu")).toBeNull();
+    fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    expect(screen.getByRole("menu", { name: "Options for Literature review" })).toBeTruthy();
   });
 
   it("gives chips and options 44 high targets on a phone", () => {

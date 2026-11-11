@@ -80,6 +80,7 @@ import {
 } from "@/pages/site/compose/modalRecipes";
 
 import type { PromptView } from "@/pages/site/compose/DetailsPanel";
+import { MODAL_TOP } from "@/pages/site/compose/ModalFrame";
 import { PromptEdits, type PromptEditHandlers } from "@/pages/site/compose/editKit";
 
 import { JobFields, agentOfPrompt } from "./JobFields";
@@ -721,8 +722,8 @@ export function FullPromptWindow(props: FullPromptWindowProps) {
             zIndex: 61,
             ...(phone
               ? { inset: 0, boxSizing: "border-box", overflowY: "auto", padding: "16px 16px 0", background: t.window, color: t.text, fontFamily: FIGTREE }
-              : /* CA-15b: the frame recipe, 640 wide, at most the window less 80, centred. */
-                { top: "50%", left: "50%", transform: "translate(-50%, -50%)", ...frameStyle(MODAL_WIDTH.wide) }),
+              : /* CA-15b: the frame recipe, 640 wide. F38: its top edge pinned at 48 as ModalShell's (F25), so a section that opens moves nothing above it. */
+                { top: MODAL_TOP, left: "50%", transform: "translateX(-50%)", ...frameStyle(MODAL_WIDTH.wide), maxHeight: `calc(100dvh - ${MODAL_TOP * 2}px)` }),
           }}
         >
           {step ? (

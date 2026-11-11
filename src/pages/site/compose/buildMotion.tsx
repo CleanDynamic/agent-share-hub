@@ -100,7 +100,7 @@ export function liftOut(elements: readonly Element[], { stagger = 0, spread = ST
 /** How long a lift of `count` items takes from the first starting to the last ending. */
 export const liftSpan = (count: number, stagger: number = STAGGER, spread: number = STAGGER_SPREAD_MAX, ms: number = LIFT): number => (count > 0 ? staggerDelay(count - 1, count, stagger, spread) + ms : 0);
 
-/* ── resizeFrame: a window that grows or closes about its fixed centre ── */
+/* ── resizeFrame: a window that grows or closes from its pinned top edge (F38) ── */
 
 /** The three parts of a modal window that move when its frame changes size. */
 export interface FrameParts {
@@ -120,17 +120,16 @@ const SHADOW_ROOM = 96;
 const FRAME_RADIUS = 12;
 
 /**
- * A centred window that was `from` tall and is now `to` tall (growing: it is already drawn at `to`; closing: it is still drawn at
- * `from`, and the caller takes the content away once this has run). Its centre stays where it is: the top edge and the header move
- * by half the difference one way, the bottom edge and the footer by half the other way. The frame is drawn with `clip-path: inset()`
- * from the old height to the new, and the header, body and footer move with `translateY`, so no layout property is animated.
+ * A window that was `from` tall and is now `to` tall (growing: it is already drawn at `to`; closing: it is still drawn at `from`,
+ * and the caller takes the content away once this has run). F38: its top edge is pinned (F25, `MODAL_TOP`), so the top edge, the
+ * header and the body stay where they are; only the bottom edge and the footer move, by the whole difference. The frame is drawn
+ * with `clip-path: inset()` from the old height to the new, and the footer moves with `translateY`, so no layout property is animated.
  */
 export function resizeFrame(frame: HTMLElement, parts: FrameParts, from: number, to: number, ms: number = BASE): MotionRun {
   const change = Math.abs(to - from);
   if (!canAnimate(frame) || change < 1) return DONE;
-  const half = change / 2;
   const growing = to > from;
-  const clip = (cut: number) => `inset(${cut}px -${SHADOW_ROOM}px ${cut}px -${SHADOW_ROOM}px round ${FRAME_RADIUS}px)`;
+  const clip = (cut: number) => `inset(-${SHADOW_ROOM}px -${SHADOW_ROOM}px ${cut}px -${SHADOW_ROOM}px round ${FRAME_RADIUS}px)`;
   const options: KeyframeAnimationOptions = { duration: ms, fill: growing ? "none" : "forwards" };
   const slide = (element: HTMLElement | null, id: string, by: number) => {
     if (!element || !canAnimate(element)) return null;
@@ -138,10 +137,8 @@ export function resizeFrame(frame: HTMLElement, parts: FrameParts, from: number,
     return start(element, id, growing ? [{ transform: away }, { transform: "none" }] : [{ transform: "none" }, { transform: away }], options);
   };
   return runOf([
-    start(frame, "frame", growing ? [{ clipPath: clip(half) }, { clipPath: clip(-SHADOW_ROOM) }] : [{ clipPath: clip(-SHADOW_ROOM) }, { clipPath: clip(half) }], options),
-    slide(parts.header, "frame-header", half),
-    slide(parts.body, "frame-body", half),
-    slide(parts.footer, "frame-footer", -half),
+    start(frame, "frame", growing ? [{ clipPath: clip(change) }, { clipPath: clip(-SHADOW_ROOM) }] : [{ clipPath: clip(-SHADOW_ROOM) }, { clipPath: clip(change) }], options),
+    slide(parts.footer, "frame-footer", -change),
   ]);
 }
 

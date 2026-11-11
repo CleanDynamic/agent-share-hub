@@ -12,6 +12,7 @@
    active `role="option"`; ArrowDown, ArrowUp, Enter and Escape work. While typing, the field's edge and ring are the
    focus ring. Touch targets are 44 high on a phone. The pieces are in `classificationPieces.tsx`. */
 
+import * as Menu from "@radix-ui/react-dropdown-menu";
 import { useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 
 import { Glyph } from "@/components/brand/Glyph";
@@ -22,7 +23,9 @@ import { DM_MONO } from "@/lib/theme/type";
 import { CUSTOM_MAX_LENGTH, findValues, isTechnicalField, pathOf, valueOf, valueByLabel, type Facet, type TaxonomyValue } from "@/lib/classify/taxonomy";
 import { isCustomEntry, type Entry } from "@/lib/classify/types";
 
-import { bareButton, ellipsis, text, wellField } from "./refinedStyles";
+import { bareButton, ellipsis, menuItem, menuSurface, text, wellField } from "./refinedStyles";
+import { MenuContent } from "./ComposeMenu";
+import { FLOATING_Z } from "./ToolPicker";
 import { ChosenValue, Matched, SuggestedRow, Suggestion, ownEntryRow, typeaheadList, typeaheadNote, typeaheadRow } from "./classificationPieces";
 
 export const OWN_ENTRY_NOTE = "Shown on the build. Reviewed before listing.";
@@ -71,38 +74,31 @@ export function resultNote(facet: Facet, value: TaxonomyValue, query: string): s
   return facet === "field" && isTechnicalField(value.id) ? `Technical \u203A ${path}` : path;
 }
 
+/** F39: the same Radix menu as the composer's and the prompt window's (`MenuContent`, `menuSurface`, `menuItem`): opens on click,
+ * Enter and ArrowDown, closes on Escape and a click outside, arrows move the highlight. */
 function TaskMenu({ label, phone, onMakePrimary }: { label: string; phone: boolean; onMakePrimary: () => void }) {
   const [menu, setMenu] = useState(false);
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
-    <>
-      <button
-        type="button"
-        aria-label={`Options for ${label}`}
-        aria-haspopup="menu"
-        aria-expanded={menu}
-        onClick={() => setMenu((v) => !v)}
-        {...handlers}
-        style={{ ...bareButton, display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: phone ? 44 : 18, minHeight: phone ? 44 : 18, borderRadius: 4, color: t.text2, ...ring(state.focusVisible) }}
-      >
-        <Glyph name="more" size={14} />
-      </button>
-      {menu ? (
-        <div role="menu" aria-label={`${label} options`} style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 20, padding: 4, borderRadius: 9, background: t.window, border: `1px solid ${t.controlBorder}`, boxShadow: t.windowShadow }}>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              onMakePrimary();
-              setMenu(false);
-            }}
-            style={{ ...bareButton, display: "flex", alignItems: "center", minHeight: phone ? 44 : 30, padding: "0 10px", borderRadius: 6, whiteSpace: "nowrap", ...text(13, 400, t.text) }}
-          >
+    <Menu.Root open={menu} onOpenChange={setMenu}>
+      <Menu.Trigger asChild>
+        <button
+          type="button"
+          aria-label={`Options for ${label}`}
+          {...handlers}
+          style={{ ...bareButton, display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: phone ? 44 : 18, minHeight: phone ? 44 : 18, borderRadius: 4, color: t.text2, ...ring(state.focusVisible) }}
+        >
+          <Glyph name="more" size={14} />
+        </button>
+      </Menu.Trigger>
+      <Menu.Portal>
+        <MenuContent align="start" sideOffset={4} style={{ ...menuSurface(), zIndex: FLOATING_Z }}>
+          <Menu.Item onSelect={onMakePrimary} style={menuItem(true, phone)}>
             Make primary
-          </button>
-        </div>
-      ) : null}
-    </>
+          </Menu.Item>
+        </MenuContent>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }
 
