@@ -15,7 +15,6 @@ import { Link } from "react-router-dom";
 
 import { LampBar } from "@/components/brand/LampDot";
 import { ModelMark } from "@/components/brand/ModelMark";
-import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
 import { Checkbox } from "@/components/brand/Checkbox";
 import {
   DropdownMenu,
@@ -310,15 +309,22 @@ function ColumnHead({ id, last, sorted, sortValue, onSort }: { id: ColumnId; las
   );
 }
 
-/** A tool's mark: the real logo from the registry in the board's 16px tile, and its name for a screen reader. */
+/** A tool's mark: the real logo from the registry in the board's 16px tile. BF-01 P5 (C11): a keyboard can reach it, and
+    it names its tool to a screen reader and, on hover, in its title. No shared tooltip is used on a site page. */
+function ToolMark({ tool }: { tool: TableTool }) {
+  const { state, handlers } = useInteractive<HTMLSpanElement>();
+  return (
+    <span role="img" aria-label={tool.name} title={tool.name} tabIndex={0} {...handlers} style={{ position: "relative", width: 16, height: 16, borderRadius: r.chip, background: t.tile, display: "inline-grid", placeItems: "center", ...ring(state.focusVisible) }}>
+      <ModelMark tool={tool.id} size={14} />
+    </span>
+  );
+}
+
 function ToolMarks({ tools }: { tools: readonly TableTool[] }) {
   return (
     <span style={{ display: "inline-flex", gap: 4, verticalAlign: "middle" }}>
       {tools.map((tool) => (
-        <span key={tool.id} title={tool.name} style={{ position: "relative", width: 16, height: 16, borderRadius: r.chip, background: t.tile, display: "inline-grid", placeItems: "center" }}>
-          <ModelMark tool={tool.id} size={14} />
-          <VisuallyHidden>{tool.name}</VisuallyHidden>
-        </span>
+        <ToolMark key={tool.id} tool={tool} />
       ))}
     </span>
   );

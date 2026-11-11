@@ -477,3 +477,31 @@ describe("BF-01 the lamp", () => {
     expect(within(foot).getByText("stale")).toBeTruthy();
   });
 });
+
+describe("BF-01 tools and runs", () => {
+  it("a build with no runs in twelve weeks shows the empty mark in Runs", () => {
+    for (const runs of [[], Array.from({ length: 12 }, () => 0)]) {
+      const { unmount } = drawTable([{ ...blankRow, runs }]);
+      expect(within(cellIn("Runs, 12 weeks")).getByTestId("empty-value")).toBeTruthy();
+      expect(screen.queryByRole("img", { name: /^Runs per week/ })).toBeNull();
+      unmount();
+    }
+  });
+
+  it("a build with runs still draws twelve bars with their summary", () => {
+    drawTable([{ ...blankRow, runs: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2] }]);
+    const summary = screen.getByRole("img", { name: "Runs per week over 12 weeks, oldest first: 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2" });
+    expect(summary.querySelectorAll('[aria-hidden="true"]').length).toBe(12);
+  });
+
+  it("each tool mark can be focused and names its tool", () => {
+    const tools = [{ id: "claude-code", name: "Claude Code" }, { id: "cursor", name: "Cursor" }];
+    drawTable([{ ...blankRow, tools }]);
+    for (const tool of tools) {
+      const mark = within(cellIn("Tools")).getByRole("img", { name: tool.name });
+      expect(mark.tabIndex).toBe(0);
+      mark.focus();
+      expect(document.activeElement).toBe(mark);
+    }
+  });
+});
