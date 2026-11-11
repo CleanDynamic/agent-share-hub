@@ -41,21 +41,9 @@ import { BuildsControl, BuildsTextButton, FiltersButton, TABLE_ROW, UpdatingStat
 
 /* ── props ── */
 
-/** The board's twelve columns. */
-export type BoardColumnId = "build" | "built" | "field" | "tools" | "steps" | "sessions" | "reproductions" | "confirmed" | "runs" | "rebuilds" | "open" | "cost";
-
-/** SV-24 P2: the twelve more the Columns chooser offers, 24 in all: Shape and the classification facets that are not already a column.
-    BF-10: and four more, 28: Works on model, Likes, Patterns (each a filter with no column till now) and Published (Newest's). */
-export type ExtraColumnId = "shape" | "task" | "setting" | "role" | "technique" | "modality" | "method" | "autonomy" | "data" | "oversight" | "age" | "skill" | "works" | "likes" | "patterns" | "published";
-
-export type ColumnId = BoardColumnId | ExtraColumnId;
-
-export const COLUMN_ORDER: readonly ColumnId[] = ["build", "built", "field", "tools", "steps", "sessions", "reproductions", "confirmed", "runs", "rebuilds", "open", "cost"];
-
-export const EXTRA_COLUMNS: readonly ExtraColumnId[] = ["shape", "task", "setting", "role", "technique", "modality", "method", "autonomy", "data", "oversight", "age", "skill", "works", "likes", "patterns", "published"];
-
-/** Every column, the extras after the board's twelve (so the footer's groups stay together). */
-export const ALL_COLUMNS: readonly ColumnId[] = [...COLUMN_ORDER, ...EXTRA_COLUMNS];
+/* BF-12: the ids live in `src/lib/build/buildsColumns.ts`, where the address can read them too. */
+import { ALL_COLUMNS, COLUMN_ORDER, EXTRA_COLUMNS, type BoardColumnId, type ColumnId, type ExtraColumnId } from "@/lib/build/buildsColumns";
+export { ALL_COLUMNS, COLUMN_ORDER, EXTRA_COLUMNS, type BoardColumnId, type ColumnId, type ExtraColumnId };
 
 export const COLUMN_NAME: Record<ColumnId, string> = {
   build: "Build",
@@ -117,6 +105,9 @@ export interface TableRowView {
   cost: string;
   /** SV-24 P2: the extra columns' values; absent where the dev page draws only the board's twelve. */
   extra?: Readonly<Partial<Record<ExtraColumnId, string>>>;
+  /** BF-12 (B3): the raw times of Last confirmed and Published, so they sort as times. */
+  confirmedAt?: string | null;
+  publishedAt?: string | null;
   /** BF-10: the Likes number, and the lists Works on model and Patterns are joined from, for the footer's calculations. */
   likes?: number;
   lists?: Readonly<Partial<Record<"works" | "patterns", readonly string[]>>>;

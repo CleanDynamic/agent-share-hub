@@ -32,12 +32,15 @@ export function listParamsOf(params: GalleryParams): BuildsTableOptions {
     confirmedState: params.state,
     worksOn: params.model,
     sort: params.sort ?? DEFAULT_GALLERY_SORT,
+    /* BF-12: the direction is the database sort's only while no browser key (other than the sort's own column, which a second
+       key sets) is set: a browser sort never asks again. */
+    ascending: params.dir === "asc" && (!params.by || params.by === SORT_COLUMN[params.sort ?? DEFAULT_GALLERY_SORT]),
   };
 }
 
 /** BF-08 (C1): what the lens counts are asked with: the list's filters, without the lens and the sort. */
 export function lensCountParams(params: GalleryParams): LensCountFilters {
-  const { lens: _lens, sort: _sort, ...filters } = listParamsOf(params);
+  const { lens: _lens, sort: _sort, ascending: _ascending, ...filters } = listParamsOf(params);
   return filters;
 }
 
@@ -280,7 +283,7 @@ export const activeCount = (params: GalleryParams): number => activeChips(params
 
 /** BF-02 (X2): what Clear all leaves: the lens, the view and the sort. Every filter, the query and the open set go. */
 export function clearedFilters(params: GalleryParams): GalleryParams {
-  return { lens: params.lens, madeFor: [], madeWith: [], query: null, view: params.view, sort: params.sort };
+  return { lens: params.lens, madeFor: [], madeWith: [], query: null, view: params.view, sort: params.sort, dir: params.dir, by: params.by, by2: params.by2, dir2: params.dir2 };
 }
 
 /** SV-12: the Maps view draws this many builds at a time, and reads their Maps in one request. */
@@ -339,6 +342,8 @@ export function tableRow(build: BuildsTableBuild, now: number, extras: readonly 
     ...(extras.length > 0 ? { extra: Object.fromEntries(extras.map((id) => [id, extraOf(id)])) } : null),
     likes: build.likeCount ?? 0,
     lists: { works, patterns },
+    confirmedAt: build.lastConfirmedAt,
+    publishedAt: build.publishedAt,
   };
 }
 
@@ -550,5 +555,118 @@ export const SORT_OPTIONS: readonly { value: GalleryFeedSort; label: string }[] 
   { value: "newest", label: "Newest" },
 ];
 
-/** The column each sort draws its arrow on; Newest has none. */
-export const SORT_COLUMN: Partial<Record<GalleryFeedSort, ColumnId>> = { reproduced: "reproductions", confirmed: "confirmed", rebuilt: "rebuilds" };
+/* ── BF-12 (B3, B5): sorting ── */
+
+/** The six orderings the database can do, by the column whose head chooses them. Every other column sorts in the browser,
+    and only when every matching build is loaded. */
+export const SERVER_SORT: Partial<Record<ColumnId, GalleryFeedSort>> = { reproductions: "reproduced", confirmed: "confirmed", rebuilds: "rebuilt", steps: "steps", sessions: "sessions", published: "newest" };
+
+/** The column each sort draws its arrow on: SERVER_SORT's inverse. */
+export const SORT_COLUMN = Object.fromEntries(Object.entries(SERVER_SORT).map(([column, sort]) => [sort, column])) as Partial<Record<GalleryFeedSort, ColumnId>>;
+
+const time = (value: string | null | undefined): number | null => {
+  const at = value ? Date.parse(value) : NaN;
+  return Number.isNaN(at) ? null : at;
+};
+
+/** A scale's place in the taxonomy, from its label; unknown labels are empty. */
+const scalePlace = (facet: Facet, label: string | undefined): number | null => {
+  const at = label ? TAXONOMY[facet].findIndex((value) => value.label === label) : -1;
+  return at < 0 ? null : at;
+};
+
+/** One sort key per column: a number, a word, or null for an empty value. */
+function sortKey(row: TableRowView, column: ColumnId): number | string | null {
+  const word = (value: string | undefined) => (value ? value : null);
+  switch (column) {
+    case "build":
+      return row.title;
+    case "steps":
+      return row.steps;
+    case "sessions":
+      return row.sessions;
+    case "reproductions":
+      return row.reproductions;
+    case "rebuilds":
+      return row.rebuilds;
+    case "likes":
+      return row.likes ?? null;
+    case "confirmed":
+      return time(row.confirmedAt);
+    case "published":
+      return time(row.publishedAt);
+    case "runs":
+      return row.runs.reduce((sum, value) => sum + value, 0);
+    case "tools":
+      return word(row.tools[0]?.name);
+    case "open":
+      return row.open ? Number.parseInt(row.open, 10) || 0 : null;
+    case "cost":
+      return scalePlace("cost", row.cost);
+    case "autonomy":
+    case "age":
+    case "skill":
+      return scalePlace(column, row.extra?.[column]);
+    case "built":
+      return word(row.built);
+    case "field":
+      return word(row.field);
+    default:
+      return word(row.extra?.[column]);
+  }
+}
+
+const collator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
+
+/** Two keys compared in a direction, an empty value last whichever way. */
+function compareKeys(a: number | string | null, b: number | string | null, ascending: boolean): number {
+  if (a === null || b === null) return a === b ? 0 : a === null ? 1 : -1;
+  const order = typeof a === "number" && typeof b === "number" ? a - b : collator.compare(String(a), String(b));
+  return ascending ? order : -order;
+}
+
+/** The rows sorted by a column (and a second to break its ties), each in its own direction. Pure and stable: a new array, equal
+    keys in the order they came. */
+export function sortRows(rows: readonly TableRowView[], by: ColumnId, ascending: boolean, by2?: ColumnId, ascending2 = false): TableRowView[] {
+  return rows
+    .map((row, at) => ({ row, at }))
+    .sort((a, b) => compareKeys(sortKey(a.row, by), sortKey(b.row, by), ascending) || (by2 ? compareKeys(sortKey(a.row, by2), sortKey(b.row, by2), ascending2) : 0) || a.at - b.at)
+    .map((entry) => entry.row);
+}
+
+/** The column the database sort draws its arrow on. */
+export const serverSortColumn = (params: GalleryParams): ColumnId | undefined => SORT_COLUMN[params.sort ?? DEFAULT_GALLERY_SORT];
+
+/** The first press on a column: a database column sorts there (descending, any browser keys cleared); any other column becomes
+    the browser's key over the database's sort. */
+export function firstSortStep(params: GalleryParams, column: ColumnId): GalleryParams {
+  const server = SERVER_SORT[column];
+  if (server) return { ...params, sort: server === DEFAULT_GALLERY_SORT ? undefined : server, dir: undefined, by: undefined, by2: undefined, dir2: undefined };
+  return { ...params, by: column, dir: undefined, by2: undefined, dir2: undefined };
+}
+
+/** What a press on a head does. A plain press cycles its column: sorted, then ascending, then back (the default sort's column has
+    two steps, so it only flips). A column the database cannot sort is offered only with everything loaded. `second` (Shift)
+    cycles the second key the same way, only with everything loaded. */
+export function nextSort(params: GalleryParams, column: ColumnId, allLoaded: boolean, second = false): GalleryParams {
+  const server = SERVER_SORT[column];
+  if (second) {
+    const first = params.by ?? serverSortColumn(params);
+    if (!allLoaded || !first || first === column) return params;
+    /* by2 needs a by: a second key over the database's sort names the sort's own column as the first. */
+    if (params.by2 !== column) return { ...params, by: first, by2: column, dir2: undefined };
+    if (params.dir2 !== "asc") return { ...params, dir2: "asc" };
+    return { ...params, by2: undefined, dir2: undefined };
+  }
+  const cleared = { ...params, by2: undefined, dir2: undefined };
+  if (server) {
+    const current = (!params.by || params.by === column) && (params.sort ?? DEFAULT_GALLERY_SORT) === server;
+    if (!current) return firstSortStep(params, column);
+    if (params.dir !== "asc") return { ...cleared, by: undefined, dir: "asc" };
+    return server === DEFAULT_GALLERY_SORT ? { ...cleared, by: undefined, dir: undefined } : { ...cleared, by: undefined, sort: undefined, dir: undefined };
+  }
+  if (!allLoaded) return params;
+  if (params.by !== column) return firstSortStep(params, column);
+  if (params.dir !== "asc") return { ...cleared, dir: "asc" };
+  return { ...cleared, by: undefined, dir: undefined };
+}
