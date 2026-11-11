@@ -121,13 +121,13 @@ export interface SourcesPanelProps {
 
 /** UX-02 P3 Stage B: the List's own grip at a row's start, drawn while the row is hovered or holds focus, at once. The only drag start. */
 function SourceGrip({ drag, label, phone, still = false }: { drag: ReturnType<typeof useSourceDrag>; label: string; phone: boolean; /** F52: a row that cannot move keeps the grip's room, so every row starts at one edge. */ still?: boolean }) {
-  if (!drag.on) return null;
-  if (still) return <span aria-hidden="true" data-testid="source-grip-room" style={{ width: GRIP_ROOM, flexShrink: 0 }} />;
+  /* S22: a row that cannot be dragged keeps the grip's room too, so every row's icon stands 24 from the column's edge. */
+  if (!drag.on || still) return <span aria-hidden="true" data-testid="source-grip-room" style={{ width: GRIP_ROOM, flexShrink: 0 }} />;
   return <DragHandle label={label} nest={drag} testId="source-drag-handle" phone={phone} />;
 }
 
-/** F52: the grip's width (DragHandle's 18). */
-const GRIP_ROOM = 18;
+/** F52, S22: the grip's width (DragHandle's 16). */
+const GRIP_ROOM = size.icon;
 
 /** F51: every row's one trailing slot, the same width and place: "+", the tick, or a file's "…" menu. */
 function TrailSlot({ phone, children }: { phone: boolean; children?: ReactNode }) {
@@ -252,8 +252,19 @@ function SessionRow({
   const drag = useSourceDrag("session", session.key);
   return (
     <div ref={drag.setRef} data-source-drag={drag.on ? drag.dragId : undefined} style={{ ...rowLine, padding: `${space[2]}px 0` }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
         <SourceGrip drag={drag} label={`Move Session ${session.number}`} phone={phone} />
+        <SelectButton selected={selectedId === session.key} onClick={() => onSelect(session.key)} minHeight={phone ? size.touch : size.control} style={{ alignItems: "flex-start" }}>
+          <ToolMark tool={session.tool} size={size.icon} />
+          <span style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0 }}>
+            <span {...fullText(`Session ${session.number} · ${session.tool}`)} style={{ ...text(13, 500, t.text), ...PREVIEW }}>
+              {/* CA-06 P4: a coloured session's 7px dot before its name. */}
+              {session.colour ? <ColourDot colour={session.colour} size={7} style={{ marginRight: space[2], verticalAlign: "middle" }} /> : null}
+              Session {session.number} · {session.tool}
+            </span>
+            <span {...fullText(session.detail)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{session.detail}</span>
+          </span>
+        </SelectButton>
         <button
           type="button"
           aria-expanded={open}
@@ -280,25 +291,14 @@ function SessionRow({
             <Glyph name="chev" size={size.icon} />
           </span>
         </button>
-        <SelectButton selected={selectedId === session.key} onClick={() => onSelect(session.key)} minHeight={phone ? size.touch : size.row} style={{ alignItems: "flex-start", padding: `${space[2]}px` }}>
-          <ToolMark tool={session.tool} size={20} />
-          <span style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0 }}>
-            <span {...fullText(`Session ${session.number} · ${session.tool}`)} style={{ ...text(13, 500, t.text), ...PREVIEW }}>
-              {/* CA-06 P4: a coloured session's 7px dot before its name. */}
-              {session.colour ? <ColourDot colour={session.colour} size={7} style={{ marginRight: space[2], verticalAlign: "middle" }} /> : null}
-              Session {session.number} · {session.tool}
-            </span>
-            <span {...fullText(session.detail)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{session.detail}</span>
-          </span>
-        </SelectButton>
         <TrailSlot phone={phone}>
           <InBuildTick />
         </TrailSlot>
       </div>
       {open ? (
-        <div style={{ marginLeft: space[6], display: "flex", flexDirection: "column", gap: space[1], paddingTop: space[1] }}>
+        <div style={{ marginLeft: GRIP_ROOM + space[6], display: "flex", flexDirection: "column", gap: space[1], paddingTop: space[1] }}>
           {session.prompts.map((prompt) => (
-            <SelectButton key={prompt.id} selected={selectedId === prompt.id} onClick={() => onSelect(prompt.id)} minHeight={phone ? 44 : 30}>
+            <SelectButton key={prompt.id} selected={selectedId === prompt.id} onClick={() => onSelect(prompt.id)} minHeight={phone ? size.touch : size.control}>
               <span style={{ fontFamily: DM_MONO, fontSize: 10.5, color: t.label, ...tnum, flexShrink: 0 }}>{stepLabel(prompt.number)}</span>
               {/* F53: the number, then the prompt's first six words, cut at the end. */}
               <span {...fullText(prompt.words ?? prompt.title)} style={{ ...text(12.5, 400, t.text), ...ellipsis }}>{prompt.words ?? prompt.title}</span>
@@ -320,10 +320,10 @@ function FileRow({ file, phone, sessions, selected = false, onOpen, onAddToSessi
     });
   };
   return (
-    <div ref={drag.setRef} data-source-drag={drag.on ? drag.dragId : undefined} data-file-id={file.id} {...{ [SLIDE_ATTR]: `file:${file.id}` }} aria-hidden={leaving || undefined} style={{ ...(leaving ? { pointerEvents: "none" } : null), ...rowLine, display: "flex", alignItems: "flex-start", gap: space[2], minHeight: phone ? 44 : undefined, padding: `${space[3]}px 0`, boxSizing: "border-box" }}>
+    <div ref={drag.setRef} data-source-drag={drag.on ? drag.dragId : undefined} data-file-id={file.id} {...{ [SLIDE_ATTR]: `file:${file.id}` }} aria-hidden={leaving || undefined} style={{ ...(leaving ? { pointerEvents: "none" } : null), ...rowLine, display: "flex", alignItems: "center", gap: 0, minHeight: phone ? size.touch : size.row, padding: `${space[2]}px 0`, boxSizing: "border-box" }}>
       <SourceGrip drag={drag} label={`Move ${file.name}`} phone={phone} />
       {/* F7: the row is one button: a click selects the file and scrolls to its tile. A drag starts only from the grip at its start. */}
-      <SelectButton selected={selected} onClick={() => select(file.id)} minHeight={phone ? 44 : 30} style={{ alignItems: "flex-start", textAlign: "left" }}>
+      <SelectButton selected={selected} onClick={() => select(file.id)} minHeight={phone ? size.touch : size.control} style={{ alignItems: "flex-start", textAlign: "left" }}>
         <span style={{ display: "inline-flex", color: t.label, flexShrink: 0 }}>
           <Glyph name="file" size={size.icon} />
         </span>
@@ -432,7 +432,7 @@ function LibraryRow({ item, phone, onAdd, parts, lastPart }: { item: SourceLibra
     <div ref={drag.setRef} data-source-drag={movable ? drag.dragId : undefined} style={{ ...rowLine, display: "flex", alignItems: "center", gap: space[2], minHeight: phone ? size.touch : size.row, padding: `${space[2]}px 0`, boxSizing: "border-box" }}>
       <SourceGrip drag={drag} label={`Move ${libraryName(item)}`} phone={phone} still={!movable} />
       {/* SV-05 P3: the app's mark when the app is known; none when it is not. */}
-      {item.appKnown ? <ToolMark tool={item.app} size={20} /> : <span aria-hidden="true" style={{ width: 20, flexShrink: 0 }} />}
+      {item.appKnown ? <ToolMark tool={item.app} size={size.icon} /> : <span aria-hidden="true" style={{ width: size.icon, flexShrink: 0 }} />}
       <span style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0, flexGrow: 1 }}>
         {/* UX-02 P8: a long name wraps to two lines before it is cut. */}
         <span title={libraryName(item)} style={{ ...text(13, 400, t.text2), ...PREVIEW }}>{middleCut(libraryName(item), LIBRARY_NAME_MAX)}</span>
@@ -479,7 +479,8 @@ function PlusToWords() {
 function UnfinishedRow({ item, phone }: { item: SourceUnfinishedItem; phone: boolean }) {
   return (
     <div style={{ ...rowLine, display: "flex", alignItems: "center", gap: space[2], minHeight: phone ? size.touch : size.row, padding: `${space[2]}px 0`, boxSizing: "border-box" }}>
-      <ToolMark tool={item.label} size={20} />
+      <span aria-hidden="true" style={{ width: GRIP_ROOM, flexShrink: 0 }} />
+      <ToolMark tool={item.label} size={size.icon} />
       <span style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0, flexGrow: 1 }}>
         <span style={{ ...text(13, 400, t.text2), ...ellipsis }}>{item.label}</span>
         <span style={{ ...text(11.5, 400, t.label), overflowWrap: "anywhere" }}>{item.line}</span>
