@@ -86,6 +86,24 @@ describe("a tile added from the composer (F13)", () => {
   });
 });
 
+describe("undo after adding from the composer (F16)", () => {
+  it('adds "abc", says Prompt added with Undo, and Undo takes the tile back off', async () => {
+    await mountCa20(seedCa20);
+    const tiles = () => screen.getAllByRole("group", { name: /^Prompt \d+:/ }).length;
+    const before = tiles();
+    await openAddRow();
+    fireEvent.click(await screen.findByRole("menuitem", { name: /^Prompt/ }));
+    const field = await screen.findByRole("textbox", { name: "Add a prompt" });
+    fireEvent.change(field, { target: { value: "abc" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+    await waitFor(() => expect(tiles()).toBe(before + 1), { timeout: 15_000 });
+    await waitFor(() => expect(screen.getByTestId("reference-notice").textContent).toMatch(/^Prompt added/), { timeout: 15_000 });
+    expect(screen.getByTestId("reference-notice").getAttribute("role")).toBe("status");
+    fireEvent.click(within(screen.getByTestId("reference-notice")).getByRole("button", { name: "Undo" }));
+    await waitFor(() => expect(tiles()).toBe(before), { timeout: 15_000 });
+  });
+});
+
 describe("one identifier for a step (F56)", () => {
   it("a build of two sessions: the tile, the panel, the prompt window and Sources all say Step 4 for the same step", async () => {
     await mountCa20(seedCa20);
