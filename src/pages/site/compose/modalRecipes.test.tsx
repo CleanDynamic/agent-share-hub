@@ -151,7 +151,7 @@ describe("the modal recipes (CA-15b P1)", () => {
     expect(styleOf(screen.getByRole("group", { name: "Usage" })).gridTemplateColumns).toBe("repeat(2, minmax(0, 1fr))");
   });
 
-  it("buttons: 32 tall, radius 8; small 28; a disabled primary is the control with --text-disabled words", () => {
+  it("buttons: 32 tall, radius r.control, padded 0 12, small ones too (S1 to S4); a disabled primary is the control with --text-disabled words", () => {
     render(
       <>
         <RecipeButton>Cancel</RecipeButton>
@@ -161,8 +161,8 @@ describe("the modal recipes (CA-15b P1)", () => {
         </RecipeButton>
       </>,
     );
-    expect(styleOf(screen.getByRole("button", { name: "Cancel" }))).toMatchObject({ height: "32px", borderRadius: "8px", padding: "0px 12px" });
-    expect(styleOf(screen.getByRole("button", { name: "Copy prompt" }))).toMatchObject({ height: "28px", padding: "0px 10px", fontSize: "12.5px" });
+    expect(styleOf(screen.getByRole("button", { name: "Cancel" }))).toMatchObject({ height: "32px", borderRadius: "var(--r-control)", padding: "0px 12px" });
+    expect(styleOf(screen.getByRole("button", { name: "Copy prompt" }))).toMatchObject({ height: "32px", padding: "0px 12px", fontSize: "12.5px" });
     const add = screen.getByRole("button", { name: "Add" });
     const disabled = html(<RecipeButton variant="primary" disabled>Add</RecipeButton>);
     expect(disabled).toContain(`background:${t.control}`);
@@ -181,7 +181,7 @@ describe("the modal recipes (CA-15b P1)", () => {
     expect(link.style.fontSize).toBe("12.5px");
     expect(html(<TextLink onClick={() => {}}>Add a model</TextLink>)).toContain("text-decoration:underline");
     expect(link.style.textUnderlineOffset).toBe("3px");
-    expect(styleOf(screen.getByTestId("tag"))).toMatchObject({ height: "22px", padding: "0px 7px", borderRadius: "5px", fontSize: "11px" });
+    expect(styleOf(screen.getByTestId("tag"))).toMatchObject({ height: "20px", padding: "0px 8px", borderRadius: "var(--r-chip)", fontSize: "11px" });
   });
 
   it("footer: padding 14 20, a rule above, the footer fill", () => {
@@ -230,6 +230,6 @@ describe("the modal recipes (CA-15b P1)", () => {
     const zone = screen.getByText("Drop images or videos here").parentElement as HTMLElement;
     expect(styleOf(zone)).toMatchObject({ height: "148px", borderRadius: "10px", gap: "10px" });
     expect(html(<DropZone words="w" button="b" onFiles={() => {}} phone={false} inputLabel="i" />)).toContain(`border:1px dashed ${t.segOnBorder}`);
-    expect(styleOf(screen.getByRole("button", { name: "Choose files" })).height).toBe("28px");
+    expect(styleOf(screen.getByRole("button", { name: "Choose files" })).height).toBe("32px");
   });
 });

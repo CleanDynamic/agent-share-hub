@@ -156,7 +156,7 @@ import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { MENU_COPY, REASONS, moveReason } from "@/lib/build/componentMenus";
 import { canMove as canMoveIn, locate, moveBy, moveModelOf, spotOf, type MoveModel, type MoveNames } from "@/lib/build/moveRules";
 import { shortcutLabel, type ShortcutId } from "@/lib/build/shortcuts";
-import { COUNT } from "./modalRecipes";
+import { COUNT, BUTTON_PAD, BUTTON_PAD_SMALL_TEXT } from "./modalRecipes";
 import { RemoveRow, useReason } from "./removePieces";
 import { useBuildActionsContext } from "./useBuildActions";
 import { useBuildSelectionContext } from "./useBuildSelection";
@@ -779,7 +779,7 @@ function SentWithSuggestions({ step, props }: { step: Step; props: BuildListProp
       <span style={text(12, 400, t.text2)}>{SENT_WITH_COPY.found(offered.length)}</span>
       <Popover.Root>
         <Popover.Trigger asChild>
-          <Button variant="secondary" size={phone ? 44 : 28} fontSize={12}>
+          <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={12}>
             {SENT_WITH_COPY.review}
           </Button>
         </Popover.Trigger>
@@ -797,7 +797,7 @@ function SentWithSuggestions({ step, props }: { step: Step; props: BuildListProp
               <div key={suggestion.key} data-testid="sent-with-suggestion" style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 12, borderTop: `1px solid ${t.line}` }}>
                 <span style={{ ...text(12.5, 500, t.text), overflowWrap: "anywhere" }}>{["Code", suggestion.filename ?? (suggestion.language === "other" ? null : suggestion.language), `${lineCount(suggestion.source)} ${lineCount(suggestion.source) === 1 ? "line" : "lines"}`].filter(Boolean).join(" · ")}</span>
                 <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => props.onKeepSentWith?.(suggestion)}>
+                  <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={12} onClick={() => props.onKeepSentWith?.(suggestion)}>
                     {SENT_WITH_COPY.accept}
                   </Button>
                   <TextButton target={phone} style={text(12, 500, t.text2)} onClick={() => props.onIgnoreSentWith?.(suggestion.stepId, suggestion.key)}>
@@ -2187,7 +2187,7 @@ function AddPrompt({
       {offerCode ? (
         <div data-testid="keep-as-code" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
           <Quiet>{CODE_COPY.looksLikeCode}</Quiet>
-          <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => void asCode()}>
+          <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={12} onClick={() => void asCode()}>
             {CODE_COPY.keepAsCode}
           </Button>
         </div>
@@ -2198,14 +2198,14 @@ function AddPrompt({
         {redirect ? null : <ModelPicker tool={tool} value={model} onChange={setModel} phone={phone} placeholder={MODEL_PICKER_COPY.label} />}
         <span style={{ flexGrow: 1 }} />
         {/* F15 (D3): the add is a button in words, not an arrow. */}
-        <Button variant="primary" size={phone ? 44 : 28} fontSize={12} data-testid="composer-add" disabled={!value.trim() || busy || redirect} onClick={() => void submit()}>
+        <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="primary" size={phone ? 44 : 32} fontSize={12} data-testid="composer-add" disabled={!value.trim() || busy || redirect} onClick={() => void submit()}>
           {LIST_COPY.add}
         </Button>
       </div>
       {redirect && known ? (
         <div data-testid="add-as-agent" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
           <Quiet>{ADD_PROMPT_COPY.runsItself(known.name)}</Quiet>
-          <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} disabled={!onAddAsAgent} onClick={() => void asAgent()}>
+          <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={12} disabled={!onAddAsAgent} onClick={() => void asAgent()}>
             {ADD_PROMPT_COPY.addAsAgent}
           </Button>
         </div>

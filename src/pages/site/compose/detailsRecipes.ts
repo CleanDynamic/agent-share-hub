@@ -4,6 +4,7 @@
    pixels at 100%; every paint is a token, so Noon follows. These are recipes like `modalRecipes`: the measures that are not
    steps of the spacing scale (10, 22, 27, 38) live here and nowhere else, and `lookRules.test.ts` reads this file as a recipe file. */
 
+import { space } from "@/lib/theme/space";
 import type { CSSProperties } from "react";
 
 import { CONTROL } from "@/lib/theme/refinedControl";
@@ -34,7 +35,7 @@ export const HEAD_TEXT: CSSProperties = { display: "flex", flexDirection: "colum
 export const HEAD_TITLE: CSSProperties = { ...type(15, 500, t.text, 22), margin: 0, ...TITLE_LINE };
 export const HEAD_LINE: CSSProperties = { ...type(12.5, 400, t.text2, 18), margin: 0, display: "flex", alignItems: "center", gap: 8, overflowWrap: "anywhere" };
 /** Edit: secondary, 28 tall, padding 0 10 (the `Button` draws the rest: 12.5/500, radius 6). */
-export const EDIT_BUTTON: CSSProperties = { padding: "0 10px", flexShrink: 0 };
+export const EDIT_BUTTON: CSSProperties = { padding: `0 ${space[3]}px`, flexShrink: 0 };
 
 /* ── a section ── */
 
@@ -107,4 +108,3 @@ export const REFS_ROW_HEIGHT = 36;
 export const REFS_ROW_GAP = 10;
 /** Read all, 10 under the notes. */
 export const REFS_READ_ALL_ABOVE = 10;
-export const REFS_BUTTON_PAD = "0 10px";

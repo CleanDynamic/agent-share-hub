@@ -49,6 +49,7 @@ import { fieldBase } from "./composeFields";
 import { addPromptLabel, MADE_WITH_ENTRY_MAX, promptDragData } from "./composeModel";
 import { PROMPT_DRAG_TYPE } from "./PromptsPanel";
 import { size } from "@/lib/theme/space";
+import { BUTTON_PAD } from "./modalRecipes";
 
 /** The desktop header is 64px tall; the panel sticks 24px under it. */
 const STICKY_TOP = 64 + 24;
@@ -200,7 +201,7 @@ function AddModel({ session, phone, onSetModel }: { session: ComposeSession; pho
               />
             ) : null}
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <Button type="submit" size={phone ? 44 : 36} fontSize={13} disabled={!value}>
+              <Button style={BUTTON_PAD} type="submit" size={phone ? 44 : 32} fontSize={13} disabled={!value}>
                 Save
               </Button>
             </div>

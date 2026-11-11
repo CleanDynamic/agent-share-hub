@@ -45,6 +45,7 @@ import { TextButton } from "@/pages/site/compose/composeControls";
 import { EYEBROW, text, tnum } from "@/pages/site/compose/refinedStyles";
 import { size, space } from "@/lib/theme/space";
 import { r } from "@/lib/theme/radius";
+import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT } from "@/pages/site/compose/modalRecipes";
 
 export const PART_WINDOW_COPY = {
   copyCode: "Copy code",
@@ -221,7 +222,7 @@ function TileBody({ step, props, say }: { step: Step; props: PartWindowProps; sa
           <LinkLines lines={[...callsOf(step.id, props.steps), ...definesOf(step.id, props.steps)]} onOpen={(id) => props.onGo(refTo({ kind: "node", id }))} />
           <CodeLines text={step.text} testId="part-text" label="Code" empty={PART_WINDOW_COPY.nothing} />
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <Button variant="secondary" size={28} fontSize={12} onClick={() => void copyText(step.text).then((done) => say(done ? PART_WINDOW_COPY.copied : "Code not copied"))}>
+            <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={12} onClick={() => void copyText(step.text).then((done) => say(done ? PART_WINDOW_COPY.copied : "Code not copied"))}>
               {PART_WINDOW_COPY.copyCode}
             </Button>
           </div>
@@ -299,7 +300,7 @@ function TileBody({ step, props, say }: { step: Step; props: PartWindowProps; sa
           {step.text && step.inside ? <TextWell label="About the file">{step.text}</TextWell> : null}
           {props.onDownload ? (
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <Button variant="secondary" size={28} fontSize={12} onClick={() => props.onDownload?.(step.id)}>
+              <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={12} onClick={() => props.onDownload?.(step.id)}>
                 {PART_WINDOW_COPY.download}
               </Button>
             </div>
@@ -364,7 +365,7 @@ function AgentRuntimeBody({ step, props, say }: { step: Step; props: PartWindowP
           {shape.sample ? <CodeLines text={shape.sample} testId="shape-sample" label="Sample" /> : null}
           {fragment?.text ? (
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <Button variant="secondary" size={28} fontSize={12} onClick={() => done(fragment.text)}>
+              <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={12} onClick={() => done(fragment.text)}>
                 Copy the setting
               </Button>
             </div>
@@ -374,11 +375,11 @@ function AgentRuntimeBody({ step, props, say }: { step: Step; props: PartWindowP
       {copy ? (
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
           {copy.code ? (
-            <Button variant="primary" size={28} fontSize={12} onClick={() => done(copy.code!.text)}>
+            <Button style={BUTTON_PAD_SMALL_TEXT} variant="primary" size={32} fontSize={12} onClick={() => done(copy.code!.text)}>
               {copy.code.label}
             </Button>
           ) : null}
-          <Button variant="secondary" size={28} fontSize={12} onClick={() => done(copy.start.text)}>
+          <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={12} onClick={() => done(copy.start.text)}>
             {copy.start.label}
           </Button>
         </div>
@@ -478,11 +479,11 @@ function DecisionBody({ step, props, say }: { step: Step; props: PartWindowProps
       {copy ? (
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
           {copy.code ? (
-            <Button variant="primary" size={28} fontSize={12} onClick={() => done(copy.code!.text)}>
+            <Button style={BUTTON_PAD_SMALL_TEXT} variant="primary" size={32} fontSize={12} onClick={() => done(copy.code!.text)}>
               {PART_WINDOW_COPY.copyTheCode}
             </Button>
           ) : null}
-          <Button variant="secondary" size={28} fontSize={12} onClick={() => done(copy.request.text)}>
+          <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={12} onClick={() => done(copy.request.text)}>
             {PART_WINDOW_COPY.copyRequest}
           </Button>
         </div>
@@ -612,7 +613,7 @@ export function PartWindow(props: PartWindowProps) {
           >
             {props.fromPost && props.onBackToPost ? <FromPostNote onBack={props.onBackToPost} phone={phone} /> : null}
             <span style={{ flexGrow: 1 }} />
-            <Button size={phone ? 48 : 32} fontSize={13} onClick={props.onClose} style={phone ? undefined : { height: 30 }}>
+            <Button size={phone ? 48 : 32} fontSize={13} onClick={props.onClose} style={BUTTON_PAD}>
               {PART_WINDOW_COPY.done}
             </Button>
           </div>

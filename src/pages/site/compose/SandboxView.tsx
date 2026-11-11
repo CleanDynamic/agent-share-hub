@@ -80,6 +80,7 @@ import { PanelBoundary, type PanelName } from "./PanelBoundary";
 import { EmptyBuild, type EmptyBuildProps } from "./EmptyBuild";
 import { scrollBehavior } from "@/lib/theme/motion";
 import { size } from "@/lib/theme/space";
+import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT } from "./modalRecipes";
 
 export type SandboxLens = "list" | "map";
 
@@ -1466,7 +1467,7 @@ function SandboxBody(props: SandboxViewProps) {
         {tabs}
         <div style={{ ...TAB_ACTIONS, marginLeft: "auto" }}>
           <BuildTitleActions />
-          <Button variant="secondary" size={28} fontSize={12} aria-label="Classification" onClick={() => openCard(null)}>
+          <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={12} aria-label="Classification" onClick={() => openCard(null)}>
             Classification
           </Button>
           {published ? (
@@ -1485,7 +1486,7 @@ function SandboxBody(props: SandboxViewProps) {
                   Preview
                 </LinkButton>
               )}
-              <Button size={28} fontSize={12} disabled={publishDisabled} onClick={() => void pressPublish()}>
+              <Button style={BUTTON_PAD_SMALL_TEXT} size={32} fontSize={12} disabled={publishDisabled} onClick={() => void pressPublish()}>
                 {publishLabel}
               </Button>
             </>

@@ -36,6 +36,7 @@ import { TextButton } from "./composeControls";
 import { fieldBase } from "./composeFields";
 import { MADE_WITH_ENTRY_MAX, type MadeWithChip } from "./composeModel";
 import { size, space } from "@/lib/theme/space";
+import { BUTTON_PAD } from "./modalRecipes";
 
 export interface MadeWithLineProps {
   phone: boolean;
@@ -180,7 +181,7 @@ function AddEntry({ phone, onAdd }: { phone: boolean; onAdd: (name: string) => v
               style={{ ...fieldBase, height: phone ? 44 : 33, padding: "0 7px", fontSize: phone ? 16 : 14 }}
             />
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <Button type="submit" size={phone ? 44 : 36} fontSize={13} disabled={!name.trim()}>
+              <Button style={BUTTON_PAD} type="submit" size={phone ? 44 : 32} fontSize={13} disabled={!name.trim()}>
                 Add
               </Button>
             </div>

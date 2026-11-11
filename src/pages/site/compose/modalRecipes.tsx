@@ -708,9 +708,10 @@ export function RecipeButton({ variant = "secondary", small = false, phone = fal
         alignItems: "center",
         justifyContent: "center",
         flexShrink: 0,
-        height: phone ? 44 : small ? 28 : 32,
-        padding: small ? "0 10px" : "0 12px",
-        borderRadius: 8,
+        gap: space[2],
+        height: phone ? size.touch : size.control,
+        padding: `0 ${space[3]}px`,
+        borderRadius: r.control,
         whiteSpace: "nowrap",
         ...type(small ? 12.5 : 13, 500, t.text),
         ...paint,
@@ -731,15 +732,20 @@ export const smallButtonStyle = (phone: boolean, state: { hovered?: boolean; pre
   display: "inline-flex",
   alignItems: "center",
   alignSelf: "flex-start",
-  gap: 6,
+  gap: space[2],
   maxWidth: "100%",
-  height: phone ? 44 : 28,
-  padding: "0 10px",
-  borderRadius: 8,
+  height: phone ? size.touch : size.control,
+  padding: `0 ${space[3]}px`,
+  borderRadius: r.control,
   whiteSpace: "nowrap",
   cursor: "pointer",
   ...type(12.5, 500, t.text),
 });
+
+/** S1 to S4: the shared Button (components/brand) pads 0 16 above 28; in the build editor every button is 32 high and padded 0 space[3]. */
+export const BUTTON_PAD: CSSProperties = { padding: `0 ${space[3]}px` };
+/** S1 to S4: a button the editor drew at 28 is 32 now and keeps its 12.5 label (the shared Button sets 13 above 28). */
+export const BUTTON_PAD_SMALL_TEXT: CSSProperties = { ...BUTTON_PAD, fontSize: 12.5 };
 
 /** A text link: 12.5 `--text2`, underlined 3 below in `--label` at half strength. */
 export function TextLink({ children, onClick, phone = false, disabled, ...aria }: { children: ReactNode; onClick: () => void; phone?: boolean; disabled?: boolean; "aria-label"?: string }) {

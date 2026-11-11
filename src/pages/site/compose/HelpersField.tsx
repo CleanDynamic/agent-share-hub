@@ -16,6 +16,7 @@ import { t } from "@/lib/theme/tokens";
 import { Field, TextButton } from "./composeControls";
 import { PickMenu } from "./PickMenu";
 import { text, tnum, typedField } from "./refinedStyles";
+import { BUTTON_PAD } from "./modalRecipes";
 
 const PROVIDERS = [{ value: "scaledown", label: "ScaleDown" }, { value: "typesafe", label: "TypeSafe" }, { value: "typed", label: "Another provider" }];
 
@@ -104,7 +105,7 @@ function ChipsInput({ label, items, input, onInput, onItems, phone }: { label: s
     <Field id={uid} label={label}>
       <div style={{ display: "flex", gap: 6 }}>
         <input id={uid} type="text" value={input} maxLength={60} onChange={(e) => onInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }} style={typedField(phone, { flex: 1, minWidth: 0 })} />
-        <Button variant="secondary" size={phone ? 44 : 32} onClick={add} disabled={!input.trim()}>Add</Button>
+        <Button style={BUTTON_PAD} variant="secondary" size={phone ? 44 : 32} onClick={add} disabled={!input.trim()}>Add</Button>
       </div>
       {items.length ? (
         <span style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
