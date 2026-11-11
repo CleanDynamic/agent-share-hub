@@ -12,7 +12,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 import { visionBuildsTableProps, visionBuildsTableViewProps } from "@/dev/fixtures/vision/builds-table";
 import { STALE_AFTER_DAYS } from "@/lib/build/signals";
 
-import { ALL_COLUMNS, BuildsTableView, type ColumnId, type TableRowView } from "./BuildsTableView";
+import { ALL_COLUMNS, BuildsTableView, COLUMN_ORDER, type ColumnId, type TableRowView } from "./BuildsTableView";
 import { BuildsView, type BuildsViewProps } from "./BuildsView";
 import { FiltersButton } from "./BuildsFrame";
 import { chosenColumns, columnsLabel, columnsMenu, tableRow } from "./buildsModel";
@@ -544,5 +544,65 @@ describe("the grouped chooser", () => {
     openChooser(onReset);
     fireEvent.click(screen.getByRole("button", { name: "Back to the default columns" }));
     expect(onReset).toHaveBeenCalled();
+  });
+});
+
+/* ── BF-11 P2 (B2) ── */
+
+describe("BF-11 filtered heads", () => {
+  /** The head's own markup, as React writes it (jsdom drops a `var()` from an inline style). */
+  const headMarkup = (props: ReturnType<typeof visionBuildsTableViewProps>, name: string) => {
+    const html = renderToStaticMarkup(
+      <MemoryRouter>
+        <BuildsTableView {...props} />
+      </MemoryRouter>,
+    );
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    return [...doc.querySelectorAll("th")].find((th) => th.textContent?.startsWith(name))!.outerHTML;
+  };
+  const withAutonomy = (filtered: ColumnId[]) => ({ ...visionBuildsTableViewProps(), columns: [...COLUMN_ORDER, "autonomy"] as ColumnId[], filtered: new Set(filtered) });
+
+  it('a filtered column\'s head is in --text at weight 500 with a 1px --selected-edge underline, and its name ends ", filtered" for a screen reader', () => {
+    render(
+      <MemoryRouter>
+        <BuildsTableView {...withAutonomy(["autonomy"])} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("columnheader", { name: /Autonomy, filtered/ })).toBeTruthy();
+    const markup = headMarkup(withAutonomy(["autonomy"]), "Autonomy");
+    expect(markup).toContain("color:var(--text)");
+    expect(markup).toContain("font-weight:500");
+    expect(markup).toContain("border-bottom:1px solid var(--selected-edge)");
+  });
+
+  it("a column that is not filtered has no underline and no such text", () => {
+    const markup = headMarkup(withAutonomy(["autonomy"]), "Field");
+    expect(markup).not.toContain("selected-edge");
+    expect(markup).not.toContain("filtered");
+  });
+
+  it("a column that is both sorted and filtered shows the arrow and the underline", () => {
+    const props = { ...withAutonomy(["reproductions"]) };
+    render(
+      <MemoryRouter>
+        <BuildsTableView {...props} />
+      </MemoryRouter>,
+    );
+    const head = screen.getByRole("columnheader", { name: /Reproductions, filtered/ });
+    expect(head.getAttribute("aria-sort")).toBe("descending");
+    expect(head.textContent).toContain("↓");
+    expect(headMarkup(props, "Reproductions")).toContain("border-bottom:1px solid var(--selected-edge)");
+  });
+
+  it("the mark is drawn with the setting off too", () => {
+    /* With "Add a column for each filter" off, a column the reader ticked is still drawn, and still says it is filtered: the
+       mark follows the filter, not the setting. */
+    const props = { ...visionBuildsTableViewProps(), columns: ["build", "field"] as ColumnId[], filtered: new Set<ColumnId>(["field"]) };
+    render(
+      <MemoryRouter>
+        <BuildsTableView {...props} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("columnheader", { name: /Field, filtered/ })).toBeTruthy();
   });
 });

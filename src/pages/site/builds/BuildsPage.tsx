@@ -207,7 +207,8 @@ export default function BuildsPage() {
   /* BF-11 (B1): the reader's own columns, then the column of each filter that holds a value, worked out from the address on
      every render: a filter set by the dialog, a value's link, a saved set or Back all draw the same. Nothing is stored. */
   const chosen = chosenColumns(layout.columns, countsLive);
-  const columns = drawnColumns(chosen, filteredColumns(params), layout.filterColumns, countsLive);
+  const filteredIds = filteredColumns(params);
+  const columns = drawnColumns(chosen, filteredIds, layout.filterColumns, countsLive);
   const extras = columns.filter((id): id is ExtraColumnId => (EXTRA_COLUMNS as readonly string[]).includes(id));
   const rows = builds.map((build) => tableRow(build, now, extras));
   const calculationChoices = calculationOptions(layout.calculations, columns);
@@ -473,6 +474,7 @@ export default function BuildsPage() {
               rows,
               sortColumn: SORT_COLUMN[sort] ? { id: SORT_COLUMN[sort]!, ascending: false } : null,
               sortableBy: { reproductions: "reproduced", confirmed: "confirmed", rebuilds: "rebuilt" },
+              filtered: new Set(filteredIds),
               footer: {
                 ...tableFooter(total, rows),
                 calculations: footerCalculations(layout.calculations, columns, rows, (calculation) => update((current) => withCalculation(current, calculation, false))),
