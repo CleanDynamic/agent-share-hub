@@ -200,4 +200,22 @@ test.describe("/builds filters", () => {
     await expect(dialog).toBeHidden();
     await expect(button).toBeFocused();
   });
+
+  /* ── BF-06 P3 (E5, X1) ── */
+
+  for (const [label, path, card] of [
+    ["Classification", "/builds?view=classification", "classification-card"],
+    ["Maps", "/builds?view=maps", "map-card"],
+  ] as const) {
+    test(`${label}: opening Filters does not move the first card`, async ({ page }) => {
+      await open(page, path, answerWithBuilds);
+      const first = page.getByTestId(card).first();
+      await expect(first).toBeVisible();
+      const before = await first.boundingBox();
+      await page.getByRole("button", { name: /^Filters/ }).click();
+      await expect(page.getByRole("dialog", { name: "Filters" })).toBeVisible();
+      const after = await first.boundingBox();
+      for (const key of ["x", "y", "width", "height"] as const) expect(Math.abs(after![key] - before![key])).toBeLessThanOrEqual(1);
+    });
+  }
 });
