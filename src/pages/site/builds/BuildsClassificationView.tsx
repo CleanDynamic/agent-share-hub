@@ -7,7 +7,7 @@
    page's (`facets`, `onFacets`), and the last facet cannot be unchecked.
 
    A card is a module: title, "@maker · Shape", the reproductions and the lamp, then one row per facet shown: its name and
-   source in a 112 column and the values as links. A value is a real link, underlined on hover with no fade. Cards past
+   source in a 112 column and the values as links. A value is a real link, underlined dotted at rest and solid on hover with no fade. Cards past
    the first screen are skipped by the browser until they come near (`content-visibility`). */
 
 import { useState, type CSSProperties, type ReactNode } from "react";
@@ -56,7 +56,7 @@ const FIRST_SCREEN_CARDS = 6;
 /** A card's height: its head and padding, and a row with its source line is 55 (54 and a hairline). */
 const cardHeight = (rows: number): number => 32 + 38 + 16 + rows * 55;
 
-/** A value: `--text`, underlined on hover with no fade; the maker's own words are plain text. */
+/** A value: `--text`, underlined dotted at rest and solid on hover with no fade (BF-04 E2); the maker's own words are plain text. */
 function ValueLink({ value }: { value: ClassValueView }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   if (value.href === null) return <span>{value.label}</span>;
@@ -67,7 +67,8 @@ function ValueLink({ value }: { value: ClassValueView }) {
       {...handlers}
       style={{
         color: t.text,
-        textDecoration: state.hovered ? "underline" : "none",
+        textDecorationLine: "underline",
+        textDecorationStyle: state.hovered ? "solid" : "dotted",
         textDecorationColor: t.label,
         textUnderlineOffset: 3,
         borderRadius: r.chip,

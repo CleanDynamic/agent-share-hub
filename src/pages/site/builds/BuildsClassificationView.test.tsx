@@ -75,6 +75,37 @@ describe("a card", () => {
   });
 });
 
+describe("BF-04 values that can be pressed", () => {
+  const drawValues = () =>
+    draw((p) => ({
+      ...p,
+      cards: [{ ...p.cards[0], rows: [{ ...p.cards[0].rows[0], values: [{ label: "Education", href: "/builds?f=field%3Aeducation" }, { label: "Own words", href: null }] }] }],
+    }));
+
+  it("a value with a link is underlined at rest", () => {
+    drawValues();
+    const link = screen.getByRole("link", { name: "Education" });
+    expect(link.style.textDecorationLine).toBe("underline");
+    expect(link.style.textDecorationStyle).toBe("dotted");
+  });
+
+  it("a hovered value draws the underline solid, where hover is a fine pointer", () => {
+    const base = window.matchMedia;
+    window.matchMedia = ((query: string) => ({ ...base(query), matches: true })) as unknown as typeof window.matchMedia;
+    drawValues();
+    const link = screen.getByRole("link", { name: "Education" });
+    fireEvent.mouseEnter(link);
+    expect(link.style.textDecorationStyle).toBe("solid");
+  });
+
+  it("a value with no link is plain text", () => {
+    drawValues();
+    const word = screen.getByText("Own words");
+    expect(word.tagName).toBe("SPAN");
+    expect(word.style.textDecorationLine).toBe("");
+  });
+});
+
 describe("Facets shown", () => {
   const open = () => fireEvent.click(screen.getByRole("button", { name: /Facets shown/ }));
 
