@@ -99,3 +99,30 @@ describe("groups and a name search", () => {
     expect((screen.getByRole("searchbox", { name: "Find a filter" }) as HTMLInputElement).value).toBe("");
   });
 });
+
+/* ── BF-07 P2 (A4, A5) ── */
+
+describe("fixed places, and nothing empty", () => {
+  it('a checklist with no values shows "No builds have a value yet." and no checkboxes', () => {
+    draw();
+    const techniques = screen.getByRole("region", { name: "Techniques" });
+    expect(within(techniques).getByText("No builds have a value yet.")).toBeTruthy();
+    expect(within(techniques).queryAllByRole("checkbox")).toHaveLength(0);
+  });
+
+  it("toggling a value never changes the order of the filters in its group", () => {
+    const { rerender, props, onOpenChange } = draw();
+    const before = shownNames();
+    const third = props.sections.find((section) => section.name === before[2]);
+    expect(third?.kind).toBe("word");
+    const toggledSections = props.sections.map((section) =>
+      section === third && section.kind === "word" ? { ...section, options: section.options.map((option, at) => (at === 0 ? { ...option, checked: !option.checked } : option)) } : section,
+    );
+    rerender(
+      <MemoryRouter>
+        <BuildsFilters {...props} sections={toggledSections} open onOpenChange={onOpenChange} />
+      </MemoryRouter>,
+    );
+    expect(shownNames()).toEqual(before);
+  });
+});

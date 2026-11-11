@@ -434,16 +434,16 @@ describe("SV-24 P2: the reader's layout", () => {
     const first = renderAt("/builds");
     await screen.findByRole("link", { name: "Build 1" });
     await openFilters();
-    expect(sectionNames().slice(0, 2)).toEqual(["Field", "Task"]);
+    expect(sectionNames().slice(0, 2)).toEqual(["Field", "Autonomy"]);
     fireEvent.keyDown(screen.getByRole("button", { name: "Move Field" }), { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Move down" }));
-    await waitFor(() => expect(sectionNames().slice(0, 2)).toEqual(["Task", "Field"]));
-    expect(stored().order.slice(0, 2)).toEqual(["task", "field"]);
+    await waitFor(() => expect(sectionNames().slice(0, 2)).toEqual(["Autonomy", "Field"]));
+    expect(stored().order.slice(0, 2)).toEqual(["autonomy", "field"]);
     first.unmount();
     renderAt("/builds");
     await screen.findByRole("link", { name: "Build 1" });
     await openFilters();
-    expect(sectionNames().slice(0, 2)).toEqual(["Task", "Field"]);
+    expect(sectionNames().slice(0, 2)).toEqual(["Autonomy", "Field"]);
   });
 
   it("keeps a checklist's height for the next visit", async () => {
@@ -514,7 +514,7 @@ describe("SV-24 P2: the reader's layout", () => {
     renderAt(`/builds?set=${SET_ID}`);
     await screen.findByRole("link", { name: "Build 1" });
     await openFilters();
-    expect(sectionNames().slice(0, 2)).toEqual(["Field", "Task"]);
+    expect(sectionNames().slice(0, 2)).toEqual(["Field", "Autonomy"]);
     fireEvent.keyDown(screen.getByRole("button", { name: "Move Field" }), { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Move down" }));
     await waitFor(() => expect(stored()).not.toBeNull());

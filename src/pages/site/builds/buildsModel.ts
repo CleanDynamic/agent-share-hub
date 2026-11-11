@@ -12,7 +12,7 @@ import { modelById, modelLabel } from "@/lib/models/registry";
 import { toolFor } from "@/lib/tools/registry";
 import { shortAgo } from "@/pages/site/home/homeModel";
 
-import type { FilterGroup, FilterSection, RangeSection, WordOption, WordOrder } from "./BuildsFiltersView";
+import { FILTER_GROUPS, type FilterGroup, type FilterSection, type RangeSection, type WordOption, type WordOrder } from "./BuildsFiltersView";
 import { CALC_KINDS, type CalcKind, type Calculation } from "@/lib/build/buildsLayout";
 
 import { ALL_COLUMNS, COLUMN_NAME, type CalculationOption, type ColumnId, type ColumnsMenu, type ExtraColumnId, type TableCalculation, type TableChip, type TableFooterView, type TableRowView, type TableTool } from "./BuildsTableView";
@@ -191,7 +191,10 @@ export function panelSections(state: PanelState): FilterSection[] {
     sections.push({ kind: "word", id: "pattern", name: "Patterns", group: "Structure", order: "count", options: state.patterns.map((entry) => ({ key: entry.value, label: PATTERN_LABEL[entry.value], count: entry.count, checked: state.pattern === entry.value })) });
   }
   sections.push({ kind: "word", id: "open", name: "Still open", group: "OpenBuilds", order: "az", options: [{ key: "open", label: "Has a still-open topic", count: 0, checked: state.open }] });
-  return sections;
+  /* BF-07 (A4, A5): within each group a checklist with nothing to choose follows the rest. Nothing else reorders, and nothing a
+     reader does moves a filter: holding a value is not a place. */
+  const empty = (section: FilterSection) => (section.kind === "word" && section.options.length === 0 ? 1 : 0);
+  return sections.sort((a, b) => FILTER_GROUPS.indexOf(a.group) - FILTER_GROUPS.indexOf(b.group) || empty(a) - empty(b));
 }
 
 /** "App", "Workflow": a shape as a word. */

@@ -131,7 +131,7 @@ describe("the proof (SV-23 P2)", () => {
 /* ── BF-07 P1 (A3) ── */
 
 describe("the groups", () => {
-  const ALL = { ...STATE, counts: { "field:education": 2 }, patterns: [], spread: { reproductions: new Map(), rebuilds: new Map(), likes: new Map(), steps: new Map(), sessions: new Map() }, worksOn: [] };
+  const ALL = { ...STATE, counts: { "field:education": 2 }, patterns: [], spread: { reproductions: new Map(), rebuilds: new Map(), likes: new Map(), steps: new Map(), sessions: new Map() }, worksOn: [{ model: { id: "opus-5-5", name: "Opus 5.5" }, builds: 3 }] as never };
 
   it("every section carries its group, and the groups are Classification, Proof, Structure and OpenBuilds in that order", () => {
     const sections = panelSections(ALL);
@@ -141,6 +141,7 @@ describe("the groups", () => {
     expect(of("Classification")).toHaveLength(15);
     expect(of("Classification")).toContain("stack");
     expect(of("Proof")).toEqual(["reproductions", "model", "within", "state", "rebuilds", "likes"]);
+    /* Patterns has no value yet, so it follows the rest of Structure (Part 2). */
     expect(of("Structure")).toEqual(["shape", "steps", "sessions", "pattern"]);
     expect(of("OpenBuilds")).toEqual(["open"]);
   });
@@ -148,5 +149,30 @@ describe("the groups", () => {
   it('no section is of kind "closed"', () => {
     expect(panelSections(ALL).every((section) => ["word", "range", "scale"].includes(section.kind))).toBe(true);
     expect(panelSections(ALL).find((section) => section.id === "autonomy")?.kind).toBe("scale");
+  });
+});
+
+/* ── BF-07 P2 (A4, A5) ── */
+
+describe("fixed places", () => {
+  const counts = { "field:education": 2 };
+
+  it("within a group, filters that have nothing to choose come after those that have", () => {
+    const classification = panelSections({ ...STATE, counts }).filter((section) => section.group === "Classification");
+    const ids = classification.map((section) => section.id);
+    expect(ids.slice(0, 2)).toEqual(["field", "autonomy"]);
+    const emptyAt = classification.findIndex((section) => section.kind === "word" && section.options.length === 0);
+    expect(classification.slice(emptyAt).every((section) => section.kind === "word" && section.options.length === 0)).toBe(true);
+    /* Stable otherwise: the empty ones keep the taxonomy's order among themselves. */
+    expect(ids.slice(emptyAt, emptyAt + 3)).toEqual(["task", "setting", "built"]);
+  });
+
+  it("Field is not special: it is drawn like any other filter", () => {
+    const sections = panelSections({ ...STATE, counts });
+    const field = sections.find((section) => section.id === "field");
+    const task = sections.find((section) => section.id === "task");
+    expect(field).toMatchObject({ kind: "word", group: "Classification" });
+    expect(Object.keys(field!).sort()).toEqual(Object.keys(task!).sort());
+    expect(sections.filter((section) => section.id === "field")).toHaveLength(1);
   });
 });

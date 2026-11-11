@@ -405,6 +405,9 @@ function WordFilter({ section, label, onToggle, onOrder, move, height, onResize 
         move={move}
         right={label ? <span style={small(t.label)}>{label}</span> : section.order === "scale" ? <span style={small(t.label)}>Scale order</span> : <OrderPair order={section.order} onOrder={onOrder} />}
       />
+      {section.options.length === 0 ? (
+        <p style={{ ...text(12, 400, t.label), margin: "10px 0 0" }}>No builds have a value yet.</p>
+      ) : (
       <div style={onResize ? { position: "relative" } : undefined}>
         <div ref={list} role="group" aria-label={`${section.name} values`} style={{ ...(height ? { maxHeight: height, overflowY: "auto" } : null), marginTop: 10 }}>
           {section.options.map((option) => (
@@ -413,6 +416,7 @@ function WordFilter({ section, label, onToggle, onOrder, move, height, onResize 
         </div>
         {onResize ? <ResizeHandle name={section.name} list={list} height={height} onResize={onResize} /> : null}
       </div>
+      )}
     </section>
   );
 }
