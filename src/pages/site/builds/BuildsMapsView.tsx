@@ -175,7 +175,7 @@ function Well({ drawing, note, words }: { drawing: MapDrawing | null; note?: str
               <span style={{ display: "block", ...ellipsis, fontFamily: DM_MONO, fontSize: 10, lineHeight: "13px", color: t.label }}>{box.meta}</span>
             </span>
           ))}
-          {note ? <span style={{ position: "absolute", left: 0, right: 0, bottom: 14, textAlign: "center", ...text(11.5, 400, t.label) }}>{note}</span> : null}
+          {note ? <span style={{ position: "absolute", left: 0, right: 0, bottom: 14, textAlign: "center", ...text(12, 400, t.label) }}>{note}</span> : null}
         </div>
       ) : (
         <div aria-hidden="true" style={{ position: "absolute", inset: 0, padding: 16, display: "flex", flexDirection: "column", gap: 12, justifyContent: "center" }}>
@@ -209,7 +209,7 @@ export function MapCard({ card, direction, index }: { card: MapCardView; directi
           <Link to={card.href} style={{ display: "block", ...ellipsis, ...text(13, 500, t.text), textDecoration: "none", borderRadius: r.chip }}>
             {card.title}
           </Link>
-          <span style={text(11.5, 400, t.label)}>{`${card.maker ? `@${card.maker} · ` : ""}${card.summary}`}</span>
+          <span style={text(12, 400, t.label)}>{`${card.maker ? `@${card.maker} · ` : ""}${card.summary}`}</span>
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flex: "none" }}>
           <span style={text(12.5, 400, t.text2)}>{card.reproduced}</span>

@@ -216,7 +216,7 @@ export const BuildsControl = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<
 });
 
 /** A text button: "Clear all", "Save current", "Add a calculation". Takes a ref and a button's props, so a menu's trigger can be one. */
-export const BuildsTextButton = forwardRef<HTMLButtonElement, Omit<ButtonHTMLAttributes<HTMLButtonElement>, "color"> & { size?: 11.5 | 12 | 12.5; color?: string }>(function BuildsTextButton(
+export const BuildsTextButton = forwardRef<HTMLButtonElement, Omit<ButtonHTMLAttributes<HTMLButtonElement>, "color"> & { size?: 12 | 12.5; color?: string }>(function BuildsTextButton(
   { children, size = 12, color = t.label, ...rest },
   ref,
 ) {

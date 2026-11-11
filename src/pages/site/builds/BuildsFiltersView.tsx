@@ -467,7 +467,7 @@ function RangeFilter({ section, onChange, move }: { section: RangeSection; onCha
           <SliderPrimitive.Thumb aria-label={`${section.name} from`} aria-valuetext={section.describe(low, "min")} style={thumb} onFocus={(e) => focus(e, true)} onBlur={(e) => focus(e, false)} />
           <SliderPrimitive.Thumb aria-label={`${section.name} to`} aria-valuetext={section.describe(high, "max")} style={thumb} onFocus={(e) => focus(e, true)} onBlur={(e) => focus(e, false)} />
         </SliderPrimitive.Root>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, ...text(11.5, 400, t.label) }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, ...text(12, 400, t.label) }}>
           <span>{section.endLabels[0]}</span>
           <span>{section.endLabels[1]}</span>
         </div>
@@ -506,7 +506,7 @@ function ScaleFilter({ section, onToggle, move }: { section: ScaleSection; onTog
           <Segment key={segment.key} label={segment.label} on={segment.on} onClick={() => onToggle?.(segment.key)} />
         ))}
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, ...text(11.5, 400, t.label) }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, ...text(12, 400, t.label) }}>
         <span>{section.endLabels[0]}</span>
         <span>{section.endLabels[1]}</span>
       </div>
@@ -543,7 +543,7 @@ function Catalogue({ total, groups }: { total: number; groups: readonly Catalogu
       </div>
       {groups.map((group) => (
         <div key={group.name} style={{ marginTop: 14 }}>
-          <div style={text(11.5, 400, t.label)}>{`${group.name} · ${group.count}`}</div>
+          <div style={text(12, 400, t.label)}>{`${group.name} · ${group.count}`}</div>
           <div style={{ ...text(12, 400, t.text2), marginTop: 2 }}>{group.items}</div>
         </div>
       ))}

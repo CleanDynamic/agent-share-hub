@@ -89,7 +89,7 @@ function FacetRow({ row }: { row: ClassRowView }) {
     <div style={{ display: "grid", gridTemplateColumns: "112px minmax(0, 1fr)", columnGap: 12, padding: "10px 0", borderTop: `1px solid ${t.hairline}` }}>
       <dt style={{ ...text(12, 400, t.text2), lineHeight: "18px" }}>
         {row.name}
-        {row.source ? <span style={{ display: "block", ...text(11, 400, t.label), lineHeight: "16px" }}>{row.source}</span> : null}
+        {row.source ? <span style={{ display: "block", ...text(12, 400, t.label), lineHeight: "16px" }}>{row.source}</span> : null}
       </dt>
       <dd style={{ margin: 0, ...text(12.5, 400, t.text), lineHeight: "18px" }}>
         {row.values.length === 0 ? (
