@@ -79,8 +79,9 @@ import { ComposeArrival } from "./ComposeSkeleton";
 import { PanelBoundary, type PanelName } from "./PanelBoundary";
 import { EmptyBuild, type EmptyBuildProps } from "./EmptyBuild";
 import { scrollBehavior } from "@/lib/theme/motion";
-import { size } from "@/lib/theme/space";
+import { size, space } from "@/lib/theme/space";
 import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT } from "./modalRecipes";
+import { r } from "@/lib/theme/radius";
 
 export type SandboxLens = "list" | "map";
 
@@ -521,12 +522,12 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
           display: "flex",
           alignItems: "center",
           justifyContent: "flex-start",
-          gap: 8,
+          gap: space[2],
           width: "100%",
-          height: 36,
+          height: size.control,
           boxSizing: "border-box",
-          padding: "0 8px",
-          borderRadius: 6,
+          padding: `0 ${space[3]}px`,
+          borderRadius: r.control,
           ...text(13, 500, t.text2),
           cursor: "pointer",
           ...(rowTrigger.state.hovered ? { background: t.controlOn } : null),

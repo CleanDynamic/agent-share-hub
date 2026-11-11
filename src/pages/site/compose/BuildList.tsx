@@ -1483,7 +1483,7 @@ function AgentPromptField({ agent, props, onDone }: { agent: Step; props: BuildL
         <TextButton onClick={cancel} target={props.phone} style={text(12.5, 500, t.text2)}>
           Cancel
         </TextButton>
-        <Button variant="primary" size={props.phone ? 44 : 28} fontSize={12} aria-label="Add prompt to this agent" data-testid="agent-prompt-add" disabled={!text_.trim() || busy} onClick={() => void submit()}>
+        <Button style={props.phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="primary" size={props.phone ? 44 : 32} fontSize={12} aria-label="Add prompt to this agent" data-testid="agent-prompt-add" disabled={!text_.trim() || busy} onClick={() => void submit()}>
           {LIST_COPY.add}
         </Button>
       </div>

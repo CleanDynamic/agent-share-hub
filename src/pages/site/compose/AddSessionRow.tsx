@@ -26,7 +26,8 @@ import { ToolMark } from "./refinedPieces";
 import { bareButton, ellipsis, menuItem, menuSurface, text, tnum, wellField } from "./refinedStyles";
 import { draftNote, groupLibrary, openingWords, REPEAT_COPY, type SourceLibraryItem } from "./sourcesModel";
 import { FLOATING_Z } from "./ToolPicker";
-import { size } from "@/lib/theme/space";
+import { size, space } from "@/lib/theme/space";
+import { r } from "@/lib/theme/radius";
 
 export const ADD_SESSION_COPY = {
   /** F55: the three add controls read Add step, Add session, Add part; the plus is their icon. */
@@ -278,12 +279,12 @@ const addRowStyle = (hovered: boolean, focusVisible: boolean, adding: boolean): 
     display: "flex",
     alignItems: "center",
     justifyContent: "flex-start",
-    gap: 8,
+    gap: space[2],
     width: "100%",
-    height: 36,
+    height: size.control,
     boxSizing: "border-box",
-    padding: "0 8px",
-    borderRadius: 6,
+    padding: `0 ${space[3]}px`,
+    borderRadius: r.control,
     ...text(13, 500, t.text2),
     cursor: adding ? "default" : "pointer",
     ...(hovered && !adding ? { background: t.controlOn } : null),
