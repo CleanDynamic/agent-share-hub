@@ -195,16 +195,17 @@ export function sandboxDetailsProps(kind: SandboxDetails = "prompt", which: Sand
   const fox = which === "fox";
   const views: Record<SandboxDetails, DetailsView> = {
     prompt: fox
-      ? { kind: "prompt", id: "p1", number: "1", title: null, defaultTitle: "Prompt 1", editable: true, sessionLine: "Session 1 · Claude", detailLine: "Opus 5.5 · 3 Mar · prompt 1 of 1", typed: false, model: "Opus 5.5", text: FOX_TEXT, words: 27, uses: [], options: [], goesInto: [{ id: "result", label: "Result" }], makes: [] }
+      ? { kind: "prompt", id: "p1", number: "1", title: null, defaultTitle: "Prompt 1", place: "Step 1", editable: true, sessionLine: "Session 1 · Claude", detailLine: "Opus 5.5 · 3 Mar", typed: false, model: "Opus 5.5", text: FOX_TEXT, words: 27, uses: [], options: [], goesInto: [{ id: "result", label: "Result" }], makes: [] }
       : {
           kind: "prompt",
           id: "p3",
           number: "3",
           title: "Fix the mobile layout",
           defaultTitle: "Prompt 3",
+          place: "Step 3",
           editable: true,
           sessionLine: "Session 2 · Claude Code",
-          detailLine: "Sonnet 5.5 · 4 Mar · prompt 3 of 4",
+          detailLine: "Sonnet 5.5 · 4 Mar",
           typed: false,
           model: "Sonnet 5.5",
           text: "The menu grid overflows on a phone. Stack it to one column below 600px and keep the header sticky.",

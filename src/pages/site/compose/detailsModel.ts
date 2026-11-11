@@ -241,13 +241,6 @@ export function insideCounts(step: Pick<Step, "kind" | "children">): string {
   return `${count} ${noun}`;
 }
 
-/** "prompt 2 of 5": a prompt's place among the build's prompts. */
-export function promptPlace(step: Step, steps: readonly Step[]): string {
-  const prompts = flatten(steps).filter((candidate) => candidate.kind === "prompt" && !isInstructions(candidate));
-  const at = prompts.findIndex((candidate) => candidate.id === step.id);
-  return at < 0 ? "" : `prompt ${at + 1} of ${prompts.length}`;
-}
-
 /** One line of a session's checklist. */
 export interface ChecklistRow {
   ordinal: number;

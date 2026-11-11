@@ -357,7 +357,7 @@ const FILE: readonly SectionDef[] = [
   /* UX-02 P9: a file's type, and for a File step tile where it stands: in the List, and on the published page. Read from the file,
      never asked for, so neither is named as not set. */
   S("type", "Type", "", (tile) => (tile.kind === "file" ? one("Type", tile.type) : null)),
-  S("place", "In the build", "", (tile) => (tile.kind === "file" && tile.place ? rows([["Position", `Session ${tile.place.session} · step tile ${tile.place.at}`], ["On the published page", `Step ${tile.place.step} · File`]]) : null)),
+  S("place", "In the build", "", (tile) => (tile.kind === "file" && tile.place ? rows([["Session", `Session ${tile.place.session}`], ["On the published page", `Step ${tile.place.step} · File`]]) : null)),
   S("from", "From", "Where the file came from", (tile) => (tile.kind === "file" ? rows([["From", tile.from], ["Size", tile.size]]) : null)),
   S("usedBy", "Used by", "The steps that take it in", usedByOf),
 ];
@@ -641,7 +641,7 @@ export function headOf(tile: DetailsView): TileHead {
   const named = (title: string | null, fallback: string) => ({ title: title ?? fallback, untitled: !title });
   switch (tile.kind) {
     case "prompt":
-      return { ...named(tile.title, tile.defaultTitle), line: join(tile.sessionLine, tile.detailLine), tool: tile.sessionLine.split(" · ").pop() || null, model: tile.model };
+      return { ...named(tile.title, tile.defaultTitle), line: join(tile.place, tile.sessionLine, tile.detailLine), tool: tile.sessionLine.split(" · ").pop() || null, model: tile.model };
     case "manual":
       return { ...named(tile.title, tile.defaultTitle), line: join(`Manual step ${tile.number}`, tile.tool), tool: tile.tool || null, model: null };
     case "code":

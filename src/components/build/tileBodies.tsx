@@ -540,7 +540,7 @@ export function RepoTileBody({ step, indent = 0 }: { step: Step; indent?: number
 }
 
 /**
- * A prompt's name: its place on the build ("Prompt 3 · Session 2") in `--text2`, and, when the maker gave one, their title
+ * A prompt's name: its identifier, its position in the build ("Step 3"), in `--text2`, and, when the maker gave one, their title
  * next to it in `--text`. One line, an ellipsis. Draw it inside the heading.
  */
 export function PromptName({ place, title, size = 14 }: { place: string; title: string | null; size?: number }) {

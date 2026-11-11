@@ -83,7 +83,7 @@ describe("SandboxView frame", () => {
   it("draws Sources, Build and Details, and one primary button", () => {
     view();
     for (const name of ["Sources", "Build", "Details"]) expect(screen.getByRole("region", { name })).toBeTruthy();
-    expect(screen.getByText("Select a prompt, session or file to see it here.")).toBeTruthy();
+    expect(screen.getByText("Select a step to see its details")).toBeTruthy();
     expect(document.querySelectorAll('[data-variant="primary"]').length).toBe(1);
     expect(screen.getByTestId("sandbox-counts").textContent).toBe("3 sessions · 12 prompts · 2 files");
   });

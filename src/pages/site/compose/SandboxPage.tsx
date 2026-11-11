@@ -39,7 +39,7 @@ import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import type { BuildNode } from "@/lib/build/types";
 import { evalChoicesOf } from "@/lib/build/comparison";
 import { afterForIndex, type FilePlace } from "@/lib/build/fileDrop";
-import { addFile, placeStepAfter, topSteps, buildSteps, fileKindOf, previewOf, canCheck, resultFactsOf, resultHoldsWord, FILE_TYPE, groupKey, nestRefusal, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, testedStepOf, TOOL_TYPE, usesOf, type ResultInput, type Step } from "@/lib/build/graph";
+import { addFile, placeStepAfter, topSteps, buildSteps, fileKindOf, previewOf, canCheck, resultFactsOf, resultHoldsWord, FILE_TYPE, groupKey, isCountedPrompt, nestRefusal, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, testedStepOf, TOOL_TYPE, usesOf, type ResultInput, type Step } from "@/lib/build/graph";
 import { toolFor } from "@/lib/tools/registry";
 import { addWrittenPrompt } from "@/lib/build/composePrompts";
 import { addSetupFile, addSetupPlugin, addSetupRule, addSetupServer, addSetupWorkflow, isSetupPayload, needsText, routeSetupFiles, setNotShared, setupItemsOf, type DroppedFile, type SetupDraft } from "@/lib/build/setup";
@@ -381,8 +381,8 @@ function SandboxPageBody() {
     const all = flatten(steps);
     const next: SandboxCounts = {
       sessions: shownGroups(groups).length,
-      // SV-07 P7: a Summary tile is no prompt.
-      prompts: all.filter((step) => step.kind === "prompt" && !step.summary).length,
+      // F57: counted by the one rule (`isCountedPrompt`): no Summary tile, no agent's instructions.
+      prompts: all.filter(isCountedPrompt).length,
       files: tree.filter((node) => node.type === FILE_TYPE && !isSetupPayload(node.payload)).length,
     };
     return { counts: next, hasAgent: all.some((step) => step.kind === "agent" || step.kind === "team"), sessionCount: shownGroups(groups).length, steps, groups };
@@ -629,11 +629,26 @@ function SandboxPageBody() {
 
   /* ── Sources ── */
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const onNameMade = useCallback((stepId: string) => {
-    setSelectedId(stepId);
-    setFocusMakes({ id: stepId, at: Date.now() });
+  const [selectedId, setSelectedRaw] = useState<string | null>(null);
+  /** F11: the one function that sets the selection. Every action aimed at a tile calls it; the tile is then scrolled into view (F12, F13). */
+  const [reveal, setReveal] = useState<{ id: string } | null>(null);
+  const select = useCallback((id: string | null) => {
+    setSelectedRaw(id);
+    setReveal(id ? { id } : null);
   }, []);
+  /* The selected tile is brought into view, block "nearest": a tile that is already on screen does not move. A tile just added is
+     not drawn until its write lands, so this waits for it and runs when the steps change. */
+  useEffect(() => {
+    if (!reveal) return;
+    const tile = document.querySelector<HTMLElement>(`[data-tile-id="${reveal.id}"], [data-node-id="${reveal.id}"]`);
+    if (!tile) return;
+    tile.scrollIntoView?.({ block: "nearest" });
+    setReveal(null);
+  }, [reveal, steps, tree]);
+  const onNameMade = useCallback((stepId: string) => {
+    select(stepId);
+    setFocusMakes({ id: stepId, at: Date.now() });
+  }, [select]);
   // The ask belongs to the prompt it was made on: once something else is selected it is spent.
   useEffect(() => {
     if (focusMakes && selectedId !== focusMakes.id) setFocusMakes(null);
@@ -679,7 +694,7 @@ function SandboxPageBody() {
     registry,
     lens: phone ? "list" : lens,
     phone,
-    setSelectedId,
+    setSelectedId: select,
     setOpenPromptId,
     groupEntries: groupTargets,
   });
@@ -801,7 +816,7 @@ function SandboxPageBody() {
     }),
     [groups, steps],
   );
-  const selection = useBuildSelection({ drawn, onSelect: setSelectedId, phone });
+  const selection = useBuildSelection({ drawn, onSelect: select, phone });
   /* CA-20 P5: every change the maker makes, other than typing, is a step of the build's history. `asStep` makes a handler one. */
   const track = buildHistory.track;
   const asStep = useCallback(
@@ -1156,12 +1171,15 @@ function SandboxPageBody() {
   const onAddPrompt = useCallback(
     async (input: { text: string; tool: string | null; model: string | null }) => {
       const session = await sessionToWrite();
-      const saved = await prompts.addNow({ ...input, session });
+      // F13: the id is chosen before the write, so the new prompt can be selected when it lands.
+      const id = crypto.randomUUID();
+      const saved = await prompts.addNow({ ...input, session, id });
       // The box stays open in its session, ready for the next prompt.
       if (saved && session) setPromptSession(session);
+      if (saved) select(id);
       return saved;
     },
-    [prompts, sessionToWrite],
+    [prompts, sessionToWrite, select],
   );
   const reminderRows = useMemo(() => projectFileReminders(sourceSessionRows, sourceFileRows), [sourceSessionRows, sourceFileRows]);
   /* SV-07 P7: the same chat imported again says which session it repeats. */
@@ -1253,12 +1271,20 @@ function SandboxPageBody() {
   /** Select a tile and open its window: a prompt's own window, any other tile's, a session's. A tile with none (a file) is only selected. */
   const openTile = useCallback(
     (id: string) => {
-      setSelectedId(id);
+      select(id);
       const part = allParts(steps).find((candidate) => candidate.id === id);
       if (part?.kind === "prompt" && !part.id.endsWith(":instructions")) setOpenPromptId(id);
       else setEditId(id);
     },
-    [steps],
+    [steps, select],
+  );
+  /** F11: "Open prompt" selects the prompt it opens. */
+  const openPrompt = useCallback(
+    (id: string) => {
+      select(id);
+      setOpenPromptId(id);
+    },
+    [select],
   );
 
   /** Writes to a node inside an agent or a team are not laid over the tree, so read the build again once they land. */
@@ -1343,13 +1369,13 @@ function SandboxPageBody() {
       },
       onSelect: (to) => {
         const target = parseRefTo(to);
-        if (target?.kind === "node" || target?.kind === "session") setSelectedId(target.id);
+        if (target?.kind === "node" || target?.kind === "session") select(target.id);
         else links.goTo(to, null);
       },
       onGoTo: showWords,
       onOpenGroup: referenceActions.openGroup,
     }),
-    [references.model, references.editor, allTargets, links, referenceActions.openGroup],
+    [references.model, references.editor, allTargets, links, referenceActions.openGroup, select],
   );
 
   /* ── tiles inside tiles (CA-04 P2) ── */
@@ -1372,10 +1398,10 @@ function SandboxPageBody() {
       });
       settleSeed(Boolean(id));
       if (!id) return;
-      setSelectedId(id);
+      select(id);
       afterWrite();
     },
-    [prompts, afterWrite, settleSeed, sessionToWrite],
+    [prompts, afterWrite, settleSeed, sessionToWrite, select],
   );
 
   const onAddDecision = useCallback(
@@ -1383,11 +1409,11 @@ function SandboxPageBody() {
       const session = await sessionToWrite();
       const id = await prompts.addDecisionTile({ ...input, session });
       if (!id) return;
-      setSelectedId(id);
+      select(id);
       setRinged((current) => ({ id, n: (current?.n ?? 0) + 1 }));
       afterWrite();
     },
-    [prompts, afterWrite, sessionToWrite],
+    [prompts, afterWrite, sessionToWrite, select],
   );
 
   /** CA-15 P9: a system prompt, a dataset or a repository is placed at the end of the current session and selected, as a tool is. */
@@ -1396,11 +1422,11 @@ function SandboxPageBody() {
       const session = await sessionToWrite();
       const id = await add(session);
       if (!id) return;
-      setSelectedId(id);
+      select(id);
       setRinged((current) => ({ id, n: (current?.n ?? 0) + 1 }));
       afterWrite();
     },
-    [afterWrite, sessionToWrite],
+    [afterWrite, sessionToWrite, select],
   );
 
   const onAddAgentTo = useCallback(
@@ -1410,10 +1436,10 @@ function SandboxPageBody() {
       const model = team?.children[team.children.length - 1]?.model ?? DEFAULT_AGENT_MODEL;
       const id = await prompts.addAgentTo(teamId, model);
       if (!id) return;
-      setSelectedId(id);
+      select(id);
       afterWrite();
     },
-    [prompts, steps, afterWrite],
+    [prompts, steps, afterWrite, select],
   );
 
   /** Goes after the selected step (the one a selected step sits in, when it is inside an agent or a team), else at the end. */
@@ -1426,10 +1452,10 @@ function SandboxPageBody() {
     async (input: AddManualStepInput) => {
       const id = await prompts.addManual({ ...input, afterId: afterStep?.id ?? null, session: await sessionToWrite() });
       if (!id) return;
-      setSelectedId(id);
+      select(id);
       afterWrite();
     },
-    [prompts, afterStep, afterWrite, sessionToWrite],
+    [prompts, afterStep, afterWrite, sessionToWrite, select],
   );
 
   const onAddCheck = useCallback(
@@ -1445,7 +1471,7 @@ function SandboxPageBody() {
         // A check uses the step it tested: the selected one, else the last agent, team or code.
         const id = await prompts.addCheckStep({ ...input, ...(evidence ? { evidence } : null), testedStep: testedStepOf(steps, afterStep?.id ?? null), session: await sessionToWrite() });
         if (!id) return;
-        setSelectedId(id);
+        select(id);
         afterWrite();
       } catch (cause) {
         // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
@@ -1453,7 +1479,7 @@ function SandboxPageBody() {
         sayFailed(cause, "Check not added");
       }
     },
-    [ensureBuild, nodes, prompts, steps, afterStep, afterWrite, sessionToWrite],
+    [ensureBuild, nodes, prompts, steps, afterStep, afterWrite, sessionToWrite, select],
   );
 
   const onAddCode = useCallback(
@@ -1464,9 +1490,9 @@ function SandboxPageBody() {
         savingCode.current = false;
       });
       settleCode(Boolean(id));
-      if (id) setSelectedId(id);
+      if (id) select(id);
     },
-    [prompts, settleCode, sessionToWrite],
+    [prompts, settleCode, sessionToWrite, select],
   );
 
   const onAddAgentPrompt = useCallback(
@@ -1557,7 +1583,10 @@ function SandboxPageBody() {
           await insertSession({ kind: "copy", copy, head: { tool: copy.meta.tool ?? NO_APP, detail: "", date: shortDate(new Date().toISOString()) } });
         }
         await flush();
-        if (first) setInserted((current) => ({ id: first as string, n: (current?.n ?? 0) + 1 }));
+        if (first) {
+          select(first);
+          setInserted((current) => ({ id: first as string, n: (current?.n ?? 0) + 1 }));
+        }
         void touchSavedItems(items.map((item) => item.id)).catch(() => undefined);
         void queryClient.invalidateQueries({ queryKey: ["library", "savedItemsUsedIn"] });
         void queryClient.invalidateQueries({ queryKey: ["library", "listSavedItems"] });
@@ -1567,7 +1596,7 @@ function SandboxPageBody() {
         sayFailed(cause, "Not added from Library", () => void onInsertFromLibrary(items, place));
       }
     },
-    [user?.id, sessionToWrite, actions, insertSession, queryClient],
+    [user?.id, sessionToWrite, actions, insertSession, queryClient, select],
   );
   /* The new tile is brought into view only when it would be wholly off screen (SV-06's helper), and ringed once. */
   useEffect(() => {
@@ -1582,10 +1611,10 @@ function SandboxPageBody() {
   const addPiece = useCallback(
     async (kind: "tool" | "result", name?: string) => {
       const id = await prompts.addPiece(kind, name);
-      if (id) setSelectedId(id);
+      if (id) select(id);
       return id;
     },
-    [prompts],
+    [prompts, select],
   );
 
   /* CA-10 (CA-09 T7, Add › Result and Add › Session): until the write lands (on a new post `ensureBuild` makes the
@@ -1640,7 +1669,7 @@ function SandboxPageBody() {
         }
         const id = await prompts.addResultOf(made);
         if (id) {
-          setSelectedId(id);
+          select(id);
           setRinged((current) => ({ id, n: (current?.n ?? 0) + 1 }));
         }
       } catch (cause) {
@@ -1651,7 +1680,7 @@ function SandboxPageBody() {
         setPendingAdd(null);
       }
     },
-    [ensureBuild, nodes, prompts, showPending],
+    [ensureBuild, nodes, prompts, showPending, select],
   );
   const onAddResult = useCallback(() => setAddResultOpen(true), []);
 
@@ -1694,15 +1723,15 @@ function SandboxPageBody() {
       ...classificationCard,
       onSave: saveCard,
       maker,
-      onSelectSource: (id: string) => setSelectedId(id),
+      onSelectSource: (id: string) => select(id),
       onAction: (action: "add-code" | "add-run" | "add-cost" | "add-tool", question: { tileId?: string }) => {
         if (action === "add-code") setAddCodeOpen(true);
         else if (action === "add-run") setAddResultOpen(true);
         else if (action === "add-tool") setAddToolOpen(true);
-        else if (question.tileId) setSelectedId(question.tileId);
+        else if (question.tileId) select(question.tileId);
       },
     }),
-    [classificationCard, saveCard, maker],
+    [classificationCard, saveCard, maker, select],
   );
   /* CA-25: the Publish checklist's input. The sessions with no app are the ones a maker can still give one; a legacy session cannot be. */
   const appless = useMemo(() => sourceSessionRows.filter((row) => row.tool === NO_APP && !isLegacySession(row.key)).map((row) => ({ key: row.key, number: row.number })), [sourceSessionRows]);
@@ -1787,11 +1816,11 @@ function SandboxPageBody() {
       const session = await sessionToWrite();
       const id = await prompts.addToolTile({ ...input, session });
       if (id) {
-        setSelectedId(id);
+        select(id);
         setRinged((current) => ({ id, n: (current?.n ?? 0) + 1 }));
       }
     },
-    [prompts, sessionToWrite],
+    [prompts, sessionToWrite, select],
   );
 
   const download = useCallback(
@@ -1997,6 +2026,7 @@ function SandboxPageBody() {
           );
         });
         await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) });
+        if (added.node && !("into" in place)) select(added.node.id);
         return added.node;
       } catch (cause) {
         // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
@@ -2005,7 +2035,7 @@ function SandboxPageBody() {
         return null;
       }
     },
-    [tree, ensureBuild, nodes, writeFileTile, queryClient, motion],
+    [tree, ensureBuild, nodes, writeFileTile, queryClient, motion, select],
   );
 
   /** Files onto one prompt: each is added to the build and then listed as that prompt's input, in order. */
@@ -2206,9 +2236,9 @@ function SandboxPageBody() {
   /** "Setup 2" on a session's head: the session in Details, scrolled to its Setup. */
   const [focusSetup, setFocusSetup] = useState<{ key: string; at: number } | null>(null);
   const onOpenSetup = useCallback((key: string) => {
-    setSelectedId(key);
+    select(key);
     setFocusSetup({ key, at: Date.now() });
-  }, []);
+  }, [select]);
 
   /**
    * CA-05 P2: a dropped Claude Code result file (the JSON a script run prints) tells what the session cost, the tokens it
@@ -2261,9 +2291,12 @@ function SandboxPageBody() {
         return;
       }
       // One after another, so several files keep their order at the place they were dropped.
-      for (const [at, file] of rest.entries()) await addOneFile(file, "add", null, null, true, onList.place ? { ...onList.place, index: onList.place.index + at } : null);
+      for (const [at, file] of rest.entries()) {
+        const added = await addOneFile(file, "add", null, null, true, onList.place ? { ...onList.place, index: onList.place.index + at } : null);
+        if (added) select(added.id);
+      }
     },
-    [addOneFile, addSetup, navigate, takeResultFiles],
+    [addOneFile, addSetup, navigate, takeResultFiles, select],
   );
 
   /** The picker is an explicit choice of files, so nothing is taken for an export; setup files still go to the setup. */
@@ -2271,10 +2304,10 @@ function SandboxPageBody() {
     async (files: File[], tile = false) => {
       for (const file of await addSetup(await takeResultFiles(files), undefined)) {
         const added = await addOneFile(file, "add", null, null, tile);
-        if (added && tile) setSelectedId(added.id);
+        if (added && tile) select(added.id);
       }
     },
-    [addOneFile, addSetup, takeResultFiles],
+    [addOneFile, addSetup, takeResultFiles, select],
   );
 
   /* CA-14 P5: what the Add items do, in each session's "+ Add step tile" (UX-02 P7: the one way to add a step tile). */
@@ -2355,7 +2388,7 @@ function SandboxPageBody() {
   const openInBuild = useCallback(
     (key: string) => {
       setLens("list");
-      setSelectedId(key);
+      select(key);
       window.setTimeout(() => {
         const el = partElement(registry, refTo({ kind: "session", id: key }));
         if (el) {
@@ -2364,12 +2397,12 @@ function SandboxPageBody() {
         }
       }, 60);
     },
-    [registry],
+    [registry, select],
   );
   const openTileInBuild = useCallback(
     (tileId: string) => {
       setLens("list");
-      setSelectedId(tileId);
+      select(tileId);
       window.setTimeout(() => {
         const el = partElement(registry, refTo({ kind: "node", id: tileId }));
         if (el) {
@@ -2378,7 +2411,7 @@ function SandboxPageBody() {
         }
       }, 60);
     },
-    [registry],
+    [registry, select],
   );
   const mapColumn =
     mapSettings && mapActive ? (
@@ -2386,7 +2419,7 @@ function SandboxPageBody() {
         model={mapModel}
         direction={mapSettings.direction}
         selected={mapSelected}
-        onSelect={setSelectedId}
+        onSelect={select}
         shownLine={mapSettings.onBuildPage ? "Shown on build page" : "Not on build page"}
         controls={{
           onDirection: (direction) => changeMap({ ...mapSettings, direction }),
@@ -2403,15 +2436,15 @@ function SandboxPageBody() {
   const architectureColumn =
     mapSettings && (deploymentTiles.length > 0 || steps.some((step) => step.kind === "retrieval" || step.kind === "decision")) ? (
       <Suspense fallback={mapColumn}>
-        <MapViews made={made} sessions={savedGroups.length} tree={tree} direction={mapSettings.direction} sessionsMap={mapColumn} onView={(view) => changeMap({ ...mapSettings, view })} onOpen={setSelectedId} />
+        <MapViews made={made} sessions={savedGroups.length} tree={tree} direction={mapSettings.direction} sessionsMap={mapColumn} onView={(view) => changeMap({ ...mapSettings, view })} onOpen={select} />
       </Suspense>
     ) : null;
   const mapPanel = mapSettings && mapActive ? <SessionMapPanel model={mapModel} selected={mapSelected} onOpenInBuild={openInBuild} onOpenTile={openTileInBuild} /> : null;
 
   /** The handlers Details had, which its tiles' windows now call (CA-18). */
   const detailsHandlers: DetailsHandlers = {
-    onSelect: setSelectedId,
-    onOpenPrompt: setOpenPromptId,
+    onSelect: select,
+    onOpenPrompt: openPrompt,
     onRename: prompts.rename,
     onModel: prompts.setModel,
     onAddMade: (stepId, name) => void prompts.addMadeFile(stepId, name),
@@ -2633,7 +2666,7 @@ function SandboxPageBody() {
     selection,
     selectedId,
     tiles: drawn.sessions.flatMap((session) => session.tiles),
-    onSelect: setSelectedId,
+    onSelect: select,
     onMove: stepOf.move,
     openHelp: actions.shortcuts.open,
     openFind: find.show,
@@ -2794,7 +2827,7 @@ function SandboxPageBody() {
             results={listFacts.results}
             selectedId={selectedId}
             onSelect={selection.selectTile}
-            onOpenPrompt={setOpenPromptId}
+            onOpenPrompt={openPrompt}
             onEditTile={openTile}
             onRename={prompts.rename}
             onMove={stepOf.move}
@@ -2876,7 +2909,7 @@ function SandboxPageBody() {
                 sessionNumber={(key) => savedGroups.find((group) => groupKey(group) === key)?.number ?? null}
                 selectedId={selectedId}
                 phone={phone}
-                onOpen={(id) => setSelectedId(id)}
+                onOpen={(id) => select(id)}
               />
               </Suspense>
               ) : null}
@@ -2900,7 +2933,7 @@ function SandboxPageBody() {
             didntFinish={unfinishedRows.didntFinish}
             reminders={reminderRows}
             selectedId={selectedId}
-            onSelect={setSelectedId}
+            onSelect={select}
             onAddSession={(id, part) => void stepOf.session(id, part)}
             parts={addToParts}
             lastPart={lastPart}
@@ -2984,7 +3017,7 @@ function SandboxPageBody() {
         add={prompts.addDeploymentTile}
         onAdded={(id) => {
           motion.expect({ kind: "add", keys: [id] });
-          setSelectedId(id);
+          select(id);
         }}
       />
       <TileEditDialog view={editView} handlers={detailsStepped} inBuild={inBuild} teamsAvailable={teamsAvailable} onClose={() => setEditId(null)} />
@@ -3002,7 +3035,7 @@ function SandboxPageBody() {
         onReply={prompts.setReply}
         onExtras={prompts.setExtras}
         onText={prompts.setTextOf}
-        onNavigate={setOpenPromptId}
+        onNavigate={openPrompt}
         onClose={() => {
           setOpenPromptId(null);
           links.closeWindows();

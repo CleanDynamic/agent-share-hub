@@ -23,6 +23,7 @@ import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { LoadingBlocks } from "./LoadingBlocks";
 import { PanelFailed } from "./PanelBoundary";
 import { LIBRARY_MORE_WIDTH } from "./loadingBlocks";
+import { stepLabel } from "@/lib/build/graph";
 import { PLUS_OUT_MS, WORDS_IN_MS } from "@/lib/build/buildMotion";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -266,7 +267,7 @@ function SessionRow({
         <div style={{ marginLeft: 22, display: "flex", flexDirection: "column", gap: 2, paddingTop: 4 }}>
           {session.prompts.map((prompt) => (
             <SelectButton key={prompt.id} selected={selectedId === prompt.id} onClick={() => onSelect(prompt.id)} minHeight={phone ? 44 : 30}>
-              <span style={{ fontFamily: DM_MONO, fontSize: 10.5, color: t.label, ...tnum }}>{prompt.number}</span>
+              <span style={{ fontFamily: DM_MONO, fontSize: 10.5, color: t.label, ...tnum }}>{stepLabel(prompt.number)}</span>
               <span {...fullText(prompt.title)} style={{ ...text(12.5, prompt.isDefault ? 400 : 500, prompt.isDefault ? t.text2 : t.text), ...ellipsis }}>{prompt.title}</span>
             </SelectButton>
           ))}

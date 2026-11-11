@@ -1233,7 +1233,10 @@ export function withSentWith(step: Step): Step[] {
 }
 
 /** The title the maker typed, else the default. */
-/** A prompt's name by its place on the build: "Prompt 3 · Session 2", or "Prompt 3" when it is in no numbered session. The maker's own title, if any, is drawn next to it. */
+/** F56: the one identifier of a step: its position in the build, "Step 11". The tile, Details, the prompt window and Sources all say it this way. */
+export const stepLabel = (number: string): string => `Step ${number}`;
+
+/** A prompt's name by its place on the build: "Prompt 3 · Session 2", or "Prompt 3" when it is in no numbered session. Only the Open Builds attach labels still use it (F56 left them out: not a file this prompt may touch). */
 export function promptPlace(number: string, sessionNumber: number | null | undefined): string {
   return sessionNumber ? `Prompt ${number} · Session ${sessionNumber}` : `Prompt ${number}`;
 }
@@ -1420,6 +1423,13 @@ export function groupOfStep(groups: readonly SessionGroup[], step: Pick<Step, "n
 /** CA-04 P1: the numbers of a group's prompts, in order: a group now holds every kind of step. */
 export const promptNumbersOf = (group: Pick<SessionGroup, "stepNumbers">, steps: readonly Pick<Step, "number" | "kind">[]): string[] =>
   group.stepNumbers.filter((number) => steps.find((step) => step.number === number)?.kind === "prompt");
+
+/**
+ * F57: the one rule for counting a prompt: a step shown as a prompt step. An agent's `:instructions` prompt and a Summary tile are
+ * not counted; a system prompt is a step of its own kind, so it is not a prompt either. The Build line, Details and the prompt
+ * window's "of N" all count through this.
+ */
+export const isCountedPrompt = (step: Pick<Step, "kind" | "id" | "summary">): boolean => step.kind === "prompt" && !step.summary && !step.id.endsWith(":instructions");
 
 /** Every step, parents before their children. */
 function flattenSteps(steps: readonly Step[]): Step[] {

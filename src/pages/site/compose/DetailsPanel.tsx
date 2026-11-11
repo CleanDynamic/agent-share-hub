@@ -99,7 +99,7 @@ export interface PromptView extends InputsView {
   defaultTitle: string;
   /** False for an agent's instructions: they are renamed through the agent. */
   editable: boolean;
-  /** Its name by its place on the build: "Prompt 3 · Session 2". Absent for an agent's instructions. */
+  /** Its identifier, its position in the build: "Step 3". Absent for an agent's instructions. */
   place?: string;
   /** "Session 2 · Claude", or "Typed here · ChatGPT". */
   sessionLine: string;
@@ -479,7 +479,8 @@ export interface DetailsPlan {
 }
 
 export const DETAILS_COPY = {
-  empty: "Select a step tile or session to see it here.",
+  /** F14: the one line shown with nothing selected. */
+  empty: "Select a step to see its details",
   /** UX-02 P9: in place of "Not set: …". */
   addDetails: "Add details",
   edit: "Edit",

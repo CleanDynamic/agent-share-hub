@@ -72,7 +72,7 @@ describe("Undo and Redo", () => {
     fireEvent.click(await screen.findByRole("menuitem", { name: /^Session 3/ }));
     await waitFor(() => expect((nodeRow(IDS.p1)?.payload as { session?: string }).session).toBe(KEY_C), { timeout: 15_000 });
     expect(screen.queryByTestId("notice-undo")).toBeNull();
-    await waitFor(() => expect(undoButton().getAttribute("title")?.replace(/ \([^)]*\)$/, "")).toBe("Undo: Moved step tile 1 to Session 3"));
+    await waitFor(() => expect(undoButton().getAttribute("title")?.replace(/ \([^)]*\)$/, "")).toBe("Undo: Moved step 1 to Session 3"));
     fireEvent.click(undoButton());
     await waitFor(() => expect((nodeRow(IDS.p1)?.payload as { session?: string }).session).toBe(KEY_A), { timeout: 15_000 });
     expect(positions().filter((row) => row.parent_id === null)[0].id).toBe(IDS.p1);

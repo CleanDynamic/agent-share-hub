@@ -62,7 +62,7 @@ describe("the refined window does what the window does", () => {
 
   it("heads itself, puts focus on the text, lists the uses, and closes with Done and Close", async () => {
     const props = open("p3");
-    expect(screen.getByRole("dialog", { name: "Prompt 3 of 5" })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: "Step 3" })).toBeTruthy();
     await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId("full-prompt-text")));
     expect(screen.getByText("19 words")).toBeTruthy();
     expect(screen.getByText("Output of 2 · Prompt 2")).toBeTruthy();
@@ -83,7 +83,7 @@ describe("the refined window does what the window does", () => {
   it("is a heading for a reader, with Before you send it", () => {
     open("p3", { mode: "reader", onTitle: undefined });
     expect(screen.queryByLabelText("Title")).toBeNull();
-    expect(screen.getByRole("heading", { name: /^Prompt 3(?: · Session \d+)?(?: Fix the mobile layout)?$/ })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /^Step 3(?: Fix the mobile layout)?$/ })).toBeTruthy();
     expect(screen.getByText("Before you send it")).toBeTruthy();
   });
 });

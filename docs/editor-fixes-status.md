@@ -47,10 +47,10 @@ Note: 21 distinct names are listed for 31 failed tests. Names that repeat across
 | F8 | 1 | done | src/components/build/tileBodies.tsx, BuildList.tsx | FileTileBody gets optional `onPreview`; the thumbnail is then a button (aria-label "Preview <name>") that opens the tile window. File name spans have cursor default. |
 | F9 | 1 | done | src/components/post/editor/PostToolbar.tsx | Eye button is 36 (desktop) / 44 (phone) square, already with a hover state. Added `previewOpen` prop → aria-pressed, and a title naming what it shows or hides. PostTab.tsx does not pass `previewOpen` yet (not on the list). |
 | F10 | 1 | done | src/pages/site/compose/SandboxCard.tsx, SandboxCard.test.tsx | SandboxCard guards onOpenChange: when any field differs from open, Escape/outside/close square shows an in-dialog Keep editing / Discard changes choice. useLeaveGuard is router-only, not reused. Tests: `F10 · closing Classification with changes`. |
-| F11 | 2 | not started | | |
-| F12 | 2 | not started | | |
-| F13 | 2 | not started | | |
-| F14 | 2 | not started | | |
+| F11 | 2 | done | src/pages/site/compose/SandboxPage.tsx, BuildList.tsx (comment) | `select` in SandboxPage.tsx (one `useState` kept, its setter renamed `setSelectedRaw`); every former `setSelectedId` call now calls `select`. "Open prompt" and the prompt window's prev/next go through `openPrompt`; a file dropped on the List, a source file added as a tile, an add from the composer and an add from Library now select. Test `selection.ui.test.tsx > "Open prompt" selects the prompt it opens`. |
+| F12 | 2 | done | src/pages/site/compose/SandboxPage.tsx | `select` sets `reveal`; the effect after it calls `scrollIntoView({ block: "nearest" })` on `[data-node-id]` / `[data-tile-id]` and the card shows `data-selected`. Test `selection.ui.test.tsx > a click on a prompt in Sources selects its tile and scrolls it into view, nearest`. Not checked on the dev kit page: scroll behaviour of a real browser. |
+| F13 | 2 | done | src/pages/site/compose/SandboxPage.tsx | Composer prompt: `onAddPrompt` picks the id before the write and selects it; tool/result/agent/decision/code/check/manual/source tiles already selected and now scroll through `select`; Library insert selects its first tile. The effect waits until the new tile is drawn. No dedicated test for the composer add (see report). |
+| F14 | 2 | done | src/pages/site/compose/DetailsPanel.tsx, SandboxView.tsx, DetailsPanel.test.tsx, SandboxView.test.tsx, aroundBuild.test.tsx | `DETAILS_COPY.empty` = "Select a step to see its details" (and the same line in SandboxView `DETAILS_EMPTY`). Tests `DetailsPanel.test.tsx > shows tile B's title after tile A's, and the line again when the selection is cleared (F14)`; `selection.ui.test.tsx > selects tile A, then tile B: the panel's title is B's`. |
 | F15 | 5 | not started | | |
 | F16 | 5 | not started | | |
 | F17 | 6 | not started | | |
@@ -92,8 +92,8 @@ Note: 21 distinct names are listed for 31 failed tests. Names that repeat across
 | F53 | 7 | not started | | |
 | F54 | 6 | not started | | |
 | F55 | 7 | not started | | |
-| F56 | 2 | not started | | |
-| F57 | 2 | not started | | |
+| F56 | 2 | done | src/lib/build/graph.ts, tileSections.ts, src/components/build/FullPromptWindow.tsx, tileBodies.tsx (comment), src/pages/site/compose/BuildList.tsx, SourcesPanel.tsx, detailsView.ts, detailsModel.ts, useSessionEdits.ts, src/dev/fixtures/detailsKinds.ts, sandbox.ts | `stepLabel(number)` = "Step N" (graph.ts). Tile, panel line (`headOf`), prompt window title and Sources row all call it with `step.number`: same N, no computation changed. Position in session only in the dialog's grey line "Step 4 · 1 of 2 in Session 2 · …". Sentences: "Moved step 1 to Session 2", "Split Session 2 at step 5". Test `selection.ui.test.tsx > a build of two sessions: the tile, the panel, the prompt window and Sources all say Step 4 for the same step`. |
+| F57 | 2 | done | src/lib/build/graph.ts, src/pages/site/compose/SandboxPage.tsx, detailsView.ts, src/components/build/FullPromptWindow.tsx, selection.ui.test.tsx | Page-header count: not present (the CA-20 draft page renders one prompt count, `sandbox-counts`; `buildSummary` has no caller; stored `step_count` counts steps, not prompts). Mismatch fixed: `isCountedPrompt` (graph.ts) = a prompt step, not a Summary tile, not an agent's `:instructions`; called by the Build line's count (SandboxPage.tsx), Details' session list (detailsView.ts `sessionView`) and the prompt window's "of N". Test `selection.ui.test.tsx > one prompt count (F57)`: 3 prompts + system prompt + agent with instructions + Summary tile → "3 prompts", "2 of 3 in Session 1", "3 of 3". |
 | F58 | 8 | not started | | |
 | F59 | 8 | not started | | |
 | F60 | 8 | not started | | |

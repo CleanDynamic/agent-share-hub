@@ -51,7 +51,7 @@ describe("UX-02 P9 · a selected File step tile", () => {
     const type = screen.getAllByTestId("details-section").find((section) => section.querySelector("h4")?.textContent === "Type") as HTMLElement;
     expect(within(type).getByText("MD")).toBeTruthy();
     const place = screen.getAllByTestId("details-section").find((section) => section.querySelector("h4")?.textContent === "In the build") as HTMLElement;
-    expect(within(place).getByText("Session 2 · step tile 3")).toBeTruthy();
+    expect(within(place).getByText("Session 2")).toBeTruthy();
     expect(within(place).getByText("Step 5 · File")).toBeTruthy();
   });
 

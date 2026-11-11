@@ -78,7 +78,7 @@ import { MenuButton } from "@/components/brand/MenuButton";
 import { Pill } from "@/components/brand/Pill";
 import type { SessionGroup, Step } from "@/lib/build/graph";
 import { footerFactsOf, resultTypeLine, typeLineOf } from "@/lib/build/tileLines";
-import { checkHistoryLine, checkStatus, promptPlace, resultHolds, sentWithLabel, stepRunsLabel, stepTitle, TOOL_TYPE, withSentWith } from "@/lib/build/graph";
+import { checkHistoryLine, checkStatus, resultHolds, sentWithLabel, stepLabel, stepRunsLabel, stepTitle, TOOL_TYPE, withSentWith } from "@/lib/build/graph";
 import { ChangedText } from "@/components/build/ChangedText";
 import { copyTogether } from "@/lib/build/copyTogether";
 import { codeInPrompt, SENT_WITH_COPY, type CodeSuggestion } from "@/lib/build/sentWithSuggest";
@@ -1118,7 +1118,7 @@ function TileTitle({ step, rename, noun, phone }: { step: Step; rename: ReturnTy
   );
 }
 
-/** The one text link at the right of a tile's footer: "Open prompt", "Show agents". It never selects the tile. */
+/** The one text link at the right of a tile's footer: "Open prompt", "Show agents". It does not reach the tile's own click; "Open prompt" selects the prompt through its handler (F11). */
 function FooterLink({ phone, onClick, expanded, children }: { phone: boolean; onClick: () => void; expanded?: boolean; children: ReactNode }) {
   return (
     <TextButton
@@ -1180,11 +1180,10 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
   const selected = selectedId === step.id || picked;
   const title = stepTitle(step);
   const isDefault = step.title === null;
-  const { sessionNumbers, alsoIn: repeated } = useContext(ListRefsContext);
-  const sessionNumber = sessionNumbers?.get(step.id);
+  const { alsoIn: repeated } = useContext(ListRefsContext);
   const alsoIn = repeated?.get(step.id);
   // SV-07 P7: a Summary tile is called what it is, never by a prompt's place.
-  const place = step.summary ? SUMMARY_COPY.title : promptPlace(step.number, sessionNumber);
+  const place = step.summary ? SUMMARY_COPY.title : stepLabel(step.number);
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState("");
   const [over, setOver] = useState(false);

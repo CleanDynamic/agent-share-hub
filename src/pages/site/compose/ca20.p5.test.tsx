@@ -187,7 +187,7 @@ describe("on the page", () => {
     fireEvent.keyDown(await screen.findByRole("menuitem", { name: "Move to session…" }), { key: "ArrowRight" });
     fireEvent.click(await screen.findByRole("menuitem", { name: /^Session 2/ }));
     await waitFor(() => expect((nodeRow(IDS.p1)?.payload as { session?: string }).session).toBe(KEY_B), { timeout: 15_000 });
-    await waitUndo("Moved step tile 1 to Session 2");
+    await waitUndo("Moved step 1 to Session 2");
     expect(screen.queryByTestId("notice-undo")).toBeNull();
     expect(document.querySelector("[data-sonner-toast]")).toBeNull();
   });
