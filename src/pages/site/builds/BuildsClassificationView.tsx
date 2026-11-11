@@ -24,7 +24,7 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
-import { BuildsControl, BuildsHead, UpdatingStatus, ViewSwitch, ellipsis, text, useCardColumns } from "./BuildsFrame";
+import { BuildsControl, BuildsHead, UpdatingStatus, ViewSwitch, ellipsis, hitArea, text, useCardColumns } from "./BuildsFrame";
 import { ActiveFilters, RowLamp, type TableChip } from "./BuildsTableView";
 import { ALL_FACETS, type ClassCardView, type ClassRowView, type ClassValueView } from "./classificationModel";
 
@@ -75,6 +75,8 @@ function ValueLink({ value }: { value: ClassValueView }) {
         textDecorationStyle: state.hovered ? "solid" : "dotted",
         textDecorationColor: t.label,
         textUnderlineOffset: 3,
+        // BF-05 (G3): an inline link, so the padding grows its hit area and leaves the line alone.
+        padding: "4px 0",
         borderRadius: r.chip,
         ...ring(state.focusVisible),
       }}
@@ -123,7 +125,7 @@ export function ClassificationCard({ card, index }: { card: ClassCardView; index
     >
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
         <div style={{ minWidth: 0 }}>
-          <Link to={card.href} style={{ display: "block", ...ellipsis, ...text(14, 500, t.text), lineHeight: 1.3, textDecoration: "none", borderRadius: r.chip }}>
+          <Link to={card.href} style={{ display: "block", ...ellipsis, ...hitArea(4), ...text(14, 500, t.text), lineHeight: 1.3, textDecoration: "none", borderRadius: r.chip }}>
             {card.title}
           </Link>
           <div style={{ marginTop: 2, ...text(12, 400, t.label), lineHeight: "normal" }}>{card.subtitle}</div>

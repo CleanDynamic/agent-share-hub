@@ -441,9 +441,13 @@ function Histogram({ bars, height }: { bars: RangeSection["histogram"]; height: 
 
 function RangeFilter({ section, onChange, move }: { section: RangeSection; onChange?: (value: readonly [number, number]) => void; move: Moving }) {
   const [low, high] = section.value;
-  const thumb: CSSProperties = { display: "block", width: 12, height: 12, borderRadius: 6, background: t.text, outline: "none" };
+  // BF-05 (G3): the thumb is a 24 by 24 transparent hit area holding the 12px dot. The shared focus outline is drawn inside the
+  // round thumb (`data-ring-inset`, 4px in), so it circles the dot and not the hit area; the dot keeps its own halo.
+  const thumb: CSSProperties = { display: "grid", placeItems: "center", width: 24, height: 24, borderRadius: 12, background: "transparent", outline: "none" };
+  const dot: CSSProperties = { display: "block", width: 12, height: 12, borderRadius: 6, background: t.text };
   const focus = (event: { currentTarget: HTMLElement }, on: boolean) => {
-    event.currentTarget.style.boxShadow = on ? `0 0 0 2px ${t.frame}, 0 0 0 4px ${t.text}` : "none";
+    const mark = event.currentTarget.firstElementChild as HTMLElement | null;
+    if (mark) mark.style.boxShadow = on ? `0 0 0 2px ${t.frame}, 0 0 0 4px ${t.text}` : "none";
   };
   return (
     <section aria-label={section.name} style={rule}>
@@ -459,13 +463,17 @@ function RangeFilter({ section, onChange, move }: { section: RangeSection; onCha
           minStepsBetweenThumbs={0}
           value={[low, high]}
           onValueChange={(value) => onChange?.([value[0], value[1]])}
-          style={{ position: "relative", display: "flex", alignItems: "center", height: 14, marginTop: 4, touchAction: "none", userSelect: "none" }}
+          style={{ position: "relative", display: "flex", alignItems: "center", height: 14, margin: "4px -6px 0", touchAction: "none", userSelect: "none" }}
         >
-          <SliderPrimitive.Track style={{ position: "relative", flexGrow: 1, height: 2, borderRadius: 1, background: t.label }}>
+          <SliderPrimitive.Track style={{ position: "relative", flexGrow: 1, height: 2, margin: "0 6px", borderRadius: 1, background: t.label }}>
             <SliderPrimitive.Range style={{ position: "absolute", height: "100%", borderRadius: 1, background: t.text }} />
           </SliderPrimitive.Track>
-          <SliderPrimitive.Thumb aria-label={`${section.name} from`} aria-valuetext={section.describe(low, "min")} style={thumb} onFocus={(e) => focus(e, true)} onBlur={(e) => focus(e, false)} />
-          <SliderPrimitive.Thumb aria-label={`${section.name} to`} aria-valuetext={section.describe(high, "max")} style={thumb} onFocus={(e) => focus(e, true)} onBlur={(e) => focus(e, false)} />
+          <SliderPrimitive.Thumb data-ring-inset aria-label={`${section.name} from`} aria-valuetext={section.describe(low, "min")} style={thumb} onFocus={(e) => focus(e, true)} onBlur={(e) => focus(e, false)}>
+            <span aria-hidden="true" style={dot} />
+          </SliderPrimitive.Thumb>
+          <SliderPrimitive.Thumb data-ring-inset aria-label={`${section.name} to`} aria-valuetext={section.describe(high, "max")} style={thumb} onFocus={(e) => focus(e, true)} onBlur={(e) => focus(e, false)}>
+            <span aria-hidden="true" style={dot} />
+          </SliderPrimitive.Thumb>
         </SliderPrimitive.Root>
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, ...text(12, 400, t.label) }}>
           <span>{section.endLabels[0]}</span>

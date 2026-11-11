@@ -35,7 +35,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 
-import { BuildsControl, BuildsTextButton, TABLE_ROW, UpdatingStatus, ellipsis, text } from "./BuildsFrame";
+import { BuildsControl, BuildsTextButton, TABLE_ROW, UpdatingStatus, ellipsis, hitArea, text } from "./BuildsFrame";
 
 /* ── props ── */
 
@@ -301,7 +301,7 @@ function ColumnHead({ id, last, sorted, sortValue, onSort }: { id: ColumnId; las
           type="button"
           onClick={() => onSort(sortValue)}
           {...handlers}
-          style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: 0, padding: 0, font: "inherit", color: state.hovered ? t.text : "inherit", cursor: "pointer", borderRadius: r.chip, ...ring(state.focusVisible) }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: 0, ...hitArea(2), font: "inherit", color: state.hovered ? t.text : "inherit", cursor: "pointer", borderRadius: r.chip, ...ring(state.focusVisible) }}
         >
           {HEAD[id]}
           {sorted ? <span aria-hidden="true">{sorted.ascending ? "↑" : "↓"}</span> : null}
@@ -318,8 +318,11 @@ function ColumnHead({ id, last, sorted, sortValue, onSort }: { id: ColumnId; las
 function ToolMark({ tool }: { tool: TableTool }) {
   const { state, handlers } = useInteractive<HTMLSpanElement>();
   return (
-    <span role="img" aria-label={tool.name} title={tool.name} tabIndex={0} {...handlers} style={{ position: "relative", width: 16, height: 16, borderRadius: r.chip, background: t.tile, display: "inline-grid", placeItems: "center", ...ring(state.focusVisible) }}>
-      <ModelMark tool={tool.id} size={14} />
+    // BF-05 (G3): the focusable span is a 24 by 24 hit area with a -4 margin, so the row keeps its footprint; the 16px tile inside is what is drawn and what the focus ring circles.
+    <span role="img" aria-label={tool.name} title={tool.name} tabIndex={0} {...handlers} style={{ boxSizing: "content-box", width: 16, height: 16, padding: 4, margin: -4, display: "inline-grid", placeItems: "center" }}>
+      <span style={{ position: "relative", width: 16, height: 16, borderRadius: r.chip, background: t.tile, display: "inline-grid", placeItems: "center", ...ring(state.focusVisible) }}>
+        <ModelMark tool={tool.id} size={14} />
+      </span>
     </span>
   );
 }
@@ -351,7 +354,7 @@ function BuildCell({ row }: { row: TableRowView }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   return (
     <span style={{ display: "block", minWidth: 200 }}>
-      <Link to={row.href} {...handlers} style={{ display: "block", maxWidth: 220, ...ellipsis, ...text(13, 500, state.hovered ? t.text2 : t.text), textDecoration: "none", borderRadius: r.chip, ...ring(state.focusVisible) }}>
+      <Link to={row.href} {...handlers} style={{ display: "block", maxWidth: 220, ...ellipsis, ...hitArea(2), ...text(13, 500, state.hovered ? t.text2 : t.text), textDecoration: "none", borderRadius: r.chip, ...ring(state.focusVisible) }}>
         {row.title}
       </Link>
       <span style={text(12, 400, t.label)}>@{row.maker}</span>

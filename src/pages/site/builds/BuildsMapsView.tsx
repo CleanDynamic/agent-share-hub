@@ -25,7 +25,7 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
-import { BuildsControl, BuildsHead, UpdatingStatus, ViewSwitch, ellipsis, text, useCardColumns } from "./BuildsFrame";
+import { BuildsControl, BuildsHead, UpdatingStatus, ViewSwitch, ellipsis, hitArea, text, useCardColumns } from "./BuildsFrame";
 import { ActiveFilters, RowLamp, type TableChip } from "./BuildsTableView";
 
 /** The well, in the board's own units. */
@@ -206,7 +206,7 @@ export function MapCard({ card, direction, index }: { card: MapCardView; directi
       />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginTop: 10 }}>
         <span style={{ minWidth: 0 }}>
-          <Link to={card.href} style={{ display: "block", ...ellipsis, ...text(13, 500, t.text), textDecoration: "none", borderRadius: r.chip }}>
+          <Link to={card.href} style={{ display: "block", ...ellipsis, ...hitArea(2), ...text(13, 500, t.text), textDecoration: "none", borderRadius: r.chip }}>
             {card.title}
           </Link>
           <span style={text(12, 400, t.label)}>{`${card.maker ? `@${card.maker} · ` : ""}${card.summary}`}</span>
