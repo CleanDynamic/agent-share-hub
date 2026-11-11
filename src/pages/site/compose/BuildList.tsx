@@ -2251,10 +2251,10 @@ const labelOf = (tiles: ReadonlyMap<string, Step>, id: string): string => {
 
 /** A session's head and its tiles, registered for the post's links by the session's key. */
 /** The gaps a folding run cancels: a session's, between its head and its tiles, and a part's, between its head and its sessions. */
-const SESSION_GAP = 4;
-const PART_GAP = 8;
+const SESSION_GAP = space[2];
+const PART_GAP = space[2];
 
-function SessionRun({ head, phone: _phone, first, lit = false, found = false, part: partKey = "", hidden = false, children }: { head: SourceSession | null; phone: boolean; first: boolean; lit?: boolean; found?: boolean; part?: string; hidden?: boolean; children: ReactNode }) {
+function SessionRun({ head, phone: _phone, first: _first, lit = false, found = false, part: partKey = "", hidden = false, children }: { head: SourceSession | null; phone: boolean; first: boolean; lit?: boolean; found?: boolean; part?: string; hidden?: boolean; children: ReactNode }) {
   const part = usePartRef(head && !head.key.startsWith("typed-legacy-") ? refTo({ kind: "session", id: head.key }) : null);
   // CA-06 P4: a coloured session has a thin line round its head and its tiles, and room inside it only then.
   const colour = head?.colour;
@@ -2265,7 +2265,7 @@ function SessionRun({ head, phone: _phone, first, lit = false, found = false, pa
       {...(head ? { "data-skel-kind": "session", "data-skel-id": head.key, "data-skel-container": partKey, [SLIDE_ATTR]: `session:${head.key}` } : null)}
       data-lit={lit || undefined}
       data-session-colour={colour}
-      style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, ...(head && !first ? { marginTop: 16 } : null), ...(colour ? { ...outlineFor(colour), padding: 12 } : null), ...(lit ? ring(true) : null), ...(found ? FOUND_RING : null), ...(hidden ? { visibility: "hidden" } : null) }}
+      style={{ display: "flex", flexDirection: "column", gap: SESSION_GAP, minWidth: 0, ...(colour ? { ...outlineFor(colour), padding: space[3] } : null), ...(lit ? ring(true) : null), ...(found ? FOUND_RING : null), ...(hidden ? { visibility: "hidden" } : null) }}
     >
       {children}
     </div>
@@ -2688,7 +2688,7 @@ export function BuildList(raw: BuildListProps) {
   const list = (
     /* The global field rule makes a field inherit its size on a desktop (`font-size: inherit !important`), so the
      fields' type is set here, where they inherit it. */
-    <div ref={sorting.rootRef} data-testid="build-list" {...fileDrop} style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13.5, ...(sorting.skeleton || arrival.skeleton || director.skeleton ? { position: "relative", isolation: "isolate" } : null) }}>
+    <div ref={sorting.rootRef} data-testid="build-list" {...fileDrop} style={{ display: "flex", flexDirection: "column", gap: parts ? space[6] : space[8], minWidth: 0, fontSize: 13.5, ...(sorting.skeleton || arrival.skeleton || director.skeleton ? { position: "relative", isolation: "isolate" } : null) }}>
       {sorting.skeleton ? <SkeletonLayer skeleton={sorting.skeleton} shown={sorting.skeletonShown} /> : arrival.skeleton ? <SkeletonLayer skeleton={arrival.skeleton} shown={arrival.shown} fadeIn={arrival.fadeIn} opening={arrival.opening} fadeAfter={arrival.fadeAfter} onGone={arrival.gone} /> : director.skeleton ? <SkeletonLayer skeleton={director.skeleton} shown={director.shown} fadeAfter={FADE_AFTER_MS} onGone={director.gone} /> : null}
       {props.phone ? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{LIST_COPY.hintPhone}</p> : null}
       {props.costGroups ? <CostStrip steps={steps} groups={props.costGroups} audience="maker" /> : null}
