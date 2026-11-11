@@ -40,6 +40,8 @@ export interface BuildsClassificationViewProps {
   chips: readonly TableChip[];
   onRemoveChip: (key: string) => void;
   onClearAll: () => void;
+  /** BF-09 (A8): the open saved set's name, on the Filters button. */
+  setName?: string;
   /** The Table's filters, drawn in the Filters dialog (BF-06). BF-07: the props, not a drawn panel, since the dialog holds the
       name search the panel reads. Absent: Filters is disabled. */
   filters?: BuildsFiltersViewProps;
@@ -177,7 +179,7 @@ function FacetChooser({ facets, onFacets }: Pick<BuildsClassificationViewProps, 
 const CLASSIFICATION_PARTS = [{ text: "Classification of each build" }, { text: "select a value to filter by it" }];
 
 export default function BuildsClassificationView(props: BuildsClassificationViewProps) {
-  const { view, hrefFor, onViewIntent, buildsLabel, activeCount, chips, onRemoveChip, onClearAll, filters, facets, onFacets, cards, onMore, loadingMore, empty, updating } = props;
+  const { view, hrefFor, onViewIntent, buildsLabel, activeCount, chips, onRemoveChip, onClearAll, filters, setName, facets, onFacets, cards, onMore, loadingMore, empty, updating } = props;
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [facetsOpen, setFacetsOpen] = useState(false);
   const columns = useCardColumns();
@@ -186,7 +188,7 @@ export default function BuildsClassificationView(props: BuildsClassificationView
       <BuildsHead figure={buildsLabel} parts={CLASSIFICATION_PARTS} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
 
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 16px", marginTop: 24 }}>
-        <FiltersButton activeCount={activeCount} disabled={!filters} onClick={() => setFiltersOpen(true)} />
+        <FiltersButton activeCount={activeCount} setName={setName} disabled={!filters} onClick={() => setFiltersOpen(true)} />
         <BuildsControl aria-expanded={facetsOpen} onClick={() => setFacetsOpen((value) => !value)}>
           <span style={{ color: t.label }}>Facets shown</span>
           <span>{`${facets.length} of ${ALL_FACETS.length}`}</span>

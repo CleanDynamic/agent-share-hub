@@ -197,13 +197,16 @@ export const BuildsControl = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<
 });
 
 /** BF-06 (A1, G4): the one Filters button of Table, Maps and Classification. The word, then the count when a filter is on;
-    with one on it is drawn in the selected look (not the primary: Apply is the dialog's one primary). It opens a dialog. */
-export const FiltersButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { activeCount: number }>(function FiltersButton({ activeCount, ...rest }, ref) {
+    with one on it is drawn in the selected look (not the primary: Apply is the dialog's one primary). It opens a dialog.
+    BF-09 (A8): with a saved set open, its name follows the count. */
+export const FiltersButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { activeCount: number; setName?: string }>(function FiltersButton({ activeCount, setName, ...rest }, ref) {
   const on = activeCount > 0;
+  const name = `${on ? `Filters, ${activeCount} on` : "Filters"}${setName ? `, set ${setName}` : ""}`;
   return (
-    <BuildsControl ref={ref} aria-haspopup="dialog" aria-label={on ? `Filters, ${activeCount} on` : "Filters"} {...rest} selected={on}>
+    <BuildsControl ref={ref} aria-haspopup="dialog" aria-label={name} {...rest} selected={on}>
       <span style={on ? { color: t.text, fontWeight: 500 } : { color: t.label }}>Filters</span>
       {on ? <span style={{ color: t.text }}>{activeCount}</span> : null}
+      {setName ? <span style={{ color: t.text2, maxWidth: 160, ...ellipsis }}>{`· ${setName}`}</span> : null}
     </BuildsControl>
   );
 });

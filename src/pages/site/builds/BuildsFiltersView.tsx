@@ -501,11 +501,16 @@ export function holdsValue(section: FilterSection): boolean {
   return section.value[0] !== section.min || section.value[1] !== section.max;
 }
 
-/** A group's button: its name, and on the right how many of its filters hold a value ("2 on"), or how many it has. */
-function GroupButton({ name, sections, current, onChoose }: { name: string; sections: readonly FilterSection[]; current: boolean; onChoose: () => void }) {
+/** A group's right-hand number: how many of its filters hold a value ("2 on"), or how many it has. */
+const groupCount = (sections: readonly FilterSection[]): string => {
+  const on = sections.filter(holdsValue).length;
+  return on > 0 ? `${on} on` : String(sections.length);
+};
+
+/** A group's button: its name, and its number on the right. */
+function GroupButton({ name, count, current, onChoose }: { name: string; count: string; current: boolean; onChoose: () => void }) {
   const phone = useIsPhone();
   const { state, handlers } = useInteractive<HTMLButtonElement>();
-  const on = sections.filter(holdsValue).length;
   return (
     <button
       type="button"
@@ -531,7 +536,7 @@ function GroupButton({ name, sections, current, onChoose }: { name: string; sect
       }}
     >
       <span>{name}</span>
-      <span style={small(t.label)}>{on > 0 ? `${on} on` : sections.length}</span>
+      <span style={small(t.label)}>{count}</span>
     </button>
   );
 }
@@ -547,21 +552,23 @@ export function BuildsFiltersView(props: BuildsFiltersBodyProps) {
   const { activeCount, onAdd, savedSets, sections, onToggleOption, onRange, onToggleSegment, search = "" } = props;
   const phone = useIsPhone();
   const groups = FILTER_GROUPS.filter((group) => sections.some((section) => section.group === group));
-  const [chosen, setChosen] = useState<FilterGroup | null>(null);
-  const group = chosen !== null && groups.includes(chosen) ? chosen : (groups[0] ?? null);
+  /* BF-09 (A8): a signed-in reader's saved sets are one more group, listed first; Classification stays the one chosen at first. */
+  const [chosen, setChosen] = useState<FilterGroup | "Saved" | null>(null);
+  const group = chosen === "Saved" && savedSets ? "Saved" : chosen !== null && chosen !== "Saved" && groups.includes(chosen) ? chosen : (groups[0] ?? null);
   const query = search.trim().toLowerCase();
   const shown = query ? sections.filter((section) => section.name.toLowerCase().includes(query)) : sections.filter((section) => section.group === group);
   return (
     <div data-testid="builds-filters">
       <FiltersHead activeCount={activeCount} onAdd={onAdd} />
-      {savedSets ? <SavedSets {...savedSets} /> : null}
       <div style={{ display: "grid", gridTemplateColumns: phone ? "minmax(0, 1fr)" : "200px minmax(0, 1fr)", columnGap: 24, rowGap: 12, alignItems: "start" }}>
         <div role="group" aria-label="Filter groups" style={phone ? { display: "flex", gap: 4, overflowX: "auto" } : { display: "flex", flexDirection: "column", gap: 2, position: "sticky", top: 0 }}>
+          {savedSets ? <GroupButton name="Saved" count={String(savedSets.rows.length)} current={!query && group === "Saved"} onChoose={() => setChosen("Saved")} /> : null}
           {groups.map((name) => (
-            <GroupButton key={name} name={name} sections={sections.filter((section) => section.group === name)} current={!query && name === group} onChoose={() => setChosen(name)} />
+            <GroupButton key={name} name={name} count={groupCount(sections.filter((section) => section.group === name))} current={!query && name === group} onChoose={() => setChosen(name)} />
           ))}
         </div>
         <div style={{ minWidth: 0 }}>
+          {!query && group === "Saved" && savedSets ? <SavedSets {...savedSets} /> : null}
           {query && shown.length === 0 ? <p style={{ ...text(12.5, 400, t.text2), margin: 0, padding: "16px 0" }}>No filter has that name.</p> : null}
           {shown.map((section) => {
             const label = query ? section.group : undefined;

@@ -188,6 +188,8 @@ export interface BuildsTableViewProps {
   /** BF-06 (A1): how many filters hold a value, for the Filters button, and the press that opens the dialog. */
   activeCount: number;
   onOpenFilters: () => void;
+  /** BF-09 (A8): the open saved set's name, on the Filters button. */
+  setName?: string;
 }
 
 /* ── the lens row ── */
@@ -242,13 +244,13 @@ function ColumnsChooser({ label, menu }: { label: string; menu: ColumnsMenu }) {
   );
 }
 
-function LensRow({ lenses, lens, onLens, sort, columnsLabel, columnsMenu, updating, activeCount, onOpenFilters }: Pick<BuildsTableViewProps, "lenses" | "lens" | "onLens" | "sort" | "columnsLabel" | "columnsMenu" | "updating" | "activeCount" | "onOpenFilters">) {
+function LensRow({ lenses, lens, onLens, sort, columnsLabel, columnsMenu, updating, activeCount, onOpenFilters, setName }: Pick<BuildsTableViewProps, "lenses" | "lens" | "onLens" | "sort" | "columnsLabel" | "columnsMenu" | "updating" | "activeCount" | "onOpenFilters" | "setName">) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12, borderBottom: `1px solid ${t.hairline}` }}>
       <TextTabs tabs={lenses} value={lens} onChange={onLens} label="Lens" rule={false} />
       <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
         <UpdatingStatus updating={updating} />
-        <FiltersButton activeCount={activeCount} onClick={onOpenFilters} />
+        <FiltersButton activeCount={activeCount} setName={setName} onClick={onOpenFilters} />
         <SortMenu sort={sort} />
         {columnsLabel && columnsMenu ? (
           <ColumnsChooser label={columnsLabel} menu={columnsMenu} />
@@ -544,10 +546,10 @@ function Footer({ columns, footer }: { columns: readonly ColumnId[]; footer: Tab
 /* ── the table ── */
 
 export function BuildsTableView(props: BuildsTableViewProps) {
-  const { lenses, lens, onLens, sort, columnsLabel, columnsMenu, chips, onRemoveChip, onClearAll, columns, rows, sortColumn, sortableBy, footer, onMore, loadingMore, empty, updating, activeCount, onOpenFilters } = props;
+  const { lenses, lens, onLens, sort, columnsLabel, columnsMenu, chips, onRemoveChip, onClearAll, columns, rows, sortColumn, sortableBy, footer, onMore, loadingMore, empty, updating, activeCount, onOpenFilters, setName } = props;
   return (
     <div data-testid="builds-table">
-      <LensRow lenses={lenses} lens={lens} onLens={onLens} sort={sort} columnsLabel={columnsLabel} columnsMenu={columnsMenu} updating={updating} activeCount={activeCount} onOpenFilters={onOpenFilters} />
+      <LensRow lenses={lenses} lens={lens} onLens={onLens} sort={sort} columnsLabel={columnsLabel} columnsMenu={columnsMenu} updating={updating} activeCount={activeCount} onOpenFilters={onOpenFilters} setName={setName} />
       <ActiveFilters chips={chips} onRemove={onRemoveChip} onClearAll={onClearAll} />
       {rows.length === 0 && empty ? (
         <div style={{ marginTop: 20 }}>{empty}</div>

@@ -480,3 +480,13 @@ describe("the Table without the rail", () => {
     expect(markup).toMatch(/aria-label="Builds table"[^>]*style="[^"]*scrollbar-width:thin/);
   });
 });
+
+/* ── BF-09 P3 (A8) ── */
+
+describe("the open set on the Filters button", () => {
+  it('with a set open, the Filters button on the page reads "Filters 2 · <set name>"', () => {
+    draw((p) => ({ ...p, filters: { ...p.filters, activeCount: 2 }, table: { ...p.table!, setName: "Sales on Claude Code" } }));
+    const button = screen.getByRole("button", { name: "Filters, 2 on, set Sales on Claude Code" });
+    expect(Array.from(button.children).map((child) => child.textContent)).toEqual(["Filters", "2", "· Sales on Claude Code"]);
+  });
+});

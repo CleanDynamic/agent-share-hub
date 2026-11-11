@@ -104,6 +104,8 @@ export interface BuildsMapsViewProps {
   chips: readonly TableChip[];
   onRemoveChip: (key: string) => void;
   onClearAll: () => void;
+  /** BF-09 (A8): the open saved set's name, on the Filters button. */
+  setName?: string;
   /** The Table's filters, drawn in the Filters dialog (BF-06). BF-07: the props, not a drawn panel, since the dialog holds the
       name search the panel reads. Absent: Filters is disabled. */
   filters?: BuildsFiltersViewProps;
@@ -227,7 +229,7 @@ export function MapCard({ card, direction, index }: { card: MapCardView; directi
 const MAPS_PARTS = [{ text: "Each build's Map: one box per session, one line where a tile in one session uses something from another." }];
 
 export default function BuildsMapsView(props: BuildsMapsViewProps) {
-  const { view, hrefFor, onViewIntent, activeCount, chips, onRemoveChip, onClearAll, filters, direction, onDirection, buildsLabel, withMap, cards, onMore, loadingMore, empty, notice, updating } = props;
+  const { view, hrefFor, onViewIntent, activeCount, chips, onRemoveChip, onClearAll, filters, setName, direction, onDirection, buildsLabel, withMap, cards, onMore, loadingMore, empty, notice, updating } = props;
   const [open, setOpen] = useState(false);
   const columns = useCardColumns();
   return (
@@ -235,7 +237,7 @@ export default function BuildsMapsView(props: BuildsMapsViewProps) {
       <BuildsHead figure={buildsLabel} parts={MAPS_PARTS} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
 
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 16 }}>
-        <FiltersButton activeCount={activeCount} disabled={!filters} onClick={() => setOpen(true)} />
+        <FiltersButton activeCount={activeCount} setName={setName} disabled={!filters} onClick={() => setOpen(true)} />
         <span style={{ flex: 1 }} />
         <Segmented<MapsDirection>
           label="Map direction"

@@ -37,7 +37,8 @@ const shownNames = () => Array.from(screen.getByTestId("builds-filters").querySe
 describe("groups and a name search", () => {
   it("the groups are buttons; Classification is current at first; each shows how many filters it holds", () => {
     draw((p) => ({ ...p, sections: p.sections.map((section) => (section.kind === "word" ? { ...section, options: section.options.map((option) => ({ ...option, checked: false })) } : section.kind === "scale" ? { ...section, segments: section.segments.map((segment) => ({ ...segment, on: false })) } : { ...section, value: [section.min, section.max] })) }));
-    expect(groups().map((button) => button.textContent)).toEqual(["Classification7", "Proof3", "Structure1", "OpenBuilds1"]);
+    /* BF-09: a signed-in reader's saved sets are listed first, as Saved. */
+    expect(groups().map((button) => button.textContent)).toEqual(["Saved2", "Classification7", "Proof3", "Structure1", "OpenBuilds1"]);
     expect(screen.getByRole("button", { name: /^Classification/ }).getAttribute("aria-current")).toBe("true");
     expect(screen.getByRole("button", { name: /^Proof/ }).getAttribute("aria-current")).toBeNull();
   });
@@ -274,5 +275,33 @@ describe("number fields", () => {
     cleanup();
     const drawn = reproductions();
     expect(drawn.region.getByRole("group", { name: /^Reproductions,/ }).querySelectorAll('[aria-hidden="true"] > span').length).toBeGreaterThan(0);
+  });
+});
+
+/* ── BF-09 P3 (A8) ── */
+
+describe("saved sets as a group", () => {
+  it("signed in: the first group is Saved, showing how many sets the reader has; choosing it shows the saved sets and no filters", () => {
+    draw();
+    expect(groups()[0].textContent).toBe("Saved2");
+    expect(screen.getByRole("button", { name: /^Classification/ }).getAttribute("aria-current")).toBe("true");
+    expect(screen.queryByRole("region", { name: "Saved filter sets" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /^Saved/ }));
+    expect(screen.getByRole("region", { name: "Saved filter sets" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Sales on Claude Code/ })).toBeTruthy();
+    expect(shownNames()).toEqual([]);
+  });
+
+  it("signed out: there is no Saved group", () => {
+    draw((p) => ({ ...p, savedSets: undefined }));
+    expect(screen.queryByRole("button", { name: /^Saved/ })).toBeNull();
+    expect(groups()[0].textContent).toMatch(/^Classification/);
+  });
+
+  it("Saved is not matched by the filter name search", () => {
+    draw();
+    fireEvent.change(screen.getByRole("searchbox", { name: "Find a filter" }), { target: { value: "saved" } });
+    expect(screen.getByText("No filter has that name.")).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "Saved filter sets" })).toBeNull();
   });
 });

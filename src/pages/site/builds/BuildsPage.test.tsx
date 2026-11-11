@@ -356,7 +356,7 @@ describe("SV-24 P1: saved filter sets", () => {
     auth.user = { id: "reader-1" };
     sets.listMyFilterSets.mockResolvedValue([mine, { ...mine, id: "9d6f3a42-1c52-4e0e-9a3c-6d2f1f4a9c11", name: "Sales", search: "f=field%3Asales", isPublic: true }]);
     renderAt("/builds?view=maps");
-    fireEvent.click(await screen.findByRole("button", { name: /Filters/ }, { timeout: 4000 }));
+    await openFilters("Saved");
     const link = await screen.findByRole("link", { name: /Stale agents/ });
     expect(link.getAttribute("href")).toBe(`/builds?view=maps&shape=agent&state=stale&set=${SET_ID}`);
     expect(screen.getByRole("link", { name: /Sales/ }).textContent).toContain("Public");
@@ -374,7 +374,7 @@ describe("SV-24 P1: saved filter sets", () => {
     auth.user = { id: "reader-1" };
     sets.createFilterSet.mockResolvedValue(mine);
     renderAt("/builds?view=maps&f=field%3Alaw&sort=newest");
-    fireEvent.click(await screen.findByRole("button", { name: /Filters/ }, { timeout: 4000 }));
+    await openFilters("Saved");
     fireEvent.click(await screen.findByRole("button", { name: "Save current" }));
     fireEvent.change(await screen.findByLabelText("Name"), { target: { value: "Law, newest" } });
     fireEvent.click(screen.getByRole("checkbox", { name: /Public/ }));
@@ -388,7 +388,7 @@ describe("SV-24 P1: saved filter sets", () => {
     sets.listMyFilterSets.mockResolvedValue([mine]);
     sets.renameFilterSet.mockResolvedValue("Old agents");
     renderAt("/builds");
-    await openFilters();
+    await openFilters("Saved");
     fireEvent.keyDown(await screen.findByRole("button", { name: "More for Stale agents" }), { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Rename" }));
     const field = await screen.findByLabelText("Name");
@@ -404,7 +404,7 @@ describe("SV-24 P1: saved filter sets", () => {
     sets.getFilterSet.mockResolvedValue({ ...mine, mine: true, members: 0, member: false });
     sets.deleteFilterSet.mockResolvedValue(undefined);
     renderAt(`/builds?shape=agent&state=stale&set=${SET_ID}`);
-    await openFilters();
+    await openFilters("Saved");
     fireEvent.keyDown(await screen.findByRole("button", { name: "More for Stale agents" }), { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Delete" }));
     expect(sets.deleteFilterSet).not.toHaveBeenCalled();
@@ -419,7 +419,7 @@ describe("SV-24 P1: saved filter sets", () => {
     sets.getFilterSet.mockResolvedValue({ ...group, mine: false, members: 12, member: false });
     sets.joinFilterSet.mockResolvedValue(undefined);
     renderAt(`/builds?set=${SET_ID}`);
-    await openFilters();
+    await openFilters("Saved");
     expect(await screen.findByText("Group · 12 members")).toBeTruthy();
     sets.getFilterSet.mockResolvedValue({ ...group, mine: false, members: 13, member: true });
     fireEvent.click(screen.getByRole("button", { name: "Join Sales agents" }));
@@ -432,7 +432,7 @@ describe("SV-24 P1: saved filter sets", () => {
     auth.user = { id: "reader-1" };
     sets.createFilterSet.mockRejectedValue(new Error("nope"));
     renderAt("/builds");
-    await openFilters();
+    await openFilters("Saved");
     fireEvent.click(await screen.findByRole("button", { name: "Save current" }));
     fireEvent.change(await screen.findByLabelText("Name"), { target: { value: "x" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));

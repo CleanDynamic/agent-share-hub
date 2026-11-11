@@ -378,6 +378,7 @@ export default function BuildsPage() {
             onRemoveChip={(key) => go(withoutChip(params, key))}
             onClearAll={() => go(clearedFilters(params))}
             filters={filters}
+            setName={openDetail?.name}
             direction={direction}
             onDirection={setDirection}
             buildsLabel={buildsLabel}
@@ -411,6 +412,7 @@ export default function BuildsPage() {
             onRemoveChip={(key) => go(withoutChip(params, key))}
             onClearAll={() => go(clearedFilters(params))}
             filters={filters}
+            setName={openDetail?.name}
             facets={shownFacets}
             onFacets={onFacets}
             cards={builds.map((build) => cardOf(build, shownFacets, valueHref, now))}
@@ -436,6 +438,7 @@ export default function BuildsPage() {
           ? {
               lenses: GALLERY_LENSES.map((lens) => ({ value: lens, label: LENS_LABEL[lens], count: lensCounts.data?.[lens] })),
               lens: params.lens,
+              setName: openDetail?.name,
               onLens: (lens) => go({ ...params, lens: lens as GalleryLens }),
               sort: { value: sort, options: SORT_OPTIONS, onChange: (value) => go({ ...params, sort: value as GalleryFeedSort }) },
               chips: activeChips(params),
