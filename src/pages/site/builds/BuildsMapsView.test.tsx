@@ -11,7 +11,11 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 
 import { visionBuildsMapsProps } from "@/dev/fixtures/vision/builds-maps";
 
+import type { BuildsTableBuild } from "@/lib/build/gallery";
+import { sessionMapModel } from "@/lib/build/sessionMap";
+
 import BuildsMapsView, { BOX_H, BOX_W, WELL_H, WELL_W, type BuildsMapsViewProps } from "./BuildsMapsView";
+import { cardOf } from "./mapsModel";
 
 function media(width: number) {
   window.matchMedia = ((query: string) => {
@@ -44,10 +48,10 @@ const cards = () => screen.getAllByTestId("map-card");
 describe("the page", () => {
   it("has the board's head, and the Filters control with its count", () => {
     draw();
-    expect(screen.getByRole("heading", { level: 1, name: "Builds" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "18 builds" })).toBeTruthy();
     expect(screen.getByText("Each build's Map: one box per session, one line where a tile in one session uses something from another.")).toBeTruthy();
     expect(screen.getByRole("button", { name: /Filters/ }).textContent).toContain("6");
-    expect(screen.getByText(/18 builds · 14 with a Map/)).toBeTruthy();
+    expect(screen.getByText("14 with a Map")).toBeTruthy();
   });
 
   it("draws one card for each build", () => {
@@ -241,5 +245,66 @@ describe("the updating state", () => {
     expect(grid.getAttribute("aria-busy")).toBe("false");
     expect(grid.style.opacity).toBe("");
     expect(screen.getByRole("status").textContent).toBe("");
+  });
+});
+
+/* ── BF-03 P1 (D1) ── */
+
+describe("the head", () => {
+  it('the head is the shared head: an h1 that reads "<n> builds", aligned to the top, with the view switch', () => {
+    draw();
+    const head = screen.getByTestId("builds-head");
+    expect(head.style.alignItems).toBe("flex-start");
+    expect(within(head).getByRole("heading", { level: 1 }).textContent).toMatch(/^\d+( of \d+)? builds?$/);
+    expect(within(head).getByRole("heading", { level: 1, name: /^\d+( of \d+)? builds?$/ })).toBeTruthy();
+    expect(within(head).getByRole("navigation", { name: "View" })).toBeTruthy();
+  });
+});
+
+/* ── BF-03 P2 (D2) ── */
+
+describe("the sentence in the well", () => {
+  const NOW = Date.parse("2026-10-26T12:00:00Z");
+  const build: BuildsTableBuild = { id: "b", slug: "b", title: "A build", shape: "", madeWith: [], reproductionCount: 0, lastConfirmedAt: null, lastConfirmedModel: null, publishedAt: "2025-01-01T09:00:00Z", rebuildCount: 0, maker: { handle: "maya", name: null }, open: { count: 0 } };
+  const withSessions = (n: number) =>
+    sessionMapModel({
+      sessions: Array.from({ length: n }, (_, at) => ({ key: `s${at + 1}`, number: at + 1, app: "Claude", model: "opus", title: `Session ${at + 1}`, part: "p0", tiles: 2 })),
+      parts: [{ key: "p0", index: 0, sessions: Array.from({ length: n }, (_, at) => `s${at + 1}`) }],
+      links: n >= 2 ? [{ id: "s1>s2", session: "s2", from: "s1", tiles: [] }] : [],
+      meta: {},
+      labels: "letters",
+    });
+  const one = (card: ReturnType<typeof cardOf>) => {
+    draw({ cards: [card] });
+    return cards()[0];
+  };
+
+  it('a build with no sessions says "No sessions yet" in the well and "No sessions" under it', () => {
+    const card = one(cardOf(build, { buildId: "b", model: null }, NOW));
+    expect(within(card).getByText("No sessions yet")).toBeTruthy();
+    expect(within(card).getByText("@maya · No sessions")).toBeTruthy();
+    expect(within(card).queryByText("One session. A Map needs two.")).toBeNull();
+  });
+
+  it('a build with one session says "One session. A Map needs two."', () => {
+    const card = one(cardOf(build, { buildId: "b", model: withSessions(1) }, NOW));
+    expect(within(card).getByText("One session. A Map needs two.")).toBeTruthy();
+    expect(within(card).queryByText("No sessions yet")).toBeNull();
+  });
+
+  it("a build with two sessions draws its Map and no sentence", () => {
+    const card = one(cardOf(build, { buildId: "b", model: withSessions(2) }, NOW));
+    expect(card.querySelectorAll("path")).toHaveLength(1);
+    expect(within(card).queryByText("One session. A Map needs two.")).toBeNull();
+    expect(within(card).queryByText("No sessions yet")).toBeNull();
+  });
+
+  it("a card whose Map did not load says neither sentence", () => {
+    const made = cardOf(build, undefined, NOW, true);
+    expect(made.drawings).not.toBeNull();
+    const card = one(made);
+    expect(within(card).getByText("@maya · Map not loaded")).toBeTruthy();
+    expect(within(card).queryByText("One session. A Map needs two.")).toBeNull();
+    expect(within(card).queryByText("No sessions yet")).toBeNull();
   });
 });

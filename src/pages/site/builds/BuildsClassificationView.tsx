@@ -24,7 +24,7 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
-import { BuildsControl, ClassificationHead, UpdatingStatus, ViewSwitch, ellipsis, text, useCardColumns } from "./BuildsFrame";
+import { BuildsControl, BuildsHead, UpdatingStatus, ViewSwitch, ellipsis, text, useCardColumns } from "./BuildsFrame";
 import { RowLamp } from "./BuildsTableView";
 import { ALL_FACETS, type ClassCardView, type ClassRowView, type ClassValueView } from "./classificationModel";
 
@@ -159,6 +159,8 @@ function FacetChooser({ facets, onFacets }: Pick<BuildsClassificationViewProps, 
   );
 }
 
+const CLASSIFICATION_PARTS = [{ text: "Classification of each build" }, { text: "select a value to filter by it" }];
+
 export default function BuildsClassificationView(props: BuildsClassificationViewProps) {
   const { view, hrefFor, onViewIntent, buildsLabel, activeCount, panel, facets, onFacets, cards, onMore, loadingMore, empty, updating } = props;
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -166,7 +168,7 @@ export default function BuildsClassificationView(props: BuildsClassificationView
   const columns = useCardColumns();
   return (
     <div data-testid="builds-classification" style={ROOT}>
-      <ClassificationHead figure={buildsLabel} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
+      <BuildsHead figure={buildsLabel} parts={CLASSIFICATION_PARTS} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
 
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 16px", marginTop: 24 }}>
         <BuildsControl aria-expanded={panel ? filtersOpen : undefined} disabled={!panel} onClick={() => setFiltersOpen((value) => !value)}>

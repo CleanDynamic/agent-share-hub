@@ -1414,7 +1414,9 @@ function toBuildsTableBuild(row: BuildsTableRow, now: Date): BuildsTableBuild {
     maker: row.maker ? { handle: row.maker.username ?? null, name: row.maker.display_name?.trim() || null } : null,
     open: { count: Math.max(0, row.still_open_topics ?? 0) },
     stepCount: typeof row.step_count === "number" ? row.step_count : null,
-    sessionCount: typeof row.session_count === "number" ? row.session_count : null,
+    // BF-03 (D3): session_count defaults to 0 and an older writer filled it, so only a build the SV-23 writer has saved (its
+    // step_count written) has a session count to trust; any other shows the empty mark, as its steps do.
+    sessionCount: typeof row.step_count === "number" && typeof row.session_count === "number" ? row.session_count : null,
     runs: runsPerWeek((row.build_reproductions ?? []).map((run) => run.confirmed_at), now),
   };
 }

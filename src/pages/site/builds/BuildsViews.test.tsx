@@ -13,6 +13,7 @@ import { STALE_AFTER_DAYS } from "@/lib/build/signals";
 
 import { ALL_COLUMNS, BuildsTableView, type ColumnId, type TableRowView } from "./BuildsTableView";
 import { BuildsView, type BuildsViewProps } from "./BuildsView";
+import { tableRow } from "./buildsModel";
 
 /** A wide window: every min-width query matches, so the two columns are drawn. */
 beforeEach(() => {
@@ -536,5 +537,29 @@ describe("BF-01 tools and runs", () => {
       mark.focus();
       expect(document.activeElement).toBe(mark);
     }
+  });
+});
+
+/* ── BF-03 P1 (D1) ── */
+
+describe("the head", () => {
+  it('the head is the shared head: an h1 that reads "<n> builds", aligned to the top, with the view switch', () => {
+    draw();
+    const head = screen.getByTestId("builds-head");
+    expect(head.style.alignItems).toBe("flex-start");
+    expect(within(head).getByRole("heading", { level: 1 }).textContent).toMatch(/^\d+( of \d+)? builds?$/);
+    expect(within(head).getByRole("heading", { level: 1, name: /^\d+( of \d+)? builds?$/ })).toBeTruthy();
+    expect(within(head).getByRole("navigation", { name: "View" })).toBeTruthy();
+  });
+});
+
+/* ── BF-03 P3 (D3) ── */
+
+describe("the stored counts", () => {
+  it("a build never counted shows the empty mark in both Steps and Sessions", () => {
+    // What the list reads for a build the SV-23 writer has not saved: no step count, so no session count either (gallery.ts).
+    const never = { id: "n", slug: "n", title: "Never counted", shape: "", madeWith: [], reproductionCount: 0, lastConfirmedAt: null, lastConfirmedModel: null, publishedAt: null, rebuildCount: 0, maker: null, open: { count: 0 }, stepCount: null, sessionCount: null };
+    drawTable([tableRow(never, Date.parse("2026-11-10T12:00:00Z"))]);
+    for (const column of ["Steps", "Sessions"]) expect(within(cellIn(column)).getByTestId("empty-value")).toBeTruthy();
   });
 });

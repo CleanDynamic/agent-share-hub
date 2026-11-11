@@ -156,3 +156,16 @@ describe("the updating state", () => {
     expect(screen.getByRole("status").textContent).toBe("");
   });
 });
+
+/* ── BF-03 P1 (D1) ── */
+
+describe("the head", () => {
+  it('the head is the shared head: an h1 that reads "<n> builds", aligned to the top, with the view switch', () => {
+    draw();
+    const head = screen.getByTestId("builds-head");
+    expect(head.style.alignItems).toBe("flex-start");
+    expect(within(head).getByRole("heading", { level: 1 }).textContent).toMatch(/^\d+( of \d+)? builds?$/);
+    expect(within(head).getByRole("heading", { level: 1, name: /^\d+( of \d+)? builds?$/ })).toBeTruthy();
+    expect(within(head).getByRole("navigation", { name: "View" })).toBeTruthy();
+  });
+});

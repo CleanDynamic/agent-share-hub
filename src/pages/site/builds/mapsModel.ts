@@ -186,6 +186,7 @@ export function cardOf(build: BuildsTableBuild, map: BuildMap | undefined, now: 
     reproductions: row.reproductions,
     lit: row.lit,
     sessions: model?.sessions.length ?? 0,
+    failed: !map && failed,
     words: !map && failed ? `${row.title}: the Map did not load.` : mapWords(row.title, model),
     drawings,
   };
