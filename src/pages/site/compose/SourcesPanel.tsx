@@ -151,11 +151,11 @@ const rowLine: CSSProperties = { borderTop: `1px solid ${t.hairline}` };
 
 /** A selected row: the selected recipe's fill and edge, drawn inside the row so the hairlines do not move. */
 const selectedRow = (selected: boolean): CSSProperties =>
-  selected ? { background: t.selectedFill, boxShadow: `inset 0 0 0 1px ${t.selectedEdge}`, borderRadius: 6 } : {};
+  selected ? { background: t.selectedFill, boxShadow: `inset 0 0 0 1px ${t.selectedEdge}`, borderRadius: r.control } : {};
 
 function GroupHead({ name, count, hollow }: { name: string; count: number; hollow?: boolean }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, paddingBottom: 8 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: space[2], paddingBottom: space[2] }}>
       <span
         aria-hidden="true"
         style={{
@@ -183,7 +183,7 @@ function Capped<T>({ rows, render, phone }: { rows: readonly T[]; render: (row: 
     <>
       {shown.map(render)}
       {hidden > 0 ? (
-        <div style={{ ...rowLine, paddingTop: 8 }}>
+        <div style={{ ...rowLine, paddingTop: space[2] }}>
           <TextButton onClick={() => setAll(true)} target={phone} style={{ ...textLinkBox(phone), ...text(12.5, 500, t.text2) }}>
             Show {hidden} more
           </TextButton>
@@ -217,13 +217,13 @@ function SelectButton({
         ...bareButton,
         display: "flex",
         alignItems: "center",
-        gap: 8,
+        gap: space[2],
         flexGrow: 1,
         minWidth: 0,
         minHeight,
         boxSizing: "border-box",
-        padding: "0 6px",
-        borderRadius: 6,
+        padding: `0 ${space[2]}px`,
+        borderRadius: r.control,
         ...(state.hovered && !selected ? { background: t.controlOn } : null),
         ...selectedRow(selected),
         ...ring(state.focusVisible),
@@ -251,7 +251,7 @@ function SessionRow({
   const toggle = useInteractive<HTMLButtonElement>();
   const drag = useSourceDrag("session", session.key);
   return (
-    <div ref={drag.setRef} data-source-drag={drag.on ? drag.dragId : undefined} style={{ ...rowLine, padding: "6px 0" }}>
+    <div ref={drag.setRef} data-source-drag={drag.on ? drag.dragId : undefined} style={{ ...rowLine, padding: `${space[2]}px 0` }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
         <SourceGrip drag={drag} label={`Move Session ${session.number}`} phone={phone} />
         <button
@@ -280,12 +280,12 @@ function SessionRow({
             <Glyph name="chev" size={size.icon} />
           </span>
         </button>
-        <SelectButton selected={selectedId === session.key} onClick={() => onSelect(session.key)} minHeight={phone ? 44 : 40} style={{ alignItems: "flex-start", padding: "6px" }}>
+        <SelectButton selected={selectedId === session.key} onClick={() => onSelect(session.key)} minHeight={phone ? size.touch : size.row} style={{ alignItems: "flex-start", padding: `${space[2]}px` }}>
           <ToolMark tool={session.tool} size={20} />
-          <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+          <span style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0 }}>
             <span {...fullText(`Session ${session.number} · ${session.tool}`)} style={{ ...text(13, 500, t.text), ...PREVIEW }}>
               {/* CA-06 P4: a coloured session's 7px dot before its name. */}
-              {session.colour ? <ColourDot colour={session.colour} size={7} style={{ marginRight: 6, verticalAlign: "middle" }} /> : null}
+              {session.colour ? <ColourDot colour={session.colour} size={7} style={{ marginRight: space[2], verticalAlign: "middle" }} /> : null}
               Session {session.number} · {session.tool}
             </span>
             <span {...fullText(session.detail)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{session.detail}</span>
@@ -296,7 +296,7 @@ function SessionRow({
         </TrailSlot>
       </div>
       {open ? (
-        <div style={{ marginLeft: 22, display: "flex", flexDirection: "column", gap: 2, paddingTop: 4 }}>
+        <div style={{ marginLeft: space[6], display: "flex", flexDirection: "column", gap: space[1], paddingTop: space[1] }}>
           {session.prompts.map((prompt) => (
             <SelectButton key={prompt.id} selected={selectedId === prompt.id} onClick={() => onSelect(prompt.id)} minHeight={phone ? 44 : 30}>
               <span style={{ fontFamily: DM_MONO, fontSize: 10.5, color: t.label, ...tnum, flexShrink: 0 }}>{stepLabel(prompt.number)}</span>
@@ -320,14 +320,14 @@ function FileRow({ file, phone, sessions, selected = false, onOpen, onAddToSessi
     });
   };
   return (
-    <div ref={drag.setRef} data-source-drag={drag.on ? drag.dragId : undefined} data-file-id={file.id} {...{ [SLIDE_ATTR]: `file:${file.id}` }} aria-hidden={leaving || undefined} style={{ ...(leaving ? { pointerEvents: "none" } : null), ...rowLine, display: "flex", alignItems: "flex-start", gap: 8, minHeight: phone ? 44 : undefined, padding: "12px 0", boxSizing: "border-box" }}>
+    <div ref={drag.setRef} data-source-drag={drag.on ? drag.dragId : undefined} data-file-id={file.id} {...{ [SLIDE_ATTR]: `file:${file.id}` }} aria-hidden={leaving || undefined} style={{ ...(leaving ? { pointerEvents: "none" } : null), ...rowLine, display: "flex", alignItems: "flex-start", gap: space[2], minHeight: phone ? 44 : undefined, padding: `${space[3]}px 0`, boxSizing: "border-box" }}>
       <SourceGrip drag={drag} label={`Move ${file.name}`} phone={phone} />
       {/* F7: the row is one button: a click selects the file and scrolls to its tile. A drag starts only from the grip at its start. */}
       <SelectButton selected={selected} onClick={() => select(file.id)} minHeight={phone ? 44 : 30} style={{ alignItems: "flex-start", textAlign: "left" }}>
         <span style={{ display: "inline-flex", color: t.label, flexShrink: 0 }}>
           <Glyph name="file" size={size.icon} />
         </span>
-        <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
+        <span style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0, flexGrow: 1 }}>
           {/* F63: a long name is cut in the middle, so its ending shows; all of it is in the title. */}
           <span title={file.name} style={{ ...text(13, 500, t.text), ...ellipsis }}>{middleCut(file.name)}</span>
           <span {...fullText(file.note)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{file.note}</span>
@@ -349,7 +349,7 @@ function FileRow({ file, phone, sessions, selected = false, onOpen, onAddToSessi
               ) : null}
               {onAddToSession && sessions.length > 0 ? (
                 <Menu.Sub>
-                  <Menu.SubTrigger style={{ ...menuItem(true, phone), justifyContent: "space-between", gap: 12 }}>
+                  <Menu.SubTrigger style={{ ...menuItem(true, phone), justifyContent: "space-between", gap: space[3] }}>
                     <span>{MENU_COPY.addToSession}</span>
                     <span aria-hidden="true" style={{ display: "inline-flex", color: t.label }}>
                       <Glyph name="chev" size={size.icon} />
@@ -359,7 +359,7 @@ function FileRow({ file, phone, sessions, selected = false, onOpen, onAddToSessi
                     <MenuSubContent sideOffset={4} style={menuSurface()}>
                       {/* Built as "Add this session to" builds its rows: one per session of the build, in order. */}
                       {sessions.map((session) => (
-                        <Menu.Item key={session.key} onSelect={() => onAddToSession(file.id, session.key)} style={{ ...menuItem(true, phone), gap: 8 }}>
+                        <Menu.Item key={session.key} onSelect={() => onAddToSession(file.id, session.key)} style={{ ...menuItem(true, phone), gap: space[2] }}>
                           <span style={{ flexGrow: 1, minWidth: 0 }}>{`Session ${session.number} · ${session.tool}`}</span>
                         </Menu.Item>
                       ))}
@@ -383,7 +383,7 @@ function FileRow({ file, phone, sessions, selected = false, onOpen, onAddToSessi
  */
 function ReminderRow({ reminder, phone, onPick }: { reminder: SourceReminder; phone: boolean; onPick: () => void }) {
   return (
-    <div style={{ ...rowLine, display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : undefined, padding: "8px 0", boxSizing: "border-box" }}>
+    <div style={{ ...rowLine, display: "flex", alignItems: "center", gap: space[2], minHeight: phone ? size.touch : size.row, padding: `${space[2]}px 0`, boxSizing: "border-box" }}>
       <span data-testid="reminder-line" style={{ ...text(12.5, 400, t.text2), flex: "1 1 auto", minWidth: 0, whiteSpace: "normal", overflowWrap: "normal", wordBreak: "normal" }}>
         {reminder.line}
       </span>
@@ -403,9 +403,9 @@ function AddToMenu({ item, parts, phone, onAdd, lastPart }: { item: SourceLibrar
       </Menu.Trigger>
       <Menu.Portal>
         <MenuContent align="end" sideOffset={4} style={menuSurface()}>
-          <Menu.Label style={{ ...text(11.5, 500, t.label), padding: "6px 12px 4px" }}>{SOURCES_COPY.addThisTo}</Menu.Label>
+          <Menu.Label style={{ ...text(11.5, 500, t.label), padding: `${space[2]}px ${space[3]}px ${space[1]}px` }}>{SOURCES_COPY.addThisTo}</Menu.Label>
           {parts.map((part) => (
-            <Menu.Item key={part.key} onSelect={() => onAdd(item.id, part.key)} data-last={part.key === lastPart || undefined} style={{ ...menuItem(true, phone), gap: 8 }}>
+            <Menu.Item key={part.key} onSelect={() => onAdd(item.id, part.key)} data-last={part.key === lastPart || undefined} style={{ ...menuItem(true, phone), gap: space[2] }}>
               <ColourDot colour={part.colour} />
               <span style={{ flexGrow: 1, minWidth: 0 }}>{part.title}</span>
               {/* SV-07 P3: the part a session was last added to, marked as the View menu marks its choices. */}
@@ -429,11 +429,11 @@ function LibraryRow({ item, phone, onAdd, parts, lastPart }: { item: SourceLibra
   const drag = useSourceDrag("session", item.id);
   const movable = drag.on && !item.inThisDraft && !item.adding;
   return (
-    <div ref={drag.setRef} data-source-drag={movable ? drag.dragId : undefined} style={{ ...rowLine, display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : undefined, padding: "8px 0", boxSizing: "border-box" }}>
+    <div ref={drag.setRef} data-source-drag={movable ? drag.dragId : undefined} style={{ ...rowLine, display: "flex", alignItems: "center", gap: space[2], minHeight: phone ? size.touch : size.row, padding: `${space[2]}px 0`, boxSizing: "border-box" }}>
       <SourceGrip drag={drag} label={`Move ${libraryName(item)}`} phone={phone} still={!movable} />
       {/* SV-05 P3: the app's mark when the app is known; none when it is not. */}
       {item.appKnown ? <ToolMark tool={item.app} size={20} /> : <span aria-hidden="true" style={{ width: 20, flexShrink: 0 }} />}
-      <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
+      <span style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0, flexGrow: 1 }}>
         {/* UX-02 P8: a long name wraps to two lines before it is cut. */}
         <span title={libraryName(item)} style={{ ...text(13, 400, t.text2), ...PREVIEW }}>{middleCut(libraryName(item), LIBRARY_NAME_MAX)}</span>
         <span {...fullText(item.line)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{item.line}</span>
@@ -478,9 +478,9 @@ function PlusToWords() {
 /** CA-12: an import that is not a session yet; nothing to press. */
 function UnfinishedRow({ item, phone }: { item: SourceUnfinishedItem; phone: boolean }) {
   return (
-    <div style={{ ...rowLine, display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : undefined, padding: "8px 0", boxSizing: "border-box" }}>
+    <div style={{ ...rowLine, display: "flex", alignItems: "center", gap: space[2], minHeight: phone ? size.touch : size.row, padding: `${space[2]}px 0`, boxSizing: "border-box" }}>
       <ToolMark tool={item.label} size={20} />
-      <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
+      <span style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0, flexGrow: 1 }}>
         <span style={{ ...text(13, 400, t.text2), ...ellipsis }}>{item.label}</span>
         <span style={{ ...text(11.5, 400, t.label), overflowWrap: "anywhere" }}>{item.line}</span>
       </span>
@@ -491,7 +491,7 @@ function UnfinishedRow({ item, phone }: { item: SourceUnfinishedItem; phone: boo
 /** UX-02 P8: the panel's foot: Add files opens the picker; on a computer, one line says a file can be dropped on the build too. */
 function AddFiles({ fine, phone, onPick }: Pick<SourcesPanelProps, "fine" | "phone" | "onPick">) {
   return (
-    <div data-testid="sources-add-files" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+    <div data-testid="sources-add-files" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: space[1] }}>
       <TextButton onClick={onPick} target={phone} style={{ ...textLinkBox(phone), ...text(12.5, 500, t.text) }}>
         {SOURCES_COPY.addFiles}
       </TextButton>
@@ -520,10 +520,10 @@ function AvailableGroup({ props, phone }: { props: SourcesPanelProps; phone: boo
           style={{ ...wellField, height: phone ? size.touch : size.control, padding: `0 ${space[3]}px`, marginBottom: space[2], ...text(phone ? 16 : 13, 400, t.text) }}
         />
       ) : null}
-      {shown.length === 0 ? <p style={{ ...text(12.5, 400, t.label), margin: 0, padding: "8px 0" }}>{SOURCES_COPY.noMatch}</p> : null}
+      {shown.length === 0 ? <p style={{ ...text(12.5, 400, t.label), margin: 0, padding: `${space[2]}px 0` }}>{SOURCES_COPY.noMatch}</p> : null}
       <Capped key={wanted} rows={shown} phone={phone} render={(item) => <LibraryRow key={item.id} item={item} phone={phone} onAdd={props.onAddSession} parts={props.parts} lastPart={props.lastPart} />} />
       {props.libraryHasMore ? (
-        <div style={{ ...rowLine, paddingTop: 8 }}>
+        <div style={{ ...rowLine, paddingTop: space[2] }}>
           {props.libraryLoadingMore ? (
             <LoadingRegion what="more sessions" data-testid="library-more-loading">
               <LoadingBlocks kind="line" width={LIBRARY_MORE_WIDTH} />
@@ -585,7 +585,7 @@ export function SourcesPanel(props: SourcesPanelProps) {
   if (status === "loading") {
     return (
       <LoadingRegion what="your sources" announce>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: space[3] }}>
           <Skeleton width={120} height={13} />
           <Skeleton height={40} radius={6} />
           <Skeleton height={40} radius={6} />
@@ -597,20 +597,20 @@ export function SourcesPanel(props: SourcesPanelProps) {
 
   return (
     <MotionBoundary motion={motion} slide={NO_SLIDE} when={releasing}>
-      <div ref={rootRef} data-testid="sources-panel" {...(fine ? dropTarget(props.onDropFiles) : null)} style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: phone ? "flex-end" : "flex-start", gap: 2, marginBottom: -8 }}>
+      <div ref={rootRef} data-testid="sources-panel" {...(fine ? dropTarget(props.onDropFiles) : null)} style={{ display: "flex", flexDirection: "column", gap: space[6], minWidth: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: phone ? "flex-end" : "flex-start", gap: space[1] }}>
           {/* On a phone the bottom sheet's own title is "Sources". */}
           {phone ? null : <h2 style={{ ...text(14, 500, t.text), margin: 0 }}>Sources</h2>}
           <span style={{ ...text(12, 400, t.label), ...tnum }}>{inBuild} in build</span>
         </div>
 
         {empty ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: space[2] }}>
             <p style={{ ...text(13, 400, t.text), margin: 0 }}>{SOURCES_COPY.noSessions}</p>
             <Link to={props.connectHref} style={{ ...text(12.5, 500, t.text), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line }}>
               {SOURCES_COPY.connect}
             </Link>
-            <p style={{ ...text(13, 400, t.text), margin: "6px 0 0" }}>{SOURCES_COPY.noFiles}</p>
+            <p style={{ ...text(13, 400, t.text), margin: `${space[2]}px 0 0` }}>{SOURCES_COPY.noFiles}</p>
           </div>
         ) : null}
 
