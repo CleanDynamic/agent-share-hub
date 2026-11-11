@@ -216,4 +216,41 @@ test.describe("/builds filters", () => {
       for (const key of ["x", "y", "width", "height"] as const) expect(Math.abs(after![key] - before![key])).toBeLessThanOrEqual(1);
     });
   }
+
+  /* ── BF-10 P3 (C9) ── */
+
+  test("ticking a column in the chooser shows its head while the chooser is still open, and the chooser does not cover it", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "desktop project only");
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open(page, "/builds", answerWithBuilds);
+    await page.getByRole("button", { name: /^Columns:/ }).click();
+    const chooser = page.getByRole("dialog").filter({ has: page.getByRole("group", { name: "Columns" }) });
+    await expect(chooser).toBeVisible();
+    await chooser.getByRole("checkbox", { name: "Shape" }).check();
+    const head = page.getByRole("columnheader", { name: "Shape" });
+    await expect(head).toBeVisible();
+    await expect(chooser).toBeVisible();
+    await head.scrollIntoViewIfNeeded();
+    const [a, b] = [await head.boundingBox(), await chooser.boundingBox()];
+    // eslint-disable-next-line no-console
+    console.log(`Shape head ${JSON.stringify(a)}, chooser ${JSON.stringify(b)}`);
+    const overlaps = a!.x < b!.x + b!.width && b!.x < a!.x + a!.width && a!.y < b!.y + b!.height && b!.y < a!.y + a!.height;
+    expect(overlaps).toBe(false);
+  });
+
+  test("phone at 390: the chooser stays on the screen", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "mobile project only");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page, "/builds", answerWithBuilds);
+    await page.getByRole("button", { name: /^Columns:/ }).click();
+    const chooser = page.getByRole("dialog").filter({ has: page.getByRole("group", { name: "Columns" }) });
+    await expect(chooser).toBeVisible();
+    const box = (await chooser.boundingBox())!;
+    const viewport = page.viewportSize()!;
+    // eslint-disable-next-line no-console
+    console.log(`phone chooser ${JSON.stringify(box)} in ${viewport.width} x ${viewport.height}, side ${await chooser.getAttribute("data-side")}`);
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
+    expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
+  });
 });

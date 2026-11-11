@@ -370,9 +370,22 @@ export function chosenColumns(saved: readonly string[] | null, countsLive: boole
 /** "12 of 24". */
 export const columnsLabel = (chosen: readonly ColumnId[], countsLive: boolean): string => `${chosen.length} of ${availableColumns(countsLive).length}`;
 
-/** The chooser's checklist. */
+/** BF-10 (C9): the chooser's groups, the dialog's four after Identity, each in the order it lists its columns. */
+export type ColumnGroup = "Identity" | "Classification" | "Proof" | "Structure" | "OpenBuilds";
+const COLUMN_GROUPS: readonly (readonly [ColumnGroup, readonly ColumnId[]])[] = [
+  ["Identity", ["build", "published"]],
+  ["Classification", ["built", "field", "tools", "cost", "task", "setting", "role", "technique", "modality", "method", "autonomy", "data", "oversight", "age", "skill"]],
+  ["Proof", ["reproductions", "works", "confirmed", "runs", "rebuilds", "likes"]],
+  ["Structure", ["shape", "steps", "sessions", "patterns"]],
+  ["OpenBuilds", ["open"]],
+];
+export const COLUMN_GROUP = Object.fromEntries(COLUMN_GROUPS.flatMap(([group, ids]) => ids.map((id) => [id, group]))) as Record<ColumnId, ColumnGroup>;
+
+/** The chooser's checklist, by group. */
 export function columnsMenu(chosen: readonly ColumnId[], countsLive: boolean, onToggle: (id: ColumnId) => void, onReset?: () => void): ColumnsMenu {
-  return { options: availableColumns(countsLive).map((id) => ({ id, name: COLUMN_NAME[id], on: chosen.includes(id), ...(id === "build" ? { locked: true } : null) })), onToggle, onReset };
+  const offered = new Set(availableColumns(countsLive));
+  const options = COLUMN_GROUPS.flatMap(([group, ids]) => ids.filter((id) => offered.has(id)).map((id) => ({ id, name: COLUMN_NAME[id], group, on: chosen.includes(id), ...(id === "build" ? { locked: true } : null) })));
+  return { options, onToggle, onReset };
 }
 
 /** The chosen columns with one turned on or off. Build stays. */

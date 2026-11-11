@@ -16,6 +16,7 @@ import { Link } from "react-router-dom";
 import { LampBar } from "@/components/brand/LampDot";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { Checkbox } from "@/components/brand/Checkbox";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -162,7 +163,8 @@ export interface CalculationOption {
 }
 
 export interface ColumnsMenu {
-  options: readonly { id: ColumnId; name: string; on: boolean; locked?: boolean }[];
+  /** BF-10 (C9): `group` heads the options under it; options of a group come together. */
+  options: readonly { id: ColumnId; name: string; group?: string; on: boolean; locked?: boolean }[];
   onToggle: (id: ColumnId) => void;
   /** Back to the default twelve; drawn only while the columns are not. */
   onReset?: () => void;
@@ -225,8 +227,17 @@ function SortMenu({ sort }: { sort: BuildsTableViewProps["sort"] }) {
   );
 }
 
-/** The Columns chooser: a checklist of every column in a popover. Build is always on. */
+/** The Columns chooser: a checklist of every column in a popover, by group. Build is always on. BF-10 (C9): it opens to the left of
+    its button, so the column a tick adds is not under it. On a phone there is no room to its left (Radix kept it there, 18px off
+    the screen at 412 wide), so it opens under the button. */
 function ColumnsChooser({ label, menu }: { label: string; menu: ColumnsMenu }) {
+  const phone = useIsPhone();
+  const groups: { name: string | undefined; options: ColumnsMenu["options"][number][] }[] = [];
+  for (const option of menu.options) {
+    const last = groups.at(-1);
+    if (last && last.name === option.group) last.options.push(option);
+    else groups.push({ name: option.group, options: [option] });
+  }
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -234,13 +245,18 @@ function ColumnsChooser({ label, menu }: { label: string; menu: ColumnsMenu }) {
           <span style={{ color: t.label }}>Columns</span> {label}
         </BuildsControl>
       </PopoverTrigger>
-      <PopoverContent align="end" sideOffset={6} style={{ width: 320, maxWidth: "calc(100vw - 28px)", padding: 16 }}>
-        <div role="group" aria-label="Columns" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", columnGap: 16 }}>
-          {menu.options.map((option) => (
-            <label key={option.id} style={{ display: "grid", gridTemplateColumns: "16px 1fr", columnGap: 10, alignItems: "center", minHeight: 32, cursor: option.locked ? "default" : "pointer", ...text(12.5, 400, option.on ? t.text : t.text2) }}>
-              <Checkbox checked={option.on} disabled={option.locked} onChange={() => menu.onToggle(option.id)} />
-              <span>{option.name}</span>
-            </label>
+      <PopoverContent side={phone ? "bottom" : "left"} align={phone ? "end" : "start"} sideOffset={6} collisionPadding={14} style={{ width: 240, maxWidth: "calc(100vw - 28px)", maxHeight: "min(560px, calc(100dvh - 120px), var(--radix-popover-content-available-height))", overflowY: "auto", padding: 16 }}>
+        <div role="group" aria-label="Columns">
+          {groups.map((group, at) => (
+            <div key={group.name ?? at} role={group.name ? "group" : undefined} aria-label={group.name}>
+              {group.name ? <div style={{ ...text(12, 400, t.label), margin: `${at === 0 ? 0 : 12}px 0 4px` }}>{group.name}</div> : null}
+              {group.options.map((option) => (
+                <label key={option.id} style={{ display: "grid", gridTemplateColumns: "16px 1fr", columnGap: 10, alignItems: "center", minHeight: 32, cursor: option.locked ? "default" : "pointer", ...text(12.5, 400, option.on ? t.text : t.text2) }}>
+                  <Checkbox checked={option.on} disabled={option.locked} onChange={() => menu.onToggle(option.id)} />
+                  <span>{option.name}</span>
+                </label>
+              ))}
+            </div>
           ))}
         </div>
         {menu.onReset ? (

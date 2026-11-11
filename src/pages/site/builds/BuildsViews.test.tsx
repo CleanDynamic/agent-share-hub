@@ -503,3 +503,46 @@ describe("the four new columns in the chooser", () => {
     for (const name of ["Works on model", "Likes", "Patterns", "Published"]) expect(within(group).getByRole("checkbox", { name })).toBeTruthy();
   });
 });
+
+/* ── BF-10 P3 (C9) ── */
+
+describe("the grouped chooser", () => {
+  const openChooser = (onReset?: () => void) => {
+    const columns = chosenColumns(null, true);
+    draw((p) => ({ ...p, table: { ...p.table!, columnsLabel: columnsLabel(columns, true), columnsMenu: columnsMenu(columns, true, vi.fn(), onReset) } }));
+    fireEvent.click(screen.getByRole("button", { name: /^Columns:/ }));
+    return within(screen.getByRole("group", { name: "Columns" }));
+  };
+  const namesIn = (group: string) => within(screen.getByRole("group", { name: group })).getAllByRole("checkbox").map((box) => box.closest("label")?.textContent);
+
+  it("the chooser groups its columns under Identity, Classification, Proof, Structure and OpenBuilds, in that order", () => {
+    const chooser = openChooser();
+    expect(chooser.getAllByRole("group").map((group) => group.getAttribute("aria-label"))).toEqual(["Identity", "Classification", "Proof", "Structure", "OpenBuilds"]);
+  });
+
+  // The names are today's: BF-10 Part 1 (one set of names) stopped at A5, so Confirmed, Open and Tools keep theirs.
+  it("Identity holds Build (locked) and Published; Proof holds Reproductions, Works on model, Confirmed, Runs, 12 weeks, Rebuilds and Likes; Structure holds Shape, Steps, Sessions and Patterns; OpenBuilds holds Open; Classification holds the fifteen facets", () => {
+    openChooser();
+    expect(namesIn("Identity")).toEqual(["Build", "Published"]);
+    expect((within(screen.getByRole("group", { name: "Identity" })).getByRole("checkbox", { name: "Build" }) as HTMLInputElement).disabled).toBe(true);
+    expect(namesIn("Proof")).toEqual(["Reproductions", "Works on model", "Confirmed", "Runs, 12 weeks", "Rebuilds", "Likes"]);
+    expect(namesIn("Structure")).toEqual(["Shape", "Steps", "Sessions", "Patterns"]);
+    expect(namesIn("OpenBuilds")).toEqual(["Open"]);
+    expect(namesIn("Classification")).toHaveLength(15);
+    expect(namesIn("Classification")).toEqual(expect.arrayContaining(["What was built", "Field", "Tools", "Cost to run", "Autonomy", "Skill"]));
+  });
+
+  it("the popover opens to the left of its button", () => {
+    openChooser();
+    const content = screen.getByRole("dialog");
+    expect(content.getAttribute("data-side")).toBe("left");
+    expect(content.getAttribute("data-align")).toBe("start");
+  });
+
+  it("Back to the default columns is still offered once the columns differ", () => {
+    const onReset = vi.fn();
+    openChooser(onReset);
+    fireEvent.click(screen.getByRole("button", { name: "Back to the default columns" }));
+    expect(onReset).toHaveBeenCalled();
+  });
+});
