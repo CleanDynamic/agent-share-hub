@@ -14,7 +14,8 @@ import { PREVIEW, TITLE_LINE } from "@/lib/theme/truncate";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { useCrossfade } from "./buildMotion";
-import { size } from "@/lib/theme/space";
+import { size, space } from "@/lib/theme/space";
+import { r } from "@/lib/theme/radius";
 
 const type = (px: number, weight: 400 | 500, color: string, line?: number): CSSProperties => ({ fontFamily: FIGTREE, fontSize: px, fontWeight: weight, lineHeight: line ? `${line}px` : "normal", color });
 const ellipsis = TITLE_LINE;
@@ -61,7 +62,7 @@ export function NumberBadge({ children }: { children: ReactNode }) {
       ref={badge}
       aria-hidden="true"
       data-testid="number-badge"
-      style={{ ...CONTROL, boxSizing: "border-box", flexShrink: 0, minWidth: 22, height: 22, marginTop: 1, padding: "0 4px", borderRadius: 5, display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: DM_MONO, fontSize: 11, lineHeight: "normal", color: t.text2, fontVariantNumeric: "tabular-nums" }}
+      style={{ ...CONTROL, boxSizing: "border-box", flexShrink: 0, minWidth: size.controlSmall, height: size.controlSmall, padding: `0 ${space[1]}px`, borderRadius: r.chip, display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: DM_MONO, fontSize: 11, lineHeight: "normal", color: t.text2, fontVariantNumeric: "tabular-nums" }}
     >
       {children}
     </span>
