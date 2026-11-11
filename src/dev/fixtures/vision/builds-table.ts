@@ -183,7 +183,8 @@ export function visionBuildsTableProps(): BuildsViewProps {
       columns: COLUMN_ORDER,
       rows: visionBuildsRows,
       sortColumn: { id: "reproductions", ascending: false },
-      sortableBy: { reproductions: "reproduced", confirmed: "confirmed", rebuilds: "rebuilt" },
+      sortable: new Set(["reproductions", "confirmed", "rebuilds", "steps", "sessions"]),
+      onSortColumn: noop,
       footer: { count: "18 builds", mostCommon: "Most common · Sales, Claude Code", median: "Median 11 steps", total: "Total 214", onCalculate: noop },
     },
   };

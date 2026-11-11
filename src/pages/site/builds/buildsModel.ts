@@ -411,10 +411,10 @@ export function filteredColumns(params: GalleryParams): ColumnId[] {
 }
 
 /** The columns drawn: the reader's own, then, with the setting on, each filtered column that is available and not already
-    there, in the table's own order. */
-export function drawnColumns(chosen: readonly ColumnId[], filtered: readonly ColumnId[], on: boolean, countsLive: boolean): ColumnId[] {
-  if (!on) return [...chosen];
-  const added = new Set(filtered.filter((id) => !chosen.includes(id)));
+    there, in the table's own order (and the sorted column, BF-12). */
+export function drawnColumns(chosen: readonly ColumnId[], filtered: readonly ColumnId[], on: boolean, countsLive: boolean, sorted: readonly ColumnId[] = []): ColumnId[] {
+  /* BF-12: the column the database sorts by is drawn by the same rule (Published with Newest), whatever the setting. */
+  const added = new Set([...(on ? filtered : []), ...sorted].filter((id) => !chosen.includes(id)));
   return [...chosen, ...availableColumns(countsLive).filter((id) => added.has(id))];
 }
 

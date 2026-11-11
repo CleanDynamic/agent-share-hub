@@ -53,7 +53,7 @@ import { BuildsView, statParts } from "./BuildsView";
 import {
   LENS_LABEL,
   MAPS_PAGE,
-  SORT_COLUMN,
+  SERVER_SORT,
   SORT_OPTIONS,
   activeChips,
   activeCount,
@@ -67,8 +67,11 @@ import {
   footerCalculations,
   lensCountParams,
   listParamsOf,
+  nextSort,
   nextTableOffset,
   panelSections,
+  serverSortColumn,
+  sortRows,
   tableFooter,
   tableRow,
   toggled,
@@ -78,7 +81,7 @@ import {
   type PanelOrder,
 } from "./buildsModel";
 import { BuildsClassificationView, BuildsMapsPane, prefetchView } from "./buildsViews";
-import { EXTRA_COLUMNS, type ExtraColumnId } from "./BuildsTableView";
+import { EXTRA_COLUMNS, type ColumnId, type ExtraColumnId } from "./BuildsTableView";
 import { useBuildsLayout } from "./useBuildsLayout";
 import { cardOf, readFacetChoice, writeFacetChoice } from "./classificationModel";
 import type { MapsDirection } from "./BuildsMapsView";
@@ -208,9 +211,21 @@ export default function BuildsPage() {
      every render: a filter set by the dialog, a value's link, a saved set or Back all draw the same. Nothing is stored. */
   const chosen = chosenColumns(layout.columns, countsLive);
   const filteredIds = filteredColumns(params);
-  const columns = drawnColumns(chosen, filteredIds, layout.filterColumns, countsLive);
+  /* BF-12: the column the database sorts by is drawn too (Published, with Newest). */
+  const serverColumn = serverSortColumn(params);
+  const columns = drawnColumns(chosen, filteredIds, layout.filterColumns, countsLive, serverColumn ? [serverColumn] : []);
   const extras = columns.filter((id): id is ExtraColumnId => (EXTRA_COLUMNS as readonly string[]).includes(id));
-  const rows = builds.map((build) => tableRow(build, now, extras));
+  /* BF-12 (B3): a head sorts only when its answer is true for the whole list: with every match loaded any drawn column sorts in
+     the browser; with more pages waiting, only the database's six. */
+  const allLoaded = Boolean(list.data) && !list.hasNextPage && !list.isPlaceholderData;
+  const sortable = new Set(allLoaded ? columns : columns.filter((id) => SERVER_SORT[id]));
+  const browserBy = allLoaded && params.by && columns.includes(params.by as ColumnId) ? (params.by as ColumnId) : null;
+  const browserBy2 = browserBy && params.by2 && columns.includes(params.by2 as ColumnId) ? (params.by2 as ColumnId) : undefined;
+  const loadedRows = builds.map((build) => tableRow(build, now, extras));
+  const rows = browserBy ? sortRows(loadedRows, browserBy, params.dir === "asc", browserBy2, params.dir2 === "asc") : loadedRows;
+  /* The arrow: the browser's key while it applies, else the database's sort, in the direction the address says. A `by` that
+     does not apply draws no arrow, and the database's sort is drawn descending as the list was asked. */
+  const sortColumn = browserBy ? { id: browserBy, ascending: params.dir === "asc" } : serverColumn ? { id: serverColumn, ascending: params.dir === "asc" && !params.by } : null;
   const calculationChoices = calculationOptions(layout.calculations, columns);
   const loading = list.isLoading;
   /* BF-02 (C2): the rows on screen are the last address's until the new page lands. They stay, and say so. */
@@ -472,8 +487,9 @@ export default function BuildsPage() {
                 columns.filter((id) => !chosen.includes(id)),
               ),
               rows,
-              sortColumn: SORT_COLUMN[sort] ? { id: SORT_COLUMN[sort]!, ascending: false } : null,
-              sortableBy: { reproductions: "reproduced", confirmed: "confirmed", rebuilds: "rebuilt" },
+              sortColumn,
+              sortable,
+              onSortColumn: (id, second) => go(nextSort(params, id, allLoaded, second)),
               filtered: new Set(filteredIds),
               footer: {
                 ...tableFooter(total, rows),

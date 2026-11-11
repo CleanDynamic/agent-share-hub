@@ -177,8 +177,10 @@ export interface BuildsTableViewProps {
   rows: readonly TableRowView[];
   /** The column each head sorts by, and the arrow on the sorted one. */
   sortColumn: { id: ColumnId; ascending: boolean } | null;
-  /** Column heads that sort: id to the sort value they choose. */
-  sortableBy: Partial<Record<ColumnId, string>>;
+  /** BF-12 (B3): the heads that sort: every drawn column once the whole list is loaded, else the database's six. */
+  sortable: ReadonlySet<ColumnId>;
+  /** A press on a sortable head; `second` is Shift (BF-12 P4). */
+  onSortColumn: (id: ColumnId, second: boolean) => void;
   /** BF-11 (B2): the columns whose filter holds a value; their heads are marked. Absent: none. */
   filtered?: ReadonlySet<ColumnId>;
   footer: TableFooterView;
@@ -321,20 +323,20 @@ const td = (right: boolean, last: boolean): React.CSSProperties => ({ padding: l
 /** BF-11 (B2): a filtered column's head is in `--text` at 500 over a 1px `--selected-edge` line, and says so to a screen reader.
     No icon, and no new press: pressing the head sorts, as before. The words are the head's (and its button's) `aria-label`, not
     hidden text: hidden text is positioned, so a name built from it reads "Autonomy , filtered". */
-function ColumnHead({ id, last, sorted, sortValue, onSort, filtered = false }: { id: ColumnId; last: boolean; sorted: { ascending: boolean } | null; sortValue?: string; onSort: (value: string) => void; filtered?: boolean }) {
+function ColumnHead({ id, last, sorted, sortable, onSort, filtered = false }: { id: ColumnId; last: boolean; sorted: { ascending: boolean } | null; sortable: boolean; onSort: (second: boolean) => void; filtered?: boolean }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   const right = RIGHT.has(id);
-  const ariaSort = sorted ? (sorted.ascending ? "ascending" : "descending") : sortValue ? "none" : undefined;
+  const ariaSort = sorted ? (sorted.ascending ? "ascending" : "descending") : sortable ? "none" : undefined;
   const mark: React.CSSProperties | undefined = filtered ? { fontWeight: 500, borderBottom: `1px solid ${t.selectedEdge}` } : undefined;
   const name = HEAD[id];
   const label = filtered ? `${HEAD[id]}, filtered` : undefined;
   return (
     <th scope="col" aria-sort={ariaSort} aria-label={label} style={{ ...th(right, last), color: sorted || filtered ? t.text : t.label }}>
-      {sortValue ? (
+      {sortable ? (
         <button
           type="button"
           aria-label={label}
-          onClick={() => onSort(sortValue)}
+          onClick={(event) => onSort(event.shiftKey)}
           {...handlers}
           style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: 0, ...hitArea(2), font: "inherit", color: state.hovered ? t.text : "inherit", cursor: "pointer", borderRadius: r.chip, ...ring(state.focusVisible), ...mark }}
         >
@@ -577,7 +579,7 @@ function Footer({ columns, footer }: { columns: readonly ColumnId[]; footer: Tab
 /* ── the table ── */
 
 export function BuildsTableView(props: BuildsTableViewProps) {
-  const { lenses, lens, onLens, sort, columnsLabel, columnsMenu, chips, onRemoveChip, onClearAll, columns, rows, sortColumn, sortableBy, footer, onMore, loadingMore, empty, updating, activeCount, onOpenFilters, setName, filtered } = props;
+  const { lenses, lens, onLens, sort, columnsLabel, columnsMenu, chips, onRemoveChip, onClearAll, columns, rows, sortColumn, sortable, onSortColumn, footer, onMore, loadingMore, empty, updating, activeCount, onOpenFilters, setName, filtered } = props;
   return (
     <div data-testid="builds-table">
       <LensRow lenses={lenses} lens={lens} onLens={onLens} sort={sort} columnsLabel={columnsLabel} columnsMenu={columnsMenu} updating={updating} activeCount={activeCount} onOpenFilters={onOpenFilters} setName={setName} />
@@ -595,8 +597,8 @@ export function BuildsTableView(props: BuildsTableViewProps) {
                     id={id}
                     last={position === columns.length - 1}
                     sorted={sortColumn?.id === id ? sortColumn : null}
-                    sortValue={sortableBy[id]}
-                    onSort={sort.onChange}
+                    sortable={sortable.has(id)}
+                    onSort={(second) => onSortColumn(id, second)}
                     filtered={filtered?.has(id)}
                   />
                 ))}
