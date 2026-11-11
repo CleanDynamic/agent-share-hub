@@ -193,7 +193,11 @@ describe("the Add menu holds exactly 15 items, all enabled (UI-P70, CA-02 P7, CA
       onAddFromLibrary: vi.fn(),
     });
     fireEvent.keyDown(screen.getByTestId("add-to-session"), { key: "Enter" });
-    const items = await screen.findAllByRole("menuitem");
+    // F40: five on the first screen, then More types and From Library; opened, every type.
+    const first = await screen.findAllByRole("menuitem");
+    expect(first.map((item) => item.firstChild?.textContent)).toEqual(["Prompt", "Agent", "Tool", "File", "Dataset", "More types", "From Library"]);
+    fireEvent.click(screen.getByTestId("add-more-types"));
+    const items = (await screen.findAllByRole("menuitem")).filter((item) => item.getAttribute("data-testid") !== "add-more-types");
     expect(items).toHaveLength(15);
     expect(items[0].textContent).toBe("PromptMessage sent to a model");
     expect(items.map((item) => item.getAttribute("aria-disabled"))).toEqual(Array(15).fill(null));
@@ -203,6 +207,7 @@ describe("the Add menu holds exactly 15 items, all enabled (UI-P70, CA-02 P7, CA
   it("lists Check disabled, saying why, when the build has nothing to check (CA-03 P5)", async () => {
     addRow({ onAddCheck: vi.fn(), checkable: false });
     fireEvent.keyDown(screen.getByTestId("add-to-session"), { key: "Enter" });
+    fireEvent.click(await screen.findByTestId("add-more-types"));
     const check = await screen.findByRole("menuitem", { name: /^Check/ });
     expect(check.getAttribute("aria-disabled")).toBe("true");
     expect(check.textContent).toBe("CheckAdd an agent or code first");
@@ -212,11 +217,13 @@ describe("the Add menu holds exactly 15 items, all enabled (UI-P70, CA-02 P7, CA
     const onAddCode = vi.fn();
     addRow({ onAddCode });
     fireEvent.keyDown(screen.getByTestId("add-to-session"), { key: "Enter" });
+    fireEvent.click(await screen.findByTestId("add-more-types"));
     fireEvent.click(await screen.findByRole("menuitem", { name: /^Code/ }));
     expect(onAddCode).toHaveBeenCalled();
     cleanup();
     addRow();
     fireEvent.keyDown(screen.getByTestId("add-to-session"), { key: "Enter" });
+    fireEvent.click(await screen.findByTestId("add-more-types"));
     expect((await screen.findByRole("menuitem", { name: /^Code/ })).getAttribute("aria-disabled")).toBe("true");
   });
 
@@ -224,6 +231,7 @@ describe("the Add menu holds exactly 15 items, all enabled (UI-P70, CA-02 P7, CA
     const onAddManual = vi.fn();
     addRow({ onAddManual });
     fireEvent.keyDown(screen.getByTestId("add-to-session"), { key: "Enter" });
+    fireEvent.click(await screen.findByTestId("add-more-types"));
     fireEvent.click(await screen.findByRole("menuitem", { name: /Manual step/ }));
     expect(onAddManual).toHaveBeenCalled();
   });
@@ -232,6 +240,7 @@ describe("the Add menu holds exactly 15 items, all enabled (UI-P70, CA-02 P7, CA
     const onAddManual = vi.fn();
     addRow({ onAddManual });
     fireEvent.keyDown(screen.getByTestId("add-to-session"), { key: "Enter" });
+    fireEvent.click(await screen.findByTestId("add-more-types"));
     const item = await screen.findByRole("menuitem", { name: /^Approval/ });
     expect(item.textContent).toBe("ApprovalA person approves before work continues");
     fireEvent.click(item);
@@ -493,6 +502,7 @@ describe("CA-10 · the Add menu fits the screen and keeps the focus a row gives"
     const add = screen.getByTestId("add-to-session");
     add.focus();
     fireEvent.keyDown(add, { key: "Enter" });
+    fireEvent.click(await screen.findByTestId("add-more-types"));
     fireEvent.click(await screen.findByRole("menuitem", { name: /Manual step/ }));
     expect(onAddManual).toHaveBeenCalled();
     await new Promise((resolve) => setTimeout(resolve, 50));
@@ -522,12 +532,16 @@ describe("CA-10 · on a phone, Add opens as a bottom sheet", () => {
     expect(within(sheet).getByRole("heading", { name: "Add step tile" }).textContent).toBe("Add step tile");
     expect(within(sheet).getByTestId("sheet-grab-line")).toBeTruthy();
     const rows = within(within(sheet).getByRole("group", { name: "Add step tile" })).getAllByRole("button");
-    // UX-02 P6: in the menu's groups (Prompt first, then by node-type category), one column; entries not live are left out.
+    // UX-02 P6, F40: the five first, then More types (closed), then From Library; opened, the groups by node-type category, one column.
     const layout = addMenuLayout(addEntries(props), undefined);
-    const names = [layout.first, ...layout.groups.flatMap((group) => group.entries), ...layout.loose, layout.library].flatMap((item) => (item ? [item.name] : []));
-    expect(rows.map((row) => row.firstChild?.textContent)).toEqual(names);
-    expect(names[0]).toBe("Prompt");
+    const first = [...layout.primary.map((item) => item.name), "More types", ...(layout.library ? [layout.library.name] : [])];
+    expect(rows.map((row) => row.firstChild?.textContent)).toEqual(first);
+    expect(first[0]).toBe("Prompt");
     for (const row of rows) expect(row.style.minHeight).toBe("44px");
+    fireEvent.click(within(sheet).getByRole("button", { name: /^More types/ }));
+    const opened = within(within(sheet).getByRole("group", { name: "Add step tile" })).getAllByRole("button");
+    const names = [...layout.primary, ...layout.groups.flatMap((group) => group.entries), ...layout.loose, layout.library].flatMap((item) => (item ? [item.name] : []));
+    expect(opened.map((row) => row.firstChild?.textContent).filter((name) => name !== "More types")).toEqual(names);
   });
 
   it("Prompt shuts the sheet and focuses the field in the same tap", async () => {

@@ -179,7 +179,8 @@ describe("Typed here: the model menu follows the tool (CA-02 P4)", () => {
     list(noToolFirst());
     const button = screen.getByRole("button", { name: "Select a tool first" });
     expect((button as HTMLButtonElement).disabled).toBe(true);
-    expect(button.textContent).toContain("model");
+    // F41: the control reads "Model".
+    expect(button.textContent).toContain("Model");
   });
 
   it("offers the tool's own models under their lab, and saves the one picked", async () => {
@@ -189,8 +190,8 @@ describe("Typed here: the model menu follows the tool (CA-02 P4)", () => {
     expect(screen.getByText("Anthropic")).toBeTruthy();
     expect(screen.queryByRole("menuitemradio", { name: "Grok 4.7" })).toBeNull();
     fireEvent.click(screen.getByRole("menuitemradio", { name: "Opus 5.5" }));
-    fireEvent.change(screen.getByPlaceholderText("Paste or type a prompt…"), { target: { value: "Plan it" } });
-    fireEvent.click(screen.getByRole("button", { name: "Add prompt" }));
+    fireEvent.change(screen.getByPlaceholderText("Add a prompt to this session"), { target: { value: "Plan it" } });
+    fireEvent.click(screen.getByTestId("composer-add"));
     expect(props.onAddPrompt).toHaveBeenCalledWith({ text: "Plan it", tool: "claude", model: "Opus 5.5" });
   });
 
@@ -222,14 +223,14 @@ describe("Typed here: the model menu follows the tool (CA-02 P4)", () => {
     expect(screen.queryByRole("button", { name: /^model/ })).toBeNull();
     // Hermes Agent runs prompts by itself: no model menu, the line and the button instead.
     expect(screen.getByText("Hermes Agent runs prompts by itself. Add it as an agent.")).toBeTruthy();
-    expect((screen.getByRole("button", { name: "Add prompt" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByTestId("composer-add") as HTMLButtonElement).disabled).toBe(true);
     expect(props.onAddPrompt).not.toHaveBeenCalled();
   });
 
   it("hands Add as an agent the tool and the text, and clears the field once the agent is saved", async () => {
     const onAddAsAgent = vi.fn(() => Promise.resolve(true));
     list({ onAddAsAgent });
-    const field = screen.getByPlaceholderText("Paste or type a prompt…") as HTMLTextAreaElement;
+    const field = screen.getByPlaceholderText("Add a prompt to this session") as HTMLTextAreaElement;
     fireEvent.change(field, { target: { value: "Triage my inbox" } });
     pickTool("hermes", /^Hermes Agent/);
     fireEvent.click(screen.getByRole("button", { name: "Add as an agent" }));
@@ -240,7 +241,7 @@ describe("Typed here: the model menu follows the tool (CA-02 P4)", () => {
   it("keeps the field's text when the agent is not saved", async () => {
     const onAddAsAgent = vi.fn(() => Promise.resolve(false));
     list({ onAddAsAgent });
-    const field = screen.getByPlaceholderText("Paste or type a prompt…") as HTMLTextAreaElement;
+    const field = screen.getByPlaceholderText("Add a prompt to this session") as HTMLTextAreaElement;
     fireEvent.change(field, { target: { value: "Triage my inbox" } });
     pickTool("hermes", /^Hermes Agent/);
     fireEvent.click(screen.getByRole("button", { name: "Add as an agent" }));
@@ -257,8 +258,8 @@ describe("Typed here: the model menu follows the tool (CA-02 P4)", () => {
     expect(other.maxLength).toBe(40);
     fireEvent.change(other, { target: { value: "my-local-llm" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    fireEvent.change(screen.getByPlaceholderText("Paste or type a prompt…"), { target: { value: "Go" } });
-    fireEvent.click(screen.getByRole("button", { name: "Add prompt" }));
+    fireEvent.change(screen.getByPlaceholderText("Add a prompt to this session"), { target: { value: "Go" } });
+    fireEvent.click(screen.getByTestId("composer-add"));
     expect(props.onAddPrompt).toHaveBeenCalledWith({ text: "Go", tool: "claude-code", model: "my-local-llm" });
   });
 
@@ -329,7 +330,7 @@ describe("code (CA-02 P7)", () => {
 describe("pasting code into Typed here (CA-02 P7)", () => {
   const CODE = "const a = 1;\nconst b = 2;\nexport { a, b };";
   const paste = (text: string) => {
-    const field = screen.getByPlaceholderText("Paste or type a prompt…") as HTMLTextAreaElement;
+    const field = screen.getByPlaceholderText("Add a prompt to this session") as HTMLTextAreaElement;
     fireEvent.paste(field);
     fireEvent.change(field, { target: { value: text } });
     return field;
@@ -355,7 +356,7 @@ describe("pasting code into Typed here (CA-02 P7)", () => {
     expect(screen.queryByText("This looks like code.")).toBeNull();
     cleanup();
     list({ onKeepAsCode: vi.fn(() => Promise.resolve(true)) });
-    fireEvent.change(screen.getByPlaceholderText("Paste or type a prompt…"), { target: { value: CODE } });
+    fireEvent.change(screen.getByPlaceholderText("Add a prompt to this session"), { target: { value: CODE } });
     expect(screen.queryByText("This looks like code.")).toBeNull();
   });
 
@@ -366,7 +367,7 @@ describe("pasting code into Typed here (CA-02 P7)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Keep it as code" }));
     await waitFor(() => expect(onKeepAsCode).toHaveBeenCalled());
     expect(field.value).toBe(CODE);
-    fireEvent.click(screen.getByRole("button", { name: "Add prompt" }));
+    fireEvent.click(screen.getByTestId("composer-add"));
     expect(props.onAddPrompt).toHaveBeenCalledWith({ text: CODE, tool: null, model: null });
   });
 });
@@ -374,7 +375,7 @@ describe("pasting code into Typed here (CA-02 P7)", () => {
 describe("the add field", () => {
   it("adds on Enter, not on Shift+Enter, and clears once saved", async () => {
     const props = list(noToolFirst());
-    const field = screen.getByPlaceholderText("Paste or type a prompt…") as HTMLTextAreaElement;
+    const field = screen.getByPlaceholderText("Add a prompt to this session") as HTMLTextAreaElement;
     fireEvent.change(field, { target: { value: "Add a footer" } });
     fireEvent.keyDown(field, { key: "Enter", shiftKey: true });
     expect(props.onAddPrompt).not.toHaveBeenCalled();
@@ -385,10 +386,10 @@ describe("the add field", () => {
 
   it("keeps the words when the write fails", async () => {
     list({ onAddPrompt: vi.fn(() => Promise.resolve(false)) });
-    const field = screen.getByPlaceholderText("Paste or type a prompt…") as HTMLTextAreaElement;
+    const field = screen.getByPlaceholderText("Add a prompt to this session") as HTMLTextAreaElement;
     fireEvent.change(field, { target: { value: "Keep me" } });
-    fireEvent.click(screen.getByRole("button", { name: "Add prompt" }));
-    await waitFor(() => expect(screen.getByRole("button", { name: "Add prompt" })).toBeTruthy());
+    fireEvent.click(screen.getByTestId("composer-add"));
+    await waitFor(() => expect(screen.getByTestId("composer-add")).toBeTruthy());
     expect(field.value).toBe("Keep me");
   });
 
@@ -396,7 +397,7 @@ describe("the add field", () => {
     const props = sandboxListProps("fox");
     const field = createRef<HTMLTextAreaElement>();
     const { rerender } = render(<BuildList {...props} addPromptRef={field} />);
-    expect(field.current).toBe(screen.getByPlaceholderText("Paste or type a prompt…"));
+    expect(field.current).toBe(screen.getByPlaceholderText("Add a prompt to this session"));
     expect(screen.getByTestId("add-prompt").getAttribute("data-lit")).toBeNull();
     rerender(<BuildList {...props} addPromptRef={field} addPromptFlash={1} />);
     expect(screen.getByTestId("add-prompt").getAttribute("data-lit")).toBe("true");
@@ -832,5 +833,36 @@ describe("sessions are sittings (CA-04 P1, CA-14 P5)", () => {
       </MemoryRouter>,
     );
     expect(screen.queryAllByRole("separator")).toHaveLength(0);
+  });
+});
+
+describe("F15 and F41 · the composer", () => {
+  it("F15: the field says Add a prompt to this session, and a button in words adds; Enter still adds", async () => {
+    const props = list();
+    const field = screen.getByPlaceholderText("Add a prompt to this session");
+    const add = screen.getByTestId("composer-add");
+    expect(add.textContent).toBe("Add");
+    expect(add.tagName).toBe("BUTTON");
+    expect((add as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(field, { target: { value: "abc" } });
+    expect((add as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(add);
+    await waitFor(() => expect(props.onAddPrompt).toHaveBeenCalledWith(expect.objectContaining({ text: "abc" })));
+    fireEvent.change(field, { target: { value: "def" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+    await waitFor(() => expect(props.onAddPrompt).toHaveBeenCalledWith(expect.objectContaining({ text: "def" })));
+  });
+
+  it("F41: the model control reads Model until one is chosen, then that model's name", () => {
+    list();
+    expect(screen.getByRole("button", { name: "model" }).textContent).toContain("Model");
+    fireEvent.click(screen.getByRole("button", { name: /^Prompt tool · / }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Find a tool" }), { target: { value: "claude" } });
+    fireEvent.click(screen.getByRole("option", { name: "Claude" }));
+    fireEvent.keyDown(screen.getByRole("button", { name: "model" }), { key: "Enter" });
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Opus 5.5" }));
+    const chosen = screen.getByRole("button", { name: "model Opus 5.5" });
+    expect(chosen.textContent).toContain("Opus 5.5");
+    expect(chosen.textContent).not.toContain("Model");
   });
 });

@@ -433,6 +433,8 @@ export const ADD_SEARCH_COPY = { label: "Find a step tile", placeholder: "Find a
 export const ADD_MENU_WIDTH = 520;
 
 export const ADD_ASK_COPY = { row: "Add step tile" } as const;
+/** F40: the row the other types sit under, opened in place. */
+export const ADD_MORE_COPY = { row: "More types" } as const;
 
 /**
  * CA-10 (CA-09 F1, F2). On a computer, a dropdown that fits the screen (`MenuContent`, `menuSurface`) and is not
@@ -476,6 +478,10 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
   const layout = addMenuLayout(found, props.nodeCategories);
   /** Deployment is closed until opened, in place, at once. */
   const [deployOpen, setDeployOpen] = useState(false);
+  /** F40: the types beyond the first five are closed until "More types" is opened, in place; a search shows every type. */
+  const [moreOpen, setMoreOpen] = useState(false);
+  const showMore = moreOpen || query.trim() !== "";
+  const hasMore = layout.groups.length > 0 || layout.loose.length > 0 || layout.deployment.length > 0;
   /** Run an item for a session: the session first, in the same tap. */
   const run = (item: AddEntry) => {
     if (fixedSession) targets?.onSession?.(fixedSession);
@@ -551,22 +557,30 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
           {(
             /* UX-02 P6: the same groups, one column. */
             <>
-              {layout.first ? <SheetRow name={layout.first.name} line={layout.first.line} disabled={!layout.first.enabled} onSelect={() => choose(layout.first as AddEntry)} /> : null}
-              {layout.groups.map((group) => (
-                <Fragment key={group.category}>
-                  <p style={{ ...text(11.5, 500, t.label), margin: "12px 16px 4px" }}>{group.head}</p>
-                  {group.entries.map((item) => (
-                    <SheetRow key={item.key} name={item.name} line={item.line} disabled={!item.enabled} onSelect={() => choose(item)} />
-                  ))}
-                </Fragment>
-              ))}
-              {layout.loose.map((item) => (
+              {layout.primary.map((item) => (
                 <SheetRow key={item.key} name={item.name} line={item.line} disabled={!item.enabled} onSelect={() => choose(item)} />
               ))}
-              {layout.deployment.length > 0 ? <SheetRow name={DEPLOYMENT_GROUP_HEAD} line="" expanded={deployOpen} onSelect={() => setDeployOpen((open) => !open)} /> : null}
-              {deployOpen
-                ? layout.deployment.map((item) => <SheetRow key={item.key} inset name={item.name} line={item.line} disabled={!item.enabled} onSelect={() => choose(item)} />)
-                : null}
+              {/* F40: the other types under More types, opened in place. */}
+              {hasMore ? <SheetRow name={ADD_MORE_COPY.row} line="" expanded={showMore} onSelect={() => setMoreOpen((open) => !open)} /> : null}
+              {showMore ? (
+                <>
+                  {layout.groups.map((group) => (
+                    <Fragment key={group.category}>
+                      <p style={{ ...text(11.5, 500, t.label), margin: "12px 16px 4px" }}>{group.head}</p>
+                      {group.entries.map((item) => (
+                        <SheetRow key={item.key} inset name={item.name} line={item.line} disabled={!item.enabled} onSelect={() => choose(item)} />
+                      ))}
+                    </Fragment>
+                  ))}
+                  {layout.loose.map((item) => (
+                    <SheetRow key={item.key} inset name={item.name} line={item.line} disabled={!item.enabled} onSelect={() => choose(item)} />
+                  ))}
+                  {layout.deployment.length > 0 ? <SheetRow inset name={DEPLOYMENT_GROUP_HEAD} line="" expanded={deployOpen} onSelect={() => setDeployOpen((open) => !open)} /> : null}
+                  {deployOpen
+                    ? layout.deployment.map((item) => <SheetRow key={item.key} inset name={item.name} line={item.line} disabled={!item.enabled} onSelect={() => choose(item)} />)
+                    : null}
+                </>
+              ) : null}
               {layout.library ? <SheetRow name={layout.library.name} line={layout.library.line} disabled={!layout.library.enabled} onSelect={() => choose(layout.library as AddEntry)} /> : null}
             </>
           )}
@@ -576,7 +590,7 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
   }
 
   /** The first entry the search leaves that can run. */
-  const firstFound = [layout.first, ...layout.groups.flatMap((group) => group.entries), ...layout.loose, ...layout.deployment, layout.library].find((item): item is AddEntry => Boolean(item?.enabled));
+  const firstFound = [...layout.primary, ...layout.groups.flatMap((group) => group.entries), ...layout.loose, ...layout.deployment, layout.library].find((item): item is AddEntry => Boolean(item?.enabled));
   const menu = (
     <Menu.Root
       open={open}
@@ -623,25 +637,46 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
             style={{ ...wellField, height: 32, padding: "0 10px", marginBottom: 4, ...text(13, 400, t.text) }}
           />
           {firstFound ? null : <p style={{ ...text(12.5, 400, t.label), margin: 0, padding: "8px 12px" }}>{ADD_SEARCH_COPY.none}</p>}
-          {/* UX-02 P6: Prompt first, then the groups by category, the single entries, Deployment (closed until opened), From Library. */}
-          {layout.first ? desktopItem(layout.first) : null}
-          {layout.first && (layout.groups.length > 0 || layout.loose.length > 0) ? <Menu.Separator style={MENU_RULE} /> : null}
-          {layout.groups.map((group) => (
+          {/* UX-02 P6, F40: the five first; then, under More types (open in place, or while a search runs), the groups by category,
+              the single entries and Deployment (closed until opened); From Library last. */}
+          {layout.primary.length > 0 ? (
+            <div role="none" data-testid="add-primary" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 4 }}>
+              {layout.primary.map(desktopItem)}
+            </div>
+          ) : null}
+          {layout.primary.length > 0 && hasMore ? <Menu.Separator style={MENU_RULE} /> : null}
+          {hasMore && !query.trim() ? (
+            <Menu.Item
+              aria-expanded={showMore}
+              data-testid="add-more-types"
+              onSelect={(event) => {
+                event.preventDefault();
+                setMoreOpen((open) => !open);
+              }}
+              style={{ ...menuItem(true, false), ...text(11.5, 500, t.label), justifyContent: "space-between", gap: 8 }}
+            >
+              <span>{ADD_MORE_COPY.row}</span>
+              <span aria-hidden="true" style={{ display: "inline-flex" }}>
+                <Glyph name={showMore ? "chevd" : "chev"} size={16} />
+              </span>
+            </Menu.Item>
+          ) : null}
+          {showMore ? layout.groups.map((group) => (
             <Fragment key={group.category}>
               <Menu.Label data-testid="add-group-head" style={{ ...text(11.5, 500, t.label), padding: "8px 12px 4px" }}>{group.head}</Menu.Label>
               <div role="none" data-testid="add-group" data-head={group.head} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 4 }}>
                 {group.entries.map(desktopItem)}
               </div>
             </Fragment>
-          ))}
+          )) : null}
           {/* The entries of groups of one stand apart from the last headed group, so none reads as its member. */}
-          {layout.loose.length > 0 && layout.groups.length > 0 ? <Menu.Separator style={MENU_RULE} /> : null}
-          {layout.loose.length > 0 ? (
+          {showMore && layout.loose.length > 0 && layout.groups.length > 0 ? <Menu.Separator style={MENU_RULE} /> : null}
+          {showMore && layout.loose.length > 0 ? (
             <div role="none" data-testid="add-loose" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 4 }}>
               {layout.loose.map(desktopItem)}
             </div>
           ) : null}
-          {layout.deployment.length > 0 ? (
+          {showMore && layout.deployment.length > 0 ? (
             <>
               <Menu.Item
                 aria-expanded={deployOpen}

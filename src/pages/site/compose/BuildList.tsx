@@ -26,7 +26,7 @@
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import * as Popover from "@radix-ui/react-popover";
-import { ArrowUp, Link as JoinIcon, Unlink as SplitIcon } from "lucide-react";
+import { Link as JoinIcon, Unlink as SplitIcon } from "lucide-react";
 import {
   createContext,
   useCallback,
@@ -73,7 +73,6 @@ import { REF_KIND } from "@/lib/build/postRefs";
 import { borderFor, outlineFor } from "@/lib/theme/partColour";
 import { refTo } from "@/lib/build/thread";
 import { Glyph } from "@/components/brand/Glyph";
-import { IconButton } from "@/components/brand/IconButton";
 import { MenuButton } from "@/components/brand/MenuButton";
 import { Pill } from "@/components/brand/Pill";
 import type { SessionGroup, Step } from "@/lib/build/graph";
@@ -173,7 +172,11 @@ export const LIST_COPY = {
   edit: "Edit…",
   /** Product names keep their case: "Open GitHub repository". */
   open: (noun: string) => `Open ${/^GitHub/.test(noun) ? noun : noun.charAt(0).toLowerCase() + noun.slice(1)}`,
-  placeholder: "Paste or type a prompt…",
+  /** F15: the composer's field says what it does; the agent's field the same, for its agent. */
+  placeholder: "Add a prompt to this session",
+  placeholderAgent: "Add a prompt to this agent",
+  /** F15: the composer's one button, in words; Enter still adds. */
+  add: "Add",
   /** CA-15 P10: the one link in a prompt tile's footer. */
   openPrompt: "Open prompt",
   /** CA-03 P5: a check's eyebrow. */
@@ -1470,7 +1473,7 @@ function AgentPromptField({ agent, props, onDone }: { agent: Step; props: BuildL
         aria-label={`Add a prompt to agent ${agent.number}`}
         rows={2}
         value={text_}
-        placeholder={LIST_COPY.placeholder}
+        placeholder={LIST_COPY.placeholderAgent}
         onChange={(event) => setText(event.target.value)}
         onKeyDown={(event) => {
           if (event.key === "Escape") {
@@ -1487,7 +1490,9 @@ function AgentPromptField({ agent, props, onDone }: { agent: Step; props: BuildL
         <TextButton onClick={cancel} target={props.phone} style={text(12.5, 500, t.text2)}>
           Cancel
         </TextButton>
-        <IconButton icon={ArrowUp} glyph="up" label="Add prompt to this agent" size={28} disabled={!text_.trim() || busy} onClick={() => void submit()} />
+        <Button variant="primary" size={props.phone ? 44 : 28} fontSize={12} aria-label="Add prompt to this agent" data-testid="agent-prompt-add" disabled={!text_.trim() || busy} onClick={() => void submit()}>
+          {LIST_COPY.add}
+        </Button>
       </div>
     </div>
   );
@@ -2196,10 +2201,13 @@ function AddPrompt({
       ) : null}
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
         <ToolPicker label={`Prompt tool · ${toolLabel ?? "pick a tool"}`} value={tool} onChange={changeTool} inBuild={inBuild} allowNone phone={phone} step="prompt" />
-        {/* CA-03: this row has no field label, so the model menu keeps the word "model" while empty. */}
-        {redirect ? null : <ModelPicker tool={tool} value={model} onChange={setModel} phone={phone} placeholder={MODEL_PICKER_COPY.model} />}
+        {/* CA-03: this row has no field label, so the model menu says it is the model while empty (F41: "Model"); chosen, it shows the model's name. */}
+        {redirect ? null : <ModelPicker tool={tool} value={model} onChange={setModel} phone={phone} placeholder={MODEL_PICKER_COPY.label} />}
         <span style={{ flexGrow: 1 }} />
-        <IconButton icon={ArrowUp} glyph="up" label="Add prompt" size={28} disabled={!value.trim() || busy || redirect} onClick={() => void submit()} style={phone ? { width: 44, height: 44 } : undefined} />
+        {/* F15 (D3): the add is a button in words, not an arrow. */}
+        <Button variant="primary" size={phone ? 44 : 28} fontSize={12} data-testid="composer-add" disabled={!value.trim() || busy || redirect} onClick={() => void submit()}>
+          {LIST_COPY.add}
+        </Button>
       </div>
       {redirect && known ? (
         <div data-testid="add-as-agent" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>

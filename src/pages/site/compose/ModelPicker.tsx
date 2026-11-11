@@ -38,6 +38,8 @@ export const MODEL_CLEARED_MS = 6000;
 
 export const MODEL_PICKER_COPY = {
   model: "model",
+  /** F41: the composer's control reads "Model" until a model is chosen; then the model's name. */
+  label: "Model",
   /** CA-03: the button while no model is chosen. */
   choose: "Select a model",
   pickToolFirst: "Select a tool first",

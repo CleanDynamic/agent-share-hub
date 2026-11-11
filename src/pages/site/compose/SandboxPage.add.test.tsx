@@ -76,8 +76,18 @@ async function openAdd(phone: boolean) {
   return phone ? within(opened) : null;
 }
 
+/** F40: the five on the first screen; every other type sits under More types, opened first. */
+const FIRST_SCREEN = /^(Prompt|Agent|Tool|File|Dataset)\b/;
+async function openMore(phone: boolean, sheet: ReturnType<typeof within> | null, name: RegExp) {
+  if (FIRST_SCREEN.test(name.source.replace(/^\^/, ""))) return;
+  if (sheet) fireEvent.click(sheet.getByRole("button", { name: /^More types/ }));
+  else fireEvent.click(await screen.findByTestId("add-more-types"));
+  void phone;
+}
+
 async function choose(phone: boolean, name: RegExp) {
   const sheet = await openAdd(phone);
+  await openMore(phone, sheet, name);
   if (sheet) fireEvent.click(sheet.getByRole("button", { name }));
   else fireEvent.click(await screen.findByRole("menuitem", { name }));
 }
@@ -168,6 +178,7 @@ describe.each([
     // CA-24 P2: an empty build shows "Add your first session". The Build panel's head is the sign the page has loaded (UX-02 P7).
     await screen.findByTestId("sandbox-build-head-row", undefined, { timeout: 10_000 });
     const sheet = await openAdd(phone);
+    await openMore(phone, sheet, /^Check/);
     const row = sheet ? sheet.getByRole("button", { name: /^Check/ }) : await screen.findByRole("menuitem", { name: /^Check/ });
     const disabled = row.hasAttribute("disabled") || row.getAttribute("aria-disabled") === "true";
     if (disabled) {
