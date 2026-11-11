@@ -465,7 +465,7 @@ describe("the Table without the rail", () => {
     const dialog = screen.getByRole("dialog", { name: "Filters" });
     expect(within(dialog).getByTestId("builds-filters")).toBeTruthy();
     expect(within(dialog).getByRole("checkbox", { name: /Sales/ })).toBeTruthy();
-    fireEvent.click(within(dialog).getByRole("button", { name: "Done" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("dialog")).toBeNull();
     await waitFor(() => expect(document.activeElement).toBe(button));
   });

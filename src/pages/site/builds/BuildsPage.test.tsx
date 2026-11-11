@@ -37,6 +37,7 @@ const getClassificationFacets = vi.fn();
 const getGalleryFacets = vi.fn();
 const getCountSpread = vi.fn();
 const getWorksOnModelCounts = vi.fn();
+const countBuildsTable = vi.fn();
 vi.mock("@/lib/build/gallery", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/build/gallery")>()),
   listBuildsTable: (...args: unknown[]) => listBuildsTable(...args),
@@ -46,6 +47,7 @@ vi.mock("@/lib/build/gallery", async (importOriginal) => ({
   getGalleryFacets: () => getGalleryFacets(),
   getCountSpread: () => getCountSpread(),
   getWorksOnModelCounts: () => getWorksOnModelCounts(),
+  countBuildsTable: (...args: unknown[]) => countBuildsTable(...args),
 }));
 
 import { emptyClassification } from "@/lib/classify/facets";
@@ -61,9 +63,12 @@ const build = (n: number) => ({
 });
 
 let address = "";
+/** BF-08: every history entry the page has been on, by its key, to count the navigations. */
+let entries: string[] = [];
 function Where() {
   const location = useLocation();
   address = `${location.pathname}${location.search}`;
+  if (!entries.includes(location.key)) entries.push(location.key);
   return null;
 }
 
@@ -87,10 +92,15 @@ async function openFilters(group?: string) {
   if (group) fireEvent.click(await screen.findByRole("button", { name: new RegExp(`^${group}`) }));
 }
 function closeFilters() {
-  fireEvent.click(screen.getByRole("button", { name: "Done" }));
+  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+}
+/** BF-08: the dialog's choices are a draft; Apply writes them to the address once and closes it. */
+function applyFilters() {
+  fireEvent.click(screen.getByRole("button", { name: "Apply" }));
 }
 
 beforeEach(() => {
+  entries = [];
   globalThis.ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} } as unknown as typeof ResizeObserver;
   window.matchMedia = ((query: string) => ({ matches: query.includes("min-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined, addListener: () => undefined, removeListener: () => undefined, onchange: null, dispatchEvent: () => false })) as unknown as typeof window.matchMedia;
   report.mockReset();
@@ -108,6 +118,8 @@ beforeEach(() => {
   getCountSpread.mockResolvedValue(null);
   getWorksOnModelCounts.mockReset();
   getWorksOnModelCounts.mockResolvedValue(null);
+  countBuildsTable.mockReset();
+  countBuildsTable.mockResolvedValue(1);
   auth.user = null;
   localStorage.clear();
   for (const fn of Object.values(sets)) fn.mockReset();
@@ -176,10 +188,11 @@ describe("BuildsPage", () => {
     expect(within(screen.getByRole("navigation", { name: "View" })).getByRole("link", { name: "Classification" }).getAttribute("aria-current")).toBe("page");
   });
 
-  it("writes a checked value to the address, and the list follows it", async () => {
+  it("writes a checked value to the address on Apply, and the list follows it", async () => {
     renderAt("/builds");
     await openFilters();
     fireEvent.click(await screen.findByRole("checkbox", { name: /Education/ }));
+    applyFilters();
     await waitFor(() => expect(address).toBe("/builds?f=field%3Aeducation"));
     await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ facets: ["field:education"] })));
   });
@@ -246,7 +259,7 @@ describe("BuildsPage", () => {
       expect(screen.getByRole("region", { name: "Sessions" })).toBeTruthy();
     });
 
-    it("writes a range to the address, replacing the entry so dragging leaves one step in history, and the list follows", async () => {
+    it("writes a range to the address on Apply, and the list follows", async () => {
       getCountSpread.mockResolvedValue(SPREAD);
       listBuildsTable.mockResolvedValue({ countsLive: true, builds: [counted(1, 4, 1)], total: 1 });
       renderAt("/builds");
@@ -254,9 +267,9 @@ describe("BuildsPage", () => {
       const from = await screen.findByRole("slider", { name: "Steps from" });
       from.focus();
       fireEvent.keyDown(from, { key: "ArrowRight" });
+      applyFilters();
       await waitFor(() => expect(address).toBe("/builds?steps=1-"));
       await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ ranges: { steps: { min: 1 } } })));
-      closeFilters();
       expect(await screen.findByRole("button", { name: "Remove filter Steps" })).toBeTruthy();
     });
 
@@ -288,14 +301,15 @@ describe("BuildsPage", () => {
       renderAt("/builds");
       await openFilters("Proof");
       fireEvent.click(await screen.findByRole("checkbox", { name: /Within 30 days/ }));
+      applyFilters();
       await waitFor(() => expect(address).toBe("/builds?within=30"));
       await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ confirmedWithin: 30 })));
+      await openFilters("Proof");
       fireEvent.click(screen.getByRole("checkbox", { name: /Within 30 days/ }));
-      await waitFor(() => expect(address).toBe("/builds"));
       fireEvent.click(screen.getByRole("checkbox", { name: /Stale, not confirmed in 120 days/ }));
+      applyFilters();
       await waitFor(() => expect(address).toBe("/builds?state=stale"));
       await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ confirmedState: "stale" })));
-      closeFilters();
       expect(await screen.findByRole("button", { name: "Remove filter Confirmed or stale" })).toBeTruthy();
     });
 
@@ -306,9 +320,9 @@ describe("BuildsPage", () => {
       renderAt("/builds");
       await openFilters("Proof");
       fireEvent.click(await screen.findByRole("checkbox", { name: /Opus 5.5/ }));
+      applyFilters();
       await waitFor(() => expect(address).toBe("/builds?model=opus-5-5"));
       await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ worksOn: "opus-5-5" })));
-      closeFilters();
       expect(await screen.findByRole("button", { name: "Remove filter Works on" })).toBeTruthy();
     });
 
@@ -438,7 +452,6 @@ describe("SV-24 P2: the reader's layout", () => {
     const before = sectionNames();
     expect(before.slice(0, 2)).toEqual(["Field", "Autonomy"]);
     fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
-    await waitFor(() => expect(address).toBe("/builds?f=field%3Aeducation"));
     expect(sectionNames()).toEqual(before);
     expect(stored()).toBeNull();
     first.unmount();
@@ -567,8 +580,8 @@ describe("BF-02 the updating state", () => {
     listBuildsTable.mockReturnValueOnce(next.answer);
     await openFilters();
     fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
+    applyFilters();
     await waitFor(() => expect(address).toBe("/builds?f=field%3Aeducation"));
-    closeFilters();
     await waitFor(() => expect(screen.getByRole("region", { name: "Builds table" }).getAttribute("aria-busy")).toBe("true"));
     expect(screen.getByRole("link", { name: "Build 1" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Build 2" })).toBeTruthy();
@@ -651,5 +664,121 @@ describe("BF-02 one Clear all", () => {
     const empty = await screen.findByTestId("builds-empty");
     expect(within(empty).getByText("No builds here yet.")).toBeTruthy();
     expect(within(empty).queryByRole("button")).toBeNull();
+  });
+});
+
+/* ── BF-08 P2 (A2) ── */
+
+describe("BF-08 draft and Apply", () => {
+  it("ticking values in the dialog does not change the address or ask for the list", async () => {
+    renderAt("/builds?sort=newest");
+    await screen.findByRole("link", { name: "Build 1" });
+    const asked = listBuildsTable.mock.calls.length;
+    await openFilters();
+    fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Law/ }));
+    expect((screen.getByRole("checkbox", { name: /Education/ }) as HTMLInputElement).checked).toBe(true);
+    await waitFor(() => expect(countBuildsTable).toHaveBeenCalled());
+    expect(address).toBe("/builds?sort=newest");
+    expect(listBuildsTable).toHaveBeenCalledTimes(asked);
+    expect(entries).toHaveLength(1);
+  });
+
+  it("the footer says how many builds will match the draft", async () => {
+    countBuildsTable.mockResolvedValue(4);
+    renderAt("/builds");
+    await openFilters();
+    const status = within(screen.getByRole("dialog", { name: "Filters" })).getByRole("status");
+    expect(status.textContent).toBe("2 builds match");
+    fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
+    await waitFor(() => expect(status.textContent).toBe("4 builds match"));
+    expect(countBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ facets: ["field:education"] }));
+  });
+
+  it("Apply navigates once with every draft filter, keeps the view and the sort, and closes the dialog", async () => {
+    renderAt("/builds?view=classification&sort=newest");
+    await screen.findByTestId("builds-classification");
+    const asked = listBuildsTable.mock.calls.length;
+    await openFilters();
+    fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Law/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^Proof/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Within 30 days/ }));
+    applyFilters();
+    await waitFor(() => expect(new URLSearchParams(address.split("?")[1]).getAll("f")).toEqual(["field:education", "field:law"]));
+    const query = new URLSearchParams(address.split("?")[1]);
+    expect([query.get("view"), query.get("sort"), query.get("within")]).toEqual(["classification", "newest", "30"]);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(entries).toHaveLength(2);
+    await waitFor(() => expect(listBuildsTable).toHaveBeenCalledTimes(asked + 1));
+  });
+
+  it("Cancel, Close and Escape discard the draft", async () => {
+    renderAt("/builds");
+    await screen.findByRole("link", { name: "Build 1" });
+    for (const close of [
+      () => closeFilters(),
+      () => fireEvent.click(screen.getByRole("button", { name: "Close" })),
+      () => fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" }),
+    ]) {
+      await openFilters();
+      fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
+      close();
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+      await openFilters();
+      expect((screen.getByRole("checkbox", { name: /Education/ }) as HTMLInputElement).checked).toBe(false);
+      closeFilters();
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    }
+    expect(address).toBe("/builds");
+  });
+
+  it("reopening after Apply starts from the applied filters", async () => {
+    renderAt("/builds");
+    await openFilters();
+    fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
+    applyFilters();
+    await waitFor(() => expect(address).toBe("/builds?f=field%3Aeducation"));
+    await openFilters();
+    expect((screen.getByRole("checkbox", { name: /Education/ }) as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole("button", { name: "Apply" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("Clear all in the dialog clears the draft only; the address changes on Apply", async () => {
+    renderAt("/builds?f=field%3Alaw&sort=newest");
+    await openFilters();
+    const dialog = screen.getByRole("dialog", { name: "Filters" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Clear all" }));
+    expect((screen.getByRole("checkbox", { name: /Law/ }) as HTMLInputElement).checked).toBe(false);
+    expect(address).toBe("/builds?f=field%3Alaw&sort=newest");
+    applyFilters();
+    await waitFor(() => expect(address).toBe("/builds?sort=newest"));
+  });
+
+  it("with no change, Apply is disabled", async () => {
+    renderAt("/builds");
+    await openFilters();
+    expect((screen.getByRole("button", { name: "Apply" }) as HTMLButtonElement).disabled).toBe(true);
+    /* Nothing changed: the dialog says the page's own total and asks for no count (the first screen is as it was). */
+    expect(countBuildsTable).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
+    expect((screen.getByRole("button", { name: "Apply" }) as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
+    expect((screen.getByRole("button", { name: "Apply" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("dragging a range handle updates the address of nothing and asks for one count when the handle is let go", async () => {
+    getCountSpread.mockResolvedValue({ steps: new Map([[2, 4]]), sessions: new Map() });
+    listBuildsTable.mockResolvedValue({ countsLive: true, builds: [build(1)], total: 1 });
+    renderAt("/builds");
+    await openFilters("Structure");
+    const from = await screen.findByRole("slider", { name: "Steps from" });
+    from.focus();
+    // A key press is a change and a commit at once, as a handle let go is.
+    fireEvent.keyDown(from, { key: "ArrowRight" });
+    await waitFor(() => expect(countBuildsTable).toHaveBeenCalledTimes(1));
+    expect(countBuildsTable).toHaveBeenCalledWith(expect.objectContaining({ ranges: { steps: { min: 1 } } }));
+    expect(address).toBe("/builds");
+    expect(entries).toHaveLength(1);
   });
 });

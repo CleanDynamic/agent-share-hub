@@ -166,7 +166,8 @@ test.describe("/builds filters", () => {
     expect(widths.scroll).toBeLessThanOrEqual(widths.client);
   });
 
-  test("mobile: Filters opens a full screen dialog, and Done closes it", async ({ page }, testInfo) => {
+  // BF-08 put Cancel and Apply in the footer in place of Done.
+  test("mobile: Filters opens a full screen dialog, and Cancel closes it", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "mobile", "mobile project only");
     await open(page, "/builds", answerWithBuilds);
     await page.getByRole("button", { name: /^Filters/ }).click();
@@ -178,7 +179,7 @@ test.describe("/builds filters", () => {
     expect(Math.round(box!.y)).toBe(0);
     expect(Math.round(box!.width)).toBe(viewport.width);
     expect(Math.abs(box!.height - viewport.height)).toBeLessThanOrEqual(1);
-    await dialog.getByRole("button", { name: "Done" }).click();
+    await dialog.getByRole("button", { name: "Cancel" }).click();
     await expect(dialog).toBeHidden();
   });
 

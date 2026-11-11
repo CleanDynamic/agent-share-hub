@@ -27,6 +27,8 @@ export interface BuildsFiltersDialogProps {
   footer?: ReactNode;
   /** Drawn in the header between the title and Close (BF-07: the search and the order control). */
   headerExtra?: ReactNode;
+  /** BF-08: called each time the dialog opens. */
+  onOpen?: () => void;
 }
 
 /** The content's frame. Exported because jsdom drops `min()` and `dvh` from an inline style, so the test reads it here. */
@@ -53,7 +55,7 @@ export const dialogFrame = (phone: boolean): CSSProperties => ({
       }),
 });
 
-export function BuildsFiltersDialog({ open, onOpenChange, children, footer, headerExtra }: BuildsFiltersDialogProps) {
+export function BuildsFiltersDialog({ open, onOpenChange, children, footer, headerExtra, onOpen }: BuildsFiltersDialogProps) {
   const phone = useIsPhone();
   /* The button that opened the dialog is not a Radix Trigger (each view draws its own), so the dialog remembers what had
      focus as it opened and gives focus back to it as it closes. */
@@ -67,6 +69,7 @@ export function BuildsFiltersDialog({ open, onOpenChange, children, footer, head
           style={dialogFrame(phone)}
           onOpenAutoFocus={() => {
             opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+            onOpen?.();
           }}
           onCloseAutoFocus={(event) => {
             event.preventDefault();

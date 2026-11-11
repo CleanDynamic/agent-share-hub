@@ -1509,6 +1509,42 @@ async function listBuildsTableRows(options: BuildsTableOptions, reviews: boolean
 }
 
 /**
+ * BF-08: how many builds the Table's filters match, as one exact head request: the list's base, its filters
+ * (`applyTableFilters`), its lens and its review filter, with no rows and no runs. Exact, because the number is shown in full
+ * beside the list's own exact total (the dialog's "n builds match", the lens counts while a filter is on). Asked again
+ * without the stored counts when they are missing, as the list is.
+ */
+export function countBuildsTable(options: BuildsTableOptions = {}): Promise<number> {
+  return withReviewFilter((reviews) => countBuildsTableRows(options, reviews));
+}
+
+async function countBuildsTableRows(options: BuildsTableOptions, reviews: boolean): Promise<number> {
+  const lens: GalleryLens = GALLERY_LENSES.includes(options.lens as GalleryLens) ? (options.lens as GalleryLens) : "all";
+  const search = await feedSearchClause(options.query, true);
+  const now = new Date();
+
+  const request = (withCounts: boolean) => {
+    let query = (supabase as unknown as { from: (table: string) => { select: (columns: string, options: { count: "exact"; head: true }) => TableQuery } })
+      .from("builds")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["published", "gallery"])
+      .or(galleryPredicate());
+    query = applyTableFilters(query, options, { lens, now, withCounts, search });
+    return leaveOutReviews(applyLensFilters(query, lens), reviews);
+  };
+
+  let withCounts = !countColumnsMissing;
+  let answer = await request(withCounts);
+  if (answer.error && withCounts && isMissingColumn(answer.error)) {
+    countColumnsMissing = true;
+    withCounts = false;
+    answer = await request(withCounts);
+  }
+  if (answer.error) throw buildLayerError("countBuildsTable", answer.error);
+  return answer.count ?? 0;
+}
+
+/**
  * SV-23 P1: how many published builds sit at each value of a number filter (a value above the filter's cap is counted at the cap),
  * for the panel's histograms. One request, started with the list. `null` when the function is not there yet or the read failed:
  * the filters it draws are then not drawn.

@@ -23,7 +23,7 @@ let answer: (own: Recorded[]) => { count: number | null; error: unknown } = () =
 function builder() {
   const id = (builders += 1);
   const self: Record<string, unknown> = {};
-  for (const method of ["select", "in", "or", "eq", "gte", "order", "limit", "range", "overlaps"]) {
+  for (const method of ["select", "in", "or", "eq", "gte", "lt", "lte", "contains", "order", "limit", "range", "overlaps"]) {
     self[method] = (...args: unknown[]) => {
       calls.push({ method, args, builder: id });
       return self;
@@ -51,7 +51,11 @@ import {
   GALLERY_LENSES,
   GALLERY_THRESHOLD,
   GALLERY_SHAPES,
+  countBuildsTable,
   countGalleryLenses,
+  listBuildsTable,
+  resetBuildsCountColumns,
+  resetReviewColumn,
   getGalleryShapeFacets,
   getGalleryStats,
   listGallery,
@@ -305,3 +309,38 @@ describe("listGallery's shape filter (UI-P28)", () => {
   });
 });
 
+
+/* ── BF-08 P2 (A2) ── */
+
+describe("countBuildsTable", () => {
+  const OPTIONS = { lens: "proven" as const, facets: ["field:law", "stack:claude-code"], shapes: ["agent"], pattern: "router" as never, stillOpen: true, ranges: { steps: { min: 5, max: 30 } }, confirmedWithin: 30, confirmedState: "stale" as const, worksOn: "opus-5-5" };
+  /** The filters a request sent: everything but the table, the columns, the order, the page and the runs embed's window. */
+  const predicates = (own: Recorded[]) =>
+    own.filter((call) => !["from", "select", "order", "limit", "range"].includes(call.method) && call.args[0] !== "build_reproductions.confirmed_at").map((call) => [call.method, ...call.args]);
+
+  beforeEach(() => {
+    resetBuildsCountColumns();
+    resetReviewColumn();
+  });
+
+  it("countBuildsTable applies the same filters as the list and asks for an exact head count", async () => {
+    await listBuildsTable(OPTIONS);
+    const list = predicates(callsOf(1));
+    calls = [];
+    builders = 0;
+    answer = () => ({ count: 7, error: null });
+    await expect(countBuildsTable(OPTIONS)).resolves.toBe(7);
+    const own = callsOf(1);
+    expect(named(own, "select")[0]).toEqual(["id", { count: "exact", head: true }]);
+    expect(predicates(own)).toEqual(list);
+    expect(list.length).toBeGreaterThan(8);
+    expect(named(own, "range")).toEqual([]);
+  });
+
+  it("countBuildsTable asks again without the stored counts when they are missing", async () => {
+    answer = (own) => (named(own, "gte").some((args) => args[0] === "step_count") ? { count: null, error: { code: "42703", message: "column builds.step_count does not exist" } } : { count: 3, error: null });
+    await expect(countBuildsTable({ ranges: { steps: { min: 2 } } })).resolves.toBe(3);
+    expect(calls.filter((call) => call.method === "from")).toHaveLength(2);
+    expect(named(callsOf(2), "gte").some((args) => args[0] === "step_count")).toBe(false);
+  });
+});

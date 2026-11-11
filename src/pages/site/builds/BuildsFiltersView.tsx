@@ -13,6 +13,7 @@ import * as SliderPrimitive from "@radix-ui/react-slider";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
+import { Button } from "@/components/brand/Button";
 import { Checkbox } from "@/components/brand/Checkbox";
 import { Glyph } from "@/components/brand/Glyph";
 import { useIsPhone } from "@/components/shell/useMinWidth";
@@ -134,6 +135,17 @@ export interface BuildsFiltersViewProps {
   /** BF-07 (A7): one order for every checklist, chosen in the dialog's header. */
   order: "az" | "count";
   onOrder: (order: "az" | "count") => void;
+  /** BF-08 (A2): the choices are a draft; Apply commits them once. `dirty`: the draft differs from what is applied. */
+  dirty: boolean;
+  /** How many builds the draft (or, while nothing changed, the page) matches; null while the count is on its way. */
+  matchCount: number | null;
+  onApply: () => void;
+  /** Cancel, Close and Escape: the draft is dropped. */
+  onCancel: () => void;
+  /** Clear all in the dialog: the draft's filters, not the page's. */
+  onClear: () => void;
+  /** The dialog opened: the draft starts from what is applied. */
+  onOpen: () => void;
   onRange?: (sectionId: string, value: readonly [number, number]) => void;
   onToggleSegment?: (sectionId: string, key: string) => void;
 }
@@ -318,7 +330,9 @@ function Histogram({ bars, height }: { bars: RangeSection["histogram"]; height: 
 }
 
 function RangeFilter({ section, label, onChange }: { section: RangeSection; label?: string; onChange?: (value: readonly [number, number]) => void }) {
-  const [low, high] = section.value;
+  /* BF-08: while a handle is held the slider shows where it is; the filter changes once, when it is let go. */
+  const [live, setLive] = useState<readonly [number, number] | null>(null);
+  const [low, high] = live ?? section.value;
   // BF-05 (G3): the thumb is a 24 by 24 transparent hit area holding the 12px dot. The shared focus outline is drawn inside the
   // round thumb (`data-ring-inset`, 4px in), so it circles the dot and not the hit area; the dot keeps its own halo.
   const thumb: CSSProperties = { display: "grid", placeItems: "center", width: 24, height: 24, borderRadius: 12, background: "transparent", outline: "none" };
@@ -340,7 +354,11 @@ function RangeFilter({ section, label, onChange }: { section: RangeSection; labe
           step={1}
           minStepsBetweenThumbs={0}
           value={[low, high]}
-          onValueChange={(value) => onChange?.([value[0], value[1]])}
+          onValueChange={(value) => setLive([value[0], value[1]])}
+          onValueCommit={(value) => {
+            onChange?.([value[0], value[1]]);
+            setLive(null);
+          }}
           style={{ position: "relative", display: "flex", alignItems: "center", height: 14, margin: "4px -6px 0", touchAction: "none", userSelect: "none" }}
         >
           <SliderPrimitive.Track style={{ position: "relative", flexGrow: 1, height: 2, margin: "0 6px", borderRadius: 1, background: t.label }}>
@@ -487,23 +505,51 @@ export function BuildsFiltersView(props: BuildsFiltersBodyProps) {
     header and the body reach it, and is cleared when the dialog closes. */
 export function BuildsFilters({ open, onOpenChange, ...props }: BuildsFiltersViewProps & { open: boolean; onOpenChange: (open: boolean) => void }) {
   const [search, setSearch] = useState("");
+  /* Close, Escape and Cancel drop the draft; Apply commits it. Either way the search goes. */
   const close = (next: boolean) => {
-    if (!next) setSearch("");
-    onOpenChange(next);
+    if (next) return onOpenChange(true);
+    props.onCancel();
+    setSearch("");
+    onOpenChange(false);
+  };
+  const apply = () => {
+    props.onApply();
+    setSearch("");
+    onOpenChange(false);
   };
   return (
     <BuildsFiltersDialog
       open={open}
       onOpenChange={close}
+      onOpen={props.onOpen}
       headerExtra={
         <>
           <FilterSearch value={search} onChange={setSearch} />
           <OrderValues order={props.order} onOrder={props.onOrder} />
         </>
       }
+      footer={<FiltersFooter matchCount={props.matchCount} dirty={props.dirty} onClear={props.onClear} onCancel={() => close(false)} onApply={apply} />}
     >
       <BuildsFiltersView {...props} search={search} />
     </BuildsFiltersDialog>
+  );
+}
+
+/** BF-08 (A2): how many builds the draft matches, then Clear all, Cancel and Apply (the dialog's one primary). */
+function FiltersFooter({ matchCount, dirty, onClear, onCancel, onApply }: { matchCount: number | null; dirty: boolean; onClear: () => void; onCancel: () => void; onApply: () => void }) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+      <span role="status" style={text(12.5, 400, t.text2)}>
+        {matchCount === null ? "" : `${matchCount} ${matchCount === 1 ? "build matches" : "builds match"}`}
+      </span>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <BuildsTextButton onClick={onClear}>Clear all</BuildsTextButton>
+        <BuildsControl onClick={onCancel}>Cancel</BuildsControl>
+        <Button variant="primary" size={32} fontSize={12} disabled={!dirty} onClick={onApply}>
+          Apply
+        </Button>
+      </div>
+    </div>
   );
 }
 
