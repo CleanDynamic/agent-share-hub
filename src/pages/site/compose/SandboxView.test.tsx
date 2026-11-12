@@ -256,10 +256,12 @@ describe("the refined look (UI-P93)", () => {
       </MemoryRouter>,
     );
 
-  it("draws the title row under a hairline, 34 in at the sides: the title and its status line at the left, Card and Preview as secondary 28 and Publish as the one primary 28 (CA-17 P6)", () => {
+  it("draws the title row under a hairline, 32 in at the sides (F75, F76): the title and its status line at the left, Card and Preview as secondary 28 and Publish as the one primary 28 (CA-17 P6)", () => {
     view();
     const row = screen.getByTestId("sandbox-tabrow");
-    expect(row.getAttribute("style") ?? "").toContain("padding: 10px 33px 0px 137px");
+    expect(row.getAttribute("style") ?? "").toContain("padding: 10px 31px 0px 31px");
+    // F18: it stays under the site header, on the surface's own tone, below dialogs and menus.
+    expect(row.getAttribute("style") ?? "").toContain("position: sticky; top: 48px; z-index: 10");
     expect(screen.getByRole("heading", { level: 1 }).getAttribute("style")).toMatch(/font-size:\s*20px/);
     const publish = screen.getByRole("button", { name: "Publish" });
     expect(publish.getAttribute("data-variant")).toBe("primary");
@@ -302,19 +304,20 @@ describe("the refined look (UI-P93)", () => {
     expect(within(screen.getByTestId("sandbox-tabrow")).getByRole("heading", { level: 1 })).toBeTruthy();
   });
 
-  it("puts Sources on the surface, 216 wide, with a hairline on its right", () => {
+  it("puts Sources on the surface, 256 wide, with no rule on its right (S34, D6)", () => {
     const html = markup();
-    expect(html).toContain("flex:0 0 216px;width:216px;box-sizing:border-box;padding-right:24px;border-right:1px solid var(--hairline)");
-    expect(html).toContain("flex:0 1 640px;width:640px");
+    expect(html).toContain("flex:0 0 256px;width:256px;box-sizing:border-box");
+    expect(html).not.toContain("border-right:1px solid var(--hairline)");
+    expect(html).toContain("flex:0 1 680px;width:680px");
   });
 
   it("CA-18b: stands the three columns where frameOf puts them at 1440, not in a row", () => {
     const html = markup();
     // Window 1440: Build 640 from 400, Sources 216 from 144, Details 1080 wide room 320. The surface's 6, its border and the 34 are taken off.
-    expect(html).toContain("left:137px;width:216px");
-    expect(html).toContain('<div style="margin-left:359px">');
-    expect(html).toContain("left:1073px;width:320px");
-    expect(html).toContain("position:relative;display:block;padding:32px 34px 0");
+    expect(html).toContain("left:31px;width:256px");
+    expect(html).toContain('<div style="margin-left:287px">');
+    expect(html).toContain("left:1031px;width:360px");
+    expect(html).toContain("position:relative;display:block;padding:32px 32px 0");
   });
 
   // UX-02 P7: one way to add at each level. The Build header's Add is gone, on a computer and on a phone; a step is added

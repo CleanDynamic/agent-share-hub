@@ -11,7 +11,7 @@ import { BASE } from "@/lib/theme/motion";
 
 import { BUILD_ACTIONS, SandboxView, type SandboxViewProps } from "./SandboxView";
 import { OVERLAY_FOOT_COPY, OVERLAY_PANEL_PAD, OVERLAY_WIDTH, TABLET_MAX } from "./detailsRecipes";
-import { frameOf, innerWidthOf } from "./detailsLayout";
+import { ORIGIN, frameOf, innerWidthOf } from "./detailsLayout";
 
 function stubWidth(px: number) {
   vi.stubGlobal("matchMedia", (query: string) => {
@@ -75,8 +75,8 @@ describe("the panel", () => {
     expect(slot.parentElement).toBe(columns);
     const frame = frameOf(innerWidthOf(1024));
     expect(frame.beside).toBe(false);
-    // Its right edge is the box's: Build's, where Details is not beside it; the columns area starts 7 in from the window's edge.
-    expect(parseFloat(slot.style.left) + 300 + 7).toBe(frame.boxRight);
+    // Its right edge is the box's: Build's, where Details is not beside it; the columns area starts ORIGIN (9, S35) in from the window's edge.
+    expect(parseFloat(slot.style.left) + 300 + ORIGIN).toBe(frame.boxRight);
     expect(slot.style.top).toBe("0px");
     expect(slot.style.bottom).toBe("0px");
     expect(slot.style.pointerEvents).toBe("none");
@@ -120,7 +120,8 @@ describe("the panel", () => {
     view(1152);
     expect(screen.getByTestId("details-foot").textContent).toBe("Tap to edit");
     cleanup();
-    view(1240);
+    // F62: Details is beside the build from 1240, so the overlay's widest window is 1232.
+    view(1232);
     expect(screen.getByTestId("details-foot").textContent).toBe("Click to edit");
   });
 
