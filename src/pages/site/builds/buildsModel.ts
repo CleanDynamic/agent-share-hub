@@ -1,11 +1,11 @@
 /* SV-11: Builds' words and shapes, pure: what the list is asked for, and how a row, a filter and the head are put. */
 
-import { BUILDS_TABLE_PAGE_SIZE, GALLERY_SHAPES, confirmedCutoff, madeWithSpellings, stackSpellings, hasFilters, type LensCountFilters, type BuildsTableBuild, type CountSpread, type WorksOnModelCount, type BuildsTableOptions, type BuildsTablePage, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
+import { BUILDS_TABLE_PAGE_SIZE, GALLERY_SHAPES, confirmedCutoff, hasFilters, type LensCountFilters, type BuildsTableBuild, type CountSpread, type WorksOnModelCount, type BuildsTableOptions, type BuildsTablePage, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
 import { CONFIRMED_WITHIN, DEFAULT_GALLERY_SORT, type ConfirmedState, type ConfirmedWithin, type GalleryParams } from "@/lib/build/galleryParams";
 import { RANGE_FILTERS, RANGE_KEYS, rangeWords, type NumberRange, type RangeKey } from "@/lib/build/galleryRanges";
 import { PATTERN_LABEL, type Pattern } from "@/lib/build/patterns";
 import { STALE_AFTER_DAYS, isStale } from "@/lib/build/signals";
-import { computeFacets, shownValues } from "@/lib/classify/facets";
+import { shownValues } from "@/lib/classify/facets";
 import { labelFor } from "@/lib/classify/lines";
 import { FACET_LABEL, TAXONOMY, valueOf, type Facet } from "@/lib/classify/taxonomy";
 import { modelById, modelKeysOf, modelLabel } from "@/lib/models/registry";
@@ -701,9 +701,10 @@ export function nextSort(params: GalleryParams, column: ColumnId, allLoaded: boo
 /** Load all stops here: beyond it, every filter must match. */
 export const MATCH_LOAD_LIMIT = 200;
 
-/** The filters the browser can decide by the database's own rule, from the row (Part 0's table). Sessions (the row hides a stored
-    0) and Still open (another column) are required: they stay ANDed on the server and are not counted. */
-export const COUNTABLE: ReadonlySet<string> = new Set([...PANEL_FACETS, "stack", "shape", "pattern", "within", "state", "model", "reproductions", "rebuilds", "likes", "steps"]);
+/** The filters the browser can decide by the database's own rule, from the row (Part 0's table). Required, ANDed on the server and
+    not counted: the facets and Tools and stack (builds.facets is a snapshot taken at save time, not provably what computeFacets
+    gives the row's classification today, BF-02 A4), Sessions (the row hides a stored 0) and Still open (another column). */
+export const COUNTABLE: ReadonlySet<string> = new Set(["shape", "pattern", "within", "state", "model", "reproductions", "rebuilds", "likes", "steps"]);
 
 /** The countable filters that hold a value. */
 export const countableIds = (params: GalleryParams): string[] => activeFilterIds(params).filter((id) => COUNTABLE.has(id));
@@ -747,17 +748,7 @@ export function meets(build: BuildsTableBuild, id: string, params: GalleryParams
     const count = value(build);
     return typeof count === "number" && (range.min === undefined || count >= range.min) && (range.max === undefined || count <= range.max);
   }
-  /* A facet: builds.facets is computeFacets(classification), written on every save; the stack also matches made_with. */
-  const facets = build.classifiedAs ? computeFacets(build.classifiedAs) : [];
-  const keys = keysOf(params.facets ?? [], id as Facet);
-  if (id === "stack") {
-    const tool = madeWithSpellings(params.tool);
-    const byTool = tool.length === 0 || build.madeWith.some((name) => tool.includes(name));
-    const spellings = stackSpellings(keys);
-    const byKeys = keys.length === 0 || keys.some((key) => facets.includes(key)) || build.madeWith.some((name) => spellings.includes(name));
-    return byTool && byKeys;
-  }
-  return keys.some((key) => facets.includes(key));
+  return false;
 }
 
 /** How many of the countable filters that hold a value a build meets. */
@@ -772,5 +763,5 @@ export function matchChoices(params: GalleryParams): number[] {
 /** The address with every countable filter and the match taken out: what the list is asked for while match applies. */
 export function requiredOnly(params: GalleryParams): GalleryParams {
   const ranges = params.ranges?.sessions ? { sessions: params.ranges.sessions } : undefined;
-  return { ...params, facets: undefined, tool: undefined, shapes: undefined, pattern: undefined, within: undefined, state: undefined, model: undefined, ranges, match: undefined };
+  return { ...params, shapes: undefined, pattern: undefined, within: undefined, state: undefined, model: undefined, ranges, match: undefined };
 }

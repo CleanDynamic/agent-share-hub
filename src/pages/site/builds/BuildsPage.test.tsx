@@ -1112,17 +1112,17 @@ describe("BF-12 a second key with Shift", () => {
 
 describe("BF-14 match some conditions", () => {
   const field = (id: string) => ({ ...emptyClassification(), declared: { ...emptyClassification().declared, field: [{ id }] } });
-  /** Three candidates: law+agent+9 steps (3 of 3), law+app+40 steps (1 of 3), education+agent+9 steps (2 of 3). */
+  /** Three candidates: router+agent+9 steps (3 of 3), router+app+40 steps (1 of 3), no pattern+agent+9 steps (2 of 3). */
   const candidates = [
-    { ...build(1), classifiedAs: field("law"), shape: "agent", stepCount: 9 },
-    { ...build(2), classifiedAs: field("law"), shape: "app", stepCount: 40 },
-    { ...build(3), classifiedAs: field("education"), shape: "agent", stepCount: 9 },
+    { ...build(1), classifiedAs: field("law"), patterns: ["router"], shape: "agent", stepCount: 9 },
+    { ...build(2), classifiedAs: field("law"), patterns: ["router"], shape: "app", stepCount: 40 },
+    { ...build(3), classifiedAs: field("education"), patterns: [], shape: "agent", stepCount: 9 },
   ];
-  const THREE = "f=field%3Alaw&shape=agent&steps=5-30";
+  const THREE = "shape=agent&pattern=router&steps=5-30";
   /** The list answers the required-only ask with the candidates, and the ANDed ask with the one build that meets all three. */
   const answer = (more = false) =>
-    listBuildsTable.mockImplementation(async (options: { facets: string[] }) =>
-      options.facets.length === 0 ? { countsLive: true, builds: more ? Array.from({ length: 50 }, (_, at) => ({ ...candidates[at % 3], id: `c${at}`, slug: `c${at}`, title: `Candidate ${at}` })) : candidates, total: more ? 120 : 3 } : { countsLive: true, builds: [candidates[0]], total: 1 },
+    listBuildsTable.mockImplementation(async (options: { shapes: string[] }) =>
+      options.shapes.length === 0 ? { countsLive: true, builds: more ? Array.from({ length: 50 }, (_, at) => ({ ...candidates[at % 3], id: `c${at}`, slug: `c${at}`, title: `Candidate ${at}` })) : candidates, total: more ? 120 : 3 } : { countsLive: true, builds: [candidates[0]], total: 1 },
     );
   const titles = () => screen.getAllByRole("link", { name: /^(Build|Candidate) \d+$/ }).map((link) => link.textContent);
 
@@ -1132,7 +1132,7 @@ describe("BF-14 match some conditions", () => {
     await screen.findByRole("link", { name: "Build 1" });
     expect(listBuildsTable).toHaveBeenCalledTimes(1);
     expect(listBuildsTable.mock.calls[0][0]).toEqual({
-      lens: "all", facets: ["field:law"], tool: undefined, shapes: ["agent"], pattern: undefined, stillOpen: false, query: undefined,
+      lens: "all", facets: [], tool: undefined, shapes: ["agent"], pattern: "router", stillOpen: false, query: undefined,
       ranges: { steps: { min: 5, max: 30 } }, confirmedWithin: undefined, confirmedState: undefined, worksOn: undefined, sort: "reproduced", ascending: false, offset: 0,
     });
     expect(titles()).toEqual(["Build 1"]);
@@ -1142,7 +1142,7 @@ describe("BF-14 match some conditions", () => {
     answer();
     renderAt(`/builds?${THREE}&match=2`);
     await waitFor(() => expect(titles()).toEqual(["Build 1", "Build 3"]));
-    expect(listBuildsTable).toHaveBeenCalledWith(expect.objectContaining({ lens: "all", facets: [], shapes: [], ranges: undefined, offset: 0 }));
+    expect(listBuildsTable).toHaveBeenCalledWith(expect.objectContaining({ lens: "all", shapes: [], pattern: undefined, ranges: undefined, offset: 0 }));
   });
 
   it('the head reads "<shown> of <published> builds" from the rows shown', async () => {
@@ -1162,12 +1162,12 @@ describe("BF-14 match some conditions", () => {
     const asked = listBuildsTable.mock.calls.length;
     fireEvent.click(screen.getByRole("button", { name: "Load all" }));
     await waitFor(() => expect(listBuildsTable.mock.calls.length).toBeGreaterThan(asked));
-    expect(listBuildsTable).toHaveBeenCalledWith(expect.objectContaining({ facets: [], offset: 50 }));
+    expect(listBuildsTable).toHaveBeenCalledWith(expect.objectContaining({ shapes: [], offset: 50 }));
   });
 
   it("the dialog's footer shows the Match control only with two or more countable filters in the draft, and the match count follows it", async () => {
     answer();
-    renderAt("/builds?f=field%3Alaw&open=1");
+    renderAt("/builds?f=field%3Alaw&shape=agent&open=1");
     await screen.findByRole("link", { name: "Build 1" });
     await openFilters();
     expect(screen.queryByRole("button", { name: /^Builds must match/ })).toBeNull();
@@ -1192,11 +1192,11 @@ describe("BF-14 match some conditions", () => {
     answer();
     renderAt(`/builds?${THREE}&match=2`);
     const chips = await screen.findByRole("group", { name: "Active filters" });
-    expect(within(chips).getByRole("button", { name: "Remove filter Field" })).toBeTruthy();
+    expect(within(chips).getByRole("button", { name: "Remove filter Shape" })).toBeTruthy();
     expect(chips.textContent).toContain("Match");
     expect(chips.textContent).toContain("at least 2 of 3");
     fireEvent.click(within(chips).getByRole("button", { name: "Remove filter Match" }));
-    await waitFor(() => expect(address).toBe("/builds?shape=agent&f=field%3Alaw&steps=5-30"));
+    await waitFor(() => expect(address).toBe("/builds?shape=agent&pattern=router&steps=5-30"));
     await waitFor(() => expect(titles()).toEqual(["Build 1"]));
   });
 });

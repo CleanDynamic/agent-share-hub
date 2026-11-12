@@ -1414,21 +1414,15 @@ const quoted = (value: string): string => `"${value.replace(/[,()"\\{}]/g, " ").
 
 /** SV-11: the Tools and stack keys as one clause: the build carries one of the keys, or `made_with` names one of the tools. */
 export function stackClause(keys: readonly string[]): string {
-  const spellings = stackSpellings(keys);
-  const clauses = [`facets.ov.{${keys.map(quoted).join(",")}}`];
-  if (spellings.length > 0) clauses.push(`made_with.ov.{${spellings.map(quoted).join(",")}}`);
-  return clauses.join(",");
-}
-
-/** The made_with spellings of the tools a set of Tools and stack keys name (BF-14: the browser's match reads the same list). */
-export function stackSpellings(keys: readonly string[]): string[] {
   const spellings = new Set<string>();
   for (const key of keys) {
     const id = key.slice(key.indexOf(":") + 1);
     const tool = toolFor(valueOf("stack", id)?.label ?? null);
     if (tool) for (const spelling of [tool.name, ...tool.aliases]) spellings.add(spelling);
   }
-  return [...spellings];
+  const clauses = [`facets.ov.{${keys.map(quoted).join(",")}}`];
+  if (spellings.size > 0) clauses.push(`made_with.ov.{${[...spellings].map(quoted).join(",")}}`);
+  return clauses.join(",");
 }
 
 interface BuildsTableRow {

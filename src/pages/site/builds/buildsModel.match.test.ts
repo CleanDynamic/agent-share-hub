@@ -20,17 +20,10 @@ const build = (over: Partial<BuildsTableBuild> = {}): BuildsTableBuild => ({
 const inField = (id: string) => ({ ...emptyClassification(), declared: { ...emptyClassification().declared, field: [{ id }] } });
 
 describe("meets, one filter at a time, as the database decides it", () => {
-  it("a facet: the build's computed facets hold one of the chosen keys (an OR within the facet)", () => {
-    const p = params("f=field%3Alaw&f=field%3Aeducation");
-    expect(meets(build({ classifiedAs: inField("law") }), "field", p, NOW)).toBe(true);
-    expect(meets(build({ classifiedAs: inField("medicine") }), "field", p, NOW)).toBe(false);
-    expect(meets(build(), "field", p, NOW)).toBe(false);
-  });
-
-  it("Tools and stack: made_with names the tool (tool=), as madeWithSpellings", () => {
-    const p = params("tool=claude-code");
-    expect(meets(build({ madeWith: ["Claude Code"] }), "stack", p, NOW)).toBe(true);
-    expect(meets(build({ madeWith: ["Cursor"] }), "stack", p, NOW)).toBe(false);
+  it("a facet and Tools and stack are not countable: they stay required on the server", () => {
+    expect(COUNTABLE.has("field")).toBe(false);
+    expect(COUNTABLE.has("stack")).toBe(false);
+    expect(meets(build({ classifiedAs: inField("law") }), "field", params("f=field%3Alaw"), NOW)).toBe(false);
   });
 
   it("Shape: one of the chosen shapes", () => {
@@ -81,25 +74,25 @@ describe("meets, one filter at a time, as the database decides it", () => {
 
 describe("counting", () => {
   it("conditionsMet counts the filters a build meets, among those that hold a value and can be evaluated", () => {
-    const p = params("f=field%3Alaw&shape=agent&steps=5-30&sessions=1-&open=1");
-    expect(conditionsMet(build({ classifiedAs: inField("law"), shape: "app", stepCount: 9 }), p, NOW)).toBe(2);
+    const p = params("f=field%3Alaw&shape=agent&steps=5-30&pattern=router&sessions=1-&open=1");
+    expect(conditionsMet(build({ classifiedAs: inField("law"), shape: "app", stepCount: 9, patterns: ["router"] }), p, NOW)).toBe(2);
     expect(COUNTABLE.has("sessions")).toBe(false);
     expect(COUNTABLE.has("open")).toBe(false);
   });
 
   it("matchChoices: with m countable filters on, the choices are All and m-1 down to 1; with fewer than two, there is no choice", () => {
-    expect(matchChoices(params("f=field%3Alaw&shape=agent&steps=5-30"))).toEqual([3, 2, 1]);
-    expect(matchChoices(params("f=field%3Alaw&open=1&sessions=1-"))).toEqual([]);
+    expect(matchChoices(params("pattern=router&shape=agent&steps=5-30"))).toEqual([3, 2, 1]);
+    expect(matchChoices(params("f=field%3Alaw&tool=claude-code&shape=agent&open=1&sessions=1-"))).toEqual([]);
     expect(matchChoices(params(""))).toEqual([]);
   });
 
   it("requiredOnly keeps the lens, the sort, the search and the required filters, and drops the countable ones and match", () => {
     const p = params("lens=proven&f=field%3Alaw&tool=claude-code&shape=agent&steps=5-30&sessions=1-&open=1&sort=newest&match=2&q=notes");
-    expect(galleryHref(requiredOnly(p))).toBe("/builds?lens=proven&open=1&sessions=1-&sort=newest&q=notes");
+    expect(galleryHref(requiredOnly(p))).toBe("/builds?lens=proven&tool=claude-code&f=field%3Alaw&open=1&sessions=1-&sort=newest&q=notes");
   });
 
   it('one extra chip reads "Match · at least 2 of 3", and removing it returns to All', () => {
-    const p = params("f=field%3Alaw&shape=agent&steps=5-30&match=2");
+    const p = params("pattern=router&shape=agent&steps=5-30&match=2");
     expect(activeChips(p).find((chip) => chip.key === "match")).toEqual({ key: "match", name: "Match", value: "at least 2 of 3" });
     expect(withoutChip(p, "match").match).toBeUndefined();
   });
