@@ -244,14 +244,14 @@ describe("in Details", () => {
   it("ends the panel: after its own sections and after Add details, with a rule above", () => {
     render(details("rf-c4"));
     const panel = screen.getByTestId("details-panel");
-    // UX-02 P9: Add details stands where the Not set line stood.
+    // UX-02 P9: Add details; F71: in the head, beside Edit, so it comes before the references.
     const notSet = screen.getByTestId("details-add");
     const refs = screen.getByTestId("details-refs");
     expect(notSet.compareDocumentPosition(refs) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(panel.lastElementChild?.contains(refs) || panel.querySelector('[data-testid="details-refs"]') === refs).toBe(true);
-    // The rule is the sections' own (SECTION_BREAK): 22, a 1px hairline, 22. jsdom drops a shorthand with a variable, so the rule itself is checked in the browser.
-    expect(refs.style.marginTop).toBe("22px");
-    expect(refs.style.paddingTop).toBe("22px");
+    // The rule is the sections' own (SECTION_BREAK): 24, a 1px hairline, 24 (F70). jsdom drops a shorthand with a variable, so the rule itself is checked in the browser.
+    expect(refs.style.marginTop).toBe("24px");
+    expect(refs.style.paddingTop).toBe("24px");
     for (const section of screen.getAllByTestId("details-section")) expect(section.compareDocumentPosition(refs) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 

@@ -166,16 +166,33 @@ describe("the sections", () => {
     expect(link.textContent).toBe("2Write the menu· PromptSession 1");
   });
 
-  it("separate a section from the one before: 22, a 1px rule, 22; the first has none", () => {
+  it("puts a rule above every section, the first too: 24, a 1px rule, 24 (F70)", () => {
     panel();
     const [first, second] = screen.getAllByTestId("details-section");
-    expect(first.style.marginTop).toBe("");
-    expect(second.style.marginTop).toBe("22px");
-    expect(second.style.paddingTop).toBe("22px");
+    for (const section of [first, second]) {
+      expect(section.style.marginTop).toBe("24px");
+      expect(section.style.paddingTop).toBe("24px");
+    }
     const html = renderToStaticMarkup(<DetailsPanel {...baseProps()} view={tileView("prompt", "full")} />);
     const sections = html.match(/<section[^>]*data-testid="details-section"[^>]*>/g) ?? [];
-    expect(sections[0]).not.toContain("border-top");
+    expect(sections[0]).toContain("border-top:1px solid var(--hairline)");
     expect(sections[1]).toContain("border-top:1px solid var(--hairline)");
+  });
+
+  it("puts the meta line space[1] under its heading and the content space[3] under that (F70)", () => {
+    panel();
+    const count = screen.getAllByTestId("details-count")[0];
+    expect(count.style.marginTop).toBe("4px");
+    const value = (count.closest('[data-testid="details-section"]') as HTMLElement).lastElementChild as HTMLElement;
+    expect(value.style.marginTop).toBe("12px");
+  });
+
+  it("puts Add details in the head, beside Edit (F71)", () => {
+    panel({ view: tileView("prompt", "empty"), onEdit: vi.fn() });
+    const head = screen.getByTestId("details-head");
+    const add = screen.getByTestId("details-add");
+    expect(head.contains(add)).toBe(true);
+    expect(add.nextElementSibling).toBe(screen.getByTestId("details-action"));
   });
 });
 
