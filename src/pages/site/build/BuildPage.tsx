@@ -159,6 +159,7 @@ import { ReplayBody } from "./ReplayBody";
 import { ResultFrame } from "./ResultFrame";
 import { RunDialog, type RunSubmission } from "./RunDialog";
 import { LayerSteps, RunBody } from "./RunBody";
+import { PageBreadcrumb } from "@/components/shell/Breadcrumb";
 
 /** A build record does not change while a reader is looking at it. */
 const STALE_TIME = 60_000;
@@ -339,7 +340,17 @@ const WHERE_NEXT_STALE = 5 * STALE_TIME;
 
 /* ── the page ── */
 
+/** Page shell: this page's h1 is in its own head, not a PageHeader, so its breadcrumb is drawn before it. */
 export function BuildPage() {
+  return (
+    <>
+      <PageBreadcrumb />
+      <BuildPageBody />
+    </>
+  );
+}
+
+function BuildPageBody() {
   const { slug = "" } = useParams<{ slug: string }>();
   const { user, isLoggedIn } = useAuth();
   const navigate = useNavigate();

@@ -20,6 +20,7 @@ import { FIGTREE } from "@/lib/theme/type";
 import type { Crumb } from "./breadcrumbTrail";
 import { FrameLink } from "./FrameLink";
 import { useBreadcrumb } from "./useBreadcrumb";
+import { useIsPhone } from "./useMinWidth";
 
 /* WCAG 2.5.8: an ancestor link's target is 24 high. The line it stands on is 19, so the extra 5 is taken back by a
    margin and the breadcrumb keeps its height. */
@@ -96,5 +97,15 @@ function BreadcrumbContainer() {
    re-renders the frame around it) never re-renders the chrome. It updates on
    its own hooks only. */
 export const Breadcrumb = memo(BreadcrumbContainer);
+
+/** Page shell: the breadcrumb where the frame used to draw it, first in `<main>` on desktop, for a page with a parent whose
+    `h1` is not in a PageHeader (the build reader, the rebuild, the lineage). */
+export function PageBreadcrumb() {
+  return useIsPhone() ? null : (
+    <div data-slot="breadcrumb">
+      <Breadcrumb />
+    </div>
+  );
+}
 
 export default Breadcrumb;

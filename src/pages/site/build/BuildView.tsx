@@ -115,6 +115,7 @@ export interface BuildViewProps {
 export { BOTTOM_ROW, BuildViewSkeleton, dropped, HERO_ROW, heroRow, bottomRow, MOCK_ROWS, ProofSkeleton } from "./BuildViewSkeleton";
 import { creditLine } from "@/lib/build/contributors";
 import { BOTTOM_ROW, dropped, HERO_ROW, heroRow, bottomRow, MOCK_ROWS, pair, ProofSkeleton, side, wide } from "./BuildViewSkeleton";
+import { PAGE_TITLE } from "@/components/shell/PageHeader";
 
 /** The phone shows this many parts before "Show n more parts". */
 export const PHONE_PARTS = 6;
@@ -466,7 +467,7 @@ export function BuildViewNotice({ line, detail, action }: { line: string; detail
   return (
     <Panel padding="24px 24px">
       <div data-testid="build-notice" role="status" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
-        <h1 style={{ ...display(30), margin: 0, color: t.text }}>{line}</h1>
+        <h1 style={PAGE_TITLE}>{line}</h1>
         {detail ? <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.55, color: t.text2, maxWidth: "68ch" }}>{detail}</p> : null}
         {action}
       </div>
@@ -732,7 +733,7 @@ function Hero({
           <Mark size={24} />
         </span>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, flexGrow: 1 }}>
-          <h1 style={{ ...text(20, 500, t.text), margin: 0, letterSpacing: "-0.015em", overflowWrap: "anywhere" }}>{hero.title}</h1>
+          <h1 style={{ ...PAGE_TITLE, overflowWrap: "anywhere" }}>{hero.title}</h1>
           <SummaryLine summary={hero.summary} />
           {hero.outcome ? (
             <p style={{ ...text(13, 400, t.text2), margin: 0, maxWidth: 680, lineHeight: "20px" }}>{hero.outcome}</p>
@@ -940,7 +941,7 @@ function ThreadHero({
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 320px", minWidth: 0 }}>
-          <h1 style={{ ...text(20, 500, t.text), lineHeight: 1.3, margin: 0, letterSpacing: "-0.015em", overflowWrap: "anywhere" }}>{hero.title}</h1>
+          <h1 style={{ ...PAGE_TITLE, overflowWrap: "anywhere" }}>{hero.title}</h1>
           <SummaryLine summary={hero.summary} />
           {hero.outcome ? <p style={{ ...text(13, 400, t.text2), margin: 0, maxWidth: 680, lineHeight: "20px" }}>{hero.outcome}</p> : null}
           {/* An original build's byline carries the credit; a rebuild keeps its source line. */}
