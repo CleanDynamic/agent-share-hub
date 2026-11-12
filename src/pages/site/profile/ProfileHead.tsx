@@ -22,6 +22,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { linkHostOf, type MetaPart, type RecordPart } from "./profileFeedModel";
+import { PAGE_TITLE } from "@/components/shell/PageHeader";
 
 export interface HeadCrop {
   x: number;
@@ -206,7 +207,7 @@ export function ProfileHead(props: ProfileHeadProps) {
           </div>
         </div>
 
-        <h1 style={{ margin: "12px 0 0", fontFamily: FIGTREE, fontSize: 20, fontWeight: 500, lineHeight: 1.2, color: t.text, overflowWrap: "anywhere" }}>{props.name}</h1>
+        <h1 style={{ ...PAGE_TITLE, margin: "12px 0 0", overflowWrap: "anywhere" }}>{props.name}</h1>
 
         {props.meta.length > 0 ? (
           <div data-testid="profile-meta" style={{ marginTop: 4, fontSize: 12.5, lineHeight: 1.4, color: t.label, fontVariantNumeric: "tabular-nums" }}>

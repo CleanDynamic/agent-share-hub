@@ -18,6 +18,7 @@ import { FIGTREE } from "@/lib/theme/type";
 import { ProfileFeed, type ProfileFeedProps } from "./ProfileFeed";
 import { ProfileHead, type ProfileHeadProps } from "./ProfileHead";
 import { ProfileSide, SIDE_WIDTH, type ProfileSideProps } from "./ProfileSide";
+import { PAGE_TITLE } from "@/components/shell/PageHeader";
 
 /** The feed column's width. */
 export const FEED_COLUMN = 620;
@@ -82,7 +83,7 @@ export function ProfileLoadFailed({ onRetry, error }: { onRetry: () => void; err
 export function ProfileNotice({ line, detail, action }: { line: string; detail?: string; action?: ReactNode }) {
   return (
     <div data-testid="profile-notice" role="status" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "32px 0", textAlign: "center" }}>
-      <h1 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 20, fontWeight: 500, color: t.text }}>{line}</h1>
+      <h1 style={PAGE_TITLE}>{line}</h1>
       {detail ? <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>{detail}</p> : null}
       {action ? <div style={{ marginTop: 8 }}>{action}</div> : null}
     </div>
