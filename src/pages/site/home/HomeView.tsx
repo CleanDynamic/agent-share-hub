@@ -14,18 +14,19 @@
 
 import { PriorityImageScope } from "@/components/post/media/priorityImage";
 import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { Plus } from "lucide-react";
 
 import { Avatar } from "@/components/brand/Avatar";
 import { EmptyState } from "@/components/brand/EmptyState";
 import { ErrorState, type PanelFailure } from "@/components/brand/ErrorState";
 import { Glyph } from "@/components/brand/Glyph";
+import { IconButton } from "@/components/brand/IconButton";
 import { LampBar } from "@/components/brand/LampDot";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { Plaque } from "@/components/brand/Plaque";
 import { FeedPost } from "@/components/gallery/FeedPost";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import { PageHeader } from "@/components/shell/PageHeader";
-import { useIsPhone } from "@/components/shell/useMinWidth";
 import { EngagementRow } from "@/components/social/EngagementRow";
 import { PostCard } from "@/components/post/PostCard";
 import { ReplyAnatomy } from "@/pages/site/openbuilds/PostReplies";
@@ -49,7 +50,6 @@ import {
   HomePrimary,
   Rule,
   SectionBones,
-  SquareButton,
   ellipsis,
   text,
   useHomeLayout,
@@ -285,7 +285,6 @@ export function ContinueSection({ drafts }: { drafts: HomeViewProps["drafts"] })
 }
 
 export function SessionsSection({ sessions, onAdd }: { sessions: HomeViewProps["sessions"]; onAdd: (id: string) => void }) {
-  const phone = useIsPhone();
   if (sessions.status === "loading") return <SectionBones rows={2} height={52} what="your sessions" />;
   const meta = sessions.status === "ready" ? `${sessions.data.total} imported · newest first` : undefined;
   return (
@@ -309,9 +308,7 @@ export function SessionsSection({ sessions, onAdd }: { sessions: HomeViewProps["
               <span style={{ display: "block", ...ellipsis }}>{row.title}</span>
               <span style={{ display: "block", ...mono(10.5, t.label) }}>{row.meta}</span>
             </span>
-            <SquareButton label="Add to a new build" onClick={() => onAdd(row.id)} phone={phone}>
-              <Glyph name="plus" size={12} />
-            </SquareButton>
+            <IconButton icon={Plus} drawn={<Glyph name="plus" size={12} />} label="Add to a new build" size={24} onClick={() => onAdd(row.id)} />
           </div>
         ))
       ) : (
@@ -493,7 +490,7 @@ export function NewPill({ count, onShow }: { count: number; onShow: () => void }
         data-testid="home-new-pill"
         onClick={onShow}
         {...handlers}
-        style={{ height: 28, padding: "0 12px", background: state.hovered ? t.controlOn : t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: 14, ...text(12, 400, t.text, { lineHeight: "normal" }), cursor: "pointer", ...ring(state.focusVisible) }}
+        style={{ height: 32, padding: "0 12px", background: state.hovered ? t.controlOn : t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: 14, ...text(12, 400, t.text, { lineHeight: "normal" }), cursor: "pointer", ...ring(state.focusVisible) }}
       >
         {`${count} new since you looked`}
       </button>

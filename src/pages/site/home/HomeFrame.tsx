@@ -12,16 +12,16 @@
 
 import type { CSSProperties, ReactNode } from "react";
 
+import { Button } from "@/components/brand/Button";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { PAGE_GUTTER, pageColumns } from "@/components/shell/pageGrid";
 import { useMinWidth } from "@/components/shell/useMinWidth";
 import { PageLink as Link } from "@/lib/routing/PageLink";
 import { ring } from "@/lib/theme/controls";
-import { TOUCH_MIN } from "@/lib/theme/density";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
-import { PRIMARY, controlPaint } from "@/lib/theme/refinedControl";
+import { PRIMARY } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -93,50 +93,10 @@ export function HomeControl({
   disabled?: boolean;
   children: ReactNode;
 }) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>({}, { disabled });
   return (
-    <button
-      type="button"
-      aria-pressed={pressed}
-      disabled={disabled}
-      onClick={onClick}
-      {...handlers}
-      style={{ ...controlBase, height: 32, padding: "0 12px", fontSize: 12.5, fontWeight: 400, color: t.text, ...controlPaint(state), ...ring(state.focusVisible) }}
-    >
+    <Button variant="secondary" size={32} aria-pressed={pressed} disabled={disabled} onClick={onClick}>
       {children}
-    </button>
-  );
-}
-
-/** A 28px square control with a glyph, named for what it does. On a phone its hit area reaches 44. */
-export function SquareButton({ label, onClick, phone, children }: { label: string; onClick: () => void; phone: boolean; children: ReactNode }) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={onClick}
-      {...handlers}
-      style={{
-        boxSizing: "content-box",
-        width: 28,
-        height: 28,
-        padding: phone ? (TOUCH_MIN - 28) / 2 : 0,
-        margin: phone ? (28 - TOUCH_MIN) / 2 : 0,
-        display: "grid",
-        placeItems: "center",
-        background: "none",
-        border: 0,
-        borderRadius: r.control,
-        color: t.text,
-        cursor: "pointer",
-        ...ring(state.focusVisible),
-      }}
-    >
-      <span aria-hidden="true" style={{ boxSizing: "border-box", width: 28, height: 28, display: "grid", placeItems: "center", borderRadius: r.control, ...controlPaint(state) }}>
-        {children}
-      </span>
-    </button>
+    </Button>
   );
 }
 

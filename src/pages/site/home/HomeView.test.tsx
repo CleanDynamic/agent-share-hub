@@ -36,6 +36,19 @@ function narrow(px: number) {
 beforeEach(() => narrow(1440));
 afterEach(() => vi.unstubAllGlobals());
 
+describe("HomeView · control heights", () => {
+  it("draws Show more as the shared Button at 32 / 12, and a draft row's add button as a 24 icon button", () => {
+    mount({ feed: { ...visionHomeProps().feed, hasMore: true, onMore: vi.fn() } });
+    const more = screen.getByRole("button", { name: "Show more" });
+    expect(more.getAttribute("data-ui")).toBe("button");
+    expect([more.style.height, more.style.padding]).toEqual(["32px", "0px 12px"]);
+    const add = screen.getAllByRole("button", { name: "Add to a new build" })[0];
+    expect(add.getAttribute("data-ui")).toBe("icon-button");
+    expect([add.style.width, add.style.height]).toEqual(["24px", "24px"]);
+    expect(screen.getByTestId("home-new-pill").style.height).toBe("32px");
+  });
+});
+
 describe("HomeView · the three columns", () => {
   it("draws the studio, the feed and the room, each section under its own heading", () => {
     mount();
