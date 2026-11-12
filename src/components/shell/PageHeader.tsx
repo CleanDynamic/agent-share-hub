@@ -111,8 +111,10 @@ export function PageHeader({ eyebrow, title, description, actions, breadcrumb }:
               display: "flex",
               flexWrap: "wrap",
               alignItems: "center",
-              /* On the title's line: a taller control is centred on it and does not push the title down. */
+              /* On the title's line: a taller control is centred on it and does not push the title down. The slot wraps, so
+                 its line is centred too (alignContent), not only the items in it. */
               height: 24,
+              alignContent: "center",
               gap: SPACE_COMPACT.xs,
               /* Never the element that makes the row wider than the column:
                  the actions wrap inside themselves before the row wraps. */
