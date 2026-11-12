@@ -6,12 +6,13 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
+import { space } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 
 import type { DetailsPlan } from "./DetailsPanel";
 import { layoutDetails, type DetailsLayout, type Measured } from "./detailsLayout";
 
-/** Sticky, 16 below the 52 header. */
+/** Sticky, 16 below the 52 header, where the page gives no `top`. */
 export const ASIDE_TOP = 68;
 /** Details' bottom stays this far inside the window. */
 const BOTTOM_ROOM = 24;
@@ -31,6 +32,10 @@ export interface DetailsAsideProps {
   windowHeight: number;
   render: (plan?: DetailsPlan) => ReactNode;
   label?: string;
+  /** F67: where it sticks, under the composer's fixed title row. */
+  top?: number;
+  /** F62: the panel's header (Hide details), drawn above the content inside the sticky panel. */
+  head?: ReactNode;
 }
 
 function measureAt(host: HTMLElement, width: number): Measured {
@@ -42,15 +47,16 @@ function measureAt(host: HTMLElement, width: number): Measured {
   return { head: height("head"), foot: height("foot"), sections };
 }
 
-export function DetailsAside({ inner, windowHeight, render, label = "Details" }: DetailsAsideProps) {
+export function DetailsAside({ inner, windowHeight, render, label = "Details", top: stuck = ASIDE_TOP, head }: DetailsAsideProps) {
   const row = useRef<HTMLDivElement>(null);
   const host = useRef<HTMLDivElement>(null);
+  const headRef = useRef<HTMLDivElement>(null);
   const [shown, setShown] = useState<Shown | null>(null);
-  const [top, setTop] = useState(ASIDE_TOP);
-  const key = `${inner}x${windowHeight}x${top}`;
+  const [top, setTop] = useState(stuck);
+  const key = `${inner}x${windowHeight}x${top}x${stuck}`;
 
   useLayoutEffect(() => {
-    const at = row.current ? Math.round(row.current.getBoundingClientRect().top + (window.scrollY || 0)) : ASIDE_TOP;
+    const at = row.current ? Math.round(row.current.getBoundingClientRect().top + (window.scrollY || 0)) : stuck;
     if (at !== top) setTop(at);
     const node = host.current;
     if (!node) return;
@@ -59,7 +65,7 @@ export function DetailsAside({ inner, windowHeight, render, label = "Details" }:
       setShown(null);
       return;
     }
-    const height = Math.max(320, windowHeight - at - BOTTOM_ROOM);
+    const height = Math.max(320, windowHeight - Math.max(at, stuck) - BOTTOM_ROOM - (headRef.current?.offsetHeight ?? 0));
     const body = node.querySelector('[data-testid="details-measure"]');
     const measured = (width: number) => measureAt(node, width);
     const layout = body ? layoutDetails({ inner, height, measure: measured }) : null;
@@ -83,13 +89,18 @@ export function DetailsAside({ inner, windowHeight, render, label = "Details" }:
         data-scrolls={layout?.scrolls ? "true" : undefined}
         style={{
           position: "sticky",
-          top: ASIDE_TOP,
-          maxHeight: Math.max(320, windowHeight - Math.max(top, ASIDE_TOP) - BOTTOM_ROOM),
+          top: stuck,
+          maxHeight: Math.max(320, windowHeight - Math.max(top, stuck) - BOTTOM_ROOM),
           overflowY: layout?.scrolls ? "auto" : "visible",
           boxSizing: "border-box",
           color: t.text,
         }}
       >
+        {head ? (
+          <div ref={headRef} data-testid="details-aside-head" style={{ display: "flex", justifyContent: "flex-end", marginBottom: space[2] }}>
+            {head}
+          </div>
+        ) : null}
         <div ref={host} style={{ width }}>
           {render(shown ? shown.plan : MEASURING)}
         </div>

@@ -25,8 +25,8 @@
 import { DEPLOYMENT_GROUP_HEAD, deploymentMenuEntries, type DeploymentKind } from "@/lib/build/deployment";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import * as Popover from "@radix-ui/react-popover";
-import { MoreHorizontal, X } from "lucide-react";
-import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { MoreHorizontal, PanelRightClose, PanelRightOpen, X } from "lucide-react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/brand/Button";
@@ -58,7 +58,7 @@ import { ClickToEdit, DetailsOverlay, useTouchPanel } from "./DetailsOverlay";
 import { DetailsAside, useWindowSize } from "./DetailsAside";
 import type { DetailsPlan } from "./DetailsPanel";
 import { COMPOSER_PAD, HEAD_GAP, OVERLAY_WIDTH } from "./detailsRecipes";
-import { ORIGIN, frameOf, innerWidthOf } from "./detailsLayout";
+import { ORIGIN, SOURCES_WIDTH, frameOf, innerWidthOf } from "./detailsLayout";
 import { bareButton, menuItem, menuSurface, moduleStyle, text, tnum, wellField } from "./refinedStyles";
 import type { PartLabels } from "@/lib/build/making";
 import type { ComposePublished, ComposeStatus } from "./ComposeView";
@@ -293,6 +293,10 @@ export const listHint = (phone: boolean): string | null => (phone ? LIST_HINT_PH
 /** The columns start this far under the title row. */
 const COLUMNS_TOP = 32;
 export const DETAILS_EMPTY = "Select a step to see its details";
+/** F62 (decision D7): the right panel's collapse and the way back. */
+export const DETAILS_TOGGLE_COPY = { hide: "Hide details", show: "Show details" } as const;
+/** F67: Details sticks this far under the title row's foot, as the columns start under it. */
+const DETAILS_BELOW_ROW = COLUMNS_TOP;
 
 /** "3 sessions · 12 prompts · 2 files", leaving out any zero. */
 export function countsLine(counts: SandboxCounts): string {
@@ -1006,7 +1010,7 @@ function SourcesFrame({
         gap: 20,
         ...(overlay
           ? { ...moduleStyle(), background: t.window, borderColor: t.windowBorder, boxShadow: t.windowShadow }
-          : { flex: "0 0 216px", width: 216, boxSizing: "border-box", paddingRight: 24, borderRight: `1px solid ${t.hairline}` }),
+          : /* S34: 256 wide; D6: no rule between the columns. */ { flex: `0 0 ${SOURCES_WIDTH}px`, width: SOURCES_WIDTH, boxSizing: "border-box" }),
       }}
     >
       {titled || overlay ? (
@@ -1114,6 +1118,20 @@ function SandboxBody(props: SandboxViewProps) {
   const tabsRef = useRef<HTMLDivElement>(null);
   /* CA-22 P7: List and Map morph into one another (a computer only; the hook does nothing where motion is off). */
   const morph = useLensMorph({ lens: props.lens, onLens: props.onLens, getRoot: useCallback(() => tabsRef.current?.parentElement ?? null, []) });
+  /* F62 (decision D7): the maker hid Details. Held here only; a selection does not bring it back. */
+  const [detailsHidden, setDetailsHidden] = useState(false);
+  /* F18, F67: the title row stays under the site header; what sticks below it (Details, the find band) starts under its foot. */
+  const [rowHeight, setRowHeight] = useState(0);
+  useLayoutEffect(() => {
+    const row = tabsRef.current;
+    if (!row) return;
+    const measure = () => setRowHeight(row.offsetHeight);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(row);
+    return () => observer.disconnect();
+  }, [status, phone]);
 
   if (status === "error") {
     return (
@@ -1125,7 +1143,10 @@ function SandboxBody(props: SandboxViewProps) {
   if (status === "notFound") return <NotFound />;
 
   const untitled = isUntitled(props.title);
-  const frame = frameOf(innerWidthOf(win.width));
+  /* F62: `full` is where the columns stand with Details shown; `frame` is what is drawn, Build wider while Details is hidden. */
+  const full = frameOf(innerWidthOf(win.width));
+  const frame = frameOf(innerWidthOf(win.width), detailsHidden);
+  const stickyTop = HEADER_HEIGHT + rowHeight;
   // Map is for desktop; a phone is always the list.
   const lens: SandboxLens = phone ? "list" : props.lens;
   /* CA-18b P5: the composer is one box. The title area, the banner and the Map's row are padded in from `frameOf`'s edges. */
@@ -1307,7 +1328,7 @@ function SandboxBody(props: SandboxViewProps) {
           flexWrap: props.find?.open && !phone ? "nowrap" : "wrap",
           minWidth: 0,
           /* CA-27 P1: with Find open the row stays under the header, so the count and the buttons are in view while the page moves from match to match. */
-          ...(props.find?.open ? { position: "sticky", top: HEADER_HEIGHT, zIndex: 6, background: t.surface, padding: "6px 0", margin: "-6px 0" } : null),
+          ...(props.find?.open ? { position: "sticky", top: stickyTop, zIndex: 6, background: t.surface, padding: "6px 0", margin: "-6px 0" } : null),
         }}
       >
         <PanelTitle>Build</PanelTitle>
@@ -1461,7 +1482,7 @@ function SandboxBody(props: SandboxViewProps) {
     <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
       {/* The title row: the title and its status line at the left, then List and Map (CA-17 P6), then the actions. The tabs
           and the actions keep CA-17's measures from the rule; the row grows to hold the title. */}
-      <div data-testid="sandbox-tabrow" ref={tabsRef} style={{ ...TAB_ROW, height: "auto", minHeight: 44, gap: 16, padding: `10px ${padRight}px 0 ${padLeft}px`, flexWrap: compactRow ? "nowrap" : frame.boxRight - frame.boxLeft < 760 ? "wrap" : "nowrap" }}>
+      <div data-testid="sandbox-tabrow" ref={tabsRef} style={{ ...TAB_ROW, position: "sticky", top: HEADER_HEIGHT, zIndex: 10, background: t.surface, height: "auto", minHeight: 44, gap: 16, padding: `10px ${padRight}px 0 ${padLeft}px`, flexWrap: compactRow ? "nowrap" : frame.boxRight - frame.boxLeft < 760 ? "wrap" : "nowrap" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, flexGrow: 1, minWidth: 0, marginBottom: 12 }}>
           {heading}
           {statusLine}
@@ -1524,15 +1545,29 @@ function SandboxBody(props: SandboxViewProps) {
             </SourcesFrame>
           </div>
           <div style={{ marginLeft: frame.buildLeft - ORIGIN - COMPOSER_PAD }}>{buildColumn}</div>
-          {frame.beside ? null : (
+          {full.beside ? null : (
             /* CA-27 P4: Details where it does not fit beside the build is a panel over the composer box's right edge. */
-            <DetailsOverlay selectedKey={props.selectedKey} left={frame.boxRight - ORIGIN - OVERLAY_WIDTH} touch={touchPanel} onEdit={props.onEditSelected}>
+            <DetailsOverlay selectedKey={props.selectedKey} left={frame.boxRight - ORIGIN - OVERLAY_WIDTH} top={stickyTop} touch={touchPanel} onEdit={props.onEditSelected}>
               {detailsBody}
             </DetailsOverlay>
           )}
           {frame.beside ? (
             <div data-testid="sandbox-details-slot" style={{ position: "absolute", top: COLUMNS_TOP, bottom: 0, left: frame.detailsLeft - ORIGIN, width: frame.detailsWidth, display: "flex", alignItems: "stretch" }}>
-              <DetailsAside inner={innerWidthOf(win.width)} windowHeight={win.height} render={(plan) => (props.renderDetails ? guard("Details", props.renderDetails(plan)) : detailsBody)} />
+              <DetailsAside
+                inner={innerWidthOf(win.width)}
+                windowHeight={win.height}
+                top={stickyTop + DETAILS_BELOW_ROW}
+                head={<IconButton style={iconButtonSide()} icon={PanelRightClose} label={DETAILS_TOGGLE_COPY.hide} size={28} onClick={() => setDetailsHidden(true)} data-testid="details-hide" />}
+                render={(plan) => (props.renderDetails ? guard("Details", props.renderDetails(plan)) : detailsBody)}
+              />
+            </div>
+          ) : null}
+          {full.beside && detailsHidden ? (
+            /* F62: the way back, where Hide details stood: at the box's right edge, under the title row. */
+            <div data-testid="sandbox-details-shown-slot" style={{ position: "absolute", top: COLUMNS_TOP, bottom: 0, left: frame.boxRight - ORIGIN - size.control, width: size.control }}>
+              <div style={{ position: "sticky", top: stickyTop + DETAILS_BELOW_ROW }}>
+                <IconButton style={iconButtonSide()} icon={PanelRightOpen} label={DETAILS_TOGGLE_COPY.show} size={28} onClick={() => setDetailsHidden(false)} data-testid="details-show" />
+              </div>
             </div>
           ) : null}
         </div>

@@ -5,49 +5,47 @@
    the widths, whether Details sits beside the build, and for Details its width, its columns, which section sits in which, and
    whether it scrolls.
 
-   THE RULES (CA-18b; the boards "Details: on a 1920 window" and "Details: across window widths"). W is the window's width:
-   1. The composer's content sits 34 in from the surface's edges. The surface sits 6 in from the window, so the inner width is
+   THE RULES (editor fixes F62, S34, S35, F75; they replace CA-18b's centred Build). W is the window's width:
+   1. The composer's content sits 32 in from the surface's edges. The surface sits 8 in from the window, so the inner width is
       the window less 80 (`innerWidthOf`).
-   2. Build is `clamp(560, inner - 720, 760)` and sits in the dead centre of the window: its left edge is `(W - Build) / 2`. The
-      post shares its column. The window decides, never the selection.
-   3. Sources is 216 wide with its right edge 40 left of Build, while its left edge stays 40 or more from the window's edge
-      (windows of 1152 and up). Below that it folds to its 52 rail, 24 left of Build, and between 768 and 792 Build narrows below
-      560 as far as it needs to keep the rail 40 from the edge.
-   4. Details starts 40 right of Build and may use everything up to 40 from the window's right edge: `(inner - Build) / 2 - 40`.
-      Under 280 it is not beside the build.
+   2. Sources is 256 wide and Details 360 (`DETAILS_MAX`), each 32 from Build. Build takes what is left, up to 760. Once Build
+      is 760 the whole box (Sources, Build, Details) is centred in the window; below that it fills the inner width.
+   3. Where 360 does not leave Build its 560, Details gives up width down to 280 (`DETAILS_MIN`); under 280 it is not beside
+      the build (windows under 1240). Without Details, Build takes the room up to 760 and the box is centred again.
+   4. Where even Sources and a 560 Build do not fit (windows under 928), Sources folds to its 52 rail, 24 left of Build, and
+      Build takes the rest, up to 760.
    5. (CA-18b P5) The composer is one box. Its left edge is Sources' (or the rail's); its right edge is Details' (or Build's when
       Details is hidden). The title area sits inside it: the breadcrumb and the title start at `boxLeft`, Publish ends at
-      `boxRight`. So Details' right edge never moves with the selection: it is one fixed width per window, `min(room, 520)`,
-      at least 280. The content fills that column from the left; taller than the window, it scrolls inside. This replaces
-      CA-18's narrowest-column and multi-column fill.
-   6. The Map view has the same `boxLeft`, and the same right edge when Details is beside; under 1280, where Details is hidden,
-      its right edge is 40 from the window's edge so the map has room (`mapRight`).
+      `boxRight`. Details' right edge never moves with the selection: it is one fixed width per window. The content fills
+      that column from the left; taller than the window, it scrolls inside.
+   6. The Map view has the same `boxLeft`, and the same right edge when Details is beside; where Details is hidden, its right
+      edge is 40 from the window's edge so the map has room (`mapRight`).
+   F62 (decision D7): Details can be collapsed (`frameOf(inner, true)`). Sources and the box's right edge stay where they are;
+      Build grows to the right, up to 760, and Details is not beside.
    7. A prose section taller than the height is cut to fit, with Read all. */
 
-export const COMPOSER_INSET = 34;
+export const COMPOSER_INSET = 32;
 /** The surface sits this far from the window (SiteFrame). */
-export const SURFACE_MARGIN = 6;
+export const SURFACE_MARGIN = 8;
 /** The surface's own 1px border. */
 export const SURFACE_BORDER = 1;
 /** Where the surface's content box begins, from the window's left edge: its margin and its border. */
 export const ORIGIN = SURFACE_MARGIN + SURFACE_BORDER;
-export const SOURCES_WIDTH = 216;
-export const SOURCES_GAP = 40;
+export const SOURCES_WIDTH = 256;
+export const SOURCES_GAP = 32;
 export const RAIL_WIDTH = 52;
 export const RAIL_GAP = 24;
 export const BUILD_MIN = 560;
 export const BUILD_MAX = 760;
-/** Build is the inner width less this, between BUILD_MIN and BUILD_MAX: what the two side columns and their gaps leave. */
-export const BUILD_SIDES = 720;
 /** Build's left edge sits at least this far from the window's edge when Sources is folded to its rail. */
 export const EDGE_MIN = SURFACE_MARGIN + COMPOSER_INSET;
-/** Between Build and Details, and between Details and the window's right edge. */
-export const DETAILS_GAP = 40;
+/** Between Build and Details. */
+export const DETAILS_GAP = 32;
 export const DETAILS_MIN = 280;
-/** Details' width when the room allows. */
-export const DETAILS_MAX = 520;
-/** The space a section takes above itself when it is not first in its column: 22, a 1px rule, 22. */
-export const SEPARATION = 45;
+/** Details' width when the room allows (F62: 360 on a desktop, from windows of 1400 up). */
+export const DETAILS_MAX = 360;
+/** F70: the space every section takes above its heading: 24, a 1px rule, 24. */
+export const SEPARATION = 49;
 /** A section's label, its count and the 10 under them. */
 export const LABEL_BLOCK = 48;
 /** Read all: the button and the 10 above it. */
@@ -76,20 +74,20 @@ export interface DetailsLayoutInput {
 export interface DetailsLayout {
   /** Sources is folded to its 52 rail. */
   rail: boolean;
-  /** Sources' width, 216 or 52. */
+  /** Sources' width, 256 or 52. */
   sources: number;
-  /** The gap between Sources (or its rail) and Build: 40 or 24. */
+  /** The gap between Sources (or its rail) and Build: 32 or 24. */
   sourcesGap: number;
   build: number;
-  /** Where each column starts, from the window's left edge. Build is centred on the window. */
+  /** Where each column starts, from the window's left edge. */
   buildLeft: number;
   sourcesLeft: number;
   detailsLeft: number;
-  /** The width left for Details, after Build and the 40 between, up to 40 from the window's right edge. */
+  /** The width left for Details with Build at its 560, Sources and both gaps taken. */
   room: number;
   /** Details sits beside the build. */
   beside: boolean;
-  /** Details' fixed width for this window: `min(room, 520)`; 0 when it is not beside. */
+  /** Details' fixed width for this window: `min(room, 360)`; 0 when it is not beside. */
   detailsWidth: number;
   /** The box the composer is: Sources' (or the rail's) left edge, and Details' right edge (Build's when Details is hidden). */
   boxLeft: number;
@@ -111,23 +109,28 @@ export interface DetailsLayout {
 /** The window's width for an inner width. */
 export const windowOf = (inner: number): number => inner + 2 * (SURFACE_MARGIN + COMPOSER_INSET);
 
-/** Where the columns stand for an inner width: what depends on the window alone. */
-export function frameOf(inner: number): Pick<DetailsLayout, "rail" | "sources" | "sourcesGap" | "build" | "buildLeft" | "sourcesLeft" | "detailsLeft" | "room" | "beside" | "detailsWidth" | "boxLeft" | "boxRight" | "mapRight"> {
+/** Where the columns stand for an inner width: what depends on the window alone. `collapsed` (F62): Details is hidden by the
+    maker; Build grows to the right into its room, and the box's edges stay where they were. */
+export function frameOf(inner: number, collapsed = false): Pick<DetailsLayout, "rail" | "sources" | "sourcesGap" | "build" | "buildLeft" | "sourcesLeft" | "detailsLeft" | "room" | "beside" | "detailsWidth" | "boxLeft" | "boxRight" | "mapRight"> {
   const W = windowOf(inner);
-  const wanted = Math.min(BUILD_MAX, Math.max(BUILD_MIN, inner - BUILD_SIDES));
-  const rail = (W - wanted) / 2 - (SOURCES_WIDTH + SOURCES_GAP) < EDGE_MIN;
-  // With the rail, Build gives up width only as far as it needs to keep the rail EDGE_MIN from the window's edge.
-  const build = rail ? Math.min(wanted, W - 2 * (EDGE_MIN + RAIL_WIDTH + RAIL_GAP)) : wanted;
-  const buildLeft = (W - build) / 2;
+  const rail = inner - SOURCES_WIDTH - SOURCES_GAP < BUILD_MIN;
   const sources = rail ? RAIL_WIDTH : SOURCES_WIDTH;
   const sourcesGap = rail ? RAIL_GAP : SOURCES_GAP;
-  const room = (W - build) / 2 - SURFACE_MARGIN - COMPOSER_INSET - DETAILS_GAP;
-  const beside = room >= DETAILS_MIN;
-  const detailsWidth = beside ? Math.min(room, DETAILS_MAX) : 0;
-  const sourcesLeft = buildLeft - sourcesGap - sources;
-  const detailsLeft = buildLeft + build + DETAILS_GAP;
-  const boxRight = beside ? detailsLeft + detailsWidth : buildLeft + build;
-  return { rail, sources, sourcesGap, build, buildLeft, sourcesLeft, detailsLeft, room, beside, detailsWidth, boxLeft: sourcesLeft, boxRight, mapRight: beside ? boxRight : W - EDGE_MIN };
+  const left = sources + sourcesGap;
+  const room = inner - left - DETAILS_GAP - BUILD_MIN;
+  const fits = !rail && room >= DETAILS_MIN;
+  const detailsWidth = fits ? Math.min(room, DETAILS_MAX) : 0;
+  const right = fits ? DETAILS_GAP + detailsWidth : 0;
+  const filled = Math.min(BUILD_MAX, inner - left - right);
+  // What Build does not take is shared either side of the box.
+  const boxLeft = EDGE_MIN + (inner - left - filled - right) / 2;
+  const sourcesLeft = boxLeft;
+  const buildLeft = sourcesLeft + left;
+  const detailsLeft = buildLeft + filled + DETAILS_GAP;
+  const boxRight = buildLeft + filled + right;
+  const beside = fits && !collapsed;
+  const build = fits && collapsed ? Math.min(BUILD_MAX, boxRight - buildLeft) : filled;
+  return { rail, sources, sourcesGap, build, buildLeft, sourcesLeft, detailsLeft, room, beside, detailsWidth: beside ? detailsWidth : 0, boxLeft, boxRight, mapRight: beside ? boxRight : W - EDGE_MIN };
 }
 
 interface Fit {
@@ -140,23 +143,20 @@ function fill(measured: Measured, columns: number, height: number, cut: Record<s
   const out: string[][] = Array.from({ length: columns }, () => []);
   let at = 0;
   let used = 0;
-  let sectionsHere = 0;
   let fits = true;
   const place = (key: string, size: number, section: boolean) => {
-    // A section after another in its column has 22, a rule and 22 above it.
-    const needed = () => size + (section && sectionsHere > 0 ? SEPARATION : 0);
+    // F70: every section, the first too, has 24, a rule and 24 above it.
+    const needed = () => size + (section ? SEPARATION : 0);
     if (used + needed() > height && out[at].length > 0) {
       if (at + 1 < columns) {
         at += 1;
         used = 0;
-        sectionsHere = 0;
       } else {
         fits = false;
       }
     }
     used += needed();
     if (used > height) fits = false;
-    if (section) sectionsHere += 1;
     out[at].push(key);
   };
   place("head", measured.head, false);
@@ -164,8 +164,6 @@ function fill(measured: Measured, columns: number, height: number, cut: Record<s
   for (const section of measured.sections) if (!section.trailing) place(section.key, sized(section), true);
   if (measured.foot > 0) {
     place("foot", measured.foot, false);
-    // What follows the foot line has 22, a rule and 22 above it, as after any section.
-    sectionsHere += 1;
   }
   for (const section of measured.sections) if (section.trailing) place(section.key, sized(section), true);
   return { fits, assignment: out };

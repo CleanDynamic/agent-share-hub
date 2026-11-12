@@ -45,7 +45,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { useWindowSize } from "@/pages/site/compose/DetailsAside";
-import { ORIGIN, frameOf, innerWidthOf } from "@/pages/site/compose/detailsLayout";
+import { ORIGIN, SURFACE_MARGIN, frameOf, innerWidthOf } from "@/pages/site/compose/detailsLayout";
 import { Breadcrumb } from "./Breadcrumb";
 import { HEADER_HEIGHT } from "./chromeSize";
 import { Dock } from "./Dock";
@@ -136,6 +136,9 @@ const SURFACE: CSSProperties = {
   boxShadow: t.surfaceShadow,
 };
 
+/** S35: the composer's surface (`wide`): no 1428 cap, and SURFACE_MARGIN (8) from the window where other pages keep 6. */
+const WIDE_SURFACE: CSSProperties = { ...SURFACE, maxWidth: "none", width: `calc(100% - ${2 * SURFACE_MARGIN}px)`, margin: `0 auto ${SURFACE_MARGIN}px` };
+
 /** "Skip to content": first focusable element, off-screen until focused, targets `#main`. 36 tall, and 44 on a phone. */
 function SkipLink({ phone }: { phone: boolean }) {
   return (
@@ -224,7 +227,7 @@ export function SiteFrameView({
         {phone ? mobileHeader : header}
         {progress}
       </div>
-      <div data-ui="surface" data-wide={wide && !phone ? "true" : undefined} style={wide && !phone ? { ...SURFACE, maxWidth: "none" } : SURFACE}>
+      <div data-ui="surface" data-wide={wide && !phone ? "true" : undefined} style={wide && !phone ? WIDE_SURFACE : SURFACE}>
         <main
           id="main"
           style={{
