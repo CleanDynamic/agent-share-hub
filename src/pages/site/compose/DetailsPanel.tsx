@@ -85,7 +85,7 @@ import { Swap } from "./buildMotion";
 import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT, iconButtonSide } from "./modalRecipes";
 
 export interface InputsView {
-  /** CA-04 P2, a tile inside another: "Sent with prompt 2", which its eyebrow says in place of its number. */
+  /** CA-04 P2, a tile inside another: "Attached to prompt 2", which its eyebrow says in place of its number. */
   sentWithLine?: string;
   uses: readonly UseRow[];
   options: readonly InputOption[];
@@ -187,7 +187,7 @@ export interface FileView {
   kind: "file";
   id: string;
   number?: string;
-  /** CA-04 P2, a file sent with a step: "Sent with prompt 2". */
+  /** CA-04 P2, a file sent with a step: "Attached to prompt 2". */
   sentWithLine?: string;
   name: string;
   from: string;

@@ -21,6 +21,10 @@ import type { Crumb } from "./breadcrumbTrail";
 import { FrameLink } from "./FrameLink";
 import { useBreadcrumb } from "./useBreadcrumb";
 
+/* WCAG 2.5.8: an ancestor link's target is 24 high. The line it stands on is 19, so the extra 5 is taken back by a
+   margin and the breadcrumb keeps its height. */
+const LINK_HIT: CSSProperties = { display: "inline-flex", alignItems: "center", minHeight: 24, margin: "-3px 0" };
+
 export function BreadcrumbView({ trail }: { trail: readonly Crumb[] }) {
   const text: CSSProperties = { fontFamily: FIGTREE, fontSize: 12.5 };
   const currentWeight = 500;
@@ -68,7 +72,7 @@ export function BreadcrumbView({ trail }: { trail: readonly Crumb[] }) {
                 style={{ width: 120, height: 12, borderRadius: 4, background: t.recess, display: "inline-block" }}
               />
             ) : (
-              <FrameLink to={crumb.href} style={{ ...text, color: t.text2 }}>
+              <FrameLink to={crumb.href} style={{ ...text, color: t.text2, ...LINK_HIT }}>
                 {crumb.label}
               </FrameLink>
             )}

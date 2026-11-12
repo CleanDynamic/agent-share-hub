@@ -169,7 +169,7 @@ describe("the build page (CA-04 P2)", () => {
     const blocks = within(card).getAllByTestId("sent-with");
     expect(blocks).toHaveLength(2);
     expect(blocks.map((block) => block.style.marginLeft)).toEqual(["0px", "0px"]);
-    expect(within(blocks[0]).getAllByText("Sent with prompt 2")).toHaveLength(1);
+    expect(within(blocks[0]).getAllByText("Attached to prompt 2")).toHaveLength(1);
     expect(within(blocks[1]).getByText("menu.pdf")).toBeTruthy();
   });
 
