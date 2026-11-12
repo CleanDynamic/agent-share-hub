@@ -30,7 +30,7 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { FIGTREE, textStep } from "@/lib/theme/type";
 
 import { TextButton } from "./composeControls";
 import { fieldBase } from "./composeFields";
@@ -68,7 +68,7 @@ function RefinedChip({ chip }: { chip: MadeWithChip }) {
   return (
     <span data-testid="made-with-chip" data-on={chip.on ? "true" : "false"} style={{ display: "inline-flex" }}>
       {out ? (
-        <span style={{ display: "inline-flex", alignItems: "center", gap: space[2], height: size.tag, boxSizing: "border-box", padding: `0 ${space[2]}px`, borderRadius: r.chip, background: t.tagFill, color: t.onTag, fontFamily: FIGTREE, fontSize: 11.5, fontWeight: 500, lineHeight: 1, whiteSpace: "nowrap" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: space[2], height: size.tag, boxSizing: "border-box", padding: `0 ${space[2]}px`, borderRadius: r.chip, background: t.tagFill, color: t.onTag, fontFamily: FIGTREE, fontSize: textStep.meta, fontWeight: 500, lineHeight: 1, whiteSpace: "nowrap" }}>
           <ModelMark {...marks} size={14} />
           {chip.tool ? `${chip.tool} · ` : null}
           <s style={{ color: t.text2 }}>{chip.model}</s>
@@ -100,7 +100,7 @@ function Toggle({ chip, phone, onToggle }: { chip: MadeWithChip; phone: boolean;
         background: t.field,
         color: t.text,
         fontFamily: FIGTREE,
-        fontSize: 12,
+        fontSize: textStep.meta,
         cursor: "pointer",
         boxSizing: "border-box",
         ...ring(state.focusVisible),
@@ -150,7 +150,7 @@ function AddEntry({ phone, onAdd }: { phone: boolean; onAdd: (name: string) => v
         {...trigger.handlers}
         style={{
           fontFamily: FIGTREE,
-          fontSize: 13,
+          fontSize: textStep.body,
           color: t.text2,
           textDecoration: "underline",
           background: "transparent",
@@ -167,7 +167,7 @@ function AddEntry({ phone, onAdd }: { phone: boolean; onAdd: (name: string) => v
       <Popover.Portal>
         <Popover.Content align="start" sideOffset={6} collisionPadding={16} style={floating}>
           <form onSubmit={save} style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-            <label htmlFor={`${id}-name`} style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 600 }}>
+            <label htmlFor={`${id}-name`} style={{ fontFamily: FIGTREE, fontSize: textStep.body, fontWeight: 600 }}>
               A tool or model
             </label>
             <input
@@ -181,7 +181,7 @@ function AddEntry({ phone, onAdd }: { phone: boolean; onAdd: (name: string) => v
               style={{ ...fieldBase, height: phone ? size.touch : size.control, padding: `0 ${space[3]}px`, fontSize: phone ? 16 : 14 }}
             />
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <Button style={BUTTON_PAD} type="submit" size={phone ? 44 : 32} fontSize={13} disabled={!name.trim()}>
+              <Button style={BUTTON_PAD} type="submit" size={phone ? 44 : 32} fontSize={textStep.body} disabled={!name.trim()}>
                 Add
               </Button>
             </div>
@@ -215,7 +215,7 @@ export function MadeWithLine({ phone, chips, hasSessions, onToggle, onAdd }: Mad
 
   return (
     <div data-testid="compose-made-with" style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, fontFamily: FIGTREE, fontSize: textStep.meta, color: t.text2 }}>
         <span>Made with</span>
         {fromSessions.map((chip) => (
           <Tag key={chip.key} chip={chip} />
@@ -231,7 +231,7 @@ export function MadeWithLine({ phone, chips, hasSessions, onToggle, onAdd }: Mad
             target={phone}
             aria-expanded={open}
             onClick={flip}
-            style={{ fontSize: 12.5, color: t.text, textUnderlineOffset: 3, textDecorationColor: t.line }}
+            style={{ fontSize: textStep.meta, color: t.text, textUnderlineOffset: 3, textDecorationColor: t.line }}
           >
             {open ? "Done" : "Change"}
           </TextButton>

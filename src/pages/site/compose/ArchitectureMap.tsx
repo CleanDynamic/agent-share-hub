@@ -8,7 +8,7 @@ import { Segmented } from "@/components/brand/Segmented";
 import { layoutArchitecture, type ArchDirection } from "@/lib/build/architectureMap";
 import { mapViewOf, type MapView } from "@/lib/build/making";
 import type { NodeTree } from "@/lib/build/types";
-import { DM_MONO } from "@/lib/theme/type";
+import { DM_MONO, textStep } from "@/lib/theme/type";
 import { t } from "@/lib/theme/tokens";
 
 import { MAP_BOX, MAP_BOX_APP, MAP_BOX_TITLE, MAP_SCROLL } from "./mapRecipes";
@@ -38,13 +38,13 @@ export function ArchitectureMap({ tree, direction, onOpen }: ArchitectureMapProp
               {/* SV-28: a handoff's condition is the line's tooltip; a mention with no handoff rule is dotted. */}
               {line.when ? <title>{`${line.label} when ${line.when}`}</title> : null}
               <line x1={line.x1 + PAD} y1={line.y1 + PAD} x2={line.x2 + PAD} y2={line.y2 + PAD} stroke={t.line} strokeWidth={1} strokeDasharray={line.dotted ? "2 3" : undefined} data-testid={line.dotted ? "arch-line-dotted" : undefined} />
-              <text x={(line.x1 + line.x2) / 2 + PAD} y={(line.y1 + line.y2) / 2 + PAD - 4} textAnchor="middle" fontFamily={DM_MONO} fontSize={10} fill={t.label}>
+              <text x={(line.x1 + line.x2) / 2 + PAD} y={(line.y1 + line.y2) / 2 + PAD - 4} textAnchor="middle" fontFamily={DM_MONO} fontSize={textStep.meta} fill={t.label}>
                 {line.label}
               </text>
             </g>
           ))}
           {map.frames.map((frame) => (
-            <text key={`${frame.host}-label`} x={frame.x + PAD + 12} y={frame.y + PAD + 14} fontFamily={DM_MONO} fontSize={10} fill={t.label}>
+            <text key={`${frame.host}-label`} x={frame.x + PAD + 12} y={frame.y + PAD + 14} fontFamily={DM_MONO} fontSize={textStep.meta} fill={t.label}>
               {frame.label}
             </text>
           ))}

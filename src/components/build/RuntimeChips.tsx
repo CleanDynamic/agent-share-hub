@@ -12,6 +12,7 @@ import { t } from "@/lib/theme/tokens";
 import { ToolMark } from "@/pages/site/compose/refinedPieces";
 import { chipStyle, text } from "@/pages/site/compose/refinedStyles";
 
+import { textStep } from "@/lib/theme/type";
 export function HelperChips({ helpers, decisionName, indent = 0, style }: { helpers: readonly Helper[]; decisionName?: (id: string) => string | undefined; indent?: number; style?: CSSProperties }) {
   if (helpers.length === 0) return null;
   return (
@@ -25,7 +26,7 @@ export function HelperChips({ helpers, decisionName, indent = 0, style }: { help
               <ToolMark tool={markTool(helper.provider, helper.job)} size={14} />
               {label}
             </span>
-            {did ? <span data-testid="helper-did" style={{ ...text(11.5, 400, t.label), paddingLeft: 8 }}>{did}</span> : null}
+            {did ? <span data-testid="helper-did" style={{ ...text(textStep.meta, 400, t.label), paddingLeft: 8 }}>{did}</span> : null}
           </span>
         );
       })}
@@ -47,7 +48,7 @@ export function ShapeChip({ shape, indent = 0 }: { shape: OutputShape; indent?: 
 /** "Trace", opening in a new tab; LangSmith links get its name, any other host shows its domain. */
 export function TraceLink({ url }: { url: string }) {
   return (
-    <a data-testid="trace-link" href={url} target="_blank" rel="noopener noreferrer" style={{ ...text(12, 500, t.text2), textDecoration: "underline" }}>
+    <a data-testid="trace-link" href={url} target="_blank" rel="noopener noreferrer" style={{ ...text(textStep.meta, 500, t.text2), textDecoration: "underline" }}>
       Trace · {traceLabel(url)}
     </a>
   );

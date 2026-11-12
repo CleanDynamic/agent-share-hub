@@ -28,7 +28,7 @@ import { ManualThumb } from "@/pages/site/compose/ManualThumb";
 import { Quiet, ToolMark } from "@/pages/site/compose/refinedPieces";
 import { FindHit } from "./FindHit";
 import { ellipsis, text, tnum } from "@/pages/site/compose/refinedStyles";
-import { DM_MONO } from "@/lib/theme/type";
+import { DM_MONO, measure, textStep } from "@/lib/theme/type";
 import { BODY_LINE, DATA_LINE, FOOT_FACTS, FOOT_LINK as FOOT_LINK_STYLE, TEXT_LINK_BOX, LINK_ADDRESS, LINK_CARD, MORE_COUNT, PICTURE, PICTURES, RESPONSE_LINE, RESPONSE_WORD, STEPS, TILE_FOOT, VARIABLE } from "@/pages/site/compose/tileRecipes";
 import { size, space } from "@/lib/theme/space";
 
@@ -64,10 +64,10 @@ export function ToolTileBody({ step, indent = 0, lean = false }: { step: Step; i
       {lean ? null : (
         <div style={{ display: "flex", alignItems: "center", gap: space[2], minWidth: 0 }}>
           <ToolMark tool={name} size={20} />
-          <span style={{ ...text(13.5, 500, t.text), ...ellipsis }}>{name}</span>
+          <span style={{ ...text(textStep.body, 500, t.text), ...ellipsis }}>{name}</span>
         </div>
       )}
-      {how && !lean ? <span data-testid="tool-how" style={text(12.5, 400, t.text2)}>{how}</span> : null}
+      {how && !lean ? <span data-testid="tool-how" style={text(textStep.meta, 400, t.text2)}>{how}</span> : null}
       {step.app?.scopes ? <span data-testid="tool-scopes" style={{ ...BODY_LINE, ...(lean ? clamp(1) : null) }}>{step.app.scopes}</span> : null}
     </div>
   );
@@ -90,7 +90,7 @@ export function DecisionTileBody({ step, indent = 0, lean = false }: { step: Ste
       {lean ? null : (
         <div style={{ display: "flex", alignItems: "center", gap: space[2], minWidth: 0 }}>
           <ToolMark tool={facts.provider} size={20} />
-          <span data-testid="decision-headline" style={{ ...text(13.5, 500, t.text), ...ellipsis }}>{decisionHeadline(facts)}</span>
+          <span data-testid="decision-headline" style={{ ...text(textStep.body, 500, t.text), ...ellipsis }}>{decisionHeadline(facts)}</span>
         </div>
       )}
       {lines.map((line, index) => (
@@ -99,12 +99,12 @@ export function DecisionTileBody({ step, indent = 0, lean = false }: { step: Ste
         </span>
       ))}
       {(lean ? decisionPipelineLines(facts).slice(0, 2) : decisionPipelineLines(facts)).map((line, index) => (
-        <span key={`p${index}`} data-testid={line.kind === "limit" ? "decision-limit" : "decision-pipeline"} style={{ ...text(12.5, 400, t.text2), overflowWrap: "anywhere" }}>
+        <span key={`p${index}`} data-testid={line.kind === "limit" ? "decision-limit" : "decision-pipeline"} style={{ ...text(textStep.meta, 400, t.text2), overflowWrap: "anywhere" }}>
           {line.text}
         </span>
       ))}
       {expected.map((line, index) => (
-        <span key={`e${index}`} data-testid="decision-expected" style={{ ...text(12.5, 400, t.text2), overflowWrap: "anywhere" }}>
+        <span key={`e${index}`} data-testid="decision-expected" style={{ ...text(textStep.meta, 400, t.text2), overflowWrap: "anywhere" }}>
           {line}
         </span>
       ))}
@@ -127,9 +127,9 @@ export function RetrievalTileBody({ step, indent = 0, lean = false }: { step: St
     <div data-testid="retrieval-tile" style={{ display: "flex", flexDirection: "column", gap: space[2], paddingLeft: indent, minWidth: 0 }}>
       <span data-testid="retrieval-line" style={{ ...DATA_LINE, overflowWrap: "anywhere" }}>{retrievalLine(facts)}</span>
       {lean ? null : retrievalDetails(facts).map((line) => (
-        <span key={line} data-testid="retrieval-detail" style={{ ...text(12.5, 400, t.text2), overflowWrap: "anywhere" }}>{line}</span>
+        <span key={line} data-testid="retrieval-detail" style={{ ...text(textStep.meta, 400, t.text2), overflowWrap: "anywhere" }}>{line}</span>
       ))}
-      {source ? <span data-testid="retrieval-source" style={text(12, 400, t.label)}>{source}</span> : null}
+      {source ? <span data-testid="retrieval-source" style={text(textStep.meta, 400, t.label)}>{source}</span> : null}
     </div>
   );
 }
@@ -180,9 +180,9 @@ export function FileTileBody({ step, indent = 0, lean = false, plain = false, on
       <div data-testid="file-tile" style={{ display: "flex", flexDirection: "column", gap: space[2], paddingLeft: indent, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: space[2], minWidth: 0 }}>
           {facts.kind === "picture" && facts.mediaId ? thumb(facts.mediaId, 48) : null}
-          <span data-testid="file-name" style={{ cursor: "default", fontFamily: DM_MONO, fontSize: 12.5, fontWeight: 500, lineHeight: "normal", color: t.text, ...ellipsis }}>{facts.name}</span>
+          <span data-testid="file-name" style={{ cursor: "default", fontFamily: DM_MONO, fontSize: textStep.meta, fontWeight: 500, lineHeight: "normal", color: t.text, ...ellipsis }}>{facts.name}</span>
         </div>
-        {step.text ? <span style={{ ...text(12, 400, t.label), overflowWrap: "anywhere" }}>{step.text}</span> : null}
+        {step.text ? <span style={{ ...text(textStep.meta, 400, t.label), overflowWrap: "anywhere" }}>{step.text}</span> : null}
       </div>
     );
   }
@@ -197,7 +197,7 @@ export function FileTileBody({ step, indent = 0, lean = false, plain = false, on
         <div style={{ display: "flex", alignItems: "center", gap: space[2], minWidth: 0 }}>
           <FileMark kind={facts.kind} />
           <span style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0 }}>
-            <span style={{ cursor: "default", ...text(13.5, 500, t.text), ...ellipsis }}>{facts.name}</span>
+            <span style={{ cursor: "default", ...text(textStep.body, 500, t.text), ...ellipsis }}>{facts.name}</span>
             <Quiet>{[FILE_WORD[facts.kind], size].filter(Boolean).join(" · ")}</Quiet>
           </span>
         </div>
@@ -207,7 +207,7 @@ export function FileTileBody({ step, indent = 0, lean = false, plain = false, on
       ) : (facts.kind === "text" || facts.kind === "code" || facts.kind === "spreadsheet") && facts.preview.length > 0 ? (
         <CodeLines text={facts.preview.join("\n")} maxLines={lean ? 2 : 4} hideToggle={lean} testId="file-preview" label={`${facts.name} preview`} />
       ) : null}
-      {step.text ? <span style={{ ...text(12.5, 400, t.text2), overflowWrap: "anywhere", ...(lean ? clamp(1) : null) }}>{step.text}</span> : null}
+      {step.text ? <span style={{ ...text(textStep.meta, 400, t.text2), overflowWrap: "anywhere", ...(lean ? clamp(1) : null) }}>{step.text}</span> : null}
     </div>
   );
 }
@@ -231,7 +231,7 @@ export function ManualTileBody({ step, indent = 0, picture = true, lean = false,
       {lean ? null : (
         <div data-testid="manual-where" style={{ display: "flex", alignItems: "center", gap: space[2], minWidth: 0 }}>
           {where?.kind === "app" ? <ToolMark tool={markName} size={size.icon} /> : null}
-          <span style={{ ...text(12.5, 500, t.text2), ...ellipsis }}>{label}</span>
+          <span style={{ ...text(textStep.meta, 500, t.text2), ...ellipsis }}>{label}</span>
           {site && site !== label ? <Quiet>{site}</Quiet> : null}
         </div>
       )}
@@ -244,7 +244,7 @@ export function ManualTileBody({ step, indent = 0, picture = true, lean = false,
           ))}
         </ol>
       ) : (
-        <p data-testid="manual-lines" style={{ ...text(13.5, 400, t.text), margin: 0, lineHeight: "22px", overflowWrap: "anywhere" }}>
+        <p data-testid="manual-lines" style={{ ...text(textStep.body, 400, t.text), margin: 0, lineHeight: "23px", overflowWrap: "anywhere", ...measure }}>
           {lines[0] ?? ""}
         </p>
       )}
@@ -272,7 +272,7 @@ export function triggerLine(step: Pick<Step, "runs" | "changesEachRound">): stri
 export function ReplyBlock({ reply, onRead, indent = 0, lean = false }: { reply: string; onRead?: () => void; indent?: number; lean?: boolean }): ReactNode {
   if (lean) {
     return (
-      <p data-testid="prompt-reply" style={{ ...RESPONSE_LINE, marginLeft: indent }}>
+      <p data-testid="prompt-reply" style={{ ...RESPONSE_LINE, marginLeft: indent, ...measure }}>
         <span style={RESPONSE_WORD}>{TILE_COPY.response} </span>
         {reply.replace(/\s+/g, " ").trim()}
       </p>
@@ -281,10 +281,10 @@ export function ReplyBlock({ reply, onRead, indent = 0, lean = false }: { reply:
   const more = reply.split(/\r?\n/).length > 2 || reply.length > 180;
   return (
     <div data-testid="prompt-reply" style={{ marginLeft: indent, borderLeft: `2px solid ${t.hairline}`, paddingLeft: space[3], display: "flex", flexDirection: "column", gap: space[1], minWidth: 0 }}>
-      <p style={{ ...text(13, 400, t.text2), margin: 0, lineHeight: "20px", overflowWrap: "anywhere", whiteSpace: "pre-wrap", ...clamp(2) }}>{reply}</p>
+      <p style={{ ...text(textStep.body, 400, t.text2), margin: 0, lineHeight: "22px", overflowWrap: "anywhere", whiteSpace: "pre-wrap", ...clamp(2), ...measure }}>{reply}</p>
       {more && onRead ? (
         <div>
-          <TextButton underline onClick={onRead} style={{ ...TEXT_LINK_BOX, ...text(12, 500, t.text2) }}>
+          <TextButton underline onClick={onRead} style={{ ...TEXT_LINK_BOX, ...text(textStep.meta, 500, t.text2) }}>
             {TILE_COPY.readAll}
           </TextButton>
         </div>
@@ -304,8 +304,8 @@ export function CheckCasesBody({ cases = [], indent = 0 }: { cases?: readonly Ch
       <Quiet>{`${TILE_COPY.cases(cases.length)} · ${failing ? `${cases.filter((c) => c.passed).length} passed` : TILE_COPY.allPassed}`}</Quiet>
       {failing ? (
         <div data-testid="check-first-failing" style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0 }}>
-          <span style={text(12, 500, t.text2)}>{TILE_COPY.failing}</span>
-          <span style={{ ...text(12.5, 400, t.text), overflowWrap: "anywhere" }}>{[failing.input && `In: ${failing.input}`, failing.expected && `Expected: ${failing.expected}`, failing.actual && `Got: ${failing.actual}`].filter(Boolean).join(" · ")}</span>
+          <span style={text(textStep.meta, 500, t.text2)}>{TILE_COPY.failing}</span>
+          <span style={{ ...text(textStep.meta, 400, t.text), overflowWrap: "anywhere" }}>{[failing.input && `In: ${failing.input}`, failing.expected && `Expected: ${failing.expected}`, failing.actual && `Got: ${failing.actual}`].filter(Boolean).join(" · ")}</span>
         </div>
       ) : null}
     </div>
@@ -335,7 +335,7 @@ export function ResultTileBody({ facts, indent = 0 }: { facts: ResultFacts; inde
   if (!resultHolds(facts)) {
     return (
       <div data-testid="result-tile" style={wrap}>
-        <span data-testid="result-empty" style={text(13, 400, t.label)}>{TILE_COPY.nothingAdded}</span>
+        <span data-testid="result-empty" style={text(textStep.body, 400, t.label)}>{TILE_COPY.nothingAdded}</span>
       </div>
     );
   }
@@ -345,26 +345,26 @@ export function ResultTileBody({ facts, indent = 0 }: { facts: ResultFacts; inde
     return (
       <div data-testid="result-tile" data-kind={detail.kind} style={{ ...wrap, gap: space[1] }}>
         {detail.kind === "text" ? (
-          <span data-testid="result-text" style={{ ...text(13, 400, t.text), overflowWrap: "anywhere", whiteSpace: "pre-wrap", ...clamp(2) }}>
+          <span data-testid="result-text" style={{ ...text(textStep.body, 400, t.text), overflowWrap: "anywhere", whiteSpace: "pre-wrap", ...clamp(2), ...measure }}>
             {detail.text}
           </span>
         ) : null}
         {detail.kind === "audio" ? (
           <div data-testid="result-audio" style={{ display: "flex", alignItems: "baseline", gap: space[2], minWidth: 0 }}>
-            <span style={{ ...text(13.5, 500, t.text), ...ellipsis }}>{detail.name}</span>
-            {detail.seconds ? <span style={{ ...text(12, 400, t.label), fontFamily: DM_MONO, ...tnum }}>{durationOf(detail.seconds)}</span> : null}
+            <span style={{ ...text(textStep.body, 500, t.text), ...ellipsis }}>{detail.name}</span>
+            {detail.seconds ? <span style={{ ...text(textStep.meta, 400, t.label), fontFamily: DM_MONO, ...tnum }}>{durationOf(detail.seconds)}</span> : null}
           </div>
         ) : null}
         {detail.kind === "table" ? (
           <div data-testid="result-table" style={{ display: "flex", alignItems: "baseline", gap: space[2], minWidth: 0 }}>
-            <span style={{ ...text(13.5, 500, t.text), ...ellipsis }}>{detail.name ?? TILE_COPY.pastedCsv}</span>
+            <span style={{ ...text(textStep.body, 500, t.text), ...ellipsis }}>{detail.name ?? TILE_COPY.pastedCsv}</span>
             {detail.columns ? <Quiet>{`${detail.columns} columns`}</Quiet> : null}
           </div>
         ) : null}
         {detail.kind === "message" ? (
           <>
             <Quiet>{MESSAGE_CHANNEL_LABEL[detail.channel]}</Quiet>
-            <span data-testid="result-message" style={{ ...text(13, 400, t.text), ...ellipsis }}>
+            <span data-testid="result-message" style={{ ...text(textStep.body, 400, t.text), ...ellipsis }}>
               {first(detail.text)}
             </span>
           </>
@@ -373,25 +373,25 @@ export function ResultTileBody({ facts, indent = 0 }: { facts: ResultFacts; inde
           <>
             <div data-testid="result-app" style={{ display: "flex", alignItems: "center", gap: space[2], minWidth: 0 }}>
               <ToolMark tool={detail.application} size={20} />
-              <span style={{ ...text(13.5, 500, t.text), ...ellipsis }}>{detail.application}</span>
+              <span style={{ ...text(textStep.body, 500, t.text), ...ellipsis }}>{detail.application}</span>
             </div>
-            <span data-testid="result-change" style={{ ...text(13, 400, t.text), overflowWrap: "anywhere", ...clamp(2) }}>
+            <span data-testid="result-change" style={{ ...text(textStep.body, 400, t.text), overflowWrap: "anywhere", ...clamp(2) }}>
               {detail.change}
             </span>
           </>
         ) : null}
         {detail.kind === "metric" ? (
           <>
-            <span data-testid="result-metric" style={{ fontFamily: DM_MONO, fontSize: 18, lineHeight: "24px", color: t.text, ...tnum }}>
+            <span data-testid="result-metric" style={{ fontFamily: DM_MONO, fontSize: textStep.headline, lineHeight: "27px", color: t.text, ...tnum }}>
               {[detail.value, detail.unit].filter(Boolean).join(" ")}
             </span>
-            {detail.label ? <span style={text(13, 400, t.text2)}>{detail.label}</span> : null}
+            {detail.label ? <span style={text(textStep.body, 400, t.text2)}>{detail.label}</span> : null}
             {detail.before ? <Quiet>{`from ${detail.before}`}</Quiet> : null}
           </>
         ) : null}
         {detail.kind === "offline" ? (
           <div style={{ display: "flex", alignItems: "center", gap: space[2], minWidth: 0 }}>
-            <span data-testid="result-offline" style={{ ...text(13, 400, t.text), ...ellipsis, flexGrow: 1 }}>
+            <span data-testid="result-offline" style={{ ...text(textStep.body, 400, t.text), ...ellipsis, flexGrow: 1 }}>
               {first(detail.description)}
             </span>
             {detail.mediaId ? <ManualThumb mediaId={detail.mediaId} size={48} /> : null}
@@ -414,7 +414,7 @@ export function ResultTileBody({ facts, indent = 0 }: { facts: ResultFacts; inde
         >
           <SiteIcon host={link.host} />
           <span style={{ ...LINK_ADDRESS, flexGrow: 1 }}>{detail?.kind === "deployed" ? link.host : [link.host, link.path].filter(Boolean).join("")}</span>
-          <span style={{ ...text(12.5, 400, t.text2), flexShrink: 0 }}>{detail?.kind === "deployed" ? TILE_COPY.deployed : link.site}</span>
+          <span style={{ ...text(textStep.meta, 400, t.text2), flexShrink: 0 }}>{detail?.kind === "deployed" ? TILE_COPY.deployed : link.site}</span>
         </a>
       </div>
     );
@@ -443,7 +443,7 @@ export function ResultTileBody({ facts, indent = 0 }: { facts: ResultFacts; inde
         <div data-testid="result-file" style={{ display: "flex", alignItems: "center", gap: space[2], minWidth: 0 }}>
           <FileMark kind={file.kind} />
           <span style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0 }}>
-            <span style={{ ...text(13.5, 500, t.text), ...ellipsis }}>{file.name}</span>
+            <span style={{ ...text(textStep.body, 500, t.text), ...ellipsis }}>{file.name}</span>
             <Quiet>{[FILE_WORD[file.kind], size].filter(Boolean).join(" · ")}</Quiet>
           </span>
         </div>
@@ -453,8 +453,8 @@ export function ResultTileBody({ facts, indent = 0 }: { facts: ResultFacts; inde
   const model = facts.model;
   return (
     <div data-testid="result-tile" style={wrap}>
-      <span data-testid="result-model" style={{ ...text(13.5, 500, t.text), overflowWrap: "anywhere" }}>{model?.baseModel ? `Based on ${model.baseModel}` : "A trained model"}</span>
-      {model?.method ? <span style={{ ...text(12.5, 400, t.text2), overflowWrap: "anywhere" }}>{model.method}</span> : null}
+      <span data-testid="result-model" style={{ ...text(textStep.body, 500, t.text), overflowWrap: "anywhere" }}>{model?.baseModel ? `Based on ${model.baseModel}` : "A trained model"}</span>
+      {model?.method ? <span style={{ ...text(textStep.meta, 400, t.text2), overflowWrap: "anywhere" }}>{model.method}</span> : null}
     </div>
   );
 }
@@ -486,7 +486,7 @@ export function SystemPromptTileBody({ step, indent = 0, full = false }: { step:
   const parts = splitVariables(step.text);
   return (
     <div data-testid="system-prompt-tile" style={{ paddingLeft: indent, minWidth: 0 }}>
-      <p data-testid="system-prompt-text" style={{ ...text(13.5, 400, t.text), margin: 0, lineHeight: "21px", overflowWrap: "anywhere", whiteSpace: "pre-wrap", ...(full ? null : clamp(2)) }}>
+      <p data-testid="system-prompt-text" style={{ ...text(textStep.body, 400, t.text), margin: 0, lineHeight: "22px", overflowWrap: "anywhere", whiteSpace: "pre-wrap", ...(full ? null : clamp(2)), ...measure }}>
         {parts.map((part, at) =>
           part.variable ? (
             <span key={at} data-testid="variable-chip" style={VARIABLE}>
@@ -510,7 +510,7 @@ export function DatasetTileBody({ step, indent = 0 }: { step: Step; indent?: num
   return (
     <div data-testid="dataset-tile" style={{ display: "flex", flexDirection: "column", gap: space[1], paddingLeft: indent, minWidth: 0 }}>
       {facts.description ? (
-        <span data-testid="dataset-description" style={{ ...text(13, 400, t.text), ...ellipsis }}>
+        <span data-testid="dataset-description" style={{ ...text(textStep.body, 400, t.text), ...ellipsis }}>
           {facts.description}
         </span>
       ) : null}
@@ -534,12 +534,12 @@ export function RepoTileBody({ step, indent = 0 }: { step: Step; indent?: number
   return (
     <div data-testid="repo-tile" style={{ display: "flex", flexDirection: "column", gap: space[1], paddingLeft: indent, minWidth: 0 }}>
       {repo.description ? (
-        <p data-testid="repo-description" style={{ ...text(13, 400, t.text), margin: 0, lineHeight: "20px", overflowWrap: "anywhere", ...clamp(2) }}>
+        <p data-testid="repo-description" style={{ ...text(textStep.body, 400, t.text), margin: 0, lineHeight: "22px", overflowWrap: "anywhere", ...clamp(2), ...measure }}>
           {repo.description}
         </p>
       ) : null}
       {usage ? (
-        <span data-testid="repo-usage" style={{ ...text(12.5, 400, t.text2), ...ellipsis }}>
+        <span data-testid="repo-usage" style={{ ...text(textStep.meta, 400, t.text2), ...ellipsis }}>
           {usage}
         </span>
       ) : null}
@@ -569,7 +569,7 @@ export function PromptName({ place, title, size = 14 }: { place: string; title: 
 /** The type line a reader sees under a tile's title: the same words the composer draws above it. */
 export function TypeLine({ step, indent = 0 }: { step: Pick<Step, "kind"> & Parameters<typeof typeLineOf>[0]; indent?: number }) {
   return (
-    <div data-testid={`${step.kind}-eyebrow`} style={{ ...text(12, 400, t.label), paddingLeft: indent, overflowWrap: "anywhere" }}>
+    <div data-testid={`${step.kind}-eyebrow`} style={{ ...text(textStep.meta, 400, t.label), paddingLeft: indent, overflowWrap: "anywhere" }}>
       {typeLineOf(step)}
     </div>
   );
@@ -582,8 +582,8 @@ export function ReaderFacts({ facts, indent = 0 }: { facts: readonly ReaderFact[
     <dl data-testid="reader-facts" style={{ margin: 0, paddingLeft: indent, display: "flex", flexDirection: "column", gap: space[2], minWidth: 0 }}>
       {facts.map((fact) => (
         <div key={fact.label} data-testid="reader-fact" style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0 }}>
-          <dt style={text(12, 400, t.text2)}>{fact.label}</dt>
-          <dd style={{ ...text(13, 400, t.text), margin: 0, overflowWrap: "anywhere", whiteSpace: "pre-wrap", ...(fact.mono ? { fontFamily: DM_MONO, fontSize: 12.5 } : null) }}>
+          <dt style={text(textStep.meta, 400, t.text2)}>{fact.label}</dt>
+          <dd style={{ ...text(textStep.body, 400, t.text), margin: 0, overflowWrap: "anywhere", whiteSpace: "pre-wrap", ...(fact.mono ? { fontFamily: DM_MONO, fontSize: textStep.meta } : null) }}>
             {fact.lines ? (
               <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: space[1] }}>
                 {fact.lines.map((line, at) => (

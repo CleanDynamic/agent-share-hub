@@ -801,7 +801,6 @@ export function editorAttributes(): Record<string, string> {
       display: "flex",
       flexDirection: "column",
       gap: BLOCK_GAP,
-      minHeight: 48,
       outline: "none",
       whiteSpace: "pre-wrap",
       overflowWrap: "anywhere",

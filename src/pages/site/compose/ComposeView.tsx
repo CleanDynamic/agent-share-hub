@@ -41,7 +41,7 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE, display, textStep } from "@/lib/theme/type";
 
 import { Field, TextButton } from "./composeControls";
 import { SaveLine } from "./SaveLine";
@@ -156,7 +156,7 @@ export interface ComposeViewProps {
 /* ── shared pieces ── */
 
 /** A link drawn as a button of the same size and type, for Preview. */
-function LinkButton({ to, size, fontSize, variant, children }: { to: string | null; size: 42 | 48; fontSize: 14; variant: "secondary" | "ghost"; children: ReactNode }) {
+function LinkButton({ to, size, fontSize, variant, children }: { to: string | null; size: 42 | 48; fontSize: typeof textStep.body; variant: "secondary" | "ghost"; children: ReactNode }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   const common: CSSProperties = {
     height: size,
@@ -262,7 +262,7 @@ export function MediaPanel({
               <Adding pct={pct} />
             ) : (
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ flexGrow: 1, fontFamily: DM_MONO, fontSize: 12, color: t.text2 }}>Cover</span>
+                <span style={{ flexGrow: 1, fontFamily: DM_MONO, fontSize: textStep.meta, color: t.text2 }}>Cover</span>
                 <TextButton onClick={pick}>Replace</TextButton>
                 <TextButton onClick={onRemoveCover}>Remove</TextButton>
               </div>
@@ -310,7 +310,7 @@ export function MediaPanel({
             }}
           >
             <ImageIcon size={28} strokeWidth={1.6} color="var(--text2)" aria-hidden="true" />
-            <span style={{ fontFamily: FIGTREE, fontSize: 14, fontWeight: 600, color: t.text }}>
+            <span style={{ fontFamily: FIGTREE, fontSize: textStep.body, fontWeight: 600, color: t.text }}>
               {phone ? "Add a screenshot or a short video" : "Drop a screenshot or a short video"}
             </span>
             <TextButton
@@ -325,7 +325,7 @@ export function MediaPanel({
           </div>
         )}
         {mediaError ? (
-          <p role="alert" style={{ margin: "7px 0 0", fontFamily: FIGTREE, fontSize: 13, color: t.catBreakage }}>
+          <p role="alert" style={{ margin: "7px 0 0", fontFamily: FIGTREE, fontSize: textStep.body, color: t.catBreakage }}>
             {mediaError}
           </p>
         ) : null}
@@ -341,7 +341,7 @@ function Adding({ pct }: { pct: number }) {
       <div style={{ height: 4, borderRadius: 2, background: t.barBase, overflow: "hidden" }}>
         <div style={{ width: `${pct}%`, height: "100%", background: t.evidence }} />
       </div>
-      <span style={{ fontFamily: DM_MONO, fontSize: 12, color: t.text2 }}>Adding… {pct}%</span>
+      <span style={{ fontFamily: DM_MONO, fontSize: textStep.meta, color: t.text2 }}>Adding… {pct}%</span>
     </div>
   );
 }
@@ -375,10 +375,10 @@ function TextPanel({
             autoComplete="off"
             onChange={(event) => onTitle(event.target.value)}
             {...titleRing.handlers}
-            style={{ ...fieldBase, height: phone ? 44 : 36, padding: "0 10px", fontSize: 16, fontWeight: 600, ...titleRing.style }}
+            style={{ ...fieldBase, height: phone ? 44 : 36, padding: "0 10px", fontSize: textStep.section, fontWeight: 600, ...titleRing.style }}
           />
           {titleError ? (
-            <p role="alert" data-testid="title-error" style={{ margin: "7px 0 0", fontFamily: FIGTREE, fontSize: 13, color: t.catBreakage }}>
+            <p role="alert" data-testid="title-error" style={{ margin: "7px 0 0", fontFamily: FIGTREE, fontSize: textStep.body, color: t.catBreakage }}>
               {titleError}
             </p>
           ) : null}
@@ -387,7 +387,7 @@ function TextPanel({
         <Field
           id="compose-description"
           label="Description"
-          right={<span style={{ fontFamily: DM_MONO, fontSize: 12, color: t.text2 }}>{description.length} / {DESCRIPTION_MAX}</span>}
+          right={<span style={{ fontFamily: DM_MONO, fontSize: textStep.meta, color: t.text2 }}>{description.length} / {DESCRIPTION_MAX}</span>}
         >
           <textarea
             id="compose-description"
@@ -447,10 +447,10 @@ function NotFound() {
   return (
     <Panel surface="flat" padding="24px" style={{ maxWidth: 520 }}>
       <h1 style={{ ...display(30), margin: 0, color: t.text }}>No build at this address</h1>
-      <p style={{ margin: "7px 0 10px", fontFamily: FIGTREE, fontSize: 14, color: t.text2 }}>
+      <p style={{ margin: "7px 0 10px", fontFamily: FIGTREE, fontSize: textStep.body, color: t.text2 }}>
         Nothing here, or nothing you can open. It may have been deleted, or it may be another creator's build.
       </p>
-      <Link to="/compose/new" style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text2, textDecoration: "underline" }}>
+      <Link to="/compose/new" style={{ fontFamily: FIGTREE, fontSize: textStep.body, color: t.text2, textDecoration: "underline" }}>
         Start a new build
       </Link>
     </Panel>
@@ -481,13 +481,13 @@ export function ComposeView(props: ComposeViewProps) {
 
   const statusLine = (
     <>
-    <p data-testid="compose-status" style={{ margin: "4px 0 0", fontFamily: DM_MONO, fontSize: 12, color: t.text2 }}>
+    <p data-testid="compose-status" style={{ margin: "4px 0 0", fontFamily: DM_MONO, fontSize: textStep.meta, color: t.text2 }}>
       {published ? "Published" : "Draft"}
       <SaveLine save={save} lastSavedAt={props.lastSavedAt} pending={props.pendingWrites} onRetry={props.onRetrySave} />
       {needs && !published ? ` · still needs ${missing.join(", ")}` : null}
     </p>
     {props.intakeHref ? (
-      <Link to={props.intakeHref} style={{ display: "inline-block", marginTop: 6, fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>
+      <Link to={props.intakeHref} style={{ display: "inline-block", marginTop: 6, fontFamily: FIGTREE, fontSize: textStep.body, color: t.text2 }}>
         Paste a transcript or a repo instead
       </Link>
     ) : null}
@@ -602,7 +602,7 @@ export function ComposeView(props: ComposeViewProps) {
         background: t.evidenceFill,
         color: t.onEvidenceFill,
         fontFamily: FIGTREE,
-        fontSize: 13,
+        fontSize: textStep.body,
         display: "flex",
         flexWrap: "wrap",
         alignItems: "baseline",
@@ -647,11 +647,11 @@ export function ComposeView(props: ComposeViewProps) {
             boxSizing: "border-box",
           }}
         >
-          <LinkButton to={props.slug ? `/b2/${props.slug}` : null} size={48} fontSize={14} variant="ghost">
+          <LinkButton to={props.slug ? `/b2/${props.slug}` : null} size={48} fontSize={textStep.body} variant="ghost">
             Preview
           </LinkButton>
           <div style={{ flexGrow: 1 }}>
-            <Button size={48} fontSize={15} fullWidth disabled={publishDisabled} onClick={props.onPublish} style={publishStyle}>
+            <Button size={48} fontSize={textStep.body} fullWidth disabled={publishDisabled} onClick={props.onPublish} style={publishStyle}>
               {publishLabel}
             </Button>
           </div>
@@ -668,10 +668,10 @@ export function ComposeView(props: ComposeViewProps) {
           {statusLine}
         </div>
         <div style={{ display: "flex", gap: 7, flexShrink: 0 }}>
-          <LinkButton to={props.slug ? `/b2/${props.slug}` : null} size={42} fontSize={14} variant="secondary">
+          <LinkButton to={props.slug ? `/b2/${props.slug}` : null} size={42} fontSize={textStep.body} variant="secondary">
             Preview
           </LinkButton>
-          <Button size={42} fontSize={14} disabled={publishDisabled} onClick={props.onPublish} style={publishStyle}>
+          <Button size={42} fontSize={textStep.body} disabled={publishDisabled} onClick={props.onPublish} style={publishStyle}>
             {publishLabel}
           </Button>
         </div>

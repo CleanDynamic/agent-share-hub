@@ -18,6 +18,7 @@ import { t } from "@/lib/theme/tokens";
 import { menuItem, menuSurface, text } from "@/pages/site/compose/refinedStyles";
 import { MenuContent } from "@/pages/site/compose/ComposeMenu";
 
+import { textStep } from "@/lib/theme/type";
 export interface SessionJumpItem {
   key: string;
   number: number;
@@ -131,7 +132,7 @@ function Chip({ item, current, onJump }: { item: SessionJumpItem; current: boole
         border: "1px solid transparent",
         background: state.hovered ? t.controlOn : "transparent",
         cursor: "pointer",
-        ...text(13, current ? 500 : 400, current ? t.text : t.text2),
+        ...text(textStep.body, current ? 500 : 400, current ? t.text : t.text2),
         ...ring(state.focusVisible),
       }}
     >
@@ -157,9 +158,9 @@ export function SessionJump({ items, current, phone, onJump }: { items: readonly
           <MenuContent align="start" sideOffset={4} style={menuSurface()}>
             {jumpGroups(items).map((run, at) => (
               <Fragment key={`${run.group ?? "none"}:${at}`}>
-                {run.group ? <Menu.Label style={{ ...text(11.5, 500, t.label), padding: "8px 12px 4px" }}>{run.group}</Menu.Label> : null}
+                {run.group ? <Menu.Label style={{ ...text(textStep.meta, 500, t.label), padding: "8px 12px 4px" }}>{run.group}</Menu.Label> : null}
                 {run.items.map((item) => (
-                  <Menu.Item key={item.key} onSelect={() => onJump(item.key)} aria-current={item.key === current ? "true" : undefined} style={{ ...menuItem(true, true), ...text(13, item.key === current ? 500 : 400, item.key === current ? t.text : t.text2) }}>
+                  <Menu.Item key={item.key} onSelect={() => onJump(item.key)} aria-current={item.key === current ? "true" : undefined} style={{ ...menuItem(true, true), ...text(textStep.body, item.key === current ? 500 : 400, item.key === current ? t.text : t.text2) }}>
                     {item.number} {item.label}
                   </Menu.Item>
                 ))}
@@ -175,7 +176,7 @@ export function SessionJump({ items, current, phone, onJump }: { items: readonly
       {jumpGroups(items).map((run, at) => (
         <Fragment key={`${run.group ?? "none"}:${at}`}>
           {run.group ? (
-            <span data-testid="session-list-part" style={{ ...text(12, 500, t.label), flexShrink: 0, whiteSpace: "nowrap", padding: at > 0 ? "0 4px 0 12px" : "0 4px 0 0" }}>
+            <span data-testid="session-list-part" style={{ ...text(textStep.meta, 500, t.label), flexShrink: 0, whiteSpace: "nowrap", padding: at > 0 ? "0 4px 0 12px" : "0 4px 0 0" }}>
               {run.group}
             </span>
           ) : null}

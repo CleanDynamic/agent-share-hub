@@ -25,8 +25,8 @@
 import { DEPLOYMENT_GROUP_HEAD, deploymentMenuEntries, type DeploymentKind } from "@/lib/build/deployment";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import * as Popover from "@radix-ui/react-popover";
-import { MoreHorizontal, X } from "lucide-react";
-import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { MoreHorizontal, PanelRightClose, PanelRightOpen, X } from "lucide-react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/brand/Button";
@@ -58,7 +58,7 @@ import { ClickToEdit, DetailsOverlay, useTouchPanel } from "./DetailsOverlay";
 import { DetailsAside, useWindowSize } from "./DetailsAside";
 import type { DetailsPlan } from "./DetailsPanel";
 import { COMPOSER_PAD, HEAD_GAP, OVERLAY_WIDTH } from "./detailsRecipes";
-import { ORIGIN, frameOf, innerWidthOf } from "./detailsLayout";
+import { ORIGIN, SOURCES_WIDTH, frameOf, innerWidthOf } from "./detailsLayout";
 import { bareButton, menuItem, menuSurface, moduleStyle, text, tnum, wellField } from "./refinedStyles";
 import type { PartLabels } from "@/lib/build/making";
 import type { ComposePublished, ComposeStatus } from "./ComposeView";
@@ -83,6 +83,7 @@ import { size, space } from "@/lib/theme/space";
 import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT, iconButtonSide } from "./modalRecipes";
 import { r } from "@/lib/theme/radius";
 
+import { textStep } from "@/lib/theme/type";
 export type SandboxLens = "list" | "map";
 
 /** CA-24 P3: a panel whose own query has failed (`failed`), and the refetch of that panel's queries alone. */
@@ -293,6 +294,10 @@ export const listHint = (phone: boolean): string | null => (phone ? LIST_HINT_PH
 /** The columns start this far under the title row. */
 const COLUMNS_TOP = 32;
 export const DETAILS_EMPTY = "Select a step to see its details";
+/** F62 (decision D7): the right panel's collapse and the way back. */
+export const DETAILS_TOGGLE_COPY = { hide: "Hide details", show: "Show details" } as const;
+/** F67: Details sticks this far under the title row's foot, as the columns start under it. */
+const DETAILS_BELOW_ROW = COLUMNS_TOP;
 
 /** "3 sessions · 12 prompts · 2 files", leaving out any zero. */
 export function countsLine(counts: SandboxCounts): string {
@@ -403,8 +408,8 @@ function tileEntries({ onAddFile, onAddPromptFocus, onAddTool, onAddResult, onAd
 function AddLabel({ name, line, enabled = true }: { name: string; line: string; enabled?: boolean }) {
   return (
     <>
-      <span style={text(13, 500, enabled ? t.text : t.textDisabled)}>{name}</span>
-      <span style={text(11.5, 400, enabled ? t.label : t.text2)}>{line}</span>
+      <span style={text(textStep.body, 500, enabled ? t.text : t.textDisabled)}>{name}</span>
+      <span style={text(textStep.meta, 400, enabled ? t.label : t.text2)}>{line}</span>
     </>
   );
 }
@@ -529,7 +534,7 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
           boxSizing: "border-box",
           padding: `0 ${space[3]}px`,
           borderRadius: r.control,
-          ...text(13, 500, t.text2),
+          ...text(textStep.body, 500, t.text2),
           cursor: "pointer",
           ...(rowTrigger.state.hovered ? { background: t.controlOn } : null),
           ...ring(rowTrigger.state.focusVisible),
@@ -571,7 +576,7 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
                 <>
                   {layout.groups.map((group) => (
                     <Fragment key={group.category}>
-                      <p style={{ ...text(11.5, 500, t.label), margin: "12px 16px 4px" }}>{group.head}</p>
+                      <p style={{ ...text(textStep.meta, 500, t.label), margin: "12px 16px 4px" }}>{group.head}</p>
                       {group.entries.map((item) => (
                         <SheetRow key={item.key} inset name={item.name} line={item.line} disabled={!item.enabled} onSelect={() => choose(item)} />
                       ))}
@@ -639,9 +644,9 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
               // The menu's own type-ahead must not take the letters typed here; Escape still closes it.
               if (event.key !== "Escape" && event.key !== "Tab") event.stopPropagation();
             }}
-            style={{ ...wellField, height: size.control, padding: `0 ${space[3]}px`, marginBottom: space[1], ...text(13, 400, t.text) }}
+            style={{ ...wellField, height: size.control, padding: `0 ${space[3]}px`, marginBottom: space[1], ...text(textStep.body, 400, t.text) }}
           />
-          {firstFound ? null : <p style={{ ...text(12.5, 400, t.label), margin: 0, padding: "8px 12px" }}>{ADD_SEARCH_COPY.none}</p>}
+          {firstFound ? null : <p style={{ ...text(textStep.meta, 400, t.label), margin: 0, padding: "8px 12px" }}>{ADD_SEARCH_COPY.none}</p>}
           {/* UX-02 P6, F40: the five first; then, under More types (open in place, or while a search runs), the groups by category,
               the single entries and Deployment (closed until opened); From Library last. */}
           {layout.primary.length > 0 ? (
@@ -658,7 +663,7 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
                 event.preventDefault();
                 setMoreOpen((open) => !open);
               }}
-              style={{ ...menuItem(true, false), ...text(11.5, 500, t.label), justifyContent: "space-between", gap: 8 }}
+              style={{ ...menuItem(true, false), ...text(textStep.meta, 500, t.label), justifyContent: "space-between", gap: 8 }}
             >
               <span>{ADD_MORE_COPY.row}</span>
               <span aria-hidden="true" style={{ display: "inline-flex" }}>
@@ -668,7 +673,7 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
           ) : null}
           {showMore ? layout.groups.map((group) => (
             <Fragment key={group.category}>
-              <Menu.Label data-testid="add-group-head" style={{ ...text(11.5, 500, t.label), padding: "8px 12px 4px" }}>{group.head}</Menu.Label>
+              <Menu.Label data-testid="add-group-head" style={{ ...text(textStep.meta, 500, t.label), padding: "8px 12px 4px" }}>{group.head}</Menu.Label>
               <div role="none" data-testid="add-group" data-head={group.head} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 4 }}>
                 {group.entries.map(desktopItem)}
               </div>
@@ -690,7 +695,7 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
                   event.preventDefault();
                   setDeployOpen((open) => !open);
                 }}
-                style={{ ...menuItem(true, false), ...text(11.5, 500, t.label), justifyContent: "space-between", gap: 8 }}
+                style={{ ...menuItem(true, false), ...text(textStep.meta, 500, t.label), justifyContent: "space-between", gap: 8 }}
               >
                 <span>{DEPLOYMENT_GROUP_HEAD}</span>
                 <span aria-hidden="true" style={{ display: "inline-flex" }}>
@@ -738,11 +743,11 @@ export const VIEW_COPY = { button: "View", sessionList: "Session list", labelPar
 function LabelPartsRow({ labels, phone }: { labels: NonNullable<ViewMenuProps["labels"]>; phone: boolean }) {
   return (
     <div data-testid="label-parts" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: phone ? "8px 12px" : "6px 12px 4px" }}>
-      <span style={text(13, 400, t.text)}>{VIEW_COPY.labelParts}</span>
+      <span style={text(textStep.body, 400, t.text)}>{VIEW_COPY.labelParts}</span>
       <Segmented
         label={VIEW_COPY.labelParts}
         size={phone ? 50 : 28}
-        fontSize={12}
+        fontSize={textStep.meta}
         value={labels.value}
         onChange={labels.onChange}
         items={[
@@ -939,10 +944,10 @@ function BuildActionsMenu({ previewTo }: { previewTo: string | null }) {
 }
 
 function PanelTitle({ children }: { children: ReactNode }) {
-  return <h2 style={{ ...text(13.5, 500, t.text), margin: 0 }}>{children}</h2>;
+  return <h2 style={{ ...text(textStep.body, 500, t.text), margin: 0 }}>{children}</h2>;
 }
 
-const quiet: CSSProperties = { ...text(13, 400, t.text2), margin: 0 };
+const quiet: CSSProperties = { ...text(textStep.body, 400, t.text2), margin: 0 };
 
 /** One 40-wide ghost button of the Sources rail (UI-P94): the glyph in `--text2`, 36 high, or 44 with its count under it. */
 function RailButton({ glyph, label, count, onClick }: { glyph: "panel" | "layers" | "file" | "plus"; label: string; count?: number; onClick: () => void }) {
@@ -973,7 +978,7 @@ function RailButton({ glyph, label, count, onClick }: { glyph: "panel" | "layers
       }}
     >
       <Glyph name={glyph} size={size.icon} />
-      {counted ? <span style={{ ...text(10.5, 500, "inherit"), ...tnum }}>{count}</span> : null}
+      {counted ? <span style={{ ...text(textStep.meta, 500, "inherit"), ...tnum }}>{count}</span> : null}
     </button>
   );
 }
@@ -1006,7 +1011,7 @@ function SourcesFrame({
         gap: 20,
         ...(overlay
           ? { ...moduleStyle(), background: t.window, borderColor: t.windowBorder, boxShadow: t.windowShadow }
-          : { flex: "0 0 216px", width: 216, boxSizing: "border-box", paddingRight: 24, borderRight: `1px solid ${t.hairline}` }),
+          : /* S34: 256 wide; D6: no rule between the columns. */ { flex: `0 0 ${SOURCES_WIDTH}px`, width: SOURCES_WIDTH, boxSizing: "border-box" }),
       }}
     >
       {titled || overlay ? (
@@ -1055,7 +1060,7 @@ function SourcesFrame({
 }
 
 function DefaultSources() {
-  const label = text(12, 500, t.text2);
+  const label = text(textStep.meta, 500, t.text2);
   return (
     <>
       {/* UX-02 P8: Sources' two groups. */}
@@ -1068,18 +1073,18 @@ function DefaultSources() {
 function NotFound() {
   return (
     <div style={{ ...moduleStyle(false, 24), maxWidth: 520, display: "flex", flexDirection: "column", gap: 8 }}>
-      <h1 style={{ ...text(20, 500, t.text), margin: 0, letterSpacing: "-0.015em" }}>No build at this address</h1>
-      <p style={{ ...text(13, 400, t.text2), margin: 0 }}>
+      <h1 style={{ ...text(textStep.headline, 500, t.text), margin: 0, letterSpacing: "-0.015em" }}>No build at this address</h1>
+      <p style={{ ...text(textStep.body, 400, t.text2), margin: 0 }}>
         Nothing here, or nothing you can open. It may have been deleted, or it may be another creator's build.
       </p>
-      <Link to="/compose/new" style={{ ...text(12.5, 500, t.text), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line, alignSelf: "flex-start" }}>
+      <Link to="/compose/new" style={{ ...text(textStep.meta, 500, t.text), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line, alignSelf: "flex-start" }}>
         Start a new build
       </Link>
     </div>
   );
 }
 
-const underlined: CSSProperties = { ...text(12.5, 400, t.text), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line };
+const underlined: CSSProperties = { ...text(textStep.meta, 400, t.text), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line };
 
 /* ── the view ── */
 
@@ -1114,6 +1119,20 @@ function SandboxBody(props: SandboxViewProps) {
   const tabsRef = useRef<HTMLDivElement>(null);
   /* CA-22 P7: List and Map morph into one another (a computer only; the hook does nothing where motion is off). */
   const morph = useLensMorph({ lens: props.lens, onLens: props.onLens, getRoot: useCallback(() => tabsRef.current?.parentElement ?? null, []) });
+  /* F62 (decision D7): the maker hid Details. Held here only; a selection does not bring it back. */
+  const [detailsHidden, setDetailsHidden] = useState(false);
+  /* F18, F67: the title row stays under the site header; what sticks below it (Details, the find band) starts under its foot. */
+  const [rowHeight, setRowHeight] = useState(0);
+  useLayoutEffect(() => {
+    const row = tabsRef.current;
+    if (!row) return;
+    const measure = () => setRowHeight(row.offsetHeight);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(row);
+    return () => observer.disconnect();
+  }, [status, phone]);
 
   if (status === "error") {
     return (
@@ -1125,7 +1144,10 @@ function SandboxBody(props: SandboxViewProps) {
   if (status === "notFound") return <NotFound />;
 
   const untitled = isUntitled(props.title);
-  const frame = frameOf(innerWidthOf(win.width));
+  /* F62: `full` is where the columns stand with Details shown; `frame` is what is drawn, Build wider while Details is hidden. */
+  const full = frameOf(innerWidthOf(win.width));
+  const frame = frameOf(innerWidthOf(win.width), detailsHidden);
+  const stickyTop = HEADER_HEIGHT + rowHeight;
   // Map is for desktop; a phone is always the list.
   const lens: SandboxLens = phone ? "list" : props.lens;
   /* CA-18b P5: the composer is one box. The title area, the banner and the Map's row are padded in from `frameOf`'s edges. */
@@ -1208,7 +1230,7 @@ function SandboxBody(props: SandboxViewProps) {
   ) : null;
 
   const statusLine = (
-    <p data-testid="sandbox-status" style={{ ...text(12.5, 400, t.text2), margin: 0, overflowWrap: "anywhere" }}>
+    <p data-testid="sandbox-status" style={{ ...text(textStep.meta, 400, t.text2), margin: 0, overflowWrap: "anywhere" }}>
       {published ? publishedWords(props.publishedAt) : "Draft"}
       <SaveLine
         save={save}
@@ -1229,7 +1251,7 @@ function SandboxBody(props: SandboxViewProps) {
     <h1
       data-testid="sandbox-heading"
       {...fullText(untitled ? null : props.title.trim())}
-      style={{ ...text(20, 500, untitled ? t.text2 : t.text), margin: 0, letterSpacing: "-0.015em", ...TITLE_LINE }}
+      style={{ ...text(textStep.title, 500, t.text), margin: 0, letterSpacing: "-0.015em", ...TITLE_LINE }}
     >
       {untitled ? UNTITLED : props.title.trim()}
     </h1>
@@ -1263,10 +1285,10 @@ function SandboxBody(props: SandboxViewProps) {
     <div
       role="status"
       data-testid="sandbox-published"
-      style={{ padding: "8px 12px", borderRadius: 6, background: t.evidenceFill, ...text(12.5, 400, t.text), display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 4 }}
+      style={{ padding: "8px 12px", borderRadius: 6, background: t.evidenceFill, ...text(textStep.meta, 400, t.text), display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 4 }}
     >
       <span>Published. {published.inGallery ? "It is in the Gallery now." : `It will show in the Gallery once you ${published.shortfall}.`}</span>
-      <Link to={`/b2/${published.slug}`} style={{ ...text(12.5, 500, t.text), textDecoration: "underline", textUnderlineOffset: 3 }}>
+      <Link to={`/b2/${published.slug}`} style={{ ...text(textStep.meta, 500, t.text), textDecoration: "underline", textUnderlineOffset: 3 }}>
         See it
       </Link>
     </div>
@@ -1307,20 +1329,20 @@ function SandboxBody(props: SandboxViewProps) {
           flexWrap: props.find?.open && !phone ? "nowrap" : "wrap",
           minWidth: 0,
           /* CA-27 P1: with Find open the row stays under the header, so the count and the buttons are in view while the page moves from match to match. */
-          ...(props.find?.open ? { position: "sticky", top: HEADER_HEIGHT, zIndex: 6, background: t.surface, padding: "6px 0", margin: "-6px 0" } : null),
+          ...(props.find?.open ? { position: "sticky", top: stickyTop, zIndex: 6, background: t.surface, padding: "6px 0", margin: "-6px 0" } : null),
         }}
       >
         <PanelTitle>Build</PanelTitle>
-        <span data-testid="sandbox-counts" style={{ ...text(12, 400, t.text2), ...tnum, flexGrow: 1, minWidth: 0, userSelect: "none", ...(props.find?.open && !phone ? TITLE_LINE : null) }}>
+        <span data-testid="sandbox-counts" style={{ ...text(textStep.meta, 400, t.text2), ...tnum, flexGrow: 1, minWidth: 0, userSelect: "none", ...(props.find?.open && !phone ? TITLE_LINE : null) }}>
           {countsLine(props.counts)}
         </span>
         {phone ? (
           /* A phone puts Sources, Details and Add on a line of their own under the title, at touch size. */
           <span style={{ flexBasis: "100%", display: "flex", gap: 8 }}>
-            <Button variant="secondary" size={44} fontSize={13} onClick={() => setSourcesOpen(true)}>
+            <Button variant="secondary" size={44} fontSize={textStep.body} onClick={() => setSourcesOpen(true)}>
               Sources
             </Button>
-            <Button variant="secondary" size={44} fontSize={13} onClick={() => setDetailsOpen(true)}>
+            <Button variant="secondary" size={44} fontSize={textStep.body} onClick={() => setDetailsOpen(true)}>
               Details
             </Button>
             <span style={{ flexGrow: 1 }} />
@@ -1332,7 +1354,7 @@ function SandboxBody(props: SandboxViewProps) {
         {phone ? null : props.viewOptions ? <ViewMenu phone={false} view={props.viewOptions} /> : null}
       </div>
       {lens === "list" ? props.sessionList : null}
-      {guard("Build", props.emptyBuild ? <EmptyBuild {...props.emptyBuild} /> : (props.list ?? (listHint(phone) ? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{listHint(phone)}</p> : null)))}
+      {guard("Build", props.emptyBuild ? <EmptyBuild {...props.emptyBuild} /> : (props.list ?? (listHint(phone) ? <p style={{ ...text(textStep.meta, 400, t.label), margin: 0 }}>{listHint(phone)}</p> : null)))}
     </section>
   );
 
@@ -1416,7 +1438,7 @@ function SandboxBody(props: SandboxViewProps) {
             boxSizing: "border-box",
           }}
         >
-          <Button variant="ghost" size={48} fontSize={14} onClick={() => openCard(null)}>
+          <Button variant="ghost" size={48} fontSize={textStep.body} onClick={() => openCard(null)}>
             Classification
           </Button>
           {published ? (
@@ -1432,7 +1454,7 @@ function SandboxBody(props: SandboxViewProps) {
                 Preview
               </LinkButton>
               <div style={{ flexGrow: 1 }}>
-                <Button size={48} fontSize={15} fullWidth disabled={publishDisabled} onClick={() => void pressPublish()}>
+                <Button size={48} fontSize={textStep.body} fullWidth disabled={publishDisabled} onClick={() => void pressPublish()}>
                   {publishLabel}
                 </Button>
               </div>
@@ -1461,7 +1483,7 @@ function SandboxBody(props: SandboxViewProps) {
     <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
       {/* The title row: the title and its status line at the left, then List and Map (CA-17 P6), then the actions. The tabs
           and the actions keep CA-17's measures from the rule; the row grows to hold the title. */}
-      <div data-testid="sandbox-tabrow" ref={tabsRef} style={{ ...TAB_ROW, height: "auto", minHeight: 44, gap: 16, padding: `10px ${padRight}px 0 ${padLeft}px`, flexWrap: compactRow ? "nowrap" : frame.boxRight - frame.boxLeft < 760 ? "wrap" : "nowrap" }}>
+      <div data-testid="sandbox-tabrow" ref={tabsRef} style={{ ...TAB_ROW, position: "sticky", top: HEADER_HEIGHT, zIndex: 10, background: t.surface, height: "auto", minHeight: 44, gap: 16, padding: `10px ${padRight}px 0 ${padLeft}px`, flexWrap: compactRow ? "nowrap" : frame.boxRight - frame.boxLeft < 760 ? "wrap" : "nowrap" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, flexGrow: 1, minWidth: 0, marginBottom: 12 }}>
           {heading}
           {statusLine}
@@ -1469,7 +1491,7 @@ function SandboxBody(props: SandboxViewProps) {
         {tabs}
         <div style={{ ...TAB_ACTIONS, marginLeft: "auto" }}>
           <BuildTitleActions />
-          <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={12} aria-label="Classification" onClick={() => openCard(null)}>
+          <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={textStep.meta} aria-label="Classification" onClick={() => openCard(null)}>
             Classification
           </Button>
           {published ? (
@@ -1488,7 +1510,7 @@ function SandboxBody(props: SandboxViewProps) {
                   Preview
                 </LinkButton>
               )}
-              <Button style={BUTTON_PAD_SMALL_TEXT} size={32} fontSize={12} disabled={publishDisabled} onClick={() => void pressPublish()}>
+              <Button style={BUTTON_PAD_SMALL_TEXT} size={32} fontSize={textStep.meta} disabled={publishDisabled} onClick={() => void pressPublish()}>
                 {publishLabel}
               </Button>
             </>
@@ -1524,15 +1546,29 @@ function SandboxBody(props: SandboxViewProps) {
             </SourcesFrame>
           </div>
           <div style={{ marginLeft: frame.buildLeft - ORIGIN - COMPOSER_PAD }}>{buildColumn}</div>
-          {frame.beside ? null : (
+          {full.beside ? null : (
             /* CA-27 P4: Details where it does not fit beside the build is a panel over the composer box's right edge. */
-            <DetailsOverlay selectedKey={props.selectedKey} left={frame.boxRight - ORIGIN - OVERLAY_WIDTH} touch={touchPanel} onEdit={props.onEditSelected}>
+            <DetailsOverlay selectedKey={props.selectedKey} left={frame.boxRight - ORIGIN - OVERLAY_WIDTH} top={stickyTop} touch={touchPanel} onEdit={props.onEditSelected}>
               {detailsBody}
             </DetailsOverlay>
           )}
           {frame.beside ? (
             <div data-testid="sandbox-details-slot" style={{ position: "absolute", top: COLUMNS_TOP, bottom: 0, left: frame.detailsLeft - ORIGIN, width: frame.detailsWidth, display: "flex", alignItems: "stretch" }}>
-              <DetailsAside inner={innerWidthOf(win.width)} windowHeight={win.height} render={(plan) => (props.renderDetails ? guard("Details", props.renderDetails(plan)) : detailsBody)} />
+              <DetailsAside
+                inner={innerWidthOf(win.width)}
+                windowHeight={win.height}
+                top={stickyTop + DETAILS_BELOW_ROW}
+                head={<IconButton style={iconButtonSide()} icon={PanelRightClose} label={DETAILS_TOGGLE_COPY.hide} size={28} onClick={() => setDetailsHidden(true)} data-testid="details-hide" />}
+                render={(plan) => (props.renderDetails ? guard("Details", props.renderDetails(plan)) : detailsBody)}
+              />
+            </div>
+          ) : null}
+          {full.beside && detailsHidden ? (
+            /* F62: the way back, where Hide details stood: at the box's right edge, under the title row. */
+            <div data-testid="sandbox-details-shown-slot" style={{ position: "absolute", top: COLUMNS_TOP, bottom: 0, left: frame.boxRight - ORIGIN - size.control, width: size.control }}>
+              <div style={{ position: "sticky", top: stickyTop + DETAILS_BELOW_ROW }}>
+                <IconButton style={iconButtonSide()} icon={PanelRightOpen} label={DETAILS_TOGGLE_COPY.show} size={28} onClick={() => setDetailsHidden(false)} data-testid="details-show" />
+              </div>
             </div>
           ) : null}
         </div>

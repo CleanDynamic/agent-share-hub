@@ -43,6 +43,7 @@ import { useCrossfade } from "./buildMotion";
 import { size } from "@/lib/theme/space";
 import { iconButtonSide } from "./modalRecipes";
 
+import { textStep } from "@/lib/theme/type";
 export const SESSION_HEAD_COPY = {
   titlePlaceholder: "Add a title",
   noTiles: "No steps yet",
@@ -211,12 +212,12 @@ function TitleField({ session, phone, onSave }: { session: SourceSession; phone:
           ...(quiet ? { flex: "0 0 auto", width: "auto", fieldSizing: "content", cursor: "text" } : null),
           textOverflow: "ellipsis",
           userSelect: "text",
-          ...text(15, 400, t.text),
-          ...(phone ? { fontSize: 16 } : null),
+          ...text(textStep.section, 400, t.text),
+          ...(phone ? { fontSize: textStep.section } : null),
         }}
       />
       {past ? (
-        <span style={{ ...text(11, 400, t.label), ...tnum, flexShrink: 0 }}>
+        <span style={{ ...text(textStep.meta, 400, t.label), ...tnum, flexShrink: 0 }}>
           {SESSION_HEAD_COPY.typedPast(draft.length)}
         </span>
       ) : null}
@@ -284,7 +285,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
       {maker ? (
           <TitleField session={session} phone={phone} onSave={(title) => ops?.onTitle(session.key, title)} />
         ) : session.title ? (
-          <span data-testid="session-title-text" {...fullText(session.title)} style={{ ...text(13, 400, t.text), ...TITLE_LINE, flex: "1 1 120px" }}>
+          <span data-testid="session-title-text" {...fullText(session.title)} style={{ ...text(textStep.body, 400, t.text), ...TITLE_LINE, flex: "1 1 120px" }}>
             <FindHit text={session.title} />
           </span>
         ) : (
@@ -304,12 +305,12 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
         ) : null}
         {session.imported ? <span data-testid="session-imported" style={quiet(t.text2)}>{SESSION_HEAD_COPY.imported(session.imported.have, session.imported.of)}</span> : null}
         {session.imported && maker && ops?.onRetryImport ? (
-          <TextButton target={phone} style={{ ...text(12, 500, t.text2), flexShrink: 0 }} aria-label={`Retry importing Session ${session.number}`} onClick={() => ops.onRetryImport?.(session.key)}>
+          <TextButton target={phone} style={{ ...text(textStep.meta, 500, t.text2), flexShrink: 0 }} aria-label={`Retry importing Session ${session.number}`} onClick={() => ops.onRetryImport?.(session.key)}>
             {SESSION_HEAD_COPY.retry}
           </TextButton>
         ) : null}
         {session.setupCount && onOpenSetup ? (
-          <TextButton target={phone} style={{ ...textLinkBox(phone), ...text(12, 500, t.text2), flexShrink: 0 }} aria-label={`Setup of session ${session.number}: ${session.setupCount}`} onClick={() => onOpenSetup(session.key)}>
+          <TextButton target={phone} style={{ ...textLinkBox(phone), ...text(textStep.meta, 500, t.text2), flexShrink: 0 }} aria-label={`Setup of session ${session.number}: ${session.setupCount}`} onClick={() => onOpenSetup(session.key)}>
             {`Setup ${session.setupCount}`}
           </TextButton>
         ) : null}

@@ -29,7 +29,7 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { fade, prefersReducedMotion } from "@/lib/theme/motion";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO } from "@/lib/theme/type";
+import { DM_MONO, textStep } from "@/lib/theme/type";
 
 import { TextButton } from "./composeControls";
 import type { AddToPart } from "./AddSessionRow";
@@ -168,8 +168,8 @@ function GroupHead({ name, count, hollow }: { name: string; count: number; hollo
           flexShrink: 0,
         }}
       />
-      <h3 style={{ ...text(12, 500, t.text2), margin: 0, flexGrow: 1, minWidth: 0 }}>{name}</h3>
-      <span style={{ ...text(11.5, 400, t.label), ...tnum }}>{count}</span>
+      <h3 style={{ ...text(textStep.meta, 500, t.text2), margin: 0, flexGrow: 1, minWidth: 0 }}>{name}</h3>
+      <span style={{ ...text(textStep.meta, 400, t.text2), ...tnum }}>{count}</span>
     </div>
   );
 }
@@ -184,7 +184,7 @@ function Capped<T>({ rows, render, phone }: { rows: readonly T[]; render: (row: 
       {shown.map(render)}
       {hidden > 0 ? (
         <div style={{ ...rowLine, paddingTop: space[2] }}>
-          <TextButton onClick={() => setAll(true)} target={phone} style={{ ...textLinkBox(phone), ...text(12.5, 500, t.text2) }}>
+          <TextButton onClick={() => setAll(true)} target={phone} style={{ ...textLinkBox(phone), ...text(textStep.meta, 500, t.text2) }}>
             Show {hidden} more
           </TextButton>
         </div>
@@ -257,12 +257,12 @@ function SessionRow({
         <SelectButton selected={selectedId === session.key} onClick={() => onSelect(session.key)} minHeight={phone ? size.touch : size.control} style={{ alignItems: "flex-start" }}>
           <ToolMark tool={session.tool} size={size.icon} />
           <span style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0 }}>
-            <span {...fullText(`Session ${session.number} · ${session.tool}`)} style={{ ...text(13, 500, t.text), ...PREVIEW }}>
+            <span {...fullText(`Session ${session.number} · ${session.tool}`)} style={{ ...text(textStep.body, 500, t.text), ...PREVIEW }}>
               {/* CA-06 P4: a coloured session's 7px dot before its name. */}
               {session.colour ? <ColourDot colour={session.colour} size={7} style={{ marginRight: space[2], verticalAlign: "middle" }} /> : null}
               Session {session.number} · {session.tool}
             </span>
-            <span {...fullText(session.detail)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{session.detail}</span>
+            <span {...fullText(session.detail)} style={{ ...text(textStep.meta, 400, t.text2), ...ellipsis }}>{session.detail}</span>
           </span>
         </SelectButton>
         <button
@@ -301,9 +301,9 @@ function SessionRow({
         <div style={{ marginLeft: GRIP_ROOM + space[6], display: "flex", flexDirection: "column", gap: space[1], paddingTop: space[1] }}>
           {session.prompts.map((prompt) => (
             <SelectButton key={prompt.id} selected={selectedId === prompt.id} onClick={() => onSelect(prompt.id)} minHeight={phone ? size.touch : size.control}>
-              <span style={{ fontFamily: DM_MONO, fontSize: 10.5, color: t.label, ...tnum, flexShrink: 0 }}>{stepLabel(prompt.number)}</span>
+              <span style={{ fontFamily: DM_MONO, fontSize: textStep.meta, color: t.text2, ...tnum, flexShrink: 0 }}>{stepLabel(prompt.number)}</span>
               {/* F53: the number, then the prompt's first six words, cut at the end. */}
-              <span {...fullText(prompt.words ?? prompt.title)} style={{ ...text(12.5, 400, t.text), ...ellipsis }}>{prompt.words ?? prompt.title}</span>
+              <span {...fullText(prompt.words ?? prompt.title)} style={{ ...text(textStep.meta, 400, t.text), ...ellipsis }}>{prompt.words ?? prompt.title}</span>
             </SelectButton>
           ))}
         </div>
@@ -331,8 +331,8 @@ function FileRow({ file, phone, sessions, selected = false, onOpen, onAddToSessi
         </span>
         <span style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0, flexGrow: 1 }}>
           {/* F63: a long name is cut in the middle, so its ending shows; all of it is in the title. */}
-          <span title={file.name} style={{ ...text(13, 500, t.text), ...ellipsis }}>{middleCut(file.name)}</span>
-          <span {...fullText(file.note)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{file.note}</span>
+          <span title={file.name} style={{ ...text(textStep.body, 500, t.text), ...ellipsis }}>{middleCut(file.name)}</span>
+          <span {...fullText(file.note)} style={{ ...text(textStep.meta, 400, t.text2), ...ellipsis }}>{file.note}</span>
         </span>
       </SelectButton>
       {/* CA-20 P2: a file's menu ends with Remove file, like every other component's. UX-02 P2: Open file and Add to session come first. */}
@@ -386,10 +386,10 @@ function FileRow({ file, phone, sessions, selected = false, onOpen, onAddToSessi
 function ReminderRow({ reminder, phone, onPick }: { reminder: SourceReminder; phone: boolean; onPick: () => void }) {
   return (
     <div style={{ ...rowLine, display: "flex", alignItems: "center", gap: space[2], minHeight: phone ? size.touch : size.row, padding: `${space[2]}px 0`, boxSizing: "border-box" }}>
-      <span data-testid="reminder-line" style={{ ...text(12.5, 400, t.text2), flex: "1 1 auto", minWidth: 0, whiteSpace: "normal", overflowWrap: "normal", wordBreak: "normal" }}>
+      <span data-testid="reminder-line" style={{ ...text(textStep.meta, 400, t.text2), flex: "1 1 auto", minWidth: 0, whiteSpace: "normal", overflowWrap: "normal", wordBreak: "normal" }}>
         {reminder.line}
       </span>
-      <TextButton onClick={onPick} target={phone} aria-label={`Add ${reminder.file}`} style={{ ...textLinkBox(phone), ...text(12.5, 500, t.text), whiteSpace: "nowrap", flexShrink: 0 }}>
+      <TextButton onClick={onPick} target={phone} aria-label={`Add ${reminder.file}`} style={{ ...textLinkBox(phone), ...text(textStep.meta, 500, t.text), whiteSpace: "nowrap", flexShrink: 0 }}>
         {SOURCES_COPY.addFile}
       </TextButton>
     </div>
@@ -405,7 +405,7 @@ function AddToMenu({ item, parts, phone, onAdd, lastPart }: { item: SourceLibrar
       </Menu.Trigger>
       <Menu.Portal>
         <MenuContent align="end" sideOffset={4} style={menuSurface()}>
-          <Menu.Label style={{ ...text(11.5, 500, t.label), padding: `${space[2]}px ${space[3]}px ${space[1]}px` }}>{SOURCES_COPY.addThisTo}</Menu.Label>
+          <Menu.Label style={{ ...text(textStep.meta, 500, t.label), padding: `${space[2]}px ${space[3]}px ${space[1]}px` }}>{SOURCES_COPY.addThisTo}</Menu.Label>
           {parts.map((part) => (
             <Menu.Item key={part.key} onSelect={() => onAdd(item.id, part.key)} data-last={part.key === lastPart || undefined} style={{ ...menuItem(true, phone), gap: space[2] }}>
               <ColourDot colour={part.colour} />
@@ -437,10 +437,10 @@ function LibraryRow({ item, phone, onAdd, parts, lastPart }: { item: SourceLibra
       {item.appKnown ? <ToolMark tool={item.app} size={size.icon} /> : <span aria-hidden="true" style={{ width: size.icon, flexShrink: 0 }} />}
       <span style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0, flexGrow: 1 }}>
         {/* UX-02 P8: a long name wraps to two lines before it is cut. */}
-        <span title={libraryName(item)} style={{ ...text(13, 400, t.text2), ...PREVIEW }}>{middleCut(libraryName(item), LIBRARY_NAME_MAX)}</span>
-        <span {...fullText(item.line)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{item.line}</span>
-        {item.alsoIn ? <span {...fullText(item.alsoIn)} style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{item.alsoIn}</span> : null}
-        {item.sameAs ? <span data-testid="same-prompts" style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{REPEAT_COPY.sameAs(item.sameAs)}</span> : null}
+        <span title={libraryName(item)} style={{ ...text(textStep.body, 400, t.text2), ...PREVIEW }}>{middleCut(libraryName(item), LIBRARY_NAME_MAX)}</span>
+        <span {...fullText(item.line)} style={{ ...text(textStep.meta, 400, t.text2), ...ellipsis }}>{item.line}</span>
+        {item.alsoIn ? <span {...fullText(item.alsoIn)} style={{ ...text(textStep.meta, 400, t.text2), ...ellipsis }}>{item.alsoIn}</span> : null}
+        {item.sameAs ? <span data-testid="same-prompts" style={{ ...text(textStep.meta, 400, t.text2), ...ellipsis }}>{REPEAT_COPY.sameAs(item.sameAs)}</span> : null}
       </span>
       <TrailSlot phone={phone}>
         {item.inThisDraft ? (
@@ -484,8 +484,8 @@ function UnfinishedRow({ item, phone }: { item: SourceUnfinishedItem; phone: boo
       <span aria-hidden="true" style={{ width: GRIP_ROOM, flexShrink: 0 }} />
       <ToolMark tool={item.label} size={size.icon} />
       <span style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0, flexGrow: 1 }}>
-        <span style={{ ...text(13, 400, t.text2), ...ellipsis }}>{item.label}</span>
-        <span style={{ ...text(11.5, 400, t.label), overflowWrap: "anywhere" }}>{item.line}</span>
+        <span style={{ ...text(textStep.body, 400, t.text2), ...ellipsis }}>{item.label}</span>
+        <span style={{ ...text(textStep.meta, 400, t.text2), overflowWrap: "anywhere" }}>{item.line}</span>
       </span>
     </div>
   );
@@ -495,10 +495,10 @@ function UnfinishedRow({ item, phone }: { item: SourceUnfinishedItem; phone: boo
 function AddFiles({ fine, phone, onPick }: Pick<SourcesPanelProps, "fine" | "phone" | "onPick">) {
   return (
     <div data-testid="sources-add-files" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: space[1] }}>
-      <TextButton onClick={onPick} target={phone} style={{ ...textLinkBox(phone), ...text(12.5, 500, t.text) }}>
+      <TextButton onClick={onPick} target={phone} style={{ ...textLinkBox(phone), ...text(textStep.meta, 500, t.text) }}>
         {SOURCES_COPY.addFiles}
       </TextButton>
-      {fine ? <p style={{ ...text(11.5, 400, t.label), margin: 0 }}>{SOURCES_COPY.dropLine}</p> : null}
+      {fine ? <p style={{ ...text(textStep.meta, 400, t.text2), margin: 0 }}>{SOURCES_COPY.dropLine}</p> : null}
     </div>
   );
 }
@@ -523,7 +523,7 @@ function AvailableGroup({ props, phone }: { props: SourcesPanelProps; phone: boo
           style={{ ...wellField, height: phone ? size.touch : size.control, padding: `0 ${space[3]}px`, marginBottom: space[2], ...text(phone ? 16 : 13, 400, t.text) }}
         />
       ) : null}
-      {shown.length === 0 ? <p style={{ ...text(12.5, 400, t.label), margin: 0, padding: `${space[2]}px 0` }}>{SOURCES_COPY.noMatch}</p> : null}
+      {shown.length === 0 ? <p style={{ ...text(textStep.meta, 400, t.text2), margin: 0, padding: `${space[2]}px 0` }}>{SOURCES_COPY.noMatch}</p> : null}
       <Capped key={wanted} rows={shown} phone={phone} render={(item) => <LibraryRow key={item.id} item={item} phone={phone} onAdd={props.onAddSession} parts={props.parts} lastPart={props.lastPart} />} />
       {props.libraryHasMore ? (
         <div style={{ ...rowLine, paddingTop: space[2] }}>
@@ -532,7 +532,7 @@ function AvailableGroup({ props, phone }: { props: SourcesPanelProps; phone: boo
               <LoadingBlocks kind="line" width={LIBRARY_MORE_WIDTH} />
             </LoadingRegion>
           ) : (
-            <TextButton onClick={() => props.onLibraryMore?.()} target={phone} style={{ ...textLinkBox(phone), ...text(12.5, 500, t.text2) }}>
+            <TextButton onClick={() => props.onLibraryMore?.()} target={phone} style={{ ...textLinkBox(phone), ...text(textStep.meta, 500, t.text2) }}>
               {SOURCES_COPY.showMoreSessions}
             </TextButton>
           )}
@@ -603,19 +603,19 @@ export function SourcesPanel(props: SourcesPanelProps) {
       <div ref={rootRef} data-testid="sources-panel" {...(fine ? dropTarget(props.onDropFiles) : null)} style={{ display: "flex", flexDirection: "column", gap: space[4], minWidth: 0 }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: phone ? "flex-end" : "flex-start", gap: space[1] }}>
           {/* On a phone the bottom sheet's own title is "Sources". */}
-          {phone ? null : <h2 style={{ ...text(14, 500, t.text), margin: 0 }}>Sources</h2>}
-          <span style={{ ...text(12, 400, t.label), ...tnum }}>{inBuild} in build</span>
+          {phone ? null : <h2 style={{ ...text(textStep.body, 500, t.text), margin: 0 }}>Sources</h2>}
+          <span style={{ ...text(textStep.meta, 400, t.text2), ...tnum }}>{inBuild} in build</span>
         </div>
 
         {/* S36: the heading space[4] over the first group; the groups space[6] apart. */}
         <div data-testid="sources-groups" style={{ display: "flex", flexDirection: "column", gap: space[6], minWidth: 0 }}>
           {empty ? (
             <div style={{ display: "flex", flexDirection: "column", gap: space[2] }}>
-              <p style={{ ...text(13, 400, t.text), margin: 0 }}>{SOURCES_COPY.noSessions}</p>
-              <Link to={props.connectHref} style={{ ...text(12.5, 500, t.text), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line }}>
+              <p style={{ ...text(textStep.body, 400, t.text), margin: 0 }}>{SOURCES_COPY.noSessions}</p>
+              <Link to={props.connectHref} style={{ ...text(textStep.meta, 500, t.text), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line }}>
                 {SOURCES_COPY.connect}
               </Link>
-              <p style={{ ...text(13, 400, t.text), margin: `${space[2]}px 0 0` }}>{SOURCES_COPY.noFiles}</p>
+              <p style={{ ...text(textStep.body, 400, t.text), margin: `${space[2]}px 0 0` }}>{SOURCES_COPY.noFiles}</p>
             </div>
           ) : null}
   

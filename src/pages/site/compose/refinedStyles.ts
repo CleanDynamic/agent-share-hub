@@ -11,7 +11,7 @@ import type { CSSProperties } from "react";
 import { SELECTED, WELL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { TITLE_LINE } from "@/lib/theme/truncate";
-import { FIGTREE } from "@/lib/theme/type";
+import { FIGTREE, textStep } from "@/lib/theme/type";
 import { space, size } from "@/lib/theme/space";
 import { r } from "@/lib/theme/radius";
 
@@ -34,7 +34,7 @@ export const tnum: CSSProperties = { fontVariantNumeric: "tabular-nums" };
  */
 export const EYEBROW: CSSProperties = {
   fontFamily: FIGTREE,
-  fontSize: 10.5,
+  fontSize: textStep.meta,
   fontWeight: 500,
   lineHeight: "normal",
   color: t.label,
@@ -89,7 +89,7 @@ export const wellField: CSSProperties = {
   width: "100%",
   /* No inline `outline`: the global field rule is `outline: none` at rest and rings the field on :focus-visible, and an
      inline `none` would delete that ring (UI-P97). */
-  ...text(13.5, 400, t.text),
+  ...text(textStep.body, 400, t.text),
 };
 
 /** A reference: 22 high, the tile's fill, radius 4, 11.5. */
@@ -101,7 +101,7 @@ export const chipStyle: CSSProperties = {
   height: size.tag,
   padding: `0 ${space[2]}px`,
   borderRadius: r.chip,
-  ...text(11.5, 400, t.text),
+  ...text(textStep.meta, 400, t.text),
   whiteSpace: "nowrap",
   maxWidth: "100%",
   overflow: "hidden",
@@ -118,7 +118,7 @@ export const tagStyle: CSSProperties = {
   boxSizing: "border-box",
   borderRadius: r.chip,
   background: t.tagFill,
-  ...text(11.5, 400, t.text2),
+  ...text(textStep.meta, 400, t.text2),
   whiteSpace: "nowrap",
   maxWidth: "100%",
   overflow: "hidden",
@@ -165,7 +165,7 @@ export const windowStyle = (width: number): CSSProperties => ({
   fontFamily: FIGTREE,
 });
 
-export const dialogTitle: CSSProperties = { ...text(15, 500, t.text), margin: "0 0 16px" };
+export const dialogTitle: CSSProperties = { ...text(textStep.section, 500, t.text), margin: "0 0 16px" };
 
 /** CA-03: a field you type in, on the well: 30 high (44 on a phone), 13 (16 on a phone, so iOS does not zoom). */
 export const typedField = (phone: boolean, extra: CSSProperties = {}): CSSProperties => ({
@@ -193,7 +193,7 @@ export const menuItem = (enabled: boolean, phone: boolean): CSSProperties => ({
   minHeight: phone ? size.touch : size.control,
   padding: `0 ${space[3]}px`,
   borderRadius: r.control,
-  ...text(13, 400, t.text),
+  ...text(textStep.body, 400, t.text),
   cursor: enabled ? "pointer" : "default",
   filter: enabled ? undefined : t.dimFilter,
   outline: "none",

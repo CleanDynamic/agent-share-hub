@@ -48,7 +48,7 @@ import { groupKind, groupOfStep, isCountedPrompt, promptNumbersOf, stepLabel, st
 import { EFFORTS, EFFORT_LABEL, SETTINGS_INSTRUCTIONS_MAX, VARIABLE_DESCRIPTION_MAX, markVariable, variablesFor, type Effort, type PromptSettings } from "@/lib/build/tileExtras";
 import { modelLabel } from "@/lib/models/registry";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { FIGTREE, textStep } from "@/lib/theme/type";
 import { ModelPicker } from "@/pages/site/compose/ModelPicker";
 import { OptionalField, OptionalSection, summaryOf } from "@/pages/site/compose/OptionalSection";
 import { OptionalRow, OptionalRows } from "@/pages/site/compose/OptionalRows";
@@ -347,7 +347,7 @@ function ShapeRead({ shape }: { shape: OutputShape }) {
       {shape.sample ? <CodeLines text={shape.sample} testId="shape-sample" label="Sample" /> : null}
       {fragment.text ? (
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={12} onClick={() => void navigator.clipboard?.writeText(fragment.text).then(() => setSaid("Copied"), () => setSaid("Text not copied"))}>
+          <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={textStep.meta} onClick={() => void navigator.clipboard?.writeText(fragment.text).then(() => setSaid("Copied"), () => setSaid("Text not copied"))}>
             Copy the setting
           </Button>
           <span aria-live="polite" style={geist(12, 400, t.label)}>{said}</span>

@@ -36,6 +36,7 @@ import { MODAL_COPY, ModalForm, ModalShell } from "./ModalFrame";
 import { FieldInput, MODAL_WIDTH } from "./modalRecipes";
 import { PickMenu } from "./PickMenu";
 
+import { textStep } from "@/lib/theme/type";
 export const DEPLOYMENT_DIALOG_COPY = {
   title: (name: string) => `Add ${name.toLowerCase()}`,
   for: "For",
@@ -87,11 +88,11 @@ function Pick<V extends string>({ id, label, value, list, phone, onChange }: { i
 
 function Toggle({ label, line, checked, onChange }: { label: string; line?: string; checked: boolean; onChange: (on: boolean) => void }) {
   return (
-    <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: t.text }}>
+    <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: textStep.body, color: t.text }}>
       <Checkbox checked={checked} onChange={(event) => onChange(event.target.checked)} />
       <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
         {label}
-        {line ? <span style={{ fontSize: 12, color: t.label }}>{line}</span> : null}
+        {line ? <span style={{ fontSize: textStep.meta, color: t.label }}>{line}</span> : null}
       </span>
     </label>
   );
@@ -163,7 +164,7 @@ export function DeploymentDialog({ open, onOpenChange, kind, agents, forAgent = 
           ) : null}
           {kind === "knowledge_base" ? (
             <>
-              <span style={{ fontSize: 12, color: t.label }}>{DEPLOYMENT_DIALOG_COPY.kbHelp}</span>
+              <span style={{ fontSize: textStep.meta, color: t.label }}>{DEPLOYMENT_DIALOG_COPY.kbHelp}</span>
               <Pick id={id("format")} label="Format" value={str(payload.format) || "markdown files"} list={options(KB_FORMATS)} phone={phone} onChange={(value) => set({ format: value })} />
               <Text id={id("app")} label="App" value={str(payload.app)} max={60} placeholder="e.g. Obsidian" phone={phone} onChange={(value) => set({ app: value })} />
               <Pick id={id("sync")} label="Sync" value={str(payload.sync) || "none"} list={options(KB_SYNCS)} phone={phone} onChange={(value) => set({ sync: value })} />
@@ -172,7 +173,7 @@ export function DeploymentDialog({ open, onOpenChange, kind, agents, forAgent = 
           ) : null}
           {kind === "relay" ? (
             <>
-              <span style={{ fontSize: 12, color: t.label }}>{DEPLOYMENT_DIALOG_COPY.relayHelp}</span>
+              <span style={{ fontSize: textStep.meta, color: t.label }}>{DEPLOYMENT_DIALOG_COPY.relayHelp}</span>
               <Text id={id("provider")} label={DEPLOYMENT_DIALOG_COPY.provider} value={str(payload.provider)} max={60} placeholder="e.g. Agent Tincan" phone={phone} onChange={(value) => set({ provider: value })} />
               <Text id={id("network")} label="Network" value={str(payload.network)} max={60} placeholder="e.g. Tailscale" phone={phone} onChange={(value) => set({ network: value })} />
               <Toggle label="Queues requests" line="Requests wait while an agent is offline" checked={payload.queues === true} onChange={(on) => set({ queues: on })} />

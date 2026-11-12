@@ -21,6 +21,7 @@ import { OVERLAY_EDGE, OVERLAY_FOOT_COPY, OVERLAY_FOOT_PAD, OVERLAY_PANEL_PAD, O
 import { text } from "./refinedStyles";
 import { iconButtonSide } from "./modalRecipes";
 
+import { textStep } from "@/lib/theme/type";
 /** What a click on the content must not take as "edit": the controls inside it. */
 const CONTROLS = "button, a, input, select, textarea, [role='button'], [role='menuitem']";
 
@@ -39,7 +40,7 @@ export function ClickToEdit({ onEdit, phone, pad = 0, touch = phone, panel = fal
       <div data-testid="details-clickable" tabIndex={0} onClick={onClick} onKeyDown={onKeyDown} style={{ cursor: "pointer", outline: "none", flex: "1 1 auto", minHeight: 0, overflowY: "auto", padding: pad }}>
         {children}
       </div>
-      <p data-testid="details-foot" style={{ ...text(12, 400, t.label), margin: 0, flex: "0 0 auto", ...(panel ? { paddingTop: 8, textAlign: "left" } : { padding: OVERLAY_FOOT_PAD, borderTop: `1px solid ${t.hairline}` }) }}>
+      <p data-testid="details-foot" style={{ ...text(textStep.meta, 400, t.label), margin: 0, flex: "0 0 auto", ...(panel ? { paddingTop: 8, textAlign: "left" } : { padding: OVERLAY_FOOT_PAD, borderTop: `1px solid ${t.hairline}` }) }}>
         {touch ? OVERLAY_FOOT_COPY.tap : OVERLAY_FOOT_COPY.click}
       </p>
     </>
@@ -51,6 +52,8 @@ export interface DetailsOverlayProps {
   selectedKey: string | null | undefined;
   /** The panel's left edge, in the columns area's own coordinates: its right edge is the composer box's. */
   left: number;
+  /** F18: the foot of the composer's fixed title row; the panel stands OVERLAY_EDGE under it. Absent: under the site header. */
+  top?: number;
   /** The window is a tablet's (or the screen is touched): the foot says Tap to edit. */
   touch: boolean;
   onEdit?: () => void;
@@ -63,7 +66,7 @@ export function useTouchPanel(width: number): boolean {
   return width <= TABLET_MAX || coarse;
 }
 
-export function DetailsOverlay({ selectedKey, left, touch, onEdit, children }: DetailsOverlayProps) {
+export function DetailsOverlay({ selectedKey, left, top: under = HEADER_HEIGHT, touch, onEdit, children }: DetailsOverlayProps) {
   const [open, setOpen] = useState(false);
   const returnTo = useRef<Opener>({ el: null, place: null });
   const panel = useRef<HTMLElement>(null);
@@ -111,7 +114,7 @@ export function DetailsOverlay({ selectedKey, left, touch, onEdit, children }: D
   }
 
   if (!open || !selectedKey) return null;
-  const top = HEADER_HEIGHT + OVERLAY_EDGE;
+  const top = under + OVERLAY_EDGE;
   return (
     <div data-testid="details-overlay-slot" style={{ position: "absolute", top: 0, bottom: 0, left, width: OVERLAY_WIDTH, zIndex: 15, pointerEvents: "none" }}>
       <section

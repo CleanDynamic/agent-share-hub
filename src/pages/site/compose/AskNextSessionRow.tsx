@@ -16,6 +16,7 @@ import { OPEN_REQUEST_COPY } from "./openRequestCopy";
 import { OpenRequestWindow as OpenRequestDialog } from "./composerWindows";
 import { TextButton } from "./composeControls";
 
+import { textStep } from "@/lib/theme/type";
 export const ASK_ROW_COPY = {
   ask: "Ask for the next session",
   asking: (problem: string) => `Asking for the next session: ${problem}`,
@@ -41,8 +42,8 @@ export function AskNextSessionRow({ label, partKey, open, phone, onOpen }: AskNe
       <div data-testid="ask-next-session" {...{ [SLIDE_ATTR]: `ask:${partKey}` }} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, padding: "4px 8px" }}>
         {open ? (
           <>
-            <span style={{ ...text(13, 400, t.text2), minWidth: 0, overflowWrap: "anywhere" }}>{ASK_ROW_COPY.asking(open)}</span>
-            <TextButton target={phone} style={text(13, 500, t.text2)} aria-label={`${ASK_ROW_COPY.takeBack}: ${label}`} onClick={() => onOpen(partKey, null)}>
+            <span style={{ ...text(textStep.body, 400, t.text2), minWidth: 0, overflowWrap: "anywhere" }}>{ASK_ROW_COPY.asking(open)}</span>
+            <TextButton target={phone} style={text(textStep.body, 500, t.text2)} aria-label={`${ASK_ROW_COPY.takeBack}: ${label}`} onClick={() => onOpen(partKey, null)}>
               {ASK_ROW_COPY.takeBack}
             </TextButton>
           </>
@@ -59,7 +60,7 @@ export function AskNextSessionRow({ label, partKey, open, phone, onOpen }: AskNe
               boxSizing: "border-box",
               borderRadius: 6,
               border: `1px dashed ${state.hovered ? t.text2 : t.line}`,
-              ...text(12.5, 400, t.text2),
+              ...text(textStep.meta, 400, t.text2),
               ...ring(state.focusVisible),
             }}
           >

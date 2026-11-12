@@ -15,7 +15,7 @@ import { EMPTY_PLACE_HEIGHT, type Lane, type Rail, type Rect, type Skeleton, typ
 import { useResolvedTheme } from "@/contexts/ThemeContext";
 import { fade, prefersReducedMotion } from "@/lib/theme/motion";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
-import { mono } from "@/lib/theme/type";
+import { mono, textStep } from "@/lib/theme/type";
 
 import { FramePieces } from "./framePieces";
 import { animateOn, openFrame, runOf, slideBox } from "./listMotion";
@@ -76,8 +76,8 @@ function TargetBox({ target }: { target: Target }) {
     <Box id={target.id} rect={target.rect} testId="skeleton-target" style={{ ...socketStyle(target.radius, t.skeletonTarget), display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
       {target.words ? (
         <>
-          <span style={text(12.5, 400, t.text2)}>{target.words.lead}</span>
-          <span style={text(12.5, 500, t.text)}>{target.words.place}</span>
+          <span style={text(textStep.meta, 400, t.text2)}>{target.words.lead}</span>
+          <span style={text(textStep.meta, 500, t.text)}>{target.words.place}</span>
         </>
       ) : null}
     </Box>
@@ -174,7 +174,7 @@ export function SkeletonLayer({ skeleton, shown, fadeIn, opening, fadeAfter = 0,
 export function EmptyPlace({ words }: { words: string }) {
   return (
     <div data-testid="skeleton-empty" style={{ ...socketStyle(12, t.skeletonTarget), height: EMPTY_PLACE_HEIGHT, width: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <span style={text(12.5, 400, t.text2)}>{words}</span>
+      <span style={text(textStep.meta, 400, t.text2)}>{words}</span>
     </div>
   );
 }

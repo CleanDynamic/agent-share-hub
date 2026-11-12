@@ -7,11 +7,12 @@ import { t } from "@/lib/theme/tokens";
 import { text } from "./refinedStyles";
 import type { Step } from "@/lib/build/graph";
 
+import { textStep } from "@/lib/theme/type";
 export function CodePartLine({ step, style }: { step: Pick<Step, "partOf" | "runsWhere">; style?: CSSProperties }) {
   const line = partLine(step);
   if (!line) return null;
   return (
-    <span data-testid="code-part-line" style={{ ...text(12, 400, t.label), ...style }}>
+    <span data-testid="code-part-line" style={{ ...text(textStep.meta, 400, t.label), ...style }}>
       {line}
     </span>
   );

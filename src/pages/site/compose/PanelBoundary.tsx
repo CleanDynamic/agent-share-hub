@@ -19,14 +19,14 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { controlPaint } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { FIGTREE, textStep } from "@/lib/theme/type";
 
 export type PanelName = "Sources" | "Post" | "Build" | "Details" | "Map";
 
 export const panelFailedLine = (panel: PanelName): string => `${panel} didn't load`;
 
 const FALLBACK: CSSProperties = { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, padding: 16, boxSizing: "border-box", minWidth: 0 };
-const LINE: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, lineHeight: "normal", color: t.text };
+const LINE: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: textStep.body, fontWeight: 500, lineHeight: "normal", color: t.text };
 const RETRY: CSSProperties = {
   appearance: "none",
   boxSizing: "border-box",
@@ -34,7 +34,7 @@ const RETRY: CSSProperties = {
   padding: "0 9px",
   borderRadius: 7,
   fontFamily: FIGTREE,
-  fontSize: 12,
+  fontSize: textStep.meta,
   fontWeight: 500,
   lineHeight: "normal",
   color: t.text,

@@ -22,7 +22,7 @@ import { useWindowFocus } from "@/lib/focus/windowFocus";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { FIGTREE, textStep } from "@/lib/theme/type";
 
 import { IconSquare, RecipeButton } from "./modalRecipes";
 import { space, size } from "@/lib/theme/space";
@@ -102,8 +102,8 @@ export interface AddFromLibraryWindowProps {
 
 const line = (size: number, weight: 400 | 500, color: string, height?: number): CSSProperties => ({ fontFamily: FIGTREE, fontSize: size, fontWeight: weight, color, ...(height ? { lineHeight: `${height}px` } : null) });
 
-const TITLE_STYLE: CSSProperties = { ...line(14, 500, t.text), margin: 0, lineHeight: 1.3 };
-const SUB_STYLE: CSSProperties = { ...line(12, 400, t.label), margin: `${space[1]}px 0 0` };
+const TITLE_STYLE: CSSProperties = { ...line(textStep.body, 500, t.text), margin: 0, lineHeight: 1.3 };
+const SUB_STYLE: CSSProperties = { ...line(textStep.meta, 400, t.label), margin: `${space[1]}px 0 0` };
 
 /** The rows that match the search: its words are all in the title or the detail. Pure. */
 export function matchingRows(rows: readonly LibraryWindowRow[], query: string): LibraryWindowRow[] {
@@ -137,10 +137,10 @@ function Row({ row, selected, tabStop, last, phone, version, versions, onSelect,
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-        <span style={line(13, 500, t.text, 20)}>{row.title}</span>
-        <span style={{ ...line(12, 400, row.state === "edited" ? t.lit : row.state === "removed" ? t.catBreakage : t.label, 20), flexShrink: 0 }}>{LIBRARY_WINDOW_COPY.states[row.state]}</span>
+        <span style={line(textStep.body, 500, t.text, 22)}>{row.title}</span>
+        <span style={{ ...line(textStep.meta, 400, row.state === "edited" ? t.lit : row.state === "removed" ? t.catBreakage : t.label, 20), flexShrink: 0 }}>{LIBRARY_WINDOW_COPY.states[row.state]}</span>
       </div>
-      <div style={line(12, 400, t.label, 17)}>{row.detail}</div>
+      <div style={line(textStep.meta, 400, t.label, 17)}>{row.detail}</div>
       {selected && versions ? (
         <div style={{ marginTop: 12 }} onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
           <Segmented<LibraryVersion>
@@ -222,7 +222,7 @@ function Body(props: AddFromLibraryWindowProps) {
             ]}
           />
         </div>
-        {missing ? <span style={{ ...line(12, 400, t.label), paddingBottom: 8, textAlign: "right" }}>{missing}</span> : null}
+        {missing ? <span style={{ ...line(textStep.meta, 400, t.label), paddingBottom: 8, textAlign: "right" }}>{missing}</span> : null}
       </div>
 
       <div style={{ padding: "12px 20px 0" }}>
@@ -231,11 +231,11 @@ function Body(props: AddFromLibraryWindowProps) {
 
       <div style={{ padding: "8px 20px 0", overflowY: "auto", minHeight: 0, flex: "1 1 auto" }}>
         {status === "loading" ? (
-          <p data-testid="library-status" style={{ ...line(12.5, 400, t.label, 18), margin: "12px 0" }}>
+          <p data-testid="library-status" style={{ ...line(textStep.meta, 400, t.label, 17), margin: "12px 0" }}>
             {copy.loading}
           </p>
         ) : status === "error" ? (
-          <div data-testid="library-error" style={{ display: "flex", alignItems: "center", gap: 12, margin: "12px 0", ...line(12.5, 400, t.text2, 18) }}>
+          <div data-testid="library-error" style={{ display: "flex", alignItems: "center", gap: 12, margin: "12px 0", ...line(textStep.meta, 400, t.text2, 17) }}>
             <span>{copy.error}</span>
             {onRetry ? (
               <RecipeButton small phone={phone} onClick={onRetry}>
@@ -244,7 +244,7 @@ function Body(props: AddFromLibraryWindowProps) {
             ) : null}
           </div>
         ) : shown.length === 0 ? (
-          <p style={{ ...line(12.5, 400, t.label, 18), margin: "12px 0" }}>
+          <p style={{ ...line(textStep.meta, 400, t.label, 17), margin: "12px 0" }}>
             {rows.length === 0 ? copy.empty : copy.noMatch}{" "}
             {rows.length === 0 ? (
               <Link to="/library" style={{ color: t.text2, textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line }}>
@@ -274,7 +274,7 @@ function Body(props: AddFromLibraryWindowProps) {
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8, padding: "16px 20px", borderTop: `1px solid ${t.hairline}`, flexWrap: phone ? "wrap" : "nowrap" }}>
-        <p style={{ ...line(12, 400, t.label, 17), margin: 0, flex: 1, minWidth: 0 }}>
+        <p style={{ ...line(textStep.meta, 400, t.label, 17), margin: 0, flex: 1, minWidth: 0 }}>
           {selectedShown ? footer : ""}
         </p>
         <RecipeButton phone={phone} onClick={onClose}>
@@ -325,8 +325,8 @@ export function AddFromLibraryWindow(props: AddFromLibraryWindowProps) {
             boxShadow: t.windowShadow,
             color: t.text,
             fontFamily: FIGTREE,
-            fontSize: 13,
-            lineHeight: "20px",
+            fontSize: textStep.body,
+            lineHeight: "22px",
             fontVariantNumeric: "tabular-nums",
           }}
         >

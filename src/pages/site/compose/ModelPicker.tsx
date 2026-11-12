@@ -31,6 +31,7 @@ import { MenuContent } from "./ComposeMenu";
 import { PickerFieldButton } from "./modalRecipes";
 import { size, space } from "@/lib/theme/space";
 
+import { textStep } from "@/lib/theme/type";
 /** The longest model name a maker can type. */
 export const MODEL_TYPED_MAX = 40;
 
@@ -78,9 +79,9 @@ export interface ModelPickerProps {
   field?: boolean;
 }
 
-const labelStyle: CSSProperties = { ...text(11.5, 500, t.label), padding: "8px 12px 4px" };
+const labelStyle: CSSProperties = { ...text(textStep.meta, 500, t.label), padding: "8px 12px 4px" };
 
-const quiet: CSSProperties = text(12, 400, t.text2);
+const quiet: CSSProperties = text(textStep.meta, 400, t.text2);
 
 export function ModelPicker({ tool, value, onChange, phone, allowNone = true, name, openSignal, anyWithoutTool = false, placeholder = MODEL_PICKER_COPY.choose, block = false, field = false }: ModelPickerProps) {
   const menu = modelMenu(anyWithoutTool ? harnessTool(tool) : tool);
@@ -187,10 +188,10 @@ export function ModelPicker({ tool, value, onChange, phone, allowNone = true, na
                 style={{ ...wellField, height: phone ? size.touch : size.control, padding: `0 ${space[3]}px`, fontSize: phone ? 16 : 13 }}
               />
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-                <TextButton onClick={() => setTyping(false)} target={phone} style={text(12.5, 500, t.text2)}>
+                <TextButton onClick={() => setTyping(false)} target={phone} style={text(textStep.meta, 500, t.text2)}>
                   {MODEL_PICKER_COPY.cancel}
                 </TextButton>
-                <TextButton onClick={save} disabled={!draft.trim()} target={phone} style={text(12.5, 500, draft.trim() ? t.text : t.text2)}>
+                <TextButton onClick={save} disabled={!draft.trim()} target={phone} style={text(textStep.meta, 500, draft.trim() ? t.text : t.text2)}>
                   {MODEL_PICKER_COPY.save}
                 </TextButton>
               </div>

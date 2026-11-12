@@ -17,6 +17,7 @@ import { t } from "@/lib/theme/tokens";
 import { ChoiceGrid } from "./ChoiceGrid";
 import { text, typedArea, typedField } from "./refinedStyles";
 
+import { textStep } from "@/lib/theme/type";
 export const EVIDENCE_COPY = {
   kind: "Kind of evidence",
   url: "Evidence URL",
@@ -70,7 +71,7 @@ export function EvidenceControl({
         ...(options.width ? { width: options.width } : { flex: "1 1 160px" }),
       }}
     >
-      <span style={text(12, 400, t.label)}>{words}</span>
+      <span style={text(textStep.meta, 400, t.label)}>{words}</span>
       <input
         type="text"
         aria-label={label(words)}
@@ -114,7 +115,7 @@ export function EvidenceControl({
         columns={2}
       />
       {draft.mediaId ? (
-        <span style={text(12.5, 400, t.text2)}>
+        <span style={text(textStep.meta, 400, t.text2)}>
           {EVIDENCE_COPY.attached(draft.name || "A file")}
         </span>
       ) : null}
@@ -163,7 +164,7 @@ export function EvidenceControl({
       ) : draft.mediaId ? null : (
         input("url", EVIDENCE_COPY.url, { max: 2000, disabled: fileChosen })
       )}
-      {why ? <span style={text(12, 400, t.text2)}>{why}</span> : null}
+      {why ? <span style={text(textStep.meta, 400, t.text2)}>{why}</span> : null}
     </div>
   );
 }

@@ -8,11 +8,11 @@ import type { CSSProperties, MouseEvent, ReactNode } from "react";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { FIGTREE, textStep } from "@/lib/theme/type";
 
 const text2Button: CSSProperties = {
   fontFamily: FIGTREE,
-  fontSize: 13,
+  fontSize: textStep.body,
   color: t.text2,
   background: "transparent",
   border: 0,
@@ -69,7 +69,7 @@ export function TextButton({
 
 
 /** A field's label (CA-03, the Components table): Geist 13/500 `--text`, sentence case, 6 above its control. */
-export const FIELD_LABEL: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, lineHeight: "normal", color: t.text };
+export const FIELD_LABEL: CSSProperties = { fontFamily: FIGTREE, fontSize: textStep.body, fontWeight: 500, lineHeight: "normal", color: t.text };
 
 /**
  * A label over its control. With `group`, the control is not one input (a picker, a row of menus): the label names a
@@ -88,7 +88,7 @@ export function Field({ id, label, hint, right, group = false, children }: { id:
             {label}
           </label>
         )}
-        {hint ? <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>{hint}</span> : null}
+        {hint ? <span style={{ fontFamily: FIGTREE, fontSize: textStep.meta, color: t.text2 }}>{hint}</span> : null}
         {right ? <span style={{ marginLeft: "auto" }}>{right}</span> : null}
       </div>
       {children}

@@ -18,7 +18,7 @@ import { t } from "@/lib/theme/tokens";
 import { CodeLines } from "@/components/code/CodeLines";
 import { modelLabel } from "@/lib/models/registry";
 import { toolName } from "@/lib/tools/registry";
-import { data as dataType, eyebrow, label as labelType, tabular } from "@/lib/theme/type";
+import { data as dataType, eyebrow, label as labelType, tabular, textStep } from "@/lib/theme/type";
 import { MEDIA_WIDTH, MediaFigure } from "../MediaFigure";
 import {
   Caption,
@@ -125,7 +125,7 @@ export function ArtefactRenderer(props: NodeProps) {
     <div data-visual-slot="renderer-artefact" style={{ minWidth: 0 }}>
       <Stack gap={12}>
         {ownName ? (
-          <span style={{ ...dataType, fontFamily: MONO_STACK, fontSize: 12.5, color: t.text, wordBreak: "break-all" }}>{ownName}</span>
+          <span style={{ ...dataType, fontFamily: MONO_STACK, fontSize: textStep.meta, color: t.text, wordBreak: "break-all" }}>{ownName}</span>
         ) : null}
 
         {language || filename || entrypoint ? (
@@ -141,7 +141,7 @@ export function ArtefactRenderer(props: NodeProps) {
                   ...dataType,
                   ...tabular,
                   fontFamily: MONO_STACK,
-                  fontSize: 12,
+                  fontSize: textStep.meta,
                   color: t.text2,
                   wordBreak: "break-all",
                 }}

@@ -88,7 +88,7 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO } from "@/lib/theme/type";
+import { DM_MONO, textStep } from "@/lib/theme/type";
 
 import {
   agentEyebrow,
@@ -566,7 +566,7 @@ function MentionedLine({ to, phone }: { to: string; phone: boolean }) {
           <TextButton
             target={phone}
             underline
-            style={{ ...textLinkBox(phone), ...text(12, 500, t.text2) }}
+            style={{ ...textLinkBox(phone), ...text(textStep.meta, 500, t.text2) }}
             onClick={(event) => {
               event.stopPropagation();
               onBack(to);
@@ -638,7 +638,7 @@ function NestButtons({ step, phone }: { step: Step; phone: boolean }) {
     <span ref={ref} data-testid="nest-control" style={{ display: "inline-flex", opacity: shown ? 1 : 0 }}>
       <TextButton
         target={phone}
-        style={{ ...textLinkBox(phone), ...text(12, 500, t.text2), display: "inline-flex", alignItems: "center", gap: space[1] }}
+        style={{ ...textLinkBox(phone), ...text(textStep.meta, 500, t.text2), display: "inline-flex", alignItems: "center", gap: space[1] }}
         onClick={(event) => {
           event.stopPropagation();
           if (own) nest.move(step.id, null, nest.after(step.id));
@@ -744,7 +744,7 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
         <Quiet style={{ ...ellipsis, minWidth: 0, flexGrow: 1 }}>{NEST_LIST_COPY.sentWith(step.inside?.label ?? "the step above")}</Quiet>
         <CardColour step={step} phone={props.phone} />
       </div>
-      <span style={{ ...text(13, 500, step.title ? t.text : t.text2), overflowWrap: "anywhere" }}>
+      <span style={{ ...text(textStep.body, 500, step.title ? t.text : t.text2), overflowWrap: "anywhere" }}>
         {[kind === "Prompt" ? null : kind, step.title ?? (kind === "Prompt" ? stepTitle(step) : named ?? (step.kind === "file" ? step.filename : null))].filter(Boolean).join(" · ")}
       </span>
       {step.kind === "code" ? (
@@ -753,7 +753,7 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
           <CodeLines text={step.text} compact testId="code-lines" label={`${kind} text`} />
         </>
       ) : step.text ? (
-        <p style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", ...clamp2 }}>{step.text}</p>
+        <p style={{ ...text(textStep.body, 400, t.text), lineHeight: "23px", margin: 0, overflowWrap: "anywhere", ...clamp2 }}>{step.text}</p>
       ) : null}
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} indent={0} />
@@ -776,10 +776,10 @@ function SentWithSuggestions({ step, props }: { step: Step; props: BuildListProp
   const { phone } = props;
   return (
     <div data-testid="sent-with-found" onClick={(event) => event.stopPropagation()} style={{ paddingLeft: INDENT, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-      <span style={text(12, 400, t.text2)}>{SENT_WITH_COPY.found(offered.length)}</span>
+      <span style={text(textStep.meta, 400, t.text2)}>{SENT_WITH_COPY.found(offered.length)}</span>
       <Popover.Root>
         <Popover.Trigger asChild>
-          <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={12}>
+          <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={textStep.meta}>
             {SENT_WITH_COPY.review}
           </Button>
         </Popover.Trigger>
@@ -792,15 +792,15 @@ function SentWithSuggestions({ step, props }: { step: Step; props: BuildListProp
             data-testid="sent-with-review"
             style={{ ...menuSurface(360), maxHeight: "var(--radix-popover-content-available-height)", padding: 12, display: "flex", flexDirection: "column", gap: 12 }}
           >
-            <span style={text(12.5, 500, t.text)}>{SENT_WITH_COPY.keep}</span>
+            <span style={text(textStep.meta, 500, t.text)}>{SENT_WITH_COPY.keep}</span>
             {offered.map((suggestion) => (
               <div key={suggestion.key} data-testid="sent-with-suggestion" style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 12, borderTop: `1px solid ${t.line}` }}>
-                <span style={{ ...text(12.5, 500, t.text), overflowWrap: "anywhere" }}>{["Code", suggestion.filename ?? (suggestion.language === "other" ? null : suggestion.language), `${lineCount(suggestion.source)} ${lineCount(suggestion.source) === 1 ? "line" : "lines"}`].filter(Boolean).join(" · ")}</span>
+                <span style={{ ...text(textStep.meta, 500, t.text), overflowWrap: "anywhere" }}>{["Code", suggestion.filename ?? (suggestion.language === "other" ? null : suggestion.language), `${lineCount(suggestion.source)} ${lineCount(suggestion.source) === 1 ? "line" : "lines"}`].filter(Boolean).join(" · ")}</span>
                 <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={12} onClick={() => props.onKeepSentWith?.(suggestion)}>
+                  <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={textStep.meta} onClick={() => props.onKeepSentWith?.(suggestion)}>
                     {SENT_WITH_COPY.accept}
                   </Button>
-                  <TextButton target={phone} style={{ ...textLinkBox(phone), ...text(12, 500, t.text2) }} onClick={() => props.onIgnoreSentWith?.(suggestion.stepId, suggestion.key)}>
+                  <TextButton target={phone} style={{ ...textLinkBox(phone), ...text(textStep.meta, 500, t.text2) }} onClick={() => props.onIgnoreSentWith?.(suggestion.stepId, suggestion.key)}>
                     {SENT_WITH_COPY.ignore}
                   </TextButton>
                 </span>
@@ -875,7 +875,7 @@ function Suggestion({ label, onAccept, onDismiss }: { label: string; onAccept: (
         boxSizing: "border-box",
         borderRadius: 6,
         border: `1px dashed ${t.line}`,
-        ...text(11.5, 400, t.text2),
+        ...text(textStep.meta, 400, t.text2),
         whiteSpace: "nowrap",
         maxWidth: "100%",
       }}
@@ -896,7 +896,7 @@ function Suggestion({ label, onAccept, onDismiss }: { label: string; onAccept: (
           padding: `0 ${space[2]}px`,
           boxSizing: "border-box",
           borderRadius: r.chip,
-          ...text(11.5, 500, t.text),
+          ...text(textStep.meta, 500, t.text),
           cursor: "pointer",
           flexShrink: 0,
           ...ring(accept.state.focusVisible),
@@ -909,7 +909,7 @@ function Suggestion({ label, onAccept, onDismiss }: { label: string; onAccept: (
           event.stopPropagation();
           onDismiss();
         }}
-        style={{ ...TEXT_LINK_BOX, ...text(11.5, 400, t.text2), flexShrink: 0 }}
+        style={{ ...TEXT_LINK_BOX, ...text(textStep.meta, 400, t.text2), flexShrink: 0 }}
       >
         Dismiss
       </TextButton>
@@ -1010,7 +1010,7 @@ function StepTitle({ title, isDefault }: { title: string; isDefault: boolean }) 
   return (
     <h3
       data-default-title={isDefault ? "true" : undefined}
-      style={{ ...text(14, 500, isDefault ? t.text2 : t.text), margin: 0, flexGrow: 1, minWidth: 0, letterSpacing: "-0.005em", ...ellipsis }}
+      style={{ ...text(textStep.body, 500, isDefault ? t.text2 : t.text), margin: 0, flexGrow: 1, minWidth: 0, letterSpacing: "-0.005em", ...ellipsis }}
     >
       {title}
     </h3>
@@ -1340,13 +1340,13 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         }
       />
       {step.origin || step.asksFor ? (
-        <p data-testid="prompt-origin" style={{ ...text(12, 400, t.label), margin: 0, paddingLeft: INDENT }}>
+        <p data-testid="prompt-origin" style={{ ...text(textStep.meta, 400, t.label), margin: 0, paddingLeft: INDENT }}>
           {[step.origin ? originLine(step.origin) : null, step.asksFor ? ASKS_FOR_LABEL[step.asksFor] : null].filter(Boolean).join(" · ")}
         </p>
       ) : null}
       <p
         ref={textRef}
-        style={{ ...text(13.5, 400, t.text), lineHeight: "21px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }}
+        style={{ ...text(textStep.body, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }}
       >
         {/* F19: plain words; a prompt with marked changes keeps its text as written, so the marks stay on their words. */}
         <ChangedText text={step.changes?.length ? step.text : plainPreview(step.text)} changes={step.changes} />
@@ -1390,19 +1390,19 @@ function InnerCard({ step, eyebrow, runs, nested, made, outside = [], phone = fa
     <div ref={part} data-testid={nested ? "inner-prompt" : "inner-card"} style={{ ...tileStyle, padding: 12, display: "flex", flexDirection: "column", gap: 6, ...colourEdge(to ? step.colour : undefined) }}>
       {eyebrow ? <Quiet>{eyebrow}</Quiet> : null}
       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-        <span style={{ fontFamily: DM_MONO, fontSize: 10.5, color: t.label, ...tnum, flexShrink: 0 }}>{step.number}</span>
-        <span style={{ ...text(13, 500, step.title ? t.text : t.text2), flexGrow: 1, minWidth: 0, ...ellipsis }}>{stepTitle(step)}</span>
+        <span style={{ fontFamily: DM_MONO, fontSize: textStep.meta, color: t.label, ...tnum, flexShrink: 0 }}>{step.number}</span>
+        <span style={{ ...text(textStep.body, 500, step.title ? t.text : t.text2), flexGrow: 1, minWidth: 0, ...ellipsis }}>{stepTitle(step)}</span>
         {to ? <CardColour step={step} phone={phone} /> : null}
       </div>
       {runs ? <DotLine testId="runs-line">{runs}</DotLine> : null}
       {step.kind === "agent" && step.memory ? <DotLine testId="memory-line">{LIST_COPY.remembers(step.memory)}</DotLine> : null}
       {step.kind === "agent" && step.memoryTidy ? <DotLine testId="memory-tidy-line">{LIST_COPY.tidies(step.memoryTidy)}</DotLine> : null}
       {step.id.endsWith(":instructions") && !step.text.trim() ? (
-        <span data-testid="agent-instructions" style={text(12.5, 400, t.label)}>{TILE_COPY.noInstructions}</span>
+        <span data-testid="agent-instructions" style={text(textStep.meta, 400, t.label)}>{TILE_COPY.noInstructions}</span>
       ) : team ? (
         <MentionText value={step.text} team={mentionTeam(team)} style={clamp3} />
       ) : (
-        <p data-testid={step.id.endsWith(":instructions") ? "agent-instructions" : undefined} style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", whiteSpace: step.id.endsWith(":instructions") ? "pre-wrap" : undefined, ...(step.id.endsWith(":instructions") ? clamp3 : clamp2) }}>{step.text}</p>
+        <p data-testid={step.id.endsWith(":instructions") ? "agent-instructions" : undefined} style={{ ...text(textStep.body, 400, t.text), lineHeight: "23px", margin: 0, overflowWrap: "anywhere", whiteSpace: step.id.endsWith(":instructions") ? "pre-wrap" : undefined, ...(step.id.endsWith(":instructions") ? clamp3 : clamp2) }}>{step.text}</p>
       )}
       {step.job ? <JobLine job={step.job} /> : null}
       <AgentRules agent={step} />
@@ -1431,7 +1431,7 @@ function GhostAdd({ label, phone, onClick }: { label: string; phone: boolean; on
         boxSizing: "border-box",
         borderRadius: 6,
         border: `1px dashed ${state.hovered ? t.text2 : t.line}`,
-        ...text(12.5, 400, t.text2),
+        ...text(textStep.meta, 400, t.text2),
         ...ring(state.focusVisible),
       }}
     >
@@ -1482,10 +1482,10 @@ function AgentPromptField({ agent, props, onDone }: { agent: Step; props: BuildL
         style={{ ...wellField, resize: "none", minHeight: space[16], padding: `${space[2]}px ${space[3]}px`, fontSize: props.phone ? 16 : 13.5 }}
       />
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
-        <TextButton onClick={cancel} target={props.phone} style={{ ...textLinkBox(props.phone), ...text(12.5, 500, t.text2) }}>
+        <TextButton onClick={cancel} target={props.phone} style={{ ...textLinkBox(props.phone), ...text(textStep.meta, 500, t.text2) }}>
           Cancel
         </TextButton>
-        <Button style={props.phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="primary" size={props.phone ? 44 : 32} fontSize={12} aria-label="Add prompt to this agent" data-testid="agent-prompt-add" disabled={!text_.trim() || busy} onClick={() => void submit()}>
+        <Button style={props.phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="primary" size={props.phone ? 44 : 32} fontSize={textStep.meta} aria-label="Add prompt to this agent" data-testid="agent-prompt-add" disabled={!text_.trim() || busy} onClick={() => void submit()}>
           {LIST_COPY.add}
         </Button>
       </div>
@@ -1512,8 +1512,8 @@ function TeamAgents({ team }: { team: Step }) {
           const right = [at === 0 ? "Lead" : null, agent.harness ? (toolName(agent.harness) ?? agent.harness) : null, stepModel(agent)].filter(Boolean).join(" · ");
           return (
             <li key={agent.id} data-testid="team-agent" style={listRow(at === 0)}>
-              <span style={{ ...text(13, 400, agent.title ? t.text : t.text2), flexGrow: 1, minWidth: 0, ...ellipsis }}>{stepTitle(agent)}</span>
-              <span style={{ fontFamily: DM_MONO, fontSize: 11.5, lineHeight: "18px", color: t.label, flexShrink: 0, maxWidth: "55%", ...ellipsis }}>{right}</span>
+              <span style={{ ...text(textStep.body, 400, agent.title ? t.text : t.text2), flexGrow: 1, minWidth: 0, ...ellipsis }}>{stepTitle(agent)}</span>
+              <span style={{ fontFamily: DM_MONO, fontSize: textStep.meta, lineHeight: "19px", color: t.label, flexShrink: 0, maxWidth: "55%", ...ellipsis }}>{right}</span>
             </li>
           );
         })}
@@ -1583,7 +1583,7 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingLeft: INDENT, minWidth: 0 }}>
           {instructions ? (
-            <span data-testid="agent-instructions-line" style={{ ...text(13, 400, t.text), ...ellipsis }}>
+            <span data-testid="agent-instructions-line" style={{ ...text(textStep.body, 400, t.text), ...ellipsis }}>
               {instructions}
             </span>
           ) : null}
@@ -1592,7 +1592,7 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
           {toolNames.length > 0 ? (
             <span data-testid="agent-tools" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
               {toolNames.map((name) => (
-                <span key={name} title={name} style={{ display: "inline-flex", alignItems: "center", gap: 4, ...text(11.5, 400, t.text2) }}>
+                <span key={name} title={name} style={{ display: "inline-flex", alignItems: "center", gap: 4, ...text(textStep.meta, 400, t.text2) }}>
                   <ToolMark tool={name} size={14} />
                   {name}
                 </span>
@@ -1613,7 +1613,7 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
           return (
             <div key={child.id} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {isTeam && index === 1 ? (
-                <span data-testid="handed-work-to" style={{ ...text(11.5, 500, t.label), paddingTop: 4 }}>
+                <span data-testid="handed-work-to" style={{ ...text(textStep.meta, 500, t.label), paddingTop: 4 }}>
                   {TEAM_COPY.handedTo}
                 </span>
               ) : null}
@@ -1632,7 +1632,7 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
                     <TextButton
                       target={props.phone}
                       aria-expanded={open}
-                      style={{ ...textLinkBox(props.phone), ...text(12.5, 500, t.text2) }}
+                      style={{ ...textLinkBox(props.phone), ...text(textStep.meta, 500, t.text2) }}
                       onClick={(event) => {
                         event.stopPropagation();
                         setOpenAgent(open ? null : child.id);
@@ -1941,13 +1941,13 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
         menu={<TileMenu step={step} noun="Check" index={index} last={last} props={props} rename={rename} />}
       />
       {criteria ? (
-        <p data-testid="check-criteria" style={{ ...text(13, 400, t.text), lineHeight: "20px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }}>
-          <span style={{ ...text(12.5, 400, t.text2) }}>Pass criteria: </span>
+        <p data-testid="check-criteria" style={{ ...text(textStep.body, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }}>
+          <span style={{ ...text(textStep.meta, 400, t.text2) }}>Pass criteria: </span>
           {criteria}
         </p>
       ) : null}
       {status ? (
-        <DotLine testId="check-status" dot={status.allPassed ? t.evidence : t.catBreakage} style={{ paddingLeft: INDENT, ...text(13, 400, t.text), lineHeight: "20px" }}>
+        <DotLine testId="check-status" dot={status.allPassed ? t.evidence : t.catBreakage} style={{ paddingLeft: INDENT, ...text(textStep.body, 400, t.text), lineHeight: "22px" }}>
           <span style={tnum}>{status.line}</span>
         </DotLine>
       ) : null}
@@ -1980,7 +1980,7 @@ function PendingAddCard({ kind }: { kind: PendingAdd }) {
       </span>
       <div role="status" style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
         <Quiet>{PENDING_ADD_COPY[kind].eyebrow}</Quiet>
-        <span style={text(14, 500, t.text2)}>{PENDING_ADD_COPY[kind].adding}</span>
+        <span style={text(textStep.body, 500, t.text2)}>{PENDING_ADD_COPY[kind].adding}</span>
       </div>
     </div>
   );
@@ -2012,10 +2012,10 @@ function ResultCard({ result, selected, ringed = false, onSelect, onEdit }: { re
         <Glyph name="check" size={size.icon} />
       </span>
       <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
-        <span data-testid="result-eyebrow" style={{ ...text(11.5, 400, t.label), ...ellipsis }}>
+        <span data-testid="result-eyebrow" style={{ ...text(textStep.meta, 400, t.label), ...ellipsis }}>
           {resultTypeLine(result.facts)}
         </span>
-        <span title={result.title} style={{ ...text(14, 500, t.text), ...ellipsis }}>
+        <span title={result.title} style={{ ...text(textStep.body, 500, t.text), ...ellipsis }}>
           {result.title}
         </span>
         <ResultTileBody facts={result.facts} />
@@ -2166,7 +2166,7 @@ function AddPrompt({
   };
 
   return (
-    <div data-testid="add-prompt" data-lit={lit || undefined} style={{ ...moduleStyle(false, 12), display: "flex", flexDirection: "column", gap: 12, fontSize: 13.5, ...ring(lit) }}>
+    <div data-testid="add-prompt" data-lit={lit || undefined} style={{ ...moduleStyle(false, 12), display: "flex", flexDirection: "column", gap: 12, fontSize: textStep.body, ...ring(lit) }}>
       <textarea
         ref={setField}
         aria-label="Add a prompt"
@@ -2189,7 +2189,7 @@ function AddPrompt({
       {offerCode ? (
         <div data-testid="keep-as-code" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
           <Quiet>{CODE_COPY.looksLikeCode}</Quiet>
-          <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={12} onClick={() => void asCode()}>
+          <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={textStep.meta} onClick={() => void asCode()}>
             {CODE_COPY.keepAsCode}
           </Button>
         </div>
@@ -2200,14 +2200,14 @@ function AddPrompt({
         {redirect ? null : <ModelPicker tool={tool} value={model} onChange={setModel} phone={phone} placeholder={MODEL_PICKER_COPY.label} />}
         <span style={{ flexGrow: 1 }} />
         {/* F15 (D3): the add is a button in words, not an arrow. */}
-        <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="primary" size={phone ? 44 : 32} fontSize={12} data-testid="composer-add" disabled={!value.trim() || busy || redirect} onClick={() => void submit()}>
+        <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="primary" size={phone ? 44 : 32} fontSize={textStep.meta} data-testid="composer-add" disabled={!value.trim() || busy || redirect} onClick={() => void submit()}>
           {LIST_COPY.add}
         </Button>
       </div>
       {redirect && known ? (
         <div data-testid="add-as-agent" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
           <Quiet>{ADD_PROMPT_COPY.runsItself(known.name)}</Quiet>
-          <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={12} disabled={!onAddAsAgent} onClick={() => void asAgent()}>
+          <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={textStep.meta} disabled={!onAddAsAgent} onClick={() => void asAgent()}>
             {ADD_PROMPT_COPY.addAsAgent}
           </Button>
         </div>
@@ -2563,7 +2563,7 @@ export function BuildList(raw: BuildListProps) {
                     <SessionLines session={sameStageAs ? { ...run.head, sameStageAs } : run.head} />
                     {drawBranches(run.steps, (step) => step, steps, placed)}
                     {/* SV-07 P6: an empty session looks one way, "No tiles yet" and "+ Add tile"; the dashed place shows only while a tile is dragged. */}
-                    {run.steps.length === 0 && !promptHere ? sorting.held && sorting.held.type !== "session" && sorting.held.type !== "part" ? <EmptyPlace words="Drop a step here" /> : <p style={{ ...text(13, 400, t.label), margin: 0 }}>{SESSION_HEAD_COPY.noTiles}</p> : null}
+                    {run.steps.length === 0 && !promptHere ? sorting.held && sorting.held.type !== "session" && sorting.held.type !== "part" ? <EmptyPlace words="Drop a step here" /> : <p style={{ ...text(textStep.body, 400, t.label), margin: 0 }}>{SESSION_HEAD_COPY.noTiles}</p> : null}
                     {promptHere ? (
                       <AddPrompt
                         phone={props.phone}
@@ -2618,11 +2618,11 @@ export function BuildList(raw: BuildListProps) {
             </>
           ) : (
             <div data-testid="workstream-empty" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, padding: "4px 8px" }}>
-              {sorting.held?.type === "session" ? <EmptyPlace words="Drop a session here" /> : <p style={{ ...text(13, 400, t.label), margin: 0 }}>{WORKSTREAM_HEAD_COPY.empty}</p>}
+              {sorting.held?.type === "session" ? <EmptyPlace words="Drop a session here" /> : <p style={{ ...text(textStep.body, 400, t.label), margin: 0 }}>{WORKSTREAM_HEAD_COPY.empty}</p>}
               {parts?.ops ? (
                 <TextButton
                   target={props.phone}
-                  style={{ ...textLinkBox(props.phone), ...text(13, 500, t.text2) }}
+                  style={{ ...textLinkBox(props.phone), ...text(textStep.body, 500, t.text2) }}
                   onClick={() => {
                     setAddFor((current) => ({ part: view.key, n: (current?.n ?? 0) + 1 }));
                     parts.onAddSession?.(view.key);
@@ -2688,9 +2688,9 @@ export function BuildList(raw: BuildListProps) {
   const list = (
     /* The global field rule makes a field inherit its size on a desktop (`font-size: inherit !important`), so the
      fields' type is set here, where they inherit it. */
-    <div ref={sorting.rootRef} data-testid="build-list" {...fileDrop} style={{ display: "flex", flexDirection: "column", gap: parts ? space[6] : space[8], minWidth: 0, fontSize: 13.5, ...(sorting.skeleton || arrival.skeleton || director.skeleton ? { position: "relative", isolation: "isolate" } : null) }}>
+    <div ref={sorting.rootRef} data-testid="build-list" {...fileDrop} style={{ display: "flex", flexDirection: "column", gap: parts ? space[6] : space[8], minWidth: 0, fontSize: textStep.body, ...(sorting.skeleton || arrival.skeleton || director.skeleton ? { position: "relative", isolation: "isolate" } : null) }}>
       {sorting.skeleton ? <SkeletonLayer skeleton={sorting.skeleton} shown={sorting.skeletonShown} /> : arrival.skeleton ? <SkeletonLayer skeleton={arrival.skeleton} shown={arrival.shown} fadeIn={arrival.fadeIn} opening={arrival.opening} fadeAfter={arrival.fadeAfter} onGone={arrival.gone} /> : director.skeleton ? <SkeletonLayer skeleton={director.skeleton} shown={director.shown} fadeAfter={FADE_AFTER_MS} onGone={director.gone} /> : null}
-      {props.phone ? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{LIST_COPY.hintPhone}</p> : null}
+      {props.phone ? <p style={{ ...text(textStep.meta, 400, t.label), margin: 0 }}>{LIST_COPY.hintPhone}</p> : null}
       {props.costGroups ? <CostStrip steps={steps} groups={props.costGroups} audience="maker" /> : null}
       {parts ? (
         <>

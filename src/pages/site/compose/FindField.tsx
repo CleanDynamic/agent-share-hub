@@ -13,7 +13,7 @@ import { FIND_COPY } from "@/lib/build/findInBuild";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO } from "@/lib/theme/type";
+import { DM_MONO, textStep } from "@/lib/theme/type";
 
 import { bareButton, text } from "./refinedStyles";
 import type { BuildFind } from "./useBuildFind";
@@ -74,10 +74,10 @@ export function FindField({ find }: { find: BuildFind }) {
         spellCheck={false}
         onChange={(event) => find.setInput(event.target.value)}
         onKeyDown={find.onFieldKey}
-        style={{ flex: "1 1 0", minWidth: 0, background: "transparent", border: 0, padding: 0, ...text(13, 400, t.text) }}
+        style={{ flex: "1 1 0", minWidth: 0, background: "transparent", border: 0, padding: 0, ...text(textStep.body, 400, t.text) }}
       />
       {find.words ? (
-        <span data-testid="find-count" style={{ flexShrink: 0, whiteSpace: "nowrap", fontFamily: DM_MONO, fontSize: 11, lineHeight: "normal", color: t.label, fontVariantNumeric: "tabular-nums" }}>
+        <span data-testid="find-count" style={{ flexShrink: 0, whiteSpace: "nowrap", fontFamily: DM_MONO, fontSize: textStep.meta, lineHeight: "normal", color: t.label, fontVariantNumeric: "tabular-nums" }}>
           {find.words}
         </span>
       ) : null}

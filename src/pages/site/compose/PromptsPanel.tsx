@@ -21,7 +21,7 @@ import { Panel, PanelHead } from "@/components/brand/Panel";
 import { fade } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE, textStep } from "@/lib/theme/type";
 
 import { TextButton } from "./composeControls";
 import { bareField, useRing } from "./composeFields";
@@ -146,7 +146,7 @@ function PromptRow({
     </div>
   );
 
-  const source = <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.text2, minWidth: 0, overflowWrap: "anywhere" }}>{row.source}</span>;
+  const source = <span style={{ fontFamily: DM_MONO, fontSize: textStep.meta, color: t.text2, minWidth: 0, overflowWrap: "anywhere" }}>{row.source}</span>;
 
   return (
     <li
@@ -181,7 +181,7 @@ function PromptRow({
           background: t.cell,
           color: t.text,
           fontFamily: DM_MONO,
-          fontSize: 12,
+          fontSize: textStep.meta,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -270,7 +270,7 @@ export function PromptsPanel({ phone, fine, prompts, focus, onText, onMove, onRe
           title={
             <>
               Prompts
-              <span style={{ marginLeft: 6, fontFamily: DM_MONO, fontSize: 12, fontWeight: 400, color: t.text2 }}>{prompts.length}</span>
+              <span style={{ marginLeft: 6, fontFamily: DM_MONO, fontSize: textStep.meta, fontWeight: 400, color: t.text2 }}>{prompts.length}</span>
             </>
           }
           subtitle="The prompts someone needs to get the same result, in order."
@@ -311,7 +311,7 @@ export function PromptsPanel({ phone, fine, prompts, focus, onText, onMove, onRe
               padding: "6px 9px",
               textAlign: "center",
               fontFamily: FIGTREE,
-              fontSize: 13,
+              fontSize: textStep.body,
               color: t.text2,
             }}
           >

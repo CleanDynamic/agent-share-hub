@@ -14,9 +14,12 @@
    not in its own block, so one diagonal wave crosses every placeholder on the page together. A block that mounts later keeps
    the wave in step by adding the page's own clock (`pageClock`). */
 
+import { textStep } from "@/lib/theme/type";
+
 export const CELL_W = 8;
 export const CELL_H = 12;
-export const CELL_FONT = 11;
+/** F77: the meta step; nothing in the editor is set below 12. */
+export const CELL_FONT = textStep.meta;
 export const CYCLE_MS = 1600;
 /** The characters, lightest first, and how much of the colour each shows. */
 export const GLYPHS = ["\u00B7", "\u25AB", "\u25AA", "\u25A0"] as const;

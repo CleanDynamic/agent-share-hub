@@ -375,6 +375,11 @@ export const type = {
 
 export type TypeRole = keyof typeof scale;
 
+/** F77: the build editor's five type steps, in px: 12 meta, 14 body, 16 a section heading, 20 a headline, 24 the page
+    title. Nothing in the editor is set below 12. The roles above are whole styles; these are sizes only, for the editor's
+    own `text()` and `type()` recipes. */
+export const textStep = { meta: 12, body: 14, section: 16, headline: 20, title: 24 } as const;
+
 /* ── Modifiers ─────────────────────────────────────────────────────────────
    Spread alongside a role rather than baked into it, because both depend on
    where the text sits rather than on what it is. */

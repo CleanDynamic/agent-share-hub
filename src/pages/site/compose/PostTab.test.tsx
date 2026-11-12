@@ -224,7 +224,8 @@ describe("the layout", () => {
     expect(row.firstElementChild).toBe(screen.getByTestId("thread-rail"));
     expect(row.contains(document.querySelector('[contenteditable="true"]'))).toBe(true);
     const toolbar = screen.getByTestId("post-toolbar");
-    expect((toolbar.parentElement as HTMLElement).style.marginLeft).toBe("52px");
+    // F74: the avatar (40) and its gap (12), less half of what the 36 tool square leaves round its 18 mark: the first mark starts under the words.
+    expect((toolbar.parentElement as HTMLElement).style.marginLeft).toBe("43px");
     expect(screen.queryByRole("navigation", { name: "Posts" })).toBeNull();
     expect(screen.queryByRole("region", { name: "Preview" })).toBeNull();
   });

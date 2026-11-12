@@ -42,6 +42,7 @@ import { useCurrentPath, useGo } from "@/lib/routing/go";
 import { useIdleReady } from "@/lib/routing/lazyHost";
 import { useIntent } from "@/lib/routing/useIntent";
 import { r } from "@/lib/theme/radius";
+import { space } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -148,7 +149,7 @@ function LazyAccountMenu({ viewer, onSignOut, avatarSize = 34 }: { viewer: Frame
 }
 
 /* ── UI-P87, refined ──
-   On `--frame` with no background and no border, 48 high, `0 20px`, gap 8: the lockup (18 / 14), a 1px × 16 `--line`
+   On `--frame` with no background and no border, 48 high, `0 space[6]` (24), gap space[2] (8; S37): the lockup (18 / 14), a 1px × 16 `--line`
    divider, the links (13/500 `--text2`, `0 12px` as the board draws them; the current one `--text` with a 2px
    `--nav-mark` bar 10 in from each side and `--nav-lamp-glow`; Drafts keeps its count at 11/500 `--label`), a spacer,
    the search (240×30, "/"), New build as a secondary button 30 high with no icon, the bell as a ghost 30 icon link with
@@ -161,7 +162,7 @@ const refinedLink: CSSProperties = {
   height: HEADER_HEIGHT,
   display: "flex",
   alignItems: "center",
-  gap: 6,
+  gap: space[2],
   fontFamily: FIGTREE,
   fontSize: 13,
   fontWeight: 500,
@@ -224,8 +225,8 @@ function RefinedSiteHeaderView({
         height: HEADER_HEIGHT,
         display: "flex",
         alignItems: "center",
-        gap: 8,
-        padding: "0 20px",
+        gap: space[2],
+        padding: `0 ${space[6]}px`,
         boxSizing: "border-box",
       }}
     >

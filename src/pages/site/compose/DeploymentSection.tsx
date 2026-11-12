@@ -9,6 +9,7 @@ import { text } from "./refinedStyles";
 
 import { TextButton } from "./composeControls";
 
+import { textStep } from "@/lib/theme/type";
 export interface DeploymentSectionProps {
   tiles: readonly DeploymentTile[];
   /** The build's steps: its agents and teams head the groups. */
@@ -26,11 +27,11 @@ export function DeploymentSection({ tiles, steps, sessionNumber, selectedId, pho
   const groups = groupDeployment(tiles, agentChoicesOf(steps));
   return (
     <section aria-label={DEPLOYMENT_GROUP_HEAD} data-testid="deployment-section" style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 32, minWidth: 0 }}>
-      <h3 style={{ ...text(14, 500, t.text), margin: 0, lineHeight: 1.3 }}>{DEPLOYMENT_GROUP_HEAD}</h3>
-      <p style={{ ...text(12, 400, t.label), margin: 0 }}>{deploymentSectionMeta(tiles)}</p>
+      <h3 style={{ ...text(textStep.body, 500, t.text), margin: 0, lineHeight: 1.3 }}>{DEPLOYMENT_GROUP_HEAD}</h3>
+      <p style={{ ...text(textStep.meta, 400, t.label), margin: 0 }}>{deploymentSectionMeta(tiles)}</p>
       {groups.map((group) => (
         <div key={group.key} role="list" aria-label={group.label ?? DEPLOYMENT_GROUP_HEAD} style={{ display: "flex", flexDirection: "column", marginTop: 12 }}>
-          {group.label ? <p style={{ ...text(12.5, 500, t.text2), margin: "0 0 4px" }}>{group.label}</p> : null}
+          {group.label ? <p style={{ ...text(textStep.meta, 500, t.text2), margin: "0 0 4px" }}>{group.label}</p> : null}
           {group.tiles.map((tile, at) => {
             const session = tile.payload.made_in ? sessionNumber(tile.payload.made_in) : null;
             return (
@@ -42,9 +43,9 @@ export function DeploymentSection({ tiles, steps, sessionNumber, selectedId, pho
                 style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 44, borderTop: at === 0 ? "none" : `1px solid ${t.hairline}`, background: selectedId === tile.id ? t.selectedFill : undefined }}
               >
                 <TextButton target={phone} onClick={() => onOpen(tile.id)} aria-label={`${DEPLOYMENT_KIND_NAME[tile.kind]}: ${deploymentName(tile)}`}>
-                  <span style={text(13, 500, t.text)}>{deploymentName(tile)}</span>
+                  <span style={text(textStep.body, 500, t.text)}>{deploymentName(tile)}</span>
                 </TextButton>
-                <span style={{ ...text(12, 400, t.label), marginLeft: "auto" }}>{DEPLOYMENT_KIND_NAME[tile.kind]}</span>
+                <span style={{ ...text(textStep.meta, 400, t.label), marginLeft: "auto" }}>{DEPLOYMENT_KIND_NAME[tile.kind]}</span>
                 {session !== null && tile.payload.made_in ? (
                   <TextButton target={phone} onClick={() => onSession?.(tile.payload.made_in as string)}>
                     {`Made in Session ${session}`}

@@ -18,6 +18,7 @@ import { PickMenu } from "./PickMenu";
 import { text, tnum, typedField } from "./refinedStyles";
 import { BUTTON_PAD } from "./modalRecipes";
 
+import { textStep } from "@/lib/theme/type";
 const PROVIDERS = [{ value: "scaledown", label: "ScaleDown" }, { value: "typesafe", label: "TypeSafe" }, { value: "typed", label: "Another provider" }];
 
 interface Draft {
@@ -110,7 +111,7 @@ function ChipsInput({ label, items, input, onInput, onItems, phone }: { label: s
       {items.length ? (
         <span style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           {items.map((item) => (
-            <TextButton key={item} onClick={() => onItems(items.filter((x) => x !== item))} aria-label={`Remove ${item}`} style={text(12, 500, t.text2)}>
+            <TextButton key={item} onClick={() => onItems(items.filter((x) => x !== item))} aria-label={`Remove ${item}`} style={text(textStep.meta, 500, t.text2)}>
               {item} ×
             </TextButton>
           ))}
@@ -158,7 +159,7 @@ export function HelpersField({ helpers, toolNames, decisions, phone, onChange, b
   };
   return (
     <section aria-label={HELPERS_COPY.title} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {bare ? null : <h3 style={{ ...text(12.5, 500, t.text), margin: 0 }}>{HELPERS_COPY.title}</h3>}
+      {bare ? null : <h3 style={{ ...text(textStep.meta, 500, t.text), margin: 0 }}>{HELPERS_COPY.title}</h3>}
       {helpers.length ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {helpers.map((helper, index) => (
@@ -175,7 +176,7 @@ export function HelpersField({ helpers, toolNames, decisions, phone, onChange, b
             <PickMenu label="Job of the helper" phone={phone} value={d.job} options={HELPER_JOBS.map((job) => ({ value: job, label: HELPER_JOB_LABEL[job] }))} onChange={(job) => set({ ...blank(), job, provider: job === "decide" ? "typesafe" : "scaledown" })} />
           </Field>
           <Field id="helper-provider" label="Provider" group>
-            <Segmented<string> label="Provider of the helper" size={phone ? 50 : 32} fontSize={13} items={PROVIDERS} value={d.provider} onChange={(provider) => set({ provider })} />
+            <Segmented<string> label="Provider of the helper" size={phone ? 50 : 32} fontSize={textStep.meta} items={PROVIDERS} value={d.provider} onChange={(provider) => set({ provider })} />
           </Field>
           {d.provider === "typed" ? <input aria-label="Provider name" type="text" value={d.typedProvider} maxLength={40} onChange={(e) => set({ typedProvider: e.target.value })} style={typedField(phone)} /> : null}
           {d.job === "summarize" ? (
@@ -191,11 +192,11 @@ export function HelpersField({ helpers, toolNames, decisions, phone, onChange, b
                 toolNames.map((name) => (
                   <label key={name} style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 24 }}>
                     <Checkbox checked={d.tools.includes(name)} onChange={(e) => set({ tools: e.target.checked ? [...d.tools, name] : d.tools.filter((x) => x !== name) })} />
-                    <span style={text(13, 400, t.text)}>{name}</span>
+                    <span style={text(textStep.body, 400, t.text)}>{name}</span>
                   </label>
                 ))
               ) : (
-                <span style={text(12, 400, t.label)}>No tools on this agent. Blank: all tool results</span>
+                <span style={text(textStep.meta, 400, t.label)}>No tools on this agent. Blank: all tool results</span>
               )}
             </Field>
           ) : null}
@@ -210,12 +211,12 @@ export function HelpersField({ helpers, toolNames, decisions, phone, onChange, b
           ) : null}
           {d.job === "decide" ? (
             <Field id="helper-decision" label="Decision" group>
-              {decisions.length ? <PickMenu label="Decision it calls" phone={phone} placeholder="Select a decision" value={d.decision || null} options={decisions.map((x) => ({ value: x.id, label: x.label }))} onChange={(decision) => set({ decision })} /> : <span style={text(12, 400, t.label)}>Needs a Decision step</span>}
+              {decisions.length ? <PickMenu label="Decision it calls" phone={phone} placeholder="Select a decision" value={d.decision || null} options={decisions.map((x) => ({ value: x.id, label: x.label }))} onChange={(decision) => set({ decision })} /> : <span style={text(textStep.meta, 400, t.label)}>Needs a Decision step</span>}
             </Field>
           ) : null}
           <label style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 24 }}>
             <Checkbox checked={d.did} onChange={(e) => set({ did: e.target.checked })} />
-            <span style={text(13, 400, t.text)}>On the run</span>
+            <span style={text(textStep.body, 400, t.text)}>On the run</span>
           </label>
           {d.did ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -224,16 +225,16 @@ export function HelpersField({ helpers, toolNames, decisions, phone, onChange, b
                 <Field id="did-before" label="Before"><input id="did-before" type="text" inputMode="numeric" value={d.before} onChange={(e) => set({ before: e.target.value })} style={typedField(phone, { width: 112, ...tnum })} /></Field>
                 <Field id="did-after" label="After"><input id="did-after" type="text" inputMode="numeric" value={d.after} onChange={(e) => set({ after: e.target.value })} style={typedField(phone, { width: 112, ...tnum })} /></Field>
               </div>
-              <Segmented<"characters" | "tokens"> label="Unit of before and after" size={phone ? 50 : 32} fontSize={13} items={[{ value: "characters", label: "Characters" }, { value: "tokens", label: "Tokens" }]} value={d.unit} onChange={(unit) => set({ unit })} />
+              <Segmented<"characters" | "tokens"> label="Unit of before and after" size={phone ? 50 : 32} fontSize={textStep.meta} items={[{ value: "characters", label: "Characters" }, { value: "tokens", label: "Tokens" }]} value={d.unit} onChange={(unit) => set({ unit })} />
               <Field id="did-values" label="Values it pulled out" hint="order_id = 4821, one per line"><textarea id="did-values" rows={2} value={d.values} onChange={(e) => set({ values: e.target.value })} style={typedField(phone, { height: "auto", padding: "6px 8px" })} /></Field>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <Field id="did-stopped" label="Stopped on label"><input id="did-stopped" type="text" value={d.stoppedLabel} onChange={(e) => set({ stoppedLabel: e.target.value })} style={typedField(phone, { width: 140 })} /></Field>
                 <Field id="did-score" label="Score, 0 to 1"><input id="did-score" type="text" inputMode="decimal" value={d.stoppedScore} onChange={(e) => set({ stoppedScore: e.target.value })} style={typedField(phone, { width: 96, ...tnum })} /></Field>
               </div>
-              <Segmented<"run" | "maker"> label="Where the figures came from" size={phone ? 50 : 32} fontSize={13} items={[{ value: "run", label: "From the run" }, { value: "maker", label: "Maker's figure" }]} value={d.source} onChange={(source) => set({ source })} />
+              <Segmented<"run" | "maker"> label="Where the figures came from" size={phone ? 50 : 32} fontSize={textStep.meta} items={[{ value: "run", label: "From the run" }, { value: "maker", label: "Maker's figure" }]} value={d.source} onChange={(source) => set({ source })} />
             </div>
           ) : null}
-          {error ? <span role="alert" style={text(12.5, 400, t.text)}>{error}</span> : null}
+          {error ? <span role="alert" style={text(textStep.meta, 400, t.text)}>{error}</span> : null}
           <div style={{ display: "flex", gap: 8 }}>
             <Button variant="primary" size={size} onClick={add}>{HELPERS_COPY.addThis}</Button>
             <Button variant="secondary" size={size} onClick={() => { setOpen(false); setError(null); }}>Cancel</Button>

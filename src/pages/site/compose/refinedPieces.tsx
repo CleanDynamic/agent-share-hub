@@ -9,7 +9,7 @@ import { casesLine } from "@/lib/build/testCases";
 import { markFor } from "@/lib/models/marks";
 import { CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO } from "@/lib/theme/type";
+import { DM_MONO, textStep } from "@/lib/theme/type";
 
 import { text, tnum } from "./refinedStyles";
 
@@ -32,7 +32,7 @@ export function NumberTile({ children }: { children: ReactNode }) {
         alignItems: "center",
         justifyContent: "center",
         fontFamily: DM_MONO,
-        fontSize: 11,
+        fontSize: textStep.meta,
         lineHeight: "normal",
         color: t.text,
         ...tnum,
@@ -57,7 +57,7 @@ export function ToolMark({ tool, model, size }: { tool?: string | null; model?: 
 
 /** "Uses", "Goes into", "words": the quiet 11.5 `--label` words of a row. */
 export function Quiet({ children, style }: { children: ReactNode; style?: CSSProperties }) {
-  return <span style={{ ...text(11.5, 400, t.label), ...style }}>{children}</span>;
+  return <span style={{ ...text(textStep.meta, 400, t.label), ...style }}>{children}</span>;
 }
 
 /**
@@ -67,7 +67,7 @@ export function Quiet({ children, style }: { children: ReactNode; style?: CSSPro
  */
 export function DotLine({ dot = t.label, children, style, testId }: { dot?: string; children: ReactNode; style?: CSSProperties; testId?: string }) {
   return (
-    <span data-testid={testId} style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, ...text(12, 400, t.text2), lineHeight: "18px", ...style }}>
+    <span data-testid={testId} style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, ...text(textStep.meta, 400, t.text2), lineHeight: "18px", ...style }}>
       <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", background: dot, flexShrink: 0 }} />
       <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{children}</span>
     </span>
@@ -78,8 +78,8 @@ export function DotLine({ dot = t.label, children, style, testId }: { dot?: stri
 export function LabelValue({ label, children, testId }: { label: string; children: ReactNode; testId?: string }) {
   return (
     <div data-testid={testId ?? "label-value"} style={{ display: "flex", flexDirection: "column", gap: 2, padding: "8px 0", borderBottom: `1px solid ${t.hairlineModule}`, minWidth: 0 }}>
-      <span style={text(12, 400, t.text2)}>{label}</span>
-      <span style={{ ...text(13, 400, t.text), overflowWrap: "anywhere" }}>{children}</span>
+      <span style={text(textStep.meta, 400, t.text2)}>{label}</span>
+      <span style={{ ...text(textStep.body, 400, t.text), overflowWrap: "anywhere" }}>{children}</span>
     </div>
   );
 }

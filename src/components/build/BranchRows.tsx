@@ -11,6 +11,7 @@ import type { Step } from "@/lib/build/graph";
 import { t } from "@/lib/theme/tokens";
 import { text } from "@/pages/site/compose/refinedStyles";
 
+import { textStep } from "@/lib/theme/type";
 export function drawBranches<T>(items: readonly T[], stepOf: (item: T) => Step, all: readonly Step[], draw: (item: T) => ReactNode): ReactNode {
   const steps = items.map(stepOf);
   if (!hasBranches(steps) && !steps.some((step) => step.kind === "decision")) return items.map(draw);
@@ -30,7 +31,7 @@ export function drawBranches<T>(items: readonly T[], stepOf: (item: T) => Step, 
       }
       out.push(
         <div key={`branch-${row.group}-${row.decisionId}`} data-testid="branch-group" data-group={row.group} style={{ marginLeft: 16, paddingLeft: 12, borderLeft: `2px solid ${t.hairline}`, display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
-          <span data-testid="branch-head" style={text(12.5, 500, t.text2)}>{row.label}</span>
+          <span data-testid="branch-head" style={text(textStep.meta, 500, t.text2)}>{row.label}</span>
           {inner}
         </div>,
       );
@@ -38,10 +39,10 @@ export function drawBranches<T>(items: readonly T[], stepOf: (item: T) => Step, 
       continue;
     }
     if (row.kind === "join") {
-      out.push(<span key={`join-${i}`} data-testid="branch-join" style={text(11.5, 400, t.label)}>{JOIN_LINE}</span>);
+      out.push(<span key={`join-${i}`} data-testid="branch-join" style={text(textStep.meta, 400, t.label)}>{JOIN_LINE}</span>);
     } else {
       if (row.step.kind === "decision" && !sawDecision) {
-        out.push(<span key={`how-${row.step.id}`} data-testid="how-it-runs" style={text(11.5, 400, t.label)}>How it runs</span>);
+        out.push(<span key={`how-${row.step.id}`} data-testid="how-it-runs" style={text(textStep.meta, 400, t.label)}>How it runs</span>);
         sawDecision = true;
       }
       out.push(draw(byId.get(row.step.id) as T));

@@ -15,6 +15,7 @@ import { FieldInput, Row } from "@/pages/site/compose/modalRecipes";
 import { OptionalField } from "@/pages/site/compose/OptionalSection";
 import { PickMenu } from "@/pages/site/compose/PickMenu";
 
+import { textStep } from "@/lib/theme/type";
 const TYPED = "__typed";
 const NONE = "__none";
 
@@ -73,7 +74,7 @@ export function JobFields({ step, agent, names, phone, onExtras }: { step: Step;
       {typing ? (
         <FieldInput phone={phone} aria-label={JOB_COPY.destination} maxLength={DESTINATION_MAX} value={typed} placeholder={JOB_COPY.destinationPlaceholder} onChange={(event) => setTyped(event.target.value)} onBlur={() => typed.trim() !== (job.destination ?? "") && onExtras(step.id, { destination: typed.trim() || null })} />
       ) : null}
-      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: t.text }}>
+      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: textStep.body, color: t.text }}>
         <Checkbox checked={job.needsApproval === true} onChange={(event) => onExtras(step.id, { needs_approval: event.target.checked || null })} />
         {JOB_COPY.approval}
       </label>

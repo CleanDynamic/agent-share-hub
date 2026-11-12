@@ -19,7 +19,8 @@ import { RUNS_CHOICES, RUNS_COPY, RUNS_HELP, SCHEDULE_PRESETS, atOnce, isClockTi
 import type { AgentView, DetailsHandlers } from "./DetailsPanel";
 import { text, tnum, typedField } from "./refinedStyles";
 
-const quiet = (extra: CSSProperties = {}): CSSProperties => text(11.5, 400, t.label, extra);
+import { textStep } from "@/lib/theme/type";
+const quiet = (extra: CSSProperties = {}): CSSProperties => text(textStep.meta, 400, t.label, extra);
 
 /** A small label over a control that is not one input: the field label's look, in a group. */
 function GroupLabel({ id, children }: { id: string; children: ReactNode }) {
@@ -124,7 +125,7 @@ export function RunsGroup({ view, phone, onRuns, onAgentNotes }: { view: AgentVi
         />
         {showMore ? null : (
           <span>
-            <TextButton target={phone} style={text(12.5, 500, t.text2)} onClick={() => setMoreAsked(true)}>
+            <TextButton target={phone} style={text(textStep.meta, 500, t.text2)} onClick={() => setMoreAsked(true)}>
               {RUNS_COPY.more}
             </TextButton>
           </span>
@@ -233,7 +234,7 @@ export function RunsGroup({ view, phone, onRuns, onAgentNotes }: { view: AgentVi
               <span style={quiet()}>{RUNS_HELP.noChannel}</span>
             ) : (
               runChannels.map((channel) => (
-                <label key={channel.id} style={{ display: "flex", alignItems: "center", gap: 8, ...text(12.5, 400, t.text) }}>
+                <label key={channel.id} style={{ display: "flex", alignItems: "center", gap: 8, ...text(textStep.meta, 400, t.text) }}>
                   <Checkbox checked={channels.includes(channel.id)} onChange={(event) => toggleChannel(channel.id, event.target.checked)} />
                   {channel.name}
                 </label>
@@ -292,7 +293,7 @@ export function RunsGroup({ view, phone, onRuns, onAgentNotes }: { view: AgentVi
                   onKeyDown={enterBlurs}
                   style={typedField(phone, { width: 56, ...tnum })}
                 />
-                <span style={text(12.5, 400, t.text2)}>{RUNS_COPY.times}</span>
+                <span style={text(textStep.meta, 400, t.text2)}>{RUNS_COPY.times}</span>
               </div>
             </div>
             {/* CA-05 P9: what an agent changes each round, when it runs again until a condition was met. */}

@@ -20,9 +20,15 @@ const panelLine = () => within(panel()).getByTestId("details-line").textContent;
 /** F42: a tile's title, as its heading draws it. */
 const tileTitle = (name: RegExp) => within(card(name)).getByRole("heading", { level: 3 }).textContent;
 
-/** Sources, opened from its rail, with Session 2 open. */
+/** Sources folds to its rail only under 928 (S34); at the test window it is open. Open the rail where there is one. */
+function showSources() {
+  const rail = screen.queryByRole("button", { name: "Show sources" });
+  if (rail) fireEvent.click(rail);
+}
+
+/** Sources, with Session 2 open. */
 async function sourcesOpen() {
-  fireEvent.click(screen.getByRole("button", { name: "Show sources" }));
+  showSources();
   const sources = await screen.findByRole("region", { name: "Sources" });
   fireEvent.click(await within(sources).findByRole("button", { name: "Open session 2" }));
   await within(sources).findByText("Step 4");
@@ -155,7 +161,7 @@ describe("one prompt count (F57)", () => {
     expect(within(dialog).getByTestId("full-prompt-line").textContent).toMatch(/^Step 2 · 2 of 3 in Session 1/);
     fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
     // Details, on the session.
-    fireEvent.click(screen.getByRole("button", { name: "Show sources" }));
+    showSources();
     const sources = await screen.findByRole("region", { name: "Sources" });
     fireEvent.click(await within(sources).findByText("Session 1 · Claude Code"));
     await waitFor(() => expect(panel().textContent).toContain("3 of 3"));

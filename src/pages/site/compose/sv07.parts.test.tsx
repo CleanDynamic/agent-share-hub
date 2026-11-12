@@ -91,7 +91,9 @@ describe("SV-07 P3 · closed parts", () => {
     await closedPartTwo();
     await addChatTo("Part 2", CHATS[1].name);
     await settled(2);
-    fireEvent.click(screen.getByRole("button", { name: /Show sources/ }));
+    // S34: Sources folds to its rail only under 928; open the rail where there is one.
+    const rail = screen.queryByRole("button", { name: /Show sources/ });
+    if (rail) fireEvent.click(rail);
     // F55: the List's row also reads Add session now; this is Sources' +.
     const add = (await within(await screen.findByTestId("sources-panel")).findAllByRole("button", { name: "Add session" })).find((button) => !(button as HTMLButtonElement).disabled) as HTMLElement;
     fireEvent.pointerDown(add, { button: 0, ctrlKey: false });
