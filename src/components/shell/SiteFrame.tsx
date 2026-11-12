@@ -29,8 +29,8 @@
 // THE REFINED FRAME (UI-P87). Under the refined look the root is `--frame` and a flex column. The header sits on it
 // (sticky, 48, the frame behind it so the page scrolls under the frame and not through it), and one SURFACE wraps
 // everything below: `calc(100% - 16px)` wide, max 1428, `0 auto 8px`, `--surface`, a 1px `--surface-border`, radius 10,
-// `--surface-shadow`. `<main>` inside it has `39px 55px 48px` and a 24px column gap, the
-// breadcrumb first; the footer is inside the surface, pushed to its foot. On a phone the surface keeps its 6px inset
+// `--surface-shadow`. `<main>` inside it has `39px 55px 48px` and a 24px column gap, the page's PageHeader first
+// (the composer keeps the breadcrumb slot first); the footer is inside the surface, pushed to its foot. On a phone the surface keeps its 6px inset
 // and radius 10 under the 48px header, and the dock is fixed below it. The slots, their order and `#main` are the
 // same in both looks.
 //
@@ -244,7 +244,8 @@ export function SiteFrameView({
             minWidth: 0,
           }}
         >
-          {phone ? null : <div data-slot="breadcrumb" style={wide ? { padding: `24px 0 0 ${frameOf(innerWidthOf(win.width)).boxLeft - ORIGIN}px` } : undefined}>{breadcrumb}</div>}
+          {/* Only the composer keeps the frame's breadcrumb; a page with a parent draws it in its PageHeader. */}
+          {phone || !wide ? null : <div data-slot="breadcrumb" style={{ padding: `24px 0 0 ${frameOf(innerWidthOf(win.width)).boxLeft - ORIGIN}px` }}>{breadcrumb}</div>}
           {children}
         </main>
         {phone ? null : (

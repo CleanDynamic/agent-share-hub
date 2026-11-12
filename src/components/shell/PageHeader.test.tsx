@@ -1,8 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { PageHeader } from "./PageHeader";
-import { SENTIENT, sectionHead, type } from "@/lib/theme/type";
-import { t } from "@/lib/theme/tokens";
+import { PAGE_TITLE, PageHeader } from "./PageHeader";
+import { FIGTREE, type } from "@/lib/theme/type";
 
 /* ────────────────────────────────────────────────
    BG-P14 — PageHeader.
@@ -19,22 +18,26 @@ describe("PageHeader", () => {
     expect(document.querySelectorAll("h1")).toHaveLength(1);
   });
 
-  it("sets the title in the display face, at the whole sectionHead role", () => {
+  it("sets the title in the site pages' face: Figtree 20 / 500, line 24, -0.015em", () => {
     render(<PageHeader title="The gallery" />);
     const h1 = screen.getByRole("heading", { level: 1 });
-    expect(h1.style.fontFamily).toBe(SENTIENT);
-
-    /* The role SPREAD, not picked apart — a heading that arrived with the
-       size but not the weight is how a scale stops being one. Compared
-       against a reference element rather than property by property, so a
-       field added to the role is covered without editing this test.
-
-       `fontSize` is absent from both sides: jsdom's CSS parser drops a
-       `clamp()`, and the role's size is a clamp. It is held by the type
-       scale's own test and measured for real in the browser sweep. */
-    const reference = render(<h1 style={{ ...sectionHead, color: t.text, margin: 0 }} />)
-      .container.querySelector("h1")!;
+    expect(h1.style.fontFamily).toBe(FIGTREE);
+    expect(h1.style.fontSize).toBe("20px");
+    expect(h1.style.fontWeight).toBe("500");
+    expect(h1.style.lineHeight).toBe("24px");
+    expect(h1.style.letterSpacing).toBe("-0.015em");
+    /* The one shared style, spread whole. */
+    const reference = render(<h1 style={PAGE_TITLE} />).container.querySelector("h1")!;
     expect(h1.getAttribute("style")).toBe(reference.getAttribute("style"));
+  });
+
+  it("puts the breadcrumb in the 24 above the title, out of flow", () => {
+    const { container } = render(<PageHeader title="The gallery" breadcrumb={<nav aria-label="Breadcrumb" />} />);
+    const slot = container.querySelector('[data-slot="page-breadcrumb"]') as HTMLElement;
+    expect(slot.style.position).toBe("absolute");
+    expect(slot.style.bottom).toBe("100%");
+    expect(slot.style.height).toBe("24px");
+    expect(slot.compareDocumentPosition(screen.getByRole("heading", { level: 1 }))).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
   it("renders a title alone — every other part is optional", () => {

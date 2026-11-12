@@ -67,7 +67,14 @@ describe("SiteFrameView under the refined look", () => {
     expect(surface.querySelector("main#main")).not.toBeNull();
     expect(surface.contains(screen.getByTestId("f"))).toBe(true);
     expect(surface.contains(screen.getByTestId("h"))).toBe(false);
-    const main = surface.querySelector("main#main")!;
+    // The page's PageHeader draws the breadcrumb now; the frame keeps its slot for the composer only.
+    expect(screen.queryByTestId("b")).toBeNull();
+    expect(surface.querySelector("main#main")!.firstElementChild?.textContent).toBe("page");
+  });
+
+  it("keeps the breadcrumb slot first in main for the composer (wide)", () => {
+    refinedFrame({ viewport: "desktop", wide: true, breadcrumb: <i data-testid="b" />, children: <p>page</p> });
+    const main = screen.getByTestId("site-frame").querySelector("main#main")!;
     expect(main.firstElementChild?.contains(screen.getByTestId("b"))).toBe(true);
   });
 
