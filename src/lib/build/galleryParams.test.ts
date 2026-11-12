@@ -124,7 +124,7 @@ describe("SV-11: the view, open and the resting sort", () => {
   });
 
   it("drops the dashboard's parameters", () => {
-    expect(parse("tab=makers&lab=Google&report=multi&active=30&dsort=prompts&build=x&by=field")).toEqual({ lens: "all", madeFor: [], madeWith: [], query: null });
+    expect(parse("tab=makers&lab=Google&report=multi&active=30&dsort=prompts&build=x&by=makers")).toEqual({ lens: "all", madeFor: [], madeWith: [], query: null });
   });
 });
 
@@ -192,5 +192,50 @@ describe("SV-24: the open filter set in the address", () => {
     expect(href).toBe(`/builds?f=field%3Aai-ml&sort=rebuilt&q=nlp&set=${ID}`);
     expect(galleryHref(parse(href.split("?")[1]))).toBe(href);
     expect(galleryHref({ set: "nope" })).toBe("/builds");
+  });
+});
+
+describe("BF-12 the sort's direction and the browser's keys", () => {
+  it("dir=asc is read and written; anything else is descending and is not written", () => {
+    expect(parse("sort=steps&dir=asc")).toMatchObject({ sort: "steps", dir: "asc" });
+    expect(galleryHref(parse("sort=steps&dir=asc"))).toBe("/builds?sort=steps&dir=asc");
+    for (const value of ["desc", "ASC", "1", ""]) expect(parse(`dir=${value}`).dir).toBeUndefined();
+    expect(galleryHref({ dir: "desc" as never })).toBe("/builds");
+  });
+
+  it("by=<a column id> is read and written; an unknown id is dropped", () => {
+    expect(parse("by=field").by).toBe("field");
+    expect(galleryHref(parse("by=field"))).toBe("/builds?by=field");
+    expect(parse("by=nothing").by).toBeUndefined();
+    expect(galleryHref({ by: "nothing" })).toBe("/builds");
+  });
+
+  it("by2 and dir2 the same; by2 without by is dropped", () => {
+    expect(parse("by=field&by2=steps&dir2=asc")).toMatchObject({ by: "field", by2: "steps", dir2: "asc" });
+    expect(galleryHref(parse("by=field&by2=steps&dir2=asc"))).toBe("/builds?by=field&by2=steps&dir2=asc");
+    expect(parse("by2=steps&dir2=asc").by2).toBeUndefined();
+    expect(parse("by2=steps&dir2=asc").dir2).toBeUndefined();
+    expect(parse("by=field&by2=nothing").by2).toBeUndefined();
+  });
+
+  it("sort accepts steps and sessions", () => {
+    expect(parse("sort=steps").sort).toBe("steps");
+    expect(parse("sort=sessions").sort).toBe("sessions");
+    expect(galleryHref({ sort: "sessions" })).toBe("/builds?sort=sessions");
+  });
+
+  it("the order of keys in the address is unchanged for the old parameters, with sort, dir, by, by2, dir2 after the ranges", () => {
+    const address = "/builds?view=maps&lens=proven&shape=agent&model=sonnet-5-5&f=field%3Aeducation&open=1&within=30&steps=5-30&sort=steps&dir=asc&by=field&by2=reproductions&dir2=asc&q=inbox";
+    expect(galleryHref(parse(address.split("?")[1]))).toBe(address);
+    expect(galleryHref(parse("q=inbox&sort=newest&model=sonnet-5-5&view=maps"))).toBe("/builds?view=maps&model=sonnet-5-5&sort=newest&q=inbox");
+  });
+});
+
+describe("BF-14 match", () => {
+  it("match=2 is read and written; 0, a non-number, or a number at or above the count of countable filters is dropped", () => {
+    expect(parse("match=2").match).toBe(2);
+    expect(galleryHref(parse("f=field%3Alaw&sort=steps&dir=asc&match=2&q=notes"))).toBe("/builds?f=field%3Alaw&sort=steps&dir=asc&match=2&q=notes");
+    for (const value of ["0", "-1", "two", "2.5", ""]) expect(parse(`match=${value}`).match).toBeUndefined();
+    /* At or above the count: the address keeps it, and the page, which knows the count, treats it as All (BuildsPage tests). */
   });
 });

@@ -12,7 +12,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 import { visionBuildsTableProps, visionBuildsTableViewProps } from "@/dev/fixtures/vision/builds-table";
 import { STALE_AFTER_DAYS } from "@/lib/build/signals";
 
-import { ALL_COLUMNS, BuildsTableView, type ColumnId, type TableRowView } from "./BuildsTableView";
+import { ALL_COLUMNS, BuildsTableView, COLUMN_ORDER, type ColumnId, type TableRowView } from "./BuildsTableView";
 import { BuildsView, type BuildsViewProps } from "./BuildsView";
 import { FiltersButton } from "./BuildsFrame";
 import { chosenColumns, columnsLabel, columnsMenu, tableRow } from "./buildsModel";
@@ -97,12 +97,13 @@ describe("the Table", () => {
   });
 
   it("says which column is sorted, and a sortable head chooses its sort", () => {
-    const onChange = vi.fn();
-    draw((p) => ({ ...p, table: { ...p.table!, sort: { ...p.table!.sort, onChange } } }));
+    const onSortColumn = vi.fn();
+    draw((p) => ({ ...p, table: { ...p.table!, onSortColumn } }));
     expect(screen.getByRole("columnheader", { name: /Reproductions/ }).getAttribute("aria-sort")).toBe("descending");
     expect(screen.getByRole("columnheader", { name: "Confirmed" }).getAttribute("aria-sort")).toBe("none");
+    expect(screen.getByRole("columnheader", { name: "Field" }).getAttribute("aria-sort")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Confirmed" }));
-    expect(onChange).toHaveBeenCalledWith("confirmed");
+    expect(onSortColumn).toHaveBeenCalledWith("confirmed", false);
   });
 
   it("puts a row's build, maker, numbers and lamp where the board does", () => {
@@ -242,7 +243,7 @@ describe("Add a calculation", () => {
 
   it("shows each calculation added, with a way to take it off", () => {
     const onRemove = vi.fn();
-    draw((p) => ({ ...p, table: { ...p.table!, footer: { ...p.table!.footer, calculations: [{ key: "steps:sum", text: "Sum, Steps 214", onRemove }] } } }));
+    draw((p) => ({ ...p, table: { ...p.table!, footer: { ...p.table!.footer, calculations: [{ key: "steps:sum", column: "steps", text: "Sum, Steps 214", onRemove }] } } }));
     expect(screen.getByText("Sum, Steps 214")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Remove Sum, Steps 214" }));
     expect(onRemove).toHaveBeenCalled();
@@ -254,15 +255,36 @@ describe("Add a calculation", () => {
   });
 });
 
+/** BF-12 (B4): a narrow window, where the Sort menu is drawn. */
+const asPhone = () => {
+  window.matchMedia = ((query: string) => ({ matches: query.includes("max-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined, addListener: () => undefined, removeListener: () => undefined, onchange: null, dispatchEvent: () => false })) as unknown as typeof window.matchMedia;
+};
+
 describe("the Sort menu", () => {
-  it("opens on a mouse press, not only from the keyboard", () => {
+  it("opens on a mouse press, not only from the keyboard (phone)", () => {
+    asPhone();
     (window as unknown as { PointerEvent: unknown }).PointerEvent = class extends MouseEvent {};
     draw();
     fireEvent.pointerDown(screen.getByRole("button", { name: /^Sort:/ }), { button: 0, ctrlKey: false });
-    expect(screen.getByRole("menuitemradio", { name: "Newest" })).toBeTruthy();
+    expect(screen.getByRole("menuitemradio", { name: "Steps" })).toBeTruthy();
+  });
+
+  it("desktop: there is no Sort menu in the lens row", () => {
+    draw();
+    expect(screen.queryByRole("button", { name: /^Sort/ })).toBeNull();
+  });
+
+  it("phone: the Sort menu lists the drawn columns that can be sorted, by their column names, and choosing one sorts descending", () => {
+    asPhone();
+    (window as unknown as { PointerEvent: unknown }).PointerEvent = class extends MouseEvent {};
+    const onSortColumn = vi.fn();
+    draw((p) => ({ ...p, table: { ...p.table!, onSortColumn } }));
+    fireEvent.pointerDown(screen.getByRole("button", { name: "Sort: Reproductions" }), { button: 0, ctrlKey: false });
+    expect(screen.getAllByRole("menuitemradio").map((item) => item.textContent)).toEqual(["Steps", "Sessions", "Reproductions", "Confirmed", "Rebuilds"]);
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Steps" }));
+    expect(onSortColumn).toHaveBeenCalledWith("steps", false, true);
   });
 });
-
 
 /* ── BF-01 ── */
 
@@ -355,13 +377,14 @@ describe("BF-01 the lamp", () => {
     expect(within(bodyRow()).getByRole("img", { name: dim })).toBeTruthy();
   });
 
-  it("the footer carries the key: a lit lamp with its words and a dim lamp with its words", () => {
+  it("the key sits on its own line under the table (BF-13): a lit lamp with its words and a dim lamp with its words", () => {
     drawTable([blankRow]);
-    const foot = screen.getAllByRole("rowgroup").find((group) => group.tagName === "TFOOT")!;
-    expect(within(foot).getByRole("img", { name: lit })).toBeTruthy();
-    expect(within(foot).getByRole("img", { name: dim })).toBeTruthy();
-    expect(within(foot).getByText(`confirmed in the last ${STALE_AFTER_DAYS} days`)).toBeTruthy();
-    expect(within(foot).getByText("stale")).toBeTruthy();
+    const key = screen.getByTestId("lamp-key");
+    expect(key.closest("table")).toBeNull();
+    expect(within(key).getByRole("img", { name: lit })).toBeTruthy();
+    expect(within(key).getByRole("img", { name: dim })).toBeTruthy();
+    expect(within(key).getByText(`confirmed in the last ${STALE_AFTER_DAYS} days`)).toBeTruthy();
+    expect(within(key).getByText("stale")).toBeTruthy();
   });
 });
 
@@ -449,12 +472,12 @@ describe("the Table without the rail", () => {
     expect(screen.queryByTestId("builds-filters")).toBeNull();
   });
 
-  it("the lens row holds Filters, then Sort, then Columns", () => {
+  it("the lens row holds Filters, then Columns (Sort is on a phone only, BF-12)", () => {
     draw();
     const filters = screen.getByRole("button", { name: /^Filters/ });
     const row = filters.parentElement as HTMLElement;
     const names = within(row).getAllByRole("button").map((button) => (button.getAttribute("aria-label") ?? button.textContent ?? "").replace(/\s+/g, " ").trim());
-    expect(names).toEqual(["Filters, 6 on", "Sort: Reproductions", "Columns 12 of 24"]);
+    expect(names).toEqual(["Filters, 6 on", "Columns 12 of 24"]);
   });
 
   it("pressing Filters opens the dialog with the filter panel in it; closing it returns focus to the button", async () => {
@@ -515,21 +538,21 @@ describe("the grouped chooser", () => {
   };
   const namesIn = (group: string) => within(screen.getByRole("group", { name: group })).getAllByRole("checkbox").map((box) => box.closest("label")?.textContent);
 
-  it("the chooser groups its columns under Identity, Classification, Proof, Structure and OpenBuilds, in that order", () => {
+  /* BF-13 (C6): the reader's columns come first, in their order, under "Shown, in order"; each group lists the rest. */
+  it("the chooser lists the shown columns first, then the rest under Identity, Classification, Proof and Structure, in that order", () => {
     const chooser = openChooser();
-    expect(chooser.getAllByRole("group").map((group) => group.getAttribute("aria-label"))).toEqual(["Identity", "Classification", "Proof", "Structure", "OpenBuilds"]);
+    expect(chooser.getAllByRole("group").map((group) => group.getAttribute("aria-label"))).toEqual(["Shown, in order", "Identity", "Classification", "Proof", "Structure"]);
   });
 
-  // The names are today's: BF-10 Part 1 (one set of names) stopped at A5, so Confirmed, Open and Tools keep theirs.
-  it("Identity holds Build (locked) and Published; Proof holds Reproductions, Works on model, Confirmed, Runs, 12 weeks, Rebuilds and Likes; Structure holds Shape, Steps, Sessions and Patterns; OpenBuilds holds Open; Classification holds the fifteen facets", () => {
+  it("Shown holds the default twelve in order, Build locked; Identity holds Published; Proof holds Works on model and Likes; Structure holds Shape and Patterns; Classification holds the other eleven facets", () => {
     openChooser();
-    expect(namesIn("Identity")).toEqual(["Build", "Published"]);
-    expect((within(screen.getByRole("group", { name: "Identity" })).getByRole("checkbox", { name: "Build" }) as HTMLInputElement).disabled).toBe(true);
-    expect(namesIn("Proof")).toEqual(["Reproductions", "Works on model", "Confirmed", "Runs, 12 weeks", "Rebuilds", "Likes"]);
-    expect(namesIn("Structure")).toEqual(["Shape", "Steps", "Sessions", "Patterns"]);
-    expect(namesIn("OpenBuilds")).toEqual(["Open"]);
-    expect(namesIn("Classification")).toHaveLength(15);
-    expect(namesIn("Classification")).toEqual(expect.arrayContaining(["What was built", "Field", "Tools", "Cost to run", "Autonomy", "Skill"]));
+    expect(namesIn("Shown, in order")).toEqual(["Build", "What was built", "Field", "Tools", "Steps", "Sessions", "Reproductions", "Confirmed", "Runs, 12 weeks", "Rebuilds", "Open", "Cost to run"]);
+    expect((within(screen.getByRole("group", { name: "Shown, in order" })).getByRole("checkbox", { name: "Build" }) as HTMLInputElement).disabled).toBe(true);
+    expect(namesIn("Identity")).toEqual(["Published"]);
+    expect(namesIn("Proof")).toEqual(["Works on model", "Likes"]);
+    expect(namesIn("Structure")).toEqual(["Shape", "Patterns"]);
+    expect(namesIn("Classification")).toHaveLength(11);
+    expect(namesIn("Classification")).toEqual(expect.arrayContaining(["Autonomy", "Skill"]));
   });
 
   it("the popover opens to the left of its button", () => {
@@ -544,5 +567,219 @@ describe("the grouped chooser", () => {
     openChooser(onReset);
     fireEvent.click(screen.getByRole("button", { name: "Back to the default columns" }));
     expect(onReset).toHaveBeenCalled();
+  });
+});
+
+/* ── BF-11 P2 (B2) ── */
+
+describe("BF-11 filtered heads", () => {
+  /** The head's own markup, as React writes it (jsdom drops a `var()` from an inline style). */
+  const headMarkup = (props: ReturnType<typeof visionBuildsTableViewProps>, name: string) => {
+    const html = renderToStaticMarkup(
+      <MemoryRouter>
+        <BuildsTableView {...props} />
+      </MemoryRouter>,
+    );
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    return [...doc.querySelectorAll("th")].find((th) => th.textContent?.startsWith(name))!.outerHTML;
+  };
+  const withAutonomy = (filtered: ColumnId[]) => ({ ...visionBuildsTableViewProps(), columns: [...COLUMN_ORDER, "autonomy"] as ColumnId[], filtered: new Set(filtered) });
+
+  it('a filtered column\'s head is in --text at weight 500 with a 1px --selected-edge underline, and its name ends ", filtered" for a screen reader', () => {
+    render(
+      <MemoryRouter>
+        <BuildsTableView {...withAutonomy(["autonomy"])} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("columnheader", { name: /Autonomy, filtered/ })).toBeTruthy();
+    const markup = headMarkup(withAutonomy(["autonomy"]), "Autonomy");
+    expect(markup).toContain("color:var(--text)");
+    expect(markup).toContain("font-weight:500");
+    expect(markup).toContain("border-bottom:1px solid var(--selected-edge)");
+  });
+
+  it("a column that is not filtered has no underline and no such text", () => {
+    const markup = headMarkup(withAutonomy(["autonomy"]), "Field");
+    expect(markup).not.toContain("selected-edge");
+    expect(markup).not.toContain("filtered");
+  });
+
+  it("a column that is both sorted and filtered shows the arrow and the underline", () => {
+    const props = { ...withAutonomy(["reproductions"]) };
+    render(
+      <MemoryRouter>
+        <BuildsTableView {...props} />
+      </MemoryRouter>,
+    );
+    const head = screen.getByRole("columnheader", { name: /Reproductions, filtered/ });
+    expect(head.getAttribute("aria-sort")).toBe("descending");
+    expect(head.textContent).toContain("↓");
+    expect(headMarkup(props, "Reproductions")).toContain("border-bottom:1px solid var(--selected-edge)");
+  });
+
+  it("the mark is drawn with the setting off too", () => {
+    /* With "Add a column for each filter" off, a column the reader ticked is still drawn, and still says it is filtered: the
+       mark follows the filter, not the setting. */
+    const props = { ...visionBuildsTableViewProps(), columns: ["build", "field"] as ColumnId[], filtered: new Set<ColumnId>(["field"]) };
+    render(
+      <MemoryRouter>
+        <BuildsTableView {...props} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("columnheader", { name: /Field, filtered/ })).toBeTruthy();
+  });
+});
+
+/* ── BF-13 P1 (C6): the footer, one cell per column ── */
+
+describe("BF-13 footer", () => {
+  const drawTable = (change: (props: ReturnType<typeof visionBuildsTableViewProps>) => ReturnType<typeof visionBuildsTableViewProps> = (p) => p) =>
+    render(
+      <MemoryRouter>
+        <BuildsTableView {...change(visionBuildsTableViewProps())} />
+      </MemoryRouter>,
+    );
+  /** The footer's cells, by the column above each. */
+  const footerCells = () => {
+    const footer = screen.getAllByRole("rowgroup").at(-1)!;
+    const heads = screen.getAllByRole("columnheader").map((head) => head.textContent?.replace(/[↑↓2]/g, "") ?? "");
+    const cells = within(footer).getAllByRole("cell");
+    return { heads, cells, under: (name: string) => cells[heads.indexOf(name)] };
+  };
+
+  it("with the default columns the footer reads as it did", () => {
+    drawTable();
+    const { under } = footerCells();
+    expect(under("Build").textContent).toContain("18 builds");
+    expect(under("Field").textContent).toBe("Sales");
+    expect(under("Tools").textContent).toBe("Claude Code");
+    expect(under("Steps").textContent).toBe("Median 11");
+    expect(under("Reproductions").textContent).toBe("Total 214");
+  });
+
+  it("the footer has exactly one cell per drawn column, and none has a colSpan", () => {
+    drawTable();
+    const { heads, cells } = footerCells();
+    expect(cells).toHaveLength(heads.length);
+    for (const cell of cells) expect(cell.getAttribute("colspan")).toBeNull();
+    expect(screen.getAllByRole("rowgroup").at(-1)!.querySelectorAll("tr")).toHaveLength(1);
+  });
+
+  it("moving Field after Reproductions moves its footer value with it", () => {
+    drawTable((p) => ({ ...p, columns: ["build", "built", "tools", "steps", "reproductions", "field", "confirmed"] }));
+    const { heads, cells } = footerCells();
+    expect(heads.indexOf("Field")).toBe(5);
+    expect(cells[5].textContent).toBe("Sales");
+    expect(cells[4].textContent).toBe("Total 214");
+  });
+
+  it("a calculation the reader added is drawn under its own column, with its Remove button", () => {
+    const onRemove = vi.fn();
+    drawTable((p) => ({ ...p, footer: { ...p.footer, calculations: [{ key: "steps:sum", column: "steps", text: "Sum, Steps 214", onRemove }] } }));
+    const cell = footerCells().under("Steps");
+    expect(within(cell).getByText("Sum, Steps 214")).toBeTruthy();
+    fireEvent.click(within(cell).getByRole("button", { name: "Remove Sum, Steps 214" }));
+    expect(onRemove).toHaveBeenCalled();
+  });
+
+  it("Add a calculation is in the Build column's footer cell, under the count", () => {
+    drawTable();
+    const cell = footerCells().under("Build");
+    const button = within(cell).getByRole("button", { name: "Add a calculation" });
+    expect(cell.textContent?.indexOf("18 builds")).toBeLessThan(cell.textContent!.indexOf("Add a calculation"));
+    expect(button).toBeTruthy();
+  });
+
+  it("with Last confirmed not drawn, Add a calculation is still there", () => {
+    drawTable((p) => ({ ...p, columns: ["build", "reproductions"] }));
+    expect(within(footerCells().under("Build")).getByRole("button", { name: "Add a calculation" })).toBeTruthy();
+  });
+});
+
+/* ── BF-13 P2 (C6): the reader's order ── */
+
+describe("BF-13 column order", () => {
+  const menuOf = (onMove = vi.fn()) => columnsMenu(["build", "field", "tools", "steps"], true, vi.fn(), undefined, [], onMove);
+  const openChooser = (menu: ReturnType<typeof menuOf>) => {
+    render(
+      <MemoryRouter>
+        <BuildsTableView {...visionBuildsTableViewProps()} columnsLabel="4 of 28" columnsMenu={menu} />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Columns: 4 of 28" }));
+  };
+
+  it('in the chooser every chosen column but Build has "Move <name> left" and "Move <name> right" buttons; the first movable one\'s Left and the last one\'s Right are disabled', () => {
+    openChooser(menuOf());
+    const shown = screen.getByRole("group", { name: "Shown, in order" });
+    expect(within(shown).queryByRole("button", { name: /^Move Build/ })).toBeNull();
+    for (const name of ["Field", "Tools", "Steps"]) {
+      expect(within(shown).getByRole("button", { name: `Move ${name} left` })).toBeTruthy();
+      expect(within(shown).getByRole("button", { name: `Move ${name} right` })).toBeTruthy();
+    }
+    expect((within(shown).getByRole("button", { name: "Move Field left" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((within(shown).getByRole("button", { name: "Move Steps right" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((within(shown).getByRole("button", { name: "Move Tools left" }) as HTMLButtonElement).disabled).toBe(false);
+    expect(within(shown).getAllByRole("checkbox").map((box) => box.closest("label")?.textContent)).toEqual(["Build", "Field", "Tools", "Steps"]);
+  });
+
+  it('pressing Move right calls onMove with the id and "right"', () => {
+    const onMove = vi.fn();
+    openChooser(menuOf(onMove));
+    fireEvent.click(screen.getByRole("button", { name: "Move Tools right" }));
+    expect(onMove).toHaveBeenCalledWith("tools", "right");
+  });
+
+  it("a head has user-select none and touch-action none while it can be dragged", () => {
+    const props = { ...visionBuildsTableViewProps(), onDropColumn: vi.fn(), movable: new Set<ColumnId>(["field"]) };
+    const html = renderToStaticMarkup(
+      <MemoryRouter>
+        <BuildsTableView {...props} />
+      </MemoryRouter>,
+    );
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const head = (name: string) => [...doc.querySelectorAll("th")].find((th) => th.textContent?.startsWith(name))!.getAttribute("style") ?? "";
+    expect(head("Field")).toContain("user-select:none");
+    expect(head("Field")).toContain("touch-action:none");
+    expect(head("Tools")).not.toContain("touch-action:none");
+  });
+});
+
+/* ── BF-13 P3 (C5b): the Build column stays in view ── */
+
+describe("BF-13 pinned Build column", () => {
+  it("the Build head and every Build cell are position sticky at left 0 with the surface colour behind them", () => {
+    const html = renderToStaticMarkup(
+      <MemoryRouter>
+        <BuildsTableView {...visionBuildsTableViewProps()} />
+      </MemoryRouter>,
+    );
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const firstCells = [...doc.querySelectorAll("tr")].map((row) => row.children[0] as HTMLElement);
+    expect(firstCells.length).toBeGreaterThan(3);
+    for (const cell of firstCells) {
+      const style = cell.getAttribute("style") ?? "";
+      expect(style).toContain("position:sticky");
+      expect(style).toContain("left:0");
+      expect(style).toContain("background:var(--surface)");
+    }
+    const second = (doc.querySelector("tbody tr")!.children[1] as HTMLElement).getAttribute("style") ?? "";
+    expect(second).not.toContain("sticky");
+  });
+
+  it("the pinned cells take a hairline edge only once the table is scrolled", () => {
+    render(
+      <MemoryRouter>
+        <BuildsTableView {...visionBuildsTableViewProps()} />
+      </MemoryRouter>,
+    );
+    const region = screen.getByRole("region", { name: "Builds table" });
+    expect(region.getAttribute("data-scrolled")).toBeNull();
+    region.scrollLeft = 40;
+    fireEvent.scroll(region);
+    expect(region.getAttribute("data-scrolled")).toBe("true");
+    region.scrollLeft = 0;
+    fireEvent.scroll(region);
+    expect(region.getAttribute("data-scrolled")).toBeNull();
   });
 });

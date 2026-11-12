@@ -3,7 +3,7 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { EMPTY_LAYOUT, LAYOUT_KEY, isEmptyLayout, parseLayout, readStoredLayout, withCalculation, withColumns, writeStoredLayout } from "./buildsLayout";
+import { EMPTY_LAYOUT, LAYOUT_KEY, isEmptyLayout, parseLayout, readStoredLayout, withCalculation, withColumns, withFilterColumns, writeStoredLayout } from "./buildsLayout";
 
 afterEach(() => {
   localStorage.clear();
@@ -31,14 +31,28 @@ describe("parseLayout", () => {
 
   it("buildsLayout: parseLayout ignores order, opened and heights from an older layout and keeps columns and calculations", () => {
     const layout = parseLayout({ order: ["field", "task"], opened: ["task"], heights: { field: 200 }, columns: ["build", "skill"], calculations: [{ column: "steps", kind: "median" }] });
-    expect(layout).toEqual({ columns: ["build", "skill"], calculations: [{ column: "steps", kind: "median" }] });
-    expect(Object.keys(layout).sort()).toEqual(["calculations", "columns"]);
+    expect(layout).toEqual({ columns: ["build", "skill"], calculations: [{ column: "steps", kind: "median" }], filterColumns: true });
+    expect(Object.keys(layout).sort()).toEqual(["calculations", "columns", "filterColumns"]);
   });
 
   it("buildsLayout: a layout with only old keys is empty", () => {
     const layout = parseLayout({ order: ["autonomy"], opened: ["task"], heights: { field: 480 } });
     expect(layout).toEqual(EMPTY_LAYOUT);
     expect(isEmptyLayout(layout)).toBe(true);
+  });
+});
+
+describe("BF-11 filterColumns", () => {
+  it("filterColumns is true by default, false only when the stored value is exactly false", () => {
+    expect(EMPTY_LAYOUT.filterColumns).toBe(true);
+    expect(parseLayout({}).filterColumns).toBe(true);
+    for (const raw of [0, "false", null, "no"]) expect(parseLayout({ filterColumns: raw }).filterColumns).toBe(true);
+    expect(parseLayout({ filterColumns: false }).filterColumns).toBe(false);
+  });
+
+  it("a layout that differs only by filterColumns being false is not empty", () => {
+    expect(isEmptyLayout(withFilterColumns(EMPTY_LAYOUT, false))).toBe(false);
+    expect(isEmptyLayout(withFilterColumns(withFilterColumns(EMPTY_LAYOUT, false), true))).toBe(true);
   });
 });
 
@@ -53,7 +67,7 @@ describe("the browser's copy", () => {
 
   it("reads an older copy, holding the filters' order, without it", () => {
     localStorage.setItem(LAYOUT_KEY, JSON.stringify({ order: ["field"], opened: [], heights: { task: 240 }, columns: null, calculations: [{ column: "reproductions", kind: "sum" }] }));
-    expect(readStoredLayout()).toEqual({ columns: null, calculations: [{ column: "reproductions", kind: "sum" }] });
+    expect(readStoredLayout()).toEqual({ columns: null, calculations: [{ column: "reproductions", kind: "sum" }], filterColumns: true });
   });
 
   it("reads nothing when the stored text is broken, and a failing store is not an error", () => {

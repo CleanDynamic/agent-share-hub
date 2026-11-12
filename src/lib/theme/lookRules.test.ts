@@ -1165,6 +1165,21 @@ export const CA03_FILES: readonly string[] = [
   // BF-09
   "src/pages/site/builds/SetDialogs.test.tsx",
 
+  // BF-11
+  "src/pages/site/builds/buildsModel.filterColumns.test.ts",
+  "src/lib/build/buildsLayout.ts",
+  "src/lib/build/buildsLayout.test.ts",
+
+  // BF-12
+  "src/lib/build/buildsColumns.ts",
+  "src/pages/site/builds/buildsModel.sort.test.ts",
+
+  // BF-13
+  "src/pages/site/builds/columnDrag.ts",
+
+  // BF-14
+  "src/pages/site/builds/buildsModel.match.test.ts",
+
   // SV-14
   "src/lib/build/graph.ts",
   "src/pages/site/openbuilds/OpenBuildsFrame.tsx",
@@ -1931,6 +1946,11 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "no untouched shadcn",
     text: `import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropd`,
     why: "SV-14: OpenBuilds' Sort is the menu the Builds Table's Sort opens (SV-11), a radio group behind the board's control. A styled select cannot be drawn: index.css paints every select's fill and border with !important.",
+  },
+  {
+    rule: "no untouched shadcn",
+    text: `import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger }`,
+    why: "BF-14: Builds must match is a radio menu, the one the Table's Sort opens on a phone; a native select is not drawn on the site (index.css paints every select).",
   },
   {
     rule: "no untouched shadcn",

@@ -966,7 +966,7 @@ async function countGalleryBuildRows(operation: string, lens: GalleryLens, now: 
 }
 
 /** BF-08: the Table's filters, without the lens, the sort and the page: what the lens counts follow. */
-export type LensCountFilters = Omit<BuildsTableOptions, "lens" | "sort" | "offset" | "limit">;
+export type LensCountFilters = Omit<BuildsTableOptions, "lens" | "sort" | "ascending" | "offset" | "limit">;
 
 /** BF-08: any of the Table's filters (or the search) holds a value. */
 export function hasFilters(options: LensCountFilters | undefined): boolean {
@@ -1111,7 +1111,7 @@ function cleanShapes(values: string[] | undefined): BuildShape[] {
 const FEED_HANDLE_LIMIT = 20;
 const FEED_ID_CHUNK = 100;
 
-export type GalleryFeedSort = "newest" | "reproduced" | "confirmed" | "rebuilt";
+export type GalleryFeedSort = "newest" | "reproduced" | "confirmed" | "rebuilt" | "steps" | "sessions";
 
 /** The builder methods the feed calls on a builds query. */
 interface FeedQuery extends PromiseLike<{ data: unknown; error: unknown; count?: number | null }> {
@@ -1216,16 +1216,26 @@ export function madeWithSpellings(toolId: string | undefined): string[] {
   return tool ? [tool.name, ...tool.aliases] : [];
 }
 
-/** The sort's own database order, with id last so a page never repeats a row. */
-function feedOrder(query: FeedQuery, sort: GalleryFeedSort): FeedQuery {
+/** The sort's own database order, with id last so a page never repeats a row. BF-12: the sort's own first order follows
+    `ascending` (empty values last either way); the tie-breakers after it never change. Steps and Sessions read the stored
+    counts, on their indexes (`idx_builds_step_count`, `idx_builds_session_count`). */
+function feedOrder(query: FeedQuery, sort: GalleryFeedSort, ascending = false): FeedQuery {
   const desc = { ascending: false, nullsFirst: false };
+  const first = { ascending, nullsFirst: false };
   let q = query;
   if (sort === "reproduced") {
-    q = q.order("reproduction_count", desc).order("last_confirmed_at", desc);
+    q = q.order("reproduction_count", first).order("last_confirmed_at", desc);
   } else if (sort === "confirmed") {
-    q = q.order("last_confirmed_at", desc);
+    q = q.order("last_confirmed_at", first);
   } else if (sort === "rebuilt") {
-    q = q.order("rebuild_count", desc);
+    q = q.order("rebuild_count", first);
+  } else if (sort === "steps") {
+    q = q.order("step_count", first);
+  } else if (sort === "sessions") {
+    q = q.order("session_count", first);
+  } else if (ascending) {
+    /* Newest's own order is published_at, the first tie-breaker: ascending, it is its own first order. */
+    q = q.order("published_at", first);
   }
   return q.order("published_at", desc).order("id", { ascending: true });
 }
@@ -1370,6 +1380,8 @@ export interface BuildsTableOptions {
   /** SV-23 P2: Works on model: a registry model id; builds with a run that worked on it. */
   worksOn?: string;
   sort?: GalleryFeedSort;
+  /** BF-12 (B3): the sort's own first order ascending. */
+  ascending?: boolean;
   offset?: number;
   limit?: number;
 }
@@ -1531,7 +1543,9 @@ async function listBuildsTableRows(options: BuildsTableOptions, reviews: boolean
     query = applyTableFilters(query, options, { lens, now, withCounts, search });
     query = leaveOutReviews(applyLensFilters(query, lens), reviews);
 
-    return (feedOrder(query as unknown as FeedQuery, options.sort ?? "reproduced") as unknown as TableQuery)
+    /* Without the stored counts there is no step_count or session_count to order by: the resting sort stands in. */
+    const sort = !withCounts && (options.sort === "steps" || options.sort === "sessions") ? "reproduced" : (options.sort ?? "reproduced");
+    return (feedOrder(query as unknown as FeedQuery, sort, options.ascending === true) as unknown as TableQuery)
       .limit(RUNS_PER_BUILD, { referencedTable: "build_reproductions" })
       .range(offset, offset + limit - 1);
   };

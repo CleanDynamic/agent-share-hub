@@ -10,4 +10,4 @@ The current prompt series is **SV-01 to SV-26**, in `design/prompts/sv-series/`:
 
 ## BF series (Builds filters)
 
-The prompts **BF-00 to BF-15** are in `design/prompts/bf-series/`: `README.md` holds the order, the rules, the design spec and the table of every fix, and each prompt is `BF-nn-<name>.md`. When asked to run "BF-01", "bf 1" or similar, open the file with that number and follow it. For the Builds pages the BF README's design spec replaces the three Builds vision boards, which BF-00 retired.
+The prompts **BF-00 to BF-15** are in `design/prompts/bf-series/`: `README.md` holds the order, the rules, the design spec and the table of every fix, and each prompt is `BF-nn-<name>.md`. When asked to run "BF-01", "bf 1" or similar, open the file with that number and follow it. For the Builds pages the BF README's design spec replaces the three Builds vision boards, which BF-00 retired. The series is complete: `design/prompts/bf-series/RESULTS.md` holds the proof of every fix, and what is left.

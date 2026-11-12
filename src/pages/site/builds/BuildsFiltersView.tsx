@@ -17,7 +17,7 @@ import { Button } from "@/components/brand/Button";
 import { Checkbox } from "@/components/brand/Checkbox";
 import { Glyph } from "@/components/brand/Glyph";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
@@ -153,6 +153,12 @@ export interface BuildsFiltersViewProps {
   onOpen: () => void;
   onRange?: (sectionId: string, value: readonly [number, number]) => void;
   onToggleSegment?: (sectionId: string, key: string) => void;
+  /** BF-14 (B6): "Builds must match", part of the draft; absent with fewer than two countable filters. `unavailable`: why it is
+      disabled (not every candidate is loaded), with Load all when that is still possible. */
+  match?: { choices: readonly number[]; value: number; onChange: (value: number) => void; unavailable?: string; onLoadAll?: () => void };
+  /** BF-11 (B1): "Add a column for each filter", a layout setting that applies at once, not part of the draft. Absent: not drawn. */
+  addColumns?: boolean;
+  onAddColumns?: (on: boolean) => void;
 }
 
 /* ── pieces ── */
@@ -621,20 +627,30 @@ export function BuildsFilters({ open, onOpenChange, ...props }: BuildsFiltersVie
           <OrderValues order={props.order} onOrder={props.onOrder} />
         </>
       }
-      footer={<FiltersFooter matchCount={props.matchCount} dirty={props.dirty} onClear={props.onClear} onCancel={() => close(false)} onApply={apply} />}
+      footer={<FiltersFooter matchCount={props.matchCount} dirty={props.dirty} match={props.match} addColumns={props.addColumns} onAddColumns={props.onAddColumns} onClear={props.onClear} onCancel={() => close(false)} onApply={apply} />}
     >
       <BuildsFiltersView {...props} search={search} />
     </BuildsFiltersDialog>
   );
 }
 
-/** BF-08 (A2): how many builds the draft matches, then Clear all, Cancel and Apply (the dialog's one primary). */
-function FiltersFooter({ matchCount, dirty, onClear, onCancel, onApply }: { matchCount: number | null; dirty: boolean; onClear: () => void; onCancel: () => void; onApply: () => void }) {
+/** BF-08 (A2): how many builds the draft matches, then Clear all, Cancel and Apply (the dialog's one primary). BF-11 (B1): beside
+    the count, "Add a column for each filter", which applies at once. */
+function FiltersFooter({ matchCount, dirty, match, addColumns, onAddColumns, onClear, onCancel, onApply }: { matchCount: number | null; dirty: boolean; match?: BuildsFiltersViewProps["match"]; addColumns?: boolean; onAddColumns?: (on: boolean) => void; onClear: () => void; onCancel: () => void; onApply: () => void }) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-      <span role="status" style={text(12.5, 400, t.text2)}>
-        {matchCount === null ? "" : `${matchCount} ${matchCount === 1 ? "build matches" : "builds match"}`}
-      </span>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 16px" }}>
+        <span role="status" style={text(12.5, 400, t.text2)}>
+          {matchCount === null ? "" : `${matchCount} ${matchCount === 1 ? "build matches" : "builds match"}`}
+        </span>
+        {match ? <MatchControl match={match} /> : null}
+        {onAddColumns ? (
+          <label style={{ display: "inline-flex", alignItems: "center", gap: 8, minHeight: 24, cursor: "pointer", ...text(12.5, 400, t.text2) }}>
+            <Checkbox checked={addColumns !== false} onChange={(event) => onAddColumns(event.currentTarget.checked)} />
+            Add a column for each filter
+          </label>
+        ) : null}
+      </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <BuildsTextButton onClick={onClear}>Clear all</BuildsTextButton>
         <BuildsControl onClick={onCancel}>Cancel</BuildsControl>
@@ -643,6 +659,35 @@ function FiltersFooter({ matchCount, dirty, onClear, onCancel, onApply }: { matc
         </Button>
       </div>
     </div>
+  );
+}
+
+/** BF-14 (B6): "Builds must match": All m filters, or at least m-1 down to 1 of m. A menu of choices, as the Sort menu is (the
+    look's rules keep native selects off the site). */
+function MatchControl({ match }: { match: NonNullable<BuildsFiltersViewProps["match"]> }) {
+  const m = match.choices[0];
+  const words = (choice: number) => (choice === m ? `All ${m} filters` : `At least ${choice} of ${m}`);
+  return (
+    <span style={{ display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: 8, ...text(12.5, 400, t.text2) }}>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild disabled={Boolean(match.unavailable)}>
+          <BuildsControl aria-label={`Builds must match: ${words(match.value)}`} disabled={Boolean(match.unavailable)}>
+            <span style={{ color: t.label }}>Builds must match</span> {words(match.value)}
+          </BuildsControl>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" sideOffset={6}>
+          <DropdownMenuRadioGroup value={String(match.value)} onValueChange={(value) => match.onChange(Number(value))}>
+            {match.choices.map((choice) => (
+              <DropdownMenuRadioItem key={choice} value={String(choice)}>
+                {words(choice)}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {match.unavailable ? <span>{match.unavailable}</span> : null}
+      {match.onLoadAll ? <BuildsTextButton onClick={match.onLoadAll}>Load all</BuildsTextButton> : null}
+    </span>
   );
 }
 

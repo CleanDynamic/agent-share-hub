@@ -24,9 +24,11 @@ export interface BuildsLayout {
   /** The table's columns; null is the default. */
   columns: string[] | null;
   calculations: Calculation[];
+  /** BF-11 (B1): draw the column of each filter that holds a value. On unless the reader turned it off. */
+  filterColumns: boolean;
 }
 
-export const EMPTY_LAYOUT: BuildsLayout = { columns: null, calculations: [] };
+export const EMPTY_LAYOUT: BuildsLayout = { columns: null, calculations: [], filterColumns: true };
 
 const MAX_LIST = 64;
 
@@ -49,6 +51,7 @@ export function parseLayout(raw: unknown): BuildsLayout {
   return {
     columns: Array.isArray(value.columns) ? strings(value.columns) : null,
     calculations,
+    filterColumns: value.filterColumns !== false,
   };
 }
 
@@ -72,12 +75,14 @@ export function writeStoredLayout(layout: BuildsLayout): void {
 
 /** The layout holds nothing: a set without one saves no `layout` key. */
 export function isEmptyLayout(layout: BuildsLayout): boolean {
-  return layout.columns === null && layout.calculations.length === 0;
+  return layout.columns === null && layout.calculations.length === 0 && layout.filterColumns;
 }
 
 /* ── the layout, changed ── */
 
 export const withColumns = (layout: BuildsLayout, columns: readonly string[] | null): BuildsLayout => ({ ...layout, columns: columns === null ? null : [...columns] });
+
+export const withFilterColumns = (layout: BuildsLayout, on: boolean): BuildsLayout => ({ ...layout, filterColumns: on });
 
 export function withCalculation(layout: BuildsLayout, calculation: Calculation, on: boolean): BuildsLayout {
   const others = layout.calculations.filter((entry) => !(entry.column === calculation.column && entry.kind === calculation.kind));

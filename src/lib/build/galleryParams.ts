@@ -41,6 +41,7 @@ import { toolFor } from "@/lib/tools/registry";
 import { isPattern, type Pattern } from "./patterns";
 import { isKnown, type Facet } from "@/lib/classify/taxonomy";
 
+import { isColumnId } from "./buildsColumns";
 import { RANGE_KEYS, formatRange, parseRange, type NumberRange, type RangeKey } from "./galleryRanges";
 import { normaliseQuery } from "./search";
 
@@ -48,7 +49,7 @@ import { normaliseQuery } from "./search";
 export type GalleryViewMode = "table" | "maps" | "classification";
 export const GALLERY_VIEWS: readonly GalleryViewMode[] = ["table", "maps", "classification"];
 
-export const GALLERY_FEED_SORTS: readonly GalleryFeedSort[] = ["newest", "reproduced", "confirmed", "rebuilt"];
+export const GALLERY_FEED_SORTS: readonly GalleryFeedSort[] = ["newest", "reproduced", "confirmed", "rebuilt", "steps", "sessions"];
 
 /** SV-11: the Table's resting order, the board's "Sort Reproductions". */
 export const DEFAULT_GALLERY_SORT: GalleryFeedSort = "reproduced";
@@ -96,6 +97,15 @@ export interface GalleryParams {
   ranges?: Partial<Record<RangeKey, NumberRange>>;
   /** UI-P49. Present only when it is not the resting sort (SV-11: reproduced). */
   sort?: GalleryFeedSort;
+  /** BF-12 (B3). The first key ascending (`dir=asc`); absent is descending. The first key is `by` while it is set, else the sort. */
+  dir?: "asc";
+  /** BF-12 (B3). A Table column sorted in the browser, over the database's sort, once every match is loaded. */
+  by?: string;
+  /** BF-12 (B5). A second column that breaks the first key's ties, and its direction; only with a first key. */
+  by2?: string;
+  dir2?: "asc";
+  /** BF-14 (B6). Builds that meet at least this many of the countable filters; whether it is below their count is the page's. */
+  match?: number;
   /** SV-24. The filter set that is open: where the panel's layout is kept. The filters themselves are the other parameters. */
   set?: string;
 }
@@ -134,6 +144,9 @@ function isSort(value: string | null | undefined): value is GalleryFeedSort {
   return typeof value === "string" && (GALLERY_FEED_SORTS as readonly string[]).includes(value);
 }
 
+/** BF-14: a positive whole number, as written. */
+const isMatch = (value: string | null): boolean => value !== null && /^[1-9][0-9]?$/.test(value);
+
 function isLens(value: string | null): value is GalleryLens {
   return value !== null && (GALLERY_LENSES as readonly string[]).includes(value);
 }
@@ -151,6 +164,8 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
   const facets = cleanFacetKeys(search.getAll("f"));
   const view = search.get("view");
   const sort = search.get("sort");
+  const by = search.get("by");
+  const by2 = search.get("by2");
   const ranges: Partial<Record<RangeKey, NumberRange>> = {};
   for (const key of RANGE_KEYS) {
     const range = parseRange(search.get(key));
@@ -172,13 +187,18 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
     ...(search.get("state") === "confirmed" || search.get("state") === "stale" ? { state: search.get("state") as ConfirmedState } : {}),
     ...(Object.keys(ranges).length > 0 ? { ranges } : {}),
     ...(isSort(sort) && sort !== DEFAULT_GALLERY_SORT ? { sort } : {}),
+    ...(search.get("dir") === "asc" ? { dir: "asc" as const } : {}),
+    ...(isColumnId(by) ? { by } : {}),
+    ...(isColumnId(by) && isColumnId(by2) ? { by2 } : {}),
+    ...(isColumnId(by) && isColumnId(by2) && search.get("dir2") === "asc" ? { dir2: "asc" as const } : {}),
+    ...(isMatch(search.get("match")) ? { match: Number(search.get("match")) } : {}),
     ...(cleanSet(search.get("set")) ? { set: cleanSet(search.get("set")) } : {}),
   };
 }
 
 /**
  * The address of a gallery view: only the values that differ from the
- * default, keys in the order view, lens, for, with, shape, model, tool, pattern, f (CA-16, repeatable), open, within, state (SV-23 P2: Last confirmed, Confirmed or stale), the number filters (SV-23: steps, sessions, reproductions, rebuilds, likes), sort, q, set (SV-24: the open filter set).
+ * default, keys in the order view, lens, for, with, shape, model, tool, pattern, f (CA-16, repeatable), open, within, state (SV-23 P2: Last confirmed, Confirmed or stale), the number filters (SV-23: steps, sessions, reproductions, rebuilds, likes), sort, dir, by, by2, dir2 (BF-12), match (BF-14), q, set (SV-24: the open filter set).
  */
 export function galleryHref(params: Partial<GalleryParams> = {}): string {
   const out = new URLSearchParams();
@@ -201,6 +221,16 @@ export function galleryHref(params: Partial<GalleryParams> = {}): string {
     if (range) out.set(key, range);
   }
   if (isSort(params.sort) && params.sort !== DEFAULT_GALLERY_SORT) out.set("sort", params.sort);
+  if (params.dir === "asc") out.set("dir", "asc");
+  if (isColumnId(params.by)) {
+    out.set("by", params.by);
+    if (isColumnId(params.by2)) {
+      out.set("by2", params.by2);
+      if (params.dir2 === "asc") out.set("dir2", "asc");
+    }
+  }
+
+  if (params.match !== undefined && isMatch(String(params.match))) out.set("match", String(params.match));
 
   const query = normaliseQuery(params.query ?? null);
   if (query !== null) out.set("q", query);

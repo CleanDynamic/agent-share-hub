@@ -337,3 +337,31 @@ describe("the four new columns' data", () => {
     expect(page.builds[0]).toMatchObject({ likeCount: 2, patterns: [] });
   });
 });
+
+describe("BF-12 the sort's direction, Steps and Sessions", () => {
+  it("orders by step_count or session_count, empty last, then the same tie-breakers", async () => {
+    await listBuildsTable({ sort: "steps" });
+    expect(call("order").map((entry) => entry.args)).toEqual([
+      ["step_count", { ascending: false, nullsFirst: false }],
+      ["published_at", { ascending: false, nullsFirst: false }],
+      ["id", { ascending: true }],
+    ]);
+    calls = [];
+    await listBuildsTable({ sort: "sessions", ascending: true });
+    expect(call("order").map((entry) => entry.args)).toEqual([
+      ["session_count", { ascending: true, nullsFirst: false }],
+      ["published_at", { ascending: false, nullsFirst: false }],
+      ["id", { ascending: true }],
+    ]);
+  });
+
+  it("ascending turns only the sort's own first order", async () => {
+    await listBuildsTable({ ascending: true });
+    expect(call("order").map((entry) => entry.args)).toEqual([
+      ["reproduction_count", { ascending: true, nullsFirst: false }],
+      ["last_confirmed_at", { ascending: false, nullsFirst: false }],
+      ["published_at", { ascending: false, nullsFirst: false }],
+      ["id", { ascending: true }],
+    ]);
+  });
+});

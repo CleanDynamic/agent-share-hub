@@ -255,7 +255,7 @@ describe("BuildsPage", () => {
       renderAt("/builds");
       expect(await screen.findByRole("columnheader", { name: "Steps" })).toBeTruthy();
       expect(screen.getByRole("columnheader", { name: "Sessions" })).toBeTruthy();
-      expect(screen.getByText("Median 8 steps")).toBeTruthy();
+      expect(screen.getByText("Median 8")).toBeTruthy();
       await openFilters("Structure");
       expect(await screen.findByRole("region", { name: "Steps" })).toBeTruthy();
       expect(screen.getByRole("region", { name: "Sessions" })).toBeTruthy();
@@ -851,5 +851,352 @@ describe("BF-09 Save current", () => {
     renderAt("/builds");
     const button = await saveCurrent();
     expect(button.disabled).toBe(false);
+  });
+});
+
+describe("BF-11 filters become columns", () => {
+  const stored = () => JSON.parse(localStorage.getItem("builds:layout:v1") ?? "null");
+  const autonomy = `autonomy:${AUTONOMY_VALUES[0].id}`;
+
+  it("filtering by Autonomy draws an Autonomy column; removing the chip removes it", async () => {
+    renderAt(`/builds?f=${encodeURIComponent(autonomy)}`);
+    expect(await screen.findByRole("columnheader", { name: /^Autonomy/ })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Remove filter Autonomy" }));
+    await waitFor(() => expect(address).toBe("/builds"));
+    await waitFor(() => expect(screen.queryByRole("columnheader", { name: /^Autonomy/ })).toBeNull());
+    expect(stored()).toBeNull();
+  });
+
+  it("a column the reader ticked stays when its filter is removed", async () => {
+    localStorage.setItem("builds:layout:v1", JSON.stringify({ columns: ["build", "field", "autonomy"], calculations: [] }));
+    renderAt(`/builds?f=${encodeURIComponent(autonomy)}`);
+    expect(await screen.findByRole("columnheader", { name: /^Autonomy/ })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Remove filter Autonomy" }));
+    await waitFor(() => expect(address).toBe("/builds"));
+    expect(screen.getByRole("columnheader", { name: /^Autonomy/ })).toBeTruthy();
+  });
+
+  it("opening /builds?view=classification and pressing a value, then choosing Table, shows that value's column", async () => {
+    localStorage.setItem("builds:layout:v1", JSON.stringify({ columns: ["build", "reproductions"], calculations: [] }));
+    listBuildsTable.mockResolvedValue({ builds: [{ ...build(1), classifiedAs: { ...emptyClassification(), declared: { ...emptyClassification().declared, field: [{ id: "education" }] } } }], total: 1 });
+    renderAt("/builds?view=classification");
+    fireEvent.click(await screen.findByRole("link", { name: "Education" }));
+    await waitFor(() => expect(address).toBe("/builds?view=classification&f=field%3Aeducation"));
+    fireEvent.click(within(screen.getByRole("navigation", { name: "View" })).getByRole("link", { name: "Table" }));
+    await waitFor(() => expect(address).toBe("/builds?f=field%3Aeducation"));
+    expect(await screen.findByRole("columnheader", { name: /^Field/ })).toBeTruthy();
+    expect(stored().columns).toEqual(["build", "reproductions"]);
+  });
+
+  it('the dialog\'s footer has "Add a column for each filter", ticked; unticking it and applying draws only the reader\'s columns, and the choice is kept', async () => {
+    renderAt(`/builds?f=${encodeURIComponent(autonomy)}`);
+    expect(await screen.findByRole("columnheader", { name: /^Autonomy/ })).toBeTruthy();
+    await openFilters();
+    const box = screen.getByRole("checkbox", { name: "Add a column for each filter" }) as HTMLInputElement;
+    expect(box.checked).toBe(true);
+    fireEvent.click(box);
+    expect((screen.getByRole("checkbox", { name: "Add a column for each filter" }) as HTMLInputElement).checked).toBe(false);
+    expect(stored().filterColumns).toBe(false);
+    closeFilters();
+    await waitFor(() => expect(screen.queryByRole("columnheader", { name: /^Autonomy/ })).toBeNull());
+    expect(address).toBe(`/builds?f=${encodeURIComponent(autonomy)}`);
+  });
+
+  it("the Columns label counts the reader's own columns", async () => {
+    renderAt(`/builds?f=${encodeURIComponent(autonomy)}&shape=agent`);
+    expect(await screen.findByRole("columnheader", { name: /^Autonomy/ })).toBeTruthy();
+    const button = screen.getByRole("button", { name: "Columns: 10 of 25" });
+    fireEvent.click(button);
+    const added = screen.getByRole("checkbox", { name: "Autonomy, from a filter" }) as HTMLInputElement;
+    expect(added.checked).toBe(true);
+    expect(added.disabled).toBe(true);
+  });
+});
+
+describe("BF-12 heads sort", () => {
+  const field = (id: string) => ({ ...emptyClassification(), declared: { ...emptyClassification().declared, field: [{ id }] } });
+  /** Build 1 in Education, Build 2 in Law: the list's order is 1, 2. */
+  const twoFields = () => listBuildsTable.mockResolvedValue({ countsLive: true, builds: [{ ...build(1), classifiedAs: field("education"), stepCount: 3 }, { ...build(2), classifiedAs: field("law"), stepCount: 9 }], total: 2 });
+  /** A full page of 50: more pages wait on the server. */
+  const fullPage = () => listBuildsTable.mockResolvedValue({ countsLive: true, builds: Array.from({ length: 50 }, (_, at) => ({ ...build(at + 1), classifiedAs: field(at % 2 ? "law" : "education") })), total: 200 });
+  const order = () => screen.getAllByRole("link", { name: /^Build \d+$/ }).map((link) => link.textContent);
+  const headButton = (name: string) => within(screen.getByRole("columnheader", { name: new RegExp(`^${name}`) })).queryByRole("button");
+
+  it("every drawn column's head is a button when the whole list is loaded", async () => {
+    twoFields();
+    renderAt("/builds");
+    await screen.findByRole("link", { name: "Build 1" });
+    const heads = screen.getAllByRole("columnheader");
+    expect(heads.length).toBe(12);
+    for (const head of heads) expect(within(head).queryByRole("button")).not.toBeNull();
+  });
+
+  it("with more pages to load, only Reproductions, Last confirmed, Rebuilds, Steps, Sessions and Published are buttons; the rest are text", async () => {
+    fullPage();
+    renderAt("/builds?sort=newest");
+    await screen.findByRole("link", { name: "Build 1" });
+    const sortable = screen.getAllByRole("columnheader").filter((head) => within(head).queryByRole("button")).map((head) => head.textContent?.replace(/[↑↓2]/g, ""));
+    expect(sortable).toEqual(["Steps", "Sessions", "Reproductions", "Confirmed", "Rebuilds", "Published"]);
+  });
+
+  it("pressing Field (whole list loaded) writes by=field and reorders the rows without asking the list again", async () => {
+    twoFields();
+    renderAt("/builds");
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(order()).toEqual(["Build 1", "Build 2"]);
+    const asked = listBuildsTable.mock.calls.length;
+    fireEvent.click(headButton("Field")!);
+    await waitFor(() => expect(address).toBe("/builds?by=field"));
+    expect(order()).toEqual(["Build 2", "Build 1"]);
+    expect(listBuildsTable.mock.calls.length).toBe(asked);
+  });
+
+  it("pressing it again writes dir=asc; a third press clears by and dir", async () => {
+    twoFields();
+    renderAt("/builds?by=field");
+    await screen.findByRole("link", { name: "Build 1" });
+    const asked = listBuildsTable.mock.calls.length;
+    fireEvent.click(headButton("Field")!);
+    await waitFor(() => expect(address).toBe("/builds?dir=asc&by=field"));
+    expect(order()).toEqual(["Build 1", "Build 2"]);
+    fireEvent.click(headButton("Field")!);
+    await waitFor(() => expect(address).toBe("/builds"));
+    expect(listBuildsTable.mock.calls.length).toBe(asked);
+  });
+
+  it("pressing Steps writes sort=steps and asks the list; again, dir=asc; a third press returns to the default sort", async () => {
+    twoFields();
+    renderAt("/builds");
+    await screen.findByRole("link", { name: "Build 1" });
+    fireEvent.click(headButton("Steps")!);
+    await waitFor(() => expect(address).toBe("/builds?sort=steps"));
+    await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ sort: "steps", ascending: false })));
+    fireEvent.click(headButton("Steps")!);
+    await waitFor(() => expect(address).toBe("/builds?sort=steps&dir=asc"));
+    await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ sort: "steps", ascending: true })));
+    fireEvent.click(headButton("Steps")!);
+    await waitFor(() => expect(address).toBe("/builds"));
+  });
+
+  it("pressing Reproductions, the default sort, only flips the direction", async () => {
+    renderAt("/builds");
+    await screen.findByRole("link", { name: "Build 1" });
+    fireEvent.click(headButton("Reproductions")!);
+    await waitFor(() => expect(address).toBe("/builds?dir=asc"));
+    fireEvent.click(headButton("Reproductions")!);
+    await waitFor(() => expect(address).toBe("/builds"));
+  });
+
+  it("aria-sort is descending, ascending or none on each head, and the arrow matches", async () => {
+    twoFields();
+    renderAt("/builds?by=field&dir=asc");
+    await screen.findByRole("link", { name: "Build 1" });
+    const head = (name: string) => screen.getByRole("columnheader", { name: new RegExp(`^${name}`) });
+    expect(head("Field").getAttribute("aria-sort")).toBe("ascending");
+    expect(head("Field").textContent).toContain("↑");
+    expect(head("Reproductions").getAttribute("aria-sort")).toBe("none");
+    expect(head("Reproductions").textContent).not.toMatch(/[↑↓]/);
+    fireEvent.click(headButton("Steps")!);
+    await waitFor(() => expect(head("Steps").getAttribute("aria-sort")).toBe("descending"));
+    expect(head("Steps").textContent).toContain("↓");
+    /* While the new list is on its way the old rows are not the whole answer, so Field waits for it to sort again. */
+    await waitFor(() => expect(head("Field").getAttribute("aria-sort")).toBe("none"));
+  });
+
+  it("an address with by=field while more pages exist draws no arrow on Field and sorts by the server's order", async () => {
+    fullPage();
+    renderAt("/builds?by=field");
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(screen.getByRole("columnheader", { name: /^Field/ }).getAttribute("aria-sort")).toBeNull();
+    expect(screen.getByRole("columnheader", { name: /^Reproductions/ }).getAttribute("aria-sort")).toBe("descending");
+    expect(order().slice(0, 3)).toEqual(["Build 1", "Build 2", "Build 3"]);
+  });
+
+  it("with sort=newest and no Published column chosen, the Published column is drawn", async () => {
+    renderAt("/builds?sort=newest");
+    expect(await screen.findByRole("columnheader", { name: /^Published/ })).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: /^Published/ }).getAttribute("aria-sort")).toBe("descending");
+  });
+});
+
+describe("BF-12 one sort control", () => {
+  it("the Sort menu and the heads never disagree", async () => {
+    window.matchMedia = ((query: string) => ({ matches: query.includes("max-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined, addListener: () => undefined, removeListener: () => undefined, onchange: null, dispatchEvent: () => false })) as unknown as typeof window.matchMedia;
+    (window as unknown as { PointerEvent: unknown }).PointerEvent = class extends MouseEvent {};
+    listBuildsTable.mockResolvedValue({ countsLive: true, builds: [build(1), build(2)], total: 2 });
+    renderAt("/builds?sort=steps&dir=asc");
+    await screen.findByRole("link", { name: "Build 1" });
+    fireEvent.pointerDown(screen.getByRole("button", { name: "Sort: Steps" }), { button: 0, ctrlKey: false });
+    fireEvent.click(await screen.findByRole("menuitemradio", { name: "Steps" }));
+    await waitFor(() => expect(address).toBe("/builds?sort=steps"));
+    expect(screen.getByRole("columnheader", { name: /^Steps/ }).getAttribute("aria-sort")).toBe("descending");
+  });
+});
+
+describe("BF-12 a second key with Shift", () => {
+  const field = (id: string) => ({ ...emptyClassification(), declared: { ...emptyClassification().declared, field: [{ id }] } });
+  /** Two in Law and one in Education, reproductions 1, 2, 3 as the build numbers. */
+  const three = () => listBuildsTable.mockResolvedValue({ countsLive: true, builds: [{ ...build(1), classifiedAs: field("law") }, { ...build(2), classifiedAs: field("education") }, { ...build(3), classifiedAs: field("law") }], total: 3 });
+  const order = () => screen.getAllByRole("link", { name: /^Build \d+$/ }).map((link) => link.textContent);
+  const head = (name: string) => screen.getByRole("columnheader", { name: new RegExp(`^${name}`) });
+  const press = (name: string, shiftKey = false) => fireEvent.click(within(head(name)).getByRole("button"), { shiftKey });
+
+  it("Shift-pressing Reproductions while sorted by Field writes by2=reproductions and orders within each field", async () => {
+    three();
+    renderAt("/builds?by=field&dir=asc");
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(order()).toEqual(["Build 2", "Build 1", "Build 3"]);
+    press("Reproductions", true);
+    await waitFor(() => expect(address).toBe("/builds?dir=asc&by=field&by2=reproductions"));
+    expect(order()).toEqual(["Build 2", "Build 3", "Build 1"]);
+  });
+
+  it('the second key\'s head shows its arrow followed by "2", and its aria-sort is "other"', async () => {
+    three();
+    renderAt("/builds?by=field&by2=reproductions");
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(head("Reproductions").getAttribute("aria-sort")).toBe("other");
+    expect(head("Reproductions").textContent).toContain("↓2");
+    expect(head("Field").getAttribute("aria-sort")).toBe("descending");
+    expect(screen.getAllByRole("columnheader").filter((entry) => ["ascending", "descending"].includes(entry.getAttribute("aria-sort") ?? ""))).toHaveLength(1);
+  });
+
+  it("Shift-press again flips it; a third clears it", async () => {
+    three();
+    renderAt("/builds?by=field&by2=reproductions");
+    await screen.findByRole("link", { name: "Build 1" });
+    press("Reproductions", true);
+    await waitFor(() => expect(address).toBe("/builds?by=field&by2=reproductions&dir2=asc"));
+    expect(head("Reproductions").textContent).toContain("↑2");
+    press("Reproductions", true);
+    await waitFor(() => expect(address).toBe("/builds?by=field"));
+  });
+
+  it("a plain press on any head clears the second key", async () => {
+    three();
+    renderAt("/builds?by=field&by2=reproductions");
+    await screen.findByRole("link", { name: "Build 1" });
+    press("Field");
+    await waitFor(() => expect(address).toBe("/builds?dir=asc&by=field"));
+  });
+
+  it("with more pages to load, Shift-press does nothing", async () => {
+    listBuildsTable.mockResolvedValue({ countsLive: true, builds: Array.from({ length: 50 }, (_, at) => build(at + 1)), total: 200 });
+    renderAt("/builds?sort=steps");
+    await screen.findByRole("link", { name: "Build 1" });
+    press("Rebuilds", true);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(address).toBe("/builds?sort=steps");
+  });
+
+  it("Shift with Enter or Space on a focused head does the same as Shift-click", async () => {
+    three();
+    renderAt("/builds?by=field");
+    await screen.findByRole("link", { name: "Build 1" });
+    for (const key of ["Enter", " "]) {
+      const button = within(head("Reproductions")).getByRole("button");
+      button.focus();
+      fireEvent.keyDown(button, { key, shiftKey: true });
+      /* A browser may fire the keyboard's click without the modifier: the head remembers the Shift of its key press. */
+      fireEvent.click(button);
+      fireEvent.keyUp(button, { key, shiftKey: true });
+      await waitFor(() => expect(address).toContain("by2=reproductions"));
+      if (key === "Enter") {
+        await waitFor(() => expect(address).toBe("/builds?by=field&by2=reproductions"));
+        press("Field");
+        await waitFor(() => expect(address).not.toContain("by2"));
+      }
+    }
+  });
+});
+
+describe("BF-14 match some conditions", () => {
+  const field = (id: string) => ({ ...emptyClassification(), declared: { ...emptyClassification().declared, field: [{ id }] } });
+  /** Three candidates: router+agent+9 steps (3 of 3), router+app+40 steps (1 of 3), no pattern+agent+9 steps (2 of 3). */
+  const candidates = [
+    { ...build(1), classifiedAs: field("law"), patterns: ["router"], shape: "agent", stepCount: 9 },
+    { ...build(2), classifiedAs: field("law"), patterns: ["router"], shape: "app", stepCount: 40 },
+    { ...build(3), classifiedAs: field("education"), patterns: [], shape: "agent", stepCount: 9 },
+  ];
+  const THREE = "shape=agent&pattern=router&steps=5-30";
+  /** The list answers the required-only ask with the candidates, and the ANDed ask with the one build that meets all three. */
+  const answer = (more = false) =>
+    listBuildsTable.mockImplementation(async (options: { shapes: string[] }) =>
+      options.shapes.length === 0 ? { countsLive: true, builds: more ? Array.from({ length: 50 }, (_, at) => ({ ...candidates[at % 3], id: `c${at}`, slug: `c${at}`, title: `Candidate ${at}` })) : candidates, total: more ? 120 : 3 } : { countsLive: true, builds: [candidates[0]], total: 1 },
+    );
+  const titles = () => screen.getAllByRole("link", { name: /^(Build|Candidate) \d+$/ }).map((link) => link.textContent);
+
+  it("with match unset, the list is asked exactly as before and no row is filtered in the browser", async () => {
+    answer();
+    renderAt(`/builds?${THREE}`);
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(listBuildsTable).toHaveBeenCalledTimes(1);
+    expect(listBuildsTable.mock.calls[0][0]).toEqual({
+      lens: "all", facets: [], tool: undefined, shapes: ["agent"], pattern: "router", stillOpen: false, query: undefined,
+      ranges: { steps: { min: 5, max: 30 } }, confirmedWithin: undefined, confirmedState: undefined, worksOn: undefined, sort: "reproduced", ascending: false, offset: 0,
+    });
+    expect(titles()).toEqual(["Build 1"]);
+  });
+
+  it("with match=2 and three countable filters on, the list is asked with the lens and the required filters only, and the rows shown are those meeting at least two", async () => {
+    answer();
+    renderAt(`/builds?${THREE}&match=2`);
+    await waitFor(() => expect(titles()).toEqual(["Build 1", "Build 3"]));
+    expect(listBuildsTable).toHaveBeenCalledWith(expect.objectContaining({ lens: "all", shapes: [], pattern: undefined, ranges: undefined, offset: 0 }));
+  });
+
+  it('the head reads "<shown> of <published> builds" from the rows shown', async () => {
+    answer();
+    getGalleryStats.mockResolvedValue({ inGallery: 3, reproducedThisWeek: 0, weeklyGoal: null, freshPct: 50 });
+    renderAt(`/builds?${THREE}&match=2`);
+    expect(await screen.findByRole("heading", { level: 1, name: "2 of 3 builds" })).toBeTruthy();
+  });
+
+  it('when the lens holds more builds than one page, the Match control is disabled and a line says "Available when every build is loaded: <n> of <total> so far.", and Load all asks for the remaining pages', async () => {
+    answer(true);
+    renderAt(`/builds?${THREE}&match=2`);
+    await screen.findByRole("link", { name: "Build 1" });
+    await openFilters();
+    await waitFor(() => expect((screen.getByRole("button", { name: /^Builds must match/ }) as HTMLButtonElement).disabled).toBe(true));
+    expect(screen.getByText("Available when every build is loaded: 50 of 120 so far.")).toBeTruthy();
+    const asked = listBuildsTable.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: "Load all" }));
+    await waitFor(() => expect(listBuildsTable.mock.calls.length).toBeGreaterThan(asked));
+    expect(listBuildsTable).toHaveBeenCalledWith(expect.objectContaining({ shapes: [], offset: 50 }));
+  });
+
+  it("the dialog's footer shows the Match control only with two or more countable filters in the draft, and the match count follows it", async () => {
+    answer();
+    renderAt("/builds?f=field%3Alaw&shape=agent&open=1");
+    await screen.findByRole("link", { name: "Build 1" });
+    await openFilters();
+    expect(screen.queryByRole("button", { name: /^Builds must match/ })).toBeNull();
+    closeFilters();
+  });
+
+  it("with the address's candidates all loaded, choosing at least 1 of 3 in the dialog counts the loaded rows with no request", async () => {
+    answer();
+    renderAt(`/builds?${THREE}&match=2`);
+    await waitFor(() => expect(titles()).toEqual(["Build 1", "Build 3"]));
+    await openFilters();
+    (window as unknown as { PointerEvent: unknown }).PointerEvent = class extends MouseEvent {};
+    fireEvent.pointerDown(screen.getByRole("button", { name: "Builds must match: At least 2 of 3" }), { button: 0, ctrlKey: false });
+    expect((await screen.findAllByRole("menuitemradio")).map((item) => item.textContent)).toEqual(["All 3 filters", "At least 2 of 3", "At least 1 of 3"]);
+    const counted = countBuildsTable.mock.calls.length;
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "At least 1 of 3" }));
+    expect(await screen.findByText("3 builds match")).toBeTruthy();
+    expect(countBuildsTable.mock.calls.length).toBe(counted);
+  });
+
+  it('each chip of a countable filter is unchanged; one extra chip reads "Match · at least 2 of 3" and removing it returns to All', async () => {
+    answer();
+    renderAt(`/builds?${THREE}&match=2`);
+    const chips = await screen.findByRole("group", { name: "Active filters" });
+    expect(within(chips).getByRole("button", { name: "Remove filter Shape" })).toBeTruthy();
+    expect(chips.textContent).toContain("Match");
+    expect(chips.textContent).toContain("at least 2 of 3");
+    fireEvent.click(within(chips).getByRole("button", { name: "Remove filter Match" }));
+    await waitFor(() => expect(address).toBe("/builds?shape=agent&pattern=router&steps=5-30"));
+    await waitFor(() => expect(titles()).toEqual(["Build 1"]));
   });
 });
