@@ -177,7 +177,7 @@ function PanelError({ what, onRetry }: { what: string; onRetry: () => void }) {
   return (
     <div role="alert" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, paddingBlock: 16 }}>
       <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, color: t.text }}>{what}</p>
-      <LibraryControl size={28} onClick={onRetry}>
+      <LibraryControl onClick={onRetry}>
         Retry
       </LibraryControl>
     </div>
@@ -191,11 +191,11 @@ function PanelEmpty({ empty, testId }: { empty: LibraryEmpty; testId: string }) 
     <div data-testid={testId} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, paddingBlock: 16 }}>
       <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>{empty.line}</p>
       {"href" in action ? (
-        <LibraryControl size={28} href={action.href}>
+        <LibraryControl href={action.href}>
           {action.label}
         </LibraryControl>
       ) : (
-        <LibraryControl size={28} onClick={action.onClick}>
+        <LibraryControl onClick={action.onClick}>
           {action.label}
         </LibraryControl>
       )}
@@ -391,7 +391,7 @@ function CollectionHeading({ heading }: { heading: LibraryCollectionHeading }) {
       {heading.actions?.length ? (
         <div data-testid="library-collection-actions" style={{ display: "flex", gap: 6 }}>
           {heading.actions.map((action) => (
-            <LibraryControl key={action.label} size={28} onClick={action.onClick} disabled={action.disabled}>
+            <LibraryControl key={action.label} onClick={action.onClick} disabled={action.disabled}>
               {action.label}
             </LibraryControl>
           ))}
@@ -455,10 +455,10 @@ export function LibraryItems(props: LibraryItemsProps) {
         <TabsOnRule tabs={tabs} tab={tab} onTab={onTab} />
         {controls ? (
           <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
-            <LibraryControl size={28} onClick={controls.onFilters}>
+            <LibraryControl onClick={controls.onFilters}>
               <span style={{ color: t.label }}>Filters</span> {controls.filters}
             </LibraryControl>
-            <LibraryControl size={28} onClick={controls.onSort}>
+            <LibraryControl onClick={controls.onSort}>
               <span style={{ color: t.label }}>Sort</span> {controls.sort}
             </LibraryControl>
           </div>
@@ -473,7 +473,7 @@ export function LibraryItems(props: LibraryItemsProps) {
       {body}
       {more && status === "ready" ? (
         <div style={{ marginTop: 16 }}>
-          <LibraryControl size={28} onClick={more.onMore} disabled={more.loading}>
+          <LibraryControl onClick={more.onMore} disabled={more.loading}>
             Show more
           </LibraryControl>
         </div>

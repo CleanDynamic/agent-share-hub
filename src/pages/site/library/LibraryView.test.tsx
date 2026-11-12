@@ -170,6 +170,20 @@ describe("LibraryView", () => {
     expect(order.indexOf("library-items")).toBeLessThan(order.indexOf("library-selected"));
   });
 
+  it("draws its buttons with the shared Button, 32 high with 12 side padding (the control-heights pass)", () => {
+    view();
+    const buttons = [
+      screen.getByRole("button", { name: "Filters 2" }),
+      within(screen.getByTestId("library-selected")).getByRole("button", { name: "Use in a build" }),
+      within(screen.getByTestId("library-selected")).getByRole("button", { name: "Copy" }),
+    ];
+    for (const button of buttons) {
+      expect(button.getAttribute("data-ui"), button.textContent ?? "").toBe("button");
+      expect(button.style.height, button.textContent ?? "").toBe("32px");
+      expect(button.style.padding, button.textContent ?? "").toBe("0px 12px");
+    }
+  });
+
   it("draws no section whose prop is absent", () => {
     view({ changes: undefined, kinds: undefined, preview: undefined, selected: null });
     expect(screen.queryByTestId("library-changes")).toBeNull();
