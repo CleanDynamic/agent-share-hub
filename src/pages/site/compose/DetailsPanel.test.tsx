@@ -121,7 +121,7 @@ describe("the sections", () => {
     const sections = screen.getAllByTestId("details-section");
     expect(sections.map((section) => section.querySelector("h4")?.textContent)).toEqual(["Prompt", "Response", "Model", "Uses", "Makes", "Used by", "Model settings", "Variables"]);
     expect(within(sections[0]).getByTestId("details-count").textContent).toBe("19 words");
-    expect(within(sections[3]).getByTestId("details-count").textContent).toBe("2 tiles");
+    expect(within(sections[3]).getByTestId("details-count").textContent).toBe("2 steps");
     expect(within(sections[7]).getByTestId("details-count").textContent).toBe("1 word a copier replaces");
   });
 

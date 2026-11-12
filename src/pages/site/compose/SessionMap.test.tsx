@@ -291,7 +291,7 @@ describe("the panel", () => {
     expect(connections[0].textContent).toContain("Uses from");
     expect(connections[0].textContent).toContain("src/portal/api.ts · Session 2");
     expect(connections[1].textContent).toContain("Used by");
-    expect(within(panel).getByTestId("panel-tiles-note").textContent).toBe("2 tiles, shown here and not on the map");
+    expect(within(panel).getByTestId("panel-tiles-note").textContent).toBe("2 steps, shown here and not on the map");
     expect(within(panel).getAllByTestId("panel-tile-row").map((row) => row.textContent)).toEqual(["9Triage promptPrompt", "4api.tsCode"]);
   });
   it("has Open in the build for the maker, which asks for the session, and not for a reader", () => {

@@ -25,6 +25,7 @@ import { menuItem, menuSurface } from "./refinedStyles";
 import { useReason } from "./removePieces";
 import { useBuildActionsContext } from "./useBuildActions";
 import { useBuildHistoryContext } from "./useBuildHistory";
+import { size } from "@/lib/theme/space";
 
 interface TitleIconProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
   glyph: GlyphName;
@@ -63,7 +64,7 @@ export function TitleIcon({ glyph, label, phone, disabled, style, ...rest }: Tit
         ...style,
       }}
     >
-      <Glyph name={glyph} size={16} />
+      <Glyph name={glyph} size={size.icon} />
     </button>
   );
 }

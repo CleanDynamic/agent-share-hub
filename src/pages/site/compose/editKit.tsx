@@ -27,12 +27,12 @@ export const EDIT_COPY = {
   uses: "Uses",
   addInput: "Add input",
   /** F6: shown beside "Add input" while there is nothing it could take. */
-  noInputs: "No other step tiles yet",
+  noInputs: "No other steps yet",
   attach: "File from computer",
   makes: "Makes",
   nameFile: "Add file name",
   filePlaceholder: "brand-guide.md",
-  taken: "Name already used by this tile",
+  taken: "Name already used by this step",
   goesInto: "Used by",
   runtime: "Runtime",
   count: (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`,
@@ -66,7 +66,7 @@ export function UsesBlock({ id, rows: initial, options: initialOptions, phone, h
 
   return (
     <Block label={EDIT_COPY.uses} testId="edit-uses">
-      <BlockHead label={EDIT_COPY.uses} count={EDIT_COPY.count(rows.length, "tile", "tiles")} />
+      <BlockHead label={EDIT_COPY.uses} count={EDIT_COPY.count(rows.length, "step", "steps")} />
       <div style={PANEL_LIST}>
         {rows.map((row) => (
           <FileLine key={keyOf(row)} name={nameOf(row)} removeLabel={`Remove ${row.label}`} onRemove={() => remove(row)} phone={phone} />
@@ -203,7 +203,7 @@ export function GoesBlock({ rows, label = EDIT_COPY.goesInto, empty }: { rows: r
   if (rows.length === 0 && !empty) return null;
   return (
     <Block label={label} testId="edit-goes-into">
-      <BlockHead label={label} count={rows.length > 0 ? EDIT_COPY.count(rows.length, "tile", "tiles") : undefined} />
+      <BlockHead label={label} count={rows.length > 0 ? EDIT_COPY.count(rows.length, "step", "steps") : undefined} />
       {rows.length === 0 ? (
         <Hint testId="edit-goes-into-empty">{empty}</Hint>
       ) : (

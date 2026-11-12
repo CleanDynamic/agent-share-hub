@@ -1944,7 +1944,7 @@ export async function setRuntimeFields(node: BuildNode, patch: RuntimePatch): Pr
     set("build_cost", patch.buildCost && buildCostOf(patch.buildCost) ? patch.buildCost : null);
   }
   if ("runCost" in patch) {
-    if (!RUNTIME_TYPES.has(node.type)) throw refuse("setRuntimeFields", "Only a runtime tile has a cost to run.");
+    if (!RUNTIME_TYPES.has(node.type)) throw refuse("setRuntimeFields", "Only a runtime step has a cost to run.");
     if (patch.runCost) {
       const why = costRefusal(patch.runCost);
       if (why) throw refuse("setRuntimeFields", why);
@@ -1956,7 +1956,7 @@ export async function setRuntimeFields(node: BuildNode, patch: RuntimePatch): Pr
     set("run_cost", patch.runCost && runCostOf(patch.runCost) ? { ...stored, ...(itemNoun?.trim() ? { item_noun: itemNoun.trim() } : null) } : null);
   }
   if ("volume" in patch) {
-    if (!RUNTIME_TYPES.has(node.type)) throw refuse("setRuntimeFields", "Only a runtime tile has a daily volume.");
+    if (!RUNTIME_TYPES.has(node.type)) throw refuse("setRuntimeFields", "Only a runtime step has a daily volume.");
     if (patch.volume && volumeOf(patch.volume) === null) throw refuse("setRuntimeFields", `Daily volume: a whole number of items, up to ${VOLUME_MAX.toLocaleString("en-GB")}`);
     set("volume", patch.volume ?? null);
   }
@@ -2576,10 +2576,10 @@ function heightOf(node: NodeTree): number {
 const holds = (node: NodeTree, id: string): boolean => (node.children ?? []).some((child) => child.id === id || holds(child, id));
 
 export const NEST_COPY = {
-  missing: "That step tile is not in this build.",
+  missing: "That step is not in this build.",
   notATile: "Only a step or a file moves like that.",
   noParent: "That step is not in this build.",
-  cycle: "A step tile can't go inside itself or anything it holds.",
+  cycle: "A step can't go inside itself or anything it holds.",
   result: "Nothing goes inside a result.",
   file: "Nothing goes inside a file.",
   agent: "An agent holds its own prompts only.",

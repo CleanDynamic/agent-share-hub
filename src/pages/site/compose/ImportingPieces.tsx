@@ -25,6 +25,8 @@ import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { LoadingBlocks } from "./LoadingBlocks";
 import { tileStyle } from "./tileRecipes";
+import { space, size } from "@/lib/theme/space";
+import { r } from "@/lib/theme/radius";
 
 export const SLOW_IMPORT_MS = 1000;
 /** SV-05 P4: the tile's own padding: the blocks fill the socket's inner area, this far in from every edge. */
@@ -58,9 +60,9 @@ export function useSlow(active: boolean, after: number = SLOW_IMPORT_MS): boolea
 const TAG: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
-  height: 20,
-  padding: "0 7px",
-  borderRadius: 5,
+  height: size.tag,
+  padding: `0 ${space[2]}px`,
+  borderRadius: r.chip,
   boxSizing: "border-box",
   flexShrink: 0,
   background: t.control,

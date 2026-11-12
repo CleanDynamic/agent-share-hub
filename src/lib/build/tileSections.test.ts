@@ -100,7 +100,7 @@ describe("read", () => {
   it("reads links as selectable tiles with their number, kind and session", () => {
     const { sections } = readSections(tileView("prompt", "full"), buildFacts);
     const uses = sections.find((section) => section.key === "uses")?.value;
-    expect(uses).toMatchObject({ type: "links", count: "2 tiles" });
+    expect(uses).toMatchObject({ type: "links", count: "2 steps" });
     if (uses?.type !== "links") throw new Error("links");
     expect(uses.items[0]).toMatchObject({ id: "p2", badge: "2", name: "Write the menu", kind: "Prompt", value: "Session 1" });
     const goes = sections.find((section) => section.key === "goesInto")?.value;

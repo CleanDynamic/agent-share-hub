@@ -17,7 +17,7 @@ import { QUESTION_TYPE_LABEL } from "@/lib/build/decision";
 import { SHAPE_HOW_LABEL } from "@/lib/build/answerShape";
 import { modelLabel } from "@/lib/models/registry";
 import { toolName } from "@/lib/tools/registry";
-import { CONNECTION_LABEL } from "@/lib/build/graph";
+import { CONNECTION_LABEL, wordCount } from "@/lib/build/graph";
 import {
   AGENT_PATTERN_LABEL,
   CHECK_METHOD_LABEL,
@@ -129,7 +129,7 @@ const refItem = (build: BuildFacts, id: string, fallback: string): ListItem => {
   return { id, badge: ref.number, name: ref.name, kind: ref.kind, value: ref.session, ...(ref.kind === "Tool" ? { tool: ref.name, kind: null } : null) };
 };
 
-const tiles = (n: number) => noun(n, "tile");
+const tiles = (n: number) => noun(n, "step");
 
 /** The "Uses" rows: what the tile takes in. */
 function usesOf(tile: DetailsView, build: BuildFacts): SectionValue | null {
@@ -224,7 +224,7 @@ const PROMPT: readonly SectionDef[] = [
   S("prompt", "Prompt", "What you sent to the model", (tile) => (tile.kind === "prompt" ? prose(tile.text, wordsCount(tile.words), { copy: true, ...(tile.changes?.length ? { changes: tile.changes } : null) }) : null), true),
   S("response", "Response", "What came back", (tile) => {
     const reply = str(payloadOf(tile).reply);
-    return prose(reply, `${reply.length.toLocaleString("en-GB")} characters`, { muted: true });
+    return prose(reply, wordsCount(wordCount(reply)), { muted: true });
   }),
   S("model", "Model", "The model that answered", (tile) => (tile.kind === "prompt" && tile.typed ? one("Model", tile.model) : null)),
   MODEL_RUN,
@@ -323,14 +323,14 @@ const DECISION: readonly SectionDef[] = [
     const questions = tile.draft.questions.filter((question) => question.id.trim());
     return questions.length === 0 ? null : { type: "list", items: questions.map((question, at) => ({ badge: String(at + 1), name: question.id, detail: QUESTION_TYPE_LABEL[question.type] ?? question.type })), count: noun(questions.length, "question") };
   }, true),
-  S("callingCode", "Calling code", "Code tile that sends the request", (tile) => {
+  S("callingCode", "Calling code", "Code step that sends the request", (tile) => {
     if (tile.kind !== "decision") return null;
     return chips(tile.draft.calledFrom.map((id) => tile.codeTiles.find((code) => code.id === id)?.label ?? id), "");
   }),
-  S("input", "Input", "Another tile's output, or sample text", (tile) => {
+  S("input", "Input", "Another step's output, or sample text", (tile) => {
     if (tile.kind !== "decision") return null;
     const draft = tile.draft;
-    return draft.reads === "step" ? one("Another tile's output", tile.stepChoices.find((step) => step.id === draft.stateFrom)?.label) : prose(draft.stateSample, null);
+    return draft.reads === "step" ? one("Another step's output", tile.stepChoices.find((step) => step.id === draft.stateFrom)?.label) : prose(draft.stateSample, null);
   }),
   S("recorded", "Recorded answer", "One real answer", (tile) => {
     if (tile.kind !== "decision") return null;

@@ -39,16 +39,16 @@ const html = (node: ReactElement) => renderToStaticMarkup(node);
 describe("the modal recipes (CA-15b P1)", () => {
   it("frame: the window recipe, radius 12, overflow hidden, at most the window less 80", () => {
     const frame = frameStyle(560);
-    expect(frame).toMatchObject({ width: 560, borderRadius: 12, background: t.window, border: `1px solid ${t.windowBorder}`, boxShadow: t.windowShadow, overflow: "hidden", maxHeight: "calc(100dvh - 80px)" });
+    expect(frame).toMatchObject({ width: 560, borderRadius: "var(--r-window)", background: t.window, border: `1px solid ${t.windowBorder}`, boxShadow: t.windowShadow, overflow: "hidden", maxHeight: "calc(100dvh - 80px)" });
     expect(frameStyle(640).width).toBe(640);
   });
 
-  it("icon button: 28 square, radius 7, the control recipe, a 14 glyph", () => {
+  it("icon button: 28 square, radius 7, the control recipe, a 16 glyph (S8)", () => {
     render(<IconSquare glyph="x" label="Close" />);
     const button = screen.getByRole("button", { name: "Close" });
-    expect(styleOf(button)).toMatchObject({ width: "28px", height: "28px", borderRadius: "7px" });
+    expect(styleOf(button)).toMatchObject({ width: "32px", height: "32px", borderRadius: "var(--r-control)" }); // S6
     expect(html(<IconSquare glyph="x" label="Close" />)).toContain(`background:${t.control}`);
-    expect(button.querySelector("svg")?.getAttribute("width")).toBe("14");
+    expect(button.querySelector("svg")?.getAttribute("width")).toBe("16");
   });
 
   it("row: a 148 label column, gap 16, padding 12 20 inside a modal, a rule above", () => {
@@ -91,7 +91,7 @@ describe("the modal recipes (CA-15b P1)", () => {
       </ModalInset.Provider>,
     );
     const block = screen.getByTestId("block");
-    expect(styleOf(block).padding).toBe("14px 20px 16px");
+    expect(styleOf(block).padding).toBe("16px 20px"); // S31: space[4] top and bottom; the sides are the inset given
     expect(html(<Block>x</Block>)).toContain(`border-top:1px solid ${t.hairlineModule}`);
     const count = screen.getByTestId("count");
     expect(count.style.fontSize).toBe("11.5px");
@@ -100,24 +100,24 @@ describe("the modal recipes (CA-15b P1)", () => {
   });
 
   it("field: 32 tall, padding 0 10, radius 8, the well, 13px; a phone takes 44 and 16px", () => {
-    expect(fieldStyle(false)).toMatchObject({ height: 32, padding: "0 10px", borderRadius: 8, background: t.well, fontSize: 13 });
+    expect(fieldStyle(false)).toMatchObject({ height: 32, padding: "0 12px", borderRadius: "var(--r-control)", background: t.well, fontSize: 13 }); // S10
     expect(fieldStyle(true)).toMatchObject({ height: 44, fontSize: 16 });
     render(<FieldInput phone={false} aria-label="Name" />);
     const input = screen.getByLabelText("Name");
-    expect(styleOf(input)).toMatchObject({ height: "32px", borderRadius: "8px" });
+    expect(styleOf(input)).toMatchObject({ height: "32px", borderRadius: "var(--r-control)" });
     fireEvent.focus(input);
     expect(input.getAttribute("data-focused")).toBe("true");
     expect(FIELD_FOCUS).toEqual({ borderColor: t.focusRing, outline: `1px solid ${t.focusRing}`, outlineOffset: 0 });
   });
 
   it("text area: padding 9 10 on 20, as tall as its rows", () => {
-    expect(areaStyle(false, 5)).toMatchObject({ padding: "9px 10px", lineHeight: "20px", minHeight: 120, borderRadius: 8 });
+    expect(areaStyle(false, 5)).toMatchObject({ padding: "8px 12px", lineHeight: "20px", minHeight: 118, borderRadius: "var(--r-control)" }); // S12
     render(<FieldArea phone={false} rows={5} aria-label="Prompt" />);
     expect(screen.getByLabelText("Prompt").getAttribute("rows")).toBe("5");
   });
 
   it("picker field: the well, full width, the placeholder in --label", () => {
-    expect(pickerFieldStyle(false, {}, true)).toMatchObject({ width: "100%", height: 32, background: t.well, color: t.label, borderRadius: 8, textAlign: "left" });
+    expect(pickerFieldStyle(false, {}, true)).toMatchObject({ width: "100%", height: 32, background: t.well, color: t.label, borderRadius: "var(--r-control)", textAlign: "left" }); // S14
     expect(pickerFieldStyle(false, {}, false).color).toBe(t.text);
   });
 
@@ -125,11 +125,11 @@ describe("the modal recipes (CA-15b P1)", () => {
     const pick = vi.fn();
     render(<SegmentedField label="Permissions" phone={false} value="rw" onChange={pick} items={[{ value: "r", label: "Read only" }, { value: "rw", label: "Read and write" }]} />);
     const group = screen.getByRole("radiogroup", { name: "Permissions" });
-    expect(styleOf(group)).toMatchObject({ padding: "2px", gap: "2px", borderRadius: "8px", flexWrap: "wrap" });
+    expect(styleOf(group)).toMatchObject({ padding: "2px", gap: "2px", borderRadius: "var(--r-card)", flexWrap: "wrap" });
     const seg = html(<SegmentedField label="P" phone={false} value="rw" onChange={() => {}} items={[{ value: "rw", label: "Read and write" }]} />);
     expect(seg).toContain(`background:${t.segTrack}`);
     const [first, second] = within(group).getAllByRole("radio");
-    expect(styleOf(first)).toMatchObject({ height: "28px", padding: "0px 10px", borderRadius: "6px", whiteSpace: "nowrap" });
+    expect(styleOf(first)).toMatchObject({ height: "32px", padding: "0px 12px", borderRadius: "var(--r-control)", whiteSpace: "nowrap" }); // S13
     expect(seg).toContain(`border-color:${t.segOnBorder}`);
     expect(seg).toContain(`background:${t.controlOn}`);
     fireEvent.click(first);
@@ -139,9 +139,9 @@ describe("the modal recipes (CA-15b P1)", () => {
   it("option grid: three columns, gap 6; each option 32 tall, left-aligned, one line with its name as the tooltip", () => {
     render(<OptionGrid label="Connection method" phone={false} chosen={["mcp"]} onPick={() => {}} items={[{ value: "mcp", label: "MCP server" }, { value: "cli", label: "Command-line interface" }]} />);
     const grid = screen.getByRole("group", { name: "Connection method" });
-    expect(styleOf(grid)).toMatchObject({ gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "6px" });
+    expect(styleOf(grid)).toMatchObject({ gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "8px" });
     const option = screen.getByRole("button", { name: "Command-line interface" });
-    expect(styleOf(option)).toMatchObject({ height: "32px", textAlign: "left", whiteSpace: "nowrap", textOverflow: "ellipsis", borderRadius: "8px" });
+    expect(styleOf(option)).toMatchObject({ height: "32px", textAlign: "left", whiteSpace: "nowrap", textOverflow: "ellipsis", borderRadius: "var(--r-control)" }); // S13
     expect(option.getAttribute("title")).toBe("Command-line interface");
     expect(screen.getByRole("button", { name: "MCP server" }).getAttribute("aria-pressed")).toBe("true");
   });
@@ -151,7 +151,7 @@ describe("the modal recipes (CA-15b P1)", () => {
     expect(styleOf(screen.getByRole("group", { name: "Usage" })).gridTemplateColumns).toBe("repeat(2, minmax(0, 1fr))");
   });
 
-  it("buttons: 32 tall, radius 8; small 28; a disabled primary is the control with --text-disabled words", () => {
+  it("buttons: 32 tall, radius r.control, padded 0 12, small ones too (S1 to S4); a disabled primary is the control with --text-disabled words", () => {
     render(
       <>
         <RecipeButton>Cancel</RecipeButton>
@@ -161,8 +161,8 @@ describe("the modal recipes (CA-15b P1)", () => {
         </RecipeButton>
       </>,
     );
-    expect(styleOf(screen.getByRole("button", { name: "Cancel" }))).toMatchObject({ height: "32px", borderRadius: "8px", padding: "0px 12px" });
-    expect(styleOf(screen.getByRole("button", { name: "Copy prompt" }))).toMatchObject({ height: "28px", padding: "0px 10px", fontSize: "12.5px" });
+    expect(styleOf(screen.getByRole("button", { name: "Cancel" }))).toMatchObject({ height: "32px", borderRadius: "var(--r-control)", padding: "0px 12px" });
+    expect(styleOf(screen.getByRole("button", { name: "Copy prompt" }))).toMatchObject({ height: "32px", padding: "0px 12px", fontSize: "12.5px" });
     const add = screen.getByRole("button", { name: "Add" });
     const disabled = html(<RecipeButton variant="primary" disabled>Add</RecipeButton>);
     expect(disabled).toContain(`background:${t.control}`);
@@ -181,11 +181,11 @@ describe("the modal recipes (CA-15b P1)", () => {
     expect(link.style.fontSize).toBe("12.5px");
     expect(html(<TextLink onClick={() => {}}>Add a model</TextLink>)).toContain("text-decoration:underline");
     expect(link.style.textUnderlineOffset).toBe("3px");
-    expect(styleOf(screen.getByTestId("tag"))).toMatchObject({ height: "22px", padding: "0px 7px", borderRadius: "5px", fontSize: "11px" });
+    expect(styleOf(screen.getByTestId("tag"))).toMatchObject({ height: "20px", padding: "0px 8px", borderRadius: "var(--r-chip)", fontSize: "11px" });
   });
 
   it("footer: padding 14 20, a rule above, the footer fill", () => {
-    expect(footerStyle(false)).toMatchObject({ padding: "14px 20px", background: t.windowFoot, gap: 8, borderTop: `1px solid ${t.hairlineModule}` });
+    expect(footerStyle(false)).toMatchObject({ padding: "16px 24px", background: t.windowFoot, gap: 8, borderTop: `1px solid ${t.hairlineModule}` });
   });
 
   it("phone (CA-15b P4): the footer stays at the bottom of the sheet; fields and buttons are 44 tall at 16px", () => {
@@ -218,18 +218,18 @@ describe("the modal recipes (CA-15b P1)", () => {
     );
     const panel = screen.getByTestId("panel");
     expect(html(<Panel>x</Panel>)).toContain(`background:${t.surface}`);
-    expect(styleOf(panel).borderRadius).toBe("10px");
+    expect(styleOf(panel).borderRadius).toBe("var(--r-panel)");
     const fact = screen.getByTestId("fact");
     expect(fact.style.fontSize).toBe("12.5px");
-    expect(styleOf(fact.parentElement as HTMLElement).padding).toBe("9px 14px");
+    expect(styleOf(fact.parentElement as HTMLElement).padding).toBe("8px 16px");
   });
 
   it("drop zone: 148 tall, a dashed --seg-on-border edge, radius 10, its words and a small button", () => {
     const files = vi.fn();
     render(<DropZone words="Drop images or videos here" button="Choose files" onFiles={files} phone={false} inputLabel="Images" testId="drop" />);
     const zone = screen.getByText("Drop images or videos here").parentElement as HTMLElement;
-    expect(styleOf(zone)).toMatchObject({ height: "148px", borderRadius: "10px", gap: "10px" });
+    expect(styleOf(zone)).toMatchObject({ height: "148px", borderRadius: "var(--r-panel)", gap: "12px" });
     expect(html(<DropZone words="w" button="b" onFiles={() => {}} phone={false} inputLabel="i" />)).toContain(`border:1px dashed ${t.segOnBorder}`);
-    expect(styleOf(screen.getByRole("button", { name: "Choose files" })).height).toBe("28px");
+    expect(styleOf(screen.getByRole("button", { name: "Choose files" })).height).toBe("32px");
   });
 });

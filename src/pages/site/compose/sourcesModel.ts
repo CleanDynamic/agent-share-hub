@@ -184,8 +184,8 @@ export const UNKNOWN_APP = "Unknown app";
 /** CA-14 P5: "In this draft", "In 2 drafts", "In 1 draft"; null when no draft holds it. */
 export function draftNote(item: Pick<SourceLibraryItem, "inThisDraft" | "draftCount">): string | null {
   if (item.draftCount === 0) return null;
-  if (item.inThisDraft && item.draftCount === 1) return "In this draft";
-  return `In ${item.draftCount} ${item.draftCount === 1 ? "draft" : "drafts"}`;
+  if (item.inThisDraft && item.draftCount === 1) return "In this build";
+  return `In ${item.draftCount} ${item.draftCount === 1 ? "build" : "builds"}`;
 }
 
 /** CA-14 P5: the first prompt's opening words, at most 60 characters, cut with an ellipsis. */
@@ -376,7 +376,7 @@ export function projectFileReminders(sessions: readonly Pick<SourceSession, "too
 /** "Also in 2 drafts", from the drafts a session is in other than this one; null for none. */
 export function alsoInLine(draftIds: readonly string[], buildId: string | null | undefined): string | null {
   const others = draftIds.filter((id) => id !== buildId).length;
-  return others === 0 ? null : `Also in ${others} ${others === 1 ? "draft" : "drafts"}`;
+  return others === 0 ? null : `Also in ${others} ${others === 1 ? "build" : "builds"}`;
 }
 
 /**

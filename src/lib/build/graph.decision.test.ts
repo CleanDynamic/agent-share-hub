@@ -45,7 +45,7 @@ describe("a decision step (CA-13 P2)", () => {
     expect(steps[2].decision?.questions.map((q) => q.id)).toEqual(["team", "tone"]);
   });
 
-  it("reads 'Runs when' on runtime tiles only, never on a prompt, manual step, file or result", () => {
+  it("reads 'Runs when' on runtime steps only, never on a prompt, manual step, file or result", () => {
     const runs_when = { decision: "d", question: "team", is: ["billing"] };
     const steps = buildSteps([
       node({ id: "d", position: 1, type: "decision", payload: decisionPayload }),
@@ -183,11 +183,11 @@ describe("runtime facts (CA-13 P5 to P8)", () => {
     await expect(setRuntimeFields(prompt, { helpers: [{ provider: "scaledown", job: "summarize" }] })).rejects.toThrow(/Only an agent has helpers/);
     await expect(setRuntimeFields(asNode(agent), { traceUrl: "http://x.com" })).rejects.toThrow(/https/);
     await expect(setRuntimeFields(asNode(agent), { helpers: [{ provider: "scaledown", job: "extract" }] })).rejects.toThrow(/fields to pull out/);
-    await expect(setRuntimeFields(prompt, { runCost: { per: "call", ms: 1, source: "maker" } })).rejects.toThrow(/Only a runtime tile/);
+    await expect(setRuntimeFields(prompt, { runCost: { per: "call", ms: 1, source: "maker" } })).rejects.toThrow(/Only a runtime step/);
     await expect(setRuntimeFields(prompt, { outputShape: { how: "json-schema" } })).rejects.toThrow(/needs its schema/);
   });
 
-  it("keeps what it took to make apart from what it costs to run, on a runtime tile", async () => {
+  it("keeps what it took to make apart from what it costs to run, on a runtime step", async () => {
     await setRuntimeFields(asNode(agent), { buildCost: { ms: 1000, source: "maker" }, runCost: { per: "hour", cost: 7, currency: "GBP", source: "maker" } });
     expect(written()).toMatchObject({ build_cost: { ms: 1000 }, run_cost: { per: "hour", cost: 7 } });
   });

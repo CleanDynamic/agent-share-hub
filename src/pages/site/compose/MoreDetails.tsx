@@ -24,6 +24,7 @@ import { FIGTREE } from "@/lib/theme/type";
 
 import { Field } from "./composeControls";
 import { fieldBase, useRing } from "./composeFields";
+import { size, space } from "@/lib/theme/space";
 
 export interface ComposeDetails {
   /** "What broke". */
@@ -89,7 +90,7 @@ function NumberField({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           {...focus.handlers}
-          style={{ ...fieldBase, height: phone ? 44 : 33, padding: "0 9px", fontSize: phone ? 16 : 14, ...focus.style }}
+          style={{ ...fieldBase, height: phone ? size.touch : size.control, padding: `0 ${space[3]}px`, fontSize: phone ? 16 : 14, ...focus.style }}
         />
       </Field>
     </div>
@@ -124,7 +125,7 @@ function RefinedDisclosure({ open, controls, phone, onClick }: { open: boolean; 
         ...ring(state.focusVisible),
       }}
     >
-      <Glyph name={open ? "chevd" : "chev"} size={16} color={t.label} />
+      <Glyph name={open ? "chevd" : "chev"} size={size.icon} color={t.label} />
       More details
       <span style={{ color: t.text2, fontWeight: 400, whiteSpace: "pre" }}> (optional)</span>
     </button>

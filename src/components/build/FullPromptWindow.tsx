@@ -53,31 +53,7 @@ import { ModelPicker } from "@/pages/site/compose/ModelPicker";
 import { OptionalField, OptionalSection, summaryOf } from "@/pages/site/compose/OptionalSection";
 import { OptionalRow, OptionalRows } from "@/pages/site/compose/OptionalRows";
 import { EYEBROW } from "@/pages/site/compose/refinedStyles";
-import {
-  Block,
-  BlockHead,
-  Count,
-  FOOT_NOTE,
-  FieldArea,
-  FieldInput,
-  HEADER,
-  HEADER_ICONS,
-  HEADER_TEXT,
-  Hint,
-  IconSquare,
-  Inline,
-  MODAL_PAD,
-  MODAL_WIDTH,
-  ModalInset,
-  RecipeButton,
-  Row,
-  SUBTITLE,
-  SegmentedField,
-  areaStyle,
-  bodyStyle,
-  footerStyle,
-  frameStyle,
-} from "@/pages/site/compose/modalRecipes";
+import { Block, BlockHead, Count, FOOT_NOTE, FieldArea, FieldInput, HEADER, HEADER_ICONS, HEADER_TEXT, Hint, IconSquare, Inline, MODAL_PAD, MODAL_WIDTH, ModalInset, RecipeButton, Row, SUBTITLE, SegmentedField, areaStyle, bodyStyle, footerStyle, frameStyle, BUTTON_PAD, BUTTON_PAD_SMALL_TEXT } from "@/pages/site/compose/modalRecipes";
 
 import type { PromptView } from "@/pages/site/compose/DetailsPanel";
 import { MODAL_TOP } from "@/pages/site/compose/ModalFrame";
@@ -86,6 +62,8 @@ import { PromptEdits, type PromptEditHandlers } from "@/pages/site/compose/editK
 import { JobFields, agentOfPrompt } from "./JobFields";
 import { FromPostNote } from "./PartWindow";
 import { PromptName } from "./tileBodies";
+import { space, size } from "@/lib/theme/space";
+import { r } from "@/lib/theme/radius";
 
 export type FullPromptMode = "maker" | "reader";
 
@@ -148,7 +126,8 @@ export const FULL_PROMPT_COPY = {
   variables: "Variables",
   variablesLine: "Format: {company name}",
   noVariablesCount: "No variables yet",
-  replyCount: (n: number) => `${n.toLocaleString("en-GB")} of ${REPLY_MAX.toLocaleString("en-GB")} characters`,
+  wordCount: (n: number) => `${n.toLocaleString("en-GB")} ${n === 1 ? "word" : "words"}`,
+  replyCount: (n: number) => `${n.toLocaleString("en-GB")} / ${REPLY_MAX.toLocaleString("en-GB")}`,
   markVariable: "Mark selection as a variable",
   noVariables: "No {variables} written in this prompt yet.",
 } as const;
@@ -238,11 +217,11 @@ const FOOT_NOTE_WORD: CSSProperties = { ...FOOT_NOTE, flexGrow: 0, flexShrink: 0
 const refChip: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
-  gap: 6,
-  height: 22,
-  padding: "0 8px",
+  gap: space[2],
+  height: size.tag,
+  padding: `0 ${space[2]}px`,
   boxSizing: "border-box",
-  borderRadius: 4,
+  borderRadius: r.chip,
   background: t.tile,
   border: `1px solid ${t.tileBorder}`,
   ...geist(11.5, 400, t.text),
@@ -368,7 +347,7 @@ function ShapeRead({ shape }: { shape: OutputShape }) {
       {shape.sample ? <CodeLines text={shape.sample} testId="shape-sample" label="Sample" /> : null}
       {fragment.text ? (
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Button variant="secondary" size={28} fontSize={12} onClick={() => void navigator.clipboard?.writeText(fragment.text).then(() => setSaid("Copied"), () => setSaid("Text not copied"))}>
+          <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={12} onClick={() => void navigator.clipboard?.writeText(fragment.text).then(() => setSaid("Copied"), () => setSaid("Text not copied"))}>
             Copy the setting
           </Button>
           <span aria-live="polite" style={geist(12, 400, t.label)}>{said}</span>
@@ -600,7 +579,7 @@ function RefinedBody({ props: given, step, prompts, phone }: { props: FullPrompt
       <ModalInset.Provider value={phone ? 0 : MODAL_PAD}>
         <div data-testid="modal-body" style={bodyStyle(phone)}>
           <Block noRule>
-            <BlockHead label={FULL_PROMPT_COPY.prompt} id={`prompt-label-${step.id}`} count={`${step.words} words`}>
+            <BlockHead label={FULL_PROMPT_COPY.prompt} id={`prompt-label-${step.id}`} count={FULL_PROMPT_COPY.wordCount(step.words)}>
               {markable ? (
                 <RecipeButton
                   small

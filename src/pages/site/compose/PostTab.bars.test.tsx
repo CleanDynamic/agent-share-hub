@@ -351,7 +351,7 @@ describe("the slash menu", () => {
   it("is a window of radius 8, with no blur", () => {
     const { editor } = mount(doc(p("")));
     typeSlash(editor);
-    expect(listbox().style.borderRadius).toBe("8px");
+    expect(listbox().style.borderRadius).toBe("var(--r-window)"); // S32
     expect(listbox().getAttribute("style") ?? "").not.toContain("blur");
   });
 });

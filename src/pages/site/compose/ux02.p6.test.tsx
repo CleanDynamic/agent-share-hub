@@ -1,4 +1,4 @@
-// UX-02 P6: the Add step tile menu, rendered: Prompt first, then every entry under the head of its node type's category (from the
+// UX-02 P6: the Add step menu, rendered: Prompt first, then every entry under the head of its node type's category (from the
 // fallback table, and from a registry that differs), a group of one with no head, not-live entries left out, Check listed while it
 // cannot be added, Deployment closed until opened, From Library last, and drawn before the registry has been read.
 
@@ -25,7 +25,7 @@ const openAll = (props: Parameters<typeof openAddMenu>[0]) => {
 const groupsOf = (menu: HTMLElement) =>
   Object.fromEntries(within(menu).getAllByTestId("add-group").map((group) => [group.getAttribute("data-head"), within(group).getAllByRole("menuitem").map((item) => item.firstChild?.textContent)]));
 
-describe("UX-02 P6 · the Add step tile menu", () => {
+describe("UX-02 P6 · the Add step menu", () => {
   it("F40: the first screen is Prompt, Agent, Tool, File, Dataset, then More types, then From Library", () => {
     const menu = openAddMenu(everyEntry());
     const items = within(menu).getAllByRole("menuitem").map((item) => item.firstChild?.textContent);
@@ -84,7 +84,7 @@ describe("UX-02 P6 · the Add step tile menu", () => {
     expect(screen.getByRole("menuitem", { name: /^Host/ })).toBeTruthy();
   });
 
-  it("says step tile on its row", () => {
+  it("says step on its row", () => {
     openAddMenu(everyEntry());
     // F55: the word is step (F58's glossary).
     expect(screen.getByTestId("add-to-session").textContent).toBe("Add step");
@@ -93,7 +93,7 @@ describe("UX-02 P6 · the Add step tile menu", () => {
   it("has a field, focused as it opens, that finds entries by name and line at once", async () => {
     const props = everyEntry();
     const menu = openAddMenu(props);
-    const field = within(menu).getByRole("searchbox", { name: "Find a step tile" });
+    const field = within(menu).getByRole("searchbox", { name: "Find a step" });
     await new Promise((resolve) => setTimeout(resolve, 30));
     expect(document.activeElement).toBe(field);
     fireEvent.change(field, { target: { value: "outside AI" } });
@@ -103,13 +103,13 @@ describe("UX-02 P6 · the Add step tile menu", () => {
     // Deployment's entries are found without opening it.
     expect(within(menu).getAllByRole("menuitem").map((item) => item.firstChild?.textContent)).toContain("Host");
     fireEvent.change(field, { target: { value: "zzz" } });
-    expect(within(menu).getByText("No step tile matches.")).toBeTruthy();
+    expect(within(menu).getByText("No step matches.")).toBeTruthy();
   });
 
   it("Down goes to the first entry; Enter runs the first one found", () => {
     const props = everyEntry();
     const menu = openAddMenu(props);
-    const field = within(menu).getByRole("searchbox", { name: "Find a step tile" });
+    const field = within(menu).getByRole("searchbox", { name: "Find a step" });
     fireEvent.change(field, { target: { value: "code" } });
     fireEvent.keyDown(field, { key: "ArrowDown" });
     expect(document.activeElement?.textContent).toMatch(/^Code/);

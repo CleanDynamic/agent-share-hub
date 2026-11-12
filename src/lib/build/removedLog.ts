@@ -53,7 +53,7 @@ export const REMOVED_COPY = {
   whole: "The whole build",
   restored: (name: string) => `Restored ${name}`,
   /** Why Restore cannot put the thing back, when it cannot. */
-  cannot: "Tile not restored",
+  cannot: "Step not restored",
 } as const;
 
 /** "Just now", "4 min ago", "2 h ago", "3 days ago". */

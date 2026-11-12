@@ -29,6 +29,7 @@ import { FLOATING_Z } from "./ToolPicker";
 import { menuItem, menuSurface, text, wellField } from "./refinedStyles";
 import { MenuContent } from "./ComposeMenu";
 import { PickerFieldButton } from "./modalRecipes";
+import { size, space } from "@/lib/theme/space";
 
 /** The longest model name a maker can type. */
 export const MODEL_TYPED_MAX = 40;
@@ -97,7 +98,8 @@ export function ModelPicker({ tool, value, onChange, phone, allowNone = true, na
   }, [openSignal, opens]);
 
   const word = name ?? MODEL_PICKER_COPY.model;
-  const buttonStyle: CSSProperties = { maxWidth: "100%", ...(phone ? { height: 44 } : null), ...(block ? { width: "100%", justifyContent: "space-between" } : null) };
+  /* S14: the shared MenuButton draws 28 high, padded 0 8 0 12; in the editor a select is 32, 0 space[3], gap space[2]. */
+  const buttonStyle: CSSProperties = { maxWidth: "100%", height: phone ? size.touch : size.control, padding: `0 ${space[3]}px`, gap: space[2], ...(block ? { width: "100%", justifyContent: "space-between" } : null) };
 
   if (menu.state === "none") return null;
   if (menu.state === "hidden") return <span style={quiet}>{menu.note}</span>;
@@ -135,7 +137,7 @@ export function ModelPicker({ tool, value, onChange, phone, allowNone = true, na
     <Menu.RadioItem key={key} value={saved} style={{ ...menuItem(true, phone), gap: 6 }}>
       <span style={{ width: 14, display: "inline-flex" }}>
         <Menu.ItemIndicator>
-          <Glyph name="check" size={14} />
+          <Glyph name="check" size={size.icon} />
         </Menu.ItemIndicator>
       </span>
       {label}
@@ -182,7 +184,7 @@ export function ModelPicker({ tool, value, onChange, phone, allowNone = true, na
                   }
                   event.stopPropagation();
                 }}
-                style={{ ...wellField, height: phone ? 44 : 30, padding: "0 8px", fontSize: phone ? 16 : 13 }}
+                style={{ ...wellField, height: phone ? size.touch : size.control, padding: `0 ${space[3]}px`, fontSize: phone ? 16 : 13 }}
               />
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                 <TextButton onClick={() => setTyping(false)} target={phone} style={text(12.5, 500, t.text2)}>

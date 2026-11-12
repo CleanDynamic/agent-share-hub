@@ -138,8 +138,8 @@ describe("the title row", () => {
     expect(within(row).queryByRole("link", { name: "Preview" })).toBeNull();
     expect(within(row).getByRole("button", { name: "Publish" })).toBeTruthy();
     const menu = within(row).getByRole("button", { name: BUILD_ACTIONS.label });
-    expect(menu.style.width).toBe("28px");
-    expect(menu.style.height).toBe("28px");
+    expect(menu.style.width).toBe("32px"); // S6
+    expect(menu.style.height).toBe("32px");
     fireEvent.pointerDown(menu, { button: 0, ctrlKey: false });
     fireEvent.keyDown(menu, { key: "Enter" });
     await act(async () => undefined);

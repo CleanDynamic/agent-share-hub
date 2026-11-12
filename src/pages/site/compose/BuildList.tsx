@@ -111,7 +111,7 @@ import { OutsideWarning } from "./OutsideWarning";
 import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
 import { CHECK_COPY, DotLine, Quiet, ToolMark } from "./refinedPieces";
 import { AgentRules, GateLine, JobLine, MentionText, TeamHead, TeamLinesContext, WaitsLine, mentionTeam } from "@/components/build/teamLines";
-import { FOOT_LINK, LIST_BOX, MarkedName, listRow, NumberBadge, RESPONSE_WORD, RUN, SESSION_META, SmallCodeWell, TILE_EYEBROW, TILE_HEAD, TILE_INDENT, TILE_TEXT, TILE_TITLE, TileOptions, tileStyle as tileCard } from "./tileRecipes";
+import { FOOT_LINK, LIST_BOX, TEXT_LINK_BOX, textLinkBox, MarkedName, listRow, NumberBadge, RESPONSE_WORD, RUN, SESSION_META, SmallCodeWell, TILE_EYEBROW, TILE_HEAD, TILE_INDENT, TILE_TEXT, TILE_TITLE, TileOptions, tileStyle as tileCard } from "./tileRecipes";
 
 /** CA-15b: a tile's body and foot sit 34 in, under its title. */
 const INDENT = TILE_INDENT;
@@ -156,17 +156,19 @@ import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { MENU_COPY, REASONS, moveReason } from "@/lib/build/componentMenus";
 import { canMove as canMoveIn, locate, moveBy, moveModelOf, spotOf, type MoveModel, type MoveNames } from "@/lib/build/moveRules";
 import { shortcutLabel, type ShortcutId } from "@/lib/build/shortcuts";
-import { COUNT } from "./modalRecipes";
+import { COUNT, BUTTON_PAD, BUTTON_PAD_SMALL_TEXT } from "./modalRecipes";
 import { RemoveRow, useReason } from "./removePieces";
 import { useBuildActionsContext } from "./useBuildActions";
 import { useBuildSelectionContext } from "./useBuildSelection";
+import { size, space } from "@/lib/theme/space";
+import { r } from "@/lib/theme/radius";
 
 /** CA-10: how long the add field is ringed after Add › Prompt reaches it. */
 export const ADD_FLASH_MS = 1200;
 
 export const LIST_COPY = {
   /** UX-02 P5: the phone's one line; a computer has none (double-click is not a command, every tile shows its controls). */
-  hintPhone: "Tap a step tile to see its details",
+  hintPhone: "Tap a step to see its details",
   /** UX-02 P5: a tile's visible ways to open and to change it, in place of the double-click. */
   edit: "Edit…",
   /** Product names keep their case: "Open GitHub repository". */
@@ -564,7 +566,7 @@ function MentionedLine({ to, phone }: { to: string; phone: boolean }) {
           <TextButton
             target={phone}
             underline
-            style={text(12, 500, t.text2)}
+            style={{ ...textLinkBox(phone), ...text(12, 500, t.text2) }}
             onClick={(event) => {
               event.stopPropagation();
               onBack(to);
@@ -581,11 +583,11 @@ function MentionedLine({ to, phone }: { to: string; phone: boolean }) {
 /* ── tiles inside tiles (CA-04 P2) ── */
 
 export const NEST_LIST_COPY = {
-  sendWithAbove: "Send with the step tile above",
-  ownStep: "Make it its own step tile",
+  sendWithAbove: "Attach to the step above",
+  ownStep: "Make it its own step",
   copyTogether: "Copy together",
-  sentWith: (label: string) => `Sent with ${label}`,
-  nowSentWith: (name: string, label: string) => `${name} is now sent with ${label}.`,
+  sentWith: (label: string) => `Attached to ${label}`,
+  nowSentWith: (name: string, label: string) => `${name} is now attached to ${label}.`,
   nowOwnStep: (name: string) => `${name} is now its own step.`,
   nowIn: (name: string, session: string) => `${name} is now in ${session}.`,
   copied: (name: string) => `Copied ${name} together.`,
@@ -636,14 +638,14 @@ function NestButtons({ step, phone }: { step: Step; phone: boolean }) {
     <span ref={ref} data-testid="nest-control" style={{ display: "inline-flex", opacity: shown ? 1 : 0 }}>
       <TextButton
         target={phone}
-        style={{ ...text(12, 500, t.text2), display: "inline-flex", alignItems: "center", gap: 4 }}
+        style={{ ...textLinkBox(phone), ...text(12, 500, t.text2), display: "inline-flex", alignItems: "center", gap: space[1] }}
         onClick={(event) => {
           event.stopPropagation();
           if (own) nest.move(step.id, null, nest.after(step.id));
           else if (above) nest.move(step.id, above.id, Number.MAX_SAFE_INTEGER);
         }}
       >
-        <Icon size={12} strokeWidth={1.6} aria-hidden="true" />
+        <Icon size={size.icon} strokeWidth={1.6} aria-hidden="true" />
         {own ? NEST_LIST_COPY.ownStep : NEST_LIST_COPY.sendWithAbove}
       </TextButton>
     </span>
@@ -683,7 +685,7 @@ const tileName = (step: Step) => sentWithLabel(step);
 const gripName = (step: Step) => {
   const label = sentWithLabel(step);
   if ((step.kind === "code" || step.kind === "file") && step.filename) return label;
-  if (!step.number && step.inside) return `${REF_KIND[step.kind] ?? "Prompt"} sent with ${step.inside.label}`;
+  if (!step.number && step.inside) return `${REF_KIND[step.kind] ?? "Prompt"} attached to ${step.inside.label}`;
   return label.charAt(0).toUpperCase() + label.slice(1);
 };
 
@@ -701,7 +703,7 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
     <div
       ref={cardRef}
       role="group"
-      aria-label={`${kind} sent with ${step.inside?.label ?? "a step"}: ${stepTitle(step)}`}
+      aria-label={`${kind} attached to ${step.inside?.label ?? "a step"}: ${stepTitle(step)}`}
       data-testid="sent-with-tile"
       data-kind={step.kind}
       data-skel-kind="nested"
@@ -777,7 +779,7 @@ function SentWithSuggestions({ step, props }: { step: Step; props: BuildListProp
       <span style={text(12, 400, t.text2)}>{SENT_WITH_COPY.found(offered.length)}</span>
       <Popover.Root>
         <Popover.Trigger asChild>
-          <Button variant="secondary" size={phone ? 44 : 28} fontSize={12}>
+          <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={12}>
             {SENT_WITH_COPY.review}
           </Button>
         </Popover.Trigger>
@@ -795,10 +797,10 @@ function SentWithSuggestions({ step, props }: { step: Step; props: BuildListProp
               <div key={suggestion.key} data-testid="sent-with-suggestion" style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 12, borderTop: `1px solid ${t.line}` }}>
                 <span style={{ ...text(12.5, 500, t.text), overflowWrap: "anywhere" }}>{["Code", suggestion.filename ?? (suggestion.language === "other" ? null : suggestion.language), `${lineCount(suggestion.source)} ${lineCount(suggestion.source) === 1 ? "line" : "lines"}`].filter(Boolean).join(" · ")}</span>
                 <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => props.onKeepSentWith?.(suggestion)}>
+                  <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={12} onClick={() => props.onKeepSentWith?.(suggestion)}>
                     {SENT_WITH_COPY.accept}
                   </Button>
-                  <TextButton target={phone} style={text(12, 500, t.text2)} onClick={() => props.onIgnoreSentWith?.(suggestion.stepId, suggestion.key)}>
+                  <TextButton target={phone} style={{ ...textLinkBox(phone), ...text(12, 500, t.text2) }} onClick={() => props.onIgnoreSentWith?.(suggestion.stepId, suggestion.key)}>
                     {SENT_WITH_COPY.ignore}
                   </TextButton>
                 </span>
@@ -881,6 +883,7 @@ function Suggestion({ label, onAccept, onDismiss }: { label: string; onAccept: (
       <span style={{ ...ellipsis, minWidth: 0 }}>{label}</span>
       <button
         type="button"
+        data-hit=""
         {...accept.handlers}
         onClick={(event) => {
           event.stopPropagation();
@@ -889,10 +892,10 @@ function Suggestion({ label, onAccept, onDismiss }: { label: string; onAccept: (
         style={{
           ...CONTROL,
           ...(accept.state.hovered ? { background: t.controlOn } : null),
-          height: 20,
-          padding: "0 8px",
+          height: size.controlSmall,
+          padding: `0 ${space[2]}px`,
           boxSizing: "border-box",
-          borderRadius: 4,
+          borderRadius: r.chip,
           ...text(11.5, 500, t.text),
           cursor: "pointer",
           flexShrink: 0,
@@ -906,7 +909,7 @@ function Suggestion({ label, onAccept, onDismiss }: { label: string; onAccept: (
           event.stopPropagation();
           onDismiss();
         }}
-        style={{ ...text(11.5, 400, t.text2), height: 20, padding: "0 4px", flexShrink: 0 }}
+        style={{ ...TEXT_LINK_BOX, ...text(11.5, 400, t.text2), flexShrink: 0 }}
       >
         Dismiss
       </TextButton>
@@ -947,11 +950,12 @@ function UsesRow({
           <button
             key={suggestionKey(use)}
             type="button"
+            data-hit=""
             onClick={(event) => {
               event.stopPropagation();
               props.onSelect(use.node_id);
             }}
-            style={{ ...chipStyle, cursor: "pointer" }}
+            style={{ ...chipStyle, minHeight: size.controlSmall, cursor: "pointer" }}
           >
             {label}
           </button>
@@ -1126,7 +1130,7 @@ function FooterLink({ phone, onClick, expanded, children }: { phone: boolean; on
     <TextButton
       target={phone}
       aria-expanded={expanded}
-      style={{ ...FOOT_LINK, userSelect: "none" }}
+      style={{ ...FOOT_LINK, ...textLinkBox(phone), userSelect: "none" }}
       onClick={(event) => {
         event.stopPropagation();
         onClick();
@@ -1475,13 +1479,13 @@ function AgentPromptField({ agent, props, onDone }: { agent: Step; props: BuildL
             void submit();
           }
         }}
-        style={{ ...wellField, resize: "none", padding: 12, fontSize: props.phone ? 16 : 13.5 }}
+        style={{ ...wellField, resize: "none", minHeight: space[16], padding: `${space[2]}px ${space[3]}px`, fontSize: props.phone ? 16 : 13.5 }}
       />
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
-        <TextButton onClick={cancel} target={props.phone} style={text(12.5, 500, t.text2)}>
+        <TextButton onClick={cancel} target={props.phone} style={{ ...textLinkBox(props.phone), ...text(12.5, 500, t.text2) }}>
           Cancel
         </TextButton>
-        <Button variant="primary" size={props.phone ? 44 : 28} fontSize={12} aria-label="Add prompt to this agent" data-testid="agent-prompt-add" disabled={!text_.trim() || busy} onClick={() => void submit()}>
+        <Button style={props.phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="primary" size={props.phone ? 44 : 32} fontSize={12} aria-label="Add prompt to this agent" data-testid="agent-prompt-add" disabled={!text_.trim() || busy} onClick={() => void submit()}>
           {LIST_COPY.add}
         </Button>
       </div>
@@ -1628,7 +1632,7 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
                     <TextButton
                       target={props.phone}
                       aria-expanded={open}
-                      style={text(12.5, 500, t.text2)}
+                      style={{ ...textLinkBox(props.phone), ...text(12.5, 500, t.text2) }}
                       onClick={(event) => {
                         event.stopPropagation();
                         setOpenAgent(open ? null : child.id);
@@ -1972,7 +1976,7 @@ function PendingAddCard({ kind }: { kind: PendingAdd }) {
         aria-hidden="true"
         style={{ width: 24, height: 24, borderRadius: 6, background: t.evidenceFill, color: t.evidence, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
       >
-        <Glyph name="check" size={14} />
+        <Glyph name="check" size={size.icon} />
       </span>
       <div role="status" style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
         <Quiet>{PENDING_ADD_COPY[kind].eyebrow}</Quiet>
@@ -2005,7 +2009,7 @@ function ResultCard({ result, selected, ringed = false, onSelect, onEdit }: { re
         aria-hidden="true"
         style={{ width: 24, height: 24, borderRadius: 6, background: t.evidenceFill, color: t.evidence, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
       >
-        <Glyph name="check" size={14} />
+        <Glyph name="check" size={size.icon} />
       </span>
       <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
         <span data-testid="result-eyebrow" style={{ ...text(11.5, 400, t.label), ...ellipsis }}>
@@ -2021,7 +2025,7 @@ function ResultCard({ result, selected, ringed = false, onSelect, onEdit }: { re
           link={
             onEdit ? (
               <TextButton
-                style={FOOT_LINK}
+                style={{ ...TEXT_LINK_BOX, ...FOOT_LINK }}
                 onClick={(event) => {
                   event.stopPropagation();
                   onEdit(result.id);
@@ -2180,12 +2184,12 @@ function AddPrompt({
             void submit();
           }
         }}
-        style={{ ...wellField, resize: "none", padding: 12, fontSize: phone ? 16 : 13.5 }}
+        style={{ ...wellField, resize: "none", minHeight: space[16], padding: `${space[2]}px ${space[3]}px`, fontSize: phone ? 16 : 13.5 }}
       />
       {offerCode ? (
         <div data-testid="keep-as-code" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
           <Quiet>{CODE_COPY.looksLikeCode}</Quiet>
-          <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => void asCode()}>
+          <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={12} onClick={() => void asCode()}>
             {CODE_COPY.keepAsCode}
           </Button>
         </div>
@@ -2196,14 +2200,14 @@ function AddPrompt({
         {redirect ? null : <ModelPicker tool={tool} value={model} onChange={setModel} phone={phone} placeholder={MODEL_PICKER_COPY.label} />}
         <span style={{ flexGrow: 1 }} />
         {/* F15 (D3): the add is a button in words, not an arrow. */}
-        <Button variant="primary" size={phone ? 44 : 28} fontSize={12} data-testid="composer-add" disabled={!value.trim() || busy || redirect} onClick={() => void submit()}>
+        <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="primary" size={phone ? 44 : 32} fontSize={12} data-testid="composer-add" disabled={!value.trim() || busy || redirect} onClick={() => void submit()}>
           {LIST_COPY.add}
         </Button>
       </div>
       {redirect && known ? (
         <div data-testid="add-as-agent" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
           <Quiet>{ADD_PROMPT_COPY.runsItself(known.name)}</Quiet>
-          <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} disabled={!onAddAsAgent} onClick={() => void asAgent()}>
+          <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={12} disabled={!onAddAsAgent} onClick={() => void asAgent()}>
             {ADD_PROMPT_COPY.addAsAgent}
           </Button>
         </div>
@@ -2242,15 +2246,15 @@ function IncomingSlot({ kind, id, container, height }: { kind: "tile" | "session
 /** A tile's name in the List's lines, from the tiles by id. */
 const labelOf = (tiles: ReadonlyMap<string, Step>, id: string): string => {
   const tile = tiles.get(id);
-  return tile ? tileName(tile) : "that step tile";
+  return tile ? tileName(tile) : "that step";
 };
 
 /** A session's head and its tiles, registered for the post's links by the session's key. */
 /** The gaps a folding run cancels: a session's, between its head and its tiles, and a part's, between its head and its sessions. */
-const SESSION_GAP = 4;
-const PART_GAP = 8;
+const SESSION_GAP = space[2];
+const PART_GAP = space[2];
 
-function SessionRun({ head, phone: _phone, first, lit = false, found = false, part: partKey = "", hidden = false, children }: { head: SourceSession | null; phone: boolean; first: boolean; lit?: boolean; found?: boolean; part?: string; hidden?: boolean; children: ReactNode }) {
+function SessionRun({ head, phone: _phone, first: _first, lit = false, found = false, part: partKey = "", hidden = false, children }: { head: SourceSession | null; phone: boolean; first: boolean; lit?: boolean; found?: boolean; part?: string; hidden?: boolean; children: ReactNode }) {
   const part = usePartRef(head && !head.key.startsWith("typed-legacy-") ? refTo({ kind: "session", id: head.key }) : null);
   // CA-06 P4: a coloured session has a thin line round its head and its tiles, and room inside it only then.
   const colour = head?.colour;
@@ -2261,7 +2265,7 @@ function SessionRun({ head, phone: _phone, first, lit = false, found = false, pa
       {...(head ? { "data-skel-kind": "session", "data-skel-id": head.key, "data-skel-container": partKey, [SLIDE_ATTR]: `session:${head.key}` } : null)}
       data-lit={lit || undefined}
       data-session-colour={colour}
-      style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, ...(head && !first ? { marginTop: 16 } : null), ...(colour ? { ...outlineFor(colour), padding: 12 } : null), ...(lit ? ring(true) : null), ...(found ? FOUND_RING : null), ...(hidden ? { visibility: "hidden" } : null) }}
+      style={{ display: "flex", flexDirection: "column", gap: SESSION_GAP, minWidth: 0, ...(colour ? { ...outlineFor(colour), padding: space[3] } : null), ...(lit ? ring(true) : null), ...(found ? FOUND_RING : null), ...(hidden ? { visibility: "hidden" } : null) }}
     >
       {children}
     </div>
@@ -2309,7 +2313,7 @@ export function BuildList(raw: BuildListProps) {
   const names: MoveNames = {
     tile: (id) => {
       const step = stepsById.get(id);
-      if (!step) return "that step tile";
+      if (!step) return "that step";
       const word = tileName(step);
       return step.number && !step.filename ? word.charAt(0).toUpperCase() + word.slice(1) : word;
     },
@@ -2326,7 +2330,7 @@ export function BuildList(raw: BuildListProps) {
     onOpen: (key) => base.onToggleCollapsed?.(key, false),
     commit: (commit: Commit) => {
       const write = commit.write;
-      if (write.kind === "tile" && write.session) return base.onMoveToSession?.(commit.held.id, write.session, { order: write.atEnd, sentence: commit.sentence, notice: true, failed: "Tile not moved" });
+      if (write.kind === "tile" && write.session) return base.onMoveToSession?.(commit.held.id, write.session, { order: write.atEnd, sentence: commit.sentence, notice: true, failed: "Step not moved" });
       if (write.kind === "nested" && write.parent !== undefined && write.index !== undefined) return base.onNest?.(write.id, write.parent, write.index);
       if (write.kind === "session") {
         if (write.toPart) return write.before ? base.onDropSession?.(write.id, write.before) : base.onDropOnWorkstream?.(write.id, write.toPart);
@@ -2394,7 +2398,7 @@ export function BuildList(raw: BuildListProps) {
   const tiles = new Map(steps.flatMap(withSentWith).map((step) => [step.id, step]));
   const label = (id: string) => {
     const tile = tiles.get(id);
-    return tile ? tileName(tile) : "that step tile";
+    return tile ? tileName(tile) : "that step";
   };
   const topOf = (id: string): Step | undefined => steps.find((step) => withSentWith(step).some((tile) => tile.id === id));
 
@@ -2559,7 +2563,7 @@ export function BuildList(raw: BuildListProps) {
                     <SessionLines session={sameStageAs ? { ...run.head, sameStageAs } : run.head} />
                     {drawBranches(run.steps, (step) => step, steps, placed)}
                     {/* SV-07 P6: an empty session looks one way, "No tiles yet" and "+ Add tile"; the dashed place shows only while a tile is dragged. */}
-                    {run.steps.length === 0 && !promptHere ? sorting.held && sorting.held.type !== "session" && sorting.held.type !== "part" ? <EmptyPlace words="Drop a step tile here" /> : <p style={{ ...text(13, 400, t.label), margin: 0 }}>{SESSION_HEAD_COPY.noTiles}</p> : null}
+                    {run.steps.length === 0 && !promptHere ? sorting.held && sorting.held.type !== "session" && sorting.held.type !== "part" ? <EmptyPlace words="Drop a step here" /> : <p style={{ ...text(13, 400, t.label), margin: 0 }}>{SESSION_HEAD_COPY.noTiles}</p> : null}
                     {promptHere ? (
                       <AddPrompt
                         phone={props.phone}
@@ -2618,7 +2622,7 @@ export function BuildList(raw: BuildListProps) {
               {parts?.ops ? (
                 <TextButton
                   target={props.phone}
-                  style={text(13, 500, t.text2)}
+                  style={{ ...textLinkBox(props.phone), ...text(13, 500, t.text2) }}
                   onClick={() => {
                     setAddFor((current) => ({ part: view.key, n: (current?.n ?? 0) + 1 }));
                     parts.onAddSession?.(view.key);
@@ -2684,7 +2688,7 @@ export function BuildList(raw: BuildListProps) {
   const list = (
     /* The global field rule makes a field inherit its size on a desktop (`font-size: inherit !important`), so the
      fields' type is set here, where they inherit it. */
-    <div ref={sorting.rootRef} data-testid="build-list" {...fileDrop} style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13.5, ...(sorting.skeleton || arrival.skeleton || director.skeleton ? { position: "relative", isolation: "isolate" } : null) }}>
+    <div ref={sorting.rootRef} data-testid="build-list" {...fileDrop} style={{ display: "flex", flexDirection: "column", gap: parts ? space[6] : space[8], minWidth: 0, fontSize: 13.5, ...(sorting.skeleton || arrival.skeleton || director.skeleton ? { position: "relative", isolation: "isolate" } : null) }}>
       {sorting.skeleton ? <SkeletonLayer skeleton={sorting.skeleton} shown={sorting.skeletonShown} /> : arrival.skeleton ? <SkeletonLayer skeleton={arrival.skeleton} shown={arrival.shown} fadeIn={arrival.fadeIn} opening={arrival.opening} fadeAfter={arrival.fadeAfter} onGone={arrival.gone} /> : director.skeleton ? <SkeletonLayer skeleton={director.skeleton} shown={director.shown} fadeAfter={FADE_AFTER_MS} onGone={director.gone} /> : null}
       {props.phone ? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{LIST_COPY.hintPhone}</p> : null}
       {props.costGroups ? <CostStrip steps={steps} groups={props.costGroups} audience="maker" /> : null}

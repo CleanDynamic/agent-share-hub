@@ -118,7 +118,7 @@ export function refGroups({ steps, groups, making }: RefInput): RefGroup[] {
     const entry: RefGroup = { key, label, entries: [] };
     if (linkable(group)) {
       const mine = steps.filter((step) => group.stepNumbers.includes(step.number));
-      const facts = [group.tool, group.model, shortDay(group.startedAt), `${countTiles(mine)} ${countTiles(mine) === 1 ? "tile" : "tiles"}`].filter(Boolean);
+      const facts = [group.tool, group.model, shortDay(group.startedAt), `${countTiles(mine)} ${countTiles(mine) === 1 ? "step" : "steps"}`].filter(Boolean);
       entry.entries.push({
         to: refTo({ kind: "session", id: key }),
         number: `S${group.number}`,

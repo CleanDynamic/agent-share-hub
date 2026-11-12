@@ -16,6 +16,7 @@ import { t } from "@/lib/theme/tokens";
 import { ModalShell } from "./ModalFrame";
 import { FOOT_NOTE, LABEL, RecipeButton, bodyStyle, footerStyle } from "./modalRecipes";
 import { Badge, ELLIPSIS, words } from "./referencePieces";
+import { size } from "@/lib/theme/space";
 
 export function RecentlyRemovedDialog({ open, entries, onRestore, onClose }: { open: boolean; entries: readonly RemovedEntry[]; onRestore: (id: string) => void; onClose: () => void }) {
   const phone = useIsPhone();
@@ -42,7 +43,7 @@ export function RecentlyRemovedDialog({ open, entries, onRestore, onClose }: { o
                 data-testid="removed-row"
                 style={{ boxSizing: "border-box", height: phone ? 56 : 44, display: "flex", alignItems: "center", gap: 12, minWidth: 0, borderTop: at === 0 ? undefined : `1px solid ${t.hairline}` }}
               >
-                <Badge>{typeof entry.badge === "string" ? entry.badge : <Glyph name={entry.badge.glyph} size={14} />}</Badge>
+                <Badge>{typeof entry.badge === "string" ? entry.badge : <Glyph name={entry.badge.glyph} size={size.iconSmall} />}</Badge>
                 <span style={{ ...ELLIPSIS, flexGrow: 1, display: "flex", alignItems: "baseline", gap: 0 }}>
                   <span style={words(13, 500, t.text)}>{entry.name}</span>
                   {entry.detail ? <span style={words(13, 400, t.text2)}>{` · ${entry.detail}`}</span> : null}

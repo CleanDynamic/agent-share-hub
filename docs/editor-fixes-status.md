@@ -94,22 +94,22 @@ Note: 21 distinct names are listed for 31 failed tests. Names that repeat across
 | F55 | 7 | done | src/pages/site/compose/SandboxView.tsx (`ADD_ASK_COPY.row`), AddSessionRow.tsx (`row`, `addPart`), WorkstreamHead.tsx (`addHere`), SessionHead.tsx (`addToThis`, unused), AddSessionRow.test.tsx, BuildList.parts.test.tsx, SandboxPage.parts.test.tsx, SandboxView.test.tsx, sv07.small.test.tsx, sv07.parts.test.tsx, ux02.p6.test.tsx | "Add step", "Add session", "Add part"; the rows that draw a plus icon have no "+" in their words; the part's "Add session" (was "+ Add a session to this part") has no icon. The two BuildList rows near 254/272 are the props that draw these (no text of their own). The Add a session dialog's title stays "Add a session". |
 | F56 | 2 | done | src/lib/build/graph.ts, tileSections.ts, src/components/build/FullPromptWindow.tsx, tileBodies.tsx (comment), src/pages/site/compose/BuildList.tsx, SourcesPanel.tsx, detailsView.ts, detailsModel.ts, useSessionEdits.ts, src/dev/fixtures/detailsKinds.ts, sandbox.ts | `stepLabel(number)` = "Step N" (graph.ts). Tile, panel line (`headOf`), prompt window title and Sources row all call it with `step.number`: same N, no computation changed. Position in session only in the dialog's grey line "Step 4 · 1 of 2 in Session 2 · …". Sentences: "Moved step 1 to Session 2", "Split Session 2 at step 5". Test `selection.ui.test.tsx > a build of two sessions: the tile, the panel, the prompt window and Sources all say Step 4 for the same step`. |
 | F57 | 2 | done | src/lib/build/graph.ts, src/pages/site/compose/SandboxPage.tsx, detailsView.ts, src/components/build/FullPromptWindow.tsx, selection.ui.test.tsx | Page-header count: not present (the CA-20 draft page renders one prompt count, `sandbox-counts`; `buildSummary` has no caller; stored `step_count` counts steps, not prompts). Mismatch fixed: `isCountedPrompt` (graph.ts) = a prompt step, not a Summary tile, not an agent's `:instructions`; called by the Build line's count (SandboxPage.tsx), Details' session list (detailsView.ts `sessionView`) and the prompt window's "of N". Test `selection.ui.test.tsx > one prompt count (F57)`: 3 prompts + system prompt + agent with instructions + Summary tile → "3 prompts", "2 of 3 in Session 1", "3 of 3". |
-| F58 | 8 | not started | | |
-| F59 | 8 | not started | | |
-| F60 | 8 | not started | | |
-| F61 | 8 | not started | | |
+| F58 | 8 | done | src/pages/site/compose (sourcesModel.ts, SourcesPanel.tsx, AddSessionRow.tsx, useSessionEdits.ts, ComposePage.tsx, PublishedMenu.tsx, BuildList.tsx, SandboxView.tsx, SessionHead.tsx, editKit.tsx, DecisionFields.tsx, …), src/components/build/PartWindow.tsx, src/lib/build (componentMenus.ts, publishChecklist.ts, graph.ts, shortcuts.ts, tileSections.ts, addSession.ts, …); 40 test files | Object-'draft' → build: "In this build", "In 2 builds", "Also in 2 builds" (sourcesModel.ts `draftNote`, `alsoIn`), SourcesPanel/AddSessionRow `inThisDraft`, "That build is not saved yet.", "Build not started", "Preview opens once the build is saved", "That session is already in this build.", "The link stops working. The build stays a draft.". "Draft" kept as a status (SandboxView.tsx status line, ComposeView.tsx). 'step tile'/'tile' → step in about 100 user-facing strings (full list in the Prompt 8 report), e.g. picker `ADD_SEARCH_COPY` "Find a step", "No step matches.", "Step not moved", `SessionHead` "3 steps". Test `sourcesModel.test.ts`, `SessionHead.test.tsx`. Dev kit sandbox, dusk and exhibition: 0 "step tile", 0 "this draft"; "In this build" in Sources. |
+| F59 | 8 | done | src/components/build/FullPromptWindow.tsx, modalBoards.test.tsx | `FULL_PROMPT_COPY.replyCount` reads "240 / 4,000"; the Prompt block's length is `FULL_PROMPT_COPY.wordCount` ("1 word", "7 words"). Other limits were already "n / max" (SandboxCard.tsx Summary, AddDatasetDialog.tsx Description). |
+| F60 | 8 | done | src/lib/build/tileSections.ts, tileSections.test.ts | Every limit counts characters and every length words: prompt dialog Prompt (length, words), Response (limit, characters); Classification Summary (limit, characters); Add a dataset Description (limit, characters); tiles' word counts (tileLines.ts `counted`, words). Changed: Details › Response length from "N characters" to words (`wordsCount(wordCount(reply))`). SetupPromptWindow now counts words too (`SETUP_PROMPT_COPY.words`, owner's follow-up). |
+| F61 | 8 | done | src/pages/site/compose/BuildList.tsx, useBuildSorting.ts, BuildList.nest.test.tsx, ca21.p3.test.tsx | `NEST_LIST_COPY.sendWithAbove` = "Attach to the step above", `ownStep` = "Make it its own step"; the drag announcement over a step reads "Attach to Prompt 1" (useBuildSorting.ts). Follow-up: a step inside another reads "Attached to Prompt 1" and the notice "… is now attached to …" (BuildList.tsx, detailsView.ts, PartWindow.tsx); the reader's build page (src/pages/site/build, outside these folders) still says "Sent with". |
 | F62 | 12 | not started | | |
 | F63 | 7 | done | src/pages/site/compose/sourcesModel.ts (`middleCut`), SourcesPanel.tsx, sourcesModel.test.ts | File names over 28 characters (library names over 60, which wrap to two lines first) are cut in the middle so the ending shows; the full name is the `title`. Test `F63: cuts a long name in the middle` ("Screenshot 2026-11-03 at 09.41.12.png" → "Screenshot 2026…09.41.12.png"). |
 | F64 | 12 | not started | | |
-| F65 | 11 | not started | | |
+| F65 | 11 | done | as S19 | Row heights one value (48) where they were 46, 52, 59, 63. |
 | F66 | 7 | done | src/pages/site/compose/SessionHead.tsx | Same change as F50 (the quiet title at rest, the field on focus). |
 | F67 | 12 | not started | | |
-| F68 | 9 | not started | | |
-| F69 | 11 | not started | | |
+| F68 | 9 | done (step 3 not applied) | src/index.css, src/lib/theme/space.ts, src/lib/theme/space.test.ts | `--space-1` to `--space-16` and `--size-icon-small` to `--size-touch` on `:root` (index.css); `space` and `size` in space.ts, with a one-line note above SPACE, SPACE_COMPACT and SPACE_REFINED. Test `space.test.ts > the build editor's steps (F68, S40)`. Step 3: no file imports `CONTROL_SIZE` but controls.ts, yet `menuItemStyle` (used by ui/dropdown-menu.tsx, ui/select.tsx, canvas/BlockContextMenu.tsx, share/ShareMenu.tsx, content-detail/PrimitiveCommentDrawer.tsx) reads it, and controls.test.ts ties it to `CONTROL_CLASS` (src/components/ui button, input, select, tabs, checkbox, badge, switch, radio-group, textarea, dropdown-menu): all outside the editor, so the values are unchanged, as the prompt says. Step 4: radius.ts untouched. Nothing reads the new tokens yet, so the dev kit page cannot move. |
+| F69 | 11 | done | as S30 | Sessions 32 apart (was 16), parts 24 (was 35). |
 | F70 | 12 | not started | | |
 | F71 | 12 | not started | | |
-| F72 | 11 | not started | | |
-| F73 | 11 | not started | | |
+| F72 | 11 | done | as S28 | Four edges: 0, 16, 40, 72 (+1 for the tile's edge). |
+| F73 | 11 | done | as S24, S25 | Tile padding 12 ≤ the 12 gap between tiles. |
 | F74 | 12 | not started | | |
 | F75 | 12 | not started | | |
 | F76 | 12 | not started | | |
@@ -117,7 +117,7 @@ Note: 21 distinct names are listed for 31 failed tests. Names that repeat across
 | F78 | 13 | not started | | |
 | F79 | 13 | not started | | |
 | F80 | 14 | not started | | |
-| F81 | 10 | not started | | |
+| F81 | 10 | done | BuildList.tsx, DetailsPanel.tsx, modalRecipes.tsx (RemovableTag, OPTIONAL.row), SourcesPanel.tsx, SessionHead.tsx | Desktop targets ≥ 24; data-hit gives a 44×44 touch area where there is no phone flag. Full audit (script over every button, link, input, menu item, radio and tab) on /dev/kit/pages/sandbox default, ca22, shape-everything and the Classification, prompt and dataset dialogs: fixed the Sources toggle (0 → 8 from its row), the Setup count (16 → 24 high), the Classification rows (touching → 8 apart). Left: the drag handle is S7's 16×24 with no tappable neighbour (WCAG 2.5.8 spacing exception); the breadcrumb (components/shell, outside these folders) is 19 high. |
 | F82 | 13 | not started | | |
 | F83 | 14 | not started | | |
 | F84 | 14 | not started | | |
@@ -135,43 +135,43 @@ Note: 21 distinct names are listed for 31 failed tests. Names that repeat across
 | F96 | 14 | not started | | |
 | F97 | 14 | not started | | |
 | F98 | 14 | not started | | |
-| S1 | 10 | not started | | |
-| S2 | 10 | not started | | |
-| S3 | 10 | not started | | |
-| S4 | 10 | not started | | |
-| S5 | 10 | not started | | |
-| S6 | 10 | not started | | |
-| S7 | 10 | not started | | |
-| S8 | 10 | not started | | |
-| S9 | 10 | not started | | |
-| S10 | 10 | not started | | |
-| S11 | 10 | not started | | |
-| S12 | 10 | not started | | |
-| S13 | 10 | not started | | |
-| S14 | 10 | not started | | |
-| S15 | 10 | not started | | |
-| S16 | 10 | not started | | |
-| S17 | 10 | not started | | |
-| S18 | 10 | not started | | |
-| S19 | 11 | not started | | |
-| S20 | 11 | not started | | |
-| S21 | 11 | not started | | |
-| S22 | 11 | not started | | |
-| S23 | 11 | not started | | |
-| S24 | 11 | not started | | |
-| S25 | 11 | not started | | |
-| S26 | 11 | not started | | |
-| S27 | 11 | not started | | |
-| S28 | 11 | not started | | |
-| S29 | 11 | not started | | |
-| S30 | 11 | not started | | |
-| S31 | 11 | not started | | |
-| S32 | 11 | not started | | |
-| S33 | 11 | not started | | |
+| S1 | 10 | done | src/pages/site/compose/modalRecipes.tsx (RecipeButton, smallButtonStyle, BUTTON_PAD, BUTTON_PAD_SMALL_TEXT), the editor's <Button> calls (SandboxView, BuildList, DetailsPanel, DetailsReferences, RuntimeFields, ReadFromBuild, SessionsPanel, MadeWithLine, HelpersField, CostFields, PartWindow, FullPromptWindow), detailsRecipes.ts | Buttons 32 (44 phone), padding 0 space[3], gap space[2], r.control; a former 28 keeps its 12.5 label. Header Classification and Publish: 32 (SandboxView.tsx). Measured on /dev/kit/pages/sandbox (dusk and exhibition, 1440): Classification dialog and prompt dialog buttons 32h, padding 0 12, radius 6 (r.control); icon buttons 32 square; inputs 32h, 0 12, r 6; prompt text 8 12, r 6. Test `modalRecipes.test.tsx > buttons: 32 tall, radius r.control…`. "New build" is not in the editor folders (site header): not changed. |
+| S2 | 10 | done | as S1 | Dialog toolbar buttons (RecipeButton small, Copy prompt) and footers: 32, 0 12, r.control. Measured on /dev/kit/pages/sandbox (dusk and exhibition, 1440): Classification dialog and prompt dialog buttons 32h, padding 0 12, radius 6 (r.control); icon buttons 32 square; inputs 32h, 0 12, r 6; prompt text 8 12, r 6. |
+| S3 | 10 | done | as S1 | Dialog footer buttons (RecipeButton) radius 8 → r.control. Measured on /dev/kit/pages/sandbox (dusk and exhibition, 1440): Classification dialog and prompt dialog buttons 32h, padding 0 12, radius 6 (r.control); icon buttons 32 square; inputs 32h, 0 12, r 6; prompt text 8 12, r 6. |
+| S4 | 10 | done | src/pages/site/compose/AddSessionRow.tsx (addRowStyle), SandboxView.tsx (add-to-session) | Add step, Add a session, Add a part rows: 32, 0 space[3], gap space[2], r.control (were 36, 0 8). |
+| S5 | 10 | done | src/pages/site/compose/tileRecipes.tsx (TEXT_LINK_BOX, textLinkBox), modalRecipes.tsx (TextLink), OptionalRows.tsx (Accept/Undo), BuildList.tsx, SourcesPanel.tsx, src/components/build/tileBodies.tsx | Text links 24 high (44 phone), padding 0 space[1], gap space[1]. TextButton (composeControls.tsx) itself unchanged: post/media/EditMediaDialog, post/RefLinks and brand/ColourPicker use it. DetailsPanel draws its links through tileBodies/LINK_ROW rows (rows are S19). |
+| S6 | 10 | done | modalRecipes.tsx (IconSquare, iconButtonSide), the editor's <IconButton> calls (16 files), ColoursWindow.tsx, SourcesPanel.tsx, FindField.tsx | Icon buttons 32 square (44 phone), r.control; the shared IconButton stops at 30, so calls pass iconButtonSide(phone). Find field's inner buttons 24 (they sit inside a 32 field). Measured: prompt dialog 4 icon buttons 32; Classification 1 at 32. |
+| S7 | 10 | done | tileRecipes.tsx (TileOptions), listNest.tsx (grip) | Tile options 24 square, r.control (44 phone); drag handle 16 by 24 (44 phone), r.chip. Measured: options 24. |
+| S8 | 10 | done | 30 files (Glyph size → size.icon / size.iconSmall) | Every Glyph 16, 12 in a badge, chip or checkbox. ToolMark/ModelMark accept 14/16/20/24 only: marks inside chips stay 14; ToolMark 20/24 are app marks, not icons. Test `tileRecipes.test.tsx`, `modalRecipes.test.tsx` (16 glyph). |
+| S9 | 10 | done | modalRecipes.tsx (fieldStyle), refinedStyles.ts (typedField, wellField), SourcesPanel, AddSessionRow, FindField, ModelPicker, ClassificationPicker, SandboxView, ToolPicker, SessionsPanel, AddFromLibraryWindow, MoreDetails, MadeWithLine, ComposeView | Inputs 32 (44 phone), 0 space[3], r.control. Measured on /dev/kit/pages/sandbox (dusk and exhibition, 1440): Classification dialog and prompt dialog buttons 32h, padding 0 12, radius 6 (r.control); icon buttons 32 square; inputs 32h, 0 12, r 6; prompt text 8 12, r 6. |
+| S10 | 10 | done | as S9 | Dialog inputs (FieldInput → fieldStyle) radius 8 → r.control, padding 10 → 12. Measured on /dev/kit/pages/sandbox (dusk and exhibition, 1440): Classification dialog and prompt dialog buttons 32h, padding 0 12, radius 6 (r.control); icon buttons 32 square; inputs 32h, 0 12, r 6; prompt text 8 12, r 6. |
+| S11 | 10 | done | as S9 | Page inputs (typedField 30/0 8 → 32/0 12). Session title input left to F50. |
+| S12 | 10 | done | modalRecipes.tsx (areaStyle), refinedStyles.ts (typedArea), BuildList.tsx (composer) | Textareas padding space[2] space[3], min 64, r.control. Measured: prompt text 8 12 r 6; composer 64h 8 12. |
+| S13 | 10 | done | modalRecipes.tsx (Segment, OptionButton), MadeWithLine.tsx | Toggle options 32 (44 phone), 0 space[3], r.control; the segmented track keeps its 2px inset, radius r.card. |
+| S14 | 10 | done | modalRecipes.tsx (pickerFieldStyle), ToolPicker.tsx, ModelPicker.tsx | Selects 32, 0 space[3], gap space[2], r.control (the shared MenuButton draws 28; the editor passes its size). |
+| S15 | 10 | done | MadeWithLine, modalRecipes (Tag), referencePieces (Badge, reference chip), refinedStyles (chipStyle, tagStyle), ImportingPieces, PartWindow, FullPromptWindow | Tags 20, 0 space[2], r.chip. Test `modalRecipes.test.tsx > text link and tag`. |
+| S16 | 10 | done | classificationPieces.tsx (Suggestion, chosen chip), modalRecipes.tsx (OPTIONAL.suggestedChip) | Suggestion chips 24 (44 phone), 0 space[2], gap space[1], r.chip; the chosen chip the same, its remove button 24 (44 phone), no -6 phone margin. The uses row's dashed suggestion in BuildList stays 28: it holds a 24 Accept. |
+| S17 | 10 | done | tileRecipes.tsx (NumberBadge) | 24 high, min width 24, 0 space[1], r.chip, no top margin. Measured: 24h, padding 0 4, r 4. Test `tileRecipes.test.tsx > number badge 24 high…`. |
+| S18 | 10 | not present | (none) | No agent avatar in tileBodies.tsx. The only 20-square radius-5 mark is AppMark (tileRecipes.tsx:133) on tool and repository titles; not changed. |
+| S19 | 11 | done | src/pages/site/compose/SourcesPanel.tsx, AddSessionRow.tsx | Rows at least 48 (size.row; 44 phone), padded space[2], icon to text space[2], title to meta line space[1]. Nested one-line prompt rows not changed to 32 (they hold a SelectButton sized by S19's rule; see report). |
+| S20 | 11 | done | as S19 | Row paddings 6/12 → space[2]/space[3]; line gap 2 → space[1]. |
+| S21 | 11 | done | as S19 | Add a session rows min 48 (56 on a phone, size.rowLarge). |
+| S22 | 11 | done | src/pages/site/compose/SourcesPanel.tsx | Owner's answer: the session row's open/close toggle moves after the row, before its trailing slot. Every row keeps the grip's 16 slot (dragged or not; the connect-a-tool rows too); marks 16, 8 from their words. Measured on /dev/kit/pages/sandbox (default, ca22, shape-everything): sessions, files and library rows icon 24, text 48; nested prompt rows text 48, 32 high. |
+| S23 | 11 | done | src/pages/site/compose/modalRecipes.tsx (OPTIONAL) | Optional header space[3] space[6]; rows min 56, space[2] space[6], gap space[4]. Measured in Classification: row 56h, padding 8 24. |
+| S24 | 11 | done | src/pages/site/compose/tileRecipes.tsx (tileStyle) | Tile padding space[3] space[4], blocks space[2], r.panel. Measured: padding 12 16, radius 10. |
+| S25 | 11 | done | tileRecipes.tsx (RUN) | Tiles space[3] apart; padding 12 ≤ gap 12. Measured: 12, 12, 12. |
+| S26 | 11 | done | tileRecipes.tsx (LINK_CARD, FOUND_LINE, code well, LIST_BOX), src/components/build/tileBodies.tsx | Nested cards space[2] space[3], r.card. The composer card in AddSessionRow takes the same through the mapping. |
+| S27 | 11 | done | tileRecipes.tsx (TILE_HEAD) | Header gap space[2]. |
+| S28 | 11 | done | tileRecipes.tsx (TILE_INDENT = space[6]), listNest.tsx | Body and footer indent space[6]. Measured from the Build column: tile 0, handle 16 (17 with the 1px edge), badge 41, title 73. A tile that cannot move keeps the handle's 16 slot. |
+| S29 | 11 | done | tileRecipes.tsx (RUN) | The run's 14 padding and 1px rule are gone. |
+| S30 | 11 | done | BuildList.tsx, workstreamRecipes.ts | Head to Length line space[2] (measured 8); Length to first tile and tile to tile space[3] (12); sessions space[8] (measured 32); parts space[6]. Build heading to list not changed (in SandboxView's Build column head, not measured). |
+| S31 | 11 | done | modalRecipes.tsx (MODAL_PAD, HEADER, footerStyle, blocks), ModalFrame.tsx, SandboxCard.tsx | Side padding space[6], header and footer space[4] top and bottom, r.window. Measured: head 16 24, foot 16 24, radius 12. |
+| S32 | 11 | done | refinedStyles.ts (menuSurface, menuItem), SandboxView.tsx (addItem) | Shell padding space[1], r.window; entries min 48, space[2] space[3]. |
+| S33 | 11 | done | src/pages/site/compose/tabRowRecipes.ts | Tabs 32, padding 0 space[2], no bottom padding. Measured: 32h, 0 8. |
 | S34 | 12 | not started | | |
 | S35 | 12 | not started | | |
-| S36 | 11 | not started | | |
+| S36 | 11 | done | SourcesPanel.tsx (`sources-groups`) | Owner's answer: a wrapper. The groups and Add files sit in one column, space[6] apart; the panel's gap under the heading is space[4]. Measured (ca22): heading to first group 16, group to group 24, label to first row 8. The -8 margin is gone. |
 | S37 | 12 | not started | | |
-| S38 | 11 | not started | | |
-| S39 | 10 | not started | | |
-| S40 | 9 | not started | | |
+| S38 | 11 | done (some kept) | DetailsReferences, classificationPieces, AddFromLibraryWindow, PromptsPanel, detailsRecipes, RunsFields, Replay, RunView, FindField, SourcesPanel, tileRecipes, modalRecipes, tabRowRecipes | Removed: see the commit 'S38 negative margins and nudges' and the Prompt 11 report. Kept with reasons: composeControls TextButton phone target (shared outside the editor), MadeWithLine and SessionsPanel phone targets (same pattern), SkipToBuild sr-only -1, AddFromLibraryWindow -1 hairline and the selected row's bleed, modalRecipes sectionAt bleed, SandboxView find band -6, WorkstreamHead/ToolPicker/SessionHead '0 -6px' (hover backdrop; removing moves the text 6). |
+| S39 | 10 | done | as F81 | Header actions 32; every neighbouring pair of editor targets ≥ 8 apart in the audit above. |
+| S40 | 9 | done | src/index.css, src/lib/theme/space.ts | As F68: the size tokens `size.*` / `--size-*`. |

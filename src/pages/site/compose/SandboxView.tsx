@@ -79,6 +79,9 @@ import { ComposeArrival } from "./ComposeSkeleton";
 import { PanelBoundary, type PanelName } from "./PanelBoundary";
 import { EmptyBuild, type EmptyBuildProps } from "./EmptyBuild";
 import { scrollBehavior } from "@/lib/theme/motion";
+import { size, space } from "@/lib/theme/space";
+import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT, iconButtonSide } from "./modalRecipes";
+import { r } from "@/lib/theme/radius";
 
 export type SandboxLens = "list" | "map";
 
@@ -269,7 +272,7 @@ export const ADD_ITEMS: readonly { key: AddKey; name: string; line: string; read
   { key: "check", name: "Check", line: "Test of part of the build", ready: true },
   { key: "result", name: "Result", line: "Output the build produced", ready: true },
   /* SV-18: saved steps and sessions, copied in with their source. Listed after the twelve; it opens its own window. */
-  { key: "library", name: "From Library", line: "Step tiles and collections you saved", ready: true },
+  { key: "library", name: "From Library", line: "Steps and collections you saved", ready: true },
 ];
 
 /** CA-03 P5: the Add menu's own words. */
@@ -284,7 +287,7 @@ export function notSavedLine(problem: SaveFailure): string {
 }
 
 /** CA-10 (CA-09 F12): a phone has no double-click and taps, not clicks. UX-02 P5: a computer has no hint line (double-click is not a command). */
-export const LIST_HINT_PHONE = "Tap a step tile to see its details";
+export const LIST_HINT_PHONE = "Tap a step to see its details";
 export const listHint = (phone: boolean): string | null => (phone ? LIST_HINT_PHONE : null);
 
 /** The columns start this far under the title row. */
@@ -406,7 +409,7 @@ function AddLabel({ name, line, enabled = true }: { name: string; line: string; 
   );
 }
 
-const MENU_RULE = { height: 1, margin: "4px 0", background: t.hairline } as const;
+const MENU_RULE = { height: 1, margin: `${space[1]}px 0`, background: t.hairline } as const;
 
 const addItem = (enabled: boolean): CSSProperties => ({
   ...menuItem(enabled, false),
@@ -415,9 +418,10 @@ const addItem = (enabled: boolean): CSSProperties => ({
   flexDirection: "column",
   alignItems: "flex-start",
   justifyContent: "center",
-  gap: 2,
-  minHeight: 44,
-  padding: "6px 12px",
+  gap: space[1],
+  minHeight: size.row,
+  padding: `${space[2]}px ${space[3]}px`,
+  borderRadius: r.control,
 });
 
 /** CA-14 P5: where a new step tile goes: a session's own "+ Add step tile" row names its session. */
@@ -427,7 +431,7 @@ export interface AddTargets {
 }
 
 /** UX-02 P6: the field at the top of the menu. */
-export const ADD_SEARCH_COPY = { label: "Find a step tile", placeholder: "Find a step tile", none: "No step tile matches." } as const;
+export const ADD_SEARCH_COPY = { label: "Find a step", placeholder: "Find a step", none: "No step matches." } as const;
 
 /** UX-02 P6: two columns of entries in a group on a computer. */
 export const ADD_MENU_WIDTH = 520;
@@ -519,12 +523,12 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
           display: "flex",
           alignItems: "center",
           justifyContent: "flex-start",
-          gap: 8,
+          gap: space[2],
           width: "100%",
-          height: 36,
+          height: size.control,
           boxSizing: "border-box",
-          padding: "0 8px",
-          borderRadius: 6,
+          padding: `0 ${space[3]}px`,
+          borderRadius: r.control,
           ...text(13, 500, t.text2),
           cursor: "pointer",
           ...(rowTrigger.state.hovered ? { background: t.controlOn } : null),
@@ -532,7 +536,7 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
         }}
       >
         <span aria-hidden="true" style={{ display: "inline-flex" }}>
-          <Glyph name="plus" size={16} />
+          <Glyph name="plus" size={size.icon} />
         </span>
         {ADD_ASK_COPY.row}
       </button>
@@ -635,7 +639,7 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
               // The menu's own type-ahead must not take the letters typed here; Escape still closes it.
               if (event.key !== "Escape" && event.key !== "Tab") event.stopPropagation();
             }}
-            style={{ ...wellField, height: 32, padding: "0 10px", marginBottom: 4, ...text(13, 400, t.text) }}
+            style={{ ...wellField, height: size.control, padding: `0 ${space[3]}px`, marginBottom: space[1], ...text(13, 400, t.text) }}
           />
           {firstFound ? null : <p style={{ ...text(12.5, 400, t.label), margin: 0, padding: "8px 12px" }}>{ADD_SEARCH_COPY.none}</p>}
           {/* UX-02 P6, F40: the five first; then, under More types (open in place, or while a search runs), the groups by category,
@@ -658,7 +662,7 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
             >
               <span>{ADD_MORE_COPY.row}</span>
               <span aria-hidden="true" style={{ display: "inline-flex" }}>
-                <Glyph name={showMore ? "chevd" : "chev"} size={16} />
+                <Glyph name={showMore ? "chevd" : "chev"} size={size.icon} />
               </span>
             </Menu.Item>
           ) : null}
@@ -690,7 +694,7 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
               >
                 <span>{DEPLOYMENT_GROUP_HEAD}</span>
                 <span aria-hidden="true" style={{ display: "inline-flex" }}>
-                  <Glyph name={deployOpen ? "chevd" : "chev"} size={16} />
+                  <Glyph name={deployOpen ? "chevd" : "chev"} size={size.icon} />
                 </span>
               </Menu.Item>
               {deployOpen || query.trim() ? (
@@ -765,7 +769,7 @@ function SessionListSheetRow({ view }: { view: ViewMenuProps }) {
         {...why.props}
         style={{ ...bareButton, ...menuItem(!reason, true), width: "100%", gap: 8, textAlign: "left" }}
       >
-        <span style={{ width: 16, display: "inline-flex" }}>{view.sessionList ? <Glyph name="check" size={16} /> : null}</span>
+        <span style={{ width: 16, display: "inline-flex" }}>{view.sessionList ? <Glyph name="check" size={size.icon} /> : null}</span>
         {VIEW_COPY.sessionList}
       </button>
       {why.note}
@@ -782,7 +786,7 @@ function SessionListMenuRow({ view }: { view: ViewMenuProps }) {
       <Menu.CheckboxItem checked={view.sessionList} disabled={Boolean(reason)} onCheckedChange={(next) => view.onChange({ sessionList: next })} onSelect={(event) => event.preventDefault()} style={{ ...menuItem(!reason, false), gap: 8 }} {...why.props}>
         <span style={{ width: 16, display: "inline-flex" }}>
           <Menu.ItemIndicator>
-            <Glyph name="check" size={16} />
+            <Glyph name="check" size={size.icon} />
           </Menu.ItemIndicator>
         </span>
         {VIEW_COPY.sessionList}
@@ -920,7 +924,7 @@ function BuildActionsMenu({ previewTo }: { previewTo: string | null }) {
   return (
     <Menu.Root modal={false}>
       <Menu.Trigger asChild>
-        <IconButton icon={MoreHorizontal} glyph="more" label={BUILD_ACTIONS.label} size={28} data-testid="build-actions" data-hit="" />
+        <IconButton style={iconButtonSide()} icon={MoreHorizontal} glyph="more" label={BUILD_ACTIONS.label} size={28} data-testid="build-actions" data-hit="" />
       </Menu.Trigger>
       <Menu.Portal>
         <MenuContent align="end" sideOffset={6} style={menuSurface(160)}>
@@ -968,7 +972,7 @@ function RailButton({ glyph, label, count, onClick }: { glyph: "panel" | "layers
         ...ring(state.focusVisible),
       }}
     >
-      <Glyph name={glyph} size={16} />
+      <Glyph name={glyph} size={size.icon} />
       {counted ? <span style={{ ...text(10.5, 500, "inherit"), ...tnum }}>{count}</span> : null}
     </button>
   );
@@ -1008,7 +1012,7 @@ function SourcesFrame({
       {titled || overlay ? (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
           {titled ? <PanelTitle>Sources</PanelTitle> : <span />}
-          {overlay ? <IconButton icon={X} glyph="x" boxed={false} label="Close sources" size={26} onClick={onClose} /> : null}
+          {overlay ? <IconButton style={iconButtonSide()} icon={X} glyph="x" boxed={false} label="Close sources" size={26} onClick={onClose} /> : null}
         </div>
       ) : null}
       {children}
@@ -1465,7 +1469,7 @@ function SandboxBody(props: SandboxViewProps) {
         {tabs}
         <div style={{ ...TAB_ACTIONS, marginLeft: "auto" }}>
           <BuildTitleActions />
-          <Button variant="secondary" size={28} fontSize={12} aria-label="Classification" onClick={() => openCard(null)}>
+          <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={12} aria-label="Classification" onClick={() => openCard(null)}>
             Classification
           </Button>
           {published ? (
@@ -1484,7 +1488,7 @@ function SandboxBody(props: SandboxViewProps) {
                   Preview
                 </LinkButton>
               )}
-              <Button size={28} fontSize={12} disabled={publishDisabled} onClick={() => void pressPublish()}>
+              <Button style={BUTTON_PAD_SMALL_TEXT} size={32} fontSize={12} disabled={publishDisabled} onClick={() => void pressPublish()}>
                 {publishLabel}
               </Button>
             </>

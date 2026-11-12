@@ -51,6 +51,8 @@ import {
   frameStyle,
   missingSet,
 } from "./modalRecipes";
+import { size as sizes, space } from "@/lib/theme/space";
+import { r } from "@/lib/theme/radius";
 
 export const MODAL_COPY = {
   close: "Close",
@@ -135,7 +137,7 @@ export function ModalShell({ open, onOpenChange, title, subtitle, eyebrow, width
           <div data-testid="modal-header" style={HEADER}>
             <div style={HEADER_TEXT}>
               {eyebrow ? (
-                <p data-testid="modal-eyebrow" style={{ ...EYEBROW, margin: "0 0 4px" }}>
+                <p data-testid="modal-eyebrow" style={{ ...EYEBROW, margin: `0 0 ${space[1]}px` }}>
                   {eyebrow}
                 </p>
               ) : null}
@@ -228,7 +230,7 @@ export function GlyphButton({ glyph, label, onClick, phone = false, size = 20 }:
         boxSizing: "border-box",
         background: "transparent",
         border: "1px solid transparent",
-        borderRadius: 6,
+        borderRadius: r.control,
         color: state.hovered ? t.text : t.label,
         display: "inline-flex",
         alignItems: "center",
@@ -237,7 +239,7 @@ export function GlyphButton({ glyph, label, onClick, phone = false, size = 20 }:
         ...ring(state.focusVisible),
       }}
     >
-      <Glyph name={glyph} size={12} />
+      <Glyph name={glyph} size={sizes.icon} />
     </button>
   );
 }

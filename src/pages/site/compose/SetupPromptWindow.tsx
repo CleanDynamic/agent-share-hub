@@ -82,7 +82,7 @@ export function SetupPromptWindow({ id, tree, name, onCopy, onClose, harness }: 
       </div>
       <div style={footerStyle(phone)}>
         <span data-testid="setup-prompt-count" style={{ ...FOOT_NOTE, fontVariantNumeric: "tabular-nums" }}>
-          {SETUP_PROMPT_COPY.characters(prompt.text.length)}
+          {SETUP_PROMPT_COPY.words(prompt.text)}
         </span>
         <RecipeButton variant="primary" small={!phone} phone={phone} onClick={() => onCopy(prompt.text)}>
           {SETUP_PROMPT_COPY.copy}

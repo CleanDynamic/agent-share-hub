@@ -82,6 +82,7 @@ import type { RunFacts, SessionExtras } from "@/lib/build/sessionFacts";
 import type { SessionGoal } from "@/lib/build/making";
 import type { SetupLoaded, SetupPlugin } from "@/lib/build/setup";
 import { Swap } from "./buildMotion";
+import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT, iconButtonSide } from "./modalRecipes";
 
 export interface InputsView {
   /** CA-04 P2, a tile inside another: "Sent with prompt 2", which its eyebrow says in place of its number. */
@@ -521,7 +522,7 @@ function LinkItem({ item, onSelect }: { item: ListItem; onSelect?: (id: string) 
   const id = item.id;
   if (id && onSelect) {
     return (
-      <button type="button" data-testid="details-link" onClick={() => onSelect(id)} style={{ ...LIST_ROW, ...LINK_ROW }}>
+      <button type="button" data-testid="details-link" data-hit="" onClick={() => onSelect(id)} style={{ ...LIST_ROW, ...LINK_ROW }}>
         <ItemBody item={item} />
       </button>
     );
@@ -547,7 +548,7 @@ function Prose({ value, changes, clamp, onReadAll }: { value: Extract<SectionVal
       ) : null}
       {clamp && onReadAll ? (
         <div style={VALUE}>
-          <Button variant="secondary" size={28} fontSize={12} onClick={onReadAll} style={EDIT_BUTTON}>
+          <Button variant="secondary" size={32} fontSize={12} onClick={onReadAll} style={{ ...EDIT_BUTTON, ...BUTTON_PAD_SMALL_TEXT }}>
             {DETAILS_COPY.readAll}
           </Button>
         </div>
@@ -615,7 +616,7 @@ function CopyButton({ text: words }: { text: string }) {
   useEffect(() => () => window.clearTimeout(timer.current), []);
   return (
     <>
-      <IconButton
+      <IconButton style={iconButtonSide()}
         icon={Copy}
         label={DETAILS_COPY.copy}
         size={26}
@@ -691,7 +692,7 @@ export function DetailsHead({ view, colour, onEdit }: { view: DetailsView; colou
       </div>
       {/* F47: one action, in the same place for every object: Open for a file (its window, with the preview), Edit for the rest. */}
       {onEdit ? (
-        <Button variant="secondary" size={28} fontSize={12} onClick={onEdit} style={EDIT_BUTTON} data-testid="details-action">
+        <Button variant="secondary" size={32} fontSize={12} onClick={onEdit} style={{ ...EDIT_BUTTON, ...BUTTON_PAD_SMALL_TEXT }} data-testid="details-action">
           {view.kind === "file" ? DETAILS_COPY.open : DETAILS_COPY.edit}
         </Button>
       ) : null}
@@ -722,7 +723,7 @@ const SESSION_HEAD_LABELS = new Set(["Harness and model", "Date"]);
 function AddDetails({ onEdit }: { onEdit: () => void }) {
   return (
     <div data-testid="details-add" style={{ display: "flex" }}>
-      <Button variant="secondary" size={32} fontSize={13} onClick={onEdit}>
+      <Button style={BUTTON_PAD} variant="secondary" size={32} fontSize={13} onClick={onEdit}>
         {DETAILS_COPY.addDetails}
       </Button>
     </div>

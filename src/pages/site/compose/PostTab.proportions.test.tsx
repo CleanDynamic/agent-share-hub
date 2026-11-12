@@ -123,7 +123,7 @@ describe("removing a post", () => {
     expect(screen.queryByRole("button", { name: "Remove this post" })).toBeNull();
     focusAt(editor, 2);
     const remove = screen.getByRole("button", { name: "Remove this post" });
-    expect([remove.style.width, remove.style.right, remove.style.position]).toEqual(["28px", "0px", "absolute"]);
+    expect([remove.style.width, remove.style.right, remove.style.position]).toEqual(["32px", "0px", "absolute"]); // S6
   });
 
   it("takes the post and the break before it out in one step, and Undo puts them back", () => {

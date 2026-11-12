@@ -56,7 +56,7 @@ describe("SV-07 P2 · addSessionCopy", () => {
 
   it("refuses a key that is already in the draft, and one that is not a session made here", async () => {
     open();
-    await expect(addSessionCopy(DRAFT, { ...copy, key: FIVE })).rejects.toThrow(/already in this draft/);
+    await expect(addSessionCopy(DRAFT, { ...copy, key: FIVE })).rejects.toThrow(/already in this build/);
     await expect(addSessionCopy(DRAFT, { ...copy, key: "0e0e0e0e-0000-4000-8000-000000000001" })).rejects.toThrow(/made here/);
   });
 

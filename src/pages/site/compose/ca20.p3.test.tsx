@@ -157,7 +157,7 @@ describe("on the page", () => {
     fireEvent.click(within(bar() as HTMLElement).getByRole("button", { name: "Remove" }));
     await waitFor(() => expect(ids()).not.toContain(IDS.p1), { timeout: 15_000 });
     expect(ids()).not.toContain(IDS.p2);
-    expect(await screen.findByText("Removed 2 step tiles")).toBeTruthy();
+    expect(await screen.findByText("Removed 2 steps")).toBeTruthy();
     fireEvent.click(await screen.findByTestId("notice-undo"));
     await waitFor(() => expect(ids()).toEqual(expect.arrayContaining([IDS.p1, IDS.p2])), { timeout: 15_000 });
   });
@@ -170,22 +170,22 @@ describe("on the page", () => {
     fireEvent.click(within(bar() as HTMLElement).getByRole("button", { name: "Remove" }));
     const dialog = await screen.findByRole("alertdialog");
     expect(within(dialog).getByText("Remove 2 sessions?")).toBeTruthy();
-    expect(within(dialog).getByText("They have 2 step tiles between them.")).toBeTruthy();
+    expect(within(dialog).getByText("They have 2 steps between them.")).toBeTruthy();
     fireEvent.click(within(dialog).getByRole("button", { name: "Remove all" }));
     await waitFor(() => expect(keys()).toEqual([KEY_B]), { timeout: 15_000 });
-    expect(await screen.findByText("Removed 2 sessions and 2 step tiles")).toBeTruthy();
+    expect(await screen.findByText("Removed 2 sessions and 2 steps")).toBeTruthy();
     fireEvent.click(await screen.findByTestId("notice-undo"));
     await waitFor(() => expect(keys()).toEqual([KEY_A, KEY_B, KEY_C]), { timeout: 15_000 });
     expect(ids()).toEqual(expect.arrayContaining([IDS.p1, IDS.p2]));
   });
 
-  it("a session and a tile outside it go together: Remove 1 session and 1 step tile?", async () => {
+  it("a session and a tile outside it go together: Remove 1 session and 1 step?", async () => {
     await mountCa20(seedCa20);
     fireEvent.click(head(3), { metaKey: true });
     fireEvent.click(card(4), { metaKey: true });
     fireEvent.click(within(bar() as HTMLElement).getByRole("button", { name: "Remove" }));
     const dialog = await screen.findByRole("alertdialog");
-    expect(within(dialog).getByText("Remove 1 session and 1 step tile?")).toBeTruthy();
+    expect(within(dialog).getByText("Remove 1 session and 1 step?")).toBeTruthy();
     fireEvent.click(within(dialog).getByRole("button", { name: "Remove all" }));
     await waitFor(() => expect(keys()).toEqual([KEY_A, KEY_B]), { timeout: 15_000 });
     expect(ids()).not.toContain(IDS.p3);

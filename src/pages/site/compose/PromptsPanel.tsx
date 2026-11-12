@@ -25,6 +25,7 @@ import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { TextButton } from "./composeControls";
 import { bareField, useRing } from "./composeFields";
+import { iconButtonSide } from "./modalRecipes";
 
 /** The type a dragged session prompt carries beside its text: what tells it from any other drag. */
 export const PROMPT_DRAG_TYPE = "application/x-buildgallery-prompt";
@@ -139,9 +140,9 @@ function PromptRow({
         transition: fade(),
       }}
     >
-      <IconButton icon={ArrowUp} size={size} style={target} label={`Move prompt ${n} up`} disabled={!canUp} data-arrow="up" onClick={() => arrow(-1)} />
-      <IconButton icon={ArrowDown} size={size} style={target} label={`Move prompt ${n} down`} disabled={!canDown} data-arrow="down" onClick={() => arrow(1)} />
-      <IconButton icon={X} size={size} style={target} label={`Remove prompt ${n}`} onClick={() => onRemove(row.key)} />
+      <IconButton icon={ArrowUp} size={size} style={{ ...target, ...iconButtonSide(phone) }} label={`Move prompt ${n} up`} disabled={!canUp} data-arrow="up" onClick={() => arrow(-1)} />
+      <IconButton icon={ArrowDown} size={size} style={{ ...target, ...iconButtonSide(phone) }} label={`Move prompt ${n} down`} disabled={!canDown} data-arrow="down" onClick={() => arrow(1)} />
+      <IconButton icon={X} size={size} style={{ ...target, ...iconButtonSide(phone) }} label={`Remove prompt ${n}`} onClick={() => onRemove(row.key)} />
     </div>
   );
 
@@ -203,7 +204,7 @@ function PromptRow({
             display: "block",
             width: "100%",
             boxSizing: "border-box",
-            margin: "1px 0 0",
+            margin: 0,
             padding: 0,
             borderRadius: 4,
             color: t.text,

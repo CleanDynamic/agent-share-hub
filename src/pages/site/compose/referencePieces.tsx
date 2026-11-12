@@ -37,6 +37,8 @@ import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 import { dropIn, liftOut, useCrossfade, useHeld } from "./buildMotion";
 import { BAR_AIR, PHONE_BARS_BOTTOM } from "./composeChrome";
 import { GROUP_TITLE, NOTE, RecipeButton, SUBTITLE, footerStyle, frameStyle } from "./modalRecipes";
+import { size as sizes, space } from "@/lib/theme/space";
+import { r } from "@/lib/theme/radius";
 
 /* ── type ── */
 
@@ -108,7 +110,7 @@ export function GroupLabel({ name, colour, prefix, testId = "group-label", onCli
       <span style={{ ...words(11.5, 500, ink), ...ELLIPSIS }}>{prefix ? `${prefix} ${name}` : name}</span>
     </>
   );
-  const look: CSSProperties = { boxSizing: "border-box", display: "inline-flex", alignItems: "center", gap: 6, height: 20, padding: "0 7px", borderRadius: 5, backgroundColor: t.hairline, maxWidth: "100%", minWidth: 0, flexShrink: 1 };
+  const look: CSSProperties = { boxSizing: "border-box", display: "inline-flex", alignItems: "center", gap: space[2], height: sizes.tag, padding: `0 ${space[2]}px`, borderRadius: r.chip, backgroundColor: t.hairline, maxWidth: "100%", minWidth: 0, flexShrink: 1 };
   if (!onClick) {
     return (
       <span data-testid={testId} data-group-label={name} style={look}>
@@ -176,7 +178,7 @@ export function GhostIcon({ glyph, label, phone = false, size = 28, pressed = fa
         ...style,
       }}
     >
-      <Glyph name={glyph} size={14} />
+      <Glyph name={glyph} size={sizes.icon} />
     </button>
   );
 }
@@ -393,7 +395,7 @@ function SortableItem({ row, height }: { row: SortableRow; height: number }) {
       {...listeners}
       style={{ appearance: "none", background: "none", border: 0, padding: 0, width: 16, height: 28, display: "inline-flex", alignItems: "center", justifyContent: "center", color: t.label, cursor: "grab", flexShrink: 0, touchAction: "none" }}
     >
-      <Glyph name="grip" size={14} />
+      <Glyph name="grip" size={sizes.icon} />
     </button>
   );
   return (
@@ -445,7 +447,7 @@ export function SortableRows({ rows, height = 40, label, onOrder }: { rows: read
 
 /** A component's badge: its number in the data face 11 on the tag fill ("S2", "4"). */
 export function Badge({ children }: { children: ReactNode }) {
-  return <span style={{ ...data(11, t.text2), boxSizing: "border-box", minWidth: 28, height: 20, padding: "0 6px", borderRadius: 5, background: t.tagFill, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{children}</span>;
+  return <span style={{ ...data(11, t.text2), boxSizing: "border-box", minWidth: 28, height: sizes.tag, padding: `0 ${space[2]}px`, borderRadius: r.chip, background: t.tagFill, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{children}</span>;
 }
 
 /** A confirmation: a title, a line, Cancel and the action in the danger colour. */

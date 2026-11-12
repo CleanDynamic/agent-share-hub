@@ -51,7 +51,7 @@ describe("the collapse arrow", () => {
     list({ collapsed: new Set([first]) });
     const folded = within(head(1));
     expect(folded.getByRole("button", { name: "Expand Session 1" }).getAttribute("aria-expanded")).toBe("false");
-    expect(folded.getByTestId("session-count").textContent).toBe("2 step tiles");
+    expect(folded.getByTestId("session-count").textContent).toBe("2 steps");
     const run = document.querySelector(`[data-session-key="${first}"]`) as HTMLElement;
     expect(within(run).queryAllByTestId("step-card")).toHaveLength(0);
     // The other sessions are open and show no count.
@@ -200,7 +200,7 @@ describe("the app", () => {
 });
 
 describe("empty sessions and mixed tiles", () => {
-  it("draws an empty session where its number puts it, with No step tiles yet", () => {
+  it("draws an empty session where its number puts it, with No steps yet", () => {
     const base = sandboxListProps("bakery");
     const heads = [...base.dividers.values()];
     // The three sessions are numbered 2, 3 and 4; the empty one is Session 1, so it comes first.
@@ -210,7 +210,7 @@ describe("empty sessions and mixed tiles", () => {
     expect(names[0]).toBe("Session 1 · No harness chosen");
     expect(names).toHaveLength(heads.length + 1);
     const run = document.querySelector('[data-session-key="typed-empty"]') as HTMLElement;
-    expect(within(run).getByText("No step tiles yet")).toBeTruthy();
+    expect(within(run).getByText("No steps yet")).toBeTruthy();
     expect(within(run).getByRole("button", { name: "Collapse Session 1" })).toBeTruthy();
   });
 

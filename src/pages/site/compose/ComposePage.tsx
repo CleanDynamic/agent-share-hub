@@ -147,7 +147,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
           creating.current = null;
           // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
           console.error(errorLine("[Compose] createBuild failed", cause));
-          toast.error("Draft not started");
+          toast.error("Build not started");
           // CA-10: said once, here; a caller that failed only because of this says nothing more (sayFailed).
           throw new DraftNotStartedError(cause);
         });

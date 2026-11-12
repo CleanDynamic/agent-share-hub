@@ -39,7 +39,7 @@ describe("confirmRows", () => {
   it("reads each row's value from the fixture", () => {
     expect(confirmRows(FIXTURE).map((row) => [row.name, row.value])).toEqual([
       ["Post", "240 words, 3 links"],
-      ["Build", "2 parts, 4 sessions, 18 step tiles"],
+      ["Build", "2 parts, 4 sessions, 18 steps"],
       ["Files", "menu.pdf, logo.png, homepage.html"],
       ["Classification", "Website, Content"],
     ]);
@@ -48,7 +48,7 @@ describe("confirmRows", () => {
   it("leaves parts out at 1, and says one link, one session and one tile in the singular", () => {
     const rows = confirmRows({ ...FIXTURE, parts: 1, post: { words: 1, links: 1 }, sessions: 1, tiles: 1 });
     expect(rows[0].value).toBe("1 word, 1 link");
-    expect(rows[1].value).toBe("1 session, 1 step tile");
+    expect(rows[1].value).toBe("1 session, 1 step");
   });
 
   it("leaves out links when the post has none", () => {
@@ -82,7 +82,7 @@ describe("the Confirm window", () => {
     expect(within(window).getByRole("region", { name: "Public" })).toBeTruthy();
     expect(within(window).getByRole("region", { name: "Private" })).toBeTruthy();
     expect(within(window).getByTestId("confirm-post-value").textContent).toBe("240 words, 3 links");
-    expect(within(window).getByTestId("confirm-build-value").textContent).toBe("2 parts, 4 sessions, 18 step tiles");
+    expect(within(window).getByTestId("confirm-build-value").textContent).toBe("2 parts, 4 sessions, 18 steps");
     expect(within(window).getByTestId("confirm-files-value").textContent).toBe("menu.pdf, logo.png, homepage.html");
     expect(within(window).getByTestId("confirm-card-value").textContent).toBe("Website, Content");
     expect(within(window).getByTestId("confirm-private").textContent).toBe("Your sessions not in the build, Recently removed");

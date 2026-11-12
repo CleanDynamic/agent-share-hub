@@ -49,5 +49,5 @@ export const ADDED = {
   part: "Added a part",
   promptToAgent: "Added a prompt to an agent",
   agentToTeam: "Added an agent to a team",
-  nested: "Moved a tile",
+  nested: "Moved a step",
 } as const;

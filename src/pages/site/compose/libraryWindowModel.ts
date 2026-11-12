@@ -84,7 +84,7 @@ export function footerFor(item: LibrarySavedItem, facts: RowFacts, copierId: str
   const handle = maker ? facts.handles.get(maker) : undefined;
   if (!maker || !handle || maker === copierId) return lead;
   const used = (facts.usedIn.get(item.id) ?? 0) + 1;
-  return `${lead} @${handle} is credited on the step tile, and their ${item.kind === "session" ? "session" : item.kind === "part" ? "part" : "step"} will show used in ${buildsWord(used)}.`;
+  return `${lead} @${handle} is credited on the step, and their ${item.kind === "session" ? "session" : item.kind === "part" ? "part" : "step"} will show used in ${buildsWord(used)}.`;
 }
 
 export interface CollectionFacts {
@@ -111,7 +111,7 @@ export function collectionRows(collections: readonly CollectionFacts[], byKept: 
   return { rows, items };
 }
 
-export const COLLECTION_FOOTER = "Copied in order, each as a new step tile with its source. Their makers are credited on the step tiles.";
+export const COLLECTION_FOOTER = "Copied in order, each as a new step with its source. Their makers are credited on the steps.";
 
 export { fitWords, missingKindWords };
 export type { LibraryTab };

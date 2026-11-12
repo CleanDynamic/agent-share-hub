@@ -40,7 +40,7 @@ async function open() {
   await mountCa20(() => undefined, { keep: true });
 }
 
-/** UX-02 P7: the first session's Add step tile (the header's Add is gone). */
+/** UX-02 P7: the first session's Add step (the header's Add is gone). */
 const openAdd = () => fireEvent.keyDown(screen.getAllByTestId("add-to-session")[0], { key: "Enter" });
 async function openWindow() {
   openAdd();
@@ -71,8 +71,8 @@ describe("Add › From Library", () => {
     openAdd();
     const item = await screen.findByRole("menuitem", { name: /From Library/ });
     expect(item.getAttribute("aria-disabled")).not.toBe("true");
-    // UX-02 Words: step tiles.
-    expect(item.textContent).toContain("Step tiles and collections you saved");
+    // UX-02 Words: steps.
+    expect(item.textContent).toContain("Steps and collections you saved");
   });
 
   it("lists the saved steps and sessions that fit the session, and no request, filter set or collection", async () => {
@@ -91,7 +91,7 @@ describe("Add › From Library", () => {
     const before = tiles().length;
     const dialog = await openWindow();
     await pick(dialog, "Summary on one prompt");
-    expect(within(dialog).getByText(/Copied as a new prompt with its source\. @maya is credited on the step tile, and their step will show used in 5 builds\./)).toBeTruthy();
+    expect(within(dialog).getByText(/Copied as a new prompt with its source\. @maya is credited on the step, and their step will show used in 5 builds\./)).toBeTruthy();
     fireEvent.click(within(dialog).getByRole("button", { name: "Insert" }));
     await waitFor(() => expect(tiles()).toHaveLength(before + 1), { timeout: 20_000 });
     const added = tiles().find((row) => (row.source_ref as { saved_item_id?: string } | null)?.saved_item_id === "si-prompt");

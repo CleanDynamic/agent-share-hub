@@ -81,7 +81,7 @@ export interface MapPieceLike {
 
 const flat = (list: readonly Step[]): Step[] => list.flatMap((step) => [step, ...flat(step.children), ...flat(step.sentWith ?? [])]);
 
-const kindWord = (step: Pick<Step, "kind">): string => REF_KIND[step.kind] ?? "Tile";
+const kindWord = (step: Pick<Step, "kind">): string => REF_KIND[step.kind] ?? "Step";
 /** "Agent 9". A tile with no number ("File order-form.tsx") is named by its title. */
 export const tileName = (step: Pick<Step, "kind" | "number" | "title" | "defaultTitle" | "filename">): string => `${kindWord(step)} ${step.number || step.filename || step.title || step.defaultTitle}`;
 
@@ -276,7 +276,7 @@ export function sessionMapFor(input: { groups: readonly SessionGroup[]; steps: r
   for (const top of input.steps) {
     const key = sessionOf.get(top.id);
     if (!key) continue;
-    (tiles[key] ??= []).push({ id: top.id, number: top.number, title: stepTitle(top), kind: REF_KIND[top.kind] ?? "Tile" });
+    (tiles[key] ??= []).push({ id: top.id, number: top.number, title: stepTitle(top), kind: REF_KIND[top.kind] ?? "Step" });
   }
 
   return sessionMapModel({

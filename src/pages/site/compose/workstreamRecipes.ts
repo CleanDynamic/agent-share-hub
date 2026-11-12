@@ -4,6 +4,7 @@
 import type { CSSProperties } from "react";
 
 import { t } from "@/lib/theme/tokens";
+import { space } from "@/lib/theme/space";
 
 /**
  * A part's group: a 1px `--hairline` outline, radius 14, padding 10, gap 8. Sessions keep their own look inside it. SV-06 P4: the
@@ -14,16 +15,17 @@ export const WORKSTREAM_GROUP: CSSProperties = {
   position: "relative",
   display: "flex",
   flexDirection: "column",
-  gap: 8,
+  gap: space[2],
   minWidth: 0,
-  padding: 11,
+  padding: space[3] + 1,
 };
 
 /** The part's outline, as `FramePieces` draws it. */
 export const WORKSTREAM_FRAME = { radius: 14, colour: t.hairline } as const;
 
 /** What a part holds, session after session. */
-export const WORKSTREAM_BODY: CSSProperties = { display: "flex", flexDirection: "column", gap: 8, minWidth: 0 };
+/** S30, F69: sessions space[8] apart. */
+export const WORKSTREAM_BODY: CSSProperties = { display: "flex", flexDirection: "column", gap: space[8], minWidth: 0 };
 
 /** "Starts after Part A · Session 2", under the head, in line with the name. */
-export const WORKSTREAM_STARTS: CSSProperties = { margin: 0, paddingLeft: 26 };
+export const WORKSTREAM_STARTS: CSSProperties = { margin: 0, paddingLeft: space[6] };

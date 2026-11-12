@@ -511,7 +511,7 @@ export function datasetRows(payload: Raw): ExtraRow[] {
       name: DATASET_DIALOG_COPY.records,
       description: "",
       summary: summaryOf(facts.recordCount === null ? null : facts.recordCount.toLocaleString("en-GB")),
-      fields: [{ key: "records", label: DATASET_DIALOG_COPY.records, kind: "count", max: 12, placeholder: DATASET_DIALOG_COPY.recordsPlaceholder }],
+      fields: [{ key: "records", label: DATASET_DIALOG_COPY.records, kind: "count", max: 12 }],
       values: { records: facts.recordCount === null ? "" : String(facts.recordCount) },
       toPatch: (v) => ({ record_count: v.records ? Number(v.records) : null }),
     },

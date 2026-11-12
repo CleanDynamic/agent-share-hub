@@ -185,9 +185,9 @@ describe("ClassificationPicker: as the board draws it (CA-16b)", () => {
     render(<Harness initial={[{ id: "ai-ml.retrieval.hybrid-search" }, { custom: "Bee keeping" }]} />);
     const chosen = screen.getByRole("list", { name: "Field, chosen" });
     const chip = within(chosen).getByText("AI and machine learning › Retrieval systems › Hybrid search").closest("li") as HTMLElement;
-    expect(chip.style.minHeight).toBe("28px");
-    expect(chip.style.borderRadius).toBe("7px");
-    expect(within(chip).getByRole("button", { name: "Remove Hybrid search" }).style.width).toBe("18px");
+    expect(chip.style.minHeight).toBe("24px"); // S16
+    expect(chip.style.borderRadius).toBe("var(--r-chip)");
+    expect(within(chip).getByRole("button", { name: "Remove Hybrid search" }).style.width).toBe("24px");
     const own = within(chosen).getByText("Bee keeping").closest("li") as HTMLElement;
     expect(own.style.borderStyle).toBe("dashed");
     expect(own.style.background).toBe("transparent");

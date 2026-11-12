@@ -169,7 +169,7 @@ describe("the Unpublish window", () => {
     const window = await ask();
     expect(window.getAttribute("style")).toContain("width: 420px");
     expect(within(window).getByText("Unpublish Bakery homepage?")).toBeTruthy();
-    expect(within(window).getByTestId("unpublish-body").textContent).toBe("The link stops working. The draft stays.");
+    expect(within(window).getByTestId("unpublish-body").textContent).toBe("The link stops working. The build stays a draft.");
     expect(within(window).getByTestId("unpublish-cancel").textContent).toBe("Cancel");
     const confirm = within(window).getByTestId("unpublish-confirm");
     expect(confirm.textContent).toBe("Unpublish");

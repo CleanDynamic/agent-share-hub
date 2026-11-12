@@ -33,6 +33,7 @@ import { BASE, move } from "@/lib/theme/motion";
 
 import { dropIn, frameParts, liftOut, motionOn, resizeFrame, type MotionRun } from "./buildMotion";
 import { Block, COUNT, HINT, ModalInset, OPTIONAL, STRONG_LABEL, useModalInset } from "./modalRecipes";
+import { size } from "@/lib/theme/space";
 
 export const OPTIONAL_COPY = {
   heading: "Optional",
@@ -310,7 +311,7 @@ export function OptionalSection({ children, bleed = 0 }: OptionalSectionProps) {
                 {filled > 0 ? OPTIONAL_COPY.filled(rows.length, filled) : OPTIONAL_COPY.fields(rows.length)}
               </span>
               <span aria-hidden="true" style={{ ...OPTIONAL.chevron(open), transition: move(BASE) }}>
-                <Glyph name="chevd" size={14} />
+                <Glyph name="chevd" size={size.icon} />
               </span>
             </span>
           </button>

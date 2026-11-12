@@ -1,5 +1,6 @@
 // BG-P04 — the spacing scale, and the one rule that comes with it.
 
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { denseSpace } from "./density";
 import {
@@ -15,6 +16,8 @@ import {
   isRefinedStep,
   isSpaceStep,
   px,
+  size,
+  space,
 } from "./space";
 
 describe("the spacing scale", () => {
@@ -194,5 +197,20 @@ describe("a card's padding may never exceed the gap to its neighbour", () => {
     expect(assertPadding(24, Number.POSITIVE_INFINITY)).toContain("finite");
     expect(assertPadding(-8, 24)).toContain("non-negative");
     expect(assertPadding(8, -24)).toContain("non-negative");
+  });
+});
+
+describe("the build editor's steps (F68, S40)", () => {
+  const css = readFileSync("src/index.css", "utf-8");
+  const kebab = (name: string) => name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
+
+  it("are the eight spacing steps and the eight sizes", () => {
+    expect(space).toEqual({ 1: 4, 2: 8, 3: 12, 4: 16, 6: 24, 8: 32, 12: 48, 16: 64 });
+    expect(size).toEqual({ iconSmall: 12, icon: 16, tag: 20, controlSmall: 24, control: 32, row: 48, rowLarge: 56, touch: 44 });
+  });
+
+  it("match the --space-* and --size-* custom properties in index.css", () => {
+    for (const [step, value] of Object.entries(space)) expect(css).toContain(`--space-${step}: ${value}px;`);
+    for (const [name, value] of Object.entries(size)) expect(css).toContain(`--size-${kebab(name)}: ${value}px;`);
   });
 });

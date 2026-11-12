@@ -14,6 +14,7 @@ import { FLOATING_Z } from "./ToolPicker";
 import { menuItem, menuSurface } from "./refinedStyles";
 import { MenuContent } from "./ComposeMenu";
 import { PickerFieldButton } from "./modalRecipes";
+import { size } from "@/lib/theme/space";
 
 export interface PickOption<V extends string> {
   value: V;
@@ -68,7 +69,7 @@ export function PickMenu<V extends string>({ label, options, value, onChange, ph
               <Menu.RadioItem key={option.value} value={option.value} style={{ ...menuItem(true, phone), gap: 6 }}>
                 <span style={{ width: 14, display: "inline-flex" }}>
                   <Menu.ItemIndicator>
-                    <Glyph name="check" size={14} />
+                    <Glyph name="check" size={size.icon} />
                   </Menu.ItemIndicator>
                 </span>
                 {option.label ?? option.value}

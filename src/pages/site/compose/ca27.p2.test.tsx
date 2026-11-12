@@ -72,8 +72,8 @@ describe("the heads", () => {
 
 describe("the words", () => {
   it("Read all replaces Read all of it", () => {
-    // UX-02 P5: the computer's hint line went with the double-click; the phone's says step tile.
-    expect(LIST_HINT_PHONE).toBe("Tap a step tile to see its details");
+    // UX-02 P5: the computer's hint line went with the double-click; the phone's says step.
+    expect(LIST_HINT_PHONE).toBe("Tap a step to see its details");
     expect(LIST_COPY.hintPhone).toBe(LIST_HINT_PHONE);
     for (const file of ["src/pages/site/compose/BuildList.tsx", "src/pages/site/build/BuildSteps.tsx", "src/pages/site/compose/SandboxView.tsx"]) {
       const source = fs.readFileSync(path.resolve(__dirname, "../../../..", file), "utf8");

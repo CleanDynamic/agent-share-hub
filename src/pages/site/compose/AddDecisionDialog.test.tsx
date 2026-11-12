@@ -102,12 +102,12 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
     fillChoice();
     expect(add().disabled).toBe(false);
     openRow("Calling code");
-    expect(screen.getByText("No Code step tile linked")).toBeTruthy();
+    expect(screen.getByText("No Code step linked")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Add code" }));
     expect(onAddCode).toHaveBeenCalled();
   });
 
-  it("with code lists each Code tile to pick as the calling code", () => {
+  it("with code lists each Code step to pick as the calling code", () => {
     const props = open({ codeTiles: [{ id: "c1", label: "router.py", source: "x" }] });
     openRow("Calling code");
     fireEvent.click(screen.getByRole("button", { name: /router\.py/ }));

@@ -35,6 +35,8 @@ import { FIGTREE } from "@/lib/theme/type";
 import { TextButton } from "./composeControls";
 import { fieldBase } from "./composeFields";
 import { MADE_WITH_ENTRY_MAX, type MadeWithChip } from "./composeModel";
+import { size, space } from "@/lib/theme/space";
+import { BUTTON_PAD } from "./modalRecipes";
 
 export interface MadeWithLineProps {
   phone: boolean;
@@ -66,7 +68,7 @@ function RefinedChip({ chip }: { chip: MadeWithChip }) {
   return (
     <span data-testid="made-with-chip" data-on={chip.on ? "true" : "false"} style={{ display: "inline-flex" }}>
       {out ? (
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 22, boxSizing: "border-box", padding: "0 8px 0 6px", borderRadius: 4, background: t.tagFill, color: t.onTag, fontFamily: FIGTREE, fontSize: 11.5, fontWeight: 500, lineHeight: 1, whiteSpace: "nowrap" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: space[2], height: size.tag, boxSizing: "border-box", padding: `0 ${space[2]}px`, borderRadius: r.chip, background: t.tagFill, color: t.onTag, fontFamily: FIGTREE, fontSize: 11.5, fontWeight: 500, lineHeight: 1, whiteSpace: "nowrap" }}>
           <ModelMark {...marks} size={14} />
           {chip.tool ? `${chip.tool} · ` : null}
           <s style={{ color: t.text2 }}>{chip.model}</s>
@@ -90,9 +92,9 @@ function Toggle({ chip, phone, onToggle }: { chip: MadeWithChip; phone: boolean;
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 6,
-        height: phone ? 44 : 30,
-        padding: "0 9px",
+        gap: space[2],
+        height: phone ? size.touch : size.control,
+        padding: `0 ${space[3]}px`,
         borderRadius: r.control,
         border: `1px solid ${state.hovered ? t.text2 : t.line}`,
         background: t.field,
@@ -119,7 +121,7 @@ function Toggle({ chip, phone, onToggle }: { chip: MadeWithChip; phone: boolean;
           border: `1.5px solid ${chip.on ? t.text : t.line}`,
         }}
       >
-        {chip.on ? <Check size={12} strokeWidth={2.4} color="var(--field)" /> : null}
+        {chip.on ? <Check size={size.iconSmall} strokeWidth={2.4} color="var(--field)" /> : null}
       </span>
       {chip.label}
     </button>
@@ -176,10 +178,10 @@ function AddEntry({ phone, onAdd }: { phone: boolean; onAdd: (name: string) => v
               maxLength={MADE_WITH_ENTRY_MAX}
               autoComplete="off"
               onChange={(event) => setName(event.target.value)}
-              style={{ ...fieldBase, height: phone ? 44 : 33, padding: "0 7px", fontSize: phone ? 16 : 14 }}
+              style={{ ...fieldBase, height: phone ? size.touch : size.control, padding: `0 ${space[3]}px`, fontSize: phone ? 16 : 14 }}
             />
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <Button type="submit" size={phone ? 44 : 36} fontSize={13} disabled={!name.trim()}>
+              <Button style={BUTTON_PAD} type="submit" size={phone ? 44 : 32} fontSize={13} disabled={!name.trim()}>
                 Add
               </Button>
             </div>
