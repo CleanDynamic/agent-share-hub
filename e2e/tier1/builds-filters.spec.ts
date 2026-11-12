@@ -253,4 +253,20 @@ test.describe("/builds filters", () => {
     expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
     expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
   });
+
+  /* ── BF-12 P4 (B5) ── */
+
+  test("Shift with Enter on a focused head sets the second key, as Shift-click does", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "desktop project only");
+    await open(page, "/builds?by=field", answerWithBuilds);
+    const button = page.getByRole("columnheader", { name: /^Reproductions/ }).getByRole("button");
+    await button.focus();
+    await page.keyboard.press("Shift+Enter");
+    await expect(page).toHaveURL(/by=field&by2=reproductions/);
+    await expect(page.getByRole("columnheader", { name: /^Reproductions/ })).toHaveAttribute("aria-sort", "other");
+    await page.getByRole("columnheader", { name: /^Field/ }).getByRole("button").click();
+    await expect(page).not.toHaveURL(/by2=/);
+    await page.getByRole("columnheader", { name: /^Rebuilds/ }).getByRole("button").click({ modifiers: ["Shift"] });
+    await expect(page).toHaveURL(/by2=rebuilds/);
+  });
 });

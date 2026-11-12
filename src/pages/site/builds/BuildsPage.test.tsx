@@ -1032,3 +1032,80 @@ describe("BF-12 one sort control", () => {
     expect(screen.getByRole("columnheader", { name: /^Steps/ }).getAttribute("aria-sort")).toBe("descending");
   });
 });
+
+describe("BF-12 a second key with Shift", () => {
+  const field = (id: string) => ({ ...emptyClassification(), declared: { ...emptyClassification().declared, field: [{ id }] } });
+  /** Two in Law and one in Education, reproductions 1, 2, 3 as the build numbers. */
+  const three = () => listBuildsTable.mockResolvedValue({ countsLive: true, builds: [{ ...build(1), classifiedAs: field("law") }, { ...build(2), classifiedAs: field("education") }, { ...build(3), classifiedAs: field("law") }], total: 3 });
+  const order = () => screen.getAllByRole("link", { name: /^Build \d+$/ }).map((link) => link.textContent);
+  const head = (name: string) => screen.getByRole("columnheader", { name: new RegExp(`^${name}`) });
+  const press = (name: string, shiftKey = false) => fireEvent.click(within(head(name)).getByRole("button"), { shiftKey });
+
+  it("Shift-pressing Reproductions while sorted by Field writes by2=reproductions and orders within each field", async () => {
+    three();
+    renderAt("/builds?by=field&dir=asc");
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(order()).toEqual(["Build 2", "Build 1", "Build 3"]);
+    press("Reproductions", true);
+    await waitFor(() => expect(address).toBe("/builds?dir=asc&by=field&by2=reproductions"));
+    expect(order()).toEqual(["Build 2", "Build 3", "Build 1"]);
+  });
+
+  it('the second key\'s head shows its arrow followed by "2", and its aria-sort is "other"', async () => {
+    three();
+    renderAt("/builds?by=field&by2=reproductions");
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(head("Reproductions").getAttribute("aria-sort")).toBe("other");
+    expect(head("Reproductions").textContent).toContain("↓2");
+    expect(head("Field").getAttribute("aria-sort")).toBe("descending");
+    expect(screen.getAllByRole("columnheader").filter((entry) => ["ascending", "descending"].includes(entry.getAttribute("aria-sort") ?? ""))).toHaveLength(1);
+  });
+
+  it("Shift-press again flips it; a third clears it", async () => {
+    three();
+    renderAt("/builds?by=field&by2=reproductions");
+    await screen.findByRole("link", { name: "Build 1" });
+    press("Reproductions", true);
+    await waitFor(() => expect(address).toBe("/builds?by=field&by2=reproductions&dir2=asc"));
+    expect(head("Reproductions").textContent).toContain("↑2");
+    press("Reproductions", true);
+    await waitFor(() => expect(address).toBe("/builds?by=field"));
+  });
+
+  it("a plain press on any head clears the second key", async () => {
+    three();
+    renderAt("/builds?by=field&by2=reproductions");
+    await screen.findByRole("link", { name: "Build 1" });
+    press("Field");
+    await waitFor(() => expect(address).toBe("/builds?dir=asc&by=field"));
+  });
+
+  it("with more pages to load, Shift-press does nothing", async () => {
+    listBuildsTable.mockResolvedValue({ countsLive: true, builds: Array.from({ length: 50 }, (_, at) => build(at + 1)), total: 200 });
+    renderAt("/builds?sort=steps");
+    await screen.findByRole("link", { name: "Build 1" });
+    press("Rebuilds", true);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(address).toBe("/builds?sort=steps");
+  });
+
+  it("Shift with Enter or Space on a focused head does the same as Shift-click", async () => {
+    three();
+    renderAt("/builds?by=field");
+    await screen.findByRole("link", { name: "Build 1" });
+    for (const key of ["Enter", " "]) {
+      const button = within(head("Reproductions")).getByRole("button");
+      button.focus();
+      fireEvent.keyDown(button, { key, shiftKey: true });
+      /* A browser may fire the keyboard's click without the modifier: the head remembers the Shift of its key press. */
+      fireEvent.click(button);
+      fireEvent.keyUp(button, { key, shiftKey: true });
+      await waitFor(() => expect(address).toContain("by2=reproductions"));
+      if (key === "Enter") {
+        await waitFor(() => expect(address).toBe("/builds?by=field&by2=reproductions"));
+        press("Field");
+        await waitFor(() => expect(address).not.toContain("by2"));
+      }
+    }
+  });
+});

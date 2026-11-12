@@ -10,7 +10,7 @@
    region a keyboard can reach. Rows past the first screen are skipped until near (`content-visibility`). No motion: rows
    change at once. */
 
-import { cloneElement, type ReactElement, type ReactNode } from "react";
+import { cloneElement, useRef, type ReactElement, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { LampBar } from "@/components/brand/LampDot";
@@ -171,6 +171,8 @@ export interface BuildsTableViewProps {
   rows: readonly TableRowView[];
   /** The column each head sorts by, and the arrow on the sorted one. */
   sortColumn: { id: ColumnId; ascending: boolean } | null;
+  /** BF-12 (B5): the second key, which breaks the first's ties; its head says "other" and draws its arrow with a 2. */
+  sortColumn2?: { id: ColumnId; ascending: boolean } | null;
   /** BF-12 (B3): the heads that sort: every drawn column once the whole list is loaded, else the database's six. */
   sortable: ReadonlySet<ColumnId>;
   /** A press on a sortable head; `second` is Shift (BF-12 P4). `fresh`: the phone's Sort menu, which starts the column's cycle
@@ -322,10 +324,13 @@ const td = (right: boolean, last: boolean): React.CSSProperties => ({ padding: l
 /** BF-11 (B2): a filtered column's head is in `--text` at 500 over a 1px `--selected-edge` line, and says so to a screen reader.
     No icon, and no new press: pressing the head sorts, as before. The words are the head's (and its button's) `aria-label`, not
     hidden text: hidden text is positioned, so a name built from it reads "Autonomy , filtered". */
-function ColumnHead({ id, last, sorted, sortable, onSort, filtered = false }: { id: ColumnId; last: boolean; sorted: { ascending: boolean } | null; sortable: boolean; onSort: (second: boolean) => void; filtered?: boolean }) {
+function ColumnHead({ id, last, sorted, second = false, sortable, onSort, filtered = false }: { id: ColumnId; last: boolean; sorted: { ascending: boolean } | null; second?: boolean; sortable: boolean; onSort: (second: boolean) => void; filtered?: boolean }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
+  /* BF-12 (B5): Shift with Enter or Space. A browser may fire the keyboard's click without the modifier, so the key press's Shift
+     is kept for the click it causes; a pointer press starts clean. */
+  const shiftKey = useRef(false);
   const right = RIGHT.has(id);
-  const ariaSort = sorted ? (sorted.ascending ? "ascending" : "descending") : sortable ? "none" : undefined;
+  const ariaSort = sorted ? (second ? "other" : sorted.ascending ? "ascending" : "descending") : sortable ? "none" : undefined;
   const mark: React.CSSProperties | undefined = filtered ? { fontWeight: 500, borderBottom: `1px solid ${t.selectedEdge}` } : undefined;
   const name = HEAD[id];
   const label = filtered ? `${HEAD[id]}, filtered` : undefined;
@@ -335,12 +340,21 @@ function ColumnHead({ id, last, sorted, sortable, onSort, filtered = false }: { 
         <button
           type="button"
           aria-label={label}
-          onClick={(event) => onSort(event.shiftKey)}
           {...handlers}
+          onPointerDown={(event) => {
+            shiftKey.current = false;
+            handlers.onPointerDown(event);
+          }}
+          onKeyDown={(event) => (shiftKey.current = event.shiftKey)}
+          onClick={(event) => {
+            const withShift = event.shiftKey || shiftKey.current;
+            shiftKey.current = false;
+            onSort(withShift);
+          }}
           style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: 0, ...hitArea(2), font: "inherit", color: state.hovered ? t.text : "inherit", cursor: "pointer", borderRadius: r.chip, ...ring(state.focusVisible), ...mark }}
         >
           {name}
-          {sorted ? <span aria-hidden="true">{sorted.ascending ? "↑" : "↓"}</span> : null}
+          {sorted ? <span aria-hidden="true">{`${sorted.ascending ? "↑" : "↓"}${second ? "2" : ""}`}</span> : null}
         </button>
       ) : mark ? (
         <span style={mark}>{name}</span>
@@ -578,7 +592,7 @@ function Footer({ columns, footer }: { columns: readonly ColumnId[]; footer: Tab
 /* ── the table ── */
 
 export function BuildsTableView(props: BuildsTableViewProps) {
-  const { lenses, lens, onLens, columnsLabel, columnsMenu, chips, onRemoveChip, onClearAll, columns, rows, sortColumn, sortable, onSortColumn, footer, onMore, loadingMore, empty, updating, activeCount, onOpenFilters, setName, filtered } = props;
+  const { lenses, lens, onLens, columnsLabel, columnsMenu, chips, onRemoveChip, onClearAll, columns, rows, sortColumn, sortColumn2, sortable, onSortColumn, footer, onMore, loadingMore, empty, updating, activeCount, onOpenFilters, setName, filtered } = props;
   return (
     <div data-testid="builds-table">
       <LensRow lenses={lenses} lens={lens} onLens={onLens} columns={columns} sortable={sortable} sortColumn={sortColumn} onSortColumn={onSortColumn} columnsLabel={columnsLabel} columnsMenu={columnsMenu} updating={updating} activeCount={activeCount} onOpenFilters={onOpenFilters} setName={setName} />
@@ -595,7 +609,8 @@ export function BuildsTableView(props: BuildsTableViewProps) {
                     key={id}
                     id={id}
                     last={position === columns.length - 1}
-                    sorted={sortColumn?.id === id ? sortColumn : null}
+                    sorted={sortColumn?.id === id ? sortColumn : sortColumn2?.id === id ? sortColumn2 : null}
+                    second={sortColumn?.id !== id && sortColumn2?.id === id}
                     sortable={sortable.has(id)}
                     onSort={(second) => onSortColumn(id, second)}
                     filtered={filtered?.has(id)}

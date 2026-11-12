@@ -486,6 +486,7 @@ export default function BuildsPage() {
               ),
               rows,
               sortColumn,
+              sortColumn2: browserBy2 ? { id: browserBy2, ascending: params.dir2 === "asc" } : null,
               sortable,
               onSortColumn: (id, second, fresh) => go(fresh ? firstSortStep(params, id) : nextSort(params, id, allLoaded, second)),
               filtered: new Set(filteredIds),
