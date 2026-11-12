@@ -104,6 +104,8 @@ export interface GalleryParams {
   /** BF-12 (B5). A second column that breaks the first key's ties, and its direction; only with a first key. */
   by2?: string;
   dir2?: "asc";
+  /** BF-14 (B6). Builds that meet at least this many of the countable filters; whether it is below their count is the page's. */
+  match?: number;
   /** SV-24. The filter set that is open: where the panel's layout is kept. The filters themselves are the other parameters. */
   set?: string;
 }
@@ -141,6 +143,9 @@ function isModel(value: string | null | undefined): value is string {
 function isSort(value: string | null | undefined): value is GalleryFeedSort {
   return typeof value === "string" && (GALLERY_FEED_SORTS as readonly string[]).includes(value);
 }
+
+/** BF-14: a positive whole number, as written. */
+const isMatch = (value: string | null): boolean => value !== null && /^[1-9][0-9]?$/.test(value);
 
 function isLens(value: string | null): value is GalleryLens {
   return value !== null && (GALLERY_LENSES as readonly string[]).includes(value);
@@ -186,13 +191,14 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
     ...(isColumnId(by) ? { by } : {}),
     ...(isColumnId(by) && isColumnId(by2) ? { by2 } : {}),
     ...(isColumnId(by) && isColumnId(by2) && search.get("dir2") === "asc" ? { dir2: "asc" as const } : {}),
+    ...(isMatch(search.get("match")) ? { match: Number(search.get("match")) } : {}),
     ...(cleanSet(search.get("set")) ? { set: cleanSet(search.get("set")) } : {}),
   };
 }
 
 /**
  * The address of a gallery view: only the values that differ from the
- * default, keys in the order view, lens, for, with, shape, model, tool, pattern, f (CA-16, repeatable), open, within, state (SV-23 P2: Last confirmed, Confirmed or stale), the number filters (SV-23: steps, sessions, reproductions, rebuilds, likes), sort, dir, by, by2, dir2 (BF-12), q, set (SV-24: the open filter set).
+ * default, keys in the order view, lens, for, with, shape, model, tool, pattern, f (CA-16, repeatable), open, within, state (SV-23 P2: Last confirmed, Confirmed or stale), the number filters (SV-23: steps, sessions, reproductions, rebuilds, likes), sort, dir, by, by2, dir2 (BF-12), match (BF-14), q, set (SV-24: the open filter set).
  */
 export function galleryHref(params: Partial<GalleryParams> = {}): string {
   const out = new URLSearchParams();
@@ -223,6 +229,8 @@ export function galleryHref(params: Partial<GalleryParams> = {}): string {
       if (params.dir2 === "asc") out.set("dir2", "asc");
     }
   }
+
+  if (params.match !== undefined && isMatch(String(params.match))) out.set("match", String(params.match));
 
   const query = normaliseQuery(params.query ?? null);
   if (query !== null) out.set("q", query);

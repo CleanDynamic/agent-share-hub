@@ -1,14 +1,14 @@
 /* SV-11: Builds' words and shapes, pure: what the list is asked for, and how a row, a filter and the head are put. */
 
-import { BUILDS_TABLE_PAGE_SIZE, GALLERY_SHAPES, hasFilters, type LensCountFilters, type BuildsTableBuild, type CountSpread, type WorksOnModelCount, type BuildsTableOptions, type BuildsTablePage, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
+import { BUILDS_TABLE_PAGE_SIZE, GALLERY_SHAPES, confirmedCutoff, madeWithSpellings, stackSpellings, hasFilters, type LensCountFilters, type BuildsTableBuild, type CountSpread, type WorksOnModelCount, type BuildsTableOptions, type BuildsTablePage, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
 import { CONFIRMED_WITHIN, DEFAULT_GALLERY_SORT, type ConfirmedState, type ConfirmedWithin, type GalleryParams } from "@/lib/build/galleryParams";
 import { RANGE_FILTERS, RANGE_KEYS, rangeWords, type NumberRange, type RangeKey } from "@/lib/build/galleryRanges";
 import { PATTERN_LABEL, type Pattern } from "@/lib/build/patterns";
 import { STALE_AFTER_DAYS, isStale } from "@/lib/build/signals";
-import { shownValues } from "@/lib/classify/facets";
+import { computeFacets, shownValues } from "@/lib/classify/facets";
 import { labelFor } from "@/lib/classify/lines";
 import { FACET_LABEL, TAXONOMY, valueOf, type Facet } from "@/lib/classify/taxonomy";
-import { modelById, modelLabel } from "@/lib/models/registry";
+import { modelById, modelKeysOf, modelLabel } from "@/lib/models/registry";
 import { toolFor } from "@/lib/tools/registry";
 import { shortAgo } from "@/pages/site/home/homeModel";
 
@@ -243,6 +243,8 @@ export function activeChips(params: GalleryParams): TableChip[] {
     const range = params.ranges?.[key];
     if (range) chips.push({ key: `range:${key}`, name: RANGE_FILTERS[key].name, value: rangeWords(range) });
   }
+  const match = validMatch(params);
+  if (match !== null) chips.push({ key: "match", name: "Match", value: `at least ${match} of ${countableIds(params).length}` });
   if (params.query) chips.push({ key: "q", name: "Search", value: params.query });
   return chips;
 }
@@ -258,6 +260,7 @@ export function withoutChip(params: GalleryParams, key: string): GalleryParams {
   if (key === "model") return { ...params, model: undefined };
   if (key === "within") return { ...params, within: undefined };
   if (key === "state") return { ...params, state: undefined };
+  if (key === "match") return { ...params, match: undefined };
   if (key.startsWith("range:")) {
     const { [key.slice(6) as RangeKey]: _removed, ...rest } = params.ranges ?? {};
     return { ...params, ranges: Object.keys(rest).length > 0 ? rest : undefined };
@@ -279,7 +282,7 @@ export function toggled(params: GalleryParams, sectionId: string, key: string): 
 }
 
 /** How many values the filters hold, for "n active". */
-export const activeCount = (params: GalleryParams): number => activeChips(params).filter((chip) => chip.key !== "q").length;
+export const activeCount = (params: GalleryParams): number => activeChips(params).filter((chip) => chip.key !== "q" && chip.key !== "match").length;
 
 /** BF-02 (X2): what Clear all leaves: the lens, the view and the sort. Every filter, the query and the open set go. */
 export function clearedFilters(params: GalleryParams): GalleryParams {
@@ -691,4 +694,83 @@ export function nextSort(params: GalleryParams, column: ColumnId, allLoaded: boo
   if (params.by !== column) return firstSortStep(params, column);
   if (params.dir !== "asc") return { ...cleared, dir: "asc" };
   return { ...cleared, by: undefined, dir: undefined };
+}
+
+/* ── BF-14 (B6): match some conditions, decided in the browser once every candidate is loaded ── */
+
+/** Load all stops here: beyond it, every filter must match. */
+export const MATCH_LOAD_LIMIT = 200;
+
+/** The filters the browser can decide by the database's own rule, from the row (Part 0's table). Sessions (the row hides a stored
+    0) and Still open (another column) are required: they stay ANDed on the server and are not counted. */
+export const COUNTABLE: ReadonlySet<string> = new Set([...PANEL_FACETS, "stack", "shape", "pattern", "within", "state", "model", "reproductions", "rebuilds", "likes", "steps"]);
+
+/** The countable filters that hold a value. */
+export const countableIds = (params: GalleryParams): string[] => activeFilterIds(params).filter((id) => COUNTABLE.has(id));
+
+/** The address's match when it is a real choice (1 to one below the countable filters), else null: All. */
+export function validMatch(params: GalleryParams): number | null {
+  const m = countableIds(params).length;
+  return params.match !== undefined && params.match >= 1 && params.match < m ? params.match : null;
+}
+
+const RANGE_VALUE: Partial<Record<RangeKey, (build: BuildsTableBuild) => number | null | undefined>> = {
+  steps: (build) => build.stepCount,
+  reproductions: (build) => build.reproductionCount,
+  rebuilds: (build) => build.rebuildCount,
+  likes: (build) => build.likeCount,
+};
+
+/** Whether a build meets one filter, by the rule `applyTableFilters` gives the database. `countsLive`: the list was read with the
+    stored counts; without them the database applies no range and no Works on model, so neither does this. */
+export function meets(build: BuildsTableBuild, id: string, params: GalleryParams, now: number, countsLive = true): boolean {
+  const at = new Date(now);
+  const confirmed = build.lastConfirmedAt ? Date.parse(build.lastConfirmedAt) : NaN;
+  if (id === "shape") return (params.shapes ?? []).includes(build.shape);
+  if (id === "pattern") return Boolean(params.pattern && (build.patterns ?? []).includes(params.pattern));
+  if (id === "within") return params.within !== undefined && confirmed >= Date.parse(confirmedCutoff(params.within, at));
+  if (id === "state") {
+    if (build.reproductionCount < 1 || Number.isNaN(confirmed)) return false;
+    const fresh = confirmed >= Date.parse(confirmedCutoff(STALE_AFTER_DAYS, at));
+    return params.state === "confirmed" ? fresh : !fresh;
+  }
+  if (id === "model") {
+    const model = params.model ? modelById(params.model) : null;
+    if (!countsLive || !model) return true;
+    const keys = modelKeysOf(model);
+    return (build.workedModels ?? []).some((key) => keys.includes(key));
+  }
+  const range = params.ranges?.[id as RangeKey];
+  const value = RANGE_VALUE[id as RangeKey];
+  if (range && value) {
+    if (!countsLive) return true;
+    const count = value(build);
+    return typeof count === "number" && (range.min === undefined || count >= range.min) && (range.max === undefined || count <= range.max);
+  }
+  /* A facet: builds.facets is computeFacets(classification), written on every save; the stack also matches made_with. */
+  const facets = build.classifiedAs ? computeFacets(build.classifiedAs) : [];
+  const keys = keysOf(params.facets ?? [], id as Facet);
+  if (id === "stack") {
+    const tool = madeWithSpellings(params.tool);
+    const byTool = tool.length === 0 || build.madeWith.some((name) => tool.includes(name));
+    const spellings = stackSpellings(keys);
+    const byKeys = keys.length === 0 || keys.some((key) => facets.includes(key)) || build.madeWith.some((name) => spellings.includes(name));
+    return byTool && byKeys;
+  }
+  return keys.some((key) => facets.includes(key));
+}
+
+/** How many of the countable filters that hold a value a build meets. */
+export const conditionsMet = (build: BuildsTableBuild, params: GalleryParams, now: number, countsLive = true): number => countableIds(params).filter((id) => meets(build, id, params, now, countsLive)).length;
+
+/** The Match control's choices, m (All) down to 1; none with fewer than two countable filters. */
+export function matchChoices(params: GalleryParams): number[] {
+  const m = countableIds(params).length;
+  return m < 2 ? [] : Array.from({ length: m }, (_, at) => m - at);
+}
+
+/** The address with every countable filter and the match taken out: what the list is asked for while match applies. */
+export function requiredOnly(params: GalleryParams): GalleryParams {
+  const ranges = params.ranges?.sessions ? { sessions: params.ranges.sessions } : undefined;
+  return { ...params, facets: undefined, tool: undefined, shapes: undefined, pattern: undefined, within: undefined, state: undefined, model: undefined, ranges, match: undefined };
 }

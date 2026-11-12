@@ -1177,6 +1177,9 @@ export const CA03_FILES: readonly string[] = [
   // BF-13
   "src/pages/site/builds/columnDrag.ts",
 
+  // BF-14
+  "src/pages/site/builds/buildsModel.match.test.ts",
+
   // SV-14
   "src/lib/build/graph.ts",
   "src/pages/site/openbuilds/OpenBuildsFrame.tsx",

@@ -1109,3 +1109,94 @@ describe("BF-12 a second key with Shift", () => {
     }
   });
 });
+
+describe("BF-14 match some conditions", () => {
+  const field = (id: string) => ({ ...emptyClassification(), declared: { ...emptyClassification().declared, field: [{ id }] } });
+  /** Three candidates: law+agent+9 steps (3 of 3), law+app+40 steps (1 of 3), education+agent+9 steps (2 of 3). */
+  const candidates = [
+    { ...build(1), classifiedAs: field("law"), shape: "agent", stepCount: 9 },
+    { ...build(2), classifiedAs: field("law"), shape: "app", stepCount: 40 },
+    { ...build(3), classifiedAs: field("education"), shape: "agent", stepCount: 9 },
+  ];
+  const THREE = "f=field%3Alaw&shape=agent&steps=5-30";
+  /** The list answers the required-only ask with the candidates, and the ANDed ask with the one build that meets all three. */
+  const answer = (more = false) =>
+    listBuildsTable.mockImplementation(async (options: { facets: string[] }) =>
+      options.facets.length === 0 ? { countsLive: true, builds: more ? Array.from({ length: 50 }, (_, at) => ({ ...candidates[at % 3], id: `c${at}`, slug: `c${at}`, title: `Candidate ${at}` })) : candidates, total: more ? 120 : 3 } : { countsLive: true, builds: [candidates[0]], total: 1 },
+    );
+  const titles = () => screen.getAllByRole("link", { name: /^(Build|Candidate) \d+$/ }).map((link) => link.textContent);
+
+  it("with match unset, the list is asked exactly as before and no row is filtered in the browser", async () => {
+    answer();
+    renderAt(`/builds?${THREE}`);
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(listBuildsTable).toHaveBeenCalledTimes(1);
+    expect(listBuildsTable.mock.calls[0][0]).toEqual({
+      lens: "all", facets: ["field:law"], tool: undefined, shapes: ["agent"], pattern: undefined, stillOpen: false, query: undefined,
+      ranges: { steps: { min: 5, max: 30 } }, confirmedWithin: undefined, confirmedState: undefined, worksOn: undefined, sort: "reproduced", ascending: false, offset: 0,
+    });
+    expect(titles()).toEqual(["Build 1"]);
+  });
+
+  it("with match=2 and three countable filters on, the list is asked with the lens and the required filters only, and the rows shown are those meeting at least two", async () => {
+    answer();
+    renderAt(`/builds?${THREE}&match=2`);
+    await waitFor(() => expect(titles()).toEqual(["Build 1", "Build 3"]));
+    expect(listBuildsTable).toHaveBeenCalledWith(expect.objectContaining({ lens: "all", facets: [], shapes: [], ranges: undefined, offset: 0 }));
+  });
+
+  it('the head reads "<shown> of <published> builds" from the rows shown', async () => {
+    answer();
+    getGalleryStats.mockResolvedValue({ inGallery: 3, reproducedThisWeek: 0, weeklyGoal: null, freshPct: 50 });
+    renderAt(`/builds?${THREE}&match=2`);
+    expect(await screen.findByRole("heading", { level: 1, name: "2 of 3 builds" })).toBeTruthy();
+  });
+
+  it('when the lens holds more builds than one page, the Match control is disabled and a line says "Available when every build is loaded: <n> of <total> so far.", and Load all asks for the remaining pages', async () => {
+    answer(true);
+    renderAt(`/builds?${THREE}&match=2`);
+    await screen.findByRole("link", { name: "Build 1" });
+    await openFilters();
+    await waitFor(() => expect((screen.getByRole("combobox", { name: "Builds must match" }) as HTMLSelectElement).disabled).toBe(true));
+    expect(screen.getByText("Available when every build is loaded: 50 of 120 so far.")).toBeTruthy();
+    const asked = listBuildsTable.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: "Load all" }));
+    await waitFor(() => expect(listBuildsTable.mock.calls.length).toBeGreaterThan(asked));
+    expect(listBuildsTable).toHaveBeenCalledWith(expect.objectContaining({ facets: [], offset: 50 }));
+  });
+
+  it("the dialog's footer shows the Match control only with two or more countable filters in the draft, and the match count follows it", async () => {
+    answer();
+    renderAt("/builds?f=field%3Alaw&open=1");
+    await screen.findByRole("link", { name: "Build 1" });
+    await openFilters();
+    expect(screen.queryByRole("combobox", { name: "Builds must match" })).toBeNull();
+    closeFilters();
+  });
+
+  it("with the address's candidates all loaded, choosing at least 1 of 3 in the dialog counts the loaded rows with no request", async () => {
+    answer();
+    renderAt(`/builds?${THREE}&match=2`);
+    await waitFor(() => expect(titles()).toEqual(["Build 1", "Build 3"]));
+    await openFilters();
+    const select = screen.getByRole("combobox", { name: "Builds must match" }) as HTMLSelectElement;
+    expect([...select.options].map((option) => option.textContent)).toEqual(["All 3 filters", "At least 2 of 3", "At least 1 of 3"]);
+    expect(select.value).toBe("2");
+    const counted = countBuildsTable.mock.calls.length;
+    fireEvent.change(select, { target: { value: "1" } });
+    expect(await screen.findByText("3 builds match")).toBeTruthy();
+    expect(countBuildsTable.mock.calls.length).toBe(counted);
+  });
+
+  it('each chip of a countable filter is unchanged; one extra chip reads "Match · at least 2 of 3" and removing it returns to All', async () => {
+    answer();
+    renderAt(`/builds?${THREE}&match=2`);
+    const chips = await screen.findByRole("group", { name: "Active filters" });
+    expect(within(chips).getByRole("button", { name: "Remove filter Field" })).toBeTruthy();
+    expect(chips.textContent).toContain("Match");
+    expect(chips.textContent).toContain("at least 2 of 3");
+    fireEvent.click(within(chips).getByRole("button", { name: "Remove filter Match" }));
+    await waitFor(() => expect(address).toBe("/builds?shape=agent&f=field%3Alaw&steps=5-30"));
+    await waitFor(() => expect(titles()).toEqual(["Build 1"]));
+  });
+});

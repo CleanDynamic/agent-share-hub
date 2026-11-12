@@ -230,3 +230,12 @@ describe("BF-12 the sort's direction and the browser's keys", () => {
     expect(galleryHref(parse("q=inbox&sort=newest&model=sonnet-5-5&view=maps"))).toBe("/builds?view=maps&model=sonnet-5-5&sort=newest&q=inbox");
   });
 });
+
+describe("BF-14 match", () => {
+  it("match=2 is read and written; 0, a non-number, or a number at or above the count of countable filters is dropped", () => {
+    expect(parse("match=2").match).toBe(2);
+    expect(galleryHref(parse("f=field%3Alaw&sort=steps&dir=asc&match=2&q=notes"))).toBe("/builds?f=field%3Alaw&sort=steps&dir=asc&match=2&q=notes");
+    for (const value of ["0", "-1", "two", "2.5", ""]) expect(parse(`match=${value}`).match).toBeUndefined();
+    /* At or above the count: the address keeps it, and the page, which knows the count, treats it as All (BuildsPage tests). */
+  });
+});

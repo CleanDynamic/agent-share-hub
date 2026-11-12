@@ -153,6 +153,9 @@ export interface BuildsFiltersViewProps {
   onOpen: () => void;
   onRange?: (sectionId: string, value: readonly [number, number]) => void;
   onToggleSegment?: (sectionId: string, key: string) => void;
+  /** BF-14 (B6): "Builds must match", part of the draft; absent with fewer than two countable filters. `unavailable`: why it is
+      disabled (not every candidate is loaded), with Load all when that is still possible. */
+  match?: { choices: readonly number[]; value: number; onChange: (value: number) => void; unavailable?: string; onLoadAll?: () => void };
   /** BF-11 (B1): "Add a column for each filter", a layout setting that applies at once, not part of the draft. Absent: not drawn. */
   addColumns?: boolean;
   onAddColumns?: (on: boolean) => void;
@@ -624,7 +627,7 @@ export function BuildsFilters({ open, onOpenChange, ...props }: BuildsFiltersVie
           <OrderValues order={props.order} onOrder={props.onOrder} />
         </>
       }
-      footer={<FiltersFooter matchCount={props.matchCount} dirty={props.dirty} addColumns={props.addColumns} onAddColumns={props.onAddColumns} onClear={props.onClear} onCancel={() => close(false)} onApply={apply} />}
+      footer={<FiltersFooter matchCount={props.matchCount} dirty={props.dirty} match={props.match} addColumns={props.addColumns} onAddColumns={props.onAddColumns} onClear={props.onClear} onCancel={() => close(false)} onApply={apply} />}
     >
       <BuildsFiltersView {...props} search={search} />
     </BuildsFiltersDialog>
@@ -633,13 +636,14 @@ export function BuildsFilters({ open, onOpenChange, ...props }: BuildsFiltersVie
 
 /** BF-08 (A2): how many builds the draft matches, then Clear all, Cancel and Apply (the dialog's one primary). BF-11 (B1): beside
     the count, "Add a column for each filter", which applies at once. */
-function FiltersFooter({ matchCount, dirty, addColumns, onAddColumns, onClear, onCancel, onApply }: { matchCount: number | null; dirty: boolean; addColumns?: boolean; onAddColumns?: (on: boolean) => void; onClear: () => void; onCancel: () => void; onApply: () => void }) {
+function FiltersFooter({ matchCount, dirty, match, addColumns, onAddColumns, onClear, onCancel, onApply }: { matchCount: number | null; dirty: boolean; match?: BuildsFiltersViewProps["match"]; addColumns?: boolean; onAddColumns?: (on: boolean) => void; onClear: () => void; onCancel: () => void; onApply: () => void }) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 16px" }}>
         <span role="status" style={text(12.5, 400, t.text2)}>
           {matchCount === null ? "" : `${matchCount} ${matchCount === 1 ? "build matches" : "builds match"}`}
         </span>
+        {match ? <MatchControl match={match} /> : null}
         {onAddColumns ? (
           <label style={{ display: "inline-flex", alignItems: "center", gap: 8, minHeight: 24, cursor: "pointer", ...text(12.5, 400, t.text2) }}>
             <Checkbox checked={addColumns !== false} onChange={(event) => onAddColumns(event.currentTarget.checked)} />
@@ -655,6 +659,33 @@ function FiltersFooter({ matchCount, dirty, addColumns, onAddColumns, onClear, o
         </Button>
       </div>
     </div>
+  );
+}
+
+/** BF-14 (B6): "Builds must match", a native select 32 high (44 on a phone): All m filters, or at least m-1 down to 1 of m. */
+function MatchControl({ match }: { match: NonNullable<BuildsFiltersViewProps["match"]> }) {
+  const phone = useIsPhone();
+  const id = useId();
+  const m = match.choices[0];
+  return (
+    <span style={{ display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: 8, ...text(12.5, 400, t.text2) }}>
+      <label htmlFor={id}>Builds must match</label>
+      <select
+        id={id}
+        value={match.value}
+        disabled={Boolean(match.unavailable)}
+        onChange={(event) => match.onChange(Number(event.currentTarget.value))}
+        style={{ height: phone ? 44 : 32, padding: "0 8px", borderRadius: r.chip, fontFamily: FIGTREE, fontSize: phone ? 16 : 12.5, color: t.text, ...WELL }}
+      >
+        {match.choices.map((choice) => (
+          <option key={choice} value={choice}>
+            {choice === m ? `All ${m} filters` : `At least ${choice} of ${m}`}
+          </option>
+        ))}
+      </select>
+      {match.unavailable ? <span>{match.unavailable}</span> : null}
+      {match.onLoadAll ? <BuildsTextButton onClick={match.onLoadAll}>Load all</BuildsTextButton> : null}
+    </span>
   );
 }
 
