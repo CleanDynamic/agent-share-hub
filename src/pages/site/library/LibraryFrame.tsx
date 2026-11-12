@@ -3,13 +3,14 @@
    state), so the Placeholder carries none of the page's code (its table, panels and dialogs).
 
    The board is `design/reference/vision/dusk/library.html`. The surface and its padding belong to the site frame; what is
-   here starts at the page head. Columns `208px minmax(0, 1fr) 340px`, 48 apart; below 1200 the selected item moves under
-   the others; below 800 one column. */
+   here starts at the page head. Three columns are the page grid's feed template (3 / 6 / 3, 32 gutters); below 1200 the
+   selected item moves under the others (`208px minmax(0, 1fr)`, 48 apart); below 800 one column. */
 
 import type { CSSProperties, ReactNode } from "react";
 
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { pageColumns } from "@/components/shell/pageGrid";
 import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
 import { PageLink as Link } from "@/lib/routing/PageLink";
 import { ring } from "@/lib/theme/controls";
@@ -41,7 +42,7 @@ export function useLibraryLayout(): LibraryLayout {
 const ROOT: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.text, fontVariantNumeric: "tabular-nums" };
 
 const COLUMNS: Record<LibraryLayout, CSSProperties> = {
-  three: { gridTemplateColumns: "208px minmax(0, 1fr) 340px", columnGap: 48 },
+  three: pageColumns("feed"),
   two: { gridTemplateColumns: "208px minmax(0, 1fr)", columnGap: 48, rowGap: 48 },
   one: { gridTemplateColumns: "minmax(0, 1fr)", rowGap: 40 },
 };
