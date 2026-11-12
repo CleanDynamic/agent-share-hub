@@ -911,3 +911,110 @@ describe("BF-11 a filter's column", () => {
     expect(screen.getByRole("button", { name: "Columns: 10 of 25" })).toBeTruthy();
   });
 });
+
+describe("BF-12 every head sorts when its answer is true", () => {
+  const many = (countsLive = false) => listBuildsTable.mockResolvedValue({ countsLive, builds: Array.from({ length: 50 }, (_, at) => build(at + 1)), total: 120 });
+  const withFields = () =>
+    listBuildsTable.mockResolvedValue({
+      builds: [
+        { ...build(1), classifiedAs: { ...emptyClassification(), declared: { ...emptyClassification().declared, field: [{ id: "education" }] } } },
+        { ...build(2), classifiedAs: { ...emptyClassification(), declared: { ...emptyClassification().declared, field: [{ id: "law" }] } } },
+      ],
+      total: 2,
+    });
+  const titles = () => screen.getAllByRole("link", { name: /^Build \d+$/ }).map((link) => link.textContent);
+  const head = (name: RegExp) => screen.getByRole("columnheader", { name });
+  const query = () => new URLSearchParams(address.split("?")[1]);
+
+  it("every drawn column's head is a button when the whole list is loaded", async () => {
+    renderAt("/builds");
+    await screen.findByRole("link", { name: "Build 1" });
+    const heads = screen.getAllByRole("columnheader");
+    expect(heads.length).toBe(10);
+    for (const cell of heads) expect(within(cell).queryByRole("button")).toBeTruthy();
+  });
+
+  it("with more pages to load, only Reproductions, Last confirmed, Rebuilds, Steps, Sessions and Published are buttons; the rest are text", async () => {
+    many(true);
+    localStorage.setItem("builds:layout:v1", JSON.stringify({ columns: ["build", "field", "steps", "sessions", "reproductions", "confirmed", "rebuilds", "published", "skill"], calculations: [] }));
+    renderAt("/builds");
+    await screen.findByRole("link", { name: "Build 1" });
+    const buttons = screen.getAllByRole("columnheader").filter((cell) => within(cell).queryByRole("button")).map((cell) => cell.textContent?.replace(/[↑↓2]/g, ""));
+    expect(buttons).toEqual(["Steps", "Sessions", "Reproductions", "Confirmed", "Rebuilds", "Published"]);
+  });
+
+  it("pressing Field (whole list loaded) writes by=field and reorders the rows without asking the list again", async () => {
+    withFields();
+    renderAt("/builds");
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(titles()).toEqual(["Build 1", "Build 2"]);
+    const asked = listBuildsTable.mock.calls.length;
+    fireEvent.click(within(head(/^Field/)).getByRole("button"));
+    await waitFor(() => expect(query().get("by")).toBe("field"));
+    expect(titles()).toEqual(["Build 2", "Build 1"]);
+    expect(listBuildsTable.mock.calls.length).toBe(asked);
+  });
+
+  it("pressing it again writes dir=asc; a third press clears by and dir", async () => {
+    withFields();
+    renderAt("/builds?by=field");
+    await screen.findByRole("link", { name: "Build 1" });
+    fireEvent.click(within(head(/^Field/)).getByRole("button"));
+    await waitFor(() => expect(query().get("dir")).toBe("asc"));
+    expect(titles()).toEqual(["Build 1", "Build 2"]);
+    fireEvent.click(within(head(/^Field/)).getByRole("button"));
+    await waitFor(() => expect(address).toBe("/builds"));
+  });
+
+  it("pressing Steps writes sort=steps and asks the list; again, dir=asc; a third press returns to the default sort", async () => {
+    listBuildsTable.mockResolvedValue({ countsLive: true, builds: [build(1), build(2)], total: 2 });
+    renderAt("/builds");
+    await screen.findByRole("link", { name: "Build 1" });
+    fireEvent.click(within(head(/^Steps/)).getByRole("button"));
+    await waitFor(() => expect(address).toBe("/builds?sort=steps"));
+    await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ sort: "steps", ascending: false })));
+    fireEvent.click(within(head(/^Steps/)).getByRole("button"));
+    await waitFor(() => expect(address).toBe("/builds?sort=steps&dir=asc"));
+    await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ sort: "steps", ascending: true })));
+    fireEvent.click(within(head(/^Steps/)).getByRole("button"));
+    await waitFor(() => expect(address).toBe("/builds"));
+  });
+
+  it("pressing Reproductions, the default sort, only flips the direction", async () => {
+    renderAt("/builds");
+    await screen.findByRole("link", { name: "Build 1" });
+    fireEvent.click(within(head(/^Reproductions/)).getByRole("button"));
+    await waitFor(() => expect(address).toBe("/builds?dir=asc"));
+    fireEvent.click(within(head(/^Reproductions/)).getByRole("button"));
+    await waitFor(() => expect(address).toBe("/builds"));
+  });
+
+  it("aria-sort is descending, ascending or none on each head, and the arrow matches", async () => {
+    withFields();
+    renderAt("/builds?by=field&dir=asc");
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(head(/^Field/).getAttribute("aria-sort")).toBe("ascending");
+    expect(head(/^Field/).textContent).toContain("↑");
+    for (const cell of screen.getAllByRole("columnheader").filter((entry) => !/^Field/.test(entry.textContent ?? ""))) {
+      expect(cell.getAttribute("aria-sort")).toBe("none");
+      expect(cell.textContent).not.toMatch(/[↑↓]/);
+    }
+  });
+
+  it("an address with by=field while more pages exist draws no arrow on Field and sorts by the server's order", async () => {
+    many();
+    renderAt("/builds?by=field");
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(head(/^Field/).getAttribute("aria-sort")).toBeNull();
+    expect(head(/^Field/).textContent).not.toMatch(/[↑↓]/);
+    expect(head(/^Reproductions/).getAttribute("aria-sort")).toBe("descending");
+    expect(titles().slice(0, 3)).toEqual(["Build 1", "Build 2", "Build 3"]);
+    expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ sort: "reproduced", ascending: false }));
+  });
+
+  it("with sort=newest and no Published column chosen, the Published column is drawn", async () => {
+    renderAt("/builds?sort=newest");
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(head(/^Published/).getAttribute("aria-sort")).toBe("descending");
+  });
+});

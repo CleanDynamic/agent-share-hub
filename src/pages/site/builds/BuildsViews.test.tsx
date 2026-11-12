@@ -97,12 +97,13 @@ describe("the Table", () => {
   });
 
   it("says which column is sorted, and a sortable head chooses its sort", () => {
-    const onChange = vi.fn();
-    draw((p) => ({ ...p, table: { ...p.table!, sort: { ...p.table!.sort, onChange } } }));
+    // BF-12: a head calls onSortColumn with its column; the page works out the sort.
+    const onSortColumn = vi.fn();
+    draw((p) => ({ ...p, table: { ...p.table!, onSortColumn } }));
     expect(screen.getByRole("columnheader", { name: /Reproductions/ }).getAttribute("aria-sort")).toBe("descending");
     expect(screen.getByRole("columnheader", { name: "Confirmed" }).getAttribute("aria-sort")).toBe("none");
     fireEvent.click(screen.getByRole("button", { name: "Confirmed" }));
-    expect(onChange).toHaveBeenCalledWith("confirmed");
+    expect(onSortColumn).toHaveBeenCalledWith("confirmed", false);
   });
 
   it("puts a row's build, maker, numbers and lamp where the board does", () => {

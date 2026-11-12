@@ -4,7 +4,9 @@
 import { describe, expect, it } from "vitest";
 
 import type { TableRowView } from "./BuildsTableView";
-import { sortRows } from "./buildsModel";
+import type { GalleryParams } from "@/lib/build/galleryParams";
+
+import { SERVER_SORT, SORT_COLUMN, nextSort, sortRows } from "./buildsModel";
 
 const row = (id: string, over: Partial<TableRowView> = {}): TableRowView => ({
   id, href: `/b2/${id}`, title: id, maker: "kit", built: "", field: "", tools: [], steps: null, sessions: null, reproductions: 0,
@@ -76,5 +78,43 @@ describe("BF-12 sortRows", () => {
     const rows = [row("a", { field: "Law", reproductions: 1 }), row("b", { field: "Sales", reproductions: 9 }), row("c", { field: "Law", reproductions: 5 })];
     expect(ids(sortRows(rows, "field", true, "reproductions", false))).toEqual(["c", "a", "b"]);
     expect(ids(sortRows(rows, "field", true, "reproductions", true))).toEqual(["a", "c", "b"]);
+  });
+});
+
+describe("BF-12 nextSort", () => {
+  const base: GalleryParams = { lens: "all", madeFor: [], madeWith: [], query: null };
+  const keys = (params: GalleryParams) => ({ sort: params.sort, dir: params.dir, by: params.by, by2: params.by2, dir2: params.dir2 });
+
+  it("SORT_COLUMN is SERVER_SORT turned round", () => {
+    expect(SERVER_SORT).toEqual({ reproductions: "reproduced", confirmed: "confirmed", rebuilds: "rebuilt", steps: "steps", sessions: "sessions", published: "newest" });
+    for (const [column, sort] of Object.entries(SERVER_SORT)) expect(SORT_COLUMN[sort!]).toBe(column);
+  });
+
+  it("a server column: its sort, then ascending, then the default sort", () => {
+    const one = nextSort(base, "steps", false);
+    expect(keys(one)).toEqual({ sort: "steps", dir: undefined, by: undefined, by2: undefined, dir2: undefined });
+    const two = nextSort(one, "steps", false);
+    expect(keys(two)).toMatchObject({ sort: "steps", dir: "asc" });
+    expect(keys(nextSort(two, "steps", false))).toEqual({ sort: undefined, dir: undefined, by: undefined, by2: undefined, dir2: undefined });
+  });
+
+  it("the default sort's column only flips the direction", () => {
+    const one = nextSort(base, "reproductions", true);
+    expect(keys(one)).toMatchObject({ sort: undefined, dir: "asc" });
+    expect(keys(nextSort(one, "reproductions", true))).toMatchObject({ sort: undefined, dir: undefined });
+  });
+
+  it("a server column clears the browser's keys", () => {
+    expect(keys(nextSort({ ...base, by: "field", dir: "asc", by2: "likes", dir2: "asc" }, "rebuilds", true))).toEqual({ sort: "rebuilt", dir: undefined, by: undefined, by2: undefined, dir2: undefined });
+  });
+
+  it("any other column, only when every build is loaded: by, then ascending, then none; the server sort is kept", () => {
+    const start = { ...base, sort: "steps" as const };
+    expect(nextSort(start, "field", false)).toBe(start);
+    const one = nextSort(start, "field", true);
+    expect(keys(one)).toEqual({ sort: "steps", dir: undefined, by: "field", by2: undefined, dir2: undefined });
+    const two = nextSort(one, "field", true);
+    expect(keys(two)).toMatchObject({ by: "field", dir: "asc" });
+    expect(keys(nextSort(two, "field", true))).toEqual({ sort: "steps", dir: undefined, by: undefined, by2: undefined, dir2: undefined });
   });
 });

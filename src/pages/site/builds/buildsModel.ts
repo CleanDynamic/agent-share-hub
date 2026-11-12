@@ -285,10 +285,10 @@ export function filteredColumns(params: GalleryParams): ColumnId[] {
   return [...new Set(activeFilterIds(params).flatMap((id) => (FILTER_COLUMN[id] ? [FILTER_COLUMN[id]] : [])))];
 }
 
-/** The columns drawn: the reader's, then each filtered one that is available and not already there, in the table's own order. */
-export function drawnColumns(chosen: readonly ColumnId[], filtered: readonly ColumnId[], on: boolean, countsLive: boolean): ColumnId[] {
-  if (!on) return [...chosen];
-  const added = new Set(filtered.filter((id) => !chosen.includes(id)));
+/** The columns drawn: the reader's, then each filtered one that is available and not already there, in the table's own order.
+    BF-12: and the column of a sort the reader chose (Published, while the sort is Newest), whatever the setting. */
+export function drawnColumns(chosen: readonly ColumnId[], filtered: readonly ColumnId[], on: boolean, countsLive: boolean, sorted: ColumnId | null = null): ColumnId[] {
+  const added = new Set([...(on ? filtered : []), ...(sorted ? [sorted] : [])].filter((id) => !chosen.includes(id)));
   return [...chosen, ...availableColumns(countsLive).filter((id) => added.has(id))];
 }
 
@@ -627,4 +627,31 @@ export const SORT_OPTIONS: readonly { value: GalleryFeedSort; label: string }[] 
 ];
 
 /** The column each sort draws its arrow on; Newest has none. */
-export const SORT_COLUMN: Partial<Record<GalleryFeedSort, ColumnId>> = { reproduced: "reproductions", confirmed: "confirmed", rebuilt: "rebuilds" };
+/** BF-12: the columns the database can sort, so their answer is true for the whole list however many pages there are. */
+export const SERVER_SORT: Partial<Record<ColumnId, GalleryFeedSort>> = { reproductions: "reproduced", confirmed: "confirmed", rebuilds: "rebuilt", steps: "steps", sessions: "sessions", published: "newest" };
+
+/** A server sort's column. */
+export const SORT_COLUMN = Object.fromEntries(Object.entries(SERVER_SORT).map(([column, sort]) => [sort, column])) as Partial<Record<GalleryFeedSort, ColumnId>>;
+
+/** The address without any sort: the resting order. */
+const withoutSort = (params: GalleryParams): GalleryParams => ({ ...params, sort: undefined, dir: undefined, by: undefined, by2: undefined, dir2: undefined });
+
+/**
+ * BF-12: what pressing a head does. A column the database sorts: its sort, then ascending, then the resting sort (the resting
+ * sort's own column has only the two). Any other column, only when every matching build is loaded (`allLoaded`): `by` with the
+ * server sort kept, then ascending, then none. A plain press clears the second key.
+ */
+export function nextSort(params: GalleryParams, column: ColumnId, allLoaded: boolean): GalleryParams {
+  const server = SERVER_SORT[column];
+  if (server) {
+    const current = params.sort ?? DEFAULT_GALLERY_SORT;
+    if (current !== server || params.by) return { ...withoutSort(params), sort: server === DEFAULT_GALLERY_SORT ? undefined : server };
+    if (params.dir !== "asc") return { ...withoutSort(params), sort: params.sort, dir: "asc" };
+    return withoutSort(params);
+  }
+  if (!allLoaded) return params;
+  const kept = { ...params, by2: undefined, dir2: undefined };
+  if (params.by !== column) return { ...kept, by: column, dir: undefined };
+  if (params.dir !== "asc") return { ...kept, dir: "asc" };
+  return { ...kept, by: undefined, dir: undefined };
+}

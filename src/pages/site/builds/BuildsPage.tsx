@@ -53,6 +53,7 @@ import { BuildsView, statParts } from "./BuildsView";
 import {
   LENS_LABEL,
   MAPS_PAGE,
+  SERVER_SORT,
   SORT_COLUMN,
   SORT_OPTIONS,
   activeChips,
@@ -67,8 +68,10 @@ import {
   footerCalculations,
   lensCountParams,
   listParamsOf,
+  nextSort,
   nextTableOffset,
   panelSections,
+  sortRows,
   tableFooter,
   tableRow,
   toggled,
@@ -78,7 +81,7 @@ import {
   type PanelOrder,
 } from "./buildsModel";
 import { BuildsClassificationView, BuildsMapsPane, prefetchView } from "./buildsViews";
-import { EXTRA_COLUMNS, type ExtraColumnId } from "./BuildsTableView";
+import { EXTRA_COLUMNS, type ColumnId, type ExtraColumnId } from "./BuildsTableView";
 import { useBuildsLayout } from "./useBuildsLayout";
 import { cardOf, readFacetChoice, writeFacetChoice } from "./classificationModel";
 import type { MapsDirection } from "./BuildsMapsView";
@@ -208,9 +211,18 @@ export default function BuildsPage() {
      Classification link, an opened set and Back draw them too; the reader's own list is never written by a filter. */
   const chosen = chosenColumns(layout.columns, countsLive);
   const filterColumns = filteredColumns(params);
-  const columns = drawnColumns(chosen, filterColumns, layout.filterColumns, countsLive);
+  /* BF-12: the column of a sort the reader chose is drawn too (Published, while the sort is Newest). */
+  const columns = drawnColumns(chosen, filterColumns, layout.filterColumns, countsLive, params.sort ? (SORT_COLUMN[params.sort] ?? null) : null);
   const extras = columns.filter((id): id is ExtraColumnId => (EXTRA_COLUMNS as readonly string[]).includes(id));
-  const rows = builds.map((build) => tableRow(build, now, extras));
+  /* BF-12 (B3): a head sorts only where its answer is true for the whole list. With every matching build loaded, any drawn
+     column sorts here, with no request; with more pages, only the columns the database sorts. */
+  const allLoaded = !list.hasNextPage && !list.isPlaceholderData;
+  const sortable = new Set(allLoaded ? columns : columns.filter((id) => SERVER_SORT[id]));
+  const byColumn = params.by as ColumnId | undefined;
+  const browserSort = allLoaded && byColumn !== undefined && columns.includes(byColumn) ? byColumn : null;
+  const by2Column = browserSort && params.by2 && columns.includes(params.by2 as ColumnId) ? (params.by2 as ColumnId) : undefined;
+  const loadedRows = builds.map((build) => tableRow(build, now, extras));
+  const rows = browserSort ? sortRows(loadedRows, browserSort, params.dir === "asc", by2Column, params.dir2 === "asc") : loadedRows;
   const calculationChoices = calculationOptions(layout.calculations, columns);
   const loading = list.isLoading;
   /* BF-02 (C2): the rows on screen are the last address's until the new page lands. They stay, and say so. */
@@ -471,8 +483,9 @@ export default function BuildsPage() {
                 layout.filterColumns ? filterColumns : [],
               ),
               rows,
-              sortColumn: SORT_COLUMN[sort] ? { id: SORT_COLUMN[sort]!, ascending: false } : null,
-              sortableBy: { reproductions: "reproduced", confirmed: "confirmed", rebuilds: "rebuilt" },
+              sortColumn: browserSort ? { id: browserSort, ascending: params.dir === "asc" } : SORT_COLUMN[sort] ? { id: SORT_COLUMN[sort]!, ascending: listParams.ascending === true } : null,
+              sortable,
+              onSortColumn: (id) => go(nextSort(params, id, allLoaded)),
               filtered: new Set(filterColumns),
               footer: {
                 ...tableFooter(total, rows),
