@@ -546,3 +546,55 @@ describe("the grouped chooser", () => {
     expect(onReset).toHaveBeenCalled();
   });
 });
+
+describe("BF-11 a filtered head", () => {
+  const props = (filtered: readonly ColumnId[], columns: readonly ColumnId[]) => ({ ...visionBuildsTableViewProps(), columns, filtered: new Set(filtered) });
+  const drawFiltered = (filtered: readonly ColumnId[], columns: readonly ColumnId[] = ["build", "field", "reproductions", "autonomy"]) =>
+    render(
+      <MemoryRouter>
+        <BuildsTableView {...props(filtered, columns)} />
+      </MemoryRouter>,
+    );
+  /* jsdom drops a `var(...)` from inline style, so the look is read from the markup React writes. One head's markup, by its name. */
+  const headMarkup = (filtered: readonly ColumnId[], columns: readonly ColumnId[], name: string) => {
+    const markup = renderToStaticMarkup(
+      <MemoryRouter>
+        <BuildsTableView {...props(filtered, columns)} />
+      </MemoryRouter>,
+    );
+    return markup.match(/<th[^>]*>.*?<\/th>/g)!.find((head) => head.replace(/<[^>]+>/g, "").startsWith(name))!;
+  };
+  const UNDERLINE = "border-bottom:1px solid var(--selected-edge)";
+
+  it('a filtered column\'s head is in --text at weight 500 with a 1px --selected-edge underline, and its name ends ", filtered" for a screen reader', () => {
+    drawFiltered(["autonomy"]);
+    expect(screen.getByRole("columnheader", { name: /Autonomy, filtered/ })).toBeTruthy();
+    const head = headMarkup(["autonomy"], ["build", "field", "reproductions", "autonomy"], "Autonomy");
+    expect(head).toMatch(/^<th[^>]*style="[^"]*color:var\(--text\)/);
+    expect(head).toContain("font-weight:500");
+    expect(head).toContain(UNDERLINE);
+  });
+
+  it("a column that is not filtered has no underline and no such text", () => {
+    drawFiltered(["autonomy"]);
+    expect(screen.getByRole("columnheader", { name: "Field" }).textContent).not.toMatch(/filtered/);
+    const head = headMarkup(["autonomy"], ["build", "field", "reproductions", "autonomy"], "Field");
+    expect(head).not.toContain("border-bottom:1px solid var(--selected-edge)");
+    expect(head).toMatch(/^<th[^>]*style="[^"]*color:var\(--label\)/);
+  });
+
+  it("a column that is both sorted and filtered shows the arrow and the underline", () => {
+    drawFiltered(["reproductions"]);
+    const head = screen.getByRole("columnheader", { name: /Reproductions, filtered/ });
+    expect(head.getAttribute("aria-sort")).toBe("descending");
+    expect(head.textContent).toContain("↓");
+    expect(headMarkup(["reproductions"], ["build", "field", "reproductions"], "Reproductions")).toMatch(/<button[^>]*border-bottom:1px solid var\(--selected-edge\)/);
+  });
+
+  it("the mark is drawn with the setting off too", () => {
+    // With "Add a column for each filter" off the page draws only the reader's columns but still passes what is filtered: a
+    // column the reader ticked themselves is still marked.
+    drawFiltered(["field"], ["build", "field", "reproductions"]);
+    expect(screen.getByRole("columnheader", { name: /Field, filtered/ })).toBeTruthy();
+  });
+});

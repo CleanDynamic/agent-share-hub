@@ -164,6 +164,8 @@ export function visionBuildsTableProps(): BuildsViewProps {
       onOpen: noop,
       onRange: noop,
       onToggleSegment: noop,
+      addColumns: true,
+      onAddColumns: noop,
     },
     table: {
       lenses: [{ value: "all", label: "All" }, { value: "proven", label: "Reproduced" }, { value: "rebuilt", label: "Rebuilt" }, { value: "unsolved", label: "Still open" }],
@@ -182,6 +184,8 @@ export function visionBuildsTableProps(): BuildsViewProps {
       rows: visionBuildsRows,
       sortColumn: { id: "reproductions", ascending: false },
       sortableBy: { reproductions: "reproduced", confirmed: "confirmed", rebuilds: "rebuilt" },
+      /* BF-11: the drawn columns the sample's chips filter on. */
+      filtered: new Set(["field", "tools", "reproductions", "steps"]),
       footer: { count: "18 builds", mostCommon: "Most common · Sales, Claude Code", median: "Median 11 steps", total: "Total 214", onCalculate: noop },
     },
   };

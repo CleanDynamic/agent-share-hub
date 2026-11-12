@@ -188,6 +188,8 @@ export interface BuildsTableViewProps {
   sortColumn: { id: ColumnId; ascending: boolean } | null;
   /** Column heads that sort: id to the sort value they choose. */
   sortableBy: Partial<Record<ColumnId, string>>;
+  /** BF-11 (B2): the columns a filter in the address holds a value for; their heads are marked. */
+  filtered?: ReadonlySet<ColumnId>;
   footer: TableFooterView;
   /** More rows exist than are shown. */
   onMore?: () => void;
@@ -321,22 +323,32 @@ export function RowLamp({ lit }: { lit: boolean }) {
 const th = (right: boolean, last: boolean): React.CSSProperties => ({ ...text(12, 400, t.label), padding: last ? "0 0 10px" : "0 12px 10px 0", borderBottom: `1px solid ${t.hairline}`, textAlign: right ? "right" : "left", verticalAlign: "bottom", whiteSpace: "nowrap" });
 const td = (right: boolean, last: boolean): React.CSSProperties => ({ padding: last ? 0 : "0 12px 0 0", height: TABLE_ROW, textAlign: right ? "right" : "left", whiteSpace: "nowrap" });
 
-function ColumnHead({ id, last, sorted, sortValue, onSort }: { id: ColumnId; last: boolean; sorted: { ascending: boolean } | null; sortValue?: string; onSort: (value: string) => void }) {
+/** BF-11 (B2): a filtered head is in `--text` at 500 over a 1px `--selected-edge` line, and says so to a screen reader. No icon,
+    and pressing it still only sorts: the way to the filter is the Filters button and the chip. The head and its button are named
+    "Autonomy, filtered" by `aria-label`, not by a hidden piece after the name: that gets a space before its comma in some engines,
+    and would join the head's text. */
+const FILTERED_MARK: React.CSSProperties = { fontWeight: 500, borderBottom: `1px solid ${t.selectedEdge}` };
+
+function ColumnHead({ id, last, sorted, sortValue, onSort, filtered }: { id: ColumnId; last: boolean; sorted: { ascending: boolean } | null; sortValue?: string; onSort: (value: string) => void; filtered: boolean }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   const right = RIGHT.has(id);
   const ariaSort = sorted ? (sorted.ascending ? "ascending" : "descending") : sortValue ? "none" : undefined;
+  const label = filtered ? `${HEAD[id]}, filtered` : undefined;
   return (
-    <th scope="col" aria-sort={ariaSort} style={{ ...th(right, last), color: sorted ? t.text : t.label }}>
+    <th scope="col" aria-sort={ariaSort} aria-label={label} style={{ ...th(right, last), color: sorted || filtered ? t.text : t.label }}>
       {sortValue ? (
         <button
           type="button"
           onClick={() => onSort(sortValue)}
+          aria-label={label}
           {...handlers}
-          style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: 0, ...hitArea(2), font: "inherit", color: state.hovered ? t.text : "inherit", cursor: "pointer", borderRadius: r.chip, ...ring(state.focusVisible) }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: 0, ...hitArea(2), font: "inherit", color: state.hovered ? t.text : "inherit", cursor: "pointer", borderRadius: r.chip, ...ring(state.focusVisible), ...(filtered ? FILTERED_MARK : null) }}
         >
           {HEAD[id]}
           {sorted ? <span aria-hidden="true">{sorted.ascending ? "↑" : "↓"}</span> : null}
         </button>
+      ) : filtered ? (
+        <span style={FILTERED_MARK}>{HEAD[id]}</span>
       ) : (
         HEAD[id]
       )}
@@ -571,7 +583,7 @@ function Footer({ columns, footer }: { columns: readonly ColumnId[]; footer: Tab
 /* ── the table ── */
 
 export function BuildsTableView(props: BuildsTableViewProps) {
-  const { lenses, lens, onLens, sort, columnsLabel, columnsMenu, chips, onRemoveChip, onClearAll, columns, rows, sortColumn, sortableBy, footer, onMore, loadingMore, empty, updating, activeCount, onOpenFilters, setName } = props;
+  const { lenses, lens, onLens, sort, columnsLabel, columnsMenu, chips, onRemoveChip, onClearAll, columns, rows, sortColumn, sortableBy, filtered, footer, onMore, loadingMore, empty, updating, activeCount, onOpenFilters, setName } = props;
   return (
     <div data-testid="builds-table">
       <LensRow lenses={lenses} lens={lens} onLens={onLens} sort={sort} columnsLabel={columnsLabel} columnsMenu={columnsMenu} updating={updating} activeCount={activeCount} onOpenFilters={onOpenFilters} setName={setName} />
@@ -591,6 +603,7 @@ export function BuildsTableView(props: BuildsTableViewProps) {
                     sorted={sortColumn?.id === id ? sortColumn : null}
                     sortValue={sortableBy[id]}
                     onSort={sort.onChange}
+                    filtered={filtered?.has(id) === true}
                   />
                 ))}
               </tr>

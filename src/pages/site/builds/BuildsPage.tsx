@@ -473,6 +473,7 @@ export default function BuildsPage() {
               rows,
               sortColumn: SORT_COLUMN[sort] ? { id: SORT_COLUMN[sort]!, ascending: false } : null,
               sortableBy: { reproductions: "reproduced", confirmed: "confirmed", rebuilds: "rebuilt" },
+              filtered: new Set(filterColumns),
               footer: {
                 ...tableFooter(total, rows),
                 calculations: footerCalculations(layout.calculations, columns, rows, (calculation) => update((current) => withCalculation(current, calculation, false))),
