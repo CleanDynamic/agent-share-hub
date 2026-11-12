@@ -2027,16 +2027,6 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     why: "SV-11: the Builds board puts its filters and its table 56 apart (series README, Visual grammar 7).",
   },
   {
-    rule: "spacing 28 is not in SPACE_REFINED",
-    text: `<aside aria-label="Your studio" style={{ padding: "8px 28px 48px 4px",`,
-    why: "SV-10: the Home board: the left column is padded 8 28 48 4.",
-  },
-  {
-    rule: "spacing 28 is not in SPACE_REFINED",
-    text: `<aside aria-label="The room" style={{ padding: "8px 4px 48px 28px",`,
-    why: "SV-10: the Home board: the right column is padded 8 4 48 28.",
-  },
-  {
     rule: "spacing 14 is not in SPACE_REFINED",
     text: `columnGap: 10, paddingBottom: last ? 0 : 14,`,
     why: "SV-10: the Home board: Since you were last here: a timeline line every 14, its dot and text 10 apart.",

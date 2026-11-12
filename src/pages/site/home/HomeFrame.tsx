@@ -3,16 +3,18 @@
    loads, from the same pieces, so the route table's Placeholder is the page's own loading state without the page's code
    (the post, its thread, the engagement row) in the first download.
 
-   The board is `design/reference/vision/dusk/home.html`. The surface and its padding (`24px clamp(16px, 2.2vw, 32px) 0`)
-   belong to the site frame (`board="home"`); what is here starts at the columns.
+   The board is `design/reference/vision/dusk/home.html`. The surface and its padding belong to the site frame; what is
+   here starts at the columns.
 
-   COLUMNS. `280px minmax(0, 628px) 300px`, centred, no gap; the centre has a hairline either side. Below 1100 the left
-   column is hidden; below 760 one column: the Drafts line, the feed, then the right column's sections in order. */
+   COLUMNS. The page grid's feed template (3 / 6 / 3, 32 gutters); the centre has a hairline either side, centred in its
+   gutter. Below 1100 the left column is hidden (`minmax(0, 628px) 300px`, centred, the same gutter); below 760 one
+   column: the Drafts line, the feed, then the right column's sections in order. */
 
 import type { CSSProperties, ReactNode } from "react";
 
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { PAGE_GUTTER, pageColumns } from "@/components/shell/pageGrid";
 import { useMinWidth } from "@/components/shell/useMinWidth";
 import { PageLink as Link } from "@/lib/routing/PageLink";
 import { ring } from "@/lib/theme/controls";
@@ -172,21 +174,20 @@ export function HomeColumns({
       data-testid="home-view"
       data-layout={layout}
       style={{
-        display: "grid",
-        gridTemplateColumns: three ? "280px minmax(0, 628px) 300px" : "minmax(0, 628px) 300px",
-        justifyContent: "center",
+        ...(three ? pageColumns("feed") : { display: "grid", gridTemplateColumns: "minmax(0, 628px) 300px", columnGap: PAGE_GUTTER, justifyContent: "center" }),
         ...root,
       }}
     >
       {three ? (
-        <aside aria-label="Your studio" style={{ padding: "8px 28px 48px 4px", display: "flex", flexDirection: "column", gap: 32, minWidth: 0 }}>
+        <aside aria-label="Your studio" style={{ padding: "8px 0 48px", display: "flex", flexDirection: "column", gap: 32, minWidth: 0 }}>
           {left}
         </aside>
       ) : null}
-      <section aria-label="Feed" style={{ borderLeft: `1px solid ${t.hairline}`, borderRight: `1px solid ${t.hairline}`, minWidth: 0, padding: "0 0 48px" }}>
+      {/* The hairlines sit in the middle of the gutters: the section reaches half a gutter into each. */}
+      <section aria-label="Feed" style={{ borderLeft: `1px solid ${t.hairline}`, borderRight: `1px solid ${t.hairline}`, minWidth: 0, padding: "0 0 48px", margin: `0 -${PAGE_GUTTER / 2}px` }}>
         {centre}
       </section>
-      <aside aria-label="The room" style={{ padding: "8px 4px 48px 28px", display: "flex", flexDirection: "column", gap: 32, minWidth: 0 }}>
+      <aside aria-label="The room" style={{ padding: "8px 0 48px", display: "flex", flexDirection: "column", gap: 32, minWidth: 0 }}>
         {right}
       </aside>
     </div>
