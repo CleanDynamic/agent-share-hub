@@ -1157,7 +1157,7 @@ describe("BF-14 match some conditions", () => {
     renderAt(`/builds?${THREE}&match=2`);
     await screen.findByRole("link", { name: "Build 1" });
     await openFilters();
-    await waitFor(() => expect((screen.getByRole("combobox", { name: "Builds must match" }) as HTMLSelectElement).disabled).toBe(true));
+    await waitFor(() => expect((screen.getByRole("button", { name: /^Builds must match/ }) as HTMLButtonElement).disabled).toBe(true));
     expect(screen.getByText("Available when every build is loaded: 50 of 120 so far.")).toBeTruthy();
     const asked = listBuildsTable.mock.calls.length;
     fireEvent.click(screen.getByRole("button", { name: "Load all" }));
@@ -1170,7 +1170,7 @@ describe("BF-14 match some conditions", () => {
     renderAt("/builds?f=field%3Alaw&open=1");
     await screen.findByRole("link", { name: "Build 1" });
     await openFilters();
-    expect(screen.queryByRole("combobox", { name: "Builds must match" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Builds must match/ })).toBeNull();
     closeFilters();
   });
 
@@ -1179,11 +1179,11 @@ describe("BF-14 match some conditions", () => {
     renderAt(`/builds?${THREE}&match=2`);
     await waitFor(() => expect(titles()).toEqual(["Build 1", "Build 3"]));
     await openFilters();
-    const select = screen.getByRole("combobox", { name: "Builds must match" }) as HTMLSelectElement;
-    expect([...select.options].map((option) => option.textContent)).toEqual(["All 3 filters", "At least 2 of 3", "At least 1 of 3"]);
-    expect(select.value).toBe("2");
+    (window as unknown as { PointerEvent: unknown }).PointerEvent = class extends MouseEvent {};
+    fireEvent.pointerDown(screen.getByRole("button", { name: "Builds must match: At least 2 of 3" }), { button: 0, ctrlKey: false });
+    expect((await screen.findAllByRole("menuitemradio")).map((item) => item.textContent)).toEqual(["All 3 filters", "At least 2 of 3", "At least 1 of 3"]);
     const counted = countBuildsTable.mock.calls.length;
-    fireEvent.change(select, { target: { value: "1" } });
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "At least 1 of 3" }));
     expect(await screen.findByText("3 builds match")).toBeTruthy();
     expect(countBuildsTable.mock.calls.length).toBe(counted);
   });

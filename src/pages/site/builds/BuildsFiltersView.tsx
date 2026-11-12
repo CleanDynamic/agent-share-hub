@@ -17,7 +17,7 @@ import { Button } from "@/components/brand/Button";
 import { Checkbox } from "@/components/brand/Checkbox";
 import { Glyph } from "@/components/brand/Glyph";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
@@ -662,27 +662,29 @@ function FiltersFooter({ matchCount, dirty, match, addColumns, onAddColumns, onC
   );
 }
 
-/** BF-14 (B6): "Builds must match", a native select 32 high (44 on a phone): All m filters, or at least m-1 down to 1 of m. */
+/** BF-14 (B6): "Builds must match": All m filters, or at least m-1 down to 1 of m. A menu of choices, as the Sort menu is (the
+    look's rules keep native selects off the site). */
 function MatchControl({ match }: { match: NonNullable<BuildsFiltersViewProps["match"]> }) {
-  const phone = useIsPhone();
-  const id = useId();
   const m = match.choices[0];
+  const words = (choice: number) => (choice === m ? `All ${m} filters` : `At least ${choice} of ${m}`);
   return (
     <span style={{ display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: 8, ...text(12.5, 400, t.text2) }}>
-      <label htmlFor={id}>Builds must match</label>
-      <select
-        id={id}
-        value={match.value}
-        disabled={Boolean(match.unavailable)}
-        onChange={(event) => match.onChange(Number(event.currentTarget.value))}
-        style={{ height: phone ? 44 : 32, padding: "0 8px", borderRadius: r.chip, fontFamily: FIGTREE, fontSize: phone ? 16 : 12.5, color: t.text, ...WELL }}
-      >
-        {match.choices.map((choice) => (
-          <option key={choice} value={choice}>
-            {choice === m ? `All ${m} filters` : `At least ${choice} of ${m}`}
-          </option>
-        ))}
-      </select>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild disabled={Boolean(match.unavailable)}>
+          <BuildsControl aria-label={`Builds must match: ${words(match.value)}`} disabled={Boolean(match.unavailable)}>
+            <span style={{ color: t.label }}>Builds must match</span> {words(match.value)}
+          </BuildsControl>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" sideOffset={6}>
+          <DropdownMenuRadioGroup value={String(match.value)} onValueChange={(value) => match.onChange(Number(value))}>
+            {match.choices.map((choice) => (
+              <DropdownMenuRadioItem key={choice} value={String(choice)}>
+                {words(choice)}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
       {match.unavailable ? <span>{match.unavailable}</span> : null}
       {match.onLoadAll ? <BuildsTextButton onClick={match.onLoadAll}>Load all</BuildsTextButton> : null}
     </span>

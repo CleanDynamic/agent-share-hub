@@ -1949,6 +1949,11 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
   },
   {
     rule: "no untouched shadcn",
+    text: `import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger }`,
+    why: "BF-14: Builds must match is a radio menu, the one the Table's Sort opens on a phone; a native select is not drawn on the site (index.css paints every select).",
+  },
+  {
+    rule: "no untouched shadcn",
     text: `import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem,`,
     why: "UX-05: Post to is a menu of checkboxes in the DropdownMenu OpenBuilds' Sort uses (the prompt names it).",
   },
