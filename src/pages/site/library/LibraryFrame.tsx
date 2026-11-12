@@ -9,6 +9,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
+import { PageHeader } from "@/components/shell/PageHeader";
 import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
 import { PageLink as Link } from "@/lib/routing/PageLink";
 import { ring } from "@/lib/theme/controls";
@@ -153,14 +154,13 @@ export function LibraryTextButton({ onClick, children, ...rest }: { onClick: () 
 
 /* ── the head ── */
 
-const headTitle: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 20, fontWeight: 500, lineHeight: 1.2, letterSpacing: "-0.015em", color: t.text };
 const headMeta: CSSProperties = { margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 12, lineHeight: "20px", color: t.label, fontVariantNumeric: "tabular-nums" };
 
 /** "Library" and its count line. */
 export function LibraryHead({ title, meta }: { title: string; meta: ReactNode }) {
   return (
     <div>
-      <h1 style={headTitle}>{title}</h1>
+      <PageHeader title={title} />
       <p style={headMeta}>{meta}</p>
     </div>
   );
