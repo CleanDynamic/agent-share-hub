@@ -307,4 +307,37 @@ test.describe("/builds filters", () => {
     await page.getByRole("columnheader", { name: /^Field/ }).getByRole("button").click();
     await expect(page).toHaveURL(/by=field/);
   });
+
+  /* ── BF-13 P3 (C5b) ── */
+
+  test("scrolling the table to its right end leaves the first build's name on screen", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "desktop project only");
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const all = ["build", "built", "field", "tools", "steps", "sessions", "reproductions", "confirmed", "runs", "rebuilds", "open", "cost", "shape", "task", "setting", "role", "technique", "modality", "method", "autonomy", "data", "oversight", "age", "skill", "works", "likes", "patterns", "published"];
+    await page.addInitScript((columns) => window.localStorage.setItem("builds:layout:v1", JSON.stringify({ columns, calculations: [] })), all);
+    await open(page, "/builds", answerWithBuilds);
+    const region = page.getByRole("region", { name: "Builds table" });
+    await expect(page.getByRole("columnheader", { name: /^Published/ })).toBeAttached();
+    await region.evaluate((el) => el.scrollTo({ left: el.scrollWidth }));
+    await expect(region).toHaveAttribute("data-scrolled", "true");
+    const link = page.getByRole("link", { name: "Lead scoring from CRM notes" }).first();
+    const [box, frame] = [(await link.boundingBox())!, (await region.boundingBox())!];
+    expect(box.x).toBeGreaterThanOrEqual(frame.x - 1);
+    expect(box.x + box.width).toBeLessThanOrEqual(frame.x + frame.width);
+    /* Nothing is drawn over it: the topmost element at its centre is the link. */
+    const onTop = await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.closest("a")?.textContent ?? "", [box.x + box.width / 2, box.y + box.height / 2]);
+    expect(onTop).toBe("Lead scoring from CRM notes");
+  });
+
+  test("at 1440 with the default columns and four filters on, the table does not scroll sideways", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "desktop project only");
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open(page, "/builds?tool=claude-code&f=field%3Amedicine&steps=5-30&reproductions=1-50", answerWithBuilds);
+    const region = page.getByRole("region", { name: "Builds table" });
+    await expect(page.getByRole("columnheader", { name: /^Steps/ })).toBeVisible();
+    const widths = await region.evaluate((el) => ({ scroll: el.scrollWidth, client: el.clientWidth, columns: el.querySelectorAll("th").length }));
+    // eslint-disable-next-line no-console
+    console.log(`Builds table at 1440 with four filters: scrollWidth ${widths.scroll}, clientWidth ${widths.client}, ${widths.columns} columns`);
+    expect(widths.scroll).toBeLessThanOrEqual(widths.client);
+  });
 });

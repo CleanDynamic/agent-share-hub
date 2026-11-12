@@ -744,3 +744,42 @@ describe("BF-13 column order", () => {
     expect(head("Tools")).not.toContain("touch-action:none");
   });
 });
+
+/* ── BF-13 P3 (C5b): the Build column stays in view ── */
+
+describe("BF-13 pinned Build column", () => {
+  it("the Build head and every Build cell are position sticky at left 0 with the surface colour behind them", () => {
+    const html = renderToStaticMarkup(
+      <MemoryRouter>
+        <BuildsTableView {...visionBuildsTableViewProps()} />
+      </MemoryRouter>,
+    );
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const firstCells = [...doc.querySelectorAll("tr")].map((row) => row.children[0] as HTMLElement);
+    expect(firstCells.length).toBeGreaterThan(3);
+    for (const cell of firstCells) {
+      const style = cell.getAttribute("style") ?? "";
+      expect(style).toContain("position:sticky");
+      expect(style).toContain("left:0");
+      expect(style).toContain("background:var(--surface)");
+    }
+    const second = (doc.querySelector("tbody tr")!.children[1] as HTMLElement).getAttribute("style") ?? "";
+    expect(second).not.toContain("sticky");
+  });
+
+  it("the pinned cells take a hairline edge only once the table is scrolled", () => {
+    render(
+      <MemoryRouter>
+        <BuildsTableView {...visionBuildsTableViewProps()} />
+      </MemoryRouter>,
+    );
+    const region = screen.getByRole("region", { name: "Builds table" });
+    expect(region.getAttribute("data-scrolled")).toBeNull();
+    region.scrollLeft = 40;
+    fireEvent.scroll(region);
+    expect(region.getAttribute("data-scrolled")).toBe("true");
+    region.scrollLeft = 0;
+    fireEvent.scroll(region);
+    expect(region.getAttribute("data-scrolled")).toBeNull();
+  });
+});
