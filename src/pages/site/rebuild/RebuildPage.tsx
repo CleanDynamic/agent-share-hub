@@ -55,6 +55,7 @@ import { deltaLine } from "@/pages/site/build/buildModel";
 
 import { RebuildView, RebuildViewFailed, RebuildViewNotice, RebuildViewSkeleton } from "./RebuildView";
 import { changeGroups, familyView, readinessView } from "./rebuildModel";
+import { PageBreadcrumb } from "@/components/shell/Breadcrumb";
 
 /** A source does not change while somebody is rebuilding it. */
 const SOURCE_STALE = 300_000;
@@ -64,7 +65,17 @@ const DRAFT_STALE = 30_000;
 const headerKey = (slug: string) => ["build", "getBuildHeaderBySlug", slug] as const;
 const draftKey = (sourceId: string | undefined, userId: string | undefined) => ["build", "getRebuildDraft", sourceId, userId] as const;
 
+/** Page shell: this page's h1 is in its own head, not a PageHeader, so its breadcrumb is drawn before it. */
 export function RebuildPage() {
+  return (
+    <>
+      <PageBreadcrumb />
+      <RebuildPageBody />
+    </>
+  );
+}
+
+function RebuildPageBody() {
   const { slug = "" } = useParams<{ slug: string }>();
   const { user, isLoggedIn, loading: authLoading } = useAuth();
   const navigate = useNavigate();

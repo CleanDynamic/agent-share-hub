@@ -26,11 +26,12 @@ import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
 import { sideTrack, useIsPhone, useTierFit, useWidthTier } from "@/components/shell/useMinWidth";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE, display } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import { ChangesPanel } from "./ChangesPanel";
 import { FamilyPanel } from "./FamilyPanel";
 import { ReadinessPanel } from "./ReadinessPanel";
+import { PAGE_TITLE } from "@/components/shell/PageHeader";
 import {
   VISUALLY_HIDDEN,
   rebuildingLine,
@@ -204,7 +205,7 @@ export function RebuildViewNotice({ line, detail, action }: { line: string; deta
   return (
     <Panel padding="24px 24px">
       <div data-testid="rebuild-notice" role="status" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 9 }}>
-        <h1 style={{ ...display(30), margin: 0, color: t.text }}>{line}</h1>
+        <h1 style={PAGE_TITLE}>{line}</h1>
         {detail ? <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.55, color: t.text2, maxWidth: "68ch" }}>{detail}</p> : null}
         {action}
       </div>
