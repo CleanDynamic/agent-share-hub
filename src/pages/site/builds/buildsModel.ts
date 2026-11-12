@@ -481,11 +481,29 @@ export function availableColumns(countsLive: boolean): ColumnId[] {
   return ALL_COLUMNS.filter((id) => countsLive || (id !== "steps" && id !== "sessions" && id !== "works"));
 }
 
-/** The columns drawn: the default twelve, or the ones the reader kept, always with Build, always in the table's own order. */
+/** The columns drawn: the default twelve, or the ones the reader kept, always with Build first. BF-13 (C6): in the reader's order. */
 export function chosenColumns(saved: readonly string[] | null, countsLive: boolean): ColumnId[] {
   if (saved === null) return [...columnsFor(countsLive)];
-  const wanted = new Set(saved);
-  return availableColumns(countsLive).filter((id) => id === "build" || wanted.has(id));
+  const offered = new Set<string>(availableColumns(countsLive));
+  return ["build", ...(saved.filter((id) => id !== "build" && offered.has(id)) as ColumnId[])];
+}
+
+/** BF-13: a column one place left or right among the reader's. Build never moves, nothing moves before it, and at an end nothing changes. */
+export function movedColumn(chosen: readonly ColumnId[], id: ColumnId, direction: "left" | "right"): ColumnId[] {
+  const at = chosen.indexOf(id);
+  const to = direction === "left" ? at - 1 : at + 1;
+  if (id === "build" || at < 1 || to < 1 || to >= chosen.length) return [...chosen];
+  const next = [...chosen];
+  [next[at], next[to]] = [next[to], next[at]];
+  return next;
+}
+
+/** BF-13: a column dropped at a place among the reader's, after Build and no further than their last. */
+export function placedColumn(chosen: readonly ColumnId[], id: ColumnId, index: number): ColumnId[] {
+  if (id === "build" || !chosen.includes(id)) return [...chosen];
+  const others = chosen.filter((entry) => entry !== id);
+  const to = Math.max(1, Math.min(index, others.length));
+  return [...others.slice(0, to), id, ...others.slice(to)];
 }
 
 /** "12 of 24". */
@@ -506,16 +524,27 @@ export const COLUMN_GROUP = Object.fromEntries(COLUMN_GROUPS.flatMap(([group, id
     says so: it goes when the filter does. */
 export function columnsMenu(chosen: readonly ColumnId[], countsLive: boolean, onToggle: (id: ColumnId) => void, onReset?: () => void, filtered: readonly ColumnId[] = []): ColumnsMenu {
   const offered = new Set(availableColumns(countsLive));
-  const options = COLUMN_GROUPS.flatMap(([group, ids]) =>
+  /* BF-13 (C6): the columns shown first, in the table's order, each but Build with its way left and right; then the rest by group. */
+  const shown = chosen.map((id, at) => ({
+    id,
+    name: COLUMN_NAME[id],
+    group: SHOWN_GROUP,
+    on: true,
+    ...(id === "build" ? { locked: true } : { move: { left: at > 1, right: at < chosen.length - 1 } }),
+  }));
+  const rest = COLUMN_GROUPS.flatMap(([group, ids]) =>
     ids
-      .filter((id) => offered.has(id))
+      .filter((id) => offered.has(id) && !chosen.includes(id))
       .map((id) => {
         const fromFilter = !chosen.includes(id) && filtered.includes(id);
-        return { id, name: fromFilter ? `${COLUMN_NAME[id]}, from a filter` : COLUMN_NAME[id], group, on: chosen.includes(id) || fromFilter, ...(id === "build" || fromFilter ? { locked: true } : null) };
+        return { id, name: fromFilter ? `${COLUMN_NAME[id]}, from a filter` : COLUMN_NAME[id], group, on: fromFilter, ...(fromFilter ? { locked: true } : null) };
       }),
   );
-  return { options, onToggle, onReset };
+  return { options: [...shown, ...rest], onToggle, onReset };
 }
+
+/** BF-13: the chooser's first group. */
+export const SHOWN_GROUP = "Shown, in order";
 
 /** The chosen columns with one turned on or off. Build stays. */
 export function toggledColumns(chosen: readonly ColumnId[], id: ColumnId): string[] {

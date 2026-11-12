@@ -10,7 +10,7 @@
    region a keyboard can reach. Rows past the first screen are skipped until near (`content-visibility`). No motion: rows
    change at once. */
 
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { LampBar } from "@/components/brand/LampDot";
@@ -38,6 +38,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 
+import { useColumnDrag, type HeadDrag } from "./columnDrag";
 import { BuildsControl, BuildsTextButton, FiltersButton, TABLE_ROW, UpdatingStatus, ellipsis, hitArea, text } from "./BuildsFrame";
 
 /* ── props ── */
@@ -163,8 +164,10 @@ export interface CalculationOption {
 
 export interface ColumnsMenu {
   /** BF-10 (C9): `group` heads the options under it; options of a group come together. */
-  options: readonly { id: ColumnId; name: string; group?: string; on: boolean; locked?: boolean }[];
+  options: readonly { id: ColumnId; name: string; group?: string; on: boolean; locked?: boolean; move?: { left: boolean; right: boolean } }[];
   onToggle: (id: ColumnId) => void;
+  /** BF-13 (C6): a shown column one place left or right; the keyboard's way to what a head's drag does. */
+  onMove?: (id: ColumnId, direction: "left" | "right") => void;
   /** Back to the default twelve; drawn only while the columns are not. */
   onReset?: () => void;
 }
@@ -190,6 +193,10 @@ export interface BuildsTableViewProps {
   sortable: ReadonlySet<ColumnId>;
   /** A head pressed; `second` with Shift, for a second key. `fresh` from the phone's Sort menu: the column's first step. */
   onSortColumn: (id: ColumnId, second: boolean, fresh?: boolean) => void;
+  /** BF-13 (C6): the heads that can be dragged to a new place (the reader's own columns, not Build), and where one was dropped:
+      its index among the drawn heads. */
+  draggable?: ReadonlySet<ColumnId>;
+  onDropColumn?: (id: ColumnId, index: number) => void;
   /** BF-11 (B2): the columns a filter in the address holds a value for; their heads are marked. */
   filtered?: ReadonlySet<ColumnId>;
   footer: TableFooterView;
@@ -258,10 +265,22 @@ function ColumnsChooser({ label, menu }: { label: string; menu: ColumnsMenu }) {
             <div key={group.name ?? at} role={group.name ? "group" : undefined} aria-label={group.name}>
               {group.name ? <div style={{ ...text(12, 400, t.label), margin: `${at === 0 ? 0 : 12}px 0 4px` }}>{group.name}</div> : null}
               {group.options.map((option) => (
-                <label key={option.id} style={{ display: "grid", gridTemplateColumns: "16px 1fr", columnGap: 10, alignItems: "center", minHeight: 32, cursor: option.locked ? "default" : "pointer", ...text(12.5, 400, option.on ? t.text : t.text2) }}>
-                  <Checkbox checked={option.on} disabled={option.locked} onChange={() => menu.onToggle(option.id)} />
-                  <span>{option.name}</span>
-                </label>
+                <div key={option.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <label style={{ flex: 1, display: "grid", gridTemplateColumns: "16px 1fr", columnGap: 10, alignItems: "center", minHeight: 32, cursor: option.locked ? "default" : "pointer", ...text(12.5, 400, option.on ? t.text : t.text2) }}>
+                    <Checkbox checked={option.on} disabled={option.locked} onChange={() => menu.onToggle(option.id)} />
+                    <span>{option.name}</span>
+                  </label>
+                  {option.move && menu.onMove ? (
+                    <span style={{ display: "inline-flex", gap: 16, paddingInline: 8 }}>
+                      <BuildsTextButton aria-label={`Move ${option.name} left`} disabled={!option.move.left} onClick={() => menu.onMove?.(option.id, "left")}>
+                        ‹
+                      </BuildsTextButton>
+                      <BuildsTextButton aria-label={`Move ${option.name} right`} disabled={!option.move.right} onClick={() => menu.onMove?.(option.id, "right")}>
+                        ›
+                      </BuildsTextButton>
+                    </span>
+                  ) : null}
+                </div>
               ))}
             </div>
           ))}
@@ -335,7 +354,7 @@ const td = (right: boolean, last: boolean): React.CSSProperties => ({ padding: l
     and would join the head's text. */
 const FILTERED_MARK: React.CSSProperties = { fontWeight: 500, borderBottom: `1px solid ${t.selectedEdge}` };
 
-function ColumnHead({ id, last, sorted, sorted2, sortable, onSort, filtered }: { id: ColumnId; last: boolean; sorted: { ascending: boolean } | null; sorted2: { ascending: boolean } | null; sortable: boolean; onSort: (second: boolean) => void; filtered: boolean }) {
+function ColumnHead({ id, last, sorted, sorted2, sortable, onSort, filtered, drag }: { id: ColumnId; last: boolean; sorted: { ascending: boolean } | null; sorted2: { ascending: boolean } | null; sortable: boolean; onSort: (second: boolean) => void; filtered: boolean; drag?: HeadDrag }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   const right = RIGHT.has(id);
   /* Only one head may say ascending or descending; the second key's says "other", and shows its arrow and a 2. */
@@ -343,7 +362,14 @@ function ColumnHead({ id, last, sorted, sorted2, sortable, onSort, filtered }: {
   const arrow = sorted ?? sorted2;
   const label = filtered ? `${HEAD[id]}, filtered` : undefined;
   return (
-    <th scope="col" aria-sort={ariaSort} aria-label={label} style={{ ...th(right, last), color: sorted || filtered ? t.text : t.label }}>
+    <th
+      scope="col"
+      data-column={id}
+      aria-sort={ariaSort}
+      aria-label={label}
+      {...drag}
+      style={{ ...th(right, last), color: sorted || filtered ? t.text : t.label, ...(drag ? { userSelect: "none", touchAction: "none", cursor: "grab" } : null) }}
+    >
       {sortable ? (
         <button
           type="button"
@@ -567,7 +593,9 @@ function Footer({ columns, footer }: { columns: readonly ColumnId[]; footer: Tab
 /* ── the table ── */
 
 export function BuildsTableView(props: BuildsTableViewProps) {
-  const { lenses, lens, onLens, columnsLabel, columnsMenu, chips, onRemoveChip, onClearAll, columns, rows, sortColumn, sortColumn2, sortable, onSortColumn, filtered, footer, onMore, loadingMore, empty, updating, activeCount, onOpenFilters, setName } = props;
+  const { lenses, lens, onLens, columnsLabel, columnsMenu, chips, onRemoveChip, onClearAll, columns, rows, sortColumn, sortColumn2, sortable, onSortColumn, draggable, onDropColumn, filtered, footer, onMore, loadingMore, empty, updating, activeCount, onOpenFilters, setName } = props;
+  const headRow = useRef<HTMLTableRowElement>(null);
+  const dragOf = useColumnDrag(headRow, onDropColumn ? (id, index) => onDropColumn(id as ColumnId, index) : undefined);
   return (
     <div data-testid="builds-table">
       <LensRow lenses={lenses} lens={lens} onLens={onLens} columns={columns} sortable={sortable} sortColumn={sortColumn} onSortColumn={onSortColumn} columnsLabel={columnsLabel} columnsMenu={columnsMenu} updating={updating} activeCount={activeCount} onOpenFilters={onOpenFilters} setName={setName} />
@@ -575,10 +603,10 @@ export function BuildsTableView(props: BuildsTableViewProps) {
       {rows.length === 0 && empty ? (
         <div style={{ marginTop: 20 }}>{empty}</div>
       ) : (
-        <div role="region" aria-label="Builds table" aria-busy={updating === true} tabIndex={0} style={{ marginTop: 20, overflowX: "auto", scrollbarWidth: "thin", scrollbarColor: `${t.label} transparent` }}>
+        <div role="region" aria-label="Builds table" aria-busy={updating === true} tabIndex={0} style={{ position: "relative", marginTop: 20, overflowX: "auto", scrollbarWidth: "thin", scrollbarColor: `${t.label} transparent` }}>
           <table style={{ width: "100%", minWidth: 1000, borderCollapse: "collapse", ...text(13, 400, t.text) }}>
             <thead>
-              <tr>
+              <tr ref={headRow}>
                 {columns.map((id, position) => (
                   <ColumnHead
                     key={id}
@@ -589,6 +617,7 @@ export function BuildsTableView(props: BuildsTableViewProps) {
                     sortable={sortable.has(id)}
                     onSort={(second) => onSortColumn(id, second)}
                     filtered={filtered?.has(id) === true}
+                    drag={draggable?.has(id) ? dragOf?.(id) : undefined}
                   />
                 ))}
               </tr>

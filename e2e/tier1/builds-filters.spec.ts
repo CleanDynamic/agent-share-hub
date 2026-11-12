@@ -253,4 +253,43 @@ test.describe("/builds filters", () => {
     expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
     expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
   });
+
+  /* ── BF-13 P2 (C6) ── */
+
+  const headNames = (page: Page) => page.locator('[aria-label="Builds table"] thead th').evaluateAll((heads) => heads.map((head) => (head.textContent ?? "").replace(/[↑↓2]/g, "")));
+
+  test("dragging the Field head past Tools and stack puts Field after it, and no text is selected", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "desktop project only");
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open(page, "/builds", answerWithBuilds);
+    const field = page.locator('th[data-column="field"]');
+    const tools = page.locator('th[data-column="tools"]');
+    await expect(field).toBeVisible();
+    const before = await headNames(page);
+    expect(before.indexOf("Field")).toBe(before.indexOf("Tools") - 1);
+    const from = (await field.boundingBox())!;
+    const past = (await tools.boundingBox())!;
+    const y = from.y + from.height / 2;
+    await page.mouse.move(from.x + from.width / 2, y);
+    await page.mouse.down();
+    await page.mouse.move(from.x + from.width / 2 + 8, y, { steps: 2 });
+    await page.mouse.move(past.x + past.width / 2 + 10, y, { steps: 6 });
+    await page.mouse.up();
+    await expect.poll(() => headNames(page)).toEqual(expect.arrayContaining(["Field"]));
+    const after = await headNames(page);
+    expect(after.indexOf("Field")).toBe(after.indexOf("Tools") + 1);
+    expect(await page.evaluate(() => window.getSelection()?.toString() ?? "")).toBe("");
+    expect(page.url()).not.toContain("by=field");
+    await page.reload();
+    await expect(page.locator('th[data-column="field"]')).toBeVisible();
+    expect(await headNames(page)).toEqual(after);
+  });
+
+  test("a press without movement still sorts", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "desktop project only");
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open(page, "/builds", answerWithBuilds);
+    await page.locator('th[data-column="field"]').getByRole("button").click();
+    await expect(page).toHaveURL(/by=field/);
+  });
 });

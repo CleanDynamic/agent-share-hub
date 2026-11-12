@@ -526,21 +526,24 @@ describe("the grouped chooser", () => {
   };
   const namesIn = (group: string) => within(screen.getByRole("group", { name: group })).getAllByRole("checkbox").map((box) => box.closest("label")?.textContent);
 
+  // BF-13 (C6): the columns shown come first, in the table's order, under "Shown, in order"; the rest follow by group, and a group
+  // with nothing left (OpenBuilds, with Open shown) is not drawn.
   it("the chooser groups its columns under Identity, Classification, Proof, Structure and OpenBuilds, in that order", () => {
     const chooser = openChooser();
-    expect(chooser.getAllByRole("group").map((group) => group.getAttribute("aria-label"))).toEqual(["Identity", "Classification", "Proof", "Structure", "OpenBuilds"]);
+    expect(chooser.getAllByRole("group").map((group) => group.getAttribute("aria-label"))).toEqual(["Shown, in order", "Identity", "Classification", "Proof", "Structure"]);
   });
 
   // The names are today's: BF-10 Part 1 (one set of names) stopped at A5, so Confirmed, Open and Tools keep theirs.
   it("Identity holds Build (locked) and Published; Proof holds Reproductions, Works on model, Confirmed, Runs, 12 weeks, Rebuilds and Likes; Structure holds Shape, Steps, Sessions and Patterns; OpenBuilds holds Open; Classification holds the fifteen facets", () => {
     openChooser();
-    expect(namesIn("Identity")).toEqual(["Build", "Published"]);
-    expect((within(screen.getByRole("group", { name: "Identity" })).getByRole("checkbox", { name: "Build" }) as HTMLInputElement).disabled).toBe(true);
-    expect(namesIn("Proof")).toEqual(["Reproductions", "Works on model", "Confirmed", "Runs, 12 weeks", "Rebuilds", "Likes"]);
-    expect(namesIn("Structure")).toEqual(["Shape", "Steps", "Sessions", "Patterns"]);
-    expect(namesIn("OpenBuilds")).toEqual(["Open"]);
-    expect(namesIn("Classification")).toHaveLength(15);
-    expect(namesIn("Classification")).toEqual(expect.arrayContaining(["What was built", "Field", "Tools", "Cost to run", "Autonomy", "Skill"]));
+    expect(namesIn("Shown, in order")).toEqual(["Build", "What was built", "Field", "Tools", "Steps", "Sessions", "Reproductions", "Confirmed", "Runs, 12 weeks", "Rebuilds", "Open", "Cost to run"]);
+    expect((within(screen.getByRole("group", { name: "Shown, in order" })).getByRole("checkbox", { name: "Build" }) as HTMLInputElement).disabled).toBe(true);
+    expect(namesIn("Identity")).toEqual(["Published"]);
+    expect(namesIn("Proof")).toEqual(["Works on model", "Likes"]);
+    expect(namesIn("Structure")).toEqual(["Shape", "Patterns"]);
+    expect(screen.queryByRole("group", { name: "OpenBuilds" })).toBeNull();
+    expect(namesIn("Classification")).toHaveLength(11);
+    expect(namesIn("Classification")).toEqual(expect.arrayContaining(["Autonomy", "Skill"]));
   });
 
   it("the popover opens to the left of its button", () => {
@@ -687,5 +690,46 @@ describe("BF-13 footer", () => {
     drawTable([blankRow], ["build", "field", "reproductions"]);
     expect(within(cellUnder("Build")).getByRole("button", { name: "Add a calculation" })).toBeTruthy();
     expect(footCells().length).toBe(3);
+  });
+});
+
+describe("BF-13 moving a column", () => {
+  const openChooser = (onMove = vi.fn()) => {
+    const columns = ["build", "field", "tools", "reproductions"] as const;
+    draw((p) => ({ ...p, table: { ...p.table!, columns, columnsLabel: "4 of 28", columnsMenu: { ...columnsMenu(columns, true, vi.fn()), onMove } } }));
+    fireEvent.click(screen.getByRole("button", { name: /^Columns:/ }));
+    return within(screen.getByRole("group", { name: "Shown, in order" }));
+  };
+
+  it('in the chooser every chosen column but Build has "Move <name> left" and "Move <name> right" buttons; the first movable one\'s Left and the last one\'s Right are disabled', () => {
+    const shown = openChooser();
+    expect(shown.queryByRole("button", { name: /^Move Build/ })).toBeNull();
+    for (const name of ["Field", "Tools", "Reproductions"]) {
+      expect(shown.getByRole("button", { name: `Move ${name} left` })).toBeTruthy();
+      expect(shown.getByRole("button", { name: `Move ${name} right` })).toBeTruthy();
+    }
+    expect((shown.getByRole("button", { name: "Move Field left" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((shown.getByRole("button", { name: "Move Reproductions right" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((shown.getByRole("button", { name: "Move Tools left" }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('pressing Move right calls onMove with the id and "right"', () => {
+    const onMove = vi.fn();
+    const shown = openChooser(onMove);
+    fireEvent.click(shown.getByRole("button", { name: "Move Field right" }));
+    expect(onMove).toHaveBeenCalledWith("field", "right");
+  });
+
+  it("a head has user-select none and touch-action none while it can be dragged", () => {
+    const markup = renderToStaticMarkup(
+      <MemoryRouter>
+        <BuildsTableView {...visionBuildsTableViewProps()} columns={["build", "field", "autonomy"]} draggable={new Set(["field"])} onDropColumn={vi.fn()} />
+      </MemoryRouter>,
+    );
+    const heads = markup.match(/<th\s[^>]*>/g)!;
+    expect(heads[1]).toMatch(/user-select:none/);
+    expect(heads[1]).toMatch(/touch-action:none/);
+    expect(heads[0]).not.toMatch(/user-select:none/);
+    expect(heads[2]).not.toMatch(/user-select:none/);
   });
 });
