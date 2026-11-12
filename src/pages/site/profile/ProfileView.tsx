@@ -11,7 +11,8 @@ import type { ReactNode } from "react";
 import { ErrorState } from "@/components/brand/ErrorState";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
-import { useIsPhone } from "@/components/shell/useMinWidth";
+import { pageColumns } from "@/components/shell/pageGrid";
+import { BETWEEN, useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -34,6 +35,7 @@ export interface ProfileViewProps {
 
 export function ProfileView({ head, feed, side }: ProfileViewProps) {
   const phone = useIsPhone();
+  const grid = useMinWidth(BETWEEN.stack);
   return (
     <div data-testid="profile-view" style={{ display: "flex", flexDirection: "column", gap: 24, minWidth: 0, paddingBottom: 48, fontFamily: FIGTREE }}>
       <ProfileHead {...head} />
@@ -42,6 +44,12 @@ export function ProfileView({ head, feed, side }: ProfileViewProps) {
           <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
             {side ? <ProfileSide {...side} /> : null}
             {feed ? <ProfileFeed {...feed} /> : null}
+          </div>
+        ) : grid ? (
+          /* The page grid's main and side template (9 / 3), under the full-width head. */
+          <div style={{ ...pageColumns("mainSide"), alignItems: "start", minWidth: 0 }}>
+            <div style={{ maxWidth: FEED_COLUMN, minWidth: 0 }}>{feed ? <ProfileFeed {...feed} /> : null}</div>
+            {side ? <ProfileSide {...side} /> : null}
           </div>
         ) : (
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: COLUMN_GAP, minWidth: 0 }}>

@@ -272,7 +272,8 @@ export function ProfileSide(props: ProfileSideProps) {
     </div>
   );
   if (!props.progress && sections.length === 0) return null;
-  if (!phone) return <aside aria-label="About this person" style={{ width: SIDE_WIDTH, flex: "none" }}>{column}</aside>;
+  // Up to 280, and no wider than the page grid's side track (264 at 1280).
+  if (!phone) return <aside aria-label="About this person" style={{ width: "100%", maxWidth: SIDE_WIDTH, flex: "none", minWidth: 0 }}>{column}</aside>;
   return (
     <aside aria-label="About this person" style={{ minWidth: 0 }}>
       <button
