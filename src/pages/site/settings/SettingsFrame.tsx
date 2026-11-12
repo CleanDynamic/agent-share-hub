@@ -1,6 +1,6 @@
 /* UX-15 P2: the Settings frame. PURE.
 
-   Desktop: a 220 left list of the six sections (the current one in `text` with a 1px underline and `aria-current="page"`), then the
+   Desktop: a left list (the page grid's columns 1 to 3) of the six sections (the current one in `text` with a 1px underline and `aria-current="page"`), then the
    section at the site's reading measure. Phone: `/settings` is the list; a section is its own page, without the list.
    `/settings` on a desktop shows the list and the first section beside it, so the page is never empty. */
 
@@ -8,6 +8,7 @@ import type { CSSProperties, ReactNode } from "react";
 
 import { Glyph } from "@/components/brand/Glyph";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { pageColumns } from "@/components/shell/pageGrid";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { PlainRow } from "@/components/vision/PlainRow";
 import { PageLink } from "@/lib/routing/PageLink";
@@ -62,7 +63,8 @@ export function SettingsFrame({ section, children }: SettingsFrameProps) {
   return (
     <>
     <PageHeader title="Settings" />
-    <div style={{ display: "grid", gridTemplateColumns: "220px minmax(0, 1fr)", columnGap: 56, alignItems: "start", fontFamily: FIGTREE }}>
+    {/* The page grid's feed template: the list in columns 1 to 3, the section in columns 4 to 9. */}
+    <div style={{ ...pageColumns("feed"), alignItems: "start", fontFamily: FIGTREE }}>
       <nav aria-label="Settings">
         <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column" }}>
           {SECTIONS.map((s) => {
