@@ -182,7 +182,7 @@ export function visionBuildsTableProps(): BuildsViewProps {
       onSortColumn: noop,
       /* BF-11: the drawn columns the sample's chips filter on. */
       filtered: new Set(["field", "tools", "reproductions", "steps"]),
-      footer: { count: "18 builds", mostCommon: "Most common · Sales, Claude Code", median: "Median 11 steps", total: "Total 214", onCalculate: noop },
+      footer: { count: "18 builds", byColumn: { field: "Sales", tools: "Claude Code", steps: "Median 11", reproductions: "Total 214" }, onCalculate: noop },
     },
   };
 }

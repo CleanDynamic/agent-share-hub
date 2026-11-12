@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 
 import { ALL_COLUMNS, COLUMN_ORDER, EXTRA_COLUMNS, type TableRowView } from "./BuildsTableView";
-import { availableColumns, calculate, calculationOptions, calculationsFor, chosenColumns, columnsLabel, columnsMenu, footerCalculations, tableRow, toggledColumns } from "./buildsModel";
+import { tableFooter, availableColumns, calculate, calculationOptions, calculationsFor, chosenColumns, columnsLabel, columnsMenu, footerCalculations, tableRow, toggledColumns } from "./buildsModel";
 import { emptyClassification } from "@/lib/classify/facets";
 import { MODEL_VERSIONS, modelKeysOf } from "@/lib/models/registry";
 
@@ -156,5 +156,18 @@ describe("the four new columns", () => {
     expect(calculate({ column: "likes", kind: "sum" }, rows)).toBe("8");
     expect(calculate({ column: "works", kind: "common" }, rows)).toBe(MODEL_VERSIONS[1].name);
     expect(calculate({ column: "patterns", kind: "common" }, rows)).toBe("Uses a router");
+  });
+});
+
+describe("BF-13 the footer by column", () => {
+  it("tableFooter puts each value under its own column", () => {
+    const rows = [row(), row({ id: "b2", steps: 14, reproductions: 2 })];
+    expect(tableFooter(5, rows)).toEqual({ count: "5 builds", byColumn: { field: "Sales", tools: "Claude Code", steps: "Median 12", reproductions: "Total 6" } });
+    expect(tableFooter(null, [row({ field: "", tools: [], steps: null })]).byColumn).toEqual({ reproductions: "Total 4" });
+  });
+
+  it("footerCalculations carry their column", () => {
+    const entries = footerCalculations([{ column: "steps", kind: "sum" }], ["build", "steps"], [row()], () => undefined);
+    expect(entries[0]).toMatchObject({ key: "steps:sum", column: "steps", text: "Sum, Steps 10" });
   });
 });

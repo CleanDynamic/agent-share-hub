@@ -10,7 +10,7 @@
    region a keyboard can reach. Rows past the first screen are skipped until near (`content-visibility`). No motion: rows
    change at once. */
 
-import { cloneElement, type ReactElement, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { LampBar } from "@/components/brand/LampDot";
@@ -136,12 +136,8 @@ export interface TableChip {
 
 export interface TableFooterView {
   count: string;
-  /** "Most common · Sales, Claude Code". */
-  mostCommon?: string;
-  /** "Median 11 steps". */
-  median?: string;
-  /** "Total 214". */
-  total?: string;
+  /** BF-13: a value under its own column: the most common Field and Tool, "Median 11" under Steps, "Total 214" under Reproductions. */
+  byColumn?: Readonly<Partial<Record<ColumnId, string>>>;
   /** The dev page's button, with no menu. */
   onCalculate?: () => void;
   /** SV-24 P2: the calculations added, each worked out from the loaded page. */
@@ -152,6 +148,8 @@ export interface TableFooterView {
 
 export interface TableCalculation {
   key: string;
+  /** BF-13: the column it is drawn under. */
+  column: ColumnId;
   /** "Sum, Steps 214". */
   text: string;
   onRemove: () => void;
@@ -482,10 +480,10 @@ function Row({ row, columns, index }: { row: TableRowView; columns: readonly Col
 
 /* ── the footer ── */
 
-/** BF-01 P4: what the two lamps mean, the last thing in the footer. */
+/** BF-01 P4: what the two lamps mean. BF-13: its own line under the table, outside it. */
 function LampKey() {
   return (
-    <span style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 8, ...text(12, 400, t.label) }}>
+    <span data-testid="builds-lamp-key" style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 8, ...text(12, 400, t.label) }}>
       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
         <RowLamp lit />
         <span>{`confirmed in the last ${STALE_AFTER_DAYS} days`}</span>
@@ -496,10 +494,6 @@ function LampKey() {
       </span>
     </span>
   );
-}
-
-function span(columns: readonly ColumnId[], from: ColumnId, group: readonly ColumnId[]): number {
-  return group.filter((id) => columns.includes(id) && columns.indexOf(id) >= columns.indexOf(from)).length;
 }
 
 /** Add a calculation: a menu of the columns one can be made on (sum and median of a count, most common of a word), or the dev page's plain button. */
@@ -532,72 +526,40 @@ function AddCalculation({ footer }: { footer: TableFooterView }) {
   ) : null;
 }
 
-/** The calculations added, each with its way to take it off, and the button that adds one. */
-function CalculationCell({ footer }: { footer: TableFooterView }) {
-  return (
-    <span style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "4px 16px" }}>
-      <AddCalculation footer={footer} />
-      {(footer.calculations ?? []).map((calculation) => (
-        <span key={calculation.key} style={{ display: "inline-flex", alignItems: "baseline", gap: 4, ...text(12, 400, t.label) }}>
-          {calculation.text}
-          <BuildsTextButton size={12} aria-label={`Remove ${calculation.text}`} onClick={calculation.onRemove}>
-            ×
-          </BuildsTextButton>
-        </span>
-      ))}
-    </span>
-  );
-}
-
+/** BF-13 (C6): one cell per column, in the drawn order, so a value moves with its column. The Build cell holds the count and, under
+    it, Add a calculation; every other cell its own value and the calculations added on it, each with its Remove button. */
 function Footer({ columns, footer }: { columns: readonly ColumnId[]; footer: TableFooterView }) {
-  const cells: ReactNode[] = [];
-  const small = { ...text(12, 400, t.label), padding: "12px 12px 0 0" };
-  const skip = new Set<ColumnId>();
-  const hasCalculations = Boolean(footer.onCalculate || footer.calculate);
-  columns.forEach((id, position) => {
-    if (skip.has(id)) return;
-    if (id === "build") {
-      cells.push(<td key={id} style={small}>{footer.count}</td>);
-    } else if (id === "built") {
-      const n = span(columns, "built", ["built", "field", "tools"]);
-      (["built", "field", "tools"] as const).forEach((c) => skip.add(c));
-      cells.push(<td key={id} colSpan={n} style={small}>{footer.mostCommon ?? ""}</td>);
-    } else if (id === "steps") {
-      const n = span(columns, "steps", ["steps", "sessions"]);
-      (["steps", "sessions"] as const).forEach((c) => skip.add(c));
-      cells.push(<td key={id} colSpan={n} style={{ ...small, textAlign: "right" }}>{footer.median ?? ""}</td>);
-    } else if (id === "reproductions") {
-      cells.push(<td key={id} style={{ ...small, textAlign: "right" }}>{footer.total ?? ""}</td>);
-    } else if (id === "confirmed") {
-      const rest = columns.length - position;
-      columns.slice(position).forEach((c) => skip.add(c));
-      cells.push(
-        <td key={id} colSpan={rest} style={{ ...small, padding: "12px 0 0" }}>
-          {hasCalculations ? <CalculationCell footer={footer} /> : null}
-        </td>,
-      );
-    } else {
-      cells.push(<td key={id} style={small} />);
-    }
-  });
-  /* With Confirmed off the button has no cell of its own: it sits in a row under the footer, the width of the table. */
-  const apart = hasCalculations && !columns.includes("confirmed");
-  /* The key goes last in the footer's final cell: the row under it when the calculations sit apart, else the last cell. */
-  if (!apart) {
-    const last = cells[cells.length - 1] as ReactElement<{ children?: ReactNode }>;
-    cells[cells.length - 1] = cloneElement(last, undefined, last.props.children, <LampKey key="key" />);
-  }
+  const line = { display: "block" } as const;
   return (
     <tfoot>
-      <tr>{cells}</tr>
-      {apart ? (
-        <tr>
-          <td colSpan={columns.length} style={{ padding: "8px 0 0" }}>
-            <CalculationCell footer={footer} />
-            <LampKey />
-          </td>
-        </tr>
-      ) : null}
+      <tr>
+        {columns.map((id, position) => {
+          const last = position === columns.length - 1;
+          const calculations = (footer.calculations ?? []).filter((calculation) => calculation.column === id);
+          return (
+            <td key={id} style={{ ...text(12, 400, t.label), padding: last ? "12px 0 0" : "12px 12px 0 0", textAlign: RIGHT.has(id) ? "right" : "left", verticalAlign: "top" }}>
+              {id === "build" ? (
+                <>
+                  <span style={line}>{footer.count}</span>
+                  <AddCalculation footer={footer} />
+                </>
+              ) : (
+                <>
+                  {footer.byColumn?.[id] ? <span style={line}>{footer.byColumn[id]}</span> : null}
+                  {calculations.map((calculation) => (
+                    <span key={calculation.key} style={{ display: "flex", alignItems: "baseline", justifyContent: RIGHT.has(id) ? "flex-end" : "flex-start", gap: 4 }}>
+                      {calculation.text}
+                      <BuildsTextButton size={12} aria-label={`Remove ${calculation.text}`} onClick={calculation.onRemove}>
+                        ×
+                      </BuildsTextButton>
+                    </span>
+                  ))}
+                </>
+              )}
+            </td>
+          );
+        })}
+      </tr>
     </tfoot>
   );
 }
@@ -640,6 +602,7 @@ export function BuildsTableView(props: BuildsTableViewProps) {
           </table>
         </div>
       )}
+      {rows.length === 0 && empty ? null : <LampKey />}
       {onMore ? (
         <div style={{ marginTop: 20 }}>
           <BuildsControl onClick={onMore} disabled={loadingMore}>
