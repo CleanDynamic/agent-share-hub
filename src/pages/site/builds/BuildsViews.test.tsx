@@ -538,21 +538,21 @@ describe("the grouped chooser", () => {
   };
   const namesIn = (group: string) => within(screen.getByRole("group", { name: group })).getAllByRole("checkbox").map((box) => box.closest("label")?.textContent);
 
-  it("the chooser groups its columns under Identity, Classification, Proof, Structure and OpenBuilds, in that order", () => {
+  /* BF-13 (C6): the reader's columns come first, in their order, under "Shown, in order"; each group lists the rest. */
+  it("the chooser lists the shown columns first, then the rest under Identity, Classification, Proof and Structure, in that order", () => {
     const chooser = openChooser();
-    expect(chooser.getAllByRole("group").map((group) => group.getAttribute("aria-label"))).toEqual(["Identity", "Classification", "Proof", "Structure", "OpenBuilds"]);
+    expect(chooser.getAllByRole("group").map((group) => group.getAttribute("aria-label"))).toEqual(["Shown, in order", "Identity", "Classification", "Proof", "Structure"]);
   });
 
-  // The names are today's: BF-10 Part 1 (one set of names) stopped at A5, so Confirmed, Open and Tools keep theirs.
-  it("Identity holds Build (locked) and Published; Proof holds Reproductions, Works on model, Confirmed, Runs, 12 weeks, Rebuilds and Likes; Structure holds Shape, Steps, Sessions and Patterns; OpenBuilds holds Open; Classification holds the fifteen facets", () => {
+  it("Shown holds the default twelve in order, Build locked; Identity holds Published; Proof holds Works on model and Likes; Structure holds Shape and Patterns; Classification holds the other eleven facets", () => {
     openChooser();
-    expect(namesIn("Identity")).toEqual(["Build", "Published"]);
-    expect((within(screen.getByRole("group", { name: "Identity" })).getByRole("checkbox", { name: "Build" }) as HTMLInputElement).disabled).toBe(true);
-    expect(namesIn("Proof")).toEqual(["Reproductions", "Works on model", "Confirmed", "Runs, 12 weeks", "Rebuilds", "Likes"]);
-    expect(namesIn("Structure")).toEqual(["Shape", "Steps", "Sessions", "Patterns"]);
-    expect(namesIn("OpenBuilds")).toEqual(["Open"]);
-    expect(namesIn("Classification")).toHaveLength(15);
-    expect(namesIn("Classification")).toEqual(expect.arrayContaining(["What was built", "Field", "Tools", "Cost to run", "Autonomy", "Skill"]));
+    expect(namesIn("Shown, in order")).toEqual(["Build", "What was built", "Field", "Tools", "Steps", "Sessions", "Reproductions", "Confirmed", "Runs, 12 weeks", "Rebuilds", "Open", "Cost to run"]);
+    expect((within(screen.getByRole("group", { name: "Shown, in order" })).getByRole("checkbox", { name: "Build" }) as HTMLInputElement).disabled).toBe(true);
+    expect(namesIn("Identity")).toEqual(["Published"]);
+    expect(namesIn("Proof")).toEqual(["Works on model", "Likes"]);
+    expect(namesIn("Structure")).toEqual(["Shape", "Patterns"]);
+    expect(namesIn("Classification")).toHaveLength(11);
+    expect(namesIn("Classification")).toEqual(expect.arrayContaining(["Autonomy", "Skill"]));
   });
 
   it("the popover opens to the left of its button", () => {
@@ -693,5 +693,54 @@ describe("BF-13 footer", () => {
   it("with Last confirmed not drawn, Add a calculation is still there", () => {
     drawTable((p) => ({ ...p, columns: ["build", "reproductions"] }));
     expect(within(footerCells().under("Build")).getByRole("button", { name: "Add a calculation" })).toBeTruthy();
+  });
+});
+
+/* ── BF-13 P2 (C6): the reader's order ── */
+
+describe("BF-13 column order", () => {
+  const menuOf = (onMove = vi.fn()) => columnsMenu(["build", "field", "tools", "steps"], true, vi.fn(), undefined, [], onMove);
+  const openChooser = (menu: ReturnType<typeof menuOf>) => {
+    render(
+      <MemoryRouter>
+        <BuildsTableView {...visionBuildsTableViewProps()} columnsLabel="4 of 28" columnsMenu={menu} />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Columns: 4 of 28" }));
+  };
+
+  it('in the chooser every chosen column but Build has "Move <name> left" and "Move <name> right" buttons; the first movable one\'s Left and the last one\'s Right are disabled', () => {
+    openChooser(menuOf());
+    const shown = screen.getByRole("group", { name: "Shown, in order" });
+    expect(within(shown).queryByRole("button", { name: /^Move Build/ })).toBeNull();
+    for (const name of ["Field", "Tools", "Steps"]) {
+      expect(within(shown).getByRole("button", { name: `Move ${name} left` })).toBeTruthy();
+      expect(within(shown).getByRole("button", { name: `Move ${name} right` })).toBeTruthy();
+    }
+    expect((within(shown).getByRole("button", { name: "Move Field left" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((within(shown).getByRole("button", { name: "Move Steps right" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((within(shown).getByRole("button", { name: "Move Tools left" }) as HTMLButtonElement).disabled).toBe(false);
+    expect(within(shown).getAllByRole("checkbox").map((box) => box.closest("label")?.textContent)).toEqual(["Build", "Field", "Tools", "Steps"]);
+  });
+
+  it('pressing Move right calls onMove with the id and "right"', () => {
+    const onMove = vi.fn();
+    openChooser(menuOf(onMove));
+    fireEvent.click(screen.getByRole("button", { name: "Move Tools right" }));
+    expect(onMove).toHaveBeenCalledWith("tools", "right");
+  });
+
+  it("a head has user-select none and touch-action none while it can be dragged", () => {
+    const props = { ...visionBuildsTableViewProps(), onDropColumn: vi.fn(), movable: new Set<ColumnId>(["field"]) };
+    const html = renderToStaticMarkup(
+      <MemoryRouter>
+        <BuildsTableView {...props} />
+      </MemoryRouter>,
+    );
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const head = (name: string) => [...doc.querySelectorAll("th")].find((th) => th.textContent?.startsWith(name))!.getAttribute("style") ?? "";
+    expect(head("Field")).toContain("user-select:none");
+    expect(head("Field")).toContain("touch-action:none");
+    expect(head("Tools")).not.toContain("touch-action:none");
   });
 });

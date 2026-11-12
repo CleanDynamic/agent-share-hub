@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 
 import { ALL_COLUMNS, COLUMN_ORDER, EXTRA_COLUMNS, type TableRowView } from "./BuildsTableView";
-import { availableColumns, calculate, calculationOptions, calculationsFor, chosenColumns, columnsLabel, columnsMenu, footerCalculations, tableRow, toggledColumns } from "./buildsModel";
+import { availableColumns, drawnColumns, movedColumn, placedColumn, calculate, calculationOptions, calculationsFor, chosenColumns, columnsLabel, columnsMenu, footerCalculations, tableRow, toggledColumns } from "./buildsModel";
 import { emptyClassification } from "@/lib/classify/facets";
 import { MODEL_VERSIONS, modelKeysOf } from "@/lib/models/registry";
 
@@ -35,8 +35,8 @@ describe("the columns", () => {
     expect(columnsLabel(chosenColumns(null, false), false)).toBe("10 of 25");
   });
 
-  it("keep what the reader chose, in the table's own order, always with Build, and never one that is not live", () => {
-    expect(chosenColumns(["skill", "cost", "steps"], true)).toEqual(["build", "steps", "cost", "skill"]);
+  it("keep what the reader chose, in the reader's order (BF-13), always with Build first, and never one that is not live", () => {
+    expect(chosenColumns(["skill", "cost", "steps"], true)).toEqual(["build", "skill", "cost", "steps"]);
     expect(chosenColumns(["skill", "steps", "nope"], false)).toEqual(["build", "skill"]);
     expect(chosenColumns([], true)).toEqual(["build"]);
   });
@@ -154,5 +154,37 @@ describe("the four new columns", () => {
     expect(calculate({ column: "likes", kind: "sum" }, rows)).toBe("8");
     expect(calculate({ column: "works", kind: "common" }, rows)).toBe(MODEL_VERSIONS[1].name);
     expect(calculate({ column: "patterns", kind: "common" }, rows)).toBe("Uses a router");
+  });
+});
+
+describe("BF-13 column order", () => {
+  it("chosenColumns keeps the saved order, with Build first whatever was saved", () => {
+    expect(chosenColumns(["field", "build", "reproductions", "built"], true)).toEqual(["build", "field", "reproductions", "built"]);
+  });
+
+  it("chosenColumns with nothing saved is the default order", () => {
+    expect(chosenColumns(null, true)).toEqual(COLUMN_ORDER);
+  });
+
+  it("movedColumn: left and right by one place; Build never moves and nothing moves before it; at an end it does nothing", () => {
+    const chosen = ["build", "field", "tools", "steps"] as const;
+    expect(movedColumn(chosen, "tools", "left")).toEqual(["build", "tools", "field", "steps"]);
+    expect(movedColumn(chosen, "tools", "right")).toEqual(["build", "field", "steps", "tools"]);
+    expect(movedColumn(chosen, "field", "left")).toEqual([...chosen]);
+    expect(movedColumn(chosen, "build", "right")).toEqual([...chosen]);
+    expect(movedColumn(chosen, "steps", "right")).toEqual([...chosen]);
+  });
+
+  it("placedColumn: a column dropped at an index lands there among the reader's columns", () => {
+    const chosen = ["build", "field", "tools", "steps"] as const;
+    expect(placedColumn(chosen, "field", 2)).toEqual(["build", "tools", "field", "steps"]);
+    expect(placedColumn(chosen, "steps", 1)).toEqual(["build", "steps", "field", "tools"]);
+    expect(placedColumn(chosen, "steps", 0)).toEqual(["build", "steps", "field", "tools"]);
+    expect(placedColumn(chosen, "field", 9)).toEqual(["build", "tools", "steps", "field"]);
+    expect(placedColumn(chosen, "build", 3)).toEqual([...chosen]);
+  });
+
+  it("drawnColumns still appends a filter's columns after the reader's", () => {
+    expect(drawnColumns(["build", "steps", "field"], ["autonomy", "built"], true, true)).toEqual(["build", "steps", "field", "built", "autonomy"]);
   });
 });

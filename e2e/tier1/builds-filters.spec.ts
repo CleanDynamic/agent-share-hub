@@ -269,4 +269,42 @@ test.describe("/builds filters", () => {
     await page.getByRole("columnheader", { name: /^Rebuilds/ }).getByRole("button").click({ modifiers: ["Shift"] });
     await expect(page).toHaveURL(/by2=rebuilds/);
   });
+
+  /* ── BF-13 P2 (C6) ── */
+
+  const headNames = (page: Page) => page.getByRole("columnheader").evaluateAll((heads) => heads.map((head) => (head.textContent ?? "").replace(/[↑↓]2?/g, "").trim()));
+
+  test("dragging the Field head past Tools and stack puts Field after it, and no text is selected", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "desktop project only");
+    await open(page, "/builds", answerWithBuilds);
+    await expect(page.getByRole("columnheader", { name: /^Field/ })).toBeVisible();
+    const before = await headNames(page);
+    expect(before.indexOf("Field") + 1).toBe(before.indexOf("Tools"));
+    const field = (await page.getByRole("columnheader", { name: /^Field/ }).boundingBox())!;
+    const tools = (await page.getByRole("columnheader", { name: /^Tools/ }).boundingBox())!;
+    const y = field.y + field.height / 2;
+    await page.mouse.move(field.x + 10, y);
+    await page.mouse.down();
+    await page.mouse.move(field.x + 10 + 8, y, { steps: 2 });
+    /* Far enough that the dragged head's centre passes the next head's centre by 4px. */
+    const dx = tools.x + tools.width / 2 - (field.x + field.width / 2) + 4;
+    await page.mouse.move(field.x + 10 + dx, y, { steps: 8 });
+    await page.mouse.up();
+    const swapped = [...before];
+    swapped.splice(before.indexOf("Field"), 2, "Tools", "Field");
+    await expect.poll(() => headNames(page)).toEqual(swapped);
+    expect(await page.evaluate(() => window.getSelection()?.toString() ?? "")).toBe("");
+    await expect(page).not.toHaveURL(/by=field/);
+    await page.reload();
+    await expect(page.getByRole("columnheader", { name: /^Field/ })).toBeVisible();
+    const after = await headNames(page);
+    expect(after.indexOf("Field")).toBe(after.indexOf("Tools") + 1);
+  });
+
+  test("a press without movement still sorts", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "desktop project only");
+    await open(page, "/builds", answerWithBuilds);
+    await page.getByRole("columnheader", { name: /^Field/ }).getByRole("button").click();
+    await expect(page).toHaveURL(/by=field/);
+  });
 });

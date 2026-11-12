@@ -365,11 +365,30 @@ export function availableColumns(countsLive: boolean): ColumnId[] {
   return ALL_COLUMNS.filter((id) => countsLive || (id !== "steps" && id !== "sessions" && id !== "works"));
 }
 
-/** The columns drawn: the default twelve, or the ones the reader kept, always with Build, always in the table's own order. */
+/** The columns the reader chose: the default twelve, or the ones the reader kept in the reader's order (BF-13), Build first
+    whatever was saved, and never one that is not live. */
 export function chosenColumns(saved: readonly string[] | null, countsLive: boolean): ColumnId[] {
   if (saved === null) return [...columnsFor(countsLive)];
-  const wanted = new Set(saved);
-  return availableColumns(countsLive).filter((id) => id === "build" || wanted.has(id));
+  const offered = new Set<string>(availableColumns(countsLive));
+  return ["build", ...[...new Set(saved)].filter((id): id is ColumnId => id !== "build" && offered.has(id))];
+}
+
+/** BF-13 (C6): a column moved one place left or right among the reader's columns. Build never moves, and nothing moves before it. */
+export function movedColumn(chosen: readonly ColumnId[], id: ColumnId, direction: "left" | "right"): ColumnId[] {
+  const at = chosen.indexOf(id);
+  const to = direction === "left" ? at - 1 : at + 1;
+  if (id === "build" || at < 1 || to < 1 || to >= chosen.length) return [...chosen];
+  const next = [...chosen];
+  [next[at], next[to]] = [next[to], next[at]];
+  return next;
+}
+
+/** BF-13 (C6): a column dropped at an index among the reader's columns (counted without it), never before Build. */
+export function placedColumn(chosen: readonly ColumnId[], id: ColumnId, index: number): ColumnId[] {
+  if (id === "build" || !chosen.includes(id)) return [...chosen];
+  const rest = chosen.filter((entry) => entry !== id);
+  const at = Math.max(1, Math.min(index, rest.length));
+  return [...rest.slice(0, at), id, ...rest.slice(at)];
 }
 
 /* ── BF-11 (B1): a filter that holds a value draws its column, worked out from the address on every render, never stored ── */
@@ -432,18 +451,23 @@ const COLUMN_GROUPS: readonly (readonly [ColumnGroup, readonly ColumnId[]])[] = 
 ];
 export const COLUMN_GROUP = Object.fromEntries(COLUMN_GROUPS.flatMap(([group, ids]) => ids.map((id) => [id, group]))) as Record<ColumnId, ColumnGroup>;
 
-/** The chooser's checklist, by group. BF-11 (B1): a column drawn only because a filter holds a value is on and locked, and says so. */
-export function columnsMenu(chosen: readonly ColumnId[], countsLive: boolean, onToggle: (id: ColumnId) => void, onReset?: () => void, fromFilters: readonly ColumnId[] = []): ColumnsMenu {
+/** The chooser's checklist: the reader's columns first, in their order, under "Shown, in order" (BF-13, each but Build with its
+    Move buttons), then the rest by group. BF-11 (B1): a column drawn only because a filter holds a value is on and locked, and
+    says so. */
+export const SHOWN_GROUP = "Shown, in order";
+export function columnsMenu(chosen: readonly ColumnId[], countsLive: boolean, onToggle: (id: ColumnId) => void, onReset?: () => void, fromFilters: readonly ColumnId[] = [], onMove?: (id: ColumnId, direction: "left" | "right") => void): ColumnsMenu {
   const offered = new Set(availableColumns(countsLive));
-  const options = COLUMN_GROUPS.flatMap(([group, ids]) =>
+  const shown = chosen.filter((id) => offered.has(id)).map((id) => ({ id, name: COLUMN_NAME[id], group: SHOWN_GROUP, on: true, ...(id === "build" ? { locked: true } : { movable: true }) }));
+  const rest = COLUMN_GROUPS.flatMap(([group, ids]) =>
     ids
-      .filter((id) => offered.has(id))
+      .filter((id) => offered.has(id) && !chosen.includes(id))
       .map((id) => {
-        const fromFilter = !chosen.includes(id) && fromFilters.includes(id);
-        return { id, name: COLUMN_NAME[id], group, on: chosen.includes(id) || fromFilter, ...(id === "build" || fromFilter ? { locked: true } : null), ...(fromFilter ? { fromFilter } : null) };
+        const fromFilter = fromFilters.includes(id);
+        return { id, name: COLUMN_NAME[id], group, on: fromFilter, ...(fromFilter ? { locked: true, fromFilter } : null) };
       }),
   );
-  return { options, onToggle, onReset };
+  const options = [...shown, ...rest];
+  return { options, onToggle, onReset, onMove };
 }
 
 /** The chosen columns with one turned on or off. Build stays. */
