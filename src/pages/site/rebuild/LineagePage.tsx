@@ -34,11 +34,22 @@ import { t } from "@/lib/theme/tokens";
 import { LineageView, type LineageSelection } from "./LineageView";
 import { RebuildViewFailed, RebuildViewNotice, RebuildViewSkeleton } from "./RebuildView";
 import { changeGroups, familyView } from "./rebuildModel";
+import { PageBreadcrumb } from "@/components/shell/Breadcrumb";
 
 /** A family does not change while somebody is looking at it. */
 const STALE_TIME = 300_000;
 
+/** Page shell: this page's h1 is in its own head, not a PageHeader, so its breadcrumb is drawn before it. */
 export function LineagePage() {
+  return (
+    <>
+      <PageBreadcrumb />
+      <LineagePageBody />
+    </>
+  );
+}
+
+function LineagePageBody() {
   const { slug = "" } = useParams<{ slug: string }>();
   const navigate = useNavigate();
 
