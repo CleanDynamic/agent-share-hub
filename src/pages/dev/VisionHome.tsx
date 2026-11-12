@@ -35,7 +35,7 @@ export default function VisionHome({ viewport = "desktop", state = "populated" }
       data-design-state={state}
       style={{ width: viewport === "mobile" ? 390 : 1440 }}
     >
-      <SiteFrameView viewport={viewport} fit="board" board="home" {...devChrome({ theme, current: "home", trail: [{ label: "Home" }], dockCurrent: null })}>
+      <SiteFrameView viewport={viewport} fit="board" {...devChrome({ theme, current: "home", trail: [{ label: "Home" }], dockCurrent: null })}>
         <HomeView {...visionHomeProps(state)} />
       </SiteFrameView>
     </div>

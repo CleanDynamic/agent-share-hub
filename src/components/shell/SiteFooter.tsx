@@ -49,7 +49,8 @@ function RefinedSiteFooterView({ signedIn, onSignOut, onConnect, showPrivacy = f
       style={{
         marginTop: "auto",
         borderTop: `1px solid ${t.hairline}`,
-        padding: "12px clamp(16px, 4.6vw, 64px)",
+        /* The page's 56 content edge, less the surface's 1px border. */
+        padding: "12px 55px",
         display: "flex",
         flexWrap: "wrap",
         alignItems: "center",

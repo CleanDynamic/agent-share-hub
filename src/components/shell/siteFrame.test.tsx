@@ -74,9 +74,9 @@ describe("SiteFrameView under the refined look", () => {
   it("draws the surface recipe on --frame, with the board's main padding", () => {
     const html = markup({ viewport: "desktop", children: <p>page</p> });
     expect(html).toContain("background:var(--frame)");
-    expect(html).toContain("width:calc(100% - 12px);max-width:1428px;margin:0 auto 6px");
+    expect(html).toContain("width:calc(100% - 16px);max-width:1428px;margin:0 auto 8px");
     expect(html).toContain("background:var(--surface);border:1px solid var(--surface-border);border-radius:10px;box-shadow:var(--surface-shadow)");
-    expect(html).toContain("padding:24px clamp(16px, 4.6vw, 64px) 48px");
+    expect(html).toContain("padding:39px 55px 48px");
   });
 
   it("keeps the 6px inset and radius 10 on a phone, with the phone header and the dock", () => {

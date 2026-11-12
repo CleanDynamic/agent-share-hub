@@ -173,11 +173,11 @@ describe("SiteHeaderView under the refined look", () => {
     expect(screen.getByRole("button", { name: "Account" })).toBeTruthy();
   });
 
-  it("sits on the frame: 48 high, 0 24px (S37), gap 8, no background and no border", () => {
+  it("sits on the frame: 48 high, 0 56px, gap 8, no background and no border", () => {
     const html = markup();
     const head = html.slice(html.indexOf("<header"), html.indexOf(">", html.indexOf("<header")));
     expect(head).toContain("height:48px");
-    expect(head).toContain("padding:0 24px");
+    expect(head).toContain("padding:0 56px");
     expect(head).toContain("gap:8px");
     expect(head).not.toContain("background");
     expect(head).not.toMatch(/[;"]border(-bottom)?:/);

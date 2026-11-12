@@ -219,14 +219,15 @@ function RefinedSiteHeaderView({
       data-testid="site-header"
       data-ui="site-header"
       style={{
-        width: "100%",
-        maxWidth: 1440,
+        /* The surface's width rule, and its 56 content edge, so the header lines up with the page at every width. */
+        width: "calc(100% - 16px)",
+        maxWidth: 1428,
         margin: "0 auto",
         height: HEADER_HEIGHT,
         display: "flex",
         alignItems: "center",
         gap: space[2],
-        padding: `0 ${space[6]}px`,
+        padding: "0 56px",
         boxSizing: "border-box",
       }}
     >

@@ -20,8 +20,8 @@ const markup = (wide?: boolean) =>
 describe("the frame's wide option", () => {
   it("keeps the surface at 1428 and the main padding unless asked", () => {
     const html = markup();
-    expect(html).toContain("width:calc(100% - 12px);max-width:1428px;margin:0 auto 6px");
-    expect(html).toContain("padding:24px clamp(16px, 4.6vw, 64px) 48px");
+    expect(html).toContain("width:calc(100% - 16px);max-width:1428px;margin:0 auto 8px");
+    expect(html).toContain("padding:39px 55px 48px");
     expect(html).not.toContain("data-wide");
   });
 
