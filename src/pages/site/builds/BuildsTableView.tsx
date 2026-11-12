@@ -10,7 +10,7 @@
    region a keyboard can reach. Rows past the first screen are skipped until near (`content-visibility`). No motion: rows
    change at once. */
 
-import { cloneElement, type ReactElement, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { LampBar } from "@/components/brand/LampDot";
@@ -29,6 +29,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ActiveFilterChip } from "@/components/vision/ActiveFilterChip";
 import { Empty } from "@/components/vision/Empty";
 import type { CalcKind } from "@/lib/build/buildsLayout";
+import { ALL_COLUMN_IDS } from "@/lib/build/buildsColumns";
 import { RANGE_FILTERS } from "@/lib/build/galleryRanges";
 import { STALE_AFTER_DAYS } from "@/lib/build/signals";
 import { TextTabs, type TextTab } from "@/components/vision/TextTabs";
@@ -37,6 +38,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 
+import { useColumnDrag, type HeadDrag } from "./columnDrag";
 import { BuildsControl, BuildsTextButton, FiltersButton, TABLE_ROW, UpdatingStatus, ellipsis, hitArea, text } from "./BuildsFrame";
 
 /* ── props ── */
@@ -54,8 +56,9 @@ export const COLUMN_ORDER: readonly ColumnId[] = ["build", "built", "field", "to
 
 export const EXTRA_COLUMNS: readonly ExtraColumnId[] = ["shape", "task", "setting", "role", "technique", "modality", "method", "autonomy", "data", "oversight", "age", "skill", "works", "likes", "patterns", "published"];
 
-/** Every column, the extras after the board's twelve (so the footer's groups stay together). */
-export const ALL_COLUMNS: readonly ColumnId[] = [...COLUMN_ORDER, ...EXTRA_COLUMNS];
+/** Every column, the extras after the board's twelve (so the footer's groups stay together). BF-12: the list itself is in
+    `src/lib/build/buildsColumns.ts`, where the address reads it. */
+export const ALL_COLUMNS = ALL_COLUMN_IDS as readonly ColumnId[];
 
 export const COLUMN_NAME: Record<ColumnId, string> = {
   build: "Build",
@@ -117,14 +120,13 @@ export interface TableRowView {
   cost: string;
   /** SV-24 P2: the extra columns' values; absent where the dev page draws only the board's twelve. */
   extra?: Readonly<Partial<Record<ExtraColumnId, string>>>;
+  /** BF-12: what a row is sorted on where its cell is words: the raw times and the open topics' number. Absent on the dev page. */
+  confirmedAt?: string | null;
+  publishedAt?: string | null;
+  openCount?: number;
   /** BF-10: the Likes number, and the lists Works on model and Patterns are joined from, for the footer's calculations. */
   likes?: number;
   lists?: Readonly<Partial<Record<"works" | "patterns", readonly string[]>>>;
-}
-
-export interface SortOption {
-  value: string;
-  label: string;
 }
 
 export interface TableChip {
@@ -135,12 +137,8 @@ export interface TableChip {
 
 export interface TableFooterView {
   count: string;
-  /** "Most common · Sales, Claude Code". */
-  mostCommon?: string;
-  /** "Median 11 steps". */
-  median?: string;
-  /** "Total 214". */
-  total?: string;
+  /** BF-13: a value under its own column: the most common Field and Tool, "Median 11" under Steps, "Total 214" under Reproductions. */
+  byColumn?: Readonly<Partial<Record<ColumnId, string>>>;
   /** The dev page's button, with no menu. */
   onCalculate?: () => void;
   /** SV-24 P2: the calculations added, each worked out from the loaded page. */
@@ -151,6 +149,8 @@ export interface TableFooterView {
 
 export interface TableCalculation {
   key: string;
+  /** BF-13: the column it is drawn under. */
+  column: ColumnId;
   /** "Sum, Steps 214". */
   text: string;
   onRemove: () => void;
@@ -164,8 +164,10 @@ export interface CalculationOption {
 
 export interface ColumnsMenu {
   /** BF-10 (C9): `group` heads the options under it; options of a group come together. */
-  options: readonly { id: ColumnId; name: string; group?: string; on: boolean; locked?: boolean }[];
+  options: readonly { id: ColumnId; name: string; group?: string; on: boolean; locked?: boolean; move?: { left: boolean; right: boolean } }[];
   onToggle: (id: ColumnId) => void;
+  /** BF-13 (C6): a shown column one place left or right; the keyboard's way to what a head's drag does. */
+  onMove?: (id: ColumnId, direction: "left" | "right") => void;
   /** Back to the default twelve; drawn only while the columns are not. */
   onReset?: () => void;
 }
@@ -174,7 +176,6 @@ export interface BuildsTableViewProps {
   lenses: readonly TextTab[];
   lens: string;
   onLens: (lens: string) => void;
-  sort: { value: string; options: readonly SortOption[]; onChange: (value: string) => void };
   /** "12 of 24": drawn only where the chooser is live. */
   columnsLabel?: string;
   /** SV-24 P2: the Columns chooser. Absent: the label is all there is. */
@@ -186,8 +187,18 @@ export interface BuildsTableViewProps {
   rows: readonly TableRowView[];
   /** The column each head sorts by, and the arrow on the sorted one. */
   sortColumn: { id: ColumnId; ascending: boolean } | null;
-  /** Column heads that sort: id to the sort value they choose. */
-  sortableBy: Partial<Record<ColumnId, string>>;
+  /** BF-12 (B5): the second key, for ties: its head shows its arrow and "2". */
+  sortColumn2?: { id: ColumnId; ascending: boolean } | null;
+  /** BF-12 (B3): the heads that sort, those whose answer is true for the whole list. */
+  sortable: ReadonlySet<ColumnId>;
+  /** A head pressed; `second` with Shift, for a second key. `fresh` from the phone's Sort menu: the column's first step. */
+  onSortColumn: (id: ColumnId, second: boolean, fresh?: boolean) => void;
+  /** BF-13 (C6): the heads that can be dragged to a new place (the reader's own columns, not Build), and where one was dropped:
+      its index among the drawn heads. */
+  draggable?: ReadonlySet<ColumnId>;
+  onDropColumn?: (id: ColumnId, index: number) => void;
+  /** BF-11 (B2): the columns a filter in the address holds a value for; their heads are marked. */
+  filtered?: ReadonlySet<ColumnId>;
   footer: TableFooterView;
   /** More rows exist than are shown. */
   onMore?: () => void;
@@ -205,20 +216,23 @@ export interface BuildsTableViewProps {
 
 /* ── the lens row ── */
 
-function SortMenu({ sort }: { sort: BuildsTableViewProps["sort"] }) {
-  const current = sort.options.find((option) => option.value === sort.value);
+/** BF-12 (B4): on a phone, where heads are small and scroll away, the one sort control is this menu: the drawn columns that can
+    be sorted, by their names, the sorted one checked. Choosing one sorts by it descending. On a wider screen the heads are it. */
+function SortMenu({ columns, sortable, sortColumn, onSortColumn }: Pick<BuildsTableViewProps, "columns" | "sortable" | "sortColumn" | "onSortColumn">) {
+  const options = columns.filter((id) => sortable.has(id));
+  const current = sortColumn ? COLUMN_NAME[sortColumn.id] : "";
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <BuildsControl aria-label={`Sort: ${current?.label ?? ""}`}>
-          <span style={{ color: t.label }}>Sort</span> {current?.label}
+        <BuildsControl aria-label={`Sort: ${current}`}>
+          <span style={{ color: t.label }}>Sort</span> {current}
         </BuildsControl>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={6}>
-        <DropdownMenuRadioGroup value={sort.value} onValueChange={sort.onChange}>
-          {sort.options.map((option) => (
-            <DropdownMenuRadioItem key={option.value} value={option.value}>
-              {option.label}
+        <DropdownMenuRadioGroup value={sortColumn?.id ?? ""} onValueChange={(id) => onSortColumn(id as ColumnId, false, true)}>
+          {options.map((id) => (
+            <DropdownMenuRadioItem key={id} value={id}>
+              {COLUMN_NAME[id]}
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>
@@ -251,10 +265,22 @@ function ColumnsChooser({ label, menu }: { label: string; menu: ColumnsMenu }) {
             <div key={group.name ?? at} role={group.name ? "group" : undefined} aria-label={group.name}>
               {group.name ? <div style={{ ...text(12, 400, t.label), margin: `${at === 0 ? 0 : 12}px 0 4px` }}>{group.name}</div> : null}
               {group.options.map((option) => (
-                <label key={option.id} style={{ display: "grid", gridTemplateColumns: "16px 1fr", columnGap: 10, alignItems: "center", minHeight: 32, cursor: option.locked ? "default" : "pointer", ...text(12.5, 400, option.on ? t.text : t.text2) }}>
-                  <Checkbox checked={option.on} disabled={option.locked} onChange={() => menu.onToggle(option.id)} />
-                  <span>{option.name}</span>
-                </label>
+                <div key={option.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <label style={{ flex: 1, display: "grid", gridTemplateColumns: "16px 1fr", columnGap: 10, alignItems: "center", minHeight: 32, cursor: option.locked ? "default" : "pointer", ...text(12.5, 400, option.on ? t.text : t.text2) }}>
+                    <Checkbox checked={option.on} disabled={option.locked} onChange={() => menu.onToggle(option.id)} />
+                    <span>{option.name}</span>
+                  </label>
+                  {option.move && menu.onMove ? (
+                    <span style={{ display: "inline-flex", gap: 16, paddingInline: 8 }}>
+                      <BuildsTextButton aria-label={`Move ${option.name} left`} disabled={!option.move.left} onClick={() => menu.onMove?.(option.id, "left")}>
+                        ‹
+                      </BuildsTextButton>
+                      <BuildsTextButton aria-label={`Move ${option.name} right`} disabled={!option.move.right} onClick={() => menu.onMove?.(option.id, "right")}>
+                        ›
+                      </BuildsTextButton>
+                    </span>
+                  ) : null}
+                </div>
               ))}
             </div>
           ))}
@@ -269,14 +295,15 @@ function ColumnsChooser({ label, menu }: { label: string; menu: ColumnsMenu }) {
   );
 }
 
-function LensRow({ lenses, lens, onLens, sort, columnsLabel, columnsMenu, updating, activeCount, onOpenFilters, setName }: Pick<BuildsTableViewProps, "lenses" | "lens" | "onLens" | "sort" | "columnsLabel" | "columnsMenu" | "updating" | "activeCount" | "onOpenFilters" | "setName">) {
+function LensRow({ lenses, lens, onLens, columns, sortable, sortColumn, onSortColumn, columnsLabel, columnsMenu, updating, activeCount, onOpenFilters, setName }: Pick<BuildsTableViewProps, "lenses" | "lens" | "onLens" | "columns" | "sortable" | "sortColumn" | "onSortColumn" | "columnsLabel" | "columnsMenu" | "updating" | "activeCount" | "onOpenFilters" | "setName">) {
+  const phone = useIsPhone();
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12, borderBottom: `1px solid ${t.hairline}` }}>
       <TextTabs tabs={lenses} value={lens} onChange={onLens} label="Lens" rule={false} />
       <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
         <UpdatingStatus updating={updating} />
         <FiltersButton activeCount={activeCount} setName={setName} onClick={onOpenFilters} />
-        <SortMenu sort={sort} />
+        {phone ? <SortMenu columns={columns} sortable={sortable} sortColumn={sortColumn} onSortColumn={onSortColumn} /> : null}
         {columnsLabel && columnsMenu ? (
           <ColumnsChooser label={columnsLabel} menu={columnsMenu} />
         ) : columnsLabel ? (
@@ -318,25 +345,65 @@ export function RowLamp({ lit }: { lit: boolean }) {
   );
 }
 
+/** BF-13 (C5b): the Build column stays in view while the table scrolls sideways, on the surface it sits on. */
+const PINNED: CSSProperties = { position: "sticky", left: 0, zIndex: 1, background: t.surface };
+
+/** The pinned column's right edge, drawn only while the table is scrolled, so the cells passing under it are cut by a line. */
+function PinnedEdge({ scrolled }: { scrolled: boolean }) {
+  return scrolled ? <span aria-hidden="true" style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 1, background: t.hairline }} /> : null;
+}
+
 const th = (right: boolean, last: boolean): React.CSSProperties => ({ ...text(12, 400, t.label), padding: last ? "0 0 10px" : "0 12px 10px 0", borderBottom: `1px solid ${t.hairline}`, textAlign: right ? "right" : "left", verticalAlign: "bottom", whiteSpace: "nowrap" });
 const td = (right: boolean, last: boolean): React.CSSProperties => ({ padding: last ? 0 : "0 12px 0 0", height: TABLE_ROW, textAlign: right ? "right" : "left", whiteSpace: "nowrap" });
 
-function ColumnHead({ id, last, sorted, sortValue, onSort }: { id: ColumnId; last: boolean; sorted: { ascending: boolean } | null; sortValue?: string; onSort: (value: string) => void }) {
+/** BF-11 (B2): a filtered head is in `--text` at 500 over a 1px `--selected-edge` line, and says so to a screen reader. No icon,
+    and pressing it still only sorts: the way to the filter is the Filters button and the chip. The head and its button are named
+    "Autonomy, filtered" by `aria-label`, not by a hidden piece after the name: that gets a space before its comma in some engines,
+    and would join the head's text. */
+const FILTERED_MARK: React.CSSProperties = { fontWeight: 500, borderBottom: `1px solid ${t.selectedEdge}` };
+
+function ColumnHead({ id, last, sorted, sorted2, sortable, onSort, filtered, drag, scrolled }: { id: ColumnId; last: boolean; sorted: { ascending: boolean } | null; sorted2: { ascending: boolean } | null; sortable: boolean; onSort: (second: boolean) => void; filtered: boolean; drag?: HeadDrag; scrolled: boolean }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   const right = RIGHT.has(id);
-  const ariaSort = sorted ? (sorted.ascending ? "ascending" : "descending") : sortValue ? "none" : undefined;
+  /* Only one head may say ascending or descending; the second key's says "other", and shows its arrow and a 2. */
+  const ariaSort = sorted ? (sorted.ascending ? "ascending" : "descending") : sorted2 ? "other" : sortable ? "none" : undefined;
+  const arrow = sorted ?? sorted2;
+  const label = filtered ? `${HEAD[id]}, filtered` : undefined;
   return (
-    <th scope="col" aria-sort={ariaSort} style={{ ...th(right, last), color: sorted ? t.text : t.label }}>
-      {sortValue ? (
+    <th
+      scope="col"
+      data-column={id}
+      aria-sort={ariaSort}
+      aria-label={label}
+      {...drag}
+      style={{ ...th(right, last), color: sorted || filtered ? t.text : t.label, ...(drag ? { userSelect: "none", touchAction: "none", cursor: "grab" } : null), ...(id === "build" ? PINNED : null) }}
+    >
+      {id === "build" ? <PinnedEdge scrolled={scrolled} /> : null}
+      {sortable ? (
         <button
           type="button"
-          onClick={() => onSort(sortValue)}
+          onClick={(event) => onSort(event.shiftKey)}
+          /* Shift with Enter or Space is the second key from the keyboard, whatever the browser puts on the click it makes. */
+          onKeyDown={(event) => {
+            if (event.shiftKey && (event.key === "Enter" || event.key === " ")) {
+              event.preventDefault();
+              onSort(true);
+            }
+          }}
+          aria-label={label}
           {...handlers}
-          style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: 0, ...hitArea(2), font: "inherit", color: state.hovered ? t.text : "inherit", cursor: "pointer", borderRadius: r.chip, ...ring(state.focusVisible) }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: 0, ...hitArea(2), font: "inherit", color: state.hovered ? t.text : "inherit", cursor: "pointer", borderRadius: r.chip, ...ring(state.focusVisible), ...(filtered ? FILTERED_MARK : null) }}
         >
           {HEAD[id]}
-          {sorted ? <span aria-hidden="true">{sorted.ascending ? "↑" : "↓"}</span> : null}
+          {arrow ? (
+            <span aria-hidden="true">
+              {arrow.ascending ? "↑" : "↓"}
+              {sorted2 && !sorted ? "2" : null}
+            </span>
+          ) : null}
         </button>
+      ) : filtered ? (
+        <span style={FILTERED_MARK}>{HEAD[id]}</span>
       ) : (
         HEAD[id]
       )}
@@ -434,11 +501,12 @@ const QUIET: ReadonlySet<ColumnId> = new Set(["built", "field", "confirmed", "op
 /** Rows past the first screen are skipped until they come near. */
 const FIRST_SCREEN_ROWS = 14;
 
-function Row({ row, columns, index }: { row: TableRowView; columns: readonly ColumnId[]; index: number }) {
+function Row({ row, columns, index, scrolled }: { row: TableRowView; columns: readonly ColumnId[]; index: number; scrolled: boolean }) {
   return (
     <tr style={{ borderBottom: `1px solid ${t.hairline}`, ...(index >= FIRST_SCREEN_ROWS ? { contentVisibility: "auto", containIntrinsicSize: `auto ${TABLE_ROW}px` } : null) }}>
       {columns.map((id, position) => (
-        <td key={id} style={{ ...td(RIGHT.has(id), position === columns.length - 1), color: QUIET.has(id) ? t.text2 : t.text }}>
+        <td key={id} style={{ ...td(RIGHT.has(id), position === columns.length - 1), color: QUIET.has(id) ? t.text2 : t.text, ...(id === "build" ? PINNED : null) }}>
+          {id === "build" ? <PinnedEdge scrolled={scrolled} /> : null}
           {cellOf(id, row)}
         </td>
       ))}
@@ -448,10 +516,10 @@ function Row({ row, columns, index }: { row: TableRowView; columns: readonly Col
 
 /* ── the footer ── */
 
-/** BF-01 P4: what the two lamps mean, the last thing in the footer. */
+/** BF-01 P4: what the two lamps mean. BF-13: its own line under the table, outside it. */
 function LampKey() {
   return (
-    <span style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 8, ...text(12, 400, t.label) }}>
+    <span data-testid="builds-lamp-key" style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 8, ...text(12, 400, t.label) }}>
       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
         <RowLamp lit />
         <span>{`confirmed in the last ${STALE_AFTER_DAYS} days`}</span>
@@ -462,10 +530,6 @@ function LampKey() {
       </span>
     </span>
   );
-}
-
-function span(columns: readonly ColumnId[], from: ColumnId, group: readonly ColumnId[]): number {
-  return group.filter((id) => columns.includes(id) && columns.indexOf(id) >= columns.indexOf(from)).length;
 }
 
 /** Add a calculation: a menu of the columns one can be made on (sum and median of a count, most common of a word), or the dev page's plain button. */
@@ -498,72 +562,43 @@ function AddCalculation({ footer }: { footer: TableFooterView }) {
   ) : null;
 }
 
-/** The calculations added, each with its way to take it off, and the button that adds one. */
-function CalculationCell({ footer }: { footer: TableFooterView }) {
-  return (
-    <span style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "4px 16px" }}>
-      <AddCalculation footer={footer} />
-      {(footer.calculations ?? []).map((calculation) => (
-        <span key={calculation.key} style={{ display: "inline-flex", alignItems: "baseline", gap: 4, ...text(12, 400, t.label) }}>
-          {calculation.text}
-          <BuildsTextButton size={12} aria-label={`Remove ${calculation.text}`} onClick={calculation.onRemove}>
-            ×
-          </BuildsTextButton>
-        </span>
-      ))}
-    </span>
-  );
-}
-
-function Footer({ columns, footer }: { columns: readonly ColumnId[]; footer: TableFooterView }) {
-  const cells: ReactNode[] = [];
-  const small = { ...text(12, 400, t.label), padding: "12px 12px 0 0" };
-  const skip = new Set<ColumnId>();
-  const hasCalculations = Boolean(footer.onCalculate || footer.calculate);
-  columns.forEach((id, position) => {
-    if (skip.has(id)) return;
-    if (id === "build") {
-      cells.push(<td key={id} style={small}>{footer.count}</td>);
-    } else if (id === "built") {
-      const n = span(columns, "built", ["built", "field", "tools"]);
-      (["built", "field", "tools"] as const).forEach((c) => skip.add(c));
-      cells.push(<td key={id} colSpan={n} style={small}>{footer.mostCommon ?? ""}</td>);
-    } else if (id === "steps") {
-      const n = span(columns, "steps", ["steps", "sessions"]);
-      (["steps", "sessions"] as const).forEach((c) => skip.add(c));
-      cells.push(<td key={id} colSpan={n} style={{ ...small, textAlign: "right" }}>{footer.median ?? ""}</td>);
-    } else if (id === "reproductions") {
-      cells.push(<td key={id} style={{ ...small, textAlign: "right" }}>{footer.total ?? ""}</td>);
-    } else if (id === "confirmed") {
-      const rest = columns.length - position;
-      columns.slice(position).forEach((c) => skip.add(c));
-      cells.push(
-        <td key={id} colSpan={rest} style={{ ...small, padding: "12px 0 0" }}>
-          {hasCalculations ? <CalculationCell footer={footer} /> : null}
-        </td>,
-      );
-    } else {
-      cells.push(<td key={id} style={small} />);
-    }
-  });
-  /* With Confirmed off the button has no cell of its own: it sits in a row under the footer, the width of the table. */
-  const apart = hasCalculations && !columns.includes("confirmed");
-  /* The key goes last in the footer's final cell: the row under it when the calculations sit apart, else the last cell. */
-  if (!apart) {
-    const last = cells[cells.length - 1] as ReactElement<{ children?: ReactNode }>;
-    cells[cells.length - 1] = cloneElement(last, undefined, last.props.children, <LampKey key="key" />);
-  }
+/** BF-13 (C6): one cell per column, in the drawn order, so a value moves with its column. The Build cell holds the count and, under
+    it, Add a calculation; every other cell its own value and the calculations added on it, each with its Remove button. */
+function Footer({ columns, footer, scrolled }: { columns: readonly ColumnId[]; footer: TableFooterView; scrolled: boolean }) {
+  const line = { display: "block" } as const;
   return (
     <tfoot>
-      <tr>{cells}</tr>
-      {apart ? (
-        <tr>
-          <td colSpan={columns.length} style={{ padding: "8px 0 0" }}>
-            <CalculationCell footer={footer} />
-            <LampKey />
-          </td>
-        </tr>
-      ) : null}
+      <tr>
+        {columns.map((id, position) => {
+          const last = position === columns.length - 1;
+          const calculations = (footer.calculations ?? []).filter((calculation) => calculation.column === id);
+          return (
+            <td key={id} style={{ ...text(12, 400, t.label), padding: last ? "12px 0 0" : "12px 12px 0 0", textAlign: RIGHT.has(id) ? "right" : "left", verticalAlign: "top", ...(id === "build" ? PINNED : null) }}>
+              {id === "build" ? (
+                <>
+                  <PinnedEdge scrolled={scrolled} />
+                  <span style={line}>{footer.count}</span>
+                  <AddCalculation footer={footer} />
+                </>
+              ) : (
+                <>
+                  {/* The footer's own value never widens its column: it wraps within the width the head and the cells set, and a
+                      word longer than that ("Median" under Steps) runs into the cell's own padding. */}
+                  {footer.byColumn?.[id] ? <span style={{ display: "block", width: 0, minWidth: "100%" }}>{footer.byColumn[id]}</span> : null}
+                  {calculations.map((calculation) => (
+                    <span key={calculation.key} style={{ display: "flex", alignItems: "baseline", justifyContent: RIGHT.has(id) ? "flex-end" : "flex-start", gap: 4 }}>
+                      {calculation.text}
+                      <BuildsTextButton size={12} aria-label={`Remove ${calculation.text}`} onClick={calculation.onRemove}>
+                        ×
+                      </BuildsTextButton>
+                    </span>
+                  ))}
+                </>
+              )}
+            </td>
+          );
+        })}
+      </tr>
     </tfoot>
   );
 }
@@ -571,39 +606,58 @@ function Footer({ columns, footer }: { columns: readonly ColumnId[]; footer: Tab
 /* ── the table ── */
 
 export function BuildsTableView(props: BuildsTableViewProps) {
-  const { lenses, lens, onLens, sort, columnsLabel, columnsMenu, chips, onRemoveChip, onClearAll, columns, rows, sortColumn, sortableBy, footer, onMore, loadingMore, empty, updating, activeCount, onOpenFilters, setName } = props;
+  const { lenses, lens, onLens, columnsLabel, columnsMenu, chips, onRemoveChip, onClearAll, columns, rows, sortColumn, sortColumn2, sortable, onSortColumn, draggable, onDropColumn, filtered, footer, onMore, loadingMore, empty, updating, activeCount, onOpenFilters, setName } = props;
+  const headRow = useRef<HTMLTableRowElement>(null);
+  /* BF-13 (C5b): one passive listener sets one flag, whether the table is scrolled sideways; the region carries it as
+     data-scrolled and the pinned column draws its edge from it. Nothing else changes per scroll event. */
+  const region = useRef<HTMLDivElement>(null);
+  const [scrolled, setScrolled] = useState(false);
+  const shown = !(rows.length === 0 && empty);
+  useEffect(() => {
+    const el = region.current;
+    if (!el) return;
+    const onScroll = () => setScrolled(el.scrollLeft > 0);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [shown]);
+  const dragOf = useColumnDrag(headRow, onDropColumn ? (id, index) => onDropColumn(id as ColumnId, index) : undefined);
   return (
     <div data-testid="builds-table">
-      <LensRow lenses={lenses} lens={lens} onLens={onLens} sort={sort} columnsLabel={columnsLabel} columnsMenu={columnsMenu} updating={updating} activeCount={activeCount} onOpenFilters={onOpenFilters} setName={setName} />
+      <LensRow lenses={lenses} lens={lens} onLens={onLens} columns={columns} sortable={sortable} sortColumn={sortColumn} onSortColumn={onSortColumn} columnsLabel={columnsLabel} columnsMenu={columnsMenu} updating={updating} activeCount={activeCount} onOpenFilters={onOpenFilters} setName={setName} />
       <ActiveFilters chips={chips} onRemove={onRemoveChip} onClearAll={onClearAll} />
       {rows.length === 0 && empty ? (
         <div style={{ marginTop: 20 }}>{empty}</div>
       ) : (
-        <div role="region" aria-label="Builds table" aria-busy={updating === true} tabIndex={0} style={{ marginTop: 20, overflowX: "auto", scrollbarWidth: "thin", scrollbarColor: `${t.label} transparent` }}>
+        <div ref={region} role="region" aria-label="Builds table" data-scrolled={scrolled ? "true" : undefined} aria-busy={updating === true} tabIndex={0} style={{ position: "relative", marginTop: 20, overflowX: "auto", scrollbarWidth: "thin", scrollbarColor: `${t.label} transparent` }}>
           <table style={{ width: "100%", minWidth: 1000, borderCollapse: "collapse", ...text(13, 400, t.text) }}>
             <thead>
-              <tr>
+              <tr ref={headRow}>
                 {columns.map((id, position) => (
                   <ColumnHead
                     key={id}
                     id={id}
                     last={position === columns.length - 1}
                     sorted={sortColumn?.id === id ? sortColumn : null}
-                    sortValue={sortableBy[id]}
-                    onSort={sort.onChange}
+                    sorted2={sortColumn2?.id === id ? sortColumn2 : null}
+                    sortable={sortable.has(id)}
+                    onSort={(second) => onSortColumn(id, second)}
+                    filtered={filtered?.has(id) === true}
+                    drag={draggable?.has(id) ? dragOf?.(id) : undefined}
+                    scrolled={scrolled}
                   />
                 ))}
               </tr>
             </thead>
             <tbody style={updating ? { opacity: 0.5 } : undefined}>
               {rows.map((row, index) => (
-                <Row key={row.id} row={row} columns={columns} index={index} />
+                <Row key={row.id} row={row} columns={columns} index={index} scrolled={scrolled} />
               ))}
             </tbody>
-            <Footer columns={columns} footer={footer} />
+            <Footer columns={columns} footer={footer} scrolled={scrolled} />
           </table>
         </div>
       )}
+      {rows.length === 0 && empty ? null : <LampKey />}
       {onMore ? (
         <div style={{ marginTop: 20 }}>
           <BuildsControl onClick={onMore} disabled={loadingMore}>

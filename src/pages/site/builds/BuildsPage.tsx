@@ -38,9 +38,9 @@ import { SeoHead } from "@/components/SeoHead";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { useAuth } from "@/contexts/AuthContext";
 import { reportError } from "@/lib/errors/report";
-import { isEmptyLayout, withCalculation, withColumns, type BuildsLayout } from "@/lib/build/buildsLayout";
+import { isEmptyLayout, withCalculation, withColumns, withFilterColumns, type BuildsLayout } from "@/lib/build/buildsLayout";
 import { createFilterSet, deleteFilterSet, getFilterSet, joinFilterSet, leaveFilterSet, listMyFilterSets, renameFilterSet, saveFilterSetLayout, setFilterSetPublic, type FilterSet, type FilterSetDetail } from "@/lib/build/filterSets";
-import { GALLERY_LENSES, countBuildsTable, countGalleryLenses, getClassificationFacets, getCountSpread, getGalleryFacets, getWorksOnModelCounts, getGalleryStats, listBuildsTable, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
+import { BUILDS_TABLE_PAGE_SIZE, GALLERY_LENSES, countBuildsTable, countGalleryLenses, getClassificationFacets, getCountSpread, getGalleryFacets, getWorksOnModelCounts, getGalleryStats, listBuildsTable, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
 import { RANGE_KEYS, type RangeKey } from "@/lib/build/galleryRanges";
 import { galleryHref, parseGalleryParams, type GalleryParams, type GalleryViewMode } from "@/lib/build/galleryParams";
 import { LIST_STALE_MS, SLOW_STALE_MS } from "@/lib/query/client";
@@ -53,8 +53,8 @@ import { BuildsView, statParts } from "./BuildsView";
 import {
   LENS_LABEL,
   MAPS_PAGE,
+  SERVER_SORT,
   SORT_COLUMN,
-  SORT_OPTIONS,
   activeChips,
   activeCount,
   calculationOptions,
@@ -62,11 +62,22 @@ import {
   chosenColumns,
   columnsLabel,
   columnsMenu,
+  drawnColumns,
+  filteredColumns,
   footerCalculations,
   lensCountParams,
   listParamsOf,
+  movedColumn,
+  conditionsMet,
+  matchChoices,
+  matchOf,
+  requiredOnly,
+  nextSort,
+  placedColumn,
   nextTableOffset,
   panelSections,
+  sortRows,
+  sortedBy,
   tableFooter,
   tableRow,
   toggled,
@@ -76,10 +87,13 @@ import {
   type PanelOrder,
 } from "./buildsModel";
 import { BuildsClassificationView, BuildsMapsPane, prefetchView } from "./buildsViews";
-import { EXTRA_COLUMNS, type ExtraColumnId } from "./BuildsTableView";
+import { EXTRA_COLUMNS, type ColumnId, type ExtraColumnId } from "./BuildsTableView";
 import { useBuildsLayout } from "./useBuildsLayout";
 import { cardOf, readFacetChoice, writeFacetChoice } from "./classificationModel";
 import type { MapsDirection } from "./BuildsMapsView";
+
+/** BF-14: Load all reads the candidates' pages up to this many builds; past it a match is not offered. */
+const LOAD_ALL_MAX = 200;
 
 /** One sentence and Retry (CA-28's wording). */
 function TableError({ onRetry }: { onRetry: () => void }) {
@@ -120,7 +134,10 @@ export default function BuildsPage() {
   const userId = user?.id ?? null;
   const params = parseGalleryParams(search);
   const view: GalleryViewMode = params.view ?? "table";
-  const listParams = listParamsOf(params);
+  /* BF-14 (B6): with a match applied, the list is asked for the lens and the required filters only: the candidates, every one of
+     which the browser checks against the countable filters once all are loaded. */
+  const applied = matchOf(params);
+  const listParams = listParamsOf(applied !== null ? requiredOnly(params) : params);
   const sort = (listParams.sort ?? "reproduced") as GalleryFeedSort;
   const go = (next: GalleryParams) => navigate(galleryHref(next), { preventScrollReset: true });
   const hrefFor = (next: GalleryViewMode) => galleryHref({ ...params, view: next === "table" ? undefined : next });
@@ -147,6 +164,18 @@ export default function BuildsPage() {
     placeholderData: keepPreviousData,
     staleTime: LIST_STALE_MS,
   });
+  /* BF-14: while the candidates are more than one page, every filter stays ANDed on the server, as if no match were set. */
+  const andedParams = listParamsOf(params);
+  const anded = useInfiniteQuery({
+    queryKey: ["build", "listBuildsTable", andedParams],
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) => listBuildsTable({ ...andedParams, offset: pageParam }),
+    getNextPageParam: nextTableOffset,
+    placeholderData: keepPreviousData,
+    staleTime: LIST_STALE_MS,
+    enabled: applied !== null && list.hasNextPage,
+  });
+  const shownList = applied !== null && list.hasNextPage ? anded : list;
   const stats = useQuery({ queryKey: ["build", "getGalleryStats"], queryFn: getGalleryStats, staleTime: SLOW_STALE_MS });
   /* BF-08 (C1): the lens counts follow the filters (exact while one is on, so a tab's number is the list's); the old numbers stay
      until the new arrive. */
@@ -176,11 +205,27 @@ export default function BuildsPage() {
   );
 
   useEffect(() => {
-    if (list.error) reportError(list.error, { source: "query", context: "listBuildsTable" });
-  }, [list.error]);
+    if (shownList.error) reportError(shownList.error, { source: "query", context: "listBuildsTable" });
+  }, [shownList.error]);
 
   const now = Date.now();
-  const builds = list.data?.pages.flatMap((page) => page.builds) ?? [];
+  const countsLive = shownList.data?.pages[0]?.countsLive === true;
+  const loadedBuilds = shownList.data?.pages.flatMap((page) => page.builds) ?? [];
+  /* BF-14: the match applies only when every candidate is loaded; then the head, the rows and the lens tab count what it leaves. */
+  const matchLive = applied !== null && shownList === list && list.data !== undefined && !list.hasNextPage;
+  const builds = matchLive ? loadedBuilds.filter((build) => conditionsMet(build, params, now, countsLive) >= applied) : loadedBuilds;
+  const loadedCandidates = list.data?.pages.reduce((sum, page) => sum + page.builds.length, 0) ?? 0;
+  const candidateTotal = list.data?.pages[0]?.total ?? null;
+  /** Load all: the candidates' remaining pages, at most to LOAD_ALL_MAX builds. */
+  const onLoadAll = async () => {
+    let more = list.hasNextPage;
+    let loaded = loadedCandidates;
+    while (more && loaded < LOAD_ALL_MAX) {
+      const next = await list.fetchNextPage();
+      more = next.hasNextPage;
+      loaded = next.data?.pages.reduce((sum, page) => sum + page.builds.length, 0) ?? LOAD_ALL_MAX;
+    }
+  };
 
   /* MAPS: one read for each 24 builds drawn, started the moment the list has answered (the ids come from it). The data
      layer is a chunk of its own, brought on pointing at the Maps segment or here. */
@@ -200,15 +245,27 @@ export default function BuildsPage() {
     if (failure) reportError(failure, { source: "query", context: "listBuildMaps" });
   }, [maps]);
 
-  const total = list.data?.pages[0]?.total ?? null;
-  const countsLive = list.data?.pages[0]?.countsLive === true;
-  const columns = chosenColumns(layout.columns, countsLive);
+  const total = matchLive ? builds.length : (shownList.data?.pages[0]?.total ?? null);
+  /* BF-11 (B1): the reader's columns, then each column a filter in the address holds a value for. Worked out on every render, so a
+     Classification link, an opened set and Back draw them too; the reader's own list is never written by a filter. */
+  const chosen = chosenColumns(layout.columns, countsLive);
+  const filterColumns = filteredColumns(params);
+  /* BF-12: the column of a sort the reader chose is drawn too (Published, while the sort is Newest). */
+  const columns = drawnColumns(chosen, filterColumns, layout.filterColumns, countsLive, params.sort ? (SORT_COLUMN[params.sort] ?? null) : null);
   const extras = columns.filter((id): id is ExtraColumnId => (EXTRA_COLUMNS as readonly string[]).includes(id));
-  const rows = builds.map((build) => tableRow(build, now, extras));
+  /* BF-12 (B3): a head sorts only where its answer is true for the whole list. With every matching build loaded, any drawn
+     column sorts here, with no request; with more pages, only the columns the database sorts. */
+  const allLoaded = !shownList.hasNextPage && !shownList.isPlaceholderData;
+  const sortable = new Set(allLoaded ? columns : columns.filter((id) => SERVER_SORT[id]));
+  const byColumn = params.by as ColumnId | undefined;
+  const browserSort = allLoaded && byColumn !== undefined && columns.includes(byColumn) ? byColumn : null;
+  const by2Column = browserSort && params.by2 && columns.includes(params.by2 as ColumnId) ? (params.by2 as ColumnId) : undefined;
+  const loadedRows = builds.map((build) => tableRow(build, now, extras));
+  const rows = browserSort ? sortRows(loadedRows, browserSort, params.dir === "asc", by2Column, params.dir2 === "asc") : loadedRows;
   const calculationChoices = calculationOptions(layout.calculations, columns);
-  const loading = list.isLoading;
+  const loading = shownList.isLoading;
   /* BF-02 (C2): the rows on screen are the last address's until the new page lands. They stay, and say so. */
-  const updating = list.isPlaceholderData;
+  const updating = shownList.isPlaceholderData;
   usePageReady("builds", !loading && (view !== "maps" || mapsSettled));
 
   const classified = classification.data?.live === true;
@@ -317,13 +374,29 @@ export default function BuildsPage() {
 
   /* BF-08 (A2): only while the draft is dirty is the count asked, so the first screen is as it was; with nothing changed the
      dialog says the page's own total. */
+  /* BF-14: a draft with a match is counted from its candidates, read once while the dialog shows it, and only when they are one
+     page; the count request, which ANDs every filter, is not asked for it. */
+  const draftMatch = dirty && draft ? matchOf(draft) : null;
+  const draftCandidatesParams = { ...listParamsOf(requiredOnly(draft ?? params)), offset: 0 };
+  const draftCandidates = useQuery({
+    queryKey: ["build", "listBuildsTable", draftCandidatesParams],
+    queryFn: () => listBuildsTable(draftCandidatesParams),
+    enabled: draftMatch !== null,
+    staleTime: LIST_STALE_MS,
+  });
+  const draftMatchCount =
+    draftMatch !== null && draft && draftCandidates.data && draftCandidates.data.builds.length < BUILDS_TABLE_PAGE_SIZE
+      ? draftCandidates.data.builds.filter((build) => conditionsMet(build, draft, now, draftCandidates.data!.countsLive) >= draftMatch).length
+      : null;
   const draftCount = useQuery({
     queryKey: ["build", "countBuildsTable", listParamsOf(draft ?? params)],
     queryFn: () => countBuildsTable(listParamsOf(draft as GalleryParams)),
-    enabled: dirty,
+    enabled: dirty && draftMatch === null,
     placeholderData: keepPreviousData,
     staleTime: LIST_STALE_MS,
   });
+  const choices = matchChoices(shown);
+  const matchWaits = applied !== null && list.hasNextPage;
 
   const filters: BuildsFiltersViewProps = {
       activeCount: activeCount(shown),
@@ -335,7 +408,25 @@ export default function BuildsPage() {
       onToggleOption: (sectionId, key) => setDraft(toggled(shown, sectionId, key)),
       onToggleSegment: (sectionId, key) => setDraft(toggled(shown, sectionId, key)),
       dirty,
-      matchCount: dirty ? (draftCount.data ?? null) : total,
+      matchCount: dirty ? (draftMatch !== null ? draftMatchCount : (draftCount.data ?? null)) : total,
+      match:
+        choices.length > 0
+          ? {
+              choices,
+              value: matchOf(shown) ?? undefined,
+              onChange: (value) => setDraft({ ...shown, match: value }),
+              ...(matchWaits
+                ? {
+                    disabled: true,
+                    line:
+                      candidateTotal !== null && candidateTotal > LOAD_ALL_MAX
+                        ? `Available when every build is loaded: these filters leave more than ${LOAD_ALL_MAX}.`
+                        : `Available when every build is loaded: ${loadedCandidates} of ${candidateTotal ?? loadedCandidates} so far.`,
+                    onLoadAll: candidateTotal !== null && candidateTotal <= LOAD_ALL_MAX ? () => void onLoadAll() : undefined,
+                  }
+                : null),
+            }
+          : undefined,
       onOpen: () => setDraft(null),
       onCancel: () => setDraft(null),
       onClear: () => setDraft(clearedFilters(shown)),
@@ -346,12 +437,14 @@ export default function BuildsPage() {
       },
       order,
       onOrder: setOrder,
+      addColumns: layout.filterColumns,
+      onAddColumns: (on) => update((current) => withFilterColumns(current, on)),
   };
 
   const onMoreMaps = () => {
     const next = mapsShown + MAPS_PAGE;
     setMapsShown(next);
-    if (next > builds.length && list.hasNextPage) void list.fetchNextPage();
+    if (next > builds.length && shownList.hasNextPage) void shownList.fetchNextPage();
   };
 
   const onFacets = (next: typeof shownFacets) => {
@@ -374,8 +467,8 @@ export default function BuildsPage() {
 
   const mapsPage =
     view === "maps" ? (
-      list.error && !list.data ? (
-        <TableError onRetry={() => void list.refetch()} />
+      shownList.error && !shownList.data ? (
+        <TableError onRetry={() => void shownList.refetch()} />
       ) : (
         <Suspense fallback={<MapsLoadingView hrefFor={hrefFor} />}>
           <BuildsMapsPane
@@ -397,8 +490,8 @@ export default function BuildsPage() {
             notice={mapsFailed ? <MapsError onRetry={() => maps.forEach((entry) => entry.isError && void entry.refetch())} /> : undefined}
             now={now}
             empty={noMatches}
-            onMore={mapsShown < builds.length || list.hasNextPage ? onMoreMaps : undefined}
-            loadingMore={list.isFetchingNextPage}
+            onMore={mapsShown < builds.length || shownList.hasNextPage ? onMoreMaps : undefined}
+            loadingMore={shownList.isFetchingNextPage}
             updating={updating}
           />
         </Suspense>
@@ -407,8 +500,8 @@ export default function BuildsPage() {
 
   const classificationPage =
     view === "classification" ? (
-      list.error && !list.data ? (
-        <TableError onRetry={() => void list.refetch()} />
+      shownList.error && !shownList.data ? (
+        <TableError onRetry={() => void shownList.refetch()} />
       ) : (
         <Suspense fallback={<ClassificationLoadingView hrefFor={hrefFor} />}>
           <BuildsClassificationView
@@ -426,8 +519,8 @@ export default function BuildsPage() {
             onFacets={onFacets}
             cards={builds.map((build) => cardOf(build, shownFacets, valueHref, now))}
             empty={noMatches}
-            onMore={list.hasNextPage ? () => void list.fetchNextPage() : undefined}
-            loadingMore={list.isFetchingNextPage}
+            onMore={shownList.hasNextPage ? () => void shownList.fetchNextPage() : undefined}
+            loadingMore={shownList.isFetchingNextPage}
             updating={updating}
           />
         </Suspense>
@@ -443,27 +536,37 @@ export default function BuildsPage() {
       onViewIntent={prefetchView}
       filters={filters}
       table={
-        view === "table" && !(list.error && !list.data)
+        view === "table" && !(shownList.error && !shownList.data)
           ? {
-              lenses: GALLERY_LENSES.map((lens) => ({ value: lens, label: LENS_LABEL[lens], count: lensCounts.data?.[lens] })),
+              /* BF-14: with a match applied, the lens on screen counts the rows the match leaves; the other lenses' builds are not loaded. */
+              lenses: GALLERY_LENSES.map((lens) => ({ value: lens, label: LENS_LABEL[lens], count: matchLive && lens === params.lens ? builds.length : lensCounts.data?.[lens] })),
               lens: params.lens,
               setName: openDetail?.name,
               onLens: (lens) => go({ ...params, lens: lens as GalleryLens }),
-              sort: { value: sort, options: SORT_OPTIONS, onChange: (value) => go({ ...params, sort: value as GalleryFeedSort }) },
               chips: activeChips(params),
               onRemoveChip: (key) => go(withoutChip(params, key)),
               onClearAll: () => go(clearedFilters(params)),
               columns,
-              columnsLabel: columnsLabel(columns, countsLive),
-              columnsMenu: columnsMenu(
-                columns,
-                countsLive,
-                (id) => update((current) => withColumns(current, toggledColumns(chosenColumns(current.columns, countsLive), id))),
-                layout.columns === null ? undefined : () => update((current) => withColumns(current, null)),
-              ),
+              columnsLabel: columnsLabel(chosen, countsLive),
+              columnsMenu: {
+                ...columnsMenu(
+                  chosen,
+                  countsLive,
+                  (id) => update((current) => withColumns(current, toggledColumns(chosenColumns(current.columns, countsLive), id))),
+                  layout.columns === null ? undefined : () => update((current) => withColumns(current, null)),
+                  layout.filterColumns ? filterColumns : [],
+                ),
+                onMove: (id, direction) => update((current) => withColumns(current, movedColumn(chosenColumns(current.columns, countsLive), id, direction))),
+              },
+              /* BF-13 (C6): the reader's own columns, Build aside, can be dragged; a filter's or a sort's column is not theirs to place. */
+              draggable: new Set(chosen.filter((id) => id !== "build")),
+              onDropColumn: (id, index) => update((current) => withColumns(current, placedColumn(chosenColumns(current.columns, countsLive), id, index))),
               rows,
-              sortColumn: SORT_COLUMN[sort] ? { id: SORT_COLUMN[sort]!, ascending: false } : null,
-              sortableBy: { reproductions: "reproduced", confirmed: "confirmed", rebuilds: "rebuilt" },
+              sortColumn: browserSort ? { id: browserSort, ascending: params.dir === "asc" } : SORT_COLUMN[sort] ? { id: SORT_COLUMN[sort]!, ascending: listParams.ascending === true } : null,
+              sortable,
+              sortColumn2: by2Column ? { id: by2Column, ascending: params.dir2 === "asc" } : null,
+              onSortColumn: (id, second, fresh) => go(fresh ? sortedBy(params, id, allLoaded) : nextSort(params, id, allLoaded, second)),
+              filtered: new Set(filterColumns),
               footer: {
                 ...tableFooter(total, rows),
                 calculations: footerCalculations(layout.calculations, columns, rows, (calculation) => update((current) => withCalculation(current, calculation, false))),
@@ -475,13 +578,13 @@ export default function BuildsPage() {
                       }
                     : undefined,
               },
-              onMore: list.hasNextPage ? () => void list.fetchNextPage() : undefined,
-              loadingMore: list.isFetchingNextPage,
+              onMore: shownList.hasNextPage ? () => void shownList.fetchNextPage() : undefined,
+              loadingMore: shownList.isFetchingNextPage,
               empty: noMatches,
             }
           : null
       }
-      other={list.error && !list.data ? <TableError onRetry={() => void list.refetch()} /> : null}
+      other={shownList.error && !shownList.data ? <TableError onRetry={() => void shownList.refetch()} /> : null}
       updating={updating}
     />
   );

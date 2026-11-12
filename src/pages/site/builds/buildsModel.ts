@@ -1,6 +1,6 @@
 /* SV-11: Builds' words and shapes, pure: what the list is asked for, and how a row, a filter and the head are put. */
 
-import { BUILDS_TABLE_PAGE_SIZE, GALLERY_SHAPES, hasFilters, type LensCountFilters, type BuildsTableBuild, type CountSpread, type WorksOnModelCount, type BuildsTableOptions, type BuildsTablePage, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
+import { BUILDS_TABLE_PAGE_SIZE, GALLERY_SHAPES, confirmedCutoff, hasFilters, madeWithSpellings, type LensCountFilters, type BuildsTableBuild, type CountSpread, type WorksOnModelCount, type BuildsTableOptions, type BuildsTablePage, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
 import { CONFIRMED_WITHIN, DEFAULT_GALLERY_SORT, type ConfirmedState, type ConfirmedWithin, type GalleryParams } from "@/lib/build/galleryParams";
 import { RANGE_FILTERS, RANGE_KEYS, rangeWords, type NumberRange, type RangeKey } from "@/lib/build/galleryRanges";
 import { PATTERN_LABEL, type Pattern } from "@/lib/build/patterns";
@@ -8,7 +8,7 @@ import { STALE_AFTER_DAYS, isStale } from "@/lib/build/signals";
 import { shownValues } from "@/lib/classify/facets";
 import { labelFor } from "@/lib/classify/lines";
 import { FACET_LABEL, TAXONOMY, valueOf, type Facet } from "@/lib/classify/taxonomy";
-import { modelById, modelLabel } from "@/lib/models/registry";
+import { modelById, modelKeysOf, modelLabel } from "@/lib/models/registry";
 import { toolFor } from "@/lib/tools/registry";
 import { shortAgo } from "@/pages/site/home/homeModel";
 
@@ -32,6 +32,8 @@ export function listParamsOf(params: GalleryParams): BuildsTableOptions {
     confirmedState: params.state,
     worksOn: params.model,
     sort: params.sort ?? DEFAULT_GALLERY_SORT,
+    /* BF-12: the direction is the server sort's only while no browser key (`by`) holds it. */
+    ascending: params.dir === "asc" && !params.by,
   };
 }
 
@@ -240,8 +242,146 @@ export function activeChips(params: GalleryParams): TableChip[] {
     const range = params.ranges?.[key];
     if (range) chips.push({ key: `range:${key}`, name: RANGE_FILTERS[key].name, value: rangeWords(range) });
   }
+  const match = matchOf(params);
+  if (match !== null) chips.push({ key: "match", name: "Match", value: `at least ${match} of ${countableIds(params).length}` });
   if (params.query) chips.push({ key: "q", name: "Search", value: params.query });
   return chips;
+}
+
+/* ── a filter's column (BF-11, B1) ── */
+
+/** The column each filter of the panel is about: a facet its own, Tools and stack the Tools column, the proof and structure
+    filters the column that shows what they test. Last confirmed and Confirmed or stale share Confirmed. */
+export const FILTER_COLUMN: Record<string, ColumnId> = {
+  ...(Object.fromEntries((["field", "task", "setting", "built", "role", "technique", "modality", "method", "autonomy", "data", "oversight", "age", "skill", "cost"] as const).map((facet) => [facet, facet])) as Record<string, ColumnId>),
+  stack: "tools",
+  reproductions: "reproductions",
+  rebuilds: "rebuilds",
+  likes: "likes",
+  steps: "steps",
+  sessions: "sessions",
+  model: "works",
+  within: "confirmed",
+  state: "confirmed",
+  shape: "shape",
+  pattern: "patterns",
+  open: "open",
+};
+
+/** The filters that hold a value, one id each, from the parameters `activeChips` reads, without the search. */
+export function activeFilterIds(params: GalleryParams): string[] {
+  const ids: string[] = (params.facets ?? []).map((key) => key.slice(0, key.indexOf(":")));
+  if (params.tool) ids.push("stack");
+  if ((params.shapes ?? []).length > 0) ids.push("shape");
+  if (params.pattern) ids.push("pattern");
+  if (params.open) ids.push("open");
+  if (params.model) ids.push("model");
+  if (params.within !== undefined) ids.push("within");
+  if (params.state) ids.push("state");
+  for (const key of RANGE_KEYS) if (params.ranges?.[key]) ids.push(key);
+  return [...new Set(ids)];
+}
+
+/** The columns of the filters that hold a value, each once. Worked out from the address on every render: nothing is stored. */
+export function filteredColumns(params: GalleryParams): ColumnId[] {
+  return [...new Set(activeFilterIds(params).flatMap((id) => (FILTER_COLUMN[id] ? [FILTER_COLUMN[id]] : [])))];
+}
+
+/** The columns drawn: the reader's, then each filtered one that is available and not already there, in the table's own order.
+    BF-12: and the column of a sort the reader chose (Published, while the sort is Newest), whatever the setting. */
+export function drawnColumns(chosen: readonly ColumnId[], filtered: readonly ColumnId[], on: boolean, countsLive: boolean, sorted: ColumnId | null = null): ColumnId[] {
+  const added = new Set([...(on ? filtered : []), ...(sorted ? [sorted] : [])].filter((id) => !chosen.includes(id)));
+  return [...chosen, ...availableColumns(countsLive).filter((id) => added.has(id))];
+}
+
+/* ── match some conditions (BF-14, B6) ── */
+
+/** The filters whose database rule the browser applies to a row with proof (BF-14 A1): the rest are required, ANDed on the server. */
+export const COUNTABLE: ReadonlySet<string> = new Set(["stack", "shape", "pattern", "model", "within", "state", "reproductions", "rebuilds", "likes", "steps"]);
+
+/** The filters holding a value that count towards "n of m". Tools is countable only from `tool` alone: a Tools and stack facet
+    also reads `builds.facets`, which the row does not carry. */
+export function countableIds(params: GalleryParams): string[] {
+  const stackFacet = (params.facets ?? []).some((key) => key.startsWith("stack:"));
+  return activeFilterIds(params).filter((id) => COUNTABLE.has(id) && !(id === "stack" && stackFacet));
+}
+
+/** A range on a count: from and to, a build with no count left out. */
+const inRange = (value: number | null | undefined, range: NumberRange | undefined): boolean =>
+  typeof value === "number" && (range?.min === undefined || value >= range.min) && (range?.max === undefined || value <= range.max);
+
+/**
+ * Whether a build meets one countable filter, by the same rule the database applies (`applyTableFilters`). The ranges and Works on
+ * model are asked only while the list carries the stored counts (`countsLive`); without them the database applies none of them,
+ * so neither does this.
+ */
+export function meets(build: BuildsTableBuild, id: string, params: GalleryParams, now: number, countsLive = true): boolean {
+  const confirmed = build.lastConfirmedAt ? Date.parse(build.lastConfirmedAt) : NaN;
+  const since = (days: number) => Date.parse(confirmedCutoff(days, new Date(now)));
+  switch (id) {
+    case "stack":
+      return madeWithSpellings(params.tool).some((spelling) => build.madeWith.includes(spelling));
+    case "shape":
+      return (params.shapes ?? []).includes(build.shape);
+    case "pattern":
+      return params.pattern !== undefined && (build.patterns ?? []).includes(params.pattern);
+    case "model": {
+      const model = params.model ? modelById(params.model) : null;
+      if (!countsLive || !model) return true;
+      const keys = modelKeysOf(model);
+      return (build.workedModels ?? []).some((key) => keys.includes(key));
+    }
+    case "within":
+      return params.within !== undefined && !Number.isNaN(confirmed) && confirmed >= since(params.within);
+    case "state":
+      if (build.reproductionCount < 1 || Number.isNaN(confirmed)) return false;
+      return params.state === "confirmed" ? confirmed >= since(STALE_AFTER_DAYS) : confirmed < since(STALE_AFTER_DAYS);
+    case "reproductions":
+      return !countsLive || inRange(build.reproductionCount, params.ranges?.reproductions);
+    case "rebuilds":
+      return !countsLive || inRange(build.rebuildCount, params.ranges?.rebuilds);
+    case "likes":
+      return !countsLive || inRange(build.likeCount ?? 0, params.ranges?.likes);
+    case "steps":
+      return !countsLive || inRange(build.stepCount, params.ranges?.steps);
+    default:
+      return false;
+  }
+}
+
+/** How many of the countable filters holding a value a build meets. */
+export function conditionsMet(build: BuildsTableBuild, params: GalleryParams, now: number, countsLive = true): number {
+  return countableIds(params).filter((id) => meets(build, id, params, now, countsLive)).length;
+}
+
+/** The Match choices: all m, then m-1 down to 1; none with fewer than two countable filters. */
+export function matchChoices(params: GalleryParams): number[] {
+  const m = countableIds(params).length;
+  return m < 2 ? [] : Array.from({ length: m }, (_, at) => m - at);
+}
+
+/** The match the page applies: below the count of countable filters, or none (All). */
+export function matchOf(params: GalleryParams): number | null {
+  const m = countableIds(params).length;
+  return m >= 2 && params.match !== undefined && params.match >= 1 && params.match < m ? params.match : null;
+}
+
+/** The address with every countable filter taken out, and the match: what the list is asked for while a match applies. */
+export function requiredOnly(params: GalleryParams): GalleryParams {
+  const ids = new Set(countableIds(params));
+  const ranges = { ...params.ranges };
+  for (const key of RANGE_KEYS) if (ids.has(key)) delete ranges[key];
+  return {
+    ...params,
+    match: undefined,
+    ...(ids.has("stack") ? { tool: undefined } : null),
+    ...(ids.has("shape") ? { shapes: undefined } : null),
+    ...(ids.has("pattern") ? { pattern: undefined } : null),
+    ...(ids.has("model") ? { model: undefined } : null),
+    ...(ids.has("within") ? { within: undefined } : null),
+    ...(ids.has("state") ? { state: undefined } : null),
+    ranges: Object.keys(ranges).length > 0 ? ranges : undefined,
+  };
 }
 
 /** The address without the chip's value. */
@@ -252,6 +392,7 @@ export function withoutChip(params: GalleryParams, key: string): GalleryParams {
   if (key === "pattern") return { ...params, pattern: undefined };
   if (key === "open") return { ...params, open: undefined };
   if (key === "q") return { ...params, query: null };
+  if (key === "match") return { ...params, match: undefined };
   if (key === "model") return { ...params, model: undefined };
   if (key === "within") return { ...params, within: undefined };
   if (key === "state") return { ...params, state: undefined };
@@ -276,7 +417,7 @@ export function toggled(params: GalleryParams, sectionId: string, key: string): 
 }
 
 /** How many values the filters hold, for "n active". */
-export const activeCount = (params: GalleryParams): number => activeChips(params).filter((chip) => chip.key !== "q").length;
+export const activeCount = (params: GalleryParams): number => activeChips(params).filter((chip) => chip.key !== "q" && chip.key !== "match").length;
 
 /** BF-02 (X2): what Clear all leaves: the lens, the view and the sort. Every filter, the query and the open set go. */
 export function clearedFilters(params: GalleryParams): GalleryParams {
@@ -336,10 +477,83 @@ export function tableRow(build: BuildsTableBuild, now: number, extras: readonly 
     rebuilds: build.rebuildCount,
     open: build.open.count === 0 ? "" : `${build.open.count} open`,
     cost: first("cost"),
+    confirmedAt: build.lastConfirmedAt,
+    publishedAt: build.publishedAt,
+    openCount: build.open.count,
     ...(extras.length > 0 ? { extra: Object.fromEntries(extras.map((id) => [id, extraOf(id)])) } : null),
     likes: build.likeCount ?? 0,
     lists: { works, patterns },
   };
+}
+
+/* ── sorting in the browser (BF-12, B3) ── */
+
+/** A value to sort on: a number or a word; null is empty, and goes last in both directions. */
+type SortKey = number | string | null;
+
+/** A scale facet's value by its place in the taxonomy, so Autonomy runs from "You do each step" to "Fully autonomous". */
+const scalePlace = (facet: Facet, label: string): SortKey => {
+  if (!label) return null;
+  const at = TAXONOMY[facet].findIndex((value) => value.label === label);
+  return at < 0 ? null : at;
+};
+const timeOf = (value: string | null | undefined): SortKey => {
+  const time = value ? Date.parse(value) : NaN;
+  return Number.isNaN(time) ? null : time;
+};
+const word = (value: string | undefined): SortKey => (value ? value : null);
+
+/** One key for each column: what its cells mean, not how they are written. */
+function sortKey(row: TableRowView, column: ColumnId): SortKey {
+  switch (column) {
+    case "build":
+      return word(row.title);
+    case "built":
+    case "field":
+      return word(row[column]);
+    case "tools":
+      return word(row.tools[0]?.name);
+    case "steps":
+    case "sessions":
+      return row[column];
+    case "reproductions":
+    case "rebuilds":
+      return row[column];
+    case "likes":
+      return row.likes ?? null;
+    case "confirmed":
+      return timeOf(row.confirmedAt);
+    case "published":
+      return timeOf(row.publishedAt);
+    case "runs":
+      return row.runs.length === 0 ? null : row.runs.reduce((total, value) => total + value, 0);
+    case "open":
+      return row.openCount ? row.openCount : null;
+    case "cost":
+      return scalePlace("cost", row.cost);
+    case "works":
+    case "patterns":
+      return word(row.lists?.[column]?.[0] ?? row.extra?.[column]);
+    default:
+      return SCALE_FACETS.includes(column as Facet) ? scalePlace(column as Facet, row.extra?.[column] ?? "") : word(row.extra?.[column]);
+  }
+}
+
+const collator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
+
+/** Two keys in one direction; an empty key is last whichever the direction. */
+function compareKeys(a: SortKey, b: SortKey, ascending: boolean): number {
+  if (a === null || b === null) return a === b ? 0 : a === null ? 1 : -1;
+  const order = typeof a === "number" && typeof b === "number" ? a - b : collator.compare(String(a), String(b));
+  return ascending ? order : -order;
+}
+
+/** The rows in a new array, sorted by one column and, for ties, a second. Stable: equal rows keep the order they came in. */
+export function sortRows(rows: readonly TableRowView[], by: ColumnId, ascending: boolean, by2?: ColumnId, ascending2 = false): TableRowView[] {
+  return rows
+    .map((row, at) => ({ row, at, first: sortKey(row, by), second: by2 ? sortKey(row, by2) : null }))
+    .sort((a, b) => compareKeys(a.first, b.first, ascending) || (by2 ? compareKeys(a.second, b.second, ascending2) : 0) || a.at - b.at)
+    .map((entry) => entry.row);
 }
 
 /** "2d ago", "just now": a short age as the Table writes it. */
@@ -360,11 +574,29 @@ export function availableColumns(countsLive: boolean): ColumnId[] {
   return ALL_COLUMNS.filter((id) => countsLive || (id !== "steps" && id !== "sessions" && id !== "works"));
 }
 
-/** The columns drawn: the default twelve, or the ones the reader kept, always with Build, always in the table's own order. */
+/** The columns drawn: the default twelve, or the ones the reader kept, always with Build first. BF-13 (C6): in the reader's order. */
 export function chosenColumns(saved: readonly string[] | null, countsLive: boolean): ColumnId[] {
   if (saved === null) return [...columnsFor(countsLive)];
-  const wanted = new Set(saved);
-  return availableColumns(countsLive).filter((id) => id === "build" || wanted.has(id));
+  const offered = new Set<string>(availableColumns(countsLive));
+  return ["build", ...(saved.filter((id) => id !== "build" && offered.has(id)) as ColumnId[])];
+}
+
+/** BF-13: a column one place left or right among the reader's. Build never moves, nothing moves before it, and at an end nothing changes. */
+export function movedColumn(chosen: readonly ColumnId[], id: ColumnId, direction: "left" | "right"): ColumnId[] {
+  const at = chosen.indexOf(id);
+  const to = direction === "left" ? at - 1 : at + 1;
+  if (id === "build" || at < 1 || to < 1 || to >= chosen.length) return [...chosen];
+  const next = [...chosen];
+  [next[at], next[to]] = [next[to], next[at]];
+  return next;
+}
+
+/** BF-13: a column dropped at a place among the reader's, after Build and no further than their last. */
+export function placedColumn(chosen: readonly ColumnId[], id: ColumnId, index: number): ColumnId[] {
+  if (id === "build" || !chosen.includes(id)) return [...chosen];
+  const others = chosen.filter((entry) => entry !== id);
+  const to = Math.max(1, Math.min(index, others.length));
+  return [...others.slice(0, to), id, ...others.slice(to)];
 }
 
 /** "12 of 24". */
@@ -381,12 +613,31 @@ const COLUMN_GROUPS: readonly (readonly [ColumnGroup, readonly ColumnId[]])[] = 
 ];
 export const COLUMN_GROUP = Object.fromEntries(COLUMN_GROUPS.flatMap(([group, ids]) => ids.map((id) => [id, group]))) as Record<ColumnId, ColumnGroup>;
 
-/** The chooser's checklist, by group. */
-export function columnsMenu(chosen: readonly ColumnId[], countsLive: boolean, onToggle: (id: ColumnId) => void, onReset?: () => void): ColumnsMenu {
+/** The chooser's checklist, by group. BF-11: a column drawn only because a filter holds a value is on and locked, and its name
+    says so: it goes when the filter does. */
+export function columnsMenu(chosen: readonly ColumnId[], countsLive: boolean, onToggle: (id: ColumnId) => void, onReset?: () => void, filtered: readonly ColumnId[] = []): ColumnsMenu {
   const offered = new Set(availableColumns(countsLive));
-  const options = COLUMN_GROUPS.flatMap(([group, ids]) => ids.filter((id) => offered.has(id)).map((id) => ({ id, name: COLUMN_NAME[id], group, on: chosen.includes(id), ...(id === "build" ? { locked: true } : null) })));
-  return { options, onToggle, onReset };
+  /* BF-13 (C6): the columns shown first, in the table's order, each but Build with its way left and right; then the rest by group. */
+  const shown = chosen.map((id, at) => ({
+    id,
+    name: COLUMN_NAME[id],
+    group: SHOWN_GROUP,
+    on: true,
+    ...(id === "build" ? { locked: true } : { move: { left: at > 1, right: at < chosen.length - 1 } }),
+  }));
+  const rest = COLUMN_GROUPS.flatMap(([group, ids]) =>
+    ids
+      .filter((id) => offered.has(id) && !chosen.includes(id))
+      .map((id) => {
+        const fromFilter = !chosen.includes(id) && filtered.includes(id);
+        return { id, name: fromFilter ? `${COLUMN_NAME[id]}, from a filter` : COLUMN_NAME[id], group, on: fromFilter, ...(fromFilter ? { locked: true } : null) };
+      }),
+  );
+  return { options: [...shown, ...rest], onToggle, onReset };
 }
+
+/** BF-13: the chooser's first group. */
+export const SHOWN_GROUP = "Shown, in order";
 
 /** The chosen columns with one turned on or off. Build stays. */
 export function toggledColumns(chosen: readonly ColumnId[], id: ColumnId): string[] {
@@ -444,7 +695,7 @@ export function footerCalculations(calculations: readonly Calculation[], chosen:
     .filter((calculation) => chosen.includes(calculation.column as ColumnId) && CALC_KINDS.includes(calculation.kind))
     .map((calculation) => {
       const text = `${CALC_WORD[calculation.kind]}, ${COLUMN_NAME[calculation.column as ColumnId]}`;
-      return { key: `${calculation.column}:${calculation.kind}`, text: `${text} ${calculate(calculation, rows) ?? "–"}`, onRemove: () => onRemove(calculation) };
+      return { key: `${calculation.column}:${calculation.kind}`, column: calculation.column as ColumnId, text: `${text} ${calculate(calculation, rows) ?? "–"}`, onRemove: () => onRemove(calculation) };
     });
 }
 
@@ -476,13 +727,18 @@ export function medianOf(values: readonly number[]): number | null {
 /** The footer: the count, the most common Field and Tools on the page, the median steps and the reproductions on the page. */
 export function tableFooter(total: number | null, rows: readonly TableRowView[]): TableFooterView {
   const median = medianOf(rows.flatMap((row) => (row.steps === null ? [] : [row.steps])));
-  const common = [mostCommon(rows.map((row) => row.field)), mostCommon(rows.flatMap((row) => row.tools.map((tool) => tool.name)))].filter(Boolean);
+  const field = mostCommon(rows.map((row) => row.field));
+  const tool = mostCommon(rows.flatMap((row) => row.tools.map((entry) => entry.name)));
   const count = total ?? rows.length;
+  /* BF-13 (C6): each value under its own column, so it moves with the column. */
   return {
     count: `${count} ${count === 1 ? "build" : "builds"}`,
-    mostCommon: common.length > 0 ? `Most common · ${common.join(", ")}` : undefined,
-    median: median === null ? undefined : `Median ${median} ${median === 1 ? "step" : "steps"}`,
-    total: `Total ${rows.reduce((sum, row) => sum + row.reproductions, 0)}`,
+    byColumn: {
+      ...(field ? { field } : null),
+      ...(tool ? { tools: tool } : null),
+      ...(median === null ? null : { steps: `Median ${median}` }),
+      reproductions: `Total ${rows.reduce((sum, row) => sum + row.reproductions, 0)}`,
+    },
   };
 }
 
@@ -490,12 +746,50 @@ export function tableFooter(total: number | null, rows: readonly TableRowView[])
 
 export const LENS_LABEL: Record<GalleryLens, string> = { all: "All", proven: "Reproduced", rebuilt: "Rebuilt", unsolved: "Still open" };
 
-export const SORT_OPTIONS: readonly { value: GalleryFeedSort; label: string }[] = [
-  { value: "reproduced", label: "Reproductions" },
-  { value: "confirmed", label: "Confirmed" },
-  { value: "rebuilt", label: "Rebuilds" },
-  { value: "newest", label: "Newest" },
-];
+/** BF-12 (B4): the Sort menu's choice: the column's first step, descending, from no sort at all. */
+export function sortedBy(params: GalleryParams, column: ColumnId, allLoaded: boolean): GalleryParams {
+  const server = SERVER_SORT[column];
+  if (server) return { ...withoutSort(params), sort: server === DEFAULT_GALLERY_SORT ? undefined : server };
+  return allLoaded ? { ...params, by: column, dir: undefined, by2: undefined, dir2: undefined } : params;
+}
 
 /** The column each sort draws its arrow on; Newest has none. */
-export const SORT_COLUMN: Partial<Record<GalleryFeedSort, ColumnId>> = { reproduced: "reproductions", confirmed: "confirmed", rebuilt: "rebuilds" };
+/** BF-12: the columns the database can sort, so their answer is true for the whole list however many pages there are. */
+export const SERVER_SORT: Partial<Record<ColumnId, GalleryFeedSort>> = { reproductions: "reproduced", confirmed: "confirmed", rebuilds: "rebuilt", steps: "steps", sessions: "sessions", published: "newest" };
+
+/** A server sort's column. */
+export const SORT_COLUMN = Object.fromEntries(Object.entries(SERVER_SORT).map(([column, sort]) => [sort, column])) as Partial<Record<GalleryFeedSort, ColumnId>>;
+
+/** The address without any sort: the resting order. */
+const withoutSort = (params: GalleryParams): GalleryParams => ({ ...params, sort: undefined, dir: undefined, by: undefined, by2: undefined, dir2: undefined });
+
+/**
+ * BF-12: what pressing a head does. A column the database sorts: its sort, then ascending, then the resting sort (the resting
+ * sort's own column has only the two). Any other column, only when every matching build is loaded (`allLoaded`): `by` with the
+ * server sort kept, then ascending, then none. A plain press clears the second key. B5, with Shift (`second`), only when every
+ * build is loaded: the column becomes the key for ties (`by2`), then ascending, then none. A server sort that is the first key
+ * is taken into the browser as `by` first, so both keys are sorted in one place.
+ */
+export function nextSort(params: GalleryParams, column: ColumnId, allLoaded: boolean, second = false): GalleryParams {
+  if (second) {
+    if (!allLoaded) return params;
+    const first = params.by ?? SORT_COLUMN[params.sort ?? DEFAULT_GALLERY_SORT];
+    if (!first || first === column) return params;
+    const keyed = { ...params, by: first };
+    if (params.by2 !== column) return { ...keyed, by2: column, dir2: undefined };
+    if (params.dir2 !== "asc") return { ...keyed, dir2: "asc" };
+    return { ...keyed, by2: undefined, dir2: undefined };
+  }
+  const server = SERVER_SORT[column];
+  if (server) {
+    const current = params.sort ?? DEFAULT_GALLERY_SORT;
+    if (current !== server || params.by) return { ...withoutSort(params), sort: server === DEFAULT_GALLERY_SORT ? undefined : server };
+    if (params.dir !== "asc") return { ...withoutSort(params), sort: params.sort, dir: "asc" };
+    return withoutSort(params);
+  }
+  if (!allLoaded) return params;
+  const kept = { ...params, by2: undefined, dir2: undefined };
+  if (params.by !== column) return { ...kept, by: column, dir: undefined };
+  if (params.dir !== "asc") return { ...kept, dir: "asc" };
+  return { ...kept, by: undefined, dir: undefined };
+}

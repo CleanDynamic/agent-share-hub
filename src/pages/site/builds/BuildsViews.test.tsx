@@ -97,12 +97,13 @@ describe("the Table", () => {
   });
 
   it("says which column is sorted, and a sortable head chooses its sort", () => {
-    const onChange = vi.fn();
-    draw((p) => ({ ...p, table: { ...p.table!, sort: { ...p.table!.sort, onChange } } }));
+    // BF-12: a head calls onSortColumn with its column; the page works out the sort.
+    const onSortColumn = vi.fn();
+    draw((p) => ({ ...p, table: { ...p.table!, onSortColumn } }));
     expect(screen.getByRole("columnheader", { name: /Reproductions/ }).getAttribute("aria-sort")).toBe("descending");
     expect(screen.getByRole("columnheader", { name: "Confirmed" }).getAttribute("aria-sort")).toBe("none");
     fireEvent.click(screen.getByRole("button", { name: "Confirmed" }));
-    expect(onChange).toHaveBeenCalledWith("confirmed");
+    expect(onSortColumn).toHaveBeenCalledWith("confirmed", false);
   });
 
   it("puts a row's build, maker, numbers and lamp where the board does", () => {
@@ -242,7 +243,7 @@ describe("Add a calculation", () => {
 
   it("shows each calculation added, with a way to take it off", () => {
     const onRemove = vi.fn();
-    draw((p) => ({ ...p, table: { ...p.table!, footer: { ...p.table!.footer, calculations: [{ key: "steps:sum", text: "Sum, Steps 214", onRemove }] } } }));
+    draw((p) => ({ ...p, table: { ...p.table!, footer: { ...p.table!.footer, calculations: [{ key: "steps:sum", column: "steps", text: "Sum, Steps 214", onRemove }] } } }));
     expect(screen.getByText("Sum, Steps 214")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Remove Sum, Steps 214" }));
     expect(onRemove).toHaveBeenCalled();
@@ -255,11 +256,13 @@ describe("Add a calculation", () => {
 });
 
 describe("the Sort menu", () => {
+  // BF-12 (B4): the menu is drawn on a phone only, and lists the columns that sort.
   it("opens on a mouse press, not only from the keyboard", () => {
     (window as unknown as { PointerEvent: unknown }).PointerEvent = class extends MouseEvent {};
+    window.matchMedia = ((query: string) => ({ matches: query.includes("max-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined, addListener: () => undefined, removeListener: () => undefined, onchange: null, dispatchEvent: () => false })) as unknown as typeof window.matchMedia;
     draw();
     fireEvent.pointerDown(screen.getByRole("button", { name: /^Sort:/ }), { button: 0, ctrlKey: false });
-    expect(screen.getByRole("menuitemradio", { name: "Newest" })).toBeTruthy();
+    expect(screen.getByRole("menuitemradio", { name: "Confirmed" })).toBeTruthy();
   });
 });
 
@@ -355,9 +358,11 @@ describe("BF-01 the lamp", () => {
     expect(within(bodyRow()).getByRole("img", { name: dim })).toBeTruthy();
   });
 
+  // BF-13 P1: the key is its own line under the table, outside it, so the footer has one cell per column.
   it("the footer carries the key: a lit lamp with its words and a dim lamp with its words", () => {
     drawTable([blankRow]);
-    const foot = screen.getAllByRole("rowgroup").find((group) => group.tagName === "TFOOT")!;
+    const foot = screen.getByTestId("builds-lamp-key");
+    expect(foot.closest("table")).toBeNull();
     expect(within(foot).getByRole("img", { name: lit })).toBeTruthy();
     expect(within(foot).getByRole("img", { name: dim })).toBeTruthy();
     expect(within(foot).getByText(`confirmed in the last ${STALE_AFTER_DAYS} days`)).toBeTruthy();
@@ -449,12 +454,18 @@ describe("the Table without the rail", () => {
     expect(screen.queryByTestId("builds-filters")).toBeNull();
   });
 
+  // BF-12 (B4): on a wider screen the heads sort and there is no Sort menu; on a phone it sits between Filters and Columns.
   it("the lens row holds Filters, then Sort, then Columns", () => {
+    const names = () => {
+      const row = screen.getByRole("button", { name: /^Filters/ }).parentElement as HTMLElement;
+      return within(row).getAllByRole("button").map((button) => (button.getAttribute("aria-label") ?? button.textContent ?? "").replace(/\s+/g, " ").trim());
+    };
+    const first = draw();
+    expect(names()).toEqual(["Filters, 6 on", "Columns 12 of 24"]);
+    first.unmount();
+    window.matchMedia = ((query: string) => ({ matches: query.includes("max-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined, addListener: () => undefined, removeListener: () => undefined, onchange: null, dispatchEvent: () => false })) as unknown as typeof window.matchMedia;
     draw();
-    const filters = screen.getByRole("button", { name: /^Filters/ });
-    const row = filters.parentElement as HTMLElement;
-    const names = within(row).getAllByRole("button").map((button) => (button.getAttribute("aria-label") ?? button.textContent ?? "").replace(/\s+/g, " ").trim());
-    expect(names).toEqual(["Filters, 6 on", "Sort: Reproductions", "Columns 12 of 24"]);
+    expect(names()).toEqual(["Filters, 6 on", "Sort: Reproductions", "Columns 12 of 24"]);
   });
 
   it("pressing Filters opens the dialog with the filter panel in it; closing it returns focus to the button", async () => {
@@ -515,21 +526,24 @@ describe("the grouped chooser", () => {
   };
   const namesIn = (group: string) => within(screen.getByRole("group", { name: group })).getAllByRole("checkbox").map((box) => box.closest("label")?.textContent);
 
+  // BF-13 (C6): the columns shown come first, in the table's order, under "Shown, in order"; the rest follow by group, and a group
+  // with nothing left (OpenBuilds, with Open shown) is not drawn.
   it("the chooser groups its columns under Identity, Classification, Proof, Structure and OpenBuilds, in that order", () => {
     const chooser = openChooser();
-    expect(chooser.getAllByRole("group").map((group) => group.getAttribute("aria-label"))).toEqual(["Identity", "Classification", "Proof", "Structure", "OpenBuilds"]);
+    expect(chooser.getAllByRole("group").map((group) => group.getAttribute("aria-label"))).toEqual(["Shown, in order", "Identity", "Classification", "Proof", "Structure"]);
   });
 
   // The names are today's: BF-10 Part 1 (one set of names) stopped at A5, so Confirmed, Open and Tools keep theirs.
   it("Identity holds Build (locked) and Published; Proof holds Reproductions, Works on model, Confirmed, Runs, 12 weeks, Rebuilds and Likes; Structure holds Shape, Steps, Sessions and Patterns; OpenBuilds holds Open; Classification holds the fifteen facets", () => {
     openChooser();
-    expect(namesIn("Identity")).toEqual(["Build", "Published"]);
-    expect((within(screen.getByRole("group", { name: "Identity" })).getByRole("checkbox", { name: "Build" }) as HTMLInputElement).disabled).toBe(true);
-    expect(namesIn("Proof")).toEqual(["Reproductions", "Works on model", "Confirmed", "Runs, 12 weeks", "Rebuilds", "Likes"]);
-    expect(namesIn("Structure")).toEqual(["Shape", "Steps", "Sessions", "Patterns"]);
-    expect(namesIn("OpenBuilds")).toEqual(["Open"]);
-    expect(namesIn("Classification")).toHaveLength(15);
-    expect(namesIn("Classification")).toEqual(expect.arrayContaining(["What was built", "Field", "Tools", "Cost to run", "Autonomy", "Skill"]));
+    expect(namesIn("Shown, in order")).toEqual(["Build", "What was built", "Field", "Tools", "Steps", "Sessions", "Reproductions", "Confirmed", "Runs, 12 weeks", "Rebuilds", "Open", "Cost to run"]);
+    expect((within(screen.getByRole("group", { name: "Shown, in order" })).getByRole("checkbox", { name: "Build" }) as HTMLInputElement).disabled).toBe(true);
+    expect(namesIn("Identity")).toEqual(["Published"]);
+    expect(namesIn("Proof")).toEqual(["Works on model", "Likes"]);
+    expect(namesIn("Structure")).toEqual(["Shape", "Patterns"]);
+    expect(screen.queryByRole("group", { name: "OpenBuilds" })).toBeNull();
+    expect(namesIn("Classification")).toHaveLength(11);
+    expect(namesIn("Classification")).toEqual(expect.arrayContaining(["Autonomy", "Skill"]));
   });
 
   it("the popover opens to the left of its button", () => {
@@ -544,5 +558,196 @@ describe("the grouped chooser", () => {
     openChooser(onReset);
     fireEvent.click(screen.getByRole("button", { name: "Back to the default columns" }));
     expect(onReset).toHaveBeenCalled();
+  });
+});
+
+describe("BF-11 a filtered head", () => {
+  const props = (filtered: readonly ColumnId[], columns: readonly ColumnId[]) => ({ ...visionBuildsTableViewProps(), columns, filtered: new Set(filtered) });
+  const drawFiltered = (filtered: readonly ColumnId[], columns: readonly ColumnId[] = ["build", "field", "reproductions", "autonomy"]) =>
+    render(
+      <MemoryRouter>
+        <BuildsTableView {...props(filtered, columns)} />
+      </MemoryRouter>,
+    );
+  /* jsdom drops a `var(...)` from inline style, so the look is read from the markup React writes. One head's markup, by its name. */
+  const headMarkup = (filtered: readonly ColumnId[], columns: readonly ColumnId[], name: string) => {
+    const markup = renderToStaticMarkup(
+      <MemoryRouter>
+        <BuildsTableView {...props(filtered, columns)} />
+      </MemoryRouter>,
+    );
+    return markup.match(/<th[^>]*>.*?<\/th>/g)!.find((head) => head.replace(/<[^>]+>/g, "").startsWith(name))!;
+  };
+  const UNDERLINE = "border-bottom:1px solid var(--selected-edge)";
+
+  it('a filtered column\'s head is in --text at weight 500 with a 1px --selected-edge underline, and its name ends ", filtered" for a screen reader', () => {
+    drawFiltered(["autonomy"]);
+    expect(screen.getByRole("columnheader", { name: /Autonomy, filtered/ })).toBeTruthy();
+    const head = headMarkup(["autonomy"], ["build", "field", "reproductions", "autonomy"], "Autonomy");
+    expect(head).toMatch(/^<th[^>]*style="[^"]*color:var\(--text\)/);
+    expect(head).toContain("font-weight:500");
+    expect(head).toContain(UNDERLINE);
+  });
+
+  it("a column that is not filtered has no underline and no such text", () => {
+    drawFiltered(["autonomy"]);
+    expect(screen.getByRole("columnheader", { name: "Field" }).textContent).not.toMatch(/filtered/);
+    const head = headMarkup(["autonomy"], ["build", "field", "reproductions", "autonomy"], "Field");
+    expect(head).not.toContain("border-bottom:1px solid var(--selected-edge)");
+    expect(head).toMatch(/^<th[^>]*style="[^"]*color:var\(--label\)/);
+  });
+
+  it("a column that is both sorted and filtered shows the arrow and the underline", () => {
+    drawFiltered(["reproductions"]);
+    const head = screen.getByRole("columnheader", { name: /Reproductions, filtered/ });
+    expect(head.getAttribute("aria-sort")).toBe("descending");
+    expect(head.textContent).toContain("↓");
+    expect(headMarkup(["reproductions"], ["build", "field", "reproductions"], "Reproductions")).toMatch(/<button[^>]*border-bottom:1px solid var\(--selected-edge\)/);
+  });
+
+  it("the mark is drawn with the setting off too", () => {
+    // With "Add a column for each filter" off the page draws only the reader's columns but still passes what is filtered: a
+    // column the reader ticked themselves is still marked.
+    drawFiltered(["field"], ["build", "field", "reproductions"]);
+    expect(screen.getByRole("columnheader", { name: /Field, filtered/ })).toBeTruthy();
+  });
+});
+
+describe("BF-12 one sort control", () => {
+  const phone = () => {
+    window.matchMedia = ((query: string) => ({ matches: query.includes("max-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined, addListener: () => undefined, removeListener: () => undefined, onchange: null, dispatchEvent: () => false })) as unknown as typeof window.matchMedia;
+  };
+
+  it("desktop: there is no Sort menu in the lens row", () => {
+    draw();
+    expect(screen.queryByRole("button", { name: /^Sort/ })).toBeNull();
+  });
+
+  it("phone: the Sort menu lists the drawn columns that can be sorted, by their column names, and choosing one sorts descending", async () => {
+    phone();
+    const onSortColumn = vi.fn();
+    draw((p) => ({ ...p, table: { ...p.table!, columns: ["build", "field", "steps", "reproductions", "confirmed"], sortable: new Set(["field", "steps", "reproductions"]), onSortColumn } }));
+    const trigger = screen.getByRole("button", { name: "Sort: Reproductions" });
+    fireEvent.keyDown(trigger, { key: "Enter" });
+    const items = await screen.findAllByRole("menuitemradio");
+    expect(items.map((item) => item.textContent)).toEqual(["Field", "Steps", "Reproductions"]);
+    expect(items[2].getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(items[1]);
+    expect(onSortColumn).toHaveBeenCalledWith("steps", false, true);
+  });
+});
+
+describe("BF-13 footer", () => {
+  const footCells = () => within(screen.getAllByRole("rowgroup").find((group) => group.tagName === "TFOOT")!).getAllByRole("cell");
+  const headNames = () => screen.getAllByRole("columnheader").map((head) => head.textContent?.replace(/[↑↓2]/g, "") ?? "");
+  const cellUnder = (name: string) => footCells()[headNames().indexOf(name)];
+
+  it("with the default columns the footer reads as it did", () => {
+    drawTable([blankRow]);
+    expect(cellUnder("Build").textContent).toContain("18 builds");
+    expect(cellUnder("Field").textContent).toBe("Sales");
+    expect(cellUnder("Tools").textContent).toBe("Claude Code");
+    expect(cellUnder("Steps").textContent).toBe("Median 11");
+    expect(cellUnder("Reproductions").textContent).toBe("Total 214");
+  });
+
+  it("the footer has exactly one cell per drawn column, and none has a colSpan", () => {
+    drawTable([blankRow]);
+    expect(footCells().length).toBe(screen.getAllByRole("columnheader").length);
+    for (const cell of footCells()) expect(cell.getAttribute("colspan")).toBeNull();
+  });
+
+  it("moving Field after Reproductions moves its footer value with it", () => {
+    drawTable([blankRow], ["build", "built", "tools", "steps", "sessions", "reproductions", "field", "confirmed"]);
+    expect(headNames().indexOf("Field")).toBe(6);
+    expect(cellUnder("Field").textContent).toBe("Sales");
+    expect(footCells()[2].textContent).toBe("Claude Code");
+  });
+
+  it("a calculation the reader added is drawn under its own column, with its Remove button", () => {
+    const onRemove = vi.fn();
+    const table = visionBuildsTableViewProps();
+    render(
+      <MemoryRouter>
+        <BuildsTableView {...table} rows={[blankRow]} footer={{ ...table.footer, calculations: [{ key: "rebuilds:sum", column: "rebuilds", text: "Sum, Rebuilds 9", onRemove }] }} />
+      </MemoryRouter>,
+    );
+    const cell = cellUnder("Rebuilds");
+    expect(cell.textContent).toContain("Sum, Rebuilds 9");
+    fireEvent.click(within(cell).getByRole("button", { name: "Remove Sum, Rebuilds 9" }));
+    expect(onRemove).toHaveBeenCalled();
+  });
+
+  it("Add a calculation is in the Build column's footer cell, under the count", () => {
+    drawTable([blankRow]);
+    const cell = cellUnder("Build");
+    const button = within(cell).getByRole("button", { name: "Add a calculation" });
+    expect(cell.textContent?.indexOf("18 builds")).toBeLessThan(cell.textContent?.indexOf("Add a calculation") ?? -1);
+    expect(button).toBeTruthy();
+  });
+
+  it("with Last confirmed not drawn, Add a calculation is still there", () => {
+    drawTable([blankRow], ["build", "field", "reproductions"]);
+    expect(within(cellUnder("Build")).getByRole("button", { name: "Add a calculation" })).toBeTruthy();
+    expect(footCells().length).toBe(3);
+  });
+});
+
+describe("BF-13 moving a column", () => {
+  const openChooser = (onMove = vi.fn()) => {
+    const columns = ["build", "field", "tools", "reproductions"] as const;
+    draw((p) => ({ ...p, table: { ...p.table!, columns, columnsLabel: "4 of 28", columnsMenu: { ...columnsMenu(columns, true, vi.fn()), onMove } } }));
+    fireEvent.click(screen.getByRole("button", { name: /^Columns:/ }));
+    return within(screen.getByRole("group", { name: "Shown, in order" }));
+  };
+
+  it('in the chooser every chosen column but Build has "Move <name> left" and "Move <name> right" buttons; the first movable one\'s Left and the last one\'s Right are disabled', () => {
+    const shown = openChooser();
+    expect(shown.queryByRole("button", { name: /^Move Build/ })).toBeNull();
+    for (const name of ["Field", "Tools", "Reproductions"]) {
+      expect(shown.getByRole("button", { name: `Move ${name} left` })).toBeTruthy();
+      expect(shown.getByRole("button", { name: `Move ${name} right` })).toBeTruthy();
+    }
+    expect((shown.getByRole("button", { name: "Move Field left" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((shown.getByRole("button", { name: "Move Reproductions right" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((shown.getByRole("button", { name: "Move Tools left" }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('pressing Move right calls onMove with the id and "right"', () => {
+    const onMove = vi.fn();
+    const shown = openChooser(onMove);
+    fireEvent.click(shown.getByRole("button", { name: "Move Field right" }));
+    expect(onMove).toHaveBeenCalledWith("field", "right");
+  });
+
+  it("a head has user-select none and touch-action none while it can be dragged", () => {
+    const markup = renderToStaticMarkup(
+      <MemoryRouter>
+        <BuildsTableView {...visionBuildsTableViewProps()} columns={["build", "field", "autonomy"]} draggable={new Set(["field"])} onDropColumn={vi.fn()} />
+      </MemoryRouter>,
+    );
+    const heads = markup.match(/<th\s[^>]*>/g)!;
+    expect(heads[1]).toMatch(/user-select:none/);
+    expect(heads[1]).toMatch(/touch-action:none/);
+    expect(heads[0]).not.toMatch(/user-select:none/);
+    expect(heads[2]).not.toMatch(/user-select:none/);
+  });
+});
+
+describe("BF-13 the pinned Build column", () => {
+  it("the Build head and every Build cell are position sticky at left 0 with the surface colour behind them", () => {
+    const markup = renderToStaticMarkup(
+      <MemoryRouter>
+        <BuildsTableView {...visionBuildsTableViewProps()} />
+      </MemoryRouter>,
+    );
+    const head = markup.match(/<th\s[^>]*data-column="build"[^>]*>/)![0];
+    const rows = markup.match(/<tr[^>]*>\s*<td[^>]*>/g)!;
+    expect(rows.length).toBeGreaterThan(1);
+    for (const cell of [head, ...rows.map((row) => row.match(/<td[^>]*>/)![0])]) {
+      expect(cell).toMatch(/position:sticky/);
+      expect(cell).toMatch(/left:0/);
+      expect(cell).toMatch(/background:var\(--surface\)/);
+    }
   });
 });

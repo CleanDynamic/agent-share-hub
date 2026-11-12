@@ -164,16 +164,13 @@ export function visionBuildsTableProps(): BuildsViewProps {
       onOpen: noop,
       onRange: noop,
       onToggleSegment: noop,
+      addColumns: true,
+      onAddColumns: noop,
     },
     table: {
       lenses: [{ value: "all", label: "All" }, { value: "proven", label: "Reproduced" }, { value: "rebuilt", label: "Rebuilt" }, { value: "unsolved", label: "Still open" }],
       lens: "all",
       onLens: noop,
-      sort: {
-        value: "reproduced",
-        options: [{ value: "newest", label: "Newest" }, { value: "reproduced", label: "Reproductions" }, { value: "confirmed", label: "Confirmed" }, { value: "rebuilt", label: "Rebuilds" }],
-        onChange: noop,
-      },
       columnsLabel: "12 of 24",
       chips: [["Field", "Sales"], ["Tools", "Claude Code"], ["Reproductions", "3 or more"], ["Works on", "Opus 5.5"], ["Steps", "5 to 30"], ["Autonomy", "2 of 4"]].map(([name, value]) => ({ key: name, name, value })),
       onRemoveChip: noop,
@@ -181,8 +178,11 @@ export function visionBuildsTableProps(): BuildsViewProps {
       columns: COLUMN_ORDER,
       rows: visionBuildsRows,
       sortColumn: { id: "reproductions", ascending: false },
-      sortableBy: { reproductions: "reproduced", confirmed: "confirmed", rebuilds: "rebuilt" },
-      footer: { count: "18 builds", mostCommon: "Most common · Sales, Claude Code", median: "Median 11 steps", total: "Total 214", onCalculate: noop },
+      sortable: new Set(["reproductions", "confirmed", "rebuilds"]),
+      onSortColumn: noop,
+      /* BF-11: the drawn columns the sample's chips filter on. */
+      filtered: new Set(["field", "tools", "reproductions", "steps"]),
+      footer: { count: "18 builds", byColumn: { field: "Sales", tools: "Claude Code", steps: "Median 11", reproductions: "Total 214" }, onCalculate: noop },
     },
   };
 }

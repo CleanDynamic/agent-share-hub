@@ -1268,6 +1268,15 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/builds/useBuildsLayout.test.tsx",
   "src/pages/site/builds/buildsModel.layout.test.ts",
   "src/pages/site/builds/buildsModel.clear.test.ts",
+  // BF-11
+  "src/pages/site/builds/buildsModel.filterColumns.test.ts",
+  // BF-12
+  "src/lib/build/buildsColumns.ts",
+  "src/pages/site/builds/buildsModel.sort.test.ts",
+  // BF-13
+  "src/pages/site/builds/columnDrag.ts",
+  // BF-14
+  "src/pages/site/builds/buildsModel.match.test.ts",
 
   // SV-25
   "src/components/build/BuildConnections.tsx",
@@ -1931,6 +1940,11 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "no untouched shadcn",
     text: `import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropd`,
     why: "SV-14: OpenBuilds' Sort is the menu the Builds Table's Sort opens (SV-11), a radio group behind the board's control. A styled select cannot be drawn: index.css paints every select's fill and border with !important.",
+  },
+  {
+    rule: "no untouched shadcn",
+    text: `import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/c`,
+    why: "BF-14: Builds must match is a choice of one, the radio menu the Builds Sort uses (SV-11), in the Filters dialog that already imports DropdownMenu for a set's menu. The Components table has no native select.",
   },
   {
     rule: "no untouched shadcn",

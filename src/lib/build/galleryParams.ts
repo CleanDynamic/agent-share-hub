@@ -43,12 +43,13 @@ import { isKnown, type Facet } from "@/lib/classify/taxonomy";
 
 import { RANGE_KEYS, formatRange, parseRange, type NumberRange, type RangeKey } from "./galleryRanges";
 import { normaliseQuery } from "./search";
+import { isColumnId } from "./buildsColumns";
 
 /** SV-11: the three views of the same builds; the Table is the resting one. */
 export type GalleryViewMode = "table" | "maps" | "classification";
 export const GALLERY_VIEWS: readonly GalleryViewMode[] = ["table", "maps", "classification"];
 
-export const GALLERY_FEED_SORTS: readonly GalleryFeedSort[] = ["newest", "reproduced", "confirmed", "rebuilt"];
+export const GALLERY_FEED_SORTS: readonly GalleryFeedSort[] = ["newest", "reproduced", "confirmed", "rebuilt", "steps", "sessions"];
 
 /** SV-11: the Table's resting order, the board's "Sort Reproductions". */
 export const DEFAULT_GALLERY_SORT: GalleryFeedSort = "reproduced";
@@ -96,6 +97,16 @@ export interface GalleryParams {
   ranges?: Partial<Record<RangeKey, NumberRange>>;
   /** UI-P49. Present only when it is not the resting sort (SV-11: reproduced). */
   sort?: GalleryFeedSort;
+  /** BF-12. The sort smallest first; absent is descending, the resting direction. With `by` it is `by`'s direction. */
+  dir?: "asc";
+  /** BF-12. A column the browser sorts by, when every matching build is loaded: a Table column id. */
+  by?: string;
+  /** BF-12 (B5). A second column for ties, and its direction; only with `by`. */
+  by2?: string;
+  dir2?: "asc";
+  /** BF-14 (B6). Builds must meet at least this many of the filters the browser can check; the page drops it when it is not
+      below their count. */
+  match?: number;
   /** SV-24. The filter set that is open: where the panel's layout is kept. The filters themselves are the other parameters. */
   set?: string;
 }
@@ -151,6 +162,8 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
   const facets = cleanFacetKeys(search.getAll("f"));
   const view = search.get("view");
   const sort = search.get("sort");
+  const by = search.get("by");
+  const by2 = isColumnId(by) && isColumnId(search.get("by2")) && search.get("by2") !== by ? search.get("by2")! : undefined;
   const ranges: Partial<Record<RangeKey, NumberRange>> = {};
   for (const key of RANGE_KEYS) {
     const range = parseRange(search.get(key));
@@ -172,13 +185,18 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
     ...(search.get("state") === "confirmed" || search.get("state") === "stale" ? { state: search.get("state") as ConfirmedState } : {}),
     ...(Object.keys(ranges).length > 0 ? { ranges } : {}),
     ...(isSort(sort) && sort !== DEFAULT_GALLERY_SORT ? { sort } : {}),
+    ...(search.get("dir") === "asc" ? { dir: "asc" as const } : {}),
+    ...(isColumnId(by) ? { by } : {}),
+    ...(by2 ? { by2 } : {}),
+    ...(by2 && search.get("dir2") === "asc" ? { dir2: "asc" as const } : {}),
+    ...(/^[1-9]\d{0,2}$/.test(search.get("match") ?? "") ? { match: Number(search.get("match")) } : {}),
     ...(cleanSet(search.get("set")) ? { set: cleanSet(search.get("set")) } : {}),
   };
 }
 
 /**
  * The address of a gallery view: only the values that differ from the
- * default, keys in the order view, lens, for, with, shape, model, tool, pattern, f (CA-16, repeatable), open, within, state (SV-23 P2: Last confirmed, Confirmed or stale), the number filters (SV-23: steps, sessions, reproductions, rebuilds, likes), sort, q, set (SV-24: the open filter set).
+ * default, keys in the order view, lens, for, with, shape, model, tool, pattern, f (CA-16, repeatable), open, within, state (SV-23 P2: Last confirmed, Confirmed or stale), the number filters (SV-23: steps, sessions, reproductions, rebuilds, likes), sort, dir, by, by2, dir2 (BF-12), match (BF-14), q, set (SV-24: the open filter set).
  */
 export function galleryHref(params: Partial<GalleryParams> = {}): string {
   const out = new URLSearchParams();
@@ -201,6 +219,15 @@ export function galleryHref(params: Partial<GalleryParams> = {}): string {
     if (range) out.set(key, range);
   }
   if (isSort(params.sort) && params.sort !== DEFAULT_GALLERY_SORT) out.set("sort", params.sort);
+  if (params.dir === "asc") out.set("dir", "asc");
+  if (isColumnId(params.by)) {
+    out.set("by", params.by);
+    if (isColumnId(params.by2) && params.by2 !== params.by) {
+      out.set("by2", params.by2);
+      if (params.dir2 === "asc") out.set("dir2", "asc");
+    }
+  }
+  if (typeof params.match === "number" && Number.isInteger(params.match) && params.match > 0) out.set("match", String(params.match));
 
   const query = normaliseQuery(params.query ?? null);
   if (query !== null) out.set("q", query);

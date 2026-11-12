@@ -17,7 +17,7 @@ import { Button } from "@/components/brand/Button";
 import { Checkbox } from "@/components/brand/Checkbox";
 import { Glyph } from "@/components/brand/Glyph";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
@@ -153,6 +153,23 @@ export interface BuildsFiltersViewProps {
   onOpen: () => void;
   onRange?: (sectionId: string, value: readonly [number, number]) => void;
   onToggleSegment?: (sectionId: string, key: string) => void;
+  /** BF-11 (B1): a filter that holds a value adds its column. A layout setting, not part of the draft: it applies at once. Absent: not drawn. */
+  addColumns?: boolean;
+  onAddColumns?: (on: boolean) => void;
+  /** BF-14 (B6): Builds must match, drawn with two or more countable filters in the draft; part of the draft. */
+  match?: MatchControl;
+}
+
+export interface MatchControl {
+  /** All m, then m-1 down to 1. */
+  choices: readonly number[];
+  /** The chosen least, or undefined for All. */
+  value?: number;
+  onChange: (value: number | undefined) => void;
+  /** While a match applies to more builds than are loaded. */
+  disabled?: boolean;
+  line?: string;
+  onLoadAll?: () => void;
 }
 
 /* ── pieces ── */
@@ -621,20 +638,60 @@ export function BuildsFilters({ open, onOpenChange, ...props }: BuildsFiltersVie
           <OrderValues order={props.order} onOrder={props.onOrder} />
         </>
       }
-      footer={<FiltersFooter matchCount={props.matchCount} dirty={props.dirty} onClear={props.onClear} onCancel={() => close(false)} onApply={apply} />}
+      footer={<FiltersFooter matchCount={props.matchCount} dirty={props.dirty} match={props.match} addColumns={props.addColumns} onAddColumns={props.onAddColumns} onClear={props.onClear} onCancel={() => close(false)} onApply={apply} />}
     >
       <BuildsFiltersView {...props} search={search} />
     </BuildsFiltersDialog>
   );
 }
 
-/** BF-08 (A2): how many builds the draft matches, then Clear all, Cancel and Apply (the dialog's one primary). */
-function FiltersFooter({ matchCount, dirty, onClear, onCancel, onApply }: { matchCount: number | null; dirty: boolean; onClear: () => void; onCancel: () => void; onApply: () => void }) {
+/** BF-08 (A2): how many builds the draft matches, then Clear all, Cancel and Apply (the dialog's one primary). BF-11 (B1): beside
+    the count, whether each filter adds its column, which applies at once. */
+/** BF-14 (B6): Builds must match, chosen from a menu of one choice (the Components table has no native select): All m, then at
+    least m-1 down to 1. */
+function MatchSelect({ match }: { match: MatchControl }) {
+  const m = match.choices[0];
+  const word = (least: number | undefined) => (least === undefined ? `All ${m} filters` : `At least ${least} of ${m}`);
+  return (
+    <span style={{ display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: "4px 8px", ...text(12.5, 400, t.text2) }}>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild disabled={match.disabled}>
+          <BuildsControl aria-label={`Builds must match: ${word(match.value)}`} disabled={match.disabled} style={match.disabled ? { cursor: "default" } : undefined}>
+            <span style={{ color: t.label }}>Builds must match</span> {word(match.value)}
+          </BuildsControl>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" sideOffset={6}>
+          <DropdownMenuRadioGroup value={String(match.value ?? "")} onValueChange={(value) => match.onChange(value === "" ? undefined : Number(value))}>
+            <DropdownMenuRadioItem value="">{word(undefined)}</DropdownMenuRadioItem>
+            {match.choices.slice(1).map((least) => (
+              <DropdownMenuRadioItem key={least} value={String(least)}>
+                {word(least)}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {match.line ? <span>{match.line}</span> : null}
+      {match.onLoadAll ? <BuildsControl onClick={match.onLoadAll}>Load all</BuildsControl> : null}
+    </span>
+  );
+}
+
+function FiltersFooter({ matchCount, dirty, match, addColumns, onAddColumns, onClear, onCancel, onApply }: { matchCount: number | null; dirty: boolean; match?: MatchControl; addColumns?: boolean; onAddColumns?: (on: boolean) => void; onClear: () => void; onCancel: () => void; onApply: () => void }) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-      <span role="status" style={text(12.5, 400, t.text2)}>
-        {matchCount === null ? "" : `${matchCount} ${matchCount === 1 ? "build matches" : "builds match"}`}
-      </span>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 16px" }}>
+        <span role="status" style={text(12.5, 400, t.text2)}>
+          {matchCount === null ? "" : `${matchCount} ${matchCount === 1 ? "build matches" : "builds match"}`}
+        </span>
+        {match ? <MatchSelect match={match} /> : null}
+        {addColumns !== undefined && onAddColumns ? (
+          <label style={{ display: "inline-flex", alignItems: "center", gap: 8, minHeight: 32, cursor: "pointer", ...text(12.5, 400, t.text2) }}>
+            <Checkbox checked={addColumns} onChange={(event) => onAddColumns(event.currentTarget.checked)} />
+            Add a column for each filter
+          </label>
+        ) : null}
+      </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <BuildsTextButton onClick={onClear}>Clear all</BuildsTextButton>
         <BuildsControl onClick={onCancel}>Cancel</BuildsControl>

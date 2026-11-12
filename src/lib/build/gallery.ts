@@ -1111,7 +1111,7 @@ function cleanShapes(values: string[] | undefined): BuildShape[] {
 const FEED_HANDLE_LIMIT = 20;
 const FEED_ID_CHUNK = 100;
 
-export type GalleryFeedSort = "newest" | "reproduced" | "confirmed" | "rebuilt";
+export type GalleryFeedSort = "newest" | "reproduced" | "confirmed" | "rebuilt" | "steps" | "sessions";
 
 /** The builder methods the feed calls on a builds query. */
 interface FeedQuery extends PromiseLike<{ data: unknown; error: unknown; count?: number | null }> {
@@ -1216,16 +1216,25 @@ export function madeWithSpellings(toolId: string | undefined): string[] {
   return tool ? [tool.name, ...tool.aliases] : [];
 }
 
-/** The sort's own database order, with id last so a page never repeats a row. */
-function feedOrder(query: FeedQuery, sort: GalleryFeedSort): FeedQuery {
+/** The sort's own database order, with id last so a page never repeats a row. BF-12: `ascending` turns the sort's own first
+    order only, empty values staying last; the tie-breakers after it are unchanged. Steps and Sessions read the stored counts,
+    so without them (`withCounts` false) only the tie-breakers are left. */
+function feedOrder(query: FeedQuery, sort: GalleryFeedSort, ascending = false, withCounts = true): FeedQuery {
   const desc = { ascending: false, nullsFirst: false };
+  const first = { ascending, nullsFirst: false };
   let q = query;
   if (sort === "reproduced") {
-    q = q.order("reproduction_count", desc).order("last_confirmed_at", desc);
+    q = q.order("reproduction_count", first).order("last_confirmed_at", desc);
   } else if (sort === "confirmed") {
-    q = q.order("last_confirmed_at", desc);
+    q = q.order("last_confirmed_at", first);
   } else if (sort === "rebuilt") {
-    q = q.order("rebuild_count", desc);
+    q = q.order("rebuild_count", first);
+  } else if (sort === "steps" && withCounts) {
+    q = q.order("step_count", first);
+  } else if (sort === "sessions" && withCounts) {
+    q = q.order("session_count", first);
+  } else if (sort === "newest" && ascending) {
+    q = q.order("published_at", first);
   }
   return q.order("published_at", desc).order("id", { ascending: true });
 }
@@ -1370,6 +1379,8 @@ export interface BuildsTableOptions {
   /** SV-23 P2: Works on model: a registry model id; builds with a run that worked on it. */
   worksOn?: string;
   sort?: GalleryFeedSort;
+  /** BF-12: the sort's own first order, smallest first. */
+  ascending?: boolean;
   offset?: number;
   limit?: number;
 }
@@ -1531,7 +1542,7 @@ async function listBuildsTableRows(options: BuildsTableOptions, reviews: boolean
     query = applyTableFilters(query, options, { lens, now, withCounts, search });
     query = leaveOutReviews(applyLensFilters(query, lens), reviews);
 
-    return (feedOrder(query as unknown as FeedQuery, options.sort ?? "reproduced") as unknown as TableQuery)
+    return (feedOrder(query as unknown as FeedQuery, options.sort ?? "reproduced", options.ascending === true, withCounts) as unknown as TableQuery)
       .limit(RUNS_PER_BUILD, { referencedTable: "build_reproductions" })
       .range(offset, offset + limit - 1);
   };
