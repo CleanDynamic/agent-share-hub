@@ -21,7 +21,7 @@ import { FormatBar } from "@/components/post/editor/FormatBar";
 import { addPictures, postAtCaret, type EditRequest } from "@/components/post/editor/pictures";
 import { EditMediaDialog } from "@/components/post/media/EditMediaDialog";
 import { withoutGoneSteps } from "@/lib/build/gridSteps";
-import { addPostAtEnd, PostToolbar, removePost } from "@/components/post/editor/PostToolbar";
+import { addPostAtEnd, DESKTOP_TOOL_SIZE, PostToolbar, removePost, TOOL_GLYPH } from "@/components/post/editor/PostToolbar";
 import { LinkPanel } from "@/components/post/editor/LinkPanel";
 import { readRefSpot, restoreTypedAt, type RefSpot } from "@/components/post/editor/references";
 import { SlashMenu, type InsertPicture } from "@/components/post/editor/SlashMenu";
@@ -592,8 +592,9 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
           />
         </div>
       </div>
-      {/* Under the words, not the avatar, as X lines its toolbar up; a phone gives the toolbar the whole width. */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, marginLeft: phone ? 0 : avatar + RAIL_GAP.desktop }}>
+      {/* Under the words, not the avatar, as X lines its toolbar up; a phone gives the toolbar the whole width. F74: on a computer the
+          first tool's mark, not its square, starts at the words' left edge. */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, marginLeft: phone ? 0 : avatar + RAIL_GAP.desktop - (DESKTOP_TOOL_SIZE - TOOL_GLYPH) / 2 }}>
         {notice ? (
           <p role="status" style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12.5, fontWeight: 400, lineHeight: "normal", color: t.text2 }}>
             {notice}
