@@ -733,3 +733,21 @@ describe("BF-13 moving a column", () => {
     expect(heads[2]).not.toMatch(/user-select:none/);
   });
 });
+
+describe("BF-13 the pinned Build column", () => {
+  it("the Build head and every Build cell are position sticky at left 0 with the surface colour behind them", () => {
+    const markup = renderToStaticMarkup(
+      <MemoryRouter>
+        <BuildsTableView {...visionBuildsTableViewProps()} />
+      </MemoryRouter>,
+    );
+    const head = markup.match(/<th\s[^>]*data-column="build"[^>]*>/)![0];
+    const rows = markup.match(/<tr[^>]*>\s*<td[^>]*>/g)!;
+    expect(rows.length).toBeGreaterThan(1);
+    for (const cell of [head, ...rows.map((row) => row.match(/<td[^>]*>/)![0])]) {
+      expect(cell).toMatch(/position:sticky/);
+      expect(cell).toMatch(/left:0/);
+      expect(cell).toMatch(/background:var\(--surface\)/);
+    }
+  });
+});

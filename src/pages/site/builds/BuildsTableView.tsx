@@ -10,7 +10,7 @@
    region a keyboard can reach. Rows past the first screen are skipped until near (`content-visibility`). No motion: rows
    change at once. */
 
-import { useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { LampBar } from "@/components/brand/LampDot";
@@ -345,6 +345,14 @@ export function RowLamp({ lit }: { lit: boolean }) {
   );
 }
 
+/** BF-13 (C5b): the Build column stays in view while the table scrolls sideways, on the surface it sits on. */
+const PINNED: CSSProperties = { position: "sticky", left: 0, zIndex: 1, background: t.surface };
+
+/** The pinned column's right edge, drawn only while the table is scrolled, so the cells passing under it are cut by a line. */
+function PinnedEdge({ scrolled }: { scrolled: boolean }) {
+  return scrolled ? <span aria-hidden="true" style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 1, background: t.hairline }} /> : null;
+}
+
 const th = (right: boolean, last: boolean): React.CSSProperties => ({ ...text(12, 400, t.label), padding: last ? "0 0 10px" : "0 12px 10px 0", borderBottom: `1px solid ${t.hairline}`, textAlign: right ? "right" : "left", verticalAlign: "bottom", whiteSpace: "nowrap" });
 const td = (right: boolean, last: boolean): React.CSSProperties => ({ padding: last ? 0 : "0 12px 0 0", height: TABLE_ROW, textAlign: right ? "right" : "left", whiteSpace: "nowrap" });
 
@@ -354,7 +362,7 @@ const td = (right: boolean, last: boolean): React.CSSProperties => ({ padding: l
     and would join the head's text. */
 const FILTERED_MARK: React.CSSProperties = { fontWeight: 500, borderBottom: `1px solid ${t.selectedEdge}` };
 
-function ColumnHead({ id, last, sorted, sorted2, sortable, onSort, filtered, drag }: { id: ColumnId; last: boolean; sorted: { ascending: boolean } | null; sorted2: { ascending: boolean } | null; sortable: boolean; onSort: (second: boolean) => void; filtered: boolean; drag?: HeadDrag }) {
+function ColumnHead({ id, last, sorted, sorted2, sortable, onSort, filtered, drag, scrolled }: { id: ColumnId; last: boolean; sorted: { ascending: boolean } | null; sorted2: { ascending: boolean } | null; sortable: boolean; onSort: (second: boolean) => void; filtered: boolean; drag?: HeadDrag; scrolled: boolean }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   const right = RIGHT.has(id);
   /* Only one head may say ascending or descending; the second key's says "other", and shows its arrow and a 2. */
@@ -368,8 +376,9 @@ function ColumnHead({ id, last, sorted, sorted2, sortable, onSort, filtered, dra
       aria-sort={ariaSort}
       aria-label={label}
       {...drag}
-      style={{ ...th(right, last), color: sorted || filtered ? t.text : t.label, ...(drag ? { userSelect: "none", touchAction: "none", cursor: "grab" } : null) }}
+      style={{ ...th(right, last), color: sorted || filtered ? t.text : t.label, ...(drag ? { userSelect: "none", touchAction: "none", cursor: "grab" } : null), ...(id === "build" ? PINNED : null) }}
     >
+      {id === "build" ? <PinnedEdge scrolled={scrolled} /> : null}
       {sortable ? (
         <button
           type="button"
@@ -492,11 +501,12 @@ const QUIET: ReadonlySet<ColumnId> = new Set(["built", "field", "confirmed", "op
 /** Rows past the first screen are skipped until they come near. */
 const FIRST_SCREEN_ROWS = 14;
 
-function Row({ row, columns, index }: { row: TableRowView; columns: readonly ColumnId[]; index: number }) {
+function Row({ row, columns, index, scrolled }: { row: TableRowView; columns: readonly ColumnId[]; index: number; scrolled: boolean }) {
   return (
     <tr style={{ borderBottom: `1px solid ${t.hairline}`, ...(index >= FIRST_SCREEN_ROWS ? { contentVisibility: "auto", containIntrinsicSize: `auto ${TABLE_ROW}px` } : null) }}>
       {columns.map((id, position) => (
-        <td key={id} style={{ ...td(RIGHT.has(id), position === columns.length - 1), color: QUIET.has(id) ? t.text2 : t.text }}>
+        <td key={id} style={{ ...td(RIGHT.has(id), position === columns.length - 1), color: QUIET.has(id) ? t.text2 : t.text, ...(id === "build" ? PINNED : null) }}>
+          {id === "build" ? <PinnedEdge scrolled={scrolled} /> : null}
           {cellOf(id, row)}
         </td>
       ))}
@@ -554,7 +564,7 @@ function AddCalculation({ footer }: { footer: TableFooterView }) {
 
 /** BF-13 (C6): one cell per column, in the drawn order, so a value moves with its column. The Build cell holds the count and, under
     it, Add a calculation; every other cell its own value and the calculations added on it, each with its Remove button. */
-function Footer({ columns, footer }: { columns: readonly ColumnId[]; footer: TableFooterView }) {
+function Footer({ columns, footer, scrolled }: { columns: readonly ColumnId[]; footer: TableFooterView; scrolled: boolean }) {
   const line = { display: "block" } as const;
   return (
     <tfoot>
@@ -563,15 +573,18 @@ function Footer({ columns, footer }: { columns: readonly ColumnId[]; footer: Tab
           const last = position === columns.length - 1;
           const calculations = (footer.calculations ?? []).filter((calculation) => calculation.column === id);
           return (
-            <td key={id} style={{ ...text(12, 400, t.label), padding: last ? "12px 0 0" : "12px 12px 0 0", textAlign: RIGHT.has(id) ? "right" : "left", verticalAlign: "top" }}>
+            <td key={id} style={{ ...text(12, 400, t.label), padding: last ? "12px 0 0" : "12px 12px 0 0", textAlign: RIGHT.has(id) ? "right" : "left", verticalAlign: "top", ...(id === "build" ? PINNED : null) }}>
               {id === "build" ? (
                 <>
+                  <PinnedEdge scrolled={scrolled} />
                   <span style={line}>{footer.count}</span>
                   <AddCalculation footer={footer} />
                 </>
               ) : (
                 <>
-                  {footer.byColumn?.[id] ? <span style={line}>{footer.byColumn[id]}</span> : null}
+                  {/* The footer's own value never widens its column: it wraps within the width the head and the cells set, and a
+                      word longer than that ("Median" under Steps) runs into the cell's own padding. */}
+                  {footer.byColumn?.[id] ? <span style={{ display: "block", width: 0, minWidth: "100%" }}>{footer.byColumn[id]}</span> : null}
                   {calculations.map((calculation) => (
                     <span key={calculation.key} style={{ display: "flex", alignItems: "baseline", justifyContent: RIGHT.has(id) ? "flex-end" : "flex-start", gap: 4 }}>
                       {calculation.text}
@@ -595,6 +608,18 @@ function Footer({ columns, footer }: { columns: readonly ColumnId[]; footer: Tab
 export function BuildsTableView(props: BuildsTableViewProps) {
   const { lenses, lens, onLens, columnsLabel, columnsMenu, chips, onRemoveChip, onClearAll, columns, rows, sortColumn, sortColumn2, sortable, onSortColumn, draggable, onDropColumn, filtered, footer, onMore, loadingMore, empty, updating, activeCount, onOpenFilters, setName } = props;
   const headRow = useRef<HTMLTableRowElement>(null);
+  /* BF-13 (C5b): one passive listener sets one flag, whether the table is scrolled sideways; the region carries it as
+     data-scrolled and the pinned column draws its edge from it. Nothing else changes per scroll event. */
+  const region = useRef<HTMLDivElement>(null);
+  const [scrolled, setScrolled] = useState(false);
+  const shown = !(rows.length === 0 && empty);
+  useEffect(() => {
+    const el = region.current;
+    if (!el) return;
+    const onScroll = () => setScrolled(el.scrollLeft > 0);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [shown]);
   const dragOf = useColumnDrag(headRow, onDropColumn ? (id, index) => onDropColumn(id as ColumnId, index) : undefined);
   return (
     <div data-testid="builds-table">
@@ -603,7 +628,7 @@ export function BuildsTableView(props: BuildsTableViewProps) {
       {rows.length === 0 && empty ? (
         <div style={{ marginTop: 20 }}>{empty}</div>
       ) : (
-        <div role="region" aria-label="Builds table" aria-busy={updating === true} tabIndex={0} style={{ position: "relative", marginTop: 20, overflowX: "auto", scrollbarWidth: "thin", scrollbarColor: `${t.label} transparent` }}>
+        <div ref={region} role="region" aria-label="Builds table" data-scrolled={scrolled ? "true" : undefined} aria-busy={updating === true} tabIndex={0} style={{ position: "relative", marginTop: 20, overflowX: "auto", scrollbarWidth: "thin", scrollbarColor: `${t.label} transparent` }}>
           <table style={{ width: "100%", minWidth: 1000, borderCollapse: "collapse", ...text(13, 400, t.text) }}>
             <thead>
               <tr ref={headRow}>
@@ -618,16 +643,17 @@ export function BuildsTableView(props: BuildsTableViewProps) {
                     onSort={(second) => onSortColumn(id, second)}
                     filtered={filtered?.has(id) === true}
                     drag={draggable?.has(id) ? dragOf?.(id) : undefined}
+                    scrolled={scrolled}
                   />
                 ))}
               </tr>
             </thead>
             <tbody style={updating ? { opacity: 0.5 } : undefined}>
               {rows.map((row, index) => (
-                <Row key={row.id} row={row} columns={columns} index={index} />
+                <Row key={row.id} row={row} columns={columns} index={index} scrolled={scrolled} />
               ))}
             </tbody>
-            <Footer columns={columns} footer={footer} />
+            <Footer columns={columns} footer={footer} scrolled={scrolled} />
           </table>
         </div>
       )}

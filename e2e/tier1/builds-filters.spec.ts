@@ -292,4 +292,24 @@ test.describe("/builds filters", () => {
     await page.locator('th[data-column="field"]').getByRole("button").click();
     await expect(page).toHaveURL(/by=field/);
   });
+
+  /* ── BF-13 P3 (C5b) ── */
+
+  test("scrolling the table to its right end leaves the first build's name on screen", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "desktop project only");
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.addInitScript(() => {
+      const all = ["build", "built", "field", "tools", "steps", "sessions", "reproductions", "confirmed", "runs", "rebuilds", "open", "cost", "shape", "task", "setting", "role", "technique", "modality", "method", "autonomy", "data", "oversight", "age", "skill", "works", "likes", "patterns", "published"];
+      window.localStorage.setItem("builds:layout:v1", JSON.stringify({ columns: all, calculations: [] }));
+    });
+    await open(page, "/builds", answerWithBuilds);
+    const region = page.getByRole("region", { name: "Builds table" });
+    await expect(page.locator('th[data-column="published"]')).toBeAttached();
+    await region.evaluate((el) => (el.scrollLeft = el.scrollWidth));
+    const name = page.getByRole("link", { name: "Lead scoring from CRM notes" }).first();
+    const [box, frame] = [await name.boundingBox(), await region.boundingBox()];
+    expect(box!.x).toBeGreaterThanOrEqual(frame!.x - 1);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(frame!.x + frame!.width);
+    await expect(region).toHaveAttribute("data-scrolled", "true");
+  });
 });
