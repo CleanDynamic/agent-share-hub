@@ -1158,12 +1158,12 @@ describe("BF-14 match some conditions", () => {
     renderAt(`${THREE}&match=2`);
     await screen.findByRole("link", { name: "Build 1" });
     await openFilters();
-    const select = screen.getByRole("combobox", { name: "Builds must match" }) as HTMLSelectElement;
-    expect(select.disabled).toBe(true);
+    const control = () => screen.getByRole("button", { name: /^Builds must match/ }) as HTMLButtonElement;
+    expect(control().disabled).toBe(true);
     expect(screen.getByText("Available when every build is loaded: 50 of 70 so far.")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Load all" }));
     await waitFor(() => expect(listBuildsTable).toHaveBeenCalledWith(expect.objectContaining({ offset: 50, shapes: [] })));
-    await waitFor(() => expect((screen.getByRole("combobox", { name: "Builds must match" }) as HTMLSelectElement).disabled).toBe(false));
+    await waitFor(() => expect(control().disabled).toBe(false));
   });
 
   it("past 200 builds the line says so and the control stays disabled", async () => {
@@ -1171,7 +1171,7 @@ describe("BF-14 match some conditions", () => {
     renderAt(`${THREE}&match=2`);
     await screen.findByRole("link", { name: "Build 1" });
     await openFilters();
-    expect((screen.getByRole("combobox", { name: "Builds must match" }) as HTMLSelectElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: /^Builds must match/ }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByText("Available when every build is loaded: these filters leave more than 200.")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Load all" })).toBeNull();
   });
@@ -1181,9 +1181,10 @@ describe("BF-14 match some conditions", () => {
     const first = renderAt("/builds?shape=app&pattern=router");
     await screen.findByRole("link", { name: "Build 1" });
     await openFilters();
-    const select = screen.getByRole("combobox", { name: "Builds must match" }) as HTMLSelectElement;
-    expect(Array.from(select.options).map((option) => option.textContent)).toEqual(["All 2 filters", "At least 1 of 2"]);
-    fireEvent.change(select, { target: { value: "1" } });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Builds must match: All 2 filters" }), { key: "Enter" });
+    const items = await screen.findAllByRole("menuitemradio");
+    expect(items.map((item) => item.textContent)).toEqual(["All 2 filters", "At least 1 of 2"]);
+    fireEvent.click(items[1]);
     await waitFor(() => expect(screen.getByRole("status").textContent).toBe("2 builds match"));
     expect(address).toBe("/builds?shape=app&pattern=router");
     applyFilters();
@@ -1191,7 +1192,7 @@ describe("BF-14 match some conditions", () => {
     first.unmount();
     renderAt("/builds?shape=app");
     await openFilters();
-    expect(screen.queryByRole("combobox", { name: "Builds must match" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Builds must match/ })).toBeNull();
   });
 
   it('each chip of a countable filter is unchanged; one extra chip reads "Match · at least 2 of 3" and removing it returns to All', async () => {

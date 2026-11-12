@@ -17,7 +17,7 @@ import { Button } from "@/components/brand/Button";
 import { Checkbox } from "@/components/brand/Checkbox";
 import { Glyph } from "@/components/brand/Glyph";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
@@ -647,25 +647,30 @@ export function BuildsFilters({ open, onOpenChange, ...props }: BuildsFiltersVie
 
 /** BF-08 (A2): how many builds the draft matches, then Clear all, Cancel and Apply (the dialog's one primary). BF-11 (B1): beside
     the count, whether each filter adds its column, which applies at once. */
-/** BF-14 (B6): a native select, 32 high (44 on a phone, at 16px so the phone does not zoom), named "Builds must match". */
+/** BF-14 (B6): Builds must match, chosen from a menu of one choice (the Components table has no native select): All m, then at
+    least m-1 down to 1. */
 function MatchSelect({ match }: { match: MatchControl }) {
-  const phone = useIsPhone();
   const m = match.choices[0];
+  const word = (least: number | undefined) => (least === undefined ? `All ${m} filters` : `At least ${least} of ${m}`);
   return (
     <span style={{ display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: "4px 8px", ...text(12.5, 400, t.text2) }}>
-      <span aria-hidden="true">Builds must match</span>
-      <select
-        aria-label="Builds must match"
-        value={match.value ?? ""}
-        disabled={match.disabled}
-        onChange={(event) => match.onChange(event.currentTarget.value === "" ? undefined : Number(event.currentTarget.value))}
-        style={{ boxSizing: "border-box", height: phone ? 44 : 32, padding: "0 8px", borderRadius: r.control, border: `1px solid ${t.controlBorder}`, background: t.control, color: t.text, fontFamily: "inherit", fontSize: phone ? 16 : 12.5, opacity: match.disabled ? 0.5 : undefined }}
-      >
-        <option value="">{`All ${m} filters`}</option>
-        {match.choices.slice(1).map((least) => (
-          <option key={least} value={least}>{`At least ${least} of ${m}`}</option>
-        ))}
-      </select>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild disabled={match.disabled}>
+          <BuildsControl aria-label={`Builds must match: ${word(match.value)}`} disabled={match.disabled} style={match.disabled ? { cursor: "default" } : undefined}>
+            <span style={{ color: t.label }}>Builds must match</span> {word(match.value)}
+          </BuildsControl>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" sideOffset={6}>
+          <DropdownMenuRadioGroup value={String(match.value ?? "")} onValueChange={(value) => match.onChange(value === "" ? undefined : Number(value))}>
+            <DropdownMenuRadioItem value="">{word(undefined)}</DropdownMenuRadioItem>
+            {match.choices.slice(1).map((least) => (
+              <DropdownMenuRadioItem key={least} value={String(least)}>
+                {word(least)}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
       {match.line ? <span>{match.line}</span> : null}
       {match.onLoadAll ? <BuildsControl onClick={match.onLoadAll}>Load all</BuildsControl> : null}
     </span>
