@@ -39,7 +39,8 @@ test.describe("/notifications in the site frame", () => {
       await expect(page.getByTestId("site-footer")).toBeVisible();
       await expect(page.getByTestId("dock")).toHaveCount(0);
       await expect(page.getByTestId("mobile-header")).toHaveCount(0);
-      await expect(page.getByTestId("breadcrumb")).toHaveText(/^Home\s*\/\s*Activity$/);
+      // Activity has no parent, so no breadcrumb (page shell step 3).
+      await expect(page.getByTestId("breadcrumb")).toHaveCount(0);
     }
   });
 
