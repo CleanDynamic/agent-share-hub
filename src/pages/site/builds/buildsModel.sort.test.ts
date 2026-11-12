@@ -133,3 +133,26 @@ describe("BF-12 sortedBy: the Sort menu's choice, the column's first step", () =
     expect(sortedBy(start, "field", false)).toBe(start);
   });
 });
+
+describe("BF-12 nextSort, the second key", () => {
+  const base: GalleryParams = { lens: "all", madeFor: [], madeWith: [], query: null };
+
+  it("Shift on another column sets by2, then ascending, then clears it; on the first key it does nothing", () => {
+    const start = { ...base, by: "field" };
+    const one = nextSort(start, "likes", true, true);
+    expect(one).toMatchObject({ by: "field", by2: "likes", dir2: undefined });
+    const two = nextSort(one, "likes", true, true);
+    expect(two).toMatchObject({ by2: "likes", dir2: "asc" });
+    expect(nextSort(two, "likes", true, true)).toMatchObject({ by: "field", by2: undefined, dir2: undefined });
+    expect(nextSort(start, "field", true, true)).toBe(start);
+  });
+
+  it("with a server sort as the first key, Shift takes it into the browser as by", () => {
+    expect(nextSort({ ...base, sort: "steps", dir: "asc" }, "field", true, true)).toMatchObject({ sort: "steps", by: "steps", dir: "asc", by2: "field" });
+  });
+
+  it("only when every build is loaded", () => {
+    const start = { ...base, by: "field" };
+    expect(nextSort(start, "likes", false, true)).toBe(start);
+  });
+});

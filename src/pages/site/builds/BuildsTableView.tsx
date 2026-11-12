@@ -186,6 +186,8 @@ export interface BuildsTableViewProps {
   rows: readonly TableRowView[];
   /** The column each head sorts by, and the arrow on the sorted one. */
   sortColumn: { id: ColumnId; ascending: boolean } | null;
+  /** BF-12 (B5): the second key, for ties: its head shows its arrow and "2". */
+  sortColumn2?: { id: ColumnId; ascending: boolean } | null;
   /** BF-12 (B3): the heads that sort, those whose answer is true for the whole list. */
   sortable: ReadonlySet<ColumnId>;
   /** A head pressed; `second` with Shift, for a second key. `fresh` from the phone's Sort menu: the column's first step. */
@@ -335,10 +337,12 @@ const td = (right: boolean, last: boolean): React.CSSProperties => ({ padding: l
     and would join the head's text. */
 const FILTERED_MARK: React.CSSProperties = { fontWeight: 500, borderBottom: `1px solid ${t.selectedEdge}` };
 
-function ColumnHead({ id, last, sorted, sortable, onSort, filtered }: { id: ColumnId; last: boolean; sorted: { ascending: boolean } | null; sortable: boolean; onSort: (second: boolean) => void; filtered: boolean }) {
+function ColumnHead({ id, last, sorted, sorted2, sortable, onSort, filtered }: { id: ColumnId; last: boolean; sorted: { ascending: boolean } | null; sorted2: { ascending: boolean } | null; sortable: boolean; onSort: (second: boolean) => void; filtered: boolean }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   const right = RIGHT.has(id);
-  const ariaSort = sorted ? (sorted.ascending ? "ascending" : "descending") : sortable ? "none" : undefined;
+  /* Only one head may say ascending or descending; the second key's says "other", and shows its arrow and a 2. */
+  const ariaSort = sorted ? (sorted.ascending ? "ascending" : "descending") : sorted2 ? "other" : sortable ? "none" : undefined;
+  const arrow = sorted ?? sorted2;
   const label = filtered ? `${HEAD[id]}, filtered` : undefined;
   return (
     <th scope="col" aria-sort={ariaSort} aria-label={label} style={{ ...th(right, last), color: sorted || filtered ? t.text : t.label }}>
@@ -346,12 +350,24 @@ function ColumnHead({ id, last, sorted, sortable, onSort, filtered }: { id: Colu
         <button
           type="button"
           onClick={(event) => onSort(event.shiftKey)}
+          /* Shift with Enter or Space is the second key from the keyboard, whatever the browser puts on the click it makes. */
+          onKeyDown={(event) => {
+            if (event.shiftKey && (event.key === "Enter" || event.key === " ")) {
+              event.preventDefault();
+              onSort(true);
+            }
+          }}
           aria-label={label}
           {...handlers}
           style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: 0, ...hitArea(2), font: "inherit", color: state.hovered ? t.text : "inherit", cursor: "pointer", borderRadius: r.chip, ...ring(state.focusVisible), ...(filtered ? FILTERED_MARK : null) }}
         >
           {HEAD[id]}
-          {sorted ? <span aria-hidden="true">{sorted.ascending ? "↑" : "↓"}</span> : null}
+          {arrow ? (
+            <span aria-hidden="true">
+              {arrow.ascending ? "↑" : "↓"}
+              {sorted2 && !sorted ? "2" : null}
+            </span>
+          ) : null}
         </button>
       ) : filtered ? (
         <span style={FILTERED_MARK}>{HEAD[id]}</span>
@@ -589,7 +605,7 @@ function Footer({ columns, footer }: { columns: readonly ColumnId[]; footer: Tab
 /* ── the table ── */
 
 export function BuildsTableView(props: BuildsTableViewProps) {
-  const { lenses, lens, onLens, columnsLabel, columnsMenu, chips, onRemoveChip, onClearAll, columns, rows, sortColumn, sortable, onSortColumn, filtered, footer, onMore, loadingMore, empty, updating, activeCount, onOpenFilters, setName } = props;
+  const { lenses, lens, onLens, columnsLabel, columnsMenu, chips, onRemoveChip, onClearAll, columns, rows, sortColumn, sortColumn2, sortable, onSortColumn, filtered, footer, onMore, loadingMore, empty, updating, activeCount, onOpenFilters, setName } = props;
   return (
     <div data-testid="builds-table">
       <LensRow lenses={lenses} lens={lens} onLens={onLens} columns={columns} sortable={sortable} sortColumn={sortColumn} onSortColumn={onSortColumn} columnsLabel={columnsLabel} columnsMenu={columnsMenu} updating={updating} activeCount={activeCount} onOpenFilters={onOpenFilters} setName={setName} />
@@ -607,6 +623,7 @@ export function BuildsTableView(props: BuildsTableViewProps) {
                     id={id}
                     last={position === columns.length - 1}
                     sorted={sortColumn?.id === id ? sortColumn : null}
+                    sorted2={sortColumn2?.id === id ? sortColumn2 : null}
                     sortable={sortable.has(id)}
                     onSort={(second) => onSortColumn(id, second)}
                     filtered={filtered?.has(id) === true}

@@ -1034,3 +1034,78 @@ describe("BF-12 one sort control on the page", () => {
     expect(screen.getByRole("columnheader", { name: /^Steps/ }).getAttribute("aria-sort")).toBe("descending");
   });
 });
+
+describe("BF-12 a second key with Shift", () => {
+  const field = (id: string) => ({ ...emptyClassification(), declared: { ...emptyClassification().declared, field: [{ id }] } });
+  const three = () =>
+    listBuildsTable.mockResolvedValue({
+      builds: [{ ...build(1), classifiedAs: field("education") }, { ...build(2), classifiedAs: field("law") }, { ...build(3), classifiedAs: field("education") }],
+      total: 3,
+    });
+  const titles = () => screen.getAllByRole("link", { name: /^Build \d+$/ }).map((link) => link.textContent);
+  const button = (name: RegExp) => within(screen.getByRole("columnheader", { name })).getByRole("button");
+  const query = () => new URLSearchParams(address.split("?")[1]);
+
+  it("Shift-pressing Reproductions while sorted by Field writes by2=reproductions and orders within each field", async () => {
+    three();
+    renderAt("/builds?by=field");
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(titles()).toEqual(["Build 2", "Build 1", "Build 3"]);
+    fireEvent.click(button(/^Reproductions/), { shiftKey: true });
+    await waitFor(() => expect(query().get("by2")).toBe("reproductions"));
+    expect(query().get("by")).toBe("field");
+    expect(titles()).toEqual(["Build 2", "Build 3", "Build 1"]);
+  });
+
+  it('the second key\'s head shows its arrow followed by "2", and its aria-sort is "other"', async () => {
+    three();
+    renderAt("/builds?by=field&by2=reproductions");
+    await screen.findByRole("link", { name: "Build 1" });
+    const second = screen.getByRole("columnheader", { name: /^Reproductions/ });
+    expect(second.getAttribute("aria-sort")).toBe("other");
+    expect(second.textContent).toBe("Reproductions↓2");
+    const sorted = screen.getAllByRole("columnheader").filter((cell) => ["ascending", "descending"].includes(cell.getAttribute("aria-sort") ?? ""));
+    expect(sorted.map((cell) => cell.textContent)).toEqual(["Field↓"]);
+  });
+
+  it("Shift-press again flips it; a third clears it", async () => {
+    three();
+    renderAt("/builds?by=field&by2=reproductions");
+    await screen.findByRole("link", { name: "Build 1" });
+    fireEvent.click(button(/^Reproductions/), { shiftKey: true });
+    await waitFor(() => expect(query().get("dir2")).toBe("asc"));
+    expect(titles()).toEqual(["Build 2", "Build 1", "Build 3"]);
+    fireEvent.click(button(/^Reproductions/), { shiftKey: true });
+    await waitFor(() => expect(address).toBe("/builds?by=field"));
+  });
+
+  it("a plain press on any head clears the second key", async () => {
+    three();
+    renderAt("/builds?by=field&by2=reproductions");
+    await screen.findByRole("link", { name: "Build 1" });
+    fireEvent.click(button(/^Field/));
+    await waitFor(() => expect(address).toBe("/builds?dir=asc&by=field"));
+    fireEvent.click(button(/^Rebuilds/));
+    await waitFor(() => expect(address).toBe("/builds?sort=rebuilt"));
+  });
+
+  it("with more pages to load, Shift-press does nothing", async () => {
+    listBuildsTable.mockResolvedValue({ builds: Array.from({ length: 50 }, (_, at) => build(at + 1)), total: 120 });
+    renderAt("/builds?sort=rebuilt");
+    await screen.findByRole("link", { name: "Build 1" });
+    fireEvent.click(button(/^Reproductions/), { shiftKey: true });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(address).toBe("/builds?sort=rebuilt");
+  });
+
+  it("Shift with Enter or Space on a focused head does the same as Shift-click", async () => {
+    three();
+    renderAt("/builds?by=field");
+    await screen.findByRole("link", { name: "Build 1" });
+    button(/^Reproductions/).focus();
+    fireEvent.keyDown(button(/^Reproductions/), { key: "Enter", shiftKey: true });
+    await waitFor(() => expect(query().get("by2")).toBe("reproductions"));
+    fireEvent.keyDown(button(/^Reproductions/), { key: " ", shiftKey: true });
+    await waitFor(() => expect(query().get("dir2")).toBe("asc"));
+  });
+});

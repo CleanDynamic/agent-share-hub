@@ -639,9 +639,20 @@ const withoutSort = (params: GalleryParams): GalleryParams => ({ ...params, sort
 /**
  * BF-12: what pressing a head does. A column the database sorts: its sort, then ascending, then the resting sort (the resting
  * sort's own column has only the two). Any other column, only when every matching build is loaded (`allLoaded`): `by` with the
- * server sort kept, then ascending, then none. A plain press clears the second key.
+ * server sort kept, then ascending, then none. A plain press clears the second key. B5, with Shift (`second`), only when every
+ * build is loaded: the column becomes the key for ties (`by2`), then ascending, then none. A server sort that is the first key
+ * is taken into the browser as `by` first, so both keys are sorted in one place.
  */
-export function nextSort(params: GalleryParams, column: ColumnId, allLoaded: boolean): GalleryParams {
+export function nextSort(params: GalleryParams, column: ColumnId, allLoaded: boolean, second = false): GalleryParams {
+  if (second) {
+    if (!allLoaded) return params;
+    const first = params.by ?? SORT_COLUMN[params.sort ?? DEFAULT_GALLERY_SORT];
+    if (!first || first === column) return params;
+    const keyed = { ...params, by: first };
+    if (params.by2 !== column) return { ...keyed, by2: column, dir2: undefined };
+    if (params.dir2 !== "asc") return { ...keyed, dir2: "asc" };
+    return { ...keyed, by2: undefined, dir2: undefined };
+  }
   const server = SERVER_SORT[column];
   if (server) {
     const current = params.sort ?? DEFAULT_GALLERY_SORT;
