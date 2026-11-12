@@ -6,6 +6,7 @@
 import type { ReactNode } from "react";
 
 import { PostControl, PostPrimary } from "@/components/post/postControls";
+import { Breadcrumb } from "@/components/shell/Breadcrumb";
 import { TextTabs } from "@/components/vision/TextTabs";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -49,14 +50,16 @@ export function SpaceView(view: SpaceViewProps) {
   );
 
   return (
-    <div style={{ maxWidth: 700, margin: "0 auto", paddingBottom: 48 }}>
+    <div>
       <PageHead
         title={view.name}
         line={view.description || undefined}
         meta={view.meta}
         actions={view.role === "moderator" ? <PostControl onClick={view.onSettings}>Settings</PostControl> : undefined}
         primary={primary}
+        breadcrumb={<Breadcrumb />}
       />
+    <div style={{ maxWidth: 700, margin: "0 auto", paddingBottom: 48 }}>
       <div style={{ borderBottom: `1px solid ${t.hairline}`, padding: "0 4px" }}>
         <TextTabs tabs={TABS} value={view.tab} onChange={view.onTab} label="Space" rule={false} />
       </div>
@@ -76,6 +79,7 @@ export function SpaceView(view: SpaceViewProps) {
           )}
         </div>
       )}
+    </div>
     </div>
   );
 }

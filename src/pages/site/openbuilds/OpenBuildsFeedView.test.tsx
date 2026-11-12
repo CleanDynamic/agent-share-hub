@@ -70,6 +70,14 @@ const draw = (extra: Partial<OpenBuildsFeedViewProps> = {}) =>
 afterEach(() => vi.unstubAllGlobals());
 
 describe("OpenBuildsFeedView", () => {
+  it("opens with PageHeader: the shared title style and no breadcrumb (page shell)", () => {
+    const { container } = draw();
+    const h1 = screen.getByRole("heading", { level: 1, name: "OpenBuilds" });
+    expect(h1.style.fontSize).toBe("20px");
+    expect(h1.style.lineHeight).toBe("24px");
+    expect(container.querySelector('[data-slot="page-breadcrumb"]')).toBeNull();
+  });
+
   it("heads the page with OpenBuilds, its line and the one primary, Post", () => {
     atWidth(1440);
     const view = props();

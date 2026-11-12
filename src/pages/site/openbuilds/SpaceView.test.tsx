@@ -57,6 +57,15 @@ const draw = (extra: Partial<SpaceViewProps> = {}) =>
 afterEach(() => vi.unstubAllGlobals());
 
 describe("SpaceView", () => {
+  it("opens with PageHeader: the shared title style and the breadcrumb above it (page shell)", () => {
+    const { container } = draw();
+    const h1 = screen.getByRole("heading", { level: 1, name: "Evals" });
+    expect(h1.style.fontSize).toBe("20px");
+    expect(h1.style.lineHeight).toBe("24px");
+    const slot = container.querySelector('[data-slot="page-breadcrumb"]')!;
+    expect(slot.querySelector('[data-testid="breadcrumb"]')).not.toBeNull();
+  });
+
   it("heads the page with the space's name, its description and the made-by line", () => {
     atWidth(1440);
     draw();
