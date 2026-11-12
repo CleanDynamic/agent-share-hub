@@ -3,8 +3,8 @@
 Every fix id in the BF README's coverage table, the test that proves it, and the line that was reverted (in the working
 tree only, never committed) to see that test fail. Each `proved` row was run three times by a script: the test alone
 (passing), the fix reverted (failing), the fix restored with `git checkout -- <file>` (passing again). Checked on
-11 and 12 November 2026 on `claude/blissful-hypatia-bnufn8`, which carries BF-06 to BF-10 (from
-`claude/bf-06-filter-dialog-shell-lhscbv`, not yet merged) and BF-11 to BF-15.
+11 and 12 November 2026 on `claude/blissful-hypatia-bnufn8`: main with BF-00 to BF-10 (BF-06 to BF-10 merged as #465
+while this ran), plus BF-11 to BF-15.
 
 | Id | Fix | Proved by (file · test name) | Reverted line that makes it fail | Status |
 | --- | --- | --- | --- | --- |
@@ -55,3 +55,58 @@ tree only, never committed) to see that test fail. Each `proved` row was run thr
 | X1 | Maps draws the filters as a dialog | `builds/BuildsMapsView.test.tsx` · pressing Filters opens the dialog and does not draw the panel inline | `builds/BuildsMapsView.tsx`: `{filters ? <BuildsFilters {...filters} open={open} onOpenChange={setOpen} /> : null}` -> `null` | proved |
 | X2 | One Clear all | `builds/buildsModel.clear.test.ts` · clearedFilters keeps lens, view and sort | `builds/buildsModel.ts`: `view: params.view, sort: params.sort, dir:` -> `view: params.view, dir:` | proved |
 | X3 | One chip row in every view | `builds/BuildsMapsView.test.tsx` · six active filters draw six chips and Clear all | `builds/BuildsMapsView.tsx`: `<ActiveFilters chips={chips} onRemove={onRemoveChip} onClearAll={onClearAll} />` -> `<ActiveFilters chips={chips.slice(0, 4)} onRemove={onRemoveChip} onCle` | proved |
+
+## Dead code seen
+
+- `SortOption` and `SORT_OPTIONS` were deleted by BF-12 P3 (nothing else read them). Nothing else the series left unused is
+  known.
+- `filterDrag.ts` was deleted by BF-07 P3; `columnDrag.ts` (BF-13) follows its pattern.
+- `sortableBy` is gone from `BuildsTableViewProps` (BF-12 P2).
+- The BF-02 to BF-10 reports (commit messages) list no other dead code.
+
+## Questions for Miles still open
+
+- **C8, one set of names (BF-10).** Renaming the heads to the filters' names (Tools and stack, Last confirmed, Still open)
+  makes the default table 1315 wide in 1282 at 1440. Longer heads and a wider frame, or one short label used in both
+  places?
+- **D3, the session count (BF-03).** Has `/dev/backfill-counts` been run, and what did its summary say? Until it is, a build
+  saved before SV-23 shows the empty mark for Steps and Sessions.
+- **B6, match in the database (BF-14).** How many builds are in the gallery today? Part 2 is built only past 200, or if you
+  want it now.
+- **B3, server sorts (BF-12).** Which columns do readers ask to sort once the list passes 50 builds? Only six sort in the
+  database today.
+- **A8, saved sets' name (BF-09).** Keep "saved filter sets", or rename to "saved views" (which reaches Library and
+  OpenBuilds)?
+
+## Not built, and why
+
+- A tool's name with "+2" in the Tools cell (C11): the marks are named, one per tool.
+- A count beside each value that follows the draft (A2): only the total follows it.
+- A head row pinned while the page scrolls down (C5b): the table would need a region that scrolls both ways (BF-13 A4).
+- Server sorts beyond the six database orderings (B3).
+- Ranking or marking rows by how many conditions they met (B6), and lens counts that follow a match.
+- Match in the database (BF-14 Part 2): gated on the gallery's size, which this session could not read.
+- The facets and Tools and stack as countable conditions (BF-14): `builds.facets` is a snapshot taken at save time, not
+  provably what the browser derives (BF-02 A4).
+- The board redraw: the three Builds boards stay retired (BF-00); the BF README's design spec is the source of truth.
+- BF-02 Part 3 (matching facets in the browser): its premise was false.
+- BF-10 Part 1 (one set of names): stopped at its A5, as C8 above.
+
+## Checks at the end of the series (12 November 2026), against BF-00's baseline
+
+| Check | BF-00 baseline | End | Builds-related failure? |
+| --- | --- | --- | --- |
+| `npm test` | 11479 tests, 31 failed | 11771 tests, 33 failed (main alone: 11594, 33 failed) | none: the failures are build-page, compose and lookRules files main also fails |
+| `tsc` | | clean after merging main (main had one error in `detailsOptional.tsx` earlier) | none |
+| `npm run lint` | | 888 errors, all outside the series' files; the Builds files have warnings only | none |
+| `npm run build` | | passes | none |
+| e2e tier 1, desktop and mobile | | 351 passed, 134 failed, 27 skipped; every Builds spec passes | none: auth-entry, backdrop, wide-layout, home, build, profile, post-thread and signin frames |
+| `/builds` requests and rounds (`audit:pages`) | cold 13 requests, 2 rounds; first 13, 1 round | cold 14, 2 rounds; first 13, 1 round; reload 11, 2 | none: Builds meets its targets; home and profile miss theirs |
+| LCP, INP proxy, CLS for /builds (`audit:perf`, noon/dusk) | 1256/1260 ms, 24/32 ms, 0.043 | 1432/1480 ms, 32/24 ms, 0.007 | LCP is 180 ms worse, measured while other suites ran on the same machine; worth one quiet re-run |
+| `audit:themes`, `audit:contrast` | fail | fail (home's ALT button; references-composer measured nothing) | none |
+| Builds chunk | | `BuildsPage` 22.3 kB, `buildsModel` 62.9 kB, `builds` 55.2 kB raw | |
+
+Diff of the series, searched: no em dash, no `select('*')`, no `transition` added under `src/pages/site/builds` (only
+tests asserting it is empty), no `.only(`. The `.skip(` added are project gates (`desktop project only`), as the file
+already used. Two dependencies entered `package.json` (`@lovable.dev/vite-plugin-*`) through Lovable's own "Changes"
+commit on main, not through the series.
