@@ -14,12 +14,12 @@ import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 const type = (size: number, weight: 400 | 500, color: string, line: number): CSSProperties => ({ fontFamily: FIGTREE, fontSize: size, fontWeight: weight, lineHeight: `${line}px`, color });
 
-/** What sits between two sections: 22, a 1px rule, 22. */
-export const SECTION_GAP = { above: 22, rule: 1, below: 22 } as const;
-/** The space a section takes above itself when it is not first in its column. */
+/** F70: what sits above every section, the first too: space[6], a 1px rule, space[6]. */
+export const SECTION_GAP = { above: space[6], rule: 1, below: space[6] } as const;
+/** The space a section takes above itself. */
 export const SECTION_SEPARATION = SECTION_GAP.above + SECTION_GAP.rule + SECTION_GAP.below;
-/** The head block to the value: 10. */
-export const HEAD_TO_VALUE = 10;
+/** F70: the head block (the heading, or its meta line) to the value: space[3]. */
+export const HEAD_TO_VALUE = space[3];
 /** 4 below the head of the whole column. */
 export const HEAD_BELOW = 4;
 /** The line naming what is empty sits 22 below the last section. */
@@ -41,9 +41,10 @@ export const EDIT_BUTTON: CSSProperties = { padding: `0 ${space[3]}px`, flexShri
 
 export const SECTION_HEAD: CSSProperties = { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, minWidth: 0 };
 export const SECTION_LABEL: CSSProperties = { ...type(14, 500, t.text, 20), margin: 0 };
-export const SECTION_COUNT: CSSProperties = { ...type(12.5, 400, t.text2, 18), margin: 0 };
+/** F70: the meta line, space[1] under its heading. */
+export const SECTION_COUNT: CSSProperties = { ...type(12.5, 400, t.text2, 18), margin: `${space[1]}px 0 0` };
 
-/** A section after the first in its column: 22, a 1px `--hairline`, 22. */
+/** F70: every section: space[6], a 1px `--hairline`, space[6]. */
 export const SECTION_BREAK: CSSProperties = { marginTop: SECTION_GAP.above, paddingTop: SECTION_GAP.below, borderTop: `1px solid ${t.hairline}` };
 
 export const VALUE: CSSProperties = { marginTop: HEAD_TO_VALUE, minWidth: 0 };

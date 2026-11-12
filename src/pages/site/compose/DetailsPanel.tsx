@@ -637,7 +637,8 @@ function CopyButton({ text: words }: { text: string }) {
   );
 }
 
-/** One section: its label, its count under it, a reading button at the right, then its value. Not first in its column: 22, a rule, 22. */
+/** One section: its label, its count under it, a reading button at the right, then its value. F70: a rule above every section,
+    space[6] either side of it; `first` is the measuring copy only, drawn without it (the layout adds SEPARATION). */
 export function DetailsSection({ section, first, view, onSelect, clamp, onReadAll }: { section: ReadSection; first: boolean; view: DetailsView; onSelect?: (id: string) => void; clamp?: number; onReadAll?: () => void }) {
   const value = section.value;
   const copyable = value.type === "prose" && value.copy ? value.text : null;
@@ -669,8 +670,8 @@ function MemberGroupLine({ to }: { to: string }) {
   );
 }
 
-/** The head: the tool's mark, the title and the modal's header line (a colour dot before it when set), Edit at the right. */
-export function DetailsHead({ view, colour, onEdit }: { view: DetailsView; colour?: DetailsColour | null; onEdit?: () => void }) {
+/** The head: the tool's mark, the title and the modal's header line (a colour dot before it when set), Add details and Edit at the right. */
+export function DetailsHead({ view, colour, onEdit, onAddDetails }: { view: DetailsView; colour?: DetailsColour | null; onEdit?: () => void; /** F71: beside Edit, when something is not set. */ onAddDetails?: () => void }) {
   const head = headOf(view);
   return (
     <header data-testid="details-head" style={{ ...HEAD_ROW, marginBottom: HEAD_BELOW }}>
@@ -690,6 +691,8 @@ export function DetailsHead({ view, colour, onEdit }: { view: DetailsView; colou
         {/* CA-19 P5: a member of a named group: "In Login flow", under the header line. */}
         {colour?.to ? <MemberGroupLine to={colour.to} /> : null}
       </div>
+      {/* F71: Add details in the head, beside Edit. */}
+      {onAddDetails ? <AddDetails onEdit={onAddDetails} /> : null}
       {/* F47: one action, in the same place for every object: Open for a file (its window, with the preview), Edit for the rest. */}
       {onEdit ? (
         <Button variant="secondary" size={32} fontSize={12} onClick={onEdit} style={{ ...EDIT_BUTTON, ...BUTTON_PAD_SMALL_TEXT }} data-testid="details-action">
@@ -719,10 +722,10 @@ export function detailsOf(view: DetailsView, build: BuildFacts = nameOnly) {
 const SESSION_HEAD_SECTIONS = new Set(["app", "date"]);
 const SESSION_HEAD_LABELS = new Set(["Harness and model", "Date"]);
 
-/** UX-02 P9: in place of "Not set: …": one control that opens the same window Edit opens. */
+/** UX-02 P9: in place of "Not set: …": one control that opens the same window Edit opens. F71: in the head, beside Edit. */
 function AddDetails({ onEdit }: { onEdit: () => void }) {
   return (
-    <div data-testid="details-add" style={{ display: "flex" }}>
+    <div data-testid="details-add" style={{ display: "flex", flexShrink: 0 }}>
       <Button style={BUTTON_PAD} variant="secondary" size={32} fontSize={13} onClick={onEdit}>
         {DETAILS_COPY.addDetails}
       </Button>
@@ -734,7 +737,8 @@ function AddDetails({ onEdit }: { onEdit: () => void }) {
 
 function Body({ view, plan, colour, build, onSelect, onEdit, onOpenPrompt }: { view: DetailsView; plan?: DetailsPlan; colour?: DetailsColour | null; build?: BuildFacts; onSelect?: (id: string) => void; onEdit?: () => void; onOpenPrompt?: (id: string) => void }) {
   const { sections, notSet } = detailsOf(view, build);
-  const foot = notSet.length > 0 && onEdit ? <AddDetails onEdit={onEdit} /> : null;
+  /* F71: Add details stands in the head, beside Edit; nothing closes the panel under the sections. */
+  const addDetails = notSet.length > 0 && onEdit ? onEdit : undefined;
   const id = view.kind === "session" ? view.key : view.id;
   const readAll = view.kind === "prompt" && onOpenPrompt ? () => onOpenPrompt(id) : undefined;
   const one = (section: ReadSection, first: boolean) => (
@@ -746,35 +750,32 @@ function Body({ view, plan, colour, build, onSelect, onEdit, onOpenPrompt }: { v
   if (!plan) {
     return (
       <div style={COLUMN}>
-        <DetailsHead view={view} colour={colour} onEdit={onEdit} />
-        {sections.map((section, at) => one(section, at === 0))}
-        {foot}
-        {references(sections.length === 0 && !foot)}
+        <DetailsHead view={view} colour={colour} onEdit={onEdit} onAddDetails={addDetails} />
+        {sections.map((section) => one(section, false))}
+        {references(false)}
       </div>
     );
   }
   if (plan.measure) {
     return (
       <div data-testid="details-measure" style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
-        <div data-measure="head" style={FLOW}><DetailsHead view={view} colour={colour} onEdit={onEdit} /></div>
+        <div data-measure="head" style={FLOW}><DetailsHead view={view} colour={colour} onEdit={onEdit} onAddDetails={addDetails} /></div>
         {sections.map((section) => (
           <div key={section.key} data-measure={section.key} style={FLOW}>{one(section, true)}</div>
         ))}
-        {foot ? <div data-measure="foot" style={FLOW}>{foot}</div> : null}
         {refs ? <div data-measure="references" data-trailing="true" style={FLOW}>{references(true)}</div> : null}
       </div>
     );
   }
-  const byKey = new Map<string, ReactNode>([["head", <DetailsHead key="head" view={view} colour={colour} onEdit={onEdit} />], ["foot", foot ? <div key="foot">{foot}</div> : null]]);
+  const byKey = new Map<string, ReactNode>([["head", <DetailsHead key="head" view={view} colour={colour} onEdit={onEdit} onAddDetails={addDetails} />]]);
   return (
     <div data-testid="details-columns" style={{ display: "flex", alignItems: "flex-start", gap: 48 }}>
       {plan.columns.map((keys, at) => (
         <div key={at} data-testid="details-column" style={{ ...COLUMN, width: plan.columnWidth, flexShrink: 0 }}>
-          {keys.map((key, index) => {
+          {keys.map((key) => {
             const section = sections.find((entry) => entry.key === key);
-            const earlier = keys.slice(0, index).some((before) => before !== "head");
-            if (section) return one(section, !earlier);
-            if (key === "references") return references(!earlier);
+            if (section) return one(section, false);
+            if (key === "references") return references(false);
             return byKey.get(key) ?? null;
           })}
         </div>
