@@ -207,6 +207,7 @@ export function ProfileHead(props: ProfileHeadProps) {
           </div>
         </div>
 
+        {/* Page shell exception: the name stays beside its avatar rather than in a PageHeader at 64 / 88, in the shared title style, the page's one h1. */}
         <h1 style={{ ...PAGE_TITLE, margin: "12px 0 0", overflowWrap: "anywhere" }}>{props.name}</h1>
 
         {props.meta.length > 0 ? (
