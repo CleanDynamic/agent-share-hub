@@ -34,6 +34,7 @@ import { GlyphButton, ModalShell } from "./ModalFrame";
 import { COUNT, FOOT_NOTE, FieldArea, FieldInput, MODAL_PAD, ModalInset, RecipeButton, Row, TextLink, bodyStyle, footerStyle } from "./modalRecipes";
 import { Badge, BlockTitle, ConfirmDialog, DANGER, ELLIPSIS, GAP, InnerPanel, PAD, SECTION_LABEL, SortableRows, SquareSwatch, UndoRedo, data, words } from "./referencePieces";
 
+import { textStep } from "@/lib/theme/type";
 export const GROUP_WINDOW_COPY = {
   title: "Reference group",
   subtitle: "Components under one colour",
@@ -111,8 +112,8 @@ function MemberRow({ grip, entry, phone, onRemove }: { grip: React.ReactNode; en
     <span style={{ display: "flex", alignItems: "center", gap: GAP.row, flexGrow: 1, minWidth: 0 }}>
       {grip}
       <Badge>{entry?.number ?? ""}</Badge>
-      <span style={{ ...words(13, 500, t.text), ...ELLIPSIS, flexGrow: 1 }}>{name}</span>
-      <span style={{ ...words(12.5, 400, t.text2), flexShrink: 0 }}>{entry?.kind ?? ""}</span>
+      <span style={{ ...words(textStep.body, 500, t.text), ...ELLIPSIS, flexGrow: 1 }}>{name}</span>
+      <span style={{ ...words(textStep.meta, 400, t.text2), flexShrink: 0 }}>{entry?.kind ?? ""}</span>
       <GlyphButton glyph="x" label={GROUP_WINDOW_COPY.remove(name)} phone={phone} onClick={onRemove} />
     </span>
   );
@@ -148,9 +149,9 @@ function AddChoice({ entry, indent, disabled, onPick }: { entry: RefEntry; inden
         ...ring(state.focusVisible),
       }}
     >
-      <span style={{ ...data(11, t.text2), minWidth: 22, flexShrink: 0 }}>{entry.number}</span>
-      <span style={{ ...words(13, 400, t.text), ...ELLIPSIS, flexGrow: 1 }}>{entry.title}</span>
-      <span style={{ ...words(12, 400, t.label), flexShrink: 0 }}>{entry.kind}</span>
+      <span style={{ ...data(textStep.meta, t.text2), minWidth: 22, flexShrink: 0 }}>{entry.number}</span>
+      <span style={{ ...words(textStep.body, 400, t.text), ...ELLIPSIS, flexGrow: 1 }}>{entry.title}</span>
+      <span style={{ ...words(textStep.meta, 400, t.label), flexShrink: 0 }}>{entry.kind}</span>
     </button>
   );
 }
@@ -187,16 +188,16 @@ function LinkedText({ isNew, linked, phone, findWords, onLinkFound, onSelectWord
   const found = useMemo(() => (query.trim() ? findWords(query) : []), [query, findWords]);
   return (
     <InnerPanel testId="group-linked" style={{ display: "flex", flexDirection: "column", gap: GAP.column }}>
-      <span style={words(12.5, 500, t.text)}>
+      <span style={words(textStep.meta, 500, t.text)}>
         {GROUP_WINDOW_COPY.linkedText}
-        <span style={words(12.5, 400, t.label)}>{GROUP_WINDOW_COPY.oneOfOne(Boolean(linked))}</span>
+        <span style={words(textStep.meta, 400, t.label)}>{GROUP_WINDOW_COPY.oneOfOne(Boolean(linked))}</span>
       </span>
       {linked ? (
         <span style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-          <span data-testid="group-linked-words" style={{ ...words(13, 400, t.text), ...refWordsStyle(refPaint({ colour: linked.colour, number: linked.number }, theme)), ...ELLIPSIS, cursor: "default" }}>
+          <span data-testid="group-linked-words" style={{ ...words(textStep.body, 400, t.text), ...refWordsStyle(refPaint({ colour: linked.colour, number: linked.number }, theme)), ...ELLIPSIS, cursor: "default" }}>
             {linked.words}
           </span>
-          <span style={{ ...data(11, t.label), flexGrow: 1 }}>{GROUP_WINDOW_COPY.post(linked.post)}</span>
+          <span style={{ ...data(textStep.meta, t.label), flexGrow: 1 }}>{GROUP_WINDOW_COPY.post(linked.post)}</span>
           <TextLink phone={phone} onClick={onGoToLink}>
             {GROUP_WINDOW_COPY.goTo}
           </TextLink>
@@ -205,13 +206,13 @@ function LinkedText({ isNew, linked, phone, findWords, onLinkFound, onSelectWord
           </TextLink>
         </span>
       ) : isNew ? (
-        <span style={words(12.5, 400, t.text2, 18)}>{GROUP_WINDOW_COPY.saveFirst}</span>
+        <span style={words(textStep.meta, 400, t.text2, 17)}>{GROUP_WINDOW_COPY.saveFirst}</span>
       ) : (
         <>
           <FieldInput phone={phone} aria-label={GROUP_WINDOW_COPY.findWords} placeholder={GROUP_WINDOW_COPY.findWords} value={query} onChange={(event) => setQuery(event.target.value)} autoComplete="off" spellCheck={false} />
           {query.trim() ? (
             <ul aria-label={GROUP_WINDOW_COPY.findWords} style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-              {found.length === 0 ? <li style={words(12.5, 400, t.text2)}>{GROUP_WINDOW_COPY.noMatch}</li> : null}
+              {found.length === 0 ? <li style={words(textStep.meta, 400, t.text2)}>{GROUP_WINDOW_COPY.noMatch}</li> : null}
               {found.map((hit) => (
                 <li key={hit.from}>
                   <TextLink phone={phone} onClick={() => onLinkFound(hit)} aria-label={`${hit.match} · ${GROUP_WINDOW_COPY.post(hit.post)}`}>
@@ -342,7 +343,7 @@ function GroupForm(props: ReferenceGroupWindowProps) {
       <div data-testid="group-window-footer" style={footerStyle(phone)}>
         <UndoRedo phone={phone} canUndo={history.canUndo} canRedo={history.canRedo} onUndo={history.onUndo} onRedo={history.onRedo} />
         {isNew ? null : (
-          <button type="button" data-testid="group-delete" onClick={() => setDeleting(true)} style={{ appearance: "none", background: "none", border: 0, padding: phone ? "12px 0" : 0, cursor: "pointer", ...words(12.5, 500, DANGER) }}>
+          <button type="button" data-testid="group-delete" onClick={() => setDeleting(true)} style={{ appearance: "none", background: "none", border: 0, padding: phone ? "12px 0" : 0, cursor: "pointer", ...words(textStep.meta, 500, DANGER) }}>
             {GROUP_WINDOW_COPY.delete}
           </button>
         )}

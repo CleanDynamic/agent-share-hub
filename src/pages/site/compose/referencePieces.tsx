@@ -32,7 +32,7 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { nameColourFor, swatchFor } from "@/lib/theme/partColour";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE, textStep } from "@/lib/theme/type";
 
 import { dropIn, liftOut, useCrossfade, useHeld } from "./buildMotion";
 import { BAR_AIR, PHONE_BARS_BOTTOM } from "./composeChrome";
@@ -54,13 +54,13 @@ export const words = (px: number, weight: 400 | 500 | 600, color: string, line?:
 export const data = (px: number, color: string): CSSProperties => ({ fontFamily: DM_MONO, fontSize: px, fontWeight: 400, lineHeight: "normal", color, fontVariantNumeric: "tabular-nums" });
 
 /** "REFERENCE GROUPS": the data face 11 in capitals, .04em apart, `--label`. */
-export const SECTION_LABEL: CSSProperties = { fontFamily: DM_MONO, fontSize: 11, fontWeight: 400, lineHeight: "normal", color: t.label, textTransform: "uppercase", letterSpacing: "0.04em" };
+export const SECTION_LABEL: CSSProperties = { fontFamily: DM_MONO, fontSize: textStep.meta, fontWeight: 400, lineHeight: "normal", color: t.label, textTransform: "uppercase", letterSpacing: "0.04em" };
 
 /** The danger words: `--breakage`. */
 export const DANGER = t.breakage;
 
 /** The colour code field's face: the data face 12.5, padded 0 8 (the recipe's field gives the fill, the edge and the focus). */
-export const CODE_FIELD: CSSProperties = { fontFamily: DM_MONO, fontSize: 12.5, padding: "0 8px", minWidth: 0, width: "100%", fontVariantNumeric: "tabular-nums" };
+export const CODE_FIELD: CSSProperties = { fontFamily: DM_MONO, fontSize: textStep.meta, padding: "0 8px", minWidth: 0, width: "100%", fontVariantNumeric: "tabular-nums" };
 
 export const ELLIPSIS: CSSProperties = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 };
 
@@ -107,7 +107,7 @@ export function GroupLabel({ name, colour, prefix, testId = "group-label", onCli
   const body = (
     <>
       <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, ...swatchFor(ink) }} />
-      <span style={{ ...words(11.5, 500, ink), ...ELLIPSIS }}>{prefix ? `${prefix} ${name}` : name}</span>
+      <span style={{ ...words(textStep.meta, 500, ink), ...ELLIPSIS }}>{prefix ? `${prefix} ${name}` : name}</span>
     </>
   );
   const look: CSSProperties = { boxSizing: "border-box", display: "inline-flex", alignItems: "center", gap: space[2], height: sizes.tag, padding: `0 ${space[2]}px`, borderRadius: r.chip, backgroundColor: t.hairline, maxWidth: "100%", minWidth: 0, flexShrink: 1 };
@@ -255,7 +255,7 @@ export function ReferenceNotice({ notice: given, onUndo, onDone, phone = false }
         border: `1px solid ${t.windowBorder}`,
         borderRadius: 10,
         boxShadow: t.windowShadow,
-        ...words(13, 400, t.text),
+        ...words(textStep.body, 400, t.text),
         ...(held.leaving ? { pointerEvents: "none" } : null),
       }}
     >
@@ -348,10 +348,10 @@ function KeepRow({ choice, chosen, onChoose }: { choice: KeepChoice; chosen: boo
         ...ring(state.focusVisible),
       }}
     >
-      <span style={words(12, 400, t.label)}>{choice.owner}</span>
+      <span style={words(textStep.meta, 400, t.label)}>{choice.owner}</span>
       <span style={{ display: "flex", alignItems: "baseline", gap: 8, minWidth: 0 }}>
-        <span style={{ ...words(13, 500, t.text), ...ELLIPSIS, flexGrow: 1 }}>{`"${choice.words}"`}</span>
-        <span style={{ ...data(11, t.label), flexShrink: 0 }}>{KEEP_COPY.post(choice.post)}</span>
+        <span style={{ ...words(textStep.body, 500, t.text), ...ELLIPSIS, flexGrow: 1 }}>{`"${choice.words}"`}</span>
+        <span style={{ ...data(textStep.meta, t.label), flexShrink: 0 }}>{KEEP_COPY.post(choice.post)}</span>
       </span>
     </button>
   );
@@ -364,10 +364,10 @@ export function BlockTitle({ title, sub, id, children }: { title: string; sub?: 
   return (
     <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
       <span style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
-        <span id={id} style={words(13.5, 500, t.text, 20)}>
+        <span id={id} style={words(textStep.body, 500, t.text, 21)}>
           {title}
         </span>
-        {sub ? <span style={words(12.5, 400, t.text2, 18)}>{sub}</span> : null}
+        {sub ? <span style={words(textStep.meta, 400, t.text2, 17)}>{sub}</span> : null}
       </span>
       {children ? <span style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>{children}</span> : null}
     </div>
@@ -447,7 +447,7 @@ export function SortableRows({ rows, height = 40, label, onOrder }: { rows: read
 
 /** A component's badge: its number in the data face 11 on the tag fill ("S2", "4"). */
 export function Badge({ children }: { children: ReactNode }) {
-  return <span style={{ ...data(11, t.text2), boxSizing: "border-box", minWidth: 28, height: sizes.tag, padding: `0 ${space[2]}px`, borderRadius: r.chip, background: t.tagFill, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{children}</span>;
+  return <span style={{ ...data(textStep.meta, t.text2), boxSizing: "border-box", minWidth: 28, height: sizes.tag, padding: `0 ${space[2]}px`, borderRadius: r.chip, background: t.tagFill, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{children}</span>;
 }
 
 /** A confirmation: a title, a line, Cancel and the action in the danger colour. */

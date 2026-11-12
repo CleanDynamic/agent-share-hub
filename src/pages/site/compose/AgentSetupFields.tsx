@@ -47,6 +47,7 @@ import { chipStyle, text, typedArea } from "./refinedStyles";
 import { ToolPicker } from "./ToolPicker";
 import { FieldInput, Hint, IconSquare, PICKER_ROW, RemovableTag, Row, Tag, TagList, TextLink, iconButtonSide } from "./modalRecipes";
 
+import { textStep } from "@/lib/theme/type";
 export const AGENT_SETUP_COPY = {
   /** SV-27 P1: was Host platform; `payload.harness` is unchanged. */
   runsIn: HARNESS_COPY.label,
@@ -430,7 +431,7 @@ export function useAgentSetupFields({ value, onChange, phone, inBuild, openMainM
                     style={{ width: "100%", justifyContent: "space-between" }}
                   />
                 ) : (
-                  <span data-testid="agent-model-main" style={{ ...text(12.5, 400, t.text2), paddingLeft: 12 }}>
+                  <span data-testid="agent-model-main" style={{ ...text(textStep.meta, 400, t.text2), paddingLeft: 12 }}>
                     {AGENT_SETUP_COPY.main}
                   </span>
                 )
@@ -450,13 +451,13 @@ export function useAgentSetupFields({ value, onChange, phone, inBuild, openMainM
           ))}
           {several && value.models.length < AGENT_MODELS_MAX ? (
             <span>
-              <TextButton target={phone} style={text(12.5, 500, t.text2)} onClick={() => onChange({ ...value, models: [...value.models, { model: null, role: nextRole(value.harness) }] })}>
+              <TextButton target={phone} style={text(textStep.meta, 500, t.text2)} onClick={() => onChange({ ...value, models: [...value.models, { model: null, role: nextRole(value.harness) }] })}>
                 {AGENT_SETUP_COPY.addModel}
               </TextButton>
             </span>
           ) : null}
           <div data-testid="agent-model-cleared">
-            {cleared ? <span style={text(12, 400, t.text2)}>{cleared}</span> : null}
+            {cleared ? <span style={text(textStep.meta, 400, t.text2)}>{cleared}</span> : null}
           </div>
         </div>
       </Field>

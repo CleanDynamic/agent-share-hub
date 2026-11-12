@@ -14,7 +14,7 @@ import { OPEN_PROBLEM_MAX } from "@/lib/build/openRequest";
 import { fieldStyle } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE, display } from "@/lib/theme/type";
+import { FIGTREE, display, textStep } from "@/lib/theme/type";
 
 export { OPEN_REQUEST_COPY } from "./openRequestCopy";
 import { OPEN_REQUEST_COPY } from "./openRequestCopy";
@@ -83,9 +83,9 @@ export function OpenRequestDialog({ open, title, initial, onClose, onSubmit }: O
                 <IconButton style={iconButtonSide()} icon={X} label="Close" size={38} />
               </Dialog.Close>
             </div>
-            <Dialog.Description style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: t.text2 }}>{OPEN_REQUEST_COPY.description}</Dialog.Description>
+            <Dialog.Description style={{ margin: 0, fontSize: textStep.body, lineHeight: 1.55, color: t.text2 }}>{OPEN_REQUEST_COPY.description}</Dialog.Description>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <label htmlFor={`${id}-problem`} style={{ fontSize: 12, color: t.label }}>
+              <label htmlFor={`${id}-problem`} style={{ fontSize: textStep.meta, color: t.label }}>
                 {OPEN_REQUEST_COPY.label}
               </label>
               <textarea
@@ -96,16 +96,16 @@ export function OpenRequestDialog({ open, title, initial, onClose, onSubmit }: O
                 aria-invalid={tried && empty}
                 aria-describedby={tried && empty ? `${id}-why` : undefined}
                 onChange={(event) => setProblem(event.target.value)}
-                style={{ ...fieldStyle(), fontFamily: FIGTREE, fontSize: 16, width: "100%", padding: "8px", color: t.text, boxSizing: "border-box", resize: "vertical" }}
+                style={{ ...fieldStyle(), fontFamily: FIGTREE, fontSize: textStep.section, width: "100%", padding: "8px", color: t.text, boxSizing: "border-box", resize: "vertical" }}
               />
               {tried && empty ? (
-                <span id={`${id}-why`} role="alert" style={{ fontSize: 12, color: t.text2 }}>
+                <span id={`${id}-why`} role="alert" style={{ fontSize: textStep.meta, color: t.text2 }}>
                   {OPEN_REQUEST_COPY.empty}
                 </span>
               ) : null}
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <Button type="submit" variant="primary" size={44} fontSize={14}>
+              <Button type="submit" variant="primary" size={44} fontSize={textStep.body}>
                 {OPEN_REQUEST_COPY.submit}
               </Button>
             </div>

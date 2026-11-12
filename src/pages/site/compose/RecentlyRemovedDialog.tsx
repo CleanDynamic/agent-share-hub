@@ -18,6 +18,7 @@ import { FOOT_NOTE, LABEL, RecipeButton, bodyStyle, footerStyle } from "./modalR
 import { Badge, ELLIPSIS, words } from "./referencePieces";
 import { size } from "@/lib/theme/space";
 
+import { textStep } from "@/lib/theme/type";
 export function RecentlyRemovedDialog({ open, entries, onRestore, onClose }: { open: boolean; entries: readonly RemovedEntry[]; onRestore: (id: string) => void; onClose: () => void }) {
   const phone = useIsPhone();
   // How long ago moves on while the window is open.
@@ -45,10 +46,10 @@ export function RecentlyRemovedDialog({ open, entries, onRestore, onClose }: { o
               >
                 <Badge>{typeof entry.badge === "string" ? entry.badge : <Glyph name={entry.badge.glyph} size={size.iconSmall} />}</Badge>
                 <span style={{ ...ELLIPSIS, flexGrow: 1, display: "flex", alignItems: "baseline", gap: 0 }}>
-                  <span style={words(13, 500, t.text)}>{entry.name}</span>
-                  {entry.detail ? <span style={words(13, 400, t.text2)}>{` · ${entry.detail}`}</span> : null}
+                  <span style={words(textStep.body, 500, t.text)}>{entry.name}</span>
+                  {entry.detail ? <span style={words(textStep.body, 400, t.text2)}>{` · ${entry.detail}`}</span> : null}
                 </span>
-                <span style={{ ...words(12.5, 400, t.text2), whiteSpace: "nowrap", flexShrink: 0 }}>{agoLine(entry.at, now)}</span>
+                <span style={{ ...words(textStep.meta, 400, t.text2), whiteSpace: "nowrap", flexShrink: 0 }}>{agoLine(entry.at, now)}</span>
                 <RecipeButton small={!phone} phone={phone} aria-label={`${REMOVED_COPY.restore} ${entry.name}`} data-testid="removed-restore" onClick={() => onRestore(entry.id)}>
                   {REMOVED_COPY.restore}
                 </RecipeButton>

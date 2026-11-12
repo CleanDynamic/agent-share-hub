@@ -29,6 +29,7 @@ import { FLOATING_Z } from "./ToolPicker";
 import { size, space } from "@/lib/theme/space";
 import { r } from "@/lib/theme/radius";
 
+import { textStep } from "@/lib/theme/type";
 export const ADD_SESSION_COPY = {
   /** F55: the three add controls read Add step, Add session, Add part; the plus is their icon. */
   row: "Add session",
@@ -105,8 +106,8 @@ function Choice({ title, line, onPick, phone, forward = false }: { title: string
       style={{ ...rowButton, minHeight: phone ? size.rowLarge : size.row, padding: `${space[2]}px ${space[2]}px`, cursor: "pointer", ...(state.hovered ? { background: t.controlOn } : null), ...ring(state.focusVisible) }}
     >
       <span style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0, flexGrow: 1 }}>
-        <span style={text(13, 500, t.text)}>{title}</span>
-        <span style={text(11, 400, t.label)}>{line}</span>
+        <span style={text(textStep.body, 500, t.text)}>{title}</span>
+        <span style={text(textStep.meta, 400, t.text2)}>{line}</span>
       </span>
       {forward ? (
         <span aria-hidden="true" style={{ color: t.label, display: "inline-flex" }}>
@@ -153,12 +154,12 @@ function PickRow({ item, phone, onPick }: { item: SourceLibraryItem; phone: bool
       )}
       <span style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0, flexGrow: 1, overflow: "hidden" }}>
         <span style={{ display: "flex", alignItems: "baseline", gap: space[2], minWidth: 0, height: 20, overflow: "hidden" }}>
-          <span style={{ ...text(13, 500, t.text), whiteSpace: "nowrap", flexShrink: 0, maxWidth: "45%", ...ellipsis }}>{item.app}</span>
-          {opening ? <span style={{ ...text(13, 400, t.text2), ...ellipsis, minWidth: 0 }}>{opening}</span> : null}
+          <span style={{ ...text(textStep.body, 500, t.text), whiteSpace: "nowrap", flexShrink: 0, maxWidth: "45%", ...ellipsis }}>{item.app}</span>
+          {opening ? <span style={{ ...text(textStep.body, 400, t.text2), ...ellipsis, minWidth: 0 }}>{opening}</span> : null}
         </span>
-        <span style={{ ...text(11, 400, t.label), ...ellipsis, ...tnum, height: 16 }}>{second}</span>
+        <span style={{ ...text(textStep.meta, 400, t.text2), ...ellipsis, ...tnum, height: 16 }}>{second}</span>
       </span>
-      {note ? <span style={{ ...text(11, 400, t.label), flexShrink: 0, whiteSpace: "nowrap" }}>{note}</span> : null}
+      {note ? <span style={{ ...text(textStep.meta, 400, t.text2), flexShrink: 0, whiteSpace: "nowrap" }}>{note}</span> : null}
     </button>
   );
 }
@@ -172,10 +173,10 @@ function ChatList({ props, close, back, part }: { props: AddSessionRowProps; clo
   return (
     <div data-testid="add-session-picker" style={{ display: "flex", flexDirection: "column", gap: space[2], minWidth: 0, ...(phone ? { height: "calc(100dvh - 180px)", minHeight: 240 } : null) }}>
       <div style={{ display: "flex", alignItems: "center", gap: space[2] }}>
-        <TextButton target={phone} onClick={back} style={text(13, 500, t.text2)}>
+        <TextButton target={phone} onClick={back} style={text(textStep.body, 500, t.text2)}>
           {ADD_SESSION_COPY.back}
         </TextButton>
-        <h3 style={{ ...text(13, 500, t.text), margin: 0 }}>{ADD_SESSION_COPY.yours}</h3>
+        <h3 style={{ ...text(textStep.body, 500, t.text), margin: 0 }}>{ADD_SESSION_COPY.yours}</h3>
       </div>
       <input
         id={`${id}-search`}
@@ -189,13 +190,13 @@ function ChatList({ props, close, back, part }: { props: AddSessionRowProps; clo
       />
       <div role="list" aria-label={ADD_SESSION_COPY.yours} style={{ display: "flex", flexDirection: "column", gap: 0, minHeight: 0, ...(phone ? { flex: "1 1 auto" } : { maxHeight: 340 }), overflowY: "auto", overscrollBehavior: "contain" }}>
         {library.length === 0 ? (
-          <p style={{ ...text(13, 400, t.text2), margin: 0, padding: `${space[2]}px 0` }}>{ADD_SESSION_COPY.empty}</p>
+          <p style={{ ...text(textStep.body, 400, t.text2), margin: 0, padding: `${space[2]}px 0` }}>{ADD_SESSION_COPY.empty}</p>
         ) : shown.length === 0 ? (
-          <p style={{ ...text(13, 400, t.text2), margin: 0, padding: `${space[2]}px 0` }}>{ADD_SESSION_COPY.none}</p>
+          <p style={{ ...text(textStep.body, 400, t.text2), margin: 0, padding: `${space[2]}px 0` }}>{ADD_SESSION_COPY.none}</p>
         ) : (
           groups.map((group) => (
             <div key={group.label} role="group" aria-label={group.label} style={{ display: "flex", flexDirection: "column" }}>
-              <h4 style={{ ...text(11, 500, t.label), margin: 0, padding: `${space[2]}px ${space[2]}px ${space[1]}px`, flexShrink: 0 }}>{group.label}</h4>
+              <h4 style={{ ...text(textStep.meta, 500, t.label), margin: 0, padding: `${space[2]}px ${space[2]}px ${space[1]}px`, flexShrink: 0 }}>{group.label}</h4>
               {group.items.map((item) => (
                 <PickRow
                   key={item.id}
@@ -213,7 +214,7 @@ function ChatList({ props, close, back, part }: { props: AddSessionRowProps; clo
         )}
         {props.hasMore ? (
           <div style={{ padding: `${space[2]}px ${space[2]}px` }}>
-            <TextButton onClick={() => props.onMore?.()} target={phone} disabled={props.loadingMore} style={text(13, 500, t.text2)}>
+            <TextButton onClick={() => props.onMore?.()} target={phone} disabled={props.loadingMore} style={text(textStep.body, 500, t.text2)}>
               {props.loadingMore ? "Loading…" : ADD_SESSION_COPY.more}
             </TextButton>
           </div>
@@ -285,7 +286,7 @@ const addRowStyle = (hovered: boolean, focusVisible: boolean, adding: boolean): 
     boxSizing: "border-box",
     padding: `0 ${space[3]}px`,
     borderRadius: r.control,
-    ...text(13, 500, t.text2),
+    ...text(textStep.body, 500, t.text2),
     cursor: adding ? "default" : "pointer",
     ...(hovered && !adding ? { background: t.controlOn } : null),
     ...ring(focusVisible),

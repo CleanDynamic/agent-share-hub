@@ -9,6 +9,7 @@ import { ring } from "@/lib/theme/controls";
 import { t } from "@/lib/theme/tokens";
 import { text } from "./refinedStyles";
 
+import { textStep } from "@/lib/theme/type";
 /** The item a Tab press lands on: the last one that had focus, or the first. */
 export function currentBuildItem(): HTMLElement | null {
   const root = document.querySelector<HTMLElement>('[data-testid="build-list"]');
@@ -43,7 +44,7 @@ export function SkipToBuild() {
     background: t.window,
     border: `1px solid ${t.windowBorder}`,
     textDecoration: "none",
-    ...text(13, 500, t.text),
+    ...text(textStep.body, 500, t.text),
     ...ring(true),
   };
   return (

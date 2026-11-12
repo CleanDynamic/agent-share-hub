@@ -83,6 +83,7 @@ import { size, space } from "@/lib/theme/space";
 import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT, iconButtonSide } from "./modalRecipes";
 import { r } from "@/lib/theme/radius";
 
+import { textStep } from "@/lib/theme/type";
 export type SandboxLens = "list" | "map";
 
 /** CA-24 P3: a panel whose own query has failed (`failed`), and the refetch of that panel's queries alone. */
@@ -407,8 +408,8 @@ function tileEntries({ onAddFile, onAddPromptFocus, onAddTool, onAddResult, onAd
 function AddLabel({ name, line, enabled = true }: { name: string; line: string; enabled?: boolean }) {
   return (
     <>
-      <span style={text(13, 500, enabled ? t.text : t.textDisabled)}>{name}</span>
-      <span style={text(11.5, 400, enabled ? t.label : t.text2)}>{line}</span>
+      <span style={text(textStep.body, 500, enabled ? t.text : t.textDisabled)}>{name}</span>
+      <span style={text(textStep.meta, 400, enabled ? t.label : t.text2)}>{line}</span>
     </>
   );
 }
@@ -533,7 +534,7 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
           boxSizing: "border-box",
           padding: `0 ${space[3]}px`,
           borderRadius: r.control,
-          ...text(13, 500, t.text2),
+          ...text(textStep.body, 500, t.text2),
           cursor: "pointer",
           ...(rowTrigger.state.hovered ? { background: t.controlOn } : null),
           ...ring(rowTrigger.state.focusVisible),
@@ -575,7 +576,7 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
                 <>
                   {layout.groups.map((group) => (
                     <Fragment key={group.category}>
-                      <p style={{ ...text(11.5, 500, t.label), margin: "12px 16px 4px" }}>{group.head}</p>
+                      <p style={{ ...text(textStep.meta, 500, t.label), margin: "12px 16px 4px" }}>{group.head}</p>
                       {group.entries.map((item) => (
                         <SheetRow key={item.key} inset name={item.name} line={item.line} disabled={!item.enabled} onSelect={() => choose(item)} />
                       ))}
@@ -643,9 +644,9 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
               // The menu's own type-ahead must not take the letters typed here; Escape still closes it.
               if (event.key !== "Escape" && event.key !== "Tab") event.stopPropagation();
             }}
-            style={{ ...wellField, height: size.control, padding: `0 ${space[3]}px`, marginBottom: space[1], ...text(13, 400, t.text) }}
+            style={{ ...wellField, height: size.control, padding: `0 ${space[3]}px`, marginBottom: space[1], ...text(textStep.body, 400, t.text) }}
           />
-          {firstFound ? null : <p style={{ ...text(12.5, 400, t.label), margin: 0, padding: "8px 12px" }}>{ADD_SEARCH_COPY.none}</p>}
+          {firstFound ? null : <p style={{ ...text(textStep.meta, 400, t.label), margin: 0, padding: "8px 12px" }}>{ADD_SEARCH_COPY.none}</p>}
           {/* UX-02 P6, F40: the five first; then, under More types (open in place, or while a search runs), the groups by category,
               the single entries and Deployment (closed until opened); From Library last. */}
           {layout.primary.length > 0 ? (
@@ -662,7 +663,7 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
                 event.preventDefault();
                 setMoreOpen((open) => !open);
               }}
-              style={{ ...menuItem(true, false), ...text(11.5, 500, t.label), justifyContent: "space-between", gap: 8 }}
+              style={{ ...menuItem(true, false), ...text(textStep.meta, 500, t.label), justifyContent: "space-between", gap: 8 }}
             >
               <span>{ADD_MORE_COPY.row}</span>
               <span aria-hidden="true" style={{ display: "inline-flex" }}>
@@ -672,7 +673,7 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
           ) : null}
           {showMore ? layout.groups.map((group) => (
             <Fragment key={group.category}>
-              <Menu.Label data-testid="add-group-head" style={{ ...text(11.5, 500, t.label), padding: "8px 12px 4px" }}>{group.head}</Menu.Label>
+              <Menu.Label data-testid="add-group-head" style={{ ...text(textStep.meta, 500, t.label), padding: "8px 12px 4px" }}>{group.head}</Menu.Label>
               <div role="none" data-testid="add-group" data-head={group.head} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 4 }}>
                 {group.entries.map(desktopItem)}
               </div>
@@ -694,7 +695,7 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
                   event.preventDefault();
                   setDeployOpen((open) => !open);
                 }}
-                style={{ ...menuItem(true, false), ...text(11.5, 500, t.label), justifyContent: "space-between", gap: 8 }}
+                style={{ ...menuItem(true, false), ...text(textStep.meta, 500, t.label), justifyContent: "space-between", gap: 8 }}
               >
                 <span>{DEPLOYMENT_GROUP_HEAD}</span>
                 <span aria-hidden="true" style={{ display: "inline-flex" }}>
@@ -742,11 +743,11 @@ export const VIEW_COPY = { button: "View", sessionList: "Session list", labelPar
 function LabelPartsRow({ labels, phone }: { labels: NonNullable<ViewMenuProps["labels"]>; phone: boolean }) {
   return (
     <div data-testid="label-parts" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: phone ? "8px 12px" : "6px 12px 4px" }}>
-      <span style={text(13, 400, t.text)}>{VIEW_COPY.labelParts}</span>
+      <span style={text(textStep.body, 400, t.text)}>{VIEW_COPY.labelParts}</span>
       <Segmented
         label={VIEW_COPY.labelParts}
         size={phone ? 50 : 28}
-        fontSize={12}
+        fontSize={textStep.meta}
         value={labels.value}
         onChange={labels.onChange}
         items={[
@@ -943,10 +944,10 @@ function BuildActionsMenu({ previewTo }: { previewTo: string | null }) {
 }
 
 function PanelTitle({ children }: { children: ReactNode }) {
-  return <h2 style={{ ...text(13.5, 500, t.text), margin: 0 }}>{children}</h2>;
+  return <h2 style={{ ...text(textStep.body, 500, t.text), margin: 0 }}>{children}</h2>;
 }
 
-const quiet: CSSProperties = { ...text(13, 400, t.text2), margin: 0 };
+const quiet: CSSProperties = { ...text(textStep.body, 400, t.text2), margin: 0 };
 
 /** One 40-wide ghost button of the Sources rail (UI-P94): the glyph in `--text2`, 36 high, or 44 with its count under it. */
 function RailButton({ glyph, label, count, onClick }: { glyph: "panel" | "layers" | "file" | "plus"; label: string; count?: number; onClick: () => void }) {
@@ -977,7 +978,7 @@ function RailButton({ glyph, label, count, onClick }: { glyph: "panel" | "layers
       }}
     >
       <Glyph name={glyph} size={size.icon} />
-      {counted ? <span style={{ ...text(10.5, 500, "inherit"), ...tnum }}>{count}</span> : null}
+      {counted ? <span style={{ ...text(textStep.meta, 500, "inherit"), ...tnum }}>{count}</span> : null}
     </button>
   );
 }
@@ -1059,7 +1060,7 @@ function SourcesFrame({
 }
 
 function DefaultSources() {
-  const label = text(12, 500, t.text2);
+  const label = text(textStep.meta, 500, t.text2);
   return (
     <>
       {/* UX-02 P8: Sources' two groups. */}
@@ -1072,18 +1073,18 @@ function DefaultSources() {
 function NotFound() {
   return (
     <div style={{ ...moduleStyle(false, 24), maxWidth: 520, display: "flex", flexDirection: "column", gap: 8 }}>
-      <h1 style={{ ...text(20, 500, t.text), margin: 0, letterSpacing: "-0.015em" }}>No build at this address</h1>
-      <p style={{ ...text(13, 400, t.text2), margin: 0 }}>
+      <h1 style={{ ...text(textStep.headline, 500, t.text), margin: 0, letterSpacing: "-0.015em" }}>No build at this address</h1>
+      <p style={{ ...text(textStep.body, 400, t.text2), margin: 0 }}>
         Nothing here, or nothing you can open. It may have been deleted, or it may be another creator's build.
       </p>
-      <Link to="/compose/new" style={{ ...text(12.5, 500, t.text), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line, alignSelf: "flex-start" }}>
+      <Link to="/compose/new" style={{ ...text(textStep.meta, 500, t.text), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line, alignSelf: "flex-start" }}>
         Start a new build
       </Link>
     </div>
   );
 }
 
-const underlined: CSSProperties = { ...text(12.5, 400, t.text), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line };
+const underlined: CSSProperties = { ...text(textStep.meta, 400, t.text), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line };
 
 /* ── the view ── */
 
@@ -1229,7 +1230,7 @@ function SandboxBody(props: SandboxViewProps) {
   ) : null;
 
   const statusLine = (
-    <p data-testid="sandbox-status" style={{ ...text(12.5, 400, t.text2), margin: 0, overflowWrap: "anywhere" }}>
+    <p data-testid="sandbox-status" style={{ ...text(textStep.meta, 400, t.text2), margin: 0, overflowWrap: "anywhere" }}>
       {published ? publishedWords(props.publishedAt) : "Draft"}
       <SaveLine
         save={save}
@@ -1250,7 +1251,7 @@ function SandboxBody(props: SandboxViewProps) {
     <h1
       data-testid="sandbox-heading"
       {...fullText(untitled ? null : props.title.trim())}
-      style={{ ...text(20, 500, untitled ? t.text2 : t.text), margin: 0, letterSpacing: "-0.015em", ...TITLE_LINE }}
+      style={{ ...text(textStep.title, 500, t.text), margin: 0, letterSpacing: "-0.015em", ...TITLE_LINE }}
     >
       {untitled ? UNTITLED : props.title.trim()}
     </h1>
@@ -1284,10 +1285,10 @@ function SandboxBody(props: SandboxViewProps) {
     <div
       role="status"
       data-testid="sandbox-published"
-      style={{ padding: "8px 12px", borderRadius: 6, background: t.evidenceFill, ...text(12.5, 400, t.text), display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 4 }}
+      style={{ padding: "8px 12px", borderRadius: 6, background: t.evidenceFill, ...text(textStep.meta, 400, t.text), display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 4 }}
     >
       <span>Published. {published.inGallery ? "It is in the Gallery now." : `It will show in the Gallery once you ${published.shortfall}.`}</span>
-      <Link to={`/b2/${published.slug}`} style={{ ...text(12.5, 500, t.text), textDecoration: "underline", textUnderlineOffset: 3 }}>
+      <Link to={`/b2/${published.slug}`} style={{ ...text(textStep.meta, 500, t.text), textDecoration: "underline", textUnderlineOffset: 3 }}>
         See it
       </Link>
     </div>
@@ -1332,16 +1333,16 @@ function SandboxBody(props: SandboxViewProps) {
         }}
       >
         <PanelTitle>Build</PanelTitle>
-        <span data-testid="sandbox-counts" style={{ ...text(12, 400, t.text2), ...tnum, flexGrow: 1, minWidth: 0, userSelect: "none", ...(props.find?.open && !phone ? TITLE_LINE : null) }}>
+        <span data-testid="sandbox-counts" style={{ ...text(textStep.meta, 400, t.text2), ...tnum, flexGrow: 1, minWidth: 0, userSelect: "none", ...(props.find?.open && !phone ? TITLE_LINE : null) }}>
           {countsLine(props.counts)}
         </span>
         {phone ? (
           /* A phone puts Sources, Details and Add on a line of their own under the title, at touch size. */
           <span style={{ flexBasis: "100%", display: "flex", gap: 8 }}>
-            <Button variant="secondary" size={44} fontSize={13} onClick={() => setSourcesOpen(true)}>
+            <Button variant="secondary" size={44} fontSize={textStep.body} onClick={() => setSourcesOpen(true)}>
               Sources
             </Button>
-            <Button variant="secondary" size={44} fontSize={13} onClick={() => setDetailsOpen(true)}>
+            <Button variant="secondary" size={44} fontSize={textStep.body} onClick={() => setDetailsOpen(true)}>
               Details
             </Button>
             <span style={{ flexGrow: 1 }} />
@@ -1353,7 +1354,7 @@ function SandboxBody(props: SandboxViewProps) {
         {phone ? null : props.viewOptions ? <ViewMenu phone={false} view={props.viewOptions} /> : null}
       </div>
       {lens === "list" ? props.sessionList : null}
-      {guard("Build", props.emptyBuild ? <EmptyBuild {...props.emptyBuild} /> : (props.list ?? (listHint(phone) ? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{listHint(phone)}</p> : null)))}
+      {guard("Build", props.emptyBuild ? <EmptyBuild {...props.emptyBuild} /> : (props.list ?? (listHint(phone) ? <p style={{ ...text(textStep.meta, 400, t.label), margin: 0 }}>{listHint(phone)}</p> : null)))}
     </section>
   );
 
@@ -1437,7 +1438,7 @@ function SandboxBody(props: SandboxViewProps) {
             boxSizing: "border-box",
           }}
         >
-          <Button variant="ghost" size={48} fontSize={14} onClick={() => openCard(null)}>
+          <Button variant="ghost" size={48} fontSize={textStep.body} onClick={() => openCard(null)}>
             Classification
           </Button>
           {published ? (
@@ -1453,7 +1454,7 @@ function SandboxBody(props: SandboxViewProps) {
                 Preview
               </LinkButton>
               <div style={{ flexGrow: 1 }}>
-                <Button size={48} fontSize={15} fullWidth disabled={publishDisabled} onClick={() => void pressPublish()}>
+                <Button size={48} fontSize={textStep.body} fullWidth disabled={publishDisabled} onClick={() => void pressPublish()}>
                   {publishLabel}
                 </Button>
               </div>
@@ -1490,7 +1491,7 @@ function SandboxBody(props: SandboxViewProps) {
         {tabs}
         <div style={{ ...TAB_ACTIONS, marginLeft: "auto" }}>
           <BuildTitleActions />
-          <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={12} aria-label="Classification" onClick={() => openCard(null)}>
+          <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={textStep.meta} aria-label="Classification" onClick={() => openCard(null)}>
             Classification
           </Button>
           {published ? (
@@ -1509,7 +1510,7 @@ function SandboxBody(props: SandboxViewProps) {
                   Preview
                 </LinkButton>
               )}
-              <Button style={BUTTON_PAD_SMALL_TEXT} size={32} fontSize={12} disabled={publishDisabled} onClick={() => void pressPublish()}>
+              <Button style={BUTTON_PAD_SMALL_TEXT} size={32} fontSize={textStep.meta} disabled={publishDisabled} onClick={() => void pressPublish()}>
                 {publishLabel}
               </Button>
             </>

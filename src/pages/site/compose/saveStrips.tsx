@@ -8,7 +8,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { FIGTREE, textStep } from "@/lib/theme/type";
 
 import { RecipeButton } from "./modalRecipes";
 
@@ -30,15 +30,15 @@ export const STRIP: CSSProperties = {
   background: t.well,
   border: `1px solid ${t.hairline}`,
   fontFamily: FIGTREE,
-  fontSize: 13,
+  fontSize: textStep.body,
   fontWeight: 400,
-  lineHeight: "18px",
+  lineHeight: "19px",
   color: t.text,
   minWidth: 0,
 };
 
 /** The small button at a strip's right. */
-const SHOW: CSSProperties = { height: 26, padding: "0 9px", borderRadius: 7, fontSize: 12, fontWeight: 500, marginLeft: "auto" };
+const SHOW: CSSProperties = { height: 26, padding: "0 9px", borderRadius: 7, fontSize: textStep.meta, fontWeight: 500, marginLeft: "auto" };
 
 export function OfflineStrip() {
   return (

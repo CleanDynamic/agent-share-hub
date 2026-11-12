@@ -10,7 +10,7 @@ import type { CSSProperties } from "react";
 import { CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { TITLE_LINE } from "@/lib/theme/truncate";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE, textStep } from "@/lib/theme/type";
 
 const type = (size: number, weight: 400 | 500, color: string, line: number): CSSProperties => ({ fontFamily: FIGTREE, fontSize: size, fontWeight: weight, lineHeight: `${line}px`, color });
 
@@ -32,17 +32,17 @@ export const COLUMN: CSSProperties = { display: "flex", flexDirection: "column",
 export const HEAD_ROW: CSSProperties = { display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0 };
 export const HEAD_MARK: CSSProperties = { flexShrink: 0 };
 export const HEAD_TEXT: CSSProperties = { display: "flex", flexDirection: "column", flexGrow: 1, minWidth: 0 };
-export const HEAD_TITLE: CSSProperties = { ...type(15, 500, t.text, 22), margin: 0, ...TITLE_LINE };
-export const HEAD_LINE: CSSProperties = { ...type(12.5, 400, t.text2, 18), margin: 0, display: "flex", alignItems: "center", gap: 8, overflowWrap: "anywhere" };
+export const HEAD_TITLE: CSSProperties = { ...type(textStep.section, 500, t.text, 23), margin: 0, ...TITLE_LINE };
+export const HEAD_LINE: CSSProperties = { ...type(textStep.meta, 400, t.text2, 17), margin: 0, display: "flex", alignItems: "center", gap: 8, overflowWrap: "anywhere" };
 /** Edit: secondary, 28 tall, padding 0 10 (the `Button` draws the rest: 12.5/500, radius 6). */
 export const EDIT_BUTTON: CSSProperties = { padding: `0 ${space[3]}px`, flexShrink: 0 };
 
 /* ── a section ── */
 
 export const SECTION_HEAD: CSSProperties = { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, minWidth: 0 };
-export const SECTION_LABEL: CSSProperties = { ...type(14, 500, t.text, 20), margin: 0 };
+export const SECTION_LABEL: CSSProperties = { ...type(textStep.body, 500, t.text, 20), margin: 0 };
 /** F70: the meta line, space[1] under its heading. */
-export const SECTION_COUNT: CSSProperties = { ...type(12.5, 400, t.text2, 18), margin: `${space[1]}px 0 0` };
+export const SECTION_COUNT: CSSProperties = { ...type(textStep.meta, 400, t.text2, 17), margin: `${space[1]}px 0 0` };
 
 /** F70: every section: space[6], a 1px `--hairline`, space[6]. */
 export const SECTION_BREAK: CSSProperties = { marginTop: SECTION_GAP.above, paddingTop: SECTION_GAP.below, borderTop: `1px solid ${t.hairline}` };
@@ -51,23 +51,23 @@ export const VALUE: CSSProperties = { marginTop: HEAD_TO_VALUE, minWidth: 0 };
 
 /* ── values ── */
 
-export const PROSE: CSSProperties = { ...type(13, 400, t.text, 21), margin: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere" };
+export const PROSE: CSSProperties = { ...type(textStep.body, 400, t.text, 23), margin: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere" };
 export const PROSE_MUTED: CSSProperties = { ...PROSE, color: t.text2 };
-export const PROSE_CODE: CSSProperties = { ...PROSE, fontFamily: DM_MONO, fontSize: 12.5, lineHeight: "20px" };
+export const PROSE_CODE: CSSProperties = { ...PROSE, fontFamily: DM_MONO, fontSize: textStep.meta, lineHeight: "19px" };
 
 /** A label and its value: 38 tall, 13px, a 1px `--hairline` rule above; the label at the left, the value at the right, 14 apart at least. */
-export const ROW: CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, minHeight: 38, boxSizing: "border-box", borderTop: `1px solid ${t.hairline}`, fontFamily: FIGTREE, fontSize: 13, minWidth: 0 };
-export const ROW_LABEL: CSSProperties = { ...type(13, 400, t.text2, 18), flexShrink: 0 };
-export const ROW_VALUE: CSSProperties = { ...type(13, 400, t.text, 18), textAlign: "right", overflowWrap: "anywhere", minWidth: 0 };
+export const ROW: CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, minHeight: 38, boxSizing: "border-box", borderTop: `1px solid ${t.hairline}`, fontFamily: FIGTREE, fontSize: textStep.body, minWidth: 0 };
+export const ROW_LABEL: CSSProperties = { ...type(textStep.body, 400, t.text2, 19), flexShrink: 0 };
+export const ROW_VALUE: CSSProperties = { ...type(textStep.body, 400, t.text, 19), textAlign: "right", overflowWrap: "anywhere", minWidth: 0 };
 
 /** A list or links row: 27 tall, 13px, gap 10. */
-export const LIST_ROW: CSSProperties = { display: "flex", alignItems: "center", gap: 10, minHeight: 27, minWidth: 0, fontFamily: FIGTREE, fontSize: 13 };
+export const LIST_ROW: CSSProperties = { display: "flex", alignItems: "center", gap: 10, minHeight: 27, minWidth: 0, fontFamily: FIGTREE, fontSize: textStep.body };
 /** The tile's number: the data face 10.5/14 on the control, radius 3, padding 2 6, at least 30 wide, centred. */
-export const BADGE: CSSProperties = { ...CONTROL, boxSizing: "border-box", minWidth: 30, padding: "2px 6px", borderRadius: 3, fontFamily: DM_MONO, fontSize: 10.5, lineHeight: "14px", color: t.text, textAlign: "center", fontVariantNumeric: "tabular-nums", flexShrink: 0 };
-export const LIST_NAME: CSSProperties = { ...type(13, 500, t.text, 18), overflowWrap: "anywhere", minWidth: 0 };
-export const LIST_KIND: CSSProperties = { ...type(13, 400, t.text2, 18), whiteSpace: "nowrap" };
-export const LIST_VALUE: CSSProperties = { ...type(12.5, 400, t.text2, 18), marginLeft: "auto", whiteSpace: "nowrap", paddingLeft: 10 };
-export const LIST_DETAIL: CSSProperties = { ...type(12.5, 400, t.text2, 18), overflowWrap: "anywhere" };
+export const BADGE: CSSProperties = { ...CONTROL, boxSizing: "border-box", minWidth: 30, padding: "2px 6px", borderRadius: 3, fontFamily: DM_MONO, fontSize: textStep.meta, lineHeight: "16px", color: t.text, textAlign: "center", fontVariantNumeric: "tabular-nums", flexShrink: 0 };
+export const LIST_NAME: CSSProperties = { ...type(textStep.body, 500, t.text, 19), overflowWrap: "anywhere", minWidth: 0 };
+export const LIST_KIND: CSSProperties = { ...type(textStep.body, 400, t.text2, 19), whiteSpace: "nowrap" };
+export const LIST_VALUE: CSSProperties = { ...type(textStep.meta, 400, t.text2, 17), marginLeft: "auto", whiteSpace: "nowrap", paddingLeft: 10 };
+export const LIST_DETAIL: CSSProperties = { ...type(textStep.meta, 400, t.text2, 17), overflowWrap: "anywhere" };
 export const LINK_ROW: CSSProperties = { appearance: "none", background: "none", border: 0, padding: 0, margin: 0, width: "100%", textAlign: "left", cursor: "pointer", color: "inherit" };
 export const CHIPS: CSSProperties = { display: "flex", flexWrap: "wrap", gap: 6, minWidth: 0 };
 
@@ -76,8 +76,8 @@ export const TOOL_MARK_SIZE = 20;
 
 /* ── the foot ── */
 
-export const NOT_SET: CSSProperties = { ...type(12, 400, t.label, 17), margin: 0, marginTop: FOOT_ABOVE };
-export const EMPTY: CSSProperties = { ...type(13, 400, t.text2, 18), margin: 0 };
+export const NOT_SET: CSSProperties = { ...type(textStep.meta, 400, t.label, 17), margin: 0, marginTop: FOOT_ABOVE };
+export const EMPTY: CSSProperties = { ...type(textStep.body, 400, t.text2, 19), margin: 0 };
 
 /* CA-18 P4: the composer's frame. The composer sits 34 in from the surface; the build head's post is 18 below its status line and 18 above its hairline. */
 /** F75: the composer's content inset, as `COMPOSER_INSET` (32). */

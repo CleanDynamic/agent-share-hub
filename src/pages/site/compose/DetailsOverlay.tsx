@@ -21,6 +21,7 @@ import { OVERLAY_EDGE, OVERLAY_FOOT_COPY, OVERLAY_FOOT_PAD, OVERLAY_PANEL_PAD, O
 import { text } from "./refinedStyles";
 import { iconButtonSide } from "./modalRecipes";
 
+import { textStep } from "@/lib/theme/type";
 /** What a click on the content must not take as "edit": the controls inside it. */
 const CONTROLS = "button, a, input, select, textarea, [role='button'], [role='menuitem']";
 
@@ -39,7 +40,7 @@ export function ClickToEdit({ onEdit, phone, pad = 0, touch = phone, panel = fal
       <div data-testid="details-clickable" tabIndex={0} onClick={onClick} onKeyDown={onKeyDown} style={{ cursor: "pointer", outline: "none", flex: "1 1 auto", minHeight: 0, overflowY: "auto", padding: pad }}>
         {children}
       </div>
-      <p data-testid="details-foot" style={{ ...text(12, 400, t.label), margin: 0, flex: "0 0 auto", ...(panel ? { paddingTop: 8, textAlign: "left" } : { padding: OVERLAY_FOOT_PAD, borderTop: `1px solid ${t.hairline}` }) }}>
+      <p data-testid="details-foot" style={{ ...text(textStep.meta, 400, t.label), margin: 0, flex: "0 0 auto", ...(panel ? { paddingTop: 8, textAlign: "left" } : { padding: OVERLAY_FOOT_PAD, borderTop: `1px solid ${t.hairline}` }) }}>
         {touch ? OVERLAY_FOOT_COPY.tap : OVERLAY_FOOT_COPY.click}
       </p>
     </>

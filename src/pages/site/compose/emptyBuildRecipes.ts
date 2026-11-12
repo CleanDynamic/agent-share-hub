@@ -12,7 +12,7 @@
 import type { CSSProperties } from "react";
 
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { FIGTREE, textStep } from "@/lib/theme/type";
 
 export const EMPTY_BUILD_COPY = {
   heading: "Add your first session",
@@ -24,7 +24,7 @@ export const EMPTY_BUILD_COPY = {
 
 const type = (px: number, weight: 400 | 500, color: string): CSSProperties => ({ fontFamily: FIGTREE, fontSize: px, fontWeight: weight, lineHeight: "normal", color });
 
-export const EMPTY_HEADING: CSSProperties = { ...type(15, 500, t.text), margin: 0 };
+export const EMPTY_HEADING: CSSProperties = { ...type(textStep.section, 500, t.text), margin: 0 };
 export const EMPTY_COLUMN: CSSProperties = { display: "flex", flexDirection: "column", gap: 12, minWidth: 0 };
 export const EMPTY_BOX: CSSProperties = {
   boxSizing: "border-box",
@@ -56,8 +56,8 @@ export const EMPTY_ROW: CSSProperties = {
 export const EMPTY_RULE: CSSProperties = { height: 0, borderTop: `1px solid ${t.hairline}`, flexShrink: 0 };
 export const EMPTY_MARK: CSSProperties = { width: 24, height: 24, boxSizing: "border-box", flexShrink: 0, background: t.control, border: `1px solid ${t.controlBorder}`, borderRadius: 5 };
 export const EMPTY_NAMES: CSSProperties = { display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 };
-export const EMPTY_NAME: CSSProperties = type(13, 500, t.text);
-export const EMPTY_DETAIL: CSSProperties = type(12, 400, t.label);
+export const EMPTY_NAME: CSSProperties = type(textStep.body, 500, t.text);
+export const EMPTY_DETAIL: CSSProperties = type(textStep.meta, 400, t.label);
 export const EMPTY_CHEVRON: CSSProperties = { color: t.label, display: "inline-flex", flexShrink: 0 };
 
 export const EMPTY_DROP_HEIGHT = 64;
@@ -72,5 +72,5 @@ export const emptyDrop = (over: boolean): CSSProperties => ({
   borderRadius: 10,
   background: "none",
   textAlign: "center",
-  ...type(12.5, 400, t.label),
+  ...type(textStep.meta, 400, t.label),
 });

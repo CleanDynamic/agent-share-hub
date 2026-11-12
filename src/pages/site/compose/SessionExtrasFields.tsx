@@ -22,7 +22,7 @@ import { REVIEW_FILES_MAX, REVIEW_SCOPES, reviewLine, reviewRefusal, type Review
 import { OUTPUT_KINDS, OUTPUT_LABEL, OUTPUTS_MAX, outputRow, outputsCountLine, outputsRefusal, type OutputKind, type OutputLink } from "@/lib/build/sessionOutputs";
 import { ACCESS_LABEL, ACCESS_SYSTEMS, ENVIRONMENT_LABEL, ENVIRONMENTS, ISOLATION_LABEL, ISOLATIONS, accessLine, type AccessScope, type AccessSystem, type Environment, type Isolation } from "@/lib/build/sessionAccess";
 import { settingLines, worktreeOf } from "@/lib/build/startedWith";
-import { DM_MONO } from "@/lib/theme/type";
+import { DM_MONO, textStep } from "@/lib/theme/type";
 
 import { RUN_CHANGED_MAX, RUN_HISTORY_HELP, RUN_ID_MAX } from "@/lib/build/evalHarness";
 import { checkRunsOf, checkRunsRefusal, CHECK_RUNS_KEPT, type CheckRun } from "@/lib/build/graph";
@@ -111,7 +111,7 @@ export function CostControl({ id, extras, phone, onChange }: { id: string; extra
   return (
     <>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span aria-hidden="true" style={text(13, 400, t.text2)}>{symbol}</span>
+        <span aria-hidden="true" style={text(textStep.body, 400, t.text2)}>{symbol}</span>
         <div style={{ width: 120 }}>
           <ExtrasInput
             key={`${id}:cost:${extras.cost ?? ""}`}
@@ -131,12 +131,12 @@ export function CostControl({ id, extras, phone, onChange }: { id: string; extra
           />
         </div>
       </div>
-      {wrong ? <span style={text(12, 400, t.text2)}>{EXTRAS_COPY.costBad}</span> : null}
+      {wrong ? <span style={text(textStep.meta, 400, t.text2)}>{EXTRAS_COPY.costBad}</span> : null}
       <label style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 28, cursor: "pointer" }}>
         <Checkbox checked={extras.showCost === true} onChange={(event) => save({ showCost: event.target.checked ? true : undefined })} />
-        <span style={text(13, 400, t.text)}>{EXTRAS_COPY.showReaders}</span>
+        <span style={text(textStep.body, 400, t.text)}>{EXTRAS_COPY.showReaders}</span>
       </label>
-      <span style={text(12, 400, t.text2)}>{EXTRAS_COPY.showReadersLine}</span>
+      <span style={text(textStep.meta, 400, t.text2)}>{EXTRAS_COPY.showReadersLine}</span>
     </>
   );
 }
@@ -249,7 +249,7 @@ export function StartedWithControl({ id, extras, phone, onChange }: { id: string
       {lines.length > 0 ? (
         <ul data-testid="started-with-settings" style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 2 }}>
           {lines.map((line) => (
-            <li key={line} style={text(12.5, 400, t.text2)}>
+            <li key={line} style={text(textStep.meta, 400, t.text2)}>
               {line}
             </li>
           ))}
@@ -418,11 +418,11 @@ export function CheckRunsField({ id, runs, phone, onChange }: { id: string; runs
             <div style={{ width: 56, flexShrink: 0 }}>
               <ExtrasInput label={`${RUNS_FIELD_COPY.passed} in run ${index + 1}`} value={row.passed} max={5} phone={phone} inputMode="numeric" onCommit={(passed) => { const next = drafts.map((d, i) => (i === index ? { ...d, passed } : d)); setDrafts(next); commit(next); }} />
             </div>
-            <span style={text(12.5, 400, t.text2)}>{RUNS_FIELD_COPY.of}</span>
+            <span style={text(textStep.meta, 400, t.text2)}>{RUNS_FIELD_COPY.of}</span>
             <div style={{ width: 56, flexShrink: 0 }}>
               <ExtrasInput label={`${RUNS_FIELD_COPY.total} in run ${index + 1}`} value={row.total} max={5} phone={phone} inputMode="numeric" onCommit={(total) => { const next = drafts.map((d, i) => (i === index ? { ...d, total } : d)); setDrafts(next); commit(next); }} />
             </div>
-            <TextButton target={phone} style={text(12, 500, t.text2)} onClick={() => edit(index, { more: !row.more })}>
+            <TextButton target={phone} style={text(textStep.meta, 500, t.text2)} onClick={() => edit(index, { more: !row.more })}>
               {row.more ? "Fewer" : "More"}
             </TextButton>
             <IconButton style={iconButtonSide(phone)}
@@ -463,13 +463,13 @@ export function CheckRunsField({ id, runs, phone, onChange }: { id: string; runs
             ) : null}
           </div>
         ))}
-        {drafts.some((row) => row.more) ? <span data-testid="run-history-help" style={text(12, 400, t.label)}>{RUN_HISTORY_HELP}</span> : null}
-        {wrong ? <span style={text(12, 400, t.text2)}>{RUNS_FIELD_COPY.bad}</span> : null}
+        {drafts.some((row) => row.more) ? <span data-testid="run-history-help" style={text(textStep.meta, 400, t.label)}>{RUN_HISTORY_HELP}</span> : null}
+        {wrong ? <span style={text(textStep.meta, 400, t.text2)}>{RUNS_FIELD_COPY.bad}</span> : null}
         {full ? (
-          <span style={text(12, 400, t.text2)}>{RUNS_FIELD_COPY.more(CHECK_RUNS_KEPT)}</span>
+          <span style={text(textStep.meta, 400, t.text2)}>{RUNS_FIELD_COPY.more(CHECK_RUNS_KEPT)}</span>
         ) : (
           <span>
-            <TextButton target={phone} style={text(12.5, 500, t.text2)} onClick={() => setDrafts((rows) => [{ at: "", passed: "", total: "" }, ...rows])}>
+            <TextButton target={phone} style={text(textStep.meta, 500, t.text2)} onClick={() => setDrafts((rows) => [{ at: "", passed: "", total: "" }, ...rows])}>
               {RUNS_FIELD_COPY.add}
             </TextButton>
           </span>
@@ -487,7 +487,7 @@ export function ModelIdControl({ id, extras, phone, fromRun, onChange }: { id: s
   return (
     <>
       <ExtrasInput key={`${id}:model_id:${extras.model_id ?? ""}`} label={EXTRAS_COPY.modelId} value={extras.model_id ?? ""} placeholder={EXTRAS_COPY.modelIdHint} max={MODEL_ID_MAX} phone={phone} onCommit={(value) => onChange({ ...extras, model_id: value.trim() || undefined })} />
-      {extras.model_id ? <span style={text(12, 400, t.label)}>{fromRun ? EXTRAS_COPY.fromRun : EXTRAS_COPY.makersFigure}</span> : null}
+      {extras.model_id ? <span style={text(textStep.meta, 400, t.label)}>{fromRun ? EXTRAS_COPY.fromRun : EXTRAS_COPY.makersFigure}</span> : null}
     </>
   );
 }
@@ -513,7 +513,7 @@ export const environmentHeld = (extras: SessionExtras): string | null => (extras
 export function EnvironmentControl({ id, extras, phone, onChange }: { id: string; extras: SessionExtras; phone: boolean; onChange: (change: SessionExtras) => void }) {
   return (
     <>
-      <span style={text(12.5, 500, t.text2)}>Where it ran</span>
+      <span style={text(textStep.meta, 500, t.text2)}>Where it ran</span>
       <ChoiceRows<Environment | "unsaid">
         label="Where it ran"
         name={`environment-${id}`}
@@ -522,7 +522,7 @@ export function EnvironmentControl({ id, extras, phone, onChange }: { id: string
         onChange={(environment) => onChange({ ...extras, environment: environment === "unsaid" ? undefined : environment })}
         rows={[{ value: "unsaid", label: "Not said" }, ...ENVIRONMENTS.map((value) => ({ value, label: ENVIRONMENT_LABEL[value] }))]}
       />
-      <span style={text(12.5, 500, t.text2)}>Isolation</span>
+      <span style={text(textStep.meta, 500, t.text2)}>Isolation</span>
       <ChoiceRows<Isolation | "unsaid">
         label="Isolation"
         name={`isolation-${id}`}
@@ -533,7 +533,7 @@ export function EnvironmentControl({ id, extras, phone, onChange }: { id: string
       />
       <label style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 28, cursor: "pointer" }}>
         <Checkbox checked={extras.can_install === true} onChange={(event) => onChange({ ...extras, can_install: event.target.checked ? true : undefined })} />
-        <span style={text(13, 400, t.text)}>Could install packages</span>
+        <span style={text(textStep.body, 400, t.text)}>Could install packages</span>
       </label>
     </>
   );
@@ -556,14 +556,14 @@ export function AccessControl({ id, extras, proposed = [], phone, onChange }: { 
         const scope = held.get(system) ?? null;
         return (
           <div key={system} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: phone ? 44 : 28, flexWrap: "wrap" }}>
-            <span style={{ ...text(13, 400, t.text), minWidth: 120 }}>
+            <span style={{ ...text(textStep.body, 400, t.text), minWidth: 120 }}>
               {ACCESS_LABEL[system]}
-              {proposed.includes(system) && !scope ? <span style={text(12, 400, t.label)}> · in this session&apos;s setup</span> : null}
+              {proposed.includes(system) && !scope ? <span style={text(textStep.meta, 400, t.label)}> · in this session&apos;s setup</span> : null}
             </span>
             {ACCESS_SCOPES_UI.map((candidate) => (
               <label key={candidate} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
                 <Checkbox aria-label={`${ACCESS_LABEL[system]}: ${candidate}`} checked={scope === candidate} onChange={(event) => set(system, event.target.checked ? candidate : null)} />
-                <span style={text(13, 400, t.text2)}>{candidate === "read" ? "Read" : "Write"}</span>
+                <span style={text(textStep.body, 400, t.text2)}>{candidate === "read" ? "Read" : "Write"}</span>
               </label>
             ))}
           </div>
@@ -606,7 +606,7 @@ function CountControl({ id, field, label, extras, run, phone, onChange }: { id: 
           }}
         />
       </div>
-      {figure ? <span style={text(12, 400, t.label)}>{(extras[field] !== undefined ? sourceOfCount(extras, field) : figure.from) === "run" ? EXTRAS_COPY.fromRun : EXTRAS_COPY.makersFigure}</span> : null}
+      {figure ? <span style={text(textStep.meta, 400, t.label)}>{(extras[field] !== undefined ? sourceOfCount(extras, field) : figure.from) === "run" ? EXTRAS_COPY.fromRun : EXTRAS_COPY.makersFigure}</span> : null}
     </>
   );
 }
@@ -648,26 +648,26 @@ export function OutputsControl({ id, extras, phone, onChange }: { id: string; ex
           <IconButton style={iconButtonSide(phone)} icon={X} glyph="x" boxed={false} label={`Remove output ${index + 1}`} size={26} onClick={() => commit(rows.filter((_, at) => at !== index))} />
         </div>
       ))}
-      {wrong ? <span style={text(12, 400, t.text2)}>{wrong}</span> : null}
+      {wrong ? <span style={text(textStep.meta, 400, t.text2)}>{wrong}</span> : null}
       {rows.length < OUTPUTS_MAX ? (
         <span>
-          <TextButton target={phone} style={text(12.5, 500, t.text2)} onClick={() => setRows((now) => [...now, { kind: "commit", a: "", b: "" }])}>
+          <TextButton target={phone} style={text(textStep.meta, 500, t.text2)} onClick={() => setRows((now) => [...now, { kind: "commit", a: "", b: "" }])}>
             Add a link
           </TextButton>
         </span>
       ) : (
-        <span style={text(12, 400, t.text2)}>{OUTPUTS_MAX} max</span>
+        <span style={text(textStep.meta, 400, t.text2)}>{OUTPUTS_MAX} max</span>
       )}
       {(extras.outputs ?? []).length > 0 ? (
         <>
           <label style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 28, cursor: "pointer" }}>
             <Checkbox checked={extras.showOutputs === true} onChange={(event) => onChange({ ...extras, showOutputs: event.target.checked ? true : undefined })} />
-            <span style={text(13, 400, t.text)}>{EXTRAS_COPY.showReaders}</span>
+            <span style={text(textStep.body, 400, t.text)}>{EXTRAS_COPY.showReaders}</span>
           </label>
-          <span style={text(12, 400, t.text2)}>Off: links hidden from readers. {extras.from_original ? "These came with the original." : ""}</span>
+          <span style={text(textStep.meta, 400, t.text2)}>Off: links hidden from readers. {extras.from_original ? "These came with the original." : ""}</span>
           <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
             {(extras.outputs ?? []).map((entry, at) => (
-              <li key={at} style={text(12, 400, t.label)}>
+              <li key={at} style={text(textStep.meta, 400, t.label)}>
                 {outputRow(entry).label}
               </li>
             ))}
@@ -716,8 +716,8 @@ export function ReviewControl({ id, extras, phone, onChange }: { id: string; ext
           style={{ ...typedArea(phone, ring(false)), fontFamily: DM_MONO, fontSize: phone ? 16 : 12 }}
         />
       ) : null}
-      {wrong ? <span style={text(12, 400, t.text2)}>{wrong}</span> : null}
-      {extras.from_original && extras.review ? <span style={text(12, 400, t.label)}>The original&apos;s</span> : null}
+      {wrong ? <span style={text(textStep.meta, 400, t.text2)}>{wrong}</span> : null}
+      {extras.from_original && extras.review ? <span style={text(textStep.meta, 400, t.label)}>The original&apos;s</span> : null}
     </>
   );
 }

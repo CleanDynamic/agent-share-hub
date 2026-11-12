@@ -14,7 +14,7 @@ import { useInRouterContext } from "react-router-dom";
 import { galleryHref, cleanFacetKeys } from "@/lib/build/galleryParams";
 import { PageLink } from "@/lib/routing/PageLink";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE, textStep } from "@/lib/theme/type";
 
 interface Shown {
   label: string;
@@ -145,12 +145,12 @@ export function ClassificationSection({ classification, maker }: { classificatio
         ))}
       </div>
       {maker && notStated.length > 0 ? (
-        <PageLink to={maker.editHref} data-testid="classification-open" style={{ alignSelf: "flex-start", fontFamily: FIGTREE, fontSize: 12.5, color: t.text2, textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line }}>
+        <PageLink to={maker.editHref} data-testid="classification-open" style={{ alignSelf: "flex-start", fontFamily: FIGTREE, fontSize: textStep.meta, color: t.text2, textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line }}>
           {OPEN_CLASSIFICATION}
         </PageLink>
       ) : null}
       {regulatedArea(classification) ? (
-        <p role="note" data-testid="regulated-notice" style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12.5, lineHeight: 1.5, color: t.text2 }}>
+        <p role="note" data-testid="regulated-notice" style={{ margin: 0, fontFamily: FIGTREE, fontSize: textStep.meta, lineHeight: 1.5, color: t.text2 }}>
           {REGULATED_NOTICE}
         </p>
       ) : null}

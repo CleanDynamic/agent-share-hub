@@ -21,7 +21,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE, textStep } from "@/lib/theme/type";
 
 import { LoadingBlocks } from "./LoadingBlocks";
 import { tileStyle } from "./tileRecipes";
@@ -68,7 +68,7 @@ const TAG: CSSProperties = {
   background: t.control,
   border: `1px solid ${t.controlBorder}`,
   fontFamily: DM_MONO,
-  fontSize: 10.5,
+  fontSize: textStep.meta,
   fontWeight: 400,
   lineHeight: "normal",
   color: t.text2,
@@ -100,14 +100,14 @@ export function SocketBlocks({ gone = false }: { gone?: boolean }) {
 export function WrittenPrompt({ text }: { text: string }) {
   return (
     <div data-testid="written-prompt" style={{ ...tileStyle(false), position: "absolute", inset: 0, visibility: "visible", overflow: "hidden" }}>
-      <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, fontWeight: 400, lineHeight: "normal", color: t.text, overflow: "hidden" }}>{text}</p>
+      <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: textStep.body, fontWeight: 400, lineHeight: "normal", color: t.text, overflow: "hidden" }}>{text}</p>
     </div>
   );
 }
 
 const ROW: CSSProperties = { display: "flex", alignItems: "center", gap: 12, marginTop: 4, minWidth: 0 };
 const BAR: CSSProperties = { flex: "1 1 auto", minWidth: 0, height: 4, borderRadius: 2, background: t.hairline, overflow: "hidden" };
-const COUNT: CSSProperties = { fontFamily: DM_MONO, fontSize: 11, fontWeight: 400, lineHeight: "normal", color: t.label, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" };
+const COUNT: CSSProperties = { fontFamily: DM_MONO, fontSize: textStep.meta, fontWeight: 400, lineHeight: "normal", color: t.label, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" };
 const STOP: CSSProperties = {
   appearance: "none",
   background: "none",
@@ -116,7 +116,7 @@ const STOP: CSSProperties = {
   padding: 0,
   cursor: "pointer",
   fontFamily: FIGTREE,
-  fontSize: 12.5,
+  fontSize: textStep.meta,
   fontWeight: 500,
   lineHeight: "normal",
   color: t.text,

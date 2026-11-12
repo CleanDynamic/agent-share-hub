@@ -17,6 +17,7 @@ import { MODAL_COPY, ModalForm, missingLabels } from "./ModalFrame";
 import { Block, BlockHead, FieldInput, OptionGrid } from "./modalRecipes";
 import { PickMenu } from "./PickMenu";
 
+import { textStep } from "@/lib/theme/type";
 export interface ApprovalChoices {
   /** The build's steps, in order. */
   steps: readonly Step[];
@@ -75,11 +76,11 @@ export function ApprovalForm({ choices, gate, self, phone, editing, onSubmit, on
       <Block label={GATE_COPY.blocks}>
         <BlockHead label={GATE_COPY.blocks} />
         {options.length === 0 ? (
-          <span style={{ fontSize: 12.5, color: t.label }}>No steps come after it yet.</span>
+          <span style={{ fontSize: textStep.meta, color: t.label }}>No steps come after it yet.</span>
         ) : (
           <div role="group" aria-label={GATE_COPY.blocks} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {options.map((step) => (
-              <label key={step.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: t.text }}>
+              <label key={step.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: textStep.body, color: t.text }}>
                 <Checkbox checked={blocks.includes(step.id)} onChange={(event) => toggle(step.id, event.target.checked)} />
                 {`${step.number} · ${stepTitle(step)}`}
               </label>

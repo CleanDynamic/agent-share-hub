@@ -2,7 +2,7 @@
 
 import { SaveItemMarker } from "@/components/social/SaveItemMarker";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { FIGTREE, textStep } from "@/lib/theme/type";
 import { usedInText, useBuildConnections, type SaveKind } from "./BuildConnections";
 import { StepRepliesLink } from "./DiscussedSection";
 
@@ -18,7 +18,7 @@ export function UsedInLine({ id, indent = 0 }: { id: string; indent?: number }) 
   const n = useBuildConnections()?.usedIn.get(id) ?? 0;
   if (n <= 0) return null;
   return (
-    <span data-testid="used-in" style={{ fontFamily: FIGTREE, fontSize: 12, fontWeight: 400, color: t.label, paddingLeft: indent, fontVariantNumeric: "tabular-nums" }}>
+    <span data-testid="used-in" style={{ fontFamily: FIGTREE, fontSize: textStep.meta, fontWeight: 400, color: t.label, paddingLeft: indent, fontVariantNumeric: "tabular-nums" }}>
       {usedInText(n)}
     </span>
   );

@@ -14,8 +14,9 @@ import { ELLIPSIS, RecipeButton } from "./modalRecipes";
 import { PublishFrame } from "./PublishChecklist";
 import { text } from "./refinedStyles";
 
-const LINE: CSSProperties = { ...text(12.5, 400, t.text2), margin: "4px 0 0" };
-const SECTION_LABEL: CSSProperties = { ...text(12, 400, t.label), margin: "14px 0 4px" };
+import { textStep } from "@/lib/theme/type";
+const LINE: CSSProperties = { ...text(textStep.meta, 400, t.text2), margin: "4px 0 0" };
+const SECTION_LABEL: CSSProperties = { ...text(textStep.meta, 400, t.label), margin: "14px 0 4px" };
 const ROW: CSSProperties = { display: "flex", alignItems: "center", gap: 12, minHeight: 44, boxSizing: "border-box" };
 
 export interface PublishConfirmProps {
@@ -46,8 +47,8 @@ export function PublishConfirm({ open, title, rows, onCancel, onPublish }: Publi
             <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
               {rows.map((row, at) => (
                 <li key={row.key} data-testid={`confirm-${row.key}`} style={{ ...ROW, ...(at === 0 ? null : { borderTop: `1px solid ${t.hairline}` }) }}>
-                  <span style={{ ...text(13, 400, t.text), flexShrink: 0 }}>{row.name}</span>
-                  <span data-testid={`confirm-${row.key}-value`} title={row.value} style={{ ...text(12.5, 400, t.text2), ...ELLIPSIS, flexGrow: 1, textAlign: "right" }}>
+                  <span style={{ ...text(textStep.body, 400, t.text), flexShrink: 0 }}>{row.name}</span>
+                  <span data-testid={`confirm-${row.key}-value`} title={row.value} style={{ ...text(textStep.meta, 400, t.text2), ...ELLIPSIS, flexGrow: 1, textAlign: "right" }}>
                     {row.value}
                   </span>
                 </li>
@@ -56,7 +57,7 @@ export function PublishConfirm({ open, title, rows, onCancel, onPublish }: Publi
           </section>
           <section aria-label={CONFIRM_COPY.private}>
             <h3 style={{ ...SECTION_LABEL, fontWeight: 400 }}>{CONFIRM_COPY.private}</h3>
-            <p data-testid="confirm-private" style={{ ...ROW, ...text(12.5, 400, t.text2), margin: 0 }}>
+            <p data-testid="confirm-private" style={{ ...ROW, ...text(textStep.meta, 400, t.text2), margin: 0 }}>
               {CONFIRM_COPY.privateRow}
             </p>
           </section>

@@ -10,6 +10,7 @@ import { t } from "@/lib/theme/tokens";
 import { TextButton } from "./composeControls";
 import { text } from "./refinedStyles";
 
+import { textStep } from "@/lib/theme/type";
 export const PAIR_COPY = {
   notOffered: (tool: string, model: string) => `${model} not on ${tool}.`,
   runsNoModel: (tool: string) => `${tool} doesn't run a model.`,
@@ -30,8 +31,8 @@ export function PairNote({ tool, model, phone, onChange, onRemove }: { tool: str
   const line = check === "not-offered" ? PAIR_COPY.notOffered(name, (model ?? "").trim()) : check === "tool-runs-no-model" ? PAIR_COPY.runsNoModel(name) : PAIR_COPY.hidesModel(name);
   return (
     <div data-testid="pair-note" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-      <span style={text(12, 400, t.text2)}>{line}</span>
-      <TextButton target={phone} underline style={text(12, 500, t.text)} onClick={check === "not-offered" ? onChange : onRemove}>
+      <span style={text(textStep.meta, 400, t.text2)}>{line}</span>
+      <TextButton target={phone} underline style={text(textStep.meta, 500, t.text)} onClick={check === "not-offered" ? onChange : onRemove}>
         {check === "not-offered" ? PAIR_COPY.change : PAIR_COPY.remove}
       </TextButton>
     </div>

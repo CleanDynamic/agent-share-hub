@@ -21,6 +21,7 @@ import { toolName } from "@/lib/tools/registry";
 import { TextButton } from "@/pages/site/compose/composeControls";
 import { text } from "@/pages/site/compose/refinedStyles";
 
+import { textStep } from "@/lib/theme/type";
 export interface TeamLinesValue {
   /** Open a step or an agent by its id. Absent: numbers and mentions are plain words. */
   open?: (id: string) => void;
@@ -33,8 +34,8 @@ export interface TeamLinesValue {
 
 export const TeamLinesContext = createContext<TeamLinesValue>({});
 
-const LINE: CSSProperties = { ...text(12, 400, t.text2), lineHeight: "18px", margin: 0, overflowWrap: "anywhere" };
-const HEAD: CSSProperties = { ...text(11.5, 500, t.label), lineHeight: "16px" };
+const LINE: CSSProperties = { ...text(textStep.meta, 400, t.text2), lineHeight: "18px", margin: 0, overflowWrap: "anywhere" };
+const HEAD: CSSProperties = { ...text(textStep.meta, 500, t.label), lineHeight: "17px" };
 const stop = (event: { stopPropagation: () => void }) => event.stopPropagation();
 
 /** The agents of a step's team as mentions resolve them: role, then title. */
@@ -57,7 +58,7 @@ function MentionLink({ id, children }: { id: string; children: ReactNode }) {
 export function MentionText({ value, team, style, testId }: { value: string; team: readonly MentionAgent[]; style?: CSSProperties; testId?: string }) {
   const runs = mentionRuns(value, mentionsOf(value, team).mentions);
   return (
-    <p data-testid={testId} style={{ ...LINE, ...text(13, 400, t.text), lineHeight: "21px", whiteSpace: "pre-wrap", ...style }}>
+    <p data-testid={testId} style={{ ...LINE, ...text(textStep.body, 400, t.text), lineHeight: "23px", whiteSpace: "pre-wrap", ...style }}>
       {runs.map((run, at) => (run.id ? <MentionLink key={at} id={run.id}>{run.text}</MentionLink> : <span key={at}>{run.text}</span>))}
     </p>
   );
@@ -86,7 +87,7 @@ export function TeamHead({ team, style }: { team: Step; style?: CSSProperties })
       {run.length > 0 ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <span>
-            <TextButton target={phone} aria-expanded={open} onClick={(event) => (stop(event), setOpen(!open))} style={text(12, 500, t.text2)}>
+            <TextButton target={phone} aria-expanded={open} onClick={(event) => (stop(event), setOpen(!open))} style={text(textStep.meta, 500, t.text2)}>
               {EXAMPLE_COPY.head(run.length)}
             </TextButton>
           </span>
@@ -96,7 +97,7 @@ export function TeamHead({ team, style }: { team: Step; style?: CSSProperties })
               <ol style={{ margin: 0, padding: 0, listStyle: "none", borderLeft: `1px solid ${t.line}`, display: "flex", flexDirection: "column", gap: 12 }}>
                 {run.map((entry, at) => (
                   <li key={at} style={{ paddingLeft: 12, display: "flex", flexDirection: "column", gap: 2 }}>
-                    <span style={text(12.5, 500, t.text)}>{nameOf(entry.agent)}</span>
+                    <span style={text(textStep.meta, 500, t.text)}>{nameOf(entry.agent)}</span>
                     <span style={LINE}>{entry.did}</span>
                     {entry.passed_on ? <span style={{ ...LINE, color: t.label }}>{EXAMPLE_COPY.passed(entry.passed_on)}</span> : null}
                   </li>
@@ -164,7 +165,7 @@ function StepNumber({ id, number }: { id: string; number: string }) {
   const { open, phone } = useContext(TeamLinesContext);
   if (!open) return <span>{number}</span>;
   return (
-    <TextButton target={phone} underline aria-label={`Open step ${number}`} onClick={(event) => (stop(event), open(id))} style={text(12, 500, t.text2)}>
+    <TextButton target={phone} underline aria-label={`Open step ${number}`} onClick={(event) => (stop(event), open(id))} style={text(textStep.meta, 500, t.text2)}>
       {number}
     </TextButton>
   );

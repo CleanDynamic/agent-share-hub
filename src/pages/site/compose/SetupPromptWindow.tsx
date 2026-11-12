@@ -10,7 +10,7 @@ import { REBUILD_COPY, harnessEntry, mappedHarnesses } from "@/lib/build/harness
 import { SETUP_PROMPT_COPY, isVendorHosted, setupPromptOf } from "@/lib/build/setupPrompt";
 import type { NodeTree } from "@/lib/build/types";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO } from "@/lib/theme/type";
+import { DM_MONO, textStep } from "@/lib/theme/type";
 
 import { ModalShell } from "./ModalFrame";
 import { FOOT_NOTE, LABEL, RecipeButton, bodyStyle, footerStyle } from "./modalRecipes";
@@ -70,13 +70,13 @@ export function SetupPromptWindow({ id, tree, name, onCopy, onClose, harness }: 
           <section aria-label={REBUILD_COPY.notCarried} data-testid="setup-not-carried" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <h3 style={{ ...LABEL, margin: 0 }}>{REBUILD_COPY.notCarried}</h3>
             {prompt.notCarried.map((line) => (
-              <p key={line} style={{ margin: 0, fontSize: 12.5, lineHeight: "18px", color: t.text2 }}>
+              <p key={line} style={{ margin: 0, fontSize: textStep.meta, lineHeight: "17px", color: t.text2 }}>
                 {line}
               </p>
             ))}
           </section>
         ) : null}
-        <pre data-testid="setup-prompt-text" tabIndex={0} aria-label={SETUP_PROMPT_COPY.title} style={{ margin: 0, padding: 12, maxHeight: phone ? "50vh" : 420, overflow: "auto", whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontFamily: DM_MONO, fontSize: 12, lineHeight: "18px", color: t.text, background: t.well, border: `1px solid ${t.wellBorder}`, borderRadius: 6 }}>
+        <pre data-testid="setup-prompt-text" tabIndex={0} aria-label={SETUP_PROMPT_COPY.title} style={{ margin: 0, padding: 12, maxHeight: phone ? "50vh" : 420, overflow: "auto", whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontFamily: DM_MONO, fontSize: textStep.meta, lineHeight: "18px", color: t.text, background: t.well, border: `1px solid ${t.wellBorder}`, borderRadius: 6 }}>
           {prompt.text}
         </pre>
       </div>

@@ -7,7 +7,7 @@ import { classificationLines } from "@/lib/classify/lines";
 import type { Classification } from "@/lib/classify/types";
 import { t } from "@/lib/theme/tokens";
 import { TITLE_LINE, fullText } from "@/lib/theme/truncate";
-import { DM_MONO } from "@/lib/theme/type";
+import { DM_MONO, textStep } from "@/lib/theme/type";
 
 import { text } from "./refinedStyles";
 
@@ -34,16 +34,16 @@ export function CardPreview({ title, classification, maker }: { title: string; c
       <article style={{ padding: "14px 16px", boxSizing: "border-box", background: t.well, border: `1px solid ${t.wellBorder}`, borderRadius: 10, boxShadow: t.wellShadow, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
           {maker ? (
-            <span aria-hidden="true" style={{ width: 26, height: 26, flexShrink: 0, borderRadius: 13, background: t.controlOn, display: "inline-flex", alignItems: "center", justifyContent: "center", ...text(10.5, 500, t.text) }}>
+            <span aria-hidden="true" style={{ width: 26, height: 26, flexShrink: 0, borderRadius: 13, background: t.controlOn, display: "inline-flex", alignItems: "center", justifyContent: "center", ...text(textStep.meta, 500, t.text) }}>
               {initialsOf(name) || "?"}
             </span>
           ) : null}
-          {name ? <span style={{ ...text(13, 500, t.text), minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span> : null}
-          {maker?.handle ? <span style={{ ...text(13, 400, t.label), minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{`@${maker.handle}`}</span> : null}
-          <span style={{ marginLeft: "auto", fontFamily: DM_MONO, fontSize: 11.5, color: t.label }}>Preview</span>
+          {name ? <span style={{ ...text(textStep.body, 500, t.text), minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span> : null}
+          {maker?.handle ? <span style={{ ...text(textStep.body, 400, t.label), minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{`@${maker.handle}`}</span> : null}
+          <span style={{ marginLeft: "auto", fontFamily: DM_MONO, fontSize: textStep.meta, color: t.label }}>Preview</span>
         </div>
         <div style={{ marginTop: 10, display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: 6, rowGap: 4, minWidth: 0 }}>
-          <span {...fullText(title.trim())} style={{ ...text(15, 500, title.trim() ? t.text : t.label), ...TITLE_LINE, flex: "0 1 auto", lineHeight: "20px" }}>{title.trim() || "Untitled build"}</span>
+          <span {...fullText(title.trim())} style={{ ...text(textStep.section, 500, title.trim() ? t.text : t.label), ...TITLE_LINE, flex: "0 1 auto", lineHeight: "21px" }}>{title.trim() || "Untitled build"}</span>
           {lines.regulated ? <RegulatedTag /> : null}
         </div>
         {lines.line1.length > 0 || lines.line2.length > 0 ? (

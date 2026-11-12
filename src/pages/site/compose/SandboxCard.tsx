@@ -51,6 +51,7 @@ import { type ComposeDetailKey, type ComposeDetails } from "./MoreDetails";
 import { space } from "@/lib/theme/space";
 import { r } from "@/lib/theme/radius";
 
+import { textStep } from "@/lib/theme/type";
 /** Where the Card opens: the field a missing item names. */
 export type CardField = "cover" | "title" | "summary" | "audience";
 
@@ -129,7 +130,7 @@ function CardSwitch({ on, onChange, phone, label }: { on: boolean; onChange: (on
       aria-checked={on}
       onClick={() => onChange(!on)}
       {...handlers}
-      style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: space[2], minHeight: phone ? 44 : 32, padding: `0 ${space[1]}px`, margin: "0 -4px", border: 0, borderRadius: r.control, background: "transparent", cursor: "pointer", ...text(13, 400, t.text), ...ring(state.focusVisible) }}
+      style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: space[2], minHeight: phone ? 44 : 32, padding: `0 ${space[1]}px`, margin: "0 -4px", border: 0, borderRadius: r.control, background: "transparent", cursor: "pointer", ...text(textStep.body, 400, t.text), ...ring(state.focusVisible) }}
     >
       <span aria-hidden="true" style={{ position: "relative", width: 36, height: 22, borderRadius: r.window, background: on ? t.evidence : t.line, flexShrink: 0 }}>
         <span style={{ position: "absolute", top: 3, left: 3, width: 16, height: 16, borderRadius: r.card, background: t.field, transform: on ? "translateX(14px)" : "none" }} />
@@ -175,7 +176,7 @@ function BuildDetails({ phone, details, onChange, onTopicSource }: { phone: bool
       {onTopicSource ? (
         <OptionalRow phone={phone} filledText name="Topics" description={TOPIC_SOURCE_LABEL} summary={details.allowAsTopicSource === false ? "Off" : ""}>
           <CardSwitch on={details.allowAsTopicSource !== false} onChange={onTopicSource} phone={phone} label={TOPIC_SOURCE_LABEL} />
-          <p data-testid="topic-source-note" style={{ margin: 0, ...text(12, 400, t.label) }}>
+          <p data-testid="topic-source-note" style={{ margin: 0, ...text(textStep.meta, 400, t.label) }}>
             {TOPIC_SOURCE_NOTE}
           </p>
         </OptionalRow>
@@ -421,7 +422,7 @@ function CardBody(props: SandboxCardProps & { guard: CloseGuard }) {
                     <div style={{ display: "flex", alignItems: "center", gap: space[3], flexWrap: "wrap" }}>
                       <SegmentedField label="Age suitability" items={AGE_VALUES.map((value) => ({ value: value.id, label: value.label }))} value={draft.age} phone={phone} onChange={(value) => set("age", value)} />
                       {draft.age ? (
-                        <button type="button" onClick={() => set("age", null)} style={{ border: 0, background: "none", cursor: "pointer", minHeight: phone ? 44 : 24, ...text(12, 400, t.text2), textDecoration: "underline" }}>
+                        <button type="button" onClick={() => set("age", null)} style={{ border: 0, background: "none", cursor: "pointer", minHeight: phone ? 44 : 24, ...text(textStep.meta, 400, t.text2), textDecoration: "underline" }}>
                           Clear age suitability
                         </button>
                       ) : null}

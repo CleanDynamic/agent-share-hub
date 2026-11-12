@@ -35,14 +35,7 @@ import { hexToRgba } from "../tokens";
 import { chipType } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import {
-  DM_MONO,
-  body as bodyType,
-  data as dataType,
-  eyebrow,
-  measure,
-  tabular,
-} from "@/lib/theme/type";
+import { DM_MONO, body as bodyType, data as dataType, eyebrow, measure, tabular, textStep } from "@/lib/theme/type";
 
 /* ── BG-P21 — the three faces, by job ─────────────────────────────────────────
 
@@ -455,7 +448,7 @@ export function StatRow({
             style={{
               ...dataType,
               ...tabular,
-              fontSize: 17,
+              fontSize: textStep.section,
               fontWeight: 500,
               lineHeight: 1.2,
               color: colour,
@@ -609,7 +602,7 @@ export const monoBlockStyle: CSSProperties = {
   padding: "9px 10px",
   margin: 0,
   fontFamily: MONO_STACK,
-  fontSize: 12,
+  fontSize: textStep.meta,
   fontWeight: 400,
   lineHeight: 1.65,
   color: t.text,

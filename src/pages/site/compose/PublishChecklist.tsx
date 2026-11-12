@@ -22,6 +22,7 @@ import { FOOT_NOTE, RecipeButton, TITLE, footerStyle, frameStyle } from "./modal
 import { text } from "./refinedStyles";
 import { size } from "@/lib/theme/space";
 
+import { textStep } from "@/lib/theme/type";
 /** The window the three Publish windows share: a title, a body, a footer. A phone gets the bottom sheet. */
 export function PublishFrame({
   open,
@@ -79,8 +80,8 @@ export function PublishFrame({
   );
 }
 
-const LINE: CSSProperties = { ...text(12.5, 400, t.text2), margin: "4px 0 0" };
-const SECTION_LABEL: CSSProperties = { ...text(12, 400, t.label), margin: "14px 0 4px" };
+const LINE: CSSProperties = { ...text(textStep.meta, 400, t.text2), margin: "4px 0 0" };
+const SECTION_LABEL: CSSProperties = { ...text(textStep.meta, 400, t.label), margin: "14px 0 4px" };
 const ROW: CSSProperties = { display: "flex", alignItems: "center", gap: 10, minHeight: 48, boxSizing: "border-box", padding: "8px 0" };
 
 function Circle({ done }: { done: boolean }) {
@@ -119,7 +120,7 @@ function ActionLink({ children, onClick, label }: { children: ReactNode; onClick
         border: 0,
         padding: 0,
         flexShrink: 0,
-        ...text(12.5, 500, state.hovered ? t.text : t.text2),
+        ...text(textStep.meta, 500, state.hovered ? t.text : t.text2),
         textDecoration: "underline",
         textUnderlineOffset: 3,
         cursor: "pointer",
@@ -136,8 +137,8 @@ function ChecklistRow({ item, first, onAction }: { item: ChecklistItem; first: b
     <li data-testid={`checklist-${item.key}`} data-done={item.done ? "true" : "false"} style={{ ...ROW, ...(first ? null : { borderTop: `1px solid ${t.hairline}` }) }}>
       <Circle done={item.done} />
       <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
-        <span style={{ ...(item.done ? text(13, 400, t.text2) : text(13, 500, t.text)), overflowWrap: "anywhere" }}>{item.words}</span>
-        {item.detail ? <span style={{ ...text(12, 400, t.label), overflowWrap: "anywhere", ...(item.done ? { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } : null) }}>{item.detail}</span> : null}
+        <span style={{ ...(item.done ? text(textStep.body, 400, t.text2) : text(textStep.body, 500, t.text)), overflowWrap: "anywhere" }}>{item.words}</span>
+        {item.detail ? <span style={{ ...text(textStep.meta, 400, t.label), overflowWrap: "anywhere", ...(item.done ? { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } : null) }}>{item.detail}</span> : null}
       </div>
       {item.actions ? (
         <span style={{ display: "flex", gap: 12, flexShrink: 0 }}>
@@ -177,7 +178,7 @@ function OpensGroup({ count, control }: { count: number; control?: ReactNode }) 
       <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
         <li data-testid="checklist-opens" style={ROW}>
           <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
-            <span style={{ ...text(13, 400, t.text2), overflowWrap: "anywhere" }}>{CHECKLIST_COPY.opensWords(count)}</span>
+            <span style={{ ...text(textStep.body, 400, t.text2), overflowWrap: "anywhere" }}>{CHECKLIST_COPY.opensWords(count)}</span>
           </div>
           {control ? <span style={{ flexShrink: 0 }}>{control}</span> : null}
         </li>
@@ -233,7 +234,7 @@ export function PublishChecklist({ open, checklist, opensIn, onClose, onAction, 
       footer={
         <>
           {checklist.note ? (
-            <span data-testid="checklist-note" style={{ ...FOOT_NOTE, ...text(12, 400, t.label) }}>
+            <span data-testid="checklist-note" style={{ ...FOOT_NOTE, ...text(textStep.meta, 400, t.label) }}>
               {checklist.note}
             </span>
           ) : (

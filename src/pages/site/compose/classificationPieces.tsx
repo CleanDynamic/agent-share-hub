@@ -11,7 +11,7 @@ import { Glyph } from "@/components/brand/Glyph";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE, textStep } from "@/lib/theme/type";
 
 import { ellipsis, text } from "./refinedStyles";
 import { size, space } from "@/lib/theme/space";
@@ -58,7 +58,7 @@ export function ChosenValue({
     borderWidth: 1,
     borderStyle: own ? "dashed" : "solid",
     borderColor: own ? DASH_EDGE : SEG_ON_BORDER,
-    ...text(12.5, 400, t.text),
+    ...text(textStep.meta, 400, t.text),
   };
   return (
     <li style={box} data-custom={own ? "true" : undefined}>
@@ -99,7 +99,7 @@ export function ChosenValue({
 export function SuggestedRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <ul aria-label={label} style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
-      <li aria-hidden="true" style={{ fontFamily: DM_MONO, fontSize: 11.5, lineHeight: "normal", color: t.label }}>
+      <li aria-hidden="true" style={{ fontFamily: DM_MONO, fontSize: textStep.meta, lineHeight: "normal", color: t.label }}>
         Suggested
       </li>
       {children}
@@ -133,7 +133,7 @@ export function Suggestion({ label, name, title, phone, onAdd }: { label: string
           borderStyle: "dashed",
           borderColor: lit ? t.label : DASH_EDGE,
           cursor: "pointer",
-          ...text(12, 400, lit ? t.text : t.text2),
+          ...text(textStep.meta, 400, lit ? t.text : t.text2),
           ...ring(state.focusVisible),
         }}
       >
@@ -192,7 +192,7 @@ export function typeaheadRow(active: boolean, phone: boolean): CSSProperties {
     cursor: "pointer",
     background: active ? t.controlOn : "transparent",
     fontFamily: FIGTREE,
-    fontSize: 13,
+    fontSize: textStep.body,
     lineHeight: "normal",
     color: t.text,
   };
@@ -201,7 +201,7 @@ export function typeaheadRow(active: boolean, phone: boolean): CSSProperties {
 /** The path at the right: the data face, 11 `--label`, cut with an ellipsis. */
 export const typeaheadNote = (phone: boolean): CSSProperties => ({
   fontFamily: DM_MONO,
-  fontSize: 11,
+  fontSize: textStep.meta,
   lineHeight: "normal",
   color: t.label,
   ...ellipsis,

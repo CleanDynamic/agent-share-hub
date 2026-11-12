@@ -28,6 +28,7 @@ import { pickerRows, TYPED_TOOL_MAX, type PickerRow } from "./toolPickerModel";
 import { size, space } from "@/lib/theme/space";
 import { r } from "@/lib/theme/radius";
 
+import { textStep } from "@/lib/theme/type";
 export interface ToolPickerProps {
   /** A tool id, a typed name, or null. */
   value: string | null;
@@ -178,7 +179,7 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
     cursor: "pointer",
     textDecoration: "underline",
     textUnderlineOffset: 3,
-    ...text(15, 500, t.text2),
+    ...text(textStep.section, 500, t.text2),
     ...ring(trigger.state.focusVisible),
   };
   const fieldStyle: CSSProperties = { ...pickerFieldStyle(phone, trigger.state, !value), ...ring(trigger.state.focusVisible) };
@@ -197,7 +198,7 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
     borderRadius: r.control,
     cursor: "pointer",
     textAlign: "left",
-    ...text(13, 400, value ? t.text : t.text2),
+    ...text(textStep.body, 400, value ? t.text : t.text2),
     ...ring(trigger.state.focusVisible),
   };
 
@@ -212,7 +213,7 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
     border: "1px solid transparent",
     cursor: isDisabled(row) ? "default" : "pointer",
     overflowWrap: "anywhere",
-    ...text(13, 400, row.kind === "showAll" || row.kind === "showMore" ? t.text2 : t.text),
+    ...text(textStep.body, 400, row.kind === "showAll" || row.kind === "showMore" ? t.text2 : t.text),
     ...(row.kind === "tool" && row.unavailable ? { filter: t.dimFilter } : null),
     ...(pickable.indexOf(row) === current ? { background: t.controlOn } : null),
     ...(isChosen(row) ? SELECTED : null),
@@ -264,11 +265,11 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
           <div id={`${uid}-list`} role="listbox" aria-label={label} style={{ maxHeight: 320, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
             {rows.map((row, index) =>
               row.kind === "note" ? (
-                <div key={`n-${row.text}`} role="note" style={{ ...text(12, 400, t.text2), padding: "6px 8px", overflowWrap: "anywhere" }}>
+                <div key={`n-${row.text}`} role="note" style={{ ...text(textStep.meta, 400, t.text2), padding: "6px 8px", overflowWrap: "anywhere" }}>
                   {row.text}
                 </div>
               ) : row.kind === "heading" ? (
-                <div key={`h-${row.label}`} role="presentation" style={{ ...text(11.5, 400, t.label), padding: index === 0 ? "4px 10px" : "8px 10px 4px" }}>
+                <div key={`h-${row.label}`} role="presentation" style={{ ...text(textStep.meta, 400, t.label), padding: index === 0 ? "4px 10px" : "8px 10px 4px" }}>
                   {row.label}
                 </div>
               ) : (
@@ -287,7 +288,7 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
                   {row.kind === "tool" && row.line ? (
                     <span style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0, padding: "4px 0" }}>
                       <span>{rowName(row, noneLabel, list, code?.label)}</span>
-                      <span style={text(11.5, 400, t.label)}>{row.line}</span>
+                      <span style={text(textStep.meta, 400, t.label)}>{row.line}</span>
                     </span>
                   ) : (
                     <span style={{ minWidth: 0 }}>{rowName(row, noneLabel, list, code?.label)}</span>

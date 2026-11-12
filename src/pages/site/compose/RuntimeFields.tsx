@@ -21,6 +21,7 @@ import type { RuntimeView } from "./runtimeView";
 import { text, typedArea, typedField } from "./refinedStyles";
 import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT } from "./modalRecipes";
 
+import { textStep } from "@/lib/theme/type";
 function AnswerShapeField({ shape, schemaFiles, phone, onChange }: { shape: OutputShape | null; schemaFiles: readonly string[]; phone: boolean; onChange: (next: OutputShape | null) => void }) {
   const uid = useId();
   const [open, setOpen] = useState(Boolean(shape));
@@ -38,7 +39,7 @@ function AnswerShapeField({ shape, schemaFiles, phone, onChange }: { shape: Outp
   };
   return (
     <section aria-label="Answer shape" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <TextButton target={phone} onClick={() => setOpen((v) => !v)} aria-expanded={open} style={{ ...text(12.5, 500, t.text), alignSelf: "flex-start" }}>
+      <TextButton target={phone} onClick={() => setOpen((v) => !v)} aria-expanded={open} style={{ ...text(textStep.meta, 500, t.text), alignSelf: "flex-start" }}>
         Answer shape{shape ? " · returns a fixed shape" : ""}
       </TextButton>
       {open ? (
@@ -50,21 +51,21 @@ function AnswerShapeField({ shape, schemaFiles, phone, onChange }: { shape: Outp
             <input id={`${uid}-where`} type="text" value={d.where ?? ""} maxLength={40} onChange={(e) => set({ where: e.target.value })} style={typedField(phone)} />
             <span style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {SHAPE_WHERE_SUGGESTIONS.map((name) => (
-                <TextButton key={name} onClick={() => set({ where: name })} style={text(12, 400, t.text2)}>{name}</TextButton>
+                <TextButton key={name} onClick={() => set({ where: name })} style={text(textStep.meta, 400, t.text2)}>{name}</TextButton>
               ))}
             </span>
           </Field>
           <Field id={`${uid}-schema`} label="Schema" hint={`Up to ${SHAPE_TEXT_MAX.toLocaleString("en-GB")} characters`}>
             <textarea id={`${uid}-schema`} rows={5} value={d.schema ?? ""} maxLength={SHAPE_TEXT_MAX} onChange={(e) => set({ schema: e.target.value })} style={typedArea(phone, { fontFamily: "var(--font-data)", fontSize: phone ? 16 : 12 })} />
-            {schemaFiles.length ? <span style={text(12, 400, t.label)}>Schema file in this build: {schemaFiles.join(", ")}</span> : null}
+            {schemaFiles.length ? <span style={text(textStep.meta, 400, t.label)}>Schema file in this build: {schemaFiles.join(", ")}</span> : null}
           </Field>
           <Field id={`${uid}-sample`} label="Sample answer" hint="Optional">
             <textarea id={`${uid}-sample`} rows={3} value={d.sample ?? ""} maxLength={SHAPE_TEXT_MAX} onChange={(e) => set({ sample: e.target.value })} style={typedArea(phone, { fontFamily: "var(--font-data)", fontSize: phone ? 16 : 12 })} />
           </Field>
-          {error ? <span role="alert" style={text(12.5, 400, t.text)}>{error}</span> : null}
+          {error ? <span role="alert" style={text(textStep.meta, 400, t.text)}>{error}</span> : null}
           <div style={{ display: "flex", gap: 8 }}>
-            <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={12} onClick={save}>Save the answer shape</Button>
-            {shape ? <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={12} onClick={() => { onChange(null); setD({ how: "json-schema" }); }}>Remove</Button> : null}
+            <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={textStep.meta} onClick={save}>Save the answer shape</Button>
+            {shape ? <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={textStep.meta} onClick={() => { onChange(null); setD({ how: "json-schema" }); }}>Remove</Button> : null}
           </div>
         </div>
       ) : null}
@@ -91,19 +92,19 @@ function ReadFromCode({ codeTiles, definedIn, phone, onRead }: { codeTiles: read
   const mine = codeTiles.filter((tile) => definedIn.includes(tile.id));
   return (
     <section aria-label="Read the helpers from code" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <h3 style={{ ...text(12.5, 500, t.text), margin: 0 }}>Read the helpers from code</h3>
+      <h3 style={{ ...text(textStep.meta, 500, t.text), margin: 0 }}>Read the helpers from code</h3>
       {mine.map((tile) => (
         <div key={tile.id}>
-          <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={12} onClick={() => run(tile.source)}>Read from {tile.label}</Button>
+          <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={textStep.meta} onClick={() => run(tile.source)}>Read from {tile.label}</Button>
         </div>
       ))}
       <Field id={`${uid}-paste`} label="create_deep_agent(...) call">
         <textarea id={`${uid}-paste`} rows={3} value={pasted} onChange={(e) => setPasted(e.target.value)} style={typedArea(phone, { fontFamily: "var(--font-data)", fontSize: phone ? 16 : 12 })} />
       </Field>
       <div>
-        <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={12} disabled={!pasted.trim()} onClick={() => run(pasted)}>Read</Button>
+        <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={textStep.meta} disabled={!pasted.trim()} onClick={() => run(pasted)}>Read</Button>
       </div>
-      {said ? <span role="status" style={text(12, 400, t.text2)}>{said}</span> : null}
+      {said ? <span role="status" style={text(textStep.meta, 400, t.text2)}>{said}</span> : null}
     </section>
   );
 }
@@ -134,12 +135,12 @@ export function RuntimeFields({ id, runtime, phone, onRuntime, onReadHelpers }: 
                 {agent.codeTiles.map((tile) => (
                   <label key={tile.id} style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 24 }}>
                     <Checkbox checked={agent.definedIn.includes(tile.id)} onChange={(e) => onRuntime(id, { definedIn: e.target.checked ? [...agent.definedIn, tile.id] : agent.definedIn.filter((x) => x !== tile.id) })} />
-                    <span style={text(13, 400, t.text)}>{tile.label}</span>
+                    <span style={text(textStep.body, 400, t.text)}>{tile.label}</span>
                   </label>
                 ))}
               </div>
             ) : (
-              <span style={text(12, 400, t.label)}>No Code step linked</span>
+              <span style={text(textStep.meta, 400, t.label)}>No Code step linked</span>
             )}
           </Field>
           {onReadHelpers ? <ReadFromCode codeTiles={agent.codeTiles} definedIn={agent.definedIn} phone={phone} onRead={(read) => onReadHelpers(id, read)} /> : null}
@@ -158,7 +159,7 @@ export function RuntimeFields({ id, runtime, phone, onRuntime, onReadHelpers }: 
               }}
               style={typedField(phone)}
             />
-            {traceError ? <span role="alert" style={text(12, 400, t.text)}>{traceError}</span> : null}
+            {traceError ? <span role="alert" style={text(textStep.meta, 400, t.text)}>{traceError}</span> : null}
           </Field>
         </>
       ) : null}

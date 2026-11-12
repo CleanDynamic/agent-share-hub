@@ -22,7 +22,7 @@ import { IconButton } from "@/components/brand/IconButton";
 import { WORKSTREAM_NAME_MAX } from "@/lib/build/making";
 import { refTo } from "@/lib/build/thread";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO } from "@/lib/theme/type";
+import { DM_MONO, textStep } from "@/lib/theme/type";
 
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { DragHandle, useNestWorkstream, useNestWorkstreamDrag } from "./listNest";
@@ -94,7 +94,7 @@ export interface WorkstreamHeadProps {
   onColour?: (anchor: HTMLElement) => void;
 }
 
-const quiet = { ...text(12, 400, t.label), fontFamily: DM_MONO, ...tnum, whiteSpace: "nowrap" as const, flexShrink: 0 };
+const quiet = { ...text(textStep.meta, 400, t.label), fontFamily: DM_MONO, ...tnum, whiteSpace: "nowrap" as const, flexShrink: 0 };
 
 /** The part's name as an inline field: saved on blur and on Enter, Esc puts it back. */
 function NameField({ part, phone, onSave }: { part: WorkstreamHeadView; phone: boolean; onSave: (name: string) => void }) {
@@ -160,8 +160,8 @@ function NameField({ part, phone, onSave }: { part: WorkstreamHeadView; phone: b
         padding: "0 6px",
         margin: "0 -6px",
         textOverflow: "ellipsis",
-        ...text(14, 500, part.nameColour),
-        ...(phone ? { fontSize: 16 } : null),
+        ...text(textStep.body, 500, part.nameColour),
+        ...(phone ? { fontSize: textStep.section } : null),
       }}
     />
   );
@@ -299,14 +299,14 @@ export function WorkstreamHead(props: WorkstreamHeadProps) {
             <DragHandle label={`Move ${part.label}`} nest={drag} testId="workstream-drag-handle" />
           </span>
         ) : null}
-        <span data-testid="workstream-label" style={{ ...text(14, 500, part.nameColour), whiteSpace: "nowrap", ...NO_SHRINK }}>
+        <span data-testid="workstream-label" style={{ ...text(textStep.body, 500, part.nameColour), whiteSpace: "nowrap", ...NO_SHRINK }}>
           {part.label}
           {part.name || maker ? " ·" : ""}
         </span>
         {maker ? (
           <NameField part={part} phone={phone} onSave={(name) => ops?.onName(part.key, name)} />
         ) : part.name ? (
-          <span data-testid="workstream-name-text" {...fullText(part.name)} style={{ ...text(14, 500, part.nameColour), ...TITLE_LINE, flex: "1 1 120px" }}>
+          <span data-testid="workstream-name-text" {...fullText(part.name)} style={{ ...text(textStep.body, 500, part.nameColour), ...TITLE_LINE, flex: "1 1 120px" }}>
             <FindHit text={part.name} />
           </span>
         ) : (
@@ -343,7 +343,7 @@ export function WorkstreamHead(props: WorkstreamHeadProps) {
         />
       </div>
       {part.startsAfterLine ? (
-        <p data-testid="workstream-starts" style={{ ...text(12.5, 400, t.label), ...(maker ? WORKSTREAM_STARTS : { margin: 0 }) }}>
+        <p data-testid="workstream-starts" style={{ ...text(textStep.meta, 400, t.label), ...(maker ? WORKSTREAM_STARTS : { margin: 0 }) }}>
           {WORKSTREAM_HEAD_COPY.startsLine(part.startsAfterLine)}
         </p>
       ) : null}

@@ -16,6 +16,7 @@ import { t } from "@/lib/theme/tokens";
 
 import { text } from "./refinedStyles";
 
+import { textStep } from "@/lib/theme/type";
 export interface ChoiceRow<V extends string> {
   value: V;
   label: string;
@@ -84,8 +85,8 @@ function Row<V extends string>({ row, name, chosen, phone, onChange }: { row: Ch
         <ChoiceRing on={chosen} />
       </span>
       <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-        <span style={{ ...text(13, 400, t.text), lineHeight: "18px" }}>{row.label}</span>
-        {row.line ? <span style={{ ...text(12, 400, t.text2), lineHeight: "16px" }}>{row.line}</span> : null}
+        <span style={{ ...text(textStep.body, 400, t.text), lineHeight: "19px" }}>{row.label}</span>
+        {row.line ? <span style={{ ...text(textStep.meta, 400, t.text2), lineHeight: "16px" }}>{row.line}</span> : null}
       </span>
     </label>
   );

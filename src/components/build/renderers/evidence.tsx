@@ -7,7 +7,7 @@
 
 import { hexToRgba } from "../tokens";
 import { t } from "@/lib/theme/tokens";
-import { body as bodyType, FIGTREE } from "@/lib/theme/type";
+import { body as bodyType, FIGTREE, textStep } from "@/lib/theme/type";
 import { MEDIA_WIDTH, MediaFigure } from "../MediaFigure";
 import {
   Caption,
@@ -82,8 +82,8 @@ function CheckAnswers({ payload }: { payload: ReturnType<typeof payloadOf> }) {
           data-testid={`check-answer-${key}`}
           style={{ display: "flex", flexDirection: "column", gap: 2, padding: "8px 0", borderTop: index === 0 ? "none" : `1px solid ${t.hairline}`, minWidth: 0 }}
         >
-          <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>{label}</span>
-          <span style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text, overflowWrap: "anywhere" }}>{str(payload, key)}</span>
+          <span style={{ fontFamily: FIGTREE, fontSize: textStep.meta, color: t.text2 }}>{label}</span>
+          <span style={{ fontFamily: FIGTREE, fontSize: textStep.body, color: t.text, overflowWrap: "anywhere" }}>{str(payload, key)}</span>
         </div>
       ))}
     </div>

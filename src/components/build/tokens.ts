@@ -31,7 +31,7 @@ import type { CSSProperties } from "react";
 
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { FIGTREE, textStep } from "@/lib/theme/type";
 
 /** The page ground. Was `#08080C`; a light room has no void in it. */
 export const VOID = t.bg;
@@ -173,33 +173,33 @@ export const cardGlass: CSSProperties = {
  * a layout property, and it is the half of the pairing the floor names.
  */
 export const bodyText: CSSProperties = {
-  fontSize: 12,
+  fontSize: textStep.meta,
   fontWeight: 400,
   lineHeight: 1.6,
   color: TEXT_PRIMARY,
 };
 
 export const labelText: CSSProperties = {
-  fontSize: 12,
+  fontSize: textStep.meta,
   fontWeight: 500,
   letterSpacing: "0.04em",
   color: TEXT_SECONDARY,
 };
 
 export const titleText: CSSProperties = {
-  fontSize: 14,
+  fontSize: textStep.body,
   fontWeight: 600,
   color: TEXT_PRIMARY,
 };
 
 export const headingText: CSSProperties = {
-  fontSize: 17,
+  fontSize: textStep.section,
   fontWeight: 600,
   color: TEXT_PRIMARY,
 };
 
 export const pageHeadingText: CSSProperties = {
-  fontSize: 19,
+  fontSize: textStep.headline,
   fontWeight: 700,
   lineHeight: 1.3,
   color: TEXT_PRIMARY,

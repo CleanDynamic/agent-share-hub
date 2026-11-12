@@ -12,6 +12,7 @@ import { t } from "@/lib/theme/tokens";
 import { TextButton } from "@/pages/site/compose/composeControls";
 import { text, tnum } from "@/pages/site/compose/refinedStyles";
 
+import { textStep } from "@/lib/theme/type";
 export interface CertaintyProps {
   /** The answer in words: "billing", "Annoyed". */
   answer: string;
@@ -39,12 +40,12 @@ export function Certainty({ answer, share, probabilities, source, bare = false }
   return (
     <span data-testid="certainty" style={{ display: "inline-flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
       <span role="img" aria-label={certaintySpoken(answer, share, source)} style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-        {bare ? null : <span style={text(13, 500, t.text)}>{answer}</span>}
-        <span data-testid="certainty-words" data-unsure={words.unsure || undefined} style={{ ...text(12.5, 400, words.unsure ? t.label : t.text2), ...tnum }}>{words.text}</span>
+        {bare ? null : <span style={text(textStep.body, 500, t.text)}>{answer}</span>}
+        <span data-testid="certainty-words" data-unsure={words.unsure || undefined} style={{ ...text(textStep.meta, 400, words.unsure ? t.label : t.text2), ...tnum }}>{words.text}</span>
         {bar(share, t.text2, 48, 4)}
       </span>
       {shares.length > 1 ? (
-        <TextButton onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-controls={id} style={{ alignSelf: "flex-start", fontSize: 12 }}>
+        <TextButton onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-controls={id} style={{ alignSelf: "flex-start", fontSize: textStep.meta }}>
           {open ? "Hide the options" : "Show every option"}
         </TextButton>
       ) : null}
@@ -52,14 +53,14 @@ export function Certainty({ answer, share, probabilities, source, bare = false }
         <span id={id} role="list" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {shares.map((row) => (
             <span key={row.key} role="listitem" data-chosen={row.key === answer || undefined} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ ...text(12.5, row.key === answer ? 500 : 400, row.key === answer ? t.text : t.text2), flex: "0 0 96px", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.key}</span>
+              <span style={{ ...text(textStep.meta, row.key === answer ? 500 : 400, row.key === answer ? t.text : t.text2), flex: "0 0 96px", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.key}</span>
               {bar(row.share, row.key === answer ? t.text : t.text2, 120, 4)}
-              <span style={{ ...text(12, 400, t.text2), ...tnum }}>{Math.round(row.share * 100)}%</span>
+              <span style={{ ...text(textStep.meta, 400, t.text2), ...tnum }}>{Math.round(row.share * 100)}%</span>
             </span>
           ))}
         </span>
       ) : null}
-      {note ? <span style={text(11.5, 400, t.label)}>{note}</span> : null}
+      {note ? <span style={text(textStep.meta, 400, t.label)}>{note}</span> : null}
     </span>
   );
 }

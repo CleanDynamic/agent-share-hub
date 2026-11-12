@@ -34,6 +34,7 @@ import { DANGER, ELLIPSIS, GAP, PAD, words } from "./referencePieces";
 import { menuItem, menuSurface } from "./refinedStyles";
 import { focusBuild } from "./buildFocus";
 
+import { textStep } from "@/lib/theme/type";
 /* ── P1: the reason a greyed item gives ── */
 
 /** The props and the hidden words that give a greyed control its reason. Nothing is drawn when there is none. */
@@ -213,7 +214,7 @@ function BarButton({ children, onClick, danger = false, disabled = false, testId
         whiteSpace: "nowrap",
         background: state.hovered && !disabled ? t.tile : "transparent",
         cursor: disabled ? "default" : "pointer",
-        ...words(12.5, 500, danger ? DANGER : t.text),
+        ...words(textStep.meta, 500, danger ? DANGER : t.text),
         ...(disabled ? { filter: t.dimFilter } : null),
         ...ring(state.focusVisible),
       }}
@@ -282,7 +283,7 @@ export function SelectionBar({ leaving = false, phone, count, moveTo, holds, onM
         ...(leaving ? { pointerEvents: "none" } : null),
       }}
     >
-      <span ref={countRef} data-testid="selection-count" style={{ ...words(13, 500, t.text), whiteSpace: "nowrap", paddingRight: 8 }}>
+      <span ref={countRef} data-testid="selection-count" style={{ ...words(textStep.body, 500, t.text), whiteSpace: "nowrap", paddingRight: 8 }}>
         {SELECTION_COUNT(count)}
       </span>
       <span aria-hidden="true" style={{ width: 1, height: 20, background: t.hairline, marginRight: 4, flexShrink: 0 }} />
@@ -342,5 +343,5 @@ export function SelectionBar({ leaving = false, phone, count, moveTo, holds, onM
 const SELECTION_COUNT = SELECTION_COPY.count;
 
 function MoveHeading({ children }: { children: ReactNode }) {
-  return <div style={{ ...words(11.5, 400, t.label), padding: "6px 12px 2px" }}>{children}</div>;
+  return <div style={{ ...words(textStep.meta, 400, t.label), padding: "6px 12px 2px" }}>{children}</div>;
 }

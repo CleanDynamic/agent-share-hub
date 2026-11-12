@@ -40,7 +40,7 @@ import { modelLabel } from "@/lib/models/registry";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE, textStep } from "@/lib/theme/type";
 import { TextButton } from "@/pages/site/compose/composeControls";
 import { EYEBROW, text, tnum } from "@/pages/site/compose/refinedStyles";
 import { size, space } from "@/lib/theme/space";
@@ -119,7 +119,7 @@ const factTag: CSSProperties = {
   boxSizing: "border-box",
   borderRadius: r.chip,
   background: t.tagFill,
-  ...text(11.5, 500, t.onTag),
+  ...text(textStep.meta, 500, t.onTag),
   lineHeight: 1,
   whiteSpace: "nowrap",
 };
@@ -140,7 +140,7 @@ function Facts({ facts }: { facts: readonly string[] }) {
 function Section({ label, children }: { label: string; children: ReactNode }) {
   return (
     <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <h3 style={{ ...text(12.5, 500, t.text2), margin: 0 }}>{label}</h3>
+      <h3 style={{ ...text(textStep.meta, 500, t.text2), margin: 0 }}>{label}</h3>
       {children}
     </section>
   );
@@ -161,7 +161,7 @@ function TextWell({ children, label }: { children: string; label: string }) {
         outline: "none",
         whiteSpace: "pre-wrap",
         overflowWrap: "anywhere",
-        ...text(14, 400, t.text),
+        ...text(textStep.body, 400, t.text),
         lineHeight: "23px",
       }}
     >
@@ -194,9 +194,9 @@ function GoRow({ number, title, kind, onGo }: { number: string; title: string; k
         ...ring(state.focusVisible),
       }}
     >
-      <span style={{ fontFamily: DM_MONO, fontSize: 10.5, color: t.label, ...tnum, minWidth: 24 }}>{number}</span>
-      <span style={{ ...text(13.5, 500, t.text), flexGrow: 1, minWidth: 0, overflowWrap: "anywhere" }}>{title}</span>
-      <span style={text(12, 400, t.label)}>{kind}</span>
+      <span style={{ fontFamily: DM_MONO, fontSize: textStep.meta, color: t.label, ...tnum, minWidth: 24 }}>{number}</span>
+      <span style={{ ...text(textStep.body, 500, t.text), flexGrow: 1, minWidth: 0, overflowWrap: "anywhere" }}>{title}</span>
+      <span style={text(textStep.meta, 400, t.label)}>{kind}</span>
     </button>
   );
 }
@@ -222,7 +222,7 @@ function TileBody({ step, props, say }: { step: Step; props: PartWindowProps; sa
           <LinkLines lines={[...callsOf(step.id, props.steps), ...definesOf(step.id, props.steps)]} onOpen={(id) => props.onGo(refTo({ kind: "node", id }))} />
           <CodeLines text={step.text} testId="part-text" label="Code" empty={PART_WINDOW_COPY.nothing} />
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={12} onClick={() => void copyText(step.text).then((done) => say(done ? PART_WINDOW_COPY.copied : "Code not copied"))}>
+            <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={textStep.meta} onClick={() => void copyText(step.text).then((done) => say(done ? PART_WINDOW_COPY.copied : "Code not copied"))}>
               {PART_WINDOW_COPY.copyCode}
             </Button>
           </div>
@@ -240,7 +240,7 @@ function TileBody({ step, props, say }: { step: Step; props: PartWindowProps; sa
             <TextWell label={PART_WINDOW_COPY.instructions}>{step.text}</TextWell>
           </Section>
           <Section label={PART_WINDOW_COPY.starts}>
-            <p style={{ ...text(13.5, 400, t.text), margin: 0, lineHeight: "22px" }}>{triggerLine(step)}</p>
+            <p style={{ ...text(textStep.body, 400, t.text), margin: 0, lineHeight: "23px" }}>{triggerLine(step)}</p>
           </Section>
           {models.length ? (
             <Section label={PART_WINDOW_COPY.models}>
@@ -271,13 +271,13 @@ function TileBody({ step, props, say }: { step: Step; props: PartWindowProps; sa
       return (
         <>
           <Section label={PART_WINDOW_COPY.tested}>
-            <p style={{ ...text(13.5, 400, t.text), margin: 0, lineHeight: "22px" }}>{check?.tested || PART_WINDOW_COPY.nothing}</p>
+            <p style={{ ...text(textStep.body, 400, t.text), margin: 0, lineHeight: "23px" }}>{check?.tested || PART_WINDOW_COPY.nothing}</p>
           </Section>
           <Section label={PART_WINDOW_COPY.passing}>
-            <p style={{ ...text(13.5, 400, t.text), margin: 0, lineHeight: "22px" }}>{check?.passing || PART_WINDOW_COPY.nothing}</p>
+            <p style={{ ...text(textStep.body, 400, t.text), margin: 0, lineHeight: "23px" }}>{check?.passing || PART_WINDOW_COPY.nothing}</p>
           </Section>
           <Section label={PART_WINDOW_COPY.onFail}>
-            <p style={{ ...text(13.5, 400, t.text), margin: 0, lineHeight: "22px" }}>{check?.onFail || PART_WINDOW_COPY.nothing}</p>
+            <p style={{ ...text(textStep.body, 400, t.text), margin: 0, lineHeight: "23px" }}>{check?.onFail || PART_WINDOW_COPY.nothing}</p>
           </Section>
           {runs.length ? (
             <Section label={PART_WINDOW_COPY.runs}>
@@ -300,7 +300,7 @@ function TileBody({ step, props, say }: { step: Step; props: PartWindowProps; sa
           {step.text && step.inside ? <TextWell label="About the file">{step.text}</TextWell> : null}
           {props.onDownload ? (
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={12} onClick={() => props.onDownload?.(step.id)}>
+              <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={textStep.meta} onClick={() => props.onDownload?.(step.id)}>
                 {PART_WINDOW_COPY.download}
               </Button>
             </div>
@@ -354,7 +354,7 @@ function AgentRuntimeBody({ step, props, say }: { step: Step; props: PartWindowP
             {helpers.map((helper, index) => (
               <HelperBody key={`${helper.job}-${index}`} helper={helper} decisionName={decisionName} />
             ))}
-            {helperSavingsLine(helpers) ? <span style={text(12.5, 400, t.text2)}>{helperSavingsLine(helpers)}</span> : null}
+            {helperSavingsLine(helpers) ? <span style={text(textStep.meta, 400, t.text2)}>{helperSavingsLine(helpers)}</span> : null}
           </div>
         </Section>
       ) : null}
@@ -365,7 +365,7 @@ function AgentRuntimeBody({ step, props, say }: { step: Step; props: PartWindowP
           {shape.sample ? <CodeLines text={shape.sample} testId="shape-sample" label="Sample" /> : null}
           {fragment?.text ? (
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={12} onClick={() => done(fragment.text)}>
+              <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={textStep.meta} onClick={() => done(fragment.text)}>
                 Copy the setting
               </Button>
             </div>
@@ -375,16 +375,16 @@ function AgentRuntimeBody({ step, props, say }: { step: Step; props: PartWindowP
       {copy ? (
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
           {copy.code ? (
-            <Button style={BUTTON_PAD_SMALL_TEXT} variant="primary" size={32} fontSize={12} onClick={() => done(copy.code!.text)}>
+            <Button style={BUTTON_PAD_SMALL_TEXT} variant="primary" size={32} fontSize={textStep.meta} onClick={() => done(copy.code!.text)}>
               {copy.code.label}
             </Button>
           ) : null}
-          <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={12} onClick={() => done(copy.start.text)}>
+          <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={textStep.meta} onClick={() => done(copy.start.text)}>
             {copy.start.label}
           </Button>
         </div>
       ) : null}
-      {copy ? <span style={text(12, 400, t.label)}>{copy.start.note}.</span> : null}
+      {copy ? <span style={text(textStep.meta, 400, t.label)}>{copy.start.note}.</span> : null}
     </>
   );
 }
@@ -404,18 +404,18 @@ function HelperBody({ helper, decisionName }: { helper: Helper; decisionName: (i
   const ba = beforeAfterLine(did);
   return (
     <div data-testid="helper-body" style={{ ...WELL, padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
-      <span style={{ ...text(13.5, 500, t.text), display: "flex", alignItems: "center", gap: 8 }}>
+      <span style={{ ...text(textStep.body, 500, t.text), display: "flex", alignItems: "center", gap: 8 }}>
         <ToolMark tool={markTool(helper.provider, helper.job)} size={size.icon} />
         {helperChip(helper, decisionName)}
-        <span style={text(12, 400, t.label)}>{providerLabel(helper.provider)}</span>
+        <span style={text(textStep.meta, 400, t.label)}>{providerLabel(helper.provider)}</span>
       </span>
       {settings.map((line) => (
-        <span key={line} style={text(12.5, 400, t.text2)}>{line}</span>
+        <span key={line} style={text(textStep.meta, 400, t.text2)}>{line}</span>
       ))}
-      {ba ? <span data-testid="helper-before-after" style={{ ...text(13, 400, t.text), fontVariantNumeric: "tabular-nums" }}>{ba}</span> : null}
-      {did?.times !== undefined && helper.job === "summarize" ? <span style={text(13, 400, t.text)}>{did.times} {did.times === 1 ? "time" : "times"}</span> : null}
-      {did?.values ? <span style={text(13, 400, t.text)}>{Object.entries(did.values).map(([k, v]) => `${k} = ${v}`).join(", ")}</span> : null}
-      {did?.stopped ? <Certainty answer={did.stopped.label} share={did.stopped.score} source={did.source} /> : did ? <span style={text(11.5, 400, t.label)}>{certaintySource(did.source)}</span> : null}
+      {ba ? <span data-testid="helper-before-after" style={{ ...text(textStep.body, 400, t.text), fontVariantNumeric: "tabular-nums" }}>{ba}</span> : null}
+      {did?.times !== undefined && helper.job === "summarize" ? <span style={text(textStep.body, 400, t.text)}>{did.times} {did.times === 1 ? "time" : "times"}</span> : null}
+      {did?.values ? <span style={text(textStep.body, 400, t.text)}>{Object.entries(did.values).map(([k, v]) => `${k} = ${v}`).join(", ")}</span> : null}
+      {did?.stopped ? <Certainty answer={did.stopped.label} share={did.stopped.score} source={did.source} /> : did ? <span style={text(textStep.meta, 400, t.label)}>{certaintySource(did.source)}</span> : null}
     </div>
   );
 }
@@ -426,7 +426,7 @@ function HelperBody({ helper, decisionName }: { helper: Helper; decisionName: (i
 function DecisionBody({ step, props, say }: { step: Step; props: PartWindowProps; say: (words: string) => void }) {
   const facts = step.decision;
   const parts = allParts(props.steps);
-  if (!facts) return <p style={{ ...text(13, 400, t.label), margin: 0 }}>{PART_WINDOW_COPY.nothing}</p>;
+  if (!facts) return <p style={{ ...text(textStep.body, 400, t.label), margin: 0 }}>{PART_WINDOW_COPY.nothing}</p>;
   const copy = decisionCopy(step, parts);
   const tiles = calledFromTiles(step, parts);
   const read = facts.stateFrom ? parts.find((part) => part.id === facts.stateFrom) : undefined;
@@ -458,16 +458,16 @@ function DecisionBody({ step, props, say }: { step: Step; props: PartWindowProps
             const sure = a ? sureOf(q, a) : undefined;
             return (
               <div key={q.id} data-testid="decision-question" style={{ ...WELL, padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
-                <span style={text(13.5, 500, t.text)}>
-                  {q.id} <span style={text(12, 400, t.label)}>{questionTypeLabel(q.type)}</span>
+                <span style={text(textStep.body, 500, t.text)}>
+                  {q.id} <span style={text(textStep.meta, 400, t.label)}>{questionTypeLabel(q.type)}</span>
                 </span>
-                {q.instructions ? <span style={{ ...text(13, 400, t.text2), overflowWrap: "anywhere" }}>{q.instructions}</span> : null}
-                <span style={text(12.5, 400, t.label)}>{questionLine(q).slice(q.id.length + 2)}</span>
+                {q.instructions ? <span style={{ ...text(textStep.body, 400, t.text2), overflowWrap: "anywhere" }}>{q.instructions}</span> : null}
+                <span style={text(textStep.meta, 400, t.label)}>{questionLine(q).slice(q.id.length + 2)}</span>
                 {a ? (
                   sure !== undefined ? (
                     <Certainty answer={answerWord(q, a)} share={sure} probabilities={a.probabilities} source={answered?.[q.id] ? facts.source : "original"} />
                   ) : (
-                    <span style={text(13, 400, t.text)}>{answerLine(q, a).slice(q.id.length + 3)}</span>
+                    <span style={text(textStep.body, 400, t.text)}>{answerLine(q, a).slice(q.id.length + 3)}</span>
                   )
                 ) : null}
               </div>
@@ -475,20 +475,20 @@ function DecisionBody({ step, props, say }: { step: Step; props: PartWindowProps
           })}
         </div>
       </Section>
-      {answered && sourceNote(facts.source) && !facts.questions.some((q) => answered[q.id] && sureOf(q, answered[q.id]) !== undefined) ? <span style={text(12, 400, t.label)}>{sourceNote(facts.source)}</span> : null}
+      {answered && sourceNote(facts.source) && !facts.questions.some((q) => answered[q.id] && sureOf(q, answered[q.id]) !== undefined) ? <span style={text(textStep.meta, 400, t.label)}>{sourceNote(facts.source)}</span> : null}
       {copy ? (
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
           {copy.code ? (
-            <Button style={BUTTON_PAD_SMALL_TEXT} variant="primary" size={32} fontSize={12} onClick={() => done(copy.code!.text)}>
+            <Button style={BUTTON_PAD_SMALL_TEXT} variant="primary" size={32} fontSize={textStep.meta} onClick={() => done(copy.code!.text)}>
               {PART_WINDOW_COPY.copyTheCode}
             </Button>
           ) : null}
-          <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={12} onClick={() => done(copy.request.text)}>
+          <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={textStep.meta} onClick={() => done(copy.request.text)}>
             {PART_WINDOW_COPY.copyRequest}
           </Button>
         </div>
       ) : null}
-      {copy && !copy.code ? <span style={text(12, 400, t.label)}>{COPY_REQUEST_NOTE}.</span> : null}
+      {copy && !copy.code ? <span style={text(textStep.meta, 400, t.label)}>{COPY_REQUEST_NOTE}.</span> : null}
     </>
   );
 }
@@ -502,7 +502,7 @@ function SessionBody({ group, props }: { group: SessionGroup; props: PartWindowP
     <>
       <Facts facts={facts} />
       {group.extras?.traceUrl ? <TraceLink url={group.extras.traceUrl} /> : null}
-      {setup ? <p style={{ ...text(12.5, 400, t.text2), margin: 0 }}>{PART_WINDOW_COPY.setup(setup)}</p> : null}
+      {setup ? <p style={{ ...text(textStep.meta, 400, t.text2), margin: 0 }}>{PART_WINDOW_COPY.setup(setup)}</p> : null}
       <Section label={PART_WINDOW_COPY.tiles}>
         <div style={{ display: "flex", flexDirection: "column", borderTop: `1px solid ${t.hairlineModule}` }}>
           {tiles.map((step) => (
@@ -517,10 +517,10 @@ function SessionBody({ group, props }: { group: SessionGroup; props: PartWindowP
 /** "Opened from the post · Back to the post", at the left of a window's footer. */
 export function FromPostNote({ onBack, phone }: { onBack: () => void; phone: boolean }) {
   return (
-    <span data-testid="from-post" style={{ ...text(12, 400, t.label), display: "inline-flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+    <span data-testid="from-post" style={{ ...text(textStep.meta, 400, t.label), display: "inline-flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
       {REF_COPY.fromPost}
       {" · "}
-      <TextButton target={phone} underline style={text(12, 500, t.text2)} onClick={onBack}>
+      <TextButton target={phone} underline style={text(textStep.meta, 500, t.text2)} onClick={onBack}>
         {REF_COPY.backToPost}
       </TextButton>
     </span>
@@ -591,7 +591,7 @@ export function PartWindow(props: PartWindowProps) {
               <IconButton style={iconButtonSide(phone)} icon={X} glyph="x" label="Close" size={28} />
             </Dialog.Close>
           </div>
-          <h2 ref={heading} tabIndex={-1} style={{ ...text(18, 500, t.text), margin: 0, letterSpacing: "-0.015em", overflowWrap: "anywhere", outline: "none" }}>
+          <h2 ref={heading} tabIndex={-1} style={{ ...text(textStep.headline, 500, t.text), margin: 0, letterSpacing: "-0.015em", overflowWrap: "anywhere", outline: "none" }}>
             {title}
           </h2>
           {step?.runsWhen ? (
@@ -613,7 +613,7 @@ export function PartWindow(props: PartWindowProps) {
           >
             {props.fromPost && props.onBackToPost ? <FromPostNote onBack={props.onBackToPost} phone={phone} /> : null}
             <span style={{ flexGrow: 1 }} />
-            <Button size={phone ? 48 : 32} fontSize={13} onClick={props.onClose} style={BUTTON_PAD}>
+            <Button size={phone ? 48 : 32} fontSize={textStep.body} onClick={props.onClose} style={BUTTON_PAD}>
               {PART_WINDOW_COPY.done}
             </Button>
           </div>

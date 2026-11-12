@@ -19,7 +19,7 @@ import { Glyph } from "@/components/brand/Glyph";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO } from "@/lib/theme/type";
+import { DM_MONO, textStep } from "@/lib/theme/type";
 import { CUSTOM_MAX_LENGTH, findValues, isTechnicalField, pathOf, valueOf, valueByLabel, type Facet, type TaxonomyValue } from "@/lib/classify/taxonomy";
 import { isCustomEntry, type Entry } from "@/lib/classify/types";
 
@@ -175,7 +175,7 @@ export function ClassificationPicker({ id, facet, label, entries, onChange, max,
                 menu={
                   primary ? (
                     index === 0 ? (
-                      <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.label }}>Primary</span>
+                      <span style={{ fontFamily: DM_MONO, fontSize: textStep.meta, color: t.label }}>Primary</span>
                     ) : (
                       <TaskMenu label={name} phone={phone} onMakePrimary={() => commit([entries[index], ...entries.filter((_, at) => at !== index)])} />
                     )

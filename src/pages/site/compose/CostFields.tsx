@@ -14,6 +14,7 @@ import { Field, TextButton } from "./composeControls";
 import { text, tnum, typedField } from "./refinedStyles";
 import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT } from "./modalRecipes";
 
+import { textStep } from "@/lib/theme/type";
 export const COST_COPY = { build: "Build cost", run: "Running cost", save: "Save", clear: "Clear" } as const;
 
 const PER_LABEL: Record<RunPer, string> = { call: "Each call", run: "Each run", hour: "Per hour", day: "Per day", item: "Each item" };
@@ -93,13 +94,13 @@ export function CostFields({ kind, value, phone, onChange, volume, onVolume }: {
   const size = phone ? 44 : 32;
   return (
     <section aria-label={label} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <TextButton target={phone} onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-controls={`${uid}-body`} style={{ ...text(12.5, 500, t.text), alignSelf: "flex-start" }}>
+      <TextButton target={phone} onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-controls={`${uid}-body`} style={{ ...text(textStep.meta, 500, t.text), alignSelf: "flex-start" }}>
         {label}
         {value ? " · given" : ""}
       </TextButton>
       {open ? (
         <div id={`${uid}-body`} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {kind === "run" ? <Segmented<RunPer> label="Per" size={phone ? 50 : 32} fontSize={13} items={RUN_PERS.map((per) => ({ value: per, label: PER_LABEL[per] }))} value={d.per} onChange={(per) => set({ per })} /> : null}
+          {kind === "run" ? <Segmented<RunPer> label="Per" size={phone ? 50 : 32} fontSize={textStep.meta} items={RUN_PERS.map((per) => ({ value: per, label: PER_LABEL[per] }))} value={d.per} onChange={(per) => set({ per })} /> : null}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <Field id={`${uid}-s`} label="Time" hint="Seconds"><input id={`${uid}-s`} type="text" inputMode="decimal" value={d.seconds} onChange={(e) => set({ seconds: e.target.value })} style={typedField(phone, { width: 96, ...tnum })} /></Field>
             <Field id={`${uid}-ti`} label="Tokens in"><input id={`${uid}-ti`} type="text" inputMode="numeric" value={d.tokensIn} onChange={(e) => set({ tokensIn: e.target.value })} style={typedField(phone, { width: 112, ...tnum })} /></Field>
@@ -109,7 +110,7 @@ export function CostFields({ kind, value, phone, onChange, volume, onVolume }: {
           {kind === "run" && d.per === "item" ? (
             <>
               <Field id={`${uid}-noun`} label="What one item is" hint="A product, a ticket"><input id={`${uid}-noun`} type="text" maxLength={ITEM_NOUN_MAX} value={d.itemNoun} onChange={(e) => set({ itemNoun: e.target.value })} style={typedField(phone, { width: 160 })} /></Field>
-              <Segmented<Pricing> label="Pricing basis" size={phone ? 50 : 32} fontSize={13} items={PRICINGS.map((value) => ({ value, label: PRICING_LABEL[value] }))} value={d.pricing} onChange={(pricing) => set({ pricing })} />
+              <Segmented<Pricing> label="Pricing basis" size={phone ? 50 : 32} fontSize={textStep.meta} items={PRICINGS.map((value) => ({ value, label: PRICING_LABEL[value] }))} value={d.pricing} onChange={(pricing) => set({ pricing })} />
             </>
           ) : null}
           {kind === "run" && onVolume ? (
@@ -117,12 +118,12 @@ export function CostFields({ kind, value, phone, onChange, volume, onVolume }: {
               <input id={`${uid}-volume`} type="text" inputMode="numeric" value={daily} onChange={(e) => { const digits = e.target.value.replace(/[^0-9]/g, ""); setDaily(digits); onVolume(digits && Number(digits) > 0 ? { count: Number(digits), per: "day" } : null); }} style={typedField(phone, { width: 160, ...tnum })} />
             </Field>
           ) : null}
-          <Segmented<Currency> label="Currency" size={phone ? 50 : 32} fontSize={13} items={[{ value: "GBP", label: "£" }, { value: "USD", label: "$" }]} value={d.currency} onChange={(currency) => set({ currency })} />
-          <Segmented<"run" | "maker"> label="Where the figures came from" size={phone ? 50 : 32} fontSize={13} items={[{ value: "run", label: "From the run" }, { value: "maker", label: "Maker's figure" }]} value={d.source} onChange={(source) => set({ source })} />
-          {error ? <span role="alert" style={text(12.5, 400, t.text)}>{error}</span> : null}
+          <Segmented<Currency> label="Currency" size={phone ? 50 : 32} fontSize={textStep.meta} items={[{ value: "GBP", label: "£" }, { value: "USD", label: "$" }]} value={d.currency} onChange={(currency) => set({ currency })} />
+          <Segmented<"run" | "maker"> label="Where the figures came from" size={phone ? 50 : 32} fontSize={textStep.meta} items={[{ value: "run", label: "From the run" }, { value: "maker", label: "Maker's figure" }]} value={d.source} onChange={(source) => set({ source })} />
+          {error ? <span role="alert" style={text(textStep.meta, 400, t.text)}>{error}</span> : null}
           <div style={{ display: "flex", gap: 8 }}>
-            <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={size} fontSize={12} onClick={save}>{COST_COPY.save}</Button>
-            {value ? <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={size} fontSize={12} onClick={() => { setD(draftOf(null)); onChange(null); }}>{COST_COPY.clear}</Button> : null}
+            <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={size} fontSize={textStep.meta} onClick={save}>{COST_COPY.save}</Button>
+            {value ? <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={size} fontSize={textStep.meta} onClick={() => { setD(draftOf(null)); onChange(null); }}>{COST_COPY.clear}</Button> : null}
           </div>
         </div>
       ) : null}

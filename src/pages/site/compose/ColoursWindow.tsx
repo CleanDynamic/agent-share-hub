@@ -28,6 +28,7 @@ import { menuItem, menuSurface } from "./refinedStyles";
 import { Badge, BlockTitle, ConfirmDialog, DANGER, ELLIPSIS, GAP, GhostIcon, InnerPanel, SortableRows, SquareSwatch, UndoRedo, words } from "./referencePieces";
 import { r } from "@/lib/theme/radius";
 
+import { textStep } from "@/lib/theme/type";
 export const COLOURS_COPY = {
   title: "Colours",
   subtitle: "Reference groups and single colours",
@@ -189,7 +190,7 @@ function ColoursBody(props: ColoursWindowProps) {
         <div data-testid="colours-body" style={bodyStyle(phone)}>
           <div role="group" aria-labelledby="colours-groups" data-testid="colours-groups" style={{ ...block, borderTop: 0 }}>
             <BlockTitle title={COLOURS_COPY.groups} id="colours-groups" sub={COLOURS_COPY.order(groups.length)} />
-            {groups.length === 0 ? <span style={words(12.5, 400, t.text2)}>{COLOURS_COPY.noGroups}</span> : null}
+            {groups.length === 0 ? <span style={words(textStep.meta, 400, t.text2)}>{COLOURS_COPY.noGroups}</span> : null}
             <SortableRows
               label={COLOURS_COPY.groups}
               height={44}
@@ -201,9 +202,9 @@ function ColoursBody(props: ColoursWindowProps) {
                   <span data-colours-group={group.id} data-menu-open={menuOpen === group.id || undefined} style={{ display: "flex", alignItems: "center", gap: GAP.row, flexGrow: 1, minWidth: 0, alignSelf: "stretch", padding: "0 4px", borderRadius: 6, background: menuOpen === group.id ? t.tile : "transparent" }}>
                     {grip}
                     <SquareSwatch colour={group.colour} />
-                    <span style={{ ...words(13, 500, group.name ? t.text : t.text2), ...ELLIPSIS }}>{groupName(group)}</span>
+                    <span style={{ ...words(textStep.body, 500, group.name ? t.text : t.text2), ...ELLIPSIS }}>{groupName(group)}</span>
                     <span style={{ ...COUNT, flexGrow: 1 }}>{group.colour}</span>
-                    <span style={{ ...words(12, 400, t.label), flexShrink: 0 }}>
+                    <span style={{ ...words(textStep.meta, 400, t.label), flexShrink: 0 }}>
                       {COLOURS_COPY.components(group.members.length)}
                       {isLinked(`group:${group.id}`) ? ` · ${COLOURS_COPY.linked}` : ""}
                     </span>
@@ -225,7 +226,7 @@ function ColoursBody(props: ColoursWindowProps) {
           </div>
           <div role="group" aria-labelledby="colours-singles" data-testid="colours-singles" style={block}>
             <BlockTitle title={COLOURS_COPY.singles} id="colours-singles" sub={COLOURS_COPY.singlesCount(singlesCount)} />
-            {singlesCount === 0 ? <span style={words(12.5, 400, t.text2)}>{COLOURS_COPY.noSingles}</span> : null}
+            {singlesCount === 0 ? <span style={words(textStep.meta, 400, t.text2)}>{COLOURS_COPY.noSingles}</span> : null}
             <SortableRows
               label={COLOURS_COPY.singles}
               height={44}
@@ -240,9 +241,9 @@ function ColoursBody(props: ColoursWindowProps) {
                       {grip}
                       <SquareSwatch colour={colour} />
                       <Badge>{lookup.get(ref)?.number ?? ""}</Badge>
-                      <span style={{ ...words(13, 500, t.text), ...ELLIPSIS }}>{nameOf(ref)}</span>
+                      <span style={{ ...words(textStep.body, 500, t.text), ...ELLIPSIS }}>{nameOf(ref)}</span>
                       <span style={{ ...COUNT, flexGrow: 1 }}>{colour}</span>
-                      {isLinked(ref) ? <span style={{ ...words(12, 400, t.label), flexShrink: 0 }}>{COLOURS_COPY.linked}</span> : null}
+                      {isLinked(ref) ? <span style={{ ...words(textStep.meta, 400, t.label), flexShrink: 0 }}>{COLOURS_COPY.linked}</span> : null}
                     </span>
                   ),
                 };
@@ -250,7 +251,7 @@ function ColoursBody(props: ColoursWindowProps) {
             />
             {shared.map(([colour, refs]) => (
               <InnerPanel key={colour} testId="colours-shared" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ ...words(12.5, 400, t.text2, 18), flexGrow: 1, minWidth: 0 }}>{COLOURS_COPY.shared(andList(refs.map(nameOf)))}</span>
+                <span style={{ ...words(textStep.meta, 400, t.text2, 17), flexGrow: 1, minWidth: 0 }}>{COLOURS_COPY.shared(andList(refs.map(nameOf)))}</span>
                 <RecipeButton small phone={phone} onClick={() => props.onGroupThese(refs, colour)}>
                   {COLOURS_COPY.makeThemGroup}
                 </RecipeButton>
@@ -259,7 +260,7 @@ function ColoursBody(props: ColoursWindowProps) {
           </div>
           <div role="group" aria-labelledby="colours-saved" data-testid="colours-saved" style={block}>
             <BlockTitle title={COLOURS_COPY.saved} id="colours-saved" sub={COLOURS_COPY.savedHint} />
-            {props.swatches.favourites.length === 0 ? <span style={words(12.5, 400, t.text2)}>{COLOURS_COPY.noSaved}</span> : null}
+            {props.swatches.favourites.length === 0 ? <span style={words(textStep.meta, 400, t.text2)}>{COLOURS_COPY.noSaved}</span> : null}
             <div data-swatch-row="" style={{ display: "flex", flexWrap: "wrap", gap: GAP.swatch }}>
               {props.swatches.favourites.map((hex) => (
                 <SavedSwatch key={hex} hex={hex} current={false} onUse={() => undefined} onRemove={() => props.onSwatches({ ...props.swatches, favourites: props.swatches.favourites.filter((entry) => entry !== hex) })} />
@@ -270,7 +271,7 @@ function ColoursBody(props: ColoursWindowProps) {
       </ModalInset.Provider>
       <div data-testid="colours-footer" style={footerStyle(phone)}>
         <UndoRedo phone={phone} canUndo={history.canUndo} canRedo={history.canRedo} onUndo={history.onUndo} onRedo={history.onRedo} />
-        <button type="button" data-testid="colours-clear" onClick={() => setConfirm({ kind: "clear" })} style={{ appearance: "none", background: "none", border: 0, padding: phone ? "12px 0" : 0, cursor: "pointer", ...words(12.5, 500, DANGER) }}>
+        <button type="button" data-testid="colours-clear" onClick={() => setConfirm({ kind: "clear" })} style={{ appearance: "none", background: "none", border: 0, padding: phone ? "12px 0" : 0, cursor: "pointer", ...words(textStep.meta, 500, DANGER) }}>
           {COLOURS_COPY.clear}
         </button>
         <span style={{ flexGrow: 1 }} />

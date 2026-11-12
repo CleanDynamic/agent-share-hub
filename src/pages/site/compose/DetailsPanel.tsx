@@ -84,6 +84,7 @@ import type { SetupLoaded, SetupPlugin } from "@/lib/build/setup";
 import { Swap } from "./buildMotion";
 import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT, iconButtonSide } from "./modalRecipes";
 
+import { textStep } from "@/lib/theme/type";
 export interface InputsView {
   /** CA-04 P2, a tile inside another: "Attached to prompt 2", which its eyebrow says in place of its number. */
   sentWithLine?: string;
@@ -542,13 +543,13 @@ function Prose({ value, changes, clamp, onReadAll }: { value: Extract<SectionVal
         {value.changes ? <ChangedText text={value.text} changes={changes ?? value.changes} /> : value.text}
       </p>
       {value.changes?.length ? (
-        <p data-testid="changes-line" style={text(11.5, 400, t.label, { margin: 0 })}>
+        <p data-testid="changes-line" style={text(textStep.meta, 400, t.label, { margin: 0 })}>
           {changesLine(value.changes.length)}
         </p>
       ) : null}
       {clamp && onReadAll ? (
         <div style={VALUE}>
-          <Button variant="secondary" size={32} fontSize={12} onClick={onReadAll} style={{ ...EDIT_BUTTON, ...BUTTON_PAD_SMALL_TEXT }}>
+          <Button variant="secondary" size={32} fontSize={textStep.meta} onClick={onReadAll} style={{ ...EDIT_BUTTON, ...BUTTON_PAD_SMALL_TEXT }}>
             {DETAILS_COPY.readAll}
           </Button>
         </div>
@@ -695,7 +696,7 @@ export function DetailsHead({ view, colour, onEdit, onAddDetails }: { view: Deta
       {onAddDetails ? <AddDetails onEdit={onAddDetails} /> : null}
       {/* F47: one action, in the same place for every object: Open for a file (its window, with the preview), Edit for the rest. */}
       {onEdit ? (
-        <Button variant="secondary" size={32} fontSize={12} onClick={onEdit} style={{ ...EDIT_BUTTON, ...BUTTON_PAD_SMALL_TEXT }} data-testid="details-action">
+        <Button variant="secondary" size={32} fontSize={textStep.meta} onClick={onEdit} style={{ ...EDIT_BUTTON, ...BUTTON_PAD_SMALL_TEXT }} data-testid="details-action">
           {view.kind === "file" ? DETAILS_COPY.open : DETAILS_COPY.edit}
         </Button>
       ) : null}
@@ -726,7 +727,7 @@ const SESSION_HEAD_LABELS = new Set(["Harness and model", "Date"]);
 function AddDetails({ onEdit }: { onEdit: () => void }) {
   return (
     <div data-testid="details-add" style={{ display: "flex", flexShrink: 0 }}>
-      <Button style={BUTTON_PAD} variant="secondary" size={32} fontSize={13} onClick={onEdit}>
+      <Button style={BUTTON_PAD} variant="secondary" size={32} fontSize={textStep.body} onClick={onEdit}>
         {DETAILS_COPY.addDetails}
       </Button>
     </div>
@@ -811,7 +812,7 @@ export function DetailsPanel({ view, colour = null, build, onEdit, plan, onSelec
   if (view.kind === "session" && view.status === "loading") return <DetailsLoading />;
   return (
     <DetailsFade view={view}>
-      <div data-testid="details-panel" data-kind={view.kind} style={{ ...COLUMN, fontSize: 13 }}>
+      <div data-testid="details-panel" data-kind={view.kind} style={{ ...COLUMN, fontSize: textStep.body }}>
         <Body view={view} plan={plan} colour={colour} build={build} onSelect={onSelect} onEdit={onEdit} onOpenPrompt={onOpenPrompt} />
         {(view.kind === "agent" || view.kind === "team") && view.deploymentTree ? (
           <Suspense fallback={null}>

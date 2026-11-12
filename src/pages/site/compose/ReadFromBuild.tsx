@@ -24,6 +24,7 @@ import { PickMenu } from "./PickMenu";
 import { bareButton, text, typedField } from "./refinedStyles";
 import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT } from "./modalRecipes";
 
+import { textStep } from "@/lib/theme/type";
 export const CONFIRMED_FREE = "Confirmed free";
 
 export interface ReadFromBuildProps {
@@ -45,7 +46,7 @@ export const READ_COPY = {
   openStack: "Edit in Tools and stack",
 } as const;
 
-const link: CSSProperties = { ...bareButton, ...text(12, 400, t.text2), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line, borderRadius: 4 };
+const link: CSSProperties = { ...bareButton, ...text(textStep.meta, 400, t.text2), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line, borderRadius: 4 };
 
 function LinkButton({ children, onClick, label, phone }: { children: string; onClick: () => void; label?: string; phone: boolean }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
@@ -75,9 +76,9 @@ function DisputeForm({ facet, phone, current, onApply, onCancel }: { facet: Face
       }}
       style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, borderRadius: 6, background: t.tile, border: `1px solid ${t.tileBorder}` }}
     >
-      <span style={text(12.5, 500, t.text)}>{`Corrected value for ${name}`}</span>
+      <span style={text(textStep.meta, 500, t.text)}>{`Corrected value for ${name}`}</span>
       <PickMenu label={`Corrected value for ${name}`} options={options.map((option) => ({ value: option.id, label: option.label }))} value={value || null} onChange={setValue} phone={phone} id={`${id}-value`} />
-      <label htmlFor={`${id}-reason`} style={text(12.5, 500, t.text)}>
+      <label htmlFor={`${id}-reason`} style={text(textStep.meta, 500, t.text)}>
         {`Reason for changing ${name}`}
       </label>
       <input
@@ -91,10 +92,10 @@ function DisputeForm({ facet, phone, current, onApply, onCancel }: { facet: Face
         style={field}
       />
       <div style={{ display: "flex", gap: 8 }}>
-        <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} type="submit" size={phone ? 44 : 32} fontSize={13} disabled={!value || !(reason.trim() || free)}>
+        <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} type="submit" size={phone ? 44 : 32} fontSize={textStep.body} disabled={!value || !(reason.trim() || free)}>
           Use this value
         </Button>
-        <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="ghost" size={phone ? 44 : 32} fontSize={13} onClick={onCancel}>
+        <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="ghost" size={phone ? 44 : 32} fontSize={textStep.body} onClick={onCancel}>
           Cancel
         </Button>
       </div>
@@ -109,16 +110,16 @@ export function ReadFromBuild({ classification, questions, phone, onDispute, onD
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {questions.length > 0 ? (
         <section aria-label="Questions" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <h3 style={{ ...text(12.5, 500, t.text), margin: 0 }}>Questions</h3>
+          <h3 style={{ ...text(textStep.meta, 500, t.text), margin: 0 }}>Questions</h3>
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
             {questions.map((question) => (
               <li key={question.id} style={{ display: "flex", flexDirection: "column", gap: 6, padding: 12, borderRadius: 6, background: t.tile, border: `1px solid ${t.tileBorder}` }}>
-                <p style={{ margin: 0, ...text(13, 400, t.text), lineHeight: "20px" }}>{question.text}</p>
+                <p style={{ margin: 0, ...text(textStep.body, 400, t.text), lineHeight: "22px" }}>{question.text}</p>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={13} onClick={() => onAction?.(question.action, question)}>
+                  <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={textStep.body} onClick={() => onAction?.(question.action, question)}>
                     {question.actionLabel}
                   </Button>
-                  <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="ghost" size={phone ? 44 : 32} fontSize={13} onClick={() => onDismiss(question.id)}>
+                  <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="ghost" size={phone ? 44 : 32} fontSize={textStep.body} onClick={() => onDismiss(question.id)}>
                     Dismiss
                   </Button>
                 </div>
@@ -141,19 +142,19 @@ export function ReadFromBuild({ classification, questions, phone, onDispute, onD
           return (
             <li key={facet} data-facet={facet} style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 0", borderBottom: `1px solid ${t.hairlineModule}` }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 8, flexWrap: "wrap" }}>
-                <span style={{ ...text(12.5, 500, t.text), flex: "0 0 124px", minWidth: 0 }}>{name}</span>
+                <span style={{ ...text(textStep.meta, 500, t.text), flex: "0 0 124px", minWidth: 0 }}>{name}</span>
                 {stackLink ? (
                   <LinkButton phone={phone} onClick={stackLink}>
                     {READ_COPY.openStack}
                   </LinkButton>
                 ) : (
                   <>
-                    <span style={{ ...text(12.5, 400, labels.length > 0 ? t.text : t.label), flex: "1 1 120px", minWidth: 0, overflowWrap: "anywhere" }}>{labels.length > 0 ? labels.join(", ") : "Not stated"}</span>
+                    <span style={{ ...text(textStep.meta, 400, labels.length > 0 ? t.text : t.label), flex: "1 1 120px", minWidth: 0, overflowWrap: "anywhere" }}>{labels.length > 0 ? labels.join(", ") : "Not stated"}</span>
                     <ProvenanceDot kind={shown.provenance} viewer="maker" showWord />
                   </>
                 )}
               </div>
-              {disputed ? <p style={{ margin: 0, ...text(12, 400, t.text2) }}>{`Reason: ${disputed.reason}`}</p> : null}
+              {disputed ? <p style={{ margin: 0, ...text(textStep.meta, 400, t.text2) }}>{`Reason: ${disputed.reason}`}</p> : null}
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", minHeight: 0 }}>
                 {from.length > 0 && !disputed && !stackLink ? (
                   <LinkButton label={`Source of ${name}`} phone={phone} onClick={() => onSource?.(from[0])}>

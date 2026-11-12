@@ -78,6 +78,7 @@ import { FIELD_LABEL } from "./composeControls";
 /** The words the prompt window uses for the same two rows. */
 import { FULL_PROMPT_COPY } from "@/components/build/FullPromptWindow";
 
+import { textStep } from "@/lib/theme/type";
 export type ExtraKind = "line" | "text" | "lines" | "count" | "choice" | "model" | "tool" | "evidence";
 
 export interface ExtraField {
@@ -164,7 +165,7 @@ function RowBody({ id, row, phone, inBuild, onExtras }: { id: string; row: Extra
   const shown = row.fields.filter((field) => !field.when || field.when(values));
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {row.note ? <span style={text(12.5, 400, t.text2)}>{row.note}</span> : null}
+      {row.note ? <span style={text(textStep.meta, 400, t.text2)}>{row.note}</span> : null}
       {shown.map((field) => (
         <div key={field.key} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {row.fields.length > 1 ? <span style={FIELD_LABEL}>{field.label}</span> : null}

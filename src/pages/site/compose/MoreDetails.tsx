@@ -20,7 +20,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { move } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { FIGTREE, textStep } from "@/lib/theme/type";
 
 import { Field } from "./composeControls";
 import { fieldBase, useRing } from "./composeFields";
@@ -118,7 +118,7 @@ function RefinedDisclosure({ open, controls, phone, onClick }: { open: boolean; 
         borderRadius: 6,
         background: "transparent",
         fontFamily: FIGTREE,
-        fontSize: 13,
+        fontSize: textStep.body,
         fontWeight: 500,
         color: t.text,
         cursor: "pointer",
@@ -146,7 +146,7 @@ export function MoreDetails({ phone, details, onDetail }: MoreDetailsProps) {
           <Panel surface="flat" padding={phone ? "16px" : "24px"}>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <fieldset style={{ margin: 0, padding: 0, border: 0, minWidth: 0, display: "flex", flexDirection: "column", gap: 7 }}>
-                <legend style={{ padding: 0, marginBottom: 7, fontFamily: FIGTREE, fontSize: 14, fontWeight: 600, color: t.text }}>Where it broke</legend>
+                <legend style={{ padding: 0, marginBottom: 7, fontFamily: FIGTREE, fontSize: textStep.body, fontWeight: 600, color: t.text }}>Where it broke</legend>
                 <div style={row}>
                   <div style={{ flex: "1 1 240px", minWidth: 0 }}>
                     <Field id={`${id}-broke`} label="What broke">

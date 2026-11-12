@@ -70,6 +70,7 @@ import { RemovableTag, TagList } from "./modalRecipes";
 import { PickMenu } from "./PickMenu";
 import { typedField } from "./refinedStyles";
 
+import { textStep } from "@/lib/theme/type";
 export const DEPLOYMENT_LINE_COPY = { label: "Deployment", add: "Add deployment", open: (name: string) => `Open ${name}` } as const;
 
 const FRAMEWORKS = TOOLS.filter((tool) => tool.group === "runtime-frameworks" && tool.status === "current");
@@ -123,7 +124,7 @@ export function DeploymentLine({ entries, phone, onOpen, onAdd }: { entries: rea
     );
   });
   return (
-    <p data-testid="deployment-line" aria-label={DEPLOYMENT_LINE_COPY.label} style={{ margin: 0, fontSize: 12.5, color: t.text2 }}>
+    <p data-testid="deployment-line" aria-label={DEPLOYMENT_LINE_COPY.label} style={{ margin: 0, fontSize: textStep.meta, color: t.text2 }}>
       {parts.map((part, at) => (
         <Fragment key={at}>{part}</Fragment>
       ))}
@@ -193,7 +194,7 @@ export function AgentRuntimeFields({ id, kind, phone, fields, harness, builtInCo
       {ownSetup.length > 0 ? (
         <Field id={`${id}-setup`} label="Setup" group>
           {ownSetup.map((item) => (
-            <span key={item.id} style={{ fontSize: 12.5, color: t.text2 }}>
+            <span key={item.id} style={{ fontSize: textStep.meta, color: t.text2 }}>
               {[item.kind, item.name, item.origin].filter(Boolean).join(" · ")}
             </span>
           ))}
@@ -332,7 +333,7 @@ export function AgentRuntimeFields({ id, kind, phone, fields, harness, builtInCo
             const permission = shown.toolPermissions?.[tool];
             return (
               <div key={tool} style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "space-between" }}>
-                <span style={{ fontSize: 12.5, color: t.text }}>{name}</span>
+                <span style={{ fontSize: textStep.meta, color: t.text }}>{name}</span>
                 <PickMenu<ToolPermission | typeof NOT_SAID>
                   label={`Permission for ${name}`}
                   options={[...TOOL_PERMISSIONS.map((value) => ({ value, label: TOOL_PERMISSION_LABEL[value] })), { value: NOT_SAID, label: APPROVALS_COPY.notSaid }]}
@@ -400,7 +401,7 @@ export function AgentTeamFields({ id, phone, mates, handoffs, rules, follows, on
                   Remove
                 </TextButton>
               </div>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: t.text2 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: textStep.meta, color: t.text2 }}>
                 <Checkbox
                   checked={rule.needs_approval === true}
                   onChange={(event) => {
@@ -454,14 +455,14 @@ export function AgentTeamFields({ id, phone, mates, handoffs, rules, follows, on
           }}
           style={{ ...typedField(phone, {}), height: "auto", minHeight: 72, resize: "vertical", padding: 8 }}
         />
-        {ruleLines.length > OUTPUT_RULES_MAX ? <span role="alert" style={{ fontSize: 12, color: t.text }}>{`Output rules: ${OUTPUT_RULES_MAX} max, one per line`}</span> : null}
-        {ruleLines.some((line) => line.length > OUTPUT_RULE_MAX) ? <span role="alert" style={{ fontSize: 12, color: t.text }}>{`Each output rule: ${OUTPUT_RULE_MAX} characters max`}</span> : null}
+        {ruleLines.length > OUTPUT_RULES_MAX ? <span role="alert" style={{ fontSize: textStep.meta, color: t.text }}>{`Output rules: ${OUTPUT_RULES_MAX} max, one per line`}</span> : null}
+        {ruleLines.some((line) => line.length > OUTPUT_RULE_MAX) ? <span role="alert" style={{ fontSize: textStep.meta, color: t.text }}>{`Each output rule: ${OUTPUT_RULE_MAX} characters max`}</span> : null}
       </Field>
 
       <Field id={`${id}-follows`} label={RULES_COPY.follows} hint={RULES_COPY.followsHint} group>
         {shownFollows.map((rule, at) => (
           <div key={rule.url} style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "space-between" }}>
-            <span style={{ fontSize: 12.5, color: t.text, minWidth: 0, overflowWrap: "anywhere" }}>{rule.text}</span>
+            <span style={{ fontSize: textStep.meta, color: t.text, minWidth: 0, overflowWrap: "anywhere" }}>{rule.text}</span>
             <TextButton target={phone} aria-label={`${RULES_COPY.remove}: ${rule.text}`} onClick={() => writeFollows(shownFollows.filter((_, i) => i !== at))}>
               Remove
             </TextButton>
@@ -471,7 +472,7 @@ export function AgentTeamFields({ id, phone, mates, handoffs, rules, follows, on
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <input type="text" aria-label={RULES_COPY.text} maxLength={RULE_TEXT_MAX} value={draftFollow.text} placeholder="e.g. GOV.UK style guide" onChange={(event) => setDraftFollow({ ...draftFollow, text: event.target.value })} style={typedField(phone, {})} />
             <input type="url" aria-label={RULES_COPY.url} value={draftFollow.url} placeholder="https://" onChange={(event) => setDraftFollow({ ...draftFollow, url: event.target.value })} style={typedField(phone, {})} />
-            {draftFollow.url.trim() && !followUrl ? <span role="alert" style={{ fontSize: 12, color: t.text }}>{RULES_COPY.https}</span> : null}
+            {draftFollow.url.trim() && !followUrl ? <span role="alert" style={{ fontSize: textStep.meta, color: t.text }}>{RULES_COPY.https}</span> : null}
             <span>
               <TextButton
                 underline

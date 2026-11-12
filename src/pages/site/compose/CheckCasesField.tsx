@@ -14,6 +14,7 @@ import { Field, TextButton } from "./composeControls";
 import { PickMenu } from "./PickMenu";
 import { text, tnum, typedField } from "./refinedStyles";
 
+import { textStep } from "@/lib/theme/type";
 export const CASES_COPY = {
   title: "Test cases",
   add: "Add a test case",
@@ -109,33 +110,33 @@ export function CheckCasesField({ id, cases, phone, onChange, onBlurOnly = false
                 {row.stability === "flaky" ? (
                   <PickMenu label={`${CASES_COPY.cause} of case ${at + 1}`} phone={phone} placeholder={`${CASES_COPY.cause}: ${CASES_COPY.none.toLowerCase()}`} value={row.flaky_cause ?? NONE} options={[{ value: NONE, label: `${CASES_COPY.cause}: ${CASES_COPY.none.toLowerCase()}` }, ...FLAKY_CAUSES.map((value) => ({ value, label: FLAKY_CAUSE_LABEL[value] }))]} onChange={(next) => edit(at, { flaky_cause: next === NONE ? undefined : (next as FlakyCause) }, true)} />
                 ) : null}
-                <label style={{ display: "flex", alignItems: "center", gap: 8, ...text(12.5, 400, t.text2) }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 8, ...text(textStep.meta, 400, t.text2) }}>
                   <Checkbox checked={row.example === true} onChange={(event) => set(rows.map((other, i) => ({ ...other, example: i === at && event.target.checked ? (true as const) : undefined })), true)} />
                   {CASES_COPY.example}
                 </label>
               </div>
             ) : null}
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <TextButton target={phone} onClick={() => setMore((open) => { const next = new Set(open); if (next.has(at)) next.delete(at); else next.add(at); return next; })} style={text(12, 500, t.text2)}>
+              <TextButton target={phone} onClick={() => setMore((open) => { const next = new Set(open); if (next.has(at)) next.delete(at); else next.add(at); return next; })} style={text(textStep.meta, 500, t.text2)}>
                 {more.has(at) ? CASES_COPY.fewer : CASES_COPY.more}
               </TextButton>
-              <TextButton target={phone} onClick={() => edit(at, { passed: !row.passed }, true)} style={text(12.5, 500, row.passed ? t.text : t.text2)}>
+              <TextButton target={phone} onClick={() => edit(at, { passed: !row.passed }, true)} style={text(textStep.meta, 500, row.passed ? t.text : t.text2)}>
                 {row.passed ? CASES_COPY.passed : CASES_COPY.failed}
               </TextButton>
-              <TextButton target={phone} onClick={() => set(rows.filter((_, i) => i !== at), true)} style={text(12, 500, t.text2)}>
+              <TextButton target={phone} onClick={() => set(rows.filter((_, i) => i !== at), true)} style={text(textStep.meta, 500, t.text2)}>
                 {`${CASES_COPY.remove} ${at + 1}`}
               </TextButton>
             </div>
           </div>
         ))}
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <TextButton target={phone} disabled={rows.length >= CASES_MAX} onClick={() => set([...rows, blank()], false)} style={text(12.5, 500, t.text2)}>
+          <TextButton target={phone} disabled={rows.length >= CASES_MAX} onClick={() => set([...rows, blank()], false)} style={text(textStep.meta, 500, t.text2)}>
             {CASES_COPY.add}
           </TextButton>
-          {totals.total > 0 ? <span style={{ ...text(11.5, 400, t.text2), ...tnum }}>{`${totals.passed} passed out of ${totals.total}`}</span> : null}
+          {totals.total > 0 ? <span style={{ ...text(textStep.meta, 400, t.text2), ...tnum }}>{`${totals.passed} passed out of ${totals.total}`}</span> : null}
         </div>
         {why ? (
-          <span role="alert" style={text(12.5, 400, t.text2)}>
+          <span role="alert" style={text(textStep.meta, 400, t.text2)}>
             {why}
           </span>
         ) : null}

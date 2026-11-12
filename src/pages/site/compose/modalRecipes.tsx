@@ -63,7 +63,7 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { CONTROL, PRIMARY, SELECTED, WELL, controlPaint } from "@/lib/theme/refinedControl";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE, textStep } from "@/lib/theme/type";
 import { size, space } from "@/lib/theme/space";
 import { r } from "@/lib/theme/radius";
 import { TEXT_LINK_BOX } from "./tileRecipes";
@@ -97,7 +97,7 @@ function FieldRequired({ label }: { label: string }) {
 /** The line itself, for a window that keeps its own footer (the Card's "Required: a title"). */
 export function FieldRequiredLine() {
   return (
-    <span data-testid="field-required" style={type(12.5, 400, t.text, 18)}>
+    <span data-testid="field-required" style={type(textStep.meta, 400, t.text, 17)}>
       {FIELD_REQUIRED_COPY}
     </span>
   );
@@ -114,16 +114,16 @@ const type = (px: number, weight: 400 | 500, color: string, line?: number): CSSP
   color,
 });
 
-export const TITLE: CSSProperties = { ...type(15, 500, t.text, 20), margin: 0 };
-export const SUBTITLE: CSSProperties = { ...type(13, 400, t.text2, 18), margin: `${space[1]}px 0 0` };
-export const LABEL: CSSProperties = type(13, 400, t.text2, 18);
-export const STRONG_LABEL: CSSProperties = type(13, 500, t.text, 18);
-export const HINT: CSSProperties = type(12, 400, t.label, 16);
-export const COUNT: CSSProperties = { fontFamily: DM_MONO, fontSize: 11.5, fontWeight: 400, lineHeight: "16px", color: t.label, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" };
-export const GROUP_TITLE: CSSProperties = { ...type(14, 500, t.text, 20), margin: 0 };
-export const NOTE: CSSProperties = type(12.5, 400, t.label, 18);
+export const TITLE: CSSProperties = { ...type(textStep.section, 500, t.text, 21), margin: 0 };
+export const SUBTITLE: CSSProperties = { ...type(textStep.body, 400, t.text2, 19), margin: `${space[1]}px 0 0` };
+export const LABEL: CSSProperties = type(textStep.body, 400, t.text2, 19);
+export const STRONG_LABEL: CSSProperties = type(textStep.body, 500, t.text, 19);
+export const HINT: CSSProperties = type(textStep.meta, 400, t.label, 16);
+export const COUNT: CSSProperties = { fontFamily: DM_MONO, fontSize: textStep.meta, fontWeight: 400, lineHeight: "17px", color: t.label, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" };
+export const GROUP_TITLE: CSSProperties = { ...type(textStep.body, 500, t.text, 20), margin: 0 };
+export const NOTE: CSSProperties = type(textStep.meta, 400, t.label, 17);
 /** Plain words inside a modal's body (a file's name, a line the modal says). */
-export const BODY_TEXT: CSSProperties = type(13, 400, t.text, 18);
+export const BODY_TEXT: CSSProperties = type(textStep.body, 400, t.text, 19);
 export const DATA_FACE: CSSProperties = { fontFamily: DM_MONO };
 export const ELLIPSIS: CSSProperties = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 };
 
@@ -591,7 +591,7 @@ function Segment<V extends string>({ item, current, tabStop, phone, onPick }: { 
         border: "1px solid transparent",
         background: "transparent",
         whiteSpace: "nowrap",
-        ...type(12.5, 400, state.hovered ? t.text : t.text2),
+        ...type(textStep.meta, 400, state.hovered ? t.text : t.text2),
         cursor: item.disabled ? "default" : "pointer",
         ...(current ? { background: t.controlOn, borderColor: t.segOnBorder, color: t.text, boxShadow: "inset 0 1px 0 rgba(255,255,255,.04)" } : null),
         ...(item.disabled ? { filter: t.dimFilter } : null),
@@ -665,7 +665,7 @@ function OptionButton({ label, chosen, disabled, phone, onPick }: { label: strin
         borderRadius: r.control,
         background: "transparent",
         border: `1px solid ${t.windowBorder}`,
-        ...type(12.5, 400, t.text2),
+        ...type(textStep.meta, 400, t.text2),
         ...ELLIPSIS,
         cursor: disabled ? "default" : "pointer",
         ...(state.hovered && !chosen ? { background: t.tile, color: t.text } : null),
@@ -741,7 +741,7 @@ export const smallButtonStyle = (phone: boolean, state: { hovered?: boolean; pre
   borderRadius: r.control,
   whiteSpace: "nowrap",
   cursor: "pointer",
-  ...type(12.5, 500, t.text),
+  ...type(textStep.meta, 500, t.text),
 });
 
 /** S6: the shared IconButton (components/brand) stops at 30 square; in the build editor an icon button is 32 square, 44 on a phone. */
@@ -749,7 +749,7 @@ export const iconButtonSide = (phone = false): CSSProperties => ({ width: phone 
 /** S1 to S4: the shared Button (components/brand) pads 0 16 above 28; in the build editor every button is 32 high and padded 0 space[3]. */
 export const BUTTON_PAD: CSSProperties = { padding: `0 ${space[3]}px` };
 /** S1 to S4: a button the editor drew at 28 is 32 now and keeps its 12.5 label (the shared Button sets 13 above 28). */
-export const BUTTON_PAD_SMALL_TEXT: CSSProperties = { ...BUTTON_PAD, fontSize: 12.5 };
+export const BUTTON_PAD_SMALL_TEXT: CSSProperties = { ...BUTTON_PAD, fontSize: textStep.meta };
 
 /** A text link: 12.5 `--text2`, underlined 3 below in `--label` at half strength. */
 export function TextLink({ children, onClick, phone = false, disabled, ...aria }: { children: ReactNode; onClick: () => void; phone?: boolean; disabled?: boolean; "aria-label"?: string }) {
@@ -768,7 +768,7 @@ export function TextLink({ children, onClick, phone = false, disabled, ...aria }
         ...TEXT_LINK_BOX,
         minHeight: phone ? size.touch : size.controlSmall,
         alignSelf: "flex-start",
-        ...type(12.5, 400, state.hovered ? t.text : t.text2),
+        ...type(textStep.meta, 400, state.hovered ? t.text : t.text2),
         textDecoration: "underline",
         textUnderlineOffset: 3,
         textDecorationColor: tokenAlpha("label", 0.5),
@@ -787,7 +787,7 @@ export function Tag({ children, testId }: { children: ReactNode; testId?: string
   return (
     <span
       data-testid={testId}
-      style={{ ...CONTROL, boxSizing: "border-box", display: "inline-flex", alignItems: "center", flexShrink: 0, height: size.tag, padding: `0 ${space[2]}px`, borderRadius: r.chip, fontFamily: DM_MONO, fontSize: 11, lineHeight: "normal", color: t.text2, whiteSpace: "nowrap" }}
+      style={{ ...CONTROL, boxSizing: "border-box", display: "inline-flex", alignItems: "center", flexShrink: 0, height: size.tag, padding: `0 ${space[2]}px`, borderRadius: r.chip, fontFamily: DM_MONO, fontSize: textStep.meta, lineHeight: "normal", color: t.text2, whiteSpace: "nowrap" }}
     >
       {children}
     </span>
@@ -798,7 +798,7 @@ export function Tag({ children, testId }: { children: ReactNode; testId?: string
 export function RemovableTag({ children, removeLabel, onRemove, phone }: { children: ReactNode; removeLabel: string; onRemove: () => void; phone: boolean }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
-    <span role="listitem" style={{ ...CONTROL, boxSizing: "border-box", display: "inline-flex", alignItems: "center", height: phone ? size.touch : size.controlSmall, padding: `0 0 0 ${space[2]}px`, borderRadius: r.chip, ...type(12.5, 400, t.text), whiteSpace: "nowrap", maxWidth: "100%" }}>
+    <span role="listitem" style={{ ...CONTROL, boxSizing: "border-box", display: "inline-flex", alignItems: "center", height: phone ? size.touch : size.controlSmall, padding: `0 0 0 ${space[2]}px`, borderRadius: r.chip, ...type(textStep.meta, 400, t.text), whiteSpace: "nowrap", maxWidth: "100%" }}>
       <span style={ELLIPSIS}>{children}</span>
       <button
         type="button"
@@ -837,7 +837,7 @@ export function FileLine({ name, removeLabel, onRemove, phone }: { name: string;
 /** A line the modal says about what it refused, in plain words. */
 export function Alert({ children }: { children: ReactNode }) {
   return (
-    <span role="alert" style={type(12.5, 400, t.text, 18)}>
+    <span role="alert" style={type(textStep.meta, 400, t.text, 17)}>
       {children}
     </span>
   );
@@ -883,15 +883,15 @@ export const OPTIONAL = {
   }),
   /** Focus: a 2px outline inset by 2, so the row's own edges never cut it. */
   focus: (visible: boolean): CSSProperties => (visible ? { outline: `2px solid ${t.focusRing}`, outlineOffset: -2 } : { outline: "none" }),
-  title: type(13, 400, t.text, 18),
+  title: type(textStep.body, 400, t.text, 19),
   titleLine: { display: "flex", alignItems: "baseline", gap: space[2], minWidth: 0 } as CSSProperties,
-  hint: type(12.5, 400, t.label, 17),
+  hint: type(textStep.meta, 400, t.label, 16),
   /** CA-16b's card: a filled row's line in `--text`. */
   filledLine: { color: t.text } as CSSProperties,
   /** F20: the line and, beside it, the suggested chip. */
   lineRow: { display: "flex", alignItems: "center", gap: space[2], minWidth: 0 } as CSSProperties,
   /** F20: a suggestion on a closed row: the dashed edge a suggestion chip has, never the look of a value. */
-  suggestedChip: { ...type(12, 400, t.text2, 16), display: "inline-block", boxSizing: "border-box", height: size.controlSmall, lineHeight: `${size.controlSmall - 2}px`, padding: `0 ${space[2]}px`, borderRadius: r.chip, borderWidth: 1, borderStyle: "dashed", borderColor: t.segOnBorder, background: "transparent", ...ELLIPSIS } as CSSProperties,
+  suggestedChip: { ...type(textStep.meta, 400, t.text2, 16), display: "inline-block", boxSizing: "border-box", height: size.controlSmall, lineHeight: `${size.controlSmall - 2}px`, padding: `0 ${space[2]}px`, borderRadius: r.chip, borderWidth: 1, borderStyle: "dashed", borderColor: t.segOnBorder, background: "transparent", ...ELLIPSIS } as CSSProperties,
   value: { ...COUNT, maxWidth: "45%", overflow: "hidden", textOverflow: "ellipsis" } as CSSProperties,
   chevron: (open: boolean): CSSProperties => ({ display: "inline-flex", flexShrink: 0, color: t.label, transform: open ? "rotate(180deg)" : "none" }),
   body: (inset: number): CSSProperties => ({ display: "flex", flexDirection: "column", gap: space[2], padding: `0 ${inset}px ${space[4]}px`, minWidth: 0 }),
@@ -925,7 +925,7 @@ export const GROW: CSSProperties = { flex: "1 1 0", minWidth: 0 };
 
 /** A panel's head: the grip, its title at 13/500, and a button at the right. */
 export const PANEL_HEAD: CSSProperties = { display: "grid", gridTemplateColumns: "16px minmax(0, 1fr) auto", alignItems: "center", gap: space[2], minHeight: 28, paddingBottom: space[2] };
-export const PANEL_TITLE: CSSProperties = type(13, 500, t.text, 18);
+export const PANEL_TITLE: CSSProperties = type(textStep.body, 500, t.text, 19);
 /** A list inside a panel or a row: a column, 8 apart. */
 export const PANEL_LIST: CSSProperties = { display: "flex", flexDirection: "column", gap: space[2], minWidth: 0 };
 
@@ -972,8 +972,8 @@ export function FactList({ children }: { children: ReactNode }) {
 export function FactRow({ label, children, first = false, testId }: { label: string; children: ReactNode; first?: boolean; testId?: string }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: space[4], padding: `${space[2]}px ${space[4]}px`, minWidth: 0, ...(first ? null : rule(t.hairline)) }}>
-      <dt style={type(13, 400, t.text2, 18)}>{label}</dt>
-      <dd data-testid={testId} style={{ margin: 0, fontFamily: DM_MONO, fontSize: 12.5, lineHeight: "18px", color: t.text, textAlign: "right", overflowWrap: "anywhere", minWidth: 0 }}>
+      <dt style={type(textStep.body, 400, t.text2, 19)}>{label}</dt>
+      <dd data-testid={testId} style={{ margin: 0, fontFamily: DM_MONO, fontSize: textStep.meta, lineHeight: "17px", color: t.text, textAlign: "right", overflowWrap: "anywhere", minWidth: 0 }}>
         {children}
       </dd>
     </div>
@@ -1005,7 +1005,7 @@ export function DropZone({ words, button, accept, multiple = false, onFiles, pho
       }}
       style={{ ...WELL, border: `1px dashed ${t.segOnBorder}`, borderRadius: r.panel, boxSizing: "border-box", height: 148, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: space[3], padding: space[3] }}
     >
-      <span style={type(13, 400, t.text2, 18)}>{words}</span>
+      <span style={type(textStep.body, 400, t.text2, 19)}>{words}</span>
       <RecipeButton small phone={phone} onClick={() => input.current?.click()}>
         {button}
       </RecipeButton>

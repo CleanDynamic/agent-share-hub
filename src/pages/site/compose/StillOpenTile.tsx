@@ -14,6 +14,7 @@ import { text } from "./refinedStyles";
 import { OpenRequestWindow } from "./composerWindows";
 import { OPEN_REQUEST_COPY } from "./openRequestCopy";
 
+import { textStep } from "@/lib/theme/type";
 export const STILL_OPEN_TILE_COPY = {
   mark: "Mark still open",
   edit: "Edit what's missing",
@@ -57,7 +58,7 @@ export function useStillOpenTile(step: Step, on?: (id: string, problem: string |
 export function StillOpenLine({ step }: { step: Pick<Step, "stillOpen"> }) {
   if (step.stillOpen === undefined) return null;
   return (
-    <span data-testid="tile-still-open" title={step.stillOpen || undefined} style={text(12, 400, t.label)}>
+    <span data-testid="tile-still-open" title={step.stillOpen || undefined} style={text(textStep.meta, 400, t.label)}>
       {STILL_OPEN_TILE_COPY.line}
     </span>
   );

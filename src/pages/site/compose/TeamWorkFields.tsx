@@ -38,6 +38,7 @@ import { Field, TextButton } from "./composeControls";
 import { PickMenu } from "./PickMenu";
 import { typedField } from "./refinedStyles";
 
+import { textStep } from "@/lib/theme/type";
 const NOT_SAID = "none";
 
 export function TeamWorkFields({ id, tree, phone, onExtras }: { id: string; tree: readonly NodeTree[]; phone: boolean; onExtras?: (id: string, patch: Record<string, unknown>) => void }) {
@@ -110,7 +111,7 @@ export function TeamWorkFields({ id, tree, phone, onExtras }: { id: string; tree
           {entries.map((entry, at) => (
             <li key={at} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 12, color: t.label, minWidth: 16 }}>{at + 1}</span>
+                <span style={{ fontSize: textStep.meta, color: t.label, minWidth: 16 }}>{at + 1}</span>
                 <PickMenu<string> label={`Step ${at + 1}: agent`} options={agents.map((agent) => ({ value: agent.id, label: agent.label }))} value={entry.agent} placeholder="Select an agent" phone={phone} onChange={(agent) => change(at, { agent })} />
                 <TextButton target={phone} aria-label={EXAMPLE_COPY.up(at + 1)} disabled={at === 0} onClick={() => swap(at, -1)}>Up</TextButton>
                 <TextButton target={phone} aria-label={EXAMPLE_COPY.down(at + 1)} disabled={at === entries.length - 1} onClick={() => swap(at, 1)}>Down</TextButton>
@@ -133,7 +134,7 @@ export function TeamWorkFields({ id, tree, phone, onExtras }: { id: string; tree
             </li>
           ))}
         </ol>
-        {short ? <span role="status" style={{ fontSize: 12, color: t.label }}>{EXAMPLE_COPY.range}</span> : null}
+        {short ? <span role="status" style={{ fontSize: textStep.meta, color: t.label }}>{EXAMPLE_COPY.range}</span> : null}
         {entries.length < EXAMPLE_RUN_MAX && agents.length > 0 ? (
           <span>
             <TextButton underline target={phone} onClick={() => setEntries([...entries, { agent: agents[entries.length % agents.length]?.id ?? "", did: "" }])}>

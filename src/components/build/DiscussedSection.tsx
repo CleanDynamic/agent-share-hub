@@ -17,7 +17,7 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { FIGTREE, textStep } from "@/lib/theme/type";
 
 export const DISCUSSED_TITLE = "Discussed in OpenBuilds";
 export const START_TOPIC = "Start a topic about this build";
@@ -97,7 +97,7 @@ export function DiscussedSection({ counts, rows, onStart, isMaker }: DiscussedSe
               label={
                 <span style={{ display: "flex", flexDirection: "column", gap: 2, padding: "6px 0" }}>
                   <HeadingLink to={row.to}>{row.heading || "Untitled post"}</HeadingLink>
-                  {row.meta ? <span style={{ fontSize: 12, color: t.label }}>{row.meta}</span> : null}
+                  {row.meta ? <span style={{ fontSize: textStep.meta, color: t.label }}>{row.meta}</span> : null}
                 </span>
               }
             />
@@ -122,7 +122,7 @@ export function StepRepliesLink({ count, to }: { count: number; to: string }) {
       to={to}
       data-testid="step-replies"
       {...handlers}
-      style={{ fontFamily: FIGTREE, fontSize: 12, color: t.label, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: r.control, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", ...ring(state.focusVisible) }}
+      style={{ fontFamily: FIGTREE, fontSize: textStep.meta, color: t.label, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: r.control, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", ...ring(state.focusVisible) }}
     >
       {plural(count, "reply", "replies")}
     </PageLink>

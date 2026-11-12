@@ -5,7 +5,7 @@ import type { CSSProperties } from "react";
 
 import { size, space } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { FIGTREE, textStep } from "@/lib/theme/type";
 
 export const TAB_ROW: CSSProperties = {
   display: "flex",
@@ -35,7 +35,7 @@ export const tabStyle = (selected: boolean): CSSProperties => ({
   padding: `0 ${space[2]}px`,
   cursor: "pointer",
   fontFamily: FIGTREE,
-  fontSize: 13,
+  fontSize: textStep.body,
   lineHeight: "normal",
   fontWeight: selected ? 500 : 400,
   color: selected ? t.text : t.text2,

@@ -9,14 +9,14 @@
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { CLASH_COPY, type ClashView, type PanelField } from "@/lib/build/clashView";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { FIGTREE, textStep } from "@/lib/theme/type";
 
 import { RecipeButton } from "./modalRecipes";
 import { RecipeWindow } from "./saveWindows";
 
 const PANEL = { boxSizing: "border-box", minWidth: 0, flex: "1 1 0", padding: "12px 14px", background: t.well, border: `1px solid ${t.hairlineModule}`, borderRadius: 10, display: "flex", flexDirection: "column", gap: 8 } as const;
-const LABEL = { fontFamily: FIGTREE, fontSize: 12, fontWeight: 400, lineHeight: "16px", color: t.label, margin: 0 } as const;
-const TEXT = { fontFamily: FIGTREE, fontSize: 13, fontWeight: 400, lineHeight: "19px", color: t.text, margin: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere" } as const;
+const LABEL = { fontFamily: FIGTREE, fontSize: textStep.meta, fontWeight: 400, lineHeight: "16px", color: t.label, margin: 0 } as const;
+const TEXT = { fontFamily: FIGTREE, fontSize: textStep.body, fontWeight: 400, lineHeight: "20px", color: t.text, margin: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere" } as const;
 
 function Panel({ label, fields, testId }: { label: string; fields: readonly PanelField[]; testId: string }) {
   return (

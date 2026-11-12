@@ -73,6 +73,7 @@ import { RecipeButton, iconButtonSide } from "./modalRecipes";
 import { menuItem, menuSurface } from "./refinedStyles";
 import { size } from "@/lib/theme/space";
 
+import { textStep } from "@/lib/theme/type";
 export const MAP_COPY = {
   directionLabel: "Map direction",
   horizontal: "Horizontal",
@@ -375,7 +376,7 @@ export function SessionMapColumn({ model, direction: wanted, selected, onSelect,
             <Segmented
               label={MAP_COPY.directionLabel}
               size={28}
-              fontSize={12}
+              fontSize={textStep.meta}
               compact
               value={wanted}
               onChange={controls.onDirection}

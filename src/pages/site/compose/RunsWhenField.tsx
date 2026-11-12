@@ -16,6 +16,7 @@ import { text } from "./refinedStyles";
 const NONE = "__none__";
 import type { RunsWhenView } from "./runtimeView";
 
+import { textStep } from "@/lib/theme/type";
 export const RUNS_WHEN_COPY = { label: "Runs when", always: "Always", decision: "Decision", question: "Question", value: "Value", pickDecision: "Select a decision", pickQuestion: "Select a question", pickValue: "Select a value", none: "Add a decision above this step first" } as const;
 
 const sameIs = (a: RunsWhenIs, b: RunsWhenIs) => JSON.stringify(a) === JSON.stringify(b);
@@ -30,7 +31,7 @@ export function RunsWhenField({ view, phone, onChange }: { view: RunsWhenView; p
   const valueIndex = chosenQuestion && view.current && view.current.decision === decision && view.current.question === question ? chosenQuestion.choices.findIndex((choice) => sameIs(choice.is, view.current!.is)) : -1;
 
   if (decisions.length === 0 && !view.current) {
-    return <span style={text(12, 400, t.label)}>{RUNS_WHEN_COPY.label}: {RUNS_WHEN_COPY.none}</span>;
+    return <span style={text(textStep.meta, 400, t.label)}>{RUNS_WHEN_COPY.label}: {RUNS_WHEN_COPY.none}</span>;
   }
   return (
     <Field id={`${uid}-rw`} label={RUNS_WHEN_COPY.label} hint={view.currentLabel ?? RUNS_WHEN_COPY.always} group>
@@ -72,7 +73,7 @@ export function RunsWhenField({ view, phone, onChange }: { view: RunsWhenView; p
             }}
           />
         ) : null}
-        {view.broken && view.current ? <span role="status" style={text(12, 400, t.label)}>{view.broken}</span> : null}
+        {view.broken && view.current ? <span role="status" style={text(textStep.meta, 400, t.label)}>{view.broken}</span> : null}
       </div>
     </Field>
   );
