@@ -75,10 +75,11 @@ export function Button({
     { disabled },
   );
   const phone = useIsPhone();
-  /* UI-P84: radius 6, heights 28/32/36 (a phone's 44 and 48 stay), padding 0 12px up to 28 and 0 16px above, 12.5/13
-     at 500. Primary, secondary (the control recipe) and ghost are the board's. A labelled button draws no icon. */
+  /* Radius 6, heights 24 and 32 (a phone's 44 and 48 stay), padding 0 8px at 24 and 0 12px at 32 (16 at 36 and over,
+     which only sign-in and the editor reach), 12/13 at 500. Primary, secondary (the control recipe) and ghost are the
+     board's. A labelled button draws no icon. */
   const height = refinedButtonHeight(size, phone);
-  const small = height <= 28;
+  const small = height <= 24;
   const paint: CSSProperties =
     variant === "primary"
       ? { ...PRIMARY, ...(state.hovered ? { filter: "brightness(1.08)" } : null) }
@@ -100,12 +101,12 @@ export function Button({
       style={{
         boxSizing: "border-box",
         height,
-        padding: small ? "0 12px" : "0 16px",
+        padding: small ? "0 8px" : height < 36 ? "0 12px" : "0 16px",
         borderRadius: r.control,
         color: variant === "secondary" ? t.text : undefined,
         ...paint,
         fontFamily: FIGTREE,
-        fontSize: small ? 12.5 : 13,
+        fontSize: small ? 12 : 13,
         fontWeight: 500,
         display: fullWidth ? "flex" : "inline-flex",
         width: fullWidth ? "100%" : undefined,

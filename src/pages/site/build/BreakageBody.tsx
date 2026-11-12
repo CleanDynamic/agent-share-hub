@@ -67,8 +67,8 @@ function Row({ row, onOpenReplay, onStartTopic }: { row: BreakageRowView; onOpen
             {row.span}
           </Button>
         ) : (
-          /* As tall as the Button it stands in for (28 drawn, 23 since UI-P58), so a row keeps its height either way. */
-          <span style={{ fontFamily: DM_MONO, fontSize: 10, color: t.label, lineHeight: "23px" }}>{row.span ?? "no step recorded"}</span>
+          /* As tall as the Button it stands in for (28 drawn, 24 rendered), so a row keeps its height either way. */
+          <span style={{ fontFamily: DM_MONO, fontSize: 10, color: t.label, lineHeight: "24px" }}>{row.span ?? "no step recorded"}</span>
         )}
         {row.attempts ? <span style={{ fontFamily: DM_MONO, fontSize: 10, color: t.label }}>{row.attempts}</span> : null}
         {onStartTopic ? (

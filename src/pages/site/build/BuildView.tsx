@@ -963,11 +963,11 @@ function ThreadHero({
               <Button
                 data-testid="build-follow"
                 variant="secondary"
-                size={28}
+                size={phone ? 44 : 28}
                 fontSize={12}
                 disabled={follow.busy}
                 onClick={follow.onToggle}
-                style={{ marginLeft: "auto", height: phone ? 44 : 28 }}
+                style={{ marginLeft: "auto" }}
               >
                 {follow.following ? "Following" : "Follow"}
               </Button>

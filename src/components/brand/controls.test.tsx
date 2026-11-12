@@ -282,19 +282,19 @@ const at = (url: string, node: React.ReactElement) => (
 const refined = (node: React.ReactElement) => markup(at(REFINED, node));
 
 describe("refined controls (UI-P84)", () => {
-  it("Button maps its sizes to 28, 32 and 36 and draws no icon behind a label", () => {
-    const h = (size: 28 | 30 | 32 | 34 | 36 | 38 | 42) =>
+  it("Button renders 24 (drawn 28) or 32 (drawn 30 to 42) and draws no icon behind a label", () => {
+    const h = (size: 28 | 30 | 32 | 34 | 36 | 38 | 42 | 44 | 48) =>
       refined(<Button size={size} icon={Plus}>Go</Button>);
-    expect(h(28)).toContain("height:28px");
-    expect(h(30)).toContain("height:28px");
-    expect(h(32)).toContain("height:32px");
-    expect(h(34)).toContain("height:32px");
-    expect(h(36)).toContain("height:36px");
-    expect(h(42)).toContain("height:36px");
+    expect(h(28)).toContain("height:24px");
+    for (const size of [30, 32, 34, 36, 38, 42] as const) expect(h(size), `${size}`).toContain("height:32px");
+    // Drawn 44 and over is sign-in's and the editor's; it keeps its 36 on desktop (outside this prompt).
+    expect(h(44)).toContain("height:36px");
+    expect(h(48)).toContain("height:36px");
     expect(h(36)).not.toContain("<svg");
-    expect(h(28)).toContain("padding:0 12px");
-    expect(h(32)).toContain("padding:0 16px");
-    expect(h(28)).toContain("font-size:12.5px");
+    expect(h(28)).toContain("padding:0 8px");
+    expect(h(32)).toContain("padding:0 12px");
+    expect(h(44)).toContain("padding:0 16px");
+    expect(h(28)).toContain("font-size:12px");
     expect(h(32)).toContain("font-size:13px");
     expect(h(36)).toContain("font-weight:500");
   });
