@@ -5,9 +5,11 @@
 
 import { Panel } from "@/components/brand/Panel";
 import { ConnectorGuide, type ConnectorGuideProps } from "@/components/connect/ConnectorGuide";
+import { Breadcrumb } from "@/components/shell/Breadcrumb";
+import { PageHeader } from "@/components/shell/PageHeader";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE, display } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 import { SITE_NAME } from "@/lib/site";
 
 export type ConnectViewProps = Omit<ConnectorGuideProps, "doneLabel" | "gutter">;
@@ -17,9 +19,7 @@ export function ConnectView(props: ConnectViewProps) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: 720, minWidth: 0 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-        <h1 style={{ ...(phone ? display(32, { mobilePageHeading: true }) : display(44)), margin: 0, color: t.text }}>
-          Connect a tool
-        </h1>
+        <PageHeader title="Connect a tool" breadcrumb={phone ? undefined : <Breadcrumb />} />
         <p style={{ fontFamily: FIGTREE, fontSize: 14, lineHeight: 1.5, margin: 0, color: t.text2 }}>
           Send the chats you build in to {SITE_NAME}, then turn them into builds.
         </p>
