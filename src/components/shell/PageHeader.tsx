@@ -33,12 +33,8 @@ import { bodyLarge, eyebrow as eyebrowRole, FIGTREE, measure } from "@/lib/theme
    first screen; and prose at a wide page's full width is 140 characters a line,
    which is why `measure` is on it and not on the title.
 
-   ONE `<h1>`, because a page has one name. It takes the whole `sectionHead`
-   role — the display face at 30–48px — rather than `hero`, which is 44–78px
-   and "one per page, at most" for a landing surface, not for the top of an
-   application screen. The face is never named here: it is whatever the role
-   says it is, which is what keeps the scale's 20px display floor covering
-   this component as well as the module that declares it.
+   ONE `<h1>`, because a page has one name. It takes PAGE_TITLE (below), the
+   title every site page already drew by hand: Figtree 20 / 500 on a 24 line.
 
    ITS SPACING IS THE COMPACT SCALE (UI-P55): the same steps by name, through
    the density table — sm 12, md 17, lg 29, xs 6 (16, 24, 40 and 8 before).
