@@ -171,11 +171,6 @@ export function visionBuildsTableProps(): BuildsViewProps {
       lenses: [{ value: "all", label: "All" }, { value: "proven", label: "Reproduced" }, { value: "rebuilt", label: "Rebuilt" }, { value: "unsolved", label: "Still open" }],
       lens: "all",
       onLens: noop,
-      sort: {
-        value: "reproduced",
-        options: [{ value: "newest", label: "Newest" }, { value: "reproduced", label: "Reproductions" }, { value: "confirmed", label: "Confirmed" }, { value: "rebuilt", label: "Rebuilds" }],
-        onChange: noop,
-      },
       columnsLabel: "12 of 24",
       chips: [["Field", "Sales"], ["Tools", "Claude Code"], ["Reproductions", "3 or more"], ["Works on", "Opus 5.5"], ["Steps", "5 to 30"], ["Autonomy", "2 of 4"]].map(([name, value]) => ({ key: name, name, value })),
       onRemoveChip: noop,

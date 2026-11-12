@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import type { TableRowView } from "./BuildsTableView";
 import type { GalleryParams } from "@/lib/build/galleryParams";
 
-import { SERVER_SORT, SORT_COLUMN, nextSort, sortRows } from "./buildsModel";
+import { SERVER_SORT, SORT_COLUMN, nextSort, sortRows, sortedBy } from "./buildsModel";
 
 const row = (id: string, over: Partial<TableRowView> = {}): TableRowView => ({
   id, href: `/b2/${id}`, title: id, maker: "kit", built: "", field: "", tools: [], steps: null, sessions: null, reproductions: 0,
@@ -116,5 +116,20 @@ describe("BF-12 nextSort", () => {
     const two = nextSort(one, "field", true);
     expect(keys(two)).toMatchObject({ by: "field", dir: "asc" });
     expect(keys(nextSort(two, "field", true))).toEqual({ sort: "steps", dir: undefined, by: undefined, by2: undefined, dir2: undefined });
+  });
+});
+
+describe("BF-12 sortedBy: the Sort menu's choice, the column's first step", () => {
+  const base: GalleryParams = { lens: "all", madeFor: [], madeWith: [], query: null };
+
+  it("a server column descending, whatever was before; the resting column is the resting sort", () => {
+    expect(sortedBy({ ...base, sort: "steps", dir: "asc" }, "steps", false)).toMatchObject({ sort: "steps", dir: undefined });
+    expect(sortedBy({ ...base, sort: "steps", dir: "asc", by: "field" }, "reproductions", true)).toMatchObject({ sort: undefined, dir: undefined, by: undefined });
+  });
+
+  it("another column by itself, descending, only when every build is loaded", () => {
+    expect(sortedBy({ ...base, by: "field", dir: "asc" }, "field", true)).toMatchObject({ by: "field", dir: undefined });
+    const start = { ...base, sort: "rebuilt" as const };
+    expect(sortedBy(start, "field", false)).toBe(start);
   });
 });

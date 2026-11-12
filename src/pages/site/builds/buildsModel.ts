@@ -619,12 +619,12 @@ export function tableFooter(total: number | null, rows: readonly TableRowView[])
 
 export const LENS_LABEL: Record<GalleryLens, string> = { all: "All", proven: "Reproduced", rebuilt: "Rebuilt", unsolved: "Still open" };
 
-export const SORT_OPTIONS: readonly { value: GalleryFeedSort; label: string }[] = [
-  { value: "reproduced", label: "Reproductions" },
-  { value: "confirmed", label: "Confirmed" },
-  { value: "rebuilt", label: "Rebuilds" },
-  { value: "newest", label: "Newest" },
-];
+/** BF-12 (B4): the Sort menu's choice: the column's first step, descending, from no sort at all. */
+export function sortedBy(params: GalleryParams, column: ColumnId, allLoaded: boolean): GalleryParams {
+  const server = SERVER_SORT[column];
+  if (server) return { ...withoutSort(params), sort: server === DEFAULT_GALLERY_SORT ? undefined : server };
+  return allLoaded ? { ...params, by: column, dir: undefined, by2: undefined, dir2: undefined } : params;
+}
 
 /** The column each sort draws its arrow on; Newest has none. */
 /** BF-12: the columns the database can sort, so their answer is true for the whole list however many pages there are. */

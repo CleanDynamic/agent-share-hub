@@ -1018,3 +1018,19 @@ describe("BF-12 every head sorts when its answer is true", () => {
     expect(head(/^Published/).getAttribute("aria-sort")).toBe("descending");
   });
 });
+
+describe("BF-12 one sort control on the page", () => {
+  it("the Sort menu and the heads never disagree", async () => {
+    window.matchMedia = ((query: string) => ({ matches: query.includes("max-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined, addListener: () => undefined, removeListener: () => undefined, onchange: null, dispatchEvent: () => false })) as unknown as typeof window.matchMedia;
+    listBuildsTable.mockResolvedValue({ countsLive: true, builds: [build(1), build(2)], total: 2 });
+    renderAt("/builds?sort=steps&dir=asc");
+    await screen.findByRole("link", { name: "Build 1" });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Sort: Steps" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitemradio", { name: "Reproductions" }));
+    await waitFor(() => expect(address).toBe("/builds"));
+    fireEvent.keyDown(screen.getByRole("button", { name: "Sort: Reproductions" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitemradio", { name: "Steps" }));
+    await waitFor(() => expect(address).toBe("/builds?sort=steps"));
+    expect(screen.getByRole("columnheader", { name: /^Steps/ }).getAttribute("aria-sort")).toBe("descending");
+  });
+});

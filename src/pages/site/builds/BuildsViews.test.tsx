@@ -256,11 +256,13 @@ describe("Add a calculation", () => {
 });
 
 describe("the Sort menu", () => {
+  // BF-12 (B4): the menu is drawn on a phone only, and lists the columns that sort.
   it("opens on a mouse press, not only from the keyboard", () => {
     (window as unknown as { PointerEvent: unknown }).PointerEvent = class extends MouseEvent {};
+    window.matchMedia = ((query: string) => ({ matches: query.includes("max-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined, addListener: () => undefined, removeListener: () => undefined, onchange: null, dispatchEvent: () => false })) as unknown as typeof window.matchMedia;
     draw();
     fireEvent.pointerDown(screen.getByRole("button", { name: /^Sort:/ }), { button: 0, ctrlKey: false });
-    expect(screen.getByRole("menuitemradio", { name: "Newest" })).toBeTruthy();
+    expect(screen.getByRole("menuitemradio", { name: "Confirmed" })).toBeTruthy();
   });
 });
 
@@ -450,12 +452,18 @@ describe("the Table without the rail", () => {
     expect(screen.queryByTestId("builds-filters")).toBeNull();
   });
 
+  // BF-12 (B4): on a wider screen the heads sort and there is no Sort menu; on a phone it sits between Filters and Columns.
   it("the lens row holds Filters, then Sort, then Columns", () => {
+    const names = () => {
+      const row = screen.getByRole("button", { name: /^Filters/ }).parentElement as HTMLElement;
+      return within(row).getAllByRole("button").map((button) => (button.getAttribute("aria-label") ?? button.textContent ?? "").replace(/\s+/g, " ").trim());
+    };
+    const first = draw();
+    expect(names()).toEqual(["Filters, 6 on", "Columns 12 of 24"]);
+    first.unmount();
+    window.matchMedia = ((query: string) => ({ matches: query.includes("max-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined, addListener: () => undefined, removeListener: () => undefined, onchange: null, dispatchEvent: () => false })) as unknown as typeof window.matchMedia;
     draw();
-    const filters = screen.getByRole("button", { name: /^Filters/ });
-    const row = filters.parentElement as HTMLElement;
-    const names = within(row).getAllByRole("button").map((button) => (button.getAttribute("aria-label") ?? button.textContent ?? "").replace(/\s+/g, " ").trim());
-    expect(names).toEqual(["Filters, 6 on", "Sort: Reproductions", "Columns 12 of 24"]);
+    expect(names()).toEqual(["Filters, 6 on", "Sort: Reproductions", "Columns 12 of 24"]);
   });
 
   it("pressing Filters opens the dialog with the filter panel in it; closing it returns focus to the button", async () => {
@@ -597,5 +605,29 @@ describe("BF-11 a filtered head", () => {
     // column the reader ticked themselves is still marked.
     drawFiltered(["field"], ["build", "field", "reproductions"]);
     expect(screen.getByRole("columnheader", { name: /Field, filtered/ })).toBeTruthy();
+  });
+});
+
+describe("BF-12 one sort control", () => {
+  const phone = () => {
+    window.matchMedia = ((query: string) => ({ matches: query.includes("max-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined, addListener: () => undefined, removeListener: () => undefined, onchange: null, dispatchEvent: () => false })) as unknown as typeof window.matchMedia;
+  };
+
+  it("desktop: there is no Sort menu in the lens row", () => {
+    draw();
+    expect(screen.queryByRole("button", { name: /^Sort/ })).toBeNull();
+  });
+
+  it("phone: the Sort menu lists the drawn columns that can be sorted, by their column names, and choosing one sorts descending", async () => {
+    phone();
+    const onSortColumn = vi.fn();
+    draw((p) => ({ ...p, table: { ...p.table!, columns: ["build", "field", "steps", "reproductions", "confirmed"], sortable: new Set(["field", "steps", "reproductions"]), onSortColumn } }));
+    const trigger = screen.getByRole("button", { name: "Sort: Reproductions" });
+    fireEvent.keyDown(trigger, { key: "Enter" });
+    const items = await screen.findAllByRole("menuitemradio");
+    expect(items.map((item) => item.textContent)).toEqual(["Field", "Steps", "Reproductions"]);
+    expect(items[2].getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(items[1]);
+    expect(onSortColumn).toHaveBeenCalledWith("steps", false, true);
   });
 });

@@ -128,11 +128,6 @@ export interface TableRowView {
   lists?: Readonly<Partial<Record<"works" | "patterns", readonly string[]>>>;
 }
 
-export interface SortOption {
-  value: string;
-  label: string;
-}
-
 export interface TableChip {
   key: string;
   name: string;
@@ -180,7 +175,6 @@ export interface BuildsTableViewProps {
   lenses: readonly TextTab[];
   lens: string;
   onLens: (lens: string) => void;
-  sort: { value: string; options: readonly SortOption[]; onChange: (value: string) => void };
   /** "12 of 24": drawn only where the chooser is live. */
   columnsLabel?: string;
   /** SV-24 P2: the Columns chooser. Absent: the label is all there is. */
@@ -194,8 +188,8 @@ export interface BuildsTableViewProps {
   sortColumn: { id: ColumnId; ascending: boolean } | null;
   /** BF-12 (B3): the heads that sort, those whose answer is true for the whole list. */
   sortable: ReadonlySet<ColumnId>;
-  /** A head pressed; `second` with Shift, for a second key. */
-  onSortColumn: (id: ColumnId, second: boolean) => void;
+  /** A head pressed; `second` with Shift, for a second key. `fresh` from the phone's Sort menu: the column's first step. */
+  onSortColumn: (id: ColumnId, second: boolean, fresh?: boolean) => void;
   /** BF-11 (B2): the columns a filter in the address holds a value for; their heads are marked. */
   filtered?: ReadonlySet<ColumnId>;
   footer: TableFooterView;
@@ -215,20 +209,23 @@ export interface BuildsTableViewProps {
 
 /* ── the lens row ── */
 
-function SortMenu({ sort }: { sort: BuildsTableViewProps["sort"] }) {
-  const current = sort.options.find((option) => option.value === sort.value);
+/** BF-12 (B4): on a phone, where heads are small and scroll away, the one sort control is this menu: the drawn columns that can
+    be sorted, by their names, the sorted one checked. Choosing one sorts by it descending. On a wider screen the heads are it. */
+function SortMenu({ columns, sortable, sortColumn, onSortColumn }: Pick<BuildsTableViewProps, "columns" | "sortable" | "sortColumn" | "onSortColumn">) {
+  const options = columns.filter((id) => sortable.has(id));
+  const current = sortColumn ? COLUMN_NAME[sortColumn.id] : "";
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <BuildsControl aria-label={`Sort: ${current?.label ?? ""}`}>
-          <span style={{ color: t.label }}>Sort</span> {current?.label}
+        <BuildsControl aria-label={`Sort: ${current}`}>
+          <span style={{ color: t.label }}>Sort</span> {current}
         </BuildsControl>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={6}>
-        <DropdownMenuRadioGroup value={sort.value} onValueChange={sort.onChange}>
-          {sort.options.map((option) => (
-            <DropdownMenuRadioItem key={option.value} value={option.value}>
-              {option.label}
+        <DropdownMenuRadioGroup value={sortColumn?.id ?? ""} onValueChange={(id) => onSortColumn(id as ColumnId, false, true)}>
+          {options.map((id) => (
+            <DropdownMenuRadioItem key={id} value={id}>
+              {COLUMN_NAME[id]}
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>
@@ -279,14 +276,15 @@ function ColumnsChooser({ label, menu }: { label: string; menu: ColumnsMenu }) {
   );
 }
 
-function LensRow({ lenses, lens, onLens, sort, columnsLabel, columnsMenu, updating, activeCount, onOpenFilters, setName }: Pick<BuildsTableViewProps, "lenses" | "lens" | "onLens" | "sort" | "columnsLabel" | "columnsMenu" | "updating" | "activeCount" | "onOpenFilters" | "setName">) {
+function LensRow({ lenses, lens, onLens, columns, sortable, sortColumn, onSortColumn, columnsLabel, columnsMenu, updating, activeCount, onOpenFilters, setName }: Pick<BuildsTableViewProps, "lenses" | "lens" | "onLens" | "columns" | "sortable" | "sortColumn" | "onSortColumn" | "columnsLabel" | "columnsMenu" | "updating" | "activeCount" | "onOpenFilters" | "setName">) {
+  const phone = useIsPhone();
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12, borderBottom: `1px solid ${t.hairline}` }}>
       <TextTabs tabs={lenses} value={lens} onChange={onLens} label="Lens" rule={false} />
       <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
         <UpdatingStatus updating={updating} />
         <FiltersButton activeCount={activeCount} setName={setName} onClick={onOpenFilters} />
-        <SortMenu sort={sort} />
+        {phone ? <SortMenu columns={columns} sortable={sortable} sortColumn={sortColumn} onSortColumn={onSortColumn} /> : null}
         {columnsLabel && columnsMenu ? (
           <ColumnsChooser label={columnsLabel} menu={columnsMenu} />
         ) : columnsLabel ? (
@@ -591,10 +589,10 @@ function Footer({ columns, footer }: { columns: readonly ColumnId[]; footer: Tab
 /* ── the table ── */
 
 export function BuildsTableView(props: BuildsTableViewProps) {
-  const { lenses, lens, onLens, sort, columnsLabel, columnsMenu, chips, onRemoveChip, onClearAll, columns, rows, sortColumn, sortable, onSortColumn, filtered, footer, onMore, loadingMore, empty, updating, activeCount, onOpenFilters, setName } = props;
+  const { lenses, lens, onLens, columnsLabel, columnsMenu, chips, onRemoveChip, onClearAll, columns, rows, sortColumn, sortable, onSortColumn, filtered, footer, onMore, loadingMore, empty, updating, activeCount, onOpenFilters, setName } = props;
   return (
     <div data-testid="builds-table">
-      <LensRow lenses={lenses} lens={lens} onLens={onLens} sort={sort} columnsLabel={columnsLabel} columnsMenu={columnsMenu} updating={updating} activeCount={activeCount} onOpenFilters={onOpenFilters} setName={setName} />
+      <LensRow lenses={lenses} lens={lens} onLens={onLens} columns={columns} sortable={sortable} sortColumn={sortColumn} onSortColumn={onSortColumn} columnsLabel={columnsLabel} columnsMenu={columnsMenu} updating={updating} activeCount={activeCount} onOpenFilters={onOpenFilters} setName={setName} />
       <ActiveFilters chips={chips} onRemove={onRemoveChip} onClearAll={onClearAll} />
       {rows.length === 0 && empty ? (
         <div style={{ marginTop: 20 }}>{empty}</div>
