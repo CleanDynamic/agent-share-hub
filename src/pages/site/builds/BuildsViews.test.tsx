@@ -255,15 +255,36 @@ describe("Add a calculation", () => {
   });
 });
 
+/** BF-12 (B4): a narrow window, where the Sort menu is drawn. */
+const asPhone = () => {
+  window.matchMedia = ((query: string) => ({ matches: query.includes("max-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined, addListener: () => undefined, removeListener: () => undefined, onchange: null, dispatchEvent: () => false })) as unknown as typeof window.matchMedia;
+};
+
 describe("the Sort menu", () => {
-  it("opens on a mouse press, not only from the keyboard", () => {
+  it("opens on a mouse press, not only from the keyboard (phone)", () => {
+    asPhone();
     (window as unknown as { PointerEvent: unknown }).PointerEvent = class extends MouseEvent {};
     draw();
     fireEvent.pointerDown(screen.getByRole("button", { name: /^Sort:/ }), { button: 0, ctrlKey: false });
-    expect(screen.getByRole("menuitemradio", { name: "Newest" })).toBeTruthy();
+    expect(screen.getByRole("menuitemradio", { name: "Steps" })).toBeTruthy();
+  });
+
+  it("desktop: there is no Sort menu in the lens row", () => {
+    draw();
+    expect(screen.queryByRole("button", { name: /^Sort/ })).toBeNull();
+  });
+
+  it("phone: the Sort menu lists the drawn columns that can be sorted, by their column names, and choosing one sorts descending", () => {
+    asPhone();
+    (window as unknown as { PointerEvent: unknown }).PointerEvent = class extends MouseEvent {};
+    const onSortColumn = vi.fn();
+    draw((p) => ({ ...p, table: { ...p.table!, onSortColumn } }));
+    fireEvent.pointerDown(screen.getByRole("button", { name: "Sort: Reproductions" }), { button: 0, ctrlKey: false });
+    expect(screen.getAllByRole("menuitemradio").map((item) => item.textContent)).toEqual(["Steps", "Sessions", "Reproductions", "Confirmed", "Rebuilds"]);
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Steps" }));
+    expect(onSortColumn).toHaveBeenCalledWith("steps", false, true);
   });
 });
-
 
 /* ── BF-01 ── */
 
@@ -450,12 +471,12 @@ describe("the Table without the rail", () => {
     expect(screen.queryByTestId("builds-filters")).toBeNull();
   });
 
-  it("the lens row holds Filters, then Sort, then Columns", () => {
+  it("the lens row holds Filters, then Columns (Sort is on a phone only, BF-12)", () => {
     draw();
     const filters = screen.getByRole("button", { name: /^Filters/ });
     const row = filters.parentElement as HTMLElement;
     const names = within(row).getAllByRole("button").map((button) => (button.getAttribute("aria-label") ?? button.textContent ?? "").replace(/\s+/g, " ").trim());
-    expect(names).toEqual(["Filters, 6 on", "Sort: Reproductions", "Columns 12 of 24"]);
+    expect(names).toEqual(["Filters, 6 on", "Columns 12 of 24"]);
   });
 
   it("pressing Filters opens the dialog with the filter panel in it; closing it returns focus to the button", async () => {

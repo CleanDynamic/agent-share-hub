@@ -548,13 +548,6 @@ export function tableFooter(total: number | null, rows: readonly TableRowView[])
 
 export const LENS_LABEL: Record<GalleryLens, string> = { all: "All", proven: "Reproduced", rebuilt: "Rebuilt", unsolved: "Still open" };
 
-export const SORT_OPTIONS: readonly { value: GalleryFeedSort; label: string }[] = [
-  { value: "reproduced", label: "Reproductions" },
-  { value: "confirmed", label: "Confirmed" },
-  { value: "rebuilt", label: "Rebuilds" },
-  { value: "newest", label: "Newest" },
-];
-
 /* ── BF-12 (B3, B5): sorting ── */
 
 /** The six orderings the database can do, by the column whose head chooses them. Every other column sorts in the browser,

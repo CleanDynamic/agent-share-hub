@@ -54,7 +54,6 @@ import {
   LENS_LABEL,
   MAPS_PAGE,
   SERVER_SORT,
-  SORT_OPTIONS,
   activeChips,
   activeCount,
   calculationOptions,
@@ -64,6 +63,7 @@ import {
   columnsMenu,
   drawnColumns,
   filteredColumns,
+  firstSortStep,
   footerCalculations,
   lensCountParams,
   listParamsOf,
@@ -126,7 +126,6 @@ export default function BuildsPage() {
   const params = parseGalleryParams(search);
   const view: GalleryViewMode = params.view ?? "table";
   const listParams = listParamsOf(params);
-  const sort = (listParams.sort ?? "reproduced") as GalleryFeedSort;
   const go = (next: GalleryParams) => navigate(galleryHref(next), { preventScrollReset: true });
   const hrefFor = (next: GalleryViewMode) => galleryHref({ ...params, view: next === "table" ? undefined : next });
 
@@ -473,7 +472,6 @@ export default function BuildsPage() {
               lens: params.lens,
               setName: openDetail?.name,
               onLens: (lens) => go({ ...params, lens: lens as GalleryLens }),
-              sort: { value: sort, options: SORT_OPTIONS, onChange: (value) => go({ ...params, sort: value as GalleryFeedSort }) },
               chips: activeChips(params),
               onRemoveChip: (key) => go(withoutChip(params, key)),
               onClearAll: () => go(clearedFilters(params)),
@@ -489,7 +487,7 @@ export default function BuildsPage() {
               rows,
               sortColumn,
               sortable,
-              onSortColumn: (id, second) => go(nextSort(params, id, allLoaded, second)),
+              onSortColumn: (id, second, fresh) => go(fresh ? firstSortStep(params, id) : nextSort(params, id, allLoaded, second)),
               filtered: new Set(filteredIds),
               footer: {
                 ...tableFooter(total, rows),
