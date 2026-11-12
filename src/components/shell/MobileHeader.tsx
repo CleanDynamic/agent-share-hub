@@ -93,11 +93,11 @@ function RefinedMobileHeaderView({ viewer, onSearchOpen, onAccountOpen, onSignIn
     >
       <Lockup size={14} markSize={18} to={SITE_NAV.home} />
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <IconButton icon={Search} glyph="search" boxed={false} label="Search" size={30} onClick={onSearchOpen} />
+        <IconButton icon={Search} glyph="search" boxed={false} label="Search" size={32} onClick={onSearchOpen} />
         {viewer ? (
           <AvatarButton viewer={viewer} onClick={onAccountOpen} size={26} />
         ) : (
-          <Button variant="secondary" size={30} onClick={onSignIn} style={{ height: 30 }}>
+          <Button variant="secondary" size={32} onClick={onSignIn}>
             Sign in
           </Button>
         )}

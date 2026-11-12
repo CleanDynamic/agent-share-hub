@@ -192,12 +192,24 @@ describe("SiteHeaderView under the refined look", () => {
     expect(html).toMatch(/font-size:11px;font-weight:500;color:var\(--label\)/);
   });
 
-  it("draws New build as a secondary button 30 high with no icon", () => {
+  it("draws New build as a secondary button 32 high with no icon", () => {
     refined();
     const button = screen.getByRole("button", { name: "New build" });
     expect(button.getAttribute("data-variant")).toBe("secondary");
-    expect(button.style.height).toBe("30px");
+    expect(button.style.height).toBe("32px");
+    expect(button.style.padding).toBe("0px 12px");
     expect(button.querySelector("svg")).toBeNull();
+  });
+
+  it("draws search, Activity and the theme button 32 high (the control-heights pass)", () => {
+    refined();
+    const search = screen.getByRole("searchbox", { name: "Search builds" }).closest("label")!;
+    expect(search.style.height).toBe("32px");
+    expect(search.style.paddingLeft).toBe("12px");
+    const activity = screen.getByRole("link", { name: "Activity, 3 unread" });
+    expect([activity.style.width, activity.style.height]).toEqual(["32px", "32px"]);
+    const theme = screen.getByRole("button", { name: "Theme: Dark" });
+    expect([theme.style.width, theme.style.height]).toEqual(["32px", "32px"]);
   });
 
   it("badges the bell with a 12px --lit-mark count, and on /notifications fills it with --control-on, never a colour", () => {
