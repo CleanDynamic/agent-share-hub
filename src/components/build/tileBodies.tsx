@@ -28,7 +28,7 @@ import { ManualThumb } from "@/pages/site/compose/ManualThumb";
 import { Quiet, ToolMark } from "@/pages/site/compose/refinedPieces";
 import { FindHit } from "./FindHit";
 import { ellipsis, text, tnum } from "@/pages/site/compose/refinedStyles";
-import { DM_MONO } from "@/lib/theme/type";
+import { DM_MONO, measure } from "@/lib/theme/type";
 import { BODY_LINE, DATA_LINE, FOOT_FACTS, FOOT_LINK as FOOT_LINK_STYLE, TEXT_LINK_BOX, LINK_ADDRESS, LINK_CARD, MORE_COUNT, PICTURE, PICTURES, RESPONSE_LINE, RESPONSE_WORD, STEPS, TILE_FOOT, VARIABLE } from "@/pages/site/compose/tileRecipes";
 import { size, space } from "@/lib/theme/space";
 
@@ -244,7 +244,7 @@ export function ManualTileBody({ step, indent = 0, picture = true, lean = false,
           ))}
         </ol>
       ) : (
-        <p data-testid="manual-lines" style={{ ...text(13.5, 400, t.text), margin: 0, lineHeight: "22px", overflowWrap: "anywhere" }}>
+        <p data-testid="manual-lines" style={{ ...text(13.5, 400, t.text), margin: 0, lineHeight: "22px", overflowWrap: "anywhere", ...measure }}>
           {lines[0] ?? ""}
         </p>
       )}
@@ -272,7 +272,7 @@ export function triggerLine(step: Pick<Step, "runs" | "changesEachRound">): stri
 export function ReplyBlock({ reply, onRead, indent = 0, lean = false }: { reply: string; onRead?: () => void; indent?: number; lean?: boolean }): ReactNode {
   if (lean) {
     return (
-      <p data-testid="prompt-reply" style={{ ...RESPONSE_LINE, marginLeft: indent }}>
+      <p data-testid="prompt-reply" style={{ ...RESPONSE_LINE, marginLeft: indent, ...measure }}>
         <span style={RESPONSE_WORD}>{TILE_COPY.response} </span>
         {reply.replace(/\s+/g, " ").trim()}
       </p>
@@ -281,7 +281,7 @@ export function ReplyBlock({ reply, onRead, indent = 0, lean = false }: { reply:
   const more = reply.split(/\r?\n/).length > 2 || reply.length > 180;
   return (
     <div data-testid="prompt-reply" style={{ marginLeft: indent, borderLeft: `2px solid ${t.hairline}`, paddingLeft: space[3], display: "flex", flexDirection: "column", gap: space[1], minWidth: 0 }}>
-      <p style={{ ...text(13, 400, t.text2), margin: 0, lineHeight: "20px", overflowWrap: "anywhere", whiteSpace: "pre-wrap", ...clamp(2) }}>{reply}</p>
+      <p style={{ ...text(13, 400, t.text2), margin: 0, lineHeight: "20px", overflowWrap: "anywhere", whiteSpace: "pre-wrap", ...clamp(2), ...measure }}>{reply}</p>
       {more && onRead ? (
         <div>
           <TextButton underline onClick={onRead} style={{ ...TEXT_LINK_BOX, ...text(12, 500, t.text2) }}>
@@ -345,7 +345,7 @@ export function ResultTileBody({ facts, indent = 0 }: { facts: ResultFacts; inde
     return (
       <div data-testid="result-tile" data-kind={detail.kind} style={{ ...wrap, gap: space[1] }}>
         {detail.kind === "text" ? (
-          <span data-testid="result-text" style={{ ...text(13, 400, t.text), overflowWrap: "anywhere", whiteSpace: "pre-wrap", ...clamp(2) }}>
+          <span data-testid="result-text" style={{ ...text(13, 400, t.text), overflowWrap: "anywhere", whiteSpace: "pre-wrap", ...clamp(2), ...measure }}>
             {detail.text}
           </span>
         ) : null}
@@ -486,7 +486,7 @@ export function SystemPromptTileBody({ step, indent = 0, full = false }: { step:
   const parts = splitVariables(step.text);
   return (
     <div data-testid="system-prompt-tile" style={{ paddingLeft: indent, minWidth: 0 }}>
-      <p data-testid="system-prompt-text" style={{ ...text(13.5, 400, t.text), margin: 0, lineHeight: "21px", overflowWrap: "anywhere", whiteSpace: "pre-wrap", ...(full ? null : clamp(2)) }}>
+      <p data-testid="system-prompt-text" style={{ ...text(13.5, 400, t.text), margin: 0, lineHeight: "21px", overflowWrap: "anywhere", whiteSpace: "pre-wrap", ...(full ? null : clamp(2)), ...measure }}>
         {parts.map((part, at) =>
           part.variable ? (
             <span key={at} data-testid="variable-chip" style={VARIABLE}>
@@ -534,7 +534,7 @@ export function RepoTileBody({ step, indent = 0 }: { step: Step; indent?: number
   return (
     <div data-testid="repo-tile" style={{ display: "flex", flexDirection: "column", gap: space[1], paddingLeft: indent, minWidth: 0 }}>
       {repo.description ? (
-        <p data-testid="repo-description" style={{ ...text(13, 400, t.text), margin: 0, lineHeight: "20px", overflowWrap: "anywhere", ...clamp(2) }}>
+        <p data-testid="repo-description" style={{ ...text(13, 400, t.text), margin: 0, lineHeight: "20px", overflowWrap: "anywhere", ...clamp(2), ...measure }}>
           {repo.description}
         </p>
       ) : null}
