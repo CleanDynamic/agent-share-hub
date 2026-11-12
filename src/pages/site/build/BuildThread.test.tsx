@@ -163,8 +163,8 @@ describe("the build page with a thread", () => {
 
   it("puts the actions in the title block and the engagement row under the post, with no Rebuild in it", () => {
     mount(props());
-    const title = screen.getByTestId("build-title-block");
-    expect(within(title).getByRole("group", { name: "Take this build" })).toBeTruthy();
+    // Page shell: the title and its actions are the page's PageHeader on a desktop.
+    expect(within(screen.getByRole("heading", { level: 1 }).closest("header")!).getByRole("group", { name: "Take this build" })).toBeTruthy();
     const hero = screen.getByTestId("build-hero");
     const engagement = within(hero).getByTestId("engagement-row");
     expect(engagement.querySelector('[data-engagement-action="rebuild"]')).toBeNull();
@@ -190,7 +190,8 @@ describe("the build page with a thread", () => {
     mount(props());
     // UX-03 P2: one layout with a thread or without.
     const row = screen.getByTestId("build-main-row");
-    expect(row.style.justifyContent).toBe("space-between");
+    // Page shell: the page grid's main and side template.
+    expect(row.style.display).toBe("grid");
     const [left, right] = Array.from(row.children) as HTMLElement[];
     expect(left.contains(screen.getByTestId("build-hero"))).toBe(true);
     expect(left.contains(screen.getByTestId("build-steps-panel"))).toBe(true);
@@ -205,7 +206,8 @@ describe("the build page without a thread", () => {
     const hero = screen.getByTestId("build-hero");
     expect(hero.getAttribute("data-hero")).toBeNull();
     expect(within(hero).getByRole("img", { name: /· Result$/ })).toBeTruthy();
-    expect(within(hero).getByRole("group", { name: "Take this build" })).toBeTruthy();
+    // Page shell: the dock is the page header's action on a desktop.
+    expect(within(screen.getByRole("heading", { level: 1 }).closest("header")!).getByRole("group", { name: "Take this build" })).toBeTruthy();
     expect(screen.queryByTestId("build-thread")).toBeNull();
     expect(screen.queryByRole("button", { name: /^Follow/ })).toBeNull();
     // UX-03 P2: the same two columns as a thread's: the hero, then The build, on the left; the reproduction on the right.
