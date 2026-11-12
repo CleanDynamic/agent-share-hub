@@ -21,6 +21,7 @@ import { PRIVACY_REVIEWED, TERMS_REVIEWED } from "@/content/legal/reviewed";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
+import { PAGE_EDGE } from "./chromeSize";
 import { FrameLink } from "./FrameLink";
 import { SITE_NAV } from "./siteNav";
 import { SITE_NAME } from "@/lib/site";
@@ -50,7 +51,7 @@ function RefinedSiteFooterView({ signedIn, onSignOut, onConnect, showPrivacy = f
         marginTop: "auto",
         borderTop: `1px solid ${t.hairline}`,
         /* The page's 56 content edge, less the surface's 1px border. */
-        padding: "12px 55px",
+        padding: `12px ${PAGE_EDGE - 1}px`,
         display: "flex",
         flexWrap: "wrap",
         alignItems: "center",

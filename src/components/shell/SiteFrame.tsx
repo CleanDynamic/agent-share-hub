@@ -47,7 +47,7 @@ import { FIGTREE } from "@/lib/theme/type";
 import { useWindowSize } from "@/pages/site/compose/DetailsAside";
 import { ORIGIN, SURFACE_MARGIN, frameOf, innerWidthOf } from "@/pages/site/compose/detailsLayout";
 import { Breadcrumb } from "./Breadcrumb";
-import { HEADER_HEIGHT } from "./chromeSize";
+import { HEADER_HEIGHT, PAGE_EDGE } from "./chromeSize";
 import { Dock } from "./Dock";
 import { MobileHeader } from "./MobileHeader";
 import { PageProgress } from "./PageProgress";
@@ -239,7 +239,7 @@ export function SiteFrameView({
               : wide
                 ? "0 0 48px"
                 : /* 40 / 56 / 48, less the surface's 1px border. */
-                  "39px 55px 48px",
+                  `39px ${PAGE_EDGE - 1}px 48px`,
             boxSizing: "border-box",
             minWidth: 0,
           }}

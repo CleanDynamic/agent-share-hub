@@ -47,7 +47,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { AccountButton } from "./AccountButton";
-import { HEADER_HEIGHT } from "./chromeSize";
+import { HEADER_HEIGHT, PAGE_EDGE } from "./chromeSize";
 import { FrameLink } from "./FrameLink";
 import type { FrameViewer } from "./frameTypes";
 import { HeaderSearch, useGallerySearch } from "./HeaderSearch";
@@ -227,7 +227,7 @@ function RefinedSiteHeaderView({
         display: "flex",
         alignItems: "center",
         gap: space[2],
-        padding: "0 56px",
+        padding: `0 ${PAGE_EDGE}px`,
         boxSizing: "border-box",
       }}
     >

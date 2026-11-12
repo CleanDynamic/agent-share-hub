@@ -36,7 +36,7 @@ export default function VisionDrafts({ viewport = "desktop", state = "populated"
       data-design-state={state}
       style={{ width: viewport === "mobile" ? 390 : 1440 }}
     >
-      <SiteFrameView viewport={viewport} fit="board" board {...devChrome({ theme, current: "drafts", trail: [{ label: "Home", href: "/" }, { label: "Drafts" }], dockCurrent: null })}>
+      <SiteFrameView viewport={viewport} fit="board" {...devChrome({ theme, current: "drafts", trail: [{ label: "Home", href: "/" }, { label: "Drafts" }], dockCurrent: null })}>
         <DraftsView {...visionDraftsProps(state)} />
       </SiteFrameView>
     </div>
