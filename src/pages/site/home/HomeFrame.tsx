@@ -160,7 +160,6 @@ export function HomeColumns({
   if (layout === "one") {
     return (
       <div data-testid="home-view" data-layout="one" style={{ ...root, display: "flex", flexDirection: "column", gap: 24, minWidth: 0, paddingBottom: 48 }}>
-        <PageHeader title="Home" />
         {top}
         <section aria-label="Feed" style={{ minWidth: 0 }}>{centre}</section>
         <aside aria-label="The room" style={{ display: "flex", flexDirection: "column", gap: 32, minWidth: 0 }}>{right}</aside>
@@ -169,8 +168,6 @@ export function HomeColumns({
   }
   const three = layout === "three";
   return (
-    <>
-    <PageHeader title="Home" />
     <div
       data-testid="home-view"
       data-layout={layout}
@@ -193,7 +190,6 @@ export function HomeColumns({
         {right}
       </aside>
     </div>
-    </>
   );
 }
 
@@ -292,6 +288,8 @@ function RightBones() {
 export function HomeLoadingView() {
   const layout = useHomeLayout();
   return (
+    <>
+    <PageHeader title="Home" />
     <div style={{ minHeight: "100vh" }}>
       <HomeColumns
         layout={layout}
@@ -306,5 +304,6 @@ export function HomeLoadingView() {
         right={<RightBones />}
       />
     </div>
+    </>
   );
 }
