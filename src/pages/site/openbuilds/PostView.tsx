@@ -1,6 +1,6 @@
 /* UX-06 Part 1: the post page. PURE: typed props, no fetching, no `useAuth()`, no router hooks but `Link`.
 
-   `OpenBuildsColumns` (main and a 320 side column; below 1001 the side column follows the main one). In the main column: the
+   `OpenBuildsColumns` (the page grid's main and side template, 9 / 3; below 1001 the side column follows the main one). In the main column: the
    crumbs (12 `--label`, `OpenBuilds / Claude Code`), the post at page size (`PostCard` with its heading as the page's `h1`), then the
    switch (`Segmented`: `Thread · 6` and, once a reply holds a build, `Wall · 3 builds`; `Oldest first` at the row's right), then the
    Thread or the Wall. The reply box and the Wall are the container's (`replyBox`, `wall`): this view only says where they stand.

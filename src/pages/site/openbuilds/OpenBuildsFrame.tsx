@@ -10,6 +10,7 @@ import { forwardRef, type ButtonHTMLAttributes, type CSSProperties, type ReactNo
 
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
+import { pageColumns } from "@/components/shell/pageGrid";
 import { PageLink as Link } from "@/lib/routing/PageLink";
 import { ring } from "@/lib/theme/controls";
 import { TOUCH_MIN } from "@/lib/theme/density";
@@ -32,7 +33,8 @@ export function OpenBuildsColumns({ main, side, testId = "openbuilds-page", side
     <div
       data-testid={testId}
       data-layout={two ? "two" : "one"}
-      style={{ ...ROOT, display: "grid", gridTemplateColumns: two ? "minmax(0, 1fr) 320px" : "minmax(0, 1fr)", columnGap: 72, rowGap: two ? undefined : 48 }}
+      /* Two columns: the page grid's main and side template (9 / 3). */
+      style={{ ...ROOT, ...(two ? pageColumns("mainSide") : { display: "grid", gridTemplateColumns: "minmax(0, 1fr)", rowGap: 48 }) }}
     >
       <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 48, paddingBottom: two ? 64 : 0 }}>{main}</div>
       <aside aria-label={sideLabel} style={{ minWidth: 0, display: "flex", flexDirection: "column", paddingBottom: 64 }}>
