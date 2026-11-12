@@ -1275,6 +1275,8 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/builds/buildsModel.sort.test.ts",
   // BF-13
   "src/pages/site/builds/columnDrag.ts",
+  // BF-14
+  "src/pages/site/builds/buildsModel.match.test.ts",
 
   // SV-25
   "src/components/build/BuildConnections.tsx",

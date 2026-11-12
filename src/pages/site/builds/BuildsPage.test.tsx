@@ -1109,3 +1109,99 @@ describe("BF-12 a second key with Shift", () => {
     await waitFor(() => expect(query().get("dir2")).toBe("asc"));
   });
 });
+
+describe("BF-14 match some conditions", () => {
+  const THREE = "/builds?shape=app&pattern=router&rebuilds=1-";
+  const candidates = () =>
+    listBuildsTable.mockResolvedValue({
+      builds: [
+        { ...build(1), shape: "app", patterns: ["router"], rebuildCount: 0 },
+        { ...build(2), shape: "agent", patterns: [], rebuildCount: 3 },
+        { ...build(3), shape: "app", patterns: [], rebuildCount: 2 },
+        { ...build(4), shape: "workflow", patterns: [], rebuildCount: 0 },
+      ],
+      total: 4,
+    });
+  const titles = () => screen.getAllByRole("link", { name: /^Build \d+$/ }).map((link) => link.textContent);
+
+  it("with match unset, the list is asked exactly as before and no row is filtered in the browser", async () => {
+    candidates();
+    renderAt(THREE);
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(listBuildsTable).toHaveBeenCalledTimes(1);
+    expect(listBuildsTable.mock.calls[0][0]).toEqual({
+      lens: "all", facets: [], tool: undefined, shapes: ["app"], pattern: "router", stillOpen: false, query: undefined, ranges: { rebuilds: { min: 1 } },
+      confirmedWithin: undefined, confirmedState: undefined, worksOn: undefined, sort: "reproduced", ascending: false, offset: 0,
+    });
+    expect(titles()).toEqual(["Build 1", "Build 2", "Build 3", "Build 4"]);
+  });
+
+  it("with match=2 and three countable filters on, the list is asked with the lens and the required filters only, and the rows shown are those meeting at least two", async () => {
+    candidates();
+    renderAt(`${THREE}&match=2`);
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(listBuildsTable).toHaveBeenCalledTimes(1);
+    expect(listBuildsTable.mock.calls[0][0]).toMatchObject({ shapes: [], pattern: undefined, ranges: undefined, sort: "reproduced" });
+    expect(titles()).toEqual(["Build 1", "Build 3"]);
+  });
+
+  it('the head reads "<shown> of <published> builds" from the rows shown', async () => {
+    candidates();
+    renderAt(`${THREE}&match=2`);
+    await screen.findByRole("link", { name: "Build 1" });
+    await waitFor(() => expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("2 of 120 builds"));
+    expect(within(screen.getByRole("tablist", { name: "Lens" })).getByRole("tab", { name: /^All/ }).textContent).toContain("2");
+  });
+
+  it('when the lens holds more builds than one page, the Match control is disabled and a line says "Available when every build is loaded: <n> of <total> so far.", and Load all asks for the remaining pages', async () => {
+    listBuildsTable.mockImplementation(async (options: { offset?: number }) => ({ builds: Array.from({ length: options.offset ? 20 : 50 }, (_, at) => ({ ...build((options.offset ?? 0) + at + 1), shape: "app", patterns: ["router"] })), total: 70 }));
+    renderAt(`${THREE}&match=2`);
+    await screen.findByRole("link", { name: "Build 1" });
+    await openFilters();
+    const select = screen.getByRole("combobox", { name: "Builds must match" }) as HTMLSelectElement;
+    expect(select.disabled).toBe(true);
+    expect(screen.getByText("Available when every build is loaded: 50 of 70 so far.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Load all" }));
+    await waitFor(() => expect(listBuildsTable).toHaveBeenCalledWith(expect.objectContaining({ offset: 50, shapes: [] })));
+    await waitFor(() => expect((screen.getByRole("combobox", { name: "Builds must match" }) as HTMLSelectElement).disabled).toBe(false));
+  });
+
+  it("past 200 builds the line says so and the control stays disabled", async () => {
+    listBuildsTable.mockImplementation(async (options: { offset?: number }) => ({ builds: Array.from({ length: 50 }, (_, at) => ({ ...build((options.offset ?? 0) + at + 1), shape: "app" })), total: 260 }));
+    renderAt(`${THREE}&match=2`);
+    await screen.findByRole("link", { name: "Build 1" });
+    await openFilters();
+    expect((screen.getByRole("combobox", { name: "Builds must match" }) as HTMLSelectElement).disabled).toBe(true);
+    expect(screen.getByText("Available when every build is loaded: these filters leave more than 200.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Load all" })).toBeNull();
+  });
+
+  it("the dialog's footer shows the Match control only with two or more countable filters in the draft, and the match count follows it", async () => {
+    candidates();
+    const first = renderAt("/builds?shape=app&pattern=router");
+    await screen.findByRole("link", { name: "Build 1" });
+    await openFilters();
+    const select = screen.getByRole("combobox", { name: "Builds must match" }) as HTMLSelectElement;
+    expect(Array.from(select.options).map((option) => option.textContent)).toEqual(["All 2 filters", "At least 1 of 2"]);
+    fireEvent.change(select, { target: { value: "1" } });
+    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("2 builds match"));
+    expect(address).toBe("/builds?shape=app&pattern=router");
+    applyFilters();
+    await waitFor(() => expect(new URLSearchParams(address.split("?")[1]).get("match")).toBe("1"));
+    first.unmount();
+    renderAt("/builds?shape=app");
+    await openFilters();
+    expect(screen.queryByRole("combobox", { name: "Builds must match" })).toBeNull();
+  });
+
+  it('each chip of a countable filter is unchanged; one extra chip reads "Match · at least 2 of 3" and removing it returns to All', async () => {
+    candidates();
+    renderAt(`${THREE}&match=2`);
+    await screen.findByRole("link", { name: "Build 1" });
+    expect(screen.getByRole("button", { name: "Remove filter Shape" })).toBeTruthy();
+    const chip = screen.getByRole("button", { name: "Remove filter Match" }).parentElement as HTMLElement;
+    expect(chip.textContent?.replace(/×/g, "").trim()).toMatch(/Match\s*at least 2 of 3/);
+    fireEvent.click(screen.getByRole("button", { name: "Remove filter Match" }));
+    await waitFor(() => expect(address).toBe(THREE));
+  });
+});

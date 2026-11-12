@@ -104,6 +104,9 @@ export interface GalleryParams {
   /** BF-12 (B5). A second column for ties, and its direction; only with `by`. */
   by2?: string;
   dir2?: "asc";
+  /** BF-14 (B6). Builds must meet at least this many of the filters the browser can check; the page drops it when it is not
+      below their count. */
+  match?: number;
   /** SV-24. The filter set that is open: where the panel's layout is kept. The filters themselves are the other parameters. */
   set?: string;
 }
@@ -186,13 +189,14 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
     ...(isColumnId(by) ? { by } : {}),
     ...(by2 ? { by2 } : {}),
     ...(by2 && search.get("dir2") === "asc" ? { dir2: "asc" as const } : {}),
+    ...(/^[1-9]\d{0,2}$/.test(search.get("match") ?? "") ? { match: Number(search.get("match")) } : {}),
     ...(cleanSet(search.get("set")) ? { set: cleanSet(search.get("set")) } : {}),
   };
 }
 
 /**
  * The address of a gallery view: only the values that differ from the
- * default, keys in the order view, lens, for, with, shape, model, tool, pattern, f (CA-16, repeatable), open, within, state (SV-23 P2: Last confirmed, Confirmed or stale), the number filters (SV-23: steps, sessions, reproductions, rebuilds, likes), sort, dir, by, by2, dir2 (BF-12), q, set (SV-24: the open filter set).
+ * default, keys in the order view, lens, for, with, shape, model, tool, pattern, f (CA-16, repeatable), open, within, state (SV-23 P2: Last confirmed, Confirmed or stale), the number filters (SV-23: steps, sessions, reproductions, rebuilds, likes), sort, dir, by, by2, dir2 (BF-12), match (BF-14), q, set (SV-24: the open filter set).
  */
 export function galleryHref(params: Partial<GalleryParams> = {}): string {
   const out = new URLSearchParams();
@@ -223,6 +227,7 @@ export function galleryHref(params: Partial<GalleryParams> = {}): string {
       if (params.dir2 === "asc") out.set("dir2", "asc");
     }
   }
+  if (typeof params.match === "number" && Number.isInteger(params.match) && params.match > 0) out.set("match", String(params.match));
 
   const query = normaliseQuery(params.query ?? null);
   if (query !== null) out.set("q", query);

@@ -235,3 +235,14 @@ describe("BF-12: the sort's direction and the browser's keys", () => {
     expect(galleryHref(parse(href.split("?")[1]))).toBe(href);
   });
 });
+
+describe("BF-14: match in the address", () => {
+  it("match=2 is read and written; 0, a non-number, or a number at or above the count of countable filters is dropped", () => {
+    expect(parse("match=2").match).toBe(2);
+    for (const value of ["0", "-1", "two", "2.5", ""]) expect(parse(`match=${value}`)).not.toHaveProperty("match");
+    expect(galleryHref({ match: 2, sort: "rebuilt", dir: "asc", query: "nlp" })).toBe("/builds?sort=rebuilt&dir=asc&match=2&q=nlp");
+    expect(galleryHref({ match: 0 })).toBe("/builds");
+    // At or above the count of countable filters is the page's to drop, since the count comes from activeFilterIds: see
+    // BuildsPage's BF-14 tests and matchOf in buildsModel.
+  });
+});
