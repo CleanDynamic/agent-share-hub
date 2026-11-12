@@ -171,6 +171,14 @@ describe("DraftsView", () => {
     expect(onMore).toHaveBeenCalled();
   });
 
+  it("draws Show more sessions and Connect a tool with the shared Button at 32 / 12 (the control-heights pass)", () => {
+    view({ moreSessions: { loading: false, onMore: vi.fn() } });
+    for (const button of [screen.getByRole("button", { name: "Show more sessions" }), screen.getAllByRole("button", { name: "Connect a tool" })[0]]) {
+      expect(button.getAttribute("data-ui"), button.textContent ?? "").toBe("button");
+      expect([button.style.height, button.style.padding], button.textContent ?? "").toEqual(["32px", "0px 12px"]);
+    }
+  });
+
   it("empty: one line and one action each, and 'Nothing in progress.'", () => {
     const p = view({ drafts: [], sessions: [] });
     expect(screen.getByText("No new sessions.")).toBeInTheDocument();
