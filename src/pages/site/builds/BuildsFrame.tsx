@@ -13,6 +13,7 @@ import { forwardRef, type ButtonHTMLAttributes, type CSSProperties, type ReactNo
 import { Link, useLocation } from "react-router-dom";
 
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
+import { PAGE_TITLE } from "@/components/shell/PageHeader";
 import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
 import { PageFigure, type FigurePart } from "@/components/vision/PageFigure";
 import type { GalleryViewMode } from "@/lib/build/galleryParams";
@@ -141,7 +142,8 @@ export function BuildsHead({ figure, parts, switcher, updating }: { figure: Reac
   return (
     <div data-testid="builds-head" style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
       <PageFigure
-        figure={<h1 style={{ margin: 0, fontSize: "inherit", fontWeight: "inherit", lineHeight: "inherit", letterSpacing: "inherit", ...(updating ? { opacity: 0.5 } : null) }}>{figure}</h1>}
+        /* PageHeader's title style; the h1 stays here because it dims itself while the list updates (BF-02). */
+        figure={<h1 style={{ ...PAGE_TITLE, ...(updating ? { opacity: 0.5 } : null) }}>{figure}</h1>}
         parts={parts}
       />
       {switcher}
