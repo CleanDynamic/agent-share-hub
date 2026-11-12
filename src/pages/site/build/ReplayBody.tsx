@@ -319,7 +319,7 @@ export function ReplayBody({ replay, phone = false }: { replay: ReplayView; phon
         <IconButton
           icon={playing ? Pause : Play}
           label={playing ? "Pause the build" : "Play the build"}
-          size={34}
+          size={32}
           aria-pressed={playing}
           onClick={toggle}
         />

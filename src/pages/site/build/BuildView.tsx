@@ -311,7 +311,7 @@ export function AnatomyDialog({
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 8 }}>
             <Dialog.Title style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, color: t.text }}>{title}</Dialog.Title>
             <Dialog.Close asChild>
-              <IconButton icon={X} label="Close" size={34} />
+              <IconButton icon={X} label="Close" size={32} />
             </Dialog.Close>
           </div>
           {children}
@@ -340,7 +340,7 @@ export function AnatomyPanel({ anatomy, phone, onSelect }: { anatomy: BuildAnato
           subtitle={parts.length > 0 ? anatomySubtitle(parts.length, gaps) : undefined}
           right={
             phone ? undefined : (
-              <IconButton icon={Maximize2} label="Show the full anatomy" size={34} onClick={() => setOpen(true)} disabled={parts.length === 0} />
+              <IconButton icon={Maximize2} label="Show the full anatomy" size={32} onClick={() => setOpen(true)} disabled={parts.length === 0} />
             )
           }
         />
@@ -436,7 +436,7 @@ export function TimelinePanel({ timeline, phone, onPlay }: { timeline: BuildTime
           headingLevel={2}
           title="Watch it get built"
           subtitle={timelineSubtitle(duration, events.length)}
-          right={<IconButton icon={Play} label="Play the build" size={phone ? 38 : 34} onClick={onPlay} disabled={events.length === 0} />}
+          right={<IconButton icon={Play} label="Play the build" size={phone ? 38 : 32} onClick={onPlay} disabled={events.length === 0} />}
         />
         <div style={{ marginTop: 8 }}>
           {events.length > 0 ? (

@@ -717,7 +717,7 @@ function ReaderSessionHead({ chat, fold }: { chat: SessionChat; fold: Fold }) {
       </div>
       {chat.key ? <MemberLabel to={refTo({ kind: "session", id: chat.key })} /> : null}
       {chat.key ? <SaveMark kind="session" id={chat.key} /> : null}
-      <IconButton icon={ChevronRight} glyph={fold.folded ? "chev" : "chevd"} size={28} data-hit="" label={`${fold.folded ? "Expand" : "Collapse"} ${name}`} aria-expanded={!fold.folded} aria-controls={fold.controls} onClick={fold.toggle} />
+      <IconButton icon={ChevronRight} glyph={fold.folded ? "chev" : "chevd"} size={24} data-hit="" label={`${fold.folded ? "Expand" : "Collapse"} ${name}`} aria-expanded={!fold.folded} aria-controls={fold.controls} onClick={fold.toggle} />
     </div>
   );
 }

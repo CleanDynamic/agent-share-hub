@@ -120,7 +120,7 @@ export function RunDialog({ open, onOpenChange, creator, suggestions, initialMod
                 {creator ? "You ran your own build" : "You ran this build"}
               </Dialog.Title>
               <Dialog.Close asChild>
-                <IconButton icon={X} label="Close" size={38} />
+                <IconButton icon={X} label="Close" size={32} />
               </Dialog.Close>
             </div>
             <Dialog.Description style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: t.text2 }}>

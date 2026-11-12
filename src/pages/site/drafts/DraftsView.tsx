@@ -258,7 +258,7 @@ function AddMenu({
     return (
       <>
         <span style={hitArea(true)}>
-          <IconButton icon={Plus} label={ADD_NAME} size={28} onClick={() => setSheet(true)} />
+          <IconButton icon={Plus} label={ADD_NAME} size={24} onClick={() => setSheet(true)} />
         </span>
         <BottomSheet open={sheet} onOpenChange={setSheet} title="Add to a build">
           {items.map((item) => {
@@ -289,7 +289,7 @@ function AddMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <IconButton icon={Plus} label={ADD_NAME} size={28} />
+        <IconButton icon={Plus} label={ADD_NAME} size={24} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={6} style={menuContent}>
         {items.map((item) => {

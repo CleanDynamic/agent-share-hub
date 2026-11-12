@@ -319,6 +319,9 @@ describe("refined controls (UI-P84)", () => {
     expect(boxed).toContain("background:var(--control)");
     expect(boxed).toContain('viewBox="0 0 16 16"');
     expect(refined(<IconButton icon={Plus} label="New" size={38} />)).toContain("width:30px");
+    // The control-heights pass: 24 inside a row or card header, 32 everywhere else.
+    expect(refined(<IconButton icon={Plus} label="New" size={24} />)).toMatch(/width:24px;height:24px/);
+    expect(refined(<IconButton icon={Plus} label="New" size={32} />)).toMatch(/width:32px;height:32px/);
     const ghost = refined(<IconButton icon={Plus} label="New" boxed={false} />);
     expect(ghost).toContain("background:transparent");
     expect(ghost).not.toContain("--control-shadow");
