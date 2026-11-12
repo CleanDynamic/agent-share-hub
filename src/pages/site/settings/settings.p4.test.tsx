@@ -42,7 +42,7 @@ const mount = () =>
 describe("the view", () => {
   it("has the four groups, one switch per row, each named for what it does", () => {
     render(<NotificationsView prefs={parsePreferences({})} onToggle={vi.fn()} />);
-    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(["Your builds", "Topics and replies", "People", "Saved things"]);
+    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(["Notifications", "Your builds", "Topics and replies", "People", "Saved things"]);
     const labels = PREFERENCE_GROUPS.flatMap((g) => g.rows.map((r) => r.label));
     expect(screen.getAllByRole("switch").map((s) => s.getAttribute("aria-labelledby")).length).toBe(labels.length);
     for (const label of [

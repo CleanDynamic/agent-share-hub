@@ -7,6 +7,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
 import { Glyph } from "@/components/brand/Glyph";
+import { PageHeader } from "@/components/shell/PageHeader";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { PlainRow } from "@/components/vision/PlainRow";
 import { PageLink } from "@/lib/routing/PageLink";
@@ -14,7 +15,6 @@ import { SECTIONS, settingsPath, type SectionKey } from "@/lib/settings/sections
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE, measure } from "@/lib/theme/type";
 
-import { sectionTitle } from "./SettingParts";
 
 const link: CSSProperties = { textDecoration: "none", color: "inherit", display: "block" };
 
@@ -31,7 +31,7 @@ export function SettingsFrame({ section, children }: SettingsFrameProps) {
     if (section) return <div style={{ ...measure }}>{children}</div>;
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <h1 style={sectionTitle}>Settings</h1>
+        <PageHeader title="Settings" />
         <nav aria-label="Settings">
           <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
             {SECTIONS.map((s, index) => (
@@ -60,6 +60,8 @@ export function SettingsFrame({ section, children }: SettingsFrameProps) {
 
   const current: SectionKey = section ?? "account";
   return (
+    <>
+    <PageHeader title="Settings" />
     <div style={{ display: "grid", gridTemplateColumns: "220px minmax(0, 1fr)", columnGap: 56, alignItems: "start", fontFamily: FIGTREE }}>
       <nav aria-label="Settings">
         <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column" }}>
@@ -81,6 +83,7 @@ export function SettingsFrame({ section, children }: SettingsFrameProps) {
       </nav>
       <div style={{ ...measure, minWidth: 0 }}>{children}</div>
     </div>
+    </>
   );
 }
 

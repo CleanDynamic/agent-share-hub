@@ -37,7 +37,7 @@ function mount() {
 describe("Appearance", () => {
   it("is one row, named Theme, with Light, Dark and System", () => {
     const { here } = mount();
-    expect(screen.getByRole("heading", { level: 1, name: "Appearance" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 2, name: "Appearance" })).toBeTruthy();
     expect(within(here).getAllByRole("button").map((b) => b.textContent)).toEqual(["Light", "Dark", "System"]);
     expect(document.querySelectorAll('[data-ui="setting-row"]')).toHaveLength(1);
   });
