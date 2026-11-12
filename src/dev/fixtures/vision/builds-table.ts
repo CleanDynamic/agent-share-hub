@@ -180,7 +180,7 @@ export function visionBuildsTableProps(): BuildsViewProps {
       sortColumn: { id: "reproductions", ascending: false },
       sortable: new Set(["reproductions", "confirmed", "rebuilds", "steps", "sessions"]),
       onSortColumn: noop,
-      footer: { count: "18 builds", mostCommon: "Most common · Sales, Claude Code", median: "Median 11 steps", total: "Total 214", onCalculate: noop },
+      footer: { count: "18 builds", byColumn: { field: "Sales", tools: "Claude Code", steps: "Median 11", reproductions: "Total 214" }, onCalculate: noop },
     },
   };
 }

@@ -243,7 +243,7 @@ describe("Add a calculation", () => {
 
   it("shows each calculation added, with a way to take it off", () => {
     const onRemove = vi.fn();
-    draw((p) => ({ ...p, table: { ...p.table!, footer: { ...p.table!.footer, calculations: [{ key: "steps:sum", text: "Sum, Steps 214", onRemove }] } } }));
+    draw((p) => ({ ...p, table: { ...p.table!, footer: { ...p.table!.footer, calculations: [{ key: "steps:sum", column: "steps", text: "Sum, Steps 214", onRemove }] } } }));
     expect(screen.getByText("Sum, Steps 214")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Remove Sum, Steps 214" }));
     expect(onRemove).toHaveBeenCalled();
@@ -377,13 +377,14 @@ describe("BF-01 the lamp", () => {
     expect(within(bodyRow()).getByRole("img", { name: dim })).toBeTruthy();
   });
 
-  it("the footer carries the key: a lit lamp with its words and a dim lamp with its words", () => {
+  it("the key sits on its own line under the table (BF-13): a lit lamp with its words and a dim lamp with its words", () => {
     drawTable([blankRow]);
-    const foot = screen.getAllByRole("rowgroup").find((group) => group.tagName === "TFOOT")!;
-    expect(within(foot).getByRole("img", { name: lit })).toBeTruthy();
-    expect(within(foot).getByRole("img", { name: dim })).toBeTruthy();
-    expect(within(foot).getByText(`confirmed in the last ${STALE_AFTER_DAYS} days`)).toBeTruthy();
-    expect(within(foot).getByText("stale")).toBeTruthy();
+    const key = screen.getByTestId("lamp-key");
+    expect(key.closest("table")).toBeNull();
+    expect(within(key).getByRole("img", { name: lit })).toBeTruthy();
+    expect(within(key).getByRole("img", { name: dim })).toBeTruthy();
+    expect(within(key).getByText(`confirmed in the last ${STALE_AFTER_DAYS} days`)).toBeTruthy();
+    expect(within(key).getByText("stale")).toBeTruthy();
   });
 });
 
@@ -626,5 +627,71 @@ describe("BF-11 filtered heads", () => {
       </MemoryRouter>,
     );
     expect(screen.getByRole("columnheader", { name: /Field, filtered/ })).toBeTruthy();
+  });
+});
+
+/* ── BF-13 P1 (C6): the footer, one cell per column ── */
+
+describe("BF-13 footer", () => {
+  const drawTable = (change: (props: ReturnType<typeof visionBuildsTableViewProps>) => ReturnType<typeof visionBuildsTableViewProps> = (p) => p) =>
+    render(
+      <MemoryRouter>
+        <BuildsTableView {...change(visionBuildsTableViewProps())} />
+      </MemoryRouter>,
+    );
+  /** The footer's cells, by the column above each. */
+  const footerCells = () => {
+    const footer = screen.getAllByRole("rowgroup").at(-1)!;
+    const heads = screen.getAllByRole("columnheader").map((head) => head.textContent?.replace(/[↑↓2]/g, "") ?? "");
+    const cells = within(footer).getAllByRole("cell");
+    return { heads, cells, under: (name: string) => cells[heads.indexOf(name)] };
+  };
+
+  it("with the default columns the footer reads as it did", () => {
+    drawTable();
+    const { under } = footerCells();
+    expect(under("Build").textContent).toContain("18 builds");
+    expect(under("Field").textContent).toBe("Sales");
+    expect(under("Tools").textContent).toBe("Claude Code");
+    expect(under("Steps").textContent).toBe("Median 11");
+    expect(under("Reproductions").textContent).toBe("Total 214");
+  });
+
+  it("the footer has exactly one cell per drawn column, and none has a colSpan", () => {
+    drawTable();
+    const { heads, cells } = footerCells();
+    expect(cells).toHaveLength(heads.length);
+    for (const cell of cells) expect(cell.getAttribute("colspan")).toBeNull();
+    expect(screen.getAllByRole("rowgroup").at(-1)!.querySelectorAll("tr")).toHaveLength(1);
+  });
+
+  it("moving Field after Reproductions moves its footer value with it", () => {
+    drawTable((p) => ({ ...p, columns: ["build", "built", "tools", "steps", "reproductions", "field", "confirmed"] }));
+    const { heads, cells } = footerCells();
+    expect(heads.indexOf("Field")).toBe(5);
+    expect(cells[5].textContent).toBe("Sales");
+    expect(cells[4].textContent).toBe("Total 214");
+  });
+
+  it("a calculation the reader added is drawn under its own column, with its Remove button", () => {
+    const onRemove = vi.fn();
+    drawTable((p) => ({ ...p, footer: { ...p.footer, calculations: [{ key: "steps:sum", column: "steps", text: "Sum, Steps 214", onRemove }] } }));
+    const cell = footerCells().under("Steps");
+    expect(within(cell).getByText("Sum, Steps 214")).toBeTruthy();
+    fireEvent.click(within(cell).getByRole("button", { name: "Remove Sum, Steps 214" }));
+    expect(onRemove).toHaveBeenCalled();
+  });
+
+  it("Add a calculation is in the Build column's footer cell, under the count", () => {
+    drawTable();
+    const cell = footerCells().under("Build");
+    const button = within(cell).getByRole("button", { name: "Add a calculation" });
+    expect(cell.textContent?.indexOf("18 builds")).toBeLessThan(cell.textContent!.indexOf("Add a calculation"));
+    expect(button).toBeTruthy();
+  });
+
+  it("with Last confirmed not drawn, Add a calculation is still there", () => {
+    drawTable((p) => ({ ...p, columns: ["build", "reproductions"] }));
+    expect(within(footerCells().under("Build")).getByRole("button", { name: "Add a calculation" })).toBeTruthy();
   });
 });

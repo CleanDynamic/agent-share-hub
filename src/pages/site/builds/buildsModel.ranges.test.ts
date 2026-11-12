@@ -79,11 +79,11 @@ describe("the median", () => {
     expect(medianOf([4, 12])).toBe(8);
   });
 
-  it("names steps in the footer, and says nothing when no row has a count", () => {
+  it("puts the median under Steps in the footer, and says nothing when no row has a count", () => {
     const row = (steps: number | null) => ({ field: "", tools: [], reproductions: 0, steps }) as never;
-    expect(tableFooter(2, [row(4), row(12), row(null)]).median).toBe("Median 8 steps");
-    expect(tableFooter(1, [row(1)]).median).toBe("Median 1 step");
-    expect(tableFooter(1, [row(null)]).median).toBeUndefined();
+    expect(tableFooter(2, [row(4), row(12), row(null)]).byColumn?.steps).toBe("Median 8");
+    expect(tableFooter(1, [row(1)]).byColumn?.steps).toBe("Median 1");
+    expect(tableFooter(1, [row(null)]).byColumn?.steps).toBeUndefined();
   });
 });
 

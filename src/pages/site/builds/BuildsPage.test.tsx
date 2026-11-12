@@ -255,7 +255,7 @@ describe("BuildsPage", () => {
       renderAt("/builds");
       expect(await screen.findByRole("columnheader", { name: "Steps" })).toBeTruthy();
       expect(screen.getByRole("columnheader", { name: "Sessions" })).toBeTruthy();
-      expect(screen.getByText("Median 8 steps")).toBeTruthy();
+      expect(screen.getByText("Median 8")).toBeTruthy();
       await openFilters("Structure");
       expect(await screen.findByRole("region", { name: "Steps" })).toBeTruthy();
       expect(screen.getByRole("region", { name: "Sessions" })).toBeTruthy();

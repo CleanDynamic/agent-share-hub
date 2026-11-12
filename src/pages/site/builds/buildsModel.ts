@@ -502,7 +502,7 @@ export function footerCalculations(calculations: readonly Calculation[], chosen:
     .filter((calculation) => chosen.includes(calculation.column as ColumnId) && CALC_KINDS.includes(calculation.kind))
     .map((calculation) => {
       const text = `${CALC_WORD[calculation.kind]}, ${COLUMN_NAME[calculation.column as ColumnId]}`;
-      return { key: `${calculation.column}:${calculation.kind}`, text: `${text} ${calculate(calculation, rows) ?? "–"}`, onRemove: () => onRemove(calculation) };
+      return { key: `${calculation.column}:${calculation.kind}`, column: calculation.column as ColumnId, text: `${text} ${calculate(calculation, rows) ?? "–"}`, onRemove: () => onRemove(calculation) };
     });
 }
 
@@ -531,16 +531,21 @@ export function medianOf(values: readonly number[]): number | null {
   return sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
-/** The footer: the count, the most common Field and Tools on the page, the median steps and the reproductions on the page. */
+/** The footer: the count, and one value under each column that has one: the most common Field and Tools on the page, the
+    median steps and the reproductions on the page (BF-13: by column, so each moves with its column). */
 export function tableFooter(total: number | null, rows: readonly TableRowView[]): TableFooterView {
   const median = medianOf(rows.flatMap((row) => (row.steps === null ? [] : [row.steps])));
-  const common = [mostCommon(rows.map((row) => row.field)), mostCommon(rows.flatMap((row) => row.tools.map((tool) => tool.name)))].filter(Boolean);
+  const field = mostCommon(rows.map((row) => row.field));
+  const tools = mostCommon(rows.flatMap((row) => row.tools.map((tool) => tool.name)));
   const count = total ?? rows.length;
   return {
     count: `${count} ${count === 1 ? "build" : "builds"}`,
-    mostCommon: common.length > 0 ? `Most common · ${common.join(", ")}` : undefined,
-    median: median === null ? undefined : `Median ${median} ${median === 1 ? "step" : "steps"}`,
-    total: `Total ${rows.reduce((sum, row) => sum + row.reproductions, 0)}`,
+    byColumn: {
+      ...(field ? { field } : null),
+      ...(tools ? { tools } : null),
+      ...(median === null ? null : { steps: `Median ${median}` }),
+      reproductions: `Total ${rows.reduce((sum, row) => sum + row.reproductions, 0)}`,
+    },
   };
 }
 
