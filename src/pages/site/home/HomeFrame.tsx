@@ -12,6 +12,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
+import { PageHeader } from "@/components/shell/PageHeader";
 import { useMinWidth } from "@/components/shell/useMinWidth";
 import { PageLink as Link } from "@/lib/routing/PageLink";
 import { ring } from "@/lib/theme/controls";
@@ -159,6 +160,7 @@ export function HomeColumns({
   if (layout === "one") {
     return (
       <div data-testid="home-view" data-layout="one" style={{ ...root, display: "flex", flexDirection: "column", gap: 24, minWidth: 0, paddingBottom: 48 }}>
+        <PageHeader title="Home" />
         {top}
         <section aria-label="Feed" style={{ minWidth: 0 }}>{centre}</section>
         <aside aria-label="The room" style={{ display: "flex", flexDirection: "column", gap: 32, minWidth: 0 }}>{right}</aside>
@@ -167,6 +169,8 @@ export function HomeColumns({
   }
   const three = layout === "three";
   return (
+    <>
+    <PageHeader title="Home" />
     <div
       data-testid="home-view"
       data-layout={layout}
@@ -189,6 +193,7 @@ export function HomeColumns({
         {right}
       </aside>
     </div>
+    </>
   );
 }
 
