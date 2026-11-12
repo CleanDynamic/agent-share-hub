@@ -24,6 +24,7 @@ import { IconButton } from "@/components/brand/IconButton";
 import { LampBar } from "@/components/brand/LampDot";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { Plaque } from "@/components/brand/Plaque";
+import { Segmented } from "@/components/brand/Segmented";
 import { FeedPost } from "@/components/gallery/FeedPost";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import { PageHeader } from "@/components/shell/PageHeader";
@@ -431,31 +432,6 @@ function DraftsLine({ drafts, sessions }: Pick<HomeViewProps, "drafts" | "sessio
 
 /* ═════════ the feed ═════════ */
 
-function KindButton({ label, pressed, onClick }: { label: string; pressed: boolean; onClick: () => void }) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
-  return (
-    <button
-      type="button"
-      aria-pressed={pressed}
-      onClick={onClick}
-      {...handlers}
-      style={{
-        boxSizing: "border-box",
-        height: 24,
-        padding: "0 8px",
-        background: pressed ? t.control : "transparent",
-        border: pressed ? `1px solid ${t.controlBorder}` : "1px solid transparent",
-        borderRadius: r.chip,
-        ...text(12, 400, pressed || state.hovered ? t.text : t.text2, { lineHeight: "normal" }),
-        cursor: "pointer",
-        ...ring(state.focusVisible),
-      }}
-    >
-      {label}
-    </button>
-  );
-}
-
 export function FeedHead({ scope, onScopeChange, filter, onFilterChange }: Pick<HomeViewProps, "scope" | "onScopeChange" | "filter" | "onFilterChange">) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", columnGap: 12, padding: "0 20px", borderBottom: `1px solid ${t.hairline}` }}>
@@ -471,10 +447,8 @@ export function FeedHead({ scope, onScopeChange, filter, onFilterChange }: Pick<
           { value: "everyone", label: "Everyone" },
         ]}
       />
-      <div role="group" aria-label="Kind" style={{ display: "flex", gap: 2, marginBottom: 6, padding: 2, background: t.well, border: `1px solid ${t.wellBorder}`, borderRadius: r.control }}>
-        {HOME_FILTERS.map((item) => (
-          <KindButton key={item.value} label={item.label} pressed={filter === item.value} onClick={() => onFilterChange(item.value)} />
-        ))}
+      <div style={{ marginBottom: 6 }}>
+        <Segmented<HomeFilter> label="Kind" size={28} items={HOME_FILTERS} value={filter} onChange={onFilterChange} />
       </div>
     </div>
   );

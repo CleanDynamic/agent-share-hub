@@ -382,7 +382,7 @@ export function FamilyPanel({ root, fit = "content", phone = false, selectedId =
           subtitle={familySubtitle(root)}
           right={
             lone || loading || failure ? undefined : (
-              <Segmented<FamilyReading> items={READINGS} value={reading} onChange={setReading} size={30} fontSize={11} label="Read the family as" />
+              <Segmented<FamilyReading> items={READINGS} value={reading} onChange={setReading} size={28} fontSize={11} label="Read the family as" />
             )
           }
         />

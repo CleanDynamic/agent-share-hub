@@ -253,7 +253,7 @@ function Progress({ progress }: { progress: ProgressView }) {
       </div>
       {/* The four tracks need about 260 of the column's 248: the picker runs into the module's padding rather than past its edge. */}
       <div style={{ marginTop: 12, marginLeft: -12, marginRight: -12 }}>
-        <Segmented<TrackValue> label="Track" semantics="radio" items={progress.tracks} value={progress.track ?? ("" as TrackValue)} onChange={progress.onTrack} fullWidth compact fontSize={11} />
+        <Segmented<TrackValue> label="Track" semantics="radio" size={28} items={progress.tracks} value={progress.track ?? ("" as TrackValue)} onChange={progress.onTrack} fullWidth compact fontSize={11} />
       </div>
     </section>
   );

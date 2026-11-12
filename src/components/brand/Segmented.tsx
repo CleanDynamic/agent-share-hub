@@ -177,6 +177,10 @@ export function Segmented<V extends string = string>({
   compact = false,
 }: SegmentedProps<V>) {
   const radio = semantics === "radio";
+  /* The control-heights pass: drawn 28 renders the one track, 32 high with its items 24 high and centred. The other
+     sizes keep `size` and `size − 6` until the screens that pass them (sign-in, Builds) move. */
+  const track = size === 28 ? 32 : size;
+  const itemHeight = size === 28 ? 24 : size - 6;
   const stop = items.some((item) => item.value === value) ? value : items.find((item) => !item.disabled)?.value;
 
   /* The radio group's keys: right and down step on, left and up step back, both
@@ -210,7 +214,8 @@ export function Segmented<V extends string = string>({
           display: fullWidth ? "flex" : "inline-flex",
           width: fullWidth ? "100%" : undefined,
           boxSizing: "border-box",
-          height: size,
+          height: track,
+          alignItems: "center",
           gap: 2,
           padding: 2,
           borderRadius: compact ? 7 : r.control,
@@ -223,7 +228,7 @@ export function Segmented<V extends string = string>({
         <Segment
           key={item.value}
           current={item.value === value}
-          height={size - 8}
+          height={itemHeight - 2}
           ariaLabel={item.ariaLabel}
           readOnly={readOnly}
           href={item.href}

@@ -265,7 +265,7 @@ export function RunBody({
             items={WAYS}
             value={way}
             onChange={(next) => setWay(next)}
-            size={phone ? 34 : 30}
+            size={phone ? 34 : 28}
             fontSize={phone ? 12 : 11}
             label="How to read this build"
           />

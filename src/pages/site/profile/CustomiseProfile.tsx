@@ -269,10 +269,10 @@ export function CustomiseProfile({ open, onClose, initial, pinLabels, pictures, 
 
       <Group title={CUSTOMISE_COPY.groups.feed}>
         <Row label={CUSTOMISE_COPY.openOn} id={`${ids}-open`} group phone={phone} noRule>
-          <Segmented<FeedFilter> label={CUSTOMISE_COPY.openOn} semantics="radio" items={FEED_ITEMS} value={draft.settings.feedFilter} onChange={(feedFilter) => settings({ feedFilter })} />
+          <Segmented<FeedFilter> label={CUSTOMISE_COPY.openOn} semantics="radio" size={28} items={FEED_ITEMS} value={draft.settings.feedFilter} onChange={(feedFilter) => settings({ feedFilter })} />
         </Row>
         <Row label={CUSTOMISE_COPY.showBuildsAs} id={`${ids}-display`} group hint={CUSTOMISE_COPY.oneBuild} phone={phone}>
-          <Segmented<BuildDisplay> label={CUSTOMISE_COPY.showBuildsAs} semantics="radio" items={DISPLAY_ITEMS} value={draft.settings.buildDisplay} onChange={(buildDisplay) => settings({ buildDisplay })} />
+          <Segmented<BuildDisplay> label={CUSTOMISE_COPY.showBuildsAs} semantics="radio" size={28} items={DISPLAY_ITEMS} value={draft.settings.buildDisplay} onChange={(buildDisplay) => settings({ buildDisplay })} />
         </Row>
       </Group>
 
@@ -306,10 +306,10 @@ export function CustomiseProfile({ open, onClose, initial, pinLabels, pictures, 
 
       <Group title={CUSTOMISE_COPY.groups.who}>
         <Row label={CUSTOMISE_COPY.notes} id={`${ids}-notes`} group phone={phone} noRule>
-          <Segmented<NotesVisible> label={CUSTOMISE_COPY.notes} semantics="radio" items={NOTES_ITEMS} value={draft.settings.notesVisible} onChange={(notesVisible) => settings({ notesVisible })} />
+          <Segmented<NotesVisible> label={CUSTOMISE_COPY.notes} semantics="radio" size={28} items={NOTES_ITEMS} value={draft.settings.notesVisible} onChange={(notesVisible) => settings({ notesVisible })} />
         </Row>
         <Row label={CUSTOMISE_COPY.level} id={`${ids}-level`} group hint={CUSTOMISE_COPY.saves} phone={phone}>
-          <Segmented<LevelVisible> label={CUSTOMISE_COPY.level} semantics="radio" items={LEVEL_ITEMS} value={draft.settings.levelVisible} onChange={(levelVisible) => settings({ levelVisible })} />
+          <Segmented<LevelVisible> label={CUSTOMISE_COPY.level} semantics="radio" size={28} items={LEVEL_ITEMS} value={draft.settings.levelVisible} onChange={(levelVisible) => settings({ levelVisible })} />
         </Row>
         {/* UX-15 P2: private profile and blocking live in Settings. */}
         <PageLink to="/settings/privacy" style={{ ...FOOT_NOTE, color: t.label, textDecoration: "underline", textUnderlineOffset: 3, textDecorationThickness: 1, alignSelf: "flex-start" }}>

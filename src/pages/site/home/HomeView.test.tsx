@@ -47,6 +47,14 @@ describe("HomeView · control heights", () => {
     expect([add.style.width, add.style.height]).toEqual(["24px", "24px"]);
     expect(screen.getByTestId("home-new-pill").style.height).toBe("32px");
   });
+
+  it("draws the Kind filter as the shared Segmented: a 32 track with 24 items", () => {
+    mount();
+    const kind = screen.getByRole("group", { name: "Kind" });
+    expect(kind.getAttribute("data-ui")).toBe("segmented");
+    expect(kind.style.height).toBe("32px");
+    for (const item of within(kind).getAllByRole("button")) expect(item.style.height).toBe("24px");
+  });
 });
 
 describe("HomeView · the three columns", () => {

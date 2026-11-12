@@ -340,15 +340,22 @@ describe("refined controls (UI-P84)", () => {
 
   it("Segmented has a 2px track in --seg-track and items size − 6 tall", () => {
     const html = refined(
-      <Segmented label="Feed" size={28} value="a" onChange={() => {}} items={[{ value: "a", label: "A" }, { value: "b", label: "B" }]} />,
+      <Segmented label="Feed" size={30} value="a" onChange={() => {}} items={[{ value: "a", label: "A" }, { value: "b", label: "B" }]} />,
     );
     expect(html).toContain("background:var(--seg-track)");
     expect(html).toContain("var(--seg-border)");
     expect(html).toContain("padding:2px");
-    expect(html).toContain("height:28px");
-    expect(html).toContain("height:22px");
+    expect(html).toContain("height:30px");
+    expect(html).toContain("height:24px");
     expect(html).toContain("padding:0 12px");
     expect(html).toContain("background:var(--control-on)");
+  });
+
+  it("Segmented drawn 28 is the control-heights track: 32 high, items 24 high and centred", () => {
+    render(<Segmented label="Feed" size={28} value="a" onChange={() => {}} items={[{ value: "a", label: "A" }, { value: "b", label: "B" }]} />);
+    const track = screen.getByRole("group", { name: "Feed" });
+    expect([track.style.height, track.style.alignItems]).toEqual(["32px", "center"]);
+    for (const item of screen.getAllByRole("button")) expect([item.style.height, item.style.padding]).toEqual(["24px", "0px 12px"]);
   });
 
   it("UnderlineTabs is 40 high with a 2px --text edge, a hairline row and an optional count", () => {
