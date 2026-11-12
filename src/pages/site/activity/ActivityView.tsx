@@ -34,6 +34,7 @@ import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { useRoom } from "@/components/brand/useRoom";
 import { FrameLink } from "@/components/shell/FrameLink";
 import { PAGE_TITLE, PageHeader } from "@/components/shell/PageHeader";
+import { PAGE_GUTTER, pageColumns } from "@/components/shell/pageGrid";
 import { ScrollRow } from "@/components/shell/ScrollRow";
 import { BETWEEN, useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
 import { asideStyle, mainStyle, trackRow } from "@/lib/theme/refinedLayout";
@@ -691,7 +692,8 @@ function DesktopActivity(props: ActivityViewProps) {
         </p>
         <NotificationSettingsLink />
       </div>
-    <div style={trackRow(stacked, 48)}>
+    {/* The page grid's main and side template (9 / 3) on a wide window; stacked below it. */}
+    <div style={stacked ? trackRow(stacked, 48) : pageColumns("mainSide")}>
       <section aria-label="Activity" style={mainStyle(stacked, { flex: "999 1 560px", minWidth: 0, display: "flex", flexDirection: "column", gap: 32 })}>
         {writeError ? <WriteFailed failure={writeError} /> : null}
         <ActivityList list={list} chosen={chosen} now={now} phone={false} onOpen={onOpen} />
@@ -705,7 +707,9 @@ function DesktopActivity(props: ActivityViewProps) {
           display: "flex",
           flexDirection: "column",
           gap: 24,
-          paddingLeft: 32,
+          /* The hairline in the middle of the gutter, the text on the column's edge. */
+          marginLeft: stacked ? undefined : -PAGE_GUTTER / 2,
+          paddingLeft: PAGE_GUTTER / 2,
           borderLeft: `1px solid ${t.hairline}`,
         })}
       >
