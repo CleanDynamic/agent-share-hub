@@ -29,6 +29,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ActiveFilterChip } from "@/components/vision/ActiveFilterChip";
 import { Empty } from "@/components/vision/Empty";
 import type { CalcKind } from "@/lib/build/buildsLayout";
+import { ALL_COLUMN_IDS } from "@/lib/build/buildsColumns";
 import { RANGE_FILTERS } from "@/lib/build/galleryRanges";
 import { STALE_AFTER_DAYS } from "@/lib/build/signals";
 import { TextTabs, type TextTab } from "@/components/vision/TextTabs";
@@ -54,8 +55,9 @@ export const COLUMN_ORDER: readonly ColumnId[] = ["build", "built", "field", "to
 
 export const EXTRA_COLUMNS: readonly ExtraColumnId[] = ["shape", "task", "setting", "role", "technique", "modality", "method", "autonomy", "data", "oversight", "age", "skill", "works", "likes", "patterns", "published"];
 
-/** Every column, the extras after the board's twelve (so the footer's groups stay together). */
-export const ALL_COLUMNS: readonly ColumnId[] = [...COLUMN_ORDER, ...EXTRA_COLUMNS];
+/** Every column, the extras after the board's twelve (so the footer's groups stay together). BF-12: the list itself is in
+    `src/lib/build/buildsColumns.ts`, where the address reads it. */
+export const ALL_COLUMNS = ALL_COLUMN_IDS as readonly ColumnId[];
 
 export const COLUMN_NAME: Record<ColumnId, string> = {
   build: "Build",
@@ -117,6 +119,10 @@ export interface TableRowView {
   cost: string;
   /** SV-24 P2: the extra columns' values; absent where the dev page draws only the board's twelve. */
   extra?: Readonly<Partial<Record<ExtraColumnId, string>>>;
+  /** BF-12: what a row is sorted on where its cell is words: the raw times and the open topics' number. Absent on the dev page. */
+  confirmedAt?: string | null;
+  publishedAt?: string | null;
+  openCount?: number;
   /** BF-10: the Likes number, and the lists Works on model and Patterns are joined from, for the footer's calculations. */
   likes?: number;
   lists?: Readonly<Partial<Record<"works" | "patterns", readonly string[]>>>;

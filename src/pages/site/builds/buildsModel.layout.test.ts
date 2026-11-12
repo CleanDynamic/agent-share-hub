@@ -19,6 +19,8 @@ describe("the columns", () => {
     expect(EXTRA_COLUMNS).toHaveLength(16);
     expect(ALL_COLUMNS).toHaveLength(28);
     expect(ALL_COLUMNS.slice(0, 12)).toEqual(COLUMN_ORDER);
+    // BF-12: the list kept in src/lib is the view's own, in the same order.
+    expect(ALL_COLUMNS).toEqual([...COLUMN_ORDER, ...EXTRA_COLUMNS]);
     expect(new Set(ALL_COLUMNS).size).toBe(28);
   });
 

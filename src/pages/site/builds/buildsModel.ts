@@ -32,6 +32,8 @@ export function listParamsOf(params: GalleryParams): BuildsTableOptions {
     confirmedState: params.state,
     worksOn: params.model,
     sort: params.sort ?? DEFAULT_GALLERY_SORT,
+    /* BF-12: the direction is the server sort's only while no browser key (`by`) holds it. */
+    ascending: params.dir === "asc" && !params.by,
   };
 }
 
@@ -382,10 +384,83 @@ export function tableRow(build: BuildsTableBuild, now: number, extras: readonly 
     rebuilds: build.rebuildCount,
     open: build.open.count === 0 ? "" : `${build.open.count} open`,
     cost: first("cost"),
+    confirmedAt: build.lastConfirmedAt,
+    publishedAt: build.publishedAt,
+    openCount: build.open.count,
     ...(extras.length > 0 ? { extra: Object.fromEntries(extras.map((id) => [id, extraOf(id)])) } : null),
     likes: build.likeCount ?? 0,
     lists: { works, patterns },
   };
+}
+
+/* ── sorting in the browser (BF-12, B3) ── */
+
+/** A value to sort on: a number or a word; null is empty, and goes last in both directions. */
+type SortKey = number | string | null;
+
+/** A scale facet's value by its place in the taxonomy, so Autonomy runs from "You do each step" to "Fully autonomous". */
+const scalePlace = (facet: Facet, label: string): SortKey => {
+  if (!label) return null;
+  const at = TAXONOMY[facet].findIndex((value) => value.label === label);
+  return at < 0 ? null : at;
+};
+const timeOf = (value: string | null | undefined): SortKey => {
+  const time = value ? Date.parse(value) : NaN;
+  return Number.isNaN(time) ? null : time;
+};
+const word = (value: string | undefined): SortKey => (value ? value : null);
+
+/** One key for each column: what its cells mean, not how they are written. */
+function sortKey(row: TableRowView, column: ColumnId): SortKey {
+  switch (column) {
+    case "build":
+      return word(row.title);
+    case "built":
+    case "field":
+      return word(row[column]);
+    case "tools":
+      return word(row.tools[0]?.name);
+    case "steps":
+    case "sessions":
+      return row[column];
+    case "reproductions":
+    case "rebuilds":
+      return row[column];
+    case "likes":
+      return row.likes ?? null;
+    case "confirmed":
+      return timeOf(row.confirmedAt);
+    case "published":
+      return timeOf(row.publishedAt);
+    case "runs":
+      return row.runs.length === 0 ? null : row.runs.reduce((total, value) => total + value, 0);
+    case "open":
+      return row.openCount ? row.openCount : null;
+    case "cost":
+      return scalePlace("cost", row.cost);
+    case "works":
+    case "patterns":
+      return word(row.lists?.[column]?.[0] ?? row.extra?.[column]);
+    default:
+      return SCALE_FACETS.includes(column as Facet) ? scalePlace(column as Facet, row.extra?.[column] ?? "") : word(row.extra?.[column]);
+  }
+}
+
+const collator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
+
+/** Two keys in one direction; an empty key is last whichever the direction. */
+function compareKeys(a: SortKey, b: SortKey, ascending: boolean): number {
+  if (a === null || b === null) return a === b ? 0 : a === null ? 1 : -1;
+  const order = typeof a === "number" && typeof b === "number" ? a - b : collator.compare(String(a), String(b));
+  return ascending ? order : -order;
+}
+
+/** The rows in a new array, sorted by one column and, for ties, a second. Stable: equal rows keep the order they came in. */
+export function sortRows(rows: readonly TableRowView[], by: ColumnId, ascending: boolean, by2?: ColumnId, ascending2 = false): TableRowView[] {
+  return rows
+    .map((row, at) => ({ row, at, first: sortKey(row, by), second: by2 ? sortKey(row, by2) : null }))
+    .sort((a, b) => compareKeys(a.first, b.first, ascending) || (by2 ? compareKeys(a.second, b.second, ascending2) : 0) || a.at - b.at)
+    .map((entry) => entry.row);
 }
 
 /** "2d ago", "just now": a short age as the Table writes it. */

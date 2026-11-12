@@ -1,0 +1,80 @@
+// BF-12 (B3, B5): the Table sorted in the browser when every matching build is loaded. One comparator, one key per column, stable,
+// empty values last in both directions, with a second key for ties.
+
+import { describe, expect, it } from "vitest";
+
+import type { TableRowView } from "./BuildsTableView";
+import { sortRows } from "./buildsModel";
+
+const row = (id: string, over: Partial<TableRowView> = {}): TableRowView => ({
+  id, href: `/b2/${id}`, title: id, maker: "kit", built: "", field: "", tools: [], steps: null, sessions: null, reproductions: 0,
+  lit: false, confirmed: "", runs: [], rebuilds: 0, open: "", cost: "", confirmedAt: null, publishedAt: null, ...over,
+});
+const ids = (rows: readonly TableRowView[]) => rows.map((entry) => entry.id);
+
+describe("BF-12 sortRows", () => {
+  it("numbers sort as numbers, descending and ascending", () => {
+    const rows = [row("a", { steps: 9 }), row("b", { steps: 22 }), row("c", { steps: 4 })];
+    expect(ids(sortRows(rows, "steps", false))).toEqual(["b", "a", "c"]);
+    expect(ids(sortRows(rows, "steps", true))).toEqual(["c", "a", "b"]);
+  });
+
+  it("words sort by locale, case ignored", () => {
+    const rows = [row("a", { field: "sales" }), row("b", { field: "Education" }), row("c", { field: "law" })];
+    expect(ids(sortRows(rows, "field", true))).toEqual(["b", "c", "a"]);
+    expect(ids(sortRows(rows, "field", false))).toEqual(["a", "c", "b"]);
+    const titles = [row("x", { title: "beta" }), row("y", { title: "Alpha" })];
+    expect(ids(sortRows(titles, "build", true))).toEqual(["y", "x"]);
+  });
+
+  it("a scale column sorts by the taxonomy's order, not the alphabet (Autonomy)", () => {
+    const rows = [
+      row("full", { extra: { autonomy: "Fully autonomous" } }),
+      row("each", { extra: { autonomy: "You do each step" } }),
+      row("gates", { extra: { autonomy: "AI acts with approval gates" } }),
+      row("suggests", { extra: { autonomy: "AI suggests and you approve" } }),
+    ];
+    expect(ids(sortRows(rows, "autonomy", true))).toEqual(["each", "suggests", "gates", "full"]);
+    expect(ids(sortRows(rows, "autonomy", false))).toEqual(["full", "gates", "suggests", "each"]);
+  });
+
+  it("Last confirmed and Published sort by time, newest first when descending", () => {
+    const rows = [
+      row("old", { confirmedAt: "2026-01-02T00:00:00Z", publishedAt: "2026-03-01T00:00:00Z" }),
+      row("new", { confirmedAt: "2026-10-02T00:00:00Z", publishedAt: "2025-03-01T00:00:00Z" }),
+      row("mid", { confirmedAt: "2026-05-02T00:00:00Z", publishedAt: "2026-09-01T00:00:00Z" }),
+    ];
+    expect(ids(sortRows(rows, "confirmed", false))).toEqual(["new", "mid", "old"]);
+    expect(ids(sortRows(rows, "published", false))).toEqual(["mid", "old", "new"]);
+    expect(ids(sortRows(rows, "published", true))).toEqual(["new", "old", "mid"]);
+  });
+
+  it("Tools and stack sorts by the first tool's name; Runs, 12 weeks by the total of the twelve", () => {
+    const tools = [row("l", { tools: [{ id: "lovable", name: "Lovable" }] }), row("c", { tools: [{ id: "claude-code", name: "Claude Code" }, { id: "zed", name: "Zed" }] })];
+    expect(ids(sortRows(tools, "tools", true))).toEqual(["c", "l"]);
+    const runs = [row("few", { runs: [5, 0, 0] }), row("many", { runs: [1, 2, 3, 4] }), row("none", { runs: [] })];
+    expect(ids(sortRows(runs, "runs", false))).toEqual(["many", "few", "none"]);
+  });
+
+  it("an empty value is last in both directions", () => {
+    const rows = [row("empty"), row("a", { steps: 3 }), row("b", { steps: 7 })];
+    expect(ids(sortRows(rows, "steps", false))).toEqual(["b", "a", "empty"]);
+    expect(ids(sortRows(rows, "steps", true))).toEqual(["a", "b", "empty"]);
+    const words = [row("blank"), row("x", { field: "Law" })];
+    expect(ids(sortRows(words, "field", false))).toEqual(["x", "blank"]);
+    expect(ids(sortRows(words, "field", true))).toEqual(["x", "blank"]);
+  });
+
+  it("equal keys keep the order they came in (stable)", () => {
+    const rows = [row("1", { rebuilds: 2 }), row("2", { rebuilds: 1 }), row("3", { rebuilds: 2 }), row("4", { rebuilds: 2 })];
+    expect(ids(sortRows(rows, "rebuilds", false))).toEqual(["1", "3", "4", "2"]);
+    expect(ids(sortRows(rows, "rebuilds", true))).toEqual(["2", "1", "3", "4"]);
+    expect(ids(rows)).toEqual(["1", "2", "3", "4"]);
+  });
+
+  it("a second key breaks ties, with its own direction", () => {
+    const rows = [row("a", { field: "Law", reproductions: 1 }), row("b", { field: "Sales", reproductions: 9 }), row("c", { field: "Law", reproductions: 5 })];
+    expect(ids(sortRows(rows, "field", true, "reproductions", false))).toEqual(["c", "a", "b"]);
+    expect(ids(sortRows(rows, "field", true, "reproductions", true))).toEqual(["a", "c", "b"]);
+  });
+});

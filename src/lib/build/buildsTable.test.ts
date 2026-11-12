@@ -71,6 +71,41 @@ describe("listBuildsTable", () => {
     expect(call("order").map((entry) => entry.args[0]).slice(4)).toEqual(["rebuild_count", "published_at", "id"]);
   });
 
+  /* ── BF-12 (B3) ── */
+
+  it("sorts by the stored steps or sessions, empty last, with the same tie-breakers", async () => {
+    await listBuildsTable({ sort: "steps" });
+    expect(call("order").map((entry) => entry.args)).toEqual([
+      ["step_count", { ascending: false, nullsFirst: false }],
+      ["published_at", { ascending: false, nullsFirst: false }],
+      ["id", { ascending: true }],
+    ]);
+    calls = [];
+    await listBuildsTable({ sort: "sessions", ascending: true });
+    expect(call("order").map((entry) => entry.args)[0]).toEqual(["session_count", { ascending: true, nullsFirst: false }]);
+  });
+
+  it("ascending turns only the sort's own first order", async () => {
+    await listBuildsTable({ sort: "reproduced", ascending: true });
+    expect(call("order").map((entry) => entry.args)).toEqual([
+      ["reproduction_count", { ascending: true, nullsFirst: false }],
+      ["last_confirmed_at", { ascending: false, nullsFirst: false }],
+      ["published_at", { ascending: false, nullsFirst: false }],
+      ["id", { ascending: true }],
+    ]);
+    calls = [];
+    await listBuildsTable({ sort: "newest", ascending: true });
+    expect(call("order").map((entry) => entry.args)[0]).toEqual(["published_at", { ascending: true, nullsFirst: false }]);
+  });
+
+  it("without the stored counts, a steps sort keeps only the tie-breakers", async () => {
+    queue = [{ data: [], error: { code: "42703", message: 'column builds.step_count does not exist' }, count: null }];
+    await listBuildsTable({ sort: "steps" });
+    const orders = call("order").map((entry) => entry.args[0]);
+    expect(orders.slice(-2)).toEqual(["published_at", "id"]);
+    expect(orders.slice(3)).not.toContain("step_count");
+  });
+
   it("puts facets of one kind in one OR, and each kind in an AND", async () => {
     await listBuildsTable({ facets: ["field:education", "field:law", "skill:no-coding"] });
     expect(call("overlaps")).toEqual([

@@ -123,8 +123,9 @@ describe("SV-11: the view, open and the resting sort", () => {
     expect(galleryHref({ facets: ["field:education"], open: true, sort: "newest" })).toBe("/builds?f=field%3Aeducation&open=1&sort=newest");
   });
 
+  // BF-12 gave `by` a new meaning, a Table column to sort by in the browser; the board's tab values (by=makers) are not columns.
   it("drops the dashboard's parameters", () => {
-    expect(parse("tab=makers&lab=Google&report=multi&active=30&dsort=prompts&build=x&by=field")).toEqual({ lens: "all", madeFor: [], madeWith: [], query: null });
+    expect(parse("tab=makers&lab=Google&report=multi&active=30&dsort=prompts&build=x&by=makers")).toEqual({ lens: "all", madeFor: [], madeWith: [], query: null });
   });
 });
 
@@ -192,5 +193,45 @@ describe("SV-24: the open filter set in the address", () => {
     expect(href).toBe(`/builds?f=field%3Aai-ml&sort=rebuilt&q=nlp&set=${ID}`);
     expect(galleryHref(parse(href.split("?")[1]))).toBe(href);
     expect(galleryHref({ set: "nope" })).toBe("/builds");
+  });
+});
+
+describe("BF-12: the sort's direction and the browser's keys", () => {
+  const ID = "0b6f3a42-1c52-4e0e-9a3c-6d2f1f4a9c10";
+  it("dir=asc is read and written; anything else is descending and is not written", () => {
+    expect(parse("dir=asc").dir).toBe("asc");
+    for (const value of ["desc", "ASC", "1", ""]) expect(parse(`dir=${value}`)).not.toHaveProperty("dir");
+    expect(galleryHref({ dir: "asc" })).toBe("/builds?dir=asc");
+    expect(galleryHref({ dir: "desc" as never })).toBe("/builds");
+  });
+
+  it("by=<a column id> is read and written; an unknown id is dropped", () => {
+    expect(parse("by=field").by).toBe("field");
+    expect(parse("by=nope")).not.toHaveProperty("by");
+    expect(galleryHref({ by: "autonomy" })).toBe("/builds?by=autonomy");
+    expect(galleryHref({ by: "nope" })).toBe("/builds");
+  });
+
+  it("by2 and dir2 the same; by2 without by is dropped", () => {
+    expect(parse("by=field&by2=steps&dir2=asc")).toMatchObject({ by: "field", by2: "steps", dir2: "asc" });
+    expect(parse("by2=steps&dir2=asc")).not.toHaveProperty("by2");
+    expect(parse("by2=steps&dir2=asc")).not.toHaveProperty("dir2");
+    expect(parse("by=field&by2=nope")).not.toHaveProperty("by2");
+    expect(parse("by=field&by2=field")).not.toHaveProperty("by2");
+    expect(parse("by=field&dir2=asc")).not.toHaveProperty("dir2");
+    expect(galleryHref({ by2: "steps" })).toBe("/builds");
+    expect(galleryHref({ by: "field", by2: "steps", dir2: "asc" })).toBe("/builds?by=field&by2=steps&dir2=asc");
+  });
+
+  it("sort accepts steps and sessions", () => {
+    expect(parse("sort=steps").sort).toBe("steps");
+    expect(parse("sort=sessions").sort).toBe("sessions");
+    expect(galleryHref({ sort: "sessions" })).toBe("/builds?sort=sessions");
+  });
+
+  it("the order of keys in the address is unchanged for the old parameters, with sort, dir, by, by2, dir2 after the ranges", () => {
+    const href = galleryHref({ query: "nlp", sort: "steps", dir: "asc", by: "field", by2: "likes", dir2: "asc", facets: ["field:ai-ml"], ranges: { steps: { min: 5 } }, open: true, set: ID });
+    expect(href).toBe(`/builds?f=field%3Aai-ml&open=1&steps=5-&sort=steps&dir=asc&by=field&by2=likes&dir2=asc&q=nlp&set=${ID}`);
+    expect(galleryHref(parse(href.split("?")[1]))).toBe(href);
   });
 });
