@@ -123,7 +123,7 @@ describe("everything at once, on the build page", () => {
       // P10
       "A trained model, based on Muse Spark Open, trained on 1,200 rows of ratings.csv",
       // CA-04: tiles inside tiles, the goal, MCP
-      "Sent with prompt 1",
+      "Attached to prompt 1",
       "Worked until the order form passes its tests · at most 40 turns · reached in 12",
       "MCP server · at a web address · sign in with your github account",
     ];

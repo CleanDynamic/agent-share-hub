@@ -242,8 +242,10 @@ export function DragHandle({ label, nest, testId = "drag-handle", phone }: { lab
       onBlur={handlers.onBlur}
       style={{
         ...bareButton,
-        width: state?.phone ? size.touch : size.icon,
+        width: state?.phone ? size.touch : size.controlSmall,
         height: state?.phone ? size.touch : size.controlSmall,
+        /* WCAG 2.5.8: the target is 24 square. It still takes S7's 16 of the row: the other 8 hang over the gaps either side. */
+        margin: state?.phone ? undefined : `0 -${(size.controlSmall - size.icon) / 2}px`,
         flexShrink: 0,
         display: "inline-flex",
         alignItems: "center",
