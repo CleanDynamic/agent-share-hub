@@ -67,16 +67,23 @@ describe("SiteFrameView under the refined look", () => {
     expect(surface.querySelector("main#main")).not.toBeNull();
     expect(surface.contains(screen.getByTestId("f"))).toBe(true);
     expect(surface.contains(screen.getByTestId("h"))).toBe(false);
-    const main = surface.querySelector("main#main")!;
+    // The page's PageHeader draws the breadcrumb now; the frame keeps its slot for the composer only.
+    expect(screen.queryByTestId("b")).toBeNull();
+    expect(surface.querySelector("main#main")!.firstElementChild?.textContent).toBe("page");
+  });
+
+  it("keeps the breadcrumb slot first in main for the composer (wide)", () => {
+    refinedFrame({ viewport: "desktop", wide: true, breadcrumb: <i data-testid="b" />, children: <p>page</p> });
+    const main = screen.getByTestId("site-frame").querySelector("main#main")!;
     expect(main.firstElementChild?.contains(screen.getByTestId("b"))).toBe(true);
   });
 
   it("draws the surface recipe on --frame, with the board's main padding", () => {
     const html = markup({ viewport: "desktop", children: <p>page</p> });
     expect(html).toContain("background:var(--frame)");
-    expect(html).toContain("width:calc(100% - 12px);max-width:1428px;margin:0 auto 6px");
+    expect(html).toContain("width:calc(100% - 16px);max-width:1428px;margin:0 auto 8px");
     expect(html).toContain("background:var(--surface);border:1px solid var(--surface-border);border-radius:10px;box-shadow:var(--surface-shadow)");
-    expect(html).toContain("padding:24px clamp(16px, 4.6vw, 64px) 48px");
+    expect(html).toContain("padding:39px 55px 48px");
   });
 
   it("keeps the 6px inset and radius 10 on a phone, with the phone header and the dock", () => {

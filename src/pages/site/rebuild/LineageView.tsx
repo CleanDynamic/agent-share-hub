@@ -10,13 +10,13 @@
    visible heading (the breadcrumb names the build). PHONE: a heading, the family
    as an indented list, then what changed. */
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import type { PanelFailure } from "@/components/brand/ErrorState";
 import { PageHeading } from "@/components/brand/PageHeading";
 import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
-import { sideTrack, useIsPhone, useTierFit, useWidthTier } from "@/components/shell/useMinWidth";
+import { useIsPhone, useTierFit, useWidthTier } from "@/components/shell/useMinWidth";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
@@ -25,7 +25,12 @@ import { FIGTREE } from "@/lib/theme/type";
 
 import { ChangesPanel } from "./ChangesPanel";
 import { FamilyPanel } from "./FamilyPanel";
-import { VISUALLY_HIDDEN, type ChangeGroupView, type FamilyNodeView } from "./rebuildModel";
+import { type ChangeGroupView, type FamilyNodeView } from "./rebuildModel";
+import { PageHeader } from "@/components/shell/PageHeader";
+import { pageColumns } from "@/components/shell/pageGrid";
+
+/** The first line of body copy under the title. */
+const BODY_LINE: CSSProperties = { margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.text2 };
 
 /** What the right column shows for the build the reader picked. */
 export interface LineageSelection {
@@ -161,12 +166,16 @@ export function LineageView({ fit: givenFit = "content", title, family, selected
 
   return (
     <div data-testid="lineage-view" data-viewport="desktop" style={{ display: "flex", flexDirection: "column", gap: 9, lineHeight: "normal", ...boardHeight(fit) }}>
-      <h1 style={VISUALLY_HIDDEN}>{`The family of ${title}`}</h1>
+      {/* Page shell: the page's title; the build's name is in the breadcrumb; the line the hidden h1 held is the first line of body copy. */}
+      <div style={{ paddingBottom: 15 }}>
+        <PageHeader title="Lineage" />
+        <p style={BODY_LINE}>{`The family of ${title}`}</p>
+      </div>
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: stacked ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(470)}`,
-          gap: 9,
+          /* The page grid's 8 / 4 template (mainWideSide): the side column from 960 at 1440, 416 wide. Stacked below 1024. */
+          ...(stacked ? { display: "grid", gridTemplateColumns: "minmax(0, 1fr)" } : pageColumns("mainWideSide")),
+          rowGap: 9,
           flexGrow: 1,
           minHeight: 0,
         }}

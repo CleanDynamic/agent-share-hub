@@ -8,6 +8,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { Segmented } from "@/components/brand/Segmented";
+import { Breadcrumb } from "@/components/shell/Breadcrumb";
+import { PageHeader } from "@/components/shell/PageHeader";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import type { CompareRow, TotalsRow } from "@/lib/build/compare";
 import { stepTitle, type Step } from "@/lib/build/graph";
@@ -57,7 +59,7 @@ export function CompareView({ a, b, rows, totals, sentence }: CompareViewProps) 
   );
   return (
     <div data-testid="compare-view" data-viewport={phone ? "mobile" : "desktop"} style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
-      <h1 style={{ ...text(20, 500, t.text), margin: 0 }}>Compare two builds</h1>
+      <PageHeader title="Compare two builds" breadcrumb={phone ? undefined : <Breadcrumb />} />
       <section aria-label="Totals" style={{ ...moduleStyle(false), display: "flex", flexDirection: "column", gap: 12 }}>
         <table data-testid="compare-totals" style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
           <thead>

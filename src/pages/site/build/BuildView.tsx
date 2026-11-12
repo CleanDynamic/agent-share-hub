@@ -115,6 +115,8 @@ export interface BuildViewProps {
 export { BOTTOM_ROW, BuildViewSkeleton, dropped, HERO_ROW, heroRow, bottomRow, MOCK_ROWS, ProofSkeleton } from "./BuildViewSkeleton";
 import { creditLine } from "@/lib/build/contributors";
 import { BOTTOM_ROW, dropped, HERO_ROW, heroRow, bottomRow, MOCK_ROWS, pair, ProofSkeleton, side, wide } from "./BuildViewSkeleton";
+import { PAGE_TITLE, PageHeader } from "@/components/shell/PageHeader";
+import { pageColumns } from "@/components/shell/pageGrid";
 
 /** The phone shows this many parts before "Show n more parts". */
 export const PHONE_PARTS = 6;
@@ -466,7 +468,7 @@ export function BuildViewNotice({ line, detail, action }: { line: string; detail
   return (
     <Panel padding="24px 24px">
       <div data-testid="build-notice" role="status" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
-        <h1 style={{ ...display(30), margin: 0, color: t.text }}>{line}</h1>
+        <h1 style={PAGE_TITLE}>{line}</h1>
         {detail ? <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.55, color: t.text2, maxWidth: "68ch" }}>{detail}</p> : null}
         {action}
       </div>
@@ -710,7 +712,6 @@ function Hero({
         <ResultWindow label={`${hero.title} · Result`} style={{ position: "absolute", left: "calc(50% - 152px)", top: 64 }}>
           {hero.cover}
         </ResultWindow>
-        {phone ? null : <ActionDock actions={actions} phone={false} announce={announce} />}
       </div>
       ) : null}
       <div style={{ display: "flex", alignItems: pictured ? "center" : "flex-start", gap: 16, padding: 16 }}>
@@ -732,7 +733,8 @@ function Hero({
           <Mark size={24} />
         </span>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, flexGrow: 1 }}>
-          <h1 style={{ ...text(20, 500, t.text), margin: 0, letterSpacing: "-0.015em", overflowWrap: "anywhere" }}>{hero.title}</h1>
+          {/* Desktop: the title is the page's PageHeader (DesktopBuild). */}
+          {phone ? <h1 style={{ ...PAGE_TITLE, overflowWrap: "anywhere" }}>{hero.title}</h1> : null}
           <SummaryLine summary={hero.summary} />
           {hero.outcome ? (
             <p style={{ ...text(13, 400, t.text2), margin: 0, maxWidth: 680, lineHeight: "20px" }}>{hero.outcome}</p>
@@ -740,7 +742,6 @@ function Hero({
           {hero.credit.madeBy || hero.credit.rebuiltFrom ? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{credit}</p> : null}
           {hero.delta ? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{hero.delta}</p> : null}
         </div>
-        {!pictured && !phone ? <ActionDock actions={actions} phone={false} announce={announce} inline /> : null}
       </div>
     </section>
   );
@@ -940,7 +941,8 @@ function ThreadHero({
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 320px", minWidth: 0 }}>
-          <h1 style={{ ...text(20, 500, t.text), lineHeight: 1.3, margin: 0, letterSpacing: "-0.015em", overflowWrap: "anywhere" }}>{hero.title}</h1>
+          {/* Desktop: the title and the actions are the page's PageHeader (DesktopBuild). */}
+          {phone ? <h1 style={{ ...PAGE_TITLE, overflowWrap: "anywhere" }}>{hero.title}</h1> : null}
           <SummaryLine summary={hero.summary} />
           {hero.outcome ? <p style={{ ...text(13, 400, t.text2), margin: 0, maxWidth: 680, lineHeight: "20px" }}>{hero.outcome}</p> : null}
           {/* An original build's byline carries the credit; a rebuild keeps its source line. */}
@@ -972,7 +974,7 @@ function ThreadHero({
             ) : null}
           </div>
         </div>
-        <ActionGroup actions={actions} phone={phone} announce={announce} />
+        {phone ? <ActionGroup actions={actions} phone={phone} announce={announce} /> : null}
       </div>
 
       {afterTitle}
@@ -1140,8 +1142,15 @@ function DesktopBuild(props: BuildViewProps) {
     <Hero hero={hero} actions={actions} proof={proof} phone={false} now={now} announce={announce} inColumn />
   );
   return (
+    <>
+    {/* Page shell: the build's title at 64 / 88 with its actions; the breadcrumb is BuildPage's (PageBreadcrumb, every state). */}
+    <PageHeader
+      title={hero.title}
+      actions={hero.thread ? <ActionGroup actions={actions} phone={false} announce={announce} /> : <ActionDock actions={actions} phone={false} announce={announce} inline />}
+    />
     <div data-testid="build-view" data-viewport="desktop" style={{ display: "flex", flexDirection: "column", gap: 32, marginTop: 8, lineHeight: "normal" }}>
-      <div data-testid="build-main-row" style={{ ...pair(stacked), justifyContent: "space-between", alignItems: "flex-start" }}>
+      {/* The page grid's main and side template (9 / 3) above 1024. */}
+      <div data-testid="build-main-row" style={stacked ? { ...pair(stacked), justifyContent: "space-between", alignItems: "flex-start" } : { ...pageColumns("mainSide"), alignItems: "start" }}>
         {stacked ? (
           <>
             {title}
@@ -1184,7 +1193,8 @@ function DesktopBuild(props: BuildViewProps) {
         )}
       </div>
       {steps ? null : (
-        <div style={{ ...bottomRow(tier), gap: 16 }}>
+        /* From 1280 up the page grid's feed template (3 / 6 / 3), so the right column keeps the upper row's 1072 edge. */
+        <div style={tier === "full" ? { ...pageColumns("feed"), rowGap: 16, flexGrow: 1, minHeight: 0 } : { ...bottomRow(tier), gap: 16 }}>
           <div style={{ minHeight: 0 }}>
             <AnatomyPanel anatomy={anatomy} phone={false} onSelect={anatomy.onSelect} />
           </div>
@@ -1198,6 +1208,7 @@ function DesktopBuild(props: BuildViewProps) {
       )}
       {region}
     </div>
+    </>
   );
 }
 

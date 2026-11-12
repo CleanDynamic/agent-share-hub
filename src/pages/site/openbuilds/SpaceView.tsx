@@ -6,6 +6,9 @@
 import type { ReactNode } from "react";
 
 import { PostControl, PostPrimary } from "@/components/post/postControls";
+import { Breadcrumb } from "@/components/shell/Breadcrumb";
+import { pageColumns } from "@/components/shell/pageGrid";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { TextTabs } from "@/components/vision/TextTabs";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -37,6 +40,7 @@ const TABS: readonly { value: SpaceTab; label: string }[] = [
 ];
 
 export function SpaceView(view: SpaceViewProps) {
+  const phone = useIsPhone();
   const member = primaryFor(view.role) === "post";
   const primary: ReactNode = member ? (
     <PostPrimary onClick={view.onPost} block>
@@ -49,14 +53,18 @@ export function SpaceView(view: SpaceViewProps) {
   );
 
   return (
-    <div style={{ maxWidth: 700, margin: "0 auto", paddingBottom: 48 }}>
+    <div>
       <PageHead
         title={view.name}
         line={view.description || undefined}
         meta={view.meta}
         actions={view.role === "moderator" ? <PostControl onClick={view.onSettings}>Settings</PostControl> : undefined}
         primary={primary}
+        breadcrumb={<Breadcrumb />}
       />
+    {/* Desktop: the page grid's feed template, the space in columns 4 to 9. The phone keeps its 700 column. */}
+    <div style={phone ? undefined : pageColumns("feed")}>
+    <div style={phone ? { maxWidth: 700, margin: "0 auto", paddingBottom: 48 } : { gridColumn: 2, minWidth: 0, paddingBottom: 48 }}>
       <div style={{ borderBottom: `1px solid ${t.hairline}`, padding: "0 4px" }}>
         <TextTabs tabs={TABS} value={view.tab} onChange={view.onTab} label="Space" rule={false} />
       </div>
@@ -76,6 +84,8 @@ export function SpaceView(view: SpaceViewProps) {
           )}
         </div>
       )}
+    </div>
+    </div>
     </div>
   );
 }

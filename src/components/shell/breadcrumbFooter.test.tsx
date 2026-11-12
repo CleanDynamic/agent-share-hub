@@ -179,7 +179,7 @@ describe("breadcrumb and footer under the refined look", () => {
 
   it("the footer sits under a 1px --hairline with the gutter, links at 12.5 --text2 8px 20px apart, and no Theme control (UX-03 P10)", () => {
     const html = renderToStaticMarkup(refinedFooter(true));
-    expect(html).toContain("border-top:1px solid var(--hairline);padding:12px clamp(16px, 4.6vw, 64px)");
+    expect(html).toContain("border-top:1px solid var(--hairline);padding:12px 55px");
     expect(html).toContain("gap:8px 20px");
     expect(html).toContain("font-size:12.5px;font-weight:400;color:var(--text2)");
     expect(html).not.toContain('data-ui="segmented"');

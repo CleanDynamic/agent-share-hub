@@ -6,6 +6,9 @@
 /** The site header's height, desktop and phone. */
 export const HEADER_HEIGHT = 48;
 
+/** Desktop: the page's content edge, 56 inside the surface's outer edge. The header, `<main>` and the footer read it. */
+export const PAGE_EDGE = 56;
+
 /** A dock tile's height (the touch floor). */
 export const DOCK_TILE_HEIGHT = 44;
 /** The dock's padding above and below its tiles. */

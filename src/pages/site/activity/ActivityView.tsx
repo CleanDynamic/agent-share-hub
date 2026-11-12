@@ -33,6 +33,8 @@ import { LampBar } from "@/components/brand/LampDot";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { useRoom } from "@/components/brand/useRoom";
 import { FrameLink } from "@/components/shell/FrameLink";
+import { PAGE_TITLE, PageHeader } from "@/components/shell/PageHeader";
+import { PAGE_GUTTER, pageColumns } from "@/components/shell/pageGrid";
 import { ScrollRow } from "@/components/shell/ScrollRow";
 import { BETWEEN, useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
 import { asideStyle, mainStyle, trackRow } from "@/lib/theme/refinedLayout";
@@ -669,31 +671,30 @@ function DesktopActivity(props: ActivityViewProps) {
   const stacked = !useMinWidth(BETWEEN.stack);
 
   return (
-    <div
-      data-testid="activity-view"
-      data-viewport="desktop"
-      style={trackRow(stacked, 48)}
-    >
-      <section aria-labelledby="activity-heading" style={mainStyle(stacked, { flex: "999 1 560px", minWidth: 0, display: "flex", flexDirection: "column", gap: 32 })}>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 16 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4, flexGrow: 1, minWidth: 0 }}>
-            <h1 id="activity-heading" style={text(20, 500, t.text, { margin: 0, letterSpacing: "-0.015em" })}>
-              Activity
-            </h1>
-            <p style={text(12, 400, t.text2, { margin: 0, display: "flex", alignItems: "center", gap: 8, minHeight: 15 })}>
-              {unread === null ? null : (
-                <>
-                  {unreadLine(unread, live)}
-                  {live ? <LampBar /> : null}
-                </>
-              )}
-            </p>
-            <NotificationSettingsLink />
-          </div>
-          <Button variant="secondary" size={28} fontSize={12} data-testid="activity-mark-all" disabled={!unread} onClick={onMarkAllRead}>
-            Mark all read
-          </Button>
-        </div>
+    <div data-testid="activity-view" data-viewport="desktop" style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+      {/* The page head spans both tracks, so Mark all read ends at the content edge. */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+        <PageHeader
+          title="Activity"
+          actions={
+            <Button variant="secondary" size={28} fontSize={12} data-testid="activity-mark-all" disabled={!unread} onClick={onMarkAllRead}>
+              Mark all read
+            </Button>
+          }
+        />
+        <p style={text(12, 400, t.text2, { margin: 0, display: "flex", alignItems: "center", gap: 8, minHeight: 15 })}>
+          {unread === null ? null : (
+            <>
+              {unreadLine(unread, live)}
+              {live ? <LampBar /> : null}
+            </>
+          )}
+        </p>
+        <NotificationSettingsLink />
+      </div>
+    {/* The page grid's main and side template (9 / 3) on a wide window; stacked below it. */}
+    <div style={stacked ? trackRow(stacked, 48) : pageColumns("mainSide")}>
+      <section aria-label="Activity" style={mainStyle(stacked, { flex: "999 1 560px", minWidth: 0, display: "flex", flexDirection: "column", gap: 32 })}>
         {writeError ? <WriteFailed failure={writeError} /> : null}
         <ActivityList list={list} chosen={chosen} now={now} phone={false} onOpen={onOpen} />
       </section>
@@ -706,7 +707,9 @@ function DesktopActivity(props: ActivityViewProps) {
           display: "flex",
           flexDirection: "column",
           gap: 24,
-          paddingLeft: 32,
+          /* The hairline in the middle of the gutter, the text on the column's edge. */
+          marginLeft: stacked ? undefined : -PAGE_GUTTER / 2,
+          paddingLeft: PAGE_GUTTER / 2,
           borderLeft: `1px solid ${t.hairline}`,
         })}
       >
@@ -719,6 +722,7 @@ function DesktopActivity(props: ActivityViewProps) {
           onToggle={(kind) => setChosen((current) => toggleKind(current, kind))}
         />
       </aside>
+    </div>
     </div>
   );
 }
@@ -736,7 +740,7 @@ function PhoneActivity(props: ActivityViewProps) {
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
           <Eyebrow>Activity</Eyebrow>
-          <h1 style={text(20, 500, t.text, { margin: 0, letterSpacing: "-0.015em" })}>
+          <h1 style={PAGE_TITLE}>
             {unread === null ? "Activity" : unreadHeading(unread)}
           </h1>
           <NotificationSettingsLink />

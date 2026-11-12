@@ -24,6 +24,7 @@ import { ModelMark } from "@/components/brand/ModelMark";
 import { Plaque } from "@/components/brand/Plaque";
 import { FeedPost } from "@/components/gallery/FeedPost";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
+import { PageHeader } from "@/components/shell/PageHeader";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { EngagementRow } from "@/components/social/EngagementRow";
 import { PostCard } from "@/components/post/PostCard";
@@ -1016,6 +1017,8 @@ export function HomeView(props: HomeViewProps) {
   // While the feed loads the page is its loading state, the route's Placeholder, block for block (SV-04 P5).
   if (props.feed.status === "loading") return <HomeLoadingView />;
   return (
+    <>
+    <PageHeader title="Home" />
     <HomeColumns
       layout={layout}
       top={layout === "one" ? <DraftsLine drafts={props.drafts} sessions={props.sessions} /> : undefined}
@@ -1023,6 +1026,7 @@ export function HomeView(props: HomeViewProps) {
       centre={<Feed {...props} />}
       right={<Room {...props} />}
     />
+    </>
   );
 }
 

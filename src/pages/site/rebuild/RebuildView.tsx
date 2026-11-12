@@ -15,7 +15,7 @@
    Publish, then what changed, then the family as an indented list (a tree does
    not fit 390). */
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import { ErrorState } from "@/components/brand/ErrorState";
 import { PageHeading } from "@/components/brand/PageHeading";
@@ -23,22 +23,26 @@ import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { VISUALLY_HIDDEN as HIDDEN } from "@/components/brand/VisuallyHidden";
 import { Panel } from "@/components/brand/Panel";
 import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
-import { sideTrack, useIsPhone, useTierFit, useWidthTier } from "@/components/shell/useMinWidth";
+import { useIsPhone, useTierFit, useWidthTier } from "@/components/shell/useMinWidth";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE, display } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import { ChangesPanel } from "./ChangesPanel";
 import { FamilyPanel } from "./FamilyPanel";
 import { ReadinessPanel } from "./ReadinessPanel";
+import { PAGE_TITLE, PageHeader } from "@/components/shell/PageHeader";
+import { pageColumns } from "@/components/shell/pageGrid";
 import {
-  VISUALLY_HIDDEN,
   rebuildingLine,
   type ChangeGroupView,
   type FamilyNodeView,
   type ReadinessView,
   type RebuildCreditView,
 } from "./rebuildModel";
+
+/** The first line of body copy under the title. */
+const BODY_LINE: CSSProperties = { margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.text2 };
 
 export interface RebuildViewProps {
   fit?: PageFit;
@@ -98,12 +102,16 @@ export function RebuildView(props: RebuildViewProps) {
 
   return (
     <div data-testid="rebuild-view" data-viewport="desktop" style={{ display: "flex", flexDirection: "column", gap: 9, lineHeight: "normal", ...boardHeight(fit) }}>
-      <h1 style={VISUALLY_HIDDEN}>{`${draftTitle}: ${rebuildingLine(source)}`}</h1>
+      {/* Page shell: the page's title; the build's name is in the breadcrumb; the line the hidden h1 held is the first line of body copy. */}
+      <div style={{ paddingBottom: 15 }}>
+        <PageHeader title="Rebuild" />
+        <p style={BODY_LINE}>{`${draftTitle}: ${rebuildingLine(source)}`}</p>
+      </div>
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: stacked ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(470)}`,
-          gap: 9,
+          /* The page grid's 8 / 4 template (mainWideSide): the side column from 960 at 1440, 416 wide. Stacked below 1024. */
+          ...(stacked ? { display: "grid", gridTemplateColumns: "minmax(0, 1fr)" } : pageColumns("mainWideSide")),
+          rowGap: 9,
           flexGrow: 1,
           minHeight: 0,
         }}
@@ -170,9 +178,9 @@ export function RebuildViewSkeleton({ fit = "content", label = "Loading the rebu
       announce
       data-testid="rebuild-loading"
       style={{
-        display: "grid",
-        gridTemplateColumns: stacked ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(470)}`,
-        gap: 9,
+        /* As the page: the 8 / 4 template above 1024. */
+        ...(stacked ? { display: "grid", gridTemplateColumns: "minmax(0, 1fr)" } : pageColumns("mainWideSide")),
+        rowGap: 9,
         ...boardHeight(tierFit),
       }}
     >
@@ -204,7 +212,7 @@ export function RebuildViewNotice({ line, detail, action }: { line: string; deta
   return (
     <Panel padding="24px 24px">
       <div data-testid="rebuild-notice" role="status" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 9 }}>
-        <h1 style={{ ...display(30), margin: 0, color: t.text }}>{line}</h1>
+        <h1 style={PAGE_TITLE}>{line}</h1>
         {detail ? <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.55, color: t.text2, maxWidth: "68ch" }}>{detail}</p> : null}
         {action}
       </div>

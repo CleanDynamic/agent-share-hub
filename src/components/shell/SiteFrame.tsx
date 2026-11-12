@@ -28,9 +28,9 @@
 //
 // THE REFINED FRAME (UI-P87). Under the refined look the root is `--frame` and a flex column. The header sits on it
 // (sticky, 48, the frame behind it so the page scrolls under the frame and not through it), and one SURFACE wraps
-// everything below: `calc(100% - 12px)` wide, max 1428, `0 auto 6px`, `--surface`, a 1px `--surface-border`, radius 10,
-// `--surface-shadow`. `<main>` inside it has `24px clamp(16px, 4.6vw, 64px) 48px` and a 24px column gap, the
-// breadcrumb first; the footer is inside the surface, pushed to its foot. On a phone the surface keeps its 6px inset
+// everything below: `calc(100% - 16px)` wide, max 1428, `0 auto 8px`, `--surface`, a 1px `--surface-border`, radius 10,
+// `--surface-shadow`. `<main>` inside it has `39px 55px 48px` and a 24px column gap, the page's PageHeader first
+// (the composer keeps the breadcrumb slot first); the footer is inside the surface, pushed to its foot. On a phone the surface keeps its 6px inset
 // and radius 10 under the 48px header, and the dock is fixed below it. The slots, their order and `#main` are the
 // same in both looks.
 //
@@ -47,7 +47,7 @@ import { FIGTREE } from "@/lib/theme/type";
 import { useWindowSize } from "@/pages/site/compose/DetailsAside";
 import { ORIGIN, SURFACE_MARGIN, frameOf, innerWidthOf } from "@/pages/site/compose/detailsLayout";
 import { Breadcrumb } from "./Breadcrumb";
-import { HEADER_HEIGHT } from "./chromeSize";
+import { HEADER_HEIGHT, PAGE_EDGE } from "./chromeSize";
 import { Dock } from "./Dock";
 import { MobileHeader } from "./MobileHeader";
 import { PageProgress } from "./PageProgress";
@@ -90,10 +90,6 @@ export interface SiteFrameViewProps {
   wide?: boolean;
   /** CA-26 P1: replaces "Skip to content" as the first stop (the composer's "Skip to build"). */
   skipLink?: ReactNode;
-  /** SV-08: the vision boards' page area (series README, Visual grammar 1): no breadcrumb, and `<main>` padded
-      `40px clamp(16px, 5vw, 76px) 0` so the page starts where the board's does. Desktop only; the phone keeps its own.
-      SV-10 `"home"`: Home's board pads its surface `24px clamp(16px, 2.2vw, 32px) 0`. */
-  board?: boolean | "home";
   /** SV-04 P4: false for a page that draws its own chrome (the legacy workspace). The slots go and every box steps back
       (`display: contents`), but the page stays at the same place in the tree, so it is not mounted again. */
   chrome?: boolean;
@@ -136,6 +132,9 @@ const SURFACE: CSSProperties = {
   boxShadow: t.surfaceShadow,
 };
 
+/** The desktop surface: SURFACE_MARGIN (8) from the window. The phone keeps SURFACE's 6. */
+const DESKTOP_SURFACE: CSSProperties = { ...SURFACE, width: `calc(100% - ${2 * SURFACE_MARGIN}px)`, margin: `0 auto ${SURFACE_MARGIN}px` };
+
 /** S35: the composer's surface (`wide`): no 1428 cap, and SURFACE_MARGIN (8) from the window where other pages keep 6. */
 const WIDE_SURFACE: CSSProperties = { ...SURFACE, maxWidth: "none", width: `calc(100% - ${2 * SURFACE_MARGIN}px)`, margin: `0 auto ${SURFACE_MARGIN}px` };
 
@@ -169,7 +168,6 @@ export function SiteFrameView({
   progress,
   children,
   wide = false,
-  board = false,
   skipLink,
   chrome = true,
 }: SiteFrameViewProps) {
@@ -227,7 +225,7 @@ export function SiteFrameView({
         {phone ? mobileHeader : header}
         {progress}
       </div>
-      <div data-ui="surface" data-wide={wide && !phone ? "true" : undefined} style={wide && !phone ? WIDE_SURFACE : SURFACE}>
+      <div data-ui="surface" data-wide={wide && !phone ? "true" : undefined} style={wide && !phone ? WIDE_SURFACE : phone ? SURFACE : DESKTOP_SURFACE}>
         <main
           id="main"
           style={{
@@ -240,16 +238,14 @@ export function SiteFrameView({
               ? "16px 16px calc(80px + env(safe-area-inset-bottom))"
               : wide
                 ? "0 0 48px"
-                : board === "home"
-                  ? "24px clamp(16px, 2.2vw, 32px) 0"
-                  : board
-                  ? "40px clamp(16px, 5vw, 76px) 0"
-                  : "24px clamp(16px, 4.6vw, 64px) 48px",
+                : /* 40 / 56 / 48, less the surface's 1px border. */
+                  `39px ${PAGE_EDGE - 1}px 48px`,
             boxSizing: "border-box",
             minWidth: 0,
           }}
         >
-          {phone || board ? null : <div data-slot="breadcrumb" style={wide ? { padding: `24px 0 0 ${frameOf(innerWidthOf(win.width)).boxLeft - ORIGIN}px` } : undefined}>{breadcrumb}</div>}
+          {/* Only the composer keeps the frame's breadcrumb; a page with a parent draws it in its PageHeader. */}
+          {phone || !wide ? null : <div data-slot="breadcrumb" style={{ padding: `24px 0 0 ${frameOf(innerWidthOf(win.width)).boxLeft - ORIGIN}px` }}>{breadcrumb}</div>}
           {children}
         </main>
         {phone ? null : (
@@ -270,14 +266,12 @@ export interface SiteFrameProps {
   wide?: boolean;
   /** CA-26 P1: see `SiteFrameViewProps.skipLink`. */
   skipLink?: ReactNode;
-  /** SV-08: see `SiteFrameViewProps.board`. */
-  board?: boolean | "home";
   /** SV-04 P4: see `SiteFrameViewProps.chrome`. */
   chrome?: boolean;
 }
 
 /** The container: live chrome around the page. UI-P17 to UI-P19 fill the slots. */
-export function SiteFrame({ variant = "site", children, wide, board, skipLink, chrome }: SiteFrameProps) {
+export function SiteFrame({ variant = "site", children, wide, skipLink, chrome }: SiteFrameProps) {
   return (
     <CrumbTitleProvider>
       <ConnectorDialogProvider>
@@ -290,7 +284,6 @@ export function SiteFrame({ variant = "site", children, wide, board, skipLink, c
         dock={<Dock />}
         progress={<PageProgress />}
         wide={wide}
-        board={board}
         skipLink={skipLink}
         chrome={chrome}
       >

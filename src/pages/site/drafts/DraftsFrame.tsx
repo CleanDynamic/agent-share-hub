@@ -12,6 +12,8 @@ import { DashedSlot } from "@/components/vision/DashedSlot";
 import { SectionHead } from "@/components/vision/SectionHead";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { useConnectorDialog } from "@/components/connect/ConnectorDialog";
+import { PageHeader } from "@/components/shell/PageHeader";
+import { pageColumns } from "@/components/shell/pageGrid";
 import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
 import { PageLink as Link } from "@/lib/routing/PageLink";
 import { ring } from "@/lib/theme/controls";
@@ -186,10 +188,10 @@ export function RowSkeletons({ count, height = ROW, what }: { count: number; hei
 
 /* ── the page ── */
 
-export function DraftsHeading() {
+export function DraftsHeading({ onConnect }: { onConnect: () => void }) {
   return (
     <div>
-      <h1 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 20, fontWeight: 500, lineHeight: 1.2, letterSpacing: "-0.015em", color: t.text }}>Drafts</h1>
+      <PageHeader title="Drafts" actions={<ControlButton onClick={onConnect}>Connect a tool</ControlButton>} />
       <p style={{ margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.text2 }}>Pick up a build, or start one from a session.</p>
     </div>
   );
@@ -222,16 +224,12 @@ export function DraftsLayout({
   const wide = useMinWidth(TWO_COLUMNS_MIN);
   return (
     <div data-testid="drafts-view" style={{ display: "flex", flexDirection: "column", fontVariantNumeric: "tabular-nums", paddingBottom: 64 }}>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
-        <DraftsHeading />
-        <ControlButton onClick={onConnect}>Connect a tool</ControlButton>
-      </div>
+      <DraftsHeading onConnect={onConnect} />
       <div
         style={{
           marginTop: 48,
-          display: "grid",
-          gridTemplateColumns: wide ? "minmax(0, 1fr) 400px" : "minmax(0, 1fr)",
-          columnGap: 72,
+          /* The page grid's main and side template (9 / 3). */
+          ...(wide ? pageColumns("mainSide") : { display: "grid", gridTemplateColumns: "minmax(0, 1fr)" }),
           rowGap: 48,
           alignItems: "start",
         }}

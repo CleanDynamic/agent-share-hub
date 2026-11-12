@@ -38,7 +38,7 @@ export default function VisionBuildsClassification({ viewport = "desktop", state
       data-design-state={state}
       style={{ width: viewport === "mobile" ? 390 : 1440 }}
     >
-      <SiteFrameView viewport={viewport} fit="board" board {...devChrome({ theme, current: "gallery", trail: [{ label: "Home", href: "/" }, { label: "Builds" }], dockCurrent: null })}>
+      <SiteFrameView viewport={viewport} fit="board" {...devChrome({ theme, current: "gallery", trail: [{ label: "Home", href: "/" }, { label: "Builds" }], dockCurrent: null })}>
         <BuildsClassificationView {...visionBuildsClassificationProps({ facets, onFacets: setFacets, filters: visionClassificationPanel() })} />
       </SiteFrameView>
     </div>

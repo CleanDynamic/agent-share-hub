@@ -4,22 +4,43 @@
 
 import type { CSSProperties, ReactNode } from "react";
 
+import { PAGE_TITLE, PageHeader } from "@/components/shell/PageHeader";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { PostControl } from "@/components/post/postControls";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
-const H1: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 20, fontWeight: 500, lineHeight: "28px", letterSpacing: "-0.015em", color: t.text };
 const LINE: CSSProperties = { margin: "2px 0 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.text2 };
 const META: CSSProperties = { margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 12, lineHeight: "16px", color: t.label };
 
-/** The head: the page's `h1`, a line under it, optional meta, and the actions at the right (full width under them on a phone). */
-export function PageHead({ title, line, meta, actions, primary }: { title: string; line?: string; meta?: ReactNode; actions?: ReactNode; primary?: ReactNode }) {
+/** The head: the page's `h1`, a line under it, optional meta, and the actions at the right (full width under them on a phone).
+    Desktop: PageHeader, with the breadcrumb above the title on a page with a parent (a space). */
+export function PageHead({ title, line, meta, actions, primary, breadcrumb }: { title: string; line?: string; meta?: ReactNode; actions?: ReactNode; primary?: ReactNode; breadcrumb?: ReactNode }) {
   const phone = useIsPhone();
+  if (!phone) {
+    return (
+      <div style={{ paddingBottom: 24 }}>
+        <PageHeader
+          title={title}
+          breadcrumb={breadcrumb}
+          actions={
+            actions || primary ? (
+              <>
+                {actions}
+                {primary}
+              </>
+            ) : undefined
+          }
+        />
+        {line ? <p style={LINE}>{line}</p> : null}
+        {meta ? <p style={META}>{meta}</p> : null}
+      </div>
+    );
+  }
   return (
     <header style={{ display: "flex", flexDirection: phone ? "column" : "row", alignItems: phone ? "stretch" : "flex-start", justifyContent: "space-between", gap: phone ? 16 : 24, padding: "0 4px 24px" }}>
       <div style={{ minWidth: 0 }}>
-        <h1 style={H1}>{title}</h1>
+        <h1 style={PAGE_TITLE}>{title}</h1>
         {line ? <p style={LINE}>{line}</p> : null}
         {meta ? <p style={META}>{meta}</p> : null}
       </div>

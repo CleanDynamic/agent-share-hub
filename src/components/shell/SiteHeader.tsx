@@ -47,7 +47,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { AccountButton } from "./AccountButton";
-import { HEADER_HEIGHT } from "./chromeSize";
+import { HEADER_HEIGHT, PAGE_EDGE } from "./chromeSize";
 import { FrameLink } from "./FrameLink";
 import type { FrameViewer } from "./frameTypes";
 import { HeaderSearch, useGallerySearch } from "./HeaderSearch";
@@ -219,14 +219,15 @@ function RefinedSiteHeaderView({
       data-testid="site-header"
       data-ui="site-header"
       style={{
-        width: "100%",
-        maxWidth: 1440,
+        /* The surface's width rule, and its 56 content edge, so the header lines up with the page at every width. */
+        width: "calc(100% - 16px)",
+        maxWidth: 1428,
         margin: "0 auto",
         height: HEADER_HEIGHT,
         display: "flex",
         alignItems: "center",
         gap: space[2],
-        padding: `0 ${space[6]}px`,
+        padding: `0 ${PAGE_EDGE}px`,
         boxSizing: "border-box",
       }}
     >

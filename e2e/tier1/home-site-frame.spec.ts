@@ -41,7 +41,8 @@ test.describe("/ in the site frame", () => {
     } else {
       await expect(page.getByTestId("site-header")).toBeVisible();
       await expect(page.getByTestId("site-footer")).toBeVisible();
-      await expect(page.getByTestId("breadcrumb")).toHaveText(/^Home$/);
+      // Home has no parent, so no breadcrumb (page shell step 3).
+      await expect(page.getByTestId("breadcrumb")).toHaveCount(0);
     }
     await expect(page.locator("main#main").getByTestId("home-view")).toBeVisible();
   });

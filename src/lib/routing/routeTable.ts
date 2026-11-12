@@ -48,9 +48,8 @@ export interface RouteEntry {
   load: () => Promise<{ default: ComponentType<never> }>;
   prefetch: (params: RouteParams, queryClient: QueryClient, context: RouteContext) => Promise<void> | void;
   Placeholder: ComponentType;
-  /** SV-04 P4: what the one frame does for this page. `wide`: no 1428 cap and no side padding; `SkipLink`: the first stop.
-      SV-08 `board`: the vision boards' page area (no breadcrumb, the board's padding). */
-  frame?: { wide?: boolean; board?: boolean | "home"; SkipLink?: ComponentType };
+  /** SV-04 P4: what the one frame does for this page. `wide`: no 1428 cap and no side padding; `SkipLink`: the first stop. */
+  frame?: { wide?: boolean; SkipLink?: ComponentType };
 }
 
 
@@ -113,7 +112,6 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
       ]);
     },
     Placeholder: HomePlaceholder,
-    frame: { board: "home" },
   },
   gallery: {
     key: "gallery",
@@ -150,7 +148,6 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
       ]);
     },
     Placeholder: BuildsPlaceholder,
-    frame: { board: true },
   },
   openbuilds: {
     key: "openbuilds",
@@ -177,7 +174,6 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
       ]);
     },
     Placeholder: OpenBuildsFeedPlaceholder,
-    frame: { board: "home" },
   },
   /* UX-05 P3: a space's page. Round 1 is the space with its people; its posts need the space's id and order. */
   space: {
@@ -191,7 +187,6 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
       await queryClient.prefetchQuery({ queryKey: model.spaceCrowdKey(slug, userId), queryFn: () => lib.getSpaceCrowd(slug, userId), staleTime: LIST_STALE_MS });
     },
     Placeholder: OpenBuildsFeedPlaceholder,
-    frame: { board: "home" },
   },
   /* UX-06: a post's page, at the address UX-05 gave every post (/openbuilds/posts/:id redirects here). Round 1 is the post with
      its replies; the rest needs the post's ids. Same key and function as PostPage. */
@@ -206,7 +201,6 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
       await queryClient.prefetchQuery({ queryKey: model.postPageKey(id), queryFn: () => lib.getPost(id), staleTime: LIST_STALE_MS });
     },
     Placeholder: PostPlaceholder,
-    frame: { board: true },
   },
   library: {
     key: "library",
@@ -233,7 +227,6 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
       ]);
     },
     Placeholder: LibraryPlaceholder,
-    frame: { board: true },
   },
   drafts: {
     key: "drafts",
@@ -256,7 +249,6 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
       ]);
     },
     Placeholder: DraftsPlaceholder,
-    frame: { board: true },
   },
   /* UX-01 P9: the sign-in page, so that hovering or focusing the header's Sign in opens its chunk before the press. It sits outside the
      app shell (no placeholder is drawn by a page change): its Placeholder is the fallback `SignInSite` draws while the chunk loads. */

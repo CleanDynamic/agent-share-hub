@@ -11,13 +11,15 @@ import type { ReactNode } from "react";
 import { ErrorState } from "@/components/brand/ErrorState";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
-import { useIsPhone } from "@/components/shell/useMinWidth";
+import { pageColumns } from "@/components/shell/pageGrid";
+import { BETWEEN, useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { ProfileFeed, type ProfileFeedProps } from "./ProfileFeed";
 import { ProfileHead, type ProfileHeadProps } from "./ProfileHead";
 import { ProfileSide, SIDE_WIDTH, type ProfileSideProps } from "./ProfileSide";
+import { PAGE_TITLE } from "@/components/shell/PageHeader";
 
 /** The feed column's width. */
 export const FEED_COLUMN = 620;
@@ -33,6 +35,7 @@ export interface ProfileViewProps {
 
 export function ProfileView({ head, feed, side }: ProfileViewProps) {
   const phone = useIsPhone();
+  const grid = useMinWidth(BETWEEN.stack);
   return (
     <div data-testid="profile-view" style={{ display: "flex", flexDirection: "column", gap: 24, minWidth: 0, paddingBottom: 48, fontFamily: FIGTREE }}>
       <ProfileHead {...head} />
@@ -41,6 +44,12 @@ export function ProfileView({ head, feed, side }: ProfileViewProps) {
           <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
             {side ? <ProfileSide {...side} /> : null}
             {feed ? <ProfileFeed {...feed} /> : null}
+          </div>
+        ) : grid ? (
+          /* The page grid's main and side template (9 / 3), under the full-width head. */
+          <div style={{ ...pageColumns("mainSide"), alignItems: "start", minWidth: 0 }}>
+            <div style={{ maxWidth: FEED_COLUMN, minWidth: 0 }}>{feed ? <ProfileFeed {...feed} /> : null}</div>
+            {side ? <ProfileSide {...side} /> : null}
           </div>
         ) : (
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: COLUMN_GAP, minWidth: 0 }}>
@@ -82,7 +91,7 @@ export function ProfileLoadFailed({ onRetry, error }: { onRetry: () => void; err
 export function ProfileNotice({ line, detail, action }: { line: string; detail?: string; action?: ReactNode }) {
   return (
     <div data-testid="profile-notice" role="status" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "32px 0", textAlign: "center" }}>
-      <h1 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 20, fontWeight: 500, color: t.text }}>{line}</h1>
+      <h1 style={PAGE_TITLE}>{line}</h1>
       {detail ? <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>{detail}</p> : null}
       {action ? <div style={{ marginTop: 8 }}>{action}</div> : null}
     </div>

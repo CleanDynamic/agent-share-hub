@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const getBuildBySlug = vi.fn();
 vi.mock("@/lib/build", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/build")>()), getBuildBySlug: (...a: unknown[]) => getBuildBySlug(...a) }));
-vi.mock("@/components/shell/useBreadcrumb", () => ({ useCrumbTitle: () => undefined }));
+vi.mock("@/components/shell/useBreadcrumb", () => ({ useCrumbTitle: () => undefined, useBreadcrumb: () => [] }));
 
 import { ComparePage } from "./ComparePage";
 

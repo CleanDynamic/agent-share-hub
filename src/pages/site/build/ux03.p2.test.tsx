@@ -73,8 +73,9 @@ describe("UX-03 P2: no picture area without a cover", () => {
     const hero = screen.getByTestId("build-hero");
     expect(hero.querySelector("[data-testid='build-hero-picture']")).toBeNull();
     expect(hero.querySelector("[data-testid='build-hero-picture'] [data-testid='build-shape-tag']")).toBeNull();
-    expect(within(hero).getByTestId("build-action-dock")).toBeTruthy();
-    expect(within(hero).getByRole("heading", { level: 1 })).toBeTruthy();
+    // Page shell: the title and the dock are the page's PageHeader on a desktop.
+    expect(within(screen.getByRole("heading", { level: 1 }).closest("header")!).getByTestId("build-action-dock")).toBeTruthy();
+    expect(within(hero).queryByRole("heading", { level: 1 })).toBeNull();
   });
 
   it("keeps the picture when the build has a cover", () => {

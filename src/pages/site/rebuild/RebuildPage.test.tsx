@@ -143,7 +143,9 @@ describe("RebuildPage (site frame)", () => {
     await settled();
     expect(getRebuildDraft).toHaveBeenCalledWith({ sourceBuildId: "src", creatorId: "me" });
     expect(startRebuild).not.toHaveBeenCalled();
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Multi-currency triage: Rebuilding Invoice triage agent by @maya.");
+    // Page shell: the title is "Rebuild"; the line that was the hidden h1 is the first line of body copy.
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Rebuild");
+    expect(screen.getByText("Multi-currency triage: Rebuilding Invoice triage agent by @maya.")).toBeTruthy();
   });
 
   it("starts one, once, when the reader has none", async () => {

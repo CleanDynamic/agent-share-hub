@@ -35,7 +35,7 @@ export default function VisionLibrary({ viewport = "desktop", state = "populated
       data-design-state={state}
       style={{ width: viewport === "mobile" ? 390 : 1440 }}
     >
-      <SiteFrameView viewport={viewport} fit="board" board {...devChrome({ theme, current: "library", trail: [{ label: "Home", href: "/" }, { label: "Library" }], dockCurrent: null })}>
+      <SiteFrameView viewport={viewport} fit="board" {...devChrome({ theme, current: "library", trail: [{ label: "Home", href: "/" }, { label: "Library" }], dockCurrent: null })}>
         <LibraryView {...visionLibraryProps(state)} />
       </SiteFrameView>
     </div>

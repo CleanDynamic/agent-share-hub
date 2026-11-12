@@ -80,12 +80,14 @@ describe("on a desktop", () => {
     const links = within(nav).getAllByRole("link");
     expect(links.map((a) => a.textContent)).toEqual(["Account", "Notifications", "Privacy and blocking", "Connected apps", "Your data", "Appearance"]);
     expect(links.filter((a) => a.getAttribute("aria-current") === "page").map((a) => a.textContent)).toEqual(["Privacy and blocking"]);
-    expect(screen.getByRole("heading", { level: 1, name: "Privacy and blocking" })).toBeTruthy();
+    // Page shell: one h1, "Settings"; the section's name is the content column's first heading.
+    expect(screen.getAllByRole("heading", { level: 1 }).map((h) => h.textContent)).toEqual(["Settings"]);
+    expect(screen.getByRole("heading", { level: 2, name: "Privacy and blocking" })).toBeTruthy();
   });
 
   it("shows the first section beside the list at /settings", async () => {
     mount("/settings");
-    expect(await screen.findByRole("heading", { level: 1, name: "Account" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 2, name: "Account" })).toBeTruthy();
     expect(within(screen.getByRole("navigation", { name: "Settings" })).getByRole("link", { name: "Account" }).getAttribute("aria-current")).toBe("page");
   });
 

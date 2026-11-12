@@ -1,11 +1,11 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import { SPACE_COMPACT } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 /* Roles imported by name rather than as `type`: this file uses inline
    type-import modifiers, which a value binding called `type` makes ambiguous.
    The scale module says so at its export. */
-import { bodyLarge, eyebrow as eyebrowRole, measure, sectionHead } from "@/lib/theme/type";
+import { bodyLarge, eyebrow as eyebrowRole, FIGTREE, measure } from "@/lib/theme/type";
 
 /* ────────────────────────────────────────────────────────────────────────────
    BG-P14 — PageHeader.
@@ -33,16 +33,30 @@ import { bodyLarge, eyebrow as eyebrowRole, measure, sectionHead } from "@/lib/t
    first screen; and prose at a wide page's full width is 140 characters a line,
    which is why `measure` is on it and not on the title.
 
-   ONE `<h1>`, because a page has one name. It takes the whole `sectionHead`
-   role — the display face at 30–48px — rather than `hero`, which is 44–78px
-   and "one per page, at most" for a landing surface, not for the top of an
-   application screen. The face is never named here: it is whatever the role
-   says it is, which is what keeps the scale's 20px display floor covering
-   this component as well as the module that declares it.
+   ONE `<h1>`, because a page has one name. It takes PAGE_TITLE (below), the
+   title every site page already drew by hand: Figtree 20 / 500 on a 24 line.
 
    ITS SPACING IS THE COMPACT SCALE (UI-P55): the same steps by name, through
    the density table — sm 12, md 17, lg 29, xs 6 (16, 24, 40 and 8 before).
+
+   THE PAGE SHELL. Every framed page opens with this header, first in `<main>`,
+   so the title's top is the shell's content top (88 at 1440 by 900). The title
+   is the site pages' own: Figtree 20 / 500, line 24. The breadcrumb sits in the
+   24 above the title, out of flow, so it never moves the title. The actions sit
+   on the title's 24px line, centred on it, and end at the content edge. The
+   space under the header belongs to the page, unless there is a description.
    ──────────────────────────────────────────────────────────────────────────── */
+
+/** The page title: one face, size and line on every page. */
+export const PAGE_TITLE: CSSProperties = {
+  margin: 0,
+  fontFamily: FIGTREE,
+  fontSize: 20,
+  fontWeight: 500,
+  lineHeight: "24px",
+  letterSpacing: "-0.015em",
+  color: t.text,
+};
 
 export interface PageHeaderProps {
   /** The small mono label above the title — a section, a count, a kind. */
@@ -53,25 +67,33 @@ export interface PageHeaderProps {
   description?: ReactNode;
   /** Buttons or controls belonging to the page as a whole. */
   actions?: ReactNode;
+  /** Where the page sits, for a page with a parent: in the 24 above the title. */
+  breadcrumb?: ReactNode;
 }
 
-export function PageHeader({ eyebrow, title, description, actions }: PageHeaderProps) {
+export function PageHeader({ eyebrow, title, description, actions, breadcrumb }: PageHeaderProps) {
   return (
     <header
       style={{
+        position: "relative",
         display: "flex",
         flexDirection: "column",
         /* sm between the title row and the description: they are one group.
-           lg below the header: the header and what it heads are not. */
+           lg below a description: the header and what it heads are not. */
         gap: SPACE_COMPACT.sm,
-        marginBottom: SPACE_COMPACT.lg,
+        marginBottom: description != null ? SPACE_COMPACT.lg : 0,
       }}
     >
+      {breadcrumb != null && (
+        <div data-slot="page-breadcrumb" style={{ position: "absolute", left: 0, right: 0, bottom: "100%", height: 24, display: "flex", alignItems: "center", minWidth: 0 }}>
+          {breadcrumb}
+        </div>
+      )}
       <div
         style={{
           display: "flex",
           flexWrap: "wrap",
-          alignItems: "flex-end",
+          alignItems: "center",
           justifyContent: "space-between",
           gap: SPACE_COMPACT.md,
         }}
@@ -80,7 +102,7 @@ export function PageHeader({ eyebrow, title, description, actions }: PageHeaderP
           {eyebrow != null && (
             <span style={{ ...eyebrowRole, color: t.text2 }}>{eyebrow}</span>
           )}
-          <h1 style={{ ...sectionHead, color: t.text, margin: 0 }}>{title}</h1>
+          <h1 style={PAGE_TITLE}>{title}</h1>
         </div>
 
         {actions != null && (
@@ -89,6 +111,10 @@ export function PageHeader({ eyebrow, title, description, actions }: PageHeaderP
               display: "flex",
               flexWrap: "wrap",
               alignItems: "center",
+              /* On the title's line: a taller control is centred on it and does not push the title down. The slot wraps, so
+                 its line is centred too (alignContent), not only the items in it. */
+              height: 24,
+              alignContent: "center",
               gap: SPACE_COMPACT.xs,
               /* Never the element that makes the row wider than the column:
                  the actions wrap inside themselves before the row wraps. */

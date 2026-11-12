@@ -35,7 +35,7 @@ export default function VisionBuildsTable({ viewport = "desktop", state = "popul
       data-design-state={state}
       style={{ width: viewport === "mobile" ? 390 : 1440 }}
     >
-      <SiteFrameView viewport={viewport} fit="board" board {...devChrome({ theme, current: "gallery", trail: [{ label: "Home", href: "/" }, { label: "Builds" }], dockCurrent: null })}>
+      <SiteFrameView viewport={viewport} fit="board" {...devChrome({ theme, current: "gallery", trail: [{ label: "Home", href: "/" }, { label: "Builds" }], dockCurrent: null })}>
         <BuildsView {...visionBuildsTableProps()} />
       </SiteFrameView>
     </div>
