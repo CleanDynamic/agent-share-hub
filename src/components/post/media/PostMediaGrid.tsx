@@ -125,11 +125,11 @@ export function GridFrame({ layout, count, renderCell }: GridFrameProps) {
         borderRadius: GRID_RADIUS,
         overflow: "hidden",
         border: `1px solid ${t.hairline}`,
-        background: t.hairline,
+        background: t.well,
       }}
     >
       {layout.cells.map((cell, index) =>
-        renderCell(index, { position: "relative", overflow: "hidden", minWidth: 0, minHeight: 0, background: t.tile, ...cell.area }, cell),
+        renderCell(index, { position: "relative", overflow: "hidden", minWidth: 0, minHeight: 0, background: t.inset, ...cell.area }, cell),
       )}
     </div>
   );

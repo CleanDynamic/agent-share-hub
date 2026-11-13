@@ -73,7 +73,7 @@ export const GAP = { notice: 14, picker: 16, column: 10, swatch: 8, panels: 8, r
 
 export function InnerPanel({ children, testId, style, bar }: { children: ReactNode; testId?: string; style?: CSSProperties; bar?: string }) {
   return (
-    <div data-testid={testId} style={{ position: "relative", background: t.tile, borderRadius: 8, padding: PAD.panel, minWidth: 0, boxSizing: "border-box", overflow: "hidden", ...style }}>
+    <div data-testid={testId} style={{ position: "relative", background: t.inset, borderRadius: 8, padding: PAD.panel, minWidth: 0, boxSizing: "border-box", overflow: "hidden", ...style }}>
       {/* A group's colour as a 3px bar down the left: a fill, never a coloured edge. */}
       {bar ? <span aria-hidden="true" data-group-bar="" style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, ...swatchFor(bar) }} /> : null}
       {children}

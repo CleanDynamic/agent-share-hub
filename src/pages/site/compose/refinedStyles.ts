@@ -74,7 +74,7 @@ export const moduleStyle = (selected = false, padding: number | string = 16): CS
 });
 
 export const tileStyle: CSSProperties = {
-  background: t.tile,
+  background: t.inset,
   border: `1px solid ${t.tileBorder}`,
   borderRadius: 6,
   boxSizing: "border-box",

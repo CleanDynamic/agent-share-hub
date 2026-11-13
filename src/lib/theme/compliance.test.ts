@@ -169,11 +169,11 @@ const CAPPED: Record<string, { max: number; why: string }> = {
       "THE CAP IS 2 BECAUSE THAT IS ALL THERE IS.",
   },
   "src/components/brand/FramedWork.tsx": {
-    max: 26,
+    max: 23,
     why:
       "THE FRAMED WORK'S ARTWORK CONSTANTS (UI-P86) — the raised frame a picture " +
-      "hangs in, per room: Dusk's shaded fill, edge, top edge and three-part shadow; " +
-      "Noon's white fill, edge and two-part shadow; the result window's deeper drop " +
+      "hangs in, per room: Dusk's shaded fill and three-part shadow; " +
+      "Noon's white fill and two-part shadow (the edge is the control edge token); the result window's deeper drop " +
       "and chrome dots; the lit wash and the picture light's cone. The frame is an " +
       "object hung on the wall, not the room, and UI-P86 names these as the artwork " +
       "constants RULES §2 allows, written as named constants in the component. THE " +
@@ -190,14 +190,14 @@ const CAPPED: Record<string, { max: number; why: string }> = {
       "5 BECAUSE THAT IS ALL A PICTURE'S CONTROLS NEED.",
   },
   "src/pages/site/compose/mapArtwork.ts": {
-    max: 11,
+    max: 9,
     why:
       "THE MAP'S BOXES AND LANES, PER ROOM (UI-P91) — a box on the Map is a raised " +
-      "object laid on the well, not a surface: Dusk's shaded fill (two stops), edge, " +
-      "two-part shadow and the selected lift; Noon's white fill, edge and shadow; and " +
+      "object laid on the well, not a surface: Dusk's shaded fill (two stops), " +
+      "two-part shadow and the selected lift; Noon's white fill and shadow (the edge is the edge token); and " +
       "each room's faint lane wash. UI-P91 names these as the artwork constants RULES " +
       "§2 allows, as `refined/{dusk,noon}/build-map.html` draws them, written as named " +
-      "constants in the module that owns them. THE CAP IS 11 BECAUSE THAT IS ALL THE " +
+      "constants in the module that owns them. THE CAP IS 9 BECAUSE THAT IS ALL THE " +
       "BOARDS DRAW: a new value is a design decision.",
   },
   "src/components/brand/CoverFallback.tsx": {

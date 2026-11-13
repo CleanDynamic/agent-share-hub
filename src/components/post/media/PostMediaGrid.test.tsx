@@ -35,14 +35,14 @@ const grid = (pictures: unknown[], media = MEDIA, src: ReadonlyMap<string, strin
 const cells = (block: HTMLElement) => Array.from(block.querySelectorAll<HTMLElement>("[data-grid-tile]"));
 
 describe("the block", () => {
-  it("is radius 16, a 1px hairline round it, 2px between, on the hairline", () => {
+  it("is radius 16, a 1px hairline round it, 2px between, on the well", () => {
     const block = grid([pic("a"), pic("b")]);
     expect(block.style.borderRadius).toBe("16px");
     expect(block.style.overflow).toBe("hidden");
     expect(block.style.gap).toBe("2px");
     // jsdom drops a var() colour from a React style, so the colours are read from the markup.
     const html = renderToStaticMarkup(<PostMediaGrid pictures={[pic("a"), pic("b")]} mediaById={MEDIA} srcByPath={SIGNED} />);
-    expect(html).toContain("border:1px solid var(--hairline);background:var(--hairline)");
+    expect(html).toContain("border:1px solid var(--hairline);background:var(--well)");
     expect(block.getAttribute("role")).toBe("group");
     expect(block.getAttribute("aria-label")).toBe("2 pictures");
   });
@@ -91,7 +91,7 @@ describe("the block", () => {
     const block = grid([pic("a"), pic("b")], MEDIA, new Map());
     expect(block.style.aspectRatio).toBe("1.7778");
     expect(block.querySelector("img")).toBeNull();
-    expect(renderToStaticMarkup(<PostMediaGrid pictures={[pic("a")]} mediaById={MEDIA} srcByPath={new Map()} />)).toContain("background:var(--tile)");
+    expect(renderToStaticMarkup(<PostMediaGrid pictures={[pic("a")]} mediaById={MEDIA} srcByPath={new Map()} />)).toContain("background:var(--inset)");
     expect(Array.from(block.querySelectorAll("[data-tile-empty]")).map((tile) => tile.getAttribute("aria-label"))).toEqual(["Picture 1 of 2", "Picture 2 of 2"]);
   });
 

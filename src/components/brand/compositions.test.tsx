@@ -61,12 +61,12 @@ describe("PartViewer", () => {
     for (const item of group.querySelectorAll<HTMLElement>("button")) expect(item.style.height).toBe("24px");
   });
 
-  it("draws the strip: 'PART 01' in the viewer block, then the raised tab with the chip and the name", () => {
+  it("draws the strip: 'PART 01' in the viewer block, then the inset tab with the chip and the name", () => {
     const html = markup(viewer());
     expect(html).toContain("PART 01");
     expect(html).toContain("background:var(--viewer-block)");
     expect(html).toContain("border-radius:0 0 14px 0");
-    expect(html).toContain("background:var(--tab)");
+    expect(html).toContain("background:var(--inset)");
     expect(html).toContain("border-radius:12px 0 0 0");
     expect(html).toContain("border-bottom:0");
     expect(html).toContain('data-ui="category-chip"');

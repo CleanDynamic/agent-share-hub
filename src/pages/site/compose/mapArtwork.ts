@@ -7,6 +7,7 @@
 // is a token.
 
 import type { CSSProperties } from "react";
+import { t } from "@/lib/theme/tokens";
 
 export type MapRoom = "dusk" | "noon";
 
@@ -23,7 +24,7 @@ export const MAP_ARTWORK: Record<MapRoom, MapArtwork> = {
   dusk: {
     box: {
       background: "linear-gradient(#232327, #1E1E21)",
-      border: "1px solid #303035",
+      border: `1px solid ${t.surfaceBorder}`,
       boxShadow: "inset 0 1px 0 rgba(255,255,255,.035), 0 1px 2px rgba(0,0,0,.45)",
     },
     selectedShadow: "0 8px 20px -6px rgba(0,0,0,.6)",
@@ -32,7 +33,7 @@ export const MAP_ARTWORK: Record<MapRoom, MapArtwork> = {
   noon: {
     box: {
       background: "#FFFFFF",
-      border: "1px solid #D9D9D9",
+      border: `1px solid ${t.surfaceBorder}`,
       boxShadow: "0 1px 2px rgba(20,20,18,.06)",
     },
     selectedShadow: null,

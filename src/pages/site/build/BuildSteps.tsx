@@ -314,7 +314,7 @@ const sessionModuleStyle = (colour: string | undefined): CSSProperties => ({
 });
 
 const tileStyle: CSSProperties = {
-  background: t.tile,
+  background: t.inset,
   border: `1px solid ${t.tileBorder}`,
   borderRadius: 6,
   boxSizing: "border-box",
@@ -459,7 +459,7 @@ function PasteRow({ text: what, title, phone, onGo }: { text: string; title: str
       }}
     >
       <span style={text(12.5, 400, t.text2)}>{what}</span>
-      <span style={{ ...chipStyle, background: state.hovered ? t.controlOn : t.tile }}>{title}</span>
+      <span style={{ ...chipStyle, background: state.hovered ? t.controlOn : t.module }}>{title}</span>
     </button>
   );
 }

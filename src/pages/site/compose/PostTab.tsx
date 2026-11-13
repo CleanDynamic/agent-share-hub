@@ -681,7 +681,7 @@ export const SELECT_WORDS_COPY = {
 /** CA-19 P4: the bar at the top of the post while it asks for words: `--tile`, padding 10 14, 12.5, Cancel at 500 at the right. */
 function SelectWordsBar({ name, refusal, onCancel }: { name: string; refusal: string | null; onCancel: () => void }) {
   return (
-    <div role="status" data-testid="select-words-bar" style={{ display: "flex", alignItems: "center", gap: 12, background: t.tile, borderRadius: 8, padding: PAD.bar, minWidth: 0 }}>
+    <div role="status" data-testid="select-words-bar" style={{ display: "flex", alignItems: "center", gap: 12, background: t.inset, borderRadius: 8, padding: PAD.bar, minWidth: 0 }}>
       <span style={{ ...pieceWords(12.5, 400, refusal ? DANGER : t.text), flexGrow: 1, minWidth: 0 }}>{refusal ?? SELECT_WORDS_COPY.ask(name)}</span>
       <TextButton style={pieceWords(12.5, 500, t.text)} onClick={onCancel}>
         {SELECT_WORDS_COPY.cancel}

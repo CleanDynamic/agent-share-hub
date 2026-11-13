@@ -14,7 +14,9 @@ export const CONTROL: CSSProperties = {
   boxShadow: t.controlShadow,
 };
 
-export const CONTROL_HOVER: CSSProperties = { background: t.controlOn };
+/* The surface ladder: --control-on is --control, so a hovered control steps its fill four grey levels toward the text
+   (1.9% of --text: #323237 to #36363B in Dusk, #FFFFFF to #FBFBFB in Noon). */
+export const CONTROL_HOVER: CSSProperties = { background: `color-mix(in srgb, ${t.text} 1.9%, ${t.control})` };
 
 export const PRESSED: CSSProperties = {
   background: t.well,

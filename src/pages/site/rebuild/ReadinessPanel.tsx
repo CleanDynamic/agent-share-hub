@@ -66,7 +66,7 @@ export function CreditBox({ credit, phone = false }: { credit: RebuildCreditView
     <div
       data-testid="rebuild-credit-box"
       style={
-        { marginTop: 12, padding: 12, borderRadius: 6, background: t.tile, border: `1px solid ${t.tileBorder}` }
+        { marginTop: 12, padding: 12, borderRadius: 6, background: t.inset, border: `1px solid ${t.tileBorder}` }
       }
     >
       <Eyebrow size={10}>The credit it will carry</Eyebrow>
@@ -134,7 +134,7 @@ export function ReadinessPanel({
       flexDirection: "column",
       alignItems: "flex-start",
       gap: 2,
-      background: t.tile,
+      background: t.inset,
       border: `1px solid ${t.tileBorder}`,
       borderRadius: 6,
     }}

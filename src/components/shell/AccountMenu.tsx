@@ -4,12 +4,14 @@
 // `LazyAccountMenu`).
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 
 import { PageLink } from "@/lib/routing/PageLink";
 import { MENU_ITEM_CLASS } from "@/lib/theme/controls";
-import { t } from "@/lib/theme/tokens";
+import { useInteractive } from "@/lib/theme/interactive";
+import { feedback } from "@/lib/theme/motion";
+import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { AccountButton } from "./AccountButton";
@@ -24,6 +26,28 @@ export interface AccountMenuProps {
   defaultOpen?: boolean;
   /** The account button had focus before the menu's code was here: it keeps it. */
   focusOnMount?: boolean;
+}
+
+/* The surface ladder: a hovered item steps its fill four grey levels toward the text (1.9% of --text over the window)
+   and draws no ring; the ring is for keyboard focus only. Radix moves focus onto the item under the pointer, which the
+   browser then marks :focus-visible, so the pointer's move and leave are kept from Radix and the hover is tracked here. */
+const HOVER_FILL = tokenAlpha("text", 0.019);
+const keepFromRadix = (event: PointerEvent) => event.preventDefault();
+
+function Entry({ children }: { children: ReactNode }) {
+  const { state, handlers } = useInteractive<HTMLElement>();
+  return (
+    <DropdownMenu.Item
+      asChild
+      className={MENU_ITEM_CLASS}
+      {...handlers}
+      onPointerMove={keepFromRadix}
+      onPointerLeave={keepFromRadix}
+      style={{ background: state.hovered ? HOVER_FILL : "transparent", transition: feedback() }}
+    >
+      {children}
+    </DropdownMenu.Item>
+  );
 }
 
 export function AccountMenu({ viewer, onSignOut, avatarSize = 34, defaultOpen = false, focusOnMount = false }: AccountMenuProps) {
@@ -50,7 +74,6 @@ export function AccountMenu({ viewer, onSignOut, avatarSize = 34, defaultOpen = 
     outline: "none",
     cursor: "pointer",
     border: 0,
-    background: "transparent",
     width: "100%",
     textAlign: "left",
   };
@@ -67,30 +90,30 @@ export function AccountMenu({ viewer, onSignOut, avatarSize = 34, defaultOpen = 
             minWidth: 190,
             padding: 4,
             borderRadius: 14,
-            background: t.solid,
-            border: `1px solid ${t.glassBorder}`,
+            background: t.window,
+            border: `1px solid ${t.windowBorder}`,
             boxShadow: t.shadowFloat,
             color: t.text,
             zIndex: 50,
           }}
         >
-          <DropdownMenu.Item asChild className={MENU_ITEM_CLASS}>
+          <Entry>
             <PageLink to={profileHref} aria-current={onOwnProfile ? "page" : undefined} style={item}>Profile</PageLink>
-          </DropdownMenu.Item>
-          <DropdownMenu.Item asChild className={MENU_ITEM_CLASS}>
+          </Entry>
+          <Entry>
             <PageLink to={SITE_NAV.library} style={item}>Library</PageLink>
-          </DropdownMenu.Item>
-          <DropdownMenu.Item asChild className={MENU_ITEM_CLASS}>
+          </Entry>
+          <Entry>
             <PageLink to={SITE_NAV.drafts} style={item}>Drafts</PageLink>
-          </DropdownMenu.Item>
+          </Entry>
           {/* UX-15: Settings, between the profile's items and Sign out. */}
-          <DropdownMenu.Item asChild className={MENU_ITEM_CLASS}>
+          <Entry>
             <PageLink to={SITE_NAV.settings} aria-current={pathname === SITE_NAV.settings || pathname.startsWith(`${SITE_NAV.settings}/`) ? "page" : undefined} style={item}>Settings</PageLink>
-          </DropdownMenu.Item>
+          </Entry>
           <DropdownMenu.Separator style={{ height: 1, margin: "4px 4px", background: t.line }} />
-          <DropdownMenu.Item asChild className={MENU_ITEM_CLASS}>
+          <Entry>
             <button type="button" onClick={onSignOut} style={item}>Sign out</button>
-          </DropdownMenu.Item>
+          </Entry>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>

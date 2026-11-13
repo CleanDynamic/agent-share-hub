@@ -44,7 +44,6 @@ import type { PageFit } from "@/components/shell/siteFrameFit";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
-import { SELECTED } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, display } from "@/lib/theme/type";
 
@@ -132,9 +131,9 @@ function NodeTarget({
 
 /** The edge a node stands in: the viewer's draft is dashed `--action`; a chosen node or the page's own build is solid `--action`. */
 function edge(node: FamilyNodeView, selected: boolean, width: number): CSSProperties {
-  /* Selected: fill, 1px edge and ring, never a colour. The viewer's draft keeps its dash. */
+  /* Selected: the 1px selected edge, never a fill, a ring or a colour. The viewer's draft keeps its dash. */
   if (node.draft) return { borderWidth: 1, borderStyle: "dashed", borderColor: t.selectedEdge };
-  if (selected || node.current) return { ...SELECTED };
+  if (selected || node.current) return { borderWidth: 1, borderStyle: "solid", borderColor: t.selectedEdge };
   return { borderWidth: width, borderStyle: "solid", borderColor: t.moduleBorder };
 }
 
@@ -282,9 +281,9 @@ export function FamilyList({
                 width: "100%",
                 paddingLeft: 16 * depth,
                 paddingRight: 0,
-                border: 0,
+                border: `1px solid ${selected ? t.selectedEdge : "transparent"}`,
                 borderRadius: r.control,
-                background: selected ? (t.selectedFill) : "transparent",
+                background: "transparent",
                 boxSizing: "border-box",
               }}
             >

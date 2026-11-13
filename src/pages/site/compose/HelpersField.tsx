@@ -171,7 +171,7 @@ export function HelpersField({ helpers, toolNames, decisions, phone, onChange, b
         </div>
       ) : null}
       {open ? (
-        <div role="group" aria-label={HELPERS_COPY.add} style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, background: t.tile, border: `1px solid ${t.tileBorder}`, borderRadius: 6 }}>
+        <div role="group" aria-label={HELPERS_COPY.add} style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, background: t.inset, border: `1px solid ${t.tileBorder}`, borderRadius: 6 }}>
           <Field id="helper-job" label="Job" group>
             <PickMenu label="Job of the helper" phone={phone} value={d.job} options={HELPER_JOBS.map((job) => ({ value: job, label: HELPER_JOB_LABEL[job] }))} onChange={(job) => set({ ...blank(), job, provider: job === "decide" ? "typesafe" : "scaledown" })} />
           </Field>
