@@ -368,7 +368,7 @@ describe("refined controls (UI-P84)", () => {
     for (const item of screen.getAllByRole("button")) expect([item.style.height, item.style.padding]).toEqual(["24px", "0px 12px"]);
   });
 
-  it("UnderlineTabs is 40 high with a 2px --text edge, a hairline row and an optional count", () => {
+  it("UnderlineTabs is 32 high with a 2px --text edge, a hairline row and an optional count", () => {
     const html = refined(
       <UnderlineTabs
         label="Sections"
@@ -377,7 +377,7 @@ describe("refined controls (UI-P84)", () => {
         tabs={[{ value: "a", label: "Builds", count: 10 }, { value: "b", label: "Models" }]}
       />,
     );
-    expect(html).toContain("height:40px");
+    expect(html).toContain("height:32px");
     expect(html).toContain("border-bottom:2px solid var(--text)");
     expect(html).toContain("border-bottom:2px solid transparent");
     expect(html).toContain("border-bottom:1px solid var(--hairline)");
