@@ -49,4 +49,8 @@ describe("the ladder's role changes", () => {
   it.each(["dusk", "noon"] as const)("%s: an avatar's fill is the inset", (theme) => {
     expect(resolveToken(theme, "avatar-fill")).toBe(resolveToken(theme, "inset"));
   });
+
+  it.each(["dusk", "noon"] as const)("%s: a status chip's fill is the inset", (theme) => {
+    expect(resolveToken(theme, "pill")).toBe(resolveToken(theme, "inset"));
+  });
 });

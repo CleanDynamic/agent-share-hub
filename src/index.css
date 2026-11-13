@@ -269,7 +269,7 @@
   --action-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 1px 2px rgba(0,0,0,.25);
   --tag-fill: #E9E9E9;
   --on-tag: #575757;
-  --pill: #E6E6E6;
+  --pill: var(--inset);
   --on-pill: #333333;
   --lit-mark: #F5CB4C;
   --nav-mark: #1C1C1C;
@@ -510,7 +510,7 @@
   --action-shadow: inset 0 -1px 0 rgba(0,0,0,.14), 0 1px 2px rgba(0,0,0,.45);
   --tag-fill: #26262A;
   --on-tag: #A0A0A6;
-  --pill: #303035;
+  --pill: var(--inset);
   --on-pill: #CFCFD3;
   --lit-mark: #F5CB4C;
   --nav-mark: #F5CB4C;
