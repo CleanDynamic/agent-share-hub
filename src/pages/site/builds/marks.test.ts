@@ -73,9 +73,9 @@ describe("G1: marks a reader must see reach 3:1", () => {
 describe("G2: no text under 12px on Builds", () => {
   // The Map is drawn in the well's own 400 by 220 units; its box and part labels are part of the drawing.
   const SMALL_ALLOWED = [
-    { file: "BuildsMapsView.tsx", has: "fontSize: 10, letterSpacing", why: "a part label, in the Map's drawing" },
+    { file: "BuildsMapsView.tsx", has: "fontSize: 11, letterSpacing", why: "a part label, in the Map's drawing" },
     { file: "BuildsMapsView.tsx", has: "fontSize: 11, fontWeight: 500", why: "a box label, in the Map's drawing" },
-    { file: "BuildsMapsView.tsx", has: "fontSize: 10, lineHeight", why: "a box's meta line, in the Map's drawing" },
+    { file: "BuildsMapsView.tsx", has: "fontSize: 11, lineHeight", why: "a box's meta line, in the Map's drawing" },
   ] as const;
 
   it("no Builds view sets type under 12px outside the Map's drawing", () => {

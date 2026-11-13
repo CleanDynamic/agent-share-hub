@@ -175,7 +175,7 @@ export interface MatchControl {
 /* ── pieces ── */
 
 const rule: CSSProperties = { padding: "16px 0", borderTop: `1px solid ${t.hairline}` };
-const name12: CSSProperties = text(12.5, 500, t.text);
+const name12: CSSProperties = text(12, 500, t.text);
 const small = (color: string): CSSProperties => text(12, 400, color);
 
 function SectionHead({ name, right }: { name: string; right: ReactNode }) {
@@ -234,7 +234,7 @@ function SavedSetLink({ row, menu }: { row: SavedSetRow; menu?: ReactNode }) {
         to={row.href}
         aria-current={row.current ? "true" : undefined}
         {...handlers}
-        style={{ flex: 1, minWidth: 0, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, minHeight: 36, textDecoration: "none", borderRadius: r.chip, ...text(12.5, row.current ? 500 : 400, state.hovered || row.current ? t.text : t.text2), ...ring(state.focusVisible) }}
+        style={{ flex: 1, minWidth: 0, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, minHeight: 36, textDecoration: "none", borderRadius: r.chip, ...text(12, row.current ? 500 : 400, state.hovered || row.current ? t.text : t.text2), ...ring(state.focusVisible) }}
       >
         <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.name}</span>
         {value !== undefined ? <span style={small(t.label)}>{value}</span> : null}
@@ -319,7 +319,7 @@ function SavedSets({ rows, canSave, saveHint, onSaveCurrent, open, onRename, onT
 
 function OptionRow({ option, onToggle }: { option: WordOption; onToggle: () => void }) {
   return (
-    <label style={{ display: "grid", gridTemplateColumns: "14px 1fr auto", columnGap: 10, alignItems: "center", minHeight: 30, cursor: "pointer", ...text(12.5, 400, option.checked ? t.text : t.text2) }}>
+    <label style={{ display: "grid", gridTemplateColumns: "14px 1fr auto", columnGap: 10, alignItems: "center", minHeight: 30, cursor: "pointer", ...text(12, 400, option.checked ? t.text : t.text2) }}>
       <Checkbox checked={option.checked} onChange={onToggle} style={{ width: 14, height: 14 }} />
       <span>{option.label}</span>
       {option.count === undefined ? <span /> : <span style={small(t.label)}>{option.count}</span>}
@@ -495,7 +495,7 @@ function ScaleButton({ label, on, onClick }: { label: string; on: boolean; onCli
         padding: "6px 8px",
         borderRadius: r.control,
         ...(on ? { background: t.selectedFill, border: `1px solid ${t.selectedEdge}` } : { background: "none", border: `1px solid ${t.label}` }),
-        ...text(12.5, on ? 500 : 400, on ? t.text : t.text2, { lineHeight: "16px", textAlign: "center" }),
+        ...text(12, on ? 500 : 400, on ? t.text : t.text2, { lineHeight: "16px", textAlign: "center" }),
         whiteSpace: "normal",
         cursor: "pointer",
         ...ring(state.focusVisible),
@@ -560,7 +560,7 @@ function GroupButton({ name, count, current, onChoose }: { name: string; count: 
         background: current ? t.selectedFill : "none",
         cursor: "pointer",
         whiteSpace: "nowrap",
-        ...text(12.5, current ? 500 : 400, current || state.hovered ? t.text : t.text2),
+        ...text(12, current ? 500 : 400, current || state.hovered ? t.text : t.text2),
         ...ring(state.focusVisible),
       }}
     >
@@ -598,7 +598,7 @@ export function BuildsFiltersView(props: BuildsFiltersBodyProps) {
         </div>
         <div style={{ minWidth: 0 }}>
           {!query && group === "Saved" && savedSets ? <SavedSets {...savedSets} /> : null}
-          {query && shown.length === 0 ? <p style={{ ...text(12.5, 400, t.text2), margin: 0, padding: "16px 0" }}>No filter has that name.</p> : null}
+          {query && shown.length === 0 ? <p style={{ ...text(12, 400, t.text2), margin: 0, padding: "16px 0" }}>No filter has that name.</p> : null}
           {shown.map((section) => {
             const label = query ? section.group : undefined;
             if (section.kind === "word") return <WordFilter key={section.id} section={section} label={label} onToggle={(key) => onToggleOption(section.id, key)} />;
@@ -653,7 +653,7 @@ function MatchSelect({ match }: { match: MatchControl }) {
   const m = match.choices[0];
   const word = (least: number | undefined) => (least === undefined ? `All ${m} filters` : `At least ${least} of ${m}`);
   return (
-    <span style={{ display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: "4px 8px", ...text(12.5, 400, t.text2) }}>
+    <span style={{ display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: "4px 8px", ...text(12, 400, t.text2) }}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild disabled={match.disabled}>
           <BuildsControl aria-label={`Builds must match: ${word(match.value)}`} disabled={match.disabled} style={match.disabled ? { cursor: "default" } : undefined}>
@@ -681,12 +681,12 @@ function FiltersFooter({ matchCount, dirty, match, addColumns, onAddColumns, onC
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 16px" }}>
-        <span role="status" style={text(12.5, 400, t.text2)}>
+        <span role="status" style={text(12, 400, t.text2)}>
           {matchCount === null ? "" : `${matchCount} ${matchCount === 1 ? "build matches" : "builds match"}`}
         </span>
         {match ? <MatchSelect match={match} /> : null}
         {addColumns !== undefined && onAddColumns ? (
-          <label style={{ display: "inline-flex", alignItems: "center", gap: 8, minHeight: 32, cursor: "pointer", ...text(12.5, 400, t.text2) }}>
+          <label style={{ display: "inline-flex", alignItems: "center", gap: 8, minHeight: 32, cursor: "pointer", ...text(12, 400, t.text2) }}>
             <Checkbox checked={addColumns} onChange={(event) => onAddColumns(event.currentTarget.checked)} />
             Add a column for each filter
           </label>

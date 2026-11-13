@@ -266,7 +266,7 @@ function ColumnsChooser({ label, menu }: { label: string; menu: ColumnsMenu }) {
               {group.name ? <div style={{ ...text(12, 400, t.label), margin: `${at === 0 ? 0 : 12}px 0 4px` }}>{group.name}</div> : null}
               {group.options.map((option) => (
                 <div key={option.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                  <label style={{ flex: 1, display: "grid", gridTemplateColumns: "16px 1fr", columnGap: 10, alignItems: "center", minHeight: 32, cursor: option.locked ? "default" : "pointer", ...text(12.5, 400, option.on ? t.text : t.text2) }}>
+                  <label style={{ flex: 1, display: "grid", gridTemplateColumns: "16px 1fr", columnGap: 10, alignItems: "center", minHeight: 32, cursor: option.locked ? "default" : "pointer", ...text(12, 400, option.on ? t.text : t.text2) }}>
                     <Checkbox checked={option.on} disabled={option.locked} onChange={() => menu.onToggle(option.id)} />
                     <span>{option.name}</span>
                   </label>

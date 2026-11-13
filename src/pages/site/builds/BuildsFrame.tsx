@@ -104,7 +104,7 @@ function ViewSegment({ view, current, href, onIntent }: { view: GalleryViewMode;
           border: `1px solid ${current ? t.selectedEdge : "transparent"}`,
           background: current ? t.control : "transparent",
           fontFamily: FIGTREE,
-          fontSize: 12.5,
+          fontSize: 12,
           fontWeight: current ? 500 : 400,
           lineHeight: "normal",
           color: current || state.hovered ? t.text : t.text2,
