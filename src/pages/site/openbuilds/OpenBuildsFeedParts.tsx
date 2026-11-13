@@ -13,6 +13,9 @@ import { FIGTREE } from "@/lib/theme/type";
 const LINE: CSSProperties = { margin: "2px 0 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.text2 };
 const META: CSSProperties = { margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 12, lineHeight: "16px", color: t.label };
 
+/** The feed's head copy, drawn by the page and by its loading view alike. */
+export const FEED_HEAD = { title: "OpenBuilds", line: "Post anything, reply with anything. Spaces are made and run by the people in them." } as const;
+
 /** The head: the page's `h1`, a line under it, optional meta, and the actions at the right (full width under them on a phone).
     Desktop: PageHeader, with the breadcrumb above the title on a page with a parent (a space). */
 export function PageHead({ title, line, meta, actions, primary, breadcrumb }: { title: string; line?: string; meta?: ReactNode; actions?: ReactNode; primary?: ReactNode; breadcrumb?: ReactNode }) {

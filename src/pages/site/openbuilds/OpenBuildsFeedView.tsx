@@ -22,7 +22,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 import { HomeColumns, useHomeLayout } from "@/pages/site/home/HomeFrame";
 
-import { EmptyLine, LoadError, PageHead } from "./OpenBuildsFeedParts";
+import { EmptyLine, FEED_HEAD, LoadError, PageHead } from "./OpenBuildsFeedParts";
 import type { FeedScope } from "./openBuildsFeedModel";
 
 export type FeedStatus = "loading" | "error" | "ready";
@@ -237,8 +237,8 @@ export function OpenBuildsFeedView(view: OpenBuildsFeedViewProps) {
   return (
     <div>
       <PageHead
-        title="OpenBuilds"
-        line="Post anything, reply with anything. Spaces are made and run by the people in them."
+        title={FEED_HEAD.title}
+        line={FEED_HEAD.line}
         primary={
           <PostPrimary onClick={view.onPost} block>
             Post
