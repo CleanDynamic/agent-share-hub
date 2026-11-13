@@ -31,6 +31,7 @@ import { NOTICE_COPY, NOTICE_MS } from "@/lib/build/referenceHistory";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { nameColourFor, swatchFor } from "@/lib/theme/partColour";
+import { hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE, textStep } from "@/lib/theme/type";
 
@@ -129,7 +130,7 @@ export function GroupLabel({ name, colour, prefix, testId = "group-label", onCli
         onClick();
       }}
       {...handlers}
-      style={{ ...look, border: 0, cursor: "pointer", ...(state.hovered ? { backgroundColor: t.controlOn } : null), ...ring(state.focusVisible) }}
+      style={{ ...look, border: 0, cursor: "pointer", ...(state.hovered ? { backgroundColor: hoverFill() } : null), ...ring(state.focusVisible) }}
     >
       {body}
     </button>
@@ -168,7 +169,7 @@ export function GhostIcon({ glyph, label, phone = false, size = 28, pressed = fa
         boxSizing: "border-box",
         borderRadius: 7,
         border: `1px solid ${pressed ? t.segOnBorder : "transparent"}`,
-        background: pressed || (state.hovered && !disabled) ? t.controlOn : "transparent",
+        background: pressed ? t.controlOn : state.hovered && !disabled ? hoverFill() : "transparent",
         color: disabled ? t.textDisabled : state.hovered || pressed ? t.text : t.text2,
         display: "inline-flex",
         alignItems: "center",
@@ -343,7 +344,7 @@ function KeepRow({ choice, chosen, onChoose }: { choice: KeepChoice; chosen: boo
         padding: PAD.panel,
         borderRadius: 8,
         cursor: "pointer",
-        background: chosen ? t.selectedFill : state.hovered ? t.controlOn : t.tile,
+        background: chosen ? t.selectedFill : state.hovered ? hoverFill(t.tile) : t.tile,
         border: `1px solid ${chosen ? t.selectedEdge : "transparent"}`,
         ...ring(state.focusVisible),
       }}

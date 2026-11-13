@@ -278,7 +278,7 @@
   --frozen: #3F86B5;
   --selected-edge: #6E6E73;
   --selected-fill: var(--module);
-  --selected-ring: 0 0 0 1px #1C1C1C;
+  --selected-ring: 0 0 0 1px var(--selected-edge);
   --window: #FFFFFF;
   --window-border: var(--control-border);
   --window-shadow: 0 2px 6px rgba(0,0,0,.08), 0 32px 64px -16px rgba(0,0,0,.3);
@@ -519,7 +519,7 @@
   --frozen: #8FB8D0;
   --selected-edge: #9A9AA2;
   --selected-fill: var(--module);
-  --selected-ring: 0 0 0 1px #8E8E95;
+  --selected-ring: 0 0 0 1px var(--selected-edge);
   --window: #28282C;
   --window-border: var(--control-border);
   --window-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 2px 6px rgba(0,0,0,.4), 0 32px 64px -16px rgba(0,0,0,.75);
@@ -1443,6 +1443,20 @@ input[type="search"] { border-radius: var(--r-control); }
 }
 :root [data-ring-inset]:focus-visible {
   outline-offset: -4px !important;
+}
+
+/* The surface ladder's hover for menu items. Radix marks the item under the pointer (and the one the keyboard reached)
+   with `data-highlighted`, which no inline style can read, so its fill is set here: the resting fill moved four grey
+   levels toward the text, as `hoverFill()` in src/lib/theme/refinedControl.ts writes it. Radix also moves focus onto the
+   item under the pointer, which the browser marks :focus-visible; an item the pointer is over draws no ring. The ring
+   stays for the item the keyboard reached. */
+:root :where([role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"], [role="option"])[data-highlighted] {
+  background-color: color-mix(in srgb, var(--text) 1.9%, transparent) !important;
+}
+@media (hover: hover) and (pointer: fine) {
+  :root :where([role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"], [role="option"]):hover:focus-visible {
+    outline: none !important;
+  }
 }
 
 /* MOTION. Nothing in the refined look animates except the theme change: no hover fade, no pulse, no reveal, no

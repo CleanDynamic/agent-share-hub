@@ -17,6 +17,7 @@ import { MenuButton } from "@/components/brand/MenuButton";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
+import { hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 
 import { dropIn } from "./buildMotion";
@@ -103,7 +104,7 @@ function Choice({ title, line, onPick, phone, forward = false }: { title: string
       type="button"
       onClick={onPick}
       {...handlers}
-      style={{ ...rowButton, minHeight: phone ? size.rowLarge : size.row, padding: `${space[2]}px ${space[2]}px`, cursor: "pointer", ...(state.hovered ? { background: t.controlOn } : null), ...ring(state.focusVisible) }}
+      style={{ ...rowButton, minHeight: phone ? size.rowLarge : size.row, padding: `${space[2]}px ${space[2]}px`, cursor: "pointer", ...(state.hovered ? { background: hoverFill() } : null), ...ring(state.focusVisible) }}
     >
       <span style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0, flexGrow: 1 }}>
         <span style={text(textStep.body, 500, t.text)}>{title}</span>
@@ -141,7 +142,7 @@ function PickRow({ item, phone, onPick }: { item: SourceLibraryItem; phone: bool
         padding: `${space[2]}px ${space[2]}px`,
         cursor: here ? "default" : "pointer",
         ...(here ? { filter: t.dimFilter } : null),
-        ...(state.hovered && !here ? { background: t.controlOn } : null),
+        ...(state.hovered && !here ? { background: hoverFill() } : null),
         ...ring(state.focusVisible),
       }}
     >
@@ -288,7 +289,7 @@ const addRowStyle = (hovered: boolean, focusVisible: boolean, adding: boolean): 
     borderRadius: r.control,
     ...text(textStep.body, 500, t.text2),
     cursor: adding ? "default" : "pointer",
-    ...(hovered && !adding ? { background: t.controlOn } : null),
+    ...(hovered && !adding ? { background: hoverFill() } : null),
     ...ring(focusVisible),
 });
 

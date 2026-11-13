@@ -615,8 +615,8 @@ export const GLASS_BLUR = "blur(16px) saturate(1.15)";
 
 /** Menus and popovers: portalled, blurred, `raised`. */
 export const menuPanelStyle: CSSProperties = {
-  background: t.glass,
-  borderColor: t.glassBorder,
+  background: t.window,
+  borderColor: t.windowBorder,
   borderWidth: 1,
   borderStyle: "solid",
   borderRadius: r.panel,
@@ -669,8 +669,8 @@ export const menuLabelStyle: CSSProperties = { ...chipType, color: t.text2 };
 
 /** Dialogs and sheets: portalled, blurred, `overlay`. */
 export const dialogPanelStyle: CSSProperties = {
-  background: t.glass,
-  borderColor: t.glassBorder,
+  background: t.window,
+  borderColor: t.windowBorder,
   borderWidth: 1,
   borderStyle: "solid",
   borderRadius: r.panel,
@@ -706,8 +706,8 @@ export function sheetPanelStyle(side: "top" | "bottom" | "left" | "right"): CSSP
           : { borderTopLeftRadius: radius, borderTopRightRadius: radius };
 
   return {
-    background: t.glass,
-    borderColor: t.glassBorder,
+    background: t.window,
+    borderColor: t.windowBorder,
     color: t.text,
     ...corners,
     ...elevation.overlay,

@@ -18,7 +18,7 @@ import { ModelMark } from "@/components/brand/ModelMark";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { CONTROL, CONTROL_HOVER, SELECTED } from "@/lib/theme/refinedControl";
+import { CONTROL, CONTROL_HOVER, SELECTED, hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { toolFor, type StepKey, type ToolList } from "@/lib/tools/registry";
 
@@ -215,7 +215,7 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
     overflowWrap: "anywhere",
     ...text(textStep.body, 400, row.kind === "showAll" || row.kind === "showMore" ? t.text2 : t.text),
     ...(row.kind === "tool" && row.unavailable ? { filter: t.dimFilter } : null),
-    ...(pickable.indexOf(row) === current ? { background: t.controlOn } : null),
+    ...(pickable.indexOf(row) === current ? { background: hoverFill() } : null),
     ...(isChosen(row) ? SELECTED : null),
   });
 

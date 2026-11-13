@@ -18,6 +18,7 @@ import { PostControl } from "@/components/post/postControls";
 import { groupAttachable, labelAttachable, listAttachableWork, postKey, type LabelledWork, type WorkSize } from "@/lib/openbuilds";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
+import { hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -60,7 +61,7 @@ function Row({ work, onPick }: { work: LabelledWork; onPick: (work: LabelledWork
       type="button"
       onClick={() => onPick(work)}
       {...handlers}
-      style={{ ...rowBox, background: state.hovered ? t.controlOn : "none", color: t.text, cursor: "pointer", ...ring(state.focusVisible) }}
+      style={{ ...rowBox, background: state.hovered ? hoverFill() : "none", color: t.text, cursor: "pointer", ...ring(state.focusVisible) }}
     >
       <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{work.label}</span>
       {work.context ? <span style={{ flexShrink: 0, maxWidth: "45%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12, color: t.label }}>{work.context}</span> : null}

@@ -52,6 +52,7 @@ import { MENU_ITEM_CLASS, ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { TOUCH_MIN } from "@/lib/theme/density";
 import { r } from "@/lib/theme/radius";
+import { hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -146,7 +147,7 @@ function DraftRow({
           alignItems: "center",
           minHeight: ROW,
           borderBottom: `1px solid ${over ? t.evidence : t.hairline}`,
-          background: over || state.hovered ? t.rowHighlight : "transparent",
+          background: over || state.hovered ? hoverFill() : "transparent",
           textDecoration: "none",
           color: t.text,
           boxSizing: "border-box",
@@ -192,8 +193,8 @@ const menuContent: CSSProperties = {
   maxWidth: 340,
   padding: 4,
   borderRadius: r.panel,
-  background: t.solid,
-  border: `1px solid ${t.line}`,
+  background: t.window,
+  border: `1px solid ${t.windowBorder}`,
   boxShadow: t.shadowFloat,
   color: t.text,
   zIndex: 50,

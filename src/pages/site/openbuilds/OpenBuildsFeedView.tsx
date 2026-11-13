@@ -18,6 +18,7 @@ import { TextTabs } from "@/components/vision/TextTabs";
 import { PageLink as Link } from "@/lib/routing/PageLink";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
+import { hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 import { HomeColumns, useHomeLayout } from "@/pages/site/home/HomeFrame";
@@ -76,7 +77,7 @@ function SpaceLink({ to, current, children, fresh }: { to: string; current?: boo
       to={to}
       aria-current={current ? "page" : undefined}
       {...handlers}
-      style={{ boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, minHeight: 32, color: current || state.hovered ? t.text : t.text2, textDecoration: "none", ...rowText({ fontWeight: current ? 500 : 400 }), ...ring(state.focusVisible) }}
+      style={{ boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, minHeight: 32, background: state.hovered ? hoverFill() : "transparent", color: current || state.hovered ? t.text : t.text2, textDecoration: "none", ...rowText({ fontWeight: current ? 500 : 400 }), ...ring(state.focusVisible) }}
     >
       <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{children}</span>
       {fresh ? <span style={{ flexShrink: 0, fontSize: 12, color: t.label }}>{`${fresh} new`}</span> : null}

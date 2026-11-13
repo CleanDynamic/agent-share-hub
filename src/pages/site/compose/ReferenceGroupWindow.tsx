@@ -26,6 +26,7 @@ import type { FoundWords } from "@/lib/build/linkRules";
 import { shownName, type RefEntry, type RefGroup } from "@/lib/build/postRefs";
 import { GROUP_MIN_MEMBERS, GROUP_NAME_MAX, GROUP_NOTES_MAX, type ReferenceGroup } from "@/lib/build/referenceGroups";
 import { normaliseHex } from "@/lib/theme/partColour";
+import { hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { useInteractive } from "@/lib/theme/interactive";
 import { ring } from "@/lib/theme/controls";
@@ -143,7 +144,7 @@ function AddChoice({ entry, indent, disabled, onPick }: { entry: RefEntry; inden
         padding: PAD.row,
         paddingLeft: GAP.row + indent,
         borderRadius: 7,
-        background: state.hovered && !disabled ? t.controlOn : "transparent",
+        background: state.hovered && !disabled ? hoverFill() : "transparent",
         cursor: disabled ? "default" : "pointer",
         ...(disabled ? { filter: t.dimFilter } : null),
         ...ring(state.focusVisible),

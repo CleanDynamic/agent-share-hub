@@ -76,3 +76,72 @@ describe("hover on the ladder", () => {
     expect(controlPaint({ hovered: true }).background).toBe("color-mix(in srgb, var(--text) 1.9%, var(--control))");
   });
 });
+
+describe("selection on the ladder (F3)", () => {
+  it("SELECTED is the selected border alone: no fill of its own, no ring, no old edge colour", async () => {
+    const { SELECTED } = await import("./refinedControl");
+    expect(SELECTED).toEqual({ border: "1px solid var(--selected-edge)" });
+  });
+  it.each(["dusk", "noon"] as const)("%s: the selected ring carries the selected edge, not the old one", (theme) => {
+    expect(resolveToken(theme, "selected-ring")).toBe("0 0 0 1px var(--selected-edge)");
+  });
+});
+
+describe("selection on the composer's tiles (F3)", () => {
+  it("a selected tile keeps the unselected fill and takes the selected border", async () => {
+    const { tileStyle } = await import("@/pages/site/compose/tileRecipes");
+    const { moduleStyle } = await import("@/pages/site/compose/refinedStyles");
+    for (const recipe of [tileStyle, moduleStyle]) {
+      expect(recipe(true).background).toBe(recipe(false).background);
+      expect(recipe(true).border).toBe("1px solid var(--selected-edge)");
+      expect(recipe(false).border).not.toBe(recipe(true).border);
+      expect(recipe(true).boxShadow).toBe(recipe(false).boxShadow);
+    }
+  });
+});
+
+describe("one hover fill (F2)", () => {
+  it("moves the resting fill four grey levels toward the text, or lays that step over a transparent rest", async () => {
+    const { hoverFill, CONTROL_HOVER } = await import("./refinedControl");
+    expect(hoverFill()).toBe("color-mix(in srgb, var(--text) 1.9%, transparent)");
+    expect(hoverFill("transparent")).toBe(hoverFill());
+    expect(hoverFill("var(--module)")).toBe("color-mix(in srgb, var(--text) 1.9%, var(--module))");
+    expect(CONTROL_HOVER.background).toBe(hoverFill("var(--control)"));
+  });
+
+  it("no hover state in the edit area paints --control-on", async () => {
+    const { readFileSync, readdirSync, statSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const walk = (dir: string): string[] => readdirSync(dir).flatMap((name) => {
+      const path = join(dir, name);
+      return statSync(path).isDirectory() ? walk(path) : /\.tsx?$/.test(name) && !/\.test\./.test(name) ? [path] : [];
+    });
+    const offenders = ["src/pages/site", "src/components/shell", "src/components/brand"].flatMap(walk).flatMap((file) =>
+      readFileSync(file, "utf8").split("\n").flatMap((line, i) => (/hovered[^?]*\?\s*(\{\s*background(Color)?:\s*)?t\.controlOn/.test(line) ? [`${file}:${i + 1}`] : [])),
+    );
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe("overlays are windows (F4)", () => {
+  it("the shared menu, popover, dialog and sheet surfaces are --window", async () => {
+    const { menuPanelStyle, dialogPanelStyle, sheetPanelStyle } = await import("./controls");
+    for (const style of [menuPanelStyle, dialogPanelStyle, sheetPanelStyle("right")]) expect(style.background).toBe("var(--window)");
+    for (const style of [menuPanelStyle, dialogPanelStyle]) expect(style.borderColor).toBe("var(--window-border)");
+  });
+
+  it("no overlay in the edit area paints the card tone itself", async () => {
+    const { readFileSync } = await import("node:fs");
+    const OVERLAYS = [
+      "src/pages/site/builds/BuildsFiltersDialog.tsx",
+      "src/pages/site/builds/SetDialogs.tsx",
+      "src/pages/site/compose/MadeWithLine.tsx",
+      "src/pages/site/compose/SessionsPanel.tsx",
+      "src/pages/site/compose/OpenRequestDialog.tsx",
+      "src/pages/site/drafts/DraftsView.tsx",
+      "src/pages/site/build/RunDialog.tsx",
+      "src/pages/site/build/BuildView.tsx",
+    ];
+    for (const file of OVERLAYS) expect(readFileSync(file, "utf8"), file).not.toMatch(/background: t\.solid/);
+  });
+});

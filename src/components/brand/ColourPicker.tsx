@@ -51,7 +51,7 @@ import {
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { HEX_HINT, normaliseHex, SUGGESTED_COLOURS, swatchFor } from "@/lib/theme/partColour";
-import { CONTROL, WELL } from "@/lib/theme/refinedControl";
+import { CONTROL, WELL, hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { refPaint, refWordsStyle } from "@/components/post/RefLinks";
 import { FIELD_FOCUS, FieldInput, HEADER_ICONS, IconSquare, RecipeButton, TextLink, fieldStyle, footerStyle, frameStyle } from "@/pages/site/compose/modalRecipes";
@@ -389,7 +389,7 @@ function SaveCircle({ disabled, onSave }: { disabled: boolean; onSave: () => voi
         boxSizing: "border-box",
         borderRadius: "50%",
         border: `1px dashed ${t.segOnBorder}`,
-        background: state.hovered && !disabled ? t.controlOn : "transparent",
+        background: state.hovered && !disabled ? hoverFill() : "transparent",
         color: disabled ? t.textDisabled : t.text2,
         display: "inline-flex",
         alignItems: "center",
@@ -554,7 +554,7 @@ function FoundRow({ hit, onPick }: { hit: FoundWords; onPick: () => void }) {
       data-found={hit.from}
       onClick={onPick}
       {...handlers}
-      style={{ appearance: "none", border: 0, width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 8, minHeight: 30, padding: "4px 8px", borderRadius: 6, background: state.hovered ? t.controlOn : "transparent", cursor: "pointer", ...ring(state.focusVisible) }}
+      style={{ appearance: "none", border: 0, width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 8, minHeight: 30, padding: "4px 8px", borderRadius: 6, background: state.hovered ? hoverFill() : "transparent", cursor: "pointer", ...ring(state.focusVisible) }}
     >
       <span style={{ ...words(12.5, 400, t.text2), ...ELLIPSIS, flexGrow: 1 }}>
         {hit.before ? `…${hit.before}` : ""}
@@ -603,7 +603,7 @@ function GroupChoice({ group, onPick }: { group: PickerGroup; onPick: () => void
       data-group-choice={group.id}
       onClick={onPick}
       {...handlers}
-      style={{ appearance: "none", border: 0, width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: GAP.row, height: 32, padding: PAD.row, borderRadius: 7, background: state.hovered ? t.controlOn : "transparent", cursor: "pointer", ...ring(state.focusVisible) }}
+      style={{ appearance: "none", border: 0, width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: GAP.row, height: 32, padding: PAD.row, borderRadius: 7, background: state.hovered ? hoverFill() : "transparent", cursor: "pointer", ...ring(state.focusVisible) }}
     >
       <SquareSwatch colour={group.colour} />
       <span style={{ ...words(13, 500, group.name ? t.text : t.text2), ...ELLIPSIS, flexGrow: 1 }}>{group.name ?? COLOUR_PICKER_COPY.noName}</span>

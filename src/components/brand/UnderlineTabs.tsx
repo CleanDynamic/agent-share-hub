@@ -96,7 +96,7 @@ function Tab({
         padding: 0,
         background: "none",
         border: 0,
-        borderBottom: `2px solid ${current ? t.text : "transparent"}`,
+        borderBottom: `2px solid ${current ? t.selectedEdge : "transparent"}`,
         fontFamily: FIGTREE,
         fontSize: 13,
         fontWeight: 500,

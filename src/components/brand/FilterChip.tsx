@@ -39,13 +39,14 @@ export function FilterChip({
 }: FilterChipProps) {
   const { state, handlers } = useInteractive<HTMLButtonElement>({ onFocus, onBlur });
 
-  /* UI-P84: the control recipe at 36 high and radius 6; on is the selected recipe, not an inversion. */
+  /* UI-P84: the control recipe at 36 high and radius 6; on lays the selected border over it, not an inversion. */
   const paint: CSSProperties = {
     boxSizing: "border-box",
     height: 36,
     padding: "0 12px",
     borderRadius: r.control,
-    ...(on ? SELECTED : controlPaint(state)),
+    ...controlPaint(state),
+    ...(on ? SELECTED : null),
     color: t.text,
     gap: 6,
   };
