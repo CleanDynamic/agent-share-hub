@@ -187,7 +187,7 @@ describe("LibraryView", () => {
   it("draws the Version switch as a 32 track with 24 items", () => {
     view();
     const group = within(screen.getByTestId("library-selected")).getByRole("radiogroup", { name: "Version" });
-    expect([group.style.height, group.style.alignItems]).toEqual(["32px", "center"]);
+    expect([group.style.minHeight, group.style.alignItems]).toEqual(["32px", "center"]);
     for (const item of within(group).getAllByRole("radio")) expect(item.style.height).toBe("24px");
   });
 

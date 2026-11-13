@@ -6,7 +6,7 @@
 // string, so a check on the node would pass on a control painted in raw colour.
 // Behaviour (keyboard, aria) is asserted on the rendered tree.
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Plus } from "lucide-react";
 import { MemoryRouter } from "react-router-dom";
@@ -349,6 +349,16 @@ describe("refined controls (UI-P84)", () => {
     expect(html).toContain("height:24px");
     expect(html).toContain("padding:0 12px");
     expect(html).toContain("background:var(--control-on)");
+  });
+
+  it("Button and the pass's Segmented keep a 44 high hit area on a phone (G8a)", () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("max-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
+    render(<Button size={32}>Go</Button>);
+    expect(screen.getByRole("button", { name: "Go" }).style.minHeight).toBe("44px");
+    render(<Segmented label="Phone feed" size={28} value="a" onChange={() => {}} items={[{ value: "a", label: "A" }, { value: "b", label: "B" }]} />);
+    const group = screen.getByRole("group", { name: "Phone feed" });
+    for (const item of within(group).getAllByRole("button")) expect(item.style.minHeight).toBe("44px");
+    vi.unstubAllGlobals();
   });
 
   it("Segmented drawn 28 is the control-heights track: 32 high, items 24 high and centred", () => {

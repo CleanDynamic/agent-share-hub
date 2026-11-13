@@ -36,6 +36,7 @@ import {
   themeToggleSegmentStyle,
   tooltipStyle,
   TOUCH_HIT_CLASS,
+  touchArea,
   touchHit,
   uiTransition,
   type ButtonVariant,
@@ -493,5 +494,14 @@ describe("control sizes (UI-P53, the density pass)", () => {
   it("leaves the focus ring alone: it is not a size", () => {
     expect(focusRing.outlineWidth).toBe("2px");
     expect(focusRing.outlineOffset).toBe("2px");
+  });
+});
+
+describe("touchArea (the control-heights pass, G8a)", () => {
+  it("gives every control a 44 high hit area below 768px, whatever it is drawn at, and an icon-only one 44 wide too", () => {
+    expect(touchArea(true)).toEqual({ minHeight: 44 });
+    expect(touchArea(true, true)).toEqual({ minHeight: 44, minWidth: 44 });
+    expect(touchArea(false)).toEqual({});
+    expect(touchArea(false, true)).toEqual({});
   });
 });

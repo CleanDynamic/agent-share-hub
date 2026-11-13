@@ -28,6 +28,7 @@ import { Segmented } from "@/components/brand/Segmented";
 import { FeedPost } from "@/components/gallery/FeedPost";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { EngagementRow } from "@/components/social/EngagementRow";
 import { PostCard } from "@/components/post/PostCard";
 import { ReplyAnatomy } from "@/pages/site/openbuilds/PostReplies";
@@ -37,7 +38,7 @@ import { SectionChevron, SectionHead } from "@/components/vision/SectionHead";
 import { TextTabs } from "@/components/vision/TextTabs";
 import { START_TOPIC_FROM_RUN_LABEL } from "./runTopic";
 import { PageLink as Link } from "@/lib/routing/PageLink";
-import { ring } from "@/lib/theme/controls";
+import { ring, touchArea } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
@@ -455,6 +456,7 @@ export function FeedHead({ scope, onScopeChange, filter, onFilterChange }: Pick<
 }
 
 export function NewPill({ count, onShow }: { count: number; onShow: () => void }) {
+  const phone = useIsPhone();
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   if (count <= 0) return null;
   return (
@@ -464,7 +466,7 @@ export function NewPill({ count, onShow }: { count: number; onShow: () => void }
         data-testid="home-new-pill"
         onClick={onShow}
         {...handlers}
-        style={{ height: 32, padding: "0 12px", background: state.hovered ? t.controlOn : t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: 14, ...text(12, 400, t.text, { lineHeight: "normal" }), cursor: "pointer", ...ring(state.focusVisible) }}
+        style={{ height: 32, ...touchArea(phone), padding: "0 12px", background: state.hovered ? t.controlOn : t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: 14, ...text(12, 400, t.text, { lineHeight: "normal" }), cursor: "pointer", ...ring(state.focusVisible) }}
       >
         {`${count} new since you looked`}
       </button>

@@ -68,7 +68,8 @@ import type { Step } from "@/lib/build/graph";
 import { sessionHeadline, shortDate } from "@/lib/build/readerSteps";
 import type { NeedGroup, NeedRow, ReaderFile, ReaderResult, ReaderStep } from "@/lib/build/readerSteps";
 import { markFor } from "@/lib/models/marks";
-import { ring } from "@/lib/theme/controls";
+import { useIsPhone } from "@/components/shell/useMinWidth";
+import { ring, touchArea } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { controlPaint, CONTROL } from "@/lib/theme/refinedControl";
@@ -342,6 +343,7 @@ function Chip({ children }: { children: ReactNode }) {
 
 /** A secondary 26 that is a link: Download. */
 function DownloadButton({ href, name, label = "Download" }: { href: string; name: string; label?: string }) {
+  const phone = useIsPhone();
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   return (
     <a
@@ -353,6 +355,7 @@ function DownloadButton({ href, name, label = "Download" }: { href: string; name
       style={{
         ...controlPaint(state),
         height: 28,
+        ...touchArea(phone),
         boxSizing: "border-box",
         display: "inline-flex",
         alignItems: "center",

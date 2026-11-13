@@ -910,3 +910,13 @@ export const CONTROL_CLASS = {
 export function touchHit(phone: boolean, drawn: number): CSSProperties {
   return phone && drawn >= TOUCH_MIN ? { minHeight: TOUCH_MIN } : {};
 }
+
+/**
+ * The control-heights pass's touch rule, beside `touchHit` and with no height
+ * threshold: below 768px (`phone`) every button, field, tab, switch and menu
+ * item keeps a 44px high hit area, and an icon-only control a 44px wide one too.
+ */
+export function touchArea(phone: boolean, iconOnly = false): CSSProperties {
+  if (!phone) return {};
+  return iconOnly ? { minHeight: TOUCH_MIN, minWidth: TOUCH_MIN } : { minHeight: TOUCH_MIN };
+}

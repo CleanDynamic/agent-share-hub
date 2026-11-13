@@ -22,7 +22,7 @@ import { IconButton } from "@/components/brand/IconButton";
 import { Lockup } from "@/components/brand/Lockup";
 import { ThemeSegmented } from "@/components/theme/ThemeSegmented";
 import { useAuth } from "@/contexts/AuthContext";
-import { ring } from "@/lib/theme/controls";
+import { ring, touchArea } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -93,7 +93,7 @@ function RefinedMobileHeaderView({ viewer, onSearchOpen, onAccountOpen, onSignIn
     >
       <Lockup size={14} markSize={18} to={SITE_NAV.home} />
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <IconButton icon={Search} glyph="search" boxed={false} label="Search" size={32} onClick={onSearchOpen} />
+        <IconButton icon={Search} glyph="search" boxed={false} label="Search" size={32} onClick={onSearchOpen} style={touchArea(true, true)} />
         {viewer ? (
           <AvatarButton viewer={viewer} onClick={onAccountOpen} size={26} />
         ) : (

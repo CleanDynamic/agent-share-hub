@@ -28,7 +28,7 @@ import type { LucideIcon } from "lucide-react";
 
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { useInteractive } from "@/lib/theme/interactive";
-import { ring } from "@/lib/theme/controls";
+import { ring, touchArea } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { controlPaint, PRIMARY, refinedButtonHeight } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
@@ -117,6 +117,7 @@ export function Button({
         opacity: disabled ? 0.5 : undefined,
         whiteSpace: "nowrap",
         flexShrink: 0,
+        ...touchArea(phone),
         ...ring(state.focusVisible),
         ...style,
       }}

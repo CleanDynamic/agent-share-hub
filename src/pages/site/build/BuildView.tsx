@@ -46,7 +46,7 @@ import {
 } from "@/components/shell/useMinWidth";
 import { EngagementRow } from "@/components/social/EngagementRow";
 import { asideStyle, mainStyle } from "@/lib/theme/refinedLayout";
-import { ring } from "@/lib/theme/controls";
+import { ring, touchArea } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { scrollBehavior } from "@/lib/theme/motion";
 import { CONTROL, controlPaint } from "@/lib/theme/refinedControl";
@@ -436,7 +436,7 @@ export function TimelinePanel({ timeline, phone, onPlay }: { timeline: BuildTime
           headingLevel={2}
           title="Watch it get built"
           subtitle={timelineSubtitle(duration, events.length)}
-          right={<IconButton icon={Play} label="Play the build" size={phone ? 38 : 32} onClick={onPlay} disabled={events.length === 0} />}
+          right={<IconButton icon={Play} label="Play the build" size={phone ? 38 : 32} onClick={onPlay} disabled={events.length === 0} style={touchArea(phone, true)} />}
         />
         <div style={{ marginTop: 8 }}>
           {events.length > 0 ? (

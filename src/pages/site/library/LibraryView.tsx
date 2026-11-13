@@ -19,7 +19,8 @@ import { PlainRow } from "@/components/vision/PlainRow";
 import { SectionChevron, SectionHead } from "@/components/vision/SectionHead";
 import { TextTabs } from "@/components/vision/TextTabs";
 import { TypeChip, type ChipTone } from "@/components/vision/TypeChip";
-import { ring } from "@/lib/theme/controls";
+import { useIsPhone } from "@/components/shell/useMinWidth";
+import { ring, touchArea } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { WELL } from "@/lib/theme/refinedControl";
@@ -508,7 +509,7 @@ function VersionSwitch({ value, onChange }: { value: "saved" | "current"; onChan
     (event.currentTarget.parentElement?.querySelector(`[data-value="${next}"]`) as HTMLButtonElement | null)?.focus();
   };
   return (
-    <div role="radiogroup" aria-label="Version" style={{ display: "flex", alignItems: "center", boxSizing: "border-box", height: 32, gap: 2, marginTop: 16, padding: 2, ...WELL, boxShadow: "none", borderRadius: r.control }}>
+    <div role="radiogroup" aria-label="Version" style={{ display: "flex", alignItems: "center", boxSizing: "border-box", minHeight: 32, gap: 2, marginTop: 16, padding: 2, ...WELL, boxShadow: "none", borderRadius: r.control }}>
       {options.map((option) => (
         <VersionOption key={option.value} label={option.label} value={option.value} on={option.value === value} onChoose={() => onChange(option.value)} onKeyDown={move} />
       ))}
@@ -517,6 +518,7 @@ function VersionSwitch({ value, onChange }: { value: "saved" | "current"; onChan
 }
 
 function VersionOption({ label, value, on, onChoose, onKeyDown }: { label: string; value: string; on: boolean; onChoose: () => void; onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void }) {
+  const phone = useIsPhone();
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <button
@@ -531,6 +533,7 @@ function VersionOption({ label, value, on, onChoose, onKeyDown }: { label: strin
       style={{
         flex: 1,
         height: 24,
+        ...touchArea(phone),
         background: on ? t.control : "none",
         border: on ? `1px solid ${t.controlBorder}` : "1px solid transparent",
         borderRadius: r.chip,
