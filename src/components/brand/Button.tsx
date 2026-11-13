@@ -7,18 +7,15 @@
 // does not count, which is a rule for the page rather than something a button
 // can enforce, so it is stated here and not checked.
 //
-// SIZE AND TYPE ARE TWO NUMBERS BECAUSE THE REFERENCE STATES BOTH. A button is
-// `size` px tall at `fontSize` px, and the design uses eleven pairs of them —
-// 28/11, 30/12, 32/12, 34/12, 36/13, 38/13, 42/14, 44/13, 46/15, 48/14, 48/15 —
-// so neither is derived from the other. The default is 36/13. Padding is 0 14px
-// at every size, the radius is the control step (12), the gap is 7, and the icon
-// is 15px at stroke 1.8.
-//
-// THOSE ARE THE DRAWN NUMBERS, AND THE BUTTON RENDERS THEM DENSER (UI-P54). The
-// density pass maps every one through the table (`design/prompts/README-density.md`):
-// 36/13 renders 30/12, the padding is 0 10px and the gap 5. Callers keep passing
-// the drawn size. On a phone a button drawn 44px or taller stays 44, the touch
-// target; the icon keeps its 15px, as the kit's icons did.
+// SIZE IS THE DRAWN NUMBER; THE BUTTON RENDERS ONE OF TWO HEIGHTS (the control-
+// heights pass). Callers pass the height the reference drew and
+// `refinedButtonHeight` maps it: drawn 28 or less renders 24 (0 8px, 12px), the
+// small button, for a row or a card header only; drawn 30 to 42 renders 32
+// (0 12px, 13px). Drawn 44 and over renders 36 (0 16px) on desktop, which only
+// sign-in and the editor pass, and keeps its 44 or 48 on a phone. On a phone every
+// button keeps a 44 high hit area (`touchArea`). `fontSize` is accepted and not
+// read: the label is 13/500, 12 on a 24. The radius is `r.control`, the gap 8,
+// and a labelled button draws no icon.
 //
 // This is the new button. The shadcn `ui/button.tsx` and every call site of it
 // are untouched: they move when their page is rebuilt.
