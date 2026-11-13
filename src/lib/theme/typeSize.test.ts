@@ -43,6 +43,9 @@ const AREA = [
   "src/components/post/PostCard.tsx",
   "src/components/gallery/FeedPost.tsx",
   "src/components/classify/ClassificationBits.tsx",
+  "src/components/post/postType.ts",
+  "src/components/post/PostBody.tsx",
+  "src/components/brand/UnderlineTabs.tsx",
 ];
 
 /** Lines allowed off the scale, by file and the text on the line, each with its reason. */

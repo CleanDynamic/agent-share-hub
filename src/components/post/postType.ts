@@ -48,7 +48,7 @@ const text = (size: number, weight: number, leading: number, tracking: string): 
 
 /** The scale at this width. `phone` is true below 768px. */
 export function postType(phone: boolean): PostTypeScale {
-  const titleSize = phone ? 24 : 28;
+  const titleSize = 20;
   const headingSize = phone ? 18 : 20;
   return {
     title: { ...text(titleSize, 500, 1.1, "-0.03em"), textWrap: "balance" },
