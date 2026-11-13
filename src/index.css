@@ -236,15 +236,15 @@
   --shadow-card: var(--module-shadow);
   --nav-lamp-glow: none;
   --rank-glow: 0 0 0 0 transparent;
-  --inset: var(--tile);
+  --inset: #F1F1F1;
   --turn: rgba(0,0,0,.025);
   --sheet-dim: rgba(28,28,28,.25);
   --shadow-square: 0 1px 2px rgba(0,0,0,.08);
   --shadow-sheet: 0 -16px 48px rgba(0,0,0,.14);
 
   /* UI-P79 — the refined names (semantics.ts); the values are the refined boards'. */
-  --frame: #E9E9E9;
-  --surface: #F4F4F4;
+  --frame: #E4E4E4;
+  --surface: #EFEFEF;
   --surface-border: #DCDCDC;
   --surface-shadow: 0 1px 2px rgba(0,0,0,.05);
   --module: #FAFAFA;
@@ -252,14 +252,15 @@
   --module-shadow: 0 1px 2px rgba(0,0,0,.04);
   --tile: #EFEFEF;
   --tile-border: #E2E2E2;
-  --well: #ECECEC;
+  --well: #E8E8E8;
   --well-border: #D9D9D9;
   --well-shadow: inset 0 1px 2px rgba(0,0,0,.05);
+  --well-on-page: #DBDBDB;
   --hairline-module: #E7E7E7;
   --control: #FFFFFF;
   --control-border: #D9D9D9;
   --control-shadow: 0 1px 2px rgba(0,0,0,.07), inset 0 -1px 0 rgba(0,0,0,.03);
-  --control-on: #FFFFFF;
+  --control-on: var(--control);
   --seg-track: #E6E6E6;
   --seg-border: #D9D9D9;
   --seg-on-border: #D9D9D9;
@@ -275,10 +276,10 @@
   --breakage: #C42E1C;
   --breakage-fill: #F9E6E3;
   --frozen: #3F86B5;
-  --selected-edge: #1C1C1C;
-  --selected-fill: #FFFFFF;
+  --selected-edge: #6E6E73;
+  --selected-fill: var(--module);
   --selected-ring: 0 0 0 1px #1C1C1C;
-  --window: #FAFAFA;
+  --window: #FFFFFF;
   --window-border: #DCDCDC;
   --window-shadow: 0 2px 6px rgba(0,0,0,.08), 0 32px 64px -16px rgba(0,0,0,.3);
   --sheet-shadow: -24px 0 64px -16px rgba(0,0,0,.25);
@@ -476,7 +477,7 @@
   --shadow-card: var(--module-shadow);
   --nav-lamp-glow: 0 0 8px rgba(245,203,76,.55);
   --rank-glow: 0 0 0 0 transparent;
-  --inset: var(--tile);
+  --inset: #1B1B1D;
   --turn: rgba(255,255,255,.03);
   --sheet-dim: rgba(10,10,11,.5);
   --shadow-square: 0 1px 2px rgba(0,0,0,.45);
@@ -484,22 +485,23 @@
 
   /* UI-P79 — the refined names (semantics.ts); the values are the refined boards'. */
   --frame: #0F0F10;
-  --surface: #19191B;
+  --surface: #18181A;
   --surface-border: #232326;
   --surface-shadow: inset 0 1px 0 rgba(255,255,255,.035);
-  --module: #1E1E21;
+  --module: #202023;
   --module-border: #29292D;
   --module-shadow: none;
   --tile: #232327;
   --tile-border: #2E2E33;
-  --well: #141416;
+  --well: #131315;
   --well-border: #27272B;
   --well-shadow: inset 0 1px 1px rgba(0,0,0,.35);
+  --well-on-page: #0A0A0B;
   --hairline-module: #2A2A2E;
-  --control: #27272B;
+  --control: #323237;
   --control-border: #323237;
   --control-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 1px 2px rgba(0,0,0,.35);
-  --control-on: #2F2F34;
+  --control-on: var(--control);
   --seg-track: #141416;
   --seg-border: #27272B;
   --seg-on-border: #3A3A40;
@@ -515,10 +517,10 @@
   --breakage: #E5807F;
   --breakage-fill: rgba(229,128,127,.12);
   --frozen: #8FB8D0;
-  --selected-edge: #8E8E95;
-  --selected-fill: #222226;
+  --selected-edge: #9A9AA2;
+  --selected-fill: var(--module);
   --selected-ring: 0 0 0 1px #8E8E95;
-  --window: #1E1E21;
+  --window: #28282C;
   --window-border: #2E2E33;
   --window-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 2px 6px rgba(0,0,0,.4), 0 32px 64px -16px rgba(0,0,0,.75);
   --sheet-shadow: -24px 0 64px -16px rgba(0,0,0,.7);
