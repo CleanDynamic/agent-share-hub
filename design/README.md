@@ -103,7 +103,7 @@ Deliberate, and expected in every compare report:
   - 11.5, 12.5 → 12 (meta lines, breadcrumbs, the footer's links, table cells, the Library's rail, the classification lines); 10.5, 10.6, 10 → 11 (type chips, the Plaque's pill, eyebrows, the search key, mono labels, the Map's part labels); 13.5 → 13 (step text, the compare sentence), except a card head (`CardHead`, an h2) at 14;
   - every h2 is a section heading at 14 / 500: the Library's Collections (12.5), Settings' section titles on a desktop (20; 20 stays where the section is a phone's page);
   - 15 → 13 for names and 14 → 13 for body (the post and feed author names and their lines, Home's author row, the Connect line, the new-post field); 15 → 14 for a dialog, sheet or legacy page title;
-  - figures 24 → 16 (Home's room, Activity's people, the Rebuild's readiness, the sign-in counts); the post title 28 is unchanged (it is the composer's post type, `postType.ts`, outside the pass);
+  - figures 24 → 16 (Home's room, Activity's people, the Rebuild's readiness, the sign-in counts); the post title 28 (24 on a phone) → 20 / 500, never larger than the page title, and the post page's compact text 13.5 and 12.5 → 13 and 12;
   - 17, 19 and 22 → 16 / 500 (the build's part numbers, the family tree's node titles, the readiness headline, the Builds and Run dialogs' titles); the sign-in tagline 44 → 32;
   - weights 600 and 700 → 500 on headings, names, badges and the skip link; About and API docs from 30 / 700 and 24 / 700 to the page title, 20 / 500;
   - the Rebuild's change rows, the family's node lines, the credit line and the readiness figure are in Geist, not Geist Mono (mono is for code, token counts, file names and tags); the change marks (+ ~ −) and the group labels stay mono;
