@@ -122,13 +122,42 @@ export function ConfirmInline({
   );
 }
 
-/** While a section's data is on its way: the title and bones the size of its groups. */
-export function SectionLoading({ title, rows = 3 }: { title: string; rows?: number }) {
+/** One group while it loads: its setting rows (with a hint line or without), or, for a group that may hold only a note, one
+    note's line. */
+export interface GroupBones {
+  rows: number;
+  hint?: boolean;
+}
+
+/** A bar inside a line of text: the line keeps the text's own height, so a bone row is the loaded row's height. */
+const bar = (width: string, height: number) => <Skeleton width={width} height={height} radius={4} style={{ display: "inline-block", verticalAlign: "middle" }} />;
+
+/** A group while it loads: the module box and its padding, the head's line, then its rows (or one note's line) at the loaded
+    sizes, so the card is the loaded card's height when it holds the fewest rows it can. */
+function GroupSkeleton({ rows, hint = false }: GroupBones) {
+  return (
+    <div data-testid="settings-card-bones" aria-hidden="true" style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, padding: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ fontSize: 14, lineHeight: 1.3 }}>{bar("30%", 12)}</div>
+      {rows === 0 ? (
+        <div style={{ fontSize: 12, lineHeight: 1.4 }}>{bar("70%", 10)}</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {Array.from({ length: rows }, (_, index) => (
+            <SettingRow key={index} last={index === rows - 1} label={bar("40%", 12)} hint={hint ? bar("60%", 10) : undefined} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** While a section's data is on its way: the title and one card per group it will show, each at that group's least height. */
+export function SectionLoading({ title, groups }: { title: string; groups: readonly GroupBones[] }) {
   return (
     <SectionPage title={title}>
       <LoadingRegion what={title.toLowerCase()} announce style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-        {Array.from({ length: rows }, (_, index) => (
-          <Skeleton key={index} height={96} radius={8} />
+        {groups.map((group, index) => (
+          <GroupSkeleton key={index} {...group} />
         ))}
       </LoadingRegion>
     </SectionPage>
