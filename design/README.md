@@ -98,7 +98,17 @@ To see a real route in the new frame before the flag is on anywhere: `?frame=sit
 Deliberate, and expected in every compare report:
 
 - **The animated backdrop (UI-P13b).** The reference boards show a static gradient and arc; the live app renders a continuously drifting WebGL field with domain warping and interactive ripples. Comparisons mask the entire backdrop region (outside the content column and panels) to prevent the 12% diffs from being flagged as failures. Only the panel contents are compared.
-- **10px minimum text.** A few mono labels are 9px at 1440 in the reference; in code they are 10px.
+- **11px minimum text (the type prompt).** The reference draws labels at 9, 10 and 10.5px at 1440; in code they are 11px.
+- **The seven type sizes (the type prompt).** Every board is drawn in the earlier scale; the app sets every size in its pages to one of seven (`typeSize` in `src/lib/theme/type.ts`, and `RULES.md` "Type"), so the boards differ in type size and weight, never in copy:
+  - 11.5, 12.5 → 12 (meta lines, breadcrumbs, the footer's links, table cells, the Library's rail, the classification lines); 10.5, 10.6, 10 → 11 (type chips, the Plaque's pill, eyebrows, the search key, mono labels, the Map's part labels); 13.5 → 13 (step text, the compare sentence), except a card head (`CardHead`, an h2) at 14;
+  - every h2 is a section heading at 14 / 500: the Library's Collections (12.5), Settings' section titles on a desktop (20; 20 stays where the section is a phone's page);
+  - 15 → 13 for names and 14 → 13 for body (the post and feed author names and their lines, Home's author row, the Connect line, the new-post field); 15 → 14 for a dialog, sheet or legacy page title;
+  - figures 24 → 16 (Home's room, Activity's people, the Rebuild's readiness, the sign-in counts); the post title 28 is unchanged (it is the composer's post type, `postType.ts`, outside the pass);
+  - 17, 19 and 22 → 16 / 500 (the build's part numbers, the family tree's node titles, the readiness headline, the Builds and Run dialogs' titles); the sign-in tagline 44 → 32;
+  - weights 600 and 700 → 500 on headings, names, badges and the skip link; About and API docs from 30 / 700 and 24 / 700 to the page title, 20 / 500;
+  - the Rebuild's change rows, the family's node lines, the credit line and the readiness figure are in Geist, not Geist Mono (mono is for code, token counts, file names and tags); the change marks (+ ~ −) and the group labels stay mono;
+  - Avatar initials scale with the avatar and the Lockup wordmark is a logo: both keep their sizes.
+- **Loading layouts (the type prompt).** The boards draw the populated state only. While a page loads, its header is drawn at once and its skeleton keeps the loaded page's columns, row pitch and card heights: OpenBuilds draws its own head and the feed template (no pictures, no right-rail bars of Home's), the Library its rule row, table header and kinds, Settings one card per group it will show, the Builds views their head's meta line, table header and key line.
 - **`--lit-ink` for amber that is read.** Amber (`--lit`) is light, never text: it fails contrast. Where the reference draws a word or a glyph in amber — the `~` in a change list, the deploy label, the streak flame, a reward figure — code uses `--lit-ink` (darkened on Noon, unchanged on Dusk).
 - **The Noon focus ring** is ink, not amber (UI-P04).
 - **"Reproduced today" and "48 runs"**, not "reproducing now": nothing in the data records a run in progress.
