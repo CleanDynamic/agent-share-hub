@@ -99,3 +99,26 @@ describe("selection on the composer's tiles (F3)", () => {
     }
   });
 });
+
+describe("one hover fill (F2)", () => {
+  it("moves the resting fill four grey levels toward the text, or lays that step over a transparent rest", async () => {
+    const { hoverFill, CONTROL_HOVER } = await import("./refinedControl");
+    expect(hoverFill()).toBe("color-mix(in srgb, var(--text) 1.9%, transparent)");
+    expect(hoverFill("transparent")).toBe(hoverFill());
+    expect(hoverFill("var(--module)")).toBe("color-mix(in srgb, var(--text) 1.9%, var(--module))");
+    expect(CONTROL_HOVER.background).toBe(hoverFill("var(--control)"));
+  });
+
+  it("no hover state in the edit area paints --control-on", async () => {
+    const { readFileSync, readdirSync, statSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const walk = (dir: string): string[] => readdirSync(dir).flatMap((name) => {
+      const path = join(dir, name);
+      return statSync(path).isDirectory() ? walk(path) : /\.tsx?$/.test(name) && !/\.test\./.test(name) ? [path] : [];
+    });
+    const offenders = ["src/pages/site", "src/components/shell", "src/components/brand"].flatMap(walk).flatMap((file) =>
+      readFileSync(file, "utf8").split("\n").flatMap((line, i) => (/hovered[^?]*\?\s*(\{\s*background(Color)?:\s*)?t\.controlOn/.test(line) ? [`${file}:${i + 1}`] : [])),
+    );
+    expect(offenders).toEqual([]);
+  });
+});

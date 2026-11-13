@@ -28,6 +28,7 @@ import { PLUS_OUT_MS, WORDS_IN_MS } from "@/lib/build/buildMotion";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { fade, prefersReducedMotion } from "@/lib/theme/motion";
+import { hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, textStep } from "@/lib/theme/type";
 
@@ -224,7 +225,7 @@ function SelectButton({
         boxSizing: "border-box",
         padding: `0 ${space[2]}px`,
         borderRadius: r.control,
-        ...(state.hovered && !selected ? { background: t.controlOn } : null),
+        ...(state.hovered && !selected ? { background: hoverFill() } : null),
         ...selectedRow(selected),
         ...ring(state.focusVisible),
         ...style,

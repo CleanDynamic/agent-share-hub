@@ -42,7 +42,7 @@ import { useIsPhone } from "@/components/shell/useMinWidth";
 import { ring } from "@/lib/theme/controls";
 import { TITLE_LINE, fullText } from "@/lib/theme/truncate";
 import { useInteractive } from "@/lib/theme/interactive";
-import { controlPaint } from "@/lib/theme/refinedControl";
+import { controlPaint, hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 
 import { FindButton, FindField } from "./FindField";
@@ -536,7 +536,7 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
           borderRadius: r.control,
           ...text(textStep.body, 500, t.text2),
           cursor: "pointer",
-          ...(rowTrigger.state.hovered ? { background: t.controlOn } : null),
+          ...(rowTrigger.state.hovered ? { background: hoverFill() } : null),
           ...ring(rowTrigger.state.focusVisible),
         }}
       >
@@ -973,7 +973,7 @@ function RailButton({ glyph, label, count, onClick }: { glyph: "panel" | "layers
         gap: 4,
         borderRadius: 6,
         color: state.hovered ? t.text : t.text2,
-        ...(state.hovered ? { background: t.controlOn } : null),
+        ...(state.hovered ? { background: hoverFill() } : null),
         ...ring(state.focusVisible),
       }}
     >

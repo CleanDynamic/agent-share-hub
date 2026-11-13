@@ -49,7 +49,7 @@ import { asideStyle, mainStyle } from "@/lib/theme/refinedLayout";
 import { ring, touchArea } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { scrollBehavior } from "@/lib/theme/motion";
-import { CONTROL, controlPaint } from "@/lib/theme/refinedControl";
+import { CONTROL, controlPaint, hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE, figure, DM_MONO, display } from "@/lib/theme/type";
 
@@ -550,7 +550,7 @@ function dockItemStyle(first: boolean, phone: boolean, height: number, state: { 
     margin: 0,
     border: 0,
     borderLeft: first ? 0 : `1px solid ${t.controlBorder}`,
-    background: state.hovered ? t.controlOn : "transparent",
+    background: state.hovered ? hoverFill() : "transparent",
     ...text(12.5, 500, t.text),
     whiteSpace: "nowrap",
     textDecoration: "none",

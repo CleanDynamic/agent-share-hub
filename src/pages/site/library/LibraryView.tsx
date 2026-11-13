@@ -23,7 +23,7 @@ import { useIsPhone } from "@/components/shell/useMinWidth";
 import { ring, touchArea } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
-import { WELL } from "@/lib/theme/refinedControl";
+import { WELL, hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
@@ -223,7 +223,7 @@ function KindRow({ item, current }: { item: LibraryKindsProps["items"][number]; 
         margin: "0 -8px",
         border: `1px solid ${current ? t.selectedEdge : "transparent"}`,
         borderRadius: r.control,
-        background: "transparent",
+        background: state.hovered ? hoverFill() : "transparent",
         fontFamily: FIGTREE,
         fontSize: 12.5,
         fontWeight: current ? 500 : 400,
@@ -274,7 +274,7 @@ function CollectionRow({ item, current, href }: { item: CollectionEntry; current
         gap: 8,
         minHeight: 48,
         borderBottom: `1px solid ${t.hairline}`,
-        background: current ? t.selectedFill : "transparent",
+        background: current ? t.selectedFill : state.hovered ? hoverFill() : "transparent",
         fontFamily: FIGTREE,
         color: state.hovered ? t.text2 : t.text,
         textDecoration: "none",

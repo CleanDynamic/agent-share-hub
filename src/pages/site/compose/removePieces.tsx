@@ -24,6 +24,7 @@ import { SESSION_WINDOW_COPY } from "@/lib/build/componentMenus";
 import { ring } from "@/lib/theme/controls";
 import { BASE } from "@/lib/theme/motion";
 import { useInteractive } from "@/lib/theme/interactive";
+import { hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 
 import { fallOut, riseIn, useCrossfade } from "./buildMotion";
@@ -212,7 +213,7 @@ function BarButton({ children, onClick, danger = false, disabled = false, testId
         alignItems: "center",
         flexShrink: 0,
         whiteSpace: "nowrap",
-        background: state.hovered && !disabled ? t.tile : "transparent",
+        background: state.hovered && !disabled ? hoverFill() : "transparent",
         cursor: disabled ? "default" : "pointer",
         ...words(textStep.meta, 500, danger ? DANGER : t.text),
         ...(disabled ? { filter: t.dimFilter } : null),

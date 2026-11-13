@@ -25,6 +25,7 @@ import { flushSync } from "react-dom";
 import { BASE, STANDARD, prefersReducedMotion } from "@/lib/theme/motion";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
+import { hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -150,7 +151,7 @@ export function SheetRow({ name, line, disabled = false, onSelect, expanded, ins
     boxSizing: "border-box",
     border: 0,
     borderRadius: 6,
-    background: !disabled && state.hovered ? t.controlOn : "transparent",
+    background: !disabled && state.hovered ? hoverFill() : "transparent",
     textAlign: "left",
     cursor: disabled ? "not-allowed" : "pointer",
     filter: disabled ? t.dimFilter : undefined,

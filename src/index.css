@@ -1445,6 +1445,20 @@ input[type="search"] { border-radius: var(--r-control); }
   outline-offset: -4px !important;
 }
 
+/* The surface ladder's hover for menu items. Radix marks the item under the pointer (and the one the keyboard reached)
+   with `data-highlighted`, which no inline style can read, so its fill is set here: the resting fill moved four grey
+   levels toward the text, as `hoverFill()` in src/lib/theme/refinedControl.ts writes it. Radix also moves focus onto the
+   item under the pointer, which the browser marks :focus-visible; an item the pointer is over draws no ring. The ring
+   stays for the item the keyboard reached. */
+:root :where([role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"], [role="option"])[data-highlighted] {
+  background-color: color-mix(in srgb, var(--text) 1.9%, transparent) !important;
+}
+@media (hover: hover) and (pointer: fine) {
+  :root :where([role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"], [role="option"]):hover:focus-visible {
+    outline: none !important;
+  }
+}
+
 /* MOTION. Nothing in the refined look animates except the theme change: no hover fade, no pulse, no reveal, no
    enter or exit. The theme change is `[data-theme-changing]`, which has its own rule above, so these stand down
    while it is set. Whatever a dependency adds (a Radix dialog's enter keyframes) is covered by the same rule. */
