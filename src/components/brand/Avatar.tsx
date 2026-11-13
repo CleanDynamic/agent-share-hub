@@ -103,6 +103,8 @@ export function Avatar({ size, name, src, alt, style }: AvatarProps) {
         ...circle,
         /* UI-P84: initials on `--avatar-fill` in `--on-avatar`, Geist 500 at size × .38 (10 at the least). */
         background: t.avatarFill,
+        border: `1px solid ${t.moduleBorder}`,
+        boxSizing: "border-box",
         color: t.onAvatar,
         fontFamily: FIGTREE,
         fontSize: Math.max(10, Math.round(size * 0.38 * 10) / 10),

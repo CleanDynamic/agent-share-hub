@@ -44,3 +44,9 @@ describe("the surface ladder", () => {
     expect(new Set(raised).size).toBe(4);
   });
 });
+
+describe("the ladder's role changes", () => {
+  it.each(["dusk", "noon"] as const)("%s: an avatar's fill is the inset", (theme) => {
+    expect(resolveToken(theme, "avatar-fill")).toBe(resolveToken(theme, "inset"));
+  });
+});
