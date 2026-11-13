@@ -144,7 +144,7 @@ export function PartViewer<V extends string = string>({
             flexGrow: 1,
             minWidth: 0,
             margin: "5px 0 0 5px",
-            background: t.tab,
+            background: t.inset,
             border: `1px solid ${t.headerBorder}`,
             borderBottom: 0,
             borderRadius: "12px 0 0 0",
