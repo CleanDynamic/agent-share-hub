@@ -25,13 +25,14 @@ export const sectionTitle: CSSProperties = {
   color: t.text,
 };
 
-/** The section's heading and the column the groups sit in (48 between groups, the site's rule). The heading is an `h2` under
+/** The section's heading (14 on a desktop, 20 where it is a phone's page title) and the column the groups sit in (48 between groups, the site's rule). The heading is an `h2` under
     the page's "Settings" on a desktop, and the page's `h1` on a phone, where the section is a page of its own. */
 export function SectionPage({ title, children }: { title: string; children: ReactNode }) {
-  const Heading = useIsPhone() ? "h1" : "h2";
+  const phone = useIsPhone();
+  const Heading = phone ? "h1" : "h2";
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24, fontFamily: FIGTREE }}>
-      <Heading style={sectionTitle}>{title}</Heading>
+      <Heading style={{ ...sectionTitle, fontSize: phone ? 20 : 14 }}>{title}</Heading>
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>{children}</div>
     </div>
   );
