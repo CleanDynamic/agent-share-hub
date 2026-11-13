@@ -117,7 +117,7 @@ const row: CSSProperties = {
   minHeight: 44,
   padding: "0 4px",
   fontFamily: FIGTREE,
-  fontSize: 14,
+  fontSize: 13,
   fontWeight: 500,
   color: t.text,
   textDecoration: "none",

@@ -141,7 +141,7 @@ describe("ThemeSegmented", () => {
 describe("breadcrumb and footer under the refined look", () => {
   const REFINED = "/dev/kit/pages/home";
 
-  it("the breadcrumb is Geist 12.5, 8 apart, '/' in --label, the current page --text at 500", () => {
+  it("the breadcrumb is Geist 12, 8 apart, '/' in --label, the current page --text at 500", () => {
     const html = renderToStaticMarkup(
       <MemoryRouter initialEntries={[REFINED]}>
         <BreadcrumbView
@@ -155,9 +155,9 @@ describe("breadcrumb and footer under the refined look", () => {
     );
     expect(html).toContain("gap:8px");
     expect(html).not.toContain("height:33px");
-    expect(html).toContain("font-size:12.5px;color:var(--text2)");
-    expect(html).toMatch(/aria-hidden="true" style="[^"]*font-size:12.5px;color:var\(--label\)">\//);
-    expect(html).toMatch(/aria-current="page" style="[^"]*font-size:12.5px;font-weight:500;color:var\(--text\)/);
+    expect(html).toContain("font-size:12px;color:var(--text2)");
+    expect(html).toMatch(/aria-hidden="true" style="[^"]*font-size:12px;color:var\(--label\)">\//);
+    expect(html).toMatch(/aria-current="page" style="[^"]*font-size:12px;font-weight:500;color:var\(--text\)/);
   });
 
   const refinedFooter = (signedIn: boolean) => (
@@ -177,11 +177,11 @@ describe("breadcrumb and footer under the refined look", () => {
     expect(screen.getByText("© OpenBuilds.ai")).toBeTruthy();
   });
 
-  it("the footer sits under a 1px --hairline with the gutter, links at 12.5 --text2 8px 20px apart, and no Theme control (UX-03 P10)", () => {
+  it("the footer sits under a 1px --hairline with the gutter, links at 12 --text2 8px 20px apart, and no Theme control (UX-03 P10)", () => {
     const html = renderToStaticMarkup(refinedFooter(true));
     expect(html).toContain("border-top:1px solid var(--hairline);padding:12px 55px");
     expect(html).toContain("gap:8px 20px");
-    expect(html).toContain("font-size:12.5px;font-weight:400;color:var(--text2)");
+    expect(html).toContain("font-size:12px;font-weight:400;color:var(--text2)");
     expect(html).not.toContain('data-ui="segmented"');
     expect(html).toContain("font-size:12px;font-weight:400;color:var(--label)");
     expect(html).not.toContain("var(--header)");

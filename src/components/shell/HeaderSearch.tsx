@@ -200,7 +200,7 @@ export function HeaderSearch({
             aria-hidden="true"
             style={{
               fontFamily: DM_MONO,
-              fontSize: 10,
+              fontSize: 11,
               border: `1px solid ${t.line}`,
               borderRadius: 6,
               padding: "0 5px",

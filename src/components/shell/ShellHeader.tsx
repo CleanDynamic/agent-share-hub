@@ -181,7 +181,7 @@ export function ShellHeader({
             display: "flex",
             alignItems: "center",
             fontFamily: FONT,
-            fontSize: 15,
+            fontSize: 14,
             fontWeight: 600,
             color: "var(--text)",
             whiteSpace: "nowrap",
@@ -243,7 +243,7 @@ export function ShellHeader({
                     {typeof t.count === "number" && (
                       <span
                         style={{
-                          fontSize: 10,
+                          fontSize: 11,
                           fontWeight: 600,
                           padding: "1px 4px",
                           borderRadius: 999,
