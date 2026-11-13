@@ -27,13 +27,12 @@ type Room = "dusk" | "noon";
 export const FRAME_ARTWORK: Record<Room, CSSProperties> = {
   dusk: {
     background: "linear-gradient(#2A2A2E, #1F1F22)",
-    border: "1px solid #333338",
-    borderTopColor: "#3C3C42",
+    border: `1px solid ${t.controlBorder}`,
     boxShadow: "inset 0 1px 0 rgba(255,255,255,.04), 0 1px 1px rgba(0,0,0,.55), 0 6px 12px -4px rgba(0,0,0,.45)",
   },
   noon: {
     background: "#FFFFFF",
-    border: "1px solid #D9D9D9",
+    border: `1px solid ${t.controlBorder}`,
     boxShadow: "0 1px 1px rgba(20,20,18,.06), 0 6px 12px -6px rgba(20,20,18,.18)",
   },
 };

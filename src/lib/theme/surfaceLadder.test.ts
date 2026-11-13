@@ -54,3 +54,17 @@ describe("the ladder's role changes", () => {
     expect(resolveToken(theme, "pill")).toBe(resolveToken(theme, "inset"));
   });
 });
+
+describe("the ladder's three border greys", () => {
+  const ROLES: Record<string, { tokens: string[]; dusk: string; noon: string }> = {
+    divider: { tokens: ["hairline", "hairline-module"], dusk: "#26262A", noon: "#E2E2E2" },
+    edge: { tokens: ["surface-border", "module-border", "tile-border", "well-border", "seg-border", "line"], dusk: "#303035", noon: "#D6D6D6" },
+    "control edge": { tokens: ["control-border", "window-border", "seg-on-border"], dusk: "#404046", noon: "#C8C8C8" },
+  };
+  it.each(Object.entries(ROLES).flatMap(([role, v]) => (["dusk", "noon"] as const).flatMap((theme) => v.tokens.map((name) => ({ role, theme, name, want: v[theme] })))))(
+    "$theme --$name is the $role, $want",
+    ({ theme, name, want }) => {
+      expect(resolveToken(theme, name)).toBe(want);
+    },
+  );
+});

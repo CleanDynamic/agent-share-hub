@@ -169,11 +169,11 @@ const CAPPED: Record<string, { max: number; why: string }> = {
       "THE CAP IS 2 BECAUSE THAT IS ALL THERE IS.",
   },
   "src/components/brand/FramedWork.tsx": {
-    max: 26,
+    max: 23,
     why:
       "THE FRAMED WORK'S ARTWORK CONSTANTS (UI-P86) — the raised frame a picture " +
-      "hangs in, per room: Dusk's shaded fill, edge, top edge and three-part shadow; " +
-      "Noon's white fill, edge and two-part shadow; the result window's deeper drop " +
+      "hangs in, per room: Dusk's shaded fill and three-part shadow; " +
+      "Noon's white fill and two-part shadow (the edge is the control edge token); the result window's deeper drop " +
       "and chrome dots; the lit wash and the picture light's cone. The frame is an " +
       "object hung on the wall, not the room, and UI-P86 names these as the artwork " +
       "constants RULES §2 allows, written as named constants in the component. THE " +

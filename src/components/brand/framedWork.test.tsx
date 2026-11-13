@@ -20,18 +20,18 @@ const refined = (node: React.ReactElement) => renderToStaticMarkup(underRefined(
 afterEach(() => document.documentElement.removeAttribute("data-theme"));
 
 describe("FramedWork", () => {
-  it("is a raised object on Noon: white, a #D9D9D9 hairline, radius 4, padding 4, the picture on --well at radius 2", () => {
+  it("is a raised object on Noon: white, the control edge, radius 4, padding 4, the picture on --well at radius 2", () => {
     document.documentElement.setAttribute("data-theme", "noon");
     const html = renderToStaticMarkup(<FramedWork height={72}>x</FramedWork>);
     expect(html).toContain("border-radius:4px");
     expect(html).toContain("padding:4px");
     expect(html).toContain("background:#FFFFFF");
-    expect(html).toContain("border:1px solid #D9D9D9");
+    expect(html).toContain("border:1px solid var(--control-border)");
     expect(html).toContain("background:var(--well)");
     expect(html).toContain("border-radius:2px");
   });
 
-  it("follows <html data-theme> as it changes, and is shaded in Dusk with a lighter top edge", async () => {
+  it("follows <html data-theme> as it changes, and is shaded in Dusk inside the control edge", async () => {
     document.documentElement.setAttribute("data-theme", "noon");
     const { container } = render(<FramedWork height={72}>x</FramedWork>);
     const frame = container.querySelector<HTMLElement>('[data-ui="framed-work"]')!;
@@ -39,7 +39,8 @@ describe("FramedWork", () => {
     act(() => document.documentElement.setAttribute("data-theme", "dusk"));
     await waitFor(() => expect(frame.dataset.room).toBe("dusk"));
     expect(FRAME_ARTWORK.dusk.background).toBe("linear-gradient(#2A2A2E, #1F1F22)");
-    expect(FRAME_ARTWORK.dusk.borderTopColor).toBe("#3C3C42");
+    expect(FRAME_ARTWORK.dusk.border).toBe("1px solid var(--control-border)");
+    expect(FRAME_ARTWORK.dusk.borderTopColor).toBeUndefined();
   });
 
   it("pads 3 under 40px high", () => {
