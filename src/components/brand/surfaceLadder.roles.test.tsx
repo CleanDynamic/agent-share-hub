@@ -25,3 +25,15 @@ describe("the surface ladder in the brand primitives", () => {
     }
   });
 });
+
+describe("the media grid on the surface ladder", () => {
+  it("is a well holding inset cells, not a hairline fill", async () => {
+    const { GridFrame } = await import("@/components/post/media/PostMediaGrid");
+    const layout = { columns: "1fr 1fr", rows: "1fr", ratio: 2, cells: [{ area: {} }, { area: {} }] };
+    const html = renderToStaticMarkup(
+      <GridFrame layout={layout as never} count={2} renderCell={(index, style) => <div key={index} data-cell="" style={style} />} />,
+    );
+    expect(styleOf(html, "[data-post-media-grid]")).toContain("background:var(--well)");
+    expect(styleOf(html, "[data-cell]")).toContain("background:var(--inset)");
+  });
+});

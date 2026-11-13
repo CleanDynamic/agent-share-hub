@@ -68,3 +68,11 @@ describe("the ladder's three border greys", () => {
     },
   );
 });
+
+describe("hover on the ladder", () => {
+  it("steps a hovered control's fill toward the text, since --control-on is --control", async () => {
+    const { controlPaint } = await import("./refinedControl");
+    expect(controlPaint({ hovered: true }).background).not.toBe(controlPaint({}).background);
+    expect(controlPaint({ hovered: true }).background).toBe("color-mix(in srgb, var(--text) 1.9%, var(--control))");
+  });
+});
