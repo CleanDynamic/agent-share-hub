@@ -152,7 +152,7 @@ export function MarkedName({ name, children }: { name: string; children: ReactNo
 }
 
 /** A picture's frame: 56 square, radius 6, `--tile`, 1px `--window-border`. */
-export const PICTURE: CSSProperties = { width: 56, height: 56, flexShrink: 0, boxSizing: "border-box", borderRadius: r.control, background: t.tile, border: `1px solid ${t.windowBorder}`, overflow: "hidden", display: "inline-flex", alignItems: "center", justifyContent: "center", color: t.label };
+export const PICTURE: CSSProperties = { width: 56, height: 56, flexShrink: 0, boxSizing: "border-box", borderRadius: r.control, background: t.well, border: `1px solid ${t.windowBorder}`, overflow: "hidden", display: "inline-flex", alignItems: "center", justifyContent: "center", color: t.label };
 export const PICTURES: CSSProperties = { display: "flex", flexWrap: "wrap", gap: space[2], alignItems: "center" };
 export const MORE_COUNT: CSSProperties = { ...type(textStep.meta, 400, t.text2), fontVariantNumeric: "tabular-nums" };
 

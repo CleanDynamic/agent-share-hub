@@ -173,7 +173,7 @@ function Well({ drawing, note, words }: { drawing: MapDrawing | null; note?: str
           {drawing.boxes.map((box) => (
             <span
               key={box.key}
-              style={{ position: "absolute", left: pct(box.x, w), top: pct(box.y, h), width: pct(BOX_W, w), height: BOX_H, boxSizing: "border-box", padding: "4px 7px", background: t.tile, border: `1px solid ${t.tileBorder}`, borderRadius: r.control, overflow: "hidden", whiteSpace: "nowrap" }}
+              style={{ position: "absolute", left: pct(box.x, w), top: pct(box.y, h), width: pct(BOX_W, w), height: BOX_H, boxSizing: "border-box", padding: "4px 7px", background: t.inset, border: `1px solid ${t.tileBorder}`, borderRadius: r.control, overflow: "hidden", whiteSpace: "nowrap" }}
             >
               <span style={{ display: "block", ...ellipsis, fontSize: 11, fontWeight: 500, lineHeight: "14px", color: t.text }}>{box.label}</span>
               <span style={{ display: "block", ...ellipsis, fontFamily: DM_MONO, fontSize: 10, lineHeight: "13px", color: t.label }}>{box.meta}</span>

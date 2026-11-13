@@ -34,7 +34,7 @@ export function CardPreview({ title, classification, maker }: { title: string; c
       <article style={{ padding: "14px 16px", boxSizing: "border-box", background: t.well, border: `1px solid ${t.wellBorder}`, borderRadius: 10, boxShadow: t.wellShadow, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
           {maker ? (
-            <span aria-hidden="true" style={{ width: 26, height: 26, flexShrink: 0, borderRadius: 13, background: t.controlOn, display: "inline-flex", alignItems: "center", justifyContent: "center", ...text(textStep.meta, 500, t.text) }}>
+            <span aria-hidden="true" style={{ width: 26, height: 26, flexShrink: 0, borderRadius: 13, background: t.avatarFill, display: "inline-flex", alignItems: "center", justifyContent: "center", ...text(textStep.meta, 500, t.text) }}>
               {initialsOf(name) || "?"}
             </span>
           ) : null}

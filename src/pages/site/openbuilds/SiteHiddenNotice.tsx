@@ -17,7 +17,7 @@ export function SiteHiddenNotice({ entries }: { entries: readonly Notice[] }) {
     <div
       role="status"
       data-testid="site-hidden-notice"
-      style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, marginBottom: 12, borderRadius: 6, background: t.tile, border: `1px solid ${t.tileBorder}`, fontFamily: FIGTREE }}
+      style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, marginBottom: 12, borderRadius: 6, background: t.inset, border: `1px solid ${t.tileBorder}`, fontFamily: FIGTREE }}
     >
       {entries.map((entry) => (
         <div key={entry.id} style={{ display: "flex", flexDirection: "column", gap: 2 }}>

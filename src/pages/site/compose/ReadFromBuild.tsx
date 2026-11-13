@@ -74,7 +74,7 @@ function DisputeForm({ facet, phone, current, onApply, onCancel }: { facet: Face
         if (!value || !why) return;
         onApply(value, why);
       }}
-      style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, borderRadius: 6, background: t.tile, border: `1px solid ${t.tileBorder}` }}
+      style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, borderRadius: 6, background: t.inset, border: `1px solid ${t.tileBorder}` }}
     >
       <span style={text(textStep.meta, 500, t.text)}>{`Corrected value for ${name}`}</span>
       <PickMenu label={`Corrected value for ${name}`} options={options.map((option) => ({ value: option.id, label: option.label }))} value={value || null} onChange={setValue} phone={phone} id={`${id}-value`} />
@@ -113,7 +113,7 @@ export function ReadFromBuild({ classification, questions, phone, onDispute, onD
           <h3 style={{ ...text(textStep.meta, 500, t.text), margin: 0 }}>Questions</h3>
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
             {questions.map((question) => (
-              <li key={question.id} style={{ display: "flex", flexDirection: "column", gap: 6, padding: 12, borderRadius: 6, background: t.tile, border: `1px solid ${t.tileBorder}` }}>
+              <li key={question.id} style={{ display: "flex", flexDirection: "column", gap: 6, padding: 12, borderRadius: 6, background: t.inset, border: `1px solid ${t.tileBorder}` }}>
                 <p style={{ margin: 0, ...text(textStep.body, 400, t.text), lineHeight: "22px" }}>{question.text}</p>
                 <div style={{ display: "flex", gap: 8 }}>
                   <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="secondary" size={phone ? 44 : 32} fontSize={textStep.body} onClick={() => onAction?.(question.action, question)}>
