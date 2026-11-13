@@ -61,9 +61,12 @@ function LinkButton({ children, onClick, label }: { children: string; onClick: (
       {...handlers}
       style={{
         ...text(12.5, 500, t.text),
+        display: "inline-flex",
+        alignItems: "center",
+        height: 24,
         background: "none",
         border: 0,
-        padding: 0,
+        padding: "0 4px",
         cursor: "pointer",
         textDecoration: state.hovered ? "underline" : "none",
         textUnderlineOffset: 3,

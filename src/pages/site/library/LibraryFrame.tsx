@@ -146,7 +146,7 @@ export function LibraryTextButton({ onClick, children, ...rest }: { onClick: () 
       onClick={onClick}
       {...rest}
       {...handlers}
-      style={{ background: "none", border: 0, padding: 0, borderRadius: r.chip, fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: state.hovered ? t.text : t.text2, cursor: "pointer", ...ring(state.focusVisible) }}
+      style={{ display: "inline-flex", alignItems: "center", height: 24, background: "none", border: 0, padding: "0 4px", borderRadius: r.chip, fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: state.hovered ? t.text : t.text2, cursor: "pointer", ...ring(state.focusVisible) }}
     >
       {children}
     </button>

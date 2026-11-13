@@ -50,7 +50,7 @@ const underlined: CSSProperties = {
 export function TextButton({ onClick, style, children, disabled }: { onClick: () => void; style?: CSSProperties; children: ReactNode; disabled?: boolean }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
-    <button type="button" data-hit="" disabled={disabled} onClick={onClick} {...handlers} style={{ ...underlined, borderRadius: 6, ...ring(state.focusVisible), ...style }}>
+    <button type="button" data-hit="" disabled={disabled} onClick={onClick} {...handlers} style={{ ...underlined, display: "inline-flex", alignItems: "center", height: 24, padding: "0 4px", borderRadius: 6, ...ring(state.focusVisible), ...style }}>
       {children}
     </button>
   );

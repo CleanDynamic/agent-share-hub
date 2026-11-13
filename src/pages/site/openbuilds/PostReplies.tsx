@@ -76,8 +76,8 @@ export const TextButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTM
       {...handlers}
       style={{
         ...plain,
-        padding: `${reach}px 0`,
-        margin: `${-reach}px 0`,
+        /* A text link button: 24 high with 4 either side; on a phone the padding reaches 44 and the margin keeps the line. */
+        ...(phone ? { padding: `${reach}px 0`, margin: `${-reach}px 0` } : { display: "inline-flex", alignItems: "center", height: 24, padding: "0 4px" }),
         background: "none",
         border: 0,
         borderRadius: r.control,
@@ -246,7 +246,7 @@ function LinkText({ to, size = 12, same = false, children }: { to: string; size?
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   const Tag = same ? Link : PageLink;
   return (
-    <Tag to={to} {...handlers} style={{ ...plain, fontSize: size, lineHeight: "16px", color: t.text2, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: r.control, whiteSpace: "nowrap", ...ring(state.focusVisible) }}>
+    <Tag to={to} {...handlers} style={{ ...plain, display: "inline-flex", alignItems: "center", height: 24, padding: "0 4px", fontSize: size, lineHeight: "16px", color: t.text2, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: r.control, whiteSpace: "nowrap", ...ring(state.focusVisible) }}>
       {children}
     </Tag>
   );
