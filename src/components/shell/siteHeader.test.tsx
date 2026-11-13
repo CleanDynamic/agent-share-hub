@@ -212,6 +212,14 @@ describe("SiteHeaderView under the refined look", () => {
     expect([theme.style.width, theme.style.height]).toEqual(["32px", "32px"]);
   });
 
+  it("draws the Account button 32 square with the picture 24 inside it", () => {
+    refined();
+    const account = screen.getByRole("button", { name: "Account" });
+    expect([account.style.width, account.style.height]).toEqual(["32px", "32px"]);
+    const picture = account.firstElementChild as HTMLElement;
+    expect([picture.style.width, picture.style.height]).toEqual(["24px", "24px"]);
+  });
+
   it("badges the bell with a 12px --lit-mark count, and on /notifications fills it with --control-on, never a colour", () => {
     const html = markup();
     expect(html).toContain("background:var(--lit-mark)");

@@ -322,7 +322,7 @@ function RefinedSiteHeaderView({
       />
 
       {viewer ? (
-        <LazyAccountMenu viewer={viewer} onSignOut={onSignOut} avatarSize={26} />
+        <LazyAccountMenu viewer={viewer} onSignOut={onSignOut} avatarSize={24} />
       ) : (
         <SignInControl onSignIn={onSignIn} />
       )}
