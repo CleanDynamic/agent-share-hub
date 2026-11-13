@@ -122,7 +122,7 @@ export function StartRow({ phone, onDropSession }: { phone: boolean; onDropSessi
         alignItems: "center",
         justifyContent: "space-between",
         gap: 12,
-        minHeight: 52,
+        minHeight: 48,
         marginTop: 16,
         padding: "0 16px",
         borderColor: over ? t.evidence : t.label,

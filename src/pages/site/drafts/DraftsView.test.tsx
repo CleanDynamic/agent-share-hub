@@ -186,6 +186,7 @@ describe("DraftsView", () => {
     expect(screen.getByText("No new sessions.")).toBeInTheDocument();
     expect(screen.getByText("Nothing in progress.")).toBeInTheDocument();
     expect(screen.getByTestId("start-row")).toBeInTheDocument();
+    expect(screen.getByTestId("start-row").style.minHeight).toBe("48px");
     const buttons = screen.getAllByRole("button", { name: "Connect a tool" });
     fireEvent.click(buttons[buttons.length - 1]);
     expect(p.onConnect).toHaveBeenCalled();
