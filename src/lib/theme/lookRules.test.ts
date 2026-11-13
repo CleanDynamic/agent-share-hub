@@ -2137,6 +2137,11 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     why: "The type prompt (G4): the Library table's header row while it loads keeps the head's own 10 above its hairline, so the rows under it land where the loaded rows do.",
   },
   {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `<div style={{ ...text(12, 400, t.label), padding: "0 0 10px", borderBottom: \`1px solid \${t.hairline}\` }}>{"\\u00a0"}</div>`,
+    why: "The type prompt (G4): the Builds table's header row while it loads keeps the head's own 10 above its hairline (BuildsTableView's th), so the rows under it land where the loaded rows do.",
+  },
+  {
     rule: "spacing 28 is not in SPACE_REFINED",
     text: `<div aria-hidden="true" style={{ marginTop: 28 }}>`,
     why: "The type prompt (G4): the Library's kinds while they load start 28 below the page head, as the kinds do.",
