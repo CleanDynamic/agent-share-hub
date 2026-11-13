@@ -258,7 +258,7 @@ const TEXT_BLOCKS = new Set(["paragraph", "heading"]);
 
 export function PostBody(props: PostBodyProps) {
   const base = postType(Boolean(props.phone));
-  const scale = props.compact ? { ...base, body: { ...base.body, fontSize: 13.5, lineHeight: "22px" }, small: { ...base.small, fontSize: 12.5, lineHeight: "20px" } } : base;
+  const scale = props.compact ? { ...base, body: { ...base.body, fontSize: 13, lineHeight: "22px" }, small: { ...base.small, fontSize: 12, lineHeight: "20px" } } : base;
   const ctx: Ctx = { scale, props };
   // CA-07: an old post's pictures, between the lines or in rows, are read as one grid at its end. Nothing is saved.
   const content = Array.isArray(props.post?.content) ? props.post.content : [];
