@@ -397,6 +397,7 @@ describe("refined controls (UI-P84)", () => {
 
   it("CategoryChip is a tag with a 6px square, dashed when it marks a gap", () => {
     const solid = refined(<CategoryChip category="data" label="data" />);
+    expect(solid).toContain("padding:0 8px");
     expect(solid).toContain("background:var(--tag-fill)");
     expect(solid).toContain("height:20px");
     expect(solid).toContain("width:6px");
@@ -424,9 +425,10 @@ describe("refined controls (UI-P84)", () => {
 });
 
 describe("Pill, MenuButton, SearchField and Checkbox (UI-P84)", () => {
-  it("Pill is 18 high in mono 10.5 and takes its tone's fill and ink", () => {
+  it("Pill is 20 high with 8 either side, in mono 10.5, and takes its tone's fill and ink", () => {
     const plain = markup(<Pill>x</Pill>);
-    expect(plain).toContain("height:18px");
+    expect(plain).toContain("height:20px");
+    expect(plain).toContain("padding:0 8px");
     expect(plain).toContain("font-size:10.5px");
     expect(plain).toContain("background:var(--pill)");
     expect(plain).toContain("color:var(--on-pill)");

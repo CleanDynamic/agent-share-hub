@@ -2093,12 +2093,12 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
   },
   {
     rule: "upper case outside the Details eyebrow",
-    text: `fontFamily: DM_MONO, fontSize: 10.5, fontWeight: 400, lineHeight: "18px", textTransform: "uppercase",`,
+    text: `fontFamily: DM_MONO, fontSize: 10.5, fontWeight: 400, lineHeight: "20px", textTransform: "uppercase",`,
     why: "SV-02: the boards' type chip (STEP, PROMPT) is Geist Mono 10.5 in capitals. Only TypeChip spends it.",
   },
   {
     rule: "the data face with upper case",
-    text: `fontFamily: DM_MONO, fontSize: 10.5, fontWeight: 400, lineHeight: "18px", textTransform: "uppercase",`,
+    text: `fontFamily: DM_MONO, fontSize: 10.5, fontWeight: 400, lineHeight: "20px", textTransform: "uppercase",`,
     why: "SV-02: the boards' type chip (STEP, PROMPT) is Geist Mono 10.5 in capitals. Only TypeChip spends it.",
   },
   {
