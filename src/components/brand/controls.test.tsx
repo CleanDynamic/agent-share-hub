@@ -401,8 +401,9 @@ describe("refined controls (UI-P84)", () => {
     expect(off).toContain("height:36px");
     expect(off).toContain("background:var(--control)");
     const on = refined(<FilterChip label="All" on />);
-    expect(on).toContain("background:var(--selected-fill)");
-    expect(on).toContain("var(--selected-edge)");
+    expect(on).toContain("background:var(--control)");
+    expect(on).toContain("border:1px solid var(--selected-edge)");
+    expect(on).not.toContain("selected-ring");
     expect(on).not.toContain("var(--on-text)");
   });
 

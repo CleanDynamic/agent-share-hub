@@ -619,7 +619,7 @@ describe("the refined look (UI-P93)", () => {
     const heads = screen.getAllByTestId("session-head");
     expect(heads.map((head) => Boolean(head.querySelector("[data-mark]")))).toEqual([true, true, true]);
     const html = markup();
-    expect(html).toMatch(/data-selected="true"[^>]*style="[^"]*background:var\(--selected-fill\);border:1px solid var\(--selected-edge\)/);
+    expect(html).toMatch(/data-selected="true"[^>]*style="[^"]*background:var\(--module\);[^"]*border:1px solid var\(--selected-edge\)/);
     expect(html).toContain("padding-left:24px"); // S28
   });
 

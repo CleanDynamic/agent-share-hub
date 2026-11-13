@@ -76,3 +76,26 @@ describe("hover on the ladder", () => {
     expect(controlPaint({ hovered: true }).background).toBe("color-mix(in srgb, var(--text) 1.9%, var(--control))");
   });
 });
+
+describe("selection on the ladder (F3)", () => {
+  it("SELECTED is the selected border alone: no fill of its own, no ring, no old edge colour", async () => {
+    const { SELECTED } = await import("./refinedControl");
+    expect(SELECTED).toEqual({ border: "1px solid var(--selected-edge)" });
+  });
+  it.each(["dusk", "noon"] as const)("%s: the selected ring carries the selected edge, not the old one", (theme) => {
+    expect(resolveToken(theme, "selected-ring")).toBe("0 0 0 1px var(--selected-edge)");
+  });
+});
+
+describe("selection on the composer's tiles (F3)", () => {
+  it("a selected tile keeps the unselected fill and takes the selected border", async () => {
+    const { tileStyle } = await import("@/pages/site/compose/tileRecipes");
+    const { moduleStyle } = await import("@/pages/site/compose/refinedStyles");
+    for (const recipe of [tileStyle, moduleStyle]) {
+      expect(recipe(true).background).toBe(recipe(false).background);
+      expect(recipe(true).border).toBe("1px solid var(--selected-edge)");
+      expect(recipe(false).border).not.toBe(recipe(true).border);
+      expect(recipe(true).boxShadow).toBe(recipe(false).boxShadow);
+    }
+  });
+});

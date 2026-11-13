@@ -24,10 +24,10 @@ export const PRESSED: CSSProperties = {
   boxShadow: t.wellShadow,
 };
 
+/* The surface ladder: state is not elevation. Selected is the selected border alone, laid over the element's own fill
+   (on a card, the card's fill), so a selected item and its neighbours share one fill. No ring, no shadow. */
 export const SELECTED: CSSProperties = {
-  background: t.selectedFill,
   border: `1px solid ${t.selectedEdge}`,
-  boxShadow: t.selectedRing,
 };
 
 export const WELL: CSSProperties = {
