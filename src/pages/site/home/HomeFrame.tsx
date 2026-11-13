@@ -206,7 +206,7 @@ function LeftBones() {
 function RightBones() {
   return (
     <>
-      <SectionBones rows={3} height={36} what="today's runs" />
+      <SectionBones rows={3} height={32} what="today's runs" />
       <Rule />
       <SectionBones rows={3} height={48} what="open requests" />
       <Rule />

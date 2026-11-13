@@ -425,7 +425,7 @@ function DraftsLine({ drafts, sessions }: Pick<HomeViewProps, "drafts" | "sessio
     <Link
       to={DRAFTS}
       data-testid="home-drafts-line"
-      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, minHeight: 44, padding: "0 12px", boxSizing: "border-box", background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, color: t.text, textDecoration: "none" }}
+      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, minHeight: 32, padding: "0 12px", boxSizing: "border-box", background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, color: t.text, textDecoration: "none" }}
     >
       <span>{parts.join(" · ")}</span>
       <Glyph name="chev" size={12} />
@@ -829,7 +829,7 @@ export function RoomSection({ room, now }: { room: HomeRoom; now: number }) {
             <div key={run.key} style={{ borderTop: `1px solid ${t.hairline}` }}>
               <Link
                 to={run.href}
-                style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", columnGap: 10, alignItems: "center", minHeight: 36, color: t.text, textDecoration: "none" }}
+                style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", columnGap: 10, alignItems: "center", minHeight: 32, color: t.text, textDecoration: "none" }}
               >
                 <span style={runChip(run.worked)}>{run.worked ? "Worked" : "Didn’t"}</span>
                 <span style={{ minWidth: 0, ...ellipsis, ...text(12.5, 400, t.text) }}>
@@ -961,7 +961,7 @@ export function PublishedSection({ published, onCopyLink }: { published: HomePub
         <SectionHead title="Your published builds" meta={meta} headingLevel={2} />
       </div>
       {published.rows.map((row, index) => (
-        <Link key={row.id} to={row.href} data-testid="home-published-row" style={rowLink(index === published.rows.length - 1, { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, minHeight: 44 })}>
+        <Link key={row.id} to={row.href} data-testid="home-published-row" style={rowLink(index === published.rows.length - 1, { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, minHeight: 32 })}>
           <span style={{ minWidth: 0, fontWeight: 500, ...ellipsis }}>{row.title}</span>
           <span style={{ ...text(12, 400, t.label), whiteSpace: "nowrap" }}>{row.published}</span>
         </Link>

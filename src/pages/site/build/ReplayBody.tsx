@@ -212,8 +212,8 @@ function StepRow({ event, current, phone, onGo }: { event: ReplayEventView; curr
           gap: 6,
           alignItems: "center",
           width: "100%",
-          /* A step is a control: 44 on a phone (the touch floor), 34 → 28 above it. */
-          minHeight: phone ? 44 : 28,
+          /* A step is a control: 44 on a phone (the touch floor), a one-line row's 32 above it. */
+          minHeight: phone ? 44 : 32,
           padding: "0 7px",
           borderRadius: r.control,
           border: 0,

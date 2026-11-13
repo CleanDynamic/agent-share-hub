@@ -72,10 +72,10 @@ describe("AttachPicker", () => {
     expect(listAttachableWork.mock.calls.every(([options]) => (options as { forReply?: boolean }).forReply === undefined)).toBe(true);
   });
 
-  it("rows are 36 high: the name at the left and its context at the right", async () => {
+  it("rows are 32 high (a one-line row): the name at the left and its context at the right", async () => {
     draw();
     const row = await screen.findByRole("button", { name: /Scorer draft/ });
-    expect(row.style.height).toBe("36px");
+    expect(row.style.height).toBe("32px");
     expect(row.textContent).toBe("Scorer draftResume screener");
   });
 

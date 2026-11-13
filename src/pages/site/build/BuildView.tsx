@@ -222,8 +222,8 @@ export function PartRow({
            to it rather than eating into it. The row stretches across the list as
            a flex item, so no width is needed. */
         boxSizing: "content-box",
-        /* A part is a control: 46 drawn on a phone, held at the 44px touch floor; 40 → 33 above it. */
-        ...(phone ? { minHeight: 44 } : { height: 33 }),
+        /* A part is a control: 46 drawn on a phone, held at the 44px touch floor; a one-line row's 32 above it. */
+        ...(phone ? { minHeight: 44 } : { height: 32 }),
         padding: "0 8px",
         borderRadius: r.control,
         /* Longhands: a shorthand holding a var() is one declaration some engines drop whole. */

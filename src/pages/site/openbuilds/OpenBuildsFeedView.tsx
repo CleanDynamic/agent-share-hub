@@ -76,7 +76,7 @@ function SpaceLink({ to, current, children, fresh }: { to: string; current?: boo
       to={to}
       aria-current={current ? "page" : undefined}
       {...handlers}
-      style={{ boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, minHeight: 40, color: current || state.hovered ? t.text : t.text2, textDecoration: "none", ...rowText({ fontWeight: current ? 500 : 400 }), ...ring(state.focusVisible) }}
+      style={{ boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, minHeight: 32, color: current || state.hovered ? t.text : t.text2, textDecoration: "none", ...rowText({ fontWeight: current ? 500 : 400 }), ...ring(state.focusVisible) }}
     >
       <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{children}</span>
       {fresh ? <span style={{ flexShrink: 0, fontSize: 12, color: t.label }}>{`${fresh} new`}</span> : null}

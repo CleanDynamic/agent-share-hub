@@ -218,7 +218,7 @@ function KindRow({ item, current }: { item: LibraryKindsProps["items"][number]; 
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        minHeight: 34,
+        minHeight: 32,
         padding: "0 8px",
         margin: "0 -8px",
         borderRadius: r.control,
@@ -335,7 +335,7 @@ export function LibraryChanges({ figure, parts, to, rows }: LibraryChangesProps)
       </div>
       <div style={{ marginTop: 16 }}>
         {rows.map((row) => (
-          <div key={row.id} style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr) auto", columnGap: 12, alignItems: "center", minHeight: 40, borderBottom: `1px solid ${t.hairline}`, fontFamily: FIGTREE, fontSize: 13 }}>
+          <div key={row.id} style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr) auto", columnGap: 12, alignItems: "center", minHeight: 32, borderBottom: `1px solid ${t.hairline}`, fontFamily: FIGTREE, fontSize: 13 }}>
             <TypeChip tone={CHANGE_TONE[row.tag]}>{row.tag}</TypeChip>
             <span style={{ minWidth: 0, ...ellipsis }}>
               <span style={{ fontWeight: 500, color: t.text }}>{row.item}</span>
@@ -566,7 +566,7 @@ function SelectedRows({ rows }: { rows: SelectedBase["rows"] }) {
   return (
     <div style={{ marginTop: 16 }}>
       {rows.map((row) => (
-        <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, minHeight: 36, borderTop: `1px solid ${t.hairline}`, fontFamily: FIGTREE, fontSize: 13 }}>
+        <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, minHeight: 32, borderTop: `1px solid ${t.hairline}`, fontFamily: FIGTREE, fontSize: 13 }}>
           <span style={{ color: t.text2 }}>{row.label}</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 8, color: t.text, textAlign: "right" }}>
             {row.value}
@@ -656,7 +656,7 @@ export function LibraryPreview({ name, meta, to, rows, status, onStart }: Librar
           <CollectionSkeletons />
         ) : (
           rows.slice(0, 3).map((row, index, shown) => (
-            <div key={row.id} style={{ display: "grid", gridTemplateColumns: "16px 1fr auto", columnGap: 10, alignItems: "center", minHeight: 40, borderBottom: index < shown.length - 1 ? `1px solid ${t.hairline}` : "none", fontFamily: FIGTREE, fontSize: 13 }}>
+            <div key={row.id} style={{ display: "grid", gridTemplateColumns: "16px 1fr auto", columnGap: 10, alignItems: "center", minHeight: 32, borderBottom: index < shown.length - 1 ? `1px solid ${t.hairline}` : "none", fontFamily: FIGTREE, fontSize: 13 }}>
               <span style={{ ...small, fontVariantNumeric: "tabular-nums" }}>{index + 1}</span>
               <span style={{ minWidth: 0, color: t.text, ...ellipsis }}>{row.title}</span>
               <span style={small}>{row.type}</span>

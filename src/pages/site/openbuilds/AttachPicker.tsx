@@ -30,7 +30,7 @@ const SIZES: readonly { value: WorkSize; label: string }[] = [
 
 export const attachableKey = (userId: string, size: WorkSize, query: string) => postKey("listAttachableWork", userId, size, query);
 
-const rowBox: CSSProperties = { boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, width: "100%", height: 36, padding: "0 8px", border: 0, borderRadius: 6, fontFamily: FIGTREE, fontSize: 13, textAlign: "left" };
+const rowBox: CSSProperties = { boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, width: "100%", height: 32, padding: "0 8px", border: 0, borderRadius: 6, fontFamily: FIGTREE, fontSize: 13, textAlign: "left" };
 
 /** UX-06: someone else's work in a reply: shown, not choosable, with Mention instead. */
 function MentionRow({ work, onMention }: { work: LabelledWork; onMention: (handle: string) => void }) {
