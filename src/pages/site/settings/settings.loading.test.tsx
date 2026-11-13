@@ -73,3 +73,25 @@ describe("the route table's placeholder for Settings", () => {
     expect(view.container.querySelectorAll('[data-testid="settings-card-bones"]').length).toBe(PREFERENCE_GROUPS.length);
   });
 });
+
+describe("D4: a settings section whose read never answers", () => {
+  it("swaps its cards for the section's error line and Retry after STALL_MS, and Retry brings the cards back", async () => {
+    const { act, fireEvent } = await import("@testing-library/react");
+    const { STALL_MS } = await import("@/components/shell/useStalled");
+    vi.useFakeTimers();
+    try {
+      for (const section of [<AccountSection key="a" />, <NotificationsSection key="n" />, <PrivacySection key="p" />, <AppsSection key="x" />]) {
+        const view = render(wrap(section));
+        expect(view.container.querySelectorAll('[data-testid="settings-card-bones"]').length).toBeGreaterThan(0);
+        act(() => vi.advanceTimersByTime(STALL_MS));
+        expect(view.getByRole("alert").textContent).toContain("Couldn't load this.");
+        expect(view.container.querySelectorAll('[data-testid="settings-card-bones"]').length).toBe(0);
+        act(() => fireEvent.click(view.getByRole("button", { name: "Retry" })));
+        expect(view.container.querySelectorAll('[data-testid="settings-card-bones"]').length).toBeGreaterThan(0);
+        view.unmount();
+      }
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
