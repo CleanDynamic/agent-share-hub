@@ -124,7 +124,7 @@ function RefinedDockView({ current, unread, placement = "fixed" }: DockViewProps
                   color: t.onLit,
                   fontFamily: FIGTREE,
                   fontSize: 11,
-                  fontWeight: 600,
+                  fontWeight: 500,
                   lineHeight: "12px",
                   textAlign: "center",
                 }}

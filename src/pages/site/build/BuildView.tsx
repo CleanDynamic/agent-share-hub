@@ -309,7 +309,7 @@ export function AnatomyDialog({
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <Dialog.Title style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, fontWeight: 600, color: t.text }}>{title}</Dialog.Title>
+            <Dialog.Title style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, fontWeight: 500, color: t.text }}>{title}</Dialog.Title>
             <Dialog.Close asChild>
               <IconButton icon={X} label="Close" size={32} />
             </Dialog.Close>

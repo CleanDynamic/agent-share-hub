@@ -291,7 +291,7 @@ export function FeedPost({
         data-feed-author-row=""
         style={{ ...column, gridColumn: 2, gridRow: 1, display: "flex", alignItems: "center", gap: 6, minHeight: 24, marginBottom: 4, whiteSpace: "nowrap" }}
       >
-        <QuietLink to={profileHref} testId="feed-author-name" touch={phone} style={{ flex: "0 100 auto", fontSize: 13, fontWeight: 600, ...ellipsis }} colour={t.text}>
+        <QuietLink to={profileHref} testId="feed-author-name" touch={phone} style={{ flex: "0 100 auto", fontSize: 13, fontWeight: 500, ...ellipsis }} colour={t.text}>
           {name}
         </QuietLink>
         <span style={{ display: "flex", flex: "0 1 auto", minWidth: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.4, color: t.label }}>

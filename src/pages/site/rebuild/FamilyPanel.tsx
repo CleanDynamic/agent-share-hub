@@ -45,7 +45,7 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import {
   CANVAS_HEIGHT,
@@ -188,7 +188,7 @@ function TreeNode({
           justifyContent: "space-between",
           gap: 4,
           marginTop: 2,
-          fontFamily: DM_MONO,
+          fontFamily: FIGTREE,
           fontSize: 11,
           lineHeight: "normal",
           color: t.text2,
@@ -304,7 +304,7 @@ export function FamilyList({
               </span>
               <span style={{ flexGrow: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                 <span style={{ ...nodeTitle, display: "block" }}>{node.title}</span>
-                <span style={{ fontFamily: DM_MONO, fontSize: 11, lineHeight: "normal", color: t.text2 }}>
+                <span style={{ fontFamily: FIGTREE, fontSize: 11, lineHeight: "normal", color: t.text2 }}>
                   {node.maker} · {countLabel(node.reproduced)} reproduced
                 </span>
               </span>

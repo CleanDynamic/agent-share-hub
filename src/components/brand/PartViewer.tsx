@@ -154,7 +154,7 @@ export function PartViewer<V extends string = string>({
             paddingLeft: phone ? 7 : 9,
             fontFamily: FIGTREE,
             fontSize: 12,
-            fontWeight: 600,
+            fontWeight: 500,
             color: t.text,
           }}
         >

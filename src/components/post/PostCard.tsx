@@ -223,7 +223,7 @@ export function PostCard({ card: full, clamp = true, page = false, renderTile, m
         {/* Head: name, @handle · age · in spaces; the reward and Pinned at the right end. */}
         <div style={{ display: "flex", alignItems: "baseline", gap: 6, minHeight: 24, marginBottom: 4 }}>
           <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexWrap: "wrap", alignItems: "baseline", columnGap: 6 }}>
-            <span style={{ ...plain, fontSize: 13, fontWeight: 600, lineHeight: 1.4 }}>{name}</span>
+            <span style={{ ...plain, fontSize: 13, fontWeight: 500, lineHeight: 1.4 }}>{name}</span>
             <span style={{ ...plain, fontSize: 13, lineHeight: 1.4, color: label, whiteSpace: "pre-wrap" }}>
               {meta}
               {card.spaces.length > 0 ? " · in  " : ""}

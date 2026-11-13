@@ -109,7 +109,7 @@ export function BottomSheet({ open, onOpenChange, title, hideTitle = false, chil
               style={
                 hideTitle
                   ? VISUALLY_HIDDEN
-                  : { margin: 0, fontFamily: FIGTREE, fontSize: 14, fontWeight: 600, color: t.text }
+                  : { margin: 0, fontFamily: FIGTREE, fontSize: 14, fontWeight: 500, color: t.text }
               }
             >
               {title}

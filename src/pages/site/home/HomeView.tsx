@@ -510,7 +510,7 @@ function useNear<E extends Element>(id: string, onNear?: (ids: string[]) => void
 function AuthorRow({ name, line }: { name: string; line: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6, minHeight: 24, marginBottom: 4, whiteSpace: "nowrap", minWidth: 0 }}>
-      <span style={text(13, 500, t.text, { fontWeight: 600, lineHeight: 1.4 })}>{name}</span>
+      <span style={text(13, 500, t.text, { lineHeight: 1.4 })}>{name}</span>
       <span style={{ ...text(13, 400, t.label, { lineHeight: 1.4 }), ...ellipsis, minWidth: 0 }}>{line}</span>
     </div>
   );
@@ -671,7 +671,7 @@ export function ReplyGroupItem({ item }: { item: HomeReplyGroup }) {
         <PlainLink to={item.to} data-testid="home-reply-group-link" style={{ display: "grid", gridTemplateColumns: "24px minmax(0, 1fr)", columnGap: 12, color: t.text, textDecoration: "none" }}>
           <Avatar size={24} userId={item.topic.author.id} name={name} src={item.topic.author.avatarUrl} />
           <span style={{ display: "flex", alignItems: "baseline", gap: 6, minWidth: 0, whiteSpace: "nowrap" }}>
-            <span style={text(13, 500, t.text, { fontWeight: 600, lineHeight: "20px" })}>{name}</span>
+            <span style={text(13, 500, t.text, { lineHeight: "20px" })}>{name}</span>
             <span style={{ ...text(12, 400, t.label, { lineHeight: "20px" }), ...ellipsis, minWidth: 0 }}>{line}</span>
           </span>
           <span style={{ gridColumn: 2, display: "block", marginTop: 4, ...text(13, 500, t.text, { lineHeight: 1.4 }), overflowWrap: "anywhere" }}>{item.topic.heading || "Untitled post"}</span>

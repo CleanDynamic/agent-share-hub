@@ -159,7 +159,7 @@ export function ReplyAnatomy({ reply, children }: { reply: ReplyItem; children?:
       <div style={{ minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, minHeight: 24 }}>
           <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 6, rowGap: 4 }}>
-            <span style={{ ...plain, fontSize: 13, fontWeight: 600, lineHeight: "20px" }}>{reply.author.name}</span>
+            <span style={{ ...plain, fontSize: 13, fontWeight: 500, lineHeight: "20px" }}>{reply.author.name}</span>
             <span style={{ ...plain, fontSize: 12, lineHeight: "20px", color: t.label }}>{[reply.author.handle ? `@${reply.author.handle}` : null, reply.age].filter(Boolean).join(" · ")}</span>
             {reply.about ? (
               <>

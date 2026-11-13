@@ -85,12 +85,12 @@ export function ChangeList({ groups, phone = false }: { groups: readonly ChangeG
                   alignItems: "center",
                   ...(phone ? { minHeight: 32 } : { height: 32 }),
                   borderBottom: `1px solid ${t.hairline}`,
-                  fontFamily: DM_MONO,
+                  fontFamily: FIGTREE,
                   fontSize: 12,
                   lineHeight: "normal",
                 }}
               >
-                <span style={{ color: SYMBOL[row.kind].colour }}>
+                <span style={{ fontFamily: DM_MONO, color: SYMBOL[row.kind].colour }}>
                   <span aria-hidden="true">{SYMBOL[row.kind].glyph}</span>
                   <span style={VISUALLY_HIDDEN}>{row.kind}</span>
                 </span>

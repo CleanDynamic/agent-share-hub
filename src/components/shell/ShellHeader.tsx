@@ -153,7 +153,7 @@ export function ShellHeader({
                 color: "var(--on-action)",
                 fontFamily: FONT,
                 fontSize: 12,
-                fontWeight: 600,
+                fontWeight: 500,
                 cursor: primaryAction.disabled ? "not-allowed" : "pointer",
                 opacity: primaryAction.disabled ? 0.5 : 1,
                 transition: feedback("transform", "opacity"),
@@ -182,7 +182,7 @@ export function ShellHeader({
             alignItems: "center",
             fontFamily: FONT,
             fontSize: 14,
-            fontWeight: 600,
+            fontWeight: 500,
             color: "var(--text)",
             whiteSpace: "nowrap",
             overflow: "hidden",
@@ -244,7 +244,7 @@ export function ShellHeader({
                       <span
                         style={{
                           fontSize: 11,
-                          fontWeight: 600,
+                          fontWeight: 500,
                           padding: "1px 4px",
                           borderRadius: 999,
                           background: "var(--recess)",

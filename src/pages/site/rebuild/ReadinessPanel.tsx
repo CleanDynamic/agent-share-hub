@@ -35,7 +35,7 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import type { ReadinessView, RebuildCreditView } from "./rebuildModel";
 
@@ -82,7 +82,7 @@ export function CreditBox({ credit, phone = false }: { credit: RebuildCreditView
       {credit.delta ? (
         <p
           data-testid="rebuild-credit-delta"
-          style={{ margin: "3px 0 0", fontFamily: DM_MONO, fontSize: 11, lineHeight: "normal", color: t.text2, overflowWrap: "anywhere" }}
+          style={{ margin: "3px 0 0", fontFamily: FIGTREE, fontSize: 11, lineHeight: "normal", color: t.text2, overflowWrap: "anywhere" }}
         >
           {credit.delta}
         </p>
@@ -139,7 +139,7 @@ export function ReadinessPanel({
       borderRadius: 6,
     }}
   >
-    <span aria-hidden="true" style={{ fontFamily: DM_MONO, fontSize: 16, lineHeight: "normal", color: t.text, fontVariantNumeric: "tabular-nums" }}>{`${readiness.pct}%`}</span>
+    <span aria-hidden="true" style={{ fontFamily: FIGTREE, fontSize: 16, lineHeight: "normal", color: t.text, fontVariantNumeric: "tabular-nums" }}>{`${readiness.pct}%`}</span>
     <span aria-hidden="true" style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.label }}>ready</span>
   </div>;
 

@@ -185,7 +185,7 @@ function Step({
   return (
     <>
       {step.heading ? (
-        <li role="presentation" data-testid="build-run-heading" style={{ listStyle: "none", fontFamily: FIGTREE, fontSize: phone ? 13 : 12, fontWeight: 600, color: t.text2, paddingTop: 4 }}>
+        <li role="presentation" data-testid="build-run-heading" style={{ listStyle: "none", fontFamily: FIGTREE, fontSize: phone ? 13 : 12, fontWeight: 500, color: t.text2, paddingTop: 4 }}>
           {step.heading}
         </li>
       ) : null}
@@ -195,7 +195,7 @@ function Step({
       </span>
       <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 7, minHeight: 25 }}>
-          <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: phone ? 14 : 13, fontWeight: 600, lineHeight: 1.4, color: t.text, minWidth: 0, flexGrow: 1 }}>
+          <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: phone ? 14 : 13, fontWeight: 500, lineHeight: 1.4, color: t.text, minWidth: 0, flexGrow: 1 }}>
             <span style={VISUALLY_HIDDEN}>{`Step ${said}: `}</span>
             {step.title}
             <span style={{ fontFamily: DM_MONO, fontSize: 11, fontWeight: 400, color: t.text2, marginLeft: 6, whiteSpace: "nowrap" }}>
@@ -394,7 +394,7 @@ export function LayerSteps({
               </span>
               <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
                 {step.title ? (
-                  <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: phone ? 14 : 13, fontWeight: 600, lineHeight: 1.4, color: t.text }}>
+                  <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: phone ? 14 : 13, fontWeight: 500, lineHeight: 1.4, color: t.text }}>
                     <span style={VISUALLY_HIDDEN}>{`Step ${step.n}: `}</span>
                     {step.title}
                   </h3>

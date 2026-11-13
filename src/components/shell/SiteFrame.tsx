@@ -112,7 +112,7 @@ const SKIP_BASE: CSSProperties = {
   border: `1px solid ${t.line}`,
   fontFamily: FIGTREE,
   fontSize: 12,
-  fontWeight: 600,
+  fontWeight: 500,
   textDecoration: "none",
 };
 
