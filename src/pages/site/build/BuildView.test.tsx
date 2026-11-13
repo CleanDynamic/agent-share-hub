@@ -264,7 +264,7 @@ describe("the summary line under the title (CA-03 P8)", () => {
       </MemoryRouter>,
     );
     const tag = /<p data-testid="build-summary"[^>]*>/.exec(markup)?.[0] ?? "";
-    expect(tag).toContain("font-size:12.5px");
+    expect(tag).toContain("font-size:12px");
     expect(tag).toContain("color:var(--text2)");
     expect(tag).toContain("white-space:nowrap");
     expect(tag).toContain("text-overflow:ellipsis");

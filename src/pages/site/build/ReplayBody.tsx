@@ -43,7 +43,7 @@ const HIT_HEIGHT = 44;
 
 const kindStyle = (kind: ReplayEventView["kind"]): CSSProperties => ({
   fontFamily: DM_MONO,
-  fontSize: 10,
+  fontSize: 11,
   letterSpacing: ".08em",
   textTransform: "uppercase",
   color: EVENT_INK[kind],
@@ -173,7 +173,7 @@ function StepList({
             <div
               style={{
                 fontFamily: DM_MONO,
-                fontSize: 10,
+                fontSize: 11,
                 letterSpacing: ".09em",
                 textTransform: "uppercase",
                 color: t.label,
@@ -225,7 +225,7 @@ function StepRow({ event, current, phone, onGo }: { event: ReplayEventView; curr
           ...ring(state.focusVisible),
         }}
       >
-        <span style={{ fontFamily: DM_MONO, fontSize: phone ? 11 : 10, color: t.label }}>{event.at}</span>
+        <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.label }}>{event.at}</span>
         <span style={kindStyle(event.kind)}>{event.kind}</span>
         <span
           style={{
@@ -373,7 +373,7 @@ export function ReplayBody({ replay, phone = false }: { replay: ReplayView; phon
       <div data-testid="build-replay-current" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
           <span style={kindStyle(current.kind)}>{current.kind}</span>
-          <span style={{ fontFamily: DM_MONO, fontSize: 10, color: t.label }}>{current.at}</span>
+          <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.label }}>{current.at}</span>
         </div>
         <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.65, color: t.text, whiteSpace: "pre-wrap" }}>
           {current.text}

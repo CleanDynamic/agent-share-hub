@@ -49,7 +49,7 @@ function Row({ row, onOpenReplay, onStartTopic }: { row: BreakageRowView; onOpen
         {row.happened ? <p style={{ margin: 0, color: t.text2, whiteSpace: "pre-wrap" }}>{row.happened}</p> : null}
         {row.fix ? (
           <p style={{ margin: 0, color: t.text, whiteSpace: "pre-wrap" }}>
-            <span style={{ fontFamily: DM_MONO, fontSize: 10, letterSpacing: ".09em", color: t.label, marginRight: 4 }}>FIX</span>
+            <span style={{ fontFamily: DM_MONO, fontSize: 11, letterSpacing: ".09em", color: t.label, marginRight: 4 }}>FIX</span>
             {row.fix}
           </p>
         ) : null}
@@ -68,9 +68,9 @@ function Row({ row, onOpenReplay, onStartTopic }: { row: BreakageRowView; onOpen
           </Button>
         ) : (
           /* As tall as the Button it stands in for (28 drawn, 24 rendered), so a row keeps its height either way. */
-          <span style={{ fontFamily: DM_MONO, fontSize: 10, color: t.label, lineHeight: "24px" }}>{row.span ?? "no step recorded"}</span>
+          <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.label, lineHeight: "24px" }}>{row.span ?? "no step recorded"}</span>
         )}
-        {row.attempts ? <span style={{ fontFamily: DM_MONO, fontSize: 10, color: t.label }}>{row.attempts}</span> : null}
+        {row.attempts ? <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.label }}>{row.attempts}</span> : null}
         {onStartTopic ? (
           <Button variant="ghost" size={28} fontSize={11} aria-label={`Start a topic: ${row.name}`} onClick={() => onStartTopic(row)}>
             Start a topic

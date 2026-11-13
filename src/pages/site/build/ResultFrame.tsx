@@ -20,7 +20,7 @@ export function ResultFrame({ date, children }: { date: string | null; children:
     <div data-testid="build-result" style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <CategoryChip category="evidence" label="evidence" />
-        {date ? <span style={{ fontFamily: DM_MONO, fontSize: 10, color: t.label }}>{date}</span> : null}
+        {date ? <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.label }}>{date}</span> : null}
       </div>
       <div
         data-testid="build-result-frame"
