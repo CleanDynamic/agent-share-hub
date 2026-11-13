@@ -66,7 +66,7 @@ describe("DraftsView", () => {
     expect(titles[0].textContent).toBe("Photo renamer by date taken");
     expect(titles[1].textContent).toBe("Untitled build");
     const markup = html();
-    expect(markup).toContain('data-testid="draft-title" style="display:block;font-weight:500');
+    expect(markup).toContain('data-testid="draft-title" style="display:block;font-size:13px;font-weight:500');
     expect(markup).toMatch(/font-weight:500;color:var\(--text\);white-space:nowrap[^>]*>Photo renamer by date taken/);
     expect(markup).toMatch(/font-weight:500;color:var\(--text2\);white-space:nowrap[^>]*>Untitled build/);
   });

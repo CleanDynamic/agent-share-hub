@@ -297,7 +297,7 @@ function DesktopRow({ row, now, onOpen }: { row: ActivityRow; now: number; onOpe
       <Who row={row} />
       <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, padding: "8px 0" }}>
         <Line row={row} />
-        {row.detail ? <span style={text(12.5, 400, t.text2, { overflowWrap: "anywhere" })}>{row.detail}</span> : null}
+        {row.detail ? <span style={text(12, 400, t.text2, { overflowWrap: "anywhere" })}>{row.detail}</span> : null}
       </div>
       <Thumb row={row} />
       <When row={row} now={now} style={{ textAlign: "right" }} />

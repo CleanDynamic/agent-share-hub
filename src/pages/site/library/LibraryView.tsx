@@ -368,10 +368,10 @@ function ItemRow({ row, selected, usedIn, onSelect }: { row: LibraryRow; selecte
             onSelect();
           }}
           {...handlers}
-          style={{ display: "block", maxWidth: "100%", minWidth: 0, padding: 0, background: "none", border: 0, borderRadius: r.chip, textAlign: "left", fontFamily: FIGTREE, color: t.text, cursor: "pointer", ...ring(state.focusVisible) }}
+          style={{ display: "flex", flexDirection: "column", gap: 4, maxWidth: "100%", minWidth: 0, padding: 0, background: "none", border: 0, borderRadius: r.chip, textAlign: "left", fontFamily: FIGTREE, color: t.text, cursor: "pointer", ...ring(state.focusVisible) }}
         >
-          <span style={{ display: "block", fontSize: 12.5, fontWeight: 500, lineHeight: "20px", maxWidth: 300, ...ellipsis, textDecoration: state.hovered ? "underline" : "none", textDecorationColor: t.line, textUnderlineOffset: 3 }}>{row.title}</span>
-          {row.detail ? <span style={{ ...small, display: "block", lineHeight: "20px", ...ellipsis }}>{row.detail}</span> : null}
+          <span style={{ display: "block", fontSize: 13, fontWeight: 500, lineHeight: "20px", maxWidth: 300, ...ellipsis, textDecoration: state.hovered ? "underline" : "none", textDecorationColor: t.line, textUnderlineOffset: 3 }}>{row.title}</span>
+          {row.detail ? <span style={{ ...small, fontSize: 12, display: "block", lineHeight: "20px", ...ellipsis }}>{row.detail}</span> : null}
         </button>
       </td>
       <td style={td}>{row.type}</td>

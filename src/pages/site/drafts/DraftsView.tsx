@@ -153,11 +153,12 @@ function DraftRow({
           ...ring(state.focusVisible),
         }}
       >
-        <span style={{ minWidth: 0 }}>
+        <span style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
           <span
             data-testid="draft-title"
             style={{
               display: "block",
+              fontSize: 13,
               fontWeight: 500,
               color: untitled ? t.text2 : t.text,
               whiteSpace: "nowrap",

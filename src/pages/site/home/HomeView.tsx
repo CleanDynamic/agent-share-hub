@@ -272,9 +272,9 @@ export function ContinueSection({ drafts }: { drafts: HomeViewProps["drafts"] })
       ) : drafts.status === "ready" && drafts.data.rows.length > 0 ? (
         drafts.data.rows.map((row, index) => (
           <Link key={row.id} to={`/compose/${row.id}`} data-testid="home-draft-row" style={rowLink(index === drafts.data.rows.length - 1, { display: "flex", alignItems: "center", minHeight: 48 })}>
-            <span style={{ minWidth: 0 }}>
+            <span style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
               <span style={{ display: "block", fontWeight: 500, color: row.untitled ? t.text2 : t.text, ...ellipsis }}>{row.title}</span>
-              <span style={mono(10.5, t.label)}>{row.meta}</span>
+              <span style={text(12, 400, t.label)}>{row.meta}</span>
             </span>
           </Link>
         ))
