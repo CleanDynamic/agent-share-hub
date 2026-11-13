@@ -2133,6 +2133,16 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
   },
   {
     rule: "spacing 10 is not in SPACE_REFINED",
+    text: `return <div style={{ fontFamily: FIGTREE, fontSize: 12, padding: "0 0 10px", borderBottom`,
+    why: "The type prompt (G4): the Library table's header row while it loads keeps the head's own 10 above its hairline, so the rows under it land where the loaded rows do.",
+  },
+  {
+    rule: "spacing 28 is not in SPACE_REFINED",
+    text: `<div aria-hidden="true" style={{ marginTop: 28 }}>`,
+    why: "The type prompt (G4): the Library's kinds while they load start 28 below the page head, as the kinds do.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
     text: `style={{ ...th, padding: "0 0 10px", textAlign: "right"`,
     why: "SV-09: the Library board's table heads sit 10 above their hairline.",
   },
