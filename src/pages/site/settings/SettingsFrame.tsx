@@ -13,6 +13,7 @@ import { useIsPhone } from "@/components/shell/useMinWidth";
 import { PlainRow } from "@/components/vision/PlainRow";
 import { PageLink } from "@/lib/routing/PageLink";
 import { SECTIONS, settingsPath, type SectionKey } from "@/lib/settings/sections";
+import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE, measure } from "@/lib/theme/type";
 
@@ -74,7 +75,7 @@ export function SettingsFrame({ section, children }: SettingsFrameProps) {
                 <PageLink
                   to={settingsPath(s.key)}
                   aria-current={isCurrent ? "page" : undefined}
-                  style={{ ...link, minHeight: 32, lineHeight: "32px", fontSize: 13, fontWeight: isCurrent ? 500 : 400, color: isCurrent ? t.text : t.text2 }}
+                  style={{ ...link, minHeight: 32, lineHeight: "30px", padding: "0 7px", margin: "0 -8px", border: `1px solid ${isCurrent ? t.selectedEdge : "transparent"}`, borderRadius: r.control, fontSize: 13, fontWeight: isCurrent ? 500 : 400, color: isCurrent ? t.text : t.text2 }}
                 >
                   <span style={isCurrent ? { textDecoration: "underline", textUnderlineOffset: 6, textDecorationThickness: 1 } : undefined}>{s.label}</span>
                 </PageLink>

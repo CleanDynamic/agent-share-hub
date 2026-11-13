@@ -223,14 +223,14 @@ export function PartRow({
            a flex item, so no width is needed. */
         boxSizing: "content-box",
         /* A part is a control: 46 drawn on a phone, held at the 44px touch floor; a one-line row's 32 above it. */
-        ...(phone ? { minHeight: 44 } : { height: 32 }),
-        padding: "0 8px",
+        ...(part.gap ? (phone ? { minHeight: 44 } : { height: 32 }) : phone ? { minHeight: 42 } : { height: 30 }),
+        padding: part.gap ? "0 8px" : "0 7px",
         borderRadius: r.control,
         /* Longhands: a shorthand holding a var() is one declaration some engines drop whole. */
-        borderWidth: part.gap ? 1.5 : 0,
-        borderStyle: part.gap ? "dashed" : "none",
-        borderColor: part.gap ? t.catBreakage : "transparent",
-        background: selected ? t.rowHighlight : "transparent",
+        borderWidth: part.gap ? 1.5 : 1,
+        borderStyle: part.gap ? "dashed" : "solid",
+        borderColor: selected ? t.selectedEdge : part.gap ? t.catBreakage : "transparent",
+        background: "transparent",
         color: t.text,
         textAlign: "left",
         cursor: "pointer",
