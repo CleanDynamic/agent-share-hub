@@ -184,6 +184,13 @@ describe("LibraryView", () => {
     }
   });
 
+  it("draws the Version switch as a 32 track with 24 items", () => {
+    view();
+    const group = within(screen.getByTestId("library-selected")).getByRole("radiogroup", { name: "Version" });
+    expect([group.style.height, group.style.alignItems]).toEqual(["32px", "center"]);
+    for (const item of within(group).getAllByRole("radio")) expect(item.style.height).toBe("24px");
+  });
+
   it("draws its underline tabs 32 high", () => {
     view();
     const tabs = screen.getAllByRole("tab");

@@ -508,7 +508,7 @@ function VersionSwitch({ value, onChange }: { value: "saved" | "current"; onChan
     (event.currentTarget.parentElement?.querySelector(`[data-value="${next}"]`) as HTMLButtonElement | null)?.focus();
   };
   return (
-    <div role="radiogroup" aria-label="Version" style={{ display: "flex", gap: 2, marginTop: 16, padding: 2, ...WELL, boxShadow: "none", borderRadius: r.control }}>
+    <div role="radiogroup" aria-label="Version" style={{ display: "flex", alignItems: "center", boxSizing: "border-box", height: 32, gap: 2, marginTop: 16, padding: 2, ...WELL, boxShadow: "none", borderRadius: r.control }}>
       {options.map((option) => (
         <VersionOption key={option.value} label={option.label} value={option.value} on={option.value === value} onChoose={() => onChange(option.value)} onKeyDown={move} />
       ))}
@@ -530,7 +530,7 @@ function VersionOption({ label, value, on, onChoose, onKeyDown }: { label: strin
       {...handlers}
       style={{
         flex: 1,
-        height: 26,
+        height: 24,
         background: on ? t.control : "none",
         border: on ? `1px solid ${t.controlBorder}` : "1px solid transparent",
         borderRadius: r.chip,
