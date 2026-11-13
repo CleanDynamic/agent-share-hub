@@ -380,6 +380,12 @@ export type TypeRole = keyof typeof scale;
     own `text()` and `type()` recipes. */
 export const textStep = { meta: 12, body: 14, section: 16, headline: 20, title: 24 } as const;
 
+/** The seven sizes, in px. Every font size the site sets is one of these; the roles above stay for the pages that read
+    them. 32 the sign-in tagline only; 20 / 500 the page title; 16 / 500 a post or card title; 14 / 500 a section heading
+    (every h2 inside a page); 13 body, row titles and controls; 12 meta lines, breadcrumbs and text links; 11 tags, mono
+    labels and table micro-labels. */
+export const typeSize = { tagline: 32, title: 20, cardTitle: 16, section: 14, body: 13, meta: 12, micro: 11 } as const;
+
 /* ── Modifiers ─────────────────────────────────────────────────────────────
    Spread alongside a role rather than baked into it, because both depend on
    where the text sits rather than on what it is. */
