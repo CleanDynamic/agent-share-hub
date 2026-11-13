@@ -271,7 +271,7 @@ function CollectionRow({ item, current, href }: { item: CollectionEntry; current
         justifyContent: "space-between",
         alignItems: "center",
         gap: 8,
-        minHeight: 40,
+        minHeight: 48,
         borderBottom: `1px solid ${t.hairline}`,
         background: current ? t.selectedFill : "transparent",
         fontFamily: FIGTREE,

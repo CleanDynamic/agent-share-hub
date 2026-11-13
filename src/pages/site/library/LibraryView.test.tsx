@@ -67,6 +67,8 @@ describe("LibraryView", () => {
   it("lists the collections, ordered by last use, each with what it is and its count", () => {
     view();
     const rows = screen.getAllByTestId("library-collection");
+    // A two-line row (name over its kind): a 48 minimum.
+    for (const row of rows) expect(row.style.minHeight).toBe("48px");
     expect(rows.map((row) => row.textContent)).toEqual(["Sales promptsPublic9", "Agents to tryPrivate6", "Call tooling kitPrivate5", "Best of Opus 5.5Public · @kit12", "Research briefsFilter set21"]);
     expect(screen.getByText("Ordered by your last use")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New collection" })).toBeInTheDocument();

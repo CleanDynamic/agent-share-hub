@@ -143,7 +143,7 @@ export function CollectionSkeletons() {
   return (
     <div aria-hidden="true">
       {[0, 1, 2].map((index) => (
-        <div key={index} style={{ display: "flex", alignItems: "center", height: 40, borderBottom: `1px solid ${t.hairline}` }}>
+        <div key={index} style={{ display: "flex", alignItems: "center", height: 48, borderBottom: `1px solid ${t.hairline}` }}>
           <Skeleton width="60%" height={12} radius={4} />
         </div>
       ))}

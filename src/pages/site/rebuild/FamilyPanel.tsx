@@ -277,8 +277,8 @@ export function FamilyList({
                 display: "flex",
                 alignItems: "center",
                 gap: 7,
-                /* A phone keeps the 44px touch target; the board's row is 43. */
-                minHeight: phone ? 44 : 43,
+                /* A two-line row: a 48 minimum (the control-heights pass), over the phone's 44 touch floor. */
+                minHeight: 48,
                 width: "100%",
                 paddingLeft: 16 * depth,
                 paddingRight: 0,
