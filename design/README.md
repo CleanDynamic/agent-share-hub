@@ -121,7 +121,8 @@ Deliberate, and expected in every compare report:
   - the account menu is a window (#28282C / #FFFFFF over a #202023 / #FAFAFA card), not the card's tone;
   - avatars and plain status chips sit on `--inset` with an edge border; a tile inside a card, the Build reader's part header strip and the reference panels are `--inset`; thumbnails, framed pictures and the composer's picture well are `--well`, not `--paper`;
   - selection is the border only: the Library rail, a Lineage node, the Build reader's part row and the Settings side list keep the unselected fill and take 1px `--selected-edge` (#9A9AA2 / #6E6E73), with no selection fill, shadow or ring;
-  - a hovered account menu item steps its fill four grey levels toward the text and draws no ring; the ring is keyboard focus only.
+  - a hovered account menu item and a hovered control step their fill four grey levels toward the text and draws no ring; the ring is keyboard focus only.
+  - a post's media grid is a well with inset cells, where the boards draw a hairline fill with tile cells.
 
 ## A note on the sample content
 
