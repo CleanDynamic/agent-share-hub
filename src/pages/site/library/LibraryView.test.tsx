@@ -184,6 +184,13 @@ describe("LibraryView", () => {
     }
   });
 
+  it("draws its underline tabs 32 high", () => {
+    view();
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs.length).toBeGreaterThan(0);
+    for (const tab of tabs) expect(tab.style.height, tab.textContent ?? "").toBe("32px");
+  });
+
   it("draws no section whose prop is absent", () => {
     view({ changes: undefined, kinds: undefined, preview: undefined, selected: null });
     expect(screen.queryByTestId("library-changes")).toBeNull();

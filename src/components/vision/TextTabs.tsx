@@ -30,7 +30,7 @@ export interface TextTabsProps<V extends string = string> {
   /** The tablist's accessible name. */
   label: string;
   /** SV-10: Home's board draws its tabs 40 high and 24 apart. */
-  height?: 36 | 40;
+  height?: 32 | 36;
   gap?: 20 | 24;
   /** The hairline under the tabs. Off where the row around them draws it (Home). */
   rule?: boolean;

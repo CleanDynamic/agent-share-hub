@@ -216,7 +216,7 @@ export function OpenBuildsFeedView(view: OpenBuildsFeedViewProps) {
   const centre = (
     <div>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12, padding: "0 20px", borderBottom: `1px solid ${t.hairline}` }}>
-        {view.signedIn ? <TextTabs tabs={tabs} value={view.scope} onChange={view.onScope} label="Posts from" rule={false} /> : <span />}
+        {view.signedIn ? <TextTabs tabs={tabs} value={view.scope} onChange={view.onScope} label="Posts from" height={32} rule={false} /> : <span />}
         <div style={{ paddingBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
           <Segmented
             label="Show"

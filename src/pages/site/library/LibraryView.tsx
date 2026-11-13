@@ -250,7 +250,7 @@ export function LibraryKinds({ items, value }: LibraryKindsProps) {
 export function LibraryKindTabs({ items, value, onChange }: LibraryKindsProps) {
   return (
     <div style={{ marginTop: 24, overflowX: "auto" }}>
-      <TextTabs label="Kinds" tabs={items.map((item) => ({ value: item.value, label: item.label, count: item.count }))} value={value ?? "all"} onChange={onChange} />
+      <TextTabs label="Kinds" height={32} tabs={items.map((item) => ({ value: item.value, label: item.label, count: item.count }))} value={value ?? "all"} onChange={onChange} />
     </div>
   );
 }
@@ -486,7 +486,7 @@ export function LibraryItems(props: LibraryItemsProps) {
 function TabsOnRule({ tabs, tab, onTab }: { tabs: LibraryItemsProps["tabs"]; tab: string; onTab: (tab: string) => void }) {
   return (
     <div style={{ marginBottom: -1 }}>
-      <TextTabs label="State" tabs={tabs} value={tab} onChange={onTab} />
+      <TextTabs label="State" height={32} tabs={tabs} value={tab} onChange={onTab} />
     </div>
   );
 }

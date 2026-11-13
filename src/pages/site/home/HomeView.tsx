@@ -437,7 +437,7 @@ export function FeedHead({ scope, onScopeChange, filter, onFilterChange }: Pick<
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", columnGap: 12, padding: "0 20px", borderBottom: `1px solid ${t.hairline}` }}>
       <TextTabs<HomeScope>
         label="Feed scope"
-        height={40}
+        height={32}
         gap={24}
         rule={false}
         value={scope}

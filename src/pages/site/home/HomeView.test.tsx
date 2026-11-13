@@ -55,6 +55,11 @@ describe("HomeView · control heights", () => {
     expect(kind.style.height).toBe("32px");
     for (const item of within(kind).getAllByRole("button")) expect(item.style.height).toBe("24px");
   });
+
+  it("draws the feed's underline tabs 32 high", () => {
+    mount();
+    for (const tab of screen.getAllByRole("tab")) expect(tab.style.height, tab.textContent ?? "").toBe("32px");
+  });
 });
 
 describe("HomeView · the three columns", () => {
