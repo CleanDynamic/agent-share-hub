@@ -107,7 +107,7 @@ export function FramedWork({ lit = false, dim = false, width, height, children, 
           display: "block",
           height: "100%",
           borderRadius: 2,
-          background: t.paper,
+          background: t.well,
           overflow: "hidden",
         }}
       >
@@ -214,7 +214,7 @@ export function ResultWindow({ label, children, width = 304, height = 176, style
           top: 22,
           bottom: 6,
           borderRadius: 3,
-          background: t.paper,
+          background: t.well,
           overflow: "hidden",
         }}
       >

@@ -98,7 +98,7 @@ function RefinedCoverFallback({ radius, index }: { radius: string | number; inde
         boxSizing: "border-box",
         padding: compact ? 4 : 8,
         borderRadius: radius,
-        background: t.paper,
+        background: t.well,
         overflow: "hidden",
         flexShrink: 0,
       }}

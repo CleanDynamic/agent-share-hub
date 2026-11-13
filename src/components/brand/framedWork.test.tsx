@@ -20,14 +20,14 @@ const refined = (node: React.ReactElement) => renderToStaticMarkup(underRefined(
 afterEach(() => document.documentElement.removeAttribute("data-theme"));
 
 describe("FramedWork", () => {
-  it("is a raised object on Noon: white, a #D9D9D9 hairline, radius 4, padding 4, the picture on --paper at radius 2", () => {
+  it("is a raised object on Noon: white, a #D9D9D9 hairline, radius 4, padding 4, the picture on --well at radius 2", () => {
     document.documentElement.setAttribute("data-theme", "noon");
     const html = renderToStaticMarkup(<FramedWork height={72}>x</FramedWork>);
     expect(html).toContain("border-radius:4px");
     expect(html).toContain("padding:4px");
     expect(html).toContain("background:#FFFFFF");
     expect(html).toContain("border:1px solid #D9D9D9");
-    expect(html).toContain("background:var(--paper)");
+    expect(html).toContain("background:var(--well)");
     expect(html).toContain("border-radius:2px");
   });
 
@@ -60,11 +60,11 @@ describe("FramedWork", () => {
 });
 
 describe("CoverFallback under the refined look", () => {
-  it("draws the page sketch on --paper instead of the landscape, and keeps its sky in the markup", () => {
+  it("draws the page sketch on --well instead of the landscape, and keeps its sky in the markup", () => {
     const html = refined(<CoverFallback seed="b1" radius={2} sky={3} />);
     expect(html).toContain('data-ui="cover-fallback"');
     expect(html).toContain('data-sky="3"');
-    expect(html).toContain("background:var(--paper)");
+    expect(html).toContain("background:var(--well)");
     expect(html).not.toContain("<svg");
   });
 });
@@ -89,7 +89,7 @@ describe("PictureLight", () => {
 });
 
 describe("ResultWindow", () => {
-  it("is a named 304×176 window with a 20px chrome row of three dots and the picture on --paper", () => {
+  it("is a named 304×176 window with a 20px chrome row of three dots and the picture on --well", () => {
     render(<ResultWindow label="Bakery homepage · Result">x</ResultWindow>);
     expect(screen.getByRole("img", { name: "Bakery homepage · Result" })).toBeTruthy();
     const html = renderToStaticMarkup(<ResultWindow label="r">x</ResultWindow>);
@@ -97,7 +97,7 @@ describe("ResultWindow", () => {
     expect(html).toContain("height:176px");
     expect(html).toContain("height:20px");
     expect(html.match(/width:4px;height:4px/g)).toHaveLength(3);
-    expect(html).toContain("background:var(--paper)");
+    expect(html).toContain("background:var(--well)");
   });
 });
 
