@@ -393,7 +393,7 @@ describe("refined controls (UI-P84)", () => {
     expect(html).toContain("border-bottom:2px solid transparent");
     expect(html).toContain("border-bottom:1px solid var(--hairline)");
     expect(html).toContain("gap:24px");
-    expect(html).toContain("font-size:11.5px");
+    expect(html).toContain("font-size:12px");
   });
 
   it("FilterChip is the control recipe at 36 and selected when on, never inverted", () => {
