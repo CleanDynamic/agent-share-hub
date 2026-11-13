@@ -30,7 +30,7 @@ export interface TextTabsProps<V extends string = string> {
   onChange: (value: V) => void;
   /** The tablist's accessible name. */
   label: string;
-  /** SV-10: Home's board draws its tabs 40 high and 24 apart. */
+  /** 32 is the control-heights pass's tab (Home, Library, Space, the OpenBuilds feed); the default 36 waits on the Builds spec. */
   height?: 32 | 36;
   gap?: 20 | 24;
   /** The hairline under the tabs. Off where the row around them draws it (Home). */
