@@ -54,6 +54,13 @@ describe("PartViewer", () => {
     </PartViewer>
   );
 
+  it("draws its View switch as the control-heights track: 32 high, items 24", () => {
+    render(viewer());
+    const group = screen.getByRole("group", { name: "View" });
+    expect(group.style.height).toBe("32px");
+    for (const item of group.querySelectorAll<HTMLElement>("button")) expect(item.style.height).toBe("24px");
+  });
+
   it("draws the strip: 'PART 01' in the viewer block, then the raised tab with the chip and the name", () => {
     const html = markup(viewer());
     expect(html).toContain("PART 01");

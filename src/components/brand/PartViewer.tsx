@@ -193,7 +193,7 @@ export function PartViewer<V extends string = string>({
                 items={MODES}
                 value={mode}
                 onChange={onModeChange}
-                size={phone ? 34 : 30}
+                size={phone ? 34 : 28}
                 fontSize={phone ? 12 : 11}
                 label="View"
               />
