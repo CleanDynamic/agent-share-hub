@@ -33,3 +33,15 @@ describe("the account menu on the surface ladder", () => {
     expect(style).toContain("border:1px solid var(--window-border)");
   });
 });
+
+describe("the header search on the surface ladder (F1)", () => {
+  it("is a well that sits on the page: --well-on-page, and the plain well inside the phone's sheet", async () => {
+    const { HeaderSearch } = await import("./HeaderSearch");
+    const style = (sheet: boolean) => {
+      const html = renderToStaticMarkup(<MemoryRouter><HeaderSearch variant={sheet ? "sheet" : "bar"} onSubmit={() => true} /></MemoryRouter>);
+      return new DOMParser().parseFromString(html, "text/html").querySelector(sheet ? '[data-ui="header-search"]' : '[data-ui="search-field"]')?.getAttribute("style") ?? "";
+    };
+    expect(style(false)).toContain("background:var(--well-on-page)");
+    expect(style(true)).toContain("background:var(--field)");
+  });
+});
