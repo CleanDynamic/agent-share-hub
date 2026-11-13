@@ -116,6 +116,13 @@ describe("ActiveFilterChip", () => {
 });
 
 describe("TextTabs", () => {
+  it("keeps a 44 high hit area on a phone (the control-heights pass)", () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("max-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
+    render(<TextTabs tabs={[{ value: "a", label: "A" }, { value: "b", label: "B" }]} value="a" onChange={() => {}} label="Phone tabs" height={32} />);
+    for (const tab of screen.getAllByRole("tab")) expect(tab.style.minHeight).toBe("44px");
+    vi.unstubAllGlobals();
+  });
+
   const tabs = [
     { value: "a", label: "Table" },
     { value: "b", label: "Maps", count: 4 },
