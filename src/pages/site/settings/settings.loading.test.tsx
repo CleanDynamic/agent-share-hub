@@ -59,3 +59,17 @@ describe("a settings section while it loads", () => {
     expect(bones(<AppsSection />)).toBe(loaded);
   });
 });
+
+describe("the route table's placeholder for Settings", () => {
+  it("is the Settings page while it loads: its h1, its list, and the section's cards", async () => {
+    const { SettingsPlaceholder } = await import("@/lib/routing/placeholders");
+    const view = render(
+      <MemoryRouter initialEntries={["/settings/notifications"]}>
+        <SettingsPlaceholder />
+      </MemoryRouter>,
+    );
+    expect(view.getByRole("heading", { level: 1 }).textContent).toBe("Settings");
+    expect(view.getByRole("heading", { level: 2 }).textContent).toBe("Notifications");
+    expect(view.container.querySelectorAll('[data-testid="settings-card-bones"]').length).toBe(PREFERENCE_GROUPS.length);
+  });
+});

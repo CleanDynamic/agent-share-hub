@@ -13,33 +13,25 @@ import { DATA_COPY, deleteMyAccount, prepareExport, saveFile } from "@/lib/setti
 import { blockKeys, listBlocks, unblockUser, type BlockedPerson } from "@/lib/settings/blocks";
 import { loadIsPrivate, setIsPrivate } from "@/lib/settings/privacySettings";
 import { loadNotificationPreferences, setNotificationPreference } from "@/lib/settings/notificationSettings";
-import { PREFERENCE_GROUPS, type NotificationPreferences, type PreferenceKey } from "@/lib/settings/notificationPrefs";
-import { LINKABLE, changeEmail, changePassword, hasPassword, linkProvider, loadAccount, signOutEverywhere, unlinkMethod } from "@/lib/settings/account";
+import { type NotificationPreferences, type PreferenceKey } from "@/lib/settings/notificationPrefs";
+import { changeEmail, changePassword, hasPassword, linkProvider, loadAccount, signOutEverywhere, unlinkMethod } from "@/lib/settings/account";
 
 import { AccountView } from "./AccountView";
 import { AppsView } from "./AppsView";
 import { DataView } from "./DataView";
 import { NotificationsView } from "./NotificationsView";
 import { PrivacyView } from "./PrivacyView";
-import { SectionError, SectionLoading, type GroupBones } from "./SettingParts";
+import { SectionError, SectionLoading } from "./SettingParts";
+import { SECTION_BONES } from "./SettingsLoading";
 
 const STALE_MS = 60_000;
-
-/* G5: each section's cards while it loads, one per group the view draws, each at its fewest rows. Account: Email, Password,
-   Sign-in methods (a row for each provider the site offers, linked or not) and Devices, a row with a hint each. Notifications: its groups, their rows without
-   hints. Privacy: Your profile's two rows; Blocked people and How blocking works, a note each when nobody is blocked.
-   Connected apps: the one group, a note when no app has access. */
-const ACCOUNT_BONES: readonly GroupBones[] = [{ rows: 1, hint: true }, { rows: 1, hint: true }, { rows: LINKABLE.length, hint: true }, { rows: 1, hint: true }];
-const NOTIFICATION_BONES: readonly GroupBones[] = PREFERENCE_GROUPS.map((group) => ({ rows: group.rows.length }));
-const PRIVACY_BONES: readonly GroupBones[] = [{ rows: 2, hint: true }, { rows: 0 }, { rows: 0 }];
-const APPS_BONES: readonly GroupBones[] = [{ rows: 0 }];
 
 export function AccountSection() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const account = useQuery({ queryKey: ["settings", "loadAccount"], queryFn: loadAccount, staleTime: STALE_MS });
   if (account.isError) return <SectionError title="Account" onRetry={() => void account.refetch()} />;
-  if (!account.data) return <SectionLoading title="Account" groups={ACCOUNT_BONES} />;
+  if (!account.data) return <SectionLoading title="Account" groups={SECTION_BONES.account} />;
   const { email, methods } = account.data;
   return (
     <AccountView
@@ -89,7 +81,7 @@ export function NotificationsSection() {
     onSuccess: () => toast(SAVED),
   });
   if (prefs.isError) return <SectionError title="Notifications" onRetry={() => void prefs.refetch()} />;
-  if (!prefs.data) return <SectionLoading title="Notifications" groups={NOTIFICATION_BONES} />;
+  if (!prefs.data) return <SectionLoading title="Notifications" groups={SECTION_BONES.notifications} />;
   return <NotificationsView prefs={prefs.data} onToggle={(changed, on) => write.mutate({ key: changed, on })} />;
 }
 
@@ -141,7 +133,7 @@ export function PrivacySection() {
   };
 
   if (isPrivate.isError || blocks.isError) return <SectionError title="Privacy and blocking" onRetry={() => { void isPrivate.refetch(); void blocks.refetch(); }} />;
-  if (isPrivate.data === undefined || !blocks.data) return <SectionLoading title="Privacy and blocking" groups={PRIVACY_BONES} />;
+  if (isPrivate.data === undefined || !blocks.data) return <SectionLoading title="Privacy and blocking" groups={SECTION_BONES.privacy} />;
   return <PrivacyView isPrivate={isPrivate.data} onTogglePrivate={(on) => togglePrivate.mutate(on)} blocked={blocks.data} onUnblock={(person) => void unblock(person)} busy={busy} />;
 }
 
@@ -168,7 +160,7 @@ export function AppsSection() {
   const queryClient = useQueryClient();
   const apps = useQuery({ queryKey: ["settings", "listApps"], queryFn: listApps, staleTime: STALE_MS });
   if (apps.isError) return <SectionError title="Connected apps" onRetry={() => void apps.refetch()} />;
-  if (!apps.data) return <SectionLoading title="Connected apps" groups={APPS_BONES} />;
+  if (!apps.data) return <SectionLoading title="Connected apps" groups={SECTION_BONES.apps} />;
   return (
     <AppsView
       apps={apps.data.state === "listed" ? apps.data.apps : null}
