@@ -389,7 +389,7 @@ describe("refined controls (UI-P84)", () => {
       />,
     );
     expect(html).toContain("height:32px");
-    expect(html).toContain("border-bottom:2px solid var(--text)");
+    expect(html).toContain("border-bottom:2px solid var(--selected-edge)");
     expect(html).toContain("border-bottom:2px solid transparent");
     expect(html).toContain("border-bottom:1px solid var(--hairline)");
     expect(html).toContain("gap:24px");
