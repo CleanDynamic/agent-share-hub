@@ -314,7 +314,7 @@ const sessionModuleStyle = (colour: string | undefined): CSSProperties => ({
 });
 
 const tileStyle: CSSProperties = {
-  background: t.tile,
+  background: t.inset,
   border: `1px solid ${t.tileBorder}`,
   borderRadius: 6,
   boxSizing: "border-box",

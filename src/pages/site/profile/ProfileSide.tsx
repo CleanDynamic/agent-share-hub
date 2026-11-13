@@ -117,7 +117,7 @@ function CollectionTile({ tile }: { tile: SideCollection }) {
         flexDirection: "column",
         gap: 4,
         padding: 4,
-        background: t.tile,
+        background: t.inset,
         border: `1px solid ${t.tileBorder}`,
         borderRadius: r.card,
         boxSizing: "border-box",
