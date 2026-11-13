@@ -170,7 +170,7 @@ export interface LibraryViewProps {
 
 /* ── shared ── */
 
-const small: CSSProperties = { fontFamily: FIGTREE, fontSize: 11.5, lineHeight: "20px", color: t.label };
+const small: CSSProperties = { fontFamily: FIGTREE, fontSize: 12, lineHeight: "20px", color: t.label };
 const ellipsis: CSSProperties = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 
 /** One sentence and Retry (CA-28's wording). */
@@ -225,7 +225,7 @@ function KindRow({ item, current }: { item: LibraryKindsProps["items"][number]; 
         borderRadius: r.control,
         background: "transparent",
         fontFamily: FIGTREE,
-        fontSize: 12.5,
+        fontSize: 12,
         fontWeight: current ? 500 : 400,
         color: current || state.hovered ? t.text : t.text2,
         textDecoration: "none",
@@ -282,7 +282,7 @@ function CollectionRow({ item, current, href }: { item: CollectionEntry; current
       }}
     >
       <span style={{ minWidth: 0 }}>
-        <span style={{ display: "block", fontSize: 12.5, ...ellipsis }}>{item.name}</span>
+        <span style={{ display: "block", fontSize: 12, ...ellipsis }}>{item.name}</span>
         <span style={small}>{item.meta}</span>
       </span>
       <span style={{ fontSize: 12, color: t.label, fontVariantNumeric: "tabular-nums" }}>{item.count}</span>
@@ -294,7 +294,7 @@ export function LibraryCollections({ status, items, current, hrefFor, onNew, onR
   return (
     <section aria-label="Collections" style={{ marginTop: 32 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingBottom: 8, borderBottom: `1px solid ${t.hairline}` }}>
-        <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12.5, fontWeight: 500, lineHeight: "20px", color: t.text }}>Collections</h2>
+        <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, fontWeight: 500, lineHeight: "20px", color: t.text }}>Collections</h2>
         {onNew ? (
           <LibraryTextButton onClick={onNew} aria-label="New collection">
             New
@@ -429,9 +429,9 @@ export function LibraryItems(props: LibraryItemsProps) {
     /* A phone scrolls the table inside its own box, never the page sideways. */
     body = (
       <div style={{ overflowX: "auto", marginTop: chips?.length || sameAsBuilds ? 16 : 0 }}>
-      <table data-testid="library-table" style={{ width: "100%", borderCollapse: "collapse", fontFamily: FIGTREE, fontSize: 12.5, fontVariantNumeric: "tabular-nums" }}>
+      <table data-testid="library-table" style={{ width: "100%", borderCollapse: "collapse", fontFamily: FIGTREE, fontSize: 12, fontVariantNumeric: "tabular-nums" }}>
         <thead>
-          <tr style={{ fontSize: 11.5, color: t.label }}>
+          <tr style={{ fontSize: 12, color: t.label }}>
             <th scope="col" style={th}>{itemColumn}</th>
             <th scope="col" style={th}>Type</th>
             <th scope="col" style={th}>State</th>
@@ -552,7 +552,7 @@ function VersionOption({ label, value, on, onChoose, onKeyDown }: { label: strin
 
 function Content({ lines }: { lines: readonly DiffLine[] }) {
   return (
-    <div style={{ marginTop: 12, padding: 12, ...WELL, boxShadow: "none", borderRadius: r.control, fontFamily: DM_MONO, fontSize: 11.5, lineHeight: "18px", color: t.text2, whiteSpace: "pre-wrap" }}>
+    <div style={{ marginTop: 12, padding: 12, ...WELL, boxShadow: "none", borderRadius: r.control, fontFamily: DM_MONO, fontSize: 12, lineHeight: "18px", color: t.text2, whiteSpace: "pre-wrap" }}>
       {lines.map((line, index) => (
         <span key={index} style={{ display: "block", color: line.change === "removed" ? t.catBreakage : line.change === "added" ? t.evidence : undefined, textDecoration: line.change === "removed" ? "line-through" : undefined }}>
           {line.change ? <VisuallyHidden>{line.change === "removed" ? "Removed: " : "Added: "}</VisuallyHidden> : null}
@@ -641,7 +641,7 @@ function NoteField({ value, onChange, onCommit }: { value: string; onChange: (va
       value={value}
       onChange={(event) => onChange(event.target.value)}
       {...handlers}
-      style={{ display: "block", width: "100%", boxSizing: "border-box", marginTop: 6, padding: "8px 10px", ...WELL, boxShadow: "none", borderRadius: r.control, color: t.text, fontFamily: FIGTREE, fontSize: 12.5, lineHeight: "20px", resize: "vertical", ...ring(state.focusVisible) }}
+      style={{ display: "block", width: "100%", boxSizing: "border-box", marginTop: 6, padding: "8px 10px", ...WELL, boxShadow: "none", borderRadius: r.control, color: t.text, fontFamily: FIGTREE, fontSize: 12, lineHeight: "20px", resize: "vertical", ...ring(state.focusVisible) }}
     />
   );
 }
