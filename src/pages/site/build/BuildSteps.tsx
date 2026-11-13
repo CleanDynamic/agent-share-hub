@@ -70,6 +70,7 @@ import type { NeedGroup, NeedRow, ReaderFile, ReaderResult, ReaderStep } from "@
 import { markFor } from "@/lib/models/marks";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
+import { r } from "@/lib/theme/radius";
 import { controlPaint, CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
@@ -319,15 +320,15 @@ const tileStyle: CSSProperties = {
   minWidth: 0,
 };
 
-/** A reference: 22 high, the tile's fill, radius 4, 11.5. */
+/** A reference: 20 high, the tile's fill, radius 4, 11.5. */
 const chipStyle: CSSProperties = {
   ...tileStyle,
   display: "inline-flex",
   alignItems: "center",
   gap: 6,
-  height: 22,
+  height: 20,
   padding: "0 8px",
-  borderRadius: 4,
+  borderRadius: r.chip,
   ...text(11.5, 400, t.text),
   whiteSpace: "nowrap",
   maxWidth: "100%",

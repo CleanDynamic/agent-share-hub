@@ -56,6 +56,16 @@ describe("HomeView · control heights", () => {
     for (const item of within(kind).getAllByRole("button")) expect(item.style.height).toBe("24px");
   });
 
+  it("draws the latest runs' status chips 20 high with 8 either side and no shadow", () => {
+    mount();
+    const chips = within(screen.getByTestId("home-latest-runs")).getAllByText(/^(Worked|Didn’t)$/);
+    expect(chips.length).toBeGreaterThan(0);
+    for (const chip of chips) {
+      expect([chip.style.height, chip.style.padding], chip.textContent ?? "").toEqual(["20px", "0px 8px"]);
+      expect(chip.style.boxShadow).toBe("");
+    }
+  });
+
   it("draws the feed's underline tabs 32 high", () => {
     mount();
     for (const tab of screen.getAllByRole("tab")) expect(tab.style.height, tab.textContent ?? "").toBe("32px");

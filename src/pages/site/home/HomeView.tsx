@@ -786,7 +786,11 @@ function Figure({ value, lamp = false }: { value: number | null; lamp?: boolean 
 
 const runChip = (worked: boolean): CSSProperties => ({
   ...text(11.5, 400, worked ? t.evidence : t.catBreakage, { lineHeight: "18px" }),
-  padding: "0 6px",
+  display: "inline-flex",
+  alignItems: "center",
+  boxSizing: "border-box",
+  height: 20,
+  padding: "0 8px",
   borderRadius: r.chip,
   background: worked ? t.evidenceFill : t.catBreakageFill,
   whiteSpace: "nowrap",
