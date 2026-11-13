@@ -44,8 +44,9 @@ function FamilyLink({ to, phone, label, testId = "build-rebuilds-family" }: { to
         display: "inline-flex",
         alignItems: "center",
         gap: 5,
-        /* A 44px target on a phone; 36 above it, through the table. */
-        minHeight: phone ? 44 : 36,
+        /* A 44px target on a phone; a text link's 24 above it. */
+        minHeight: phone ? 44 : 24,
+        padding: "0 4px",
         fontFamily: FIGTREE,
         fontSize: phone ? 13 : 12,
         color: t.action,

@@ -143,7 +143,7 @@ export function HeaderSearch({
           alignItems: "center",
           gap: 6,
           width: sheet ? "100%" : (width ?? "100%"),
-          height: sheet ? 44 : 31,
+          height: sheet ? 44 : 32,
           boxSizing: "border-box",
           padding: "0 9px",
           borderRadius: r.control,

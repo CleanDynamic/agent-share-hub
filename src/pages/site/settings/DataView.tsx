@@ -100,7 +100,7 @@ function DeleteWindow({ open, username, onClose, onPrepare, onSave, onDelete }: 
             autoCapitalize="off"
             spellCheck={false}
             aria-label="Your username"
-            style={{ height: 36, padding: "0 10px", borderRadius: 6, border: `1px solid ${t.line}`, background: t.field, color: t.text, fontFamily: FIGTREE, fontSize: 16 }}
+            style={{ height: 32, padding: "0 12px", borderRadius: 6, border: `1px solid ${t.line}`, background: t.field, color: t.text, fontFamily: FIGTREE, fontSize: 16 }}
           />
         </label>
         {remove.state.status === "error" ? <FieldMessage>{remove.state.message}</FieldMessage> : null}

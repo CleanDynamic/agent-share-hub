@@ -341,7 +341,7 @@ function Chip({ children }: { children: ReactNode }) {
   return <span style={chipStyle}>{children}</span>;
 }
 
-/** A secondary 26 that is a link: Download. */
+/** A secondary 24 that is a link: Download, in the step card's head. */
 function DownloadButton({ href, name, label = "Download" }: { href: string; name: string; label?: string }) {
   const phone = useIsPhone();
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
@@ -354,13 +354,13 @@ function DownloadButton({ href, name, label = "Download" }: { href: string; name
       {...handlers}
       style={{
         ...controlPaint(state),
-        height: 28,
+        height: 24,
         ...touchArea(phone),
         boxSizing: "border-box",
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "0 12px",
+        padding: "0 8px",
         borderRadius: 6,
         ...text(12.5, 500, t.text),
         whiteSpace: "nowrap",
