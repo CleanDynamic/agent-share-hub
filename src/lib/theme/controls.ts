@@ -458,10 +458,10 @@ export function switchTrackStyle(state: ControlState = {}): CSSProperties {
 
   /* NO `borderWidth` HERE, DELIBERATELY. The track keeps the `border-2` it has
      always had, because that 2px is load-bearing geometry, not decoration:
-     w-11 is 44px, two 2px borders leave a 40px inner track, and the thumb is
-     16px travelling exactly 24px to sit flush at each end (UI-P53: it was 20px
-     travelling 20 in a 24px track; the 44px width is not a square's and kept
-     its size). Narrowing the border to 1px would widen the inner track to 42px
+     w-10 is 40px, two 2px borders leave a 36px inner track, and the thumb is
+     16px travelling exactly 20px to sit flush at each end (the control-heights
+     pass: it was 44 wide with the thumb travelling 24). Narrowing the border to
+     1px would widen the inner track to 38px
      and leave the thumb 2px short of the right edge — a visible misalignment
      produced by a purely visual change, which is the kind of thing this
      restyle must not do. Only the border's COLOUR is ours; its width belongs to
@@ -846,24 +846,24 @@ export function themeToggleSegmentStyle(state: ControlState & { selected?: boole
    ─────────────────────────────────────────────────────────────────────────── */
 
 export const CONTROL_SIZE = {
-  /** The shadcn button: sm 36 → 30, default 40 → 33, lg 44 → 36 (44 on a phone), icon 40 → 33 square. */
-  button: { sm: 30, default: 33, lg: 36, icon: 33 },
-  /** An input or a select trigger: 40 → 33. */
-  field: 33,
+  /** The shadcn button, every size 32 (the control-heights pass); lg keeps 44 on a phone. */
+  button: { sm: 32, default: 32, lg: 32, icon: 32 },
+  /** An input or a select trigger: 32. */
+  field: 32,
   /** A selectable chip — the filter chip: 36 → 30. */
   chip: 30,
-  /** A tabs list: 40 → 33. */
-  tab: 33,
-  /** The switch track: 24 → 20 tall. Its 44px width is not a square's, so it is kept. */
-  switchTrack: 20,
+  /** A tabs list: 32. */
+  tab: 32,
+  /** The switch track: 24 tall, 40 wide (`CONTROL_CLASS.switchTrack`). */
+  switchTrack: 24,
   /** The switch thumb: 20 → 16 square. */
   switchThumb: 16,
   /** A checkbox: 18 → 15. */
   checkbox: 15,
   /** A radio: 16, under 20, so the table keeps it. */
   radio: 16,
-  /** A menu item: 36 → 30. */
-  menuItem: 30,
+  /** A menu item: 32. */
+  menuItem: 32,
 } as const;
 
 /** Below 768px, a control that was at least 44px tall keeps a 44px hit area. */
@@ -873,33 +873,33 @@ export const TOUCH_HIT_CLASS = "max-md:min-h-[44px]";
 export const CONTROL_CLASS = {
   button: {
     /** h-10 px-4 py-2 */
-    default: "h-[33px] px-3 py-1.5",
+    default: "h-[32px] px-3 py-1.5",
     /** h-9 px-3 */
-    sm: "h-[30px] rounded-md px-[9px]",
+    sm: "h-[32px] rounded-md px-3",
     /** h-11 px-8, and 44px on a phone */
-    lg: "h-[36px] rounded-md px-[23px] max-md:min-h-[44px]",
+    lg: "h-[32px] rounded-md px-3 max-md:min-h-[44px]",
     /** h-10 w-10 */
-    icon: "h-[33px] w-[33px]",
+    icon: "h-[32px] w-[32px]",
   },
   /** h-10 px-3 py-2 — the input and the select trigger */
-  field: "h-[33px] px-[9px] py-1.5",
+  field: "h-[32px] px-3 py-1.5",
   /** px-3 py-2; its min-h-[80px] is over 64, so the table keeps it */
   textarea: "px-[9px] py-1.5",
   /** px-2.5 py-0.5 — the badge */
   chip: "px-[7px] py-0.5",
   /** h-10 p-1 */
-  tabList: "h-[33px] p-1",
+  tabList: "h-[32px] p-1",
   /** px-3 py-1.5 */
   tabTrigger: "px-[9px] py-1",
-  /** h-6 w-11 */
-  switchTrack: "h-5 w-11",
-  /** h-5 w-5, travelling 20px; now 16px travelling 24 to sit flush in the 40px inner track */
-  switchThumb: "h-4 w-4 data-[state=checked]:translate-x-6",
+  /** h-6 w-11; the control-heights pass's 24 by 40 */
+  switchTrack: "h-6 w-10",
+  /** h-5 w-5, travelling 20px; now 16px travelling 20 to sit flush in the 36px inner track */
+  switchThumb: "h-4 w-4 data-[state=checked]:translate-x-5",
   /** h-4 w-4 */
   checkbox: "h-[15px] w-[15px]",
   /** h-4 w-4, kept */
   radio: "h-4 w-4",
-  /** py-1.5; `menuItemStyle` holds the 30px minimum */
+  /** py-1.5; `menuItemStyle` holds the 32px minimum */
   menuItem: "py-1",
 } as const;
 

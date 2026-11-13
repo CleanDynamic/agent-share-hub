@@ -114,11 +114,11 @@ describe("the reset note says and looks as it was specified", () => {
   it("keeps its action a 44px touch target", () => {
     render(<ResetNote />);
 
-    // UI-P52 density pass: the control kit's lg size is CONTROL_CLASS.button.lg —
-    // 36px at desktop (it was h-11, 44px) and still 44px below 768px, the touch
-    // target this asserts. The size is not set anywhere else.
+    // The control kit's lg size is CONTROL_CLASS.button.lg — 32px at desktop since
+    // the control-heights pass (it was h-11, 44px, then 36) and still 44px below
+    // 768px, the touch target this asserts. The size is not set anywhere else.
     const className = screen.getByRole("button", { name: "Got it" }).className;
-    expect(className).toContain("h-[36px]");
+    expect(className).toContain("h-[32px]");
     expect(className).toContain("max-md:min-h-[44px]");
   });
 

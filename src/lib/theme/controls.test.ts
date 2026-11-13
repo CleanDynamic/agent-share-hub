@@ -402,10 +402,10 @@ describe("where the radius tokens do not produce the shape the spec describes", 
     }
   });
 
-  it("the switch track is a soft rectangle: --r-control is 6px on a 20px track", () => {
+  it("the switch track is a soft rectangle: --r-control is 6px on a 24px track", () => {
     // It was a capsule under the old 12px control radius (UI-P99 retired it).
     expect(px("r-control")).toBe(6);
-    expect(CONTROL_SIZE.switchTrack).toBe(20);
+    expect(CONTROL_SIZE.switchTrack).toBe(24);
     expect(fullyRounds(px("r-control"), CONTROL_SIZE.switchTrack)).toBe(false);
   });
 
@@ -429,20 +429,22 @@ describe("control sizes (UI-P53, the density pass)", () => {
   // design/prompts/README-density.md, and the classes the shadcn kit spends say
   // the same numbers as CONTROL_SIZE.
   it("maps each control's old height through the table", () => {
+    // The control-heights pass took the buttons, the field, the tabs list, the menu item and the switch track off
+    // the table (below); the chip, the thumb and the radio still come from it.
     const pairs: Array<[number, number]> = [
-      [CONTROL_SIZE.button.sm, 36],
-      [CONTROL_SIZE.button.default, 40],
-      [CONTROL_SIZE.button.lg, 44],
-      [CONTROL_SIZE.button.icon, 40],
-      [CONTROL_SIZE.field, 40],
       [CONTROL_SIZE.chip, 36],
-      [CONTROL_SIZE.tab, 40],
-      [CONTROL_SIZE.switchTrack, 24],
       [CONTROL_SIZE.switchThumb, 20],
       [CONTROL_SIZE.radio, 16],
-      [CONTROL_SIZE.menuItem, 36],
     ];
     for (const [size, old] of pairs) expect(size, `${old}px`).toBe(denseHeight(old));
+  });
+
+  it("holds the control-heights pass's sizes: 32 for buttons, fields, tabs and menu items, a 24 switch track", () => {
+    expect(CONTROL_SIZE.button).toEqual({ sm: 32, default: 32, lg: 32, icon: 32 });
+    expect(CONTROL_SIZE.field).toBe(32);
+    expect(CONTROL_SIZE.tab).toBe(32);
+    expect(CONTROL_SIZE.menuItem).toBe(32);
+    expect(CONTROL_SIZE.switchTrack).toBe(24);
   });
 
   it("takes the checkbox to 15, the one size the pass names outright", () => {
@@ -458,19 +460,19 @@ describe("control sizes (UI-P53, the density pass)", () => {
     expect(CONTROL_CLASS.field).toContain(`h-[${CONTROL_SIZE.field}px]`);
     expect(CONTROL_CLASS.tabList).toContain(`h-[${CONTROL_SIZE.tab}px]`);
     expect(CONTROL_CLASS.checkbox).toBe(`h-[${CONTROL_SIZE.checkbox}px] w-[${CONTROL_SIZE.checkbox}px]`);
-    // h-5 is 20px and h-4 16px: Tailwind's own steps where the table lands on them.
-    expect(CONTROL_CLASS.switchTrack).toContain("h-5");
+    // h-6 w-10 is the 24 by 40 switch; h-4 is the 16px thumb, Tailwind's own steps.
+    expect(CONTROL_CLASS.switchTrack).toBe("h-6 w-10");
     expect(CONTROL_CLASS.switchThumb).toContain("h-4 w-4");
     expect(CONTROL_CLASS.radio).toBe("h-4 w-4");
   });
 
-  it("keeps the switch thumb flush: 16px travelling 24 in a 40px inner track", () => {
-    const inner = 44 - 2 * 2;
-    expect(CONTROL_CLASS.switchThumb).toContain("translate-x-6");
-    expect(24 + CONTROL_SIZE.switchThumb).toBe(inner);
+  it("keeps the switch thumb flush: 16px travelling 20 in a 36px inner track", () => {
+    const inner = 40 - 2 * 2;
+    expect(CONTROL_CLASS.switchThumb).toContain("translate-x-5");
+    expect(20 + CONTROL_SIZE.switchThumb).toBe(inner);
   });
 
-  it("holds a menu item to its 30px minimum in the style every menu spends", () => {
+  it("holds a menu item to its 32px minimum in the style every menu spends", () => {
     expect(menuItemStyle().minHeight).toBe(CONTROL_SIZE.menuItem);
     expect(CONTROL_CLASS.menuItem).toBe("py-1");
   });
