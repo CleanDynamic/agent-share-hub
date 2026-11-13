@@ -115,6 +115,13 @@ Deliberate, and expected in every compare report:
   - Home's run chips and the build page's reference chips are 20 high with 8 either side and no shadow;
   - inputs, selects and menu items are 32 high with 12 either side; the switch is 24 by 40;
   - below 768px every button, field, tab, switch and menu item keeps a 44 high hit area, and an icon-only one 44 wide.
+- **The surface ladder (the surface-ladder pass).** The boards draw the earlier surface and border greys; the app uses the ladder in `RULES.md` ("The surface ladder"), so every board differs in fills and borders, never in size, type or copy:
+  - fills: `--surface` #18181A / #EFEFEF, `--module` #202023 (Noon keeps #FAFAFA), `--window` #28282C / #FFFFFF, `--well` #131315 / #E8E8E8, Noon's `--frame` #E4E4E4, `--control` #323237 in Dusk; `--control-on` is `--control`, so the active segment, the current Builds view and the header's current item are drawn in the control fill the boards give `--control`;
+  - borders: three greys (divider #26262A / #E2E2E2, edge #303035 / #D6D6D6, control edge #404046 / #C8C8C8) where the boards draw eight or more; the framed work's and the Map boxes' edges are the control edge and the edge, and Dusk's framed work loses its lighter top edge;
+  - the account menu is a window (#28282C / #FFFFFF over a #202023 / #FAFAFA card), not the card's tone;
+  - avatars and plain status chips sit on `--inset` with an edge border; a tile inside a card, the Build reader's part header strip and the reference panels are `--inset`; thumbnails, framed pictures and the composer's picture well are `--well`, not `--paper`;
+  - selection is the border only: the Library rail, a Lineage node, the Build reader's part row and the Settings side list keep the unselected fill and take 1px `--selected-edge` (#9A9AA2 / #6E6E73), with no selection fill, shadow or ring;
+  - a hovered account menu item steps its fill four grey levels toward the text and draws no ring; the ring is keyboard focus only.
 
 ## A note on the sample content
 
