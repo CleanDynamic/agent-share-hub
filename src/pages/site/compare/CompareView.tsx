@@ -43,7 +43,7 @@ function Cell({ step }: { step: Step | null }) {
   }
   return (
     <div data-testid="compare-step" style={{ background: t.inset, border: `1px solid ${t.tileBorder}`, borderRadius: 6, padding: "8px 12px", minHeight: 40, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-      <span style={text(11.5, 400, t.label)}>{KIND[step.kind] ?? "Step"} {step.number}</span>
+      <span style={text(12, 400, t.label)}>{KIND[step.kind] ?? "Step"} {step.number}</span>
       <span style={{ ...text(13, 500, t.text), overflowWrap: "anywhere" }}>{stepTitle(step)}</span>
     </div>
   );
@@ -81,7 +81,7 @@ export function CompareView({ a, b, rows, totals, sentence }: CompareViewProps) 
             ))}
           </tbody>
         </table>
-        <p data-testid="compare-sentence" style={{ ...text(13.5, 400, t.text), margin: 0 }}>{sentence}</p>
+        <p data-testid="compare-sentence" style={{ ...text(13, 400, t.text), margin: 0 }}>{sentence}</p>
       </section>
       <section aria-label="Steps" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {phone ? (

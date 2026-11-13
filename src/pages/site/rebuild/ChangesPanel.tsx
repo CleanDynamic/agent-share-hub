@@ -60,7 +60,7 @@ export function ChangeList({ groups, phone = false }: { groups: readonly ChangeG
             style={{
               margin: 0,
               fontFamily: DM_MONO,
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: 400,
               letterSpacing: ".09em",
               textTransform: "uppercase",

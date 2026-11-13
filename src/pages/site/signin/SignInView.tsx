@@ -141,8 +141,8 @@ function CountModule({ label, value, unit, testId }: { label: string; value: str
       }}
     >
       <span style={{ fontFamily: FIGTREE, fontSize: 12, fontWeight: 500, lineHeight: "normal", color: t.label }}>{label}</span>
-      <span style={{ fontFamily: DM_MONO, fontSize: 24, lineHeight: "normal", color: t.text, fontVariantNumeric: "tabular-nums" }}>{value}</span>
-      <span style={{ fontFamily: FIGTREE, fontSize: 11.5, lineHeight: "normal", color: t.label }}>{unit}</span>
+      <span style={{ fontFamily: DM_MONO, fontSize: 16, lineHeight: "normal", color: t.text, fontVariantNumeric: "tabular-nums" }}>{value}</span>
+      <span style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.label }}>{unit}</span>
     </div>
   );
 }
@@ -240,7 +240,7 @@ function DesktopView({ fit = "content", mode, carry = "", onBack, reproducedToda
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
         <Lockup size={70} />
-        <RefinedTagline size={44} />
+        <RefinedTagline size={32} />
         <RefinedCounts reproducedToday={reproducedToday} inGallery={inGallery} countsFailed={countsFailed} />
       </div>
 

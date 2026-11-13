@@ -26,7 +26,7 @@ export function ConnectView(props: ConnectViewProps) {
     <div style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: phone ? 720 : undefined, minWidth: 0 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
         <PageHeader title="Connect a tool" breadcrumb={phone ? undefined : <Breadcrumb />} />
-        <p style={{ fontFamily: FIGTREE, fontSize: 14, lineHeight: 1.5, margin: 0, color: t.text2 }}>
+        <p style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.5, margin: 0, color: t.text2 }}>
           Send the chats you build in to {SITE_NAME}, then turn them into builds.
         </p>
       </div>

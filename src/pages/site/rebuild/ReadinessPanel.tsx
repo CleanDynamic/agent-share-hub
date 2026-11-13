@@ -14,8 +14,8 @@
    still missing links to that workspace too: it is where the thing gets done,
    and on a phone, where the board draws Publish alone, it is the way on.
 
-   Desktop: a row (OrbRing 120; Rebuild readiness, display 22, Figtree 12),
-   the credit box 10 below, the actions 10 below. Phone: OrbRing 112, display 20,
+   Desktop: a row (OrbRing 120; Rebuild readiness, headline 16 / 500, Figtree 12),
+   the credit box 10 below, the actions 10 below. Phone: OrbRing 112, headline 16,
    Figtree 12, the credit's sentence at 13, a full-width 48/15 primary (the
    Button maps it: 44 tall on a phone). Sizes are after UI-P58's density table;
    `display()` and the brand primitives take the drawn size.
@@ -35,7 +35,7 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import type { ReadinessView, RebuildCreditView } from "./rebuildModel";
 
@@ -139,8 +139,8 @@ export function ReadinessPanel({
       borderRadius: 6,
     }}
   >
-    <span aria-hidden="true" style={{ fontFamily: DM_MONO, fontSize: 24, lineHeight: "normal", color: t.text, fontVariantNumeric: "tabular-nums" }}>{`${readiness.pct}%`}</span>
-    <span aria-hidden="true" style={{ fontFamily: FIGTREE, fontSize: 11.5, lineHeight: "normal", color: t.label }}>ready</span>
+    <span aria-hidden="true" style={{ fontFamily: DM_MONO, fontSize: 16, lineHeight: "normal", color: t.text, fontVariantNumeric: "tabular-nums" }}>{`${readiness.pct}%`}</span>
+    <span aria-hidden="true" style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.label }}>ready</span>
   </div>;
 
   const publish = (
@@ -148,7 +148,7 @@ export function ReadinessPanel({
       data-testid="rebuild-publish"
       variant="primary"
       size={phone ? 48 : 36}
-      fontSize={phone ? 15 : 13}
+      fontSize={13}
       icon={Check}
       fullWidth={phone}
       disabled={blocked || publishing}
@@ -167,7 +167,7 @@ export function ReadinessPanel({
           {orb}
           <div style={{ display: "flex", flexDirection: "column", gap: phone ? 4 : 6, minWidth: 0 }}>
             <Eyebrow>{phone ? "Readiness" : "Rebuild readiness"}</Eyebrow>
-            <div style={{ ...display(phone ? 20 : 22), lineHeight: 1.1, letterSpacing: "-0.02em", color: t.text }}>{readiness.headline}</div>
+            <div style={{ fontFamily: FIGTREE, fontSize: 16, fontWeight: 500, lineHeight: 1.1, letterSpacing: "-0.02em", color: t.text }}>{readiness.headline}</div>
             {readiness.next ? (
               <div id={nextId} style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text2 }}>
                 {workspaceTo ? <NextLink to={workspaceTo}>{readiness.next}</NextLink> : readiness.next}
