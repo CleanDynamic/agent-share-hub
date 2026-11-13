@@ -29,7 +29,8 @@ import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { useInteractive } from "@/lib/theme/interactive";
-import { ring } from "@/lib/theme/controls";
+import { useIsPhone } from "@/components/shell/useMinWidth";
+import { ring, touchArea } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { CONTROL, CONTROL_HOVER } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
@@ -90,6 +91,7 @@ function Segment({
   fullWidth,
   compact = false,
   disabled = false,
+  touch = false,
   tabStop,
   onSelect,
   children,
@@ -103,6 +105,8 @@ function Segment({
   fullWidth: boolean;
   compact?: boolean;
   disabled?: boolean;
+  /** The pass's track on a phone: the item keeps a 44 high hit area. */
+  touch?: boolean;
   /** The radio group's one tab stop: the current segment, or the first that can be chosen when none is. */
   tabStop: boolean;
   onSelect: () => void;
@@ -128,6 +132,7 @@ function Segment({
     ...(fullWidth ? { flex: 1, justifyContent: "center", display: "inline-flex", alignItems: "center" } : null),
     ...(current ? { ...CONTROL, ...CONTROL_HOVER, color: t.text } : null),
     ...(disabled ? { filter: t.dimFilter } : null),
+    ...touchArea(touch),
     ...ring(state.focusVisible),
   };
 
@@ -177,6 +182,12 @@ export function Segmented<V extends string = string>({
   compact = false,
 }: SegmentedProps<V>) {
   const radio = semantics === "radio";
+  /* The control-heights pass: drawn 28 renders the one track, 32 high with its items 24 high and centred. The other
+     sizes keep `size` and `size − 6` until the screens that pass them (sign-in, Builds) move. */
+  const track = size === 28 ? 32 : size;
+  /* On a phone the pass's items keep a 44 high hit area, and the track grows round them. */
+  const touch = useIsPhone() && size === 28;
+  const itemHeight = size === 28 ? 24 : size - 6;
   const stop = items.some((item) => item.value === value) ? value : items.find((item) => !item.disabled)?.value;
 
   /* The radio group's keys: right and down step on, left and up step back, both
@@ -210,7 +221,9 @@ export function Segmented<V extends string = string>({
           display: fullWidth ? "flex" : "inline-flex",
           width: fullWidth ? "100%" : undefined,
           boxSizing: "border-box",
-          height: size,
+          height: touch ? undefined : track,
+          minHeight: touch ? track : undefined,
+          alignItems: "center",
           gap: 2,
           padding: 2,
           borderRadius: compact ? 7 : r.control,
@@ -223,7 +236,7 @@ export function Segmented<V extends string = string>({
         <Segment
           key={item.value}
           current={item.value === value}
-          height={size - 8}
+          height={itemHeight - 2}
           ariaLabel={item.ariaLabel}
           readOnly={readOnly}
           href={item.href}
@@ -231,6 +244,7 @@ export function Segmented<V extends string = string>({
           fullWidth={fullWidth}
           compact={compact}
           disabled={item.disabled}
+          touch={touch}
           tabStop={item.value === stop}
           onSelect={() => onChange?.(item.value)}
         >

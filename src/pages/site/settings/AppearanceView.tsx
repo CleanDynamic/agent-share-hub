@@ -11,7 +11,7 @@ export function AppearanceView() {
   return (
     <SectionPage title="Appearance">
       <Group title="Theme">
-        <SettingRow last id="pref-theme" label="Theme" hint="Light, Dark, or whatever your device is set to." control={<ThemeSegmented size={32} fontSize={12} />} />
+        <SettingRow last id="pref-theme" label="Theme" hint="Light, Dark, or whatever your device is set to." control={<ThemeSegmented size={28} fontSize={12} />} />
       </Group>
     </SectionPage>
   );

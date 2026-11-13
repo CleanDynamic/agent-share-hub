@@ -19,7 +19,8 @@ import { PlainRow } from "@/components/vision/PlainRow";
 import { SectionChevron, SectionHead } from "@/components/vision/SectionHead";
 import { TextTabs } from "@/components/vision/TextTabs";
 import { TypeChip, type ChipTone } from "@/components/vision/TypeChip";
-import { ring } from "@/lib/theme/controls";
+import { useIsPhone } from "@/components/shell/useMinWidth";
+import { ring, touchArea } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { WELL } from "@/lib/theme/refinedControl";
@@ -177,7 +178,7 @@ function PanelError({ what, onRetry }: { what: string; onRetry: () => void }) {
   return (
     <div role="alert" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, paddingBlock: 16 }}>
       <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, color: t.text }}>{what}</p>
-      <LibraryControl size={28} onClick={onRetry}>
+      <LibraryControl onClick={onRetry}>
         Retry
       </LibraryControl>
     </div>
@@ -191,11 +192,11 @@ function PanelEmpty({ empty, testId }: { empty: LibraryEmpty; testId: string }) 
     <div data-testid={testId} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, paddingBlock: 16 }}>
       <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>{empty.line}</p>
       {"href" in action ? (
-        <LibraryControl size={28} href={action.href}>
+        <LibraryControl href={action.href}>
           {action.label}
         </LibraryControl>
       ) : (
-        <LibraryControl size={28} onClick={action.onClick}>
+        <LibraryControl onClick={action.onClick}>
           {action.label}
         </LibraryControl>
       )}
@@ -217,7 +218,7 @@ function KindRow({ item, current }: { item: LibraryKindsProps["items"][number]; 
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        minHeight: 34,
+        minHeight: 32,
         padding: "0 8px",
         margin: "0 -8px",
         borderRadius: r.control,
@@ -250,7 +251,7 @@ export function LibraryKinds({ items, value }: LibraryKindsProps) {
 export function LibraryKindTabs({ items, value, onChange }: LibraryKindsProps) {
   return (
     <div style={{ marginTop: 24, overflowX: "auto" }}>
-      <TextTabs label="Kinds" tabs={items.map((item) => ({ value: item.value, label: item.label, count: item.count }))} value={value ?? "all"} onChange={onChange} />
+      <TextTabs label="Kinds" height={32} tabs={items.map((item) => ({ value: item.value, label: item.label, count: item.count }))} value={value ?? "all"} onChange={onChange} />
     </div>
   );
 }
@@ -270,7 +271,7 @@ function CollectionRow({ item, current, href }: { item: CollectionEntry; current
         justifyContent: "space-between",
         alignItems: "center",
         gap: 8,
-        minHeight: 40,
+        minHeight: 48,
         borderBottom: `1px solid ${t.hairline}`,
         background: current ? t.selectedFill : "transparent",
         fontFamily: FIGTREE,
@@ -334,7 +335,7 @@ export function LibraryChanges({ figure, parts, to, rows }: LibraryChangesProps)
       </div>
       <div style={{ marginTop: 16 }}>
         {rows.map((row) => (
-          <div key={row.id} style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr) auto", columnGap: 12, alignItems: "center", minHeight: 40, borderBottom: `1px solid ${t.hairline}`, fontFamily: FIGTREE, fontSize: 13 }}>
+          <div key={row.id} style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr) auto", columnGap: 12, alignItems: "center", minHeight: 32, borderBottom: `1px solid ${t.hairline}`, fontFamily: FIGTREE, fontSize: 13 }}>
             <TypeChip tone={CHANGE_TONE[row.tag]}>{row.tag}</TypeChip>
             <span style={{ minWidth: 0, ...ellipsis }}>
               <span style={{ fontWeight: 500, color: t.text }}>{row.item}</span>
@@ -368,10 +369,10 @@ function ItemRow({ row, selected, usedIn, onSelect }: { row: LibraryRow; selecte
             onSelect();
           }}
           {...handlers}
-          style={{ display: "block", maxWidth: "100%", minWidth: 0, padding: 0, background: "none", border: 0, borderRadius: r.chip, textAlign: "left", fontFamily: FIGTREE, color: t.text, cursor: "pointer", ...ring(state.focusVisible) }}
+          style={{ display: "flex", flexDirection: "column", gap: 4, maxWidth: "100%", minWidth: 0, padding: 0, background: "none", border: 0, borderRadius: r.chip, textAlign: "left", fontFamily: FIGTREE, color: t.text, cursor: "pointer", ...ring(state.focusVisible) }}
         >
-          <span style={{ display: "block", fontSize: 12.5, fontWeight: 500, lineHeight: "20px", maxWidth: 300, ...ellipsis, textDecoration: state.hovered ? "underline" : "none", textDecorationColor: t.line, textUnderlineOffset: 3 }}>{row.title}</span>
-          {row.detail ? <span style={{ ...small, display: "block", lineHeight: "20px", ...ellipsis }}>{row.detail}</span> : null}
+          <span style={{ display: "block", fontSize: 13, fontWeight: 500, lineHeight: "20px", maxWidth: 300, ...ellipsis, textDecoration: state.hovered ? "underline" : "none", textDecorationColor: t.line, textUnderlineOffset: 3 }}>{row.title}</span>
+          {row.detail ? <span style={{ ...small, fontSize: 12, display: "block", lineHeight: "20px", ...ellipsis }}>{row.detail}</span> : null}
         </button>
       </td>
       <td style={td}>{row.type}</td>
@@ -391,7 +392,7 @@ function CollectionHeading({ heading }: { heading: LibraryCollectionHeading }) {
       {heading.actions?.length ? (
         <div data-testid="library-collection-actions" style={{ display: "flex", gap: 6 }}>
           {heading.actions.map((action) => (
-            <LibraryControl key={action.label} size={28} onClick={action.onClick} disabled={action.disabled}>
+            <LibraryControl key={action.label} onClick={action.onClick} disabled={action.disabled}>
               {action.label}
             </LibraryControl>
           ))}
@@ -455,10 +456,10 @@ export function LibraryItems(props: LibraryItemsProps) {
         <TabsOnRule tabs={tabs} tab={tab} onTab={onTab} />
         {controls ? (
           <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
-            <LibraryControl size={28} onClick={controls.onFilters}>
+            <LibraryControl onClick={controls.onFilters}>
               <span style={{ color: t.label }}>Filters</span> {controls.filters}
             </LibraryControl>
-            <LibraryControl size={28} onClick={controls.onSort}>
+            <LibraryControl onClick={controls.onSort}>
               <span style={{ color: t.label }}>Sort</span> {controls.sort}
             </LibraryControl>
           </div>
@@ -473,7 +474,7 @@ export function LibraryItems(props: LibraryItemsProps) {
       {body}
       {more && status === "ready" ? (
         <div style={{ marginTop: 16 }}>
-          <LibraryControl size={28} onClick={more.onMore} disabled={more.loading}>
+          <LibraryControl onClick={more.onMore} disabled={more.loading}>
             Show more
           </LibraryControl>
         </div>
@@ -486,7 +487,7 @@ export function LibraryItems(props: LibraryItemsProps) {
 function TabsOnRule({ tabs, tab, onTab }: { tabs: LibraryItemsProps["tabs"]; tab: string; onTab: (tab: string) => void }) {
   return (
     <div style={{ marginBottom: -1 }}>
-      <TextTabs label="State" tabs={tabs} value={tab} onChange={onTab} />
+      <TextTabs label="State" height={32} tabs={tabs} value={tab} onChange={onTab} />
     </div>
   );
 }
@@ -508,7 +509,7 @@ function VersionSwitch({ value, onChange }: { value: "saved" | "current"; onChan
     (event.currentTarget.parentElement?.querySelector(`[data-value="${next}"]`) as HTMLButtonElement | null)?.focus();
   };
   return (
-    <div role="radiogroup" aria-label="Version" style={{ display: "flex", gap: 2, marginTop: 16, padding: 2, ...WELL, boxShadow: "none", borderRadius: r.control }}>
+    <div role="radiogroup" aria-label="Version" style={{ display: "flex", alignItems: "center", boxSizing: "border-box", minHeight: 32, gap: 2, marginTop: 16, padding: 2, ...WELL, boxShadow: "none", borderRadius: r.control }}>
       {options.map((option) => (
         <VersionOption key={option.value} label={option.label} value={option.value} on={option.value === value} onChoose={() => onChange(option.value)} onKeyDown={move} />
       ))}
@@ -517,6 +518,7 @@ function VersionSwitch({ value, onChange }: { value: "saved" | "current"; onChan
 }
 
 function VersionOption({ label, value, on, onChoose, onKeyDown }: { label: string; value: string; on: boolean; onChoose: () => void; onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void }) {
+  const phone = useIsPhone();
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <button
@@ -530,7 +532,8 @@ function VersionOption({ label, value, on, onChoose, onKeyDown }: { label: strin
       {...handlers}
       style={{
         flex: 1,
-        height: 26,
+        height: 24,
+        ...touchArea(phone),
         background: on ? t.control : "none",
         border: on ? `1px solid ${t.controlBorder}` : "1px solid transparent",
         borderRadius: r.chip,
@@ -563,7 +566,7 @@ function SelectedRows({ rows }: { rows: SelectedBase["rows"] }) {
   return (
     <div style={{ marginTop: 16 }}>
       {rows.map((row) => (
-        <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, minHeight: 36, borderTop: `1px solid ${t.hairline}`, fontFamily: FIGTREE, fontSize: 13 }}>
+        <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, minHeight: 32, borderTop: `1px solid ${t.hairline}`, fontFamily: FIGTREE, fontSize: 13 }}>
           <span style={{ color: t.text2 }}>{row.label}</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 8, color: t.text, textAlign: "right" }}>
             {row.value}
@@ -653,7 +656,7 @@ export function LibraryPreview({ name, meta, to, rows, status, onStart }: Librar
           <CollectionSkeletons />
         ) : (
           rows.slice(0, 3).map((row, index, shown) => (
-            <div key={row.id} style={{ display: "grid", gridTemplateColumns: "16px 1fr auto", columnGap: 10, alignItems: "center", minHeight: 40, borderBottom: index < shown.length - 1 ? `1px solid ${t.hairline}` : "none", fontFamily: FIGTREE, fontSize: 13 }}>
+            <div key={row.id} style={{ display: "grid", gridTemplateColumns: "16px 1fr auto", columnGap: 10, alignItems: "center", minHeight: 32, borderBottom: index < shown.length - 1 ? `1px solid ${t.hairline}` : "none", fontFamily: FIGTREE, fontSize: 13 }}>
               <span style={{ ...small, fontVariantNumeric: "tabular-nums" }}>{index + 1}</span>
               <span style={{ minWidth: 0, color: t.text, ...ellipsis }}>{row.title}</span>
               <span style={small}>{row.type}</span>

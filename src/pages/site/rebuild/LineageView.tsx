@@ -76,7 +76,8 @@ function OpenLink({ to, title, phone }: { to: string; title: string; phone: bool
       style={{
         display: "inline-flex",
         alignItems: "center",
-        minHeight: phone ? 44 : 36,
+        minHeight: phone ? 44 : 24,
+        padding: "0 4px",
         fontFamily: FIGTREE,
         fontSize: 12,
         color: t.action,

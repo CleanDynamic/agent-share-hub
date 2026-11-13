@@ -8,16 +8,14 @@
 
 import type { CSSProperties, ReactNode } from "react";
 
+import { Button } from "@/components/brand/Button";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { pageColumns } from "@/components/shell/pageGrid";
 import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
-import { PageLink as Link } from "@/lib/routing/PageLink";
 import { ring } from "@/lib/theme/controls";
-import { TOUCH_MIN } from "@/lib/theme/density";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
-import { PRIMARY, controlPaint } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -74,66 +72,23 @@ export function LibraryColumns({ layout, head, left, main, detail, testId = "lib
 
 /* ── controls ── */
 
-const controlBase: CSSProperties = {
-  boxSizing: "border-box",
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 6,
-  borderRadius: r.control,
-  fontFamily: FIGTREE,
-  fontWeight: 400,
-  lineHeight: "normal",
-  whiteSpace: "nowrap",
-  textDecoration: "none",
-  cursor: "pointer",
-};
-
-/** A control at the board's 28 or 32 (44 on a phone, as the Drafts page's controls are). */
-export function LibraryControl({ size = 32, onClick, href, disabled, wide, children, ...rest }: { size?: 28 | 32; onClick?: () => void; href?: string; disabled?: boolean; wide?: boolean; children: ReactNode; "aria-label"?: string }) {
+/** A control 32 high (44 on a phone, as the Drafts page's controls are): the shared Button, a link when it goes somewhere. */
+export function LibraryControl({ onClick, href, disabled, wide, children, ...rest }: { onClick?: () => void; href?: string; disabled?: boolean; wide?: boolean; children: ReactNode; "aria-label"?: string }) {
   const phone = useIsPhone();
-  const { state, handlers } = useInteractive<HTMLElement>({}, { disabled });
-  const style: CSSProperties = {
-    ...controlBase,
-    height: phone ? TOUCH_MIN : size,
-    width: wide ? "100%" : undefined,
-    padding: size === 28 ? "0 10px" : "0 12px",
-    fontSize: size === 28 ? 12 : 12.5,
-    color: t.text,
-    ...controlPaint(state),
-    ...ring(state.focusVisible),
-    cursor: disabled ? "not-allowed" : "pointer",
-  };
-  if (href) {
-    return (
-      <Link to={href} {...rest} {...handlers} style={style}>
-        {children}
-      </Link>
-    );
-  }
   return (
-    <button type="button" disabled={disabled} onClick={onClick} {...rest} {...handlers} style={style}>
+    <Button variant="secondary" size={phone ? 44 : 32} href={href} fullWidth={wide} disabled={disabled} onClick={onClick} {...rest}>
       {children}
-    </button>
+    </Button>
   );
 }
 
-/** The view's one primary: `--action` fill, `--on-action` text 500, radius 6, 32 high (44 on a phone). */
+/** The view's one primary: the shared Button, `--action`, 32 high (44 on a phone); a link when it goes somewhere. */
 export function LibraryPrimary({ onClick, href, children }: { onClick?: () => void; href?: string; children: ReactNode }) {
   const phone = useIsPhone();
-  const { state, handlers } = useInteractive<HTMLElement>();
-  const style: CSSProperties = { ...controlBase, ...PRIMARY, flexGrow: 1, height: phone ? TOUCH_MIN : 32, padding: "0 12px", fontSize: 12.5, fontWeight: 500, ...ring(state.focusVisible) };
-  if (href) {
-    return (
-      <Link to={href} data-visual-slot="btn-primary" {...handlers} style={style}>
-        {children}
-      </Link>
-    );
-  }
   return (
-    <button type="button" data-visual-slot="btn-primary" onClick={onClick} {...handlers} style={style}>
+    <Button variant="primary" size={phone ? 44 : 32} href={href} data-visual-slot="btn-primary" onClick={onClick} style={{ flexGrow: 1 }}>
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -146,7 +101,7 @@ export function LibraryTextButton({ onClick, children, ...rest }: { onClick: () 
       onClick={onClick}
       {...rest}
       {...handlers}
-      style={{ background: "none", border: 0, padding: 0, borderRadius: r.chip, fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: state.hovered ? t.text : t.text2, cursor: "pointer", ...ring(state.focusVisible) }}
+      style={{ display: "inline-flex", alignItems: "center", height: 24, background: "none", border: 0, padding: "0 4px", borderRadius: r.chip, fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: state.hovered ? t.text : t.text2, cursor: "pointer", ...ring(state.focusVisible) }}
     >
       {children}
     </button>
@@ -188,7 +143,7 @@ export function CollectionSkeletons() {
   return (
     <div aria-hidden="true">
       {[0, 1, 2].map((index) => (
-        <div key={index} style={{ display: "flex", alignItems: "center", height: 40, borderBottom: `1px solid ${t.hairline}` }}>
+        <div key={index} style={{ display: "flex", alignItems: "center", height: 48, borderBottom: `1px solid ${t.hairline}` }}>
           <Skeleton width="60%" height={12} radius={4} />
         </div>
       ))}

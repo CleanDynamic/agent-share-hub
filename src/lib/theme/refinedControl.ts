@@ -46,10 +46,11 @@ export function controlPaint(state: { hovered?: boolean; pressed?: boolean }): C
   return { ...CONTROL, ...(state.hovered ? CONTROL_HOVER : null), ...(state.pressed ? PRESSED : null) };
 }
 
-/** Button heights under the refined look: 26 to 36. A phone's 44 and 48 touch targets stay. */
+/** Button heights: 24 (drawn 28, a row's small button) or 32. A phone's 44 and 48 touch targets stay. Drawn 44 and
+    over keeps 36 on desktop: only sign-in and the editor pass it, and neither is part of the control-heights pass. */
 export function refinedButtonHeight(size: number, phone: boolean): number {
   if (phone && size >= 44) return size;
-  if (size <= 30) return 28;
-  if (size <= 34) return 32;
+  if (size <= 28) return 24;
+  if (size < 44) return 32;
   return 36;
 }

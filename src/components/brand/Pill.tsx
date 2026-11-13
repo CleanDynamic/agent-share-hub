@@ -5,6 +5,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
 import type { Category } from "@/lib/theme/category";
+import { r } from "@/lib/theme/radius";
 import { t, tokenVar, type TokenName } from "@/lib/theme/tokens";
 import { DM_MONO } from "@/lib/theme/type";
 
@@ -43,9 +44,9 @@ export function Pill({ children, tone, style }: PillProps) {
         display: "inline-flex",
         alignItems: "center",
         boxSizing: "border-box",
-        height: 18,
-        padding: "0 6px",
-        borderRadius: 4,
+        height: 20,
+        padding: "0 8px",
+        borderRadius: r.chip,
         fontFamily: DM_MONO,
         fontSize: 10.5,
         lineHeight: "normal",

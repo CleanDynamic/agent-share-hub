@@ -105,6 +105,16 @@ Deliberate, and expected in every compare report:
 - **The vacant frame's lamp is always dimmed.** It marks a missing part, not a stale build.
 - **The footer's last link** reads "Sign out" for a signed-in visitor; the reference draws the signed-out state.
 - **Following** on Home is disabled until the feed has a scope — the RPC takes none today.
+- **Control heights (the control-heights pass).** Outside the build editor and the sign-in screens every control is 24, 32 or 48 high, wherever a board draws another height:
+  - buttons are 32 high with 12 either side (13 / 500), or 24 with 8 either side (12) inside a row or a card header; icon buttons are 32 square, or 24 in a row; primary and secondary are the same size;
+  - the header's New build, Sign in, search, Activity and theme buttons are 32;
+  - a segmented track is 32 high with its items 24 high and centred;
+  - underline tabs drawn with `TextTabs` (Home, Library, Space, the OpenBuilds feed) are 32 high;
+  - the draft, Library and Activity rows keep a 48 minimum, with a 13 / 500 title, a 12px sans meta line and 4 between them (Home's draft meta was 10.5 mono);
+  - text link buttons (Reply, Like, View more, Manage) are 24 high with 4 either side; the text keeps its size;
+  - Home's run chips and the build page's reference chips are 20 high with 8 either side and no shadow;
+  - inputs, selects and menu items are 32 high with 12 either side; the switch is 24 by 40;
+  - below 768px every button, field, tab, switch and menu item keeps a 44 high hit area, and an icon-only one 44 wide.
 
 ## A note on the sample content
 

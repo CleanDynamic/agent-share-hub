@@ -6,7 +6,7 @@
 // string, so a check on the node would pass on a control painted in raw colour.
 // Behaviour (keyboard, aria) is asserted on the rendered tree.
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Plus } from "lucide-react";
 import { MemoryRouter } from "react-router-dom";
@@ -282,19 +282,19 @@ const at = (url: string, node: React.ReactElement) => (
 const refined = (node: React.ReactElement) => markup(at(REFINED, node));
 
 describe("refined controls (UI-P84)", () => {
-  it("Button maps its sizes to 28, 32 and 36 and draws no icon behind a label", () => {
-    const h = (size: 28 | 30 | 32 | 34 | 36 | 38 | 42) =>
+  it("Button renders 24 (drawn 28) or 32 (drawn 30 to 42) and draws no icon behind a label", () => {
+    const h = (size: 28 | 30 | 32 | 34 | 36 | 38 | 42 | 44 | 48) =>
       refined(<Button size={size} icon={Plus}>Go</Button>);
-    expect(h(28)).toContain("height:28px");
-    expect(h(30)).toContain("height:28px");
-    expect(h(32)).toContain("height:32px");
-    expect(h(34)).toContain("height:32px");
-    expect(h(36)).toContain("height:36px");
-    expect(h(42)).toContain("height:36px");
+    expect(h(28)).toContain("height:24px");
+    for (const size of [30, 32, 34, 36, 38, 42] as const) expect(h(size), `${size}`).toContain("height:32px");
+    // Drawn 44 and over is sign-in's and the editor's; it keeps its 36 on desktop (outside this prompt).
+    expect(h(44)).toContain("height:36px");
+    expect(h(48)).toContain("height:36px");
     expect(h(36)).not.toContain("<svg");
-    expect(h(28)).toContain("padding:0 12px");
-    expect(h(32)).toContain("padding:0 16px");
-    expect(h(28)).toContain("font-size:12.5px");
+    expect(h(28)).toContain("padding:0 8px");
+    expect(h(32)).toContain("padding:0 12px");
+    expect(h(44)).toContain("padding:0 16px");
+    expect(h(28)).toContain("font-size:12px");
     expect(h(32)).toContain("font-size:13px");
     expect(h(36)).toContain("font-weight:500");
   });
@@ -319,6 +319,9 @@ describe("refined controls (UI-P84)", () => {
     expect(boxed).toContain("background:var(--control)");
     expect(boxed).toContain('viewBox="0 0 16 16"');
     expect(refined(<IconButton icon={Plus} label="New" size={38} />)).toContain("width:30px");
+    // The control-heights pass: 24 inside a row or card header, 32 everywhere else.
+    expect(refined(<IconButton icon={Plus} label="New" size={24} />)).toMatch(/width:24px;height:24px/);
+    expect(refined(<IconButton icon={Plus} label="New" size={32} />)).toMatch(/width:32px;height:32px/);
     const ghost = refined(<IconButton icon={Plus} label="New" boxed={false} />);
     expect(ghost).toContain("background:transparent");
     expect(ghost).not.toContain("--control-shadow");
@@ -337,18 +340,46 @@ describe("refined controls (UI-P84)", () => {
 
   it("Segmented has a 2px track in --seg-track and items size − 6 tall", () => {
     const html = refined(
-      <Segmented label="Feed" size={28} value="a" onChange={() => {}} items={[{ value: "a", label: "A" }, { value: "b", label: "B" }]} />,
+      <Segmented label="Feed" size={30} value="a" onChange={() => {}} items={[{ value: "a", label: "A" }, { value: "b", label: "B" }]} />,
     );
     expect(html).toContain("background:var(--seg-track)");
     expect(html).toContain("var(--seg-border)");
     expect(html).toContain("padding:2px");
-    expect(html).toContain("height:28px");
-    expect(html).toContain("height:22px");
+    expect(html).toContain("height:30px");
+    expect(html).toContain("height:24px");
     expect(html).toContain("padding:0 12px");
     expect(html).toContain("background:var(--control-on)");
   });
 
-  it("UnderlineTabs is 40 high with a 2px --text edge, a hairline row and an optional count", () => {
+  it("Button with href is an anchor drawn exactly as the button", () => {
+    const button = refined(<Button variant="secondary" size={32}>Open</Button>);
+    const link = refined(<Button variant="secondary" size={32} href="/b/1">Open</Button>);
+    const style = (html: string) => /style="([^"]*)"/.exec(html)?.[1];
+    expect(link.startsWith("<a")).toBe(true);
+    expect(link).toContain('href="/b/1"');
+    expect(link).toContain('data-ui="button"');
+    expect(style(link)).toBe(style(button));
+    expect(refined(<Button href="https://example.com/file.md">Download</Button>)).toContain('href="https://example.com/file.md"');
+  });
+
+  it("Button and the pass's Segmented keep a 44 high hit area on a phone (G8a)", () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("max-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
+    render(<Button size={32}>Go</Button>);
+    expect(screen.getByRole("button", { name: "Go" }).style.minHeight).toBe("44px");
+    render(<Segmented label="Phone feed" size={28} value="a" onChange={() => {}} items={[{ value: "a", label: "A" }, { value: "b", label: "B" }]} />);
+    const group = screen.getByRole("group", { name: "Phone feed" });
+    for (const item of within(group).getAllByRole("button")) expect(item.style.minHeight).toBe("44px");
+    vi.unstubAllGlobals();
+  });
+
+  it("Segmented drawn 28 is the control-heights track: 32 high, items 24 high and centred", () => {
+    render(<Segmented label="Feed" size={28} value="a" onChange={() => {}} items={[{ value: "a", label: "A" }, { value: "b", label: "B" }]} />);
+    const track = screen.getByRole("group", { name: "Feed" });
+    expect([track.style.height, track.style.alignItems]).toEqual(["32px", "center"]);
+    for (const item of screen.getAllByRole("button")) expect([item.style.height, item.style.padding]).toEqual(["24px", "0px 12px"]);
+  });
+
+  it("UnderlineTabs is 32 high with a 2px --text edge, a hairline row and an optional count", () => {
     const html = refined(
       <UnderlineTabs
         label="Sections"
@@ -357,7 +388,7 @@ describe("refined controls (UI-P84)", () => {
         tabs={[{ value: "a", label: "Builds", count: 10 }, { value: "b", label: "Models" }]}
       />,
     );
-    expect(html).toContain("height:40px");
+    expect(html).toContain("height:32px");
     expect(html).toContain("border-bottom:2px solid var(--text)");
     expect(html).toContain("border-bottom:2px solid transparent");
     expect(html).toContain("border-bottom:1px solid var(--hairline)");
@@ -377,6 +408,7 @@ describe("refined controls (UI-P84)", () => {
 
   it("CategoryChip is a tag with a 6px square, dashed when it marks a gap", () => {
     const solid = refined(<CategoryChip category="data" label="data" />);
+    expect(solid).toContain("padding:0 8px");
     expect(solid).toContain("background:var(--tag-fill)");
     expect(solid).toContain("height:20px");
     expect(solid).toContain("width:6px");
@@ -404,9 +436,10 @@ describe("refined controls (UI-P84)", () => {
 });
 
 describe("Pill, MenuButton, SearchField and Checkbox (UI-P84)", () => {
-  it("Pill is 18 high in mono 10.5 and takes its tone's fill and ink", () => {
+  it("Pill is 20 high with 8 either side, in mono 10.5, and takes its tone's fill and ink", () => {
     const plain = markup(<Pill>x</Pill>);
-    expect(plain).toContain("height:18px");
+    expect(plain).toContain("height:20px");
+    expect(plain).toContain("padding:0 8px");
     expect(plain).toContain("font-size:10.5px");
     expect(plain).toContain("background:var(--pill)");
     expect(plain).toContain("color:var(--on-pill)");

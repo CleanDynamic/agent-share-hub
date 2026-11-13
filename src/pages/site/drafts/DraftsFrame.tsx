@@ -10,6 +10,7 @@ import { useState, type CSSProperties, type DragEvent, type ReactNode } from "re
 
 import { DashedSlot } from "@/components/vision/DashedSlot";
 import { SectionHead } from "@/components/vision/SectionHead";
+import { Button } from "@/components/brand/Button";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { useConnectorDialog } from "@/components/connect/ConnectorDialog";
 import { PageHeader } from "@/components/shell/PageHeader";
@@ -17,10 +18,8 @@ import { pageColumns } from "@/components/shell/pageGrid";
 import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
 import { PageLink as Link } from "@/lib/routing/PageLink";
 import { ring } from "@/lib/theme/controls";
-import { TOUCH_MIN } from "@/lib/theme/density";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
-import { controlPaint } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -51,42 +50,19 @@ const underlined: CSSProperties = {
 export function TextButton({ onClick, style, children, disabled }: { onClick: () => void; style?: CSSProperties; children: ReactNode; disabled?: boolean }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
-    <button type="button" data-hit="" disabled={disabled} onClick={onClick} {...handlers} style={{ ...underlined, borderRadius: 6, ...ring(state.focusVisible), ...style }}>
+    <button type="button" data-hit="" disabled={disabled} onClick={onClick} {...handlers} style={{ ...underlined, display: "inline-flex", alignItems: "center", height: 24, padding: "0 4px", borderRadius: 6, ...ring(state.focusVisible), ...style }}>
       {children}
     </button>
   );
 }
 
-/** A control: `--control` fill, 1px `--control-border`, radius 6, 32 high (44 on a phone), 12.5/500. */
+/** A control: the shared Button, secondary, 32 high (44 on a phone). */
 export function ControlButton({ onClick, disabled, children }: { onClick: () => void; disabled?: boolean; children: ReactNode }) {
   const phone = useIsPhone();
-  const { state, handlers } = useInteractive<HTMLButtonElement>({}, { disabled });
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      {...handlers}
-      style={{
-        boxSizing: "border-box",
-        height: phone ? TOUCH_MIN : 32,
-        padding: "0 12px",
-        display: "inline-flex",
-        alignItems: "center",
-        flexShrink: 0,
-        borderRadius: r.control,
-        fontFamily: FIGTREE,
-        fontSize: 12.5,
-        fontWeight: 500,
-        lineHeight: "normal",
-        color: t.text,
-        cursor: disabled ? "not-allowed" : "pointer",
-        ...controlPaint(state),
-        ...ring(state.focusVisible),
-      }}
-    >
+    <Button variant="secondary" size={phone ? 44 : 32} disabled={disabled} onClick={onClick}>
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -146,7 +122,7 @@ export function StartRow({ phone, onDropSession }: { phone: boolean; onDropSessi
         alignItems: "center",
         justifyContent: "space-between",
         gap: 12,
-        minHeight: 52,
+        minHeight: 48,
         marginTop: 16,
         padding: "0 16px",
         borderColor: over ? t.evidence : t.label,

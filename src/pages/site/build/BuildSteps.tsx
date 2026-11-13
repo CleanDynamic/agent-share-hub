@@ -68,9 +68,11 @@ import type { Step } from "@/lib/build/graph";
 import { sessionHeadline, shortDate } from "@/lib/build/readerSteps";
 import type { NeedGroup, NeedRow, ReaderFile, ReaderResult, ReaderStep } from "@/lib/build/readerSteps";
 import { markFor } from "@/lib/models/marks";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { controlPaint, CONTROL } from "@/lib/theme/refinedControl";
+import { r } from "@/lib/theme/radius";
+import { CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
@@ -319,15 +321,15 @@ const tileStyle: CSSProperties = {
   minWidth: 0,
 };
 
-/** A reference: 22 high, the tile's fill, radius 4, 11.5. */
+/** A reference: 20 high, the tile's fill, radius 4, 11.5. */
 const chipStyle: CSSProperties = {
   ...tileStyle,
   display: "inline-flex",
   alignItems: "center",
   gap: 6,
-  height: 22,
+  height: 20,
   padding: "0 8px",
-  borderRadius: 4,
+  borderRadius: r.chip,
   ...text(11.5, 400, t.text),
   whiteSpace: "nowrap",
   maxWidth: "100%",
@@ -339,34 +341,13 @@ function Chip({ children }: { children: ReactNode }) {
   return <span style={chipStyle}>{children}</span>;
 }
 
-/** A secondary 26 that is a link: Download. */
+/** A secondary 24 that is a link: Download, in the step card's head. The shared Button, as an anchor. */
 function DownloadButton({ href, name, label = "Download" }: { href: string; name: string; label?: string }) {
-  const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  const phone = useIsPhone();
   return (
-    <a
-      href={href}
-      download={name}
-      data-hit=""
-      aria-label={`${label} ${name}`}
-      {...handlers}
-      style={{
-        ...controlPaint(state),
-        height: 28,
-        boxSizing: "border-box",
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "0 12px",
-        borderRadius: 6,
-        ...text(12.5, 500, t.text),
-        whiteSpace: "nowrap",
-        textDecoration: "none",
-        flexShrink: 0,
-        ...ring(state.focusVisible),
-      }}
-    >
+    <Button variant="secondary" size={phone ? 44 : 28} href={href} data-hit="" aria-label={`${label} ${name}`} {...{ download: name }}>
       {label}
-    </a>
+    </Button>
   );
 }
 
@@ -717,7 +698,7 @@ function ReaderSessionHead({ chat, fold }: { chat: SessionChat; fold: Fold }) {
       </div>
       {chat.key ? <MemberLabel to={refTo({ kind: "session", id: chat.key })} /> : null}
       {chat.key ? <SaveMark kind="session" id={chat.key} /> : null}
-      <IconButton icon={ChevronRight} glyph={fold.folded ? "chev" : "chevd"} size={28} data-hit="" label={`${fold.folded ? "Expand" : "Collapse"} ${name}`} aria-expanded={!fold.folded} aria-controls={fold.controls} onClick={fold.toggle} />
+      <IconButton icon={ChevronRight} glyph={fold.folded ? "chev" : "chevd"} size={24} data-hit="" label={`${fold.folded ? "Expand" : "Collapse"} ${name}`} aria-expanded={!fold.folded} aria-controls={fold.controls} onClick={fold.toggle} />
     </div>
   );
 }

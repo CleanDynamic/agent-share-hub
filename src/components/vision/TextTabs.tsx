@@ -8,7 +8,8 @@
 
 import { useRef, type KeyboardEvent, type ReactNode } from "react";
 
-import { ring } from "@/lib/theme/controls";
+import { useIsPhone } from "@/components/shell/useMinWidth";
+import { ring, touchArea } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -29,8 +30,8 @@ export interface TextTabsProps<V extends string = string> {
   onChange: (value: V) => void;
   /** The tablist's accessible name. */
   label: string;
-  /** SV-10: Home's board draws its tabs 40 high and 24 apart. */
-  height?: 36 | 40;
+  /** 32 is the control-heights pass's tab (Home, Library, Space, the OpenBuilds feed); the default 36 waits on the Builds spec. */
+  height?: 32 | 36;
   gap?: 20 | 24;
   /** The hairline under the tabs. Off where the row around them draws it (Home). */
   rule?: boolean;
@@ -50,6 +51,8 @@ function Tab({
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
 }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
+  /* The control-heights pass: on a phone a 32 high tab keeps a 44 high hit area (the Builds table's 36 waits on its spec). */
+  const touch = useIsPhone() && height === 32;
   return (
     <button
       type="button"
@@ -64,6 +67,7 @@ function Tab({
       style={{
         boxSizing: "border-box",
         height,
+        ...touchArea(touch),
         margin: "0 0 -1px",
         padding: 0,
         background: "none",

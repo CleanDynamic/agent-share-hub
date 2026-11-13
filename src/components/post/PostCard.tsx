@@ -63,7 +63,7 @@ const plain: CSSProperties = { fontFamily: FIGTREE, margin: 0 };
 function HeadingLink({ to, children }: { to: string; children: string }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   return (
-    <Link to={to} data-testid="post-card-heading-link" {...handlers} style={{ color: t.text, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: 4, ...ring(state.focusVisible) }}>
+    <Link to={to} data-testid="post-card-heading-link" {...handlers} style={{ display: "inline-block", lineHeight: "24px", color: t.text, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: 4, ...ring(state.focusVisible) }}>
       <h3 style={{ ...plain, display: "inline", fontSize: 13, fontWeight: 500, lineHeight: 1.4 }}>{children}</h3>
     </Link>
   );

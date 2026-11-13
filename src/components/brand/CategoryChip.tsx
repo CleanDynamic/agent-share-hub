@@ -64,14 +64,14 @@ export interface CategoryChipOverflowProps extends CommonProps {
 
 export type CategoryChipProps = CategoryChipCategoryProps | CategoryChipOverflowProps;
 
-/** UI-P84: the tag recipe. `--tag-fill`, radius 4, 20 high, `0 6px`, Geist 11.5 in `--on-tag`. */
+/** UI-P84: the tag recipe. `--tag-fill`, radius 4, 20 high, `0 8px`, Geist 11.5 in `--on-tag`. */
 const TAG: CSSProperties = {
   boxSizing: "border-box",
   display: "inline-flex",
   alignItems: "center",
   gap: 6,
   height: 20,
-  padding: "0 6px",
+  padding: "0 8px",
   borderRadius: r.chip,
   background: t.tagFill,
   color: t.onTag,

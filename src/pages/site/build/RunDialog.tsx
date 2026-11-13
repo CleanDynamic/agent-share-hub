@@ -20,6 +20,7 @@ import { X } from "lucide-react";
 
 import { Button } from "@/components/brand/Button";
 import { IconButton } from "@/components/brand/IconButton";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { fieldStyle } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
@@ -58,12 +59,14 @@ const input: CSSProperties = {
   /* 16px: anything smaller makes mobile Safari zoom the page on focus. */
   fontSize: 15,
   width: "100%",
-  padding: "7px 9px",
+  height: 32,
+  padding: "0 12px",
   color: t.text,
   boxSizing: "border-box",
 };
 
 export function RunDialog({ open, onOpenChange, creator, suggestions, initialModel = "", onSubmit }: RunDialogProps) {
+  const phone = useIsPhone();
   const [model, setModel] = useState(initialModel);
   const [note, setNote] = useState("");
   const ids = useId().replace(/[^a-zA-Z0-9_-]/g, "");
@@ -118,7 +121,7 @@ export function RunDialog({ open, onOpenChange, creator, suggestions, initialMod
                 {creator ? "You ran your own build" : "You ran this build"}
               </Dialog.Title>
               <Dialog.Close asChild>
-                <IconButton icon={X} label="Close" size={38} />
+                <IconButton icon={X} label="Close" size={32} />
               </Dialog.Close>
             </div>
             <Dialog.Description style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: t.text2 }}>
@@ -172,11 +175,11 @@ export function RunDialog({ open, onOpenChange, creator, suggestions, initialMod
               {creator ? (
                 <span />
               ) : (
-                <Button variant="ghost" size={44} fontSize={13} onClick={() => submit(false)}>
+                <Button variant="ghost" size={phone ? 44 : 32} fontSize={13} onClick={() => submit(false)}>
                   It did not work
                 </Button>
               )}
-              <Button type="submit" variant="primary" size={44} fontSize={14}>
+              <Button type="submit" variant="primary" size={phone ? 44 : 32} fontSize={14}>
                 {creator ? "It still works" : "It worked"}
               </Button>
             </div>

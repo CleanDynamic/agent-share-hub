@@ -153,11 +153,12 @@ function DraftRow({
           ...ring(state.focusVisible),
         }}
       >
-        <span style={{ minWidth: 0 }}>
+        <span style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
           <span
             data-testid="draft-title"
             style={{
               display: "block",
+              fontSize: 13,
               fontWeight: 500,
               color: untitled ? t.text2 : t.text,
               whiteSpace: "nowrap",
@@ -201,8 +202,8 @@ const menuContent: CSSProperties = {
 const menuItem: CSSProperties = {
   display: "flex",
   alignItems: "center",
-  minHeight: 31,
-  padding: "0 9px",
+  minHeight: 32,
+  padding: "0 12px",
   borderRadius: 10,
   fontFamily: FIGTREE,
   fontSize: 13,
@@ -258,7 +259,7 @@ function AddMenu({
     return (
       <>
         <span style={hitArea(true)}>
-          <IconButton icon={Plus} label={ADD_NAME} size={28} onClick={() => setSheet(true)} />
+          <IconButton icon={Plus} label={ADD_NAME} size={24} onClick={() => setSheet(true)} />
         </span>
         <BottomSheet open={sheet} onOpenChange={setSheet} title="Add to a build">
           {items.map((item) => {
@@ -289,7 +290,7 @@ function AddMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <IconButton icon={Plus} label={ADD_NAME} size={28} />
+        <IconButton icon={Plus} label={ADD_NAME} size={24} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={6} style={menuContent}>
         {items.map((item) => {

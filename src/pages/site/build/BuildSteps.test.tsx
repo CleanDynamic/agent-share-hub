@@ -105,6 +105,10 @@ describe("StepsList", () => {
     expect(screen.getByText("Put CLAUDE.md in your project")).toBeTruthy();
     expect(screen.queryByText("attach")).toBeNull();
     expect(screen.getAllByRole("link", { name: "Download CLAUDE.md" }).length).toBeGreaterThan(0);
+    for (const link of screen.getAllByRole("link", { name: "Download CLAUDE.md" })) {
+      expect(link.getAttribute("data-ui")).toBe("button");
+      expect(link.hasAttribute("download")).toBe(true);
+    }
   });
 
   it("any other file is still attached, and a workflow reads as one to import", () => {

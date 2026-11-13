@@ -83,7 +83,7 @@ export function ChangeList({ groups, phone = false }: { groups: readonly ChangeG
                   gridTemplateColumns: phone ? "16px 118px minmax(0, 1fr)" : "18px 130px minmax(0, 1fr)",
                   gap: 6,
                   alignItems: "center",
-                  ...(phone ? { minHeight: 30 } : { height: 25 }),
+                  ...(phone ? { minHeight: 32 } : { height: 32 }),
                   borderBottom: `1px solid ${t.hairline}`,
                   fontFamily: DM_MONO,
                   fontSize: 12,

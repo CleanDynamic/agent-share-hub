@@ -107,7 +107,7 @@ export function HeaderSearch({
 
   const sheet = variant === "sheet";
 
-  /* UI-P87, refined: the bar's field is the refined `SearchField`, 240×30 with the "/" key, on the well recipe. The
+  /* UI-P87, refined: the bar's field is the refined `SearchField`, 240×32 with the "/" key, on the well recipe. The
      form, its name, the shortcut and the submit are the same. The sheet's 44px field stays: it is a touch target. */
   if (!sheet) {
     return (
@@ -117,6 +117,7 @@ export function HeaderSearch({
           label="Search builds"
           hint="/"
           width={width ?? 240}
+          style={{ height: 32 }}
           placeholder={width !== undefined && width < 240 ? "Search builds" : "Search builds, makers, tools"}
           className={INPUT_CLASS}
           maxLength={SEARCH_MAX}
@@ -142,7 +143,7 @@ export function HeaderSearch({
           alignItems: "center",
           gap: 6,
           width: sheet ? "100%" : (width ?? "100%"),
-          height: sheet ? 44 : 31,
+          height: sheet ? 44 : 32,
           boxSizing: "border-box",
           padding: "0 9px",
           borderRadius: r.control,

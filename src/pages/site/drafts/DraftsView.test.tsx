@@ -66,7 +66,7 @@ describe("DraftsView", () => {
     expect(titles[0].textContent).toBe("Photo renamer by date taken");
     expect(titles[1].textContent).toBe("Untitled build");
     const markup = html();
-    expect(markup).toContain('data-testid="draft-title" style="display:block;font-weight:500');
+    expect(markup).toContain('data-testid="draft-title" style="display:block;font-size:13px;font-weight:500');
     expect(markup).toMatch(/font-weight:500;color:var\(--text\);white-space:nowrap[^>]*>Photo renamer by date taken/);
     expect(markup).toMatch(/font-weight:500;color:var\(--text2\);white-space:nowrap[^>]*>Untitled build/);
   });
@@ -162,6 +162,8 @@ describe("DraftsView", () => {
     expect(open.getAttribute("href")).toBe("/compose/d1");
     expect(screen.queryByRole("menuitem", { name: "Add to Photo renamer by date taken" })).toBeNull();
     expect(screen.getByRole("menuitem", { name: "Add to Untitled build" })).toBeInTheDocument();
+    // The control-heights pass: a menu item is 32 high with 12 either side.
+    for (const item of screen.getAllByRole("menuitem")) expect([item.style.minHeight, item.style.padding], item.textContent ?? "").toEqual(["32px", "0px 12px"]);
   });
 
   it("CA-12: asks for the next page of sessions", () => {
@@ -171,11 +173,20 @@ describe("DraftsView", () => {
     expect(onMore).toHaveBeenCalled();
   });
 
+  it("draws Show more sessions and Connect a tool with the shared Button at 32 / 12 (the control-heights pass)", () => {
+    view({ moreSessions: { loading: false, onMore: vi.fn() } });
+    for (const button of [screen.getByRole("button", { name: "Show more sessions" }), screen.getAllByRole("button", { name: "Connect a tool" })[0]]) {
+      expect(button.getAttribute("data-ui"), button.textContent ?? "").toBe("button");
+      expect([button.style.height, button.style.padding], button.textContent ?? "").toEqual(["32px", "0px 12px"]);
+    }
+  });
+
   it("empty: one line and one action each, and 'Nothing in progress.'", () => {
     const p = view({ drafts: [], sessions: [] });
     expect(screen.getByText("No new sessions.")).toBeInTheDocument();
     expect(screen.getByText("Nothing in progress.")).toBeInTheDocument();
     expect(screen.getByTestId("start-row")).toBeInTheDocument();
+    expect(screen.getByTestId("start-row").style.minHeight).toBe("48px");
     const buttons = screen.getAllByRole("button", { name: "Connect a tool" });
     fireEvent.click(buttons[buttons.length - 1]);
     expect(p.onConnect).toHaveBeenCalled();

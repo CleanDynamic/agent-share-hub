@@ -27,7 +27,7 @@ export const AccountButton = forwardRef<HTMLButtonElement, AccountButtonProps>(f
       aria-label="Account"
       {...rest}
       {...handlers}
-      style={{ padding: 0, border: 0, background: "transparent", borderRadius: "50%", cursor: "pointer", display: "flex", ...ring(state.focusVisible) }}
+      style={{ boxSizing: "border-box", width: 32, height: 32, padding: 0, border: 0, background: "transparent", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, ...ring(state.focusVisible) }}
     >
       <Avatar size={avatarSize} userId={viewer.id} name={viewer.name} hue={viewer.hue} src={viewer.avatarUrl} />
     </button>

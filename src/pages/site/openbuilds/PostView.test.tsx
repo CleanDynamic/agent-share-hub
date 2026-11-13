@@ -138,6 +138,17 @@ describe("the post page's anatomy", () => {
     expect(within(nested).getByRole("link", { name: "View 3 more replies" })).toHaveAttribute("href", "/?reply=ola");
   });
 
+  it("draws Reply, Like and View more as text buttons 24 high with 4 side padding (the control-heights pass)", () => {
+    draw();
+    const first = screen.getAllByTestId("reply")[0];
+    const controls = [
+      within(first).getByRole("button", { name: "Reply" }),
+      within(first).getByRole("button", { name: "Like" }),
+      screen.getByRole("link", { name: "View 3 more replies" }),
+    ];
+    for (const control of controls) expect([control.style.height, control.style.padding], control.textContent ?? "").toEqual(["24px", "0px 4px"]);
+  });
+
   it("marks a reply about a step, and shows a like count only above zero", () => {
     draw();
     const kit = screen.getAllByTestId("reply")[1];

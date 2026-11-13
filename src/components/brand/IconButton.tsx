@@ -19,7 +19,7 @@ import { Icon as AnyIcon } from "./Icon";
 import type { GlyphName } from "./Glyph";
 
 /** 22 (CA-06's colour button), 26, 28 and 30 are the refined look's; 34 and 38 are the current look's and draw as 30. */
-export type IconButtonSize = 22 | 26 | 28 | 30 | 34 | 38;
+export type IconButtonSize = 22 | 24 | 26 | 28 | 30 | 32 | 34 | 38;
 
 export interface IconButtonProps
   extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children" | "aria-label"> {
@@ -59,7 +59,7 @@ export function IconButton({
     { disabled },
   );
 
-  const side = size > 30 ? 30 : size;
+  const side = size > 32 ? 30 : size;
   return (
     <button
       data-ui="icon-button"

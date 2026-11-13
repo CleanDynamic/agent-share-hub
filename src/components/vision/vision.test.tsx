@@ -86,14 +86,14 @@ describe("PlainRow", () => {
 });
 
 describe("TypeChip", () => {
-  it("is Geist Mono 10.5 over 18, 0 6px, radius 4, --control fill, --text2 text", () => {
+  it("is Geist Mono 10.5 over 20, 0 8px, radius 4, --control fill, --text2 text", () => {
     const html = markup(<TypeChip>Step</TypeChip>);
-    expect(html).toContain("padding:0 6px");
+    expect(html).toContain("padding:0 8px");
     expect(html).toContain("border-radius:var(--r-chip)");
     expect(html).toContain("background:var(--control)");
     expect(html).toContain("color:var(--text2)");
     expect(html).toContain("font-size:10.5px");
-    expect(html).toContain("line-height:18px");
+    expect(html).toContain("line-height:20px");
     expect(html).toContain("text-transform:uppercase");
   });
 });
@@ -116,6 +116,13 @@ describe("ActiveFilterChip", () => {
 });
 
 describe("TextTabs", () => {
+  it("keeps a 44 high hit area on a phone (the control-heights pass)", () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("max-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
+    render(<TextTabs tabs={[{ value: "a", label: "A" }, { value: "b", label: "B" }]} value="a" onChange={() => {}} label="Phone tabs" height={32} />);
+    for (const tab of screen.getAllByRole("tab")) expect(tab.style.minHeight).toBe("44px");
+    vi.unstubAllGlobals();
+  });
+
   const tabs = [
     { value: "a", label: "Table" },
     { value: "b", label: "Maps", count: 4 },

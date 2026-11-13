@@ -73,7 +73,7 @@ function Tab({
 }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
 
-  /* UI-P84: Geist 13/500, 40 high, the current tab `--text` over a 2px `--text` edge that sits on the row's hairline;
+  /* UI-P84: Geist 13/500, 32 high (the control-heights pass), the current tab `--text` over a 2px `--text` edge that sits on the row's hairline;
      the others `--text2` over a transparent 2px edge. */
   return (
     <button
@@ -91,7 +91,7 @@ function Tab({
       {...handlers}
       style={{
         boxSizing: "border-box",
-        height: 40,
+        height: 32,
         margin: "0 0 -1px",
         padding: 0,
         background: "none",

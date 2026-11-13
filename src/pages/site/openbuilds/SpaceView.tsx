@@ -66,7 +66,7 @@ export function SpaceView(view: SpaceViewProps) {
     <div style={phone ? undefined : pageColumns("feed")}>
     <div style={phone ? { maxWidth: 700, margin: "0 auto", paddingBottom: 48 } : { gridColumn: 2, minWidth: 0, paddingBottom: 48 }}>
       <div style={{ borderBottom: `1px solid ${t.hairline}`, padding: "0 4px" }}>
-        <TextTabs tabs={TABS} value={view.tab} onChange={view.onTab} label="Space" rule={false} />
+        <TextTabs tabs={TABS} value={view.tab} onChange={view.onTab} label="Space" height={32} rule={false} />
       </div>
       {view.tab === "rules" ? (
         <div role="tabpanel" aria-label="Rules" style={{ padding: "20px 4px", fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", whiteSpace: "pre-wrap", overflowWrap: "anywhere", color: view.rules ? t.text : t.text2 }}>

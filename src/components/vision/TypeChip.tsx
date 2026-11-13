@@ -1,6 +1,6 @@
 /* SV-02: the grey mono type chip (`STEP`, `PROMPT`): the only chip that sits in a row (series README, Visual grammar 6).
 
-   Geist Mono 10.5, line-height 18, padding `0 6px`, radius 4, `--control` fill, `--text2` text, upper case. A tone
+   Geist Mono 10.5, line-height 20, padding `0 8px`, radius 4, `--control` fill, `--text2` text, upper case. A tone
    changes the text colour only (SV-09: `text`, the Library's ANSWER chip). Plain text, so a screen reader reads the word as it is written. */
 
 import type { ReactNode } from "react";
@@ -20,11 +20,11 @@ export function TypeChip({ children, tone }: { children: ReactNode; tone?: ChipT
       style={{
         display: "inline-block",
         boxSizing: "border-box",
-        padding: "0 6px",
+        padding: "0 8px",
         borderRadius: r.chip,
         background: t.control,
         color: tone ? TONE[tone] : t.text2,
-        fontFamily: DM_MONO, fontSize: 10.5, fontWeight: 400, lineHeight: "18px", textTransform: "uppercase",
+        fontFamily: DM_MONO, fontSize: 10.5, fontWeight: 400, lineHeight: "20px", textTransform: "uppercase",
         whiteSpace: "nowrap",
       }}
     >

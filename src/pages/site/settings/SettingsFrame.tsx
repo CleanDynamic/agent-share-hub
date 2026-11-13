@@ -74,7 +74,7 @@ export function SettingsFrame({ section, children }: SettingsFrameProps) {
                 <PageLink
                   to={settingsPath(s.key)}
                   aria-current={isCurrent ? "page" : undefined}
-                  style={{ ...link, minHeight: 36, lineHeight: "36px", fontSize: 13, fontWeight: isCurrent ? 500 : 400, color: isCurrent ? t.text : t.text2 }}
+                  style={{ ...link, minHeight: 32, lineHeight: "32px", fontSize: 13, fontWeight: isCurrent ? 500 : 400, color: isCurrent ? t.text : t.text2 }}
                 >
                   <span style={isCurrent ? { textDecoration: "underline", textUnderlineOffset: 6, textDecorationThickness: 1 } : undefined}>{s.label}</span>
                 </PageLink>

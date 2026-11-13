@@ -7,18 +7,15 @@
 // does not count, which is a rule for the page rather than something a button
 // can enforce, so it is stated here and not checked.
 //
-// SIZE AND TYPE ARE TWO NUMBERS BECAUSE THE REFERENCE STATES BOTH. A button is
-// `size` px tall at `fontSize` px, and the design uses eleven pairs of them —
-// 28/11, 30/12, 32/12, 34/12, 36/13, 38/13, 42/14, 44/13, 46/15, 48/14, 48/15 —
-// so neither is derived from the other. The default is 36/13. Padding is 0 14px
-// at every size, the radius is the control step (12), the gap is 7, and the icon
-// is 15px at stroke 1.8.
-//
-// THOSE ARE THE DRAWN NUMBERS, AND THE BUTTON RENDERS THEM DENSER (UI-P54). The
-// density pass maps every one through the table (`design/prompts/README-density.md`):
-// 36/13 renders 30/12, the padding is 0 10px and the gap 5. Callers keep passing
-// the drawn size. On a phone a button drawn 44px or taller stays 44, the touch
-// target; the icon keeps its 15px, as the kit's icons did.
+// SIZE IS THE DRAWN NUMBER; THE BUTTON RENDERS ONE OF TWO HEIGHTS (the control-
+// heights pass). Callers pass the height the reference drew and
+// `refinedButtonHeight` maps it: drawn 28 or less renders 24 (0 8px, 12px), the
+// small button, for a row or a card header only; drawn 30 to 42 renders 32
+// (0 12px, 13px). Drawn 44 and over renders 36 (0 16px) on desktop, which only
+// sign-in and the editor pass, and keeps its 44 or 48 on a phone. On a phone every
+// button keeps a 44 high hit area (`touchArea`). `fontSize` is accepted and not
+// read: the label is 13/500, 12 on a 24. The radius is `r.control`, the gap 8,
+// and a labelled button draws no icon.
 //
 // This is the new button. The shadcn `ui/button.tsx` and every call site of it
 // are untouched: they move when their page is rebuilt.
@@ -27,8 +24,9 @@ import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 
 import { useIsPhone } from "@/components/shell/useMinWidth";
+import { PageLink } from "@/lib/routing/PageLink";
 import { useInteractive } from "@/lib/theme/interactive";
-import { ring } from "@/lib/theme/controls";
+import { ring, touchArea } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { controlPaint, PRIMARY, refinedButtonHeight } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
@@ -48,6 +46,8 @@ export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement
   icon?: LucideIcon;
   /** `display: flex; width: 100%` — the mobile 48px buttons. */
   fullWidth?: boolean;
+  /** Draw the button as a link to this address, with identical styles: a router link for a path on the site, an anchor otherwise. */
+  href?: string;
   children: ReactNode;
 }
 
@@ -57,6 +57,7 @@ export function Button({
   fontSize = 13,
   icon: Icon,
   fullWidth = false,
+  href,
   type = "button",
   disabled,
   style,
@@ -75,10 +76,11 @@ export function Button({
     { disabled },
   );
   const phone = useIsPhone();
-  /* UI-P84: radius 6, heights 28/32/36 (a phone's 44 and 48 stay), padding 0 12px up to 28 and 0 16px above, 12.5/13
-     at 500. Primary, secondary (the control recipe) and ghost are the board's. A labelled button draws no icon. */
+  /* Radius 6, heights 24 and 32 (a phone's 44 and 48 stay), padding 0 8px at 24 and 0 12px at 32 (16 at 36 and over,
+     which only sign-in and the editor reach), 12/13 at 500. Primary, secondary (the control recipe) and ghost are the
+     board's. A labelled button draws no icon. */
   const height = refinedButtonHeight(size, phone);
-  const small = height <= 28;
+  const small = height <= 24;
   const paint: CSSProperties =
     variant === "primary"
       ? { ...PRIMARY, ...(state.hovered ? { filter: "brightness(1.08)" } : null) }
@@ -89,37 +91,46 @@ export function Button({
             border: "1px solid transparent",
             color: state.hovered ? t.text : t.text2,
           };
+  const look: CSSProperties = {
+    boxSizing: "border-box",
+    height,
+    padding: small ? "0 8px" : height < 36 ? "0 12px" : "0 16px",
+    borderRadius: r.control,
+    color: variant === "secondary" ? t.text : undefined,
+    ...paint,
+    fontFamily: FIGTREE,
+    fontSize: small ? 12 : 13,
+    fontWeight: 500,
+    display: fullWidth ? "flex" : "inline-flex",
+    width: fullWidth ? "100%" : undefined,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    cursor: disabled ? "not-allowed" : "pointer",
+    opacity: disabled ? 0.5 : undefined,
+    whiteSpace: "nowrap",
+    flexShrink: 0,
+    textDecoration: "none",
+    ...touchArea(phone),
+    ...ring(state.focusVisible),
+    ...style,
+  };
+  if (href !== undefined) {
+    /* The same element in every respect but its tag: the button's attributes and handlers ride on the anchor. */
+    const anchor = { "data-ui": "button", "data-variant": variant, ...(rest as object), ...(handlers as object), style: look };
+    /* A download is never routed: the router would take the click. */
+    return href.startsWith("/") && !("download" in rest) ? (
+      <PageLink to={href} {...anchor}>
+        {children}
+      </PageLink>
+    ) : (
+      <a href={href} {...anchor}>
+        {children}
+      </a>
+    );
+  }
   return (
-    <button
-      data-ui="button"
-      data-variant={variant}
-      type={type}
-      disabled={disabled}
-      {...rest}
-      {...handlers}
-      style={{
-        boxSizing: "border-box",
-        height,
-        padding: small ? "0 12px" : "0 16px",
-        borderRadius: r.control,
-        color: variant === "secondary" ? t.text : undefined,
-        ...paint,
-        fontFamily: FIGTREE,
-        fontSize: small ? 12.5 : 13,
-        fontWeight: 500,
-        display: fullWidth ? "flex" : "inline-flex",
-        width: fullWidth ? "100%" : undefined,
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.5 : undefined,
-        whiteSpace: "nowrap",
-        flexShrink: 0,
-        ...ring(state.focusVisible),
-        ...style,
-      }}
-    >
+    <button data-ui="button" data-variant={variant} type={type} disabled={disabled} {...rest} {...handlers} style={look}>
       {children}
     </button>
   );

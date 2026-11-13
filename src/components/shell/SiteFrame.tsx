@@ -105,7 +105,7 @@ const SKIP_BASE: CSSProperties = {
   boxSizing: "border-box",
   display: "inline-flex",
   alignItems: "center",
-  padding: "0 10px",
+  padding: "0 12px",
   borderRadius: 12,
   background: t.solid,
   color: t.text,
@@ -144,7 +144,7 @@ function SkipLink({ phone }: { phone: boolean }) {
     <a
       href="#main"
       data-testid="skip-link"
-      style={{ ...SKIP_BASE, minHeight: phone ? 44 : 36, transform: "translateY(-200%)" }}
+      style={{ ...SKIP_BASE, minHeight: phone ? 44 : 32, transform: "translateY(-200%)" }}
       onFocus={(event) => {
         event.currentTarget.style.transform = "none";
       }}

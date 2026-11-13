@@ -40,8 +40,8 @@ export function AccountMenu({ viewer, onSignOut, avatarSize = 34, defaultOpen = 
   const item: CSSProperties = {
     display: "flex",
     alignItems: "center",
-    height: 30,
-    padding: "0 9px",
+    height: 32,
+    padding: "0 12px",
     borderRadius: 10,
     fontFamily: FIGTREE,
     fontSize: 12,

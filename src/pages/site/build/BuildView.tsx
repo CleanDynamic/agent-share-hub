@@ -46,7 +46,7 @@ import {
 } from "@/components/shell/useMinWidth";
 import { EngagementRow } from "@/components/social/EngagementRow";
 import { asideStyle, mainStyle } from "@/lib/theme/refinedLayout";
-import { ring } from "@/lib/theme/controls";
+import { ring, touchArea } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { scrollBehavior } from "@/lib/theme/motion";
 import { CONTROL, controlPaint } from "@/lib/theme/refinedControl";
@@ -222,8 +222,8 @@ export function PartRow({
            to it rather than eating into it. The row stretches across the list as
            a flex item, so no width is needed. */
         boxSizing: "content-box",
-        /* A part is a control: 46 drawn on a phone, held at the 44px touch floor; 40 → 33 above it. */
-        ...(phone ? { minHeight: 44 } : { height: 33 }),
+        /* A part is a control: 46 drawn on a phone, held at the 44px touch floor; a one-line row's 32 above it. */
+        ...(phone ? { minHeight: 44 } : { height: 32 }),
         padding: "0 8px",
         borderRadius: r.control,
         /* Longhands: a shorthand holding a var() is one declaration some engines drop whole. */
@@ -311,7 +311,7 @@ export function AnatomyDialog({
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 8 }}>
             <Dialog.Title style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, color: t.text }}>{title}</Dialog.Title>
             <Dialog.Close asChild>
-              <IconButton icon={X} label="Close" size={34} />
+              <IconButton icon={X} label="Close" size={32} />
             </Dialog.Close>
           </div>
           {children}
@@ -340,7 +340,7 @@ export function AnatomyPanel({ anatomy, phone, onSelect }: { anatomy: BuildAnato
           subtitle={parts.length > 0 ? anatomySubtitle(parts.length, gaps) : undefined}
           right={
             phone ? undefined : (
-              <IconButton icon={Maximize2} label="Show the full anatomy" size={34} onClick={() => setOpen(true)} disabled={parts.length === 0} />
+              <IconButton icon={Maximize2} label="Show the full anatomy" size={32} onClick={() => setOpen(true)} disabled={parts.length === 0} />
             )
           }
         />
@@ -436,7 +436,7 @@ export function TimelinePanel({ timeline, phone, onPlay }: { timeline: BuildTime
           headingLevel={2}
           title="Watch it get built"
           subtitle={timelineSubtitle(duration, events.length)}
-          right={<IconButton icon={Play} label="Play the build" size={phone ? 38 : 34} onClick={onPlay} disabled={events.length === 0} />}
+          right={<IconButton icon={Play} label="Play the build" size={phone ? 38 : 32} onClick={onPlay} disabled={events.length === 0} style={touchArea(phone, true)} />}
         />
         <div style={{ marginTop: 8 }}>
           {events.length > 0 ? (
@@ -963,11 +963,11 @@ function ThreadHero({
               <Button
                 data-testid="build-follow"
                 variant="secondary"
-                size={28}
+                size={phone ? 44 : 28}
                 fontSize={12}
                 disabled={follow.busy}
                 onClick={follow.onToggle}
-                style={{ marginLeft: "auto", height: phone ? 44 : 28 }}
+                style={{ marginLeft: "auto" }}
               >
                 {follow.following ? "Following" : "Follow"}
               </Button>

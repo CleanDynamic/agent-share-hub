@@ -277,8 +277,8 @@ export function FamilyList({
                 display: "flex",
                 alignItems: "center",
                 gap: 7,
-                /* A phone keeps the 44px touch target; the board's row is 43. */
-                minHeight: phone ? 44 : 43,
+                /* A two-line row: a 48 minimum (the control-heights pass), over the phone's 44 touch floor. */
+                minHeight: 48,
                 width: "100%",
                 paddingLeft: 16 * depth,
                 paddingRight: 0,
@@ -382,7 +382,7 @@ export function FamilyPanel({ root, fit = "content", phone = false, selectedId =
           subtitle={familySubtitle(root)}
           right={
             lone || loading || failure ? undefined : (
-              <Segmented<FamilyReading> items={READINGS} value={reading} onChange={setReading} size={30} fontSize={11} label="Read the family as" />
+              <Segmented<FamilyReading> items={READINGS} value={reading} onChange={setReading} size={28} fontSize={11} label="Read the family as" />
             )
           }
         />

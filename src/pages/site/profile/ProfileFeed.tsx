@@ -187,7 +187,7 @@ export function ProfileFeed(props: ProfileFeedProps) {
   return (
     <section aria-label="Feed" data-testid="profile-feed" style={{ fontFamily: FIGTREE, minWidth: 0 }}>
       {props.options.length > 1 ? (
-        <Segmented<FeedFilterValue> label={FEED_COPY.filter} semantics="radio" items={props.options} value={props.filter} onChange={props.onFilter} />
+        <Segmented<FeedFilterValue> label={FEED_COPY.filter} semantics="radio" size={28} items={props.options} value={props.filter} onChange={props.onFilter} />
       ) : null}
       {props.status === "error" && entries.length === 0 ? (
         <p style={{ margin: "24px 0 0", fontSize: 13, color: t.text2 }}>

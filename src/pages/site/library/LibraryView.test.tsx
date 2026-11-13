@@ -67,6 +67,8 @@ describe("LibraryView", () => {
   it("lists the collections, ordered by last use, each with what it is and its count", () => {
     view();
     const rows = screen.getAllByTestId("library-collection");
+    // A two-line row (name over its kind): a 48 minimum.
+    for (const row of rows) expect(row.style.minHeight).toBe("48px");
     expect(rows.map((row) => row.textContent)).toEqual(["Sales promptsPublic9", "Agents to tryPrivate6", "Call tooling kitPrivate5", "Best of Opus 5.5Public · @kit12", "Research briefsFilter set21"]);
     expect(screen.getByText("Ordered by your last use")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New collection" })).toBeInTheDocument();
@@ -119,6 +121,7 @@ describe("LibraryView", () => {
     expect(within(panel).getByLabelText("Your note")).toHaveValue("Good section split. Try with the call notes build.");
     expect(within(panel).getByRole("button", { name: "Use in a build" })).toBeInTheDocument();
     expect(within(panel).getByRole("link", { name: "Open source" })).toBeInTheDocument();
+    expect(within(panel).getByRole("link", { name: "Open source" }).getAttribute("data-ui")).toBe("button");
   });
 
   it("shows a selected build with its Plaque and Open, no version switch", () => {
@@ -127,6 +130,7 @@ describe("LibraryView", () => {
     expect(panel.querySelector('[data-ui="plaque"]')).not.toBeNull();
     expect(within(panel).queryByRole("radiogroup")).toBeNull();
     expect(within(panel).getByRole("link", { name: "Open" })).toHaveAttribute("href", "/b2/inbox-triage");
+    expect(within(panel).getByRole("link", { name: "Open" })).toHaveAttribute("data-ui", "button");
     fireEvent.click(within(panel).getByRole("button", { name: "Copy" }));
     expect(build.onCopy).toHaveBeenCalled();
     fireEvent.click(within(panel).getByRole("button", { name: "Add to a collection" }));
@@ -157,6 +161,7 @@ describe("LibraryView", () => {
     const empty = screen.getByTestId("library-empty");
     expect(within(empty).getByText("Save a step from any build and it waits for you here.")).toBeInTheDocument();
     expect(within(empty).getAllByRole("link")).toHaveLength(1);
+    expect(within(empty).getByRole("link")).toHaveAttribute("data-ui", "button");
   });
 
   it("puts the kinds in a row of tabs on a phone, then the table, then the selected item", () => {
@@ -168,6 +173,34 @@ describe("LibraryView", () => {
     expect(screen.getByRole("tablist", { name: "Kinds" })).toBeInTheDocument();
     const order = Array.from(page.children).map((child) => child.querySelector("[data-testid]")?.getAttribute("data-testid") ?? child.getAttribute("aria-label"));
     expect(order.indexOf("library-items")).toBeLessThan(order.indexOf("library-selected"));
+  });
+
+  it("draws its buttons with the shared Button, 32 high with 12 side padding (the control-heights pass)", () => {
+    view();
+    const buttons = [
+      screen.getByRole("button", { name: "Filters 2" }),
+      within(screen.getByTestId("library-selected")).getByRole("button", { name: "Use in a build" }),
+      within(screen.getByTestId("library-selected")).getByRole("button", { name: "Copy" }),
+    ];
+    for (const button of buttons) {
+      expect(button.getAttribute("data-ui"), button.textContent ?? "").toBe("button");
+      expect(button.style.height, button.textContent ?? "").toBe("32px");
+      expect(button.style.padding, button.textContent ?? "").toBe("0px 12px");
+    }
+  });
+
+  it("draws the Version switch as a 32 track with 24 items", () => {
+    view();
+    const group = within(screen.getByTestId("library-selected")).getByRole("radiogroup", { name: "Version" });
+    expect([group.style.minHeight, group.style.alignItems]).toEqual(["32px", "center"]);
+    for (const item of within(group).getAllByRole("radio")) expect(item.style.height).toBe("24px");
+  });
+
+  it("draws its underline tabs 32 high", () => {
+    view();
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs.length).toBeGreaterThan(0);
+    for (const tab of tabs) expect(tab.style.height, tab.textContent ?? "").toBe("32px");
   });
 
   it("draws no section whose prop is absent", () => {

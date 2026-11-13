@@ -168,10 +168,6 @@ const refinedLink: CSSProperties = {
   fontWeight: 500,
 };
 
-/* The header's buttons are drawn 30 high with the 32 button's `0 16px` and 13px label (the refined `Button` steps
-   28 → 32, and the board draws 30). */
-const REFINED_30: CSSProperties = { height: 30, padding: "0 16px", fontSize: 13 };
-
 const refinedBadge: CSSProperties = {
   position: "absolute",
   top: 3,
@@ -282,10 +278,10 @@ function RefinedSiteHeaderView({
       {searchField ? (
         <HeaderSearch onSubmit={onSearch ?? (() => undefined)} initialValue={searchInitial} width={searchFull ? 240 : 200} />
       ) : (
-        <IconButton icon={Search} glyph="search" boxed={false} label="Search" size={30} onClick={() => setSearchOpen(true)} />
+        <IconButton icon={Search} glyph="search" boxed={false} label="Search" size={32} onClick={() => setSearchOpen(true)} />
       )}
 
-      <Button variant="secondary" size={30} onClick={onNewBuild} style={newLabel ? REFINED_30 : { ...REFINED_30, width: 30, padding: 0 }}>
+      <Button variant="secondary" size={32} onClick={onNewBuild} style={newLabel ? undefined : { width: 32, padding: 0 }}>
         {newLabel ? "New build" : <span style={visuallyHidden}>New build</span>}
       </Button>
 
@@ -296,8 +292,8 @@ function RefinedSiteHeaderView({
           aria-current={activityCurrent ? "page" : undefined}
           style={{
             position: "relative",
-            width: 30,
-            height: 30,
+            width: 32,
+            height: 32,
             boxSizing: "border-box",
             display: "inline-flex",
             alignItems: "center",
@@ -317,7 +313,7 @@ function RefinedSiteHeaderView({
       )}
 
       <IconButton
-        size={30}
+        size={32}
         boxed={false}
         icon={theme === "dusk" ? Moon : Sun}
         glyph={theme === "dusk" ? "moon" : "sun"}
@@ -326,7 +322,7 @@ function RefinedSiteHeaderView({
       />
 
       {viewer ? (
-        <LazyAccountMenu viewer={viewer} onSignOut={onSignOut} avatarSize={26} />
+        <LazyAccountMenu viewer={viewer} onSignOut={onSignOut} avatarSize={24} />
       ) : (
         <SignInControl onSignIn={onSignIn} />
       )}
@@ -353,7 +349,7 @@ function RefinedSiteHeaderView({
 function SignInControl({ onSignIn }: { onSignIn: () => void }) {
   const intent = useIntent("/login");
   return (
-    <Button variant="secondary" size={30} onClick={onSignIn} style={REFINED_30} {...intent}>
+    <Button variant="secondary" size={32} onClick={onSignIn} {...intent}>
       Sign in
     </Button>
   );

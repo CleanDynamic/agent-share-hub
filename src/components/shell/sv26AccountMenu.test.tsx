@@ -29,6 +29,8 @@ describe("the account menu, loaded apart", () => {
     );
     const menu = screen.getByRole("menu");
     expect([...menu.querySelectorAll("a, button")].map((el) => el.textContent)).toEqual(["Profile", "Library", "Drafts", "Settings", "Sign out"]);
+    // The control-heights pass: a menu item is 32 high with 12 either side.
+    for (const item of menu.querySelectorAll<HTMLElement>("a, button")) expect([item.style.height, item.style.padding], item.textContent ?? "").toEqual(["32px", "0px 12px"]);
   });
 });
 

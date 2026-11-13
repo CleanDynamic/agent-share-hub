@@ -14,14 +14,18 @@
 
 import { PriorityImageScope } from "@/components/post/media/priorityImage";
 import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { Plus } from "lucide-react";
 
 import { Avatar } from "@/components/brand/Avatar";
 import { EmptyState } from "@/components/brand/EmptyState";
 import { ErrorState, type PanelFailure } from "@/components/brand/ErrorState";
+import { Button } from "@/components/brand/Button";
 import { Glyph } from "@/components/brand/Glyph";
+import { IconButton } from "@/components/brand/IconButton";
 import { LampBar } from "@/components/brand/LampDot";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { Plaque } from "@/components/brand/Plaque";
+import { Segmented } from "@/components/brand/Segmented";
 import { FeedPost } from "@/components/gallery/FeedPost";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import { PageHeader } from "@/components/shell/PageHeader";
@@ -35,7 +39,7 @@ import { SectionChevron, SectionHead } from "@/components/vision/SectionHead";
 import { TextTabs } from "@/components/vision/TextTabs";
 import { START_TOPIC_FROM_RUN_LABEL } from "./runTopic";
 import { PageLink as Link } from "@/lib/routing/PageLink";
-import { ring } from "@/lib/theme/controls";
+import { ring, touchArea } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
@@ -46,10 +50,8 @@ import {
   HomeColumns,
   HomeControl,
   HomeLoadingView,
-  HomePrimary,
   Rule,
   SectionBones,
-  SquareButton,
   ellipsis,
   text,
   useHomeLayout,
@@ -271,9 +273,9 @@ export function ContinueSection({ drafts }: { drafts: HomeViewProps["drafts"] })
       ) : drafts.status === "ready" && drafts.data.rows.length > 0 ? (
         drafts.data.rows.map((row, index) => (
           <Link key={row.id} to={`/compose/${row.id}`} data-testid="home-draft-row" style={rowLink(index === drafts.data.rows.length - 1, { display: "flex", alignItems: "center", minHeight: 48 })}>
-            <span style={{ minWidth: 0 }}>
+            <span style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
               <span style={{ display: "block", fontWeight: 500, color: row.untitled ? t.text2 : t.text, ...ellipsis }}>{row.title}</span>
-              <span style={mono(10.5, t.label)}>{row.meta}</span>
+              <span style={text(12, 400, t.label)}>{row.meta}</span>
             </span>
           </Link>
         ))
@@ -285,7 +287,6 @@ export function ContinueSection({ drafts }: { drafts: HomeViewProps["drafts"] })
 }
 
 export function SessionsSection({ sessions, onAdd }: { sessions: HomeViewProps["sessions"]; onAdd: (id: string) => void }) {
-  const phone = useIsPhone();
   if (sessions.status === "loading") return <SectionBones rows={2} height={52} what="your sessions" />;
   const meta = sessions.status === "ready" ? `${sessions.data.total} imported · newest first` : undefined;
   return (
@@ -309,9 +310,7 @@ export function SessionsSection({ sessions, onAdd }: { sessions: HomeViewProps["
               <span style={{ display: "block", ...ellipsis }}>{row.title}</span>
               <span style={{ display: "block", ...mono(10.5, t.label) }}>{row.meta}</span>
             </span>
-            <SquareButton label="Add to a new build" onClick={() => onAdd(row.id)} phone={phone}>
-              <Glyph name="plus" size={12} />
-            </SquareButton>
+            <IconButton icon={Plus} drawn={<Glyph name="plus" size={12} />} label="Add to a new build" size={24} onClick={() => onAdd(row.id)} />
           </div>
         ))
       ) : (
@@ -394,7 +393,9 @@ function StudioSignedOut() {
     <section aria-label="Your studio">
       <EmptyState line="Sign in to see your drafts, sessions and week." action={undefined} />
       <div style={{ marginTop: 12 }}>
-        <HomePrimary href={SIGN_IN}>Sign in</HomePrimary>
+        <Button variant="primary" size={32} href={SIGN_IN} data-visual-slot="btn-primary">
+          Sign in
+        </Button>
       </div>
     </section>
   );
@@ -424,7 +425,7 @@ function DraftsLine({ drafts, sessions }: Pick<HomeViewProps, "drafts" | "sessio
     <Link
       to={DRAFTS}
       data-testid="home-drafts-line"
-      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, minHeight: 44, padding: "0 12px", boxSizing: "border-box", background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, color: t.text, textDecoration: "none" }}
+      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, minHeight: 32, padding: "0 12px", boxSizing: "border-box", background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, color: t.text, textDecoration: "none" }}
     >
       <span>{parts.join(" · ")}</span>
       <Glyph name="chev" size={12} />
@@ -434,37 +435,12 @@ function DraftsLine({ drafts, sessions }: Pick<HomeViewProps, "drafts" | "sessio
 
 /* ═════════ the feed ═════════ */
 
-function KindButton({ label, pressed, onClick }: { label: string; pressed: boolean; onClick: () => void }) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
-  return (
-    <button
-      type="button"
-      aria-pressed={pressed}
-      onClick={onClick}
-      {...handlers}
-      style={{
-        boxSizing: "border-box",
-        height: 24,
-        padding: "0 8px",
-        background: pressed ? t.control : "transparent",
-        border: pressed ? `1px solid ${t.controlBorder}` : "1px solid transparent",
-        borderRadius: r.chip,
-        ...text(12, 400, pressed || state.hovered ? t.text : t.text2, { lineHeight: "normal" }),
-        cursor: "pointer",
-        ...ring(state.focusVisible),
-      }}
-    >
-      {label}
-    </button>
-  );
-}
-
 export function FeedHead({ scope, onScopeChange, filter, onFilterChange }: Pick<HomeViewProps, "scope" | "onScopeChange" | "filter" | "onFilterChange">) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", columnGap: 12, padding: "0 20px", borderBottom: `1px solid ${t.hairline}` }}>
       <TextTabs<HomeScope>
         label="Feed scope"
-        height={40}
+        height={32}
         gap={24}
         rule={false}
         value={scope}
@@ -474,16 +450,15 @@ export function FeedHead({ scope, onScopeChange, filter, onFilterChange }: Pick<
           { value: "everyone", label: "Everyone" },
         ]}
       />
-      <div role="group" aria-label="Kind" style={{ display: "flex", gap: 2, marginBottom: 6, padding: 2, background: t.well, border: `1px solid ${t.wellBorder}`, borderRadius: r.control }}>
-        {HOME_FILTERS.map((item) => (
-          <KindButton key={item.value} label={item.label} pressed={filter === item.value} onClick={() => onFilterChange(item.value)} />
-        ))}
+      <div style={{ marginBottom: 6 }}>
+        <Segmented<HomeFilter> label="Kind" size={28} items={HOME_FILTERS} value={filter} onChange={onFilterChange} />
       </div>
     </div>
   );
 }
 
 export function NewPill({ count, onShow }: { count: number; onShow: () => void }) {
+  const phone = useIsPhone();
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   if (count <= 0) return null;
   return (
@@ -493,7 +468,7 @@ export function NewPill({ count, onShow }: { count: number; onShow: () => void }
         data-testid="home-new-pill"
         onClick={onShow}
         {...handlers}
-        style={{ height: 28, padding: "0 12px", background: state.hovered ? t.controlOn : t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: 14, ...text(12, 400, t.text, { lineHeight: "normal" }), cursor: "pointer", ...ring(state.focusVisible) }}
+        style={{ height: 32, ...touchArea(phone), padding: "0 12px", background: state.hovered ? t.controlOn : t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: 14, ...text(12, 400, t.text, { lineHeight: "normal" }), cursor: "pointer", ...ring(state.focusVisible) }}
       >
         {`${count} new since you looked`}
       </button>
@@ -815,7 +790,11 @@ function Figure({ value, lamp = false }: { value: number | null; lamp?: boolean 
 
 const runChip = (worked: boolean): CSSProperties => ({
   ...text(11.5, 400, worked ? t.evidence : t.catBreakage, { lineHeight: "18px" }),
-  padding: "0 6px",
+  display: "inline-flex",
+  alignItems: "center",
+  boxSizing: "border-box",
+  height: 20,
+  padding: "0 8px",
   borderRadius: r.chip,
   background: worked ? t.evidenceFill : t.catBreakageFill,
   whiteSpace: "nowrap",
@@ -850,7 +829,7 @@ export function RoomSection({ room, now }: { room: HomeRoom; now: number }) {
             <div key={run.key} style={{ borderTop: `1px solid ${t.hairline}` }}>
               <Link
                 to={run.href}
-                style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", columnGap: 10, alignItems: "center", minHeight: 36, color: t.text, textDecoration: "none" }}
+                style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", columnGap: 10, alignItems: "center", minHeight: 32, color: t.text, textDecoration: "none" }}
               >
                 <span style={runChip(run.worked)}>{run.worked ? "Worked" : "Didn’t"}</span>
                 <span style={{ minWidth: 0, ...ellipsis, ...text(12.5, 400, t.text) }}>
@@ -982,7 +961,7 @@ export function PublishedSection({ published, onCopyLink }: { published: HomePub
         <SectionHead title="Your published builds" meta={meta} headingLevel={2} />
       </div>
       {published.rows.map((row, index) => (
-        <Link key={row.id} to={row.href} data-testid="home-published-row" style={rowLink(index === published.rows.length - 1, { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, minHeight: 44 })}>
+        <Link key={row.id} to={row.href} data-testid="home-published-row" style={rowLink(index === published.rows.length - 1, { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, minHeight: 32 })}>
           <span style={{ minWidth: 0, fontWeight: 500, ...ellipsis }}>{row.title}</span>
           <span style={{ ...text(12, 400, t.label), whiteSpace: "nowrap" }}>{row.published}</span>
         </Link>
