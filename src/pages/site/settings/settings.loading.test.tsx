@@ -8,7 +8,7 @@ import type { ReactNode } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
-const { never } = vi.hoisted(() => ({ never: () => new Promise<never>(() => undefined) }));
+const { never } = vi.hoisted(() => ({ never: vi.fn(() => new Promise<never>(() => undefined)) }));
 vi.mock("@/lib/settings/account", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/settings/account")>()), loadAccount: never }));
 vi.mock("@/lib/settings/notificationSettings", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/settings/notificationSettings")>()), loadNotificationPreferences: never }));
 vi.mock("@/lib/settings/privacySettings", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/settings/privacySettings")>()), loadIsPrivate: never }));
@@ -75,7 +75,7 @@ describe("the route table's placeholder for Settings", () => {
 });
 
 describe("D4: a settings section whose read never answers", () => {
-  it("swaps its cards for the section's error line and Retry after STALL_MS, and Retry brings the cards back", async () => {
+  it("swaps its cards for the section's error line and Retry after STALL_MS; Retry brings the cards back and asks again", async () => {
     const { act, fireEvent } = await import("@testing-library/react");
     const { STALL_MS } = await import("@/components/shell/useStalled");
     vi.useFakeTimers();
@@ -86,8 +86,13 @@ describe("D4: a settings section whose read never answers", () => {
         act(() => vi.advanceTimersByTime(STALL_MS));
         expect(view.getByRole("alert").textContent).toContain("Couldn't load this.");
         expect(view.container.querySelectorAll('[data-testid="settings-card-bones"]').length).toBe(0);
-        act(() => fireEvent.click(view.getByRole("button", { name: "Retry" })));
+        const asked = never.mock.calls.length;
+        await act(async () => {
+          fireEvent.click(view.getByRole("button", { name: "Retry" }));
+        });
         expect(view.container.querySelectorAll('[data-testid="settings-card-bones"]').length).toBeGreaterThan(0);
+        // Retry asks again: the read that never answered is cancelled and sent afresh, not joined.
+        expect(never.mock.calls.length).toBeGreaterThan(asked);
         view.unmount();
       }
     } finally {

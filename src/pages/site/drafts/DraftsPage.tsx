@@ -38,7 +38,7 @@ import { librarySessionsKey, useLibrarySessions } from "@/hooks/useLibrarySessio
 import { listDraftFirstPrompts, listDraftTopics, listDraftsWithSessions, listEmptyDraftIds, removeEmptyDrafts, type DraftListItem } from "@/lib/build/drafts";
 import { attachSession } from "@/lib/build/sessions";
 import { PageArrival } from "@/components/shell/PageArrival";
-import { useStalled } from "@/components/shell/useStalled";
+import { useAskAgain, useStalled } from "@/components/shell/useStalled";
 
 import { DraftsLoadingView } from "./DraftsFrame";
 import { DraftsView } from "./DraftsView";
@@ -146,6 +146,7 @@ export function DraftsPage() {
   }, [userId, refresh]);
 
   /* D4: a read that never answers is a failed read after STALL_MS, so its panel says so instead of staying a skeleton. */
+  const askAgain = useAskAgain();
   const draftsStall = useStalled(!draftsQuery.data && !draftsQuery.isLoadingError);
   const sessionsStall = useStalled(!library.data && !library.isLoadingError);
   const draftsStatus = draftsQuery.data ? "ready" : draftsQuery.isLoadingError || draftsStall.stalled ? "error" : "loading";
@@ -161,10 +162,10 @@ export function DraftsPage() {
           now={Date.now()}
           draftsStatus={draftsStatus}
           draftsError={draftsQuery.isLoadingError ? draftsQuery.error : undefined}
-          onRetryDrafts={() => { draftsStall.restart(); void draftsQuery.refetch(); }}
+          onRetryDrafts={() => { draftsStall.restart(); askAgain(["build", "listDraftsWithSessions", userId], draftsQuery.refetch); }}
           sessionsStatus={sessionsStatus}
           sessionsError={library.isLoadingError ? library.error : undefined}
-          onRetrySessions={() => { sessionsStall.restart(); void library.refetch(); }}
+          onRetrySessions={() => { sessionsStall.restart(); askAgain(librarySessionsKey, library.refetch); }}
           sessionsAnchor={sessionsAnchor}
           drafts={withTopics(withFirstPrompts(draftsQuery.data ?? [], promptsQuery.data), topicsQuery.data)}
           sessions={library.data ?? []}

@@ -5,6 +5,7 @@
    is for Retry: it gives the read another STALL_MS from now, so the skeleton comes back while the retried read is out. A
    failed read reaches the error state by itself, sooner; this is only the case of a read that never answers. */
 
+import { useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 
 /** How long a skeleton may wait for its read before the page says it did not load. */
@@ -24,3 +25,15 @@ export function useStalled(waiting: boolean, ms: number = STALL_MS): { stalled: 
 }
 
 export default useStalled;
+
+/** Retry for a read that may still be out. A refetch joins a first read that never answered instead of asking again, so the
+    read under `queryKey` (and any whose key starts with it) is cancelled first, then asked for afresh. */
+export function useAskAgain(): (queryKey: QueryKey, refetch: () => unknown) => void {
+  const client = useQueryClient();
+  return useCallback(
+    (queryKey, refetch) => {
+      void client.cancelQueries({ queryKey }).then(() => refetch());
+    },
+    [client],
+  );
+}

@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-import { useStalled } from "@/components/shell/useStalled";
+import { useAskAgain, useStalled } from "@/components/shell/useStalled";
 import { useAuth } from "@/contexts/AuthContext";
 import { listApps, revokeApp } from "@/lib/settings/apps";
 import { DATA_COPY, deleteMyAccount, prepareExport, saveFile } from "@/lib/settings/data";
@@ -31,8 +31,9 @@ export function AccountSection() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const account = useQuery({ queryKey: ["settings", "loadAccount"], queryFn: loadAccount, staleTime: STALE_MS });
+  const askAgain = useAskAgain();
   const accountStall = useStalled(!account.data && !account.isError);
-  if (account.isError || accountStall.stalled) return <SectionError title="Account" onRetry={() => { accountStall.restart(); void account.refetch(); }} />;
+  if (account.isError || accountStall.stalled) return <SectionError title="Account" onRetry={() => { accountStall.restart(); askAgain(["settings", "loadAccount"], account.refetch); }} />;
   if (!account.data) return <SectionLoading title="Account" groups={SECTION_BONES.account} />;
   const { email, methods } = account.data;
   return (
@@ -82,8 +83,9 @@ export function NotificationsSection() {
     },
     onSuccess: () => toast(SAVED),
   });
+  const askAgain = useAskAgain();
   const prefsStall = useStalled(!prefs.data && !prefs.isError);
-  if (prefs.isError || prefsStall.stalled) return <SectionError title="Notifications" onRetry={() => { prefsStall.restart(); void prefs.refetch(); }} />;
+  if (prefs.isError || prefsStall.stalled) return <SectionError title="Notifications" onRetry={() => { prefsStall.restart(); askAgain(key, prefs.refetch); }} />;
   if (!prefs.data) return <SectionLoading title="Notifications" groups={SECTION_BONES.notifications} />;
   return <NotificationsView prefs={prefs.data} onToggle={(changed, on) => write.mutate({ key: changed, on })} />;
 }
@@ -135,8 +137,9 @@ export function PrivacySection() {
     }
   };
 
+  const askAgain = useAskAgain();
   const privacyStall = useStalled((isPrivate.data === undefined || !blocks.data) && !isPrivate.isError && !blocks.isError);
-  if (isPrivate.isError || blocks.isError || privacyStall.stalled) return <SectionError title="Privacy and blocking" onRetry={() => { privacyStall.restart(); void isPrivate.refetch(); void blocks.refetch(); }} />;
+  if (isPrivate.isError || blocks.isError || privacyStall.stalled) return <SectionError title="Privacy and blocking" onRetry={() => { privacyStall.restart(); askAgain(privateKey, isPrivate.refetch); askAgain(blockKeys.list, blocks.refetch); }} />;
   if (isPrivate.data === undefined || !blocks.data) return <SectionLoading title="Privacy and blocking" groups={SECTION_BONES.privacy} />;
   return <PrivacyView isPrivate={isPrivate.data} onTogglePrivate={(on) => togglePrivate.mutate(on)} blocked={blocks.data} onUnblock={(person) => void unblock(person)} busy={busy} />;
 }
@@ -163,8 +166,9 @@ export function DataSection() {
 export function AppsSection() {
   const queryClient = useQueryClient();
   const apps = useQuery({ queryKey: ["settings", "listApps"], queryFn: listApps, staleTime: STALE_MS });
+  const askAgain = useAskAgain();
   const appsStall = useStalled(!apps.data && !apps.isError);
-  if (apps.isError || appsStall.stalled) return <SectionError title="Connected apps" onRetry={() => { appsStall.restart(); void apps.refetch(); }} />;
+  if (apps.isError || appsStall.stalled) return <SectionError title="Connected apps" onRetry={() => { appsStall.restart(); askAgain(["settings", "listApps"], apps.refetch); }} />;
   if (!apps.data) return <SectionLoading title="Connected apps" groups={SECTION_BONES.apps} />;
   return (
     <AppsView

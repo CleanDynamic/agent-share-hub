@@ -30,7 +30,10 @@ describe("D4 · the Drafts page when a read never answers", () => {
   it("shows the drafts panel's error and Retry in place of its rows, and keeps the sessions", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    startAuditBackend({ schema: REPO_SCHEMA, delays: [{ method: "GET", path: DRAFTS, delayMs: 600_000 }] });
+    // The drafts read never answers. Each one is counted as it arrives (the fake logs a request only once it answers).
+    let sent = 0;
+    const arriving = { test: (path: string) => (DRAFTS.test(path) ? ((sent += 1), true) : false) } as unknown as RegExp;
+    startAuditBackend({ schema: REPO_SCHEMA, delays: [{ method: "GET", path: arriving, delayMs: 600_000 }] });
     render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
         <HelmetProvider>
@@ -47,8 +50,11 @@ describe("D4 · the Drafts page when a read never answers", () => {
     const panel = await screen.findByRole("status", { name: "Continue editing" }, { timeout: 3_000 });
     expect(within(panel).getByText("That didn't load.")).toBeTruthy();
     expect(screen.getByText("A waiting session.")).toBeTruthy();
+    const asked = sent;
     fireEvent.click(within(panel).getByRole("button", { name: /try again|retry/i }));
     await waitFor(() => expect(screen.queryByRole("status", { name: "Continue editing" })).toBeNull());
     expect(screen.getByText("Loading your drafts")).toBeTruthy();
+    // Retry asks again: the read that never answered is cancelled and sent afresh, not joined.
+    await waitFor(() => expect(sent).toBeGreaterThan(asked));
   });
 });
