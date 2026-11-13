@@ -162,6 +162,8 @@ describe("DraftsView", () => {
     expect(open.getAttribute("href")).toBe("/compose/d1");
     expect(screen.queryByRole("menuitem", { name: "Add to Photo renamer by date taken" })).toBeNull();
     expect(screen.getByRole("menuitem", { name: "Add to Untitled build" })).toBeInTheDocument();
+    // The control-heights pass: a menu item is 32 high with 12 either side.
+    for (const item of screen.getAllByRole("menuitem")) expect([item.style.minHeight, item.style.padding], item.textContent ?? "").toEqual(["32px", "0px 12px"]);
   });
 
   it("CA-12: asks for the next page of sessions", () => {

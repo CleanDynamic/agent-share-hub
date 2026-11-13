@@ -59,7 +59,8 @@ const input: CSSProperties = {
   /* 16px: anything smaller makes mobile Safari zoom the page on focus. */
   fontSize: 15,
   width: "100%",
-  padding: "7px 9px",
+  height: 32,
+  padding: "0 12px",
   color: t.text,
   boxSizing: "border-box",
 };

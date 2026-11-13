@@ -202,8 +202,8 @@ const menuContent: CSSProperties = {
 const menuItem: CSSProperties = {
   display: "flex",
   alignItems: "center",
-  minHeight: 31,
-  padding: "0 9px",
+  minHeight: 32,
+  padding: "0 12px",
   borderRadius: 10,
   fontFamily: FIGTREE,
   fontSize: 13,
