@@ -53,6 +53,9 @@ describe("PostCard", () => {
     const toPost = screen.getAllByRole("link").filter((link) => link.getAttribute("href") === "/openbuilds/topics/p1");
     expect(toPost).toHaveLength(2);
     expect(screen.getAllByTestId("post-card-heading-link")).toHaveLength(1);
+    // The control-heights pass: the heading link is a 24 line box.
+    const heading = screen.getByTestId("post-card-heading-link");
+    expect([heading.style.display, heading.style.lineHeight]).toEqual(["inline-block", "24px"]);
     const strip = screen.getByTestId("post-card-replies-strip");
     expect(strip.textContent).toContain("6 replies");
     expect(strip.textContent).toContain("3 builds · latest from @kit 20m ago");
