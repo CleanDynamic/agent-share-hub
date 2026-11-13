@@ -113,7 +113,7 @@ function SideColumn({ space, rows }: PostViewProps["side"]) {
         <section aria-label="Space" style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, padding: 16 }}>
           <SpaceName to={space.to}>{space.name}</SpaceName>
           <p style={{ ...label(12), marginTop: 2 }}>{space.meta}</p>
-          {space.description ? <p style={{ ...label(12.5, t.text2), lineHeight: "20px", marginTop: 8 }}>{space.description}</p> : null}
+          {space.description ? <p style={{ ...label(12, t.text2), lineHeight: "20px", marginTop: 8 }}>{space.description}</p> : null}
           {space.joined !== null ? (
             <div style={{ marginTop: 12 }}>
               {space.joined ? (
@@ -186,7 +186,7 @@ export function PostView(view: PostViewProps) {
         <div role="region" aria-label="Thread">
           {view.thread.filter ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "12px 0", borderBottom: `1px solid ${t.hairline}` }}>
-              <span style={label(12.5, t.text2)}>{view.thread.filter.label}</span>
+              <span style={label(12, t.text2)}>{view.thread.filter.label}</span>
               <PostControl onClick={view.thread.filter.onShowAll}>Show all replies</PostControl>
             </div>
           ) : null}

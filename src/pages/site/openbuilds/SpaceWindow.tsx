@@ -158,7 +158,7 @@ export function SpaceWindow({ mode, slug, onClose }: { mode: "make" | "settings"
         </Row>
         <WhoCanPost value={draft.whoCanPost} onChange={(value) => set("whoCanPost", value)} phone={phone} />
         {error ? (
-          <p role="alert" style={{ margin: "8px 0 0", fontFamily: FIGTREE, fontSize: 12.5, color: t.text }}>
+          <p role="alert" style={{ margin: "8px 0 0", fontFamily: FIGTREE, fontSize: 12, color: t.text }}>
             {error}
           </p>
         ) : null}
@@ -244,7 +244,7 @@ export function SpaceWindow({ mode, slug, onClose }: { mode: "make" | "settings"
           </Row>
         ) : null}
         {error ? (
-          <p role="alert" style={{ margin: "8px 0 0", fontFamily: FIGTREE, fontSize: 12.5, color: t.text }}>
+          <p role="alert" style={{ margin: "8px 0 0", fontFamily: FIGTREE, fontSize: 12, color: t.text }}>
             {error}
           </p>
         ) : null}

@@ -48,7 +48,7 @@ export function PostStepMenu({ tile, inner, replies, onReplyOn, onShowReplies, a
       <DropdownMenuTrigger asChild>
         <TileTrigger aria-label={`${head}, ${tile.title}${replies > 0 ? `, ${replies} ${replies === 1 ? "reply" : "replies"}` : ""}`}>
           {inner}
-          {replies > 0 ? <div style={{ fontFamily: FIGTREE, fontSize: 11.5, color: t.text2, marginTop: 2 }}>{`${replies} ${replies === 1 ? "reply" : "replies"}`}</div> : null}
+          {replies > 0 ? <div style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2, marginTop: 2 }}>{`${replies} ${replies === 1 ? "reply" : "replies"}`}</div> : null}
         </TileTrigger>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" style={{ zIndex: MENU_Z }}>

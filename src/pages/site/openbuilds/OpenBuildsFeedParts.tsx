@@ -57,7 +57,7 @@ export function PageHead({ title, line, meta, actions, primary, breadcrumb }: { 
 /** One sentence and Retry (CA-28's wording). */
 export function LoadError({ what, onRetry }: { what: string; onRetry: () => void }) {
   return (
-    <div role="alert" style={{ display: "flex", alignItems: "center", gap: 12, padding: "20px 20px", fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 }}>
+    <div role="alert" style={{ display: "flex", alignItems: "center", gap: 12, padding: "20px 20px", fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>
       <span style={{ flexGrow: 1 }}>{what}</span>
       <PostControl onClick={onRetry}>Retry</PostControl>
     </div>

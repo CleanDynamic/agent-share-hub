@@ -240,7 +240,7 @@ export function ReplyBox({ pageId, rootId, parentId, about, onRemoveAbout, signI
           )}
         </div>
         {notice ? (
-          <p role="alert" style={{ ...textLine(12.5, t.text), lineHeight: "20px" }}>
+          <p role="alert" style={{ ...textLine(12, t.text), lineHeight: "20px" }}>
             {notice}
           </p>
         ) : null}

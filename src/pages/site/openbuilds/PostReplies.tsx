@@ -164,7 +164,7 @@ export function ReplyAnatomy({ reply, children }: { reply: ReplyItem; children?:
             {reply.about ? (
               <>
                 <span style={{ ...plain, fontSize: 12, lineHeight: "20px", color: t.label }}>· on</span>
-                <DashedSlot data-testid="reply-about" style={{ display: "inline-flex", alignItems: "center", height: 20, padding: "0 6px", ...plain, fontSize: 11.5, color: t.text2 }}>
+                <DashedSlot data-testid="reply-about" style={{ display: "inline-flex", alignItems: "center", height: 20, padding: "0 6px", ...plain, fontSize: 12, color: t.text2 }}>
                   {reply.about}
                 </DashedSlot>
               </>
@@ -219,7 +219,7 @@ export function Reply({ reply, actions, last, box }: { reply: ReplyItem; actions
         ) : null}
         {reply.more > 0 ? (
           <div style={{ marginTop: 8 }}>
-            <LinkText to={actions.branchHref(reply.id)} size={12.5} same>{`View ${reply.more} more ${reply.more === 1 ? "reply" : "replies"}`}</LinkText>
+            <LinkText to={actions.branchHref(reply.id)} size={12} same>{`View ${reply.more} more ${reply.more === 1 ? "reply" : "replies"}`}</LinkText>
           </div>
         ) : null}
     </ReplyAnatomy>

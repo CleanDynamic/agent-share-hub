@@ -55,7 +55,7 @@ const controlBase: CSSProperties = {
   gap: 6,
   borderRadius: r.control,
   fontFamily: FIGTREE,
-  fontSize: 12.5,
+  fontSize: 12,
   fontWeight: 500,
   lineHeight: "normal",
   whiteSpace: "nowrap",
