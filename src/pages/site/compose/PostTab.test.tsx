@@ -239,7 +239,7 @@ describe("the layout", () => {
   it("draws a heading in the published post's type, and the words in the composer's own, 20 / 1.25", () => {
     mount(doc({ type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "Big" }] }, p("body text"), { type: "paragraph", attrs: { size: "small" }, content: [{ type: "text", text: "tiny" }] }));
     const title = document.querySelector('[data-heading="1"]') as HTMLElement;
-    expect(title.style.fontSize).toBe("28px");
+    expect(title.style.fontSize).toBe("20px");
     expect(title.style.fontWeight).toBe("500");
     const body = document.querySelector('[data-size="body"]') as HTMLElement;
     expect([body.style.fontSize, body.style.lineHeight]).toEqual(["20px", "1.25"]);

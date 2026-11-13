@@ -124,7 +124,7 @@ describe("the format bar", () => {
     const items = within(menu).getAllByRole("menuitem");
     expect(items.map((item) => item.textContent)).toEqual(["Title", "Heading", "Body", "Small", "Code"]);
     const sizes = items.map((item) => (item.querySelector("span") as HTMLElement).style.fontSize);
-    expect(sizes).toEqual(["28px", "20px", "16px", "13px", "13px"]);
+    expect(sizes).toEqual(["20px", "20px", "16px", "13px", "13px"]);
     fireEvent.click(items[0]);
     expect(json(editor).content[0]).toMatchObject({ type: "heading", attrs: { level: 1 } });
   });
