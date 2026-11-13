@@ -25,7 +25,7 @@ export function CardHead({ title, subtitle, action, headingLevel }: CardHeadProp
           style={{
             margin: 0,
             fontFamily: FIGTREE,
-            fontSize: 13.5,
+            fontSize: 14,
             fontWeight: 500,
             letterSpacing: "-0.005em",
             lineHeight: "normal",

@@ -15,7 +15,7 @@ export function ClassificationLines({ lines, gap = 3 }: { lines: CardLines; gap?
   return (
     <div data-card-part="classification" style={{ display: "flex", flexDirection: "column", gap, minWidth: 0 }}>
       {lines.line1.length > 0 ? (
-        <p data-card-part="classification-1" style={{ margin: 0, fontFamily: DM_MONO, fontSize: 11.5, lineHeight: "17px", color: t.text, overflowWrap: "anywhere" }}>
+        <p data-card-part="classification-1" style={{ margin: 0, fontFamily: DM_MONO, fontSize: 12, lineHeight: "17px", color: t.text, overflowWrap: "anywhere" }}>
           {lines.line1.join(" \u00B7 ")}
         </p>
       ) : null}
@@ -78,7 +78,7 @@ export function ProvenanceDot({ kind, viewer = "reader", showWord = false }: { k
   return (
     <span title={word} data-provenance={kind} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
       <span role="img" aria-label={word} style={dot} />
-      {showWord ? <span style={{ fontFamily: FIGTREE, fontSize: 11.5, color: t.text2 }}>{word}</span> : null}
+      {showWord ? <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>{word}</span> : null}
     </span>
   );
 }

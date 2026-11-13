@@ -86,13 +86,13 @@ describe("PlainRow", () => {
 });
 
 describe("TypeChip", () => {
-  it("is Geist Mono 10.5 over 20, 0 8px, radius 4, --control fill, --text2 text", () => {
+  it("is Geist Mono 11 over 20, 0 8px, radius 4, --control fill, --text2 text", () => {
     const html = markup(<TypeChip>Step</TypeChip>);
     expect(html).toContain("padding:0 8px");
     expect(html).toContain("border-radius:var(--r-chip)");
     expect(html).toContain("background:var(--control)");
     expect(html).toContain("color:var(--text2)");
-    expect(html).toContain("font-size:10.5px");
+    expect(html).toContain("font-size:11px");
     expect(html).toContain("line-height:20px");
     expect(html).toContain("text-transform:uppercase");
   });

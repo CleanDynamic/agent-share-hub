@@ -77,7 +77,7 @@ const TAG: CSSProperties = {
   color: t.onTag,
   border: "1px solid transparent",
   fontFamily: FIGTREE,
-  fontSize: 11.5,
+  fontSize: 12,
   fontWeight: 400,
   lineHeight: "normal",
   whiteSpace: "nowrap",

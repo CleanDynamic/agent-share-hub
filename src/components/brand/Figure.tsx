@@ -31,7 +31,7 @@ export function Figure({ value, unit, label, lamp = false }: FigureProps) {
         </div>
       ) : null}
       <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-        <span style={{ ...figure, color: t.text }}>{value}</span>
+        <span style={{ ...figure, fontSize: 16, color: t.text }}>{value}</span>
         {unit !== undefined ? (
           <span style={{ fontFamily: FIGTREE, fontSize: 12, fontWeight: 400, lineHeight: "normal", color: t.text2 }}>
             {unit}

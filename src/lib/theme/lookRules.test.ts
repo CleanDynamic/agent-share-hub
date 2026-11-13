@@ -2093,13 +2093,13 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
   },
   {
     rule: "upper case outside the Details eyebrow",
-    text: `fontFamily: DM_MONO, fontSize: 10.5, fontWeight: 400, lineHeight: "20px", textTransform: "uppercase",`,
-    why: "SV-02: the boards' type chip (STEP, PROMPT) is Geist Mono 10.5 in capitals. Only TypeChip spends it.",
+    text: `fontFamily: DM_MONO, fontSize: 11, fontWeight: 400, lineHeight: "20px", textTransform: "uppercase",`,
+    why: "SV-02: the boards' type chip (STEP, PROMPT) is Geist Mono in capitals, at 11 since the seven sizes (a tag is 11). Only TypeChip spends it.",
   },
   {
     rule: "the data face with upper case",
-    text: `fontFamily: DM_MONO, fontSize: 10.5, fontWeight: 400, lineHeight: "20px", textTransform: "uppercase",`,
-    why: "SV-02: the boards' type chip (STEP, PROMPT) is Geist Mono 10.5 in capitals. Only TypeChip spends it.",
+    text: `fontFamily: DM_MONO, fontSize: 11, fontWeight: 400, lineHeight: "20px", textTransform: "uppercase",`,
+    why: "SV-02: the boards' type chip (STEP, PROMPT) is Geist Mono in capitals, at 11 since the seven sizes (a tag is 11). Only TypeChip spends it.",
   },
   {
     rule: "spacing 10 is not in SPACE_REFINED",

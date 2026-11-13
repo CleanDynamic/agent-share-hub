@@ -39,7 +39,7 @@ export function SearchField({ label, hint, width = 260, style, ...rest }: Search
         ...WELL,
         color: t.label,
         /* Above 768px index.css makes every input inherit its font size, so the size is set here, on its box, too. */
-        fontSize: phone ? 16 : 12.5,
+        fontSize: phone ? 16 : 12,
         ...style,
       }}
     >
@@ -55,7 +55,7 @@ export function SearchField({ label, hint, width = 260, style, ...rest }: Search
           border: 0,
           outline: "none",
           fontFamily: FIGTREE,
-          fontSize: phone ? 16 : 12.5,
+          fontSize: phone ? 16 : 12,
           fontWeight: 400,
           color: t.text,
         }}
@@ -65,7 +65,7 @@ export function SearchField({ label, hint, width = 260, style, ...rest }: Search
           aria-hidden="true"
           style={{
             fontFamily: DM_MONO,
-            fontSize: 10.5,
+            fontSize: 11,
             lineHeight: "16px",
             padding: "0 4px",
             borderRadius: 4,

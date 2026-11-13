@@ -121,12 +121,12 @@ describe("PostCard", () => {
     expect(screen.getByRole("link", { name: "Download" })).toHaveAttribute("href", "https://example.test/scores.csv");
   });
 
-  it("sets the heading at the feed card's title size, 13/500, and the author at 15/600", () => {
+  it("sets the heading at the feed card's title size, 13/500, and the author at 13/600", () => {
     draw();
     const heading = screen.getByRole("heading", { name: base.heading });
     expect(heading.style.fontSize).toBe("13px");
     expect(heading.style.fontWeight).toBe("500");
-    expect(screen.getByText("Sam Ellis").style.fontSize).toBe("15px");
+    expect(screen.getByText("Sam Ellis").style.fontSize).toBe("13px");
     expect(screen.getByText("Sam Ellis").style.fontWeight).toBe("600");
   });
 

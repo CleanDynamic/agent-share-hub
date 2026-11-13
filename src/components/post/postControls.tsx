@@ -33,7 +33,7 @@ const base: CSSProperties = {
   flexShrink: 0,
   borderRadius: r.control,
   fontFamily: FIGTREE,
-  fontSize: 12.5,
+  fontSize: 12,
   lineHeight: "normal",
   whiteSpace: "nowrap",
   textDecoration: "none",

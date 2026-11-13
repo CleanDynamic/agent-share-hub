@@ -224,9 +224,9 @@ describe("refined layers and data marks (UI-P85)", () => {
     expect(refined(<Well>x</Well>)).not.toContain("radial-gradient");
   });
 
-  it("CardHead is 13.5/500 over a 12 --text2 subtitle, with an action at the right; PanelHead renders it", () => {
+  it("CardHead is 14/500 over a 12 --text2 subtitle, with an action at the right; PanelHead renders it", () => {
     const html = refined(<CardHead title="Title" subtitle="Sub" action={<a href="/x">go</a>} />);
-    expect(html).toContain("font-size:13.5px");
+    expect(html).toContain("font-size:14px");
     expect(html).toContain("font-weight:500");
     expect(html).toContain("font-size:12px");
     expect(html).toContain("color:var(--text2)");

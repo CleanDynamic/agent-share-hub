@@ -97,7 +97,7 @@ function BuildAttachment({ attachment, onPickTile, renderTile }: { attachment: E
 function StepAttachment({ attachment }: { attachment: Extract<CardAttachment, { kind: "step" }> }) {
   return (
     <div style={{ ...tileBox, padding: "8px 10px" }}>
-      <div style={{ ...plain, fontSize: 11.5, color: t.label }}>{attachment.head}</div>
+      <div style={{ ...plain, fontSize: 12, color: t.label }}>{attachment.head}</div>
       <div style={{ fontFamily: DM_MONO, fontSize: 12, lineHeight: "18px", whiteSpace: "pre-wrap", overflowWrap: "anywhere", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{attachment.text}</div>
     </div>
   );
@@ -124,12 +124,12 @@ export function AttachmentView({ attachment, onPickTile, renderTile }: { attachm
   if (attachment.kind === "picture") return <PicturesBlock pictures={[attachment]} />;
   if (attachment.kind === "line") {
     return (
-      <div style={{ ...tileBox, padding: "8px 10px", ...plain, fontSize: 12.5 }}>{attachment.text}</div>
+      <div style={{ ...tileBox, padding: "8px 10px", ...plain, fontSize: 12 }}>{attachment.text}</div>
     );
   }
   return (
     <div style={{ ...tileBox, padding: "8px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-      <span style={{ ...plain, fontSize: 12.5, overflowWrap: "anywhere" }}>{attachment.name}</span>
+      <span style={{ ...plain, fontSize: 12, overflowWrap: "anywhere" }}>{attachment.name}</span>
       {attachment.href ? (
         <PostControl to={attachment.href} download>
           Download
@@ -223,8 +223,8 @@ export function PostCard({ card: full, clamp = true, page = false, renderTile, m
         {/* Head: name, @handle · age · in spaces; the reward and Pinned at the right end. */}
         <div style={{ display: "flex", alignItems: "baseline", gap: 6, minHeight: 24, marginBottom: 4 }}>
           <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexWrap: "wrap", alignItems: "baseline", columnGap: 6 }}>
-            <span style={{ ...plain, fontSize: 15, fontWeight: 600, lineHeight: 1.4 }}>{name}</span>
-            <span style={{ ...plain, fontSize: 14, lineHeight: 1.4, color: label, whiteSpace: "pre-wrap" }}>
+            <span style={{ ...plain, fontSize: 13, fontWeight: 600, lineHeight: 1.4 }}>{name}</span>
+            <span style={{ ...plain, fontSize: 13, lineHeight: 1.4, color: label, whiteSpace: "pre-wrap" }}>
               {meta}
               {card.spaces.length > 0 ? " · in  " : ""}
               {card.spaces.map((space, index) => (
@@ -322,7 +322,7 @@ function RepliesStrip({ replies }: { replies: NonNullable<PostCardData["replies"
           ))}
         </span>
       ) : null}
-      <span style={{ ...plain, fontSize: 12.5, lineHeight: "20px", minWidth: 0 }}>
+      <span style={{ ...plain, fontSize: 12, lineHeight: "20px", minWidth: 0 }}>
         <span style={{ fontWeight: 500 }}>{repliesWords(replies.count)}</span>
         {replies.detail ? <span style={{ color: t.text2, whiteSpace: "pre-wrap" }}>{`  · ${replies.detail} `}</span> : null}
       </span>
