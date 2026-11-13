@@ -38,7 +38,7 @@ export const dialogFrame = (phone: boolean): CSSProperties => ({
   boxSizing: "border-box",
   display: "grid",
   gridTemplateRows: "auto minmax(0, 1fr) auto",
-  background: t.solid,
+  background: t.window,
   boxShadow: t.shadowSheet,
   color: t.text,
   fontFamily: FIGTREE,

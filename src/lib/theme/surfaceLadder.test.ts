@@ -122,3 +122,26 @@ describe("one hover fill (F2)", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe("overlays are windows (F4)", () => {
+  it("the shared menu, popover, dialog and sheet surfaces are --window", async () => {
+    const { menuPanelStyle, dialogPanelStyle, sheetPanelStyle } = await import("./controls");
+    for (const style of [menuPanelStyle, dialogPanelStyle, sheetPanelStyle("right")]) expect(style.background).toBe("var(--window)");
+    for (const style of [menuPanelStyle, dialogPanelStyle]) expect(style.borderColor).toBe("var(--window-border)");
+  });
+
+  it("no overlay in the edit area paints the card tone itself", async () => {
+    const { readFileSync } = await import("node:fs");
+    const OVERLAYS = [
+      "src/pages/site/builds/BuildsFiltersDialog.tsx",
+      "src/pages/site/builds/SetDialogs.tsx",
+      "src/pages/site/compose/MadeWithLine.tsx",
+      "src/pages/site/compose/SessionsPanel.tsx",
+      "src/pages/site/compose/OpenRequestDialog.tsx",
+      "src/pages/site/drafts/DraftsView.tsx",
+      "src/pages/site/build/RunDialog.tsx",
+      "src/pages/site/build/BuildView.tsx",
+    ];
+    for (const file of OVERLAYS) expect(readFileSync(file, "utf8"), file).not.toMatch(/background: t\.solid/);
+  });
+});
