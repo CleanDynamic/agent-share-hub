@@ -351,6 +351,17 @@ describe("refined controls (UI-P84)", () => {
     expect(html).toContain("background:var(--control-on)");
   });
 
+  it("Button with href is an anchor drawn exactly as the button", () => {
+    const button = refined(<Button variant="secondary" size={32}>Open</Button>);
+    const link = refined(<Button variant="secondary" size={32} href="/b/1">Open</Button>);
+    const style = (html: string) => /style="([^"]*)"/.exec(html)?.[1];
+    expect(link.startsWith("<a")).toBe(true);
+    expect(link).toContain('href="/b/1"');
+    expect(link).toContain('data-ui="button"');
+    expect(style(link)).toBe(style(button));
+    expect(refined(<Button href="https://example.com/file.md">Download</Button>)).toContain('href="https://example.com/file.md"');
+  });
+
   it("Button and the pass's Segmented keep a 44 high hit area on a phone (G8a)", () => {
     vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("max-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
     render(<Button size={32}>Go</Button>);

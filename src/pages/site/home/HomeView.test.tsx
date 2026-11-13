@@ -114,6 +114,7 @@ describe("HomeView · the three columns", () => {
     mount({ drafts: { status: "signed-out" }, sessions: { status: "signed-out" }, week: { status: "signed-out" }, whereNext: { status: "signed-out" } });
     const studio = screen.getByRole("complementary", { name: "Your studio" });
     expect(within(studio).getByRole("link", { name: "Sign in" }).getAttribute("href")).toBe("/login?redirect=/");
+    expect(within(studio).getByRole("link", { name: "Sign in" }).getAttribute("data-ui")).toBe("button");
     expect(screen.queryByRole("heading", { name: "Where next" })).toBeNull();
   });
 });

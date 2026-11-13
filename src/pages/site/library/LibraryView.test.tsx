@@ -119,6 +119,7 @@ describe("LibraryView", () => {
     expect(within(panel).getByLabelText("Your note")).toHaveValue("Good section split. Try with the call notes build.");
     expect(within(panel).getByRole("button", { name: "Use in a build" })).toBeInTheDocument();
     expect(within(panel).getByRole("link", { name: "Open source" })).toBeInTheDocument();
+    expect(within(panel).getByRole("link", { name: "Open source" }).getAttribute("data-ui")).toBe("button");
   });
 
   it("shows a selected build with its Plaque and Open, no version switch", () => {
@@ -127,6 +128,7 @@ describe("LibraryView", () => {
     expect(panel.querySelector('[data-ui="plaque"]')).not.toBeNull();
     expect(within(panel).queryByRole("radiogroup")).toBeNull();
     expect(within(panel).getByRole("link", { name: "Open" })).toHaveAttribute("href", "/b2/inbox-triage");
+    expect(within(panel).getByRole("link", { name: "Open" })).toHaveAttribute("data-ui", "button");
     fireEvent.click(within(panel).getByRole("button", { name: "Copy" }));
     expect(build.onCopy).toHaveBeenCalled();
     fireEvent.click(within(panel).getByRole("button", { name: "Add to a collection" }));
@@ -157,6 +159,7 @@ describe("LibraryView", () => {
     const empty = screen.getByTestId("library-empty");
     expect(within(empty).getByText("Save a step from any build and it waits for you here.")).toBeInTheDocument();
     expect(within(empty).getAllByRole("link")).toHaveLength(1);
+    expect(within(empty).getByRole("link")).toHaveAttribute("data-ui", "button");
   });
 
   it("puts the kinds in a row of tabs on a phone, then the table, then the selected item", () => {

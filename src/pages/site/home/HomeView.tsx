@@ -19,6 +19,7 @@ import { Plus } from "lucide-react";
 import { Avatar } from "@/components/brand/Avatar";
 import { EmptyState } from "@/components/brand/EmptyState";
 import { ErrorState, type PanelFailure } from "@/components/brand/ErrorState";
+import { Button } from "@/components/brand/Button";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { LampBar } from "@/components/brand/LampDot";
@@ -49,7 +50,6 @@ import {
   HomeColumns,
   HomeControl,
   HomeLoadingView,
-  HomePrimary,
   Rule,
   SectionBones,
   ellipsis,
@@ -393,7 +393,9 @@ function StudioSignedOut() {
     <section aria-label="Your studio">
       <EmptyState line="Sign in to see your drafts, sessions and week." action={undefined} />
       <div style={{ marginTop: 12 }}>
-        <HomePrimary href={SIGN_IN}>Sign in</HomePrimary>
+        <Button variant="primary" size={32} href={SIGN_IN} data-visual-slot="btn-primary">
+          Sign in
+        </Button>
       </div>
     </section>
   );

@@ -24,6 +24,7 @@ import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 
 import { useIsPhone } from "@/components/shell/useMinWidth";
+import { PageLink } from "@/lib/routing/PageLink";
 import { useInteractive } from "@/lib/theme/interactive";
 import { ring, touchArea } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
@@ -45,6 +46,8 @@ export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement
   icon?: LucideIcon;
   /** `display: flex; width: 100%` — the mobile 48px buttons. */
   fullWidth?: boolean;
+  /** Draw the button as a link to this address, with identical styles: a router link for a path on the site, an anchor otherwise. */
+  href?: string;
   children: ReactNode;
 }
 
@@ -54,6 +57,7 @@ export function Button({
   fontSize = 13,
   icon: Icon,
   fullWidth = false,
+  href,
   type = "button",
   disabled,
   style,
@@ -87,38 +91,46 @@ export function Button({
             border: "1px solid transparent",
             color: state.hovered ? t.text : t.text2,
           };
+  const look: CSSProperties = {
+    boxSizing: "border-box",
+    height,
+    padding: small ? "0 8px" : height < 36 ? "0 12px" : "0 16px",
+    borderRadius: r.control,
+    color: variant === "secondary" ? t.text : undefined,
+    ...paint,
+    fontFamily: FIGTREE,
+    fontSize: small ? 12 : 13,
+    fontWeight: 500,
+    display: fullWidth ? "flex" : "inline-flex",
+    width: fullWidth ? "100%" : undefined,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    cursor: disabled ? "not-allowed" : "pointer",
+    opacity: disabled ? 0.5 : undefined,
+    whiteSpace: "nowrap",
+    flexShrink: 0,
+    textDecoration: "none",
+    ...touchArea(phone),
+    ...ring(state.focusVisible),
+    ...style,
+  };
+  if (href !== undefined) {
+    /* The same element in every respect but its tag: the button's attributes and handlers ride on the anchor. */
+    const anchor = { "data-ui": "button", "data-variant": variant, ...(rest as object), ...(handlers as object), style: look };
+    /* A download is never routed: the router would take the click. */
+    return href.startsWith("/") && !("download" in rest) ? (
+      <PageLink to={href} {...anchor}>
+        {children}
+      </PageLink>
+    ) : (
+      <a href={href} {...anchor}>
+        {children}
+      </a>
+    );
+  }
   return (
-    <button
-      data-ui="button"
-      data-variant={variant}
-      type={type}
-      disabled={disabled}
-      {...rest}
-      {...handlers}
-      style={{
-        boxSizing: "border-box",
-        height,
-        padding: small ? "0 8px" : height < 36 ? "0 12px" : "0 16px",
-        borderRadius: r.control,
-        color: variant === "secondary" ? t.text : undefined,
-        ...paint,
-        fontFamily: FIGTREE,
-        fontSize: small ? 12 : 13,
-        fontWeight: 500,
-        display: fullWidth ? "flex" : "inline-flex",
-        width: fullWidth ? "100%" : undefined,
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.5 : undefined,
-        whiteSpace: "nowrap",
-        flexShrink: 0,
-        ...touchArea(phone),
-        ...ring(state.focusVisible),
-        ...style,
-      }}
-    >
+    <button data-ui="button" data-variant={variant} type={type} disabled={disabled} {...rest} {...handlers} style={look}>
       {children}
     </button>
   );

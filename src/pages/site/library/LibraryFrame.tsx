@@ -13,12 +13,9 @@ import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { pageColumns } from "@/components/shell/pageGrid";
 import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
-import { PageLink as Link } from "@/lib/routing/PageLink";
 import { ring } from "@/lib/theme/controls";
-import { TOUCH_MIN } from "@/lib/theme/density";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
-import { PRIMARY, controlPaint } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -75,65 +72,23 @@ export function LibraryColumns({ layout, head, left, main, detail, testId = "lib
 
 /* ── controls ── */
 
-const controlBase: CSSProperties = {
-  boxSizing: "border-box",
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 6,
-  borderRadius: r.control,
-  fontFamily: FIGTREE,
-  fontWeight: 400,
-  lineHeight: "normal",
-  whiteSpace: "nowrap",
-  textDecoration: "none",
-  cursor: "pointer",
-};
-
-/** A control 32 high (44 on a phone, as the Drafts page's controls are): the shared Button, or a link drawn to its size. */
+/** A control 32 high (44 on a phone, as the Drafts page's controls are): the shared Button, a link when it goes somewhere. */
 export function LibraryControl({ onClick, href, disabled, wide, children, ...rest }: { onClick?: () => void; href?: string; disabled?: boolean; wide?: boolean; children: ReactNode; "aria-label"?: string }) {
   const phone = useIsPhone();
-  const { state, handlers } = useInteractive<HTMLElement>({}, { disabled });
-  if (!href) {
-    return (
-      <Button variant="secondary" size={phone ? 44 : 32} fullWidth={wide} disabled={disabled} onClick={onClick} {...rest}>
-        {children}
-      </Button>
-    );
-  }
-  const style: CSSProperties = {
-    ...controlBase,
-    height: phone ? TOUCH_MIN : 32,
-    width: wide ? "100%" : undefined,
-    padding: "0 12px",
-    fontSize: 12.5,
-    color: t.text,
-    ...controlPaint(state),
-    ...ring(state.focusVisible),
-  };
   return (
-    <Link to={href} {...rest} {...handlers} style={style}>
+    <Button variant="secondary" size={phone ? 44 : 32} href={href} fullWidth={wide} disabled={disabled} onClick={onClick} {...rest}>
       {children}
-    </Link>
+    </Button>
   );
 }
 
-/** The view's one primary: `--action` fill, `--on-action` text 500, radius 6, 32 high (44 on a phone). */
+/** The view's one primary: the shared Button, `--action`, 32 high (44 on a phone); a link when it goes somewhere. */
 export function LibraryPrimary({ onClick, href, children }: { onClick?: () => void; href?: string; children: ReactNode }) {
   const phone = useIsPhone();
-  const { state, handlers } = useInteractive<HTMLElement>();
-  if (!href) {
-    return (
-      <Button variant="primary" size={phone ? 44 : 32} data-visual-slot="btn-primary" onClick={onClick} style={{ flexGrow: 1 }}>
-        {children}
-      </Button>
-    );
-  }
-  const style: CSSProperties = { ...controlBase, ...PRIMARY, flexGrow: 1, height: phone ? TOUCH_MIN : 32, padding: "0 12px", fontSize: 12.5, fontWeight: 500, ...ring(state.focusVisible) };
   return (
-    <Link to={href} data-visual-slot="btn-primary" {...handlers} style={style}>
+    <Button variant="primary" size={phone ? 44 : 32} href={href} data-visual-slot="btn-primary" onClick={onClick} style={{ flexGrow: 1 }}>
       {children}
-    </Link>
+    </Button>
   );
 }
 

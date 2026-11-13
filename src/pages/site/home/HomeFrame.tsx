@@ -17,11 +17,6 @@ import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { PAGE_GUTTER, pageColumns } from "@/components/shell/pageGrid";
 import { useMinWidth } from "@/components/shell/useMinWidth";
-import { PageLink as Link } from "@/lib/routing/PageLink";
-import { ring } from "@/lib/theme/controls";
-import { useInteractive } from "@/lib/theme/interactive";
-import { r } from "@/lib/theme/radius";
-import { PRIMARY } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -58,30 +53,6 @@ export function Rule() {
 
 /* ── controls ── */
 
-const controlBase: CSSProperties = {
-  boxSizing: "border-box",
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  borderRadius: r.control,
-  fontFamily: FIGTREE,
-  lineHeight: "normal",
-  textDecoration: "none",
-  whiteSpace: "nowrap",
-  cursor: "pointer",
-};
-
-/** The view's one primary: `--action`, 32 high, 12.5/500. A link when it goes somewhere. */
-export function HomePrimary({ href, children }: { href: string; children: ReactNode }) {
-  const { state, handlers } = useInteractive<HTMLAnchorElement>();
-  return (
-    <Link to={href} data-visual-slot="btn-primary" {...handlers} style={{ ...controlBase, ...PRIMARY, height: 32, padding: "0 12px", fontSize: 12.5, fontWeight: 500, ...ring(state.focusVisible) }}>
-      {children}
-    </Link>
-  );
-}
-
-/** A control: `--control` fill, 1px `--control-border`, radius 6, 32 high, 12.5/400. */
 export function HomeControl({
   onClick,
   pressed,

@@ -69,10 +69,10 @@ import { sessionHeadline, shortDate } from "@/lib/build/readerSteps";
 import type { NeedGroup, NeedRow, ReaderFile, ReaderResult, ReaderStep } from "@/lib/build/readerSteps";
 import { markFor } from "@/lib/models/marks";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { ring, touchArea } from "@/lib/theme/controls";
+import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
-import { controlPaint, CONTROL } from "@/lib/theme/refinedControl";
+import { CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
@@ -341,36 +341,13 @@ function Chip({ children }: { children: ReactNode }) {
   return <span style={chipStyle}>{children}</span>;
 }
 
-/** A secondary 24 that is a link: Download, in the step card's head. */
+/** A secondary 24 that is a link: Download, in the step card's head. The shared Button, as an anchor. */
 function DownloadButton({ href, name, label = "Download" }: { href: string; name: string; label?: string }) {
   const phone = useIsPhone();
-  const { state, handlers } = useInteractive<HTMLAnchorElement>();
   return (
-    <a
-      href={href}
-      download={name}
-      data-hit=""
-      aria-label={`${label} ${name}`}
-      {...handlers}
-      style={{
-        ...controlPaint(state),
-        height: 24,
-        ...touchArea(phone),
-        boxSizing: "border-box",
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "0 8px",
-        borderRadius: 6,
-        ...text(12.5, 500, t.text),
-        whiteSpace: "nowrap",
-        textDecoration: "none",
-        flexShrink: 0,
-        ...ring(state.focusVisible),
-      }}
-    >
+    <Button variant="secondary" size={phone ? 44 : 28} href={href} data-hit="" aria-label={`${label} ${name}`} {...{ download: name }}>
       {label}
-    </a>
+    </Button>
   );
 }
 
