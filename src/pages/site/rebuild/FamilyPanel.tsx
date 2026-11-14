@@ -45,7 +45,7 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, display } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import {
   CANVAS_HEIGHT,
@@ -65,9 +65,11 @@ const READINGS: readonly SegmentedItem<FamilyReading>[] = [
   { value: "list", label: "List" },
 ];
 
-/** The title on a node: the display face at its floor (the board draws 14; Sentient is never under 17 here). */
+/** The title on a node: a card title, 16 / 500. */
 const nodeTitle: CSSProperties = {
-  ...display(17),
+  fontFamily: FIGTREE,
+  fontSize: 16,
+  fontWeight: 500,
   letterSpacing: "-0.01em",
   lineHeight: 1.05,
   textWrap: "nowrap",
@@ -186,8 +188,8 @@ function TreeNode({
           justifyContent: "space-between",
           gap: 4,
           marginTop: 2,
-          fontFamily: DM_MONO,
-          fontSize: 10,
+          fontFamily: FIGTREE,
+          fontSize: 11,
           lineHeight: "normal",
           color: t.text2,
         }}
@@ -302,7 +304,7 @@ export function FamilyList({
               </span>
               <span style={{ flexGrow: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                 <span style={{ ...nodeTitle, display: "block" }}>{node.title}</span>
-                <span style={{ fontFamily: DM_MONO, fontSize: 10, lineHeight: "normal", color: t.text2 }}>
+                <span style={{ fontFamily: FIGTREE, fontSize: 11, lineHeight: "normal", color: t.text2 }}>
                   {node.maker} · {countLabel(node.reproduced)} reproduced
                 </span>
               </span>

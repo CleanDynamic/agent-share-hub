@@ -24,7 +24,7 @@ export function TypeChip({ children, tone }: { children: ReactNode; tone?: ChipT
         borderRadius: r.chip,
         background: t.control,
         color: tone ? TONE[tone] : t.text2,
-        fontFamily: DM_MONO, fontSize: 10.5, fontWeight: 400, lineHeight: "20px", textTransform: "uppercase",
+        fontFamily: DM_MONO, fontSize: 11, fontWeight: 400, lineHeight: "20px", textTransform: "uppercase",
         whiteSpace: "nowrap",
       }}
     >

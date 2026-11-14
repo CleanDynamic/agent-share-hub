@@ -105,7 +105,7 @@ export const NEED_ROWS = 6;
 /** A text past this many words (or lines) is clamped to four lines, so it offers the whole of it. */
 export const LONG_WORDS = 40;
 
-export const mono = (size: 11 | 11.5 | 12): CSSProperties => ({ fontFamily: DM_MONO, fontSize: size, lineHeight: "normal", color: t.text2 });
+export const mono = (size: 11 | 12): CSSProperties => ({ fontFamily: DM_MONO, fontSize: size, lineHeight: "normal", color: t.text2 });
 
 export const stepDomId = (id: string) => `step-${id}`;
 
@@ -330,7 +330,7 @@ const chipStyle: CSSProperties = {
   height: 20,
   padding: "0 8px",
   borderRadius: r.chip,
-  ...text(11.5, 400, t.text),
+  ...text(12, 400, t.text),
   whiteSpace: "nowrap",
   maxWidth: "100%",
   overflow: "hidden",
@@ -384,7 +384,7 @@ function ReadAll({ onRead, label = "Read all", expanded }: { onRead: () => void;
       style={{
         ...bareButton,
         height: 24,
-        ...text(12.5, 500, t.text),
+        ...text(12, 500, t.text),
         textDecoration: "underline",
         textUnderlineOffset: 3,
         textDecorationColor: state.hovered ? t.text2 : t.line,
@@ -410,7 +410,7 @@ function StepText({ step, onRead, alone = false, indent = INDENT }: { step: Step
       <p
         data-testid="step-text"
         style={{
-          ...text(13.5, 400, t.text),
+          ...text(13, 400, t.text),
           margin: 0,
           paddingLeft: indent,
           lineHeight: "21px",
@@ -422,17 +422,17 @@ function StepText({ step, onRead, alone = false, indent = INDENT }: { step: Step
         <ChangedText text={step.text} changes={step.changes} />
       </p>
       {step.changes?.length ? (
-        <p data-testid="changes-line" style={{ ...text(11.5, 400, t.label), margin: 0, paddingLeft: indent }}>
+        <p data-testid="changes-line" style={{ ...text(12, 400, t.label), margin: 0, paddingLeft: indent }}>
           {changesLine(step.changes.length)}
         </p>
       ) : null}
       {long ? (
         <div style={{ display: "flex", alignItems: "center", gap: 12, paddingLeft: indent }}>
           <ReadAll onRead={onRead} />
-          <span style={text(11.5, 400, t.label, tnum)}>{step.words} words</span>
+          <span style={text(12, 400, t.label, tnum)}>{step.words} words</span>
         </div>
       ) : alone ? (
-        <div style={{ ...text(11.5, 400, t.label, tnum), paddingLeft: indent }}>{step.words} words</div>
+        <div style={{ ...text(12, 400, t.label, tnum), paddingLeft: indent }}>{step.words} words</div>
       ) : null}
     </>
   );
@@ -458,7 +458,7 @@ function PasteRow({ text: what, title, phone, onGo }: { text: string; title: str
         ...ring(state.focusVisible),
       }}
     >
-      <span style={text(12.5, 400, t.text2)}>{what}</span>
+      <span style={text(12, 400, t.text2)}>{what}</span>
       <span style={{ ...chipStyle, background: state.hovered ? hoverFill(t.module) : t.module }}>{title}</span>
     </button>
   );
@@ -479,12 +479,12 @@ function Inputs({ entry, phone, go }: { entry: ReaderStep; phone: boolean; go: (
         ) : (
           <div key={file.id} style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 32, minWidth: 0 }}>
             {file.setup ? (
-              <span style={{ ...text(12.5, 400, t.text), minWidth: 0, overflowWrap: "anywhere" }}>
+              <span style={{ ...text(12, 400, t.text), minWidth: 0, overflowWrap: "anywhere" }}>
                 {file.setup.kind === "project" ? `Put ${file.name} in your project` : `Import ${file.name} into ${file.setup.tool}`}
               </span>
             ) : (
               <>
-                <span style={text(12.5, 400, t.text2)}>attach</span>
+                <span style={text(12, 400, t.text2)}>attach</span>
                 <Chip>{file.name}</Chip>
               </>
             )}
@@ -505,10 +505,10 @@ function AttachDownload({ file }: { file: ReaderFile }) {
 function MadeFileRow({ file, madeIn, phone, go }: { file: ReaderFile; madeIn: NonNullable<ReaderFile["madeIn"]>; phone: boolean; go: (id: string) => void }) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, minHeight: 32, minWidth: 0 }}>
-      <span style={text(12.5, 400, t.text2)}>attach</span>
+      <span style={text(12, 400, t.text2)}>attach</span>
       <span style={{ display: "inline-flex", alignItems: "center", minWidth: 0 }}>
         <Chip>{file.name}</Chip>
-        <span style={{ ...text(12.5, 400, t.text2), whiteSpace: "nowrap" }}>, made in {stepList([madeIn.number], false)}</span>
+        <span style={{ ...text(12, 400, t.text2), whiteSpace: "nowrap" }}>, made in {stepList([madeIn.number], false)}</span>
       </span>
       <span style={{ flexGrow: 1 }} />
       <GoToStep stepId={madeIn.stepId} number={madeIn.number} phone={phone} go={go} />
@@ -529,7 +529,7 @@ function GoToStep({ stepId, number, phone, go }: { stepId: string; number: strin
       }}
       {...handlers}
       style={{
-        ...text(12.5, 500, t.text),
+        ...text(12, 500, t.text),
         display: "inline-flex",
         alignItems: "center",
         minHeight: phone ? 44 : 24,
@@ -608,14 +608,14 @@ function SentWithTile({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
       <span style={{ ...text(12, 400, t.label), padding: "4px 0" }}>{`Attached to ${step.inside?.label ?? "this step"}`}</span>
       {step.kind === "file" ? (
         <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 32, minWidth: 0 }}>
-          <span style={text(12.5, 400, t.text2)}>attach</span>
+          <span style={text(12, 400, t.text2)}>attach</span>
           <Chip>{file?.name ?? name ?? "a file"}</Chip>
           <span style={{ flexGrow: 1 }} />
           {file ? <AttachDownload file={file} /> : null}
         </div>
       ) : (
         <>
-          <span style={{ ...text(12.5, 500, t.text), overflowWrap: "anywhere" }}>{[TILE_KIND[step.kind] ?? step.kind, name].filter(Boolean).join(" · ")}</span>
+          <span style={{ ...text(12, 500, t.text), overflowWrap: "anywhere" }}>{[TILE_KIND[step.kind] ?? step.kind, name].filter(Boolean).join(" · ")}</span>
           {step.kind === "code" ? (
             <>
               <CodePartLine step={step} />
@@ -714,8 +714,8 @@ function ChatHead({ chat, copy, fold }: { chat: SessionChat; copy?: { onCopy: (t
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
           <span style={text(12, 400, t.label)}>{item.notShared ? `${item.kindLabel} · not shared` : item.kindLabel}</span>
-          <span style={{ ...text(12.5, 400, t.text), overflowWrap: "anywhere" }}>{item.rule ? `${item.rule.when}${item.rule.filter ? ` · ${item.rule.filter}` : ""}: ${item.name}` : item.name}</span>
-          {item.description ? <span style={{ ...text(11.5, 400, t.label), overflowWrap: "anywhere" }}>{item.description}</span> : null}
+          <span style={{ ...text(12, 400, t.text), overflowWrap: "anywhere" }}>{item.rule ? `${item.rule.when}${item.rule.filter ? ` · ${item.rule.filter}` : ""}: ${item.name}` : item.name}</span>
+          {item.description ? <span style={{ ...text(12, 400, t.label), overflowWrap: "anywhere" }}>{item.description}</span> : null}
         </div>
         {item.download ? <DownloadButton href={item.download} name={item.name} /> : null}
       </div>
@@ -768,7 +768,7 @@ function ChatHead({ chat, copy, fold }: { chat: SessionChat; copy?: { onCopy: (t
           {outputsOpen ? (
             <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 2 }}>
               {chat.outputs.map((row) => (
-                <li key={`${row.label}:${row.href ?? ""}`} style={text(12.5, 400, t.text2)}>
+                <li key={`${row.label}:${row.href ?? ""}`} style={text(12, 400, t.text2)}>
                   {row.href ? (
                     <a href={row.href} rel="noopener noreferrer" target="_blank" style={{ color: "inherit", textDecoration: "underline" }}>
                       {row.label}
@@ -794,7 +794,7 @@ function ChatHead({ chat, copy, fold }: { chat: SessionChat; copy?: { onCopy: (t
               </div>
               <code style={{ ...text(12, 400, t.text), fontFamily: DM_MONO, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{chat.startedWith.command}</code>
               {chat.startedWith.settings.map((line) => (
-                <span key={line} style={text(11.5, 400, t.label)}>
+                <span key={line} style={text(12, 400, t.label)}>
                   {line}
                 </span>
               ))}
@@ -803,7 +803,7 @@ function ChatHead({ chat, copy, fold }: { chat: SessionChat; copy?: { onCopy: (t
           {grouped
             ? grouped.map((group) => (
                 <div key={group.loaded} role="group" aria-label={group.label} data-testid="setup-loaded" data-loaded={group.loaded} style={{ display: "flex", flexDirection: "column" }}>
-                  <span style={{ ...text(11.5, 400, t.label), paddingTop: 8 }}>{group.label}</span>
+                  <span style={{ ...text(12, 400, t.label), paddingTop: 8 }}>{group.label}</span>
                   {group.items.map(setupRow)}
                 </div>
               ))
@@ -1190,13 +1190,13 @@ function ResultCard({ result, ctx }: { result: ReaderResult; ctx: Ctx }) {
           <Glyph name="check" size={14} />
         </span>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
-          <span data-testid="result-eyebrow" style={text(11.5, 400, t.label)}>{resultTypeLine(result.facts)}</span>
+          <span data-testid="result-eyebrow" style={text(12, 400, t.label)}>{resultTypeLine(result.facts)}</span>
           {name}
           {/* CA-12 P9: the thing itself, as the maker's tile draws it. */}
           {result.trained ? null : <ResultTileBody facts={result.facts} />}
           {/* CA-05 P10: a trained model, said in one line, with the file it learned from. */}
           {result.trained ? (
-            <span data-testid="trained-model-line" style={{ ...text(12.5, 400, t.text2), overflowWrap: "anywhere" }}>
+            <span data-testid="trained-model-line" style={{ ...text(12, 400, t.text2), overflowWrap: "anywhere" }}>
               {result.trained.line}
             </span>
           ) : null}
@@ -1582,7 +1582,7 @@ function NeedGroupBlock({ group, onOpen }: { group: NeedGroup; onOpen: (row: Nee
           <Row
             label={
               row.id ? (
-                <button type="button" onClick={() => onOpen(row)} style={{ ...bareButton, ...text(12.5, 400, t.text2) }}>
+                <button type="button" onClick={() => onOpen(row)} style={{ ...bareButton, ...text(12, 400, t.text2) }}>
                   {row.title}
                 </button>
               ) : (
@@ -1596,7 +1596,7 @@ function NeedGroupBlock({ group, onOpen }: { group: NeedGroup; onOpen: (row: Nee
         </div>
       ))}
       {more > 0 ? (
-        <button type="button" onClick={() => setAll(true)} style={{ ...bareButton, ...text(12.5, 500, t.text), padding: "8px 0 0", textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line }}>
+        <button type="button" onClick={() => setAll(true)} style={{ ...bareButton, ...text(12, 500, t.text), padding: "8px 0 0", textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line }}>
           Show {more} more
         </button>
       ) : null}
@@ -1631,7 +1631,7 @@ function ListRow({ row }: { row: NeedRow }) {
   const body = (
     <>
       {chip ? <TypeChip>{chip}</TypeChip> : null}
-      <span style={file ? { fontFamily: DM_MONO, fontSize: 12.5, fontWeight: 500, color: t.text, overflowWrap: "anywhere" } : { ...text(13, 500, t.text), overflowWrap: "anywhere" }}>{row.title}</span>
+      <span style={file ? { fontFamily: DM_MONO, fontSize: 12, fontWeight: 500, color: t.text, overflowWrap: "anywhere" } : { ...text(13, 500, t.text), overflowWrap: "anywhere" }}>{row.title}</span>
       {row.model ? <span style={{ ...text(13, 400, t.label), overflowWrap: "anywhere" }}>{`· ${row.model}`}</span> : null}
       <span style={{ flexGrow: 1 }} />
       {where ? <span style={{ ...text(12, 400, t.label), whiteSpace: "nowrap" }}>{where}</span> : null}
@@ -1677,8 +1677,8 @@ export function NeedPanel({ view, onOpenOther, details = [] }: NeedPanelProps) {
       ) : null}
       {notes.map((note) => (
         <div key={note.title} data-testid="need-note" style={column(4)}>
-          <span style={text(12.5, 500, t.text)}>{note.title}</span>
-          <span style={{ ...text(12.5, 400, t.text), lineHeight: "18px" }}>{note.line}</span>
+          <span style={text(12, 500, t.text)}>{note.title}</span>
+          <span style={{ ...text(12, 400, t.text), lineHeight: "18px" }}>{note.line}</span>
         </div>
       ))}
       {rest.map((group) => (

@@ -17,7 +17,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { WELL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE, display } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 export const SET_NAME_MAX = 80;
 
@@ -73,7 +73,7 @@ function Frame({
               gap: 8,
             }}
           >
-            <Dialog.Title style={{ ...display(22), margin: 0, color: t.text }}>
+            <Dialog.Title style={{ fontFamily: FIGTREE, fontSize: 16, fontWeight: 500, lineHeight: 1.05, letterSpacing: "-0.02em", textWrap: "balance", margin: 0, color: t.text }}>
               {title}
             </Dialog.Title>
             <Dialog.Close asChild>
@@ -170,7 +170,7 @@ export function SetNameDialog({
         <label
           style={{
             display: "block",
-            fontSize: 12.5,
+            fontSize: 12,
             fontWeight: 500,
             marginBottom: 6,
           }}
@@ -216,7 +216,7 @@ export function SetNameDialog({
               alignItems: "start",
               marginTop: 16,
               cursor: "pointer",
-              fontSize: 12.5,
+              fontSize: 12,
             }}
           >
             <Checkbox

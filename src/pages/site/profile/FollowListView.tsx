@@ -59,7 +59,7 @@ function Person({ person }: { person: FollowRowView }) {
           {person.name}
           {person.handle ? <span style={{ fontWeight: 400, color: t.label }}>{` @${person.handle}`}</span> : null}
         </span>
-        {person.line ? <span style={{ ...ellipsis, color: t.text2, fontSize: 12.5 }}>{person.line}</span> : null}
+        {person.line ? <span style={{ ...ellipsis, color: t.text2, fontSize: 12 }}>{person.line}</span> : null}
       </span>
     </span>
   );

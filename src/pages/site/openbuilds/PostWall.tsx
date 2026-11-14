@@ -43,7 +43,7 @@ function Who({ author }: { author: WallCard["author"] }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
       <Avatar size={20} userId={author.id} name={author.name} src={author.avatarUrl} />
-      <span style={line(12.5, t.text2)}>{author.handle ? `@${author.handle}` : author.name}</span>
+      <span style={line(12, t.text2)}>{author.handle ? `@${author.handle}` : author.name}</span>
     </div>
   );
 }

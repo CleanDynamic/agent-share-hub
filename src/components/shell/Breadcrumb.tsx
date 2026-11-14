@@ -28,7 +28,7 @@ import { useIsPhone } from "./useMinWidth";
 const LINK_HIT: CSSProperties = { display: "inline-flex", alignItems: "center", minHeight: 24, margin: "-3px 0" };
 
 export function BreadcrumbView({ trail }: { trail: readonly Crumb[] }) {
-  const text: CSSProperties = { fontFamily: FIGTREE, fontSize: 12.5 };
+  const text: CSSProperties = { fontFamily: FIGTREE, fontSize: 12 };
   const currentWeight = 500;
   return (
     <nav
@@ -79,7 +79,7 @@ export function BreadcrumbView({ trail }: { trail: readonly Crumb[] }) {
               </FrameLink>
             )}
             {!last && (
-              <span aria-hidden="true" style={{ fontFamily: FIGTREE, fontSize: 12.5, color: t.label }}>
+              <span aria-hidden="true" style={{ fontFamily: FIGTREE, fontSize: 12, color: t.label }}>
                 /
               </span>
             )}

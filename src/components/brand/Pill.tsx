@@ -48,7 +48,7 @@ export function Pill({ children, tone, style }: PillProps) {
         padding: "0 8px",
         borderRadius: r.chip,
         fontFamily: DM_MONO,
-        fontSize: 10.5,
+        fontSize: 11,
         lineHeight: "normal",
         whiteSpace: "nowrap",
         ...paint(tone),

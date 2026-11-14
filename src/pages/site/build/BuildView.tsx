@@ -51,7 +51,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { scrollBehavior } from "@/lib/theme/motion";
 import { CONTROL, controlPaint, hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE, figure, DM_MONO, display } from "@/lib/theme/type";
+import { FIGTREE, figure, DM_MONO } from "@/lib/theme/type";
 
 import type {
   BuildActionsView,
@@ -237,7 +237,7 @@ export function PartRow({
         ...ring(state.focusVisible),
       }}
     >
-      <span style={{ ...display(20), color: t.label }}>{String(part.number).padStart(2, "0")}</span>
+      <span style={{ fontFamily: FIGTREE, fontSize: 16, fontWeight: 500, lineHeight: 1.05, letterSpacing: "-0.02em", color: t.label }}>{String(part.number).padStart(2, "0")}</span>
       <span style={{ display: "flex", alignItems: "center", gap: phone ? 6 : 4, minWidth: 0 }}>
         <span
           aria-hidden="true"
@@ -263,7 +263,7 @@ export function PartRow({
         </span>
       </span>
       {meta ? (
-        <span style={{ fontFamily: DM_MONO, fontSize: phone ? 11 : 10, color: part.gap ? t.catBreakage : t.text2 }}>{meta}</span>
+        <span style={{ fontFamily: DM_MONO, fontSize: 11, color: part.gap ? t.catBreakage : t.text2 }}>{meta}</span>
       ) : (
         <span />
       )}
@@ -309,7 +309,7 @@ export function AnatomyDialog({
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <Dialog.Title style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, color: t.text }}>{title}</Dialog.Title>
+            <Dialog.Title style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, fontWeight: 500, color: t.text }}>{title}</Dialog.Title>
             <Dialog.Close asChild>
               <IconButton icon={X} label="Close" size={32} />
             </Dialog.Close>
@@ -551,7 +551,7 @@ function dockItemStyle(first: boolean, phone: boolean, height: number, state: { 
     border: 0,
     borderLeft: first ? 0 : `1px solid ${t.controlBorder}`,
     background: state.hovered ? hoverFill() : "transparent",
-    ...text(12.5, 500, t.text),
+    ...text(12, 500, t.text),
     whiteSpace: "nowrap",
     textDecoration: "none",
     cursor: "pointer",
@@ -953,8 +953,8 @@ function ThreadHero({
             style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 28, marginTop: 8, minWidth: 0, maxWidth: 680, whiteSpace: "nowrap" }}
           >
             {maker ? <Avatar size={20} userId={maker.userId} name={name} src={maker.avatarUrl} /> : null}
-            <span style={{ ...text(12.5, 400, t.text), flex: "0 100 auto", minWidth: 0, ...ellipsis }}>{nameNode}</span>
-            <span style={{ ...text(12.5, 400, t.label), display: "flex", flex: "0 1 auto", minWidth: 0 }}>
+            <span style={{ ...text(12, 400, t.text), flex: "0 100 auto", minWidth: 0, ...ellipsis }}>{nameNode}</span>
+            <span style={{ ...text(12, 400, t.label), display: "flex", flex: "0 1 auto", minWidth: 0 }}>
               {handle ? <span style={{ minWidth: 0, ...ellipsis }}>{`@${handle}`}</span> : null}
               {thread.published ? <span style={{ flex: "none", whiteSpace: "pre" }}>{handle ? ` · ${thread.published}` : thread.published}</span> : null}
               {withLine ? <span data-testid="build-contributors" style={{ minWidth: 0, whiteSpace: "pre", ...ellipsis }}>{` · ${withLine}`}</span> : null}
@@ -1311,7 +1311,7 @@ export function BuildView(props: BuildViewProps) {
 function SummaryLine({ summary }: { summary: string | undefined }) {
   if (!summary) return null;
   return (
-    <p data-testid="build-summary" title={summary} style={{ ...text(12.5, 400, t.text2), margin: 0, minWidth: 0, maxWidth: "100%", ...ellipsis }}>
+    <p data-testid="build-summary" title={summary} style={{ ...text(12, 400, t.text2), margin: 0, minWidth: 0, maxWidth: "100%", ...ellipsis }}>
       {summary}
     </p>
   );

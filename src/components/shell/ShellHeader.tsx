@@ -153,7 +153,7 @@ export function ShellHeader({
                 color: "var(--on-action)",
                 fontFamily: FONT,
                 fontSize: 12,
-                fontWeight: 600,
+                fontWeight: 500,
                 cursor: primaryAction.disabled ? "not-allowed" : "pointer",
                 opacity: primaryAction.disabled ? 0.5 : 1,
                 transition: feedback("transform", "opacity"),
@@ -181,8 +181,8 @@ export function ShellHeader({
             display: "flex",
             alignItems: "center",
             fontFamily: FONT,
-            fontSize: 15,
-            fontWeight: 600,
+            fontSize: 14,
+            fontWeight: 500,
             color: "var(--text)",
             whiteSpace: "nowrap",
             overflow: "hidden",
@@ -243,8 +243,8 @@ export function ShellHeader({
                     {typeof t.count === "number" && (
                       <span
                         style={{
-                          fontSize: 10,
-                          fontWeight: 600,
+                          fontSize: 11,
+                          fontWeight: 500,
                           padding: "1px 4px",
                           borderRadius: 999,
                           background: "var(--recess)",

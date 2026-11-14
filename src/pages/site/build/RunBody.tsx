@@ -31,7 +31,7 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import type { LayerStepsView, RunBodyView, RunStepView } from "./buildModel";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
@@ -51,7 +51,7 @@ const stepGrid = (phone: boolean): CSSProperties => ({
   alignItems: "start",
 });
 
-const numberStyle: CSSProperties = { ...display(20), color: t.label };
+const numberStyle: CSSProperties = { fontFamily: FIGTREE, fontSize: 16, fontWeight: 500, lineHeight: 1.05, letterSpacing: "-0.02em", color: t.label };
 
 /** A polite live region of its own: the bodies sit outside the view's announcer. */
 function useCopied(onCopy: (text: string) => Promise<boolean>) {
@@ -185,7 +185,7 @@ function Step({
   return (
     <>
       {step.heading ? (
-        <li role="presentation" data-testid="build-run-heading" style={{ listStyle: "none", fontFamily: FIGTREE, fontSize: phone ? 13 : 12, fontWeight: 600, color: t.text2, paddingTop: 4 }}>
+        <li role="presentation" data-testid="build-run-heading" style={{ listStyle: "none", fontFamily: FIGTREE, fontSize: phone ? 13 : 12, fontWeight: 500, color: t.text2, paddingTop: 4 }}>
           {step.heading}
         </li>
       ) : null}
@@ -195,10 +195,10 @@ function Step({
       </span>
       <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 7, minHeight: 25 }}>
-          <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: phone ? 14 : 13, fontWeight: 600, lineHeight: 1.4, color: t.text, minWidth: 0, flexGrow: 1 }}>
+          <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: phone ? 14 : 13, fontWeight: 500, lineHeight: 1.4, color: t.text, minWidth: 0, flexGrow: 1 }}>
             <span style={VISUALLY_HIDDEN}>{`Step ${said}: `}</span>
             {step.title}
-            <span style={{ fontFamily: DM_MONO, fontSize: 10, fontWeight: 400, color: t.text2, marginLeft: 6, whiteSpace: "nowrap" }}>
+            <span style={{ fontFamily: DM_MONO, fontSize: 11, fontWeight: 400, color: t.text2, marginLeft: 6, whiteSpace: "nowrap" }}>
               {step.kind}
             </span>
           </h3>
@@ -229,7 +229,7 @@ function Step({
           </div>
         ) : null}
         {step.quiet?.map((line) => (
-          <span key={line} data-testid="build-run-quiet" style={{ fontFamily: FIGTREE, fontSize: 11.5, color: t.label, fontVariantNumeric: "tabular-nums" }}>{line}</span>
+          <span key={line} data-testid="build-run-quiet" style={{ fontFamily: FIGTREE, fontSize: 12, color: t.label, fontVariantNumeric: "tabular-nums" }}>{line}</span>
         ))}
       </div>
     </li>
@@ -394,7 +394,7 @@ export function LayerSteps({
               </span>
               <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
                 {step.title ? (
-                  <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: phone ? 14 : 13, fontWeight: 600, lineHeight: 1.4, color: t.text }}>
+                  <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: phone ? 14 : 13, fontWeight: 500, lineHeight: 1.4, color: t.text }}>
                     <span style={VISUALLY_HIDDEN}>{`Step ${step.n}: `}</span>
                     {step.title}
                   </h3>

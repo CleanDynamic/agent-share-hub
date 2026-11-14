@@ -248,7 +248,7 @@ export function SinceSection({ meta, rows, now }: { meta: string; rows: readonly
                 <div style={{ fontWeight: 500 }}>{row.href ? <PlainLink to={row.href}>{row.title}</PlainLink> : row.title}</div>
                 <div style={text(12, 400, t.label)}>{row.detail}</div>
               </div>
-              <span style={text(11.5, 400, t.label)}>{shortAgo(row.at, now)}</span>
+              <span style={text(12, 400, t.label)}>{shortAgo(row.at, now)}</span>
             </li>
           );
         })}
@@ -309,7 +309,7 @@ export function SessionsSection({ sessions, onAdd }: { sessions: HomeViewProps["
             </span>
             <span style={{ minWidth: 0 }}>
               <span style={{ display: "block", ...ellipsis }}>{row.title}</span>
-              <span style={{ display: "block", ...mono(10.5, t.label) }}>{row.meta}</span>
+              <span style={{ display: "block", ...mono(11, t.label) }}>{row.meta}</span>
             </span>
             <IconButton icon={Plus} drawn={<Glyph name="plus" size={12} />} label="Add to a new build" size={24} onClick={() => onAdd(row.id)} />
           </div>
@@ -369,14 +369,14 @@ export function WeekSection({ week }: { week: HomeViewProps["week"] }) {
               return (
                 <div key={index} aria-hidden="true" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                   <span style={dayBar(state, today)} />
-                  <span style={text(10.5, today ? 500 : 400, today ? t.text : t.label)}>{DAY_LETTERS[index]}</span>
+                  <span style={text(11, today ? 500 : 400, today ? t.text : t.label)}>{DAY_LETTERS[index]}</span>
                 </div>
               );
             })}
           </div>
           {week.data.challenges.map((row, index) => (
             <div key={row.slug} data-testid="weekly-challenge" style={{ padding: index === week.data.challenges.length - 1 ? "10px 0 0" : "10px 0", borderTop: `1px solid ${t.hairline}` }}>
-              <span style={{ display: "flex", justifyContent: "space-between", gap: 8, ...text(12.5, 500, t.text) }}>
+              <span style={{ display: "flex", justifyContent: "space-between", gap: 8, ...text(12, 500, t.text) }}>
                 <span>{row.title}</span>
                 <span style={{ color: t.label, fontWeight: 400, whiteSpace: "nowrap" }}>{`${row.done} / ${row.target}`}</span>
               </span>
@@ -511,8 +511,8 @@ function useNear<E extends Element>(id: string, onNear?: (ids: string[]) => void
 function AuthorRow({ name, line }: { name: string; line: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6, minHeight: 24, marginBottom: 4, whiteSpace: "nowrap", minWidth: 0 }}>
-      <span style={text(15, 500, t.text, { fontWeight: 600, lineHeight: 1.4 })}>{name}</span>
-      <span style={{ ...text(14, 400, t.label, { lineHeight: 1.4 }), ...ellipsis, minWidth: 0 }}>{line}</span>
+      <span style={text(13, 500, t.text, { lineHeight: 1.4 })}>{name}</span>
+      <span style={{ ...text(13, 400, t.label, { lineHeight: 1.4 }), ...ellipsis, minWidth: 0 }}>{line}</span>
     </div>
   );
 }
@@ -570,7 +570,7 @@ export function NoteItem({ item, now, heading }: { item: HomeReproNote; now: num
             </div>
           ) : null}
         </div>
-        <span style={text(11.5, 400, t.label)}>{shortAgo(item.at, now)}</span>
+        <span style={text(12, 400, t.label)}>{shortAgo(item.at, now)}</span>
       </div>
     </FeedItemFrame>
   );
@@ -603,7 +603,7 @@ export function RebuildItem({ item, now, onNear }: { item: HomeRebuildPost; now:
           <div style={{ display: "grid", gridTemplateColumns: "88px minmax(0, 1fr)", columnGap: 12, marginTop: 12, padding: 10, background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card }}>
             <Cover cover={{ src: null }} height={58} />
             <span style={{ minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: 2 }}>
-              <span style={text(11.5, 400, t.label)}>Rebuilt from</span>
+              <span style={text(12, 400, t.label)}>Rebuilt from</span>
               <span style={{ fontWeight: 500, ...ellipsis }}>{item.source.title}</span>
               {source ? <span style={text(12, 400, t.label)}>{source}</span> : null}
             </span>
@@ -672,11 +672,11 @@ export function ReplyGroupItem({ item }: { item: HomeReplyGroup }) {
         <PlainLink to={item.to} data-testid="home-reply-group-link" style={{ display: "grid", gridTemplateColumns: "24px minmax(0, 1fr)", columnGap: 12, color: t.text, textDecoration: "none" }}>
           <Avatar size={24} userId={item.topic.author.id} name={name} src={item.topic.author.avatarUrl} />
           <span style={{ display: "flex", alignItems: "baseline", gap: 6, minWidth: 0, whiteSpace: "nowrap" }}>
-            <span style={text(13, 500, t.text, { fontWeight: 600, lineHeight: "20px" })}>{name}</span>
+            <span style={text(13, 500, t.text, { lineHeight: "20px" })}>{name}</span>
             <span style={{ ...text(12, 400, t.label, { lineHeight: "20px" }), ...ellipsis, minWidth: 0 }}>{line}</span>
           </span>
           <span style={{ gridColumn: 2, display: "block", marginTop: 4, ...text(13, 500, t.text, { lineHeight: 1.4 }), overflowWrap: "anywhere" }}>{item.topic.heading || "Untitled post"}</span>
-          <span data-testid="home-reply-group-count" style={{ gridColumn: 2, display: "block", marginTop: 8, ...text(12.5, 500, t.text2, { lineHeight: "20px" }) }}>
+          <span data-testid="home-reply-group-count" style={{ gridColumn: 2, display: "block", marginTop: 8, ...text(12, 500, t.text2, { lineHeight: "20px" }) }}>
             {item.count}
           </span>
         </PlainLink>
@@ -782,7 +782,7 @@ function Feed(props: HomeViewProps) {
 
 function Figure({ value, lamp = false }: { value: number | null; lamp?: boolean }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, ...text(24, 500, t.text, { lineHeight: 1.1, letterSpacing: "-0.02em" }) }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, ...text(16, 500, t.text, { lineHeight: 1.1, letterSpacing: "-0.02em" }) }}>
       {lamp ? <LampBar width={10} /> : null}
       {value === null ? " " : value.toLocaleString("en-GB")}
     </div>
@@ -790,7 +790,7 @@ function Figure({ value, lamp = false }: { value: number | null; lamp?: boolean 
 }
 
 const runChip = (worked: boolean): CSSProperties => ({
-  ...text(11.5, 400, worked ? t.evidence : t.catBreakage, { lineHeight: "18px" }),
+  ...text(12, 400, worked ? t.evidence : t.catBreakage, { lineHeight: "18px" }),
   display: "inline-flex",
   alignItems: "center",
   boxSizing: "border-box",
@@ -833,11 +833,11 @@ export function RoomSection({ room, now }: { room: HomeRoom; now: number }) {
                 style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", columnGap: 10, alignItems: "center", minHeight: 32, color: t.text, textDecoration: "none" }}
               >
                 <span style={runChip(run.worked)}>{run.worked ? "Worked" : "Didn’t"}</span>
-                <span style={{ minWidth: 0, ...ellipsis, ...text(12.5, 400, t.text) }}>
+                <span style={{ minWidth: 0, ...ellipsis, ...text(12, 400, t.text) }}>
                   <span style={{ fontWeight: 500 }}>{run.buildTitle}</span>
                   {run.handle ? <span style={{ color: t.label }}>{` · ${atHandle(run.handle)}`}</span> : null}
                 </span>
-                <span style={text(11.5, 400, t.label)}>{shortAgo(run.at, now)}</span>
+                <span style={text(12, 400, t.label)}>{shortAgo(run.at, now)}</span>
               </Link>
               {run.canStartTopic && room.onStartTopic ? (
                 <div style={{ paddingBottom: 8 }}>
@@ -893,7 +893,7 @@ export function MostRunSection({ mostRun }: { mostRun: HomeViewProps["mostRun"] 
       ) : mostRun.status === "ready" && mostRun.data.length > 0 ? (
         mostRun.data.map((row, index) => (
           <Link key={row.buildId} to={row.href} data-testid="home-most-run-row" style={rowLink(index === mostRun.data.length - 1, MOST_RUN_ROW)}>
-            <span style={mono(10.5, t.label)}>{index + 1}</span>
+            <span style={mono(11, t.label)}>{index + 1}</span>
             <Avatar size={28} userId={row.maker.id} name={row.maker.name} hue={row.maker.hue} src={row.maker.avatarUrl} />
             <span style={{ minWidth: 0 }}>
               <span style={{ display: "block", fontWeight: 500, ...ellipsis }}>{row.title}</span>
@@ -927,7 +927,7 @@ export function WhereNextSection({ whereNext }: { whereNext: HomeViewProps["wher
             <Cover cover={row.cover} height={40} />
             <span style={{ minWidth: 0 }}>
               <span style={{ display: "block", fontWeight: 500, ...ellipsis }}>{row.title}</span>
-              <span style={{ display: "block", ...mono(10.5, t.label), ...ellipsis }}>{row.reason}</span>
+              <span style={{ display: "block", ...mono(11, t.label), ...ellipsis }}>{row.reason}</span>
             </span>
           </Link>
         ))

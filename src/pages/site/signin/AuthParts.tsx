@@ -458,7 +458,7 @@ export function PrimaryAction({ children, loadingText, loading = false, disabled
     <Button
       variant="primary"
       size={sizes.primary}
-      fontSize={15}
+      fontSize={13}
       fullWidth
       type={type}
       disabled={disabled || loading}

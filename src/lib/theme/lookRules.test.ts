@@ -2093,13 +2093,13 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
   },
   {
     rule: "upper case outside the Details eyebrow",
-    text: `fontFamily: DM_MONO, fontSize: 10.5, fontWeight: 400, lineHeight: "20px", textTransform: "uppercase",`,
-    why: "SV-02: the boards' type chip (STEP, PROMPT) is Geist Mono 10.5 in capitals. Only TypeChip spends it.",
+    text: `fontFamily: DM_MONO, fontSize: 11, fontWeight: 400, lineHeight: "20px", textTransform: "uppercase",`,
+    why: "SV-02: the boards' type chip (STEP, PROMPT) is Geist Mono in capitals, at 11 since the seven sizes (a tag is 11). Only TypeChip spends it.",
   },
   {
     rule: "the data face with upper case",
-    text: `fontFamily: DM_MONO, fontSize: 10.5, fontWeight: 400, lineHeight: "20px", textTransform: "uppercase",`,
-    why: "SV-02: the boards' type chip (STEP, PROMPT) is Geist Mono 10.5 in capitals. Only TypeChip spends it.",
+    text: `fontFamily: DM_MONO, fontSize: 11, fontWeight: 400, lineHeight: "20px", textTransform: "uppercase",`,
+    why: "SV-02: the boards' type chip (STEP, PROMPT) is Geist Mono in capitals, at 11 since the seven sizes (a tag is 11). Only TypeChip spends it.",
   },
   {
     rule: "spacing 10 is not in SPACE_REFINED",
@@ -2130,6 +2130,21 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "spacing 10 is not in SPACE_REFINED",
     text: `const th: CSSProperties = { fontWeight: 400, padding: "0 12px 10px 0"`,
     why: "SV-09: the Library board's table heads sit 10 above their hairline.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `return <div style={{ fontFamily: FIGTREE, fontSize: 12, padding: "0 0 10px", borderBottom`,
+    why: "The type prompt (G4): the Library table's header row while it loads keeps the head's own 10 above its hairline, so the rows under it land where the loaded rows do.",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `<div style={{ ...text(12, 400, t.label), padding: "0 0 10px", borderBottom: \`1px solid \${t.hairline}\` }}>{"\\u00a0"}</div>`,
+    why: "The type prompt (G4): the Builds table's header row while it loads keeps the head's own 10 above its hairline (BuildsTableView's th), so the rows under it land where the loaded rows do.",
+  },
+  {
+    rule: "spacing 28 is not in SPACE_REFINED",
+    text: `<div aria-hidden="true" style={{ marginTop: 28 }}>`,
+    why: "The type prompt (G4): the Library's kinds while they load start 28 below the page head, as the kinds do.",
   },
   {
     rule: "spacing 10 is not in SPACE_REFINED",

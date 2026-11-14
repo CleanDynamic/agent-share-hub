@@ -212,10 +212,10 @@ export function NewPostWindow({ spaceSlug, draft: restored, onClose, onReopen }:
           rows={6}
           autoFocus
           onChange={(event) => change({ body: event.target.value })}
-          style={areaStyle(phone, 6, { fontSize: phone ? 16 : 14, outline: "none" })}
+          style={areaStyle(phone, 6, { fontSize: phone ? 16 : 13, outline: "none" })}
         />
         {notice ? (
-          <p role="alert" style={{ margin: "6px 0 0", fontFamily: FIGTREE, fontSize: 12.5, color: t.text }}>
+          <p role="alert" style={{ margin: "6px 0 0", fontFamily: FIGTREE, fontSize: 12, color: t.text }}>
             {notice}
           </p>
         ) : null}

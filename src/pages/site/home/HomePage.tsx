@@ -25,6 +25,7 @@ import { SITE_NAME, siteUrl } from "@/lib/site";
 import { MEDIA_WIDTH } from "@/components/build/MediaFigure";
 import { coverMedia, feedMedia, stillFor, useSignedMedia, type CardMedia } from "@/components/gallery/cardMedia";
 import { PageArrival } from "@/components/shell/PageArrival";
+import { useAskAgain, useStalled } from "@/components/shell/useStalled";
 import { useAuth } from "@/contexts/AuthContext";
 import { engagementFor, useEngagement } from "@/hooks/useEngagement";
 import { librarySessionsKey, useLibrarySessions } from "@/hooks/useLibrarySessions";
@@ -94,19 +95,38 @@ const THUMB_WIDTH = MEDIA_WIDTH.variant;
 const SIGN_IN = "/login?redirect=/";
 
 /** A section's state: signed out, loading, failed, or its data mapped for the view. */
+/** D4: a section still waiting after STALL_MS, and its Retry (which cancels the read that never answered and asks afresh). */
+interface Late {
+  stalled: boolean;
+  retry: () => void;
+}
+
+function useLate(waiting: boolean, again: () => void): Late {
+  const { stalled, restart } = useStalled(waiting);
+  return {
+    stalled,
+    retry: () => {
+      restart();
+      again();
+    },
+  };
+}
+
 function loadable<T, U>(
   signedIn: boolean | null,
   query: { isLoading: boolean; error: unknown; data: T | undefined; refetch: () => unknown },
   map: (data: T) => U,
+  late?: Late,
 ): Loadable<U> {
-  if (signedIn === null) return { status: "loading" };
+  if (signedIn === null) return late?.stalled ? { status: "error", onRetry: late.retry } : { status: "loading" };
   if (!signedIn) return { status: "signed-out" };
-  return publicLoadable(query, map);
+  return publicLoadable(query, map, late);
 }
 
-function publicLoadable<T, U>(query: { isLoading: boolean; error: unknown; data: T | undefined; refetch: () => unknown }, map: (data: T) => U): Loadable<U> {
+function publicLoadable<T, U>(query: { isLoading: boolean; error: unknown; data: T | undefined; refetch: () => unknown }, map: (data: T) => U, late?: Late): Loadable<U> {
   if (query.data !== undefined) return { status: "ready", data: map(query.data) };
   if (query.error) return { status: "error", onRetry: () => void query.refetch(), error: query.error };
+  if (late?.stalled) return { status: "error", onRetry: late.retry };
   return { status: "loading" };
 }
 
@@ -444,7 +464,25 @@ export function HomePage() {
      still waits for those posts: that is when the first screen is real. */
   const arrived = useRef(false);
   if (!feedQuery.isPending) arrived.current = true;
-  const feedStatus = feedQuery.isError && items.length === 0 ? "error" : arrived.current ? "ready" : "loading";
+  const askAgain = useAskAgain();
+  const feedLate = useLate(!feedQuery.isError && !arrived.current, () => askAgain(feedKey(scope, userId), feedQuery.refetch));
+  const feedStatus = (feedQuery.isError && items.length === 0) || feedLate.stalled ? "error" : arrived.current ? "ready" : "loading";
+  const waits = (query: { data: unknown; error: unknown }) => query.data === undefined && !query.error;
+  const draftsLate = useLate(signedIn !== false && waits(drafts), () => askAgain(["build", "listDraftsWithSessions"], drafts.refetch));
+  const sessionsLate = useLate(signedIn !== false && !library.data && !library.isLoadingError, () => askAgain(librarySessionsKey, library.refetch));
+  const weekLate = useLate(signedIn !== false && (week.data === undefined || streak.data === undefined) && !week.error && !streak.error, () => {
+    askAgain(["progress.week"], week.refetch);
+    askAgain(["progress", "getStreakDays"], streak.refetch);
+  });
+  const requestsLate = useLate(waits(stillOpen) || signedIn === null, () => askAgain(postKey("listPosts", stillOpenScope, "stillOpen", STILL_OPEN_SHOWN), stillOpen.refetch));
+  const mostRunLate = useLate(waits(mostRun), () => askAgain(["build", "listMostReproduced"], mostRun.refetch));
+  const whereNextLate = useLate(signedIn !== false && waits(whereNext), () => askAgain(["build", "getWhereNextForViewer"], whereNext.refetch));
+  const publishedLate = useLate(signedIn !== false && waits(published), () => askAgain(["build", "listPublishedBuildsByCreator"], published.refetch));
+  const countsLate = useLate(waits(reproduced) || waits(runsWeek) || waits(lit), () => {
+    askAgain(["build", "countReproducedToday"], reproduced.refetch);
+    askAgain(["build", "countRunsThisWeek"], runsWeek.refetch);
+    askAgain(["build", "countLitToday"], lit.refetch);
+  });
   usePageReady("home", feedStatus !== "loading" && firstScreenSettled);
 
   const countsFailed = (reproduced.isError && reproduced.data === undefined) || (runsWeek.isError && runsWeek.data === undefined);
@@ -469,7 +507,7 @@ export function HomePage() {
               .slice(0, 3)
               // UX-03 P7: an untitled draft is shown by its first prompt.
               .map((draft) => ({ id: draft.id, title: draftRowTitle({ ...draft, firstPrompt: draftPrompts.data?.get(draft.id) ?? null }), untitled: isUntitled(draft.title), meta: draftMeta(draft, now) })),
-          }))}
+          }), draftsLate)}
           sessions={loadable(signedIn, { isLoading: !library.data && !library.isLoadingError, error: library.isLoadingError ? library.error : null, data: library.data, refetch: library.refetch }, (rows) => ({
             total: rows.length,
             rows: rows.slice(0, 2).map((session) => {
@@ -482,7 +520,7 @@ export function HomePage() {
                 model: session.model,
               };
             }),
-          }))}
+          }), sessionsLate)}
           onAddSession={(id) => void onAddSession(id)}
           week={
             signedIn === false
@@ -491,7 +529,9 @@ export function HomePage() {
                 ? { status: "ready", data: homeWeek(streak.data, weeklyProgress(week.data, new Date(now)), new Date(now)) }
                 : week.error || streak.error
                   ? { status: "error", onRetry: () => void Promise.all([week.refetch(), streak.refetch()]), error: week.error ?? streak.error }
-                  : { status: "loading" }
+                  : weekLate.stalled
+                    ? { status: "error", onRetry: weekLate.retry }
+                    : { status: "loading" }
           }
           scope={scope}
           onScopeChange={onScopeChange}
@@ -511,7 +551,7 @@ export function HomePage() {
             hasMore: feedQuery.hasNextPage,
             loadingMore: feedQuery.isFetchingNextPage,
             onMore: () => void feedQuery.fetchNextPage(),
-            onRetry: () => void feedQuery.refetch(),
+            onRetry: feedLate.stalled ? feedLate.retry : () => void feedQuery.refetch(),
             error: feedQuery.error,
           }}
           newCount={newCount}
@@ -549,7 +589,9 @@ export function HomePage() {
             reproducedToday: reproduced.data ?? null,
             litToday: lit.data ?? null,
             runsThisWeek: runsWeek.data ?? null,
-            failure: countsFailed
+            failure: countsLate.stalled
+              ? { onRetry: countsLate.retry }
+              : countsFailed
               ? {
                   onRetry: () => {
                     void reproduced.refetch();
@@ -562,7 +604,7 @@ export function HomePage() {
             runs: runRows(items, 3, userId),
             onStartTopic: userId ? (run) => void onStartTopic(run) : undefined,
           }}
-          requests={publicLoadable({ isLoading: stillOpen.isLoading || signedIn === null, error: stillOpen.error, data: stillOpen.data, refetch: stillOpen.refetch }, (page) => stillOpenRows(page.posts))}
+          requests={publicLoadable({ isLoading: stillOpen.isLoading || signedIn === null, error: stillOpen.error, data: stillOpen.data, refetch: stillOpen.refetch }, (page) => stillOpenRows(page.posts), requestsLate)}
           stillOpenScope={stillOpenScope}
           mostRun={publicLoadable(mostRun, (rows) =>
             rows.map((row) => ({
@@ -572,13 +614,14 @@ export function HomePage() {
               maker: { id: row.creatorId, handle: row.maker.handle, name: row.maker.name ?? row.maker.handle ?? "Someone", avatarUrl: row.maker.avatarUrl },
               count: row.count,
             })),
+            mostRunLate,
           )}
-          whereNext={loadable(signedIn, whereNext, (next) => whereNextRows(next, (item) => stillFor(srcByPath, item.build.cover)))}
+          whereNext={loadable(signedIn, whereNext, (next) => whereNextRows(next, (item) => stillFor(srcByPath, item.build.cover)), whereNextLate)}
           published={loadable(signedIn, published, (result) => ({
             total: result.total,
             reproduced: result.reproduced,
             rows: result.rows.map((row) => ({ id: row.id, title: row.title, slug: row.slug, href: `/b2/${row.slug}`, published: row.published_at ? sessionDate(row.published_at, now) : "" })),
-          }))}
+          }), publishedLate)}
           onCopyLink={(slug) =>
             void copyToClipboard(siteUrl(`/b2/${slug}`)).then((copied) => toast(copied ? "Link copied" : "The link could not be copied."))
           }

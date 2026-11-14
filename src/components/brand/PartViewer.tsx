@@ -132,7 +132,7 @@ export function PartViewer<V extends string = string>({
             gap: 5,
             paddingLeft: phone ? 10 : 12,
             fontFamily: DM_MONO,
-            fontSize: phone ? 10 : 11,
+            fontSize: 11,
             letterSpacing: ".08em",
             color: t.text2,
           }}
@@ -154,7 +154,7 @@ export function PartViewer<V extends string = string>({
             paddingLeft: phone ? 7 : 9,
             fontFamily: FIGTREE,
             fontSize: 12,
-            fontWeight: 600,
+            fontWeight: 500,
             color: t.text,
           }}
         >

@@ -31,7 +31,7 @@ const text = (size: number, color: string, extra: CSSProperties = {}): CSSProper
 
 export function LineUpToggle({ on, onChange }: { on: boolean; onChange: (on: boolean) => void }) {
   return (
-    <label style={{ ...text(12.5, t.text2), display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+    <label style={{ ...text(12, t.text2), display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
       <Checkbox checked={on} onChange={(event) => onChange(event.target.checked)} />
       Line up steps
     </label>
@@ -89,7 +89,7 @@ export function LineUpTable({ lineUp }: { lineUp: LineUp }) {
             {lineUp.rows.map((row) => (
               <tr key={row.key}>
                 <th scope="row" style={{ padding: 4, textAlign: "left", verticalAlign: "top", fontWeight: 400 }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, ...text(12.5, t.text) }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, ...text(12, t.text) }}>
                     {row.author ? <Avatar size={20} userId={row.author.id} name={row.author.name} src={row.author.avatarUrl} /> : null}
                     {row.name}
                   </span>
@@ -102,7 +102,7 @@ export function LineUpTable({ lineUp }: { lineUp: LineUp }) {
           </tbody>
         </table>
       </div>
-      {lineUp.sentence ? <p style={{ ...text(12.5, t.text2, { lineHeight: "20px" }), marginTop: 12 }}>{lineUp.sentence}</p> : null}
+      {lineUp.sentence ? <p style={{ ...text(12, t.text2, { lineHeight: "20px" }), marginTop: 12 }}>{lineUp.sentence}</p> : null}
     </section>
   );
 }

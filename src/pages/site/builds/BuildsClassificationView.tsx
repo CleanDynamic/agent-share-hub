@@ -97,7 +97,7 @@ function FacetRow({ row }: { row: ClassRowView }) {
         {row.name}
         {row.source ? <span style={{ display: "block", ...text(12, 400, t.label), lineHeight: "16px" }}>{row.source}</span> : null}
       </dt>
-      <dd style={{ margin: 0, ...text(12.5, 400, t.text), lineHeight: "18px" }}>
+      <dd style={{ margin: 0, ...text(12, 400, t.text), lineHeight: "18px" }}>
         {row.values.length === 0 ? (
           <Empty />
         ) : (
@@ -134,7 +134,7 @@ export function ClassificationCard({ card, index }: { card: ClassCardView; index
           </Link>
           <div style={{ marginTop: 2, ...text(12, 400, t.label), lineHeight: "normal" }}>{card.subtitle}</div>
         </div>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flex: "none", ...text(12.5, 400, t.text) }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flex: "none", ...text(12, 400, t.text) }}>
           <span>
             {card.reproductions}
             <VisuallyHidden> reproduced</VisuallyHidden>
@@ -143,7 +143,7 @@ export function ClassificationCard({ card, index }: { card: ClassCardView; index
         </span>
       </div>
       {blank ? (
-        <p style={{ ...text(12.5, 400, t.label), margin: "16px 0 0" }}>Not classified yet</p>
+        <p style={{ ...text(12, 400, t.label), margin: "16px 0 0" }}>Not classified yet</p>
       ) : (
         <dl style={{ margin: "16px 0 0" }}>
           {card.rows.map((row) => (
@@ -166,7 +166,7 @@ function FacetChooser({ facets, onFacets }: Pick<BuildsClassificationViewProps, 
       {ALL_FACETS.map((facet) => {
         const on = facets.includes(facet);
         return (
-          <label key={facet} style={{ display: "grid", gridTemplateColumns: "14px 1fr", columnGap: 10, alignItems: "center", minHeight: 30, cursor: "pointer", ...text(12.5, 400, on ? t.text : t.text2) }}>
+          <label key={facet} style={{ display: "grid", gridTemplateColumns: "14px 1fr", columnGap: 10, alignItems: "center", minHeight: 30, cursor: "pointer", ...text(12, 400, on ? t.text : t.text2) }}>
             <Checkbox checked={on} disabled={on && facets.length === 1} onChange={() => toggle(facet)} style={{ width: 14, height: 14 }} />
             <span>{FACET_LABEL[facet]}</span>
           </label>

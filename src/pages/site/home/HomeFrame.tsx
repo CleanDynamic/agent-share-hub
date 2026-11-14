@@ -152,7 +152,7 @@ export function RowBones({ count, height, what }: { count: number; height: numbe
 
 /** The feed's tabs row, drawn while the feed loads, at its own height. */
 function TabsBones() {
-  return <div style={{ height: 41, boxSizing: "border-box", borderBottom: `1px solid ${t.hairline}` }} />;
+  return <div style={{ height: 39, boxSizing: "border-box", borderBottom: `1px solid ${t.hairline}` }} />;
 }
 
 /** A post while the feed loads: the author row, a title, a picture. */

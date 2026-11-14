@@ -124,10 +124,17 @@ export function LibraryHead({ title, meta }: { title: string; meta: ReactNode })
 
 /* ── loading ── */
 
-/** Rows of the table while it loads, at the table's own sizes. */
+/** The table's header row while it loads: the header's own size, line and rule around a blank line, so it is the header's
+    height in any face. */
+function TableHeadBones() {
+  return <div style={{ fontFamily: FIGTREE, fontSize: 12, padding: "0 0 10px", borderBottom: `1px solid ${t.hairline}` }}>{"\u00a0"}</div>;
+}
+
+/** Rows of the table while it loads, at the table's own sizes, under its header row. */
 export function TableRowSkeletons({ count }: { count: number }) {
   return (
     <div aria-hidden="true">
+      <TableHeadBones />
       {Array.from({ length: count }, (_, index) => (
         <div key={index} style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 6, height: TABLE_ROW, borderBottom: `1px solid ${t.hairline}` }}>
           <Skeleton width="40%" height={12} radius={4} />
@@ -151,6 +158,22 @@ export function CollectionSkeletons() {
   );
 }
 
+/** The kinds an owner's Library lists: `LIVE_KINDS` in libraryModel, counted here so the model stays out of the first download. */
+const KIND_ROWS = 8;
+
+/** The kinds while they load: one 32 row each, under the head as the kinds are. */
+function KindBones() {
+  return (
+    <div aria-hidden="true" style={{ marginTop: 28 }}>
+      {Array.from({ length: KIND_ROWS }, (_, index) => (
+        <div key={index} style={{ display: "flex", alignItems: "center", height: 32 }}>
+          <Skeleton width="50%" height={12} radius={4} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /** The Library as it stands before its lists arrive: the route table's Placeholder for /library, and the page's own
     loading state. The head and the column frames are drawn; the lists and the selected item are blocks. */
 export function LibraryLoadingView() {
@@ -162,11 +185,23 @@ export function LibraryLoadingView() {
         testId="library-loading"
         head={<LibraryHead title="Library" meta={" "} />}
         left={
-          <div style={{ marginTop: 32 }}>
-            <CollectionSkeletons />
-          </div>
+          <>
+            <KindBones />
+            <section aria-label="Collections" style={{ marginTop: 32 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingBottom: 8, borderBottom: `1px solid ${t.hairline}` }}>
+                <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, fontWeight: 500, lineHeight: "20px", color: t.text }}>Collections</h2>
+                <span style={{ display: "inline-flex", height: 24 }} />
+              </div>
+              <CollectionSkeletons />
+            </section>
+          </>
         }
-        main={<TableRowSkeletons count={7} />}
+        main={
+          <>
+            <div style={{ height: 37, boxSizing: "border-box", borderBottom: `1px solid ${t.hairline}` }} />
+            <TableRowSkeletons count={7} />
+          </>
+        }
         detail={<Skeleton height={320} radius={8} />}
       />
     </LoadingRegion>

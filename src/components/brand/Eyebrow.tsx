@@ -25,7 +25,7 @@ export function Eyebrow({ children, as: Tag = "div", style }: EyebrowProps) {
       style={{
         ...{
           fontFamily: FIGTREE,
-          fontSize: 10.5,
+          fontSize: 11,
           fontWeight: 500,
           letterSpacing: ".06em",
           textTransform: "uppercase" as const,

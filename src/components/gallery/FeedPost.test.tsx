@@ -205,7 +205,7 @@ describe("a build with no thread", () => {
     renderRow(build({ post_doc: null, media: [cover], cover_media_id: "m9" }), { srcByPath: new Map([["b1/m9.png", "https://signed.example/m9.png"]]) });
     const post = document.querySelector("[data-feed-post-body]") as HTMLElement;
     // UX-03 P1: the title's words are the link to the build, inside the Title line.
-    expect(within(post).getByText("Crumb homepage").closest("p")).toHaveStyle({ fontSize: "28px" });
+    expect(within(post).getByText("Crumb homepage").closest("p")).toHaveStyle({ fontSize: "20px" });
     expect(within(post).getByRole("link", { name: "Crumb homepage" })).toHaveAttribute("href", expect.stringMatching(/^\/b2\//));
     expect(within(post).getByRole("img")).toHaveAttribute("src", "https://signed.example/m9.png");
     expect(screen.queryByText("Show more")).toBeNull();

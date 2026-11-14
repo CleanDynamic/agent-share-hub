@@ -107,7 +107,7 @@ function RefinedTimeline({ events, label }: Pick<TimelineProps, "events" | "labe
               <Eyebrow as="span" style={{ color: REFINED_TONE[event.kind] }}>
                 {event.kind}
               </Eyebrow>
-              <span style={{ fontFamily: FIGTREE, fontSize: 12.5, fontWeight: 500, lineHeight: "normal", color: t.text }}>
+              <span style={{ fontFamily: FIGTREE, fontSize: 12, fontWeight: 500, lineHeight: "normal", color: t.text }}>
                 {event.text}
               </span>
             </span>

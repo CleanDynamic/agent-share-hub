@@ -21,7 +21,7 @@ export function SiteHiddenNotice({ entries }: { entries: readonly Notice[] }) {
     >
       {entries.map((entry) => (
         <div key={entry.id} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <span style={{ fontSize: 12.5, fontWeight: 500, lineHeight: 1.4, color: t.text }}>
+          <span style={{ fontSize: 12, fontWeight: 500, lineHeight: 1.4, color: t.text }}>
             {entry.kind === "topic" ? `${SITE_HIDDEN_WORDS}: your topic` : `${SITE_HIDDEN_WORDS}: your reply`}
           </span>
           {entry.heading ? <span style={{ fontSize: 13, lineHeight: "20px", color: t.text2, overflowWrap: "anywhere" }}>{`“${entry.heading}”`}</span> : null}

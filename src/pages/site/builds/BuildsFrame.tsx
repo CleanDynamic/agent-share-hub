@@ -104,7 +104,7 @@ function ViewSegment({ view, current, href, onIntent }: { view: GalleryViewMode;
           border: `1px solid ${current ? t.selectedEdge : "transparent"}`,
           background: current ? t.control : "transparent",
           fontFamily: FIGTREE,
-          fontSize: 12.5,
+          fontSize: 12,
           fontWeight: current ? 500 : 400,
           lineHeight: "normal",
           color: current || state.hovered ? t.text : t.text2,
@@ -255,6 +255,8 @@ export const BuildsTextButton = forwardRef<HTMLButtonElement, Omit<ButtonHTMLAtt
 export function TableRowSkeletons({ count }: { count: number }) {
   return (
     <div aria-hidden="true">
+      {/* The table's header row: its own type, padding and rule around a blank line, so the rows start where the table's do. */}
+      <div style={{ ...text(12, 400, t.label), padding: "0 0 10px", borderBottom: `1px solid ${t.hairline}` }}>{"\u00a0"}</div>
       {Array.from({ length: count }, (_, index) => (
         <div key={index} style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 6, height: TABLE_ROW, borderBottom: `1px solid ${t.hairline}` }}>
           <Skeleton width="36%" height={12} radius={4} />
@@ -293,11 +295,11 @@ export function BuildsLoadingView() {
     <LoadingRegion what="builds" announce>
       <BuildsColumns
         testId="builds-loading"
-        head={<BuildsHead figure="Builds" parts={[{ text: " " }]} switcher={<ViewSwitch view={view} hrefFor={hrefFor} />} />}
+        head={<BuildsHead figure="Builds" parts={[{ text: "\u00a0" }]} switcher={<ViewSwitch view={view} hrefFor={hrefFor} />} />}
         main={
           <>
             <div style={{ height: 36, borderBottom: `1px solid ${t.hairline}` }} />
-            <div style={{ marginTop: 16 + 26 + 20 }}>
+            <div style={{ marginTop: 20 }}>
               <TableRowSkeletons count={10} />
             </div>
           </>
@@ -316,8 +318,8 @@ export function MapsLoadingView({ hrefFor }: { hrefFor: (view: GalleryViewMode) 
   return (
     <LoadingRegion what="builds" announce>
       <div data-testid="builds-loading" style={{ ...ROOT, paddingBottom: 64 }}>
-        <BuildsHead figure="Builds" parts={[{ text: " " }]} switcher={<ViewSwitch view="maps" hrefFor={hrefFor} />} />
-        <div style={{ height: 28, marginTop: 16 }} />
+        <BuildsHead figure="Builds" parts={[{ text: "\u00a0" }]} switcher={<ViewSwitch view="maps" hrefFor={hrefFor} />} />
+        <div style={{ height: 30, marginTop: 16 }} />
         <div style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, marginTop: 32 }} aria-hidden="true">
           {Array.from({ length: columns * 2 }, (_, index) => (
             <div key={index} style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, padding: 16 }}>
@@ -343,9 +345,11 @@ export function ClassificationLoadingView({ hrefFor }: { hrefFor: (view: Gallery
   return (
     <LoadingRegion what="builds" announce>
       <div data-testid="builds-loading" style={{ ...ROOT, paddingBottom: 64 }}>
-        <BuildsHead figure="Builds" parts={[{ text: " " }]} switcher={<ViewSwitch view="classification" hrefFor={hrefFor} />} />
+        <BuildsHead figure="Builds" parts={[{ text: "\u00a0" }]} switcher={<ViewSwitch view="classification" hrefFor={hrefFor} />} />
         <div style={{ height: 28, marginTop: 24 }} />
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, alignItems: "start", marginTop: 32 }} aria-hidden="true">
+        {/* The key's line under the row, in its own type, so the cards start where the page's do. */}
+        <div style={{ ...text(12, 400, t.label), margin: "16px 0 0" }}>{"\u00a0"}</div>
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, alignItems: "start", marginTop: 16 }} aria-hidden="true">
           {Array.from({ length: columns * 2 }, (_, index) => (
             <div key={index} style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, padding: 16 }}>
               <Skeleton width="55%" height={12} radius={4} />

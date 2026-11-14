@@ -181,8 +181,8 @@ const refinedBadge: CSSProperties = {
   background: t.litMark,
   color: t.onLit,
   fontFamily: FIGTREE,
-  fontSize: 9,
-  fontWeight: 600,
+  fontSize: 11,
+  fontWeight: 500,
   lineHeight: "12px",
   textAlign: "center",
 };

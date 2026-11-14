@@ -24,7 +24,7 @@ import { useIsPhone } from "@/components/shell/useMinWidth";
 import { fieldStyle } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 export interface RunSubmission {
   worked: boolean;
@@ -57,7 +57,7 @@ const input: CSSProperties = {
   ...fieldStyle(),
   fontFamily: FIGTREE,
   /* 16px: anything smaller makes mobile Safari zoom the page on focus. */
-  fontSize: 15,
+  fontSize: 13,
   width: "100%",
   height: 32,
   padding: "0 12px",
@@ -117,7 +117,7 @@ export function RunDialog({ open, onOpenChange, creator, suggestions, initialMod
         >
           <form onSubmit={onForm} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 9 }}>
-              <Dialog.Title style={{ ...display(22), margin: 0, color: t.text }}>
+              <Dialog.Title style={{ fontFamily: FIGTREE, fontSize: 16, fontWeight: 500, lineHeight: 1.05, letterSpacing: "-0.02em", textWrap: "balance", margin: 0, color: t.text }}>
                 {creator ? "You ran your own build" : "You ran this build"}
               </Dialog.Title>
               <Dialog.Close asChild>

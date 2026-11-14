@@ -60,7 +60,7 @@ function LinkButton({ children, onClick, label }: { children: string; onClick: (
       aria-label={label}
       {...handlers}
       style={{
-        ...text(12.5, 500, t.text),
+        ...text(12, 500, t.text),
         display: "inline-flex",
         alignItems: "center",
         height: 24,
@@ -89,8 +89,8 @@ export function BeforeYouSend({ entry, toolOf, onSelect }: BeforeYouSendProps) {
       {inside(entry) ? (
         entry.uses.map((use) => (
           <div key={use} data-testid="before-row" style={row}>
-            <span style={text(12.5, 500, t.text)}>Uses</span>
-            <span style={{ ...text(12.5, 400, t.text2), minWidth: 0, overflowWrap: "anywhere" }}>{use}</span>
+            <span style={text(12, 500, t.text)}>Uses</span>
+            <span style={{ ...text(12, 400, t.text2), minWidth: 0, overflowWrap: "anywhere" }}>{use}</span>
           </div>
         ))
       ) : (
@@ -103,8 +103,8 @@ export function BeforeYouSend({ entry, toolOf, onSelect }: BeforeYouSendProps) {
                   <Glyph name="larr" size={16} />
                 </span>
                 <div style={lines}>
-                  <span style={text(12.5, 500, t.text)}>Paste what step {paste.number} gave you</span>
-                  <span style={text(11.5, 400, t.label)}>{[paste.title, tool].filter(Boolean).join(" · ")}</span>
+                  <span style={text(12, 500, t.text)}>Paste what step {paste.number} gave you</span>
+                  <span style={text(12, 400, t.label)}>{[paste.title, tool].filter(Boolean).join(" · ")}</span>
                 </div>
                 <LinkButton label={`Go to step ${paste.number}`} onClick={() => onSelect(paste.stepId)}>
                   {`Step ${paste.number}`}
@@ -118,15 +118,15 @@ export function BeforeYouSend({ entry, toolOf, onSelect }: BeforeYouSendProps) {
                 <Glyph name="file" size={16} />
               </span>
               <div style={lines}>
-                <span style={{ ...text(12.5, 500, t.text), overflowWrap: "anywhere" }}>Attach {file.name}</span>
-                <span style={text(11.5, 400, t.label)}>{["File", file.size].filter(Boolean).join(" · ")}</span>
+                <span style={{ ...text(12, 500, t.text), overflowWrap: "anywhere" }}>Attach {file.name}</span>
+                <span style={text(12, 400, t.label)}>{["File", file.size].filter(Boolean).join(" · ")}</span>
               </div>
               {file.download ? (
                 <a
                   href={file.download}
                   download={file.name}
                   aria-label={`Download ${file.name}`}
-                  style={{ ...text(12.5, 500, t.text), textDecoration: "none", flexShrink: 0 }}
+                  style={{ ...text(12, 500, t.text), textDecoration: "none", flexShrink: 0 }}
                 >
                   Download
                 </a>

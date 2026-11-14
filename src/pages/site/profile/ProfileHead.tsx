@@ -211,7 +211,7 @@ export function ProfileHead(props: ProfileHeadProps) {
         <h1 style={{ ...PAGE_TITLE, margin: "12px 0 0", overflowWrap: "anywhere" }}>{props.name}</h1>
 
         {props.meta.length > 0 ? (
-          <div data-testid="profile-meta" style={{ marginTop: 4, fontSize: 12.5, lineHeight: 1.4, color: t.label, fontVariantNumeric: "tabular-nums" }}>
+          <div data-testid="profile-meta" style={{ marginTop: 4, fontSize: 12, lineHeight: 1.4, color: t.label, fontVariantNumeric: "tabular-nums" }}>
             <Dotted
               parts={props.meta}
               render={(index) => {
@@ -229,7 +229,7 @@ export function ProfileHead(props: ProfileHeadProps) {
         ) : null}
 
         {props.level !== null ? (
-          <div data-testid="profile-level" style={{ marginTop: 2, fontSize: 12.5, lineHeight: 1.4, color: t.label }}>
+          <div data-testid="profile-level" style={{ marginTop: 2, fontSize: 12, lineHeight: 1.4, color: t.label }}>
             {`Level ${props.level}`}
           </div>
         ) : null}

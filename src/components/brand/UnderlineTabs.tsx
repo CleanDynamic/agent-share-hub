@@ -112,7 +112,7 @@ function Tab({
       {count !== undefined ? (
         <>
           {" "}
-          <span style={{ fontSize: 11.5, fontWeight: 400, color: t.label, fontVariantNumeric: "tabular-nums" }}>
+          <span style={{ fontSize: 12, fontWeight: 400, color: t.label, fontVariantNumeric: "tabular-nums" }}>
             {count}
           </span>
         </>

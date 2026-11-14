@@ -324,7 +324,7 @@ describe("the toolbar", () => {
       expect(buttons.map((button) => button.getAttribute("aria-pressed"))).toEqual(["false", "false", "true", "false", "false"]);
       expect(row.style.overflowX).toBe("auto");
       // Each in its own phone size.
-      expect(within(row).getByText("Title").style.fontSize).toBe("24px");
+      expect(within(row).getByText("Title").style.fontSize).toBe("20px");
       expect(within(row).getByText("Heading").style.fontSize).toBe("18px");
       expect(within(row).getByText("Body").style.fontSize).toBe("16px");
       expect(within(row).getByText("Small").style.fontSize).toBe("13px");

@@ -109,17 +109,17 @@ export function AttachPicker({ userId, onPick, reply, open: startOpen = false, s
           />
           <div style={{ maxHeight: 320, overflowY: "auto" }}>
             {work.isError ? (
-              <p role="alert" style={{ margin: 0, padding: "8px", fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 }}>
+              <p role="alert" style={{ margin: 0, padding: "8px", fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>
                 Your work didn't load.
               </p>
             ) : work.isPending ? (
-              <p style={{ margin: 0, padding: "8px", fontFamily: FIGTREE, fontSize: 12.5, color: t.label }}>Loading</p>
+              <p style={{ margin: 0, padding: "8px", fontFamily: FIGTREE, fontSize: 12, color: t.label }}>Loading</p>
             ) : groups.length === 0 ? (
-              <p style={{ margin: 0, padding: "8px", fontFamily: FIGTREE, fontSize: 12.5, color: t.label }}>Nothing to attach at this size.</p>
+              <p style={{ margin: 0, padding: "8px", fontFamily: FIGTREE, fontSize: 12, color: t.label }}>Nothing to attach at this size.</p>
             ) : (
               groups.map((group) => (
                 <section key={group.title} aria-label={group.title} style={{ paddingBottom: 8 }}>
-                  <h4 style={{ margin: 0, padding: "8px 8px 4px", fontFamily: FIGTREE, fontSize: 11.5, fontWeight: 500, color: t.label }}>{group.title}</h4>
+                  <h4 style={{ margin: 0, padding: "8px 8px 4px", fontFamily: FIGTREE, fontSize: 12, fontWeight: 500, color: t.label }}>{group.title}</h4>
                   {group.rows.map((row) =>
                     reply && row.origin === "others" ? (
                       <MentionRow

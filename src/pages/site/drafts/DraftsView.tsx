@@ -249,7 +249,7 @@ function AddMenu({
     background: "transparent",
     textAlign: "left",
     fontFamily: FIGTREE,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 500,
     color: t.text,
     textDecoration: "none",
@@ -376,9 +376,9 @@ function SessionRow({
 function ConnectedTools({ tools, onManage }: { tools: ReturnType<typeof connectedTools>; onManage: () => void }) {
   return (
     <InnerTile style={{ marginTop: 24 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12.5 }}>
-        <h3 style={{ margin: 0, fontSize: 12.5, fontWeight: 500, lineHeight: "normal" }}>Connected tools</h3>
-        <TextButton onClick={onManage} style={{ fontSize: 12.5, lineHeight: "normal", textDecoration: "none" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
+        <h3 style={{ margin: 0, fontSize: 12, fontWeight: 500, lineHeight: "normal" }}>Connected tools</h3>
+        <TextButton onClick={onManage} style={{ fontSize: 12, lineHeight: "normal", textDecoration: "none" }}>
           Manage
         </TextButton>
       </div>

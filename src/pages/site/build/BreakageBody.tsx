@@ -45,11 +45,11 @@ function Row({ row, onOpenReplay, onStartTopic }: { row: BreakageRowView; onOpen
     >
       <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: r.full, background: t.catBreakage, marginTop: 4 }} />
       <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0, fontFamily: FIGTREE, fontSize: 12, lineHeight: 1.5 }}>
-        <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12, fontWeight: 600, lineHeight: 1.5, color: t.text }}>{row.name}</h3>
+        <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12, fontWeight: 500, lineHeight: 1.5, color: t.text }}>{row.name}</h3>
         {row.happened ? <p style={{ margin: 0, color: t.text2, whiteSpace: "pre-wrap" }}>{row.happened}</p> : null}
         {row.fix ? (
           <p style={{ margin: 0, color: t.text, whiteSpace: "pre-wrap" }}>
-            <span style={{ fontFamily: DM_MONO, fontSize: 10, letterSpacing: ".09em", color: t.label, marginRight: 4 }}>FIX</span>
+            <span style={{ fontFamily: DM_MONO, fontSize: 11, letterSpacing: ".09em", color: t.label, marginRight: 4 }}>FIX</span>
             {row.fix}
           </p>
         ) : null}
@@ -68,9 +68,9 @@ function Row({ row, onOpenReplay, onStartTopic }: { row: BreakageRowView; onOpen
           </Button>
         ) : (
           /* As tall as the Button it stands in for (28 drawn, 24 rendered), so a row keeps its height either way. */
-          <span style={{ fontFamily: DM_MONO, fontSize: 10, color: t.label, lineHeight: "24px" }}>{row.span ?? "no step recorded"}</span>
+          <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.label, lineHeight: "24px" }}>{row.span ?? "no step recorded"}</span>
         )}
-        {row.attempts ? <span style={{ fontFamily: DM_MONO, fontSize: 10, color: t.label }}>{row.attempts}</span> : null}
+        {row.attempts ? <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.label }}>{row.attempts}</span> : null}
         {onStartTopic ? (
           <Button variant="ghost" size={28} fontSize={11} aria-label={`Start a topic: ${row.name}`} onClick={() => onStartTopic(row)}>
             Start a topic
@@ -101,7 +101,7 @@ function Gap({ gap, onReply }: { gap: OpenGapView; onReply?: (topicId: string) =
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0, fontFamily: FIGTREE, fontSize: 12, lineHeight: 1.5 }}>
-        <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12, fontWeight: 600, lineHeight: 1.5, color: t.text }}>{gap.title}</h3>
+        <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12, fontWeight: 500, lineHeight: 1.5, color: t.text }}>{gap.title}</h3>
         <p style={{ margin: 0, color: t.text2 }}>{gap.problem ?? "Left open on purpose: the build works without it."}</p>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
@@ -121,7 +121,7 @@ export function BreakageBody({ breakage }: { breakage: BreakageBodyView }) {
   if (rows.length === 0 && gaps.length === 0) {
     return (
       <section data-testid="build-breakage" aria-label="Where it broke" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <p style={{ margin: 0, fontWeight: 600 }}>No breakages recorded</p>
+        <p style={{ margin: 0, fontWeight: 500 }}>No breakages recorded</p>
         <p style={{ margin: 0, color: t.text2 }}>Either nothing broke, or nothing was written down. Both are worth knowing.</p>
       </section>
     );

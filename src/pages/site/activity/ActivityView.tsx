@@ -212,7 +212,7 @@ function Thumb({ row }: { row: ActivityRow }) {
 
 function When({ row, now, style }: { row: ActivityRow; now: number; style?: CSSProperties }) {
   return (
-    <time dateTime={row.at} style={text(11.5, 400, t.label, { ...tnum, ...style })}>
+    <time dateTime={row.at} style={text(12, 400, t.label, { ...tnum, ...style })}>
       {shortAgo(row.at, now)}
     </time>
   );
@@ -617,7 +617,7 @@ function KindToggle({
         background: "transparent",
         ...(state.hovered ? CONTROL_HOVER : null),
         ...(on ? SELECTED : null),
-        ...text(12.5, on ? 500 : 400, on ? t.text : t.text2),
+        ...text(12, on ? 500 : 400, on ? t.text : t.text2),
         cursor: "pointer",
         textAlign: "left",
         ...ring(state.focusVisible),

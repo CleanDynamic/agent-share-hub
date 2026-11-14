@@ -31,6 +31,7 @@ import {
   requestAddToCollection,
 } from "@/components/library/addToCollection";
 import { PageArrival } from "@/components/shell/PageArrival";
+import { useAskAgain, useStalled } from "@/components/shell/useStalled";
 import { useAuth } from "@/contexts/AuthContext";
 import { copyToClipboard } from "@/lib/deepLink";
 import { reportError } from "@/lib/errors/report";
@@ -228,7 +229,25 @@ export default function LibraryPage() {
     refetchOnWindowFocus: false,
   });
 
-  const loading = visiting ? owner.isLoading || collections.isLoading : openId ? collectionBuilds.isLoading : saved.isLoading;
+  /* D4: a read that never answers is a failed read after STALL_MS: the page draws, and the panel says what did not load. */
+  const askAgain = useAskAgain();
+  const stalls = {
+    owner: useStalled(owner.isLoading),
+    saved: useStalled(saved.isLoading),
+    collections: useStalled(collections.isLoading),
+    kept: useStalled(kept.isLoading),
+    alone: useStalled(alone.isLoading),
+    collectionBuilds: useStalled(collectionBuilds.isLoading),
+  };
+  const read = <Q extends { isLoading: boolean; isError: boolean }>(query: Q, stall: { stalled: boolean }) => ({ isLoading: query.isLoading && !stall.stalled, isError: query.isError || stall.stalled });
+  const ownerRead = read(owner, stalls.owner);
+  const savedRead = read(saved, stalls.saved);
+  const collectionsRead = read(collections, stalls.collections);
+  const keptRead = read(kept, stalls.kept);
+  const aloneRead = read(alone, stalls.alone);
+  const collectionBuildsRead = read(collectionBuilds, stalls.collectionBuilds);
+
+  const loading = visiting ? ownerRead.isLoading || collectionsRead.isLoading : openId ? collectionBuildsRead.isLoading : savedRead.isLoading;
   const firstScreen = !loading && !collections.isLoading;
 
   /* The changes on the saved builds: the same events Home reads, saved builds only. Started once the first screen is up:
@@ -313,14 +332,15 @@ export default function LibraryPage() {
       : undefined;
 
   /* All saved shows the builds even when the kept items fail to load (reported by their own context). */
-  const itemsStatus = statusOf(kept);
-  const kindStatus: PanelStatus = openId || kind === "builds" ? statusOf(saved) : itemKind ? itemsStatus : saved.isLoading ? "loading" : saved.isError ? "error" : "ready";
-  const tableStatus: PanelStatus = visiting && !openId ? statusOf(collections) : openId && !open ? statusOf(alone.isError ? alone : collectionBuilds) : openId ? statusOf(collectionBuilds) : kindStatus;
+  const itemsStatus = statusOf(keptRead);
+  const kindStatus: PanelStatus = openId || kind === "builds" ? statusOf(savedRead) : itemKind ? itemsStatus : savedRead.isLoading ? "loading" : savedRead.isError ? "error" : "ready";
+  const tableStatus: PanelStatus = visiting && !openId ? statusOf(collectionsRead) : openId && !open ? statusOf(aloneRead.isError ? aloneRead : collectionBuildsRead) : openId ? statusOf(collectionBuildsRead) : kindStatus;
   const retryTable = () => {
-    if (openId) return void collectionBuilds.refetch();
-    if (visiting) return void collections.refetch();
-    if (kind !== "builds") void kept.refetch();
-    if (kind === "builds" || !itemKind) void saved.refetch();
+    Object.values(stalls).forEach((stall) => stall.restart());
+    if (openId) return askAgain([LIBRARY_COLLECTION_BUILDS_KEY], collectionBuilds.refetch);
+    if (visiting) return askAgain([LIBRARY_COLLECTIONS_KEY], collections.refetch);
+    if (kind !== "builds") askAgain(["library", "listSavedItems"], kept.refetch);
+    if (kind === "builds" || !itemKind) askAgain([LIBRARY_SAVED_KEY], saved.refetch);
   };
   const hasMore = openId ? collectionBuilds : kind === "builds" ? saved : itemKind ? kept : null;
   const moreAvailable = hasMore ? hasMore.hasNextPage : Boolean(saved.hasNextPage || (wantsItems && kept.hasNextPage));
@@ -539,7 +559,7 @@ export default function LibraryPage() {
         name: previewEntry.name,
         meta: [`${privacyWord(previewEntry.isPrivate)} · ${countWords(previewEntry.itemCount, "item")}`, savedByOf(previewEntry.isPrivate ? undefined : previewEntry.id)].filter(Boolean).join(" · "),
         to: hrefFor({ collection: previewEntry.id }),
-        status: statusOf(collectionBuilds),
+        status: statusOf(collectionBuildsRead),
         onStart: () => void startFromCollection(previewEntry.id, previewEntry.name),
         rows: (collectionBuilds.data?.pages[0]?.items ?? []).slice(0, 3).map((item) => ({
           id: item.build.id,
@@ -572,12 +592,12 @@ export default function LibraryPage() {
         }
         changes={!visiting && changeRows.length > 0 ? { ...changesFigure(changeRows), rows: changeRows } : undefined}
         collections={{
-          status: statusOf(collections),
+          status: statusOf(collectionsRead),
           items: list.map((item) => ({ id: item.id, name: item.name, meta: privacyWord(item.isPrivate), count: item.itemCount })),
           current: openId,
           hrefFor: (id) => hrefFor({ collection: id }),
           onNew: visiting ? undefined : () => setNaming("new"),
-          onRetry: () => void collections.refetch(),
+          onRetry: () => { stalls.collections.restart(); askAgain([LIBRARY_COLLECTIONS_KEY], collections.refetch); },
           emptyLine: visiting ? "No public collections yet." : "No collections yet.",
         }}
         items={{
@@ -600,7 +620,7 @@ export default function LibraryPage() {
           tab: tabs.some((item) => item.value === address.tab) ? address.tab : "all",
           onTab: (next) => move({ tab: next }),
           status: tableStatus,
-          what: openId && !open && alone.isError ? "This collection didn't load." : itemKind && !openId ? "Saved items didn't load." : "Builds didn't load.",
+          what: openId && !open && aloneRead.isError ? "This collection didn't load." : itemKind && !openId ? "Saved items didn't load." : "Builds didn't load.",
           onRetry: retryTable,
           empty: {
             line:

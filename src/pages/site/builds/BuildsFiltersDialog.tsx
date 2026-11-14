@@ -15,7 +15,7 @@ import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE, display } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import { BuildsControl } from "./BuildsFrame";
 
@@ -77,7 +77,7 @@ export function BuildsFiltersDialog({ open, onOpenChange, children, footer, head
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: `1px solid ${t.hairline}` }}>
-            <Dialog.Title style={{ ...display(22), margin: 0, color: t.text }}>Filters</Dialog.Title>
+            <Dialog.Title style={{ fontFamily: FIGTREE, fontSize: 16, fontWeight: 500, lineHeight: 1.05, letterSpacing: "-0.02em", textWrap: "balance", margin: 0, color: t.text }}>Filters</Dialog.Title>
             <Dialog.Description style={VISUALLY_HIDDEN}>Choose which builds are shown.</Dialog.Description>
             <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 12 }}>{headerExtra}</div>
             <Dialog.Close asChild>

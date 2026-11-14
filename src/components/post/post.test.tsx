@@ -107,13 +107,13 @@ describe("PostBody", () => {
     expect(screen.getByText("Sub").tagName).toBe("H3");
   });
 
-  it("sets the title at 28px, and 24px on a phone", () => {
+  it("sets the title at 20px, on a phone too (the seven sizes: never larger than the page title)", () => {
     const heading = { type: "heading", attrs: { level: 1 }, content: [word("T")] } as PostBlock;
     const wide = body([heading]);
-    expect(screen.getByText("T")).toHaveStyle({ fontSize: "28px", fontWeight: "500" });
+    expect(screen.getByText("T")).toHaveStyle({ fontSize: "20px", fontWeight: "500" });
     wide.unmount();
     body([heading], { phone: true });
-    expect(screen.getByText("T")).toHaveStyle({ fontSize: "24px" });
+    expect(screen.getByText("T")).toHaveStyle({ fontSize: "20px" });
   });
 
   it("draws lists with their markers and a code block that scrolls", () => {

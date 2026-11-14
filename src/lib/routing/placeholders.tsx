@@ -15,6 +15,7 @@ import { ComposeSkeleton } from "@/pages/site/compose/ComposeSkeleton";
 import { DraftsLoadingView } from "@/pages/site/drafts/DraftsFrame";
 import { HomeLoadingView } from "@/pages/site/home/HomeFrame";
 import { BuildsLoadingView } from "@/pages/site/builds/BuildsFrame";
+import { SettingsLoadingView } from "@/pages/site/settings/SettingsLoading";
 
 const column: CSSProperties = { display: "flex", flexDirection: "column", gap: 12, minHeight: "60vh", paddingTop: 24 };
 
@@ -46,4 +47,4 @@ export const ComposerPlaceholder = () => <ComposeSkeleton />;
 // UX-12 P2: a legal page is text in one column; the placeholder is that column's first lines.
 export const LegalPlaceholder = () => <ListPlaceholder what="Page" rows={8} rowHeight={20} />;
 // UX-15: Settings is a list of rows: a title and the rows of one section.
-export const SettingsPlaceholder = () => <ListPlaceholder what="Settings" rows={5} rowHeight={56} />;
+export const SettingsPlaceholder = SettingsLoadingView;

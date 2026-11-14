@@ -161,7 +161,7 @@ function Well({ drawing, note, words }: { drawing: MapDrawing | null; note?: str
       {drawing ? (
         <div aria-hidden="true" style={{ position: "relative", width: "100%", minWidth: scrolls ? w : undefined, height: h }}>
           {drawing.parts.map((part) => (
-            <span key={part.key} style={{ position: "absolute", left: pct(part.x, w), top: pct(part.y, h), fontFamily: DM_MONO, fontSize: 10, letterSpacing: ".04em", color: t.label, whiteSpace: "nowrap" }}>
+            <span key={part.key} style={{ position: "absolute", left: pct(part.x, w), top: pct(part.y, h), fontFamily: DM_MONO, fontSize: 11, letterSpacing: ".04em", color: t.label, whiteSpace: "nowrap" }}>
               {part.label}
             </span>
           ))}
@@ -176,7 +176,7 @@ function Well({ drawing, note, words }: { drawing: MapDrawing | null; note?: str
               style={{ position: "absolute", left: pct(box.x, w), top: pct(box.y, h), width: pct(BOX_W, w), height: BOX_H, boxSizing: "border-box", padding: "4px 7px", background: t.inset, border: `1px solid ${t.tileBorder}`, borderRadius: r.control, overflow: "hidden", whiteSpace: "nowrap" }}
             >
               <span style={{ display: "block", ...ellipsis, fontSize: 11, fontWeight: 500, lineHeight: "14px", color: t.text }}>{box.label}</span>
-              <span style={{ display: "block", ...ellipsis, fontFamily: DM_MONO, fontSize: 10, lineHeight: "13px", color: t.label }}>{box.meta}</span>
+              <span style={{ display: "block", ...ellipsis, fontFamily: DM_MONO, fontSize: 11, lineHeight: "13px", color: t.label }}>{box.meta}</span>
             </span>
           ))}
           {note ? <span style={{ position: "absolute", left: 0, right: 0, bottom: 14, textAlign: "center", ...text(12, 400, t.label) }}>{note}</span> : null}
@@ -216,7 +216,7 @@ export function MapCard({ card, direction, index }: { card: MapCardView; directi
           <span style={text(12, 400, t.label)}>{`${card.maker ? `@${card.maker} · ` : ""}${card.summary}`}</span>
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flex: "none" }}>
-          <span style={text(12.5, 400, t.text2)}>{card.reproduced}</span>
+          <span style={text(12, 400, t.text2)}>{card.reproduced}</span>
           {card.reproductions > 0 ? <RowLamp lit={card.lit} /> : null}
         </span>
       </div>

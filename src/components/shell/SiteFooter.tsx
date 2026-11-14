@@ -43,7 +43,7 @@ export interface SiteFooterViewProps {
 /* UI-P87, refined: inside the surface, under a 1px `--hairline`, `12px <gutter>`, wrapping with `12px 24px` between
    items: the lockup (15 / 13), the links at 12.5 `--text2` `8px 20px` apart, a spacer, and "© buildgallery" at 12
    `--label`. The items, their order and their names are the current footer's; UX-03 P10 took out the Theme control. */
-const refinedLink: CSSProperties = { fontFamily: FIGTREE, fontSize: 12.5, fontWeight: 400, color: t.text2 };
+const refinedLink: CSSProperties = { fontFamily: FIGTREE, fontSize: 12, fontWeight: 400, color: t.text2 };
 const refinedButtonLink: CSSProperties = { ...refinedLink, padding: 0, border: 0, background: "transparent", cursor: "pointer" };
 
 function RefinedSiteFooterView({ signedIn, onSignOut, onConnect, showPrivacy = false, showTerms = false, signInTo = "/login", signInState }: SiteFooterViewProps) {

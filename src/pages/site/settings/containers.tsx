@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+import { useAskAgain, useStalled } from "@/components/shell/useStalled";
 import { useAuth } from "@/contexts/AuthContext";
 import { listApps, revokeApp } from "@/lib/settings/apps";
 import { DATA_COPY, deleteMyAccount, prepareExport, saveFile } from "@/lib/settings/data";
@@ -22,6 +23,7 @@ import { DataView } from "./DataView";
 import { NotificationsView } from "./NotificationsView";
 import { PrivacyView } from "./PrivacyView";
 import { SectionError, SectionLoading } from "./SettingParts";
+import { SECTION_BONES } from "./SettingsLoading";
 
 const STALE_MS = 60_000;
 
@@ -29,8 +31,10 @@ export function AccountSection() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const account = useQuery({ queryKey: ["settings", "loadAccount"], queryFn: loadAccount, staleTime: STALE_MS });
-  if (account.isError) return <SectionError title="Account" onRetry={() => void account.refetch()} />;
-  if (!account.data) return <SectionLoading title="Account" />;
+  const askAgain = useAskAgain();
+  const accountStall = useStalled(!account.data && !account.isError);
+  if (account.isError || accountStall.stalled) return <SectionError title="Account" onRetry={() => { accountStall.restart(); askAgain(["settings", "loadAccount"], account.refetch); }} />;
+  if (!account.data) return <SectionLoading title="Account" groups={SECTION_BONES.account} />;
   const { email, methods } = account.data;
   return (
     <AccountView
@@ -79,8 +83,10 @@ export function NotificationsSection() {
     },
     onSuccess: () => toast(SAVED),
   });
-  if (prefs.isError) return <SectionError title="Notifications" onRetry={() => void prefs.refetch()} />;
-  if (!prefs.data) return <SectionLoading title="Notifications" rows={4} />;
+  const askAgain = useAskAgain();
+  const prefsStall = useStalled(!prefs.data && !prefs.isError);
+  if (prefs.isError || prefsStall.stalled) return <SectionError title="Notifications" onRetry={() => { prefsStall.restart(); askAgain(key, prefs.refetch); }} />;
+  if (!prefs.data) return <SectionLoading title="Notifications" groups={SECTION_BONES.notifications} />;
   return <NotificationsView prefs={prefs.data} onToggle={(changed, on) => write.mutate({ key: changed, on })} />;
 }
 
@@ -131,8 +137,10 @@ export function PrivacySection() {
     }
   };
 
-  if (isPrivate.isError || blocks.isError) return <SectionError title="Privacy and blocking" onRetry={() => { void isPrivate.refetch(); void blocks.refetch(); }} />;
-  if (isPrivate.data === undefined || !blocks.data) return <SectionLoading title="Privacy and blocking" />;
+  const askAgain = useAskAgain();
+  const privacyStall = useStalled((isPrivate.data === undefined || !blocks.data) && !isPrivate.isError && !blocks.isError);
+  if (isPrivate.isError || blocks.isError || privacyStall.stalled) return <SectionError title="Privacy and blocking" onRetry={() => { privacyStall.restart(); askAgain(privateKey, isPrivate.refetch); askAgain(blockKeys.list, blocks.refetch); }} />;
+  if (isPrivate.data === undefined || !blocks.data) return <SectionLoading title="Privacy and blocking" groups={SECTION_BONES.privacy} />;
   return <PrivacyView isPrivate={isPrivate.data} onTogglePrivate={(on) => togglePrivate.mutate(on)} blocked={blocks.data} onUnblock={(person) => void unblock(person)} busy={busy} />;
 }
 
@@ -158,8 +166,10 @@ export function DataSection() {
 export function AppsSection() {
   const queryClient = useQueryClient();
   const apps = useQuery({ queryKey: ["settings", "listApps"], queryFn: listApps, staleTime: STALE_MS });
-  if (apps.isError) return <SectionError title="Connected apps" onRetry={() => void apps.refetch()} />;
-  if (!apps.data) return <SectionLoading title="Connected apps" rows={2} />;
+  const askAgain = useAskAgain();
+  const appsStall = useStalled(!apps.data && !apps.isError);
+  if (apps.isError || appsStall.stalled) return <SectionError title="Connected apps" onRetry={() => { appsStall.restart(); askAgain(["settings", "listApps"], apps.refetch); }} />;
+  if (!apps.data) return <SectionLoading title="Connected apps" groups={SECTION_BONES.apps} />;
   return (
     <AppsView
       apps={apps.data.state === "listed" ? apps.data.apps : null}
