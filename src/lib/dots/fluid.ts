@@ -268,10 +268,20 @@ export class FluidRegion {
     return this.goneAt !== null && (t - this.goneAt) * SPEED > this.height + RAMP;
   }
 
-  /** Move every dot's cursor offset on by `dt`. */
+  /** Dots with a cursor offset still easing back. */
+  private moving = 0;
+
+  /** Move every dot's cursor offset on by `dt`. Measures where the region is this frame, for `draw` too. */
   step(dt: number) {
     const box = this.host.isConnected ? this.host.getBoundingClientRect() : null;
     if (box) this.viewport = { left: box.left + this.host.clientLeft, top: box.top + this.host.clientTop };
+    // Nothing to move: no offset left to ease back, and the pointer is beyond reach of every dot.
+    if (this.moving === 0 && box) {
+      const dx = Math.max(box.left - pointer.x, 0, pointer.x - box.right);
+      const dy = Math.max(box.top - pointer.y, 0, pointer.y - box.bottom);
+      if (!pointer.has || dx * dx + dy * dy > (REACH + 8) ** 2) return;
+    }
+    let moving = 0;
     const grow = 1 - Math.exp(-GROW_RATE * dt);
     const back = 1 - Math.exp(-RETURN_RATE * dt);
     for (let i = 0; i < this.count; i++) {
@@ -292,15 +302,25 @@ export class FluidRegion {
       const k = tx * tx + ty * ty > this.ox[i] ** 2 + this.oy[i] ** 2 ? grow : back;
       this.ox[i] += (tx - this.ox[i]) * k;
       this.oy[i] += (ty - this.oy[i]) * k;
+      // An offset under a thousandth of a pixel is drawn as none: it is let go, and the dot stops being moved.
+      if (Math.abs(this.ox[i]) < 1e-3 && Math.abs(this.oy[i]) < 1e-3 && tx === 0 && ty === 0) {
+        this.ox[i] = 0;
+        this.oy[i] = 0;
+      } else moving++;
     }
+    this.moving = moving;
   }
 
   /** Draw at time `t`; `still` is reduced motion's single frame (t = 3, no reveal, no wind-down, no cursor). */
   draw(t: number, still: boolean) {
     const ctx = this.ctx;
     if (!ctx) return;
-    if (this.dirty) this.layout();
-    if (!still && this.host.isConnected) {
+    if (this.dirty) {
+      this.layout();
+      this.moving = 0;
+    }
+    // A still frame (reduced motion) has no step before it to say where the region is.
+    if (still && this.host.isConnected) {
       const box = this.host.getBoundingClientRect();
       this.viewport = { left: box.left + this.host.clientLeft, top: box.top + this.host.clientTop };
     }
@@ -451,7 +471,12 @@ function visibility(): IntersectionObserver | null {
   if (observer || typeof IntersectionObserver === "undefined") return observer;
   observer = new IntersectionObserver((entries) => {
     for (const entry of entries) {
-      for (const region of regions) if (region.host === entry.target) region.visible = entry.isIntersecting;
+      for (const region of regions) {
+        if (region.host !== entry.target) continue;
+        region.visible = entry.isIntersecting;
+        // G28: a region off screen is not drawn; its canvas says so.
+        region.canvas.dataset.visible = String(entry.isIntersecting);
+      }
     }
     ensureLoop();
   });
