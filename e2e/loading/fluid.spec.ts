@@ -98,6 +98,8 @@ test("G28: regions off screen are paused, and one loop drives every region", asy
     window.scrollTo(0, 0);
   });
   await expect.poll(() => page.locator('canvas[data-fluid][data-visible="true"]').count()).toBe(0);
+  // The loop sees that on its next frame and stops there.
+  await page.waitForTimeout(300);
   const idle = await page.evaluate(() => (window as unknown as { __frames: number }).__frames);
   await page.waitForTimeout(500);
   expect(await page.evaluate(() => (window as unknown as { __frames: number }).__frames)).toBe(idle);

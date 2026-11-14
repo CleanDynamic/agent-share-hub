@@ -51,9 +51,13 @@ test.beforeEach(async ({ page }) => {
 test("G17: no canvas and no frames while closed; while open a fixed, full, inert layer between scrim and dialog", async ({ page }) => {
   await page.goto("/builds");
   await page.waitForLoadState("networkidle");
-  await page.waitForTimeout(500);
+  // The page's own loading fields run on the same engine (Part E): wait for them to finish, then count from there.
+  await expect(page.locator("canvas[data-fluid]")).toHaveCount(0);
+  await page.waitForTimeout(300);
   await expect(layer(page)).toHaveCount(0);
-  expect(await engineFrames(page)).toBe(0);
+  const settled = await engineFrames(page);
+  await page.waitForTimeout(500);
+  expect(await engineFrames(page)).toBe(settled);
 
   await page.getByRole("banner").getByRole("button", { name: "Sign in" }).click();
   await expect(layer(page)).toHaveCount(1);
