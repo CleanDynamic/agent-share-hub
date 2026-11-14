@@ -25,6 +25,10 @@
   to = "/index.html"
   status = 200
 
+# G20. Every response. The policy and why each source is allowed: docs/security/auth-settings.md.
+# D5: the Content-Security-Policy ships as Report-Only first; a later, separate commit makes it enforcing.
+# The two sha256 sources are the inline scripts in index.html (theme boot, boot-shell remover);
+# src/test/security/headers.test.ts fails if either script changes without its hash here.
 [[headers]]
   for = "/*"
   [headers.values]
@@ -32,6 +36,8 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    Content-Security-Policy-Report-Only = "default-src 'self'; script-src 'self' 'sha256-DAKqQDvsEF+tk0RJM2ne0CTlClG3fDFvhUCf9YUAaYQ=' 'sha256-Jihd92I6JqT2CplVwABTR5EWHt9Gm0PgHAN+LQ9j4HA=' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' https://zybdotagjwektucfdkri.supabase.co wss://zybdotagjwektucfdkri.supabase.co https://api.microlink.io; frame-src https:; media-src 'self' blob: https:; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 
 [[headers]]
   for = "/assets/*"
