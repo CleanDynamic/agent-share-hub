@@ -41,6 +41,12 @@ function atAddress(entry: string) {
 const redirectOf = () => new URLSearchParams(screen.getByTestId("signin-at").textContent!.split("?")[1]).get("redirect");
 
 describe("ProtectedRoute", () => {
+  it("G17: carries the path, the query and the hash to sign in", () => {
+    Object.assign(auth, { isLoggedIn: false });
+    atAddress("/private/library?view=saved#top");
+    expect(redirectOf()).toBe("/private/library?view=saved#top");
+  });
+
   it("G16: sends / as the return when the path would leave the site", () => {
     Object.assign(auth, { isLoggedIn: false });
     atAddress("/private//example.com");

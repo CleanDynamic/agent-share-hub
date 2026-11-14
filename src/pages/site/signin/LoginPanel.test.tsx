@@ -113,6 +113,15 @@ describe("signing in", () => {
     expect(resolvePostAuthRoute).not.toHaveBeenCalled();
   });
 
+  it("G17: lands on the exact address the guard carried: path, query and hash", async () => {
+    signIn.mockResolvedValue({ outcome: "signed-in", userId: "u-1" });
+    const where = open(`/login?redirect=${encodeURIComponent("/library?view=saved#top")}`);
+    fill();
+    submit();
+    await waitFor(() => expect(where.at()).toBe("/library?view=saved"));
+    expect(where.hash()).toBe("#top");
+  });
+
   it("G16: lands on / for a hostile returnTo", async () => {
     signIn.mockResolvedValue({ outcome: "signed-in", userId: "u-1" });
     const where = open("/login?returnTo=javascript%3Aalert(1)");

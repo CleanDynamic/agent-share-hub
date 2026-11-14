@@ -19,8 +19,8 @@ export function ProtectedRoute({ children, requireCreator }: ProtectedRouteProps
   }
 
   if (!isLoggedIn) {
-    // G16: the return goes through safeReturnPath before it is written into the address.
-    return <Navigate to={`/login?redirect=${encodeURIComponent(safeReturnPath(location.pathname))}`} replace />;
+    // G16, G17: the whole address (path, query and hash) goes through safeReturnPath before it is written.
+    return <Navigate to={`/login?redirect=${encodeURIComponent(safeReturnPath(`${location.pathname}${location.search}${location.hash}`))}`} replace />;
   }
   if (requireCreator && !isCreator) return <Navigate to="/" replace />;
 
