@@ -8,8 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
  * confirmation either way does not leak which emails are registered. A thrown
  * error is a network or server failure.
  */
-export async function requestPasswordReset(email: string, redirectTo: string): Promise<boolean> {
-  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+export async function requestPasswordReset(email: string, redirectTo: string, captchaToken?: string): Promise<boolean> {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo, captchaToken });
   return !error;
 }
 

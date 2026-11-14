@@ -27,6 +27,7 @@ import { returnPathFrom } from "@/lib/auth/safeReturnPath";
 import { signInWithEmail } from "@/lib/auth/signInWithEmail";
 
 import { loginCanSubmit } from "./authModel";
+import { useDialogCaptcha, VERIFY_FAILED } from "./dialogCaptcha";
 import { LoginForm } from "./LoginForm";
 import { setSigningIn } from "./signinActivity";
 import { useSignInNavigation } from "./useSignInNavigation";
@@ -45,6 +46,7 @@ export function LoginPanel() {
   const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(null);
   const [error, setError] = useState("");
   const views = useSignInNavigation();
+  const captcha = useDialogCaptcha();
 
   // The halftone layer's signing-in ripple, while the request or a provider is out.
   useEffect(() => {
@@ -65,8 +67,15 @@ export function LoginPanel() {
     }
     setIsSubmitting(true);
     setError("");
+    const check = await captcha.token();
+    if (check.failed) {
+      captcha.reset();
+      setError(VERIFY_FAILED);
+      setIsSubmitting(false);
+      return;
+    }
     try {
-      const result = await signInWithEmail(emailOrUsername, password);
+      const result = await signInWithEmail(emailOrUsername, password, check.token);
 
       if (result.outcome !== "signed-in") {
         setError(
@@ -85,6 +94,9 @@ export function LoginPanel() {
     } catch {
       setError("Something went wrong. Please try again.");
       setIsSubmitting(false);
+    } finally {
+      // G6: a token is good for one request; the widget makes the next one.
+      captcha.reset();
     }
   };
 

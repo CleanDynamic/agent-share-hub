@@ -60,7 +60,7 @@ export async function verifyEmailLink(link: EmailLink, isCancelled: () => boolea
  * Send the confirmation email again. True when it went; a refusal is false and
  * the page simply lets the reader try again.
  */
-export async function resendSignupEmail(email: string): Promise<boolean> {
-  const { error } = await supabase.auth.resend({ type: "signup", email });
+export async function resendSignupEmail(email: string, captchaToken?: string): Promise<boolean> {
+  const { error } = await supabase.auth.resend({ type: "signup", email, options: { captchaToken } });
   return !error;
 }

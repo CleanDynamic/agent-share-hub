@@ -14,6 +14,9 @@ const verifyEmailLink = vi.fn();
 const resendSignupEmail = vi.fn();
 const resolvePostAuthRoute = vi.fn();
 
+// G6: the dialog's one Turnstile widget, faked: every submission takes its token and resets it.
+const captcha = vi.hoisted(() => ({ token: vi.fn(), reset: vi.fn() }));
+vi.mock("@/lib/auth/turnstile", () => ({ useTurnstile: () => captcha }));
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ session: auth.session, user: auth.session?.user ?? null, isLoggedIn: Boolean(auth.session), loading: false }),
 }));
@@ -26,6 +29,8 @@ vi.mock("@/lib/auth/postAuthRoute", () => ({ resolvePostAuthRoute: (...args: unk
 import { renderDialog, setViewport } from "./signinTest";
 
 beforeEach(() => {
+  captcha.token.mockReset().mockResolvedValue({ token: "tok-1", failed: false });
+  captcha.reset.mockReset();
   setViewport("desktop");
   auth.session = null;
   verifyEmailLink.mockReset();
@@ -103,7 +108,8 @@ describe("resending", () => {
     fireEvent.click(screen.getByRole("button", { name: "Resend verification" }));
     await settle(0);
 
-    expect(resendSignupEmail).toHaveBeenCalledWith("ada@example.com");
+    expect(resendSignupEmail).toHaveBeenCalledWith("ada@example.com", "tok-1");
+    expect(captcha.reset).toHaveBeenCalledTimes(1);
     expect(screen.getByText("Sent again — it should arrive in a minute.")).toBeTruthy();
 
     await settle(2500);
@@ -129,6 +135,17 @@ describe("resending", () => {
     await settle(0);
     expect(screen.getByRole("button", { name: "Resend verification" })).toBeEnabled();
     expect(screen.queryByText("Sent again — it should arrive in a minute.")).toBeNull();
+    expect(captcha.reset).toHaveBeenCalledTimes(1);
+  });
+
+  it("G6: sends nothing and gives the button back, reset, when the widget has no token", async () => {
+    captcha.token.mockResolvedValue({ token: undefined, failed: true });
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Resend verification" }));
+    await settle(0);
+    expect(resendSignupEmail).not.toHaveBeenCalled();
+    expect(captcha.reset).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: "Resend verification" })).toBeEnabled();
   });
 });
 
@@ -192,7 +209,7 @@ describe("an emailed link", () => {
     await screen.findByRole("heading", { name: "This link doesn't work" });
 
     fireEvent.click(screen.getByRole("button", { name: "Send a new link" }));
-    await waitFor(() => expect(resendSignupEmail).toHaveBeenCalledWith("ada@example.com"));
+    await waitFor(() => expect(resendSignupEmail).toHaveBeenCalledWith("ada@example.com", "tok-1"));
 
     // The dialog's way back is row 1's link alone (D3); the failed view's body carries none.
     expect(screen.queryByRole("button", { name: "Back to sign in" })).toBeNull();

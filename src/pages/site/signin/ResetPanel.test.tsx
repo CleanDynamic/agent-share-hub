@@ -15,6 +15,9 @@ const onPasswordRecovery = vi.fn();
 const verifyEmailLink = vi.fn();
 const toastSuccess = vi.fn();
 
+// G6: the dialog's one Turnstile widget, faked: every submission takes its token and resets it.
+const captcha = vi.hoisted(() => ({ token: vi.fn(), reset: vi.fn() }));
+vi.mock("@/lib/auth/turnstile", () => ({ useTurnstile: () => captcha }));
 vi.mock("@/lib/auth/passwordReset", () => ({
   requestPasswordReset: (...args: unknown[]) => requestPasswordReset(...args),
   setNewPassword: (...args: unknown[]) => setNewPassword(...args),
@@ -31,6 +34,8 @@ let stopListening = vi.fn();
 let recovery: () => void = () => {};
 
 beforeEach(() => {
+  captcha.token.mockReset().mockResolvedValue({ token: "tok-1", failed: false });
+  captcha.reset.mockReset();
   setViewport("desktop");
   for (const fn of [requestPasswordReset, setNewPassword, onPasswordRecovery, verifyEmailLink, toastSuccess]) fn.mockReset();
   stopListening = vi.fn();
@@ -82,8 +87,20 @@ describe("the request form", () => {
     fireEvent.click(screen.getByRole("button", { name: "Send reset link" }));
 
     expect(await screen.findByRole("heading", { level: 2, name: "Check your inbox" })).toBeTruthy();
-    expect(requestPasswordReset).toHaveBeenCalledWith("ada@example.com", `${window.location.origin}/reset-password`);
+    expect(requestPasswordReset).toHaveBeenCalledWith("ada@example.com", `${window.location.origin}/reset-password`, "tok-1");
     expect(screen.getByText("ada@example.com")).toBeTruthy();
+    // G6: the widget is reset after the submission.
+    expect(captcha.reset).toHaveBeenCalledTimes(1);
+  });
+
+  it("G6: says the check failed, sends nothing and resets, when the widget has no token", async () => {
+    captcha.token.mockResolvedValue({ token: undefined, failed: true });
+    open();
+    type("you@example.com", "ada@example.com");
+    fireEvent.click(screen.getByRole("button", { name: "Send reset link" }));
+    expect(await screen.findByText("Couldn't verify this request. Try again.")).toBeTruthy();
+    expect(requestPasswordReset).not.toHaveBeenCalled();
+    expect(captcha.reset).toHaveBeenCalledTimes(1);
   });
 
   it("refuses an address with no domain before it asks anyone, under the field", () => {

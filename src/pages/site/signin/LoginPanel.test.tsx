@@ -13,6 +13,9 @@ const signIn = vi.fn();
 const resolvePostAuthRoute = vi.fn();
 const startOAuthSignIn = vi.fn();
 
+// G6: the dialog's one Turnstile widget, faked: every submission takes its token and resets it.
+const captcha = vi.hoisted(() => ({ token: vi.fn(), reset: vi.fn() }));
+vi.mock("@/lib/auth/turnstile", () => ({ useTurnstile: () => captcha }));
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ isLoggedIn: auth.isLoggedIn, user: null, session: null, loading: false }),
 }));
@@ -25,6 +28,8 @@ vi.mock("@/lib/auth/oauth", () => ({ startOAuthSignIn: (...args: unknown[]) => s
 import { renderDialog, setViewport } from "./signinTest";
 
 beforeEach(() => {
+  captcha.token.mockReset().mockResolvedValue({ token: "tok-1", failed: false });
+  captcha.reset.mockReset();
   setViewport("desktop");
   auth.isLoggedIn = false;
   signIn.mockReset();
@@ -70,7 +75,7 @@ describe("signing in", () => {
     submit();
 
     await waitFor(() => expect(where.at()).toBe("/onboarding"));
-    expect(signIn).toHaveBeenCalledWith("  ada@example.com ", "hunter22");
+    expect(signIn).toHaveBeenCalledWith("  ada@example.com ", "hunter22", "tok-1");
     expect(resolvePostAuthRoute).toHaveBeenCalledWith("u-1");
   });
 
@@ -151,6 +156,39 @@ describe("signing in", () => {
     await act(async () => finish({ outcome: "rejected" }));
     await waitFor(() => expect(primary()).toBeEnabled());
     expect(primary().textContent).toBe("Sign in");
+  });
+});
+
+describe("the bot check (G6)", () => {
+  it("sends the widget's token with the sign-in, and resets the widget after a success", async () => {
+    signIn.mockResolvedValue({ outcome: "signed-in", userId: "u-1" });
+    open("/login?redirect=%2Fgallery");
+    fill();
+    submit();
+    await waitFor(() => expect(signIn).toHaveBeenCalledWith("ada@example.com", "hunter22", "tok-1"));
+    await waitFor(() => expect(captcha.reset).toHaveBeenCalledTimes(1));
+  });
+
+  it("resets the widget after a refusal and after a thrown failure", async () => {
+    signIn.mockResolvedValueOnce({ outcome: "rejected" }).mockRejectedValueOnce(new Error("network down"));
+    open();
+    fill();
+    submit();
+    await waitFor(() => expect(captcha.reset).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(primary()).toBeEnabled());
+    submit();
+    await waitFor(() => expect(captcha.reset).toHaveBeenCalledTimes(2));
+  });
+
+  it("says the check failed, sends nothing and resets, when the widget has no token", async () => {
+    captcha.token.mockResolvedValue({ token: undefined, failed: true });
+    open();
+    fill();
+    submit();
+    expect(await screen.findByText("Couldn't verify this request. Try again.")).toBeTruthy();
+    expect(signIn).not.toHaveBeenCalled();
+    expect(captcha.reset).toHaveBeenCalledTimes(1);
+    expect(primary()).toBeEnabled();
   });
 });
 

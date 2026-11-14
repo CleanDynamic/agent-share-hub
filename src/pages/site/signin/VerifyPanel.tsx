@@ -24,6 +24,7 @@ import { resendSignupEmail, verifyEmailLink } from "@/lib/auth/emailLink";
 import { resolvePostAuthRoute } from "@/lib/auth/postAuthRoute";
 
 import { readEmailLink } from "./authModel";
+import { useDialogCaptcha } from "./dialogCaptcha";
 import { LinkChecking } from "./ResetForms";
 import { VerifyFailed, VerifyPending, VerifySuccess } from "./VerifyForms";
 import { useSignInNavigation } from "./useSignInNavigation";
@@ -33,6 +34,7 @@ const RESEND_COOLDOWN_SECONDS = 45;
 export function VerifyPanel() {
   const navigate = useNavigate();
   const views = useSignInNavigation();
+  const captcha = useDialogCaptcha();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { session } = useAuth();
@@ -98,7 +100,19 @@ export function VerifyPanel() {
       return;
     }
     setResendState("sending");
-    const sent = await resendSignupEmail(email);
+    const check = await captcha.token();
+    if (check.failed) {
+      captcha.reset();
+      setResendState("idle");
+      return;
+    }
+    let sent = false;
+    try {
+      sent = await resendSignupEmail(email, check.token);
+    } finally {
+      // G6: a token is good for one request; the widget makes the next one.
+      captcha.reset();
+    }
     if (!sent) {
       setResendState("idle");
       return;

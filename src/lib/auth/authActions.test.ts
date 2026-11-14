@@ -112,6 +112,7 @@ describe("signUpWithEmail", () => {
     displayName: "Ada Lovelace",
     username: "ada_l",
     emailRedirectTo: "https://openbuilds.ai/verify-email",
+    captchaToken: "tok-1",
   };
 
   it("sends the metadata the handle_new_user trigger reads, in snake case", async () => {
@@ -125,6 +126,7 @@ describe("signUpWithEmail", () => {
       options: {
         data: { display_name: "Ada Lovelace", username: "ada_l" },
         emailRedirectTo: "https://openbuilds.ai/verify-email",
+        captchaToken: "tok-1",
       },
     });
   });
@@ -158,9 +160,10 @@ describe("signUpWithEmail", () => {
 describe("requestPasswordReset", () => {
   it("asks for the link to land on the page it names, and says whether it was accepted", async () => {
     resetPasswordForEmail.mockResolvedValueOnce({ error: null });
-    await expect(requestPasswordReset("ada@example.com", "https://openbuilds.ai/reset-password")).resolves.toBe(true);
+    await expect(requestPasswordReset("ada@example.com", "https://openbuilds.ai/reset-password", "tok-1")).resolves.toBe(true);
     expect(resetPasswordForEmail).toHaveBeenCalledWith("ada@example.com", {
       redirectTo: "https://openbuilds.ai/reset-password",
+      captchaToken: "tok-1",
     });
 
     resetPasswordForEmail.mockResolvedValueOnce({ error: { message: "nope" } });
@@ -315,8 +318,8 @@ describe("verifyEmailLink", () => {
 describe("resendSignupEmail", () => {
   it("asks for the signup email again, and says whether it went", async () => {
     resend.mockResolvedValueOnce({ error: null });
-    await expect(resendSignupEmail("ada@example.com")).resolves.toBe(true);
-    expect(resend).toHaveBeenCalledWith({ type: "signup", email: "ada@example.com" });
+    await expect(resendSignupEmail("ada@example.com", "tok-1")).resolves.toBe(true);
+    expect(resend).toHaveBeenCalledWith({ type: "signup", email: "ada@example.com", options: { captchaToken: "tok-1" } });
 
     resend.mockResolvedValueOnce({ error: { message: "rate limited" } });
     await expect(resendSignupEmail("ada@example.com")).resolves.toBe(false);

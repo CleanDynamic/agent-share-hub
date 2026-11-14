@@ -26,6 +26,7 @@ import { verifyEmailLink } from "@/lib/auth/emailLink";
 import { onPasswordRecovery, requestPasswordReset, setNewPassword } from "@/lib/auth/passwordReset";
 
 import { readEmailLink, resetConfirmCanSubmit, resetRequestCanSubmit } from "./authModel";
+import { useDialogCaptcha, VERIFY_FAILED } from "./dialogCaptcha";
 import { LinkChecking, ResetConfirmForm, ResetLinkError, ResetRequestForm, ResetSent } from "./ResetForms";
 import { useSignInNavigation } from "./useSignInNavigation";
 import { withoutDialog } from "./signinUrl";
@@ -36,6 +37,7 @@ type Mode = "request" | "sent" | "verifying" | "confirm" | "error";
 
 export function ResetPanel() {
   const views = useSignInNavigation();
+  const captcha = useDialogCaptcha();
   const [searchParams] = useSearchParams();
 
   const link = readEmailLink(undefined, searchParams, window.location.hash);
@@ -111,11 +113,18 @@ export function ResetPanel() {
     setRequestSubmitting(true);
     setRequestError("");
 
+    const check = await captcha.token();
+    if (check.failed) {
+      captcha.reset();
+      setRequestError(VERIFY_FAILED);
+      setRequestSubmitting(false);
+      return;
+    }
     try {
       // The project deliberately doesn't surface "email not found" here, so an
       // accepted request shows the same generic confirmation either way, to avoid
       // leaking which emails are registered.
-      const accepted = await requestPasswordReset(cleanEmail, `${window.location.origin}/reset-password`);
+      const accepted = await requestPasswordReset(cleanEmail, `${window.location.origin}/reset-password`, check.token);
       if (!accepted) {
         setRequestError("Something went wrong. Please try again.");
         setRequestSubmitting(false);
@@ -127,6 +136,8 @@ export function ResetPanel() {
       setRequestError("Something went wrong. Please try again.");
     } finally {
       setRequestSubmitting(false);
+      // G6: a token is good for one request; the widget makes the next one.
+      captcha.reset();
     }
   };
 

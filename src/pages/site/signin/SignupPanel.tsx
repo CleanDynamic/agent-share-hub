@@ -26,6 +26,7 @@ import { signUpWithEmail } from "@/lib/auth/signUpWithEmail";
 import { PRIVACY_REVIEWED, TERMS_REVIEWED } from "@/content/legal/reviewed";
 
 import { signupCanSubmit } from "./authModel";
+import { useDialogCaptcha, VERIFY_FAILED } from "./dialogCaptcha";
 import { SignupForm } from "./SignupForm";
 import { setSigningIn } from "./signinActivity";
 import { useSignInNavigation } from "./useSignInNavigation";
@@ -51,6 +52,7 @@ function readSavedDraft(): SavedDraft | null {
 export function SignupPanel() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const captcha = useDialogCaptcha();
   const views = useSignInNavigation();
   const { isLoggedIn } = useAuth();
 
@@ -183,6 +185,13 @@ export function SignupPanel() {
 
     setIsSubmitting(true);
     setError("");
+    const check = await captcha.token();
+    if (check.failed) {
+      captcha.reset();
+      setError(VERIFY_FAILED);
+      setIsSubmitting(false);
+      return;
+    }
     try {
       const result = await signUpWithEmail({
         email: cleanEmail,
@@ -190,6 +199,7 @@ export function SignupPanel() {
         displayName: displayName.trim(),
         username: cleanUsername,
         emailRedirectTo: `${window.location.origin}/verify-email`,
+        captchaToken: check.token,
       });
 
       if (result.outcome !== "created") {
@@ -215,6 +225,9 @@ export function SignupPanel() {
     } catch {
       setError("Something went wrong. Please try again.");
       setIsSubmitting(false);
+    } finally {
+      // G6: a token is good for one request; the widget makes the next one.
+      captcha.reset();
     }
   };
 

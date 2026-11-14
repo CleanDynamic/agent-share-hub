@@ -7,6 +7,8 @@ export interface EmailSignUp {
   username: string;
   /** Where the confirmation link in the email lands. */
   emailRedirectTo: string;
+  /** The bot-check token (G6); the auth service checks it. */
+  captchaToken?: string;
 }
 
 /**
@@ -36,6 +38,7 @@ export async function signUpWithEmail(input: EmailSignUp): Promise<EmailSignUpRe
         username: input.username,
       },
       emailRedirectTo: input.emailRedirectTo,
+      captchaToken: input.captchaToken,
     },
   });
 

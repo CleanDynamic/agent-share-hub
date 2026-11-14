@@ -14,6 +14,9 @@ const signUp = vi.fn();
 const checkUsernameAvailability = vi.fn();
 const startOAuthSignIn = vi.fn();
 
+// G6: the dialog's one Turnstile widget, faked: every submission takes its token and resets it.
+const captcha = vi.hoisted(() => ({ token: vi.fn(), reset: vi.fn() }));
+vi.mock("@/lib/auth/turnstile", () => ({ useTurnstile: () => captcha }));
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ isLoggedIn: auth.isLoggedIn, user: null, session: null, loading: false }),
 }));
@@ -26,6 +29,8 @@ vi.mock("@/lib/auth/oauth", () => ({ startOAuthSignIn: (...args: unknown[]) => s
 import { renderDialog, setViewport } from "./signinTest";
 
 beforeEach(() => {
+  captcha.token.mockReset().mockResolvedValue({ token: "tok-1", failed: false });
+  captcha.reset.mockReset();
   setViewport("desktop");
   auth.isLoggedIn = false;
   signUp.mockReset();
@@ -280,7 +285,21 @@ describe("creating the account", () => {
       displayName: "Ada Lovelace",
       username: "ada_l",
       emailRedirectTo: `${window.location.origin}/verify-email`,
+      captchaToken: "tok-1",
     });
+    // G6: the widget is reset after the submission.
+    expect(captcha.reset).toHaveBeenCalledTimes(1);
+  });
+
+  it("G6: says the check failed, creates nothing and resets, when the widget has no token", async () => {
+    captcha.token.mockResolvedValue({ token: undefined, failed: true });
+    open();
+    await fillAll();
+    fireEvent.click(create());
+    await act(async () => {});
+    expect(screen.getByText("Couldn't verify this request. Try again.")).toBeTruthy();
+    expect(signUp).not.toHaveBeenCalled();
+    expect(captcha.reset).toHaveBeenCalledTimes(1);
   });
 
   it("goes to the pending view with the address, remembered, when the project wants the email verified", async () => {
