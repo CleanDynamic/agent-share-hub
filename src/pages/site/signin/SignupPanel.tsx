@@ -139,9 +139,12 @@ export function SignupPanel() {
     setUsernameValidation({ state: "checking" });
     const seq = ++usernameSeq.current;
     usernameDebounce.current = setTimeout(async () => {
-      const { available, suggestion } = await checkUsernameAvailability(next);
+      const { available, suggestion, checkFailed } = await checkUsernameAvailability(next);
       if (seq !== usernameSeq.current) return; // a newer keystroke superseded this
-      if (available) {
+      if (checkFailed) {
+        // G13: an unchecked name is not available, and Join stays closed until a check succeeds.
+        setUsernameValidation({ state: "invalid", message: "Couldn't check, try again." });
+      } else if (available) {
         setUsernameValidation({ state: "valid", message: "Username available" });
       } else {
         setUsernameValidation({

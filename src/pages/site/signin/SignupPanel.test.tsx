@@ -147,6 +147,23 @@ describe("the username", () => {
     expect(screen.getByText("That username is taken")).toBeTruthy();
   });
 
+  it("G13: says it couldn't check, and keeps Create account closed, when the check fails", async () => {
+    open();
+    await fillAll();
+    expect(create()).toBeEnabled();
+    checkUsernameAvailability.mockResolvedValueOnce({ available: false, checkFailed: true });
+    type("username", "ada_lc");
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(400);
+    });
+    expect(screen.getByText("Couldn't check, try again.")).toBeTruthy();
+    expect(screen.queryByText("Username available")).toBeNull();
+    expect(create()).toBeDisabled();
+    fireEvent.submit(create().closest("form")!);
+    await act(async () => {});
+    expect(signUp).not.toHaveBeenCalled();
+  });
+
   it("shows the address it will have", () => {
     open();
     type("username", "ada_l");
