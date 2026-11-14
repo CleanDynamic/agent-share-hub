@@ -20,7 +20,6 @@ export interface EmailSignUp {
  */
 export type EmailSignUpResult =
   | { outcome: "created"; signedIn: boolean }
-  | { outcome: "already-registered"; message: string }
   | { outcome: "refused"; refusal: AuthRefusal; message: string };
 
 /**
@@ -28,8 +27,10 @@ export type EmailSignUpResult =
  *
  * The `handle_new_user` trigger reads `display_name` and `username` from the
  * sign-up metadata, in snake case, so those two keys are not ours to rename.
- * An "already registered" refusal is told apart by its wording, because the
- * client library gives no code for it.
+ * G11: an address that already has an account is answered exactly like a new
+ * one waiting for its link, so nothing tells a stranger which addresses are
+ * registered. (With email confirmation on, the auth service already does this;
+ * the wording check covers a project where it is off.)
  */
 export async function signUpWithEmail(input: EmailSignUp): Promise<EmailSignUpResult> {
   const { data, error } = await supabase.auth.signUp({
@@ -48,7 +49,7 @@ export async function signUpWithEmail(input: EmailSignUp): Promise<EmailSignUpRe
   if (error) {
     const message = error.message.toLowerCase();
     const taken = message.includes("already") && (message.includes("registered") || message.includes("exist"));
-    if (taken) return { outcome: "already-registered", message: error.message };
+    if (taken) return { outcome: "created", signedIn: false };
     return { outcome: "refused", refusal: refusalOf(error), message: error.message };
   }
 

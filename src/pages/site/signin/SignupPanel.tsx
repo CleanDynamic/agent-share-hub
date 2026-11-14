@@ -203,12 +203,7 @@ export function SignupPanel() {
       });
 
       if (result.outcome !== "created") {
-        if (result.outcome === "already-registered") {
-          setEmailValidation({ state: "invalid", message: "An account with this email already exists" });
-          setError("That email is already registered — try signing in instead.");
-        } else {
-          setError(result.refusal === "captcha" ? VERIFY_FAILED : result.message);
-        }
+        setError(result.refusal === "captcha" ? VERIFY_FAILED : result.message);
         setIsSubmitting(false);
         return;
       }

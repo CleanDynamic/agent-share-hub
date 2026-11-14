@@ -325,18 +325,15 @@ describe("creating the account", () => {
     expect(window.sessionStorage.getItem("pending_verification_email")).toBeNull();
   });
 
-  it("says plainly that an address is taken, under the email and under the form", async () => {
-    signUp.mockResolvedValue({ outcome: "already-registered", message: "User already registered" });
-    open();
+  it("G11: shows the same Check your inbox view whether or not the address already has an account", async () => {
+    signUp.mockResolvedValue({ outcome: "created", signedIn: false });
+    const where = open();
     await fillAll();
     fireEvent.click(create());
     await act(async () => {});
-
-    expect(screen.getByText("An account with this email already exists")).toBeTruthy();
-    expect(screen.getByText("That email is already registered — try signing in instead.")).toBeTruthy();
-    expect(screen.getByPlaceholderText("you@example.com").getAttribute("aria-invalid")).toBe("true");
-    // Closed again, until the email is changed.
-    expect(create()).toBeDisabled();
+    expect(where.at()).toBe("/?signin=verify");
+    expect(where.state()).toEqual({ email: "ada@example.com" });
+    expect(screen.queryByText(/already/i)).toBeNull();
   });
 
   it("passes any other refusal on in the client's own words", async () => {

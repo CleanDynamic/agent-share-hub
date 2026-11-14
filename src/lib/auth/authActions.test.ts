@@ -143,9 +143,9 @@ describe("signUpWithEmail", () => {
     "User already registered",
     "A user with this email address has already been registered",
     "Email already exists",
-  ])("knows %j as an address that already has an account", async (message) => {
+  ])("G11: answers %j exactly as a new account waiting for its link, so nothing says the address is taken", async (message) => {
     signUp.mockResolvedValue({ data: { session: null }, error: { message } });
-    await expect(signUpWithEmail(input)).resolves.toEqual({ outcome: "already-registered", message });
+    await expect(signUpWithEmail(input)).resolves.toEqual({ outcome: "created", signedIn: false });
   });
 
   it("passes any other refusal on in the client's own words", async () => {

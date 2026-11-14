@@ -68,3 +68,12 @@ describe("G10: the per-IP limit's table and function, in the same migration", ()
     expect(code).toMatch(/SECURITY INVOKER/);
   });
 });
+
+describe("G11: no screen says an address already has an account", () => {
+  const signin = readdirSync("src/pages/site/signin").filter((name) => /\.tsx?$/.test(name) && !/\.test\./.test(name));
+  const sources = [...signin.map((name) => `src/pages/site/signin/${name}`), "src/lib/auth/signUpWithEmail.ts"].map((file) => readFileSync(file, "utf8"));
+
+  it.each(["An account with this email already exists", "That email is already registered"])("has no %j", (text) => {
+    for (const source of sources) expect(source).not.toContain(text);
+  });
+});
