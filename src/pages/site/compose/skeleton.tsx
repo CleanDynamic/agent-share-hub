@@ -152,7 +152,7 @@ export function SkeletonLayer({ skeleton, shown, fadeIn, opening, fadeAfter = 0,
       data-testid="skeleton-layer"
       data-kind={skeleton.kind}
       aria-hidden="true"
-      style={{ position: "absolute", inset: 0, zIndex: -1, pointerEvents: "none", opacity: shown && entered ? 1 : 0, transition: shown ? fade(SKELETON_IN) : played ? "none" : fade(SKELETON_OUT) }}
+      style={{ position: "absolute", inset: 0, zIndex: -1, pointerEvents: "none", ...(skeleton.origin ? { transform: `translate(${Math.round(skeleton.origin.x) - skeleton.origin.x}px, ${Math.round(skeleton.origin.y) - skeleton.origin.y}px)` } : null), opacity: shown && entered ? 1 : 0, transition: shown ? fade(SKELETON_IN) : played ? "none" : fade(SKELETON_OUT) }}
     >
       {skeleton.lanes.map((lane) => (
         <LaneBox key={`lane:${lane.id}`} lane={lane} dusk={dusk} opens={Boolean(opening?.has(lane.id))} />

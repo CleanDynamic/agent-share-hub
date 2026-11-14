@@ -243,7 +243,13 @@ const heldKindOf = (type: HeldType): HeldKind => (type === "session" ? "session"
 
 export function measureSkeleton(root: HTMLElement, held: Held, live: MoveModel, start: MoveModel, names: MoveNames, edge: number, boxOf: BoxOf = drawnBox): Skeleton {
   const origin = drawnBox(root);
-  const rel = (box: Box) => ({ x: box.x - origin.x, y: box.y - origin.y, w: box.w, h: box.h });
+  // Prompt 6 G3: every box on whole pixels, against the origin's whole pixel (the layer is moved there, `skeleton.tsx`).
+  const at = { x: Math.round(origin.x), y: Math.round(origin.y) };
+  const rel = (box: Box) => {
+    const x = Math.round(box.x);
+    const y = Math.round(box.y);
+    return { x: x - at.x, y: y - at.y, w: Math.round(box.x + box.w) - x, h: Math.round(box.y + box.h) - y };
+  };
   const radiusOf = (element: Element, fallback: number) => {
     const target = element.getAttribute("data-skel-kind") === "tile" || element.getAttribute("data-skel-kind") === "nested" ? (element.firstElementChild ?? element) : element;
     const r = typeof getComputedStyle === "function" ? Number.parseFloat(getComputedStyle(target).borderTopLeftRadius) : Number.NaN;
@@ -301,8 +307,8 @@ export function measureSkeleton(root: HTMLElement, held: Held, live: MoveModel, 
       containers.push({ id: "", rect: { x, y, w: Math.max(...boxes.map((b) => b.x + b.w)) - x, h: Math.max(...boxes.map((b) => b.y + b.h)) - y }, items: live.parts.map((part) => part.key), framed: false, name: "Build" });
     }
   }
-  const left = items.length > 0 ? Math.min(...items.map((item) => item.rect.x)) + origin.x : origin.x;
-  return skeletonOf({ kind, items, containers, held: held.id, moved, room: left - edge });
+  const left = items.length > 0 ? Math.min(...items.map((item) => item.rect.x)) + at.x : origin.x;
+  return { ...skeletonOf({ kind, items, containers, held: held.id, moved, room: left - edge }), origin: { x: origin.x, y: origin.y } };
 }
 
 /** The right edge of whatever stands to the left of the build column: Sources, or its rail. */

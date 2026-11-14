@@ -118,6 +118,8 @@ export interface Skeleton {
   lanes: Lane[];
   rails: Rail[];
   target: Target | null;
+  /** Prompt 6 G3: where the layer's parent is drawn, when the boxes were rounded against it; the layer moves to its whole pixel. */
+  origin?: { x: number; y: number };
 }
 
 const grow = (rect: Rect, top: number, right: number, bottom: number, left: number): Rect => ({ x: rect.x - left, y: rect.y - top, w: rect.w + left + right, h: rect.h + top + bottom });
