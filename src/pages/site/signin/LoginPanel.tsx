@@ -23,6 +23,7 @@ import type { OAuthProvider } from "@/components/auth/OAuthButtons";
 import { useAuth } from "@/contexts/AuthContext";
 import { startOAuthSignIn } from "@/lib/auth/oauth";
 import { resolvePostAuthRoute } from "@/lib/auth/postAuthRoute";
+import { messageFor } from "@/lib/auth/authMessages";
 import { returnPathFrom } from "@/lib/auth/safeReturnPath";
 import { signInWithEmail } from "@/lib/auth/signInWithEmail";
 
@@ -78,13 +79,7 @@ export function LoginPanel() {
       const result = await signInWithEmail(emailOrUsername, password, check.token);
 
       if (result.outcome !== "signed-in") {
-        setError(
-          result.outcome === "not-an-email"
-            ? "Sign in with your email address."
-            : result.outcome === "email-not-confirmed"
-              ? "Please verify your email before signing in — check your inbox."
-              : "Wrong email or password",
-        );
+        setError(result.outcome === "not-an-email" ? "Sign in with your email address." : messageFor(result.refusal));
         setIsSubmitting(false);
         return;
       }

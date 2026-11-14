@@ -81,7 +81,7 @@ describe("the request form", () => {
   });
 
   it("asks for the link to land back on this page, and says to check the inbox, naming the address", async () => {
-    requestPasswordReset.mockResolvedValue(true);
+    requestPasswordReset.mockResolvedValue({ sent: true });
     open();
     type("you@example.com", "  ada@example.com ");
     fireEvent.click(screen.getByRole("button", { name: "Send reset link" }));
@@ -91,6 +91,14 @@ describe("the request form", () => {
     expect(screen.getByText("ada@example.com")).toBeTruthy();
     // G6: the widget is reset after the submission.
     expect(captcha.reset).toHaveBeenCalledTimes(1);
+  });
+
+  it("G7: surfaces the server's refusal of the token as our sentence", async () => {
+    requestPasswordReset.mockResolvedValue({ sent: false, refusal: "captcha" });
+    open();
+    type("you@example.com", "ada@example.com");
+    fireEvent.click(screen.getByRole("button", { name: "Send reset link" }));
+    expect(await screen.findByText("Couldn't verify this request. Try again.")).toBeTruthy();
   });
 
   it("G6: says the check failed, sends nothing and resets, when the widget has no token", async () => {
@@ -116,7 +124,7 @@ describe("the request form", () => {
   });
 
   it.each([
-    ["a refusal", () => requestPasswordReset.mockResolvedValue(false)],
+    ["a refusal", () => requestPasswordReset.mockResolvedValue({ sent: false, refusal: "unknown" })],
     ["a throw", () => requestPasswordReset.mockRejectedValue(new Error("network down"))],
   ])("says something went wrong on %s, and lets the reader try again", async (_name, arrange) => {
     arrange();

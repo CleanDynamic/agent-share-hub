@@ -124,9 +124,9 @@ export function ResetPanel() {
       // The project deliberately doesn't surface "email not found" here, so an
       // accepted request shows the same generic confirmation either way, to avoid
       // leaking which emails are registered.
-      const accepted = await requestPasswordReset(cleanEmail, `${window.location.origin}/reset-password`, check.token);
-      if (!accepted) {
-        setRequestError("Something went wrong. Please try again.");
+      const request = await requestPasswordReset(cleanEmail, `${window.location.origin}/reset-password`, check.token);
+      if (!request.sent) {
+        setRequestError(request.refusal === "captcha" ? VERIFY_FAILED : "Something went wrong. Please try again.");
         setRequestSubmitting(false);
         return;
       }

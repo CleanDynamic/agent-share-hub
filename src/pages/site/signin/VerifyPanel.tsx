@@ -108,7 +108,7 @@ export function VerifyPanel() {
     }
     let sent = false;
     try {
-      sent = await resendSignupEmail(email, check.token);
+      sent = (await resendSignupEmail(email, check.token)).sent;
     } finally {
       // G6: a token is good for one request; the widget makes the next one.
       captcha.reset();

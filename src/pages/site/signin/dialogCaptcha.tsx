@@ -6,10 +6,11 @@
 
 import { createContext, useContext, type ReactNode } from "react";
 
+import { AUTH_MESSAGES } from "@/lib/auth/authMessages";
 import { useTurnstile, type Captcha } from "@/lib/auth/turnstile";
 
 /** What the error line says when the check fails, before or after the request. */
-export const VERIFY_FAILED = "Couldn't verify this request. Try again.";
+export const VERIFY_FAILED = AUTH_MESSAGES.captcha;
 
 type DialogCaptcha = Pick<Captcha, "token" | "reset">;
 

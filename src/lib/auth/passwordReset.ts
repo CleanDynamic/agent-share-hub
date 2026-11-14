@@ -1,16 +1,22 @@
 import { supabase } from "@/integrations/supabase/client";
 
+import { refusalOf, type AuthRefusal } from "./authMessages";
+
 /**
  * Email a link that lets the reader set a new password.
  *
- * True when the request was accepted. The project deliberately does not say
+ * `sent` when the request was accepted, and otherwise the kind of refusal. The project deliberately does not say
  * whether the address belongs to an account, so a page that shows the same
  * confirmation either way does not leak which emails are registered. A thrown
  * error is a network or server failure.
  */
-export async function requestPasswordReset(email: string, redirectTo: string, captchaToken?: string): Promise<boolean> {
+export async function requestPasswordReset(
+  email: string,
+  redirectTo: string,
+  captchaToken?: string,
+): Promise<{ sent: boolean; refusal?: AuthRefusal }> {
   const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo, captchaToken });
-  return !error;
+  return error ? { sent: false, refusal: refusalOf(error) } : { sent: true };
 }
 
 /**

@@ -340,7 +340,7 @@ describe("creating the account", () => {
   });
 
   it("passes any other refusal on in the client's own words", async () => {
-    signUp.mockResolvedValue({ outcome: "refused", message: "Email rate limit exceeded" });
+    signUp.mockResolvedValue({ outcome: "refused", refusal: "unknown", message: "Email rate limit exceeded" });
     open();
     await fillAll();
     fireEvent.click(create());
@@ -382,7 +382,7 @@ describe("creating the account", () => {
   });
 
   it("clears the form's message on the next key", async () => {
-    signUp.mockResolvedValue({ outcome: "refused", message: "Email rate limit exceeded" });
+    signUp.mockResolvedValue({ outcome: "refused", refusal: "unknown", message: "Email rate limit exceeded" });
     open();
     await fillAll();
     fireEvent.click(create());
@@ -391,6 +391,20 @@ describe("creating the account", () => {
 
     type("Your name", "Ada L");
     expect(screen.queryByText("Email rate limit exceeded")).toBeNull();
+  });
+});
+
+describe("G7: the server refuses the token", () => {
+  beforeEach(() => vi.useFakeTimers());
+
+  it("surfaces the refusal as our sentence", async () => {
+    signUp.mockResolvedValue({ outcome: "refused", refusal: "captcha", message: "captcha protection: request disallowed" });
+    open();
+    await fillAll();
+    fireEvent.click(create());
+    await act(async () => {});
+    expect(screen.getByText("Couldn't verify this request. Try again.")).toBeTruthy();
+    expect(screen.queryByText("captcha protection: request disallowed")).toBeNull();
   });
 });
 

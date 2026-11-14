@@ -103,7 +103,7 @@ describe("resending", () => {
     });
 
   it("sends it again, says so, and then makes the reader wait 45 seconds, counting down", async () => {
-    resendSignupEmail.mockResolvedValue(true);
+    resendSignupEmail.mockResolvedValue({ sent: true });
     open();
     fireEvent.click(screen.getByRole("button", { name: "Resend verification" }));
     await settle(0);
@@ -129,7 +129,7 @@ describe("resending", () => {
   });
 
   it("gives the button back when the email could not be sent", async () => {
-    resendSignupEmail.mockResolvedValue(false);
+    resendSignupEmail.mockResolvedValue({ sent: false, refusal: "unknown" });
     open();
     fireEvent.click(screen.getByRole("button", { name: "Resend verification" }));
     await settle(0);
@@ -203,7 +203,7 @@ describe("an emailed link", () => {
 
   it("sends a new link from the dead-link card to the address it knows, and goes back to sign in when asked", async () => {
     window.sessionStorage.setItem("pending_verification_email", "ada@example.com");
-    resendSignupEmail.mockResolvedValue(true);
+    resendSignupEmail.mockResolvedValue({ sent: true });
     verifyEmailLink.mockResolvedValue(false);
     const where = open("/verify-email/tok");
     await screen.findByRole("heading", { name: "This link doesn't work" });

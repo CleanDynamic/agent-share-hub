@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
+import { refusalOf, type AuthRefusal } from "./authMessages";
+
 export interface EmailSignUp {
   email: string;
   password: string;
@@ -18,7 +20,8 @@ export interface EmailSignUp {
  */
 export type EmailSignUpResult =
   | { outcome: "created"; signedIn: boolean }
-  | { outcome: "already-registered" | "refused"; message: string };
+  | { outcome: "already-registered"; message: string }
+  | { outcome: "refused"; refusal: AuthRefusal; message: string };
 
 /**
  * Create an account with an email and a password.
@@ -45,7 +48,8 @@ export async function signUpWithEmail(input: EmailSignUp): Promise<EmailSignUpRe
   if (error) {
     const message = error.message.toLowerCase();
     const taken = message.includes("already") && (message.includes("registered") || message.includes("exist"));
-    return { outcome: taken ? "already-registered" : "refused", message: error.message };
+    if (taken) return { outcome: "already-registered", message: error.message };
+    return { outcome: "refused", refusal: refusalOf(error), message: error.message };
   }
 
   return { outcome: "created", signedIn: Boolean(data.session) };

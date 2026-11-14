@@ -153,7 +153,7 @@ describe("signing in", () => {
 
     const busy = await screen.findByRole("button", { name: "Signing in" });
     expect(busy).toBeDisabled();
-    await act(async () => finish({ outcome: "rejected" }));
+    await act(async () => finish({ outcome: "refused", refusal: "credentials" }));
     await waitFor(() => expect(primary()).toBeEnabled());
     expect(primary().textContent).toBe("Sign in");
   });
@@ -170,7 +170,7 @@ describe("the bot check (G6)", () => {
   });
 
   it("resets the widget after a refusal and after a thrown failure", async () => {
-    signIn.mockResolvedValueOnce({ outcome: "rejected" }).mockRejectedValueOnce(new Error("network down"));
+    signIn.mockResolvedValueOnce({ outcome: "refused", refusal: "credentials" }).mockRejectedValueOnce(new Error("network down"));
     open();
     fill();
     submit();
@@ -193,10 +193,18 @@ describe("the bot check (G6)", () => {
 });
 
 describe("the refusals", () => {
-  it.each(["rejected"])(
+  it("G7: surfaces the server's refusal of a missing or bad token as our sentence", async () => {
+    signIn.mockResolvedValue({ outcome: "refused", refusal: "captcha" });
+    open();
+    fill();
+    submit();
+    expect(await screen.findByText("Couldn't verify this request. Try again.")).toBeTruthy();
+  });
+
+  it.each(["credentials"])(
     "says Wrong email or password for %s, under the password, announced politely",
-    async (outcome) => {
-      signIn.mockResolvedValue({ outcome });
+    async (refusal) => {
+      signIn.mockResolvedValue({ outcome: "refused", refusal });
       open();
       fill();
       submit();
@@ -218,7 +226,7 @@ describe("the refusals", () => {
   });
 
   it("says to verify the email when it has not been confirmed", async () => {
-    signIn.mockResolvedValue({ outcome: "email-not-confirmed" });
+    signIn.mockResolvedValue({ outcome: "refused", refusal: "unconfirmed" });
     open();
     fill();
     submit();
@@ -235,7 +243,7 @@ describe("the refusals", () => {
   });
 
   it("clears the message on the next key in either field", async () => {
-    signIn.mockResolvedValue({ outcome: "rejected" });
+    signIn.mockResolvedValue({ outcome: "refused", refusal: "credentials" });
     open();
     fill();
     submit();

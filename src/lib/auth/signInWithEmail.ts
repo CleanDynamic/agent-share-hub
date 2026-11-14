@@ -1,9 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 
+import { refusalOf, type AuthRefusal } from "./authMessages";
+
 /** How a password sign-in ended. The page words each refusal; this says which one it was. */
 export type EmailSignInResult =
   | { outcome: "signed-in"; userId: string | null }
-  | { outcome: "not-an-email" | "email-not-confirmed" | "rejected" };
+  | { outcome: "not-an-email" }
+  | { outcome: "refused"; refusal: AuthRefusal };
 
 /**
  * Sign in with an email address and a password (G4: email only).
@@ -21,7 +24,9 @@ export async function signInWithEmail(identifier: string, password: string, capt
   const { data, error } = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken } });
 
   if (error) {
-    return { outcome: error.message.toLowerCase().includes("email not confirmed") ? "email-not-confirmed" : "rejected" };
+    const refusal = refusalOf(error);
+    // A refusal with no code we know is still a refusal of the credentials, as before.
+    return { outcome: "refused", refusal: refusal === "unknown" ? "credentials" : refusal };
   }
 
   return { outcome: "signed-in", userId: data.user ? data.user.id : null };

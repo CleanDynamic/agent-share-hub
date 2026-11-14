@@ -2,6 +2,8 @@ import type { EmailOtpType } from "@supabase/supabase-js";
 
 import { supabase } from "@/integrations/supabase/client";
 
+import { refusalOf, type AuthRefusal } from "./authMessages";
+
 /** What an emailed link carried: a token hash, a PKCE code, or neither (an implicit-flow hash the client reads itself). */
 export interface EmailLink {
   tokenHash: string;
@@ -57,10 +59,10 @@ export async function verifyEmailLink(link: EmailLink, isCancelled: () => boolea
 }
 
 /**
- * Send the confirmation email again. True when it went; a refusal is false and
- * the page simply lets the reader try again.
+ * Send the confirmation email again. `sent` when it went; otherwise the kind of
+ * refusal, and the page simply lets the reader try again.
  */
-export async function resendSignupEmail(email: string, captchaToken?: string): Promise<boolean> {
+export async function resendSignupEmail(email: string, captchaToken?: string): Promise<{ sent: boolean; refusal?: AuthRefusal }> {
   const { error } = await supabase.auth.resend({ type: "signup", email, options: { captchaToken } });
-  return !error;
+  return error ? { sent: false, refusal: refusalOf(error) } : { sent: true };
 }
