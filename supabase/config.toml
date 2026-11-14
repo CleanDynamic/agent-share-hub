@@ -96,3 +96,28 @@ verify_jwt = true
 # UX-15 P6. True: the gateway rejects an unauthenticated call before the code runs; the code then reads the id from the verified
 # token and uses the service role only for storage, the delete helper, the deletion log and auth.admin.deleteUser.
 verify_jwt = true
+
+# Auth hardening (security prompt 7): the owner's dashboard settings, as far as this file can express them.
+# docs/security/auth-settings.md has every setting with its dashboard path, including those this file cannot hold
+# (leaked password protection, rate limits to review). The hosted project changes only through its dashboard or
+# `supabase config push`.
+[auth]
+site_url = "https://openbuilds.ai"
+# Exact addresses only. The auth service also accepts any address on site_url's own host.
+additional_redirect_urls = ["https://openbuilds.ai/auth/callback", "https://openbuilds.ai/verify-email", "https://openbuilds.ai/reset-password", "https://openbuilds.ai/settings/account", "https://www.openbuilds.ai/auth/callback", "https://www.openbuilds.ai/verify-email", "https://www.openbuilds.ai/reset-password", "https://www.openbuilds.ai/settings/account"]
+minimum_password_length = 12
+
+[auth.email]
+enable_confirmations = true
+# Secure email change: both addresses confirm.
+double_confirm_changes = true
+# Reauthentication for a password change.
+secure_password_change = true
+# An emailed link works for an hour at most.
+otp_expiry = 3600
+
+[auth.captcha]
+enabled = true
+provider = "turnstile"
+# The secret is never in this repository: it comes from the environment of whoever runs the CLI.
+secret = "env(SUPABASE_AUTH_CAPTCHA_SECRET)"
