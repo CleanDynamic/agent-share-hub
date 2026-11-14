@@ -1,5 +1,5 @@
-// CA-24 P1 - the component: the cell, the layers, the delays from page position, building, arriving, reduced motion, and what
-// a screen reader meets.
+// CA-24 P1 - the component: the cell, the field it is drawn in (Part E), arriving, reduced motion, and what a screen reader
+// meets.
 
 import { cleanup, render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -7,8 +7,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { __resetMotionMediaCache } from "@/lib/theme/motion";
 
+import { LoadingRegion } from "@/components/brand/Skeleton";
+
 import { LoadingBlocks, LoadingStatus } from "./LoadingBlocks";
-import { GLYPHS, PHASE_MS, phaseOf, resetFirstShow } from "./loadingBlocks";
+import { resetFirstShow } from "./loadingBlocks";
 
 function reducedMotion(on: boolean) {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: on && query.includes("reduce"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
@@ -29,8 +31,6 @@ const blocks = () => screen.getAllByTestId("loading-blocks");
 const layersOf = (block: HTMLElement) => Array.from(block.children) as HTMLElement[];
 /** A layer's rows as text. */
 const linesOf = (layer: HTMLElement) => Array.from(layer.children).map((row) => row.textContent ?? "");
-/** The delay a layer's animation starts at, in ms. */
-const delayOf = (layer: HTMLElement) => Number.parseFloat(/step-end\s+(-?[\d.]+)ms/.exec(layer.style.animation)?.[1] ?? "NaN");
 
 describe("the cell", () => {
   it("fills a box with 8 by 12 cells: 10 across and 3 down in 80 by 36", () => {
@@ -65,119 +65,48 @@ describe("the cell", () => {
   });
 });
 
-describe("the layers and the cycle", () => {
-  it("has a layer for each character at each start, each changing opacity only, step-end over 1,600 ms", () => {
-    render(<LoadingBlocks kind="box" rows={2} width={64} at={{ x: 0, y: 0 }} />);
-    const layers = layersOf(blocks()[0]);
-    expect(layers.length % 4).toBe(0);
-    for (const layer of layers) {
-      expect(layer.style.animation).toMatch(/^bgLoad(Dot|Open|Small|Full) 1600ms step-end -?[\d.]+ms infinite$/);
-      expect(layer.style.opacity).toBe("0");
-      expect(layer.style.transform).toBe("");
-    }
-    const names = layers.slice(0, 4).map((layer) => layer.style.animation.split(" ")[0]);
-    expect(names).toEqual(["bgLoadDot", "bgLoadOpen", "bgLoadSmall", "bgLoadFull"]);
-    // The four layers of one start hold the four characters, and nothing else, at the same cells.
-    const [dot, open, small, full] = layers.slice(0, 4).map(linesOf);
-    expect(dot).toEqual(open.map((line) => line.split(GLYPHS[1]).join(GLYPHS[0])));
-    expect(full).toEqual(dot.map((line) => line.split(GLYPHS[0]).join(GLYPHS[3])));
-    expect(small).toEqual(dot.map((line) => line.split(GLYPHS[0]).join(GLYPHS[2])));
+/* Part E (Reference E): a block is a shape in a living dot field. Its box is the box it always had; it paints nothing in
+   the DOM (no characters, no layers, nothing animated), and its shape is drawn on a canvas: the nearest LoadingRegion's,
+   or, with none around it, its own. These replace the glyph layers', the wave's and the opacity fade's tests. */
+describe("the field", () => {
+  it("keeps its box and paints nothing itself: no characters, no layers, nothing animated", () => {
+    render(<LoadingBlocks kind="box" rows={3} width={80} />);
+    const block = blocks()[0];
+    expect([block.style.width, block.style.height]).toEqual(["80px", "36px"]);
+    expect(block.textContent).toBe("");
+    expect(block.querySelectorAll("span")).toHaveLength(0);
+    expect(block.innerHTML).not.toContain("animation");
   });
 
-  it("draws every cell once in each character, so no cell is left out or doubled", () => {
-    render(<LoadingBlocks kind="box" rows={3} width={200} at={{ x: 40, y: 24 }} />);
-    const layers = layersOf(blocks()[0]);
-    for (let glyph = 0; glyph < 4; glyph += 1) {
-      const mine = layers.filter((layer) => layer.textContent?.includes(GLYPHS[glyph]) && !GLYPHS.filter((_, at) => at !== glyph).some((other) => layer.textContent?.includes(other)));
-      const count = mine.reduce((sum, layer) => sum + (layer.textContent ?? "").split(" ").join("").length, 0);
-      expect(count, GLYPHS[glyph]).toBe(25 * 3);
-    }
-  });
-
-  it("is a few dozen layers however big the box is", () => {
-    render(<LoadingBlocks kind="box" rows={3} width={760} at={{ x: 0, y: 0 }} />);
-    expect(Number(blocks()[0].getAttribute("data-layers"))).toBeLessThanOrEqual((1600 / PHASE_MS) * 4);
-    expect(PHASE_MS).toBe(160);
-    expect(layersOf(blocks()[0]).length).toBeLessThan(40 * 3);
-  });
-});
-
-describe("the wave comes from the page, not the block", () => {
-  it("starts each cell at its page position: the layer holding a cell starts where phaseOf says", () => {
-    render(<LoadingBlocks kind="box" rows={2} width={24} at={{ x: 100, y: 48 }} />);
-    const dots = layersOf(blocks()[0]).filter((layer) => layer.textContent?.includes(GLYPHS[0]));
-    for (const layer of dots) {
-      const lines = linesOf(layer);
-      lines.forEach((line, row) => {
-        [...line].forEach((char, col) => {
-          if (char === " ") return;
-          const phase = phaseOf(100 + col * 8, 48 + row * 12);
-          expect(delayOf(layer) === 0 ? 0 : -delayOf(layer)).toBe(phase);
-        });
-      });
-    }
-  });
-
-  it("continues one wave across two blocks side by side", () => {
+  it("is its own region's shape when nothing holds it, and a shape in the LoadingRegion around it when one does", () => {
+    render(<LoadingBlocks kind="line" width={80} />);
+    expect(blocks()[0].querySelectorAll("canvas[data-fluid]")).toHaveLength(1);
+    cleanup();
     render(
-      <>
-        <LoadingBlocks kind="line" width={80} at={{ x: 0, y: 0 }} />
-        <LoadingBlocks kind="line" width={80} at={{ x: 80, y: 0 }} />
-      </>,
+      <LoadingRegion what="the composer">
+        <LoadingBlocks kind="line" width={80} />
+        <LoadingBlocks kind="box" rows={3} width={80} />
+      </LoadingRegion>,
     );
-    const startsOf = (block: HTMLElement) => {
-      const out = new Map<number, number>();
-      for (const layer of layersOf(block).filter((candidate) => candidate.textContent?.includes(GLYPHS[0]))) {
-        [...(layer.textContent ?? "")].forEach((char, col) => {
-          if (char !== " ") out.set(col, delayOf(layer) === 0 ? 0 : -delayOf(layer));
-        });
-      }
-      return out;
-    };
-    const [left, right] = blocks();
-    // Where one block's cell 10 would be, the other block's cell 0 is.
-    expect(startsOf(right).get(0)).toBe(phaseOf(80, 0));
-    expect(startsOf(left).get(9)).toBe(phaseOf(72, 0));
+    for (const block of blocks()) expect(block.querySelector("canvas")).toBeNull();
+    expect(document.querySelectorAll("canvas[data-fluid]")).toHaveLength(1);
   });
 
-  it("uses no timers and no state per cell", () => {
-    const timers = vi.spyOn(window, "setTimeout");
-    const intervals = vi.spyOn(window, "setInterval");
-    render(<LoadingBlocks kind="box" rows={3} width={400} />);
-    expect(timers).not.toHaveBeenCalled();
-    expect(intervals).not.toHaveBeenCalled();
-  });
-});
-
-describe("building, on first show", () => {
-  it("raises each row over 200 ms, bottom row first, and starts blocks 40 ms apart in reading order", () => {
-    render(
-      <>
-        <LoadingBlocks kind="box" rows={3} width={16} order={0} building at={{ x: 0, y: 0 }} />
-        <LoadingBlocks kind="box" rows={3} width={16} order={2} building at={{ x: 0, y: 100 }} />
-      </>,
-    );
-    const rows = (block: HTMLElement) => Array.from(layersOf(block)[0].children) as HTMLElement[];
-    const [first, second] = blocks();
-    expect(rows(first).map((row) => row.style.animationDelay)).toEqual(["120ms", "60ms", "0ms"]);
-    expect(rows(second).map((row) => row.style.animationDelay)).toEqual(["200ms", "140ms", "80ms"]);
-    expect(rows(first)[0].style.animation).toContain("bgLoadRise 200ms");
-  });
-
-  it("does not build when it is not the first show", () => {
-    render(<LoadingBlocks kind="box" rows={2} width={16} />);
-    expect((layersOf(blocks()[0])[0].children[0] as HTMLElement).style.animation).toBe("");
+  it("takes every prop it took, and order, building and at change nothing in its box", () => {
+    render(<LoadingBlocks kind="box" rows={3} width={80} order={4} building at={{ x: 10, y: 20 }} />);
+    const block = blocks()[0];
+    expect([block.style.width, block.style.height, block.getAttribute("data-rows"), block.getAttribute("data-cols")]).toEqual(["80px", "36px", "3", "10"]);
   });
 });
 
 describe("arriving", () => {
-  it("fades out over 200 ms in place when the content is ready, with its size unchanged", () => {
+  it("is gone when the content is ready, in place, with its size unchanged", () => {
     const { rerender } = render(<LoadingBlocks kind="box" rows={3} width={80} />);
     const before = { width: blocks()[0].style.width, height: blocks()[0].style.height };
+    expect(blocks()[0].hasAttribute("data-gone")).toBe(false);
     rerender(<LoadingBlocks kind="box" rows={3} width={80} gone />);
     const block = blocks()[0];
-    expect(block.style.opacity).toBe("0");
-    expect(block.style.transition).toContain("opacity 200ms");
+    expect(block.hasAttribute("data-gone")).toBe(true);
     expect({ width: block.style.width, height: block.style.height }).toEqual(before);
   });
 
@@ -188,18 +117,15 @@ describe("arriving", () => {
 });
 
 describe("reduced motion", () => {
-  it("is a still dot fill in the same shape: no animation, no wave, no building, an instant swap", () => {
+  it("is one still frame in the same shape: nothing animated, and nothing in the DOM moves when it goes", () => {
     reducedMotion(true);
     const { rerender } = render(<LoadingBlocks kind="box" rows={3} width={80} building order={3} />);
     const block = blocks()[0];
     expect(block.style.width).toBe("80px");
     expect(block.style.height).toBe("36px");
-    const layers = layersOf(block);
-    expect(layers).toHaveLength(1);
-    expect(linesOf(layers[0])).toEqual(Array(3).fill(GLYPHS[0].repeat(10)));
     expect(block.innerHTML).not.toContain("animation");
     rerender(<LoadingBlocks kind="box" rows={3} width={80} building order={3} gone />);
-    expect(blocks()[0].style.opacity).toBe("1");
+    expect(blocks()[0].style.opacity).toBe("");
     expect(blocks()[0].style.transition).toBe("");
   });
 });

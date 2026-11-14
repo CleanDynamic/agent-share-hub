@@ -28,7 +28,8 @@ import { PageChangeProvider } from "@/lib/routing/PageChangeProvider";
 import { ScrollKeeper } from "@/lib/routing/ScrollKeeper";
 import { ROUTE_TABLE } from "@/lib/routing/routeTable";
 import { preloadComposeRoute } from "./pages/site/compose/preload";
-import { SignInSite } from "./pages/site/signin/SignInRoutes";
+import { SignInDialogHost } from "./pages/site/signin/SignInDialogHost";
+import { SignInRedirect } from "./pages/site/signin/SignInRedirect";
 
 /** SV-26 P2: the composer's route, which holds the build layer's reads, loads with the composer and not with the first page. */
 const ComposeRoute = lazy(() => preloadComposeRoute().then((m) => ({ default: m.ComposeRoute })));
@@ -126,14 +127,9 @@ const FollowersSitePage = lazy(ROUTE_TABLE.followers.load as () => Promise<{ def
 const FollowingSitePage = lazy(ROUTE_TABLE.following.load as () => Promise<{ default: React.ComponentType }>);
 // UI-P35: Activity in the site frame; its own chunk (it draws a chart), rendered directly.
 const ActivitySitePage = lazy(() => import("./pages/site/activity/ActivityPage"));
-// UI-P36: Sign in, Join, reset and verify in the entrance's frame; each its own chunk, rendered directly.
 // UX-12 P2: the legal pages, from the route table so the route and the prefetch share one import.
 const PrivacySitePage = lazy(ROUTE_TABLE.privacy.load as () => Promise<{ default: React.ComponentType }>);
 const TermsSitePage = lazy(ROUTE_TABLE.terms.load as () => Promise<{ default: React.ComponentType }>);
-const LoginSitePage = lazy(ROUTE_TABLE.login.load as () => Promise<{ default: React.ComponentType }>);
-const SignupSitePage = lazy(() => import("./pages/site/signin/SignupPage"));
-const ResetPasswordSitePage = lazy(() => import("./pages/site/signin/ResetPasswordPage"));
-const VerifyEmailSitePage = lazy(() => import("./pages/site/signin/VerifyEmailPage"));
 // The heaviest page in the application. Lazy so it never enters the initial bundle.
 const Compose = lazy(() => import("./pages/Compose"));
 // The intake step (paste a transcript, a repo), now at /compose/start. Its own
@@ -334,20 +330,16 @@ const App = () => (
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
                 <Route path="/dev/backfill-counts" element={<AdminRoute><BackfillCounts /></AdminRoute>} />
-                {/* UI-P36 — the four entrance pages in the site frame behind the
-                    flag. Layout hands these straight through, outside AppShell,
-                    so the site branch brings its own bare frame (as /rebuild/:slug
-                    does). The two an emailed link can open are held until the
-                    flag is known, because a link's token works once: the legacy
-                    page must not mount first and spend it. /auth/callback is not
-                    repainted here. */}
-                <Route path="/signup" element={<SignInSite><SignupSitePage /></SignInSite>} />
-                <Route path="/login" element={<SignInSite><LoginSitePage /></SignInSite>} />
+                {/* G6: the four entrance pages are one dialog now (SignInDialogHost, below the routes). Each old address opens
+                    Home with the dialog on its view, carrying the query, the path's token and the hash, so an emailed
+                    link's token reaches the view whole. /auth/callback is not part of it. */}
+                <Route path="/signup" element={<SignInRedirect view="signup" />} />
+                <Route path="/login" element={<SignInRedirect view="login" />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
-                <Route path="/verify-email" element={<SignInSite><VerifyEmailSitePage /></SignInSite>} />
-                <Route path="/verify-email/:token" element={<SignInSite><VerifyEmailSitePage /></SignInSite>} />
-                <Route path="/reset-password" element={<SignInSite><ResetPasswordSitePage /></SignInSite>} />
-                <Route path="/reset-password/:token" element={<SignInSite><ResetPasswordSitePage /></SignInSite>} />
+                <Route path="/verify-email" element={<SignInRedirect view="verify" />} />
+                <Route path="/verify-email/:token" element={<SignInRedirect view="verify" />} />
+                <Route path="/reset-password" element={<SignInRedirect view="reset" />} />
+                <Route path="/reset-password/:token" element={<SignInRedirect view="reset" />} />
                 <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
                 <Route path="/onboarding/profile" element={<ProtectedRoute><OnboardingProfile /></ProtectedRoute>} />
                 <Route
@@ -609,6 +601,8 @@ const App = () => (
                 />
               )}
             </Routes>
+            {/* D1: the sign-in dialog, over whatever page is on screen, when the address carries `?signin=<view>`. */}
+            <SignInDialogHost />
             </Suspense>
             </PageChangeProvider>
             </UploadPickerProvider>

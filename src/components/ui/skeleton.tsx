@@ -1,36 +1,19 @@
 import { cn } from "@/lib/utils";
-import { skeletonStyle } from "@/lib/theme/controls";
+import { FluidShape } from "@/components/brand/FluidField";
+import { r } from "@/lib/theme/radius";
 
 /* ────────────────────────────────────────────────────────────────────────────
-   BG-P07 — the skeleton.
+   BG-P07 — the skeleton; Part E (Reference E): routed to the fluid field.
 
-   `--recess` with a highlight swept across it by the `bgShimmer` keyframe in
-   `index.css`. A keyframe is the one thing an inline style cannot express, so
-   the movement lives in the stylesheet and is referenced here by name — the
-   sanctioned exception, and the same one the intake sweep already uses.
-
-   WHY A SWEEP AND NOT A PULSE. `animate-pulse` fades the whole block in and out,
-   which at a glance is indistinguishable from content that is failing to load.
-   A sweep travels in one direction and reads as progress.
-
-   REDUCED MOTION IS ANSWERED TWICE, ON PURPOSE. `skeletonStyle()` drops the
-   animation from the style object, which covers every render; `data-bg-animated`
-   lets the stylesheet cover the gap that leaves — a visitor who changes the
-   setting while a skeleton is already on screen, where nothing would re-render
-   to notice. What remains is a flat recess, which still reads as "not content
-   yet" because that is carried by the colour and the shape, not by the movement.
+   The legacy control kit's skeleton keeps its element, its classes and its box,
+   so the pages that still use it lay out exactly as before, but it paints
+   nothing: its box is a shape in the living dot field (FluidField), in the
+   nearest loading region's canvas or its own. No shimmer.
    ──────────────────────────────────────────────────────────────────────────── */
 
 function Skeleton({ className, style, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      data-bg-animated=""
-      aria-hidden="true"
-      className={cn(className)}
-      style={{ ...skeletonStyle(), ...style }}
-      {...props}
-    />
-  );
+  // `data-bg-animated` stays: the legacy pages and their tests find their skeletons by it.
+  return <FluidShape data-bg-animated="" aria-hidden="true" className={cn(className)} style={{ borderRadius: r.media, ...style, background: "transparent" }} {...props} />;
 }
 
 export { Skeleton };

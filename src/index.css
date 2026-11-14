@@ -1005,49 +1005,6 @@ input[type="search"] { border-radius: var(--r-control); }
   to   { background-position: -100% 0; }
 }
 
-/* UI-P37 — the brand skeleton's pulse. A `--recess` block fades to .55 and back,
-   1.4s a turn. Opacity is the only property that moves: nothing here touches a
-   layout property, so a skeleton never shifts the page it stands in for. It is
-   the one keyframe the three state primitives add; `Skeleton` references it by
-   name from an inline `animation`, which `animation()` drops under reduced
-   motion (and the global rule at the end of this file covers the rest). */
-@keyframes skeletonPulse {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: .55; }
-}
-
-/* CA-24 P1, the building blocks. Ten frames in 1,600 ms, `step-end` (set where the animation is used), four characters
-   stacked in a cell: · ▫ ▪ ■ ■ ▪ ▫ · · ·. Each keyframe is one character's opacity and nothing else moves: the character
-   shows its colour at 62% (· and ▫), 80% (▪) or 100% (■) in its frames and is gone in the rest. `bgLoadRise` is a block's
-   rows building on first show: up 4 and in over 200 ms. `loadingBlocks.test.ts` holds these to `FRAME_GLYPHS`. */
-@keyframes bgLoadDot {
-  0%   { opacity: .62; }
-  10%  { opacity: 0; }
-  70%  { opacity: .62; }
-  100% { opacity: .62; }
-}
-@keyframes bgLoadOpen {
-  0%   { opacity: 0; }
-  10%  { opacity: .62; }
-  20%  { opacity: 0; }
-  60%  { opacity: .62; }
-  70%  { opacity: 0; }
-  100% { opacity: 0; }
-}
-@keyframes bgLoadSmall {
-  0%   { opacity: 0; }
-  20%  { opacity: .8; }
-  30%  { opacity: 0; }
-  50%  { opacity: .8; }
-  60%  { opacity: 0; }
-  100% { opacity: 0; }
-}
-@keyframes bgLoadFull {
-  0%   { opacity: 0; }
-  30%  { opacity: 1; }
-  50%  { opacity: 0; }
-  100% { opacity: 0; }
-}
 /* SV-04: one fade, on the compositor. A page change runs in `document.startViewTransition` (PageChangeProvider.tsx).
    The frame is named, piece by piece, and none of its pieces animates: the header, the footer, the dock and the progress
    line stand still, and the root (the surface around the page) changes at once. Only the page area, `<main id="main">`,
@@ -1105,10 +1062,6 @@ input[type="search"] { border-radius: var(--r-control); }
 @keyframes bgContentIn {
   from { opacity: 0; }
   to   { opacity: 1; }
-}
-@keyframes bgLoadRise {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: none; }
 }
 
 /* BG-P07's per-surface reset, SUPERSEDED BY THE GLOBAL RULE at the end of this

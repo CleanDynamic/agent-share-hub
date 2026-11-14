@@ -1,8 +1,8 @@
 // UX-03 P8: a count of zero is not printed. In the engagement row its slot keeps its width, and the accessible name carries
-// the count when there is one; on the sign-in page a zero count is not drawn at all.
+// the count when there is one. (The sign-in page's counts went with the page, into the sign-in dialog, which has none.)
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
@@ -13,7 +13,6 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 import { EngagementRow } from "@/components/social/EngagementRow";
-import { RefinedCounts } from "@/pages/site/signin/SignInView";
 
 const providers = (node: ReactElement) => (
   <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } })}>
@@ -48,26 +47,5 @@ describe("UX-03 P8: the engagement row", () => {
     expect(screen.getByRole("link", { name: "Rebuild, 3 rebuilds" })).toBeTruthy();
     // The number is said once, in the name.
     expect(count("like").getAttribute("aria-hidden")).toBe("true");
-  });
-});
-
-describe("UX-03 P8: the sign-in page's counts", () => {
-  it("leaves out a count of zero", () => {
-    render(<RefinedCounts reproducedToday={0} inGallery={12} countsFailed={false} />);
-    expect(screen.queryByText("Reproduced")).toBeNull();
-    const gallery = screen.getByTestId("signin-count-gallery");
-    expect(within(gallery).getByText("12")).toBeTruthy();
-    expect(within(gallery).getByText("In the gallery")).toBeTruthy();
-  });
-
-  it("draws no row when both are zero", () => {
-    const { container } = render(<RefinedCounts reproducedToday={0} inGallery={0} countsFailed={false} />);
-    expect(container.textContent).toBe("");
-  });
-
-  it("draws both when both are above zero", () => {
-    render(<RefinedCounts reproducedToday={3} inGallery={12} countsFailed={false} />);
-    expect(screen.getByText("Reproduced")).toBeTruthy();
-    expect(screen.getByText("In the gallery")).toBeTruthy();
   });
 });

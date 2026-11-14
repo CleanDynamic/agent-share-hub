@@ -12,7 +12,7 @@
 // side gutters below 1328 keep the column's edges, as the header's do.
 
 import { memo, type CSSProperties } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { useConnectorDialog } from "@/components/connect/ConnectorDialog";
 import { Lockup } from "@/components/brand/Lockup";
@@ -25,6 +25,7 @@ import { PAGE_EDGE } from "./chromeSize";
 import { FrameLink } from "./FrameLink";
 import { SITE_NAV } from "./siteNav";
 import { SITE_NAME } from "@/lib/site";
+import { deeper, openOver } from "@/pages/site/signin/signinUrl";
 
 export interface SiteFooterViewProps {
   signedIn: boolean;
@@ -34,6 +35,9 @@ export interface SiteFooterViewProps {
   /** UX-12 P3: a legal link appears only once its text has been reviewed (src/content/legal/reviewed.ts). */
   showPrivacy?: boolean;
   showTerms?: boolean;
+  /** Where Sign in goes: the sign-in dialog over the page, and the history state that push carries. */
+  signInTo?: string;
+  signInState?: unknown;
 }
 
 /* UI-P87, refined: inside the surface, under a 1px `--hairline`, `12px <gutter>`, wrapping with `12px 24px` between
@@ -42,7 +46,7 @@ export interface SiteFooterViewProps {
 const refinedLink: CSSProperties = { fontFamily: FIGTREE, fontSize: 12.5, fontWeight: 400, color: t.text2 };
 const refinedButtonLink: CSSProperties = { ...refinedLink, padding: 0, border: 0, background: "transparent", cursor: "pointer" };
 
-function RefinedSiteFooterView({ signedIn, onSignOut, onConnect, showPrivacy = false, showTerms = false }: SiteFooterViewProps) {
+function RefinedSiteFooterView({ signedIn, onSignOut, onConnect, showPrivacy = false, showTerms = false, signInTo = "/login", signInState }: SiteFooterViewProps) {
   return (
     <footer
       data-testid="site-footer"
@@ -72,7 +76,7 @@ function RefinedSiteFooterView({ signedIn, onSignOut, onConnect, showPrivacy = f
             Sign out
           </button>
         ) : (
-          <FrameLink to="/login" style={refinedLink} hoverStyle={{ color: t.text }}>Sign in</FrameLink>
+          <FrameLink to={signInTo} state={signInState} style={refinedLink} hoverStyle={{ color: t.text }}>Sign in</FrameLink>
         )}
       </nav>
       <span style={{ flexGrow: 1 }} />
@@ -89,10 +93,13 @@ export function SiteFooterView(props: SiteFooterViewProps) {
 function SiteFooterContainer() {
   const { isLoggedIn, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const connector = useConnectorDialog();
   return (
     <SiteFooterView
       signedIn={isLoggedIn}
+      signInTo={openOver(location.pathname, location.search)}
+      signInState={deeper(location.state)}
       onConnect={connector.open}
       showPrivacy={PRIVACY_REVIEWED}
       showTerms={TERMS_REVIEWED}

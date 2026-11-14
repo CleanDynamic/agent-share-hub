@@ -1,4 +1,4 @@
-/* UI-P36 — Sign in's sample data, as `SignInView` and its bodies take it.
+/* UI-P36 — Sign in's sample data, as the sign-in dialog's bodies take it.
 
    DEV ONLY (imported from `src/pages/dev/**` and `src/dev/**` alone). The board
    draws the Sign in card with empty fields (the reference shows the fields'
@@ -13,13 +13,16 @@ import type { LoginFormProps } from "@/pages/site/signin/LoginForm";
 import type { ResetConfirmFormProps, ResetRequestFormProps } from "@/pages/site/signin/ResetForms";
 import type { SignupFormProps } from "@/pages/site/signin/SignupForm";
 
-import { fixtures } from "../designFixtures";
-
 const noop = () => undefined;
 
-export type SigninMode = "login" | "signup" | "reset" | "confirm" | "verify";
+export type SigninMode =
+  | "login" | "signup" | "reset" | "sent" | "checking" | "confirm" | "dead"
+  | "verify" | "verify-sending" | "verify-sent" | "verify-cooldown" | "verifying" | "verified" | "failed";
 
-export const SIGNIN_MODES: readonly SigninMode[] = ["login", "signup", "reset", "confirm", "verify"];
+export const SIGNIN_MODES: readonly SigninMode[] = [
+  "login", "signup", "reset", "sent", "checking", "confirm", "dead",
+  "verify", "verify-sending", "verify-sent", "verify-cooldown", "verifying", "verified", "failed",
+];
 
 const providers = { onProvider: noop, loadingProvider: null } as const;
 
@@ -77,8 +80,6 @@ export function signinFixture() {
   };
 
   return {
-    reproducedToday: fixtures.home.reproduced_today,
-    inGallery: fixtures.gallery.in_gallery,
     login,
     signup,
     reset,

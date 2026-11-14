@@ -96,13 +96,17 @@ describe("the skeleton on a phone", () => {
 
 describe("building and the swap", () => {
   it("builds on the first show only", () => {
+    // Part E: every show of a block builds in from its top in the dot field, so the first show and the next draw the same
+    // boxes; nothing in the DOM rises any more.
     stage(1440);
+    const boxes = (container: HTMLElement) =>
+      Array.from(container.querySelectorAll<HTMLElement>('[data-testid="loading-blocks"]')).map((block) => [block.style.width, block.style.height]);
     const first = render(<ComposeSkeleton />);
-    const built = (container: HTMLElement) => (container.querySelector('[data-testid="loading-blocks"] > span > div') as HTMLElement).style.animation;
-    expect(built(first.container)).toContain("bgLoadRise");
+    const shown = boxes(first.container);
+    expect(first.container.innerHTML).not.toContain("bgLoadRise");
     first.unmount();
     const second = render(<ComposeSkeleton />);
-    expect(built(second.container)).toBe("");
+    expect(boxes(second.container)).toEqual(shown);
   });
 
   it("shows the content over a copy of the skeleton that fades out, then leaves only the content", () => {
@@ -122,7 +126,8 @@ describe("building and the swap", () => {
     act(() => {
       vi.advanceTimersByTime(50);
     });
-    expect((within(ghost).getAllByTestId("loading-blocks")[0] as HTMLElement).style.opacity).toBe("0");
+    // Part E: the ghost's blocks are gone (their dots wind down in the field), their boxes where they were.
+    expect(within(ghost).getAllByTestId("loading-blocks")[0].hasAttribute("data-gone")).toBe(true);
     act(() => {
       ghost.dispatchEvent(new Event("transitionend", { bubbles: true }));
     });

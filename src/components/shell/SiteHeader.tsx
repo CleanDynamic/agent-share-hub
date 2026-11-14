@@ -41,6 +41,7 @@ import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useCurrentPath, useGo } from "@/lib/routing/go";
 import { useIdleReady } from "@/lib/routing/lazyHost";
 import { useIntent } from "@/lib/routing/useIntent";
+import { deeper, openOver } from "@/pages/site/signin/signinUrl";
 import { r } from "@/lib/theme/radius";
 import { space } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
@@ -361,7 +362,7 @@ export function SiteHeaderView(props: SiteHeaderViewProps) {
 
 /** The container: the route, the reader, the theme and the unread count, around the pure view. */
 function SiteHeaderContainer() {
-  const { pathname } = useLocation();
+  const { pathname, state: locationState } = useLocation();
   // SV-04: the nav marks the page a change is on its way to, at once (go.ts).
   const current = useCurrentPath();
   const navigate = useNavigate();
@@ -397,7 +398,8 @@ function SiteHeaderContainer() {
       viewer={viewer}
       theme={resolved}
       onToggleTheme={() => setTheme(resolved === "dusk" ? "noon" : "dusk")}
-      onSignIn={() => navigate(`/login?redirect=${encodeURIComponent(pathname + window.location.search)}`)}
+      /* G5: the sign-in dialog opens over this page (`?signin=login`), coming back here once signed in. */
+      onSignIn={() => navigate(openOver(pathname, window.location.search), { state: deeper(locationState) })}
       onSignOut={async () => {
         await signOut();
         navigate("/");

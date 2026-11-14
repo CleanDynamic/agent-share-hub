@@ -85,8 +85,9 @@ describe("ProviderButtons", () => {
   it("waits on the one that was clicked: a spinner in its place, and every button disabled", () => {
     const { container } = show(<ProviderButtons onProvider={() => {}} loadingProvider="github" />);
     for (const button of screen.getAllByRole("button")) expect(button).toBeDisabled();
-    expect(container.querySelectorAll("svg.animate-spin")).toHaveLength(1);
-    expect(screen.getByRole("button", { name: "Continue with GitHub" }).querySelector("svg.animate-spin")).not.toBeNull();
+    // G12: the ring of dots in its place, and the button says what it is doing.
+    expect(container.querySelectorAll('[data-testid="pending-ring"]')).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Opening GitHub" }).querySelector('[data-testid="pending-ring"]')).not.toBeNull();
   });
 });
 
@@ -109,10 +110,10 @@ describe("AuthField", () => {
 
   it("draws the box 44 tall (content box) with 0 14px padding, radius 12, --field, a 1px --line border, 10px between icon and input", () => {
     const html = markup(field());
-    // UI-P52 density pass: the box 44 → 36, its padding 0 14px → 0 10px and the gap 10 → 7.
-    expect(html).toContain("height:36px");
-    expect(html).toContain("box-sizing:content-box");
-    expect(html).toContain("padding:0 10px");
+    // The sign-in dialog (Reference A): the box 32 high with its border, 12 either side; the gap stays 7.
+    expect(html).toContain("height:32px");
+    expect(html).toContain("box-sizing:border-box");
+    expect(html).toContain("padding:0 12px");
     expect(html).toContain("border-radius:var(--r-control)");
     expect(html).toContain("background:var(--field)");
     expect(html).toContain("border:1px solid var(--line)");
@@ -171,11 +172,11 @@ describe("AuthField", () => {
   });
 
   it("gives the reveal a 44px target", () => {
-    // UI-P52 density pass: 44 → 36 above 768px, as the tightened board; a phone keeps its 44px target.
+    // The sign-in dialog: 32 wide and the field's 30 inside its border above 768px; a phone keeps its 44px target.
     const { unmount } = show(field({ label: "Password", showPasswordToggle: true }));
     const style = screen.getByRole("button", { name: "Show password" }).getAttribute("style")!;
-    expect(style).toContain("width: 36px");
-    expect(style).toContain("height: 36px");
+    expect(style).toContain("width: 32px");
+    expect(style).toContain("height: 30px");
     unmount();
     setViewport("phone");
     show(field({ label: "Password", showPasswordToggle: true }));
@@ -224,10 +225,11 @@ describe("AuthField", () => {
 
   it("shows the state of the check at the right of the box, and a helper line under it", () => {
     const { container, rerender } = show(field({ validation: { state: "checking" }, helperText: "openbuilds.ai/profile/ada" }));
-    expect(container.querySelector("svg.animate-spin")).not.toBeNull();
+    // G27: the check's spinner is the InlineLoader.
+    expect(container.querySelector('[data-ui="inline-loader"]')).not.toBeNull();
     expect(screen.getByText("openbuilds.ai/profile/ada")).toBeTruthy();
     rerender(inRouter(field({ validation: { state: "valid" } })));
-    expect(container.querySelector("svg.animate-spin")).toBeNull();
+    expect(container.querySelector('[data-ui="inline-loader"]')).toBeNull();
     expect(container.querySelectorAll("svg")).toHaveLength(2);
   });
 
@@ -286,12 +288,12 @@ describe("AuthCheck", () => {
         Keep me signed in
       </AuthCheck>,
     );
-    // UI-P52 density pass: the words 13 → 12 and 8 → 6 from the box, as the tightened board's row.
+    // The sign-in dialog: the words 12, 8 from the box, ticked in the dialog's own green (Noon's here).
     expect(html).toContain("font-size:12px");
     expect(html).toContain("color:var(--text2)");
-    expect(html).toContain("gap:6px");
+    expect(html).toContain("gap:8px");
     expect(html).toContain("border-radius:5px");
-    expect(html).toContain("background:var(--action)");
+    expect(html).toContain("background:#77FC49");
   });
 
   it("takes a 28px target and gives the 12px back, so the row stays as tall as the reference's 19", () => {
@@ -300,10 +302,19 @@ describe("AuthCheck", () => {
         Keep me signed in
       </AuthCheck>,
     );
+    // The sign-in dialog: the row is 24 high and the label fills it; a phone keeps the 28px target in a 19px line.
     const style = container.querySelector("label")!.getAttribute("style")!;
-    expect(style).toContain("padding: 6px 0px");
-    expect(style).toContain("margin: -6px 0px");
-    expect(style).toContain("line-height: 19px");
+    expect(style).toContain("height: 24px");
+    expect(style).toContain("line-height: 24px");
+    setViewport("phone");
+    const phone = render(
+      <AuthCheck id="remember-phone" checked onChange={() => {}}>
+        Keep me signed in
+      </AuthCheck>,
+    ).container.querySelector("label")!.getAttribute("style")!;
+    expect(phone).toContain("padding: 6px 0px");
+    expect(phone).toContain("margin: -6px 0px");
+    expect(phone).toContain("line-height: 19px");
   });
 });
 
@@ -319,7 +330,8 @@ describe("PrimaryAction", () => {
     );
     const busy = screen.getByRole("button", { name: "Signing in..." });
     expect(busy).toBeDisabled();
-    expect(busy.querySelector("svg.animate-spin")).not.toBeNull();
+    // G12: the ring of dots in place of the spinner.
+    expect(busy.querySelector('[data-testid="pending-ring"]')).not.toBeNull();
   });
 });
 
@@ -330,7 +342,7 @@ describe("LoginForm", () => {
       screen.getByRole("button", { name: "Continue with Google" }),
       screen.getByRole("button", { name: "Continue with GitHub" }),
       screen.getByRole("button", { name: "Continue with X" }),
-      screen.getByText("or with email"),
+      screen.getByText("Or with email"),
       screen.getByLabelText("Email or username", { exact: true }),
       screen.getByLabelText("Password", { exact: true }),
       screen.getByRole("checkbox", { name: "Keep me signed in" }),
@@ -374,7 +386,7 @@ describe("LoginForm", () => {
     fireEvent.submit(screen.getByRole("button", { name: "Sign in" }).closest("form")!);
     expect(onSubmit).toHaveBeenCalledTimes(1);
     rerender(inRouter(<LoginForm {...login({ onSubmit, isSubmitting: true })} />));
-    expect(screen.getByRole("button", { name: "Signing in..." })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Signing in" })).toBeDisabled();
   });
 
   it("reports each field, and the remember box", () => {
@@ -395,7 +407,8 @@ describe("LoginForm", () => {
     expect(screen.getByRole("checkbox", { name: "Keep me signed in" })).toBeChecked();
     const forgot = screen.getByRole("link", { name: "Forgot password?" });
     expect(forgot.getAttribute("href")).toBe("/reset-password");
-    expect(renderToStaticMarkup(inRouter(<LoginForm {...login()} />))).toContain("color:var(--action)");
+    // The dialog's green text link: Noon's #173014 (the room under test).
+    expect(renderToStaticMarkup(inRouter(<LoginForm {...login()} />))).toContain("color:#173014");
   });
 
   it("says Forgot? on a phone and still reads as Forgot password?", () => {
@@ -420,8 +433,8 @@ describe("LoginForm", () => {
 
   it("is a column of the card's own rhythm: 12px on a desktop and 10px on a phone", () => {
     const { container, unmount } = show(<LoginForm {...login()} />);
-    // UI-P52 density pass: 12 / 10 → 9 / 7.
-    expect(container.querySelector("form")!.getAttribute("style")).toContain("gap: 9px");
+    // The sign-in dialog: the form fills the column and spaces its rows itself (4, 8 and 16); a phone keeps 7.
+    expect(container.querySelector("form")!.getAttribute("style")).toContain("flex: 1 1 auto");
     unmount();
     setViewport("phone");
     const phone = show(<LoginForm {...login()} />);
@@ -534,7 +547,8 @@ describe("ResetRequestForm", () => {
     expect(screen.getByText(/The link works once and expires after an hour\./)).toBeTruthy();
     expect(screen.getByPlaceholderText("you@example.com").getAttribute("type")).toBe("email");
     expect(screen.getByRole("button", { name: "Send reset link" })).toBeEnabled();
-    expect(screen.getByRole("link", { name: "Back to sign in" }).getAttribute("href")).toBe("/login");
+    // The dialog's way back is row 1's link alone (D3); the body carries none.
+    expect(screen.queryByRole("link", { name: "Back to sign in" })).toBeNull();
   });
 
   it("is the join form's field, with its error under it and its gate on the button", () => {
@@ -594,7 +608,8 @@ describe("the reset and link states", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Check your inbox" })).toBeTruthy();
     expect(screen.getByText("ada@example.com")).toBeTruthy();
     expect(screen.getByText(/it works once and expires after an hour/)).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Back to sign in" }).getAttribute("href")).toBe("/login");
+    // The dialog's way back is row 1's link alone (D3); the body carries none.
+    expect(screen.queryByRole("link", { name: "Back to sign in" })).toBeNull();
   });
 
   it("says the link does not work, offers a new one, and says the password has not changed", () => {
@@ -606,13 +621,15 @@ describe("the reset and link states", () => {
     expect(request.getAttribute("type")).toBe("button");
     fireEvent.click(request);
     expect(onRequestNew).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole("link", { name: "Back to sign in" })).toBeTruthy();
+    // The dialog's way back is row 1's link alone (D3); the body carries none.
+    expect(screen.queryByRole("link", { name: "Back to sign in" })).toBeNull();
   });
 
   it("says it is checking, as a status, without printing a code comment into the card", () => {
     const { container } = show(<LinkChecking title="Checking your reset link…">We&apos;re confirming the link is still valid.</LinkChecking>);
     expect(screen.getByRole("heading", { level: 2, name: "Checking your reset link…" })).toBeTruthy();
-    expect(screen.getByRole("status").textContent).toBe("We're confirming the link is still valid.");
+    // The words' status, beside the InlineLoader's own (G27).
+    expect(screen.getAllByRole("status").find((region) => region.getAttribute("data-ui") !== "inline-loader")!.textContent).toBe("We're confirming the link is still valid.");
     expect(container.textContent).not.toContain("/*");
   });
 });

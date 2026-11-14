@@ -10,6 +10,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
+import { SignInDialog } from "./SignInDialog";
+import { viewOf, type SignInView } from "./signinUrl";
+
 import { ThemeProvider } from "@/contexts/ThemeContext";
 
 /** Say which viewport `window.matchMedia` answers for: a phone is anything under 768px. */
@@ -74,4 +77,21 @@ export function renderAt(page: ReactElement, url: string, pattern: string = url.
     at: () => probe().textContent ?? "",
     state: () => JSON.parse(probe().getAttribute("data-state") ?? "null"),
   };
+}
+
+/** The dialog as the host draws it: whichever view the address names, or nothing. */
+function DialogFromAddress() {
+  const { search } = useLocation();
+  const view = viewOf(search);
+  return view ? <SignInDialog view={view} /> : null;
+}
+
+/**
+ * Render the sign-in dialog over Home on `view`, with `query` (the destination, an emailed link's parameters) in the
+ * address beside it. Navigating to any other page unmounts it. Returns where the router is.
+ */
+export function renderDialog(view: SignInView, query = "", state?: unknown): WhereIs {
+  const search = new URLSearchParams(query);
+  search.set("signin", view);
+  return renderAt(<DialogFromAddress />, `/?${search.toString()}`, "/", state);
 }
