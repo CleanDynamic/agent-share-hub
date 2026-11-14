@@ -4,6 +4,8 @@ export interface UsernameAvailabilityResult {
   available: boolean;
   /** A free variant to offer when the requested username is taken. */
   suggestion?: string;
+  /** G13: the check could not be made. The name is not available until it can be. */
+  checkFailed?: true;
 }
 
 const USERNAME_PATTERN = /^[a-z0-9_]+$/;
@@ -21,14 +23,15 @@ export async function checkUsernameAvailability(
     return { available: false };
   }
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("username", username)
-    .maybeSingle();
-
-  // On a transient query error, don't block the user.
-  if (error) return { available: true };
+  // G13: fail closed. A query that errors or throws is "couldn't check", never "available".
+  let found: { data: unknown; error: unknown };
+  try {
+    found = await supabase.from("profiles").select("id").eq("username", username).maybeSingle();
+  } catch {
+    return { available: false, checkFailed: true };
+  }
+  const { data, error } = found;
+  if (error) return { available: false, checkFailed: true };
   if (!data) return { available: true };
 
   return { available: false, suggestion: suggestUsername(username) };

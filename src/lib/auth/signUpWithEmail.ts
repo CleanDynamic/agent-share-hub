@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
+import { refusalOf, type AuthRefusal } from "./authMessages";
+
 export interface EmailSignUp {
   email: string;
   password: string;
@@ -7,6 +9,8 @@ export interface EmailSignUp {
   username: string;
   /** Where the confirmation link in the email lands. */
   emailRedirectTo: string;
+  /** The bot-check token (G6); the auth service checks it. */
+  captchaToken?: string;
 }
 
 /**
@@ -16,15 +20,17 @@ export interface EmailSignUp {
  */
 export type EmailSignUpResult =
   | { outcome: "created"; signedIn: boolean }
-  | { outcome: "already-registered" | "refused"; message: string };
+  | { outcome: "refused"; refusal: AuthRefusal };
 
 /**
  * Create an account with an email and a password.
  *
  * The `handle_new_user` trigger reads `display_name` and `username` from the
  * sign-up metadata, in snake case, so those two keys are not ours to rename.
- * An "already registered" refusal is told apart by its wording, because the
- * client library gives no code for it.
+ * G11: an address that already has an account is answered exactly like a new
+ * one waiting for its link, so nothing tells a stranger which addresses are
+ * registered. (With email confirmation on, the auth service already does this;
+ * the wording check covers a project where it is off.)
  */
 export async function signUpWithEmail(input: EmailSignUp): Promise<EmailSignUpResult> {
   const { data, error } = await supabase.auth.signUp({
@@ -36,13 +42,15 @@ export async function signUpWithEmail(input: EmailSignUp): Promise<EmailSignUpRe
         username: input.username,
       },
       emailRedirectTo: input.emailRedirectTo,
+      captchaToken: input.captchaToken,
     },
   });
 
   if (error) {
     const message = error.message.toLowerCase();
     const taken = message.includes("already") && (message.includes("registered") || message.includes("exist"));
-    return { outcome: taken ? "already-registered" : "refused", message: error.message };
+    if (taken) return { outcome: "created", signedIn: false };
+    return { outcome: "refused", refusal: refusalOf(error) };
   }
 
   return { outcome: "created", signedIn: Boolean(data.session) };

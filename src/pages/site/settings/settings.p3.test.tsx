@@ -16,6 +16,8 @@ const auth = vi.hoisted(() => ({
 }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { auth, rpc: vi.fn(), from: vi.fn() } }));
 vi.mock("@/lib/errors/report", () => ({ reportError: vi.fn() }));
+// The bot check's one-shot widget, faked: the current-password check carries its token.
+vi.mock("@/lib/auth/turnstile", () => ({ oneShotCaptchaToken: async () => ({ token: "tok-1", failed: false }) }));
 
 import {
   COPY,
@@ -214,7 +216,7 @@ describe("the calls", () => {
     auth.signInWithPassword.mockResolvedValueOnce({ error: null });
     auth.updateUser.mockResolvedValueOnce({ error: null });
     await changePassword({ email: "ada@example.com", current: "good-one", next: "new-password-1", hasPassword: true });
-    expect(auth.signInWithPassword).toHaveBeenLastCalledWith({ email: "ada@example.com", password: "good-one" });
+    expect(auth.signInWithPassword).toHaveBeenLastCalledWith({ email: "ada@example.com", password: "good-one", options: { captchaToken: "tok-1" } });
     expect(auth.updateUser).toHaveBeenCalledWith({ password: "new-password-1" });
   });
 

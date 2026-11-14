@@ -7,6 +7,7 @@ import type { UserIdentity } from "@supabase/supabase-js";
 
 import { supabase } from "@/integrations/supabase/client";
 import { calculatePasswordStrength } from "@/components/auth/PasswordStrengthMeter";
+import { oneShotCaptchaToken } from "@/lib/auth/turnstile";
 
 import { SettingsError } from "./useAction";
 
@@ -146,7 +147,9 @@ export async function changePassword(input: { email: string | null; current: str
   if (input.hasPassword) {
     if (!input.current) throw new SettingsError("Enter your current password.");
     if (!input.email) throw new SettingsError("Sign in again, then try once more.");
-    const { error } = await supabase.auth.signInWithPassword({ email: input.email, password: input.current });
+    // The current-password check is a sign-in, so it carries a bot-check token like every other (invisible widget).
+    const { token: captchaToken } = await oneShotCaptchaToken();
+    const { error } = await supabase.auth.signInWithPassword({ email: input.email, password: input.current, options: { captchaToken } });
     if (error) throw new SettingsError(friendlyAuthError(error) ?? "That isn't your current password.");
   }
   const { error } = await supabase.auth.updateUser({ password: input.next });

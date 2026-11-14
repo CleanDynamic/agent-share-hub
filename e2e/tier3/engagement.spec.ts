@@ -215,7 +215,7 @@ test("signed out, Like goes to sign in and comes back to the gallery", async ({ 
   await firstCard(page).getByRole("button", { name: "Like", exact: true }).click();
   await expect(page).toHaveURL(/\/login\?redirect=%2Fgallery$/);
 
-  await page.getByLabel("Email or username").fill("reader@example.test");
+  await page.getByLabel("Email", { exact: true }).fill("reader@example.test");
   await page.getByLabel("Password", { exact: true }).fill("a-password");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
 

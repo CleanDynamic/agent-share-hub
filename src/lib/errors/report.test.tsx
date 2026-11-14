@@ -101,4 +101,31 @@ describe("SV-01 P7: wiring", () => {
     await new Promise((r) => setTimeout(r, 20));
     expect(sentry).not.toHaveBeenCalled();
   });
+
+  it("G22: with a DSN, Sentry's beforeSend scrubs the event, and breadcrumbs stay off", async () => {
+    vi.resetModules();
+    const init = vi.fn();
+    vi.doMock("@sentry/react", () => ({ init, withScope: (fn: (scope: { setTags: () => void }) => void) => fn({ setTags: () => {} }), captureException: vi.fn() }));
+    vi.stubEnv("VITE_SENTRY_DSN", "https://public@o1.ingest.sentry.io/1");
+    try {
+      const fresh = await import("./report");
+      fresh.reportError(new Error("x"), { source: "test" });
+      await vi.waitFor(() => expect(init).toHaveBeenCalledTimes(1));
+      const options = init.mock.calls[0][0];
+      expect(options.beforeBreadcrumb()).toBeNull();
+      const out = options.beforeSend({
+        tags: { email: "ada@example.com", route: "/b/abc" },
+        exception: { values: [{ type: "Error", value: "for ada@example.com" }] },
+        breadcrumbs: [{ category: "fetch", data: { password: "hunter22", captcha_token: "tok-1" } }],
+        request: { url: "https://openbuilds.ai/?token_hash=th-secret" },
+        user: { email: "grace@example.com" },
+        extra: { refresh_token: "rt-1" },
+      });
+      expect(JSON.stringify(out)).not.toMatch(/ada@example\.com|grace@example\.com|hunter22|tok-1|rt-1|th-secret/);
+      expect(out.tags.route).toBe("/b/abc");
+    } finally {
+      vi.unstubAllEnvs();
+      vi.doUnmock("@sentry/react");
+    }
+  });
 });

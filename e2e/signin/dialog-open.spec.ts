@@ -117,7 +117,7 @@ test.describe("G7: redirect and returnTo", () => {
       await page.goto(key === "redirect" ? "/library" : "/login?returnTo=%2Flibrary");
       await expect(dialog(page)).toHaveAttribute("data-view", "login");
       expect(new URL(page.url()).searchParams.get(key)).toBe("/library");
-      await dialog(page).getByPlaceholder("Email or username").fill("ada@example.test");
+      await dialog(page).getByPlaceholder("Email", { exact: true }).fill("ada@example.test");
       await dialog(page).getByPlaceholder("Enter your password").fill("correct horse");
       await dialog(page).locator('[data-variant="signin-primary"]').click();
       await expect(page).toHaveURL(/\/library$/);

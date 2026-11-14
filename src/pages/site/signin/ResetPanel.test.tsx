@@ -15,6 +15,9 @@ const onPasswordRecovery = vi.fn();
 const verifyEmailLink = vi.fn();
 const toastSuccess = vi.fn();
 
+// G6: the dialog's one Turnstile widget, faked: every submission takes its token and resets it.
+const captcha = vi.hoisted(() => ({ token: vi.fn(), reset: vi.fn() }));
+vi.mock("@/lib/auth/turnstile", () => ({ useTurnstile: () => captcha }));
 vi.mock("@/lib/auth/passwordReset", () => ({
   requestPasswordReset: (...args: unknown[]) => requestPasswordReset(...args),
   setNewPassword: (...args: unknown[]) => setNewPassword(...args),
@@ -31,6 +34,8 @@ let stopListening = vi.fn();
 let recovery: () => void = () => {};
 
 beforeEach(() => {
+  captcha.token.mockReset().mockResolvedValue({ token: "tok-1", failed: false });
+  captcha.reset.mockReset();
   setViewport("desktop");
   for (const fn of [requestPasswordReset, setNewPassword, onPasswordRecovery, verifyEmailLink, toastSuccess]) fn.mockReset();
   stopListening = vi.fn();
@@ -76,14 +81,34 @@ describe("the request form", () => {
   });
 
   it("asks for the link to land back on this page, and says to check the inbox, naming the address", async () => {
-    requestPasswordReset.mockResolvedValue(true);
+    requestPasswordReset.mockResolvedValue({ sent: true });
     open();
     type("you@example.com", "  ada@example.com ");
     fireEvent.click(screen.getByRole("button", { name: "Send reset link" }));
 
     expect(await screen.findByRole("heading", { level: 2, name: "Check your inbox" })).toBeTruthy();
-    expect(requestPasswordReset).toHaveBeenCalledWith("ada@example.com", `${window.location.origin}/reset-password`);
+    expect(requestPasswordReset).toHaveBeenCalledWith("ada@example.com", `${window.location.origin}/reset-password`, "tok-1");
     expect(screen.getByText("ada@example.com")).toBeTruthy();
+    // G6: the widget is reset after the submission.
+    expect(captcha.reset).toHaveBeenCalledTimes(1);
+  });
+
+  it("G7: surfaces the server's refusal of the token as our sentence", async () => {
+    requestPasswordReset.mockResolvedValue({ sent: false, refusal: "captcha" });
+    open();
+    type("you@example.com", "ada@example.com");
+    fireEvent.click(screen.getByRole("button", { name: "Send reset link" }));
+    expect(await screen.findByText("Couldn't verify this request. Try again.")).toBeTruthy();
+  });
+
+  it("G6: says the check failed, sends nothing and resets, when the widget has no token", async () => {
+    captcha.token.mockResolvedValue({ token: undefined, failed: true });
+    open();
+    type("you@example.com", "ada@example.com");
+    fireEvent.click(screen.getByRole("button", { name: "Send reset link" }));
+    expect(await screen.findByText("Couldn't verify this request. Try again.")).toBeTruthy();
+    expect(requestPasswordReset).not.toHaveBeenCalled();
+    expect(captcha.reset).toHaveBeenCalledTimes(1);
   });
 
   it("refuses an address with no domain before it asks anyone, under the field", () => {
@@ -99,15 +124,15 @@ describe("the request form", () => {
   });
 
   it.each([
-    ["a refusal", () => requestPasswordReset.mockResolvedValue(false)],
+    ["a refusal", () => requestPasswordReset.mockResolvedValue({ sent: false, refusal: "unknown" })],
     ["a throw", () => requestPasswordReset.mockRejectedValue(new Error("network down"))],
-  ])("says something went wrong on %s, and lets the reader try again", async (_name, arrange) => {
+  ])("G14: says Couldn't do that on %s, and lets the reader try again", async (_name, arrange) => {
     arrange();
     open();
     type("you@example.com", "ada@example.com");
     fireEvent.click(screen.getByRole("button", { name: "Send reset link" }));
 
-    expect(await screen.findByText("Something went wrong. Please try again.")).toBeTruthy();
+    expect(await screen.findByText("Couldn't do that. Try again.")).toBeTruthy();
     await waitFor(() => expect(screen.getByRole("button", { name: "Send reset link" })).toBeEnabled());
   });
 
@@ -272,23 +297,24 @@ describe("the new-password form", () => {
     expect(where.at()).toBe("/?signin=login");
   });
 
-  it("shows the client's own words when it refuses, and words a failure with no message", async () => {
+  it("G14: words a refusal in our own sentence, never the client's, and an unknown failure as Couldn't do that", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
-    setNewPassword.mockRejectedValueOnce(new Error("New password should be different from the old password."));
+    setNewPassword.mockRejectedValueOnce(Object.assign(new Error("New password should be different from the old password."), { code: "same_password" }));
     await reach();
     type("At least 8 characters", "Abcdefghij1!x");
     type("Re-enter your password", "Abcdefghij1!x");
     await settle();
     submit();
     await settle(0);
-    expect(screen.getByText("New password should be different from the old password.")).toBeTruthy();
+    expect(screen.getByText("Choose a password you haven't used before.")).toBeTruthy();
+    expect(screen.queryByText("New password should be different from the old password.")).toBeNull();
     expect(screen.getByRole("button", { name: "Update password" })).toBeEnabled();
     expect(toastSuccess).not.toHaveBeenCalled();
 
     setNewPassword.mockRejectedValueOnce("odd");
     submit();
     await settle(0);
-    expect(screen.getByText("Something went wrong. Please try again.")).toBeTruthy();
+    expect(screen.getByText("Couldn't do that. Try again.")).toBeTruthy();
   });
 
   it("clears the messages on the next key", async () => {

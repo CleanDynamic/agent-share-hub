@@ -41,8 +41,17 @@ const unit = (call: Record<string, unknown>) =>
   ((call.line_items as { price_data: { unit_amount: number } }[])[0]).price_data.unit_amount;
 
 describe("SV-01 P3: the price comes from the database", () => {
+  it("G10: refuses a caller with no user (the public key's anon role) before it reads anything, with 401", async () => {
+    const { d, createSession } = deps(paid, null);
+    const findItem = vi.spyOn(d, "findItem");
+    const res = await createCheckoutHandler(d)(post({ content_id: ID, success_url: OK, cancel_url: BACK }));
+    expect(res.status).toBe(401);
+    expect(findItem).not.toHaveBeenCalled();
+    expect(createSession).not.toHaveBeenCalled();
+  });
+
   it("ignores a lower price in the body", async () => {
-    const { d, createSession } = deps(paid);
+    const { d, createSession } = deps(paid, BUYER);
     const res = await createCheckoutHandler(d)(post({ content_id: ID, price_amount: 100, success_url: OK, cancel_url: BACK }));
     expect(res.status).toBe(200);
     expect(unit(createSession.mock.calls[0][0])).toBe(1250);
@@ -60,7 +69,7 @@ describe("SV-01 P3: the price comes from the database", () => {
     ["unapproved", { ...paid, status: "draft" }],
     ["under a pound", { ...paid, price_gbp: 0.5 }],
   ])("refuses an item that is %s with 400 or 404", async (_name, item) => {
-    const { d, createSession } = deps(item as SaleItem);
+    const { d, createSession } = deps(item as SaleItem, BUYER);
     const res = await createCheckoutHandler(d)(post({ content_id: ID, success_url: OK, cancel_url: BACK }));
     expect([400, 404]).toContain(res.status);
     expect(createSession).not.toHaveBeenCalled();

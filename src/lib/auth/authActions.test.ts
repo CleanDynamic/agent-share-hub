@@ -39,7 +39,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 
 import { verifyEmailLink, resendSignupEmail } from "./emailLink";
 import { onPasswordRecovery, requestPasswordReset, setNewPassword } from "./passwordReset";
-import { signInWithEmailOrUsername } from "./signInWithEmailOrUsername";
+import { signInWithEmail } from "./signInWithEmail";
 import { signUpWithEmail } from "./signUpWithEmail";
 
 beforeEach(() => {
@@ -65,58 +65,43 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("signInWithEmailOrUsername", () => {
-  it("signs in with an email as typed, trimmed, and never looks a username up", async () => {
+describe("signInWithEmail", () => {
+  it("signs in with the email as typed, trimmed, and passes the captcha token straight through", async () => {
     signInWithPassword.mockResolvedValue({ data: { user: { id: "u-1" } }, error: null });
 
-    await expect(signInWithEmailOrUsername("  ada@example.com ", "hunter22")).resolves.toEqual({
+    await expect(signInWithEmail("  ada@example.com ", "hunter22", "tok-1")).resolves.toEqual({
       outcome: "signed-in",
       userId: "u-1",
     });
 
+    expect(signInWithPassword).toHaveBeenCalledWith({ email: "ada@example.com", password: "hunter22", options: { captchaToken: "tok-1" } });
+  });
+
+  it("G4: never looks a username up: text with no @ is refused before any request", async () => {
+    await expect(signInWithEmail("ada_l", "hunter22", "tok-1")).resolves.toEqual({ outcome: "not-an-email" });
     expect(rpc).not.toHaveBeenCalled();
-    expect(signInWithPassword).toHaveBeenCalledWith({ email: "ada@example.com", password: "hunter22" });
-  });
-
-  it("resolves a username to its email first, and signs in with that", async () => {
-    rpc.mockResolvedValue({ data: "ada@example.com", error: null });
-    signInWithPassword.mockResolvedValue({ data: { user: { id: "u-1" } }, error: null });
-
-    await expect(signInWithEmailOrUsername("ada_l", "hunter22")).resolves.toEqual({ outcome: "signed-in", userId: "u-1" });
-
-    expect(rpc).toHaveBeenCalledWith("get_email_by_username", { _username: "ada_l" });
-    expect(signInWithPassword).toHaveBeenCalledWith({ email: "ada@example.com", password: "hunter22" });
-  });
-
-  it("refuses a username that resolves to nothing, without trying the password", async () => {
-    rpc.mockResolvedValueOnce({ data: null, error: null });
-    await expect(signInWithEmailOrUsername("nobody", "x")).resolves.toEqual({ outcome: "unknown-username" });
-
-    rpc.mockResolvedValueOnce({ data: "ada@example.com", error: { message: "boom" } });
-    await expect(signInWithEmailOrUsername("nobody", "x")).resolves.toEqual({ outcome: "unknown-username" });
-
     expect(signInWithPassword).not.toHaveBeenCalled();
   });
 
-  it("tells an unconfirmed email from any other refusal, whatever the case of the message", async () => {
+  it("G12: reads an unconfirmed email as the same refusal as a wrong password, whatever the case of the message", async () => {
     signInWithPassword.mockResolvedValueOnce({ data: { user: null }, error: { message: "Email not confirmed" } });
-    await expect(signInWithEmailOrUsername("ada@example.com", "x")).resolves.toEqual({ outcome: "email-not-confirmed" });
+    await expect(signInWithEmail("ada@example.com", "x")).resolves.toEqual({ outcome: "refused", refusal: "credentials" });
 
     signInWithPassword.mockResolvedValueOnce({ data: { user: null }, error: { message: "EMAIL NOT CONFIRMED" } });
-    await expect(signInWithEmailOrUsername("ada@example.com", "x")).resolves.toEqual({ outcome: "email-not-confirmed" });
+    await expect(signInWithEmail("ada@example.com", "x")).resolves.toEqual({ outcome: "refused", refusal: "credentials" });
 
     signInWithPassword.mockResolvedValueOnce({ data: { user: null }, error: { message: "Invalid login credentials" } });
-    await expect(signInWithEmailOrUsername("ada@example.com", "x")).resolves.toEqual({ outcome: "rejected" });
+    await expect(signInWithEmail("ada@example.com", "x")).resolves.toEqual({ outcome: "refused", refusal: "credentials" });
   });
 
   it("answers a null user id when the session came back without a user", async () => {
     signInWithPassword.mockResolvedValue({ data: { user: null }, error: null });
-    await expect(signInWithEmailOrUsername("ada@example.com", "x")).resolves.toEqual({ outcome: "signed-in", userId: null });
+    await expect(signInWithEmail("ada@example.com", "x")).resolves.toEqual({ outcome: "signed-in", userId: null });
   });
 
   it("lets a thrown failure through, for the page's one 'something went wrong'", async () => {
     signInWithPassword.mockRejectedValue(new Error("network down"));
-    await expect(signInWithEmailOrUsername("ada@example.com", "x")).rejects.toThrow("network down");
+    await expect(signInWithEmail("ada@example.com", "x")).rejects.toThrow("network down");
   });
 });
 
@@ -127,6 +112,7 @@ describe("signUpWithEmail", () => {
     displayName: "Ada Lovelace",
     username: "ada_l",
     emailRedirectTo: "https://openbuilds.ai/verify-email",
+    captchaToken: "tok-1",
   };
 
   it("sends the metadata the handle_new_user trigger reads, in snake case", async () => {
@@ -140,6 +126,7 @@ describe("signUpWithEmail", () => {
       options: {
         data: { display_name: "Ada Lovelace", username: "ada_l" },
         emailRedirectTo: "https://openbuilds.ai/verify-email",
+        captchaToken: "tok-1",
       },
     });
   });
@@ -156,30 +143,28 @@ describe("signUpWithEmail", () => {
     "User already registered",
     "A user with this email address has already been registered",
     "Email already exists",
-  ])("knows %j as an address that already has an account", async (message) => {
+  ])("G11: answers %j exactly as a new account waiting for its link, so nothing says the address is taken", async (message) => {
     signUp.mockResolvedValue({ data: { session: null }, error: { message } });
-    await expect(signUpWithEmail(input)).resolves.toEqual({ outcome: "already-registered", message });
+    await expect(signUpWithEmail(input)).resolves.toEqual({ outcome: "created", signedIn: false });
   });
 
-  it("passes any other refusal on in the client's own words", async () => {
+  it("G14: passes any other refusal on as its kind, never the client's words", async () => {
     signUp.mockResolvedValue({ data: { session: null }, error: { message: "Email rate limit exceeded" } });
-    await expect(signUpWithEmail(input)).resolves.toEqual({
-      outcome: "refused",
-      message: "Email rate limit exceeded",
-    });
+    await expect(signUpWithEmail(input)).resolves.toEqual({ outcome: "refused", refusal: "rate-limit" });
   });
 });
 
 describe("requestPasswordReset", () => {
   it("asks for the link to land on the page it names, and says whether it was accepted", async () => {
     resetPasswordForEmail.mockResolvedValueOnce({ error: null });
-    await expect(requestPasswordReset("ada@example.com", "https://openbuilds.ai/reset-password")).resolves.toBe(true);
+    await expect(requestPasswordReset("ada@example.com", "https://openbuilds.ai/reset-password", "tok-1")).resolves.toEqual({ sent: true });
     expect(resetPasswordForEmail).toHaveBeenCalledWith("ada@example.com", {
       redirectTo: "https://openbuilds.ai/reset-password",
+      captchaToken: "tok-1",
     });
 
     resetPasswordForEmail.mockResolvedValueOnce({ error: { message: "nope" } });
-    await expect(requestPasswordReset("ada@example.com", "https://x")).resolves.toBe(false);
+    await expect(requestPasswordReset("ada@example.com", "https://x")).resolves.toEqual({ sent: false, refusal: "unknown" });
   });
 });
 
@@ -330,10 +315,10 @@ describe("verifyEmailLink", () => {
 describe("resendSignupEmail", () => {
   it("asks for the signup email again, and says whether it went", async () => {
     resend.mockResolvedValueOnce({ error: null });
-    await expect(resendSignupEmail("ada@example.com")).resolves.toBe(true);
-    expect(resend).toHaveBeenCalledWith({ type: "signup", email: "ada@example.com" });
+    await expect(resendSignupEmail("ada@example.com", "tok-1")).resolves.toEqual({ sent: true });
+    expect(resend).toHaveBeenCalledWith({ type: "signup", email: "ada@example.com", options: { captchaToken: "tok-1" } });
 
     resend.mockResolvedValueOnce({ error: { message: "rate limited" } });
-    await expect(resendSignupEmail("ada@example.com")).resolves.toBe(false);
+    await expect(resendSignupEmail("ada@example.com")).resolves.toEqual({ sent: false, refusal: "rate-limit" });
   });
 });

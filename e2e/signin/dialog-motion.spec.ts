@@ -80,7 +80,7 @@ test("G12: a pending Sign in shows the ring of 8 dots and says Signing in", asyn
   await stub(page, { signInDelayMs: 3000 });
   await open(page, "dusk");
   const dialog = page.getByTestId("signin-dialog");
-  await dialog.getByPlaceholder("Email or username").fill("ada@example.test");
+  await dialog.getByPlaceholder("Email", { exact: true }).fill("ada@example.test");
   await dialog.getByPlaceholder("Enter your password").fill("correct horse");
   const primary = dialog.locator('[data-variant="signin-primary"]');
   await primary.click();

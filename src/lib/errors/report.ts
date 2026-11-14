@@ -14,6 +14,7 @@
 // error's name and code, the route, a source label, ids and node types.
 
 import { errorCode } from "./code";
+import { scrubEvent } from "./scrub";
 
 /** The only keys a report may carry. Anything else a caller passes is dropped. */
 const CONTEXT_KEYS = ["source", "route", "context", "buildId", "nodeId", "nodeType", "shape", "userId", "authenticated"] as const;
@@ -100,7 +101,9 @@ function load(dsn: string): Promise<SentryModule> {
         delete event.request;
         delete event.user;
         delete event.extra;
-        return event;
+        // G22: and whatever is left, tags, exception values and breadcrumbs included, loses passwords, tokens, captcha
+        // tokens and email addresses.
+        return scrubEvent(event);
       },
     });
     return S;

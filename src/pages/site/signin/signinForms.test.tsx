@@ -343,7 +343,7 @@ describe("LoginForm", () => {
       screen.getByRole("button", { name: "Continue with GitHub" }),
       screen.getByRole("button", { name: "Continue with X" }),
       screen.getByText("Or with email"),
-      screen.getByLabelText("Email or username", { exact: true }),
+      screen.getByLabelText("Email", { exact: true }),
       screen.getByLabelText("Password", { exact: true }),
       screen.getByRole("checkbox", { name: "Keep me signed in" }),
       screen.getByRole("link", { name: "Forgot password?" }),
@@ -359,11 +359,11 @@ describe("LoginForm", () => {
 
   it("keeps the placeholders and labels the existing specs find the fields by", () => {
     show(<LoginForm {...login()} />);
-    expect(screen.getByPlaceholderText("Email or username")).toBeTruthy();
+    expect(screen.getByPlaceholderText("Email")).toBeTruthy();
     expect(screen.getByPlaceholderText("Enter your password")).toBeTruthy();
-    expect(screen.getByLabelText("Email or username")).toBeTruthy();
+    expect(screen.getByLabelText("Email")).toBeTruthy();
     expect(screen.getByLabelText("Password", { exact: true })).toBeTruthy();
-    expect(screen.getByPlaceholderText("Email or username").getAttribute("autocomplete")).toBe("username");
+    expect(screen.getByPlaceholderText("Email").getAttribute("autocomplete")).toBe("email");
     expect(screen.getByPlaceholderText("Enter your password").getAttribute("autocomplete")).toBe("current-password");
   });
 
@@ -394,7 +394,7 @@ describe("LoginForm", () => {
     const onPasswordChange = vi.fn();
     const onRememberMeChange = vi.fn();
     const { container } = show(<LoginForm {...login({ onEmailOrUsernameChange, onPasswordChange, onRememberMeChange })} />);
-    fireEvent.change(screen.getByPlaceholderText("Email or username"), { target: { value: "ada_l" } });
+    fireEvent.change(screen.getByPlaceholderText("Email"), { target: { value: "ada_l" } });
     fireEvent.change(screen.getByPlaceholderText("Enter your password"), { target: { value: "hunter22" } });
     fireEvent.click(container.querySelector('label[for="remember"] > div')!.lastElementChild!);
     expect(onEmailOrUsernameChange).toHaveBeenCalledWith("ada_l");
@@ -427,7 +427,7 @@ describe("LoginForm", () => {
     expect(message.getAttribute("aria-live")).toBe("polite");
     expect(password.getAttribute("aria-invalid")).toBe("true");
     expect(password.getAttribute("aria-describedby")).toBe(message.id);
-    expect(screen.getByPlaceholderText("Email or username").getAttribute("aria-invalid")).toBe("false");
+    expect(screen.getByPlaceholderText("Email").getAttribute("aria-invalid")).toBe("false");
     expect(screen.getAllByText("Wrong email or password")).toHaveLength(1);
   });
 

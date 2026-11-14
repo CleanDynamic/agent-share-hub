@@ -6,6 +6,7 @@
 
 import { useState } from "react";
 
+import { DialogCaptchaProvider } from "./dialogCaptcha";
 import { AccountSwitch, BackToSignIn, SignInDialogFrame } from "./SignInDialogFrame";
 import { LoginPanel } from "./LoginPanel";
 import { ResetPanel } from "./ResetPanel";
@@ -36,7 +37,10 @@ export function SignInDialog({ view, closing = false }: { view: SignInView; clos
       view={view}
       rowStart={rowStart}
     >
-      {view === "signup" ? <SignupPanel /> : view === "reset" ? <ResetPanel /> : view === "verify" ? <VerifyPanel /> : <LoginPanel />}
+      {/* G6: one invisible Turnstile widget for every view, outside the layout. */}
+      <DialogCaptchaProvider>
+        {view === "signup" ? <SignupPanel /> : view === "reset" ? <ResetPanel /> : view === "verify" ? <VerifyPanel /> : <LoginPanel />}
+      </DialogCaptchaProvider>
     </SignInDialogFrame>
   );
 }

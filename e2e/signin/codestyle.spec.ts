@@ -92,7 +92,7 @@ test("G21: a held mouse button and a held key switch to characters and back; a t
 
 test("G21: typing in the email and password fields triggers it", async ({ page }) => {
   await openOver(page);
-  for (const placeholder of ["Email or username", "Enter your password"]) {
+  for (const placeholder of ["Email", "Enter your password"]) {
     await page.getByPlaceholder(placeholder).focus();
     await page.keyboard.down("a");
     expect(await mode(page)).toBe("code");

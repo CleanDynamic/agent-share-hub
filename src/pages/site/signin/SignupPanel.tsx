@@ -13,7 +13,7 @@
    `src/lib/auth/`, since a component may not call Supabase. */
 
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import type { InputValidation } from "@/components/auth/AuthInput";
 import type { OAuthProvider } from "@/components/auth/OAuthButtons";
@@ -21,10 +21,13 @@ import { calculatePasswordStrength, type PasswordStrength } from "@/components/a
 import { useAuth } from "@/contexts/AuthContext";
 import { checkUsernameAvailability } from "@/lib/auth/checkUsernameAvailability";
 import { startOAuthSignIn } from "@/lib/auth/oauth";
+import { messageFor } from "@/lib/auth/authMessages";
+import { returnPathFrom } from "@/lib/auth/safeReturnPath";
 import { signUpWithEmail } from "@/lib/auth/signUpWithEmail";
 import { PRIVACY_REVIEWED, TERMS_REVIEWED } from "@/content/legal/reviewed";
 
 import { signupCanSubmit } from "./authModel";
+import { useDialogCaptcha, VERIFY_FAILED } from "./dialogCaptcha";
 import { SignupForm } from "./SignupForm";
 import { setSigningIn } from "./signinActivity";
 import { useSignInNavigation } from "./useSignInNavigation";
@@ -49,6 +52,8 @@ function readSavedDraft(): SavedDraft | null {
 
 export function SignupPanel() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const captcha = useDialogCaptcha();
   const views = useSignInNavigation();
   const { isLoggedIn } = useAuth();
 
@@ -135,9 +140,12 @@ export function SignupPanel() {
     setUsernameValidation({ state: "checking" });
     const seq = ++usernameSeq.current;
     usernameDebounce.current = setTimeout(async () => {
-      const { available, suggestion } = await checkUsernameAvailability(next);
+      const { available, suggestion, checkFailed } = await checkUsernameAvailability(next);
       if (seq !== usernameSeq.current) return; // a newer keystroke superseded this
-      if (available) {
+      if (checkFailed) {
+        // G13: an unchecked name is not available, and Join stays closed until a check succeeds.
+        setUsernameValidation({ state: "invalid", message: "Couldn't check, try again." });
+      } else if (available) {
         setUsernameValidation({ state: "valid", message: "Username available" });
       } else {
         setUsernameValidation({
@@ -181,6 +189,13 @@ export function SignupPanel() {
 
     setIsSubmitting(true);
     setError("");
+    const check = await captcha.token();
+    if (check.failed) {
+      captcha.reset();
+      setError(VERIFY_FAILED);
+      setIsSubmitting(false);
+      return;
+    }
     try {
       const result = await signUpWithEmail({
         email: cleanEmail,
@@ -188,15 +203,11 @@ export function SignupPanel() {
         displayName: displayName.trim(),
         username: cleanUsername,
         emailRedirectTo: `${window.location.origin}/verify-email`,
+        captchaToken: check.token,
       });
 
       if (result.outcome !== "created") {
-        if (result.outcome === "already-registered") {
-          setEmailValidation({ state: "invalid", message: "An account with this email already exists" });
-          setError("That email is already registered — try signing in instead.");
-        } else {
-          setError(result.message);
-        }
+        setError(messageFor(result.refusal));
         setIsSubmitting(false);
         return;
       }
@@ -211,15 +222,18 @@ export function SignupPanel() {
         views.replaceWith("verify", { email: cleanEmail });
       }
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(messageFor("unknown"));
       setIsSubmitting(false);
+    } finally {
+      // G6: a token is good for one request; the widget makes the next one.
+      captcha.reset();
     }
   };
 
   const handleProvider = async (provider: OAuthProvider) => {
     setLoadingProvider(provider);
     // OAuth — this redirects the whole page to the provider.
-    const oauthError = await startOAuthSignIn(provider);
+    const oauthError = await startOAuthSignIn(provider, returnPathFrom(searchParams));
     if (oauthError) {
       setError(oauthError);
       // The page is still here, so the buttons are for trying again.

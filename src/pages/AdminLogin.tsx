@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { AUTH_MESSAGES } from "@/lib/auth/authMessages";
+import { signInWithEmail } from "@/lib/auth/signInWithEmail";
+import { useTurnstile } from "@/lib/auth/turnstile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,16 +15,32 @@ const AdminLogin = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const captcha = useTurnstile();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+    // D3: the same email-only sign-in and the same invisible bot check as the dialog.
+    if (!email.includes("@")) {
+      setError("Sign in with your email address.");
+      setLoading(false);
+      return;
+    }
+    const check = await captcha.token();
+    if (check.failed) {
+      captcha.reset();
+      setError(AUTH_MESSAGES.captcha);
+      setLoading(false);
+      return;
+    }
+    const result = await signInWithEmail(email, password, check.token).finally(() => captcha.reset());
 
-    if (authError) {
-      setError("Invalid email or password. Please try again.");
+    if (result.outcome !== "signed-in") {
+      setError(
+        result.outcome === "refused" && result.refusal === "captcha" ? AUTH_MESSAGES.captcha : "Invalid email or password. Please try again.",
+      );
       setLoading(false);
       return;
     }

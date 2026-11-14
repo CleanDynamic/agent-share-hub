@@ -14,6 +14,9 @@ const signUp = vi.fn();
 const checkUsernameAvailability = vi.fn();
 const startOAuthSignIn = vi.fn();
 
+// G6: the dialog's one Turnstile widget, faked: every submission takes its token and resets it.
+const captcha = vi.hoisted(() => ({ token: vi.fn(), reset: vi.fn() }));
+vi.mock("@/lib/auth/turnstile", () => ({ useTurnstile: () => captcha }));
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ isLoggedIn: auth.isLoggedIn, user: null, session: null, loading: false }),
 }));
@@ -26,6 +29,8 @@ vi.mock("@/lib/auth/oauth", () => ({ startOAuthSignIn: (...args: unknown[]) => s
 import { renderDialog, setViewport } from "./signinTest";
 
 beforeEach(() => {
+  captcha.token.mockReset().mockResolvedValue({ token: "tok-1", failed: false });
+  captcha.reset.mockReset();
   setViewport("desktop");
   auth.isLoggedIn = false;
   signUp.mockReset();
@@ -140,6 +145,23 @@ describe("the username", () => {
       await vi.advanceTimersByTimeAsync(400);
     });
     expect(screen.getByText("That username is taken")).toBeTruthy();
+  });
+
+  it("G13: says it couldn't check, and keeps Create account closed, when the check fails", async () => {
+    open();
+    await fillAll();
+    expect(create()).toBeEnabled();
+    checkUsernameAvailability.mockResolvedValueOnce({ available: false, checkFailed: true });
+    type("username", "ada_lc");
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(400);
+    });
+    expect(screen.getByText("Couldn't check, try again.")).toBeTruthy();
+    expect(screen.queryByText("Username available")).toBeNull();
+    expect(create()).toBeDisabled();
+    fireEvent.submit(create().closest("form")!);
+    await act(async () => {});
+    expect(signUp).not.toHaveBeenCalled();
   });
 
   it("shows the address it will have", () => {
@@ -280,7 +302,21 @@ describe("creating the account", () => {
       displayName: "Ada Lovelace",
       username: "ada_l",
       emailRedirectTo: `${window.location.origin}/verify-email`,
+      captchaToken: "tok-1",
     });
+    // G6: the widget is reset after the submission.
+    expect(captcha.reset).toHaveBeenCalledTimes(1);
+  });
+
+  it("G6: says the check failed, creates nothing and resets, when the widget has no token", async () => {
+    captcha.token.mockResolvedValue({ token: undefined, failed: true });
+    open();
+    await fillAll();
+    fireEvent.click(create());
+    await act(async () => {});
+    expect(screen.getByText("Couldn't verify this request. Try again.")).toBeTruthy();
+    expect(signUp).not.toHaveBeenCalled();
+    expect(captcha.reset).toHaveBeenCalledTimes(1);
   });
 
   it("goes to the pending view with the address, remembered, when the project wants the email verified", async () => {
@@ -306,40 +342,42 @@ describe("creating the account", () => {
     expect(window.sessionStorage.getItem("pending_verification_email")).toBeNull();
   });
 
-  it("says plainly that an address is taken, under the email and under the form", async () => {
-    signUp.mockResolvedValue({ outcome: "already-registered", message: "User already registered" });
-    open();
+  it("G11: shows the same Check your inbox view whether or not the address already has an account", async () => {
+    signUp.mockResolvedValue({ outcome: "created", signedIn: false });
+    const where = open();
     await fillAll();
     fireEvent.click(create());
     await act(async () => {});
-
-    expect(screen.getByText("An account with this email already exists")).toBeTruthy();
-    expect(screen.getByText("That email is already registered — try signing in instead.")).toBeTruthy();
-    expect(screen.getByPlaceholderText("you@example.com").getAttribute("aria-invalid")).toBe("true");
-    // Closed again, until the email is changed.
-    expect(create()).toBeDisabled();
+    expect(where.at()).toBe("/?signin=verify");
+    expect(where.state()).toEqual({ email: "ada@example.com" });
+    expect(screen.queryByText(/already/i)).toBeNull();
   });
 
-  it("passes any other refusal on in the client's own words", async () => {
-    signUp.mockResolvedValue({ outcome: "refused", message: "Email rate limit exceeded" });
+  it.each([
+    ["rate-limit", "Too many tries. Wait a minute, then try again."],
+    ["weak-password", "Choose a stronger password."],
+    ["unknown", "Couldn't do that. Try again."],
+  ])("G14: words a %s refusal in our own sentence, never the client's", async (refusal, sentence) => {
+    signUp.mockResolvedValue({ outcome: "refused", refusal });
     open();
     await fillAll();
     fireEvent.click(create());
     await act(async () => {});
 
-    const message = screen.getByText("Email rate limit exceeded");
+    const message = screen.getByText(sentence);
     expect(message.getAttribute("aria-live")).toBe("polite");
     expect(create()).toBeEnabled();
   });
 
-  it("says something went wrong when the request throws, and lets the reader try again", async () => {
+  it("G14: says Couldn't do that when the request throws, and lets the reader try again", async () => {
     signUp.mockRejectedValue(new Error("network down"));
     open();
     await fillAll();
     fireEvent.click(create());
     await act(async () => {});
 
-    expect(screen.getByText("Something went wrong. Please try again.")).toBeTruthy();
+    expect(screen.getByText("Couldn't do that. Try again.")).toBeTruthy();
+    expect(screen.queryByText("network down")).toBeNull();
     expect(create()).toBeEnabled();
   });
 
@@ -363,15 +401,29 @@ describe("creating the account", () => {
   });
 
   it("clears the form's message on the next key", async () => {
-    signUp.mockResolvedValue({ outcome: "refused", message: "Email rate limit exceeded" });
+    signUp.mockResolvedValue({ outcome: "refused", refusal: "rate-limit" });
     open();
     await fillAll();
     fireEvent.click(create());
     await act(async () => {});
-    expect(screen.getByText("Email rate limit exceeded")).toBeTruthy();
+    expect(screen.getByText("Too many tries. Wait a minute, then try again.")).toBeTruthy();
 
     type("Your name", "Ada L");
-    expect(screen.queryByText("Email rate limit exceeded")).toBeNull();
+    expect(screen.queryByText("Too many tries. Wait a minute, then try again.")).toBeNull();
+  });
+});
+
+describe("G7: the server refuses the token", () => {
+  beforeEach(() => vi.useFakeTimers());
+
+  it("surfaces the refusal as our sentence", async () => {
+    signUp.mockResolvedValue({ outcome: "refused", refusal: "captcha" });
+    open();
+    await fillAll();
+    fireEvent.click(create());
+    await act(async () => {});
+    expect(screen.getByText("Couldn't verify this request. Try again.")).toBeTruthy();
+    expect(screen.queryByText("captcha protection: request disallowed")).toBeNull();
   });
 });
 
@@ -382,7 +434,14 @@ describe("the providers", () => {
     fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
 
     expect(await screen.findByText("Couldn't connect to google. Please try again.")).toBeTruthy();
-    expect(startOAuthSignIn).toHaveBeenCalledWith("google");
+    expect(startOAuthSignIn).toHaveBeenCalledWith("google", null);
     await waitFor(() => expect(screen.getByRole("button", { name: "Continue with Google" })).toBeEnabled());
+  });
+
+  it("G18: carry the return address to the provider, and / for one that leaves the site", async () => {
+    startOAuthSignIn.mockResolvedValue(null);
+    renderDialog("signup", "redirect=https%3A%2F%2Fexample.com");
+    fireEvent.click(screen.getByRole("button", { name: "Continue with GitHub" }));
+    await waitFor(() => expect(startOAuthSignIn).toHaveBeenLastCalledWith("github", "/"));
   });
 });

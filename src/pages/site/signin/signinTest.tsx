@@ -34,9 +34,9 @@ export function setViewport(viewport: "desktop" | "phone"): void {
 }
 
 function Probe() {
-  const { pathname, search, state } = useLocation();
+  const { pathname, search, hash, state } = useLocation();
   return (
-    <p data-testid="where" data-state={JSON.stringify(state ?? null)}>
+    <p data-testid="where" data-state={JSON.stringify(state ?? null)} data-hash={hash}>
       {pathname + search}
     </p>
   );
@@ -47,6 +47,8 @@ export interface WhereIs {
   at: () => string;
   /** The router state the last navigation carried. */
   state: () => unknown;
+  /** The hash the router is at now. */
+  hash: () => string;
 }
 
 /**
@@ -76,6 +78,7 @@ export function renderAt(page: ReactElement, url: string, pattern: string = url.
   return {
     at: () => probe().textContent ?? "",
     state: () => JSON.parse(probe().getAttribute("data-state") ?? "null"),
+    hash: () => probe().getAttribute("data-hash") ?? "",
   };
 }
 

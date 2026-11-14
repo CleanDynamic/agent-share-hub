@@ -6,7 +6,7 @@
    controlled; Signup.tsx's rules live in the container and in `signupCanSubmit`.
 
    THE FORM'S ONE ERROR SITS UNDER THE TERMS, the last thing a reader does before
-   the button. "Choose an available username", "already registered" and the
+   the button. "Choose an available username" and the
    client's own refusals are about the form as a whole; what belongs to a single
    field (the username's and the email's checks) sits under that field. */
 

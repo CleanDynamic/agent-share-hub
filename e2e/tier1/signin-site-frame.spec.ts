@@ -201,7 +201,7 @@ test.describe("signing in", () => {
   test("with ?redirect=/gallery lands on the gallery", async ({ page }) => {
     await open(page, "/login?redirect=%2Fgallery");
 
-    await page.getByLabel("Email or username").fill("reader@example.test");
+    await page.getByLabel("Email", { exact: true }).fill("reader@example.test");
     await page.getByLabel("Password", { exact: true }).fill("a-password");
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
 
@@ -212,7 +212,7 @@ test.describe("signing in", () => {
 
   test("the unencoded redirect, and the returnTo alias, land there too", async ({ page }) => {
     await open(page, "/login?returnTo=/gallery");
-    await page.getByPlaceholder("Email or username").fill("reader@example.test");
+    await page.getByPlaceholder("Email", { exact: true }).fill("reader@example.test");
     await page.getByPlaceholder("Enter your password").fill("a-password");
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await expect(page).toHaveURL(/\/gallery$/);
@@ -222,7 +222,7 @@ test.describe("signing in", () => {
     await open(page, "/login");
     const submit = page.getByRole("button", { name: "Sign in", exact: true });
     await expect(submit).toBeDisabled();
-    await page.getByPlaceholder("Email or username").fill("reader@example.test");
+    await page.getByPlaceholder("Email", { exact: true }).fill("reader@example.test");
     await expect(submit).toBeDisabled();
     const password = page.getByPlaceholder("Enter your password");
     await password.fill("a-password");
