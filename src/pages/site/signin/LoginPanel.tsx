@@ -90,7 +90,7 @@ export function LoginPanel() {
       const destination = redirectParam || (result.userId ? await resolvePostAuthRoute(result.userId) : "/");
       navigate(destination, { replace: true });
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(messageFor("unknown"));
       setIsSubmitting(false);
     } finally {
       // G6: a token is good for one request; the widget makes the next one.

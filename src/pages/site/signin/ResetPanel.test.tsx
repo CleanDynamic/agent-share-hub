@@ -126,13 +126,13 @@ describe("the request form", () => {
   it.each([
     ["a refusal", () => requestPasswordReset.mockResolvedValue({ sent: false, refusal: "unknown" })],
     ["a throw", () => requestPasswordReset.mockRejectedValue(new Error("network down"))],
-  ])("says something went wrong on %s, and lets the reader try again", async (_name, arrange) => {
+  ])("G14: says Couldn't do that on %s, and lets the reader try again", async (_name, arrange) => {
     arrange();
     open();
     type("you@example.com", "ada@example.com");
     fireEvent.click(screen.getByRole("button", { name: "Send reset link" }));
 
-    expect(await screen.findByText("Something went wrong. Please try again.")).toBeTruthy();
+    expect(await screen.findByText("Couldn't do that. Try again.")).toBeTruthy();
     await waitFor(() => expect(screen.getByRole("button", { name: "Send reset link" })).toBeEnabled());
   });
 
@@ -297,23 +297,24 @@ describe("the new-password form", () => {
     expect(where.at()).toBe("/?signin=login");
   });
 
-  it("shows the client's own words when it refuses, and words a failure with no message", async () => {
+  it("G14: words a refusal in our own sentence, never the client's, and an unknown failure as Couldn't do that", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
-    setNewPassword.mockRejectedValueOnce(new Error("New password should be different from the old password."));
+    setNewPassword.mockRejectedValueOnce(Object.assign(new Error("New password should be different from the old password."), { code: "same_password" }));
     await reach();
     type("At least 8 characters", "Abcdefghij1!x");
     type("Re-enter your password", "Abcdefghij1!x");
     await settle();
     submit();
     await settle(0);
-    expect(screen.getByText("New password should be different from the old password.")).toBeTruthy();
+    expect(screen.getByText("Choose a password you haven't used before.")).toBeTruthy();
+    expect(screen.queryByText("New password should be different from the old password.")).toBeNull();
     expect(screen.getByRole("button", { name: "Update password" })).toBeEnabled();
     expect(toastSuccess).not.toHaveBeenCalled();
 
     setNewPassword.mockRejectedValueOnce("odd");
     submit();
     await settle(0);
-    expect(screen.getByText("Something went wrong. Please try again.")).toBeTruthy();
+    expect(screen.getByText("Couldn't do that. Try again.")).toBeTruthy();
   });
 
   it("clears the messages on the next key", async () => {

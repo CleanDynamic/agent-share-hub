@@ -148,13 +148,9 @@ describe("signUpWithEmail", () => {
     await expect(signUpWithEmail(input)).resolves.toEqual({ outcome: "created", signedIn: false });
   });
 
-  it("passes any other refusal on in the client's own words", async () => {
+  it("G14: passes any other refusal on as its kind, never the client's words", async () => {
     signUp.mockResolvedValue({ data: { session: null }, error: { message: "Email rate limit exceeded" } });
-    await expect(signUpWithEmail(input)).resolves.toEqual({
-      outcome: "refused",
-      refusal: "unknown",
-      message: "Email rate limit exceeded",
-    });
+    await expect(signUpWithEmail(input)).resolves.toEqual({ outcome: "refused", refusal: "rate-limit" });
   });
 });
 
@@ -323,6 +319,6 @@ describe("resendSignupEmail", () => {
     expect(resend).toHaveBeenCalledWith({ type: "signup", email: "ada@example.com", options: { captchaToken: "tok-1" } });
 
     resend.mockResolvedValueOnce({ error: { message: "rate limited" } });
-    await expect(resendSignupEmail("ada@example.com")).resolves.toEqual({ sent: false, refusal: "unknown" });
+    await expect(resendSignupEmail("ada@example.com")).resolves.toEqual({ sent: false, refusal: "rate-limit" });
   });
 });

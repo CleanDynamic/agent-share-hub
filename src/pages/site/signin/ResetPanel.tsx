@@ -22,6 +22,7 @@ import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { calculatePasswordStrength, type PasswordStrength } from "@/components/auth/PasswordStrengthMeter";
+import { messageFor, refusalOf } from "@/lib/auth/authMessages";
 import { verifyEmailLink } from "@/lib/auth/emailLink";
 import { onPasswordRecovery, requestPasswordReset, setNewPassword } from "@/lib/auth/passwordReset";
 
@@ -126,14 +127,14 @@ export function ResetPanel() {
       // leaking which emails are registered.
       const request = await requestPasswordReset(cleanEmail, `${window.location.origin}/reset-password`, check.token);
       if (!request.sent) {
-        setRequestError(request.refusal === "captcha" ? VERIFY_FAILED : "Something went wrong. Please try again.");
+        setRequestError(messageFor(request.refusal ?? "unknown"));
         setRequestSubmitting(false);
         return;
       }
       setSubmittedEmail(cleanEmail);
       setMode("sent");
     } catch {
-      setRequestError("Something went wrong. Please try again.");
+      setRequestError(messageFor("unknown"));
     } finally {
       setRequestSubmitting(false);
       // G6: a token is good for one request; the widget makes the next one.
@@ -167,9 +168,8 @@ export function ResetPanel() {
       toast.success("Password updated. Sign in with your new password.");
       views.replaceWith("login", undefined, withoutDialog(`?${searchParams.toString()}`));
     } catch (err) {
-      const message =
-        err instanceof Error && err.message ? err.message : "Something went wrong. Please try again.";
-      setConfirmError(message);
+      // G14: our own sentence for the refusal, never the client's words.
+      setConfirmError(messageFor(refusalOf(err && typeof err === "object" ? (err as { code?: string; status?: number; message?: string }) : null)));
       setConfirmSubmitting(false);
     }
   };

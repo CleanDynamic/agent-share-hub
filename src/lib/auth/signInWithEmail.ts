@@ -24,9 +24,8 @@ export async function signInWithEmail(identifier: string, password: string, capt
   const { data, error } = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken } });
 
   if (error) {
-    const refusal = refusalOf(error);
-    // A refusal with no code we know is still a refusal of the credentials, as before.
-    return { outcome: "refused", refusal: refusal === "unknown" ? "credentials" : refusal };
+    // G12: one refusal for sign-in. Only a failed bot check, which says nothing about the account, is told apart.
+    return { outcome: "refused", refusal: refusalOf(error) === "captcha" ? "captcha" : "credentials" };
   }
 
   return { outcome: "signed-in", userId: data.user ? data.user.id : null };

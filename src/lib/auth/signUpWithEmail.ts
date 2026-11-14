@@ -20,7 +20,7 @@ export interface EmailSignUp {
  */
 export type EmailSignUpResult =
   | { outcome: "created"; signedIn: boolean }
-  | { outcome: "refused"; refusal: AuthRefusal; message: string };
+  | { outcome: "refused"; refusal: AuthRefusal };
 
 /**
  * Create an account with an email and a password.
@@ -50,7 +50,7 @@ export async function signUpWithEmail(input: EmailSignUp): Promise<EmailSignUpRe
     const message = error.message.toLowerCase();
     const taken = message.includes("already") && (message.includes("registered") || message.includes("exist"));
     if (taken) return { outcome: "created", signedIn: false };
-    return { outcome: "refused", refusal: refusalOf(error), message: error.message };
+    return { outcome: "refused", refusal: refusalOf(error) };
   }
 
   return { outcome: "created", signedIn: Boolean(data.session) };

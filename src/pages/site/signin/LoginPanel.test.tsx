@@ -242,7 +242,7 @@ describe("the refusals", () => {
     open();
     fill();
     submit();
-    expect(await screen.findByText("Something went wrong. Please try again.")).toBeTruthy();
+    expect(await screen.findByText("Couldn't do that. Try again.")).toBeTruthy();
     expect(primary()).toBeEnabled();
   });
 

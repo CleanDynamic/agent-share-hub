@@ -77,3 +77,14 @@ describe("G11: no screen says an address already has an account", () => {
     for (const source of sources) expect(source).not.toContain(text);
   });
 });
+
+describe("G14: the dialog never shows server text", () => {
+  const panels = ["LoginPanel", "SignupPanel", "ResetPanel", "VerifyPanel"].map((name) => readFileSync(`src/pages/site/signin/${name}.tsx`, "utf8"));
+
+  it("puts no error's own message on screen", () => {
+    for (const source of panels) {
+      expect(source).not.toMatch(/set\w*Error\([^)]*\.message\b/);
+      expect(source).not.toMatch(/set\w*Error\(\s*(err|error|e)\s*\)/);
+    }
+  });
+});

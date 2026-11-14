@@ -353,26 +353,31 @@ describe("creating the account", () => {
     expect(screen.queryByText(/already/i)).toBeNull();
   });
 
-  it("passes any other refusal on in the client's own words", async () => {
-    signUp.mockResolvedValue({ outcome: "refused", refusal: "unknown", message: "Email rate limit exceeded" });
+  it.each([
+    ["rate-limit", "Too many tries. Wait a minute, then try again."],
+    ["weak-password", "Choose a stronger password."],
+    ["unknown", "Couldn't do that. Try again."],
+  ])("G14: words a %s refusal in our own sentence, never the client's", async (refusal, sentence) => {
+    signUp.mockResolvedValue({ outcome: "refused", refusal });
     open();
     await fillAll();
     fireEvent.click(create());
     await act(async () => {});
 
-    const message = screen.getByText("Email rate limit exceeded");
+    const message = screen.getByText(sentence);
     expect(message.getAttribute("aria-live")).toBe("polite");
     expect(create()).toBeEnabled();
   });
 
-  it("says something went wrong when the request throws, and lets the reader try again", async () => {
+  it("G14: says Couldn't do that when the request throws, and lets the reader try again", async () => {
     signUp.mockRejectedValue(new Error("network down"));
     open();
     await fillAll();
     fireEvent.click(create());
     await act(async () => {});
 
-    expect(screen.getByText("Something went wrong. Please try again.")).toBeTruthy();
+    expect(screen.getByText("Couldn't do that. Try again.")).toBeTruthy();
+    expect(screen.queryByText("network down")).toBeNull();
     expect(create()).toBeEnabled();
   });
 
@@ -396,15 +401,15 @@ describe("creating the account", () => {
   });
 
   it("clears the form's message on the next key", async () => {
-    signUp.mockResolvedValue({ outcome: "refused", refusal: "unknown", message: "Email rate limit exceeded" });
+    signUp.mockResolvedValue({ outcome: "refused", refusal: "rate-limit" });
     open();
     await fillAll();
     fireEvent.click(create());
     await act(async () => {});
-    expect(screen.getByText("Email rate limit exceeded")).toBeTruthy();
+    expect(screen.getByText("Too many tries. Wait a minute, then try again.")).toBeTruthy();
 
     type("Your name", "Ada L");
-    expect(screen.queryByText("Email rate limit exceeded")).toBeNull();
+    expect(screen.queryByText("Too many tries. Wait a minute, then try again.")).toBeNull();
   });
 });
 
@@ -412,7 +417,7 @@ describe("G7: the server refuses the token", () => {
   beforeEach(() => vi.useFakeTimers());
 
   it("surfaces the refusal as our sentence", async () => {
-    signUp.mockResolvedValue({ outcome: "refused", refusal: "captcha", message: "captcha protection: request disallowed" });
+    signUp.mockResolvedValue({ outcome: "refused", refusal: "captcha" });
     open();
     await fillAll();
     fireEvent.click(create());

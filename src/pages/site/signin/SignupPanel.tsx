@@ -21,6 +21,7 @@ import { calculatePasswordStrength, type PasswordStrength } from "@/components/a
 import { useAuth } from "@/contexts/AuthContext";
 import { checkUsernameAvailability } from "@/lib/auth/checkUsernameAvailability";
 import { startOAuthSignIn } from "@/lib/auth/oauth";
+import { messageFor } from "@/lib/auth/authMessages";
 import { returnPathFrom } from "@/lib/auth/safeReturnPath";
 import { signUpWithEmail } from "@/lib/auth/signUpWithEmail";
 import { PRIVACY_REVIEWED, TERMS_REVIEWED } from "@/content/legal/reviewed";
@@ -206,7 +207,7 @@ export function SignupPanel() {
       });
 
       if (result.outcome !== "created") {
-        setError(result.refusal === "captcha" ? VERIFY_FAILED : result.message);
+        setError(messageFor(result.refusal));
         setIsSubmitting(false);
         return;
       }
@@ -221,7 +222,7 @@ export function SignupPanel() {
         views.replaceWith("verify", { email: cleanEmail });
       }
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(messageFor("unknown"));
       setIsSubmitting(false);
     } finally {
       // G6: a token is good for one request; the widget makes the next one.
