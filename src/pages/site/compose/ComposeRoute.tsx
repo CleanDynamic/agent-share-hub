@@ -47,6 +47,7 @@ import { SANDBOX_COMPOSER_ENABLED } from "@/lib/build/flags";
 
 import { ComposeSkeleton } from "./ComposeSkeleton";
 import { preloadComposer } from "./preload";
+import { offerTutorial } from "./tutorialStore";
 
 /** Its own chunk: the composer is heavy, and nothing else should pay for it. */
 const ComposePage = lazy(() => import("./ComposePage"));
@@ -76,7 +77,7 @@ const composeParentKey = (buildId: string | undefined) => ["build", "getBuildPar
 export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
   const { buildId } = useParams<{ buildId: string }>();
   const location = useLocation();
-  const { isLoggedIn, loading } = useAuth();
+  const { isLoggedIn, loading, user } = useAuth();
 
   /* An arrival from intake (a transcript, a repo or a Build File, which carry
      `state.intake`) opens the legacy workspace: its tray and proposal review are
@@ -134,6 +135,16 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
   const rebuild = Boolean(buildId) && !startedNew && Boolean(check.data?.parent_build_id);
   const showLegacy = !loading && isLoggedIn && (hasFrom || rebuild);
   useHideFrameChrome(showLegacy);
+
+  /* THE TUTORIAL, ON A MAKER'S FIRST VISIT. Once the new composer is what this address shows (not the skeleton, not the legacy
+     workspace), a maker who has not seen the editor's tutorial is offered it: it opens when the composer's code is in and the
+     page has settled. tutorialStore.ts holds the rule and the open bit; the window itself loads with the composer's others. */
+  const composerUp = SANDBOX_COMPOSER_ENABLED && !loading && isLoggedIn && !showLegacy && !checking && !waitingForRecord && !waitingForLibrary;
+  const makerId = user?.id;
+  useEffect(() => {
+    if (!composerUp) return;
+    return offerTutorial(makerId, preloadComposer());
+  }, [composerUp, makerId]);
 
   if (loading) return <ComposeSkeleton />;
   if (!isLoggedIn) {

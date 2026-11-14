@@ -36,9 +36,10 @@ import { orderKeys } from "@/lib/build/sessionLayout";
 import { refTo } from "@/lib/build/thread";
 
 import { ClearBuildDialog } from "./ClearBuildDialog";
-import { RecentlyRemovedWindow as RecentlyRemovedDialog } from "./composerWindows";
+import { RecentlyRemovedWindow as RecentlyRemovedDialog, TutorialWindow } from "./composerWindows";
 import { SessionRemoveWindow, type SessionRemoval } from "./removePieces";
 import { buildSessionRowsKey } from "./useComposeSessions";
+import { useTutorialOpen } from "./tutorialStore";
 import type { BuildHistoryApi } from "./useBuildHistory";
 import type { ComposeNodes } from "./useComposeNodes";
 
@@ -399,6 +400,9 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
     [removeTile, removeTiles, removeFile, askRemoveSessions, removeSelection, duplicate, insertFromLibrary, convertTargets, convert, fold, group, ungroup, grouped, clearCounts, history.removed.length],
   );
 
+  /* The tutorial's open bit is the page's, not this hook's: the route opens it on a first visit, Build options after that. */
+  const tutorialOpen = useTutorialOpen();
+
   const dialogs = (
     <>
       <RecentlyRemovedDialog open={listOpen} entries={history.removed} onRestore={(id) => void history.restoreRemoved(id)} onClose={() => setListOpen(false)} />
@@ -412,6 +416,7 @@ export function useBuildActions({ buildId, made, onCleared, nodes, history, brid
         }}
       />
     <ShortcutsDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
+    <TutorialWindow open={tutorialOpen} />
     <ConvertWindow
       conversion={converting}
       onClose={() => setConverting(null)}

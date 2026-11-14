@@ -3,7 +3,7 @@
    Undo and Redo are 28 square ghost icon buttons (the `undo` and `redo` glyphs at 16, stroke 1.4). Their tooltips name the step:
    "Undo: Removed Prompt 3", "Redo: Moved Session 2"; with nothing to do they are greyed and say "Nothing to undo" or "Nothing to redo".
    "Build options" is a 28 square ghost button with the dots; its menu is "Recently removed…" (with a count at the right when there
-   is one), "Keyboard shortcuts" and, after a rule, "Clear the build…" in the danger text colour.
+   is one), "Tutorial" (the editor's tutorial, opened again), "Keyboard shortcuts" and, after a rule, "Clear the build…" in the danger text colour.
 
    The row's gap does the spacing: this draws three buttons and no box. A phone draws them in the header, at touch size. */
 
@@ -24,6 +24,7 @@ import { COUNT } from "./modalRecipes";
 import { DANGER } from "./referencePieces";
 import { menuItem, menuSurface } from "./refinedStyles";
 import { useReason } from "./removePieces";
+import { TUTORIAL_MENU_COPY, openTutorial } from "./tutorialStore";
 import { useBuildActionsContext } from "./useBuildActions";
 import { useBuildHistoryContext } from "./useBuildHistory";
 import { size } from "@/lib/theme/space";
@@ -121,6 +122,9 @@ export function BuildTitleActions({ phone = false, keys }: { phone?: boolean; ke
                   {actions.recentlyRemoved.count > 0 ? <span style={COUNT}>{actions.recentlyRemoved.count}</span> : null}
                 </Menu.Item>
               ) : null}
+              <Menu.Item data-testid="build-options-tutorial" onSelect={openTutorial} style={menuItem(true, phone)}>
+                {TUTORIAL_MENU_COPY.item}
+              </Menu.Item>
               {keys?.shortcuts}
               {phone ? null : (
                 <Menu.Item data-testid="build-options-shortcuts" onSelect={actions.shortcuts.open} style={{ ...menuItem(true, phone), justifyContent: "space-between", gap: 12 }}>
