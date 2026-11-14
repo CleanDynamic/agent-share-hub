@@ -6,6 +6,14 @@
 
 import { bayer, clamp01, CoarseGrid, DotBatch, ease, fbm3, pn, smoothstep } from "@/lib/dots/engine";
 
+import { CODE_COLUMN, CODE_LINE, type CodeSprites } from "./codeSprites";
+
+/** Code style (Reference D): no character within the dialog grown by 10 sideways and 14 up and down. */
+export const CODE_CLEAR_X = 10;
+export const CODE_CLEAR_Y = 14;
+/** The cursor clears a round hole this wide instead of pushing. */
+const CODE_HOLE = 46;
+
 /** The one speed the reveal, the wind-down and the ripple travel at. */
 export const V = 280;
 /** The wind-down is over, and the canvas goes, once `back` passes this. */
@@ -70,6 +78,12 @@ export class HalftoneField {
   private threshold = new Float32Array(0);
   private ox = new Float32Array(0);
   private oy = new Float32Array(0);
+  /* The code style's cells, worked out once per layout: centre, signed distance to the dialog, Bayer threshold. */
+  private cells = 0;
+  private cx = new Float32Array(0);
+  private cy = new Float32Array(0);
+  private cdm = new Float32Array(0);
+  private cthreshold = new Float32Array(0);
 
   /* The pointer, smoothed, and the gain that eases in while it is over the page. */
   private pointerX = 0;
@@ -127,6 +141,43 @@ export class HalftoneField {
     this.threshold = threshold;
     this.ox = new Float32Array(n);
     this.oy = new Float32Array(n);
+    this.layoutCode(width, height, dialog);
+  }
+
+  /** The code style's grid: columns 12 apart, lines 23.5 apart, centred in the viewport, none whose box meets the dialog
+      grown by 10 sideways and 14 up and down. */
+  private layoutCode(width: number, height: number, dialog: Rect) {
+    const centreX = width / 2;
+    const centreY = height / 2;
+    const clear = { left: dialog.left - CODE_CLEAR_X, right: dialog.right + CODE_CLEAR_X, top: dialog.top - CODE_CLEAR_Y, bottom: dialog.bottom + CODE_CLEAR_Y };
+    const firstCol = -Math.ceil(centreX / CODE_COLUMN);
+    const lastCol = Math.ceil((width - centreX) / CODE_COLUMN);
+    const firstRow = -Math.ceil(centreY / CODE_LINE);
+    const lastRow = Math.ceil((height - centreY) / CODE_LINE);
+    const max = (lastCol - firstCol + 1) * (lastRow - firstRow + 1);
+    const cx = new Float32Array(max);
+    const cy = new Float32Array(max);
+    const cdm = new Float32Array(max);
+    const cthreshold = new Float32Array(max);
+    let n = 0;
+    for (let row = firstRow; row <= lastRow; row++) {
+      for (let col = firstCol; col <= lastCol; col++) {
+        const x = centreX + col * CODE_COLUMN;
+        const y = centreY + row * CODE_LINE;
+        const meets = x + CODE_COLUMN / 2 > clear.left && x - CODE_COLUMN / 2 < clear.right && y + CODE_LINE / 2 > clear.top && y - CODE_LINE / 2 < clear.bottom;
+        if (meets) continue;
+        cx[n] = x;
+        cy[n] = y;
+        cdm[n] = signedDistance(x, y, dialog);
+        cthreshold[n] = bayer(col, row);
+        n++;
+      }
+    }
+    this.cells = n;
+    this.cx = cx;
+    this.cy = cy;
+    this.cdm = cdm;
+    this.cthreshold = cthreshold;
   }
 
   /** Where the pointer is, in viewport pixels, or null when it has left the page. */
@@ -242,6 +293,58 @@ export class HalftoneField {
       batch.add(colour, this.x[i] + ox + 4.4 * (wx - 0.5), this.y[i] + oy + 7 * (f - 0.5), radius);
     }
     batch.flush(ctx, this.input.palette);
+  }
+
+  /**
+   * Draw the code style at time `t` (Reference D): the same field, wx, dw, lead, trail, crest and signing-in ripple as the
+   * dots, its own density and characters, from the sprite sheet at whole device pixels. Characters never move; the cursor
+   * clears a round hole of radius 46.
+   */
+  drawCode(ctx: CanvasRenderingContext2D, t: number, openedAt: number, closedAt: number | null, sprites: CodeSprites, ratio: number) {
+    if (!this.input) return;
+    const { grid } = this;
+    const at = new Float64Array(3);
+    const front = V * (t - openedAt);
+    const back = closedAt === null ? 0 : V * (t - closedAt);
+    const ripple = this.busy;
+    const hole = this.over && this.hasPointer;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    for (let i = 0; i < this.cells; i++) {
+      const x = this.cx[i];
+      const y = this.cy[i];
+      if (hole) {
+        const dx = x - this.pointerX;
+        const dy = y - this.pointerY;
+        if (dx * dx + dy * dy < CODE_HOLE * CODE_HOLE) continue;
+      }
+      grid.locate(x, y, at);
+      const f = grid.sample(F, at);
+      const wx = grid.sample(WX, at);
+      const dm = this.cdm[i];
+      const dw = dm + 60 * (wx - 0.5);
+      const lead = clamp01((front + 40 - dw) / 80);
+      const trail = closedAt === null ? 1 : clamp01((dw - back + 40) / 80);
+      if (lead * trail < 0.5) continue;
+      let v = clamp01((f - 0.44) / 0.3);
+      const c = (front - dw) / 55;
+      if (c < 3) v += 0.5 * Math.exp(-c * c) * (1 - v);
+      if (ripple > 0) {
+        const rg = 0.5 + 0.5 * Math.cos((2 * Math.PI * (dw - V * t)) / 210);
+        v += 0.42 * ripple * rg ** 4 * Math.exp(-dm / 300) * (1 - v);
+      }
+      let char: number;
+      if (v > 0.8) char = 4;
+      else if (v > 0.62) char = 3;
+      else if (v > 0.34) char = 2;
+      else if (v > 0.2) char = 1;
+      else if (v > 0.1) char = 0;
+      else if (v >= 0.03 && this.cthreshold[i] <= 0.06) char = 0;
+      else continue;
+      // The sheet is in CODE_CHARS order: ".", "o", "0", "1", "8".
+      const dx = Math.round((x - CODE_COLUMN / 2) * ratio);
+      const dy = Math.round((y - CODE_LINE / 2) * ratio);
+      ctx.drawImage(sprites.sheet, char * sprites.width, 0, sprites.width, sprites.height, dx, dy, sprites.width, sprites.height);
+    }
   }
 
   /** The wind-down is over. */

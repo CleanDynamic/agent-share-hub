@@ -371,6 +371,8 @@ export function SignInDialogFrame({
           ref={scrim}
           forceMount
           data-testid="signin-scrim"
+          /* A click on the scrim closes (G5); a press held on it is code style (G21), so it is the click, not the press. */
+          onClick={() => onOpenChange(false)}
           style={{
             position: "fixed",
             inset: 0,
@@ -395,6 +397,7 @@ export function SignInDialogFrame({
             data-view={view}
             aria-describedby={undefined}
             onCloseAutoFocus={returnFocus}
+            onPointerDownOutside={(event) => event.preventDefault()}
             /* Radix hides the rest of the page from assistive technology; the attribute says so to the dialog's own role too (G14). */
             aria-modal="true"
             style={{

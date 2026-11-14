@@ -121,6 +121,13 @@ const CATEGORIES: Category[] = [
 ];
 
 const CAPPED: Record<string, { max: number; why: string }> = {
+  "src/pages/site/signin/codeSprites.ts": {
+    max: 10,
+    why:
+      "Reference D, the sign-in layer's code style, from the approved prototype: one colour per character per theme, " +
+      "one per value. Dusk . #3C8333, o #58BA71, 0 #6BE2A0, 1 #4FA862, 8 #C9F6DD; Noon . #7FE85C, o #56C93A, " +
+      "0 #3F9230, 1 #2C6B22, 8 #000000. They are baked into a sprite sheet drawn on a canvas, which cannot read a var().",
+  },
   "src/pages/site/signin/halftoneField.ts": {
     max: 10,
     why:
