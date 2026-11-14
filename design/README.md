@@ -141,6 +141,12 @@ Deliberate, and expected in every compare report:
   - reset and verify are views of the same dialog, each under its existing title;
   - around the dialog a halftone dot layer plays, and while a button or a key is held it is drawn as Geist Mono characters; neither is on any board.
 - **Loading states are dot fields (Part E).** Every skeleton keeps the box the boards and the code give it, but is drawn as a living green dot field rather than a `--well` or `--recess` block; the building blocks' characters and the spinner's ring are dots too (InlineLoader). No board draws a loading state, so no compare changes; a screenshot taken while a page loads does.
+- **Dragging a step in the build editor (Prompt 6).** No board draws the editor while something is held, nor a build with parts in the editor; these values are not on any board and differ from what the earlier prompts built:
+  - a part's group is padded 16 at the sides (13 above and below, as before), so the tiles inside it stand at 344 to 992 at 1440, where they stood at 341 to 995;
+  - the skeleton behind a held tile stands on whole pixels on the 4px grid: part frame 328, lane 336, sockets 340, tiles 344 (mirrored at 992, 996, 1000, 1008); a lane wraps its sockets only, 4 outside them, not the session's header; a tile's tick is 24 below its socket's top;
+  - a held list tile's rail stands from the part frame: rail 312, ticks 316 to 324, its numbers ending at 310 (off the 4px grid, so a two-digit number clears Sources at 296); it needs 32 of room left of the frame, and a container of 100 places or more draws none;
+  - a tile is picked up by a press anywhere on it that is not a control (a mouse on a 4px move or a 150ms hold, a finger on a 250ms hold on any device); the held copy keeps to its column and gives a short sideways shake (`SHAKE_MS`, `SHAKE_STEPS` in `src/lib/build/buildMotion.ts`) when picked up, at each change of place and when it lands; none under reduced motion;
+  - in the editor only, a tile's footer line and an inner card's number no longer inherit the page's 1.55 line height, so tiles are whole pixels tall: up to 2.69 shorter than before (a prompt tile 127.69 to 125, an agent 267.28 to 265). The Build reader's tiles are unchanged.
 
 ## A note on the sample content
 
