@@ -142,3 +142,23 @@ describe("the target", () => {
     expect(placeLine("Build", 2, 4)).toBe("Build · 3 of 4");
   });
 });
+
+describe("the spacing constants (Prompt 6 G6)", () => {
+  /** Off the 4px grid, each for a reason; everything else in the module is a multiple of 4. */
+  const OFF_GRID: Record<string, string> = {
+    FRAME_NUMBER_END: "18: a two-digit number must end at 310 to clear Sources at 296 (approved)",
+    TICK_FROM: "22: today's rule, kept for a nested tile, a session, a part and a build with no parts",
+    NUMBER_END: "26: today's rule, kept as TICK_FROM",
+    RAIL_INSET: "14: today's rule, kept as TICK_FROM",
+    SESSION_TICK_DOWN: "22: session and part ticks are unchanged (G5)",
+    SOCKET_NUMBER_IN: "10: SV-05 P4's numbers inside an import's sockets, outside this prompt",
+    LANE_RADIUS: "14: a radius, not a spacing; radii stay concentric as they are",
+    FRAME_PLACES_MAX: "100: a count of places, not a spacing",
+  };
+
+  it("are multiples of 4, or listed with the reason they are not", async () => {
+    const module = (await import("./sortLayout")) as Record<string, unknown>;
+    const off = Object.entries(module).filter(([name, value]) => typeof value === "number" && value % 4 !== 0 && !(name in OFF_GRID));
+    expect(off).toEqual([]);
+  });
+});
