@@ -100,6 +100,27 @@ describe("signing in", () => {
     await waitFor(() => expect(where.at()).toBe("/b2/invoice-triage-agent"));
   });
 
+  it.each([
+    ["an absolute address", "https%3A%2F%2Fexample.com"],
+    ["a protocol-relative address", "%2F%2Fexample.com"],
+    ["a slash-backslash address", "%2F%5Cexample.com"],
+  ])("G16: lands on / for %s in redirect, and never asks where next", async (_name, value) => {
+    signIn.mockResolvedValue({ outcome: "signed-in", userId: "u-1" });
+    const where = open(`/login?redirect=${value}`);
+    fill();
+    submit();
+    await waitFor(() => expect(where.at()).toBe("/"));
+    expect(resolvePostAuthRoute).not.toHaveBeenCalled();
+  });
+
+  it("G16: lands on / for a hostile returnTo", async () => {
+    signIn.mockResolvedValue({ outcome: "signed-in", userId: "u-1" });
+    const where = open("/login?returnTo=javascript%3Aalert(1)");
+    fill();
+    submit();
+    await waitFor(() => expect(where.at()).toBe("/"));
+  });
+
   it("goes Home when the session came back without a user", async () => {
     signIn.mockResolvedValue({ outcome: "signed-in", userId: null });
     const where = open();
@@ -178,6 +199,12 @@ describe("a visitor who is already signed in", () => {
   it("is sent Home at once", async () => {
     auth.isLoggedIn = true;
     const where = open("/login");
+    await waitFor(() => expect(where.at()).toBe("/"));
+  });
+
+  it("G16: is sent to / when the redirect leaves the site", async () => {
+    auth.isLoggedIn = true;
+    const where = open("/login?redirect=https%3A%2F%2Fexample.com");
     await waitFor(() => expect(where.at()).toBe("/"));
   });
 

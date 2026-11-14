@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const auth = { isLoggedIn: true, isCreator: false, loading: false, profileLoading: false };
@@ -21,7 +21,32 @@ function at(requireCreator = false) {
 
 beforeEach(() => Object.assign(auth, { isLoggedIn: true, isCreator: false, loading: false, profileLoading: false }));
 
+/** The sign-in page as the guard reaches it: shows the address it was sent to. */
+function SignIn() {
+  const { pathname, search } = useLocation();
+  return <p data-testid="signin-at">{`${pathname}${search}`}</p>;
+}
+
+function atAddress(entry: string) {
+  return render(
+    <MemoryRouter initialEntries={[entry]}>
+      <Routes>
+        <Route path="/private/*" element={<ProtectedRoute><p>the page</p></ProtectedRoute>} />
+        <Route path="/login" element={<SignIn />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+const redirectOf = () => new URLSearchParams(screen.getByTestId("signin-at").textContent!.split("?")[1]).get("redirect");
+
 describe("ProtectedRoute", () => {
+  it("G16: sends / as the return when the path would leave the site", () => {
+    Object.assign(auth, { isLoggedIn: false });
+    atAddress("/private//example.com");
+    expect(redirectOf()).toBe("/");
+  });
+
   it("renders the page once the session is known, with the profile still pending", () => {
     Object.assign(auth, { profileLoading: true });
     at();

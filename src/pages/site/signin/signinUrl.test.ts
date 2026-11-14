@@ -32,5 +32,8 @@ describe("the dialog in the address", () => {
   it("sends a retired address to Home on its view, with its query, its path token and its hash", () => {
     expect(addressFor("reset", "?redirect=%2Fx", "#access_token=a", "tok")).toEqual({ pathname: "/", search: "?redirect=%2Fx&token=tok&signin=reset", hash: "#access_token=a" });
     expect(addressFor("verify", "?token_hash=h&type=signup", "", undefined)).toEqual({ pathname: "/", search: "?token_hash=h&type=signup&signin=verify", hash: "" });
+    // G16: a legacy address's return goes through safeReturnPath on the way in.
+    expect(addressFor("login", "?redirect=https%3A%2F%2Fexample.com", "")).toEqual({ pathname: "/", search: "?redirect=%2F&signin=login", hash: "" });
+    expect(addressFor("login", "?returnTo=%2F%2Fexample.com&redirect=%2Flibrary", "")).toEqual({ pathname: "/", search: "?returnTo=%2F&redirect=%2Flibrary&signin=login", hash: "" });
   });
 });

@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { safeReturnPath } from "@/lib/auth/safeReturnPath";
 import { RoutePlaceholder } from "@/lib/routing/RoutePlaceholder";
 
 interface ProtectedRouteProps {
@@ -18,7 +19,8 @@ export function ProtectedRoute({ children, requireCreator }: ProtectedRouteProps
   }
 
   if (!isLoggedIn) {
-    return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
+    // G16: the return goes through safeReturnPath before it is written into the address.
+    return <Navigate to={`/login?redirect=${encodeURIComponent(safeReturnPath(location.pathname))}`} replace />;
   }
   if (requireCreator && !isCreator) return <Navigate to="/" replace />;
 

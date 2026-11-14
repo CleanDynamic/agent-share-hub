@@ -23,6 +23,7 @@ import type { OAuthProvider } from "@/components/auth/OAuthButtons";
 import { useAuth } from "@/contexts/AuthContext";
 import { startOAuthSignIn } from "@/lib/auth/oauth";
 import { resolvePostAuthRoute } from "@/lib/auth/postAuthRoute";
+import { returnPathFrom } from "@/lib/auth/safeReturnPath";
 import { signInWithEmailOrUsername } from "@/lib/auth/signInWithEmailOrUsername";
 
 import { loginCanSubmit } from "./authModel";
@@ -34,8 +35,8 @@ export function LoginPanel() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { isLoggedIn } = useAuth();
-  // Honour both the existing `redirect` param and the `returnTo` alias.
-  const redirectParam = searchParams.get("redirect") || searchParams.get("returnTo");
+  // Honour both the existing `redirect` param and the `returnTo` alias, through safeReturnPath (G16): only a path here.
+  const redirectParam = returnPathFrom(searchParams);
 
   const [emailOrUsername, setEmailOrUsername] = useState("");
   const [password, setPassword] = useState("");

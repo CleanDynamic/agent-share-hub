@@ -5,6 +5,8 @@
    address is the page's own again. A dialog that arrived by address (an emailed link, /login from a guard) has no depth:
    closing it replaces the address with the page's, without the dialog's parameters. */
 
+import { safeReturnPath } from "@/lib/auth/safeReturnPath";
+
 export const SIGNIN_PARAM = "signin";
 
 export type SignInView = "login" | "signup" | "reset" | "verify";
@@ -54,6 +56,11 @@ export const deeper = (state: unknown) => ({ signinDepth: depthOf(state) + 1 });
 /** The address a retired sign-in page now opens: Home, with the dialog on its view, keeping the query, the path's token and the hash. */
 export function addressFor(view: SignInView, search: string, hash: string, token?: string): { pathname: string; search: string; hash: string } {
   const next = new URLSearchParams(search);
+  // G16: a return address arriving at a legacy address goes through the gate on the way in.
+  for (const key of ["redirect", "returnTo"]) {
+    const value = next.get(key);
+    if (value !== null) next.set(key, safeReturnPath(value));
+  }
   if (token && !next.has("token")) next.set("token", token);
   next.set(SIGNIN_PARAM, view);
   return { pathname: "/", search: `?${next.toString()}`, hash };
