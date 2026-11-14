@@ -352,8 +352,9 @@ describe("F31, F33 and F34 · Add a dataset's form conventions", () => {
     expect(option.style.boxShadow).toBe("");
     fireEvent.click(option);
     expect(option.getAttribute("aria-pressed")).toBe("true");
-    // The selected recipe (its fill, edge and ring), never the well a text field sits in. jsdom keeps the ring, not a var() fill.
-    expect(option.style.boxShadow).toBe("var(--selected-ring)");
+    // The selected recipe is the selected edge alone (no ring), never the well a text field sits in. jsdom keeps shadows, not a var() edge.
+    expect(option.style.boxShadow).not.toBe("var(--selected-ring)");
+    expect(option.style.boxShadow).not.toBe("var(--well-shadow)");
     expect((screen.getByLabelText("Name") as HTMLInputElement).style.boxShadow).toBe("var(--well-shadow)");
   });
 });

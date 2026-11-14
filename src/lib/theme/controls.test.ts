@@ -337,7 +337,7 @@ describe("the sheet is anchored, and its style knows it", () => {
       expect(style.borderWidth, side).toBeUndefined();
       expect(style.borderStyle, side).toBeUndefined();
       // The colour is still ours — it is the width that belongs to the layout.
-      expect(style.borderColor, side).toBe("var(--glass-border)");
+      expect(style.borderColor, side).toBe("var(--window-border)");
     }
   });
 

@@ -1,5 +1,5 @@
-// UI-P36 — `/reset-password` and `/reset-password/:token` in the entrance's
-// frame: every state, handler and rule of pages/ResetPassword.tsx, held to what
+// The reset views of the sign-in dialog (was UI-P36's `/reset-password` and `/reset-password/:token` page, whose
+// path token now arrives as `?token=`): every state, handler and rule of pages/ResetPassword.tsx, held to what
 // it did — the request form, the three ways an emailed link arrives, the
 // new-password form's checks, and the dead link.
 //
@@ -22,11 +22,10 @@ vi.mock("@/lib/auth/passwordReset", () => ({
 }));
 vi.mock("@/lib/auth/emailLink", () => ({ verifyEmailLink: (...args: unknown[]) => verifyEmailLink(...args) }));
 vi.mock("sonner", () => ({ toast: { success: (...args: unknown[]) => toastSuccess(...args) } }));
-vi.mock("@/lib/build/signals", () => ({ countReproducedToday: vi.fn().mockResolvedValue(48) }));
-vi.mock("@/lib/build/gallery", () => ({ getGalleryStats: vi.fn().mockResolvedValue({ inGallery: 1284 }) }));
+// A finished reset shows the Sign in view, which asks who is signed in: nobody.
+vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ isLoggedIn: false, user: null, session: null, loading: false }) }));
 
-import { ResetPasswordPage } from "./ResetPasswordPage";
-import { renderAt, setViewport } from "./signinTest";
+import { renderDialog, setViewport } from "./signinTest";
 
 let stopListening = vi.fn();
 let recovery: () => void = () => {};
@@ -46,8 +45,15 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const open = (url = "/reset-password", pattern = "/reset-password") => renderAt(<ResetPasswordPage />, url, pattern);
-const openLink = (url: string) => open(url, url.startsWith("/reset-password/") ? "/reset-password/:token" : "/reset-password");
+/** The old address, as the redirect hands it to the dialog: the query kept, a path token carried as `?token=`. */
+const open = (url = "/reset-password") => {
+  const [path, query = ""] = url.split("?");
+  const search = new URLSearchParams(query);
+  const token = path.split("/")[2];
+  if (token) search.set("token", token);
+  return renderDialog("reset", search.toString());
+};
+const openLink = open;
 
 const type = (placeholder: string, value: string) => fireEvent.change(screen.getByPlaceholderText(placeholder), { target: { value } });
 
@@ -61,11 +67,12 @@ describe("the request form", () => {
     expect(screen.getByRole("button", { name: "Send reset link" })).toBeDisabled();
   });
 
-  it("is the title and the way back, and has no Sign in · Join free switch", async () => {
+  it("is the title and the way back in row 1, and has no Sign in · Join free switch", () => {
     open();
-    await waitFor(() => expect(document.title).toBe("Reset your password · OpenBuilds.ai"));
-    expect(screen.queryByRole("link", { name: "Join free" })).toBeNull();
-    expect(screen.getAllByRole("link", { name: "Back to sign in" })[0].getAttribute("href")).toBe("/login");
+    expect(screen.queryByRole("button", { name: "Join free" })).toBeNull();
+    // The dialog's way back is row 1's link alone (D3).
+    expect(screen.getAllByRole("link", { name: "Back to sign in" })).toHaveLength(1);
+    expect(screen.getByRole("link", { name: "Back to sign in" }).getAttribute("href")).toBe("/?signin=login");
   });
 
   it("asks for the link to land back on this page, and says to check the inbox, naming the address", async () => {
@@ -120,7 +127,8 @@ describe("an emailed link", () => {
     openLink("/reset-password/abc");
 
     expect(screen.getByRole("heading", { level: 2, name: "Checking your reset link…" })).toBeTruthy();
-    expect(screen.getByRole("status").textContent).toContain("We're confirming the link is still valid.");
+    // The words' status, beside the InlineLoader's own (G27).
+    expect(screen.getAllByRole("status").find((region) => region.getAttribute("data-ui") !== "inline-loader")!.textContent).toContain("We're confirming the link is still valid.");
     expect(verifyEmailLink).toHaveBeenCalledTimes(1);
     expect(verifyEmailLink.mock.calls[0][0]).toEqual({ tokenHash: "abc", code: "", type: "recovery" });
 
@@ -169,8 +177,8 @@ describe("an emailed link", () => {
     const isCancelled = verifyEmailLink.mock.calls[0][1] as () => boolean;
     expect(isCancelled()).toBe(false);
 
-    // Leave the page: the router sends the visitor somewhere this route does not match.
-    fireEvent.click(screen.getByRole("link", { name: "Back" }));
+    // Close the dialog: the address loses the dialog and the link's parameters, and the view goes.
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
     await waitFor(() => expect(where.at()).toBe("/"));
     expect(stopListening).toHaveBeenCalledTimes(1);
     expect(isCancelled()).toBe(true);
@@ -178,14 +186,13 @@ describe("an emailed link", () => {
 
   it("offers a new link from the dead-link state: back to the request form, with the address cleaned", async () => {
     verifyEmailLink.mockResolvedValue(false);
-    openLink("/reset-password/abc");
+    const where = openLink("/reset-password/abc?code=stale");
     await screen.findByRole("heading", { name: "This reset link doesn't work" });
 
-    window.history.replaceState({}, "", "/reset-password/abc?code=stale");
     fireEvent.click(screen.getByRole("button", { name: "Request a new one" }));
 
     expect(await screen.findByRole("heading", { level: 2, name: "Reset your password" })).toBeTruthy();
-    expect(window.location.pathname + window.location.search).toBe("/reset-password");
+    expect(where.at()).toBe("/?signin=reset");
   });
 });
 
@@ -262,7 +269,7 @@ describe("the new-password form", () => {
 
     expect(setNewPassword).toHaveBeenCalledWith("Abcdefghij1!x");
     expect(toastSuccess).toHaveBeenCalledWith("Password updated. Sign in with your new password.");
-    expect(where.at()).toBe("/login");
+    expect(where.at()).toBe("/?signin=login");
   });
 
   it("shows the client's own words when it refuses, and words a failure with no message", async () => {

@@ -117,7 +117,8 @@ export function HeaderSearch({
           label="Search builds"
           hint="/"
           width={width ?? 240}
-          style={{ height: 32 }}
+          /* The surface ladder: the header's field is a well that sits directly on the page. */
+          style={{ height: 32, background: t.wellOnPage }}
           placeholder={width !== undefined && width < 240 ? "Search builds" : "Search builds, makers, tools"}
           className={INPUT_CLASS}
           maxLength={SEARCH_MAX}

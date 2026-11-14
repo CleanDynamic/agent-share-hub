@@ -16,6 +16,7 @@ import { SHORTCUT_COPY, shortcutLabel } from "@/lib/build/shortcuts";
 import { CLEAR_COPY } from "@/lib/build/componentMenus";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
+import { hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 
 import { MenuContent } from "./ComposeMenu";
@@ -54,7 +55,7 @@ export function TitleIcon({ glyph, label, phone, disabled, style, ...rest }: Tit
         boxSizing: "border-box",
         borderRadius: 7,
         border: "1px solid transparent",
-        background: state.hovered && !disabled ? t.controlOn : "transparent",
+        background: state.hovered && !disabled ? hoverFill() : "transparent",
         color: disabled ? t.textDisabled : state.hovered ? t.text : t.text2,
         display: "inline-flex",
         alignItems: "center",

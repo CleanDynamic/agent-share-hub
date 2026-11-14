@@ -1,4 +1,4 @@
-/* UI-P36 — `/signup` in the entrance's frame: the container.
+/* The Join free view of the sign-in dialog: the container (was UI-P36's `/signup` page).
 
    A REPAINT OF THE FORM, NOT A REWRITE OF JOINING. This is `pages/Signup.tsx`'s
    state and handlers, in the same order and with the same words: the username is
@@ -7,7 +7,7 @@
    the email is checked when it is left, the password's strength is worked out
    200ms after the last key, a signed-in visitor is sent Home, and a successful
    sign-up goes to onboarding when the project returned a session and otherwise
-   to the pending-verification page with the address remembered.
+   to the pending-verification view with the address remembered (in the dialog, the verify view replaces this one).
 
    What the Supabase call became is only where it lives: a named function in
    `src/lib/auth/`, since a component may not call Supabase. */
@@ -15,7 +15,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { SeoHead } from "@/components/SeoHead";
 import type { InputValidation } from "@/components/auth/AuthInput";
 import type { OAuthProvider } from "@/components/auth/OAuthButtons";
 import { calculatePasswordStrength, type PasswordStrength } from "@/components/auth/PasswordStrengthMeter";
@@ -26,9 +25,9 @@ import { signUpWithEmail } from "@/lib/auth/signUpWithEmail";
 import { PRIVACY_REVIEWED, TERMS_REVIEWED } from "@/content/legal/reviewed";
 
 import { signupCanSubmit } from "./authModel";
-import { SignInShell } from "./SignInShell";
 import { SignupForm } from "./SignupForm";
-import { SITE_NAME } from "@/lib/site";
+import { setSigningIn } from "./signinActivity";
+import { useSignInNavigation } from "./useSignInNavigation";
 
 const EMAIL_REGEX = /^[^@]+@[^@]+\.[^@]+$/;
 
@@ -48,8 +47,9 @@ function readSavedDraft(): SavedDraft | null {
   }
 }
 
-export function SignupPage() {
+export function SignupPanel() {
   const navigate = useNavigate();
+  const views = useSignInNavigation();
   const { isLoggedIn } = useAuth();
 
   const [saved] = useState(readSavedDraft);
@@ -86,6 +86,12 @@ export function SignupPage() {
       /* the form is simply empty on the way back */
     }
   };
+
+  // The halftone layer's signing-in ripple, while the request or a provider is out.
+  useEffect(() => {
+    setSigningIn(isSubmitting || loadingProvider !== null);
+    return () => setSigningIn(false);
+  }, [isSubmitting, loadingProvider]);
 
   // Already signed in — auth pages aren't for you.
   useEffect(() => {
@@ -202,7 +208,7 @@ export function SignupPage() {
         navigate("/onboarding", { replace: true });
       } else {
         sessionStorage.setItem("pending_verification_email", cleanEmail);
-        navigate("/verify-email", { state: { email: cleanEmail }, replace: true });
+        views.replaceWith("verify", { email: cleanEmail });
       }
     } catch {
       setError("Something went wrong. Please try again.");
@@ -222,50 +228,45 @@ export function SignupPage() {
   };
 
   return (
-    <>
-      <SeoHead title="Join" description={`Create a free ${SITE_NAME} account.`} path="/signup" noIndex />
-      <SignInShell mode="signup">
-        <SignupForm
-          displayName={displayName}
-          username={username}
-          email={email}
-          password={password}
-          agreedToTerms={agreedToTerms}
-          onDisplayNameChange={(value) => {
-            setDisplayName(value);
-            setError("");
-          }}
-          onUsernameChange={handleUsernameChange}
-          onEmailChange={handleEmailChange}
-          onEmailBlur={handleEmailBlur}
-          onPasswordChange={(value) => {
-            setPassword(value);
-            setError("");
-          }}
-          onAgreedToTermsChange={setAgreedToTerms}
-          usernameValidation={usernameValidation}
-          emailValidation={emailValidation}
-          passwordStrength={passwordStrength}
-          canSubmit={signupCanSubmit({
-            displayName,
-            username,
-            email,
-            password,
-            agreedToTerms,
-            usernameValidation,
-            emailValidation,
-          })}
-          isSubmitting={isSubmitting}
-          onSubmit={handleEmailSignup}
-          onProvider={handleProvider}
-          loadingProvider={loadingProvider}
-          error={error}
-          showLegalLine={TERMS_REVIEWED && PRIVACY_REVIEWED}
-          onLeaveForLegal={keepForLegal}
-        />
-      </SignInShell>
-    </>
+    <SignupForm
+      displayName={displayName}
+      username={username}
+      email={email}
+      password={password}
+      agreedToTerms={agreedToTerms}
+      onDisplayNameChange={(value) => {
+        setDisplayName(value);
+        setError("");
+      }}
+      onUsernameChange={handleUsernameChange}
+      onEmailChange={handleEmailChange}
+      onEmailBlur={handleEmailBlur}
+      onPasswordChange={(value) => {
+        setPassword(value);
+        setError("");
+      }}
+      onAgreedToTermsChange={setAgreedToTerms}
+      usernameValidation={usernameValidation}
+      emailValidation={emailValidation}
+      passwordStrength={passwordStrength}
+      canSubmit={signupCanSubmit({
+        displayName,
+        username,
+        email,
+        password,
+        agreedToTerms,
+        usernameValidation,
+        emailValidation,
+      })}
+      isSubmitting={isSubmitting}
+      onSubmit={handleEmailSignup}
+      onProvider={handleProvider}
+      loadingProvider={loadingProvider}
+      error={error}
+      showLegalLine={TERMS_REVIEWED && PRIVACY_REVIEWED}
+      onLeaveForLegal={keepForLegal}
+    />
   );
 }
 
-export default SignupPage;
+export default SignupPanel;

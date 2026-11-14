@@ -61,7 +61,7 @@ import {
 import { Glyph, type GlyphName } from "@/components/brand/Glyph";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { CONTROL, PRIMARY, SELECTED, WELL, controlPaint } from "@/lib/theme/refinedControl";
+import { CONTROL, PRIMARY, SELECTED, WELL, controlPaint, hoverFill } from "@/lib/theme/refinedControl";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE, textStep } from "@/lib/theme/type";
 import { size, space } from "@/lib/theme/space";
@@ -668,7 +668,7 @@ function OptionButton({ label, chosen, disabled, phone, onPick }: { label: strin
         ...type(textStep.meta, 400, t.text2),
         ...ELLIPSIS,
         cursor: disabled ? "default" : "pointer",
-        ...(state.hovered && !chosen ? { background: t.tile, color: t.text } : null),
+        ...(state.hovered && !chosen ? { background: hoverFill(), color: t.text } : null),
         ...(chosen ? { ...SELECTED, color: t.text } : null),
         ...(disabled ? { filter: t.dimFilter } : null),
         ...ring(state.focusVisible),
@@ -879,7 +879,7 @@ export const OPTIONAL = {
     gap: space[4],
     minHeight: size.rowLarge,
     padding: `${space[2]}px ${inset}px`,
-    background: hovered ? t.tile : "transparent",
+    background: hovered ? hoverFill() : "transparent",
   }),
   /** Focus: a 2px outline inset by 2, so the row's own edges never cut it. */
   focus: (visible: boolean): CSSProperties => (visible ? { outline: `2px solid ${t.focusRing}`, outlineOffset: -2 } : { outline: "none" }),

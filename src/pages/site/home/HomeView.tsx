@@ -42,6 +42,7 @@ import { PageLink as Link } from "@/lib/routing/PageLink";
 import { ring, touchArea } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
+import { hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO } from "@/lib/theme/type";
 
@@ -468,7 +469,7 @@ export function NewPill({ count, onShow }: { count: number; onShow: () => void }
         data-testid="home-new-pill"
         onClick={onShow}
         {...handlers}
-        style={{ height: 32, ...touchArea(phone), padding: "0 12px", background: state.hovered ? t.controlOn : t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: 14, ...text(12, 400, t.text, { lineHeight: "normal" }), cursor: "pointer", ...ring(state.focusVisible) }}
+        style={{ height: 32, ...touchArea(phone), padding: "0 12px", background: state.hovered ? hoverFill(t.module) : t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: 14, ...text(12, 400, t.text, { lineHeight: "normal" }), cursor: "pointer", ...ring(state.focusVisible) }}
       >
         {`${count} new since you looked`}
       </button>

@@ -21,7 +21,9 @@ const markup = (look: "refined" | "current", node: React.ReactElement) => render
 describe("Skeleton, refined", () => {
   it("is a flat --well block: no animation and no gradient", () => {
     const html = markup("refined", <Skeleton width={120} height={13} />);
-    expect(html).toContain("background:var(--well)");
+    // Part E: the box paints nothing; the loading region's dot field draws the shape.
+    expect(html).toContain("background:transparent");
+    expect(html).toContain("width:120px;height:13px");
     expect(html).not.toContain("animation");
     expect(html).not.toContain("gradient");
     expect(html).not.toContain("data-bg-animated");

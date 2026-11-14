@@ -1,4 +1,4 @@
-// UI-P36 — `/signup` in the entrance's frame: every handler, validation and rule
+// The Join free view of the sign-in dialog (was UI-P36's `/signup` page): every handler, validation and rule
 // of pages/Signup.tsx, held to what it did — the username as it is typed and as
 // it is checked, the email when it is left, the strength after a pause, the gate
 // on the button, and the three ways a sign-up can end.
@@ -22,11 +22,8 @@ vi.mock("@/lib/auth/checkUsernameAvailability", () => ({
   checkUsernameAvailability: (...args: unknown[]) => checkUsernameAvailability(...args),
 }));
 vi.mock("@/lib/auth/oauth", () => ({ startOAuthSignIn: (...args: unknown[]) => startOAuthSignIn(...args) }));
-vi.mock("@/lib/build/signals", () => ({ countReproducedToday: vi.fn().mockResolvedValue(48) }));
-vi.mock("@/lib/build/gallery", () => ({ getGalleryStats: vi.fn().mockResolvedValue({ inGallery: 1284 }) }));
 
-import { renderAt, setViewport } from "./signinTest";
-import { SignupPage } from "./SignupPage";
+import { renderDialog, setViewport } from "./signinTest";
 
 beforeEach(() => {
   setViewport("desktop");
@@ -42,7 +39,8 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const open = (url = "/signup") => renderAt(<SignupPage />, url, "/signup");
+/** The old address's query, on the dialog's Join free view over Home. */
+const open = (url = "/signup") => renderDialog("signup", url.split("?")[1] ?? "");
 
 const type = (placeholder: string, value: string) => fireEvent.change(screen.getByPlaceholderText(placeholder), { target: { value } });
 
@@ -60,17 +58,17 @@ async function fillAll(over: Partial<Record<"name" | "username" | "email" | "pas
 
 const create = () => screen.getByRole("button", { name: /^Create account$/ });
 
-describe("the page", () => {
-  it("is the join card: the title, no index, the switch on Join free", async () => {
+describe("the view", () => {
+  it("is the join view: the switch on Join free", () => {
     open();
-    await waitFor(() => expect(document.title).toBe("Join · OpenBuilds.ai"));
-    expect(screen.getByRole("link", { name: "Join free" }).getAttribute("aria-current")).toBe("page");
+    expect(screen.getByRole("button", { name: "Join free" }).getAttribute("aria-pressed")).toBe("true");
     expect(create()).toBeDisabled();
   });
 
-  it("carries ?redirect= back to Sign in", () => {
-    open("/signup?redirect=%2Fgallery");
-    expect(screen.getByRole("link", { name: "Sign in" }).getAttribute("href")).toBe("/login?redirect=%2Fgallery");
+  it("carries ?redirect= back to Sign in, on the same page", async () => {
+    const where = open("/signup?redirect=%2Fgallery");
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    await waitFor(() => expect(where.at()).toBe("/?redirect=%2Fgallery&signin=login"));
   });
 
   it("is sent Home when the visitor is already signed in", async () => {
@@ -285,14 +283,14 @@ describe("creating the account", () => {
     });
   });
 
-  it("goes to the pending page with the address, remembered, when the project wants the email verified", async () => {
+  it("goes to the pending view with the address, remembered, when the project wants the email verified", async () => {
     signUp.mockResolvedValue({ outcome: "created", signedIn: false });
     const where = open();
     await fillAll();
     fireEvent.click(create());
     await act(async () => {});
 
-    expect(where.at()).toBe("/verify-email");
+    expect(where.at()).toBe("/?signin=verify");
     expect(where.state()).toEqual({ email: "ada@example.com" });
     expect(window.sessionStorage.getItem("pending_verification_email")).toBe("ada@example.com");
   });

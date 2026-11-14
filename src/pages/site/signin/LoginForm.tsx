@@ -13,12 +13,14 @@
 import { Lock, User } from "lucide-react";
 
 import type { OAuthProvider } from "@/components/auth/OAuthButtons";
+import { useRoom } from "@/components/brand/useRoom";
 import { FrameLink } from "@/components/shell/FrameLink";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
-import { AuthCheck, AuthField, AuthForm, OrRule, PrimaryAction, ProviderButtons } from "./AuthParts";
-import { useAuthSizes } from "./authSizes";
+import { AuthCheck, AuthField, AuthForm, Gap, OrRule, PrimaryAction, ProviderButtons, PushDown } from "./AuthParts";
+import { DIALOG, useAuthSizes } from "./authSizes";
+import { SIGNIN_COLOURS } from "./signinColours";
 
 export interface LoginFormProps {
   emailOrUsername: string;
@@ -34,6 +36,10 @@ export interface LoginFormProps {
   onProvider: (provider: OAuthProvider) => void;
   loadingProvider: OAuthProvider | null;
   error?: string;
+  /** Where "Forgot password?" goes: the dialog's reset view, as an address, so it does not leave the page behind. */
+  forgotTo?: string;
+  /** The history state that link carries (how deep into the dialog it goes). */
+  forgotState?: unknown;
 }
 
 export function LoginForm({
@@ -49,8 +55,70 @@ export function LoginForm({
   onProvider,
   loadingProvider,
   error,
+  forgotTo = "/reset-password",
+  forgotState,
 }: LoginFormProps) {
   const { phone } = useAuthSizes();
+  const room = useRoom();
+  if (!phone) {
+    /* The dialog's column (Reference A): providers, 16, the divider, 16, the two fields 16 apart, 4 and the reserved error
+       line, 8, the remember row, then the primary on the bottom padding line. */
+    return (
+      <>
+        <ProviderButtons onProvider={onProvider} loadingProvider={loadingProvider} />
+        <Gap size={16} />
+        <OrRule>Or with email</OrRule>
+        <Gap size={16} />
+        <AuthForm onSubmit={onSubmit}>
+          <AuthField
+            label="Email or username"
+            icon={User}
+            value={emailOrUsername}
+            onChange={onEmailOrUsernameChange}
+            placeholder="Email or username"
+            required
+            autoComplete="username"
+          />
+          <Gap size={16} />
+          <AuthField
+            label="Password"
+            icon={Lock}
+            showPasswordToggle
+            value={password}
+            onChange={onPasswordChange}
+            placeholder="Enter your password"
+            required
+            autoComplete="current-password"
+            error={error}
+            reserveMessage
+          />
+          <Gap size={8} />
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: DIALOG.row, fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>
+            <AuthCheck id="remember" checked={rememberMe} onChange={onRememberMeChange}>
+              Keep me signed in
+            </AuthCheck>
+            <FrameLink
+              to={forgotTo}
+              state={forgotState}
+              style={{
+                lineHeight: `${DIALOG.row}px`,
+                color: SIGNIN_COLOURS[room].link,
+                textDecoration: "underline",
+                textUnderlineOffset: 4,
+                textDecorationThickness: 1,
+              }}
+            >
+              Forgot password?
+            </FrameLink>
+          </div>
+          <PushDown />
+          <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText="Signing in">
+            Sign in
+          </PrimaryAction>
+        </AuthForm>
+      </>
+    );
+  }
   return (
     <>
       <ProviderButtons onProvider={onProvider} loadingProvider={loadingProvider} />
@@ -81,7 +149,7 @@ export function LoginForm({
             Keep me signed in
           </AuthCheck>
           <FrameLink
-            to="/reset-password"
+            to={forgotTo}
             data-hit=""
             /* The reference's phone says "Forgot?"; the name is the whole sentence. */
             aria-label={phone ? "Forgot password?" : undefined}
@@ -100,7 +168,7 @@ export function LoginForm({
             {phone ? "Forgot?" : "Forgot password?"}
           </FrameLink>
         </div>
-        <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText="Signing in...">
+        <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText="Signing in">
           Sign in
         </PrimaryAction>
       </AuthForm>

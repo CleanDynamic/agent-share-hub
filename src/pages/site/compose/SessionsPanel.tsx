@@ -41,6 +41,7 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { move } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
+import { hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE, textStep } from "@/lib/theme/type";
 
@@ -102,8 +103,8 @@ const floating: CSSProperties = {
   boxSizing: "border-box",
   padding: 9,
   borderRadius: r.panel,
-  background: t.solid,
-  border: `1px solid ${t.line}`,
+  background: t.window,
+  border: `1px solid ${t.windowBorder}`,
   boxShadow: t.shadowFloat,
   color: t.text,
   zIndex: 50,
@@ -328,7 +329,7 @@ function SessionSection({
             padding: 0,
             border: 0,
             borderRadius: 10,
-            background: head.state.hovered ? t.rowHighlight : "transparent",
+            background: head.state.hovered ? hoverFill() : "transparent",
             cursor: "pointer",
             ...ring(head.state.focusVisible),
           }}

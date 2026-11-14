@@ -72,7 +72,7 @@ import { useIsPhone } from "@/components/shell/useMinWidth";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
-import { CONTROL } from "@/lib/theme/refinedControl";
+import { CONTROL, hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
@@ -459,7 +459,7 @@ function PasteRow({ text: what, title, phone, onGo }: { text: string; title: str
       }}
     >
       <span style={text(12, 400, t.text2)}>{what}</span>
-      <span style={{ ...chipStyle, background: state.hovered ? t.controlOn : t.module }}>{title}</span>
+      <span style={{ ...chipStyle, background: state.hovered ? hoverFill(t.module) : t.module }}>{title}</span>
     </button>
   );
 }

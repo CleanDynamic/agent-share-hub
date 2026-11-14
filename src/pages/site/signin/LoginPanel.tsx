@@ -1,4 +1,4 @@
-/* UI-P36 — `/login` in the entrance's frame: the container.
+/* The Sign in view of the sign-in dialog: the container (was UI-P36's `/login` page).
 
    A REPAINT OF THE FORM, NOT A REWRITE OF SIGN-IN. This is `pages/Login.tsx`'s
    state and handlers, in the same order and with the same words: the redirect
@@ -10,12 +10,15 @@
 
    What the Supabase calls became is only where they live: they are named
    functions in `src/lib/auth/` now, since a component may not call Supabase.
-   Identity still comes from `useAuth()`. */
+   Identity still comes from `useAuth()`.
+
+   IN THE DIALOG, the destination is unchanged: `redirect` (or `returnTo`) when the address has one, which the header
+   sets to the page the dialog was opened over, and otherwise `resolvePostAuthRoute`. "Forgot password?" is the reset
+   view's address on the same page, a push. */
 
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-import { SeoHead } from "@/components/SeoHead";
 import type { OAuthProvider } from "@/components/auth/OAuthButtons";
 import { useAuth } from "@/contexts/AuthContext";
 import { startOAuthSignIn } from "@/lib/auth/oauth";
@@ -24,10 +27,10 @@ import { signInWithEmailOrUsername } from "@/lib/auth/signInWithEmailOrUsername"
 
 import { loginCanSubmit } from "./authModel";
 import { LoginForm } from "./LoginForm";
-import { SignInShell } from "./SignInShell";
-import { SITE_NAME } from "@/lib/site";
+import { setSigningIn } from "./signinActivity";
+import { useSignInNavigation } from "./useSignInNavigation";
 
-export function LoginPage() {
+export function LoginPanel() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { isLoggedIn } = useAuth();
@@ -40,6 +43,13 @@ export function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(null);
   const [error, setError] = useState("");
+  const views = useSignInNavigation();
+
+  // The halftone layer's signing-in ripple, while the request or a provider is out.
+  useEffect(() => {
+    setSigningIn(isSubmitting || loadingProvider !== null);
+    return () => setSigningIn(false);
+  }, [isSubmitting, loadingProvider]);
 
   // Already signed in — bounce to the destination (or home).
   useEffect(() => {
@@ -82,32 +92,29 @@ export function LoginPage() {
   };
 
   return (
-    <>
-      <SeoHead title="Sign in" description={`Sign in to your ${SITE_NAME} account.`} path="/login" noIndex />
-      <SignInShell mode="login">
-        <LoginForm
-          emailOrUsername={emailOrUsername}
-          password={password}
-          rememberMe={rememberMe}
-          onEmailOrUsernameChange={(value) => {
-            setEmailOrUsername(value);
-            setError("");
-          }}
-          onPasswordChange={(value) => {
-            setPassword(value);
-            setError("");
-          }}
-          onRememberMeChange={setRememberMe}
-          canSubmit={loginCanSubmit(emailOrUsername, password)}
-          isSubmitting={isSubmitting}
-          onSubmit={handleEmailLogin}
-          onProvider={handleProvider}
-          loadingProvider={loadingProvider}
-          error={error}
-        />
-      </SignInShell>
-    </>
+    <LoginForm
+      forgotTo={views.hrefFor("reset")}
+      forgotState={views.linkState}
+      emailOrUsername={emailOrUsername}
+      password={password}
+      rememberMe={rememberMe}
+      onEmailOrUsernameChange={(value) => {
+        setEmailOrUsername(value);
+        setError("");
+      }}
+      onPasswordChange={(value) => {
+        setPassword(value);
+        setError("");
+      }}
+      onRememberMeChange={setRememberMe}
+      canSubmit={loginCanSubmit(emailOrUsername, password)}
+      isSubmitting={isSubmitting}
+      onSubmit={handleEmailLogin}
+      onProvider={handleProvider}
+      loadingProvider={loadingProvider}
+      error={error}
+    />
   );
 }
 
-export default LoginPage;
+export default LoginPanel;

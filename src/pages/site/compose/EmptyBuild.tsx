@@ -14,6 +14,7 @@ import { useRef, useState, type DragEvent } from "react";
 import { Glyph } from "@/components/brand/Glyph";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
+import { hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 
 import { ChatsPicker, type AddSessionRowProps } from "./AddSessionRow";
@@ -57,7 +58,7 @@ function Row({ name, detail, onClick, disabled, testId }: { name: string; detail
       disabled={disabled}
       onClick={onClick}
       {...handlers}
-      style={{ ...EMPTY_ROW, ...(state.hovered && !disabled ? { background: t.controlOn } : null), ...(disabled ? { cursor: "default" } : null), ...ring(state.focusVisible) }}
+      style={{ ...EMPTY_ROW, ...(state.hovered && !disabled ? { background: hoverFill() } : null), ...(disabled ? { cursor: "default" } : null), ...ring(state.focusVisible) }}
     >
       <span aria-hidden="true" style={EMPTY_MARK} />
       <span style={EMPTY_NAMES}>

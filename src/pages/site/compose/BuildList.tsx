@@ -86,7 +86,7 @@ import { nextModelAfterToolChange } from "@/lib/tools/modelRules";
 import { toolFor, toolName } from "@/lib/tools/registry";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { CONTROL } from "@/lib/theme/refinedControl";
+import { CONTROL, hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, textStep } from "@/lib/theme/type";
 
@@ -891,7 +891,7 @@ function Suggestion({ label, onAccept, onDismiss }: { label: string; onAccept: (
         }}
         style={{
           ...CONTROL,
-          ...(accept.state.hovered ? { background: t.controlOn } : null),
+          ...(accept.state.hovered ? { background: hoverFill() } : null),
           height: size.controlSmall,
           padding: `0 ${space[2]}px`,
           boxSizing: "border-box",

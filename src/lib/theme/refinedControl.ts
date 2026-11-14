@@ -14,9 +14,15 @@ export const CONTROL: CSSProperties = {
   boxShadow: t.controlShadow,
 };
 
-/* The surface ladder: --control-on is --control, so a hovered control steps its fill four grey levels toward the text
-   (1.9% of --text: #323237 to #36363B in Dusk, #FFFFFF to #FBFBFB in Noon). */
-export const CONTROL_HOVER: CSSProperties = { background: `color-mix(in srgb, ${t.text} 1.9%, ${t.control})` };
+/**
+ * The surface ladder's one hover: the resting fill moved four grey levels toward the text (1.9% of --text: #FFFFFF to
+ * #FBFBFB in Noon, #28282C to #2C2C30 in Dusk). A row that rests transparent takes the same step laid over whatever it
+ * sits on. Every hovered row, menu item and control spends this; nothing hovers to --control-on, which is --control.
+ */
+export const hoverFill = (resting?: string): string =>
+  `color-mix(in srgb, ${t.text} 1.9%, ${!resting || resting === "transparent" || resting === "none" ? "transparent" : resting})`;
+
+export const CONTROL_HOVER: CSSProperties = { background: hoverFill(t.control) };
 
 export const PRESSED: CSSProperties = {
   background: t.well,
@@ -24,10 +30,10 @@ export const PRESSED: CSSProperties = {
   boxShadow: t.wellShadow,
 };
 
+/* The surface ladder: state is not elevation. Selected is the selected border alone, laid over the element's own fill
+   (on a card, the card's fill), so a selected item and its neighbours share one fill. No ring, no shadow. */
 export const SELECTED: CSSProperties = {
-  background: t.selectedFill,
   border: `1px solid ${t.selectedEdge}`,
-  boxShadow: t.selectedRing,
 };
 
 export const WELL: CSSProperties = {

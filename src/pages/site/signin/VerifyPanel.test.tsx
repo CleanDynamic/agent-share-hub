@@ -1,5 +1,5 @@
-// UI-P36 — `/verify-email` and `/verify-email/:token` in the entrance's frame:
-// every state, handler and rule of pages/VerifyEmail.tsx, held to what it did —
+// The verify views of the sign-in dialog (was UI-P36's `/verify-email` and `/verify-email/:token` page, whose path
+// token now arrives as `?token=`): every state, handler and rule of pages/VerifyEmail.tsx, held to what it did —
 // the pending card and its resend with a cooldown, the ways an emailed link
 // arrives, and where "Continue" goes.
 //
@@ -22,11 +22,8 @@ vi.mock("@/lib/auth/emailLink", () => ({
   resendSignupEmail: (...args: unknown[]) => resendSignupEmail(...args),
 }));
 vi.mock("@/lib/auth/postAuthRoute", () => ({ resolvePostAuthRoute: (...args: unknown[]) => resolvePostAuthRoute(...args) }));
-vi.mock("@/lib/build/signals", () => ({ countReproducedToday: vi.fn().mockResolvedValue(48) }));
-vi.mock("@/lib/build/gallery", () => ({ getGalleryStats: vi.fn().mockResolvedValue({ inGallery: 1284 }) }));
 
-import { renderAt, setViewport } from "./signinTest";
-import { VerifyEmailPage } from "./VerifyEmailPage";
+import { renderDialog, setViewport } from "./signinTest";
 
 beforeEach(() => {
   setViewport("desktop");
@@ -43,8 +40,14 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const open = (url = "/verify-email", state?: unknown) =>
-  renderAt(<VerifyEmailPage />, url, url.startsWith("/verify-email/") ? "/verify-email/:token" : "/verify-email", state);
+/** The old address, as the redirect hands it to the dialog: the query kept, a path token carried as `?token=`. */
+const open = (url = "/verify-email", state?: unknown) => {
+  const [path, query = ""] = url.split("?");
+  const search = new URLSearchParams(query);
+  const token = path.split("/")[2];
+  if (token) search.set("token", token);
+  return renderDialog("verify", search.toString(), state);
+};
 
 describe("the pending card", () => {
   it("is the card the entrance spec looks for, naming the address it sent to, and starts no verification", async () => {
@@ -54,8 +57,7 @@ describe("the pending card", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Check your inbox" })).toBeTruthy();
     expect(screen.getByText("ada@example.com")).toBeTruthy();
     expect(verifyEmailLink).not.toHaveBeenCalled();
-    await waitFor(() => expect(document.title).toBe("Verify your email · OpenBuilds.ai"));
-    expect(screen.queryByRole("link", { name: "Join free" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Join free" })).toBeNull();
   });
 
   it("prefers the address the sign-up carried in the router's state over the remembered one", () => {
@@ -70,16 +72,16 @@ describe("the pending card", () => {
     expect(screen.getByText("your email")).toBeTruthy();
   });
 
-  it("sends Sign up again back to the join page", async () => {
+  it("sends Sign up again back to the join view", async () => {
     const where = open();
     fireEvent.click(screen.getByRole("button", { name: "Sign up again" }));
-    await waitFor(() => expect(where.at()).toBe("/signup"));
+    await waitFor(() => expect(where.at()).toBe("/?signin=signup"));
   });
 
-  it("goes to the join page instead of resending when there is no address to send to", async () => {
+  it("goes to the join view instead of resending when there is no address to send to", async () => {
     const where = open();
     fireEvent.click(screen.getByRole("button", { name: "Resend verification" }));
-    await waitFor(() => expect(where.at()).toBe("/signup"));
+    await waitFor(() => expect(where.at()).toBe("/?signin=signup"));
     expect(resendSignupEmail).not.toHaveBeenCalled();
   });
 });
@@ -137,7 +139,8 @@ describe("an emailed link", () => {
     open("/verify-email/tok");
 
     expect(screen.getByRole("heading", { level: 2, name: "Verifying your email…" })).toBeTruthy();
-    expect(screen.getByRole("status").textContent).toContain("We're checking the link you opened.");
+    // The words' status, beside the InlineLoader's own (G27).
+    expect(screen.getAllByRole("status").find((region) => region.getAttribute("data-ui") !== "inline-loader")!.textContent).toContain("We're checking the link you opened.");
     expect(verifyEmailLink.mock.calls[0][0]).toEqual({ tokenHash: "tok", code: "", type: "email" });
 
     await act(async () => verified(true));
@@ -176,7 +179,7 @@ describe("an emailed link", () => {
     const isCancelled = verifyEmailLink.mock.calls[0][1] as () => boolean;
     expect(isCancelled()).toBe(false);
 
-    fireEvent.click(screen.getByRole("link", { name: "Back" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
     await waitFor(() => expect(where.at()).toBe("/"));
     expect(isCancelled()).toBe(true);
   });
@@ -191,8 +194,9 @@ describe("an emailed link", () => {
     fireEvent.click(screen.getByRole("button", { name: "Send a new link" }));
     await waitFor(() => expect(resendSignupEmail).toHaveBeenCalledWith("ada@example.com"));
 
-    fireEvent.click(screen.getByRole("button", { name: "Back to sign in" }));
-    await waitFor(() => expect(where.at()).toBe("/login"));
+    // The dialog's way back is row 1's link alone (D3); the failed view's body carries none.
+    expect(screen.queryByRole("button", { name: "Back to sign in" })).toBeNull();
+    expect(where.at()).toBe("/?token=tok&signin=verify");
   });
 });
 
@@ -216,7 +220,7 @@ describe("Continue", () => {
   it("goes to sign in when there is no session", async () => {
     const where = await reach();
     fireEvent.click(screen.getByRole("button", { name: "Continue to OpenBuilds.ai" }));
-    await waitFor(() => expect(where.at()).toBe("/login"));
+    await waitFor(() => expect(where.at()).toBe("/?token=tok&signin=login"));
     expect(resolvePostAuthRoute).not.toHaveBeenCalled();
   });
 });

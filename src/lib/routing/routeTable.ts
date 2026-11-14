@@ -250,13 +250,13 @@ export const ROUTE_TABLE: Record<string, RouteEntry> = {
     },
     Placeholder: DraftsPlaceholder,
   },
-  /* UX-01 P9: the sign-in page, so that hovering or focusing the header's Sign in opens its chunk before the press. It sits outside the
-     app shell (no placeholder is drawn by a page change): its Placeholder is the fallback `SignInSite` draws while the chunk loads. */
+  /* UX-01 P9: the sign-in dialog's chunk, so that hovering or focusing the header's Sign in opens it before the press. /login itself
+     only redirects to Home with the dialog over it (G6); no page change draws this entry's Placeholder. */
   login: {
     key: "login",
     pattern: "/login",
     signedIn: false,
-    load: () => import("@/pages/site/signin/LoginPage"),
+    load: () => import("@/pages/site/signin/SignInDialog"),
     prefetch: () => undefined,
     Placeholder: SignInFallback,
   },

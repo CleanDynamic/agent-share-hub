@@ -10,7 +10,7 @@ import { __resetMotionMediaCache } from "@/lib/theme/motion";
 import { ComposeSkeleton } from "./ComposeSkeleton";
 import { SOCKET_INSET, SOCKET_NUMBER_ROOM } from "./ImportingPieces";
 import { LoadingBlocks } from "./LoadingBlocks";
-import { CELL_H, CELL_W, GLYPHS, fillOf, resetFirstShow, TILE_HEIGHT } from "./loadingBlocks";
+import { CELL_H, CELL_W, fillOf, resetFirstShow, TILE_HEIGHT } from "./loadingBlocks";
 
 function reducedMotion(on: boolean) {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: on && query.includes("reduce"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
@@ -71,8 +71,10 @@ describe("SV-05 P4 · the blocks fill the socket", () => {
       </div>,
     );
     const block = screen.getByTestId("loading-blocks");
-    expect(block.getAttribute("data-layers")).toBe("1");
-    expect(block.textContent).toBe(GLYPHS[0].repeat(10 * 3));
+    // Part E: one still frame of the dot field over the same box; no characters and nothing animated in the DOM.
+    expect(block.getAttribute("data-rows")).toBe("3");
+    expect(block.getAttribute("data-cols")).toBe("10");
+    expect(block.textContent).toBe("");
     expect(block.innerHTML).not.toMatch(/animation/);
   });
 });

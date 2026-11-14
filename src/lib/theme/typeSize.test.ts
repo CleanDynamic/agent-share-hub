@@ -55,6 +55,14 @@ const EXCEPTIONS: readonly { file: string; has: string; why: string }[] = [
   { file: "src/components/shell/WorkspaceBar.tsx", has: "fontWeight: 600,", why: "the build editor's bar: its title and context line, outside the type prompt" },
 ];
 
+/** The sign-in dialog is the one design with its own greens, its own 22px tagline and its own mono labels (design/RULES.md, "The sign-in dialog"). */
+const SIGN_IN_DIALOG = new Set([
+  "src/pages/site/signin/SignInDialogFrame.tsx",
+  "src/pages/site/signin/codeSprites.ts",
+  "src/pages/site/signin/halftoneField.ts",
+  "src/pages/site/signin/signinColours.ts",
+]);
+
 function filesOf(path: string): string[] {
   const full = join(process.cwd(), path);
   if (statSync(full).isFile()) return [path];
@@ -65,7 +73,7 @@ const SEVEN = new Set(Object.values(typeSize) as number[]);
 
 function offences(): string[] {
   const found: string[] = [];
-  const files = AREA.flatMap(filesOf).filter((file) => /\.tsx?$/.test(file) && !/\.test\./.test(file) && !file.includes("/compose/"));
+  const files = AREA.flatMap(filesOf).filter((file) => /\.tsx?$/.test(file) && !/\.test\./.test(file) && !file.includes("/compose/") && !SIGN_IN_DIALOG.has(file));
   for (const file of files) {
     readFileSync(join(process.cwd(), file), "utf8").split("\n").forEach((line, index) => {
       if (/^\s*(\/\/|\*|\/\*)/.test(line)) return;

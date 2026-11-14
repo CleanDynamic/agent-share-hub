@@ -131,7 +131,16 @@ Deliberate, and expected in every compare report:
   - the account menu is a window (#28282C / #FFFFFF over a #202023 / #FAFAFA card), not the card's tone;
   - avatars and plain status chips sit on `--inset` with an edge border; a tile inside a card, the Build reader's part header strip and the reference panels are `--inset`; thumbnails, framed pictures and the composer's picture well are `--well`, not `--paper`;
   - selection is the border only: the Library rail, a Lineage node, the Build reader's part row and the Settings side list keep the unselected fill and take 1px `--selected-edge` (#9A9AA2 / #6E6E73), with no selection fill, shadow or ring;
-  - a hovered account menu item steps its fill four grey levels toward the text and draws no ring; the ring is keyboard focus only.
+  - a hovered account menu item and a hovered control step their fill four grey levels toward the text and draws no ring; the ring is keyboard focus only.
+  - a post's media grid is a well with inset cells, where the boards draw a hairline fill with tile cells.
+- **Sign in is a dialog (the sign-in dialog prompt, Parts A to D).** The `signin` boards draw a full page; the app opens one dialog over the page the person is on, so the signin boards differ in everything but the form's words:
+  - the dialog is 840 by 540, radius 16, centred over a scrim of rgba(0,0,0,0.8) in Dusk and rgba(244,244,242,0.84) in Noon; a 360 picture column (the beaver picture 360 by 300, the lockup, the tagline "Publish, reproduce and fork AI-assisted workflows." at 22 / 500, "openbuilds.ai" in 11px mono) and a 480 form column padded 24, every control 432 by 32;
+  - the primary is #6BE2A0 with black ink in Dusk (hover #58BA71) and #77FC49 in Noon (hover #5EE832); Noon's green text links are #173014;
+  - the field labels and the "Or with email" divider are 11px Geist Mono in a 16px line; the error line is always 16px high;
+  - row 1 is the Sign in · Join free switch (or "Back to sign in") and a Close button, where the board draws Back; the count tiles, the theme control and the "Every AI build, hung with its proof." tagline are gone on a computer (a phone keeps today's layout full screen);
+  - reset and verify are views of the same dialog, each under its existing title;
+  - around the dialog a halftone dot layer plays, and while a button or a key is held it is drawn as Geist Mono characters; neither is on any board.
+- **Loading states are dot fields (Part E).** Every skeleton keeps the box the boards and the code give it, but is drawn as a living green dot field rather than a `--well` or `--recess` block; the building blocks' characters and the spinner's ring are dots too (InlineLoader). No board draws a loading state, so no compare changes; a screenshot taken while a page loads does.
 
 ## A note on the sample content
 

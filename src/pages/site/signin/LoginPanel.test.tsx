@@ -1,5 +1,5 @@
-// UI-P36 — `/login` in the entrance's frame: every handler, validation, provider
-// and ?redirect= behaviour of pages/Login.tsx, held to what it did.
+// The Sign in view of the sign-in dialog (was UI-P36's `/login` page): every handler, validation, provider and
+// ?redirect= behaviour of pages/Login.tsx, held to what it did, now with the dialog over Home.
 //
 // The auth functions are stubbed and their calls counted, as the other pages'
 // container tests do. What is claimed is what the container asks of them, what
@@ -21,11 +21,8 @@ vi.mock("@/lib/auth/signInWithEmailOrUsername", () => ({
 }));
 vi.mock("@/lib/auth/postAuthRoute", () => ({ resolvePostAuthRoute: (...args: unknown[]) => resolvePostAuthRoute(...args) }));
 vi.mock("@/lib/auth/oauth", () => ({ startOAuthSignIn: (...args: unknown[]) => startOAuthSignIn(...args) }));
-vi.mock("@/lib/build/signals", () => ({ countReproducedToday: vi.fn().mockResolvedValue(48) }));
-vi.mock("@/lib/build/gallery", () => ({ getGalleryStats: vi.fn().mockResolvedValue({ inGallery: 1284 }) }));
 
-import { LoginPage } from "./LoginPage";
-import { renderAt, setViewport } from "./signinTest";
+import { renderDialog, setViewport } from "./signinTest";
 
 beforeEach(() => {
   setViewport("desktop");
@@ -36,30 +33,31 @@ beforeEach(() => {
   resolvePostAuthRoute.mockResolvedValue("/");
 });
 
-const open = (url = "/login") => renderAt(<LoginPage />, url, "/login");
+/** The old address's query, on the dialog's Sign in view over Home. */
+const open = (url = "/login") => renderDialog("login", url.split("?")[1] ?? "");
+/** The form's primary: the switch's "Sign in" is a button too. */
+const primary = () => document.querySelector<HTMLButtonElement>('[data-variant="signin-primary"]')!;
 
 const fill = (identifier = "ada@example.com", password = "hunter22") => {
   fireEvent.change(screen.getByPlaceholderText("Email or username"), { target: { value: identifier } });
   fireEvent.change(screen.getByPlaceholderText("Enter your password"), { target: { value: password } });
 };
-const submit = () => fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+const submit = () => fireEvent.click(primary());
 
 describe("the gate", () => {
   it("opens when both fields have something in them, as the existing spec finds it", () => {
     open();
-    expect(screen.getByRole("button", { name: "Sign in" })).toBeDisabled();
+    expect(primary()).toBeDisabled();
     fireEvent.change(screen.getByPlaceholderText("Email or username"), { target: { value: "ada@example.com" } });
-    expect(screen.getByRole("button", { name: "Sign in" })).toBeDisabled();
+    expect(primary()).toBeDisabled();
     fireEvent.change(screen.getByPlaceholderText("Enter your password"), { target: { value: "hunter22" } });
-    expect(screen.getByRole("button", { name: "Sign in" })).toBeEnabled();
+    expect(primary()).toBeEnabled();
   });
 
-  it("is the page's entrance: the title, no index, the lockup and the sentence", async () => {
+  it("is a modal dialog over the page, labelled by the tagline", () => {
     open();
-    await waitFor(() => expect(document.title).toBe("Sign in · OpenBuilds.ai"));
-    expect(document.querySelector('meta[name="robots"]')?.getAttribute("content")).toContain("noindex");
-    expect(screen.getByText("OpenBuilds.ai", { exact: true })).toBeTruthy();
-    expect(screen.getByRole("heading", { level: 1, name: "Every AI build, hung with its proof." })).toBeTruthy();
+    const dialog = screen.getByRole("dialog", { name: "Publish, reproduce and fork AI-assisted workflows." });
+    expect(dialog.getAttribute("aria-modal")).toBe("true");
   });
 });
 
@@ -118,10 +116,11 @@ describe("signing in", () => {
     fill();
     submit();
 
-    const busy = await screen.findByRole("button", { name: "Signing in..." });
+    const busy = await screen.findByRole("button", { name: "Signing in" });
     expect(busy).toBeDisabled();
     await act(async () => finish({ outcome: "rejected" }));
-    expect(await screen.findByRole("button", { name: "Sign in" })).toBeEnabled();
+    await waitFor(() => expect(primary()).toBeEnabled());
+    expect(primary().textContent).toBe("Sign in");
   });
 });
 
@@ -137,7 +136,7 @@ describe("the refusals", () => {
       const message = await screen.findByText("Wrong email or password");
       expect(message.getAttribute("aria-live")).toBe("polite");
       expect(screen.getByPlaceholderText("Enter your password").getAttribute("aria-invalid")).toBe("true");
-      expect(screen.getByRole("button", { name: "Sign in" })).toBeEnabled();
+      expect(primary()).toBeEnabled();
     },
   );
 
@@ -155,7 +154,7 @@ describe("the refusals", () => {
     fill();
     submit();
     expect(await screen.findByText("Something went wrong. Please try again.")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Sign in" })).toBeEnabled();
+    expect(primary()).toBeEnabled();
   });
 
   it("clears the message on the next key in either field", async () => {
@@ -196,7 +195,8 @@ describe("the providers", () => {
     fireEvent.click(screen.getByRole("button", { name: "Continue with GitHub" }));
 
     await waitFor(() => expect(startOAuthSignIn).toHaveBeenCalledWith("github"));
-    for (const name of ["Continue with Google", "Continue with GitHub", "Continue with X"]) {
+    // G12: the one that was clicked now says it is opening.
+    for (const name of ["Continue with Google", "Opening GitHub", "Continue with X"]) {
       await waitFor(() => expect(screen.getByRole("button", { name })).toBeDisabled());
     }
   });
@@ -221,22 +221,19 @@ describe("the providers", () => {
   });
 });
 
-describe("the rest of the card", () => {
-  it("carries ?redirect= across to Join free, and back", () => {
-    open("/login?redirect=%2Fgallery");
-    expect(screen.getByRole("link", { name: "Join free" }).getAttribute("href")).toBe("/signup?redirect=%2Fgallery");
-    expect(screen.getByRole("link", { name: "Sign in" }).getAttribute("href")).toBe("/login?redirect=%2Fgallery");
+describe("the rest of the dialog", () => {
+  it("carries ?redirect= across to Join free, and back, on the same page", async () => {
+    const where = open("/login?redirect=%2Fgallery");
+    fireEvent.click(screen.getByRole("button", { name: "Join free" }));
+    await waitFor(() => expect(where.at()).toBe("/?redirect=%2Fgallery&signin=signup"));
+    fireEvent.click(screen.getAllByRole("button", { name: "Sign in" })[0]);
+    await waitFor(() => expect(where.at()).toBe("/?redirect=%2Fgallery&signin=login"));
   });
 
-  it("points Forgot password? at /reset-password, and Back at Home", () => {
-    open();
-    expect(screen.getByRole("link", { name: "Forgot password?" }).getAttribute("href")).toBe("/reset-password");
-    expect(screen.getByRole("link", { name: "Back" }).getAttribute("href")).toBe("/");
-  });
-
-  it("goes Home on Back when it is the first page of the session", async () => {
-    const where = open("/login");
-    fireEvent.click(screen.getByRole("link", { name: "Back" }));
+  it("points Forgot password? at the reset view on the same page, and Close takes the dialog off", async () => {
+    const where = open("/login?redirect=%2Fgallery");
+    expect(screen.getByRole("link", { name: "Forgot password?" }).getAttribute("href")).toBe("/?redirect=%2Fgallery&signin=reset");
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
     await waitFor(() => expect(where.at()).toBe("/"));
   });
 });

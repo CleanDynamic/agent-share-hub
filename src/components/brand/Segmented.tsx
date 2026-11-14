@@ -32,7 +32,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { ring, touchArea } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
-import { CONTROL, CONTROL_HOVER } from "@/lib/theme/refinedControl";
+import { CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -130,7 +130,7 @@ function Segment({
     background: "transparent",
     color: t.text2,
     ...(fullWidth ? { flex: 1, justifyContent: "center", display: "inline-flex", alignItems: "center" } : null),
-    ...(current ? { ...CONTROL, ...CONTROL_HOVER, color: t.text } : null),
+    ...(current ? { ...CONTROL, background: t.controlOn, color: t.text } : null),
     ...(disabled ? { filter: t.dimFilter } : null),
     ...touchArea(touch),
     ...ring(state.focusVisible),

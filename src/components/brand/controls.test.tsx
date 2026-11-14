@@ -389,7 +389,7 @@ describe("refined controls (UI-P84)", () => {
       />,
     );
     expect(html).toContain("height:32px");
-    expect(html).toContain("border-bottom:2px solid var(--text)");
+    expect(html).toContain("border-bottom:2px solid var(--selected-edge)");
     expect(html).toContain("border-bottom:2px solid transparent");
     expect(html).toContain("border-bottom:1px solid var(--hairline)");
     expect(html).toContain("gap:24px");
@@ -401,8 +401,9 @@ describe("refined controls (UI-P84)", () => {
     expect(off).toContain("height:36px");
     expect(off).toContain("background:var(--control)");
     const on = refined(<FilterChip label="All" on />);
-    expect(on).toContain("background:var(--selected-fill)");
-    expect(on).toContain("var(--selected-edge)");
+    expect(on).toContain("background:var(--control)");
+    expect(on).toContain("border:1px solid var(--selected-edge)");
+    expect(on).not.toContain("selected-ring");
     expect(on).not.toContain("var(--on-text)");
   });
 
