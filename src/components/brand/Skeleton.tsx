@@ -1,27 +1,17 @@
 // The skeleton (UI-P37): what a panel shows in place of its content while the
 // content is on its way.
 //
-// A `--recess` block that is THE SAME SIZE AS WHAT IT REPLACES — a card the
-// card's size, a row the row's height, an orb a circle of the orb's diameter, a
-// chart the chart's box — so that nothing moves when the real thing arrives.
-// Panels, their heads and their padding render normally while loading; only the
-// content inside them is skeletal, which is why this takes a width, a height
-// and a radius and nothing else: it is a rectangle, not a layout.
-//
-// ONE MOVEMENT, ONE PROPERTY. A 1.4s pulse between opacity 1 and .55, in the
-// `skeletonPulse` keyframe in `index.css` (a keyframe is the one thing an inline
-// style cannot express). Opacity is compositor-only, so a page of forty bones
-// costs no layout and no paint. Under `prefers-reduced-motion` the animation is
-// not emitted at all (`animation()` returns undefined) and the global rule in
-// `index.css` covers a visitor who changes the setting mid-load: what is left is
-// a flat recess, which still reads as "not content yet" because the colour and
-// the shape say so. Not the older sweep in `ui/skeleton.tsx`: that one is the
-// legacy control kit's and stays for the pages that still use it.
+// A shape THE SAME SIZE AS WHAT IT REPLACES — a card the card's size, a row the
+// row's height, an orb a circle of the orb's diameter, a chart the chart's box —
+// so that nothing moves when the real thing arrives. Panels, their heads and their
+// padding render normally while loading; only the content inside them is
+// skeletal, which is why this takes a width, a height and a radius and nothing
+// else: it is a rectangle, not a layout.
 //
 // A LOADING REGION IS NAMED, NOT JUST DRAWN. The bones are `aria-hidden`; the
 // region around them (`LoadingRegion`) is `aria-busy="true"` and holds a
 // visually hidden "Loading {what}", so a screen reader meets a sentence where a
-// sighted reader meets a pulse. Only a whole page announces itself (`announce`):
+// sighted reader meets the field. Only a whole page announces itself (`announce`):
 // a page with five loading panels would otherwise read five sentences at once.
 
 // PART E (Reference E): A SKELETON IS NOW A SHAPE IN A LIVING DOT FIELD. It keeps its DOM box and size exactly as
