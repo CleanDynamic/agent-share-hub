@@ -12,7 +12,8 @@ import { r } from "@/lib/theme/radius";
    ──────────────────────────────────────────────────────────────────────────── */
 
 function Skeleton({ className, style, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <FluidShape aria-hidden="true" className={cn(className)} style={{ borderRadius: r.media, ...style, background: "transparent" }} {...props} />;
+  // `data-bg-animated` stays: the legacy pages and their tests find their skeletons by it.
+  return <FluidShape data-bg-animated="" aria-hidden="true" className={cn(className)} style={{ borderRadius: r.media, ...style, background: "transparent" }} {...props} />;
 }
 
 export { Skeleton };
