@@ -1,5 +1,4 @@
-/* UI-P36 — the sign-in pages' small pure pieces: what the switch carries across,
-   what an emailed link carried, and when each form may be sent.
+/* UI-P36 — the sign-in views' small pure pieces: what an emailed link carried, and when each form may be sent.
 
    The gates are the ones the legacy cards computed in their render; the link
    reading is the one ResetPassword and VerifyEmail did inline. They are here so
@@ -8,19 +7,6 @@
 import type { EmailOtpType } from "@supabase/supabase-js";
 
 import type { InputValidation } from "@/components/auth/AuthInput";
-
-export type AuthMode = "login" | "signup" | "reset" | "verify";
-
-/**
- * The query string the Sign in · Join free switch carries to the other page:
- * the address the visitor was heading for, as `?redirect=…`. `returnTo` is the
- * alias Login also honours; it is carried under the name the rest of the app
- * writes. Nothing else rides along.
- */
-export function carriedSearch(params: URLSearchParams): string {
-  const redirect = params.get("redirect") || params.get("returnTo");
-  return redirect ? `?redirect=${encodeURIComponent(redirect)}` : "";
-}
 
 /** What an emailed link carried, read the way ResetPassword and VerifyEmail read it. */
 export interface EmailLinkParams {

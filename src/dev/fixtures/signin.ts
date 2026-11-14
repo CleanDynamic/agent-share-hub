@@ -1,4 +1,4 @@
-/* UI-P36 — Sign in's sample data, as `SignInView` and its bodies take it.
+/* UI-P36 — Sign in's sample data, as the sign-in dialog's bodies take it.
 
    DEV ONLY (imported from `src/pages/dev/**` and `src/dev/**` alone). The board
    draws the Sign in card with empty fields (the reference shows the fields'

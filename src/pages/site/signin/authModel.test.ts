@@ -1,9 +1,8 @@
-// UI-P36 — what the switch carries, what an emailed link carried, and when each form may be sent.
+// UI-P36 — what an emailed link carried, and when each form may be sent.
 
 import { describe, expect, it } from "vitest";
 
 import {
-  carriedSearch,
   loginCanSubmit,
   readEmailLink,
   resetConfirmCanSubmit,
@@ -13,30 +12,6 @@ import {
 } from "./authModel";
 
 const params = (query: string) => new URLSearchParams(query);
-
-describe("carriedSearch", () => {
-  it("carries the address the visitor was heading for, encoded", () => {
-    expect(carriedSearch(params("redirect=/gallery"))).toBe("?redirect=%2Fgallery");
-    expect(carriedSearch(params("redirect=%2Fb2%2Finvoice-triage-agent%3Ftab%3Dparts"))).toBe(
-      "?redirect=%2Fb2%2Finvoice-triage-agent%3Ftab%3Dparts",
-    );
-  });
-
-  it("carries the returnTo alias under the name the rest of the app writes", () => {
-    expect(carriedSearch(params("returnTo=/gallery"))).toBe("?redirect=%2Fgallery");
-  });
-
-  it("prefers redirect over returnTo, as Login does", () => {
-    expect(carriedSearch(params("returnTo=/b&redirect=/a"))).toBe("?redirect=%2Fa");
-  });
-
-  it("carries nothing else, and nothing when there is no destination", () => {
-    expect(carriedSearch(params(""))).toBe("");
-    expect(carriedSearch(params("frame=site&token=abc"))).toBe("");
-    expect(carriedSearch(params("redirect="))).toBe("");
-    expect(carriedSearch(params("frame=site&redirect=/gallery"))).toBe("?redirect=%2Fgallery");
-  });
-});
 
 describe("readEmailLink", () => {
   it("reads a token from the path first, then token_hash, then token", () => {

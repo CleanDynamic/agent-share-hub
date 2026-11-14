@@ -62,7 +62,8 @@ describe("Appearance", () => {
   });
 
   it("is the control the phone's account sheet and the sign-in page already draw, not a second one", () => {
-    for (const file of ["src/components/shell/MobileHeader.tsx", "src/pages/site/signin/SignInView.tsx", "src/pages/site/settings/AppearanceView.tsx"]) {
+    // The sign-in page's theme control went with the page: the sign-in dialog has none.
+    for (const file of ["src/components/shell/MobileHeader.tsx", "src/pages/site/settings/AppearanceView.tsx"]) {
       expect(readFileSync(file, "utf8"), file).toContain("ThemeSegmented");
     }
   });
