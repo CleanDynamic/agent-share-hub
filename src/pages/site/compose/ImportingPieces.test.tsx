@@ -179,8 +179,9 @@ describe("prompts already in", () => {
     expect(within(places[0]).getByText("First prompt")).toBeTruthy();
     expect(within(places[1]).getByText("Second prompt")).toBeTruthy();
     // SV-05 P4: the blocks and the prompt overlap in the slot while the blocks fade, so the socket is never empty for a frame.
-    expect(within(within(places[0]).getByTestId("socket-blocks")).getByTestId("loading-blocks").style.opacity).toBe("0");
-    expect(within(within(places[2]).getByTestId("socket-blocks")).getByTestId("loading-blocks").style.opacity).toBe("1");
+    // Part E: a written socket's blocks are gone (their dots wind down in the field); an empty socket's keep drawing.
+    expect(within(within(places[0]).getByTestId("socket-blocks")).getByTestId("loading-blocks").hasAttribute("data-gone")).toBe(true);
+    expect(within(within(places[2]).getByTestId("socket-blocks")).getByTestId("loading-blocks").hasAttribute("data-gone")).toBe(false);
   });
 });
 
