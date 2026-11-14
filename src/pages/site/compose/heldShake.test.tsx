@@ -25,7 +25,7 @@ afterEach(() => {
   __resetMotionMediaCache();
 });
 
-const overlay = { html: "<div>Prompt 2</div>", w: 648, h: 128, type: "tile" as const };
+const overlay = { html: "<div>Prompt 2</div>", w: 648, h: 128, type: "tile" as const, place: 0 };
 
 describe("G12: the shake on pick-up", () => {
   it("plays once, on an element inside the held copy", () => {

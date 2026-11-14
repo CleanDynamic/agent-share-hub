@@ -70,6 +70,26 @@ export function HeldCopy({ overlay }: { overlay: NonNullable<Sorting["overlay"]>
   useLayoutEffect(() => {
     if (inner.current) shakeOnce(inner.current);
   }, []);
+  // G13: each change of landing place shakes once, when the slides that change started have ended. A later change does not take an
+  // earlier one's shake away; a new shake takes the place of one still running (`shakeOnce`), so one runs at a time.
+  const place = overlay.place ?? 0;
+  const slidesDone = useRef(overlay.slidesDone);
+  slidesDone.current = overlay.slidesDone;
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (place === 0) return;
+    void Promise.resolve(slidesDone.current?.())
+      .catch(() => undefined)
+      .then(() => {
+        if (mounted.current && inner.current) shakeOnce(inner.current);
+      });
+  }, [place]);
   return (
     <div data-testid="held-copy" data-held={overlay.type} data-ground={whole ? "surface" : undefined} aria-hidden="true" style={{ width: overlay.w, fontSize: textStep.body, cursor: "grabbing", pointerEvents: "none", position: "relative" }}>
       <div ref={inner} data-held-shake="" style={{ position: "relative", ...(whole ? { backgroundColor: t.surface, borderRadius: 12, boxShadow: shadow } : { boxShadow: shadow, borderRadius: 12 }) }}>

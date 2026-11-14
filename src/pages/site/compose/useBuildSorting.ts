@@ -23,6 +23,7 @@ import { RAIL_ROOM, skeletonOf, type HeldKind, type Skeleton, type SkeletonConta
 import { prefersReducedMotion } from "@/lib/theme/motion";
 
 import { SLIDE_ATTR, type Box } from "./flip";
+import { shakeOnce } from "./listMotion";
 
 /** What is held: a top-level tile, a tile among its siblings, a session, a part. */
 export type HeldType = "tile" | "nested" | "session" | "part";
@@ -387,6 +388,8 @@ export interface SortingOptions {
   say: (line: string) => void;
   /** Where an element stands at rest, by its slide id: the List's animator (`ListMotion.restOf`). Without it, boxes are read as drawn. */
   restOf?: (slideId: string) => Box | null;
+  /** Prompt 6 G13: resolves when the List's last slides have ended (`ListMotion.plan().slides.finished`). */
+  slidesDone?: () => Promise<unknown>;
   /** UX-02 P3: an item from Sources dropped on the List. Resolves true once written, false when it was not. Absent: the List takes nothing from outside. */
   add?: (add: IncomingAdd) => Promise<boolean>;
   /** UX-02 P3: whether a held file can go inside this tile (a dropped file attaches inside that step). */
@@ -404,6 +407,8 @@ interface Drag {
   size: { w: number; h: number };
   /** UX-02 P3: an item from Sources, not yet in the build. Its held copy is its row's markup, taken at the start. */
   incoming?: Incoming;
+  /** Prompt 6 G13: how many times its landing place has changed since it was picked up. */
+  place?: number;
 }
 
 export interface Sorting {
@@ -418,7 +423,8 @@ export interface Sorting {
   send: string | null;
   skeleton: Skeleton | null;
   skeletonShown: boolean;
-  overlay: { html: string; w: number; h: number; type: HeldType } | null;
+  /** Prompt 6 G13: `place` counts the changes of landing place; `slidesDone` resolves when the slides of the last change have ended. */
+  overlay: { html: string; w: number; h: number; type: HeldType; place: number; slidesDone?: () => Promise<unknown> } | null;
   /** Where the held thing was when it was picked up: the copy keeps to it, though its own element moves. Prompt 6 G7: `column`
    *  for a tile of the list (top-level or nested), whose copy then moves up and down only. */
   initial: { left: number; top: number; column?: boolean } | null;
@@ -494,11 +500,26 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     candidate.current = { send: null, open: null };
   };
 
-  const set = (next: Drag | null) => {
+  /** Prompt 6 G13: where the held thing last had a place, and how many times that has changed. A dwell that takes the place away, or a decision that leaves it, changes nothing. */
+  const lastSpot = useRef<string | null>(null);
+  const placeCount = useRef(0);
+  const set = (given: Drag | null) => {
+    let next = given;
+    if (next) {
+      const spot = spotOf(next.live, next.held.id);
+      const key = spot ? `${spot.part ?? ""}|${spot.session ?? ""}|${spot.parent ?? ""}|${spot.index}` : null;
+      if (key && key !== lastSpot.current) {
+        if (lastSpot.current !== null) placeCount.current += 1;
+        lastSpot.current = key;
+      }
+      if (next.place !== placeCount.current) next = { ...next, place: placeCount.current };
+    }
     dragRef.current = next;
     setDrag(next);
     setTick((value) => value + 1);
   };
+  /** Prompt 6 G13: the tile dropped, whose card shakes once it has landed and its copy is gone. */
+  const settleShake = useRef<string | null>(null);
 
   // After every change of order: measure the page for the layer. (What moved is already sliding: the animator's pass.)
   const live = drag?.live ?? pending?.model ?? null;
@@ -643,6 +664,16 @@ export function useBuildSorting(options: SortingOptions): Sorting {
       timers.current.settle = window.setTimeout(() => {
         setSkeleton(null);
         setHidden(null);
+        // G13: the tile dropped is drawn again where it landed: its card shakes once, on the next frame.
+        const landed = settleShake.current;
+        settleShake.current = null;
+        if (landed) {
+          window.requestAnimationFrame(() => {
+            const own = rootRef.current?.querySelector(`[data-skel-id="${landed}"]`);
+            const card = own?.getAttribute("data-skel-kind") === "tile" ? own.firstElementChild : own;
+            if (card) shakeOnce(card);
+          });
+        }
       }, prefersReducedMotion() ? 0 : SETTLE_MS);
     }, prefersReducedMotion() ? 0 : after);
   };
@@ -654,6 +685,9 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     const held = heldOf(dragId, o.model);
     const root = rootRef.current;
     if (!held || !root) return;
+    lastSpot.current = null;
+    placeCount.current = 0;
+    settleShake.current = null;
     setSettles(true);
     window.clearTimeout(timers.current.fade);
     window.clearTimeout(timers.current.settle);
@@ -817,6 +851,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     dragRef.current = null;
     setDrag(null);
     setTick((value) => value + 1);
+    if (current.held.type === "tile" || current.held.type === "nested") settleShake.current = current.held.id;
     fadeOut(SETTLE_MS);
     if (viaKeys.current) setRefocus(current.held.id);
     if (current.send) {
@@ -925,7 +960,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     setRefocus(null);
   }, [refocus, drag, tick]);
 
-  const overlay = useMemo(() => (drag && drag.html ? { html: drag.html, w: drag.size.w, h: drag.size.h, type: drag.held.type } : null), [drag]);
+  const overlay = useMemo(() => (drag && drag.html ? { html: drag.html, w: drag.size.w, h: drag.size.h, type: drag.held.type, place: drag.place ?? 0, slidesDone: optionsRef.current.slidesDone } : null), [drag]);
 
   return {
     rootRef,

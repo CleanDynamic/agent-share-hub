@@ -285,7 +285,8 @@ export function finishSlides(root: ParentNode): void {
  * asked for while one runs takes its place, so one runs at a time; it ends at rest. None under reduced motion.
  */
 export function shakeOnce(element: Element, delay = 0): MotionRun {
-  return runOf([animateOn(element, "shake", shakeFrames(), { duration: SHAKE_MS, delay })]);
+  // Added to whatever else moves the element (a nested tile's slide), so neither overwrites the other.
+  return runOf([animateOn(element, "shake", shakeFrames(), { duration: SHAKE_MS, delay, composite: "add" })]);
 }
 
 /* ── slides ── */

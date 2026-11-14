@@ -2359,6 +2359,7 @@ export function BuildList(raw: BuildListProps) {
     sentLine: (id, parentId) => NEST_LIST_COPY.nowSentWith(labelOf(stepsById, id), labelOf(stepsById, parentId)),
     say: setSaid,
     restOf: motion.restOf,
+    slidesDone: () => motion.plan().slides.finished,
     add: base.onAddFromSources,
     // A held file goes inside a step that takes a dropped file: a prompt (as a file dropped on its card is attached, P1).
     takesFile: (id) => stepsById.get(id)?.kind === "prompt",
