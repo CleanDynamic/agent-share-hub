@@ -15,9 +15,14 @@ import type { SignupFormProps } from "@/pages/site/signin/SignupForm";
 
 const noop = () => undefined;
 
-export type SigninMode = "login" | "signup" | "reset" | "sent" | "checking" | "confirm" | "dead" | "verify";
+export type SigninMode =
+  | "login" | "signup" | "reset" | "sent" | "checking" | "confirm" | "dead"
+  | "verify" | "verify-sending" | "verify-sent" | "verify-cooldown" | "verifying" | "verified" | "failed";
 
-export const SIGNIN_MODES: readonly SigninMode[] = ["login", "signup", "reset", "sent", "checking", "confirm", "dead", "verify"];
+export const SIGNIN_MODES: readonly SigninMode[] = [
+  "login", "signup", "reset", "sent", "checking", "confirm", "dead",
+  "verify", "verify-sending", "verify-sent", "verify-cooldown", "verifying", "verified", "failed",
+];
 
 const providers = { onProvider: noop, loadingProvider: null } as const;
 

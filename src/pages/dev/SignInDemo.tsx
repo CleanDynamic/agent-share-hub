@@ -1,12 +1,11 @@
 /* /dev/kit/pages/signin?theme=noon|dusk&viewport=desktop|mobile — the sign-in dialog (Reference A), open, with the
    sample data, over an empty bare frame.
 
-   `?mode=signup|reset|sent|checking|confirm|dead|verify` draws the other views in the same dialog. `?error=1` fills the Sign in view's
+   `?mode=` any of SIGNIN_MODES (the reset and verify states among them) draws the other views in the same dialog. `?error=1` fills the Sign in view's
    error line ("Wrong email or password"), so the two can be compared (G9). Nothing here reaches a production bundle. */
 
 import { useSearchParams } from "react-router-dom";
 
-import { AuthEmailVerificationCard } from "@/components/auth/AuthEmailVerificationCard";
 import { SiteFrameView } from "@/components/shell/SiteFrame";
 import { signinFixture, SIGNIN_MODES, type SigninMode } from "@/dev/fixtures/signin";
 import { useDesignTheme } from "@/dev/useDesignTheme";
@@ -14,6 +13,7 @@ import { LoginForm } from "@/pages/site/signin/LoginForm";
 import { LinkChecking, ResetConfirmForm, ResetLinkError, ResetRequestForm, ResetSent } from "@/pages/site/signin/ResetForms";
 import { AccountSwitch, BackToSignIn, SignInDialogFrame } from "@/pages/site/signin/SignInDialogFrame";
 import { SignupForm } from "@/pages/site/signin/SignupForm";
+import { VerifyFailed, VerifyPending, VerifySuccess } from "@/pages/site/signin/VerifyForms";
 
 import type { DesignPageProps } from "./KitPages";
 
@@ -55,8 +55,22 @@ export default function SignInDemo({ viewport }: DesignPageProps) {
           <ResetConfirmForm {...sample.confirm} />
         ) : mode === "dead" ? (
           <ResetLinkError onRequestNew={noop} />
-        ) : mode === "verify" ? (
-          <AuthEmailVerificationCard email="you@studio.com" resendState="idle" onResend={noop} onChangeEmail={noop} />
+        ) : mode === "verify" || mode === "verify-sending" || mode === "verify-sent" || mode === "verify-cooldown" ? (
+          <VerifyPending
+            email="you@studio.com"
+            resendState={mode === "verify" ? "idle" : mode === "verify-sending" ? "sending" : mode === "verify-sent" ? "sent" : "cooldown"}
+            cooldownSeconds={45}
+            onResend={noop}
+            onChangeEmail={noop}
+          />
+        ) : mode === "verifying" ? (
+          <LinkChecking title="Verifying your email…">
+            We&apos;re checking the link you opened. This page updates on its own in a moment.
+          </LinkChecking>
+        ) : mode === "verified" ? (
+          <VerifySuccess onContinue={noop} />
+        ) : mode === "failed" ? (
+          <VerifyFailed onResend={noop} onBackToSignIn={noop} />
         ) : (
           <LoginForm {...sample.login} forgotTo={here("reset")} error={params.get("error") ? "Wrong email or password" : undefined} />
         )}

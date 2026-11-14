@@ -10,6 +10,13 @@ const VIEWS: { mode: string; words: string[] }[] = [
   { mode: "checking", words: ["Checking your reset link…", "We're confirming the link is still valid."] },
   { mode: "confirm", words: ["Choose a new password", "Your reset link is valid.", "Update password"] },
   { mode: "dead", words: ["This reset link doesn't work", "It may have expired or already been used.", "Request a new one"] },
+  { mode: "verify", words: ["Check your inbox", "We sent a verification link to", "Didn't get the email?", "Resend verification", "Wrong email?", "Sign up again"] },
+  { mode: "verify-sending", words: ["Sending…"] },
+  { mode: "verify-sent", words: ["Sent again — it should arrive in a minute."] },
+  { mode: "verify-cooldown", words: ["Resend available in 45s"] },
+  { mode: "verifying", words: ["Verifying your email…", "We're checking the link you opened."] },
+  { mode: "verified", words: ["You're in", "Your email is confirmed and your account is active.", "Continue to OpenBuilds.ai"] },
+  { mode: "failed", words: ["This link doesn't work", "It may have expired or been used already.", "Send a new link"] },
 ];
 
 async function open(page: Page, theme: string, mode: string) {
@@ -33,7 +40,7 @@ const fits = (page: Page) =>
 
 for (const theme of THEMES) {
   test.describe(`sign-in views, ${theme}`, () => {
-    test("G8, G10: each reset state, its words, the same frame, within 540", async ({ page }) => {
+    test("G8, G10: each reset and verify state, its words, the same frame, within 540", async ({ page }) => {
       await open(page, theme, "login");
       const signIn = await boxes(page);
       for (const view of VIEWS) {

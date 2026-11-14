@@ -19,9 +19,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { SeoHead } from "@/components/SeoHead";
-import { AuthEmailErrorCard } from "@/components/auth/AuthEmailErrorCard";
-import { AuthEmailSuccessCard } from "@/components/auth/AuthEmailSuccessCard";
-import { AuthEmailVerificationCard, type ResendState } from "@/components/auth/AuthEmailVerificationCard";
+import type { ResendState } from "@/components/auth/AuthEmailVerificationCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { resendSignupEmail, verifyEmailLink } from "@/lib/auth/emailLink";
 import { resolvePostAuthRoute } from "@/lib/auth/postAuthRoute";
@@ -29,6 +27,7 @@ import { resolvePostAuthRoute } from "@/lib/auth/postAuthRoute";
 import { readEmailLink } from "./authModel";
 import { LinkChecking } from "./ResetForms";
 import { SignInShell } from "./SignInShell";
+import { VerifyFailed, VerifyPending, VerifySuccess } from "./VerifyForms";
 import { SITE_NAME } from "@/lib/site";
 
 const RESEND_COOLDOWN_SECONDS = 45;
@@ -130,11 +129,11 @@ export function VerifyEmailPage() {
             We&apos;re checking the link you opened. This page updates on its own in a moment.
           </LinkChecking>
         ) : mode === "success" ? (
-          <AuthEmailSuccessCard onContinue={handleContinue} />
+          <VerifySuccess onContinue={handleContinue} />
         ) : mode === "error" ? (
-          <AuthEmailErrorCard onResend={handleResend} onBackToSignIn={() => navigate("/login", { replace: true })} />
+          <VerifyFailed onResend={handleResend} onBackToSignIn={() => navigate("/login", { replace: true })} />
         ) : (
-          <AuthEmailVerificationCard
+          <VerifyPending
             email={email || "your email"}
             resendState={resendState}
             cooldownSeconds={cooldown}

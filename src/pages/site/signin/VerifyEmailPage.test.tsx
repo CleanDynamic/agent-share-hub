@@ -191,8 +191,9 @@ describe("an emailed link", () => {
     fireEvent.click(screen.getByRole("button", { name: "Send a new link" }));
     await waitFor(() => expect(resendSignupEmail).toHaveBeenCalledWith("ada@example.com"));
 
-    fireEvent.click(screen.getByRole("button", { name: "Back to sign in" }));
-    await waitFor(() => expect(where.at()).toBe("/login"));
+    // The dialog's way back is row 1's link alone (D3); the failed view's body carries none.
+    expect(screen.queryByRole("button", { name: "Back to sign in" })).toBeNull();
+    expect(where.at()).toBe("/verify-email/tok");
   });
 });
 
