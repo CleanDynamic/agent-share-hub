@@ -71,13 +71,13 @@ export function LoginForm({
         <Gap size={16} />
         <AuthForm onSubmit={onSubmit}>
           <AuthField
-            label="Email or username"
+            label="Email"
             icon={User}
             value={emailOrUsername}
             onChange={onEmailOrUsernameChange}
-            placeholder="Email or username"
+            placeholder="Email"
             required
-            autoComplete="username"
+            autoComplete="email"
           />
           <Gap size={16} />
           <AuthField
@@ -125,13 +125,13 @@ export function LoginForm({
       <OrRule>or with email</OrRule>
       <AuthForm onSubmit={onSubmit}>
         <AuthField
-          label="Email or username"
+          label="Email"
           icon={User}
           value={emailOrUsername}
           onChange={onEmailOrUsernameChange}
-          placeholder="Email or username"
+          placeholder="Email"
           required
-          autoComplete="username"
+          autoComplete="email"
         />
         <AuthField
           label="Password"

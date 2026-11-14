@@ -3,7 +3,7 @@
    A REPAINT OF THE FORM, NOT A REWRITE OF SIGN-IN. This is `pages/Login.tsx`'s
    state and handlers, in the same order and with the same words: the redirect
    honours both `redirect` and its `returnTo` alias, a signed-in visitor is sent
-   on at once, an identifier without "@" is a username, a refused password says
+   on at once, sign-in is by email only (G4: text without "@" is answered before any request), a refused password says
    "Wrong email or password" whichever way it was refused, an unconfirmed email
    says so, and a successful sign-in goes to the redirect if there is one and
    otherwise to wherever `resolvePostAuthRoute` says (onboarding, or Home).
@@ -24,7 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { startOAuthSignIn } from "@/lib/auth/oauth";
 import { resolvePostAuthRoute } from "@/lib/auth/postAuthRoute";
 import { returnPathFrom } from "@/lib/auth/safeReturnPath";
-import { signInWithEmailOrUsername } from "@/lib/auth/signInWithEmailOrUsername";
+import { signInWithEmail } from "@/lib/auth/signInWithEmail";
 
 import { loginCanSubmit } from "./authModel";
 import { LoginForm } from "./LoginForm";
@@ -58,16 +58,23 @@ export function LoginPanel() {
   }, [isLoggedIn, navigate, redirectParam]);
 
   const handleEmailLogin = async () => {
+    // G4: email only. Text with no "@" is answered here, and no request is sent.
+    if (!emailOrUsername.includes("@")) {
+      setError("Sign in with your email address.");
+      return;
+    }
     setIsSubmitting(true);
     setError("");
     try {
-      const result = await signInWithEmailOrUsername(emailOrUsername, password);
+      const result = await signInWithEmail(emailOrUsername, password);
 
       if (result.outcome !== "signed-in") {
         setError(
-          result.outcome === "email-not-confirmed"
-            ? "Please verify your email before signing in — check your inbox."
-            : "Wrong email or password",
+          result.outcome === "not-an-email"
+            ? "Sign in with your email address."
+            : result.outcome === "email-not-confirmed"
+              ? "Please verify your email before signing in — check your inbox."
+              : "Wrong email or password",
         );
         setIsSubmitting(false);
         return;

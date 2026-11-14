@@ -39,7 +39,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 
 import { verifyEmailLink, resendSignupEmail } from "./emailLink";
 import { onPasswordRecovery, requestPasswordReset, setNewPassword } from "./passwordReset";
-import { signInWithEmailOrUsername } from "./signInWithEmailOrUsername";
+import { signInWithEmail } from "./signInWithEmail";
 import { signUpWithEmail } from "./signUpWithEmail";
 
 beforeEach(() => {
@@ -65,58 +65,43 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("signInWithEmailOrUsername", () => {
-  it("signs in with an email as typed, trimmed, and never looks a username up", async () => {
+describe("signInWithEmail", () => {
+  it("signs in with the email as typed, trimmed, and passes the captcha token straight through", async () => {
     signInWithPassword.mockResolvedValue({ data: { user: { id: "u-1" } }, error: null });
 
-    await expect(signInWithEmailOrUsername("  ada@example.com ", "hunter22")).resolves.toEqual({
+    await expect(signInWithEmail("  ada@example.com ", "hunter22", "tok-1")).resolves.toEqual({
       outcome: "signed-in",
       userId: "u-1",
     });
 
+    expect(signInWithPassword).toHaveBeenCalledWith({ email: "ada@example.com", password: "hunter22", options: { captchaToken: "tok-1" } });
+  });
+
+  it("G4: never looks a username up: text with no @ is refused before any request", async () => {
+    await expect(signInWithEmail("ada_l", "hunter22", "tok-1")).resolves.toEqual({ outcome: "not-an-email" });
     expect(rpc).not.toHaveBeenCalled();
-    expect(signInWithPassword).toHaveBeenCalledWith({ email: "ada@example.com", password: "hunter22" });
-  });
-
-  it("resolves a username to its email first, and signs in with that", async () => {
-    rpc.mockResolvedValue({ data: "ada@example.com", error: null });
-    signInWithPassword.mockResolvedValue({ data: { user: { id: "u-1" } }, error: null });
-
-    await expect(signInWithEmailOrUsername("ada_l", "hunter22")).resolves.toEqual({ outcome: "signed-in", userId: "u-1" });
-
-    expect(rpc).toHaveBeenCalledWith("get_email_by_username", { _username: "ada_l" });
-    expect(signInWithPassword).toHaveBeenCalledWith({ email: "ada@example.com", password: "hunter22" });
-  });
-
-  it("refuses a username that resolves to nothing, without trying the password", async () => {
-    rpc.mockResolvedValueOnce({ data: null, error: null });
-    await expect(signInWithEmailOrUsername("nobody", "x")).resolves.toEqual({ outcome: "unknown-username" });
-
-    rpc.mockResolvedValueOnce({ data: "ada@example.com", error: { message: "boom" } });
-    await expect(signInWithEmailOrUsername("nobody", "x")).resolves.toEqual({ outcome: "unknown-username" });
-
     expect(signInWithPassword).not.toHaveBeenCalled();
   });
 
   it("tells an unconfirmed email from any other refusal, whatever the case of the message", async () => {
     signInWithPassword.mockResolvedValueOnce({ data: { user: null }, error: { message: "Email not confirmed" } });
-    await expect(signInWithEmailOrUsername("ada@example.com", "x")).resolves.toEqual({ outcome: "email-not-confirmed" });
+    await expect(signInWithEmail("ada@example.com", "x")).resolves.toEqual({ outcome: "email-not-confirmed" });
 
     signInWithPassword.mockResolvedValueOnce({ data: { user: null }, error: { message: "EMAIL NOT CONFIRMED" } });
-    await expect(signInWithEmailOrUsername("ada@example.com", "x")).resolves.toEqual({ outcome: "email-not-confirmed" });
+    await expect(signInWithEmail("ada@example.com", "x")).resolves.toEqual({ outcome: "email-not-confirmed" });
 
     signInWithPassword.mockResolvedValueOnce({ data: { user: null }, error: { message: "Invalid login credentials" } });
-    await expect(signInWithEmailOrUsername("ada@example.com", "x")).resolves.toEqual({ outcome: "rejected" });
+    await expect(signInWithEmail("ada@example.com", "x")).resolves.toEqual({ outcome: "rejected" });
   });
 
   it("answers a null user id when the session came back without a user", async () => {
     signInWithPassword.mockResolvedValue({ data: { user: null }, error: null });
-    await expect(signInWithEmailOrUsername("ada@example.com", "x")).resolves.toEqual({ outcome: "signed-in", userId: null });
+    await expect(signInWithEmail("ada@example.com", "x")).resolves.toEqual({ outcome: "signed-in", userId: null });
   });
 
   it("lets a thrown failure through, for the page's one 'something went wrong'", async () => {
     signInWithPassword.mockRejectedValue(new Error("network down"));
-    await expect(signInWithEmailOrUsername("ada@example.com", "x")).rejects.toThrow("network down");
+    await expect(signInWithEmail("ada@example.com", "x")).rejects.toThrow("network down");
   });
 });
 

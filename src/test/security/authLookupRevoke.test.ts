@@ -30,3 +30,15 @@ describe("G1: the auth hardening migration takes get_email_by_username from ever
     expect(SQL).not.toMatch(/CREATE OR REPLACE FUNCTION[^;(]*get_email_by_username/i);
   });
 });
+
+describe("G4: the browser never calls get_email_by_username", () => {
+  const files = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
+      entry.isDirectory() ? files(`${dir}/${entry.name}`) : /\.(ts|tsx)$/.test(entry.name) ? [`${dir}/${entry.name}`] : [],
+    );
+
+  it("has no rpc call to it anywhere in src", () => {
+    const callers = files("src").filter((file) => /rpc\(\s*["'`]get_email_by_username/.test(readFileSync(file, "utf8")));
+    expect(callers).toEqual([]);
+  });
+});

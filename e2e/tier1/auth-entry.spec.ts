@@ -130,7 +130,7 @@ test.describe("the sign-in gate still opens on the same input", () => {
     const submit = page.getByRole("button", { name: "Sign in" });
     await expect(submit).toBeDisabled();
 
-    await page.getByPlaceholder("Email or username").fill("someone@example.com");
+    await page.getByPlaceholder("Email", { exact: true }).fill("someone@example.com");
     await expect(submit).toBeDisabled();
 
     await page.getByPlaceholder("Enter your password").fill("hunter2hunter2");

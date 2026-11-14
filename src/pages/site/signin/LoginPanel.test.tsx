@@ -16,8 +16,8 @@ const startOAuthSignIn = vi.fn();
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ isLoggedIn: auth.isLoggedIn, user: null, session: null, loading: false }),
 }));
-vi.mock("@/lib/auth/signInWithEmailOrUsername", () => ({
-  signInWithEmailOrUsername: (...args: unknown[]) => signIn(...args),
+vi.mock("@/lib/auth/signInWithEmail", () => ({
+  signInWithEmail: (...args: unknown[]) => signIn(...args),
 }));
 vi.mock("@/lib/auth/postAuthRoute", () => ({ resolvePostAuthRoute: (...args: unknown[]) => resolvePostAuthRoute(...args) }));
 vi.mock("@/lib/auth/oauth", () => ({ startOAuthSignIn: (...args: unknown[]) => startOAuthSignIn(...args) }));
@@ -39,7 +39,7 @@ const open = (url = "/login") => renderDialog("login", url.split("?")[1] ?? "");
 const primary = () => document.querySelector<HTMLButtonElement>('[data-variant="signin-primary"]')!;
 
 const fill = (identifier = "ada@example.com", password = "hunter22") => {
-  fireEvent.change(screen.getByPlaceholderText("Email or username"), { target: { value: identifier } });
+  fireEvent.change(screen.getByPlaceholderText("Email"), { target: { value: identifier } });
   fireEvent.change(screen.getByPlaceholderText("Enter your password"), { target: { value: password } });
 };
 const submit = () => fireEvent.click(primary());
@@ -48,7 +48,7 @@ describe("the gate", () => {
   it("opens when both fields have something in them, as the existing spec finds it", () => {
     open();
     expect(primary()).toBeDisabled();
-    fireEvent.change(screen.getByPlaceholderText("Email or username"), { target: { value: "ada@example.com" } });
+    fireEvent.change(screen.getByPlaceholderText("Email"), { target: { value: "ada@example.com" } });
     expect(primary()).toBeDisabled();
     fireEvent.change(screen.getByPlaceholderText("Enter your password"), { target: { value: "hunter22" } });
     expect(primary()).toBeEnabled();
@@ -155,7 +155,7 @@ describe("signing in", () => {
 });
 
 describe("the refusals", () => {
-  it.each(["rejected", "unknown-username"])(
+  it.each(["rejected"])(
     "says Wrong email or password for %s, under the password, announced politely",
     async (outcome) => {
       signIn.mockResolvedValue({ outcome });
@@ -169,6 +169,15 @@ describe("the refusals", () => {
       expect(primary()).toBeEnabled();
     },
   );
+
+  it("G4: asks for an email address when there is no @, before any request is sent", async () => {
+    open();
+    fill("ada_l", "hunter22");
+    submit();
+    expect(await screen.findByText("Sign in with your email address.")).toBeTruthy();
+    expect(signIn).not.toHaveBeenCalled();
+    expect(primary()).toBeEnabled();
+  });
 
   it("says to verify the email when it has not been confirmed", async () => {
     signIn.mockResolvedValue({ outcome: "email-not-confirmed" });
@@ -199,7 +208,7 @@ describe("the refusals", () => {
 
     submit();
     await screen.findByText("Wrong email or password");
-    fireEvent.change(screen.getByPlaceholderText("Email or username"), { target: { value: "grace@example.com" } });
+    fireEvent.change(screen.getByPlaceholderText("Email"), { target: { value: "grace@example.com" } });
     expect(screen.queryByText("Wrong email or password")).toBeNull();
   });
 });
