@@ -24,11 +24,17 @@
 // sighted reader meets a pulse. Only a whole page announces itself (`announce`):
 // a page with five loading panels would otherwise read five sentences at once.
 
-import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
+// PART E (Reference E): A SKELETON IS NOW A SHAPE IN A LIVING DOT FIELD. It keeps its DOM box and size exactly as
+// before, so nothing shifts, but paints nothing: its box and corner radius are registered with the loading region around
+// it (LoadingRegion), whose one canvas draws the dots (src/lib/dots/fluid.ts, FluidField.tsx). A skeleton with no region
+// around it is its own small region. The props are unchanged.
+
+import { useMemo, useRef, type CSSProperties, type HTMLAttributes, type ReactNode } from "react";
 
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 
+import { FluidRegionContext, FluidShape, useFluidRegion } from "./FluidField";
 import { VisuallyHidden } from "./VisuallyHidden";
 
 export interface SkeletonProps {
@@ -45,18 +51,17 @@ export function Skeleton({ width = "100%", height, radius = 8, style }: Skeleton
   /* UI-P97: under the refined look a skeleton is a flat `--well` block at the content's size. Nothing moves: no pulse,
      no shimmer gradient, so there is no animation to guard and none to forget under reduced motion. */
   return (
-    <div
+    <FluidShape
       data-ui="skeleton"
-      data-bg-animated={undefined}
       aria-hidden="true"
       style={{
         width,
         height,
         borderRadius: radius,
-        background: t.well,
         flexShrink: 0,
-        animation: undefined,
         ...style,
+        // The field draws the shape; the box itself is transparent.
+        background: "transparent",
       }}
     />
   );
@@ -67,14 +72,27 @@ export interface LoadingRegionProps extends Omit<HTMLAttributes<HTMLDivElement>,
   what: string;
   /** A polite announcement, for a whole page. A panel among others stays quiet. */
   announce?: boolean;
+  /** Part E: the content is ready; the region's dots wind down from its top. */
+  gone?: boolean;
   children?: ReactNode;
 }
 
-export function LoadingRegion({ what, announce = false, children, ...rest }: LoadingRegionProps) {
+export function LoadingRegion({ what, announce = false, gone = false, children, style, ...rest }: LoadingRegionProps) {
+  const host = useRef<HTMLDivElement>(null);
+  const region = useFluidRegion(host, { gone });
+  const inside = useMemo(() => ({ region }), [region]);
   return (
-    <div data-ui="loading" {...rest} role={announce ? "status" : undefined} aria-busy="true">
+    <div
+      ref={host}
+      data-ui="loading"
+      {...rest}
+      // The region's canvas is placed over it: the region is its containing block unless it is placed already.
+      style={{ position: "relative", ...style }}
+      role={announce ? "status" : undefined}
+      aria-busy="true"
+    >
       <VisuallyHidden>Loading {what}</VisuallyHidden>
-      {children}
+      <FluidRegionContext.Provider value={inside}>{children}</FluidRegionContext.Provider>
     </div>
   );
 }

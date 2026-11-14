@@ -121,6 +121,13 @@ const CATEGORIES: Category[] = [
 ];
 
 const CAPPED: Record<string, { max: number; why: string }> = {
+  "src/lib/dots/fluid.ts": {
+    max: 12,
+    why:
+      "Reference E, the fluid loading fields, from the approved prototype: the two six-step dot palettes, one per " +
+      "value, by density. Dusk #2B6424 #337A2C #3C8333 #4A9C50 #58BA71 #6BE2A0; Noon #BFEDAE #A6EB8C #8DEB6B " +
+      "#77FC49 #56C93A #3F9230. They are drawn on canvases, which cannot read a var(), and no token holds the ramp.",
+  },
   "src/pages/site/signin/codeSprites.ts": {
     max: 10,
     why:
