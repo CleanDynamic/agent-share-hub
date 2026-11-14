@@ -635,7 +635,8 @@ function NestButtons({ step, phone }: { step: Step; phone: boolean }) {
   const own = Boolean(step.inside);
   const Icon = own ? SplitIcon : JoinIcon;
   return (
-    <span ref={ref} data-testid="nest-control" style={{ display: "inline-flex", opacity: shown ? 1 : 0 }}>
+    /* Prompt 6 D5: at the top of its line, so the 21.7px line it inherits adds no fraction to the tile's height. */
+    <span ref={ref} data-testid="nest-control" style={{ display: "inline-flex", verticalAlign: "top", opacity: shown ? 1 : 0 }}>
       <TextButton
         target={phone}
         style={{ ...textLinkBox(phone), ...text(textStep.meta, 500, t.text2), display: "inline-flex", alignItems: "center", gap: space[1] }}
@@ -702,6 +703,7 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
   return (
     <div
       ref={cardRef}
+      {...nest.surface}
       role="group"
       aria-label={`${kind} attached to ${step.inside?.label ?? "a step"}: ${stepTitle(step)}`}
       data-testid="sent-with-tile"
@@ -735,7 +737,7 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
         cursor: "pointer",
         ...(selected ? { background: t.selectedFill, borderColor: t.selectedEdge, boxShadow: t.selectedRing } : null),
         ...colourEdge(step.colour),
-        ...(nest.takes ? TAKES : null),
+        ...(nest.takes ? TAKES : null), ...nest.touchStyle,
         ...(hidden ? { visibility: "hidden" } : null),
       }}
     >
@@ -750,7 +752,9 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
       {step.kind === "code" ? (
         <>
           <CodePartLine step={step} />
-          <CodeLines text={step.text} compact testId="code-lines" label={`${kind} text`} />
+          <div data-no-drag="" style={{ display: "contents" }}>
+            <CodeLines text={step.text} compact testId="code-lines" label={`${kind} text`} />
+          </div>
         </>
       ) : step.text ? (
         <p style={{ ...text(textStep.body, 400, t.text), lineHeight: "23px", margin: 0, overflowWrap: "anywhere", ...clamp2 }}>{step.text}</p>
@@ -1225,6 +1229,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
     <>
     <div
       ref={cardRef}
+      {...nest.surface}
       role="group"
       aria-label={step.summary ? `${SUMMARY_COPY.title}: ${step.title ?? "untitled"}` : `Prompt ${step.number}: ${step.title ?? "untitled"}`}
       data-testid="step-card"
@@ -1257,7 +1262,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         const files = Array.from(event.dataTransfer.files);
         if (files.length > 0) props.onDropOnStep?.(step.id, files);
       } : undefined}
-      style={{ ...tileCard(selected || over), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
+      style={{ ...tileCard(selected || over), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
         step={step}
@@ -1390,7 +1395,8 @@ function InnerCard({ step, eyebrow, runs, nested, made, outside = [], phone = fa
     <div ref={part} data-testid={nested ? "inner-prompt" : "inner-card"} style={{ ...tileStyle, padding: 12, display: "flex", flexDirection: "column", gap: 6, ...colourEdge(to ? step.colour : undefined) }}>
       {eyebrow ? <Quiet>{eyebrow}</Quiet> : null}
       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-        <span style={{ fontFamily: DM_MONO, fontSize: textStep.meta, color: t.label, ...tnum, flexShrink: 0 }}>{step.number}</span>
+        {/* Prompt 6 D5: a whole-pixel line (19 for 12px; the inherited 1.55 gave 18.6). */}
+        <span data-testid="inner-card-number" style={{ fontFamily: DM_MONO, fontSize: textStep.meta, lineHeight: "19px", color: t.label, ...tnum, flexShrink: 0 }}>{step.number}</span>
         <span style={{ ...text(textStep.body, 500, step.title ? t.text : t.text2), flexGrow: 1, minWidth: 0, ...ellipsis }}>{stepTitle(step)}</span>
         {to ? <CardColour step={step} phone={phone} /> : null}
       </div>
@@ -1557,6 +1563,7 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
   return (
     <div
       ref={cardRef}
+      {...nest.surface}
       role="group"
       aria-label={`${noun} ${step.number}: ${stepTitle(step)}`}
       data-testid="step-card"
@@ -1564,7 +1571,7 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
       tabIndex={0}
       {...focus.bind}
       onClick={() => props.onSelect(step.id)}
-      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
+      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
         step={step}
@@ -1704,6 +1711,7 @@ function PlainCard({ step, index, last, props, noun, body, after, link, typeLine
   return (
     <div
       ref={cardRef}
+      {...nest.surface}
       role="group"
       aria-label={`${noun} ${step.number}: ${stepTitle(step)}`}
       data-testid="step-card"
@@ -1719,7 +1727,7 @@ function PlainCard({ step, index, last, props, noun, body, after, link, typeLine
           props.onSelect(step.id);
         }
       }}
-      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
+      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
         step={step}
@@ -1846,6 +1854,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
   return (
     <div
       ref={cardRef}
+      {...nest.surface}
       role="group"
       aria-label={`Code ${step.number}: ${stepTitle(step)}`}
       data-testid="step-card"
@@ -1860,7 +1869,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
           props.onSelect(step.id);
         }
       }}
-      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
+      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
         step={step}
@@ -1873,7 +1882,9 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
       />
       <div style={{ paddingLeft: INDENT, minWidth: 0 }}>
         <CodePartLine step={step} />
-        <SmallCodeWell text={step.text} lines={all ? Number.POSITIVE_INFINITY : CODE_TILE_LINES} label={`Code ${step.number}`} />
+        <div data-no-drag="" style={{ display: "contents" }}>
+          <SmallCodeWell text={step.text} lines={all ? Number.POSITIVE_INFINITY : CODE_TILE_LINES} label={`Code ${step.number}`} />
+        </div>
       </div>
       <LinkLines lines={[...callsOf(step.id, props.steps), ...definesOf(step.id, props.steps)]} onOpen={props.onSelect} indent={INDENT} />
       <TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />
@@ -1915,6 +1926,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
   return (
     <div
       ref={cardRef}
+      {...nest.surface}
       role="group"
       aria-label={`Check ${step.number}: ${stepTitle(step)}`}
       data-testid="step-card"
@@ -1929,7 +1941,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
           props.onSelect(step.id);
         }
       }}
-      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
+      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
         step={step}
@@ -2328,6 +2340,7 @@ export function BuildList(raw: BuildListProps) {
     canTake: (id, parentId) => base.canNest?.(id, parentId) ?? false,
     collapsed: base.collapsed,
     onOpen: (key) => base.onToggleCollapsed?.(key, false),
+    onSelect: (id) => base.onSelect(id),
     commit: (commit: Commit) => {
       const write = commit.write;
       if (write.kind === "tile" && write.session) return base.onMoveToSession?.(commit.held.id, write.session, { order: write.atEnd, sentence: commit.sentence, notice: true, failed: "Step not moved" });
@@ -2346,6 +2359,7 @@ export function BuildList(raw: BuildListProps) {
     sentLine: (id, parentId) => NEST_LIST_COPY.nowSentWith(labelOf(stepsById, id), labelOf(stepsById, parentId)),
     say: setSaid,
     restOf: motion.restOf,
+    slidesDone: () => motion.plan().slides.finished,
     add: base.onAddFromSources,
     // A held file goes inside a step that takes a dropped file: a prompt (as a file dropped on its card is attached, P1).
     takesFile: (id) => stepsById.get(id)?.kind === "prompt",
@@ -2594,7 +2608,7 @@ export function BuildList(raw: BuildListProps) {
     const neighbour = parts?.parts[at - 1] ?? parts?.parts[at + 1];
     const count = parts?.parts.length ?? 0;
     return (
-      <div key={view.key} data-testid="workstream-group" data-workstream-group={view.key} data-skel-kind="part" data-skel-id={view.key} data-skel-container="" {...{ [SLIDE_ATTR]: `part:${view.key}` }} style={{ ...WORKSTREAM_GROUP, ...(sorting.hidden === view.key ? { visibility: "hidden" } : null), ...(props.find?.view.current === view.key ? FOUND_RING : null) }}>
+      <div key={view.key} data-testid="workstream-group" data-workstream-group={view.key} data-skel-kind="part" data-skel-id={view.key} data-skel-container="" {...{ [SLIDE_ATTR]: `part:${view.key}` }} style={{ ...WORKSTREAM_GROUP, paddingLeft: space[4], paddingRight: space[4], ...(sorting.hidden === view.key ? { visibility: "hidden" } : null), ...(props.find?.view.current === view.key ? FOUND_RING : null) }}>
         <FramePieces radius={WORKSTREAM_FRAME.radius} colour={WORKSTREAM_FRAME.colour} />
         <WorkstreamHead
           part={view}

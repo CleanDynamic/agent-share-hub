@@ -25,9 +25,11 @@ describe("a session", () => {
     expect(copy.querySelectorAll('[role="group"]').length).toBeGreaterThanOrEqual(tiles);
     // The block it sits on, and the outline 6 outside it.
     expect(copy.getAttribute("data-ground")).toBe("surface");
-    expect(copy.style.borderRadius).toBe("12px");
-    expect((copy.firstElementChild as HTMLElement).style.inset).toBe("-6px");
-    expect((copy.firstElementChild as HTMLElement).style.borderRadius).toBe("14px");
+    // Prompt 6 G12: the block and its outline are drawn by the element inside the copy that shakes.
+    const block = copy.querySelector("[data-held-shake]") as HTMLElement;
+    expect(block.style.borderRadius).toBe("12px");
+    expect((block.firstElementChild as HTMLElement).style.inset).toBe("-6px");
+    expect((block.firstElementChild as HTMLElement).style.borderRadius).toBe("14px");
   });
 
   it("folds nothing, says what was picked up, and numbers the sessions in their part", async () => {

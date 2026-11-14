@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { LANE_RADIUS, RAIL_ROOM, placeLine, skeletonOf, socketReach, type SkeletonContainer, type SkeletonInput, type SkeletonItem } from "./sortLayout";
+import { LANE_RADIUS, RAIL_ROOM, RAIL_ROOM_ITEMS, placeLine, skeletonOf, socketReach, type SkeletonContainer, type SkeletonInput, type SkeletonItem } from "./sortLayout";
 
 const item = (id: string, container: string, y: number, h = 100, radius = 12): SkeletonItem => ({ id, container, rect: { x: 100, y, w: 400, h }, radius });
 const base = (over: Partial<SkeletonInput> = {}): SkeletonInput => ({
@@ -46,6 +46,21 @@ describe("lanes", () => {
     expect(lanes[0]).toEqual({ id: "s1", rect: { x: 92, y: -8, w: 416, h: 340 }, radius: LANE_RADIUS, outline: true });
   });
 
+  it("wrap the sockets and nothing else: 4 outside the first and last socket, not round the session's header (G4)", () => {
+    // The session's box starts 82 above its first tile (its header); the lane does not reach it.
+    const { lanes, sockets } = skeletonOf(base({ containers: [{ id: "s1", rect: { x: 100, y: -82, w: 400, h: 406 }, items: ["a", "b", "c"], framed: false, name: "Session 1" }, { id: "s2", rect: { x: 100, y: 318, w: 400, h: 182 }, items: ["d"], framed: false, name: "Session 2" }] }));
+    const mine = sockets.filter((socket) => ["a", "b", "c"].includes(socket.id));
+    const top = Math.min(...mine.map((socket) => socket.rect.y));
+    const bottom = Math.max(...mine.map((socket) => socket.rect.y + socket.rect.h));
+    expect(lanes[0].rect).toEqual({ x: 92, y: top - 4, w: 416, h: bottom - top + 8 });
+    expect(lanes[1].rect).toEqual({ x: 92, y: 392, w: 416, h: 116 });
+  });
+
+  it("keep a session with no tiles in its own place: 8 outside its box, as before (G4)", () => {
+    const { lanes } = skeletonOf(base({ containers: [...base().containers, { id: "s3", rect: { x: 100, y: 600, w: 400, h: 60 }, items: [], framed: false, name: "Session 3" }] }));
+    expect(lanes[2].rect).toEqual({ x: 92, y: 592, w: 416, h: 76 });
+  });
+
   it("draw no second outline round a part, which has its own frame", () => {
     const parts: SkeletonContainer[] = [{ id: "pa", rect: { x: 100, y: 0, w: 400, h: 300 }, items: ["s1"], framed: true, name: "Part 1" }];
     const { lanes } = skeletonOf({ kind: "session", items: [item("s1", "pa", 40, 200)], containers: parts, held: "s1", moved: false, room: 60 });
@@ -54,11 +69,12 @@ describe("lanes", () => {
 });
 
 describe("rail and numbers", () => {
-  it("number each place within its container and tick tiles at their middle", () => {
+  it("number each place within its container and tick tiles 24 below the top of their socket (G5)", () => {
     const { rails } = skeletonOf(base());
     expect(rails.map((rail) => rail.ticks.map((tick) => tick.n))).toEqual([[1, 2, 3], [1]]);
     expect(rails[0].x).toBe(76);
-    expect(rails[0].ticks[0]).toMatchObject({ y: 50, tickFrom: 78, tickTo: 88, numberRight: 74 });
+    expect(rails[0].ticks[0]).toMatchObject({ y: 20, tickFrom: 78, tickTo: 88, numberRight: 74 });
+    expect(rails[0].ticks[1].y).toBe(112 - 4 + 24);
     expect(rails[0].top).toBe(6);
     expect(rails[0].bottom).toBe(318);
   });
@@ -74,11 +90,42 @@ describe("rail and numbers", () => {
   });
 
   it("are left out under 40 of room, with the sockets and lanes kept", () => {
-    const out = skeletonOf(base({ room: RAIL_ROOM - 1 }));
+    const out = skeletonOf(base({ room: RAIL_ROOM_ITEMS - 1 }));
     expect(out.rails).toEqual([]);
     expect(out.sockets).toHaveLength(4);
     expect(out.lanes).toHaveLength(2);
-    expect(skeletonOf(base({ room: RAIL_ROOM })).rails).toHaveLength(2);
+    expect(skeletonOf(base({ room: RAIL_ROOM_ITEMS })).rails).toHaveLength(2);
+  });
+
+  describe("a list tile held in a build with a part frame (G2)", () => {
+    // The part frame stands 16 left of the tiles: frame 84, tiles 100.
+    const framed = (over: Partial<SkeletonInput> = {}) => base({ frame: 84, room: 32, ...over });
+
+    it("stand from the frame's left edge: rail 16 left, ticks 12 to 4 left, numbers ending 18 left", () => {
+      const { rails } = skeletonOf(framed());
+      expect(rails).toHaveLength(2);
+      expect(rails[0].x).toBe(68);
+      expect(rails[0].ticks[0]).toMatchObject({ tickFrom: 72, tickTo: 80, numberRight: 66 });
+    });
+
+    it("run from the first socket's top to the last socket's bottom, inside the lane", () => {
+      const { rails, lanes } = skeletonOf(framed());
+      expect([rails[0].top, rails[0].bottom]).toEqual([-4, 328]);
+      expect(rails[0].top).toBeGreaterThanOrEqual(lanes[0].rect.y);
+      expect(rails[0].bottom).toBeLessThanOrEqual(lanes[0].rect.y + lanes[0].rect.h);
+    });
+
+    it("need 32 of room left of the frame", () => {
+      expect(RAIL_ROOM).toBe(32);
+      expect(skeletonOf(framed({ room: 31 })).rails).toEqual([]);
+      expect(skeletonOf(framed({ room: 32 })).rails).toHaveLength(2);
+    });
+
+    it("draw no rail for a container whose numbers reach three digits, so no number leaves the gutter", () => {
+      const many = Array.from({ length: 100 }, (_, at) => item(`t${at}`, "s9", 1000 + at * 112));
+      const out = skeletonOf(framed({ items: many, containers: [{ id: "s9", rect: { x: 100, y: 1000, w: 400, h: 11200 }, items: many.map((entry) => entry.id), framed: false, name: "Session 9" }], held: "t0" }));
+      expect(out.rails).toEqual([]);
+    });
   });
 });
 
@@ -93,5 +140,25 @@ describe("the target", () => {
     expect(target?.words).toEqual({ lead: "Lands here", place: "Session 1 · 2 of 3" });
     expect(placeLine("Part 2", 0, 1)).toBe("Part 2 · 1 of 1");
     expect(placeLine("Build", 2, 4)).toBe("Build · 3 of 4");
+  });
+});
+
+describe("the spacing constants (Prompt 6 G6)", () => {
+  /** Off the 4px grid, each for a reason; everything else in the module is a multiple of 4. */
+  const OFF_GRID: Record<string, string> = {
+    FRAME_NUMBER_END: "18: a two-digit number must end at 310 to clear Sources at 296 (approved)",
+    TICK_FROM: "22: today's rule, kept for a nested tile, a session, a part and a build with no parts",
+    NUMBER_END: "26: today's rule, kept as TICK_FROM",
+    RAIL_INSET: "14: today's rule, kept as TICK_FROM",
+    SESSION_TICK_DOWN: "22: session and part ticks are unchanged (G5)",
+    SOCKET_NUMBER_IN: "10: SV-05 P4's numbers inside an import's sockets, outside this prompt",
+    LANE_RADIUS: "14: a radius, not a spacing; radii stay concentric as they are",
+    FRAME_PLACES_MAX: "100: a count of places, not a spacing",
+  };
+
+  it("are multiples of 4, or listed with the reason they are not", async () => {
+    const module = (await import("./sortLayout")) as Record<string, unknown>;
+    const off = Object.entries(module).filter(([name, value]) => typeof value === "number" && value % 4 !== 0 && !(name in OFF_GRID));
+    expect(off).toEqual([]);
   });
 });

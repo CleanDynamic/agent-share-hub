@@ -6,7 +6,8 @@
 //
 // All numbers are the prompt's: a socket sits 4 outside its component (half the gap where the gap is under 8), a lane 8
 // outside its container with radius 14, the rail 24 left of the components with ticks 10 wide from 22 to 12 left, and numbers
-// ending 26 left. The rail and numbers need 40 free to the left.
+// ending 26 left. The rail and numbers need 40 free to the left. Prompt 6: a list tile held in a build with parts stands its rail
+// from the part frame instead (`FRAME_*`, `RAIL_ROOM`).
 
 export type HeldKind = "tile" | "session" | "part";
 
@@ -49,19 +50,39 @@ export interface SkeletonInput {
   room: number;
   /** SV-05 P4: an import's sockets: each number inside its socket, `SOCKET_NUMBER_IN` from its left edge, and no rail. */
   inside?: boolean;
+  /**
+   * Prompt 6 G2: x of the part frame's left edge, when a list tile is held in a build with parts. The rail, ticks and numbers then
+   * stand from it (`FRAME_*`), and `room` is measured from it against `RAIL_ROOM`.
+   */
+  frame?: number;
 }
 
 export const SOCKET_OUT = 4;
 export const SOCKET_MIN_GAP = 8;
 export const LANE_OUT = 8;
+/** Prompt 6 G4: a lane stands this far outside its sockets, on every side. */
+export const LANE_GAP = 4;
 export const LANE_RADIUS = 14;
 export const RAIL_AT = 24;
 export const TICK_FROM = 22;
 export const TICK_TO = 12;
 export const NUMBER_END = 26;
-export const RAIL_ROOM = 40;
+/** Prompt 6 G2: the room a list tile's rail needs left of the part frame: numbers ending 18 left of it, two digits 13.2 wide. */
+export const RAIL_ROOM = 32;
+/** The room the rail needs left of the components themselves, everywhere else (a nested tile, a session, a part, no parts). */
+export const RAIL_ROOM_ITEMS = 40;
+/** Prompt 6 G2: from the part frame's left edge, the rail 16 left, ticks from 12 to 4 left, numbers ending 18 left. */
+export const FRAME_RAIL_AT = 16;
+export const FRAME_TICK_FROM = 12;
+export const FRAME_TICK_TO = 4;
+/** Off the 4px grid on purpose (x 310 at 1440): at 20 left a two-digit number (13.2 wide) would cross into Sources. */
+export const FRAME_NUMBER_END = 18;
+/** A container with this many places or more has three-digit numbers, which do not fit the gutter: no rail for it. */
+export const FRAME_PLACES_MAX = 100;
 export const RAIL_INSET = 14;
 export const SESSION_TICK_DOWN = 22;
+/** Prompt 6 G5: a tile's tick stands this far below the top of its socket. */
+export const TILE_TICK_DOWN = 24;
 /** SV-05 P4: how far in from a socket's left edge its number stands, when the numbers are inside. */
 export const SOCKET_NUMBER_IN = 10;
 export const EMPTY_PLACE_HEIGHT = 44;
@@ -118,6 +139,8 @@ export interface Skeleton {
   lanes: Lane[];
   rails: Rail[];
   target: Target | null;
+  /** Prompt 6 G3: where the layer's parent is drawn, when the boxes were rounded against it; the layer moves to its whole pixel. */
+  origin?: { x: number; y: number };
 }
 
 const grow = (rect: Rect, top: number, right: number, bottom: number, left: number): Rect => ({ x: rect.x - left, y: rect.y - top, w: rect.w + left + right, h: rect.h + top + bottom });
@@ -149,27 +172,42 @@ export function skeletonOf(input: SkeletonInput): Skeleton {
     const out = reach.get(item.id) ?? SOCKET_OUT;
     return { id: item.id, rect: grow(item.rect, out, out, out, out), radius: item.radius + out };
   });
-  const lanes: Lane[] = input.containers.map((container) => ({ id: container.id, rect: grow(container.rect, LANE_OUT, LANE_OUT, LANE_OUT, LANE_OUT), radius: LANE_RADIUS, outline: !container.framed }));
-  const rails: Rail[] = [];
   const socketOf = new Map(sockets.map((socket) => [socket.id, socket]));
-  if (input.inside || input.room >= RAIL_ROOM) {
+  // G4: a lane wraps its container's sockets and nothing else (not a session's header); an empty container keeps its own place.
+  const lanes: Lane[] = input.containers.map((container) => {
+    const mine = container.items.map((id) => socketOf.get(id)).filter((socket): socket is Socket => Boolean(socket));
+    if (mine.length === 0) return { id: container.id, rect: grow(container.rect, LANE_OUT, LANE_OUT, LANE_OUT, LANE_OUT), radius: LANE_RADIUS, outline: !container.framed };
+    const x = Math.min(...mine.map((socket) => socket.rect.x));
+    const y = Math.min(...mine.map((socket) => socket.rect.y));
+    const right = Math.max(...mine.map((socket) => socket.rect.x + socket.rect.w));
+    const bottom = Math.max(...mine.map((socket) => socket.rect.y + socket.rect.h));
+    return { id: container.id, rect: grow({ x, y, w: right - x, h: bottom - y }, LANE_GAP, LANE_GAP, LANE_GAP, LANE_GAP), radius: LANE_RADIUS, outline: !container.framed };
+  });
+  const rails: Rail[] = [];
+  const frame = input.inside ? undefined : input.frame;
+  if (input.inside || input.room >= (frame === undefined ? RAIL_ROOM_ITEMS : RAIL_ROOM)) {
     for (const container of input.containers) {
       const mine = container.items.map((id) => input.items.find((item) => item.id === id)).filter((item): item is SkeletonItem => Boolean(item));
       if (mine.length === 0) continue;
+      if (frame !== undefined && mine.length >= FRAME_PLACES_MAX) continue;
       const left = Math.min(...mine.map((item) => item.rect.x));
       const lane = grow(container.rect, LANE_OUT, LANE_OUT, LANE_OUT, LANE_OUT);
+      const socketTop = (item: SkeletonItem) => socketOf.get(item.id)?.rect.y ?? item.rect.y;
+      // G2: from the part frame, the rail runs from the first socket's top to the last socket's bottom.
+      const last = socketOf.get(mine[mine.length - 1].id)?.rect;
       rails.push({
         container: container.id,
-        x: left - RAIL_AT,
-        top: lane.y + RAIL_INSET,
-        bottom: lane.y + lane.h - RAIL_INSET,
+        x: frame === undefined ? left - RAIL_AT : frame - FRAME_RAIL_AT,
+        top: frame === undefined ? lane.y + RAIL_INSET : Math.min(...mine.map(socketTop)),
+        bottom: frame === undefined || !last ? lane.y + lane.h - RAIL_INSET : last.y + last.h,
         ticks: mine.map((item, at) => ({
           id: item.id,
           n: at + 1,
-          y: input.kind === "tile" ? item.rect.y + item.rect.h / 2 : item.rect.y + SESSION_TICK_DOWN,
-          numberRight: item.rect.x - NUMBER_END,
-          tickFrom: item.rect.x - TICK_FROM,
-          tickTo: item.rect.x - TICK_TO,
+          // SV-05 P4: a number inside its socket stays at the socket's middle; there is no tick.
+          y: input.kind !== "tile" ? item.rect.y + SESSION_TICK_DOWN : input.inside ? item.rect.y + item.rect.h / 2 : socketTop(item) + TILE_TICK_DOWN,
+          numberRight: frame === undefined ? item.rect.x - NUMBER_END : frame - FRAME_NUMBER_END,
+          tickFrom: frame === undefined ? item.rect.x - TICK_FROM : frame - FRAME_TICK_FROM,
+          tickTo: frame === undefined ? item.rect.x - TICK_TO : frame - FRAME_TICK_TO,
           ...(input.inside ? { numberLeft: (socketOf.get(item.id)?.rect.x ?? item.rect.x) + SOCKET_NUMBER_IN } : null),
         })),
         ...(input.inside ? { inside: true } : null),

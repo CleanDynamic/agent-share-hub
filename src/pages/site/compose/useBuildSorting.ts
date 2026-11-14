@@ -23,6 +23,7 @@ import { RAIL_ROOM, skeletonOf, type HeldKind, type Skeleton, type SkeletonConta
 import { prefersReducedMotion } from "@/lib/theme/motion";
 
 import { SLIDE_ATTR, type Box } from "./flip";
+import { shakeOnce } from "./listMotion";
 
 /** What is held: a top-level tile, a tile among its siblings, a session, a part. */
 export type HeldType = "tile" | "nested" | "session" | "part";
@@ -243,7 +244,13 @@ const heldKindOf = (type: HeldType): HeldKind => (type === "session" ? "session"
 
 export function measureSkeleton(root: HTMLElement, held: Held, live: MoveModel, start: MoveModel, names: MoveNames, edge: number, boxOf: BoxOf = drawnBox): Skeleton {
   const origin = drawnBox(root);
-  const rel = (box: Box) => ({ x: box.x - origin.x, y: box.y - origin.y, w: box.w, h: box.h });
+  // Prompt 6 G3: every box on whole pixels, against the origin's whole pixel (the layer is moved there, `skeleton.tsx`).
+  const at = { x: Math.round(origin.x), y: Math.round(origin.y) };
+  const rel = (box: Box) => {
+    const x = Math.round(box.x);
+    const y = Math.round(box.y);
+    return { x: x - at.x, y: y - at.y, w: Math.round(box.x + box.w) - x, h: Math.round(box.y + box.h) - y };
+  };
   const radiusOf = (element: Element, fallback: number) => {
     const target = element.getAttribute("data-skel-kind") === "tile" || element.getAttribute("data-skel-kind") === "nested" ? (element.firstElementChild ?? element) : element;
     const r = typeof getComputedStyle === "function" ? Number.parseFloat(getComputedStyle(target).borderTopLeftRadius) : Number.NaN;
@@ -301,8 +308,11 @@ export function measureSkeleton(root: HTMLElement, held: Held, live: MoveModel, 
       containers.push({ id: "", rect: { x, y, w: Math.max(...boxes.map((b) => b.x + b.w)) - x, h: Math.max(...boxes.map((b) => b.y + b.h)) - y }, items: live.parts.map((part) => part.key), framed: false, name: "Build" });
     }
   }
-  const left = items.length > 0 ? Math.min(...items.map((item) => item.rect.x)) + origin.x : origin.x;
-  return skeletonOf({ kind, items, containers, held: held.id, moved, room: left - edge });
+  // Prompt 6 G2: a list tile held in a build with parts: the rail stands from the part frame's left edge, and the room is measured from it.
+  const frames = held.type === "tile" && live.hasParts ? itemsOf(root, "part").map((element) => rel(boxOf(element)).x) : [];
+  const frame = frames.length > 0 ? Math.min(...frames) : undefined;
+  const left = frame !== undefined ? frame + at.x : items.length > 0 ? Math.min(...items.map((item) => item.rect.x)) + at.x : origin.x;
+  return { ...skeletonOf({ kind, items, containers, held: held.id, moved, room: left - edge, frame }), origin: { x: origin.x, y: origin.y } };
 }
 
 /** The right edge of whatever stands to the left of the build column: Sources, or its rail. */
@@ -366,6 +376,8 @@ export interface SortingOptions {
   collapsed?: ReadonlySet<string>;
   /** A folded session's head held over for `DWELL_OPEN_MS`. */
   onOpen?: (sessionKey: string) => void;
+  /** Prompt 6 G9: a tile picked up by a press on it and let go in place is selected, as a click would. */
+  onSelect?: (id: string) => void;
   /** The write at the drop. Resolves true when it was written, false when it was not; void when the page cannot say. */
   commit: (commit: Commit) => Promise<unknown> | void;
   /** One tile sent with another at the drop. Resolves true once written. */
@@ -376,6 +388,8 @@ export interface SortingOptions {
   say: (line: string) => void;
   /** Where an element stands at rest, by its slide id: the List's animator (`ListMotion.restOf`). Without it, boxes are read as drawn. */
   restOf?: (slideId: string) => Box | null;
+  /** Prompt 6 G13: resolves when the List's last slides have ended (`ListMotion.plan().slides.finished`). */
+  slidesDone?: () => Promise<unknown>;
   /** UX-02 P3: an item from Sources dropped on the List. Resolves true once written, false when it was not. Absent: the List takes nothing from outside. */
   add?: (add: IncomingAdd) => Promise<boolean>;
   /** UX-02 P3: whether a held file can go inside this tile (a dropped file attaches inside that step). */
@@ -393,6 +407,8 @@ interface Drag {
   size: { w: number; h: number };
   /** UX-02 P3: an item from Sources, not yet in the build. Its held copy is its row's markup, taken at the start. */
   incoming?: Incoming;
+  /** Prompt 6 G13: how many times its landing place has changed since it was picked up. */
+  place?: number;
 }
 
 export interface Sorting {
@@ -407,9 +423,11 @@ export interface Sorting {
   send: string | null;
   skeleton: Skeleton | null;
   skeletonShown: boolean;
-  overlay: { html: string; w: number; h: number; type: HeldType } | null;
-  /** Where the held thing was when it was picked up: the copy keeps to it, though its own element moves. */
-  initial: { left: number; top: number } | null;
+  /** Prompt 6 G13: `place` counts the changes of landing place; `slidesDone` resolves when the slides of the last change have ended. */
+  overlay: { html: string; w: number; h: number; type: HeldType; place: number; slidesDone?: () => Promise<unknown> } | null;
+  /** Where the held thing was when it was picked up: the copy keeps to it, though its own element moves. Prompt 6 G7: `column`
+   *  for a tile of the list (top-level or nested), whose copy then moves up and down only. */
+  initial: { left: number; top: number; column?: boolean } | null;
   /** Where a drag by the keys has put the held copy: on its place. Null for a drag by the pointer. */
   keyboardAt: { x: number; y: number } | null;
   /** Up and Down while something is held by the keys: one place at a time, by `moveBy`'s rules. */
@@ -455,8 +473,10 @@ export function useBuildSorting(options: SortingOptions): Sorting {
   const [hidden, setHidden] = useState<string | null>(null);
   const [keyboardAt, setKeyboardAt] = useState<{ x: number; y: number } | null>(null);
   const viaKeys = useRef(false);
+  /** Prompt 6 G9: the drag started from a press on a tile's surface (not its grip, not the keys). */
+  const fromSurface = useRef(false);
   const [refocus, setRefocus] = useState<string | null>(null);
-  const [initial, setInitial] = useState<{ left: number; top: number } | null>(null);
+  const [initial, setInitial] = useState<{ left: number; top: number; column?: boolean } | null>(null);
   const [tick, setTick] = useState(0);
   const dragRef = useRef<Drag | null>(null);
   const optionsRef = useRef(options);
@@ -480,11 +500,26 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     candidate.current = { send: null, open: null };
   };
 
-  const set = (next: Drag | null) => {
+  /** Prompt 6 G13: where the held thing last had a place, and how many times that has changed. A dwell that takes the place away, or a decision that leaves it, changes nothing. */
+  const lastSpot = useRef<string | null>(null);
+  const placeCount = useRef(0);
+  const set = (given: Drag | null) => {
+    let next = given;
+    if (next) {
+      const spot = spotOf(next.live, next.held.id);
+      const key = spot ? `${spot.part ?? ""}|${spot.session ?? ""}|${spot.parent ?? ""}|${spot.index}` : null;
+      if (key && key !== lastSpot.current) {
+        if (lastSpot.current !== null) placeCount.current += 1;
+        lastSpot.current = key;
+      }
+      if (next.place !== placeCount.current) next = { ...next, place: placeCount.current };
+    }
     dragRef.current = next;
     setDrag(next);
     setTick((value) => value + 1);
   };
+  /** Prompt 6 G13: the tile dropped, whose card shakes once it has landed and its copy is gone. */
+  const settleShake = useRef<string | null>(null);
 
   // After every change of order: measure the page for the layer. (What moved is already sliding: the animator's pass.)
   const live = drag?.live ?? pending?.model ?? null;
@@ -629,6 +664,16 @@ export function useBuildSorting(options: SortingOptions): Sorting {
       timers.current.settle = window.setTimeout(() => {
         setSkeleton(null);
         setHidden(null);
+        // G13: the tile dropped is drawn again where it landed: its card shakes once, on the next frame.
+        const landed = settleShake.current;
+        settleShake.current = null;
+        if (landed) {
+          window.requestAnimationFrame(() => {
+            const own = rootRef.current?.querySelector(`[data-skel-id="${landed}"]`);
+            const card = own?.getAttribute("data-skel-kind") === "tile" ? own.firstElementChild : own;
+            if (card) shakeOnce(card);
+          });
+        }
       }, prefersReducedMotion() ? 0 : SETTLE_MS);
     }, prefersReducedMotion() ? 0 : after);
   };
@@ -640,12 +685,17 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     const held = heldOf(dragId, o.model);
     const root = rootRef.current;
     if (!held || !root) return;
+    lastSpot.current = null;
+    placeCount.current = 0;
+    settleShake.current = null;
     setSettles(true);
     window.clearTimeout(timers.current.fade);
     window.clearTimeout(timers.current.settle);
     setSettleMs(null);
     const from = point(event.activatorEvent as Event);
     viaKeys.current = (event.activatorEvent as Event | null)?.type === "keydown";
+    const pressed = (event.activatorEvent as Event | null)?.target;
+    fromSurface.current = !viaKeys.current && (held.type === "tile" || held.type === "nested") && pressed instanceof Element && !pressed.closest('[data-testid$="drag-handle"]');
     setKeyboardAt(null);
     if (from) pointer.current = from;
     // Its copy is made once the page has drawn the hold (no tile shows what it shows when it is near), in `useLayoutEffect` below.
@@ -654,7 +704,10 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     setSkeletonShown(true);
     setPending(null);
     const rect = event.active.rect.current.initial;
-    setInitial(rect ? { left: rect.left, top: rect.top } : null);
+    // Prompt 6 G7: a tile of the list keeps to its column. dnd-kit has often not measured it yet here, so its own box is read once.
+    const column = held.type === "tile" || held.type === "nested";
+    const own = column && !rect ? root.querySelector(`${SELECTOR[held.type]}[data-skel-id="${held.id}"]`)?.getBoundingClientRect() : undefined;
+    setInitial(rect ? { left: rect.left, top: rect.top, ...(column ? { column: true } : null) } : own ? { left: own.left, top: own.top, column: true } : null);
     set(next);
     setSaid(pickedLine(held, o.model, o.names));
   };
@@ -798,6 +851,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     dragRef.current = null;
     setDrag(null);
     setTick((value) => value + 1);
+    if (current.held.type === "tile" || current.held.type === "nested") settleShake.current = current.held.id;
     fadeOut(SETTLE_MS);
     if (viaKeys.current) setRefocus(current.held.id);
     if (current.send) {
@@ -809,6 +863,8 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     const write = writeOf(current.start, current.live, current.held.id);
     if (!write) {
       setSaid(putBackLine(current.held, current.start, o.names));
+      // G9: picked up by a press on the tile and let go where it was: the click the drag took is given back.
+      if (fromSurface.current && sameModel(current.live, current.start)) o.onSelect?.(current.held.id);
       return;
     }
     const was = spotOf(current.start, current.held.id) as Spot;
@@ -904,7 +960,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     setRefocus(null);
   }, [refocus, drag, tick]);
 
-  const overlay = useMemo(() => (drag && drag.html ? { html: drag.html, w: drag.size.w, h: drag.size.h, type: drag.held.type } : null), [drag]);
+  const overlay = useMemo(() => (drag && drag.html ? { html: drag.html, w: drag.size.w, h: drag.size.h, type: drag.held.type, place: drag.place ?? 0, slidesDone: optionsRef.current.slidesDone } : null), [drag]);
 
   return {
     rootRef,

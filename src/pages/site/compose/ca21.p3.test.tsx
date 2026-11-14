@@ -33,7 +33,8 @@ describe("picking a tile up", () => {
     expect(copy.querySelector("[data-testid]")).toBeNull();
     // No scale, no turn, no fade.
     expect(copy.getAttribute("style")).not.toMatch(/scale|rotate|opacity/);
-    expect(copy.style.boxShadow).toContain("var(--seg-on-border)");
+    // Prompt 6 G12: the shadow is drawn by the element inside the copy that shakes.
+    expect((copy.querySelector("[data-held-shake]") as HTMLElement).style.boxShadow).toContain("var(--seg-on-border)");
   });
 
   it("folds nothing, and the 2px lines are gone", async () => {

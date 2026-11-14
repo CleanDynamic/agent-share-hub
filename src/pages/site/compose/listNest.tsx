@@ -1,14 +1,15 @@
 /* CA-04 P2, CA-21 P3: dragging in the List: a tile, a session or a part, by the `grip` at its left.
 
-   `@dnd-kit/core` with its pointer, touch and keyboard sensors; the `grip` handle is the only drag start (18 by 22, 44 high on a
-   phone, where a long press starts the drag); the rest of a tile keeps its click and double-click. What is held is drawn in the
+   `@dnd-kit/core` with its pointer, touch and keyboard sensors. Prompt 6: a tile is picked up by a press anywhere on it that is not a
+   control (a mouse on a 4px move or a 150ms hold, a finger on a 250ms hold); its `grip` stays, as the keys' handle and a hint; a click
+   and a double-click on a tile do what they did. A session or a part is picked up by its grip. What is held is drawn in the
    `DragOverlay` as a copy of its own element at its own size, with a shadow and nothing else. Where it will land is not drawn on the
    tiles: the build slides to make room (`useBuildSorting`) and the skeleton behind it says where (`skeleton.tsx`). Held over
    the middle third of a tile that can take it for half a second, that tile becomes the target (the selected fill and a `--text2` edge).
 
    Nothing here writes. `useBuildSorting` hands a drop to the List's handlers, which say what happened in one polite line. */
 
-import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, TouchSensor, useDraggable, useSensor, useSensors, type CollisionDetection, type KeyboardCoordinateGetter, type Modifier } from "@dnd-kit/core";
+import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, TouchSensor, useDraggable, useSensor, useSensors, type CollisionDetection, type KeyboardCoordinateGetter, type Modifier, type PointerSensorOptions, type PointerSensorProps, type TouchSensorOptions, type UniqueIdentifier } from "@dnd-kit/core";
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 
 import { Glyph } from "@/components/brand/Glyph";
@@ -19,6 +20,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
 import { t } from "@/lib/theme/tokens";
 
+import { shakeOnce } from "./listMotion";
 import { bareButton } from "./refinedStyles";
 import { SESSION_DRAG, SOURCE_FILE_DRAG, SOURCE_SESSION_DRAG, WORKSTREAM_DRAG, type Held, type Sorting } from "./useBuildSorting";
 import { size } from "@/lib/theme/space";
@@ -55,35 +57,133 @@ export function heldShadow(dusk: boolean): string {
   return dusk ? `0 0 0 1px ${t.segOnBorder}, 0 18px 40px color-mix(in srgb, black 55%, transparent)` : `0 0 0 1px ${t.segOnBorder}, 0 14px 32px color-mix(in srgb, black 18%, transparent)`;
 }
 
-/** The held copy: the element's own markup at its own size. A session or a part has no ground of its own, so it sits on a block. */
+/**
+ * The held copy: the element's own markup at its own size. A session or a part has no ground of its own, so it sits on a block.
+ * Prompt 6 G12: what is drawn (its shadow, its ground, its markup) stands in `[data-held-shake]`, inside the copy, which shakes once when the
+ * copy is first drawn; dnd-kit moves the overlay round the copy, never this.
+ */
 export function HeldCopy({ overlay }: { overlay: NonNullable<Sorting["overlay"]> }) {
   const dusk = useResolvedTheme() === "dusk";
   const shadow = heldShadow(dusk);
   const whole = overlay.type === "session" || overlay.type === "part";
+  const inner = useRef<HTMLDivElement | null>(null);
+  useLayoutEffect(() => {
+    if (inner.current) shakeOnce(inner.current);
+  }, []);
+  // G13: each change of landing place shakes once, when the slides that change started have ended. A later change does not take an
+  // earlier one's shake away; a new shake takes the place of one still running (`shakeOnce`), so one runs at a time.
+  const place = overlay.place ?? 0;
+  const slidesDone = useRef(overlay.slidesDone);
+  slidesDone.current = overlay.slidesDone;
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (place === 0) return;
+    void Promise.resolve(slidesDone.current?.())
+      .catch(() => undefined)
+      .then(() => {
+        if (mounted.current && inner.current) shakeOnce(inner.current);
+      });
+  }, [place]);
   return (
-    <div data-testid="held-copy" data-held={overlay.type} data-ground={whole ? "surface" : undefined} aria-hidden="true" style={{ width: overlay.w, fontSize: textStep.body, cursor: "grabbing", pointerEvents: "none", position: "relative", ...(whole ? { backgroundColor: t.surface, borderRadius: 12, boxShadow: shadow } : { boxShadow: shadow, borderRadius: 12 }) }}>
-      {whole ? <span aria-hidden="true" style={{ position: "absolute", inset: -6, borderRadius: 14, boxShadow: `0 0 0 1px ${t.segOnBorder}`, pointerEvents: "none" }} /> : null}
-      {/* SV-01: raw HTML on purpose. `overlay.html` is `cloneHtml(element).outerHTML` in useBuildSorting.ts, the markup React already drew for a tile the reader is dragging; it is never user text. */}
-      <div dangerouslySetInnerHTML={{ __html: overlay.html }} />
+    <div data-testid="held-copy" data-held={overlay.type} data-ground={whole ? "surface" : undefined} aria-hidden="true" style={{ width: overlay.w, fontSize: textStep.body, cursor: "grabbing", pointerEvents: "none", position: "relative" }}>
+      <div ref={inner} data-held-shake="" style={{ position: "relative", ...(whole ? { backgroundColor: t.surface, borderRadius: 12, boxShadow: shadow } : { boxShadow: shadow, borderRadius: 12 }) }}>
+        {whole ? <span aria-hidden="true" style={{ position: "absolute", inset: -6, borderRadius: 14, boxShadow: `0 0 0 1px ${t.segOnBorder}`, pointerEvents: "none" }} /> : null}
+        {/* SV-01: raw HTML on purpose. `overlay.html` is `cloneHtml(element).outerHTML` in useBuildSorting.ts, the markup React already drew for a tile the reader is dragging; it is never user text. */}
+        <div dangerouslySetInnerHTML={{ __html: overlay.html }} />
+      </div>
     </div>
   );
 }
 
-/** The sensors: a touch screen of any width picks up by a press of 250 ms on the grip (CA-27 P4); a mouse after 4 px; the keys. */
-export function useDragSensors(phone: boolean, coordinateGetter: KeyboardCoordinateGetter) {
-  /* CA-27 P4: a touch screen of any width (a tablet's too) picks a tile up by a press of 250 ms on its grip, so one finger anywhere else scrolls. */
-  const coarse = typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches;
-  const press = phone || coarse ? { delay: 250, tolerance: 6 } : { distance: 4 };
+/* ── Prompt 6: what starts a drag ── */
+
+/** What a press inside a tile never starts a drag from: it does what it does. Anything else inside a tile that handles its own presses takes `data-no-drag`. */
+export const NO_DRAG = 'button, a[href], input, textarea, select, [role="button"], [role="menuitem"], [contenteditable]:not([contenteditable="false"]), [data-no-drag]';
+
+/**
+ * Whether a press on `target` may start a drag of the thing whose listeners sit on `surface`. Not from outside the surface's DOM (a
+ * menu or popover portalled out of a tile still reaches its listeners through React), and not from a control inside it. A
+ * surface that is itself a control (a grip, a row's handle) starts from anywhere on it.
+ */
+export function pressStartsDrag(target: EventTarget | null, surface: Element | null): boolean {
+  if (!surface || !(target instanceof Element) || !surface.contains(target)) return false;
+  const control = target.closest(NO_DRAG);
+  return !control || control === surface || !surface.contains(control);
+}
+
+/** A tile of the list (top-level or nested): not a session, a part, or a row from Sources. */
+export const isListTile = (id: UniqueIdentifier): boolean => ![SESSION_DRAG, WORKSTREAM_DRAG, SOURCE_SESSION_DRAG, SOURCE_FILE_DRAG].some((prefix) => String(id).startsWith(prefix));
+
+/** D1, D10: a mouse (or a pen) picks a tile up on a 4px move or a 150ms hold, whichever comes first; nothing in between cancels it. */
+export const MOUSE_TILE_PRESS = { delay: 150, distance: 4, tolerance: Number.POSITIVE_INFINITY };
+/** Session and part grips and rows from Sources keep today's rule: a 4px move. */
+export const MOUSE_GRIP_PRESS = { distance: 4 };
+/** G10: a finger, on any device: a 250ms hold within 6px (CA-27 P4's rule, now from anywhere on a tile). */
+export const TOUCH_PRESS = { delay: 250, tolerance: 6 };
+
+type Activator<E> = { nativeEvent: E; currentTarget: EventTarget & Element };
+
+/** The pointer sensor for a mouse or a pen only (a finger is the touch sensor's), with the press filter and the rule for what it holds. */
+class MousePressSensor extends PointerSensor {
+  constructor(props: PointerSensorProps) {
+    super({ ...props, options: { ...props.options, activationConstraint: isListTile(props.active) ? MOUSE_TILE_PRESS : MOUSE_GRIP_PRESS } });
+  }
+
+  static activators = [
+    {
+      eventName: "onPointerDown" as const,
+      handler: ({ nativeEvent: event, currentTarget }: Activator<PointerEvent>, { onActivation }: PointerSensorOptions) => {
+        if (!event.isPrimary || event.button !== 0 || event.pointerType === "touch") return false;
+        if (!pressStartsDrag(event.target, currentTarget)) return false;
+        onActivation?.({ event });
+        return true;
+      },
+    },
+  ];
+}
+
+/** The touch sensor with the press filter. */
+class TouchPressSensor extends TouchSensor {
+  static activators = [
+    {
+      eventName: "onTouchStart" as const,
+      handler: ({ nativeEvent: event, currentTarget }: Activator<TouchEvent>, { onActivation }: TouchSensorOptions) => {
+        if (event.touches.length > 1) return false;
+        if (!pressStartsDrag(event.target, currentTarget)) return false;
+        onActivation?.({ event });
+        return true;
+      },
+    },
+  ];
+}
+
+/** The sensors: a mouse or a pen (`MousePressSensor`), a finger on any device (`TOUCH_PRESS`), and the keys. `_phone` is no longer read: a finger is told by its event, not the width. */
+export function useDragSensors(_phone: boolean, coordinateGetter: KeyboardCoordinateGetter) {
   return useSensors(
-    useSensor(PointerSensor, { activationConstraint: press }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 6 } }),
+    useSensor(MousePressSensor, {}),
+    useSensor(TouchPressSensor, { activationConstraint: TOUCH_PRESS }),
     useSensor(KeyboardSensor, { coordinateGetter }),
   );
 }
 
-/** The held thing's own element moves as the page slides, so the copy keeps to where it was picked up, plus the pointer's travel. */
+/**
+ * The held thing's own element moves as the page slides, so the copy keeps to where it was picked up, plus the pointer's travel.
+ * Prompt 6 G7: a tile of the list (`initial.column`) keeps to its column: no sideways travel, its left on the whole pixel it was picked up at.
+ */
 export function keepToStartOf(initial: Sorting["initial"], at: Sorting["keyboardAt"]): Modifier {
-  return ({ transform, activeNodeRect }) => (at ? { ...transform, x: at.x, y: at.y } : initial && activeNodeRect ? { ...transform, x: transform.x - (activeNodeRect.left - initial.left), y: transform.y - (activeNodeRect.top - initial.top) } : transform);
+  return ({ transform, activeNodeRect }) => {
+    if (at) return { ...transform, x: at.x, y: at.y };
+    if (!initial || !activeNodeRect) return transform;
+    // The overlay stands at the rect the tile had when it was picked up (`initial`), plus `x`: so `x` only rounds that to a whole pixel.
+    const x = initial.column ? Math.round(initial.left) - initial.left : transform.x - (activeNodeRect.left - initial.left);
+    return { ...transform, x, y: transform.y - (activeNodeRect.top - initial.top) };
+  };
 }
 
 /** While something is held, the page's cursor is the grab. */
@@ -164,16 +264,24 @@ export function useNestTile(id: string) {
   const disabled = !state;
   const drag = useDraggable({ id, disabled });
   const takes = Boolean(state?.send && state.send === id);
+  // G8: a press anywhere on the tile picks it up (the keys stay on the grip, its activator).
+  const listeners = (drag.listeners ?? {}) as Record<string, ((event: unknown) => void) | undefined>;
   return {
     on: !disabled,
     setRef: (element: HTMLElement | null) => {
       drag.setNodeRef(element);
     },
+    surface: disabled ? {} : { onPointerDown: listeners.onPointerDown, onTouchStart: listeners.onTouchStart },
+    /** D2: on a touch screen a hold on a tile's text picks it up, so the text gives no callout and no selection there; a mouse keeps both. */
+    touchStyle: !disabled && (state?.phone || coarsePointer()) ? TOUCH_SURFACE : null,
     handle: { attributes: drag.attributes, listeners: drag.listeners, setActivator: drag.setActivatorNodeRef },
     takes,
     held: drag.isDragging,
   };
 }
+
+const coarsePointer = (): boolean => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches;
+const TOUCH_SURFACE: CSSProperties = { WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none" };
 
 /** A tile under a held tile that can take it: the selected fill, and its edge in `--text2`. */
 export const TAKES: CSSProperties = { background: t.selectedFill, borderColor: t.text2 };
@@ -210,7 +318,7 @@ export function useTileNear(ref: RefObject<HTMLElement | null>, phone: boolean):
   return phone || (near && !holding);
 }
 
-/** The `grip` at a tile's left: the only place a drag starts. 18 by 22; 44 high on a phone. It is drawn while its tile is hovered or has focus, and on a phone. */
+/** The `grip` at a tile's left: the keys' handle, and one place among the tile's surface where a press picks it up. 18 by 22; 44 high on a phone. It is drawn while its tile is hovered or has focus, and on a phone. */
 export function DragHandle({ label, nest, testId = "drag-handle", phone }: { label: string; nest: Pick<ReturnType<typeof useNestTile>, "on" | "handle" | "held">; testId?: string; phone?: boolean }) {
   const nestState = useContext(NestContext);
   const state = phone === undefined ? nestState : { phone };

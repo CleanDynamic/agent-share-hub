@@ -124,3 +124,16 @@ export const STAGGER_SPREAD_MAX = STAGGER * 5;
 /** Between one of `count` items and the next: `step`, closer for a set whose spread would pass `spreadMax`, so the spread never grows. */
 export const staggerStep = (count: number, step: number, spreadMax: number) =>
   count < 2 ? 0 : Math.min(step, Math.floor(spreadMax / (count - 1)));
+
+/* ── Prompt 6: the shake ──
+
+   A held tile gives a short sideways shake when it is picked up, each time its landing place changes, and when it settles. Transform
+   only; it plays through the list's animator (`shakeOnce` in `listMotion.ts`), one at a time on an element, and not at all under
+   reduced motion. */
+
+/** How long the shake lasts. */
+export const SHAKE_MS = BASE;
+/** Where it goes sideways, in px, evenly spaced over `SHAKE_MS` after rest, ending at rest. */
+export const SHAKE_STEPS = [-3, 3, -2, 2, 0] as const;
+/** The shake's keyframes: from rest, through `SHAKE_STEPS`, back to rest. */
+export const shakeFrames = (): Keyframe[] => [{ transform: "none" }, ...SHAKE_STEPS.map((x) => ({ transform: x === 0 ? "none" : `translateX(${x}px)` }))];
