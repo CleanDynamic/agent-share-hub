@@ -8,6 +8,7 @@ import { SITE_NAME, SITE_URL, siteUrl } from "../_shared/site.ts";
 import { getCaller } from "../_shared/caller.ts";
 import { fail, json, preflight } from "../_shared/cors.ts";
 import { mayExport } from "./access.ts";
+import { freshReblogPdf, reblogPdfPath } from "./reblogCache.ts";
 import {
   PDFDocument,
   StandardFonts,
@@ -486,7 +487,7 @@ Deno.serve(async (req) => {
     if (kind === "reblog") {
       const { data: reblog, error: rErr } = await supabase
         .from("reblogs")
-        .select("id, slug, text, media_kind, media_url, created_at, reblogger_id, original_post_id")
+        .select("id, slug, text, media_kind, media_url, created_at, updated_at, reblogger_id, original_post_id")
         .eq("id", reblogId)
         .is("deleted_at", null)
         .maybeSingle();
@@ -501,7 +502,7 @@ Deno.serve(async (req) => {
 
       const { data: original } = await supabase
         .from("content_items")
-        .select("id, slug, title, description, post_type, created_at, creator_id, status, visibility")
+        .select("id, slug, title, description, post_type, created_at, updated_at, creator_id, status, visibility")
         .eq("id", (reblog as any).original_post_id)
         .maybeSingle();
 
@@ -519,16 +520,22 @@ Deno.serve(async (req) => {
         originalAuthor = oa;
       }
 
-      const pdfBytes = await buildReblogPdf(reblog, original, reblogger, originalAuthor);
-      const fileName = `reblog/${(reblog as any).id}/${((reblog as any).slug ?? (reblog as any).id).split("/").join("-")}-${Date.now()}.pdf`;
+      // G10: one file per reblog. While it is newer than the reblog and its original it is handed back as it is;
+      // otherwise it is made again over the same path. The ?v= keeps a cached copy of an older version from being served.
+      const fileName = reblogPdfPath(reblog as any);
+      const folder = fileName.slice(0, fileName.lastIndexOf("/"));
+      const { data: stored } = await supabase.storage.from("ai-pdfs").list(folder);
+      const publicUrl = supabase.storage.from("ai-pdfs").getPublicUrl(fileName).data.publicUrl;
+      const fresh = freshReblogPdf(stored ?? [], reblog as any, (original as any)?.updated_at ?? null);
+      if (fresh !== null) return json(req, { url: `${publicUrl}?v=${fresh}`, cached: true });
 
+      const pdfBytes = await buildReblogPdf(reblog, original, reblogger, originalAuthor);
       const { error: upErr } = await supabase.storage
         .from("ai-pdfs")
         .upload(fileName, pdfBytes, { contentType: "application/pdf", upsert: true });
       if (upErr) throw upErr;
 
-      const { data: pub } = supabase.storage.from("ai-pdfs").getPublicUrl(fileName);
-      const url = pub.publicUrl;
+      const url = `${publicUrl}?v=${Date.now()}`;
 
       // Best-effort log
       const { error: logErr } = await supabase.from("ai_export_log").insert({ post_id: (reblog as any).original_post_id, format: "ai-pdf-reblog" } as any);
