@@ -635,7 +635,8 @@ function NestButtons({ step, phone }: { step: Step; phone: boolean }) {
   const own = Boolean(step.inside);
   const Icon = own ? SplitIcon : JoinIcon;
   return (
-    <span ref={ref} data-testid="nest-control" style={{ display: "inline-flex", opacity: shown ? 1 : 0 }}>
+    /* Prompt 6 D5: at the top of its line, so the 21.7px line it inherits adds no fraction to the tile's height. */
+    <span ref={ref} data-testid="nest-control" style={{ display: "inline-flex", verticalAlign: "top", opacity: shown ? 1 : 0 }}>
       <TextButton
         target={phone}
         style={{ ...textLinkBox(phone), ...text(textStep.meta, 500, t.text2), display: "inline-flex", alignItems: "center", gap: space[1] }}
@@ -1394,7 +1395,8 @@ function InnerCard({ step, eyebrow, runs, nested, made, outside = [], phone = fa
     <div ref={part} data-testid={nested ? "inner-prompt" : "inner-card"} style={{ ...tileStyle, padding: 12, display: "flex", flexDirection: "column", gap: 6, ...colourEdge(to ? step.colour : undefined) }}>
       {eyebrow ? <Quiet>{eyebrow}</Quiet> : null}
       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-        <span style={{ fontFamily: DM_MONO, fontSize: textStep.meta, color: t.label, ...tnum, flexShrink: 0 }}>{step.number}</span>
+        {/* Prompt 6 D5: a whole-pixel line (19 for 12px; the inherited 1.55 gave 18.6). */}
+        <span data-testid="inner-card-number" style={{ fontFamily: DM_MONO, fontSize: textStep.meta, lineHeight: "19px", color: t.label, ...tnum, flexShrink: 0 }}>{step.number}</span>
         <span style={{ ...text(textStep.body, 500, step.title ? t.text : t.text2), flexGrow: 1, minWidth: 0, ...ellipsis }}>{stepTitle(step)}</span>
         {to ? <CardColour step={step} phone={phone} /> : null}
       </div>
