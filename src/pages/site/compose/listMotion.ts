@@ -28,7 +28,7 @@
 
 import { Component, createContext, useContext, useRef, useState, type ReactNode, type RefObject } from "react";
 
-import { DROP, DROP_FALL, SEQUENCE_CAP, slideMs } from "@/lib/build/buildMotion";
+import { DROP, DROP_FALL, SEQUENCE_CAP, SHAKE_MS, shakeFrames, slideMs } from "@/lib/build/buildMotion";
 import { BASE, prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
 
 import { SLIDE_ATTR, type Box } from "./flip";
@@ -278,6 +278,14 @@ export function finishSlides(root: ParentNode): void {
     const slides = RUNNING.get(element)?.get("slide");
     if (slides) for (const animation of [...slides]) animation.finish();
   }
+}
+
+/**
+ * Prompt 6: the shake, once, on `element` (an element inside what moves, never the element a slide or the drag moves). A shake
+ * asked for while one runs takes its place, so one runs at a time; it ends at rest. None under reduced motion.
+ */
+export function shakeOnce(element: Element, delay = 0): MotionRun {
+  return runOf([animateOn(element, "shake", shakeFrames(), { duration: SHAKE_MS, delay })]);
 }
 
 /* ── slides ── */

@@ -5,7 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { BASE, FAST } from "@/lib/theme/motion";
 import { __resetMotionMediaCache } from "@/lib/theme/motion";
-import { DROP, DROP_FALL, LIFT, LIFT_RISE, OUTLINE_HOLD, OUTLINE_IN, OUTLINE_OUT, SLIDE, STAGGER, CROSSFADE } from "@/lib/build/buildMotion";
+import { DROP, DROP_FALL, LIFT, LIFT_RISE, OUTLINE_HOLD, OUTLINE_IN, OUTLINE_OUT, SHAKE_MS, SHAKE_STEPS, SLIDE, STAGGER, CROSSFADE, shakeFrames } from "@/lib/build/buildMotion";
+import { shakeOnce } from "./listMotion";
 
 import { crossfade, useCrossfade, dropIn, liftOut, liftSpan, outlineOnce, slideOut, staggerDelay, useLeaving } from "./buildMotion";
 import { passes, stubAnimations } from "./motionStub";
@@ -276,5 +277,46 @@ describe("crossfade", () => {
     expect(document.querySelector('[data-testid="crossfade-old"]')?.textContent).toBe("2 selected");
     expect(played.map((entry) => entry.keyframes.map((frame) => frame.opacity))).toEqual([[1, 0], [0, 1]]);
     return vi.waitFor(() => expect(document.querySelector('[data-testid="crossfade-old"]')).toBeNull());
+  });
+});
+
+describe("the shake (Prompt 6 D4, G14 to G16)", () => {
+  it("is named: BASE long, sideways -3, 3, -2, 2, 0, from rest and back to it", () => {
+    expect(SHAKE_MS).toBe(BASE);
+    expect(SHAKE_STEPS).toEqual([-3, 3, -2, 2, 0]);
+    expect(shakeFrames()).toEqual([{ transform: "none" }, { transform: "translateX(-3px)" }, { transform: "translateX(3px)" }, { transform: "translateX(-2px)" }, { transform: "translateX(2px)" }, { transform: "none" }]);
+  });
+
+  it("plays once, transform only, through the list's animator", () => {
+    const element = div();
+    shakeOnce(element);
+    expect(played).toHaveLength(1);
+    expect(played[0].element).toBe(element);
+    expect(only(played[0].keyframes)).toEqual(["transform"]);
+    expect(played[0].options.duration).toBe(SHAKE_MS);
+  });
+
+  it("leaves one shake running on an element however fast it is asked again, and ends at none", () => {
+    const element = div();
+    for (let at = 0; at < 4; at += 1) shakeOnce(element);
+    expect(played.filter((entry) => entry.element === element && !entry.cancelled && !entry.finished)).toHaveLength(1);
+    expect(played[played.length - 1].keyframes.at(-1)).toEqual({ transform: "none" });
+  });
+
+  it("plays nothing under reduced motion", () => {
+    reduced = true;
+    __resetMotionMediaCache();
+    shakeOnce(div());
+    expect(played).toHaveLength(0);
+  });
+
+  it("has no literal in any component: its figures live in buildMotion.ts alone", async () => {
+    const { readdirSync, readFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const roots = ["src/pages/site/compose", "src/components"];
+    const walk = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((entry) => (entry.isDirectory() ? walk(join(dir, entry.name)) : /\.tsx?$/.test(entry.name) && !/\.test\./.test(entry.name) ? [join(dir, entry.name)] : []));
+    const files = roots.flatMap(walk);
+    const literal = /translateX\(-?[23]px\)|\[-3, 3, -2, 2/;
+    expect(files.filter((file) => literal.test(readFileSync(file, "utf8")))).toEqual([]);
   });
 });

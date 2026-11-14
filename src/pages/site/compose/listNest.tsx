@@ -20,6 +20,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
 import { t } from "@/lib/theme/tokens";
 
+import { shakeOnce } from "./listMotion";
 import { bareButton } from "./refinedStyles";
 import { SESSION_DRAG, SOURCE_FILE_DRAG, SOURCE_SESSION_DRAG, WORKSTREAM_DRAG, type Held, type Sorting } from "./useBuildSorting";
 import { size } from "@/lib/theme/space";
@@ -56,16 +57,26 @@ export function heldShadow(dusk: boolean): string {
   return dusk ? `0 0 0 1px ${t.segOnBorder}, 0 18px 40px color-mix(in srgb, black 55%, transparent)` : `0 0 0 1px ${t.segOnBorder}, 0 14px 32px color-mix(in srgb, black 18%, transparent)`;
 }
 
-/** The held copy: the element's own markup at its own size. A session or a part has no ground of its own, so it sits on a block. */
+/**
+ * The held copy: the element's own markup at its own size. A session or a part has no ground of its own, so it sits on a block.
+ * Prompt 6 G12: what is drawn (its shadow, its ground, its markup) stands in `[data-held-shake]`, inside the copy, which shakes once when the
+ * copy is first drawn; dnd-kit moves the overlay round the copy, never this.
+ */
 export function HeldCopy({ overlay }: { overlay: NonNullable<Sorting["overlay"]> }) {
   const dusk = useResolvedTheme() === "dusk";
   const shadow = heldShadow(dusk);
   const whole = overlay.type === "session" || overlay.type === "part";
+  const inner = useRef<HTMLDivElement | null>(null);
+  useLayoutEffect(() => {
+    if (inner.current) shakeOnce(inner.current);
+  }, []);
   return (
-    <div data-testid="held-copy" data-held={overlay.type} data-ground={whole ? "surface" : undefined} aria-hidden="true" style={{ width: overlay.w, fontSize: textStep.body, cursor: "grabbing", pointerEvents: "none", position: "relative", ...(whole ? { backgroundColor: t.surface, borderRadius: 12, boxShadow: shadow } : { boxShadow: shadow, borderRadius: 12 }) }}>
-      {whole ? <span aria-hidden="true" style={{ position: "absolute", inset: -6, borderRadius: 14, boxShadow: `0 0 0 1px ${t.segOnBorder}`, pointerEvents: "none" }} /> : null}
-      {/* SV-01: raw HTML on purpose. `overlay.html` is `cloneHtml(element).outerHTML` in useBuildSorting.ts, the markup React already drew for a tile the reader is dragging; it is never user text. */}
-      <div dangerouslySetInnerHTML={{ __html: overlay.html }} />
+    <div data-testid="held-copy" data-held={overlay.type} data-ground={whole ? "surface" : undefined} aria-hidden="true" style={{ width: overlay.w, fontSize: textStep.body, cursor: "grabbing", pointerEvents: "none", position: "relative" }}>
+      <div ref={inner} data-held-shake="" style={{ position: "relative", ...(whole ? { backgroundColor: t.surface, borderRadius: 12, boxShadow: shadow } : { boxShadow: shadow, borderRadius: 12 }) }}>
+        {whole ? <span aria-hidden="true" style={{ position: "absolute", inset: -6, borderRadius: 14, boxShadow: `0 0 0 1px ${t.segOnBorder}`, pointerEvents: "none" }} /> : null}
+        {/* SV-01: raw HTML on purpose. `overlay.html` is `cloneHtml(element).outerHTML` in useBuildSorting.ts, the markup React already drew for a tile the reader is dragging; it is never user text. */}
+        <div dangerouslySetInnerHTML={{ __html: overlay.html }} />
+      </div>
     </div>
   );
 }
