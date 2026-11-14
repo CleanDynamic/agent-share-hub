@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { LANE_RADIUS, RAIL_ROOM, placeLine, skeletonOf, socketReach, type SkeletonContainer, type SkeletonInput, type SkeletonItem } from "./sortLayout";
+import { LANE_RADIUS, RAIL_ROOM, RAIL_ROOM_ITEMS, placeLine, skeletonOf, socketReach, type SkeletonContainer, type SkeletonInput, type SkeletonItem } from "./sortLayout";
 
 const item = (id: string, container: string, y: number, h = 100, radius = 12): SkeletonItem => ({ id, container, rect: { x: 100, y, w: 400, h }, radius });
 const base = (over: Partial<SkeletonInput> = {}): SkeletonInput => ({
@@ -89,11 +89,35 @@ describe("rail and numbers", () => {
   });
 
   it("are left out under 40 of room, with the sockets and lanes kept", () => {
-    const out = skeletonOf(base({ room: RAIL_ROOM - 1 }));
+    const out = skeletonOf(base({ room: RAIL_ROOM_ITEMS - 1 }));
     expect(out.rails).toEqual([]);
     expect(out.sockets).toHaveLength(4);
     expect(out.lanes).toHaveLength(2);
-    expect(skeletonOf(base({ room: RAIL_ROOM })).rails).toHaveLength(2);
+    expect(skeletonOf(base({ room: RAIL_ROOM_ITEMS })).rails).toHaveLength(2);
+  });
+
+  describe("a list tile held in a build with a part frame (G2)", () => {
+    // The part frame stands 16 left of the tiles: frame 84, tiles 100.
+    const framed = (over: Partial<SkeletonInput> = {}) => base({ frame: 84, room: 32, ...over });
+
+    it("stand from the frame's left edge: rail 16 left, ticks 12 to 4 left, numbers ending 18 left", () => {
+      const { rails } = skeletonOf(framed());
+      expect(rails).toHaveLength(2);
+      expect(rails[0].x).toBe(68);
+      expect(rails[0].ticks[0]).toMatchObject({ tickFrom: 72, tickTo: 80, numberRight: 66 });
+    });
+
+    it("need 32 of room left of the frame", () => {
+      expect(RAIL_ROOM).toBe(32);
+      expect(skeletonOf(framed({ room: 31 })).rails).toEqual([]);
+      expect(skeletonOf(framed({ room: 32 })).rails).toHaveLength(2);
+    });
+
+    it("draw no rail for a container whose numbers reach three digits, so no number leaves the gutter", () => {
+      const many = Array.from({ length: 100 }, (_, at) => item(`t${at}`, "s9", 1000 + at * 112));
+      const out = skeletonOf(framed({ items: many, containers: [{ id: "s9", rect: { x: 100, y: 1000, w: 400, h: 11200 }, items: many.map((entry) => entry.id), framed: false, name: "Session 9" }], held: "t0" }));
+      expect(out.rails).toEqual([]);
+    });
   });
 });
 

@@ -307,8 +307,11 @@ export function measureSkeleton(root: HTMLElement, held: Held, live: MoveModel, 
       containers.push({ id: "", rect: { x, y, w: Math.max(...boxes.map((b) => b.x + b.w)) - x, h: Math.max(...boxes.map((b) => b.y + b.h)) - y }, items: live.parts.map((part) => part.key), framed: false, name: "Build" });
     }
   }
-  const left = items.length > 0 ? Math.min(...items.map((item) => item.rect.x)) + at.x : origin.x;
-  return { ...skeletonOf({ kind, items, containers, held: held.id, moved, room: left - edge }), origin: { x: origin.x, y: origin.y } };
+  // Prompt 6 G2: a list tile held in a build with parts: the rail stands from the part frame's left edge, and the room is measured from it.
+  const frames = held.type === "tile" && live.hasParts ? itemsOf(root, "part").map((element) => rel(boxOf(element)).x) : [];
+  const frame = frames.length > 0 ? Math.min(...frames) : undefined;
+  const left = frame !== undefined ? frame + at.x : items.length > 0 ? Math.min(...items.map((item) => item.rect.x)) + at.x : origin.x;
+  return { ...skeletonOf({ kind, items, containers, held: held.id, moved, room: left - edge, frame }), origin: { x: origin.x, y: origin.y } };
 }
 
 /** The right edge of whatever stands to the left of the build column: Sources, or its rail. */

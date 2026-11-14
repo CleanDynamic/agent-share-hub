@@ -6,7 +6,8 @@
 //
 // All numbers are the prompt's: a socket sits 4 outside its component (half the gap where the gap is under 8), a lane 8
 // outside its container with radius 14, the rail 24 left of the components with ticks 10 wide from 22 to 12 left, and numbers
-// ending 26 left. The rail and numbers need 40 free to the left.
+// ending 26 left. The rail and numbers need 40 free to the left. Prompt 6: a list tile held in a build with parts stands its rail
+// from the part frame instead (`FRAME_*`, `RAIL_ROOM`).
 
 export type HeldKind = "tile" | "session" | "part";
 
@@ -49,6 +50,11 @@ export interface SkeletonInput {
   room: number;
   /** SV-05 P4: an import's sockets: each number inside its socket, `SOCKET_NUMBER_IN` from its left edge, and no rail. */
   inside?: boolean;
+  /**
+   * Prompt 6 G2: x of the part frame's left edge, when a list tile is held in a build with parts. The rail, ticks and numbers then
+   * stand from it (`FRAME_*`), and `room` is measured from it against `RAIL_ROOM`.
+   */
+  frame?: number;
 }
 
 export const SOCKET_OUT = 4;
@@ -61,7 +67,18 @@ export const RAIL_AT = 24;
 export const TICK_FROM = 22;
 export const TICK_TO = 12;
 export const NUMBER_END = 26;
-export const RAIL_ROOM = 40;
+/** Prompt 6 G2: the room a list tile's rail needs left of the part frame: numbers ending 18 left of it, two digits 13.2 wide. */
+export const RAIL_ROOM = 32;
+/** The room the rail needs left of the components themselves, everywhere else (a nested tile, a session, a part, no parts). */
+export const RAIL_ROOM_ITEMS = 40;
+/** Prompt 6 G2: from the part frame's left edge, the rail 16 left, ticks from 12 to 4 left, numbers ending 18 left. */
+export const FRAME_RAIL_AT = 16;
+export const FRAME_TICK_FROM = 12;
+export const FRAME_TICK_TO = 4;
+/** Off the 4px grid on purpose (x 310 at 1440): at 20 left a two-digit number (13.2 wide) would cross into Sources. */
+export const FRAME_NUMBER_END = 18;
+/** A container with this many places or more has three-digit numbers, which do not fit the gutter: no rail for it. */
+export const FRAME_PLACES_MAX = 100;
 export const RAIL_INSET = 14;
 export const SESSION_TICK_DOWN = 22;
 /** SV-05 P4: how far in from a socket's left edge its number stands, when the numbers are inside. */
@@ -165,24 +182,26 @@ export function skeletonOf(input: SkeletonInput): Skeleton {
     return { id: container.id, rect: grow({ x, y, w: right - x, h: bottom - y }, LANE_GAP, LANE_GAP, LANE_GAP, LANE_GAP), radius: LANE_RADIUS, outline: !container.framed };
   });
   const rails: Rail[] = [];
-  if (input.inside || input.room >= RAIL_ROOM) {
+  const frame = input.inside ? undefined : input.frame;
+  if (input.inside || input.room >= (frame === undefined ? RAIL_ROOM_ITEMS : RAIL_ROOM)) {
     for (const container of input.containers) {
       const mine = container.items.map((id) => input.items.find((item) => item.id === id)).filter((item): item is SkeletonItem => Boolean(item));
       if (mine.length === 0) continue;
+      if (frame !== undefined && mine.length >= FRAME_PLACES_MAX) continue;
       const left = Math.min(...mine.map((item) => item.rect.x));
       const lane = grow(container.rect, LANE_OUT, LANE_OUT, LANE_OUT, LANE_OUT);
       rails.push({
         container: container.id,
-        x: left - RAIL_AT,
+        x: frame === undefined ? left - RAIL_AT : frame - FRAME_RAIL_AT,
         top: lane.y + RAIL_INSET,
         bottom: lane.y + lane.h - RAIL_INSET,
         ticks: mine.map((item, at) => ({
           id: item.id,
           n: at + 1,
           y: input.kind === "tile" ? item.rect.y + item.rect.h / 2 : item.rect.y + SESSION_TICK_DOWN,
-          numberRight: item.rect.x - NUMBER_END,
-          tickFrom: item.rect.x - TICK_FROM,
-          tickTo: item.rect.x - TICK_TO,
+          numberRight: frame === undefined ? item.rect.x - NUMBER_END : frame - FRAME_NUMBER_END,
+          tickFrom: frame === undefined ? item.rect.x - TICK_FROM : frame - FRAME_TICK_FROM,
+          tickTo: frame === undefined ? item.rect.x - TICK_TO : frame - FRAME_TICK_TO,
           ...(input.inside ? { numberLeft: (socketOf.get(item.id)?.rect.x ?? item.rect.x) + SOCKET_NUMBER_IN } : null),
         })),
         ...(input.inside ? { inside: true } : null),
