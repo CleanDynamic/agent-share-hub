@@ -81,9 +81,18 @@ export function useDragSensors(phone: boolean, coordinateGetter: KeyboardCoordin
   );
 }
 
-/** The held thing's own element moves as the page slides, so the copy keeps to where it was picked up, plus the pointer's travel. */
+/**
+ * The held thing's own element moves as the page slides, so the copy keeps to where it was picked up, plus the pointer's travel.
+ * Prompt 6 G7: a tile of the list (`initial.column`) keeps to its column: no sideways travel, its left on the whole pixel it was picked up at.
+ */
 export function keepToStartOf(initial: Sorting["initial"], at: Sorting["keyboardAt"]): Modifier {
-  return ({ transform, activeNodeRect }) => (at ? { ...transform, x: at.x, y: at.y } : initial && activeNodeRect ? { ...transform, x: transform.x - (activeNodeRect.left - initial.left), y: transform.y - (activeNodeRect.top - initial.top) } : transform);
+  return ({ transform, activeNodeRect }) => {
+    if (at) return { ...transform, x: at.x, y: at.y };
+    if (!initial || !activeNodeRect) return transform;
+    // The overlay stands at the rect the tile had when it was picked up (`initial`), plus `x`: so `x` only rounds that to a whole pixel.
+    const x = initial.column ? Math.round(initial.left) - initial.left : transform.x - (activeNodeRect.left - initial.left);
+    return { ...transform, x, y: transform.y - (activeNodeRect.top - initial.top) };
+  };
 }
 
 /** While something is held, the page's cursor is the grab. */

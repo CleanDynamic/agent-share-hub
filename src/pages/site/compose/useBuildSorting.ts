@@ -417,8 +417,9 @@ export interface Sorting {
   skeleton: Skeleton | null;
   skeletonShown: boolean;
   overlay: { html: string; w: number; h: number; type: HeldType } | null;
-  /** Where the held thing was when it was picked up: the copy keeps to it, though its own element moves. */
-  initial: { left: number; top: number } | null;
+  /** Where the held thing was when it was picked up: the copy keeps to it, though its own element moves. Prompt 6 G7: `column`
+   *  for a tile of the list (top-level or nested), whose copy then moves up and down only. */
+  initial: { left: number; top: number; column?: boolean } | null;
   /** Where a drag by the keys has put the held copy: on its place. Null for a drag by the pointer. */
   keyboardAt: { x: number; y: number } | null;
   /** Up and Down while something is held by the keys: one place at a time, by `moveBy`'s rules. */
@@ -465,7 +466,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
   const [keyboardAt, setKeyboardAt] = useState<{ x: number; y: number } | null>(null);
   const viaKeys = useRef(false);
   const [refocus, setRefocus] = useState<string | null>(null);
-  const [initial, setInitial] = useState<{ left: number; top: number } | null>(null);
+  const [initial, setInitial] = useState<{ left: number; top: number; column?: boolean } | null>(null);
   const [tick, setTick] = useState(0);
   const dragRef = useRef<Drag | null>(null);
   const optionsRef = useRef(options);
@@ -663,7 +664,10 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     setSkeletonShown(true);
     setPending(null);
     const rect = event.active.rect.current.initial;
-    setInitial(rect ? { left: rect.left, top: rect.top } : null);
+    // Prompt 6 G7: a tile of the list keeps to its column. dnd-kit has often not measured it yet here, so its own box is read once.
+    const column = held.type === "tile" || held.type === "nested";
+    const own = column && !rect ? root.querySelector(`${SELECTOR[held.type]}[data-skel-id="${held.id}"]`)?.getBoundingClientRect() : undefined;
+    setInitial(rect ? { left: rect.left, top: rect.top, ...(column ? { column: true } : null) } : own ? { left: own.left, top: own.top, column: true } : null);
     set(next);
     setSaid(pickedLine(held, o.model, o.names));
   };
