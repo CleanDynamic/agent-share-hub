@@ -54,6 +54,8 @@ export interface SkeletonInput {
 export const SOCKET_OUT = 4;
 export const SOCKET_MIN_GAP = 8;
 export const LANE_OUT = 8;
+/** Prompt 6 G4: a lane stands this far outside its sockets, on every side. */
+export const LANE_GAP = 4;
 export const LANE_RADIUS = 14;
 export const RAIL_AT = 24;
 export const TICK_FROM = 22;
@@ -151,9 +153,18 @@ export function skeletonOf(input: SkeletonInput): Skeleton {
     const out = reach.get(item.id) ?? SOCKET_OUT;
     return { id: item.id, rect: grow(item.rect, out, out, out, out), radius: item.radius + out };
   });
-  const lanes: Lane[] = input.containers.map((container) => ({ id: container.id, rect: grow(container.rect, LANE_OUT, LANE_OUT, LANE_OUT, LANE_OUT), radius: LANE_RADIUS, outline: !container.framed }));
-  const rails: Rail[] = [];
   const socketOf = new Map(sockets.map((socket) => [socket.id, socket]));
+  // G4: a lane wraps its container's sockets and nothing else (not a session's header); an empty container keeps its own place.
+  const lanes: Lane[] = input.containers.map((container) => {
+    const mine = container.items.map((id) => socketOf.get(id)).filter((socket): socket is Socket => Boolean(socket));
+    if (mine.length === 0) return { id: container.id, rect: grow(container.rect, LANE_OUT, LANE_OUT, LANE_OUT, LANE_OUT), radius: LANE_RADIUS, outline: !container.framed };
+    const x = Math.min(...mine.map((socket) => socket.rect.x));
+    const y = Math.min(...mine.map((socket) => socket.rect.y));
+    const right = Math.max(...mine.map((socket) => socket.rect.x + socket.rect.w));
+    const bottom = Math.max(...mine.map((socket) => socket.rect.y + socket.rect.h));
+    return { id: container.id, rect: grow({ x, y, w: right - x, h: bottom - y }, LANE_GAP, LANE_GAP, LANE_GAP, LANE_GAP), radius: LANE_RADIUS, outline: !container.framed };
+  });
+  const rails: Rail[] = [];
   if (input.inside || input.room >= RAIL_ROOM) {
     for (const container of input.containers) {
       const mine = container.items.map((id) => input.items.find((item) => item.id === id)).filter((item): item is SkeletonItem => Boolean(item));

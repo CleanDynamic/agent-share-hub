@@ -46,6 +46,21 @@ describe("lanes", () => {
     expect(lanes[0]).toEqual({ id: "s1", rect: { x: 92, y: -8, w: 416, h: 340 }, radius: LANE_RADIUS, outline: true });
   });
 
+  it("wrap the sockets and nothing else: 4 outside the first and last socket, not round the session's header (G4)", () => {
+    // The session's box starts 82 above its first tile (its header); the lane does not reach it.
+    const { lanes, sockets } = skeletonOf(base({ containers: [{ id: "s1", rect: { x: 100, y: -82, w: 400, h: 406 }, items: ["a", "b", "c"], framed: false, name: "Session 1" }, { id: "s2", rect: { x: 100, y: 318, w: 400, h: 182 }, items: ["d"], framed: false, name: "Session 2" }] }));
+    const mine = sockets.filter((socket) => ["a", "b", "c"].includes(socket.id));
+    const top = Math.min(...mine.map((socket) => socket.rect.y));
+    const bottom = Math.max(...mine.map((socket) => socket.rect.y + socket.rect.h));
+    expect(lanes[0].rect).toEqual({ x: 92, y: top - 4, w: 416, h: bottom - top + 8 });
+    expect(lanes[1].rect).toEqual({ x: 92, y: 392, w: 416, h: 116 });
+  });
+
+  it("keep a session with no tiles in its own place: 8 outside its box, as before (G4)", () => {
+    const { lanes } = skeletonOf(base({ containers: [...base().containers, { id: "s3", rect: { x: 100, y: 600, w: 400, h: 60 }, items: [], framed: false, name: "Session 3" }] }));
+    expect(lanes[2].rect).toEqual({ x: 92, y: 592, w: 416, h: 76 });
+  });
+
   it("draw no second outline round a part, which has its own frame", () => {
     const parts: SkeletonContainer[] = [{ id: "pa", rect: { x: 100, y: 0, w: 400, h: 300 }, items: ["s1"], framed: true, name: "Part 1" }];
     const { lanes } = skeletonOf({ kind: "session", items: [item("s1", "pa", 40, 200)], containers: parts, held: "s1", moved: false, room: 60 });
