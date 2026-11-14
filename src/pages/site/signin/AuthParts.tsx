@@ -54,6 +54,19 @@ export function PushDown() {
 /** The dialog's field label and divider words: 11px mono in a 16 line. */
 const MONO_LINE: CSSProperties = { fontFamily: DM_MONO, fontSize: 11, fontWeight: 400, lineHeight: `${DIALOG.line}px`, height: DIALOG.line };
 
+/**
+ * A view's heading in the dialog (Reference A, other views): the title at 16 / 500 and, 8 below it, one or two lines of
+ * 13px helper text. The words are each state's existing words.
+ */
+export function ViewHeading({ title, children }: { title: string; children?: ReactNode }) {
+  return (
+    <div data-testid="signin-view-heading" style={{ flexShrink: 0 }}>
+      <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 16, fontWeight: 500, lineHeight: "20px", color: t.text }}>{title}</h2>
+      {children ? <p style={{ margin: "8px 0 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.text2 }}>{children}</p> : null}
+    </div>
+  );
+}
+
 /* ── providers ── */
 
 const PROVIDERS: readonly { id: OAuthProvider; label: string; mark: ReactNode }[] = [

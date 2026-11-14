@@ -65,7 +65,8 @@ describe("the request form", () => {
     open();
     await waitFor(() => expect(document.title).toBe("Reset your password · OpenBuilds.ai"));
     expect(screen.queryByRole("link", { name: "Join free" })).toBeNull();
-    expect(screen.getAllByRole("link", { name: "Back to sign in" })[0].getAttribute("href")).toBe("/login");
+    // The dialog's way back is row 1's link alone (D3); the request form's body carries none.
+    expect(screen.queryByRole("link", { name: "Back to sign in" })).toBeNull();
   });
 
   it("asks for the link to land back on this page, and says to check the inbox, naming the address", async () => {

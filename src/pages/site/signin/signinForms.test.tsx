@@ -544,7 +544,8 @@ describe("ResetRequestForm", () => {
     expect(screen.getByText(/The link works once and expires after an hour\./)).toBeTruthy();
     expect(screen.getByPlaceholderText("you@example.com").getAttribute("type")).toBe("email");
     expect(screen.getByRole("button", { name: "Send reset link" })).toBeEnabled();
-    expect(screen.getByRole("link", { name: "Back to sign in" }).getAttribute("href")).toBe("/login");
+    // The dialog's way back is row 1's link alone (D3); the body carries none.
+    expect(screen.queryByRole("link", { name: "Back to sign in" })).toBeNull();
   });
 
   it("is the join form's field, with its error under it and its gate on the button", () => {
@@ -604,7 +605,8 @@ describe("the reset and link states", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Check your inbox" })).toBeTruthy();
     expect(screen.getByText("ada@example.com")).toBeTruthy();
     expect(screen.getByText(/it works once and expires after an hour/)).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Back to sign in" }).getAttribute("href")).toBe("/login");
+    // The dialog's way back is row 1's link alone (D3); the body carries none.
+    expect(screen.queryByRole("link", { name: "Back to sign in" })).toBeNull();
   });
 
   it("says the link does not work, offers a new one, and says the password has not changed", () => {
@@ -616,7 +618,8 @@ describe("the reset and link states", () => {
     expect(request.getAttribute("type")).toBe("button");
     fireEvent.click(request);
     expect(onRequestNew).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole("link", { name: "Back to sign in" })).toBeTruthy();
+    // The dialog's way back is row 1's link alone (D3); the body carries none.
+    expect(screen.queryByRole("link", { name: "Back to sign in" })).toBeNull();
   });
 
   it("says it is checking, as a status, without printing a code comment into the card", () => {

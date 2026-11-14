@@ -1,7 +1,7 @@
 /* /dev/kit/pages/signin?theme=noon|dusk&viewport=desktop|mobile — the sign-in dialog (Reference A), open, with the
    sample data, over an empty bare frame.
 
-   `?mode=signup|reset|confirm|verify` draws the other views in the same dialog. `?error=1` fills the Sign in view's
+   `?mode=signup|reset|sent|checking|confirm|dead|verify` draws the other views in the same dialog. `?error=1` fills the Sign in view's
    error line ("Wrong email or password"), so the two can be compared (G9). Nothing here reaches a production bundle. */
 
 import { useSearchParams } from "react-router-dom";
@@ -11,7 +11,7 @@ import { SiteFrameView } from "@/components/shell/SiteFrame";
 import { signinFixture, SIGNIN_MODES, type SigninMode } from "@/dev/fixtures/signin";
 import { useDesignTheme } from "@/dev/useDesignTheme";
 import { LoginForm } from "@/pages/site/signin/LoginForm";
-import { ResetConfirmForm, ResetRequestForm } from "@/pages/site/signin/ResetForms";
+import { LinkChecking, ResetConfirmForm, ResetLinkError, ResetRequestForm, ResetSent } from "@/pages/site/signin/ResetForms";
 import { AccountSwitch, BackToSignIn, SignInDialogFrame } from "@/pages/site/signin/SignInDialogFrame";
 import { SignupForm } from "@/pages/site/signin/SignupForm";
 
@@ -45,8 +45,16 @@ export default function SignInDemo({ viewport }: DesignPageProps) {
           <SignupForm {...sample.signup} />
         ) : mode === "reset" ? (
           <ResetRequestForm {...sample.reset} />
+        ) : mode === "sent" ? (
+          <ResetSent email="you@studio.com" />
+        ) : mode === "checking" ? (
+          <LinkChecking title="Checking your reset link…">
+            We&apos;re confirming the link is still valid. The form for your new password appears here in a moment.
+          </LinkChecking>
         ) : mode === "confirm" ? (
           <ResetConfirmForm {...sample.confirm} />
+        ) : mode === "dead" ? (
+          <ResetLinkError onRequestNew={noop} />
         ) : mode === "verify" ? (
           <AuthEmailVerificationCard email="you@studio.com" resendState="idle" onResend={noop} onChangeEmail={noop} />
         ) : (

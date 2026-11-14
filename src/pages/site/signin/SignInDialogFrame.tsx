@@ -13,7 +13,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import { IconButton } from "@/components/brand/IconButton";
 import { Segmented } from "@/components/brand/Segmented";
@@ -109,9 +109,23 @@ function PictureColumn() {
   );
 }
 
+/** What focus lands on in a view that has just arrived: its first field or control, or the view itself. */
+const FOCUSABLE = 'input:not([type="checkbox"]):not([disabled]), button:not([disabled]), a[href]';
+
 export function SignInDialogFrame({ open, onOpenChange, rowStart, view, children }: SignInDialogFrameProps) {
   const room = useRoom();
   const twoColumns = useMinWidth(DIALOG.twoColumnsFrom);
+  const body = useRef<HTMLDivElement>(null);
+  const shown = useRef(view);
+
+  /* G10: after a view change focus is inside the new view, never left on a control that has gone (or on row 1). The first
+     view's focus is Radix's to place. */
+  useEffect(() => {
+    if (shown.current === view) return;
+    shown.current = view;
+    const target = body.current?.querySelector<HTMLElement>(FOCUSABLE) ?? body.current;
+    target?.focus();
+  }, [view]);
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -150,7 +164,7 @@ export function SignInDialogFrame({ open, onOpenChange, rowStart, view, children
                 <IconButton icon={X} label="Close" size={32} />
               </Dialog.Close>
             </div>
-            <div data-testid="signin-view-body" style={{ flex: "1 1 auto", minHeight: 0, marginTop: 16, display: "flex", flexDirection: "column" }}>
+            <div ref={body} tabIndex={-1} data-testid="signin-view-body" style={{ outline: "none", flex: "1 1 auto", minHeight: 0, marginTop: 16, display: "flex", flexDirection: "column" }}>
               {children}
             </div>
           </div>
