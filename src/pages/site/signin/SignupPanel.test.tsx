@@ -382,7 +382,14 @@ describe("the providers", () => {
     fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
 
     expect(await screen.findByText("Couldn't connect to google. Please try again.")).toBeTruthy();
-    expect(startOAuthSignIn).toHaveBeenCalledWith("google");
+    expect(startOAuthSignIn).toHaveBeenCalledWith("google", null);
     await waitFor(() => expect(screen.getByRole("button", { name: "Continue with Google" })).toBeEnabled());
+  });
+
+  it("G18: carry the return address to the provider, and / for one that leaves the site", async () => {
+    startOAuthSignIn.mockResolvedValue(null);
+    renderDialog("signup", "redirect=https%3A%2F%2Fexample.com");
+    fireEvent.click(screen.getByRole("button", { name: "Continue with GitHub" }));
+    await waitFor(() => expect(startOAuthSignIn).toHaveBeenLastCalledWith("github", "/"));
   });
 });

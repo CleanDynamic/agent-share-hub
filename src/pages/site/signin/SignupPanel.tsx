@@ -13,7 +13,7 @@
    `src/lib/auth/`, since a component may not call Supabase. */
 
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import type { InputValidation } from "@/components/auth/AuthInput";
 import type { OAuthProvider } from "@/components/auth/OAuthButtons";
@@ -21,6 +21,7 @@ import { calculatePasswordStrength, type PasswordStrength } from "@/components/a
 import { useAuth } from "@/contexts/AuthContext";
 import { checkUsernameAvailability } from "@/lib/auth/checkUsernameAvailability";
 import { startOAuthSignIn } from "@/lib/auth/oauth";
+import { returnPathFrom } from "@/lib/auth/safeReturnPath";
 import { signUpWithEmail } from "@/lib/auth/signUpWithEmail";
 import { PRIVACY_REVIEWED, TERMS_REVIEWED } from "@/content/legal/reviewed";
 
@@ -49,6 +50,7 @@ function readSavedDraft(): SavedDraft | null {
 
 export function SignupPanel() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const views = useSignInNavigation();
   const { isLoggedIn } = useAuth();
 
@@ -219,7 +221,7 @@ export function SignupPanel() {
   const handleProvider = async (provider: OAuthProvider) => {
     setLoadingProvider(provider);
     // OAuth — this redirects the whole page to the provider.
-    const oauthError = await startOAuthSignIn(provider);
+    const oauthError = await startOAuthSignIn(provider, returnPathFrom(searchParams));
     if (oauthError) {
       setError(oauthError);
       // The page is still here, so the buttons are for trying again.

@@ -230,7 +230,7 @@ describe("the providers", () => {
     open();
     fireEvent.click(screen.getByRole("button", { name: "Continue with GitHub" }));
 
-    await waitFor(() => expect(startOAuthSignIn).toHaveBeenCalledWith("github"));
+    await waitFor(() => expect(startOAuthSignIn).toHaveBeenCalledWith("github", null));
     // G12: the one that was clicked now says it is opening.
     for (const name of ["Continue with Google", "Opening GitHub", "Continue with X"]) {
       await waitFor(() => expect(screen.getByRole("button", { name })).toBeDisabled());
@@ -241,7 +241,14 @@ describe("the providers", () => {
     startOAuthSignIn.mockResolvedValue(null);
     open();
     fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
-    await waitFor(() => expect(startOAuthSignIn).toHaveBeenLastCalledWith("google"));
+    await waitFor(() => expect(startOAuthSignIn).toHaveBeenLastCalledWith("google", null));
+  });
+
+  it("G18: carries the return address to the provider, through the gate", async () => {
+    startOAuthSignIn.mockResolvedValue(null);
+    open(`/login?redirect=${encodeURIComponent("/library?view=saved#top")}`);
+    fireEvent.click(screen.getByRole("button", { name: "Continue with X" }));
+    await waitFor(() => expect(startOAuthSignIn).toHaveBeenLastCalledWith("x", "/library?view=saved#top"));
   });
 
   it("says why it could not start, and gives the buttons back to try again", async () => {

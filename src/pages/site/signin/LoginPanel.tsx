@@ -84,7 +84,7 @@ export function LoginPanel() {
   const handleProvider = async (provider: OAuthProvider) => {
     setLoadingProvider(provider);
     // OAuth — this redirects the whole page to the provider.
-    const oauthError = await startOAuthSignIn(provider);
+    const oauthError = await startOAuthSignIn(provider, redirectParam);
     if (oauthError) {
       setError(oauthError);
       // The page is still here, so the buttons are for trying again.
