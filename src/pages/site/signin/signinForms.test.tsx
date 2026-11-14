@@ -85,8 +85,9 @@ describe("ProviderButtons", () => {
   it("waits on the one that was clicked: a spinner in its place, and every button disabled", () => {
     const { container } = show(<ProviderButtons onProvider={() => {}} loadingProvider="github" />);
     for (const button of screen.getAllByRole("button")) expect(button).toBeDisabled();
-    expect(container.querySelectorAll("svg.animate-spin")).toHaveLength(1);
-    expect(screen.getByRole("button", { name: "Continue with GitHub" }).querySelector("svg.animate-spin")).not.toBeNull();
+    // G12: the ring of dots in its place, and the button says what it is doing.
+    expect(container.querySelectorAll('[data-testid="pending-ring"]')).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Opening GitHub" }).querySelector('[data-testid="pending-ring"]')).not.toBeNull();
   });
 });
 
@@ -328,7 +329,8 @@ describe("PrimaryAction", () => {
     );
     const busy = screen.getByRole("button", { name: "Signing in..." });
     expect(busy).toBeDisabled();
-    expect(busy.querySelector("svg.animate-spin")).not.toBeNull();
+    // G12: the ring of dots in place of the spinner.
+    expect(busy.querySelector('[data-testid="pending-ring"]')).not.toBeNull();
   });
 });
 
@@ -383,7 +385,7 @@ describe("LoginForm", () => {
     fireEvent.submit(screen.getByRole("button", { name: "Sign in" }).closest("form")!);
     expect(onSubmit).toHaveBeenCalledTimes(1);
     rerender(inRouter(<LoginForm {...login({ onSubmit, isSubmitting: true })} />));
-    expect(screen.getByRole("button", { name: "Signing in..." })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Signing in" })).toBeDisabled();
   });
 
   it("reports each field, and the remember box", () => {

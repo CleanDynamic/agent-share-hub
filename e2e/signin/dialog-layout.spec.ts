@@ -8,6 +8,8 @@ async function open(page: Page, theme: string, extra = "") {
   await page.goto(`/dev/kit/pages/signin?theme=${theme}&viewport=desktop${extra}`);
   await page.getByTestId("signin-dialog").waitFor();
   await page.evaluate(() => document.fonts.ready);
+  // Measure the dialog where it rests, not mid-entrance (G11 slides it up 12px and scales it from 0.98).
+  await page.waitForFunction(() => document.querySelector('[data-testid="signin-dialog"]')?.getAnimations().length === 0);
 }
 
 const rect = (page: Page, testId: string) =>

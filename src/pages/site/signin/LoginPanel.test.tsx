@@ -116,7 +116,7 @@ describe("signing in", () => {
     fill();
     submit();
 
-    const busy = await screen.findByRole("button", { name: "Signing in..." });
+    const busy = await screen.findByRole("button", { name: "Signing in" });
     expect(busy).toBeDisabled();
     await act(async () => finish({ outcome: "rejected" }));
     await waitFor(() => expect(primary()).toBeEnabled());
@@ -195,7 +195,8 @@ describe("the providers", () => {
     fireEvent.click(screen.getByRole("button", { name: "Continue with GitHub" }));
 
     await waitFor(() => expect(startOAuthSignIn).toHaveBeenCalledWith("github"));
-    for (const name of ["Continue with Google", "Continue with GitHub", "Continue with X"]) {
+    // G12: the one that was clicked now says it is opening.
+    for (const name of ["Continue with Google", "Opening GitHub", "Continue with X"]) {
       await waitFor(() => expect(screen.getByRole("button", { name })).toBeDisabled());
     }
   });

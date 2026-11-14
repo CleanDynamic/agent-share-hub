@@ -13,7 +13,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import { IconButton } from "@/components/brand/IconButton";
 import { Segmented } from "@/components/brand/Segmented";
@@ -24,11 +24,22 @@ import { Panel } from "@/components/brand/Panel";
 import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
 import { useRoom } from "@/components/brand/useRoom";
 import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
+import { prefersReducedMotion } from "@/lib/theme/motion";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { DIALOG } from "./authSizes";
 import { SIGNIN_COLOURS } from "./signinColours";
+import {
+  DIALOG_FADE_EASING,
+  DIALOG_FADE_MS,
+  DIALOG_MOVE_EASING,
+  DIALOG_MOVE_FROM,
+  DIALOG_MOVE_MS,
+  SCRIM_EASING,
+  SCRIM_IN_MS,
+  SCRIM_OUT_MS,
+} from "./signinMotion";
 
 export const TAGLINE = "Publish, reproduce and fork AI-assisted workflows.";
 
@@ -89,6 +100,7 @@ export function BackToSignIn({ to, state }: { to: string; state?: unknown }) {
 }
 
 export interface SignInDialogFrameProps {
+  /** False while the dialog is closing: it stays mounted for the scrim's fade-out, fading itself at once (G11). */
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Row 1's left side: the Sign in · Join free switch, or "Back to sign in". */
@@ -216,11 +228,15 @@ function PhoneFrame({
   view,
   children,
   onCloseAutoFocus,
+  contentRef,
 }: Omit<SignInDialogFrameProps, "open" | "onOpenChange"> & {
   onCloseAutoFocus: (event: Event) => void;
+  contentRef: (el: HTMLDivElement | null) => void;
 }) {
   return (
     <Dialog.Content
+      ref={contentRef}
+      forceMount
       data-testid="signin-dialog"
       data-view={view}
       data-viewport="mobile"
@@ -318,10 +334,42 @@ export function SignInDialogFrame({
       body.current?.querySelector<HTMLElement>(FOCUSABLE) ?? body.current;
     target?.focus();
   }, [view]);
+
+  /* G11: the scrim fades in over 300ms and out over 900ms; the dialog enters with opacity over 320ms ease-out and
+     translateY(12px) scale(0.98) to none over 440ms on the prototype's curve, with no delay, and on close starts fading
+     at once. Played on the elements through the Web Animations API; under reduced motion nothing animates. */
+  /* Callback refs held in state: Radix mounts its portal a layout pass after the dialog, so the elements arrive later. */
+  const [scrimEl, scrim] = useState<HTMLDivElement | null>(null);
+  const [contentEl, content] = useState<HTMLDivElement | null>(null);
+  useLayoutEffect(() => {
+    if (!scrimEl || !contentEl) return;
+    const animates = typeof contentEl.animate === "function";
+    if (animates) for (const el of [scrimEl, contentEl]) el.getAnimations().forEach((animation) => animation.cancel());
+    contentEl.style.pointerEvents = open ? "" : "none";
+    if (!open && opener && opener !== document.body && opener.isConnected) opener.focus();
+    if (prefersReducedMotion() || !animates) {
+      scrimEl.style.opacity = open ? "" : "0";
+      contentEl.style.opacity = open ? "" : "0";
+      return;
+    }
+    if (open) {
+      scrimEl.animate([{ opacity: 0 }, { opacity: 1 }], { duration: SCRIM_IN_MS, easing: SCRIM_EASING });
+      contentEl.animate([{ opacity: 0 }, { opacity: 1 }], { duration: DIALOG_FADE_MS, easing: DIALOG_FADE_EASING });
+      contentEl.animate([{ transform: DIALOG_MOVE_FROM }, { transform: "none" }], { duration: DIALOG_MOVE_MS, easing: DIALOG_MOVE_EASING });
+    } else {
+      scrimEl.animate([{ opacity: 1 }, { opacity: 0 }], { duration: SCRIM_OUT_MS, easing: SCRIM_EASING, fill: "forwards" });
+      contentEl.animate([{ opacity: 1 }, { opacity: 0 }], { duration: DIALOG_FADE_MS, easing: DIALOG_FADE_EASING, fill: "forwards" });
+    }
+    // The opener is the one recorded when the dialog mounted.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, scrimEl, contentEl]);
+
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
+      <Dialog.Portal forceMount>
         <Dialog.Overlay
+          ref={scrim}
+          forceMount
           data-testid="signin-scrim"
           style={{
             position: "fixed",
@@ -335,11 +383,14 @@ export function SignInDialogFrame({
             rowStart={rowStart}
             view={view}
             onCloseAutoFocus={returnFocus}
+            contentRef={content}
           >
             {children}
           </PhoneFrame>
         ) : (
           <Dialog.Content
+            ref={content}
+            forceMount
             data-testid="signin-dialog"
             data-view={view}
             aria-describedby={undefined}

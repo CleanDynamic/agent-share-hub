@@ -112,7 +112,7 @@ export function LoginForm({
             </FrameLink>
           </div>
           <PushDown />
-          <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText="Signing in...">
+          <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText="Signing in">
             Sign in
           </PrimaryAction>
         </AuthForm>
@@ -168,7 +168,7 @@ export function LoginForm({
             {phone ? "Forgot?" : "Forgot password?"}
           </FrameLink>
         </div>
-        <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText="Signing in...">
+        <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText="Signing in">
           Sign in
         </PrimaryAction>
       </AuthForm>

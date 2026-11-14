@@ -39,6 +39,7 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { DIALOG, useAuthSizes } from "./authSizes";
+import { PendingRing } from "./PendingRing";
 import { SIGNIN_COLOURS } from "./signinColours";
 
 /** A fixed vertical space in the dialog's form column: 4, 8, 16 or 24 (G3), and nothing else. */
@@ -69,10 +70,11 @@ export function ViewHeading({ title, children }: { title: string; children?: Rea
 
 /* ── providers ── */
 
-const PROVIDERS: readonly { id: OAuthProvider; label: string; mark: ReactNode }[] = [
-  { id: "google", label: "Continue with Google", mark: <GoogleIcon size={16} /> },
-  { id: "github", label: "Continue with GitHub", mark: <Github size={16} strokeWidth={1.6} aria-hidden="true" /> },
-  { id: "x", label: "Continue with X", mark: <XIcon size={16} /> },
+/* G12: while a provider is opening, its button shows the ring and says so: "Opening Google" and the like. */
+const PROVIDERS: readonly { id: OAuthProvider; label: string; opening: string; mark: ReactNode }[] = [
+  { id: "google", label: "Continue with Google", opening: "Opening Google", mark: <GoogleIcon size={16} /> },
+  { id: "github", label: "Continue with GitHub", opening: "Opening GitHub", mark: <Github size={16} strokeWidth={1.6} aria-hidden="true" /> },
+  { id: "x", label: "Continue with X", opening: "Opening X", mark: <XIcon size={16} /> },
 ];
 
 export interface ProviderButtonsProps {
@@ -98,10 +100,8 @@ export function ProviderButtons({ onProvider, loadingProvider }: ProviderButtons
           onClick={() => onProvider(provider.id)}
           style={{ gap: 7 }}
         >
-          {loadingProvider === provider.id ? (
-            <Loader2 className="animate-spin" size={16} aria-hidden="true" />
-          ) : null}
-          {provider.label}
+          {loadingProvider === provider.id ? <PendingRing /> : null}
+          {loadingProvider === provider.id ? provider.opening : provider.label}
         </Button>
       ))}
     </>
@@ -448,7 +448,7 @@ export function PrimaryAction({ children, loadingText, loading = false, disabled
   if (!sizes.phone) {
     return (
       <DialogPrimary type={type} disabled={disabled || loading} onClick={onClick}>
-        {loading ? <Loader2 className="animate-spin" size={16} aria-hidden="true" /> : null}
+        {loading ? <PendingRing /> : null}
         {loading ? (loadingText ?? children) : children}
       </DialogPrimary>
     );
@@ -463,7 +463,7 @@ export function PrimaryAction({ children, loadingText, loading = false, disabled
       disabled={disabled || loading}
       onClick={onClick}
     >
-      {loading ? <Loader2 className="animate-spin" size={16} aria-hidden="true" /> : null}
+      {loading ? <PendingRing /> : null}
       {loading ? (loadingText ?? children) : children}
     </Button>
   );

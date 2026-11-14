@@ -12,7 +12,7 @@ import { VerifyPanel } from "./VerifyPanel";
 import type { SignInView } from "./signinUrl";
 import { useSignInNavigation } from "./useSignInNavigation";
 
-export function SignInDialog({ view }: { view: SignInView }) {
+export function SignInDialog({ view, closing = false }: { view: SignInView; closing?: boolean }) {
   const views = useSignInNavigation();
   const rowStart =
     view === "login" || view === "signup" ? (
@@ -21,7 +21,7 @@ export function SignInDialog({ view }: { view: SignInView }) {
       <BackToSignIn to={views.hrefFor("login")} state={views.linkState} />
     );
   return (
-    <SignInDialogFrame open onOpenChange={(open) => (open ? undefined : views.close())} view={view} rowStart={rowStart}>
+    <SignInDialogFrame open={!closing} onOpenChange={(open) => (open || closing ? undefined : views.close())} view={view} rowStart={rowStart}>
       {view === "signup" ? <SignupPanel /> : view === "reset" ? <ResetPanel /> : view === "verify" ? <VerifyPanel /> : <LoginPanel />}
     </SignInDialogFrame>
   );
