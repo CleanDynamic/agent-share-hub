@@ -127,7 +127,8 @@ describe("an emailed link", () => {
     openLink("/reset-password/abc");
 
     expect(screen.getByRole("heading", { level: 2, name: "Checking your reset link…" })).toBeTruthy();
-    expect(screen.getByRole("status").textContent).toContain("We're confirming the link is still valid.");
+    // The words' status, beside the InlineLoader's own (G27).
+    expect(screen.getAllByRole("status").find((region) => region.getAttribute("data-ui") !== "inline-loader")!.textContent).toContain("We're confirming the link is still valid.");
     expect(verifyEmailLink).toHaveBeenCalledTimes(1);
     expect(verifyEmailLink.mock.calls[0][0]).toEqual({ tokenHash: "abc", code: "", type: "recovery" });
 

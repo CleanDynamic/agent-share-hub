@@ -139,7 +139,8 @@ describe("an emailed link", () => {
     open("/verify-email/tok");
 
     expect(screen.getByRole("heading", { level: 2, name: "Verifying your email…" })).toBeTruthy();
-    expect(screen.getByRole("status").textContent).toContain("We're checking the link you opened.");
+    // The words' status, beside the InlineLoader's own (G27).
+    expect(screen.getAllByRole("status").find((region) => region.getAttribute("data-ui") !== "inline-loader")!.textContent).toContain("We're checking the link you opened.");
     expect(verifyEmailLink.mock.calls[0][0]).toEqual({ tokenHash: "tok", code: "", type: "email" });
 
     await act(async () => verified(true));

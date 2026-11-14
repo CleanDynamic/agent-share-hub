@@ -225,10 +225,11 @@ describe("AuthField", () => {
 
   it("shows the state of the check at the right of the box, and a helper line under it", () => {
     const { container, rerender } = show(field({ validation: { state: "checking" }, helperText: "openbuilds.ai/profile/ada" }));
-    expect(container.querySelector("svg.animate-spin")).not.toBeNull();
+    // G27: the check's spinner is the InlineLoader.
+    expect(container.querySelector('[data-ui="inline-loader"]')).not.toBeNull();
     expect(screen.getByText("openbuilds.ai/profile/ada")).toBeTruthy();
     rerender(inRouter(field({ validation: { state: "valid" } })));
-    expect(container.querySelector("svg.animate-spin")).toBeNull();
+    expect(container.querySelector('[data-ui="inline-loader"]')).toBeNull();
     expect(container.querySelectorAll("svg")).toHaveLength(2);
   });
 
@@ -627,7 +628,8 @@ describe("the reset and link states", () => {
   it("says it is checking, as a status, without printing a code comment into the card", () => {
     const { container } = show(<LinkChecking title="Checking your reset link…">We&apos;re confirming the link is still valid.</LinkChecking>);
     expect(screen.getByRole("heading", { level: 2, name: "Checking your reset link…" })).toBeTruthy();
-    expect(screen.getByRole("status").textContent).toBe("We're confirming the link is still valid.");
+    // The words' status, beside the InlineLoader's own (G27).
+    expect(screen.getAllByRole("status").find((region) => region.getAttribute("data-ui") !== "inline-loader")!.textContent).toBe("We're confirming the link is still valid.");
     expect(container.textContent).not.toContain("/*");
   });
 });

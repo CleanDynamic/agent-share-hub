@@ -9,7 +9,9 @@
    PURE and fully controlled, like the other bodies. */
 
 import type { ReactNode } from "react";
-import { AlertCircle, Loader2, Lock, Mail } from "lucide-react";
+import { AlertCircle, Lock, Mail } from "lucide-react";
+
+import { InlineLoader } from "@/components/brand/InlineLoader";
 
 import { PasswordStrengthMeter, type PasswordStrength } from "@/components/auth/PasswordStrengthMeter";
 import { FrameLink } from "@/components/shell/FrameLink";
@@ -265,14 +267,14 @@ export function LinkChecking({ title, children }: { title: string; children: Rea
           <span role="status">{children}</span>
         </ViewHeading>
         <div style={{ flex: "1 1 auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Loader2 className="animate-spin" aria-hidden="true" style={{ width: 56, height: 56, color: t.text2 }} />
+          <InlineLoader size={22} label={title} />
         </div>
       </>
     );
   }
   return (
     <Centred>
-      <Loader2 className="animate-spin" aria-hidden="true" style={{ width: 56, height: 56, color: t.text2 }} />
+      <InlineLoader size={22} label={title} />
       <h2 style={{ ...cardTitle, margin: "14px 0 0", color: t.text }}>{title}</h2>
       <p role="status" style={{ ...LEDE, marginTop: 4 }}>
         {children}

@@ -25,12 +25,13 @@
    placeholder is a pseudo-element, which only a utility can reach. */
 
 import { useId, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
-import { Check, Eye, EyeOff, Github, Loader2, X, type LucideIcon } from "lucide-react";
+import { Check, Eye, EyeOff, Github, X, type LucideIcon } from "lucide-react";
 
 import type { InputValidation } from "@/components/auth/AuthInput";
 import { GoogleIcon, XIcon, type OAuthProvider } from "@/components/auth/OAuthButtons";
 import { Button } from "@/components/brand/Button";
 import { Eyebrow } from "@/components/brand/Eyebrow";
+import { InlineLoader } from "@/components/brand/InlineLoader";
 import { useRoom } from "@/components/brand/useRoom";
 import { checkboxStyle, ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -326,7 +327,7 @@ export function AuthField({
             </button>
           ) : validation && validation.state !== "idle" ? (
             <span aria-hidden="true" style={{ display: "flex", flexShrink: 0 }}>
-              {validation.state === "checking" ? <Loader2 className="animate-spin" size={16} /> : null}
+              {validation.state === "checking" ? <InlineLoader size={16} label="Checking the username" /> : null}
               {validation.state === "valid" ? <Check size={16} strokeWidth={1.6} style={{ color: t.evidence }} /> : null}
               {validation.state === "invalid" ? <X size={16} strokeWidth={1.6} style={{ color: t.catBreakage }} /> : null}
             </span>
