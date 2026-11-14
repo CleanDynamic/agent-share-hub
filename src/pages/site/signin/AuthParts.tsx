@@ -24,19 +24,35 @@
    classes) and the box carries the border and the focus ring instead. The
    placeholder is a pseudo-element, which only a utility can reach. */
 
-import { useId, useState, type FormEvent, type ReactNode } from "react";
+import { useId, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import { Check, Eye, EyeOff, Github, Loader2, X, type LucideIcon } from "lucide-react";
 
 import type { InputValidation } from "@/components/auth/AuthInput";
 import { GoogleIcon, XIcon, type OAuthProvider } from "@/components/auth/OAuthButtons";
 import { Button } from "@/components/brand/Button";
 import { Eyebrow } from "@/components/brand/Eyebrow";
+import { useRoom } from "@/components/brand/useRoom";
 import { checkboxStyle, ring } from "@/lib/theme/controls";
+import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
-import { useAuthSizes } from "./authSizes";
+import { DIALOG, useAuthSizes } from "./authSizes";
+import { SIGNIN_COLOURS } from "./signinColours";
+
+/** A fixed vertical space in the dialog's form column: 4, 8, 16 or 24 (G3), and nothing else. */
+export function Gap({ size }: { size: 4 | 8 | 16 | 24 }) {
+  return <div aria-hidden="true" style={{ height: size, flexShrink: 0 }} />;
+}
+
+/** The flexible space above the primary: at least 24, and whatever the column has left, so the primary sits on the bottom padding line. */
+export function PushDown() {
+  return <div aria-hidden="true" style={{ flex: "1 0 24px" }} />;
+}
+
+/** The dialog's field label and divider words: 11px mono in a 16 line. */
+const MONO_LINE: CSSProperties = { fontFamily: DM_MONO, fontSize: 11, fontWeight: 400, lineHeight: `${DIALOG.line}px`, height: DIALOG.line };
 
 /* ── providers ── */
 
@@ -56,7 +72,7 @@ export interface ProviderButtonsProps {
 export function ProviderButtons({ onProvider, loadingProvider }: ProviderButtonsProps) {
   const sizes = useAuthSizes();
   /* Under the refined look a labelled button carries no icon: the words name the provider. A spinner stays, it is state. */
-  return (
+  const buttons = (
     <>
       {PROVIDERS.map((provider) => (
         <Button
@@ -77,6 +93,8 @@ export function ProviderButtons({ onProvider, loadingProvider }: ProviderButtons
       ))}
     </>
   );
+  /* In the dialog the three are one column, 8 apart; on a phone they stay siblings of the card's column. */
+  return sizes.phone ? buttons : <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{buttons}</div>;
 }
 
 /* ── the rule ── */
@@ -85,6 +103,15 @@ export function ProviderButtons({ onProvider, loadingProvider }: ProviderButtons
 export function OrRule({ children }: { children: ReactNode }) {
   const sizes = useAuthSizes();
   const line = { flexGrow: 1, height: 1, background: t.line } as const;
+  if (!sizes.phone) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: sizes.ruleGap, height: DIALOG.line }}>
+        <span aria-hidden="true" style={line} />
+        <span style={{ ...MONO_LINE, color: t.text2, whiteSpace: "nowrap" }}>{children}</span>
+        <span aria-hidden="true" style={line} />
+      </div>
+    );
+  }
   return (
     <div style={{ display: "flex", alignItems: "center", gap: sizes.ruleGap, margin: sizes.ruleMargin }}>
       <span aria-hidden="true" style={line} />
@@ -105,7 +132,18 @@ const MESSAGE = { margin: 0, fontFamily: FIGTREE, fontSize: 12, lineHeight: 1.4 
  * that arrives with its text in it is not announced by every reader; one that
  * already exists and is then filled is. An empty one has no margin and no height.
  */
-export function FieldMessage({ id, children, tone = "error" }: { id?: string; children?: ReactNode; tone?: "error" | "good" }) {
+export function FieldMessage({
+  id,
+  children,
+  tone = "error",
+  reserve = false,
+}: {
+  id?: string;
+  children?: ReactNode;
+  tone?: "error" | "good";
+  /** The dialog's error line: always 16 high and 4 below what it is about, empty until there is something to say, so nothing moves when it fills. */
+  reserve?: boolean;
+}) {
   return (
     <p
       id={id}
@@ -113,7 +151,7 @@ export function FieldMessage({ id, children, tone = "error" }: { id?: string; ch
       data-testid="field-message"
       style={{
         ...MESSAGE,
-        marginTop: children ? 4 : 0,
+        ...(reserve ? { marginTop: 4, height: DIALOG.line, lineHeight: `${DIALOG.line}px`, whiteSpace: "nowrap" } : { marginTop: children ? 4 : 0 }),
         color: tone === "good" ? t.evidence : t.catBreakage,
       }}
     >
@@ -146,6 +184,8 @@ export interface AuthFieldProps {
   showPasswordToggle?: boolean;
   required?: boolean;
   autoComplete?: string;
+  /** In the dialog: keep the 16px message line under the field whether or not it has anything in it. */
+  reserveMessage?: boolean;
 }
 
 export function AuthField({
@@ -162,6 +202,7 @@ export function AuthField({
   showPasswordToggle = false,
   required = false,
   autoComplete,
+  reserveMessage = false,
 }: AuthFieldProps) {
   const sizes = useAuthSizes();
   const [focused, setFocused] = useState(false);
@@ -175,18 +216,26 @@ export function AuthField({
 
   return (
     <div>
-      <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-        <Eyebrow size={10} as="span">
-          {label}
-        </Eyebrow>
+      <label style={{ display: "flex", flexDirection: "column", gap: sizes.phone ? 5 : 8 }}>
+        {sizes.phone ? (
+          <Eyebrow size={10} as="span">
+            {label}
+          </Eyebrow>
+        ) : (
+          <Eyebrow as="span" style={{ ...MONO_LINE, letterSpacing: 0 }}>
+            {label}
+          </Eyebrow>
+        )}
         <span
+          data-testid="auth-field-box"
           style={{
             display: "flex",
             alignItems: "center",
             gap: 7,
             height: sizes.field,
-            boxSizing: "content-box",
-            padding: "0 10px",
+            /* In the dialog the field is 32 with its border; a phone's keeps its 44 content box. */
+            boxSizing: sizes.phone ? "content-box" : "border-box",
+            padding: sizes.phone ? "0 10px" : "0 12px",
             borderRadius: r.control,
             background: t.field,
             border: `1px solid ${invalid ? t.catBreakage : focused ? t.action : t.line}`,
@@ -250,9 +299,9 @@ export function AuthField({
                 /* A 44px target around a 16px icon on a phone (36 above it, as the
                    tightened board), pulled back so the icon sits where the field's own
                    padding would put it and the box does not grow. */
-                width: sizes.phone ? 44 : 36,
-                height: sizes.phone ? 44 : 36,
-                margin: "0 -14px 0 -8px",
+                width: sizes.phone ? 44 : 32,
+                height: sizes.phone ? 44 : DIALOG.control - 2,
+                margin: sizes.phone ? "0 -14px 0 -8px" : "0 -8px 0 -4px",
                 padding: 0,
                 border: 0,
                 background: "transparent",
@@ -274,7 +323,7 @@ export function AuthField({
       {helperText ? (
         <p style={{ ...MESSAGE, marginTop: 4, fontStyle: "normal", color: t.text2 }}>{helperText}</p>
       ) : null}
-      <FieldMessage id={messageId} tone={confirmed ? "good" : "error"}>
+      <FieldMessage id={messageId} tone={confirmed ? "good" : "error"} reserve={reserveMessage && !sizes.phone}>
         {message}
       </FieldMessage>
     </div>
@@ -302,6 +351,10 @@ export interface AuthCheckProps {
  */
 export function AuthCheck({ id, checked, onChange, children }: AuthCheckProps) {
   const [focusVisible, setFocusVisible] = useState(false);
+  const { phone } = useAuthSizes();
+  const room = useRoom();
+  /* In the dialog the row is 24 high and the label fills it; a phone keeps the 28px target in a 19px line. */
+  const tick = phone ? t.action : SIGNIN_COLOURS[room].primary;
   return (
     <label
       htmlFor={id}
@@ -309,15 +362,16 @@ export function AuthCheck({ id, checked, onChange, children }: AuthCheckProps) {
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 6,
-        padding: "6px 0",
-        margin: "-6px 0",
+        gap: phone ? 6 : 8,
+        padding: phone ? "6px 0" : 0,
+        margin: phone ? "-6px 0" : 0,
+        height: phone ? undefined : DIALOG.row,
         cursor: "pointer",
         fontFamily: FIGTREE,
         fontSize: 12,
         /* The reference's row is 19px tall (a 13px box and its margins): a native
            checkbox the density pass does not touch, so the row keeps 19. */
-        lineHeight: "19px",
+        lineHeight: phone ? "19px" : `${DIALOG.row}px`,
         color: t.text2,
       }}
     >
@@ -347,9 +401,9 @@ export function AuthCheck({ id, checked, onChange, children }: AuthCheckProps) {
             /* The kit's 8px chip radius makes a 16px box a circle, which reads as a
                radio; 5px is the radius the reference draws on its 16px marks. */
             borderRadius: 5,
-            background: checked ? t.action : t.recess,
-            borderColor: checked ? t.action : t.line,
-            color: t.onAction,
+            background: checked ? tick : t.recess,
+            borderColor: checked ? tick : t.line,
+            color: phone ? t.onAction : SIGNIN_COLOURS[room].onPrimary,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -378,6 +432,14 @@ export interface PrimaryActionProps {
 /** The one primary action of a card: 46/15 on desktop, a full-width 48/15 on a phone. */
 export function PrimaryAction({ children, loadingText, loading = false, disabled = false, type = "submit", onClick }: PrimaryActionProps) {
   const sizes = useAuthSizes();
+  if (!sizes.phone) {
+    return (
+      <DialogPrimary type={type} disabled={disabled || loading} onClick={onClick}>
+        {loading ? <Loader2 className="animate-spin" size={16} aria-hidden="true" /> : null}
+        {loading ? (loadingText ?? children) : children}
+      </DialogPrimary>
+    );
+  }
   return (
     <Button
       variant="primary"
@@ -394,13 +456,74 @@ export function PrimaryAction({ children, loadingText, loading = false, disabled
   );
 }
 
-/** A form that is a column of the card's own rhythm, and says what it sends. */
+/**
+ * The dialog's primary (D5): the prototype's green with black ink, a colour change on hover and never an opacity fade.
+ * Local to the sign-in dialog, so no other primary on the site changes. 432 wide by the column, 32 high.
+ */
+export function DialogPrimary({
+  children,
+  type = "submit",
+  disabled = false,
+  onClick,
+}: {
+  children: ReactNode;
+  type?: "submit" | "button";
+  disabled?: boolean;
+  onClick?: () => void;
+}) {
+  const room = useRoom();
+  const colours = SIGNIN_COLOURS[room];
+  const { state, handlers } = useInteractive<HTMLButtonElement>({}, { disabled });
+  const fill = state.hovered && !disabled ? colours.primaryHover : colours.primary;
+  return (
+    <button
+      data-ui="button"
+      data-variant="signin-primary"
+      type={type}
+      disabled={disabled}
+      onClick={onClick}
+      {...handlers}
+      style={{
+        boxSizing: "border-box",
+        width: "100%",
+        height: DIALOG.control,
+        flexShrink: 0,
+        padding: "0 12px",
+        borderRadius: r.control,
+        border: `1px solid ${fill}`,
+        background: fill,
+        color: colours.onPrimary,
+        fontFamily: FIGTREE,
+        fontSize: 13,
+        fontWeight: 500,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        cursor: disabled ? "not-allowed" : "pointer",
+        whiteSpace: "nowrap",
+        ...ring(state.focusVisible),
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** A form that is a column of the card's own rhythm, and says what it sends. In the dialog it fills the form column, so its primary can sit on the bottom padding line. */
 export function AuthForm({ onSubmit, children }: { onSubmit: () => void; children: ReactNode }) {
   const sizes = useAuthSizes();
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     onSubmit();
   };
+  if (!sizes.phone) {
+    return (
+      <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", flex: "1 1 auto", minHeight: 0, margin: 0 }}>
+        {children}
+      </form>
+    );
+  }
   return (
     <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: sizes.gap, margin: 0 }}>
       {children}

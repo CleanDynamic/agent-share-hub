@@ -121,6 +121,16 @@ const CATEGORIES: Category[] = [
 ];
 
 const CAPPED: Record<string, { max: number; why: string }> = {
+  "src/pages/site/signin/signinColours.ts": {
+    max: 10,
+    why:
+      "The sign-in dialog's own colours (Reference A, from the approved prototype), scoped to the dialog so no other " +
+      "primary changes, one per value: #6BE2A0 the Dusk primary and #58BA71 its hover; #77FC49 the Noon primary and " +
+      "#5EE832 its hover (hover is a colour change, never a fade); #000000 three times, the black ink on both greens and " +
+      "Dusk's picture column, which must be the beaver picture's own black so the picture and the column meet with no " +
+      "seam; #173014 Noon's green text link; rgba(0,0,0,0.8) and rgba(244,244,242,0.84) the two scrims, which are the " +
+      "prototype's and darker or lighter than --scrim on purpose, because the halftone layer is drawn over them.",
+  },
   "src/lib/theme/partColour.ts": {
     max: 6,
     why:

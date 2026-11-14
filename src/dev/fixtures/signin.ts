@@ -13,8 +13,6 @@ import type { LoginFormProps } from "@/pages/site/signin/LoginForm";
 import type { ResetConfirmFormProps, ResetRequestFormProps } from "@/pages/site/signin/ResetForms";
 import type { SignupFormProps } from "@/pages/site/signin/SignupForm";
 
-import { fixtures } from "../designFixtures";
-
 const noop = () => undefined;
 
 export type SigninMode = "login" | "signup" | "reset" | "confirm" | "verify";
@@ -77,8 +75,6 @@ export function signinFixture() {
   };
 
   return {
-    reproducedToday: fixtures.home.reproduced_today,
-    inGallery: fixtures.gallery.in_gallery,
     login,
     signup,
     reset,
