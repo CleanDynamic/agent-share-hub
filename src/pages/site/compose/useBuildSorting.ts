@@ -375,6 +375,8 @@ export interface SortingOptions {
   collapsed?: ReadonlySet<string>;
   /** A folded session's head held over for `DWELL_OPEN_MS`. */
   onOpen?: (sessionKey: string) => void;
+  /** Prompt 6 G9: a tile picked up by a press on it and let go in place is selected, as a click would. */
+  onSelect?: (id: string) => void;
   /** The write at the drop. Resolves true when it was written, false when it was not; void when the page cannot say. */
   commit: (commit: Commit) => Promise<unknown> | void;
   /** One tile sent with another at the drop. Resolves true once written. */
@@ -465,6 +467,8 @@ export function useBuildSorting(options: SortingOptions): Sorting {
   const [hidden, setHidden] = useState<string | null>(null);
   const [keyboardAt, setKeyboardAt] = useState<{ x: number; y: number } | null>(null);
   const viaKeys = useRef(false);
+  /** Prompt 6 G9: the drag started from a press on a tile's surface (not its grip, not the keys). */
+  const fromSurface = useRef(false);
   const [refocus, setRefocus] = useState<string | null>(null);
   const [initial, setInitial] = useState<{ left: number; top: number; column?: boolean } | null>(null);
   const [tick, setTick] = useState(0);
@@ -656,6 +660,8 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     setSettleMs(null);
     const from = point(event.activatorEvent as Event);
     viaKeys.current = (event.activatorEvent as Event | null)?.type === "keydown";
+    const pressed = (event.activatorEvent as Event | null)?.target;
+    fromSurface.current = !viaKeys.current && (held.type === "tile" || held.type === "nested") && pressed instanceof Element && !pressed.closest('[data-testid$="drag-handle"]');
     setKeyboardAt(null);
     if (from) pointer.current = from;
     // Its copy is made once the page has drawn the hold (no tile shows what it shows when it is near), in `useLayoutEffect` below.
@@ -822,6 +828,8 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     const write = writeOf(current.start, current.live, current.held.id);
     if (!write) {
       setSaid(putBackLine(current.held, current.start, o.names));
+      // G9: picked up by a press on the tile and let go where it was: the click the drag took is given back.
+      if (fromSurface.current && sameModel(current.live, current.start)) o.onSelect?.(current.held.id);
       return;
     }
     const was = spotOf(current.start, current.held.id) as Spot;

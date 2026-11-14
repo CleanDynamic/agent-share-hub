@@ -702,6 +702,7 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
   return (
     <div
       ref={cardRef}
+      {...nest.surface}
       role="group"
       aria-label={`${kind} attached to ${step.inside?.label ?? "a step"}: ${stepTitle(step)}`}
       data-testid="sent-with-tile"
@@ -735,7 +736,7 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
         cursor: "pointer",
         ...(selected ? { background: t.selectedFill, borderColor: t.selectedEdge, boxShadow: t.selectedRing } : null),
         ...colourEdge(step.colour),
-        ...(nest.takes ? TAKES : null),
+        ...(nest.takes ? TAKES : null), ...nest.touchStyle,
         ...(hidden ? { visibility: "hidden" } : null),
       }}
     >
@@ -750,7 +751,9 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
       {step.kind === "code" ? (
         <>
           <CodePartLine step={step} />
-          <CodeLines text={step.text} compact testId="code-lines" label={`${kind} text`} />
+          <div data-no-drag="" style={{ display: "contents" }}>
+            <CodeLines text={step.text} compact testId="code-lines" label={`${kind} text`} />
+          </div>
         </>
       ) : step.text ? (
         <p style={{ ...text(textStep.body, 400, t.text), lineHeight: "23px", margin: 0, overflowWrap: "anywhere", ...clamp2 }}>{step.text}</p>
@@ -1225,6 +1228,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
     <>
     <div
       ref={cardRef}
+      {...nest.surface}
       role="group"
       aria-label={step.summary ? `${SUMMARY_COPY.title}: ${step.title ?? "untitled"}` : `Prompt ${step.number}: ${step.title ?? "untitled"}`}
       data-testid="step-card"
@@ -1257,7 +1261,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         const files = Array.from(event.dataTransfer.files);
         if (files.length > 0) props.onDropOnStep?.(step.id, files);
       } : undefined}
-      style={{ ...tileCard(selected || over), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
+      style={{ ...tileCard(selected || over), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
         step={step}
@@ -1557,6 +1561,7 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
   return (
     <div
       ref={cardRef}
+      {...nest.surface}
       role="group"
       aria-label={`${noun} ${step.number}: ${stepTitle(step)}`}
       data-testid="step-card"
@@ -1564,7 +1569,7 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
       tabIndex={0}
       {...focus.bind}
       onClick={() => props.onSelect(step.id)}
-      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
+      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
         step={step}
@@ -1704,6 +1709,7 @@ function PlainCard({ step, index, last, props, noun, body, after, link, typeLine
   return (
     <div
       ref={cardRef}
+      {...nest.surface}
       role="group"
       aria-label={`${noun} ${step.number}: ${stepTitle(step)}`}
       data-testid="step-card"
@@ -1719,7 +1725,7 @@ function PlainCard({ step, index, last, props, noun, body, after, link, typeLine
           props.onSelect(step.id);
         }
       }}
-      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
+      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
         step={step}
@@ -1846,6 +1852,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
   return (
     <div
       ref={cardRef}
+      {...nest.surface}
       role="group"
       aria-label={`Code ${step.number}: ${stepTitle(step)}`}
       data-testid="step-card"
@@ -1860,7 +1867,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
           props.onSelect(step.id);
         }
       }}
-      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
+      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
         step={step}
@@ -1873,7 +1880,9 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
       />
       <div style={{ paddingLeft: INDENT, minWidth: 0 }}>
         <CodePartLine step={step} />
-        <SmallCodeWell text={step.text} lines={all ? Number.POSITIVE_INFINITY : CODE_TILE_LINES} label={`Code ${step.number}`} />
+        <div data-no-drag="" style={{ display: "contents" }}>
+          <SmallCodeWell text={step.text} lines={all ? Number.POSITIVE_INFINITY : CODE_TILE_LINES} label={`Code ${step.number}`} />
+        </div>
       </div>
       <LinkLines lines={[...callsOf(step.id, props.steps), ...definesOf(step.id, props.steps)]} onOpen={props.onSelect} indent={INDENT} />
       <TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />
@@ -1915,6 +1924,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
   return (
     <div
       ref={cardRef}
+      {...nest.surface}
       role="group"
       aria-label={`Check ${step.number}: ${stepTitle(step)}`}
       data-testid="step-card"
@@ -1929,7 +1939,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
           props.onSelect(step.id);
         }
       }}
-      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
+      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
         step={step}
@@ -2328,6 +2338,7 @@ export function BuildList(raw: BuildListProps) {
     canTake: (id, parentId) => base.canNest?.(id, parentId) ?? false,
     collapsed: base.collapsed,
     onOpen: (key) => base.onToggleCollapsed?.(key, false),
+    onSelect: (id) => base.onSelect(id),
     commit: (commit: Commit) => {
       const write = commit.write;
       if (write.kind === "tile" && write.session) return base.onMoveToSession?.(commit.held.id, write.session, { order: write.atEnd, sentence: commit.sentence, notice: true, failed: "Step not moved" });
