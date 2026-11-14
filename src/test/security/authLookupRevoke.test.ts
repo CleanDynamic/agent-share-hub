@@ -42,3 +42,29 @@ describe("G4: the browser never calls get_email_by_username", () => {
     expect(callers).toEqual([]);
   });
 });
+
+describe("G10: the per-IP limit's table and function, in the same migration", () => {
+  const code = SQL.replace(/--[^\n]*/g, "");
+
+  it("keeps hits per bucket and window, with an expiry, and an index to clear expired rows by", () => {
+    expect(code).toMatch(/CREATE TABLE IF NOT EXISTS public\.edge_rate_limits/);
+    expect(code).toMatch(/PRIMARY KEY \(bucket, window_start\)/);
+    expect(code).toMatch(/expires_at timestamptz NOT NULL/);
+    expect(code).toMatch(/CREATE INDEX IF NOT EXISTS edge_rate_limits_expires_at/);
+  });
+
+  it("is service role only: RLS on with no policy, and nothing granted to PUBLIC, anon or authenticated", () => {
+    expect(code).toMatch(/ALTER TABLE public\.edge_rate_limits ENABLE ROW LEVEL SECURITY/);
+    expect(code).not.toMatch(/CREATE POLICY/i);
+    expect(code).toMatch(/REVOKE ALL ON TABLE public\.edge_rate_limits FROM PUBLIC, anon, authenticated/);
+    expect(code).toMatch(/REVOKE EXECUTE ON FUNCTION public\.edge_rate_limit_hit\(text, integer, integer\) FROM PUBLIC, anon, authenticated/);
+    expect(code).toMatch(/GRANT EXECUTE ON FUNCTION public\.edge_rate_limit_hit\(text, integer, integer\) TO service_role/);
+  });
+
+  it("counts atomically, checks its arguments, and deletes expired rows", () => {
+    expect(code).toMatch(/ON CONFLICT \(bucket, window_start\) DO UPDATE SET hits = r\.hits \+ 1/);
+    expect(code).toMatch(/RAISE EXCEPTION/);
+    expect(code).toMatch(/DELETE FROM public\.edge_rate_limits WHERE expires_at < now\(\)/);
+    expect(code).toMatch(/SECURITY INVOKER/);
+  });
+});
