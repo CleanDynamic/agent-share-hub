@@ -38,6 +38,8 @@ export interface LoginFormProps {
   error?: string;
   /** Where "Forgot password?" goes: the dialog's reset view, as an address, so it does not leave the page behind. */
   forgotTo?: string;
+  /** The history state that link carries (how deep into the dialog it goes). */
+  forgotState?: unknown;
 }
 
 export function LoginForm({
@@ -54,6 +56,7 @@ export function LoginForm({
   loadingProvider,
   error,
   forgotTo = "/reset-password",
+  forgotState,
 }: LoginFormProps) {
   const { phone } = useAuthSizes();
   const room = useRoom();
@@ -96,6 +99,7 @@ export function LoginForm({
             </AuthCheck>
             <FrameLink
               to={forgotTo}
+              state={forgotState}
               style={{
                 lineHeight: `${DIALOG.row}px`,
                 color: SIGNIN_COLOURS[room].link,

@@ -1,5 +1,5 @@
-/* UI-P36 — `/verify-email` and `/verify-email/:token` in the entrance's frame:
-   the container.
+/* The verify views of the sign-in dialog: the container (was UI-P36's `/verify-email` and `/verify-email/:token` page;
+   both addresses now open Home with this view, the path's token carried as `?token=`).
 
    A REPAINT OF THE PAGE, NOT A REWRITE OF VERIFYING. This is
    `pages/VerifyEmail.tsx`'s state and handlers, in the same order and with the
@@ -16,9 +16,8 @@
    profile says (onboarding, or Home), and to sign in when there is no session. */
 
 import { useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
-import { SeoHead } from "@/components/SeoHead";
 import type { ResendState } from "@/components/auth/AuthEmailVerificationCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { resendSignupEmail, verifyEmailLink } from "@/lib/auth/emailLink";
@@ -26,27 +25,28 @@ import { resolvePostAuthRoute } from "@/lib/auth/postAuthRoute";
 
 import { readEmailLink } from "./authModel";
 import { LinkChecking } from "./ResetForms";
-import { SignInShell } from "./SignInShell";
 import { VerifyFailed, VerifyPending, VerifySuccess } from "./VerifyForms";
-import { SITE_NAME } from "@/lib/site";
+import { useSignInNavigation } from "./useSignInNavigation";
 
 const RESEND_COOLDOWN_SECONDS = 45;
 
-export function VerifyEmailPage() {
+export function VerifyPanel() {
   const navigate = useNavigate();
+  const views = useSignInNavigation();
   const location = useLocation();
-  const params = useParams();
   const [searchParams] = useSearchParams();
   const { session } = useAuth();
 
-  const link = readEmailLink(params.token, searchParams, window.location.hash);
+  const link = readEmailLink(undefined, searchParams, window.location.hash);
 
-  const [mode, setMode] = useState<"pending" | "verifying" | "success" | "error">(
-    link.present ? "verifying" : "pending",
-  );
+  const [mode, setMode] = useState<
+    "pending" | "verifying" | "success" | "error"
+  >(link.present ? "verifying" : "pending");
 
   const email =
-    (location.state as { email?: string } | null)?.email || sessionStorage.getItem("pending_verification_email") || "";
+    (location.state as { email?: string } | null)?.email ||
+    sessionStorage.getItem("pending_verification_email") ||
+    "";
 
   /* ── Run verification when a token / code is present in the URL ── */
   useEffect(() => {
@@ -96,7 +96,7 @@ export function VerifyEmailPage() {
 
   const handleResend = async () => {
     if (!email) {
-      navigate("/signup");
+      views.show("signup");
       return;
     }
     setResendState("sending");
@@ -110,40 +110,39 @@ export function VerifyEmailPage() {
   };
 
   const handleContinue = async () => {
-    const route = session ? await resolvePostAuthRoute(session.user.id) : "/login";
-    navigate(route, { replace: true });
+    if (!session) {
+      views.replaceWith("login");
+      return;
+    }
+    navigate(await resolvePostAuthRoute(session.user.id), { replace: true });
   };
 
   /* ── Render ── */
   return (
     <>
-      <SeoHead
-        title="Verify your email"
-        description={`Verify your ${SITE_NAME} account email.`}
-        path="/verify-email"
-        noIndex
-      />
-      <SignInShell mode="verify">
-        {mode === "verifying" ? (
-          <LinkChecking title="Verifying your email…">
-            We&apos;re checking the link you opened. This page updates on its own in a moment.
-          </LinkChecking>
-        ) : mode === "success" ? (
-          <VerifySuccess onContinue={handleContinue} />
-        ) : mode === "error" ? (
-          <VerifyFailed onResend={handleResend} onBackToSignIn={() => navigate("/login", { replace: true })} />
-        ) : (
-          <VerifyPending
-            email={email || "your email"}
-            resendState={resendState}
-            cooldownSeconds={cooldown}
-            onResend={handleResend}
-            onChangeEmail={() => navigate("/signup")}
-          />
-        )}
-      </SignInShell>
+      {mode === "verifying" ? (
+        <LinkChecking title="Verifying your email…">
+          We&apos;re checking the link you opened. This page updates on its own
+          in a moment.
+        </LinkChecking>
+      ) : mode === "success" ? (
+        <VerifySuccess onContinue={handleContinue} />
+      ) : mode === "error" ? (
+        <VerifyFailed
+          onResend={handleResend}
+          onBackToSignIn={() => views.replaceWith("login")}
+        />
+      ) : (
+        <VerifyPending
+          email={email || "your email"}
+          resendState={resendState}
+          cooldownSeconds={cooldown}
+          onResend={handleResend}
+          onChangeEmail={() => views.show("signup")}
+        />
+      )}
     </>
   );
 }
 
-export default VerifyEmailPage;
+export default VerifyPanel;

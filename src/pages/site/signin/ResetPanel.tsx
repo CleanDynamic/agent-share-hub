@@ -1,5 +1,5 @@
-/* UI-P36 — `/reset-password` and `/reset-password/:token` in the entrance's
-   frame: the container.
+/* The reset views of the sign-in dialog: the container (was UI-P36's `/reset-password` and `/reset-password/:token`
+   page; both addresses now open Home with this view, the path's token carried as `?token=`).
 
    A REPAINT OF THE FORMS, NOT A REWRITE OF RECOVERY. This is
    `pages/ResetPassword.tsx`'s state and handlers, in the same order and with the
@@ -18,31 +18,48 @@
    `src/lib/auth/`, since a component may not call Supabase. */
 
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
-import { SeoHead } from "@/components/SeoHead";
-import { calculatePasswordStrength, type PasswordStrength } from "@/components/auth/PasswordStrengthMeter";
+import {
+  calculatePasswordStrength,
+  type PasswordStrength,
+} from "@/components/auth/PasswordStrengthMeter";
 import { verifyEmailLink } from "@/lib/auth/emailLink";
-import { onPasswordRecovery, requestPasswordReset, setNewPassword } from "@/lib/auth/passwordReset";
+import {
+  onPasswordRecovery,
+  requestPasswordReset,
+  setNewPassword,
+} from "@/lib/auth/passwordReset";
 
-import { readEmailLink, resetConfirmCanSubmit, resetRequestCanSubmit } from "./authModel";
-import { LinkChecking, ResetConfirmForm, ResetLinkError, ResetRequestForm, ResetSent } from "./ResetForms";
-import { SignInShell } from "./SignInShell";
-import { SITE_NAME } from "@/lib/site";
+import {
+  readEmailLink,
+  resetConfirmCanSubmit,
+  resetRequestCanSubmit,
+} from "./authModel";
+import {
+  LinkChecking,
+  ResetConfirmForm,
+  ResetLinkError,
+  ResetRequestForm,
+  ResetSent,
+} from "./ResetForms";
+import { useSignInNavigation } from "./useSignInNavigation";
+import { withoutDialog } from "./signinUrl";
 
 const EMAIL_REGEX = /^[^@]+@[^@]+\.[^@]+$/;
 
 type Mode = "request" | "sent" | "verifying" | "confirm" | "error";
 
-export function ResetPasswordPage() {
-  const navigate = useNavigate();
-  const params = useParams();
+export function ResetPanel() {
+  const views = useSignInNavigation();
   const [searchParams] = useSearchParams();
 
-  const link = readEmailLink(params.token, searchParams, window.location.hash);
+  const link = readEmailLink(undefined, searchParams, window.location.hash);
 
-  const [mode, setMode] = useState<Mode>(link.present ? "verifying" : "request");
+  const [mode, setMode] = useState<Mode>(
+    link.present ? "verifying" : "request",
+  );
 
   // --- Request form state ---
   const [email, setEmail] = useState("");
@@ -53,7 +70,8 @@ export function ResetPasswordPage() {
   // --- Confirm form state ---
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>("weak");
+  const [passwordStrength, setPasswordStrength] =
+    useState<PasswordStrength>("weak");
   const [confirmSubmitting, setConfirmSubmitting] = useState(false);
   const [confirmError, setConfirmError] = useState("");
   const [mismatchError, setMismatchError] = useState("");
@@ -117,7 +135,10 @@ export function ResetPasswordPage() {
       // The project deliberately doesn't surface "email not found" here, so an
       // accepted request shows the same generic confirmation either way, to avoid
       // leaking which emails are registered.
-      const accepted = await requestPasswordReset(cleanEmail, `${window.location.origin}/reset-password`);
+      const accepted = await requestPasswordReset(
+        cleanEmail,
+        `${window.location.origin}/reset-password`,
+      );
       if (!accepted) {
         setRequestError("Something went wrong. Please try again.");
         setRequestSubmitting(false);
@@ -156,10 +177,16 @@ export function ResetPasswordPage() {
       await setNewPassword(password);
 
       toast.success("Password updated. Sign in with your new password.");
-      navigate("/login", { replace: true });
+      views.replaceWith(
+        "login",
+        undefined,
+        withoutDialog(`?${searchParams.toString()}`),
+      );
     } catch (err) {
       const message =
-        err instanceof Error && err.message ? err.message : "Something went wrong. Please try again.";
+        err instanceof Error && err.message
+          ? err.message
+          : "Something went wrong. Please try again.";
       setConfirmError(message);
       setConfirmSubmitting(false);
     }
@@ -168,7 +195,11 @@ export function ResetPasswordPage() {
   const handleRequestNewLink = () => {
     // Clear the URL of any failed token params so a refresh doesn't loop us
     // back into the error state.
-    window.history.replaceState({}, "", "/reset-password");
+    views.replaceWith(
+      "reset",
+      undefined,
+      withoutDialog(`?${searchParams.toString()}`),
+    );
     setEmail("");
     setRequestError("");
     setMode("request");
@@ -178,57 +209,50 @@ export function ResetPasswordPage() {
 
   return (
     <>
-      <SeoHead
-        title="Reset your password"
-        description={`Reset your ${SITE_NAME} account password.`}
-        path="/reset-password"
-        noIndex
-      />
-      <SignInShell mode="reset">
-        {mode === "verifying" ? (
-          <LinkChecking title="Checking your reset link…">
-            We&apos;re confirming the link is still valid. The form for your new password appears here in a moment.
-          </LinkChecking>
-        ) : mode === "sent" ? (
-          <ResetSent email={submittedEmail} />
-        ) : mode === "error" ? (
-          <ResetLinkError onRequestNew={handleRequestNewLink} />
-        ) : mode === "confirm" ? (
-          <ResetConfirmForm
-            password={password}
-            confirmPassword={confirmPassword}
-            passwordStrength={passwordStrength}
-            onPasswordChange={(value) => {
-              setPassword(value);
-              setConfirmError("");
-              setMismatchError("");
-            }}
-            onConfirmPasswordChange={(value) => {
-              setConfirmPassword(value);
-              setMismatchError("");
-            }}
-            canSubmit={resetConfirmCanSubmit(password, confirmPassword)}
-            isSubmitting={confirmSubmitting}
-            onSubmit={handleConfirmSubmit}
-            mismatchError={mismatchError}
-            error={confirmError}
-          />
-        ) : (
-          <ResetRequestForm
-            email={email}
-            onEmailChange={(value) => {
-              setEmail(value);
-              setRequestError("");
-            }}
-            canSubmit={resetRequestCanSubmit(email)}
-            isSubmitting={requestSubmitting}
-            onSubmit={handleRequestSubmit}
-            error={requestError}
-          />
-        )}
-      </SignInShell>
+      {mode === "verifying" ? (
+        <LinkChecking title="Checking your reset link…">
+          We&apos;re confirming the link is still valid. The form for your new
+          password appears here in a moment.
+        </LinkChecking>
+      ) : mode === "sent" ? (
+        <ResetSent email={submittedEmail} />
+      ) : mode === "error" ? (
+        <ResetLinkError onRequestNew={handleRequestNewLink} />
+      ) : mode === "confirm" ? (
+        <ResetConfirmForm
+          password={password}
+          confirmPassword={confirmPassword}
+          passwordStrength={passwordStrength}
+          onPasswordChange={(value) => {
+            setPassword(value);
+            setConfirmError("");
+            setMismatchError("");
+          }}
+          onConfirmPasswordChange={(value) => {
+            setConfirmPassword(value);
+            setMismatchError("");
+          }}
+          canSubmit={resetConfirmCanSubmit(password, confirmPassword)}
+          isSubmitting={confirmSubmitting}
+          onSubmit={handleConfirmSubmit}
+          mismatchError={mismatchError}
+          error={confirmError}
+        />
+      ) : (
+        <ResetRequestForm
+          email={email}
+          onEmailChange={(value) => {
+            setEmail(value);
+            setRequestError("");
+          }}
+          canSubmit={resetRequestCanSubmit(email)}
+          isSubmitting={requestSubmitting}
+          onSubmit={handleRequestSubmit}
+          error={requestError}
+        />
+      )}
     </>
   );
 }
 
-export default ResetPasswordPage;
+export default ResetPanel;

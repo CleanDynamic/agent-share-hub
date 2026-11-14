@@ -4,7 +4,7 @@
    `?mode=` any of SIGNIN_MODES (the reset and verify states among them) draws the other views in the same dialog. `?error=1` fills the Sign in view's
    error line ("Wrong email or password"), so the two can be compared (G9). Nothing here reaches a production bundle. */
 
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { SiteFrameView } from "@/components/shell/SiteFrame";
 import { signinFixture, SIGNIN_MODES, type SigninMode } from "@/dev/fixtures/signin";
@@ -22,6 +22,7 @@ const noop = () => undefined;
 export default function SignInDemo({ viewport }: DesignPageProps) {
   useDesignTheme();
   const [params] = useSearchParams();
+  const navigate = useNavigate();
   const asked = params.get("mode") as SigninMode | null;
   const mode: SigninMode = asked && SIGNIN_MODES.includes(asked) ? asked : "login";
   const sample = signinFixture();
@@ -32,7 +33,7 @@ export default function SignInDemo({ viewport }: DesignPageProps) {
   };
   const rowStart =
     mode === "login" || mode === "signup" ? (
-      <AccountSwitch value={mode} loginTo={here("login")} signupTo={here("signup")} />
+      <AccountSwitch value={mode} onChange={(next) => navigate(here(next))} />
     ) : (
       <BackToSignIn to={here("login")} />
     );

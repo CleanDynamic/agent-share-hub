@@ -31,6 +31,7 @@ import { LazyBottomSheet } from "./LazyBottomSheet";
 import type { FrameViewer } from "./frameTypes";
 import { RoutedHeaderSearch } from "./HeaderSearch";
 import { SITE_NAV } from "./siteNav";
+import { deeper, openOver } from "@/pages/site/signin/signinUrl";
 import { HEADER_HEIGHT } from "./chromeSize";
 
 export interface MobileHeaderViewProps {
@@ -130,7 +131,7 @@ const row: CSSProperties = {
 
 /** The container: the account, the route, and the two sheets. */
 function MobileHeaderContainer() {
-  const { pathname } = useLocation();
+  const { pathname, state: locationState } = useLocation();
   const navigate = useNavigate();
   const { isLoggedIn, user, profile, signOut } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -155,7 +156,8 @@ function MobileHeaderContainer() {
         viewer={viewer}
         onSearchOpen={() => setSearchOpen(true)}
         onAccountOpen={() => setAccountOpen(true)}
-        onSignIn={() => navigate(`/login?redirect=${encodeURIComponent(pathname + window.location.search)}`)}
+        /* G5: the sign-in dialog opens over this page, full screen on a phone. */
+        onSignIn={() => navigate(openOver(pathname, window.location.search), { state: deeper(locationState) })}
       />
 
       <LazyBottomSheet open={searchOpen} onOpenChange={setSearchOpen} title="Search">
