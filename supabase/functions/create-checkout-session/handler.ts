@@ -23,12 +23,16 @@ export function createCheckoutHandler(deps: PaymentDeps) {
       if (!body.ok) return fail(req, 400, body.error);
       const { content_id, success_url, cancel_url } = body.data;
 
+      // G10: a buyer must be signed in. The public key alone (the anon role) carries no user, so it is refused here,
+      // before the database or Stripe is asked anything. Nothing in the app calls this without a user.
+      const buyerId = await deps.getUserId(req);
+      if (!buyerId) return fail(req, 401, "Sign in to buy this");
+
       const item = await deps.findItem(content_id);
       if (!item) return fail(req, 404, "Content not found");
       const pence = paidPence(item);
       if (pence === null) return fail(req, 400, "This item is not for sale");
 
-      const buyerId = await deps.getUserId(req);
       const session = await deps.createSession({
         payment_method_types: ["card"],
         mode: "payment",
@@ -42,7 +46,7 @@ export function createCheckoutHandler(deps: PaymentDeps) {
             quantity: 1,
           },
         ],
-        metadata: { content_id, ...(buyerId ? { buyer_id: buyerId } : {}) },
+        metadata: { content_id, buyer_id: buyerId },
         success_url,
         cancel_url,
       });
