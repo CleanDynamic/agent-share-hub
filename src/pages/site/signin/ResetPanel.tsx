@@ -21,29 +21,12 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
-import {
-  calculatePasswordStrength,
-  type PasswordStrength,
-} from "@/components/auth/PasswordStrengthMeter";
+import { calculatePasswordStrength, type PasswordStrength } from "@/components/auth/PasswordStrengthMeter";
 import { verifyEmailLink } from "@/lib/auth/emailLink";
-import {
-  onPasswordRecovery,
-  requestPasswordReset,
-  setNewPassword,
-} from "@/lib/auth/passwordReset";
+import { onPasswordRecovery, requestPasswordReset, setNewPassword } from "@/lib/auth/passwordReset";
 
-import {
-  readEmailLink,
-  resetConfirmCanSubmit,
-  resetRequestCanSubmit,
-} from "./authModel";
-import {
-  LinkChecking,
-  ResetConfirmForm,
-  ResetLinkError,
-  ResetRequestForm,
-  ResetSent,
-} from "./ResetForms";
+import { readEmailLink, resetConfirmCanSubmit, resetRequestCanSubmit } from "./authModel";
+import { LinkChecking, ResetConfirmForm, ResetLinkError, ResetRequestForm, ResetSent } from "./ResetForms";
 import { useSignInNavigation } from "./useSignInNavigation";
 import { withoutDialog } from "./signinUrl";
 
@@ -57,9 +40,7 @@ export function ResetPanel() {
 
   const link = readEmailLink(undefined, searchParams, window.location.hash);
 
-  const [mode, setMode] = useState<Mode>(
-    link.present ? "verifying" : "request",
-  );
+  const [mode, setMode] = useState<Mode>(link.present ? "verifying" : "request");
 
   // --- Request form state ---
   const [email, setEmail] = useState("");
@@ -70,8 +51,7 @@ export function ResetPanel() {
   // --- Confirm form state ---
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordStrength, setPasswordStrength] =
-    useState<PasswordStrength>("weak");
+  const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>("weak");
   const [confirmSubmitting, setConfirmSubmitting] = useState(false);
   const [confirmError, setConfirmError] = useState("");
   const [mismatchError, setMismatchError] = useState("");
@@ -135,10 +115,7 @@ export function ResetPanel() {
       // The project deliberately doesn't surface "email not found" here, so an
       // accepted request shows the same generic confirmation either way, to avoid
       // leaking which emails are registered.
-      const accepted = await requestPasswordReset(
-        cleanEmail,
-        `${window.location.origin}/reset-password`,
-      );
+      const accepted = await requestPasswordReset(cleanEmail, `${window.location.origin}/reset-password`);
       if (!accepted) {
         setRequestError("Something went wrong. Please try again.");
         setRequestSubmitting(false);
@@ -177,16 +154,10 @@ export function ResetPanel() {
       await setNewPassword(password);
 
       toast.success("Password updated. Sign in with your new password.");
-      views.replaceWith(
-        "login",
-        undefined,
-        withoutDialog(`?${searchParams.toString()}`),
-      );
+      views.replaceWith("login", undefined, withoutDialog(`?${searchParams.toString()}`));
     } catch (err) {
       const message =
-        err instanceof Error && err.message
-          ? err.message
-          : "Something went wrong. Please try again.";
+        err instanceof Error && err.message ? err.message : "Something went wrong. Please try again.";
       setConfirmError(message);
       setConfirmSubmitting(false);
     }
@@ -195,11 +166,7 @@ export function ResetPanel() {
   const handleRequestNewLink = () => {
     // Clear the URL of any failed token params so a refresh doesn't loop us
     // back into the error state.
-    views.replaceWith(
-      "reset",
-      undefined,
-      withoutDialog(`?${searchParams.toString()}`),
-    );
+    views.replaceWith("reset", undefined, withoutDialog(`?${searchParams.toString()}`));
     setEmail("");
     setRequestError("");
     setMode("request");
@@ -211,8 +178,7 @@ export function ResetPanel() {
     <>
       {mode === "verifying" ? (
         <LinkChecking title="Checking your reset link…">
-          We&apos;re confirming the link is still valid. The form for your new
-          password appears here in a moment.
+          We&apos;re confirming the link is still valid. The form for your new password appears here in a moment.
         </LinkChecking>
       ) : mode === "sent" ? (
         <ResetSent email={submittedEmail} />

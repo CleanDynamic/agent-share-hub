@@ -34,16 +34,13 @@ export function LoginPanel() {
   const [searchParams] = useSearchParams();
   const { isLoggedIn } = useAuth();
   // Honour both the existing `redirect` param and the `returnTo` alias.
-  const redirectParam =
-    searchParams.get("redirect") || searchParams.get("returnTo");
+  const redirectParam = searchParams.get("redirect") || searchParams.get("returnTo");
 
   const [emailOrUsername, setEmailOrUsername] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(
-    null,
-  );
+  const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(null);
   const [error, setError] = useState("");
   const views = useSignInNavigation();
 
@@ -68,9 +65,7 @@ export function LoginPanel() {
         return;
       }
 
-      const destination =
-        redirectParam ||
-        (result.userId ? await resolvePostAuthRoute(result.userId) : "/");
+      const destination = redirectParam || (result.userId ? await resolvePostAuthRoute(result.userId) : "/");
       navigate(destination, { replace: true });
     } catch {
       setError("Something went wrong. Please try again.");
@@ -90,30 +85,28 @@ export function LoginPanel() {
   };
 
   return (
-    <>
-      <LoginForm
-        forgotTo={views.hrefFor("reset")}
-        forgotState={views.linkState}
-        emailOrUsername={emailOrUsername}
-        password={password}
-        rememberMe={rememberMe}
-        onEmailOrUsernameChange={(value) => {
-          setEmailOrUsername(value);
-          setError("");
-        }}
-        onPasswordChange={(value) => {
-          setPassword(value);
-          setError("");
-        }}
-        onRememberMeChange={setRememberMe}
-        canSubmit={loginCanSubmit(emailOrUsername, password)}
-        isSubmitting={isSubmitting}
-        onSubmit={handleEmailLogin}
-        onProvider={handleProvider}
-        loadingProvider={loadingProvider}
-        error={error}
-      />
-    </>
+    <LoginForm
+      forgotTo={views.hrefFor("reset")}
+      forgotState={views.linkState}
+      emailOrUsername={emailOrUsername}
+      password={password}
+      rememberMe={rememberMe}
+      onEmailOrUsernameChange={(value) => {
+        setEmailOrUsername(value);
+        setError("");
+      }}
+      onPasswordChange={(value) => {
+        setPassword(value);
+        setError("");
+      }}
+      onRememberMeChange={setRememberMe}
+      canSubmit={loginCanSubmit(emailOrUsername, password)}
+      isSubmitting={isSubmitting}
+      onSubmit={handleEmailLogin}
+      onProvider={handleProvider}
+      loadingProvider={loadingProvider}
+      error={error}
+    />
   );
 }
 

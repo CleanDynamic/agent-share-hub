@@ -17,10 +17,7 @@ import { useNavigate } from "react-router-dom";
 
 import type { InputValidation } from "@/components/auth/AuthInput";
 import type { OAuthProvider } from "@/components/auth/OAuthButtons";
-import {
-  calculatePasswordStrength,
-  type PasswordStrength,
-} from "@/components/auth/PasswordStrengthMeter";
+import { calculatePasswordStrength, type PasswordStrength } from "@/components/auth/PasswordStrengthMeter";
 import { useAuth } from "@/contexts/AuthContext";
 import { checkUsernameAvailability } from "@/lib/auth/checkUsernameAvailability";
 import { startOAuthSignIn } from "@/lib/auth/oauth";
@@ -37,21 +34,13 @@ const EMAIL_REGEX = /^[^@]+@[^@]+\.[^@]+$/;
    and email only (never the password, never the tick), in this tab's session storage, put there when a legal link is followed
    and taken out again as soon as the form is back. */
 const DRAFT_KEY = "signup_draft";
-interface SavedDraft {
-  displayName: string;
-  username: string;
-  email: string;
-}
+interface SavedDraft { displayName: string; username: string; email: string }
 function readSavedDraft(): SavedDraft | null {
   try {
     const raw = sessionStorage.getItem(DRAFT_KEY);
     if (!raw) return null;
     const value = JSON.parse(raw) as Partial<SavedDraft>;
-    return {
-      displayName: String(value.displayName ?? ""),
-      username: String(value.username ?? ""),
-      email: String(value.email ?? ""),
-    };
+    return { displayName: String(value.displayName ?? ""), username: String(value.username ?? ""), email: String(value.email ?? "") };
   } catch {
     return null;
   }
@@ -69,19 +58,12 @@ export function SignupPanel() {
   const [password, setPassword] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(
-    null,
-  );
+  const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(null);
   const [error, setError] = useState("");
 
-  const [usernameValidation, setUsernameValidation] = useState<InputValidation>(
-    { state: "idle" },
-  );
-  const [emailValidation, setEmailValidation] = useState<InputValidation>({
-    state: "idle",
-  });
-  const [passwordStrength, setPasswordStrength] =
-    useState<PasswordStrength>("weak");
+  const [usernameValidation, setUsernameValidation] = useState<InputValidation>({ state: "idle" });
+  const [emailValidation, setEmailValidation] = useState<InputValidation>({ state: "idle" });
+  const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>("weak");
 
   // Back from reading the Terms or Privacy policy: check what was kept, then let it go.
   useEffect(() => {
@@ -98,10 +80,7 @@ export function SignupPanel() {
 
   const keepForLegal = () => {
     try {
-      sessionStorage.setItem(
-        DRAFT_KEY,
-        JSON.stringify({ displayName, username, email }),
-      );
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ displayName, username, email }));
     } catch {
       /* the form is simply empty on the way back */
     }
@@ -135,10 +114,7 @@ export function SignupPanel() {
       return;
     }
     if (next.length < 3) {
-      setUsernameValidation({
-        state: "invalid",
-        message: "Username must be at least 3 characters",
-      });
+      setUsernameValidation({ state: "invalid", message: "Username must be at least 3 characters" });
       return;
     }
     if (!/^[a-z0-9_]+$/.test(next)) {
@@ -155,16 +131,11 @@ export function SignupPanel() {
       const { available, suggestion } = await checkUsernameAvailability(next);
       if (seq !== usernameSeq.current) return; // a newer keystroke superseded this
       if (available) {
-        setUsernameValidation({
-          state: "valid",
-          message: "Username available",
-        });
+        setUsernameValidation({ state: "valid", message: "Username available" });
       } else {
         setUsernameValidation({
           state: "invalid",
-          message: suggestion
-            ? `Taken — try "${suggestion}"`
-            : "That username is taken",
+          message: suggestion ? `Taken — try "${suggestion}"` : "That username is taken",
         });
       }
     }, 400);
@@ -184,9 +155,7 @@ export function SignupPanel() {
       return;
     }
     setEmailValidation(
-      EMAIL_REGEX.test(value)
-        ? { state: "valid" }
-        : { state: "invalid", message: "Please enter a valid email" },
+      EMAIL_REGEX.test(value) ? { state: "valid" } : { state: "invalid", message: "Please enter a valid email" },
     );
   };
 
@@ -195,10 +164,7 @@ export function SignupPanel() {
     const cleanUsername = username.trim().toLowerCase();
 
     if (!EMAIL_REGEX.test(cleanEmail)) {
-      setEmailValidation({
-        state: "invalid",
-        message: "Please enter a valid email",
-      });
+      setEmailValidation({ state: "invalid", message: "Please enter a valid email" });
       return;
     }
     if (usernameValidation.state === "invalid" || cleanUsername.length < 3) {
@@ -219,13 +185,8 @@ export function SignupPanel() {
 
       if (result.outcome !== "created") {
         if (result.outcome === "already-registered") {
-          setEmailValidation({
-            state: "invalid",
-            message: "An account with this email already exists",
-          });
-          setError(
-            "That email is already registered — try signing in instead.",
-          );
+          setEmailValidation({ state: "invalid", message: "An account with this email already exists" });
+          setError("That email is already registered — try signing in instead.");
         } else {
           setError(result.message);
         }
@@ -260,46 +221,44 @@ export function SignupPanel() {
   };
 
   return (
-    <>
-      <SignupForm
-        displayName={displayName}
-        username={username}
-        email={email}
-        password={password}
-        agreedToTerms={agreedToTerms}
-        onDisplayNameChange={(value) => {
-          setDisplayName(value);
-          setError("");
-        }}
-        onUsernameChange={handleUsernameChange}
-        onEmailChange={handleEmailChange}
-        onEmailBlur={handleEmailBlur}
-        onPasswordChange={(value) => {
-          setPassword(value);
-          setError("");
-        }}
-        onAgreedToTermsChange={setAgreedToTerms}
-        usernameValidation={usernameValidation}
-        emailValidation={emailValidation}
-        passwordStrength={passwordStrength}
-        canSubmit={signupCanSubmit({
-          displayName,
-          username,
-          email,
-          password,
-          agreedToTerms,
-          usernameValidation,
-          emailValidation,
-        })}
-        isSubmitting={isSubmitting}
-        onSubmit={handleEmailSignup}
-        onProvider={handleProvider}
-        loadingProvider={loadingProvider}
-        error={error}
-        showLegalLine={TERMS_REVIEWED && PRIVACY_REVIEWED}
-        onLeaveForLegal={keepForLegal}
-      />
-    </>
+    <SignupForm
+      displayName={displayName}
+      username={username}
+      email={email}
+      password={password}
+      agreedToTerms={agreedToTerms}
+      onDisplayNameChange={(value) => {
+        setDisplayName(value);
+        setError("");
+      }}
+      onUsernameChange={handleUsernameChange}
+      onEmailChange={handleEmailChange}
+      onEmailBlur={handleEmailBlur}
+      onPasswordChange={(value) => {
+        setPassword(value);
+        setError("");
+      }}
+      onAgreedToTermsChange={setAgreedToTerms}
+      usernameValidation={usernameValidation}
+      emailValidation={emailValidation}
+      passwordStrength={passwordStrength}
+      canSubmit={signupCanSubmit({
+        displayName,
+        username,
+        email,
+        password,
+        agreedToTerms,
+        usernameValidation,
+        emailValidation,
+      })}
+      isSubmitting={isSubmitting}
+      onSubmit={handleEmailSignup}
+      onProvider={handleProvider}
+      loadingProvider={loadingProvider}
+      error={error}
+      showLegalLine={TERMS_REVIEWED && PRIVACY_REVIEWED}
+      onLeaveForLegal={keepForLegal}
+    />
   );
 }
 

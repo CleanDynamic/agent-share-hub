@@ -39,14 +39,12 @@ export function VerifyPanel() {
 
   const link = readEmailLink(undefined, searchParams, window.location.hash);
 
-  const [mode, setMode] = useState<
-    "pending" | "verifying" | "success" | "error"
-  >(link.present ? "verifying" : "pending");
+  const [mode, setMode] = useState<"pending" | "verifying" | "success" | "error">(
+    link.present ? "verifying" : "pending",
+  );
 
   const email =
-    (location.state as { email?: string } | null)?.email ||
-    sessionStorage.getItem("pending_verification_email") ||
-    "";
+    (location.state as { email?: string } | null)?.email || sessionStorage.getItem("pending_verification_email") || "";
 
   /* ── Run verification when a token / code is present in the URL ── */
   useEffect(() => {
@@ -122,16 +120,12 @@ export function VerifyPanel() {
     <>
       {mode === "verifying" ? (
         <LinkChecking title="Verifying your email…">
-          We&apos;re checking the link you opened. This page updates on its own
-          in a moment.
+          We&apos;re checking the link you opened. This page updates on its own in a moment.
         </LinkChecking>
       ) : mode === "success" ? (
         <VerifySuccess onContinue={handleContinue} />
       ) : mode === "error" ? (
-        <VerifyFailed
-          onResend={handleResend}
-          onBackToSignIn={() => views.replaceWith("login")}
-        />
+        <VerifyFailed onResend={handleResend} onBackToSignIn={() => views.replaceWith("login")} />
       ) : (
         <VerifyPending
           email={email || "your email"}
