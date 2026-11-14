@@ -81,6 +81,8 @@ export const FRAME_NUMBER_END = 18;
 export const FRAME_PLACES_MAX = 100;
 export const RAIL_INSET = 14;
 export const SESSION_TICK_DOWN = 22;
+/** Prompt 6 G5: a tile's tick stands this far below the top of its socket. */
+export const TILE_TICK_DOWN = 24;
 /** SV-05 P4: how far in from a socket's left edge its number stands, when the numbers are inside. */
 export const SOCKET_NUMBER_IN = 10;
 export const EMPTY_PLACE_HEIGHT = 44;
@@ -190,15 +192,19 @@ export function skeletonOf(input: SkeletonInput): Skeleton {
       if (frame !== undefined && mine.length >= FRAME_PLACES_MAX) continue;
       const left = Math.min(...mine.map((item) => item.rect.x));
       const lane = grow(container.rect, LANE_OUT, LANE_OUT, LANE_OUT, LANE_OUT);
+      const socketTop = (item: SkeletonItem) => socketOf.get(item.id)?.rect.y ?? item.rect.y;
+      // G2: from the part frame, the rail runs from the first socket's top to the last socket's bottom.
+      const last = socketOf.get(mine[mine.length - 1].id)?.rect;
       rails.push({
         container: container.id,
         x: frame === undefined ? left - RAIL_AT : frame - FRAME_RAIL_AT,
-        top: lane.y + RAIL_INSET,
-        bottom: lane.y + lane.h - RAIL_INSET,
+        top: frame === undefined ? lane.y + RAIL_INSET : Math.min(...mine.map(socketTop)),
+        bottom: frame === undefined || !last ? lane.y + lane.h - RAIL_INSET : last.y + last.h,
         ticks: mine.map((item, at) => ({
           id: item.id,
           n: at + 1,
-          y: input.kind === "tile" ? item.rect.y + item.rect.h / 2 : item.rect.y + SESSION_TICK_DOWN,
+          // SV-05 P4: a number inside its socket stays at the socket's middle; there is no tick.
+          y: input.kind !== "tile" ? item.rect.y + SESSION_TICK_DOWN : input.inside ? item.rect.y + item.rect.h / 2 : socketTop(item) + TILE_TICK_DOWN,
           numberRight: frame === undefined ? item.rect.x - NUMBER_END : frame - FRAME_NUMBER_END,
           tickFrom: frame === undefined ? item.rect.x - TICK_FROM : frame - FRAME_TICK_FROM,
           tickTo: frame === undefined ? item.rect.x - TICK_TO : frame - FRAME_TICK_TO,

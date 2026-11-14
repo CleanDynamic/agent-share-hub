@@ -69,11 +69,12 @@ describe("lanes", () => {
 });
 
 describe("rail and numbers", () => {
-  it("number each place within its container and tick tiles at their middle", () => {
+  it("number each place within its container and tick tiles 24 below the top of their socket (G5)", () => {
     const { rails } = skeletonOf(base());
     expect(rails.map((rail) => rail.ticks.map((tick) => tick.n))).toEqual([[1, 2, 3], [1]]);
     expect(rails[0].x).toBe(76);
-    expect(rails[0].ticks[0]).toMatchObject({ y: 50, tickFrom: 78, tickTo: 88, numberRight: 74 });
+    expect(rails[0].ticks[0]).toMatchObject({ y: 20, tickFrom: 78, tickTo: 88, numberRight: 74 });
+    expect(rails[0].ticks[1].y).toBe(112 - 4 + 24);
     expect(rails[0].top).toBe(6);
     expect(rails[0].bottom).toBe(318);
   });
@@ -105,6 +106,13 @@ describe("rail and numbers", () => {
       expect(rails).toHaveLength(2);
       expect(rails[0].x).toBe(68);
       expect(rails[0].ticks[0]).toMatchObject({ tickFrom: 72, tickTo: 80, numberRight: 66 });
+    });
+
+    it("run from the first socket's top to the last socket's bottom, inside the lane", () => {
+      const { rails, lanes } = skeletonOf(framed());
+      expect([rails[0].top, rails[0].bottom]).toEqual([-4, 328]);
+      expect(rails[0].top).toBeGreaterThanOrEqual(lanes[0].rect.y);
+      expect(rails[0].bottom).toBeLessThanOrEqual(lanes[0].rect.y + lanes[0].rect.h);
     });
 
     it("need 32 of room left of the frame", () => {
