@@ -22,6 +22,8 @@ vi.mock("@/contexts/AuthContext", () => ({
 vi.mock("@/lib/auth/signInWithEmail", () => ({
   signInWithEmail: (...args: unknown[]) => signIn(...args),
 }));
+const resendSignupEmail = vi.fn();
+vi.mock("@/lib/auth/emailLink", () => ({ resendSignupEmail: (...args: unknown[]) => resendSignupEmail(...args) }));
 vi.mock("@/lib/auth/postAuthRoute", () => ({ resolvePostAuthRoute: (...args: unknown[]) => resolvePostAuthRoute(...args) }));
 vi.mock("@/lib/auth/oauth", () => ({ startOAuthSignIn: (...args: unknown[]) => startOAuthSignIn(...args) }));
 
@@ -33,6 +35,7 @@ beforeEach(() => {
   setViewport("desktop");
   auth.isLoggedIn = false;
   signIn.mockReset();
+  resendSignupEmail.mockReset().mockResolvedValue({ sent: true });
   resolvePostAuthRoute.mockReset();
   startOAuthSignIn.mockReset();
   resolvePostAuthRoute.mockResolvedValue("/");
@@ -209,7 +212,7 @@ describe("the refusals", () => {
       fill();
       submit();
 
-      const message = await screen.findByText("Wrong email or password");
+      const message = await screen.findByText("That email or password isn't right.");
       expect(message.getAttribute("aria-live")).toBe("polite");
       expect(screen.getByPlaceholderText("Enter your password").getAttribute("aria-invalid")).toBe("true");
       expect(primary()).toBeEnabled();
@@ -225,12 +228,13 @@ describe("the refusals", () => {
     expect(primary()).toBeEnabled();
   });
 
-  it("says to verify the email when it has not been confirmed", async () => {
-    signIn.mockResolvedValue({ outcome: "refused", refusal: "unconfirmed" });
+  it("G12: says the same for an unconfirmed email as for a wrong password, and never asks to verify", async () => {
+    signIn.mockResolvedValue({ outcome: "refused", refusal: "credentials" });
     open();
     fill();
     submit();
-    expect(await screen.findByText("Please verify your email before signing in — check your inbox.")).toBeTruthy();
+    expect(await screen.findByText("That email or password isn't right.")).toBeTruthy();
+    expect(screen.queryByText(/verify your email/i)).toBeNull();
   });
 
   it("says something went wrong when the request throws, and lets the reader try again", async () => {
@@ -247,15 +251,67 @@ describe("the refusals", () => {
     open();
     fill();
     submit();
-    await screen.findByText("Wrong email or password");
+    await screen.findByText("That email or password isn't right.");
 
     fireEvent.change(screen.getByPlaceholderText("Enter your password"), { target: { value: "hunter23" } });
-    expect(screen.queryByText("Wrong email or password")).toBeNull();
+    expect(screen.queryByText("That email or password isn't right.")).toBeNull();
 
     submit();
-    await screen.findByText("Wrong email or password");
+    await screen.findByText("That email or password isn't right.");
     fireEvent.change(screen.getByPlaceholderText("Email"), { target: { value: "grace@example.com" } });
-    expect(screen.queryByText("Wrong email or password")).toBeNull();
+    expect(screen.queryByText("That email or password isn't right.")).toBeNull();
+  });
+});
+
+describe("Resend verification email (G12)", () => {
+  const resend = () => fireEvent.click(screen.getByRole("button", { name: "Resend verification email" }));
+  const ANSWER = "If that address needs verifying, we've sent a link.";
+
+  it("sends to the address typed, with the widget's token, and answers the one sentence", async () => {
+    open();
+    fill("ada@example.com", "");
+    resend();
+    expect(await screen.findByText(ANSWER)).toBeTruthy();
+    expect(resendSignupEmail).toHaveBeenCalledWith("ada@example.com", "tok-1");
+    expect(captcha.reset).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ["refused", () => resendSignupEmail.mockResolvedValue({ sent: false, refusal: "unknown" })],
+    ["thrown", () => resendSignupEmail.mockRejectedValue(new Error("network down"))],
+  ])("answers the same sentence when the request is %s", async (_name, arrange) => {
+    arrange();
+    open();
+    fill("nobody@example.com", "");
+    resend();
+    expect(await screen.findByText(ANSWER)).toBeTruthy();
+  });
+
+  it("answers the same sentence without sending when the field holds no address", async () => {
+    open();
+    fill("ada_l", "");
+    resend();
+    expect(await screen.findByText(ANSWER)).toBeTruthy();
+    expect(resendSignupEmail).not.toHaveBeenCalled();
+  });
+
+  it("says the check failed when the widget has no token, and sends nothing", async () => {
+    captcha.token.mockResolvedValue({ token: undefined, failed: true });
+    open();
+    fill("ada@example.com", "");
+    resend();
+    expect(await screen.findByText("Couldn't verify this request. Try again.")).toBeTruthy();
+    expect(resendSignupEmail).not.toHaveBeenCalled();
+  });
+
+  it("is offered again once the address changes", async () => {
+    open();
+    fill("ada@example.com", "");
+    resend();
+    await screen.findByText(ANSWER);
+    fireEvent.change(screen.getByPlaceholderText("Email"), { target: { value: "grace@example.com" } });
+    expect(screen.queryByText(ANSWER)).toBeNull();
+    expect(screen.getByRole("button", { name: "Resend verification email" })).toBeTruthy();
   });
 });
 

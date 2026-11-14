@@ -4,8 +4,7 @@
    state and handlers, in the same order and with the same words: the redirect
    honours both `redirect` and its `returnTo` alias, a signed-in visitor is sent
    on at once, sign-in is by email only (G4: text without "@" is answered before any request), a refused password says
-   "Wrong email or password" whichever way it was refused, an unconfirmed email
-   says so, and a successful sign-in goes to the redirect if there is one and
+   "That email or password isn't right." whichever way it was refused (G12: an unconfirmed email too), and a successful sign-in goes to the redirect if there is one and
    otherwise to wherever `resolvePostAuthRoute` says (onboarding, or Home).
 
    What the Supabase calls became is only where they live: they are named
@@ -24,6 +23,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { startOAuthSignIn } from "@/lib/auth/oauth";
 import { resolvePostAuthRoute } from "@/lib/auth/postAuthRoute";
 import { messageFor } from "@/lib/auth/authMessages";
+import { resendSignupEmail } from "@/lib/auth/emailLink";
 import { returnPathFrom } from "@/lib/auth/safeReturnPath";
 import { signInWithEmail } from "@/lib/auth/signInWithEmail";
 
@@ -32,6 +32,8 @@ import { useDialogCaptcha, VERIFY_FAILED } from "./dialogCaptcha";
 import { LoginForm } from "./LoginForm";
 import { setSigningIn } from "./signinActivity";
 import { useSignInNavigation } from "./useSignInNavigation";
+
+const RESEND_ANSWER = "If that address needs verifying, we've sent a link.";
 
 export function LoginPanel() {
   const navigate = useNavigate();
@@ -46,6 +48,7 @@ export function LoginPanel() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(null);
   const [error, setError] = useState("");
+  const [resendAnswer, setResendAnswer] = useState("");
   const views = useSignInNavigation();
   const captcha = useDialogCaptcha();
 
@@ -95,6 +98,28 @@ export function LoginPanel() {
     }
   };
 
+  /* G12: "Resend verification email" always answers the same sentence, whether or not the address has an account,
+     needs verifying, or the request went; only a failed bot check says otherwise. */
+  const handleResendVerification = async () => {
+    const email = emailOrUsername.trim();
+    if (email.includes("@")) {
+      const check = await captcha.token();
+      if (check.failed) {
+        captcha.reset();
+        setResendAnswer(VERIFY_FAILED);
+        return;
+      }
+      try {
+        await resendSignupEmail(email, check.token);
+      } catch {
+        // The answer is the same either way.
+      } finally {
+        captcha.reset();
+      }
+    }
+    setResendAnswer(RESEND_ANSWER);
+  };
+
   const handleProvider = async (provider: OAuthProvider) => {
     setLoadingProvider(provider);
     // OAuth — this redirects the whole page to the provider.
@@ -116,6 +141,7 @@ export function LoginPanel() {
       onEmailOrUsernameChange={(value) => {
         setEmailOrUsername(value);
         setError("");
+        setResendAnswer("");
       }}
       onPasswordChange={(value) => {
         setPassword(value);
@@ -128,6 +154,8 @@ export function LoginPanel() {
       onProvider={handleProvider}
       loadingProvider={loadingProvider}
       error={error}
+      onResendVerification={handleResendVerification}
+      resendAnswer={resendAnswer}
     />
   );
 }

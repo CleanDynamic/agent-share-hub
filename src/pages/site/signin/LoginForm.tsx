@@ -40,6 +40,39 @@ export interface LoginFormProps {
   forgotTo?: string;
   /** The history state that link carries (how deep into the dialog it goes). */
   forgotState?: unknown;
+  /** G12: "Resend verification email" under the form, and the one sentence it answers once used. */
+  onResendVerification?: () => void;
+  resendAnswer?: string;
+}
+
+/** G12: the resend link, and in its place, the same row, the one answer it ever gives. */
+function ResendVerification({ onResend, answer, colour }: { onResend: () => void; answer?: string; colour: string }) {
+  return (
+    <div aria-live="polite" style={{ display: "flex", alignItems: "center", height: DIALOG.row, fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>
+      {answer ? (
+        <span>{answer}</span>
+      ) : (
+        <button
+          type="button"
+          onClick={onResend}
+          style={{
+            background: "none",
+            border: 0,
+            padding: 0,
+            font: "inherit",
+            lineHeight: `${DIALOG.row}px`,
+            color: colour,
+            cursor: "pointer",
+            textDecoration: "underline",
+            textUnderlineOffset: 4,
+            textDecorationThickness: 1,
+          }}
+        >
+          Resend verification email
+        </button>
+      )}
+    </div>
+  );
 }
 
 export function LoginForm({
@@ -57,6 +90,8 @@ export function LoginForm({
   error,
   forgotTo = "/reset-password",
   forgotState,
+  onResendVerification,
+  resendAnswer,
 }: LoginFormProps) {
   const { phone } = useAuthSizes();
   const room = useRoom();
@@ -111,6 +146,12 @@ export function LoginForm({
               Forgot password?
             </FrameLink>
           </div>
+          {onResendVerification ? (
+            <>
+              <Gap size={8} />
+              <ResendVerification onResend={onResendVerification} answer={resendAnswer} colour={SIGNIN_COLOURS[room].link} />
+            </>
+          ) : null}
           <PushDown />
           <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText="Signing in">
             Sign in
@@ -168,6 +209,7 @@ export function LoginForm({
             {phone ? "Forgot?" : "Forgot password?"}
           </FrameLink>
         </div>
+        {onResendVerification ? <ResendVerification onResend={onResendVerification} answer={resendAnswer} colour={t.action} /> : null}
         <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText="Signing in">
           Sign in
         </PrimaryAction>

@@ -83,12 +83,12 @@ describe("signInWithEmail", () => {
     expect(signInWithPassword).not.toHaveBeenCalled();
   });
 
-  it("tells an unconfirmed email from any other refusal, whatever the case of the message", async () => {
+  it("G12: reads an unconfirmed email as the same refusal as a wrong password, whatever the case of the message", async () => {
     signInWithPassword.mockResolvedValueOnce({ data: { user: null }, error: { message: "Email not confirmed" } });
-    await expect(signInWithEmail("ada@example.com", "x")).resolves.toEqual({ outcome: "refused", refusal: "unconfirmed" });
+    await expect(signInWithEmail("ada@example.com", "x")).resolves.toEqual({ outcome: "refused", refusal: "credentials" });
 
     signInWithPassword.mockResolvedValueOnce({ data: { user: null }, error: { message: "EMAIL NOT CONFIRMED" } });
-    await expect(signInWithEmail("ada@example.com", "x")).resolves.toEqual({ outcome: "refused", refusal: "unconfirmed" });
+    await expect(signInWithEmail("ada@example.com", "x")).resolves.toEqual({ outcome: "refused", refusal: "credentials" });
 
     signInWithPassword.mockResolvedValueOnce({ data: { user: null }, error: { message: "Invalid login credentials" } });
     await expect(signInWithEmail("ada@example.com", "x")).resolves.toEqual({ outcome: "refused", refusal: "credentials" });
