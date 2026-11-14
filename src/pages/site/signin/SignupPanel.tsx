@@ -26,6 +26,7 @@ import { PRIVACY_REVIEWED, TERMS_REVIEWED } from "@/content/legal/reviewed";
 
 import { signupCanSubmit } from "./authModel";
 import { SignupForm } from "./SignupForm";
+import { setSigningIn } from "./signinActivity";
 import { useSignInNavigation } from "./useSignInNavigation";
 
 const EMAIL_REGEX = /^[^@]+@[^@]+\.[^@]+$/;
@@ -85,6 +86,12 @@ export function SignupPanel() {
       /* the form is simply empty on the way back */
     }
   };
+
+  // The halftone layer's signing-in ripple, while the request or a provider is out.
+  useEffect(() => {
+    setSigningIn(isSubmitting || loadingProvider !== null);
+    return () => setSigningIn(false);
+  }, [isSubmitting, loadingProvider]);
 
   // Already signed in — auth pages aren't for you.
   useEffect(() => {

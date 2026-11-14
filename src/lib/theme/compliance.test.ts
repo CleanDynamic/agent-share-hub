@@ -121,6 +121,14 @@ const CATEGORIES: Category[] = [
 ];
 
 const CAPPED: Record<string, { max: number; why: string }> = {
+  "src/pages/site/signin/halftoneField.ts": {
+    max: 10,
+    why:
+      "Reference C, the halftone layer around the sign-in dialog, from the approved prototype: the two five-step dot " +
+      "palettes, one per value. Dusk #1B3D17 #27591F #337A2C #4FA862 #6BE2A0 and Noon #C4F2B2 #8FEA72 #56C93A #3F9230 " +
+      "#173014, darkest to brightest by density. They are drawn on a canvas, which cannot read a var(), and they are " +
+      "a ramp of one hue that no token describes.",
+  },
   "src/pages/site/signin/signinColours.ts": {
     max: 10,
     why:

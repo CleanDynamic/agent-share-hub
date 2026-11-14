@@ -27,6 +27,7 @@ import { signInWithEmailOrUsername } from "@/lib/auth/signInWithEmailOrUsername"
 
 import { loginCanSubmit } from "./authModel";
 import { LoginForm } from "./LoginForm";
+import { setSigningIn } from "./signinActivity";
 import { useSignInNavigation } from "./useSignInNavigation";
 
 export function LoginPanel() {
@@ -43,6 +44,12 @@ export function LoginPanel() {
   const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(null);
   const [error, setError] = useState("");
   const views = useSignInNavigation();
+
+  // The halftone layer's signing-in ripple, while the request or a provider is out.
+  useEffect(() => {
+    setSigningIn(isSubmitting || loadingProvider !== null);
+    return () => setSigningIn(false);
+  }, [isSubmitting, loadingProvider]);
 
   // Already signed in — bounce to the destination (or home).
   useEffect(() => {

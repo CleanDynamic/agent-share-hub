@@ -401,7 +401,8 @@ export function SignInDialogFrame({
               position: "fixed",
               inset: 0,
               margin: "auto",
-              zIndex: 50,
+              /* Above the halftone layer (51), which is above the scrim (50). */
+              zIndex: 52,
               boxSizing: "border-box",
               width: twoColumns ? DIALOG.width : DIALOG.right,
               maxWidth: "100vw",
