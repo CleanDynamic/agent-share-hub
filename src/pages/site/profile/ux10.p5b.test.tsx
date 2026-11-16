@@ -1,6 +1,7 @@
 // UX-10 P5b: followers and following: both lists, paging, the follow buttons, a private profile and an empty list; the page reads
 // one request per page, with the follow states in it.
 
+import { readOf } from "@/components/pagestate/pageStateModel";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -41,7 +42,7 @@ const person = (n: number, over: Partial<FollowRowView> = {}): FollowRowView => 
 const view = (over: Partial<FollowListViewProps> = {}) =>
   render(
     <MemoryRouter>
-      <FollowListView handle="maya" which="followers" total={31} status="ready" people={[person(1), person(2, { readerFollows: true }), person(3, { isReader: true })]} hasMore={false} loadingMore={false} onMore={vi.fn()} onFollow={vi.fn()} onRetry={vi.fn()} {...over} />
+      <FollowListView handle="maya" which="followers" total={31} read={[readOf("ready", {}), readOf("ready", [])]} locked={false} people={[person(1), person(2, { readerFollows: true }), person(3, { isReader: true })]} hasMore={false} loadingMore={false} onMore={vi.fn()} onFollow={vi.fn()} {...over} />
     </MemoryRouter>,
   );
 
@@ -70,9 +71,26 @@ describe("the view", () => {
     view({ people: [] });
     expect(screen.getByTestId("follow-empty").textContent).toBe("No followers yet.");
     cleanup();
-    view({ status: "private", people: [] });
+    view({ locked: true, people: [] });
     expect(screen.getByText("@maya's profile is private.")).toBeInTheDocument();
     expect(screen.queryByRole("listitem")).toBeNull();
+  });
+
+  it("G32: while the reads are out, the list's skeleton; never a blank page", () => {
+    view({ read: [readOf("loading"), readOf("loading")], people: [] });
+    expect(document.querySelector('[aria-busy="true"]')).not.toBeNull();
+    expect(screen.getByRole("heading", { level: 1, name: "@maya's followers" })).toBeInTheDocument();
+  });
+
+  it("G33: not found only when the profile row is absent; a failed read is failed", () => {
+    view({ read: [readOf("ready", null)], people: [] });
+    expect(screen.getByText("Nothing at this address.")).toBeInTheDocument();
+    expect(screen.getByText("This profile may have moved, or the link may be wrong.")).toBeInTheDocument();
+    cleanup();
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    view({ read: [readOf("error"), readOf("loading")], people: [] });
+    expect(screen.getByText("Couldn't load this list. Try again.")).toBeInTheDocument();
+    expect(screen.queryByText("Nothing at this address.")).toBeNull();
   });
 
   it("offers Show more when there is more", () => {
