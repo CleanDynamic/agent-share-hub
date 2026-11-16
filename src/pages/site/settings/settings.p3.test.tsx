@@ -52,6 +52,7 @@ function props(over: Partial<AccountViewProps> = {}): AccountViewProps {
     onSignOutEverywhere: vi.fn(async () => undefined),
     sessions: [],
     onSignOutDevice: vi.fn(async () => undefined),
+    twoStep: { factors: [], onBeginAdd: vi.fn(async () => ({ factorId: "f", qrCode: "q", secret: "s" })), onFinishAdd: vi.fn(async () => null), onCancelAdd: vi.fn(async () => undefined), onRemove: vi.fn(async () => undefined) },
     ...over,
   };
 }

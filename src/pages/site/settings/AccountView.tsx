@@ -29,6 +29,7 @@ import { t } from "@/lib/theme/tokens";
 import { AuthField, FieldMessage } from "@/pages/site/signin/AuthParts";
 
 import { ConfirmInline, Group, Note, SectionPage, SettingRow } from "./SettingParts";
+import { TwoStepGroup, type TwoStepGroupProps } from "./TwoStepGroup";
 
 export interface AccountViewProps {
   email: string | null;
@@ -41,6 +42,8 @@ export interface AccountViewProps {
   /** G16: the member's sessions, newest activity first. Null: they could not be loaded. */
   sessions: readonly DeviceSession[] | null;
   onSignOutDevice: (session: DeviceSession) => Promise<void>;
+  /** Part A, G1: the Two-step sign-in group's data and callbacks. */
+  twoStep: Omit<TwoStepGroupProps, "hasPassword">;
 }
 
 function EmailGroup({ email, onChangeEmail }: Pick<AccountViewProps, "email" | "onChangeEmail">) {
@@ -273,6 +276,7 @@ export function AccountView(props: AccountViewProps) {
     <SectionPage title="Account">
       <EmailGroup email={props.email} onChangeEmail={props.onChangeEmail} />
       <PasswordGroup hasPassword={hasPasswordOf(props.methods)} onChangePassword={props.onChangePassword} />
+      <TwoStepGroup {...props.twoStep} hasPassword={hasPasswordOf(props.methods)} />
       <MethodsGroup methods={props.methods} onLink={props.onLink} onUnlink={props.onUnlink} />
       <DevicesGroup onSignOutEverywhere={props.onSignOutEverywhere} sessions={props.sessions} onSignOutDevice={props.onSignOutDevice} />
     </SectionPage>

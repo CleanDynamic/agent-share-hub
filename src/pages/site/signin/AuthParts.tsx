@@ -200,6 +200,9 @@ export interface AuthFieldProps {
   autoComplete?: string;
   /** In the dialog: keep the 16px message line under the field whether or not it has anything in it. */
   reserveMessage?: boolean;
+  /** Part A: a one-time code field asks for the number pad (`numeric`) and caps its length. */
+  inputMode?: "numeric" | "text";
+  maxLength?: number;
 }
 
 export function AuthField({
@@ -217,6 +220,8 @@ export function AuthField({
   required = false,
   autoComplete,
   reserveMessage = false,
+  inputMode,
+  maxLength,
 }: AuthFieldProps) {
   const sizes = useAuthSizes();
   const [focused, setFocused] = useState(false);
@@ -272,6 +277,8 @@ export function AuthField({
             aria-invalid={invalid}
             aria-describedby={message ? messageId : undefined}
             autoComplete={autoComplete}
+            inputMode={inputMode}
+            maxLength={maxLength}
             onFocus={(event) => {
               setFocused(true);
               // Where :focus-visible is unsupported the ring is shown rather than hidden.

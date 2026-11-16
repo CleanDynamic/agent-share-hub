@@ -121,6 +121,12 @@ const CATEGORIES: Category[] = [
 ];
 
 const CAPPED: Record<string, { max: number; why: string }> = {
+  "src/pages/site/settings/TwoStepGroup.tsx": {
+    max: 1,
+    why:
+      "Part A, G1: the white behind the authenticator QR code. A phone's camera reads a QR code as dark modules on a " +
+      "light field, so the field must stay white in Dusk as well as Noon, and every surface token flips with the theme.",
+  },
   "src/lib/dots/fluid.ts": {
     max: 12,
     why:

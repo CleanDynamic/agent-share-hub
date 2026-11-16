@@ -36,8 +36,8 @@ const prefs = Object.fromEntries(PREFERENCE_GROUPS.flatMap((group) => group.rows
 
 describe("a settings section while it loads", () => {
   it("Account: one skeleton card per card", () => {
-    const loaded = cards(<AccountView email="a@b.c" methods={[]} onChangeEmail={nop} onChangePassword={nop} onLink={nop} onUnlink={nop} onSignOutEverywhere={nop} sessions={[]} onSignOutDevice={nop} />);
-    expect(loaded).toBe(4);
+    const loaded = cards(<AccountView email="a@b.c" methods={[]} onChangeEmail={nop} onChangePassword={nop} onLink={nop} onUnlink={nop} onSignOutEverywhere={nop} sessions={[]} onSignOutDevice={nop} twoStep={{ factors: [], onBeginAdd: async () => ({ factorId: "f", qrCode: "q", secret: "s" }), onFinishAdd: async () => null, onCancelAdd: nop, onRemove: nop }} />);
+    expect(loaded).toBe(5);
     expect(bones(<AccountSection />)).toBe(loaded);
   });
 

@@ -13,12 +13,13 @@ import { SectionLoading, type GroupBones } from "./SettingParts";
 import { SettingsFrame } from "./SettingsFrame";
 
 /* Each section's cards while it loads, one per group its view draws, each at its fewest rows. Account: Email, Password,
+   Two-step sign-in (Part A: one row, Add an authenticator),
    Sign-in methods (a row for each provider the site offers, linked or not) and Devices, a row with a hint each.
    Notifications: its groups, their rows without hints. Privacy: Your profile's two rows; Blocked people and How blocking
    works, a note each when nobody is blocked. Connected apps: the one group, a note when no app has access. Your data:
    Download and Delete, a row each. Appearance: Theme, one row. */
 export const SECTION_BONES: Record<SectionKey, readonly GroupBones[]> = {
-  account: [{ rows: 1, hint: true }, { rows: 1, hint: true }, { rows: LINKABLE.length, hint: true }, { rows: 1, hint: true }],
+  account: [{ rows: 1, hint: true }, { rows: 1, hint: true }, { rows: 1, hint: true }, { rows: LINKABLE.length, hint: true }, { rows: 1, hint: true }],
   notifications: PREFERENCE_GROUPS.map((group) => ({ rows: group.rows.length })),
   privacy: [{ rows: 2, hint: true }, { rows: 0 }, { rows: 0 }],
   apps: [{ rows: 0 }],

@@ -1558,6 +1558,7 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/settings/SettingsFrame.tsx",
   "src/pages/site/settings/SettingsPage.tsx",
   "src/pages/site/settings/AccountView.tsx",
+  "src/pages/site/settings/TwoStepGroup.tsx",
   "src/pages/site/settings/NotificationsView.tsx",
   "src/pages/site/settings/PrivacyView.tsx",
   "src/pages/site/settings/AppsView.tsx",

@@ -15,6 +15,7 @@ import { blockKeys, listBlocks, unblockUser, type BlockedPerson } from "@/lib/se
 import { loadIsPrivate, setIsPrivate } from "@/lib/settings/privacySettings";
 import { loadNotificationPreferences, setNotificationPreference } from "@/lib/settings/notificationSettings";
 import { type NotificationPreferences, type PreferenceKey } from "@/lib/settings/notificationPrefs";
+import { cancelAuthenticator, confirmAuthenticator, confirmIdentity, listAuthenticators, removeAuthenticator, startAuthenticator } from "@/lib/auth/mfa";
 import { changeEmail, changePassword, hasPassword, linkProvider, listMySessions, loadAccount, signOutDevice, signOutEverywhere, unlinkMethod } from "@/lib/settings/account";
 
 import { AccountView } from "./AccountView";
@@ -33,6 +34,10 @@ export function AccountSection() {
   const account = useQuery({ queryKey: ["settings", "loadAccount"], queryFn: loadAccount, staleTime: STALE_MS });
   // G16: the devices load on their own. If they cannot, the group says so in one line and the rest of the page works.
   const sessions = useQuery({ queryKey: ["settings", "listMySessions"], queryFn: listMySessions, staleTime: STALE_MS, retry: 1 });
+  // Part A, G1: the member's authenticators, on their own; a failure is one line in the group.
+  const factors = useQuery({ queryKey: ["settings", "listAuthenticators"], queryFn: listAuthenticators, staleTime: STALE_MS, retry: 1 });
+  const factorList = factors.isError ? null : factors.data ?? [];
+  const refreshFactors = () => queryClient.invalidateQueries({ queryKey: ["settings", "listAuthenticators"] });
   const askAgain = useAskAgain();
   const accountStall = useStalled(!account.data && !account.isError);
   if (account.isError || accountStall.stalled) return <SectionError title="Account" onRetry={() => { accountStall.restart(); askAgain(["settings", "loadAccount"], account.refetch); }} />;
@@ -55,6 +60,24 @@ export function AccountSection() {
       onSignOutEverywhere={async () => {
         await signOutEverywhere();
         navigate("/login", { replace: true });
+      }}
+      twoStep={{
+        factors: factorList,
+        onBeginAdd: async ({ name, password, code }) => {
+          await confirmIdentity({ email, factors: factorList ?? [], password, code });
+          return startAuthenticator(name);
+        },
+        onFinishAdd: async (factorId, code) => {
+          await confirmAuthenticator(factorId, code);
+          await refreshFactors();
+          return null;
+        },
+        onCancelAdd: cancelAuthenticator,
+        onRemove: async (factor, code) => {
+          await confirmIdentity({ email, factors: factorList ?? [], code, factorId: factor.id });
+          await removeAuthenticator(factor.id);
+          await refreshFactors();
+        },
       }}
       sessions={sessions.isError ? null : sessions.data ?? []}
       onSignOutDevice={async (session) => {
