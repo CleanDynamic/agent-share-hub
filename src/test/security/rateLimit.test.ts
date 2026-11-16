@@ -163,3 +163,15 @@ describe("G10: import-github-readme is limited per address", () => {
     expect(source("import-github-readme").indexOf("fetch(")).toBeGreaterThan(source("import-github-readme").indexOf("if (limited) return limited;"));
   });
 });
+
+describe("G10: generate-ai-pdf is limited per address", () => {
+  it("allows 30 an hour", () => {
+    expect(RATE_RULES["generate-ai-pdf"]).toEqual({ limit: 30, windowSeconds: 3600 });
+  });
+
+  it("checks the limit before it reads the body, the caller or the database", () => {
+    limitedBeforeBody("generate-ai-pdf");
+    const code = source("generate-ai-pdf");
+    expect(code.indexOf("getCaller(req)")).toBeGreaterThan(code.indexOf("if (limited) return limited;"));
+  });
+});
