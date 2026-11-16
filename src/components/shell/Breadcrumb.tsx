@@ -27,6 +27,20 @@ import { useIsPhone } from "./useMinWidth";
    margin and the breadcrumb keeps its height. */
 const LINK_HIT: CSSProperties = { display: "inline-flex", alignItems: "center", minHeight: 24, margin: "-3px 0" };
 
+/** G12: a crumb's box is 16 high whether it holds its words or, while they load, a 12-high bar: nothing moves when they arrive. */
+const CRUMB_LINE = 16;
+const LOADING_CRUMB: CSSProperties = {
+  width: 120,
+  height: CRUMB_LINE,
+  boxSizing: "border-box",
+  borderTop: "2px solid transparent",
+  borderBottom: "2px solid transparent",
+  backgroundClip: "padding-box",
+  borderRadius: 4,
+  backgroundColor: t.recess,
+  display: "inline-block",
+};
+
 export function BreadcrumbView({ trail }: { trail: readonly Crumb[] }) {
   const text: CSSProperties = { fontFamily: FIGTREE, fontSize: 12 };
   const currentWeight = 500;
@@ -49,7 +63,7 @@ export function BreadcrumbView({ trail }: { trail: readonly Crumb[] }) {
                   role="status"
                   aria-label="Loading"
                   aria-current="page"
-                  style={{ width: 120, height: 12, borderRadius: 4, background: t.recess, display: "inline-block" }}
+                  style={LOADING_CRUMB}
                 />
               ) : (
                 <span
@@ -58,6 +72,7 @@ export function BreadcrumbView({ trail }: { trail: readonly Crumb[] }) {
                     ...text,
                     fontWeight: last ? currentWeight : 400,
                     color: last ? t.text : t.text2,
+                    lineHeight: `${CRUMB_LINE}px`,
                     maxWidth: 480,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
@@ -71,7 +86,7 @@ export function BreadcrumbView({ trail }: { trail: readonly Crumb[] }) {
               <span
                 role="status"
                 aria-label="Loading"
-                style={{ width: 120, height: 12, borderRadius: 4, background: t.recess, display: "inline-block" }}
+                style={LOADING_CRUMB}
               />
             ) : (
               <FrameLink to={crumb.href} style={{ ...text, color: t.text2, ...LINK_HIT }}>

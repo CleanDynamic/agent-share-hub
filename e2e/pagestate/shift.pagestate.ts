@@ -1,4 +1,6 @@
-// G12: the skeleton-to-state swap keeps the region's box, so nothing below it moves by more than 1px.
+// G12: the skeleton-to-state swap keeps the region's box, so nothing below it moves by more than 1px. A page-level failed or
+// not-found state does not keep the skeleton's height: there the footer may move up, but it never sits above the bottom of the
+// window, and the title and the breadcrumb do not move at all.
 //
 // Measured with the browser's layout-shift entries, which name every element that moved and its box before and after. The
 // page is loaded under "never answered" (skeleton, then the failed state at the time limit) and "empty" (skeleton, then
@@ -30,6 +32,10 @@ interface Moved {
   dy: number;
   from: number;
   to: number;
+  /** In the page's h1 or its breadcrumb: may not move at all. */
+  title: boolean;
+  /** The site footer: may move up after a page-level state, never above the window's bottom. */
+  footer: boolean;
 }
 
 for (const page of PAGES) {
@@ -47,7 +53,16 @@ for (const page of PAGES) {
         new PerformanceObserver((list) => {
           for (const entry of list.getEntries() as unknown as { startTime: number; sources?: { node: Node | null; previousRect: DOMRectReadOnly; currentRect: DOMRectReadOnly }[] }[]) {
             for (const source of entry.sources ?? []) {
-              moved.push({ at: Math.round(entry.startTime), node: describe(source.node), dy: Math.round(source.currentRect.y - source.previousRect.y), from: Math.round(source.previousRect.y), to: Math.round(source.currentRect.y) });
+              const element = source.node instanceof Element ? source.node : null;
+              moved.push({
+                at: Math.round(entry.startTime),
+                node: describe(source.node),
+                dy: Math.round(source.currentRect.y - source.previousRect.y),
+                from: Math.round(source.previousRect.y),
+                to: Math.round(source.currentRect.y),
+                title: Boolean(element?.closest("h1, [data-testid='breadcrumb']")),
+                footer: Boolean(element?.closest("[data-slot='footer'], footer")),
+              });
             }
           }
         }).observe({ type: "layout-shift", buffered: true });
@@ -60,11 +75,21 @@ for (const page of PAGES) {
       /* Before the first skeleton is on screen the page is still being drawn for the first time; a move then is not a swap. */
       const firstPaint = await browser.evaluate(() => performance.getEntriesByName("first-contentful-paint")[0]?.startTime ?? 0);
       const swaps = moved.filter((m) => m.at > firstPaint + 100);
-      const largest = swaps.reduce((max, m) => Math.max(max, Math.abs(m.dy)), 0);
+      const regions = swaps.filter((m) => !m.title && !m.footer);
+      const largest = regions.reduce((max, m) => Math.max(max, Math.abs(m.dy)), 0);
+      const titleMoves = swaps.filter((m) => m.title && m.dy !== 0);
+      const footerGap = await browser.evaluate(() => {
+        const footer = document.querySelector("[data-slot='footer']") ?? document.querySelector("footer");
+        return footer ? Math.round(window.innerHeight - footer.getBoundingClientRect().bottom) : null;
+      });
       fs.mkdirSync(OUT, { recursive: true });
-      fs.writeFileSync(path.join(OUT, `${page.name.toLowerCase()}__${condition}.json`), JSON.stringify({ page: page.name, condition, largest, swaps: swaps.slice(0, 20) }, null, 2));
-      console.log(`SHIFT ${page.name} / ${condition}: largest ${largest}px${swaps.length ? ` · ${swaps.slice(0, 6).map((m) => `${m.at}ms ${m.node} ${m.from}→${m.to}`).join(" | ")}` : ""}`);
-      expect.soft(largest, "nothing below the region moves by more than 1px").toBeLessThanOrEqual(1);
+      fs.writeFileSync(path.join(OUT, `${page.name.toLowerCase()}__${condition}.json`), JSON.stringify({ page: page.name, condition, largest, titleMoves, footerGap, swaps: swaps.slice(0, 20) }, null, 2));
+      console.log(
+        `SHIFT ${page.name} / ${condition}: regions ${largest}px · title and breadcrumb ${titleMoves.length ? titleMoves.map((m) => `${m.node.slice(0, 40)} ${m.from}→${m.to}`).join(", ") : "still"} · footer bottom ${footerGap === null ? "?" : footerGap > 0 ? `${footerGap}px ABOVE the window's bottom` : "at or below the window's bottom"}${regions.length ? ` · ${regions.slice(0, 4).map((m) => `${m.node.slice(0, 60)} ${m.from}→${m.to}`).join(" | ")}` : ""}`,
+      );
+      expect.soft(largest, "nothing below a region moves by more than 1px").toBeLessThanOrEqual(1);
+      expect.soft(titleMoves, "the title and the breadcrumb do not move").toEqual([]);
+      expect.soft(footerGap === null || footerGap <= 0, "the footer never sits above the bottom of the window").toBe(true);
     });
   }
 }
