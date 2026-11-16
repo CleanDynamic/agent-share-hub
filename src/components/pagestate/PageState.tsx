@@ -10,7 +10,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import { EmptyState, type EmptyStateAction } from "@/components/brand/EmptyState";
-import { ErrorState } from "@/components/brand/ErrorState";
+import { ErrorState, type ErrorStateProps } from "@/components/brand/ErrorState";
 import { errorLine } from "@/lib/errors/code";
 
 import { isRetrying, shownState, type ReadLike, type Shown } from "./pageStateModel";
@@ -152,5 +152,17 @@ export function PageEmpty({ line, action, style, testId }: { line: string; actio
     </Mark>
   );
 }
+
+/**
+ * A write that the server refused, said where its result was shown: ErrorState exactly as the page drew it before (its own
+ * sentence, "That didn't save.", its panel name, Try again and its retry). Moved here only so that no page imports ErrorState
+ * itself (G30); its wording is prompt 9's.
+ */
+export function WriteFailed(props: ErrorStateProps) {
+  return <ErrorState {...props} />;
+}
+
+export type { EmptyStateAction } from "@/components/brand/EmptyState";
+export type { PanelFailure } from "@/components/brand/ErrorState";
 
 export default PageState;

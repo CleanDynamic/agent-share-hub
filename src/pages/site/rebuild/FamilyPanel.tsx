@@ -36,7 +36,7 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { CoverFallback } from "@/components/brand/CoverFallback";
-import type { PanelFailure } from "@/components/brand/ErrorState";
+import type { PanelFailure } from "@/components/pagestate/PageState";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { LampDot } from "@/components/brand/LampDot";
 import { Panel, PanelHead } from "@/components/brand/Panel";

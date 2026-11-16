@@ -18,7 +18,7 @@
 import { Network } from "lucide-react";
 import { Link } from "react-router-dom";
 
-import { EmptyState } from "@/components/brand/EmptyState";
+import { PageEmpty } from "@/components/pagestate/PageState";
 import { PageLink } from "@/lib/routing/PageLink";
 import { CardSkeleton, LoadingRegion } from "@/components/brand/Skeleton";
 import { ring } from "@/lib/theme/controls";
@@ -100,7 +100,7 @@ export function RebuildsBody({ rebuilds, phone = false }: { rebuilds: RebuildsBo
           ))}
         </ul>
       ) : (
-        <EmptyState line="This build has no rebuilds yet." data-testid="build-rebuilds-empty" />
+        <PageEmpty line="This build has no rebuilds yet." testId="build-rebuilds-empty" />
       )}
       <FamilyLink to={lineageTo} phone={phone} />
       {compareLinks?.length ? (

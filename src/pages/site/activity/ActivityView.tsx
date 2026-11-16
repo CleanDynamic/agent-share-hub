@@ -17,7 +17,7 @@
    THE ROW IS ONE LINK, as today: the build's title is drawn as the board draws its link (500, `--text`) inside it, not
    as a second link nested in the first. */
 
-import { PageFailed, PageState } from "@/components/pagestate/PageState";
+import { PageFailed, PageState, WriteFailed as MovedWriteFailed } from "@/components/pagestate/PageState";
 import { readOf, type ReadLike } from "@/components/pagestate/pageStateModel";
 import { useState, type CSSProperties, type ReactNode } from "react";
 
@@ -25,7 +25,7 @@ import { Avatar } from "@/components/brand/Avatar";
 import { Button } from "@/components/brand/Button";
 import { CardHead } from "@/components/brand/CardHead";
 import { CoverFallback } from "@/components/brand/CoverFallback";
-import { ErrorState, type PanelFailure } from "@/components/brand/ErrorState";
+import type { PanelFailure } from "@/components/pagestate/PageState";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { Figure } from "@/components/brand/Figure";
 import { FilterChip } from "@/components/brand/FilterChip";
@@ -163,7 +163,7 @@ const asidePart = (gap: number, last: boolean): CSSProperties => ({
 /** A mark-read that did not save: the rows are unread again, and this says so where they are. */
 function WriteFailed({ failure }: { failure: PanelFailure }) {
   return (
-    <ErrorState
+    <MovedWriteFailed
       line="That didn't save."
       panel="Activity"
       onRetry={failure.onRetry}
@@ -588,7 +588,7 @@ function RunsChart({ runs, runsRead }: { runs: ActivityLoad<ActivityRuns>; runsR
             <Skeleton width="100%" height={CHART_H} />
           </LoadingRegion>
         ) : runs.status === "error" ? (
-          <PageState read={runsRead ?? readOf("error", undefined, runs.onRetry, runs.error)} thing="your activity" region="Runs of your builds" skeleton={null}>
+          <PageState read={runsRead ?? readOf("error", undefined, runs.onRetry, runs.error)} thing="your runs" region="Runs of your builds" skeleton={null}>
             {() => null}
           </PageState>
         ) : (

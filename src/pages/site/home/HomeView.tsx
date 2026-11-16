@@ -17,9 +17,7 @@ import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { Plus } from "lucide-react";
 
 import { Avatar } from "@/components/brand/Avatar";
-import { EmptyState } from "@/components/brand/EmptyState";
-import type { PanelFailure } from "@/components/brand/ErrorState";
-import { PageFailed, PageState } from "@/components/pagestate/PageState";
+import { PageEmpty, PageFailed, PageState, type PanelFailure } from "@/components/pagestate/PageState";
 import { readOf, type ReadLike } from "@/components/pagestate/pageStateModel";
 import { Button } from "@/components/brand/Button";
 import { Glyph } from "@/components/brand/Glyph";
@@ -411,7 +409,7 @@ export function WeekSection({ week }: { week: HomeViewProps["week"] }) {
 function StudioSignedOut() {
   return (
     <section aria-label="Your studio">
-      <EmptyState line="Sign in to see your drafts, sessions and week." action={undefined} />
+      <PageEmpty line="Sign in to see your drafts, sessions and week." />
       <div style={{ marginTop: 12 }}>
         <Button variant="primary" size={32} href={SIGN_IN} data-visual-slot="btn-primary">
           Sign in
@@ -836,7 +834,7 @@ export function RoomSection({ room, now }: { room: HomeRoom; now: number }) {
       </div>
       {room.failure ? (
         <div style={{ marginTop: 16 }}>
-          <PageState read={readOfLoadable({ status: "error", ...room.failure })} thing="the run counts" region="Run counts" skeleton={null}>
+          <PageState read={readOfLoadable({ status: "error", ...room.failure })} thing="runs" region="Run counts" skeleton={null}>
             {() => null}
           </PageState>
         </div>

@@ -6,7 +6,7 @@
    preview. Each section is its own component and is drawn only when its prop is given, so the live page draws what has
    a source and the dev page draws the whole board. */
 
-import type { EmptyStateAction } from "@/components/brand/EmptyState";
+import type { EmptyStateAction } from "@/components/pagestate/PageState";
 import { PageState } from "@/components/pagestate/PageState";
 import { shownState, type ReadLike } from "@/components/pagestate/pageStateModel";
 import type { Thing } from "@/components/pagestate/stateCopy";

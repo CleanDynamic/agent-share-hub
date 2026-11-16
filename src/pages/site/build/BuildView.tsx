@@ -70,10 +70,9 @@ import { buildPatterns, patternsLine } from "@/lib/build/patterns";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Maximize2, Play, X } from "lucide-react";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
-import { PageEmpty, PageState } from "@/components/pagestate/PageState";
+import { PageEmpty, PageState, WriteFailed } from "@/components/pagestate/PageState";
 import type { ReadLike } from "@/components/pagestate/pageStateModel";
 import { WAY_OUT } from "@/components/pagestate/stateCopy";
-import { ErrorState } from "@/components/brand/ErrorState";
 import { IconButton } from "@/components/brand/IconButton";
 import { Panel, PanelHead } from "@/components/brand/Panel";
 import { PartViewer } from "@/components/brand/PartViewer";
@@ -181,7 +180,7 @@ export function useConfirmed(): [boolean, () => void] {
 /** An optimistic run that the server refused: said once in the panel, with a retry. */
 export function RunFailed({ failure }: { failure: NonNullable<BuildProofView["writeError"]> }) {
   return (
-    <ErrorState
+    <WriteFailed
       line="That didn't save."
       panel="Reproduction"
       onRetry={failure.onRetry}

@@ -17,7 +17,7 @@ import { PageEmpty, PageState } from "@/components/pagestate/PageState";
 import { readOf } from "@/components/pagestate/pageStateModel";
 import type { CSSProperties, ReactNode } from "react";
 
-import type { PanelFailure } from "@/components/brand/ErrorState";
+import type { PanelFailure } from "@/components/pagestate/PageState";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { ModelMark } from "@/components/brand/ModelMark";

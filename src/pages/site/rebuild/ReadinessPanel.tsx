@@ -27,7 +27,7 @@ import { Check } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/brand/Button";
-import { ErrorState } from "@/components/brand/ErrorState";
+import { WriteFailed } from "@/components/pagestate/PageState";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { Panel } from "@/components/brand/Panel";
 import { rebuildCreditLine } from "@/components/build/rebuildCredit";
@@ -187,7 +187,7 @@ export function ReadinessPanel({
           </div>
         )}
         {failure ? (
-          <ErrorState
+          <WriteFailed
             line="That didn't save."
             panel="Publish rebuild"
             onRetry={failure.onRetry}

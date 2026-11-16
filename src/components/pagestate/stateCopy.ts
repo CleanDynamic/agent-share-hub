@@ -27,9 +27,11 @@ export type Thing =
   | "this list"
   | "your week"
   | "the maps"
-  // Proposed with Home: its feed holds builds and topics together, and its run counts are the room's figures.
+  // Added with Home (accepted): its feed holds builds and topics together.
   | "the feed"
-  | "the run counts";
+  // The member's own builds' runs (Activity's chart), and everyone's (Home's room).
+  | "your runs"
+  | "runs";
 
 export const failedLine = (thing: Thing): string => `Couldn't load ${thing}. Try again.`;
 
