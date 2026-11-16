@@ -1,3 +1,4 @@
+import { readOf } from "@/components/pagestate/pageStateModel";
 import { createEvent, fireEvent, render, screen, within } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
@@ -23,7 +24,7 @@ beforeEach(() => {
 });
 
 function view(props: Partial<DraftsViewProps> = {}) {
-  const base = { ...draftsViewProps(), onRetryDrafts: vi.fn(), onRetrySessions: vi.fn(), onAddToNew: vi.fn(), onAddToDraft: vi.fn(), onConnect: vi.fn(), ...props };
+  const base = { ...draftsViewProps(), onAddToNew: vi.fn(), onAddToDraft: vi.fn(), onConnect: vi.fn(), ...props };
   render(
     <MemoryRouter>
       <DraftsView {...base} />
@@ -193,23 +194,36 @@ describe("DraftsView", () => {
   });
 
   it("an error says one sentence in each list and retries that list", () => {
-    const p = view({ draftsStatus: "error", sessionsStatus: "error" });
-    expect(screen.getAllByText("That didn't load.")).toHaveLength(2);
-    fireEvent.click(screen.getAllByRole("button", { name: "Try again" })[0]);
-    expect(p.onRetryDrafts).toHaveBeenCalled();
-    expect(p.onRetrySessions).not.toHaveBeenCalled();
+    const onRetryDrafts = vi.fn();
+    const onRetrySessions = vi.fn();
+    view({ draftsRead: readOf("error", undefined, onRetryDrafts), sessionsRead: readOf("error", undefined, onRetrySessions) });
+    // G9: both lists failed, so the page says so once, and Try again asks for both.
+    expect(screen.getByText("Couldn't load this page. Try again.")).toBeInTheDocument();
+    expect(screen.queryByText(/Couldn't load your/)).toBeNull();
+    expect(screen.getAllByRole("button", { name: "Try again" })).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(onRetryDrafts).toHaveBeenCalled();
+    expect(onRetrySessions).toHaveBeenCalled();
+  });
+
+  it("one list failing says which, and retries that list only", () => {
+    const onRetryDrafts = vi.fn();
+    view({ draftsRead: readOf("error", undefined, onRetryDrafts) });
+    expect(screen.getByText("Couldn't load your drafts. Try again.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(onRetryDrafts).toHaveBeenCalled();
   });
 
   it("CA-10: a sessions failure stays in the Sessions panel, and the drafts show", () => {
-    view({ sessionsStatus: "error", sessionsError: { code: "57014", message: "canceling statement" } });
-    expect(screen.getAllByText("That didn't load.")).toHaveLength(1);
+    view({ sessionsRead: readOf("error", undefined, undefined, { code: "57014", message: "canceling statement" }) });
+    expect(screen.getAllByText(/^Couldn't load/)).toHaveLength(1);
     expect(screen.getByRole("alert", { name: "Sessions" })).toBeInTheDocument();
     expect(screen.queryByText(/Code /)).toBeNull();
     expect(screen.getAllByTestId("draft-row").length).toBeGreaterThan(0);
   });
 
   it("loading draws skeleton rows, not content", () => {
-    view({ draftsStatus: "loading", sessionsStatus: "loading" });
+    view({ draftsRead: readOf("loading"), sessionsRead: readOf("loading") });
     expect(screen.queryByTestId("draft-row")).toBeNull();
     expect(screen.getAllByText(/^Loading/).length).toBeGreaterThan(0);
   });

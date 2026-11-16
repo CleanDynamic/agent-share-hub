@@ -38,7 +38,7 @@ import { librarySessionsKey, useLibrarySessions } from "@/hooks/useLibrarySessio
 import { listDraftFirstPrompts, listDraftTopics, listDraftsWithSessions, listEmptyDraftIds, removeEmptyDrafts, type DraftListItem } from "@/lib/build/drafts";
 import { attachSession } from "@/lib/build/sessions";
 import { PageArrival } from "@/components/shell/PageArrival";
-import { useAskAgain, useStalled } from "@/components/shell/useStalled";
+import { shownState } from "@/components/pagestate/pageStateModel";
 
 import { DraftsLoadingView } from "./DraftsFrame";
 import { DraftsView } from "./DraftsView";
@@ -145,27 +145,19 @@ export function DraftsPage() {
     }
   }, [userId, refresh]);
 
-  /* D4: a read that never answers is a failed read after STALL_MS, so its panel says so instead of staying a skeleton. */
-  const askAgain = useAskAgain();
-  const draftsStall = useStalled(!draftsQuery.data && !draftsQuery.isLoadingError);
-  const sessionsStall = useStalled(!library.data && !library.isLoadingError);
-  const draftsStatus = draftsQuery.data ? "ready" : draftsQuery.isLoadingError || draftsStall.stalled ? "error" : "loading";
-  usePageReady("drafts", draftsStatus !== "loading");
-  const sessionsStatus = library.data ? "ready" : library.isLoadingError || sessionsStall.stalled ? "error" : "loading";
+  /* G1: a read that never answers fails at READ_TIMEOUT_MS by itself, so the page keeps no timer of its own. */
+  const draftsLoading = shownState([draftsQuery]) === "loading";
+  usePageReady("drafts", !draftsLoading);
 
   return (
     <>
       <SeoHead title="Drafts" description="Builds in progress, and every session you have sent." path="/drafts" noIndex />
       {/* SV-04 P5: the drafts fade in over their loading state, the route's Placeholder, when they land. */}
-      <PageArrival loading={draftsStatus === "loading"} placeholder={<DraftsLoadingView />}>
+      <PageArrival loading={draftsLoading} placeholder={<DraftsLoadingView />}>
         <DraftsView
           now={Date.now()}
-          draftsStatus={draftsStatus}
-          draftsError={draftsQuery.isLoadingError ? draftsQuery.error : undefined}
-          onRetryDrafts={() => { draftsStall.restart(); askAgain(["build", "listDraftsWithSessions", userId], draftsQuery.refetch); }}
-          sessionsStatus={sessionsStatus}
-          sessionsError={library.isLoadingError ? library.error : undefined}
-          onRetrySessions={() => { sessionsStall.restart(); askAgain(librarySessionsKey, library.refetch); }}
+          draftsRead={draftsQuery}
+          sessionsRead={library}
           sessionsAnchor={sessionsAnchor}
           drafts={withTopics(withFirstPrompts(draftsQuery.data ?? [], promptsQuery.data), topicsQuery.data)}
           sessions={library.data ?? []}

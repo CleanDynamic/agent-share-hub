@@ -59,5 +59,12 @@ export function allFailed(reads: readonly ReadLike[]): boolean {
   return reads.length > 0 && reads.every(failedWithNothing);
 }
 
+/** A read in a given state, for a view's fixture or test that has no query to hand: loading, failed or answered. */
+export function readOf(state: "loading" | "error" | "ready", data: unknown = [], onRetry: () => unknown = () => undefined, error: unknown = { message: "fixture" }): ReadLike {
+  if (state === "loading") return { data: undefined, error: null, status: "pending", fetchStatus: "fetching", refetch: onRetry };
+  if (state === "error") return { data: undefined, error, status: "error", fetchStatus: "idle", refetch: onRetry };
+  return { data, error: null, status: "success", fetchStatus: "idle", refetch: onRetry };
+}
+
 /** A retry is out on a region that failed. */
 export const isRetrying = (reads: readonly ReadLike[]): boolean => reads.some((read) => failedWithNothing(read) && read.fetchStatus === "fetching");

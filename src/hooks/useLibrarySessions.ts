@@ -55,6 +55,9 @@ export function useLibrarySessions({
     isError: pages.isError,
     isLoadingError: pages.isLoadingError,
     error: pages.error,
+    /* G4: what PageState reads to tell loading, failed and retrying apart. */
+    status: pages.status,
+    fetchStatus: pages.fetchStatus,
     refetch: () => {
       if (withUnfinished) void unfinished.refetch();
       return pages.refetch();

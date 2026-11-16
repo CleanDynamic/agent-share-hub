@@ -175,7 +175,8 @@ describe("PageState", () => {
 
   it("logs the failure once, as one line with its code", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    draw(<PageState read={failed(SERVER)} thing="builds" region="Builds" skeleton={SKELETON}>{() => null}</PageState>);
+    // Its own error: a failure is logged once for the whole app, and SERVER was logged by the tests above.
+    draw(<PageState read={failed({ ...SERVER })} thing="builds" region="Builds" skeleton={SKELETON}>{() => null}</PageState>);
     const lines = spy.mock.calls.map((call) => call[0]).filter((line) => typeof line === "string" && line.startsWith("[Builds]"));
     expect(lines).toEqual(["[Builds] read failed XX000 internal error"]);
   });

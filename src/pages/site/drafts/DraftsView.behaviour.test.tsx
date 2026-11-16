@@ -20,7 +20,7 @@ beforeEach(() => {
 });
 
 function view(props: Partial<DraftsViewProps> = {}) {
-  const base = { ...draftsViewProps(), onRetryDrafts: vi.fn(), onRetrySessions: vi.fn(), onAddToNew: vi.fn(), onAddToDraft: vi.fn(), onConnect: vi.fn(), ...props };
+  const base = { ...draftsViewProps(), onAddToNew: vi.fn(), onAddToDraft: vi.fn(), onConnect: vi.fn(), ...props };
   render(
     <MemoryRouter>
       <DraftsView {...base} />
