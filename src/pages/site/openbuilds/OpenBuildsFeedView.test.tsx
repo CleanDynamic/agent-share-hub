@@ -1,5 +1,6 @@
 // UX-05 Part 2: the feed's view. Every state, both layouts, and the lists it draws.
 
+import { readOf } from "@/components/pagestate/pageStateModel";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -48,14 +49,13 @@ const props = (extra: Partial<OpenBuildsFeedViewProps> = {}): OpenBuildsFeedView
   onMakeSpace: vi.fn(),
   signInTo: "/login?redirect=%2Fopenbuilds",
   spaces: {
-    status: "ready",
-    onRetry: vi.fn(),
+    read: readOf("ready"),
     rows: [
       { id: "s1", slug: "claude-code", name: "Claude Code", fresh: 3 },
       { id: "s2", slug: "hiring-tools", name: "Hiring tools", fresh: 0 },
     ],
   },
-  posts: { status: "ready", onRetry: vi.fn(), items: [{ card: card("p1") }, { card: card("p2") }] },
+  posts: { read: readOf("ready"), items: [{ card: card("p1") }, { card: card("p2") }] },
   busy: [{ id: "b1", slug: "evals", name: "Evals", meta: "Made by @sam · 412 members", onJoin: vi.fn() }],
   ...extra,
 });
@@ -133,7 +133,7 @@ describe("OpenBuildsFeedView", () => {
   it("draws one card per post and Show more when there is another page", () => {
     atWidth(1440);
     const onMore = vi.fn();
-    draw({ posts: { status: "ready", onRetry: vi.fn(), items: [{ card: card("p1") }, { card: card("p2") }], more: { loading: false, onMore } } });
+    draw({ posts: { read: readOf("ready"), items: [{ card: card("p1") }, { card: card("p2") }], more: { loading: false, onMore } } });
     expect(screen.getAllByRole("article")).toHaveLength(2);
     fireEvent.click(screen.getByRole("button", { name: "Show more" }));
     expect(onMore).toHaveBeenCalled();
@@ -141,7 +141,7 @@ describe("OpenBuildsFeedView", () => {
 
   it("empty Your spaces: Nothing new in your spaces, and See everyone", () => {
     atWidth(1440);
-    const view = props({ posts: { status: "ready", onRetry: vi.fn(), items: [] } });
+    const view = props({ posts: { read: readOf("ready"), items: [] } });
     render(
       <MemoryRouter>
         <OpenBuildsFeedView {...view} />
@@ -154,7 +154,7 @@ describe("OpenBuildsFeedView", () => {
 
   it("empty Everyone: No posts yet, and Post", () => {
     atWidth(1440);
-    const view = props({ scope: "everyone", posts: { status: "ready", onRetry: vi.fn(), items: [] } });
+    const view = props({ scope: "everyone", posts: { read: readOf("ready"), items: [] } });
     render(
       <MemoryRouter>
         <OpenBuildsFeedView {...view} />
@@ -165,14 +165,21 @@ describe("OpenBuildsFeedView", () => {
     expect(view.onPost).toHaveBeenCalled();
   });
 
-  it("error: the sentence and Retry", () => {
+  it("error: the sentence and Try again", () => {
     atWidth(1440);
     const onRetry = vi.fn();
-    draw({ posts: { status: "error", onRetry, items: [] } });
-    const alert = screen.getByRole("alert");
-    expect(alert).toHaveTextContent("Posts didn't load.");
-    fireEvent.click(within(alert).getByRole("button", { name: "Retry" }));
+    draw({ posts: { read: readOf("error", undefined, onRetry), items: [] } });
+    const alert = screen.getByRole("alert", { name: "Posts" });
+    expect(alert).toHaveTextContent("Couldn't load posts. Try again.");
+    fireEvent.click(within(alert).getByRole("button", { name: "Try again" }));
     expect(onRetry).toHaveBeenCalled();
+  });
+
+  it("G9: every region failed is one failed state for the page, under its title", () => {
+    atWidth(1440);
+    draw({ pageFailed: [readOf("error"), readOf("error")] });
+    expect(screen.getByText("Couldn't load this page. Try again.")).toBeInTheDocument();
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
   });
 
   it("Busy this week: the meta, a Join control, hidden when empty", () => {

@@ -4,6 +4,8 @@
    under two tabs and a Segmented, and Busy this week on the right. Below 1101 the left column becomes one control under the
    tabs, `All your spaces`, opening a menu of the reader's spaces; on a phone the right column is not drawn. */
 
+import { PageFailed, PageState } from "@/components/pagestate/PageState";
+import type { ReadLike } from "@/components/pagestate/pageStateModel";
 import type { CSSProperties, ReactNode } from "react";
 
 import { Segmented } from "@/components/brand/Segmented";
@@ -23,7 +25,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 import { HomeColumns, useHomeLayout } from "@/pages/site/home/HomeFrame";
 
-import { EmptyLine, FEED_HEAD, LoadError, PageHead } from "./OpenBuildsFeedParts";
+import { FEED_HEAD, PageHead } from "./OpenBuildsFeedParts";
 import type { FeedScope } from "./openBuildsFeedModel";
 
 export type FeedStatus = "loading" | "error" | "ready";
@@ -61,9 +63,13 @@ export interface OpenBuildsFeedViewProps {
   onMakeSpace: () => void;
   /** Where Sign in goes and comes back to. */
   signInTo: string;
-  spaces: { status: FeedStatus; rows: FeedSpaceRow[]; onRetry: () => void };
-  posts: { status: FeedStatus; items: FeedItem[]; onRetry: () => void; more?: { loading: boolean; onMore: () => void } };
+  /** G4: the reader's spaces read; PageState draws its failed state. */
+  spaces: { read: ReadLike; rows: FeedSpaceRow[] };
+  /** G4: the feed read; PageState draws its failed and empty states. */
+  posts: { read: ReadLike; items: FeedItem[]; more?: { loading: boolean; onMore: () => void } };
   busy: BusyRow[];
+  /** G9: every region failed, these being its reads: the page shows one failed state. */
+  pageFailed?: readonly ReadLike[];
 }
 
 /* ── pieces ── */
@@ -101,9 +107,8 @@ function YourSpaces({ view }: { view: OpenBuildsFeedViewProps }) {
   return (
     <section aria-label="Your spaces" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <SectionHead title="Your spaces" />
-      {spaces.status === "error" ? (
-        <LoadError what="Spaces didn't load." onRetry={spaces.onRetry} />
-      ) : (
+      <PageState read={spaces.read} thing="your spaces" region="Your spaces" skeleton={null}>
+        {() => (
         <div>
           <SpaceLink to="/openbuilds" current={view.scope === "mine"}>
             All your spaces
@@ -116,7 +121,8 @@ function YourSpaces({ view }: { view: OpenBuildsFeedViewProps }) {
             </div>
           ))}
         </div>
-      )}
+        )}
+      </PageState>
       <div>
         <PostControl onClick={view.onMakeSpace}>Make a space</PostControl>
       </div>
@@ -169,19 +175,23 @@ export function PostList({ items, more }: { items: FeedItem[]; more?: { loading:
 /** The list's body: the cards, the states. */
 function Posts({ view }: { view: OpenBuildsFeedViewProps }) {
   const { posts } = view;
-  if (posts.status === "error") return <LoadError what="Posts didn't load." onRetry={posts.onRetry} />;
-  if (posts.items.length === 0) {
-    return view.scope === "mine" ? (
-      <EmptyLine line="Nothing new in your spaces.">
-        <PostControl onClick={() => view.onScope("everyone")}>See everyone</PostControl>
-      </EmptyLine>
-    ) : (
-      <EmptyLine line="No posts yet.">
-        <PostControl onClick={view.onPost}>Post</PostControl>
-      </EmptyLine>
-    );
-  }
-  return <PostList items={posts.items} more={posts.more} />;
+  return (
+    <PageState
+      read={posts.read}
+      thing="posts"
+      region="Posts"
+      skeleton={null}
+      style={{ padding: "16px 20px" }}
+      empty={{
+        when: () => posts.items.length === 0,
+        ...(view.scope === "mine"
+          ? { line: "Nothing new in your spaces.", action: { label: "See everyone", onClick: () => view.onScope("everyone") } }
+          : { line: "No posts yet.", action: { label: "Post", onClick: view.onPost } }),
+      }}
+    >
+      {() => <PostList items={posts.items} more={posts.more} />}
+    </PageState>
+  );
 }
 
 const OPEN_ITEMS = [
@@ -246,7 +256,11 @@ export function OpenBuildsFeedView(view: OpenBuildsFeedViewProps) {
           </PostPrimary>
         }
       />
-      <HomeColumns layout={layout} left={<YourSpaces view={view} />} centre={centre} right={layout === "one" ? null : <BusyThisWeek rows={view.busy} />} />
+      {view.pageFailed ? (
+        <HomeColumns layout={layout} left={null} centre={<PageFailed reads={view.pageFailed} region="OpenBuilds" style={{ padding: "16px 20px" }} />} right={null} />
+      ) : (
+        <HomeColumns layout={layout} left={<YourSpaces view={view} />} centre={centre} right={layout === "one" ? null : <BusyThisWeek rows={view.busy} />} />
+      )}
     </div>
   );
 }

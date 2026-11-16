@@ -154,12 +154,13 @@ describe("OpenBuildsFeedPage", () => {
     expect(await screen.findByTestId("window")).toHaveTextContent("post");
   });
 
-  it("says Posts didn't load, with Retry, when the read fails", async () => {
+  it("says it couldn't load posts, with Try again, when the read fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
     listPostCards.mockReset().mockRejectedValue(new Error("boom"));
     mount();
-    expect(await screen.findByText("Posts didn't load.")).toBeInTheDocument();
+    expect(await screen.findByText("Couldn't load posts. Try again.")).toBeInTheDocument();
     listPostCards.mockResolvedValue(cards(post("p1", "Back again")));
-    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("heading", { name: "Back again" })).toBeInTheDocument();
   });
 });

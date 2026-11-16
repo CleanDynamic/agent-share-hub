@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { SeoHead } from "@/components/SeoHead";
 import { OPENBUILDS_SEO } from "./openBuildsSeo";
 import { PageArrival } from "@/components/shell/PageArrival";
-import { useAskAgain, useStalled } from "@/components/shell/useStalled";
+import { allFailed, type ReadLike } from "@/components/pagestate/pageStateModel";
 import { toCardData, topicHref } from "@/components/post/postCardModel";
 import { useAuth } from "@/contexts/AuthContext";
 import { engagementFor, useEngagement } from "@/hooks/useEngagement";
@@ -30,12 +30,6 @@ import { FEED_PAGE, busyMeta, busySpacesKey, feedKey, feedSearch, freshCount, my
 import type { PostingWindow } from "./PostingWindows";
 
 const PostingWindows = lazy(() => import("./PostingWindows"));
-
-function useReported(error: unknown, context: string) {
-  useEffect(() => {
-    if (error) reportError(error, { source: "openbuilds", context });
-  }, [error, context]);
-}
 
 export default function OpenBuildsFeedPage() {
   const qc = useQueryClient();
@@ -63,16 +57,14 @@ export default function OpenBuildsFeedPage() {
   const spaceIds = (mine.data ?? []).map((space) => space.id);
   const times = useQuery({ queryKey: recentTimesKey(spaceIds), queryFn: () => listRecentPostTimes(spaceIds), enabled: spaceIds.length > 0 });
 
-  const waiting = authLoading || feed.isPending || (viewerId !== null && mine.isPending) || busy.isPending;
-  /* D4: reads that have not answered after STALL_MS are failed reads: the page draws, and each says what did not load. */
-  const stall = useStalled(waiting);
-  const askAgain = useAskAgain();
-  const arriving = waiting && !stall.stalled;
-  const late = (query: { isPending: boolean }) => stall.stalled && query.isPending;
-  useReported(feed.error, "openbuilds-feed");
-  useReported(mine.error, "openbuilds-my-spaces");
-  useReported(busy.error, "openbuilds-busy-spaces");
+  /* G1: a read that never answers fails at READ_TIMEOUT_MS by itself, so the page keeps no timer of its own. A failed
+     read is reported once, by the query client's global report (lib/errors/wire.ts). */
+  const out = (query: { status: string; fetchStatus: string }) => query.status === "pending" && query.fetchStatus !== "idle";
+  const arriving = authLoading || out(feed) || (viewerId !== null && out(mine)) || out(busy);
   usePageReady("openbuilds", !arriving);
+  /* G9: every region failed (the posts, and, signed in, the reader's spaces). */
+  const regionReads: ReadLike[] = [feed, ...(viewerId !== null ? [mine] : [])];
+  const pageFailed = allFailed(regionReads) ? regionReads : undefined;
 
   /* ── the windows ── */
 
@@ -130,14 +122,13 @@ export default function OpenBuildsFeedPage() {
             onPost={onPost}
             onMakeSpace={onMakeSpace}
             signInTo={`/login?redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`}
+            pageFailed={pageFailed}
             spaces={{
-              status: mine.isError || late(mine) ? "error" : "ready",
-              onRetry: () => { stall.restart(); askAgain(mySpacesKey(viewerId), mine.refetch); },
+              read: mine,
               rows: (mine.data ?? []).map((space) => ({ id: space.id, slug: space.slug, name: space.name, fresh: freshCount(times.data?.[space.id], readSeen(space.slug)) })),
             }}
             posts={{
-              status: feed.isError || late(feed) ? "error" : "ready",
-              onRetry: () => { stall.restart(); askAgain(feedKey(address.scope, address.open, viewerId), feed.refetch); if (late(busy)) askAgain(busySpacesKey, busy.refetch); },
+              read: feed,
               items,
               more: feed.hasNextPage ? { loading: feed.isFetchingNextPage, onMore: () => void feed.fetchNextPage() } : undefined,
             }}
