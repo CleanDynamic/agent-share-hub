@@ -8,10 +8,16 @@ const FILE = readdirSync("supabase/migrations").find((name) => name.endsWith("_a
 const SQL = FILE ? readFileSync(`supabase/migrations/${FILE}`, "utf8") : "";
 
 describe("G1: the auth hardening migration takes get_email_by_username from everyone but service_role", () => {
-  it("exists, after every earlier migration", () => {
+  it("exists, and no later migration grants the lookup back", () => {
     expect(FILE).toBeTruthy();
-    const all = readdirSync("supabase/migrations").filter((name) => name.endsWith(".sql")).sort();
-    expect(all.at(-1)).toBe(FILE);
+    const later = readdirSync("supabase/migrations")
+      .filter((name) => name.endsWith(".sql") && name > (FILE ?? ""))
+      .sort();
+    for (const name of later) {
+      const sql = readFileSync(`supabase/migrations/${name}`, "utf8");
+      expect(sql, name).not.toMatch(/GRANT[^;]*get_email_by_username[^;]*\b(anon|authenticated|PUBLIC)\b/i);
+      expect(sql, name).not.toMatch(/CREATE OR REPLACE FUNCTION[^;(]*get_email_by_username/i);
+    }
   });
 
   it("finds every overload in the catalogue by name, so a database without it is skipped", () => {
