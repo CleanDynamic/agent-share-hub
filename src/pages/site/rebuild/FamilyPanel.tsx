@@ -381,7 +381,8 @@ export function FamilyPanel({ root, fit = "content", phone = false, selectedId =
         <PanelHead
           headingLevel={2}
           title={title}
-          subtitle={familySubtitle(root)}
+          /* G25: the counts only once the family has loaded; never "0 builds · 0 generations" while it loads or after it failed. */
+          subtitle={root && !loading && !failure ? familySubtitle(root) : "Lamps show which still work"}
           right={
             lone || loading || failure ? undefined : (
               <Segmented<FamilyReading> items={READINGS} value={reading} onChange={setReading} size={28} fontSize={11} label="Read the family as" />
