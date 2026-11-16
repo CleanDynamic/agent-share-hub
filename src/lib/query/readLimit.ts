@@ -37,11 +37,21 @@ export function isReadTimeout(error: unknown): boolean {
   for (let depth = 0; depth < MAX_DEPTH && current && typeof current === "object"; depth += 1) {
     const candidate = current as { name?: unknown; message?: unknown; readTimeout?: unknown; cause?: unknown; context?: unknown };
     if (candidate.readTimeout === true || candidate.name === READ_TIMEOUT_NAME) return true;
-    // PostgREST's form: the thrown error survives as "<name>: <message>".
-    if (typeof candidate.message === "string" && candidate.message.startsWith(`${READ_TIMEOUT_NAME}:`)) return true;
+    // PostgREST's form: the thrown error survives as "<name>: <message>", and a wrapper may put its own words in front
+    // ("listHandles failed: ReadTimeoutError: …").
+    if (typeof candidate.message === "string" && candidate.message.includes(`${READ_TIMEOUT_NAME}:`)) return true;
     current = candidate.cause ?? candidate.context;
   }
   return false;
+}
+
+/**
+ * For a wrapper that makes its own error from the client's (socialError, postLayerError, SettingsError …): the cause to
+ * give it. A read the limit cut gets a fresh ReadTimeoutError, so it is still known as one and is not retried; anything
+ * else gets nothing. Never the database's own error: its details and hint can quote what a person wrote.
+ */
+export function timeoutCause(error: unknown): { cause?: ReadTimeoutError } {
+  return isReadTimeout(error) ? { cause: new ReadTimeoutError(READ_TIMEOUT_MS) } : {};
 }
 
 /** Edge Functions that are reads, by name, and how to tell the read call from the others. */

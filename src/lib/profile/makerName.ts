@@ -5,6 +5,7 @@
 // already holds names the maker by id alone.
 
 import { supabase } from "@/integrations/supabase/client";
+import { timeoutCause } from "@/lib/query/readLimit";
 
 /** Display name, else @handle, else null. Never throws a name into an error. */
 export async function getMakerName(creatorId: string): Promise<string | null> {
@@ -15,7 +16,8 @@ export async function getMakerName(creatorId: string): Promise<string | null> {
     .limit(1)
     .maybeSingle();
 
-  if (error) throw new Error(`getMakerName failed (code ${error.code || "none"})`);
+  // A read the time limit cut keeps a clean marker as its cause, so it is still known as one (lib/query/readLimit.ts).
+  if (error) throw Object.assign(new Error(`getMakerName failed (code ${error.code || "none"})`), timeoutCause(error));
   if (!data) return null;
   return data.display_name?.trim() || (data.username ? `@${data.username}` : null);
 }

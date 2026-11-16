@@ -11,9 +11,12 @@ export const FALLBACK = "Something went wrong. Try again.";
 
 /** An error whose message is meant for the person. */
 export class SettingsError extends Error {
-  constructor(message: string) {
+  /** A clean marker when a read the time limit cut is underneath (lib/query/readLimit.ts, timeoutCause). Never shown. */
+  readonly cause?: unknown;
+  constructor(message: string, cause?: unknown) {
     super(message);
     this.name = "SettingsError";
+    if (cause !== undefined) this.cause = cause;
   }
 }
 

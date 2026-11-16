@@ -3,6 +3,7 @@
 // The pure half (`methodsOf`, `canUnlink`, `friendlyAuthError`, `emailProblem`, `passwordProblem`) says what the person is told; the
 // other half calls Supabase Auth, from the browser, on the person's own session. Nothing here uses a service key.
 
+import { timeoutCause } from "@/lib/query/readLimit";
 import type { UserIdentity } from "@supabase/supabase-js";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -206,14 +207,15 @@ interface HttpErrorLike {
 
 async function messageOf(error: unknown, fallback: string): Promise<string> {
   const response = (error as HttpErrorLike).context;
-  const body = response ? ((await response.json().catch(() => null)) as { error?: string } | null) : null;
+  // A request that got no answer has the thrown error as its context, not a response: there is no body to read.
+  const body = typeof response?.json === "function" ? ((await response.json().catch(() => null)) as { error?: string } | null) : null;
   return body?.error ?? fallback;
 }
 
 /** The member's own sessions, newest activity first, this device marked (through the my-sessions function). */
 export async function listMySessions(): Promise<DeviceSession[]> {
   const { data, error } = await supabase.functions.invoke("my-sessions", { method: "POST", body: { action: "list" } });
-  if (error) throw new SettingsError(await messageOf(error, COPY.devicesUnavailable));
+  if (error) throw new SettingsError(await messageOf(error, COPY.devicesUnavailable), timeoutCause(error).cause);
   return ((data as { sessions?: DeviceSession[] } | null)?.sessions ?? []).slice();
 }
 

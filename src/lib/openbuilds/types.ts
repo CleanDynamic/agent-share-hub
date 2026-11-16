@@ -10,6 +10,7 @@
 // nothing a reader wrote. Every other failure is built from the operation, the code and the status only: a refused insert's details
 // can quote a post's words, so the server's message is never copied for them (neoscale-error-monitoring, Privacy).
 
+import { timeoutCause } from "@/lib/query/readLimit";
 import { db } from "@/lib/social/types";
 
 export { db };
@@ -246,9 +247,11 @@ export function postLayerError(operation: string, response: { error: unknown; st
   const code = typeof error?.code === "string" ? error.code : null;
   const status = typeof response.status === "number" ? response.status : null;
   // A raised exception is the database's own plain words, fixed text with nothing a reader wrote in it.
-  if (code === "P0001" && typeof error?.message === "string") return new PostError(operation, error.message, code, status);
-  if (code === "42501" && refusal) return new PostError(operation, refusal, code, status);
-  return new PostError(operation, `${operation} failed${code ? ` (${code})` : ""}`, code, status);
+  // A read the time limit cut keeps a clean marker as its cause, so it is still known as one (lib/query/readLimit.ts).
+  const withCause = (made: PostError) => Object.assign(made, timeoutCause(response.error));
+  if (code === "P0001" && typeof error?.message === "string") return withCause(new PostError(operation, error.message, code, status));
+  if (code === "42501" && refusal) return withCause(new PostError(operation, refusal, code, status));
+  return withCause(new PostError(operation, `${operation} failed${code ? ` (${code})` : ""}`, code, status));
 }
 
 export const signedOut = (operation: string): PostError => new PostError(operation, "Sign in to do that.", null, 401);

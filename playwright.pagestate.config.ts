@@ -11,7 +11,8 @@ export default defineConfig({
   testMatch: /.*\.pagestate\.ts$/,
   fullyParallel: true,
   retries: 0,
-  workers: Number(process.env.PAGESTATE_WORKERS ?? 4),
+  // At most two: with four on a four-core machine the pages compete for it, and the first read starts 2 to 4 s late.
+  workers: Math.min(2, Number(process.env.PAGESTATE_WORKERS ?? 2)),
   reporter: [["list"]],
   // Its own artifacts folder: Playwright empties outputDir on every run, and the readings in test-results/pagestate must survive a partial rerun.
   outputDir: "test-results/pagestate-artifacts",
