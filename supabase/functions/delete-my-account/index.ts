@@ -12,7 +12,7 @@
 // =============================================================================
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { getCaller } from "../_shared/caller.ts";
 import { readBody, z } from "../_shared/body.ts";
 import { fail, json, preflight } from "../_shared/cors.ts";
@@ -20,7 +20,7 @@ import { deleteAccount, DeleteStopped, type DeleteDeps } from "./core.ts";
 
 const Body = z.object({ confirm: z.string().min(1).max(100) });
 
-export function depsFor(admin: ReturnType<typeof createClient>, userId: string, typed: string): DeleteDeps {
+export function depsFor(admin: SupabaseClient<any>, userId: string, typed: string): DeleteDeps {
   return {
     userId,
     typed,
