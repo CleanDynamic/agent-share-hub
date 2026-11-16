@@ -110,7 +110,8 @@ describe("SV-01 P7: wiring", () => {
     try {
       const fresh = await import("./report");
       fresh.reportError(new Error("x"), { source: "test" });
-      await vi.waitFor(() => expect(init).toHaveBeenCalledTimes(1));
+      // Loading the Sentry chunk can take over a second when the whole suite runs at once.
+      await vi.waitFor(() => expect(init).toHaveBeenCalledTimes(1), { timeout: 5_000 });
       const options = init.mock.calls[0][0];
       expect(options.beforeBreadcrumb()).toBeNull();
       const out = options.beforeSend({
