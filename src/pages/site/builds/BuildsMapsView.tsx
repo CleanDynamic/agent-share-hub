@@ -112,7 +112,8 @@ export interface BuildsMapsViewProps {
   direction: MapsDirection;
   onDirection: (direction: MapsDirection) => void;
   /** The page's count label ("18 builds", "3 of 18 builds"), the head's figure; and how many have a Map (null until the Maps are read). */
-  buildsLabel: string;
+  /** G25: "n builds", drawn under the title only once the list has answered with builds; null before. */
+  buildsLabel: string | null;
   withMap: number | null;
   cards: readonly MapCardView[];
   /** The rest of the matching builds are one press away. */
@@ -234,7 +235,7 @@ export default function BuildsMapsView(props: BuildsMapsViewProps) {
   const columns = useCardColumns();
   return (
     <div data-testid="builds-maps" style={ROOT}>
-      <BuildsHead figure={buildsLabel} parts={MAPS_PARTS} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
+      <BuildsHead figure="Builds" parts={buildsLabel ? [{ text: buildsLabel }, ...MAPS_PARTS] : MAPS_PARTS} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
 
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 16 }}>
         <FiltersButton activeCount={activeCount} setName={setName} disabled={!filters} onClick={() => setOpen(true)} />
