@@ -3,6 +3,8 @@
    The head (name as `h1`, description, the made-by line, and the primary by role), two tabs, and under Posts the order line and the
    space's cards. Moderators also get Settings and, on each card, the `···` menu. One column, centred at Home's feed width. */
 
+import { PageState } from "@/components/pagestate/PageState";
+import { readOf, type ReadLike } from "@/components/pagestate/pageStateModel";
 import type { ReactNode } from "react";
 
 import { PostControl, PostPrimary } from "@/components/post/postControls";
@@ -13,7 +15,7 @@ import { TextTabs } from "@/components/vision/TextTabs";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
-import { EmptyLine, LoadError, PageHead } from "./OpenBuildsFeedParts";
+import { PageHead } from "./OpenBuildsFeedParts";
 import { PostList, type FeedItem, type FeedStatus } from "./OpenBuildsFeedView";
 import { primaryFor, type SpaceTab } from "./spaceModel";
 
@@ -31,7 +33,8 @@ export interface SpaceViewProps {
   onJoin: () => void;
   onPost: () => void;
   onSettings: () => void;
-  posts: { status: FeedStatus; items: FeedItem[]; onRetry: () => void; more?: { loading: boolean; onMore: () => void } };
+  /** G4: `read` is the feed's read, for PageState's failed, retrying and empty states. */
+  posts: { status: FeedStatus; items: FeedItem[]; onRetry: () => void; read?: ReadLike; more?: { loading: boolean; onMore: () => void } };
 }
 
 const TABS: readonly { value: SpaceTab; label: string }[] = [
@@ -75,13 +78,16 @@ export function SpaceView(view: SpaceViewProps) {
       ) : (
         <div role="tabpanel" aria-label="Posts">
           <p style={{ margin: 0, padding: "8px 4px 0", fontFamily: FIGTREE, fontSize: 12, lineHeight: "16px", color: t.label }}>{view.orderLine}</p>
-          {view.posts.status === "error" ? (
-            <LoadError what="Posts didn't load." onRetry={view.posts.onRetry} />
-          ) : view.posts.items.length === 0 ? (
-            <EmptyLine line="No posts here yet.">{member ? <PostControl onClick={view.onPost}>Post here</PostControl> : <PostControl onClick={view.onJoin}>Join</PostControl>}</EmptyLine>
-          ) : (
-            <PostList items={view.posts.items} more={view.posts.more} />
-          )}
+          <PageState
+            read={view.posts.read ?? (view.posts.status === "error" ? readOf("error", undefined, view.posts.onRetry) : readOf("ready", view.posts.items))}
+            thing="posts"
+            region="Posts"
+            skeleton={null}
+            style={{ padding: "16px 20px" }}
+            empty={{ when: () => view.posts.items.length === 0, line: "No posts here yet.", action: member ? { label: "Post here", onClick: view.onPost } : { label: "Join", onClick: view.onJoin } }}
+          >
+            {() => <PostList items={view.posts.items} more={view.posts.more} />}
+          </PageState>
         </div>
       )}
     </div>

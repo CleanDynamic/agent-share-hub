@@ -165,6 +165,8 @@ describe("SpacePage", () => {
   it("says so when there is no such space", async () => {
     getSpaceCrowd.mockResolvedValue(null);
     mount("/openbuilds/spaces/nope");
-    expect(await screen.findByText("There is no space at this address.")).toBeInTheDocument();
+    expect(await screen.findByText("Nothing at this address.")).toBeInTheDocument();
+    expect(screen.getByText("This space may have been removed, or the link may be wrong.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Space" })).toBeInTheDocument();
   });
 });

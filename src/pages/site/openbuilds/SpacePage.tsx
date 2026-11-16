@@ -20,7 +20,7 @@ import { getSpaceCrowd, hidePost, joinSpace, listPostCards, pinPost, unhidePost,
 import { usePageReady } from "@/lib/routing/pageReady";
 
 import { OpenBuildsFeedLoadingView } from "./OpenBuildsFeedFrame";
-import { EmptyLine } from "./OpenBuildsFeedParts";
+import { OpenBuildsState } from "./OpenBuildsFeedParts";
 import { FEED_PAGE, markSeen, mySpacesKey } from "./openBuildsFeedModel";
 import type { FeedItem } from "./OpenBuildsFeedView";
 import type { PostingWindow } from "./PostingWindows";
@@ -146,16 +146,9 @@ export default function SpacePage() {
     };
   });
 
+  /* G4, G7: failed, or not found only when the server answered that there is no such space. */
   if (!arriving && (crowd.isError || !crowd.data)) {
-    return crowd.isError ? (
-      <EmptyLine line="This space didn't load.">
-        <PostControl onClick={() => void crowd.refetch()}>Retry</PostControl>
-      </EmptyLine>
-    ) : (
-      <EmptyLine line="There is no space at this address.">
-        <PostControl to="/openbuilds">OpenBuilds</PostControl>
-      </EmptyLine>
-    );
+    return <OpenBuildsState title="Space" read={crowd} thing="this space" region="The space" kind="space" missing={([found]) => found === null} />;
   }
 
   return (
@@ -176,7 +169,7 @@ export default function SpacePage() {
           onJoin={() => void join()}
           onPost={() => setWin({ kind: "post", spaceSlug: space.slug })}
           onSettings={() => setWin({ kind: "settings", slug: space.slug })}
-          posts={{ status: feed.isError ? "error" : "ready", items, onRetry: () => void feed.refetch(), more: feed.hasNextPage ? { loading: feed.isFetchingNextPage, onMore: () => void feed.fetchNextPage() } : undefined }}
+          posts={{ status: feed.isError ? "error" : "ready", items, onRetry: () => void feed.refetch(), read: feed, more: feed.hasNextPage ? { loading: feed.isFetchingNextPage, onMore: () => void feed.fetchNextPage() } : undefined }}
         />
       )}
       {win ? (
