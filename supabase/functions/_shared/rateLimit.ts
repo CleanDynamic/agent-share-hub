@@ -30,6 +30,7 @@ export const RATE_RULES: Record<string, RateRule> = {
   "create-pwyw-checkout-session": { limit: 10, windowSeconds: 600 },
   "create-checkout-session": { limit: 10, windowSeconds: 600 },
   "create-donation-session": { limit: 10, windowSeconds: 600 },
+  "import-github-readme": { limit: 20, windowSeconds: 3600 },
 };
 
 /** What a handler is given to check the limit: null to go on, or the answer to send. */

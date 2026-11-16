@@ -142,3 +142,24 @@ describe("G10: create-donation-session is limited per address", () => {
     expect(source("create-donation-session")).toMatch(/limitByIp\(req, "create-donation-session", RATE_RULES\["create-donation-session"\], store\)/);
   });
 });
+
+/** For a function whose handler is inline: the limit is checked, and answered, before the body is read. */
+function limitedBeforeBody(fn: string) {
+  const code = source(fn);
+  const call = code.indexOf(`limitByIp(req, "${fn}", RATE_RULES["${fn}"], store)`);
+  expect(call, "limitByIp call").toBeGreaterThan(-1);
+  expect(code.indexOf("readBody(req")).toBeGreaterThan(call);
+  expect(code).toMatch(/if \(limited\) return limited;/);
+  expect(code).toMatch(/const store = databaseRateStore\(\);/);
+}
+
+describe("G10: import-github-readme is limited per address", () => {
+  it("allows 20 an hour", () => {
+    expect(RATE_RULES["import-github-readme"]).toEqual({ limit: 20, windowSeconds: 3600 });
+  });
+
+  it("checks the limit before it reads the body or asks GitHub anything", () => {
+    limitedBeforeBody("import-github-readme");
+    expect(source("import-github-readme").indexOf("fetch(")).toBeGreaterThan(source("import-github-readme").indexOf("if (limited) return limited;"));
+  });
+});

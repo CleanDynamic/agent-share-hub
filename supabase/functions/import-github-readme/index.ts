@@ -3,6 +3,10 @@ import { z, readBody } from "../_shared/body.ts";
 import { fail, json, preflight } from "../_shared/cors.ts";
 import { githubApiUrl, parseGithubUrl } from "./github.ts";
 import { SITE_NAME } from "../_shared/site.ts";
+import { limitByIp, RATE_RULES } from "../_shared/rateLimit.ts";
+import { databaseRateStore } from "../_shared/rateLimitStore.ts";
+
+const store = databaseRateStore();
 
 const Body = z.object({ url: z.string({ required_error: "Required" }).min(1, "Required").max(2048) });
 
@@ -10,6 +14,9 @@ serve(async (req) => {
   const early = preflight(req);
   if (early) return early;
   if (req.method !== "POST") return fail(req, 405, "Method not allowed");
+  // G10: anyone may call this, and each call spends the function's shared GitHub quota, so each address is limited.
+  const limited = await limitByIp(req, "import-github-readme", RATE_RULES["import-github-readme"], store);
+  if (limited) return limited;
 
   try {
     const body = await readBody(req, Body);
