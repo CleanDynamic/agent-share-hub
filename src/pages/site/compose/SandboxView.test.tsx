@@ -617,11 +617,11 @@ describe("CA-10 · a save that stopped says what failed", () => {
     expect(notSavedLine({ reason: "no connection" })).toBe("Not saved: no connection.");
   });
 
-  it("shows the code under 'This build didn't load.'", () => {
+  it("shows no code under 'This build didn't load.' (G10), and logs it", () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     view({ status: "error", loadError: { code: "57014", message: "canceling statement due to statement timeout" } });
     expect(screen.getByText("This build didn't load.")).toBeTruthy();
-    expect(screen.getByText("Code 57014")).toBeTruthy();
+    expect(screen.queryByText(/Code /)).toBeNull();
     // eslint-disable-next-line no-console -- the spy on the deliberate log
     expect(console.error).toHaveBeenCalledWith("[Compose] build read failed 57014 canceling statement due to statement timeout");
   });

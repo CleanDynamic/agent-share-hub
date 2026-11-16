@@ -1137,7 +1137,7 @@ function SandboxBody(props: SandboxViewProps) {
   if (status === "error") {
     return (
       <div style={moduleStyle()}>
-        <ErrorState line="This build didn't load." panel="The composer" onRetry={props.onRetry} error={props.loadError} log="[Compose] build read failed" showCode />
+        <ErrorState line="This build didn't load." panel="The composer" onRetry={props.onRetry} error={props.loadError} log="[Compose] build read failed" />
       </div>
     );
   }

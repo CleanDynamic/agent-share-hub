@@ -203,8 +203,8 @@ describe("DraftsView", () => {
   it("CA-10: a sessions failure stays in the Sessions panel, and the drafts show", () => {
     view({ sessionsStatus: "error", sessionsError: { code: "57014", message: "canceling statement" } });
     expect(screen.getAllByText("That didn't load.")).toHaveLength(1);
-    expect(screen.getByRole("status", { name: "Sessions" })).toBeInTheDocument();
-    expect(screen.getByText("Code 57014")).toBeInTheDocument();
+    expect(screen.getByRole("alert", { name: "Sessions" })).toBeInTheDocument();
+    expect(screen.queryByText(/Code /)).toBeNull();
     expect(screen.getAllByTestId("draft-row").length).toBeGreaterThan(0);
   });
 

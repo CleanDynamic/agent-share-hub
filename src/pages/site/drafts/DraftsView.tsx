@@ -454,7 +454,7 @@ export function DraftsView({
         </div>
       ) : failed ? (
         <div style={{ padding: "16px 0" }}>
-          <ErrorState panel="Continue editing" onRetry={onRetryDrafts} error={draftsError} log="[Drafts] drafts read failed" showCode />
+          <ErrorState panel="Continue editing" onRetry={onRetryDrafts} error={draftsError} log="[Drafts] drafts read failed" />
         </div>
       ) : drafts.length === 0 ? (
         <EmptyState line="Nothing in progress." />
@@ -510,7 +510,7 @@ export function DraftsView({
         </div>
       ) : sessionsFailed ? (
         <div style={{ padding: "16px 0" }}>
-          <ErrorState panel="Sessions" onRetry={onRetrySessions} error={sessionsError} log="[Drafts] sessions read failed" showCode />
+          <ErrorState panel="Sessions" onRetry={onRetrySessions} error={sessionsError} log="[Drafts] sessions read failed" />
         </div>
       ) : (
         <>

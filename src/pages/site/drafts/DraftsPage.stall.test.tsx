@@ -47,12 +47,12 @@ describe("D4 · the Drafts page when a read never answers", () => {
         </HelmetProvider>
       </QueryClientProvider>,
     );
-    const panel = await screen.findByRole("status", { name: "Continue editing" }, { timeout: 3_000 });
+    const panel = await screen.findByRole("alert", { name: "Continue editing" }, { timeout: 3_000 });
     expect(within(panel).getByText("That didn't load.")).toBeTruthy();
     expect(screen.getByText("A waiting session.")).toBeTruthy();
     const asked = sent;
     fireEvent.click(within(panel).getByRole("button", { name: /try again|retry/i }));
-    await waitFor(() => expect(screen.queryByRole("status", { name: "Continue editing" })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole("alert", { name: "Continue editing" })).toBeNull());
     expect(screen.getByText("Loading your drafts")).toBeTruthy();
     // Retry asks again: the read that never answered is cancelled and sent afresh, not joined.
     await waitFor(() => expect(sent).toBeGreaterThan(asked));

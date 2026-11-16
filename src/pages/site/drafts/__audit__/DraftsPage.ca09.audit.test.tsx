@@ -70,7 +70,7 @@ const bothPanelsFailed = async () => {
 /** Only the Sessions panel failed: the drafts are on screen. */
 const sessionsPanelFailed = async () => {
   await waitFor(() => expect(screen.getAllByText("That didn't load.")).toHaveLength(1), { timeout: 20_000 });
-  expect(screen.getByRole("status", { name: "Sessions" })).toBeTruthy();
+  expect(screen.getByRole("alert", { name: "Sessions" })).toBeTruthy();
   expect(screen.getByText("Draft 1")).toBeTruthy();
 };
 
@@ -99,7 +99,7 @@ describe("CA-09 · the Drafts page on tonight's schema", () => {
   it("the drafts read times out (57014): only the drafts panel fails, the sessions show", async () => {
     mount([{ method: "GET", path: DRAFTS, answer: TIMEOUT }]);
     await waitFor(() => expect(screen.getAllByText("That didn't load.")).toHaveLength(1), { timeout: 20_000 });
-    expect(screen.getByRole("status", { name: "Continue editing" })).toBeTruthy();
+    expect(screen.getByRole("alert", { name: "Continue editing" })).toBeTruthy();
     expect(screen.getByText("A waiting session.")).toBeTruthy();
     expect(sent(DRAFTS)).toEqual(["500 57014", "500 57014"]);
     expect(sent(WAITING)[0]).toBe("200");

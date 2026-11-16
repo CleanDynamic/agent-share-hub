@@ -141,6 +141,30 @@ describe("ErrorState", () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
+  it("is an alert that names its region (G5)", () => {
+    render(<ErrorState line="Couldn't load your drafts. Try again." panel="Continue editing" onRetry={() => {}} />);
+    const region = screen.getByRole("alert");
+    expect(region).toHaveAttribute("aria-label", "Continue editing");
+    expect(region.textContent).toBe("Couldn't load your drafts. Try again.Try again");
+  });
+
+  it("while retrying, the button is disabled and reads Trying again… (G5)", () => {
+    const onRetry = vi.fn();
+    const { rerender } = render(<ErrorState panel="Continue editing" onRetry={onRetry} retrying />);
+    const button = screen.getByRole("button", { name: "Trying again…" });
+    expect(button).toBeDisabled();
+    button.click();
+    expect(onRetry).not.toHaveBeenCalled();
+    rerender(<ErrorState panel="Continue editing" onRetry={onRetry} />);
+    expect(screen.getByRole("button", { name: "Try again" })).not.toBeDisabled();
+  });
+
+  it("never shows a code, whatever it is given (G10)", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    render(<ErrorState panel="Continue editing" onRetry={() => {}} error={{ code: "PGRST301", status: 401, message: "JWT expired" }} log="[Drafts] drafts read failed" />);
+    expect(document.body.textContent).not.toMatch(/PGRST|401|Code /);
+  });
+
   it("makes the retry 44 tall on a phone, the touch floor", () => {
     stubMedia(["max-width: 767px"]);
     render(<ErrorState panel="The wall" onRetry={() => {}} />);
