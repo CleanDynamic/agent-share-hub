@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { PageState } from "@/components/pagestate/PageState";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MessageSquare, Loader2, Search, X, Pin, BellOff, LogOut, ExternalLink, UserX } from "lucide-react";
@@ -161,7 +162,7 @@ export default function MessagesPage() {
   }, [totalUnread]);
 
   // Fetch threads for the active tab
-  const { data: tabData, isLoading } = useQuery({
+  const threadsRead = useQuery({
     queryKey: ["messaging_threads", user?.id, activeTab, debouncedQuery],
     queryFn: () => getThreads({
       userId: user!.id,
@@ -172,6 +173,9 @@ export default function MessagesPage() {
     }),
     enabled: !!user,
   });
+  const { data: tabData, isLoading } = threadsRead;
+  /* G24: a failed read is the failed state, never "No conversations yet". */
+  const threadsFailed = threadsRead.isError && tabData === undefined;
 
   // Fetch the OTHER tab's count badge
   const { data: otherTabData } = useQuery({
@@ -437,6 +441,13 @@ export default function MessagesPage() {
           }}
         >
 
+        {threadsFailed ? (
+          <div style={{ width: 220, flexShrink: 0, padding: 16 }}>
+            <PageState read={threadsRead} thing="your messages" region="Conversations" skeleton={null}>
+              {() => null}
+            </PageState>
+          </div>
+        ) : (
         <MessagesThreadList
           threads={threadItems}
           activeTab={activeTab}
@@ -450,6 +461,7 @@ export default function MessagesPage() {
           width={220}
           loading={isLoading && !tabData}
         />
+        )}
 
         <div className="flex-1 min-w-0 h-full flex flex-col">
           {activeThreadId && activeThreadInfo ? (
