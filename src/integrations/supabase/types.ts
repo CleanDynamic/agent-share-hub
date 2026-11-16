@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_deletions: {
+        Row: {
+          completed_at: string | null
+          requested_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          requested_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          requested_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ad_impressions: {
         Row: {
           content_id: string
@@ -3012,6 +3030,36 @@ export type Database = {
         }
         Relationships: []
       }
+      data_exports: {
+        Row: {
+          last_exported_at: string
+          user_id: string
+        }
+        Insert: {
+          last_exported_at?: string
+          user_id: string
+        }
+        Update: {
+          last_exported_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_exports_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "data_exports_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dm_messages: {
         Row: {
           body: string | null
@@ -4408,7 +4456,7 @@ export type Database = {
         Row: {
           about_build_id: string | null
           about_node_id: string | null
-          author_id: string
+          author_id: string | null
           body: string
           closes_at: string | null
           created_at: string
@@ -4419,6 +4467,7 @@ export type Database = {
           parent_id: string | null
           pinned_at: string | null
           pinned_by: string | null
+          removed_at: string | null
           reply_count: number
           reward_gbp: number | null
           root_id: string
@@ -4429,7 +4478,7 @@ export type Database = {
         Insert: {
           about_build_id?: string | null
           about_node_id?: string | null
-          author_id: string
+          author_id?: string | null
           body?: string
           closes_at?: string | null
           created_at?: string
@@ -4440,6 +4489,7 @@ export type Database = {
           parent_id?: string | null
           pinned_at?: string | null
           pinned_by?: string | null
+          removed_at?: string | null
           reply_count?: number
           reward_gbp?: number | null
           root_id: string
@@ -4450,7 +4500,7 @@ export type Database = {
         Update: {
           about_build_id?: string | null
           about_node_id?: string | null
-          author_id?: string
+          author_id?: string | null
           body?: string
           closes_at?: string | null
           created_at?: string
@@ -4461,6 +4511,7 @@ export type Database = {
           parent_id?: string | null
           pinned_at?: string | null
           pinned_by?: string | null
+          removed_at?: string | null
           reply_count?: number
           reward_gbp?: number | null
           root_id?: string
@@ -6398,6 +6449,53 @@ export type Database = {
         }
         Relationships: []
       }
+      user_blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_blocks_blocked_id_fkey"
+            columns: ["blocked_id"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_blocks_blocked_id_fkey"
+            columns: ["blocked_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_blocks_blocker_id_fkey"
+            columns: ["blocker_id"]
+            isOneToOne: false
+            referencedRelation: "profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_blocks_blocker_id_fkey"
+            columns: ["blocker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_interactions: {
         Row: {
           content_id: string
@@ -6758,6 +6856,7 @@ export type Database = {
         }
         Returns: Json
       }
+      build_maker: { Args: { _build: string }; Returns: string }
       builds_count_spread: {
         Args: never
         Returns: {
@@ -6781,6 +6880,9 @@ export type Database = {
         }[]
       }
       create_post: { Args: { p: Json }; Returns: string }
+      data_export_done: { Args: never; Returns: undefined }
+      data_export_wait_seconds: { Args: never; Returns: number }
+      delete_account_rows: { Args: { _uid: string }; Returns: undefined }
       edge_rate_limit_hit: {
         Args: { _bucket: string; _limit: number; _window_seconds: number }
         Returns: boolean
@@ -6892,6 +6994,7 @@ export type Database = {
         Returns: undefined
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_blocked_between: { Args: { a: string; b: string }; Returns: boolean }
       is_thread_admin: {
         Args: { _thread_id: string; _user_id: string }
         Returns: boolean
@@ -6899,6 +7002,13 @@ export type Database = {
       is_thread_member: {
         Args: { _thread_id: string; _user_id: string }
         Returns: boolean
+      }
+      list_account_objects: {
+        Args: { _uid: string }
+        Returns: {
+          bucket_id: string
+          name: string
+        }[]
       }
       list_filter_set_groups: {
         Args: { p_limit?: number }
@@ -6951,10 +7061,15 @@ export type Database = {
       mark_depth_revealed: { Args: never; Returns: string }
       mark_welcome_xp_shown: { Args: never; Returns: string }
       model_key: { Args: { raw: string }; Returns: string }
+      notification_pref_key: {
+        Args: { kind: string; target_type: string }
+        Returns: string
+      }
       post_attachment_owner: {
         Args: { _build: string; _kind: string; _node: string; _session: string }
         Returns: string
       }
+      post_author: { Args: { _post: string }; Returns: string }
       post_spaces_allow_rewards: { Args: { _post: string }; Returns: boolean }
       posts_tags_ok: { Args: { tags: string[] }; Returns: boolean }
       profile_crop_ok: { Args: { c: Json }; Returns: boolean }
@@ -7090,6 +7205,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      set_notification_preference: {
+        Args: { _key: string; _on: boolean }
+        Returns: undefined
       }
       set_user_track: { Args: { _track: string }; Returns: undefined }
       soft_delete_primitive_comment: {
