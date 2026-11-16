@@ -442,6 +442,13 @@
       "when": 1794827581516,
       "tag": "0062_ux15_block_check_signed_out",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1794829888940,
+      "tag": "0063_sec00_profiles_lock_privileged",
+      "breakpoints": true
     }
   ]
 }

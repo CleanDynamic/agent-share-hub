@@ -81,6 +81,39 @@ export type Database = {
           },
         ]
       }
+      admin_audit: {
+        Row: {
+          action: string
+          actor_id: string
+          created_at: string
+          details: Json | null
+          id: number
+          ip: string | null
+          target_id: string | null
+          target_table: string | null
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          created_at?: string
+          details?: Json | null
+          id?: never
+          ip?: string | null
+          target_id?: string | null
+          target_table?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: never
+          ip?: string | null
+          target_id?: string | null
+          target_table?: string | null
+        }
+        Relationships: []
+      }
       ai_export_log: {
         Row: {
           exported_at: string
@@ -6845,6 +6878,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_set_curator: {
+        Args: { _user_id: string; _value: boolean }
+        Returns: undefined
+      }
       award_xp: {
         Args: {
           _amount: number
@@ -7149,6 +7186,7 @@ export type Database = {
           works: number
         }[]
       }
+      request_ip: { Args: never; Returns: string }
       resolve_report: {
         Args: { action: string; report: string }
         Returns: undefined
