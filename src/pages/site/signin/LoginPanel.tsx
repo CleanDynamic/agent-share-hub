@@ -13,13 +13,18 @@
 
    IN THE DIALOG, the destination is unchanged: `redirect` (or `returnTo`) when the address has one, which the header
    sets to the page the dialog was opened over, and otherwise `resolvePostAuthRoute`. "Forgot password?" is the reset
-   view's address on the same page, a push. */
+   view's address on the same page, a push.
 
-import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+   PART A (G2): after a correct password, a member with a verified authenticator is shown the code view instead of being
+   sent on; a member with none is sent on exactly as before (G6). Arriving here with a session that still owes a code
+   (Back to sign in from the code view) signs that session out of this browser. */
+
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import type { OAuthProvider } from "@/components/auth/OAuthButtons";
 import { useAuth } from "@/contexts/AuthContext";
+import { abandonCodeStep, pendingCodeFactor } from "@/lib/auth/codeStep";
 import { startOAuthSignIn } from "@/lib/auth/oauth";
 import { resolvePostAuthRoute } from "@/lib/auth/postAuthRoute";
 import { messageFor } from "@/lib/auth/authMessages";
@@ -37,6 +42,7 @@ const RESEND_ANSWER = "If that address needs verifying, we've sent a link.";
 
 export function LoginPanel() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const { isLoggedIn } = useAuth();
   // Honour both the existing `redirect` param and the `returnTo` alias, through safeReturnPath (G16): only a path here.
@@ -47,7 +53,11 @@ export function LoginPanel() {
   const [rememberMe, setRememberMe] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(null);
-  const [error, setError] = useState("");
+  // G7: the code view sends the member back here with the reason the attempt ended.
+  const notice = (location.state as { signinNotice?: unknown } | null)?.signinNotice;
+  const [error, setError] = useState(typeof notice === "string" ? notice : "");
+  /** True while this view's own sign-in is out: it decides where to go, not the effect below. */
+  const inFlight = useRef(false);
   const [resendAnswer, setResendAnswer] = useState("");
   const views = useSignInNavigation();
   const captcha = useDialogCaptcha();
@@ -58,9 +68,19 @@ export function LoginPanel() {
     return () => setSigningIn(false);
   }, [isSubmitting, loadingProvider]);
 
-  // Already signed in — bounce to the destination (or home).
+  // Already signed in — bounce to the destination (or home). A session that still owes a code is not signed in: it is
+  // one the code view was left with, and it is signed out here.
   useEffect(() => {
-    if (isLoggedIn) navigate(redirectParam || "/", { replace: true });
+    if (!isLoggedIn || inFlight.current) return;
+    let live = true;
+    void pendingCodeFactor().then(async (factorId) => {
+      if (!live || inFlight.current) return;
+      if (factorId) await abandonCodeStep();
+      else navigate(redirectParam || "/", { replace: true });
+    });
+    return () => {
+      live = false;
+    };
   }, [isLoggedIn, navigate, redirectParam]);
 
   const handleEmailLogin = async () => {
@@ -78,18 +98,27 @@ export function LoginPanel() {
       setIsSubmitting(false);
       return;
     }
+    inFlight.current = true;
     try {
       const result = await signInWithEmail(emailOrUsername, password, check.token, rememberMe);
 
       if (result.outcome !== "signed-in") {
+        inFlight.current = false;
         setError(result.outcome === "not-an-email" ? "Sign in with your email address." : messageFor(result.refusal));
         setIsSubmitting(false);
+        return;
+      }
+
+      // G2: a member with a verified authenticator owes a code before they are signed in.
+      if (await pendingCodeFactor()) {
+        views.show("code");
         return;
       }
 
       const destination = redirectParam || (result.userId ? await resolvePostAuthRoute(result.userId) : "/");
       navigate(destination, { replace: true });
     } catch {
+      inFlight.current = false;
       setError(messageFor("unknown"));
       setIsSubmitting(false);
     } finally {

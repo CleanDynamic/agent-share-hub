@@ -9,9 +9,10 @@ import { safeReturnPath } from "@/lib/auth/safeReturnPath";
 
 export const SIGNIN_PARAM = "signin";
 
-export type SignInView = "login" | "signup" | "reset" | "verify";
+/** Part A: "code" is the Enter your code view, after a correct password, for a member with an authenticator. */
+export type SignInView = "login" | "signup" | "reset" | "verify" | "code";
 
-export const SIGNIN_VIEWS: readonly SignInView[] = ["login", "signup", "reset", "verify"];
+export const SIGNIN_VIEWS: readonly SignInView[] = ["login", "signup", "reset", "verify", "code"];
 
 /** The parameters an address-opened dialog brings with it: the destination, and what an emailed link carries. */
 const DIALOG_KEYS = [SIGNIN_PARAM, "redirect", "returnTo", "token", "token_hash", "code", "type", "error", "error_description"] as const;

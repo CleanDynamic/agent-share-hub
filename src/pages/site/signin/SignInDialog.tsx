@@ -6,6 +6,9 @@
 
 import { useState } from "react";
 
+import { abandonCodeStep } from "@/lib/auth/codeStep";
+
+import { CodePanel } from "./CodePanel";
 import { DialogCaptchaProvider } from "./dialogCaptcha";
 import { AccountSwitch, BackToSignIn, SignInDialogFrame } from "./SignInDialogFrame";
 import { LoginPanel } from "./LoginPanel";
@@ -32,14 +35,16 @@ export function SignInDialog({ view, closing = false }: { view: SignInView; clos
       onOpenChange={(open) => {
         if (open || closing || leaving) return;
         setLeaving(true);
-        views.close();
+        // Part A: closing the code view leaves the half-signed-in session behind, so it is signed out first.
+        if (view === "code") void abandonCodeStep().finally(() => views.close());
+        else views.close();
       }}
       view={view}
       rowStart={rowStart}
     >
       {/* G6: one invisible Turnstile widget for every view, outside the layout. */}
       <DialogCaptchaProvider>
-        {view === "signup" ? <SignupPanel /> : view === "reset" ? <ResetPanel /> : view === "verify" ? <VerifyPanel /> : <LoginPanel />}
+        {view === "signup" ? <SignupPanel /> : view === "reset" ? <ResetPanel /> : view === "verify" ? <VerifyPanel /> : view === "code" ? <CodePanel /> : <LoginPanel />}
       </DialogCaptchaProvider>
     </SignInDialogFrame>
   );

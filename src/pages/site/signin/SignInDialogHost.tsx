@@ -8,22 +8,29 @@
    again meanwhile, it is simply open again.
 
    THE HALFTONE LAYER (G17) is drawn only around a dialog that has space around it: not on a phone, where the dialog is
-   the whole screen. Under reduced motion it has no wind-down and goes as the dialog closes. */
+   the whole screen. Under reduced motion it has no wind-down and goes as the dialog closes.
+
+   PART A (G2): a session that still owes a code (a reload on the code view, a provider sign-in coming back) opens the
+   code view over whatever page it is on. A member with no authenticator never owes one (G6), so nothing changes for them. */
 
 import { lazy, Suspense, useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+
+import { supabase } from "@/integrations/supabase/client";
+import { pendingCodeFactor } from "@/lib/auth/codeStep";
 
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { prefersReducedMotion } from "@/lib/theme/motion";
 
 import { SCRIM_OUT_MS } from "./signinMotion";
-import { viewOf, type SignInView } from "./signinUrl";
+import { viewOf, withView, type SignInView } from "./signinUrl";
 
 const SignInDialog = lazy(() => import("./SignInDialog"));
 const HalftoneLayer = lazy(() => import("./HalftoneLayer"));
 
 export function SignInDialogHost() {
-  const { search } = useLocation();
+  const { pathname, search } = useLocation();
+  const navigate = useNavigate();
   const view = viewOf(search);
   const phone = useIsPhone();
   /** The view last shown, kept while the dialog closes. */
@@ -46,6 +53,24 @@ export function SignInDialogHost() {
     const timer = window.setTimeout(() => setDialogDone(true), SCRIM_OUT_MS);
     return () => window.clearTimeout(timer);
   }, [closing]);
+
+  // Part A: with no dialog showing, a session that owes a code opens the code view.
+  useEffect(() => {
+    if (view) return;
+    let live = true;
+    const check = () =>
+      void pendingCodeFactor().then((factorId) => {
+        if (live && factorId) navigate(`${pathname}${withView(search, "code")}`);
+      });
+    check();
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "INITIAL_SESSION") check();
+    });
+    return () => {
+      live = false;
+      data.subscription.unsubscribe();
+    };
+  }, [view, pathname, search, navigate]);
 
   const layer = !phone;
   useEffect(() => {

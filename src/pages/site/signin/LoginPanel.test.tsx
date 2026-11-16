@@ -26,6 +26,12 @@ const resendSignupEmail = vi.fn();
 vi.mock("@/lib/auth/emailLink", () => ({ resendSignupEmail: (...args: unknown[]) => resendSignupEmail(...args) }));
 vi.mock("@/lib/auth/postAuthRoute", () => ({ resolvePostAuthRoute: (...args: unknown[]) => resolvePostAuthRoute(...args) }));
 vi.mock("@/lib/auth/oauth", () => ({ startOAuthSignIn: (...args: unknown[]) => startOAuthSignIn(...args) }));
+const pendingCodeFactor = vi.fn();
+const abandonCodeStep = vi.fn();
+vi.mock("@/lib/auth/codeStep", () => ({
+  pendingCodeFactor: () => pendingCodeFactor(),
+  abandonCodeStep: () => abandonCodeStep(),
+}));
 
 import { renderDialog, setViewport } from "./signinTest";
 
@@ -38,6 +44,10 @@ beforeEach(() => {
   resendSignupEmail.mockReset().mockResolvedValue({ sent: true });
   resolvePostAuthRoute.mockReset();
   startOAuthSignIn.mockReset();
+  pendingCodeFactor.mockReset();
+  pendingCodeFactor.mockResolvedValue(null);
+  abandonCodeStep.mockReset();
+  abandonCodeStep.mockResolvedValue(undefined);
   resolvePostAuthRoute.mockResolvedValue("/");
 });
 
@@ -344,6 +354,42 @@ describe("a visitor who is already signed in", () => {
     auth.isLoggedIn = true;
     const where = open("/login?redirect=%2Fgallery");
     await waitFor(() => expect(where.at()).toBe("/gallery"));
+  });
+});
+
+describe("Part A: the code step", () => {
+  it("G2: after a correct password, a member with an authenticator is shown Enter your code, not sent on", async () => {
+    signIn.mockResolvedValue({ outcome: "signed-in", userId: "u-1" });
+    pendingCodeFactor.mockResolvedValue("f1");
+    const where = open("/login?redirect=%2Fgallery");
+    fill();
+    submit();
+    await waitFor(() => expect(where.at()).toBe("/?redirect=%2Fgallery&signin=code"));
+    expect(resolvePostAuthRoute).not.toHaveBeenCalled();
+    expect(abandonCodeStep).not.toHaveBeenCalled();
+  });
+
+  it("G6: a member with no authenticator signs in exactly as before", async () => {
+    signIn.mockResolvedValue({ outcome: "signed-in", userId: "u-1" });
+    resolvePostAuthRoute.mockResolvedValue("/onboarding");
+    const where = open();
+    fill();
+    submit();
+    await waitFor(() => expect(where.at()).toBe("/onboarding"));
+    expect(where.at()).not.toContain("signin=code");
+  });
+
+  it("arriving with a session that still owes a code (Back to sign in) signs it out here, and stays", async () => {
+    auth.isLoggedIn = true;
+    pendingCodeFactor.mockResolvedValue("f1");
+    const where = open("/login?redirect=%2Fgallery");
+    await waitFor(() => expect(abandonCodeStep).toHaveBeenCalledTimes(1));
+    expect(where.at()).toContain("signin=login");
+  });
+
+  it("G7: shows why the attempt ended when the code view sends the member back", () => {
+    renderDialog("login", "", { signinNotice: "Too many wrong codes. Sign in again." });
+    expect(screen.getByText("Too many wrong codes. Sign in again.")).toBeTruthy();
   });
 });
 
