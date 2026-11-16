@@ -395,3 +395,50 @@ describe("Library", () => {
     for (const name of ["Rename", "Make public", "Make private", "Delete"]) expect(screen.queryByRole("button", { name })).toBeNull();
   });
 });
+
+describe("G33 · someone's library and a shared collection: not found only when the server says the row is absent", () => {
+  const timedOut = () => Object.assign(new Error("getLibraryOwner failed"), { cause: { name: "ReadTimeoutError" } });
+
+  it("an absent owner is not found: Nothing at this address, the profile line, and Browse builds", async () => {
+    getLibraryOwner.mockResolvedValue(null);
+    renderAt("/library/nobody");
+    expect(await screen.findByText("Nothing at this address.")).toBeInTheDocument();
+    expect(screen.getByText("This profile may have moved, or the link may be wrong.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Browse builds" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Library" })).toBeInTheDocument();
+    expect(screen.queryByText("Nobody here goes by that name.")).toBeNull();
+    expect(screen.queryByText("No public collections yet.")).toBeNull();
+  });
+
+  for (const [why, error] of [
+    ["a dropped connection", new TypeError("Failed to fetch")],
+    ["a server error", Object.assign(new Error("getLibraryOwner failed"), { status: 500, code: "XX000" })],
+    ["a timeout", timedOut()],
+  ] as const) {
+    it(`an owner read that fails (${why}) is a failed page, never not found or empty`, async () => {
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      getLibraryOwner.mockRejectedValue(error);
+      renderAt("/library/somebody");
+      expect(await screen.findByText("Couldn't load this page. Try again.")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+      expect(screen.queryByText("Nothing at this address.")).toBeNull();
+      expect(screen.queryByText("Nobody here goes by that name.")).toBeNull();
+      expect(screen.queryByText("No public collections yet.")).toBeNull();
+    });
+  }
+
+  it("a shared collection the server says is absent is not found, with the collection line", async () => {
+    getCollection.mockResolvedValue(null);
+    renderAt("/library?collection=col-gone");
+    expect(await screen.findByText("Nothing at this address.")).toBeInTheDocument();
+    expect(screen.getByText("This collection may be private, or the link may be wrong.")).toBeInTheDocument();
+  });
+
+  it("a shared collection whose read fails is failed, never not found", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    getCollection.mockRejectedValue(new TypeError("Failed to fetch"));
+    renderAt("/library?collection=col-x");
+    await waitFor(() => expect(screen.queryByText("Nothing at this address.")).toBeNull());
+    expect(await screen.findByText(/didn't load|Couldn't load/)).toBeInTheDocument();
+  });
+});
