@@ -1589,6 +1589,7 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/tutorialStore.ts",
   "src/pages/site/compose/tutorialSteps.ts",
   "src/pages/site/compose/tutorialScenes.tsx",
+  "src/pages/site/compose/tutorialTasks.tsx",
   "src/pages/site/compose/TutorialWindow.tsx",
 ];
 

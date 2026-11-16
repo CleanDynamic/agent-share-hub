@@ -177,8 +177,8 @@ describe("one animator", () => {
   const dir = join(process.cwd(), "src/pages/site/compose");
   const sources = readdirSync(dir).filter((name) => /\.(ts|tsx)$/.test(name) && !/\.test\./.test(name) && name !== "motionStub.ts");
   /** Outside the list: the map morph's flying copies and its lines (a layer in the body, and the Map), the phone's Details, and the
-      tutorial (a window over the page: its examples' loops, and its words coming in). */
-  const OUTSIDE = new Set(["mapMorph.tsx", "DetailsOverlay.tsx", "tutorialScenes.tsx", "TutorialWindow.tsx"]);
+      tutorial (a window over the page: its examples' loops, and the one helper every other move in it goes through). */
+  const OUTSIDE = new Set(["mapMorph.tsx", "DetailsOverlay.tsx", "tutorialScenes.tsx"]);
 
   it("only listMotion.ts calls element.animate in the build list", () => {
     const callers = sources.filter((name) => /\.animate\(/.test(readFileSync(join(dir, name), "utf8")));

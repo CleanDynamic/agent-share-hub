@@ -113,21 +113,21 @@ function Anim({ tl, poster = true, inline = false, style, children }: { tl: Fram
 }
 
 /** Where a piece stands on the stage. */
-const at = (left: number, top: number, width?: number, height?: number): CSSProperties => ({ position: "absolute", left, top, width, height, boxSizing: "border-box" });
+export const at = (left: number, top: number, width?: number, height?: number): CSSProperties => ({ position: "absolute", left, top, width, height, boxSizing: "border-box" });
 
-const words = (px: 11 | 12 | 13 | 14 | 16, weight: 400 | 500, color: string): CSSProperties => ({ ...text(px, weight, color), whiteSpace: "nowrap" });
+export const words = (px: 11 | 12 | 13 | 14 | 16, weight: 400 | 500, color: string): CSSProperties => ({ ...text(px, weight, color), whiteSpace: "nowrap" });
 
 /** A line of text that is not there to be read: a bar the length of the words. */
-function Bar({ left, top, width, strong = false }: { left: number; top: number; width: number; strong?: boolean }) {
+export function Bar({ left, top, width, strong = false }: { left: number; top: number; width: number; strong?: boolean }) {
   return <span style={{ ...at(left, top, width, 6), borderRadius: 2, background: strong ? t.label : t.line }} />;
 }
 
-const MODULE: CSSProperties = { background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: 8, boxShadow: t.moduleShadow };
-const WINDOW: CSSProperties = { background: t.window, border: `1px solid ${t.windowBorder}`, borderRadius: 8, boxShadow: t.windowShadow };
-const ROW: CSSProperties = { display: "flex", alignItems: "center", gap: 8 };
+export const MODULE: CSSProperties = { background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: 8, boxShadow: t.moduleShadow };
+export const WINDOW: CSSProperties = { background: t.window, border: `1px solid ${t.windowBorder}`, borderRadius: 8, boxShadow: t.windowShadow };
+export const ROW: CSSProperties = { display: "flex", alignItems: "center", gap: 8 };
 
 /** A step's number, in its box. `was` is the number it had before the example moved it. */
-function StepNumber({ now, was, at: when }: { now: number; was?: number; at?: number }) {
+export function StepNumber({ now, was, at: when }: { now: number; was?: number; at?: number }) {
   const box: CSSProperties = { position: "relative", width: 20, height: 20, flexShrink: 0, boxSizing: "border-box", borderRadius: 4, background: t.inset, border: `1px solid ${t.tileBorder}` };
   const digit: CSSProperties = { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", ...words(11, 500, t.text2), ...tnum };
   if (was === undefined || when === undefined) {
@@ -150,7 +150,7 @@ function StepNumber({ now, was, at: when }: { now: number; was?: number; at?: nu
 }
 
 /** One step tile: its number, its kind, and a bar for its words. */
-function StepTile({ number, kind, name, bar = 180 }: { number: ReactNode; kind: string; name?: string; bar?: number }) {
+export function StepTile({ number, kind, name, bar = 180 }: { number: ReactNode; kind: string; name?: string; bar?: number }) {
   return (
     <div style={{ ...MODULE, ...ROW, width: "100%", height: "100%", boxSizing: "border-box", padding: "0 12px" }}>
       {number}
@@ -160,7 +160,7 @@ function StepTile({ number, kind, name, bar = 180 }: { number: ReactNode; kind: 
   );
 }
 
-function SessionHead({ left, top }: { left: number; top: number }) {
+export function SessionHead({ left, top }: { left: number; top: number }) {
   return (
     <div style={{ ...at(left, top), ...ROW }}>
       <Glyph name="layers" size={16} color={t.text2} />
@@ -171,7 +171,7 @@ function SessionHead({ left, top }: { left: number; top: number }) {
 }
 
 /** A small button, as the title row and a window's footer draw them. */
-function MiniButton({ children, primary = false, quiet = false, style }: { children: ReactNode; primary?: boolean; quiet?: boolean; style?: CSSProperties }) {
+export function MiniButton({ children, primary = false, quiet = false, style }: { children: ReactNode; primary?: boolean; quiet?: boolean; style?: CSSProperties }) {
   return (
     <span
       style={{
@@ -208,13 +208,14 @@ function Pointer({ way, presses }: { way: Frame[]; presses: readonly number[] })
 
 /* ── step 1: the three columns ── */
 
-const COLUMNS = [
+export const COLUMNS = [
   { name: "Sources", says: "The sessions and files in this build", left: 20, width: 128, from: 0.06, to: 0.32 },
   { name: "Build", says: "Your post, then every step in order", left: 164, width: 280, from: 0.36, to: 0.62 },
   { name: "Details", says: "The fields of the step you select", left: 460, width: 112, from: 0.66, to: 0.92 },
 ] as const;
 
-function LayoutScene() {
+/** The page in miniature, standing still: the title row and the three columns. */
+export function LayoutBase() {
   return (
     <>
       <Bar left={20} top={18} width={112} strong />
@@ -250,6 +251,14 @@ function LayoutScene() {
       <Bar left={460} top={128} width={100} />
       <Bar left={460} top={140} width={80} />
 
+    </>
+  );
+}
+
+function LayoutScene() {
+  return (
+    <>
+      <LayoutBase />
       {COLUMNS.map((column) => (
         <Anim key={column.name} poster={false} tl={between(column.from, column.to, STILL)} style={{ ...at(column.left - 8, 54, column.width + 16, 142), borderRadius: 8, border: `1px solid ${t.selectedEdge}` }} />
       ))}
@@ -265,7 +274,7 @@ function LayoutScene() {
 
 /* ── step 2: the post ── */
 
-function ToolGlyph({ left, name }: { left: number; name: GlyphName }) {
+export function ToolGlyph({ left, name }: { left: number; name: GlyphName }) {
   return (
     <span style={{ ...at(left, 180), display: "flex" }}>
       <Glyph name={name} size={16} color={t.text2} />
@@ -336,7 +345,7 @@ function PostScene() {
 
 /* ── step 3: the sessions ── */
 
-const FIRST_ROWS = [
+export const FIRST_ROWS = [
   { name: "Import from connected chats", detail: "3 available" },
   { name: "New empty session", detail: "" },
 ] as const;
@@ -398,7 +407,7 @@ function SessionsScene() {
 
 /* ── step 4: the steps ── */
 
-const KINDS = [
+export const KINDS = [
   { name: "Prompt", says: "Message sent to a model" },
   { name: "Agent", says: "Single agent or a team" },
   { name: "Tool", says: "External app the model used" },
@@ -406,7 +415,7 @@ const KINDS = [
 ] as const;
 
 /** How far a tile travels to change places with its neighbour: its height and the gap. */
-const SWAP = 44;
+export const SWAP = 44;
 
 function StepsScene() {
   return (
@@ -464,7 +473,7 @@ function StepsScene() {
 
 /* ── step 5: the checklist ── */
 
-const REQUIRED = ["Cover picture or video", "Title", "Description", "Prompt"] as const;
+export const REQUIRED = ["Cover picture or video", "Title", "Description", "Prompt"] as const;
 
 function PublishScene() {
   return (
@@ -552,7 +561,7 @@ export function playScene(root: HTMLElement): Animation[] {
 }
 
 /** The stage's width where it stands, so the scene can be scaled to it as one piece. */
-function useFit(): [RefObject<HTMLDivElement | null>, number] {
+export function useFit(): [RefObject<HTMLDivElement | null>, number] {
   const ref = useRef<HTMLDivElement | null>(null);
   const [scale, setScale] = useState(1);
   useLayoutEffect(() => {
@@ -571,10 +580,16 @@ function useFit(): [RefObject<HTMLDivElement | null>, number] {
   return [ref, scale];
 }
 
+/** One short move on one piece (something arriving, a wrong press shaking the stage). Nothing under reduced motion. */
+export function play(el: HTMLElement | null, frames: Keyframe[], options: KeyframeAnimationOptions): Animation | null {
+  if (!el || prefersReducedMotion() || typeof el.animate !== "function") return null;
+  return el.animate(frames, { easing: STANDARD, ...options });
+}
+
 /** Whether an example will move at all here: not under reduced motion, and not where the browser cannot animate. */
 export const sceneMoves = (): boolean => !prefersReducedMotion() && typeof Element !== "undefined" && typeof Element.prototype.animate === "function";
 
-const stageStyle = (scale: number): CSSProperties => ({
+export const stageStyle = (scale: number): CSSProperties => ({
   position: "relative",
   display: "block",
   width: "100%",

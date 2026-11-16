@@ -1,4 +1,4 @@
-// The build editor's tutorial: when it is offered, how it is stepped through, and that it can be left at any step.
+// The build editor's tutorial: when it is offered, how its challenges are played, and that it can be left at any step.
 
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -8,7 +8,7 @@ vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => auth }));
 
 import { TutorialWindow } from "./TutorialWindow";
 import { SCENE_LOOP_MS, between, enter, leave, path, playScene, press, shift } from "./tutorialScenes";
-import { TUTORIAL_COPY, TUTORIAL_STEPS, clampStep } from "./tutorialSteps";
+import { IDLE_HINT_MS, TUTORIAL_COPY, TUTORIAL_STEPS, clampStep, runTime } from "./tutorialSteps";
 import {
   TUTORIAL_SETTLE_MS,
   closeTutorial,
@@ -179,6 +179,28 @@ describe("the examples' timelines", () => {
   });
 });
 
+describe("the challenges, in words", () => {
+  it("gives every step one to three goals, each with what it asks and a hint", () => {
+    for (const step of TUTORIAL_STEPS) {
+      expect(step.task.goals.length).toBeGreaterThanOrEqual(1);
+      expect(step.task.goals.length).toBeLessThanOrEqual(3);
+      expect(new Set(step.task.goals.map((goal) => goal.id)).size).toBe(step.task.goals.length);
+      for (const goal of step.task.goals) {
+        expect(goal.ask.length).toBeGreaterThan(0);
+        expect(goal.hint.length).toBeGreaterThan(0);
+      }
+      expect(step.task.done.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("writes a run's time as minutes and seconds", () => {
+    expect(runTime(0)).toBe("0:00");
+    expect(runTime(9_400)).toBe("0:09");
+    expect(runTime(75_000)).toBe("1:15");
+    expect(runTime(-5)).toBe("0:00");
+  });
+});
+
 describe("the window", () => {
   function Host() {
     return <TutorialWindow open={useTutorialOpen()} />;
@@ -188,30 +210,204 @@ describe("the window", () => {
     act(() => openTutorial());
   };
   const step = () => screen.getByTestId("tutorial-window").getAttribute("data-step");
-  const next = () => fireEvent.click(screen.getByTestId("tutorial-next"));
+  const main = () => screen.getByTestId("tutorial-next");
+  const next = () => fireEvent.click(main());
+  const press = (id: string) => fireEvent.click(screen.getByTestId("tutorial-task").querySelector(`[data-target="${id}"]`) as HTMLElement);
+  const ask = () => screen.getByTestId("tutorial-ask").textContent;
+  const progress = () => screen.getByTestId("tutorial-progress").textContent;
+  const stage = () => screen.getByTestId("tutorial-task");
+  /** Clear the step showing: press each goal's target in order. */
+  const clear = (index: number) => {
+    for (const goal of TUTORIAL_STEPS[index].task.goals) press(goal.id);
+  };
 
-  it("opens on step 1, with its example beside the words", () => {
+  it("opens on step 1, asking for its first goal, with nothing done", () => {
     open();
     expect(screen.getByRole("dialog", { name: TUTORIAL_STEPS[0].title })).toBeTruthy();
     expect(screen.getByTestId("tutorial-count").textContent).toBe("Tutorial · Step 1 of 5");
-    expect(screen.getByTestId("tutorial-example").getAttribute("data-scene")).toBe("layout");
+    expect(stage().getAttribute("data-scene")).toBe("layout");
+    expect(ask()).toBe(TUTORIAL_STEPS[0].task.goals[0].ask);
+    expect(progress()).toBe("0 of 5 done");
+    expect(main().textContent).toBe(TUTORIAL_COPY.skipStep);
+    expect(document.activeElement).toBe(main());
     expect(screen.queryByTestId("tutorial-back")).toBeNull();
   });
 
-  it("steps forward and back through all five, and ends on Start building", () => {
+  it("clears a goal on the right press and asks for the next", () => {
+    open();
+    press("sources");
+    expect(stage().getAttribute("data-done")).toBe("1");
+    expect(ask()).toBe(TUTORIAL_STEPS[0].task.goals[1].ask);
+    expect(progress()).toBe("0 of 5 done");
+  });
+
+  it("answers a wrong press with a hint and a pointer, and loses nothing", () => {
+    open();
+    press("sources");
+    press("details");
+    expect(stage().getAttribute("data-done")).toBe("1");
+    expect(screen.getByTestId("tutorial-hint").textContent).toBe(TUTORIAL_STEPS[0].task.goals[1].hint);
+    expect(screen.getByTestId("tutorial-hint-ring")).toBeTruthy();
+    press("build");
+    expect(screen.queryByTestId("tutorial-hint")).toBeNull();
+    expect(screen.queryByTestId("tutorial-hint-ring")).toBeNull();
+  });
+
+  it("says why, where a wrong press teaches something", () => {
+    open();
+    for (let index = 0; index < 4; index++) next();
+    press("publish");
+    expect(screen.getByTestId("tutorial-hint").textContent).toBe(TUTORIAL_STEPS[4].task.wrong?.publish);
+    expect(stage().getAttribute("data-done")).toBe("0");
+  });
+
+  it("points at the target by itself after a long pause", () => {
+    vi.useFakeTimers();
+    open();
+    expect(screen.queryByTestId("tutorial-hint-ring")).toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(IDLE_HINT_MS);
+    });
+    expect(screen.getByTestId("tutorial-hint-ring")).toBeTruthy();
+    expect(screen.queryByTestId("tutorial-hint")).toBeNull();
+  });
+
+  it("clears the step on its last goal: the bar fills, the count goes up and the main button becomes Next", () => {
+    open();
+    clear(0);
+    expect(stage().getAttribute("data-cleared")).toBe("true");
+    expect(ask()).toBe(TUTORIAL_STEPS[0].task.done);
+    expect(progress()).toBe("1 of 5 done");
+    expect(screen.getByTestId("tutorial-bars").querySelectorAll('[data-cleared="true"]')).toHaveLength(1);
+    expect(main().textContent).toBe(TUTORIAL_COPY.next);
+    expect(main().getAttribute("data-variant")).toBe("primary");
+    expect(document.activeElement).toBe(main());
+  });
+
+  it("can be played through, every step in order, to a clean run", () => {
     open();
     for (const [index, entry] of TUTORIAL_STEPS.entries()) {
       expect(step()).toBe(String(index + 1));
       expect(screen.getByTestId("tutorial-title").textContent).toBe(entry.title);
-      expect(screen.getByTestId("tutorial-example").getAttribute("data-scene")).toBe(entry.scene);
+      expect(stage().getAttribute("data-scene")).toBe(entry.scene);
       for (const point of entry.points) expect(within(screen.getByTestId("tutorial-points")).getByText(point.lead)).toBeTruthy();
+      clear(index);
+      expect(progress()).toBe(`${index + 1} of 5 done`);
+      if (index === TUTORIAL_STEPS.length - 1) expect(main().textContent).toBe(TUTORIAL_COPY.finish);
+      next();
+    }
+    expect(step()).toBe("complete");
+    expect(screen.getByTestId("tutorial-title").textContent).toBe("All five challenges done");
+    expect(screen.getByTestId("tutorial-stat-challenges").textContent).toBe("5 of 5");
+    expect(screen.getByTestId("tutorial-stat-hints").textContent).toBe(TUTORIAL_COPY.complete.none);
+    expect(screen.getByTestId("tutorial-stat-time").textContent).toMatch(/^\d+:\d\d$/);
+    expect(screen.getByTestId("tutorial-clean")).toBeTruthy();
+    expect(screen.getByText(TUTORIAL_COPY.reopen)).toBeTruthy();
+    expect(main().textContent).toBe(TUTORIAL_COPY.done);
+    next();
+    expect(screen.queryByTestId("tutorial-window")).toBeNull();
+    expect(hasSeenTutorial(MAKER)).toBe(true);
+  });
+
+  it("counts hints, and a run with any is not a clean one", () => {
+    open();
+    press("build");
+    for (const index of TUTORIAL_STEPS.keys()) {
+      clear(index);
+      next();
+    }
+    expect(screen.getByTestId("tutorial-stat-hints").textContent).toBe("1");
+    expect(screen.queryByTestId("tutorial-clean")).toBeNull();
+  });
+
+  it("never holds anyone behind a challenge: a step can be skipped, and the summary says how many were done", () => {
+    open();
+    clear(0);
+    next();
+    for (let index = 1; index < 5; index++) {
+      expect(main().textContent).toBe(TUTORIAL_COPY.skipStep);
+      next();
+    }
+    expect(step()).toBe("complete");
+    expect(screen.getByTestId("tutorial-title").textContent).toBe("1 of 5 challenges done");
+    expect(screen.queryByTestId("tutorial-clean")).toBeNull();
+  });
+
+  it("closes from the last step with nothing done, with no summary to show", () => {
+    open();
+    for (let index = 0; index < 5; index++) next();
+    expect(screen.queryByTestId("tutorial-window")).toBeNull();
+    expect(hasSeenTutorial(MAKER)).toBe(true);
+  });
+
+  it("Show me plays the step as an example, Try it comes back, and watching counts as a hint", () => {
+    open();
+    fireEvent.click(screen.getByTestId("tutorial-watch"));
+    expect(screen.queryByTestId("tutorial-task")).toBeNull();
+    expect(screen.getByTestId("tutorial-example").getAttribute("data-scene")).toBe("layout");
+    expect(ask()).toBe(TUTORIAL_COPY.watching);
+    fireEvent.click(screen.getByTestId("tutorial-watch"));
+    expect(stage().getAttribute("data-done")).toBe("0");
+    for (const index of TUTORIAL_STEPS.keys()) {
+      clear(index);
+      next();
+    }
+    expect(screen.getByTestId("tutorial-stat-hints").textContent).toBe("1");
+  });
+
+  it("keeps a cleared step cleared when it is come back to, and Again plays it once more", () => {
+    open();
+    clear(0);
+    next();
+    fireEvent.click(screen.getByTestId("tutorial-back"));
+    expect(stage().getAttribute("data-cleared")).toBe("true");
+    expect(main().textContent).toBe(TUTORIAL_COPY.next);
+    fireEvent.click(screen.getByTestId("tutorial-again"));
+    expect(stage().getAttribute("data-done")).toBe("0");
+    expect(progress()).toBe("1 of 5 done");
+  });
+
+  it("the Tool step can be moved by its button as well as by dragging", () => {
+    open();
+    for (let index = 0; index < 3; index++) next();
+    press("add");
+    press("file");
+    expect(screen.getByTestId("tutorial-hint").textContent).toBe(TUTORIAL_STEPS[3].task.wrong?.file);
+    press("tool");
+    expect(screen.getByTestId("tutorial-drag")).toBeTruthy();
+    press("move");
+    expect(stage().getAttribute("data-cleared")).toBe("true");
+  });
+
+  it("the Tool step can be dragged above step 2, and a short pull puts it back", () => {
+    open();
+    for (let index = 0; index < 3; index++) next();
+    press("add");
+    press("tool");
+    const tile = screen.getByTestId("tutorial-drag");
+    // jsdom has no PointerEvent, so a pointer event made by the library carries no place: a mouse event of the same name does.
+    const pointer = (type: string, clientY: number) => act(() => void tile.dispatchEvent(new MouseEvent(type, { bubbles: true, clientY })));
+    pointer("pointerdown", 200);
+    pointer("pointermove", 192);
+    pointer("pointerup", 192);
+    expect(stage().getAttribute("data-done")).toBe("2");
+    pointer("pointerdown", 200);
+    pointer("pointermove", 165);
+    pointer("pointerup", 165);
+    expect(stage().getAttribute("data-cleared")).toBe("true");
+  });
+
+  it("every target is a named button", () => {
+    open();
+    for (const [index, entry] of TUTORIAL_STEPS.entries()) {
+      for (const goal of entry.task.goals) {
+        const target = stage().querySelector(`[data-target="${goal.id}"]`);
+        expect(target?.tagName).toBe("BUTTON");
+        expect(target?.getAttribute("aria-label")).toBeTruthy();
+        press(goal.id);
+      }
       if (index < TUTORIAL_STEPS.length - 1) next();
     }
-    expect(screen.getByTestId("tutorial-next").textContent).toBe(TUTORIAL_COPY.done);
-    expect(screen.queryByTestId("tutorial-skip")).toBeNull();
-    expect(screen.getByText(TUTORIAL_COPY.again)).toBeTruthy();
-    fireEvent.click(screen.getByTestId("tutorial-back"));
-    expect(step()).toBe("4");
   });
 
   it("steps with the Left and Right keys", () => {
@@ -227,7 +423,7 @@ describe("the window", () => {
     expect(step()).toBe("1");
   });
 
-  it.each([0, 1, 2, 3])("can be skipped at step %i, and is then seen", (steps) => {
+  it.each([0, 1, 2, 3, 4])("can be skipped after %i steps, and is then seen", (steps) => {
     open();
     for (let index = 0; index < steps; index++) next();
     fireEvent.click(screen.getByTestId("tutorial-skip"));
@@ -236,7 +432,7 @@ describe("the window", () => {
     expect(hasSeenTutorial(MAKER)).toBe(true);
   });
 
-  it.each([0, 2, 4])("can be closed from the corner at step %i", (steps) => {
+  it.each([0, 2, 4])("can be closed from the corner after %i steps", (steps) => {
     open();
     for (let index = 0; index < steps; index++) next();
     fireEvent.click(screen.getByRole("button", { name: TUTORIAL_COPY.close }));
@@ -244,30 +440,23 @@ describe("the window", () => {
     expect(hasSeenTutorial(MAKER)).toBe(true);
   });
 
-  it("closes on Escape, part of the way through", () => {
+  it("closes on Escape, in the middle of a challenge", () => {
     open();
     next();
-    next();
+    press("picture");
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     expect(screen.queryByTestId("tutorial-window")).toBeNull();
     expect(hasSeenTutorial(MAKER)).toBe(true);
   });
 
-  it("closes from the last step's button", () => {
+  it("starts at step 1 again, with nothing done, each time it is opened", () => {
     open();
-    for (let index = 0; index < 4; index++) next();
-    next();
-    expect(screen.queryByTestId("tutorial-window")).toBeNull();
-    expect(hasSeenTutorial(MAKER)).toBe(true);
-  });
-
-  it("starts at step 1 again each time it is opened", () => {
-    open();
-    next();
+    clear(0);
     next();
     fireEvent.click(screen.getByTestId("tutorial-skip"));
     act(() => openTutorial());
     expect(step()).toBe("1");
+    expect(progress()).toBe("0 of 5 done");
   });
 
   it("closes when the page under it goes away", () => {
