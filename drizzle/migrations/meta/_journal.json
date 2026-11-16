@@ -449,6 +449,13 @@
       "when": 1794829888940,
       "tag": "0063_sec00_profiles_lock_privileged",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1794831359268,
+      "tag": "0064_c16_my_sessions",
+      "breakpoints": true
     }
   ]
 }

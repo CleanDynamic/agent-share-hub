@@ -7192,6 +7192,10 @@ export type Database = {
         Returns: undefined
       }
       respec_track: { Args: { _track: string }; Returns: string }
+      revoke_user_session: {
+        Args: { _session_id: string; _user_id: string }
+        Returns: boolean
+      }
       save_profile: { Args: { p: Json }; Returns: undefined }
       saved_items_used_in: {
         Args: never
@@ -7215,6 +7219,7 @@ export type Database = {
           title: string
         }[]
       }
+      sessions_of_user: { Args: { _user_id: string }; Returns: Json[] }
       set_build_post_media: {
         Args: { p_build_id: string; p_media_ids: string[] }
         Returns: {
