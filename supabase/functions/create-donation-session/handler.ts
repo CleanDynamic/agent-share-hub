@@ -5,6 +5,7 @@
 import { z, readBody, returnUrl } from "../_shared/body.ts";
 import { fail, json, preflight } from "../_shared/cors.ts";
 import { MIN_PENCE, PWYW_CEILING_PENCE } from "../_shared/payments.ts";
+import type { RateCheck } from "../_shared/rateLimit.ts";
 import { SITE_NAME } from "../_shared/site.ts";
 
 const Body = z.object({
@@ -20,11 +21,14 @@ export interface DonationDeps {
   createSession(params: Record<string, unknown>): Promise<{ url: string | null }>;
 }
 
-export function createDonationHandler(deps: DonationDeps) {
+export function createDonationHandler(deps: DonationDeps, limit: RateCheck = async () => null) {
   return async (req: Request): Promise<Response> => {
     const early = preflight(req);
     if (early) return early;
     if (req.method !== "POST") return fail(req, 405, "Method not allowed");
+    // G10: anyone may start a tip, so each address is limited before anything is read or asked of Stripe.
+    const limited = await limit(req);
+    if (limited) return limited;
 
     try {
       const body = await readBody(req, Body);

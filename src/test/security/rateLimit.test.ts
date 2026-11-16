@@ -56,3 +56,122 @@ describe("limitByIp", () => {
     error.mockRestore();
   });
 });
+
+// ── Each function, wired (one block per function, added with its commit) ──
+
+import { readFileSync } from "node:fs";
+import { RATE_RULES } from "../../../supabase/functions/_shared/rateLimit.ts";
+import { createPwywHandler } from "../../../supabase/functions/create-pwyw-checkout-session/handler.ts";
+import type { PaymentDeps } from "../../../supabase/functions/_shared/payments.ts";
+
+const ok = new Request("https://fn.test/x", {
+  method: "POST",
+  headers: { origin: "https://openbuilds.ai", "content-type": "application/json" },
+  body: JSON.stringify({}),
+});
+const over = async (req: Request) => {
+  const res = new Response(JSON.stringify({ error: "Too many requests. Try again later." }), { status: 429 });
+  void req;
+  return res;
+};
+function paymentDeps() {
+  const createSession = vi.fn(async () => ({ url: "https://checkout.stripe.test/s" }));
+  const findItem = vi.fn(async () => null);
+  const d = { getUserId: async () => "u-1", findItem, createSession, findSplits: async () => [], findStripeAccounts: async () => new Map() } as unknown as PaymentDeps;
+  return { d, createSession, findItem };
+}
+const source = (fn: string) => readFileSync(`supabase/functions/${fn}/index.ts`, "utf8");
+
+describe("G10: create-pwyw-checkout-session is limited per address", () => {
+  it("allows 10 per 10 minutes", () => {
+    expect(RATE_RULES["create-pwyw-checkout-session"]).toEqual({ limit: 10, windowSeconds: 600 });
+  });
+
+  it("answers over the limit before it reads the body, the database or Stripe", async () => {
+    const { d, createSession, findItem } = paymentDeps();
+    const res = await createPwywHandler(d, over)(ok);
+    expect(res.status).toBe(429);
+    expect(findItem).not.toHaveBeenCalled();
+    expect(createSession).not.toHaveBeenCalled();
+  });
+
+  it("is wired to the database store in the deployed function", () => {
+    expect(source("create-pwyw-checkout-session")).toMatch(/limitByIp\(req, "create-pwyw-checkout-session", RATE_RULES\["create-pwyw-checkout-session"\], store\)/);
+  });
+});
+
+import { createCheckoutHandler } from "../../../supabase/functions/create-checkout-session/handler.ts";
+
+describe("G10: create-checkout-session is limited per address", () => {
+  it("allows 10 per 10 minutes", () => {
+    expect(RATE_RULES["create-checkout-session"]).toEqual({ limit: 10, windowSeconds: 600 });
+  });
+
+  it("answers over the limit before it reads the body, the caller, the database or Stripe", async () => {
+    const { d, createSession, findItem } = paymentDeps();
+    const getUserId = vi.spyOn(d, "getUserId");
+    const res = await createCheckoutHandler(d, over)(ok);
+    expect(res.status).toBe(429);
+    expect(getUserId).not.toHaveBeenCalled();
+    expect(findItem).not.toHaveBeenCalled();
+    expect(createSession).not.toHaveBeenCalled();
+  });
+
+  it("is wired to the database store in the deployed function", () => {
+    expect(source("create-checkout-session")).toMatch(/limitByIp\(req, "create-checkout-session", RATE_RULES\["create-checkout-session"\], store\)/);
+  });
+});
+
+import { createDonationHandler } from "../../../supabase/functions/create-donation-session/handler.ts";
+
+describe("G10: create-donation-session is limited per address", () => {
+  it("allows 10 per 10 minutes", () => {
+    expect(RATE_RULES["create-donation-session"]).toEqual({ limit: 10, windowSeconds: 600 });
+  });
+
+  it("answers over the limit before it reads the body, the database or Stripe", async () => {
+    const findCreatorName = vi.fn(async () => "Ada");
+    const createSession = vi.fn(async () => ({ url: "https://checkout.stripe.test/s" }));
+    const res = await createDonationHandler({ findCreatorName, createSession }, over)(ok);
+    expect(res.status).toBe(429);
+    expect(findCreatorName).not.toHaveBeenCalled();
+    expect(createSession).not.toHaveBeenCalled();
+  });
+
+  it("is wired to the database store in the deployed function", () => {
+    expect(source("create-donation-session")).toMatch(/limitByIp\(req, "create-donation-session", RATE_RULES\["create-donation-session"\], store\)/);
+  });
+});
+
+/** For a function whose handler is inline: the limit is checked, and answered, before the body is read. */
+function limitedBeforeBody(fn: string) {
+  const code = source(fn);
+  const call = code.indexOf(`limitByIp(req, "${fn}", RATE_RULES["${fn}"], store)`);
+  expect(call, "limitByIp call").toBeGreaterThan(-1);
+  expect(code.indexOf("readBody(req")).toBeGreaterThan(call);
+  expect(code).toMatch(/if \(limited\) return limited;/);
+  expect(code).toMatch(/const store = databaseRateStore\(\);/);
+}
+
+describe("G10: import-github-readme is limited per address", () => {
+  it("allows 20 an hour", () => {
+    expect(RATE_RULES["import-github-readme"]).toEqual({ limit: 20, windowSeconds: 3600 });
+  });
+
+  it("checks the limit before it reads the body or asks GitHub anything", () => {
+    limitedBeforeBody("import-github-readme");
+    expect(source("import-github-readme").indexOf("fetch(")).toBeGreaterThan(source("import-github-readme").indexOf("if (limited) return limited;"));
+  });
+});
+
+describe("G10: generate-ai-pdf is limited per address", () => {
+  it("allows 30 an hour", () => {
+    expect(RATE_RULES["generate-ai-pdf"]).toEqual({ limit: 30, windowSeconds: 3600 });
+  });
+
+  it("checks the limit before it reads the body, the caller or the database", () => {
+    limitedBeforeBody("generate-ai-pdf");
+    const code = source("generate-ai-pdf");
+    expect(code.indexOf("getCaller(req)")).toBeGreaterThan(code.indexOf("if (limited) return limited;"));
+  });
+});

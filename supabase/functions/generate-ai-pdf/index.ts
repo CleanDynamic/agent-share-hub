@@ -9,6 +9,8 @@ import { getCaller } from "../_shared/caller.ts";
 import { fail, json, preflight } from "../_shared/cors.ts";
 import { mayExport } from "./access.ts";
 import { freshReblogPdf, reblogPdfPath } from "./reblogCache.ts";
+import { limitByIp, RATE_RULES } from "../_shared/rateLimit.ts";
+import { databaseRateStore } from "../_shared/rateLimitStore.ts";
 import {
   PDFDocument,
   StandardFonts,
@@ -465,10 +467,15 @@ const Body = z
     if (body.kind === "reblog" && !body.reblogId) ctx.addIssue({ code: "custom", path: ["reblogId"], message: "Required" });
   });
 
+const store = databaseRateStore();
+
 Deno.serve(async (req) => {
   const early = preflight(req);
   if (early) return early;
   if (req.method !== "POST") return fail(req, 405, "Method not allowed");
+  // G10: anyone may ask for a public post's PDF, and making one writes to storage, so each address is limited.
+  const limited = await limitByIp(req, "generate-ai-pdf", RATE_RULES["generate-ai-pdf"], store);
+  if (limited) return limited;
 
   try {
     const body = await readBody(req, Body);
