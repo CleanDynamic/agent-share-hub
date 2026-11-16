@@ -100,6 +100,9 @@ describe("isRead", () => {
     ["/storage/v1/object/build-media/a.png", "POST", "binary", false],
     ["/storage/v1/object/build-media/a.png", "GET", undefined, false],
     ["/auth/v1/user", "GET", undefined, true],
+    ["/auth/v1/user/oauth/grants", "GET", undefined, true],
+    ["/auth/v1/user/oauth/grants", "DELETE", undefined, false],
+    ["/auth/v1/user", "PUT", "{}", false],
     ["/auth/v1/token?grant_type=refresh_token", "POST", "{}", false],
     ["/auth/v1/logout?scope=local", "POST", undefined, false],
   ];

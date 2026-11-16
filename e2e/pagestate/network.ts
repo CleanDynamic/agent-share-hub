@@ -106,6 +106,7 @@ function answerEmpty(route: Route): Promise<unknown> {
 
   if (p.startsWith("/auth/v1/")) {
     if (p.endsWith("/user")) return json(route, 200, USER);
+    if (p.endsWith("/user/oauth/grants")) return json(route, 200, []);
     if (p.endsWith("/token")) return json(route, 200, session());
     if (p.endsWith("/logout")) return json(route, 204, undefined);
     return json(route, 200, {});

@@ -92,7 +92,8 @@ export function isRead(url: string, method: string, body?: unknown): boolean {
     // Signing and listing are reads. Uploads are not, and nor is a download: a file's size is the maker's, not ours.
     return verb === "POST" && /^\/storage\/v1\/object\/(sign|list)\//.test(path);
   }
-  if (path.startsWith("/auth/v1/")) return verb === "GET" && path === "/auth/v1/user";
+  // The member and what hangs off them (the connected apps' grants): reads. A token refresh or a sign-out is not.
+  if (path.startsWith("/auth/v1/")) return verb === "GET" && (path === "/auth/v1/user" || path.startsWith("/auth/v1/user/"));
   return false;
 }
 
