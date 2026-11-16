@@ -121,3 +121,24 @@ describe("G10: create-checkout-session is limited per address", () => {
     expect(source("create-checkout-session")).toMatch(/limitByIp\(req, "create-checkout-session", RATE_RULES\["create-checkout-session"\], store\)/);
   });
 });
+
+import { createDonationHandler } from "../../../supabase/functions/create-donation-session/handler.ts";
+
+describe("G10: create-donation-session is limited per address", () => {
+  it("allows 10 per 10 minutes", () => {
+    expect(RATE_RULES["create-donation-session"]).toEqual({ limit: 10, windowSeconds: 600 });
+  });
+
+  it("answers over the limit before it reads the body, the database or Stripe", async () => {
+    const findCreatorName = vi.fn(async () => "Ada");
+    const createSession = vi.fn(async () => ({ url: "https://checkout.stripe.test/s" }));
+    const res = await createDonationHandler({ findCreatorName, createSession }, over)(ok);
+    expect(res.status).toBe(429);
+    expect(findCreatorName).not.toHaveBeenCalled();
+    expect(createSession).not.toHaveBeenCalled();
+  });
+
+  it("is wired to the database store in the deployed function", () => {
+    expect(source("create-donation-session")).toMatch(/limitByIp\(req, "create-donation-session", RATE_RULES\["create-donation-session"\], store\)/);
+  });
+});

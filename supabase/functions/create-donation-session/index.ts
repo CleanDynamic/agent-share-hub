@@ -1,5 +1,7 @@
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { limitByIp, RATE_RULES } from "../_shared/rateLimit.ts";
+import { databaseRateStore } from "../_shared/rateLimitStore.ts";
 import { createDonationHandler } from "./handler.ts";
 
 // Both clients are built from environment values only.
@@ -7,6 +9,7 @@ import { createDonationHandler } from "./handler.ts";
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
 const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
 const stripe = stripeKey ? new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" }) : null;
+const store = databaseRateStore();
 
 Deno.serve(
   createDonationHandler({
@@ -20,5 +23,5 @@ Deno.serve(
       const session = await stripe.checkout.sessions.create(params as never);
       return { url: session.url };
     },
-  }),
+  }, (req) => limitByIp(req, "create-donation-session", RATE_RULES["create-donation-session"], store)),
 );
