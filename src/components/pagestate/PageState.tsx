@@ -7,7 +7,7 @@
 // THE BOX STAYS (G12). The mark around the state is `display: contents`, so the region's own box (the column, the
 // panel) is what the skeleton and the state are laid out in: nothing below moves when one replaces the other.
 
-import { useEffect, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import { EmptyState, type EmptyStateAction } from "@/components/brand/EmptyState";
 import { ErrorState } from "@/components/brand/ErrorState";
@@ -50,12 +50,29 @@ const retryFailed = (reads: readonly ReadLike[]) => {
   for (const read of reads) if (read.status === "error" && read.data === undefined) void read.refetch();
 };
 
-function Mark({ state, region, children }: { state: Shown; region: string; children: ReactNode }) {
+function Mark({ state, region, children, markRef }: { state: Shown; region: string; children: ReactNode; markRef?: React.Ref<HTMLDivElement> }) {
   return (
-    <div data-page-state={state} data-region={region} style={{ display: "contents" }}>
+    <div ref={markRef} data-page-state={state} data-region={region} style={{ display: "contents" }}>
       {children}
     </div>
   );
+}
+
+/**
+ * G12: the height the skeleton took, measured while it is on screen (the mark is `display: contents`, so its children's boxes
+ * are what is measured), so the state that replaces it can keep that box and nothing below moves.
+ */
+function useSkeletonHeight(state: Shown): { markRef: React.RefObject<HTMLDivElement>; height: number | null } {
+  const markRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    if (state !== "loading" || !markRef.current) return;
+    const boxes = Array.from(markRef.current.children).map((child) => child.getBoundingClientRect()).filter((box) => box.height > 0);
+    if (boxes.length === 0) return;
+    const measured = Math.max(...boxes.map((box) => box.bottom)) - Math.min(...boxes.map((box) => box.top));
+    if (measured > 0 && measured !== height) setHeight(measured);
+  });
+  return { markRef, height };
 }
 
 export function PageState({ read, thing, region, skeleton, empty, notFound, log, frame, frameReady = true, style, children }: PageStateProps) {
@@ -65,6 +82,7 @@ export function PageState({ read, thing, region, skeleton, empty, notFound, log,
     isEmpty: empty?.when,
     isMissing: notFound ? (notFound.when ?? (() => false)) : undefined,
   });
+  const { markRef, height } = useSkeletonHeight(state);
 
   let body: ReactNode;
   switch (state) {
@@ -86,9 +104,13 @@ export function PageState({ read, thing, region, skeleton, empty, notFound, log,
       body = children();
       break;
   }
+  const drawn = frame && state !== "loading" && (frameReady || state !== "ready") ? frame(body) : body;
+  /* G12: failed, empty and not found keep the box the skeleton had (with the frame, when the skeleton stood in for it), so
+     nothing below them moves. */
+  const kept = height !== null && (state === "failed" || state === "empty" || state === "notfound") ? <div style={{ minHeight: height }}>{drawn}</div> : drawn;
   return (
-    <Mark state={state} region={region}>
-      {frame && state !== "loading" && (frameReady || state !== "ready") ? frame(body) : body}
+    <Mark state={state} region={region} markRef={markRef}>
+      {kept}
     </Mark>
   );
 }
