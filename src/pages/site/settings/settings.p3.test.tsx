@@ -131,7 +131,7 @@ describe("the password form", () => {
     fireEvent.change(screen.getByLabelText("Current password"), { target: { value: "old-password" } });
     fireEvent.change(screen.getByLabelText("New password"), { target: { value: "new-password-1" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(await screen.findByText("Password changed. Other devices stay signed in until you sign out everywhere.")).toBeTruthy();
+    expect(await screen.findByText("Password changed. This device stays signed in. Every other device is signed out within the hour.")).toBeTruthy();
     expect(onChangePassword).toHaveBeenCalledWith({ current: "old-password", next: "new-password-1" });
   });
 
@@ -215,13 +215,40 @@ describe("the calls", () => {
     expect(auth.updateUser).not.toHaveBeenCalled();
     auth.signInWithPassword.mockResolvedValueOnce({ error: null });
     auth.updateUser.mockResolvedValueOnce({ error: null });
+    auth.signOut.mockResolvedValueOnce({ error: null });
     await changePassword({ email: "ada@example.com", current: "good-one", next: "new-password-1", hasPassword: true });
     expect(auth.signInWithPassword).toHaveBeenLastCalledWith({ email: "ada@example.com", password: "good-one", options: { captchaToken: "tok-1" } });
     expect(auth.updateUser).toHaveBeenCalledWith({ password: "new-password-1" });
   });
 
+  it("G14: once the new password is set, signs out every other device and keeps this one", async () => {
+    auth.signInWithPassword.mockResolvedValueOnce({ error: null });
+    auth.updateUser.mockResolvedValueOnce({ error: null });
+    auth.signOut.mockResolvedValueOnce({ error: null });
+    await changePassword({ email: "ada@example.com", current: "good-one", next: "new-password-1", hasPassword: true });
+    expect(auth.signOut).toHaveBeenCalledWith({ scope: "others" });
+    expect(auth.signOut).not.toHaveBeenCalledWith({ scope: "global" });
+    expect(auth.updateUser.mock.invocationCallOrder[0]).toBeLessThan(auth.signOut.mock.invocationCallOrder[0]);
+  });
+
+  it("G14: signs nobody out when the new password is refused", async () => {
+    auth.signInWithPassword.mockResolvedValueOnce({ error: null });
+    auth.updateUser.mockResolvedValueOnce({ error: { message: "x", status: 422, code: "weak_password" } });
+    await expect(changePassword({ email: "ada@example.com", current: "good-one", next: "new-password-1", hasPassword: true })).rejects.toThrow();
+    expect(auth.signOut).not.toHaveBeenCalled();
+  });
+
+  it("G14: says so plainly when the password changed but the other devices could not be signed out", async () => {
+    auth.updateUser.mockResolvedValueOnce({ error: null });
+    auth.signOut.mockResolvedValueOnce({ error: { message: "x", status: 500 } });
+    await expect(changePassword({ email: "ada@example.com", current: null, next: "new-password-1", hasPassword: false })).rejects.toThrow(
+      "Your password changed, but other devices could not be signed out. Use Sign out everywhere.",
+    );
+  });
+
   it("sets a first password without a current one", async () => {
     auth.updateUser.mockResolvedValueOnce({ error: null });
+    auth.signOut.mockResolvedValueOnce({ error: null });
     await changePassword({ email: "ada@example.com", current: null, next: "new-password-1", hasPassword: false });
     expect(auth.signInWithPassword).not.toHaveBeenCalled();
     expect(auth.updateUser).toHaveBeenCalledWith({ password: "new-password-1" });

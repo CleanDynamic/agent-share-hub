@@ -32,7 +32,10 @@ export const PASSWORD_MIN = 8;
 
 export const COPY = {
   emailSent: "Check both inboxes. The change finishes when you confirm from the new address.",
-  passwordChanged: "Password changed. Other devices stay signed in until you sign out everywhere.",
+  // G14: true to what happens. Other devices lose their refresh token now; the access token they hold works until it
+  // expires, which is an hour by default.
+  passwordChanged: "Password changed. This device stays signed in. Every other device is signed out within the hour.",
+  othersNotSignedOut: "Your password changed, but other devices could not be signed out. Use Sign out everywhere.",
   signOutEverywhere: "Sign out on every device, including this one?",
   onlyMethod: "This is the only way you can sign in. Add another first.",
   linkingOff: "Linking another account isn't switched on yet.",
@@ -140,6 +143,7 @@ export async function changeEmail(next: string, current: string | null): Promise
 /**
  * Set a new password. With a password already, the current one is checked first by signing in with it (this is the
  * re-authentication Supabase does not do for `updateUser` on its own); a person with no password sets one without.
+ * G14: once the new password is set, every other device is signed out and this one is kept.
  */
 export async function changePassword(input: { email: string | null; current: string | null; next: string; hasPassword: boolean }): Promise<void> {
   const problem = passwordProblem(input.next, input.hasPassword ? input.current : null);
@@ -154,6 +158,8 @@ export async function changePassword(input: { email: string | null; current: str
   }
   const { error } = await supabase.auth.updateUser({ password: input.next });
   if (error) throw friendlyAuthError(error) ? new SettingsError(friendlyAuthError(error)!) : error;
+  const { error: othersError } = await supabase.auth.signOut({ scope: "others" });
+  if (othersError) throw new SettingsError(COPY.othersNotSignedOut);
 }
 
 /** Start linking a provider. The browser goes to the provider and comes back to this page. */
