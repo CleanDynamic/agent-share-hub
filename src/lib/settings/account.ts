@@ -130,13 +130,14 @@ export interface AccountSummary {
 }
 
 export async function loadAccount(): Promise<AccountSummary> {
-  const [{ data: userData, error: userError }, { data: idData, error: idError }] = await Promise.all([
-    supabase.auth.getUser(),
-    supabase.auth.getUserIdentities(),
-  ]);
-  if (userError) throw userError;
-  if (idError) throw idError;
-  return { email: userData.user?.email ?? null, methods: methodsOf(idData?.identities ?? []) };
+  // One auth request, made with the session's token so it does not hold auth-js's lock while it is out: getUser() with no
+  // token holds the lock for the whole read, and every other auth call (each request's token) queues behind it, so a read
+  // the time limit cut took two waits to fail (G1). getUserIdentities() is getUser() again; the member carries their
+  // identities.
+  const { data: held } = await supabase.auth.getSession();
+  const { data, error } = await supabase.auth.getUser(held.session?.access_token);
+  if (error) throw error;
+  return { email: data.user?.email ?? null, methods: methodsOf(data.user?.identities ?? []) };
 }
 
 /** Ask for an email change. Supabase's secure email change asks both inboxes. */

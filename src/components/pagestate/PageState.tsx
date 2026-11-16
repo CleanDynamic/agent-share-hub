@@ -36,6 +36,8 @@ export interface PageStateProps {
    * region while it loads, as the region's placeholder always has, and the other states sit under the region's heading.
    */
   frame?: (body: ReactNode) => ReactNode;
+  /** Whether the frame also wraps the content once ready: false where the content draws its own frame (Settings' views). */
+  frameReady?: boolean;
   /** Spacing for the failed, empty and not-found states inside the region. */
   style?: CSSProperties;
   /** The content, drawn only once every read has answered with something to show. */
@@ -56,7 +58,7 @@ function Mark({ state, region, children }: { state: Shown; region: string; child
   );
 }
 
-export function PageState({ read, thing, region, skeleton, empty, notFound, log, frame, style, children }: PageStateProps) {
+export function PageState({ read, thing, region, skeleton, empty, notFound, log, frame, frameReady = true, style, children }: PageStateProps) {
   const reads = asList(read);
   useLogEach(reads, reads.map(() => log ?? `[${region}] read failed`));
   const state = shownState(reads, {
@@ -86,7 +88,7 @@ export function PageState({ read, thing, region, skeleton, empty, notFound, log,
   }
   return (
     <Mark state={state} region={region}>
-      {frame && state !== "loading" ? frame(body) : body}
+      {frame && state !== "loading" && (frameReady || state !== "ready") ? frame(body) : body}
     </Mark>
   );
 }

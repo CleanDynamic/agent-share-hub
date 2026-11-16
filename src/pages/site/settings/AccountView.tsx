@@ -7,6 +7,9 @@
    G16: Devices lists each session (device and browser, last active, this device marked) with its own `Sign out`, which asks once,
    says in plain words that a signed-out device can keep working for up to an hour, and keeps `Sign out everywhere`. */
 
+import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
+import { PageState } from "@/components/pagestate/PageState";
+import type { ReadLike } from "@/components/pagestate/pageStateModel";
 import { Lock, Mail } from "lucide-react";
 import { useState } from "react";
 
@@ -38,8 +41,8 @@ export interface AccountViewProps {
   onLink: (provider: LinkableProvider) => Promise<void>;
   onUnlink: (id: string) => Promise<void>;
   onSignOutEverywhere: () => Promise<void>;
-  /** G16: the member's sessions, newest activity first. Null: they could not be loaded. */
-  sessions: readonly DeviceSession[] | null;
+  /** G16: the member's sessions, newest activity first, as a read: PageState draws its loading and failed states (G2). */
+  devices: ReadLike;
   onSignOutDevice: (session: DeviceSession) => Promise<void>;
 }
 
@@ -233,13 +236,31 @@ function DeviceRow({ session, onSignOutDevice }: { session: DeviceSession; onSig
   );
 }
 
-function DevicesGroup({ onSignOutEverywhere, sessions, onSignOutDevice }: Pick<AccountViewProps, "onSignOutEverywhere" | "sessions" | "onSignOutDevice">) {
+function DevicesGroup({ onSignOutEverywhere, devices, onSignOutDevice }: Pick<AccountViewProps, "onSignOutEverywhere" | "devices" | "onSignOutDevice">) {
+  const sessions = (devices.data as readonly DeviceSession[] | undefined) ?? [];
   const [asking, setAsking] = useState(false);
   const action = useAction(onSignOutEverywhere, "settings-signout");
   return (
     <Group title="Devices">
-      {sessions === null ? <Note>{COPY.devicesUnavailable}</Note> : sessions.map((session) => <DeviceRow key={session.id} session={session} onSignOutDevice={onSignOutDevice} />)}
-      {sessions !== null && sessions.length > 0 ? <Note>{COPY.devicesHour}</Note> : null}
+      <PageState
+        read={devices}
+        thing="your devices"
+        region="Devices"
+        log="[Settings] devices read failed"
+        style={{ paddingBlock: 12 }}
+        skeleton={
+          <LoadingRegion what="your devices">
+            <Skeleton height={48} />
+          </LoadingRegion>
+        }
+      >
+        {() => (
+          <>
+            {sessions.map((session) => <DeviceRow key={session.id} session={session} onSignOutDevice={onSignOutDevice} />)}
+            {sessions.length > 0 ? <Note>{COPY.devicesHour}</Note> : null}
+          </>
+        )}
+      </PageState>
       <SettingRow
         last
         label="Sign out everywhere"
@@ -274,7 +295,7 @@ export function AccountView(props: AccountViewProps) {
       <EmailGroup email={props.email} onChangeEmail={props.onChangeEmail} />
       <PasswordGroup hasPassword={hasPasswordOf(props.methods)} onChangePassword={props.onChangePassword} />
       <MethodsGroup methods={props.methods} onLink={props.onLink} onUnlink={props.onUnlink} />
-      <DevicesGroup onSignOutEverywhere={props.onSignOutEverywhere} sessions={props.sessions} onSignOutDevice={props.onSignOutDevice} />
+      <DevicesGroup onSignOutEverywhere={props.onSignOutEverywhere} devices={props.devices} onSignOutDevice={props.onSignOutDevice} />
     </SectionPage>
   );
 }

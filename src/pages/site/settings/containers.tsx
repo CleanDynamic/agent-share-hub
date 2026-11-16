@@ -7,9 +7,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-import { useAskAgain, useStalled } from "@/components/shell/useStalled";
+import { PageState, type PageStateProps } from "@/components/pagestate/PageState";
 import { useAuth } from "@/contexts/AuthContext";
-import { listApps, revokeApp } from "@/lib/settings/apps";
+import { APPS_COPY, listApps, revokeApp } from "@/lib/settings/apps";
 import { DATA_COPY, deleteMyAccount, prepareExport, saveFile } from "@/lib/settings/data";
 import { blockKeys, listBlocks, unblockUser, type BlockedPerson } from "@/lib/settings/blocks";
 import { loadIsPrivate, setIsPrivate } from "@/lib/settings/privacySettings";
@@ -22,10 +22,31 @@ import { AppsView } from "./AppsView";
 import { DataView } from "./DataView";
 import { NotificationsView } from "./NotificationsView";
 import { PrivacyView } from "./PrivacyView";
-import { SectionError, SectionLoading } from "./SettingParts";
+import { SectionLoading, SectionPage } from "./SettingParts";
 import { SECTION_BONES } from "./SettingsLoading";
 
 const STALE_MS = 60_000;
+
+/**
+ * G4: a section's loading and failed states, through PageState: its skeleton is the section's own, and a failure sits under
+ * the section's title. The view draws its own title once the data is in. G1: a read that never answers fails at
+ * READ_TIMEOUT_MS by itself, so no section keeps a timer of its own.
+ */
+function SectionState({ title, read, groups, empty, children }: { title: string; read: PageStateProps["read"]; groups: Parameters<typeof SectionLoading>[0]["groups"]; empty?: PageStateProps["empty"]; children: () => React.ReactNode }) {
+  return (
+    <PageState
+      read={read}
+      thing="your settings"
+      region={title}
+      skeleton={<SectionLoading title={title} groups={groups} />}
+      frame={(body) => <SectionPage title={title}>{body}</SectionPage>}
+      frameReady={false}
+      empty={empty}
+    >
+      {children}
+    </PageState>
+  );
+}
 
 export function AccountSection() {
   const queryClient = useQueryClient();
@@ -33,11 +54,8 @@ export function AccountSection() {
   const account = useQuery({ queryKey: ["settings", "loadAccount"], queryFn: loadAccount, staleTime: STALE_MS });
   // G16: the devices load on their own. If they cannot, the group says so in one line and the rest of the page works.
   const sessions = useQuery({ queryKey: ["settings", "listMySessions"], queryFn: listMySessions, staleTime: STALE_MS, retry: 1 });
-  const askAgain = useAskAgain();
-  const accountStall = useStalled(!account.data && !account.isError);
-  if (account.isError || accountStall.stalled) return <SectionError title="Account" onRetry={() => { accountStall.restart(); askAgain(["settings", "loadAccount"], account.refetch); }} />;
-  if (!account.data) return <SectionLoading title="Account" groups={SECTION_BONES.account} />;
-  const { email, methods } = account.data;
+  return <SectionState title="Account" read={account} groups={SECTION_BONES.account}>{() => {
+  const { email, methods } = account.data!;
   return (
     <AccountView
       email={email}
@@ -56,7 +74,7 @@ export function AccountSection() {
         await signOutEverywhere();
         navigate("/login", { replace: true });
       }}
-      sessions={sessions.isError ? null : sessions.data ?? []}
+      devices={sessions}
       onSignOutDevice={async (session) => {
         await signOutDevice(session);
         if (session.current) {
@@ -67,6 +85,7 @@ export function AccountSection() {
       }}
     />
   );
+  }}</SectionState>;
 }
 
 /** The saved line every switch and choice says: quiet, a toast, nothing that moves. */
@@ -94,11 +113,11 @@ export function NotificationsSection() {
     },
     onSuccess: () => toast(SAVED),
   });
-  const askAgain = useAskAgain();
-  const prefsStall = useStalled(!prefs.data && !prefs.isError);
-  if (prefs.isError || prefsStall.stalled) return <SectionError title="Notifications" onRetry={() => { prefsStall.restart(); askAgain(key, prefs.refetch); }} />;
-  if (!prefs.data) return <SectionLoading title="Notifications" groups={SECTION_BONES.notifications} />;
-  return <NotificationsView prefs={prefs.data} onToggle={(changed, on) => write.mutate({ key: changed, on })} />;
+  return (
+    <SectionState title="Notifications" read={prefs} groups={SECTION_BONES.notifications}>
+      {() => <NotificationsView prefs={prefs.data!} onToggle={(changed, on) => write.mutate({ key: changed, on })} />}
+    </SectionState>
+  );
 }
 
 export function PrivacySection() {
@@ -148,11 +167,11 @@ export function PrivacySection() {
     }
   };
 
-  const askAgain = useAskAgain();
-  const privacyStall = useStalled((isPrivate.data === undefined || !blocks.data) && !isPrivate.isError && !blocks.isError);
-  if (isPrivate.isError || blocks.isError || privacyStall.stalled) return <SectionError title="Privacy and blocking" onRetry={() => { privacyStall.restart(); askAgain(privateKey, isPrivate.refetch); askAgain(blockKeys.list, blocks.refetch); }} />;
-  if (isPrivate.data === undefined || !blocks.data) return <SectionLoading title="Privacy and blocking" groups={SECTION_BONES.privacy} />;
-  return <PrivacyView isPrivate={isPrivate.data} onTogglePrivate={(on) => togglePrivate.mutate(on)} blocked={blocks.data} onUnblock={(person) => void unblock(person)} busy={busy} />;
+  return (
+    <SectionState title="Privacy and blocking" read={[isPrivate, blocks]} groups={SECTION_BONES.privacy}>
+      {() => <PrivacyView isPrivate={isPrivate.data!} onTogglePrivate={(on) => togglePrivate.mutate(on)} blocked={blocks.data!} onUnblock={(person) => void unblock(person)} busy={busy} />}
+    </SectionState>
+  );
 }
 
 export function DataSection() {
@@ -177,18 +196,23 @@ export function DataSection() {
 export function AppsSection() {
   const queryClient = useQueryClient();
   const apps = useQuery({ queryKey: ["settings", "listApps"], queryFn: listApps, staleTime: STALE_MS });
-  const askAgain = useAskAgain();
-  const appsStall = useStalled(!apps.data && !apps.isError);
-  if (apps.isError || appsStall.stalled) return <SectionError title="Connected apps" onRetry={() => { appsStall.restart(); askAgain(["settings", "listApps"], apps.refetch); }} />;
-  if (!apps.data) return <SectionLoading title="Connected apps" groups={SECTION_BONES.apps} />;
   return (
+    <SectionState
+      title="Connected apps"
+      read={apps}
+      groups={SECTION_BONES.apps}
+      empty={{ when: ([state]) => (state as Awaited<ReturnType<typeof listApps>>).state === "listed" && (state as { apps: unknown[] }).apps.length === 0, line: APPS_COPY.empty }}
+    >
+      {() => (
     <AppsView
-      apps={apps.data.state === "listed" ? apps.data.apps : null}
+      apps={apps.data!.state === "listed" ? apps.data!.apps : null}
       onRevoke={async (app) => {
         await revokeApp(app.clientId);
         await queryClient.invalidateQueries({ queryKey: ["settings", "listApps"] });
         toast("Access revoked.");
       }}
     />
+      )}
+    </SectionState>
   );
 }

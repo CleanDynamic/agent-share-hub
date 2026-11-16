@@ -62,11 +62,8 @@ export function AppsView({ apps, onRevoke }: AppsViewProps) {
         <Note>{APPS_COPY.unavailable}</Note>
       ) : (
         <Group title="Apps that can access your account">
-          {apps.length === 0 ? (
-            <Note>{APPS_COPY.empty}</Note>
-          ) : (
-            apps.map((app, index) => <AppRow key={app.clientId} app={app} last={index === apps.length - 1} onRevoke={onRevoke} />)
-          )}
+          {/* G6: none listed is the section's empty state, drawn by PageState (containers.tsx), not here. */}
+          {apps.map((app, index) => <AppRow key={app.clientId} app={app} last={index === apps.length - 1} onRevoke={onRevoke} />)}
         </Group>
       )}
     </SectionPage>

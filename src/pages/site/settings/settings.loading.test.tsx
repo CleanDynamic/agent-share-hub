@@ -2,6 +2,7 @@
 // moves when the section arrives. Connected apps shows one card (it may show none, when the list is not available; the
 // skeleton shows the one it shows whenever there is a list).
 
+import { readOf } from "@/components/pagestate/pageStateModel";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render } from "@testing-library/react";
 import type { ReactNode } from "react";
@@ -36,7 +37,7 @@ const prefs = Object.fromEntries(PREFERENCE_GROUPS.flatMap((group) => group.rows
 
 describe("a settings section while it loads", () => {
   it("Account: one skeleton card per card", () => {
-    const loaded = cards(<AccountView email="a@b.c" methods={[]} onChangeEmail={nop} onChangePassword={nop} onLink={nop} onUnlink={nop} onSignOutEverywhere={nop} sessions={[]} onSignOutDevice={nop} />);
+    const loaded = cards(<AccountView email="a@b.c" methods={[]} onChangeEmail={nop} onChangePassword={nop} onLink={nop} onUnlink={nop} onSignOutEverywhere={nop} devices={readOf("ready", [])} onSignOutDevice={nop} />);
     expect(loaded).toBe(4);
     expect(bones(<AccountSection />)).toBe(loaded);
   });
@@ -71,32 +72,5 @@ describe("the route table's placeholder for Settings", () => {
     expect(view.getByRole("heading", { level: 1 }).textContent).toBe("Settings");
     expect(view.getByRole("heading", { level: 2 }).textContent).toBe("Notifications");
     expect(view.container.querySelectorAll('[data-testid="settings-card-bones"]').length).toBe(PREFERENCE_GROUPS.length);
-  });
-});
-
-describe("D4: a settings section whose read never answers", () => {
-  it("swaps its cards for the section's error line and Retry after STALL_MS; Retry brings the cards back and asks again", async () => {
-    const { act, fireEvent } = await import("@testing-library/react");
-    const { STALL_MS } = await import("@/components/shell/useStalled");
-    vi.useFakeTimers();
-    try {
-      for (const section of [<AccountSection key="a" />, <NotificationsSection key="n" />, <PrivacySection key="p" />, <AppsSection key="x" />]) {
-        const view = render(wrap(section));
-        expect(view.container.querySelectorAll('[data-testid="settings-card-bones"]').length).toBeGreaterThan(0);
-        act(() => vi.advanceTimersByTime(STALL_MS));
-        expect(view.getByRole("alert").textContent).toContain("Couldn't load this.");
-        expect(view.container.querySelectorAll('[data-testid="settings-card-bones"]').length).toBe(0);
-        const asked = never.mock.calls.length;
-        await act(async () => {
-          fireEvent.click(view.getByRole("button", { name: "Retry" }));
-        });
-        expect(view.container.querySelectorAll('[data-testid="settings-card-bones"]').length).toBeGreaterThan(0);
-        // Retry asks again: the read that never answered is cancelled and sent afresh, not joined.
-        expect(never.mock.calls.length).toBeGreaterThan(asked);
-        view.unmount();
-      }
-    } finally {
-      vi.useRealTimers();
-    }
   });
 });
