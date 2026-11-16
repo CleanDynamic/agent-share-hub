@@ -44,7 +44,8 @@ export async function readState(page: Page): Promise<Reading> {
     const lines: string[] = [];
 
     // PageState's own mark, when there is one.
-    for (const el of all("[data-page-state]")) states.add(el.getAttribute("data-page-state") as string);
+    // `display: contents` gives the mark no box of its own, so it is read whatever its size.
+    for (const el of Array.from(document.querySelectorAll("[data-page-state]"))) states.add(el.getAttribute("data-page-state") as string);
 
     // Loading.
     const busy = document.querySelectorAll('[aria-busy="true"]').length;
