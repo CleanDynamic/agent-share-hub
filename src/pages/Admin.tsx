@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { adminSetCurator } from "@/lib/auth/adminSetCurator";
 import { insertNotification } from "@/lib/notifications";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -764,7 +765,7 @@ function CuratorsTab() {
       const { data: { user } } = await supabase.auth.getUser();
       await supabase.from("curator_applications").update({ status: "approved" } as any).eq("id", app.id);
       await supabase.from("curators").insert({ user_id: app.user_id, approved_by: user?.id ?? null } as any);
-      await supabase.from("profiles").update({ is_curator: true, curator_application_status: "approved" } as any).eq("id", app.user_id);
+      await adminSetCurator(app.user_id, true);
       insertNotification({
         recipient_id: app.user_id,
         actor_id: null,
@@ -793,7 +794,7 @@ function CuratorsTab() {
   const deactivateMutation = useMutation({
     mutationFn: async (curator: any) => {
       await supabase.from("curators").update({ is_active: false } as any).eq("id", curator.id);
-      await supabase.from("profiles").update({ is_curator: false } as any).eq("id", curator.user_id);
+      await adminSetCurator(curator.user_id, false);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_active_curators"] });

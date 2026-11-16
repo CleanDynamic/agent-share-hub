@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 import { refusalOf, type AuthRefusal } from "./authMessages";
+import { setKeepSignedIn } from "./keepSignedIn";
 
 /** How a password sign-in ended. The page words each refusal; this says which one it was. */
 export type EmailSignInResult =
@@ -14,12 +15,17 @@ export type EmailSignInResult =
  * Text with no "@" is not an email address and is refused here, before any request, so nothing ever looks a username
  * up. The captcha token, when there is one, goes straight to the auth service, which is what enforces it.
  *
+ * G13: `keep` is the "Keep me signed in" box. It is recorded before the request, so the session the request makes
+ * lands in the store the box chose.
+ *
  * A network or server failure is thrown, not returned: the page has one
  * sentence for "something went wrong" and one try/catch to say it.
  */
-export async function signInWithEmail(identifier: string, password: string, captchaToken?: string): Promise<EmailSignInResult> {
+export async function signInWithEmail(identifier: string, password: string, captchaToken?: string, keep = true): Promise<EmailSignInResult> {
   const email = identifier.trim();
   if (!email.includes("@")) return { outcome: "not-an-email" };
+
+  setKeepSignedIn(keep);
 
   const { data, error } = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken } });
 

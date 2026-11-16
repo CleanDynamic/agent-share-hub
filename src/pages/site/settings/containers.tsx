@@ -15,7 +15,7 @@ import { blockKeys, listBlocks, unblockUser, type BlockedPerson } from "@/lib/se
 import { loadIsPrivate, setIsPrivate } from "@/lib/settings/privacySettings";
 import { loadNotificationPreferences, setNotificationPreference } from "@/lib/settings/notificationSettings";
 import { type NotificationPreferences, type PreferenceKey } from "@/lib/settings/notificationPrefs";
-import { changeEmail, changePassword, hasPassword, linkProvider, loadAccount, signOutEverywhere, unlinkMethod } from "@/lib/settings/account";
+import { changeEmail, changePassword, hasPassword, linkProvider, listMySessions, loadAccount, signOutDevice, signOutEverywhere, unlinkMethod } from "@/lib/settings/account";
 
 import { AccountView } from "./AccountView";
 import { AppsView } from "./AppsView";
@@ -31,6 +31,8 @@ export function AccountSection() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const account = useQuery({ queryKey: ["settings", "loadAccount"], queryFn: loadAccount, staleTime: STALE_MS });
+  // G16: the devices load on their own. If they cannot, the group says so in one line and the rest of the page works.
+  const sessions = useQuery({ queryKey: ["settings", "listMySessions"], queryFn: listMySessions, staleTime: STALE_MS, retry: 1 });
   const askAgain = useAskAgain();
   const accountStall = useStalled(!account.data && !account.isError);
   if (account.isError || accountStall.stalled) return <SectionError title="Account" onRetry={() => { accountStall.restart(); askAgain(["settings", "loadAccount"], account.refetch); }} />;
@@ -53,6 +55,15 @@ export function AccountSection() {
       onSignOutEverywhere={async () => {
         await signOutEverywhere();
         navigate("/login", { replace: true });
+      }}
+      sessions={sessions.isError ? null : sessions.data ?? []}
+      onSignOutDevice={async (session) => {
+        await signOutDevice(session);
+        if (session.current) {
+          navigate("/login", { replace: true });
+          return;
+        }
+        await queryClient.invalidateQueries({ queryKey: ["settings", "listMySessions"] });
       }}
     />
   );

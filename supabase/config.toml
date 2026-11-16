@@ -97,6 +97,11 @@ verify_jwt = true
 # token and uses the service role only for storage, the delete helper, the deletion log and auth.admin.deleteUser.
 verify_jwt = true
 
+[functions.my-sessions]
+# G16. True: the gateway rejects an unauthenticated call. The code reads the member from the verified token and uses
+# the service role only for sessions_of_user and revoke_user_session, each given that member's own id.
+verify_jwt = true
+
 # Auth hardening (security prompt 7): the owner's dashboard settings, as far as this file can express them.
 # docs/security/auth-settings.md has every setting with its dashboard path, including those this file cannot hold
 # (leaked password protection, rate limits to review). The hosted project changes only through its dashboard or

@@ -186,6 +186,14 @@ describe("setNewPassword", () => {
     expect(order).toEqual(["update", "signOut"]);
   });
 
+  it("G15: signs out every device, not just this one (signOut's default scope is global in auth-js)", async () => {
+    updateUser.mockResolvedValue({ error: null });
+    await setNewPassword("Abcdefghij1!x");
+    expect(signOut).toHaveBeenCalledTimes(1);
+    const options = signOut.mock.calls[0][0] as { scope?: string } | undefined;
+    expect(options?.scope ?? "global").toBe("global");
+  });
+
   it("throws the client's error, and leaves the session alone, when the update is refused", async () => {
     const refusal = new Error("New password should be different from the old password.");
     updateUser.mockResolvedValue({ error: refusal });

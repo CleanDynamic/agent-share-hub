@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 import { refusalOf, type AuthRefusal } from "./authMessages";
+import { setKeepSignedIn } from "./keepSignedIn";
 
 export interface EmailSignUp {
   email: string;
@@ -33,6 +34,8 @@ export type EmailSignUpResult =
  * the wording check covers a project where it is off.)
  */
 export async function signUpWithEmail(input: EmailSignUp): Promise<EmailSignUpResult> {
+  // G13: Join has no "Keep me signed in" box, so the session its link opens is kept, as before.
+  setKeepSignedIn(true);
   const { data, error } = await supabase.auth.signUp({
     email: input.email,
     password: input.password,
