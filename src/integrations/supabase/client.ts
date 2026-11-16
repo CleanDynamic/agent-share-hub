@@ -4,6 +4,9 @@ import type { Database } from './types';
 import { brokeredPreviewStorage } from './previewAuthStorage';
 // G13: keep this line and the storage line below if this file is regenerated (src/lib/auth/keepSignedIn.test.ts checks).
 import { keepSignedInStorage } from "@/lib/auth/keepSignedIn";
+// G1: keep this import, the `global.fetch` line and the `rest.retry` line below if this file is regenerated
+// (src/lib/query/supabaseClient.test.ts checks).
+import { createSiteFetch } from "@/lib/query/readLimit";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -16,5 +19,12 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: keepSignedInStorage(brokeredPreviewStorage()),
     persistSession: true,
     autoRefreshToken: true,
-  }
+  },
+  // G1: every read is cut at READ_TIMEOUT_MS and fails like any other request; writes, uploads and refreshes are not (readLimit.ts).
+  global: { fetch: createSiteFetch() },
 });
+
+// G1 / D3: postgrest-js retries a GET or HEAD that got no answer three more times by itself (1 s, 2 s, 4 s), so a dropped
+// connection took about 15 s to fail with the query client's own retry on top. supabase-js passes no option through to
+// stop it, so it is switched off on the REST client here, and the query client's one retry is the only retry.
+(supabase as unknown as { rest: { retry?: boolean } }).rest.retry = false;

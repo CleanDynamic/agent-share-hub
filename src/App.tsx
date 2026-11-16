@@ -3,7 +3,6 @@ import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { BrowserRouter, Navigate, Route, useParams, Routes } from "react-router-dom";
 import { AddToCollectionHost } from "@/components/library/AddToCollectionHost";
-import { isPermissionError } from "@/lib/errors/permission";
 import { connectErrorReporting } from "@/lib/errors/wire";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -203,7 +202,8 @@ const queryClient = new QueryClient({
   queryCache: new QueryCache({ onError: errorReporting.queryError }),
   mutationCache: new MutationCache({ onError: errorReporting.mutationError }),
   defaultOptions: {
-    queries: { retry: (count, error) => count < 1 && !isPermissionError(error), ...QUERY_DEFAULTS },
+    // The retry rule is QUERY_DEFAULTS.retry (lib/query/client.ts): once, never after a refusal or a timeout.
+    queries: { ...QUERY_DEFAULTS },
   },
 });
 
