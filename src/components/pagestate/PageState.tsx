@@ -119,4 +119,16 @@ export function PageFailed({ reads, region, logs = [], style }: { reads: readonl
   );
 }
 
+/**
+ * G6: the empty state of a part of data that has already loaded (a build with no parts, a timeline with no events): one
+ * sentence and at most one action, the same EmptyState PageState draws. Pages use this, never EmptyState itself (G30).
+ */
+export function PageEmpty({ line, action, style, testId }: { line: string; action?: EmptyStateAction; style?: CSSProperties; testId?: string }) {
+  return (
+    <Mark state="empty" region={testId ?? "empty"}>
+      <EmptyState line={line} action={action} style={style} data-testid={testId} />
+    </Mark>
+  );
+}
+
 export default PageState;

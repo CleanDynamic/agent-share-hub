@@ -74,11 +74,3 @@ export function WhereNextPanels({ rows, phone }: { rows: readonly WhereNextRowVi
   );
 }
 
-/** Where next could not be read: one sentence and a retry. */
-export function WhereNextError({ onRetry, error }: { onRetry: () => void; error?: unknown }) {
-  return (
-    <Panel padding="16px 18px">
-      <ErrorState panel="Where next" onRetry={onRetry} error={error} data-testid="where-next-error" />
-    </Panel>
-  );
-}
