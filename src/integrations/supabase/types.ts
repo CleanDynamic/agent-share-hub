@@ -3545,6 +3545,27 @@ export type Database = {
           },
         ]
       }
+      edge_rate_limits: {
+        Row: {
+          bucket: string
+          expires_at: string
+          hits: number
+          window_start: string
+        }
+        Insert: {
+          bucket: string
+          expires_at: string
+          hits?: number
+          window_start: string
+        }
+        Update: {
+          bucket?: string
+          expires_at?: string
+          hits?: number
+          window_start?: string
+        }
+        Relationships: []
+      }
       feature_flags: {
         Row: {
           enabled: boolean
@@ -6760,6 +6781,10 @@ export type Database = {
         }[]
       }
       create_post: { Args: { p: Json }; Returns: string }
+      edge_rate_limit_hit: {
+        Args: { _bucket: string; _limit: number; _window_seconds: number }
+        Returns: boolean
+      }
       expire_import_sessions: { Args: never; Returns: number }
       gallery_facets: { Args: { thresholds?: Json }; Returns: Json }
       gallery_facets_base: { Args: { thresholds?: Json }; Returns: Json }
