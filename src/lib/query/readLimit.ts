@@ -24,7 +24,9 @@ export const READ_TIMEOUT_NAME = "ReadTimeoutError";
 export class ReadTimeoutError extends Error {
   readonly readTimeout = true;
   constructor(ms: number) {
-    super(`no answer after ${ms} ms`);
+    // The name is in the message too: a wrapper that keeps only the message (auth-js's AuthRetryableFetchError) still
+    // carries what this was. No message is ever shown on screen (G10).
+    super(`${READ_TIMEOUT_NAME}: no answer after ${ms} ms`);
     this.name = READ_TIMEOUT_NAME;
   }
 }

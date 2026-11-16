@@ -63,6 +63,12 @@ describe("a timeout passes through", () => {
     expect(isReadTimeout(await isFollowingMaker("u1", "u2").catch((caught: unknown) => caught))).toBe(true);
   });
 
+  it("auth-js's wrapper, which keeps only the message (AuthRetryableFetchError)", () => {
+    const thrown = new ReadTimeoutError(10_000);
+    // auth-js: `new AuthRetryableFetchError(_getErrorMessage(error), 0)`, the thrown error's message and nothing else.
+    expect(isReadTimeout({ name: "AuthRetryableFetchError", message: thrown.message, status: 0 })).toBe(true);
+  });
+
   it("and nothing else is taken for one", async () => {
     const { socialError } = await import("@/lib/social/types");
     expect(isReadTimeout(socialError("listCollections", { error: { code: "57014", message: "canceling statement" }, status: 500 }))).toBe(false);
