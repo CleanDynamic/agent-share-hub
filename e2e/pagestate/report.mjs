@@ -3,6 +3,9 @@ import fs from "node:fs";
 import path from "node:path";
 
 const DIR = path.resolve("test-results/pagestate");
+/** G29's limit, and the margin inside which a cell is reported as too close to it. */
+const LIMIT_S = 14;
+const CLOSE_S = 0.5;
 const CONDITIONS = ["aborted", "server-error", "never", "refused", "empty"];
 const rows = new Map();
 for (const file of fs.readdirSync(DIR).filter((f) => f.endsWith(".json"))) {
@@ -16,10 +19,11 @@ const ok = (r) =>
 
 const cell = (r) => {
   if (!r) return "–";
-  const time = r.settledSeconds === null ? ">12" : `${r.settledSeconds}`;
+  const time = r.settledSeconds === null ? `>${LIMIT_S}` : `${r.settledSeconds}`;
   const flags = [];
   if (!r.expected.includes(r.state)) flags.push(`want ${r.expected.join("/")}`);
   if (r.busy) flags.push("busy");
+  if (r.settledSeconds !== null && r.settledSeconds >= LIMIT_S - CLOSE_S) flags.push("CLOSE TO THE LIMIT");
   if (r.title === null) flags.push("no title");
   if (r.codes.length) flags.push(`code ${r.codes.join(" ")}`);
   const bad = r.retryLabels.filter((l) => l !== "Try again");

@@ -22,9 +22,9 @@ export type Thing =
   | "your settings"
   | "your devices"
   | "your messages"
-  // Proposed in Part B for regions the reference list does not name.
+  // Added in Part B for regions the reference list does not name (accepted).
   | "this collection"
-  | "these people"
+  | "this list"
   | "your week"
   | "the maps";
 
@@ -47,7 +47,7 @@ export const NOT_FOUND_DETAIL: Record<MissingKind, string> = {
   space: "This space may have been removed, or the link may be wrong.",
   post: "This post may have been removed, or the link may be wrong.",
   editor: "This build may have been deleted, or it may belong to someone else.",
-  // Proposed in Part B: a collection that is private reads the same to a visitor as one that is gone.
+  // Added in Part B (accepted): a collection that is private reads the same to a visitor as one that is gone.
   collection: "This collection may be private, or the link may be wrong.",
 };
 
