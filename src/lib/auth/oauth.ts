@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { OAuthProvider } from "@/components/auth/OAuthButtons";
 
+import { setKeepSignedIn } from "./keepSignedIn";
 import { safeReturnPath } from "./safeReturnPath";
 
 // Supabase provider IDs. "X" is registered with Supabase as "twitter".
@@ -16,9 +17,10 @@ const SUPABASE_PROVIDER: Record<OAuthProvider, "google" | "github" | "twitter"> 
  * redirect could not be started, otherwise null.
  *
  * G18: `returnTo`, when there is one, rides to the callback as `redirect`, through safeReturnPath; the callback checks
- * it again on the way back.
+ * it again on the way back. G13: `keep` is the "Keep me signed in" box (Join has none, so it keeps).
  */
-export async function startOAuthSignIn(provider: OAuthProvider, returnTo: string | null = null): Promise<string | null> {
+export async function startOAuthSignIn(provider: OAuthProvider, returnTo: string | null = null, keep = true): Promise<string | null> {
+  setKeepSignedIn(keep);
   const callback = new URL("/auth/callback", window.location.origin);
   callback.searchParams.set("provider", provider);
   if (returnTo !== null) callback.searchParams.set("redirect", safeReturnPath(returnTo));

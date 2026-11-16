@@ -78,8 +78,20 @@ describe("signing in", () => {
     submit();
 
     await waitFor(() => expect(where.at()).toBe("/onboarding"));
-    expect(signIn).toHaveBeenCalledWith("  ada@example.com ", "hunter22", "tok-1");
+    expect(signIn).toHaveBeenCalledWith("  ada@example.com ", "hunter22", "tok-1", true);
     expect(resolvePostAuthRoute).toHaveBeenCalledWith("u-1");
+  });
+
+  it("G13: sends the Keep me signed in box with the sign-in, ticked by default and unticked when unticked", async () => {
+    signIn.mockResolvedValue({ outcome: "signed-in", userId: "u-1" });
+    open();
+    const box = screen.getByRole("checkbox", { name: "Keep me signed in" });
+    expect(box).toBeChecked();
+    fireEvent.click(box);
+    expect(box).not.toBeChecked();
+    fill();
+    submit();
+    await waitFor(() => expect(signIn).toHaveBeenCalledWith("ada@example.com", "hunter22", "tok-1", false));
   });
 
   it("with ?redirect=/gallery lands on the gallery, and never asks where next", async () => {
@@ -168,7 +180,7 @@ describe("the bot check (G6)", () => {
     open("/login?redirect=%2Fgallery");
     fill();
     submit();
-    await waitFor(() => expect(signIn).toHaveBeenCalledWith("ada@example.com", "hunter22", "tok-1"));
+    await waitFor(() => expect(signIn).toHaveBeenCalledWith("ada@example.com", "hunter22", "tok-1", true));
     await waitFor(() => expect(captcha.reset).toHaveBeenCalledTimes(1));
   });
 
@@ -341,7 +353,7 @@ describe("the providers", () => {
     open();
     fireEvent.click(screen.getByRole("button", { name: "Continue with GitHub" }));
 
-    await waitFor(() => expect(startOAuthSignIn).toHaveBeenCalledWith("github", null));
+    await waitFor(() => expect(startOAuthSignIn).toHaveBeenCalledWith("github", null, true));
     // G12: the one that was clicked now says it is opening.
     for (const name of ["Continue with Google", "Opening GitHub", "Continue with X"]) {
       await waitFor(() => expect(screen.getByRole("button", { name })).toBeDisabled());
@@ -352,14 +364,14 @@ describe("the providers", () => {
     startOAuthSignIn.mockResolvedValue(null);
     open();
     fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
-    await waitFor(() => expect(startOAuthSignIn).toHaveBeenLastCalledWith("google", null));
+    await waitFor(() => expect(startOAuthSignIn).toHaveBeenLastCalledWith("google", null, true));
   });
 
   it("G18: carries the return address to the provider, through the gate", async () => {
     startOAuthSignIn.mockResolvedValue(null);
     open(`/login?redirect=${encodeURIComponent("/library?view=saved#top")}`);
     fireEvent.click(screen.getByRole("button", { name: "Continue with X" }));
-    await waitFor(() => expect(startOAuthSignIn).toHaveBeenLastCalledWith("x", "/library?view=saved#top"));
+    await waitFor(() => expect(startOAuthSignIn).toHaveBeenLastCalledWith("x", "/library?view=saved#top", true));
   });
 
   it("says why it could not start, and gives the buttons back to try again", async () => {

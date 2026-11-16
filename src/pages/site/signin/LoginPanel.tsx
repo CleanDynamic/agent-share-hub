@@ -79,7 +79,7 @@ export function LoginPanel() {
       return;
     }
     try {
-      const result = await signInWithEmail(emailOrUsername, password, check.token);
+      const result = await signInWithEmail(emailOrUsername, password, check.token, rememberMe);
 
       if (result.outcome !== "signed-in") {
         setError(result.outcome === "not-an-email" ? "Sign in with your email address." : messageFor(result.refusal));
@@ -123,7 +123,7 @@ export function LoginPanel() {
   const handleProvider = async (provider: OAuthProvider) => {
     setLoadingProvider(provider);
     // OAuth — this redirects the whole page to the provider.
-    const oauthError = await startOAuthSignIn(provider, redirectParam);
+    const oauthError = await startOAuthSignIn(provider, redirectParam, rememberMe);
     if (oauthError) {
       setError(oauthError);
       // The page is still here, so the buttons are for trying again.
