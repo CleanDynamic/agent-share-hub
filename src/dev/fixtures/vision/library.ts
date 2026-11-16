@@ -4,6 +4,7 @@
    selected step and collection preview. DEV ONLY (the dev page `vision-library` and the view's tests). Every name,
    number and sentence is sample content. */
 
+import { readOf } from "@/components/pagestate/pageStateModel";
 import type { DesignState } from "@/dev/useDesignTheme";
 import type { LibraryViewProps } from "@/pages/site/library/LibraryView";
 import { LIBRARY_KINDS, type CollectionEntry, type ItemState, type LibraryChange, type LibraryRow } from "@/pages/site/library/libraryModel";
@@ -44,6 +45,7 @@ export const visionLibraryRows: LibraryRow[] = (
 /** The view's props for a state; `?state=` on the dev page picks one. */
 export function visionLibraryProps(state: DesignState = "populated"): LibraryViewProps {
   const status = state === "loading" ? "loading" : state === "error" ? "error" : "ready";
+  const read = readOf(status, []);
   const empty = state === "empty";
   return {
     head: { title: "Library", meta: empty ? "0 saved · 0 collections" : "64 saved · 5 collections" },
@@ -54,12 +56,11 @@ export function visionLibraryProps(state: DesignState = "populated"): LibraryVie
       onChange: noop,
     },
     collections: {
-      status,
+      read,
       items: empty ? [] : visionLibraryCollections,
       current: null,
       hrefFor: (id) => `?collection=${id}`,
       onNew: noop,
-      onRetry: noop,
       emptyLine: "No collections yet.",
     },
     changes:
@@ -85,9 +86,8 @@ export function visionLibraryProps(state: DesignState = "populated"): LibraryVie
         { name: "Field", value: "Sales", onRemove: noop },
       ],
       sameAsBuilds: true,
-      status,
-      what: "Steps didn't load.",
-      onRetry: noop,
+      read,
+      thing: "your library",
       empty: { line: "Save a step from any build and it waits for you here.", action: { label: "Browse builds", href: "/builds" } },
       itemColumn: "Step",
       rows: empty ? [] : visionLibraryRows,
@@ -135,7 +135,7 @@ export function visionLibraryProps(state: DesignState = "populated"): LibraryVie
             name: "Sales prompts",
             meta: "Public · 9 items · saved by 14 people",
             to: "?collection=vc1",
-            status: "ready",
+            read: readOf("ready", []),
             rows: [
               { id: "p1", title: "Summary on one prompt", type: "Prompt" },
               { id: "p2", title: "Clean-up agent", type: "Agent" },

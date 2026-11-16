@@ -27,7 +27,7 @@ export interface PageStateProps {
   /** The region's own skeleton, drawn while its reads are out. */
   skeleton: ReactNode;
   /** G6: the server answered with nothing. `when` is given every read's data, in order. */
-  empty?: { when: (data: unknown[]) => boolean; line: string; action?: EmptyStateAction };
+  empty?: { when: (data: unknown[]) => boolean; line: string; action?: EmptyStateAction; testId?: string };
   /** G7: the server answered that what the address names does not exist. */
   notFound?: { when?: (data: unknown[]) => boolean; kind: MissingKind; way: WayOut };
   /** The console line's prefix for a failure, "[Drafts] drafts read failed"; `[<region>] read failed` when not given. */
@@ -75,7 +75,7 @@ export function PageState({ read, thing, region, skeleton, empty, notFound, log,
       ) : null;
       break;
     case "empty":
-      body = empty ? <EmptyState line={empty.line} action={empty.action} style={style} /> : null;
+      body = empty ? <EmptyState line={empty.line} action={empty.action} style={style} data-testid={empty.testId} /> : null;
       break;
     case "ready":
       body = children();

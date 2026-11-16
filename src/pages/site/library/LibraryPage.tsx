@@ -32,7 +32,7 @@ import {
 } from "@/components/library/addToCollection";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { PageFailed, PageState } from "@/components/pagestate/PageState";
-import { shownState, type ReadLike, type Shown as RegionState } from "@/components/pagestate/pageStateModel";
+import { allFailed, shownState, type ReadLike, type Shown as RegionState } from "@/components/pagestate/pageStateModel";
 import { WAY_OUT } from "@/components/pagestate/stateCopy";
 import { useAuth } from "@/contexts/AuthContext";
 import { copyToClipboard } from "@/lib/deepLink";
@@ -69,7 +69,7 @@ import { toCardData, topicHref } from "@/components/post/postCardModel";
 import { readTopicCards } from "@/lib/openbuilds/feedTopics";
 
 import { LibraryColumns, LibraryHead, LibraryLoadingView, useLibraryLayout } from "./LibraryFrame";
-import { LibraryView, type LibraryPreviewProps, type LibrarySelected, type LibraryTopic, type PanelStatus } from "./LibraryView";
+import { LibraryView, type LibraryPreviewProps, type LibrarySelected, type LibraryTopic } from "./LibraryView";
 import {
   CHANGES_WINDOW_DAYS,
   LIBRARY_KINDS,
@@ -114,8 +114,7 @@ const enabledOnly = (reads: readonly ReadLike[]): ReadLike[] => reads.filter((re
 /** G4: a region's state, from the reads it needs that are switched on. */
 const regionOf = (reads: readonly ReadLike[], isMissing?: (data: unknown[]) => boolean): RegionState => shownState(enabledOnly(reads), { isMissing });
 
-/** The panel status the view takes: failed and loading as themselves, anything that answered as ready. */
-const statusOf = (state: RegionState): PanelStatus => (state === "loading" ? "loading" : state === "failed" ? "error" : "ready");
+
 
 /** A failed read is told about once, by its panel's name (never its content). */
 function useReported(error: unknown, context: string) {
@@ -336,16 +335,12 @@ export default function LibraryPage() {
       : undefined;
 
   /* All saved shows the builds even when the kept items fail to load (reported by their own context). */
-  const kindStatus: PanelStatus = openId || kind === "builds" || !itemKind ? statusOf(savedState) : statusOf(keptState);
-  const tableStatus: PanelStatus =
-    visiting && !openId ? statusOf(collectionsState) : openId && !open ? (aloneState === "failed" ? "error" : statusOf(collectionBuildsState)) : openId ? statusOf(collectionBuildsState) : kindStatus;
-  const retryTable = () => {
-    if (openId && !open && aloneState === "failed") return void alone.refetch();
-    if (openId) return void collectionBuilds.refetch();
-    if (visiting) return void collections.refetch();
-    if (kind !== "builds") void kept.refetch();
-    if (kind === "builds" || !itemKind) void saved.refetch();
-  };
+  /* G4: the table's reads. PageState retries those that failed. */
+  const tableReads: ReadLike[] = enabledOnly(
+    visiting && !openId ? [collections] : openId && !open && aloneState === "failed" ? [alone] : openId ? [collectionBuilds] : kind === "builds" || !itemKind ? [saved] : [kept],
+  );
+  /* G9: every region of the page failed (the collections and the table; a visitor's page is its collections alone). */
+  const pageFailed = allFailed(enabledOnly(visiting ? [collections] : [collections, ...tableReads]));
   const hasMore = openId ? collectionBuilds : kind === "builds" ? saved : itemKind ? kept : null;
   const moreAvailable = hasMore ? hasMore.hasNextPage : Boolean(saved.hasNextPage || (wantsItems && kept.hasNextPage));
   const moreLoading = hasMore ? hasMore.isFetchingNextPage : saved.isFetchingNextPage || kept.isFetchingNextPage;
@@ -563,7 +558,7 @@ export default function LibraryPage() {
         name: previewEntry.name,
         meta: [`${privacyWord(previewEntry.isPrivate)} · ${countWords(previewEntry.itemCount, "item")}`, savedByOf(previewEntry.isPrivate ? undefined : previewEntry.id)].filter(Boolean).join(" · "),
         to: hrefFor({ collection: previewEntry.id }),
-        status: statusOf(collectionBuildsState),
+        read: collectionBuilds,
         onStart: () => void startFromCollection(previewEntry.id, previewEntry.name),
         rows: (collectionBuilds.data?.pages[0]?.items ?? []).slice(0, 3).map((item) => ({
           id: item.build.id,
@@ -580,15 +575,17 @@ export default function LibraryPage() {
   /* G33: a shared collection the server says is absent is not found; one that failed is failed (the table says so). */
   const collectionMissing = openId !== null && !listed && aloneState === "notfound";
   const page =
-    ownerMissingOrFailed || collectionMissing ? (
+    ownerMissingOrFailed || collectionMissing || pageFailed ? (
       <LibraryColumns
         layout={layout}
         testId="library-state"
-        head={<LibraryHead title="Library" meta={" "} />}
+        head={<LibraryHead title={visiting && owner.data ? `${ownerName}'s library` : "Library"} meta={" "} />}
         left={null}
         main={
           ownerState === "failed" ? (
             <PageFailed reads={[owner]} region="Library" logs={["[Library] owner read failed"]} />
+          ) : pageFailed && !collectionMissing ? (
+            <PageFailed reads={enabledOnly(visiting ? [collections] : [collections, ...tableReads])} region="Library" />
           ) : (
             <PageState
               read={collectionMissing ? alone : owner}
@@ -621,12 +618,11 @@ export default function LibraryPage() {
         }
         changes={!visiting && changeRows.length > 0 ? { ...changesFigure(changeRows), rows: changeRows } : undefined}
         collections={{
-          status: statusOf(collectionsState),
+          read: enabledOnly([collections]),
           items: list.map((item) => ({ id: item.id, name: item.name, meta: privacyWord(item.isPrivate), count: item.itemCount })),
           current: openId,
           hrefFor: (id) => hrefFor({ collection: id }),
           onNew: visiting ? undefined : () => setNaming("new"),
-          onRetry: () => void collections.refetch(),
           emptyLine: visiting ? "No public collections yet." : "No collections yet.",
         }}
         items={{
@@ -648,17 +644,14 @@ export default function LibraryPage() {
           tabs,
           tab: tabs.some((item) => item.value === address.tab) ? address.tab : "all",
           onTab: (next) => move({ tab: next }),
-          status: tableStatus,
-          what: openId && !open && aloneState === "failed" ? "This collection didn't load." : itemKind && !openId ? "Saved items didn't load." : "Builds didn't load.",
-          onRetry: retryTable,
+          read: tableReads,
+          thing: openId ? "this collection" : "your library",
           empty: {
             line:
               visiting && !openId
                 ? "No public collections yet."
                 : openId
-                  ? open
-                    ? "Nothing in this collection yet."
-                    : "This collection is not there any more."
+                  ? "Nothing in this collection yet."
                   : itemKind
                     ? "Nothing kept here yet."
                     : "Save a build and it waits for you here.",

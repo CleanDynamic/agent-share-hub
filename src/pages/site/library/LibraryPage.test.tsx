@@ -234,24 +234,27 @@ describe("Library", () => {
     renderAt("/library");
     const empty = await screen.findByTestId("library-empty");
     expect(empty.textContent).toContain("Save a build and it waits for you here.");
-    expect(within(empty).getByRole("link", { name: "Browse builds" })).toHaveAttribute("href", "/builds");
+    fireEvent.click(within(empty).getByRole("button", { name: "Browse builds" }));
+    expect(where()).toBe("/builds");
   });
 
-  it("says Builds didn't load, with Retry, and Retry asks again", async () => {
+  it("says it couldn't load your library, with Try again, and Try again asks again", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
     listMySavedBuilds.mockRejectedValueOnce(new Error("boom")).mockResolvedValue({ items: [], nextBefore: null });
     renderAt("/library");
-    expect(await screen.findByText("Builds didn't load.")).toBeInTheDocument();
+    expect(await screen.findByText("Couldn't load your library. Try again.")).toBeInTheDocument();
     expect(screen.queryByText(/Something went wrong/)).toBeNull();
     expect(report).toHaveBeenCalledWith(expect.any(Error), { source: "query", context: "library-saved" });
-    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(screen.getByTestId("library-empty")).toBeInTheDocument());
     expect(listMySavedBuilds).toHaveBeenCalledTimes(2);
   });
 
-  it("says Collections didn't load in the collections panel alone", async () => {
+  it("says it couldn't load your collections in the collections panel alone", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
     listCollections.mockRejectedValue(new Error("boom"));
     renderAt("/library");
-    expect(await screen.findByText("Collections didn't load.")).toBeInTheDocument();
+    expect(await screen.findByText("Couldn't load your collections. Try again.")).toBeInTheDocument();
     expect(screen.getByTestId("library-empty")).toBeInTheDocument();
   });
 
@@ -440,5 +443,18 @@ describe("G33 · someone's library and a shared collection: not found only when 
     renderAt("/library?collection=col-x");
     await waitFor(() => expect(screen.queryByText("Nothing at this address.")).toBeNull());
     expect(await screen.findByText(/didn't load|Couldn't load/)).toBeInTheDocument();
+  });
+});
+
+describe("G9 · every region of the Library failed", () => {
+  it("shows one failed state for the page, not one per panel, with the title kept", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    listCollections.mockRejectedValue(new Error("boom"));
+    listMySavedBuilds.mockRejectedValue(new Error("boom"));
+    renderAt("/library");
+    expect(await screen.findByText("Couldn't load this page. Try again.")).toBeInTheDocument();
+    expect(screen.queryByText(/Couldn't load your/)).toBeNull();
+    expect(screen.getAllByRole("button", { name: "Try again" })).toHaveLength(1);
+    expect(screen.getByRole("heading", { level: 1, name: "Library" })).toBeInTheDocument();
   });
 });

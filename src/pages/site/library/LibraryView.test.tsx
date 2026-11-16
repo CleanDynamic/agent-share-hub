@@ -1,6 +1,7 @@
 // SV-09 P2: the Library view, from the board's sample data. Every section is drawn from its own prop; the selected item
 // adapts to what it is (a step's two versions, a build's Plaque and Open).
 
+import { readOf } from "@/components/pagestate/pageStateModel";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
@@ -146,13 +147,14 @@ describe("LibraryView", () => {
     expect(within(preview).getByRole("button", { name: "Start a build from this collection" })).toBeInTheDocument();
   });
 
-  it("says a failed read in one sentence with Retry, per panel", () => {
+  it("says a failed read in one sentence with Try again, per panel", () => {
     const props = visionLibraryProps("error");
     const onRetry = vi.fn();
-    view({ ...props, items: { ...props.items, what: "Builds didn't load.", onRetry } });
-    expect(screen.getByText("Builds didn't load.")).toBeInTheDocument();
-    expect(screen.getByText("Collections didn't load.")).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole("button", { name: "Retry" })[1]);
+    view({ ...props, items: { ...props.items, read: readOf("error", undefined, onRetry), thing: "your library" } });
+    expect(screen.getByText("Couldn't load your library. Try again.")).toBeInTheDocument();
+    expect(screen.getByText("Couldn't load your collections. Try again.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
+    fireEvent.click(screen.getAllByRole("button", { name: "Try again" })[1]);
     expect(onRetry).toHaveBeenCalled();
   });
 
@@ -160,8 +162,8 @@ describe("LibraryView", () => {
     view(visionLibraryProps("empty"));
     const empty = screen.getByTestId("library-empty");
     expect(within(empty).getByText("Save a step from any build and it waits for you here.")).toBeInTheDocument();
-    expect(within(empty).getAllByRole("link")).toHaveLength(1);
-    expect(within(empty).getByRole("link")).toHaveAttribute("data-ui", "button");
+    expect(within(empty).getAllByRole("button")).toHaveLength(1);
+    expect(within(empty).getByRole("button")).toHaveAttribute("data-ui", "button");
   });
 
   it("puts the kinds in a row of tabs on a phone, then the table, then the selected item", () => {
