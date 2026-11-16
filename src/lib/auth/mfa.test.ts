@@ -9,14 +9,21 @@ const mfa = vi.hoisted(() => ({
   challengeAndVerify: vi.fn(),
 }));
 const auth = vi.hoisted(() => ({ signInWithPassword: vi.fn() }));
-vi.mock("@/integrations/supabase/client", () => ({ supabase: { auth: { ...auth, mfa } } }));
+const invoke = vi.hoisted(() => vi.fn());
+const markSessionRecovered = vi.hoisted(() => vi.fn());
+vi.mock("@/integrations/supabase/client", () => ({ supabase: { auth: { ...auth, mfa }, functions: { invoke } } }));
+vi.mock("@/lib/auth/codeStep", () => ({ markSessionRecovered: () => markSessionRecovered() }));
 vi.mock("@/lib/auth/turnstile", () => ({ oneShotCaptchaToken: async () => ({ token: "tok-1", failed: false }) }));
 
 import {
   MFA_COPY,
   cleanCode,
+  backupCodesLeft,
   confirmAuthenticator,
   confirmIdentity,
+  createBackupCodes,
+  redeemBackupCode,
+  removeLostAuthenticator,
   listAuthenticators,
   removeAuthenticator,
   startAuthenticator,
@@ -26,7 +33,7 @@ import {
 const phone: Authenticator = { id: "f1", name: "Phone", createdAt: "2026-11-01T10:00:00Z" };
 
 beforeEach(() => {
-  for (const fn of [...Object.values(mfa), ...Object.values(auth)]) fn.mockReset();
+  for (const fn of [...Object.values(mfa), ...Object.values(auth), invoke, markSessionRecovered]) fn.mockReset();
 });
 
 describe("cleanCode", () => {
@@ -125,5 +132,37 @@ describe("adding and removing", () => {
     mfa.unenroll.mockResolvedValue({ error: null });
     await removeAuthenticator("f1");
     expect(mfa.unenroll).toHaveBeenCalledWith({ factorId: "f1" });
+  });
+});
+
+describe("G5: the backup-code calls (mfa-recovery reads who from the token; nothing here names a user)", () => {
+  it("makes a new set", async () => {
+    invoke.mockResolvedValue({ data: { codes: ["AAAAA-BBBBB"] }, error: null });
+    expect(await createBackupCodes()).toEqual(["AAAAA-BBBBB"]);
+    expect(invoke).toHaveBeenCalledWith("mfa-recovery", { method: "POST", body: { action: "create" } });
+  });
+
+  it("counts what is left", async () => {
+    invoke.mockResolvedValue({ data: { left: 4 }, error: null });
+    expect(await backupCodesLeft()).toBe(4);
+  });
+
+  it("redeems one, then notes this session as verified so the dialog does not ask again", async () => {
+    invoke.mockResolvedValue({ data: { ok: true }, error: null });
+    await redeemBackupCode("abcde-fghjk");
+    expect(invoke).toHaveBeenCalledWith("mfa-recovery", { method: "POST", body: { action: "redeem", code: "abcde-fghjk" } });
+    expect(markSessionRecovered).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes on the function's sentence when it refuses, and marks nothing", async () => {
+    invoke.mockResolvedValue({ data: null, error: { context: { status: 401, json: async () => ({ error: "That backup code didn't work." }) } } });
+    await expect(redeemBackupCode("abcde-fghjk")).rejects.toThrow("That backup code didn't work.");
+    expect(markSessionRecovered).not.toHaveBeenCalled();
+  });
+
+  it("removes a lost authenticator through the server", async () => {
+    invoke.mockResolvedValue({ data: { ok: true }, error: null });
+    await removeLostAuthenticator("f1");
+    expect(invoke).toHaveBeenCalledWith("mfa-recovery", { method: "POST", body: { action: "remove_factor", factorId: "f1" } });
   });
 });

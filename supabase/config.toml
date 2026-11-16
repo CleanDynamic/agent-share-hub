@@ -102,6 +102,11 @@ verify_jwt = true
 # the service role only for sessions_of_user and revoke_user_session, each given that member's own id.
 verify_jwt = true
 
+[functions.mfa-recovery]
+# Part A, G5. True: the gateway rejects an unauthenticated call. The member is read from the verified token; the service
+# role is used only for the backup-code functions, the redeem limit and the caller's own factors.
+verify_jwt = true
+
 # Auth hardening (security prompt 7): the owner's dashboard settings, as far as this file can express them.
 # docs/security/auth-settings.md has every setting with its dashboard path, including those this file cannot hold
 # (leaked password protection, rate limits to review). The hosted project changes only through its dashboard or

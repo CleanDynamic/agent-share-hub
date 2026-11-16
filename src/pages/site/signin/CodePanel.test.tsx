@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const pendingCodeFactor = vi.fn();
 const abandonCodeStep = vi.fn();
 const verifyCode = vi.fn();
+const redeemBackupCode = vi.fn();
 const resolvePostAuthRoute = vi.fn();
 let tries = 0;
 
@@ -22,7 +23,7 @@ vi.mock("@/lib/auth/codeStep", () => ({
 }));
 vi.mock("@/lib/auth/mfa", async (importOriginal) => {
   const real = await importOriginal<typeof import("@/lib/auth/mfa")>();
-  return { ...real, verifyCode: (...args: unknown[]) => verifyCode(...args) };
+  return { ...real, verifyCode: (...args: unknown[]) => verifyCode(...args), redeemBackupCode: (...args: unknown[]) => redeemBackupCode(...args) };
 });
 vi.mock("@/lib/auth/postAuthRoute", () => ({ resolvePostAuthRoute: (...args: unknown[]) => resolvePostAuthRoute(...args) }));
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ isLoggedIn: true, user: { id: "u-1" } }) }));
@@ -44,7 +45,7 @@ const dialogBox = () => {
 
 beforeEach(() => {
   tries = 0;
-  for (const fn of [pendingCodeFactor, abandonCodeStep, verifyCode, resolvePostAuthRoute]) fn.mockReset();
+  for (const fn of [pendingCodeFactor, abandonCodeStep, verifyCode, redeemBackupCode, resolvePostAuthRoute]) fn.mockReset();
   pendingCodeFactor.mockResolvedValue("f1");
   abandonCodeStep.mockResolvedValue(undefined);
   resolvePostAuthRoute.mockResolvedValue("/home");
@@ -149,5 +150,51 @@ describe("G7: five wrong codes in a row", () => {
     fireEvent.click(verify());
     expect(await screen.findByText(MFA_COPY.codeShape)).toBeTruthy();
     expect(tries).toBe(0);
+  });
+});
+
+describe("G5: a backup code in place of the code", () => {
+  const useBackup = () => fireEvent.click(screen.getByRole("button", { name: CODE_COPY.useBackup }));
+  const backupField = () => screen.getByLabelText(CODE_COPY.backupLabel) as HTMLInputElement;
+
+  it("turns the field into a backup-code field, and back", async () => {
+    renderDialog("code");
+    await waitFor(() => expect(pendingCodeFactor).toHaveBeenCalled());
+    useBackup();
+    expect(backupField().getAttribute("inputmode")).toBe("text");
+    expect(backupField().getAttribute("autocomplete")).toBe("off");
+    fireEvent.click(screen.getByRole("button", { name: CODE_COPY.useCode }));
+    expect(field().getAttribute("inputmode")).toBe("numeric");
+  });
+
+  it("signs in with one backup code, through mfa-recovery, and never the authenticator check", async () => {
+    redeemBackupCode.mockResolvedValue(undefined);
+    const where = renderDialog("code", "redirect=%2Fgallery");
+    await waitFor(() => expect(pendingCodeFactor).toHaveBeenCalled());
+    useBackup();
+    fireEvent.change(backupField(), { target: { value: "ABCDE-FGHJK" } });
+    fireEvent.click(verify());
+    await waitFor(() => expect(where.at()).toBe("/gallery"));
+    expect(redeemBackupCode).toHaveBeenCalledWith("ABCDE-FGHJK");
+    expect(verifyCode).not.toHaveBeenCalled();
+  });
+
+  it("a refused backup code says why and counts as a try", async () => {
+    redeemBackupCode.mockRejectedValue(new SettingsError("That backup code didn't work."));
+    renderDialog("code");
+    await waitFor(() => expect(pendingCodeFactor).toHaveBeenCalled());
+    useBackup();
+    fireEvent.change(backupField(), { target: { value: "ABCDE-FGHJK" } });
+    fireEvent.click(verify());
+    expect(await screen.findByText(CODE_COPY.wrong(4))).toBeTruthy();
+    expect(tries).toBe(1);
+  });
+
+  it("is not sent until it has ten characters", async () => {
+    renderDialog("code");
+    await waitFor(() => expect(pendingCodeFactor).toHaveBeenCalled());
+    useBackup();
+    fireEvent.change(backupField(), { target: { value: "ABCDE" } });
+    expect(verify()).toBeDisabled();
   });
 });

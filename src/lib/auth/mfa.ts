@@ -7,6 +7,7 @@
 // otherwise a fresh code from the authenticator. Nothing here uses a service key.
 
 import { supabase } from "@/integrations/supabase/client";
+import { markSessionRecovered } from "@/lib/auth/codeStep";
 import { oneShotCaptchaToken } from "@/lib/auth/turnstile";
 import { SettingsError } from "@/lib/settings/useAction";
 
@@ -46,6 +47,17 @@ export const MFA_COPY = {
   removed: "Authenticator removed.",
   added: "Authenticator added. You'll be asked for a code after your password.",
   nameTaken: "You already have an authenticator with that name. Choose another.",
+  // G5
+  backupTitle: "Backup codes",
+  backupSave: "Save these backup codes somewhere safe, away from your phone. Each one works once if you lose your authenticator. They won't be shown again.",
+  backupLeft: (left: number) => `${left} of 10 left. Each works once in place of a code.`,
+  backupUnknown: "Couldn't count your backup codes.",
+  backupNew: "Make new codes",
+  backupNewNote: "New codes replace your old ones, which stop working.",
+  backupCopy: "Copy codes",
+  backupCopied: "Copied.",
+  backupDone: "I've saved them",
+  recoveredRemove: "You signed in with a backup code, so for 10 minutes you can remove a lost authenticator without its code.",
 } as const;
 
 interface AuthErrorLike {
@@ -135,4 +147,41 @@ export function addedLabel(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "Added";
   return `Added ${date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
+}
+
+interface HttpErrorLike {
+  context?: { status?: number; json: () => Promise<unknown> };
+}
+
+async function recoveryCall<T>(body: Record<string, unknown>, fallback: string): Promise<T> {
+  const { data, error } = await supabase.functions.invoke("mfa-recovery", { method: "POST", body });
+  if (error) {
+    const response = (error as HttpErrorLike).context;
+    const said = response ? ((await response.json().catch(() => null)) as { error?: string } | null) : null;
+    throw new SettingsError(said?.error ?? fallback);
+  }
+  return data as T;
+}
+
+/** G5: ten new backup codes, to show once. The old set stops working. Needs a code entered in the last ten minutes. */
+export async function createBackupCodes(): Promise<string[]> {
+  const data = await recoveryCall<{ codes?: string[] }>({ action: "create" }, "Couldn't make backup codes. Try again.");
+  return data.codes ?? [];
+}
+
+/** G5: how many unused backup codes the member has. */
+export async function backupCodesLeft(): Promise<number> {
+  const data = await recoveryCall<{ left?: number }>({ action: "status" }, MFA_COPY.backupUnknown);
+  return data.left ?? 0;
+}
+
+/** G5: spend one backup code on this session, in place of the authenticator's code. */
+export async function redeemBackupCode(text: string): Promise<void> {
+  await recoveryCall<{ ok: boolean }>({ action: "redeem", code: text }, "That backup code didn't work.");
+  await markSessionRecovered();
+}
+
+/** G5: remove an authenticator that is lost, from a session a backup code has just verified. */
+export async function removeLostAuthenticator(factorId: string): Promise<void> {
+  await recoveryCall<{ ok: boolean }>({ action: "remove_factor", factorId }, "Couldn't remove that authenticator. Try again.");
 }

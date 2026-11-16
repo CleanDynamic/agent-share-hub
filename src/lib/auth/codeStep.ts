@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 export const MAX_CODE_TRIES = 5;
 
 const TRIES_KEY = "ob-code-tries";
+/** G5: the session a backup code verified. A session id is not a secret; the database keeps the real mark. */
+const RECOVERED_KEY = "ob-recovered-session";
 
 function safely<T>(read: () => T, fallback: T): T {
   try {
@@ -28,6 +30,7 @@ function safely<T>(read: () => T, fallback: T): T {
 export async function pendingCodeFactor(): Promise<string | null> {
   const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (error || !data || data.currentLevel !== "aal1" || data.nextLevel !== "aal2") return null;
+  if (await isSessionRecovered()) return null;
   const { data: factors } = await supabase.auth.mfa.listFactors();
   return factors?.totp?.find((factor) => factor.status === "verified")?.id ?? null;
 }
@@ -52,4 +55,29 @@ export function clearTries(): void {
 export async function abandonCodeStep(): Promise<void> {
   clearTries();
   await supabase.auth.signOut({ scope: "local" });
+}
+
+/** The session_id claim of this browser's current access token, or null. */
+export async function currentSessionId(): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  const part = token?.split(".")[1];
+  if (!part) return null;
+  return safely(() => {
+    const padded = part.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(part.length / 4) * 4, "=");
+    const claims = JSON.parse(atob(padded)) as { session_id?: unknown };
+    return typeof claims.session_id === "string" ? claims.session_id : null;
+  }, null);
+}
+
+/** G5: note that a backup code verified this session, so the dialog does not ask for a code again. */
+export async function markSessionRecovered(): Promise<void> {
+  const id = await currentSessionId();
+  if (id) safely(() => localStorage.setItem(RECOVERED_KEY, id), undefined);
+}
+
+/** G5: true when a backup code verified this browser's current session. */
+export async function isSessionRecovered(): Promise<boolean> {
+  const id = await currentSessionId();
+  return id !== null && safely(() => localStorage.getItem(RECOVERED_KEY), null) === id;
 }

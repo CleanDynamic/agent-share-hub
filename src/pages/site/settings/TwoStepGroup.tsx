@@ -2,8 +2,11 @@
 
    Lists the member's authenticators (name, date added) with `Remove` on each, and `Add an authenticator`. Adding asks
    first for the password (no authenticator yet) or a fresh code (one already), then shows a QR code and the same key as
-   text, then takes one code to confirm. Removing asks for a fresh code from that authenticator. G5: once an
-   authenticator is added, the member's backup codes are shown here, once. */
+   text, then takes one code to confirm. Removing asks for a fresh code from that authenticator.
+
+   G5: after the first authenticator, ten backup codes are shown here, once. A "Backup codes" row says how many are left
+   and makes a new set (a fresh code first; the old set stops working). A session a backup code verified can remove a
+   lost authenticator without its code, for ten minutes (the server holds that window). */
 
 import { KeyRound, Lock, Smartphone } from "lucide-react";
 import { useState } from "react";
@@ -29,8 +32,45 @@ export interface TwoStepGroupProps {
   onCancelAdd: (factorId: string) => Promise<void>;
   /** Proves it is the member with a fresh code from that authenticator, then removes it. */
   onRemove: (factor: Authenticator, code: string) => Promise<void>;
-  /** G5: the backup codes block, given the codes just made. */
-  renderBackupCodes?: (codes: readonly string[], onDone: () => void) => React.ReactNode;
+  /** G5: unused backup codes; null when they could not be counted. Only asked for once there is an authenticator. */
+  backupLeft?: number | null;
+  /** G5: proves it is the member with a fresh code, then makes a new set, voiding the old. */
+  onRegenerate?: (code: string) => Promise<readonly string[]>;
+  /** G5: this session was verified with a backup code, so a lost authenticator can be removed without its code. */
+  recovered?: boolean;
+}
+
+/** G5: the new codes, shown once, with Copy and the member's word that they have saved them. */
+export function BackupCodesBlock({ codes, onDone }: { codes: readonly string[]; onDone: () => void }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }} data-testid="backup-codes">
+      <Note role="status">{MFA_COPY.backupSave}</Note>
+      <ul aria-label={MFA_COPY.backupTitle} style={{ margin: 0, padding: 0, listStyle: "none", display: "grid", gridTemplateColumns: "repeat(2, max-content)", gap: 8 }}>
+        {codes.map((code) => (
+          <li key={code} style={{ fontFamily: DM_MONO, fontSize: 12, color: t.text, userSelect: "all" }}>
+            {code}
+          </li>
+        ))}
+      </ul>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <Button
+          variant="secondary"
+          size={32}
+          fontSize={12}
+          onClick={() => {
+            void navigator.clipboard?.writeText(codes.join("\n")).then(() => setCopied(true), () => undefined);
+          }}
+        >
+          {MFA_COPY.backupCopy}
+        </Button>
+        <Button variant="secondary" size={32} fontSize={12} onClick={onDone}>
+          {MFA_COPY.backupDone}
+        </Button>
+        {copied ? <span style={{ color: t.label, fontSize: 12 }}>{MFA_COPY.backupCopied}</span> : null}
+      </div>
+    </div>
+  );
 }
 
 type Step =
@@ -38,7 +78,9 @@ type Step =
   | { kind: "identify" }
   | { kind: "scan"; enrolment: Enrolment }
   | { kind: "codes"; codes: readonly string[] }
-  | { kind: "remove"; factor: Authenticator };
+  | { kind: "remove"; factor: Authenticator }
+  | { kind: "regenerate" }
+  | { kind: "regenerated"; codes: readonly string[] };
 
 function messageOf(error: unknown): string {
   return error instanceof SettingsError ? error.message : "Something went wrong. Try again.";
@@ -46,7 +88,7 @@ function messageOf(error: unknown): string {
 
 const CODE_FIELD = { icon: KeyRound, inputMode: "numeric" as const, maxLength: CODE_LENGTH + 1, autoComplete: "one-time-code", required: true };
 
-export function TwoStepGroup({ factors, hasPassword, onBeginAdd, onFinishAdd, onCancelAdd, onRemove, renderBackupCodes }: TwoStepGroupProps) {
+export function TwoStepGroup({ factors, hasPassword, onBeginAdd, onFinishAdd, onCancelAdd, onRemove, backupLeft, onRegenerate, recovered = false }: TwoStepGroupProps) {
   const [step, setStep] = useState<Step>({ kind: "idle" });
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
@@ -122,7 +164,7 @@ export function TwoStepGroup({ factors, hasPassword, onBeginAdd, onFinishAdd, on
                 }}
                 style={{ display: "flex", flexDirection: "column", gap: 8 }}
               >
-                <AuthField label={`Code from ${factor.name}`} value={code} onChange={setCode} {...CODE_FIELD} />
+                {recovered ? <Note>{MFA_COPY.recoveredRemove}</Note> : <AuthField label={`Code from ${factor.name}`} value={code} onChange={setCode} {...CODE_FIELD} />}
                 {actions(MFA_COPY.remove, () => reset())}
                 {error ? <FieldMessage>{error}</FieldMessage> : null}
               </form>
@@ -130,6 +172,40 @@ export function TwoStepGroup({ factors, hasPassword, onBeginAdd, onFinishAdd, on
           }
         />
       ))}
+      {hasFactor && onRegenerate ? (
+        <SettingRow
+          label={MFA_COPY.backupTitle}
+          hint={backupLeft === null || backupLeft === undefined ? MFA_COPY.backupUnknown : MFA_COPY.backupLeft(backupLeft)}
+          control={
+            step.kind === "regenerate" || step.kind === "regenerated" ? null : (
+              <Button variant="secondary" size={32} fontSize={12} onClick={() => reset({ kind: "regenerate" })}>
+                {MFA_COPY.backupNew}
+              </Button>
+            )
+          }
+          below={
+            step.kind === "regenerate" ? (
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void run(async () => {
+                    const codes = await onRegenerate(code);
+                    reset({ kind: "regenerated", codes });
+                  });
+                }}
+                style={{ display: "flex", flexDirection: "column", gap: 8 }}
+              >
+                <Note>{MFA_COPY.backupNewNote}</Note>
+                <AuthField label={`Code from ${factors[0].name}`} value={code} onChange={setCode} {...CODE_FIELD} />
+                {actions(MFA_COPY.backupNew, () => reset())}
+                {error ? <FieldMessage>{error}</FieldMessage> : null}
+              </form>
+            ) : step.kind === "regenerated" ? (
+              <BackupCodesBlock codes={step.codes} onDone={() => reset()} />
+            ) : null
+          }
+        />
+      ) : null}
       <SettingRow
         last
         label="Authenticator app"
@@ -171,7 +247,7 @@ export function TwoStepGroup({ factors, hasPassword, onBeginAdd, onFinishAdd, on
                 event.preventDefault();
                 void run(async () => {
                   const codes = await onFinishAdd(step.enrolment.factorId, code);
-                  if (codes && codes.length > 0 && renderBackupCodes) reset({ kind: "codes", codes });
+                  if (codes && codes.length > 0) reset({ kind: "codes", codes });
                   else reset({ kind: "idle", done: MFA_COPY.added });
                 });
               }}
@@ -193,8 +269,8 @@ export function TwoStepGroup({ factors, hasPassword, onBeginAdd, onFinishAdd, on
               })}
               {error ? <FieldMessage>{error}</FieldMessage> : null}
             </form>
-          ) : step.kind === "codes" && renderBackupCodes ? (
-            renderBackupCodes(step.codes, () => reset({ kind: "idle", done: MFA_COPY.added }))
+          ) : step.kind === "codes" ? (
+            <BackupCodesBlock codes={step.codes} onDone={() => reset({ kind: "idle", done: MFA_COPY.added })} />
           ) : step.kind === "idle" && step.done ? (
             <Note role="status">{step.done}</Note>
           ) : null

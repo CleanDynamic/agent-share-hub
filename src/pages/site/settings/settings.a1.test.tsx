@@ -123,3 +123,52 @@ it("says so in one line when the authenticators could not be loaded", () => {
   render(<TwoStepGroup {...props({ factors: null })} />);
   expect(within(group()).getByText(/Couldn't load your authenticators/)).toBeTruthy();
 });
+
+describe("G5: backup codes", () => {
+  const codes = ["AAAAA-BBBBB", "CCCCC-DDDDD", "EEEEE-FFFFF", "GGGGG-HHHHH", "JJJJJ-KKKKK", "MMMMM-NNNNN", "PPPPP-QQQQQ", "RRRRR-SSSSS", "TTTTT-UUUUU", "VVVVV-WWWWW"];
+
+  it("after the first authenticator, shows ten codes once, then they are gone", async () => {
+    const p = props({ onFinishAdd: vi.fn(async () => codes) });
+    render(<TwoStepGroup {...p} />);
+    click(MFA_COPY.add);
+    type("Password", "secret-pass");
+    click("Continue");
+    await screen.findByRole("img", { name: "QR code for your authenticator app" });
+    type(MFA_COPY.confirmCode, "123456");
+    click("Confirm");
+    const list = await screen.findByRole("list", { name: MFA_COPY.backupTitle });
+    expect(within(list).getAllByRole("listitem").map((item) => item.textContent)).toEqual(codes);
+    expect(screen.getByText(MFA_COPY.backupSave)).toBeTruthy();
+    click(MFA_COPY.backupDone);
+    expect(screen.queryByRole("list", { name: MFA_COPY.backupTitle })).toBeNull();
+    expect(screen.queryByText(codes[0])).toBeNull();
+    expect(screen.getByText(MFA_COPY.added)).toBeTruthy();
+  });
+
+  it("says how many are left, and makes a new set only after a fresh code", async () => {
+    const onRegenerate = vi.fn(async () => codes);
+    render(<TwoStepGroup {...props({ factors: [phone], backupLeft: 7, onRegenerate })} />);
+    expect(within(group()).getByText(MFA_COPY.backupLeft(7))).toBeTruthy();
+    click(MFA_COPY.backupNew);
+    expect(screen.getByText(MFA_COPY.backupNewNote)).toBeTruthy();
+    type("Code from Phone", "222333");
+    click(MFA_COPY.backupNew);
+    await waitFor(() => expect(onRegenerate).toHaveBeenCalledWith("222333"));
+    expect(await screen.findByRole("list", { name: MFA_COPY.backupTitle })).toBeTruthy();
+  });
+
+  it("from a session a backup code verified, removes a lost authenticator without its code", async () => {
+    const p = props({ factors: [phone], recovered: true });
+    render(<TwoStepGroup {...p} />);
+    click("Remove Phone");
+    expect(screen.getByText(MFA_COPY.recoveredRemove)).toBeTruthy();
+    expect(screen.queryByLabelText("Code from Phone")).toBeNull();
+    click(MFA_COPY.remove);
+    await waitFor(() => expect(p.onRemove).toHaveBeenCalledWith(phone, ""));
+  });
+
+  it("has no Backup codes row before there is an authenticator", () => {
+    render(<TwoStepGroup {...props({ onRegenerate: vi.fn(async () => codes) })} />);
+    expect(screen.queryByText(MFA_COPY.backupTitle)).toBeNull();
+  });
+});

@@ -15,7 +15,8 @@ import { blockKeys, listBlocks, unblockUser, type BlockedPerson } from "@/lib/se
 import { loadIsPrivate, setIsPrivate } from "@/lib/settings/privacySettings";
 import { loadNotificationPreferences, setNotificationPreference } from "@/lib/settings/notificationSettings";
 import { type NotificationPreferences, type PreferenceKey } from "@/lib/settings/notificationPrefs";
-import { cancelAuthenticator, confirmAuthenticator, confirmIdentity, listAuthenticators, removeAuthenticator, startAuthenticator } from "@/lib/auth/mfa";
+import { isSessionRecovered } from "@/lib/auth/codeStep";
+import { backupCodesLeft, cancelAuthenticator, confirmAuthenticator, confirmIdentity, createBackupCodes, listAuthenticators, removeAuthenticator, removeLostAuthenticator, startAuthenticator } from "@/lib/auth/mfa";
 import { changeEmail, changePassword, hasPassword, linkProvider, listMySessions, loadAccount, signOutDevice, signOutEverywhere, unlinkMethod } from "@/lib/settings/account";
 
 import { AccountView } from "./AccountView";
@@ -38,6 +39,10 @@ export function AccountSection() {
   const factors = useQuery({ queryKey: ["settings", "listAuthenticators"], queryFn: listAuthenticators, staleTime: STALE_MS, retry: 1 });
   const factorList = factors.isError ? null : factors.data ?? [];
   const refreshFactors = () => queryClient.invalidateQueries({ queryKey: ["settings", "listAuthenticators"] });
+  // G5: the count of backup codes, once there is an authenticator; and whether a backup code verified this session.
+  const backupLeft = useQuery({ queryKey: ["settings", "backupCodesLeft"], queryFn: backupCodesLeft, enabled: (factorList?.length ?? 0) > 0, staleTime: STALE_MS, retry: 1 });
+  const recovered = useQuery({ queryKey: ["settings", "isSessionRecovered"], queryFn: isSessionRecovered, staleTime: STALE_MS });
+  const refreshBackup = () => queryClient.invalidateQueries({ queryKey: ["settings", "backupCodesLeft"] });
   const askAgain = useAskAgain();
   const accountStall = useStalled(!account.data && !account.isError);
   if (account.isError || accountStall.stalled) return <SectionError title="Account" onRetry={() => { accountStall.restart(); askAgain(["settings", "loadAccount"], account.refetch); }} />;
@@ -68,16 +73,35 @@ export function AccountSection() {
           return startAuthenticator(name);
         },
         onFinishAdd: async (factorId, code) => {
+          const first = (factorList?.length ?? 0) === 0;
           await confirmAuthenticator(factorId, code);
           await refreshFactors();
-          return null;
+          // G5: the first authenticator comes with ten backup codes, shown once. The code just entered is the fresh one.
+          if (!first) return null;
+          // The authenticator is added either way; if the codes could not be made, the Backup codes row offers them.
+          const codes = await createBackupCodes().catch(() => null);
+          await refreshBackup();
+          return codes;
         },
         onCancelAdd: cancelAuthenticator,
         onRemove: async (factor, code) => {
-          await confirmIdentity({ email, factors: factorList ?? [], code, factorId: factor.id });
-          await removeAuthenticator(factor.id);
+          if (recovered.data) {
+            // G5: the authenticator is lost and a backup code verified this session; the server checks the ten minutes.
+            await removeLostAuthenticator(factor.id);
+          } else {
+            await confirmIdentity({ email, factors: factorList ?? [], code, factorId: factor.id });
+            await removeAuthenticator(factor.id);
+          }
           await refreshFactors();
         },
+        backupLeft: backupLeft.isError ? null : backupLeft.data ?? null,
+        onRegenerate: async (code) => {
+          await confirmIdentity({ email, factors: factorList ?? [], code });
+          const codes = await createBackupCodes();
+          await refreshBackup();
+          return codes;
+        },
+        recovered: recovered.data === true,
       }}
       sessions={sessions.isError ? null : sessions.data ?? []}
       onSignOutDevice={async (session) => {
