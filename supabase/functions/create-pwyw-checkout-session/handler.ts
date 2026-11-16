@@ -10,6 +10,7 @@
 import { z, readBody, returnUrl } from "../_shared/body.ts";
 import { fail, json, preflight } from "../_shared/cors.ts";
 import { MIN_PENCE, PWYW_CEILING_PENCE, toPence, type PaymentDeps } from "../_shared/payments.ts";
+import type { RateCheck } from "../_shared/rateLimit.ts";
 
 const Body = z.object({
   content_id: z.string({ required_error: "Required" }).uuid(),
@@ -18,11 +19,14 @@ const Body = z.object({
   cancel_url: returnUrl,
 });
 
-export function createPwywHandler(deps: PaymentDeps) {
+export function createPwywHandler(deps: PaymentDeps, limit: RateCheck = async () => null) {
   return async (req: Request): Promise<Response> => {
     const early = preflight(req);
     if (early) return early;
     if (req.method !== "POST") return fail(req, 405, "Method not allowed");
+    // G10: anyone may start a checkout, so each address is limited before anything is read or asked of Stripe.
+    const limited = await limit(req);
+    if (limited) return limited;
 
     try {
       const body = await readBody(req, Body);

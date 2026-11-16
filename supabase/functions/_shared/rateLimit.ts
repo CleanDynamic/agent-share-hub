@@ -25,6 +25,14 @@ export interface RateStore {
   hit: (bucket: string, limit: number, windowSeconds: number) => Promise<boolean>;
 }
 
+/** The agreed limits, per caller address, one entry per function (G10). */
+export const RATE_RULES: Record<string, RateRule> = {
+  "create-pwyw-checkout-session": { limit: 10, windowSeconds: 600 },
+};
+
+/** What a handler is given to check the limit: null to go on, or the answer to send. */
+export type RateCheck = (req: Request) => Promise<Response | null>;
+
 const MAX_IP_LENGTH = 64;
 
 /**

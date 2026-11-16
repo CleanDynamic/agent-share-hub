@@ -56,3 +56,46 @@ describe("limitByIp", () => {
     error.mockRestore();
   });
 });
+
+// ── Each function, wired (one block per function, added with its commit) ──
+
+import { readFileSync } from "node:fs";
+import { RATE_RULES } from "../../../supabase/functions/_shared/rateLimit.ts";
+import { createPwywHandler } from "../../../supabase/functions/create-pwyw-checkout-session/handler.ts";
+import type { PaymentDeps } from "../../../supabase/functions/_shared/payments.ts";
+
+const ok = new Request("https://fn.test/x", {
+  method: "POST",
+  headers: { origin: "https://openbuilds.ai", "content-type": "application/json" },
+  body: JSON.stringify({}),
+});
+const over = async (req: Request) => {
+  const res = new Response(JSON.stringify({ error: "Too many requests. Try again later." }), { status: 429 });
+  void req;
+  return res;
+};
+function paymentDeps() {
+  const createSession = vi.fn(async () => ({ url: "https://checkout.stripe.test/s" }));
+  const findItem = vi.fn(async () => null);
+  const d = { getUserId: async () => "u-1", findItem, createSession, findSplits: async () => [], findStripeAccounts: async () => new Map() } as unknown as PaymentDeps;
+  return { d, createSession, findItem };
+}
+const source = (fn: string) => readFileSync(`supabase/functions/${fn}/index.ts`, "utf8");
+
+describe("G10: create-pwyw-checkout-session is limited per address", () => {
+  it("allows 10 per 10 minutes", () => {
+    expect(RATE_RULES["create-pwyw-checkout-session"]).toEqual({ limit: 10, windowSeconds: 600 });
+  });
+
+  it("answers over the limit before it reads the body, the database or Stripe", async () => {
+    const { d, createSession, findItem } = paymentDeps();
+    const res = await createPwywHandler(d, over)(ok);
+    expect(res.status).toBe(429);
+    expect(findItem).not.toHaveBeenCalled();
+    expect(createSession).not.toHaveBeenCalled();
+  });
+
+  it("is wired to the database store in the deployed function", () => {
+    expect(source("create-pwyw-checkout-session")).toMatch(/limitByIp\(req, "create-pwyw-checkout-session", RATE_RULES\["create-pwyw-checkout-session"\], store\)/);
+  });
+});
