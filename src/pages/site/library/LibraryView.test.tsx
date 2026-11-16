@@ -162,8 +162,8 @@ describe("LibraryView", () => {
     view(visionLibraryProps("empty"));
     const empty = screen.getByTestId("library-empty");
     expect(within(empty).getByText("Save a step from any build and it waits for you here.")).toBeInTheDocument();
-    expect(within(empty).getAllByRole("button")).toHaveLength(1);
-    expect(within(empty).getByRole("button")).toHaveAttribute("data-ui", "button");
+    expect(within(empty).getAllByRole("link")).toHaveLength(1);
+    expect(within(empty).getByRole("link")).toHaveAttribute("data-ui", "button");
   });
 
   it("puts the kinds in a row of tabs on a phone, then the table, then the selected item", () => {

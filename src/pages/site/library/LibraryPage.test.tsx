@@ -234,8 +234,7 @@ describe("Library", () => {
     renderAt("/library");
     const empty = await screen.findByTestId("library-empty");
     expect(empty.textContent).toContain("Save a build and it waits for you here.");
-    fireEvent.click(within(empty).getByRole("button", { name: "Browse builds" }));
-    expect(where()).toBe("/builds");
+    expect(within(empty).getByRole("link", { name: "Browse builds" })).toHaveAttribute("href", "/builds");
   });
 
   it("says it couldn't load your library, with Try again, and Try again asks again", async () => {
@@ -407,7 +406,7 @@ describe("G33 · someone's library and a shared collection: not found only when 
     renderAt("/library/nobody");
     expect(await screen.findByText("Nothing at this address.")).toBeInTheDocument();
     expect(screen.getByText("This profile may have moved, or the link may be wrong.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Browse builds" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Browse builds" })).toHaveAttribute("href", "/builds");
     expect(screen.getByRole("heading", { level: 1, name: "Library" })).toBeInTheDocument();
     expect(screen.queryByText("Nobody here goes by that name.")).toBeNull();
     expect(screen.queryByText("No public collections yet.")).toBeNull();

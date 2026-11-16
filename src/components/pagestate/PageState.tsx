@@ -8,7 +8,6 @@
 // panel) is what the skeleton and the state are laid out in: nothing below moves when one replaces the other.
 
 import { useEffect, type CSSProperties, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
 
 import { EmptyState, type EmptyStateAction } from "@/components/brand/EmptyState";
 import { ErrorState } from "@/components/brand/ErrorState";
@@ -53,7 +52,6 @@ function Mark({ state, region, children }: { state: Shown; region: string; child
 }
 
 export function PageState({ read, thing, region, skeleton, empty, notFound, log, style, children }: PageStateProps) {
-  const navigate = useNavigate();
   const reads = asList(read);
   useLogEach(reads, reads.map(() => log ?? `[${region}] read failed`));
   const state = shownState(reads, {
@@ -71,7 +69,7 @@ export function PageState({ read, thing, region, skeleton, empty, notFound, log,
       break;
     case "notfound":
       body = notFound ? (
-        <EmptyState line={NOT_FOUND} detail={NOT_FOUND_DETAIL[notFound.kind]} action={{ label: notFound.way.label, onClick: () => navigate(notFound.way.to) }} style={style} />
+        <EmptyState line={NOT_FOUND} detail={NOT_FOUND_DETAIL[notFound.kind]} action={{ label: notFound.way.label, href: notFound.way.to }} style={style} />
       ) : null;
       break;
     case "empty":

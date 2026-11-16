@@ -6,8 +6,7 @@
    preview. Each section is its own component and is drawn only when its prop is given, so the live page draws what has
    a source and the dev page draws the whole board. */
 
-import { useNavigate } from "react-router-dom";
-
+import type { EmptyStateAction } from "@/components/brand/EmptyState";
 import { PageState } from "@/components/pagestate/PageState";
 import { shownState, type ReadLike } from "@/components/pagestate/pageStateModel";
 import type { Thing } from "@/components/pagestate/stateCopy";
@@ -393,10 +392,9 @@ function TopicCards({ topics }: { topics: readonly LibraryTopic[] }) {
 
 export function LibraryItems(props: LibraryItemsProps) {
   const { heading, tabs, tab, onTab, controls, chips, sameAsBuilds, read, thing, empty, itemColumn, rows, selected, onSelect, more } = props;
-  const navigate = useNavigate();
   const usedIn = rows.some((row) => row.usedIn !== undefined);
   const ready = shownState(Array.isArray(read) ? read : [read as ReadLike]) === "ready";
-  const emptyAction = "href" in empty.action ? { label: empty.action.label, onClick: () => navigate((empty.action as { href: string }).href) } : empty.action;
+  const emptyAction: EmptyStateAction = "href" in empty.action ? { label: empty.action.label, href: empty.action.href } : { label: empty.action.label, onClick: empty.action.onClick };
   let table: () => ReactNode;
   if (props.topics) table = () => <TopicCards topics={props.topics ?? []} />;
   /* A phone scrolls the table inside its own box, never the page sideways. */

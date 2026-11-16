@@ -141,7 +141,9 @@ describe("PageState", () => {
     );
     expect(screen.getByText("Nothing at this address.")).toBeInTheDocument();
     expect(screen.getByText("This build may have been unpublished, or the link may be wrong.")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Browse builds" }));
+    // A navigation: a link drawn as the button, so it opens in a new tab.
+    expect(screen.getByRole("link", { name: "Browse builds" })).toHaveAttribute("href", "/builds");
+    fireEvent.click(screen.getByRole("link", { name: "Browse builds" }));
     expect(screen.getByText("The builds page")).toBeInTheDocument();
   });
 

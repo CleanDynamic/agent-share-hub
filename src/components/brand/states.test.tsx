@@ -3,6 +3,7 @@
 // Styles are asserted through SSR markup (jsdom's cssstyle drops var() values);
 // roles, text and behaviour on the rendered tree.
 
+import { MemoryRouter } from "react-router-dom";
 import { render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -81,6 +82,29 @@ describe("LoadingRegion", () => {
 });
 
 describe("EmptyState", () => {
+
+  it("an action with an address is a link drawn as the same button: it opens in a new tab and reads as a link", () => {
+    render(
+      <MemoryRouter>
+        <EmptyState line="Nothing at this address." action={{ label: "Browse builds", href: "/builds" }} />
+      </MemoryRouter>,
+    );
+    const link = screen.getByRole("link", { name: "Browse builds" });
+    expect(link).toHaveAttribute("href", "/builds");
+    expect(link).toHaveAttribute("data-ui", "button");
+    expect(link).toHaveAttribute("data-variant", "secondary");
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("an action with only a handler stays a button", () => {
+    const onClick = vi.fn();
+    render(<EmptyState line="No new sessions." action={{ label: "Connect a tool", onClick }} />);
+    const button = screen.getByRole("button", { name: "Connect a tool" });
+    expect(button.tagName).toBe("BUTTON");
+    button.click();
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("link")).toBeNull();
+  });
 
   it("draws no illustration and no icon", () => {
     const html = markup(<EmptyState line="No solutions yet." action={{ label: "Enter the gallery", onClick: () => {} }} />);

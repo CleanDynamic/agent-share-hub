@@ -25,10 +25,11 @@ import { t } from "@/lib/theme/tokens";
 
 import { Button } from "./Button";
 
-export interface EmptyStateAction {
-  label: string;
-  onClick: () => void;
-}
+/**
+ * The one way on. With an address it goes to another page and is drawn as a link styled as the same button, so it can be
+ * opened in a new tab and is read as a link; with only a handler (a dialog, a tab) it stays a button.
+ */
+export type EmptyStateAction = { label: string; href: string; onClick?: undefined } | { label: string; onClick: () => void; href?: undefined };
 
 export interface EmptyStateProps extends Omit<HTMLAttributes<HTMLDivElement>, "children" | "style"> {
   /** One sentence. */
@@ -54,7 +55,7 @@ export function EmptyState({ line, detail, action, style, ...rest }: EmptyStateP
       <p style={{ margin: 0, fontFamily: "var(--font-ui)", fontSize: 13, lineHeight: "20px", fontWeight: 400, color: t.text }}>{line}</p>
       {detail ? <p style={{ margin: "-8px 0 0", fontFamily: "var(--font-ui)", fontSize: 13, lineHeight: "20px", fontWeight: 400, color: t.text2 }}>{detail}</p> : null}
       {action ? (
-        <Button variant="secondary" size={phone ? 44 : 32} fontSize={13} onClick={action.onClick}>
+        <Button variant="secondary" size={phone ? 44 : 32} fontSize={13} href={action.href} onClick={action.onClick}>
           {action.label}
         </Button>
       ) : null}
