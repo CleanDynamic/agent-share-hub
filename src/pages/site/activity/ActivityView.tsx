@@ -17,13 +17,14 @@
    THE ROW IS ONE LINK, as today: the build's title is drawn as the board draws its link (500, `--text`) inside it, not
    as a second link nested in the first. */
 
+import { PageFailed, PageState } from "@/components/pagestate/PageState";
+import { readOf, type ReadLike } from "@/components/pagestate/pageStateModel";
 import { useState, type CSSProperties, type ReactNode } from "react";
 
 import { Avatar } from "@/components/brand/Avatar";
 import { Button } from "@/components/brand/Button";
 import { CardHead } from "@/components/brand/CardHead";
 import { CoverFallback } from "@/components/brand/CoverFallback";
-import { EmptyState } from "@/components/brand/EmptyState";
 import { ErrorState, type PanelFailure } from "@/components/brand/ErrorState";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { Figure } from "@/components/brand/Figure";
@@ -76,6 +77,8 @@ export interface ActivityListProps {
   onRetry: () => void;
   /** The real error behind `status: "error"`; logged once by the panel, never shown. */
   error?: unknown;
+  /** G4: the list's read, for PageState (failed, retrying, empty). Without it the status above stands in. */
+  read?: ReadLike;
 }
 
 export interface ActivityRuns {
@@ -103,6 +106,11 @@ export interface ActivityViewProps {
   /** That count could not be read: its orb's place says so. */
   peopleError?: PanelFailure;
   runs: ActivityLoad<ActivityRuns>;
+  /** G4: the two aside reads, for PageState's failed and retrying states. */
+  peopleRead?: ReadLike;
+  runsRead?: ReadLike;
+  /** G9: every region failed, these being its reads: the page shows one failed state under its title. */
+  pageFailed?: readonly ReadLike[];
   /**
    * A mark-read the server refused. The row and the count have already gone back to
    * unread (the page re-reads them), and the list says so in its own place with a way
@@ -396,31 +404,33 @@ function ActivityList({
   const column: CSSProperties = { display: "flex", flexDirection: "column", gap: phone ? 24 : 32, minWidth: 0 };
   const day: CSSProperties = { display: "flex", flexDirection: "column" };
 
-  if (list.status === "loading") {
-    const days = phone ? [PHONE_LOADING_ROWS] : LOADING_DAYS;
-    return (
-      <LoadingRegion what="your activity" data-testid="activity-loading" style={column}>
-        {days.map((rows, index) => (
-          <div key={index} style={day}>
-            <div style={{ paddingBottom: 8, borderBottom: `1px solid ${t.hairline}` }}>
-              <Skeleton width={72} height={11} />
-            </div>
-            {Array.from({ length: rows }, (_, i) => (
-              <RowSkeleton key={i} phone={phone} />
-            ))}
+  const days = phone ? [PHONE_LOADING_ROWS] : LOADING_DAYS;
+  const skeleton = (
+    <LoadingRegion what="your activity" data-testid="activity-loading" style={column}>
+      {days.map((rows, index) => (
+        <div key={index} style={day}>
+          <div style={{ paddingBottom: 8, borderBottom: `1px solid ${t.hairline}` }}>
+            <Skeleton width={72} height={11} />
           </div>
-        ))}
-      </LoadingRegion>
-    );
-  }
-  if (list.status === "error") {
-    return <ErrorState panel="Your activity" onRetry={list.onRetry} error={list.error} data-testid="activity-error" />;
-  }
-  if (list.groups.length === 0) return <EmptyState line="All caught up." data-testid="activity-empty" />;
+          {Array.from({ length: rows }, (_, i) => (
+            <RowSkeleton key={i} phone={phone} />
+          ))}
+        </div>
+      ))}
+    </LoadingRegion>
+  );
 
   const Row = phone ? PhoneRow : DesktopRow;
   const groups = filterGroups(list.groups, chosen);
   return (
+    <PageState
+      read={list.read ?? (list.status === "error" ? readOf("error", undefined, list.onRetry, list.error) : list.status === "loading" ? readOf("loading") : readOf("ready", list.groups))}
+      thing="your activity"
+      region="Your activity"
+      skeleton={skeleton}
+      empty={{ when: () => list.groups.length === 0, line: "All caught up.", testId: "activity-empty" }}
+    >
+      {() => (
     <div data-testid="activity-list" style={column}>
       {groups.map((group) => (
         <section key={group.day} data-testid="activity-day" style={day}>
@@ -437,12 +447,14 @@ function ActivityList({
       {groups.length === 0 ? <NoneOfThese hasMore={list.hasMore} /> : null}
       <MoreButton list={list} phone={phone} />
     </div>
+        )}
+    </PageState>
   );
 }
 
 /* ── the aside ── */
 
-function People({ peopleThisWeek, peopleError, live }: { peopleThisWeek: number | null; peopleError?: PanelFailure; live: boolean }) {
+function People({ peopleThisWeek, peopleError, peopleRead, live }: { peopleThisWeek: number | null; peopleError?: PanelFailure; peopleRead?: ReadLike; live: boolean }) {
   const grid: CSSProperties = { ...asidePart(0, false), display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 16 };
   const people =
     peopleThisWeek !== null ? (
@@ -452,7 +464,9 @@ function People({ peopleThisWeek, peopleError, live }: { peopleThisWeek: number 
         <span style={text(12, 400, t.text2)}>{peopleThisWeek === 1 ? "person ran your builds" : "people ran your builds"}</span>
       </div>
     ) : peopleError ? (
-      <ErrorState panel="People this week" onRetry={peopleError.onRetry} error={peopleError.error} data-testid="activity-orbs-error" />
+      <PageState read={peopleRead ?? readOf("error", undefined, peopleError.onRetry, peopleError.error)} thing="your activity" region="People this week" skeleton={null}>
+        {() => null}
+      </PageState>
     ) : (
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <Skeleton width="60%" height={12} />
@@ -563,7 +577,7 @@ function RunsLine({ runs }: { runs: ActivityRuns }) {
   );
 }
 
-function RunsChart({ runs }: { runs: ActivityLoad<ActivityRuns> }) {
+function RunsChart({ runs, runsRead }: { runs: ActivityLoad<ActivityRuns>; runsRead?: ReadLike }) {
   const marker = runs.status === "ready" ? runs.data.markerIndex : null;
   return (
     <section style={asidePart(16, false)}>
@@ -574,7 +588,9 @@ function RunsChart({ runs }: { runs: ActivityLoad<ActivityRuns> }) {
             <Skeleton width="100%" height={CHART_H} />
           </LoadingRegion>
         ) : runs.status === "error" ? (
-          <ErrorState panel="Runs of your builds" onRetry={runs.onRetry} error={runs.error} data-testid="activity-runs-error" />
+          <PageState read={runsRead ?? readOf("error", undefined, runs.onRetry, runs.error)} thing="your activity" region="Runs of your builds" skeleton={null}>
+            {() => null}
+          </PageState>
         ) : (
           <RunsLine runs={runs.data} />
         )}
@@ -713,8 +729,8 @@ function DesktopActivity(props: ActivityViewProps) {
           borderLeft: `1px solid ${t.hairline}`,
         })}
       >
-        <People peopleThisWeek={peopleThisWeek} peopleError={peopleError} live={live} />
-        <RunsChart runs={runs} />
+        <People peopleThisWeek={peopleThisWeek} peopleError={peopleError} peopleRead={props.peopleRead} live={live} />
+        <RunsChart runs={runs} runsRead={props.runsRead} />
         <ShowMe
           kindCounts={kindCounts}
           listStatus={list.status}
@@ -785,6 +801,15 @@ function NotificationSettingsLink() {
 
 export function ActivityView(props: ActivityViewProps) {
   const phone = useIsPhone();
+  if (props.pageFailed) {
+    /* G9: every region failed: one failed state for the page, under its title. */
+    return (
+      <div data-testid="activity-view" style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+        <PageHeader title="Activity" />
+        <PageFailed reads={props.pageFailed} region="Activity" />
+      </div>
+    );
+  }
   return phone ? <PhoneActivity {...props} /> : <DesktopActivity {...props} />;
 }
 

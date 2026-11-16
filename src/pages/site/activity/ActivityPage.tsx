@@ -21,6 +21,7 @@
    tile are told to read their count again when it lands. A write that fails
    reads everything again from the server. */
 
+import { allFailed } from "@/components/pagestate/pageStateModel";
 import { useCallback, useMemo, useState } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 
@@ -239,6 +240,7 @@ export function ActivityPage() {
     onMore: () => void listQuery.fetchNextPage(),
     onRetry: () => void listQuery.refetch(),
     error: listQuery.error,
+    read: listQuery,
   };
 
   const runs: ActivityLoad<ActivityRuns> = runsQuery.data
@@ -272,6 +274,9 @@ export function ActivityPage() {
         peopleThisWeek={typeof peopleQuery.data === "number" ? peopleQuery.data : null}
         peopleError={peopleError}
         runs={runs}
+        peopleRead={peopleQuery}
+        runsRead={runsQuery}
+        pageFailed={allFailed([listQuery, peopleQuery, runsQuery]) ? [listQuery, peopleQuery, runsQuery] : undefined}
         writeError={writeError}
         onOpen={open}
         onMarkAllRead={markAll}

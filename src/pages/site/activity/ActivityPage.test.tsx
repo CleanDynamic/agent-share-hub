@@ -179,14 +179,15 @@ describe("ActivityPage loading", () => {
     expect(screen.queryByRole("button", { name: "Show more" })).toBeNull();
   });
 
-  it("says That didn't load. for the list, never the exception, and tries again", async () => {
+  it("says it couldn't load your activity, never the exception, logs it once, and tries again", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
     getNotifications.mockRejectedValueOnce(new Error("down: 503 upstream connect error"));
     mount();
-    const failed = await screen.findByTestId("activity-error");
-    expect(failed.textContent).toContain("That didn't load.");
+    const failed = await screen.findByRole("alert", { name: "Your activity" });
+    expect(failed.textContent).toContain("Couldn't load your activity. Try again.");
     expect(failed.textContent).not.toContain("503");
-    expect(log.mock.calls.filter((call) => call.some((arg) => arg instanceof Error && arg.message.startsWith("down")))).toHaveLength(1);
+    // G10: logged once, as one line with its code.
+    expect(log.mock.calls.filter(([line]) => typeof line === "string" && line.startsWith("[Your activity] read failed"))).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findAllByTestId("activity-row")).toHaveLength(2);
     expect(getNotifications).toHaveBeenCalledTimes(2);
