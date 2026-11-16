@@ -14,6 +14,8 @@
 
    THE FEED is a `feed` list of `article`s, each labelled by its heading, with aria-setsize -1 while more can load. */
 
+import { PageEmpty, PageState } from "@/components/pagestate/PageState";
+import { readOf, type ReadLike } from "@/components/pagestate/pageStateModel";
 import type { CSSProperties, ReactNode } from "react";
 
 import { PostControl } from "@/components/post/postControls";
@@ -80,6 +82,8 @@ export interface ProfileFeedProps {
   entries: readonly FeedEntry[];
   status: "loading" | "ready" | "error";
   onRetry: () => void;
+  /** G4: the feed read, for PageState's failed and retrying states. Without it, a failed read stands in. */
+  read?: ReadLike;
   empty: EmptyFeed;
   hasMore: boolean;
   loadingMore: boolean;
@@ -102,8 +106,6 @@ export const FEED_COPY = {
   asMap: "Show as Map card",
   more: "Show more",
   loadingMore: "Loading",
-  failed: "The feed didn't load.",
-  retry: "Retry",
   menu: (heading: string) => `More for ${heading}`,
 } as const;
 
@@ -190,18 +192,14 @@ export function ProfileFeed(props: ProfileFeedProps) {
         <Segmented<FeedFilterValue> label={FEED_COPY.filter} semantics="radio" size={28} items={props.options} value={props.filter} onChange={props.onFilter} />
       ) : null}
       {props.status === "error" && entries.length === 0 ? (
-        <p style={{ margin: "24px 0 0", fontSize: 13, color: t.text2 }}>
-          {`${FEED_COPY.failed} `}
-          <PostControl onClick={props.onRetry}>{FEED_COPY.retry}</PostControl>
-        </p>
+        <div style={{ marginTop: 24 }}>
+          <PageState read={props.read ?? readOf("error", undefined, props.onRetry)} thing="the feed" region="Feed" skeleton={null}>
+            {() => null}
+          </PageState>
+        </div>
       ) : props.status === "ready" && entries.length === 0 ? (
-        <div data-testid="profile-feed-empty" style={{ marginTop: 24 }}>
-          <DashedSlot>
-            <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", width: "100%" }}>
-              <span style={{ fontSize: 13, color: t.text2 }}>{props.empty.line}</span>
-              {props.empty.action ? <PostControl to={props.empty.action.to}>{props.empty.action.label}</PostControl> : null}
-            </span>
-          </DashedSlot>
+        <div style={{ marginTop: 24 }}>
+          <PageEmpty line={props.empty.line} action={props.empty.action ? { label: props.empty.action.label, href: props.empty.action.to } : undefined} testId="profile-feed-empty" />
         </div>
       ) : (
         <div role="feed" aria-busy={props.status === "loading" || props.loadingMore} style={{ marginTop: 8 }}>

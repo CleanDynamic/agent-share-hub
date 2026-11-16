@@ -56,14 +56,14 @@ async function resolveProfile(userIdOrHandle: string, viewerId: string | null) {
   return data;
 }
 
+/** The profile, or null when the server answered that there is no such row (G7: missing is told from failed by the row, never
+    by an error's words). A failed read throws. */
 export async function getProfileSummary(
   userIdOrHandle: string,
   viewerId: string | null
-): Promise<ProfileSummary> {
+): Promise<ProfileSummary | null> {
   const profile = await resolveProfile(userIdOrHandle, viewerId);
-  if (!profile) {
-    throw new Error(`Profile not found: ${userIdOrHandle}`);
-  }
+  if (!profile) return null;
 
   const isOwnProfile = !!viewerId && viewerId === profile.id;
   const viewerFollows = Array.isArray(profile.viewer_follow) && profile.viewer_follow.length > 0;

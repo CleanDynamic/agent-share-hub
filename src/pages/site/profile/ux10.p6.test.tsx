@@ -129,7 +129,7 @@ describe("an empty filter", () => {
     expect(emptyFeed("builds", false).action).toBeNull();
   });
 
-  it("draws as one dashed slot", () => {
+  it("draws one line and its link, the same empty state as every page (G6)", () => {
     mount({ entries: [], filter: "builds", empty: emptyFeed("builds", true), hasMore: false });
     const slot = screen.getByTestId("profile-feed-empty");
     expect(slot.textContent).toContain("No builds yet.");

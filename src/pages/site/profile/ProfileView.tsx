@@ -6,9 +6,11 @@
 
    This replaces UI-P34's banner, level ring, stat boxes, works tabs and activity grid (UX-10 Part 10). */
 
+import { PageState } from "@/components/pagestate/PageState";
+import type { ReadLike } from "@/components/pagestate/pageStateModel";
+import { WAY_OUT } from "@/components/pagestate/stateCopy";
 import type { ReactNode } from "react";
 
-import { ErrorState } from "@/components/brand/ErrorState";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { pageColumns } from "@/components/shell/pageGrid";
@@ -77,23 +79,18 @@ export function ProfileViewSkeleton() {
   );
 }
 
-/** The profile itself could not be read: one sentence and Retry. Not "Profile not found": that is for a handle nobody has. */
-export function ProfileLoadFailed({ onRetry, error }: { onRetry: () => void; error?: unknown }) {
+/**
+ * G4, G7, G8, G27: the profile did not load, or nobody has this handle. Under the page's kind as its title ("Profile": the
+ * person's name is what did not load), PageState says which. Someone else's missing row is not found, with Browse builds;
+ * the reader's own missing row is a failed read (`read` is then a failed one), never "not found".
+ */
+export function ProfileViewState({ read, missing }: { read: ReadLike; missing: boolean }) {
   return (
     <div style={{ padding: 24 }}>
-      <h1 style={VISUALLY_HIDDEN}>Profile</h1>
-      <ErrorState panel="Profile" onRetry={onRetry} error={error} data-testid="profile-load-error" />
-    </div>
-  );
-}
-
-/** A sentence and a way on, for a profile that is not there. */
-export function ProfileNotice({ line, detail, action }: { line: string; detail?: string; action?: ReactNode }) {
-  return (
-    <div data-testid="profile-notice" role="status" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "32px 0", textAlign: "center" }}>
-      <h1 style={PAGE_TITLE}>{line}</h1>
-      {detail ? <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>{detail}</p> : null}
-      {action ? <div style={{ marginTop: 8 }}>{action}</div> : null}
+      <h1 style={{ ...PAGE_TITLE, marginBottom: 16 }}>Profile</h1>
+      <PageState read={read} thing="this profile" region="Profile" skeleton={null} notFound={missing ? { when: ([row]) => row === null, kind: "profile", way: WAY_OUT.browseBuilds } : undefined}>
+        {() => null}
+      </PageState>
     </div>
   );
 }
