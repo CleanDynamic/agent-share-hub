@@ -99,3 +99,25 @@ describe("G10: create-pwyw-checkout-session is limited per address", () => {
     expect(source("create-pwyw-checkout-session")).toMatch(/limitByIp\(req, "create-pwyw-checkout-session", RATE_RULES\["create-pwyw-checkout-session"\], store\)/);
   });
 });
+
+import { createCheckoutHandler } from "../../../supabase/functions/create-checkout-session/handler.ts";
+
+describe("G10: create-checkout-session is limited per address", () => {
+  it("allows 10 per 10 minutes", () => {
+    expect(RATE_RULES["create-checkout-session"]).toEqual({ limit: 10, windowSeconds: 600 });
+  });
+
+  it("answers over the limit before it reads the body, the caller, the database or Stripe", async () => {
+    const { d, createSession, findItem } = paymentDeps();
+    const getUserId = vi.spyOn(d, "getUserId");
+    const res = await createCheckoutHandler(d, over)(ok);
+    expect(res.status).toBe(429);
+    expect(getUserId).not.toHaveBeenCalled();
+    expect(findItem).not.toHaveBeenCalled();
+    expect(createSession).not.toHaveBeenCalled();
+  });
+
+  it("is wired to the database store in the deployed function", () => {
+    expect(source("create-checkout-session")).toMatch(/limitByIp\(req, "create-checkout-session", RATE_RULES\["create-checkout-session"\], store\)/);
+  });
+});
