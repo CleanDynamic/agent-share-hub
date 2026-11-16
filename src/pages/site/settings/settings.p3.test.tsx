@@ -50,6 +50,8 @@ function props(over: Partial<AccountViewProps> = {}): AccountViewProps {
     onLink: vi.fn(async () => undefined),
     onUnlink: vi.fn(async () => undefined),
     onSignOutEverywhere: vi.fn(async () => undefined),
+    sessions: [],
+    onSignOutDevice: vi.fn(async () => undefined),
     ...over,
   };
 }

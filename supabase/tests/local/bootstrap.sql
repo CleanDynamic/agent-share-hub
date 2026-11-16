@@ -37,6 +37,27 @@ CREATE TABLE IF NOT EXISTS auth.users (
   created_at timestamptz DEFAULT now()
 );
 
+-- The columns of Supabase's auth.sessions and auth.refresh_tokens that the session tests touch.
+CREATE TABLE IF NOT EXISTS auth.sessions (
+  id uuid PRIMARY KEY,
+  user_id uuid NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  aal text,
+  not_after timestamptz,
+  refreshed_at timestamp,
+  user_agent text,
+  ip inet,
+  tag text
+);
+CREATE TABLE IF NOT EXISTS auth.refresh_tokens (
+  id bigserial PRIMARY KEY,
+  token text,
+  user_id text,
+  revoked boolean DEFAULT false,
+  session_id uuid REFERENCES auth.sessions (id) ON DELETE CASCADE
+);
+
 CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $$
   SELECT coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb
 $$;

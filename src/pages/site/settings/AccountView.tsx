@@ -2,7 +2,10 @@
 
    Email: the address and `Change email`, which opens a field and `Save`. Password: `Change password`, or `Set a password` for a
    person who signs in through a provider. Sign-in methods and devices: each linked provider with `Unlink` (off, with the reason, for
-   the last one), `Link <provider>` for the rest, and `Sign out everywhere`, which asks once. */
+   the last one), `Link <provider>` for the rest, and `Sign out everywhere`, which asks once.
+
+   G16: Devices lists each session (device and browser, last active, this device marked) with its own `Sign out`, which asks once,
+   says in plain words that a signed-out device can keep working for up to an hour, and keeps `Sign out everywhere`. */
 
 import { Lock, Mail } from "lucide-react";
 import { useState } from "react";
@@ -13,12 +16,16 @@ import {
   COPY,
   calculatePasswordStrength,
   canUnlink,
+  describeDevice,
+  lastActiveLabel,
+  type DeviceSession,
   hasPassword as hasPasswordOf,
   linkableFor,
   type LinkableProvider,
   type SignInMethod,
 } from "@/lib/settings/account";
 import { useAction } from "@/lib/settings/useAction";
+import { t } from "@/lib/theme/tokens";
 import { AuthField, FieldMessage } from "@/pages/site/signin/AuthParts";
 
 import { ConfirmInline, Group, Note, SectionPage, SettingRow } from "./SettingParts";
@@ -31,6 +38,9 @@ export interface AccountViewProps {
   onLink: (provider: LinkableProvider) => Promise<void>;
   onUnlink: (id: string) => Promise<void>;
   onSignOutEverywhere: () => Promise<void>;
+  /** G16: the member's sessions, newest activity first. Null: they could not be loaded. */
+  sessions: readonly DeviceSession[] | null;
+  onSignOutDevice: (session: DeviceSession) => Promise<void>;
 }
 
 function EmailGroup({ email, onChangeEmail }: Pick<AccountViewProps, "email" | "onChangeEmail">) {
@@ -187,11 +197,49 @@ function MethodsGroup({ methods, onLink, onUnlink }: Pick<AccountViewProps, "met
   );
 }
 
-function DevicesGroup({ onSignOutEverywhere }: Pick<AccountViewProps, "onSignOutEverywhere">) {
+function DeviceRow({ session, onSignOutDevice }: { session: DeviceSession; onSignOutDevice: AccountViewProps["onSignOutDevice"] }) {
+  const [asking, setAsking] = useState(false);
+  const action = useAction(() => onSignOutDevice(session), "settings-signout-device");
+  const device = describeDevice(session.userAgent);
+  return (
+    <SettingRow
+      label={device}
+      hint={
+        <>
+          <span style={{ display: "block" }}>{lastActiveLabel(session.lastActive)}</span>
+          {session.current ? <span style={{ display: "block", color: t.label }}>{COPY.thisDevice}</span> : null}
+        </>
+      }
+      control={
+        asking ? null : (
+          <Button variant="secondary" size={32} fontSize={12} aria-label={`Sign out ${device}`} onClick={() => setAsking(true)}>
+            Sign out
+          </Button>
+        )
+      }
+      below={
+        asking ? (
+          <ConfirmInline
+            message={session.current ? COPY.signOutThisDevice : COPY.signOutDevice(device)}
+            confirmLabel="Sign out"
+            busy={action.state.status === "sending"}
+            error={action.state.status === "error" ? action.state.message : null}
+            onConfirm={() => void action.run()}
+            onCancel={() => { setAsking(false); action.reset(); }}
+          />
+        ) : null
+      }
+    />
+  );
+}
+
+function DevicesGroup({ onSignOutEverywhere, sessions, onSignOutDevice }: Pick<AccountViewProps, "onSignOutEverywhere" | "sessions" | "onSignOutDevice">) {
   const [asking, setAsking] = useState(false);
   const action = useAction(onSignOutEverywhere, "settings-signout");
   return (
     <Group title="Devices">
+      {sessions === null ? <Note>{COPY.devicesUnavailable}</Note> : sessions.map((session) => <DeviceRow key={session.id} session={session} onSignOutDevice={onSignOutDevice} />)}
+      {sessions !== null && sessions.length > 0 ? <Note>{COPY.devicesHour}</Note> : null}
       <SettingRow
         last
         label="Sign out everywhere"
@@ -226,7 +274,7 @@ export function AccountView(props: AccountViewProps) {
       <EmailGroup email={props.email} onChangeEmail={props.onChangeEmail} />
       <PasswordGroup hasPassword={hasPasswordOf(props.methods)} onChangePassword={props.onChangePassword} />
       <MethodsGroup methods={props.methods} onLink={props.onLink} onUnlink={props.onUnlink} />
-      <DevicesGroup onSignOutEverywhere={props.onSignOutEverywhere} />
+      <DevicesGroup onSignOutEverywhere={props.onSignOutEverywhere} sessions={props.sessions} onSignOutDevice={props.onSignOutDevice} />
     </SectionPage>
   );
 }

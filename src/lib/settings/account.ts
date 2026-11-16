@@ -36,6 +36,12 @@ export const COPY = {
   // expires, which is an hour by default.
   passwordChanged: "Password changed. This device stays signed in. Every other device is signed out within the hour.",
   othersNotSignedOut: "Your password changed, but other devices could not be signed out. Use Sign out everywhere.",
+  // G16, in plain words: ending a session stops the device refreshing; the access token it holds runs out within the hour.
+  devicesHour: "A device you sign out can keep working for up to an hour before it is signed out.",
+  devicesUnavailable: "Couldn't load your devices. Sign out everywhere still works.",
+  thisDevice: "This device",
+  signOutDevice: (device: string) => `${device} will be signed out within the hour.`,
+  signOutThisDevice: "You will be signed out here.",
   signOutEverywhere: "Sign out on every device, including this one?",
   onlyMethod: "This is the only way you can sign in. Add another first.",
   linkingOff: "Linking another account isn't switched on yet.",
@@ -183,4 +189,84 @@ export async function unlinkMethod(id: string): Promise<void> {
 export async function signOutEverywhere(): Promise<void> {
   const { error } = await supabase.auth.signOut({ scope: "global" });
   if (error) throw error;
+}
+
+/** G16: one of the member's sessions, as the my-sessions function sends it. No address and no token. */
+export interface DeviceSession {
+  id: string;
+  createdAt: string | null;
+  lastActive: string | null;
+  userAgent: string | null;
+  current: boolean;
+}
+
+interface HttpErrorLike {
+  context?: { status?: number; json: () => Promise<unknown> };
+}
+
+async function messageOf(error: unknown, fallback: string): Promise<string> {
+  const response = (error as HttpErrorLike).context;
+  const body = response ? ((await response.json().catch(() => null)) as { error?: string } | null) : null;
+  return body?.error ?? fallback;
+}
+
+/** The member's own sessions, newest activity first, this device marked (through the my-sessions function). */
+export async function listMySessions(): Promise<DeviceSession[]> {
+  const { data, error } = await supabase.functions.invoke("my-sessions", { method: "POST", body: { action: "list" } });
+  if (error) throw new SettingsError(await messageOf(error, COPY.devicesUnavailable));
+  return ((data as { sessions?: DeviceSession[] } | null)?.sessions ?? []).slice();
+}
+
+/** Sign out one session. This device signs out in the browser; any other goes through the my-sessions function. */
+export async function signOutDevice(session: Pick<DeviceSession, "id" | "current">): Promise<void> {
+  if (session.current) {
+    const { error } = await supabase.auth.signOut({ scope: "local" });
+    if (error) throw error;
+    return;
+  }
+  const { error } = await supabase.functions.invoke("my-sessions", { method: "POST", body: { action: "revoke", sessionId: session.id } });
+  if (error) throw new SettingsError(await messageOf(error, "Couldn't sign that device out. Try again."));
+}
+
+/** "Chrome on macOS", from the browser's own description of itself. Nothing else about the device is read. */
+export function describeDevice(userAgent: string | null): string {
+  const ua = userAgent ?? "";
+  const browser = /Edg(e|A|iOS)?\//.test(ua)
+    ? "Edge"
+    : /OPR\/|Opera/.test(ua)
+      ? "Opera"
+      : /Firefox\/|FxiOS\//.test(ua)
+        ? "Firefox"
+        : /Chrome\/|CriOS\//.test(ua)
+          ? "Chrome"
+          : /Safari\//.test(ua)
+            ? "Safari"
+            : null;
+  const system = /iPhone/.test(ua)
+    ? "iPhone"
+    : /iPad/.test(ua)
+      ? "iPad"
+      : /Android/.test(ua)
+        ? "Android"
+        : /Windows/.test(ua)
+          ? "Windows"
+          : /CrOS/.test(ua)
+            ? "ChromeOS"
+            : /Mac OS X|Macintosh/.test(ua)
+              ? "macOS"
+              : /Linux/.test(ua)
+                ? "Linux"
+                : null;
+  if (browser && system) return `${browser} on ${system}`;
+  return browser ?? system ?? "Unknown device";
+}
+
+/** "Last active 16 Nov, 09:05", in the reader's own time. */
+export function lastActiveLabel(iso: string | null): string {
+  if (!iso) return "Last active: not known";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "Last active: not known";
+  const day = date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  const time = date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  return `Last active ${day}, ${time}`;
 }
