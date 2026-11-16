@@ -96,8 +96,19 @@ Supabase dashboard → Authentication → Attack Protection:
   function logs (Supabase dashboard → Edge Functions → the function → Logs) after deploying.
 - The caller's address is read from `cf-connecting-ip`, then `x-real-ip`, then the first `x-forwarded-for` entry. A
   caller can write `x-forwarded-for` themselves. Check in one function's logs which header the platform actually fills.
-- Deploy the changed functions: `create-checkout-session`, `generate-ai-pdf`, and the others once their limits are
-  agreed.
+- The limits, per caller address (in `RATE_RULES`, `supabase/functions/_shared/rateLimit.ts`); over the limit is a 429
+  with `Retry-After`:
+
+  | Function | Limit |
+  |---|---|
+  | `create-pwyw-checkout-session` | 10 per 10 minutes |
+  | `create-checkout-session` | 10 per 10 minutes (and a signed-in buyer only) |
+  | `create-donation-session` | 10 per 10 minutes |
+  | `import-github-readme` | 20 per hour |
+  | `generate-ai-pdf` | 30 per hour |
+
+- Deploy these five functions after the migration (on Lovable, ask its chat to deploy them, or they go out with the
+  next publish).
 
 ### 6. Values to set (not in the repository)
 
