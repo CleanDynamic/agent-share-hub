@@ -13,10 +13,11 @@
 
    PURE. */
 
+import { PageEmpty, PageState } from "@/components/pagestate/PageState";
+import { readOf } from "@/components/pagestate/pageStateModel";
 import type { CSSProperties, ReactNode } from "react";
 
-import { EmptyState } from "@/components/brand/EmptyState";
-import { ErrorState, type PanelFailure } from "@/components/brand/ErrorState";
+import type { PanelFailure } from "@/components/brand/ErrorState";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { ModelMark } from "@/components/brand/ModelMark";
@@ -141,7 +142,9 @@ export function ChangesPanel({ groups, phone = false, fill = false, placeholder,
         />
         {about}
         {failure ? (
-          <ErrorState panel="What changed" onRetry={failure.onRetry} error={failure.error} style={{ marginTop: 9 }} data-testid="changes-error" />
+          <PageState read={readOf("error", undefined, failure.onRetry, failure.error)} thing="this comparison" region="What changed" skeleton={null} style={{ marginTop: 9 }}>
+            {() => null}
+          </PageState>
         ) : loading ? (
           <LoadingRegion what="what changed" data-testid="changes-loading" style={{ marginTop: 9 }}>
             {Array.from({ length: 6 }, (_, i) => (
@@ -153,7 +156,7 @@ export function ChangesPanel({ groups, phone = false, fill = false, placeholder,
         ) : placeholder ? (
           <div style={{ marginTop: 9, fontFamily: FIGTREE, fontSize: 12, lineHeight: 1.5, color: t.text2 }}>{placeholder}</div>
         ) : groups ? (
-          <EmptyState line="Nothing has changed yet." data-testid="changes-empty" />
+          <PageEmpty line="Nothing has changed yet." testId="changes-empty" />
         ) : null}
       </div>
     </Panel>

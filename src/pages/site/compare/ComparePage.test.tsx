@@ -55,6 +55,9 @@ describe("ComparePage (CA-13 P9)", () => {
   it("says so when one of them is not here", async () => {
     getBuildBySlug.mockImplementation(async (slug: string) => (slug === "orig" ? record("r", "orig", null, "Original") : null));
     mount();
-    expect(await screen.findByText("One of those builds is not here.")).toBeTruthy();
+    // G7, G8: the page's kind, Nothing at this address, the build line, Browse builds.
+    expect(await screen.findByText("Nothing at this address.")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "Compare" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Browse builds" }).getAttribute("href")).toBe("/builds");
   });
 });

@@ -209,18 +209,18 @@ describe("RebuildPage (site frame)", () => {
   it("says so when the slug names no build, and forks nothing", async () => {
     getBuildHeaderBySlug.mockResolvedValue(null);
     renderAt("/rebuild/nothing-here");
-    expect(await screen.findByRole("heading", { level: 1, name: "No build at this address." })).toBeTruthy();
+    expect(await screen.findByText("Nothing at this address.")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "Rebuild" })).toBeTruthy();
     expect(startRebuild).not.toHaveBeenCalled();
   });
 
-  it("says That didn't load. when the fork fails, naming the draft, never the cause, and asks again", async () => {
+  it("says it couldn't load this build when the fork fails, naming the draft, never the cause, and asks again", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     getRebuildDraft.mockResolvedValue(null);
     startRebuild.mockRejectedValueOnce(new Error("startRebuild failed: permission denied")).mockResolvedValue(undefined);
     renderAt("/rebuild/invoice-triage");
-    const failed = await screen.findByTestId("rebuild-error");
-    expect(failed.textContent).toContain("That didn't load.");
-    expect(failed.getAttribute("aria-label") ?? failed.querySelector("[aria-label]")?.getAttribute("aria-label")).toContain("Your draft");
+    const failed = await screen.findByRole("alert", { name: "Your draft" });
+    expect(failed.textContent).toContain("Couldn't load this build. Try again.");
     expect(screen.queryByText(/permission denied/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(startRebuild).toHaveBeenCalledTimes(2));
@@ -284,6 +284,7 @@ describe("LineagePage (site frame)", () => {
   it("says when there is no build at the address", async () => {
     getBuildHeaderBySlug.mockResolvedValue(null);
     renderAt("/b2/nothing-here/lineage");
-    expect(await screen.findByRole("heading", { level: 1, name: "No build at this address." })).toBeTruthy();
+    expect(await screen.findByText("Nothing at this address.")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "Lineage" })).toBeTruthy();
   });
 });

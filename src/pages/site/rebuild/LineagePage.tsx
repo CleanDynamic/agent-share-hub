@@ -32,7 +32,7 @@ import {
 import { t } from "@/lib/theme/tokens";
 
 import { LineageView, type LineageSelection } from "./LineageView";
-import { RebuildViewFailed, RebuildViewNotice, RebuildViewSkeleton } from "./RebuildView";
+import { RebuildViewSkeleton, RebuildViewState } from "./RebuildView";
 import { changeGroups, familyView } from "./rebuildModel";
 import { PageBreadcrumb } from "@/components/shell/Breadcrumb";
 
@@ -116,23 +116,11 @@ function LineagePageBody() {
 
   if (header.isPending && Boolean(slug)) return <RebuildViewSkeleton label="Loading the family" />;
 
-  if (header.isError) {
-    return <RebuildViewFailed panel="The family" onRetry={() => void header.refetch()} error={header.error} />;
+  /* G4, G7: failed, or not found only when the server answered that there is no such build. */
+  if (header.isError || !build) {
+    return <RebuildViewState title="Lineage" read={header} thing="this family" region="The family" missing={([row]) => row === null} />;
   }
 
-  if (!build) {
-    return (
-      <RebuildViewNotice
-        line="No build at this address."
-        detail={`Nothing is published at /b2/${slug}. It may have been unpublished, or the link may be wrong.`}
-        action={
-          <Button variant="secondary" size={36} fontSize={13} onClick={() => navigate("/gallery")}>
-            See the gallery
-          </Button>
-        }
-      />
-    );
-  }
 
   /* ── mapped for the view ── */
 
