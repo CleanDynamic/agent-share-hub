@@ -51,6 +51,18 @@ describe("a timeout passes through", () => {
     expect(isReadTimeout(new Error("listHandles failed: ReadTimeoutError: no answer after 10000 ms"))).toBe(true);
   });
 
+  it("progressFailure (lib/progress)", async () => {
+    const { progressFailure } = await import("@/lib/progress/errors");
+    expect(isReadTimeout(progressFailure("getMyWeekEvents", "u1", postgrestTimeout()))).toBe(true);
+  });
+
+  it("isFollowingMaker's failure (lib/profile/follow)", async () => {
+    const chain = { select: () => chain, eq: () => chain, limit: async () => ({ data: null, ...postgrestTimeout() }) };
+    from.mockReturnValueOnce(chain);
+    const { isFollowingMaker } = await import("@/lib/profile/follow");
+    expect(isReadTimeout(await isFollowingMaker("u1", "u2").catch((caught: unknown) => caught))).toBe(true);
+  });
+
   it("and nothing else is taken for one", async () => {
     const { socialError } = await import("@/lib/social/types");
     expect(isReadTimeout(socialError("listCollections", { error: { code: "57014", message: "canceling statement" }, status: 500 }))).toBe(false);
