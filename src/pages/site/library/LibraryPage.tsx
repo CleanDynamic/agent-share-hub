@@ -116,12 +116,6 @@ const regionOf = (reads: readonly ReadLike[], isMissing?: (data: unknown[]) => b
 
 
 
-/** A failed read is told about once, by its panel's name (never its content). */
-function useReported(error: unknown, context: string) {
-  useEffect(() => {
-    if (error) reportError(error, { source: "query", context });
-  }, [error, context]);
-}
 
 export default function LibraryPage() {
   const qc = useQueryClient();
@@ -264,12 +258,6 @@ export default function LibraryPage() {
   });
   const changeRows = libraryChanges(activity.data ?? [], now).slice(0, 6);
 
-  useReported(activity.error, "library-activity");
-  useReported(saved.error, "library-saved");
-  useReported(collections.error, "library-collections");
-  useReported(collectionBuilds.error, "library-collection-builds");
-  useReported(kept.error, "library-saved-items");
-  useReported(counts.error, "library-saved-counts");
 
   /* ── what the table shows ── */
 
@@ -286,7 +274,6 @@ export default function LibraryPage() {
     placeholderData: keepPreviousData,
     refetchOnWindowFocus: false,
   });
-  useReported(sources.error, "library-source-states");
   const itemShown: Shown[] = keptItems.map((item) => ({ id: item.id, at: item.lastUsedAt, item }));
   /* An open collection and Builds list builds; a kept kind lists its items; All saved lists both, newest first. */
   const shown: Shown[] =
@@ -304,7 +291,6 @@ export default function LibraryPage() {
     placeholderData: keepPreviousData,
     refetchOnWindowFocus: false,
   });
-  useReported(topicCards.error, "library-topic-cards");
   const unsaveTopic = async (savedItemId: string) => {
     try {
       await unsaveItem(savedItemId);
@@ -371,7 +357,6 @@ export default function LibraryPage() {
     enabled: editedItem !== null,
     refetchOnWindowFocus: false,
   });
-  useReported(currentContent.error, "library-current-version");
 
   const refreshKept = () => {
     void qc.invalidateQueries({ queryKey: ["library", "listSavedItems"] });

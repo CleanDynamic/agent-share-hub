@@ -243,7 +243,8 @@ describe("Library", () => {
     renderAt("/library");
     expect(await screen.findByText("Couldn't load your library. Try again.")).toBeInTheDocument();
     expect(screen.queryByText(/Something went wrong/)).toBeNull();
-    expect(report).toHaveBeenCalledWith(expect.any(Error), { source: "query", context: "library-saved" });
+    // Reported once, by the query client's global report (lib/errors/wire.ts), not again by the page.
+    expect(report).not.toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ context: "library-saved" }));
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(screen.getByTestId("library-empty")).toBeInTheDocument());
     expect(listMySavedBuilds).toHaveBeenCalledTimes(2);
