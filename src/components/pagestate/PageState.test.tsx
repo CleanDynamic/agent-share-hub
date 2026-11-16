@@ -161,6 +161,24 @@ describe("PageState", () => {
     }
   });
 
+  it("a frame wraps every state but loading: the skeleton stands in for the whole region", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const frame = (body: React.ReactNode) => (
+      <section aria-label="Continue editing">
+        <h2>Continue editing</h2>
+        {body}
+      </section>
+    );
+    const { unmount } = draw(<PageState read={read()} thing="your drafts" region="Continue editing" skeleton={SKELETON} frame={frame}>{() => <p>Content</p>}</PageState>);
+    expect(screen.getByTestId("skeleton")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Continue editing" })).toBeNull();
+    unmount();
+    draw(<PageState read={failed({ ...SERVER })} thing="your drafts" region="Continue editing" skeleton={SKELETON} frame={frame}>{() => <p>Content</p>}</PageState>);
+    const section = screen.getByRole("region", { name: "Continue editing" });
+    expect(section).toContainElement(screen.getByRole("heading", { name: "Continue editing" }));
+    expect(section).toContainElement(screen.getByRole("alert"));
+  });
+
   it("ready: the content, drawn only then", () => {
     const content = vi.fn(() => <p>Content</p>);
     const { rerender } = draw(<PageState read={read()} thing="builds" region="Builds" skeleton={SKELETON}>{content}</PageState>);

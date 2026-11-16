@@ -26,7 +26,10 @@ export type Thing =
   | "this collection"
   | "this list"
   | "your week"
-  | "the maps";
+  | "the maps"
+  // Proposed with Home: its feed holds builds and topics together, and its run counts are the room's figures.
+  | "the feed"
+  | "the run counts";
 
 export const failedLine = (thing: Thing): string => `Couldn't load ${thing}. Try again.`;
 

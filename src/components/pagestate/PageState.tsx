@@ -31,6 +31,11 @@ export interface PageStateProps {
   notFound?: { when?: (data: unknown[]) => boolean; kind: MissingKind; way: WayOut };
   /** The console line's prefix for a failure, "[Drafts] drafts read failed"; `[<region>] read failed` when not given. */
   log?: string;
+  /**
+   * The region's own frame (a section and its heading) around every state but loading: the skeleton stands in for the whole
+   * region while it loads, as the region's placeholder always has, and the other states sit under the region's heading.
+   */
+  frame?: (body: ReactNode) => ReactNode;
   /** Spacing for the failed, empty and not-found states inside the region. */
   style?: CSSProperties;
   /** The content, drawn only once every read has answered with something to show. */
@@ -51,7 +56,7 @@ function Mark({ state, region, children }: { state: Shown; region: string; child
   );
 }
 
-export function PageState({ read, thing, region, skeleton, empty, notFound, log, style, children }: PageStateProps) {
+export function PageState({ read, thing, region, skeleton, empty, notFound, log, frame, style, children }: PageStateProps) {
   const reads = asList(read);
   useLogEach(reads, reads.map(() => log ?? `[${region}] read failed`));
   const state = shownState(reads, {
@@ -81,7 +86,7 @@ export function PageState({ read, thing, region, skeleton, empty, notFound, log,
   }
   return (
     <Mark state={state} region={region}>
-      {body}
+      {frame && state !== "loading" ? frame(body) : body}
     </Mark>
   );
 }
