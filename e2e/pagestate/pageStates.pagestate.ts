@@ -43,12 +43,15 @@ for (const pageType of PAGE_TYPES) {
         let reading: Reading = await readState(page).catch(() => LOADING);
         let key = "";
         let since = 0;
+        /** Every change of state, with when it happened, for the report. */
+        const history: string[] = [];
         while (Date.now() - started < SETTLE_MS) {
           reading = await readState(page).catch(() => reading);
           const next = `${reading.state}|${[...reading.states].sort().join(",")}`;
           if (next !== key) {
             key = next;
             since = Date.now() - started;
+            history.push(`${(since / 1000).toFixed(1)}s ${next}`);
           }
           await page.waitForTimeout(POLL_MS);
         }
@@ -62,6 +65,7 @@ for (const pageType of PAGE_TYPES) {
           condition,
           expected,
           settledSeconds: settledAt === null ? null : Math.round(settledAt / 100) / 10,
+          history,
           ...reading,
         };
         fs.mkdirSync(OUT, { recursive: true });
