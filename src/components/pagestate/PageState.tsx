@@ -66,13 +66,22 @@ function Mark({ state, region, children, markRef }: { state: Shown; region: stri
 function useSkeletonHeight(state: Shown): { markRef: React.RefObject<HTMLDivElement>; height: number | null } {
   const markRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number | null>(null);
+  // Measured when the skeleton goes up and again whenever its boxes change size (fonts, the column settling).
   useLayoutEffect(() => {
-    if (state !== "loading" || !markRef.current) return;
-    const boxes = Array.from(markRef.current.children).map((child) => child.getBoundingClientRect()).filter((box) => box.height > 0);
-    if (boxes.length === 0) return;
-    const measured = Math.max(...boxes.map((box) => box.bottom)) - Math.min(...boxes.map((box) => box.top));
-    if (measured > 0 && measured !== height) setHeight(measured);
-  });
+    const mark = markRef.current;
+    if (state !== "loading" || !mark) return;
+    const measure = () => {
+      const boxes = Array.from(mark.children).map((child) => child.getBoundingClientRect()).filter((box) => box.height > 0);
+      if (boxes.length === 0) return;
+      const measured = Math.max(...boxes.map((box) => box.bottom)) - Math.min(...boxes.map((box) => box.top));
+      if (measured > 0) setHeight((kept) => (kept === measured ? kept : measured));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const watch = new ResizeObserver(measure);
+    for (const child of Array.from(mark.children)) watch.observe(child);
+    return () => watch.disconnect();
+  }, [state]);
   return { markRef, height };
 }
 
