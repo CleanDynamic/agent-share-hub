@@ -633,3 +633,12 @@ describe("the reset and link states", () => {
     expect(container.textContent).not.toContain("/*");
   });
 });
+
+describe("the join tick's age (prompt 9, G18)", () => {
+  it("keeps today's sentence while the minimum age is open, and confirms the age once it is set", async () => {
+    const { termsLead } = await import("./SignupForm");
+    expect(termsLead(null)).toBe("I agree to the");
+    expect(termsLead(13)).toBe("I am 13 or over and agree to the");
+    expect(termsLead(18)).toBe("I am 18 or over and agree to the");
+  });
+});

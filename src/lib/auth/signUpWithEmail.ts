@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { refusalOf, type AuthRefusal } from "./authMessages";
 import { setKeepSignedIn } from "./keepSignedIn";
+import { TERMS_VERSION, PRIVACY_VERSION } from "@/content/legal/legalConstants";
 
 export interface EmailSignUp {
   email: string;
@@ -28,6 +29,9 @@ export type EmailSignUpResult =
  *
  * The `handle_new_user` trigger reads `display_name` and `username` from the
  * sign-up metadata, in snake case, so those two keys are not ours to rename.
+ * Prompt 9 (G17): `terms_version` and `privacy_version` are the texts the person
+ * accepted with the tick; the server refuses an email sign-up without the
+ * current ones and records the acceptance with its own clock.
  * G11: an address that already has an account is answered exactly like a new
  * one waiting for its link, so nothing tells a stranger which addresses are
  * registered. (With email confirmation on, the auth service already does this;
@@ -43,6 +47,8 @@ export async function signUpWithEmail(input: EmailSignUp): Promise<EmailSignUpRe
       data: {
         display_name: input.displayName,
         username: input.username,
+        terms_version: TERMS_VERSION,
+        privacy_version: PRIVACY_VERSION,
       },
       emailRedirectTo: input.emailRedirectTo,
       captchaToken: input.captchaToken,

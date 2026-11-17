@@ -19,7 +19,7 @@ source address and the date it was read beside each one. They are listed at the 
   agreeing with.
 - **Example of a good answer:** "Example Ltd, a company registered in England and Wales, number 12345678."
   Or, for a sole trader: "Jane Smith, trading as OpenBuilds.ai."
-- **Fills:** `privacy.ts:20` and `terms.ts:21`, `{{NEED: legal name of the business or person running the site}}`
+- **Fills:** `privacy.ts:21` and `terms.ts:22`, `{{NEED: legal name of the business or person running the site}}`
 - **Answer:**
 
 ### 1.2 ICO registration
@@ -27,7 +27,7 @@ source address and the date it was read beside each one. They are listed at the 
   If so, what is the registration number? If you are exempt, say so and the line will be removed.
 - **Why:** The privacy policy shows the number if there is one.
 - **Example of a good answer:** "Yes: ZB123456." Or: "Not registered; remove the line."
-- **Fills:** `privacy.ts:27`, `{{NEED: ICO registration number, or remove}}`
+- **Fills:** `privacy.ts:28`, `{{NEED: ICO registration number, or remove}}`
 - **Answer:**
 
 ## 2. Contacts
@@ -37,7 +37,7 @@ source address and the date it was read beside each one. They are listed at the 
 - **Why:** UK data protection law and consumer law expect a way to reach you by post. A registered office or a
   service address is fine; it does not have to be a home address.
 - **Example of a good answer:** "Example Ltd, 1 Example Street, Manchester M1 1AA, United Kingdom."
-- **Fills:** `privacy.ts:25` and `terms.ts:21`, `{{NEED: postal address}}`
+- **Fills:** `privacy.ts:26` and `terms.ts:22`, `{{NEED: postal address}}`
 - **Answer:**
 
 ### 2.2 Privacy contact email
@@ -46,7 +46,7 @@ source address and the date it was read beside each one. They are listed at the 
 - **Why:** It appears in five places: the contact list, Your rights, Children, closing an account, and the terms'
   contact line. One address for all of them is simplest.
 - **Example of a good answer:** "privacy@openbuilds.ai (a shared inbox, checked every working day)."
-- **Fills:** `privacy.ts:26`, `privacy.ts:279`, `privacy.ts:332`, `terms.ts:129`, `terms.ts:187`,
+- **Fills:** `privacy.ts:27`, `privacy.ts:280`, `privacy.ts:333`, `terms.ts:130`, `terms.ts:188`,
   `{{NEED: privacy contact email}}`
 - **Answer:**
 
@@ -58,7 +58,7 @@ source address and the date it was read beside each one. They are listed at the 
   13 is the UK's age of digital consent. 18 avoids the Children's Code duties, but you would have to turn away
   younger people.
 - **Example of a good answer:** "18."
-- **Fills:** `privacy.ts:332` and `terms.ts:32`, `{{NEED: minimum age, 13 or 18}}`, and the constant
+- **Fills:** `privacy.ts:333` and `terms.ts:33`, `{{NEED: minimum age, 13 or 18}}`, and the constant
   `MINIMUM_AGE` (currently `null`) in the code
 - **Answer:**
 
@@ -69,20 +69,20 @@ source address and the date it was read beside each one. They are listed at the 
 - **Why:** The privacy policy must say how long each kind of data is kept.
 - **Example of a good answer:** "Until either person deletes the conversation, or 2 years after the last message,
   whichever comes first."
-- **Fills:** `privacy.ts:244`, `{{NEED: retention period}}` in the Messages row
+- **Fills:** `privacy.ts:245`, `{{NEED: retention period}}` in the Messages row
 - **Answer:**
 
 ### 4.2 Reports
 - **Question:** How long do you keep reports about content (who reported, what, why, and the outcome)?
 - **Why:** As above. Reports hold personal data about two people.
 - **Example of a good answer:** "12 months after the report is closed."
-- **Fills:** `privacy.ts:246`, `{{NEED: retention period}}` in the Reports row
+- **Fills:** `privacy.ts:247`, `{{NEED: retention period}}` in the Reports row
 - **Answer:**
 
 ### 4.3 Notifications
 - **Question:** How long are notifications kept?
 - **Example of a good answer:** "90 days, then deleted automatically."
-- **Fills:** `privacy.ts:247`, `{{NEED: retention period}}` in the Notifications row
+- **Fills:** `privacy.ts:248`, `{{NEED: retention period}}` in the Notifications row
 - **Answer:**
 
 ### 4.4 Error reports (your Sentry plan)
@@ -90,7 +90,7 @@ source address and the date it was read beside each one. They are listed at the 
 - **Why:** Sentry keeps errors 30 days on its Developer (free) plan and 90 days on Team, Business and Enterprise
   (Sentry's data retention page, read 17 November 2026).
 - **Example of a good answer:** "Team plan, so 90 days."
-- **Fills:** `privacy.ts:251`, `{{NEED: Sentry retention period}}`
+- **Fills:** `privacy.ts:252`, `{{NEED: Sentry retention period}}`
 - **Answer:**
 
 ## 5. Your Supabase settings
@@ -100,7 +100,7 @@ source address and the date it was read beside each one. They are listed at the 
 - **Why:** The privacy policy says where the database is. If it is in an EU or UK region, data in the database
   does not leave Europe.
 - **Example of a good answer:** "eu-west-2 (London)."
-- **Fills:** `privacy.ts:174`, `{{NEED: confirm the region of our Supabase project}}` (the row currently says "United States")
+- **Fills:** `privacy.ts:175`, `{{NEED: confirm the region of our Supabase project}}` (the row currently says "United States")
 - **Answer:**
 
 ### 5.2 Backup retention
@@ -108,7 +108,7 @@ source address and the date it was read beside each one. They are listed at the 
   the plan and on point-in-time recovery.)
 - **Why:** Deleted data stays in backups until they roll over, and the policy says for how long.
 - **Example of a good answer:** "7 days (Pro plan daily backups, no point-in-time recovery)."
-- **Fills:** `privacy.ts:256`, `{{NEED: Supabase backup retention}}`
+- **Fills:** `privacy.ts:257`, `{{NEED: Supabase backup retention}}`
 - **Answer:**
 
 ### 5.3 When expired imports are deleted
@@ -116,7 +116,7 @@ source address and the date it was read beside each one. They are listed at the 
   delete them after that (a scheduled job in Supabase), and after how long?
 - **Why:** The policy says they expire but not when they are removed. The repository schedules the expiry, not a deletion.
 - **Example of a good answer:** "Deleted 30 days after they expire, by the nightly job." Or: "Nothing deletes them yet."
-- **Fills:** `privacy.ts:245`, `{{NEED: when expired imports are deleted}}`
+- **Fills:** `privacy.ts:246`, `{{NEED: when expired imports are deleted}}`
 - **Answer:**
 
 ## 6. Appeal route
@@ -127,7 +127,7 @@ source address and the date it was read beside each one. They are listed at the 
 - **Why:** The terms promise a way to challenge decisions. The Online Safety Act expects a clear complaints route.
 - **Example of a good answer:** "Email appeals@openbuilds.ai with the link and why you disagree. A person who did
   not make the first decision replies within 14 days."
-- **Fills:** `terms.ts:119`, `{{NEED: appeal route and contact}}`
+- **Fills:** `terms.ts:120`, `{{NEED: appeal route and contact}}`
 - **Answer:**
 
 ## 7. Liability wording (for your reviewer)
@@ -137,7 +137,7 @@ source address and the date it was read beside each one. They are listed at the 
 - **Why:** It limits what you are responsible for. Only a qualified reviewer should settle this wording; this
   work did not write or change it.
 - **Example of a good answer:** "Approved as written." Or the reviewer's replacement text.
-- **Fills:** `terms.ts:157`, `{{NEED: confirm liability wording with a reviewer}}`
+- **Fills:** `terms.ts:158`, `{{NEED: confirm liability wording with a reviewer}}`
 - **Answer:**
 
 ## 8. Services the research could not settle
@@ -150,7 +150,7 @@ source address and the date it was read beside each one. They are listed at the 
   retention depends on the plan: with AI app context on, it keeps each AI request for 90 days, and that setting
   is on by default on Free and Pro. If you no longer use the gateway, say so and the line will be removed.
 - **Example of a good answer:** "Business plan, AI app context off, training opt-out set." Or: "We no longer use Lovable AI."
-- **Fills:** `privacy.ts:153`, `{{NEED: Lovable AI gateway's training and retention terms for our plan}}`
+- **Fills:** `privacy.ts:154`, `{{NEED: Lovable AI gateway's training and retention terms for our plan}}`
 - **Answer:**
 
 ### 8.2 OpenAI's transfer safeguard
@@ -159,14 +159,14 @@ source address and the date it was read beside each one. They are listed at the 
 - **Why:** OpenAI's pages refused automated reading (HTTP 403), so this could not be checked. The addendum is in
   the OpenAI platform under Settings › Organization › Data controls.
 - **Example of a good answer:** "Accepted; it uses the EU SCCs with the UK Addendum."
-- **Fills:** `privacy.ts:223`, `{{NEED: OpenAI's transfer safeguard}}`
+- **Fills:** `privacy.ts:224`, `{{NEED: OpenAI's transfer safeguard}}`
 - **Answer:**
 
 ### 8.3 X's transfer safeguard
 - **Question:** Which safeguard does X state for sign-in data leaving the UK? (See X's privacy policy.)
 - **Why:** X's pages refused automated reading (HTTP 402).
 - **Example of a good answer:** "X's privacy policy names standard contractual clauses."
-- **Fills:** `privacy.ts:226`, `{{NEED: X's transfer safeguard}}`
+- **Fills:** `privacy.ts:227`, `{{NEED: X's transfer safeguard}}`
 - **Answer:**
 
 ### 8.4 Lovable's contracting entity
@@ -176,7 +176,7 @@ source address and the date it was read beside each one. They are listed at the 
   safeguard. If the contract is with the US company, the row should say United States, and both its privacy policy
   and its DPA name the EU SCCs with the UK Addendum.
 - **Example of a good answer:** "Lovable Labs Incorporated; use United States and SCCs with the UK Addendum."
-- **Fills:** `privacy.ts:229`, `{{NEED: Lovable's contracting entity and transfer safeguard}}`, and the Lovable row
+- **Fills:** `privacy.ts:230`, `{{NEED: Lovable's contracting entity and transfer safeguard}}`, and the Lovable row
   of the sharing table
 - **Answer:**
 
@@ -208,7 +208,7 @@ source address and the date it was read beside each one. They are listed at the 
 
 ### 9.4 The terms' own words (for your reviewer)
 - **Question:** The terms still say "By using the site or creating an account, you agree…" and "please don't use
-  the site" (`terms.ts:21`). The site now says "Sign up" for making an account and avoids "please" elsewhere. Should
+  the site" (`terms.ts:22`). The site now says "Sign up" for making an account and avoids "please" elsewhere. Should
   the terms match?
 - **Why:** The legal text was out of scope for the wording sweep.
 - **Example of a good answer:** "Yes: 'By using the site or signing up…' and 'don't use the site'."

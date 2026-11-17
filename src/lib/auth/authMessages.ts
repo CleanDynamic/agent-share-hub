@@ -90,6 +90,10 @@ export const SQL_SENTENCES: readonly (readonly [string | RegExp, string])[] = [
   ["Sign in to download your data.", signInSentence("continue")],
   [/^You have opened \d+ imports today, which is the limit\./, "Couldn't start the import. You've reached today's limit, which resets at midnight UTC."],
   [/^You have \d+ imports still open\./, "Couldn't start the import. Finish or abandon an open import first."],
+  // Prompt 9, G17 (20261117120000_p9_legal_acceptances.sql).
+  ["Sign in to continue.", signInSentence("continue")],
+  ["Those are not the current Terms and Privacy policy.", "Couldn't save your acceptance. Reload the page and try again."],
+  ["Accept the current Terms and Privacy policy to sign up.", "Couldn't sign you up. Tick the box to accept the Terms and Privacy policy."],
 ];
 
 /** The shared uploader's refusals, by code (src/lib/media/uploadMedia.ts). UPLOAD_FAILED carries storage's own text: not ours. */

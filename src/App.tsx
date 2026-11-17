@@ -30,6 +30,7 @@ import { preloadComposeRoute } from "./pages/site/compose/preload";
 import { SignInDialogHost } from "./pages/site/signin/SignInDialogHost";
 import { SessionListener } from "@/components/pagestate/SessionListener";
 import { SignInRedirect } from "./pages/site/signin/SignInRedirect";
+import { PRIVACY_REVIEWED, TERMS_REVIEWED } from "@/content/legal/reviewed";
 
 /** SV-26 P2: the composer's route, which holds the build layer's reads, loads with the composer and not with the first page. */
 const ComposeRoute = lazy(() => preloadComposeRoute().then((m) => ({ default: m.ComposeRoute })));
@@ -157,6 +158,8 @@ const ImportPage = lazy(() => import("./pages/ImportPage"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 // UI-P45 — /connect in the site frame: the connector guide, inline. Its own chunk.
 const ConnectSitePage = lazy(() => import("./pages/site/connect/ConnectPage"));
+/* Prompt 9, G19: asked to accept changed terms. Loaded only once both legal texts are marked reviewed; until then nothing is fetched. */
+const AcceptTermsDialog = PRIVACY_REVIEWED && TERMS_REVIEWED ? lazy(() => import("./pages/site/legal/AcceptTermsDialog")) : null;
 
 /* BG-P07 — /dev/kit, the control-kit review page.
 
@@ -606,6 +609,7 @@ const App = () => (
             <SignInDialogHost />
             {/* G13: a session the server has ended is noticed here, once, and the dialog above opens over the page. */}
             <SessionListener />
+            {AcceptTermsDialog ? <AcceptTermsDialog /> : null}
             </Suspense>
             </PageChangeProvider>
             </UploadPickerProvider>

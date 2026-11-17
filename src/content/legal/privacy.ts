@@ -2,11 +2,12 @@
 // UK spelling, second person, short sentences. No em dashes.
 
 import { PRIVACY_REVIEWED } from "./reviewed";
+import { PRIVACY_VERSION } from "./legalConstants";
 import type { LegalText } from "./types";
 
 export const privacy: LegalText = {
   title: "Privacy policy",
-  lastUpdated: "2026-11-06",
+  lastUpdated: PRIVACY_VERSION,
   reviewed: PRIVACY_REVIEWED,
   intro:
     "This explains what OpenBuilds.ai collects about you, why, who else sees it, and what you can do about it. We have tried to say only what the site actually does.",

@@ -3,11 +3,12 @@
 // payment was confirmed (inventory marker `live-payment`).
 
 import { TERMS_REVIEWED } from "./reviewed";
+import { TERMS_VERSION } from "./legalConstants";
 import type { LegalText } from "./types";
 
 export const terms: LegalText = {
   title: "Terms",
-  lastUpdated: "2026-11-06",
+  lastUpdated: TERMS_VERSION,
   reviewed: TERMS_REVIEWED,
   intro:
     "These are the rules for using OpenBuilds.ai. They are short on purpose. If something here is unclear, email us and we will explain it.",
