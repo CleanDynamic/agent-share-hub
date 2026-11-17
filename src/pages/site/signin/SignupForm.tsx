@@ -149,12 +149,12 @@ export function SignupForm({
           </AuthCheck>
           <FieldMessage>{error}</FieldMessage>
         </div>
-        <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText={WAITING.joining}>
-          Join
+        <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText={WAITING.signingUp}>
+          Sign up
         </PrimaryAction>
         {showLegalLine ? (
           <p data-testid="signup-legal-line" style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12, lineHeight: 1.4, color: t.label }}>
-            By joining you agree to the{" "}
+            By signing up you agree to the{" "}
             <Link to="/terms" style={LEGAL_LINK} onClick={onLeaveForLegal}>
               Terms
             </Link>{" "}

@@ -86,7 +86,7 @@ describe("the sign-up line", () => {
     const props = signup({ showLegalLine: true, onLeaveForLegal: () => (left += 1) });
     render(<MemoryRouter><SignupForm {...props} /></MemoryRouter>);
     const line = screen.getByTestId("signup-legal-line");
-    expect(line.textContent).toBe("By joining you agree to the Terms and have read the Privacy policy.");
+    expect(line.textContent).toBe("By signing up you agree to the Terms and have read the Privacy policy.");
     const terms = line.querySelector('a[href="/terms"]') as HTMLAnchorElement;
     const privacy = line.querySelector('a[href="/privacy"]') as HTMLAnchorElement;
     expect(terms.textContent).toBe("Terms");

@@ -153,7 +153,7 @@ export const WAITING = {
   saving: "Saving…",
   sending: "Sending…",
   updating: "Updating…",
-  joining: "Joining…",
+  signingUp: "Signing up…",
 } as const;
 
 // ── confirmations (G8): past tense, a full stop, no "!", tick or emoji ──

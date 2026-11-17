@@ -223,7 +223,8 @@ export const RULES: Rule[] = [
   // G1, G2: the glossary
   { id: "log-in", goal: "G1", on: true, breaks: (s) => /\blog ?in\b/i.test(s) },
   { id: "log-out", goal: "G1", on: true, breaks: (s) => /\blog ?out\b/i.test(s) },
-  { id: "sign-up", goal: "G1", on: true, breaks: (s) => /\bsign ?up\b/i.test(s) },
+  // "Join" for an account (glossary row swapped after Part A): Sign up is the word; Join is only Join space.
+  { id: "account-join", goal: "G1", on: true, breaks: (s) => /\bJoin (free|again|now|today|us)\b|\bBy joining\b|^Joining…?$/i.test(s) },
   { id: "register", goal: "G1", on: true, breaks: (s) => /\bregister\b/i.test(s) },
   { id: "create-account", goal: "G1", on: true, breaks: (s) => /\bcreate (an )?account\b/i.test(s) },
   { id: "blueprint", goal: "G1", on: true, breaks: (s) => /\bblueprints?\b/i.test(s) },
@@ -249,12 +250,6 @@ export const ALLOW: Record<string, Record<string, string>> = {
     "src/components/build/FullPromptWindow.tsx|Nothing added yet": "the placeholder of an empty reply box, not an empty state",
     "src/pages/site/compose/StillOpenSpaces.tsx|No spaces to post in": "a disabled menu option (menu options are not empty states)",
     "src/pages/site/openbuilds/NewPostWindow.tsx|No spaces to post in": "a disabled menu option (menu options are not empty states)",
-  },
-  "sign-up": {
-    "src/pages/site/signin/SignInDialogFrame.tsx|Sign up": "the sign-in dialog's switch to the join view, named \"Sign up\" by the owner's decision (after prompt 9's Part A)",
-  },
-  "bare-join": {
-    "src/pages/site/signin/SignupForm.tsx|Join": "the join form's submit: \"Join\" alone means making an account (G2)",
   },
   project: {
     "src/pages/site/build/BuildSteps.tsx|Put {} in your project": "the reader's own code project, where a file goes; not a build",
@@ -354,10 +349,11 @@ describe("the reader and the rules catch what they should, whether switched on o
       ["exclamation", "Copied!", "Link copied."],
       ["please", "Please try again.", "Try again."],
       ["log-in", "Log in", "Sign in"],
-      ["sign-up", "Sign up again", "Join again"],
-      ["create-account", "Create account", "Join"],
+      ["account-join", "Join free", "Sign up"],
+      ["account-join", "By joining you agree", "By signing up you agree"],
       ["fork", "Publish, reproduce and fork", "Publish, reproduce and rebuild"],
       ["bare-join", "Join", "Join space"],
+      ["create-account", "Create account", "Sign up"],
       ["old-name", "Welcome to NeoScale", "Welcome"],
     ];
     for (const [id, bad, good] of cases) {

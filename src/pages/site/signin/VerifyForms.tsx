@@ -79,7 +79,7 @@ export function VerifyPending({ email, resendState, cooldownSeconds = 0, onResen
             textDecorationThickness: 1,
           }}
         >
-          Join again
+          Sign up again
         </button>
       </p>
     </>

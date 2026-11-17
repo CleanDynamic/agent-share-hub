@@ -61,12 +61,13 @@ async function fillAll(over: Partial<Record<"name" | "username" | "email" | "pas
   fireEvent.click(document.querySelector('label[for="terms"] > div')!.lastElementChild!);
 }
 
-const create = () => screen.getByRole("button", { name: /^Join$/ });
+/** The submit: the switch's tab has the same name, "Sign up", and is the one with aria-pressed. */
+const create = () => screen.getAllByRole("button", { name: "Sign up" }).find((button) => !button.hasAttribute("aria-pressed")) as HTMLElement;
 
 describe("the view", () => {
   it("is the join view: the switch on Join free", () => {
     open();
-    expect(screen.getByRole("button", { name: "Sign up" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Sign up", pressed: true }).getAttribute("aria-pressed")).toBe("true");
     expect(create()).toBeDisabled();
   });
 
@@ -387,7 +388,7 @@ describe("creating the account", () => {
     await fillAll();
     fireEvent.click(create());
     await act(async () => {});
-    expect(screen.getByRole("button", { name: "Joining…" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Signing up…" })).toBeDisabled();
   });
 
   it("refuses an email with no domain before it asks anyone, under the email", async () => {
