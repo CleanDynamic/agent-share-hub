@@ -345,7 +345,19 @@ function SandboxPageBody() {
   /* CA-23 P4: two tabs (or two devices) on one build. What each clash is called and where it falls is said once the page knows its tiles (`describeClash`, below). */
   const describeClash = useRef<(clash: RawClash) => ClashDescription>(() => ({ name: "This", badge: "", rank: 0 }));
   const twoTabs = useTwoTabs({ buildId, nodes, history: buildHistory, thread, rehydrate, describe: (clash) => describeClash.current(clash) });
-  useWriteGuard(buildId, { onWritten: twoTabs.announce });
+  /* G22: once the writes kept on this device from an earlier load have gone (signed out or offline before they could), the
+     build is read again and the post and the fields are drawn from it, as Show changes does: a read made while those writes
+     were being settled may have answered with the row as it was before them. Unsaved typing is never replaced. */
+  useWriteGuard(buildId, {
+    onWritten: twoTabs.announce,
+    onKeptSent: () => {
+      if (!buildId) return;
+      void queryClient.refetchQueries({ queryKey: composeBuildQueryKey(buildId), exact: true }).then(() => {
+        thread.reload?.();
+        rehydrate();
+      });
+    },
+  });
   useEffect(() => () => pendingWrites.reset(), []);
   const offline = useOffline();
   const { pending, failed: writesFailed, failedCount, retry: retryWrites } = usePendingWrites();
