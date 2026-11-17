@@ -188,3 +188,21 @@ describe("ComposeRoute · SV-04 P4, the one frame", () => {
     expect(LIBRARY_SESSIONS_KEY).toEqual(librarySessionsKey);
   });
 });
+
+describe("ComposeRoute after the server ended the session (G16)", () => {
+  afterEach(async () => {
+    (await import("@/lib/query/sessionSignal")).setSessionPhase("live");
+    auth.isLoggedIn = true;
+  });
+
+  it("keeps the composer on screen: it does not navigate by itself", async () => {
+    open("/compose/new");
+    expect(await screen.findByText("the composer")).toBeTruthy();
+    const { setSessionPhase } = await import("@/lib/query/sessionSignal");
+    act(() => setSessionPhase("ended"));
+    auth.isLoggedIn = false;
+    cleanup();
+    open("/compose/new");
+    expect(await screen.findByText("the composer")).toBeTruthy();
+  });
+});

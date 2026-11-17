@@ -2,7 +2,7 @@
 // exactly once and opens the sign-in dialog over the same page. A 403, or a request without a member's token, does nothing.
 import { act, render } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter, useLocation } from "react-router-dom";
+import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /* The listener wraps auth.signOut while mounted (G17), so the stub it calls through is kept here as `signOut`. */
@@ -27,8 +27,13 @@ const refuse = (token: string, status = 401) => noteAnswer(`${BASE}/rest/v1/buil
 let seen: { pathname: string; search: string; hash: string; state: unknown };
 function Probe() {
   const location = useLocation();
+  const navigate = useNavigate();
   seen = location;
-  return null;
+  return (
+    <button type="button" onClick={() => navigate(-1)}>
+      close
+    </button>
+  );
 }
 
 function mount(at = "/library?tab=saved#top") {
@@ -206,5 +211,21 @@ describe("back from a provider (G15)", () => {
     await flush();
     expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 640 }));
     expect(sessionStorage.length).toBe(0);
+  });
+});
+
+describe("closing the dialog without signing in (G16)", () => {
+  it("the page is read again as a visitor's: the phase is live and what failed loads from its skeleton", async () => {
+    const client = mount();
+    const reset = vi.spyOn(client, "resetQueries");
+    refuse(MEMBER);
+    await flush();
+    expect(new URLSearchParams(seen.search).get("signin")).toBe("login");
+    const { fireEvent, screen } = await import("@testing-library/react");
+    fireEvent.click(screen.getByText("close"));
+    await flush();
+    expect(seen.search).toBe("?tab=saved");
+    expect(sessionPhase()).toBe("live");
+    expect(reset).toHaveBeenCalledTimes(1);
   });
 });

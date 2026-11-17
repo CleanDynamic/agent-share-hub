@@ -37,6 +37,7 @@
 import { lazy, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate, useLocation, useParams } from "react-router-dom";
+import { sessionPhase, subscribeSession } from "@/lib/query/sessionSignal";
 
 import { useHideFrameChrome } from "@/components/shell/frameChrome";
 import { useAuth } from "@/contexts/AuthContext";
@@ -77,6 +78,10 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
   const { buildId } = useParams<{ buildId: string }>();
   const location = useLocation();
   const { isLoggedIn, loading } = useAuth();
+  /* G16 (page states): a session the server ended keeps the editor on screen, with the member's work; it does not
+     navigate by itself. Nothing is read while signed out (`reads` and the library still ask for isLoggedIn). */
+  const ended = useSyncExternalStore(subscribeSession, sessionPhase, sessionPhase) === "ended";
+  const member = isLoggedIn || ended;
 
   /* An arrival from intake (a transcript, a repo or a Build File, which carry
      `state.intake`) opens the legacy workspace: its tray and proposal review are
@@ -132,11 +137,11 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
   const waitingForLibrary = isLoggedIn && !hasFrom && !libraryIn;
   const checking = Boolean(buildId) && !startedNew && check.isPending && check.fetchStatus !== "idle";
   const rebuild = Boolean(buildId) && !startedNew && Boolean(check.data?.parent_build_id);
-  const showLegacy = !loading && isLoggedIn && (hasFrom || rebuild);
+  const showLegacy = !loading && member && (hasFrom || rebuild);
   useHideFrameChrome(showLegacy);
 
   if (loading) return <ComposeSkeleton />;
-  if (!isLoggedIn) {
+  if (!member) {
     return <Navigate to={`/login?redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`} replace />;
   }
   if (showLegacy) return <>{legacy}</>;

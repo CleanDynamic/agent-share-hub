@@ -25,7 +25,7 @@
    The editor (/compose) gets no dialog: it keeps its work on the device and says so in its own banner (Part D). */
 
 import { useEffect, useRef } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -64,6 +64,18 @@ function refusedByAuth(error: unknown): boolean {
   return status === 401 || status === 403 || code === "bad_jwt" || code === "session_not_found" || code === "user_not_found";
 }
 
+/**
+ * Back to live, and the page read again (G14, G16, G18): what failed while the session was in question starts again from
+ * its skeleton, the rest is read again in place. The reset comes first, so no frame shows those reads as failed.
+ */
+function readAgain(queryClient: QueryClient): void {
+  const failed = (query: { state: { status: string; data: unknown } }) => query.state.status === "error" && query.state.data === undefined;
+  const unanswered = queryClient.getQueryCache().findAll({ predicate: failed });
+  void queryClient.resetQueries({ predicate: (query) => unanswered.includes(query) });
+  void queryClient.invalidateQueries({ predicate: (query) => !unanswered.includes(query) });
+  setSessionPhase("live");
+}
+
 /** Where the editor lives: no dialog there. */
 const EDITOR = /^\/compose(\/|$)/;
 
@@ -75,6 +87,24 @@ export function SessionListener() {
   const go = useRef(navigate);
   go.current = navigate;
   const queryClient = useQueryClient();
+  /** Whether the client holds a member's session, from its own events. */
+  const member = useRef(false);
+
+  /* G16: the member closed the dialog the listener opened without signing in. The page is a visitor's now: it is read
+     again as one (a protected page goes Home: ProtectedRoute). */
+  const dialogShown = useRef(false);
+  const dialogOpen = viewOf(location.search) !== null;
+  useEffect(() => {
+    if (sessionPhase() !== "ended") {
+      dialogShown.current = false;
+      return;
+    }
+    if (dialogOpen) dialogShown.current = true;
+    else if (dialogShown.current && !member.current) {
+      dialogShown.current = false;
+      readAgain(queryClient);
+    }
+  }, [dialogOpen, queryClient]);
 
   // G15: back from a provider, on the page that was left.
   const address = `${location.pathname}${location.search}${location.hash}`;
@@ -133,26 +163,20 @@ export function SessionListener() {
       });
     }) as typeof signOut;
 
-    let member = false;
+    member.current = false;
     const { data: watch } = auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
-        const unasked = member && asked === 0 && sessionPhase() === "live";
-        member = false;
+        const unasked = member.current && asked === 0 && sessionPhase() === "live";
+        member.current = false;
         if (unasked) {
           setSessionPhase("ended");
           askToSignIn();
         }
         return;
       }
-      member = Boolean(session);
+      member.current = Boolean(session);
       if (event === "SIGNED_IN" && session && sessionPhase() === "ended") {
-        /* G18: what failed while the session was in question starts again from its skeleton; the rest is read again in
-           place. */
-        const failed = (query: { state: { status: string; data: unknown } }) => query.state.status === "error" && query.state.data === undefined;
-        const unanswered = queryClient.getQueryCache().findAll({ predicate: failed });
-        void queryClient.resetQueries({ predicate: (query) => unanswered.includes(query) });
-        void queryClient.invalidateQueries({ predicate: (query) => !unanswered.includes(query) });
-        setSessionPhase("live");
+        readAgain(queryClient);
       }
     });
 
