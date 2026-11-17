@@ -16,6 +16,7 @@
 
    The board measures that are not on the site's spacing scale (10, 14, 18) live here, as the recipe files keep theirs. */
 
+import { dragWords } from "@/components/brand/dragWords";
 import { useWindowFocus } from "@/lib/focus/windowFocus";
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -454,7 +455,8 @@ export function SortableRows({ rows, height = 40, label, onOrder }: { rows: read
     if (from >= 0 && to >= 0) onOrder(arrayMove(keys, from, to));
   };
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+    /* G20: the drag says the row's name and place, not its key. */
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd} accessibility={dragWords("row", keys, (id) => rows.find((row) => row.key === id)?.name ?? "")}>
       <SortableContext items={keys} strategy={verticalListSortingStrategy}>
         <ul aria-label={label} style={{ margin: 0, padding: 0, display: "flex", flexDirection: "column", minWidth: 0 }}>
           {rows.map((row) => (

@@ -12,6 +12,7 @@
 //
 // ON A PHONE two or more are a strip that scrolls sideways while the maker writes; readers still get the grid.
 
+import { dragWords } from "@/components/brand/dragWords";
 import { closestCenter, DndContext, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { horizontalListSortingStrategy, rectSortingStrategy, SortableContext, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -505,7 +506,21 @@ export function GridView(props: NodeViewProps) {
 
   return (
     <NodeViewWrapper data-grid-view="" contentEditable={false} ref={root}>
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+      {/* G20: the drag says the picture's description or number and its place, not its key. */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={onDragEnd}
+        accessibility={dragWords(
+          "picture",
+          pictures.map((picture) => picture.key),
+          (id) => {
+            const at = pictures.findIndex((picture) => picture.key === id);
+            const alt = typeof pictures[at]?.attrs.alt === "string" ? (pictures[at].attrs.alt as string).trim() : "";
+            return alt || `Picture ${at + 1}`;
+          },
+        )}
+      >
         <SortableContext items={pictures.map((picture) => picture.key)} strategy={strip ? horizontalListSortingStrategy : rectSortingStrategy}>
           {strip ? (
             <div
