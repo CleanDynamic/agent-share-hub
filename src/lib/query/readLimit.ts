@@ -14,6 +14,7 @@
 // query was cancelled) rejects with the caller's own AbortError, exactly as before, and stays silent.
 
 import { READ_RPCS } from "./readRpcs";
+import { noteAnswer } from "./sessionSignal";
 
 /** How long a read may take, response and body, before it is a failed read. */
 export const READ_TIMEOUT_MS = 10_000;
@@ -104,7 +105,13 @@ export function createSiteFetch(base: () => typeof fetch = () => globalThis.fetc
   return async (input, init) => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     const method = init?.method ?? (typeof input === "object" && "method" in input ? input.method : "GET");
-    if (!isRead(url, method, init?.body)) return base()(input, init);
+    /* G13: every answer, read or write, is shown to the session signal: a member's data request answered 401 is reported. */
+    const requestHeaders = init?.headers ?? (typeof input === "object" && "headers" in input ? input.headers : undefined);
+    const heard = (response: Response) => {
+      noteAnswer(url, requestHeaders, response.status);
+      return response;
+    };
+    if (!isRead(url, method, init?.body)) return base()(input, init).then(heard);
 
     const controller = new AbortController();
     const outer = init?.signal ?? (typeof input === "object" && "signal" in input ? input.signal : undefined) ?? undefined;
@@ -124,7 +131,7 @@ export function createSiteFetch(base: () => typeof fetch = () => globalThis.fetc
       const response = await base()(input, { ...init, signal: controller.signal });
       // The body is read inside the limit, then handed on whole.
       const bytes = method.toUpperCase() === "HEAD" || response.status === 204 ? null : await response.arrayBuffer();
-      return new Response(bytes, { status: response.status, statusText: response.statusText, headers: response.headers });
+      return heard(new Response(bytes, { status: response.status, statusText: response.statusText, headers: response.headers }));
     })();
     try {
       return await Promise.race([answer, limitReached]);

@@ -121,3 +121,21 @@ describe("isReadTimeout", () => {
     expect(isReadTimeout({ code: "57014", message: "canceling statement due to statement timeout" })).toBe(false);
   });
 });
+
+describe("createSiteFetch reports a member's refused request (G13)", () => {
+  const member = `${btoa(JSON.stringify({ alg: "HS256" }))}.${btoa(JSON.stringify({ sub: "u1", role: "authenticated" })).replace(/=+$/, "")}.sig`;
+  const answer = (status: number) => (() => Promise.resolve(new Response("{}", { status }))) as unknown as typeof fetch;
+
+  it("tells the listener about a read and a write answered 401 with a member's token, and nothing else", async () => {
+    const { listenForRefusals } = await import("./sessionSignal");
+    const heard: string[] = [];
+    listenForRefusals((token) => heard.push(token));
+    const headers = new Headers({ Authorization: `Bearer ${member}` });
+    await createSiteFetch(() => answer(401))(`${BASE}/rest/v1/builds`, { method: "GET", headers });
+    await createSiteFetch(() => answer(401))(`${BASE}/rest/v1/builds`, { method: "PATCH", headers, body: "{}" });
+    await createSiteFetch(() => answer(403))(`${BASE}/rest/v1/builds`, { method: "GET", headers });
+    await createSiteFetch(() => answer(200))(`${BASE}/rest/v1/builds`, { method: "GET", headers });
+    listenForRefusals(null);
+    expect(heard).toEqual([member, member]);
+  });
+});

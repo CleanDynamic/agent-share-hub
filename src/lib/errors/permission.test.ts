@@ -35,3 +35,19 @@ describe("isPermissionError", () => {
     expect(isPermissionError("42501")).toBe(false);
   });
 });
+
+describe("G13: the union, split", () => {
+  it("a session refusal is a 401 or a JWT code; no access is a 403 or 42501; the union keeps both", async () => {
+    const { isNoAccess, isPermissionError, isSessionRefusal } = await import("./permission");
+    for (const error of [{ status: 401 }, { code: "PGRST301" }, { code: "PGRST302" }, { code: "PGRST303" }]) {
+      expect(isSessionRefusal(error)).toBe(true);
+      expect(isNoAccess(error)).toBe(false);
+      expect(isPermissionError(error)).toBe(true);
+    }
+    for (const error of [{ status: 403 }, { code: "42501" }, new Error("search failed: code 42501")]) {
+      expect(isNoAccess(error)).toBe(true);
+      expect(isSessionRefusal(error)).toBe(false);
+      expect(isPermissionError(error)).toBe(true);
+    }
+  });
+});
