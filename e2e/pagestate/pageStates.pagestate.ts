@@ -24,7 +24,7 @@ const POLL_MS = 250;
 const OUT = path.resolve("test-results/pagestate");
 
 /** Before the document has a body to read. */
-const LOADING: Reading = { state: "loading", states: ["loading"], title: null, codes: [], retryLabels: [], busy: 0, lines: [] };
+const LOADING: Reading = { state: "loading", states: ["loading"], title: null, codes: [], gallery: false, retryLabels: [], busy: 0, lines: [] };
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
@@ -77,6 +77,7 @@ for (const pageType of PAGE_TYPES) {
         expect.soft(reading.busy, "no aria-busy left").toBe(0);
         expect.soft(reading.title, "title present").not.toBeNull();
         expect.soft(reading.codes, "no code on screen").toEqual([]);
+        if (reading.state !== "ready") expect.soft(reading.gallery, "no state says \"gallery\" (G28)").toBe(false);
         for (const label of reading.retryLabels) expect.soft(label, "retry label").toBe("Try again");
       });
     }

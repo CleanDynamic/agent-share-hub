@@ -16,6 +16,8 @@ export interface Reading {
   title: string | null;
   /** Visible text that looks like an error code. */
   codes: string[];
+  /** G28: the word "gallery" anywhere on screen. */
+  gallery: boolean;
   /** Labels of the buttons inside failed regions, and any visible "Retry". */
   retryLabels: string[];
   /** Elements still marked aria-busy="true". */
@@ -108,6 +110,7 @@ export async function readState(page: Page): Promise<Reading> {
       states: Array.from(states),
       title: h1,
       codes: Array.from(new Set(codes)),
+      gallery: /gallery/i.test(body),
       retryLabels: Array.from(new Set(retryLabels)),
       busy,
       lines: Array.from(new Set(lines)).slice(0, 6),
