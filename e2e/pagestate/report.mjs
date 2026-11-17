@@ -15,14 +15,15 @@ for (const file of fs.readdirSync(DIR).filter((f) => f.endsWith(".json"))) {
 }
 
 const ok = (r) =>
-  r.settledSeconds !== null && r.expected.includes(r.state) && r.busy === 0 && r.title !== null && r.codes.length === 0 && r.retryLabels.every((l) => l === "Try again");
+  r.settledSeconds !== null && r.expected.includes(r.state) && (r.busy === 0 || r.state === "signedout") && r.title !== null && r.codes.length === 0 && r.retryLabels.every((l) => l === "Try again");
 
 const cell = (r) => {
   if (!r) return "–";
   const time = r.settledSeconds === null ? `>${LIMIT_S}` : `${r.settledSeconds}`;
   const flags = [];
   if (!r.expected.includes(r.state)) flags.push(`want ${r.expected.join("/")}`);
-  if (r.busy) flags.push("busy");
+  // G18: under the sign-in dialog the held skeletons are busy by design (the test exempts them the same way).
+  if (r.busy && r.state !== "signedout") flags.push("busy");
   if (r.settledSeconds !== null && r.settledSeconds >= LIMIT_S - CLOSE_S) flags.push("CLOSE TO THE LIMIT");
   if (r.title === null) flags.push("no title");
   if (r.codes.length) flags.push(`code ${r.codes.join(" ")}`);
