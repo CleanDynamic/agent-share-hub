@@ -229,7 +229,7 @@ describe("the host platform, its models and its tools (CA-02 P5)", () => {
     const props = open();
     openRow("Available tools");
     const pickTool = (query: string, row: string | RegExp) => {
-      fireEvent.click(screen.getByRole("button", { name: /(^|, )Available\ tools$/ }));
+      fireEvent.click(screen.getByRole("button", { name: /(^|, )Available tools$/ }));
       fireEvent.change(screen.getByRole("combobox", { name: "Find an app" }), { target: { value: query } });
       fireEvent.click(screen.getByRole("option", { name: row }));
     };

@@ -84,7 +84,7 @@ describe("Add › Decision (CA-13 P2, CA-15 P8)", () => {
 
   it("says what is required, in order, and Add waits", () => {
     open();
-    fireEvent.click(screen.getByRole("button", { name: /(^|, )Model\ or\ service$/ }));
+    fireEvent.click(screen.getByRole("button", { name: /(^|, )Model or service$/ }));
     fireEvent.click(screen.getByRole("option", { name: /Not sure|TypeSafe Jev/ }));
     expect(status()).toBe("Required: Key");
     fireEvent.change(screen.getByLabelText("Key"), { target: { value: "team" } });
