@@ -30,6 +30,7 @@ import { t } from "@/lib/theme/tokens";
 // binding called `type` makes ambiguous. See the note in lib/theme/type.ts.
 import { data as dataType, label as labelType } from "@/lib/theme/type";
 import { useActionStyle } from "./actionStyle";
+import { screenError } from "@/lib/auth/authMessages";
 
 export interface ForkState {
   /** Fork the build, optionally at an ordinal. */
@@ -71,11 +72,7 @@ export function useForkBuild(build: Build | undefined): ForkState {
       forkBuild({ sourceBuildId: build.id, atEventOrdinal })
         .then((draft) => navigate(`/compose/${draft.id}`))
         .catch((cause: unknown) => {
-          setError(
-            cause instanceof Error
-              ? cause.message
-              : "The fork could not be created. Try again in a moment."
-          );
+          setError(screenError(cause, "The fork could not be created. Try again in a moment.", { source: "build", context: "forkBuild" }));
           setPending(false);
         });
     },

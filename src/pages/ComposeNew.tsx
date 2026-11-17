@@ -128,6 +128,7 @@ import {
   pageHeadingText,
 } from "@/components/build/tokens";
 import { feedback } from "@/lib/theme/motion";
+import { screenError } from "@/lib/auth/authMessages";
 
 /** A build is never asked to name itself before it exists. */
 const DRAFT_TITLE = "Untitled build";
@@ -199,8 +200,17 @@ function looksAcceptable(file: File): boolean {
   );
 }
 
-function messageOf(cause: unknown): string {
-  return cause instanceof Error ? cause.message : String(cause);
+/** parse-repo's two refusals a creator can act on, read by status (G4); anything else is the plain line. */
+function repoFailure(label: string, cause: unknown): string {
+  const status = (cause as { cause?: { status?: unknown } } | null)?.cause?.status;
+  if (status === 404) return `Couldn't read ${label}. It may be private, renamed or not there, so check the URL. Your draft is here and empty.`;
+  if (status === 429 || status === 403) return `Couldn't read ${label}. GitHub is limiting requests, so try again in a few minutes. Your draft is here and empty.`;
+  return `Couldn't read ${label}. Your draft is here and empty.`;
+}
+
+/** G4: our words for a failure, never its own text; `fallback` is the sentence for what was being done. */
+function messageOf(cause: unknown, fallback: string): string {
+  return screenError(cause, fallback, { source: "compose", context: "compose-start" });
 }
 
 /**
@@ -398,7 +408,7 @@ export default function ComposeNew() {
       .catch((cause: unknown) => {
         if (cancelled) return;
         setWaiting([]);
-        setWaitingError(`Your waiting imports could not be read: ${messageOf(cause)}`);
+        setWaitingError(messageOf(cause, "Couldn't load your waiting imports. Try again."));
       });
     return () => {
       cancelled = true;
@@ -421,7 +431,7 @@ export default function ComposeNew() {
     } catch (cause) {
       busyRef.current = false;
       setStarting(false);
-      setError(`The draft could not be created: ${messageOf(cause)}`);
+      setError(messageOf(cause, "Couldn't start your draft. Try again."));
     }
   }, [goToWorkspace]);
 
@@ -460,7 +470,7 @@ export default function ComposeNew() {
         buildId = build.id;
       } catch (cause) {
         busyRef.current = false;
-        setError(`The draft could not be created: ${messageOf(cause)}`);
+        setError(messageOf(cause, "Couldn't start your draft. Try again."));
         return;
       }
 
@@ -485,8 +495,7 @@ export default function ComposeNew() {
         goToWorkspace(buildId, {
           tone: "failed",
           message:
-            `${source === "lovable" ? "The export" : "The transcript"} could not be read: ` +
-            `${messageOf(cause)} Your draft is here and empty.`,
+            messageOf(cause, `Couldn't read ${source === "lovable" ? "the export" : "the transcript"}. Your draft is here and empty.`),
         });
       }
     },
@@ -526,7 +535,7 @@ export default function ComposeNew() {
         buildId = build.id;
       } catch (cause) {
         busyRef.current = false;
-        setError(`The draft could not be created: ${messageOf(cause)}`);
+        setError(messageOf(cause, "Couldn't start your draft. Try again."));
         return;
       }
 
@@ -556,7 +565,7 @@ export default function ComposeNew() {
         busyRef.current = false;
         goToWorkspace(buildId, {
           tone: "failed",
-          message: `${label} could not be read: ${messageOf(cause)} Your draft is here and empty.`,
+          message: messageOf(cause, repoFailure(label, cause)),
         });
       }
     },
@@ -586,7 +595,7 @@ export default function ComposeNew() {
       try {
         contents = await readDroppedFile(file);
       } catch (cause) {
-        setError(`${file.name} could not be read: ${messageOf(cause)}`);
+        setError(messageOf(cause, `Couldn't read ${file.name}. Choose another file.`));
         return;
       }
 
@@ -669,7 +678,7 @@ export default function ComposeNew() {
       });
     } catch (cause) {
       setWriting(false);
-      setError(`That could not be saved: ${messageOf(cause)} Nothing was lost — try again.`);
+      setError(messageOf(cause, "Couldn't save that. Nothing was lost. Try again."));
     }
   }, [goToWorkspace, selection, stage]);
 
@@ -710,7 +719,7 @@ export default function ComposeNew() {
         try {
           targets = await listClaimTargets();
         } catch (cause) {
-          targetsError = `Your drafts could not be read: ${messageOf(cause)}`;
+          targetsError = messageOf(cause, "Couldn't load your drafts. Try again.");
         }
         const resolved = await resolveDestination(item.target_build_id, targets, creatorId);
         setStage({
@@ -724,7 +733,7 @@ export default function ComposeNew() {
           targetsError,
         });
       } catch (cause) {
-        setWaitingError(`That conversation could not be opened: ${messageOf(cause)}`);
+        setWaitingError(messageOf(cause, "Couldn't open that conversation. Try again."));
       } finally {
         setOpeningId(null);
       }
@@ -772,7 +781,7 @@ export default function ComposeNew() {
         await discardImport(item.id);
         setWaiting((rows) => (rows ?? []).filter((row) => row.id !== item.id));
       } catch (cause) {
-        setWaitingError(`That conversation could not be discarded: ${messageOf(cause)}`);
+        setWaitingError(messageOf(cause, "Couldn't discard that conversation. Try again."));
       } finally {
         setDiscardingId(null);
       }

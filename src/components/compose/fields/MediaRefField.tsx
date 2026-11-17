@@ -46,6 +46,7 @@ import { type FieldWidgetProps } from "./index";
 import { r } from "@/lib/theme/radius";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { feedback } from "@/lib/theme/motion";
+import { screenError } from "@/lib/auth/authMessages";
 
 const MONO =
   "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace";
@@ -125,7 +126,7 @@ export function MediaRefField({
         onChange(row.id);
         if (replaced && replaced !== row.id) await discard(replaced);
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : String(cause));
+        setError(screenError(cause, "Couldn't upload that. Try again.", { source: "compose", context: "mediaRef" }));
       } finally {
         setFraction(null);
       }

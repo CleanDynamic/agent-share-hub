@@ -347,7 +347,7 @@ describe("taking a transcript", () => {
 
     const handed = JSON.parse(screen.getByTestId("state").textContent ?? "null");
     expect(handed.intake.tone).toBe("failed");
-    expect(handed.intake.message).toMatch(/the gateway timed out/i);
+    expect(handed.intake.message).toMatch(/Couldn't read the transcript\./);
     expect(handed.intake.message).toMatch(/draft is here and empty/i);
   });
 
@@ -511,7 +511,7 @@ describe("the review", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /add 2 to the draft/i }));
 
-    await screen.findByText(/row level security/i);
+    await screen.findByText("Couldn't save that. Nothing was lost. Try again.");
     expect(screen.getByText(/here is what it found/i)).toBeTruthy();
     expect(screen.getByText(/nothing was lost/i)).toBeTruthy();
   });
@@ -682,7 +682,7 @@ describe("a repository URL (NS-P21)", () => {
 
     const handed = JSON.parse(screen.getByTestId("state").textContent ?? "null");
     expect(handed.intake.tone).toBe("failed");
-    expect(handed.intake.message).toMatch(/is private, does not exist/i);
+    expect(handed.intake.message).toMatch(/Couldn't read acme\/widget-factory\./);
     expect(handed.intake.message).toMatch(/draft is here and empty/i);
   });
 

@@ -9,6 +9,7 @@ import { buildLayerError } from "@/lib/build/types";
 import { db } from "@/lib/openbuilds/types";
 
 import { aboutProblem, linksProblem, oneLineProblem, pinsProblem, settingsProblem, storedSettings, type BuildDisplay, type Pin, type ProfileSettings } from "./settings";
+import { ShownError } from "@/lib/auth/authMessages";
 
 export interface ProfileDraft {
   displayName: string;
@@ -44,7 +45,7 @@ type Rpc = (fn: string, params: Record<string, unknown>) => Promise<{ data: unkn
 /** Everything Customise profile holds, in one request. */
 export async function saveProfile(draft: ProfileDraft): Promise<void> {
   const problem = draftProblem(draft);
-  if (problem) throw new Error(problem);
+  if (problem) throw new ShownError(problem);
   const { error } = await (supabase.rpc as unknown as Rpc)("save_profile", { p: savePayload(draft) });
   if (error) throw buildLayerError("saveProfile", error);
 }

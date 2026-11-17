@@ -37,6 +37,7 @@ import {
   eyebrow as eyebrowText,
   label as labelText,
 } from "@/lib/theme/type";
+import { screenError } from "@/lib/auth/authMessages";
 
 /**
  * What the router carries from a drop to the workspace.
@@ -66,10 +67,6 @@ function sourceLineFor(result: BuildFileSuccess): string {
   return tool
     ? `From ${tool}, ${parts} and ${steps}`
     : `${parts} and ${steps}`;
-}
-
-function messageOf(cause: unknown): string {
-  return cause instanceof Error ? cause.message : String(cause);
 }
 
 /**
@@ -297,7 +294,7 @@ export function BuildFileIntake({ state, onReset, onCopyExtractor }: BuildFileIn
       navigate(`/compose/${buildId}`, { replace: true, state: arrival });
     } catch (cause) {
       setWriting(false);
-      setError(`That could not be saved: ${messageOf(cause)} Nothing was lost — try again.`);
+      setError(screenError(cause, "That could not be saved. Nothing was lost — try again.", { source: "compose", context: "buildFileWrite" }));
     }
   }, [isLoggedIn, isWriting, location, navigate, parsed, selection]);
 

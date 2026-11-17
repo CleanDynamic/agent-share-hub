@@ -35,6 +35,7 @@ import {
 } from "@/lib/build";
 import type { ResolveMedia } from "@/components/build/renderers/shared";
 import { composeBuildQueryKey } from "./useComposeBuild";
+import { screenError } from "@/lib/auth/authMessages";
 
 /** The same key BuildPage reads, so both surfaces share one cached list. */
 export function buildMediaQueryKey(buildId: string | undefined) {
@@ -241,9 +242,7 @@ export function MediaProvider({
             added += 1;
           } catch (cause) {
             if (row) await remove(row.id).catch(() => undefined);
-            toast.error(`${file.name || "That file"} could not be added`, {
-              description: cause instanceof Error ? cause.message : String(cause),
-            });
+            toast.error(screenError(cause, `${file.name || "That file"} could not be added`, { source: "compose", context: "addMedia" }));
           }
         }
       } finally {

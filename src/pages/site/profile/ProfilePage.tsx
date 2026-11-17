@@ -59,6 +59,7 @@ import { entryOf } from "./profileEntries";
 import { emptyFeed, feedOptions, joinedLabel, metaParts, oneLineOf, othersLines, privateLine, recordParts, shownFilter, STANDING_LABEL } from "./profileFeedModel";
 import { TRACK_ITEMS, levelView, streakLine, xpLine } from "./profileModel";
 import { useProfilePictures } from "./useProfilePictures";
+import { screenError } from "@/lib/auth/authMessages";
 
 /** A profile does not change while somebody is looking at it. */
 const STALE_MS = 60_000;
@@ -261,7 +262,7 @@ export function ProfilePage() {
       setComposeOpen(false);
       navigate(`/messages/${threadId}`);
     } catch (err) {
-      toast({ title: "Could not start conversation", description: err instanceof Error ? err.message : String(err), variant: "destructive" });
+      toast({ title: screenError(err, "Could not start conversation", { source: "profile", context: "startConversation" }), variant: "destructive" });
     } finally {
       setComposeBusy(false);
     }
@@ -296,7 +297,7 @@ export function ProfilePage() {
       await write();
       refreshProfile();
     } catch (error) {
-      toast({ title: failed, description: error instanceof Error ? error.message : undefined, variant: "destructive" });
+      toast({ title: screenError(error, failed, { source: "profile", context: "pinWrite" }), variant: "destructive" });
     }
   };
 

@@ -27,6 +27,7 @@ import type { PostingWindow } from "./PostingWindows";
 import { orderLine, readSpaceTab, spaceCrowdKey, spaceMeta, spacePostsKey, spaceSearch } from "./spaceModel";
 import { SpaceView } from "./SpaceView";
 import { PostControl } from "@/components/post/postControls";
+import { screenError } from "@/lib/auth/authMessages";
 
 const PostingWindows = lazy(() => import("./PostingWindows"));
 
@@ -81,7 +82,7 @@ export default function SpacePage() {
       void qc.invalidateQueries({ queryKey: mySpacesKey(viewerId) });
     } catch (error) {
       reportError(error, { source: "openbuilds", context: "joinSpace" });
-      toast.error(error instanceof Error && error.message ? error.message : "Couldn't join. Try again.");
+      toast.error(screenError(error, "Couldn't join. Try again.", false));
     }
   };
 
@@ -114,7 +115,7 @@ export default function SpacePage() {
     } catch (error) {
       change(postId, undo);
       reportError(error, { source: "openbuilds", context: "moderatePost" });
-      toast.error(error instanceof Error && error.message ? error.message : "That didn't save. Try again.");
+      toast.error(screenError(error, "That didn't save. Try again.", false));
     }
   };
 

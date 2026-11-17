@@ -14,7 +14,6 @@ import { EditMediaDialog, type PictureSource } from "@/components/post/media/Edi
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { useToast } from "@/hooks/use-toast";
 import type { MediaCrop } from "@/lib/build/thread";
-import { reportError } from "@/lib/errors/report";
 import {
   imageSize,
   plainUrl,
@@ -25,6 +24,7 @@ import {
   uploadProfilePicture,
   type ProfileImage,
 } from "@/lib/profile/pictures";
+import { screenError } from "@/lib/auth/authMessages";
 
 export interface StoredPicture {
   url: string;
@@ -81,8 +81,7 @@ export function useProfilePictures({ onSaved, writers = WRITERS }: { onSaved: ()
   const [editing, setEditing] = useState<Editing | null>(null);
 
   const fail = (error: unknown, title: string = PICTURE_COPY.failed) => {
-    reportError(error, { source: "profile", context: "profile pictures" });
-    toast({ title, description: error instanceof Error ? error.message : undefined, variant: "destructive" });
+    toast({ title: screenError(error, title, { source: "profile", context: "profile pictures" }), variant: "destructive" });
   };
 
   const change = (which: ProfileImage, returnTo: HTMLElement | null = null) => {

@@ -12,6 +12,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { FAVOURITES_MAX, RECENT_MAX } from "@/lib/theme/colourWheel";
 import { normaliseHex } from "@/lib/theme/partColour";
+import { ShownError } from "@/lib/auth/authMessages";
 
 export interface ColourSwatches {
   recent: string[];
@@ -76,9 +77,9 @@ export async function getColourSwatches(): Promise<ColourSwatches> {
 /** Saves the signed-in maker's swatches. Refuses a value that is not two lists of colours in their limits. */
 export async function saveColourSwatches(next: ColourSwatches): Promise<ColourSwatches> {
   const why = swatchesRefusal(next);
-  if (why) throw new Error(why);
+  if (why) throw new ShownError(why);
   const id = await signedInId();
-  if (!id) throw new Error("Sign in to keep your colours.");
+  if (!id) throw new ShownError("Sign in to keep your colours.");
   const value = { recent: [...next.recent], favourites: [...next.favourites] };
   const { error } = await profiles().update({ colour_swatches: value }).eq("id", id);
   if (error) throw error;

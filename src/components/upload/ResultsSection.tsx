@@ -11,6 +11,7 @@ import {
 import type { ContentItemResult } from '@/lib/results/types';
 import { ResultsCarouselEditor, type Slide } from './ResultsCarouselEditor';
 import { reportError } from "@/lib/errors/report";
+import { screenError } from "@/lib/auth/authMessages";
 
 const PHOTO_MAX = 10 * 1024 * 1024; // 10MB
 const VIDEO_MAX = 100 * 1024 * 1024; // 100MB
@@ -72,7 +73,7 @@ export function ResultsSection({ contentItemId, onCountChange }: ResultsSectionP
       .from('content-results')
       .upload(path, file, { contentType: file.type, upsert: false });
     if (error) {
-      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+      toast({ title: screenError(error, 'Upload failed'), variant: 'destructive' });
       return null;
     }
     const { data } = supabase.storage.from('content-results').getPublicUrl(path);
@@ -121,7 +122,7 @@ export function ResultsSection({ contentItemId, onCountChange }: ResultsSectionP
           setSlides((prev) => [...prev, rowToSlide(row)]);
           setActiveIndex(slides.length);
         } catch (err: any) {
-          toast({ title: 'Could not add slide', description: err?.message, variant: 'destructive' });
+          toast({ title: screenError(err, 'Could not add slide'), variant: 'destructive' });
         }
         return;
       }
@@ -164,7 +165,7 @@ export function ResultsSection({ contentItemId, onCountChange }: ResultsSectionP
           return next;
         });
       } catch (err: any) {
-        toast({ title: 'Could not remove slide', description: err?.message, variant: 'destructive' });
+        toast({ title: screenError(err, 'Could not remove slide'), variant: 'destructive' });
       }
     },
     [toast],
@@ -182,7 +183,7 @@ export function ResultsSection({ contentItemId, onCountChange }: ResultsSectionP
         await updateResultSlide(id, { mediaUrl: url });
         setSlides((prev) => prev.map((s) => (s.id === id ? { ...s, mediaUrl: url } : s)));
       } catch (err: any) {
-        toast({ title: 'Replace failed', description: err?.message, variant: 'destructive' });
+        toast({ title: screenError(err, 'Replace failed'), variant: 'destructive' });
       } finally {
         setUploading(false);
       }

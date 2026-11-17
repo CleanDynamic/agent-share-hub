@@ -52,6 +52,7 @@ import {
   resolveWidget,
   secondaryTextColour,
 } from "./fields";
+import { screenError } from "@/lib/auth/authMessages";
 
 /** Long enough that a typed word is one write, short enough that the creator
  *  has not moved on before it lands. */
@@ -201,9 +202,7 @@ export function useNodeWrite(buildId: string, nodeId: string | null): NodeWriter
         await upsertNode(row);
       })
       .then(undefined, (cause: unknown) => {
-        toast.error("That edit could not be saved", {
-          description: cause instanceof Error ? cause.message : String(cause),
-        });
+        toast.error(screenError(cause, "That edit could not be saved", { source: "compose", context: "upsertNode" }));
         // The cache is now a claim the server has not accepted. Refetch so the
         // panel shows what is actually stored rather than what was typed.
         void queryClient.invalidateQueries({ queryKey });

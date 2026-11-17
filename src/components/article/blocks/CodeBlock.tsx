@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/sheet';
 import { colourAlpha } from "@/lib/theme/tokens";
 import { feedback } from '@/lib/theme/motion';
+import { screenError } from "@/lib/auth/authMessages";
 
 type BlockStatus = 'idle' | 'running' | 'success' | 'error';
 
@@ -201,13 +202,14 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
       if (result.error) {
         setStatus('error');
         eventBus.emit('block:run:error', { blockId, error: result.error });
-        toast.error(result.error);
+        // G4: the program's own error stays in its output panel; the toast says ours.
+        toast.error('Your code stopped with an error. See the output.');
       } else {
         setStatus('success');
         eventBus.emit('block:run:complete', { blockId, result: combined });
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = screenError(err, "Couldn't run that code. Try again.", { source: 'article', context: 'codeBlock' });
       setStatus('error');
       eventBus.emit('block:run:error', { blockId, error: err });
       patchProps({

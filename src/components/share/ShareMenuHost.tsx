@@ -14,6 +14,7 @@ import { saveToCollection, removeFromCollection } from "@/lib/library/saveToColl
 import { createCollection } from "@/lib/library/createCollection";
 import { supabase } from "@/integrations/supabase/client";
 import { reportError } from "@/lib/errors/report";
+import { screenError } from "@/lib/auth/authMessages";
 
 function buildDeepLink(args: {
   contentType: ShareableType;
@@ -125,7 +126,7 @@ export default function ShareMenuHost({
         toast.success("Sent");
       } catch (e: any) {
         reportError(e, { source: "console", context: "ShareMenuHost" });
-        toast.error(e?.message ?? "Failed to send");
+        toast.error(screenError(e, "Failed to send", false));
       }
     },
     [contentType, contentId]
@@ -143,7 +144,7 @@ export default function ShareMenuHost({
         }
       } catch (e: any) {
         reportError(e, { source: "console", context: "ShareMenuHost" });
-        toast.error(e?.message ?? "Failed to save");
+        toast.error(screenError(e, "Failed to save", false));
       }
     },
     [contentType, contentId]
@@ -161,7 +162,7 @@ export default function ShareMenuHost({
         toast.success(`Saved to ${name}`);
       } catch (e: any) {
         reportError(e, { source: "console", context: "ShareMenuHost" });
-        toast.error(e?.message ?? "Failed to create collection");
+        toast.error(screenError(e, "Failed to create collection", false));
       }
     },
     [user?.id, contentType, contentId]

@@ -68,6 +68,7 @@ import {
   type ReplyItem,
   type ThreadContext,
 } from "./postModel";
+import { screenError } from "@/lib/auth/authMessages";
 
 const EMPTY_EXTRAS: PostPageExtras = { work: { builds: new Map(), nodes: new Map() }, signed: new Map(), facts: new Map(), steps: new Map(), liked: new Set(), crowd: null };
 
@@ -174,7 +175,7 @@ export default function PostPage() {
   };
   const refused = (error: unknown, context: string, words: string) => {
     reportError(error, { source: "openbuilds", context });
-    toast.error(error instanceof Error && error.message ? error.message : words);
+    toast.error(screenError(error, words, false));
   };
 
   const like = async (postId: string, on: boolean) => {

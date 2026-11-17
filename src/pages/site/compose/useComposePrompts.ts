@@ -126,6 +126,7 @@ import type { ModelRun } from "@/lib/build/modelRun";
 import { rowOf, type ComposeNodes } from "./useComposeNodes";
 import { showMadeWithIn } from "./useComposeSessions";
 import { sayFailed } from "./draftStart";
+import { screenError } from "@/lib/auth/authMessages";
 
 /** The key a prompt written on this page carries until it is saved. */
 const LOCAL = "local-";
@@ -148,10 +149,6 @@ const findNode = (tree: readonly NodeTree[], id: string): NodeTree | null => {
 };
 
 /** A refusal the data layer wrote as `{Field}: {rule}` ("Target: 80 characters max"), without its "addCheck failed: " lead; undefined for any other failure. */
-const refusalIn = (message: string): string | undefined => {
-  const said = /^\w+ failed: (.*)$/s.exec(message)?.[1] ?? message;
-  return /^[A-Z][^:\n]{0,40}: \S.*$/s.test(said) ? said : undefined;
-};
 
 /** "tool" is "Tool", for "Tool not added". */
 const capital = (word: string): string => `${word.slice(0, 1).toUpperCase()}${word.slice(1)}`;
@@ -881,9 +878,8 @@ export function useComposePrompts({
   const addCheckStep = (input: CheckInput) =>
     attempt(
       (cause) => {
-        // A refusal is said in its own plain words; anything else, once.
-        const said = cause instanceof Error ? refusalIn(cause.message) : undefined;
-        return said ?? "Check not added";
+        // A refusal is said in its own plain words (G4: through the one mapper); anything else, once.
+        return screenError(cause, "Check not added", false);
       },
       async () => {
         const build = await latest.current.ensureBuild();

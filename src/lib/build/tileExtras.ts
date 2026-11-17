@@ -9,6 +9,7 @@
 import type { Json } from "@/integrations/supabase/types";
 
 import { EVIDENCE_KINDS, EVIDENCE_TEXT_MAX, measurementOf, measurementRefusal, type EvidenceKind, type EvidenceMeasurement } from "./evidenceKinds";
+import { ShownError } from "@/lib/auth/authMessages";
 
 type Raw = Record<string, unknown>;
 
@@ -274,7 +275,7 @@ export const lineCleaner =
   (what: string, max: number): Cleaner =>
   (value) => {
     const said = clean(value);
-    if (said.length > max) throw new Error(`${what}: ${max} characters max`);
+    if (said.length > max) throw new ShownError(`${what}: ${max} characters max`);
     return said || null;
   };
 
@@ -283,18 +284,18 @@ const CLEANERS: Record<string, Record<string, Cleaner>> = {
   agent_config: {
     limits: (value) => {
       const lines = Array.isArray(value) ? cleanList(value, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY) : typeof value === "string" ? linesOf(value) : [];
-      if (lines.length > LIMITS_MAX) throw new Error(`Limits: ${LIMITS_MAX} max, one per line`);
-      if (lines.some((line) => line.length > LIMIT_LINE_MAX)) throw new Error(`Each limit: ${LIMIT_LINE_MAX} characters max`);
+      if (lines.length > LIMITS_MAX) throw new ShownError(`Limits: ${LIMITS_MAX} max, one per line`);
+      if (lines.some((line) => line.length > LIMIT_LINE_MAX)) throw new ShownError(`Each limit: ${LIMIT_LINE_MAX} characters max`);
       return lines.length > 0 ? lines : null;
     },
     output: (value) => {
       const said = clean(value);
-      if (said.length > OUTPUT_MAX) throw new Error(`Output and destination: ${OUTPUT_MAX} characters max`);
+      if (said.length > OUTPUT_MAX) throw new ShownError(`Output and destination: ${OUTPUT_MAX} characters max`);
       return said || null;
     },
     sample: (value) => {
       const said = clean(value);
-      if (said.length > SAMPLE_MAX) throw new Error(`Sample transcript: ${SAMPLE_MAX.toLocaleString("en-GB")} characters max`);
+      if (said.length > SAMPLE_MAX) throw new ShownError(`Sample transcript: ${SAMPLE_MAX.toLocaleString("en-GB")} characters max`);
       return said || null;
     },
   },
@@ -307,37 +308,37 @@ const CLEANERS: Record<string, Record<string, Cleaner>> = {
     scoring: (value) => {
       if (!isRecord(value) || !SCORING_HOWS.includes(value.how as ScoringHow)) return null;
       const target = value.how === "metric" ? clean(value.target) : "";
-      if (target.length > SCORING_TARGET_MAX) throw new Error(`Target: ${SCORING_TARGET_MAX} characters max`);
+      if (target.length > SCORING_TARGET_MAX) throw new ShownError(`Target: ${SCORING_TARGET_MAX} characters max`);
       return { how: value.how as ScoringHow, ...(target ? { target } : null) };
     },
     model_tested: (value) => {
       if (!isRecord(value)) return null;
       const model = clean(value.model);
       const version = clean(value.version);
-      if (model.length > MODEL_TESTED_MAX) throw new Error(`Model tested: ${MODEL_TESTED_MAX} characters max`);
-      if (version.length > MODEL_VERSION_MAX) throw new Error(`Version: ${MODEL_VERSION_MAX} characters max`);
+      if (model.length > MODEL_TESTED_MAX) throw new ShownError(`Model tested: ${MODEL_TESTED_MAX} characters max`);
+      if (version.length > MODEL_VERSION_MAX) throw new ShownError(`Version: ${MODEL_VERSION_MAX} characters max`);
       return model || version ? { ...(model ? { model } : null), ...(version ? { version } : null) } : null;
     },
     evidence: (value) => {
       if (!isRecord(value)) return null;
       // SV-30 P8: a kind says what the evidence is; one kind, one thing attached.
-      if (value.kind !== undefined && value.kind !== null && !EVIDENCE_KINDS.includes(value.kind as EvidenceKind)) throw new Error("Evidence is a recording, a video, a measurement, test output or a link.");
+      if (value.kind !== undefined && value.kind !== null && !EVIDENCE_KINDS.includes(value.kind as EvidenceKind)) throw new ShownError("Evidence is a recording, a video, a measurement, test output or a link.");
       const kind = value.kind as EvidenceKind | undefined | null;
       if (kind === "measurement") {
         const why = measurementRefusal(value.measurement);
-        if (why) throw new Error(why);
+        if (why) throw new ShownError(why);
         const measured = measurementOf(value.measurement) as EvidenceMeasurement;
         return { kind, measurement: { metric: measured.metric, unit: measured.unit, before: measured.before, after: measured.after, runs: measured.runs } };
       }
       if (kind === "test_output") {
         const text = clean(value.text);
-        if (text.length > EVIDENCE_TEXT_MAX) throw new Error(`Test output: ${EVIDENCE_TEXT_MAX.toLocaleString("en-GB")} characters max`);
+        if (text.length > EVIDENCE_TEXT_MAX) throw new ShownError(`Test output: ${EVIDENCE_TEXT_MAX.toLocaleString("en-GB")} characters max`);
         const file = clean(value.media_id) || clean(value.mediaId);
         if (file) return { kind, media_id: file, ...(clean(value.name, EVIDENCE_NAME_MAX) ? { name: clean(value.name, EVIDENCE_NAME_MAX) } : null) };
         return text ? { kind, text } : null;
       }
       const url = clean(value.url) ? cleanUrl(value.url) : null;
-      if (clean(value.url) && !url) throw new Error("Format: example.com/results");
+      if (clean(value.url) && !url) throw new ShownError("Format: example.com/results");
       const mediaId = clean(value.media_id) || clean(value.mediaId);
       const name = clean(value.name, EVIDENCE_NAME_MAX);
       if (mediaId) return { ...(kind ? { kind } : null), media_id: mediaId, ...(name ? { name } : null) };
@@ -348,13 +349,13 @@ const CLEANERS: Record<string, Record<string, Cleaner>> = {
     permissions: (value) => (TOOL_PERMISSIONS.includes(value as ToolPermission) ? (value as ToolPermission) : null),
     plan: (value) => {
       const plan = clean(value);
-      if (plan.length > TOOL_PLAN_MAX) throw new Error(`Required plan: ${TOOL_PLAN_MAX} characters max`);
+      if (plan.length > TOOL_PLAN_MAX) throw new ShownError(`Required plan: ${TOOL_PLAN_MAX} characters max`);
       return plan || null;
     },
     setup: (value) => {
       const lines = Array.isArray(value) ? cleanList(value, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY) : typeof value === "string" ? linesOf(value) : [];
-      if (lines.length > TOOL_SETUP_MAX) throw new Error(`Setup steps: ${TOOL_SETUP_MAX} max`);
-      if (lines.some((line) => line.length > TOOL_SETUP_LINE_MAX)) throw new Error(`Setup step: ${TOOL_SETUP_LINE_MAX} characters max`);
+      if (lines.length > TOOL_SETUP_MAX) throw new ShownError(`Setup steps: ${TOOL_SETUP_MAX} max`);
+      if (lines.some((line) => line.length > TOOL_SETUP_LINE_MAX)) throw new ShownError(`Setup step: ${TOOL_SETUP_LINE_MAX} characters max`);
       return lines.length > 0 ? lines : null;
     },
     alternatives: (value) => {
@@ -376,7 +377,7 @@ const CLEANERS: Record<string, Record<string, Cleaner>> = {
   prompt: {
     settings: (value) => {
       const raw = isRecord(value) ? value : {};
-      if (clean(raw.instructions).length > SETTINGS_INSTRUCTIONS_MAX) throw new Error(`Custom instructions: ${SETTINGS_INSTRUCTIONS_MAX} characters max`);
+      if (clean(raw.instructions).length > SETTINGS_INSTRUCTIONS_MAX) throw new ShownError(`Custom instructions: ${SETTINGS_INSTRUCTIONS_MAX} characters max`);
       const settings = settingsOf(raw);
       return settings ? { model: settings.model, effort: settings.effort, instructions: settings.instructions } : null;
     },
@@ -397,11 +398,11 @@ export function registerCleaners(type: string, cleaners: Record<string, Cleaner>
 /** The patch as it will be stored. Throws, with a plain sentence, for a key the type does not take or a value out of range. */
 export function cleanExtras(type: string, patch: Record<string, unknown>): Record<string, Json | null> {
   const known = CLEANERS[type];
-  if (!known) throw new Error("That has no more fields to change.");
+  if (!known) throw new ShownError("That has no more fields to change.");
   const out: Record<string, Json | null> = {};
   for (const [key, value] of Object.entries(patch)) {
     const cleaner = known[key];
-    if (!cleaner) throw new Error("That is not a field of this piece.");
+    if (!cleaner) throw new ShownError("That is not a field of this piece.");
     out[key] = cleaner(value);
   }
   return out;

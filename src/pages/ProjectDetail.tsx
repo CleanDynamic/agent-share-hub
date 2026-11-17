@@ -20,6 +20,7 @@ import {
   ArrowLeft, Eye, User, Lock, ChevronDown, ChevronUp, CheckCircle2, Calendar, Plus,
 } from "lucide-react";
 import { DIFFICULTY_LABEL_CLASS, TYPE_COLORS, displayContentType } from "@/lib/content-types";
+import { screenError } from "@/lib/auth/authMessages";
 
 // BG-P05. Difficulty is not a part category and carries no colour: one
 // uncoloured mono label, defined once in @/lib/content-types.
@@ -270,7 +271,7 @@ const ProjectDetail = () => {
       component_note: null,
     });
     if (error) {
-      toast({ title: "Failed to add blueprint", description: error.message, variant: "destructive" });
+      toast({ title: screenError(error, "Failed to add blueprint"), variant: "destructive" });
       return;
     }
     queryClient.invalidateQueries({ queryKey: ["project_components", id] });
@@ -295,7 +296,7 @@ const ProjectDetail = () => {
       if (error || data?.error) throw new Error(data?.error || "Failed");
       if (data?.url) window.location.href = data.url;
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: screenError(err, "Error"), variant: "destructive" });
     } finally { setUnlocking(false); }
   };
 

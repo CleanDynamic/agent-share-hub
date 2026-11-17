@@ -62,6 +62,7 @@ import {
 } from "@/components/build/tokens";
 import { workspaceCard, workspacePanel } from "@/components/shell/WorkspaceBar";
 import { SITE_NAME } from "@/lib/site";
+import { screenError } from "@/lib/auth/authMessages";
 
 /** Below this the two layers cannot sit beside each other, so they stack. */
 const TWO_COLUMN_MIN = 900;
@@ -384,7 +385,7 @@ export function LayerReview({
       })
       .catch((error: Error) => {
         if (!mounted.current) return;
-        setCallError(error.message);
+        setCallError(screenError(error, undefined, { source: "compose", context: "generateBuildLayers" }));
         setWorking(false);
       });
   }, [buildId, force, wanted]);

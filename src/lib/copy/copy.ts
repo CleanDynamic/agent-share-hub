@@ -9,6 +9,8 @@
 //   waiting       a present participle and the one ellipsis character: "Saving…"
 //   done          past tense, a full stop, no "!", tick or emoji: "Draft saved."
 
+import { SITE_NAME } from "@/lib/site";
+
 // ── page states (moved from prompt 10's stateCopy.ts) ──
 
 /** What a failed region was showing, in the sentence "Couldn't load <thing>. Try again." */
@@ -83,3 +85,42 @@ export type WayOut = (typeof WAY_OUT)[keyof typeof WAY_OUT];
 export const SIGNED_OUT_DIALOG = "You've been signed out. Sign in to carry on.";
 export const SIGNED_OUT_EDITOR = "You've been signed out. Your work is kept on this device.";
 export const SAVING_PAUSED = "Not saved. Sign in to save.";
+
+// ── errors (G3, G4) ──
+
+/** The one sentence for a failure we have no words for (G4). */
+export const UNKNOWN_ERROR = "Couldn't do that. Try again.";
+export const OFFLINE_ERROR = `Couldn't reach ${SITE_NAME}. Check your connection and try again.`;
+
+/** What the auth service's refusals read as (src/lib/auth/authMessages.ts maps the codes). */
+export const AUTH_ERRORS = {
+  captcha: "Couldn't verify this request. Try again.",
+  credentials: "That email or password isn't right.",
+  "rate-limit": "Too many tries. Wait a minute, then try again.",
+  "weak-password": "Choose a stronger password.",
+  "same-password": "Choose a password you haven't used before.",
+  "invalid-email": "Enter a valid email address.",
+  unknown: UNKNOWN_ERROR,
+} as const;
+
+// ── sign-in prompts (G5): at most ten, keyed by the action they guard ──
+
+export const SIGN_IN = {
+  save: "save",
+  comment: "comment",
+  like: "like",
+  rebuild: "rebuild",
+  post: "post",
+  joinSpaces: "join spaces",
+  drafts: "see your drafts",
+  profile: "change your profile",
+  confirm: "confirm",
+  continue: "continue",
+} as const;
+
+export type SignInAction = keyof typeof SIGN_IN;
+
+/** The button form: no full stop. */
+export const signInButton = (action: SignInAction): string => `Sign in to ${SIGN_IN[action]}`;
+/** The sentence form. */
+export const signInSentence = (action: SignInAction): string => `Sign in to ${SIGN_IN[action]}.`;

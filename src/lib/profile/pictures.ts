@@ -17,6 +17,7 @@ import type { MediaCrop } from "@/lib/build/thread";
 import { cropFromUrl, plainUrl, urlWithCrop } from "./avatarCrop";
 
 import { altProblem } from "./settings";
+import { ShownError } from "@/lib/auth/authMessages";
 
 export type ProfileImage = "avatar" | "banner";
 
@@ -43,7 +44,7 @@ export interface UploadedProfilePicture {
 async function myId(): Promise<string> {
   const { data } = await supabase.auth.getSession();
   const id = data.session?.user?.id;
-  if (!id) throw new Error("Sign in to change your profile.");
+  if (!id) throw new ShownError("Sign in to change your profile.");
   return id;
 }
 
@@ -53,7 +54,7 @@ async function myId(): Promise<string> {
  */
 export async function uploadProfilePicture(file: File, which: ProfileImage, onPercent: (percent: number) => void): Promise<UploadedProfilePicture> {
   const refused = profilePictureRejection(file);
-  if (refused) throw new Error(refused);
+  if (refused) throw new ShownError(refused);
   // A picture and a header go to the same place; `which` is the caller's, and says nothing to storage.
   void which;
   const media = await uploadMedia({
@@ -74,7 +75,7 @@ const COLUMNS: Record<ProfileImage, { url: string; crop: string; alt: string }> 
 /** Write the picture or header with its crop and ALT: one update of the reader's own row. */
 export async function saveProfileImage(which: ProfileImage, image: { url: string; crop: MediaCrop | null; alt: string }): Promise<void> {
   const problem = altProblem(image.alt);
-  if (problem) throw new Error(problem);
+  if (problem) throw new ShownError(problem);
   const columns = COLUMNS[which];
   const alt = image.alt.trim();
   const { error } = await supabase

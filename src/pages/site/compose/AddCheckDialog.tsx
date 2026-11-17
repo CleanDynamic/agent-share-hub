@@ -46,6 +46,7 @@ import { EvidenceControl } from "./EvidenceControl";
 import { ModelPicker } from "./ModelPicker";
 import { Alert, Block, BlockHead, Count, FieldArea, FieldInput, FileButton, FileLine, Hint, Inline, LabelText, MODAL_WIDTH, NARROW, Panel, PanelBody, RateBar, SegmentedField, Spread } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
+import { screenError } from "@/lib/auth/authMessages";
 
 export const CHECK_DIALOG_COPY = {
   title: "Add a check",
@@ -133,7 +134,7 @@ function extrasRefusal(extras: Extras, scoring: ScoringHow | null): string | nul
   try {
     cleanExtras("eval_run", given);
   } catch (cause) {
-    return cause instanceof Error ? cause.message : "That value is not allowed.";
+    return screenError(cause, "That value is not allowed.", false);
   }
   return comparisonPatchRefusal({ scoring: scoring ? { how: scoring } : undefined }, given);
 }

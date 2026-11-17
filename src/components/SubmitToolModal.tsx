@@ -14,6 +14,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Loader2, CheckCircle2 } from "lucide-react";
+import { screenError } from "@/lib/auth/authMessages";
 
 const CATEGORIES = [
   { value: "ai_chat", label: "AI Chat" },
@@ -105,7 +106,7 @@ export function SubmitToolModal({ open, onOpenChange }: Props) {
       if (error.code === "23505") {
         toast({ title: "This tool already exists or is pending review." });
       } else {
-        toast({ title: "Failed to submit", description: error.message, variant: "destructive" });
+        toast({ title: screenError(error, "Failed to submit"), variant: "destructive" });
       }
       return;
     }

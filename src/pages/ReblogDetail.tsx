@@ -13,6 +13,7 @@ import {
 } from "@/components/reblog/EmbeddedOriginalCard";
 import { EmbeddedExcerptCard } from "@/components/reblog/EmbeddedExcerptCard";
 import { FeedReblogAdapter, type FeedReblogRow } from "@/components/reblog/FeedReblogAdapter";
+import { screenError } from "@/lib/auth/authMessages";
 
 function mapPostType(t?: string | null): EmbeddedOriginalCardPost["postType"] {
   const x = (t ?? "").toLowerCase();
@@ -56,7 +57,7 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
       window.open(url, "_blank");
       toast.success("AI-PDF ready");
     } catch (e: any) {
-      toast.error(e?.message || "Couldn't export PDF");
+      toast.error(screenError(e, "Couldn't export PDF", { source: "reblog", context: "exportPdf" }));
     } finally {
       setExporting(false);
     }

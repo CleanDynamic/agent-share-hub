@@ -5,6 +5,7 @@ import { deleteMedia } from "@/lib/media/deleteMedia";
 import type { CoverImage } from "@/types/blueprintMedia";
 import { useToast } from "@/hooks/use-toast";
 import { feedback } from "@/lib/theme/motion";
+import { screenError } from "@/lib/auth/authMessages";
 
 const BUCKET = "blueprint-media";
 const PATH_PREFIX = "covers";
@@ -115,12 +116,7 @@ export function CoverImageField({
           deleteMedia({ bucket: BUCKET, path: previousPath }).catch(() => {});
         }
       } catch (err) {
-        const msg =
-          err instanceof MediaUploadError
-            ? err.message
-            : err instanceof Error
-              ? err.message
-              : "Upload failed.";
+        const msg = screenError(err, "Upload failed.", { source: "upload", context: "cover" });
         if (err instanceof MediaUploadError && (err.code === "MEDIA_TYPE_UNSUPPORTED" || err.code === "MEDIA_TOO_LARGE")) {
           setError(msg);
         } else {
