@@ -73,7 +73,7 @@ describe("each modal as its board (CA-15b P2)", () => {
   it("Add a tool", () => {
     mount(<AddToolDialog open onOpenChange={() => {}} onAdd={() => {}} />);
     header("Add a tool", "External app the model used");
-    expect(screen.getByRole("button", { name: "App" }).textContent).toBe("Select an app");
+    expect(screen.getByRole("button", { name: /(^|, )App$/ }).textContent).toBe("Select an app");
     expect(inOrder(screen.getByTestId("modal-body").textContent ?? "", ["App", "Select an app", "Optional", "6 fields"])).toEqual([]);
     expect(optionalRows()).toEqual([
       ["Connection method", "MCP server, native integration, custom code and 6 more"],

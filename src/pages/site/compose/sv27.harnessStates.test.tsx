@@ -75,7 +75,7 @@ describe("each state saves and reads back", () => {
   it("the Add window hands back each state", () => {
     const onAdd = vi.fn();
     render(<AddAgentDialog open onOpenChange={vi.fn()} nextNumber={1} teamsAvailable onAdd={onAdd} />);
-    const harness = () => screen.getAllByRole("button", { name: "Harness" }).at(-1) as HTMLElement;
+    const harness = () => screen.getAllByRole("button", { name: /(^|, )Harness$/ }).at(-1) as HTMLElement;
     fieldNamed("Harness");
     fireEvent.click(harness());
     fireEvent.click(screen.getByRole("option", { name: "Built in code (no harness)" }));

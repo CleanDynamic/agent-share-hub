@@ -20,7 +20,7 @@ function open(over: Partial<AddToolDialogProps> = {}) {
   return props;
 }
 
-const toolButton = () => screen.getByRole("button", { name: "App" });
+const toolButton = () => screen.getByRole("button", { name: /(^|, )App$/ });
 const find = () => screen.getByRole("combobox", { name: "Find an app" });
 const add = () => screen.getByRole("button", { name: "Add" }) as HTMLButtonElement;
 const control = (name: string) => screen.getAllByLabelText(name).at(-1) as HTMLElement;
@@ -137,7 +137,7 @@ describe("Add › Tool (CA-02 P6, CA-12 P7, CA-15 P4)", () => {
     const props = open();
     pickGitHub();
     openRow("Alternatives");
-    const picker = within(row("Alternatives")).getByRole("button", { name: "Alternatives" });
+    const picker = within(row("Alternatives")).getByRole("button", { name: /(^|, )Alternatives$/ });
     for (const name of ["gitlab", "gitlab", "github"]) {
       fireEvent.click(picker);
       fireEvent.change(screen.getByRole("combobox", { name: "Find an app" }), { target: { value: name } });

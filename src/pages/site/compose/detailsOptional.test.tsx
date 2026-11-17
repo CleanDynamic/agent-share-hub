@@ -187,7 +187,7 @@ describe("the Optional section in a tile's window (CA-15 P11, CA-18 P2)", () => 
 
   it("a tool says Application and Actions performed, and has no Service or What it was used for", () => {
     windowFor([node("tl", "integration", { step: true, service: "Slack", scopes: "Posted" })], "tl");
-    expect(screen.getByRole("button", { name: "App" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /(^|, )App$/ })).toBeTruthy();
     openRow("Actions performed");
     expect(screen.getAllByLabelText("Actions performed").length).toBeGreaterThan(0);
     expect(screen.queryByLabelText("Service")).toBeNull();

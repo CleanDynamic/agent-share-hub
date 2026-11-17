@@ -103,7 +103,7 @@ describe("Add › Code (CA-02 P7)", () => {
     fireEvent.change(well(), { target: { value: "export const a = 1;\nexport const b = 2;\n" } });
     fireEvent.change(filename(), { target: { value: " app.ts " } });
     openRow("Generated with");
-    fireEvent.click(screen.getByRole("button", { name: "Generated with" }));
+    fireEvent.click(screen.getByRole("button", { name: /(^|, )Generated\ with$/ }));
     fireEvent.change(screen.getByRole("combobox", { name: "Find a tool" }), { target: { value: "cursor" } });
     fireEvent.click(screen.getByRole("option", { name: "Cursor" }));
     fireEvent.keyDown(screen.getByRole("button", { name: "model" }), { key: "Enter" });
@@ -120,7 +120,7 @@ describe("Add › Code (CA-02 P7)", () => {
   it("names code tools only in Generated with", () => {
     open();
     openRow("Generated with");
-    fireEvent.click(screen.getByRole("button", { name: "Generated with" }));
+    fireEvent.click(screen.getByRole("button", { name: /(^|, )Generated\ with$/ }));
     fireEvent.click(screen.getByRole("option", { name: /^Show all/ }));
     const names = screen.getAllByRole("option").map((option) => option.textContent);
     expect(names).toContain("Claude Code");
