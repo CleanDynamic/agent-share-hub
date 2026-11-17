@@ -3,6 +3,7 @@
 
    HOW. The client's fetch reports a member's data request answered 401 (lib/query/sessionSignal.ts). The first such
    report while the session is live moves the phase to "checking" and asks the auth server, once:
+     - the client holds no session any more (it tried to refresh and was refused): the session is over, as below.
      - the client already holds a different token (it refreshed meanwhile): the refusal was for the old one; back to live.
      - the auth server refuses the token (401 or 403): the session is over. The phase is "ended", the session is cleared on
        this device only (`signOut({ scope: "local" })`, nothing else), and the sign-in dialog opens over the same page:
@@ -12,6 +13,11 @@
 
    G14: when the member signs in again, the phase is live once more and every query is marked stale, so what is on
    screen is read again with the new session (the dialog closes in place: LoginPanel).
+
+   G17: the client can drop a member's session on its own (a refresh the auth server refused). That SIGNED_OUT, for a
+   member who was signed in, takes the same path: phase "ended" and the dialog. A sign-out someone asked for goes
+   through `supabase.auth.signOut`, which this listener wraps while mounted to know it was asked for; that opens nothing.
+   (A sign-out in another tab arrives here as the client's own: this tab is asked to sign in again.)
 
    The editor (/compose) gets no dialog: it keeps its work on the device and says so in its own banner (Part D). */
 
@@ -58,6 +64,8 @@ export function SessionListener() {
     const confirm = async (token: string) => {
       const { data } = await supabase.auth.getSession();
       const current = data.session?.access_token ?? null;
+      // Gone already: the client asked for a fresh token while checking and the auth server refused it.
+      if (current === null) return "ended";
       if (current !== token) return "live";
       const { error } = await supabase.auth.getUser(token);
       return refusedByAuth(error) ? "ended" : "live";
@@ -79,7 +87,29 @@ export function SessionListener() {
         });
     });
 
-    const { data: watch } = supabase.auth.onAuthStateChange((event, session) => {
+    /* G17: who asked for a sign-out. Every caller goes through auth.signOut; while one is out, a SIGNED_OUT is theirs. */
+    const auth = supabase.auth;
+    const signOut = auth.signOut;
+    let asked = 0;
+    auth.signOut = ((...args: Parameters<typeof signOut>) => {
+      asked += 1;
+      return Promise.resolve(signOut.apply(auth, args)).finally(() => {
+        asked -= 1;
+      });
+    }) as typeof signOut;
+
+    let member = false;
+    const { data: watch } = auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
+        const unasked = member && asked === 0 && sessionPhase() === "live";
+        member = false;
+        if (unasked) {
+          setSessionPhase("ended");
+          askToSignIn();
+        }
+        return;
+      }
+      member = Boolean(session);
       if (event === "SIGNED_IN" && session && sessionPhase() === "ended") {
         setSessionPhase("live");
         void queryClient.invalidateQueries();
@@ -90,6 +120,7 @@ export function SessionListener() {
       alive = false;
       listenForRefusals(null);
       watch.subscription.unsubscribe();
+      auth.signOut = signOut;
     };
   }, [queryClient]);
 

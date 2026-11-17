@@ -5,10 +5,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+/* The listener wraps auth.signOut while mounted (G17), so the stub it calls through is kept here as `signOut`. */
+const signOut = vi.hoisted(() => vi.fn());
 const auth = vi.hoisted(() => ({
   getSession: vi.fn(),
   getUser: vi.fn(),
-  signOut: vi.fn(),
+  signOut: (() => undefined) as unknown,
   onAuthStateChange: vi.fn(),
 }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { auth } }));
@@ -48,7 +50,8 @@ beforeEach(() => {
   setSessionPhase("live");
   auth.getSession.mockResolvedValue({ data: { session: { access_token: MEMBER } }, error: null });
   auth.getUser.mockResolvedValue({ data: { user: null }, error: { status: 401, code: "bad_jwt" } });
-  auth.signOut.mockResolvedValue({ error: null });
+  signOut.mockReset().mockResolvedValue({ error: null });
+  auth.signOut = signOut;
   auth.onAuthStateChange.mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } });
 });
 afterEach(() => vi.clearAllMocks());
@@ -63,8 +66,8 @@ describe("SessionListener (G13)", () => {
     await flush();
     expect(auth.getUser).toHaveBeenCalledTimes(1);
     expect(auth.getUser).toHaveBeenCalledWith(MEMBER);
-    expect(auth.signOut).toHaveBeenCalledTimes(1);
-    expect(auth.signOut).toHaveBeenCalledWith({ scope: "local" });
+    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(signOut).toHaveBeenCalledWith({ scope: "local" });
     expect(sessionPhase()).toBe("ended");
     expect(seen.pathname).toBe("/library");
     expect(new URLSearchParams(seen.search).get("signin")).toBe("login");
@@ -78,7 +81,7 @@ describe("SessionListener (G13)", () => {
     mount();
     refuse(MEMBER);
     await flush();
-    expect(auth.signOut).not.toHaveBeenCalled();
+    expect(signOut).not.toHaveBeenCalled();
     expect(sessionPhase()).toBe("live");
     expect(seen.search).toBe("?tab=saved");
   });
@@ -88,7 +91,7 @@ describe("SessionListener (G13)", () => {
     mount();
     refuse(MEMBER);
     await flush();
-    expect(auth.signOut).not.toHaveBeenCalled();
+    expect(signOut).not.toHaveBeenCalled();
     expect(sessionPhase()).toBe("live");
   });
 
@@ -98,8 +101,17 @@ describe("SessionListener (G13)", () => {
     refuse(MEMBER);
     await flush();
     expect(auth.getUser).not.toHaveBeenCalled();
-    expect(auth.signOut).not.toHaveBeenCalled();
+    expect(signOut).not.toHaveBeenCalled();
     expect(sessionPhase()).toBe("live");
+  });
+
+  it("a session the client dropped while checking (its refresh was refused) is ended too", async () => {
+    auth.getSession.mockResolvedValue({ data: { session: null }, error: null });
+    mount();
+    refuse(MEMBER);
+    await flush();
+    expect(sessionPhase()).toBe("ended");
+    expect(new URLSearchParams(seen.search).get("signin")).toBe("login");
   });
 
   it("never starts on a 403 or on a request without a member's token", async () => {
@@ -141,5 +153,44 @@ describe("signing back in (G14)", () => {
     act(() => onChange("SIGNED_IN", { access_token: MEMBER }));
     act(() => onChange("TOKEN_REFRESHED", { access_token: MEMBER }));
     expect(invalidate).not.toHaveBeenCalled();
+  });
+});
+
+describe("a sign-out nobody asked for (G17)", () => {
+  const changes = () => auth.onAuthStateChange.mock.calls[0][0] as (event: string, session: unknown) => void;
+
+  it("the client dropping a member's session (a refused refresh) opens the dialog the same way", async () => {
+    mount();
+    act(() => changes()("INITIAL_SESSION", { access_token: MEMBER }));
+    act(() => changes()("SIGNED_OUT", null));
+    await flush();
+    expect(sessionPhase()).toBe("ended");
+    expect(signOut).not.toHaveBeenCalled();
+    expect(new URLSearchParams(seen.search).get("signin")).toBe("login");
+    expect(seen.state).toMatchObject({ signedOut: true });
+  });
+
+  it("a sign-out the member asked for (any caller of auth.signOut) opens nothing", async () => {
+    mount();
+    act(() => changes()("INITIAL_SESSION", { access_token: MEMBER }));
+    signOut.mockImplementation(async () => {
+      changes()("SIGNED_OUT", null);
+      return { error: null };
+    });
+    const { supabase } = await import("@/integrations/supabase/client");
+    await act(async () => {
+      await supabase.auth.signOut();
+    });
+    expect(sessionPhase()).toBe("live");
+    expect(seen.search).toBe("?tab=saved");
+  });
+
+  it("a visitor who was never signed in is never asked", async () => {
+    mount();
+    act(() => changes()("INITIAL_SESSION", null));
+    act(() => changes()("SIGNED_OUT", null));
+    await flush();
+    expect(sessionPhase()).toBe("live");
+    expect(seen.search).toBe("?tab=saved");
   });
 });
