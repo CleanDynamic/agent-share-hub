@@ -22,6 +22,7 @@ import { ProfileFeed, type ProfileFeedProps } from "./ProfileFeed";
 import { ProfileHead, type ProfileHeadProps } from "./ProfileHead";
 import { ProfileSide, SIDE_WIDTH, type ProfileSideProps } from "./ProfileSide";
 import { PAGE_TITLE } from "@/components/shell/PageHeader";
+import { PlaceholderTitle } from "@/components/pagestate/PlaceholderTitle";
 
 /** The feed column's width. */
 export const FEED_COLUMN = 620;
@@ -67,6 +68,8 @@ export function ProfileView({ head, feed, side }: ProfileViewProps) {
 /** The profile before it has arrived: the head's box and a few feed rows, at their sizes. */
 export function ProfileViewSkeleton() {
   return (
+    <>
+    <PlaceholderTitle>Profile</PlaceholderTitle>
     <LoadingRegion what="Profile" announce style={{ display: "flex", flexDirection: "column", gap: 24, minHeight: "60vh" }}>
       <Skeleton height={300} radius={10} />
       <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: FEED_COLUMN }}>
@@ -76,6 +79,7 @@ export function ProfileViewSkeleton() {
         ))}
       </div>
     </LoadingRegion>
+    </>
   );
 }
 

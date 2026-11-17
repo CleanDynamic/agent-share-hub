@@ -17,7 +17,6 @@
 
 import { readOf } from "@/components/pagestate/pageStateModel";
 import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
-import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { keepPreviousData, useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -314,12 +313,7 @@ export function ProfilePage() {
   );
   /* G16 (page states): your own profile under the sign-in dialog keeps its skeleton, and its title for assistive tech. */
   if (!lookup && sessionEnded) {
-    return arrive(
-      <>
-        <h1 style={VISUALLY_HIDDEN}>Profile</h1>
-        <ProfileViewSkeleton />
-      </>,
-    );
+    return arrive(<ProfileViewSkeleton />);
   }
   if (waiting) return arrive(<ProfileViewSkeleton />);
 

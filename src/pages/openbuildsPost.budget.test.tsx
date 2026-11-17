@@ -90,7 +90,7 @@ describe("the post page's choice budgets", () => {
 
   it.each(["/openbuilds/topics/p1", "/openbuilds/topics/p1?view=wall"])("has one Segmented, with at most two options, at %s", async (path) => {
     renderPage(path);
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 1, name: "Can anyone make the scorer faster?" });
     const groups = document.querySelectorAll('[data-ui="segmented"]');
     expect(groups).toHaveLength(1);
     expect(within(groups[0] as HTMLElement).getAllByRole("button").length).toBeLessThanOrEqual(2);

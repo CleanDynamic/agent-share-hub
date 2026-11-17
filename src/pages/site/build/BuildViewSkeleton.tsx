@@ -11,6 +11,7 @@ import { sideTrack, useIsPhone, useWidthTier, type WidthTier } from "@/component
 import { r } from "@/lib/theme/radius";
 import { asideStyle, mainStyle, trackRow } from "@/lib/theme/refinedLayout";
 import { t } from "@/lib/theme/tokens";
+import { PlaceholderTitle } from "@/components/pagestate/PlaceholderTitle";
 
 /** The first row's height on the desktop board. */
 export const HERO_ROW = 402;
@@ -118,17 +119,22 @@ export function BuildViewSkeleton({ fit = "content" }: { fit?: PageFit }) {
     Array.from({ length: count }, (_, i) => <Skeleton key={i} height={height} radius={r.control} style={i ? { marginTop: gap } : undefined} />);
   if (phone) {
     return (
+      <>
+      <PlaceholderTitle>Build</PlaceholderTitle>
       <LoadingRegion what="the build" announce data-testid="build-loading" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <Skeleton height={382} radius={18} />
         <Skeleton height={76} radius={18} />
         <ProofSkeleton phone />
         <StepsSkeleton phone stacked />
       </LoadingRegion>
+      </>
     );
   }
   const board = fit === "board" && tier === "full";
   const stacked = tier === "stacked";
   return (
+    <>
+    <PlaceholderTitle>Build</PlaceholderTitle>
     <LoadingRegion
       what="the build"
       announce
@@ -145,5 +151,6 @@ export function BuildViewSkeleton({ fit = "content" }: { fit?: PageFit }) {
       </div>
       <StepsSkeleton phone={false} stacked={stacked} />
     </LoadingRegion>
+    </>
   );
 }

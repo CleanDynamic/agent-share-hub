@@ -22,6 +22,7 @@ import { COMPOSER_PAD } from "./detailsRecipes";
 import { LoadingBlocks, LoadingStatus } from "./LoadingBlocks";
 import { BLOCKS_OUT_MS, CELL_H, COLUMNS_TOP, CONTENT_IN_MS, COUNTS_WIDTH, DETAILS_WIDTHS, LINE_GAP, POST_ROWS, SOURCES_WIDTHS, TILES, TILE_GAP, TILE_HEIGHT, TILE_INSET, TITLE_BLOCK_HEIGHT, TITLE_WIDTHS, TITLE_WRAP_ROOM, TITLE_WRAP_UNDER, takeFirstShow } from "./loadingBlocks";
 import { TAB_ROW } from "./tabRowRecipes";
+import { PlaceholderTitle } from "@/components/pagestate/PlaceholderTitle";
 
 const column = (gap: number): CSSProperties => ({ display: "flex", flexDirection: "column", gap, minWidth: 0 });
 
@@ -81,12 +82,15 @@ export const ComposeSkeleton = memo(function ComposeSkeleton({ gone = false, gho
 
   if (phone) {
     return (
+      <>
+      {ghost ? null : <PlaceholderTitle>Build</PlaceholderTitle>}
       <LoadingStatus>
         <div data-testid="compose-skeleton" data-layout="phone" style={column(20)}>
           <div style={{ ...column(0), paddingBottom: 16, borderBottom: `1px solid ${t.hairline}` }}>{title}</div>
           <BuildBlocks plan={plan} start={2} building={building} gone={gone} />
         </div>
       </LoadingStatus>
+      </>
     );
   }
 
@@ -94,6 +98,8 @@ export const ComposeSkeleton = memo(function ComposeSkeleton({ gone = false, gho
   const padRight = win.width - ORIGIN - frame.boxRight;
   const wraps = frame.boxRight - frame.boxLeft < TITLE_WRAP_UNDER;
   return (
+    <>
+    {ghost ? null : <PlaceholderTitle>Build</PlaceholderTitle>}
     <LoadingStatus>
       <div data-testid="compose-skeleton" data-layout="desktop" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
         <div data-testid="skeleton-tabrow" style={{ ...TAB_ROW, height: "auto", minHeight: 44, gap: 16, padding: `10px ${padRight}px 0 ${padLeft}px`, alignItems: "flex-start", flexWrap: wraps ? "wrap" : "nowrap" }}>
@@ -116,6 +122,7 @@ export const ComposeSkeleton = memo(function ComposeSkeleton({ gone = false, gho
         </div>
       </div>
     </LoadingStatus>
+    </>
   );
 });
 
