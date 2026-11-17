@@ -39,6 +39,8 @@ export interface PostCardProps {
   clamp?: boolean;
   /** UX-06: the post's own page: the heading is the page's `h1`, 20/500, and not a link; the text is never clamped. */
   page?: boolean;
+  /** G12: the heading's level in a feed: 3 under a section's h2 (the default), 2 where the feed sits right under the page's h1 (a profile). */
+  headingLevel?: 2 | 3;
   /** UX-06: what each step of an attached build is drawn inside (the post page's step menu). */
   renderTile?: (tile: StripTileData, inner: ReactNode) => ReactNode;
   moderation?: CardModeration;
@@ -60,11 +62,12 @@ export interface PostCardProps {
 const plain: CSSProperties = { fontFamily: FIGTREE, margin: 0 };
 
 /** The post's heading at FeedPost's card title size, 13/500 (a topic and a build sit side by side as equals): underlined at once under hover (a fine pointer only). */
-function HeadingLink({ to, children }: { to: string; children: string }) {
+function HeadingLink({ to, level = 3, children }: { to: string; level?: 2 | 3; children: string }) {
+  const Heading = level === 2 ? "h2" : "h3";
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   return (
     <Link to={to} data-testid="post-card-heading-link" {...handlers} style={{ display: "inline-block", lineHeight: "24px", color: t.text, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: 4, ...ring(state.focusVisible) }}>
-      <h3 style={{ ...plain, display: "inline", fontSize: 13, fontWeight: 500, lineHeight: 1.4 }}>{children}</h3>
+      <Heading style={{ ...plain, display: "inline", fontSize: 13, fontWeight: 500, lineHeight: 1.4 }}>{children}</Heading>
     </Link>
   );
 }
@@ -185,7 +188,7 @@ function HideReason({ onHide, onCancel }: { onHide: (reason: string) => void; on
   );
 }
 
-export function PostCard({ card: full, clamp = true, page = false, renderTile, moderation, engagement, topic, compact = false, reactions, onReport, onMessage, onBlock }: PostCardProps) {
+export function PostCard({ card: full, clamp = true, page = false, headingLevel = 3, renderTile, moderation, engagement, topic, compact = false, reactions, onReport, onMessage, onBlock }: PostCardProps) {
   // The compact card keeps the head, the heading and the first attachment (all of a topic's pictures are one attachment there).
   const card: PostCardData = compact
     ? { ...full, text: "", attachments: full.attachments.slice(0, 1), stillOpen: false, tags: [], closes: null, replies: null }
@@ -199,7 +202,11 @@ export function PostCard({ card: full, clamp = true, page = false, renderTile, m
   if (card.hidden) {
     return (
       <article aria-label={card.heading} style={{ padding: "20px 0 16px", color: t.textDisabled }}>
-        <h3 style={{ ...plain, fontSize: 13, fontWeight: 500, lineHeight: 1.4, color: t.textDisabled }}>{card.heading}</h3>
+        {headingLevel === 2 ? (
+          <h2 style={{ ...plain, fontSize: 13, fontWeight: 500, lineHeight: 1.4, color: t.textDisabled }}>{card.heading}</h2>
+        ) : (
+          <h3 style={{ ...plain, fontSize: 13, fontWeight: 500, lineHeight: 1.4, color: t.textDisabled }}>{card.heading}</h3>
+        )}
         <div style={{ ...plain, fontSize: 12, color: label, marginTop: 4 }}>{`Hidden by ${card.hidden.by} · only moderators see this`}</div>
         {card.hidden.reason ? <div style={{ ...plain, fontSize: 12, color: label }}>{card.hidden.reason}</div> : null}
         {moderation ? (
@@ -253,7 +260,9 @@ export function PostCard({ card: full, clamp = true, page = false, renderTile, m
         {page ? (
           <h1 style={{ ...plain, fontSize: 20, fontWeight: 500, lineHeight: 1.3, letterSpacing: "-0.015em", overflowWrap: "anywhere" }}>{card.heading || "Untitled post"}</h1>
         ) : (
-          <HeadingLink to={card.to}>{card.heading || "Untitled post"}</HeadingLink>
+          <HeadingLink to={card.to} level={headingLevel}>
+            {card.heading || "Untitled post"}
+          </HeadingLink>
         )}
 
         {card.text ? (
