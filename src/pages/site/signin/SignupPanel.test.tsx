@@ -366,7 +366,7 @@ describe("creating the account", () => {
     await act(async () => {});
 
     const message = screen.getByText(sentence);
-    expect(message.getAttribute("aria-live")).toBe("polite");
+    expect(message.getAttribute("aria-live")).toBeNull();
     expect(create()).toBeEnabled();
   });
 

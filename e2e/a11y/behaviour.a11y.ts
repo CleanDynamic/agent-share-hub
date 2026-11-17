@@ -235,3 +235,100 @@ test.describe("G17: focus after a removal", () => {
     expect(now.tag).toBe("h1");
   });
 });
+
+/* ── G14, G15: labels, ties and focus after an error ── */
+
+const FIELD_RULES = ["label", "aria-input-field-name", "select-name", "label-title-only", "aria-prohibited-attr", "aria-valid-attr-value"];
+
+async function fieldFindings(page: Page): Promise<string[]> {
+  const AxeBuilder = (await import("@axe-core/playwright")).default;
+  const result = await new AxeBuilder({ page }).withRules(FIELD_RULES).analyze();
+  return result.violations.flatMap((v) => v.nodes.map((n) => `${v.id} · ${n.target.join(" ")}`));
+}
+
+/** Where focus is, and what describes it. */
+const fieldState = (page: Page) =>
+  page.evaluate(() => {
+    const el = document.activeElement as HTMLElement | null;
+    const ids = (el?.getAttribute("aria-describedby") ?? "").split(/\s+/).filter(Boolean);
+    const messages = ids.map((id) => document.getElementById(id)).filter(Boolean) as HTMLElement[];
+    return {
+      tag: el?.tagName.toLowerCase() ?? "none",
+      label: el?.getAttribute("aria-label") ?? (el as HTMLInputElement | null)?.labels?.[0]?.textContent ?? "",
+      invalid: el?.getAttribute("aria-invalid"),
+      described: messages.map((m) => (m.textContent ?? "").trim()).join(" "),
+      live: messages.some((m) => m.closest('[aria-live], [role="alert"], [role="status"]')),
+    };
+  });
+
+test.describe("G14: every field has a programmatic label", () => {
+  for (const modal of ["tool", "result", "check", "code", "agent", "decision", "repo", "system", "dataset", "manual", "prompt"]) {
+    test(`the editor's ${modal} dialog`, async ({ page }) => {
+      await open(page, `/dev/kit/pages/modals?modal=${modal}&theme=noon&viewport=desktop`);
+      await expect(page.getByRole("dialog").first()).toBeVisible();
+      expect(await fieldFindings(page)).toEqual([]);
+    });
+  }
+
+  test("the new-post window", async ({ page }) => {
+    await open(page, "/openbuilds", true);
+    await page.getByRole("button", { name: "Post", exact: true }).first().click();
+    await expect(page.locator("#new-post-box")).toBeVisible();
+    expect(await fieldFindings(page)).toEqual([]);
+  });
+});
+
+test.describe("G15: a submit that ends in an error", () => {
+  test("Settings, a refused email change: focus on the field, tied, said once", async ({ page }) => {
+    await open(page, "about:blank");
+    await page.route(/\/auth\/v1\/user(\?|$)/, (route) => {
+      const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "*" };
+      if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
+      if (route.request().method() === "PUT") return route.fulfill({ status: 422, contentType: "application/json", headers: cors, body: JSON.stringify({ code: 422, error_code: "email_exists", msg: "A user with this email address has already been registered" }) });
+      return route.fallback();
+    });
+    await signIn(page);
+    await page.goto("/settings/account", { waitUntil: "load" });
+    await settle(page);
+    await activate(page, page.getByRole("button", { name: "Change email" }));
+    await page.getByLabel("New email address").fill("taken@example.test");
+    await page.keyboard.press("Enter");
+    await expect.poll(async () => (await fieldState(page)).invalid, { timeout: 10_000 }).toBe("true");
+    const state = await fieldState(page);
+    expect(state.label).toBe("New email address");
+    expect(state.described.length).toBeGreaterThan(0);
+    expect(state.live, "said once: the description, not also a live region").toBe(false);
+  });
+
+  test("the new-post window, sent empty: focus on the box, tied, said once", async ({ page }) => {
+    await open(page, "/openbuilds", true);
+    await page.getByRole("button", { name: "Post", exact: true }).first().click();
+    await expect(page.locator("#new-post-box")).toBeVisible();
+    await page.getByRole("dialog").getByRole("button", { name: "Post", exact: true }).click();
+    await expect.poll(async () => (await fieldState(page)).invalid).toBe("true");
+    const state = await fieldState(page);
+    expect(state.tag).toBe("textarea");
+    expect(state.described.length).toBeGreaterThan(0);
+    expect(state.live).toBe(false);
+  });
+
+  test("the sign-in dialog, a refused password: focus on the password, tied, said once", async ({ page }) => {
+    await open(page, "about:blank");
+    await page.route(/\/auth\/v1\/token/, (route) => {
+      const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "*" };
+      if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
+      return route.fulfill({ status: 400, contentType: "application/json", headers: cors, body: JSON.stringify({ code: 400, error_code: "invalid_credentials", msg: "Invalid login credentials" }) });
+    });
+    await page.goto("/?signin=login", { waitUntil: "load" });
+    await settle(page);
+    const dialog = page.getByRole("dialog");
+    await dialog.getByLabel("Email").fill("member@example.test");
+    await dialog.getByLabel("Password", { exact: true }).fill("wrong-password");
+    await page.keyboard.press("Enter");
+    await expect.poll(async () => (await fieldState(page)).invalid, { timeout: 10_000 }).toBe("true");
+    const state = await fieldState(page);
+    expect(state.label).toBe("Password");
+    expect(state.described.length).toBeGreaterThan(0);
+    expect(state.live).toBe(false);
+  });
+});

@@ -217,7 +217,7 @@ describe("the refusals", () => {
   });
 
   it.each(["credentials"])(
-    "says Wrong email or password for %s, under the password, announced politely",
+    "says Wrong email or password for %s, under the password, as its description",
     async (refusal) => {
       signIn.mockResolvedValue({ outcome: "refused", refusal });
       open();
@@ -225,7 +225,7 @@ describe("the refusals", () => {
       submit();
 
       const message = await screen.findByText("That email or password isn't right.");
-      expect(message.getAttribute("aria-live")).toBe("polite");
+      expect(message.getAttribute("aria-live")).toBeNull();
       expect(screen.getByPlaceholderText("Enter your password").getAttribute("aria-invalid")).toBe("true");
       expect(primary()).toBeEnabled();
     },

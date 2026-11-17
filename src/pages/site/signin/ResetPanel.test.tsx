@@ -116,7 +116,7 @@ describe("the request form", () => {
     type("you@example.com", "ada@example");
     fireEvent.click(screen.getByRole("button", { name: "Send reset link" }));
     const message = screen.getByText("Enter a valid email address.");
-    expect(message.getAttribute("aria-live")).toBe("polite");
+    expect(message.getAttribute("aria-live")).toBeNull();
     expect(requestPasswordReset).not.toHaveBeenCalled();
 
     type("you@example.com", "ada@example.com");
@@ -251,7 +251,7 @@ describe("the new-password form", () => {
     type("At least 8 characters", "short");
     type("Re-enter your password", "short");
     submit();
-    expect(screen.getByText("Password must be at least 8 characters.").getAttribute("aria-live")).toBe("polite");
+    expect(screen.getByText("Password must be at least 8 characters.").getAttribute("aria-live")).toBeNull();
     expect(setNewPassword).not.toHaveBeenCalled();
   });
 
@@ -274,7 +274,7 @@ describe("the new-password form", () => {
     await settle();
     submit();
     const message = screen.getByText("Passwords don't match");
-    expect(message.getAttribute("aria-live")).toBe("polite");
+    expect(message.getAttribute("aria-live")).toBeNull();
     expect(screen.getByLabelText("Confirm password", { exact: true }).getAttribute("aria-invalid")).toBe("true");
     expect(setNewPassword).not.toHaveBeenCalled();
 

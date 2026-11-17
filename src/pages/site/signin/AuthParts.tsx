@@ -24,7 +24,7 @@
    classes) and the box carries the border and the focus ring instead. The
    placeholder is a pseudo-element, which only a utility can reach. */
 
-import { useId, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type FormEvent, type ReactNode, type RefObject } from "react";
 import { Check, Eye, EyeOff, Github, X, type LucideIcon } from "lucide-react";
 
 import type { InputValidation } from "@/components/auth/AuthInput";
@@ -151,9 +151,13 @@ export function FieldMessage({
   children,
   tone = "error",
   reserve = false,
+  live = true,
 }: {
   id?: string;
   children?: ReactNode;
+  /** G15: false when the message is tied to a field with aria-describedby: it is then said once, as the field's description,
+      when focus goes there, and not a second time through a live region. */
+  live?: boolean;
   /** "neutral": a notice, not about what was typed (G19: why the dialog opened). */
   tone?: "error" | "good" | "neutral";
   /** The dialog's error line: always 16 high and 4 below what it is about, empty until there is something to say, so nothing moves when it fills. */
@@ -162,7 +166,7 @@ export function FieldMessage({
   return (
     <p
       id={id}
-      aria-live="polite"
+      aria-live={live ? "polite" : undefined}
       data-testid="field-message"
       data-tone={children ? tone : undefined}
       style={{
@@ -204,6 +208,10 @@ export interface AuthFieldProps {
   reserveMessage?: boolean;
   /** G19: a notice in the message line, in the neutral tone, while there is no error or validation to say there. */
   notice?: string;
+  /** G14: the id of a message drawn elsewhere (a form's error under its buttons) that is about this field. */
+  describedBy?: string;
+  /** G14: the field is in error because of that message. */
+  invalid?: boolean;
 }
 
 export function AuthField({
@@ -222,6 +230,8 @@ export function AuthField({
   autoComplete,
   reserveMessage = false,
   notice,
+  describedBy,
+  invalid: invalidFromForm = false,
 }: AuthFieldProps) {
   const sizes = useAuthSizes();
   const [focused, setFocused] = useState(false);
@@ -229,7 +239,7 @@ export function AuthField({
   const [revealed, setRevealed] = useState(false);
   const messageId = useId();
 
-  const invalid = Boolean(error) || validation?.state === "invalid";
+  const invalid = Boolean(error) || validation?.state === "invalid" || invalidFromForm;
   const message = error || validation?.message || notice;
   const confirmed = !error && validation?.state === "valid";
   const noticing = !error && !validation?.message && Boolean(notice);
@@ -276,7 +286,7 @@ export function AuthField({
             aria-label={label}
             aria-required={required}
             aria-invalid={invalid}
-            aria-describedby={message ? messageId : undefined}
+            aria-describedby={[message ? messageId : null, describedBy ?? null].filter(Boolean).join(" ") || undefined}
             autoComplete={autoComplete}
             onFocus={(event) => {
               setFocused(true);
@@ -343,7 +353,9 @@ export function AuthField({
       {helperText ? (
         <p style={{ ...MESSAGE, marginTop: 4, fontStyle: "normal", color: t.text2 }}>{helperText}</p>
       ) : null}
-      <FieldMessage id={messageId} tone={confirmed ? "good" : noticing ? "neutral" : "error"} reserve={reserveMessage && !sizes.phone}>
+      {/* G15: an error here is the field's description (said when focus comes to the field), so the line stops being live while
+          it holds one; empty, or holding a confirmation or a notice, it stays live and says what appears. */}
+      <FieldMessage id={messageId} tone={confirmed ? "good" : noticing ? "neutral" : "error"} reserve={reserveMessage && !sizes.phone} live={!message || confirmed || noticing}>
         {message}
       </FieldMessage>
     </div>
@@ -531,21 +543,57 @@ export function DialogPrimary({
 }
 
 /** A form that is a column of the card's own rhythm, and says what it sends. In the dialog it fills the form column, so its primary can sit on the bottom padding line. */
+/* ── G15: focus after a submit that ends in an error ── */
+
+/** The field an error is about: the first marked invalid, else the first described by an error message that is showing. */
+export function errorTarget(root: HTMLElement): HTMLElement | null {
+  const invalid = root.querySelector<HTMLElement>('[aria-invalid="true"]');
+  if (invalid) return invalid;
+  for (const field of Array.from(root.querySelectorAll<HTMLElement>("input[aria-describedby], textarea[aria-describedby], select[aria-describedby]"))) {
+    const ids = (field.getAttribute("aria-describedby") ?? "").split(/\s+/).filter(Boolean);
+    if (ids.some((id) => {
+      const message = document.getElementById(id);
+      return Boolean(message && message.getAttribute("data-tone") === "error" && (message.textContent ?? "").trim());
+    })) return field;
+  }
+  return null;
+}
+
+/**
+ * Armed by a submit, disarmed by typing: after each render while armed, focus goes to the field the error is about (see
+ * errorTarget) and the hook disarms. The error is then said once, as that field's description. A submit that succeeds draws no
+ * error, and the next keystroke disarms.
+ */
+export function useErrorFocus<T extends HTMLElement>(): { ref: RefObject<T>; arm: () => void; disarm: () => void } {
+  const ref = useRef<T>(null);
+  const armed = useRef(false);
+  useEffect(() => {
+    if (!armed.current || !ref.current) return;
+    const target = errorTarget(ref.current);
+    if (!target) return;
+    armed.current = false;
+    target.focus();
+  });
+  return useMemo(() => ({ ref, arm: () => (armed.current = true), disarm: () => (armed.current = false) }), []);
+}
+
 export function AuthForm({ onSubmit, children }: { onSubmit: () => void; children: ReactNode }) {
   const sizes = useAuthSizes();
+  const errorFocus = useErrorFocus<HTMLFormElement>();
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    errorFocus.arm();
     onSubmit();
   };
   if (!sizes.phone) {
     return (
-      <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", flex: "1 1 auto", minHeight: 0, margin: 0 }}>
+      <form ref={errorFocus.ref} onSubmit={submit} onInputCapture={errorFocus.disarm} style={{ display: "flex", flexDirection: "column", flex: "1 1 auto", minHeight: 0, margin: 0 }}>
         {children}
       </form>
     );
   }
   return (
-    <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: sizes.gap, margin: 0 }}>
+    <form ref={errorFocus.ref} onSubmit={submit} onInputCapture={errorFocus.disarm} style={{ display: "flex", flexDirection: "column", gap: sizes.gap, margin: 0 }}>
       {children}
     </form>
   );

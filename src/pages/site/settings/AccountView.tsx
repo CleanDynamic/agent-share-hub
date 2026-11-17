@@ -11,7 +11,7 @@ import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { PageState } from "@/components/pagestate/PageState";
 import type { ReadLike } from "@/components/pagestate/pageStateModel";
 import { Lock, Mail } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
 import { Button } from "@/components/brand/Button";
@@ -29,7 +29,7 @@ import {
 } from "@/lib/settings/account";
 import { useAction } from "@/lib/settings/useAction";
 import { t } from "@/lib/theme/tokens";
-import { AuthField, FieldMessage } from "@/pages/site/signin/AuthParts";
+import { AuthField, FieldMessage, useErrorFocus } from "@/pages/site/signin/AuthParts";
 
 import { ConfirmInline, Group, Note, SectionPage, SettingRow } from "./SettingParts";
 
@@ -50,6 +50,9 @@ function EmailGroup({ email, onChangeEmail }: Pick<AccountViewProps, "email" | "
   const [open, setOpen] = useState(false);
   const [next, setNext] = useState("");
   const action = useAction(onChangeEmail, "settings-email");
+  const emailFailed = action.state.status === "error";
+  const emailErrorId = useId();
+  const emailFocus = useErrorFocus<HTMLFormElement>();
   const sent = action.state.status === "sent";
   return (
     <Group title="Email">
@@ -67,13 +70,16 @@ function EmailGroup({ email, onChangeEmail }: Pick<AccountViewProps, "email" | "
         below={
           open ? (
             <form
+              ref={emailFocus.ref}
+              onInputCapture={emailFocus.disarm}
               onSubmit={async (event) => {
                 event.preventDefault();
+                emailFocus.arm();
                 if (await action.run(next)) setNext("");
               }}
               style={{ display: "flex", flexDirection: "column", gap: 8 }}
             >
-              <AuthField label="New email address" icon={Mail} type="email" value={next} onChange={setNext} autoComplete="email" required />
+              <AuthField label="New email address" icon={Mail} type="email" value={next} onChange={setNext} autoComplete="email" required describedBy={emailFailed ? emailErrorId : undefined} invalid={emailFailed} />
               <div style={{ display: "flex", gap: 8 }}>
                 <Button type="submit" variant="secondary" size={32} fontSize={12} disabled={action.state.status === "sending"}>
                   {action.state.status === "sending" ? "Sending" : "Save"}
@@ -82,7 +88,8 @@ function EmailGroup({ email, onChangeEmail }: Pick<AccountViewProps, "email" | "
                   {sent ? "Close" : "Cancel"}
                 </Button>
               </div>
-              {action.state.status === "error" ? <FieldMessage>{action.state.message}</FieldMessage> : null}
+              {/* G14, G15: the error is the field's: tied to it, said once as its description when focus goes there. */}
+              {action.state.status === "error" ? <FieldMessage id={emailErrorId} live={false}>{action.state.message}</FieldMessage> : null}
               {sent ? <Note role="status">{COPY.emailSent}</Note> : null}
             </form>
           ) : null
@@ -98,6 +105,9 @@ function PasswordGroup({ hasPassword, onChangePassword }: { hasPassword: boolean
   const [next, setNext] = useState("");
   const action = useAction(onChangePassword, "settings-password");
   const sent = action.state.status === "sent";
+  const passwordFailed = action.state.status === "error";
+  const passwordErrorId = useId();
+  const passwordFocus = useErrorFocus<HTMLFormElement>();
   const verb = hasPassword ? "Change password" : "Set a password";
   return (
     <Group title="Password">
@@ -115,8 +125,11 @@ function PasswordGroup({ hasPassword, onChangePassword }: { hasPassword: boolean
         below={
           open ? (
             <form
+              ref={passwordFocus.ref}
+              onInputCapture={passwordFocus.disarm}
               onSubmit={async (event) => {
                 event.preventDefault();
+                passwordFocus.arm();
                 if (await action.run({ current: hasPassword ? current : null, next })) {
                   setCurrent("");
                   setNext("");
@@ -125,10 +138,10 @@ function PasswordGroup({ hasPassword, onChangePassword }: { hasPassword: boolean
               style={{ display: "flex", flexDirection: "column", gap: 8 }}
             >
               {hasPassword ? (
-                <AuthField label="Current password" icon={Lock} showPasswordToggle value={current} onChange={setCurrent} autoComplete="current-password" required />
+                <AuthField label="Current password" icon={Lock} showPasswordToggle value={current} onChange={setCurrent} autoComplete="current-password" required describedBy={passwordFailed ? passwordErrorId : undefined} invalid={passwordFailed} />
               ) : null}
               <div>
-                <AuthField label="New password" icon={Lock} showPasswordToggle value={next} onChange={setNext} placeholder="At least 8 characters" autoComplete="new-password" required />
+                <AuthField label="New password" icon={Lock} showPasswordToggle value={next} onChange={setNext} placeholder="At least 8 characters" autoComplete="new-password" required describedBy={passwordFailed ? passwordErrorId : undefined} invalid={passwordFailed} />
                 {next ? <PasswordStrengthMeter strength={calculatePasswordStrength(next)} /> : null}
               </div>
               <div style={{ display: "flex", gap: 8 }}>
@@ -139,7 +152,8 @@ function PasswordGroup({ hasPassword, onChangePassword }: { hasPassword: boolean
                   {sent ? "Close" : "Cancel"}
                 </Button>
               </div>
-              {action.state.status === "error" ? <FieldMessage>{action.state.message}</FieldMessage> : null}
+              {/* G14, G15: the server's refusal names neither field, so it is tied to both; focus goes to the first. */}
+              {action.state.status === "error" ? <FieldMessage id={passwordErrorId} live={false}>{action.state.message}</FieldMessage> : null}
               {sent ? <Note role="status">{COPY.passwordChanged}</Note> : null}
             </form>
           ) : null
