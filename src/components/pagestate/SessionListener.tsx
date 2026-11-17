@@ -19,6 +19,9 @@
    through `supabase.auth.signOut`, which this listener wraps while mounted to know it was asked for; that opens nothing.
    (A sign-out in another tab arrives here as the client's own: this tab is asked to sign in again.)
 
+   G15: back from a provider's sign-in, the page the member left is put back where it was scrolled (returnPlace.ts):
+   now if the page is already tall enough, else as it grows, for up to five seconds, unless the member scrolls first.
+
    The editor (/compose) gets no dialog: it keeps its work on the device and says so in its own banner (Part D). */
 
 import { useEffect, useRef } from "react";
@@ -28,6 +31,31 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { listenForRefusals, sessionPhase, setSessionPhase } from "@/lib/query/sessionSignal";
 import { deeper, viewOf, withView } from "@/pages/site/signin/signinUrl";
+
+import { takePlace } from "./returnPlace";
+
+const PUT_BACK_FOR_MS = 5_000;
+
+/** Scroll to `y` now, or as the page grows to reach it; stops on arrival, at the limit, or when the member scrolls. */
+function putBack(y: number): () => void {
+  const reached = () => {
+    window.scrollTo({ top: y, left: 0, behavior: "instant" as ScrollBehavior });
+    return Math.abs(window.scrollY - y) <= 4;
+  };
+  if (reached() || typeof ResizeObserver === "undefined") return () => undefined;
+  const growing = new ResizeObserver(() => {
+    if (reached()) stop();
+  });
+  const timer = window.setTimeout(() => stop(), PUT_BACK_FOR_MS);
+  const stop = () => {
+    growing.disconnect();
+    window.clearTimeout(timer);
+    for (const event of ["wheel", "touchstart", "keydown"]) window.removeEventListener(event, stop);
+  };
+  growing.observe(document.body);
+  for (const event of ["wheel", "touchstart", "keydown"]) window.addEventListener(event, stop, { once: true, passive: true });
+  return stop;
+}
 
 /** The auth server's answer to the confirming check: is this the session being refused, rather than the check failing? */
 function refusedByAuth(error: unknown): boolean {
@@ -47,6 +75,13 @@ export function SessionListener() {
   const go = useRef(navigate);
   go.current = navigate;
   const queryClient = useQueryClient();
+
+  // G15: back from a provider, on the page that was left.
+  const address = `${location.pathname}${location.search}${location.hash}`;
+  useEffect(() => {
+    const y = takePlace(address);
+    return y === null ? undefined : putBack(y);
+  }, [address]);
 
   useEffect(() => {
     let alive = true;

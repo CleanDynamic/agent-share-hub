@@ -415,3 +415,16 @@ describe("signing back in after the server ended the session (G14)", () => {
     expect(resolvePostAuthRoute).not.toHaveBeenCalled();
   });
 });
+
+describe("a provider sign-in after the server ended the session (G15)", () => {
+  it("comes back to the same page, and keeps its scroll on this tab", async () => {
+    startOAuthSignIn.mockResolvedValue(null);
+    Object.defineProperty(window, "scrollY", { value: 640, configurable: true });
+    renderDialog("login", "q=keep", { signedOut: true });
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+    await waitFor(() => expect(startOAuthSignIn).toHaveBeenCalledWith("google", "/?q=keep", true));
+    const { takePlace } = await import("@/components/pagestate/returnPlace");
+    expect(takePlace("/?q=keep")).toBe(640);
+    Object.defineProperty(window, "scrollY", { value: 0, configurable: true });
+  });
+});

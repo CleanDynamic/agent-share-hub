@@ -28,9 +28,12 @@ import { returnPathFrom } from "@/lib/auth/safeReturnPath";
 import { signInWithEmail } from "@/lib/auth/signInWithEmail";
 
 import { loginCanSubmit } from "./authModel";
+import { keepPlace } from "@/components/pagestate/returnPlace";
+
 import { useDialogCaptcha, VERIFY_FAILED } from "./dialogCaptcha";
 import { LoginForm } from "./LoginForm";
 import { setSigningIn } from "./signinActivity";
+import { withoutDialog } from "./signinUrl";
 import { useSignInNavigation } from "./useSignInNavigation";
 
 const RESEND_ANSWER = "If that address needs verifying, we've sent a link.";
@@ -54,7 +57,8 @@ export function LoginPanel() {
   /* G14: the dialog the session listener opened over a page whose session the server ended. Signing in closes it where
      it is, so the page, its address and its scroll are the ones the member left; nothing else is asked. Once only: a
      close steps back through history, and the sign-in and the session arriving both finish. */
-  const signedOut = Boolean((useLocation().state as { signedOut?: unknown } | null)?.signedOut);
+  const location = useLocation();
+  const signedOut = Boolean((location.state as { signedOut?: unknown } | null)?.signedOut);
   const finished = useRef(false);
   const backInPlace = () => {
     if (finished.current) return;
@@ -140,8 +144,15 @@ export function LoginPanel() {
 
   const handleProvider = async (provider: OAuthProvider) => {
     setLoadingProvider(provider);
+    /* G15: after the server ended the session, the provider brings the member back to this page, without the dialog, and
+       the scroll is kept on this tab to be put back then (SessionListener). */
+    let returnTo = redirectParam;
+    if (signedOut) {
+      returnTo = `${location.pathname}${withoutDialog(location.search)}${location.hash}`;
+      keepPlace(returnTo, window.scrollY);
+    }
     // OAuth — this redirects the whole page to the provider.
-    const oauthError = await startOAuthSignIn(provider, redirectParam, rememberMe);
+    const oauthError = await startOAuthSignIn(provider, returnTo, rememberMe);
     if (oauthError) {
       setError(oauthError);
       // The page is still here, so the buttons are for trying again.

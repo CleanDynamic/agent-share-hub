@@ -196,3 +196,15 @@ describe("a sign-out nobody asked for (G17)", () => {
     expect(seen.search).toBe("?tab=saved");
   });
 });
+
+describe("back from a provider (G15)", () => {
+  it("puts the page back where it was scrolled, once", async () => {
+    const { keepPlace } = await import("./returnPlace");
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);
+    keepPlace("/library?tab=saved#top", 640);
+    mount();
+    await flush();
+    expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 640 }));
+    expect(sessionStorage.length).toBe(0);
+  });
+});
