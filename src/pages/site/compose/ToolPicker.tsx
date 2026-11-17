@@ -222,7 +222,7 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
   return (
     <Popover.Root open={open} onOpenChange={openChange}>
       <Popover.Trigger asChild>
-        <button type="button" aria-label={label} aria-haspopup="listbox" aria-describedby={`${uid}-value`} {...trigger.handlers} style={triggerStyle}>
+        <button type="button" aria-label={typeof shown === "string" && shown ? `${shown}, ${label}` : label} aria-haspopup="listbox" aria-describedby={`${uid}-value`} {...trigger.handlers} style={triggerStyle}>
           {value ? <ModelMark tool={chosen ? chosen.id : value} size={size.icon} /> : null}
           <span id={`${uid}-value`} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
             {shown}

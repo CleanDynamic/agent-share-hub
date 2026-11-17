@@ -68,6 +68,11 @@ export const badgeStyle: CSSProperties = {
   whiteSpace: "nowrap",
 };
 
+/* G25, WCAG 2.5.8: the ALT button's target is 24 high while the badge it draws stays BADGE_HEIGHT: the button is transparent and
+   2px taller each way, given back in negative margin (as BF-05's hitArea), and the badge is drawn by the span inside it. */
+const ALT_HIT: CSSProperties = { boxSizing: "border-box", display: "inline-flex", alignItems: "center", padding: "2px 0", margin: "-2px 0", border: 0, background: "transparent", cursor: "pointer" };
+const ALT_DRAWN: CSSProperties = badgeStyle;
+
 export interface GridTileProps {
   attrs: PostMediaAttrs;
   media: GalleryMedia | undefined;
@@ -117,16 +122,17 @@ export function GridTile({ attrs, media, srcByPath, cellRatio, align, index, cou
     onAlt ? (
       <button
         type="button"
-        aria-label="Image description"
+        /* G7: the visible word first. */
+        aria-label="ALT, image description"
         data-badge="alt"
         onClick={(event: MouseEvent<HTMLButtonElement>) => {
           event.preventDefault();
           event.stopPropagation();
           onAlt(event.currentTarget);
         }}
-        style={{ ...badgeStyle, cursor: "pointer" }}
+        style={ALT_HIT}
       >
-        ALT
+        <span style={ALT_DRAWN}>ALT</span>
       </button>
     ) : (
       <span data-badge="alt" style={badgeStyle}>

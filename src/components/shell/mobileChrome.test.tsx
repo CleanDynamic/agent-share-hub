@@ -64,7 +64,7 @@ describe("MobileHeaderView", () => {
     const h = header(viewer);
     expect(screen.getByRole("link", { name: "OpenBuilds.ai home" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
-    fireEvent.click(screen.getByRole("button", { name: "Account" }));
+    fireEvent.click(screen.getByRole("button", { name: /account menu$/ }));
     expect(h.onSearchOpen).toHaveBeenCalled();
     expect(h.onAccountOpen).toHaveBeenCalled();
   });
@@ -73,7 +73,7 @@ describe("MobileHeaderView", () => {
     const h = header(null);
     fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
     expect(h.onSignIn).toHaveBeenCalled();
-    expect(screen.queryByRole("button", { name: "Account" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /account menu$/ })).toBeNull();
   });
 });
 
@@ -146,7 +146,7 @@ describe("phone chrome under the refined look", () => {
     render(inRefined(<MobileHeaderView viewer={viewer} onSearchOpen={vi.fn()} onAccountOpen={vi.fn()} onSignIn={vi.fn()} />));
     expect(screen.getByRole("link", { name: "OpenBuilds.ai home" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Search" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Account" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /account menu$/ })).toBeTruthy();
     const html = renderToStaticMarkup(
       inRefined(<MobileHeaderView viewer={viewer} onSearchOpen={vi.fn()} onAccountOpen={vi.fn()} onSignIn={vi.fn()} />),
     );

@@ -73,7 +73,7 @@ function mount(initial: ThreadDoc, groups?: ReferenceGroup[]) {
   return { editor: dom.editor, dom };
 }
 
-const button = () => screen.getByRole("button", { name: LINK_PANEL_COPY.button });
+const button = () => screen.getByRole("button", { name: `Reference, ${LINK_PANEL_COPY.button.charAt(0).toLowerCase()}${LINK_PANEL_COPY.button.slice(1)}` });
 const panel = () => screen.getByRole("dialog", { name: LINK_PANEL_COPY.head });
 
 describe("the reference button and @", () => {

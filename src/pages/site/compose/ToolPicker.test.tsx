@@ -26,7 +26,7 @@ function Harness({ initial = null, onChange = () => undefined, allowNone = false
   );
 }
 
-const trigger = () => screen.getByRole("button", { name: "Tool" });
+const trigger = () => screen.getByRole("button", { name: /(^|, )Tool$/ });
 const find = () => screen.getByRole("combobox", { name: "Find a tool" });
 
 describe("ToolPicker", () => {

@@ -220,7 +220,7 @@ describe("Filters", () => {
     draw((p) => ({ ...p, activeCount: 3, filters: visionBuildsTableProps().filters }));
     const button = screen.getByRole("button", { name: "Filters, 3 on" });
     expect(button.getAttribute("aria-haspopup")).toBe("dialog");
-    expect(button.textContent).toBe("Filters3");
+    expect(button.textContent).toBe("Filters 3");
   });
 });
 

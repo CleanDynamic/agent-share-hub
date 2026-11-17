@@ -152,7 +152,7 @@ export function SessionJump({ items, current, phone, onJump }: { items: readonly
     return (
       <Menu.Root open={open} onOpenChange={setOpen}>
         <Menu.Trigger asChild>
-          <MenuButton data-testid="session-list" aria-label="Sessions" title={jumpLine(items, current)} label="" value={clipTo(jumpLine(items, current), SESSION_LINE_MAX)} open={open} style={{ height: 44, maxWidth: "100%" }} />
+          <MenuButton data-testid="session-list" aria-label={`${clipTo(jumpLine(items, current), SESSION_LINE_MAX)}, sessions`} title={jumpLine(items, current)} label="" value={clipTo(jumpLine(items, current), SESSION_LINE_MAX)} open={open} style={{ height: 44, maxWidth: "100%" }} />
         </Menu.Trigger>
         <Menu.Portal>
           <MenuContent align="start" sideOffset={4} style={menuSurface()}>

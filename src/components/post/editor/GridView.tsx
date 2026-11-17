@@ -147,7 +147,13 @@ function SortableTile({
   sortable: boolean;
 }) {
   const snapshot = useSyncExternalStore(host.store.subscribe, host.store.getSnapshot);
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: picture.key, disabled: !sortable });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: picture.key,
+    disabled: !sortable,
+    /* G25 (nested-interactive): a tile holds its own buttons (Edit, Remove, ALT), so it is a group, not a button. It keeps its
+       Tab stop, its name and its keyboard drag; dnd-kit sets no aria-pressed on a role that is not its own. */
+    attributes: { role: "group" },
+  });
   const [ring, setRing] = useState(false);
   const { attrs, uploadId, failed } = picture;
   const media = snapshot.rows.get(attrs.mediaId);

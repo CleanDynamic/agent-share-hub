@@ -203,11 +203,16 @@ export const BuildsControl = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<
     BF-09 (A8): with a saved set open, its name follows the count. */
 export const FiltersButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { activeCount: number; setName?: string }>(function FiltersButton({ activeCount, setName, ...rest }, ref) {
   const on = activeCount > 0;
-  const name = `${on ? `Filters, ${activeCount} on` : "Filters"}${setName ? `, set ${setName}` : ""}`;
+  /* G7: the name starts with what is drawn, in its order ("Filters 6 · Mine"), then the state it adds. The spaces between the
+     pieces are not drawn (the control is a flex box); they keep the words apart for a voice-control user. */
+  const shown = ["Filters", on ? String(activeCount) : null, setName ? `· ${setName}` : null].filter(Boolean).join(" ");
+  const name = setName ? `${shown}, ${on ? `${activeCount} on, ` : ""}saved set` : on ? `Filters, ${activeCount} on` : "Filters";
   return (
     <BuildsControl ref={ref} aria-haspopup="dialog" aria-label={name} {...rest} selected={on}>
       <span style={on ? { color: t.text, fontWeight: 500 } : { color: t.label }}>Filters</span>
+      {on ? " " : null}
       {on ? <span style={{ color: t.text }}>{activeCount}</span> : null}
+      {setName ? " " : null}
       {setName ? <span style={{ color: t.text2, maxWidth: 160, ...ellipsis }}>{`· ${setName}`}</span> : null}
     </BuildsControl>
   );

@@ -89,7 +89,7 @@ describe("SiteHeaderView", () => {
     expect(screen.queryByRole("link", { name: /^Activity/ })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
     expect(p.onSignIn).toHaveBeenCalled();
-    expect(screen.queryByRole("button", { name: "Account" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /account menu$/ })).toBeNull();
   });
 
   it("New build goes to the create route handler", () => {
@@ -127,7 +127,7 @@ describe("SiteHeaderView", () => {
       "New build",
       "Activity, 3 unread",
       "Theme: Light",
-      "Account",
+      "MO, Maya Okafor, account menu",
     ]);
   });
 });
@@ -170,7 +170,7 @@ describe("SiteHeaderView under the refined look", () => {
     expect(screen.getByRole("button", { name: "New build" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Activity, 3 unread" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Theme: Dark" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Account" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /account menu$/ })).toBeTruthy();
   });
 
   it("sits on the frame: 48 high, 0 56px, gap 8, no background and no border", () => {
@@ -214,7 +214,7 @@ describe("SiteHeaderView under the refined look", () => {
 
   it("draws the Account button 32 square with the picture 24 inside it", () => {
     refined();
-    const account = screen.getByRole("button", { name: "Account" });
+    const account = screen.getByRole("button", { name: /account menu$/ });
     expect([account.style.width, account.style.height]).toEqual(["32px", "32px"]);
     const picture = account.firstElementChild as HTMLElement;
     expect([picture.style.width, picture.style.height]).toEqual(["24px", "24px"]);

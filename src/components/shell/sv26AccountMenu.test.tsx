@@ -17,7 +17,7 @@ describe("the account menu, loaded apart", () => {
         <AccountMenu viewer={viewer} onSignOut={vi.fn()} avatarSize={26} />
       </MemoryRouter>,
     );
-    expect(screen.getByRole("button", { name: "Account" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /account menu$/ })).toBeTruthy();
     expect(screen.queryByRole("menu")).toBeNull();
   });
 

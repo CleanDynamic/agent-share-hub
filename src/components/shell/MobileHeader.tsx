@@ -12,6 +12,7 @@
 // two sheets, the route and the account. The account sheet is Profile, Library, Drafts,
 // the theme control (Noon · Dusk · System) and Sign out. UX-15 added Settings after Drafts.
 
+import { accountLabel } from "./accountLabel";
 import { Search } from "lucide-react";
 import { memo, useState, type CSSProperties } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -46,7 +47,7 @@ function AvatarButton({ viewer, onClick, size = 34 }: { viewer: FrameViewer; onC
   return (
     <button
       type="button"
-      aria-label="Account"
+      aria-label={accountLabel(viewer)}
       onClick={onClick}
       {...handlers}
       style={{

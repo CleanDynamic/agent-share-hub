@@ -288,7 +288,8 @@ function ToolButton({
   return (
     <button
       type="button"
-      aria-label={label}
+      /* G7: a button that shows a word is named with it first ("Reference, link to a group…"). The tooltip stays the label. */
+      aria-label={text ? `${text}, ${label.charAt(0).toLowerCase()}${label.slice(1)}` : label}
       title={title ?? label}
       aria-pressed={expanded === undefined ? pressed : undefined}
       aria-expanded={expanded}

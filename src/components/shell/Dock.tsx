@@ -108,6 +108,11 @@ function RefinedDockView({ current, unread, placement = "fixed" }: DockViewProps
                 style={{ position: "absolute", left: 10, right: 10, bottom: -1, height: 2, borderRadius: 1, background: t.navMark, boxShadow: t.navLampGlow }}
               />
             )}
+            <AnyIcon lucide={icon} glyph={TILE_GLYPH[name]} size={16} />
+            <span aria-hidden="true">{label}</span>
+            {badged ? " " : null}
+            {/* G7: after the word, so the visible text reads "Activity 3" as the name does; it is placed, so where it sits in the
+                markup moves nothing. */}
             {badged && (
               <span
                 aria-hidden="true"
@@ -132,8 +137,6 @@ function RefinedDockView({ current, unread, placement = "fixed" }: DockViewProps
                 {unread > 9 ? "9+" : unread}
               </span>
             )}
-            <AnyIcon lucide={icon} glyph={TILE_GLYPH[name]} size={16} />
-            <span aria-hidden="true">{label}</span>
           </FrameLink>
         );
       })}
