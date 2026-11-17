@@ -94,7 +94,8 @@ export async function readState(page: Page): Promise<Reading> {
       lines.push(text(el).slice(0, 120));
     }
 
-    const order = ["loading", "signedout", "notfound", "failed", "empty"];
+    // The sign-in dialog is over the page: it is what the person sees, whatever is under it (G18 holds the skeleton there).
+    const order = ["signedout", "loading", "notfound", "failed", "empty"];
     const state = order.find((s) => states.has(s)) ?? "ready";
 
     const h1 = all("h1").map(text).find((t) => t.length > 0) ?? null;

@@ -74,7 +74,8 @@ for (const pageType of PAGE_TYPES) {
 
         expect.soft(settledAt, "settled within 14 s").not.toBeNull();
         expect.soft(expected, `state (saw ${reading.state}: ${reading.states.join(", ")})`).toContain(reading.state);
-        expect.soft(reading.busy, "no aria-busy left").toBe(0);
+        // G18: under the sign-in dialog the page keeps its held skeletons (busy by design), hidden from assistive tech by the dialog.
+        if (reading.state !== "signedout") expect.soft(reading.busy, "no aria-busy left").toBe(0);
         expect.soft(reading.title, "title present").not.toBeNull();
         expect.soft(reading.codes, "no code on screen").toEqual([]);
         if (reading.state !== "ready") expect.soft(reading.gallery, "no state says \"gallery\" (G28)").toBe(false);
