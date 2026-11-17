@@ -200,7 +200,8 @@ export async function installCondition(page: Page, condition: Condition): Promis
    `mode` switches between a live session and a refused one ("refused" above) without reloading the page. */
 
 export interface StatefulServer {
-  mode: "live" | "refused";
+  /** live: answered; refused: the session is refused (as "refused"); down: no answer at all (as "aborted"). */
+  mode: "live" | "refused" | "down";
   build: Record<string, unknown>;
   /** Every write the server took, in order: method, path and body. */
   writes: { method: string; path: string; body: string | null }[];
@@ -229,6 +230,7 @@ export async function installStateful(page: Page, server: StatefulServer): Promi
       if (url.hostname !== SUPABASE_HOST) return route.abort("blockedbyclient").catch(() => undefined);
       if (request.method() === "OPTIONS") return route.fulfill({ status: 204, headers: CORS }).catch(() => undefined);
       if (server.mode === "refused") return answerRefused(route);
+      if (server.mode === "down") return route.abort("failed").catch(() => undefined);
       const isBuild = url.pathname === "/rest/v1/builds" && url.searchParams.get("id") === `eq.${server.build.id}`;
       if (!isBuild) return answerEmpty(route);
       const single = (request.headers()["accept"] ?? "").includes("vnd.pgrst.object");
