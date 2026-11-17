@@ -432,7 +432,9 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
     onTopicSourceSwitch: details.setAllowAsTopicSource,
   };
 
-  return { viewProps, missing, build, tree: nodes.tree, compose, ensureBuild, firstSession, buildId, nodes, sessions, prompts, rehydrate, stillOpenSpaces };
+  /** G22: every typed edit still in its debounce, written now (the write guard holds it while the session is refused). */
+  const flushTyped = () => Promise.all([prompts.flush(), details.flush()]).then(() => undefined);
+  return { viewProps, missing, build, tree: nodes.tree, compose, ensureBuild, firstSession, buildId, nodes, sessions, prompts, rehydrate, stillOpenSpaces, flushTyped };
 }
 
 export function ComposePage() {

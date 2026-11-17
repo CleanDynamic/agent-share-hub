@@ -65,6 +65,7 @@ import {
   tokensHeld,
 } from "./SessionExtrasFields";
 import { ToolPicker } from "./ToolPicker";
+import { useFlushWhenSessionInQuestion } from "./useFlushWhenSessionInQuestion";
 
 export const SESSION_DIALOG_COPY = {
   title: (n: number, tool: string) => `Session ${n}${tool ? ` · ${tool}` : ""}`,
@@ -276,6 +277,11 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
     onClose();
   };
   const history = useBuildHistoryContext();
+  /* G22: the session went into question with edits queued here: they are written now, into the held line, so none is lost.
+     The window stays open; Save writes whatever is queued after. */
+  useFlushWhenSessionInQuestion(() => {
+    if (buffer.size > 0) buffer.flush();
+  });
   const submit = () => {
     // CA-20 P5: Save is one step of the build's history, however many writes it makes.
     if (history && buffer.size > 0) {

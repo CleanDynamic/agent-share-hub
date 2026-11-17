@@ -176,6 +176,7 @@ import { preloadAddFromLibrary } from "./addFromLibraryReads";
 import { sessionCopyOf, type LibraryPlace } from "@/lib/build/fromLibrary";
 import { touchSavedItems, type LibrarySavedItem } from "@/lib/library/savedItems";
 import { reportError } from "@/lib/errors/report";
+import { useFlushWhenSessionInQuestion } from "./useFlushWhenSessionInQuestion";
 
 /** builds.making.sessions, read defensively: it is a json column. */
 function makingSessions(making: unknown): MakingSession[] {
@@ -268,7 +269,7 @@ function SandboxPageBody() {
   const announce = useAnnounce();
   /* CA-10 (CA-09 F10): the session library polls only while Sources is on screen (on a phone, while its sheet is open). */
   const [sourcesAnchor, sourcesOnScreen] = useOnScreen<HTMLDivElement>();
-  const { viewProps, missing, build, tree, ensureBuild, firstSession, nodes, sessions, prompts, compose, buildId, rehydrate, stillOpenSpaces } = useComposePage({ sessionsActive: sourcesOnScreen });
+  const { viewProps, missing, build, tree, ensureBuild, firstSession, nodes, sessions, prompts, compose, buildId, rehydrate, stillOpenSpaces, flushTyped } = useComposePage({ sessionsActive: sourcesOnScreen });
   usePageReady("composer", !buildId || Boolean(build));
   const navigate = useNavigate();
   /* CA-20: the build's one history: every change the maker makes is a step of it, CA-19's colour and link steps too. */
@@ -291,6 +292,12 @@ function SandboxPageBody() {
   /* PT-05: the thread of the post above the build. Held here so the status line and Publish can see it. */
   const thread = useComposeThread({ build, buildId, isOwner: compose.isOwner, ensureBuild });
   const { flush: flushThread, hold: threadHold } = thread;
+  /* G22: the session went into question: the post's words and every tile's and Details' typed text still in their 800 ms pause
+     are written now, into the write guard's held line, before the editor says the session ended. */
+  useFlushWhenSessionInQuestion(() => {
+    void flushThread();
+    void flushTyped();
+  });
   /* PT-07: the post draws the signed-in maker beside it, and its preview draws them too. */
   const { user, profile } = useAuth();
   const maker = useMemo<PreviewMaker>(

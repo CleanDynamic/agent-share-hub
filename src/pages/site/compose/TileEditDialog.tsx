@@ -58,6 +58,7 @@ import {
   systemPromptCurrent,
   toolCurrent,
 } from "./tileEdits";
+import { useFlushWhenSessionInQuestion } from "./useFlushWhenSessionInQuestion";
 
 type V<K extends DetailsView["kind"]> = Extract<DetailsView, { kind: K }>;
 
@@ -96,6 +97,11 @@ function useEditing(handlers: DetailsHandlers, onClose: () => void, view?: Detai
   // The buffered handlers read the page's handlers as they are when each call is made, so the buffer outlives a re-render.
   const h = useMemo(() => bufferedHandlers(handlers, buffer), [handlers, buffer]);
   const history = useBuildHistoryContext();
+  /* G22: the session went into question with edits queued here: they are written now, into the held line, so none is lost.
+     The window stays open; Save writes whatever is queued after. */
+  useFlushWhenSessionInQuestion(() => {
+    if (buffer.size > 0) buffer.flush();
+  });
   return {
     h,
     // CA-20 P5: Save is one step of the build's history, however many writes it makes.
