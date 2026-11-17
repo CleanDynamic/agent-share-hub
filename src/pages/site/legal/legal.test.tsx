@@ -56,6 +56,11 @@ describe("LegalView", () => {
     expect(headings).toEqual(["First part", "Second part", "Third part"]);
     for (const id of ["first-part", "second-part", "third-part"]) expect(document.getElementById(id)).not.toBeNull();
     expect(screen.getByTestId("legal-table").querySelector("table")).not.toBeNull();
+    // G9: the table's scroll box is a named Tab stop, so a keyboard can scroll it.
+    const box = screen.getByTestId("legal-table");
+    expect(box.tabIndex).toBe(0);
+    expect(box.getAttribute("role")).toBe("region");
+    expect(box.getAttribute("aria-label")).toMatch(/ \(table\)$/);
     const contents = within(screen.getByTestId("legal-contents"));
     expect(contents.getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["#first-part", "#second-part", "#third-part"]);
     expect(screen.getByRole("link", { name: "Back to top" })).toHaveAttribute("href", "#legal-top");
