@@ -85,6 +85,62 @@ test.describe("G1: focus after a page change", () => {
   });
 });
 
+/** An in-app change of page by Back/Forward's path: the router reads the address on popstate, as on a real Back. */
+const popTo = (page: Page, path: string) =>
+  page.evaluate((to) => {
+    // The router keys each entry; one without a key reads as the entry already on screen.
+    const idx = ((window.history.state as { idx?: number } | null)?.idx ?? 0) + 1;
+    window.history.pushState({ usr: null, key: `a11y${Date.now().toString(36)}`, idx }, "", to);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }, path);
+
+/** Hold every request to the Supabase host until `release()`; then each goes on to the faker. */
+async function holdNetwork(page: Page): Promise<() => void> {
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => (release = resolve));
+  await page.route(
+    (url) => url.hostname !== "127.0.0.1" && url.hostname !== "localhost",
+    async (route) => {
+      await gate;
+      await route.fallback().catch(() => undefined);
+    },
+  );
+  return release;
+}
+
+test.describe("G2: a page whose h1 is not drawn yet", () => {
+  for (const [kind, path] of [["Build", "/b2/a11y-missing"], ["Profile", "/profile/a11y-somebody"]] as const) {
+    test(`${kind}: focus rests on the placeholder h1, then moves to the real h1`, async ({ page }) => {
+      await open(page, "/");
+      const release = await holdNetwork(page);
+      await popTo(page, path);
+      await expect.poll(async () => (await focused(page)).text, { message: "focus on the placeholder h1", timeout: 15_000 }).toBe(kind);
+      expect(await page.evaluate(() => document.activeElement?.hasAttribute("data-h1-placeholder"))).toBe(true);
+      release();
+      await expect.poll(() => page.evaluate(() => document.activeElement?.tagName === "H1" && !document.activeElement.hasAttribute("data-h1-placeholder")), { message: "focus on the real h1", timeout: 15_000 }).toBe(true);
+    });
+  }
+});
+
+test("D1: in the editor focus goes to Skip to build, and the page's title is said once", async ({ page }) => {
+  await open(page, "/drafts", true);
+  await popTo(page, "/compose/new");
+  await expect.poll(async () => (await focused(page)).text, { message: "focus on Skip to build", timeout: 20_000 }).toBe("Skip to build");
+  await expect(page.getByTestId("page-said")).toHaveText("Untitled build", { timeout: 20_000 });
+  await expect(page.getByTestId("page-said")).toHaveAttribute("aria-live", "polite");
+});
+
+test("G3: a hash link on the same page moves focus to its anchor", async ({ page }) => {
+  await open(page, "/privacy");
+  const anchor = await page.evaluate(() => {
+    const link = Array.from(document.querySelectorAll<HTMLAnchorElement>('main a[href^="#"]')).find((a) => a.getAttribute("href") !== "#main" && document.getElementById(a.hash.slice(1)));
+    return link ? link.hash.slice(1) : null;
+  });
+  test.skip(!anchor, "the page has no in-page link");
+  await activate(page, page.locator(`main a[href="#${anchor}"]`).first());
+  await expect.poll(async () => (await focused(page)).id, { timeout: 8_000 }).toBe(anchor as string);
+});
+
 test("G4: the skip link moves focus into main", async ({ page }) => {
   await open(page, "/");
   await page.keyboard.press("Tab");
