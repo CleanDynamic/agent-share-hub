@@ -250,6 +250,9 @@ export const ALLOW: Record<string, Record<string, string>> = {
     "src/pages/site/compose/StillOpenSpaces.tsx|No spaces to post in": "a disabled menu option (menu options are not empty states)",
     "src/pages/site/openbuilds/NewPostWindow.tsx|No spaces to post in": "a disabled menu option (menu options are not empty states)",
   },
+  "sign-up": {
+    "src/pages/site/signin/SignInDialogFrame.tsx|Sign up": "the sign-in dialog's switch to the join view, named \"Sign up\" by the owner's decision (after prompt 9's Part A)",
+  },
   "bare-join": {
     "src/pages/site/signin/SignupForm.tsx|Join": "the join form's submit: \"Join\" alone means making an account (G2)",
   },

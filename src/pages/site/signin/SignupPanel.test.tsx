@@ -66,7 +66,7 @@ const create = () => screen.getByRole("button", { name: /^Join$/ });
 describe("the view", () => {
   it("is the join view: the switch on Join free", () => {
     open();
-    expect(screen.getByRole("button", { name: "Join free" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Sign up" }).getAttribute("aria-pressed")).toBe("true");
     expect(create()).toBeDisabled();
   });
 

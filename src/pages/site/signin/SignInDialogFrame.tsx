@@ -68,7 +68,7 @@ export function AccountSwitch({
       onChange={onChange}
       items={[
         { value: "login", label: "Sign in" },
-        { value: "signup", label: "Join free" },
+        { value: "signup", label: "Sign up" },
       ]}
     />
   );

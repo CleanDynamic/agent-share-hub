@@ -74,7 +74,7 @@ describe("the request form", () => {
 
   it("is the title and the way back in row 1, and has no Sign in · Join free switch", () => {
     open();
-    expect(screen.queryByRole("button", { name: "Join free" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Sign up" })).toBeNull();
     // The dialog's way back is row 1's link alone (D3).
     expect(screen.getAllByRole("link", { name: "Back to sign in" })).toHaveLength(1);
     expect(screen.getByRole("link", { name: "Back to sign in" }).getAttribute("href")).toBe("/?signin=login");

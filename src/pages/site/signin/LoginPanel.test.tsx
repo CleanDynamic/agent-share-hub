@@ -390,7 +390,7 @@ describe("the providers", () => {
 describe("the rest of the dialog", () => {
   it("carries ?redirect= across to Join free, and back, on the same page", async () => {
     const where = open("/login?redirect=%2Fgallery");
-    fireEvent.click(screen.getByRole("button", { name: "Join free" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sign up" }));
     await waitFor(() => expect(where.at()).toBe("/?redirect=%2Fgallery&signin=signup"));
     fireEvent.click(screen.getAllByRole("button", { name: "Sign in" })[0]);
     await waitFor(() => expect(where.at()).toBe("/?redirect=%2Fgallery&signin=login"));
