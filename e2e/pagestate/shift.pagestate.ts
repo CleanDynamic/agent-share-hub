@@ -36,6 +36,12 @@ interface Moved {
   title: boolean;
   /** The site footer: may move up after a page-level state, never above the window's bottom. */
   footer: boolean;
+  /**
+   * EXEMPT: Home's room. Still open, Most run and Where next are hidden when empty (UX-03 P6, kept deliberately), and they
+   * are the last things in the room; nothing but the footer sits below them (Your published builds is drawn only when all
+   * three are hidden, in their place). A list that hides moves only the hideable lists after it.
+   */
+  room: boolean;
 }
 
 for (const page of PAGES) {
@@ -62,6 +68,7 @@ for (const page of PAGES) {
                 to: Math.round(source.currentRect.y),
                 title: Boolean(element?.closest("h1, [data-testid='breadcrumb']")),
                 footer: Boolean(element?.closest("[data-slot='footer'], footer")),
+                room: Boolean(element?.closest("aside[aria-label='The room']")),
               });
             }
           }
@@ -75,7 +82,7 @@ for (const page of PAGES) {
       /* Before the first skeleton is on screen the page is still being drawn for the first time; a move then is not a swap. */
       const firstPaint = await browser.evaluate(() => performance.getEntriesByName("first-contentful-paint")[0]?.startTime ?? 0);
       const swaps = moved.filter((m) => m.at > firstPaint + 100);
-      const regions = swaps.filter((m) => !m.title && !m.footer);
+      const regions = swaps.filter((m) => !m.title && !m.footer && !(page.name === "Home" && m.room));
       const largest = regions.reduce((max, m) => Math.max(max, Math.abs(m.dy)), 0);
       const titleMoves = swaps.filter((m) => m.title && m.dy !== 0);
       const footerGap = await browser.evaluate(() => {
