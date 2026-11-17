@@ -16,6 +16,7 @@ import { fieldStyle } from "@/lib/theme/controls";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO } from "@/lib/theme/type";
 import { ellipsis, menuSurface, text, tnum } from "@/pages/site/compose/refinedStyles";
+import { EMPTY } from "@/lib/copy/copy";
 
 export const REFERENCE_COPY = {
   button: "Link to a tile or session",
@@ -23,7 +24,7 @@ export const REFERENCE_COPY = {
   /** CA-17 P5: with two or more parts the picker finds them too. */
   buttonWithParts: "Link to a part, session or tile",
   searchWithParts: "Find a part, session or tile",
-  none: "Nothing has that name",
+  none: EMPTY.nothingNamed,
   remove: "Remove the link",
   whole: "The whole session",
 } as const;

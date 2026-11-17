@@ -18,6 +18,7 @@ import { FIGTREE } from "@/lib/theme/type";
 import { Gap, PrimaryAction, PushDown, ViewHeading } from "./AuthParts";
 import { DIALOG, useAuthSizes } from "./authSizes";
 import { SIGNIN_COLOURS } from "./signinColours";
+import { WAITING } from "@/lib/copy/copy";
 
 const LINE = { margin: 0, fontFamily: FIGTREE, fontSize: 12, lineHeight: `${DIALOG.line}px`, color: t.text2 } as const;
 
@@ -56,7 +57,7 @@ export function VerifyPending({ email, resendState, cooldownSeconds = 0, onResen
         </div>
       ) : (
         <Button variant="secondary" size={32} fullWidth disabled={resendState === "sending"} onClick={onResend}>
-          {resendState === "sending" ? "Sending…" : "Resend verification"}
+          {resendState === "sending" ? WAITING.sending : "Resend verification"}
         </Button>
       )}
       <Gap size={16} />

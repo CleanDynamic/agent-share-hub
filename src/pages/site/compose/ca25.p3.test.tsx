@@ -152,7 +152,7 @@ describe("the menu", () => {
     render(<Harness onUnpublish={async () => "done"} notify={notify} />);
     openMenu();
     fireEvent.click(await screen.findByTestId("published-copy-link"));
-    await waitFor(() => expect(notify).toHaveBeenCalledWith("Link copied", { undo: false }));
+    await waitFor(() => expect(notify).toHaveBeenCalledWith("Link copied.", { undo: false }));
     expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/b2/bakery-homepage-p2m8z4`);
   });
 });

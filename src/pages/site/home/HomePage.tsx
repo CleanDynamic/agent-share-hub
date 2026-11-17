@@ -80,7 +80,7 @@ import {
   stillOpenRows,
   type StillOpenScope,
 } from "./homeModel";
-import { SAVE_FAILED, COPY_LINK_FAILED } from "@/lib/copy/copy";
+import { SAVE_FAILED, COPY_LINK_FAILED, DONE } from "@/lib/copy/copy";
 
 /** UX-08 P2: the New post window loads when a failed run first opens it, not with the page. */
 const PostingWindows = lazy(() => import("../openbuilds/PostingWindows"));
@@ -590,7 +590,7 @@ export function HomePage() {
           }))}
           pageFailed={pageFailed}
           onCopyLink={(slug) =>
-            void copyToClipboard(siteUrl(`/b2/${slug}`)).then((copied) => toast(copied ? "Link copied" : COPY_LINK_FAILED))
+            void copyToClipboard(siteUrl(`/b2/${slug}`)).then((copied) => toast(copied ? DONE.linkCopied : COPY_LINK_FAILED))
           }
         />
       </PageArrival>

@@ -31,6 +31,7 @@ import { useDialogCaptcha, VERIFY_FAILED } from "./dialogCaptcha";
 import { SignupForm } from "./SignupForm";
 import { setSigningIn } from "./signinActivity";
 import { useSignInNavigation } from "./useSignInNavigation";
+import { AUTH_ERRORS } from "@/lib/copy/copy";
 
 const EMAIL_REGEX = /^[^@]+@[^@]+\.[^@]+$/;
 
@@ -170,7 +171,7 @@ export function SignupPanel() {
       return;
     }
     setEmailValidation(
-      EMAIL_REGEX.test(value) ? { state: "valid" } : { state: "invalid", message: "Please enter a valid email" },
+      EMAIL_REGEX.test(value) ? { state: "valid" } : { state: "invalid", message: AUTH_ERRORS["invalid-email"] },
     );
   };
 
@@ -179,11 +180,11 @@ export function SignupPanel() {
     const cleanUsername = username.trim().toLowerCase();
 
     if (!EMAIL_REGEX.test(cleanEmail)) {
-      setEmailValidation({ state: "invalid", message: "Please enter a valid email" });
+      setEmailValidation({ state: "invalid", message: AUTH_ERRORS["invalid-email"] });
       return;
     }
     if (usernameValidation.state === "invalid" || cleanUsername.length < 3) {
-      setError("Please choose an available username.");
+      setError("Choose an available username.");
       return;
     }
 

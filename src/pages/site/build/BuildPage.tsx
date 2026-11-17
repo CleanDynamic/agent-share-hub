@@ -795,7 +795,7 @@ function BuildPageBody() {
       if (!build) return;
       const before = build;
       setRunFailure(null);
-      say(viewerIsCreator ? "Reconfirmed" : worked ? "Reproduction recorded" : "Report recorded");
+      say(viewerIsCreator ? "Reconfirmed." : worked ? "Reproduction recorded." : "Report recorded.");
       if (worked || viewerIsCreator) {
         putHeader({
           ...build,

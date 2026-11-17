@@ -89,7 +89,7 @@ import {
   type StillOpenScope,
 } from "./homeModel";
 import type { HomeReplyGroup, HomeTopicPost } from "./homeTopics";
-import { signInSentence } from "@/lib/copy/copy";
+import { signInSentence, EMPTY } from "@/lib/copy/copy";
 
 export type HomeScope = "following" | "everyone";
 
@@ -312,7 +312,7 @@ export function SessionsSection({ sessions, onAdd }: { sessions: HomeViewProps["
       region="Your sessions"
       skeleton={<SectionBones rows={2} height={52} what="your sessions" />}
       frame={sectionFrame("Your sessions", <SectionHead title="Your sessions" meta={meta} to={DRAFTS} openName="sessions" headingLevel={2} />)}
-      empty={{ when: () => sessions.status === "ready" && sessions.data.rows.length === 0, line: "No sessions yet." }}
+      empty={{ when: () => sessions.status === "ready" && sessions.data.rows.length === 0, line: EMPTY.sessions }}
     >
       {() =>
         sessions.status === "ready" &&

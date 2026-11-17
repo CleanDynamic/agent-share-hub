@@ -219,7 +219,7 @@ describe("where it broke reads as resolved, not as an alarm", () => {
         resolveMedia={noMedia}
       />,
     );
-    expect(screen.getByText("No breakages recorded")).toBeTruthy();
+    expect(screen.getByText("No breakages recorded.")).toBeTruthy();
   });
 });
 

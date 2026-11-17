@@ -210,7 +210,7 @@ describe("empty sessions and mixed tiles", () => {
     expect(names[0]).toBe("Session 1 · No harness chosen");
     expect(names).toHaveLength(heads.length + 1);
     const run = document.querySelector('[data-session-key="typed-empty"]') as HTMLElement;
-    expect(within(run).getByText("No steps yet")).toBeTruthy();
+    expect(within(run).getByText("No steps yet.")).toBeTruthy();
     expect(within(run).getByRole("button", { name: "Collapse Session 1" })).toBeTruthy();
   });
 

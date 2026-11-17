@@ -70,7 +70,7 @@ describe("F30, F36 and F37 · one Model, one way of saving, the same sections", 
     expect(screen.getByTestId("prompt-saved").textContent).toBe("");
     fireEvent.click(within(screen.getByTestId("edit-uses")).getByRole("button", { name: "Remove menu.pdf" }));
     expect(h.onRemoveUse).toHaveBeenCalled();
-    expect(screen.getByTestId("prompt-saved").textContent).toBe("Saved");
+    expect(screen.getByTestId("prompt-saved").textContent).toBe("Saved.");
   });
 
   it("F36: Model appears once, Used by stays with an empty line, and the sections keep one order for a prompt with and without content", () => {

@@ -60,7 +60,7 @@ import { emptyFeed, feedOptions, joinedLabel, metaParts, oneLineOf, othersLines,
 import { TRACK_ITEMS, levelView, streakLine, xpLine } from "./profileModel";
 import { useProfilePictures } from "./useProfilePictures";
 import { screenError } from "@/lib/auth/authMessages";
-import { FOLLOW_PERSON_FAILED, UNFOLLOW_PERSON_FAILED, COPY_LINK_FAILED } from "@/lib/copy/copy";
+import { FOLLOW_PERSON_FAILED, UNFOLLOW_PERSON_FAILED, COPY_LINK_FAILED, DONE } from "@/lib/copy/copy";
 
 /** A profile does not change while somebody is looking at it. */
 const STALE_MS = 60_000;
@@ -388,7 +388,7 @@ export function ProfilePage() {
     onMessage: () => (isLoggedIn ? setComposeOpen(true) : navigate("/login")),
     onEdit: () => setEditOpen(true),
     onCopyLink: () => {
-      void copyToClipboard(`${window.location.origin}/profile/${summary.handle}`).then((ok) => toast({ title: ok ? "Link copied" : COPY_LINK_FAILED }));
+      void copyToClipboard(`${window.location.origin}/profile/${summary.handle}`).then((ok) => toast({ title: ok ? DONE.linkCopied : COPY_LINK_FAILED }));
     },
     onChangeHeader: (from: HTMLElement | null) => pictures.change("banner", from),
     onChangePicture: (from: HTMLElement | null) => pictures.change("avatar", from),

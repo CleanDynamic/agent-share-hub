@@ -199,7 +199,7 @@ describe("BreakageView", () => {
         resolveMedia={() => null}
       />
     );
-    expect(screen.getByText("No breakages recorded")).toBeTruthy();
+    expect(screen.getByText("No breakages recorded.")).toBeTruthy();
     expect(screen.getByText(/Either nothing broke, or nothing was written down/)).toBeTruthy();
   });
 });

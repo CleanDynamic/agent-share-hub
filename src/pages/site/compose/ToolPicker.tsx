@@ -296,7 +296,7 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
                 </div>
               ),
             )}
-            {pickable.length === 0 ? <span style={VISUALLY_HIDDEN}>{list === "app" ? "No apps match" : "No tools match"}</span> : null}
+            {pickable.length === 0 ? <span style={VISUALLY_HIDDEN}>{list === "app" ? "No apps match." : "No tools match."}</span> : null}
           </div>
         </Popover.Content>
       </Popover.Portal>

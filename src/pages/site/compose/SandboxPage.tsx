@@ -178,6 +178,7 @@ import { touchSavedItems, type LibrarySavedItem } from "@/lib/library/savedItems
 import { reportError } from "@/lib/errors/report";
 import { useFlushWhenSessionInQuestion } from "./useFlushWhenSessionInQuestion";
 import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
+import { DONE } from "@/lib/copy/copy";
 
 /** builds.making.sessions, read defensively: it is a json column. */
 function makingSessions(making: unknown): MakingSession[] {
@@ -255,7 +256,7 @@ const fallbackMeta = (group: Parameters<typeof groupKind>[0] & { tool?: string |
 const latestOf = (a: Date | null | undefined, b: Date | null | undefined): Date | null => (a && b ? (a.getTime() >= b.getTime() ? a : b) : (a ?? b ?? null));
 
 /** F16: the notice after a prompt is added from the composer. */
-const COMPOSER_ADDED_COPY = { prompt: "Prompt added" } as const;
+const COMPOSER_ADDED_COPY = { prompt: "Prompt added." } as const;
 
 /** The page, with its one announcer around it (CA-26 P4). */
 export function SandboxPage() {
@@ -1264,7 +1265,7 @@ function SandboxPageBody() {
     afterWrite();
   };
   const [promptFor, setPromptFor] = useState<string | null>(null);
-  const copySetup = (text: string) => void navigator.clipboard?.writeText(text).then(() => buildHistory.notify("Setup prompt copied", { undo: false }), () => undefined);
+  const copySetup = (text: string) => void navigator.clipboard?.writeText(text).then(() => buildHistory.notify(DONE.setupCopied, { undo: false }), () => undefined);
   const onSetupPrompt = (id: string, how: "copy" | "show") =>
     how === "show" ? setPromptFor(id) : void import("@/lib/build/setupPrompt").then((m) => copySetup(m.setupPromptOf(id, { tree: nodes.current(), showCost: true }).text));
   const editView = useMemo(

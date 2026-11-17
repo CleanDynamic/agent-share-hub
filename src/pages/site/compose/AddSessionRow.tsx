@@ -31,6 +31,7 @@ import { size, space } from "@/lib/theme/space";
 import { r } from "@/lib/theme/radius";
 
 import { textStep } from "@/lib/theme/type";
+import { EMPTY } from "@/lib/copy/copy";
 export const ADD_SESSION_COPY = {
   /** F55: the three add controls read Add step, Add session, Add part; the plus is their icon. */
   row: "Add session",
@@ -47,7 +48,7 @@ export const ADD_SESSION_COPY = {
   search: "Search your sessions",
   searchPlaceholder: "Search by app, date or first prompt",
   none: "No session matches.",
-  empty: "No sessions yet.",
+  empty: EMPTY.sessions,
   inThisDraft: "In this build",
   more: "Show more sessions",
 } as const;

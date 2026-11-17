@@ -246,7 +246,7 @@ describe("FieldMessage", () => {
   it("has no margin while it is empty, and a 6px one once it says something", () => {
     const { rerender, getByTestId } = render(<FieldMessage />);
     expect(getByTestId("field-message").style.marginTop).toBe("0px");
-    rerender(<FieldMessage>Please choose an available username.</FieldMessage>);
+    rerender(<FieldMessage>Choose an available username.</FieldMessage>);
     // UI-P52 density pass: 6 → 4.
     expect(getByTestId("field-message").style.marginTop).toBe("4px");
   });
@@ -471,14 +471,14 @@ describe("SignupForm", () => {
       <SignupForm
         {...signup({
           usernameValidation: { state: "invalid", message: "Username must be at least 3 characters" },
-          emailValidation: { state: "invalid", message: "Please enter a valid email" },
+          emailValidation: { state: "invalid", message: "Enter a valid email address." },
         })}
       />,
     );
     expect(screen.getByPlaceholderText("username").getAttribute("aria-invalid")).toBe("true");
     expect(screen.getByPlaceholderText("you@example.com").getAttribute("aria-invalid")).toBe("true");
     expect(screen.getByText("Username must be at least 3 characters").getAttribute("aria-live")).toBe("polite");
-    expect(screen.getByText("Please enter a valid email").getAttribute("aria-live")).toBe("polite");
+    expect(screen.getByText("Enter a valid email address.").getAttribute("aria-live")).toBe("polite");
     expect(screen.getByPlaceholderText("At least 8 characters").getAttribute("aria-invalid")).toBe("false");
   });
 
@@ -513,7 +513,7 @@ describe("SignupForm", () => {
     rerender(inRouter(<SignupForm {...signup({ canSubmit: true })} />));
     expect(screen.getByRole("button", { name: "Create account" })).toBeEnabled();
     rerender(inRouter(<SignupForm {...signup({ isSubmitting: true })} />));
-    expect(screen.getByRole("button", { name: "Creating account..." })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Joining…" })).toBeDisabled();
   });
 
   it("puts the form's one error under the terms, announced politely", () => {
@@ -552,13 +552,13 @@ describe("ResetRequestForm", () => {
   });
 
   it("is the join form's field, with its error under it and its gate on the button", () => {
-    const { rerender } = show(<ResetRequestForm {...request({ error: "Please enter a valid email." })} />);
-    expect(screen.getByText("Please enter a valid email.").getAttribute("aria-live")).toBe("polite");
+    const { rerender } = show(<ResetRequestForm {...request({ error: "Enter a valid email address." })} />);
+    expect(screen.getByText("Enter a valid email address.").getAttribute("aria-live")).toBe("polite");
     expect(screen.getByPlaceholderText("you@example.com").getAttribute("aria-invalid")).toBe("true");
     rerender(inRouter(<ResetRequestForm {...request({ canSubmit: false })} />));
     expect(screen.getByRole("button", { name: "Send reset link" })).toBeDisabled();
     rerender(inRouter(<ResetRequestForm {...request({ isSubmitting: true })} />));
-    expect(screen.getByRole("button", { name: "Sending..." })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Sending…" })).toBeDisabled();
   });
 });
 
@@ -587,18 +587,18 @@ describe("ResetConfirmForm", () => {
   it("shows the strength under the new password, the mismatch under the confirmation and the refusal under both", () => {
     show(
       <ResetConfirmForm
-        {...confirm({ password: "abcdefgh1", passwordStrength: "fair", mismatchError: "Passwords don't match", error: "Please choose a stronger password." })}
+        {...confirm({ password: "abcdefgh1", passwordStrength: "fair", mismatchError: "Passwords don't match", error: "Choose a stronger password." })}
       />,
     );
     expect(screen.getByRole("img", { name: "Password strength: Fair" })).toBeTruthy();
     expect(screen.getByText("Passwords don't match").getAttribute("aria-live")).toBe("polite");
     expect(screen.getByLabelText("Confirm password", { exact: true }).getAttribute("aria-invalid")).toBe("true");
-    expect(screen.getByText("Please choose a stronger password.").getAttribute("aria-live")).toBe("polite");
+    expect(screen.getByText("Choose a stronger password.").getAttribute("aria-live")).toBe("polite");
   });
 
   it("says what it is doing while the new password is out", () => {
     show(<ResetConfirmForm {...confirm({ isSubmitting: true })} />);
-    expect(screen.getByRole("button", { name: "Updating..." })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Updating…" })).toBeDisabled();
   });
 });
 

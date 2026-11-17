@@ -210,16 +210,16 @@ export const RULES: Rule[] = [
   {
     id: "empty-stop",
     goal: "G6",
-    on: false,
+    on: true,
     breaks: (s) => /^(No|Nothing)\b/.test(s) && /\b(yet|match|matches|recorded|has that name|listed|to post in)\b/.test(s) && !/[.?]$/.test(s),
   },
   // G7: waiting labels
-  { id: "three-dots", goal: "G7", on: false, breaks: (s) => /\.\.\.\s*$/.test(s) },
+  { id: "three-dots", goal: "G7", on: true, breaks: (s) => /\.\.\.\s*$/.test(s) },
   // G8: confirmations
-  { id: "exclamation", goal: "G8", on: false, breaks: (s) => /!\s*$/.test(s) },
-  { id: "tick-or-emoji", goal: "G8", on: false, breaks: (s) => /[✓✔✅🎉👍]/u.test(s) },
+  { id: "exclamation", goal: "G8", on: true, breaks: (s) => /!\s*$/.test(s) },
+  { id: "tick-or-emoji", goal: "G8", on: true, breaks: (s) => /[✓✔✅🎉👍]/u.test(s) },
   // G9
-  { id: "please", goal: "G9", on: false, breaks: (s) => /\bPlease /.test(s) },
+  { id: "please", goal: "G9", on: true, breaks: (s) => /\bPlease /.test(s) },
   // G1, G2: the glossary
   { id: "log-in", goal: "G1", on: false, breaks: (s) => /\blog ?in\b/i.test(s) },
   { id: "log-out", goal: "G1", on: false, breaks: (s) => /\blog ?out\b/i.test(s) },
@@ -241,7 +241,16 @@ export const RULES: Rule[] = [
  * Exceptions, keyed `file|exact screen text` (as screenText reads it), with the reason. `*` as the text excuses every string
  * in that file for that rule.
  */
-export const ALLOW: Record<string, Record<string, string>> = {};
+export const ALLOW: Record<string, Record<string, string>> = {
+  "empty-stop": {
+    "src/pages/site/profile/profileModel.ts|No streak yet": "a value in the streak stat line, beside \"12-day streak · best 31\"; not an empty state",
+    "src/pages/site/settings/AppsView.tsx|No access listed": "a value in an app's hint, beside \"Can access: …\"; not an empty state",
+    "src/components/build/FullPromptWindow.tsx|No variables yet": "a count in the window's meta line, beside \"3 variables\"; a value",
+    "src/components/build/FullPromptWindow.tsx|Nothing added yet": "the placeholder of an empty reply box, not an empty state",
+    "src/pages/site/compose/StillOpenSpaces.tsx|No spaces to post in": "a disabled menu option (menu options are not empty states)",
+    "src/pages/site/openbuilds/NewPostWindow.tsx|No spaces to post in": "a disabled menu option (menu options are not empty states)",
+  },
+};
 
 export interface Finding extends ScreenString {
   rule: string;

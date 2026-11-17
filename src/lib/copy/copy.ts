@@ -135,3 +135,32 @@ export const UNFOLLOW_PERSON_FAILED = "Couldn't unfollow them. Try again.";
 export const FOLLOW_FAILED = "Couldn't follow that. Try again.";
 export const UNFOLLOW_FAILED = "Couldn't unfollow that. Try again.";
 export const JOIN_SPACE_FAILED = "Couldn't join that space. Try again.";
+
+// ── empty states (G6): "No <things> yet." / "No <things> match.", then the next step where there is one ──
+
+export const EMPTY = {
+  sessions: "No sessions yet.",
+  steps: "No steps yet.",
+  breakages: "No breakages recorded.",
+  nothingAdded: "Nothing added yet.",
+  nothingNamed: "Nothing has that name.",
+} as const;
+
+// ── waiting labels (G7): a present participle and the one ellipsis character ──
+// The sign-in dialog's "Signing in" and "Opening Google" have no ellipsis: a ring of dots sits beside them (an earlier prompt).
+
+export const WAITING = {
+  saving: "Saving…",
+  sending: "Sending…",
+  updating: "Updating…",
+  joining: "Joining…",
+} as const;
+
+// ── confirmations (G8): past tense, a full stop, no "!", tick or emoji ──
+
+export const DONE = {
+  copied: "Copied.",
+  linkCopied: "Link copied.",
+  saved: "Saved.",
+  setupCopied: "Setup prompt copied.",
+} as const;

@@ -52,6 +52,7 @@ import { addPromptLabel, MADE_WITH_ENTRY_MAX, promptDragData } from "./composeMo
 import { PROMPT_DRAG_TYPE } from "./PromptsPanel";
 import { size, space } from "@/lib/theme/space";
 import { BUTTON_PAD, iconButtonSide } from "./modalRecipes";
+import { EMPTY } from "@/lib/copy/copy";
 
 /** What PageState logs for the sessions list: the real error is reported by the query cache. */
 const SESSIONS_FAILED = { name: "SessionsError", message: "the sessions list did not load" };
@@ -468,7 +469,7 @@ export function SessionsPanel({
               {() => null}
             </PageState>
           ) : sessions.length === 0 ? (
-            <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: textStep.body, color: t.text2 }}>No sessions yet.</p>
+            <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: textStep.body, color: t.text2 }}>{EMPTY.sessions}</p>
           ) : (
             shown.map((session, index) => (
               <SessionSection

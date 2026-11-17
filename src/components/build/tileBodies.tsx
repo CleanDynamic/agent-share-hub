@@ -31,14 +31,15 @@ import { ellipsis, text, tnum } from "@/pages/site/compose/refinedStyles";
 import { DM_MONO, measure, textStep } from "@/lib/theme/type";
 import { BODY_LINE, DATA_LINE, FOOT_FACTS, FOOT_LINK as FOOT_LINK_STYLE, TEXT_LINK_BOX, LINK_ADDRESS, LINK_CARD, MORE_COUNT, PICTURE, PICTURES, RESPONSE_LINE, RESPONSE_WORD, STEPS, TILE_FOOT, VARIABLE } from "@/pages/site/compose/tileRecipes";
 import { size, space } from "@/lib/theme/space";
+import { EMPTY } from "@/lib/copy/copy";
 
 export const TILE_COPY = {
   deployed: "Deployed app",
   pastedCsv: "Pasted CSV",
-  noInstructions: "No instructions yet",
+  noInstructions: "No instructions yet.",
   readAll: "Read all",
   response: "Response",
-  nothingAdded: "Nothing added yet",
+  nothingAdded: EMPTY.nothingAdded,
   noPreview: "No preview",
   cases: (n: number) => `${n} ${n === 1 ? "case" : "cases"}`,
   allPassed: "all passed",

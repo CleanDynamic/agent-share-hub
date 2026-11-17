@@ -108,7 +108,7 @@ export const DECISION_COPY = {
   thresholdPlaceholder: "0.6",
   optionDescription: "Description",
   optionDescriptions: "Option descriptions",
-  noOptionsYet: "No options yet",
+  noOptionsYet: "No options yet.",
   fieldType: "Field type",
   questionsCount: (n: number) => `${n} ${n === 1 ? "question" : "questions"}`,
   question: (n: number) => `Question ${n}`,

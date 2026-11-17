@@ -64,6 +64,7 @@ import { FromPostNote } from "./PartWindow";
 import { PromptName } from "./tileBodies";
 import { space, size } from "@/lib/theme/space";
 import { r } from "@/lib/theme/radius";
+import { DONE } from "@/lib/copy/copy";
 
 export type FullPromptMode = "maker" | "reader";
 
@@ -103,13 +104,13 @@ export interface FullPromptWindowProps {
 
 export const FULL_PROMPT_COPY = {
   hint: "Esc Close · ← → Previous or next prompt",
-  copied: "Copied",
+  copied: DONE.copied,
   copy: "Copy prompt",
   /** F30 (D5): the window writes on every change, so its one button closes it, and "Saved" stands beside it after each write. */
   close: "Close",
   /** The footer button's accessible name: the header's square is already "Close". */
   closeWindow: "Close window",
-  saved: "Saved",
+  saved: DONE.saved,
   previous: "Previous prompt",
   next: "Next prompt",
   before: "Before you send it",

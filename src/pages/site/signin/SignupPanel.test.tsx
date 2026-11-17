@@ -198,22 +198,22 @@ describe("the email", () => {
   it("is checked when it is left, and the check clears when it is changed", () => {
     open();
     type("you@example.com", "not-an-email");
-    expect(screen.queryByText("Please enter a valid email")).toBeNull();
+    expect(screen.queryByText("Enter a valid email address.")).toBeNull();
     fireEvent.blur(screen.getByPlaceholderText("you@example.com"));
-    expect(screen.getByText("Please enter a valid email")).toBeTruthy();
+    expect(screen.getByText("Enter a valid email address.")).toBeTruthy();
     expect(screen.getByPlaceholderText("you@example.com").getAttribute("aria-invalid")).toBe("true");
 
     type("you@example.com", "ada@example.com");
-    expect(screen.queryByText("Please enter a valid email")).toBeNull();
+    expect(screen.queryByText("Enter a valid email address.")).toBeNull();
     fireEvent.blur(screen.getByPlaceholderText("you@example.com"));
-    expect(screen.queryByText("Please enter a valid email")).toBeNull();
+    expect(screen.queryByText("Enter a valid email address.")).toBeNull();
     expect(screen.getByPlaceholderText("you@example.com").getAttribute("aria-invalid")).toBe("false");
   });
 
   it("is not checked when it is left empty", () => {
     open();
     fireEvent.blur(screen.getByPlaceholderText("you@example.com"));
-    expect(screen.queryByText("Please enter a valid email")).toBeNull();
+    expect(screen.queryByText("Enter a valid email address.")).toBeNull();
   });
 });
 
@@ -387,7 +387,7 @@ describe("creating the account", () => {
     await fillAll();
     fireEvent.click(create());
     await act(async () => {});
-    expect(screen.getByRole("button", { name: "Creating account..." })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Joining…" })).toBeDisabled();
   });
 
   it("refuses an email with no domain before it asks anyone, under the email", async () => {
@@ -397,7 +397,7 @@ describe("creating the account", () => {
     await act(async () => {});
 
     expect(signUp).not.toHaveBeenCalled();
-    expect(screen.getByText("Please enter a valid email")).toBeTruthy();
+    expect(screen.getByText("Enter a valid email address.")).toBeTruthy();
   });
 
   it("clears the form's message on the next key", async () => {

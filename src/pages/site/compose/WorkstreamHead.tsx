@@ -33,6 +33,7 @@ import { WORKSTREAM_STARTS } from "./workstreamRecipes";
 import { useCrossfade } from "./buildMotion";
 import { size } from "@/lib/theme/space";
 import { iconButtonSide } from "./modalRecipes";
+import { EMPTY } from "@/lib/copy/copy";
 
 export const WORKSTREAM_HEAD_COPY = {
   namePlaceholder: "Add a name",
@@ -42,7 +43,7 @@ export const WORKSTREAM_HEAD_COPY = {
   moveUp: "Move up",
   moveDown: "Move down",
   count: (n: number) => `${n} ${n === 1 ? "session" : "sessions"}`,
-  empty: "No sessions yet",
+  empty: EMPTY.sessions,
   /** F55: one of the three add controls: Add step, Add session, Add part. */
   addHere: "Add session",
   startsLine: (after: string) => `Starts after ${after}`,

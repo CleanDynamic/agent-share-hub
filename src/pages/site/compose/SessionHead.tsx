@@ -44,9 +44,10 @@ import { size } from "@/lib/theme/space";
 import { iconButtonSide } from "./modalRecipes";
 
 import { textStep } from "@/lib/theme/type";
+import { EMPTY } from "@/lib/copy/copy";
 export const SESSION_HEAD_COPY = {
   titlePlaceholder: "Add a title",
-  noTiles: "No steps yet",
+  noTiles: EMPTY.steps,
   /** SV-05 P3: an import that wrote fewer tiles than its session has prompts. */
   imported: (have: number, of: number) => `${have} of ${of} prompts imported`,
   retry: "Retry",

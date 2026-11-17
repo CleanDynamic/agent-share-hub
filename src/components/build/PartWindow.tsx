@@ -46,10 +46,11 @@ import { EYEBROW, text, tnum } from "@/pages/site/compose/refinedStyles";
 import { size, space } from "@/lib/theme/space";
 import { r } from "@/lib/theme/radius";
 import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT, iconButtonSide } from "@/pages/site/compose/modalRecipes";
+import { DONE } from "@/lib/copy/copy";
 
 export const PART_WINDOW_COPY = {
   copyCode: "Copy code",
-  copied: "Copied",
+  copied: DONE.copied,
   download: "Download",
   done: "Done",
   instructions: "System instructions",
@@ -64,7 +65,7 @@ export const PART_WINDOW_COPY = {
   cases: "Test cases",
   tiles: "Its steps",
   setup: (n: number) => `Setup · ${n} ${n === 1 ? "item" : "items"}`,
-  nothing: "Nothing written yet",
+  nothing: "Nothing written yet.",
   calledFrom: "Calling code",
   reads: "Input",
   questions: "Questions",

@@ -21,6 +21,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { AuthCheck, AuthField, AuthForm, FieldMessage, OrRule, PrimaryAction, ProviderButtons } from "./AuthParts";
+import { WAITING } from "@/lib/copy/copy";
 
 export interface SignupFormProps {
   displayName: string;
@@ -148,7 +149,7 @@ export function SignupForm({
           </AuthCheck>
           <FieldMessage>{error}</FieldMessage>
         </div>
-        <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText="Creating account...">
+        <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText={WAITING.joining}>
           Create account
         </PrimaryAction>
         {showLegalLine ? (
