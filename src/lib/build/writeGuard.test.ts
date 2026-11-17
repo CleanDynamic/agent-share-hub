@@ -1,6 +1,6 @@
 // CA-23 P2: writes held while offline, kept across a reload, replayed first and in order; reads wait behind them.
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createConnection } from "./connection";
 import { createWriteGuard, guardedTarget, pendingKey, withStamp, type HeldWrite, type StorageLike } from "./writeGuard";
@@ -297,5 +297,68 @@ describe("reads", () => {
     await flush();
     const response = await guard.fetch(url, { method: "GET" });
     expect(await response.json()).toMatchObject({ id: "b1", title: "old" });
+  });
+});
+
+describe("G22: a session the server refused holds writes like no connection does", () => {
+  afterEach(async () => (await import("@/lib/query/sessionSignal")).setSessionPhase("live"));
+
+  it("a write answered 401 is held and kept under the pending key, not failed; sent after signing in again", async () => {
+    const { setSessionPhase } = await import("@/lib/query/sessionSignal");
+    let refused = true;
+    const sent: string[] = [];
+    const storage = memory();
+    const { guard } = setup({
+      storage,
+      base: async (_input, init) => {
+        if (refused) return json({ code: "PGRST301", message: "JWT expired" }, 401);
+        sent.push(String(init?.body));
+        return json([{ id: "b1", updated_at: "S2" }]);
+      },
+    });
+    const settled = vi.fn();
+    void write(guard, "builds", { thread: "typed" }, "PATCH", "?id=eq.b1").then(settled);
+    await flush();
+    expect(settled).not.toHaveBeenCalled();
+    expect(guard.held()).toHaveLength(1);
+    expect(JSON.parse(storage.data.get(pendingKey("b1")) ?? "[]")[0].body).toBe(JSON.stringify({ thread: "typed" }));
+    setSessionPhase("ended");
+    await flush();
+    refused = false;
+    // Signed in again: the line goes out, in order, and the caller is answered with the real response.
+    setSessionPhase("live");
+    await vi.waitFor(() => expect(settled).toHaveBeenCalledTimes(1));
+    expect(sent).toEqual([JSON.stringify({ thread: "typed" })]);
+    expect(guard.held()).toHaveLength(0);
+    expect(storage.data.has(pendingKey("b1"))).toBe(false);
+  });
+
+  it("while the session is being checked or has ended, a new write joins the line without being sent", async () => {
+    const { setSessionPhase } = await import("@/lib/query/sessionSignal");
+    const { guard, base, storage } = setup();
+    setSessionPhase("checking");
+    void write(guard, "build_nodes", { text: "a tile" });
+    await flush();
+    expect(base).not.toHaveBeenCalled();
+    expect(guard.held()).toHaveLength(1);
+    expect(storage.data.has(pendingKey("b1"))).toBe(true);
+    setSessionPhase("live");
+    await vi.waitFor(() => expect(guard.held()).toHaveLength(0));
+    expect(base).toHaveBeenCalledTimes(1);
+  });
+
+  it("a replay answered 401 stays at the head of the line, and the line waits", async () => {
+    const { setSessionPhase } = await import("@/lib/query/sessionSignal");
+    const storage = memory();
+    storage.setItem(pendingKey("b1"), JSON.stringify([{ id: "k1", at: 1, method: "PATCH", url: `${REST}/builds?id=eq.b1`, headers: [], body: '{"thread":"kept"}' }]));
+    let refused = true;
+    const { guard } = setup({ storage, base: async () => (refused ? json({ code: "PGRST301" }, 401) : json([{ id: "b1", updated_at: "S3" }])) });
+    await vi.waitFor(() => expect(guard.held()).toHaveLength(1));
+    await flush();
+    expect(guard.held()[0].body).toBe('{"thread":"kept"}');
+    refused = false;
+    setSessionPhase("ended");
+    setSessionPhase("live");
+    await vi.waitFor(() => expect(guard.held()).toHaveLength(0));
   });
 });
