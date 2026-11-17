@@ -293,3 +293,19 @@ describe("DraftsView · Remove empty drafts (SV-03 P2)", () => {
     expect(onRemove).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("the page-level failed state follows the session check (G18)", () => {
+  it("holds while the session is being checked, and shows once the server says the session is fine", async () => {
+    const { act } = await import("@testing-library/react");
+    const { setSessionPhase } = await import("@/lib/query/sessionSignal");
+    setSessionPhase("checking");
+    try {
+      view({ draftsRead: readOf("error"), sessionsRead: readOf("error") });
+      expect(screen.queryByText("Couldn't load this page. Try again.")).toBeNull();
+      act(() => setSessionPhase("live"));
+      expect(screen.getByText("Couldn't load this page. Try again.")).toBeInTheDocument();
+    } finally {
+      setSessionPhase("live");
+    }
+  });
+});

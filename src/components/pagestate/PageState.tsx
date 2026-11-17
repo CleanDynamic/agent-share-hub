@@ -7,13 +7,13 @@
 // THE BOX STAYS (G12). The mark around the state is `display: contents`, so the region's own box (the column, the
 // panel) is what the skeleton and the state are laid out in: nothing below moves when one replaces the other.
 
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import { EmptyState, type EmptyStateAction } from "@/components/brand/EmptyState";
 import { ErrorState, type ErrorStateProps } from "@/components/brand/ErrorState";
 import { errorLine } from "@/lib/errors/code";
-import { sessionPhase, subscribeSession } from "@/lib/query/sessionSignal";
 
+import { useSessionPhase } from "./useSessionPhase";
 import { isRetrying, shownState, type ReadLike, type Shown } from "./pageStateModel";
 import { FAILED_PAGE, NOT_FOUND, NOT_FOUND_DETAIL, failedLine, type MissingKind, type Thing, type WayOut } from "./stateCopy";
 
@@ -79,7 +79,7 @@ function useSkeletonHeight(state: Shown): { markRef: React.RefObject<HTMLDivElem
 export function PageState({ read, thing, region, skeleton, empty, notFound, log, frame, frameReady = true, style, children }: PageStateProps) {
   const reads = asList(read);
   // G18: drawn again when the session's phase moves (shownState reads it).
-  const phase = useSyncExternalStore(subscribeSession, sessionPhase, sessionPhase);
+  const phase = useSessionPhase();
   useLogEach(phase === "live" ? reads : [], reads.map(() => log ?? `[${region}] read failed`));
   const state = shownState(reads, {
     isEmpty: empty?.when,

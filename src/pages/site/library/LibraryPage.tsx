@@ -32,6 +32,7 @@ import {
 } from "@/components/library/addToCollection";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { PageFailed, PageState } from "@/components/pagestate/PageState";
+import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
 import { allFailed, shownState, type ReadLike, type Shown as RegionState } from "@/components/pagestate/pageStateModel";
 import { WAY_OUT } from "@/components/pagestate/stateCopy";
 import { useAuth } from "@/contexts/AuthContext";
@@ -326,6 +327,8 @@ export default function LibraryPage() {
     visiting && !openId ? [collections] : openId && !open && aloneState === "failed" ? [alone] : openId ? [collectionBuilds] : kind === "builds" || !itemKind ? [saved] : [kept],
   );
   /* G9: every region of the page failed (the collections and the table; a visitor's page is its collections alone). */
+  // G18: drawn again when the session's phase moves, so allFailed below is read again (it holds while checking).
+  useSessionPhase();
   const pageFailed = allFailed(enabledOnly(visiting ? [collections] : [collections, ...tableReads]));
   const hasMore = openId ? collectionBuilds : kind === "builds" ? saved : itemKind ? kept : null;
   const moreAvailable = hasMore ? hasMore.hasNextPage : Boolean(saved.hasNextPage || (wantsItems && kept.hasNextPage));

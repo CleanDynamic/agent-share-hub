@@ -30,6 +30,7 @@ import { PageLink as Link } from "@/lib/routing/PageLink";
 import { IntentLink } from "@/lib/routing/IntentLink";
 
 import { PageFailed, PageState } from "@/components/pagestate/PageState";
+import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
 import { allFailed, shownState, type ReadLike } from "@/components/pagestate/pageStateModel";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
@@ -415,6 +416,8 @@ export function DraftsView({
   const canDrag = !phone && fine;
   const [dragging, setDragging] = useState<string | null>(null);
   /* G9: both lists failed: one failed state for the page, in the first column, and none in the second. */
+  // G18: drawn again when the session's phase moves, so allFailed below is read again (it holds while checking).
+  useSessionPhase();
   const pageFailed = allFailed([draftsRead, sessionsRead]);
   const draftsShown = shownState([draftsRead]) === "ready";
   const sessionsShown = shownState([sessionsRead]) === "ready";

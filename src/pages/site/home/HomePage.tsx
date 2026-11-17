@@ -25,6 +25,7 @@ import { SITE_NAME, siteUrl } from "@/lib/site";
 import { MEDIA_WIDTH } from "@/components/build/MediaFigure";
 import { coverMedia, feedMedia, stillFor, useSignedMedia, type CardMedia } from "@/components/gallery/cardMedia";
 import { PageArrival } from "@/components/shell/PageArrival";
+import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
 import { allFailed, type ReadLike } from "@/components/pagestate/pageStateModel";
 import { useAuth } from "@/contexts/AuthContext";
 import { engagementFor, useEngagement } from "@/hooks/useEngagement";
@@ -450,6 +451,8 @@ export function HomePage() {
   const countsFailed = (reproduced.isError && reproduced.data === undefined) || (runsWeek.isError && runsWeek.data === undefined);
   /* G9: every region the reader can see failed (the feed, the room's lists and counts, and, signed in, the studio). */
   const regionReads: ReadLike[] = [feedQuery, stillOpen, mostRun, reproduced, ...(signedIn ? [drafts, library, week, whereNext] : [])];
+  // G18: drawn again when the session's phase moves, so allFailed below is read again (it holds while checking).
+  useSessionPhase();
   const pageFailed = feedFailed && allFailed(regionReads) ? regionReads : undefined;
   const coverOf = (build: GalleryBuild) => stillFor(srcByPath, coverMedia(build));
 

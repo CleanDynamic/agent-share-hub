@@ -21,6 +21,7 @@
    tile are told to read their count again when it lands. A write that fails
    reads everything again from the server. */
 
+import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
 import { allFailed } from "@/components/pagestate/pageStateModel";
 import { useCallback, useMemo, useState } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
@@ -261,6 +262,8 @@ export function ActivityPage() {
       ? { onRetry: () => void peopleQuery.refetch(), error: peopleQuery.error }
       : undefined;
 
+  // G18: drawn again when the session's phase moves, so allFailed below is read again (it holds while checking).
+  useSessionPhase();
   return (
     <>
       <SeoHead title="Activity" description="What happened to your builds." path="/notifications" noIndex />

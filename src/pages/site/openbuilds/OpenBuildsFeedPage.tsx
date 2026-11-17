@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { SeoHead } from "@/components/SeoHead";
 import { OPENBUILDS_SEO } from "./openBuildsSeo";
 import { PageArrival } from "@/components/shell/PageArrival";
+import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
 import { allFailed, type ReadLike } from "@/components/pagestate/pageStateModel";
 import { toCardData, topicHref } from "@/components/post/postCardModel";
 import { useAuth } from "@/contexts/AuthContext";
@@ -64,6 +65,8 @@ export default function OpenBuildsFeedPage() {
   usePageReady("openbuilds", !arriving);
   /* G9: every region failed (the posts, and, signed in, the reader's spaces). */
   const regionReads: ReadLike[] = [feed, ...(viewerId !== null ? [mine] : [])];
+  // G18: drawn again when the session's phase moves, so allFailed below is read again (it holds while checking).
+  useSessionPhase();
   const pageFailed = allFailed(regionReads) ? regionReads : undefined;
 
   /* ── the windows ── */
