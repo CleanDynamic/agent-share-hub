@@ -29,7 +29,7 @@ import { signInWithEmail } from "@/lib/auth/signInWithEmail";
 
 import { loginCanSubmit } from "./authModel";
 import { keepPlace } from "@/components/pagestate/returnPlace";
-import { SIGNED_OUT_DIALOG } from "@/components/pagestate/stateCopy";
+import { SIGNED_OUT_DIALOG } from "@/lib/copy/copy";
 import { sessionPhase } from "@/lib/query/sessionSignal";
 
 import { useDialogCaptcha, VERIFY_FAILED } from "./dialogCaptcha";

@@ -8,7 +8,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { SIGNED_OUT_EDITOR } from "@/components/pagestate/stateCopy";
+import { SIGNED_OUT_EDITOR } from "@/lib/copy/copy";
 import { deeper, withView } from "@/pages/site/signin/signinUrl";
 
 import { t } from "@/lib/theme/tokens";

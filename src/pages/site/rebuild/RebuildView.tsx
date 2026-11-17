@@ -17,7 +17,7 @@
 
 import { PageState } from "@/components/pagestate/PageState";
 import type { ReadLike } from "@/components/pagestate/pageStateModel";
-import { WAY_OUT, type Thing } from "@/components/pagestate/stateCopy";
+import { WAY_OUT, type Thing } from "@/lib/copy/copy";
 import type { CSSProperties, ReactNode } from "react";
 
 import { PageHeading } from "@/components/brand/PageHeading";

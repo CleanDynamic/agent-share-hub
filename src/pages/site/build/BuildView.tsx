@@ -72,7 +72,7 @@ import { Maximize2, Play, X } from "lucide-react";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { PageEmpty, PageState, WriteFailed } from "@/components/pagestate/PageState";
 import type { ReadLike } from "@/components/pagestate/pageStateModel";
-import { WAY_OUT } from "@/components/pagestate/stateCopy";
+import { WAY_OUT } from "@/lib/copy/copy";
 import { IconButton } from "@/components/brand/IconButton";
 import { Panel, PanelHead } from "@/components/brand/Panel";
 import { PartViewer } from "@/components/brand/PartViewer";

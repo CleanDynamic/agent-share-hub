@@ -1,5 +1,5 @@
 import { Component, type ReactNode } from "react";
-import { FAILED_PAGE } from "@/components/pagestate/stateCopy";
+import { FAILED_PAGE } from "@/lib/copy/copy";
 import { useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";

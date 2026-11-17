@@ -16,7 +16,7 @@ import { Component, useMemo, type CSSProperties, type ReactNode } from "react";
 
 import { PageState } from "@/components/pagestate/PageState";
 import { readOf } from "@/components/pagestate/pageStateModel";
-import { failedLine, type Thing } from "@/components/pagestate/stateCopy";
+import { failedLine, type Thing } from "@/lib/copy/copy";
 import { reportError } from "@/lib/errors/report";
 
 export type PanelName = "Sources" | "Post" | "Build" | "Details" | "Map";

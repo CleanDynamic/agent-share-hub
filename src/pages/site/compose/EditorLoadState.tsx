@@ -9,7 +9,7 @@ import type { CSSProperties } from "react";
 import { PageState } from "@/components/pagestate/PageState";
 import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
 import { readOf } from "@/components/pagestate/pageStateModel";
-import { WAY_OUT } from "@/components/pagestate/stateCopy";
+import { WAY_OUT } from "@/lib/copy/copy";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 

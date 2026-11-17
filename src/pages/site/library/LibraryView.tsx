@@ -9,7 +9,7 @@
 import type { EmptyStateAction } from "@/components/pagestate/PageState";
 import { PageState } from "@/components/pagestate/PageState";
 import { shownState, type ReadLike } from "@/components/pagestate/pageStateModel";
-import type { Thing } from "@/components/pagestate/stateCopy";
+import type { Thing } from "@/lib/copy/copy";
 import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 import { Link } from "react-router-dom";
 

@@ -1,7 +1,15 @@
-// The words every page uses for its states: failed, retrying, empty, not found, signed out.
+// The one copy module (prompt 9, G11). Every sentence more than one place says lives here and is imported, never retyped:
+// errors, sign-in prompts, empty states, waiting labels and confirmations, and the page states prompt 10 wrote (failed,
+// retrying, empty, not found, signed out), which moved here unchanged from src/components/pagestate/stateCopy.ts.
 //
-// One module, so no page writes its own "didn't load" or "Retry" (G30's guard checks). Prompt 9's copy module, when it
-// lands, absorbs this file.
+// The patterns (copyRules.test.ts checks them in screen text):
+//   error         "Couldn't <verb> <object>. <Next step>."      unknown: "Couldn't do that. Try again."
+//   sign-in       "Sign in to <action>." (sentence) / "Sign in to <action>" (button), from SIGN_IN only
+//   empty         "No <things> yet." / "No <things> match.", then the next step where there is one
+//   waiting       a present participle and the one ellipsis character: "Saving…"
+//   done          past tense, a full stop, no "!", tick or emoji: "Draft saved."
+
+// ── page states (moved from prompt 10's stateCopy.ts) ──
 
 /** What a failed region was showing, in the sentence "Couldn't load <thing>. Try again." */
 export type Thing =

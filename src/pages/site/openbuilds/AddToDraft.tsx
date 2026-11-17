@@ -18,7 +18,7 @@ import { reportError } from "@/lib/errors/report";
 import { addStepToDraft, stepSnapshotFor, type StepToCopy } from "@/lib/openbuilds/addToDraft";
 
 import { MENU_Z, TextButton } from "./PostReplies";
-import { couldntLoad } from "@/components/pagestate/stateCopy";
+import { couldntLoad } from "@/lib/copy/copy";
 
 /** The drafts the menu lists. */
 export const RECENT_DRAFTS = 8;

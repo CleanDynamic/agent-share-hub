@@ -34,7 +34,7 @@ import { PageArrival } from "@/components/shell/PageArrival";
 import { PageFailed, PageState } from "@/components/pagestate/PageState";
 import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
 import { allFailed, shownState, type ReadLike, type Shown as RegionState } from "@/components/pagestate/pageStateModel";
-import { WAY_OUT } from "@/components/pagestate/stateCopy";
+import { WAY_OUT } from "@/lib/copy/copy";
 import { useAuth } from "@/contexts/AuthContext";
 import { copyToClipboard } from "@/lib/deepLink";
 import { reportError } from "@/lib/errors/report";
