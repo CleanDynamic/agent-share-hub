@@ -241,17 +241,31 @@ export const privacy: LegalText = {
       blocks: [
         {
           kind: "p",
-          text: "The site keeps a few things in your browser. All of them are strictly necessary, or a setting you chose, so no banner is needed.",
+          text: "The site's own code sets no cookies. It keeps the things below in your browser's own storage on this device: local storage (kept until it is removed), session storage (gone when you close the tab) and, for one item, the browser's database. Each is strictly necessary for something you asked for, or remembers a choice you made, apart from one older item marked below.",
         },
+        // G16: generated from a search of the code for every write to localStorage, sessionStorage, IndexedDB and cookies.
+        // Each row names its key; the file and line are in prompt 9's report.
         {
           kind: "table",
-          head: ["What", "Why", "How long"],
+          head: ["What (key)", "Kept in", "What for", "How long"],
           rows: [
-            ["Your sign-in session", "To keep you signed in", "Until you sign out"],
-            ["Theme (Light or Dark)", "To remember your choice", "Until you clear your browser"],
-            ["Remembered filters, layout and view choices on Builds and the composer", "To remember how you like them", "Until you clear your browser"],
-            ["What you have already seen (a badge, a note, a space's last visit)", "So the same note or badge is not shown again", "Until you clear your browser"],
-            ["Scroll position, unsent prompts and your sign-up details if you leave to read these pages", "So going back puts you where you were. Your password is never kept.", "Until you close the tab"],
+            ["Your sign-in session (sb-…-auth-token, written by our sign-in provider's library)", "Local storage, or session storage if you untick Keep me signed in", "To keep you signed in", "Until you sign out, or until you close the browser if you unticked Keep me signed in"],
+            ["Keep me signed in (ob-keep-signed-in)", "Local storage", "To remember that you unticked Keep me signed in", "Until you tick it again"],
+            ["A sign-out marker (ob-signed-out-on-purpose)", "Local storage", "So your other open tabs know you signed out on purpose, and don't ask you to sign in again", "Read for 10 seconds after you sign out; replaced at your next sign-out"],
+            ["The address you signed up with (pending_verification_email)", "Session storage", "To name it on the Check your inbox screen", "Until you confirm it, sign out or close the sign-in window"],
+            ["Your sign-up details (signup_draft)", "Session storage", "To keep your name, username and email if you leave the form to read these pages. Your password is never kept.", "Until you come back to the form, or close the tab"],
+            ["Where you were (ob-return-place)", "Session storage", "To put you back on the page you were reading after you sign in", "10 minutes, and used once"],
+            ["Theme (bg-theme)", "Local storage", "To remember Light or Dark", "Until you clear your browser"],
+            ["A copy of pages you have read (bg-kept-cache)", "The browser's database (IndexedDB)", "So pages open quickly and can still be read offline", "Up to 24 hours. Removed when you sign out, or when someone else signs in on this device"],
+            ["Changes made while offline (bg:pending:…)", "Local storage", "To hold your edits to a build until they reach our servers, so a reload loses nothing", "Until they have been saved"],
+            ["Unsent prompts (ux-unsent:…, ux-unsent-tab)", "Session storage", "To keep a prompt you typed but did not send", "Until you send it, or close the tab"],
+            ["Scroll position (scroll:v1:…)", "Session storage", "So Back and Forward return you to where you were on a page", "Until you close the tab"],
+            ["Builds layout and chosen filters (builds:layout:v1, builds:facets:v1)", "Local storage", "To remember how you like the Builds page", "Until you clear your browser"],
+            ["Composer view (bg-compose-view:…)", "Local storage", "To remember how the composer's session list is shown", "Until you clear your browser"],
+            ["A declined review (openbuilds.layer-review.declined.…)", "Local storage", "So a build's explanation review is not offered again after you said no", "Until you clear your browser"],
+            ["What you have already seen (bg-home-seen, openbuilds:seen:…, bg-xp-reset-note-seen)", "Local storage", "To mark what is new on Home and in a space, and not show a note again", "Until you clear your browser"],
+            ["A collapsed panel in Messages (pinned-context-collapsed:…)", "Local storage", "To remember that you folded a conversation's pinned context", "Until you clear your browser"],
+            ["An ad shown on a page (openbuilds_page_ad_shown_…). Not strictly necessary.", "Session storage", "On older content pages, so a visitor who is not signed in sees a page's ad once per visit", "Until you close the tab"],
           ],
         },
         {

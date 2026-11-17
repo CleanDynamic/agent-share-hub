@@ -32,6 +32,7 @@ import { SignupForm } from "./SignupForm";
 import { setSigningIn } from "./signinActivity";
 import { useSignInNavigation } from "./useSignInNavigation";
 import { AUTH_ERRORS } from "@/lib/copy/copy";
+import { rememberPendingVerification } from "@/lib/auth/pendingVerification";
 
 const EMAIL_REGEX = /^[^@]+@[^@]+\.[^@]+$/;
 
@@ -219,7 +220,7 @@ export function SignupPanel() {
       if (result.signedIn) {
         navigate("/onboarding", { replace: true });
       } else {
-        sessionStorage.setItem("pending_verification_email", cleanEmail);
+        rememberPendingVerification(cleanEmail);
         views.replaceWith("verify", { email: cleanEmail });
       }
     } catch {

@@ -28,6 +28,7 @@ import { useDialogCaptcha } from "./dialogCaptcha";
 import { LinkChecking } from "./ResetForms";
 import { VerifyFailed, VerifyPending, VerifySuccess } from "./VerifyForms";
 import { useSignInNavigation } from "./useSignInNavigation";
+import { pendingVerificationEmail } from "@/lib/auth/pendingVerification";
 
 const RESEND_COOLDOWN_SECONDS = 45;
 
@@ -46,7 +47,7 @@ export function VerifyPanel() {
   );
 
   const email =
-    (location.state as { email?: string } | null)?.email || sessionStorage.getItem("pending_verification_email") || "";
+    (location.state as { email?: string } | null)?.email || pendingVerificationEmail() || "";
 
   /* ── Run verification when a token / code is present in the URL ── */
   useEffect(() => {
