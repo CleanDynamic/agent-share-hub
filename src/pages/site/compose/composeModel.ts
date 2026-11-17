@@ -20,6 +20,7 @@ import type { BuildNode, NodeTree } from "@/lib/build/types";
 import { modelLabel } from "@/lib/models/registry";
 import { sessionDate, sessionSource } from "@/pages/site/drafts/draftsModel";
 import { hasTitle } from "@/lib/build/publish";
+import { SAVING_PAUSED } from "@/components/pagestate/stateCopy";
 
 export const UNTITLED = "Untitled build";
 
@@ -88,7 +89,8 @@ export function parseAudience(text: string): string[] {
   return out;
 }
 
-export type SaveState = "idle" | "saving" | "saved" | "offline" | "error";
+/** G21: `paused`, the session has ended: writes are held on this device until the member signs in again. */
+export type SaveState = "idle" | "saving" | "saved" | "offline" | "error" | "paused";
 
 /** The save half of the status line, state by state. `saved` and `offline` carry more words: see `saveWords`. */
 export const SAVE_WORDS: Record<Exclude<SaveState, "idle">, string> = {
@@ -96,6 +98,7 @@ export const SAVE_WORDS: Record<Exclude<SaveState, "idle">, string> = {
   saved: "saved",
   offline: "offline",
   error: "not saved",
+  paused: SAVING_PAUSED,
 };
 
 /** CA-23: how long a write must be in flight before the line says so, so a quick save never flickers. */
@@ -132,9 +135,12 @@ export function saveState(input: { isSaving: boolean; saveError: unknown; lastSa
   return input.lastSavedAt ? "saved" : "idle";
 }
 
-/** Several saves read as one: error, then offline, then saving, then saved (PT-05: the header and the thread save apart). */
+/**
+ * Several saves read as one: paused (G21: the session ended, nothing can save until the member signs in), then error, then
+ * offline, then saving, then saved (PT-05: the header and the thread save apart).
+ */
 export function mergeSave(...states: readonly SaveState[]): SaveState {
-  for (const wanted of ["error", "offline", "saving", "saved"] as const) if (states.includes(wanted)) return wanted;
+  for (const wanted of ["paused", "error", "offline", "saving", "saved"] as const) if (states.includes(wanted)) return wanted;
   return "idle";
 }
 

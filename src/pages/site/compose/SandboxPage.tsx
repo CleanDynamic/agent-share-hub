@@ -126,7 +126,7 @@ import { refGroups, refLookup } from "@/lib/build/postRefs";
 import { makingWithGroupColours, previewGroupColour, withGroupColours, type ReferenceGroup } from "@/lib/build/referenceGroups";
 import { setReferenceGroups } from "@/lib/build/referenceGroupsWrite";
 import { NOTICE_ROOM, ReferenceNotice } from "./referencePieces";
-import { OfflineStrip, OtherTabStrip, Strips } from "./saveStrips";
+import { OfflineStrip, SignedOutStrip, OtherTabStrip, Strips } from "./saveStrips";
 import { useConnectionWatch, useOffline, usePendingWrites, useReconnected } from "./usePendingWrites";
 import { useLeaveGuard } from "./useLeaveGuard";
 import { UnsentContext, useUnsentPrompts } from "./useUnsentPrompts";
@@ -177,6 +177,7 @@ import { sessionCopyOf, type LibraryPlace } from "@/lib/build/fromLibrary";
 import { touchSavedItems, type LibrarySavedItem } from "@/lib/library/savedItems";
 import { reportError } from "@/lib/errors/report";
 import { useFlushWhenSessionInQuestion } from "./useFlushWhenSessionInQuestion";
+import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
 
 /** builds.making.sessions, read defensively: it is a json column. */
 function makingSessions(making: unknown): MakingSession[] {
@@ -351,9 +352,12 @@ function SandboxPageBody() {
   /* CA-23 P3: leaving with changes that have not landed (or have stopped) asks first; closing the tab asks the browser's way. */
   const leaving = useLeaveGuard(pending + failedCount, unsent.entries().length);
   useReconnected((count) => buildHistory.notify(RECONNECTED.saved(count), { undo: false }));
+  /* G21: the session ended here: the editor's own banner (no dialog until Sign in is pressed), and saving reads as paused. */
+  const sessionEnded = useSessionPhase() === "ended";
   const strips =
-    offline || twoTabs.changedElsewhere ? (
+    sessionEnded || offline || twoTabs.changedElsewhere ? (
       <Strips>
+        {sessionEnded ? <SignedOutStrip /> : null}
         {offline ? <OfflineStrip /> : null}
         {twoTabs.changedElsewhere ? <OtherTabStrip onShow={() => void twoTabs.showChanges()} /> : null}
       </Strips>
@@ -2774,7 +2778,7 @@ function SandboxPageBody() {
         classification={classification}
         saveProblem={compose.saveFailure}
         loadError={compose.loadError ?? undefined}
-        save={mergeSave(viewProps.save, thread.save, writesFailed ? "error" : "idle", offline ? "offline" : "idle")}
+        save={mergeSave(viewProps.save, thread.save, writesFailed ? "error" : "idle", offline ? "offline" : "idle", sessionEnded ? "paused" : "idle")}
         pendingWrites={pending}
         strips={strips}
         lastSavedAt={latestOf(viewProps.lastSavedAt, thread.lastSavedAt)}
