@@ -132,20 +132,27 @@ export function useComposeSessions({
     queryFn: () => listBuildSessions(buildId as string),
     enabled,
     staleTime: STALE_MS,
+    // G20: started by the route (composerOpen.ts); a failure it saw is not asked for again on mount. Try again asks.
+    retryOnMount: false,
   });
   const rows = useQuery({
     queryKey: buildSessionRowsKey(buildId),
     queryFn: () => listBuildSessionRows(buildId as string),
     enabled: Boolean(buildId),
     staleTime: STALE_MS,
+    // G20: started by the route (composerOpen.ts); a failure it saw is not asked for again on mount. Try again asks.
+    retryOnMount: false,
   });
-  const library = useLibrarySessions({ active: libraryActive });
+  // G20: the route started this read and waited for it; a failure it saw is not asked for again on mount.
+  const library = useLibrarySessions({ active: libraryActive, retryOnMount: false });
   const madeWithQuery = useQuery({
     queryKey: madeWithKey(buildId),
     queryFn: () => getMadeWith(buildId as string),
     enabled,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
+    // G20: started by the route (composerOpen.ts); a failure it saw is not asked for again on mount. Try again asks.
+    retryOnMount: false,
   });
 
   const [openIds, setOpenIdsState] = useState<readonly string[]>([]);

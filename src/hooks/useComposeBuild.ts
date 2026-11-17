@@ -156,6 +156,8 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
     refetchOnWindowFocus: false,
     // D3: one retry, never after the time limit cut the read, never for a refused session (lib/query/client.ts).
     retry: retryRead,
+    // G20: the route read the record first; a failure it saw is not asked for again when the page mounts (Try again does).
+    retryOnMount: false,
     structuralSharing: newerRecord,
   });
 
