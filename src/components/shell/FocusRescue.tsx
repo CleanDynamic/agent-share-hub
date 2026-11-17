@@ -38,6 +38,8 @@ interface Place {
 
 /** How long a removal keeps looking for a place for focus while its region redraws (a reload after the write). */
 export const RESCUE_WAIT_MS = 3000;
+/** How long after a removal it waits for focus to be given back by whoever owns it. */
+export const HAND_BACK_MS = 60;
 
 const keyOf = (heading: HTMLElement | null): string | null => (heading ? `${heading.tagName}:${(heading.textContent ?? "").trim()}` : null);
 
@@ -121,7 +123,11 @@ export function FocusRescue() {
         until = 0;
       }
     };
-    const check = () => {
+    let timer = 0;
+    /* Acts a moment after the removal (HAND_BACK_MS), so whoever gives focus back on their own goes first: a Radix dialog does
+       so on a timer after it unmounts, and the editor's windows give it back only to a body nobody has placed focus on. */
+    const run = () => {
+      timer = 0;
       if (!place || place.el.isConnected) return;
       const now = document.activeElement;
       if (now && now !== document.body) {
@@ -138,11 +144,16 @@ export function FocusRescue() {
       place = null;
       take(target);
     };
+    const check = () => {
+      if (!place || place.el.isConnected || timer) return;
+      timer = window.setTimeout(run, HAND_BACK_MS);
+    };
     const watch = new MutationObserver(check);
     watch.observe(document.body, { childList: true, subtree: true });
     document.addEventListener("focusin", onFocus, true);
     return () => {
       watch.disconnect();
+      window.clearTimeout(timer);
       document.removeEventListener("focusin", onFocus, true);
     };
   }, []);

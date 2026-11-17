@@ -31,7 +31,8 @@ function Drafts({ start }: { start: string[] }) {
   );
 }
 
-const flush = () => act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
+// Past the moment FocusRescue leaves for focus to be given back (HAND_BACK_MS).
+const flush = () => act(async () => new Promise((resolve) => setTimeout(resolve, 120)));
 
 async function remove(name: string) {
   const button = screen.getByRole("button", { name: `Delete ${name}` });
@@ -114,6 +115,42 @@ describe("G17: focus after a removal", () => {
     close.focus();
     await act(async () => close.click());
     await flush();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Opener" }));
+  });
+
+  it("waits for a dialog that hands focus back a moment after it closes (Radix does so on a timer)", async () => {
+    function Page() {
+      const [open, setOpen] = useState(true);
+      return (
+        <main>
+          <h1>Home</h1>
+          <button type="button" id="opener">
+            Opener
+          </button>
+          {open ? (
+            <div role="dialog" aria-label="Step">
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  // As the editor's windows do (returnFocus): give focus back only if nobody else has placed it.
+                  window.setTimeout(() => {
+                    if (document.activeElement === document.body) document.getElementById("opener")?.focus();
+                  }, 0);
+                }}
+              >
+                Close
+              </button>
+            </div>
+          ) : null}
+        </main>
+      );
+    }
+    render(<><FocusRescue /><Page /></>);
+    const close = screen.getByRole("button", { name: "Close" });
+    close.focus();
+    await act(async () => close.click());
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 150)));
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "Opener" }));
   });
 });
