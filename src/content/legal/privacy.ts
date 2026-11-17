@@ -136,7 +136,22 @@ export const privacy: LegalText = {
         },
         {
           kind: "p",
-          text: "The provider is Anthropic, OpenAI or the Lovable AI gateway, whichever we have set up at the time. The provider's own terms say whether it keeps what it receives or uses it to train models: {{NEED: confirm each provider's API data terms}}.",
+          text: "The provider is Anthropic, OpenAI or the Lovable AI gateway, whichever we have set up at the time.",
+        },
+        // G14 (prompt 9), for reviewer sign-off. Each fact from the provider's own page, read 17 November 2026:
+        //   Anthropic, no training: https://privacy.claude.com/en/articles/7996868-is-my-data-used-for-model-training (page dated 18 Aug 2026);
+        //     Commercial Terms B: https://www.anthropic.com/legal/commercial-terms (effective 17 Jun 2025)
+        //   Anthropic, 30 days, flagged up to 2 years: https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data (page dated 1 Jul 2026)
+        //   OpenAI, no training, abuse-monitoring logs up to 30 days: https://developers.openai.com/api/docs/guides/your-data (no date shown)
+        //   Lovable: its terms, privacy policy and data processing agreement disagree on training, and its retention depends on our
+        //     plan and the "AI app context" setting (docs.lovable.dev/features/ai and /features/privacy-and-security-settings). Left open.
+        {
+          kind: "list",
+          items: [
+            "Anthropic does not use what its API receives to train its models. It deletes it within 30 days, unless its safety systems flag it, when it can keep it for up to 2 years.",
+            "OpenAI does not use what its API receives to train its models. It keeps it in its abuse-monitoring logs for up to 30 days.",
+            "The Lovable AI gateway: {{NEED: Lovable AI gateway's training and retention terms for our plan}}",
+          ],
         },
         {
           kind: "p",
@@ -165,7 +180,9 @@ export const privacy: LegalText = {
             ["GitHub", "Reading a public repository you import, and signing in", "United States"],
             ["Google", "Signing in", "United States"],
             ["X", "Signing in", "United States"],
-            ["Microlink", "Previews of links you paste. The address you paste is sent to it.", "{{NEED: where Microlink is based}}"],
+            // G14, for reviewer sign-off: Microlink Labs, S.L., Murcia, Spain. https://microlink.io/terms (section 1) and
+            // https://microlink.io/dpa ("Spain, EU"), read 17 November 2026; neither page shows a date.
+            ["Microlink", "Previews of links you paste. The address you paste is sent to it.", "Spain"],
             ["Sentry", "Finding and fixing errors", "United States"],
           ],
         },
@@ -181,7 +198,36 @@ export const privacy: LegalText = {
       blocks: [
         {
           kind: "p",
-          text: "Most of the services above are in the United States, so your data leaves the UK. Transfers rely on the UK's approved safeguards: the UK International Data Transfer Agreement or Addendum, or the UK-US data bridge. {{NEED: confirm the safeguard for each service}}",
+          text: "Most of the services above are in the United States, so your data leaves the UK. Transfers rely on the UK's approved safeguards: the UK International Data Transfer Agreement or Addendum, or the UK-US data bridge. Each service's safeguard is below.",
+        },
+        // G14, for reviewer sign-off. Each from the service's own page, read 17 November 2026:
+        //   Supabase: DPA Schedule 2 (EU SCCs, UK Addendum), https://supabase.com/legal/dpa (Version 1, 1 Aug 2026)
+        //   Netlify: Privacy Statement s.13 (DPF and UK Extension), https://www.netlify.com/privacy/ (updated 4 Nov 2026); its DPA page was not found
+        //   Cloudflare: DPA s.6.4 (DPF incl. UK Extension; SCCs with UK Addendum as fallback), https://www.cloudflare.com/cloudflare-customer-dpa/ (v6.4, 3 Apr 2026)
+        //   Anthropic: DPA Schedule 3 (EU SCCs, UK Addendum), https://www.anthropic.com/legal/data-processing-addendum (effective 24 Feb 2025)
+        //   GitHub: DPA s.7.B (DPF and UK Extension), https://github.com/customer-terms/github-data-protection-agreement; privacy statement agrees (27 Apr 2026)
+        //   Google: https://policies.google.com/privacy/frameworks (DPF and UK Extension; effective 23 Aug 2025)
+        //   Sentry: DPA Schedule 3 and https://sentry.io/trust/privacy/ (DPF and UK Extension); its fallback differs between the DPA
+        //     (UK Addendum) and the privacy policy (IDTA), so only the primary safeguard is stated
+        //   Microlink: in Spain; DPA s.11 names EU SCCs and the UK Addendum for its own transfers outside the EEA, https://microlink.io/dpa
+        //   OpenAI and X: their pages refused automated reading (403, 402). Lovable: its privacy policy names Lovable Labs Sweden AB,
+        //     its DPA a US importer, Lovable Labs Incorporated. All three are left open.
+        {
+          kind: "table",
+          head: ["Service", "Safeguard"],
+          rows: [
+            ["Supabase", "Standard contractual clauses with the UK Addendum"],
+            ["Netlify", "The UK-US data bridge (the UK Extension to the EU-US Data Privacy Framework)"],
+            ["Cloudflare", "The UK-US data bridge, with standard contractual clauses and the UK Addendum as a fallback"],
+            ["Anthropic", "Standard contractual clauses with the UK Addendum"],
+            ["OpenAI", "{{NEED: OpenAI's transfer safeguard}}"],
+            ["GitHub", "The UK-US data bridge"],
+            ["Google", "The UK-US data bridge"],
+            ["X", "{{NEED: X's transfer safeguard}}"],
+            ["Sentry", "The UK-US data bridge"],
+            ["Microlink", "Based in the EU. For its own transfers outside it, standard contractual clauses with the UK Addendum"],
+            ["Lovable", "{{NEED: Lovable's contracting entity and transfer safeguard}}"],
+          ],
         },
       ],
     },
@@ -199,6 +245,9 @@ export const privacy: LegalText = {
             ["Imports sent from your AI tool and not yet reviewed", "They are marked as expired after 7 days. {{NEED: when expired imports are deleted}}"],
             ["Reports", "{{NEED: retention period}}"],
             ["Notifications", "{{NEED: retention period}}"],
+            // G14: Sentry keeps errors 30 days on its Developer plan and 90 days on Team, Business and Enterprise.
+            // https://docs.sentry.io/security-legal-pii/security/data-retention-periods/ (read 17 November 2026, no date shown).
+            // Which applies depends on our plan, so the placeholder stays (owner-answers.md).
             ["Error reports", "{{NEED: Sentry retention period}}"],
           ],
         },
