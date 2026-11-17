@@ -45,6 +45,8 @@ describe("PostCard", () => {
     expect(article.textContent).toContain("@sam · 2h · in");
     expect(within(article).getByRole("link", { name: "Claude Code" })).toHaveAttribute("href", "/openbuilds/spaces/claude-code");
     expect(within(article).getByRole("link", { name: "Hiring tools" })).toHaveAttribute("href", "/openbuilds/spaces/hiring-tools");
+    // G11: a link in the meta line is underlined at rest, not by colour alone.
+    expect((within(article).getByRole("link", { name: "Claude Code" }) as HTMLElement).style.textDecoration).toBe("underline");
     expect(within(article).getByText("£40")).toBeInTheDocument();
   });
 

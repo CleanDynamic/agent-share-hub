@@ -73,7 +73,8 @@ function HeadingLink({ to, children }: { to: string; children: string }) {
 function SpaceLink({ to, children }: { to: string; children: string }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   return (
-    <Link to={to} {...handlers} style={{ color: t.text2, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: 4, ...ring(state.focusVisible) }}>
+    /* G11: a link inside the card's meta line is underlined at rest: colour alone does not set it apart from the words round it. */
+    <Link to={to} {...handlers} style={{ color: t.text2, textDecoration: "underline", textUnderlineOffset: 3, borderRadius: 4, ...ring(state.focusVisible) }}>
       {children}
     </Link>
   );
