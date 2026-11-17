@@ -11,8 +11,8 @@
      - the auth server cannot be asked (the network): nothing is decided; back to live, and the page shows its own state.
    Reports that come in while checking or after the end are ignored, so it all happens once.
 
-   G14: when the member signs in again, the phase is live once more and every query is marked stale, so what is on
-   screen is read again with the new session (the dialog closes in place: LoginPanel).
+   G14: when the member signs in again, the phase is live once more and every query is read again with the new session
+   (the ones that failed meanwhile from their skeleton, G18) (the dialog closes in place: LoginPanel).
 
    G17: the client can drop a member's session on its own (a refresh the auth server refused). That SIGNED_OUT, for a
    member who was signed in, takes the same path: phase "ended" and the dialog. A sign-out someone asked for goes
@@ -111,8 +111,13 @@ export function SessionListener() {
       }
       member = Boolean(session);
       if (event === "SIGNED_IN" && session && sessionPhase() === "ended") {
+        /* G18: what failed while the session was in question starts again from its skeleton; the rest is read again in
+           place. */
+        const failed = (query: { state: { status: string; data: unknown } }) => query.state.status === "error" && query.state.data === undefined;
+        const unanswered = queryClient.getQueryCache().findAll({ predicate: failed });
+        void queryClient.resetQueries({ predicate: (query) => unanswered.includes(query) });
+        void queryClient.invalidateQueries({ predicate: (query) => !unanswered.includes(query) });
         setSessionPhase("live");
-        void queryClient.invalidateQueries();
       }
     });
 

@@ -8,6 +8,12 @@
 // - Once every read has answered: not found if the page says the row is absent, then empty if it says there is
 //   nothing, else ready.
 // - A read that already has data keeps it when a refetch fails: the region stays ready, as TanStack keeps it.
+// - G18: while the session is being checked or has ended (lib/query/sessionSignal.ts), a failed read is held as loading:
+//   the region shows its skeleton under the sign-in dialog, not a Try again that cannot succeed. Once signed in again,
+//   the listener resets those reads and they load. If the server says the session is fine, they fail as usual.
+//   (Any failure, not only a refusal: several wrappers keep no status, and nothing read while signed out is trusted.)
+
+import { sessionPhase } from "@/lib/query/sessionSignal";
 
 export type Shown = "loading" | "failed" | "empty" | "notfound" | "ready";
 
@@ -40,13 +46,14 @@ export interface ShownOptions {
   isMissing?: (data: unknown[]) => boolean;
 }
 
-const failedWithNothing = (read: ReadLike) => read.status === "error" && read.data === undefined;
+const failedWithNothing = (read: ReadLike) => read.status === "error" && read.data === undefined && sessionPhase() === "live";
 
 export function shownState(reads: readonly ReadLike[], options: ShownOptions = {}): Shown {
   const failures = reads.filter(failedWithNothing);
   if (failures.length > 0) {
     return options.isMissing && failures.every((read) => isNoRows(read.error)) ? "notfound" : "failed";
   }
+  // Still out, or held while the session is in question (G18).
   if (reads.some((read) => read.data === undefined)) return "loading";
   const data = reads.map((read) => read.data);
   if (options.isMissing?.(data)) return "notfound";

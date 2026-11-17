@@ -134,15 +134,17 @@ describe("SessionListener (G13)", () => {
 });
 
 describe("signing back in (G14)", () => {
-  it("puts the phase back to live and reads the page again", async () => {
+  it("puts the phase back to live and reads the page again: refused reads from their skeleton, the rest in place", async () => {
     const client = mount();
     const invalidate = vi.spyOn(client, "invalidateQueries");
+    const reset = vi.spyOn(client, "resetQueries");
     refuse(MEMBER);
     await flush();
     expect(sessionPhase()).toBe("ended");
     const onChange = auth.onAuthStateChange.mock.calls[0][0] as (event: string, session: unknown) => void;
     act(() => onChange("SIGNED_IN", { access_token: MEMBER }));
     expect(sessionPhase()).toBe("live");
+    expect(reset).toHaveBeenCalledTimes(1);
     expect(invalidate).toHaveBeenCalledTimes(1);
   });
 

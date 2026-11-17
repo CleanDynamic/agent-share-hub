@@ -201,3 +201,33 @@ describe("PageState", () => {
     expect(lines).toEqual(["[Builds] read failed XX000 internal error"]);
   });
 });
+
+describe("while the session is being checked or has ended (G18)", () => {
+  afterEach(async () => (await import("@/lib/query/sessionSignal")).setSessionPhase("live"));
+
+  it("a failed read is held as loading, so no Try again is offered that cannot succeed", async () => {
+    const { setSessionPhase } = await import("@/lib/query/sessionSignal");
+    setSessionPhase("checking");
+    expect(shownState([failed(SESSION)])).toBe("loading");
+    expect(allFailed([failed(SESSION), failed(SESSION)])).toBe(false);
+    setSessionPhase("ended");
+    expect(shownState([failed(SERVER)])).toBe("loading");
+    setSessionPhase("live");
+    expect(shownState([failed(SESSION)])).toBe("failed");
+  });
+
+  it("PageState shows the skeleton, and the failed state once the server says the session is fine", async () => {
+    const { setSessionPhase } = await import("@/lib/query/sessionSignal");
+    const { act } = await import("@testing-library/react");
+    setSessionPhase("checking");
+    draw(
+      <PageState read={failed(SESSION)} thing="builds" region="Builds" skeleton={SKELETON}>
+        {() => <p>ready</p>}
+      </PageState>,
+    );
+    expect(screen.getByTestId("skeleton")).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
+    act(() => setSessionPhase("live"));
+    expect(screen.getByRole("alert").textContent).toContain("Couldn't load builds.");
+  });
+});
