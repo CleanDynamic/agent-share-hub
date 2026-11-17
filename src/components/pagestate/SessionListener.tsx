@@ -8,7 +8,8 @@
      - the auth server refuses the token (401 or 403): the session is over. The phase is "ended", the session is cleared on
        this device only (`signOut({ scope: "local" })`, nothing else), and the sign-in dialog opens over the same page:
        the same address with `?signin=login`, its query and hash kept, one push deep, marked `signedOut` so it says why.
-     - the auth server cannot be asked (the network): nothing is decided; back to live, and the page shows its own state.
+     - the auth server cannot be asked (the network), or the check takes longer than READ_TIMEOUT_MS: nothing is decided;
+       back to live, and the page shows its own state.
    Reports that come in while checking or after the end are ignored, so it all happens once.
 
    G14: when the member signs in again, the phase is live once more and every query is read again with the new session
@@ -29,6 +30,7 @@ import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { supabase } from "@/integrations/supabase/client";
+import { READ_TIMEOUT_MS } from "@/lib/query/readLimit";
 import { listenForRefusals, sessionPhase, setSessionPhase } from "@/lib/query/sessionSignal";
 import { deeper, viewOf, withView } from "@/pages/site/signin/signinUrl";
 
@@ -139,8 +141,14 @@ export function SessionListener() {
     listenForRefusals((token) => {
       if (sessionPhase() !== "live") return;
       setSessionPhase("checking");
-      void confirm(token)
-        .catch(() => "live" as const)
+      /* The check has the reads' own limit: one that does not finish in time leaves the session live, and the held
+         failures show (G18), so no page can wait on the check for ever. */
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const limit = new Promise<"live">((resolve) => {
+        timer = setTimeout(() => resolve("live"), READ_TIMEOUT_MS);
+      });
+      void Promise.race([confirm(token).catch(() => "live" as const), limit])
+        .finally(() => clearTimeout(timer))
         .then(async (outcome) => {
           if (outcome !== "ended") {
             setSessionPhase("live");

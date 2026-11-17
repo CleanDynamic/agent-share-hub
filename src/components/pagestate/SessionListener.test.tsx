@@ -229,3 +229,25 @@ describe("closing the dialog without signing in (G16)", () => {
     expect(reset).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("the session check has a time limit", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("a check that does not finish within READ_TIMEOUT_MS leaves the session live, so held failures show", async () => {
+    vi.useFakeTimers();
+    const { READ_TIMEOUT_MS } = await import("@/lib/query/readLimit");
+    auth.getSession.mockReturnValue(new Promise(() => undefined));
+    mount();
+    refuse(MEMBER);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(READ_TIMEOUT_MS - 1);
+    });
+    expect(sessionPhase()).toBe("checking");
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(sessionPhase()).toBe("live");
+    expect(signOut).not.toHaveBeenCalled();
+    expect(seen.search).toBe("?tab=saved");
+  });
+});
