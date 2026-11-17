@@ -49,6 +49,7 @@ import { SANDBOX_COMPOSER_ENABLED } from "@/lib/build/flags";
 import { ComposeSkeleton } from "./ComposeSkeleton";
 import { preloadComposer } from "./preload";
 import { retryRead } from "@/lib/query/client";
+import { pendingKey } from "@/lib/build/writeGuard";
 
 /** Its own chunk: the composer is heavy, and nothing else should pay for it. */
 const ComposePage = lazy(() => import("./ComposePage"));
@@ -70,6 +71,16 @@ function useInCache(key: readonly unknown[]): boolean {
     },
     () => false,
   );
+}
+
+/** Whether this device holds writes for the build kept from an earlier load (writeGuard's pending key). */
+function hasKeptWrites(buildId: string): boolean {
+  try {
+    const raw = window.localStorage.getItem(pendingKey(buildId));
+    return Boolean(raw && raw !== "[]");
+  } catch {
+    return false;
+  }
 }
 
 /** True from the first time `answered` is, for as long as `key` stays the same. */
@@ -101,12 +112,17 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
   const queryClient = useQueryClient();
   const libraryIn = useInCache(LIBRARY_SESSIONS_KEY);
   const reads = Boolean(buildId) && isLoggedIn && !hasFrom && !startedNew;
+  /* G22: writes kept on this device from an earlier load of this build (signed out, or offline, before they went). The route
+     does not read the record, or start the page's other reads, ahead of the page: the write guard goes on as the page mounts
+     and sends those writes first, and the page's own reads wait behind them, so it opens on what was typed. */
+  const [kept] = useState(() => Boolean(buildId) && hasKeptWrites(buildId as string));
+  const readsAhead = reads && !kept;
   /* Its data starts first, once the session says who is asking: the small module that holds the reads is asked for before
      the composer's page, so the page's download (the heavy one) does not queue in front of it. The keys are the page's. */
   useEffect(() => {
-    if (!reads || !buildId) return;
+    if (!readsAhead || !buildId) return;
     void import("./composerOpen").then(({ startComposerReads }) => startComposerReads(queryClient, buildId));
-  }, [reads, buildId, queryClient]);
+  }, [readsAhead, buildId, queryClient]);
   /* SV-04 P4: a new build's first screen waits on Sources' session library alone, so that starts now too. */
   const newBuild = isLoggedIn && !hasFrom && !buildId;
   useEffect(() => {
@@ -134,7 +150,7 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
   const record = useQuery({
     queryKey: composeBuildQueryKey(buildId),
     queryFn: () => getBuild(buildId as string, { nodeTypes: () => fetchNodeTypes(queryClient) }),
-    enabled: reads,
+    enabled: readsAhead,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
     // D3: one retry, never after the time limit cut the read, never for a refused session (lib/query/client.ts).
@@ -144,7 +160,7 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
      Try again, the page's own read on mount), a query with nothing in it goes back to pending: waiting again then would take
      the page down to the skeleton and up again, and the page's read on mount would do it for ever. */
   const recordAnswered = useAnsweredOnce(buildId ?? "", record.data !== undefined || record.isError);
-  const waitingForRecord = reads && !recordAnswered && record.isPending && record.fetchStatus !== "idle";
+  const waitingForRecord = readsAhead && !recordAnswered && record.isPending && record.fetchStatus !== "idle";
   /* SV-04 P4: and when Sources' session library is in (startLibraryRead started it with the rest), so the page is never
      drawn with blocks in its Sources corner alone. A new build has nothing else to wait for. A read that failed does not
      hold the page: Sources says so itself. */

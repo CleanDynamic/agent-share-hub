@@ -256,3 +256,19 @@ describe("the editor's reads follow the shared retry rule (D3)", () => {
     getBuild.mockImplementation(async () => null);
   });
 });
+
+describe("writes kept on this device from an earlier load (G22)", () => {
+  afterEach(() => localStorage.clear());
+
+  it("the route does not read the record ahead of the page: the page reads it once the kept writes have gone", async () => {
+    const { pendingKey } = await import("@/lib/build/writeGuard");
+    localStorage.setItem(pendingKey("b1"), JSON.stringify([{ id: "k", at: 1, method: "PATCH", url: "/rest/v1/builds?id=eq.b1", headers: [], body: "{}" }]));
+    getBuildParent.mockImplementationOnce(async () => ({ id: "b1", parent_build_id: null }) as never);
+    getBuild.mockClear();
+    vi.mocked(startComposerReads).mockClear();
+    open("/compose/b1");
+    expect(await screen.findByText("the composer")).toBeInTheDocument();
+    expect(getBuild).not.toHaveBeenCalled();
+    expect(startComposerReads).not.toHaveBeenCalled();
+  });
+});
