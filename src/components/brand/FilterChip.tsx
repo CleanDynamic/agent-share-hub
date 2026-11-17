@@ -78,7 +78,7 @@ export function FilterChip({
       {count !== undefined ? (
         <span
           style={
-            { fontSize: 11.5, fontWeight: 400, color: t.label, fontVariantNumeric: "tabular-nums" }
+            { fontSize: 11.5, fontWeight: 400, color: t.text2, fontVariantNumeric: "tabular-nums" }
           }
         >
           {count}

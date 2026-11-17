@@ -225,7 +225,7 @@ function SortMenu({ columns, sortable, sortColumn, onSortColumn }: Pick<BuildsTa
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <BuildsControl aria-label={`Sort: ${current}`}>
-          <span style={{ color: t.label }}>Sort</span> {current}
+          <span style={{ color: t.text2 }}>Sort</span> {current}
         </BuildsControl>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={6}>
@@ -256,7 +256,7 @@ function ColumnsChooser({ label, menu }: { label: string; menu: ColumnsMenu }) {
     <Popover>
       <PopoverTrigger asChild>
         <BuildsControl aria-label={`Columns: ${label}`}>
-          <span style={{ color: t.label }}>Columns</span> {label}
+          <span style={{ color: t.text2 }}>Columns</span> {label}
         </BuildsControl>
       </PopoverTrigger>
       <PopoverContent side={phone ? "bottom" : "left"} align={phone ? "end" : "start"} sideOffset={6} collisionPadding={14} style={{ width: 240, maxWidth: "calc(100vw - 28px)", maxHeight: "min(560px, calc(100dvh - 120px), var(--radix-popover-content-available-height))", overflowY: "auto", padding: 16 }}>
@@ -308,7 +308,7 @@ function LensRow({ lenses, lens, onLens, columns, sortable, sortColumn, onSortCo
           <ColumnsChooser label={columnsLabel} menu={columnsMenu} />
         ) : columnsLabel ? (
           <BuildsControl>
-            <span style={{ color: t.label }}>Columns</span> {columnsLabel}
+            <span style={{ color: t.text2 }}>Columns</span> {columnsLabel}
           </BuildsControl>
         ) : null}
       </div>

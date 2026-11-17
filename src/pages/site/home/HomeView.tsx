@@ -576,7 +576,7 @@ export function NoteItem({ item, now, heading }: { item: HomeReproNote; now: num
               <span style={{ color: t.text2 }}>{`, and it worked${item.model ? ` on ${item.model}` : ""}`}</span>
             ) : (
               <>
-                <span style={{ color: t.catBreakage }}>, and it didn&rsquo;t work</span>
+                <span style={{ color: t.breakageInk }}>, and it didn&rsquo;t work</span>
                 {item.model ? <span style={{ color: t.text2 }}>{` on ${item.model}`}</span> : null}
               </>
             )}
@@ -815,7 +815,7 @@ function Figure({ value, lamp = false }: { value: number | null; lamp?: boolean 
 }
 
 const runChip = (worked: boolean): CSSProperties => ({
-  ...text(12, 400, worked ? t.evidence : t.catBreakage, { lineHeight: "18px" }),
+  ...text(12, 400, worked ? t.evidence : t.breakageInk, { lineHeight: "18px" }),
   display: "inline-flex",
   alignItems: "center",
   boxSizing: "border-box",

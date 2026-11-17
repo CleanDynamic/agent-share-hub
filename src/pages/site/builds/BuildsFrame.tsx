@@ -209,7 +209,7 @@ export const FiltersButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<
   const name = setName ? `${shown}, ${on ? `${activeCount} on, ` : ""}saved set` : on ? `Filters, ${activeCount} on` : "Filters";
   return (
     <BuildsControl ref={ref} aria-haspopup="dialog" aria-label={name} {...rest} selected={on}>
-      <span style={on ? { color: t.text, fontWeight: 500 } : { color: t.label }}>Filters</span>
+      <span style={on ? { color: t.text, fontWeight: 500 } : { color: t.text2 }}>Filters</span>
       {on ? " " : null}
       {on ? <span style={{ color: t.text }}>{activeCount}</span> : null}
       {setName ? " " : null}

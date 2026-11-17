@@ -46,7 +46,8 @@ export function ActiveFilterChip({ name, value, onRemove }: ActiveFilterChipProp
         whiteSpace: "nowrap",
       }}
     >
-      <span style={{ color: t.label }}>{name}</span>
+      {/* G5: --text2, not --label: the chip sits on --control, where --label is 3.9:1 in Dusk. */}
+      <span style={{ color: t.text2 }}>{name}</span>
       <span style={{ color: t.text, fontWeight: 500 }}>{value}</span>
       <button
         type="button"

@@ -69,8 +69,8 @@ describe("PageFigure", () => {
     expect(html).toContain("font-size:13px");
     expect(html).toContain("color:var(--text2)");
     expect(html).toContain("color:var(--evidence)");
-    expect(html).toContain("color:var(--cat-breakage)");
-    expect(html).toContain("color:var(--lit)");
+    expect(html).toContain("color:var(--breakage-ink)");
+    expect(html).toContain("color:var(--lit-ink)");
     expect(html).toContain("font-variant-numeric:tabular-nums");
   });
 });

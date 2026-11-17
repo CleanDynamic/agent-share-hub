@@ -191,7 +191,7 @@ export default function BuildsClassificationView(props: BuildsClassificationView
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 16px", marginTop: 24 }}>
         <FiltersButton activeCount={activeCount} setName={setName} disabled={!filters} onClick={() => setFiltersOpen(true)} />
         <BuildsControl aria-expanded={facetsOpen} onClick={() => setFacetsOpen((value) => !value)}>
-          <span style={{ color: t.label }}>Facets shown</span>
+          <span style={{ color: t.text2 }}>Facets shown</span>
           <span>{`${facets.length} of ${ALL_FACETS.length}`}</span>
         </BuildsControl>
         <UpdatingStatus updating={updating} />

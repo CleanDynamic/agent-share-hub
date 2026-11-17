@@ -96,6 +96,10 @@ export const TOKEN_NAMES = [
   "on-evidence-fill",
   "inverse-evidence-fill",
   "lit-ink",
+  // G6: the legible ink of --cat-breakage and --cat-instruction for words on Noon's light surfaces (4.5:1 on --well's greys
+  // and the breakage fill); Dusk keeps the category colour, which already reads.
+  "breakage-ink",
+  "instruction-ink",
   "ring-glow",
   "bar-base",
   "tagline-lamp",
@@ -241,6 +245,8 @@ export const noon: Record<TokenName, string> = {
   "on-evidence-fill": "var(--evidence)",
   "inverse-evidence-fill": "#1F3A27",
   "lit-ink": "#8F5E00",
+  "breakage-ink": "#AD3328",
+  "instruction-ink": "#A9532F",
   "ring-glow": "0 0 0 0 transparent",
   "bar-base": "#E0E0E0",
   "tagline-lamp": "var(--lit)",
@@ -380,6 +386,8 @@ export const dusk: Record<TokenName, string> = {
   "on-evidence-fill": "var(--evidence)",
   "inverse-evidence-fill": "#DDF2E1",
   "lit-ink": "#E8C468",
+  "breakage-ink": "#E5807F",
+  "instruction-ink": "#E39A78",
   "ring-glow": "0 0 0 0 transparent",
   "bar-base": "#3A3A3F",
   "tagline-lamp": "var(--lit)",

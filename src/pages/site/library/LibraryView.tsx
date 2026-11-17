@@ -325,7 +325,8 @@ export function LibraryChanges({ figure, parts, to, rows }: LibraryChangesProps)
 
 /* ── main: the table ── */
 
-const STATE_COLOUR: Record<ItemState, string> = { same: t.text2, edited: t.lit, removed: t.catBreakage, stale: t.label };
+/* G6: words, so the legible inks: --lit-ink and --breakage-ink reach 4.5:1 on Noon's rows; Dusk's read as before. */
+const STATE_COLOUR: Record<ItemState, string> = { same: t.text2, edited: t.litInk, removed: t.breakageInk, stale: t.label };
 
 const th: CSSProperties = { fontWeight: 400, padding: "0 12px 10px 0", borderBottom: `1px solid ${t.hairline}`, textAlign: "left", whiteSpace: "nowrap" };
 const td: CSSProperties = { padding: "0 12px 0 0", color: t.text2, whiteSpace: "nowrap" };
@@ -428,10 +429,10 @@ export function LibraryItems(props: LibraryItemsProps) {
         {controls ? (
           <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
             <LibraryControl onClick={controls.onFilters}>
-              <span style={{ color: t.label }}>Filters</span> {controls.filters}
+              <span style={{ color: t.text2 }}>Filters</span> {controls.filters}
             </LibraryControl>
             <LibraryControl onClick={controls.onSort}>
-              <span style={{ color: t.label }}>Sort</span> {controls.sort}
+              <span style={{ color: t.text2 }}>Sort</span> {controls.sort}
             </LibraryControl>
           </div>
         ) : null}
@@ -474,7 +475,7 @@ function TabsOnRule({ tabs, tab, onTab }: { tabs: LibraryItemsProps["tabs"]; tab
 
 /* ── right: the selected item ── */
 
-const STATE_TONE = { lit: t.lit, breakage: t.catBreakage, label: t.label } as const;
+const STATE_TONE = { lit: t.litInk, breakage: t.breakageInk, label: t.label } as const;
 
 function VersionSwitch({ value, onChange }: { value: "saved" | "current"; onChange: (value: "saved" | "current") => void }) {
   const options = [
@@ -533,7 +534,7 @@ function Content({ lines }: { lines: readonly DiffLine[] }) {
   return (
     <div style={{ marginTop: 12, padding: 12, ...WELL, boxShadow: "none", borderRadius: r.control, fontFamily: DM_MONO, fontSize: 12, lineHeight: "18px", color: t.text2, whiteSpace: "pre-wrap" }}>
       {lines.map((line, index) => (
-        <span key={index} style={{ display: "block", color: line.change === "removed" ? t.catBreakage : line.change === "added" ? t.evidence : undefined, textDecoration: line.change === "removed" ? "line-through" : undefined }}>
+        <span key={index} style={{ display: "block", color: line.change === "removed" ? t.breakageInk : line.change === "added" ? t.evidence : undefined, textDecoration: line.change === "removed" ? "line-through" : undefined }}>
           {line.change ? <VisuallyHidden>{line.change === "removed" ? "Removed: " : "Added: "}</VisuallyHidden> : null}
           {line.text}
         </span>
