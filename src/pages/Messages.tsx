@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { PageState } from "@/components/pagestate/PageState";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -424,6 +425,8 @@ export default function MessagesPage() {
   return (
     <>
       <SeoHead title="Messages" description={`Your conversations on ${SITE_NAME}.`} path="/messages" />
+      {/* G8: the page's h1, for assistive technology; the visible title is ShellHeader's, which other pages share. */}
+      <h1 style={VISUALLY_HIDDEN}>Messages</h1>
       <div style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%" }}>
         <ShellHeader
           onBack={() => navigate(-1)}
