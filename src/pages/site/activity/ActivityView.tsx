@@ -394,8 +394,11 @@ function ActivityList({
   now,
   phone,
   onOpen,
+  live,
 }: {
   list: ActivityListProps;
+  /** G26: the live connection is up. "All caught up." is said only then: never beside "Reconnecting". */
+  live: boolean;
   chosen: ReadonlySet<ActivityKind>;
   now: number;
   phone: boolean;
@@ -428,9 +431,9 @@ function ActivityList({
       thing="your activity"
       region="Your activity"
       skeleton={skeleton}
-      empty={{ when: () => list.groups.length === 0, line: "All caught up.", testId: "activity-empty" }}
+      empty={{ when: () => list.groups.length === 0 && live, line: "All caught up.", testId: "activity-empty" }}
     >
-      {() => (
+      {() => list.groups.length === 0 ? null : (
     <div data-testid="activity-list" style={column}>
       {groups.map((group) => (
         <section key={group.day} data-testid="activity-day" style={day}>
@@ -712,7 +715,7 @@ function DesktopActivity(props: ActivityViewProps) {
     <div style={stacked ? trackRow(stacked, 48) : pageColumns("mainSide")}>
       <section aria-label="Activity" style={mainStyle(stacked, { flex: "999 1 560px", minWidth: 0, display: "flex", flexDirection: "column", gap: 32 })}>
         {writeError ? <WriteFailed failure={writeError} /> : null}
-        <ActivityList list={list} chosen={chosen} now={now} phone={false} onOpen={onOpen} />
+        <ActivityList list={list} chosen={chosen} now={now} phone={false} onOpen={onOpen} live={live} />
       </section>
 
       <aside
@@ -744,7 +747,7 @@ function DesktopActivity(props: ActivityViewProps) {
 }
 
 function PhoneActivity(props: ActivityViewProps) {
-  const { now, list, unread, kindCounts, writeError, onOpen, onMarkAllRead } = props;
+  const { now, list, unread, live, kindCounts, writeError, onOpen, onMarkAllRead } = props;
   const [chosen, setChosen] = useState<ReadonlySet<ActivityKind>>(NONE);
 
   return (
@@ -782,7 +785,7 @@ function PhoneActivity(props: ActivityViewProps) {
       </ScrollRow>
 
       {writeError ? <WriteFailed failure={writeError} /> : null}
-      <ActivityList list={list} chosen={chosen} now={now} phone onOpen={onOpen} />
+      <ActivityList list={list} chosen={chosen} now={now} phone onOpen={onOpen} live={live} />
     </div>
   );
 }

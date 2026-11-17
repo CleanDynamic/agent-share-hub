@@ -238,3 +238,26 @@ describe("G9 · every region failed", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Activity" })).toBeTruthy();
   });
 });
+
+describe("G26 · All caught up.", () => {
+  const empty = (over: Partial<ActivityViewProps>) => mount({ list: { ...activityFixture().list, groups: [] }, ...over });
+  it("is said only when the list answered with nothing and the live connection is up", () => {
+    empty({ live: true });
+    expect(screen.getByText("All caught up.")).toBeTruthy();
+  });
+
+  it("is never said beside the connection line: with the connection down, the empty list says nothing", () => {
+    empty({ live: false });
+    expect(screen.getByText("Reconnecting")).toBeTruthy();
+    expect(screen.queryByText("All caught up.")).toBeNull();
+  });
+
+  it("is never said while the list loads or after it failed", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const loading = empty({ live: true, list: { ...activityFixture().list, status: "loading", groups: [], read: readOf("loading") } });
+    expect(screen.queryByText("All caught up.")).toBeNull();
+    loading.unmount();
+    empty({ live: true, list: { ...activityFixture().list, status: "error", groups: [], read: readOf("error") } });
+    expect(screen.queryByText("All caught up.")).toBeNull();
+  });
+});
