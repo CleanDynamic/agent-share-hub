@@ -6,7 +6,7 @@
 // it says back, and where it sends the visitor.
 
 import { act, fireEvent, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const auth = vi.hoisted(() => ({ isLoggedIn: false }));
 const signIn = vi.fn();
@@ -446,5 +446,18 @@ describe("why the dialog opened (G19)", () => {
   it("says nothing when the dialog was opened by the member", () => {
     open();
     expect(screen.getAllByTestId("field-message").every((node) => !node.textContent)).toBe(true);
+  });
+});
+
+describe("the dialog the listener opens while the session is still being cleared (G14)", () => {
+  afterEach(async () => (await import("@/lib/query/sessionSignal")).setSessionPhase("live"));
+
+  it("stays open while the old session is still there; it closes only once the member is signed in again", async () => {
+    const { setSessionPhase } = await import("@/lib/query/sessionSignal");
+    setSessionPhase("ended");
+    auth.isLoggedIn = true;
+    const where = renderDialog("login", "q=keep", { signedOut: true });
+    await act(async () => undefined);
+    expect(new URLSearchParams(where.at().split("?")[1]).get("signin")).toBe("login");
   });
 });

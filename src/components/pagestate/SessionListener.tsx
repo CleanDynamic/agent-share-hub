@@ -113,6 +113,8 @@ export function SessionListener() {
     if (dialogOpen) dialogShown.current = true;
     else if (dialogShown.current && !member.current) {
       dialogShown.current = false;
+      // Staying signed out is the member's choice now: quiet, and a protected page goes Home (ProtectedRoute).
+      setSignedOutOnPurpose(true);
       readAgain(queryClient);
     }
   }, [dialogOpen, queryClient]);

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
+import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
 import { PageState } from "@/components/pagestate/PageState";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -135,6 +136,7 @@ function ComposeModal({
 /* ───── Page ───── */
 export default function MessagesPage() {
   const { user } = useAuth();
+  const sessionEnded = useSessionPhase() === "ended";
   const navigate = useNavigate();
   const { threadId: routeThreadId } = useParams<{ threadId?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -420,7 +422,8 @@ export default function MessagesPage() {
     navigate(`/messages/${threadId}`);
   }, [user, navigate, refetchAll]);
 
-  if (!user) return null;
+  /* G16 (page states): under the sign-in dialog after the server ended the session, the page keeps its h1. */
+  if (!user) return sessionEnded ? <h1 style={VISUALLY_HIDDEN}>Messages</h1> : null;
 
   return (
     <>

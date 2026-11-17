@@ -96,11 +96,20 @@ describe("ProtectedRoute after the server ended the session (G16)", () => {
     expect(screen.queryByTestId("signin-at")).toBeNull();
   });
 
-  it("goes Home once the member closes the dialog without signing in", async () => {
+  it("keeps the page while the dialog is on its way (the sign-out can be drawn before the dialog's address)", async () => {
     (await import("@/lib/query/sessionSignal")).setSessionPhase("ended");
     Object.assign(auth, { isLoggedIn: false });
     at();
+    expect(screen.getByText("the page")).toBeTruthy();
+  });
+
+  it("goes Home once the member closes the dialog without signing in (the listener marks that choice)", async () => {
+    const signal = await import("@/lib/query/sessionSignal");
+    signal.setSignedOutOnPurpose(true);
+    Object.assign(auth, { isLoggedIn: false });
+    at();
     expect(screen.getByText("home")).toBeTruthy();
+    signal.setSignedOutOnPurpose(false);
   });
 });
 

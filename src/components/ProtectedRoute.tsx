@@ -4,7 +4,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { safeReturnPath } from "@/lib/auth/safeReturnPath";
 import { sessionPhase, signedOutOnPurpose, subscribeSession } from "@/lib/query/sessionSignal";
 import { RoutePlaceholder } from "@/lib/routing/RoutePlaceholder";
-import { viewOf } from "@/pages/site/signin/signinUrl";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -23,13 +22,15 @@ export function ProtectedRoute({ children, requireCreator }: ProtectedRouteProps
     return <RoutePlaceholder />;
   }
 
-  // The member signed out on purpose in another tab: this one goes quietly Home, without asking to sign in.
+  // The member signed out on purpose (in another tab, or by closing the dialog): quietly Home, without asking to sign in.
   if (!isLoggedIn && leftOnPurpose) return <Navigate to="/" replace />;
 
   if (!isLoggedIn && phase === "ended") {
     /* G16 (page states): the server ended the session and the listener opened the sign-in dialog over this page. The page
-       stays under it, where the member left it; it does not navigate by itself. Closed without signing in, it goes Home. */
-    return viewOf(location.search) ? <>{children}</> : <Navigate to="/" replace />;
+       stays under it, where the member left it; it does not navigate by itself (not even in the moment the session is
+       cleared before the dialog's address is drawn). Closed without signing in, the listener marks the member as signed out
+       on purpose, and the page goes Home (above). */
+    return <>{children}</>;
   }
 
   if (!isLoggedIn) {

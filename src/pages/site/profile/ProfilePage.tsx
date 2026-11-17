@@ -16,6 +16,8 @@
    and Unpin, and a build's own display. None notifies anyone. Nothing here awards XP. */
 
 import { readOf } from "@/components/pagestate/pageStateModel";
+import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
+import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { keepPreviousData, useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -97,9 +99,11 @@ export function ProfilePage() {
   const lookup = handleParam ?? user?.id ?? null;
   const viewerId = user?.id ?? null;
 
+  /* G16 (page states): not when the server ended the session; the page stays under the sign-in dialog. */
+  const sessionEnded = useSessionPhase() === "ended";
   useEffect(() => {
-    if (!authLoading && !handleParam && !isLoggedIn) navigate("/login", { replace: true });
-  }, [authLoading, handleParam, isLoggedIn, navigate]);
+    if (!authLoading && !handleParam && !isLoggedIn && !sessionEnded) navigate("/login", { replace: true });
+  }, [authLoading, handleParam, isLoggedIn, sessionEnded, navigate]);
 
   /* ── round one: the profile, its side column and the feed's first page, together ── */
 
@@ -306,6 +310,15 @@ export function ProfilePage() {
       {node}
     </PageArrival>
   );
+  /* G16 (page states): your own profile under the sign-in dialog keeps its skeleton, and its title for assistive tech. */
+  if (!lookup && sessionEnded) {
+    return arrive(
+      <>
+        <h1 style={VISUALLY_HIDDEN}>Profile</h1>
+        <ProfileViewSkeleton />
+      </>,
+    );
+  }
   if (waiting) return arrive(<ProfileViewSkeleton />);
 
   if (!summary || !handle) {

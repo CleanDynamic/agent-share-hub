@@ -34,6 +34,8 @@ import { SeoHead } from "@/components/SeoHead";
 import { Button } from "@/components/brand/Button";
 import { useCrumbTitle } from "@/components/shell/useBreadcrumb";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
+import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import {
   changeSet,
   flattenFamily,
@@ -79,6 +81,8 @@ export function RebuildPage() {
 function RebuildPageBody() {
   const { slug = "" } = useParams<{ slug: string }>();
   const { user, isLoggedIn, loading: authLoading } = useAuth();
+  /* G16 (page states): a session the server ended keeps this page in place under the sign-in dialog, as its skeleton. */
+  const sessionEnded = useSessionPhase() === "ended";
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -202,6 +206,15 @@ function RebuildPageBody() {
   /* ── the states ── */
 
   if (authLoading) return <RebuildViewSkeleton label="Checking your session" />;
+
+  if (!isLoggedIn && sessionEnded) {
+    return (
+      <>
+        <h1 style={VISUALLY_HIDDEN}>Rebuild</h1>
+        <RebuildViewSkeleton label="Checking your session" />
+      </>
+    );
+  }
 
   // The intention survives as an address, so signing in comes back to it.
   if (!isLoggedIn) {

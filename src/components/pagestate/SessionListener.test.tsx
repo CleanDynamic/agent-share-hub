@@ -227,6 +227,10 @@ describe("closing the dialog without signing in (G16)", () => {
     expect(seen.search).toBe("?tab=saved");
     expect(sessionPhase()).toBe("live");
     expect(reset).toHaveBeenCalledTimes(1);
+    // The member chose to stay signed out: a protected page goes Home (ProtectedRoute).
+    const { setSignedOutOnPurpose, signedOutOnPurpose } = await import("@/lib/query/sessionSignal");
+    expect(signedOutOnPurpose()).toBe(true);
+    setSignedOutOnPurpose(false);
   });
 });
 

@@ -30,6 +30,7 @@ import { signInWithEmail } from "@/lib/auth/signInWithEmail";
 import { loginCanSubmit } from "./authModel";
 import { keepPlace } from "@/components/pagestate/returnPlace";
 import { SIGNED_OUT_DIALOG } from "@/components/pagestate/stateCopy";
+import { sessionPhase } from "@/lib/query/sessionSignal";
 
 import { useDialogCaptcha, VERIFY_FAILED } from "./dialogCaptcha";
 import { LoginForm } from "./LoginForm";
@@ -76,7 +77,10 @@ export function LoginPanel() {
   // Already signed in — bounce to the destination (or home).
   useEffect(() => {
     if (!isLoggedIn) return;
-    if (signedOut) backInPlace();
+    // The listener may draw the dialog a moment before the old session is cleared: that is not a sign-in. Back to live is.
+    if (signedOut) {
+      if (sessionPhase() === "live") backInPlace();
+    }
     else navigate(redirectParam || "/", { replace: true });
     // backInPlace reads only refs and the navigation of this render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
