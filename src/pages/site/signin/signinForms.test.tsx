@@ -503,15 +503,15 @@ describe("SignupForm", () => {
     expect(box.querySelector("input#terms")).not.toBeNull();
     fireEvent.click(box.lastElementChild!);
     expect(onAgreedToTermsChange).toHaveBeenCalledWith(true);
-    expect(screen.getByRole("link", { name: "Terms of Service" }).getAttribute("href")).toBe("/terms");
-    expect(screen.getByRole("link", { name: "Privacy Policy" }).getAttribute("href")).toBe("/privacy");
+    expect(screen.getByRole("link", { name: "Terms" }).getAttribute("href")).toBe("/terms");
+    expect(screen.getByRole("link", { name: "Privacy policy" }).getAttribute("href")).toBe("/privacy");
   });
 
   it("disables Create account until the page says it can be sent, and says what it is doing", () => {
     const { rerender } = show(<SignupForm {...signup({ canSubmit: false })} />);
-    expect(screen.getByRole("button", { name: "Create account" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Join" })).toBeDisabled();
     rerender(inRouter(<SignupForm {...signup({ canSubmit: true })} />));
-    expect(screen.getByRole("button", { name: "Create account" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Join" })).toBeEnabled();
     rerender(inRouter(<SignupForm {...signup({ isSubmitting: true })} />));
     expect(screen.getByRole("button", { name: "Joining…" })).toBeDisabled();
   });

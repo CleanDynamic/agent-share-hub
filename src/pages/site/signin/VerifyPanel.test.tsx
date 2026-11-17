@@ -79,7 +79,7 @@ describe("the pending card", () => {
 
   it("sends Sign up again back to the join view", async () => {
     const where = open();
-    fireEvent.click(screen.getByRole("button", { name: "Sign up again" }));
+    fireEvent.click(screen.getByRole("button", { name: "Join again" }));
     await waitFor(() => expect(where.at()).toBe("/?signin=signup"));
   });
 

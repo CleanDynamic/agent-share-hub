@@ -11,6 +11,9 @@ const SUPABASE_PROVIDER: Record<OAuthProvider, "google" | "github" | "twitter"> 
   x: "twitter",
 };
 
+/** How each provider is named on screen. */
+const PROVIDER_NAME: Record<OAuthProvider, string> = { google: "Google", github: "GitHub", x: "X" };
+
 /**
  * Starts an OAuth sign-in. On success the browser is redirected to the
  * provider and then back to /auth/callback. Returns an error message if the
@@ -32,7 +35,7 @@ export async function startOAuthSignIn(provider: OAuthProvider, returnTo: string
   });
 
   if (error) {
-    return `Couldn't connect to ${provider}. Please try again.`;
+    return `Couldn't connect to ${PROVIDER_NAME[provider]}. Try again.`;
   }
   return null;
 }

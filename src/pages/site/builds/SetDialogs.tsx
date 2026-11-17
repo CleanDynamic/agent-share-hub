@@ -227,7 +227,7 @@ export function SetNameDialog({
             <span>
               Public
               <span style={{ display: "block", color: t.label, fontSize: 12 }}>
-                Anyone can open it, and it is listed as a group on OpenBuilds.
+                Anyone can open it, and it is listed for others to follow on OpenBuilds.
               </span>
             </span>
           </label>
@@ -294,7 +294,7 @@ export function DeleteSetDialog({
       title="Delete this filter set?"
       description={
         name
-          ? `"${name}" is removed from your saved filter sets and from your Library. Anyone who followed it as a group no longer sees it.`
+          ? `"${name}" is removed from your saved filter sets and from your Library. Anyone who followed it no longer sees it.`
           : ""
       }
       testId="delete-set-dialog"

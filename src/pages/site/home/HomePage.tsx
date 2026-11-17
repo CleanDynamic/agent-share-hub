@@ -461,7 +461,7 @@ export function HomePage() {
     <>
       <SeoHead
         title={SITE_NAME}
-        description="Download AI assistants, blueprints and workflows. Works with ChatGPT, Claude, Gemini and any AI tool."
+        description="Download AI assistants and builds. Works with ChatGPT, Claude, Gemini and any AI tool."
         path="/"
       />
       {/* SV-04 P5: the page arrives over its loading state, the route's Placeholder, when the feed lands. */}

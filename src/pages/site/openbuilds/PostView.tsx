@@ -121,7 +121,7 @@ function SideColumn({ space, rows }: PostViewProps["side"]) {
                   Joined
                 </PostControl>
               ) : (
-                <PostControl onClick={space.onJoin}>Join</PostControl>
+                <PostControl onClick={space.onJoin} aria-label={`Join ${space.name}`}>Join space</PostControl>
               )}
             </div>
           ) : null}

@@ -179,7 +179,7 @@ export function AuthEmailVerificationCard({
       >
         Wrong email?{" "}
         <button onClick={onChangeEmail} style={{ ...linkStyle, fontSize: "12px" }}>
-          Sign up again
+          Join again
         </button>
       </p>
     </div>

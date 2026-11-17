@@ -64,7 +64,7 @@ describe("the gate", () => {
 
   it("is a modal dialog over the page, labelled by the tagline", () => {
     open();
-    const dialog = screen.getByRole("dialog", { name: "Publish, reproduce and fork AI-assisted workflows." });
+    const dialog = screen.getByRole("dialog", { name: "Publish, reproduce and rebuild AI-assisted workflows." });
     expect(dialog.getAttribute("aria-modal")).toBe("true");
   });
 });
@@ -375,11 +375,11 @@ describe("the providers", () => {
   });
 
   it("says why it could not start, and gives the buttons back to try again", async () => {
-    startOAuthSignIn.mockResolvedValueOnce("Couldn't connect to x. Please try again.").mockResolvedValue(null);
+    startOAuthSignIn.mockResolvedValueOnce("Couldn't connect to X. Try again.").mockResolvedValue(null);
     open();
     fireEvent.click(screen.getByRole("button", { name: "Continue with X" }));
 
-    expect(await screen.findByText("Couldn't connect to x. Please try again.")).toBeTruthy();
+    expect(await screen.findByText("Couldn't connect to X. Try again.")).toBeTruthy();
     await waitFor(() => expect(screen.getByRole("button", { name: "Continue with X" })).toBeEnabled());
 
     fireEvent.click(screen.getByRole("button", { name: "Continue with X" }));

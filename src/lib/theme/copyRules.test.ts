@@ -221,20 +221,20 @@ export const RULES: Rule[] = [
   // G9
   { id: "please", goal: "G9", on: true, breaks: (s) => /\bPlease /.test(s) },
   // G1, G2: the glossary
-  { id: "log-in", goal: "G1", on: false, breaks: (s) => /\blog ?in\b/i.test(s) },
-  { id: "log-out", goal: "G1", on: false, breaks: (s) => /\blog ?out\b/i.test(s) },
-  { id: "sign-up", goal: "G1", on: false, breaks: (s) => /\bsign ?up\b/i.test(s) },
-  { id: "register", goal: "G1", on: false, breaks: (s) => /\bregister\b/i.test(s) },
-  { id: "create-account", goal: "G1", on: false, breaks: (s) => /\bcreate (an )?account\b/i.test(s) },
-  { id: "blueprint", goal: "G1", on: false, breaks: (s) => /\bblueprints?\b/i.test(s) },
-  { id: "project", goal: "G1", on: false, breaks: (s) => /\bprojects?\b/i.test(s) },
-  { id: "workflow", goal: "G1", on: false, breaks: (s) => /\bworkflows?\b/i.test(s) },
-  { id: "remix", goal: "G1", on: false, breaks: (s) => /\bremix/i.test(s) },
-  { id: "fork", goal: "G1", on: false, breaks: (s) => /\bfork(s|ed|ing)?\b/i.test(s) },
-  { id: "bare-join", goal: "G2", on: false, breaks: (s) => /^Join$/.test(s) },
+  { id: "log-in", goal: "G1", on: true, breaks: (s) => /\blog ?in\b/i.test(s) },
+  { id: "log-out", goal: "G1", on: true, breaks: (s) => /\blog ?out\b/i.test(s) },
+  { id: "sign-up", goal: "G1", on: true, breaks: (s) => /\bsign ?up\b/i.test(s) },
+  { id: "register", goal: "G1", on: true, breaks: (s) => /\bregister\b/i.test(s) },
+  { id: "create-account", goal: "G1", on: true, breaks: (s) => /\bcreate (an )?account\b/i.test(s) },
+  { id: "blueprint", goal: "G1", on: true, breaks: (s) => /\bblueprints?\b/i.test(s) },
+  { id: "project", goal: "G1", on: true, breaks: (s) => /\bprojects?\b/i.test(s) },
+  { id: "workflow", goal: "G1", on: true, breaks: (s) => /\bworkflows?\b/i.test(s) },
+  { id: "remix", goal: "G1", on: true, breaks: (s) => /\bremix/i.test(s) },
+  { id: "fork", goal: "G1", on: true, breaks: (s) => /\bfork(s|ed|ing)?\b/i.test(s) },
+  { id: "bare-join", goal: "G2", on: true, breaks: (s) => /^Join$/.test(s) },
   // G10: the product's name
-  { id: "old-name", goal: "G10", on: false, breaks: (s) => /build ?gallery|neo ?scale/i.test(s) },
-  { id: "name-literal", goal: "G10", on: false, breaks: (s) => /openbuilds\.ai/i.test(s) },
+  { id: "old-name", goal: "G10", on: true, breaks: (s) => /build ?gallery|neo ?scale/i.test(s) },
+  { id: "name-literal", goal: "G10", on: true, breaks: (s) => /openbuilds\.ai/i.test(s) },
 ];
 
 /**
@@ -249,6 +249,19 @@ export const ALLOW: Record<string, Record<string, string>> = {
     "src/components/build/FullPromptWindow.tsx|Nothing added yet": "the placeholder of an empty reply box, not an empty state",
     "src/pages/site/compose/StillOpenSpaces.tsx|No spaces to post in": "a disabled menu option (menu options are not empty states)",
     "src/pages/site/openbuilds/NewPostWindow.tsx|No spaces to post in": "a disabled menu option (menu options are not empty states)",
+  },
+  "bare-join": {
+    "src/pages/site/signin/SignupForm.tsx|Join": "the join form's submit: \"Join\" alone means making an account (G2)",
+  },
+  project: {
+    "src/pages/site/build/BuildSteps.tsx|Put {} in your project": "the reader's own code project, where a file goes; not a build",
+    "src/components/build/FullPromptWindow.tsx|Custom instructions or project knowledge that applied": "an AI provider's Projects feature; not a build",
+  },
+  workflow: {
+    "src/pages/site/compose/detailsModel.ts|The command or workflow": "a tool's command or CI workflow file; not a build",
+    "src/pages/site/compose/toolPickerModel.ts|Add its workflow with Add › File": "a tool's workflow file; not a build",
+    "src/pages/site/signin/SignInDialogFrame.tsx|Publish, reproduce and rebuild AI-assisted workflows.": "the tagline, decided by the owner (prompt 9)",
+    "src/pages/site/signin/SignInDialogFrame.tsx|AI-assisted workflows.": "the tagline's third line on a phone",
   },
 };
 

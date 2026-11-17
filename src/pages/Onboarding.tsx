@@ -14,6 +14,7 @@ import { elevation } from "@/lib/theme/elevation";
 import { r } from "@/lib/theme/radius";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { cardTitle, data as dataText, eyebrow, FIGTREE, tabular } from "@/lib/theme/type";
+import { SITE_NAME } from "@/lib/site";
 
 const USE_CASES = ["Social Media", "Research", "Business", "Productivity", "Content", "Learning", "Email", "Finance", "Hobby", "Other"];
 
@@ -130,7 +131,7 @@ export default function Onboarding() {
 
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4">
-      <SeoHead title="Onboarding" description="Set up your OpenBuilds.ai profile." path="/onboarding" noIndex />
+      <SeoHead title="Onboarding" description={`Set up your ${SITE_NAME} profile.`} path="/onboarding" noIndex />
       <div className="w-full max-w-lg p-6 sm:p-8" style={panelStyle}>
         {/* Where the reader is, in words. */}
         <p style={{ ...eyebrow, color: t.text2, marginBottom: "24px" }}>

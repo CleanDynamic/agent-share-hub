@@ -4,6 +4,7 @@
 // heading first.
 
 import { splitBody } from "@/components/post/postCardModel";
+import { SITE_NAME } from "@/lib/site";
 
 export interface PageSeo {
   title: string;
@@ -20,12 +21,12 @@ export const OPENBUILDS_SEO: PageSeo = {
 
 /** A space: `<name> · OpenBuilds.ai`, with its own description. */
 export function spaceSeo(space: { name: string; description: string } | null): PageSeo {
-  return { title: `${space?.name ?? "Space"} · OpenBuilds.ai`, description: space?.description || "A space on OpenBuilds." };
+  return { title: `${space?.name ?? "Space"} · ${SITE_NAME}`, description: space?.description || "A space on OpenBuilds." };
 }
 
 /** A topic: `<heading> · OpenBuilds.ai`, with the first 150 characters of its text (the heading when it has none). */
 export function topicSeo(topic: { body: string } | null): PageSeo {
-  if (!topic) return { title: "Topic · OpenBuilds.ai", description: "A topic on OpenBuilds." };
+  if (!topic) return { title: `Topic · ${SITE_NAME}`, description: "A topic on OpenBuilds." };
   const { heading, text } = splitBody(topic.body);
-  return { title: `${heading || "Topic"} · OpenBuilds.ai`, description: text.slice(0, TOPIC_DESCRIPTION_MAX) || heading || "A topic on OpenBuilds." };
+  return { title: `${heading || "Topic"} · ${SITE_NAME}`, description: text.slice(0, TOPIC_DESCRIPTION_MAX) || heading || "A topic on OpenBuilds." };
 }

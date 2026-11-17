@@ -171,7 +171,7 @@ describe("the post page's anatomy", () => {
     const side = screen.getByRole("complementary", { name: "About this post" });
     expect(within(side).getByRole("link", { name: "Claude Code" })).toHaveAttribute("href", "/openbuilds/spaces/claude-code");
     expect(within(side).getByText("Made by @sam · 412 members")).toBeInTheDocument();
-    expect(within(side).getByRole("button", { name: "Join" })).toBeInTheDocument();
+    expect(within(side).getByRole("button", { name: "Join Claude Code" })).toBeInTheDocument();
     expect(within(side).getByText("People replying")).toBeInTheDocument();
     expect(within(side).getByText("Replies on Step 4")).toBeInTheDocument();
   });

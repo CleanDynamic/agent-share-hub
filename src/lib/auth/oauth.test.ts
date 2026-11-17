@@ -43,6 +43,6 @@ describe("startOAuthSignIn", () => {
 
   it("says it could not start when the client refuses", async () => {
     signInWithOAuth.mockResolvedValue({ error: { message: "boom" } });
-    await expect(startOAuthSignIn("x", null)).resolves.toBe("Couldn't connect to x. Please try again.");
+    await expect(startOAuthSignIn("x", null)).resolves.toBe("Couldn't connect to X. Try again.");
   });
 });

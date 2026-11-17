@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Lock } from "lucide-react";
+import { SITE_NAME } from "@/lib/site";
 
 interface AccountGateModalProps {
   open: boolean;
@@ -34,7 +35,7 @@ export function AccountGateModal({ open, onOpenChange, contentId, mode }: Accoun
           </div>
           <h3 className="text-lg font-semibold text-foreground">Account required</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            You need a free account to {mode === "purchase" ? "purchase" : "subscribe to"} content on OpenBuilds.ai.
+            You need a free account to {mode === "purchase" ? "purchase" : "subscribe to"} content on {SITE_NAME}.
           </p>
           <Button onClick={handleCreateAccount} className="w-full min-h-[44px]">
             Create free account

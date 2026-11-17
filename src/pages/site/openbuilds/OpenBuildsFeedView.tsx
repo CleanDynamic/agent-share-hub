@@ -146,7 +146,7 @@ function BusyThisWeek({ rows }: { rows: BusyRow[] }) {
               <div style={{ ...rowText({ fontSize: 12, color: t.label }), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.meta}</div>
             </div>
             <PostControl onClick={row.onJoin} aria-label={`Join ${row.name}`}>
-              Join
+              Join space
             </PostControl>
           </div>
         ))}
