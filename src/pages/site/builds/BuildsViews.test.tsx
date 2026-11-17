@@ -101,7 +101,7 @@ describe("the Table", () => {
     const onSortColumn = vi.fn();
     draw((p) => ({ ...p, table: { ...p.table!, onSortColumn } }));
     expect(screen.getByRole("columnheader", { name: /Reproductions/ }).getAttribute("aria-sort")).toBe("descending");
-    expect(screen.getByRole("columnheader", { name: "Confirmed" }).getAttribute("aria-sort")).toBe("none");
+    expect(screen.getByRole("columnheader", { name: "Confirmed" }).getAttribute("aria-sort")).toBeNull(); // G18: the sorted head only
     fireEvent.click(screen.getByRole("button", { name: "Confirmed" }));
     expect(onSortColumn).toHaveBeenCalledWith("confirmed", false);
   });

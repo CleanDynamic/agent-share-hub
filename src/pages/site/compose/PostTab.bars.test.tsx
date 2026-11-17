@@ -310,6 +310,16 @@ describe("the slash menu", () => {
     expect(screen.queryByRole("listbox")).toBeNull();
   });
 
+  it("G18: Home and End go to the first and the last command", () => {
+    const { editor, dom } = mount(doc(p("")));
+    typeSlash(editor);
+    const options = () => within(listbox()).getAllByRole("option");
+    fireEvent.keyDown(dom, { key: "End" });
+    expect(options()[options().length - 1].getAttribute("aria-selected")).toBe("true");
+    fireEvent.keyDown(dom, { key: "Home" });
+    expect(options()[0].getAttribute("aria-selected")).toBe("true");
+  });
+
   it("chooses with the arrow keys and Enter, taking the slash away", () => {
     const { editor, dom } = mount(doc(p("")));
     typeSlash(editor);

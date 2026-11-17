@@ -484,7 +484,8 @@ function VersionSwitch({ value, onChange }: { value: "saved" | "current"; onChan
     { value: "current" as const, label: "Current version" },
   ];
   const move = (event: KeyboardEvent<HTMLButtonElement>) => {
-    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    // G18: the radio pattern takes all four arrows (two choices: any arrow switches).
+    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
     event.preventDefault();
     const next = event.key === "Home" ? "saved" : event.key === "End" ? "current" : value === "saved" ? "current" : "saved";
     onChange(next);

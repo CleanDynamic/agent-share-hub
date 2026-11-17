@@ -10,6 +10,7 @@
    region a keyboard can reach. Rows past the first screen are skipped until near (`content-visibility`). No motion: rows
    change at once. */
 
+import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
@@ -370,10 +371,11 @@ const FILTERED_MARK: React.CSSProperties = { fontWeight: 500, borderBottom: `1px
 function ColumnHead({ id, last, sorted, sorted2, sortable, onSort, filtered, drag, scrolled }: { id: ColumnId; last: boolean; sorted: { ascending: boolean } | null; sorted2: { ascending: boolean } | null; sortable: boolean; onSort: (second: boolean) => void; filtered: boolean; drag?: HeadDrag; scrolled: boolean }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   const right = RIGHT.has(id);
-  /* Only one head may say ascending or descending; the second key's says "other", and shows its arrow and a 2. */
-  const ariaSort = sorted ? (sorted.ascending ? "ascending" : "descending") : sorted2 ? "other" : sortable ? "none" : undefined;
+  /* G18: aria-sort is on the sorted head only. The second key shows its arrow and a 2, and its button says so in words. */
+  const ariaSort = sorted ? (sorted.ascending ? "ascending" : "descending") : undefined;
   const arrow = sorted ?? sorted2;
-  const label = filtered ? `${HEAD[id]}, filtered` : undefined;
+  const secondNote = sorted2 && !sorted ? `, then by this, ${sorted2.ascending ? "ascending" : "descending"}` : "";
+  const label = filtered ? `${HEAD[id]}, filtered${secondNote}` : undefined;
   return (
     <th
       scope="col"
@@ -406,6 +408,7 @@ function ColumnHead({ id, last, sorted, sorted2, sortable, onSort, filtered, dra
               {sorted2 && !sorted ? "2" : null}
             </span>
           ) : null}
+          {secondNote ? <VisuallyHidden>{secondNote}</VisuallyHidden> : null}
         </button>
       ) : filtered ? (
         <span style={FILTERED_MARK}>{HEAD[id]}</span>

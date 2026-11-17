@@ -998,14 +998,14 @@ describe("BF-12 every head sorts when its answer is true", () => {
     await waitFor(() => expect(address).toBe("/builds"));
   });
 
-  it("aria-sort is descending, ascending or none on each head, and the arrow matches", async () => {
+  it("G18: aria-sort is on the sorted head only (ascending or descending), and the arrow matches", async () => {
     withFields();
     renderAt("/builds?by=field&dir=asc");
     await screen.findByRole("link", { name: "Build 1" });
     expect(head(/^Field/).getAttribute("aria-sort")).toBe("ascending");
     expect(head(/^Field/).textContent).toContain("↑");
     for (const cell of screen.getAllByRole("columnheader").filter((entry) => !/^Field/.test(entry.textContent ?? ""))) {
-      expect(cell.getAttribute("aria-sort")).toBe("none");
+      expect(cell.getAttribute("aria-sort")).toBeNull();
       expect(cell.textContent).not.toMatch(/[↑↓]/);
     }
   });
@@ -1066,13 +1066,14 @@ describe("BF-12 a second key with Shift", () => {
     expect(titles()).toEqual(["Build 2", "Build 3", "Build 1"]);
   });
 
-  it('the second key\'s head shows its arrow followed by "2", and its aria-sort is "other"', async () => {
+  it('the second key\'s head shows its arrow followed by "2", has no aria-sort (G18), and its button says it is the second key', async () => {
     three();
     renderAt("/builds?by=field&by2=reproductions");
     await screen.findByRole("link", { name: "Build 1" });
     const second = screen.getByRole("columnheader", { name: /^Reproductions/ });
-    expect(second.getAttribute("aria-sort")).toBe("other");
-    expect(second.textContent).toBe("Reproductions↓2");
+    expect(second.getAttribute("aria-sort")).toBeNull();
+    expect(second.textContent).toBe("Reproductions↓2, then by this, descending");
+    expect(within(second).getByRole("button").textContent).toContain("then by this, descending");
     const sorted = screen.getAllByRole("columnheader").filter((cell) => ["ascending", "descending"].includes(cell.getAttribute("aria-sort") ?? ""));
     expect(sorted.map((cell) => cell.textContent)).toEqual(["Field↓"]);
   });

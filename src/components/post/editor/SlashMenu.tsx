@@ -183,6 +183,11 @@ export function SlashMenu({
         setActive((index) => (index + (event.key === "ArrowDown" ? 1 : items.length - 1)) % items.length);
         return true;
       }
+      // G18: the first and the last command, while the list is open.
+      if (event.key === "Home" || event.key === "End") {
+        setActive(event.key === "Home" ? 0 : items.length - 1);
+        return true;
+      }
       if (event.key === "Enter" || event.key === "Tab") {
         runSlash(editor, items[Math.min(active, items.length - 1)].id, slash, onInsertPicture, notice);
         return true;

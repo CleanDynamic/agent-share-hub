@@ -73,6 +73,16 @@ describe("ToolPicker", () => {
     expect(screen.queryByRole("option", { name: "No tool" })).toBeNull();
   });
 
+  it("G18: Home and End go to the first and the last option", () => {
+    render(<Harness />);
+    fireEvent.click(trigger());
+    const options = () => screen.getAllByRole("option");
+    fireEvent.keyDown(find(), { key: "End" });
+    expect(find().getAttribute("aria-activedescendant")).toBe(options()[options().length - 1].id);
+    fireEvent.keyDown(find(), { key: "Home" });
+    expect(find().getAttribute("aria-activedescendant")).toBe(options()[0].id);
+  });
+
   it("closes on Esc and gives focus back to the trigger", async () => {
     render(<Harness />);
     fireEvent.click(trigger());

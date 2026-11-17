@@ -157,6 +157,10 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
     } else if (event.key === "ArrowUp") {
       event.preventDefault();
       move(current - 1);
+    } else if (event.key === "Home" || event.key === "End") {
+      // G18: the listbox pattern's first and last option (Left and Right still move the caret in the field).
+      event.preventDefault();
+      move(event.key === "Home" ? 0 : pickable.length - 1);
     } else if (event.key === "Enter" && !event.nativeEvent.isComposing) {
       event.preventDefault();
       pick(pickable[current]);

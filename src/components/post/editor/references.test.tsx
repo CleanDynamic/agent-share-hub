@@ -77,6 +77,19 @@ describe("the picker's list", () => {
     expect(filterRefGroups(refs, "check").flatMap((group) => group.entries.map((one) => one.to))).toEqual(["node:k1"]);
   });
 
+  it("G18: Home and End go to the first and the last option", () => {
+    const { editor } = mount(doc(p("Read it.")));
+    act(() => {
+      editor.commands.setTextSelection(9);
+    });
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(`(^|, )${REFERENCE_COPY.button}$`, "i") }));
+    const field = screen.getByRole("combobox", { name: REFERENCE_COPY.search });
+    fireEvent.keyDown(field, { key: "End" });
+    expect(field.getAttribute("aria-activedescendant")).toMatch(new RegExp(`-${options().length - 1}$`));
+    fireEvent.keyDown(field, { key: "Home" });
+    expect(field.getAttribute("aria-activedescendant")).toMatch(/-0$/);
+  });
+
   it("opens from @, moves with the arrow keys, chooses with Enter, and says when nothing matches", () => {
     const { editor } = mount(doc(p("Read it.")));
     act(() => {
