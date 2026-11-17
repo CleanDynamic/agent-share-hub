@@ -188,7 +188,7 @@ export function SiteFrameView({
     return (
       <div data-testid="site-frame" data-variant="bare" style={root}>
         <SkipLink phone={phone} />
-        <main id="main" style={{ position: "relative", zIndex: 1 }}>
+        <main id="main" tabIndex={-1} style={{ position: "relative", zIndex: 1, outline: "none" }}>
           {children}
         </main>
       </div>
@@ -228,7 +228,10 @@ export function SiteFrameView({
       <div data-ui="surface" data-wide={wide && !phone ? "true" : undefined} style={wide && !phone ? WIDE_SURFACE : phone ? SURFACE : DESKTOP_SURFACE}>
         <main
           id="main"
+          /* G4: the skip link's target. A programmatic focus target, never a Tab stop, and it draws no outline. */
+          tabIndex={-1}
           style={{
+            outline: "none",
             position: "relative",
             zIndex: 1,
             display: "flex",

@@ -95,3 +95,15 @@ describe("SiteFrameView under the refined look", () => {
     expect(html).toContain("border-radius:10px");
   });
 });
+
+/* G4: the skip link's target takes focus: main is a programmatic focus target (tabIndex -1) and draws no outline. */
+describe("G4: main takes the skip link's focus", () => {
+  it.each(["site", "bare"] as const)("%s: main has tabIndex -1 and no outline", (variant) => {
+    frame({ variant, viewport: "desktop", children: <p>page</p> });
+    const main = screen.getByTestId("site-frame").querySelector("main#main") as HTMLElement;
+    expect(main.tabIndex).toBe(-1);
+    expect(main.style.outline).toBe("none");
+    main.focus();
+    expect(document.activeElement).toBe(main);
+  });
+});
