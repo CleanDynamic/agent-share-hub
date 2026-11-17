@@ -49,6 +49,7 @@ import { ORIGIN, SURFACE_MARGIN, frameOf, innerWidthOf } from "@/pages/site/comp
 import { Breadcrumb } from "./Breadcrumb";
 import { HEADER_HEIGHT, PAGE_EDGE } from "./chromeSize";
 import { Dock } from "./Dock";
+import { FocusRescue } from "./FocusRescue";
 import { MobileHeader } from "./MobileHeader";
 import { PageProgress } from "./PageProgress";
 import { ConnectorDialogProvider } from "@/components/connect/ConnectorDialog";
@@ -187,6 +188,7 @@ export function SiteFrameView({
   if (variant === "bare") {
     return (
       <div data-testid="site-frame" data-variant="bare" style={root}>
+        <FocusRescue />
         <SkipLink phone={phone} />
         <main id="main" tabIndex={-1} style={{ position: "relative", zIndex: 1, outline: "none" }}>
           {children}
@@ -199,6 +201,7 @@ export function SiteFrameView({
     // The same elements at the same places as below, so the page under `<main>` keeps its state.
     return (
       <div data-testid="site-frame" data-variant="none" style={CONTENTS}>
+        <FocusRescue />
         {null}
         {null}
         <div style={CONTENTS}>
@@ -216,6 +219,8 @@ export function SiteFrameView({
   const refinedRoot: CSSProperties = { ...root, display: "flex", flexDirection: "column", background: t.frame };
   return (
     <div data-testid="site-frame" data-variant="site" data-viewport={phone ? "mobile" : "desktop"} style={refinedRoot}>
+      {/* G17: after a removal, focus goes to the next item, the previous, or the list's heading; never the body. */}
+      <FocusRescue />
       {skipLink ?? <SkipLink phone={phone} />}
       <div
         data-slot={phone ? "mobile-header" : "header"}

@@ -363,3 +363,22 @@ test("G16: a toast takes no focus, alt+T reaches it, and its action works with E
   await expect(page.getByTestId("toast-assertive")).toHaveText("Couldn't publish the build. Try again.");
   await expect(page.locator('section[aria-label^="Notifications"]')).toHaveAttribute("aria-live", "off");
 });
+
+test("G17: Revoke opens its confirmation with focus on it, and Cancel gives focus back to Revoke", async ({ page }) => {
+  await open(page, "about:blank");
+  await page.route(/\/auth\/v1\/user\/oauth\/grants/, (route) => {
+    const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "*" };
+    if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
+    return route.fulfill({ status: 200, contentType: "application/json", headers: cors, body: JSON.stringify([{ client: { id: "a11y-client", name: "A11y Test App", uri: null }, scopes: ["openid"], granted_at: "2026-01-01T00:00:00Z" }]) });
+  });
+  await signIn(page);
+  await page.goto("/settings/apps", { waitUntil: "load" });
+  await settle(page);
+  await activate(page, page.getByRole("button", { name: "Revoke A11y Test App" }));
+  await expect.poll(async () => (await focused(page)).text).toBe("Revoke");
+  expect(await page.evaluate(() => Boolean(document.activeElement?.closest('[role="group"][aria-label="Confirm"]')))).toBe(true);
+  await page.keyboard.press("Tab");
+  expect((await focused(page)).text).toBe("Cancel");
+  await page.keyboard.press("Enter");
+  await expect.poll(async () => (await focused(page)).label).toBe("Revoke A11y Test App");
+});

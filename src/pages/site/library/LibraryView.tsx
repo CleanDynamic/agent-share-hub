@@ -438,7 +438,8 @@ export function LibraryItems(props: LibraryItemsProps) {
         ) : null}
       </div>
       {chips?.length || sameAsBuilds ? (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
+        /* G17: a chip removed hands focus to the next chip (FocusRescue reads this as a list). */
+        <div data-focus-list="" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
           {chips?.map((chip) => <ActiveFilterChip key={chip.name} name={chip.name} value={chip.value} onRemove={chip.onRemove} />)}
           {sameAsBuilds ? <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.label, alignSelf: "center", marginLeft: 6 }}>Same filters as Builds</span> : null}
         </div>

@@ -327,7 +327,7 @@ function LensRow({ lenses, lens, onLens, columns, sortable, sortColumn, onSortCo
 export function ActiveFilters({ chips, onRemove, onClearAll }: { chips: readonly TableChip[]; onRemove: (key: string) => void; onClearAll: () => void }) {
   if (chips.length === 0) return null;
   return (
-    <div role="group" aria-label="Active filters" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 16 }}>
+    <div role="group" aria-label="Active filters" data-focus-list="" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 16 }}>
       {chips.map((chip) => (
         <ActiveFilterChip key={chip.key} name={chip.name} value={chip.value} onRemove={() => onRemove(chip.key)} />
       ))}
