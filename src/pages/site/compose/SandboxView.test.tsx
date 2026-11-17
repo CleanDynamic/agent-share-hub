@@ -617,13 +617,26 @@ describe("CA-10 · a save that stopped says what failed", () => {
     expect(notSavedLine({ reason: "no connection" })).toBe("Not saved: no connection.");
   });
 
-  it("shows no code under 'This build didn't load.' (G10), and logs it", () => {
+  it("G20: a first load that failed is PageState's failed state: the page's title, the line, Try again; no code, logged once", () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
-    view({ status: "error", loadError: { code: "57014", message: "canceling statement due to statement timeout" } });
-    expect(screen.getByText("This build didn't load.")).toBeTruthy();
+    const props = view({ status: "error", onRetry: vi.fn(), loadError: { code: "57014", message: "canceling statement due to statement timeout" } });
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Build");
+    expect(screen.getByRole("alert").textContent).toContain("Couldn't load this build. Try again.");
+    expect(screen.queryByText("This build didn't load.")).toBeNull();
     expect(screen.queryByText(/Code /)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(props.onRetry).toHaveBeenCalledTimes(1);
     // eslint-disable-next-line no-console -- the spy on the deliberate log
     expect(console.error).toHaveBeenCalledWith("[Compose] build read failed 57014 canceling statement due to statement timeout");
+  });
+
+  it("G20: a build that is not at this address is PageState's not found, with Start a new build", () => {
+    view({ status: "notFound" });
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Build");
+    expect(screen.getByText("Nothing at this address.")).toBeTruthy();
+    expect(screen.getByText("This build may have been deleted, or it may belong to someone else.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Start a new build" }).getAttribute("href")).toBe("/compose/new");
+    expect(screen.queryByText("No build at this address")).toBeNull();
   });
 });
 

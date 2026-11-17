@@ -1,5 +1,5 @@
 // CA-24 P1 - the first load: the skeleton stands where the columns will, from `frameOf`, at every width; the content takes its
-// place without anything moving; and a screen reader meets one "Loading".
+// place without anything moving; and a screen reader meets one "Loading the build".
 
 import { act, cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -72,11 +72,13 @@ describe.each([900, 1280, 1440, 1920])("the skeleton at %i", (width) => {
     expect(title.map((block) => px((block as HTMLElement).style.width))).toEqual([180, 120]);
   });
 
-  it("says Loading once and hides the blocks", () => {
+  it("G20: says what is loading once, never a bare Loading, is busy, and hides the blocks", () => {
     stage(width);
     render(<ComposeSkeleton />);
-    expect(screen.getAllByText("Loading")).toHaveLength(1);
+    expect(screen.getAllByText("Loading the build")).toHaveLength(1);
+    expect(screen.queryByText("Loading")).toBeNull();
     expect(screen.getAllByRole("status")).toHaveLength(1);
+    expect(screen.getByRole("status").getAttribute("aria-busy")).toBe("true");
     for (const block of screen.getAllByTestId("loading-blocks")) expect(block.getAttribute("aria-hidden")).toBe("true");
   });
 });

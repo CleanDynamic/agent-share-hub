@@ -184,6 +184,37 @@ describe("ComposeRoute · SV-04 P4, the one frame", () => {
     expect(await screen.findByText("the composer")).toBeInTheDocument();
   });
 
+  it("G20: once the library has answered, even with a failure, the page stays mounted while it is read again", async () => {
+    open("/compose/new", { library: false });
+    await act(async () => {
+      await client.prefetchQuery({ queryKey: LIBRARY_SESSIONS_KEY, queryFn: () => Promise.reject(new Error("no answer")), retry: false });
+    });
+    expect(await screen.findByText("the composer")).toBeInTheDocument();
+    const before = mounts.count;
+    // The page reads it again on mount: with nothing in it yet, the query goes back to pending while it is out.
+    await act(async () => {
+      void client.prefetchQuery({ queryKey: LIBRARY_SESSIONS_KEY, queryFn: () => new Promise(() => undefined), retry: false });
+    });
+    expect(screen.getByText("the composer")).toBeInTheDocument();
+    expect(mounts.count).toBe(before);
+  });
+
+  it("G20: once the record has answered with a failure, Try again does not take the page down to the skeleton", async () => {
+    getBuildParent.mockImplementationOnce(async () => ({ id: "b1", parent_build_id: null }) as never);
+    getBuild.mockImplementationOnce(async () => {
+      throw new Error("no answer");
+    });
+    open("/compose/b1");
+    expect(await screen.findByText("the composer", undefined, { timeout: 3000 })).toBeInTheDocument();
+    const before = mounts.count;
+    getBuild.mockImplementationOnce(() => new Promise(() => undefined) as never);
+    await act(async () => {
+      void client.refetchQueries({ queryKey: ["compose-build", "b1"] });
+    });
+    expect(screen.getByText("the composer")).toBeInTheDocument();
+    expect(mounts.count).toBe(before);
+  });
+
   it("watches the session library on the key useLibrarySessions reads", () => {
     expect(LIBRARY_SESSIONS_KEY).toEqual(librarySessionsKey);
   });

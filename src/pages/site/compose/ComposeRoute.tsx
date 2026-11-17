@@ -34,7 +34,7 @@
    page's code suspends to the frame's one boundary, whose placeholder is that same skeleton. A rebuild swaps to the legacy
    workspace, which hides the frame's chrome (`useHideFrameChrome`) and draws its own, exactly as before. */
 
-import { lazy, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { lazy, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate, useLocation, useParams } from "react-router-dom";
 import { sessionPhase, subscribeSession } from "@/lib/query/sessionSignal";
@@ -69,6 +69,13 @@ function useInCache(key: readonly unknown[]): boolean {
     },
     () => false,
   );
+}
+
+/** True from the first time `answered` is, for as long as `key` stays the same. */
+function useAnsweredOnce(key: string, answered: boolean): boolean {
+  const seen = useRef<string | null>(null);
+  if (answered) seen.current = key;
+  return seen.current === key;
 }
 
 /** The route's own check, under its own key: it is not the composer's record any more. */
@@ -130,11 +137,16 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
     refetchOnWindowFocus: false,
     retry: 1,
   });
-  const waitingForRecord = reads && record.isPending && record.fetchStatus !== "idle";
+  /* G20: the route waits for the record and the library until each has answered once, failure or not. Read again later (a
+     Try again, the page's own read on mount), a query with nothing in it goes back to pending: waiting again then would take
+     the page down to the skeleton and up again, and the page's read on mount would do it for ever. */
+  const recordAnswered = useAnsweredOnce(buildId ?? "", record.data !== undefined || record.isError);
+  const waitingForRecord = reads && !recordAnswered && record.isPending && record.fetchStatus !== "idle";
   /* SV-04 P4: and when Sources' session library is in (startLibraryRead started it with the rest), so the page is never
      drawn with blocks in its Sources corner alone. A new build has nothing else to wait for. A read that failed does not
      hold the page: Sources says so itself. */
-  const waitingForLibrary = isLoggedIn && !hasFrom && !libraryIn;
+  const libraryAnswered = useAnsweredOnce("library", libraryIn);
+  const waitingForLibrary = isLoggedIn && !hasFrom && !libraryAnswered;
   const checking = Boolean(buildId) && !startedNew && check.isPending && check.fetchStatus !== "idle";
   const rebuild = Boolean(buildId) && !startedNew && Boolean(check.data?.parent_build_id);
   const showLegacy = !loading && member && (hasFrom || rebuild);
