@@ -3,7 +3,7 @@
    A `line` is one row; a `box` is `rows`; `width` and `height` may be "fill". The block keeps exactly the box it always
    had (rows of 12px, `loadingBlocks.ts` has the numbers), so nothing moves, and that box is a shape in the fluid field:
    in the nearest LoadingRegion's canvas, or, with none around it, its own. The block is `aria-hidden`: whoever shows it
-   supplies the one visually hidden "Loading" (`LoadingStatus`, below).
+   supplies the one visually hidden "Loading the build" (`LoadingStatus`, below).
 
    The props are unchanged. `gone` (the content is ready) winds the block's dots down from its top; `order`, `building`
    and `at` are kept for the callers and no longer change what is drawn: every first show builds in from the top, and
@@ -96,11 +96,11 @@ export function LoadingBlocks({ width, rows = 1, height, kind = "box", gone = fa
   );
 }
 
-/** The one visually hidden "Loading" for a whole placeholder, announced politely. */
-export function LoadingStatus({ children }: { children?: ReactNode }) {
+/** The one visually hidden "Loading {what}" for a whole placeholder, announced politely, and busy while it stands (G20). */
+export function LoadingStatus({ children, what = "the build" }: { children?: ReactNode; what?: string }) {
   return (
-    <div role="status" data-testid="loading-status">
-      <VisuallyHidden>Loading</VisuallyHidden>
+    <div role="status" aria-busy="true" data-testid="loading-status">
+      <VisuallyHidden>{`Loading ${what}`}</VisuallyHidden>
       {children}
     </div>
   );

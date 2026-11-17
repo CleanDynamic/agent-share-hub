@@ -6,7 +6,7 @@
 // it says back, and where it sends the visitor.
 
 import { act, fireEvent, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const auth = vi.hoisted(() => ({ isLoggedIn: false }));
 const signIn = vi.fn();
@@ -401,5 +401,63 @@ describe("the rest of the dialog", () => {
     expect(screen.getByRole("link", { name: "Forgot password?" }).getAttribute("href")).toBe("/?redirect=%2Fgallery&signin=reset");
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     await waitFor(() => expect(where.at()).toBe("/"));
+  });
+});
+
+describe("signing back in after the server ended the session (G14)", () => {
+  it("closes the dialog in place: the page and its query stay, and the profile's landing page is not asked", async () => {
+    signIn.mockResolvedValue({ outcome: "signed-in", userId: "u-1" });
+    resolvePostAuthRoute.mockResolvedValue("/onboarding");
+    const where = renderDialog("login", "q=keep", { signedOut: true });
+    fill();
+    submit();
+    await waitFor(() => expect(where.at()).toBe("/?q=keep"));
+    expect(resolvePostAuthRoute).not.toHaveBeenCalled();
+  });
+});
+
+describe("a provider sign-in after the server ended the session (G15)", () => {
+  it("comes back to the same page, and keeps its scroll on this tab", async () => {
+    startOAuthSignIn.mockResolvedValue(null);
+    Object.defineProperty(window, "scrollY", { value: 640, configurable: true });
+    renderDialog("login", "q=keep", { signedOut: true });
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+    await waitFor(() => expect(startOAuthSignIn).toHaveBeenCalledWith("google", "/?q=keep", true));
+    const { takePlace } = await import("@/components/pagestate/returnPlace");
+    expect(takePlace("/?q=keep")).toBe(640);
+    Object.defineProperty(window, "scrollY", { value: 0, configurable: true });
+  });
+});
+
+describe("why the dialog opened (G19)", () => {
+  const line = () => screen.getAllByTestId("field-message").find((node) => node.textContent)!;
+
+  it("says so in the reserved line under the password, in the neutral tone, and gives the line to an error", async () => {
+    signIn.mockResolvedValue({ outcome: "refused", refusal: "credentials" });
+    renderDialog("login", "", { signedOut: true });
+    expect(line().textContent).toBe("You've been signed out. Sign in to carry on.");
+    expect(line().getAttribute("data-tone")).toBe("neutral");
+    fill();
+    submit();
+    await waitFor(() => expect(line().textContent).toBe("That email or password isn't right."));
+    expect(line().getAttribute("data-tone")).toBe("error");
+  });
+
+  it("says nothing when the dialog was opened by the member", () => {
+    open();
+    expect(screen.getAllByTestId("field-message").every((node) => !node.textContent)).toBe(true);
+  });
+});
+
+describe("the dialog the listener opens while the session is still being cleared (G14)", () => {
+  afterEach(async () => (await import("@/lib/query/sessionSignal")).setSessionPhase("live"));
+
+  it("stays open while the old session is still there; it closes only once the member is signed in again", async () => {
+    const { setSessionPhase } = await import("@/lib/query/sessionSignal");
+    setSessionPhase("ended");
+    auth.isLoggedIn = true;
+    const where = renderDialog("login", "q=keep", { signedOut: true });
+    await act(async () => undefined);
+    expect(new URLSearchParams(where.at().split("?")[1]).get("signin")).toBe("login");
   });
 });

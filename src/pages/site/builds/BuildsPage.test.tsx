@@ -129,6 +129,9 @@ beforeEach(() => {
   sets.getFilterSet.mockResolvedValue(null);
 });
 
+/** G25: the head's text: "Builds", then the meta line (the count first, once the list has answered). */
+const headText = () => screen.getByTestId("builds-head").textContent ?? "";
+
 describe("BuildsPage", () => {
   it("starts the list, the stats, the lens counts and the facets together", async () => {
     renderAt("/builds");
@@ -139,7 +142,7 @@ describe("BuildsPage", () => {
     expect(getGalleryFacets).toHaveBeenCalledTimes(1);
     expect(getCountSpread).toHaveBeenCalledTimes(1);
     expect(getWorksOnModelCounts).toHaveBeenCalledTimes(1);
-    expect(await screen.findByRole("heading", { level: 1, name: /^2 builds/ })).toBeTruthy();
+    await waitFor(() => expect(headText()).toMatch(/^Builds2 builds/));
   });
 
   it("draws the head from the stats and the rows from the list", async () => {
@@ -225,16 +228,23 @@ describe("BuildsPage", () => {
     listBuildsTable.mockResolvedValue({ builds: [], total: 0 });
     renderAt("/builds?f=field%3Alaw");
     expect(await screen.findByText("No builds match these filters.")).toBeTruthy();
+    // G25: nothing matched, so no count and no statistics are drawn: the head is the title alone.
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Builds");
+    expect(headText()).not.toMatch(/\d+ builds?|published|reproductions/);
   });
 
-  it("says so when the list fails, offers Retry, and reports it", async () => {
+  it("says so when the list fails, offers Try again, draws no count, and leaves the report to the query client", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
     listBuildsTable.mockRejectedValue(new Error("listBuildsTable failed"));
     renderAt("/builds");
-    expect(await screen.findByText("Builds didn't load.")).toBeTruthy();
-    await waitFor(() => expect(report).toHaveBeenCalledWith(expect.any(Error), { source: "query", context: "listBuildsTable" }));
+    expect(await screen.findByText("Couldn't load builds. Try again.")).toBeTruthy();
+    // G8, G25: the title is "Builds", never "0 builds", and no count is drawn after a failure.
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Builds");
+    expect(headText()).not.toMatch(/\d+ builds?/);
+    expect(report).not.toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ context: "listBuildsTable" }));
     listBuildsTable.mockResolvedValue({ builds: [build(1)], total: 1 });
-    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
-    expect(await screen.findByRole("heading", { level: 1, name: /^1 build\b/ })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(headText()).toMatch(/^Builds1 build\b/));
   });
 
   describe("the stored counts (SV-23 P1)", () => {
@@ -537,17 +547,16 @@ describe("BF-01 the head line", () => {
   it('with no filter the head reads "2 builds" and its meta line starts "Of 2 published"', async () => {
     getGalleryStats.mockResolvedValue({ inGallery: 2, reproducedThisWeek: 0, weeklyGoal: null, freshPct: 50 });
     renderAt("/builds");
-    await screen.findByRole("heading", { level: 1, name: "2 builds" });
-    /* BF-03: the h1 holds the number only; the meta line is under it in the one head. */
-    const head = screen.getByTestId("builds-head");
-    await waitFor(() => expect(head.textContent).toMatch(/^2 buildsOf 2 published/));
+    /* G8, G25: the h1 is "Builds"; the count leads the meta line under it. */
+    await screen.findByRole("heading", { level: 1, name: "Builds" });
+    await waitFor(() => expect(headText()).toMatch(/^Builds2 builds · Of 2 published/));
   });
 
   it('with a filter on, the head reads "1 of 2 builds" and the meta line has no "Of 2 published" part', async () => {
     listBuildsTable.mockResolvedValue({ builds: [build(1)], total: 1 });
     getGalleryStats.mockResolvedValue({ inGallery: 2, reproducedThisWeek: 0, weeklyGoal: null, freshPct: 50 });
     renderAt(`/builds?f=${encodeURIComponent(`autonomy:${AUTONOMY_VALUES[0].id}`)}`);
-    await screen.findByRole("heading", { level: 1, name: "1 of 2 builds" });
+    await waitFor(() => expect(headText()).toMatch(/^Builds1 of 2 builds/));
     const head = screen.getByTestId("builds-head");
     await waitFor(() => expect(head.textContent).toContain("this week"));
     expect(head.textContent).not.toContain("published");
@@ -793,7 +802,7 @@ describe("BF-08 lens counts follow the filters", () => {
     listBuildsTable.mockResolvedValue({ builds: [build(1)], total: 1 });
     countGalleryLenses.mockImplementation(async (filters?: { facets?: string[] }) => ((filters?.facets?.length ?? 0) > 0 ? { all: 1, proven: 1, rebuilt: 0, unsolved: 0 } : { all: 2, proven: 1, rebuilt: 0, unsolved: 0 }));
     renderAt("/builds?f=field%3Alaw");
-    await screen.findByRole("heading", { level: 1, name: /^1 / });
+    await waitFor(() => expect(headText()).toMatch(/^Builds1 /));
     await waitFor(() => expect(screen.getByRole("tab", { name: /^All/ }).textContent).toBe("All1"));
     expect(countGalleryLenses).toHaveBeenCalledWith(expect.objectContaining({ facets: ["field:law"] }));
   });
@@ -1149,7 +1158,7 @@ describe("BF-14 match some conditions", () => {
     candidates();
     renderAt(`${THREE}&match=2`);
     await screen.findByRole("link", { name: "Build 1" });
-    await waitFor(() => expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("2 of 120 builds"));
+    await waitFor(() => expect(headText()).toMatch(/^Builds2 of 120 builds/));
     expect(within(screen.getByRole("tablist", { name: "Lens" })).getByRole("tab", { name: /^All/ }).textContent).toContain("2");
   });
 

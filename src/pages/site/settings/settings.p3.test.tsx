@@ -1,11 +1,14 @@
 // UX-15 P3: Account. Each form's four states, the last-sign-in-method rule, the global sign-out and its confirmation, and the calls.
 
+import { readOf } from "@/components/pagestate/pageStateModel";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const auth = vi.hoisted(() => ({
+  // loadAccount reads the member with the session's token (G1).
+  getSession: vi.fn(async () => ({ data: { session: { access_token: "token" } }, error: null })),
   getUser: vi.fn(),
   getUserIdentities: vi.fn(),
   updateUser: vi.fn(),
@@ -50,7 +53,7 @@ function props(over: Partial<AccountViewProps> = {}): AccountViewProps {
     onLink: vi.fn(async () => undefined),
     onUnlink: vi.fn(async () => undefined),
     onSignOutEverywhere: vi.fn(async () => undefined),
-    sessions: [],
+    devices: readOf("ready", []),
     onSignOutDevice: vi.fn(async () => undefined),
     ...over,
   };

@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const auth = { isLoggedIn: true, isCreator: false, loading: false, profileLoading: false };
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => auth }));
@@ -81,6 +81,45 @@ describe("ProtectedRoute", () => {
 
   it("a creator-only route sends a reader who is not a creator home once the profile has arrived", () => {
     at(true);
+    expect(screen.getByText("home")).toBeTruthy();
+  });
+});
+
+describe("ProtectedRoute after the server ended the session (G16)", () => {
+  afterEach(async () => (await import("@/lib/query/sessionSignal")).setSessionPhase("live"));
+
+  it("keeps the page under the sign-in dialog: it does not navigate by itself", async () => {
+    (await import("@/lib/query/sessionSignal")).setSessionPhase("ended");
+    Object.assign(auth, { isLoggedIn: false });
+    atAddress("/private/library?signin=login");
+    expect(screen.getByText("the page")).toBeTruthy();
+    expect(screen.queryByTestId("signin-at")).toBeNull();
+  });
+
+  it("keeps the page while the dialog is on its way (the sign-out can be drawn before the dialog's address)", async () => {
+    (await import("@/lib/query/sessionSignal")).setSessionPhase("ended");
+    Object.assign(auth, { isLoggedIn: false });
+    at();
+    expect(screen.getByText("the page")).toBeTruthy();
+  });
+
+  it("goes Home once the member closes the dialog without signing in (the listener marks that choice)", async () => {
+    const signal = await import("@/lib/query/sessionSignal");
+    signal.setSignedOutOnPurpose(true);
+    Object.assign(auth, { isLoggedIn: false });
+    at();
+    expect(screen.getByText("home")).toBeTruthy();
+    signal.setSignedOutOnPurpose(false);
+  });
+});
+
+describe("ProtectedRoute after a deliberate sign-out in another tab", () => {
+  afterEach(async () => (await import("@/lib/query/sessionSignal")).setSignedOutOnPurpose(false));
+
+  it("goes Home quietly, without asking to sign in", async () => {
+    (await import("@/lib/query/sessionSignal")).setSignedOutOnPurpose(true);
+    Object.assign(auth, { isLoggedIn: false });
+    at();
     expect(screen.getByText("home")).toBeTruthy();
   });
 });

@@ -18,6 +18,9 @@ import { REPO_SCHEMA, requests, startAuditBackend, type Delay, type Fault, type 
 
 import { DraftsPage } from "./DraftsPage";
 
+/** G5: the two panels' failed sentences. */
+const FAILED_LINE = /^Couldn't load your (drafts|sessions)\. Try again\.$/;
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -55,33 +58,33 @@ function mount({ faults = [], delays = [] }: { faults?: Fault[]; delays?: Delay[
 const lines = (logged: ReturnType<typeof vi.spyOn>) =>
   logged.mock.calls.map(([first]) => first).filter((first): first is string => typeof first === "string" && first.startsWith("[Drafts]"));
 const sent = (pattern: RegExp) => requests().filter((r) => pattern.test(r.path)).length;
-const panel = (name: string) => screen.getByRole("status", { name });
+const panel = (name: string) => screen.getByRole("alert", { name });
 
 describe("CA-10 · the Drafts page, one status per panel", () => {
   it("shows the drafts while the sessions read is 6 s slow", async () => {
     mount({ delays: [{ method: "GET", path: WAITING, delayMs: 6_000 }] });
     expect(await screen.findByText("Draft 1", undefined, { timeout: 2_000 })).toBeTruthy();
     expect(screen.getByText("Loading your sessions")).toBeTruthy();
-    expect(screen.queryByText("That didn't load.")).toBeNull();
+    expect(screen.queryByText(FAILED_LINE)).toBeNull();
   });
 
   it("shows the drafts while the sessions read fails with 57014; the error is in the Sessions panel only, with its code, logged once", async () => {
     const logged = mount({ faults: [{ method: "GET", path: WAITING, answer: TIMEOUT }] });
     expect(await screen.findByText("Draft 1")).toBeTruthy();
-    await waitFor(() => expect(screen.getAllByText("That didn't load.")).toHaveLength(1), { timeout: 5_000 });
-    expect(within(panel("Sessions")).getByText("Code 57014")).toBeTruthy();
-    expect(screen.queryByRole("status", { name: "Continue editing" })).toBeNull();
+    await waitFor(() => expect(screen.getAllByText(FAILED_LINE)).toHaveLength(1), { timeout: 5_000 });
+    expect(within(panel("Sessions")).queryByText(/Code /)).toBeNull();
+    expect(screen.queryByRole("alert", { name: "Continue editing" })).toBeNull();
     /* SV-08: twelve rows, then "Show 3 more". */
     expect(screen.getByText("Draft 12")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Show 3 more" })).toBeTruthy();
     expect(lines(logged)).toEqual(["[Drafts] sessions read failed 57014 listLibrarySessions failed: canceling statement due to statement timeout"]);
   });
 
-  it("both panels failing: each says so, with its code", async () => {
+  it("both panels failing: the page says so once (G9), and each failure is logged once with its code", async () => {
     const logged = mount({ faults: [{ method: "GET", path: WAITING, answer: TIMEOUT }, { method: "GET", path: DRAFTS, answer: TIMEOUT }] });
-    await waitFor(() => expect(screen.getAllByText("That didn't load.")).toHaveLength(2), { timeout: 5_000 });
-    expect(within(panel("Continue editing")).getByText("Code 57014")).toBeTruthy();
-    expect(within(panel("Sessions")).getByText("Code 57014")).toBeTruthy();
+    await waitFor(() => expect(screen.getByText("Couldn't load this page. Try again.")).toBeTruthy(), { timeout: 5_000 });
+    expect(screen.queryAllByText(FAILED_LINE)).toHaveLength(0);
+    expect(within(panel("Drafts")).queryByText(/Code /)).toBeNull();
     const said = lines(logged);
     expect(said.filter((line) => line.startsWith("[Drafts] drafts read failed 57014 "))).toHaveLength(1);
     expect(said.filter((line) => line.startsWith("[Drafts] sessions read failed 57014 "))).toHaveLength(1);
@@ -89,8 +92,8 @@ describe("CA-10 · the Drafts page, one status per panel", () => {
 
   it("the drafts read failing shows its code in its own panel, and the sessions still show", async () => {
     mount({ faults: [{ method: "GET", path: DRAFTS, answer: TIMEOUT }] });
-    await waitFor(() => expect(within(panel("Continue editing")).getByText("Code 57014")).toBeTruthy(), { timeout: 5_000 });
-    expect(screen.getAllByText("That didn't load.")).toHaveLength(1);
+    await waitFor(() => expect(within(panel("Continue editing")).queryByText(/Code /)).toBeNull(), { timeout: 5_000 });
+    expect(screen.getAllByText(FAILED_LINE)).toHaveLength(1);
     expect(screen.getByText("A waiting session.")).toBeTruthy();
   });
 
@@ -105,6 +108,6 @@ describe("CA-10 · the Drafts page, one status per panel", () => {
     expect(await screen.findByText("A waiting session.")).toBeTruthy();
     expect(sent(WAITING)).toBe(waiting + 1);
     expect(sent(DRAFTS)).toBe(drafts);
-    expect(screen.queryByText("That didn't load.")).toBeNull();
+    expect(screen.queryByText(FAILED_LINE)).toBeNull();
   });
 });

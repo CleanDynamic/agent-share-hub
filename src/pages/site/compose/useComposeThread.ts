@@ -32,6 +32,7 @@ import { canSucceedLater, errorLine } from "@/lib/errors/code";
 import { pendingWrites } from "@/lib/build/pendingWrites";
 
 import { saveState, type SaveState } from "./composeModel";
+import { retryRead } from "@/lib/query/client";
 
 /** Marks a thread that was opened before its build existed. */
 const NEW = "new";
@@ -118,7 +119,8 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
     enabled: needsMedia && isOwner,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
-    retry: 1,
+    // D3: one retry, never after the time limit cut the read, never for a refused session (lib/query/client.ts).
+    retry: retryRead,
   });
 
   const clearTimer = useCallback(() => {

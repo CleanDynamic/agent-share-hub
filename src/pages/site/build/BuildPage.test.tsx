@@ -389,14 +389,21 @@ describe("BuildPage (site frame)", () => {
   it("says when there is no build at the address", async () => {
     getBuildBySlug.mockResolvedValue(null);
     renderAt("nothing-here");
-    expect(await screen.findByRole("heading", { level: 1, name: "No build at this address." })).toBeTruthy();
+    // G7, G8, G28: the page's kind as its title, "Nothing at this address.", the build line, and Browse builds (never "the gallery").
+    expect(await screen.findByText("Nothing at this address.")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "Build" })).toBeTruthy();
+    expect(screen.getByText("This build may have been unpublished, or the link may be wrong.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Browse builds" }).getAttribute("href")).toBe("/builds");
+    expect(document.body.textContent).not.toMatch(/gallery/i);
   });
 
   it("says when the build could not be read, and tries again", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     getBuildBySlug.mockRejectedValueOnce(new Error("boom"));
     renderAt();
-    expect((await screen.findByTestId("build-error")).textContent).toContain("That didn't load.");
+    expect((await screen.findByRole("alert", { name: "The build" })).textContent).toContain("Couldn't load this build. Try again.");
+    expect(screen.getByRole("heading", { level: 1, name: "Build" })).toBeTruthy();
+    expect(screen.queryByText("Nothing at this address.")).toBeNull();
     expect(screen.queryByText(/boom/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" })).toBeTruthy();

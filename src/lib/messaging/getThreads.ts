@@ -1,3 +1,4 @@
+import { isReadTimeout } from "@/lib/query/readLimit";
 import { supabase } from "@/integrations/supabase/client";
 import type { ThreadSummary, ThreadType, MessageKind, SharedContentType } from "./types";
 
@@ -50,6 +51,8 @@ export async function getThreads({
       is_pinned: !!m.is_pinned,
     });
   }
+  // G1, G24: a read the time limit cut means the connection is not answering; the next read would wait as long again.
+  if (memErr && isReadTimeout(memErr)) throw memErr;
   if (memErr) {
     // Don't throw — legacy participant lookup below will still work
     // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)

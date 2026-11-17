@@ -15,8 +15,8 @@
    sets to the page the dialog was opened over, and otherwise `resolvePostAuthRoute`. "Forgot password?" is the reset
    view's address on the same page, a push. */
 
-import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import type { OAuthProvider } from "@/components/auth/OAuthButtons";
 import { useAuth } from "@/contexts/AuthContext";
@@ -28,9 +28,14 @@ import { returnPathFrom } from "@/lib/auth/safeReturnPath";
 import { signInWithEmail } from "@/lib/auth/signInWithEmail";
 
 import { loginCanSubmit } from "./authModel";
+import { keepPlace } from "@/components/pagestate/returnPlace";
+import { SIGNED_OUT_DIALOG } from "@/components/pagestate/stateCopy";
+import { sessionPhase } from "@/lib/query/sessionSignal";
+
 import { useDialogCaptcha, VERIFY_FAILED } from "./dialogCaptcha";
 import { LoginForm } from "./LoginForm";
 import { setSigningIn } from "./signinActivity";
+import { withoutDialog } from "./signinUrl";
 import { useSignInNavigation } from "./useSignInNavigation";
 
 const RESEND_ANSWER = "If that address needs verifying, we've sent a link.";
@@ -51,6 +56,17 @@ export function LoginPanel() {
   const [resendAnswer, setResendAnswer] = useState("");
   const views = useSignInNavigation();
   const captcha = useDialogCaptcha();
+  /* G14: the dialog the session listener opened over a page whose session the server ended. Signing in closes it where
+     it is, so the page, its address and its scroll are the ones the member left; nothing else is asked. Once only: a
+     close steps back through history, and the sign-in and the session arriving both finish. */
+  const location = useLocation();
+  const signedOut = Boolean((location.state as { signedOut?: unknown } | null)?.signedOut);
+  const finished = useRef(false);
+  const backInPlace = () => {
+    if (finished.current) return;
+    finished.current = true;
+    views.close();
+  };
 
   // The halftone layer's signing-in ripple, while the request or a provider is out.
   useEffect(() => {
@@ -60,8 +76,15 @@ export function LoginPanel() {
 
   // Already signed in — bounce to the destination (or home).
   useEffect(() => {
-    if (isLoggedIn) navigate(redirectParam || "/", { replace: true });
-  }, [isLoggedIn, navigate, redirectParam]);
+    if (!isLoggedIn) return;
+    // The listener may draw the dialog a moment before the old session is cleared: that is not a sign-in. Back to live is.
+    if (signedOut) {
+      if (sessionPhase() === "live") backInPlace();
+    }
+    else navigate(redirectParam || "/", { replace: true });
+    // backInPlace reads only refs and the navigation of this render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn, navigate, redirectParam, signedOut]);
 
   const handleEmailLogin = async () => {
     // G4: email only. Text with no "@" is answered here, and no request is sent.
@@ -87,6 +110,10 @@ export function LoginPanel() {
         return;
       }
 
+      if (signedOut) {
+        backInPlace();
+        return;
+      }
       const destination = redirectParam || (result.userId ? await resolvePostAuthRoute(result.userId) : "/");
       navigate(destination, { replace: true });
     } catch {
@@ -122,8 +149,15 @@ export function LoginPanel() {
 
   const handleProvider = async (provider: OAuthProvider) => {
     setLoadingProvider(provider);
+    /* G15: after the server ended the session, the provider brings the member back to this page, without the dialog, and
+       the scroll is kept on this tab to be put back then (SessionListener). */
+    let returnTo = redirectParam;
+    if (signedOut) {
+      returnTo = `${location.pathname}${withoutDialog(location.search)}${location.hash}`;
+      keepPlace(returnTo, window.scrollY);
+    }
     // OAuth — this redirects the whole page to the provider.
-    const oauthError = await startOAuthSignIn(provider, redirectParam, rememberMe);
+    const oauthError = await startOAuthSignIn(provider, returnTo, rememberMe);
     if (oauthError) {
       setError(oauthError);
       // The page is still here, so the buttons are for trying again.
@@ -154,6 +188,8 @@ export function LoginPanel() {
       onProvider={handleProvider}
       loadingProvider={loadingProvider}
       error={error}
+      /* G19: why the dialog opened, in the password field's reserved line, until there is an error to say there. */
+      notice={signedOut ? SIGNED_OUT_DIALOG : undefined}
       onResendVerification={handleResendVerification}
       resendAnswer={resendAnswer}
     />

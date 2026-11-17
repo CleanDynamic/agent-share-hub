@@ -50,6 +50,7 @@ import { flatNodes, noteRecord } from "@/lib/build/staleWrites";
 import { canSucceedLater, errorCode, errorLine, shortReason } from "@/lib/errors/code";
 import { composeBuildQueryKey } from "./composeBuildQueryKey";
 import { fetchNodeTypes } from "./useNodeType";
+import { retryRead } from "@/lib/query/client";
 
 /** Quiet enough that a sentence of typing is one write, short enough that the
  *  indicator settles while the creator is still looking at the field. */
@@ -153,7 +154,10 @@ export function useComposeBuild(buildId: string | undefined): ComposeBuild {
     // refetch can only arrive stale and fight the optimistic overlay below.
     staleTime: Infinity,
     refetchOnWindowFocus: false,
-    retry: 1,
+    // D3: one retry, never after the time limit cut the read, never for a refused session (lib/query/client.ts).
+    retry: retryRead,
+    // G20: the route read the record first; a failure it saw is not asked for again when the page mounts (Try again does).
+    retryOnMount: false,
     structuralSharing: newerRecord,
   });
 

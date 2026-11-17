@@ -18,6 +18,7 @@
 // ERRORS CARRY IDENTIFIERS ONLY ⟦neoscale-error-monitoring › Privacy⟧: the
 // operation, the maker's id, the code and the status.
 
+import { timeoutCause } from "@/lib/query/readLimit";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { getMakerStats, type MakerStats } from "@/lib/profile/makerStats";
@@ -102,11 +103,10 @@ export class BuildStatsError extends Error {
 
 function failure(operation: string, userId: string, response: { error: unknown; status?: number }) {
   const { code } = (response.error ?? {}) as { code?: unknown };
-  return new BuildStatsError(
-    operation,
-    userId,
-    typeof code === "string" && code ? code : null,
-    typeof response.status === "number" && response.status > 0 ? response.status : null,
+  // A read the time limit cut keeps a clean marker as its cause, so it is still known as one (lib/query/readLimit.ts).
+  return Object.assign(
+    new BuildStatsError(operation, userId, typeof code === "string" && code ? code : null, typeof response.status === "number" && response.status > 0 ? response.status : null),
+    timeoutCause(response.error),
   );
 }
 

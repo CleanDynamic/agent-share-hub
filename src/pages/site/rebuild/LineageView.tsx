@@ -13,7 +13,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Link } from "react-router-dom";
 
-import type { PanelFailure } from "@/components/brand/ErrorState";
+import type { PanelFailure } from "@/components/pagestate/PageState";
 import { PageHeading } from "@/components/brand/PageHeading";
 import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
 import { useIsPhone, useTierFit, useWidthTier } from "@/components/shell/useMinWidth";

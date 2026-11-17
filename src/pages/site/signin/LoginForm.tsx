@@ -36,6 +36,8 @@ export interface LoginFormProps {
   onProvider: (provider: OAuthProvider) => void;
   loadingProvider: OAuthProvider | null;
   error?: string;
+  /** G19: why the dialog opened, in the password field's message line until there is an error to say there. */
+  notice?: string;
   /** Where "Forgot password?" goes: the dialog's reset view, as an address, so it does not leave the page behind. */
   forgotTo?: string;
   /** The history state that link carries (how deep into the dialog it goes). */
@@ -88,6 +90,7 @@ export function LoginForm({
   onProvider,
   loadingProvider,
   error,
+  notice,
   forgotTo = "/reset-password",
   forgotState,
   onResendVerification,
@@ -125,6 +128,7 @@ export function LoginForm({
             required
             autoComplete="current-password"
             error={error}
+            notice={notice}
             reserveMessage
           />
           <Gap size={8} />
@@ -184,6 +188,7 @@ export function LoginForm({
           required
           autoComplete="current-password"
           error={error}
+          notice={notice}
         />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>
           <AuthCheck id="remember" checked={rememberMe} onChange={onRememberMeChange}>

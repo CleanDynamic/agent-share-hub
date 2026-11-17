@@ -6,6 +6,10 @@
    preview. Each section is its own component and is drawn only when its prop is given, so the live page draws what has
    a source and the dev page draws the whole board. */
 
+import type { EmptyStateAction } from "@/components/pagestate/PageState";
+import { PageState } from "@/components/pagestate/PageState";
+import { shownState, type ReadLike } from "@/components/pagestate/pageStateModel";
+import type { Thing } from "@/components/pagestate/stateCopy";
 import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 import { Link } from "react-router-dom";
 
@@ -42,7 +46,8 @@ import { STATE_WORD, type ChangeTag, type CollectionEntry, type ItemState, type 
 
 /* ── props ── */
 
-export type PanelStatus = "loading" | "error" | "ready";
+/** G4: a panel's reads, as PageState takes them. */
+export type PanelRead = ReadLike | readonly ReadLike[];
 
 export interface LibraryKindsProps {
   items: readonly { value: LibraryKind; label: string; count: number; href: string }[];
@@ -51,14 +56,13 @@ export interface LibraryKindsProps {
 }
 
 export interface LibraryCollectionsProps {
-  status: PanelStatus;
+  read: PanelRead;
   items: readonly CollectionEntry[];
   /** The open collection. */
   current: string | null;
   hrefFor: (id: string) => string;
   /** Your own library: the head's New. */
   onNew?: () => void;
-  onRetry: () => void;
   /** The one line when there are none. */
   emptyLine: string;
 }
@@ -88,10 +92,9 @@ export interface LibraryItemsProps {
   controls?: { filters: number; sort: string; onFilters: () => void; onSort: () => void };
   chips?: readonly { name: string; value: string; onRemove: () => void }[];
   sameAsBuilds?: boolean;
-  status: PanelStatus;
-  /** For the error line: "Builds didn't load." */
-  what: string;
-  onRetry: () => void;
+  read: PanelRead;
+  /** What failed, for "Couldn't load <thing>. Try again." */
+  thing: Thing;
   empty: LibraryEmpty;
   /** The first column's name: "Step", "Build". */
   itemColumn: string;
@@ -154,7 +157,7 @@ export interface LibraryPreviewProps {
   meta: string;
   to: string;
   rows: readonly { id: string; title: string; type: string }[];
-  status: PanelStatus;
+  read: PanelRead;
   onStart?: () => void;
 }
 
@@ -173,36 +176,6 @@ export interface LibraryViewProps {
 const small: CSSProperties = { fontFamily: FIGTREE, fontSize: 12, lineHeight: "20px", color: t.label };
 const ellipsis: CSSProperties = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 
-/** One sentence and Retry (CA-28's wording). */
-function PanelError({ what, onRetry }: { what: string; onRetry: () => void }) {
-  return (
-    <div role="alert" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, paddingBlock: 16 }}>
-      <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, color: t.text }}>{what}</p>
-      <LibraryControl onClick={onRetry}>
-        Retry
-      </LibraryControl>
-    </div>
-  );
-}
-
-/** One line and one action. */
-function PanelEmpty({ empty, testId }: { empty: LibraryEmpty; testId: string }) {
-  const { action } = empty;
-  return (
-    <div data-testid={testId} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, paddingBlock: 16 }}>
-      <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>{empty.line}</p>
-      {"href" in action ? (
-        <LibraryControl href={action.href}>
-          {action.label}
-        </LibraryControl>
-      ) : (
-        <LibraryControl onClick={action.onClick}>
-          {action.label}
-        </LibraryControl>
-      )}
-    </div>
-  );
-}
 
 /* ── left: the kinds ── */
 
@@ -290,7 +263,7 @@ function CollectionRow({ item, current, href }: { item: CollectionEntry; current
   );
 }
 
-export function LibraryCollections({ status, items, current, hrefFor, onNew, onRetry, emptyLine }: LibraryCollectionsProps) {
+export function LibraryCollections({ read, items, current, hrefFor, onNew, emptyLine }: LibraryCollectionsProps) {
   return (
     <section aria-label="Collections" style={{ marginTop: 32 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingBottom: 8, borderBottom: `1px solid ${t.hairline}` }}>
@@ -301,15 +274,14 @@ export function LibraryCollections({ status, items, current, hrefFor, onNew, onR
           </LibraryTextButton>
         ) : null}
       </div>
-      {status === "loading" ? (
-        <CollectionSkeletons />
-      ) : status === "error" ? (
-        <PanelError what="Collections didn't load." onRetry={onRetry} />
-      ) : items.length === 0 ? (
-        <p data-testid="library-collections-empty" style={{ ...small, margin: "12px 0 0" }}>
-          {emptyLine}
-        </p>
-      ) : (
+      <PageState
+        read={read}
+        thing="your collections"
+        region="Collections"
+        skeleton={<CollectionSkeletons />}
+        empty={{ when: () => items.length === 0, line: emptyLine, testId: "library-collections-empty" }}
+      >
+        {() => (
         <>
           <div data-testid="library-collections">
             {items.map((item) => (
@@ -318,7 +290,8 @@ export function LibraryCollections({ status, items, current, hrefFor, onNew, onR
           </div>
           <p style={{ ...small, margin: "10px 0 0" }}>Ordered by your last use</p>
         </>
-      )}
+        )}
+      </PageState>
     </section>
   );
 }
@@ -418,16 +391,14 @@ function TopicCards({ topics }: { topics: readonly LibraryTopic[] }) {
 }
 
 export function LibraryItems(props: LibraryItemsProps) {
-  const { heading, tabs, tab, onTab, controls, chips, sameAsBuilds, status, what, onRetry, empty, itemColumn, rows, selected, onSelect, more } = props;
+  const { heading, tabs, tab, onTab, controls, chips, sameAsBuilds, read, thing, empty, itemColumn, rows, selected, onSelect, more } = props;
   const usedIn = rows.some((row) => row.usedIn !== undefined);
-  let body: ReactNode;
-  if (status === "loading") body = <TableRowSkeletons count={7} />;
-  else if (status === "error") body = <PanelError what={what} onRetry={onRetry} />;
-  else if (rows.length === 0) body = <PanelEmpty empty={empty} testId="library-empty" />;
-  else if (props.topics) body = <TopicCards topics={props.topics} />;
-  else {
-    /* A phone scrolls the table inside its own box, never the page sideways. */
-    body = (
+  const ready = shownState(Array.isArray(read) ? read : [read as ReadLike]) === "ready";
+  const emptyAction: EmptyStateAction = "href" in empty.action ? { label: empty.action.label, href: empty.action.href } : { label: empty.action.label, onClick: empty.action.onClick };
+  let table: () => ReactNode;
+  if (props.topics) table = () => <TopicCards topics={props.topics ?? []} />;
+  /* A phone scrolls the table inside its own box, never the page sideways. */
+  else table = () => (
       <div style={{ overflowX: "auto", marginTop: chips?.length || sameAsBuilds ? 16 : 0 }}>
       <table data-testid="library-table" style={{ width: "100%", borderCollapse: "collapse", fontFamily: FIGTREE, fontSize: 12, fontVariantNumeric: "tabular-nums" }}>
         <thead>
@@ -448,8 +419,7 @@ export function LibraryItems(props: LibraryItemsProps) {
         </tbody>
       </table>
       </div>
-    );
-  }
+  );
   return (
     <section aria-label={itemColumn === "Build" ? "Saved builds" : "Saved items"} data-testid="library-items">
       {heading ? <CollectionHeading heading={heading} /> : null}
@@ -472,8 +442,17 @@ export function LibraryItems(props: LibraryItemsProps) {
           {sameAsBuilds ? <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.label, alignSelf: "center", marginLeft: 6 }}>Same filters as Builds</span> : null}
         </div>
       ) : null}
-      {body}
-      {more && status === "ready" ? (
+      <PageState
+        read={read}
+        thing={thing}
+        region={itemColumn === "Build" ? "Saved builds" : "Saved items"}
+        skeleton={<TableRowSkeletons count={7} />}
+        style={{ paddingBlock: 16 }}
+        empty={{ when: () => rows.length === 0, line: empty.line, action: emptyAction, testId: "library-empty" }}
+      >
+        {table}
+      </PageState>
+      {more && ready ? (
         <div style={{ marginTop: 16 }}>
           <LibraryControl onClick={more.onMore} disabled={more.loading}>
             Show more
@@ -648,14 +627,13 @@ function NoteField({ value, onChange, onCommit }: { value: string; onChange: (va
 
 /* ── right: a collection's preview ── */
 
-export function LibraryPreview({ name, meta, to, rows, status, onStart }: LibraryPreviewProps) {
+export function LibraryPreview({ name, meta, to, rows, read, onStart }: LibraryPreviewProps) {
   return (
     <section aria-label={`Collection: ${name}`} data-testid="library-preview" style={{ marginTop: 32 }}>
       <SectionHead title={name} meta={meta} to={to} headingLevel={2} />
       <div style={{ marginTop: 12 }}>
-        {status === "loading" ? (
-          <CollectionSkeletons />
-        ) : (
+        <PageState read={read} thing="this collection" region={`Collection: ${name}`} skeleton={<CollectionSkeletons />}>
+          {() =>
           rows.slice(0, 3).map((row, index, shown) => (
             <div key={row.id} style={{ display: "grid", gridTemplateColumns: "16px 1fr auto", columnGap: 10, alignItems: "center", minHeight: 32, borderBottom: index < shown.length - 1 ? `1px solid ${t.hairline}` : "none", fontFamily: FIGTREE, fontSize: 13 }}>
               <span style={{ ...small, fontVariantNumeric: "tabular-nums" }}>{index + 1}</span>
@@ -663,7 +641,8 @@ export function LibraryPreview({ name, meta, to, rows, status, onStart }: Librar
               <span style={small}>{row.type}</span>
             </div>
           ))
-        )}
+          }
+        </PageState>
       </div>
       {onStart ? (
         <div style={{ marginTop: 12 }}>

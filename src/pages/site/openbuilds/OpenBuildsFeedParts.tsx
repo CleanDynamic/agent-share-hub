@@ -2,6 +2,9 @@
    phone the primary under them at full width, 44 high), the load-error line and the empty line. Kept out of the frame module
    so the route table's Placeholder carries none of them. */
 
+import { PageState } from "@/components/pagestate/PageState";
+import type { ReadLike } from "@/components/pagestate/pageStateModel";
+import { WAY_OUT, type Thing } from "@/components/pagestate/stateCopy";
 import type { CSSProperties, ReactNode } from "react";
 
 import { PAGE_TITLE, PageHeader } from "@/components/shell/PageHeader";
@@ -57,22 +60,18 @@ export function PageHead({ title, line, meta, actions, primary, breadcrumb }: { 
   );
 }
 
-/** One sentence and Retry (CA-28's wording). */
-export function LoadError({ what, onRetry }: { what: string; onRetry: () => void }) {
+/**
+ * G4, G7, G8: a Space or a Post that did not load, or is not at this address. The page head with the page's kind as its title
+ * (the space's name or the topic's heading is what did not load), and PageState: "Couldn't load this space. Try again." or
+ * "Nothing at this address.", the kind's line, and OpenBuilds as the way out (D5).
+ */
+export function OpenBuildsState({ title, read, thing, region, kind, missing }: { title: string; read: ReadLike; thing: Thing; region: string; kind: "space" | "post"; missing?: (data: unknown[]) => boolean }) {
   return (
-    <div role="alert" style={{ display: "flex", alignItems: "center", gap: 12, padding: "20px 20px", fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>
-      <span style={{ flexGrow: 1 }}>{what}</span>
-      <PostControl onClick={onRetry}>Retry</PostControl>
-    </div>
-  );
-}
-
-/** One line and one action, for an empty list. */
-export function EmptyLine({ line, children }: { line: string; children: ReactNode }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "24px 20px", fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>
-      <span style={{ flexGrow: 1 }}>{line}</span>
-      {children}
+    <div>
+      <PageHead title={title} />
+      <PageState read={read} thing={thing} region={region} skeleton={null} style={{ padding: "16px 20px" }} notFound={missing ? { when: missing, kind, way: WAY_OUT.openBuilds } : undefined}>
+        {() => null}
+      </PageState>
     </div>
   );
 }

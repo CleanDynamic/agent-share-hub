@@ -27,10 +27,18 @@ export function useLibrarySessions({
   active = true,
   withUnfinished = true,
   enabled = true,
-}: SessionsPolling & { withUnfinished?: boolean; /** SV-10: Home asks only for a signed-in reader. */ enabled?: boolean } = {}) {
+  retryOnMount = true,
+}: SessionsPolling & {
+  withUnfinished?: boolean;
+  /** SV-10: Home asks only for a signed-in reader. */
+  enabled?: boolean;
+  /** G20: false where the read was just started (and seen to fail) by the route: mounting does not ask again; Try again does. */
+  retryOnMount?: boolean;
+} = {}) {
   const pages = useInfiniteQuery({
     queryKey: librarySessionsKey,
     enabled,
+    retryOnMount,
     queryFn: ({ pageParam }) => listLibrarySessions({ offset: pageParam }),
     initialPageParam: 0,
     getNextPageParam: (last, all) => (last.hasMore ? all.length * LIBRARY_PAGE : undefined),
@@ -55,6 +63,9 @@ export function useLibrarySessions({
     isError: pages.isError,
     isLoadingError: pages.isLoadingError,
     error: pages.error,
+    /* G4: what PageState reads to tell loading, failed and retrying apart. */
+    status: pages.status,
+    fetchStatus: pages.fetchStatus,
     refetch: () => {
       if (withUnfinished) void unfinished.refetch();
       return pages.refetch();

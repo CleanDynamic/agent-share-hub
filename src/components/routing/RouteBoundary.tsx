@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from "react";
+import { FAILED_PAGE } from "@/components/pagestate/stateCopy";
 import { useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,8 @@ import { body } from "@/lib/theme/type";
    rendering is replaced by one sentence and one action inside the frame, and
    the navigation around it keeps working.
 
-   WHAT THE READER SEES is STATES.md row 21: "Something went wrong." and a
+   WHAT THE READER SEES is "Couldn't load this page. Try again." (the copy module's FAILED_PAGE, G5; it was STATES.md row 21's
+   "Something went wrong.") and a
    secondary "Try again" (row 2 — the outline button on a transparent ground).
    Try again clears the boundary and renders the route again.
 
@@ -72,7 +74,8 @@ function RouteFailed({ onRetry }: { onRetry: () => void }) {
         paddingBottom: SPACE.lg,
       }}
     >
-      <p style={{ ...body, margin: 0, color: t.text }}>Something went wrong.</p>
+      {/* G5: the page-level failed sentence, from the copy module. */}
+      <p style={{ ...body, margin: 0, color: t.text }}>{FAILED_PAGE}</p>
       <Button type="button" variant="outline" onClick={onRetry} style={{ background: "transparent" }}>
         Try again
       </Button>

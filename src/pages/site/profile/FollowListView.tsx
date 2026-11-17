@@ -6,6 +6,10 @@
    primary a view has (Visual grammar 9). Newest first, 30 a page, Show more as the feed has it. A private
    profile the reader does not follow shows the profile's private sentence; an empty list says so in one line. */
 
+import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
+import { PageState } from "@/components/pagestate/PageState";
+import type { ReadLike } from "@/components/pagestate/pageStateModel";
+import { WAY_OUT } from "@/components/pagestate/stateCopy";
 import type { CSSProperties } from "react";
 
 import { Avatar } from "@/components/brand/Avatar";
@@ -36,13 +40,15 @@ export interface FollowListViewProps {
   which: FollowListKind;
   /** The list's size; null while it is not known. Hidden at zero. */
   total: number | null;
-  status: "loading" | "ready" | "error" | "private";
+  /** G4: the profile and the list, read together: PageState draws loading, failed, not found (G33) and empty. */
+  read: readonly ReadLike[];
+  /** The profile answered, and it is private to this reader: said in a sentence, the list not drawn. */
+  locked: boolean;
   people: readonly FollowRowView[];
   hasMore: boolean;
   loadingMore: boolean;
   onMore: () => void;
   onFollow: (id: string, follow: boolean) => void;
-  onRetry: () => void;
 }
 
 export const followTitle = (which: FollowListKind, handle: string): string => (which === "followers" ? `@${handle}'s followers` : `People @${handle} follows`);
@@ -79,17 +85,23 @@ export function FollowListView(props: FollowListViewProps) {
       <h1 style={{ margin: 0, fontSize: 20, fontWeight: 500, lineHeight: 1.2, letterSpacing: "-0.015em", color: t.text }}>{followTitle(which, handle)}</h1>
       {props.total ? <div style={{ marginTop: 2, fontSize: 12, color: t.label, fontVariantNumeric: "tabular-nums" }}>{props.total.toLocaleString("en-GB")}</div> : null}
       <div style={{ marginTop: 24 }}>
-        {props.status === "private" ? (
+        <PageState
+          read={props.read}
+          thing="this list"
+          region={followTitle(which, handle)}
+          skeleton={
+            <LoadingRegion what={which === "followers" ? "the followers" : "who they follow"} announce>
+              {[0, 1, 2, 3, 4].map((at) => (
+                <Skeleton key={at} height={44} style={{ marginBottom: 12 }} />
+              ))}
+            </LoadingRegion>
+          }
+          notFound={{ when: ([profile]) => profile === null, kind: "profile", way: WAY_OUT.browseBuilds }}
+          empty={{ when: () => !props.locked && props.people.length === 0, line: followEmpty(which), testId: "follow-empty" }}
+        >
+          {() =>
+        props.locked ? (
           <p style={{ margin: 0, fontSize: 13, color: t.text2 }}>{`@${handle}'s profile is private.`}</p>
-        ) : props.status === "error" ? (
-          <p style={{ margin: 0, fontSize: 13, color: t.text2 }}>
-            {"This list didn't load. "}
-            <PostControl onClick={props.onRetry}>Retry</PostControl>
-          </p>
-        ) : props.status === "ready" && props.people.length === 0 ? (
-          <p data-testid="follow-empty" style={{ margin: 0, fontSize: 13, color: t.text2 }}>
-            {followEmpty(which)}
-          </p>
         ) : (
           <ol aria-label={followTitle(which, handle)} style={{ listStyle: "none", margin: 0, padding: 0 }}>
             {props.people.map((person, index) => (
@@ -111,8 +123,10 @@ export function FollowListView(props: FollowListViewProps) {
               />
             ))}
           </ol>
-        )}
-        {props.hasMore && props.status === "ready" ? (
+        )
+          }
+        </PageState>
+        {props.hasMore && !props.locked && props.people.length > 0 ? (
           <div style={{ marginTop: 16, display: "flex", justifyContent: "center" }}>
             <PostControl onClick={props.onMore} disabled={props.loadingMore}>
               {props.loadingMore ? "Loading" : "Show more"}

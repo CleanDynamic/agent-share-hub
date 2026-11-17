@@ -44,6 +44,7 @@ import { trackWrite } from "@/lib/build/pendingWrites";
 
 import type { MadeWithChip } from "./composeModel";
 import { sayFailed } from "./draftStart";
+import { retryRead } from "@/lib/query/client";
 
 const STALE_MS = 30_000;
 const NO_SESSIONS: SessionSummary[] = [];
@@ -131,20 +132,27 @@ export function useComposeSessions({
     queryFn: () => listBuildSessions(buildId as string),
     enabled,
     staleTime: STALE_MS,
+    // G20: started by the route (composerOpen.ts); a failure it saw is not asked for again on mount. Try again asks.
+    retryOnMount: false,
   });
   const rows = useQuery({
     queryKey: buildSessionRowsKey(buildId),
     queryFn: () => listBuildSessionRows(buildId as string),
     enabled: Boolean(buildId),
     staleTime: STALE_MS,
+    // G20: started by the route (composerOpen.ts); a failure it saw is not asked for again on mount. Try again asks.
+    retryOnMount: false,
   });
-  const library = useLibrarySessions({ active: libraryActive });
+  // G20: the route started this read and waited for it; a failure it saw is not asked for again on mount.
+  const library = useLibrarySessions({ active: libraryActive, retryOnMount: false });
   const madeWithQuery = useQuery({
     queryKey: madeWithKey(buildId),
     queryFn: () => getMadeWith(buildId as string),
     enabled,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
+    // G20: started by the route (composerOpen.ts); a failure it saw is not asked for again on mount. Try again asks.
+    retryOnMount: false,
   });
 
   const [openIds, setOpenIdsState] = useState<readonly string[]>([]);
@@ -155,7 +163,8 @@ export function useComposeSessions({
       queryFn: () => getSessionPrompts(id),
       staleTime: Infinity,
       refetchOnWindowFocus: false,
-      retry: 1,
+      // D3: one retry, never after the time limit cut the read, never for a refused session (lib/query/client.ts).
+      retry: retryRead,
     })),
   });
 

@@ -49,8 +49,9 @@ const cards = () => screen.getAllByTestId("map-card");
 describe("the page", () => {
   it("has the board's head, and the Filters control with its count", () => {
     draw();
-    expect(screen.getByRole("heading", { level: 1, name: "18 builds" })).toBeTruthy();
-    expect(screen.getByText("Each build's Map: one box per session, one line where a tile in one session uses something from another.")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "Builds" })).toBeTruthy();
+    expect(screen.getByTestId("builds-head").textContent).toMatch(/^Builds18 builds/);
+    expect(screen.getByText("18 builds · Each build's Map: one box per session, one line where a tile in one session uses something from another.")).toBeTruthy();
     expect(screen.getByRole("button", { name: /Filters/ }).textContent).toContain("6");
     expect(screen.getByText("14 with a Map")).toBeTruthy();
   });
@@ -271,12 +272,12 @@ describe("the updating state", () => {
 /* ── BF-03 P1 (D1) ── */
 
 describe("the head", () => {
-  it('the head is the shared head: an h1 that reads "<n> builds", aligned to the top, with the view switch', () => {
+  it('the head is the shared head: an h1 that reads "Builds", the count first on the line under it, aligned to the top, with the view switch (G8, G25)', () => {
     draw();
     const head = screen.getByTestId("builds-head");
     expect(head.style.alignItems).toBe("flex-start");
-    expect(within(head).getByRole("heading", { level: 1 }).textContent).toMatch(/^\d+( of \d+)? builds?$/);
-    expect(within(head).getByRole("heading", { level: 1, name: /^\d+( of \d+)? builds?$/ })).toBeTruthy();
+    expect(within(head).getByRole("heading", { level: 1 }).textContent).toBe("Builds");
+    expect(head.textContent).toMatch(/^Builds\d+( of \d+)? builds?/);
     expect(within(head).getByRole("navigation", { name: "View" })).toBeTruthy();
   });
 });

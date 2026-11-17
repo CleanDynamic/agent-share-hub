@@ -70,8 +70,9 @@ import { buildPatterns, patternsLine } from "@/lib/build/patterns";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Maximize2, Play, X } from "lucide-react";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
-import { EmptyState } from "@/components/brand/EmptyState";
-import { ErrorState } from "@/components/brand/ErrorState";
+import { PageEmpty, PageState, WriteFailed } from "@/components/pagestate/PageState";
+import type { ReadLike } from "@/components/pagestate/pageStateModel";
+import { WAY_OUT } from "@/components/pagestate/stateCopy";
 import { IconButton } from "@/components/brand/IconButton";
 import { Panel, PanelHead } from "@/components/brand/Panel";
 import { PartViewer } from "@/components/brand/PartViewer";
@@ -179,7 +180,7 @@ export function useConfirmed(): [boolean, () => void] {
 /** An optimistic run that the server refused: said once in the panel, with a retry. */
 export function RunFailed({ failure }: { failure: NonNullable<BuildProofView["writeError"]> }) {
   return (
-    <ErrorState
+    <WriteFailed
       line="That didn't save."
       panel="Reproduction"
       onRetry={failure.onRetry}
@@ -345,7 +346,7 @@ export function AnatomyPanel({ anatomy, phone, onSelect }: { anatomy: BuildAnato
           }
         />
         {parts.length === 0 ? (
-          <EmptyState line="This build has no parts yet." data-testid="build-anatomy-empty" />
+          <PageEmpty line="This build has no parts yet." testId="build-anatomy-empty" />
         ) : (
           <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 2 }}>
             {shown.map((part) => (
@@ -442,7 +443,7 @@ export function TimelinePanel({ timeline, phone, onPlay }: { timeline: BuildTime
           {events.length > 0 ? (
             <Timeline events={events} size={phone ? "phone" : "desktop"} label="Kept steps" />
           ) : (
-            <EmptyState line="No events were kept for this build." data-testid="build-timeline-empty" style={{ padding: "12px 0" }} />
+            <PageEmpty line="No events were kept for this build." testId="build-timeline-empty" style={{ padding: "12px 0" }} />
           )}
         </div>
       </div>
@@ -453,25 +454,18 @@ export function TimelinePanel({ timeline, phone, onPlay }: { timeline: BuildTime
 export const selectedPart = (anatomy: BuildAnatomyView): PartRowView | null =>
   anatomy.parts.find((part) => part.id === anatomy.selectedId) ?? anatomy.parts[0] ?? null;
 
-/** The record could not be read: the page's own panel says so, inside the frame, with a retry. The h1 is for assistive technology alone. */
-export function BuildViewFailed({ onRetry, error }: { onRetry: () => void; error?: unknown }) {
+/**
+ * G4, G7, G8: the record did not load, or there is no build at this address. Inside the page's panel, under the page's kind
+ * as its title ("Build": the build's own title is what did not load), PageState says which: "Couldn't load this build. Try
+ * again." or "Nothing at this address." with Browse builds.
+ */
+export function BuildViewState({ read }: { read: ReadLike }) {
   return (
     <Panel padding="24px 24px">
-      <h1 style={VISUALLY_HIDDEN}>The build</h1>
-      <ErrorState panel="The build" onRetry={onRetry} error={error} data-testid="build-error" />
-    </Panel>
-  );
-}
-
-/** A record that is not there, or could not be read: one Sentient line and one action. */
-export function BuildViewNotice({ line, detail, action }: { line: string; detail?: string; action: ReactNode }) {
-  return (
-    <Panel padding="24px 24px">
-      <div data-testid="build-notice" role="status" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
-        <h1 style={PAGE_TITLE}>{line}</h1>
-        {detail ? <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.55, color: t.text2, maxWidth: "68ch" }}>{detail}</p> : null}
-        {action}
-      </div>
+      <h1 style={{ ...PAGE_TITLE, marginBottom: 16 }}>Build</h1>
+      <PageState read={read} thing="this build" region="The build" skeleton={null} notFound={{ when: ([record]) => record === null, kind: "build", way: WAY_OUT.browseBuilds }}>
+        {() => null}
+      </PageState>
     </Panel>
   );
 }

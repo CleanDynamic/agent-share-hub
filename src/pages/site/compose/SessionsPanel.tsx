@@ -31,7 +31,8 @@ import { flushSync } from "react-dom";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/brand/Button";
-import { ErrorState } from "@/components/brand/ErrorState";
+import { PageState } from "@/components/pagestate/PageState";
+import { readOf } from "@/components/pagestate/pageStateModel";
 import { IconButton } from "@/components/brand/IconButton";
 import { Panel, PanelHead } from "@/components/brand/Panel";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
@@ -51,6 +52,11 @@ import { addPromptLabel, MADE_WITH_ENTRY_MAX, promptDragData } from "./composeMo
 import { PROMPT_DRAG_TYPE } from "./PromptsPanel";
 import { size, space } from "@/lib/theme/space";
 import { BUTTON_PAD, iconButtonSide } from "./modalRecipes";
+
+/** What PageState logs for the sessions list: the real error is reported by the query cache. */
+const SESSIONS_FAILED = { name: "SessionsError", message: "the sessions list did not load" };
+/** The same, for one session's prompts. */
+const PROMPTS_FAILED = { name: "PromptsError", message: "a session's prompts did not load" };
 
 /** The desktop header is 64px tall; the panel sticks 24px under it. */
 const STICKY_TOP = 64 + 24;
@@ -361,11 +367,11 @@ function SessionSection({
       {open ? (
         <div id={listId} style={{ paddingTop: 2 }}>
           {session.promptsError ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "6px 6px 7px", fontFamily: FIGTREE, fontSize: textStep.meta, color: t.text2 }}>
-              <span>Prompts didn&apos;t load</span>
-              <button type="button" onClick={() => onRetryPrompts(session.id)} style={{ ...textLink, fontSize: textStep.meta }}>
-                Retry
-              </button>
+            /* G30: the shared failed state; the read's own error is reported by the query cache. */
+            <div style={{ padding: "6px 6px 7px" }}>
+              <PageState read={readOf("error", undefined, () => onRetryPrompts(session.id), PROMPTS_FAILED)} thing="these prompts" region="Prompts" skeleton={null}>
+                {() => null}
+              </PageState>
             </div>
           ) : session.prompts === null ? (
             <LoadingRegion what={`session ${session.number}'s prompts`} style={{ display: "flex", flexDirection: "column", gap: 2, padding: "2px 0 4px" }}>
@@ -457,7 +463,10 @@ export function SessionsPanel({
               <Skeleton height={phone ? 44 : 36} radius={10} />
             </LoadingRegion>
           ) : status === "error" ? (
-            <ErrorState line="Your sessions didn't load." panel="Your sessions" onRetry={onRetry} />
+            /* G20: the shared failed state. The read's own error is the page's to log (the query cache reports it). */
+            <PageState read={readOf("error", undefined, onRetry, SESSIONS_FAILED)} thing="your sessions" region="Your sessions" skeleton={null}>
+              {() => null}
+            </PageState>
           ) : sessions.length === 0 ? (
             <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: textStep.body, color: t.text2 }}>No sessions yet.</p>
           ) : (

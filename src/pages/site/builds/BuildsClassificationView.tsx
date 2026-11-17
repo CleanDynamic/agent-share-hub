@@ -34,7 +34,8 @@ export interface BuildsClassificationViewProps {
   hrefFor: (view: GalleryViewMode) => string;
   onViewIntent?: (view: GalleryViewMode) => void;
   /** "18 builds". */
-  buildsLabel: string;
+  /** G25: "n builds", drawn under the title only once the list has answered with builds; null before. */
+  buildsLabel: string | null;
   activeCount: number;
   /** BF-04 (X3): every active filter, drawn as the Table draws them, under the toolbar. */
   chips: readonly TableChip[];
@@ -185,7 +186,7 @@ export default function BuildsClassificationView(props: BuildsClassificationView
   const columns = useCardColumns();
   return (
     <div data-testid="builds-classification" style={ROOT}>
-      <BuildsHead figure={buildsLabel} parts={CLASSIFICATION_PARTS} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
+      <BuildsHead figure="Builds" parts={buildsLabel ? [{ text: buildsLabel }, ...CLASSIFICATION_PARTS] : CLASSIFICATION_PARTS} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
 
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 16px", marginTop: 24 }}>
         <FiltersButton activeCount={activeCount} setName={setName} disabled={!filters} onClick={() => setFiltersOpen(true)} />

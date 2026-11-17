@@ -58,7 +58,7 @@ describe("ErrorState, refined", () => {
   it("is one sentence and Try again, the panel naming the region instead of drawing a second line", () => {
     const onRetry = vi.fn();
     render(at("refined", <ErrorState line="This build didn't load." panel="The composer" onRetry={onRetry} />));
-    const region = screen.getByRole("status");
+    const region = screen.getByRole("alert");
     expect(region.getAttribute("aria-label")).toBe("The composer");
     expect(region.textContent).toBe("This build didn't load.Try again");
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));

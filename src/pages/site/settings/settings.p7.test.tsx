@@ -42,9 +42,9 @@ describe("the list", () => {
     expect(screen.getByText("Authorised 2 Nov 2026")).toBeTruthy();
   });
 
-  it("says so when no app has access", () => {
+  it("draws no list when no app has access: the section's empty state says so (G6, the section test below)", () => {
     render(<MemoryRouter><AppsView apps={[]} onRevoke={vi.fn()} /></MemoryRouter>);
-    expect(screen.getByText("No apps can access your account.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /^Revoke / })).toBeNull();
   });
 
   it("is one sentence when the auth server cannot list, and invents no list", () => {

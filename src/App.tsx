@@ -3,7 +3,6 @@ import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { BrowserRouter, Navigate, Route, useParams, Routes } from "react-router-dom";
 import { AddToCollectionHost } from "@/components/library/AddToCollectionHost";
-import { isPermissionError } from "@/lib/errors/permission";
 import { connectErrorReporting } from "@/lib/errors/wire";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -29,6 +28,7 @@ import { ScrollKeeper } from "@/lib/routing/ScrollKeeper";
 import { ROUTE_TABLE } from "@/lib/routing/routeTable";
 import { preloadComposeRoute } from "./pages/site/compose/preload";
 import { SignInDialogHost } from "./pages/site/signin/SignInDialogHost";
+import { SessionListener } from "@/components/pagestate/SessionListener";
 import { SignInRedirect } from "./pages/site/signin/SignInRedirect";
 
 /** SV-26 P2: the composer's route, which holds the build layer's reads, loads with the composer and not with the first page. */
@@ -203,7 +203,8 @@ const queryClient = new QueryClient({
   queryCache: new QueryCache({ onError: errorReporting.queryError }),
   mutationCache: new MutationCache({ onError: errorReporting.mutationError }),
   defaultOptions: {
-    queries: { retry: (count, error) => count < 1 && !isPermissionError(error), ...QUERY_DEFAULTS },
+    // The retry rule is QUERY_DEFAULTS.retry (lib/query/client.ts): once, never after a refusal or a timeout.
+    queries: { ...QUERY_DEFAULTS },
   },
 });
 
@@ -603,6 +604,8 @@ const App = () => (
             </Routes>
             {/* D1: the sign-in dialog, over whatever page is on screen, when the address carries `?signin=<view>`. */}
             <SignInDialogHost />
+            {/* G13: a session the server has ended is noticed here, once, and the dialog above opens over the page. */}
+            <SessionListener />
             </Suspense>
             </PageChangeProvider>
             </UploadPickerProvider>

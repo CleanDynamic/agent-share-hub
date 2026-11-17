@@ -30,12 +30,13 @@
 
    PURE. */
 
+import { PageEmpty, PageState } from "@/components/pagestate/PageState";
+import { readOf } from "@/components/pagestate/pageStateModel";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { CoverFallback } from "@/components/brand/CoverFallback";
-import { EmptyState } from "@/components/brand/EmptyState";
-import { ErrorState, type PanelFailure } from "@/components/brand/ErrorState";
+import type { PanelFailure } from "@/components/pagestate/PageState";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { LampDot } from "@/components/brand/LampDot";
 import { Panel, PanelHead } from "@/components/brand/Panel";
@@ -368,7 +369,7 @@ export function FamilyPanel({ root, fit = "content", phone = false, selectedId =
       <Panel padding="14px 16px">
         <div data-testid="family-panel">
           <PanelHead headingLevel={2} title={title} subtitle="Lamps show which still work" />
-          {failure ? <ErrorState panel="The family" onRetry={failure.onRetry} error={failure.error} style={{ paddingTop: 9 }} data-testid="family-error" /> : loading ? <FamilySkeleton phone /> : root && lone ? <EmptyState line="This build has no rebuilds yet." data-testid="family-empty" /> : root ? <FamilyList root={root} phone selectedId={selectedId} onSelect={onSelect} /> : null}
+          {failure ? <PageState read={readOf("error", undefined, failure.onRetry, failure.error)} thing="this family" region="The family" skeleton={null} style={{ paddingTop: 9 }}>{() => null}</PageState> : loading ? <FamilySkeleton phone /> : root && lone ? <PageEmpty line="This build has no rebuilds yet." testId="family-empty" /> : root ? <FamilyList root={root} phone selectedId={selectedId} onSelect={onSelect} /> : null}
         </div>
       </Panel>
     );
@@ -380,7 +381,8 @@ export function FamilyPanel({ root, fit = "content", phone = false, selectedId =
         <PanelHead
           headingLevel={2}
           title={title}
-          subtitle={familySubtitle(root)}
+          /* G25: the counts only once the family has loaded; never "0 builds · 0 generations" while it loads or after it failed. */
+          subtitle={root && !loading && !failure ? familySubtitle(root) : "Lamps show which still work"}
           right={
             lone || loading || failure ? undefined : (
               <Segmented<FamilyReading> items={READINGS} value={reading} onChange={setReading} size={28} fontSize={11} label="Read the family as" />
@@ -388,11 +390,11 @@ export function FamilyPanel({ root, fit = "content", phone = false, selectedId =
           }
         />
         {failure ? (
-          <ErrorState panel="The family" onRetry={failure.onRetry} error={failure.error} style={{ paddingTop: 9 }} data-testid="family-error" />
+          <PageState read={readOf("error", undefined, failure.onRetry, failure.error)} thing="this family" region="The family" skeleton={null} style={{ paddingTop: 9 }}>{() => null}</PageState>
         ) : loading ? (
           <FamilySkeleton phone={false} />
         ) : root && lone ? (
-          <EmptyState line="This build has no rebuilds yet." data-testid="family-empty" />
+          <PageEmpty line="This build has no rebuilds yet." testId="family-empty" />
         ) : root ? (
           reading === "tree" ? (
             <FamilyTree root={root} fit={fit} selectedId={selectedId} onSelect={onSelect} />

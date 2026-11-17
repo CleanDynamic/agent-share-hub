@@ -168,7 +168,7 @@ describe("ComposeView", () => {
 
     it("says when they did not load and offers a retry", () => {
       const base = view({ sessionsStatus: "error", onRetrySessions: vi.fn() });
-      expect(screen.getByTestId("compose-sessions").textContent).toContain("Your sessions didn't load.");
+      expect(screen.getByTestId("compose-sessions").textContent).toContain("Couldn't load your sessions. Try again.");
       fireEvent.click(within(screen.getByTestId("compose-sessions")).getByRole("button", { name: /Try again/ }));
       expect(base.onRetrySessions).toHaveBeenCalledTimes(1);
       expect(screen.queryByRole("button", { name: /^Show \d+ more$/ })).toBeNull();

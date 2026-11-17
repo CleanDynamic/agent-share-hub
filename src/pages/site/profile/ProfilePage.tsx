@@ -15,6 +15,9 @@
    WRITES: follow, a message, the track (as before), a picture or header (useProfilePictures), Customise profile's one Save, Pin
    and Unpin, and a build's own display. None notifies anyone. Nothing here awards XP. */
 
+import { readOf } from "@/components/pagestate/pageStateModel";
+import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
+import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { keepPreviousData, useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -51,7 +54,7 @@ import { BLOCK_COPY, blockKeys, blockStateOf, unblockUser } from "@/lib/settings
 
 import { CustomiseProfile } from "./CustomiseProfile";
 import type { FeedEntry } from "./ProfileFeed";
-import { ProfileLoadFailed, ProfileNotice, ProfileView, ProfileViewSkeleton } from "./ProfileView";
+import { ProfileView, ProfileViewSkeleton, ProfileViewState } from "./ProfileView";
 import { entryOf } from "./profileEntries";
 import { emptyFeed, feedOptions, joinedLabel, metaParts, oneLineOf, othersLines, privateLine, recordParts, shownFilter, STANDING_LABEL } from "./profileFeedModel";
 import { TRACK_ITEMS, levelView, streakLine, xpLine } from "./profileModel";
@@ -96,9 +99,11 @@ export function ProfilePage() {
   const lookup = handleParam ?? user?.id ?? null;
   const viewerId = user?.id ?? null;
 
+  /* G16 (page states): not when the server ended the session; the page stays under the sign-in dialog. */
+  const sessionEnded = useSessionPhase() === "ended";
   useEffect(() => {
-    if (!authLoading && !handleParam && !isLoggedIn) navigate("/login", { replace: true });
-  }, [authLoading, handleParam, isLoggedIn, navigate]);
+    if (!authLoading && !handleParam && !isLoggedIn && !sessionEnded) navigate("/login", { replace: true });
+  }, [authLoading, handleParam, isLoggedIn, sessionEnded, navigate]);
 
   /* ── round one: the profile, its side column and the feed's first page, together ── */
 
@@ -127,7 +132,10 @@ export function ProfilePage() {
   const [blocking, setBlocking] = useState<BlockTarget | null>(null);
   const locked = Boolean((summary?.isPrivate && !isOwn && !summary?.isFollowing) || blocked);
 
-  useCrumbTitle(summary ? summary.displayName : summaryQuery.isPending ? null : summaryQuery.isError && !(summaryQuery.error instanceof Error && summaryQuery.error.message.startsWith("Profile not found")) ? "Profile" : "Not found");
+  /* G7, G27: someone else's profile is missing when the server answered that the row is absent; the reader's own absent row
+     is a failed read. Never decided by an error's words. */
+  const someoneMissing = Boolean(handleParam) && summaryQuery.isSuccess && summaryQuery.data === null;
+  useCrumbTitle(summary ? summary.displayName : summaryQuery.isPending ? null : someoneMissing ? "Not found" : "Profile");
 
   const sideKey = profileKeys.side(handle, viewerId);
   const sideQuery = useQuery({
@@ -302,25 +310,21 @@ export function ProfilePage() {
       {node}
     </PageArrival>
   );
+  /* G16 (page states): your own profile under the sign-in dialog keeps its skeleton, and its title for assistive tech. */
+  if (!lookup && sessionEnded) {
+    return arrive(
+      <>
+        <h1 style={VISUALLY_HIDDEN}>Profile</h1>
+        <ProfileViewSkeleton />
+      </>,
+    );
+  }
   if (waiting) return arrive(<ProfileViewSkeleton />);
 
-  /* getProfileSummary throws "Profile not found" for a handle nobody has: that is a missing page, not a failed read. */
-  const missing = summaryQuery.error instanceof Error && summaryQuery.error.message.startsWith("Profile not found");
-  if (summaryQuery.isError && !summary && !missing) {
-    return arrive(<ProfileLoadFailed onRetry={() => void summaryQuery.refetch()} error={summaryQuery.error} />);
-  }
   if (!summary || !handle) {
-    return arrive(
-      <ProfileNotice
-        line="Profile not found"
-        detail="The handle may have changed, or the link is broken."
-        action={
-          <Button variant="secondary" size={36} onClick={() => navigate("/gallery")}>
-            Back to the gallery
-          </Button>
-        }
-      />,
-    );
+    /* G27: the reader's own row missing is drawn as the failed read it is, with Try again. */
+    const read = summaryQuery.isSuccess && !someoneMissing ? readOf("error", undefined, () => void summaryQuery.refetch(), { message: "the reader's own profile row is missing" }) : summaryQuery;
+    return arrive(<ProfileViewState read={read} missing={Boolean(handleParam)} />);
   }
 
   /* ── mapped for the view ── */
@@ -409,6 +413,7 @@ export function ProfilePage() {
           entries,
           status: (feed.isError && entries.length === 0 ? "error" : feed.isPending ? "loading" : "ready") as "error" | "loading" | "ready",
           onRetry: () => void feed.refetch(),
+          read: feed,
           empty: emptyFeed(filter, isOwn),
           hasMore: Boolean(feed.hasNextPage),
           loadingMore: feed.isFetchingNextPage,

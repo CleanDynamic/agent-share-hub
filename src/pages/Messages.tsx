@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
+import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
+import { PageState } from "@/components/pagestate/PageState";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MessageSquare, Loader2, Search, X, Pin, BellOff, LogOut, ExternalLink, UserX } from "lucide-react";
@@ -133,6 +136,7 @@ function ComposeModal({
 /* ───── Page ───── */
 export default function MessagesPage() {
   const { user } = useAuth();
+  const sessionEnded = useSessionPhase() === "ended";
   const navigate = useNavigate();
   const { threadId: routeThreadId } = useParams<{ threadId?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -161,7 +165,7 @@ export default function MessagesPage() {
   }, [totalUnread]);
 
   // Fetch threads for the active tab
-  const { data: tabData, isLoading } = useQuery({
+  const threadsRead = useQuery({
     queryKey: ["messaging_threads", user?.id, activeTab, debouncedQuery],
     queryFn: () => getThreads({
       userId: user!.id,
@@ -172,6 +176,9 @@ export default function MessagesPage() {
     }),
     enabled: !!user,
   });
+  const { data: tabData, isLoading } = threadsRead;
+  /* G24: a failed read is the failed state, never "No conversations yet". */
+  const threadsFailed = threadsRead.isError && tabData === undefined;
 
   // Fetch the OTHER tab's count badge
   const { data: otherTabData } = useQuery({
@@ -415,11 +422,14 @@ export default function MessagesPage() {
     navigate(`/messages/${threadId}`);
   }, [user, navigate, refetchAll]);
 
-  if (!user) return null;
+  /* G16 (page states): under the sign-in dialog after the server ended the session, the page keeps its h1. */
+  if (!user) return sessionEnded ? <h1 style={VISUALLY_HIDDEN}>Messages</h1> : null;
 
   return (
     <>
       <SeoHead title="Messages" description={`Your conversations on ${SITE_NAME}.`} path="/messages" />
+      {/* G8: the page's h1, for assistive technology; the visible title is ShellHeader's, which other pages share. */}
+      <h1 style={VISUALLY_HIDDEN}>Messages</h1>
       <div style={{ display: "flex", flexDirection: "column", height: "100%", width: "100%" }}>
         <ShellHeader
           onBack={() => navigate(-1)}
@@ -437,6 +447,13 @@ export default function MessagesPage() {
           }}
         >
 
+        {threadsFailed ? (
+          <div style={{ width: 220, flexShrink: 0, padding: 16 }}>
+            <PageState read={threadsRead} thing="your messages" region="Conversations" skeleton={null}>
+              {() => null}
+            </PageState>
+          </div>
+        ) : (
         <MessagesThreadList
           threads={threadItems}
           activeTab={activeTab}
@@ -450,6 +467,7 @@ export default function MessagesPage() {
           width={220}
           loading={isLoading && !tabData}
         />
+        )}
 
         <div className="flex-1 min-w-0 h-full flex flex-col">
           {activeThreadId && activeThreadInfo ? (

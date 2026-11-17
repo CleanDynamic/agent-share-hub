@@ -162,10 +162,11 @@ describe("states", () => {
     expect(screen.getByTestId("library-status")).toHaveTextContent(LIBRARY_WINDOW_COPY.loading);
   });
 
-  it("error says one sentence and offers Retry", () => {
+  it("error says one sentence and offers Try again", () => {
     const props = show({ status: "error", rows: [] });
-    expect(screen.getByTestId("library-error")).toHaveTextContent(LIBRARY_WINDOW_COPY.error);
-    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    // G30: the shared failed state, with Try again.
+    expect(screen.getByTestId("library-error")).toHaveTextContent("Couldn't load your library. Try again.");
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(props.onRetry).toHaveBeenCalled();
   });
 

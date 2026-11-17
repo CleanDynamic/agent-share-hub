@@ -7,6 +7,8 @@
 // this." (STATES.md row 21), never as a level of 1 or a week at nothing.
 
 /** The failure of a progress read: identifiers, a code and a status. */
+import { timeoutCause } from "@/lib/query/readLimit";
+
 export class ProgressReadError extends Error {
   readonly operation: string;
   readonly userId: string;
@@ -32,10 +34,9 @@ export function progressFailure(
   response: { error: unknown; status?: number },
 ): ProgressReadError {
   const { code } = (response.error ?? {}) as { code?: unknown };
-  return new ProgressReadError(
-    operation,
-    userId,
-    typeof code === "string" && code ? code : null,
-    typeof response.status === "number" && response.status > 0 ? response.status : null,
+  // A read the time limit cut keeps a clean marker as its cause, so it is still known as one (lib/query/readLimit.ts).
+  return Object.assign(
+    new ProgressReadError(operation, userId, typeof code === "string" && code ? code : null, typeof response.status === "number" && response.status > 0 ? response.status : null),
+    timeoutCause(response.error),
   );
 }

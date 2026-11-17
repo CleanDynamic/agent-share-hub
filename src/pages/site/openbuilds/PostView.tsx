@@ -7,6 +7,7 @@
 
    The side column: the module box with the space, then `In this post`. */
 
+import { PageEmpty } from "@/components/pagestate/PageState";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
@@ -27,7 +28,6 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { OpenBuildsColumns } from "./OpenBuildsFrame";
-import { EmptyLine } from "./OpenBuildsFeedParts";
 import { ReplyList, type ReplyActions } from "./PostReplies";
 import { threadLabel, wallLabel, type PostTab, type ReplyItem } from "./postModel";
 
@@ -191,7 +191,7 @@ export function PostView(view: PostViewProps) {
             </div>
           ) : null}
           {view.thread.items.length === 0 ? (
-            <EmptyLine line={view.thread.filter ? "No replies here yet." : "No replies yet."}>{null}</EmptyLine>
+            <PageEmpty line={view.thread.filter ? "No replies here yet." : "No replies yet."} />
           ) : (
             <ReplyList items={view.thread.items} actions={view.actions} box={box} />
           )}

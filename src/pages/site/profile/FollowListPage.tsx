@@ -78,19 +78,21 @@ export function FollowListPage({ which }: { which: FollowList }) {
   };
 
   return (
-    <PageArrival loading={!ready} placeholder={<ProfilePlaceholder />}>
+    /* G32: the page is drawn once the session is known; while the reads are out the list's own skeleton stands in its place. */
+    <PageArrival loading={authLoading} placeholder={<ProfilePlaceholder />}>
       <SeoHead title={followTitle(which, handle)} description={followTitle(which, handle)} path={`/profile/${handle}/${which}`} noIndex />
       <FollowListView
         handle={handle}
         which={which}
         total={profile ? (which === "followers" ? profile.counts.followers : profile.counts.following) : null}
-        status={locked ? "private" : list.isError && people.length === 0 ? "error" : list.isPending ? "loading" : "ready"}
+        /* G33: an absent or private profile decides the page by itself; the list is not what failed or is missing then. */
+        read={summary.data === null || locked ? [summary] : [summary, list]}
+        locked={locked}
         people={people.map((person) => ({ ...person, isReader: person.id === viewerId }))}
         hasMore={Boolean(list.hasNextPage)}
         loadingMore={list.isFetchingNextPage}
         onMore={() => void list.fetchNextPage()}
         onFollow={(id, follow) => void onFollow(id, follow)}
-        onRetry={() => void list.refetch()}
       />
     </PageArrival>
   );

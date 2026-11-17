@@ -1,6 +1,7 @@
 // SV-10: Home as the vision board draws it, rendered with the board's sample data: the three columns, the feed's tabs
 // and kind filter, the "n new" pill, each kind of item, and the states.
 
+import { readOf } from "@/components/pagestate/pageStateModel";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -185,8 +186,22 @@ describe("HomeView · states", () => {
   it("says a section failed in one sentence with Try again", () => {
     const onRetry = vi.fn();
     mount({ feed: { ...visionHomeProps("error").feed, onRetry } }, "error");
-    fireEvent.click(within(screen.getByTestId("home-feed-error")).getByRole("button", { name: /try again/i }));
+    const alert = screen.getByRole("alert", { name: "The feed" });
+    expect(alert.textContent).toContain("Couldn't load the feed. Try again.");
+    fireEvent.click(within(alert).getByRole("button", { name: "Try again" }));
     expect(onRetry).toHaveBeenCalled();
+  });
+
+  it("G9: one region failing keeps the others; every region failing is one state for the page", () => {
+    const failed = { status: "error" as const, onRetry: vi.fn(), error: { message: "boom" } };
+    const { unmount } = mount({ mostRun: failed }, "populated");
+    expect(screen.getByRole("alert", { name: "Most run this week" }).textContent).toContain("Couldn't load builds. Try again.");
+    expect(screen.getByTestId("home-feed")).toBeTruthy();
+    unmount();
+    mount({ pageFailed: [readOf("error"), readOf("error")] }, "populated");
+    expect(screen.getByText("Couldn't load this page. Try again.")).toBeTruthy();
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+    expect(screen.getByRole("heading", { level: 1, name: "Home" })).toBeTruthy();
   });
 
   it("says an empty feed in one line", () => {

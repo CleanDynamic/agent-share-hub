@@ -34,6 +34,8 @@ import { SeoHead } from "@/components/SeoHead";
 import { Button } from "@/components/brand/Button";
 import { useCrumbTitle } from "@/components/shell/useBreadcrumb";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
+import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import {
   changeSet,
   flattenFamily,
@@ -53,7 +55,8 @@ import {
 } from "@/lib/build";
 import { deltaLine } from "@/pages/site/build/buildModel";
 
-import { RebuildView, RebuildViewFailed, RebuildViewNotice, RebuildViewSkeleton } from "./RebuildView";
+import { readOf } from "@/components/pagestate/pageStateModel";
+import { RebuildView, RebuildViewSkeleton, RebuildViewState } from "./RebuildView";
 import { changeGroups, familyView, readinessView } from "./rebuildModel";
 import { PageBreadcrumb } from "@/components/shell/Breadcrumb";
 
@@ -78,6 +81,8 @@ export function RebuildPage() {
 function RebuildPageBody() {
   const { slug = "" } = useParams<{ slug: string }>();
   const { user, isLoggedIn, loading: authLoading } = useAuth();
+  /* G16 (page states): a session the server ended keeps this page in place under the sign-in dialog, as its skeleton. */
+  const sessionEnded = useSessionPhase() === "ended";
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -202,6 +207,15 @@ function RebuildPageBody() {
 
   if (authLoading) return <RebuildViewSkeleton label="Checking your session" />;
 
+  if (!isLoggedIn && sessionEnded) {
+    return (
+      <>
+        <h1 style={VISUALLY_HIDDEN}>Rebuild</h1>
+        <RebuildViewSkeleton label="Checking your session" />
+      </>
+    );
+  }
+
   // The intention survives as an address, so signing in comes back to it.
   if (!isLoggedIn) {
     const back = `${location.pathname}${location.search}`;
@@ -214,49 +228,24 @@ function RebuildPageBody() {
     </Button>
   );
 
-  if (sourceHeader.isError) {
-    return <RebuildViewFailed panel="The rebuild" onRetry={() => void sourceHeader.refetch()} error={sourceHeader.error} />;
+  /* G4, G7: the build being rebuilt failed, or is not at this address (only when the server answered so). */
+  if (sourceHeader.isError || (!sourceHeader.isPending && !source)) {
+    return <RebuildViewState title="Rebuild" read={sourceHeader} thing="this build" region="The rebuild" missing={([row]) => row === null} />;
   }
 
-  if (!sourceHeader.isPending && !source) {
-    return (
-      <RebuildViewNotice
-        line="No build at this address."
-        detail={`Nothing is published at /b2/${slug}. It may have been unpublished, or the link may be wrong.`}
-        action={
-          <Button variant="secondary" size={36} fontSize={13} onClick={() => navigate("/gallery")}>
-            See the gallery
-          </Button>
-        }
-      />
-    );
-  }
-
+  /* Your draft of it: read, or (the first time) started. A start that failed is drawn as the read it stands in for, and
+     Try again starts it again. */
   if (startError || draftHeader.isError) {
-    return (
-      <RebuildViewFailed
-        panel="Your draft"
-        error={startError ?? draftHeader.error}
-        onRetry={() => {
-          started.current = false;
-          setStartError(null);
-          void draftHeader.refetch();
-        }}
-      />
-    );
+    const retryDraft = () => {
+      started.current = false;
+      setStartError(null);
+      void draftHeader.refetch();
+    };
+    return <RebuildViewState title="Rebuild" read={startError ? readOf("error", undefined, retryDraft, startError) : draftHeader} thing="this build" region="Your draft" />;
   }
 
   if (sourceRecord.isError || draftRecord.isError) {
-    return (
-      <RebuildViewFailed
-        panel="The rebuild"
-        error={sourceRecord.error ?? draftRecord.error}
-        onRetry={() => {
-          void sourceRecord.refetch();
-          void draftRecord.refetch();
-        }}
-      />
-    );
+    return <RebuildViewState title="Rebuild" read={[sourceRecord, draftRecord]} thing="this build" region="The rebuild" />;
   }
 
   if (!source || !draft || !computed || !sourceRecord.data || !draftRecord.data) {

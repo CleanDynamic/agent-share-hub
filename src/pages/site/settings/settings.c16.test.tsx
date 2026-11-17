@@ -2,6 +2,7 @@
 // Sign out, and Sign out everywhere; the Devices text says in plain words that a signed-out device can keep working
 // for up to an hour.
 
+import { readOf } from "@/components/pagestate/pageStateModel";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -40,7 +41,7 @@ function props(over: Partial<AccountViewProps> = {}): AccountViewProps {
     onLink: vi.fn(async () => undefined),
     onUnlink: vi.fn(async () => undefined),
     onSignOutEverywhere: vi.fn(async () => undefined),
-    sessions: [phone, here],
+    devices: readOf("ready", [phone, here]),
     onSignOutDevice: vi.fn(async () => undefined),
     ...over,
   };
@@ -133,9 +134,13 @@ describe("the Devices group", () => {
     expect(within(devices()).getByRole("button", { name: "Sign out everywhere" })).toBeTruthy();
   });
 
-  it("says so in one line when the list could not be loaded, and still offers Sign out everywhere", () => {
-    view(props({ sessions: null }));
-    expect(within(devices()).getByText(COPY.devicesUnavailable)).toBeTruthy();
+  it("says so in one line with Try again when the list could not be loaded (G2), and still offers Sign out everywhere", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const onRetry = vi.fn();
+    view(props({ devices: readOf("error", undefined, onRetry) }));
+    expect(within(devices()).getByText("Couldn't load your devices. Try again.")).toBeTruthy();
+    within(devices()).getByRole("button", { name: "Try again" }).click();
+    expect(onRetry).toHaveBeenCalled();
     expect(within(devices()).getByRole("button", { name: "Sign out everywhere" })).toBeTruthy();
   });
 });

@@ -19,6 +19,7 @@
 // name, the ids involved, the error code and the HTTP status, never from the
 // server's message, details or hint, and it keeps no `cause`.
 
+import { timeoutCause } from "@/lib/query/readLimit";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { GalleryBuild } from "@/lib/build";
@@ -231,7 +232,9 @@ export function socialError(
   const code = typeof raw === "string" && raw.length > 0 ? raw : null;
   const status = typeof response.status === "number" && response.status > 0 ? response.status : null;
   const refused = (code !== null && NO_ACCESS_CODES.has(code)) || status === 401 || status === 403;
-  return new SocialError(operation, refused ? "no_access" : "failed", ids, code, status);
+  // A read the time limit cut keeps a clean marker as its cause, so it is still known as one (lib/query/readLimit.ts). The
+  // database's own error is never kept.
+  return Object.assign(new SocialError(operation, refused ? "no_access" : "failed", ids, code, status), timeoutCause(response.error));
 }
 
 /** Nobody is signed in: the refusal a 401 would be, without the request. */

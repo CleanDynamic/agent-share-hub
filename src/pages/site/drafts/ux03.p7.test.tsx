@@ -33,7 +33,7 @@ describe("UX-03 P7: drafts are named by their first prompt", () => {
     const one = draft({ firstPrompt: "Write the poster copy" });
     render(
       <MemoryRouter>
-        <DraftsView {...draftsViewProps()} drafts={[one]} onRetryDrafts={vi.fn()} onRetrySessions={vi.fn()} onAddToNew={vi.fn()} onAddToDraft={vi.fn()} onConnect={vi.fn()} />
+        <DraftsView {...draftsViewProps()} drafts={[one]} onAddToNew={vi.fn()} onAddToDraft={vi.fn()} onConnect={vi.fn()} />
       </MemoryRouter>,
     );
     expect(screen.getByTestId("draft-title").textContent).toBe("Write the poster copy");

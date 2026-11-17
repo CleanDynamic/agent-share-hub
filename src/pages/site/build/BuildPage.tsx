@@ -116,10 +116,10 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { BreakageBody } from "./BreakageBody";
-import { CommentsPanel, LowerSections, WhereNextError, WhereNextPanels } from "./BuildLower";
-import { EmptyState } from "@/components/brand/EmptyState";
+import { CommentsPanel, LowerSections, WhereNextPanels } from "./BuildLower";
+import { PageEmpty, PageState } from "@/components/pagestate/PageState";
 import { PageArrival } from "@/components/shell/PageArrival";
-import { BuildView, BuildViewFailed, BuildViewNotice, BuildViewSkeleton } from "./BuildView";
+import { BuildView, BuildViewSkeleton, BuildViewState } from "./BuildView";
 import { ClassificationSection } from "@/components/build/ClassificationSection";
 import { DiscussedSection, discussedRowMeta } from "@/components/build/DiscussedSection";
 import { replyHref, splitBody, topicHref } from "@/components/post/postCardModel";
@@ -853,21 +853,8 @@ function BuildPageBody() {
 
   if (recordQuery.isPending && Boolean(slug)) return arrive(<BuildViewSkeleton />);
 
-  if (recordQuery.isError) return arrive(<BuildViewFailed onRetry={() => void recordQuery.refetch()} error={recordQuery.error} />);
-
-  if (!record || !build) {
-    return arrive(
-      <BuildViewNotice
-        line="No build at this address."
-        detail={`Nothing is published at /b2/${slug}. It may have been unpublished, or the link may be wrong.`}
-        action={
-          <Button variant="secondary" size={36} fontSize={13} onClick={() => navigate("/gallery")}>
-            See the gallery
-          </Button>
-        }
-      />
-    );
-  }
+  /* G4, G7: failed, or not found only when the server answered that there is no such build. */
+  if (recordQuery.isError || !record || !build) return arrive(<BuildViewState read={recordQuery} />);
 
   /* ── mapped for the view ── */
 
@@ -965,7 +952,7 @@ function BuildPageBody() {
         return understandLayer ? (
           <LayerSteps layer={layerSteps(understandLayer, resolveNode)} phone={phone} onOpenPart={selectPart} />
         ) : (
-          <EmptyState line="There is no plain-language reading of this build yet." />
+          <PageEmpty line="There is no plain-language reading of this build yet." />
         );
       case "broke":
         return (
@@ -1015,7 +1002,7 @@ function BuildPageBody() {
             resolveMedia={resolveMedia}
           />
         ) : (
-          <EmptyState line="This build has no parts yet." />
+          <PageEmpty line="This build has no parts yet." />
         );
     }
   })();
@@ -1271,8 +1258,10 @@ function BuildPageBody() {
             />
           </CommentsPanel>
         ) : null}
-        {whereNext.isError ? (
-          <WhereNextError onRetry={() => void whereNext.refetch()} error={whereNext.error} />
+        {whereNext.isError && whereNext.data === undefined ? (
+          <PageState read={whereNext} thing="builds" region="Where next" skeleton={null} style={{ marginTop: 16 }}>
+            {() => null}
+          </PageState>
         ) : (
           <WhereNextPanels rows={nextPanels} phone={phone} />
         )}

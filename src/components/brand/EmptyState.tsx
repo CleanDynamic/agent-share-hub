@@ -25,21 +25,24 @@ import { t } from "@/lib/theme/tokens";
 
 import { Button } from "./Button";
 
-export interface EmptyStateAction {
-  label: string;
-  onClick: () => void;
-}
+/**
+ * The one way on. With an address it goes to another page and is drawn as a link styled as the same button, so it can be
+ * opened in a new tab and is read as a link; with only a handler (a dialog, a tab) it stays a button.
+ */
+export type EmptyStateAction = { label: string; href: string; onClick?: undefined } | { label: string; onClick: () => void; href?: undefined };
 
 export interface EmptyStateProps extends Omit<HTMLAttributes<HTMLDivElement>, "children" | "style"> {
   /** One sentence. */
   line: string;
+  /** G7: a second line under it, saying what kind of thing was expected ("Nothing at this address." and why). */
+  detail?: string;
   /** At most one action: the way on from here. */
   action?: EmptyStateAction;
   /** Spacing from the panel's head, where the panel needs it. */
   style?: CSSProperties;
 }
 
-export function EmptyState({ line, action, style, ...rest }: EmptyStateProps) {
+export function EmptyState({ line, detail, action, style, ...rest }: EmptyStateProps) {
   const phone = useIsPhone();
   /* UI-P97: one 13 `--text` line and one action. Secondary, because a panel's empty state is never the page's
      decision; a view with no other primary passes its own button instead of an `action`. 44 tall on a phone. */
@@ -50,8 +53,9 @@ export function EmptyState({ line, action, style, ...rest }: EmptyStateProps) {
       style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 12, padding: "24px 16px", ...style }}
     >
       <p style={{ margin: 0, fontFamily: "var(--font-ui)", fontSize: 13, lineHeight: "20px", fontWeight: 400, color: t.text }}>{line}</p>
+      {detail ? <p style={{ margin: "-8px 0 0", fontFamily: "var(--font-ui)", fontSize: 13, lineHeight: "20px", fontWeight: 400, color: t.text2 }}>{detail}</p> : null}
       {action ? (
-        <Button variant="secondary" size={phone ? 44 : 32} fontSize={13} onClick={action.onClick}>
+        <Button variant="secondary" size={phone ? 44 : 32} fontSize={13} href={action.href} onClick={action.onClick}>
           {action.label}
         </Button>
       ) : null}

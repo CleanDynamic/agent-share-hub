@@ -228,12 +228,17 @@ describe("threadOf", () => {
 });
 
 describe("saveThread", () => {
+  // Each test its own build: which picture set was last written is remembered per build.
+  let build = 0;
+  let id = BUILD_ID;
   beforeEach(() => {
     setPostMedia.mockReset();
     updateBuild.mockReset();
+    build += 1;
+    id = `b0000000-0000-4000-8000-${String(build).padStart(12, "0")}`;
   });
 
-  it("writes the set in document order, then the doc", async () => {
+  it("G22: writes the words first, then the set in document order", async () => {
     const order: string[] = [];
     setPostMedia.mockImplementation(async () => {
       order.push("set");
@@ -241,29 +246,63 @@ describe("saveThread", () => {
     });
     updateBuild.mockImplementation(async () => {
       order.push("doc");
-      return { id: BUILD_ID };
+      return { id };
     });
     const thread = doc(p("a"), pic("m2"), br, row("m1", "m2"));
 
-    await saveThread(BUILD_ID, thread);
+    await saveThread(id, thread);
 
-    expect(order).toEqual(["set", "doc"]);
-    expect(setPostMedia).toHaveBeenCalledWith(BUILD_ID, ["m2", "m1"]);
-    expect(updateBuild).toHaveBeenCalledWith(BUILD_ID, { post_doc: thread });
+    expect(order).toEqual(["doc", "set"]);
+    expect(setPostMedia).toHaveBeenCalledWith(id, ["m2", "m1"]);
+    expect(updateBuild).toHaveBeenCalledWith(id, { post_doc: thread });
   });
 
-  it("does not write the doc when the set write fails", async () => {
+  it("G22: the words go out even when the set write fails, and the save says it failed", async () => {
+    updateBuild.mockResolvedValue({ id });
     setPostMedia.mockRejectedValue(new Error("setPostMedia failed: boom"));
 
-    await expect(saveThread(BUILD_ID, doc(pic("m1")))).rejects.toThrow("boom");
-    expect(updateBuild).not.toHaveBeenCalled();
+    await expect(saveThread(id, doc(pic("m1")))).rejects.toThrow("boom");
+    expect(updateBuild).toHaveBeenCalledWith(id, { post_doc: doc(pic("m1")) });
+  });
+
+  it("G22: a set write that never answers does not hold back the words", async () => {
+    setPostMedia.mockReturnValue(new Promise(() => undefined));
+    updateBuild.mockResolvedValue({ id });
+    void saveThread(id, doc(p("words"), pic("m1")));
+    await vi.waitFor(() => expect(updateBuild).toHaveBeenCalledWith(id, { post_doc: doc(p("words"), pic("m1")) }));
+  });
+
+  it("G22: a words write that is held leaves the set waiting, never the other way round", async () => {
+    updateBuild.mockReturnValue(new Promise(() => undefined));
+    void saveThread(id, doc(p("words"), pic("m1")));
+    await vi.waitFor(() => expect(updateBuild).toHaveBeenCalledTimes(1));
+    expect(setPostMedia).not.toHaveBeenCalled();
+  });
+
+  it("skips the set write when the pictures have not changed since the last one written", async () => {
+    updateBuild.mockResolvedValue({ id });
+    setPostMedia.mockResolvedValue([]);
+    await saveThread(id, doc(p("one"), pic("m1")));
+    await saveThread(id, doc(p("two"), pic("m1")));
+    expect(setPostMedia).toHaveBeenCalledTimes(1);
+    await saveThread(id, doc(p("three"), pic("m1"), pic("m2")));
+    expect(setPostMedia).toHaveBeenCalledTimes(2);
+    expect(updateBuild).toHaveBeenCalledTimes(3);
+  });
+
+  it("writes the set again after a set write failed", async () => {
+    updateBuild.mockResolvedValue({ id });
+    setPostMedia.mockRejectedValueOnce(new Error("boom")).mockResolvedValue([]);
+    await expect(saveThread(id, doc(pic("m1")))).rejects.toThrow("boom");
+    await saveThread(id, doc(pic("m1")));
+    expect(setPostMedia).toHaveBeenCalledTimes(2);
   });
 
   it("refuses a thread with a problem before writing anything", async () => {
     const thread = doc(pic("m1", { caption: "c".repeat(CAPTION_MAX + 1) }));
 
-    await expect(saveThread(BUILD_ID, thread)).rejects.toBeInstanceOf(ThreadError);
-    await expect(saveThread(BUILD_ID, thread)).rejects.toMatchObject({ name: "ThreadError", code: "caption_too_long", post: 0 });
+    await expect(saveThread(id, thread)).rejects.toBeInstanceOf(ThreadError);
+    await expect(saveThread(id, thread)).rejects.toMatchObject({ name: "ThreadError", code: "caption_too_long", post: 0 });
     expect(setPostMedia).not.toHaveBeenCalled();
     expect(updateBuild).not.toHaveBeenCalled();
   });

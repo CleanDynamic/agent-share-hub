@@ -3,6 +3,7 @@
 // Styles are asserted through SSR markup (jsdom's cssstyle drops var() values);
 // roles, text and behaviour on the rendered tree.
 
+import { MemoryRouter } from "react-router-dom";
 import { render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -82,6 +83,29 @@ describe("LoadingRegion", () => {
 
 describe("EmptyState", () => {
 
+  it("an action with an address is a link drawn as the same button: it opens in a new tab and reads as a link", () => {
+    render(
+      <MemoryRouter>
+        <EmptyState line="Nothing at this address." action={{ label: "Browse builds", href: "/builds" }} />
+      </MemoryRouter>,
+    );
+    const link = screen.getByRole("link", { name: "Browse builds" });
+    expect(link).toHaveAttribute("href", "/builds");
+    expect(link).toHaveAttribute("data-ui", "button");
+    expect(link).toHaveAttribute("data-variant", "secondary");
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("an action with only a handler stays a button", () => {
+    const onClick = vi.fn();
+    render(<EmptyState line="No new sessions." action={{ label: "Connect a tool", onClick }} />);
+    const button = screen.getByRole("button", { name: "Connect a tool" });
+    expect(button.tagName).toBe("BUTTON");
+    button.click();
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("link")).toBeNull();
+  });
+
   it("draws no illustration and no icon", () => {
     const html = markup(<EmptyState line="No solutions yet." action={{ label: "Enter the gallery", onClick: () => {} }} />);
     expect(html).not.toMatch(/<svg|<img|<canvas/);
@@ -139,6 +163,30 @@ describe("ErrorState", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     render(<ErrorState panel="The build" onRetry={() => {}} />);
     expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("is an alert that names its region (G5)", () => {
+    render(<ErrorState line="Couldn't load your drafts. Try again." panel="Continue editing" onRetry={() => {}} />);
+    const region = screen.getByRole("alert");
+    expect(region).toHaveAttribute("aria-label", "Continue editing");
+    expect(region.textContent).toBe("Couldn't load your drafts. Try again.Try again");
+  });
+
+  it("while retrying, the button is disabled and reads Trying again… (G5)", () => {
+    const onRetry = vi.fn();
+    const { rerender } = render(<ErrorState panel="Continue editing" onRetry={onRetry} retrying />);
+    const button = screen.getByRole("button", { name: "Trying again…" });
+    expect(button).toBeDisabled();
+    button.click();
+    expect(onRetry).not.toHaveBeenCalled();
+    rerender(<ErrorState panel="Continue editing" onRetry={onRetry} />);
+    expect(screen.getByRole("button", { name: "Try again" })).not.toBeDisabled();
+  });
+
+  it("never shows a code, whatever it is given (G10)", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    render(<ErrorState panel="Continue editing" onRetry={() => {}} error={{ code: "PGRST301", status: 401, message: "JWT expired" }} log="[Drafts] drafts read failed" />);
+    expect(document.body.textContent).not.toMatch(/PGRST|401|Code /);
   });
 
   it("makes the retry 44 tall on a phone, the touch floor", () => {

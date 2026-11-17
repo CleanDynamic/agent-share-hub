@@ -15,12 +15,13 @@
    Publish, then what changed, then the family as an indented list (a tree does
    not fit 390). */
 
+import { PageState } from "@/components/pagestate/PageState";
+import type { ReadLike } from "@/components/pagestate/pageStateModel";
+import { WAY_OUT, type Thing } from "@/components/pagestate/stateCopy";
 import type { CSSProperties, ReactNode } from "react";
 
-import { ErrorState } from "@/components/brand/ErrorState";
 import { PageHeading } from "@/components/brand/PageHeading";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
-import { VISUALLY_HIDDEN as HIDDEN } from "@/components/brand/VisuallyHidden";
 import { Panel } from "@/components/brand/Panel";
 import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
 import { useIsPhone, useTierFit, useWidthTier } from "@/components/shell/useMinWidth";
@@ -197,17 +198,23 @@ export function RebuildViewSkeleton({ fit = "content", label = "Loading the rebu
   );
 }
 
-/** A page-level read that failed: the page's own panel says so, inside the frame, with a retry. The h1 is for assistive technology. */
-export function RebuildViewFailed({ panel, onRetry, error }: { panel: string; onRetry: () => void; error?: unknown }) {
+/**
+ * G4, G7, G8: a page-level read that failed, or a build that is not at this address. Inside the page's panel, under the page's
+ * kind as its title ("Rebuild", "Lineage", "Compare": what the title names is what did not load), PageState says which, with
+ * "Browse builds" as the way out of a missing build.
+ */
+export function RebuildViewState({ title, read, thing, region, missing }: { title: string; read: ReadLike | readonly ReadLike[]; thing: Thing; region: string; missing?: (data: unknown[]) => boolean }) {
   return (
     <Panel padding="24px 24px">
-      <h1 style={HIDDEN}>{panel}</h1>
-      <ErrorState panel={panel} onRetry={onRetry} error={error} data-testid="rebuild-error" />
+      <h1 style={{ ...PAGE_TITLE, marginBottom: 16 }}>{title}</h1>
+      <PageState read={read} thing={thing} region={region} skeleton={null} notFound={missing ? { when: missing, kind: "build", way: WAY_OUT.browseBuilds } : undefined}>
+        {() => null}
+      </PageState>
     </Panel>
   );
 }
 
-/** A rebuild that cannot be shown or started: one Sentient line, a sentence, and one action. */
+/** A loaded state that is none of the five (two builds of different things): one Sentient line, a sentence, and one action. */
 export function RebuildViewNotice({ line, detail, action }: { line: string; detail?: string; action: ReactNode }) {
   return (
     <Panel padding="24px 24px">

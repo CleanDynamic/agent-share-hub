@@ -24,6 +24,9 @@ import { REPO_SCHEMA, requests, startAuditBackend, type Fault, type FaultAnswer 
 
 import { DraftsPage } from "../DraftsPage";
 
+/** G5: the two panels' failed sentences. */
+const FAILED_LINE = /^Couldn't load your (drafts|sessions)\. Try again\.$/;
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -62,15 +65,16 @@ function mount(faults: Fault[] = []) {
 const appLines = (logged: ReturnType<typeof vi.spyOn>) => logged.mock.calls.filter(([first]) => typeof first === "string" && first.startsWith("[")).map(([first]) => String(first));
 const sent = (pattern: RegExp) => requests().filter((r) => pattern.test(r.path)).map((r) => `${r.status}${r.code ? " " + r.code : ""}`);
 
+/** G9: both failed, so the page says so once. */
 const bothPanelsFailed = async () => {
-  await waitFor(() => expect(screen.getAllByText("That didn't load.")).toHaveLength(2), { timeout: 20_000 });
+  await waitFor(() => expect(screen.getByText("Couldn't load this page. Try again.")).toBeTruthy(), { timeout: 20_000 });
   expect(screen.queryByText("Draft 1")).toBeNull();
 };
 
 /** Only the Sessions panel failed: the drafts are on screen. */
 const sessionsPanelFailed = async () => {
-  await waitFor(() => expect(screen.getAllByText("That didn't load.")).toHaveLength(1), { timeout: 20_000 });
-  expect(screen.getByRole("status", { name: "Sessions" })).toBeTruthy();
+  await waitFor(() => expect(screen.getAllByText(FAILED_LINE)).toHaveLength(1), { timeout: 20_000 });
+  expect(screen.getByRole("alert", { name: "Sessions" })).toBeTruthy();
   expect(screen.getByText("Draft 1")).toBeTruthy();
 };
 
@@ -82,12 +86,12 @@ describe("CA-09 · the Drafts page on tonight's schema", () => {
     expect(screen.getByText("Draft 12")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Show 3 more" }));
     expect(screen.getByText("Draft 15")).toBeTruthy();
-    expect(screen.queryByText("That didn't load.")).toBeNull();
+    expect(screen.queryByText(FAILED_LINE)).toBeNull();
     expect(sent(DRAFTS)).toEqual(["200"]);
     expect(appLines(logged)).toEqual([]);
   });
 
-  it("the waiting-sessions read times out (57014): only the Sessions panel says 'That didn't load.', the drafts show, and it is logged with its code", async () => {
+  it("the waiting-sessions read times out (57014): only the Sessions panel says it couldn't load, the drafts show, and it is logged with its code", async () => {
     const logged = mount([{ method: "GET", path: WAITING, answer: TIMEOUT }]);
     await sessionsPanelFailed();
     expect(sent(DRAFTS)).toEqual(["200"]);
@@ -98,8 +102,8 @@ describe("CA-09 · the Drafts page on tonight's schema", () => {
 
   it("the drafts read times out (57014): only the drafts panel fails, the sessions show", async () => {
     mount([{ method: "GET", path: DRAFTS, answer: TIMEOUT }]);
-    await waitFor(() => expect(screen.getAllByText("That didn't load.")).toHaveLength(1), { timeout: 20_000 });
-    expect(screen.getByRole("status", { name: "Continue editing" })).toBeTruthy();
+    await waitFor(() => expect(screen.getAllByText(FAILED_LINE)).toHaveLength(1), { timeout: 20_000 });
+    expect(screen.getByRole("alert", { name: "Continue editing" })).toBeTruthy();
     expect(screen.getByText("A waiting session.")).toBeTruthy();
     expect(sent(DRAFTS)).toEqual(["500 57014", "500 57014"]);
     expect(sent(WAITING)[0]).toBe("200");

@@ -38,7 +38,7 @@ import { siteHiddenPostsOf } from "@/lib/moderation/siteHidden";
 import { SiteHiddenNotice } from "./SiteHiddenNotice";
 
 import { AddToDraftButton, AddToDraftSub } from "./AddToDraft";
-import { EmptyLine, LoadError } from "./OpenBuildsFeedParts";
+import { OpenBuildsState } from "./OpenBuildsFeedParts";
 import { PostLoadingView } from "./PostFrame";
 import { PostStepMenu } from "./PostStepMenu";
 import { ReactionRow } from "./ReactionRow";
@@ -267,7 +267,7 @@ export default function PostPage() {
   /* ── states ── */
 
   if (post.isError) {
-    return <LoadError what="This post didn't load." onRetry={() => void post.refetch()} />;
+    return <OpenBuildsState title="Post" read={post} thing="this post" region="The post" kind="post" />;
   }
   if (!post.isPending && (thread === null || (thread.hiddenBy !== null && crowd?.role !== "moderator" && !extras.isPending))) {
     // UX-09 Q5: the topic's own author, when the site hid it, is told so rather than told it isn't there.
@@ -280,11 +280,8 @@ export default function PostPage() {
         </div>
       );
     }
-    return (
-      <EmptyLine line="This post isn't available.">
-        <PostControl to="/openbuilds">Back to OpenBuilds</PostControl>
-      </EmptyLine>
-    );
+    /* G7: not there, or hidden from this reader: to everyone but its author (above) it is not at this address. */
+    return <OpenBuildsState title="Post" read={post} thing="this post" region="The post" kind="post" missing={() => true} />;
   }
 
   /* ── the view's props ── */

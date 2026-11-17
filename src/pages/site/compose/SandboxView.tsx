@@ -29,8 +29,9 @@ import { MoreHorizontal, PanelRightClose, PanelRightOpen, X } from "lucide-react
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+import { EditorLoadState } from "./EditorLoadState";
+
 import { Button } from "@/components/brand/Button";
-import { ErrorState } from "@/components/brand/ErrorState";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { MenuButton } from "@/components/brand/MenuButton";
@@ -1070,19 +1071,6 @@ function DefaultSources() {
   );
 }
 
-function NotFound() {
-  return (
-    <div style={{ ...moduleStyle(false, 24), maxWidth: 520, display: "flex", flexDirection: "column", gap: 8 }}>
-      <h1 style={{ ...text(textStep.headline, 500, t.text), margin: 0, letterSpacing: "-0.015em" }}>No build at this address</h1>
-      <p style={{ ...text(textStep.body, 400, t.text2), margin: 0 }}>
-        Nothing here, or nothing you can open. It may have been deleted, or it may be another creator's build.
-      </p>
-      <Link to="/compose/new" style={{ ...text(textStep.meta, 500, t.text), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line, alignSelf: "flex-start" }}>
-        Start a new build
-      </Link>
-    </div>
-  );
-}
 
 const underlined: CSSProperties = { ...text(textStep.meta, 400, t.text), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line };
 
@@ -1134,14 +1122,9 @@ function SandboxBody(props: SandboxViewProps) {
     return () => observer.disconnect();
   }, [status, phone]);
 
-  if (status === "error") {
-    return (
-      <div style={moduleStyle()}>
-        <ErrorState line="This build didn't load." panel="The composer" onRetry={props.onRetry} error={props.loadError} log="[Compose] build read failed" showCode />
-      </div>
-    );
+  if (status === "error" || status === "notFound") {
+    return <EditorLoadState status={status} onRetry={props.onRetry} loadError={props.loadError} style={moduleStyle(false, 24)} />;
   }
-  if (status === "notFound") return <NotFound />;
 
   const untitled = isUntitled(props.title);
   /* F62: `full` is where the columns stand with Details shown; `frame` is what is drawn, Build wider while Details is hidden. */

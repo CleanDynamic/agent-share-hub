@@ -131,7 +131,7 @@ describe("reduced motion", () => {
 });
 
 describe("what a screen reader meets", () => {
-  it("hides every block and says Loading once", () => {
+  it("hides every block and says what is loading once (G20: never a bare Loading)", () => {
     render(
       <LoadingStatus>
         <LoadingBlocks kind="line" width={80} />
@@ -140,7 +140,8 @@ describe("what a screen reader meets", () => {
     );
     for (const block of blocks()) expect(block.getAttribute("aria-hidden")).toBe("true");
     const status = screen.getByRole("status");
-    expect(status.firstElementChild?.textContent).toBe("Loading");
-    expect(screen.getAllByText("Loading")).toHaveLength(1);
+    expect(status.firstElementChild?.textContent).toBe("Loading the build");
+    expect(screen.getAllByText("Loading the build")).toHaveLength(1);
+    expect(screen.queryByText("Loading")).toBeNull();
   });
 });

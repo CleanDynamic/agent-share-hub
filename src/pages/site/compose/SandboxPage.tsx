@@ -126,7 +126,7 @@ import { refGroups, refLookup } from "@/lib/build/postRefs";
 import { makingWithGroupColours, previewGroupColour, withGroupColours, type ReferenceGroup } from "@/lib/build/referenceGroups";
 import { setReferenceGroups } from "@/lib/build/referenceGroupsWrite";
 import { NOTICE_ROOM, ReferenceNotice } from "./referencePieces";
-import { OfflineStrip, OtherTabStrip, Strips } from "./saveStrips";
+import { OfflineStrip, SignedOutStrip, OtherTabStrip, Strips } from "./saveStrips";
 import { useConnectionWatch, useOffline, usePendingWrites, useReconnected } from "./usePendingWrites";
 import { useLeaveGuard } from "./useLeaveGuard";
 import { UnsentContext, useUnsentPrompts } from "./useUnsentPrompts";
@@ -176,6 +176,8 @@ import { preloadAddFromLibrary } from "./addFromLibraryReads";
 import { sessionCopyOf, type LibraryPlace } from "@/lib/build/fromLibrary";
 import { touchSavedItems, type LibrarySavedItem } from "@/lib/library/savedItems";
 import { reportError } from "@/lib/errors/report";
+import { useFlushWhenSessionInQuestion } from "./useFlushWhenSessionInQuestion";
+import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
 
 /** builds.making.sessions, read defensively: it is a json column. */
 function makingSessions(making: unknown): MakingSession[] {
@@ -268,7 +270,7 @@ function SandboxPageBody() {
   const announce = useAnnounce();
   /* CA-10 (CA-09 F10): the session library polls only while Sources is on screen (on a phone, while its sheet is open). */
   const [sourcesAnchor, sourcesOnScreen] = useOnScreen<HTMLDivElement>();
-  const { viewProps, missing, build, tree, ensureBuild, firstSession, nodes, sessions, prompts, compose, buildId, rehydrate, stillOpenSpaces } = useComposePage({ sessionsActive: sourcesOnScreen });
+  const { viewProps, missing, build, tree, ensureBuild, firstSession, nodes, sessions, prompts, compose, buildId, rehydrate, stillOpenSpaces, flushTyped } = useComposePage({ sessionsActive: sourcesOnScreen });
   usePageReady("composer", !buildId || Boolean(build));
   const navigate = useNavigate();
   /* CA-20: the build's one history: every change the maker makes is a step of it, CA-19's colour and link steps too. */
@@ -291,6 +293,12 @@ function SandboxPageBody() {
   /* PT-05: the thread of the post above the build. Held here so the status line and Publish can see it. */
   const thread = useComposeThread({ build, buildId, isOwner: compose.isOwner, ensureBuild });
   const { flush: flushThread, hold: threadHold } = thread;
+  /* G22: the session went into question: the post's words and every tile's and Details' typed text still in their 800 ms pause
+     are written now, into the write guard's held line, before the editor says the session ended. */
+  useFlushWhenSessionInQuestion(() => {
+    void flushThread();
+    void flushTyped();
+  });
   /* PT-07: the post draws the signed-in maker beside it, and its preview draws them too. */
   const { user, profile } = useAuth();
   const maker = useMemo<PreviewMaker>(
@@ -337,16 +345,31 @@ function SandboxPageBody() {
   /* CA-23 P4: two tabs (or two devices) on one build. What each clash is called and where it falls is said once the page knows its tiles (`describeClash`, below). */
   const describeClash = useRef<(clash: RawClash) => ClashDescription>(() => ({ name: "This", badge: "", rank: 0 }));
   const twoTabs = useTwoTabs({ buildId, nodes, history: buildHistory, thread, rehydrate, describe: (clash) => describeClash.current(clash) });
-  useWriteGuard(buildId, { onWritten: twoTabs.announce });
+  /* G22: once the writes kept on this device from an earlier load have gone (signed out or offline before they could), the
+     build is read again and the post and the fields are drawn from it, as Show changes does: a read made while those writes
+     were being settled may have answered with the row as it was before them. Unsaved typing is never replaced. */
+  useWriteGuard(buildId, {
+    onWritten: twoTabs.announce,
+    onKeptSent: () => {
+      if (!buildId) return;
+      void queryClient.refetchQueries({ queryKey: composeBuildQueryKey(buildId), exact: true }).then(() => {
+        thread.reload?.();
+        rehydrate();
+      });
+    },
+  });
   useEffect(() => () => pendingWrites.reset(), []);
   const offline = useOffline();
   const { pending, failed: writesFailed, failedCount, retry: retryWrites } = usePendingWrites();
   /* CA-23 P3: leaving with changes that have not landed (or have stopped) asks first; closing the tab asks the browser's way. */
   const leaving = useLeaveGuard(pending + failedCount, unsent.entries().length);
   useReconnected((count) => buildHistory.notify(RECONNECTED.saved(count), { undo: false }));
+  /* G21: the session ended here: the editor's own banner (no dialog until Sign in is pressed), and saving reads as paused. */
+  const sessionEnded = useSessionPhase() === "ended";
   const strips =
-    offline || twoTabs.changedElsewhere ? (
+    sessionEnded || offline || twoTabs.changedElsewhere ? (
       <Strips>
+        {sessionEnded ? <SignedOutStrip /> : null}
         {offline ? <OfflineStrip /> : null}
         {twoTabs.changedElsewhere ? <OtherTabStrip onShow={() => void twoTabs.showChanges()} /> : null}
       </Strips>
@@ -2767,7 +2790,7 @@ function SandboxPageBody() {
         classification={classification}
         saveProblem={compose.saveFailure}
         loadError={compose.loadError ?? undefined}
-        save={mergeSave(viewProps.save, thread.save, writesFailed ? "error" : "idle", offline ? "offline" : "idle")}
+        save={mergeSave(viewProps.save, thread.save, writesFailed ? "error" : "idle", offline ? "offline" : "idle", sessionEnded ? "paused" : "idle")}
         pendingWrites={pending}
         strips={strips}
         lastSavedAt={latestOf(viewProps.lastSavedAt, thread.lastSavedAt)}

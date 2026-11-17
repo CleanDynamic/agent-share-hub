@@ -6,6 +6,7 @@
 // write, and throw an error that carries identifiers and nothing the database
 // said.
 
+import { timeoutCause } from "@/lib/query/readLimit";
 import { supabase } from "@/integrations/supabase/client";
 
 /** The failure of a follow write: identifiers, a code and a status. */
@@ -29,11 +30,10 @@ export class FollowError extends Error {
 
 function failure(operation: string, userId: string, response: { error: unknown; status?: number }) {
   const { code } = (response.error ?? {}) as { code?: unknown };
-  return new FollowError(
-    operation,
-    userId,
-    typeof code === "string" && code ? code : null,
-    typeof response.status === "number" && response.status > 0 ? response.status : null,
+  // A read the time limit cut keeps a clean marker as its cause, so it is still known as one (lib/query/readLimit.ts).
+  return Object.assign(
+    new FollowError(operation, userId, typeof code === "string" && code ? code : null, typeof response.status === "number" && response.status > 0 ? response.status : null),
+    timeoutCause(response.error),
   );
 }
 

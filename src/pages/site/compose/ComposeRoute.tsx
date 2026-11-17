@@ -34,9 +34,10 @@
    page's code suspends to the frame's one boundary, whose placeholder is that same skeleton. A rebuild swaps to the legacy
    workspace, which hides the frame's chrome (`useHideFrameChrome`) and draws its own, exactly as before. */
 
-import { lazy, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { lazy, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate, useLocation, useParams } from "react-router-dom";
+import { sessionPhase, subscribeSession } from "@/lib/query/sessionSignal";
 
 import { useHideFrameChrome } from "@/components/shell/frameChrome";
 import { useAuth } from "@/contexts/AuthContext";
@@ -47,6 +48,8 @@ import { SANDBOX_COMPOSER_ENABLED } from "@/lib/build/flags";
 
 import { ComposeSkeleton } from "./ComposeSkeleton";
 import { preloadComposer } from "./preload";
+import { retryRead } from "@/lib/query/client";
+import { pendingKey } from "@/lib/build/writeGuard";
 
 /** Its own chunk: the composer is heavy, and nothing else should pay for it. */
 const ComposePage = lazy(() => import("./ComposePage"));
@@ -70,6 +73,23 @@ function useInCache(key: readonly unknown[]): boolean {
   );
 }
 
+/** Whether this device holds writes for the build kept from an earlier load (writeGuard's pending key). */
+function hasKeptWrites(buildId: string): boolean {
+  try {
+    const raw = window.localStorage.getItem(pendingKey(buildId));
+    return Boolean(raw && raw !== "[]");
+  } catch {
+    return false;
+  }
+}
+
+/** True from the first time `answered` is, for as long as `key` stays the same. */
+function useAnsweredOnce(key: string, answered: boolean): boolean {
+  const seen = useRef<string | null>(null);
+  if (answered) seen.current = key;
+  return seen.current === key;
+}
+
 /** The route's own check, under its own key: it is not the composer's record any more. */
 const composeParentKey = (buildId: string | undefined) => ["build", "getBuildParent", buildId] as const;
 
@@ -77,6 +97,10 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
   const { buildId } = useParams<{ buildId: string }>();
   const location = useLocation();
   const { isLoggedIn, loading } = useAuth();
+  /* G16 (page states): a session the server ended keeps the editor on screen, with the member's work; it does not
+     navigate by itself. Nothing is read while signed out (`reads` and the library still ask for isLoggedIn). */
+  const ended = useSyncExternalStore(subscribeSession, sessionPhase, sessionPhase) === "ended";
+  const member = isLoggedIn || ended;
 
   /* An arrival from intake (a transcript, a repo or a Build File, which carry
      `state.intake`) opens the legacy workspace: its tray and proposal review are
@@ -88,12 +112,17 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
   const queryClient = useQueryClient();
   const libraryIn = useInCache(LIBRARY_SESSIONS_KEY);
   const reads = Boolean(buildId) && isLoggedIn && !hasFrom && !startedNew;
+  /* G22: writes kept on this device from an earlier load of this build (signed out, or offline, before they went). The route
+     does not read the record, or start the page's other reads, ahead of the page: the write guard goes on as the page mounts
+     and sends those writes first, and the page's own reads wait behind them, so it opens on what was typed. */
+  const [kept] = useState(() => Boolean(buildId) && hasKeptWrites(buildId as string));
+  const readsAhead = reads && !kept;
   /* Its data starts first, once the session says who is asking: the small module that holds the reads is asked for before
      the composer's page, so the page's download (the heavy one) does not queue in front of it. The keys are the page's. */
   useEffect(() => {
-    if (!reads || !buildId) return;
+    if (!readsAhead || !buildId) return;
     void import("./composerOpen").then(({ startComposerReads }) => startComposerReads(queryClient, buildId));
-  }, [reads, buildId, queryClient]);
+  }, [readsAhead, buildId, queryClient]);
   /* SV-04 P4: a new build's first screen waits on Sources' session library alone, so that starts now too. */
   const newBuild = isLoggedIn && !hasFrom && !buildId;
   useEffect(() => {
@@ -111,7 +140,8 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
     enabled: reads,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
-    retry: 1,
+    // D3: one retry, never after the time limit cut the read, never for a refused session (lib/query/client.ts).
+    retry: retryRead,
   });
 
   /* THE PAGE MOUNTS WHEN ITS RECORD IS IN. The composer is a heavy first render; mounted while the record is still being read it
@@ -120,23 +150,29 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
   const record = useQuery({
     queryKey: composeBuildQueryKey(buildId),
     queryFn: () => getBuild(buildId as string, { nodeTypes: () => fetchNodeTypes(queryClient) }),
-    enabled: reads,
+    enabled: readsAhead,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
-    retry: 1,
+    // D3: one retry, never after the time limit cut the read, never for a refused session (lib/query/client.ts).
+    retry: retryRead,
   });
-  const waitingForRecord = reads && record.isPending && record.fetchStatus !== "idle";
+  /* G20: the route waits for the record and the library until each has answered once, failure or not. Read again later (a
+     Try again, the page's own read on mount), a query with nothing in it goes back to pending: waiting again then would take
+     the page down to the skeleton and up again, and the page's read on mount would do it for ever. */
+  const recordAnswered = useAnsweredOnce(buildId ?? "", record.data !== undefined || record.isError);
+  const waitingForRecord = readsAhead && !recordAnswered && record.isPending && record.fetchStatus !== "idle";
   /* SV-04 P4: and when Sources' session library is in (startLibraryRead started it with the rest), so the page is never
      drawn with blocks in its Sources corner alone. A new build has nothing else to wait for. A read that failed does not
      hold the page: Sources says so itself. */
-  const waitingForLibrary = isLoggedIn && !hasFrom && !libraryIn;
+  const libraryAnswered = useAnsweredOnce("library", libraryIn);
+  const waitingForLibrary = isLoggedIn && !hasFrom && !libraryAnswered;
   const checking = Boolean(buildId) && !startedNew && check.isPending && check.fetchStatus !== "idle";
   const rebuild = Boolean(buildId) && !startedNew && Boolean(check.data?.parent_build_id);
-  const showLegacy = !loading && isLoggedIn && (hasFrom || rebuild);
+  const showLegacy = !loading && member && (hasFrom || rebuild);
   useHideFrameChrome(showLegacy);
 
   if (loading) return <ComposeSkeleton />;
-  if (!isLoggedIn) {
+  if (!member) {
     return <Navigate to={`/login?redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`} replace />;
   }
   if (showLegacy) return <>{legacy}</>;

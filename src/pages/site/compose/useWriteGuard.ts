@@ -20,6 +20,11 @@ import type { BuildNode, BuildPatch } from "@/lib/build/types";
 export interface WriteGuardHooks {
   /** A write went through (live or replayed): announce it to the other tabs. */
   onWritten?: (write: { method: string; url: string; body: string | null }) => void;
+  /**
+   * G22: the writes kept on this device from an earlier load have all gone. A read made while they were being settled may
+   * have answered with the row as it was before them, so the page reads the build again.
+   */
+  onKeptSent?: () => void;
 }
 
 const parse = (body: string | null): unknown => {
@@ -72,9 +77,14 @@ export function useWriteGuard(buildId: string | undefined, hooks: WriteGuardHook
       return held;
     };
 
+    let kept = 0;
     const { uninstall } = installWriteGuard(supabase, {
       buildId,
-      onChange: ({ orphans }) => pendingWrites.set("queued", orphans),
+      onChange: ({ orphans }) => {
+        pendingWrites.set("queued", orphans);
+        if (kept > 0 && orphans === 0) latest.current.onKeptSent?.();
+        kept = orphans;
+      },
       onWritten: (write) => latest.current.onWritten?.(write),
       baseFor,
       beforeReplay,

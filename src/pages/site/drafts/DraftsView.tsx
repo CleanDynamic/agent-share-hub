@@ -29,8 +29,9 @@ import { PageLink as Link } from "@/lib/routing/PageLink";
 
 import { IntentLink } from "@/lib/routing/IntentLink";
 
-import { EmptyState } from "@/components/brand/EmptyState";
-import { ErrorState } from "@/components/brand/ErrorState";
+import { PageFailed, PageState } from "@/components/pagestate/PageState";
+import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
+import { allFailed, shownState, type ReadLike } from "@/components/pagestate/pageStateModel";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { ModelMark } from "@/components/brand/ModelMark";
@@ -86,21 +87,18 @@ import {
 
 /* ── the view's props ── */
 
-export type DraftsStatus = "loading" | "error" | "ready";
+/** G4: the two reads, as PageState takes them. */
+export type DraftsRead = ReadLike;
 
 export interface DraftsViewProps {
   /** The page's fit (UI-P16). Drafts is a list page: it grows with its rows either way. */
   fit?: "board" | "content";
   now: number;
   /** CA-10: each panel has its own status. The drafts panel's comes from the drafts read alone. */
-  draftsStatus: DraftsStatus;
-  onRetryDrafts: () => void;
-  /** The drafts read's error, logged once and its code shown. */
-  draftsError?: unknown;
+  /** G4: the drafts read. PageState draws its loading, failed and empty states. */
+  draftsRead: DraftsRead;
   /** CA-10: the sessions panel's, from the waiting-sessions read alone. */
-  sessionsStatus: DraftsStatus;
-  onRetrySessions: () => void;
-  sessionsError?: unknown;
+  sessionsRead: DraftsRead;
   /** CA-10: a marker over the Sessions panel, so the page polls only while the panel is on screen. */
   sessionsAnchor?: Ref<HTMLSpanElement>;
   drafts: readonly DraftListItem[];
@@ -400,12 +398,8 @@ const list: CSSProperties = { margin: 0, padding: 0 };
 
 export function DraftsView({
   now,
-  draftsStatus,
-  onRetryDrafts,
-  draftsError,
-  sessionsStatus,
-  onRetrySessions,
-  sessionsError,
+  draftsRead,
+  sessionsRead,
   sessionsAnchor,
   drafts,
   sessions,
@@ -421,10 +415,12 @@ export function DraftsView({
   const fine = useFinePointer();
   const canDrag = !phone && fine;
   const [dragging, setDragging] = useState<string | null>(null);
-  const loading = draftsStatus === "loading";
-  const failed = draftsStatus === "error";
-  const sessionsLoading = sessionsStatus === "loading";
-  const sessionsFailed = sessionsStatus === "error";
+  /* G9: both lists failed: one failed state for the page, in the first column, and none in the second. */
+  // G18: drawn again when the session's phase moves, so allFailed below is read again (it holds while checking).
+  useSessionPhase();
+  const pageFailed = allFailed([draftsRead, sessionsRead]);
+  const draftsShown = shownState([draftsRead]) === "ready";
+  const sessionsShown = shownState([sessionsRead]) === "ready";
 
   const pick = (session: SessionSummary) => (item: MenuItem) => {
     if (item.kind === "target" || item.kind === "draft") {
@@ -445,20 +441,26 @@ export function DraftsView({
   const continueSection = (
     <ListSection
       label="Continue editing"
-      head={<SectionHead title="Continue editing" meta={failed || loading ? "\u00a0" : draftsMeta(drafts.length)} headingLevel={2} />}
+      head={<SectionHead title="Continue editing" meta={draftsShown ? draftsMeta(drafts.length) : "\u00a0"} headingLevel={2} />}
     >
       <StartRow phone={phone} onDropSession={onAddToNew} />
-      {loading ? (
-        <div style={{ marginTop: 8 }}>
-          <RowSkeletons count={6} what="your drafts" />
-        </div>
-      ) : failed ? (
-        <div style={{ padding: "16px 0" }}>
-          <ErrorState panel="Continue editing" onRetry={onRetryDrafts} error={draftsError} log="[Drafts] drafts read failed" showCode />
-        </div>
-      ) : drafts.length === 0 ? (
-        <EmptyState line="Nothing in progress." />
+      {pageFailed ? (
+        <PageFailed reads={[draftsRead, sessionsRead]} region="Drafts" logs={["[Drafts] drafts read failed", "[Drafts] sessions read failed"]} style={{ padding: "16px 0" }} />
       ) : (
+      <PageState
+        read={draftsRead}
+        thing="your drafts"
+        region="Continue editing"
+        log="[Drafts] drafts read failed"
+        style={{ padding: "16px 0" }}
+        skeleton={
+          <div style={{ marginTop: 8 }}>
+            <RowSkeletons count={6} what="your drafts" />
+          </div>
+        }
+        empty={{ when: () => drafts.length === 0, line: "Nothing in progress." }}
+      >
+        {() => (
         <>
           <ul style={{ ...list, marginTop: 8 }}>
             {shown.map((draft) => (
@@ -471,6 +473,8 @@ export function DraftsView({
             </div>
           ) : null}
         </>
+        )}
+      </PageState>
       )}
       {emptyDrafts && emptyDrafts.count > 0 ? (
         <div style={{ minHeight: ROW, display: "flex", alignItems: "center" }}>
@@ -498,25 +502,29 @@ export function DraftsView({
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
           {/* Out of the flow and over the whole section, so it adds no space and the page can tell when any of it shows. */}
           <span ref={sessionsAnchor} aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none" }} />
-          <SectionHead title="Sessions" meta={sessionsFailed || sessionsLoading ? "\u00a0" : sessionsMeta(sessions.length, canDrag)} headingLevel={2} />
+          <SectionHead title="Sessions" meta={sessionsShown ? sessionsMeta(sessions.length, canDrag) : "\u00a0"} headingLevel={2} />
           <TextButton onClick={onConnect}>How they get here</TextButton>
         </div>
       }
     >
-      {sessionsLoading ? (
-        /* CA-10 (CA-09 F15, CLS 0.305 on a phone): the height of a typical list. */
-        <div style={{ marginTop: 16, borderTop: `1px solid ${t.hairline}` }}>
-          <RowSkeletons count={SESSION_SKELETON_ROWS} what="your sessions" />
-        </div>
-      ) : sessionsFailed ? (
-        <div style={{ padding: "16px 0" }}>
-          <ErrorState panel="Sessions" onRetry={onRetrySessions} error={sessionsError} log="[Drafts] sessions read failed" showCode />
-        </div>
-      ) : (
+      {pageFailed ? null : (
+      <PageState
+        read={sessionsRead}
+        thing="your sessions"
+        region="Sessions"
+        log="[Drafts] sessions read failed"
+        style={{ padding: "16px 0" }}
+        skeleton={
+          /* CA-10 (CA-09 F15, CLS 0.305 on a phone): the height of a typical list. */
+          <div style={{ marginTop: 16, borderTop: `1px solid ${t.hairline}` }}>
+            <RowSkeletons count={SESSION_SKELETON_ROWS} what="your sessions" />
+          </div>
+        }
+        empty={{ when: () => sessions.length === 0 && !moreSessions, line: "No new sessions.", action: { label: "Connect a tool", onClick: onConnect } }}
+      >
+        {() => (
         <>
-          {sessions.length === 0 ? (
-            <EmptyState line="No new sessions." action={{ label: "Connect a tool", onClick: onConnect }} />
-          ) : (
+          {sessions.length === 0 ? null : (
             <ul style={{ ...list, marginTop: 16, borderTop: `1px solid ${t.hairline}` }}>
               {sessions.map((session) => (
                 <SessionRow
@@ -542,11 +550,13 @@ export function DraftsView({
             </div>
           ) : null}
         </>
+        )}
+      </PageState>
       )}
     </ListSection>
   );
 
-  const tools = sessionsFailed || sessionsLoading ? [] : connectedTools(sessions, now);
+  const tools = sessionsShown ? connectedTools(sessions, now) : [];
 
   return (
     <DraftsLayout

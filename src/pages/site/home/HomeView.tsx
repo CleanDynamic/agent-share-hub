@@ -17,8 +17,8 @@ import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { Plus } from "lucide-react";
 
 import { Avatar } from "@/components/brand/Avatar";
-import { EmptyState } from "@/components/brand/EmptyState";
-import { ErrorState, type PanelFailure } from "@/components/brand/ErrorState";
+import { PageEmpty, PageFailed, PageState, type PanelFailure } from "@/components/pagestate/PageState";
+import { readOf, type ReadLike } from "@/components/pagestate/pageStateModel";
 import { Button } from "@/components/brand/Button";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
@@ -96,7 +96,7 @@ export type HomeScope = "following" | "everyone";
 export type Loadable<T> =
   | { status: "signed-out" }
   | { status: "loading" }
-  | ({ status: "error" } & PanelFailure)
+  | ({ status: "error"; retrying?: boolean } & PanelFailure)
   | { status: "ready"; data: T };
 
 export interface HomeFeedProps {
@@ -109,6 +109,8 @@ export interface HomeFeedProps {
   onRetry: () => void;
   /** The real error behind `status: "error"`; logged once by the panel, never shown. */
   error?: unknown;
+  /** G5: the retry is out. */
+  retrying?: boolean;
 }
 
 /** UX-07 P1: a topic's Like, Reply and Save on Home. */
@@ -126,7 +128,7 @@ export interface HomeRoom {
   litToday: number | null;
   runsThisWeek: number | null;
   /** The counts could not be read: the section says so in their place. */
-  failure?: PanelFailure;
+  failure?: PanelFailure & { retrying?: boolean };
   /** The latest runs: the feed's own notes. */
   runs: readonly HomeRunRow[];
   /** UX-08 P2: opens the New topic window from a run that did not work. Absent: the button is not drawn. */
@@ -175,6 +177,8 @@ export interface HomeViewProps {
   published?: Loadable<HomePublished>;
   /** UX-03 P6: Copy link on the newest published build. */
   onCopyLink?: (slug: string) => void;
+  /** G9: every region of the page failed, these being its reads. The page shows one failed state in place of its columns' content. */
+  pageFailed?: readonly ReadLike[];
 }
 
 const DRAFTS = "/drafts";
@@ -257,21 +261,34 @@ export function SinceSection({ meta, rows, now }: { meta: string; rows: readonly
   );
 }
 
-function SectionFailure({ panel, failure }: { panel: string; failure: PanelFailure }) {
-  return <ErrorState panel={panel} onRetry={failure.onRetry} error={failure.error} />;
+/** G4: a section's Loadable as PageState reads it. A signed-out section is drawn by its own branch, never handed here. */
+function readOfLoadable<T>(value: Loadable<T>): ReadLike {
+  if (value.status === "ready") return readOf("ready", value.data);
+  if (value.status === "error") return { data: undefined, error: value.error ?? { message: "section read failed" }, status: "error", fetchStatus: value.retrying ? "fetching" : "idle", refetch: value.onRetry };
+  return readOf("loading");
 }
 
+/** A section: its label, its heading and what it holds. */
+const sectionFrame = (label: string, head: ReactNode, gap = 8) => (body: ReactNode) => (
+  <section aria-label={label}>
+    <div style={{ marginBottom: gap }}>{head}</div>
+    {body}
+  </section>
+);
+
 export function ContinueSection({ drafts }: { drafts: HomeViewProps["drafts"] }) {
-  if (drafts.status === "loading") return <SectionBones rows={3} height={48} what="your drafts" />;
   const meta = drafts.status === "ready" ? `${drafts.data.total} ${drafts.data.total === 1 ? "draft" : "drafts"} · latest first` : undefined;
   return (
-    <section aria-label="Continue editing">
-      <div style={{ marginBottom: 8 }}>
-        <SectionHead title="Continue editing" meta={meta} to={DRAFTS} openName="drafts" headingLevel={2} />
-      </div>
-      {drafts.status === "error" ? (
-        <SectionFailure panel="Continue editing" failure={drafts} />
-      ) : drafts.status === "ready" && drafts.data.rows.length > 0 ? (
+    <PageState
+      read={readOfLoadable(drafts)}
+      thing="your drafts"
+      region="Continue editing"
+      skeleton={<SectionBones rows={3} height={48} what="your drafts" />}
+      frame={sectionFrame("Continue editing", <SectionHead title="Continue editing" meta={meta} to={DRAFTS} openName="drafts" headingLevel={2} />)}
+      empty={{ when: () => drafts.status === "ready" && drafts.data.rows.length === 0, line: "No drafts in progress." }}
+    >
+      {() =>
+        drafts.status === "ready" &&
         drafts.data.rows.map((row, index) => (
           <Link key={row.id} to={`/compose/${row.id}`} data-testid="home-draft-row" style={rowLink(index === drafts.data.rows.length - 1, { display: "flex", alignItems: "center", minHeight: 48 })}>
             <span style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
@@ -280,24 +297,24 @@ export function ContinueSection({ drafts }: { drafts: HomeViewProps["drafts"] })
             </span>
           </Link>
         ))
-      ) : (
-        <EmptyState line="No drafts in progress." action={undefined} />
-      )}
-    </section>
+      }
+    </PageState>
   );
 }
 
 export function SessionsSection({ sessions, onAdd }: { sessions: HomeViewProps["sessions"]; onAdd: (id: string) => void }) {
-  if (sessions.status === "loading") return <SectionBones rows={2} height={52} what="your sessions" />;
   const meta = sessions.status === "ready" ? `${sessions.data.total} imported · newest first` : undefined;
   return (
-    <section aria-label="Your sessions">
-      <div style={{ marginBottom: 8 }}>
-        <SectionHead title="Your sessions" meta={meta} to={DRAFTS} openName="sessions" headingLevel={2} />
-      </div>
-      {sessions.status === "error" ? (
-        <SectionFailure panel="Your sessions" failure={sessions} />
-      ) : sessions.status === "ready" && sessions.data.rows.length > 0 ? (
+    <PageState
+      read={readOfLoadable(sessions)}
+      thing="your sessions"
+      region="Your sessions"
+      skeleton={<SectionBones rows={2} height={52} what="your sessions" />}
+      frame={sectionFrame("Your sessions", <SectionHead title="Your sessions" meta={meta} to={DRAFTS} openName="sessions" headingLevel={2} />)}
+      empty={{ when: () => sessions.status === "ready" && sessions.data.rows.length === 0, line: "No sessions yet." }}
+    >
+      {() =>
+        sessions.status === "ready" &&
         sessions.data.rows.map((row, index) => (
           <div
             key={row.id}
@@ -314,10 +331,8 @@ export function SessionsSection({ sessions, onAdd }: { sessions: HomeViewProps["
             <IconButton icon={Plus} drawn={<Glyph name="plus" size={12} />} label="Add to a new build" size={24} onClick={() => onAdd(row.id)} />
           </div>
         ))
-      ) : (
-        <EmptyState line="No sessions yet." action={undefined} />
-      )}
-    </section>
+      }
+    </PageState>
   );
 }
 
@@ -352,16 +367,17 @@ function ChallengeBar({ done, target, title }: { done: number; target: number; t
 const weekHasProgress = (week: HomeWeek): boolean => week.streak > 0 || week.days.some((day) => day !== "none") || week.challenges.some((row) => row.done > 0);
 
 export function WeekSection({ week }: { week: HomeViewProps["week"] }) {
-  if (week.status === "loading") return <SectionBones rows={3} height={40} what="your week" />;
   if (week.status === "signed-out") return null;
   return (
-    <section aria-label="Your week">
-      <div style={{ marginBottom: 14 }}>
-        <SectionHead title="Your week" meta={week.status === "ready" ? weekMeta(week.data.streak) : undefined} headingLevel={2} />
-      </div>
-      {week.status === "error" ? (
-        <SectionFailure panel="Your week" failure={week} />
-      ) : (
+    <PageState
+      read={readOfLoadable(week)}
+      thing="your week"
+      region="Your week"
+      skeleton={<SectionBones rows={3} height={40} what="your week" />}
+      frame={sectionFrame("Your week", <SectionHead title="Your week" meta={week.status === "ready" ? weekMeta(week.data.streak) : undefined} headingLevel={2} />, 14)}
+    >
+      {() =>
+        week.status === "ready" && (
         <>
           <div role="img" aria-label={weekSummary(week.data.days)} data-testid="home-week-days" style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 6, marginBottom: 16 }}>
             {week.data.days.map((state, index) => {
@@ -384,15 +400,16 @@ export function WeekSection({ week }: { week: HomeViewProps["week"] }) {
             </div>
           ))}
         </>
-      )}
-    </section>
+        )
+      }
+    </PageState>
   );
 }
 
 function StudioSignedOut() {
   return (
     <section aria-label="Your studio">
-      <EmptyState line="Sign in to see your drafts, sessions and week." action={undefined} />
+      <PageEmpty line="Sign in to see your drafts, sessions and week." />
       <div style={{ marginTop: 12 }}>
         <Button variant="primary" size={32} href={SIGN_IN} data-visual-slot="btn-primary">
           Sign in
@@ -718,16 +735,23 @@ export function FeedEnd({ cards, now }: { cards: readonly HomeEndCard[]; now: nu
 
 function FeedBody(props: HomeViewProps) {
   const { feed, filter, now, srcByPath, onPostsNear, scope, onScopeChange } = props;
-  if (feed.status === "loading") return <FeedBones />;
-  if (feed.status === "error") return <ErrorState panel="The feed" onRetry={feed.onRetry} error={feed.error} data-testid="home-feed-error" style={{ padding: "16px 20px" }} />;
-  if (feed.items.length === 0 && props.newCount === 0) {
+  if (feed.status !== "ready" || (feed.items.length === 0 && props.newCount === 0)) {
     return (
-      <EmptyState
+      <PageState
+        read={feed.status === "ready" ? readOf("ready", feed.items) : feed.status === "error" ? { data: undefined, error: feed.error ?? { message: "feed read failed" }, status: "error", fetchStatus: feed.retrying ? "fetching" : "idle", refetch: feed.onRetry } : readOf("loading")}
+        thing="the feed"
+        region="The feed"
+        skeleton={<FeedBones />}
         style={{ padding: "16px 20px" }}
-        line={scope === "following" ? "Nobody you follow has posted yet." : "Nothing has been posted yet."}
-        action={scope === "following" ? { label: "See everyone", onClick: () => onScopeChange("everyone") } : undefined}
-        data-testid="home-feed-empty"
-      />
+        empty={{
+          when: () => true,
+          line: scope === "following" ? "Nobody you follow has posted yet." : "Nothing has been posted yet.",
+          action: scope === "following" ? { label: "See everyone", onClick: () => onScopeChange("everyone") } : undefined,
+          testId: "home-feed-empty",
+        }}
+      >
+        {() => null}
+      </PageState>
     );
   }
   const visible = feed.items.filter((item) => matchesFilter(item.kind, filter));
@@ -810,7 +834,9 @@ export function RoomSection({ room, now }: { room: HomeRoom; now: number }) {
       </div>
       {room.failure ? (
         <div style={{ marginTop: 16 }}>
-          <SectionFailure panel="Run counts" failure={room.failure} />
+          <PageState read={readOfLoadable({ status: "error", ...room.failure })} thing="runs" region="Run counts" skeleton={null}>
+            {() => null}
+          </PageState>
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginTop: 16 }}>
@@ -854,15 +880,17 @@ export function RoomSection({ room, now }: { room: HomeRoom; now: number }) {
 
 /** UX-08 P3: Still open: the topics that are still waiting for a piece, in the reader's spaces (or all of OpenBuilds when signed out). */
 export function RequestsSection({ requests, scope = "spaces" }: { requests: HomeViewProps["requests"]; scope?: StillOpenScope }) {
-  if (requests.status === "loading") return <SectionBones rows={3} height={48} what="still-open topics" />;
   return (
-    <section aria-label="Still open">
-      <div style={{ marginBottom: 8 }}>
-        <SectionHead title="Still open" meta={STILL_OPEN_META[scope]} to={STILL_OPEN_HREF} openName="OpenBuilds" headingLevel={2} />
-      </div>
-      {requests.status === "error" ? (
-        <SectionFailure panel="Still open" failure={requests} />
-      ) : requests.status === "ready" && requests.data.length > 0 ? (
+    <PageState
+      read={readOfLoadable(requests)}
+      thing="posts"
+      region="Still open"
+      skeleton={<SectionBones rows={3} height={48} what="still-open topics" />}
+      frame={sectionFrame("Still open", <SectionHead title="Still open" meta={STILL_OPEN_META[scope]} to={STILL_OPEN_HREF} openName="OpenBuilds" headingLevel={2} />)}
+      empty={{ when: () => requests.status === "ready" && requests.data.length === 0, line: "Nothing is still open right now." }}
+    >
+      {() =>
+        requests.status === "ready" &&
         requests.data.map((row, index) => (
           <Link key={row.id} to={row.href} data-testid="home-request-row" style={rowLink(index === requests.data.length - 1, { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, minHeight: 48 })}>
             <span style={{ minWidth: 0 }}>
@@ -872,25 +900,25 @@ export function RequestsSection({ requests, scope = "spaces" }: { requests: Home
             {row.reward ? <span style={{ fontWeight: 500 }}>{row.reward}</span> : null}
           </Link>
         ))
-      ) : (
-        <EmptyState line="Nothing is still open right now." action={undefined} />
-      )}
-    </section>
+      }
+    </PageState>
   );
 }
 
 const MOST_RUN_ROW: CSSProperties = { display: "grid", gridTemplateColumns: "16px 28px 1fr auto", columnGap: 10, alignItems: "center", minHeight: 48 };
 
 export function MostRunSection({ mostRun }: { mostRun: HomeViewProps["mostRun"] }) {
-  if (mostRun.status === "loading") return <SectionBones rows={3} height={48} what="the most run builds" />;
   return (
-    <section aria-label="Most run this week">
-      <div style={{ marginBottom: 8 }}>
-        <SectionHead title="Most run this week" meta="By people who reproduced them" headingLevel={2} />
-      </div>
-      {mostRun.status === "error" ? (
-        <SectionFailure panel="Most run this week" failure={mostRun} />
-      ) : mostRun.status === "ready" && mostRun.data.length > 0 ? (
+    <PageState
+      read={readOfLoadable(mostRun)}
+      thing="builds"
+      region="Most run this week"
+      skeleton={<SectionBones rows={3} height={48} what="the most run builds" />}
+      frame={sectionFrame("Most run this week", <SectionHead title="Most run this week" meta="By people who reproduced them" headingLevel={2} />)}
+      empty={{ when: () => mostRun.status === "ready" && mostRun.data.length === 0, line: "Nothing run yet this week." }}
+    >
+      {() =>
+        mostRun.status === "ready" &&
         mostRun.data.map((row, index) => (
           <Link key={row.buildId} to={row.href} data-testid="home-most-run-row" style={rowLink(index === mostRun.data.length - 1, MOST_RUN_ROW)}>
             <span style={mono(11, t.label)}>{index + 1}</span>
@@ -902,10 +930,8 @@ export function MostRunSection({ mostRun }: { mostRun: HomeViewProps["mostRun"] 
             <span style={{ fontWeight: 500 }}>{row.count.toLocaleString("en-GB")}</span>
           </Link>
         ))
-      ) : (
-        <EmptyState line="Nothing run yet this week." action={undefined} />
-      )}
-    </section>
+      }
+    </PageState>
   );
 }
 
@@ -913,15 +939,17 @@ const WHERE_NEXT_ROW: CSSProperties = { display: "grid", gridTemplateColumns: "5
 
 export function WhereNextSection({ whereNext }: { whereNext: HomeViewProps["whereNext"] }) {
   if (whereNext.status === "signed-out") return null;
-  if (whereNext.status === "loading") return <SectionBones rows={2} height={56} what="suggestions" />;
   return (
-    <section aria-label="Where next">
-      <div style={{ marginBottom: 8 }}>
-        <SectionHead title="Where next" meta="From what you ran this week" headingLevel={2} />
-      </div>
-      {whereNext.status === "error" ? (
-        <SectionFailure panel="Where next" failure={whereNext} />
-      ) : whereNext.data.length > 0 ? (
+    <PageState
+      read={readOfLoadable(whereNext)}
+      thing="builds"
+      region="Where next"
+      skeleton={<SectionBones rows={2} height={56} what="suggestions" />}
+      frame={sectionFrame("Where next", <SectionHead title="Where next" meta="From what you ran this week" headingLevel={2} />)}
+      empty={{ when: () => whereNext.status === "ready" && whereNext.data.length === 0, line: "Run a build this week and suggestions appear here." }}
+    >
+      {() =>
+        whereNext.status === "ready" &&
         whereNext.data.map((row, index) => (
           <Link key={row.id} to={row.href} data-testid="home-where-next-row" style={rowLink(index === whereNext.data.length - 1, WHERE_NEXT_ROW)}>
             <Cover cover={row.cover} height={40} />
@@ -931,10 +959,8 @@ export function WhereNextSection({ whereNext }: { whereNext: HomeViewProps["wher
             </span>
           </Link>
         ))
-      ) : (
-        <EmptyState line="Run a build this week and suggestions appear here." action={undefined} />
-      )}
-    </section>
+      }
+    </PageState>
   );
 }
 
@@ -996,6 +1022,14 @@ export function HomeView(props: HomeViewProps) {
   const layout = useHomeLayout();
   // While the feed loads the page is its loading state, the route's Placeholder, block for block (SV-04 P5).
   if (props.feed.status === "loading") return <HomeLoadingView />;
+  if (props.pageFailed) {
+    return (
+      <>
+        <PageHeader title="Home" />
+        <HomeColumns layout={layout} left={null} centre={<PageFailed reads={props.pageFailed} region="Home" style={{ padding: "16px 20px" }} />} right={null} />
+      </>
+    );
+  }
   return (
     <>
     <PageHeader title="Home" />

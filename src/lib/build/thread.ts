@@ -761,17 +761,37 @@ export class ThreadError extends Error {
   }
 }
 
+/** The picture set last written for each build, so an unchanged set is not written again on every save. */
+const writtenPostMedia = new Map<string, string>();
+
 /**
- * Save the thread. The post-media set is written first, in document order, so
- * the cover mirror follows the first picture; the document is written second,
- * and not at all if the set write fails.
+ * Save the thread. G22: the words and the pictures are two independent writes, and the words never wait on the pictures.
+ * The document goes first, on its own; the post-media set (in document order, so the cover mirror follows the first
+ * picture) follows once the words' write has answered, whichever way. A set write that fails or is held cannot hold back the
+ * words: they are already in the write guard's line, kept on the device, when the set is asked for. The words' write needs
+ * nothing the set write returns (an id, an order): the document names its pictures by their own ids. A set that has not
+ * changed since the last one written for this build is not written again. A failed set write still fails the save, so the
+ * save line says so and Retry writes both again.
  */
 export async function saveThread(buildId: string, doc: ThreadDoc): Promise<Build> {
   const [problem] = checkThread(doc);
   if (problem) throw new ThreadError(problem.code, problem.message, problem.post);
 
-  await setPostMedia(buildId, threadMediaIds(doc));
-
+  const ids = threadMediaIds(doc);
+  const set = ids.join(",");
   // post_doc is newer than the generated types, so the patch is cast here.
-  return updateBuild(buildId, { post_doc: doc as unknown as Json } as unknown as BuildPatch);
+  const words = updateBuild(buildId, { post_doc: doc as unknown as Json } as unknown as BuildPatch);
+  const pictures = words.then(
+    () => writePictures(buildId, ids, set),
+    () => writePictures(buildId, ids, set),
+  );
+  const [build] = await Promise.all([words, pictures]);
+  return build;
+}
+
+async function writePictures(buildId: string, ids: readonly string[], set: string): Promise<void> {
+  if (writtenPostMedia.get(buildId) === set) return;
+  writtenPostMedia.delete(buildId);
+  await setPostMedia(buildId, ids);
+  writtenPostMedia.set(buildId, set);
 }

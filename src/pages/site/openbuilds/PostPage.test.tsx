@@ -104,26 +104,30 @@ describe("the post page", () => {
     expect(screen.getAllByTestId("reply")).toHaveLength(2);
   });
 
-  it("says a missing post isn't available, with a way back", async () => {
+  it("says a missing post is not at this address, with OpenBuilds as the way out (G7, D5)", async () => {
     getPost.mockResolvedValue(null);
     mount();
-    expect(await screen.findByText("This post isn't available.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Back to OpenBuilds" })).toHaveAttribute("href", "/openbuilds");
+    expect(await screen.findByText("Nothing at this address.")).toBeInTheDocument();
+    expect(screen.getByText("This post may have been removed, or the link may be wrong.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "OpenBuilds" })).toHaveAttribute("href", "/openbuilds");
   });
 
-  it("says a hidden post isn't available to a reader who doesn't moderate", async () => {
+  it("a hidden post is not at this address to a reader who doesn't moderate", async () => {
     getPost.mockResolvedValue(thread({ hiddenBy: "sam" }));
     mount();
-    expect(await screen.findByText("This post isn't available.")).toBeInTheDocument();
+    expect(await screen.findByText("Nothing at this address.")).toBeInTheDocument();
   });
 
-  it("says an error in one sentence, with Retry", async () => {
+  it("says an error in one sentence, with Try again", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
     getPost.mockRejectedValue(new Error("boom"));
     mount();
-    expect(await screen.findByText("This post didn't load.")).toBeInTheDocument();
+    expect(await screen.findByText("Couldn't load this post. Try again.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Post" })).toBeInTheDocument();
     getPost.mockResolvedValue(thread());
-    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
-    expect(await screen.findByRole("heading", { level: 1 })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    // The failed state's own title is "Post"; the loaded topic's heading replaces it.
+    await waitFor(() => expect(screen.getByRole("heading", { level: 1 }).textContent).not.toBe("Post"));
   });
 
   it("gives a reader who neither wrote the post nor moderates no Pin or Hide (UX-09 P8: the menu holds Report alone)", async () => {
@@ -347,10 +351,10 @@ describe("UX-09 Q5: the author of what the site hid is told", () => {
     expect(notice.textContent).toContain("Hidden by the site's moderators: your reply");
   });
 
-  it("anyone else is told only that the post isn't available", async () => {
+  it("anyone else is told only that nothing is at this address", async () => {
     getPost.mockResolvedValue(null);
     mount();
-    expect(await screen.findByText("This post isn't available.")).toBeInTheDocument();
+    expect(await screen.findByText("Nothing at this address.")).toBeInTheDocument();
     expect(screen.queryByTestId("site-hidden-notice")).toBeNull();
   });
 
@@ -358,7 +362,7 @@ describe("UX-09 Q5: the author of what the site hid is told", () => {
     user = null;
     getPost.mockResolvedValue(null);
     mount();
-    expect(await screen.findByText("This post isn't available.")).toBeInTheDocument();
+    expect(await screen.findByText("Nothing at this address.")).toBeInTheDocument();
     expect(siteHiddenPostsOf).not.toHaveBeenCalled();
   });
 });

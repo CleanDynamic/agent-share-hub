@@ -3,6 +3,7 @@
 //
 // Styles are asserted through SSR markup (jsdom's cssstyle drops var() values); roles and names on the rendered tree.
 
+import { readOf } from "@/components/pagestate/pageStateModel";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
@@ -172,7 +173,7 @@ describe("ActivityView on a desktop", () => {
 
     const onRetry = vi.fn();
     const failed = mount({ list: { ...base, status: "error", groups: [], onRetry } });
-    expect(screen.getByTestId("activity-error").getAttribute("aria-label")).toContain("Your activity");
+    expect(screen.getByRole("alert", { name: "Your activity" }).textContent).toContain("Couldn't load your activity. Try again.");
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(onRetry).toHaveBeenCalledTimes(1);
     failed.unmount();
@@ -187,7 +188,7 @@ describe("ActivityView on a desktop", () => {
     write.unmount();
 
     const people = mount({ peopleThisWeek: null, peopleError: { onRetry } });
-    expect(screen.getByTestId("activity-orbs-error").getAttribute("aria-label")).toContain("People this week");
+    expect(screen.getByRole("alert", { name: "People this week" })).toBeTruthy();
     expect(screen.getByText("Listening")).toBeTruthy();
     people.unmount();
 
@@ -225,5 +226,38 @@ describe("ActivityView on a phone", () => {
     mount({ unread: 0 });
     expect(screen.getByRole("heading", { level: 1, name: "All caught up" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Mark all read" })).toBeNull();
+  });
+});
+
+describe("G9 · every region failed", () => {
+  it("is one failed state for the page, under its title", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    mount({ pageFailed: [readOf("error"), readOf("error"), readOf("error")] });
+    expect(screen.getByText("Couldn't load this page. Try again.")).toBeTruthy();
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+    expect(screen.getByRole("heading", { level: 1, name: "Activity" })).toBeTruthy();
+  });
+});
+
+describe("G26 · All caught up.", () => {
+  const empty = (over: Partial<ActivityViewProps>) => mount({ list: { ...activityFixture().list, groups: [] }, ...over });
+  it("is said only when the list answered with nothing and the live connection is up", () => {
+    empty({ live: true });
+    expect(screen.getByText("All caught up.")).toBeTruthy();
+  });
+
+  it("is never said beside the connection line: with the connection down, the empty list says nothing", () => {
+    empty({ live: false });
+    expect(screen.getByText("Reconnecting")).toBeTruthy();
+    expect(screen.queryByText("All caught up.")).toBeNull();
+  });
+
+  it("is never said while the list loads or after it failed", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const loading = empty({ live: true, list: { ...activityFixture().list, status: "loading", groups: [], read: readOf("loading") } });
+    expect(screen.queryByText("All caught up.")).toBeNull();
+    loading.unmount();
+    empty({ live: true, list: { ...activityFixture().list, status: "error", groups: [], read: readOf("error") } });
+    expect(screen.queryByText("All caught up.")).toBeNull();
   });
 });

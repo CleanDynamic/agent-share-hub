@@ -14,7 +14,7 @@ import { sessionOrderOf, sessionsMetaOf, storedWorkstreamsOf } from "@/lib/build
 import { asMaking } from "@/pages/site/build/buildModel";
 import { modelLabel } from "@/lib/models/registry";
 
-import { RebuildViewFailed, RebuildViewNotice, RebuildViewSkeleton } from "@/pages/site/rebuild/RebuildView";
+import { RebuildViewNotice, RebuildViewSkeleton, RebuildViewState } from "@/pages/site/rebuild/RebuildView";
 
 import { CompareView } from "./CompareView";
 
@@ -45,9 +45,9 @@ export function ComparePage() {
   }, [mine.data, theirs.data]);
 
   if ((mine.isPending && Boolean(slug)) || (theirs.isPending && Boolean(otherSlug))) return <RebuildViewSkeleton label="Loading the two builds" />;
-  if (mine.isError || theirs.isError) return <RebuildViewFailed panel="The comparison" onRetry={() => void Promise.all([mine.refetch(), theirs.refetch()])} error={mine.error ?? theirs.error} />;
-  if (!mine.data || !theirs.data) {
-    return <RebuildViewNotice line="One of those builds is not here." detail="It may have been unpublished, or the link may be wrong." action={<Link to="/gallery"><Button variant="secondary" size={36} fontSize={13}>See the gallery</Button></Link>} />;
+  /* G4, G7: failed if either read failed; not found only when the server answered that one of them is not there. */
+  if (mine.isError || theirs.isError || !mine.data || !theirs.data) {
+    return <RebuildViewState title="Compare" read={[mine, theirs]} thing="this comparison" region="The comparison" missing={([a, b]) => a === null || b === null} />;
   }
   if (!shareRoot(mine.data.build, theirs.data.build)) {
     return <RebuildViewNotice line="These two are not builds of the same thing." detail="Compare is only offered for builds in the same family of rebuilds." action={<Link to={`/b2/${slug}`}><Button variant="secondary" size={36} fontSize={13}>Back to the build</Button></Link>} />;

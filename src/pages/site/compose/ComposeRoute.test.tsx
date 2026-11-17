@@ -184,7 +184,91 @@ describe("ComposeRoute · SV-04 P4, the one frame", () => {
     expect(await screen.findByText("the composer")).toBeInTheDocument();
   });
 
+  it("G20: once the library has answered, even with a failure, the page stays mounted while it is read again", async () => {
+    open("/compose/new", { library: false });
+    await act(async () => {
+      await client.prefetchQuery({ queryKey: LIBRARY_SESSIONS_KEY, queryFn: () => Promise.reject(new Error("no answer")), retry: false });
+    });
+    expect(await screen.findByText("the composer")).toBeInTheDocument();
+    const before = mounts.count;
+    // The page reads it again on mount: with nothing in it yet, the query goes back to pending while it is out.
+    await act(async () => {
+      void client.prefetchQuery({ queryKey: LIBRARY_SESSIONS_KEY, queryFn: () => new Promise(() => undefined), retry: false });
+    });
+    expect(screen.getByText("the composer")).toBeInTheDocument();
+    expect(mounts.count).toBe(before);
+  });
+
+  it("G20: once the record has answered with a failure, Try again does not take the page down to the skeleton", async () => {
+    getBuildParent.mockImplementationOnce(async () => ({ id: "b1", parent_build_id: null }) as never);
+    getBuild.mockImplementationOnce(async () => {
+      throw new Error("no answer");
+    });
+    open("/compose/b1");
+    expect(await screen.findByText("the composer", undefined, { timeout: 3000 })).toBeInTheDocument();
+    const before = mounts.count;
+    getBuild.mockImplementationOnce(() => new Promise(() => undefined) as never);
+    await act(async () => {
+      void client.refetchQueries({ queryKey: ["compose-build", "b1"] });
+    });
+    expect(screen.getByText("the composer")).toBeInTheDocument();
+    expect(mounts.count).toBe(before);
+  });
+
   it("watches the session library on the key useLibrarySessions reads", () => {
     expect(LIBRARY_SESSIONS_KEY).toEqual(librarySessionsKey);
+  });
+});
+
+describe("ComposeRoute after the server ended the session (G16)", () => {
+  afterEach(async () => {
+    (await import("@/lib/query/sessionSignal")).setSessionPhase("live");
+    auth.isLoggedIn = true;
+  });
+
+  it("keeps the composer on screen: it does not navigate by itself", async () => {
+    open("/compose/new");
+    expect(await screen.findByText("the composer")).toBeTruthy();
+    const { setSessionPhase } = await import("@/lib/query/sessionSignal");
+    act(() => setSessionPhase("ended"));
+    auth.isLoggedIn = false;
+    cleanup();
+    open("/compose/new");
+    expect(await screen.findByText("the composer")).toBeTruthy();
+  });
+});
+
+describe("the editor's reads follow the shared retry rule (D3)", () => {
+  it("a record read the time limit cut is not tried again", async () => {
+    const { ReadTimeoutError } = await import("@/lib/query/readLimit");
+    getBuildParent.mockImplementationOnce(async () => ({ id: "b1", parent_build_id: null }) as never);
+    getBuild.mockClear();
+    getBuild.mockImplementation(async () => {
+      throw new ReadTimeoutError(10_000);
+    });
+    open("/compose/b1");
+    await waitFor(() => expect(getBuild).toHaveBeenCalledTimes(1));
+    // Past the one retry's delay (1s): still once.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1_300));
+    });
+    expect(getBuild).toHaveBeenCalledTimes(1);
+    getBuild.mockImplementation(async () => null);
+  });
+});
+
+describe("writes kept on this device from an earlier load (G22)", () => {
+  afterEach(() => localStorage.clear());
+
+  it("the route does not read the record ahead of the page: the page reads it once the kept writes have gone", async () => {
+    const { pendingKey } = await import("@/lib/build/writeGuard");
+    localStorage.setItem(pendingKey("b1"), JSON.stringify([{ id: "k", at: 1, method: "PATCH", url: "/rest/v1/builds?id=eq.b1", headers: [], body: "{}" }]));
+    getBuildParent.mockImplementationOnce(async () => ({ id: "b1", parent_build_id: null }) as never);
+    getBuild.mockClear();
+    vi.mocked(startComposerReads).mockClear();
+    open("/compose/b1");
+    expect(await screen.findByText("the composer")).toBeInTheDocument();
+    expect(getBuild).not.toHaveBeenCalled();
+    expect(startComposerReads).not.toHaveBeenCalled();
   });
 });

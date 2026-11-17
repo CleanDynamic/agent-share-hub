@@ -19,6 +19,13 @@
 // otherwise stop dead. Writes that read other rows first (moving tiles) wait in memory, behind the line.
 //
 // A WRITE REFUSED ON REPLAY (the row changed elsewhere in the meantime) is not lost and not forced: `onConflict` hears of it.
+//
+// A SESSION THE SERVER REFUSED (G22, D1) holds writes the same way. A write answered 401 is held, not failed, and kept under
+// the same key; while the session is being checked or has ended (lib/query/sessionSignal.ts) a new write joins the line
+// without being sent, and the line waits. Once the member is signed in again (the phase is live) the line goes out in order,
+// with the new session's token: a held write carries no auth headers, and the client's fetch puts the current ones on.
+
+import { sessionPhase, subscribeSession } from "@/lib/query/sessionSignal";
 
 import { connection as sharedConnection, isNetworkFailure, type Connection } from "./connection";
 
@@ -154,6 +161,9 @@ export function createWriteGuard(options: WriteGuardOptions): WriteGuard {
   let settling = false;
   let counter = 0;
   let idle: (() => void)[] = [];
+  /** G22: a write came back 401. The line waits until the session is live again. */
+  let refusedSession = false;
+  const paused = () => refusedSession || sessionPhase() !== "live";
   /** The last answers about the build's own row, so a read offline can be answered. */
   const rowCache = new Map<string, { status: number; headers: [string, string][]; body: unknown }>();
 
@@ -217,7 +227,7 @@ export function createWriteGuard(options: WriteGuardOptions): WriteGuard {
     draining = true;
     let stamp: string | null = null;
     try {
-      while (line.length > 0 && !disposed) {
+      while (line.length > 0 && !disposed && !paused()) {
         const item = line[0];
         let held = stamp ? { ...item.held, url: withStamp(item.held.url, stamp) } : item.held;
         // Nobody is waiting on a write kept from an earlier load, and what it was based on may have moved: it is settled first.
@@ -253,6 +263,11 @@ export function createWriteGuard(options: WriteGuardOptions): WriteGuard {
           item.waiter?.reject(cause);
           continue;
         }
+        // G22: the session was refused: the write stays at the head of the line, and the line waits for a new session.
+        if (response.status === 401) {
+          refusedSession = true;
+          return;
+        }
         line.shift();
         persist();
         announce();
@@ -286,7 +301,7 @@ export function createWriteGuard(options: WriteGuardOptions): WriteGuard {
       line.push({ held, waiter: { resolve, reject } });
       persist();
       announce();
-      if (!connection.isOffline() && !draining) void drain();
+      if (!connection.isOffline() && !draining && !paused()) void drain();
     });
 
   const guardedFetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
@@ -298,10 +313,15 @@ export function createWriteGuard(options: WriteGuardOptions): WriteGuard {
     if (WRITES.has(method)) {
       // Only a body that can be written down is held; a file goes straight through.
       if (init?.body != null && typeof init.body !== "string") return baseFetch(input, init);
-      if (line.length > 0 || draining || connection.isOffline()) return hold(input, init);
+      if (line.length > 0 || draining || connection.isOffline() || paused()) return hold(input, init);
       try {
         const response = await baseFetch(input, init);
         armed = true;
+        // G22: the session was refused: the write is held, as with no connection, until the member is signed in again.
+        if (response.status === 401) {
+          refusedSession = true;
+          return hold(input, init);
+        }
         if (response.ok) onWritten?.({ method, url, body: typeof init?.body === "string" ? init.body : null });
         if (target.name === "builds" && method === "PATCH") {
           try {
@@ -363,13 +383,19 @@ export function createWriteGuard(options: WriteGuardOptions): WriteGuard {
   }
 
   const stop = connection.subscribe(() => {
-    if (!connection.isOffline()) void drain();
+    if (!connection.isOffline() && !paused()) void drain();
     else release();
+  });
+  // G22: signed in again: the line goes out.
+  const stopSession = subscribeSession(() => {
+    if (sessionPhase() !== "live") return;
+    refusedSession = false;
+    if (!connection.isOffline()) void drain();
   });
 
   if (line.length > 0) {
     announce();
-    if (!connection.isOffline()) void drain();
+    if (!connection.isOffline() && !paused()) void drain();
   }
 
   return {
@@ -381,6 +407,7 @@ export function createWriteGuard(options: WriteGuardOptions): WriteGuard {
     dispose: () => {
       disposed = true;
       stop();
+      stopSession();
       release();
     },
   };

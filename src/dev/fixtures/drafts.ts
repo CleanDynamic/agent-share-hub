@@ -5,6 +5,7 @@
    prompt's own table, with times written as offsets from a fixed `now` so the
    page reads the same on any day. Nothing here reaches a production bundle. */
 
+import { readOf } from "@/components/pagestate/pageStateModel";
 import type { DraftListItem } from "@/lib/build/drafts";
 import type { SessionSummary } from "@/lib/build/sessions";
 import type { DesignState } from "@/dev/useDesignTheme";
@@ -48,18 +49,16 @@ export const sessionsFixture: SessionSummary[] = [
 export function draftsViewProps(state: DesignState = "populated"): DraftsViewProps {
   const base: DraftsViewProps = {
     now: DRAFTS_NOW,
-    draftsStatus: "ready",
-    onRetryDrafts: () => undefined,
-    sessionsStatus: "ready",
-    onRetrySessions: () => undefined,
+    draftsRead: readOf("ready", draftsFixture),
+    sessionsRead: readOf("ready", sessionsFixture),
     drafts: draftsFixture,
     sessions: sessionsFixture,
     onAddToNew: () => undefined,
     onAddToDraft: () => undefined,
     onConnect: () => undefined,
   };
-  if (state === "loading") return { ...base, draftsStatus: "loading", sessionsStatus: "loading" };
-  if (state === "error") return { ...base, draftsStatus: "error", sessionsStatus: "error" };
-  if (state === "empty") return { ...base, drafts: [], sessions: [] };
+  if (state === "loading") return { ...base, draftsRead: readOf("loading"), sessionsRead: readOf("loading") };
+  if (state === "error") return { ...base, draftsRead: readOf("error"), sessionsRead: readOf("error") };
+  if (state === "empty") return { ...base, drafts: [], sessions: [], draftsRead: readOf("ready", []), sessionsRead: readOf("ready", []) };
   return base;
 }

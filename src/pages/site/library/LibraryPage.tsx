@@ -31,7 +31,10 @@ import {
   requestAddToCollection,
 } from "@/components/library/addToCollection";
 import { PageArrival } from "@/components/shell/PageArrival";
-import { useAskAgain, useStalled } from "@/components/shell/useStalled";
+import { PageFailed, PageState } from "@/components/pagestate/PageState";
+import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
+import { allFailed, shownState, type ReadLike, type Shown as RegionState } from "@/components/pagestate/pageStateModel";
+import { WAY_OUT } from "@/components/pagestate/stateCopy";
 import { useAuth } from "@/contexts/AuthContext";
 import { copyToClipboard } from "@/lib/deepLink";
 import { reportError } from "@/lib/errors/report";
@@ -66,8 +69,8 @@ import { listActivityFor } from "@/lib/feed/activity";
 import { toCardData, topicHref } from "@/components/post/postCardModel";
 import { readTopicCards } from "@/lib/openbuilds/feedTopics";
 
-import { LibraryLoadingView } from "./LibraryFrame";
-import { LibraryView, type LibraryPreviewProps, type LibrarySelected, type LibraryTopic, type PanelStatus } from "./LibraryView";
+import { LibraryColumns, LibraryHead, LibraryLoadingView, useLibraryLayout } from "./LibraryFrame";
+import { LibraryView, type LibraryPreviewProps, type LibrarySelected, type LibraryTopic } from "./LibraryView";
 import {
   CHANGES_WINDOW_DAYS,
   LIBRARY_KINDS,
@@ -106,14 +109,14 @@ interface Shown {
 const ITEM_COLUMN: Record<LibraryKind, string> = { all: "Item", builds: "Build", parts: "Part", sessions: "Session", steps: "Step", requests: "Request", "filter-sets": "Filter set", topics: "Topic" };
 const COUNTED_KINDS = new Set(["part", "step", "session"]);
 
-const statusOf = (query: { isLoading: boolean; isError: boolean }): PanelStatus => (query.isLoading ? "loading" : query.isError ? "error" : "ready");
+/** A query that is switched off (waiting on another, or not this page's) sits at pending and idle for ever: it is not out. */
+const enabledOnly = (reads: readonly ReadLike[]): ReadLike[] => reads.filter((read) => !(read.status === "pending" && read.fetchStatus === "idle"));
 
-/** A failed read is told about once, by its panel's name (never its content). */
-function useReported(error: unknown, context: string) {
-  useEffect(() => {
-    if (error) reportError(error, { source: "query", context });
-  }, [error, context]);
-}
+/** G4: a region's state, from the reads it needs that are switched on. */
+const regionOf = (reads: readonly ReadLike[], isMissing?: (data: unknown[]) => boolean): RegionState => shownState(enabledOnly(reads), { isMissing });
+
+
+
 
 export default function LibraryPage() {
   const qc = useQueryClient();
@@ -124,6 +127,7 @@ export default function LibraryPage() {
   const now = Date.now();
 
   const address = readAddress(params);
+  const layout = useLibraryLayout();
   const viewerId = user?.id ?? null;
   const ownHandle = (profile as { username?: string | null } | null)?.username ?? null;
   const visiting = Boolean(handle) && handle !== ownHandle;
@@ -229,25 +233,19 @@ export default function LibraryPage() {
     refetchOnWindowFocus: false,
   });
 
-  /* D4: a read that never answers is a failed read after STALL_MS: the page draws, and the panel says what did not load. */
-  const askAgain = useAskAgain();
-  const stalls = {
-    owner: useStalled(owner.isLoading),
-    saved: useStalled(saved.isLoading),
-    collections: useStalled(collections.isLoading),
-    kept: useStalled(kept.isLoading),
-    alone: useStalled(alone.isLoading),
-    collectionBuilds: useStalled(collectionBuilds.isLoading),
-  };
-  const read = <Q extends { isLoading: boolean; isError: boolean }>(query: Q, stall: { stalled: boolean }) => ({ isLoading: query.isLoading && !stall.stalled, isError: query.isError || stall.stalled });
-  const ownerRead = read(owner, stalls.owner);
-  const savedRead = read(saved, stalls.saved);
-  const collectionsRead = read(collections, stalls.collections);
-  const keptRead = read(kept, stalls.kept);
-  const aloneRead = read(alone, stalls.alone);
-  const collectionBuildsRead = read(collectionBuilds, stalls.collectionBuilds);
+  /* G1: a read that never answers fails at READ_TIMEOUT_MS by itself, so the page keeps no timer of its own.
 
-  const loading = visiting ? ownerRead.isLoading || collectionsRead.isLoading : openId ? collectionBuildsRead.isLoading : savedRead.isLoading;
+     G33: someone's library is not found only when the server answered that nobody has that handle (the owner row is
+     absent); a failed, refused or timed-out read of the owner is a failed page, never "not found". */
+  const ownerState: RegionState = visiting ? regionOf([owner], ([row]) => row === null) : "ready";
+  const collectionsState = regionOf([collections]);
+  const collectionBuildsState = regionOf([collectionBuilds]);
+  const savedState = regionOf([saved]);
+  const keptState = regionOf([kept]);
+  /* A collection the list does not hold (a shared link) is read alone: not found only when that read answers that it is absent. */
+  const aloneState: RegionState = openId !== null && !listed ? regionOf([alone], ([row]) => row === null) : "ready";
+
+  const loading = visiting ? ownerState === "loading" || (ownerState === "ready" && collectionsState === "loading") : openId ? collectionBuildsState === "loading" : savedState === "loading";
   const firstScreen = !loading && !collections.isLoading;
 
   /* The changes on the saved builds: the same events Home reads, saved builds only. Started once the first screen is up:
@@ -261,12 +259,6 @@ export default function LibraryPage() {
   });
   const changeRows = libraryChanges(activity.data ?? [], now).slice(0, 6);
 
-  useReported(activity.error, "library-activity");
-  useReported(saved.error, "library-saved");
-  useReported(collections.error, "library-collections");
-  useReported(collectionBuilds.error, "library-collection-builds");
-  useReported(kept.error, "library-saved-items");
-  useReported(counts.error, "library-saved-counts");
 
   /* ── what the table shows ── */
 
@@ -283,7 +275,6 @@ export default function LibraryPage() {
     placeholderData: keepPreviousData,
     refetchOnWindowFocus: false,
   });
-  useReported(sources.error, "library-source-states");
   const itemShown: Shown[] = keptItems.map((item) => ({ id: item.id, at: item.lastUsedAt, item }));
   /* An open collection and Builds list builds; a kept kind lists its items; All saved lists both, newest first. */
   const shown: Shown[] =
@@ -301,7 +292,6 @@ export default function LibraryPage() {
     placeholderData: keepPreviousData,
     refetchOnWindowFocus: false,
   });
-  useReported(topicCards.error, "library-topic-cards");
   const unsaveTopic = async (savedItemId: string) => {
     try {
       await unsaveItem(savedItemId);
@@ -332,16 +322,14 @@ export default function LibraryPage() {
       : undefined;
 
   /* All saved shows the builds even when the kept items fail to load (reported by their own context). */
-  const itemsStatus = statusOf(keptRead);
-  const kindStatus: PanelStatus = openId || kind === "builds" ? statusOf(savedRead) : itemKind ? itemsStatus : savedRead.isLoading ? "loading" : savedRead.isError ? "error" : "ready";
-  const tableStatus: PanelStatus = visiting && !openId ? statusOf(collectionsRead) : openId && !open ? statusOf(aloneRead.isError ? aloneRead : collectionBuildsRead) : openId ? statusOf(collectionBuildsRead) : kindStatus;
-  const retryTable = () => {
-    Object.values(stalls).forEach((stall) => stall.restart());
-    if (openId) return askAgain([LIBRARY_COLLECTION_BUILDS_KEY], collectionBuilds.refetch);
-    if (visiting) return askAgain([LIBRARY_COLLECTIONS_KEY], collections.refetch);
-    if (kind !== "builds") askAgain(["library", "listSavedItems"], kept.refetch);
-    if (kind === "builds" || !itemKind) askAgain([LIBRARY_SAVED_KEY], saved.refetch);
-  };
+  /* G4: the table's reads. PageState retries those that failed. */
+  const tableReads: ReadLike[] = enabledOnly(
+    visiting && !openId ? [collections] : openId && !open && aloneState === "failed" ? [alone] : openId ? [collectionBuilds] : kind === "builds" || !itemKind ? [saved] : [kept],
+  );
+  /* G9: every region of the page failed (the collections and the table; a visitor's page is its collections alone). */
+  // G18: drawn again when the session's phase moves, so allFailed below is read again (it holds while checking).
+  useSessionPhase();
+  const pageFailed = allFailed(enabledOnly(visiting ? [collections] : [collections, ...tableReads]));
   const hasMore = openId ? collectionBuilds : kind === "builds" ? saved : itemKind ? kept : null;
   const moreAvailable = hasMore ? hasMore.hasNextPage : Boolean(saved.hasNextPage || (wantsItems && kept.hasNextPage));
   const moreLoading = hasMore ? hasMore.isFetchingNextPage : saved.isFetchingNextPage || kept.isFetchingNextPage;
@@ -372,7 +360,6 @@ export default function LibraryPage() {
     enabled: editedItem !== null,
     refetchOnWindowFocus: false,
   });
-  useReported(currentContent.error, "library-current-version");
 
   const refreshKept = () => {
     void qc.invalidateQueries({ queryKey: ["library", "listSavedItems"] });
@@ -559,7 +546,7 @@ export default function LibraryPage() {
         name: previewEntry.name,
         meta: [`${privacyWord(previewEntry.isPrivate)} · ${countWords(previewEntry.itemCount, "item")}`, savedByOf(previewEntry.isPrivate ? undefined : previewEntry.id)].filter(Boolean).join(" · "),
         to: hrefFor({ collection: previewEntry.id }),
-        status: statusOf(collectionBuildsRead),
+        read: collectionBuilds,
         onStart: () => void startFromCollection(previewEntry.id, previewEntry.name),
         rows: (collectionBuilds.data?.pages[0]?.items ?? []).slice(0, 3).map((item) => ({
           id: item.build.id,
@@ -571,9 +558,36 @@ export default function LibraryPage() {
 
   const tabs = openId ? [{ value: "all", label: "Builds" }] : kindTabs(kind).slice(0, 1);
 
+  /* G33, G8: someone's library whose owner is absent or did not load keeps the page's frame and its kind as the title. */
+  const ownerMissingOrFailed = ownerState === "notfound" || ownerState === "failed";
+  /* G33: a shared collection the server says is absent is not found; one that failed is failed (the table says so). */
+  const collectionMissing = openId !== null && !listed && aloneState === "notfound";
   const page =
-    visiting && !owner.isLoading && !owner.data ? (
-      <p style={{ margin: 0 }}>Nobody here goes by that name.</p>
+    ownerMissingOrFailed || collectionMissing || pageFailed ? (
+      <LibraryColumns
+        layout={layout}
+        testId="library-state"
+        head={<LibraryHead title={visiting && owner.data ? `${ownerName}'s library` : "Library"} meta={" "} />}
+        left={null}
+        main={
+          ownerState === "failed" ? (
+            <PageFailed reads={[owner]} region="Library" logs={["[Library] owner read failed"]} />
+          ) : pageFailed && !collectionMissing ? (
+            <PageFailed reads={enabledOnly(visiting ? [collections] : [collections, ...tableReads])} region="Library" />
+          ) : (
+            <PageState
+              read={collectionMissing ? alone : owner}
+              thing={collectionMissing ? "this collection" : "your library"}
+              region="Library"
+              skeleton={null}
+              notFound={{ when: ([row]) => row === null, kind: collectionMissing ? "collection" : "profile", way: WAY_OUT.browseBuilds }}
+            >
+              {() => null}
+            </PageState>
+          )
+        }
+        detail={null}
+      />
     ) : (
       <LibraryView
         head={
@@ -592,12 +606,11 @@ export default function LibraryPage() {
         }
         changes={!visiting && changeRows.length > 0 ? { ...changesFigure(changeRows), rows: changeRows } : undefined}
         collections={{
-          status: statusOf(collectionsRead),
+          read: enabledOnly([collections]),
           items: list.map((item) => ({ id: item.id, name: item.name, meta: privacyWord(item.isPrivate), count: item.itemCount })),
           current: openId,
           hrefFor: (id) => hrefFor({ collection: id }),
           onNew: visiting ? undefined : () => setNaming("new"),
-          onRetry: () => { stalls.collections.restart(); askAgain([LIBRARY_COLLECTIONS_KEY], collections.refetch); },
           emptyLine: visiting ? "No public collections yet." : "No collections yet.",
         }}
         items={{
@@ -619,17 +632,14 @@ export default function LibraryPage() {
           tabs,
           tab: tabs.some((item) => item.value === address.tab) ? address.tab : "all",
           onTab: (next) => move({ tab: next }),
-          status: tableStatus,
-          what: openId && !open && aloneRead.isError ? "This collection didn't load." : itemKind && !openId ? "Saved items didn't load." : "Builds didn't load.",
-          onRetry: retryTable,
+          read: tableReads,
+          thing: openId ? "this collection" : "your library",
           empty: {
             line:
               visiting && !openId
                 ? "No public collections yet."
                 : openId
-                  ? open
-                    ? "Nothing in this collection yet."
-                    : "This collection is not there any more."
+                  ? "Nothing in this collection yet."
                   : itemKind
                     ? "Nothing kept here yet."
                     : "Save a build and it waits for you here.",

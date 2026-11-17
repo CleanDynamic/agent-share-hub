@@ -29,6 +29,8 @@
    and the footer's calculations (sum, median, most common, from the rows loaded: no request). It is kept in the open filter set when the
    reader made it, and in this browser otherwise. */
 
+import { PageState } from "@/components/pagestate/PageState";
+import { shownState, type ReadLike } from "@/components/pagestate/pageStateModel";
 import { Suspense, useEffect, useState } from "react";
 import { keepPreviousData, useInfiniteQuery, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -95,34 +97,33 @@ import type { MapsDirection } from "./BuildsMapsView";
 /** BF-14: Load all reads the candidates' pages up to this many builds; past it a match is not offered. */
 const LOAD_ALL_MAX = 200;
 
-/** One sentence and Retry (CA-28's wording). */
-function TableError({ onRetry }: { onRetry: () => void }) {
+/** G4: the list's failed state, in place of the view's rows: one sentence and Try again, through PageState. */
+function ListFailed({ read }: { read: ReadLike }) {
   return (
-    <div role="alert" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, paddingBlock: 16 }}>
-      <p style={{ ...text(13, 400, t.text), margin: 0 }}>Builds didn't load.</p>
-      <BuildsControl onClick={onRetry}>Retry</BuildsControl>
-    </div>
+    <PageState read={read} thing="builds" region="Builds" skeleton={null} style={{ paddingBlock: 16 }}>
+      {() => null}
+    </PageState>
   );
 }
 
-/** One sentence and Retry: the Maps did not load (the builds did). */
-function MapsError({ onRetry }: { onRetry: () => void }) {
+/** BF-02 (X2), G6: one line and one action when the list is empty, through PageState. With a filter on, Clear all; with none,
+    on a lens other than All, Show all builds; on All with nothing at all, the line alone. */
+function NoMatches({ read, filtered, onClear, onShowAll }: { read: ReadLike; filtered: boolean; onClear: () => void; onShowAll?: () => void }) {
   return (
-    <div role="alert" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
-      <p style={{ ...text(13, 400, t.text), margin: 0 }}>Maps didn't load.</p>
-      <BuildsControl onClick={onRetry}>Retry</BuildsControl>
-    </div>
-  );
-}
-
-/** BF-02 (X2): one line and one action when the list is empty. With a filter on, Clear all; with none, on a lens other than All,
-    Show all builds; on All with nothing at all, the line alone. */
-function NoMatches({ filtered, onClear, onShowAll }: { filtered: boolean; onClear: () => void; onShowAll?: () => void }) {
-  return (
-    <div data-testid="builds-empty" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, paddingBlock: 16 }}>
-      <p style={{ ...text(13, 400, t.text2), margin: 0 }}>{filtered ? "No builds match these filters." : "No builds here yet."}</p>
-      {filtered ? <BuildsControl onClick={onClear}>Clear all</BuildsControl> : onShowAll ? <BuildsControl onClick={onShowAll}>Show all builds</BuildsControl> : null}
-    </div>
+    <PageState
+      read={read}
+      thing="builds"
+      region="Builds"
+      skeleton={null}
+      empty={{
+        when: () => true,
+        line: filtered ? "No builds match these filters." : "No builds here yet.",
+        action: filtered ? { label: "Clear all", onClick: onClear } : onShowAll ? { label: "Show all builds", onClick: onShowAll } : undefined,
+        testId: "builds-empty",
+      }}
+    >
+      {() => null}
+    </PageState>
   );
 }
 
@@ -204,9 +205,7 @@ export default function BuildsPage() {
     },
   );
 
-  useEffect(() => {
-    if (shownList.error) reportError(shownList.error, { source: "query", context: "listBuildsTable" });
-  }, [shownList.error]);
+  /* A failed read is reported once, by the query client's global report (lib/errors/wire.ts). */
 
   const now = Date.now();
   const countsLive = shownList.data?.pages[0]?.countsLive === true;
@@ -240,10 +239,6 @@ export default function BuildsPage() {
   });
   const mapsFailed = maps.some((entry) => entry.isError);
   const mapsSettled = maps.every((entry) => !entry.isPending);
-  useEffect(() => {
-    const failure = maps.find((entry) => entry.error)?.error;
-    if (failure) reportError(failure, { source: "query", context: "listBuildMaps" });
-  }, [maps]);
 
   const total = matchLive ? builds.length : (shownList.data?.pages[0]?.total ?? null);
   /* BF-11 (B1): the reader's columns, then each column a filter in the address holds a value for. Worked out on every render, so a
@@ -288,7 +283,14 @@ export default function BuildsPage() {
   const count = total ?? builds.length;
   /* BF-01 P2: with a filter on, the head says how many of the published builds match; the meta line then drops "Of n published". */
   const filtered = activeCount(params) > 0 && Boolean(stats.data);
-  const buildsLabel = filtered && stats.data ? `${count} of ${stats.data.inGallery} ${stats.data.inGallery === 1 ? "build" : "builds"}` : `${count} ${count === 1 ? "build" : "builds"}`;
+  /* G8, G25: the title is always "Builds". The count is the line under it, and it and the statistics are drawn only once the
+     list has answered with builds: never "0 builds" while it loads, after it failed, or when nothing matched. */
+  const counted = shownState([shownList]) === "ready" && builds.length > 0;
+  const buildsLabel: string | null = !counted
+    ? null
+    : filtered && stats.data
+      ? `${count} of ${stats.data.inGallery} ${stats.data.inGallery === 1 ? "build" : "builds"}`
+      : `${count} ${count === 1 ? "build" : "builds"}`;
 
   /* ── saved filter sets (SV-24 P1) ── */
 
@@ -456,6 +458,7 @@ export default function BuildsPage() {
      offers the way back to every build. */
   const noMatches = (
     <NoMatches
+      read={shownList}
       filtered={activeCount(params) > 0 || params.query !== null}
       onClear={() => go(clearedFilters(params))}
       onShowAll={params.lens === "all" ? undefined : () => go({ ...clearedFilters(params), lens: "all" })}
@@ -465,72 +468,16 @@ export default function BuildsPage() {
   /* A value's link: the page as it is (the view the reader is on) with the value's facet key added to the filters. */
   const valueHref = (key: string) => galleryHref({ ...params, facets: [...new Set([...(params.facets ?? []), key])] });
 
-  const mapsPage =
-    view === "maps" ? (
-      shownList.error && !shownList.data ? (
-        <TableError onRetry={() => void shownList.refetch()} />
-      ) : (
-        <Suspense fallback={<MapsLoadingView hrefFor={hrefFor} />}>
-          <BuildsMapsPane
-            view={view}
-            hrefFor={hrefFor}
-            onViewIntent={prefetchView}
-            activeCount={activeCount(params)}
-            chips={activeChips(params)}
-            onRemoveChip={(key) => go(withoutChip(params, key))}
-            onClearAll={() => go(clearedFilters(params))}
-            filters={filters}
-            setName={openDetail?.name}
-            direction={direction}
-            onDirection={setDirection}
-            buildsLabel={buildsLabel}
-            builds={mapBuilds}
-            maps={maps.flatMap((entry) => entry.data ?? [])}
-            failed={mapsFailed}
-            notice={mapsFailed ? <MapsError onRetry={() => maps.forEach((entry) => entry.isError && void entry.refetch())} /> : undefined}
-            now={now}
-            empty={noMatches}
-            onMore={mapsShown < builds.length || shownList.hasNextPage ? onMoreMaps : undefined}
-            loadingMore={shownList.isFetchingNextPage}
-            updating={updating}
-          />
-        </Suspense>
-      )
-    ) : null;
-
-  const classificationPage =
-    view === "classification" ? (
-      shownList.error && !shownList.data ? (
-        <TableError onRetry={() => void shownList.refetch()} />
-      ) : (
-        <Suspense fallback={<ClassificationLoadingView hrefFor={hrefFor} />}>
-          <BuildsClassificationView
-            view={view}
-            hrefFor={hrefFor}
-            onViewIntent={prefetchView}
-            buildsLabel={buildsLabel}
-            activeCount={activeCount(params)}
-            chips={activeChips(params)}
-            onRemoveChip={(key) => go(withoutChip(params, key))}
-            onClearAll={() => go(clearedFilters(params))}
-            filters={filters}
-            setName={openDetail?.name}
-            facets={shownFacets}
-            onFacets={onFacets}
-            cards={builds.map((build) => cardOf(build, shownFacets, valueHref, now))}
-            empty={noMatches}
-            onMore={shownList.hasNextPage ? () => void shownList.fetchNextPage() : undefined}
-            loadingMore={shownList.isFetchingNextPage}
-            updating={updating}
-          />
-        </Suspense>
-      )
-    ) : null;
-
   const page = (
     <BuildsView
-      figure={buildsLabel}
-      parts={stats.data ? statParts({ published: stats.data.inGallery, runsThisWeek: stats.data.reproducedThisWeek, freshPct: stats.data.freshPct, filtered }) : [{ text: " " }]}
+      figure="Builds"
+      parts={
+        buildsLabel && stats.data
+          ? [{ text: buildsLabel }, ...statParts({ published: stats.data.inGallery, runsThisWeek: stats.data.reproducedThisWeek, freshPct: stats.data.freshPct, filtered })]
+          : buildsLabel
+            ? [{ text: buildsLabel }]
+            : [{ text: " " }]
+      }
       view={view}
       hrefFor={hrefFor}
       onViewIntent={prefetchView}
@@ -584,10 +531,81 @@ export default function BuildsPage() {
             }
           : null
       }
-      other={shownList.error && !shownList.data ? <TableError onRetry={() => void shownList.refetch()} /> : null}
+      other={shownList.error && !shownList.data ? <ListFailed read={shownList} /> : null}
       updating={updating}
     />
   );
+
+  const mapsPage =
+    view === "maps" ? (
+      shownList.error && !shownList.data ? (
+        /* G8: the failure keeps the page's frame and its title: the one head, the view switch, the failure in the rows' place. */
+        page
+      ) : (
+        <Suspense fallback={<MapsLoadingView hrefFor={hrefFor} />}>
+          <BuildsMapsPane
+            view={view}
+            hrefFor={hrefFor}
+            onViewIntent={prefetchView}
+            activeCount={activeCount(params)}
+            chips={activeChips(params)}
+            onRemoveChip={(key) => go(withoutChip(params, key))}
+            onClearAll={() => go(clearedFilters(params))}
+            filters={filters}
+            setName={openDetail?.name}
+            direction={direction}
+            onDirection={setDirection}
+            buildsLabel={buildsLabel}
+            builds={mapBuilds}
+            maps={maps.flatMap((entry) => entry.data ?? [])}
+            failed={mapsFailed}
+            notice={
+              mapsFailed ? (
+                <PageState read={maps} thing="the maps" region="Maps" skeleton={null}>
+                  {() => null}
+                </PageState>
+              ) : undefined
+            }
+            now={now}
+            empty={noMatches}
+            onMore={mapsShown < builds.length || shownList.hasNextPage ? onMoreMaps : undefined}
+            loadingMore={shownList.isFetchingNextPage}
+            updating={updating}
+          />
+        </Suspense>
+      )
+    ) : null;
+
+  const classificationPage =
+    view === "classification" ? (
+      shownList.error && !shownList.data ? (
+        /* G8: the failure keeps the page's frame and its title: the one head, the view switch, the failure in the rows' place. */
+        page
+      ) : (
+        <Suspense fallback={<ClassificationLoadingView hrefFor={hrefFor} />}>
+          <BuildsClassificationView
+            view={view}
+            hrefFor={hrefFor}
+            onViewIntent={prefetchView}
+            buildsLabel={buildsLabel}
+            activeCount={activeCount(params)}
+            chips={activeChips(params)}
+            onRemoveChip={(key) => go(withoutChip(params, key))}
+            onClearAll={() => go(clearedFilters(params))}
+            filters={filters}
+            setName={openDetail?.name}
+            facets={shownFacets}
+            onFacets={onFacets}
+            cards={builds.map((build) => cardOf(build, shownFacets, valueHref, now))}
+            empty={noMatches}
+            onMore={shownList.hasNextPage ? () => void shownList.fetchNextPage() : undefined}
+            loadingMore={shownList.isFetchingNextPage}
+            updating={updating}
+          />
+        </Suspense>
+      )
+    ) : null;
+
 
   return (
     <>

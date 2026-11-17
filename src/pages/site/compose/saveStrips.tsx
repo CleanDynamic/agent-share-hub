@@ -6,6 +6,10 @@
    7); the strip goes once it is pressed. */
 
 import type { CSSProperties, ReactNode } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+
+import { SIGNED_OUT_EDITOR } from "@/components/pagestate/stateCopy";
+import { deeper, withView } from "@/pages/site/signin/signinUrl";
 
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE, textStep } from "@/lib/theme/type";
@@ -39,6 +43,23 @@ export const STRIP: CSSProperties = {
 
 /** The small button at a strip's right. */
 const SHOW: CSSProperties = { height: 26, padding: "0 9px", borderRadius: 7, fontSize: textStep.meta, fontWeight: 500, marginLeft: "auto" };
+
+/**
+ * G21: the session ended in the editor. The editor's own banner, not the dialog: the work stays on this device (the write
+ * guard holds every write), typing still works, and Sign in opens the sign-in dialog over the editor, saying why.
+ */
+export function SignedOutStrip() {
+  const navigate = useNavigate();
+  const { pathname, search, hash, state } = useLocation();
+  return (
+    <div role="status" data-testid="signed-out-strip" style={STRIP}>
+      <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{SIGNED_OUT_EDITOR}</span>
+      <RecipeButton small data-testid="signed-out-sign-in" style={SHOW} onClick={() => navigate(`${pathname}${withView(search, "login")}${hash}`, { state: { ...deeper(state), signedOut: true } })}>
+        Sign in
+      </RecipeButton>
+    </div>
+  );
+}
 
 export function OfflineStrip() {
   return (

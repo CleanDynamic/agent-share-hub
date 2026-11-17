@@ -164,16 +164,3 @@ export function SectionLoading({ title, groups }: { title: string; groups: reado
   );
 }
 
-/** A read that failed: one sentence and Retry. */
-export function SectionError({ title, onRetry }: { title: string; onRetry: () => void }) {
-  return (
-    <SectionPage title={title}>
-      <div role="alert" style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 13, color: t.text }}>Couldn&apos;t load this. Try again.</span>
-        <Button variant="secondary" size={32} fontSize={12} onClick={onRetry}>
-          Retry
-        </Button>
-      </div>
-    </SectionPage>
-  );
-}

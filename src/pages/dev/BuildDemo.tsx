@@ -19,7 +19,8 @@ import { LAYER_BLURB } from "@/lib/build";
 import { SAMPLE_TABS, buildFixture, buildLowerFixture, buildTabFixture } from "@/dev/fixtures/build";
 import { LowerSections } from "@/pages/site/build/BuildLower";
 import { EmptyState } from "@/components/brand/EmptyState";
-import { BuildView, BuildViewFailed, BuildViewSkeleton } from "@/pages/site/build/BuildView";
+import { readOf } from "@/components/pagestate/pageStateModel";
+import { BuildView, BuildViewSkeleton, BuildViewState } from "@/pages/site/build/BuildView";
 import { buildTabs, tabLayer, type BuildTabKey } from "@/pages/site/build/buildModel";
 
 import type { DesignPageProps } from "./KitPages";
@@ -33,7 +34,7 @@ export default function BuildDemo({ fit = "board", viewport, state = "populated"
 
   /* UI-P37 — the other three states, from the same sample. */
   if (state === "loading") return <BuildViewSkeleton fit={fit} />;
-  if (state === "error") return <BuildViewFailed onRetry={() => undefined} />;
+  if (state === "error") return <BuildViewState read={readOf("error")} />;
   if (state === "empty") {
     return (
       <BuildView

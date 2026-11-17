@@ -32,8 +32,9 @@ import { Image as ImageIcon } from "lucide-react";
 import { useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
+import { EditorLoadState } from "./EditorLoadState";
+
 import { Button } from "@/components/brand/Button";
-import { ErrorState } from "@/components/brand/ErrorState";
 import { Panel, PanelHead } from "@/components/brand/Panel";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { useFinePointer, useIsPhone, useWidthTier } from "@/components/shell/useMinWidth";
@@ -443,19 +444,6 @@ function Skeletons({ phone }: { phone: boolean }) {
   );
 }
 
-function NotFound() {
-  return (
-    <Panel surface="flat" padding="24px" style={{ maxWidth: 520 }}>
-      <h1 style={{ ...display(30), margin: 0, color: t.text }}>No build at this address</h1>
-      <p style={{ margin: "7px 0 10px", fontFamily: FIGTREE, fontSize: textStep.body, color: t.text2 }}>
-        Nothing here, or nothing you can open. It may have been deleted, or it may be another creator's build.
-      </p>
-      <Link to="/compose/new" style={{ fontFamily: FIGTREE, fontSize: textStep.body, color: t.text2, textDecoration: "underline" }}>
-        Start a new build
-      </Link>
-    </Panel>
-  );
-}
 
 /* ── the view ── */
 
@@ -466,14 +454,13 @@ export function ComposeView(props: ComposeViewProps) {
   const { status } = props;
 
   if (status === "loading") return <Skeletons phone={phone} />;
-  if (status === "error") {
+  if (status === "error" || status === "notFound") {
     return (
       <Panel surface="flat" padding={phone ? "16px" : "24px"}>
-        <ErrorState line="This build didn't load." panel="The composer" onRetry={props.onRetry} />
+        <EditorLoadState status={status} onRetry={props.onRetry} />
       </Panel>
     );
   }
-  if (status === "notFound") return <NotFound />;
 
   const { title, published, missing, save } = props;
   const untitled = isUntitled(title);

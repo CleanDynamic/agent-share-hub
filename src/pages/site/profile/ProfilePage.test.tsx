@@ -75,6 +75,7 @@ function renderAt(entry: string) {
       <QueryClientProvider client={client}>
         <MemoryRouter initialEntries={[entry]}>
           <Routes>
+            <Route path="/profile" element={<ProfilePage />} />
             <Route path="/profile/:handle" element={<ProfilePage />} />
           </Routes>
         </MemoryRouter>
@@ -165,5 +166,34 @@ describe("nothing here awards XP", () => {
     for (const file of ["ProfilePage.tsx", "ProfileHead.tsx", "ProfileFeed.tsx", "ProfileSide.tsx", "CustomiseProfile.tsx", "useProfilePictures.tsx"]) {
       expect(readFileSync(`src/pages/site/profile/${file}`, "utf8"), file).not.toMatch(/award_?xp/i);
     }
+  });
+});
+
+describe("G27, G7: missing is told from failed by the row being absent", () => {
+  it("someone's profile that is not there: Nothing at this address, the profile line, Browse builds", async () => {
+    stubs.summary.mockResolvedValue(null);
+    renderAt("/profile/nobody-here");
+    expect(await screen.findByText("Nothing at this address.")).toBeTruthy();
+    expect(screen.getByText("This profile may have moved, or the link may be wrong.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Browse builds" }).getAttribute("href")).toBe("/builds");
+    expect(screen.getByRole("heading", { level: 1, name: "Profile" })).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/gallery|Profile not found/);
+  });
+
+  it("your own profile whose row is missing is a failed read with Try again, not 'Profile not found' (G27)", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    stubs.summary.mockResolvedValue(null);
+    renderAt("/profile");
+    expect(await screen.findByText("Couldn't load this profile. Try again.")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
+    expect(screen.queryByText("Nothing at this address.")).toBeNull();
+  });
+
+  it("a read that fails is failed, never not found, whatever its message says", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    stubs.summary.mockRejectedValue(new Error("Profile not found: but this is a server error"));
+    renderAt("/profile/somebody");
+    expect(await screen.findByText("Couldn't load this profile. Try again.")).toBeTruthy();
+    expect(screen.queryByText("Nothing at this address.")).toBeNull();
   });
 });
