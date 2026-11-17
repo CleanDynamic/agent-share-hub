@@ -428,3 +428,23 @@ describe("a provider sign-in after the server ended the session (G15)", () => {
     Object.defineProperty(window, "scrollY", { value: 0, configurable: true });
   });
 });
+
+describe("why the dialog opened (G19)", () => {
+  const line = () => screen.getAllByTestId("field-message").find((node) => node.textContent)!;
+
+  it("says so in the reserved line under the password, in the neutral tone, and gives the line to an error", async () => {
+    signIn.mockResolvedValue({ outcome: "refused", refusal: "credentials" });
+    renderDialog("login", "", { signedOut: true });
+    expect(line().textContent).toBe("You've been signed out. Sign in to carry on.");
+    expect(line().getAttribute("data-tone")).toBe("neutral");
+    fill();
+    submit();
+    await waitFor(() => expect(line().textContent).toBe("That email or password isn't right."));
+    expect(line().getAttribute("data-tone")).toBe("error");
+  });
+
+  it("says nothing when the dialog was opened by the member", () => {
+    open();
+    expect(screen.getAllByTestId("field-message").every((node) => !node.textContent)).toBe(true);
+  });
+});

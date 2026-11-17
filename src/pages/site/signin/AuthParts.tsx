@@ -154,7 +154,8 @@ export function FieldMessage({
 }: {
   id?: string;
   children?: ReactNode;
-  tone?: "error" | "good";
+  /** "neutral": a notice, not about what was typed (G19: why the dialog opened). */
+  tone?: "error" | "good" | "neutral";
   /** The dialog's error line: always 16 high and 4 below what it is about, empty until there is something to say, so nothing moves when it fills. */
   reserve?: boolean;
 }) {
@@ -163,10 +164,11 @@ export function FieldMessage({
       id={id}
       aria-live="polite"
       data-testid="field-message"
+      data-tone={children ? tone : undefined}
       style={{
         ...MESSAGE,
         ...(reserve ? { marginTop: 4, height: DIALOG.line, lineHeight: `${DIALOG.line}px`, whiteSpace: "nowrap" } : { marginTop: children ? 4 : 0 }),
-        color: tone === "good" ? t.evidence : t.catBreakage,
+        color: tone === "good" ? t.evidence : tone === "neutral" ? t.text : t.catBreakage,
       }}
     >
       {children}
@@ -200,6 +202,8 @@ export interface AuthFieldProps {
   autoComplete?: string;
   /** In the dialog: keep the 16px message line under the field whether or not it has anything in it. */
   reserveMessage?: boolean;
+  /** G19: a notice in the message line, in the neutral tone, while there is no error or validation to say there. */
+  notice?: string;
 }
 
 export function AuthField({
@@ -217,6 +221,7 @@ export function AuthField({
   required = false,
   autoComplete,
   reserveMessage = false,
+  notice,
 }: AuthFieldProps) {
   const sizes = useAuthSizes();
   const [focused, setFocused] = useState(false);
@@ -225,8 +230,9 @@ export function AuthField({
   const messageId = useId();
 
   const invalid = Boolean(error) || validation?.state === "invalid";
-  const message = error || validation?.message;
+  const message = error || validation?.message || notice;
   const confirmed = !error && validation?.state === "valid";
+  const noticing = !error && !validation?.message && Boolean(notice);
 
   return (
     <div>
@@ -337,7 +343,7 @@ export function AuthField({
       {helperText ? (
         <p style={{ ...MESSAGE, marginTop: 4, fontStyle: "normal", color: t.text2 }}>{helperText}</p>
       ) : null}
-      <FieldMessage id={messageId} tone={confirmed ? "good" : "error"} reserve={reserveMessage && !sizes.phone}>
+      <FieldMessage id={messageId} tone={confirmed ? "good" : noticing ? "neutral" : "error"} reserve={reserveMessage && !sizes.phone}>
         {message}
       </FieldMessage>
     </div>

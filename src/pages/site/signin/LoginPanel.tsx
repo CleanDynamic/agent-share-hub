@@ -29,6 +29,7 @@ import { signInWithEmail } from "@/lib/auth/signInWithEmail";
 
 import { loginCanSubmit } from "./authModel";
 import { keepPlace } from "@/components/pagestate/returnPlace";
+import { SIGNED_OUT_DIALOG } from "@/components/pagestate/stateCopy";
 
 import { useDialogCaptcha, VERIFY_FAILED } from "./dialogCaptcha";
 import { LoginForm } from "./LoginForm";
@@ -183,6 +184,8 @@ export function LoginPanel() {
       onProvider={handleProvider}
       loadingProvider={loadingProvider}
       error={error}
+      /* G19: why the dialog opened, in the password field's reserved line, until there is an error to say there. */
+      notice={signedOut ? SIGNED_OUT_DIALOG : undefined}
       onResendVerification={handleResendVerification}
       resendAnswer={resendAnswer}
     />
