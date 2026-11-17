@@ -193,3 +193,57 @@ export async function installCondition(page: Page, condition: Condition): Promis
     });
   });
 }
+
+/* ── G22: a small server with state, for the editor's held writes ──
+   One build, owned by MEMBER, that remembers what is written to it: a PATCH merges into the row (refused, as PostgREST
+   would, when its updated_at guard is stale) and a read answers the row as it now is. Everything else answers as "empty".
+   `mode` switches between a live session and a refused one ("refused" above) without reloading the page. */
+
+export interface StatefulServer {
+  mode: "live" | "refused";
+  build: Record<string, unknown>;
+  /** Every write the server took, in order: method, path and body. */
+  writes: { method: string; path: string; body: string | null }[];
+}
+
+export function statefulServer(buildId: string): StatefulServer {
+  const now = new Date(0).toISOString();
+  const build: Record<string, unknown> = {
+    id: buildId, creator_id: MEMBER.id, slug: "pagestate-held", title: "Held writes", outcome: null, shape: null, status: "draft",
+    made_for: null, made_with: null, live_url: null, repo_url: null, hero_node_id: null, cover_media_id: null, cost_setup: null,
+    cost_monthly: null, currency: null, time_to_first_result: null, completeness: 0, reproduction_count: 0, last_confirmed_at: null,
+    last_confirmed_model: null, parent_build_id: null, root_build_id: null, forked_from_event_id: null, source_content_item_id: null,
+    monetisation_type: null, price_gbp: null, donation_enabled: false, created_at: now, updated_at: "2026-01-01T00:00:00.000Z",
+    published_at: null, rebuild_note: null, rebuild_count: 0, source_title_at_fork: null, source_handle_at_fork: null,
+    solves_node_id: null, post_doc: null, making: null,
+  };
+  return { mode: "live", build, writes: [] };
+}
+
+export async function installStateful(page: Page, server: StatefulServer): Promise<void> {
+  await page.route(
+    (url) => url.hostname !== "127.0.0.1" && url.hostname !== "localhost",
+    async (route) => {
+      const request = route.request();
+      const url = new URL(request.url());
+      if (url.hostname !== SUPABASE_HOST) return route.abort("blockedbyclient").catch(() => undefined);
+      if (request.method() === "OPTIONS") return route.fulfill({ status: 204, headers: CORS }).catch(() => undefined);
+      if (server.mode === "refused") return answerRefused(route);
+      const isBuild = url.pathname === "/rest/v1/builds" && url.searchParams.get("id") === `eq.${server.build.id}`;
+      if (!isBuild) return answerEmpty(route);
+      const single = (request.headers()["accept"] ?? "").includes("vnd.pgrst.object");
+      const answer = (row: Record<string, unknown> | null) => json(route, 200, single ? row : row ? [row] : []);
+      if (request.method() === "GET" || request.method() === "HEAD") return answer(server.build);
+      if (request.method() === "PATCH") {
+        const guard = url.searchParams.get("updated_at");
+        if (guard && guard !== `eq.${server.build.updated_at}`) return single ? json(route, 406, { code: "PGRST116", message: "no rows" }) : json(route, 200, []);
+        const body = request.postData();
+        server.writes.push({ method: "PATCH", path: `${url.pathname}${url.search}`, body });
+        Object.assign(server.build, body ? (JSON.parse(body) as Record<string, unknown>) : {}, { updated_at: new Date().toISOString() });
+        return answer(server.build);
+      }
+      return answerEmpty(route);
+    },
+  );
+  await page.routeWebSocket(/\/realtime\/v1\//, (ws) => ws.close());
+}
