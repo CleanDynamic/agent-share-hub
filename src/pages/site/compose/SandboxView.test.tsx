@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sandboxViewProps } from "@/dev/fixtures/sandbox";
 
+import { panelFailedLine } from "./PanelBoundary";
 import { SandboxView as SandboxView } from "./SandboxView";
 import { addMenuLayout } from "./addMenuGroups";
 import { AddMenu, type AddMenuProps, ADD_ITEMS, addEntries, countsLine, listHint, notSavedLine, type SandboxViewProps } from "./SandboxView";
@@ -695,12 +696,12 @@ describe("CA-24 P3 · one boundary per panel", () => {
 
   const others = { sources: <p>sources work</p>, post: <p>post works</p>, list: <p>build works</p>, selection: <p>details work</p> };
 
-  it.each(Object.keys(SLOTS) as (keyof typeof SLOTS)[])("%s failing alone: its words and Retry, the others still drawn", (broken) => {
+  it.each(Object.keys(SLOTS) as (keyof typeof SLOTS)[])("%s failing alone: the shared failed state and Try again (G20), the others still drawn", (broken) => {
     const lens = broken === "Map" ? ({ lens: "map" } as const) : ({} as const);
     const slots = broken === "Map" ? { ...others, ...lens, map: <Bomb />, mapPanel: <p>map panel works</p> } : { ...others, ...SLOTS[broken](<Bomb />) };
     view(slots as Partial<SandboxViewProps>);
-    expect(screen.getByText(`${broken} didn't load`)).toBeTruthy();
-    expect(screen.getAllByRole("button", { name: "Retry" })).toHaveLength(1);
+    expect(within(screen.getByTestId("panel-failed")).getByRole("alert").textContent).toContain(panelFailedLine(broken));
+    expect(screen.getAllByRole("button", { name: "Try again" })).toHaveLength(1);
     const alive: [string, string][] = [["Sources", "sources work"], ["Post", "post works"], ["Build", "build works"], ["Details", "details work"]];
     for (const [name, words] of alive) {
       if (name === broken) continue;
@@ -711,7 +712,7 @@ describe("CA-24 P3 · one boundary per panel", () => {
     if (broken === "Map") expect(screen.getByText("map panel works")).toBeTruthy();
   });
 
-  it("a panel's own query failing shows the same fallback; Retry runs that panel's refetch and no other", () => {
+  it("a panel's own query failing shows the same fallback; Try again runs that panel's refetch and no other", () => {
     const refetch = { Build: vi.fn(), Details: vi.fn(), Sources: vi.fn() };
     view({
       ...others,
@@ -721,10 +722,10 @@ describe("CA-24 P3 · one boundary per panel", () => {
         Sources: { onRetry: refetch.Sources },
       },
     });
-    expect(screen.getByText("Build didn't load")).toBeTruthy();
+    expect(within(screen.getByTestId("panel-failed")).getByRole("alert").textContent).toContain("Couldn't load this build. Try again.");
     expect(screen.queryByText("build works")).toBeNull();
     expect(screen.getByText("details work")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(refetch.Build).toHaveBeenCalledTimes(1);
     expect(refetch.Details).not.toHaveBeenCalled();
     expect(refetch.Sources).not.toHaveBeenCalled();

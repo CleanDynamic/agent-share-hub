@@ -12,56 +12,34 @@
    WHAT IS REPORTED (SV-01). The failure goes to reportError once, with the panel's name and the route. reportError keeps the
    error's name and code and drops its message, which can quote what the panel was drawing (a prompt's text, a post). */
 
-import { Component, useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { Component, useMemo, type CSSProperties, type ReactNode } from "react";
 
+import { PageState } from "@/components/pagestate/PageState";
+import { readOf } from "@/components/pagestate/pageStateModel";
+import { failedLine, type Thing } from "@/components/pagestate/stateCopy";
 import { reportError } from "@/lib/errors/report";
-import { ring } from "@/lib/theme/controls";
-import { useInteractive } from "@/lib/theme/interactive";
-import { controlPaint } from "@/lib/theme/refinedControl";
-import { t } from "@/lib/theme/tokens";
-import { FIGTREE, textStep } from "@/lib/theme/type";
 
 export type PanelName = "Sources" | "Post" | "Build" | "Details" | "Map";
 
-export const panelFailedLine = (panel: PanelName): string => `${panel} didn't load`;
+/** What each panel shows, for "Couldn't load <thing>. Try again." Sources lists the member's sessions; the rest are the build. */
+const PANEL_THING: Record<PanelName, Thing> = { Sources: "your sessions", Post: "this build", Build: "this build", Details: "this build", Map: "this build" };
 
-const FALLBACK: CSSProperties = { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, padding: 16, boxSizing: "border-box", minWidth: 0 };
-const LINE: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: textStep.body, fontWeight: 500, lineHeight: "normal", color: t.text };
-const RETRY: CSSProperties = {
-  appearance: "none",
-  boxSizing: "border-box",
-  height: 26,
-  padding: "0 9px",
-  borderRadius: 7,
-  fontFamily: FIGTREE,
-  fontSize: textStep.meta,
-  fontWeight: 500,
-  lineHeight: "normal",
-  color: t.text,
-  cursor: "pointer",
-};
+export const panelFailedLine = (panel: PanelName): string => failedLine(PANEL_THING[panel]);
 
-function RetryButton({ onClick }: { onClick: () => void }) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
-  return (
-    <button type="button" data-testid="panel-retry" onClick={onClick} {...handlers} style={{ ...RETRY, ...controlPaint({ hovered: state.hovered, pressed: state.pressed }), ...ring(state.focusVisible) }}>
-      Retry
-    </button>
-  );
-}
+const FALLBACK: CSSProperties = { display: "flex", flexDirection: "column", alignItems: "flex-start", padding: 16, boxSizing: "border-box", minWidth: 0 };
 
-/** The fallback itself, for a panel that has its own query failure to show (Sources' status, the post's). */
+/**
+ * The fallback itself, for a panel that has its own query failure to show (Sources' status, the post's), and for a panel that
+ * threw while drawing. G20: PageState's failed state, so the panel says what every page says, with Try again. A failed read
+ * is reported once, by the query cache (lib/errors/wire.ts), not again here.
+ */
 export function PanelFailed({ panel, onRetry, error }: { panel: PanelName; onRetry: () => void; error?: unknown }) {
-  const logged = useRef<unknown>(undefined);
-  useEffect(() => {
-    if (error === undefined || logged.current === error) return;
-    logged.current = error;
-    reportError(error, { source: "panel-query", context: panel, route: window.location.pathname });
-  }, [error, panel]);
+  const failure = useMemo(() => error ?? { name: "PanelError", message: `${panel} failed` }, [error, panel]);
   return (
-    <div role="alert" data-testid="panel-failed" data-panel={panel} style={FALLBACK}>
-      <p style={LINE}>{panelFailedLine(panel)}</p>
-      <RetryButton onClick={onRetry} />
+    <div data-testid="panel-failed" data-panel={panel} style={FALLBACK}>
+      <PageState read={readOf("error", undefined, onRetry, failure)} thing={PANEL_THING[panel]} region={panel} skeleton={null} log={`[Compose] ${panel} failed`}>
+        {() => null}
+      </PageState>
     </div>
   );
 }

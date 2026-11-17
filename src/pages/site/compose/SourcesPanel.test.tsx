@@ -188,11 +188,11 @@ describe("a file a step makes (TF-08)", () => {
 });
 
 describe("CA-24 P3 · Sources failing to load", () => {
-  it("says Sources didn't load, with Retry, which asks again", () => {
+  it("says your sessions did not load, with Try again, which asks again (G20: the shared failed state)", () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     const props = panel({ status: "error", error: new Error("boom"), onRetry: vi.fn() });
-    expect(screen.getByText("Sources didn't load")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(screen.getByRole("alert").textContent).toContain("Couldn't load your sessions. Try again.");
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(props.onRetry).toHaveBeenCalledTimes(1);
     expect(screen.queryByTestId("sources-panel")).toBeNull();
   });

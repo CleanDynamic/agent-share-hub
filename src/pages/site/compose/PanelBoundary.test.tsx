@@ -1,5 +1,5 @@
-// CA-24 P3 - a panel fails alone: its words, its Retry, the others still usable; a query error shows the same fallback; Retry
-// refetches that panel's queries only.
+// CA-24 P3 - a panel fails alone: the shared failed state (G20: PageState's line and Try again), the others still usable; a
+// query error shows the same fallback; Try again refetches that panel's queries only.
 
 import { clearRecentErrors, recentErrors } from "@/lib/errors/report";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
@@ -9,6 +9,14 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PanelBoundary, PanelFailed, panelFailedLine, type PanelName } from "./PanelBoundary";
+
+const LINE: Record<PanelName, string> = {
+  Sources: "Couldn't load your sessions. Try again.",
+  Post: "Couldn't load this build. Try again.",
+  Build: "Couldn't load this build. Try again.",
+  Details: "Couldn't load this build. Try again.",
+  Map: "Couldn't load this build. Try again.",
+};
 
 beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -26,7 +34,7 @@ function Bomb({ panel, armed }: { panel: string; armed: { current: boolean } }):
 const PANELS: PanelName[] = ["Sources", "Post", "Build", "Details", "Map"];
 
 describe("the words", () => {
-  it.each(PANELS)("%s says it did not load, with Retry", (panel) => {
+  it.each(PANELS)("%s is the shared failed state: what did not load, and Try again", (panel) => {
     const armed = { current: true };
     render(
       <PanelBoundary panel={panel}>
@@ -34,29 +42,23 @@ describe("the words", () => {
       </PanelBoundary>,
     );
     const failed = screen.getByTestId("panel-failed");
-    expect(within(failed).getByText(`${panel} didn't load`)).toBeTruthy();
-    expect(within(failed).getByRole("button", { name: "Retry" })).toBeTruthy();
-    expect(panelFailedLine(panel)).toBe(`${panel} didn't load`);
+    expect(within(failed).getByRole("alert").textContent).toContain(LINE[panel]);
+    expect(within(failed).getByRole("button", { name: "Try again" })).toBeTruthy();
+    expect(within(failed).queryByText(/didn't load|Retry/)).toBeNull();
+    expect(panelFailedLine(panel)).toBe(LINE[panel]);
   });
 
-  it("is drawn as the board has it: padding 16 at the top-left, 13/500, the button 8 below at 26 tall, padding 0 9, 12/500, radius 7", () => {
+  it("sits in the panel's own place, padded 16 at its top-left", () => {
     render(<PanelFailed panel="Details" onRetry={() => undefined} />);
-    const failed = screen.getByTestId("panel-failed");
-    const style = failed.getAttribute("style") ?? "";
+    const style = screen.getByTestId("panel-failed").getAttribute("style") ?? "";
     expect(style).toContain("padding: 16px");
     expect(style).toContain("align-items: flex-start");
-    expect(style).toContain("gap: 8px");
-    const line = failed.querySelector("p")?.getAttribute("style") ?? "";
-    expect(line).toContain("font-size: 13px");
-    expect(line).toContain("font-weight: 500");
-    const html = renderToStaticMarkup(<PanelFailed panel="Details" onRetry={() => undefined} />);
-    expect(html).toContain("background:var(--control);border:1px solid var(--control-border)");
-    const retry = (screen.getByTestId("panel-retry").getAttribute("style") ?? "").replace(/\s+/g, " ");
-    expect(retry).toContain("height: 26px");
-    expect(retry).toContain("padding: 0px 9px");
-    expect(retry).toContain("border-radius: 7px");
-    expect(retry).toContain("font-size: 12px");
-    expect(retry).toContain("font-weight: 500");
+  });
+
+  it("a failed read is not reported again here: the query cache reports it (one report per failure)", () => {
+    clearRecentErrors();
+    render(<PanelFailed panel="Sources" onRetry={() => undefined} error={new Error("boom")} />);
+    expect(recentErrors()).toHaveLength(0);
   });
 });
 
@@ -74,14 +76,14 @@ describe("each panel fails alone", () => {
       </div>,
     );
     expect(screen.getAllByTestId("panel-failed")).toHaveLength(1);
-    expect(screen.getByText(`${broken} didn't load`)).toBeTruthy();
+    expect(within(screen.getByTestId("panel-failed")).getByRole("alert").textContent).toContain(LINE[broken]);
     for (const panel of PANELS.filter((other) => other !== broken)) {
       expect(screen.getByText(`${panel} is fine`)).toBeTruthy();
       expect(screen.getByRole("button", { name: `${panel} button` })).toBeTruthy();
     }
   });
 
-  it("Retry resets the boundary and draws the panel again, and runs onRetry", () => {
+  it("Try again resets the boundary and draws the panel again, and runs onRetry", () => {
     const armed = { current: true };
     const onRetry = vi.fn();
     render(
@@ -90,21 +92,21 @@ describe("each panel fails alone", () => {
       </PanelBoundary>,
     );
     armed.current = false;
-    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(onRetry).toHaveBeenCalledTimes(1);
     expect(screen.getByText("Map is fine")).toBeTruthy();
     expect(screen.queryByTestId("panel-failed")).toBeNull();
   });
 
-  it("Retry on a panel that still fails shows the fallback again", () => {
+  it("Try again on a panel that still fails shows the fallback again", () => {
     const armed = { current: true };
     render(
       <PanelBoundary panel="Details">
         <Bomb panel="Details" armed={armed} />
       </PanelBoundary>,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
-    expect(screen.getByText("Details didn't load")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(screen.getByRole("alert").textContent).toContain(LINE.Details);
   });
 
   it("reports the failure once, naming the panel and the kind of error, never the message (SV-01: through reportError)", () => {
@@ -140,7 +142,7 @@ describe("a failing query", () => {
     );
   }
 
-  it("shows the same fallback, and Retry refetches that panel's query only", async () => {
+  it("shows the same fallback, and Try again refetches that panel's query only", async () => {
     const calls: Record<string, number> = {};
     const client = new QueryClient();
     (Panel as unknown as { client: QueryClient }).client = client;
@@ -155,10 +157,10 @@ describe("a failing query", () => {
       );
     }
     render(<App />);
-    await waitFor(() => expect(screen.getByText("Sources didn't load")).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toContain(LINE.Sources));
     expect(screen.getByText("Details")).toBeTruthy();
     expect(calls).toEqual({ Sources: 1, Details: 1 });
-    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(screen.getByText("Sources")).toBeTruthy());
     expect(calls).toEqual({ Sources: 2, Details: 1 });
     expect(screen.queryByTestId("panel-failed")).toBeNull();
