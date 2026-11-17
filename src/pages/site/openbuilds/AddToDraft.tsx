@@ -18,6 +18,7 @@ import { reportError } from "@/lib/errors/report";
 import { addStepToDraft, stepSnapshotFor, type StepToCopy } from "@/lib/openbuilds/addToDraft";
 
 import { MENU_Z, TextButton } from "./PostReplies";
+import { couldntLoad } from "@/components/pagestate/stateCopy";
 
 /** The drafts the menu lists. */
 export const RECENT_DRAFTS = 8;
@@ -53,7 +54,8 @@ function useAddToDraft(step: StepToCopy, open: boolean) {
 
   const items: ReactNode =
     drafts.isError ? (
-      <DropdownMenuItem disabled>Your drafts didn't load.</DropdownMenuItem>
+      // G30: the copy module's sentence; a disabled menu item has no button to try again with.
+      <DropdownMenuItem disabled>{couldntLoad("your drafts")}</DropdownMenuItem>
     ) : (
       <>
         {(drafts.data ?? []).slice(0, RECENT_DRAFTS).map((draft) => {

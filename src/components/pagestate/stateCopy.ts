@@ -31,9 +31,15 @@ export type Thing =
   | "the feed"
   // The member's own builds' runs (Activity's chart), and everyone's (Home's room).
   | "your runs"
-  | "runs";
+  | "runs"
+  /* G30: a session's prompts (the editor's session list and window), and the work a post can attach. */
+  | "these prompts"
+  | "your work";
 
 export const failedLine = (thing: Thing): string => `Couldn't load ${thing}. Try again.`;
+
+/** The same sentence where there is no button to try again with (a disabled menu item). */
+export const couldntLoad = (thing: Thing): string => `Couldn't load ${thing}.`;
 
 /** G9: every region of the page failed. */
 export const FAILED_PAGE = "Couldn't load this page. Try again.";

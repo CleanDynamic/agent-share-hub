@@ -66,6 +66,11 @@ import {
 } from "./SessionExtrasFields";
 import { ToolPicker } from "./ToolPicker";
 import { useFlushWhenSessionInQuestion } from "./useFlushWhenSessionInQuestion";
+import { PageState } from "@/components/pagestate/PageState";
+import { readOf } from "@/components/pagestate/pageStateModel";
+
+/** What PageState logs for a session's prompts: the read's own error is reported by the query cache. */
+const PROMPTS_FAILED = { name: "PromptsError", message: "a session's prompts did not load" };
 
 export const SESSION_DIALOG_COPY = {
   title: (n: number, tool: string) => `Session ${n}${tool ? ` · ${tool}` : ""}`,
@@ -483,14 +488,10 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
             </LoadingRegion>
           ) : null}
           {view.status === "error" ? (
-            <Inline>
-              <Hint>Prompts didn&apos;t load</Hint>
-              {h.onRetrySessionPrompts ? (
-                <TextLink onClick={() => h.onRetrySessionPrompts?.(view.key)} phone={phone}>
-                  Retry
-                </TextLink>
-              ) : null}
-            </Inline>
+            /* G30: the shared failed state; the read's own error is reported by the query cache. */
+            <PageState read={readOf("error", undefined, () => h.onRetrySessionPrompts?.(view.key), PROMPTS_FAILED)} thing="these prompts" region="Prompts" skeleton={null}>
+              {() => null}
+            </PageState>
           ) : null}
           <div role="group" aria-label="Prompts in this session" style={PANEL_LIST}>
             {view.checklist.map((row) => (

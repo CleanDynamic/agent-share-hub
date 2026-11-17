@@ -26,6 +26,11 @@ import { FIGTREE, textStep } from "@/lib/theme/type";
 
 import { IconSquare, RecipeButton } from "./modalRecipes";
 import { space, size } from "@/lib/theme/space";
+import { PageState } from "@/components/pagestate/PageState";
+import { readOf } from "@/components/pagestate/pageStateModel";
+
+/** What PageState logs for the saved items: the read's own error is reported by the query cache. */
+const LIBRARY_FAILED = { name: "LibraryError", message: "the saved items did not load" };
 
 export type LibraryTab = "steps" | "collections";
 export type LibraryVersion = "saved" | "current";
@@ -54,8 +59,6 @@ export const LIBRARY_WINDOW_COPY = {
   version: "Version to insert",
   states: { same: "Same", edited: "Edited since saved", removed: "Source removed", stale: "Stale" } as Record<LibraryRowState, string>,
   loading: "Loading your saved items…",
-  error: "Your saved items did not load.",
-  retry: "Retry",
   empty: "Nothing you have saved fits here yet.",
   noMatch: "Nothing matches that.",
   openLibrary: "Open Library",
@@ -235,13 +238,11 @@ function Body(props: AddFromLibraryWindowProps) {
             {copy.loading}
           </p>
         ) : status === "error" ? (
-          <div data-testid="library-error" style={{ display: "flex", alignItems: "center", gap: 12, margin: "12px 0", ...line(textStep.meta, 400, t.text2, 17) }}>
-            <span>{copy.error}</span>
-            {onRetry ? (
-              <RecipeButton small phone={phone} onClick={onRetry}>
-                {copy.retry}
-              </RecipeButton>
-            ) : null}
+          /* G30: the shared failed state; the read's own error is reported by the query cache. */
+          <div data-testid="library-error" style={{ margin: "12px 0" }}>
+            <PageState read={readOf("error", undefined, () => onRetry?.(), LIBRARY_FAILED)} thing="your library" region="Your library" skeleton={null}>
+              {() => null}
+            </PageState>
           </div>
         ) : shown.length === 0 ? (
           <p style={{ ...line(textStep.meta, 400, t.label, 17), margin: "12px 0" }}>

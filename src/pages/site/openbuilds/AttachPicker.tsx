@@ -21,6 +21,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
+import { PageState } from "@/components/pagestate/PageState";
 
 const SIZES: readonly { value: WorkSize; label: string }[] = [
   { value: "build", label: "Build" },
@@ -109,9 +110,12 @@ export function AttachPicker({ userId, onPick, reply, open: startOpen = false, s
           />
           <div style={{ maxHeight: 320, overflowY: "auto" }}>
             {work.isError ? (
-              <p role="alert" style={{ margin: 0, padding: "8px", fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>
-                Your work didn't load.
-              </p>
+              /* G30: the shared failed state, with Try again. */
+              <div style={{ padding: 8 }}>
+                <PageState read={work} thing="your work" region="Your work" skeleton={null}>
+                  {() => null}
+                </PageState>
+              </div>
             ) : work.isPending ? (
               <p style={{ margin: 0, padding: "8px", fontFamily: FIGTREE, fontSize: 12, color: t.label }}>Loading</p>
             ) : groups.length === 0 ? (

@@ -55,6 +55,8 @@ import { BUTTON_PAD, iconButtonSide } from "./modalRecipes";
 
 /** What PageState logs for the sessions list: the real error is reported by the query cache. */
 const SESSIONS_FAILED = { name: "SessionsError", message: "the sessions list did not load" };
+/** The same, for one session's prompts. */
+const PROMPTS_FAILED = { name: "PromptsError", message: "a session's prompts did not load" };
 
 /** The desktop header is 64px tall; the panel sticks 24px under it. */
 const STICKY_TOP = 64 + 24;
@@ -365,11 +367,11 @@ function SessionSection({
       {open ? (
         <div id={listId} style={{ paddingTop: 2 }}>
           {session.promptsError ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "6px 6px 7px", fontFamily: FIGTREE, fontSize: textStep.meta, color: t.text2 }}>
-              <span>Prompts didn&apos;t load</span>
-              <button type="button" onClick={() => onRetryPrompts(session.id)} style={{ ...textLink, fontSize: textStep.meta }}>
-                Retry
-              </button>
+            /* G30: the shared failed state; the read's own error is reported by the query cache. */
+            <div style={{ padding: "6px 6px 7px" }}>
+              <PageState read={readOf("error", undefined, () => onRetryPrompts(session.id), PROMPTS_FAILED)} thing="these prompts" region="Prompts" skeleton={null}>
+                {() => null}
+              </PageState>
             </div>
           ) : session.prompts === null ? (
             <LoadingRegion what={`session ${session.number}'s prompts`} style={{ display: "flex", flexDirection: "column", gap: 2, padding: "2px 0 4px" }}>
