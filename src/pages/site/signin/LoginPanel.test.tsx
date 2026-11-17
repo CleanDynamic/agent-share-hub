@@ -403,3 +403,15 @@ describe("the rest of the dialog", () => {
     await waitFor(() => expect(where.at()).toBe("/"));
   });
 });
+
+describe("signing back in after the server ended the session (G14)", () => {
+  it("closes the dialog in place: the page and its query stay, and the profile's landing page is not asked", async () => {
+    signIn.mockResolvedValue({ outcome: "signed-in", userId: "u-1" });
+    resolvePostAuthRoute.mockResolvedValue("/onboarding");
+    const where = renderDialog("login", "q=keep", { signedOut: true });
+    fill();
+    submit();
+    await waitFor(() => expect(where.at()).toBe("/?q=keep"));
+    expect(resolvePostAuthRoute).not.toHaveBeenCalled();
+  });
+});

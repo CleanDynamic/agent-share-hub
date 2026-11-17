@@ -10,9 +10,13 @@
      - the auth server cannot be asked (the network): nothing is decided; back to live, and the page shows its own state.
    Reports that come in while checking or after the end are ignored, so it all happens once.
 
+   G14: when the member signs in again, the phase is live once more and every query is marked stale, so what is on
+   screen is read again with the new session (the dialog closes in place: LoginPanel).
+
    The editor (/compose) gets no dialog: it keeps its work on the device and says so in its own banner (Part D). */
 
 import { useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +40,7 @@ export function SessionListener() {
   here.current = location;
   const go = useRef(navigate);
   go.current = navigate;
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     let alive = true;
@@ -74,11 +79,19 @@ export function SessionListener() {
         });
     });
 
+    const { data: watch } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session && sessionPhase() === "ended") {
+        setSessionPhase("live");
+        void queryClient.invalidateQueries();
+      }
+    });
+
     return () => {
       alive = false;
       listenForRefusals(null);
+      watch.subscription.unsubscribe();
     };
-  }, []);
+  }, [queryClient]);
 
   return null;
 }

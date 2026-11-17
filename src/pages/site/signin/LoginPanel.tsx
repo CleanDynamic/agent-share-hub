@@ -15,8 +15,8 @@
    sets to the page the dialog was opened over, and otherwise `resolvePostAuthRoute`. "Forgot password?" is the reset
    view's address on the same page, a push. */
 
-import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import type { OAuthProvider } from "@/components/auth/OAuthButtons";
 import { useAuth } from "@/contexts/AuthContext";
@@ -51,6 +51,16 @@ export function LoginPanel() {
   const [resendAnswer, setResendAnswer] = useState("");
   const views = useSignInNavigation();
   const captcha = useDialogCaptcha();
+  /* G14: the dialog the session listener opened over a page whose session the server ended. Signing in closes it where
+     it is, so the page, its address and its scroll are the ones the member left; nothing else is asked. Once only: a
+     close steps back through history, and the sign-in and the session arriving both finish. */
+  const signedOut = Boolean((useLocation().state as { signedOut?: unknown } | null)?.signedOut);
+  const finished = useRef(false);
+  const backInPlace = () => {
+    if (finished.current) return;
+    finished.current = true;
+    views.close();
+  };
 
   // The halftone layer's signing-in ripple, while the request or a provider is out.
   useEffect(() => {
@@ -60,8 +70,12 @@ export function LoginPanel() {
 
   // Already signed in — bounce to the destination (or home).
   useEffect(() => {
-    if (isLoggedIn) navigate(redirectParam || "/", { replace: true });
-  }, [isLoggedIn, navigate, redirectParam]);
+    if (!isLoggedIn) return;
+    if (signedOut) backInPlace();
+    else navigate(redirectParam || "/", { replace: true });
+    // backInPlace reads only refs and the navigation of this render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn, navigate, redirectParam, signedOut]);
 
   const handleEmailLogin = async () => {
     // G4: email only. Text with no "@" is answered here, and no request is sent.
@@ -87,6 +101,10 @@ export function LoginPanel() {
         return;
       }
 
+      if (signedOut) {
+        backInPlace();
+        return;
+      }
       const destination = redirectParam || (result.userId ? await resolvePostAuthRoute(result.userId) : "/");
       navigate(destination, { replace: true });
     } catch {

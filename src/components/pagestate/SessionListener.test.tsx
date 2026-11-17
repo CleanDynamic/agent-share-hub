@@ -120,3 +120,26 @@ describe("SessionListener (G13)", () => {
     expect(seen.search).toBe("");
   });
 });
+
+describe("signing back in (G14)", () => {
+  it("puts the phase back to live and reads the page again", async () => {
+    const client = mount();
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    refuse(MEMBER);
+    await flush();
+    expect(sessionPhase()).toBe("ended");
+    const onChange = auth.onAuthStateChange.mock.calls[0][0] as (event: string, session: unknown) => void;
+    act(() => onChange("SIGNED_IN", { access_token: MEMBER }));
+    expect(sessionPhase()).toBe("live");
+    expect(invalidate).toHaveBeenCalledTimes(1);
+  });
+
+  it("an ordinary sign-in while live reads nothing again", async () => {
+    const client = mount();
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    const onChange = auth.onAuthStateChange.mock.calls[0][0] as (event: string, session: unknown) => void;
+    act(() => onChange("SIGNED_IN", { access_token: MEMBER }));
+    act(() => onChange("TOKEN_REFRESHED", { access_token: MEMBER }));
+    expect(invalidate).not.toHaveBeenCalled();
+  });
+});
