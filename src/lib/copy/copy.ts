@@ -135,6 +135,8 @@ export const UNFOLLOW_PERSON_FAILED = "Couldn't unfollow them. Try again.";
 export const FOLLOW_FAILED = "Couldn't follow that. Try again.";
 export const UNFOLLOW_FAILED = "Couldn't unfollow that. Try again.";
 export const JOIN_SPACE_FAILED = "Couldn't join that space. Try again.";
+export const COPY_TEXT_FAILED = "Couldn't copy the text. Try again.";
+export const COPY_CODE_FAILED = "Couldn't copy the code. Try again.";
 
 // ── empty states (G6): "No <things> yet." / "No <things> match.", then the next step where there is one ──
 

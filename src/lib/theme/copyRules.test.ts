@@ -233,6 +233,10 @@ export const RULES: Rule[] = [
   { id: "remix", goal: "G1", on: true, breaks: (s) => /\bremix/i.test(s) },
   { id: "fork", goal: "G1", on: true, breaks: (s) => /\bfork(s|ed|ing)?\b/i.test(s) },
   { id: "bare-join", goal: "G2", on: true, breaks: (s) => /^Join$/.test(s) },
+  // G3 (after Part A): a failure is "Couldn't <verb> <thing>. Try again.", never the short "<Thing> not <done>".
+  { id: "not-done", goal: "G3", on: true, breaks: (s) => /^[A-Z][A-Za-z {}]*? not (added|saved|moved|removed|changed|made|deleted|copied|published|unpublished|updated|set|kept|linked|split|merged|imported|created|sent|renamed|started|loaded|dismissed|attached|uploaded|found|shared)\b[a-z ]*$/.test(s) },
+  // G3 (after Part A): a failure is "Couldn't <verb> <thing>. Try again.", never the short "<Thing> not <done>".
+  { id: "not-done", goal: "G3", on: true, breaks: (s) => /^[A-Z][A-Za-z {}·]*? not (added|saved|moved|removed|changed|made|deleted|copied|published|unpublished|updated|set|kept|linked|split|merged|imported|created|sent|renamed|started|loaded|dismissed|attached|uploaded|found|shared)\b[a-z ]*$/.test(s) },
   // G10: the product's name
   { id: "old-name", goal: "G10", on: true, breaks: (s) => /build ?gallery|neo ?scale/i.test(s) },
   { id: "name-literal", goal: "G10", on: true, breaks: (s) => /openbuilds\.ai/i.test(s) },
@@ -250,6 +254,20 @@ export const ALLOW: Record<string, Record<string, string>> = {
     "src/components/build/FullPromptWindow.tsx|Nothing added yet": "the placeholder of an empty reply box, not an empty state",
     "src/pages/site/compose/StillOpenSpaces.tsx|No spaces to post in": "a disabled menu option (menu options are not empty states)",
     "src/pages/site/openbuilds/NewPostWindow.tsx|No spaces to post in": "a disabled menu option (menu options are not empty states)",
+  },
+  // Statuses, one entry per pattern: each describes the current state, not a failed action.
+  "not-done": {
+    "src/pages/site/compose/saveWindows.tsx|Prompt not sent": "status: the leave window's title while only unsent prompt text remains (beside \"Changes still saving\")",
+    "src/pages/site/compose/SandboxCard.tsx|Classification not saved": "status: the card footer's state line (role=status), beside \"Required fields complete\"",
+    "src/pages/site/build/BuildSteps.tsx|{} · not shared": "status: a row's sharing state, beside the kind",
+    "src/pages/site/notfound/NotFoundPage.tsx|Page not found": "status: the page's title",
+  },
+  // Statuses, one entry per pattern: each describes the current state, not a failed action.
+  "not-done": {
+    "src/pages/site/compose/saveWindows.tsx|Prompt not sent": "status: the leave window's title while only unsent prompt text remains (beside \"Changes still saving\")",
+    "src/pages/site/compose/SandboxCard.tsx|Classification not saved": "status: the card footer's state line (role=status), beside \"Required fields complete\"",
+    "src/pages/site/build/BuildSteps.tsx|{} · not shared": "status: a row's sharing state, beside the kind",
+    "src/pages/site/notfound/NotFoundPage.tsx|Page not found": "status: the page's title",
   },
   project: {
     "src/pages/site/build/BuildSteps.tsx|Put {} in your project": "the reader's own code project, where a file goes; not a build",
@@ -353,6 +371,8 @@ describe("the reader and the rules catch what they should, whether switched on o
       ["account-join", "By joining you agree", "By signing up you agree"],
       ["fork", "Publish, reproduce and fork", "Publish, reproduce and rebuild"],
       ["bare-join", "Join", "Join space"],
+      ["not-done", "Step not moved", "Couldn't move the step. Try again."],
+      ["not-done", "Step not moved", "Couldn't move the step. Try again."],
       ["create-account", "Create account", "Sign up"],
       ["old-name", "Welcome to NeoScale", "Welcome"],
     ];

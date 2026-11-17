@@ -148,11 +148,6 @@ const findNode = (tree: readonly NodeTree[], id: string): NodeTree | null => {
   return null;
 };
 
-/** A refusal the data layer wrote as `{Field}: {rule}` ("Target: 80 characters max"), without its "addCheck failed: " lead; undefined for any other failure. */
-
-/** "tool" is "Tool", for "Tool not added". */
-const capital = (word: string): string => `${word.slice(0, 1).toUpperCase()}${word.slice(1)}`;
-
 /** Log a failed write with its cause, and say so in one line; `retry`, when there is one, is the toast's Retry. */
 const failed = (line: string, retry?: () => void) => (cause: unknown) => {
   // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
@@ -424,10 +419,10 @@ export function useComposePrompts({
     [run, current, record],
   );
 
-  /** Save a typed prompt; when it fails, "Prompt not saved" says so with Retry, which saves it again. */
+  /** Save a typed prompt; when it fails, "Couldn't save the prompt. Try again." says so with Retry, which saves it again. */
   const saveAgain = useCallback(
     function again(key: string): void {
-      save(key).catch(failed("Prompt not saved", () => again(key)));
+      save(key).catch(failed("Couldn't save the prompt. Try again.", () => again(key)));
     },
     [save],
   );
@@ -483,7 +478,7 @@ export function useComposePrompts({
     if (!id) return;
     // Every pending text first: a reorder rewrites the rows it reads.
     for (const pending of [...timers.current.keys()]) flushKey(pending);
-    void attempt("Step not moved", async () => {
+    void attempt("Couldn't move the step. Try again.", async () => {
       const build = latest.current.buildId;
       if (!build) return;
       // CA-21 P1: every kind of tile swaps with the step next to it, whatever either is.
@@ -546,7 +541,7 @@ export function useComposePrompts({
             next.delete(key);
             return next;
           });
-          failed("Prompt not removed", () => remove(key))(cause);
+          failed("Couldn't remove the prompt. Try again.", () => remove(key))(cause);
         },
       );
   };
@@ -583,7 +578,7 @@ export function useComposePrompts({
         toast(addedToast(n));
         onSessionUsed?.(sessionId);
       })
-      .catch(failed("Prompt not added", () => add(sessionId, ordinal)))
+      .catch(failed("Couldn't add the prompt. Try again.", () => add(sessionId, ordinal)))
       .finally(() => {
         const next = new Set(addingRef.current);
         next.delete(tag);
@@ -610,7 +605,7 @@ export function useComposePrompts({
   };
 
   const addNow = ({ text, tool, model, session, id }: { text: string; tool: string | null; model: string | null; session?: string | null; id?: string }) =>
-    attempt("Prompt not added", async () => {
+    attempt("Couldn't add the prompt. Try again.", async () => {
       const build = await latest.current.ensureBuild();
       const created = await addWrittenPrompt({ buildId: build, tree: nodes.current(), text, tool, model, session, id });
       nodes.record(created.id, created);
@@ -619,7 +614,7 @@ export function useComposePrompts({
     }, false);
 
   /**
-   * One write in the node queue. When it fails the maker is told in one line ("Prompt not added") with Retry, which runs the same
+   * One write in the node queue. When it fails the maker is told in one line ("Couldn't add the prompt. Try again.") with Retry, which runs the same
    * write again, and what the write would have made comes back as `fallback`.
    */
   const attempt = <T,>(line: string | ((cause: unknown) => string), task: () => Promise<T>, fallback: T): Promise<T> =>
@@ -639,47 +634,47 @@ export function useComposePrompts({
       undefined,
     );
 
-  const rename = (id: string, title: string) => void writeStep(id, "Step not renamed", (node) => setStepTitle(node, title));
+  const rename = (id: string, title: string) => void writeStep(id, "Couldn't rename the step. Try again.", (node) => setStepTitle(node, title));
   const setChanges = (id: string, ranges: readonly ChangeRange[]) =>
-    void writeStep(id, "Words not saved", (node) => setPromptChanges(node, ranges));
+    void writeStep(id, "Couldn't save the words. Try again.", (node) => setPromptChanges(node, ranges));
   const setReply = (id: string, reply: string) =>
-    void writeStep(id, "Response not saved", (node) => setPromptReply(node, reply.trim() || null));
+    void writeStep(id, "Couldn't save the response. Try again.", (node) => setPromptReply(node, reply.trim() || null));
   const setExtrasOf = (id: string, patch: Record<string, unknown>) =>
-    void writeStep(id, "Optional fields not saved", (node) => setExtras(node, patch, nodes.current()));
+    void writeStep(id, "Couldn't save the optional fields. Try again.", (node) => setExtras(node, patch, nodes.current()));
   const setDeployment = (id: string, payload: Record<string, unknown>) =>
-    void writeStep(id, "Deployment not saved", (node) => setDeploymentTile(node, payload));
+    void writeStep(id, "Couldn't save the deployment. Try again.", (node) => setDeploymentTile(node, payload));
   const setTextOf = (id: string, text: string) =>
-    void writeStep(id, "Prompt not saved", (node) => savePromptText(node, text));
+    void writeStep(id, "Couldn't save the prompt. Try again.", (node) => savePromptText(node, text));
   const setCasesOf = (id: string, cases: readonly CheckCase[]) =>
-    void writeStep(id, "Test cases not saved", (node) => setCheckCases(node, keptCases(cases)));
+    void writeStep(id, "Couldn't save the test cases. Try again.", (node) => setCheckCases(node, keptCases(cases)));
   const setCheckTextOf = (id: string, patch: CheckTextPatch) =>
-    void writeStep(id, "Check not saved", (node) => setCheckText(node, patch));
+    void writeStep(id, "Couldn't save the check. Try again.", (node) => setCheckText(node, patch));
   const setCodeSourceOf = (id: string, patch: { source?: string; language?: string }) =>
-    void writeStep(id, "Code not saved", (node) => setCodeSource(node, patch));
+    void writeStep(id, "Couldn't save the code. Try again.", (node) => setCodeSource(node, patch));
   const setAgentNotesOf = (id: string, notes: { memoryTidy?: string; changesEachRound?: string }) =>
-    void writeStep(id, "Notes not saved", (node) => setAgentNotes(node, notes));
+    void writeStep(id, "Couldn't save the notes. Try again.", (node) => setAgentNotes(node, notes));
   const setModelRunOf = (id: string, run: ModelRun | null) =>
-    void writeStep(id, "Model run not saved", (node) => setModelRun(node, run));
+    void writeStep(id, "Couldn't save the model run. Try again.", (node) => setModelRun(node, run));
   const setCheckRunsOf = (id: string, runs: readonly CheckRun[]) =>
-    void writeStep(id, "Runs not saved", (node) => setCheckRuns(node, runs));
+    void writeStep(id, "Couldn't save the runs. Try again.", (node) => setCheckRuns(node, runs));
   const accept = (id: string, use: Use, steps: readonly Step[]) =>
-    void writeStep(id, "Input not added", (node) => addUse(node, use, steps, madeFilesOf(nodes.current()), madeFileNamesOf(nodes.current())));
+    void writeStep(id, "Couldn't add the input. Try again.", (node) => addUse(node, use, steps, madeFilesOf(nodes.current()), madeFileNamesOf(nodes.current())));
   const dismiss = (id: string, key: string) =>
-    void writeStep(id, "Suggestion not dismissed", (node) => dismissSuggestion(node, key));
+    void writeStep(id, "Couldn't dismiss the suggestion. Try again.", (node) => dismissSuggestion(node, key));
 
   const removeUseFrom = (id: string, use: Use) =>
-    void writeStep(id, "Input not removed", (node) => removeUse(node, use));
+    void writeStep(id, "Couldn't remove the input. Try again.", (node) => removeUse(node, use));
   const setRunsOf = (id: string, runs: Runs | null) =>
-    void writeStep(id, "Run method not changed", (node) => setRuns(node, runs));
+    void writeStep(id, "Couldn't change the run method. Try again.", (node) => setRuns(node, runs));
   const setModelOf = (id: string, model: string | null) =>
-    void writeStep(id, "Model not changed", (node) => setPromptModel(node, model));
+    void writeStep(id, "Couldn't change the model. Try again.", (node) => setPromptModel(node, model));
   const setFields = (id: string, fields: Record<string, string | null>) =>
-    void writeStep(id, "Fields not saved", (node) => setNodeFields(node, fields));
-  const setColour = (id: string, colour: string | null) => void writeStep(id, "Colour not saved", (node) => setNodeColour(node, colour));
-  const setStillOpenOf = (id: string, problem: string | null) => void writeStep(id, "Still open not saved", (node) => setStillOpen(node, problem));
+    void writeStep(id, "Couldn't save the fields. Try again.", (node) => setNodeFields(node, fields));
+  const setColour = (id: string, colour: string | null) => void writeStep(id, "Couldn't save the colour. Try again.", (node) => setNodeColour(node, colour));
+  const setStillOpenOf = (id: string, problem: string | null) => void writeStep(id, "Couldn't save Still open. Try again.", (node) => setStillOpen(node, problem));
 
   const removeInside = (id: string) => {
-    void attempt("Step not removed", async () => {
+    void attempt("Couldn't remove the step. Try again.", async () => {
       await dropMadeFiles(id);
       await deleteNode(id);
       nodes.record(id, null);
@@ -688,7 +683,7 @@ export function useComposePrompts({
 
   /** TF-08: name a file `stepId` makes. Resolves the new file's id, or null if it failed. */
   const addMadeFile = (stepId: string, name: string) =>
-    attempt("File not added", async () => {
+    attempt("Couldn't add the file. Try again.", async () => {
       const build = await latest.current.ensureBuild();
       const created = await writeMadeFile(build, nodes.current(), { stepId, name });
       nodes.record(created.id, created);
@@ -697,12 +692,12 @@ export function useComposePrompts({
 
   /** TF-08: take a made file out of the build, and out of the steps that use it. Anything that is not a made file is left alone. */
   const removeMadeFile = (fileId: string) =>
-    void attempt("File not removed", async () => {
+    void attempt("Couldn't remove the file. Try again.", async () => {
       if (madeFilesOf(nodes.current()).has(fileId)) await dropFile(fileId);
     }, undefined);
 
   const addPiece = (kind: "tool" | "result", name?: string) =>
-    attempt(`${capital(kind)} not added`, async () => {
+    attempt(`Couldn't add the ${kind}. Try again.`, async () => {
       const build = await latest.current.ensureBuild();
       const created =
         kind === "tool"
@@ -713,7 +708,7 @@ export function useComposePrompts({
     }, null);
 
   const addResultOf = (input: ResultInput) =>
-    attempt("Result not added", async () => {
+    attempt("Couldn't add the result. Try again.", async () => {
       const build = await latest.current.ensureBuild();
       const created = await addResultTile(build, nodes.current(), input);
       nodes.record(created.id, created);
@@ -728,13 +723,13 @@ export function useComposePrompts({
       nodes.record(created.id, created);
       return created.id;
     }, null);
-  const addSystemPromptTile = addSourceTile(addSystemPromptStep, "System prompt not added");
-  const addDatasetTile = addSourceTile(addDatasetStep, "Dataset not added");
-  const addRepoTile = addSourceTile(addRepoStep, "Repository not added");
-  const addRetrievalTile = addSourceTile(addRetrievalStep, "Retrieval not added");
+  const addSystemPromptTile = addSourceTile(addSystemPromptStep, "Couldn't add the system prompt. Try again.");
+  const addDatasetTile = addSourceTile(addDatasetStep, "Couldn't add the dataset. Try again.");
+  const addRepoTile = addSourceTile(addRepoStep, "Couldn't add the repository. Try again.");
+  const addRetrievalTile = addSourceTile(addRetrievalStep, "Couldn't add the retrieval. Try again.");
 
   const addToolTile = (input: ToolTileInput) =>
-    attempt("Tool not added", async () => {
+    attempt("Couldn't add the tool. Try again.", async () => {
       const build = await latest.current.ensureBuild();
       const created = await addToolStep(build, nodes.current(), input);
       nodes.record(created.id, created);
@@ -743,7 +738,7 @@ export function useComposePrompts({
 
   /** SV-27 P7: Add › Deployment: one queued write through the composer's node writer. */
   const addDeploymentTile = (input: DeploymentTileInput) =>
-    attempt(`${DEPLOYMENT_KIND_NAME[input.kind]} not added`, async () => {
+    attempt(`Couldn't add the ${DEPLOYMENT_KIND_NAME[input.kind].toLowerCase()}. Try again.`, async () => {
       const build = await latest.current.ensureBuild();
       const created = await addDeploymentStep(build, nodes.current(), input);
       nodes.record(created.id, created);
@@ -767,7 +762,7 @@ export function useComposePrompts({
   };
 
   const addAgentOrTeam = ({ kind, name, model, instructions, harness, builtInCode, models, tools, memory, runs, session, helpers, limits, output, sample, traceUrl, pattern }: AgentInput) =>
-    attempt(`${capital(kind)} not added`, async () => {
+    attempt(`Couldn't add the ${kind}. Try again.`, async () => {
       const build = await latest.current.ensureBuild();
       const toolRefs = await toolRefsFor(build, tools ?? []);
       // Only the keys given: an agent made without them is written exactly as before.
@@ -803,27 +798,27 @@ export function useComposePrompts({
 
   /** CA-13 P2: Add › Decision. */
   const addDecisionTile = (input: DecisionInput) =>
-    attempt("Decision not added", async () => {
+    attempt("Couldn't add the decision. Try again.", async () => {
       const build = await latest.current.ensureBuild();
       const created = await addDecision(build, nodes.current(), input);
       nodes.record(created.id, created);
       return created.id;
     }, null);
 
-  const setDecisionOf = (id: string, input: DecisionInput) => void writeStep(id, "Decision not saved", (node) => setDecision(node, input));
+  const setDecisionOf = (id: string, input: DecisionInput) => void writeStep(id, "Couldn't save the decision. Try again.", (node) => setDecision(node, input));
   const setRunsWhenOf = (id: string, steps: readonly Step[], runsWhen: RunsWhen | null) =>
-    void writeStep(id, "Trigger not changed", (node) => setRunsWhen(node, steps, runsWhen));
+    void writeStep(id, "Couldn't change the trigger. Try again.", (node) => setRunsWhen(node, steps, runsWhen));
 
-  const setRuntimeOf = (id: string, patch: RuntimePatch) => void writeStep(id, "Runtime not saved", (node) => setRuntimeFields(node, patch));
+  const setRuntimeOf = (id: string, patch: RuntimePatch) => void writeStep(id, "Couldn't save the runtime. Try again.", (node) => setRuntimeFields(node, patch));
 
   const addAgentTo = (teamId: string, model: string) =>
-    attempt("Agent not added", async () => {
+    attempt("Couldn't add the agent. Try again.", async () => {
       const build = await latest.current.ensureBuild();
       return (await addAgent(build, nodes.current(), { model, parentId: teamId })).id;
     }, null);
 
   const addPromptTo = (agentId: string, text: string) =>
-    attempt("Prompt not added", async () => {
+    attempt("Couldn't add the prompt. Try again.", async () => {
       const agent = findNode(nodes.current(), agentId);
       if (!agent) return false;
       await addAgentPrompt(rowOf(agent), nodes.current(), text);
@@ -831,7 +826,7 @@ export function useComposePrompts({
     }, false);
 
   const setAgent = (id: string, { model, harness, builtInCode, models, tools, memory }: AgentSetupInput) =>
-    void attempt("Agent not saved", async () => {
+    void attempt("Couldn't save the agent. Try again.", async () => {
       const build = await latest.current.ensureBuild();
       const toolRefs = await toolRefsFor(build, tools ?? []);
       const node = findNode(nodes.current(), id);
@@ -841,10 +836,10 @@ export function useComposePrompts({
     }, undefined);
 
   const setInstructionsOf = (agentId: string, text: string) =>
-    void writeStep(agentId, "Instructions not saved", (node) => setInstructions(node, text));
+    void writeStep(agentId, "Couldn't save the instructions. Try again.", (node) => setInstructions(node, text));
 
   const addManual = ({ tool, text, where, lines, file, afterId, session, gate }: { tool?: string; text?: string; where?: ManualWhere | null; lines?: readonly string[]; file: File | null; afterId: string | null; session?: string | null; gate?: object }) =>
-    attempt("Manual step not added", async () => {
+    attempt("Couldn't add the manual step. Try again.", async () => {
       const build = await latest.current.ensureBuild();
       let mediaId: string | undefined;
       if (file) mediaId = (await uploadMedia({ buildId: build, file })).id;
@@ -863,7 +858,7 @@ export function useComposePrompts({
     }, null);
 
   const addCodeSteps = ({ steps, tool, model, session }: { steps: readonly { source: string; language: string; filename: string | null }[]; tool: string | null; model: string | null; session?: string | null }) =>
-    attempt((cause) => (cause instanceof Error && /100,000/.test(cause.message) ? "Code: 100,000 characters max" : "Code not added"), async () => {
+    attempt((cause) => (cause instanceof Error && /100,000/.test(cause.message) ? "Code: 100,000 characters max" : "Couldn't add the code. Try again."), async () => {
       const build = await latest.current.ensureBuild();
       let first: string | null = null;
       for (const step of steps) {
@@ -879,7 +874,7 @@ export function useComposePrompts({
     attempt(
       (cause) => {
         // A refusal is said in its own plain words (G4: through the one mapper); anything else, once.
-        return screenError(cause, "Check not added", false);
+        return screenError(cause, "Couldn't add the check. Try again.", false);
       },
       async () => {
         const build = await latest.current.ensureBuild();
@@ -891,7 +886,7 @@ export function useComposePrompts({
     );
 
   const claimSession = (stepIds: readonly string[], meta: SessionMeta) =>
-    attempt("Session not saved", async () => {
+    attempt("Couldn't save the session. Try again.", async () => {
       const build = await latest.current.ensureBuild();
       const key = newSessionKey();
       await setSessionMeta(build, key, meta);
@@ -904,14 +899,14 @@ export function useComposePrompts({
     }, null);
 
   const setSessionOf = (id: string, session: string | null) =>
-    void writeStep(id, "Step not moved", (node) => setStepSession(node, session));
+    void writeStep(id, "Couldn't move the step. Try again.", (node) => setStepSession(node, session));
 
   const nest = (id: string, parentId: string | null, index: number) =>
     attempt(
       (cause) => {
         // A refusal is one of the guards' own sentences; anything else is said once.
         const said = cause instanceof Error ? Object.values(NEST_COPY).find((line) => cause.message.includes(line)) : undefined;
-        return said ?? "Step not moved";
+        return said ?? "Couldn't move the step. Try again.";
       },
       async () => {
         const build = latest.current.buildId;
@@ -926,7 +921,7 @@ export function useComposePrompts({
     );
 
   const keepSentWith = ({ stepId, source, language, filename }: CodeSuggestion) =>
-    void attempt("Step not kept inside", async () => {
+    void attempt("Couldn't keep the step inside. Try again.", async () => {
       const build = latest.current.buildId;
       if (!build) return;
       const created = await addCode(build, nodes.current(), { source, language, filename, parentId: stepId });
@@ -935,17 +930,17 @@ export function useComposePrompts({
   const ignoreSentWith = (stepId: string, key: string) => void writeStep(stepId, "Suggestion not ignored", (node) => dismissSentWith(node, key));
 
   const setConnection = (id: string, connection: ToolConnection | null, runsAt: ToolRunsAt | null) =>
-    void writeStep(id, "Connection not saved", (node) => setToolConnection(node, connection, runsAt));
+    void writeStep(id, "Couldn't save the connection. Try again.", (node) => setToolConnection(node, connection, runsAt));
 
   const setManual = (id: string, fields: { tool?: string; text?: string; media_id?: string | null; where?: ManualWhere | null; lines?: readonly string[] }) =>
-    void writeStep(id, "Manual step not saved", async (node) => {
+    void writeStep(id, "Couldn't save the manual step. Try again.", async (node) => {
       const saved = await setManualFields(node, fields);
       noteTool(latest.current.buildId, fields.tool);
       return saved;
     });
 
   const setManualPicture = (id: string, file: File) =>
-    attempt(`${file.name} not added`, async () => {
+    attempt(`Couldn't add ${file.name}. Try again.`, async () => {
       if (mediaKindFor(file.type) !== "image" || file.size > MEDIA_MAX_BYTES) throw new Error("not a picture that can be added");
       const build = await latest.current.ensureBuild();
       const media = await uploadMedia({ buildId: build, file });

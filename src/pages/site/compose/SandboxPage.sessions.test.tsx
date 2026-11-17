@@ -194,7 +194,7 @@ describe("CA-12 P4 · sessions leave Add; + Add a session", () => {
     fireEvent.click(within(await openRow()).getAllByRole("listitem")[0]);
     await waitFor(() => expect(said).toHaveBeenCalled(), { timeout: 5_000 });
     await act(() => new Promise((resolve) => setTimeout(resolve, 300)));
-    expect(said.mock.calls.map(([line]) => line)).toEqual(["Build not started"]);
+    expect(said.mock.calls.map(([line]) => line)).toEqual(["Couldn't start the build. Try again."]);
   });
 });
 

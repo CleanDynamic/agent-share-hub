@@ -148,7 +148,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** An old build's run of typed prompts is saved as a session made here first; the key it has after. */
   const stable = useCallback(async (key: string): Promise<string | null> => (isLegacySession(key) ? latest.current.claim(key) : key), []);
 
-  /** A session edit: when it fails the maker is told ("Session not moved") with Retry, which runs the same edit again. */
+  /** A session edit: when it fails the maker is told ("Couldn't move the session. Try again.") with Retry, which runs the same edit again. */
   const guard = useCallback(
     async function again(line: string, task: () => Promise<unknown>): Promise<void> {
       try {
@@ -165,7 +165,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** A session's title: trimmed, 1 to 80 characters, or none. */
   const onTitle = useCallback(
     (key: string, title: string) =>
-      void guard("Title not saved", () => track(`Changed the title of Session ${latest.current.groups.find((entry) => groupKey(entry) === key)?.number ?? ""}`.trim(), async () => {
+      void guard("Couldn't save the title. Try again.", () => track(`Changed the title of Session ${latest.current.groups.find((entry) => groupKey(entry) === key)?.number ?? ""}`.trim(), async () => {
         const real = await stable(key);
         const { buildId, made, groups } = latest.current;
         if (!real || !buildId) return;
@@ -185,7 +185,7 @@ export function useSessionEdits(input: SessionEditsInput) {
    */
   const onSessionOpen = useCallback(
     (key: string, problem: string | null) =>
-      void guard("Request not saved", () =>
+      void guard("Couldn't save the request. Try again.", () =>
         track(
           `${problem ? "Opened" : "Took back the request on"} Session ${latest.current.groups.find((entry) => groupKey(entry) === key)?.number ?? ""}`.trim(),
           async () => {
@@ -208,7 +208,7 @@ export function useSessionEdits(input: SessionEditsInput) {
 
   const move = useCallback(
     (key: string, next: string[], from: number, to: number) =>
-      guard("Session not moved", () =>
+      guard("Couldn't move the session. Try again.", () =>
         track(
           `Moved Session ${from}${to < from ? " up" : " down"}`,
           async () => {
@@ -328,7 +328,7 @@ export function useSessionEdits(input: SessionEditsInput) {
     if (shown) latest.current.showParts?.(shown.workstreams);
     let key: string | null = null;
     try {
-      await guard("Part not added", () =>
+      await guard("Couldn't add the part. Try again.", () =>
         track("Added a part", async () => {
           const change = await applyParts(
             (making) => addWorkstream(making, editableKeys(), keysOf()),
@@ -354,19 +354,19 @@ export function useSessionEdits(input: SessionEditsInput) {
     (key: string, problem: string | null) =>
       void track(
         problem ? `Asked for the next session in ${titleOf(key)}` : `Took back the request in ${titleOf(key)}`,
-        () => editPart("Request not saved", (stored) => withWorkstream(stored, key, { open: problem ? { problem } : undefined })),
+        () => editPart("Couldn't save the request. Try again.", (stored) => withWorkstream(stored, key, { open: problem ? { problem } : undefined })),
         { motion: problem ? "add" : "remove", keys: [key] },
       ),
     [editPart, track],
   );
 
-  const onPartName = useCallback((key: string, name: string) => void track(`Renamed ${titleOf(key)}`, () => editPart("Name not saved", (stored) => withWorkstream(stored, key, { name: name.trim() || undefined }))), [editPart, track]);
+  const onPartName = useCallback((key: string, name: string) => void track(`Renamed ${titleOf(key)}`, () => editPart("Couldn't save the name. Try again.", (stored) => withWorkstream(stored, key, { name: name.trim() || undefined }))), [editPart, track]);
   /** SV-07 P3: resolves when the fold is written, so the page's at-once fold can let go then. */
-  const onPartFold = useCallback((key: string, collapsed: boolean): Promise<void> => editPart("Fold not saved", (stored) => withWorkstream(stored, key, { collapsed })), [editPart]);
-  const onPartColour = useCallback((key: string, colour: string | null) => editPart("Colour not saved", (stored) => withWorkstream(stored, key, { colour: colour ?? undefined })), [editPart]);
+  const onPartFold = useCallback((key: string, collapsed: boolean): Promise<void> => editPart("Couldn't save the fold. Try again.", (stored) => withWorkstream(stored, key, { collapsed })), [editPart]);
+  const onPartColour = useCallback((key: string, colour: string | null) => editPart("Couldn't save the colour. Try again.", (stored) => withWorkstream(stored, key, { colour: colour ?? undefined })), [editPart]);
   const onPartStartsAfter = useCallback(
     (key: string, session: string | null) =>
-      void track(`Changed when ${titleOf(key)} starts`, () => editPart("Start not saved", (stored) => {
+      void track(`Changed when ${titleOf(key)} starts`, () => editPart("Couldn't save the start. Try again.", (stored) => {
         const { made, groups } = latest.current;
         const parts = workstreamsOf(made, orderKeys(groups));
         if (session && !startsAfterChoices(key, parts).includes(session)) return stored;
@@ -379,7 +379,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** Move up and Move down on a part's head. */
   const onPartMove = useCallback(
     (key: string, by: -1 | 1) =>
-      guard("Part not moved", () =>
+      guard("Couldn't move the part. Try again.", () =>
         track(`Moved ${titleOf(key)} ${by === -1 ? "up" : "down"}`, async () => {
           const done = await applyParts((making) => moveWorkstream(making, editableKeys(), key, by));
           if (done) latest.current.say(`${titleOf(key)} moved ${by === -1 ? "up" : "down"}.`);
@@ -391,7 +391,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** A part's head dropped on another's. */
   const onDropPart = useCallback(
     (key: string, over: string) =>
-      guard("Part not moved", () =>
+      guard("Couldn't move the part. Try again.", () =>
         track(`Moved ${titleOf(key)}`, async () => {
           const done = await applyParts((making) => droppedWorkstream(making, editableKeys(), key, over));
           if (done) latest.current.say(`${titleOf(key)} moved.`);
@@ -405,7 +405,7 @@ export function useSessionEdits(input: SessionEditsInput) {
     (key: string) => {
       const sessionsIn = [...(latest.current.parts?.partOf ?? new Map<string, string>())].filter(([, part]) => part === key).length;
       const removedMeta: RemovedMeta = { kind: "part", badge: /^Part (\S+)/.exec(titleOf(key))?.[1] ?? "P", name: titleOf(key).split(" · ")[0], ...(sessionsIn > 0 ? { detail: `${sessionsIn} ${sessionsIn === 1 ? "session" : "sessions"}` } : null) };
-      void guard("Part not removed", () =>
+      void guard("Couldn't remove the part. Try again.", () =>
         track(
           (said: string | null) => said ?? "",
           async () => {
@@ -440,7 +440,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** "Move to part…", or a session's head dropped on a part: to the end of that part, or before `before`. */
   const moveToPart = useCallback(
     (key: string, to: string, before?: string) =>
-      guard("Session not moved", async () => {
+      guard("Couldn't move the session. Try again.", async () => {
         if (isLegacySession(key)) return;
         await track(
           (said: string | null) => said ?? "",
@@ -464,7 +464,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** "Same stage as the session above" in a session's menu. */
   const onWithAbove = useCallback(
     (key: string, on: boolean) =>
-      void guard("Stage not saved", () =>
+      void guard("Couldn't save the stage. Try again.", () =>
         track(`${on ? "Put" : "Took"} Session ${latest.current.groups.find((entry) => groupKey(entry) === key)?.number ?? ""} ${on ? "at the same stage as" : "off the stage of"} the session above`, async () => {
           const { buildId, nodes } = latest.current;
           if (!buildId || isLegacySession(key)) return;
@@ -480,7 +480,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** CA-17 P4, P6: Create a map, Remove map, the direction and Show on build page. */
   const onMapSettings = useCallback(
     (next: MapSettings) =>
-      void guard("Map settings not saved", () =>
+      void guard("Couldn't save the map settings. Try again.", () =>
         track(next.on ? "Changed the map" : "Removed the map", async () => {
           const { buildId, nodes } = latest.current;
           if (!buildId) return;
@@ -494,7 +494,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** "Label parts": 1, 2, 3 or A, B, C for the whole build. */
   const onLabels = useCallback(
     (labels: PartLabels) =>
-      void guard("Labels not saved", () =>
+      void guard("Couldn't save the labels. Try again.", () =>
         track(`Labelled the parts ${labels === "letters" ? "A, B, C" : "1, 2, 3"}`, async () => {
           const { buildId, nodes } = latest.current;
           if (!buildId) return;
@@ -514,7 +514,7 @@ export function useSessionEdits(input: SessionEditsInput) {
    */
   const onRemoveSessions = useCallback(
     (keys: readonly string[], mode: "keep" | "all", alsoTiles: readonly string[] = []): Promise<void> =>
-      guard("Session not removed", async () => {
+      guard("Couldn't remove the session. Try again.", async () => {
         const removedMeta: RemovedMeta = { kind: "session", badge: "S", name: "Session" };
         await track(
           (said: string | null) => said ?? "",
@@ -586,7 +586,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** "Merge with the session above": this session's tiles go to the end of the one above, and this one is gone. */
   const onMergeUp = useCallback(
     (key: string) =>
-      void guard("Sessions not merged", () =>
+      void guard("Couldn't merge the sessions. Try again.", () =>
         track(
           (said: string | null) => said ?? "",
           async () => {
@@ -620,7 +620,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** "Split session here": this tile and every tile after it start a new session right after this one. */
   const onSplitHere = useCallback(
     (stepId: string) =>
-      void guard("Session not split", () =>
+      void guard("Couldn't split the session. Try again.", () =>
         track(
           (said: string | null) => said ?? "",
           async () => {
@@ -655,7 +655,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   const onMoveTile = useCallback(
     async (id: string, key: string, options: { order?: readonly string[]; sentence?: string; said?: string; notice?: boolean; failed?: string } = {}): Promise<boolean> => {
       let ok = false;
-      await guard(options.failed ?? "Step not moved", async () => {
+      await guard(options.failed ?? "Couldn't move the step. Try again.", async () => {
         const target = await stable(key);
         if (!target) return;
         const { steps, groups } = latest.current;
@@ -675,7 +675,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** CA-20 P3: "Move to…" on the selection bar: several tiles to the end of one session, as one step. */
   const onMoveTiles = useCallback(
     async (ids: readonly string[], key: string): Promise<void> => {
-      await guard("Steps not moved", async () => {
+      await guard("Couldn't move the steps. Try again.", async () => {
         const target = await stable(key);
         if (!target) return;
         const { steps, groups } = latest.current;
@@ -693,7 +693,7 @@ export function useSessionEdits(input: SessionEditsInput) {
   /** CA-20 P3: "Move to…" with sessions chosen: each to the end of a part, as one step. */
   const onMoveSessionsToPart = useCallback(
     (keys: readonly string[], to: string): Promise<void> =>
-      guard("Sessions not moved", async () => {
+      guard("Couldn't move the sessions. Try again.", async () => {
         const moving = keys.filter((key) => !isLegacySession(key));
         if (moving.length === 0) return;
         await track(`Moved ${moving.length === 1 ? "a session" : `${moving.length} sessions`} to ${titleOf(to)}`, async () => {

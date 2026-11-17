@@ -324,7 +324,7 @@ describe("the sentence in the well", () => {
     const made = cardOf(build, undefined, NOW, true);
     expect(made.drawings).not.toBeNull();
     const card = one(made);
-    expect(within(card).getByText("@maya · Map not loaded")).toBeTruthy();
+    expect(within(card).getByText("@maya · Couldn't load the map.")).toBeTruthy();
     expect(within(card).queryByText("One session. A Map needs two.")).toBeNull();
     expect(within(card).queryByText("No sessions yet.")).toBeNull();
   });

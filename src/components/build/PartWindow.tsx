@@ -46,7 +46,7 @@ import { EYEBROW, text, tnum } from "@/pages/site/compose/refinedStyles";
 import { size, space } from "@/lib/theme/space";
 import { r } from "@/lib/theme/radius";
 import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT, iconButtonSide } from "@/pages/site/compose/modalRecipes";
-import { DONE } from "@/lib/copy/copy";
+import { DONE, COPY_TEXT_FAILED, COPY_CODE_FAILED } from "@/lib/copy/copy";
 
 export const PART_WINDOW_COPY = {
   copyCode: "Copy code",
@@ -223,7 +223,7 @@ function TileBody({ step, props, say }: { step: Step; props: PartWindowProps; sa
           <LinkLines lines={[...callsOf(step.id, props.steps), ...definesOf(step.id, props.steps)]} onOpen={(id) => props.onGo(refTo({ kind: "node", id }))} />
           <CodeLines text={step.text} testId="part-text" label="Code" empty={PART_WINDOW_COPY.nothing} />
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={textStep.meta} onClick={() => void copyText(step.text).then((done) => say(done ? PART_WINDOW_COPY.copied : "Code not copied"))}>
+            <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={textStep.meta} onClick={() => void copyText(step.text).then((done) => say(done ? PART_WINDOW_COPY.copied : COPY_CODE_FAILED))}>
               {PART_WINDOW_COPY.copyCode}
             </Button>
           </div>
@@ -335,7 +335,7 @@ function AgentRuntimeBody({ step, props, say }: { step: Step; props: PartWindowP
     return found ? stepTitle(found) : undefined;
   };
   const copy = helpers.length || tiles.length || step.harness ? agentCopy(agentSpecOf(step, names), tiles, decisionName) : null;
-  const done = (words: string) => void copyText(words).then((ok) => say(ok ? PART_WINDOW_COPY.copied : "Text not copied"));
+  const done = (words: string) => void copyText(words).then((ok) => say(ok ? PART_WINDOW_COPY.copied : COPY_TEXT_FAILED));
   const shape = step.outputShape;
   const fragment = shape ? shapeFragment(shape) : null;
   return (
@@ -432,7 +432,7 @@ function DecisionBody({ step, props, say }: { step: Step; props: PartWindowProps
   const tiles = calledFromTiles(step, parts);
   const read = facts.stateFrom ? parts.find((part) => part.id === facts.stateFrom) : undefined;
   const answered = facts.answer ?? null;
-  const done = (words: string) => void copyText(words).then((ok) => say(ok ? PART_WINDOW_COPY.copied : "Text not copied"));
+  const done = (words: string) => void copyText(words).then((ok) => say(ok ? PART_WINDOW_COPY.copied : COPY_TEXT_FAILED));
   return (
     <>
       <Facts facts={[decisionHeadline(facts), facts.via === "adapter" ? "Through an adapter" : null].filter((fact): fact is string => Boolean(fact))} />

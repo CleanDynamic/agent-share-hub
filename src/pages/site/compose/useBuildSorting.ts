@@ -857,7 +857,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     if (current.send) {
       const target = current.send;
       setSaid(o.sentLine(current.held.id, target));
-      hold(withoutTile(current.start, current.held.id), current.held, current.start, o.send(current.held.id, target), "Step not moved");
+      hold(withoutTile(current.start, current.held.id), current.held, current.start, o.send(current.held.id, target), "Couldn't move the step. Try again.");
       return;
     }
     const write = writeOf(current.start, current.live, current.held.id);
@@ -874,7 +874,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     const line = movedLine(move, o.names);
     setSaid(line);
     const run = o.commit({ held: current.held, write, move, start: current.start, end: current.live, sentence: line.replace(/\.$/, ""), line });
-    hold(current.live, current.held, current.start, run, "Step not moved");
+    hold(current.live, current.held, current.start, run, "Couldn't move the step. Try again.");
   };
 
   /**
@@ -909,7 +909,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     }
     fadeOut(SETTLE_MS);
     setPending({ model: current.live, held: current.held });
-    const failed = source.source === "file" ? "File not added" : "Session not added";
+    const failed = source.source === "file" ? "Couldn't add the file. Try again." : "Couldn't add the session. Try again.";
     void run.then(
       (ok) => {
         if (!ok) {
@@ -948,7 +948,7 @@ export function useBuildSorting(options: SortingOptions): Sorting {
     const start = optionsRef.current.model;
     if (line) setSaid(line);
     setTick((value) => value + 1);
-    hold(model, null, start, run, "Step not moved");
+    hold(model, null, start, run, "Couldn't move the step. Try again.");
   };
 
   // Focus stays on the moved thing after a drag by the keys, with the existing focus ring, scrolled into view.

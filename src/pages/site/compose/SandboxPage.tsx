@@ -324,7 +324,7 @@ function SandboxPageBody() {
       // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
       console.error("[Sandbox] unpublish failed", cause);
       const failure = unpublishFailure(cause);
-      toast.error(failure === "failed" ? "Build not unpublished" : `Build not unpublished: ${shortReason(cause)}`);
+      toast.error(failure === "failed" ? "Couldn't unpublish the build. Try again." : `Build not unpublished: ${shortReason(cause)}`);
       return failure;
     }
   }, [compose]);
@@ -1001,7 +1001,7 @@ function SandboxPageBody() {
     } catch (cause) {
       // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
       console.error("[Sandbox] session not made", cause);
-      sayFailed(cause, "Session not made", () => void again(workstream));
+      sayFailed(cause, "Couldn't make the session. Try again.", () => void again(workstream));
     } finally {
       setStartingSession(false);
     }
@@ -1027,7 +1027,7 @@ function SandboxPageBody() {
           // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
           console.error("[Sandbox] collapse not saved", cause);
           setCollapseOverride((previous) => ({ ...previous, [key]: !closed }));
-          sayFailed(cause, "Fold not saved", () => again(key, closed));
+          sayFailed(cause, "Couldn't save the fold. Try again.", () => again(key, closed));
         });
     },
     [buildId, queryClient],
@@ -1065,7 +1065,7 @@ function SandboxPageBody() {
       } catch (cause) {
         // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
         console.error("[Sandbox] session not saved", cause);
-        sayFailed(cause, "Session not saved", () => void again(key, change));
+        sayFailed(cause, "Couldn't save the session. Try again.", () => void again(key, change));
       }
     },
     [claim, ensureBuild, groups, refreshRecord],
@@ -1096,7 +1096,7 @@ function SandboxPageBody() {
       } catch (cause) {
         // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
         console.error("[Sandbox] goal not saved", cause);
-        sayFailed(cause, "Goal not saved", () => void again(key, goal));
+        sayFailed(cause, "Couldn't save the goal. Try again.", () => void again(key, goal));
       }
     },
     [claim, ensureBuild, groups, refreshRecord],
@@ -1122,7 +1122,7 @@ function SandboxPageBody() {
       } catch (cause) {
         // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
         console.error("[Sandbox] session facts not saved", cause);
-        sayFailed(cause, "Session details not saved", () => void again(key, extras));
+        sayFailed(cause, "Couldn't save the session details. Try again.", () => void again(key, extras));
       }
     },
     [claim, ensureBuild, groups, refreshRecord],
@@ -1148,7 +1148,7 @@ function SandboxPageBody() {
       } catch (cause) {
         // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
         console.error("[Sandbox] sessions at the same time not saved", cause);
-        sayFailed(cause, "Ran alongside not saved", () => void again(key, next));
+        sayFailed(cause, "Couldn't save Ran alongside. Try again.", () => void again(key, next));
       }
     },
     [claim, ensureBuild, groups, made, refreshRecord],
@@ -1171,7 +1171,7 @@ function SandboxPageBody() {
       } catch (cause) {
         // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
         console.error("[Sandbox] session colour not saved", cause);
-        sayFailed(cause, "Colour not saved", () => void again(key, colour));
+        sayFailed(cause, "Couldn't save the colour. Try again.", () => void again(key, colour));
       }
     },
     [ensureBuild, groups, refreshRecord, nodes],
@@ -1189,7 +1189,7 @@ function SandboxPageBody() {
       } catch (cause) {
         // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
         console.error("[Sandbox] app not saved", cause);
-        sayFailed(cause, "App not saved", () => void again(key, tool));
+        sayFailed(cause, "Couldn't save the app. Try again.", () => void again(key, tool));
       }
     },
     [ensureBuild, firstSession, refreshRecord],
@@ -1349,7 +1349,7 @@ function SandboxPageBody() {
     } catch (cause) {
       // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
       console.error("[Sandbox] reference groups not saved", cause);
-      sayFailed(cause, "Colours not saved", () => void again(list, order));
+      sayFailed(cause, "Couldn't save the colours. Try again.", () => void again(list, order));
     }
   };
   /* CA-06 P5: the picker the colour buttons open. */
@@ -1503,7 +1503,7 @@ function SandboxPageBody() {
       } catch (cause) {
         // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
         console.error("[Sandbox] check not added", cause);
-        sayFailed(cause, "Check not added");
+        sayFailed(cause, "Couldn't add the check. Try again.");
       }
     },
     [ensureBuild, nodes, prompts, steps, afterStep, afterWrite, sessionToWrite, select],
@@ -1702,7 +1702,7 @@ function SandboxPageBody() {
       } catch (cause) {
         // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
         console.error("[Sandbox] result not added", cause);
-        sayFailed(cause, "Result not added", () => void again(input));
+        sayFailed(cause, "Couldn't add the result. Try again.", () => void again(input));
       } finally {
         setPendingAdd(null);
       }
@@ -1884,7 +1884,7 @@ function SandboxPageBody() {
       } catch (cause) {
         // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
         console.error("[Sandbox] picture not added", cause);
-        sayFailed(cause, `${file.name} not added`, () => void again(resultId, file));
+        sayFailed(cause, `Couldn't add ${file.name}. Try again.`, () => void again(resultId, file));
       }
     },
     [ensureBuild, nodes, prompts],
@@ -1901,7 +1901,7 @@ function SandboxPageBody() {
       } catch (cause) {
         // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
         console.error("[Sandbox] cover not set", cause);
-        sayFailed(cause, "Cover not set", () => void again(mediaId));
+        sayFailed(cause, "Couldn't set the cover. Try again.", () => void again(mediaId));
       }
     },
     [viewProps],
@@ -1924,7 +1924,7 @@ function SandboxPageBody() {
       } catch (cause) {
         // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
         console.error("[Sandbox] session not added", cause);
-        sayFailed(cause, "Session not added", () => void again(importId, workstream));
+        sayFailed(cause, "Couldn't add the session. Try again.", () => void again(importId, workstream));
         return false;
       } finally {
         setAdding((previous) => {
@@ -1952,7 +1952,7 @@ function SandboxPageBody() {
       } catch (cause) {
         // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
         console.error("[Sandbox] prompts not imported", cause);
-        sayFailed(cause, "Prompts not imported", () => void again(key));
+        sayFailed(cause, "Couldn't import the prompts. Try again.", () => void again(key));
       }
     },
     [buildId, queryClient],
@@ -2058,7 +2058,7 @@ function SandboxPageBody() {
       } catch (cause) {
         // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
         console.error("[Sandbox] file not added", cause);
-        sayFailed(cause, `${title} not added`, () => void again(fileId, place));
+        sayFailed(cause, `Couldn't add ${title}. Try again.`, () => void again(fileId, place));
         return null;
       }
     },
@@ -2206,7 +2206,7 @@ function SandboxPageBody() {
       } catch (cause) {
         // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
         console.error("[Sandbox] setup not added", cause);
-        sayFailed(cause, "Setup item not added");
+        sayFailed(cause, "Couldn't add the setup item. Try again.");
       }
       return left;
     },
@@ -2228,7 +2228,7 @@ function SandboxPageBody() {
       } catch (cause) {
         // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
         console.error("[Sandbox] plugin not added", cause);
-        sayFailed(cause, "Plugin not added", () => void again(session, plugin));
+        sayFailed(cause, "Couldn't add the plugin. Try again.", () => void again(session, plugin));
       }
     },
     [ensureBuild, sessionForSetup, nodes, refreshRecord],
@@ -2254,7 +2254,7 @@ function SandboxPageBody() {
         .catch((cause) => {
           // eslint-disable-next-line no-console -- a deliberate log, as before (SV-26)
           console.error("[Sandbox] not marked", cause);
-          sayFailed(cause, "Item not kept private", () => again(id));
+          sayFailed(cause, "Couldn't keep the item private. Try again.", () => again(id));
         });
     },
     [nodes, tree],
@@ -2600,7 +2600,7 @@ function SandboxPageBody() {
     };
     const sentence = movedStep(whatIs(id), by);
     const said = movedLine(result.move, names);
-    if (write.kind === "tile" && write.session) return edits.onMoveTile(id, write.session, { order: write.atEnd, sentence, said, failed: "Step not moved" });
+    if (write.kind === "tile" && write.session) return edits.onMoveTile(id, write.session, { order: write.atEnd, sentence, said, failed: "Couldn't move the step. Try again." });
     if (write.kind === "nested" && write.parent !== undefined && write.index !== undefined) {
       const parent = write.parent;
       const index = write.index;
@@ -2925,7 +2925,7 @@ function SandboxPageBody() {
             onArrived={(key, status) => {
               setArriving((current) => (current && current.key === key ? null : current));
               if (status === "written" && arriving && arriving.key === key) setSessionSaid(arriving.count > 0 ? `Added Session ${arriving.head.number} with ${arriving.count} ${arriving.count === 1 ? "prompt" : "prompts"}.` : `Added Session ${arriving.head.number}.`);
-              if (status === "failed") setSessionSaid(arriving?.kind === "empty" ? "Session not made" : "Session not added");
+              if (status === "failed") setSessionSaid(arriving?.kind === "empty" ? "Couldn't make the session. Try again." : "Couldn't add the session. Try again.");
             }}
           />
               {/* SV-27 P7: the Deployment section, after the last part; unnumbered. Its own chunk, fetched only for a build with deployment tiles. */}
