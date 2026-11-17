@@ -34,7 +34,7 @@ import { getThreadMedia, MAX_THREAD_POSTS, threadRefs, type ThreadDoc } from "@/
 import { DIMMED_OPACITY, dimTransition, focusedPost, NEXT_PLACEHOLDER, repaintRefs } from "@/components/post/editor/extensions";
 import { useInteractive } from "@/lib/theme/interactive";
 import { ring } from "@/lib/theme/controls";
-import { RefCard, refPaint, useRefCard } from "@/components/post/RefLinks";
+import { RefCard, focusVisible, refPaint, useRefCard } from "@/components/post/RefLinks";
 import { useResolvedTheme } from "@/contexts/ThemeContext";
 import { refLookup, shownName, type RefEntry, type RefGroup } from "@/lib/build/postRefs";
 import { extraLinks, insertLinked, LINK_RULES_COPY, linkOf, linkRanges, linkWords, postAt, rangeRefusal, removeExtraLinks, trimRange, unlinkAt } from "@/lib/build/linkRules";
@@ -262,6 +262,8 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
   // Read at the moment an upload needs them, so a render never holds a stale one.
   host.ensureBuild.current = thread.ensureBuild;
   host.notice.current = setNotice;
+  const sayInEditor = useCallback((sentence: string) => host.say.current?.(sentence), [host]);
+  const [threadRing, setThreadRing] = useState(false);
   // CA-07 P6: the build's tiles, for Link a step; a step since deleted is cleared from what is saved.
   const stepLookup = references?.lookup;
   const stepGroups = references?.groups;
@@ -527,6 +529,14 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
         <div
           ref={words}
           data-testid="post-words"
+          /* G10: the thread draws no ring of its own (its outline is off so the words sit flush); its frame takes the site's ring
+             while the writing area has keyboard focus. An outline: no size or padding changes. */
+          onFocusCapture={(event) => {
+            if (event.target instanceof HTMLElement && event.target.classList.contains("ProseMirror")) setThreadRing(focusVisible(event.target));
+          }}
+          onBlurCapture={(event) => {
+            if (event.target instanceof HTMLElement && event.target.classList.contains("ProseMirror")) setThreadRing(false);
+          }}
           onDragOverCapture={(event) => {
             if (!hasFiles(event.dataTransfer)) return;
             event.preventDefault();
@@ -543,7 +553,7 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
             const files = Array.from(event.dataTransfer.files ?? []);
             if (files.length > 0) void addPictures(host, files, postAtY(event.clientY));
           }}
-          style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 12, position: "relative", paddingTop: FIRST_LINE_DROP, paddingRight: REMOVE_ROOM }}
+          style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 12, position: "relative", paddingTop: FIRST_LINE_DROP, paddingRight: REMOVE_ROOM, borderRadius: 8, ...ring(threadRing) }}
         >
           <EditorContent editor={editor} />
           {dropBox ? (
@@ -619,7 +629,7 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
         />
       </div>
       <FormatBar editor={editor} controls={controls} phone={phone} />
-      <SlashMenu editor={editor} controls={controls} onInsertPicture={insertPicture} notice={setNotice} phone={phone} />
+      <SlashMenu editor={editor} controls={controls} onInsertPicture={insertPicture} notice={setNotice} say={sayInEditor} phone={phone} />
       {cardOpen && cardEntry ? (
         <RefCard
           entry={cardEntry}

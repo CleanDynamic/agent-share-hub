@@ -251,7 +251,22 @@ describe("the slash menu", () => {
       editor.commands.insertContent(`/${query}`);
     });
   };
-  const listbox = () => screen.getByRole("listbox", { name: "Insert" });
+  const listbox = () => screen.getByRole("listbox", { name: "Commands" });
+
+  it("G10: the thread is a many-line textbox; the open list is named Commands, said once, and the root carries no aria-expanded", () => {
+    const { editor, dom } = mount(doc(p("")));
+    expect(dom.getAttribute("role")).toBe("textbox");
+    expect(dom.getAttribute("aria-multiline")).toBe("true");
+    expect(dom.getAttribute("aria-label")).toBe("The thread");
+    typeSlash(editor);
+    expect(listbox().id).toBe(dom.getAttribute("aria-controls"));
+    expect(dom.getAttribute("aria-activedescendant")).toBe(`${listbox().id}-0`);
+    expect(dom.hasAttribute("aria-expanded")).toBe(false);
+    const said = () => screen.getAllByRole("status").map((region) => region.textContent ?? "").filter((text) => text.startsWith("Commands"));
+    expect(said()).toEqual(["Commands, 7 choices. Up and Down to move, Enter to insert, Escape to close."]);
+    fireEvent.keyDown(dom, { key: "ArrowDown" });
+    expect(said()).toHaveLength(1);
+  });
 
   it("opens on / in an empty paragraph, the picture item first (CA-07: no row of pictures)", () => {
     const { editor } = mount(doc(p("")));

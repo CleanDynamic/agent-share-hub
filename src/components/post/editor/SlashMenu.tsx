@@ -134,17 +134,24 @@ export function runSlash(editor: Editor, id: SlashId, at: SlashState, onInsertPi
   }
 }
 
+/** G10: the commands list's name, and what is said when it opens (heard, never drawn). */
+export const SLASH_LIST_NAME = "Commands";
+export const SLASH_OPENED = (count: number): string => `Commands, ${count} ${count === 1 ? "choice" : "choices"}. Up and Down to move, Enter to insert, Escape to close.`;
+
 export function SlashMenu({
   editor,
   controls,
   onInsertPicture,
   notice,
+  say,
   phone = false,
 }: {
   editor: Editor | null;
   controls: PostEditorControls;
   onInsertPicture?: InsertPicture;
   notice: (sentence: string) => void;
+  /** G10: the editor's hidden polite line, for what is heard and not seen: the list opening, said once. */
+  say?: (sentence: string) => void;
   phone?: boolean;
 }) {
   const ROW = rowHeight(phone);
@@ -191,7 +198,15 @@ export function SlashMenu({
     };
   }, [open, editor, slash, items, active, controls, onInsertPicture, notice]);
 
-  // Tell assistive technology the editor has a list open.
+  // G10: the list's opening is said once, through the editor's polite line, not on every keystroke while it stays open.
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    if (open && !wasOpen.current) say?.(SLASH_OPENED(items.length));
+    wasOpen.current = open;
+  }, [open, items.length, say]);
+
+  // Tell assistive technology the editor has a list open. G10: a textbox may carry aria-controls and aria-activedescendant,
+  // not aria-expanded, so that one is not set.
   useEffect(() => {
     let dom: HTMLElement | undefined;
     try {
@@ -202,11 +217,9 @@ export function SlashMenu({
     }
     if (!dom) return;
     if (open) {
-      dom.setAttribute("aria-expanded", "true");
       dom.setAttribute("aria-controls", listId);
       dom.setAttribute("aria-activedescendant", `${listId}-${Math.min(active, items.length - 1)}`);
     } else {
-      dom.removeAttribute("aria-expanded");
       dom.removeAttribute("aria-controls");
       dom.removeAttribute("aria-activedescendant");
     }
@@ -231,7 +244,7 @@ export function SlashMenu({
     <div
       id={listId}
       role="listbox"
-      aria-label="Insert"
+      aria-label={SLASH_LIST_NAME}
       style={{ ...menuSurface(280), position: "fixed", zIndex: 60, top: place?.top ?? -9999, left: place?.left ?? 0, boxSizing: "border-box" }}
     >
       {items.map((item, index) => (

@@ -793,6 +793,9 @@ function postKeys(controls: PostEditorControls) {
 /** The editor's whole attribute set: the root element, drawn like PostBody's column. */
 export function editorAttributes(): Record<string, string> {
   return {
+    // G10: a writing area, so a textbox of many lines; its name is exposed only with a role.
+    role: "textbox",
+    "aria-multiline": "true",
     "aria-label": "The thread",
     style: styleString({
       // 16 at the root, so a phone does not zoom the page when the editor takes focus.

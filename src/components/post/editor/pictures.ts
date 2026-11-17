@@ -153,6 +153,8 @@ export interface PictureHost {
   ensureBuild: { current: (() => Promise<string>) | null };
   /** A sentence under the editor. Cleared by the next edit. */
   notice: { current: ((sentence: string) => void) | null };
+  /** G10: the editor's hidden polite line (the block handle's): heard, never drawn. Null until the handle mounts. */
+  say: { current: ((sentence: string) => void) | null };
   /** uploadId -> the file, kept for Retry, and whether it was stopped. Not in the store: nothing draws it. */
   files: Map<string, { file: File; stopped: boolean }>;
   /** CA-07 P5: the Edit dialog, opened on a grid at a picture. Null while nothing can open it. */
@@ -178,7 +180,7 @@ export interface EditRequest {
 }
 
 export function createPictureHost(): PictureHost {
-  return { store: createPictureStore(), editor: { current: null }, ensureBuild: { current: null }, notice: { current: null }, files: new Map(), openEdit: { current: null } };
+  return { store: createPictureStore(), editor: { current: null }, ensureBuild: { current: null }, notice: { current: null }, say: { current: null }, files: new Map(), openEdit: { current: null } };
 }
 
 function say(host: PictureHost, sentences: readonly (string | null)[]): void {
