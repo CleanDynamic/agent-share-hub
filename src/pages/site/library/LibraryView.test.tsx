@@ -97,7 +97,9 @@ describe("LibraryView", () => {
     expect(within(table).getByRole("columnheader", { name: /Last used/ })).toHaveAttribute("aria-sort", "descending");
     const rows = screen.getAllByTestId("library-row");
     expect(rows).toHaveLength(7);
-    expect(rows[0]).toHaveAttribute("aria-selected", "true");
+    // G21: a table row is not in a grid, so its state is on its button (aria-pressed), not aria-selected on the row.
+    expect(rows[0]).not.toHaveAttribute("aria-selected");
+    expect(within(rows[0]).getAllByRole("button")[0]).toHaveAttribute("aria-pressed", "true");
     expect(within(rows[0]).getByRole("button", { pressed: true })).toHaveTextContent("Summary on one prompt");
     const markup = html();
     expect(markup).toContain("color:var(--lit-ink)\">Edited");

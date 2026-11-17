@@ -334,7 +334,9 @@ const td: CSSProperties = { padding: "0 12px 0 0", color: t.text2, whiteSpace: "
 function ItemRow({ row, selected, usedIn, onSelect }: { row: LibraryRow; selected: boolean; usedIn: boolean; onSelect: () => void }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
-    <tr data-testid="library-row" aria-selected={selected} onClick={onSelect} style={{ borderBottom: `1px solid ${t.hairline}`, background: selected ? t.selectedFill : "transparent", cursor: "pointer" }}>
+    /* G21: the row is not in a grid, so its selected state is aria-pressed on its button, not aria-selected here; a click
+       anywhere on the row is a pointer convenience for that button. */
+    <tr data-testid="library-row" onClick={onSelect} style={{ borderBottom: `1px solid ${t.hairline}`, background: selected ? t.selectedFill : "transparent", cursor: "pointer" }}>
       <td style={{ padding: "0 12px 0 0", height: TABLE_ROW }}>
         <button
           type="button"
