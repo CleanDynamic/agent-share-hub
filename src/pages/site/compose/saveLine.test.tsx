@@ -14,7 +14,7 @@ const at = (ms: number) => new Date(ms);
 describe("saveWords", () => {
   const base = { lastSavedAt: at(0), pending: 0, now: 0 };
   it("says each state in its own words", () => {
-    expect(SAVE_WORDS).toEqual({ saving: "saving…", saved: "saved", offline: "offline", error: "not saved" });
+    expect(SAVE_WORDS).toEqual({ saving: "saving…", saved: "saved", offline: "offline", error: "not saved", paused: "Not saved. Sign in to save." });
     expect(saveWords("saving", base)).toBe("saving…");
     expect(saveWords("error", base)).toBe("not saved");
     expect(saveWords("offline", { ...base, pending: 3 })).toBe("offline · 3 changes pending");
