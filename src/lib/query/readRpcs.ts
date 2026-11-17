@@ -31,6 +31,7 @@ export const READ_RPCS: ReadonlySet<string> = new Set([
 
 /** Functions that change something: never cut by the read limit. */
 export const WRITE_RPCS: ReadonlySet<string> = new Set([
+  "accept_legal_terms",
   "admin_set_curator",
   "claim_challenge",
   "create_post",

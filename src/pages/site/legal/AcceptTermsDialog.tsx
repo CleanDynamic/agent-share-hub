@@ -58,7 +58,8 @@ type Rpc = (fn: string, params: Record<string, unknown>) => Promise<{ error: unk
 /** The table and function are newer than the generated types, so they are reached through a narrow cast. */
 export const ACCEPTANCE_DATA: AcceptanceData = {
   accepted: async (userId) => {
-    const { data, error } = await (supabase.from as unknown as TableRead)("legal_acceptances")
+    const table = supabase.from as unknown as TableRead;
+    const { data, error } = await table("legal_acceptances")
       .select("terms_version, privacy_version")
       .eq("user_id", userId)
       .order("accepted_at", { ascending: false })
