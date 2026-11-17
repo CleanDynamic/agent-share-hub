@@ -35,6 +35,7 @@ import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import type { LayerStepsView, RunBodyView, RunStepView } from "./buildModel";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
+import { DONE } from "@/lib/copy/copy";
 
 /** A step's text is shown in full up to this many lines, then on request. */
 export const WELL_LINES = 20;
@@ -64,7 +65,7 @@ function useCopied(onCopy: (text: string) => Promise<boolean>) {
     async (key: string, text: string) => {
       if (!(await onCopy(text))) return;
       setCopied(key);
-      setMessage("Copied");
+      setMessage(DONE.copied);
       clearTimeout(timer.current);
       timer.current = setTimeout(() => {
         setCopied(null);

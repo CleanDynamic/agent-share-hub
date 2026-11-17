@@ -277,7 +277,7 @@ describe("the result tile body (CA-12 P9, CA-15 P3)", () => {
     expect(screen.getByText("Fine-tuned")).toBeTruthy();
     cleanup();
     render(<ResultTileBody facts={resultFactsOf({ payload: {} })} />);
-    expect(screen.getByTestId("result-empty").textContent).toBe("Nothing added yet");
+    expect(screen.getByTestId("result-empty").textContent).toBe("Nothing added yet.");
     expect(document.body.textContent).not.toMatch(/\btext\b/);
   });
 

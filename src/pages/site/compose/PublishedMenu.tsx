@@ -19,13 +19,14 @@ import { DANGER } from "./referencePieces";
 import { menuItem, menuSurface } from "./refinedStyles";
 import { DangerButton } from "./removePieces";
 import { useBuildHistoryContext } from "./useBuildHistory";
+import { DONE, COPY_LINK_FAILED } from "@/lib/copy/copy";
 
 export const PUBLISHED_COPY = {
   options: "Published build options",
   viewLive: "View live",
   copyLink: "Copy link",
-  copied: "Link copied",
-  copyFailed: "Link not copied",
+  copied: DONE.linkCopied,
+  copyFailed: COPY_LINK_FAILED,
   unpublish: "Unpublish…",
   unpublishTitle: (title: string): string => `Unpublish ${title}?`,
   unpublishBody: "The link stops working. The build stays a draft.",

@@ -430,11 +430,11 @@ describe("SV-24 P1: saved filter sets", () => {
     sets.joinFilterSet.mockResolvedValue(undefined);
     renderAt(`/builds?set=${SET_ID}`);
     await openFilters("Saved");
-    expect(await screen.findByText("Group · 12 members")).toBeTruthy();
+    expect(await screen.findByText("Filter set · 12 followers")).toBeTruthy();
     sets.getFilterSet.mockResolvedValue({ ...group, mine: false, members: 13, member: true });
-    fireEvent.click(screen.getByRole("button", { name: "Join Sales agents" }));
+    fireEvent.click(screen.getByRole("button", { name: "Follow Sales agents", pressed: false }));
     await waitFor(() => expect(sets.joinFilterSet).toHaveBeenCalledWith(SET_ID));
-    fireEvent.click(await screen.findByRole("button", { name: "Leave Sales agents" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Follow Sales agents", pressed: true }));
     await waitFor(() => expect(sets.leaveFilterSet).toHaveBeenCalledWith(SET_ID));
   });
 

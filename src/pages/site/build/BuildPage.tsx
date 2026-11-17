@@ -160,6 +160,7 @@ import { ResultFrame } from "./ResultFrame";
 import { RunDialog, type RunSubmission } from "./RunDialog";
 import { LayerSteps, RunBody } from "./RunBody";
 import { PageBreadcrumb } from "@/components/shell/Breadcrumb";
+import { SAVE_FAILED, FOLLOW_PERSON_FAILED, UNFOLLOW_PERSON_FAILED } from "@/lib/copy/copy";
 
 /** A build record does not change while a reader is looking at it. */
 const STALE_TIME = 60_000;
@@ -539,7 +540,7 @@ function BuildPageBody() {
                 void write
                   .catch((error: unknown) => {
                     reportError(error, { source: "query", context: existing ? "unsaveItem" : "saveItem" });
-                    toast({ title: existing ? "Could not remove it from your Library" : "Could not save it", variant: "destructive" });
+                    toast({ title: existing ? "Couldn't remove it from your Library. Try again." : SAVE_FAILED, variant: "destructive" });
                   })
                   .finally(() => void queryClient.invalidateQueries({ queryKey: savedKey }));
               },
@@ -794,7 +795,7 @@ function BuildPageBody() {
       if (!build) return;
       const before = build;
       setRunFailure(null);
-      say(viewerIsCreator ? "Reconfirmed" : worked ? "Reproduction recorded" : "Report recorded");
+      say(viewerIsCreator ? "Reconfirmed." : worked ? "Reproduction recorded." : "Report recorded.");
       if (worked || viewerIsCreator) {
         putHeader({
           ...build,
@@ -811,7 +812,7 @@ function BuildPageBody() {
         if (fresh) putHeader(fresh);
       } catch (error) {
         putHeader(before);
-        say("That didn't save");
+        say(SAVE_FAILED);
         setRunFailure({ error });
       }
     },
@@ -832,7 +833,7 @@ function BuildPageBody() {
         await (next ? followMaker(viewerId, makerId) : unfollowMaker(viewerId, makerId));
       } catch {
         void queryClient.invalidateQueries({ queryKey: followKey });
-        toast({ title: next ? "Could not follow" : "Could not unfollow", variant: "destructive" });
+        toast({ title: next ? FOLLOW_PERSON_FAILED : UNFOLLOW_PERSON_FAILED, variant: "destructive" });
       } finally {
         setFollowBusy(false);
       }

@@ -34,6 +34,7 @@ import type {
   NodeTree,
 } from "@/lib/build";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
+import { screenError } from "@/lib/auth/authMessages";
 
 /** Long enough to swallow a creator changing their mind mid-click, short enough
  *  that the write is gone before they look for it. Matches the header's intent
@@ -158,9 +159,7 @@ export function useSequence({ buildId, active }: UseSequenceArgs): Sequence {
   const failed = useCallback(
     (what: string, cause: unknown, snapshot: BuildEvent[] | null) => {
       if (snapshot) queryClient.setQueryData<BuildEvent[]>(queryKey, snapshot);
-      toast.error(what, {
-        description: cause instanceof Error ? cause.message : String(cause),
-      });
+      toast.error(screenError(cause, what, { source: "compose", context: "sequence" }));
       // The snapshot restores what the creator saw; the refetch restores what
       // the server actually holds, in case an earlier write had already landed.
       void queryClient.invalidateQueries({ queryKey });

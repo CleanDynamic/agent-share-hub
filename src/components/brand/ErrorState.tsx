@@ -36,7 +36,7 @@
 import { useEffect, useRef, type CSSProperties, type HTMLAttributes } from "react";
 
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { RETRYING_LABEL, RETRY_LABEL } from "@/components/pagestate/stateCopy";
+import { RETRYING_LABEL, RETRY_LABEL } from "@/lib/copy/copy";
 import { errorLine } from "@/lib/errors/code";
 import { t } from "@/lib/theme/tokens";
 

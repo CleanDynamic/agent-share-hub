@@ -8,6 +8,8 @@ import {
   type Slide,
 } from "./ResultsCarouselViewer";
 import { reportError } from "@/lib/errors/report";
+import { screenError } from "@/lib/auth/authMessages";
+import { signInSentence } from "@/lib/copy/copy";
 
 interface ResultsViewerSectionProps {
   contentItemId: string;
@@ -89,7 +91,7 @@ export function ResultsViewerSection({
     const { data: userData } = await supabase.auth.getUser();
     const uid = userData.user?.id;
     if (!uid) {
-      toast({ title: "Sign in to save", variant: "destructive" });
+      toast({ title: signInSentence("save"), variant: "destructive" });
       return;
     }
     // Add to default Saved Items collection
@@ -111,7 +113,7 @@ export function ResultsViewerSection({
         added_by: uid,
       } as any);
     if (error && !error.message.includes("duplicate")) {
-      toast({ title: "Could not save", description: error.message, variant: "destructive" });
+      toast({ title: screenError(error, "Could not save"), variant: "destructive" });
       return;
     }
     toast({ title: "Saved to Library" });

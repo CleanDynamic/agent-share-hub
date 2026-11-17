@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { type } from "@/lib/theme/type";
+import { screenError } from "@/lib/auth/authMessages";
 
 interface ExecutionPanelProps {
   block: any; // CanvasBlock or BlockRow
@@ -113,7 +114,7 @@ export function ExecutionPanel({
       );
     } catch (err: any) {
       if (err.name !== 'AbortError') {
-        setError(err.message ?? 'Execution failed');
+        setError(screenError(err, 'Execution failed', { source: 'canvas', context: 'execute' }));
       }
     } finally {
       setRunning(false);

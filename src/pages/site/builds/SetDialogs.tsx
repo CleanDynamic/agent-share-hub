@@ -18,6 +18,7 @@ import { r } from "@/lib/theme/radius";
 import { WELL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
+import { SAVE_FAILED } from "@/lib/copy/copy";
 
 export const SET_NAME_MAX = 80;
 
@@ -226,7 +227,7 @@ export function SetNameDialog({
             <span>
               Public
               <span style={{ display: "block", color: t.label, fontSize: 12 }}>
-                Anyone can open it, and it is listed as a group on OpenBuilds.
+                Anyone can open it, and it is listed for others to follow on OpenBuilds.
               </span>
             </span>
           </label>
@@ -236,7 +237,7 @@ export function SetNameDialog({
             role="alert"
             style={{ margin: "12px 0 0", fontSize: 13, color: t.text2 }}
           >
-            Couldn't save that. Try again.
+            {SAVE_FAILED}
           </p>
         ) : null}
         <div
@@ -293,7 +294,7 @@ export function DeleteSetDialog({
       title="Delete this filter set?"
       description={
         name
-          ? `"${name}" is removed from your saved filter sets and from your Library. Anyone who followed it as a group no longer sees it.`
+          ? `"${name}" is removed from your saved filter sets and from your Library. Anyone who followed it no longer sees it.`
           : ""
       }
       testId="delete-set-dialog"

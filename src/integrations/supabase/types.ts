@@ -3890,6 +3890,33 @@ export type Database = {
           },
         ]
       }
+      legal_acceptances: {
+        Row: {
+          accepted_at: string
+          id: number
+          privacy_version: string
+          source: string
+          terms_version: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          id?: never
+          privacy_version: string
+          source: string
+          terms_version: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string
+          id?: never
+          privacy_version?: string
+          source?: string
+          terms_version?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       learning_path_progress: {
         Row: {
           completed_at: string | null
@@ -6870,6 +6897,10 @@ export type Database = {
       }
     }
     Functions: {
+      accept_legal_terms: {
+        Args: { p_privacy_version: string; p_terms_version: string }
+        Returns: undefined
+      }
       accept_bounty_solution: {
         Args: {
           p_bounty_id: string
@@ -7039,6 +7070,13 @@ export type Database = {
       is_thread_member: {
         Args: { _thread_id: string; _user_id: string }
         Returns: boolean
+      }
+      legal_versions: {
+        Args: never
+        Returns: {
+          privacy_version: string
+          terms_version: string
+        }[]
       }
       list_account_objects: {
         Args: { _uid: string }

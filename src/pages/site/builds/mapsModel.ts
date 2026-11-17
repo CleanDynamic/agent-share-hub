@@ -181,7 +181,7 @@ export function cardOf(build: BuildsTableBuild, map: BuildMap | undefined, now: 
     href: row.href,
     title: row.title,
     maker: build.maker?.handle ?? null,
-    summary: !map && failed ? "Map not loaded" : mapSummary(model),
+    summary: !map && failed ? "Couldn't load the map." : mapSummary(model),
     reproduced: `${row.reproductions} reproduced`,
     reproductions: row.reproductions,
     lit: row.lit,

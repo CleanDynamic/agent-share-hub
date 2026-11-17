@@ -227,7 +227,7 @@ export function useComposeSessions({
     }).catch((cause) => {
       // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.error("[Compose] Made with not changed", cause);
-      sayFailed(cause, "Made with not changed", () => toggleMadeWith(chip, on));
+      sayFailed(cause, "Couldn't change Made with. Try again.", () => toggleMadeWith(chip, on));
       void settleMadeWith(id);
     });
   };
@@ -240,7 +240,7 @@ export function useComposeSessions({
     }).catch((cause) => {
       // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.error("[Compose] Made with entry not added", cause);
-      sayFailed(cause, "Made with not added", () => addMadeWith(name));
+      sayFailed(cause, "Couldn't add to Made with. Try again.", () => addMadeWith(name));
     });
   };
 
@@ -294,7 +294,7 @@ export function useComposeSessions({
       .catch((cause) => {
         // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
         console.error("[Compose] setSessionModel failed", cause);
-        sayFailed(cause, "Model not saved", () => void setModel(sessionId, model));
+        sayFailed(cause, "Couldn't save the model. Try again.", () => void setModel(sessionId, model));
         return false;
       })
       .finally(() => {
@@ -313,7 +313,7 @@ export function useComposeSessions({
       .catch((cause) => {
         // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
         console.error("[Compose] setSessionTool failed", cause);
-        sayFailed(cause, "Tool not saved", () => void setTool(sessionId, tool));
+        sayFailed(cause, "Couldn't save the tool. Try again.", () => void setTool(sessionId, tool));
         return false;
       })
       .finally(() => {

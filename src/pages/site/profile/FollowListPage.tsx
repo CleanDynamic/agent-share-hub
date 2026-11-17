@@ -19,6 +19,7 @@ import { ProfilePlaceholder } from "@/lib/routing/placeholders";
 import { usePageReady } from "@/lib/routing/pageReady";
 
 import { FollowListView, followTitle } from "./FollowListView";
+import { FOLLOW_PERSON_FAILED, UNFOLLOW_PERSON_FAILED } from "@/lib/copy/copy";
 
 const STALE_MS = 60_000;
 
@@ -73,7 +74,7 @@ export function FollowListPage({ which }: { which: FollowList }) {
       await (follow ? followMaker(viewerId, id) : unfollowMaker(viewerId, id));
     } catch {
       patch(id, !follow);
-      toast({ title: follow ? "Could not follow" : "Could not unfollow", variant: "destructive" });
+      toast({ title: follow ? FOLLOW_PERSON_FAILED : UNFOLLOW_PERSON_FAILED, variant: "destructive" });
     }
   };
 

@@ -40,8 +40,9 @@ import {
   SCRIM_IN_MS,
   SCRIM_OUT_MS,
 } from "./signinMotion";
+import { SITE_NAME } from "@/lib/site";
 
-export const TAGLINE = "Publish, reproduce and fork AI-assisted workflows.";
+export const TAGLINE = "Publish, reproduce and rebuild AI-assisted workflows.";
 
 const PICTURE = {
   dusk: "/brand/beaver-dark.png",
@@ -67,7 +68,7 @@ export function AccountSwitch({
       onChange={onChange}
       items={[
         { value: "login", label: "Sign in" },
-        { value: "signup", label: "Join free" },
+        { value: "signup", label: "Sign up" },
       ]}
     />
   );
@@ -168,7 +169,7 @@ function PictureColumn() {
             color: t.text2,
           }}
         >
-          openbuilds.ai
+          {SITE_NAME}
         </span>
       </div>
     </div>
@@ -181,9 +182,10 @@ const FOCUSABLE =
 
 /* ── a phone: today's sign-in layout, full screen ── */
 
-const PHONE_TAGLINE = ["Every AI build,", "hung with", "its proof."] as const;
+/** The one tagline (TAGLINE), set in today's three phone lines: the mark still sits after the second. */
+const PHONE_TAGLINE = ["Publish, reproduce", "and rebuild", "AI-assisted workflows."] as const;
 
-/** Today's phone tagline, as one heading: the dialog's title on a phone. */
+/** The tagline on a phone, as one heading: the dialog's title on a phone. */
 function PhoneTagline() {
   return (
     <Dialog.Title
@@ -200,7 +202,7 @@ function PhoneTagline() {
         color: t.text,
       }}
     >
-      <VisuallyHidden>{PHONE_TAGLINE.join(" ")}</VisuallyHidden>
+      <VisuallyHidden>{TAGLINE}</VisuallyHidden>
       <span aria-hidden="true">{PHONE_TAGLINE[0]}</span>
       <span
         aria-hidden="true"

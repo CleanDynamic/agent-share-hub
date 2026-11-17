@@ -68,6 +68,8 @@ import {
   type ReplyItem,
   type ThreadContext,
 } from "./postModel";
+import { screenError } from "@/lib/auth/authMessages";
+import { SAVE_FAILED, JOIN_SPACE_FAILED } from "@/lib/copy/copy";
 
 const EMPTY_EXTRAS: PostPageExtras = { work: { builds: new Map(), nodes: new Map() }, signed: new Map(), facts: new Map(), steps: new Map(), liked: new Set(), crowd: null };
 
@@ -174,7 +176,7 @@ export default function PostPage() {
   };
   const refused = (error: unknown, context: string, words: string) => {
     reportError(error, { source: "openbuilds", context });
-    toast.error(error instanceof Error && error.message ? error.message : words);
+    toast.error(screenError(error, words, false));
   };
 
   const like = async (postId: string, on: boolean) => {
@@ -193,7 +195,7 @@ export default function PostPage() {
     } catch (error) {
       undo();
       if (was) qc.setQueryData(key, was);
-      refused(error, "likePost", "That didn't save. Try again.");
+      refused(error, "likePost", SAVE_FAILED);
     }
   };
 
@@ -219,7 +221,7 @@ export default function PostPage() {
       else await (change.on ? reactToPost(postId, { kind: "dislike" }) : removeReaction(postId, "dislike"));
     } catch (error) {
       if (was) qc.setQueryData(key, was);
-      refused(error, "reactToPost", "That didn't save. Try again.");
+      refused(error, "reactToPost", SAVE_FAILED);
     }
   };
   const reactionRow = (postId: string, what: "topic" | "reply") =>
@@ -239,7 +241,7 @@ export default function PostPage() {
       await write();
     } catch (error) {
       undo();
-      refused(error, "moderateReply", "That didn't save. Try again.");
+      refused(error, "moderateReply", SAVE_FAILED);
     }
   };
 
@@ -250,7 +252,7 @@ export default function PostPage() {
       await (on ? joinSpace(crowd.space.id) : leaveSpace(crowd.space.id));
       void qc.invalidateQueries({ queryKey: postExtrasKey(id, viewerId) });
     } catch (error) {
-      refused(error, "joinSpace", "Couldn't join. Try again.");
+      refused(error, "joinSpace", JOIN_SPACE_FAILED);
     }
   };
 

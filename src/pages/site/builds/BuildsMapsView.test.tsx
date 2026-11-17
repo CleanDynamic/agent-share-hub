@@ -300,9 +300,9 @@ describe("the sentence in the well", () => {
     return cards()[0];
   };
 
-  it('a build with no sessions says "No sessions yet" in the well and "No sessions" under it', () => {
+  it('a build with no sessions says "No sessions yet." in the well and "No sessions" under it', () => {
     const card = one(cardOf(build, { buildId: "b", model: null }, NOW));
-    expect(within(card).getByText("No sessions yet")).toBeTruthy();
+    expect(within(card).getByText("No sessions yet.")).toBeTruthy();
     expect(within(card).getByText("@maya · No sessions")).toBeTruthy();
     expect(within(card).queryByText("One session. A Map needs two.")).toBeNull();
   });
@@ -310,22 +310,22 @@ describe("the sentence in the well", () => {
   it('a build with one session says "One session. A Map needs two."', () => {
     const card = one(cardOf(build, { buildId: "b", model: withSessions(1) }, NOW));
     expect(within(card).getByText("One session. A Map needs two.")).toBeTruthy();
-    expect(within(card).queryByText("No sessions yet")).toBeNull();
+    expect(within(card).queryByText("No sessions yet.")).toBeNull();
   });
 
   it("a build with two sessions draws its Map and no sentence", () => {
     const card = one(cardOf(build, { buildId: "b", model: withSessions(2) }, NOW));
     expect(card.querySelectorAll("path")).toHaveLength(1);
     expect(within(card).queryByText("One session. A Map needs two.")).toBeNull();
-    expect(within(card).queryByText("No sessions yet")).toBeNull();
+    expect(within(card).queryByText("No sessions yet.")).toBeNull();
   });
 
   it("a card whose Map did not load says neither sentence", () => {
     const made = cardOf(build, undefined, NOW, true);
     expect(made.drawings).not.toBeNull();
     const card = one(made);
-    expect(within(card).getByText("@maya · Map not loaded")).toBeTruthy();
+    expect(within(card).getByText("@maya · Couldn't load the map.")).toBeTruthy();
     expect(within(card).queryByText("One session. A Map needs two.")).toBeNull();
-    expect(within(card).queryByText("No sessions yet")).toBeNull();
+    expect(within(card).queryByText("No sessions yet.")).toBeNull();
   });
 });

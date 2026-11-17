@@ -244,17 +244,17 @@ function SavedSetLink({ row, menu }: { row: SavedSetRow; menu?: ReactNode }) {
   );
 }
 
-/** What the open set says about itself under the list: a group has members, and a reader who did not make it can follow it. */
+/** What the open set says about itself under the list: who follows it, and Follow for a reader who did not make it. */
 function OpenSetLine({ open }: { open: OpenSetView }) {
-  const members = `${open.members} ${open.members === 1 ? "member" : "members"}`;
+  const followers = `${open.members} ${open.members === 1 ? "follower" : "followers"}`;
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: 6, minHeight: 28 }}>
-      <span style={small(t.label)}>{open.isPublic ? `${open.mine ? "Your group" : "Group"} · ${members}` : "Private to you"}</span>
+      <span style={small(t.label)}>{open.isPublic ? `${open.mine ? "Your filter set" : "Filter set"} · ${followers}` : "Private to you"}</span>
       {!open.mine && open.isPublic ? (
         open.member ? (
-          <BuildsTextButton onClick={open.onLeave} aria-label={`Leave ${open.name}`}>Leave</BuildsTextButton>
+          <BuildsTextButton onClick={open.onLeave} aria-pressed aria-label={`Follow ${open.name}`}>Following</BuildsTextButton>
         ) : (
-          <BuildsTextButton onClick={open.onJoin} color={t.text2} aria-label={`Join ${open.name}`}>Join</BuildsTextButton>
+          <BuildsTextButton onClick={open.onJoin} color={t.text2} aria-pressed={false} aria-label={`Follow ${open.name}`}>Follow</BuildsTextButton>
         )
       ) : null}
     </div>

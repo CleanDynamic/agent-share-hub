@@ -28,6 +28,7 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import type { BreakageBodyView, BreakageRowView, OpenGapView } from "./buildModel";
+import { EMPTY } from "@/lib/copy/copy";
 
 function Row({ row, onOpenReplay, onStartTopic }: { row: BreakageRowView; onOpenReplay?: (ordinal: number) => void; onStartTopic?: (row: BreakageRowView) => void }) {
   return (
@@ -121,7 +122,7 @@ export function BreakageBody({ breakage }: { breakage: BreakageBodyView }) {
   if (rows.length === 0 && gaps.length === 0) {
     return (
       <section data-testid="build-breakage" aria-label="Where it broke" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <p style={{ margin: 0, fontWeight: 500 }}>No breakages recorded</p>
+        <p style={{ margin: 0, fontWeight: 500 }}>{EMPTY.breakages}</p>
         <p style={{ margin: 0, color: t.text2 }}>Either nothing broke, or nothing was written down. Both are worth knowing.</p>
       </section>
     );
@@ -142,7 +143,7 @@ export function BreakageBody({ breakage }: { breakage: BreakageBodyView }) {
           </ol>
         </div>
       ) : (
-        <p style={{ margin: 0, fontSize: 12, color: t.text2 }}>No breakages recorded.</p>
+        <p style={{ margin: 0, fontSize: 12, color: t.text2 }}>{EMPTY.breakages}</p>
       )}
 
       {gaps.length > 0 ? (

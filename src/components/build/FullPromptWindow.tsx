@@ -64,6 +64,7 @@ import { FromPostNote } from "./PartWindow";
 import { PromptName } from "./tileBodies";
 import { space, size } from "@/lib/theme/space";
 import { r } from "@/lib/theme/radius";
+import { DONE, COPY_TEXT_FAILED } from "@/lib/copy/copy";
 
 export type FullPromptMode = "maker" | "reader";
 
@@ -103,13 +104,13 @@ export interface FullPromptWindowProps {
 
 export const FULL_PROMPT_COPY = {
   hint: "Esc Close · ← → Previous or next prompt",
-  copied: "Copied",
+  copied: DONE.copied,
   copy: "Copy prompt",
   /** F30 (D5): the window writes on every change, so its one button closes it, and "Saved" stands beside it after each write. */
   close: "Close",
   /** The footer button's accessible name: the header's square is already "Close". */
   closeWindow: "Close window",
-  saved: "Saved",
+  saved: DONE.saved,
   previous: "Previous prompt",
   next: "Next prompt",
   before: "Before you send it",
@@ -347,7 +348,7 @@ function ShapeRead({ shape }: { shape: OutputShape }) {
       {shape.sample ? <CodeLines text={shape.sample} testId="shape-sample" label="Sample" /> : null}
       {fragment.text ? (
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={textStep.meta} onClick={() => void navigator.clipboard?.writeText(fragment.text).then(() => setSaid("Copied"), () => setSaid("Text not copied"))}>
+          <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={textStep.meta} onClick={() => void navigator.clipboard?.writeText(fragment.text).then(() => setSaid("Copied"), () => setSaid(COPY_TEXT_FAILED))}>
             Copy the setting
           </Button>
           <span aria-live="polite" style={geist(12, 400, t.label)}>{said}</span>
@@ -540,7 +541,7 @@ function RefinedBody({ props: given, step, prompts, phone }: { props: FullPrompt
   }, []);
 
   const copy = async () => {
-    say((await copyText(bracketed(step.text, step.changes))) ? FULL_PROMPT_COPY.copied : "Text not copied");
+    say((await copyText(bracketed(step.text, step.changes))) ? FULL_PROMPT_COPY.copied : COPY_TEXT_FAILED);
   };
 
   const quiet = geist(11.5, 400, t.label);

@@ -100,7 +100,7 @@ describe("holding a tile over another session", () => {
     const { props } = mountList({ onMoveToSession: vi.fn(() => Promise.resolve(false)) });
     const first = await toSecondSession();
     await press("Space");
-    await waitFor(() => expect(said()).toBe("Step not moved"));
+    await waitFor(() => expect(said()).toBe("Couldn't move the step. Try again."));
     expect(props.onMoveToSession).toHaveBeenCalled();
     await waitFor(() => expect(tile(first).getAttribute("data-skel-container")).toBe(keys()[0]));
   });

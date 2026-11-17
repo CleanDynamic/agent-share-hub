@@ -12,6 +12,7 @@
 
 import { timeoutCause } from "@/lib/query/readLimit";
 import { db } from "@/lib/social/types";
+import { signInSentence } from "@/lib/copy/copy";
 
 export { db };
 
@@ -254,7 +255,7 @@ export function postLayerError(operation: string, response: { error: unknown; st
   return withCause(new PostError(operation, `${operation} failed${code ? ` (${code})` : ""}`, code, status));
 }
 
-export const signedOut = (operation: string): PostError => new PostError(operation, "Sign in to do that.", null, 401);
+export const signedOut = (operation: string): PostError => new PostError(operation, signInSentence("post"), null, 401);
 
 /** The ids once each, blanks dropped. */
 export const unique = (ids: readonly string[]): string[] => [...new Set(ids.filter((id) => typeof id === "string" && id.length > 0))];

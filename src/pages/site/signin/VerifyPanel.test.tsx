@@ -62,7 +62,7 @@ describe("the pending card", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Check your inbox" })).toBeTruthy();
     expect(screen.getByText("ada@example.com")).toBeTruthy();
     expect(verifyEmailLink).not.toHaveBeenCalled();
-    expect(screen.queryByRole("button", { name: "Join free" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Sign up" })).toBeNull();
   });
 
   it("prefers the address the sign-up carried in the router's state over the remembered one", () => {

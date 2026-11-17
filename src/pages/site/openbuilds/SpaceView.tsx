@@ -50,8 +50,8 @@ export function SpaceView(view: SpaceViewProps) {
       Post here
     </PostPrimary>
   ) : (
-    <PostPrimary onClick={view.onJoin} block>
-      Join
+    <PostPrimary onClick={view.onJoin} block aria-label={`Join ${view.name}`}>
+      Join space
     </PostPrimary>
   );
 
@@ -84,7 +84,7 @@ export function SpaceView(view: SpaceViewProps) {
             region="Posts"
             skeleton={null}
             style={{ padding: "16px 20px" }}
-            empty={{ when: () => view.posts.items.length === 0, line: "No posts here yet.", action: member ? { label: "Post here", onClick: view.onPost } : { label: "Join", onClick: view.onJoin } }}
+            empty={{ when: () => view.posts.items.length === 0, line: "No posts here yet.", action: member ? { label: "Post here", onClick: view.onPost } : { label: "Join space", onClick: view.onJoin } }}
           >
             {() => <PostList items={view.posts.items} more={view.posts.more} />}
           </PageState>

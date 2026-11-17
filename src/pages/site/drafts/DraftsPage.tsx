@@ -110,7 +110,7 @@ export function DraftsPage() {
         // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
         console.error("[Drafts] attachSession (new) failed", error);
         void refresh();
-        failed("Couldn't start a build from that session.");
+        failed("Couldn't start a build from that session. Try again.");
       }
     },
     [navigate, refresh],
@@ -126,7 +126,7 @@ export function DraftsPage() {
         // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
         console.error("[Drafts] attachSession (existing) failed", error);
         void refresh();
-        failed("Couldn't add that session.");
+        failed("Couldn't add that session. Try again.");
       }
     },
     [refresh],
@@ -139,7 +139,7 @@ export function DraftsPage() {
     } catch (error) {
       // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.error("[Drafts] removeEmptyDrafts failed", error);
-      failed("Couldn't remove the empty drafts.");
+      failed("Couldn't remove the empty drafts. Try again.");
     } finally {
       void refresh();
     }

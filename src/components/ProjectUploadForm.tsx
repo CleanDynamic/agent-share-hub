@@ -23,6 +23,7 @@ import {
   ImagePlus, GripVertical, X, Link2Off, ExternalLink,
 } from "lucide-react";
 import { ORDERED_CONTENT_TYPES, displayContentType } from "@/lib/content-types";
+import { screenError } from "@/lib/auth/authMessages";
 
 const CONTENT_TYPES = ORDERED_CONTENT_TYPES;
 const DIFFICULTIES = ["Beginner", "Intermediate", "Advanced"];
@@ -739,7 +740,7 @@ export function ProjectUploadForm() {
 
       setSuccess(true);
     } catch (err: any) {
-      toast({ title: "Something went wrong", description: err?.message ?? "Please try again.", variant: "destructive" });
+      toast({ title: screenError(err, "Something went wrong"), variant: "destructive" });
     } finally {
       setSubmitting(false);
     }

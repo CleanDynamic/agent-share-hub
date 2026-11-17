@@ -86,6 +86,7 @@ import { r } from "@/lib/theme/radius";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { body, data as dataType, eyebrow, label as labelType } from "@/lib/theme/type";
 import { SITE_NAME } from "@/lib/site";
+import { screenError } from "@/lib/auth/authMessages";
 
 /**
  * The copy, held as constants because it is the design.
@@ -255,7 +256,7 @@ export function CoverStrip({ build, onPatch, stacked }: CoverStripProps) {
       setError(cause.code === "full" ? FULL_SENTENCE : cause.message);
       return;
     }
-    setError(cause instanceof Error ? cause.message : String(cause));
+    setError(screenError(cause, "That could not be saved.", { source: "compose", context: "cover" }));
   }, []);
 
   const accept = useCallback(

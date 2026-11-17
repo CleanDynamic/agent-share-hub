@@ -21,6 +21,10 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { AuthCheck, AuthField, AuthForm, FieldMessage, OrRule, PrimaryAction, ProviderButtons } from "./AuthParts";
+import { WAITING } from "@/lib/copy/copy";
+import { MINIMUM_AGE } from "@/content/legal/legalConstants";
+import { termsLead } from "./termsLead";
+
 
 export interface SignupFormProps {
   displayName: string;
@@ -137,23 +141,23 @@ export function SignupForm({
         </div>
         <div>
           <AuthCheck id="terms" checked={agreedToTerms} onChange={onAgreedToTermsChange}>
-            I agree to the{" "}
+            {termsLead(MINIMUM_AGE)}{" "}
             <Link to="/terms" style={LINK} onClick={onLeaveForLegal}>
-              Terms of Service
+              Terms
             </Link>{" "}
             and{" "}
             <Link to="/privacy" style={LINK} onClick={onLeaveForLegal}>
-              Privacy Policy
+              Privacy policy
             </Link>
           </AuthCheck>
           <FieldMessage>{error}</FieldMessage>
         </div>
-        <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText="Creating account...">
-          Create account
+        <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText={WAITING.signingUp}>
+          Sign up
         </PrimaryAction>
         {showLegalLine ? (
           <p data-testid="signup-legal-line" style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12, lineHeight: 1.4, color: t.label }}>
-            By creating an account you agree to the{" "}
+            By signing up you agree to the{" "}
             <Link to="/terms" style={LEGAL_LINK} onClick={onLeaveForLegal}>
               Terms
             </Link>{" "}

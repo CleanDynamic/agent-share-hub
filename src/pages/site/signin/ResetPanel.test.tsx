@@ -74,7 +74,7 @@ describe("the request form", () => {
 
   it("is the title and the way back in row 1, and has no Sign in · Join free switch", () => {
     open();
-    expect(screen.queryByRole("button", { name: "Join free" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Sign up" })).toBeNull();
     // The dialog's way back is row 1's link alone (D3).
     expect(screen.getAllByRole("link", { name: "Back to sign in" })).toHaveLength(1);
     expect(screen.getByRole("link", { name: "Back to sign in" }).getAttribute("href")).toBe("/?signin=login");
@@ -115,12 +115,12 @@ describe("the request form", () => {
     open();
     type("you@example.com", "ada@example");
     fireEvent.click(screen.getByRole("button", { name: "Send reset link" }));
-    const message = screen.getByText("Please enter a valid email.");
+    const message = screen.getByText("Enter a valid email address.");
     expect(message.getAttribute("aria-live")).toBe("polite");
     expect(requestPasswordReset).not.toHaveBeenCalled();
 
     type("you@example.com", "ada@example.com");
-    expect(screen.queryByText("Please enter a valid email.")).toBeNull();
+    expect(screen.queryByText("Enter a valid email address.")).toBeNull();
   });
 
   it.each([
@@ -141,7 +141,7 @@ describe("the request form", () => {
     open();
     type("you@example.com", "ada@example.com");
     fireEvent.click(screen.getByRole("button", { name: "Send reset link" }));
-    expect(await screen.findByRole("button", { name: "Sending..." })).toBeDisabled();
+    expect(await screen.findByRole("button", { name: "Sending…" })).toBeDisabled();
   });
 });
 
@@ -262,7 +262,7 @@ describe("the new-password form", () => {
     type("Re-enter your password", "12345678");
     await settle();
     submit();
-    expect(screen.getByText("Please choose a stronger password.")).toBeTruthy();
+    expect(screen.getByText("Choose a stronger password.")).toBeTruthy();
     expect(setNewPassword).not.toHaveBeenCalled();
   });
 

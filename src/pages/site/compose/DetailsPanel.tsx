@@ -85,6 +85,7 @@ import { Swap } from "./buildMotion";
 import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT, iconButtonSide } from "./modalRecipes";
 
 import { textStep } from "@/lib/theme/type";
+import { DONE, COPY_TEXT_FAILED } from "@/lib/copy/copy";
 export interface InputsView {
   /** CA-04 P2, a tile inside another: "Attached to prompt 2", which its eyebrow says in place of its number. */
   sentWithLine?: string;
@@ -489,8 +490,8 @@ export const DETAILS_COPY = {
   /** F47: a file's action in the head, where Edit stands for the rest. */
   open: "Open",
   copy: "Copy",
-  copied: "Copied",
-  copyFailed: "Text not copied",
+  copied: DONE.copied,
+  copyFailed: COPY_TEXT_FAILED,
   readAll: "Read all",
 } as const;
 

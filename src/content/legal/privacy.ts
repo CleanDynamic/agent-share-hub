@@ -2,11 +2,12 @@
 // UK spelling, second person, short sentences. No em dashes.
 
 import { PRIVACY_REVIEWED } from "./reviewed";
+import { PRIVACY_VERSION } from "./legalConstants";
 import type { LegalText } from "./types";
 
 export const privacy: LegalText = {
   title: "Privacy policy",
-  lastUpdated: "2026-11-06",
+  lastUpdated: PRIVACY_VERSION,
   reviewed: PRIVACY_REVIEWED,
   intro:
     "This explains what OpenBuilds.ai collects about you, why, who else sees it, and what you can do about it. We have tried to say only what the site actually does.",
@@ -136,7 +137,22 @@ export const privacy: LegalText = {
         },
         {
           kind: "p",
-          text: "The provider is Anthropic, OpenAI or the Lovable AI gateway, whichever we have set up at the time. The provider's own terms say whether it keeps what it receives or uses it to train models: {{NEED: confirm each provider's API data terms}}.",
+          text: "The provider is Anthropic, OpenAI or the Lovable AI gateway, whichever we have set up at the time.",
+        },
+        // G14 (prompt 9), for reviewer sign-off. Each fact from the provider's own page, read 17 November 2026:
+        //   Anthropic, no training: https://privacy.claude.com/en/articles/7996868-is-my-data-used-for-model-training (page dated 18 Aug 2026);
+        //     Commercial Terms B: https://www.anthropic.com/legal/commercial-terms (effective 17 Jun 2025)
+        //   Anthropic, 30 days, flagged up to 2 years: https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data (page dated 1 Jul 2026)
+        //   OpenAI, no training, abuse-monitoring logs up to 30 days: https://developers.openai.com/api/docs/guides/your-data (no date shown)
+        //   Lovable: its terms, privacy policy and data processing agreement disagree on training, and its retention depends on our
+        //     plan and the "AI app context" setting (docs.lovable.dev/features/ai and /features/privacy-and-security-settings). Left open.
+        {
+          kind: "list",
+          items: [
+            "Anthropic does not use what its API receives to train its models. It deletes it within 30 days, unless its safety systems flag it, when it can keep it for up to 2 years.",
+            "OpenAI does not use what its API receives to train its models. It keeps it in its abuse-monitoring logs for up to 30 days.",
+            "The Lovable AI gateway: {{NEED: Lovable AI gateway's training and retention terms for our plan}}",
+          ],
         },
         {
           kind: "p",
@@ -165,7 +181,9 @@ export const privacy: LegalText = {
             ["GitHub", "Reading a public repository you import, and signing in", "United States"],
             ["Google", "Signing in", "United States"],
             ["X", "Signing in", "United States"],
-            ["Microlink", "Previews of links you paste. The address you paste is sent to it.", "{{NEED: where Microlink is based}}"],
+            // G14, for reviewer sign-off: Microlink Labs, S.L., Murcia, Spain. https://microlink.io/terms (section 1) and
+            // https://microlink.io/dpa ("Spain, EU"), read 17 November 2026; neither page shows a date.
+            ["Microlink", "Previews of links you paste. The address you paste is sent to it.", "Spain"],
             ["Sentry", "Finding and fixing errors", "United States"],
           ],
         },
@@ -181,7 +199,36 @@ export const privacy: LegalText = {
       blocks: [
         {
           kind: "p",
-          text: "Most of the services above are in the United States, so your data leaves the UK. Transfers rely on the UK's approved safeguards: the UK International Data Transfer Agreement or Addendum, or the UK-US data bridge. {{NEED: confirm the safeguard for each service}}",
+          text: "Most of the services above are in the United States, so your data leaves the UK. Transfers rely on the UK's approved safeguards: the UK International Data Transfer Agreement or Addendum, or the UK-US data bridge. Each service's safeguard is below.",
+        },
+        // G14, for reviewer sign-off. Each from the service's own page, read 17 November 2026:
+        //   Supabase: DPA Schedule 2 (EU SCCs, UK Addendum), https://supabase.com/legal/dpa (Version 1, 1 Aug 2026)
+        //   Netlify: Privacy Statement s.13 (DPF and UK Extension), https://www.netlify.com/privacy/ (updated 4 Nov 2026); its DPA page was not found
+        //   Cloudflare: DPA s.6.4 (DPF incl. UK Extension; SCCs with UK Addendum as fallback), https://www.cloudflare.com/cloudflare-customer-dpa/ (v6.4, 3 Apr 2026)
+        //   Anthropic: DPA Schedule 3 (EU SCCs, UK Addendum), https://www.anthropic.com/legal/data-processing-addendum (effective 24 Feb 2025)
+        //   GitHub: DPA s.7.B (DPF and UK Extension), https://github.com/customer-terms/github-data-protection-agreement; privacy statement agrees (27 Apr 2026)
+        //   Google: https://policies.google.com/privacy/frameworks (DPF and UK Extension; effective 23 Aug 2025)
+        //   Sentry: DPA Schedule 3 and https://sentry.io/trust/privacy/ (DPF and UK Extension); its fallback differs between the DPA
+        //     (UK Addendum) and the privacy policy (IDTA), so only the primary safeguard is stated
+        //   Microlink: in Spain; DPA s.11 names EU SCCs and the UK Addendum for its own transfers outside the EEA, https://microlink.io/dpa
+        //   OpenAI and X: their pages refused automated reading (403, 402). Lovable: its privacy policy names Lovable Labs Sweden AB,
+        //     its DPA a US importer, Lovable Labs Incorporated. All three are left open.
+        {
+          kind: "table",
+          head: ["Service", "Safeguard"],
+          rows: [
+            ["Supabase", "Standard contractual clauses with the UK Addendum"],
+            ["Netlify", "The UK-US data bridge (the UK Extension to the EU-US Data Privacy Framework)"],
+            ["Cloudflare", "The UK-US data bridge, with standard contractual clauses and the UK Addendum as a fallback"],
+            ["Anthropic", "Standard contractual clauses with the UK Addendum"],
+            ["OpenAI", "{{NEED: OpenAI's transfer safeguard}}"],
+            ["GitHub", "The UK-US data bridge"],
+            ["Google", "The UK-US data bridge"],
+            ["X", "{{NEED: X's transfer safeguard}}"],
+            ["Sentry", "The UK-US data bridge"],
+            ["Microlink", "Based in the EU. For its own transfers outside it, standard contractual clauses with the UK Addendum"],
+            ["Lovable", "{{NEED: Lovable's contracting entity and transfer safeguard}}"],
+          ],
         },
       ],
     },
@@ -199,6 +246,9 @@ export const privacy: LegalText = {
             ["Imports sent from your AI tool and not yet reviewed", "They are marked as expired after 7 days. {{NEED: when expired imports are deleted}}"],
             ["Reports", "{{NEED: retention period}}"],
             ["Notifications", "{{NEED: retention period}}"],
+            // G14: Sentry keeps errors 30 days on its Developer plan and 90 days on Team, Business and Enterprise.
+            // https://docs.sentry.io/security-legal-pii/security/data-retention-periods/ (read 17 November 2026, no date shown).
+            // Which applies depends on our plan, so the placeholder stays (owner-answers.md).
             ["Error reports", "{{NEED: Sentry retention period}}"],
           ],
         },
@@ -241,17 +291,31 @@ export const privacy: LegalText = {
       blocks: [
         {
           kind: "p",
-          text: "The site keeps a few things in your browser. All of them are strictly necessary, or a setting you chose, so no banner is needed.",
+          text: "The site's own code sets no cookies. It keeps the things below in your browser's own storage on this device: local storage (kept until it is removed), session storage (gone when you close the tab) and, for one item, the browser's database. Each is strictly necessary for something you asked for, or remembers a choice you made, apart from one older item marked below.",
         },
+        // G16: generated from a search of the code for every write to localStorage, sessionStorage, IndexedDB and cookies.
+        // Each row names its key; the file and line are in prompt 9's report.
         {
           kind: "table",
-          head: ["What", "Why", "How long"],
+          head: ["What (key)", "Kept in", "What for", "How long"],
           rows: [
-            ["Your sign-in session", "To keep you signed in", "Until you sign out"],
-            ["Theme (Light or Dark)", "To remember your choice", "Until you clear your browser"],
-            ["Remembered filters, layout and view choices on Builds and the composer", "To remember how you like them", "Until you clear your browser"],
-            ["What you have already seen (a badge, a note, a space's last visit)", "So the same note or badge is not shown again", "Until you clear your browser"],
-            ["Scroll position, unsent prompts and your sign-up details if you leave to read these pages", "So going back puts you where you were. Your password is never kept.", "Until you close the tab"],
+            ["Your sign-in session (sb-…-auth-token, written by our sign-in provider's library)", "Local storage, or session storage if you untick Keep me signed in", "To keep you signed in", "Until you sign out, or until you close the browser if you unticked Keep me signed in"],
+            ["Keep me signed in (ob-keep-signed-in)", "Local storage", "To remember that you unticked Keep me signed in", "Until you tick it again"],
+            ["A sign-out marker (ob-signed-out-on-purpose)", "Local storage", "So your other open tabs know you signed out on purpose, and don't ask you to sign in again", "Read for 10 seconds after you sign out; replaced at your next sign-out"],
+            ["The address you signed up with (pending_verification_email)", "Session storage", "To name it on the Check your inbox screen", "Until you confirm it, sign out or close the sign-in window"],
+            ["Your sign-up details (signup_draft)", "Session storage", "To keep your name, username and email if you leave the form to read these pages. Your password is never kept.", "Until you come back to the form, or close the tab"],
+            ["Where you were (ob-return-place)", "Session storage", "To put you back on the page you were reading after you sign in", "10 minutes, and used once"],
+            ["Theme (bg-theme)", "Local storage", "To remember Light or Dark", "Until you clear your browser"],
+            ["A copy of pages you have read (bg-kept-cache)", "The browser's database (IndexedDB)", "So pages open quickly and can still be read offline", "Up to 24 hours. Removed when you sign out, or when someone else signs in on this device"],
+            ["Changes made while offline (bg:pending:…)", "Local storage", "To hold your edits to a build until they reach our servers, so a reload loses nothing", "Until they have been saved"],
+            ["Unsent prompts (ux-unsent:…, ux-unsent-tab)", "Session storage", "To keep a prompt you typed but did not send", "Until you send it, or close the tab"],
+            ["Scroll position (scroll:v1:…)", "Session storage", "So Back and Forward return you to where you were on a page", "Until you close the tab"],
+            ["Builds layout and chosen filters (builds:layout:v1, builds:facets:v1)", "Local storage", "To remember how you like the Builds page", "Until you clear your browser"],
+            ["Composer view (bg-compose-view:…)", "Local storage", "To remember how the composer's session list is shown", "Until you clear your browser"],
+            ["A declined review (openbuilds.layer-review.declined.…)", "Local storage", "So a build's explanation review is not offered again after you said no", "Until you clear your browser"],
+            ["What you have already seen (bg-home-seen, openbuilds:seen:…, bg-xp-reset-note-seen)", "Local storage", "To mark what is new on Home and in a space, and not show a note again", "Until you clear your browser"],
+            ["A collapsed panel in Messages (pinned-context-collapsed:…)", "Local storage", "To remember that you folded a conversation's pinned context", "Until you clear your browser"],
+            ["An ad shown on a page (openbuilds_page_ad_shown_…). Not strictly necessary.", "Session storage", "On older content pages, so a visitor who is not signed in sees a page's ad once per visit", "Until you close the tab"],
           ],
         },
         {

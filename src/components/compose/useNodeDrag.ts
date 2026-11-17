@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { deleteNode, reorderNodes, upsertNode } from "@/lib/build";
 import type { BuildNode, BuildRecord, NodeMove, NodeTree } from "@/lib/build";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
+import { screenError } from "@/lib/auth/authMessages";
 
 /** Root is level 1. A node at level 3 can hold no children. */
 export const MAX_DEPTH = 3;
@@ -482,9 +483,7 @@ export function useNodeDrag({
 
       chainRef.current = chainRef.current.then(run).then(undefined, (cause: unknown) => {
         queryClient.setQueryData<BuildRecord | null>(queryKey, snapshot);
-        toast.error(failure, {
-          description: cause instanceof Error ? cause.message : String(cause),
-        });
+        toast.error(screenError(cause, failure, { source: "compose", context: "nodeDrag" }));
         // The snapshot restores what the creator saw; the refetch restores what
         // the server actually holds, in case an earlier write in the chain had
         // already landed.
@@ -631,9 +630,7 @@ export function useNodeDrag({
           });
           onSelect(created.id);
         } catch (cause) {
-          toast.error("That node could not be added", {
-            description: cause instanceof Error ? cause.message : String(cause),
-          });
+          toast.error(screenError(cause, "That node could not be added", { source: "compose", context: "nodeDrop" }));
         } finally {
           if (mountedRef.current) setIsAdding(false);
         }

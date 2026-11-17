@@ -63,12 +63,14 @@ import {
   measure,
 } from "@/lib/theme/type";
 import { SITE_NAME } from "@/lib/site";
+import { screenError } from "@/lib/auth/authMessages";
 
 /** The chip's own padding, matching `CategoryChip`: a label, not a target. */
 const CHIP_PAD = "2px 8px";
 
+/** G4: our words for a failure; the auth service's own text never reaches the screen. */
 function messageOf(cause: unknown): string {
-  return cause instanceof Error ? cause.message : String(cause);
+  return screenError(cause, "Couldn't send your answer. Try again.", { source: "oauth-consent" });
 }
 
 /**
@@ -289,7 +291,6 @@ export default function OAuthConsent() {
         {head}
         <Notice
           title="That request could not be read"
-          detail={load.error ? messageOf(load.error) : undefined}
         >
           It may have already been answered, or it may have expired. Ask the
           application to try again.

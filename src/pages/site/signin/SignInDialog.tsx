@@ -1,6 +1,6 @@
 /* The sign-in dialog with its views: the chunk the host loads when the address asks for it (`?signin=<view>`).
 
-   Row 1 is the Sign in · Join free switch on those two views and "Back to sign in" on every other; every change of view
+   Row 1 is the Sign in · Sign up switch on those two views and "Back to sign in" on every other; every change of view
    is a push, and closing (Escape, Close, the scrim) steps back out of the dialog, so the page behind is the page the
    person was on, untouched. */
 

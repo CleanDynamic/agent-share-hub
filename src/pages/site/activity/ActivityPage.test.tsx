@@ -287,7 +287,7 @@ describe("ActivityPage reading", () => {
     // … and a failed write puts it back and says so, naming the panel and not the cause.
     await act(async () => write.reject(new Error("refused: row-level security")));
     const failed = await screen.findByTestId("activity-write-error");
-    expect(failed.textContent).toContain("That didn't save.");
+    expect(failed.textContent).toContain("Couldn't save that. Try again.");
     expect(failed.textContent).not.toContain("row-level");
     await waitFor(() => expect(unreadRows()).toHaveLength(2));
     expect(screen.getByText("2 unread · live")).toBeTruthy();

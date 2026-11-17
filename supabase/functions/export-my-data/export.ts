@@ -43,6 +43,8 @@ export const SOURCES: readonly Source[] = [
   { key: "thread_memberships", table: "dm_thread_members", by: "user_id", columns: "thread_id, joined_at" },
   { key: "notifications", table: "notifications", by: "recipient_id", columns: "id, notification_type, actor_id, target_type, target_id, build_id, body, is_read, created_at" },
   { key: "reports_made", table: "content_reports", by: "reporter_id", columns: "id, target_type, target_id, reason, note, status, created_at" },
+  // Prompt 9 (G17): which Terms and Privacy policy versions the member accepted, when (server clock) and how.
+  { key: "legal_acceptances", table: "legal_acceptances", by: "user_id", columns: "terms_version, privacy_version, accepted_at, source" },
 ];
 
 /** The columns that must never appear in the file, whatever a source lists. The Vitest checks every source against this. */

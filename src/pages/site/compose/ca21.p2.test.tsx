@@ -97,15 +97,15 @@ describe("the skeleton layer", () => {
     expect(screen.getAllByTestId("skeleton-rail")).toHaveLength(2);
   });
 
-  it("shows an empty session as a place to drop while a tile is held, in place of 'No steps yet'", async () => {
+  it("shows an empty session as a place to drop while a tile is held, in place of 'No steps yet.'", async () => {
     stubLayout();
     const base = mountList();
     const empty = { ...[...base.props.dividers.values()][0], key: "typed-empty", number: 9 };
     base.unmount();
     mountList({ emptySessions: [empty] });
-    expect(screen.getAllByText("No steps yet").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("No steps yet.").length).toBeGreaterThan(0);
     await pickUp(firstTileGrip());
-    expect(screen.queryByText("No steps yet")).toBeNull();
+    expect(screen.queryByText("No steps yet.")).toBeNull();
     expect(screen.getByTestId("skeleton-empty").textContent).toBe("Drop a step here");
     expect(screen.getByTestId("skeleton-empty").style.height).toBe("44px");
   });

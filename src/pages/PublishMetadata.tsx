@@ -32,6 +32,7 @@ import {
 import { toast as sonnerToast } from "sonner";
 import { reportError } from "@/lib/errors/report";
 import { SITE_NAME } from "@/lib/site";
+import { screenError } from "@/lib/auth/authMessages";
 
 const buildPayload = (
   values: PublishFormValues,
@@ -272,8 +273,7 @@ export default function PublishMetadata() {
       } catch (err: any) {
         reportError(err, { source: "console", context: "PublishMetadata publish failed" });
         toast({
-          title: isUpdateMode ? "Could not update" : "Could not publish",
-          description: err?.message ?? "Unknown error",
+          title: screenError(err, isUpdateMode ? "Could not update" : "Could not publish", false),
           variant: "destructive",
         });
       } finally {

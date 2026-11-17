@@ -31,6 +31,7 @@ import { useDialogCaptcha, VERIFY_FAILED } from "./dialogCaptcha";
 import { LinkChecking, ResetConfirmForm, ResetLinkError, ResetRequestForm, ResetSent } from "./ResetForms";
 import { useSignInNavigation } from "./useSignInNavigation";
 import { withoutDialog } from "./signinUrl";
+import { AUTH_ERRORS } from "@/lib/copy/copy";
 
 const EMAIL_REGEX = /^[^@]+@[^@]+\.[^@]+$/;
 
@@ -107,7 +108,7 @@ export function ResetPanel() {
   const handleRequestSubmit = async () => {
     const cleanEmail = email.trim();
     if (!EMAIL_REGEX.test(cleanEmail)) {
-      setRequestError("Please enter a valid email.");
+      setRequestError(AUTH_ERRORS["invalid-email"]);
       return;
     }
 
@@ -151,7 +152,7 @@ export function ResetPanel() {
       return;
     }
     if (passwordStrength === "weak") {
-      setConfirmError("Please choose a stronger password.");
+      setConfirmError(AUTH_ERRORS["weak-password"]);
       return;
     }
     if (password !== confirmPassword) {

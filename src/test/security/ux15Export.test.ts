@@ -83,6 +83,7 @@ const seed = (): Record<string, Row[]> => ({
   dm_thread_members: [{ user_id: A, thread_id: "t" }, { user_id: B, thread_id: "t" }],
   notifications: [{ recipient_id: A, id: "no1", notification_type: "follow", body: "followed you" }, { recipient_id: B, id: "no9", body: "B-SECRET" }],
   content_reports: [{ reporter_id: A, id: "r1", reason: "spam" }, { reporter_id: B, id: "r9", reason: "B-SECRET" }],
+  legal_acceptances: [{ user_id: A, terms_version: "2026-11-06", privacy_version: "2026-11-06", accepted_at: "2026-11-17T10:00:00Z", source: "signup" }, { user_id: B, terms_version: "B-SECRET", privacy_version: "B-SECRET", accepted_at: "2026-11-17T10:00:00Z", source: "dialog" }],
 });
 
 describe("the export", () => {
@@ -98,6 +99,8 @@ describe("the export", () => {
     expect(file.data.messages_sent.map((r) => (r as Row).text_content)).toEqual(["I said this"]);
     expect(file.data.notifications).toHaveLength(1);
     expect(file.data.reports_made).toHaveLength(1);
+    // Prompt 9 (G17): the member's acceptance record, and nobody else's.
+    expect(file.data.legal_acceptances).toEqual([{ terms_version: "2026-11-06", privacy_version: "2026-11-06", accepted_at: "2026-11-17T10:00:00Z", source: "signup" }]);
     expect(file.data.follows.map((r) => (r as Row).following_id)).toEqual([B]);
     expect(file.data.followers.map((r) => (r as Row).follower_id)).toEqual([B]);
     expect(file.steps.map((r) => (r as Row).title).sort()).toEqual(["draft step", "step one"]);

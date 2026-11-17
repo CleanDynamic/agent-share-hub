@@ -72,7 +72,7 @@ import { Maximize2, Play, X } from "lucide-react";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { PageEmpty, PageState, WriteFailed } from "@/components/pagestate/PageState";
 import type { ReadLike } from "@/components/pagestate/pageStateModel";
-import { WAY_OUT } from "@/components/pagestate/stateCopy";
+import { WAY_OUT, SAVE_FAILED, signInButton, DONE } from "@/lib/copy/copy";
 import { IconButton } from "@/components/brand/IconButton";
 import { Panel, PanelHead } from "@/components/brand/Panel";
 import { PartViewer } from "@/components/brand/PartViewer";
@@ -130,7 +130,7 @@ export const MAKER_NOTE = "Records the date and the model you used.";
 export const ACTION_LABEL: Record<ProofActionKind, string> = {
   reproduce: "I ran this and it worked",
   reconfirm: "Re-confirm it still works",
-  "sign-in": "Sign in to confirm",
+  "sign-in": signInButton("confirm"),
 };
 
 /** The viewer's body, which the tabs control. */
@@ -181,7 +181,7 @@ export function useConfirmed(): [boolean, () => void] {
 export function RunFailed({ failure }: { failure: NonNullable<BuildProofView["writeError"]> }) {
   return (
     <WriteFailed
-      line="That didn't save."
+      line={SAVE_FAILED}
       panel="Reproduction"
       onRetry={failure.onRetry}
       error={failure.error}
@@ -402,7 +402,7 @@ export function Viewer({
   announce: (text: string) => void;
 }) {
   const copy = async () => {
-    if (await viewer.onCopy()) announce("Copied");
+    if (await viewer.onCopy()) announce(DONE.copied);
   };
   return (
     <div data-testid="build-viewer" style={{ height: phone ? undefined : "100%", minWidth: 0 }}>
@@ -611,7 +611,7 @@ function ActionDock({
   const copy = async () => {
     if (await actions.onCopyForAI()) {
       confirmCopied();
-      announce("Copied");
+      announce(DONE.copied);
     }
   };
   const frame: CSSProperties = phone
@@ -793,7 +793,7 @@ function ActionGroup({ actions, phone, announce }: { actions: BuildActionsView; 
   const copy = async () => {
     if (await actions.onCopyForAI()) {
       confirmCopied();
-      announce("Copied");
+      announce(DONE.copied);
     }
   };
   const height = phone ? 44 : 32;

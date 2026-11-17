@@ -64,7 +64,7 @@ describe("the gate", () => {
 
   it("is a modal dialog over the page, labelled by the tagline", () => {
     open();
-    const dialog = screen.getByRole("dialog", { name: "Publish, reproduce and fork AI-assisted workflows." });
+    const dialog = screen.getByRole("dialog", { name: "Publish, reproduce and rebuild AI-assisted workflows." });
     expect(dialog.getAttribute("aria-modal")).toBe("true");
   });
 });
@@ -375,11 +375,11 @@ describe("the providers", () => {
   });
 
   it("says why it could not start, and gives the buttons back to try again", async () => {
-    startOAuthSignIn.mockResolvedValueOnce("Couldn't connect to x. Please try again.").mockResolvedValue(null);
+    startOAuthSignIn.mockResolvedValueOnce("Couldn't connect to X. Try again.").mockResolvedValue(null);
     open();
     fireEvent.click(screen.getByRole("button", { name: "Continue with X" }));
 
-    expect(await screen.findByText("Couldn't connect to x. Please try again.")).toBeTruthy();
+    expect(await screen.findByText("Couldn't connect to X. Try again.")).toBeTruthy();
     await waitFor(() => expect(screen.getByRole("button", { name: "Continue with X" })).toBeEnabled());
 
     fireEvent.click(screen.getByRole("button", { name: "Continue with X" }));
@@ -390,7 +390,7 @@ describe("the providers", () => {
 describe("the rest of the dialog", () => {
   it("carries ?redirect= across to Join free, and back, on the same page", async () => {
     const where = open("/login?redirect=%2Fgallery");
-    fireEvent.click(screen.getByRole("button", { name: "Join free" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sign up" }));
     await waitFor(() => expect(where.at()).toBe("/?redirect=%2Fgallery&signin=signup"));
     fireEvent.click(screen.getAllByRole("button", { name: "Sign in" })[0]);
     await waitFor(() => expect(where.at()).toBe("/?redirect=%2Fgallery&signin=login"));
@@ -435,7 +435,7 @@ describe("why the dialog opened (G19)", () => {
   it("says so in the reserved line under the password, in the neutral tone, and gives the line to an error", async () => {
     signIn.mockResolvedValue({ outcome: "refused", refusal: "credentials" });
     renderDialog("login", "", { signedOut: true });
-    expect(line().textContent).toBe("You've been signed out. Sign in to carry on.");
+    expect(line().textContent).toBe("You've been signed out. Sign in to continue.");
     expect(line().getAttribute("data-tone")).toBe("neutral");
     fill();
     submit();

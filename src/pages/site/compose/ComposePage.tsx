@@ -147,7 +147,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
           creating.current = null;
           // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
           console.error(errorLine("[Compose] createBuild failed", cause));
-          toast.error("Build not started");
+          toast.error("Couldn't start the build. Try again.");
           // CA-10: said once, here; a caller that failed only because of this says nothing more (sayFailed).
           throw new DraftNotStartedError(cause);
         });
@@ -241,7 +241,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
     } catch (cause) {
       // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.error("[Compose] cover failed", cause);
-      setMediaError("Cover not added");
+      setMediaError("Couldn't add the cover. Try again.");
     } finally {
       setAdding(null);
     }
@@ -256,7 +256,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
     } catch (cause) {
       // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.error("[Compose] cover removal failed", cause);
-      setMediaError("Cover not removed");
+      setMediaError("Couldn't remove the cover. Try again.");
     }
   };
 
@@ -341,7 +341,7 @@ export function useComposePage({ sessionsActive = true }: { sessionsActive?: boo
     } catch (cause) {
       // eslint-disable-next-line no-console -- a deliberate, structured log that its tests assert (SV-26)
       console.error("[Compose] publish failed", cause);
-      toast.error("Build not published", { action: { label: "Retry", onClick: () => void onPublish() } });
+      toast.error("Couldn't publish the build. Try again.", { action: { label: "Retry", onClick: () => void onPublish() } });
     }
   };
 

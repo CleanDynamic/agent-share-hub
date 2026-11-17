@@ -137,7 +137,7 @@ describe("spaces", () => {
     expect(of("space_members", "eq")[0].args).toEqual(["user_id", "me"]);
     expect(of("space_members", "limit")[0].args).toEqual([100]);
     session = null;
-    await expect(listMySpaces()).rejects.toThrow("Sign in to do that.");
+    await expect(listMySpaces()).rejects.toThrow("Sign in to post.");
   });
 
   it("reads one space by its lower-case slug, or null", async () => {
@@ -233,7 +233,7 @@ describe("reading posts", () => {
     await listPosts({ scope: "following" });
     expect(of("openbuild_posts", "in")[0].args).toEqual(["author_id", ["me", "u2"]]);
     session = null;
-    await expect(listPosts({ scope: "following" })).rejects.toThrow("Sign in to do that.");
+    await expect(listPosts({ scope: "following" })).rejects.toThrow("Sign in to post.");
   });
 
   it("sorts a space that is most replied by the stored reply count, then by time", async () => {
@@ -321,7 +321,7 @@ describe("writing posts", () => {
     expect((await createPost({ body: "x", spaceIds: ["s1"] }).catch((caught) => caught)).message).toBe("You can't start a topic there.");
     expect((await createReply({ parentId: "p1" }).catch((caught) => caught)).message).toBe("You can't reply there.");
     session = null;
-    await expect(createPost({ body: "x" })).rejects.toThrow("Sign in to do that.");
+    await expect(createPost({ body: "x" })).rejects.toThrow("Sign in to post.");
   });
 
   it("edits a post's own fields, and says it in words when nothing changed", async () => {

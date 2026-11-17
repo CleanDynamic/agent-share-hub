@@ -137,7 +137,7 @@ describe("adding an agent or a team (UI-P69)", () => {
       id = await result.current.addAgentOrTeam({ kind: "team", name: null, model: "Opus 5.5" });
     });
     expect(id).toBeNull();
-    expect(toast.error).toHaveBeenCalledWith("Team not added", withRetry());
+    expect(toast.error).toHaveBeenCalledWith("Couldn't add the team. Try again.", withRetry());
   });
 
   it("adds an agent inside a team", async () => {
@@ -244,7 +244,7 @@ describe("prompts and instructions of an agent (UI-P69)", () => {
       saved = await result.current.addPromptTo("ag1", "  ");
     });
     expect(saved).toBe(false);
-    expect(toast.error).toHaveBeenCalledWith("Prompt not added", withRetry());
+    expect(toast.error).toHaveBeenCalledWith("Couldn't add the prompt. Try again.", withRetry());
   });
 
   it("writes the instructions of an agent that sits inside a team", async () => {
@@ -301,7 +301,7 @@ describe("a manual step (UI-P70)", () => {
       id = await result.current.addManual({ tool: "Figma", text: "x", file: null, afterId: null });
     });
     expect(id).toBeNull();
-    expect(toast.error).toHaveBeenCalledWith("Manual step not added", withRetry());
+    expect(toast.error).toHaveBeenCalledWith("Couldn't add the manual step. Try again.", withRetry());
   });
 
   it("moves a manual step past whatever step is next to it, not only prompts", async () => {
@@ -329,7 +329,7 @@ describe("a manual step (UI-P70)", () => {
       saved = await result.current.setManualPicture("m", new File(["x"], "spec.pdf", { type: "application/pdf" }));
     });
     expect(saved).toBe(false);
-    expect(toast.error).toHaveBeenCalledWith("spec.pdf not added", withRetry());
+    expect(toast.error).toHaveBeenCalledWith("Couldn't add spec.pdf. Try again.", withRetry());
   });
 });
 
@@ -468,7 +468,7 @@ describe("naming and removing a file a step makes (TF-08)", () => {
     });
     expect(id).toBeNull();
     expect(record).not.toHaveBeenCalled();
-    expect(toast.error).toHaveBeenCalledWith("File not added", withRetry());
+    expect(toast.error).toHaveBeenCalledWith("Couldn't add the file. Try again.", withRetry());
   });
 
   it("takes a made file out of the steps that use it, then deletes it", async () => {

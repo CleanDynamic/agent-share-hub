@@ -222,7 +222,7 @@ describe("what it keeps: it reads or moves, it does not change", () => {
     fireEvent.click(within(screen.getAllByTestId("details-section")[0]).getByRole("button", { name: "Copy" }));
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining("The menu grid overflows on a phone."));
     // The page's one announcer says it; the panel has no live region of its own.
-    await waitFor(() => expect(screen.getByTestId("build-announcer").textContent).toBe("Copied"));
+    await waitFor(() => expect(screen.getByTestId("build-announcer").textContent).toBe("Copied."));
     expect(document.querySelectorAll("[aria-live]")).toHaveLength(1);
   });
 

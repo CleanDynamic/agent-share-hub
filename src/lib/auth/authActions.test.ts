@@ -124,7 +124,7 @@ describe("signUpWithEmail", () => {
       email: "ada@example.com",
       password: "Abcdefghij1!x",
       options: {
-        data: { display_name: "Ada Lovelace", username: "ada_l" },
+        data: { display_name: "Ada Lovelace", username: "ada_l", terms_version: "2026-11-06", privacy_version: "2026-11-06" },
         emailRedirectTo: "https://openbuilds.ai/verify-email",
         captchaToken: "tok-1",
       },

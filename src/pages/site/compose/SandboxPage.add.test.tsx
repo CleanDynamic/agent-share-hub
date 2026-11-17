@@ -199,7 +199,7 @@ describe("CA-10 · a new post whose draft cannot be made says so once (CA-08 F6)
     fireEvent.click(await screen.findByTestId("empty-build-new", undefined, { timeout: 10_000 }));
     await waitFor(() => expect(said).toHaveBeenCalled(), { timeout: 5_000 });
     await act(() => new Promise((resolve) => setTimeout(resolve, 300)));
-    expect(said.mock.calls.map(([line]) => line)).toEqual(["Build not started"]);
+    expect(said.mock.calls.map(([line]) => line)).toEqual(["Couldn't start the build. Try again."]);
   });
 });
 

@@ -93,6 +93,7 @@ import { EXTRA_COLUMNS, type ColumnId, type ExtraColumnId } from "./BuildsTableV
 import { useBuildsLayout } from "./useBuildsLayout";
 import { cardOf, readFacetChoice, writeFacetChoice } from "./classificationModel";
 import type { MapsDirection } from "./BuildsMapsView";
+import { FOLLOW_FAILED, UNFOLLOW_FAILED } from "@/lib/copy/copy";
 
 /** BF-14: Load all reads the candidates' pages up to this many builds; past it a match is not offered. */
 const LOAD_ALL_MAX = 200;
@@ -200,7 +201,7 @@ export default function BuildsPage() {
         queryClient.setQueryData<FilterSetDetail | null>(["build", "getFilterSet", set.id], (current) => (current ? { ...current, layout: next } : current));
       } catch (error) {
         reportError(error, { source: "query", context: "saveFilterSetLayout" });
-        toast.error("Couldn't keep the layout in the filter set.");
+        toast.error("Couldn't keep the layout in the filter set. Try again.");
       }
     },
   );
@@ -331,23 +332,23 @@ export default function BuildsPage() {
           canSave,
           saveHint,
           onSaveCurrent: (name, isPublic) =>
-            attempt("createFilterSet", "Couldn't save the filter set.", async () => {
+            attempt("createFilterSet", "Couldn't save the filter set. Try again.", async () => {
               const set = await createFilterSet({ name, search: currentSearch, isPublic });
               refreshSets(set.id);
               navigate(setHref(set), { preventScrollReset: true });
             }, true),
           onRename: (id, name) =>
-            attempt("renameFilterSet", "Couldn't rename the filter set.", async () => {
+            attempt("renameFilterSet", "Couldn't rename the filter set. Try again.", async () => {
               await renameFilterSet(id, name);
               refreshSets(id);
             }, true),
           onTogglePublic: (id, isPublic) =>
-            void attempt("setFilterSetPublic", "Couldn't change who can open the filter set.", async () => {
+            void attempt("setFilterSetPublic", "Couldn't change who can open the filter set. Try again.", async () => {
               await setFilterSetPublic(id, isPublic);
               refreshSets(id);
             }),
           onDelete: (id) =>
-            attempt("deleteFilterSet", "Couldn't delete the filter set.", async () => {
+            attempt("deleteFilterSet", "Couldn't delete the filter set. Try again.", async () => {
               await deleteFilterSet(id);
               refreshSets(id);
               if (params.set === id) navigate(galleryHref({ ...params, set: undefined }), { preventScrollReset: true, replace: true });
@@ -361,12 +362,12 @@ export default function BuildsPage() {
                 members: openDetail.members,
                 member: openDetail.member,
                 onJoin: () =>
-                  void attempt("joinFilterSet", "Couldn't join the group.", async () => {
+                  void attempt("joinFilterSet", FOLLOW_FAILED, async () => {
                     await joinFilterSet(openDetail.id);
                     refreshSets(openDetail.id);
                   }),
                 onLeave: () =>
-                  void attempt("leaveFilterSet", "Couldn't leave the group.", async () => {
+                  void attempt("leaveFilterSet", UNFOLLOW_FAILED, async () => {
                     await leaveFilterSet(openDetail.id);
                     refreshSets(openDetail.id);
                   }),

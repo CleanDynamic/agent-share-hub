@@ -194,7 +194,7 @@ describe("CA-12 P4 · sessions leave Add; + Add a session", () => {
     fireEvent.click(within(await openRow()).getAllByRole("listitem")[0]);
     await waitFor(() => expect(said).toHaveBeenCalled(), { timeout: 5_000 });
     await act(() => new Promise((resolve) => setTimeout(resolve, 300)));
-    expect(said.mock.calls.map(([line]) => line)).toEqual(["Build not started"]);
+    expect(said.mock.calls.map(([line]) => line)).toEqual(["Couldn't start the build. Try again."]);
   });
 });
 
@@ -293,8 +293,8 @@ describe("CA-12 P5 · adding a session", () => {
     await screen.findByRole("group", { name: /^Session 1 · / }, { timeout: 10_000 });
     await startNew();
     expect(await screen.findByRole("group", { name: "Session 2 · No harness chosen" }, { timeout: 10_000 })).toBeTruthy();
-    // CA-21 P7: until its skeleton fades it shows its place to drop; then "No steps yet".
-    await waitFor(() => expect(screen.queryByText("No steps yet") ?? screen.queryByText("Drop a step here")).toBeTruthy());
+    // CA-21 P7: until its skeleton fades it shows its place to drop; then "No steps yet.".
+    await waitFor(() => expect(screen.queryByText("No steps yet.") ?? screen.queryByText("Drop a step here")).toBeTruthy());
     await waitFor(() => expect(tableRows("build_sessions").filter((row) => row.build_id === DRAFT)).toHaveLength(2), { timeout: 10_000 });
     const making = tableRows("builds").find((row) => row.id === DRAFT)?.making as { session_order?: string[] };
     expect(making.session_order).toHaveLength(2);

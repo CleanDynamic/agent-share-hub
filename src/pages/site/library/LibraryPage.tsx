@@ -34,7 +34,7 @@ import { PageArrival } from "@/components/shell/PageArrival";
 import { PageFailed, PageState } from "@/components/pagestate/PageState";
 import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
 import { allFailed, shownState, type ReadLike, type Shown as RegionState } from "@/components/pagestate/pageStateModel";
-import { WAY_OUT } from "@/components/pagestate/stateCopy";
+import { WAY_OUT, COPY_LINK_FAILED } from "@/lib/copy/copy";
 import { useAuth } from "@/contexts/AuthContext";
 import { copyToClipboard } from "@/lib/deepLink";
 import { reportError } from "@/lib/errors/report";
@@ -429,7 +429,7 @@ export default function LibraryPage() {
 
   const copyLink = async (slug: string) => {
     const ok = await copyToClipboard(`${window.location.origin}/b2/${slug}`);
-    toast(ok ? "Link copied." : "Couldn't copy the link.");
+    toast(ok ? "Link copied." : COPY_LINK_FAILED);
   };
 
   /* ── the page's first screen ── */
@@ -482,7 +482,7 @@ export default function LibraryPage() {
       ],
       note: { value: drafts[item.id] ?? item.note ?? "", onChange: (value) => setDrafts((current) => ({ ...current, [item.id]: value })), onCommit: () => void commitNote(item) },
       onCopy: () =>
-        void copyToClipboard(itemCopyText(item)).then((ok) => toast(ok ? "Copied." : "Couldn't copy.")),
+        void copyToClipboard(itemCopyText(item)).then((ok) => toast(ok ? "Copied." : "Couldn't copy that. Try again.")),
       openHref: source.buildSlug ? `/b2/${source.buildSlug}` : undefined,
       onRemove: () => void removeItem(item),
     };
@@ -534,7 +534,7 @@ export default function LibraryPage() {
       else toast(START_COPY.nothing);
     } catch (error) {
       reportError(error, { source: "action", context: "library-start-build" });
-      toast("Couldn't start a build from this collection.");
+      toast("Couldn't start a build from this collection. Try again.");
     } finally {
       setBusy(false);
     }

@@ -87,6 +87,7 @@ import { isSummaryPayload, SUMMARY_COPY } from "./summaryTurn";
 import type { EvidencePayload } from "./evidenceKinds";
 import { partOfOf, runsWhereOf, type PartOf } from "./codePart";
 import { asksForOf, originOf, type AsksFor, type PromptOrigin } from "./promptOrigin";
+import { ShownError } from "@/lib/auth/authMessages";
 
 export const AGENT_TYPE = "agent_config";
 export const TEAM_TYPE = "team";
@@ -472,7 +473,8 @@ const payloadOf = (node: Pick<BuildNode, "payload">): Payload => (isRecord(node.
 
 const stringOf = (value: unknown): string | null => (typeof value === "string" && value.trim() ? value : null);
 
-const refuse = (operation: string, message: string): Error => buildLayerError(operation, new Error(message));
+// G4: a refusal is our own sentence, so the screen may show it (screenError reads ShownError through the cause chain).
+const refuse = (operation: string, message: string): Error => buildLayerError(operation, new ShownError(message));
 
 /** Words in a text, split on whitespace. */
 export function wordCount(text: string): number {

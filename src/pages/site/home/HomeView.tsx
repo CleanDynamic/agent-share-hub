@@ -89,6 +89,7 @@ import {
   type StillOpenScope,
 } from "./homeModel";
 import type { HomeReplyGroup, HomeTopicPost } from "./homeTopics";
+import { signInSentence, EMPTY } from "@/lib/copy/copy";
 
 export type HomeScope = "following" | "everyone";
 
@@ -311,7 +312,7 @@ export function SessionsSection({ sessions, onAdd }: { sessions: HomeViewProps["
       region="Your sessions"
       skeleton={<SectionBones rows={2} height={52} what="your sessions" />}
       frame={sectionFrame("Your sessions", <SectionHead title="Your sessions" meta={meta} to={DRAFTS} openName="sessions" headingLevel={2} />)}
-      empty={{ when: () => sessions.status === "ready" && sessions.data.rows.length === 0, line: "No sessions yet." }}
+      empty={{ when: () => sessions.status === "ready" && sessions.data.rows.length === 0, line: EMPTY.sessions }}
     >
       {() =>
         sessions.status === "ready" &&
@@ -409,7 +410,7 @@ export function WeekSection({ week }: { week: HomeViewProps["week"] }) {
 function StudioSignedOut() {
   return (
     <section aria-label="Your studio">
-      <PageEmpty line="Sign in to see your drafts, sessions and week." />
+      <PageEmpty line={signInSentence("drafts")} />
       <div style={{ marginTop: 12 }}>
         <Button variant="primary" size={32} href={SIGN_IN} data-visual-slot="btn-primary">
           Sign in

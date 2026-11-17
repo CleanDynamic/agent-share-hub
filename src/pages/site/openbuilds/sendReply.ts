@@ -7,10 +7,11 @@
 import type { QueryClient } from "@tanstack/react-query";
 
 import { reportError } from "@/lib/errors/report";
-import { PostError, createReply, resolveMentionIds, type AttachmentInput, type PostAttachment, type PostThread } from "@/lib/openbuilds";
+import { createReply, resolveMentionIds, type AttachmentInput, type PostAttachment, type PostThread } from "@/lib/openbuilds";
 
 import { attachmentOf, type Sender } from "./sendPost";
 import { postPageKey } from "./postModel";
+import { screenError } from "@/lib/auth/authMessages";
 
 export const REPLY_FAILED = "Your reply didn't send. Try again.";
 
@@ -108,7 +109,7 @@ export async function sendReply({ qc, pageId, parentId, rootId, draft, sender, s
   } catch (error) {
     qc.setQueryData(key, before);
     reportError(error, { source: "openbuilds", context: "createReply" });
-    // The database's own refusal (a raised exception) is fixed text naming the rule: shown as it is.
-    return error instanceof PostError && error.code === "P0001" ? error.message : REPLY_FAILED;
+    // The database's own refusal (a raised exception) is read into our words (G4); anything else is REPLY_FAILED.
+    return screenError(error, REPLY_FAILED, false);
   }
 }

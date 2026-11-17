@@ -51,6 +51,7 @@ import { size, space } from "@/lib/theme/space";
 import { textLinkBox } from "./tileRecipes";
 import { r } from "@/lib/theme/radius";
 import { iconButtonSide } from "./modalRecipes";
+import { EMPTY } from "@/lib/copy/copy";
 
 /** F63: a library row's name wraps to two lines (PREVIEW) before it is cut, so it may run longer than a file's. */
 const LIBRARY_NAME_MAX = 60;
@@ -74,7 +75,7 @@ export const SOURCES_COPY = {
   addThisTo: "Add this session to",
   lastPart: ", chosen last",
   showMoreSessions: "Show more sessions",
-  noSessions: "No sessions yet.",
+  noSessions: EMPTY.sessions,
   noFiles: "No files yet.",
   connect: "Connect a tool",
 } as const;

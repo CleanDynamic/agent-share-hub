@@ -36,6 +36,7 @@ import { DiscussionCompose } from "@/components/DiscussionCompose";
 import { BLUEPRINT_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, displayContentType, TOPICS, getPostType, getPrimaryTypeLabel } from "@/lib/content-types";
 import { CanvasShell } from '@/components/canvas/CanvasShell';
 import { useCanvasDocument } from '@/hooks/useCanvasDocument';
+import { signInSentence } from "@/lib/copy/copy";
 /* SV-26 P3: the article editor (flow canvas, d3, tables) loads when its step opens. */
 const ArticleEditor = lazy(() => import('@/components/article/ArticleEditor').then((m) => ({ default: m.ArticleEditor })));
 import type { EvidenceMediaType } from '@/components/canvas/CanvasHeader';
@@ -55,6 +56,7 @@ import { type } from "@/lib/theme/type";
 import { colourAlpha } from "@/lib/theme/tokens";
 import { scrollBehavior, feedback } from "@/lib/theme/motion";
 import { reportError } from "@/lib/errors/report";
+import { screenError } from "@/lib/auth/authMessages";
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
 const POST_TYPE_DISPLAY: Record<string, {
@@ -610,7 +612,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
       await supabase.auth.refreshSession();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        if (!silent) toast({ title: "Sign in required", description: "Please sign in to save drafts.", variant: "destructive" });
+        if (!silent) toast({ title: "Sign in required", description: signInSentence("save"), variant: "destructive" });
         return null;
       }
 
@@ -689,7 +691,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
           .single();
         if (error || !inserted) {
           reportError(error, { source: "console", context: "Draft save failed:" });
-          if (!silent) toast({ title: "Failed to save draft", description: error?.message ?? "Unknown error", variant: "destructive" });
+          if (!silent) toast({ title: screenError(error, "Failed to save draft"), variant: "destructive" });
           return null;
         }
         draftIdToUse = inserted.id;
@@ -710,7 +712,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
           .eq("id", draftIdToUse);
         if (error) {
           reportError(error, { source: "console", context: "Draft update failed:" });
-          if (!silent) toast({ title: "Failed to save draft", description: error.message, variant: "destructive" });
+          if (!silent) toast({ title: screenError(error, "Failed to save draft"), variant: "destructive" });
           return null;
         }
       }
@@ -768,7 +770,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
       return draftIdToUse;
     } catch (err: any) {
       reportError(err, { source: "console", context: "Draft save threw:" });
-      if (!silent) toast({ title: "Failed to save draft", description: err?.message, variant: "destructive" });
+      if (!silent) toast({ title: screenError(err, "Failed to save draft"), variant: "destructive" });
       return currentDraftId;
     } finally {
       if (!silent) setSavingDraft(false);
@@ -1368,7 +1370,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
 
       setSuccess(true);
     } catch (err: any) {
-      toast({ title: "Something went wrong", description: err?.message ?? "Please try again.", variant: "destructive" });
+      toast({ title: screenError(err, "Something went wrong"), variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
@@ -1526,7 +1528,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       }
                       navigate(`/publish/${id}`);
                     } catch (err: any) {
-                      toast({ title: 'Could not prepare publish', description: err?.message ?? 'Unknown error', variant: 'destructive' });
+                      toast({ title: screenError(err, 'Could not prepare publish'), variant: 'destructive' });
                     } finally {
                       setSubmitting(false);
                     }
@@ -2640,7 +2642,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                             setGithubUrl("");
                             toast({ title: "Imported!", description: `Pre-filled from ${data.source}` });
                           } catch (err: any) {
-                            toast({ title: "Import failed", description: err.message, variant: "destructive" });
+                            toast({ title: screenError(err, "Import failed"), variant: "destructive" });
                           } finally {
                             setGithubImporting(false);
                           }

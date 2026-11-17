@@ -85,7 +85,7 @@ describe("StepsList", () => {
       fireEvent.click(copy);
     });
     expect(onCopy).toHaveBeenCalledWith(steps.steps[0].step.text);
-    expect(announce).toHaveBeenCalledWith("Copied");
+    expect(announce).toHaveBeenCalledWith("Copied.");
   });
 
   it("a paste-in scrolls to its step and rings it with the selected recipe", () => {

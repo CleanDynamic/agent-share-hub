@@ -61,12 +61,13 @@ async function fillAll(over: Partial<Record<"name" | "username" | "email" | "pas
   fireEvent.click(document.querySelector('label[for="terms"] > div')!.lastElementChild!);
 }
 
-const create = () => screen.getByRole("button", { name: /^Create account$/ });
+/** The submit: the switch's tab has the same name, "Sign up", and is the one with aria-pressed. */
+const create = () => screen.getAllByRole("button", { name: "Sign up" }).find((button) => !button.hasAttribute("aria-pressed")) as HTMLElement;
 
 describe("the view", () => {
   it("is the join view: the switch on Join free", () => {
     open();
-    expect(screen.getByRole("button", { name: "Join free" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Sign up", pressed: true }).getAttribute("aria-pressed")).toBe("true");
     expect(create()).toBeDisabled();
   });
 
@@ -156,7 +157,7 @@ describe("the username", () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(400);
     });
-    expect(screen.getByText("Couldn't check, try again.")).toBeTruthy();
+    expect(screen.getByText("Couldn't check that name. Try again.")).toBeTruthy();
     expect(screen.queryByText("Username available")).toBeNull();
     expect(create()).toBeDisabled();
     fireEvent.submit(create().closest("form")!);
@@ -198,22 +199,22 @@ describe("the email", () => {
   it("is checked when it is left, and the check clears when it is changed", () => {
     open();
     type("you@example.com", "not-an-email");
-    expect(screen.queryByText("Please enter a valid email")).toBeNull();
+    expect(screen.queryByText("Enter a valid email address.")).toBeNull();
     fireEvent.blur(screen.getByPlaceholderText("you@example.com"));
-    expect(screen.getByText("Please enter a valid email")).toBeTruthy();
+    expect(screen.getByText("Enter a valid email address.")).toBeTruthy();
     expect(screen.getByPlaceholderText("you@example.com").getAttribute("aria-invalid")).toBe("true");
 
     type("you@example.com", "ada@example.com");
-    expect(screen.queryByText("Please enter a valid email")).toBeNull();
+    expect(screen.queryByText("Enter a valid email address.")).toBeNull();
     fireEvent.blur(screen.getByPlaceholderText("you@example.com"));
-    expect(screen.queryByText("Please enter a valid email")).toBeNull();
+    expect(screen.queryByText("Enter a valid email address.")).toBeNull();
     expect(screen.getByPlaceholderText("you@example.com").getAttribute("aria-invalid")).toBe("false");
   });
 
   it("is not checked when it is left empty", () => {
     open();
     fireEvent.blur(screen.getByPlaceholderText("you@example.com"));
-    expect(screen.queryByText("Please enter a valid email")).toBeNull();
+    expect(screen.queryByText("Enter a valid email address.")).toBeNull();
   });
 });
 
@@ -387,7 +388,7 @@ describe("creating the account", () => {
     await fillAll();
     fireEvent.click(create());
     await act(async () => {});
-    expect(screen.getByRole("button", { name: "Creating account..." })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Signing up…" })).toBeDisabled();
   });
 
   it("refuses an email with no domain before it asks anyone, under the email", async () => {
@@ -397,7 +398,7 @@ describe("creating the account", () => {
     await act(async () => {});
 
     expect(signUp).not.toHaveBeenCalled();
-    expect(screen.getByText("Please enter a valid email")).toBeTruthy();
+    expect(screen.getByText("Enter a valid email address.")).toBeTruthy();
   });
 
   it("clears the form's message on the next key", async () => {
@@ -429,11 +430,11 @@ describe("G7: the server refuses the token", () => {
 
 describe("the providers", () => {
   it("start the one that was clicked, and give the buttons back when it could not start", async () => {
-    startOAuthSignIn.mockResolvedValueOnce("Couldn't connect to google. Please try again.");
+    startOAuthSignIn.mockResolvedValueOnce("Couldn't connect to Google. Try again.");
     open();
     fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
 
-    expect(await screen.findByText("Couldn't connect to google. Please try again.")).toBeTruthy();
+    expect(await screen.findByText("Couldn't connect to Google. Try again.")).toBeTruthy();
     expect(startOAuthSignIn).toHaveBeenCalledWith("google", null);
     await waitFor(() => expect(screen.getByRole("button", { name: "Continue with Google" })).toBeEnabled());
   });

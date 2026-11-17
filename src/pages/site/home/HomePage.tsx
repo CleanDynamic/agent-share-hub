@@ -80,6 +80,7 @@ import {
   stillOpenRows,
   type StillOpenScope,
 } from "./homeModel";
+import { SAVE_FAILED, COPY_LINK_FAILED, DONE } from "@/lib/copy/copy";
 
 /** UX-08 P2: the New post window loads when a failed run first opens it, not with the page. */
 const PostingWindows = lazy(() => import("../openbuilds/PostingWindows"));
@@ -325,7 +326,7 @@ export function HomePage() {
       await qc.invalidateQueries({ queryKey: ["openbuilds", "readFeedTopics"] });
     } catch (error) {
       reportError(error, { source: "home", context: "likePost" });
-      toast.error("That didn't save. Try again.");
+      toast.error(SAVE_FAILED);
     } finally {
       setLikeShift((current) => {
         const { [postId]: _done, ...rest } = current;
@@ -359,7 +360,7 @@ export function HomePage() {
       void qc.invalidateQueries({ queryKey: ["library", "countSavedItems"] });
     } catch (error) {
       reportError(error, { source: "home", context: on ? "saveItem" : "unsaveItem" });
-      toast.error("That didn't save. Try again.");
+      toast.error(SAVE_FAILED);
     } finally {
       setSaveShift((current) => {
         const { [postId]: _done, ...rest } = current;
@@ -399,7 +400,7 @@ export function HomePage() {
       toast("New build started.", { action: { label: "Open", onClick: () => navigate(`/compose/${id}`) } });
     } catch (error) {
       reportError(error, { source: "home", context: "attachSession" });
-      toast.error("Couldn't start a build from that session.");
+      toast.error("Couldn't start a build from that session. Try again.");
     } finally {
       void qc.invalidateQueries({ queryKey: ["build", "listDraftsWithSessions"] });
       void qc.invalidateQueries({ queryKey: librarySessionsKey });
@@ -460,7 +461,7 @@ export function HomePage() {
     <>
       <SeoHead
         title={SITE_NAME}
-        description="Download AI assistants, blueprints and workflows. Works with ChatGPT, Claude, Gemini and any AI tool."
+        description="Download AI assistants and builds. Works with ChatGPT, Claude, Gemini and any AI tool."
         path="/"
       />
       {/* SV-04 P5: the page arrives over its loading state, the route's Placeholder, when the feed lands. */}
@@ -589,7 +590,7 @@ export function HomePage() {
           }))}
           pageFailed={pageFailed}
           onCopyLink={(slug) =>
-            void copyToClipboard(siteUrl(`/b2/${slug}`)).then((copied) => toast(copied ? "Link copied" : "The link could not be copied."))
+            void copyToClipboard(siteUrl(`/b2/${slug}`)).then((copied) => toast(copied ? DONE.linkCopied : COPY_LINK_FAILED))
           }
         />
       </PageArrival>

@@ -15,7 +15,7 @@ import { errorLine } from "@/lib/errors/code";
 
 import { useSessionPhase } from "./useSessionPhase";
 import { isRetrying, shownState, type ReadLike, type Shown } from "./pageStateModel";
-import { FAILED_PAGE, NOT_FOUND, NOT_FOUND_DETAIL, failedLine, type MissingKind, type Thing, type WayOut } from "./stateCopy";
+import { FAILED_PAGE, NOT_FOUND, NOT_FOUND_DETAIL, failedLine, type MissingKind, type Thing, type WayOut } from "@/lib/copy/copy";
 
 export interface PageStateProps {
   /** The region's query results: one, or every read the region needs. */

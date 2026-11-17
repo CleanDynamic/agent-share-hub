@@ -358,7 +358,7 @@ describe("the review pass", () => {
 
     // The failure is said out loud, and the way out is still one press.
     expect(
-      await screen.findByText("No model is configured for this project.")
+      await screen.findByText("Couldn't do that. Try again.")
     ).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Publish without these" }));
 

@@ -5,9 +5,10 @@
 
 import { useCallback, useRef, useState } from "react";
 
-import { reportError } from "@/lib/errors/report";
+import { screenError } from "@/lib/auth/authMessages";
+import { UNKNOWN_ERROR } from "@/lib/copy/copy";
 
-export const FALLBACK = "Something went wrong. Try again.";
+export const FALLBACK = UNKNOWN_ERROR;
 
 /** An error whose message is meant for the person. */
 export class SettingsError extends Error {
@@ -39,11 +40,8 @@ export function useAction<A extends unknown[]>(fn: (...args: A) => Promise<void>
         setState({ status: "sent" });
         return true;
       } catch (error) {
-        if (error instanceof SettingsError) setState({ status: "error", message: error.message });
-        else {
-          reportError(error, { source, context: "settings" });
-          setState({ status: "error", message: FALLBACK });
-        }
+        // G4: a SettingsError's sentence, or any other failure we have words for; FALLBACK otherwise, reported.
+        setState({ status: "error", message: screenError(error, FALLBACK, { source, context: "settings" }) });
         return false;
       } finally {
         busy.current = false;

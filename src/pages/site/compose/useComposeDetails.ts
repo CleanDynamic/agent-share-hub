@@ -110,7 +110,7 @@ export function useComposeDetails({
   );
 
   const writers = { breakage: writeBreakage } as const;
-  const lines = { breakage: "Breakage not saved" } as const;
+  const lines = { breakage: "Couldn't save the breakage. Try again." } as const;
 
   const schedule = (which: keyof typeof writers, wait = SAVE_DEBOUNCE_MS) => {
     const timer = timers.current.get(which);

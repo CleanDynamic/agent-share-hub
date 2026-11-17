@@ -28,6 +28,7 @@ import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 import { BuildsControl, BuildsHead, FiltersButton, UpdatingStatus, ViewSwitch, ellipsis, hitArea, text, useCardColumns } from "./BuildsFrame";
 import { BuildsFilters, type BuildsFiltersViewProps } from "./BuildsFiltersView";
 import { ActiveFilters, RowLamp, type TableChip } from "./BuildsTableView";
+import { EMPTY } from "@/lib/copy/copy";
 
 /** The well, in the board's own units. */
 export const WELL_W = 400;
@@ -206,7 +207,7 @@ export function MapCard({ card, direction, index }: { card: MapCardView; directi
     >
       <Well
         drawing={card.drawings ? card.drawings[direction] : null}
-        note={card.drawings === null || card.failed ? undefined : card.sessions === 0 ? "No sessions yet" : card.sessions === 1 ? "One session. A Map needs two." : undefined}
+        note={card.drawings === null || card.failed ? undefined : card.sessions === 0 ? EMPTY.sessions : card.sessions === 1 ? "One session. A Map needs two." : undefined}
         words={card.words}
       />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginTop: 10 }}>

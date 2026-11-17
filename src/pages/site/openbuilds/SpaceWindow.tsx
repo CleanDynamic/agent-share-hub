@@ -28,6 +28,8 @@ import { FOOT_NOTE, FieldArea, FieldInput, HINT, RecipeButton, Row, SUBTITLE, Se
 import { PublishFrame } from "../compose/PublishChecklist";
 import { mySpacesKey } from "./openBuildsFeedModel";
 import { DEFAULT_SETTINGS, DESCRIPTION_MAX, NAME_MAX, RULES_MAX, copySettings, makeRefusal, settingsOf, spaceChoicesKey, spaceCrowdKey, type SettingsDraft } from "./spaceModel";
+import { screenError } from "@/lib/auth/authMessages";
+import { SAVE_FAILED } from "@/lib/copy/copy";
 
 const WHO: readonly { value: SpaceWhoCanPost; label: string }[] = [
   { value: "anyone", label: "Anyone" },
@@ -125,7 +127,7 @@ export function SpaceWindow({ mode, slug, onClose }: { mode: "make" | "settings"
       onClose();
     } catch (failure) {
       reportError(failure, { source: "openbuilds", context: mode === "make" ? "createSpace" : "updateSpace" });
-      setError(failure instanceof Error && failure.message ? failure.message : "That didn't save. Try again.");
+      setError(screenError(failure, SAVE_FAILED, false));
     } finally {
       setBusy(false);
     }
@@ -139,7 +141,7 @@ export function SpaceWindow({ mode, slug, onClose }: { mode: "make" | "settings"
       setHandle("");
       void qc.invalidateQueries({ queryKey: spaceCrowdKey(space.slug, viewerId) });
     } catch (failure) {
-      toast.error(failure instanceof Error && failure.message ? failure.message : "Couldn't add them. Try again.");
+      toast.error(screenError(failure, "Couldn't add them. Try again.", { source: "openbuilds", context: "addModerator" }));
     }
   };
 

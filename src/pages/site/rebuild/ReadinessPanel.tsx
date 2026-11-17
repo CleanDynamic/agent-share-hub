@@ -38,6 +38,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import type { ReadinessView, RebuildCreditView } from "./rebuildModel";
+import { SAVE_FAILED } from "@/lib/copy/copy";
 
 export interface ReadinessPanelProps {
   readiness: ReadinessView;
@@ -188,7 +189,7 @@ export function ReadinessPanel({
         )}
         {failure ? (
           <WriteFailed
-            line="That didn't save."
+            line={SAVE_FAILED}
             panel="Publish rebuild"
             onRetry={failure.onRetry}
             error={failure.error}

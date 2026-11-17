@@ -45,6 +45,8 @@ import { createRemix } from "@/lib/remix/createRemix";
 import { REMIX_CREATE_ENABLED } from "@/lib/remix/flags";
 import { SITE_NAME, SITE_URL, siteUrl } from "@/lib/site";
 import { scrollBehavior } from "@/lib/theme/motion";
+import { screenError } from "@/lib/auth/authMessages";
+import { signInSentence } from "@/lib/copy/copy";
 
 const NORMALIZE_TYPE = (raw?: string | null): "blueprint" | "blog" => (raw === "blog" ? "blog" : "blueprint");
 
@@ -244,7 +246,7 @@ export default function ContentDetail() {
 
   const handleLike = useCallback(async () => {
     if (!user?.id || !post?.id) {
-      toast({ title: "Sign in to like", variant: "destructive" });
+      toast({ title: signInSentence("like"), variant: "destructive" });
       return;
     }
     const next = !hasLiked;
@@ -274,7 +276,7 @@ export default function ContentDetail() {
 
   const handleRepost = useCallback(async () => {
     if (!user?.id || !post?.id) {
-      toast({ title: "Sign in to repost", variant: "destructive" });
+      toast({ title: signInSentence("continue"), variant: "destructive" });
       return;
     }
     const next = !hasReposted;
@@ -304,7 +306,7 @@ export default function ContentDetail() {
   const handleBookmark = useCallback(
     async (_anchor: HTMLButtonElement) => {
       if (!user?.id || !post?.id) {
-        toast({ title: "Sign in to save", variant: "destructive" });
+        toast({ title: signInSentence("save"), variant: "destructive" });
         return;
       }
       // Phase 8 ShareMenu's Save-to-Library popover anchors here.
@@ -445,7 +447,7 @@ export default function ContentDetail() {
         }
         setExportAnchor(null);
       } catch (e: any) {
-        toast({ title: "Export failed", description: e?.message ?? "Try again.", variant: "destructive" });
+        toast({ title: screenError(e, "Export failed"), variant: "destructive" });
       } finally {
         setExportBusy(null);
       }
@@ -569,7 +571,7 @@ export default function ContentDetail() {
   const handleDrawerPost = useCallback(
     async (text: string) => {
       if (!user?.id || !drawerAnchor) {
-        toast({ title: "Sign in to comment", variant: "destructive" });
+        toast({ title: signInSentence("comment"), variant: "destructive" });
         return;
       }
       try {
@@ -581,7 +583,7 @@ export default function ContentDetail() {
         });
         await refetchDrawerThreads();
       } catch (e: any) {
-        toast({ title: "Could not post", description: e?.message, variant: "destructive" });
+        toast({ title: screenError(e, "Could not post"), variant: "destructive" });
       }
     },
     [user?.id, drawerAnchor, refetchDrawerThreads, toast]
@@ -600,7 +602,7 @@ export default function ContentDetail() {
         });
         await refetchDrawerThreads();
       } catch (e: any) {
-        toast({ title: "Could not reply", description: e?.message, variant: "destructive" });
+        toast({ title: screenError(e, "Could not reply"), variant: "destructive" });
       }
     },
     [user?.id, drawerAnchor, refetchDrawerThreads, toast]
@@ -609,14 +611,14 @@ export default function ContentDetail() {
   const handleDrawerReact = useCallback(
     async (commentId: string, reaction: ReactionType) => {
       if (!user?.id) {
-        toast({ title: "Sign in to react", variant: "destructive" });
+        toast({ title: signInSentence("like"), variant: "destructive" });
         return;
       }
       try {
         await reactToComment({ commentId, reactorId: user.id, reaction });
         await refetchDrawerThreads();
       } catch (e: any) {
-        toast({ title: "Reaction failed", description: e?.message, variant: "destructive" });
+        toast({ title: screenError(e, "Reaction failed"), variant: "destructive" });
       }
     },
     [user?.id, refetchDrawerThreads, toast]
@@ -636,7 +638,7 @@ export default function ContentDetail() {
         });
         await refetchDrawerThreads();
       } catch (e: any) {
-        toast({ title: "Could not edit", description: e?.message, variant: "destructive" });
+        toast({ title: screenError(e, "Could not edit"), variant: "destructive" });
         throw e;
       }
     },
@@ -650,7 +652,7 @@ export default function ContentDetail() {
         await softDeleteComment({ commentId });
         await refetchDrawerThreads();
       } catch (e: any) {
-        toast({ title: "Could not delete", description: e?.message, variant: "destructive" });
+        toast({ title: screenError(e, "Could not delete"), variant: "destructive" });
       }
     },
     [refetchDrawerThreads, toast],
@@ -663,7 +665,7 @@ export default function ContentDetail() {
         await reportComment({ commentId });
         toast({ title: "Thanks", description: "We'll review this comment." });
       } catch (e: any) {
-        toast({ title: "Could not report", description: e?.message, variant: "destructive" });
+        toast({ title: screenError(e, "Could not report"), variant: "destructive" });
       }
     },
     [toast],

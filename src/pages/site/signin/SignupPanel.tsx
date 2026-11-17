@@ -31,6 +31,8 @@ import { useDialogCaptcha, VERIFY_FAILED } from "./dialogCaptcha";
 import { SignupForm } from "./SignupForm";
 import { setSigningIn } from "./signinActivity";
 import { useSignInNavigation } from "./useSignInNavigation";
+import { AUTH_ERRORS } from "@/lib/copy/copy";
+import { rememberPendingVerification } from "@/lib/auth/pendingVerification";
 
 const EMAIL_REGEX = /^[^@]+@[^@]+\.[^@]+$/;
 
@@ -144,7 +146,7 @@ export function SignupPanel() {
       if (seq !== usernameSeq.current) return; // a newer keystroke superseded this
       if (checkFailed) {
         // G13: an unchecked name is not available, and Join stays closed until a check succeeds.
-        setUsernameValidation({ state: "invalid", message: "Couldn't check, try again." });
+        setUsernameValidation({ state: "invalid", message: "Couldn't check that name. Try again." });
       } else if (available) {
         setUsernameValidation({ state: "valid", message: "Username available" });
       } else {
@@ -170,7 +172,7 @@ export function SignupPanel() {
       return;
     }
     setEmailValidation(
-      EMAIL_REGEX.test(value) ? { state: "valid" } : { state: "invalid", message: "Please enter a valid email" },
+      EMAIL_REGEX.test(value) ? { state: "valid" } : { state: "invalid", message: AUTH_ERRORS["invalid-email"] },
     );
   };
 
@@ -179,11 +181,11 @@ export function SignupPanel() {
     const cleanUsername = username.trim().toLowerCase();
 
     if (!EMAIL_REGEX.test(cleanEmail)) {
-      setEmailValidation({ state: "invalid", message: "Please enter a valid email" });
+      setEmailValidation({ state: "invalid", message: AUTH_ERRORS["invalid-email"] });
       return;
     }
     if (usernameValidation.state === "invalid" || cleanUsername.length < 3) {
-      setError("Please choose an available username.");
+      setError("Choose an available username.");
       return;
     }
 
@@ -218,7 +220,7 @@ export function SignupPanel() {
       if (result.signedIn) {
         navigate("/onboarding", { replace: true });
       } else {
-        sessionStorage.setItem("pending_verification_email", cleanEmail);
+        rememberPendingVerification(cleanEmail);
         views.replaceWith("verify", { email: cleanEmail });
       }
     } catch {

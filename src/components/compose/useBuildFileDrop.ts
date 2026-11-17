@@ -43,6 +43,7 @@ import {
 import { getNodeTypes } from "@/lib/build/nodeTypes";
 import { PORTABLE_FORMAT_VERSION } from "@/lib/build/portable";
 import type { NodeType } from "@/lib/build/types";
+import { screenError } from "@/lib/auth/authMessages";
 
 /** What the extractor tells someone to save. Nothing else is opened. */
 export const BUILD_FILE_EXTENSIONS = [".md", ".json", ".txt"];
@@ -293,7 +294,7 @@ export function useBuildFileDrop(options: UseBuildFileDropOptions = {}): BuildFi
         refuse(file.name, [
           {
             code: "FILE_UNREADABLE",
-            message: cause instanceof Error ? cause.message : String(cause),
+            message: screenError(cause, "Couldn't read that file. Try again.", { source: "compose", context: "file.text" }),
           },
         ]);
         return;
@@ -308,9 +309,7 @@ export function useBuildFileDrop(options: UseBuildFileDropOptions = {}): BuildFi
         refuse(file.name, [
           {
             code: "FILE_UNREADABLE",
-            message:
-              "The node type registry could not be loaded, so the file could not be read against it. " +
-              (cause instanceof Error ? cause.message : String(cause)),
+            message: screenError(cause, "Couldn't read that file. Try again.", { source: "compose", context: "getNodeTypes" }),
           },
         ]);
         return;

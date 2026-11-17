@@ -43,6 +43,7 @@ import {
   eyebrow,
   measure,
 } from "@/lib/theme/type";
+import { EMPTY } from "@/lib/copy/copy";
 
 /** The renderer key that says "this node is a breakage". */
 const BREAKAGE_RENDERER = "breakage";
@@ -200,7 +201,7 @@ export function BreakageView({
         style={{ display: "flex", flexDirection: "column", gap: 8, padding: "48px 0" }}
       >
         <p style={{ ...bodyType, fontWeight: 600, margin: 0, color: t.text }}>
-          No breakages recorded
+          {EMPTY.breakages}
         </p>
         <p style={{ ...bodyType, ...measure, margin: 0, color: t.text2 }}>
           Either nothing broke, or nothing was written down. Both are worth

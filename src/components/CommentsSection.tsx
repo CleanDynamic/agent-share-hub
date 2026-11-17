@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { MentionInput } from "@/components/MentionInput";
 import { MentionText } from "@/components/MentionText";
 import { Heart, Loader2, MessageCircle } from "lucide-react";
+import { signInSentence, signInButton } from "@/lib/copy/copy";
 
 interface Comment {
   id: string;
@@ -185,7 +186,7 @@ export function CommentsSection({
 
   async function toggleLike(commentId: string) {
     if (!isLoggedIn || !user) {
-      toast({ title: "Sign in to like comments" });
+      toast({ title: signInSentence("like") });
       return;
     }
 
@@ -291,7 +292,7 @@ export function CommentsSection({
       {/* Comment input */}
       {!isLoggedIn ? (
         <Link to="/login" className="text-xs text-muted-foreground hover:text-foreground">
-          Sign in to leave a comment
+          {signInButton("comment")}
         </Link>
       ) : !isEligible ? (
         <p className="text-xs text-muted-foreground">

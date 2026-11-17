@@ -19,6 +19,7 @@ import { linkPanelLists, type PanelGroup, type PanelRow, type RefEntry, type Ref
 import { t } from "@/lib/theme/tokens";
 import { FieldInput, HEADER_ICONS, IconSquare, RecipeButton, footerStyle, frameStyle } from "@/pages/site/compose/modalRecipes";
 import { DANGER, ELLIPSIS, GAP, InnerPanel, PAD, SECTION_LABEL, SquareSwatch, UndoRedo, data, words } from "@/pages/site/compose/referencePieces";
+import { EMPTY } from "@/lib/copy/copy";
 
 export const LINK_PANEL_COPY = {
   button: "Link to a group, part, session or tile",
@@ -26,7 +27,7 @@ export const LINK_PANEL_COPY = {
   head: "Link text",
   groups: "Reference groups",
   parts: "Parts, sessions and tiles",
-  none: "Nothing has that name",
+  none: EMPTY.nothingNamed,
   noName: "No name",
   remove: "Remove the link",
   done: "Done",

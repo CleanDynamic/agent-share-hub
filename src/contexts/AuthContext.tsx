@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, useCallback, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
+import { forgetOnAuthEvent } from "@/lib/auth/pendingVerification";
 
 interface Profile {
   id: string;
@@ -83,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Set up listener BEFORE getSession per Supabase best practice
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, newSession) => {
+        forgetOnAuthEvent(_event);
         setSession(newSession);
         if (newSession?.user) {
           const userId = newSession.user.id;

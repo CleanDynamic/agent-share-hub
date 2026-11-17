@@ -20,6 +20,7 @@ import { cardTitle, FIGTREE } from "@/lib/theme/type";
 
 import { AuthField, AuthForm, FieldMessage, Gap, PrimaryAction, PushDown, ViewHeading } from "./AuthParts";
 import { useAuthSizes } from "./authSizes";
+import { WAITING } from "@/lib/copy/copy";
 
 const LEDE = {
   margin: 0,
@@ -99,7 +100,7 @@ export function ResetRequestForm({ email, onEmailChange, canSubmit, isSubmitting
             reserveMessage
           />
           <PushDown />
-          <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText="Sending...">
+          <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText={WAITING.sending}>
             Send reset link
           </PrimaryAction>
         </AuthForm>
@@ -123,7 +124,7 @@ export function ResetRequestForm({ email, onEmailChange, canSubmit, isSubmitting
           autoComplete="email"
           error={error}
         />
-        <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText="Sending...">
+        <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText={WAITING.sending}>
           Send reset link
         </PrimaryAction>
       </AuthForm>
@@ -201,7 +202,7 @@ export function ResetConfirmForm({
           />
           <FieldMessage reserve>{error}</FieldMessage>
           <PushDown />
-          <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText="Updating...">
+          <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText={WAITING.updating}>
             Update password
           </PrimaryAction>
         </AuthForm>
@@ -241,7 +242,7 @@ export function ResetConfirmForm({
           />
           <FieldMessage>{error}</FieldMessage>
         </div>
-        <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText="Updating...">
+        <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText={WAITING.updating}>
           Update password
         </PrimaryAction>
       </AuthForm>

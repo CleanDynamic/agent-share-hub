@@ -1,4 +1,4 @@
-// CA-28 P3, on the page: a write that fails once says "Title not saved" with Retry, and Retry makes the same write again.
+// CA-28 P3, on the page: a write that fails once says "Couldn't save the title. Try again." with Retry, and Retry makes the same write again.
 
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { Toaster } from "sonner";
@@ -14,7 +14,7 @@ import { KEY_A, seedCa20 } from "./ca20Fixture";
 
 vi.setConfig({ testTimeout: 40_000 });
 
-describe("Title not saved", () => {
+describe("Couldn't save the title. Try again.", () => {
   beforeEach(harnessBefore);
   afterEach(harnessAfter);
 
@@ -26,7 +26,7 @@ describe("Title not saved", () => {
     fireEvent.change(title, { target: { value: "Login" } });
     fireEvent.keyDown(title, { key: "Enter" });
     fireEvent.blur(title);
-    const said = await screen.findByText("Title not saved", undefined, { timeout: 15_000 });
+    const said = await screen.findByText("Couldn't save the title. Try again.", undefined, { timeout: 15_000 });
     expect(sessionsMetaOf(draftRow()?.making)[KEY_A]?.title).toBeUndefined();
     fireEvent.click(within(said.closest("[data-sonner-toast]") as HTMLElement).getByRole("button", { name: "Retry" }));
     await waitFor(() => expect(sessionsMetaOf(draftRow()?.making)[KEY_A]?.title).toBe("Login"), { timeout: 15_000 });

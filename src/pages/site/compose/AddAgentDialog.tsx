@@ -65,7 +65,7 @@ export const AGENT_DIALOG_COPY = {
   sampleLine: "Transcript or trace of one run",
   trace: "Trace link",
   transcript: "Sample transcript",
-  transcriptPlaceholder: "User: Summarise today's orders\nAgent: Three orders came in ...",
+  transcriptPlaceholder: "User: Summarise today's orders\nAgent: Three orders came in…",
   pattern: "Orchestration pattern",
   patternLine: "Sequential, lead and delegates, parallel then merge, writer and reviewer",
   patternCount: "Multi-agent only",

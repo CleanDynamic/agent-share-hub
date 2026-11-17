@@ -12,6 +12,7 @@ import ReblogComposeSheet, {
 } from "@/components/reblog/ReblogComposeSheet";
 import { createReblog } from "@/lib/reblog/createReblog";
 import { ReblogValidationError } from "@/lib/reblog/media";
+import { screenError } from "@/lib/auth/authMessages";
 
 function classifyPostType(target: ReblogTargetInput): "Blueprint" | "Blog" {
   const pt = (target.post_type ?? target.content_type ?? "").toLowerCase();
@@ -137,13 +138,13 @@ export default function ReblogComposeHost({
       if (err instanceof ReblogValidationError) {
         toast.error(err.message);
       } else {
-        const msg = err?.message || "Failed to reblog";
-        if (msg.includes("once per 24 hours")) {
+        const said: string = err?.message || "";
+        if (said.includes("once per 24 hours")) {
           toast.error("You can only reblog the same post once per 24 hours");
-        } else if (msg.includes("Reblog rate limit")) {
+        } else if (said.includes("Reblog rate limit")) {
           toast.error("Reblog rate limit reached (50 / 24h)");
         } else {
-          toast.error(msg);
+          toast.error(screenError(err, "Failed to reblog", { source: "reblog", context: "compose" }));
         }
       }
       setIsPosting(false);

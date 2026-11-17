@@ -153,7 +153,9 @@ export async function requestRepoProposal(
   });
 
   if (error) {
-    throw buildLayerError("parse-repo", new Error(await readFunctionError(error)));
+    // G4: the status rides along, so the screen can say 404 and 429 in its own words without the function's text.
+    const status = ((error as { context?: { status?: unknown } })?.context?.status as number | undefined) ?? null;
+    throw buildLayerError("parse-repo", Object.assign(new Error(await readFunctionError(error)), { status }));
   }
 
   const proposal = data as RepoProposal | null;

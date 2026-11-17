@@ -1,6 +1,7 @@
 import { Suspense, createContext, lazy, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLoadAtIdle } from "@/lib/routing/lazyHost";
+import { signInSentence } from "@/lib/copy/copy";
 
 /** SV-26 P2: the reblog window loads the first time a reader reblogs, or at idle. */
 const loadHost = () => import("@/components/reblog/ReblogComposeHost");
@@ -55,7 +56,7 @@ export function ReblogComposeProvider({ children }: { children: ReactNode }) {
     (post: ReblogTargetInput) => {
       if (!isLoggedIn) {
         // SV-26 P2: sonner loads here, on the press, so it stays out of the first download.
-        void import("sonner").then(({ toast }) => toast.error("Sign in to reblog"));
+        void import("sonner").then(({ toast }) => toast.error(signInSentence("continue")));
         return;
       }
       setTarget(post);

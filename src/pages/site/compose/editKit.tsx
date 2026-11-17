@@ -27,7 +27,7 @@ export const EDIT_COPY = {
   uses: "Uses",
   addInput: "Add input",
   /** F6: shown beside "Add input" while there is nothing it could take. */
-  noInputs: "No other steps yet",
+  noInputs: "No other steps yet.",
   attach: "File from computer",
   makes: "Makes",
   nameFile: "Add file name",

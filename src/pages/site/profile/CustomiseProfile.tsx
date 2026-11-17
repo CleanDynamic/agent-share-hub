@@ -34,6 +34,7 @@ import { FIGTREE } from "@/lib/theme/type";
 import { FOOT_NOTE, FieldArea, FieldInput, HINT, RecipeButton, Row } from "../compose/modalRecipes";
 import { PublishFrame } from "../compose/PublishChecklist";
 import { SIDE_TITLES } from "./ProfileSide";
+import { screenError } from "@/lib/auth/authMessages";
 
 export interface CustomisePicture {
   /** The preview's URL, or null with none. */
@@ -147,7 +148,7 @@ export function CustomiseProfile({ open, onClose, initial, pinLabels, pictures, 
       await onSave(draft);
       onClose();
     } catch (error) {
-      setRefusal(error instanceof Error ? error.message : "Your profile didn't save.");
+      setRefusal(screenError(error, "Couldn't save your profile. Try again.", { source: "profile", context: "saveProfile" }));
     } finally {
       setSaving(false);
     }

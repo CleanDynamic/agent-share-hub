@@ -20,7 +20,7 @@ import type { BuildNode, NodeTree } from "@/lib/build/types";
 import { modelLabel } from "@/lib/models/registry";
 import { sessionDate, sessionSource } from "@/pages/site/drafts/draftsModel";
 import { hasTitle } from "@/lib/build/publish";
-import { SAVING_PAUSED } from "@/components/pagestate/stateCopy";
+import { SAVING_PAUSED } from "@/lib/copy/copy";
 
 export const UNTITLED = "Untitled build";
 

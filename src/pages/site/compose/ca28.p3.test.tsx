@@ -62,21 +62,21 @@ afterEach(() => {
 
 describe("sayFailed", () => {
   it("says the line alone when there is nothing to run again", () => {
-    sayFailed(new Error("x"), "Prompt not saved");
-    expect(toast.error).toHaveBeenCalledWith("Prompt not saved");
+    sayFailed(new Error("x"), "Couldn't save the prompt. Try again.");
+    expect(toast.error).toHaveBeenCalledWith("Couldn't save the prompt. Try again.");
   });
 
   it("puts Retry on the toast, and Retry runs what it was given", () => {
     const retry = vi.fn();
-    sayFailed(new Error("x"), "Session not moved", retry);
-    expect(toast.error).toHaveBeenCalledWith("Session not moved", withRetry());
+    sayFailed(new Error("x"), "Couldn't move the session. Try again.", retry);
+    expect(toast.error).toHaveBeenCalledWith("Couldn't move the session. Try again.", withRetry());
     expect(retry).not.toHaveBeenCalled();
     retryOf(0)?.onClick();
     expect(retry).toHaveBeenCalledTimes(1);
   });
 
   it("says nothing when the maker has been told already", () => {
-    sayFailed(new DraftNotStartedError(new Error("x")), "Prompt not saved", () => undefined);
+    sayFailed(new DraftNotStartedError(new Error("x")), "Couldn't save the prompt. Try again.", () => undefined);
     expect(toast.error).not.toHaveBeenCalled();
   });
 });
@@ -85,49 +85,49 @@ describe("the verbs, as {Thing} not {past participle}", () => {
   const cases: { name: string; line: string; fail: () => void; run: (api: ReturnType<typeof hook>["result"]["current"]) => Promise<unknown>; calls: () => number }[] = [
     {
       name: "add an agent",
-      line: "Agent not added",
+      line: "Couldn't add the agent. Try again.",
       fail: () => graph.addAgent.mockRejectedValue(new Error("down")),
       run: (api) => api.addAgentOrTeam({ kind: "agent", name: null, model: "Opus 5.5" }),
       calls: () => graph.addAgent.mock.calls.length,
     },
     {
       name: "add a team",
-      line: "Team not added",
+      line: "Couldn't add the team. Try again.",
       fail: () => graph.addTeam.mockRejectedValue(new Error("down")),
       run: (api) => api.addAgentOrTeam({ kind: "team", name: null, model: "Opus 5.5" }),
       calls: () => graph.addTeam.mock.calls.length,
     },
     {
       name: "add a manual step",
-      line: "Manual step not added",
+      line: "Couldn't add the manual step. Try again.",
       fail: () => graph.addManualStep.mockRejectedValue(new Error("down")),
       run: (api) => api.addManual({ tool: "Figma", text: "x", file: null, afterId: null }),
       calls: () => graph.addManualStep.mock.calls.length,
     },
     {
       name: "add code",
-      line: "Code not added",
+      line: "Couldn't add the code. Try again.",
       fail: () => graph.addCode.mockRejectedValue(new Error("down")),
       run: (api) => api.addCodeSteps({ steps: [{ source: "x", language: "ts", filename: null }], tool: null, model: null }),
       calls: () => graph.addCode.mock.calls.length,
     },
     {
       name: "add a decision",
-      line: "Decision not added",
+      line: "Couldn't add the decision. Try again.",
       fail: () => graph.addDecision.mockRejectedValue(new Error("down")),
       run: (api) => api.addDecisionTile({ provider: "typesafe-jev", model: "m", questions: [] } as never),
       calls: () => graph.addDecision.mock.calls.length,
     },
     {
       name: "save the instructions",
-      line: "Instructions not saved",
+      line: "Couldn't save the instructions. Try again.",
       fail: () => graph.setInstructions.mockRejectedValue(new Error("down")),
       run: async (api) => api.setInstructions("ag1", "Do it"),
       calls: () => graph.setInstructions.mock.calls.length,
     },
     {
       name: "rename a tile",
-      line: "Step not renamed",
+      line: "Couldn't rename the step. Try again.",
       fail: () => graph.setStepTitle.mockRejectedValue(new Error("down")),
       run: async (api) => api.rename("ag1", "New name"),
       calls: () => graph.setStepTitle.mock.calls.length,

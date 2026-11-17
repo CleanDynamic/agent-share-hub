@@ -18,6 +18,7 @@ import { prefersReducedMotion } from "@/lib/theme/motion";
 
 import { SCRIM_OUT_MS } from "./signinMotion";
 import { viewOf, type SignInView } from "./signinUrl";
+import { forgetPendingVerification } from "@/lib/auth/pendingVerification";
 
 const SignInDialog = lazy(() => import("./SignInDialog"));
 const HalftoneLayer = lazy(() => import("./HalftoneLayer"));
@@ -42,6 +43,8 @@ export function SignInDialogHost() {
 
   useEffect(() => {
     if (!closing) return;
+    // G16: the address kept for "Check your inbox" goes when the dialog closes.
+    forgetPendingVerification();
     if (prefersReducedMotion()) setLayerDone(true);
     const timer = window.setTimeout(() => setDialogDone(true), SCRIM_OUT_MS);
     return () => window.clearTimeout(timer);

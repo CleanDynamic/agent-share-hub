@@ -92,6 +92,7 @@ import { copyTogether } from "@/lib/build/copyTogether";
 import { AgentRules, GateLine, JobLine, TeamHead, TeamLinesContext, WaitsLine } from "@/components/build/teamLines";
 import { scrollBehavior } from "@/lib/theme/motion";
 import type { BuildStepsView } from "./buildModel";
+import { EMPTY, DONE } from "@/lib/copy/copy";
 
 /** How long the step a chip or an address named stays ringed. */
 export const RING_MS = 1200;
@@ -362,7 +363,7 @@ function CopyButton({ label = "Copy", what, text: words, onCopy, announce, phone
       onClick={async () => {
         if (await onCopy(words)) {
           confirm();
-          announce("Copied");
+          announce(DONE.copied);
         }
       }}
     >
@@ -910,7 +911,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
                 fontSize={12}
                 onClick={async () => {
                   const words = await view.setupPrompt?.(step.id);
-                  if (words && (await view.onCopy(words))) announce("Setup prompt copied");
+                  if (words && (await view.onCopy(words))) announce(DONE.setupCopied);
                 }}
               >
                 Copy setup prompt
@@ -1128,7 +1129,7 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
                 title={step.text.trim() || step.teamInstructions || step.children.some((child) => child.kind === "agent" && child.text.trim()) ? undefined : "Add instructions first"}
                 onClick={async () => {
                   const words = await view.setupPrompt?.(step.id);
-                  if (words && (await view.onCopy(words))) announce("Setup prompt copied");
+                  if (words && (await view.onCopy(words))) announce(DONE.setupCopied);
                 }}
               >
                 Copy setup prompt
@@ -1433,7 +1434,7 @@ export function StepsList({ view, phone, announce, titled = false }: StepsListPr
         isContainer(entry) ? <ContainerCard key={entry.step.id} entry={entry} ctx={ctx} /> : <StepCard key={entry.step.id} entry={entry} ctx={ctx} />,
       );
     const body = run.groups.map((group, at) => {
-      if (at === 0 && chat && typeof group.head === "function") return group.entries.length === 0 ? <p key={group.key} style={{ ...text(13, 400, t.label), margin: 0, padding: "14px 0", borderTop: `1px solid ${t.hairlineModule}` }}>No steps yet</p> : <div key={group.key} style={column(0)}>{rows(group)}</div>;
+      if (at === 0 && chat && typeof group.head === "function") return group.entries.length === 0 ? <p key={group.key} style={{ ...text(13, 400, t.label), margin: 0, padding: "14px 0", borderTop: `1px solid ${t.hairlineModule}` }}>{EMPTY.steps}</p> : <div key={group.key} style={column(0)}>{rows(group)}</div>;
       return (
         <div key={group.key} style={column(0)}>
           {typeof group.head === "function" ? group.head(null) : group.head}
@@ -1513,7 +1514,7 @@ export function StepsList({ view, phone, announce, titled = false }: StepsListPr
                     joins={neighbour?.view.label ?? ""}
                   />
                   <div id={`reader-workstream-${key}`} data-testid="workstream-body" hidden={closed} style={WORKSTREAM_BODY}>
-                    {closed ? null : mine.length > 0 ? mine.map((run) => drawRun(run)) : <p style={{ ...text(13, 400, t.label), margin: 0, padding: "4px 8px" }}>No sessions yet</p>}
+                    {closed ? null : mine.length > 0 ? mine.map((run) => drawRun(run)) : <p style={{ ...text(13, 400, t.label), margin: 0, padding: "4px 8px" }}>{EMPTY.sessions}</p>}
                   </div>
                 </div>
               );

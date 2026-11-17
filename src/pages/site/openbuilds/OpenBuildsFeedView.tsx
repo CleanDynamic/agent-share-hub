@@ -27,6 +27,7 @@ import { HomeColumns, useHomeLayout } from "@/pages/site/home/HomeFrame";
 
 import { FEED_HEAD, PageHead } from "./OpenBuildsFeedParts";
 import type { FeedScope } from "./openBuildsFeedModel";
+import { signInSentence } from "@/lib/copy/copy";
 
 export type FeedStatus = "loading" | "error" | "ready";
 
@@ -97,7 +98,7 @@ function YourSpaces({ view }: { view: OpenBuildsFeedViewProps }) {
     return (
       <section aria-label="Your spaces" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <SectionHead title="Your spaces" />
-        <p style={{ margin: 0, ...rowText({ color: t.text2 }) }}>Sign in to join spaces.</p>
+        <p style={{ margin: 0, ...rowText({ color: t.text2 }) }}>{signInSentence("joinSpaces")}</p>
         <div>
           <PostControl to={view.signInTo}>Sign in</PostControl>
         </div>
@@ -145,7 +146,7 @@ function BusyThisWeek({ rows }: { rows: BusyRow[] }) {
               <div style={{ ...rowText({ fontSize: 12, color: t.label }), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.meta}</div>
             </div>
             <PostControl onClick={row.onJoin} aria-label={`Join ${row.name}`}>
-              Join
+              Join space
             </PostControl>
           </div>
         ))}

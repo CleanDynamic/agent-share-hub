@@ -32,6 +32,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { feedback } from '@/lib/theme/motion';
+import { screenError } from "@/lib/auth/authMessages";
 
 type BlockStatus = 'idle' | 'running' | 'success' | 'error';
 
@@ -250,7 +251,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
       setStatus('success');
       toast.success(`Copied to clipboard — opened ${result.providerName}`);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Run failed';
+      const message = screenError(err, 'Run failed', { source: 'article', context: 'promptBlock' });
       eventBus.emit('block:run:error', { blockId, error: err });
       setStatus('error');
       toast.error(message);

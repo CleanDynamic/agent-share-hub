@@ -77,7 +77,7 @@ describe("Revoke", () => {
     render(<MemoryRouter><AppsView apps={[app]} onRevoke={onRevoke} /></MemoryRouter>);
     fireEvent.click(screen.getByRole("button", { name: "Revoke Claude" }));
     fireEvent.click(within(screen.getByRole("group", { name: "Confirm" })).getByRole("button", { name: "Revoke" }));
-    expect(await screen.findByText("Something went wrong. Try again.")).toBeTruthy();
+    expect(await screen.findByText("Couldn't do that. Try again.")).toBeTruthy();
     expect(screen.getByRole("group", { name: "Confirm" })).toBeTruthy();
   });
 

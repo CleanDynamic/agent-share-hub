@@ -157,7 +157,7 @@ describe("the window", () => {
     open("p3");
     fireEvent.click(screen.getByRole("button", { name: "Copy prompt" }));
     await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining("The menu grid overflows")));
-    await waitFor(() => expect(screen.getAllByRole("status").some((el) => el.textContent === "Copied")).toBe(true));
+    await waitFor(() => expect(screen.getAllByRole("status").some((el) => el.textContent === "Copied.")).toBe(true));
   });
 
   it("closes with the footer's Close and the header's Close, and stays shut for an id that is not a prompt", () => {
