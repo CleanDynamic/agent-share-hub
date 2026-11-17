@@ -332,3 +332,34 @@ test.describe("G15: a submit that ends in an error", () => {
     expect(state.live).toBe(false);
   });
 });
+
+/* ── G16: toasts ── */
+
+test("G16: a toast takes no focus, alt+T reaches it, and its action works with Enter; an error is said assertively", async ({ page }) => {
+  await open(page, "/");
+  await page.locator('section[aria-label^="Notifications"]').waitFor({ state: "attached", timeout: 20_000 });
+  const before = await page.evaluate(() => document.activeElement?.tagName);
+  // The app's own sonner (the module the toaster is drawn from), so the toast reaches the app's toaster.
+  await page.evaluate(async () => {
+    const { toast } = (await import(/* @vite-ignore */ "/src/components/ui/sonner.tsx")) as { toast: (title: string, options?: unknown) => void } & { toast: { error: (title: string) => void } };
+    (window as unknown as { __acted: boolean }).__acted = false;
+    toast("New build started.", { action: { label: "Open", onClick: () => ((window as unknown as { __acted: boolean }).__acted = true) }, duration: 60_000 });
+  });
+  await expect(page.getByTestId("toast-polite")).toHaveText("New build started.");
+  expect(await page.evaluate(() => document.activeElement?.tagName)).toBe(before);
+  await page.keyboard.press("Alt+t");
+  await expect.poll(() => page.evaluate(() => Boolean(document.activeElement?.closest('section[aria-label^="Notifications"]')))).toBe(true);
+  for (let press = 0; press < 6; press++) {
+    if ((await page.evaluate(() => document.activeElement?.textContent?.trim())) === "Open") break;
+    await page.keyboard.press("Tab");
+  }
+  expect(await page.evaluate(() => document.activeElement?.textContent?.trim())).toBe("Open");
+  await page.keyboard.press("Enter");
+  expect(await page.evaluate(() => (window as unknown as { __acted: boolean }).__acted)).toBe(true);
+  await page.evaluate(async () => {
+    const { toast } = (await import(/* @vite-ignore */ "/src/components/ui/sonner.tsx")) as unknown as { toast: { error: (title: string) => void } };
+    toast.error("Couldn't publish the build. Try again.");
+  });
+  await expect(page.getByTestId("toast-assertive")).toHaveText("Couldn't publish the build. Try again.");
+  await expect(page.locator('section[aria-label^="Notifications"]')).toHaveAttribute("aria-live", "off");
+});

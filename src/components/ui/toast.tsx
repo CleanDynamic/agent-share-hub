@@ -40,8 +40,10 @@ const toastVariants = cva(
 const Toast = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> & VariantProps<typeof toastVariants>
->(({ className, variant, ...props }, ref) => {
-  return <ToastPrimitives.Root ref={ref} className={cn(toastVariants({ variant }), className)} {...props} />;
+>(({ className, variant, type, ...props }, ref) => {
+  // G16: a toast is said politely ("background"); an error, the destructive variant, assertively ("foreground").
+  const said = type ?? (variant === "destructive" ? "foreground" : "background");
+  return <ToastPrimitives.Root ref={ref} type={said} className={cn(toastVariants({ variant }), className)} {...props} />;
 });
 Toast.displayName = ToastPrimitives.Root.displayName;
 
