@@ -10,7 +10,8 @@ vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => auth }));
 
 import { PRIVACY_VERSION, TERMS_VERSION } from "@/content/legal/legalConstants";
 
-import { AcceptTermsDialog, needsAcceptance, type AcceptanceData } from "./AcceptTermsDialog";
+import { needsAcceptance, type AcceptanceData } from "./acceptance";
+import { AcceptTermsDialog } from "./AcceptTermsDialog";
 
 function setup(reviewed: boolean, accepted: Awaited<ReturnType<AcceptanceData["accepted"]>>, accept: AcceptanceData["accept"] = vi.fn(async () => undefined)) {
   const data: AcceptanceData = { accepted: vi.fn(async () => accepted), accept };

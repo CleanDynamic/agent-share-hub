@@ -23,13 +23,8 @@ import { FIGTREE } from "@/lib/theme/type";
 import { AuthCheck, AuthField, AuthForm, FieldMessage, OrRule, PrimaryAction, ProviderButtons } from "./AuthParts";
 import { WAITING } from "@/lib/copy/copy";
 import { MINIMUM_AGE } from "@/content/legal/legalConstants";
+import { termsLead } from "./termsLead";
 
-
-/** G18 (prompt 9): the tick's opening words. With the minimum age set, the tick also confirms it; while it is open (null),
-    the sentence is today's. */
-export function termsLead(age: number | null): string {
-  return age === null ? "I agree to the" : `I am ${age} or over and agree to the`;
-}
 
 export interface SignupFormProps {
   displayName: string;
