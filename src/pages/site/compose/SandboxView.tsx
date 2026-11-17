@@ -1412,6 +1412,8 @@ function SandboxBody(props: SandboxViewProps) {
             bottom: `calc(${ACTION_BAR_BOTTOM}px + env(safe-area-inset-bottom))`,
             zIndex: 5,
             display: "flex",
+            /* G8: at 320 Publish goes to a row of its own rather than push the page sideways; where all three fit, one row. */
+            flexWrap: "wrap",
             gap: 8,
             padding: 8,
             borderRadius: 12,

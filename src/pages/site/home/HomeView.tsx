@@ -469,7 +469,11 @@ export function FeedHead({ scope, onScopeChange, filter, onFilterChange }: Pick<
           { value: "everyone", label: "Everyone" },
         ]}
       />
-      <div style={{ marginBottom: 6 }}>
+      {/* G8: at 320 the five kinds are wider than the column; they scroll in their own box (the arrows bring the chosen one
+          into view) rather than push the page sideways. Where they fit nothing changes. */}
+      {/* The box keeps 4px round the control for its focus ring, given back in margin, so nothing moves; it may reach into the
+          head's 20px side padding, as the control always could, before it scrolls. */}
+      <div style={{ flexShrink: 0, padding: 4, margin: "-4px -4px 2px", maxWidth: "calc(100% + 28px)", boxSizing: "border-box", minWidth: 0, overflowX: "auto", scrollbarWidth: "none" }}>
         <Segmented<HomeFilter> label="Kind" size={28} items={HOME_FILTERS} value={filter} onChange={onFilterChange} />
       </div>
     </div>

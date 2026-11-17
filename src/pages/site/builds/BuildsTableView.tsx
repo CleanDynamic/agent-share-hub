@@ -299,8 +299,13 @@ function LensRow({ lenses, lens, onLens, columns, sortable, sortColumn, onSortCo
   const phone = useIsPhone();
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12, borderBottom: `1px solid ${t.hairline}` }}>
-      <TextTabs tabs={lenses} value={lens} onChange={onLens} label="Lens" rule={false} />
-      <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
+      {/* G8: at 320 the lenses scroll in their own box and the controls wrap, rather than push the page sideways; where they
+          fit nothing changes. */}
+      {/* The box keeps 4px round the tabs for their focus ring, given back in margin, so nothing moves. */}
+      <div style={{ padding: 4, margin: -4, maxWidth: "calc(100% + 8px)", boxSizing: "border-box", minWidth: 0, overflowX: "auto", scrollbarWidth: "none" }}>
+        <TextTabs tabs={lenses} value={lens} onChange={onLens} label="Lens" rule={false} />
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 4 }}>
         <UpdatingStatus updating={updating} />
         <FiltersButton activeCount={activeCount} setName={setName} onClick={onOpenFilters} />
         {phone ? <SortMenu columns={columns} sortable={sortable} sortColumn={sortColumn} onSortColumn={onSortColumn} /> : null}
