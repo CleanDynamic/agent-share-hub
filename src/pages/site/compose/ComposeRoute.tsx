@@ -48,6 +48,7 @@ import { SANDBOX_COMPOSER_ENABLED } from "@/lib/build/flags";
 
 import { ComposeSkeleton } from "./ComposeSkeleton";
 import { preloadComposer } from "./preload";
+import { retryRead } from "@/lib/query/client";
 
 /** Its own chunk: the composer is heavy, and nothing else should pay for it. */
 const ComposePage = lazy(() => import("./ComposePage"));
@@ -123,7 +124,8 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
     enabled: reads,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
-    retry: 1,
+    // D3: one retry, never after the time limit cut the read, never for a refused session (lib/query/client.ts).
+    retry: retryRead,
   });
 
   /* THE PAGE MOUNTS WHEN ITS RECORD IS IN. The composer is a heavy first render; mounted while the record is still being read it
@@ -135,7 +137,8 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
     enabled: reads,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
-    retry: 1,
+    // D3: one retry, never after the time limit cut the read, never for a refused session (lib/query/client.ts).
+    retry: retryRead,
   });
   /* G20: the route waits for the record and the library until each has answered once, failure or not. Read again later (a
      Try again, the page's own read on mount), a query with nothing in it goes back to pending: waiting again then would take

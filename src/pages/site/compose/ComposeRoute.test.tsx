@@ -237,3 +237,22 @@ describe("ComposeRoute after the server ended the session (G16)", () => {
     expect(await screen.findByText("the composer")).toBeTruthy();
   });
 });
+
+describe("the editor's reads follow the shared retry rule (D3)", () => {
+  it("a record read the time limit cut is not tried again", async () => {
+    const { ReadTimeoutError } = await import("@/lib/query/readLimit");
+    getBuildParent.mockImplementationOnce(async () => ({ id: "b1", parent_build_id: null }) as never);
+    getBuild.mockClear();
+    getBuild.mockImplementation(async () => {
+      throw new ReadTimeoutError(10_000);
+    });
+    open("/compose/b1");
+    await waitFor(() => expect(getBuild).toHaveBeenCalledTimes(1));
+    // Past the one retry's delay (1s): still once.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1_300));
+    });
+    expect(getBuild).toHaveBeenCalledTimes(1);
+    getBuild.mockImplementation(async () => null);
+  });
+});

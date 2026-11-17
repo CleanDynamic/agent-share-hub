@@ -44,6 +44,7 @@ import { trackWrite } from "@/lib/build/pendingWrites";
 
 import type { MadeWithChip } from "./composeModel";
 import { sayFailed } from "./draftStart";
+import { retryRead } from "@/lib/query/client";
 
 const STALE_MS = 30_000;
 const NO_SESSIONS: SessionSummary[] = [];
@@ -155,7 +156,8 @@ export function useComposeSessions({
       queryFn: () => getSessionPrompts(id),
       staleTime: Infinity,
       refetchOnWindowFocus: false,
-      retry: 1,
+      // D3: one retry, never after the time limit cut the read, never for a refused session (lib/query/client.ts).
+      retry: retryRead,
     })),
   });
 
