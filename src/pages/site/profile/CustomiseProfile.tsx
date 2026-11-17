@@ -148,7 +148,7 @@ export function CustomiseProfile({ open, onClose, initial, pinLabels, pictures, 
       await onSave(draft);
       onClose();
     } catch (error) {
-      setRefusal(screenError(error, "Your profile didn't save.", { source: "profile", context: "saveProfile" }));
+      setRefusal(screenError(error, "Couldn't save your profile. Try again.", { source: "profile", context: "saveProfile" }));
     } finally {
       setSaving(false);
     }

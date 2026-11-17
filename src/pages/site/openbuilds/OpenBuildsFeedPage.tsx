@@ -30,6 +30,7 @@ import { OpenBuildsFeedView } from "./OpenBuildsFeedView";
 import { FEED_PAGE, busyMeta, busySpacesKey, feedKey, feedSearch, freshCount, mySpacesKey, readFeedAddress, readSeen, recentTimesKey } from "./openBuildsFeedModel";
 import type { PostingWindow } from "./PostingWindows";
 import { screenError } from "@/lib/auth/authMessages";
+import { JOIN_SPACE_FAILED } from "@/lib/copy/copy";
 
 const PostingWindows = lazy(() => import("./PostingWindows"));
 
@@ -84,7 +85,7 @@ export default function OpenBuildsFeedPage() {
       void qc.invalidateQueries({ queryKey: mySpacesKey(viewerId) });
     } catch (error) {
       reportError(error, { source: "openbuilds", context: "joinSpace" });
-      toast.error(screenError(error, "Couldn't join. Try again.", false));
+      toast.error(screenError(error, JOIN_SPACE_FAILED, false));
     }
   };
 

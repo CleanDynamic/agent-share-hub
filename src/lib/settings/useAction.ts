@@ -6,8 +6,9 @@
 import { useCallback, useRef, useState } from "react";
 
 import { screenError } from "@/lib/auth/authMessages";
+import { UNKNOWN_ERROR } from "@/lib/copy/copy";
 
-export const FALLBACK = "Something went wrong. Try again.";
+export const FALLBACK = UNKNOWN_ERROR;
 
 /** An error whose message is meant for the person. */
 export class SettingsError extends Error {

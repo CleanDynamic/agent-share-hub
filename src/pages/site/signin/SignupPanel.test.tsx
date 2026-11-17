@@ -156,7 +156,7 @@ describe("the username", () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(400);
     });
-    expect(screen.getByText("Couldn't check, try again.")).toBeTruthy();
+    expect(screen.getByText("Couldn't check that name. Try again.")).toBeTruthy();
     expect(screen.queryByText("Username available")).toBeNull();
     expect(create()).toBeDisabled();
     fireEvent.submit(create().closest("form")!);

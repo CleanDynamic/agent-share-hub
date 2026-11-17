@@ -60,6 +60,7 @@ import { emptyFeed, feedOptions, joinedLabel, metaParts, oneLineOf, othersLines,
 import { TRACK_ITEMS, levelView, streakLine, xpLine } from "./profileModel";
 import { useProfilePictures } from "./useProfilePictures";
 import { screenError } from "@/lib/auth/authMessages";
+import { FOLLOW_PERSON_FAILED, UNFOLLOW_PERSON_FAILED, COPY_LINK_FAILED } from "@/lib/copy/copy";
 
 /** A profile does not change while somebody is looking at it. */
 const STALE_MS = 60_000;
@@ -245,7 +246,7 @@ export function ProfilePage() {
       if (summary.isPrivate) refreshProfile();
     } catch {
       void qc.invalidateQueries({ queryKey: summaryKey });
-      toast({ title: following ? "Could not follow" : "Could not unfollow", variant: "destructive" });
+      toast({ title: following ? FOLLOW_PERSON_FAILED : UNFOLLOW_PERSON_FAILED, variant: "destructive" });
     } finally {
       setFollowBusy(false);
     }
@@ -262,7 +263,7 @@ export function ProfilePage() {
       setComposeOpen(false);
       navigate(`/messages/${threadId}`);
     } catch (err) {
-      toast({ title: screenError(err, "Could not start conversation", { source: "profile", context: "startConversation" }), variant: "destructive" });
+      toast({ title: screenError(err, "Couldn't start the conversation. Try again.", { source: "profile", context: "startConversation" }), variant: "destructive" });
     } finally {
       setComposeBusy(false);
     }
@@ -279,7 +280,7 @@ export function ProfilePage() {
       await (switching ? respecTrack(next) : setUserTrack(next));
       await qc.invalidateQueries({ queryKey: progressKey });
     } catch {
-      toast({ title: "Could not change your track", variant: "destructive" });
+      toast({ title: "Couldn't change your track. Try again.", variant: "destructive" });
     }
   };
   const onTrack = (next: TrackId) => {
@@ -387,7 +388,7 @@ export function ProfilePage() {
     onMessage: () => (isLoggedIn ? setComposeOpen(true) : navigate("/login")),
     onEdit: () => setEditOpen(true),
     onCopyLink: () => {
-      void copyToClipboard(`${window.location.origin}/profile/${summary.handle}`).then((ok) => toast({ title: ok ? "Link copied" : "Could not copy the link" }));
+      void copyToClipboard(`${window.location.origin}/profile/${summary.handle}`).then((ok) => toast({ title: ok ? "Link copied" : COPY_LINK_FAILED }));
     },
     onChangeHeader: (from: HTMLElement | null) => pictures.change("banner", from),
     onChangePicture: (from: HTMLElement | null) => pictures.change("avatar", from),
@@ -421,9 +422,9 @@ export function ProfilePage() {
           onMore: () => void feed.fetchNextPage(),
           isOwn,
           canPin: pinnedCount < PINS_MAX,
-          onPin: (entry: FeedEntry) => void pinWrite(() => pinToProfile(summary.id, pinOf(entry)), "Could not pin"),
-          onUnpin: (entry: FeedEntry) => void pinWrite(() => unpinFromProfile(summary.id, pinOf(entry)), "Could not unpin"),
-          onDisplay: (buildId: string, display: "first_post" | "map") => void pinWrite(() => setBuildDisplay(buildId, display), "Could not change how it shows"),
+          onPin: (entry: FeedEntry) => void pinWrite(() => pinToProfile(summary.id, pinOf(entry)), "Couldn't pin that. Try again."),
+          onUnpin: (entry: FeedEntry) => void pinWrite(() => unpinFromProfile(summary.id, pinOf(entry)), "Couldn't unpin that. Try again."),
+          onDisplay: (buildId: string, display: "first_post" | "map") => void pinWrite(() => setBuildDisplay(buildId, display), "Couldn't change how it shows. Try again."),
           now,
         },
     side: locked

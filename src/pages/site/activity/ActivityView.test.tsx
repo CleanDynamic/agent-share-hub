@@ -183,7 +183,7 @@ describe("ActivityView on a desktop", () => {
     empty.unmount();
 
     const write = mount({ writeError: { onRetry } });
-    expect(screen.getByTestId("activity-write-error").textContent).toContain("That didn't save.");
+    expect(screen.getByTestId("activity-write-error").textContent).toContain("Couldn't save that. Try again.");
     expect(screen.getAllByTestId("activity-row")).toHaveLength(5);
     write.unmount();
 

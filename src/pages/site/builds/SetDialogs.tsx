@@ -18,6 +18,7 @@ import { r } from "@/lib/theme/radius";
 import { WELL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
+import { SAVE_FAILED } from "@/lib/copy/copy";
 
 export const SET_NAME_MAX = 80;
 
@@ -236,7 +237,7 @@ export function SetNameDialog({
             role="alert"
             style={{ margin: "12px 0 0", fontSize: 13, color: t.text2 }}
           >
-            Couldn't save that. Try again.
+            {SAVE_FAILED}
           </p>
         ) : null}
         <div

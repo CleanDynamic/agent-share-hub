@@ -130,7 +130,7 @@ describe("SpacePage", () => {
     await screen.findByRole("heading", { name: "Heading p1" });
     fireEvent.keyDown(screen.getAllByRole("button", { name: "Moderate this post" })[0], { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Pin" }));
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("That didn't save. Try again."));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Couldn't save that. Try again."));
     expect(screen.queryByText("Pinned")).toBeNull();
   });
 

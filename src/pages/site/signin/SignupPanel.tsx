@@ -144,7 +144,7 @@ export function SignupPanel() {
       if (seq !== usernameSeq.current) return; // a newer keystroke superseded this
       if (checkFailed) {
         // G13: an unchecked name is not available, and Join stays closed until a check succeeds.
-        setUsernameValidation({ state: "invalid", message: "Couldn't check, try again." });
+        setUsernameValidation({ state: "invalid", message: "Couldn't check that name. Try again." });
       } else if (available) {
         setUsernameValidation({ state: "valid", message: "Username available" });
       } else {

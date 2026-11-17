@@ -60,6 +60,7 @@ import {
   type ActivityGroup,
 } from "./activityModel";
 import { type PageFit } from "@/components/shell/siteFrameFit";
+import { SAVE_FAILED } from "@/lib/copy/copy";
 
 /** What a panel that loads on its own shows. */
 export type ActivityLoad<T> =
@@ -164,7 +165,7 @@ const asidePart = (gap: number, last: boolean): CSSProperties => ({
 function WriteFailed({ failure }: { failure: PanelFailure }) {
   return (
     <MovedWriteFailed
-      line="That didn't save."
+      line={SAVE_FAILED}
       panel="Activity"
       onRetry={failure.onRetry}
       error={failure.error}

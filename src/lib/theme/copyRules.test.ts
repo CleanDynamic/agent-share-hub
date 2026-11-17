@@ -58,7 +58,7 @@ const isCodeAttr = (name: string) => CODE_ATTRS.has(name) || name.startsWith("da
 
 /** Object keys whose string values are code, not words. Keys that hold words (label, title, line …) are not here. */
 const CODE_KEY =
-  /^(className|style|background\w*|border\w*|font\w*|margin\w*|padding\w*|transition|animation\w*|boxShadow|outline\w*|grid\w*|flex\w*|color|colour|top|left|right|bottom|inset|transform\w*|zIndex|opacity|overflow\w*|whiteSpace|textTransform|letterSpacing|lineHeight|textAlign|max\w+|min\w+|width|height|filter|backdropFilter|WebkitBackdropFilter|clipPath|mask\w*|objectFit|objectPosition|pointerEvents|userSelect|verticalAlign|wordBreak|textDecoration\w*|textOverflow|boxSizing|willChange|contain|aspectRatio|place\w+|align\w+|justify\w+|content|accent\w*|easing|duration|delay|select|table|bucket|column|key|slug|event|channel|queryKey|storage\w*|icon|tone|variant|size|kind|id|path|route|href|to|type|mode|status|state|name|value|field|sort|order|platform|format|mime|ext|lang|locale|dir|tag|code|ref|source|origin|provider|scope|target|rel|method|url|src|image|thumbnail|avatar|cover|testId|cursor|display|position|gap|radius|shadow|fill|stroke|d|viewBox)$/;
+  /^(context|source|className|style|background\w*|border\w*|font\w*|margin\w*|padding\w*|transition|animation\w*|boxShadow|outline\w*|grid\w*|flex\w*|color|colour|top|left|right|bottom|inset|transform\w*|zIndex|opacity|overflow\w*|whiteSpace|textTransform|letterSpacing|lineHeight|textAlign|max\w+|min\w+|width|height|filter|backdropFilter|WebkitBackdropFilter|clipPath|mask\w*|objectFit|objectPosition|pointerEvents|userSelect|verticalAlign|wordBreak|textDecoration\w*|textOverflow|boxSizing|willChange|contain|aspectRatio|place\w+|align\w+|justify\w+|content|accent\w*|easing|duration|delay|select|table|bucket|column|key|slug|event|channel|queryKey|storage\w*|icon|tone|variant|size|kind|id|path|route|href|to|type|mode|status|state|name|value|field|sort|order|platform|format|mime|ext|lang|locale|dir|tag|code|ref|source|origin|provider|scope|target|rel|method|url|src|image|thumbnail|avatar|cover|testId|cursor|display|position|gap|radius|shadow|fill|stroke|d|viewBox)$/;
 
 /** Calls whose string arguments are code. */
 const CODE_CALL =
@@ -197,13 +197,13 @@ export interface Rule {
 
 export const RULES: Rule[] = [
   // G3: errors
-  { id: "could-not", goal: "G3", on: false, breaks: (s) => /\bCould not\b/i.test(s) },
-  { id: "failed-to", goal: "G3", on: false, breaks: (s) => /\bFailed to\b/i.test(s) },
-  { id: "unable-to", goal: "G3", on: false, breaks: (s) => /\bUnable to\b/i.test(s) },
-  { id: "error-opening", goal: "G3", on: false, breaks: (s) => /^Error\b/.test(s) },
-  { id: "oops", goal: "G3", on: false, breaks: (s) => /\bOops\b/i.test(s) },
-  { id: "something-went-wrong", goal: "G3", on: false, breaks: (s) => /something went wrong/i.test(s) },
-  { id: "didnt-save", goal: "G3", on: false, breaks: (s) => /\bdidn['’]t save\b/i.test(s) },
+  { id: "could-not", goal: "G3", on: true, breaks: (s) => /\bCould not\b/i.test(s) },
+  { id: "failed-to", goal: "G3", on: true, breaks: (s) => /\bFailed to\b/i.test(s) },
+  { id: "unable-to", goal: "G3", on: true, breaks: (s) => /\bUnable to\b/i.test(s) },
+  { id: "error-opening", goal: "G3", on: true, breaks: (s) => /^Error\b/.test(s) },
+  { id: "oops", goal: "G3", on: true, breaks: (s) => /\bOops\b/i.test(s) },
+  { id: "something-went-wrong", goal: "G3", on: true, breaks: (s) => /something went wrong/i.test(s) },
+  { id: "didnt-save", goal: "G3", on: true, breaks: (s) => /\bdidn['’]t save\b/i.test(s) },
   // G5: sign-in prompts come from SIGN_IN only
   { id: "sign-in-to", goal: "G5", on: false, breaks: (s) => /\bSign in to\b/.test(s), copyModuleMayHold: true },
   // G6: an empty state is a sentence with a full stop

@@ -18,7 +18,7 @@ import { useMinuteNow, useShownSave } from "./useSaveLine";
 /** What a screen reader is told of the save: `Saved.` once, after a save that was under way, and that a failed one can be retried. */
 export const SAVE_SAID = { saved: "Saved.", notSaved: "Not saved. Retry available." } as const;
 
-export const NOT_SAVED_DETAIL = "Your last change didn't save.";
+export const NOT_SAVED_DETAIL = "Couldn't save your last change. Try again.";
 
 export interface SaveLineProps {
   save: SaveState;

@@ -124,3 +124,14 @@ export type SignInAction = keyof typeof SIGN_IN;
 export const signInButton = (action: SignInAction): string => `Sign in to ${SIGN_IN[action]}`;
 /** The sentence form. */
 export const signInSentence = (action: SignInAction): string => `Sign in to ${SIGN_IN[action]}.`;
+
+/** G3: the shared error sentences. A caller with its own object writes "Couldn't <verb> <object>. <Next step>." in place. */
+export const SAVE_FAILED = "Couldn't save that. Try again.";
+export const COPY_LINK_FAILED = "Couldn't copy the link. Try again.";
+/** Following a person. */
+export const FOLLOW_PERSON_FAILED = "Couldn't follow them. Try again.";
+export const UNFOLLOW_PERSON_FAILED = "Couldn't unfollow them. Try again.";
+/** Following a public filter set. */
+export const FOLLOW_FAILED = "Couldn't follow that. Try again.";
+export const UNFOLLOW_FAILED = "Couldn't unfollow that. Try again.";
+export const JOIN_SPACE_FAILED = "Couldn't join that space. Try again.";

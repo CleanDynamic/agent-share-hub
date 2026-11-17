@@ -29,6 +29,7 @@ import { PublishFrame } from "../compose/PublishChecklist";
 import { mySpacesKey } from "./openBuildsFeedModel";
 import { DEFAULT_SETTINGS, DESCRIPTION_MAX, NAME_MAX, RULES_MAX, copySettings, makeRefusal, settingsOf, spaceChoicesKey, spaceCrowdKey, type SettingsDraft } from "./spaceModel";
 import { screenError } from "@/lib/auth/authMessages";
+import { SAVE_FAILED } from "@/lib/copy/copy";
 
 const WHO: readonly { value: SpaceWhoCanPost; label: string }[] = [
   { value: "anyone", label: "Anyone" },
@@ -126,7 +127,7 @@ export function SpaceWindow({ mode, slug, onClose }: { mode: "make" | "settings"
       onClose();
     } catch (failure) {
       reportError(failure, { source: "openbuilds", context: mode === "make" ? "createSpace" : "updateSpace" });
-      setError(screenError(failure, "That didn't save. Try again.", false));
+      setError(screenError(failure, SAVE_FAILED, false));
     } finally {
       setBusy(false);
     }

@@ -40,7 +40,7 @@ export const PICTURE_COPY = {
   cropPicture: "Crop picture",
   cropHeader: "Crop header",
   uploading: (percent: number) => `Uploading ${percent}%`,
-  failed: "Could not save the picture",
+  failed: "Couldn't save the picture. Try again.",
 } as const;
 
 /** The data functions the flow calls; the tests hand in their own. */

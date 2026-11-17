@@ -72,7 +72,7 @@ export function useForkBuild(build: Build | undefined): ForkState {
       forkBuild({ sourceBuildId: build.id, atEventOrdinal })
         .then((draft) => navigate(`/compose/${draft.id}`))
         .catch((cause: unknown) => {
-          setError(screenError(cause, "The fork could not be created. Try again in a moment.", { source: "build", context: "forkBuild" }));
+          setError(screenError(cause, "Couldn't make your rebuild. Try again.", { source: "build", context: "forkBuild" }));
           setPending(false);
         });
     },

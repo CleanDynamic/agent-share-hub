@@ -351,7 +351,7 @@ describe("BuildPage (site frame)", () => {
 
     await act(async () => fail(new Error("recordReproduction failed: new row violates row-level security policy")));
     const failed = await screen.findByTestId("build-run-error");
-    expect(failed.textContent).toContain("That didn't save.");
+    expect(failed.textContent).toContain("Couldn't save that. Try again.");
     expect(failed.textContent).not.toContain("row-level security");
     expect(screen.getByText("not yet reproduced")).toBeTruthy();
 
