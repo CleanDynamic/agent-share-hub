@@ -89,6 +89,7 @@ import {
   type StillOpenScope,
 } from "./homeModel";
 import type { HomeReplyGroup, HomeTopicPost } from "./homeTopics";
+import { signInSentence } from "@/lib/copy/copy";
 
 export type HomeScope = "following" | "everyone";
 
@@ -409,7 +410,7 @@ export function WeekSection({ week }: { week: HomeViewProps["week"] }) {
 function StudioSignedOut() {
   return (
     <section aria-label="Your studio">
-      <PageEmpty line="Sign in to see your drafts, sessions and week." />
+      <PageEmpty line={signInSentence("drafts")} />
       <div style={{ marginTop: 12 }}>
         <Button variant="primary" size={32} href={SIGN_IN} data-visual-slot="btn-primary">
           Sign in

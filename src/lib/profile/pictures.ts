@@ -18,6 +18,7 @@ import { cropFromUrl, plainUrl, urlWithCrop } from "./avatarCrop";
 
 import { altProblem } from "./settings";
 import { ShownError } from "@/lib/auth/authMessages";
+import { signInSentence } from "@/lib/copy/copy";
 
 export type ProfileImage = "avatar" | "banner";
 
@@ -44,7 +45,7 @@ export interface UploadedProfilePicture {
 async function myId(): Promise<string> {
   const { data } = await supabase.auth.getSession();
   const id = data.session?.user?.id;
-  if (!id) throw new ShownError("Sign in to change your profile.");
+  if (!id) throw new ShownError(signInSentence("profile"));
   return id;
 }
 

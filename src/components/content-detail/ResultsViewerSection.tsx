@@ -9,6 +9,7 @@ import {
 } from "./ResultsCarouselViewer";
 import { reportError } from "@/lib/errors/report";
 import { screenError } from "@/lib/auth/authMessages";
+import { signInSentence } from "@/lib/copy/copy";
 
 interface ResultsViewerSectionProps {
   contentItemId: string;
@@ -90,7 +91,7 @@ export function ResultsViewerSection({
     const { data: userData } = await supabase.auth.getUser();
     const uid = userData.user?.id;
     if (!uid) {
-      toast({ title: "Sign in to save", variant: "destructive" });
+      toast({ title: signInSentence("save"), variant: "destructive" });
       return;
     }
     // Add to default Saved Items collection

@@ -435,7 +435,7 @@ describe("why the dialog opened (G19)", () => {
   it("says so in the reserved line under the password, in the neutral tone, and gives the line to an error", async () => {
     signIn.mockResolvedValue({ outcome: "refused", refusal: "credentials" });
     renderDialog("login", "", { signedOut: true });
-    expect(line().textContent).toBe("You've been signed out. Sign in to carry on.");
+    expect(line().textContent).toBe("You've been signed out. Sign in to continue.");
     expect(line().getAttribute("data-tone")).toBe("neutral");
     fill();
     submit();

@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { FAVOURITES_MAX, RECENT_MAX } from "@/lib/theme/colourWheel";
 import { normaliseHex } from "@/lib/theme/partColour";
 import { ShownError } from "@/lib/auth/authMessages";
+import { signInSentence } from "@/lib/copy/copy";
 
 export interface ColourSwatches {
   recent: string[];
@@ -79,7 +80,7 @@ export async function saveColourSwatches(next: ColourSwatches): Promise<ColourSw
   const why = swatchesRefusal(next);
   if (why) throw new ShownError(why);
   const id = await signedInId();
-  if (!id) throw new ShownError("Sign in to keep your colours.");
+  if (!id) throw new ShownError(signInSentence("profile"));
   const value = { recent: [...next.recent], favourites: [...next.favourites] };
   const { error } = await profiles().update({ colour_swatches: value }).eq("id", id);
   if (error) throw error;

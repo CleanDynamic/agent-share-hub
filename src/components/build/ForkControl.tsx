@@ -31,6 +31,7 @@ import { t } from "@/lib/theme/tokens";
 import { data as dataType, label as labelType } from "@/lib/theme/type";
 import { useActionStyle } from "./actionStyle";
 import { screenError } from "@/lib/auth/authMessages";
+import { signInSentence, signInButton } from "@/lib/copy/copy";
 
 export interface ForkState {
   /** Fork the build, optionally at an ordinal. */
@@ -116,7 +117,7 @@ export function ForkControl({ state }: { state: ForkState }) {
           title={
             state.signedIn
               ? "Start your own rebuild of this build, with the source credited"
-              : "Sign in to start your own rebuild of this build"
+              : signInSentence("rebuild")
           }
           {...action.handlers}
           style={{
@@ -133,7 +134,7 @@ export function ForkControl({ state }: { state: ForkState }) {
             ? "Rebuilding…"
             : state.signedIn
               ? "Rebuild this"
-              : "Sign in to rebuild"}
+              : signInButton("rebuild")}
         </button>
       </span>
       {state.error ? (

@@ -72,7 +72,7 @@ import { Maximize2, Play, X } from "lucide-react";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { PageEmpty, PageState, WriteFailed } from "@/components/pagestate/PageState";
 import type { ReadLike } from "@/components/pagestate/pageStateModel";
-import { WAY_OUT, SAVE_FAILED } from "@/lib/copy/copy";
+import { WAY_OUT, SAVE_FAILED, signInButton } from "@/lib/copy/copy";
 import { IconButton } from "@/components/brand/IconButton";
 import { Panel, PanelHead } from "@/components/brand/Panel";
 import { PartViewer } from "@/components/brand/PartViewer";
@@ -130,7 +130,7 @@ export const MAKER_NOTE = "Records the date and the model you used.";
 export const ACTION_LABEL: Record<ProofActionKind, string> = {
   reproduce: "I ran this and it worked",
   reconfirm: "Re-confirm it still works",
-  "sign-in": "Sign in to confirm",
+  "sign-in": signInButton("confirm"),
 };
 
 /** The viewer's body, which the tabs control. */

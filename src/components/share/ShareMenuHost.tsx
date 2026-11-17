@@ -15,6 +15,7 @@ import { createCollection } from "@/lib/library/createCollection";
 import { supabase } from "@/integrations/supabase/client";
 import { reportError } from "@/lib/errors/report";
 import { screenError } from "@/lib/auth/authMessages";
+import { signInSentence } from "@/lib/copy/copy";
 
 function buildDeepLink(args: {
   contentType: ShareableType;
@@ -153,7 +154,7 @@ export default function ShareMenuHost({
   const handleCreateCollection = useCallback(
     async (name: string) => {
       if (!user?.id) {
-        toast.error("Sign in to create a collection");
+        toast.error(signInSentence("save"));
         return;
       }
       try {

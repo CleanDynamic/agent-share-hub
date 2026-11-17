@@ -36,6 +36,7 @@ import { DiscussionCompose } from "@/components/DiscussionCompose";
 import { BLUEPRINT_CONTENT_TYPES, DIFFICULTIES as DIFF_LIST, displayContentType, TOPICS, getPostType, getPrimaryTypeLabel } from "@/lib/content-types";
 import { CanvasShell } from '@/components/canvas/CanvasShell';
 import { useCanvasDocument } from '@/hooks/useCanvasDocument';
+import { signInSentence } from "@/lib/copy/copy";
 /* SV-26 P3: the article editor (flow canvas, d3, tables) loads when its step opens. */
 const ArticleEditor = lazy(() => import('@/components/article/ArticleEditor').then((m) => ({ default: m.ArticleEditor })));
 import type { EvidenceMediaType } from '@/components/canvas/CanvasHeader';
@@ -611,7 +612,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
       await supabase.auth.refreshSession();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        if (!silent) toast({ title: "Sign in required", description: "Please sign in to save drafts.", variant: "destructive" });
+        if (!silent) toast({ title: "Sign in required", description: signInSentence("save"), variant: "destructive" });
         return null;
       }
 

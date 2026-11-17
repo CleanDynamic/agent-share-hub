@@ -5,6 +5,7 @@ import { Bookmark, X, Check, Plus, Smile } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { signInSentence } from "@/lib/copy/copy";
 
 interface BookmarkButtonProps {
   contentId: string;
@@ -82,7 +83,7 @@ export function BookmarkButton({ contentId, projectId, className }: BookmarkButt
     e.preventDefault();
 
     if (!isLoggedIn || !user) {
-      toast({ title: "Sign in to save this" });
+      toast({ title: signInSentence("save") });
       setTimeout(() => navigate("/signup"), 1000);
       return;
     }
@@ -119,7 +120,7 @@ export function BookmarkButton({ contentId, projectId, className }: BookmarkButt
     e.preventDefault();
 
     if (!isLoggedIn || !user) {
-      toast({ title: "Sign in to save this" });
+      toast({ title: signInSentence("save") });
       setTimeout(() => navigate("/signup"), 1000);
       return;
     }

@@ -205,7 +205,7 @@ export const RULES: Rule[] = [
   { id: "something-went-wrong", goal: "G3", on: true, breaks: (s) => /something went wrong/i.test(s) },
   { id: "didnt-save", goal: "G3", on: true, breaks: (s) => /\bdidn['’]t save\b/i.test(s) },
   // G5: sign-in prompts come from SIGN_IN only
-  { id: "sign-in-to", goal: "G5", on: false, breaks: (s) => /\bSign in to\b/.test(s), copyModuleMayHold: true },
+  { id: "sign-in-to", goal: "G5", on: true, breaks: (s) => /\bSign in to\b/.test(s), copyModuleMayHold: true },
   // G6: an empty state is a sentence with a full stop
   {
     id: "empty-stop",

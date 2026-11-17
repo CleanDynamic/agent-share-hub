@@ -82,7 +82,7 @@ export const WAY_OUT = {
 export type WayOut = (typeof WAY_OUT)[keyof typeof WAY_OUT];
 
 /** G14, G21: the session ended. */
-export const SIGNED_OUT_DIALOG = "You've been signed out. Sign in to carry on.";
+export const SIGNED_OUT_DIALOG = "You've been signed out. Sign in to continue.";
 export const SIGNED_OUT_EDITOR = "You've been signed out. Your work is kept on this device.";
 export const SAVING_PAUSED = "Not saved. Sign in to save.";
 

@@ -76,6 +76,7 @@ import { useIsPhone } from "@/components/shell/useMinWidth";
 import { SPACE_COMPACT as SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, body, data as dataText, eyebrow, label as labelType, measure } from "@/lib/theme/type";
+import { signInButton } from "@/lib/copy/copy";
 
 /** How far below the screen the section starts asking for its comments. */
 const NEAR_MARGIN = "400px 0px";
@@ -242,7 +243,7 @@ export function Comments({ build, parts, attachRequest, onOpenPart }: CommentsPr
           data-testid="comments-sign-in"
           style={{ ...buttonStyle("link"), ...body, alignSelf: "flex-start", display: "inline-flex", alignItems: "center", minHeight: target(phone) }}
         >
-          Sign in to comment
+          {signInButton("comment")}
         </Link>
       )}
 

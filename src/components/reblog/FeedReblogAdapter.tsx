@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/drawer";
 import { ShareToDMModal } from "@/components/dm/ShareToDMModal";
 import { Send, Link as LinkIcon, Flag, Trash2 } from "lucide-react";
+import { signInSentence } from "@/lib/copy/copy";
 
 /**
  * Raw reblog row shape returned by feed queries.
@@ -152,7 +153,7 @@ export function FeedReblogAdapter({ row, variant = "feed" }: FeedReblogAdapterPr
 
   const requireAuth = () => {
     if (!user) {
-      toast.error("Sign in to do that");
+      toast.error(signInSentence("continue"));
       navigate("/login");
       return false;
     }

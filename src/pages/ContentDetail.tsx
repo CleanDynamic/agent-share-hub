@@ -46,6 +46,7 @@ import { REMIX_CREATE_ENABLED } from "@/lib/remix/flags";
 import { SITE_NAME, SITE_URL, siteUrl } from "@/lib/site";
 import { scrollBehavior } from "@/lib/theme/motion";
 import { screenError } from "@/lib/auth/authMessages";
+import { signInSentence } from "@/lib/copy/copy";
 
 const NORMALIZE_TYPE = (raw?: string | null): "blueprint" | "blog" => (raw === "blog" ? "blog" : "blueprint");
 
@@ -245,7 +246,7 @@ export default function ContentDetail() {
 
   const handleLike = useCallback(async () => {
     if (!user?.id || !post?.id) {
-      toast({ title: "Sign in to like", variant: "destructive" });
+      toast({ title: signInSentence("like"), variant: "destructive" });
       return;
     }
     const next = !hasLiked;
@@ -275,7 +276,7 @@ export default function ContentDetail() {
 
   const handleRepost = useCallback(async () => {
     if (!user?.id || !post?.id) {
-      toast({ title: "Sign in to repost", variant: "destructive" });
+      toast({ title: signInSentence("continue"), variant: "destructive" });
       return;
     }
     const next = !hasReposted;
@@ -305,7 +306,7 @@ export default function ContentDetail() {
   const handleBookmark = useCallback(
     async (_anchor: HTMLButtonElement) => {
       if (!user?.id || !post?.id) {
-        toast({ title: "Sign in to save", variant: "destructive" });
+        toast({ title: signInSentence("save"), variant: "destructive" });
         return;
       }
       // Phase 8 ShareMenu's Save-to-Library popover anchors here.
@@ -570,7 +571,7 @@ export default function ContentDetail() {
   const handleDrawerPost = useCallback(
     async (text: string) => {
       if (!user?.id || !drawerAnchor) {
-        toast({ title: "Sign in to comment", variant: "destructive" });
+        toast({ title: signInSentence("comment"), variant: "destructive" });
         return;
       }
       try {
@@ -610,7 +611,7 @@ export default function ContentDetail() {
   const handleDrawerReact = useCallback(
     async (commentId: string, reaction: ReactionType) => {
       if (!user?.id) {
-        toast({ title: "Sign in to react", variant: "destructive" });
+        toast({ title: signInSentence("like"), variant: "destructive" });
         return;
       }
       try {

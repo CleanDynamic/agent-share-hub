@@ -66,7 +66,7 @@ describe("screenError (prompt 9, G4): no server or library text reaches the scre
     );
     expect(screenError(new PostError("createPost", "bounty 7 does not exist", "P0001", 400), fallback, false)).toBe(fallback);
     expect(screenError(new PostError("joinSpace", "joinSpace failed (23505)", "23505", 409), fallback, false)).toBe(fallback);
-    expect(screenError(new PostError("createPost", "Sign in to do that.", null, 401), fallback, false)).toBe("Sign in to post.");
+    expect(screenError(new PostError("createPost", "Sign in to post.", null, 401), fallback, false)).toBe("Sign in to post.");
   });
 
   it("reads an auth refusal by its code, and a dropped connection as one", async () => {
