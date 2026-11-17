@@ -251,3 +251,50 @@ describe("the session check has a time limit", () => {
     expect(seen.search).toBe("?tab=saved");
   });
 });
+
+describe("a deliberate sign-out stays deliberate in every tab", () => {
+  const changes = () => auth.onAuthStateChange.mock.calls[0][0] as (event: string, session: unknown) => void;
+  afterEach(() => localStorage.clear());
+
+  it("this tab's deliberate sign-out leaves a short-lived marker; the listener's own clearing does not", async () => {
+    const { ON_PURPOSE_KEY } = await import("@/lib/query/sessionSignal");
+    mount();
+    const { supabase } = await import("@/integrations/supabase/client");
+    await act(async () => {
+      await supabase.auth.signOut();
+    });
+    expect(Number(localStorage.getItem(ON_PURPOSE_KEY))).toBeGreaterThan(0);
+    localStorage.clear();
+    refuse(MEMBER);
+    await flush();
+    expect(sessionPhase()).toBe("ended");
+    expect(localStorage.getItem(ON_PURPOSE_KEY)).toBeNull();
+  });
+
+  it("another tab's deliberate sign-out arrives quietly: no dialog, the page read again as a visitor's", async () => {
+    const { ON_PURPOSE_KEY, signedOutOnPurpose } = await import("@/lib/query/sessionSignal");
+    const client = mount();
+    const reset = vi.spyOn(client, "resetQueries");
+    act(() => changes()("INITIAL_SESSION", { access_token: MEMBER }));
+    localStorage.setItem(ON_PURPOSE_KEY, String(Date.now()));
+    act(() => changes()("SIGNED_OUT", null));
+    await flush();
+    expect(sessionPhase()).toBe("live");
+    expect(signedOutOnPurpose()).toBe(true);
+    expect(seen.search).toBe("?tab=saved");
+    expect(reset).toHaveBeenCalledTimes(1);
+    act(() => changes()("SIGNED_IN", { access_token: MEMBER }));
+    expect(signedOutOnPurpose()).toBe(false);
+  });
+
+  it("an old marker does not count: the sign-out is unexpected and the dialog opens", async () => {
+    const { ON_PURPOSE_KEY } = await import("@/lib/query/sessionSignal");
+    mount();
+    act(() => changes()("INITIAL_SESSION", { access_token: MEMBER }));
+    localStorage.setItem(ON_PURPOSE_KEY, String(Date.now() - 60_000));
+    act(() => changes()("SIGNED_OUT", null));
+    await flush();
+    expect(sessionPhase()).toBe("ended");
+    expect(new URLSearchParams(seen.search).get("signin")).toBe("login");
+  });
+});

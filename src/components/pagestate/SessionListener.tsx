@@ -18,7 +18,9 @@
    G17: the client can drop a member's session on its own (a refresh the auth server refused). That SIGNED_OUT, for a
    member who was signed in, takes the same path: phase "ended" and the dialog. A sign-out someone asked for goes
    through `supabase.auth.signOut`, which this listener wraps while mounted to know it was asked for; that opens nothing.
-   (A sign-out in another tab arrives here as the client's own: this tab is asked to sign in again.)
+   A deliberate sign-out stays deliberate in every tab: it leaves a short-lived marker (sessionSignal.ts) that another
+   tab reads when its session goes, and that tab goes quietly to signed out: no dialog, no notice, the page read again as
+   a visitor's (a protected page goes Home: ProtectedRoute). The listener's own clearing leaves no marker.
 
    G15: back from a provider's sign-in, the page the member left is put back where it was scrolled (returnPlace.ts):
    now if the page is already tall enough, else as it grows, for up to five seconds, unless the member scrolls first.
@@ -31,7 +33,14 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import { supabase } from "@/integrations/supabase/client";
 import { READ_TIMEOUT_MS } from "@/lib/query/readLimit";
-import { listenForRefusals, sessionPhase, setSessionPhase } from "@/lib/query/sessionSignal";
+import {
+  listenForRefusals,
+  markSignedOutOnPurpose,
+  sessionPhase,
+  setSessionPhase,
+  setSignedOutOnPurpose,
+  wasSignedOutOnPurpose,
+} from "@/lib/query/sessionSignal";
 import { deeper, viewOf, withView } from "@/pages/site/signin/signinUrl";
 
 import { takePlace } from "./returnPlace";
@@ -117,6 +126,8 @@ export function SessionListener() {
 
   useEffect(() => {
     let alive = true;
+    /** The listener's own sign-out (an ended session cleared): not on purpose, so no marker. */
+    let clearing = false;
 
     const askToSignIn = () => {
       const { pathname, search, hash, state } = here.current;
@@ -155,7 +166,13 @@ export function SessionListener() {
             return;
           }
           setSessionPhase("ended");
-          await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+          clearing = true;
+          await supabase.auth
+            .signOut({ scope: "local" })
+            .catch(() => undefined)
+            .finally(() => {
+              clearing = false;
+            });
           if (alive) askToSignIn();
         });
     });
@@ -166,6 +183,8 @@ export function SessionListener() {
     let asked = 0;
     auth.signOut = ((...args: Parameters<typeof signOut>) => {
       asked += 1;
+      // Signing other devices out leaves this one signed in: nothing for this device's tabs to hear.
+      if (!clearing && args[0]?.scope !== "others") markSignedOutOnPurpose();
       return Promise.resolve(signOut.apply(auth, args)).finally(() => {
         asked -= 1;
       });
@@ -176,13 +195,18 @@ export function SessionListener() {
       if (event === "SIGNED_OUT") {
         const unasked = member.current && asked === 0 && sessionPhase() === "live";
         member.current = false;
-        if (unasked) {
-          setSessionPhase("ended");
-          askToSignIn();
+        if (!unasked) return;
+        if (wasSignedOutOnPurpose()) {
+          setSignedOutOnPurpose(true);
+          readAgain(queryClient);
+          return;
         }
+        setSessionPhase("ended");
+        askToSignIn();
         return;
       }
       member.current = Boolean(session);
+      if (session) setSignedOutOnPurpose(false);
       if (event === "SIGNED_IN" && session && sessionPhase() === "ended") {
         readAgain(queryClient);
       }

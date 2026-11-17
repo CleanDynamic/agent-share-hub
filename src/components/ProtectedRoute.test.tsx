@@ -103,3 +103,14 @@ describe("ProtectedRoute after the server ended the session (G16)", () => {
     expect(screen.getByText("home")).toBeTruthy();
   });
 });
+
+describe("ProtectedRoute after a deliberate sign-out in another tab", () => {
+  afterEach(async () => (await import("@/lib/query/sessionSignal")).setSignedOutOnPurpose(false));
+
+  it("goes Home quietly, without asking to sign in", async () => {
+    (await import("@/lib/query/sessionSignal")).setSignedOutOnPurpose(true);
+    Object.assign(auth, { isLoggedIn: false });
+    at();
+    expect(screen.getByText("home")).toBeTruthy();
+  });
+});

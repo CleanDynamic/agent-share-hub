@@ -86,3 +86,41 @@ export function noteAnswer(url: string, headers: HeadersInit | undefined, status
 
 /** A failure that is the server refusing the session (lib/errors/permission.ts holds the one definition). */
 export { isSessionRefusal } from "@/lib/errors/permission";
+
+/* ── a deliberate sign-out, in every tab ──
+   A sign-out someone asked for on this device leaves a short-lived marker in localStorage, which every tab shares.
+   Another tab whose session goes at the same moment reads it and goes quietly to signed out: no dialog, no notice;
+   a protected page goes Home and an open page is read again as a visitor's. Only an unexpected sign-out asks the member to
+   sign in again. The listener's own clearing of an ended session leaves no marker: that one is not on purpose. */
+
+export const ON_PURPOSE_KEY = "ob-signed-out-on-purpose";
+/** How long the marker counts: the other tabs hear of the sign-out within moments. */
+export const ON_PURPOSE_MS = 10_000;
+
+export function markSignedOutOnPurpose(now: number = Date.now()): void {
+  try {
+    localStorage.setItem(ON_PURPOSE_KEY, String(now));
+  } catch {
+    /* storage refused: the other tabs ask to sign in again, as an unexpected sign-out */
+  }
+}
+
+export function wasSignedOutOnPurpose(now: number = Date.now()): boolean {
+  try {
+    const at = Number(localStorage.getItem(ON_PURPOSE_KEY));
+    return Number.isFinite(at) && at > 0 && now - at >= 0 && now - at <= ON_PURPOSE_MS;
+  } catch {
+    return false;
+  }
+}
+
+let onPurpose = false;
+
+/** This tab went quietly to signed out because the member signed out on purpose in another (ProtectedRoute goes Home). */
+export const signedOutOnPurpose = (): boolean => onPurpose;
+
+export function setSignedOutOnPurpose(next: boolean): void {
+  if (next === onPurpose) return;
+  onPurpose = next;
+  for (const watch of watchers) watch();
+}
