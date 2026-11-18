@@ -341,7 +341,7 @@ test("G16: a toast takes no focus, alt+T reaches it, and its action works with E
   const before = await page.evaluate(() => document.activeElement?.tagName);
   // The app's own sonner (the module the toaster is drawn from), so the toast reaches the app's toaster.
   await page.evaluate(async () => {
-    const { toast } = (await import(/* @vite-ignore */ "/src/components/ui/sonner.tsx")) as { toast: (title: string, options?: unknown) => void } & { toast: { error: (title: string) => void } };
+    const { toast } = (await import(/* @vite-ignore */ ["/src", "components/ui/sonner.tsx"].join("/"))) as { toast: (title: string, options?: unknown) => void } & { toast: { error: (title: string) => void } };
     (window as unknown as { __acted: boolean }).__acted = false;
     toast("New build started.", { action: { label: "Open", onClick: () => ((window as unknown as { __acted: boolean }).__acted = true) }, duration: 60_000 });
   });
@@ -357,7 +357,7 @@ test("G16: a toast takes no focus, alt+T reaches it, and its action works with E
   await page.keyboard.press("Enter");
   expect(await page.evaluate(() => (window as unknown as { __acted: boolean }).__acted)).toBe(true);
   await page.evaluate(async () => {
-    const { toast } = (await import(/* @vite-ignore */ "/src/components/ui/sonner.tsx")) as unknown as { toast: { error: (title: string) => void } };
+    const { toast } = (await import(/* @vite-ignore */ ["/src", "components/ui/sonner.tsx"].join("/"))) as unknown as { toast: { error: (title: string) => void } };
     toast.error("Couldn't publish the build. Try again.");
   });
   await expect(page.getByTestId("toast-assertive")).toHaveText("Couldn't publish the build. Try again.");
