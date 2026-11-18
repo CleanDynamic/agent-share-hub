@@ -34,6 +34,8 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
+import { useWindowFocus } from "@/lib/focus/windowFocus";
+
 import { Button } from "@/components/brand/Button";
 import { LiveRegion, useAnnouncer } from "@/components/brand/LiveRegion";
 import { ModelTag } from "@/components/brand/ModelTag";
@@ -685,6 +687,11 @@ export function FullPromptWindow(props: FullPromptWindowProps) {
     onNavigate(to.id);
   };
 
+  /* G19: closed by Escape or Close, focus goes back to what opened the window (the tile, or its menu's button when the window
+     came from Edit…), as the editor's other windows do; a window opened from a link in the post keeps its own way back
+     (props.onCloseAutoFocus runs first and keeps the event). */
+  const windowFocus = useWindowFocus(Boolean(step), props.onCloseAutoFocus);
+
   return (
     <Dialog.Root open={Boolean(step)} onOpenChange={(open) => !open && props.onClose()}>
       <Dialog.Portal>
@@ -694,7 +701,7 @@ export function FullPromptWindow(props: FullPromptWindowProps) {
           aria-describedby={undefined}
           // Focus goes to the text box (Body does it), not the first control.
           onOpenAutoFocus={(event) => event.preventDefault()}
-          onCloseAutoFocus={props.onCloseAutoFocus}
+          onCloseAutoFocus={windowFocus.onCloseAutoFocus}
           onKeyDown={onKeyDown}
           data-look={"refined"}
           style={{

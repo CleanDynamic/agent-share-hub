@@ -41,6 +41,7 @@ import {
   type ReadinessView,
   type RebuildCreditView,
 } from "./rebuildModel";
+import { PlaceholderTitle } from "@/components/pagestate/PlaceholderTitle";
 
 /** The first line of body copy under the title. */
 const BODY_LINE: CSSProperties = { margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.text2 };
@@ -158,22 +159,28 @@ function ReadinessSkeleton({ phone }: { phone: boolean }) {
 }
 
 /** The page's shape while the source, the draft and the family arrive: the panels' own heads and padding, bones inside. */
-export function RebuildViewSkeleton({ fit = "content", label = "Loading the rebuild" }: { fit?: PageFit; label?: string }) {
+/** G2: `title` is the page's kind ("Compare", "Lineage"), drawn as the hidden placeholder h1; a page that draws its own leaves it out. */
+export function RebuildViewSkeleton({ fit = "content", label = "Loading the rebuild", title }: { fit?: PageFit; label?: string; title?: string }) {
   const phone = useIsPhone();
   const tierFit = useTierFit(fit);
   const stacked = useWidthTier() === "stacked";
   const what = label.replace(/^Loading /, "");
   if (phone) {
     return (
+      <>
+      {title ? <PlaceholderTitle>{title}</PlaceholderTitle> : null}
       <LoadingRegion what={what} announce data-testid="rebuild-loading" style={{ display: "flex", flexDirection: "column", gap: 9 }}>
         <Skeleton height={78} radius={r.control} />
         <ReadinessSkeleton phone />
         <ChangesPanel groups={null} phone loading />
         <FamilyPanel root={null} phone loading />
       </LoadingRegion>
+      </>
     );
   }
   return (
+    <>
+    {title ? <PlaceholderTitle>{title}</PlaceholderTitle> : null}
     <LoadingRegion
       what={what}
       announce
@@ -195,6 +202,7 @@ export function RebuildViewSkeleton({ fit = "content", label = "Loading the rebu
         </div>
       </div>
     </LoadingRegion>
+    </>
   );
 }
 

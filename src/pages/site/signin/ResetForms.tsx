@@ -8,7 +8,7 @@
 
    PURE and fully controlled, like the other bodies. */
 
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { AlertCircle, Lock, Mail } from "lucide-react";
 
 import { InlineLoader } from "@/components/brand/InlineLoader";
@@ -163,6 +163,7 @@ export function ResetConfirmForm({
   error,
 }: ResetConfirmFormProps) {
   const { phone } = useAuthSizes();
+  const errorId = useId();
   if (!phone) {
     /* The dialog: the heading, 16, the new password with a 24 row kept for its strength meter, 16, the confirmation
        with its reserved line (the mismatch), 4 and the form's reserved line (a refused password), then the primary. */
@@ -182,6 +183,8 @@ export function ResetConfirmForm({
             placeholder="At least 8 characters"
             required
             autoComplete="new-password"
+            describedBy={error ? errorId : undefined}
+            invalid={Boolean(error)}
           />
           <Gap size={4} />
           <div data-testid="strength-row" style={{ height: 24, flexShrink: 0 }}>
@@ -200,7 +203,8 @@ export function ResetConfirmForm({
             error={mismatchError}
             reserveMessage
           />
-          <FieldMessage reserve>{error}</FieldMessage>
+          {/* G14, G15: a refused password is the new password's error: tied to it, said once as its description. */}
+          <FieldMessage id={errorId} reserve live={false}>{error}</FieldMessage>
           <PushDown />
           <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText={WAITING.updating}>
             Update password
@@ -225,6 +229,8 @@ export function ResetConfirmForm({
             placeholder="At least 8 characters"
             required
             autoComplete="new-password"
+            describedBy={error ? errorId : undefined}
+            invalid={Boolean(error)}
           />
           {password ? <PasswordStrengthMeter strength={passwordStrength} /> : null}
         </div>
@@ -240,7 +246,7 @@ export function ResetConfirmForm({
             autoComplete="new-password"
             error={mismatchError}
           />
-          <FieldMessage>{error}</FieldMessage>
+          <FieldMessage id={errorId} live={false}>{error}</FieldMessage>
         </div>
         <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText={WAITING.updating}>
           Update password

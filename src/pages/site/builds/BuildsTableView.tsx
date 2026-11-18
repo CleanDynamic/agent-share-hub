@@ -10,6 +10,7 @@
    region a keyboard can reach. Rows past the first screen are skipped until near (`content-visibility`). No motion: rows
    change at once. */
 
+import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
@@ -225,7 +226,7 @@ function SortMenu({ columns, sortable, sortColumn, onSortColumn }: Pick<BuildsTa
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <BuildsControl aria-label={`Sort: ${current}`}>
-          <span style={{ color: t.label }}>Sort</span> {current}
+          <span style={{ color: t.text2 }}>Sort</span> {current}
         </BuildsControl>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={6}>
@@ -256,7 +257,7 @@ function ColumnsChooser({ label, menu }: { label: string; menu: ColumnsMenu }) {
     <Popover>
       <PopoverTrigger asChild>
         <BuildsControl aria-label={`Columns: ${label}`}>
-          <span style={{ color: t.label }}>Columns</span> {label}
+          <span style={{ color: t.text2 }}>Columns</span> {label}
         </BuildsControl>
       </PopoverTrigger>
       <PopoverContent side={phone ? "bottom" : "left"} align={phone ? "end" : "start"} sideOffset={6} collisionPadding={14} style={{ width: 240, maxWidth: "calc(100vw - 28px)", maxHeight: "min(560px, calc(100dvh - 120px), var(--radix-popover-content-available-height))", overflowY: "auto", padding: 16 }}>
@@ -299,8 +300,13 @@ function LensRow({ lenses, lens, onLens, columns, sortable, sortColumn, onSortCo
   const phone = useIsPhone();
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12, borderBottom: `1px solid ${t.hairline}` }}>
-      <TextTabs tabs={lenses} value={lens} onChange={onLens} label="Lens" rule={false} />
-      <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
+      {/* G8: at 320 the lenses scroll in their own box and the controls wrap, rather than push the page sideways; where they
+          fit nothing changes. */}
+      {/* The box keeps 4px round the tabs for their focus ring, given back in margin, so nothing moves. */}
+      <div style={{ padding: 4, margin: -4, maxWidth: "calc(100% + 8px)", boxSizing: "border-box", minWidth: 0, overflowX: "auto", scrollbarWidth: "none" }}>
+        <TextTabs tabs={lenses} value={lens} onChange={onLens} label="Lens" rule={false} />
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 4 }}>
         <UpdatingStatus updating={updating} />
         <FiltersButton activeCount={activeCount} setName={setName} onClick={onOpenFilters} />
         {phone ? <SortMenu columns={columns} sortable={sortable} sortColumn={sortColumn} onSortColumn={onSortColumn} /> : null}
@@ -308,7 +314,7 @@ function LensRow({ lenses, lens, onLens, columns, sortable, sortColumn, onSortCo
           <ColumnsChooser label={columnsLabel} menu={columnsMenu} />
         ) : columnsLabel ? (
           <BuildsControl>
-            <span style={{ color: t.label }}>Columns</span> {columnsLabel}
+            <span style={{ color: t.text2 }}>Columns</span> {columnsLabel}
           </BuildsControl>
         ) : null}
       </div>
@@ -322,7 +328,7 @@ function LensRow({ lenses, lens, onLens, columns, sortable, sortColumn, onSortCo
 export function ActiveFilters({ chips, onRemove, onClearAll }: { chips: readonly TableChip[]; onRemove: (key: string) => void; onClearAll: () => void }) {
   if (chips.length === 0) return null;
   return (
-    <div role="group" aria-label="Active filters" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 16 }}>
+    <div role="group" aria-label="Active filters" data-focus-list="" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 16 }}>
       {chips.map((chip) => (
         <ActiveFilterChip key={chip.key} name={chip.name} value={chip.value} onRemove={() => onRemove(chip.key)} />
       ))}
@@ -365,10 +371,11 @@ const FILTERED_MARK: React.CSSProperties = { fontWeight: 500, borderBottom: `1px
 function ColumnHead({ id, last, sorted, sorted2, sortable, onSort, filtered, drag, scrolled }: { id: ColumnId; last: boolean; sorted: { ascending: boolean } | null; sorted2: { ascending: boolean } | null; sortable: boolean; onSort: (second: boolean) => void; filtered: boolean; drag?: HeadDrag; scrolled: boolean }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   const right = RIGHT.has(id);
-  /* Only one head may say ascending or descending; the second key's says "other", and shows its arrow and a 2. */
-  const ariaSort = sorted ? (sorted.ascending ? "ascending" : "descending") : sorted2 ? "other" : sortable ? "none" : undefined;
+  /* G18: aria-sort is on the sorted head only. The second key shows its arrow and a 2, and its button says so in words. */
+  const ariaSort = sorted ? (sorted.ascending ? "ascending" : "descending") : undefined;
   const arrow = sorted ?? sorted2;
-  const label = filtered ? `${HEAD[id]}, filtered` : undefined;
+  const secondNote = sorted2 && !sorted ? `, then by this, ${sorted2.ascending ? "ascending" : "descending"}` : "";
+  const label = filtered ? `${HEAD[id]}, filtered${secondNote}` : undefined;
   return (
     <th
       scope="col"
@@ -401,6 +408,7 @@ function ColumnHead({ id, last, sorted, sorted2, sortable, onSort, filtered, dra
               {sorted2 && !sorted ? "2" : null}
             </span>
           ) : null}
+          {secondNote ? <VisuallyHidden>{secondNote}</VisuallyHidden> : null}
         </button>
       ) : filtered ? (
         <span style={FILTERED_MARK}>{HEAD[id]}</span>

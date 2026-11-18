@@ -163,7 +163,7 @@ describe("step cards", () => {
 describe("Typed here: the model menu follows the tool (CA-02 P4)", () => {
   const openMenu = (name: string | RegExp) => fireEvent.keyDown(screen.getByRole("button", { name }), { key: "Enter" });
   const pickTool = (query: string, row: string | RegExp) => {
-    fireEvent.click(screen.getByRole("button", { name: /^Prompt tool · / }));
+    fireEvent.click(screen.getByRole("button", { name: /(^|, )Prompt tool · / }));
     fireEvent.change(screen.getByRole("combobox", { name: "Find a tool" }), { target: { value: query } });
     fireEvent.click(screen.getByRole("option", { name: row }));
   };
@@ -849,7 +849,7 @@ describe("F15 and F41 · the composer", () => {
   it("F41: the model control reads Model until one is chosen, then that model's name", () => {
     list();
     expect(screen.getByRole("button", { name: "model" }).textContent).toContain("Model");
-    fireEvent.click(screen.getByRole("button", { name: /^Prompt tool · / }));
+    fireEvent.click(screen.getByRole("button", { name: /(^|, )Prompt tool · / }));
     fireEvent.change(screen.getByRole("combobox", { name: "Find a tool" }), { target: { value: "claude" } });
     fireEvent.click(screen.getByRole("option", { name: "Claude" }));
     fireEvent.keyDown(screen.getByRole("button", { name: "model" }), { key: "Enter" });

@@ -20,7 +20,7 @@ function open(over: Partial<AddManualStepDialogProps> = {}) {
   return props;
 }
 
-const toolButton = () => screen.getByRole("button", { name: "App" });
+const toolButton = () => screen.getByRole("button", { name: /(^|, )App$/ });
 const pickApp = (name: string) => {
   fireEvent.click(toolButton());
   fireEvent.change(screen.getByRole("combobox", { name: "Find an app" }), { target: { value: name } });

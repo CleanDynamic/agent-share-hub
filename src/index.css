@@ -219,6 +219,8 @@
   --on-evidence-fill: var(--evidence);
   --inverse-evidence-fill: #1F3A27;
   --lit-ink: #8F5E00;
+  --breakage-ink: #AD3328;
+  --instruction-ink: #A9532F;
   --ring-glow: 0 0 0 0 transparent;
   --bar-base: #E0E0E0;
   --tagline-lamp: var(--lit);
@@ -460,6 +462,8 @@
   --on-evidence-fill: var(--evidence);
   --inverse-evidence-fill: #DDF2E1;
   --lit-ink: #E8C468;
+  --breakage-ink: #E5807F;
+  --instruction-ink: #E39A78;
   --ring-glow: 0 0 0 0 transparent;
   --bar-base: #3A3A3F;
   --tagline-lamp: var(--lit);

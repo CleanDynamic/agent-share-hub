@@ -194,6 +194,11 @@ function PanelBody({ groups, lookup, current, words: picked, post, refusal, link
       if (options.length === 0) return;
       setMoving(null);
       setActive((at) => (at + (event.key === "ArrowDown" ? 1 : options.length - 1)) % options.length);
+    } else if ((event.key === "Home" || event.key === "End") && options.length > 0) {
+      // G18: the first and the last option.
+      event.preventDefault();
+      setMoving(null);
+      setActive(event.key === "Home" ? 0 : options.length - 1);
     } else if (event.key === "Enter") {
       event.preventDefault();
       const option = options[Math.min(active, options.length - 1)];

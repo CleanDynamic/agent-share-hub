@@ -16,6 +16,7 @@
 
    The board measures that are not on the site's spacing scale (10, 14, 18) live here, as the recipe files keep theirs. */
 
+import { dragWords } from "@/components/brand/dragWords";
 import { useWindowFocus } from "@/lib/focus/windowFocus";
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -304,7 +305,26 @@ export function KeepLinkDialog({ open, title, body, action, choices, onPick, onC
           <div style={{ padding: PAD.card, display: "flex", flexDirection: "column", gap: GAP.column }}>
             <Dialog.Title style={GROUP_TITLE}>{title}</Dialog.Title>
             {body ? <p style={{ ...SUBTITLE, margin: 0 }}>{body}</p> : null}
-            <div role="radiogroup" aria-label={title} style={{ display: "flex", flexDirection: "column", gap: GAP.panels }}>
+            {/* G18: the radio pattern: one Tab stop (the chosen row), and the arrows, Home and End move the choice and focus. */}
+            <div
+              role="radiogroup"
+              aria-label={title}
+              onKeyDown={(event) => {
+                const at = choices.findIndex((choice) => choice.key === chosen);
+                const last = choices.length - 1;
+                const to =
+                  event.key === "ArrowDown" || event.key === "ArrowRight" ? (at + 1) % choices.length
+                  : event.key === "ArrowUp" || event.key === "ArrowLeft" ? (at - 1 + choices.length) % choices.length
+                  : event.key === "Home" ? 0
+                  : event.key === "End" ? last
+                  : null;
+                if (to === null || !choices[to]) return;
+                event.preventDefault();
+                setChosen(choices[to].key);
+                event.currentTarget.querySelectorAll<HTMLElement>('[role="radio"]')[to]?.focus();
+              }}
+              style={{ display: "flex", flexDirection: "column", gap: GAP.panels }}
+            >
               {choices.map((choice) => (
                 <KeepRow key={choice.key} choice={choice} chosen={chosen === choice.key} onChoose={() => setChosen(choice.key)} />
               ))}
@@ -332,6 +352,7 @@ function KeepRow({ choice, chosen, onChoose }: { choice: KeepChoice; chosen: boo
       type="button"
       role="radio"
       aria-checked={chosen}
+      tabIndex={chosen ? 0 : -1}
       data-keep={choice.key}
       onClick={onChoose}
       {...handlers}
@@ -434,7 +455,8 @@ export function SortableRows({ rows, height = 40, label, onOrder }: { rows: read
     if (from >= 0 && to >= 0) onOrder(arrayMove(keys, from, to));
   };
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+    /* G20: the drag says the row's name and place, not its key. */
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd} accessibility={dragWords("row", keys, (id) => rows.find((row) => row.key === id)?.name ?? "")}>
       <SortableContext items={keys} strategy={verticalListSortingStrategy}>
         <ul aria-label={label} style={{ margin: 0, padding: 0, display: "flex", flexDirection: "column", minWidth: 0 }}>
           {rows.map((row) => (

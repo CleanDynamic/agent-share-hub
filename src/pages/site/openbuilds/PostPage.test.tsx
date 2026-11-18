@@ -132,7 +132,7 @@ describe("the post page", () => {
 
   it("gives a reader who neither wrote the post nor moderates no Pin or Hide (UX-09 P8: the menu holds Report alone)", async () => {
     mount();
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 1, name: "Can anyone make the scorer faster?" });
     const [first] = screen.getAllByTestId("reply");
     fireEvent.keyDown(within(first).getByRole("button", { name: "More for this reply" }), { key: "Enter" });
     expect(await screen.findByRole("menuitem", { name: "Report" })).toBeInTheDocument();
@@ -143,7 +143,7 @@ describe("the post page", () => {
   it("gives the post's author Pin but not Hide", async () => {
     user = { id: "sam" };
     mount();
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 1, name: "Can anyone make the scorer faster?" });
     const [first] = screen.getAllByTestId("reply");
     fireEvent.keyDown(within(first).getByRole("button", { name: "More for this reply" }), { key: "Enter" });
     expect(await screen.findByRole("menuitem", { name: "Pin" })).toBeInTheDocument();
@@ -153,7 +153,7 @@ describe("the post page", () => {
   it("gives a moderator Pin and Hide", async () => {
     readPostExtras.mockResolvedValue(extras("moderator"));
     mount();
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 1, name: "Can anyone make the scorer faster?" });
     const [first] = screen.getAllByTestId("reply");
     fireEvent.keyDown(within(first).getByRole("button", { name: "More for this reply" }), { key: "Enter" });
     expect(await screen.findByRole("menuitem", { name: "Pin" })).toBeInTheDocument();
@@ -162,7 +162,7 @@ describe("the post page", () => {
 
   it("filters the Thread to a step from the address, and Show all replies takes the filter away", async () => {
     mount("/openbuilds/topics/p1?step=n4");
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 1, name: "Can anyone make the scorer faster?" });
     await waitFor(() => expect(screen.getAllByTestId("reply")).toHaveLength(1));
     fireEvent.click(screen.getByRole("button", { name: "Show all replies" }));
     await waitFor(() => expect(where).toBe(""));
@@ -171,7 +171,7 @@ describe("the post page", () => {
 
   it("keeps one reply box open: at the foot, then under the reply whose Reply was pressed, then back at the foot", async () => {
     mount();
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 1, name: "Can anyone make the scorer faster?" });
     expect(screen.getAllByTestId("reply-box")).toHaveLength(1);
     const thread = screen.getByRole("region", { name: "Thread" });
     expect(within(thread).queryAllByTestId("reply").some((reply) => within(reply).queryByTestId("reply-box"))).toBe(false);
@@ -240,7 +240,7 @@ describe("UX-09 P1: #reply-box", () => {
 
   it("opens the topic with the reply box's field focused (Reply on a gap)", async () => {
     mount("/openbuilds/topics/p1#reply-box");
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 1, name: "Can anyone make the scorer faster?" });
     const box = await screen.findByTestId("reply-box");
     expect(box.id).toBe("reply-box");
     await waitFor(() => expect(document.activeElement).toBe(within(box).getByRole("textbox")));
@@ -259,7 +259,7 @@ describe("UX-09 P8: reporting a topic or a reply", () => {
 
   it("a reader reports the topic, and the report is written with its target type", async () => {
     mount();
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 1, name: "Can anyone make the scorer faster?" });
     fireEvent.keyDown(screen.getByRole("button", { name: "More for this topic" }), { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Report" }));
     const dialog = await screen.findByRole("dialog", { name: "Report this topic" });
@@ -270,7 +270,7 @@ describe("UX-09 P8: reporting a topic or a reply", () => {
 
   it("a reply is reported as a reply", async () => {
     mount();
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 1, name: "Can anyone make the scorer faster?" });
     const [first] = screen.getAllByTestId("reply");
     fireEvent.keyDown(within(first).getByRole("button", { name: "More for this reply" }), { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Report" }));
@@ -281,7 +281,7 @@ describe("UX-09 P8: reporting a topic or a reply", () => {
     user = { id: "sam" };
     getPost.mockResolvedValue(thread({ replies: [entry("sam-reply", 60, { authorId: "sam" })] }));
     mount();
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 1, name: "Can anyone make the scorer faster?" });
     // Their topic: no menu for a reader who is not a moderator of its space.
     expect(screen.queryByRole("button", { name: "More for this topic" })).toBeNull();
     // Their reply: Pin (they wrote the topic), no Report.
@@ -304,7 +304,7 @@ describe("UX-09 Q4: Message the topic's author", () => {
 
   it("opens the one direct thread with the author, the topic waiting in its message box", async () => {
     mount();
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 1, name: "Can anyone make the scorer faster?" });
     fireEvent.keyDown(screen.getByRole("button", { name: "More for this topic" }), { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Message @sam" }));
     const arrived = await screen.findByTestId("arrived");
@@ -315,7 +315,7 @@ describe("UX-09 Q4: Message the topic's author", () => {
   it("is not offered to the topic's author", async () => {
     user = { id: "sam" };
     mount();
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 1, name: "Can anyone make the scorer faster?" });
     expect(screen.queryByRole("button", { name: "More for this topic" })).toBeNull();
     expect(openTopicThread).not.toHaveBeenCalled();
   });
@@ -346,7 +346,7 @@ describe("UX-09 Q5: the author of what the site hid is told", () => {
   it("a hidden reply is named above the topic it was in", async () => {
     siteHiddenPostsOf.mockResolvedValue([{ id: "x1", kind: "reply", heading: "my reply" }]);
     mount();
-    await screen.findByRole("heading", { level: 1 });
+    await screen.findByRole("heading", { level: 1, name: "Can anyone make the scorer faster?" });
     const notice = await screen.findByTestId("site-hidden-notice");
     expect(notice.textContent).toContain("Hidden by the site's moderators: your reply");
   });

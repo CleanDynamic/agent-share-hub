@@ -12,6 +12,7 @@
 //
 // ON A PHONE two or more are a strip that scrolls sideways while the maker writes; readers still get the grid.
 
+import { dragWords } from "@/components/brand/dragWords";
 import { closestCenter, DndContext, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { horizontalListSortingStrategy, rectSortingStrategy, SortableContext, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -147,7 +148,13 @@ function SortableTile({
   sortable: boolean;
 }) {
   const snapshot = useSyncExternalStore(host.store.subscribe, host.store.getSnapshot);
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: picture.key, disabled: !sortable });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: picture.key,
+    disabled: !sortable,
+    /* G25 (nested-interactive): a tile holds its own buttons (Edit, Remove, ALT), so it is a group, not a button. It keeps its
+       Tab stop, its name and its keyboard drag; dnd-kit sets no aria-pressed on a role that is not its own. */
+    attributes: { role: "group" },
+  });
   const [ring, setRing] = useState(false);
   const { attrs, uploadId, failed } = picture;
   const media = snapshot.rows.get(attrs.mediaId);
@@ -499,7 +506,21 @@ export function GridView(props: NodeViewProps) {
 
   return (
     <NodeViewWrapper data-grid-view="" contentEditable={false} ref={root}>
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+      {/* G20: the drag says the picture's description or number and its place, not its key. */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={onDragEnd}
+        accessibility={dragWords(
+          "picture",
+          pictures.map((picture) => picture.key),
+          (id) => {
+            const at = pictures.findIndex((picture) => picture.key === id);
+            const alt = typeof pictures[at]?.attrs.alt === "string" ? (pictures[at].attrs.alt as string).trim() : "";
+            return alt || `Picture ${at + 1}`;
+          },
+        )}
+      >
         <SortableContext items={pictures.map((picture) => picture.key)} strategy={strip ? horizontalListSortingStrategy : rectSortingStrategy}>
           {strip ? (
             <div

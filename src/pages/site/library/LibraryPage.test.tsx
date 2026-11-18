@@ -205,7 +205,7 @@ describe("Library", () => {
     const kinds = within(screen.getByRole("navigation", { name: "Kinds" })).getAllByRole("link");
     // UX-07 P4: saved topics are one more kind.
     expect(kinds.map((link) => link.textContent)).toEqual(["All saved18", "Builds18", "Parts0", "Sessions0", "Steps0", "Requests0", "Filter sets0", "Topics0"]);
-    expect(screen.getAllByTestId("library-row")[0]).toHaveAttribute("aria-selected", "true");
+    expect(within(screen.getAllByTestId("library-row")[0]).getAllByRole("button")[0]).toHaveAttribute("aria-pressed", "true");
 
     fireEvent.click(screen.getByRole("button", { name: "Show more" }));
     await waitFor(() => expect(listMySavedBuilds).toHaveBeenLastCalledWith({ before: "2026-09-28T10:00:00.000Z" }));

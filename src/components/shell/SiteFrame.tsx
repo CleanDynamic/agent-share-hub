@@ -49,6 +49,7 @@ import { ORIGIN, SURFACE_MARGIN, frameOf, innerWidthOf } from "@/pages/site/comp
 import { Breadcrumb } from "./Breadcrumb";
 import { HEADER_HEIGHT, PAGE_EDGE } from "./chromeSize";
 import { Dock } from "./Dock";
+import { FocusRescue } from "./FocusRescue";
 import { MobileHeader } from "./MobileHeader";
 import { PageProgress } from "./PageProgress";
 import { ConnectorDialogProvider } from "@/components/connect/ConnectorDialog";
@@ -56,7 +57,7 @@ import { SiteFooter } from "./SiteFooter";
 import { SiteHeader } from "./SiteHeader";
 import { type PageFit } from "./siteFrameFit";
 import { CrumbTitleProvider } from "./useBreadcrumb";
-import { useIsPhone } from "./useMinWidth";
+import { useIsPhone, useShortWindow } from "./useMinWidth";
 
 export { boardHeight, BOARD_GRID_HEIGHT, type PageFit } from "./siteFrameFit";
 
@@ -96,6 +97,7 @@ export interface SiteFrameViewProps {
 }
 
 const CONTENTS: CSSProperties = { display: "contents" };
+
 
 const SKIP_BASE: CSSProperties = {
   position: "absolute",
@@ -172,6 +174,7 @@ export function SiteFrameView({
   chrome = true,
 }: SiteFrameViewProps) {
   const narrow = useIsPhone();
+  const short = useShortWindow();
   const win = useWindowSize();
   const phone = (viewport ?? (narrow ? "mobile" : "desktop")) === "mobile";
   /* SV-04: set once when the frame mounts, so the page audit can tell a header kept across a page change from one drawn again. */
@@ -187,8 +190,9 @@ export function SiteFrameView({
   if (variant === "bare") {
     return (
       <div data-testid="site-frame" data-variant="bare" style={root}>
+        <FocusRescue />
         <SkipLink phone={phone} />
-        <main id="main" style={{ position: "relative", zIndex: 1 }}>
+        <main id="main" tabIndex={-1} style={{ position: "relative", zIndex: 1, outline: "none" }}>
           {children}
         </main>
       </div>
@@ -199,6 +203,7 @@ export function SiteFrameView({
     // The same elements at the same places as below, so the page under `<main>` keeps its state.
     return (
       <div data-testid="site-frame" data-variant="none" style={CONTENTS}>
+        <FocusRescue />
         {null}
         {null}
         <div style={CONTENTS}>
@@ -216,11 +221,14 @@ export function SiteFrameView({
   const refinedRoot: CSSProperties = { ...root, display: "flex", flexDirection: "column", background: t.frame };
   return (
     <div data-testid="site-frame" data-variant="site" data-viewport={phone ? "mobile" : "desktop"} style={refinedRoot}>
+      {/* G17: after a removal, focus goes to the next item, the previous, or the list's heading; never the body. */}
+      <FocusRescue />
       {skipLink ?? <SkipLink phone={phone} />}
       <div
         data-slot={phone ? "mobile-header" : "header"}
         data-frame-id={frameId}
-        style={{ position: "sticky", top: 0, zIndex: 20, minHeight: HEADER_HEIGHT, background: t.frame }}
+        /* G22: pinned unless the window is short (zoomed), where it would cover the page. */
+        style={{ position: short ? "relative" : "sticky", top: 0, zIndex: 20, minHeight: HEADER_HEIGHT, background: t.frame }}
       >
         {phone ? mobileHeader : header}
         {progress}
@@ -228,7 +236,10 @@ export function SiteFrameView({
       <div data-ui="surface" data-wide={wide && !phone ? "true" : undefined} style={wide && !phone ? WIDE_SURFACE : phone ? SURFACE : DESKTOP_SURFACE}>
         <main
           id="main"
+          /* G4: the skip link's target. A programmatic focus target, never a Tab stop, and it draws no outline. */
+          tabIndex={-1}
           style={{
+            outline: "none",
             position: "relative",
             zIndex: 1,
             display: "flex",

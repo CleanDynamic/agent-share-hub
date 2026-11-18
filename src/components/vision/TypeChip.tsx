@@ -11,7 +11,8 @@ import { DM_MONO } from "@/lib/theme/type";
 
 export type ChipTone = "evidence" | "breakage" | "lit" | "text";
 
-const TONE: Record<ChipTone, string> = { evidence: t.evidence, breakage: t.catBreakage, lit: t.lit, text: t.text };
+/* G6: a chip's word takes the legible ink of breakage and lit. */
+const TONE: Record<ChipTone, string> = { evidence: t.evidence, breakage: t.breakageInk, lit: t.litInk, text: t.text };
 
 export function TypeChip({ children, tone }: { children: ReactNode; tone?: ChipTone }) {
   return (

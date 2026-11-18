@@ -96,6 +96,19 @@ export function CategoryChip(props: CategoryChipProps) {
         data-chip-variant="overflow"
         title={title}
         onClick={onClick}
+        /* G28: with a click it is a button, as the category chip below is, and answers to its keys. */
+        role={selectable ? "button" : undefined}
+        tabIndex={selectable ? 0 : undefined}
+        onKeyDown={
+          selectable
+            ? (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  event.currentTarget.click();
+                }
+              }
+            : undefined
+        }
         style={{ ...TAG, ...tabular, ...style }}
       >
         +{props.count}

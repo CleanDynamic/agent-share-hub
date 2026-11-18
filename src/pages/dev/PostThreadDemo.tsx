@@ -11,7 +11,7 @@
    1, 3 and 4 pictures; uploading and failed; the same old post opened in the editor; and the phone's strip. */
 
 import { useMemo, useState, type ReactNode } from "react";
-import { MemoryRouter, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 import { FeedPost } from "@/components/gallery/FeedPost";
 import { MediaViewerProvider } from "@/components/post/media/MediaViewer";
@@ -266,9 +266,8 @@ export default function PostThreadDemo(_props: DesignPageProps) {
           <Widths
             id="card"
             render={(phone) => (
-              <MemoryRouter>
-                <FeedPost build={CARD} srcByPath={SRC} makerHandle="sam" makerName="Sam Rivera" makerAvatar={null} modelsUsed={[]} phone={phone} />
-              </MemoryRouter>
+              /* G13: the app's router is already round this page; a second one inside it throws. */
+              <FeedPost build={CARD} srcByPath={SRC} makerHandle="sam" makerName="Sam Rivera" makerAvatar={null} modelsUsed={[]} phone={phone} />
             )}
           />
         </Section>

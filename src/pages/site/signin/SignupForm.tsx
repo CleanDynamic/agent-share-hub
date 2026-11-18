@@ -11,6 +11,7 @@
    field (the username's and the email's checks) sits under that field. */
 
 import { AtSign, Lock, Mail, User } from "lucide-react";
+import { useId } from "react";
 import { Link } from "react-router-dom";
 
 import type { InputValidation } from "@/components/auth/AuthInput";
@@ -89,6 +90,8 @@ export function SignupForm({
   showLegalLine = false,
   onLeaveForLegal,
 }: SignupFormProps) {
+  const errorId = useId();
+  const tied = error ? errorId : undefined;
   return (
     <>
       <ProviderButtons onProvider={onProvider} loadingProvider={loadingProvider} />
@@ -101,6 +104,7 @@ export function SignupForm({
           onChange={onDisplayNameChange}
           placeholder="Your name"
           required
+          describedBy={tied}
           autoComplete="name"
         />
         <AuthField
@@ -112,6 +116,7 @@ export function SignupForm({
           helperText={username ? siteUrl(`/profile/${username}`).replace(/^https?:\/\//, "") : undefined}
           validation={usernameValidation}
           required
+          describedBy={tied}
           autoComplete="username"
         />
         <AuthField
@@ -124,6 +129,7 @@ export function SignupForm({
           placeholder="you@example.com"
           validation={emailValidation}
           required
+          describedBy={tied}
           autoComplete="email"
         />
         <div>
@@ -135,6 +141,7 @@ export function SignupForm({
             onChange={onPasswordChange}
             placeholder="At least 8 characters"
             required
+            describedBy={tied}
             autoComplete="new-password"
           />
           {password ? <PasswordStrengthMeter strength={passwordStrength} /> : null}
@@ -150,7 +157,8 @@ export function SignupForm({
               Privacy policy
             </Link>
           </AuthCheck>
-          <FieldMessage>{error}</FieldMessage>
+          {/* G14, G15: the form's error is tied to its fields and said once, as their description, when focus goes to them. */}
+          <FieldMessage id={errorId} live={false}>{error}</FieldMessage>
         </div>
         <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText={WAITING.signingUp}>
           Sign up

@@ -58,6 +58,9 @@ export function NewPostWindow({ spaceSlug, draft: restored, onClose, onReopen }:
   const [draft, setDraft] = useState<NewPostDraft>(restored ?? EMPTY_DRAFT);
   const [work, setWork] = useState<CardWork>(NO_CARD_WORK);
   const [notice, setNotice] = useState<string | null>(null);
+  /** G14, G15: the notice is the box's error (nothing to send): tied to the box, and focus goes there, rather than an alert. */
+  const [boxError, setBoxError] = useState(false);
+  const box = useRef<HTMLTextAreaElement>(null);
   const [uploading, setUploading] = useState(false);
   // What the reader just added is shown from the file itself until it has an address of its own.
   const [previews, setPreviews] = useState<Record<string, string>>({});
@@ -87,6 +90,7 @@ export function NewPostWindow({ spaceSlug, draft: restored, onClose, onReopen }:
   const rewardOk = chosen.every((space) => space.rewardsAllowed);
   const change = (patch: Partial<NewPostDraft>) => {
     setNotice(null);
+    setBoxError(false);
     setDraft((current) => ({ ...current, ...patch }));
   };
 
@@ -136,6 +140,7 @@ export function NewPostWindow({ spaceSlug, draft: restored, onClose, onReopen }:
   };
 
   const addFile = async (picked: File | undefined) => {
+    setBoxError(false);
     if (!picked) return;
     const kind = fileKindFor(picked);
     if ("refused" in kind) return setNotice(kind.refused);
@@ -160,7 +165,12 @@ export function NewPostWindow({ spaceSlug, draft: restored, onClose, onReopen }:
   };
 
   const post = () => {
-    if (!hasContent(draft)) return setNotice(EMPTY_SEND);
+    if (!hasContent(draft)) {
+      setNotice(EMPTY_SEND);
+      setBoxError(true);
+      box.current?.focus();
+      return;
+    }
     const sent = draft;
     onClose();
     void sendPost({
@@ -207,7 +217,10 @@ export function NewPostWindow({ spaceSlug, draft: restored, onClose, onReopen }:
           <VisuallyHidden>Post</VisuallyHidden>
         </label>
         <textarea
+          ref={box}
           id="new-post-box"
+          aria-invalid={boxError || undefined}
+          aria-describedby={boxError && notice ? "new-post-notice" : undefined}
           value={draft.body}
           rows={6}
           autoFocus
@@ -215,7 +228,7 @@ export function NewPostWindow({ spaceSlug, draft: restored, onClose, onReopen }:
           style={areaStyle(phone, 6, { fontSize: phone ? 16 : 13, outline: "none" })}
         />
         {notice ? (
-          <p role="alert" style={{ margin: "6px 0 0", fontFamily: FIGTREE, fontSize: 12, color: t.text }}>
+          <p id="new-post-notice" role={boxError ? undefined : "alert"} style={{ margin: "6px 0 0", fontFamily: FIGTREE, fontSize: 12, color: t.text }}>
             {notice}
           </p>
         ) : null}

@@ -82,9 +82,12 @@ const nodeTitle: CSSProperties = {
 
 const countLabel = (n: number) => (n > 0 ? n.toLocaleString("en-GB") : "—");
 
-function nodeLabel(node: FamilyNodeView): string {
-  const reproduced = node.reproduced > 0 ? `${node.reproduced.toLocaleString("en-GB")} reproduced` : "not yet reproduced";
-  return `${node.title}, ${node.draft ? "your draft" : `by ${node.maker}`}, ${reproduced}`;
+/** G7: the name follows what the node draws, in its order (the title, the maker, the count), then what it adds. */
+function nodeLabel(node: FamilyNodeView, list = false): string {
+  const count = node.reproduced.toLocaleString("en-GB");
+  // The phone's list draws "<maker> · <count> reproduced" on one line; the tree draws the maker and the count apart.
+  if (list) return `${node.title}, ${node.maker} · ${node.reproduced > 0 ? `${count} reproduced` : "reproduced by no one yet"}`;
+  return `${node.title}, ${node.maker}, ${node.reproduced > 0 ? `${count} reproduced` : "not yet reproduced"}`;
 }
 
 /* ── one node, as a link or as a choice ── */
@@ -94,12 +97,15 @@ function NodeTarget({
   style,
   onSelect,
   selected,
+  list = false,
   children,
 }: {
   node: FamilyNodeView;
   style: CSSProperties;
   onSelect?: (id: string) => void;
   selected?: boolean;
+  /** The phone's list row, whose words run in another order than the tree's node. */
+  list?: boolean;
   children: ReactNode;
 }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement & HTMLButtonElement>();
@@ -108,7 +114,7 @@ function NodeTarget({
     "data-node-id": node.id,
     "data-draft": node.draft ? "" : undefined,
     "data-lamp": node.lamp,
-    "aria-label": nodeLabel(node),
+    "aria-label": nodeLabel(node, list),
     "aria-current": node.current ? ("page" as const) : undefined,
     ...handlers,
   };
@@ -183,6 +189,9 @@ function TreeNode({
         <CoverFallback seed={node.seed} sky={node.sky} radius={0} />
       </span>
       <span style={{ ...nodeTitle, display: "block", marginTop: 5 }}>{node.title}</span>
+      {/* G7: the spaces between the pieces are not drawn (block and flex boxes); they keep the words apart in the text a
+          voice-control user matches the name against. */}
+      {" "}
       <span
         style={{
           display: "flex",
@@ -196,6 +205,7 @@ function TreeNode({
         }}
       >
         <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{node.maker}</span>
+        {" "}
         <span>{countLabel(node.reproduced)}</span>
       </span>
     </NodeTarget>
@@ -275,6 +285,7 @@ export function FamilyList({
               node={node}
               onSelect={onSelect}
               selected={selected}
+              list
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -305,6 +316,7 @@ export function FamilyList({
               </span>
               <span style={{ flexGrow: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                 <span style={{ ...nodeTitle, display: "block" }}>{node.title}</span>
+                {" "}
                 <span style={{ fontFamily: FIGTREE, fontSize: 11, lineHeight: "normal", color: t.text2 }}>
                   {node.maker} · {countLabel(node.reproduced)} reproduced
                 </span>

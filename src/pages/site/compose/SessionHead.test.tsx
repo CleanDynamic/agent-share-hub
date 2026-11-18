@@ -193,7 +193,7 @@ describe("the app", () => {
     const base = sandboxListProps("bakery");
     const [[number, first], ...rest] = [...base.dividers.entries()];
     list({ dividers: new Map([[number, { ...first, tool: "No harness chosen" }], ...rest]), onPickApp: vi.fn() });
-    const pick = within(head(1)).getByRole("button", { name: "Pick a harness for session 1" });
+    const pick = within(head(1)).getByRole("button", { name: /(^|, )Pick a harness for session 1$/ });
     expect(pick.textContent).toBe("Choose harness");
     expect(pick.style.textDecoration).not.toBe("underline");
   });

@@ -2,7 +2,7 @@
 // "or with email" rule, the field style, the checkbox row and the primary action,
 // at the reference's desktop and phone numbers, and the behaviour every existing
 // auth spec relies on (placeholders, labels, the disabled gate, the reveal, the
-// checkbox's shape, one polite error under the field it is about).
+// checkbox's shape, one error under the field it is about, tied to it).
 //
 // Token-valued styles are asserted through static markup, because jsdom's CSS
 // parser drops every `var()`; behaviour is asserted on the rendered tree.
@@ -185,9 +185,8 @@ describe("AuthField", () => {
     expect(phone).toContain("height: 44px");
   });
 
-  it("says one thing under the field it is about, in --cat-breakage, announced politely", () => {
+  it("says one thing under the field it is about, in --cat-breakage, as the field's description (G15: not also live)", () => {
     const html = markup(field({ error: "Wrong email or password" }));
-    expect(html).toContain('aria-live="polite"');
     expect(html).toContain("color:var(--cat-breakage)");
     expect(html).toContain("Wrong email or password");
     expect(html).toContain("border:1px solid var(--cat-breakage)");
@@ -196,7 +195,7 @@ describe("AuthField", () => {
     const input = screen.getByRole("textbox");
     expect(input.getAttribute("aria-invalid")).toBe("true");
     const message = screen.getByText("Wrong email or password");
-    expect(message.getAttribute("aria-live")).toBe("polite");
+    expect(message.getAttribute("aria-live")).toBeNull();
     expect(input.getAttribute("aria-describedby")).toBe(message.id);
   });
 
@@ -420,11 +419,11 @@ describe("LoginForm", () => {
     expect(forgot.textContent).toBe("Forgot?");
   });
 
-  it("puts the one error under the password, announced politely, and nowhere else", () => {
+  it("puts the one error under the password, said as the password's description, and nowhere else", () => {
     show(<LoginForm {...login({ error: "Wrong email or password" })} />);
     const password = screen.getByPlaceholderText("Enter your password");
     const message = screen.getByText("Wrong email or password");
-    expect(message.getAttribute("aria-live")).toBe("polite");
+    expect(message.getAttribute("aria-live")).toBeNull();
     expect(password.getAttribute("aria-invalid")).toBe("true");
     expect(password.getAttribute("aria-describedby")).toBe(message.id);
     expect(screen.getByPlaceholderText("Email").getAttribute("aria-invalid")).toBe("false");
@@ -477,8 +476,8 @@ describe("SignupForm", () => {
     );
     expect(screen.getByPlaceholderText("username").getAttribute("aria-invalid")).toBe("true");
     expect(screen.getByPlaceholderText("you@example.com").getAttribute("aria-invalid")).toBe("true");
-    expect(screen.getByText("Username must be at least 3 characters").getAttribute("aria-live")).toBe("polite");
-    expect(screen.getByText("Enter a valid email address.").getAttribute("aria-live")).toBe("polite");
+    expect(screen.getByText("Username must be at least 3 characters").getAttribute("aria-live")).toBeNull();
+    expect(screen.getByText("Enter a valid email address.").getAttribute("aria-live")).toBeNull();
     expect(screen.getByPlaceholderText("At least 8 characters").getAttribute("aria-invalid")).toBe("false");
   });
 
@@ -516,10 +515,10 @@ describe("SignupForm", () => {
     expect(screen.getByRole("button", { name: "Signing up…" })).toBeDisabled();
   });
 
-  it("puts the form's one error under the terms, announced politely", () => {
+  it("puts the form's one error under the terms, tied to the fields", () => {
     show(<SignupForm {...signup({ error: "That email is already registered — try signing in instead." })} />);
     const message = screen.getByText("That email is already registered — try signing in instead.");
-    expect(message.getAttribute("aria-live")).toBe("polite");
+    expect(message.getAttribute("aria-live")).toBeNull();
     expect(message.previousElementSibling!.matches('label[for="terms"]')).toBe(true);
   });
 
@@ -553,7 +552,7 @@ describe("ResetRequestForm", () => {
 
   it("is the join form's field, with its error under it and its gate on the button", () => {
     const { rerender } = show(<ResetRequestForm {...request({ error: "Enter a valid email address." })} />);
-    expect(screen.getByText("Enter a valid email address.").getAttribute("aria-live")).toBe("polite");
+    expect(screen.getByText("Enter a valid email address.").getAttribute("aria-live")).toBeNull();
     expect(screen.getByPlaceholderText("you@example.com").getAttribute("aria-invalid")).toBe("true");
     rerender(inRouter(<ResetRequestForm {...request({ canSubmit: false })} />));
     expect(screen.getByRole("button", { name: "Send reset link" })).toBeDisabled();
@@ -591,9 +590,9 @@ describe("ResetConfirmForm", () => {
       />,
     );
     expect(screen.getByRole("img", { name: "Password strength: Fair" })).toBeTruthy();
-    expect(screen.getByText("Passwords don't match").getAttribute("aria-live")).toBe("polite");
+    expect(screen.getByText("Passwords don't match").getAttribute("aria-live")).toBeNull();
     expect(screen.getByLabelText("Confirm password", { exact: true }).getAttribute("aria-invalid")).toBe("true");
-    expect(screen.getByText("Choose a stronger password.").getAttribute("aria-live")).toBe("polite");
+    expect(screen.getByText("Choose a stronger password.").getAttribute("aria-live")).toBeNull();
   });
 
   it("says what it is doing while the new password is out", () => {

@@ -80,7 +80,12 @@ describe("NewPostWindow", () => {
   it("says Write something or attach work at once, under the box, and sends nothing", async () => {
     const { onClose } = draw();
     fireEvent.click(await screen.findByRole("button", { name: "Post" }));
-    expect(screen.getByRole("alert")).toHaveTextContent("Write something or attach work.");
+    // G14, G15: the box's error is tied to it, and focus goes to the box, rather than an alert.
+    const box = document.getElementById("new-post-box") as HTMLTextAreaElement;
+    expect(box.getAttribute("aria-invalid")).toBe("true");
+    expect(document.getElementById(box.getAttribute("aria-describedby") as string)).toHaveTextContent("Write something or attach work.");
+    expect(document.activeElement).toBe(box);
+    expect(screen.queryByRole("alert")).toBeNull();
     expect(createPost).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
   });

@@ -114,7 +114,7 @@ function LineagePageBody() {
 
   /* ── the states ── */
 
-  if (header.isPending && Boolean(slug)) return <RebuildViewSkeleton label="Loading the family" />;
+  if (header.isPending && Boolean(slug)) return <RebuildViewSkeleton title="Lineage" label="Loading the family" />;
 
   /* G4, G7: failed, or not found only when the server answered that there is no such build. */
   if (header.isError || !build) {

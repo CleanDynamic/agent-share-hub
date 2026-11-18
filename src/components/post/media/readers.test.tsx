@@ -67,7 +67,7 @@ describe("old posts", () => {
 describe("the ALT badge", () => {
   it("is a button that opens Image description from the bottom, with Dismiss, and focus goes back to it", async () => {
     render(<PostMediaGrid pictures={[pic("a", { alt: "The shop front at dawn" })]} mediaById={MEDIA} srcByPath={SRC} />);
-    const badge = screen.getByRole("button", { name: "Image description" });
+    const badge = screen.getByRole("button", { name: "ALT, image description" });
     fireEvent.click(badge);
     const sheet = await screen.findByTestId("alt-sheet");
     expect(within(sheet).getByRole("heading", { name: "Image description" })).toBeInTheDocument();
@@ -80,7 +80,7 @@ describe("the ALT badge", () => {
 
   it("closes on Esc", async () => {
     render(<PostMediaGrid pictures={[pic("a", { alt: "Words" })]} mediaById={MEDIA} srcByPath={SRC} />);
-    fireEvent.click(screen.getByRole("button", { name: "Image description" }));
+    fireEvent.click(screen.getByRole("button", { name: "ALT, image description" }));
     fireEvent.keyDown(await screen.findByTestId("alt-sheet"), { key: "Escape" });
     await waitFor(() => expect(screen.queryByTestId("alt-sheet")).toBeNull());
   });

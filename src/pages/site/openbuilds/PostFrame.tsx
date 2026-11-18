@@ -7,6 +7,7 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 
 import { OpenBuildsColumns } from "./OpenBuildsFrame";
+import { PlaceholderTitle } from "@/components/pagestate/PlaceholderTitle";
 
 function ReplyBones({ last }: { last: boolean }) {
   return (
@@ -23,6 +24,8 @@ function ReplyBones({ last }: { last: boolean }) {
 
 export function PostLoadingView() {
   return (
+    <>
+    <PlaceholderTitle>Post</PlaceholderTitle>
     <LoadingRegion what="post" announce>
       <OpenBuildsColumns
         testId="openbuilds-post-loading"
@@ -55,5 +58,6 @@ export function PostLoadingView() {
         }
       />
     </LoadingRegion>
+    </>
   );
 }

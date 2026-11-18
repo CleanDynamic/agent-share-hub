@@ -141,6 +141,10 @@ export function ClassificationPicker({ id, facet, label, entries, onChange, max,
     } else if (event.key === "ArrowUp") {
       event.preventDefault();
       if (count > 0) setActive((activeIndex - 1 + count) % count);
+    } else if ((event.key === "Home" || event.key === "End") && open && count > 0) {
+      // G18: the first and the last option while the list is open.
+      event.preventDefault();
+      setActive(event.key === "Home" ? 0 : count - 1);
     } else if (event.key === "Enter") {
       if (open && activeIndex >= 0) {
         event.preventDefault();

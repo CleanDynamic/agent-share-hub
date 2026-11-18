@@ -53,7 +53,7 @@ function Inline({ text }: { text: string }) {
   );
 }
 
-function Block({ block }: { block: LegalBlock }) {
+function Block({ block, section }: { block: LegalBlock; section: string }) {
   if (block.kind === "p") {
     return <p style={body}><Inline text={block.text} /></p>;
   }
@@ -67,7 +67,9 @@ function Block({ block }: { block: LegalBlock }) {
     );
   }
   return (
-    <div data-testid="legal-table" style={{ overflowX: "auto" }}>
+    /* G9: at a narrow width the table scrolls in this box, so a keyboard must be able to reach it: a Tab stop, named for its
+       section, ringed by the site's stylesheet ([tabindex] :focus-visible). */
+    <div data-testid="legal-table" role="region" aria-label={`${section} (table)`} tabIndex={0} style={{ overflowX: "auto" }}>
       <table style={{ ...body, width: "100%", minWidth: 480, borderCollapse: "collapse" }}>
         <thead>
           <tr>
@@ -145,7 +147,7 @@ export function LegalView({ text }: LegalViewProps) {
             <SectionHead title={section.heading} headingLevel={2} />
           </div>
           {section.blocks.map((block, index) => (
-            <Block key={index} block={block} />
+            <Block key={index} block={block} section={section.heading} />
           ))}
         </section>
       ))}

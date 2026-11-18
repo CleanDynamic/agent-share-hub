@@ -131,7 +131,7 @@ describe("the Add dialog", () => {
 describe("the host platform, its models and its tools (CA-02 P5)", () => {
   const pickHarness = (query: string, row: string | RegExp) => {
     openRow("Harness");
-    fireEvent.click((screen.getAllByRole("button", { name: "Harness" }).at(-1) as HTMLElement));
+    fireEvent.click((screen.getAllByRole("button", { name: /(^|, )Harness$/ }).at(-1) as HTMLElement));
     fireEvent.change(screen.getByRole("combobox", { name: "Find a tool" }), { target: { value: query } });
     fireEvent.click(screen.getByRole("option", { name: row }));
   };
@@ -140,7 +140,7 @@ describe("the host platform, its models and its tools (CA-02 P5)", () => {
   it("has no default for Harness (it asks), and an unchosen host takes any model", () => {
     open();
     openRow("Harness");
-    expect((screen.getAllByRole("button", { name: "Harness" }).at(-1) as HTMLElement).textContent).toBe("Select a harness");
+    expect((screen.getAllByRole("button", { name: /(^|, )Harness$/ }).at(-1) as HTMLElement).textContent).toBe("Select a harness");
     openModel(`model ${DEFAULT_AGENT_MODEL}`);
     expect(screen.getByRole("menuitem", { name: "Other model…" })).toBeTruthy();
     expect(screen.getByRole("menuitemradio", { name: "Grok 4.7" })).toBeTruthy();
@@ -229,7 +229,7 @@ describe("the host platform, its models and its tools (CA-02 P5)", () => {
     const props = open();
     openRow("Available tools");
     const pickTool = (query: string, row: string | RegExp) => {
-      fireEvent.click(screen.getByRole("button", { name: "Available tools" }));
+      fireEvent.click(screen.getByRole("button", { name: /(^|, )Available tools$/ }));
       fireEvent.change(screen.getByRole("combobox", { name: "Find an app" }), { target: { value: query } });
       fireEvent.click(screen.getByRole("option", { name: row }));
     };
@@ -310,9 +310,9 @@ describe("the trigger and the system instructions (CA-12 P11, CA-15 P7)", () => 
     fireEvent.click(screen.getByRole("radio", { name: "Scheduled" }));
     fireEvent.change(screen.getByLabelText("Schedule"), { target: { value: "Mondays 07:00" } });
     openRow("Harness");
-    fireEvent.click((screen.getAllByRole("button", { name: "Harness" }).at(-1) as HTMLElement));
+    fireEvent.click((screen.getAllByRole("button", { name: /(^|, )Harness$/ }).at(-1) as HTMLElement));
     fireEvent.click(screen.getByRole("option", { name: "Not sure" }));
-    expect((screen.getAllByRole("button", { name: "Harness" }).at(-1) as HTMLElement).textContent).toBe("Not said");
+    expect((screen.getAllByRole("button", { name: /(^|, )Harness$/ }).at(-1) as HTMLElement).textContent).toBe("Not said");
     fireEvent.click(add());
     expect(props.onAdd).toHaveBeenCalledWith(expect.objectContaining({ instructions: "Triage my inbox", harness: null, runs: { how: "schedule", detail: "Mondays 07:00" } }));
     expect((props.onAdd as ReturnType<typeof vi.fn>).mock.calls[0][0]).not.toHaveProperty("builtInCode");
@@ -394,7 +394,7 @@ describe("CA-13 · Deep Agents and supporting models in the Add dialog", () => {
   it("offers the Runtime models and services subcategory first under Harness, with Deep Agents and LangGraph in Agent frameworks", () => {
     open();
     openRow("Harness");
-    fireEvent.click((screen.getAllByRole("button", { name: "Harness" }).at(-1) as HTMLElement));
+    fireEvent.click((screen.getAllByRole("button", { name: /(^|, )Harness$/ }).at(-1) as HTMLElement));
     const rows = screen.getAllByRole("option").map((row) => row.textContent ?? "");
     expect(screen.getByText("Runtime models and services")).toBeTruthy();
     // "Not sure" and "Built in code (no harness)", then the subcategory's own rows before any other tool.

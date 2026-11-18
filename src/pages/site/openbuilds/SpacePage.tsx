@@ -19,6 +19,7 @@ import { reportError } from "@/lib/errors/report";
 import { getSpaceCrowd, hidePost, joinSpace, listPostCards, pinPost, unhidePost, unpinPost, type CardsPage } from "@/lib/openbuilds";
 import { usePageReady } from "@/lib/routing/pageReady";
 
+import { PlaceholderTitle } from "@/components/pagestate/PlaceholderTitle";
 import { OpenBuildsFeedLoadingView } from "./OpenBuildsFeedFrame";
 import { OpenBuildsState } from "./OpenBuildsFeedParts";
 import { FEED_PAGE, markSeen, mySpacesKey } from "./openBuildsFeedModel";
@@ -157,7 +158,10 @@ export default function SpacePage() {
     <>
       <SeoHead {...spaceSeo(space)} path={`/openbuilds/spaces/${slug}`} />
       {arriving || !crowd.data || !space ? (
-        <OpenBuildsFeedLoadingView />
+        <>
+          <PlaceholderTitle>Space</PlaceholderTitle>
+          <OpenBuildsFeedLoadingView />
+        </>
       ) : (
         <SpaceView
           name={space.name}

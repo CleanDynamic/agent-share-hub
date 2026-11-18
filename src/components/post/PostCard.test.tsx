@@ -1,6 +1,6 @@
 // UX-05 Part 1: the post card. Each attachment kind renders; one heading link per card; the replies strip is absent at zero.
 
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
@@ -38,6 +38,19 @@ const draw = (card: Partial<PostCardData> = {}, clamp = true) =>
   );
 
 describe("PostCard", () => {
+  it("G12: the heading is an h3 in a feed under a section's h2, and an h2 where the feed sits under the page's h1", () => {
+    draw();
+    expect(screen.getByRole("heading", { level: 3 })).toBeInTheDocument();
+    cleanup();
+    render(
+      <MemoryRouter>
+        <PostCard card={base} headingLevel={2} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("heading", { level: 2 })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 3 })).toBeNull();
+  });
+
   it("draws the head: name, handle, age, the spaces as links, and the reward", () => {
     draw();
     const article = screen.getByRole("article");
@@ -45,6 +58,8 @@ describe("PostCard", () => {
     expect(article.textContent).toContain("@sam · 2h · in");
     expect(within(article).getByRole("link", { name: "Claude Code" })).toHaveAttribute("href", "/openbuilds/spaces/claude-code");
     expect(within(article).getByRole("link", { name: "Hiring tools" })).toHaveAttribute("href", "/openbuilds/spaces/hiring-tools");
+    // G11: a link in the meta line is underlined at rest, not by colour alone.
+    expect((within(article).getByRole("link", { name: "Claude Code" }) as HTMLElement).style.textDecoration).toBe("underline");
     expect(within(article).getByText("£40")).toBeInTheDocument();
   });
 

@@ -2,6 +2,7 @@
 // draw it at once while the menu (and the menu library under it) loads apart, in `AccountMenu`. The same button is the
 // menu's trigger once the menu is here, so nothing on screen changes when it arrives.
 
+import { accountLabel } from "./accountLabel";
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 
 import { Avatar } from "@/components/brand/Avatar";
@@ -24,7 +25,7 @@ export const AccountButton = forwardRef<HTMLButtonElement, AccountButtonProps>(f
     <button
       ref={ref}
       type="button"
-      aria-label="Account"
+      aria-label={accountLabel(viewer)}
       {...rest}
       {...handlers}
       style={{ boxSizing: "border-box", width: 32, height: 32, padding: 0, border: 0, background: "transparent", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, ...ring(state.focusVisible) }}

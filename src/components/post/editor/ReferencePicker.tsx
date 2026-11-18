@@ -135,6 +135,10 @@ function PickerBody({ groups, current, phone, onChoose, onRemove, onClose, field
       event.preventDefault();
       if (rows.length === 0) return;
       setActive((at) => (at + (event.key === "ArrowDown" ? 1 : rows.length - 1)) % rows.length);
+    } else if ((event.key === "Home" || event.key === "End") && rows.length > 0) {
+      // G18: the first and the last option.
+      event.preventDefault();
+      setActive(event.key === "Home" ? 0 : rows.length - 1);
     } else if (event.key === "Enter") {
       event.preventDefault();
       choose(rows[Math.min(active, rows.length - 1)]);

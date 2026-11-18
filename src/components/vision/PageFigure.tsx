@@ -25,7 +25,8 @@ export interface PageFigureProps {
   separator?: string;
 }
 
-const TONE: Record<FigureTone, string> = { evidence: t.evidence, breakage: t.catBreakage, lit: t.lit };
+/* G6: the figure's words take the legible inks of breakage and lit. */
+const TONE: Record<FigureTone, string> = { evidence: t.evidence, breakage: t.breakageInk, lit: t.litInk };
 
 export function PageFigure({ figure, parts = [], size = "page", separator = " · " }: PageFigureProps) {
   const room = size === "room";

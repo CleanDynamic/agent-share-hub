@@ -118,7 +118,9 @@ function PromptRow({
     element.style.height = "auto";
     const max = LINE * MAX_LINES;
     element.style.height = `${Math.min(Math.max(element.scrollHeight, LINE), max)}px`;
-    element.style.overflowY = element.scrollHeight > max ? "auto" : "hidden";
+    /* G23: it scrolls rather than hides: sized to its words it shows no scrollbar, and if text spacing (or anything else)
+       makes the words taller after this ran, they are scrolled to, not cut. */
+    element.style.overflowY = "auto";
   }, [row.text]);
 
   useEffect(() => {
@@ -213,7 +215,7 @@ function PromptRow({
             lineHeight: 1.5,
             resize: "none",
             outline: "none",
-            overflowY: "hidden",
+            overflowY: "auto",
             ...fieldRing.style,
           }}
         />

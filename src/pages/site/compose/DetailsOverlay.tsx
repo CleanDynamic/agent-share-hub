@@ -10,7 +10,7 @@
 
 import { captureOpener, returnFocus, type Opener } from "@/lib/focus/windowFocus";
 import { X } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 
 import { IconButton } from "@/components/brand/IconButton";
 import { HEADER_HEIGHT } from "@/components/shell/chromeSize";
@@ -27,6 +27,7 @@ const CONTROLS = "button, a, input, select, textarea, [role='button'], [role='me
 
 /** The content, clickable as a whole to open the window, with the foot that says so. */
 export function ClickToEdit({ onEdit, phone, pad = 0, touch = phone, panel = false, children }: { onEdit?: () => void; phone: boolean; pad?: number; /** The foot says Tap to edit. */ touch?: boolean; /** In the tablet panel: the foot has no rule above it and is not padded in. */ panel?: boolean; children: ReactNode }) {
+  const footId = `details-foot-${useId().replace(/:/g, "")}`;
   if (!onEdit) return <div style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", padding: pad }}>{children}</div>;
   const onClick = (event: MouseEvent<HTMLDivElement>) => {
     if ((event.target as HTMLElement).closest(CONTROLS)) return;
@@ -37,10 +38,11 @@ export function ClickToEdit({ onEdit, phone, pad = 0, touch = phone, panel = fal
   };
   return (
     <>
-      <div data-testid="details-clickable" tabIndex={0} onClick={onClick} onKeyDown={onKeyDown} style={{ cursor: "pointer", outline: "none", flex: "1 1 auto", minHeight: 0, overflowY: "auto", padding: pad }}>
+      {/* G28: a named group that Enter opens; the line under it says so. Not a button: it holds controls of its own. */}
+      <div data-testid="details-clickable" role="group" aria-label="Details" aria-describedby={footId} tabIndex={0} onClick={onClick} onKeyDown={onKeyDown} style={{ cursor: "pointer", outline: "none", flex: "1 1 auto", minHeight: 0, overflowY: "auto", padding: pad }}>
         {children}
       </div>
-      <p data-testid="details-foot" style={{ ...text(textStep.meta, 400, t.label), margin: 0, flex: "0 0 auto", ...(panel ? { paddingTop: 8, textAlign: "left" } : { padding: OVERLAY_FOOT_PAD, borderTop: `1px solid ${t.hairline}` }) }}>
+      <p id={footId} data-testid="details-foot" style={{ ...text(textStep.meta, 400, t.label), margin: 0, flex: "0 0 auto", ...(panel ? { paddingTop: 8, textAlign: "left" } : { padding: OVERLAY_FOOT_PAD, borderTop: `1px solid ${t.hairline}` }) }}>
         {touch ? OVERLAY_FOOT_COPY.tap : OVERLAY_FOOT_COPY.click}
       </p>
     </>

@@ -51,13 +51,21 @@ function caretOf(editor: Editor | null): Caret {
  * `gutter` (SV-05 P5): the clear room left of the words, when it is narrower than the grip (a post's avatar stands 12 to
  * the left): the grip's box takes that room and no more, so it never touches what stands beside it.
  */
-export function BlockHandle({ editor, phone, gutter = MARGIN }: { editor: Editor | null; host?: PictureHost; phone: boolean; gutter?: number }) {
+export function BlockHandle({ editor, host, phone, gutter = MARGIN }: { editor: Editor | null; host?: PictureHost; phone: boolean; gutter?: number }) {
   const layer = useRef<HTMLDivElement>(null);
   const caret = useEditorState({ editor, selector: ({ editor: current }) => caretOf(current) }) ?? { index: -1, focused: false, count: 0, movable: 0 };
   const [hover, setHover] = useState<number | null>(null);
   const [held, setHeld] = useState(false);
   const [top, setTop] = useState(0);
   const [said, setSaid] = useState("");
+  /* G10: the hidden polite line is the editor's: what else must be heard and not seen (the slash menu opening) is said here. */
+  useEffect(() => {
+    if (!host) return;
+    host.say.current = setSaid;
+    return () => {
+      if (host.say.current === setSaid) host.say.current = null;
+    };
+  }, [host]);
   const { state, handlers } = useInteractive<HTMLButtonElement>();
 
   const index = hover ?? (caret.focused || held ? caret.index : -1);

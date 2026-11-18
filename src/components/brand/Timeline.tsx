@@ -69,6 +69,9 @@ const REFINED_TONE: Record<EventKind, string> = {
   deploy: t.evidence,
 };
 
+/** G6: the kind's name is read, so a prompt's takes --instruction-ink (4.5:1 on Noon's card); the dot keeps the category colour. */
+const REFINED_INK: Record<EventKind, string> = { ...REFINED_TONE, prompt: t.instructionInk };
+
 function RefinedTimeline({ events, label }: Pick<TimelineProps, "events" | "label">) {
   return (
     <div data-ui="timeline" style={{ position: "relative" }}>
@@ -104,7 +107,7 @@ function RefinedTimeline({ events, label }: Pick<TimelineProps, "events" | "labe
               {event.at}
             </span>
             <span style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-              <Eyebrow as="span" style={{ color: REFINED_TONE[event.kind] }}>
+              <Eyebrow as="span" style={{ color: REFINED_INK[event.kind] }}>
                 {event.kind}
               </Eyebrow>
               <span style={{ fontFamily: FIGTREE, fontSize: 12, fontWeight: 500, lineHeight: "normal", color: t.text }}>

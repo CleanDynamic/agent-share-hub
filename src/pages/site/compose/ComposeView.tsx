@@ -231,7 +231,6 @@ export function MediaPanel({
   };
 
   const pct = Math.round((adding ?? 0) * 100);
-  const { handlers: zoneHandlers, style: zoneRing } = useRing<HTMLDivElement>();
 
   return (
     <Panel surface="flat" padding={phone ? "16px" : "24px"}>
@@ -292,7 +291,9 @@ export function MediaPanel({
             data-testid="compose-dropzone"
             data-over={over ? "true" : undefined}
             {...dropHandlers}
-            {...(phone ? { ...zoneHandlers, role: "button", tabIndex: 0, "aria-label": "Add a screenshot or a short video", onClick: pick, onKeyDown: (event: React.KeyboardEvent) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); pick(); } } } : null)}
+            /* G25 (nested-interactive): the zone is a named drop target, not a button: "or browse your files" inside it is the real
+               button a keyboard and a screen reader use. A tap anywhere on the zone still opens the picker on a phone. */
+            {...(phone ? { role: "group", "aria-label": "Add a screenshot or a short video", onClick: pick } : null)}
             style={{
               aspectRatio: "16 / 9",
               borderRadius: r.media,
@@ -307,7 +308,6 @@ export function MediaPanel({
               padding: 12,
               textAlign: "center",
               cursor: phone ? "pointer" : "default",
-              ...(phone ? zoneRing : null),
             }}
           >
             <ImageIcon size={28} strokeWidth={1.6} color="var(--text2)" aria-hidden="true" />

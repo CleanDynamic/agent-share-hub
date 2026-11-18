@@ -101,7 +101,7 @@ describe("the Table", () => {
     const onSortColumn = vi.fn();
     draw((p) => ({ ...p, table: { ...p.table!, onSortColumn } }));
     expect(screen.getByRole("columnheader", { name: /Reproductions/ }).getAttribute("aria-sort")).toBe("descending");
-    expect(screen.getByRole("columnheader", { name: "Confirmed" }).getAttribute("aria-sort")).toBe("none");
+    expect(screen.getByRole("columnheader", { name: "Confirmed" }).getAttribute("aria-sort")).toBeNull(); // G18: the sorted head only
     fireEvent.click(screen.getByRole("button", { name: "Confirmed" }));
     expect(onSortColumn).toHaveBeenCalledWith("confirmed", false);
   });
@@ -438,7 +438,7 @@ describe("the Filters button", () => {
   it('FiltersButton: with three on it reads "Filters 3", is drawn in the selected look, and its name is "Filters, 3 on"', () => {
     render(<FiltersButton activeCount={3} />);
     const button = screen.getByRole("button", { name: "Filters, 3 on" });
-    expect(button.textContent).toBe("Filters3");
+    expect(button.textContent).toBe("Filters 3");
     const markup = renderToStaticMarkup(<FiltersButton activeCount={3} />);
     expect(markup).toContain("background:var(--selected-fill)");
     expect(markup).toContain("border:1px solid var(--selected-edge)");
@@ -497,7 +497,7 @@ describe("the Table without the rail", () => {
 describe("the open set on the Filters button", () => {
   it('with a set open, the Filters button on the page reads "Filters 2 · <set name>"', () => {
     draw((p) => ({ ...p, filters: { ...p.filters, activeCount: 2 }, table: { ...p.table!, setName: "Sales on Claude Code" } }));
-    const button = screen.getByRole("button", { name: "Filters, 2 on, set Sales on Claude Code" });
+    const button = screen.getByRole("button", { name: "Filters 2 · Sales on Claude Code, 2 on, saved set" });
     expect(Array.from(button.children).map((child) => child.textContent)).toEqual(["Filters", "2", "· Sales on Claude Code"]);
   });
 });

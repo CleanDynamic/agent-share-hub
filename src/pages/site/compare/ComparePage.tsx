@@ -44,7 +44,7 @@ export function ComparePage() {
     return { a, b, rows: matchSteps(a.steps, b.steps), totals: totalsRows(ta, tb), sentence: differenceSentence(ta, tb) };
   }, [mine.data, theirs.data]);
 
-  if ((mine.isPending && Boolean(slug)) || (theirs.isPending && Boolean(otherSlug))) return <RebuildViewSkeleton label="Loading the two builds" />;
+  if ((mine.isPending && Boolean(slug)) || (theirs.isPending && Boolean(otherSlug))) return <RebuildViewSkeleton title="Compare" label="Loading the two builds" />;
   /* G4, G7: failed if either read failed; not found only when the server answered that one of them is not there. */
   if (mine.isError || theirs.isError || !mine.data || !theirs.data) {
     return <RebuildViewState title="Compare" read={[mine, theirs]} thing="this comparison" region="The comparison" missing={([a, b]) => a === null || b === null} />;

@@ -118,7 +118,7 @@ describe("navigation budgets (hicks-law › Budgets)", () => {
         </MemoryRouter>
       </ThemeProvider>,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Account" }));
+    fireEvent.click(screen.getByRole("button", { name: /account menu$/ }));
     // SV-26 P2: the sheet's code loads on first open (LazyBottomSheet).
     const sheet = await screen.findByRole("dialog", { name: "Account" });
     expect(within(sheet).getAllByRole("link").map((a) => a.textContent)).toEqual(["Profile", "Library", "Drafts", "Settings"]);

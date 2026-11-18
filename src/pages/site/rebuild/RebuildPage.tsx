@@ -35,7 +35,6 @@ import { Button } from "@/components/brand/Button";
 import { useCrumbTitle } from "@/components/shell/useBreadcrumb";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
-import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import {
   changeSet,
   flattenFamily,
@@ -205,15 +204,10 @@ function RebuildPageBody() {
 
   /* ── the states ── */
 
-  if (authLoading) return <RebuildViewSkeleton label="Checking your session" />;
+  if (authLoading) return <RebuildViewSkeleton title="Rebuild" label="Checking your session" />;
 
   if (!isLoggedIn && sessionEnded) {
-    return (
-      <>
-        <h1 style={VISUALLY_HIDDEN}>Rebuild</h1>
-        <RebuildViewSkeleton label="Checking your session" />
-      </>
-    );
+    return <RebuildViewSkeleton title="Rebuild" label="Checking your session" />;
   }
 
   // The intention survives as an address, so signing in comes back to it.
@@ -249,7 +243,7 @@ function RebuildPageBody() {
   }
 
   if (!source || !draft || !computed || !sourceRecord.data || !draftRecord.data) {
-    return <RebuildViewSkeleton label={source ? `Setting up your rebuild of ${source.title}` : "Loading the rebuild"} />;
+    return <RebuildViewSkeleton title="Rebuild" label={source ? `Setting up your rebuild of ${source.title}` : "Loading the rebuild"} />;
   }
 
   /* ── mapped for the view ── */

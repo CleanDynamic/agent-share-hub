@@ -13,6 +13,7 @@
 // `DockView` is pure; `Dock` reads the route and the unread count. `placement`
 // is `fixed` everywhere except the catalogue, which draws it inside a strip.
 
+import { useShortWindow } from "./useMinWidth";
 import { Bell, Home, Image as ImageIcon, Plus, Target, type LucideIcon } from "lucide-react";
 import { memo } from "react";
 import { useCurrentPath } from "@/lib/routing/go";
@@ -43,7 +44,7 @@ export interface DockViewProps {
   current: Exclude<DockTileName, "new"> | null;
   unread: number;
   /** `absolute` only where the dock is drawn inside a strip (the catalogue). */
-  placement?: "fixed" | "absolute";
+  placement?: "fixed" | "absolute" | "static";
 }
 
 /* UI-P87, refined: no glass. A bar the width of the screen on `--surface` with a 1px `--surface-border` top edge, and
@@ -108,6 +109,11 @@ function RefinedDockView({ current, unread, placement = "fixed" }: DockViewProps
                 style={{ position: "absolute", left: 10, right: 10, bottom: -1, height: 2, borderRadius: 1, background: t.navMark, boxShadow: t.navLampGlow }}
               />
             )}
+            <AnyIcon lucide={icon} glyph={TILE_GLYPH[name]} size={16} />
+            <span aria-hidden="true">{label}</span>
+            {badged ? " " : null}
+            {/* G7: after the word, so the visible text reads "Activity 3" as the name does; it is placed, so where it sits in the
+                markup moves nothing. */}
             {badged && (
               <span
                 aria-hidden="true"
@@ -132,8 +138,6 @@ function RefinedDockView({ current, unread, placement = "fixed" }: DockViewProps
                 {unread > 9 ? "9+" : unread}
               </span>
             )}
-            <AnyIcon lucide={icon} glyph={TILE_GLYPH[name]} size={16} />
-            <span aria-hidden="true">{label}</span>
           </FrameLink>
         );
       })}
@@ -156,7 +160,9 @@ function DockContainer() {
     : section === "home" || section === "gallery" || section === "openbuilds"
       ? section
       : null;
-  return <DockView current={current} unread={count} />;
+  // G22: in a short window the dock follows the page instead of covering its foot.
+  const short = useShortWindow();
+  return <DockView current={current} unread={count} placement={short ? "static" : "fixed"} />;
 }
 
 /* UI-P40: memoised, and it takes no props, so a page's data changing (which

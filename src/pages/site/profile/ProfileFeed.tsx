@@ -167,7 +167,8 @@ function Card({ entry, now }: { entry: FeedEntry; now: number }) {
       );
     case "topic":
     case "reply":
-      return <PostCard card={entry.card} />;
+      // G12: the feed sits right under the profile's h1, so a post's heading is an h2.
+      return <PostCard card={entry.card} headingLevel={2} />;
     case "repro_note":
       return (
         <NoteItem

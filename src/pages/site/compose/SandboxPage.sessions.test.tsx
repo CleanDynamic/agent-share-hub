@@ -82,7 +82,7 @@ describe("CA-12 P3 · Session 1", () => {
     expect(screen.queryByRole("group", { name: /^Session 1/ })).toBeNull();
     await openPromptBox();
     expect(screen.getByRole("group", { name: "Session 1 · No harness chosen" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Pick a harness for session 1" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /(^|, )Pick a harness for session 1$/ })).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/Unknown tool|typed here/i);
   });
 

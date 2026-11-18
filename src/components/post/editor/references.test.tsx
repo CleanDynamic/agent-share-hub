@@ -77,12 +77,25 @@ describe("the picker's list", () => {
     expect(filterRefGroups(refs, "check").flatMap((group) => group.entries.map((one) => one.to))).toEqual(["node:k1"]);
   });
 
+  it("G18: Home and End go to the first and the last option", () => {
+    const { editor } = mount(doc(p("Read it.")));
+    act(() => {
+      editor.commands.setTextSelection(9);
+    });
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(`(^|, )${REFERENCE_COPY.button}$`, "i") }));
+    const field = screen.getByRole("combobox", { name: REFERENCE_COPY.search });
+    fireEvent.keyDown(field, { key: "End" });
+    expect(field.getAttribute("aria-activedescendant")).toMatch(new RegExp(`-${options().length - 1}$`));
+    fireEvent.keyDown(field, { key: "Home" });
+    expect(field.getAttribute("aria-activedescendant")).toMatch(/-0$/);
+  });
+
   it("opens from @, moves with the arrow keys, chooses with Enter, and says when nothing matches", () => {
     const { editor } = mount(doc(p("Read it.")));
     act(() => {
       editor.commands.setTextSelection(9);
     });
-    fireEvent.click(screen.getByRole("button", { name: REFERENCE_COPY.button }));
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(`(^|, )${REFERENCE_COPY.button}$`, "i") }));
     const field = screen.getByRole("combobox", { name: REFERENCE_COPY.search });
     expect(document.activeElement).toBe(field);
     expect(options()).toEqual(["S1The whole sessionSession", "1Brand briefPrompt", "2Launch emailPrompt", "2hero.tsxCode", "S2The whole sessionSession", "3Speed checkCheck"]);
@@ -98,7 +111,7 @@ describe("the picker's list", () => {
 
   it("filters as it is typed, and says when nothing has that name", () => {
     mount(doc(p("")));
-    fireEvent.click(screen.getByRole("button", { name: REFERENCE_COPY.button }));
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(`(^|, )${REFERENCE_COPY.button}$`, "i") }));
     const field = screen.getByRole("combobox");
     fireEvent.change(field, { target: { value: "launch" } });
     expect(options()).toEqual(["2Launch emailPrompt"]);
@@ -115,7 +128,7 @@ describe("what a choice does", () => {
     act(() => {
       editor.commands.setTextSelection({ from: 16, to: 27 });
     });
-    fireEvent.click(screen.getByRole("button", { name: REFERENCE_COPY.button }));
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(`(^|, )${REFERENCE_COPY.button}$`, "i") }));
     fireEvent.click(within(screen.getByRole("listbox")).getByText("Brand brief"));
     expect(json(editor)).toEqual(
       doc({ type: "paragraph", content: [{ type: "text", text: "Start from the " }, { type: "text", text: "brand brief", marks: [ref("node:p1")] }, { type: "text", text: ", then build." }] } as never),
@@ -127,7 +140,7 @@ describe("what a choice does", () => {
     act(() => {
       editor.commands.setTextSelection(5);
     });
-    fireEvent.click(screen.getByRole("button", { name: REFERENCE_COPY.button }));
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(`(^|, )${REFERENCE_COPY.button}$`, "i") }));
     fireEvent.click(within(screen.getByRole("listbox")).getAllByText("The whole session")[0]);
     expect(json(editor)).toEqual(doc({ type: "paragraph", content: [{ type: "text", text: "See " }, { type: "text", text: "session 1 · claude code", marks: [ref("session:typed-a")] }, { type: "text", text: " " }] } as never));
   });
@@ -164,7 +177,7 @@ describe("what a choice does", () => {
     act(() => {
       editor.commands.setTextSelection({ from: 6, to: 15 });
     });
-    fireEvent.click(screen.getByRole("button", { name: REFERENCE_COPY.button }));
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(`(^|, )${REFERENCE_COPY.button}$`, "i") }));
     const chosen = document.querySelector('[data-ref-option="node:p1"]') as HTMLElement;
     expect(chosen.getAttribute("aria-current")).toBe("true");
     const field = screen.getByRole("combobox");
@@ -175,7 +188,7 @@ describe("what a choice does", () => {
     act(() => {
       editor.commands.setTextSelection(10);
     });
-    fireEvent.click(screen.getByRole("button", { name: REFERENCE_COPY.button }));
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(`(^|, )${REFERENCE_COPY.button}$`, "i") }));
     // CA-19 P3: Remove the link is in the panel's footer.
     fireEvent.click(screen.getByRole("button", { name: REFERENCE_COPY.remove }));
     expect(json(editor)).toEqual(doc(p("Read the brief")));

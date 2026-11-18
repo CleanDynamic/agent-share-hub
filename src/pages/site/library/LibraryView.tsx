@@ -325,7 +325,8 @@ export function LibraryChanges({ figure, parts, to, rows }: LibraryChangesProps)
 
 /* ── main: the table ── */
 
-const STATE_COLOUR: Record<ItemState, string> = { same: t.text2, edited: t.lit, removed: t.catBreakage, stale: t.label };
+/* G6: words, so the legible inks: --lit-ink and --breakage-ink reach 4.5:1 on Noon's rows; Dusk's read as before. */
+const STATE_COLOUR: Record<ItemState, string> = { same: t.text2, edited: t.litInk, removed: t.breakageInk, stale: t.label };
 
 const th: CSSProperties = { fontWeight: 400, padding: "0 12px 10px 0", borderBottom: `1px solid ${t.hairline}`, textAlign: "left", whiteSpace: "nowrap" };
 const td: CSSProperties = { padding: "0 12px 0 0", color: t.text2, whiteSpace: "nowrap" };
@@ -333,7 +334,9 @@ const td: CSSProperties = { padding: "0 12px 0 0", color: t.text2, whiteSpace: "
 function ItemRow({ row, selected, usedIn, onSelect }: { row: LibraryRow; selected: boolean; usedIn: boolean; onSelect: () => void }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
-    <tr data-testid="library-row" aria-selected={selected} onClick={onSelect} style={{ borderBottom: `1px solid ${t.hairline}`, background: selected ? t.selectedFill : "transparent", cursor: "pointer" }}>
+    /* G21: the row is not in a grid, so its selected state is aria-pressed on its button, not aria-selected here; a click
+       anywhere on the row is a pointer convenience for that button. */
+    <tr data-testid="library-row" onClick={onSelect} style={{ borderBottom: `1px solid ${t.hairline}`, background: selected ? t.selectedFill : "transparent", cursor: "pointer" }}>
       <td style={{ padding: "0 12px 0 0", height: TABLE_ROW }}>
         <button
           type="button"
@@ -428,16 +431,17 @@ export function LibraryItems(props: LibraryItemsProps) {
         {controls ? (
           <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
             <LibraryControl onClick={controls.onFilters}>
-              <span style={{ color: t.label }}>Filters</span> {controls.filters}
+              <span style={{ color: t.text2 }}>Filters</span> {controls.filters}
             </LibraryControl>
             <LibraryControl onClick={controls.onSort}>
-              <span style={{ color: t.label }}>Sort</span> {controls.sort}
+              <span style={{ color: t.text2 }}>Sort</span> {controls.sort}
             </LibraryControl>
           </div>
         ) : null}
       </div>
       {chips?.length || sameAsBuilds ? (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
+        /* G17: a chip removed hands focus to the next chip (FocusRescue reads this as a list). */
+        <div data-focus-list="" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
           {chips?.map((chip) => <ActiveFilterChip key={chip.name} name={chip.name} value={chip.value} onRemove={chip.onRemove} />)}
           {sameAsBuilds ? <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.label, alignSelf: "center", marginLeft: 6 }}>Same filters as Builds</span> : null}
         </div>
@@ -474,7 +478,7 @@ function TabsOnRule({ tabs, tab, onTab }: { tabs: LibraryItemsProps["tabs"]; tab
 
 /* ── right: the selected item ── */
 
-const STATE_TONE = { lit: t.lit, breakage: t.catBreakage, label: t.label } as const;
+const STATE_TONE = { lit: t.litInk, breakage: t.breakageInk, label: t.label } as const;
 
 function VersionSwitch({ value, onChange }: { value: "saved" | "current"; onChange: (value: "saved" | "current") => void }) {
   const options = [
@@ -482,7 +486,8 @@ function VersionSwitch({ value, onChange }: { value: "saved" | "current"; onChan
     { value: "current" as const, label: "Current version" },
   ];
   const move = (event: KeyboardEvent<HTMLButtonElement>) => {
-    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    // G18: the radio pattern takes all four arrows (two choices: any arrow switches).
+    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
     event.preventDefault();
     const next = event.key === "Home" ? "saved" : event.key === "End" ? "current" : value === "saved" ? "current" : "saved";
     onChange(next);
@@ -533,7 +538,7 @@ function Content({ lines }: { lines: readonly DiffLine[] }) {
   return (
     <div style={{ marginTop: 12, padding: 12, ...WELL, boxShadow: "none", borderRadius: r.control, fontFamily: DM_MONO, fontSize: 12, lineHeight: "18px", color: t.text2, whiteSpace: "pre-wrap" }}>
       {lines.map((line, index) => (
-        <span key={index} style={{ display: "block", color: line.change === "removed" ? t.catBreakage : line.change === "added" ? t.evidence : undefined, textDecoration: line.change === "removed" ? "line-through" : undefined }}>
+        <span key={index} style={{ display: "block", color: line.change === "removed" ? t.breakageInk : line.change === "added" ? t.evidence : undefined, textDecoration: line.change === "removed" ? "line-through" : undefined }}>
           {line.change ? <VisuallyHidden>{line.change === "removed" ? "Removed: " : "Added: "}</VisuallyHidden> : null}
           {line.text}
         </span>
