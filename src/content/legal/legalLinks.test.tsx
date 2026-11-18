@@ -16,7 +16,7 @@ import { PRIVACY_REVIEWED, TERMS_REVIEWED } from "./reviewed";
 const ROOT = path.resolve(__dirname, "../../..");
 const read = (file: string) => fs.readFileSync(path.join(ROOT, file), "utf8");
 
-const footer = (extra: { showPrivacy?: boolean; showTerms?: boolean } = {}) =>
+const footer = (extra: { showPrivacy?: boolean; showTerms?: boolean; showFooterPages?: boolean } = {}) =>
   render(
     <MemoryRouter>
       <ThemeProvider>
@@ -30,6 +30,27 @@ describe("the footer", () => {
     footer();
     expect(screen.queryByRole("link", { name: "Privacy" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Terms" })).toBeNull();
+  });
+
+  it("TB-02: shows the three footer pages after Terms, in order, only when showFooterPages is true", () => {
+    const { unmount } = footer({ showPrivacy: true, showTerms: true });
+    for (const name of ["Community rules", "Report a problem", "Contact"]) expect(screen.queryByRole("link", { name })).toBeNull();
+    unmount();
+    footer({ showPrivacy: true, showTerms: true, showFooterPages: true });
+    const links = screen.getAllByRole("link").map((a) => [a.textContent, a.getAttribute("href")]);
+    expect(links).toEqual([
+      ["OpenBuilds.ai", "/"],
+      ["About", "/about"],
+      ["API docs", "/api-docs"],
+      ["Privacy", "/privacy"],
+      ["Terms", "/terms"],
+      ["Community rules", "/rules"],
+      ["Report a problem", "/report"],
+      ["Contact", "/contact"],
+      ["Sign in", "/login"],
+    ]);
+    const style = (name: string) => screen.getByRole("link", { name }).getAttribute("style");
+    expect(style("Contact")).toBe(style("About"));
   });
 
   it("shows both after API docs, in the neighbours' style, once told they are reviewed", () => {
