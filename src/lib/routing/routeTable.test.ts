@@ -32,5 +32,9 @@ describe("the route table", () => {
     // UX-12: the legal pages are in the table, text only, with nothing to prefetch.
     expect(matchRoute("/privacy")?.entry.key).toBe("privacy");
     expect(matchRoute("/terms")?.entry.key).toBe("terms");
+    // TB-02: the three footer pages.
+    expect(matchRoute("/rules")?.entry.key).toBe("rules");
+    expect(matchRoute("/report")?.entry.key).toBe("report");
+    expect(matchRoute("/contact")?.entry.key).toBe("contact");
   });
 });

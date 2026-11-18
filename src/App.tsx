@@ -131,6 +131,9 @@ const ActivitySitePage = lazy(() => import("./pages/site/activity/ActivityPage")
 // UX-12 P2: the legal pages, from the route table so the route and the prefetch share one import.
 const PrivacySitePage = lazy(ROUTE_TABLE.privacy.load as () => Promise<{ default: React.ComponentType }>);
 const TermsSitePage = lazy(ROUTE_TABLE.terms.load as () => Promise<{ default: React.ComponentType }>);
+const RulesSitePage = lazy(ROUTE_TABLE.rules.load as () => Promise<{ default: React.ComponentType }>);
+const ReportSitePage = lazy(ROUTE_TABLE.report.load as () => Promise<{ default: React.ComponentType }>);
+const ContactSitePage = lazy(ROUTE_TABLE.contact.load as () => Promise<{ default: React.ComponentType }>);
 // The heaviest page in the application. Lazy so it never enters the initial bundle.
 const Compose = lazy(() => import("./pages/Compose"));
 // The intake step (paste a transcript, a repo), now at /compose/start. Its own
@@ -307,6 +310,9 @@ const App = () => (
                 <Route path="/about" element={<About />} />
                 <Route path="/privacy" element={<PrivacySitePage />} />
                 <Route path="/terms" element={<TermsSitePage />} />
+                <Route path="/rules" element={<RulesSitePage />} />
+                <Route path="/report" element={<ReportSitePage />} />
+                <Route path="/contact" element={<ContactSitePage />} />
                 <Route path="/api-docs" element={<ApiDocs />} />
                 <Route path="/content/:id" element={<ContentDetail />} />
                 <Route path="/b/:id" element={<ContentOrReblogRoute />} />

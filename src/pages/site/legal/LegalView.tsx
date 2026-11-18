@@ -30,7 +30,9 @@ const th: CSSProperties = { fontWeight: 500, padding: "0 16px 8px 0", borderBott
 const td: CSSProperties = { padding: "8px 16px 8px 0", borderBottom: `1px solid ${t.hairline}`, verticalAlign: "top", color: t.text };
 
 /** Text with its placeholders and outside addresses drawn. */
-export function Inline({ text, links, section }: { text: string; links?: readonly LegalLink[]; section?: string }) {
+export function Inline({ text, links, section, touch = false }: { text: string; links?: readonly LegalLink[]; section?: string; touch?: boolean }) {
+  /* A phone keeps a 44px hit area on an inline link: the padding grows the box that takes the tap, not the line. */
+  const own: CSSProperties = touch ? { ...link, padding: "16px 0" } : link;
   return (
     <>
       {piecesOf(text, links, section).map((piece, index) => {
@@ -43,14 +45,14 @@ export function Inline({ text, links, section }: { text: string; links?: readonl
         }
         if (piece.kind === "link" && piece.href.startsWith("/")) {
           return (
-            <FrameLink key={index} to={piece.href} style={link}>
+            <FrameLink key={index} to={piece.href} style={own}>
               {piece.text}
             </FrameLink>
           );
         }
         if (piece.kind === "link") {
           return (
-            <a key={index} href={piece.href} rel="noopener noreferrer" style={link}>
+            <a key={index} href={piece.href} rel="noopener noreferrer" style={own}>
               {piece.text}
             </a>
           );

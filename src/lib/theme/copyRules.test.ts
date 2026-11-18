@@ -253,6 +253,10 @@ export const ALLOW: Record<string, Record<string, string>> = {
     "src/pages/site/compose/StillOpenSpaces.tsx|No spaces to post in": "a disabled menu option (menu options are not empty states)",
     "src/pages/site/openbuilds/NewPostWindow.tsx|No spaces to post in": "a disabled menu option (menu options are not empty states)",
   },
+  // TB-02 Part 5.3 fixes this card subtitle's words; "Please don't" is the Terms' own lead-in, not an apology or a request to retry.
+  please: {
+    "src/pages/site/legal/FooterPageView.tsx|{} rules · Please don't": "the Rules card's subtitle, carrying the Terms' lead-in \"Please don't:\" (TB-02 Part 5.3)",
+  },
   // Statuses, one entry per pattern: each describes the current state, not a failed action.
   "not-done": {
     "src/pages/site/compose/saveWindows.tsx|Prompt not sent": "status: the leave window's title while only unsent prompt text remains (beside \"Changes still saving\")",
