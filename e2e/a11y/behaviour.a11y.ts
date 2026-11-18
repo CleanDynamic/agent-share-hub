@@ -185,6 +185,13 @@ test("the account menu: Enter opens on the first item, arrows move, Escape close
   expect(await button.evaluate((el) => el === document.activeElement)).toBe(true);
 });
 
+/** G17: where focus is once FocusRescue has had its turn. It waits HAND_BACK_MS (60 ms) for an owner to give focus back
+ * before placing it, so focus sits on the body for that long by design; read it once it has left, or after a second. */
+async function settledFocus(page: Page): Promise<Focused> {
+  await expect.poll(async () => (await focused(page)).tag, { timeout: 1_000 }).not.toBe("body").catch(() => undefined);
+  return focused(page);
+}
+
 test.describe("G17: focus after a removal", () => {
   test("a filter chip removed: focus moves to the next chip", async ({ page }) => {
     await open(page, "/builds?f=field%3Aai-ml&open=1&state=confirmed&q=agents");
@@ -195,7 +202,7 @@ test.describe("G17: focus after a removal", () => {
     const nextName = await removes.nth(1).getAttribute("aria-label");
     await activate(page, removes.first());
     await expect(removes).toHaveCount(before - 1);
-    const now = await focused(page);
+    const now = await settledFocus(page);
     expect(now.tag, "focus did not fall to the body").not.toBe("body");
     expect(now.label).toBe(nextName);
   });
@@ -220,7 +227,7 @@ test.describe("G17: focus after a removal", () => {
     await activate(page, page.getByRole("button", { name: "Revoke A11y Test App" }));
     await activate(page, page.getByRole("group", { name: "Confirm" }).getByRole("button", { name: "Revoke", exact: true }));
     await expect(page.getByText("A11y Test App")).toHaveCount(0);
-    const now = await focused(page);
+    const now = await settledFocus(page);
     expect(now.tag, "focus did not fall to the body").not.toBe("body");
     expect(now.tag).toMatch(/^h[1-3]$/);
   });
@@ -230,7 +237,7 @@ test.describe("G17: focus after a removal", () => {
     await expect(page.getByRole("dialog")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toHaveCount(0);
-    const now = await focused(page);
+    const now = await settledFocus(page);
     expect(now.tag, "focus did not fall to the body").not.toBe("body");
     expect(now.tag).toBe("h1");
   });

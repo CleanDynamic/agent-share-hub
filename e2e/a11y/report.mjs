@@ -13,7 +13,7 @@ const read = (f) => JSON.parse(fs.readFileSync(path.join(DIR, f), "utf8"));
 const runs = files.filter((f) => !f.startsWith("reflow-")).map(read);
 const reflow = files.filter((f) => f.startsWith("reflow-")).map(read);
 
-const cols = [["light", 1440], ["dark", 1440], ["dark", 390]];
+const cols = [["light", 1440], ["dark", 1440], ["light", 390], ["dark", 390]];
 const pages = [...new Set(runs.map((r) => r.page))];
 const cell = (r) => {
   if (!r) return "not run";
@@ -23,7 +23,7 @@ const cell = (r) => {
 };
 
 const out = [];
-out.push("| Page | State | light 1440 | dark 1440 | dark 390 | Rules |", "|---|---|---|---|---|---|");
+out.push("| Page | State | light 1440 | dark 1440 | light 390 | dark 390 | Rules |", "|---|---|---|---|---|---|---|");
 for (const name of pages) {
   const mine = runs.filter((r) => r.page === name);
   const rules = new Map();

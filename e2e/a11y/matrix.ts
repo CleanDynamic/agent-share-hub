@@ -11,10 +11,11 @@ export interface Variant {
   width: 1440 | 390;
 }
 
-/** D4: the full matrix at 1440 in both themes; at 390, dark only. */
+/** G25, D4: the full matrix in both themes at 1440 and at 390. */
 export const VARIANTS: readonly Variant[] = [
   { theme: "light", width: 1440 },
   { theme: "dark", width: 1440 },
+  { theme: "light", width: 390 },
   { theme: "dark", width: 390 },
 ];
 
