@@ -1,8 +1,14 @@
 // UX-12 P1: the shape of a legal text. The text is typed data, not JSX, so a reviewer can change wording without touching layout.
 // A placeholder is written `{{NEED: what is needed}}`; it renders as itself, highlighted, while the text is a draft.
 
+/** A link inside a paragraph. `text` must appear exactly once in the paragraph; `href` starts with "/" for a page on the site. */
+export interface LegalLink {
+  text: string;
+  href: string;
+}
+
 export type LegalBlock =
-  | { kind: "p"; text: string }
+  | { kind: "p"; text: string; links?: LegalLink[] }
   | { kind: "list"; items: string[] }
   | { kind: "table"; head: string[]; rows: string[][] };
 
@@ -10,6 +16,8 @@ export interface LegalSection {
   /** A stable kebab-case anchor, so a link like /privacy#your-rights keeps working. */
   id: string;
   heading: string;
+  /** Where the section's words come from: the Terms, or what the code does. Absent on the Terms and Privacy texts. */
+  source?: "terms" | "code";
   blocks: LegalBlock[];
 }
 
