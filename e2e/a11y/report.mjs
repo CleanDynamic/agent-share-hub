@@ -10,7 +10,8 @@ const DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../te
 const files = fs.existsSync(DIR) ? fs.readdirSync(DIR).filter((f) => f.endsWith(".json")) : [];
 const read = (f) => JSON.parse(fs.readFileSync(path.join(DIR, f), "utf8"));
 
-const runs = files.filter((f) => !f.startsWith("reflow-")).map(read);
+// Only the page runs: zoom-, spacing- and ring- files written by the other specs have no axe field.
+const runs = files.filter((f) => !f.startsWith("reflow-")).map(read).filter((r) => Array.isArray(r.axe) && r.walk);
 const reflow = files.filter((f) => f.startsWith("reflow-")).map(read);
 
 const cols = [["light", 1440], ["dark", 1440], ["light", 390], ["dark", 390]];
