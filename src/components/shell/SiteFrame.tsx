@@ -57,7 +57,7 @@ import { SiteFooter } from "./SiteFooter";
 import { SiteHeader } from "./SiteHeader";
 import { type PageFit } from "./siteFrameFit";
 import { CrumbTitleProvider } from "./useBreadcrumb";
-import { useIsPhone } from "./useMinWidth";
+import { useIsPhone, useShortWindow } from "./useMinWidth";
 
 export { boardHeight, BOARD_GRID_HEIGHT, type PageFit } from "./siteFrameFit";
 
@@ -97,6 +97,7 @@ export interface SiteFrameViewProps {
 }
 
 const CONTENTS: CSSProperties = { display: "contents" };
+
 
 const SKIP_BASE: CSSProperties = {
   position: "absolute",
@@ -173,6 +174,7 @@ export function SiteFrameView({
   chrome = true,
 }: SiteFrameViewProps) {
   const narrow = useIsPhone();
+  const short = useShortWindow();
   const win = useWindowSize();
   const phone = (viewport ?? (narrow ? "mobile" : "desktop")) === "mobile";
   /* SV-04: set once when the frame mounts, so the page audit can tell a header kept across a page change from one drawn again. */
@@ -225,7 +227,8 @@ export function SiteFrameView({
       <div
         data-slot={phone ? "mobile-header" : "header"}
         data-frame-id={frameId}
-        style={{ position: "sticky", top: 0, zIndex: 20, minHeight: HEADER_HEIGHT, background: t.frame }}
+        /* G22: pinned unless the window is short (zoomed), where it would cover the page. */
+        style={{ position: short ? "relative" : "sticky", top: 0, zIndex: 20, minHeight: HEADER_HEIGHT, background: t.frame }}
       >
         {phone ? mobileHeader : header}
         {progress}

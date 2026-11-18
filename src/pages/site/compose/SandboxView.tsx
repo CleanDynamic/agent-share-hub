@@ -39,7 +39,7 @@ import { Segmented } from "@/components/brand/Segmented";
 import { BottomSheet as BrandBottomSheet, SheetRow, closeNow } from "@/components/brand/BottomSheet";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { HEADER_HEIGHT } from "@/components/shell/chromeSize";
-import { useIsPhone } from "@/components/shell/useMinWidth";
+import { useIsPhone, useShortWindow } from "@/components/shell/useMinWidth";
 import { ring } from "@/lib/theme/controls";
 import { TITLE_LINE, fullText } from "@/lib/theme/truncate";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -1084,6 +1084,7 @@ export function SandboxView(props: SandboxViewProps) {
 
 function SandboxBody(props: SandboxViewProps) {
   const phone = useIsPhone();
+  const short = useShortWindow();
   const win = useWindowSize();
   const touchPanel = useTouchPanel(win.width);
   const { status, published, save } = props;
@@ -1408,7 +1409,8 @@ function SandboxBody(props: SandboxViewProps) {
           role="group"
           aria-label="Actions"
           style={{
-            position: "sticky",
+            /* G22: pinned to the foot unless the window is short (zoomed), where it would cover the page. */
+            position: short ? "static" : "sticky",
             bottom: `calc(${ACTION_BAR_BOTTOM}px + env(safe-area-inset-bottom))`,
             zIndex: 5,
             display: "flex",

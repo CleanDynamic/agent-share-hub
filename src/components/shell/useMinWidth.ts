@@ -35,6 +35,13 @@ export function useIsPhone(): boolean {
   return useMedia("(max-width: 767px)", false);
 }
 
+/** G22: a window under 480 CSS pixels tall (a 1280 by 800 window at 200% and up): pinned chrome there would cover the page,
+    so the header, the dock and the composer's action bar scroll with it. */
+export const SHORT_WINDOW = 480;
+export function useShortWindow(): boolean {
+  return useMedia(`(max-height: ${SHORT_WINDOW - 1}px)`, false);
+}
+
 /* UI-P39 — the widths between the boards. The kit draws 1440 and 390; between
    768 and 1279 a page reads one of these tiers and changes nothing else.
    `full` is 1280 up (the board's composition), `split` is 1024 to 1279 (both
