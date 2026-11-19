@@ -1,7 +1,7 @@
-/* The build editor's tutorial: a window of five steps, each a small challenge on a copy of the editor, over a few plain lines.
+/* The build editor's tutorial: a window of eight chapters that make one build, each a small challenge on a copy of the editor, over a few plain lines.
 
    IT OPENS BY ITSELF ONCE, the first time a maker opens the editor (ComposeRoute offers it, tutorialStore.ts holds the rule),
-   and from "Tutorial" under Build options whenever it is wanted again. Each opening starts at step 1.
+   and from "Tutorial" under Build options whenever it is wanted again. Each opening starts at chapter 1.
 
    IT IS PLAYED, NOT READ. Each step asks for one thing at a time ("Press Add step", "Choose Tool", "Drag it above step 2") on a
    stage that is the editor in miniature (tutorialTasks.tsx), and answers every press at once: the right one clears the goal and
@@ -9,9 +9,10 @@
    press and nothing is timed out. A long pause brings the pointer by itself. "Show me" plays the step as an example
    (tutorialScenes.tsx) for anyone who would rather watch, and "Try it" comes back.
 
-   PROGRESS IS ALWAYS IN SIGHT: five bars under the title, one a challenge, and "2 of 5 done" in the footer. The main button is
-   "Skip step" until the step is cleared and "Next" after, so nobody is ever stuck behind a challenge. The last screen says what
-   the run came to: how many of the five, how long, how many hints, and "Clean run" for all five with none.
+   PROGRESS IS ALWAYS IN SIGHT: eight bars under the title, one a chapter, grouped by the four stages (Foundations, Structure,
+   Agents, Sharing) with the stage's name over each group, and "2 of 8 done" in the footer. The main button is "Skip chapter"
+   until the chapter is cleared and "Next" (or "Finish") after, so nobody is ever stuck behind a challenge. The last screen says
+   what the run came to: how many of the eight, how long, how many hints, and "Clean run" for all eight with none.
 
    IT CAN BE LEFT AT ANY STEP, three ways that are always there: Close in the corner, Skip tutorial in the footer, and Escape.
    A click outside does not close it: a first visit should not lose the tutorial to a stray press, and the three ways out are
@@ -37,9 +38,9 @@ import { t } from "@/lib/theme/tokens";
 import { useAnnounce } from "./BuildAnnouncer";
 import { BODY_TEXT, HEADER, HEADER_TEXT, IconSquare, LABEL, NOTE, RecipeButton, STRONG_LABEL, TITLE, footerStyle, frameStyle, MODAL_WIDTH } from "./modalRecipes";
 import { tagStyle } from "./refinedStyles";
-import { ScenePlayer, play } from "./tutorialScenes";
-import { IDLE_HINT_MS, TUTORIAL_COPY, TUTORIAL_STEPS, clampStep, runTime } from "./tutorialSteps";
-import { TaskStage, Tick } from "./tutorialTasks";
+import { play } from "./tutorialScenes";
+import { IDLE_HINT_MS, TUTORIAL_COPY, TUTORIAL_STAGES, TUTORIAL_STEPS, clampStep, runTime, stageOf } from "./tutorialSteps";
+import { TaskDemo, TaskStage, Tick } from "./tutorialTasks";
 import { closeTutorial } from "./tutorialStore";
 
 /** The words under the stage keep this height on a computer, whichever step is showing: the tallest step's. */
@@ -52,12 +53,20 @@ const STAT: CSSProperties = { flex: "1 1 0", minWidth: 0, display: "flex", flexD
 
 const TOTAL = TUTORIAL_STEPS.length;
 
-/** How the five challenges stand: one bar a step. Cleared is the text colour, the one in hand a step lighter, the rest the line's. */
+/** How the eight chapters stand: one bar a chapter, grouped by stage with its name over each group. Cleared is the text colour, the one in hand a step lighter, the rest the line's. */
 function Progress({ step, cleared }: { step: number | null; cleared: ReadonlySet<number> }) {
+  const current = step === null ? null : stageOf(step);
   return (
-    <div aria-hidden="true" data-testid="tutorial-bars" style={{ display: "flex", gap: 4 }}>
-      {TUTORIAL_STEPS.map((entry, index) => (
-        <span key={entry.scene} data-cleared={cleared.has(index) ? "true" : undefined} style={{ flex: "1 1 0", height: 4, borderRadius: 2, background: cleared.has(index) ? t.text : index === step ? t.label : t.line }} />
+    <div aria-hidden="true" data-testid="tutorial-bars" style={{ display: "flex", gap: 8 }}>
+      {TUTORIAL_STAGES.map((stage) => (
+        <div key={stage.name} data-stage={stage.name} style={{ flex: `${stage.chapters.length} 1 0`, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ ...NOTE, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: stage === current ? t.text : t.label }}>{stage.name}</span>
+          <div style={{ display: "flex", gap: 4 }}>
+            {stage.chapters.map((index) => (
+              <span key={index} data-cleared={cleared.has(index) ? "true" : undefined} style={{ flex: "1 1 0", height: 4, borderRadius: 2, background: cleared.has(index) ? t.text : index === step ? t.label : t.line }} />
+            ))}
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -83,7 +92,7 @@ interface Run {
 
 function Steps({ phone, onClose }: { phone: boolean; onClose: () => void }) {
   const [step, setStep] = useState(0);
-  /** Goals cleared in the step showing. */
+  /** Goals cleared in the chapter showing. */
   const [done, setDone] = useState(0);
   const [cleared, setCleared] = useState<ReadonlySet<number>>(() => new Set());
   const [watching, setWatching] = useState(false);
@@ -297,7 +306,7 @@ function Steps({ phone, onClose }: { phone: boolean; onClose: () => void }) {
       </div>
 
       <div style={{ padding: `0 ${side}px`, flexShrink: 0 }}>
-        {watching ? <ScenePlayer scene={entry.scene} /> : <TaskStage key={step} scene={entry.scene} done={done} goal={goal?.id ?? null} hinting={hinting} hit={hit} misses={misses} />}
+        {watching ? <TaskDemo key={step} scene={entry.scene} /> : <TaskStage key={step} scene={entry.scene} done={done} goal={goal?.id ?? null} hinting={hinting} hit={hit} misses={misses} />}
       </div>
 
       <div ref={wordsRef} style={{ display: "flex", flexDirection: "column", gap: 12, boxSizing: "border-box", padding: `16px ${side}px 20px`, minHeight: phone ? undefined : WORDS_HEIGHT, overflowY: "auto" }}>
