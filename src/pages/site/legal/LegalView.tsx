@@ -12,9 +12,10 @@
 
 import type { CSSProperties } from "react";
 
+import { FrameLink } from "@/components/shell/FrameLink";
 import { SectionHead } from "@/components/vision/SectionHead";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import type { LegalBlock, LegalText } from "@/content/legal/types";
+import type { LegalBlock, LegalLink, LegalText } from "@/content/legal/types";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE, measure } from "@/lib/theme/type";
@@ -29,10 +30,12 @@ const th: CSSProperties = { fontWeight: 500, padding: "0 16px 8px 0", borderBott
 const td: CSSProperties = { padding: "8px 16px 8px 0", borderBottom: `1px solid ${t.hairline}`, verticalAlign: "top", color: t.text };
 
 /** Text with its placeholders and outside addresses drawn. */
-function Inline({ text }: { text: string }) {
+export function Inline({ text, links, section, touch = false }: { text: string; links?: readonly LegalLink[]; section?: string; touch?: boolean }) {
+  /* A phone keeps a 44px hit area on an inline link: the padding grows the box that takes the tap, not the line. */
+  const own: CSSProperties = touch ? { ...link, padding: "16px 0" } : link;
   return (
     <>
-      {piecesOf(text).map((piece, index) => {
+      {piecesOf(text, links, section).map((piece, index) => {
         if (piece.kind === "need") {
           return (
             <mark key={index} data-need="true" style={{ backgroundColor: t.lit, color: t.onLit, borderRadius: 4, padding: "0 4px" }}>
@@ -40,9 +43,16 @@ function Inline({ text }: { text: string }) {
             </mark>
           );
         }
+        if (piece.kind === "link" && piece.href.startsWith("/")) {
+          return (
+            <FrameLink key={index} to={piece.href} style={own}>
+              {piece.text}
+            </FrameLink>
+          );
+        }
         if (piece.kind === "link") {
           return (
-            <a key={index} href={piece.href} rel="noopener noreferrer" style={link}>
+            <a key={index} href={piece.href} rel="noopener noreferrer" style={own}>
               {piece.text}
             </a>
           );
@@ -53,9 +63,9 @@ function Inline({ text }: { text: string }) {
   );
 }
 
-function Block({ block, section }: { block: LegalBlock; section: string }) {
+function Block({ block, section, id }: { block: LegalBlock; section: string; id: string }) {
   if (block.kind === "p") {
-    return <p style={body}><Inline text={block.text} /></p>;
+    return <p style={body}><Inline text={block.text} links={block.links} section={id} /></p>;
   }
   if (block.kind === "list") {
     return (
@@ -147,7 +157,7 @@ export function LegalView({ text }: LegalViewProps) {
             <SectionHead title={section.heading} headingLevel={2} />
           </div>
           {section.blocks.map((block, index) => (
-            <Block key={index} block={block} section={section.heading} />
+            <Block key={index} block={block} section={section.heading} id={section.id} />
           ))}
         </section>
       ))}

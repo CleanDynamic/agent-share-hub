@@ -1,7 +1,7 @@
 /* UX-12 P2 and P3: the container shared by /privacy and /terms. It reads no data. It sets the page's head (noindex while the text is
    a draft), marks the page ready at once, and scrolls to the section named in the address after that. */
 
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 
 import { SeoHead } from "@/components/SeoHead";
@@ -12,15 +12,17 @@ import { LegalView } from "./LegalView";
 import { hashTarget } from "./legalModel";
 
 export interface LegalPageProps {
-  name: "privacy" | "terms";
+  name: "privacy" | "terms" | "rules" | "report" | "contact";
   text: LegalText;
   /** `Privacy policy` */
   seoTitle: string;
   description: string;
   path: string;
+  /** TB-02: the page drawn for the text. The legal reading view when absent. */
+  view?: ReactNode;
 }
 
-export function LegalPage({ name, text, seoTitle, description, path }: LegalPageProps) {
+export function LegalPage({ name, text, seoTitle, description, path, view }: LegalPageProps) {
   const { hash } = useLocation();
   usePageReady(name, true);
 
@@ -33,7 +35,7 @@ export function LegalPage({ name, text, seoTitle, description, path }: LegalPage
   return (
     <>
       <SeoHead title={seoTitle} description={description} path={path} noIndex={!text.reviewed} />
-      <LegalView text={text} />
+      {view ?? <LegalView text={text} />}
     </>
   );
 }

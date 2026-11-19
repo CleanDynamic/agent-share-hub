@@ -35,6 +35,8 @@ export interface SiteFooterViewProps {
   /** UX-12 P3: a legal link appears only once its text has been reviewed (src/content/legal/reviewed.ts). */
   showPrivacy?: boolean;
   showTerms?: boolean;
+  /** TB-02: Community rules, Report a problem and Contact, shown together once the Terms they repeat are reviewed. */
+  showFooterPages?: boolean;
   /** Where Sign in goes: the sign-in dialog over the page, and the history state that push carries. */
   signInTo?: string;
   signInState?: unknown;
@@ -46,7 +48,7 @@ export interface SiteFooterViewProps {
 const refinedLink: CSSProperties = { fontFamily: FIGTREE, fontSize: 12, fontWeight: 400, color: t.text2 };
 const refinedButtonLink: CSSProperties = { ...refinedLink, padding: 0, border: 0, background: "transparent", cursor: "pointer" };
 
-function RefinedSiteFooterView({ signedIn, onSignOut, onConnect, showPrivacy = false, showTerms = false, signInTo = "/login", signInState }: SiteFooterViewProps) {
+function RefinedSiteFooterView({ signedIn, onSignOut, onConnect, showPrivacy = false, showTerms = false, showFooterPages = false, signInTo = "/login", signInState }: SiteFooterViewProps) {
   return (
     <footer
       data-testid="site-footer"
@@ -68,6 +70,13 @@ function RefinedSiteFooterView({ signedIn, onSignOut, onConnect, showPrivacy = f
         <FrameLink to="/api-docs" style={refinedLink} hoverStyle={{ color: t.text }}>API docs</FrameLink>
         {showPrivacy ? <FrameLink to="/privacy" style={refinedLink} hoverStyle={{ color: t.text }}>Privacy</FrameLink> : null}
         {showTerms ? <FrameLink to="/terms" style={refinedLink} hoverStyle={{ color: t.text }}>Terms</FrameLink> : null}
+        {showFooterPages ? (
+          <>
+            <FrameLink to="/rules" style={refinedLink} hoverStyle={{ color: t.text }}>Community rules</FrameLink>
+            <FrameLink to="/report" style={refinedLink} hoverStyle={{ color: t.text }}>Report a problem</FrameLink>
+            <FrameLink to="/contact" style={refinedLink} hoverStyle={{ color: t.text }}>Contact</FrameLink>
+          </>
+        ) : null}
         <button type="button" onClick={onConnect} style={refinedButtonLink}>
           Connect a tool
         </button>
@@ -103,6 +112,7 @@ function SiteFooterContainer() {
       onConnect={connector.open}
       showPrivacy={PRIVACY_REVIEWED}
       showTerms={TERMS_REVIEWED}
+      showFooterPages={TERMS_REVIEWED}
       onSignOut={async () => {
         await signOut();
         navigate("/");

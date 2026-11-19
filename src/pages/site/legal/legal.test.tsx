@@ -41,6 +41,19 @@ describe("formatting", () => {
   it("cuts placeholders and outside addresses out of a sentence", () => {
     expect(piecesOf("a {{NEED: x}} b ico.org.uk").map((piece) => piece.kind)).toEqual(["text", "need", "text", "link"]);
   });
+  it("makes a listed link a link piece, and keeps a paragraph without links as it was", () => {
+    const pieces = piecesOf("See Report a problem for more.", [{ text: "Report a problem", href: "/report" }]);
+    expect(pieces).toEqual([
+      { kind: "text", text: "See " },
+      { kind: "link", text: "Report a problem", href: "/report" },
+      { kind: "text", text: " for more." },
+    ]);
+    expect(piecesOf("a {{NEED: x}} b ico.org.uk")).toEqual(piecesOf("a {{NEED: x}} b ico.org.uk", []));
+  });
+  it("throws in development when a listed text is not in the sentence exactly once", () => {
+    expect(() => piecesOf("Nothing here.", [{ text: "Missing", href: "/x" }], "sec")).toThrow();
+    expect(() => piecesOf("twice twice", [{ text: "twice", href: "/x" }])).toThrow();
+  });
   it("reads a hash", () => {
     expect(hashTarget("#your-rights")).toBe("your-rights");
     expect(hashTarget("")).toBe("");
@@ -95,11 +108,12 @@ describe("LegalView", () => {
     }
   });
 
-  it("imports nothing from src/lib/ but the theme", () => {
+  // TB-02: legalModel.ts also imports reportError (a listed link missing in production is reported, not drawn).
+  it("imports nothing from src/lib/ but the theme and the error report", () => {
     for (const file of ["LegalView.tsx", "legalModel.ts"]) {
       const source = fs.readFileSync(path.resolve(__dirname, file), "utf8");
       const libs = [...source.matchAll(/from "(@\/lib\/[^"]+)"/g)].map((match) => match[1]);
-      for (const lib of libs) expect(lib, `${file} imports ${lib}`).toMatch(/^@\/lib\/theme\//);
+      for (const lib of libs) expect(lib, `${file} imports ${lib}`).toMatch(/^@\/lib\/(theme\/|errors\/report$)/);
     }
   });
 });

@@ -4,8 +4,11 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { contact } from "./contact";
 import { privacy } from "./privacy";
 import { PRIVACY_REVIEWED, TERMS_REVIEWED } from "./reviewed";
+import { report } from "./report";
+import { rules } from "./rules";
 import { terms } from "./terms";
 import { NEED_PATTERN, textsOf, type LegalText } from "./types";
 
@@ -16,6 +19,9 @@ const BANNED = [new RegExp(String.fromCharCode(0x2014)), /herein/i, /hereinafter
 const texts: Array<[string, LegalText]> = [
   ["privacy", privacy],
   ["terms", terms],
+  ["rules", rules],
+  ["report", report],
+  ["contact", contact],
 ];
 
 /** The services the inventory lists between its markers. */
@@ -83,6 +89,29 @@ describe("the Privacy policy and the inventory", () => {
       "children",
       "changes",
     ]);
+  });
+});
+
+describe("the footer pages (TB-02)", () => {
+  const termsItems = (terms.sections.find((s) => s.id === "what-you-must-not-do")?.blocks.find((b) => b.kind === "list") as { items: string[] }).items;
+  const rulesItems = (rules.sections[0].blocks[0] as { items: string[] }).items;
+
+  it("keep the Terms' ten rules unedited and in order", () => {
+    expect(rulesItems).toEqual(termsItems);
+    expect(rules.sections.map((s) => s.id)).toEqual(["what-you-must-not-do", "reproductions-and-rebuilds", "spaces", "what-we-may-do"]);
+    expect(report.sections.map((s) => s.id)).toEqual(["report-something", "block-someone", "children", "appeals-and-complaints"]);
+    expect(contact.sections.map((s) => s.id)).toEqual(["who-we-are", "email", "your-data", "reports"]);
+  });
+
+  it("give every section a source, and every listed link text appears exactly once", () => {
+    for (const [, text] of texts.slice(2)) {
+      for (const section of text.sections) {
+        expect(["terms", "code"]).toContain(section.source);
+        for (const block of section.blocks) {
+          if (block.kind === "p") for (const link of block.links ?? []) expect(block.text.split(link.text).length - 1, link.text).toBe(1);
+        }
+      }
+    }
   });
 });
 

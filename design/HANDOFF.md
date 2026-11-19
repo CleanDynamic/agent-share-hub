@@ -309,3 +309,59 @@ The waves, in short:
 Where a prompt names a function, component or column that does not exist or has been renamed, the file on disk wins — `RULES.md` §8 says what to do, and it is never "invent a table".
 
 **The density pass (UI-P52 to UI-P59).** After the series, UI-P52 to UI-P59 tightened density site-wide, "tighter, organised like the example": UI-P52 tightened the reference kit itself, UI-P53 to UI-P55 carried the same table into the type, spacing and control roles, the brand primitives and the site frame, UI-P56 to UI-P58 into every page (the gallery; home, activity, profile, bounties and sign in; build, rebuild, import and the workspace), and UI-P59 swept the site-frame routes for anything the others missed and signed the pass off. Type, padding, margin, gap and control heights are smaller; widths of layout columns, radii, colours, positions and order are not, no text is under 10px, and on a phone a control that was 44px tall still is. The table, how to read it, and how code maps a size a board drew before the pass are in [`prompts/README-density.md`](prompts/README-density.md).
+
+---
+
+## TB-02: Community rules, Report a problem and Contact (`/rules`, `/report`, `/contact`)
+
+### Owner actions (not done here)
+
+1. **Placeholders to fill** before `TERMS_REVIEWED` can be set to true (`legalContent.test.ts` fails the build if a reviewed text still holds one):
+   - legal name of the business or person running the site (Contact)
+   - postal address (Contact)
+   - privacy contact email (Contact)
+   - appeal route and contact (Report a problem)
+   - one line per report reason, five of them (Report a problem; one `{{NEED: one line for each reason}}` per row of `REPORT_REASONS`)
+2. **The Terms contradict Settings.** §what-we-may-do says you close your account "by emailing {{NEED: privacy contact email}}", but Settings has a Delete account control (`DataView.tsx`). Community rules leaves that sentence out and Contact follows Settings. The Terms were not edited.
+3. **Report reasons have no descriptions in code.** The five lines are the owner's to write.
+4. The three pages are `noIndex`, are not in the sitemap (`scripts/generate-sitemap.js` lists neither `/terms` nor `/privacy`) and are not in the footer while `TERMS_REVIEWED` is false.
+
+### Files
+
+Added: `src/content/legal/{rules,report,contact}.ts`; `src/pages/site/legal/{FooterPageView.tsx,FooterPageView.test.tsx,RulesPage.tsx,ReportPage.tsx,ContactPage.tsx}`; `e2e/tier3/footer-pages.spec.ts`; `design/audits/tb-02/` (12 screenshots).
+Changed: `src/content/legal/types.ts` (`LegalLink`, `links` on `p`, `LegalSection.source`); `legalModel.ts` (`piecesOf(text, links?, section?)`); `LegalView.tsx` (`Inline` exported, takes `links`, `section`, `touch`; `/` hrefs render as `FrameLink`); `LegalPage.tsx` (`name` widened, `view` slot); `routeTable.ts`, `routeTable.test.ts`, `App.tsx` (three routes); `SiteFooter.tsx` (`showFooterPages`); tests listed below.
+
+### Where this prompt and the code disagreed
+
+- **Branch:** the session was fixed to `claude/tb-02-footer-pages-xq86ui`, not `tb-02-footer-pages`. Nothing was pushed or opened as a pull request by me.
+- **`Panel` takes no `id` or `aria-*`.** Each card is a `<section id aria-labelledby>` wrapping `<Panel as="div">`, so the Panel is unchanged.
+- **Settings deep link.** `/settings/:section` exists (`privacy`, `data`). Part 3 and 9.1 fix the hrefs as `/settings`, so they were used; `/settings/privacy` and `/settings/data` would be the better targets and are a one-line change each.
+- **`touchHit(phone, drawn)` adds nothing at 32.** `touchArea(phone)` is used for the side links. Inline links in paragraphs get `padding: 16px 0` on a phone (grows the tap box, not the line), via `Inline`'s `touch` prop.
+- **Side-link hover.** The side links rest on `--text`, so there is no darker step; hover goes to `--text2`. No other page sets one to copy.
+- **The `ChevronRight`** is drawn through `Icon` (the look-rules guard forbids a bare lucide icon).
+- **`SideSection` is imported from `OpenBuildsFrame.tsx`** as specified; it pulls that module into the legal chunk.
+- Terms wording was copied as it stands at 74f3520; no change found.
+
+### Quirks reported, not fixed (Part 1)
+
+`PageHeader` description 13.5px. `SideSection` vertical padding 28. `PageHeader` also uses the compact density gaps 6, 17 and 29 (off the skill's scale).
+
+### Type audit (1440, Dusk and Noon, read from computed styles)
+
+Union over the three pages: 20/500 text (title); 13.5/400 text2 (intro); 14/500 text (card and side headings); 12/400 text2 (subtitles, meta, table descriptions); 13/500 text (list-row titles and table reasons); 13/400 text (paragraphs and links); 11/400 text2 mono (tags); the placeholder mark (`--on-lit`, 13/400 in a paragraph and 12/400 in a table cell, because it inherits). The pages do not each show every entry: Rules has no placeholder, Contact has no list or table (so no 13/500), Report has them all. Nothing outside the list appears.
+
+### Measured (1440 × 900, both themes, all three routes)
+
+`h1` 20px / 500, left 64, top 88 (within 0.5). First card left 64, side column left 1072, same top. List rows 48, side links 32, tags 20. Radii 8 (cards) and 4 (tags). At 390: no horizontal scroll, side below the last card, every link box at least 44 × 44. These are asserted by `e2e/tier3/footer-pages.spec.ts` (18 tests, desktop project, viewports set in the spec), which passed.
+
+### Tests changed and why
+
+- `legal.test.tsx`: the "imports nothing from src/lib/ but the theme" guard now also allows `@/lib/errors/report` (`piecesOf` reports a bad link in production). Added `piecesOf` link tests.
+- `legalContent.test.ts`: the three texts joined the shared checks; added checks for the ten rules matching the Terms, section ids, `source` and link uniqueness.
+- `copyRules.test.ts`: one allow-list entry for the Rules card subtitle `{} rules · Please don't`, which Part 5.3 fixes and which is the Terms' own lead-in. The page descriptions use `SITE_NAME` instead of a literal, which the guard wants.
+- `lookRules.test.ts`: the new view, page and content files added to the lists.
+- `legalLinks.test.tsx`: footer gate and order for the three links. `routeTable.test.ts`: the three keys.
+
+### Checks
+
+`tsc` and the tests above pass; `npm run build` passes. **Not clean and not mine, as far as I can tell:** the full `npm test` has 23 failing files with these changes stashed (e.g. `lookRules.test.ts` for BuildSteps, `retiredAddresses.test.tsx`), and `npm run audit:contrast` (other routes: `ca24-failed`, `sv30-list`) and `npm run audit:themes` (the planted-colour self-test) fail. The audits were not run on a clean checkout to confirm.
