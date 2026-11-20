@@ -86,8 +86,7 @@ const countLabel = (n: number) => (n > 0 ? n.toLocaleString("en-GB") : "—");
 function nodeLabel(node: FamilyNodeView, list = false): string {
   const count = node.reproduced.toLocaleString("en-GB");
   // The phone's list draws "<maker> · <count> reproduced" on one line; the tree draws the maker and the count apart.
-  if (list) return `${node.title}, ${node.maker} · ${node.reproduced > 0 ? `${count} reproduced` : "reproduced by no one yet"}`;
-  return `${node.title}, ${node.maker}, ${node.reproduced > 0 ? `${count} reproduced` : "not yet reproduced"}`;
+  return `${node.title}, ${node.maker}${node.reproduced > 0 ? `${list ? " · " : ", "}${count} reproduced` : ""}`;
 }
 
 /* ── one node, as a link or as a choice ── */
@@ -206,7 +205,7 @@ function TreeNode({
       >
         <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{node.maker}</span>
         {" "}
-        <span>{countLabel(node.reproduced)}</span>
+        {node.reproduced > 0 && <span>{countLabel(node.reproduced)}</span>}
       </span>
     </NodeTarget>
   );
@@ -318,7 +317,7 @@ export function FamilyList({
                 <span style={{ ...nodeTitle, display: "block" }}>{node.title}</span>
                 {" "}
                 <span style={{ fontFamily: FIGTREE, fontSize: 11, lineHeight: "normal", color: t.text2 }}>
-                  {node.maker} · {countLabel(node.reproduced)} reproduced
+                  {node.maker}{node.reproduced > 0 ? ` · ${countLabel(node.reproduced)} reproduced` : ""}
                 </span>
               </span>
               {node.lamp === "draft" ? (

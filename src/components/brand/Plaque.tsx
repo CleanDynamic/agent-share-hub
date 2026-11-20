@@ -20,7 +20,7 @@
 //   stale         the same tag, the lamp dimmed to 45%, the claim in `--text2`.
 //                 A prompt, never a failure: nothing here rewords it, warns, or
 //                 paints it red. A build nobody confirmed lately has not failed.
-//   unreproduced  one line, "not yet reproduced", in `--text2`. No tag, no lamp,
+//   unreproduced  nothing rendered. No line, tag or lamp,
 //                 no freshness: with no reproduction there is nothing to light
 //                 and nothing to date, and a lamp that was off would say
 //                 something different from a lamp that is absent.
@@ -116,9 +116,6 @@ export interface PlaqueProps {
   now?: number;
 }
 
-/** What the plaque says when nobody who is not the creator has run it. */
-const NEVER_REPRODUCED = "not yet reproduced";
-
 /**
  * What the freshness half says when there is no confirmation to report.
  * Exported so a table that reports the same fact (RC-P23's analytics) says it
@@ -201,17 +198,10 @@ export function Plaque({ build, size = "card", tone = "surface", trailing, wordi
 
   /* UI-P85, REFINED: the count is an evidence `Pill`, then the lamp bar 8×3 from `plaqueState()` (dimmed when stale,
      absent when nobody has reproduced it), then the freshness in 12 `--text2`; a stale claim reads in `--label`. Not
-     yet reproduced is a neutral `Pill`. The hooks and the hover are the ones below. */
+     yet reproduced renders no reproduction signal. The hooks and the hover are the ones below. */
   const text: CSSProperties = { fontFamily: FIGTREE, fontSize: 12, fontWeight: 400, lineHeight: "normal" };
   if (state === "unreproduced") {
-    return (
-      <div {...marks} data-variant="never" style={{ ...frame, gap: 8 }}>
-        <span data-plaque-reproduction="" data-testid="reproduction-count" title={countTitle(0)} style={{ display: "inline-flex" }}>
-          <Pill>{NEVER_REPRODUCED}</Pill>
-        </span>
-        {trailing}
-      </div>
-    );
+    return trailing ? <div {...marks} style={frame}>{trailing}</div> : null;
   }
   const words =
     (wording ?? (size === "header" || size === "proof" ? "full" : "short")) === "full"

@@ -90,7 +90,7 @@ function RefinedBlocks() {
           />
         </div>
       </Example>
-      <Example caption="plaque · fresh, stale, not yet reproduced">
+      <Example caption="plaque · fresh, stale">
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <Plaque build={build(41, 3)} now={now} />
           <Plaque build={build(12, 130)} now={now} />

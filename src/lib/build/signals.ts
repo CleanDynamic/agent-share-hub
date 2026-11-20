@@ -259,7 +259,7 @@ type PlaqueSourceBuild = Pick<
  * name. With proof = null it is the build's own overall figures.
  *
  * A model with no worked reproduction gives count 0 and no confirmation, which
- * plaqueState reads as "not yet reproduced" — true of that model.
+ * plaqueState omits the reproduction signal when no one has reproduced that model.
  */
 export function plaqueBuildFor(
   build: PlaqueSourceBuild,

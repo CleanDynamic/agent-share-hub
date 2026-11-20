@@ -131,12 +131,12 @@ describe("Plaque — unreproduced", () => {
 
   it("says nothing about freshness even when the creator has confirmed it", () => {
     const text = renderPlaque(build({ reproduction_count: 0 })).textContent;
-    expect(text).toBe("not yet reproduced");
+    expect(text).toBe("");
   });
 
   it("keeps the count's hooks, so the one reproduction line is still findable", () => {
     const container = renderPlaque(BY_STATE.unreproduced);
-    expect(container.querySelector("[data-testid='reproduction-count']")).toHaveTextContent("not yet reproduced");
+    expect(container.firstElementChild).toBeNull();
   });
 
   it("agrees with the picture lamp: absent, and the spacer holds the row", () => {
@@ -176,7 +176,8 @@ describe("Plaque — every state, every size", () => {
     for (const size of SIZES) {
       it(`renders ${state} at ${size} with the reproduction hook, and carries no raw colour`, () => {
         const html = plaqueHtml(BY_STATE[state], size);
-        expect(html).toContain("data-plaque-reproduction");
+        if (state === "unreproduced") expect(html).toBe("");
+        else expect(html).toContain("data-plaque-reproduction");
         expect(html).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
         expect(html).not.toMatch(/rgba?\(/);
       });
@@ -196,9 +197,7 @@ describe("Plaque — every state, every size", () => {
   it("explains the count on hover", () => {
     const container = renderPlaque(build({ reproduction_count: 1 }));
     expect(container.querySelector("[title]")?.getAttribute("title")).toMatch(/1 person other than the creator/);
-    expect(renderPlaque(BY_STATE.unreproduced).querySelector("[title]")?.getAttribute("title")).toMatch(
-      /Nobody other than the creator/,
-    );
+    expect(renderPlaque(BY_STATE.unreproduced).querySelector("[title]")).toBeNull();
   });
 });
 
@@ -245,8 +244,7 @@ describe("refined plaque and lamps (UI-P85)", () => {
 
   it("Plaque: not yet reproduced is a neutral pill with no lamp", () => {
     const html = refined(<Plaque build={build({ reproduction_count: 0 })} now={NOW} />);
-    expect(html).toContain("not yet reproduced");
-    expect(html).toContain('data-ui="pill"');
+    expect(html).toBe("");
     expect(html).not.toContain('data-tone=');
     expect(html).not.toContain("data-plaque-lamp");
   });

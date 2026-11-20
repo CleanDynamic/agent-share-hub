@@ -167,7 +167,6 @@ export function ControlsSection() {
       <Row>
         <Example caption="pill">
           <Row gap={8}>
-            <Pill>not yet reproduced</Pill>
             <Pill tone="evidence">41 reproduced</Pill>
             <Pill tone="breakage">1 secret found</Pill>
             <Pill tone="lit-ink">new</Pill>

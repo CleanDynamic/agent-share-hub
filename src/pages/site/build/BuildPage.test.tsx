@@ -175,7 +175,7 @@ describe("BuildPage (site frame)", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" })).toBeTruthy();
     expect(screen.queryByTestId("build-shape-tag")).toBeNull();
     expect(within(screen.getByTestId("build-proof")).queryByText("ran it")).toBeNull();
-    expect(screen.getByText("not yet reproduced")).toBeTruthy();
+    expect(screen.queryByText("not yet reproduced")).toBeNull();
     expect(screen.getByText("£18.40")).toBeTruthy();
     expect(screen.getByText("35 min")).toBeTruthy();
     // What you need, in the proof card.
@@ -328,7 +328,7 @@ describe("BuildPage (site frame)", () => {
     // The clock moves; the count, and so the plaque, stays other people's.
     await waitFor(() => expect(recordSelfConfirmation).toHaveBeenCalledTimes(1));
     expect(within(screen.getByTestId("build-proof")).queryByText("ran it")).toBeNull();
-    expect(screen.getByText("not yet reproduced")).toBeTruthy();
+    expect(screen.queryByText("not yet reproduced")).toBeNull();
   });
 
   it("shows a reproduction at once, and rolls it back with a line in the proof panel if the write fails — never the exception", async () => {
@@ -339,7 +339,7 @@ describe("BuildPage (site frame)", () => {
     recordReproduction.mockReturnValue(new Promise((_, reject) => (fail = reject)));
     renderAt();
     await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" });
-    expect(screen.getByText("not yet reproduced")).toBeTruthy();
+    expect(screen.queryByText("not yet reproduced")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "I ran this and it worked" }));
     const dialog = await screen.findByRole("dialog", { name: "You ran this build" });
     fireEvent.click(within(dialog).getByRole("button", { name: "It worked" }));
@@ -353,7 +353,7 @@ describe("BuildPage (site frame)", () => {
     const failed = await screen.findByTestId("build-run-error");
     expect(failed.textContent).toContain("Couldn't save that. Try again.");
     expect(failed.textContent).not.toContain("row-level security");
-    expect(screen.getByText("not yet reproduced")).toBeTruthy();
+    expect(screen.queryByText("not yet reproduced")).toBeNull();
 
     fireEvent.click(within(failed).getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("dialog", { name: "You ran this build" })).toBeTruthy();

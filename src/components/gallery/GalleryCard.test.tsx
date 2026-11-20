@@ -295,7 +295,7 @@ describe("UI-P49, PT-04 — the row layout is the feed's post", () => {
     const { container } = renderRow(build(), {
       plaqueBuild: { reproduction_count: 0, last_confirmed_at: null, last_confirmed_model: null, published_at: "2026-08-01T00:00:00Z" },
     });
-    expect(screen.getByText("not yet reproduced")).toBeInTheDocument();
+    expect(screen.queryByText("not yet reproduced")).toBeNull();
     expect(container.querySelector('[data-ui="picture-lamp"]')).toBeNull();
   });
 });

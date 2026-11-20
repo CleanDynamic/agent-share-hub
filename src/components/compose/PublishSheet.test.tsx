@@ -193,7 +193,7 @@ describe("the publish sheet", () => {
     // it draws the build's sky, exactly as /gallery does (UI-P14 — the card no
     // longer leads with a node's words).
     expect(preview.querySelector('[data-ui="cover-fallback"]')).not.toBeNull();
-    expect(preview).toHaveTextContent("not yet reproduced");
+    expect(preview).not.toHaveTextContent("not yet reproduced");
   });
 
   it("draws the sky and the title when the record has neither picture nor words", async () => {
