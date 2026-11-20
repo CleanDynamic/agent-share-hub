@@ -136,7 +136,7 @@
    src/lib/theme/semantics.ts — change them there and mirror the change here;
    src/lib/theme/tokens.ts is how components read them.
 
-   The bare :root block duplicates Noon so a document with no data-theme
+   The bare :root block duplicates Dusk so a document with no data-theme
    attribute still renders correctly. It intentionally redeclares --bg and
    --text from the legacy block above, which is what BG-P29 will finish
    migrating.
@@ -144,8 +144,10 @@
    No component reads these yet. BG-P02 adds the switch that sets data-theme.
    ─────────────────────────────────────────────────────────────────────────── */
 
-:root,
 :root[data-theme="noon"] {
+  color-scheme: light;
+  --brand-accent: hsl(115.34 58.19% 34.71%);
+  --on-brand-accent: hsl(0 0% 100%);
   --bg: var(--frame);
   --recess: var(--well);
   --text: #1C1C1C;
@@ -389,7 +391,11 @@
 
 }
 
+:root,
 :root[data-theme="dusk"] {
+  color-scheme: dark;
+  --brand-accent: hsl(146.72 67.23% 65.29%);
+  --on-brand-accent: hsl(240 5.26% 7.45%);
   --bg: var(--frame);
   --recess: var(--well);
   --text: #EDEDEF;

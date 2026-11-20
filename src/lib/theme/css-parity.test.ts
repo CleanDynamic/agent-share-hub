@@ -45,7 +45,7 @@ const DECLARED = [
 
 describe("index.css mirrors semantics.ts", () => {
   it("noon (bare :root and [data-theme=noon])", () => {
-    const got = parse(':root,\n:root[data-theme="noon"]');
+    const got = parse(':root[data-theme="noon"]');
     expect(Object.keys(got).sort()).toEqual(DECLARED);
     for (const n of TOKEN_NAMES) expect([n, got[n]]).toEqual([n, noon[n]]);
     for (const n of MOTION_NAMES) expect([n, got[n]]).toEqual([n, MOTION_TOKENS[n]]);
@@ -63,7 +63,7 @@ describe("index.css mirrors shadcn.ts", () => {
      token does. If a name here drifts from the module, every utility spending
      it drifts with it and nothing else in the suite would notice. */
   it("noon declares the whole bridge", () => {
-    const got = parse(':root,\n:root[data-theme="noon"]');
+    const got = parse(':root[data-theme="noon"]');
     for (const n of SHADCN_NAMES) expect([n, got[n]]).toEqual([n, noonShadcn[n]]);
   });
 
@@ -112,14 +112,14 @@ describe("index.css mirrors radius.ts", () => {
   it.each(["noon", "dusk"] as const)("%s declares the whole scale", (theme) => {
     const got = parse(
       theme === "noon"
-        ? ':root,\n:root[data-theme="noon"]'
+        ? ':root[data-theme="noon"]'
         : ':root[data-theme="dusk"]',
     );
     for (const n of RADIUS_NAMES) expect([n, got[n]]).toEqual([n, RADIUS[n]]);
   });
 
   it("declares the same values in both blocks — radius is theme-independent", () => {
-    const light = parse(':root,\n:root[data-theme="noon"]');
+    const light = parse(':root[data-theme="noon"]');
     const dark = parse(':root[data-theme="dusk"]');
     for (const n of RADIUS_NAMES) expect([n, dark[n]]).toEqual([n, light[n]]);
   });
@@ -127,7 +127,7 @@ describe("index.css mirrors radius.ts", () => {
 
 describe("index.css mirrors elevation.ts", () => {
   it("noon declares both shadows", () => {
-    const got = parse(':root,\n:root[data-theme="noon"]');
+    const got = parse(':root[data-theme="noon"]');
     for (const n of ELEVATION_TOKENS) expect([n, got[n]]).toEqual([n, noonElevation[n]]);
   });
 
@@ -140,7 +140,7 @@ describe("index.css mirrors elevation.ts", () => {
     // The point of putting these in the theme blocks at all: a shadow on a
     // light ground and a shadow on a dark ground are not the same object. The
     // two levels are references now, so it is the shadows they name that differ.
-    const light = parse(':root,\n:root[data-theme="noon"]');
+    const light = parse(':root[data-theme="noon"]');
     const dark = parse(':root[data-theme="dusk"]');
     expect(dark["control-shadow"]).not.toBe(light["control-shadow"]);
     expect(dark["window-shadow"]).not.toBe(light["window-shadow"]);

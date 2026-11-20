@@ -14,6 +14,7 @@ function Probe() {
       <span data-testid="theme">{theme}</span>
       <span data-testid="resolved">{resolved}</span>
       <button onClick={() => setTheme("dusk")}>dusk</button>
+      <button onClick={() => setTheme("noon")}>noon</button>
       <button onClick={() => setTheme("system")}>system</button>
     </div>
   );
@@ -77,18 +78,18 @@ afterEach(() => {
 });
 
 describe("ThemeProvider", () => {
-  it("defaults a visitor with no stored preference to Noon", () => {
+  it("defaults a visitor with no stored preference to Dusk", () => {
     renderProvider();
-    expect(read("theme")).toBe("noon");
-    expect(read("resolved")).toBe("noon");
+    expect(read("theme")).toBe("dusk");
+    expect(read("resolved")).toBe("dusk");
   });
 
-  it("defaults to Noon even where the OS prefers dark", () => {
+  it("defaults to Dusk even where the OS prefers light", () => {
     // The departure from the spec is deliberate: an unknown visitor gets the
     // lit room, and only an explicit "system" defers to the OS.
-    stubMatchMedia(true);
+    stubMatchMedia(false);
     renderProvider();
-    expect(read("resolved")).toBe("noon");
+    expect(read("resolved")).toBe("dusk");
   });
 
   it("prefers a stored choice over the default", () => {
@@ -101,7 +102,7 @@ describe("ThemeProvider", () => {
   it("ignores a stored value that is not a theme", () => {
     window.localStorage.setItem(THEME_STORAGE_KEY, "midnight");
     renderProvider();
-    expect(read("theme")).toBe("noon");
+    expect(read("theme")).toBe("dusk");
   });
 
   /* UI-P02. Noon was called Exhibition before UI-P02, and a returning visitor
@@ -122,7 +123,8 @@ describe("ThemeProvider", () => {
       expect(boot, "the inline theme boot script").toBeDefined();
 
       window.localStorage.setItem(THEME_STORAGE_KEY, "exhibition");
-      new Function(boot!)();
+      if (!boot) throw new Error("Missing theme boot script");
+      new Function(boot)();
       expect(rootTheme()).toBe("noon");
       expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe("noon");
     });
@@ -136,7 +138,7 @@ describe("ThemeProvider", () => {
 
   it("persists a new choice and moves the root attribute", () => {
     renderProvider();
-    act(() => screen.getByText("dusk").click());
+    act(() => screen.getByRole("button", { name: "dusk" }).click());
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe("dusk");
     expect(rootTheme()).toBe("dusk");
   });
@@ -189,8 +191,8 @@ describe("ThemeProvider", () => {
         throw new Error("access denied");
       });
       renderProvider();
-      expect(read("theme")).toBe("noon");
-      expect(rootTheme()).toBe("noon");
+      expect(read("theme")).toBe("dusk");
+      expect(rootTheme()).toBe("dusk");
     });
 
     it("still switches, for the life of the page", () => {
@@ -198,7 +200,7 @@ describe("ThemeProvider", () => {
         throw new Error("quota exceeded");
       });
       renderProvider();
-      act(() => screen.getByText("dusk").click());
+      act(() => screen.getByRole("button", { name: "dusk" }).click());
       expect(read("resolved")).toBe("dusk");
       expect(rootTheme()).toBe("dusk");
     });
@@ -214,7 +216,7 @@ describe("ThemeProvider", () => {
     vi.useFakeTimers();
     try {
       renderProvider();
-      act(() => screen.getByText("dusk").click());
+      act(() => screen.getByRole("button", { name: "noon" }).click());
       expect(document.documentElement.dataset.themeChanging).toBe("");
       act(() => vi.advanceTimersByTime(180));
       expect(document.documentElement.dataset.themeChanging).toBeUndefined();
@@ -236,7 +238,7 @@ describe("ThemeProvider", () => {
     })) as unknown as typeof window.matchMedia;
 
     renderProvider();
-    act(() => screen.getByText("dusk").click());
+    act(() => screen.getByRole("button", { name: "dusk" }).click());
     expect(rootTheme()).toBe("dusk");
     expect(document.documentElement.dataset.themeChanging).toBeUndefined();
   });

@@ -54,11 +54,8 @@ const DARK_QUERY = "(prefers-color-scheme: dark)";
    `motion.test.ts` holds the two to each other. */
 const TRANSITION_MS = THEME_SWITCH;
 
-/* BG-P02. A visitor with no stored preference gets Noon, not the Dusk
-   the theme spec names: a gallery that opens in the dark undersells itself, and
-   most visitors arrive with no preference either way. "system" stays
-   selectable for anyone who wants their OS to decide. */
-const DEFAULT_THEME: ThemeChoice = "noon";
+/* TB-01: new visitors get Dusk by the owner's decision; any stored choice still wins. */
+const DEFAULT_THEME: ThemeChoice = "dusk";
 
 const CHOICES: readonly ThemeChoice[] = ["noon", "dusk", "system"];
 
@@ -193,7 +190,7 @@ export function useTheme(): ThemeState {
    directly, so the provider's state is not always the room on screen. */
 function readRootRoom(): ResolvedTheme {
   if (typeof document === "undefined") return DEFAULT_THEME === "dusk" ? "dusk" : "noon";
-  return document.documentElement.getAttribute("data-theme") === "dusk" ? "dusk" : "noon";
+  return document.documentElement.getAttribute("data-theme") === "noon" ? "noon" : "dusk";
 }
 
 function subscribeRootRoom(onChange: () => void): () => void {
