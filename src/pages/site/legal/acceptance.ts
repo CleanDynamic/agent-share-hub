@@ -29,18 +29,19 @@ export interface AcceptanceData {
 
 export const ACCEPTANCE_DATA: AcceptanceData = {
   accepted: async (userId) => {
-    const { data, error } = await supabase
+    // Generated types lag the legal migration; keep the existing request and narrow its result locally.
+    const { data, error } = await (supabase as any)
       .from("legal_acceptances")
       .select("terms_version, privacy_version")
       .eq("user_id", userId)
       .order("accepted_at", { ascending: false })
       .limit(1);
     if (error) throw error;
-    const row = data?.[0];
+    const row = data?.[0] as { terms_version: string; privacy_version: string } | undefined;
     return row ? { terms: row.terms_version, privacy: row.privacy_version } : null;
   },
   accept: async (terms, privacy) => {
-    const { error } = await supabase.rpc("accept_legal_terms", { p_terms_version: terms, p_privacy_version: privacy });
+    const { error } = await (supabase as any).rpc("accept_legal_terms", { p_terms_version: terms, p_privacy_version: privacy });
     if (error) throw error;
   },
 };

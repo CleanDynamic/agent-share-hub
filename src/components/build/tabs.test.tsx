@@ -129,7 +129,7 @@ describe("the replay", () => {
     // One over the scrubber, one heading the list of its events.
     expect(headings.length).toBeGreaterThanOrEqual(2);
     for (const heading of headings) {
-      expect(styleOf(heading)).toContain("Geist Mono");
+      expect(styleOf(heading)).toContain("Geist Serif");
       expect(styleOf(heading)).toContain("text-transform:uppercase");
     }
   });

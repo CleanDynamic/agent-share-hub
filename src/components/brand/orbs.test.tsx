@@ -58,7 +58,7 @@ describe("OrbRing", () => {
     expect(html).toContain("font-size:22px");
     expect(html).toContain("letter-spacing:-0.03em");
     expect(html).toContain("line-height:1");
-    expect(html).toContain("Geist");
+    expect(html).toContain("Geist Serif");
     expect(html).toContain("font-size:10px");
     expect(html).toContain("level");
     expect(markup(<OrbRing size={120} percent={50} value={3} label="x" />)).toContain("font-size:20px");

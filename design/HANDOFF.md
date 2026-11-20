@@ -1,3 +1,23 @@
+## TB-01 handoff — 2026-11-20
+
+**Owner actions:** Terms and Privacy remain unreviewed; footer therefore shows About and API docs only. All three TB-02 routes already exist. Other amber accents and the separate freshness wording “not confirmed by anyone yet” remain unchanged.
+
+- Applied Geist Serif from npm geist **1.9.2** (latest reported version). FontTools found **ELSH 0–100 only**, not a weight axis. Owner explicitly approved this actual font; existing CSS weights and sizes are unchanged. Geist Mono remains solely because sign-in code artwork embeds it; unused Geist Sans removed.
+- Desktop bar: theme-matched beaver, search/jump combobox, Drafts/Library for members, Builds/OpenBuilds/Connect a tool, activity dot, lazy Create and extended account menus. Connect goes to existing `/connect`; New post reuses lazy PostingWindows. No new backend query for Builds/Makers suggestions.
+- Footer moved outside the surface on desktop and mobile; logo and current-year brand; review gates untouched. MobileHeader and phone search unchanged.
+- Dusk fallback agrees between boot script, provider, root observer and bare CSS root; noon/system/exhibition preserved. Updated existing CSP hash for the changed boot script.
+- Zero Plaque returns null unless it has unrelated trailing content; family nodes omit count and accessible reproduction clause at zero.
+- Existing breakpoints retained: 1260 full spacing, 960 compact links, 1100 search width, 900 search icon/sheet, 980 Connect link visibility. Existing PAGE_EDGE 56 gives x64 at 1440; header measured 48 high and logo 32 square at (64,8) on Home/Builds in both themes. No second build-page band.
+- Choice budget: 5 global member links / 3 visitor links; logo replaces Home; Create contains exactly 4 choices. Existing navigation budget tests pass. Required hicks-law and other named skills were unavailable, so this is a direct count, not a skill audit.
+- Images generated using Pillow: crop `(round(w*.07), round(h*.07), round(w*.93), round(h*.07+w*.86))`, LANCZOS resize to 64/128, quantize 64 colours, optimized PNG. Sizes 1,778 / 5,426 and 1,743 / 5,255 bytes.
+- **Verified:** 159 focused tests across 9 files passed; earlier font subset 123 passed; legal-acceptance tests 9 passed. Preview build signal is OK. Browser verified public search → `/builds?q=test`, four Create items, signed-in account item order, Dark theme switching and logo swapping, noon retained after reload; mobile footer no horizontal overflow. Screenshots in `design/audits/tb-01/`.
+- **Not fully verified:** full unit run exceeded 600 seconds and showed failures (90 failure markers at inspection), including unrelated failures and old intended layout/snapshot expectations; no all-suite pass claimed. Lint: 1,446 problems (889 errors / 557 warnings). Per prompt, unrelated test failures were not fixed. Build/typechecks run by platform only; audit:contrast, audit:themes, audit:size and tier-1/tier-3 suites not run. No before/after bundle figures available. Full populated-route screenshot matrix, h1/footer-edge measurements and readability inventory incomplete; signed-in live pages still showed loading rows during capture. No publish.
+- Changes: theme/type/CSS/font/preload/notices; shell header/account/search/create/logo/footer/frame/nav and tests; Plaque/family/dev samples/signals and zero-state tests; roadmap and implementation rules. Pre-existing stale legal acceptance typings narrowed locally (same queries) to repair preview, generated types untouched.
+- Other amber consumers left alone: LampDot, Dock, TypeChip, PageFigure, BadgeMark, LitBar, ActivityGrid, Mark, Timeline, OrbRing, RankRung, Pill, PortfolioCard.
+- Branch remains the platform's current branch; switching/creating the requested branch is disallowed here. Five requested part commits used instead.
+
+---
+
 # buildgallery UI overhaul — Noon & Dusk handoff
 
 > **Since UI-P98 the refined boards are the source of truth, and since UI-P99 the only look.** `design/reference/refined/{dusk,noon}/<board>.html` (1440 wide, values exact, no browser strip, no mobile boards) describe what visitors see. The mockups, colours, type and frame described below are the retired current look (kept for the record, with its boards in `design/reference/archive/`); `design/RULES.md`, last section, describes the refined system. Where this file and a refined board disagree, the refined board wins.
