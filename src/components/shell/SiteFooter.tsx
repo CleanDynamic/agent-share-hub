@@ -12,11 +12,12 @@
 // side gutters below 1328 keep the column's edges, as the header's do.
 
 import { memo, type CSSProperties } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
-import { useConnectorDialog } from "@/components/connect/ConnectorDialog";
-import { Lockup } from "@/components/brand/Lockup";
-import { useAuth } from "@/contexts/AuthContext";
+import { useResolvedTheme } from "@/contexts/ThemeContext";
+import { touchHit } from "@/lib/theme/controls";
+import { useIsPhone } from "./useMinWidth";
+import { BeaverLogo } from "./BeaverLogo";
 import { PRIVACY_REVIEWED, TERMS_REVIEWED } from "@/content/legal/reviewed";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -25,13 +26,12 @@ import { PAGE_EDGE } from "./chromeSize";
 import { FrameLink } from "./FrameLink";
 import { SITE_NAV } from "./siteNav";
 import { SITE_NAME } from "@/lib/site";
-import { deeper, openOver } from "@/pages/site/signin/signinUrl";
 
 export interface SiteFooterViewProps {
-  signedIn: boolean;
-  onSignOut: () => void;
+  signedIn?: boolean;
+  onSignOut?: () => void;
   /** "Connect a tool": opens the connector guide. */
-  onConnect: () => void;
+  onConnect?: () => void;
   /** UX-12 P3: a legal link appears only once its text has been reviewed (src/content/legal/reviewed.ts). */
   showPrivacy?: boolean;
   showTerms?: boolean;
@@ -46,50 +46,42 @@ export interface SiteFooterViewProps {
    items: the lockup (15 / 13), the links at 12.5 `--text2` `8px 20px` apart, a spacer, and "© buildgallery" at 12
    `--label`. The items, their order and their names are the current footer's; UX-03 P10 took out the Theme control. */
 const refinedLink: CSSProperties = { fontFamily: FIGTREE, fontSize: 12, fontWeight: 400, color: t.text2 };
-const refinedButtonLink: CSSProperties = { ...refinedLink, padding: 0, border: 0, background: "transparent", cursor: "pointer" };
 
-function RefinedSiteFooterView({ signedIn, onSignOut, onConnect, showPrivacy = false, showTerms = false, showFooterPages = false, signInTo = "/login", signInState }: SiteFooterViewProps) {
+function RefinedSiteFooterView({ showPrivacy = false, showTerms = false, showFooterPages = false }: SiteFooterViewProps) {
+  const theme = useResolvedTheme();
+  const phone = useIsPhone();
+  const { pathname } = useLocation();
+  const links = [
+    { label: "About", href: "/about" }, { label: "API docs", href: "/api-docs" },
+    ...(showTerms ? [{ label: "Terms", href: "/terms" }] : []),
+    ...(showPrivacy ? [{ label: "Privacy", href: "/privacy" }] : []),
+    ...(showFooterPages ? [{ label: "Community rules", href: "/rules" }, { label: "Report a problem", href: "/report" }, { label: "Contact", href: "/contact" }] : []),
+  ];
   return (
     <footer
       data-testid="site-footer"
       data-ui="site-footer"
       style={{
         marginTop: "auto",
-        borderTop: `1px solid ${t.hairline}`,
-        /* The page's 56 content edge, less the surface's 1px border. */
-        padding: `12px ${PAGE_EDGE - 1}px`,
+        width: "calc(100% - 16px)",
+        maxWidth: 1428,
+        margin: "auto auto 0",
+        boxSizing: "border-box",
+        padding: phone ? "16px 16px 24px" : `16px ${PAGE_EDGE}px 24px`,
         display: "flex",
         flexWrap: "wrap",
-        alignItems: "center",
-        gap: "12px 24px",
+        alignItems: phone ? "flex-start" : "center",
+        flexDirection: phone ? "column" : "row",
+        justifyContent: "space-between",
+        gap: "8px 24px",
       }}
     >
-      <Lockup size={13} markSize={15} to={SITE_NAV.home} />
-      <nav aria-label="Footer" style={{ display: "flex", flexWrap: "wrap", gap: "8px 20px" }}>
-        <FrameLink to="/about" style={refinedLink} hoverStyle={{ color: t.text }}>About</FrameLink>
-        <FrameLink to="/api-docs" style={refinedLink} hoverStyle={{ color: t.text }}>API docs</FrameLink>
-        {showPrivacy ? <FrameLink to="/privacy" style={refinedLink} hoverStyle={{ color: t.text }}>Privacy</FrameLink> : null}
-        {showTerms ? <FrameLink to="/terms" style={refinedLink} hoverStyle={{ color: t.text }}>Terms</FrameLink> : null}
-        {showFooterPages ? (
-          <>
-            <FrameLink to="/rules" style={refinedLink} hoverStyle={{ color: t.text }}>Community rules</FrameLink>
-            <FrameLink to="/report" style={refinedLink} hoverStyle={{ color: t.text }}>Report a problem</FrameLink>
-            <FrameLink to="/contact" style={refinedLink} hoverStyle={{ color: t.text }}>Contact</FrameLink>
-          </>
-        ) : null}
-        <button type="button" onClick={onConnect} style={refinedButtonLink}>
-          Connect a tool
-        </button>
-        {signedIn ? (
-          <button type="button" onClick={onSignOut} style={refinedButtonLink}>
-            Sign out
-          </button>
-        ) : (
-          <FrameLink to={signInTo} state={signInState} style={refinedLink} hoverStyle={{ color: t.text }}>Sign in</FrameLink>
-        )}
+      <FrameLink to={SITE_NAV.home} aria-label="OpenBuilds.ai home" style={{ ...refinedLink, display: "flex", alignItems: "center", gap: 8, outlineColor: t.brandAccent, ...touchHit(phone, 44) }}>
+        <BeaverLogo theme={theme} size={16} /><span>© {new Date().getFullYear()} {SITE_NAME}</span>
+      </FrameLink>
+      <nav aria-label="Footer" style={{ display: "flex", flexWrap: "wrap", gap: "8px 20px", justifyContent: phone ? "flex-start" : "flex-end" }}>
+        {links.map(({ label, href }) => <FrameLink key={href} to={href} aria-current={pathname === href ? "page" : undefined} style={{ ...refinedLink, color: pathname === href ? t.text : t.text2, display: "inline-flex", alignItems: "center", minWidth: phone ? 44 : undefined, outlineColor: t.brandAccent, textUnderlineOffset: 4, ...touchHit(phone, 44) }} hoverStyle={{ color: t.text, textDecoration: "underline" }}>{label}</FrameLink>)}
       </nav>
-      <span style={{ flexGrow: 1 }} />
-      <span style={{ fontFamily: FIGTREE, fontSize: 12, fontWeight: 400, color: t.label }}>© {SITE_NAME}</span>
     </footer>
   );
 }
@@ -100,23 +92,11 @@ export function SiteFooterView(props: SiteFooterViewProps) {
 
 /** The container: signed-in state and sign-out from `useAuth()`. */
 function SiteFooterContainer() {
-  const { isLoggedIn, signOut } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const connector = useConnectorDialog();
   return (
     <SiteFooterView
-      signedIn={isLoggedIn}
-      signInTo={openOver(location.pathname, location.search)}
-      signInState={deeper(location.state)}
-      onConnect={connector.open}
       showPrivacy={PRIVACY_REVIEWED}
       showTerms={TERMS_REVIEWED}
       showFooterPages={TERMS_REVIEWED}
-      onSignOut={async () => {
-        await signOut();
-        navigate("/");
-      }}
     />
   );
 }

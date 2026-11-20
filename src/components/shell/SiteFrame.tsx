@@ -259,12 +259,8 @@ export function SiteFrameView({
           {phone || !wide ? null : <div data-slot="breadcrumb" style={{ padding: `24px 0 0 ${frameOf(innerWidthOf(win.width)).boxLeft - ORIGIN}px` }}>{breadcrumb}</div>}
           {children}
         </main>
-        {phone ? null : (
-          <div data-slot="footer" style={{ marginTop: "auto", display: "flex", flexDirection: "column" }}>
-            {footer}
-          </div>
-        )}
       </div>
+      <div data-slot="footer" style={{ marginTop: "auto", display: "flex", flexDirection: "column" }}>{footer}</div>
       {phone ? <div data-slot="dock">{dock}</div> : null}
     </div>
   );

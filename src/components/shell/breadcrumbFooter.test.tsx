@@ -79,39 +79,14 @@ describe("Breadcrumb", () => {
 });
 
 describe("SiteFooterView", () => {
-  const footer = (signedIn: boolean, onSignOut = vi.fn(), onConnect = vi.fn()) =>
-    render(
-      <MemoryRouter>
-        <ThemeProvider>
-          <SiteFooterView signedIn={signedIn} onSignOut={onSignOut} onConnect={onConnect} />
-        </ThemeProvider>
-      </MemoryRouter>,
-    );
-
-  it("signed out: the links, Sign in last (UX-08 P5: no Solvers)", () => {
-    footer(false);
-    const links = screen.getAllByRole("link").map((a) => [a.textContent, a.getAttribute("href")]);
-    expect(links).toEqual([
-      ["OpenBuilds.ai", "/"],
-      ["About", "/about"],
-      ["API docs", "/api-docs"],
-      ["Sign in", "/login"],
-    ]);
+  it("hides unreviewed legal and safety links", () => {
+    render(<MemoryRouter><SiteFooterView /></MemoryRouter>);
+    expect(screen.getAllByRole("link").map(a=>a.getAttribute("href"))).toEqual(["/", "/about", "/api-docs"]);
   });
-
-  it("Connect a tool is a button that opens the guide", () => {
-    const onConnect = vi.fn();
-    footer(false, vi.fn(), onConnect);
-    fireEvent.click(screen.getByRole("button", { name: "Connect a tool" }));
-    expect(onConnect).toHaveBeenCalled();
-  });
-
-  it("signed in: Sign out is a button", () => {
-    const onSignOut = vi.fn();
-    footer(true, onSignOut);
-    expect(screen.queryByRole("link", { name: "Sign in" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
-    expect(onSignOut).toHaveBeenCalled();
+  it("offers all reviewed links in the approved order", () => {
+    render(<MemoryRouter initialEntries={["/privacy"]}><SiteFooterView showPrivacy showTerms showFooterPages /></MemoryRouter>);
+    expect(screen.getAllByRole("link").map(a=>a.getAttribute("href"))).toEqual(["/", "/about", "/api-docs", "/terms", "/privacy", "/rules", "/report", "/contact"]);
+    expect(screen.getByRole("link",{name:"Privacy"}).getAttribute("aria-current")).toBe("page");
   });
 });
 
@@ -160,30 +135,4 @@ describe("breadcrumb and footer under the refined look", () => {
     expect(html).toMatch(/aria-current="page" style="[^"]*font-size:12px;font-weight:500;color:var\(--text\)/);
   });
 
-  const refinedFooter = (signedIn: boolean) => (
-    <MemoryRouter initialEntries={[REFINED]}>
-      <ThemeProvider>
-        <SiteFooterView signedIn={signedIn} onSignOut={vi.fn()} onConnect={vi.fn()} />
-      </ThemeProvider>
-    </MemoryRouter>
-  );
-
-  it("the footer keeps its items, names and order", () => {
-    render(refinedFooter(false));
-    expect(screen.getAllByRole("link").map((a) => a.textContent)).toEqual(["OpenBuilds.ai", "About", "API docs", "Sign in"]);
-    expect(screen.getByRole("button", { name: "Connect a tool" })).toBeTruthy();
-    // UX-03 P10: no theme control in the footer; the header's is the one.
-    expect(screen.queryByRole("group", { name: "Theme" })).toBeNull();
-    expect(screen.getByText("© OpenBuilds.ai")).toBeTruthy();
-  });
-
-  it("the footer sits under a 1px --hairline with the gutter, links at 12 --text2 8px 20px apart, and no Theme control (UX-03 P10)", () => {
-    const html = renderToStaticMarkup(refinedFooter(true));
-    expect(html).toContain("border-top:1px solid var(--hairline);padding:12px 55px");
-    expect(html).toContain("gap:8px 20px");
-    expect(html).toContain("font-size:12px;font-weight:400;color:var(--text2)");
-    expect(html).not.toContain('data-ui="segmented"');
-    expect(html).toContain("font-size:12px;font-weight:400;color:var(--label)");
-    expect(html).not.toContain("var(--header)");
-  });
 });
