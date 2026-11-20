@@ -334,6 +334,18 @@ Where a prompt names a function, component or column that does not exist or has 
 
 ## TB-02: Community rules, Report a problem and Contact (`/rules`, `/report`, `/contact`)
 
+### Reverification — 20 November 2026
+
+**Owner actions remain unchanged:** fill the legal name, postal address, contact email, appeal route/contact and five report-reason descriptions before review; reconcile the Terms' email-deletion sentence with Settings. No placeholder, Terms wording or review flag was changed. Footer links remain hidden and pages remain noindex drafts.
+
+TB-02 was already implemented in the checkout. This pass corrected obsolete footer tests to the approved TB-01 footer (logo outside its navigation, Terms before Privacy, no Sign in link), replaced Inline's literal placeholder radius with `r.chip`, and removed negative tracking from FooterPageView side headings. The browser spec now blocks unstubbed external requests, asserts the exact in-page destination and saves viewport-only screenshots. Twelve screenshots were refreshed in `design/audits/tb-02/`.
+
+**Verification:** 99/99 focused tests across six files pass; 18/18 browser tests pass in Dusk and Noon at 1440×900 and 390×844. Desktop title measured 20px/500 at (64,88), main left 64, side left 1072, equal column tops; mobile no horizontal scrolling, side below cards, links at least 44×44. Fresh preview log reports `build OK`. Existing section counts, type audit and component quirks below remain valid; fonts now resolve through TB-01's Geist Serif handles.
+
+**Incomplete wider checks:** lookRules run: 2,851 passed / 21 failed (combined with focused tests); failures concern existing neighbouring components. Contrast audit: one failed sweep, `page.evaluate: TypeError: Cannot read properties of null (reading 'click')`. Theme audit: planted-colour detector passed; remaining sweep terminated at the 600-second command limit. Full unit run terminated at 150 seconds without a final total. No manual build/typecheck was run because this workspace's preview harness owns them. Logs are in `/tmp/tb02-*.log` (temporary).
+
+**Workflow differences:** all five requested active skills are unavailable, so their reviews could not run; no substitute draft skills were used. Branch switching is prohibited here; existing commits already contain TB-02a/b/c's original work, so this pass commits only completion changes. No dependency, database change, sitemap change, publication or unrelated restyling was made. The short completion plan is saved in `.lovable/tb02-plan.md`; root AGENTS.md records the existing shared reading-page architecture.
+
 ### Owner actions (not done here)
 
 1. **Placeholders to fill** before `TERMS_REVIEWED` can be set to true (`legalContent.test.ts` fails the build if a reviewed text still holds one):

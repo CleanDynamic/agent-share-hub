@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] TB-02: verified existing footer pages, closed presentation/test gaps, refreshed screenshots and handoff; review flags preserved. Wider audits remain incomplete/failing as documented.
+
 - [x] TB-01 A: use actual Geist Serif 1.9.2 as approved; document ELSH-only variation and missing weight axis.
 - [x] TB-01 B: desktop global bar and menus.
 - [x] TB-01 C: frame footer with theme-matched beaver and review-gated links.

@@ -37,17 +37,16 @@ describe("the footer", () => {
     for (const name of ["Community rules", "Report a problem", "Contact"]) expect(screen.queryByRole("link", { name })).toBeNull();
     unmount();
     footer({ showPrivacy: true, showTerms: true, showFooterPages: true });
-    const links = screen.getAllByRole("link").map((a) => [a.textContent, a.getAttribute("href")]);
-    expect(links).toEqual([
-      ["OpenBuilds.ai", "/"],
+    const links = screen.getByRole("navigation", { name: "Footer" }).querySelectorAll("a");
+    const destinations = Array.from(links, (a) => [a.textContent, a.getAttribute("href")]);
+    expect(destinations).toEqual([
       ["About", "/about"],
       ["API docs", "/api-docs"],
-      ["Privacy", "/privacy"],
       ["Terms", "/terms"],
+      ["Privacy", "/privacy"],
       ["Community rules", "/rules"],
       ["Report a problem", "/report"],
       ["Contact", "/contact"],
-      ["Sign in", "/login"],
     ]);
     const style = (name: string) => screen.getByRole("link", { name }).getAttribute("style");
     expect(style("Contact")).toBe(style("About"));
@@ -55,14 +54,12 @@ describe("the footer", () => {
 
   it("shows both after API docs, in the neighbours' style, once told they are reviewed", () => {
     footer({ showPrivacy: true, showTerms: true });
-    const links = screen.getAllByRole("link").map((a) => [a.textContent, a.getAttribute("href")]);
+    const links = Array.from(screen.getByRole("navigation", { name: "Footer" }).querySelectorAll("a"), (a) => [a.textContent, a.getAttribute("href")]);
     expect(links).toEqual([
-      ["OpenBuilds.ai", "/"],
       ["About", "/about"],
       ["API docs", "/api-docs"],
-      ["Privacy", "/privacy"],
       ["Terms", "/terms"],
-      ["Sign in", "/login"],
+      ["Privacy", "/privacy"],
     ]);
     const style = (name: string) => screen.getByRole("link", { name }).getAttribute("style");
     expect(style("Privacy")).toBe(style("About"));

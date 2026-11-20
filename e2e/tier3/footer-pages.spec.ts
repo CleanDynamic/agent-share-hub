@@ -17,6 +17,13 @@ const THEMES = [
 ] as const;
 
 async function fake(page: Page, theme: string) {
+  // Local app files may load; all external traffic is blocked unless a stub below answers it.
+  await page.route("**/*", (route) => {
+    const url = new URL(route.request().url());
+    return url.origin === new URL(process.env.E2E_BASE_URL ?? "http://127.0.0.1:5173").origin
+      ? route.continue()
+      : route.abort();
+  });
   await page.addInitScript((value) => {
     try {
       window.localStorage.setItem("bg-theme", value);
@@ -67,7 +74,7 @@ for (const theme of THEMES) {
         expect(Math.abs(side.x - 1072)).toBeLessThanOrEqual(0.5);
         expect(Math.abs(first.y - side.y)).toBeLessThanOrEqual(0.5);
 
-        if (process.env.E2E_SHOTS) await page.screenshot({ path: `design/audits/tb-02/${p.path.slice(1)}-1440-${theme.name}.png`, fullPage: true });
+        if (process.env.E2E_SHOTS) await page.screenshot({ path: `design/audits/tb-02/${p.path.slice(1)}-1440-${theme.name}.png` });
       });
 
       test("a hash scrolls its card into view, and the side links navigate", async ({ page }) => {
@@ -77,7 +84,7 @@ for (const theme of THEMES) {
         await expect.poll(async () => (await box(page, page.locator(`section#${p.second}`))).y).toBeLessThan(400);
 
         await page.getByRole("navigation", { name: "In this page" }).getByRole("link").first().click();
-        await expect(page).toHaveURL(new RegExp(`#`));
+        await expect(page).toHaveURL(new RegExp(`${p.path}#${p.path === "/rules" ? "what-you-must-not-do" : p.path === "/report" ? "report-something" : "who-we-are"}$`));
         await page.getByRole("navigation", { name: "Related pages" }).getByRole("link", { name: p.side }).click();
         await expect(page).toHaveURL(new RegExp(`${p.sideHref}$`));
         await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
@@ -110,7 +117,7 @@ for (const theme of THEMES) {
         );
         expect(small).toEqual([]);
 
-        if (process.env.E2E_SHOTS) await page.screenshot({ path: `design/audits/tb-02/${p.path.slice(1)}-390-${theme.name}.png`, fullPage: true });
+        if (process.env.E2E_SHOTS) await page.screenshot({ path: `design/audits/tb-02/${p.path.slice(1)}-390-${theme.name}.png` });
       });
     });
   }

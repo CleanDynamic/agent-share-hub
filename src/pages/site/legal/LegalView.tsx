@@ -38,7 +38,7 @@ export function Inline({ text, links, section, touch = false }: { text: string; 
       {piecesOf(text, links, section).map((piece, index) => {
         if (piece.kind === "need") {
           return (
-            <mark key={index} data-need="true" style={{ backgroundColor: t.lit, color: t.onLit, borderRadius: 4, padding: "0 4px" }}>
+            <mark key={index} data-need="true" style={{ backgroundColor: t.lit, color: t.onLit, borderRadius: r.chip, padding: "0 4px" }}>
               {piece.text}
             </mark>
           );
