@@ -27,3 +27,6 @@ Copyright (c) 2022 Pablo Hdez
 ## Geist
 
 The Geist typeface is used under the SIL Open Font License, Version 1.1 (OFL 1.1), <https://openfontlicense.org>.
+
+
+Geist Serif from geist 1.9.2 is self-hosted under the same SIL Open Font License 1.1; see `public/fonts/GeistSerif-OFL.txt`.

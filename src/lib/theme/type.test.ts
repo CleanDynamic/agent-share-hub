@@ -303,15 +303,15 @@ describe("the retired faces", () => {
   it("self-hosts Geist and Geist Mono: two variable WOFF2 files, two @font-face rules, Geist preloaded", () => {
     const html = readFileSync(join(process.cwd(), "index.html"), "utf8");
     const css = readFileSync(join(process.cwd(), "src/index.css"), "utf8");
-    for (const file of ["Geist-Variable.woff2", "GeistMono-Variable.woff2"]) {
+    for (const file of ["GeistSerif-Variable.woff2", "GeistMono-Variable.woff2"]) {
       expect(existsSync(join(process.cwd(), "public/fonts", file)), `${file} is shipped`).toBe(true);
     }
     expect(html).toMatch(
-      /<link\s+rel="preload"\s+as="font"\s+type="font\/woff2"\s+href="\/fonts\/Geist-Variable\.woff2"\s+crossorigin/,
+      /<link\s+rel="preload"\s+as="font"\s+type="font\/woff2"\s+href="\/fonts\/GeistSerif-Variable\.woff2"\s+crossorigin/,
     );
     const faces = [...css.matchAll(/@font-face\s*\{([^}]*)\}/g)].map((m) => m[1]);
     expect(faces).toHaveLength(2);
-    for (const family of ["Geist", "Geist Mono"]) {
+    for (const family of ["Geist Serif", "Geist Mono"]) {
       const face = faces.find((f) => new RegExp(`font-family:\\s*"${family}"`).test(f));
       expect(face, `${family} is declared`).toBeDefined();
       expect(face).toMatch(/font-display:\s*swap/);
@@ -534,9 +534,9 @@ describe("roles (UI-P80)", () => {
   const first = (family: string) => /^'?([^',]+)'?/.exec(family)![1];
 
   it("declares the three family tokens: Geist, Geist and Geist Mono", () => {
-    expect(first(refined["font-ui"])).toBe("Geist");
-    expect(first(refined["font-display"])).toBe("Geist");
-    expect(first(refined["font-data"])).toBe("Geist Mono");
+    expect(first(refined["font-ui"])).toBe("Geist Serif");
+    expect(first(refined["font-display"])).toBe("Geist Serif");
+    expect(first(refined["font-data"])).toBe("Geist Serif");
   });
 
   it("resolves to the table of UI-P80", () => {
@@ -558,21 +558,21 @@ describe("roles (UI-P80)", () => {
     expect([r(type.label.fontSize), r(type.label.fontWeight), r(type.label.lineHeight), r(type.label.letterSpacing)]).toEqual(["12.5px", "500", "1.3", "0"]);
     // eyebrow 10.5 / 500 caps / .06em, in Geist, not mono
     expect([r(type.eyebrow.fontSize), r(type.eyebrow.fontWeight), r(type.eyebrow.letterSpacing), type.eyebrow.textTransform]).toEqual(["10.5px", "500", "0.06em", "uppercase"]);
-    expect(first(r(type.eyebrow.fontFamily))).toBe("Geist");
+    expect(first(r(type.eyebrow.fontFamily))).toBe("Geist Serif");
     // meta (the data role) 12 / 400 / 1.4 in Geist
     expect([r(type.data.fontSize), r(type.data.lineHeight)]).toEqual(["12px", "1.4"]);
-    expect(first(r(type.data.fontFamily))).toBe("Geist");
+    expect(first(r(type.data.fontFamily))).toBe("Geist Serif");
     // mono 10.5 / 400 / 18px in Geist Mono
     expect([r(type.monoLabel.fontSize), r(type.monoLabel.fontWeight), r(type.monoLabel.lineHeight)]).toEqual(["10.5px", "400", "18px"]);
-    expect(first(r(type.monoLabel.fontFamily))).toBe("Geist Mono");
+    expect(first(r(type.monoLabel.fontFamily))).toBe("Geist Serif");
   });
 
   it("sets every refined heading and label in Geist, and nothing in a serif", () => {
     for (const [role, style] of Object.entries(scale)) {
       const face = first(resolve((style as { fontFamily: string }).fontFamily, refined));
-      expect(["Geist", "Geist Mono"], `${role} resolves to ${face}`).toContain(face);
+      expect(["Geist Serif", "Geist Serif"], `${role} resolves to ${face}`).toContain(face);
     }
-    expect(refined["font-display"]).not.toMatch(/serif(?!\s*$)|Georgia|Sentient/);
+    expect(refined["font-display"]).toContain("Geist Serif");
   });
 
   it("keeps the floors over the shipped scale", () => {

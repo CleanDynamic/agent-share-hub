@@ -1,8 +1,8 @@
-/* Geist and Geist Mono (UI-P80), the site's faces. Variable files, one per family, self-hosted; Geist-OFL.txt sits
+/* Geist Serif (TB-01; ELSH axis, no weight axis) and retained code-art Geist Mono, the site's faces. Variable files, one per family, self-hosted; Geist-OFL.txt sits
    beside them. Geist is preloaded in index.html. UI-P99 retired Figtree, Sentient and DM Mono. */
 @font-face {
-  font-family: "Geist";
-  src: url("/fonts/Geist-Variable.woff2") format("woff2");
+  font-family: "Geist Serif";
+  src: url("/fonts/GeistSerif-Variable.woff2") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -23,9 +23,9 @@
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px; --space-12: 48px; --space-16: 64px;
   --size-icon-small: 12px; --size-icon: 16px; --size-tag: 20px; --size-control-small: 24px; --size-control: 32px; --size-row: 48px; --size-row-large: 56px; --size-touch: 44px;
 
-  --font-ui: 'Geist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-display: 'Geist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-data: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-ui: 'Geist Serif', Georgia, 'Times New Roman', serif;
+  --font-display: 'Geist Serif', Georgia, 'Times New Roman', serif;
+  --font-data: 'Geist Serif', Georgia, 'Times New Roman', serif;
 
   --type-hero-size: 44px;
   --type-hero-leading: 1.04;

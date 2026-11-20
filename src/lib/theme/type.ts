@@ -21,8 +21,8 @@
 // the size without the weight, the family without the line-height — is how a
 // scale stops being one.
 //
-// TWO FACES, THREE JOBS. Geist (self-hosted from /fonts) is body, UI and display:
-// every heading. Geist Mono is data: model names, cost, timestamps, change
+// ONE FACE, THREE JOBS. Geist Serif (self-hosted from /fonts) is body, UI and display:
+// every heading. Geist Serif is also data: model names, cost, timestamps, change
 // summaries, part labels, counts and eyebrows. Mono never sets long-form prose.
 // The names FIGTREE, SENTIENT and DM_MONO stay as the three roles' handles, from
 // before UI-P99 retired Figtree, Sentient and DM Mono; each now reads Geist or Geist Mono.
@@ -81,15 +81,15 @@ const roleVar = (role: string, prop: "size" | "weight" | "leading" | "tracking" 
 
 /** Body and UI: Geist. The `*_STACK` constants are the fallbacks written into each `var()`. */
 export const FIGTREE_STACK =
-  "'Geist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  "'Geist Serif', Georgia, 'Times New Roman', serif";
 export const FIGTREE = `var(--font-ui, ${FIGTREE_STACK})`;
 
 /** Display: Geist, loaded by the `@font-face` rules in src/index.css. */
-export const SENTIENT_STACK = "'Geist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+export const SENTIENT_STACK = "'Geist Serif', Georgia, 'Times New Roman', serif";
 export const SENTIENT = `var(--font-display, ${SENTIENT_STACK})`;
 
 /** Data. */
-export const DM_MONO_STACK = "'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace";
+export const DM_MONO_STACK = "'Geist Serif', Georgia, 'Times New Roman', serif";
 export const DM_MONO = `var(--font-data, ${DM_MONO_STACK})`;
 
 /* ── The scale ─────────────────────────────────────────────────────────────

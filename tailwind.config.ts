@@ -182,9 +182,9 @@ export default {
         "on-error-container": "#ffdad6",
       },
       fontFamily: {
-        headline: ["Inter", "system-ui", "sans-serif"],
-        body: ["Inter", "system-ui", "sans-serif"],
-        label: ["Inter", "system-ui", "sans-serif"],
+        headline: ["var(--font-ui)"],
+        body: ["var(--font-ui)"],
+        label: ["var(--font-ui)"],
       },
       borderRadius: {
         lg: "var(--radius)",
