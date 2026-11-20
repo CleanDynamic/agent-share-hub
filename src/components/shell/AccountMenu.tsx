@@ -12,8 +12,10 @@ import { MENU_ITEM_CLASS } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { feedback } from "@/lib/theme/motion";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
+import { r } from "@/lib/theme/radius";
+import { Button } from "@/components/brand/Button";
 import { AccountButton } from "./AccountButton";
 import type { FrameViewer } from "./frameTypes";
 import { SITE_NAV } from "./siteNav";
@@ -22,6 +24,9 @@ export interface AccountMenuProps {
   viewer: FrameViewer;
   onSignOut: () => void;
   avatarSize?: number;
+  drafts?: number;
+  theme?: "dusk" | "noon";
+  onToggleTheme?: () => void;
   /** Open at once: the reader pressed the account button before the menu's code was here. */
   defaultOpen?: boolean;
   /** The account button had focus before the menu's code was here: it keeps it. */
@@ -50,7 +55,7 @@ function Entry({ children }: { children: ReactNode }) {
   );
 }
 
-export function AccountMenu({ viewer, onSignOut, avatarSize = 34, defaultOpen = false, focusOnMount = false }: AccountMenuProps) {
+export function AccountMenu({ viewer, onSignOut, avatarSize = 24, drafts = 0, theme = "dusk", onToggleTheme, defaultOpen = false, focusOnMount = false }: AccountMenuProps) {
   const trigger = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (focusOnMount && !defaultOpen) trigger.current?.focus();
@@ -66,13 +71,14 @@ export function AccountMenu({ viewer, onSignOut, avatarSize = 34, defaultOpen = 
     alignItems: "center",
     height: 32,
     padding: "0 12px",
-    borderRadius: 10,
+    borderRadius: r.chip,
     fontFamily: FIGTREE,
-    fontSize: 12,
-    fontWeight: 500,
+    fontSize: 13,
+    fontWeight: 400,
     textDecoration: "none",
     outline: "none",
     cursor: "pointer",
+    outlineColor: t.brandAccent,
     border: 0,
     width: "100%",
     textAlign: "left",
@@ -85,35 +91,29 @@ export function AccountMenu({ viewer, onSignOut, avatarSize = 34, defaultOpen = 
       <DropdownMenu.Portal>
         <DropdownMenu.Content
           align="end"
-          sideOffset={8}
+          sideOffset={4}
           style={{
-            minWidth: 190,
+            minWidth: 220,
             padding: 4,
-            borderRadius: 14,
+            borderRadius: r.window,
             background: t.window,
             border: `1px solid ${t.windowBorder}`,
-            boxShadow: t.shadowFloat,
+            boxShadow: t.windowShadow,
             color: t.text,
             zIndex: 50,
           }}
         >
-          <Entry>
-            <PageLink to={profileHref} aria-current={onOwnProfile ? "page" : undefined} style={item}>Profile</PageLink>
-          </Entry>
-          <Entry>
-            <PageLink to={SITE_NAV.library} style={item}>Library</PageLink>
-          </Entry>
-          <Entry>
-            <PageLink to={SITE_NAV.drafts} style={item}>Drafts</PageLink>
-          </Entry>
-          {/* UX-15: Settings, between the profile's items and Sign out. */}
-          <Entry>
-            <PageLink to={SITE_NAV.settings} aria-current={pathname === SITE_NAV.settings || pathname.startsWith(`${SITE_NAV.settings}/`) ? "page" : undefined} style={item}>Settings</PageLink>
-          </Entry>
-          <DropdownMenu.Separator style={{ height: 1, margin: "4px 4px", background: t.line }} />
-          <Entry>
-            <button type="button" onClick={onSignOut} style={item}>Sign out</button>
-          </Entry>
+          <DropdownMenu.Label style={{ padding: "8px 12px", fontFamily: FIGTREE, fontSize: 12, fontWeight: 400, color: t.text2 }}>Signed in as <span style={{ fontWeight: 500, color: t.text }}>@{viewer.handle}</span></DropdownMenu.Label>
+          <Entry><PageLink to={profileHref} aria-current={onOwnProfile ? "page" : undefined} style={item}>Your profile</PageLink></Entry>
+          <Entry><PageLink to={SITE_NAV.drafts} style={item}>Your drafts{drafts > 0 && <span style={{ marginLeft: "auto", fontFamily: DM_MONO, fontSize: 11, color: t.text2 }}>{drafts}</span>}</PageLink></Entry>
+          <Entry><PageLink to={SITE_NAV.library} style={item}>Your library</PageLink></Entry>
+          <Entry><PageLink to="/messages" style={item}>Messages</PageLink></Entry>
+          <DropdownMenu.Separator style={{ height: 1, margin: "4px 0", background: t.windowBorder }} />
+          <DropdownMenu.CheckboxItem checked={theme === "dusk"} onCheckedChange={() => onToggleTheme?.()} style={{ ...item, color: t.text, background: "transparent", outlineColor: t.brandAccent }} onFocus={(event) => { event.currentTarget.style.background = HOVER_FILL; }} onBlur={(event) => { event.currentTarget.style.background = "transparent"; }}>Dark theme<span style={{ marginLeft: "auto", fontFamily: DM_MONO, fontSize: 11, color: t.text2 }}>{theme === "dusk" ? "On" : "Off"}</span></DropdownMenu.CheckboxItem>
+          <Entry><PageLink to={SITE_NAV.settings} aria-current={pathname.startsWith(SITE_NAV.settings) ? "page" : undefined} style={item}>Settings</PageLink></Entry>
+          <Entry><PageLink to="/api-docs" style={item}>API docs</PageLink></Entry>
+          <DropdownMenu.Separator style={{ height: 1, margin: "4px 0", background: t.windowBorder }} />
+          <Entry><Button variant="ghost" size={32} onClick={onSignOut} style={item}>Sign out</Button></Entry>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>

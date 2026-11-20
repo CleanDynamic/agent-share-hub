@@ -25,7 +25,7 @@
 // (21 → 18). The side gutters below 1328 are not drawn on any board and keep the
 // 1280 column's edges, so they stay.
 
-import { Bell, Moon, Search, Sun } from "lucide-react";
+import { Bell, ChevronDown, Moon, Plus, Search, Sun } from "lucide-react";
 import { lazy, memo, startTransition, Suspense, useEffect, useState, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -33,7 +33,9 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/brand/Button";
 import { Icon } from "@/components/brand/Icon";
 import { IconButton } from "@/components/brand/IconButton";
-import { Lockup } from "@/components/brand/Lockup";
+import { BeaverLogo } from "./BeaverLogo";
+import { HeaderJumpSearch } from "./HeaderJumpSearch";
+import type { PostingWindow } from "@/pages/site/openbuilds/PostingWindows";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { countDraftBuilds } from "@/lib/build/draftCount";
@@ -78,6 +80,7 @@ export interface SiteHeaderViewProps {
   /** Search submit. Defaults to nothing (the compare page). */
   onSearch?: (query: string) => boolean | void;
   searchInitial?: string;
+  onCreate?: (kind: "build" | "import" | "post" | "connect") => void;
 }
 
 /* THE HEADER BETWEEN THE BOARDS (UI-P39). The reference draws 1280 and nothing
@@ -108,7 +111,7 @@ const visuallyHidden: CSSProperties = {
 const loadAccountMenu = () => import("./AccountMenu");
 const AccountMenu = lazy(() => loadAccountMenu().then((m) => ({ default: m.AccountMenu })));
 
-function LazyAccountMenu({ viewer, onSignOut, avatarSize = 34 }: { viewer: FrameViewer; onSignOut: () => void; avatarSize?: number }) {
+function LazyAccountMenu({ viewer, onSignOut, avatarSize = 24, drafts = 0, theme, onToggleTheme }: { viewer: FrameViewer; onSignOut: () => void; avatarSize?: number; drafts?: number; theme: "dusk" | "noon"; onToggleTheme: () => void }) {
   const idle = useIdleReady();
   const [ready, setReady] = useState(false);
   const [openOnMount, setOpenOnMount] = useState(false);
@@ -144,7 +147,7 @@ function LazyAccountMenu({ viewer, onSignOut, avatarSize = 34 }: { viewer: Frame
   );
   return (
     <Suspense fallback={standIn}>
-      {ready ? <AccountMenu viewer={viewer} onSignOut={onSignOut} avatarSize={avatarSize} defaultOpen={openOnMount} focusOnMount={focused} /> : standIn}
+      {ready ? <AccountMenu viewer={viewer} onSignOut={onSignOut} avatarSize={avatarSize} drafts={drafts} theme={theme} onToggleTheme={onToggleTheme} defaultOpen={openOnMount} focusOnMount={focused} /> : standIn}
     </Suspense>
   );
 }
@@ -169,23 +172,16 @@ const refinedLink: CSSProperties = {
   fontWeight: 500,
 };
 
-const refinedBadge: CSSProperties = {
-  position: "absolute",
-  top: 3,
-  right: 3,
-  minWidth: 12,
-  height: 12,
-  padding: "0 3px",
-  boxSizing: "border-box",
-  borderRadius: 6,
-  background: t.litMark,
-  color: t.onLit,
-  fontFamily: FIGTREE,
-  fontSize: 11,
-  fontWeight: 500,
-  lineHeight: "12px",
-  textAlign: "center",
-};
+const loadCreateMenu = () => import("./CreateMenu");
+const CreateMenu = lazy(() => loadCreateMenu().then((m) => ({ default: m.CreateMenu })));
+const PostingWindows = lazy(() => import("@/pages/site/openbuilds/PostingWindows"));
+function LazyCreateMenu({ onChoose }: { onChoose: (kind: "build" | "import" | "post" | "connect") => void }) {
+  const [ready, setReady] = useState(false);
+  const [open, setOpen] = useState(false);
+  const warm = () => { void loadCreateMenu(); };
+  const standIn = <Button variant="ghost" size={32} aria-label="Create new…" aria-haspopup="menu" aria-expanded={false} title="Create new…" onPointerEnter={warm} onFocus={warm} onClick={() => { setOpen(true); setReady(true); }} style={{ padding: "0 8px", outlineColor: t.brandAccent }}><Plus size={16} /><ChevronDown size={8} /></Button>;
+  return <Suspense fallback={standIn}>{ready ? <CreateMenu onChoose={onChoose} defaultOpen={open} /> : standIn}</Suspense>;
+}
 
 function RefinedSiteHeaderView({
   current,
@@ -200,16 +196,17 @@ function RefinedSiteHeaderView({
   onNewBuild,
   onSearch,
   searchInitial,
+  onCreate,
 }: SiteHeaderViewProps) {
   const full = useMinWidth(FULL_MIN);
   const compact = !useMinWidth(MID_MIN);
   const searchFull = useMinWidth(SEARCH_FULL_MIN);
   const searchField = useMinWidth(SEARCH_FIELD_MIN);
-  const newLabel = useMinWidth(NEW_LABEL_MIN);
+  const showConnect = useMinWidth(NEW_LABEL_MIN);
   const [searchOpen, setSearchOpen] = useState(false);
   const signedIn = viewer !== null;
-  const linkPad = full ? "0 12px" : compact ? "0 6px" : "0 8px";
-  const unreadLabel = unread > 9 ? "9+" : String(unread);
+  const linkPad = full ? "0 8px" : compact ? "0 4px" : "0 8px";
+
 
   return (
     <header
@@ -228,20 +225,19 @@ function RefinedSiteHeaderView({
         boxSizing: "border-box",
       }}
     >
-      <span style={{ display: "flex", paddingRight: 8 }}>
-        <Lockup size={14} markSize={18} to={SITE_NAV.home} />
-      </span>
-      <span aria-hidden="true" style={{ width: 1, height: 16, background: t.line, flexShrink: 0 }} />
-
+      <FrameLink to={SITE_NAV.home} aria-label="OpenBuilds.ai home" aria-current={current === "home" ? "page" : undefined} style={{ flexShrink: 0, outlineColor: t.brandAccent }}><BeaverLogo theme={theme} /></FrameLink>
+      <span style={{ width: full ? 8 : 0, flexShrink: 0 }} />
+      {searchField ? <HeaderJumpSearch signedIn={signedIn} width={searchFull ? 272 : 200} initialValue={searchInitial} onSubmit={onSearch ?? (() => undefined)} /> : <IconButton icon={Search} glyph="search" boxed={false} label="Search" size={32} onClick={() => setSearchOpen(true)} />}
+      <span style={{ width: full ? 8 : 0, flexShrink: 0 }} />
       <nav aria-label="Primary" style={{ display: "flex", alignItems: "stretch", height: HEADER_HEIGHT, paddingLeft: 4 }}>
-        {PRIMARY_LINKS.filter((link) => !link.authOnly || signedIn).map((link) => {
+        {PRIMARY_LINKS.filter((link) => (!link.authOnly || signedIn) && (link.key !== "connect" || showConnect)).map((link) => {
           const isCurrent = link.key === current;
           return (
             <FrameLink
               key={link.key}
               to={link.href}
               aria-current={isCurrent ? "page" : undefined}
-              style={{ ...refinedLink, padding: linkPad, color: isCurrent ? t.text : t.text2 }}
+              style={{ ...refinedLink, height: 32, padding: linkPad, fontWeight: isCurrent ? 500 : 400, color: isCurrent ? t.text : t.text2, whiteSpace: "nowrap", outlineColor: t.brandAccent, boxShadow: isCurrent ? `inset 0 -2px ${t.brandAccent}` : undefined }}
               hoverStyle={{ color: t.text }}
             >
               {link.label}
@@ -253,38 +249,12 @@ function RefinedSiteHeaderView({
                   {drafts}
                 </span>
               )}
-              {isCurrent && (
-                <span
-                  aria-hidden="true"
-                  data-ui="nav-mark"
-                  style={{
-                    position: "absolute",
-                    left: 10,
-                    right: 10,
-                    bottom: -1,
-                    height: 2,
-                    borderRadius: 1,
-                    background: t.navMark,
-                    boxShadow: t.navLampGlow,
-                  }}
-                />
-              )}
             </FrameLink>
           );
         })}
       </nav>
 
       <span style={{ flexGrow: 1 }} />
-
-      {searchField ? (
-        <HeaderSearch onSubmit={onSearch ?? (() => undefined)} initialValue={searchInitial} width={searchFull ? 240 : 200} />
-      ) : (
-        <IconButton icon={Search} glyph="search" boxed={false} label="Search" size={32} onClick={() => setSearchOpen(true)} />
-      )}
-
-      <Button variant="secondary" size={32} onClick={onNewBuild} style={newLabel ? undefined : { width: 32, padding: 0 }}>
-        {newLabel ? "New build" : <span style={visuallyHidden}>New build</span>}
-      </Button>
 
       {signedIn && (
         <FrameLink
@@ -309,24 +279,12 @@ function RefinedSiteHeaderView({
           hoverStyle={{ color: t.text }}
         >
           <Icon lucide={Bell} glyph="bell" size={16} />
-          {unread > 0 && <span aria-hidden="true" style={refinedBadge}>{unreadLabel}</span>}
+          {unread > 0 && <span aria-hidden="true" data-testid="unread-dot" style={{ position: "absolute", top: 0, right: 0, width: 8, height: 8, borderRadius: r.full, background: t.brandAccent, boxShadow: `0 0 0 2px ${t.frame}` }} />}
         </FrameLink>
       )}
 
-      <IconButton
-        size={32}
-        boxed={false}
-        icon={theme === "dusk" ? Moon : Sun}
-        glyph={theme === "dusk" ? "moon" : "sun"}
-        label={theme === "dusk" ? "Theme: Dark" : "Theme: Light"}
-        onClick={onToggleTheme}
-      />
-
-      {viewer ? (
-        <LazyAccountMenu viewer={viewer} onSignOut={onSignOut} avatarSize={24} />
-      ) : (
-        <SignInControl onSignIn={onSignIn} />
-      )}
+      <LazyCreateMenu onChoose={(kind) => { if (!viewer) onSignIn(); else if (onCreate) onCreate(kind); else if (kind === "build") onNewBuild(); }} />
+      {viewer ? <LazyAccountMenu viewer={viewer} onSignOut={onSignOut} avatarSize={24} drafts={drafts} theme={theme} onToggleTheme={onToggleTheme} /> : <><SignInControl onSignIn={onSignIn} /><IconButton size={32} boxed={false} icon={theme === "dusk" ? Moon : Sun} glyph={theme === "dusk" ? "moon" : "sun"} label={theme === "dusk" ? "Theme: Dark" : "Theme: Light"} onClick={onToggleTheme} style={{ outlineColor: t.brandAccent }} /></>}
 
       {searchField ? null : (
         <LazyBottomSheet open={searchOpen} onOpenChange={setSearchOpen} title="Search">
@@ -378,6 +336,7 @@ function SiteHeaderContainer() {
   });
   const search = useGallerySearch();
   const [params] = useSearchParams();
+  const [posting, setPosting] = useState<PostingWindow | null>(null);
 
   const viewer: FrameViewer | null =
     isLoggedIn && user
@@ -390,6 +349,7 @@ function SiteHeaderContainer() {
       : null;
 
   return (
+    <>
     <SiteHeaderView
       current={sectionForPath(current)}
       activityCurrent={isActivityPath(current)}
@@ -405,10 +365,17 @@ function SiteHeaderContainer() {
         navigate("/");
       }}
       onNewBuild={() => go(SITE_NAV.create)}
+      onCreate={(kind) => {
+        if (!viewer) { navigate(openOver(pathname, window.location.search), { state: deeper(locationState) }); return; }
+        if (kind === "post") setPosting({ kind: "post" });
+        else go(kind === "build" ? SITE_NAV.create : kind === "import" ? "/import" : "/connect");
+      }}
       newBuildSecondary={pathname.startsWith("/compose/")}
       onSearch={search}
       searchInitial={isBuildsPath(pathname) ? (params.get("q") ?? "") : ""}
     />
+    {posting && <Suspense fallback={null}><PostingWindows window={posting} onClose={() => setPosting(null)} onReopen={setPosting} /></Suspense>}
+    </>
   );
 }
 

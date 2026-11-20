@@ -75,14 +75,14 @@ beforeEach(() => {
 describe("navigation budgets (hicks-law › Budgets)", () => {
   it("a signed-in reader's header has 5 links and the New build button", () => {
     header(true);
-    expect(primaryLinks()).toEqual(["Home", "Builds", "OpenBuilds", "Library", "Drafts"]);
-    expect(screen.getAllByRole("button", { name: "New build" })).toHaveLength(1);
+    expect(primaryLinks()).toEqual(["Drafts", "Library", "Builds", "OpenBuilds", "Connect a tool"]);
+    expect(screen.getAllByRole("button", { name: "Create new…" })).toHaveLength(1);
   });
 
   it("a signed-out visitor's header has Home, Builds and OpenBuilds", () => {
     header(false);
-    expect(primaryLinks()).toEqual(["Home", "Builds", "OpenBuilds"]);
-    expect(screen.getAllByRole("button", { name: "New build" })).toHaveLength(1);
+    expect(primaryLinks()).toEqual(["Builds", "OpenBuilds", "Connect a tool"]);
+    expect(screen.getAllByRole("button", { name: "Create new…" })).toHaveLength(1);
   });
 
   it("the phone dock offers exactly 5 destinations", () => {
@@ -103,8 +103,8 @@ describe("navigation budgets (hicks-law › Budgets)", () => {
   it("the desktop chrome has exactly one search field", () => {
     header(true);
     expect(screen.getAllByRole("search")).toHaveLength(1);
-    expect(screen.getAllByRole("searchbox")).toHaveLength(1);
-    expect(screen.getByRole("searchbox", { name: "Search builds" })).toBeInTheDocument();
+    expect(screen.getAllByRole("combobox")).toHaveLength(1);
+    expect(screen.getByRole("combobox", { name: "Search builds" })).toBeInTheDocument();
   });
 
   it("the phone's account sheet lists Profile, Library, Drafts and Settings, then Sign out", async () => {

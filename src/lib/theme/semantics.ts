@@ -35,6 +35,8 @@
  * none of them can drift.
  */
 export const TOKEN_NAMES = [
+  "brand-accent",
+  "on-brand-accent",
   "bg",
   "recess",
   "text",
@@ -184,6 +186,8 @@ export type ThemeName = "noon" | "dusk";
 
 /** Noon, light. The default theme. */
 export const noon: Record<TokenName, string> = {
+  "brand-accent": "hsl(115.34 58.19% 34.71%)",
+  "on-brand-accent": "hsl(0 0% 100%)",
   bg: "var(--frame)",
   recess: "var(--well)",
   text: "#1C1C1C",
@@ -325,6 +329,8 @@ export const noon: Record<TokenName, string> = {
 
 /** Dusk, dark. */
 export const dusk: Record<TokenName, string> = {
+  "brand-accent": "hsl(146.72 67.23% 65.29%)",
+  "on-brand-accent": "hsl(240 5.26% 7.45%)",
   bg: "var(--frame)",
   recess: "var(--well)",
   text: "#EDEDEF",

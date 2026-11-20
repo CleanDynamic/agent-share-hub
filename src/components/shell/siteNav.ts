@@ -19,15 +19,15 @@ export const SITE_NAV = {
   settings: "/settings",
 } as const;
 
-export type PrimarySection = "home" | "gallery" | "openbuilds" | "library" | "drafts";
+export type PrimarySection = "home" | "gallery" | "openbuilds" | "library" | "drafts" | "connect";
 
 /** The links in the header's primary nav, in order. Library is signed-in only, as in `allNavItems`. */
 export const PRIMARY_LINKS: readonly { key: PrimarySection; label: string; href: string; authOnly?: boolean }[] = [
-  { key: "home", label: "Home", href: SITE_NAV.home },
+  { key: "drafts", label: "Drafts", href: SITE_NAV.drafts, authOnly: true },
+  { key: "library", label: "Library", href: SITE_NAV.library, authOnly: true },
   { key: "gallery", label: "Builds", href: SITE_NAV.gallery },
   { key: "openbuilds", label: "OpenBuilds", href: SITE_NAV.openbuilds },
-  { key: "library", label: "Library", href: SITE_NAV.library, authOnly: true },
-  { key: "drafts", label: "Drafts", href: SITE_NAV.drafts, authOnly: true },
+  { key: "connect", label: "Connect a tool", href: "/connect" },
 ];
 
 /**
@@ -36,6 +36,7 @@ export const PRIMARY_LINKS: readonly { key: PrimarySection; label: string; href:
  * the bell instead).
  */
 export function sectionForPath(pathname: string): PrimarySection | null {
+  if (pathname === "/connect") return "connect";
   if (pathname === "/" || pathname === "") return "home";
   if (isBuildsPath(pathname) || pathname.startsWith("/b2/") || pathname.startsWith("/rebuild/")) return "gallery";
   if (isOpenBuildsPath(pathname) || pathname.startsWith("/openbuilds/")) return "openbuilds";

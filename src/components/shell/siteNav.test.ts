@@ -7,21 +7,21 @@ describe("PRIMARY_LINKS", () => {
   // budget (hicks-law), so it shows up as a diff in this snapshot.
   it("is the header's list: Library and Drafts are signed-in only", () => {
     expect(PRIMARY_LINKS).toEqual([
-      { key: "home", label: "Home", href: "/" },
+      { key: "drafts", label: "Drafts", href: "/drafts", authOnly: true },
+      { key: "library", label: "Library", href: "/library", authOnly: true },
       { key: "gallery", label: "Builds", href: "/builds" },
       { key: "openbuilds", label: "OpenBuilds", href: "/openbuilds" },
-      { key: "library", label: "Library", href: "/library", authOnly: true },
-      { key: "drafts", label: "Drafts", href: "/drafts", authOnly: true },
+      { key: "connect", label: "Connect a tool", href: "/connect" },
     ]);
   });
 
   it("agrees with SITE_NAV", () => {
     expect(PRIMARY_LINKS.map((link) => link.href)).toEqual([
-      SITE_NAV.home,
+      SITE_NAV.drafts,
+      SITE_NAV.library,
       SITE_NAV.gallery,
       SITE_NAV.openbuilds,
-      SITE_NAV.library,
-      SITE_NAV.drafts,
+      "/connect",
     ]);
   });
 });
