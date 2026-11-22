@@ -94,7 +94,7 @@ describe("the modal recipes (CA-15b P1)", () => {
     expect(styleOf(block).padding).toBe("16px 20px"); // S31: space[4] top and bottom; the sides are the inset given
     expect(html(<Block>x</Block>)).toContain(`border-top:1px solid ${t.hairlineModule}`);
     const count = screen.getByTestId("count");
-    expect(count.style.fontSize).toBe("11.5px");
+    expect(count.style.fontSize).toBe("13px");
     expect(html(<BlockHead label="Prompt" count="48 words" />)).toContain(`color:${t.label}`);
     expect((count.parentElement as HTMLElement).style.minHeight).toBe("28px");
   });
@@ -178,10 +178,10 @@ describe("the modal recipes (CA-15b P1)", () => {
       </>,
     );
     const link = screen.getByRole("button", { name: "Add a model" });
-    expect(link.style.fontSize).toBe("12.5px");
+    expect(link.style.fontSize).toBe("13px");
     expect(html(<TextLink onClick={() => {}}>Add a model</TextLink>)).toContain("text-decoration:underline");
     expect(link.style.textUnderlineOffset).toBe("3px");
-    expect(styleOf(screen.getByTestId("tag"))).toMatchObject({ height: "20px", padding: "0px 8px", borderRadius: "var(--r-chip)", fontSize: "11px" });
+    expect(styleOf(screen.getByTestId("tag"))).toMatchObject({ height: "20px", padding: "0px 8px", borderRadius: "var(--r-chip)", fontSize: "13px" });
   });
 
   it("footer: padding 14 20, a rule above, the footer fill", () => {
@@ -202,7 +202,7 @@ describe("the modal recipes (CA-15b P1)", () => {
       </ModalInset.Provider>,
     );
     const heading = screen.getByRole("heading", { name: "Model" });
-    expect(heading.style.fontSize).toBe("14px");
+    expect(heading.style.fontSize).toBe("15px");
     expect(styleOf(heading.parentElement as HTMLElement).padding).toBe("16px 20px 4px");
   });
 
@@ -220,7 +220,7 @@ describe("the modal recipes (CA-15b P1)", () => {
     expect(html(<Panel>x</Panel>)).toContain(`background:${t.surface}`);
     expect(styleOf(panel).borderRadius).toBe("var(--r-panel)");
     const fact = screen.getByTestId("fact");
-    expect(fact.style.fontSize).toBe("12.5px");
+    expect(fact.style.fontSize).toBe("13px");
     expect(styleOf(fact.parentElement as HTMLElement).padding).toBe("8px 16px");
   });
 

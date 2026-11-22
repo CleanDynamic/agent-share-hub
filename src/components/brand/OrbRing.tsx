@@ -79,7 +79,7 @@ export function OrbRing({ size, percent, value, caption, label, thickness = 9, c
               {value}
             </div>
             {caption ? (
-              <div style={{ fontFamily: FIGTREE, fontSize: 10, lineHeight: "normal", color: t.onOrbGlass }}>
+              <div style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: t.onOrbGlass }}>
                 {caption}
               </div>
             ) : null}

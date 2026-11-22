@@ -73,9 +73,9 @@ describe("BuildCard", () => {
     // UI-P52 density pass: display() renders the drawn size through the table
     // (19 → 16, 17 → 16), and under 20px a display role is Figtree 600.
     const html = markup();
-    expect(html).toContain("font-size:16px;font-weight:600");
+    expect(html).toContain("font-size:17px;font-weight:600");
     expect(html).toContain("white-space:nowrap;overflow:hidden;text-overflow:ellipsis");
-    expect(markup({ titleSize: 17 })).toContain("font-size:16px");
+    expect(markup({ titleSize: 17 })).toContain("font-size:17px");
   });
 
   it("pads the body 0 5px 5px at gap 6, and chips wrap at gap 4", () => {

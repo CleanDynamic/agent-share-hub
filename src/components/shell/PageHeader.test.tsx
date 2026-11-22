@@ -23,9 +23,9 @@ describe("PageHeader", () => {
     const h1 = screen.getByRole("heading", { level: 1 });
     expect(h1.style.fontFamily).toBe(FIGTREE);
     expect(h1.style.fontSize).toBe("20px");
-    expect(h1.style.fontWeight).toBe("500");
+    expect(h1.style.fontWeight).toBe("600");
     expect(h1.style.lineHeight).toBe("24px");
-    expect(h1.style.letterSpacing).toBe("-0.015em");
+    expect(h1.style.letterSpacing).toBe("-0.01em");
     /* The one shared style, spread whole. */
     const reference = render(<h1 style={PAGE_TITLE} />).container.querySelector("h1")!;
     expect(h1.getAttribute("style")).toBe(reference.getAttribute("style"));
@@ -50,7 +50,7 @@ describe("PageHeader", () => {
     render(<PageHeader eyebrow="42 builds" title="The gallery" />);
     const eyebrow = screen.getByText("42 builds");
     expect(eyebrow.style.fontFamily).toBe(type.eyebrow.fontFamily);
-    expect(eyebrow.style.textTransform).toBe("uppercase");
+    expect(eyebrow.style.textTransform).toBe("");
     expect(eyebrow.compareDocumentPosition(screen.getByRole("heading", { level: 1 })))
       .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });

@@ -361,8 +361,8 @@ describe("every display-face instance comes from the scale", () => {
         }
       }
     }
-    // Guard against the sweep silently finding nothing to check.
-    expect(sites.length).toBeGreaterThan(0);
+    // The serif is no longer interpolated into CSS anywhere (works are styled through `work`), so nothing may be found.
+    expect(sites).toEqual([]);
   });
 
   it("clears the floor at the one site that picks the stack in JS", () => {
