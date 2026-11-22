@@ -213,14 +213,15 @@ function RefinedSiteHeaderView({
       data-testid="site-header"
       data-ui="site-header"
       style={{
-        /* The page container's edges: 1280 centred (80 from each side at 1440), and 8 from the window below it. */
-        width: `min(${FRAME_MAX_WIDTH}px, 100% - ${2 * PANEL_GUTTER}px)`,
+        /* The panels' edges: the 1280 container centred, and the panels 8 inside it (88 from the window at 1440, 8 below 1296). */
+        width: "100%",
+        maxWidth: FRAME_MAX_WIDTH,
         margin: "0 auto",
         height: HEADER_HEIGHT,
         display: "flex",
         alignItems: "center",
         gap: space[2],
-        padding: 0,
+        padding: `0 ${PANEL_GUTTER}px`,
         boxSizing: "border-box",
       }}
     >
