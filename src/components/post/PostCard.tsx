@@ -20,7 +20,7 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { radiusVar } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import { PostControl } from "./postControls";
 import { repliesWords, type CardAttachment, type PostCardData } from "./postCardModel";
@@ -89,7 +89,7 @@ function BuildAttachment({ attachment, onPickTile, renderTile }: { attachment: E
       <div style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: radiusVar("r-card"), padding: 16, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div style={{ minWidth: 0 }}>
           <div style={{ ...plain, fontSize: 13, fontWeight: 500, overflowWrap: "anywhere" }}>{attachment.title}</div>
-          <div style={{ ...plain, fontSize: 12, color: t.label }}>{[attachment.harness ?? "Harness", attachment.steps > 0 ? `${attachment.steps} ${attachment.steps === 1 ? "step" : "steps"}` : null].filter(Boolean).join(" · ")}</div>
+          <div style={{ ...plain, fontSize: 13, color: t.label }}>{[attachment.harness ?? "Harness", attachment.steps > 0 ? `${attachment.steps} ${attachment.steps === 1 ? "step" : "steps"}` : null].filter(Boolean).join(" · ")}</div>
         </div>
         {attachment.plaque ? <Plaque build={attachment.plaque} size="row" /> : null}
       </div>
@@ -101,8 +101,8 @@ function BuildAttachment({ attachment, onPickTile, renderTile }: { attachment: E
 function StepAttachment({ attachment }: { attachment: Extract<CardAttachment, { kind: "step" }> }) {
   return (
     <div style={{ ...tileBox, padding: "8px 10px" }}>
-      <div style={{ ...plain, fontSize: 12, color: t.label }}>{attachment.head}</div>
-      <div style={{ fontFamily: DM_MONO, fontSize: 12, lineHeight: "18px", whiteSpace: "pre-wrap", overflowWrap: "anywhere", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{attachment.text}</div>
+      <div style={{ ...plain, fontSize: 13, color: t.label }}>{attachment.head}</div>
+      <div style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "18px", whiteSpace: "pre-wrap", overflowWrap: "anywhere", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{attachment.text}</div>
     </div>
   );
 }
@@ -128,12 +128,12 @@ export function AttachmentView({ attachment, onPickTile, renderTile }: { attachm
   if (attachment.kind === "picture") return <PicturesBlock pictures={[attachment]} />;
   if (attachment.kind === "line") {
     return (
-      <div style={{ ...tileBox, padding: "8px 10px", ...plain, fontSize: 12 }}>{attachment.text}</div>
+      <div style={{ ...tileBox, padding: "8px 10px", ...plain, fontSize: 13 }}>{attachment.text}</div>
     );
   }
   return (
     <div style={{ ...tileBox, padding: "8px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-      <span style={{ ...plain, fontSize: 12, overflowWrap: "anywhere" }}>{attachment.name}</span>
+      <span style={{ ...plain, fontSize: 13, overflowWrap: "anywhere" }}>{attachment.name}</span>
       {attachment.href ? (
         <PostControl to={attachment.href} download>
           Download
@@ -180,7 +180,7 @@ function HideReason({ onHide, onCancel }: { onHide: (reason: string) => void; on
         value={reason}
         onChange={(event) => setReason(event.target.value)}
         placeholder="Why is it hidden?"
-        style={{ flex: "1 1 200px", minWidth: 0, height: 32, boxSizing: "border-box", padding: "0 10px", borderRadius: radiusVar("r-control"), border: `1px solid ${t.controlBorder}`, background: t.well, color: t.text, fontFamily: FIGTREE, fontSize: 16 }}
+        style={{ flex: "1 1 200px", minWidth: 0, height: 32, boxSizing: "border-box", padding: "0 10px", borderRadius: radiusVar("r-control"), border: `1px solid ${t.controlBorder}`, background: t.well, color: t.text, fontFamily: FIGTREE, fontSize: 15 }}
       />
       <PostControl type="submit">Hide</PostControl>
       <PostControl onClick={onCancel}>Cancel</PostControl>
@@ -207,8 +207,8 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
         ) : (
           <h3 style={{ ...plain, fontSize: 13, fontWeight: 500, lineHeight: 1.4, color: t.textDisabled }}>{card.heading}</h3>
         )}
-        <div style={{ ...plain, fontSize: 12, color: label, marginTop: 4 }}>{`Hidden by ${card.hidden.by} · only moderators see this`}</div>
-        {card.hidden.reason ? <div style={{ ...plain, fontSize: 12, color: label }}>{card.hidden.reason}</div> : null}
+        <div style={{ ...plain, fontSize: 13, color: label, marginTop: 4 }}>{`Hidden by ${card.hidden.by} · only moderators see this`}</div>
+        {card.hidden.reason ? <div style={{ ...plain, fontSize: 13, color: label }}>{card.hidden.reason}</div> : null}
         {moderation ? (
           <div style={{ marginTop: 8 }}>
             <PostControl onClick={moderation.onUnhide}>Unhide</PostControl>
@@ -243,7 +243,7 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
               ))}
             </span>
           </div>
-          {card.pinned ? <span style={{ ...plain, flex: "none", fontSize: 12, color: label }}>Pinned</span> : null}
+          {card.pinned ? <span style={{ ...plain, flex: "none", fontSize: 13, color: label }}>Pinned</span> : null}
           {card.reward ? <span style={{ ...plain, flex: "none", fontSize: 13, fontWeight: 500 }}>{card.reward}</span> : null}
           {moderation || onReport || onMessage || onBlock ? <ModerationMenu card={card} moderation={moderation} onAsk={() => setAsking(true)} onReport={onReport} onMessage={onMessage} onBlock={onBlock} /> : null}
         </div>
@@ -298,10 +298,10 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
         {card.stillOpen || card.tags.length > 0 || card.closes ? (
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px 12px", marginTop: 12 }}>
             {card.stillOpen ? (
-              <DashedSlot style={{ height: 22, padding: "0 8px", display: "inline-flex", alignItems: "center", ...plain, fontSize: 12, color: t.text2 }}>Still open</DashedSlot>
+              <DashedSlot style={{ height: 22, padding: "0 8px", display: "inline-flex", alignItems: "center", ...plain, fontSize: 13, color: t.text2 }}>Still open</DashedSlot>
             ) : null}
-            {card.tags.length > 0 ? <span style={{ ...plain, fontSize: 12, color: label }}>{card.tags.map((tag) => `#${tag}`).join(" ")}</span> : null}
-            {card.closes ? <span style={{ ...plain, fontSize: 12, color: label }}>{card.closes}</span> : null}
+            {card.tags.length > 0 ? <span style={{ ...plain, fontSize: 13, color: label }}>{card.tags.map((tag) => `#${tag}`).join(" ")}</span> : null}
+            {card.closes ? <span style={{ ...plain, fontSize: 13, color: label }}>{card.closes}</span> : null}
           </div>
         ) : null}
 
@@ -332,7 +332,7 @@ function RepliesStrip({ replies }: { replies: NonNullable<PostCardData["replies"
           ))}
         </span>
       ) : null}
-      <span style={{ ...plain, fontSize: 12, lineHeight: "20px", minWidth: 0 }}>
+      <span style={{ ...plain, fontSize: 13, lineHeight: "20px", minWidth: 0 }}>
         <span style={{ fontWeight: 500 }}>{repliesWords(replies.count)}</span>
         {replies.detail ? <span style={{ color: t.text2, whiteSpace: "pre-wrap" }}>{`  · ${replies.detail} `}</span> : null}
       </span>

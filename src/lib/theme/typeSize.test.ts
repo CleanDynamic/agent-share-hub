@@ -1,4 +1,4 @@
-// The seven sizes: every font size the site sets is one of these.
+// The five sizes: every font size the site sets is one of these.
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -7,18 +7,18 @@ import { describe, expect, it } from "vitest";
 
 import { typeSize } from "./type";
 
-describe("typeSize: the seven sizes", () => {
-  it("holds exactly 11, 12, 13, 14, 16, 20 and 32", () => {
-    expect(Object.values(typeSize).sort((a, b) => a - b)).toEqual([11, 12, 13, 14, 16, 20, 32]);
+describe("typeSize: the five sizes", () => {
+  it("holds exactly 13, 15, 17, 20 and 31", () => {
+    expect(Object.values(typeSize).sort((a, b) => a - b)).toEqual([13, 15, 17, 20, 31]);
   });
 
   it("names each size for its job", () => {
-    expect(typeSize).toEqual({ tagline: 32, title: 20, cardTitle: 16, section: 14, body: 13, meta: 12, micro: 11 });
+    expect(typeSize).toEqual({ title: 31, section: 20, group: 17, body: 15, meta: 13 });
   });
 });
 
 /* G10: the area the type prompt set (the site's pages but the composer, the shell, the skeleton, About, API docs, and the
-   shared components whose sizes it moved) sets no font size outside the seven, no weight of 600 or 700 and no hex colour.
+   shared components whose sizes it moved) sets no font size outside the seven, no weight of 700 and no hex colour.
    Each exception is named with its reason. */
 
 const AREA = [
@@ -69,7 +69,7 @@ function filesOf(path: string): string[] {
   return readdirSync(full).flatMap((name) => filesOf(join(path, name)));
 }
 
-const SEVEN = new Set(Object.values(typeSize) as number[]);
+const FIVE = new Set(Object.values(typeSize) as number[]);
 
 function offences(): string[] {
   const found: string[] = [];
@@ -80,24 +80,24 @@ function offences(): string[] {
       if (EXCEPTIONS.some((e) => e.file === file && line.includes(e.has))) return;
       for (const m of line.matchAll(/fontSize["']?\s*[:=]\s*\{?([^,;}\n]+)/g)) {
         const sizes = [...m[1].matchAll(/(?<![\w.])(\d+(?:\.\d+)?)(?:px)?(?![\w.%])/g)].map((v) => Number(v[1]));
-        if (sizes.some((size) => !SEVEN.has(size))) found.push(`${file}:${index + 1} size: ${line.trim()}`);
+        if (sizes.some((size) => !FIVE.has(size))) found.push(`${file}:${index + 1} size: ${line.trim()}`);
       }
-      if (/fontWeight\s*:\s*["']?(600|700)\b|font-(semibold|bold)\b/.test(line)) found.push(`${file}:${index + 1} weight: ${line.trim()}`);
+      if (/fontWeight\s*:\s*["']?700\b|font-bold\b/.test(line)) found.push(`${file}:${index + 1} weight: ${line.trim()}`);
       if (/#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b(?![0-9a-fA-F-])/.test(line)) found.push(`${file}:${index + 1} hex: ${line.trim()}`);
     });
   }
   return found;
 }
 
-describe("G10: the type prompt's area keeps to the seven sizes, 400 and 500, and tokens", () => {
-  it("finds no size off the seven, no 600 or 700, and no hex, outside the named exceptions", () => {
+describe("G10: the type prompt's area keeps to the five sizes, no bold and tokens", () => {
+  it("finds no size off the five, no 700, and no hex, outside the named exceptions", () => {
     expect(offences()).toEqual([]);
   });
 
   it("catches each kind of offence, so the sweep is not passing by never looking", () => {
     const line = (text: string) => /fontSize["']?\s*[:=]\s*\{?([^,;}\n]+)/.exec(text)?.[1] ?? "";
     expect([...line("fontSize: 12.5,").matchAll(/(?<![\w.])(\d+(?:\.\d+)?)(?:px)?(?![\w.%])/g)].map((v) => Number(v[1]))).toEqual([12.5]);
-    expect(/fontWeight\s*:\s*["']?(600|700)\b/.test("fontWeight: 600,")).toBe(true);
+    expect(/fontWeight\s*:\s*["']?700\b/.test("fontWeight: 700,")).toBe(true);
     expect(/#[0-9a-fA-F]{6}\b/.test("color: #1D1D20")).toBe(true);
   });
 });

@@ -281,7 +281,7 @@ describe("the refined look (UI-P93)", () => {
     const map = screen.getByTestId("sandbox-tab-map");
     expect(list.getAttribute("aria-pressed")).toBe("true");
     expect(list.getAttribute("style")).toContain("font-weight: 500");
-    expect(list.getAttribute("style")).toContain("font-size: 13px");
+    expect(list.getAttribute("style")).toContain("font-size: 15px");
     expect(list.getAttribute("style")).toContain("padding: 0px 8px"); // S33
     expect(list.getAttribute("style")).toContain("height: 32px");
     expect(list.getAttribute("style")).toContain("inset 0 -1.5px 0");
@@ -351,7 +351,7 @@ describe("the refined Map and Card (UI-P94)", () => {
     expect([show.style.width, show.style.height]).toEqual(["40px", "36px"]);
     const sessions = within(rail).getByRole("button", { name: "Sessions" });
     expect(sessions.style.height).toBe("44px");
-    expect((sessions.lastElementChild as HTMLElement).style.fontSize).toBe("10.5px");
+    expect((sessions.lastElementChild as HTMLElement).style.fontSize).toBe("13px");
     expect(markup({ lens: "map" })).toContain("width:28px;height:1px;background:var(--hairline-module)");
   });
 

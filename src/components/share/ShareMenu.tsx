@@ -372,7 +372,7 @@ const ShareMenu: React.FC<ShareMenuProps> = ({
           fontFamily: "var(--font-ui)",
           fontSize: 11,
           fontWeight: 600,
-          textTransform: "uppercase",
+          textTransform: "none",
           letterSpacing: "0.05em",
           color: "var(--text2)",
         }}

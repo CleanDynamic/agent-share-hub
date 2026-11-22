@@ -39,7 +39,7 @@ function StatBlock({
   return (
     <div className="flex flex-col gap-1">
       <span
-        className="text-[10px] font-semibold uppercase tracking-[0.08em]"
+        className="text-[10px] font-semibold tracking-[0.08em]"
         style={{ color: "var(--text2)" }}
       >
         {label}
@@ -132,7 +132,7 @@ function ToolChip({ name }: { name: string }) {
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <span
-      className="text-[10px] font-semibold uppercase tracking-[0.08em]"
+      className="text-[10px] font-semibold tracking-[0.08em]"
       style={{ color: "var(--text2)" }}
     >
       {children}

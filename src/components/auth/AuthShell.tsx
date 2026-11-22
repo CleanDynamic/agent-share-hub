@@ -6,7 +6,7 @@ import { prefersReducedMotion } from "@/lib/theme/controls";
 import { elevation } from "@/lib/theme/elevation";
 import { r } from "@/lib/theme/radius";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
-import { SENTIENT, FIGTREE } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 import { SITE_NAME } from "@/lib/site";
 
 interface AuthShellProps {
@@ -97,7 +97,7 @@ export function AuthShell({ children }: AuthShellProps) {
         >
           <span
             style={{
-              fontFamily: SENTIENT,
+              fontFamily: FIGTREE,
               fontSize: "28px",
               fontWeight: 500,
               lineHeight: 1.1,

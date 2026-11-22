@@ -339,7 +339,7 @@ export function SlashCommandMenu({
                   fontWeight: 600,
                   letterSpacing: '0.08em',
                   color: 'var(--text2)',
-                  textTransform: 'uppercase',
+                  textTransform: 'none',
                 }}
               >
                 {category}

@@ -123,7 +123,7 @@ describe("the buttons", () => {
     mount();
     const h1 = screen.getByRole("heading", { level: 1, name: "Maya Ali" });
     expect(h1.style.fontSize).toBe("20px");
-    expect(h1.style.fontWeight).toBe("500");
+    expect(h1.style.fontWeight).toBe("600");
   });
 });
 

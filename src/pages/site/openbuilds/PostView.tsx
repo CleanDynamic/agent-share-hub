@@ -100,7 +100,7 @@ function Crumb({ to, children }: { to: string; children: string }) {
 function SpaceName({ to, children }: { to: string; children: string }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   return (
-    <PageLink to={to} {...handlers} style={{ fontFamily: FIGTREE, fontSize: 14, fontWeight: 500, lineHeight: 1.3, color: t.text, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: r.control, ...ring(state.focusVisible) }}>
+    <PageLink to={to} {...handlers} style={{ fontFamily: FIGTREE, fontSize: 15, fontWeight: 500, lineHeight: 1.3, color: t.text, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: r.control, ...ring(state.focusVisible) }}>
       {children}
     </PageLink>
   );
@@ -171,7 +171,7 @@ export function PostView(view: PostViewProps) {
       <PostCard card={view.card} page clamp={false} engagement={view.engagement} renderTile={view.renderTile} reactions={view.reactions} onReport={view.onReport} onMessage={view.onMessage} onBlock={view.onBlock} />
 
       <div style={{ display: "flex", flexDirection: phone ? "column" : "row", alignItems: phone ? "stretch" : "center", justifyContent: "space-between", gap: 12, marginTop: 8, paddingBottom: 12, borderBottom: `1px solid ${t.hairline}` }}>
-        <Segmented label="Show" items={items} value={tab} onChange={(value) => view.onTab(value as PostTab)} size={phone ? 50 : 28} fontSize={12} fullWidth={phone} />
+        <Segmented label="Show" items={items} value={tab} onChange={(value) => view.onTab(value as PostTab)} size={phone ? 50 : 28} fontSize={13} fullWidth={phone} />
         <span style={{ display: "inline-flex", alignItems: "center", gap: 16, alignSelf: phone ? "flex-end" : undefined }}>
           {tab === "wall" ? view.wallRow : null}
           <span style={label(12)}>Oldest first</span>

@@ -172,7 +172,7 @@ function MobileHeaderContainer() {
         {/* UX-15: Settings, before the theme control and Sign out. */}
         <Link to={SITE_NAV.settings} aria-current={pathname === SITE_NAV.settings || pathname.startsWith(`${SITE_NAV.settings}/`) ? "page" : undefined} style={row} onClick={() => setAccountOpen(false)}>Settings</Link>
         <div style={{ padding: "4px 0" }}>
-          <ThemeSegmented size={36} fontSize={11} />
+          <ThemeSegmented size={36} fontSize={13} />
         </div>
         <button
           type="button"

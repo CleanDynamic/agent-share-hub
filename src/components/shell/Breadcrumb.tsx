@@ -42,7 +42,7 @@ const LOADING_CRUMB: CSSProperties = {
 };
 
 export function BreadcrumbView({ trail }: { trail: readonly Crumb[] }) {
-  const text: CSSProperties = { fontFamily: FIGTREE, fontSize: 12 };
+  const text: CSSProperties = { fontFamily: FIGTREE, fontSize: 13 };
   const currentWeight = 500;
   return (
     <nav
@@ -94,7 +94,7 @@ export function BreadcrumbView({ trail }: { trail: readonly Crumb[] }) {
               </FrameLink>
             )}
             {!last && (
-              <span aria-hidden="true" style={{ fontFamily: FIGTREE, fontSize: 12, color: t.label }}>
+              <span aria-hidden="true" style={{ fontFamily: FIGTREE, fontSize: 13, color: t.label }}>
                 /
               </span>
             )}

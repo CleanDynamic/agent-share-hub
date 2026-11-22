@@ -82,7 +82,7 @@ export function AcceptTermsDialog({ reviewed = PRIVACY_REVIEWED && TERMS_REVIEWE
       }
     >
       {error ? (
-        <p role="alert" style={{ margin: 0, color: t.catBreakage, fontSize: phone ? 14 : 13 }}>
+        <p role="alert" style={{ margin: 0, color: t.catBreakage, fontSize: phone ? 15 : 13 }}>
           {error}
         </p>
       ) : null}

@@ -288,7 +288,7 @@ describe("AuthCheck", () => {
       </AuthCheck>,
     );
     // The sign-in dialog: the words 12, 8 from the box, ticked in the dialog's own green (Noon's here).
-    expect(html).toContain("font-size:12px");
+    expect(html).toContain("font-size:13px");
     expect(html).toContain("color:var(--text2)");
     expect(html).toContain("gap:8px");
     expect(html).toContain("border-radius:5px");

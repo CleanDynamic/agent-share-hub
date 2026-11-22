@@ -88,7 +88,7 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
                   border: '1px solid color-mix(in srgb, var(--action) 25%, transparent)',
                   borderRadius: 4,
                   padding: '2px 8px',
-                  textTransform: 'uppercase',
+                  textTransform: 'none',
                   letterSpacing: '0.08em',
                 }}>
                   Stage {stage.stageNumber}

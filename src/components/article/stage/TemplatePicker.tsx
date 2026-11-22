@@ -262,7 +262,7 @@ export function TemplatePicker({
                   <div className="text-[13px] font-medium text-foreground/90 truncate">{t.name}</div>
                   <span className="text-[10px] text-foreground/45 shrink-0">{t.preview}</span>
                 </div>
-                <div className="text-[10.5px] uppercase tracking-wider text-foreground/40">
+                <div className="text-[10.5px] tracking-wider text-foreground/40">
                   {t.category}
                 </div>
                 <div className="text-[11px] text-foreground/55 line-clamp-2">{t.description}</div>

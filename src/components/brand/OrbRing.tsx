@@ -15,7 +15,7 @@ import type { ReactNode } from "react";
 
 import { denseHeight, denseSpace } from "@/lib/theme/density";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, DRAWN_HEADING_MIN_PX, display } from "@/lib/theme/type";
+import { DRAWN_HEADING_MIN_PX, display, FIGTREE } from "@/lib/theme/type";
 
 export interface OrbRingProps {
   /** Diameter in px: 150, 120, 118 or 112 for the orb; smaller for an avatar's ring. */
@@ -79,7 +79,7 @@ export function OrbRing({ size, percent, value, caption, label, thickness = 9, c
               {value}
             </div>
             {caption ? (
-              <div style={{ fontFamily: DM_MONO, fontSize: 10, lineHeight: "normal", color: t.onOrbGlass }}>
+              <div style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: t.onOrbGlass }}>
                 {caption}
               </div>
             ) : null}

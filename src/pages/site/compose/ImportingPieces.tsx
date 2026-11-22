@@ -67,7 +67,7 @@ const TAG: CSSProperties = {
   flexShrink: 0,
   background: t.control,
   border: `1px solid ${t.controlBorder}`,
-  fontFamily: DM_MONO,
+  fontFamily: FIGTREE,
   fontSize: textStep.meta,
   fontWeight: 400,
   lineHeight: "normal",

@@ -486,7 +486,7 @@ function ColorPickerPopover({ mode, triggerColor, triggerLabel, onApply }: Color
             fontSize: 11,
             fontWeight: 600,
             color: 'var(--text2)',
-            textTransform: 'uppercase',
+            textTransform: 'none',
             letterSpacing: '0.05em',
             marginBottom: 8,
           }}
@@ -989,7 +989,7 @@ export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint', onOpenRe
                   color: 'var(--text)',
                 }}
               >
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', textTransform: 'none', letterSpacing: '0.05em', marginBottom: 8 }}>
                   Insert image
                 </div>
                 <input
@@ -1044,7 +1044,7 @@ export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint', onOpenRe
                   color: 'var(--text)',
                 }}
               >
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', textTransform: 'none', letterSpacing: '0.05em', marginBottom: 8 }}>
                   Insert video
                 </div>
                 <input

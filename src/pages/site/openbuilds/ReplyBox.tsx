@@ -199,7 +199,7 @@ export function ReplyBox({ pageId, rootId, parentId, about, onRemoveAbout, signI
           placeholder={REPLY_PLACEHOLDER}
           onChange={(event) => change({ body: event.target.value })}
           {...field.handlers}
-          style={{ boxSizing: "border-box", width: "100%", minHeight: 64, padding: "8px 12px", borderRadius: r.control, border: `1px solid ${t.controlBorder}`, background: t.well, color: t.text, fontFamily: FIGTREE, fontSize: phone ? 16 : 13, lineHeight: "20px", resize: "vertical", outline: "none", ...ring(field.state.focusVisible) }}
+          style={{ boxSizing: "border-box", width: "100%", minHeight: 64, padding: "8px 12px", borderRadius: r.control, border: `1px solid ${t.controlBorder}`, background: t.well, color: t.text, fontFamily: FIGTREE, fontSize: phone ? 15 : 13, lineHeight: "20px", resize: "vertical", outline: "none", ...ring(field.state.focusVisible) }}
         />
         {tile ? <StepTileEditor tile={tile} onChange={setTile} idPrefix={`reply-tile-${parentId}`} /> : null}
         {drawn ? (

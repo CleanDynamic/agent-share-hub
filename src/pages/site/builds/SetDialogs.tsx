@@ -74,7 +74,7 @@ function Frame({
               gap: 8,
             }}
           >
-            <Dialog.Title style={{ fontFamily: FIGTREE, fontSize: 16, fontWeight: 500, lineHeight: 1.05, letterSpacing: "-0.02em", textWrap: "balance", margin: 0, color: t.text }}>
+            <Dialog.Title style={{ fontFamily: FIGTREE, fontSize: 15, fontWeight: 500, lineHeight: 1.05, letterSpacing: "-0.02em", textWrap: "balance", margin: 0, color: t.text }}>
               {title}
             </Dialog.Title>
             <Dialog.Close asChild>
@@ -171,7 +171,7 @@ export function SetNameDialog({
         <label
           style={{
             display: "block",
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: 500,
             marginBottom: 6,
           }}
@@ -198,13 +198,13 @@ export function SetNameDialog({
             borderRadius: r.control,
             color: t.text,
             fontFamily: FIGTREE,
-            fontSize: phone ? 16 : 13,
+            fontSize: phone ? 15 : 13,
             ...WELL,
             ...ring(state.focusVisible),
           }}
         />
         {hint ? (
-          <p id="set-name-hint" style={{ margin: "6px 0 0", fontSize: 12, color: t.label }}>
+          <p id="set-name-hint" style={{ margin: "6px 0 0", fontSize: 13, color: t.label }}>
             Give it a name to save.
           </p>
         ) : null}
@@ -217,7 +217,7 @@ export function SetNameDialog({
               alignItems: "start",
               marginTop: 16,
               cursor: "pointer",
-              fontSize: 12,
+              fontSize: 13,
             }}
           >
             <Checkbox
@@ -226,7 +226,7 @@ export function SetNameDialog({
             />
             <span>
               Public
-              <span style={{ display: "block", color: t.label, fontSize: 12 }}>
+              <span style={{ display: "block", color: t.label, fontSize: 13 }}>
                 Anyone can open it, and it is listed for others to follow on OpenBuilds.
               </span>
             </span>
@@ -247,7 +247,7 @@ export function SetNameDialog({
             type="submit"
             variant="primary"
             size={44}
-            fontSize={14}
+            fontSize={15}
             disabled={!ready}
             aria-describedby={hint ? "set-name-hint" : undefined}
           >
@@ -311,7 +311,7 @@ export function DeleteSetDialog({
         <Button
           variant="secondary"
           size={44}
-          fontSize={14}
+          fontSize={15}
           onClick={onCancel}
           disabled={busy}
         >
@@ -320,7 +320,7 @@ export function DeleteSetDialog({
         <Button
           variant="primary"
           size={44}
-          fontSize={14}
+          fontSize={15}
           onClick={() => void remove()}
           disabled={busy}
         >

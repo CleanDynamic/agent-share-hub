@@ -31,14 +31,14 @@ const KINDS = [
   { value: "code", label: "Code" },
 ] as const;
 
-const fieldBox = (phone: boolean): CSSProperties => ({ boxSizing: "border-box", width: "100%", borderRadius: r.control, border: `1px solid ${t.controlBorder}`, background: t.well, color: t.text, fontSize: phone ? 16 : 13, outline: "none" });
+const fieldBox = (phone: boolean): CSSProperties => ({ boxSizing: "border-box", width: "100%", borderRadius: r.control, border: `1px solid ${t.controlBorder}`, background: t.well, color: t.text, fontSize: phone ? 15 : 13, outline: "none" });
 
 /** A chooser: its label in 12 `--label`, a control naming the choice, and a menu of the options as one radio group. */
 function Choice({ id, label, value, options, onChange }: { id: string; label: string; value: string; options: readonly { value: string; label: string }[]; onChange: (value: string) => void }) {
   const current = options.find((option) => option.value === value)?.label ?? options[0]?.label ?? "";
   return (
     <div style={{ flex: "1 1 160px", minWidth: 0 }}>
-      <span id={`${id}-label`} style={{ display: "block", fontFamily: FIGTREE, fontSize: 12, lineHeight: "16px", color: t.label, marginBottom: 4 }}>
+      <span id={`${id}-label`} style={{ display: "block", fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label, marginBottom: 4 }}>
         {label}
       </span>
       <DropdownMenu>
@@ -66,8 +66,8 @@ export function StepTileEditor({ tile, onChange, idPrefix }: { tile: ReplyStepTi
   return (
     <section aria-label="Step tile" style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-        <Segmented label="Step tile kind" items={KINDS} value={tile.kind} onChange={(kind) => onChange({ ...tile, kind: kind as ReplyStepTile["kind"] })} size={28} fontSize={12} />
-        <span style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "16px", color: t.label }}>Saved to Drafts</span>
+        <Segmented label="Step tile kind" items={KINDS} value={tile.kind} onChange={(kind) => onChange({ ...tile, kind: kind as ReplyStepTile["kind"] })} size={28} fontSize={13} />
+        <span style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label }}>Saved to Drafts</span>
       </div>
       <div>
         <label htmlFor={`${idPrefix}-text`}>
@@ -87,7 +87,7 @@ export function StepTileEditor({ tile, onChange, idPrefix }: { tile: ReplyStepTi
         <Choice id={`${idPrefix}-harness`} label={HARNESS_COPY.label} value={tile.tool ?? ""} options={[{ value: "", label: NO_HARNESS }, ...REPLY_HARNESSES.map((tool) => ({ value: tool.id, label: tool.name }))]} onChange={(value) => onChange({ ...tile, tool: value || null })} />
         <Choice id={`${idPrefix}-model`} label="Model" value={tile.model ?? ""} options={[{ value: "", label: MODEL_NOT_NAMED }, ...REPLY_MODELS.map((model) => ({ value: model.id, label: model.name }))]} onChange={(value) => onChange({ ...tile, model: value || null })} />
       </div>
-      <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12, lineHeight: "16px", color: t.label }}>{ATTACH_FROM_DRAFTS}</p>
+      <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label }}>{ATTACH_FROM_DRAFTS}</p>
     </section>
   );
 }

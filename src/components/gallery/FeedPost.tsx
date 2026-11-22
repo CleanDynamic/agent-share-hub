@@ -340,7 +340,7 @@ export function FeedPost({
           </QuietLink>
           {lines.regulated ? <RegulatedTag /> : null}
           {preview ? (
-            <span data-testid="feed-draft" style={{ fontFamily: FIGTREE, fontSize: 12, fontWeight: 500, lineHeight: 1.4, color: t.text2 }}>
+            <span data-testid="feed-draft" style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, lineHeight: 1.4, color: t.text2 }}>
               Draft
             </span>
           ) : plaqueBuild ? (

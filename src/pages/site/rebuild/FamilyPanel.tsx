@@ -69,7 +69,7 @@ const READINGS: readonly SegmentedItem<FamilyReading>[] = [
 /** The title on a node: a card title, 16 / 500. */
 const nodeTitle: CSSProperties = {
   fontFamily: FIGTREE,
-  fontSize: 16,
+  fontSize: 15,
   fontWeight: 500,
   letterSpacing: "-0.01em",
   lineHeight: 1.05,
@@ -198,7 +198,7 @@ function TreeNode({
           gap: 4,
           marginTop: 2,
           fontFamily: FIGTREE,
-          fontSize: 11,
+          fontSize: 13,
           lineHeight: "normal",
           color: t.text2,
         }}
@@ -316,7 +316,7 @@ export function FamilyList({
               <span style={{ flexGrow: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                 <span style={{ ...nodeTitle, display: "block" }}>{node.title}</span>
                 {" "}
-                <span style={{ fontFamily: FIGTREE, fontSize: 11, lineHeight: "normal", color: t.text2 }}>
+                <span style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: t.text2 }}>
                   {node.maker}{node.reproduced > 0 ? ` · ${countLabel(node.reproduced)} reproduced` : ""}
                 </span>
               </span>
@@ -396,7 +396,7 @@ export function FamilyPanel({ root, fit = "content", phone = false, selectedId =
           subtitle={root && !loading && !failure ? familySubtitle(root) : "Lamps show which still work"}
           right={
             lone || loading || failure ? undefined : (
-              <Segmented<FamilyReading> items={READINGS} value={reading} onChange={setReading} size={28} fontSize={11} label="Read the family as" />
+              <Segmented<FamilyReading> items={READINGS} value={reading} onChange={setReading} size={28} fontSize={13} label="Read the family as" />
             )
           }
         />

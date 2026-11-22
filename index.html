@@ -7,13 +7,14 @@
     <meta name="description" content="A gallery of AI builds with the proof attached: who ran them, whether they worked, and when.">
     <meta name="author" content="openbuilds.ai" />
 
-    <!-- Typefaces: Geist Serif (UI, display and data); Geist Mono retained for code artwork, self-hosted as variable .woff2 files in /public/fonts
-         and declared by the @font-face rules in src/index.css. Geist Serif is preloaded so the first heading does not wait
+    <!-- Typefaces: Geist (the interface), Geist Serif (works only, weight 400) and Geist Mono (numbers only), self-hosted as variable .woff2 files in /public/fonts
+         and declared by the @font-face rules in src/index.css. Geist and Geist Serif are preloaded so the first heading does not wait
          on the stylesheet. UI-P99 retired Figtree, Sentient and DM Mono, and with them the request to Google Fonts.
          The faces are read through src/lib/theme/type.ts. -->
     <!-- SV-03: the first database request would pay for DNS and TLS; this pays for them while the bundle loads. The address is the client's own, filled in by Vite at build time. -->
     <link rel="preconnect" href="%VITE_SUPABASE_URL%" crossorigin />
     <meta name="build-commit" content="%VITE_BUILD_COMMIT%" />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/Geist-Variable.woff2" crossorigin />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/GeistSerif-Variable.woff2" crossorigin />
 
     <!-- BG-P02 theme boot: sets <html data-theme> before the bundle, so nobody

@@ -244,7 +244,7 @@ function RefinedSiteHeaderView({
               {link.key === "drafts" && drafts > 0 && (
                 <span
                   data-testid="drafts-count"
-                  style={{ fontFamily: FIGTREE, fontSize: 11, fontWeight: 500, color: t.label, fontVariantNumeric: "tabular-nums" }}
+                  style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, color: t.label, fontVariantNumeric: "tabular-nums" }}
                 >
                   {drafts}
                 </span>

@@ -55,7 +55,7 @@ const controlBase: CSSProperties = {
   gap: 6,
   borderRadius: r.control,
   fontFamily: FIGTREE,
-  fontSize: 12,
+  fontSize: 13,
   fontWeight: 500,
   lineHeight: "normal",
   whiteSpace: "nowrap",
@@ -103,7 +103,7 @@ export const SortControl = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HT
       type="button"
       {...rest}
       {...handlers}
-      style={{ ...controlBase, height: phone ? TOUCH_MIN : 30, marginBottom: 4, padding: "0 10px", fontSize: 12, fontWeight: 400, color: t.text, ...controlPaint(state), ...ring(state.focusVisible) }}
+      style={{ ...controlBase, height: phone ? TOUCH_MIN : 30, marginBottom: 4, padding: "0 10px", fontSize: 13, fontWeight: 400, color: t.text, ...controlPaint(state), ...ring(state.focusVisible) }}
     >
       {children}
     </button>

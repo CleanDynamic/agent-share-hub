@@ -48,17 +48,17 @@ export function HeaderJumpSearch({ signedIn, width = 272, initialValue = "", onS
             if (event.key === "ArrowDown" || event.key === "ArrowUp") { event.preventDefault(); setOpen(true); setActive((previous) => Math.max(0, Math.min(options.length - 1, previous + (event.key === "ArrowDown" ? 1 : -1)))); }
             if (event.key === "Escape") { event.preventDefault(); if (open || value) { setValue(""); setOpen(false); setActive(-1); } else input.current?.blur(); }
           }} style={{ minWidth: 0, width: "100%", background: "transparent", outline: "none", border: 0, fontFamily: FIGTREE, fontSize: 13, fontWeight: 400, color: t.text }} />
-          <span aria-hidden="true" style={{ fontFamily: DM_MONO, fontSize: 11, color: t.text2, border: `1px solid ${t.controlBorder}`, borderRadius: r.chip, height: 20, padding: "0 4px" }}>/</span>
+          <span aria-hidden="true" style={{ fontFamily: DM_MONO, fontSize: 13, color: t.text2, border: `1px solid ${t.controlBorder}`, borderRadius: r.chip, height: 20, padding: "0 4px" }}>/</span>
         </label>
       </form>
       {open && <div id={`${id}-list`} role="listbox" aria-label="Jump to" style={{ position: "absolute", top: 36, left: 0, width: 460, maxWidth: "calc(100vw - 160px)", padding: "4px 0", boxSizing: "border-box", background: t.window, border: `1px solid ${t.windowBorder}`, borderRadius: r.window, boxShadow: t.windowShadow, zIndex: 50 }}>
         {options.map((item, index) => <div key={item.href}>
-          {(index === 0 || (options[index - 1]?.search && !item.search)) && <div role="presentation" style={{ padding: "8px 12px 4px", fontFamily: FIGTREE, fontSize: 11, fontWeight: 500, color: t.text2 }}>{item.search ? "Search" : "Jump to"}</div>}
+          {(index === 0 || (options[index - 1]?.search && !item.search)) && <div role="presentation" style={{ padding: "8px 12px 4px", fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, color: t.text2 }}>{item.search ? "Search" : "Jump to"}</div>}
           <Button variant="ghost" size={32} role="option" id={`${id}-${index}`} aria-selected={active === index} onMouseDown={(event) => event.preventDefault()} onMouseEnter={() => setActive(index)} onClick={() => choose(index)} style={{ width: "100%", justifyContent: "flex-start", borderRadius: r.chip, padding: "0 12px", fontWeight: 400, background: active === index ? tokenAlpha("text", 0.019) : "transparent", outlineColor: t.brandAccent }}>
-            {item.search ? <Search size={16} /> : <ArrowRight size={16} />}<span>{item.label}</span><span style={{ marginLeft: "auto", fontFamily: DM_MONO, fontSize: 11, color: t.text2 }}>{item.search ? "Search all builds" : item.href}</span>
+            {item.search ? <Search size={16} /> : <ArrowRight size={16} />}<span>{item.label}</span><span style={{ marginLeft: "auto", fontFamily: DM_MONO, fontSize: 13, color: t.text2 }}>{item.search ? "Search all builds" : item.href}</span>
           </Button>
         </div>)}
-        {options.length === 0 && <div style={{ padding: "8px 12px", fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>No match. Type 2 or more characters to search builds.</div>}
+        {options.length === 0 && <div style={{ padding: "8px 12px", fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>No match. Type 2 or more characters to search builds.</div>}
       </div>}
     </div>
   );

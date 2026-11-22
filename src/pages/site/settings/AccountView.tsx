@@ -62,7 +62,7 @@ function EmailGroup({ email, onChangeEmail }: Pick<AccountViewProps, "email" | "
         hint={email ?? "Loading"}
         control={
           open ? null : (
-            <Button variant="secondary" size={32} fontSize={12} onClick={() => { setOpen(true); action.reset(); }}>
+            <Button variant="secondary" size={32} fontSize={13} onClick={() => { setOpen(true); action.reset(); }}>
               Change email
             </Button>
           )
@@ -81,10 +81,10 @@ function EmailGroup({ email, onChangeEmail }: Pick<AccountViewProps, "email" | "
             >
               <AuthField label="New email address" icon={Mail} type="email" value={next} onChange={setNext} autoComplete="email" required describedBy={emailFailed ? emailErrorId : undefined} invalid={emailFailed} />
               <div style={{ display: "flex", gap: 8 }}>
-                <Button type="submit" variant="secondary" size={32} fontSize={12} disabled={action.state.status === "sending"}>
+                <Button type="submit" variant="secondary" size={32} fontSize={13} disabled={action.state.status === "sending"}>
                   {action.state.status === "sending" ? "Sending" : "Save"}
                 </Button>
-                <Button variant="ghost" size={32} fontSize={12} onClick={() => { setOpen(false); setNext(""); action.reset(); }}>
+                <Button variant="ghost" size={32} fontSize={13} onClick={() => { setOpen(false); setNext(""); action.reset(); }}>
                   {sent ? "Close" : "Cancel"}
                 </Button>
               </div>
@@ -117,7 +117,7 @@ function PasswordGroup({ hasPassword, onChangePassword }: { hasPassword: boolean
         hint={hasPassword ? "The password you sign in with." : "You sign in through a provider. A password lets you sign in with your email too."}
         control={
           open ? null : (
-            <Button variant="secondary" size={32} fontSize={12} onClick={() => { setOpen(true); action.reset(); }}>
+            <Button variant="secondary" size={32} fontSize={13} onClick={() => { setOpen(true); action.reset(); }}>
               {verb}
             </Button>
           )
@@ -145,10 +145,10 @@ function PasswordGroup({ hasPassword, onChangePassword }: { hasPassword: boolean
                 {next ? <PasswordStrengthMeter strength={calculatePasswordStrength(next)} /> : null}
               </div>
               <div style={{ display: "flex", gap: 8 }}>
-                <Button type="submit" variant="secondary" size={32} fontSize={12} disabled={action.state.status === "sending"}>
+                <Button type="submit" variant="secondary" size={32} fontSize={13} disabled={action.state.status === "sending"}>
                   {action.state.status === "sending" ? "Saving" : "Save"}
                 </Button>
-                <Button variant="ghost" size={32} fontSize={12} onClick={() => { setOpen(false); setCurrent(""); setNext(""); action.reset(); }}>
+                <Button variant="ghost" size={32} fontSize={13} onClick={() => { setOpen(false); setCurrent(""); setNext(""); action.reset(); }}>
                   {sent ? "Close" : "Cancel"}
                 </Button>
               </div>
@@ -181,7 +181,7 @@ function MethodsGroup({ methods, onLink, onUnlink }: Pick<AccountViewProps, "met
             <Button
               variant="secondary"
               size={32}
-              fontSize={12}
+              fontSize={13}
               disabled={!removable || busyId === method.id}
               aria-label={`Unlink ${method.label}`}
               onClick={async () => {
@@ -202,7 +202,7 @@ function MethodsGroup({ methods, onLink, onUnlink }: Pick<AccountViewProps, "met
           label={one.label}
           hint="Not linked"
           control={
-            <Button variant="secondary" size={32} fontSize={12} onClick={() => void link.run(one.provider)}>
+            <Button variant="secondary" size={32} fontSize={13} onClick={() => void link.run(one.provider)}>
               {`Link ${one.label}`}
             </Button>
           }
@@ -229,7 +229,7 @@ function DeviceRow({ session, onSignOutDevice }: { session: DeviceSession; onSig
       }
       control={
         asking ? null : (
-          <Button variant="secondary" size={32} fontSize={12} aria-label={`Sign out ${device}`} onClick={() => setAsking(true)}>
+          <Button variant="secondary" size={32} fontSize={13} aria-label={`Sign out ${device}`} onClick={() => setAsking(true)}>
             Sign out
           </Button>
         )
@@ -281,7 +281,7 @@ function DevicesGroup({ onSignOutEverywhere, devices, onSignOutDevice }: Pick<Ac
         hint="Ends every session, on every device. You will sign in again here."
         control={
           asking ? null : (
-            <Button variant="secondary" size={32} fontSize={12} onClick={() => setAsking(true)}>
+            <Button variant="secondary" size={32} fontSize={13} onClick={() => setAsking(true)}>
               Sign out everywhere
             </Button>
           )

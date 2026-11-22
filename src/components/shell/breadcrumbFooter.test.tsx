@@ -130,9 +130,9 @@ describe("breadcrumb and footer under the refined look", () => {
     );
     expect(html).toContain("gap:8px");
     expect(html).not.toContain("height:33px");
-    expect(html).toContain("font-size:12px;color:var(--text2)");
-    expect(html).toMatch(/aria-hidden="true" style="[^"]*font-size:12px;color:var\(--label\)">\//);
-    expect(html).toMatch(/aria-current="page" style="[^"]*font-size:12px;font-weight:500;color:var\(--text\)/);
+    expect(html).toContain("font-size:13px;color:var(--text2)");
+    expect(html).toMatch(/aria-hidden="true" style="[^"]*font-size:13px;color:var\(--label\)">\//);
+    expect(html).toMatch(/aria-current="page" style="[^"]*font-size:13px;font-weight:500;color:var\(--text\)/);
   });
 
 });

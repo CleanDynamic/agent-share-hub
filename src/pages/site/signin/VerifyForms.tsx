@@ -20,7 +20,7 @@ import { DIALOG, useAuthSizes } from "./authSizes";
 import { SIGNIN_COLOURS } from "./signinColours";
 import { WAITING } from "@/lib/copy/copy";
 
-const LINE = { margin: 0, fontFamily: FIGTREE, fontSize: 12, lineHeight: `${DIALOG.line}px`, color: t.text2 } as const;
+const LINE = { margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: `${DIALOG.line}px`, color: t.text2 } as const;
 
 export interface VerifyPendingProps {
   email: string;
@@ -41,7 +41,7 @@ export function VerifyPending({ email, resendState, cooldownSeconds = 0, onResen
   return (
     <>
       <ViewHeading title="Check your inbox">
-        We sent a verification link to <span style={{ color: t.text }}>{email}</span>. Open it and your account is active — you can close
+        We sent a verification link to <span style={{ color: t.text }}>{email}</span>. Open it and your account is active. You can close
         this page.
       </ViewHeading>
       <Gap size={16} />
@@ -49,7 +49,7 @@ export function VerifyPending({ email, resendState, cooldownSeconds = 0, onResen
       <Gap size={8} />
       {resendState === "sent" ? (
         <div style={row}>
-          <p style={{ ...LINE, fontWeight: 500, color: t.evidence }}>Sent again — it should arrive in a minute.</p>
+          <p style={{ ...LINE, fontWeight: 500, color: t.evidence }}>Sent again. It should arrive in a minute.</p>
         </div>
       ) : resendState === "cooldown" ? (
         <div style={row}>
@@ -71,7 +71,7 @@ export function VerifyPending({ email, resendState, cooldownSeconds = 0, onResen
             border: "none",
             padding: 0,
             fontFamily: FIGTREE,
-            fontSize: 12,
+            fontSize: 13,
             color: SIGNIN_COLOURS[room].link,
             cursor: "pointer",
             textDecoration: "underline",

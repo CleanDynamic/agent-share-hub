@@ -469,7 +469,7 @@ function RangeField({ label, value, placeholder, min, max, onCommit }: { label: 
           padding: "0 8px",
           borderRadius: r.control,
           fontFamily: FIGTREE,
-          fontSize: phone ? 16 : 13,
+          fontSize: phone ? 15 : 13,
           color: t.text,
           ...ring(state.focusVisible),
         }}
@@ -695,7 +695,7 @@ function FiltersFooter({ matchCount, dirty, match, addColumns, onAddColumns, onC
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <BuildsTextButton onClick={onClear}>Clear all</BuildsTextButton>
         <BuildsControl onClick={onCancel}>Cancel</BuildsControl>
-        <Button variant="primary" size={32} fontSize={12} disabled={!dirty} onClick={onApply}>
+        <Button variant="primary" size={32} fontSize={13} disabled={!dirty} onClick={onApply}>
           Apply
         </Button>
       </div>
@@ -742,7 +742,7 @@ function FilterSearch({ value, onChange }: { value: string; onChange: (value: st
         padding: "0 10px",
         borderRadius: r.control,
         fontFamily: FIGTREE,
-        fontSize: phone ? 16 : 13,
+        fontSize: phone ? 15 : 13,
         color: t.text,
         ...ring(state.focusVisible),
       }}

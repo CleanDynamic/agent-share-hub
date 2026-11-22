@@ -301,27 +301,27 @@ const Admin = () => {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
           <div className="border border-border rounded-xl p-4 bg-card text-center">
             <p className="text-2xl font-bold text-foreground">{pendingItems?.length ?? 0}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Pending</p>
+            <p className="text-[10px] text-muted-foreground tracking-wider">Pending</p>
           </div>
           <div className="border border-border rounded-xl p-4 bg-card text-center">
             <p className="text-2xl font-bold text-foreground">{approvedToolsList.length}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">AI Tools</p>
+            <p className="text-[10px] text-muted-foreground tracking-wider">AI Tools</p>
           </div>
           <div className="border border-border rounded-xl p-4 bg-card text-center">
             <p className="text-2xl font-bold text-foreground">{pendingProjects?.length ?? 0}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Pending Projects</p>
+            <p className="text-[10px] text-muted-foreground tracking-wider">Pending Projects</p>
           </div>
           <div className="border border-border rounded-xl p-4 bg-card text-center">
             <p className="text-2xl font-bold text-foreground">{approvedProjects?.length ?? 0}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Live Projects</p>
+            <p className="text-[10px] text-muted-foreground tracking-wider">Live Projects</p>
           </div>
           <div className="border border-border rounded-xl p-4 bg-card text-center">
             <p className="text-2xl font-bold text-foreground">{totalRatings ?? 0}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Ratings</p>
+            <p className="text-[10px] text-muted-foreground tracking-wider">Total Ratings</p>
           </div>
           <div className="border border-border rounded-xl p-4 bg-card text-center">
             <p className="text-2xl font-bold text-foreground">{totalComments ?? 0}</p>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Comments</p>
+            <p className="text-[10px] text-muted-foreground tracking-wider">Total Comments</p>
           </div>
         </div>
 

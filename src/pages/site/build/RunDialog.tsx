@@ -24,7 +24,7 @@ import { useIsPhone } from "@/components/shell/useMinWidth";
 import { fieldStyle } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 export interface RunSubmission {
   worked: boolean;
@@ -46,10 +46,10 @@ export interface RunDialogProps {
 }
 
 const label: CSSProperties = {
-  fontFamily: DM_MONO,
-  fontSize: 11,
+  fontFamily: FIGTREE,
+  fontSize: 13,
   letterSpacing: ".09em",
-  textTransform: "uppercase",
+  textTransform: "none",
   color: t.label,
 };
 
@@ -117,7 +117,7 @@ export function RunDialog({ open, onOpenChange, creator, suggestions, initialMod
         >
           <form onSubmit={onForm} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 9 }}>
-              <Dialog.Title style={{ fontFamily: FIGTREE, fontSize: 16, fontWeight: 500, lineHeight: 1.05, letterSpacing: "-0.02em", textWrap: "balance", margin: 0, color: t.text }}>
+              <Dialog.Title style={{ fontFamily: FIGTREE, fontSize: 15, fontWeight: 500, lineHeight: 1.05, letterSpacing: "-0.02em", textWrap: "balance", margin: 0, color: t.text }}>
                 {creator ? "You ran your own build" : "You ran this build"}
               </Dialog.Title>
               <Dialog.Close asChild>
@@ -126,7 +126,7 @@ export function RunDialog({ open, onOpenChange, creator, suggestions, initialMod
             </div>
             <Dialog.Description style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: t.text2 }}>
               {creator
-                ? "This moves the date on the freshness line. It does not touch the count — that stays other people."
+                ? "This moves the date on the freshness line. It does not touch the count. That stays other people."
                 : "What you say here is what the next reader sees. Both answers are worth having."}
             </Dialog.Description>
 
@@ -148,7 +148,7 @@ export function RunDialog({ open, onOpenChange, creator, suggestions, initialMod
                   <option key={entry} value={entry} />
                 ))}
               </datalist>
-              <span style={{ fontSize: 12, lineHeight: 1.45, color: t.text2 }}>
+              <span style={{ fontSize: 13, lineHeight: 1.45, color: t.text2 }}>
                 {suggestions.length > 0
                   ? `The creator used ${suggestions.join(", ")}. Say what you used.`
                   : "Leave it blank rather than guess."}
@@ -179,7 +179,7 @@ export function RunDialog({ open, onOpenChange, creator, suggestions, initialMod
                   It did not work
                 </Button>
               )}
-              <Button type="submit" variant="primary" size={phone ? 44 : 32} fontSize={14}>
+              <Button type="submit" variant="primary" size={phone ? 44 : 32} fontSize={15}>
                 {creator ? "It still works" : "It worked"}
               </Button>
             </div>

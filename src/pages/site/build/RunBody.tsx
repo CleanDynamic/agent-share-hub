@@ -52,7 +52,7 @@ const stepGrid = (phone: boolean): CSSProperties => ({
   alignItems: "start",
 });
 
-const numberStyle: CSSProperties = { fontFamily: FIGTREE, fontSize: 16, fontWeight: 500, lineHeight: 1.05, letterSpacing: "-0.02em", color: t.label };
+const numberStyle: CSSProperties = { fontFamily: FIGTREE, fontSize: 15, fontWeight: 500, lineHeight: 1.05, letterSpacing: "-0.02em", color: t.label };
 
 /** A polite live region of its own: the bodies sit outside the view's announcer. */
 function useCopied(onCopy: (text: string) => Promise<boolean>) {
@@ -105,8 +105,8 @@ function TextOnlyWell({ text, phone }: { text: string; phone: boolean }) {
           padding: "9px 10px",
           borderRadius: r.control,
           background: t.recess,
-          fontFamily: DM_MONO,
-          fontSize: 12,
+          fontFamily: FIGTREE,
+          fontSize: 13,
           lineHeight: 1.55,
           color: t.text,
           whiteSpace: "pre-wrap",
@@ -152,7 +152,7 @@ function TextButton({
         border: 0,
         background: "transparent",
         fontFamily: FIGTREE,
-        fontSize: phone ? 13 : 12,
+        fontSize: phone ? 13 : 13,
         color: t.action,
         textDecoration: "underline",
         textUnderlineOffset: 3,
@@ -186,7 +186,7 @@ function Step({
   return (
     <>
       {step.heading ? (
-        <li role="presentation" data-testid="build-run-heading" style={{ listStyle: "none", fontFamily: FIGTREE, fontSize: phone ? 13 : 12, fontWeight: 500, color: t.text2, paddingTop: 4 }}>
+        <li role="presentation" data-testid="build-run-heading" style={{ listStyle: "none", fontFamily: FIGTREE, fontSize: phone ? 13 : 13, fontWeight: 500, color: t.text2, paddingTop: 4 }}>
           {step.heading}
         </li>
       ) : null}
@@ -196,10 +196,10 @@ function Step({
       </span>
       <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 7, minHeight: 25 }}>
-          <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: phone ? 14 : 13, fontWeight: 500, lineHeight: 1.4, color: t.text, minWidth: 0, flexGrow: 1 }}>
+          <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: phone ? 15 : 13, fontWeight: 500, lineHeight: 1.4, color: t.text, minWidth: 0, flexGrow: 1 }}>
             <span style={VISUALLY_HIDDEN}>{`Step ${said}: `}</span>
             {step.title}
-            <span style={{ fontFamily: DM_MONO, fontSize: 11, fontWeight: 400, color: t.text2, marginLeft: 6, whiteSpace: "nowrap" }}>
+            <span style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 400, color: t.text2, marginLeft: 6, whiteSpace: "nowrap" }}>
               {step.kind}
             </span>
           </h3>
@@ -207,7 +207,7 @@ function Step({
             <Button
               variant="secondary"
               size={30}
-              fontSize={12}
+              fontSize={13}
               icon={copied ? Check : Copy}
               onClick={onCopy}
               aria-label={`Copy step ${said}: ${step.title}`}
@@ -223,14 +223,14 @@ function Step({
         )}
         {step.setsUp?.length ? (
           <div data-testid="build-run-sets-up" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <span style={{ fontFamily: FIGTREE, fontSize: 12, fontWeight: 500, color: t.text2 }}>What this code sets up</span>
+            <span style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, color: t.text2 }}>What this code sets up</span>
             {step.setsUp.map((line) => (
-              <span key={line} style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2, overflowWrap: "anywhere" }}>{line}</span>
+              <span key={line} style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text2, overflowWrap: "anywhere" }}>{line}</span>
             ))}
           </div>
         ) : null}
         {step.quiet?.map((line) => (
-          <span key={line} data-testid="build-run-quiet" style={{ fontFamily: FIGTREE, fontSize: 12, color: t.label, fontVariantNumeric: "tabular-nums" }}>{line}</span>
+          <span key={line} data-testid="build-run-quiet" style={{ fontFamily: FIGTREE, fontSize: 13, color: t.label, fontVariantNumeric: "tabular-nums" }}>{line}</span>
         ))}
       </div>
     </li>
@@ -267,7 +267,7 @@ export function RunBody({
             value={way}
             onChange={(next) => setWay(next)}
             size={phone ? 34 : 28}
-            fontSize={phone ? 12 : 11}
+            fontSize={phone ? 13 : 13}
             label="How to read this build"
           />
         ) : (
@@ -275,13 +275,13 @@ export function RunBody({
         )}
         {way === "sequence" && steps.length > 0 ? (
           <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-            <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.text2 }}>
+            <span style={{ fontFamily: DM_MONO, fontSize: 13, color: t.text2 }}>
               {steps.length === 1 ? "1 step" : `${steps.length.toLocaleString("en-GB")} steps`}
             </span>
             <Button
               variant="secondary"
               size={30}
-              fontSize={12}
+              fontSize={13}
               icon={copied === "all" ? Check : Copy}
               onClick={() => void copy("all", allText)}
             >
@@ -329,7 +329,7 @@ export function RunBody({
                 />
                 <span style={{ minWidth: 0 }}>
                   {item.title}
-                  {item.requirement ? <span style={{ color: t.text2 }}> — {item.requirement}</span> : null}
+                  {item.requirement ? <span style={{ color: t.text2 }}> · {item.requirement}</span> : null}
                 </span>
               </li>
             ))}
@@ -376,8 +376,8 @@ export function LayerSteps({
           margin: 0,
           paddingBottom: 7,
           borderBottom: `1px solid ${t.hairline}`,
-          fontFamily: DM_MONO,
-          fontSize: 11,
+          fontFamily: FIGTREE,
+          fontSize: 13,
           lineHeight: 1.5,
           color: t.text2,
         }}
@@ -395,7 +395,7 @@ export function LayerSteps({
               </span>
               <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
                 {step.title ? (
-                  <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: phone ? 14 : 13, fontWeight: 500, lineHeight: 1.4, color: t.text }}>
+                  <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: phone ? 15 : 13, fontWeight: 500, lineHeight: 1.4, color: t.text }}>
                     <span style={VISUALLY_HIDDEN}>{`Step ${step.n}: `}</span>
                     {step.title}
                   </h3>

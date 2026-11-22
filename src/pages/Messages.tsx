@@ -600,7 +600,7 @@ export default function MessagesPage() {
             <div className="mt-4 space-y-1">
               {/* Members */}
               <div className="px-1 pb-2">
-                <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">
+                <p className="text-[11px] tracking-wider text-muted-foreground font-semibold mb-2">
                   Members ({activeThreadInfo.headerThread.memberCount})
                 </p>
                 <div className="flex items-center gap-2 flex-wrap">

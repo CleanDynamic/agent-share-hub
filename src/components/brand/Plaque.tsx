@@ -199,7 +199,7 @@ export function Plaque({ build, size = "card", tone = "surface", trailing, wordi
   /* UI-P85, REFINED: the count is an evidence `Pill`, then the lamp bar 8×3 from `plaqueState()` (dimmed when stale,
      absent when nobody has reproduced it), then the freshness in 12 `--text2`; a stale claim reads in `--label`. Not
      yet reproduced renders no reproduction signal. The hooks and the hover are the ones below. */
-  const text: CSSProperties = { fontFamily: FIGTREE, fontSize: 12, fontWeight: 400, lineHeight: "normal" };
+  const text: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, fontWeight: 400, lineHeight: "normal" };
   if (state === "unreproduced") {
     return trailing ? <div {...marks} style={frame}>{trailing}</div> : null;
   }

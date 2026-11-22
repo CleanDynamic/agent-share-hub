@@ -8,7 +8,7 @@ import { useIsPhone } from "@/components/shell/useMinWidth";
 import { r } from "@/lib/theme/radius";
 import { WELL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import { Glyph } from "./Glyph";
 
@@ -39,7 +39,7 @@ export function SearchField({ label, hint, width = 260, style, ...rest }: Search
         ...WELL,
         color: t.label,
         /* Above 768px index.css makes every input inherit its font size, so the size is set here, on its box, too. */
-        fontSize: phone ? 16 : 12,
+        fontSize: phone ? 15 : 13,
         ...style,
       }}
     >
@@ -55,7 +55,7 @@ export function SearchField({ label, hint, width = 260, style, ...rest }: Search
           border: 0,
           outline: "none",
           fontFamily: FIGTREE,
-          fontSize: phone ? 16 : 12,
+          fontSize: phone ? 15 : 13,
           fontWeight: 400,
           color: t.text,
         }}
@@ -64,8 +64,8 @@ export function SearchField({ label, hint, width = 260, style, ...rest }: Search
         <span
           aria-hidden="true"
           style={{
-            fontFamily: DM_MONO,
-            fontSize: 11,
+            fontFamily: FIGTREE,
+            fontSize: 13,
             lineHeight: "16px",
             padding: "0 4px",
             borderRadius: 4,

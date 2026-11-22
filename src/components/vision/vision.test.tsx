@@ -92,9 +92,9 @@ describe("TypeChip", () => {
     expect(html).toContain("border-radius:var(--r-chip)");
     expect(html).toContain("background:var(--control)");
     expect(html).toContain("color:var(--text2)");
-    expect(html).toContain("font-size:11px");
+    expect(html).toContain("font-size:13px");
     expect(html).toContain("line-height:20px");
-    expect(html).toContain("text-transform:uppercase");
+    expect(html).not.toContain("text-transform:uppercase");
   });
 });
 

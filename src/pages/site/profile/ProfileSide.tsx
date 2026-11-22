@@ -135,7 +135,7 @@ function CollectionTile({ tile }: { tile: SideCollection }) {
       </div>
       <div style={{ padding: "0 4px 4px", display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
         <h3 style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, lineHeight: 1.3, margin: 0, color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tile.title}</h3>
-        <div style={{ fontFamily: FIGTREE, fontSize: 11, lineHeight: "normal", color: t.text2 }}>{tile.count}</div>
+        <div style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: t.text2 }}>{tile.count}</div>
       </div>
     </Link>
   );
@@ -157,7 +157,7 @@ function Spaces({ spaces }: { spaces: readonly SideSpace[] }) {
                 {space.name}
               </Link>
             }
-            value={<span style={{ fontWeight: 400, color: t.label, fontSize: 12 }}>{space.standing}</span>}
+            value={<span style={{ fontWeight: 400, color: t.label, fontSize: 13 }}>{space.standing}</span>}
           />
         ))}
       </ul>
@@ -194,7 +194,7 @@ function Section({ id, props }: { id: SideSectionKey; props: ProfileSideProps })
           {props.about?.trim() ? <p style={{ ...BODY, margin: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{props.about.trim()}</p> : null}
           {props.worksIn.length > 0 ? (
             <div data-testid="profile-works-in" style={{ marginTop: props.about?.trim() ? 12 : 0 }}>
-              <div style={{ fontFamily: FIGTREE, fontSize: 12, color: t.label }}>Works in</div>
+              <div style={{ fontFamily: FIGTREE, fontSize: 13, color: t.label }}>Works in</div>
               <div style={{ ...BODY, color: t.text }}>{props.worksIn.join(" · ")}</div>
             </div>
           ) : null}
@@ -253,7 +253,7 @@ function Progress({ progress }: { progress: ProgressView }) {
       </div>
       {/* The four tracks need about 260 of the column's 248: the picker runs into the module's padding rather than past its edge. */}
       <div style={{ marginTop: 12, marginLeft: -12, marginRight: -12 }}>
-        <Segmented<TrackValue> label="Track" semantics="radio" size={28} items={progress.tracks} value={progress.track ?? ("" as TrackValue)} onChange={progress.onTrack} fullWidth compact fontSize={11} />
+        <Segmented<TrackValue> label="Track" semantics="radio" size={28} items={progress.tracks} value={progress.track ?? ("" as TrackValue)} onChange={progress.onTrack} fullWidth compact fontSize={13} />
       </div>
     </section>
   );
@@ -281,7 +281,7 @@ export function ProfileSide(props: ProfileSideProps) {
         aria-expanded={open}
         aria-controls="profile-side-panel"
         onClick={() => setOpen((was) => !was)}
-        style={{ ...MODULE, width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: 44, padding: "0 16px", cursor: "pointer", fontFamily: FIGTREE, fontSize: 14, fontWeight: 500, color: t.text }}
+        style={{ ...MODULE, width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: 44, padding: "0 16px", cursor: "pointer", fontFamily: FIGTREE, fontSize: 15, fontWeight: 500, color: t.text }}
       >
         <span>{SIDE_TITLES.about}</span>
         <span aria-hidden="true" style={{ color: t.label }}>

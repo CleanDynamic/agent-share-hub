@@ -46,7 +46,7 @@ import { hoverIsFine, prefersReducedMotion } from "@/lib/theme/controls";
 import { feedback } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { display, DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { display, FIGTREE, SENTIENT } from "@/lib/theme/type";
 
 import { CategoryChip } from "./CategoryChip";
 import { FramedWork } from "./FramedWork";
@@ -177,7 +177,7 @@ export function BuildCard({
                   left: 6,
                   background: t.mediaTag,
                   color: t.text,
-                  fontFamily: DM_MONO,
+                  fontFamily: FIGTREE,
                   fontSize: 10,
                   lineHeight: "normal",
                   padding: "2px 4px",
@@ -214,7 +214,7 @@ export function BuildCard({
                 <div
                   data-testid="card-delta"
                   style={{
-                    fontFamily: DM_MONO,
+                    fontFamily: FIGTREE,
                     fontSize: 10,
                     /* The kit's own leading: inherited, the page's 1.55 made this
                        line 2.5px taller than the catalogue's. */
@@ -285,7 +285,7 @@ export function CardCredit({ rebuiltFrom, by }: CardCreditProps) {
     >
       {source ? (
         <>
-          Rebuilt from <i style={{ color: t.text, fontStyle: "normal" }}>{source}</i>
+          Rebuilt from <i style={{ fontFamily: SENTIENT, fontWeight: 400, color: t.text, fontStyle: "normal" }}>{source}</i>
           {who ? ` by ${who}` : null}
         </>
       ) : (

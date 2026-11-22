@@ -56,7 +56,7 @@ export default function BadgeEarnedToast({
               fontWeight: 700,
               letterSpacing: "0.08em",
               color: tokens.orange,
-              textTransform: "uppercase",
+              textTransform: "none",
             }}
           >
             Badge earned

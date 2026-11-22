@@ -23,7 +23,7 @@ import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { Panel, PanelHead } from "@/components/brand/Panel";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import { changesEyebrow, type ChangeGroupView, type ChangeRowKind } from "./rebuildModel";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
@@ -60,11 +60,11 @@ export function ChangeList({ groups, phone = false }: { groups: readonly ChangeG
           <h3
             style={{
               margin: 0,
-              fontFamily: DM_MONO,
-              fontSize: 11,
+              fontFamily: FIGTREE,
+              fontSize: 13,
               fontWeight: 400,
               letterSpacing: ".09em",
-              textTransform: "uppercase",
+              textTransform: "none",
               lineHeight: "normal",
               color: t.label,
               padding: "9px 0 4px",
@@ -87,11 +87,11 @@ export function ChangeList({ groups, phone = false }: { groups: readonly ChangeG
                   ...(phone ? { minHeight: 32 } : { height: 32 }),
                   borderBottom: `1px solid ${t.hairline}`,
                   fontFamily: FIGTREE,
-                  fontSize: 12,
+                  fontSize: 13,
                   lineHeight: "normal",
                 }}
               >
-                <span style={{ fontFamily: DM_MONO, color: SYMBOL[row.kind].colour }}>
+                <span style={{ fontFamily: FIGTREE, color: SYMBOL[row.kind].colour }}>
                   <span aria-hidden="true">{SYMBOL[row.kind].glyph}</span>
                   <span style={VISUALLY_HIDDEN}>{row.kind}</span>
                 </span>
@@ -137,7 +137,7 @@ export function ChangesPanel({ groups, phone = false, fill = false, placeholder,
         <PanelHead
           headingLevel={2}
           title="What changed"
-          subtitle={phone ? "Computed from the source — not editable" : "Computed from the source — you cannot edit this list"}
+          subtitle={phone ? "Computed from the source, not editable" : "Computed from the source. You cannot edit this list"}
           right={!phone && groups ? <Eyebrow>{changesEyebrow(groups)}</Eyebrow> : undefined}
         />
         {about}
@@ -154,7 +154,7 @@ export function ChangesPanel({ groups, phone = false, fill = false, placeholder,
         ) : groups && groups.length > 0 ? (
           <ChangeList groups={groups} phone={phone} />
         ) : placeholder ? (
-          <div style={{ marginTop: 9, fontFamily: FIGTREE, fontSize: 12, lineHeight: 1.5, color: t.text2 }}>{placeholder}</div>
+          <div style={{ marginTop: 9, fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.5, color: t.text2 }}>{placeholder}</div>
         ) : groups ? (
           <PageEmpty line="Nothing has changed yet." testId="changes-empty" />
         ) : null}

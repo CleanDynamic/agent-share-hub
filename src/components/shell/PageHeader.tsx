@@ -5,7 +5,7 @@ import { t } from "@/lib/theme/tokens";
 /* Roles imported by name rather than as `type`: this file uses inline
    type-import modifiers, which a value binding called `type` makes ambiguous.
    The scale module says so at its export. */
-import { bodyLarge, eyebrow as eyebrowRole, FIGTREE, measure } from "@/lib/theme/type";
+import { bodyLarge, eyebrow as eyebrowRole, FIGTREE, measure, SENTIENT } from "@/lib/theme/type";
 
 /* ────────────────────────────────────────────────────────────────────────────
    BG-P14 — PageHeader.
@@ -21,7 +21,7 @@ import { bodyLarge, eyebrow as eyebrowRole, FIGTREE, measure } from "@/lib/theme
 
    THE FOUR PARTS, and why they are in this order:
 
-     eyebrow      12px mono, uppercase, --text2. What kind of page this is.
+     eyebrow      13px Geist, --text2. What kind of page this is.
      title        The display face, clamped 30–48px. What this page is.
      actions      Whatever the page offers. Sits beside the title on a wide
                   row and drops under it when there is no room.
@@ -41,7 +41,7 @@ import { bodyLarge, eyebrow as eyebrowRole, FIGTREE, measure } from "@/lib/theme
 
    THE PAGE SHELL. Every framed page opens with this header, first in `<main>`,
    so the title's top is the shell's content top (88 at 1440 by 900). The title
-   is the site pages' own: Figtree 20 / 500, line 24. The breadcrumb sits in the
+   is the site pages' own: Geist 20 / 600, line 24. The breadcrumb sits in the
    24 above the title, out of flow, so it never moves the title. The actions sit
    on the title's 24px line, centred on it, and end at the content edge. The
    space under the header belongs to the page, unless there is a description.
@@ -52,10 +52,20 @@ export const PAGE_TITLE: CSSProperties = {
   margin: 0,
   fontFamily: FIGTREE,
   fontSize: 20,
-  fontWeight: 500,
+  fontWeight: 600,
   lineHeight: "24px",
-  letterSpacing: "-0.015em",
+  letterSpacing: "-0.01em",
   color: t.text,
+};
+
+/** The title of a work (the build page): Geist Serif 400, 31 / 36, never bold. */
+export const WORK_TITLE: CSSProperties = {
+  ...PAGE_TITLE,
+  fontFamily: SENTIENT,
+  fontSize: 31,
+  fontWeight: 400,
+  lineHeight: "36px",
+  letterSpacing: "-0.02em",
 };
 
 export interface PageHeaderProps {
@@ -63,6 +73,8 @@ export interface PageHeaderProps {
   eyebrow?: ReactNode;
   /** The page's name. Rendered as the page's one `<h1>`. */
   title: ReactNode;
+  /** The title names a work (a build): set in the serif at 31 / 36. */
+  work?: boolean;
   /** One paragraph under the title. Capped at the 68ch reading measure. */
   description?: ReactNode;
   /** Buttons or controls belonging to the page as a whole. */
@@ -71,7 +83,7 @@ export interface PageHeaderProps {
   breadcrumb?: ReactNode;
 }
 
-export function PageHeader({ eyebrow, title, description, actions, breadcrumb }: PageHeaderProps) {
+export function PageHeader({ eyebrow, title, work, description, actions, breadcrumb }: PageHeaderProps) {
   return (
     <header
       style={{
@@ -102,7 +114,7 @@ export function PageHeader({ eyebrow, title, description, actions, breadcrumb }:
           {eyebrow != null && (
             <span style={{ ...eyebrowRole, color: t.text2 }}>{eyebrow}</span>
           )}
-          <h1 style={PAGE_TITLE}>{title}</h1>
+          <h1 style={work ? WORK_TITLE : PAGE_TITLE}>{title}</h1>
         </div>
 
         {actions != null && (

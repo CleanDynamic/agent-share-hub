@@ -75,7 +75,7 @@ export function CreditBox({ credit, phone = false }: { credit: RebuildCreditView
         data-testid="rebuild-credit-line"
         data-rebuild-credit=""
         title={line}
-        style={{ margin: "4px 0 0", fontFamily: FIGTREE, fontSize: phone ? 13 : 12, lineHeight: "normal", color: t.text }}
+        style={{ margin: "4px 0 0", fontFamily: FIGTREE, fontSize: phone ? 13 : 13, lineHeight: "normal", color: t.text }}
       >
         Rebuilt from <i style={{ fontStyle: "normal" }}>{credit.title}</i>
         {credit.handle ? ` by @${credit.handle}` : null}
@@ -83,7 +83,7 @@ export function CreditBox({ credit, phone = false }: { credit: RebuildCreditView
       {credit.delta ? (
         <p
           data-testid="rebuild-credit-delta"
-          style={{ margin: "3px 0 0", fontFamily: FIGTREE, fontSize: 11, lineHeight: "normal", color: t.text2, overflowWrap: "anywhere" }}
+          style={{ margin: "3px 0 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: t.text2, overflowWrap: "anywhere" }}
         >
           {credit.delta}
         </p>
@@ -140,8 +140,8 @@ export function ReadinessPanel({
       borderRadius: 6,
     }}
   >
-    <span aria-hidden="true" style={{ fontFamily: FIGTREE, fontSize: 16, lineHeight: "normal", color: t.text, fontVariantNumeric: "tabular-nums" }}>{`${readiness.pct}%`}</span>
-    <span aria-hidden="true" style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.label }}>ready</span>
+    <span aria-hidden="true" style={{ fontFamily: FIGTREE, fontSize: 15, lineHeight: "normal", color: t.text, fontVariantNumeric: "tabular-nums" }}>{`${readiness.pct}%`}</span>
+    <span aria-hidden="true" style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: t.label }}>ready</span>
   </div>;
 
   const publish = (
@@ -168,9 +168,9 @@ export function ReadinessPanel({
           {orb}
           <div style={{ display: "flex", flexDirection: "column", gap: phone ? 4 : 6, minWidth: 0 }}>
             <Eyebrow>{phone ? "Readiness" : "Rebuild readiness"}</Eyebrow>
-            <div style={{ fontFamily: FIGTREE, fontSize: 16, fontWeight: 500, lineHeight: 1.1, letterSpacing: "-0.02em", color: t.text }}>{readiness.headline}</div>
+            <div style={{ fontFamily: FIGTREE, fontSize: 15, fontWeight: 500, lineHeight: 1.1, letterSpacing: "-0.02em", color: t.text }}>{readiness.headline}</div>
             {readiness.next ? (
-              <div id={nextId} style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text2 }}>
+              <div id={nextId} style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: t.text2 }}>
                 {workspaceTo ? <NextLink to={workspaceTo}>{readiness.next}</NextLink> : readiness.next}
               </div>
             ) : null}

@@ -2140,7 +2140,7 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
   },
   {
     rule: "spacing 10 is not in SPACE_REFINED",
-    text: `return <div style={{ fontFamily: FIGTREE, fontSize: 12, padding: "0 0 10px", borderBottom`,
+    text: `return <div style={{ fontFamily: FIGTREE, fontSize: 13, padding: "0 0 10px", borderBottom`,
     why: "The type prompt (G4): the Library table's header row while it loads keeps the head's own 10 above its hairline, so the rows under it land where the loaded rows do.",
   },
   {
@@ -2160,7 +2160,7 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
   },
   {
     rule: "spacing 10 is not in SPACE_REFINED",
-    text: `<h2 style={{ margin: "10px 0 0", fontFamily: FIGTREE, fontSize: 14`,
+    text: `<h2 style={{ margin: "10px 0 0", fontFamily: FIGTREE, fontSize: 15`,
     why: "SV-09: the Library board's selected item puts its title 10 under its chip.",
   },
   {

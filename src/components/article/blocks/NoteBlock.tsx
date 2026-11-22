@@ -114,7 +114,7 @@ export function NoteBlockNode({ id, data, selected }: NodeProps) {
       {/* Header Row */}
       <div className="flex items-center gap-2 mb-2">
         <StickyNote size={12} className="text-muted-foreground" />
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="text-[11px] font-semibold tracking-wide text-muted-foreground">
           Note
         </span>
 

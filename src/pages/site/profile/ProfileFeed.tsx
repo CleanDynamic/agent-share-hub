@@ -109,7 +109,7 @@ export const FEED_COPY = {
   menu: (heading: string) => `More for ${heading}`,
 } as const;
 
-const LINE: CSSProperties = { fontFamily: FIGTREE, fontSize: 12, lineHeight: "16px", color: t.label };
+const LINE: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label };
 
 function ItemMenu({ entry, canPin, onPin, onUnpin, onDisplay }: { entry: FeedEntry; canPin: boolean; onPin: () => void; onUnpin: () => void; onDisplay: (display: BuildDisplayValue) => void }) {
   return (

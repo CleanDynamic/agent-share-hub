@@ -39,7 +39,7 @@ export const EYEBROW: CSSProperties = {
   lineHeight: "normal",
   color: t.label,
   letterSpacing: ".06em",
-  textTransform: "uppercase",
+  textTransform: "none",
 };
 
 export const ellipsis: CSSProperties = TITLE_LINE;

@@ -18,7 +18,7 @@ import { markFor, type MarkKey } from "@/lib/models/marks";
 import { normaliseModel } from "@/lib/models/registry";
 import { toolName } from "@/lib/tools/registry";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 /** The most marks drawn, by width. The rest are counted. */
 export const MARKS_DESKTOP = 4;
@@ -114,7 +114,7 @@ export function MadeWithMarks({ madeWith, modelsUsed, phone = false }: MadeWithM
         <ModelMark key={mark.key} size={16} {...mark.by} />
       ))}
       {rest > 0 ? (
-        <span aria-hidden="true" style={{ fontFamily: DM_MONO, fontSize: 12, lineHeight: 1, color: t.label }}>
+        <span aria-hidden="true" style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: 1, color: t.label }}>
           {`+${rest}`}
         </span>
       ) : null}

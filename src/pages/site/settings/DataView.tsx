@@ -38,7 +38,7 @@ function DownloadGroup({ onPrepare, onSave }: Pick<DataViewProps, "onPrepare" | 
         label="Download your data"
         hint="One file with your profile, builds, drafts, topics, replies, likes, follows, saves, collections, comments, the messages you sent, your notifications and the reports you made. Once an hour."
         control={
-          <Button variant="secondary" size={32} fontSize={12} disabled={preparing} onClick={() => { setFile(null); void action.run(); }}>
+          <Button variant="secondary" size={32} fontSize={13} disabled={preparing} onClick={() => { setFile(null); void action.run(); }}>
             {preparing ? "Preparing" : "Download your data"}
           </Button>
         }
@@ -48,7 +48,7 @@ function DownloadGroup({ onPrepare, onSave }: Pick<DataViewProps, "onPrepare" | 
               {file ? (
                 <div role="status" style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", fontSize: 13, color: t.text }}>
                   <span style={{ overflowWrap: "anywhere" }}>{`${file.fileName} · ${formatBytes(file.bytes)}`}</span>
-                  <Button variant="secondary" size={32} fontSize={12} onClick={() => onSave(file)}>
+                  <Button variant="secondary" size={32} fontSize={13} onClick={() => onSave(file)}>
                     Save file
                   </Button>
                 </div>
@@ -85,13 +85,13 @@ function DeleteWindow({ open, username, onClose, onPrepare, onSave, onDelete }: 
       >
         <p style={{ margin: 0, fontSize: 13, lineHeight: "20px", color: t.text }}>{DELETE_STATEMENT}</p>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <Button variant="secondary" size={32} fontSize={12} disabled={first.state.status === "sending"} onClick={() => void first.run()}>
+          <Button variant="secondary" size={32} fontSize={13} disabled={first.state.status === "sending"} onClick={() => void first.run()}>
             Download your data first
           </Button>
-          {file ? <span style={{ fontSize: 12, color: t.label }}>{`${file.fileName} · ${formatBytes(file.bytes)}`}</span> : null}
+          {file ? <span style={{ fontSize: 13, color: t.label }}>{`${file.fileName} · ${formatBytes(file.bytes)}`}</span> : null}
         </div>
         {first.state.status === "error" ? <FieldMessage>{first.state.message}</FieldMessage> : null}
-        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: t.label }}>
+        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: t.label }}>
           {`Type your username${username ? ` (${username})` : ""} to confirm`}
           <input
             value={typed}
@@ -100,15 +100,15 @@ function DeleteWindow({ open, username, onClose, onPrepare, onSave, onDelete }: 
             autoCapitalize="off"
             spellCheck={false}
             aria-label="Your username"
-            style={{ height: 32, padding: "0 12px", borderRadius: 6, border: `1px solid ${t.line}`, background: t.field, color: t.text, fontFamily: FIGTREE, fontSize: 16 }}
+            style={{ height: 32, padding: "0 12px", borderRadius: 6, border: `1px solid ${t.line}`, background: t.field, color: t.text, fontFamily: FIGTREE, fontSize: 15 }}
           />
         </label>
         {remove.state.status === "error" ? <FieldMessage>{remove.state.message}</FieldMessage> : null}
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <Button variant="ghost" size={32} fontSize={12} disabled={busy} onClick={onClose}>
+          <Button variant="ghost" size={32} fontSize={13} disabled={busy} onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" variant="secondary" size={32} fontSize={12} disabled={!ready || busy}>
+          <Button type="submit" variant="secondary" size={32} fontSize={13} disabled={!ready || busy}>
             {busy ? "Deleting" : "Delete my account"}
           </Button>
         </div>
@@ -128,7 +128,7 @@ export function DataView(props: DataViewProps) {
           label="Delete account"
           hint="Removes your account and what you made. This can't be undone."
           control={
-            <Button variant="secondary" size={32} fontSize={12} onClick={() => setAsking(true)}>
+            <Button variant="secondary" size={32} fontSize={13} onClick={() => setAsking(true)}>
               Delete account
             </Button>
           }

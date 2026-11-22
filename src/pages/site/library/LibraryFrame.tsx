@@ -101,7 +101,7 @@ export function LibraryTextButton({ onClick, children, ...rest }: { onClick: () 
       onClick={onClick}
       {...rest}
       {...handlers}
-      style={{ display: "inline-flex", alignItems: "center", height: 24, background: "none", border: 0, padding: "0 4px", borderRadius: r.chip, fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: state.hovered ? t.text : t.text2, cursor: "pointer", ...ring(state.focusVisible) }}
+      style={{ display: "inline-flex", alignItems: "center", height: 24, background: "none", border: 0, padding: "0 4px", borderRadius: r.chip, fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: state.hovered ? t.text : t.text2, cursor: "pointer", ...ring(state.focusVisible) }}
     >
       {children}
     </button>
@@ -110,7 +110,7 @@ export function LibraryTextButton({ onClick, children, ...rest }: { onClick: () 
 
 /* ── the head ── */
 
-const headMeta: CSSProperties = { margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 12, lineHeight: "20px", color: t.label, fontVariantNumeric: "tabular-nums" };
+const headMeta: CSSProperties = { margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.label, fontVariantNumeric: "tabular-nums" };
 
 /** "Library" and its count line. */
 export function LibraryHead({ title, meta }: { title: string; meta: ReactNode }) {
@@ -127,7 +127,7 @@ export function LibraryHead({ title, meta }: { title: string; meta: ReactNode })
 /** The table's header row while it loads: the header's own size, line and rule around a blank line, so it is the header's
     height in any face. */
 function TableHeadBones() {
-  return <div style={{ fontFamily: FIGTREE, fontSize: 12, padding: "0 0 10px", borderBottom: `1px solid ${t.hairline}` }}>{"\u00a0"}</div>;
+  return <div style={{ fontFamily: FIGTREE, fontSize: 13, padding: "0 0 10px", borderBottom: `1px solid ${t.hairline}` }}>{"\u00a0"}</div>;
 }
 
 /** Rows of the table while it loads, at the table's own sizes, under its header row. */
@@ -189,7 +189,7 @@ export function LibraryLoadingView() {
             <KindBones />
             <section aria-label="Collections" style={{ marginTop: 32 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingBottom: 8, borderBottom: `1px solid ${t.hairline}` }}>
-                <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, fontWeight: 500, lineHeight: "20px", color: t.text }}>Collections</h2>
+                <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: 500, lineHeight: "20px", color: t.text }}>Collections</h2>
                 <span style={{ display: "inline-flex", height: 24 }} />
               </div>
               <CollectionSkeletons />

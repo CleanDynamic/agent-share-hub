@@ -233,7 +233,7 @@ describe("refined plaque and lamps (UI-P85)", () => {
     expect(fresh).toContain('data-tone="evidence"');
     expect(fresh).toContain("41 reproduced");
     expect(fresh).toContain('data-plaque-lamp="lit"');
-    expect(fresh).toContain("font-size:12px");
+    expect(fresh).toContain("font-size:13px");
     expect(fresh).toContain("color:var(--text2)");
 
     const stale = refined(<Plaque build={build({ last_confirmed_at: new Date(NOW - (STALE_AFTER_DAYS + 5) * DAY).toISOString() })} now={NOW} />);

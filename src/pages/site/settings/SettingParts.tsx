@@ -32,7 +32,7 @@ export function SectionPage({ title, children }: { title: string; children: Reac
   const Heading = phone ? "h1" : "h2";
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24, fontFamily: FIGTREE }}>
-      <Heading style={{ ...sectionTitle, fontSize: phone ? 20 : 14 }}>{title}</Heading>
+      <Heading style={{ ...sectionTitle, fontSize: phone ? 20 : 15 }}>{title}</Heading>
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>{children}</div>
     </div>
   );
@@ -72,7 +72,7 @@ export function SettingRow({ label, hint, control, last = false, below, id }: Se
       <div style={{ display: "flex", flexDirection: phone ? "column" : "row", alignItems: phone ? "stretch" : "center", gap: phone ? 8 : 16, minHeight: 32 }}>
         <div style={{ flexGrow: 1, minWidth: 0 }}>
           <div id={id} style={{ fontSize: 13, fontWeight: 500, lineHeight: "20px", color: t.text }}>{label}</div>
-          {hint ? <div style={{ fontSize: 12, fontWeight: 400, lineHeight: 1.4, color: t.label, marginTop: 2 }}>{hint}</div> : null}
+          {hint ? <div style={{ fontSize: 13, fontWeight: 400, lineHeight: 1.4, color: t.label, marginTop: 2 }}>{hint}</div> : null}
         </div>
         {control ? <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: phone ? "flex-start" : "flex-end" }}>{control}</div> : null}
       </div>
@@ -84,7 +84,7 @@ export function SettingRow({ label, hint, control, last = false, below, id }: Se
 /** A sentence that is not a setting: the status of a save, a reason a control is off. `label` colour, 12px. */
 export function Note({ children, role }: { children: ReactNode; role?: "status" | "alert" }) {
   return (
-    <p role={role} style={{ margin: 0, fontSize: 12, fontWeight: 400, lineHeight: 1.4, color: t.label }}>
+    <p role={role} style={{ margin: 0, fontSize: 13, fontWeight: 400, lineHeight: 1.4, color: t.label }}>
       {children}
     </p>
   );
@@ -110,10 +110,10 @@ export function ConfirmInline({
     <div role="group" aria-label="Confirm" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <span style={{ fontSize: 13, fontWeight: 400, lineHeight: "20px", color: t.text }}>{message}</span>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <Button variant="secondary" size={32} fontSize={12} disabled={busy} onClick={onConfirm}>
+        <Button variant="secondary" size={32} fontSize={13} disabled={busy} onClick={onConfirm}>
           {confirmLabel}
         </Button>
-        <Button variant="ghost" size={32} fontSize={12} disabled={busy} onClick={onCancel}>
+        <Button variant="ghost" size={32} fontSize={13} disabled={busy} onClick={onCancel}>
           Cancel
         </Button>
       </div>
@@ -137,9 +137,9 @@ const bar = (width: string, height: number) => <Skeleton width={width} height={h
 function GroupSkeleton({ rows, hint = false }: GroupBones) {
   return (
     <div data-testid="settings-card-bones" aria-hidden="true" style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, padding: 16, display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ fontSize: 14, lineHeight: 1.3 }}>{bar("30%", 12)}</div>
+      <div style={{ fontSize: 15, lineHeight: 1.3 }}>{bar("30%", 12)}</div>
       {rows === 0 ? (
-        <div style={{ fontSize: 12, lineHeight: 1.4 }}>{bar("70%", 10)}</div>
+        <div style={{ fontSize: 13, lineHeight: 1.4 }}>{bar("70%", 10)}</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column" }}>
           {Array.from({ length: rows }, (_, index) => (

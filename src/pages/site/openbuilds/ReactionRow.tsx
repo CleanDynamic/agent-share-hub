@@ -47,7 +47,7 @@ function RatingGroup({ what, mine, onRate }: { what: ReactionRowProps["what"]; m
   };
   return (
     <div role="radiogroup" aria-label={`Rate this ${what}`} style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-      <span aria-hidden="true" style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "16px", color: t.text2 }}>
+      <span aria-hidden="true" style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.text2 }}>
         Rate
       </span>
       {RATINGS.map((value) => (
@@ -84,7 +84,7 @@ export function ReactionRow({ kinds, reactions, what, onDislike, onRate }: React
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
           <RatingGroup what={what} mine={reactions.mine} onRate={onRate} />
           {reactions.ratings > 0 && reactions.average !== null ? (
-            <span data-testid="rating-summary" style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "16px", color: t.label, fontVariantNumeric: "tabular-nums" }}>
+            <span data-testid="rating-summary" style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label, fontVariantNumeric: "tabular-nums" }}>
               {ratingWords(reactions.average, reactions.ratings)}
             </span>
           ) : null}

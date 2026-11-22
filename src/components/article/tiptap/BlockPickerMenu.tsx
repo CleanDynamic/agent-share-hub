@@ -125,7 +125,7 @@ export function BlockPickerMenu({
           fontSize: 10,
           fontWeight: 600,
           letterSpacing: '0.05em',
-          textTransform: 'uppercase',
+          textTransform: 'none',
           color: 'var(--text2)',
           padding: '6px 8px 4px',
         }}

@@ -46,7 +46,7 @@ function MentionRow({ work, onMention }: { work: LabelledWork; onMention: (handl
           aria-label={`Mention @${work.handle} instead`}
           onClick={() => onMention(work.handle ?? "")}
           {...handlers}
-          style={{ flexShrink: 0, padding: 0, background: "none", border: 0, borderRadius: 4, fontFamily: FIGTREE, fontSize: 12, color: t.text2, cursor: "pointer", textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, ...ring(state.focusVisible) }}
+          style={{ flexShrink: 0, padding: 0, background: "none", border: 0, borderRadius: 4, fontFamily: FIGTREE, fontSize: 13, color: t.text2, cursor: "pointer", textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, ...ring(state.focusVisible) }}
         >
           Mention instead
         </button>
@@ -65,7 +65,7 @@ function Row({ work, onPick }: { work: LabelledWork; onPick: (work: LabelledWork
       style={{ ...rowBox, background: state.hovered ? hoverFill() : "none", color: t.text, cursor: "pointer", ...ring(state.focusVisible) }}
     >
       <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{work.label}</span>
-      {work.context ? <span style={{ flexShrink: 0, maxWidth: "45%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12, color: t.label }}>{work.context}</span> : null}
+      {work.context ? <span style={{ flexShrink: 0, maxWidth: "45%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13, color: t.label }}>{work.context}</span> : null}
     </button>
   );
 }
@@ -100,13 +100,13 @@ export function AttachPicker({ userId, onPick, reply, open: startOpen = false, s
       </PopoverTrigger>
       <PopoverContent align="start" style={{ width: 360, maxWidth: "calc(100vw - 32px)", padding: 12, zIndex: 80 }} aria-label="Attach work">
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <Segmented label="Size of work" items={SIZES} value={size} onChange={(value) => setSize(value as WorkSize)} size={28} fontSize={12} fullWidth />
+          <Segmented label="Size of work" items={SIZES} value={size} onChange={(value) => setSize(value as WorkSize)} size={28} fontSize={13} fullWidth />
           <input
             aria-label="Search work"
             placeholder="e.g. screener"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            style={{ boxSizing: "border-box", width: "100%", height: 32, padding: "0 10px", borderRadius: 6, border: `1px solid ${t.controlBorder}`, background: t.well, color: t.text, fontFamily: FIGTREE, fontSize: 16 }}
+            style={{ boxSizing: "border-box", width: "100%", height: 32, padding: "0 10px", borderRadius: 6, border: `1px solid ${t.controlBorder}`, background: t.well, color: t.text, fontFamily: FIGTREE, fontSize: 15 }}
           />
           <div style={{ maxHeight: 320, overflowY: "auto" }}>
             {work.isError ? (
@@ -117,13 +117,13 @@ export function AttachPicker({ userId, onPick, reply, open: startOpen = false, s
                 </PageState>
               </div>
             ) : work.isPending ? (
-              <p style={{ margin: 0, padding: "8px", fontFamily: FIGTREE, fontSize: 12, color: t.label }}>Loading</p>
+              <p style={{ margin: 0, padding: "8px", fontFamily: FIGTREE, fontSize: 13, color: t.label }}>Loading</p>
             ) : groups.length === 0 ? (
-              <p style={{ margin: 0, padding: "8px", fontFamily: FIGTREE, fontSize: 12, color: t.label }}>Nothing to attach at this size.</p>
+              <p style={{ margin: 0, padding: "8px", fontFamily: FIGTREE, fontSize: 13, color: t.label }}>Nothing to attach at this size.</p>
             ) : (
               groups.map((group) => (
                 <section key={group.title} aria-label={group.title} style={{ paddingBottom: 8 }}>
-                  <h4 style={{ margin: 0, padding: "8px 8px 4px", fontFamily: FIGTREE, fontSize: 12, fontWeight: 500, color: t.label }}>{group.title}</h4>
+                  <h4 style={{ margin: 0, padding: "8px 8px 4px", fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, color: t.label }}>{group.title}</h4>
                   {group.rows.map((row) =>
                     reply && row.origin === "others" ? (
                       <MentionRow

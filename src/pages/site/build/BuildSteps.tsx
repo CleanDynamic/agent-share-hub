@@ -106,7 +106,7 @@ export const NEED_ROWS = 6;
 /** A text past this many words (or lines) is clamped to four lines, so it offers the whole of it. */
 export const LONG_WORDS = 40;
 
-export const mono = (size: 11 | 12): CSSProperties => ({ fontFamily: DM_MONO, fontSize: size, lineHeight: "normal", color: t.text2 });
+export const mono = (size: 11 | 12): CSSProperties => ({ fontFamily: FIGTREE, fontSize: size, lineHeight: "normal", color: t.text2 });
 
 export const stepDomId = (id: string) => `step-${id}`;
 
@@ -358,7 +358,7 @@ function CopyButton({ label = "Copy", what, text: words, onCopy, announce, phone
     <Button
       variant="secondary"
       size={phone ? 44 : 28}
-      fontSize={12}
+      fontSize={13}
       aria-label={`${label} ${what}`}
       onClick={async () => {
         if (await onCopy(words)) {
@@ -908,7 +908,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
               <Button
                 variant="secondary"
                 size={phone ? 44 : 28}
-                fontSize={12}
+                fontSize={13}
                 onClick={async () => {
                   const words = await view.setupPrompt?.(step.id);
                   if (words && (await view.onCopy(words))) announce(DONE.setupCopied);
@@ -1124,7 +1124,7 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
               <Button
                 variant="secondary"
                 size={phone ? 44 : 28}
-                fontSize={12}
+                fontSize={13}
                 disabled={!(step.text.trim() || step.teamInstructions || step.children.some((child) => child.kind === "agent" && child.text.trim()))}
                 title={step.text.trim() || step.teamInstructions || step.children.some((child) => child.kind === "agent" && child.text.trim()) ? undefined : "Add instructions first"}
                 onClick={async () => {
@@ -1475,7 +1475,7 @@ export function StepsList({ view, phone, announce, titled = false }: StepsListPr
             value={lens}
             onChange={setLens}
             size={28}
-            fontSize={12}
+            fontSize={13}
           />
         </div>
       ) : null}
@@ -1632,7 +1632,7 @@ function ListRow({ row }: { row: NeedRow }) {
   const body = (
     <>
       {chip ? <TypeChip>{chip}</TypeChip> : null}
-      <span style={file ? { fontFamily: DM_MONO, fontSize: 12, fontWeight: 500, color: t.text, overflowWrap: "anywhere" } : { ...text(13, 500, t.text), overflowWrap: "anywhere" }}>{row.title}</span>
+      <span style={file ? { fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, color: t.text, overflowWrap: "anywhere" } : { ...text(13, 500, t.text), overflowWrap: "anywhere" }}>{row.title}</span>
       {row.model ? <span style={{ ...text(13, 400, t.label), overflowWrap: "anywhere" }}>{`· ${row.model}`}</span> : null}
       <span style={{ flexGrow: 1 }} />
       {where ? <span style={{ ...text(12, 400, t.label), whiteSpace: "nowrap" }}>{where}</span> : null}

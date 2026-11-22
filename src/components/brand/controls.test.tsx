@@ -393,7 +393,7 @@ describe("refined controls (UI-P84)", () => {
     expect(html).toContain("border-bottom:2px solid transparent");
     expect(html).toContain("border-bottom:1px solid var(--hairline)");
     expect(html).toContain("gap:24px");
-    expect(html).toContain("font-size:12px");
+    expect(html).toContain("font-size:13px");
   });
 
   it("FilterChip is the control recipe at 36 and selected when on, never inverted", () => {
@@ -421,9 +421,9 @@ describe("refined controls (UI-P84)", () => {
 
   it("Eyebrow is Geist 11/500 in capitals by CSS", () => {
     const html = refined(<Eyebrow>Maker</Eyebrow>);
-    expect(html).toContain("font-size:11px");
+    expect(html).toContain("font-size:13px");
     expect(html).toContain("font-weight:500");
-    expect(html).toContain("text-transform:uppercase");
+    expect(html).not.toContain("text-transform:uppercase");
     expect(html).toContain("letter-spacing:.06em");
   });
 
@@ -441,7 +441,7 @@ describe("Pill, MenuButton, SearchField and Checkbox (UI-P84)", () => {
     const plain = markup(<Pill>x</Pill>);
     expect(plain).toContain("height:20px");
     expect(plain).toContain("padding:0 8px");
-    expect(plain).toContain("font-size:11px");
+    expect(plain).toContain("font-size:13px");
     expect(plain).toContain("background:var(--pill)");
     expect(plain).toContain("color:var(--on-pill)");
     expect(markup(<Pill tone="evidence">x</Pill>)).toContain("background:var(--evidence-fill)");

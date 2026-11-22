@@ -21,13 +21,13 @@ export function SiteHiddenNotice({ entries }: { entries: readonly Notice[] }) {
     >
       {entries.map((entry) => (
         <div key={entry.id} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <span style={{ fontSize: 12, fontWeight: 500, lineHeight: 1.4, color: t.text }}>
+          <span style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.4, color: t.text }}>
             {entry.kind === "topic" ? `${SITE_HIDDEN_WORDS}: your topic` : `${SITE_HIDDEN_WORDS}: your reply`}
           </span>
           {entry.heading ? <span style={{ fontSize: 13, lineHeight: "20px", color: t.text2, overflowWrap: "anywhere" }}>{`“${entry.heading}”`}</span> : null}
         </div>
       ))}
-      <span style={{ fontSize: 12, lineHeight: 1.4, color: t.text2 }}>
+      <span style={{ fontSize: 13, lineHeight: 1.4, color: t.text2 }}>
         Nobody else sees it now.{" "}
         <Link to={TERMS_REPORTING_HREF} style={{ color: t.text }}>
           How reporting works

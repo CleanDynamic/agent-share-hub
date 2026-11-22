@@ -55,11 +55,11 @@ describe("OrbRing", () => {
     // UI-P52 density pass: the figure is drawn at 20% of the size and display()
     // renders it through the table — 30 → 22 here, 24 → 20 at 120.
     const html = ring();
-    expect(html).toContain("font-size:22px");
+    expect(html).toContain("font-size:31px");
     expect(html).toContain("letter-spacing:-0.03em");
     expect(html).toContain("line-height:1");
-    expect(html).toContain("Geist Serif");
-    expect(html).toContain("font-size:10px");
+    expect(html).toContain("Geist");
+    expect(html).toContain("font-size:13px");
     expect(html).toContain("level");
     expect(markup(<OrbRing size={120} percent={50} value={3} label="x" />)).toContain("font-size:20px");
   });
@@ -69,7 +69,7 @@ describe("OrbRing", () => {
     // renders at 16 — under Sentient's 20px floor, so in Figtree 600.
     expect(() => markup(<OrbRing size={36} percent={50} value={3} label="x" />)).not.toThrow();
     const html = markup(<OrbRing size={36} percent={50} value={3} label="x" />);
-    expect(html).toContain("font-size:16px;font-weight:600");
+    expect(html).toContain("font-size:17px;font-weight:600");
     expect(html).not.toContain("Sentient");
   });
 

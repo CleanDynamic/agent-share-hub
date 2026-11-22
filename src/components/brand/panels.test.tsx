@@ -178,16 +178,16 @@ describe("PageHeading", () => {
   });
 
   it.each([30, 32, 34, 36])("sets a %ipx mobile title at -0.035em", (size) => {
-    expect(markup(<PageHeading eyebrow="E" title="T" size={size} />)).toContain("letter-spacing:-0.035em");
+    expect(markup(<PageHeading eyebrow="E" title="T" size={size} />)).toContain("letter-spacing:-0.02em");
   });
 
   it("has no padding of its own inside a panel, and takes the page's own sizes", () => {
     const html = markup(<PageHeading eyebrow="E" title="T" size={50} variant="in-panel" />);
     expect(html).not.toContain("padding");
     // UI-P52 density pass: drawn at 50, rendered at 38, with the 44–51 band's tracking.
-    expect(html).toContain("font-size:38px");
-    expect(html).toContain("letter-spacing:-0.035em");
-    expect(markup(<PageHeading eyebrow="E" title="T" size={52} variant="in-panel" />)).toContain("letter-spacing:-0.04em");
+    expect(html).toContain("font-size:31px");
+    expect(html).toContain("letter-spacing:-0.02em");
+    expect(markup(<PageHeading eyebrow="E" title="T" size={52} variant="in-panel" />)).toContain("letter-spacing:-0.02em");
   });
 
   it("omits the sub when there is none", () => {
@@ -226,9 +226,9 @@ describe("refined layers and data marks (UI-P85)", () => {
 
   it("CardHead is 14/500 over a 12 --text2 subtitle, with an action at the right; PanelHead renders it", () => {
     const html = refined(<CardHead title="Title" subtitle="Sub" action={<a href="/x">go</a>} />);
-    expect(html).toContain("font-size:14px");
+    expect(html).toContain("font-size:15px");
     expect(html).toContain("font-weight:500");
-    expect(html).toContain("font-size:12px");
+    expect(html).toContain("font-size:13px");
     expect(html).toContain("color:var(--text2)");
     expect(html).toContain("gap:4px");
     expect(html).toContain('href="/x"');

@@ -1,65 +1,36 @@
-// buildgallery.ai — the type scale.
+// OpenBuilds — the type scale (Synth draft brand pack).
 //
 // THIS IS THE ONLY TYPE MODULE A COMPONENT IMPORTS, and it is the companion to
 // `tokens.ts`: that one decides colour, this one decides lettering. Neither
 // decides layout.
 //
-// Styling in this codebase is applied inline, because Tailwind's generated
-// utilities override hand-written classes at build time. So every role below is
-// a ready-made style object, meant to be spread rather than copied:
+// Styling in this codebase is applied inline. Every role below is a ready-made
+// style object, meant to be spread rather than copied:
 //
-//   import { type } from "@/lib/theme/type";
-//   import { t } from "@/lib/theme/tokens";
-//
-//   <h2 style={{ ...type.sectionHead, color: t.text }}>How it was built</h2>
+//   <h2 style={{ ...type.sectionHead, color: t.text }}>36 drafts</h2>
 //   <p  style={{ ...type.body, ...measure, color: t.text2 }}>…</p>
-//   <span style={{ ...type.data, ...tabular }}>$0.42</span>
-//   <h1 style={{ ...type.display(44), color: t.text }}>Builds worth running</h1>
-//   <span style={{ ...type.mono(10, { caps: true }) }}>Maker</span>
+//   <span style={{ ...type.data, ...tabular }}>12</span>
+//   <h1 style={{ ...type.work, color: t.text }}>The build's title</h1>
 //
-// Spread it; do not pick fields out of it. A role that arrives half-applied —
-// the size without the weight, the family without the line-height — is how a
-// scale stops being one.
+// ONE SANS, ONE SERIF, ONE MONO.
+//   Geist        the interface: headings, body, buttons, nav, labels.
+//   Geist Serif  weight 400 ONLY, and ONLY for works: the build title, a
+//                build's name in a "Rebuilt from" box, compare column heads,
+//                the credit line on Rebuild, a profile card's name in Followers.
+//                It has no weight axis, so it is never bolded.
+//   Geist Mono   ONLY for numbers: counts in tables, step numbers, keys,
+//                character counts, XP figures, "1 of 3". Never a sentence,
+//                a label or a handle.
+// The names FIGTREE, SENTIENT and DM_MONO stay as the three roles' handles so
+// callers do not change; FIGTREE is Geist, SENTIENT is Geist Serif, DM_MONO is
+// Geist Mono.
 //
-// ONE FACE, THREE JOBS. Geist Serif (self-hosted from /fonts) is body, UI and display:
-// every heading. Geist Serif is also data: model names, cost, timestamps, change
-// summaries, part labels, counts and eyebrows. Mono never sets long-form prose.
-// The names FIGTREE, SENTIENT and DM_MONO stay as the three roles' handles, from
-// before UI-P99 retired Figtree, Sentient and DM Mono; each now reads Geist or Geist Mono.
-//
-// TWO FLOORS, ENFORCED BELOW RATHER THAN DOCUMENTED. Sentient is never emitted
-// under 20px, and Figtree is never emitted under weight 400 at sizes below
-// 18px. Both are hard rules in the theme: a display face loses its shape at
-// small sizes, worst on the dark room, and a sub-400 weight at text size
-// disappears into the ground. The one sanctioned exception is the lockup
-// wordmark, which the reference draws at 15px in the footer; `display(16,
-// { lockup: true })` is the only way to get it. `assertFloors` runs over the
-// static role table at import time in dev, and the unit test runs it in CI, so
-// a violation cannot reach a screen by being written down.
-//
-// THE DENSITY PASS (UI-P52, UI-P53). The kit was tightened by the table in
-// `design/prompts/README-density.md`, and this scale follows it: every static
-// role below is its old size through the table, and `display(px)` and
-// `mono(px)` take the size the boards drew BEFORE the pass and render it
-// through the table (`display(44)` is 33px), keeping that size's tracking and
-// leading — which is exactly what the tightened kit draws. So every caller
-// tightened without being edited. Sentient stays at 20px and up: a heading the
-// table takes under 20 is set in Figtree 600 at the same size, which is why
-// the floor rose from 17 to 20 here.
+// FIVE SIZES (px size / line): 31/36 page titles and the build title; 20/24
+// section heads; 17/22 group headings; 15/20 body, fields, buttons, nav; 13/16
+// meta, labels, chips. The eyebrow role is retired: it keeps its name so
+// callers do not change, and renders as a plain 13/16 label. No uppercase.
 
 import type { CSSProperties } from "react";
-
-import { denseFont } from "./density";
-
-/* ── The family and size tokens (UI-P80) ───────────────────────────────────
-   Every family and every size is read through a custom property declared on
-   `:root` in src/index.css, with a fallback carrying the same value:
-
-     --font-ui / --font-display / --font-data     the three families
-     --type-<role>-{size,weight,leading,tracking,font}   a role's own value
-
-   `fallbackOf` is how the floors below, and the tests, read the value out of a
-   `var(--x, value)`. */
 
 /** `var(--x, fallback)` → `fallback`, through nested vars. Anything else comes back unchanged. */
 export function fallbackOf(value: string): string {
@@ -79,152 +50,147 @@ const roleVar = (role: string, prop: "size" | "weight" | "leading" | "tracking" 
    Each stack falls back within its own job, so a face that fails to load
    degrades to something doing the same work rather than to the body face. */
 
-/** Body and UI: Geist. The `*_STACK` constants are the fallbacks written into each `var()`. */
-export const FIGTREE_STACK =
-  "'Geist Serif', Georgia, 'Times New Roman', serif";
+/** The interface: Geist. The `*_STACK` constants are the fallbacks written into each `var()`. */
+export const FIGTREE_STACK = "Geist, system-ui, sans-serif";
 export const FIGTREE = `var(--font-ui, ${FIGTREE_STACK})`;
 
-/** Display: Geist, loaded by the `@font-face` rules in src/index.css. */
-export const SENTIENT_STACK = "'Geist Serif', Georgia, 'Times New Roman', serif";
+/** Works only: Geist Serif 400. */
+export const SENTIENT_STACK = "'Geist Serif', Georgia, serif";
 export const SENTIENT = `var(--font-display, ${SENTIENT_STACK})`;
 
-/** Data. */
-export const DM_MONO_STACK = "'Geist Serif', Georgia, 'Times New Roman', serif";
+/** Numbers only: Geist Mono. */
+export const DM_MONO_STACK = "'Geist Mono', ui-monospace, monospace";
 export const DM_MONO = `var(--font-data, ${DM_MONO_STACK})`;
 
 /* ── The scale ─────────────────────────────────────────────────────────────
-   Eight roles. Sizes given as a range in the spec are `clamp()`d between those
-   bounds so they scale with the viewport instead of stepping at a breakpoint;
-   the lower bound is the value the floors are checked against, because it is
-   the smallest the role can ever render.
+   Five sizes, nine role names. `textWrap` is set by role: headings balance so a
+   two-line title does not leave one word stranded, descriptions get `pretty`.
+   Neither belongs on a label or a number. */
 
-   `textWrap` is set by role, not by taste: headings balance so a two-line
-   title does not leave one word stranded, descriptions get `pretty` so a
-   paragraph does not end on a widow. Neither belongs on a label or a number,
-   which is why the short roles carry no `textWrap` at all.
-
-   UI-P53: each size is its pre-pass size through the density table (16 → 15,
-   13 → 12, 22 → 19, 48 → 36…). A `clamp()`'s preferred term is scaled with its
-   bounds, so the role still renders the dense size at 1440 and at 390. */
-
-/** 12px mono, uppercase. The small label above a section or a card.
-    `mono(px, { caps: true })` is the same job at the reference's other sizes.
-    12 is in the table's kept band (10–12), so the pass left it alone. */
+/** 13/16 Geist 500. The retired eyebrow: the name stays so callers do not change,
+    but there is no uppercase and no mono any more. */
 export const eyebrow = {
-  fontFamily: roleVar("eyebrow", "font", DM_MONO),
-  fontSize: roleVar("eyebrow", "size", "12px"),
+  fontFamily: roleVar("eyebrow", "font", FIGTREE),
+  fontSize: roleVar("eyebrow", "size", "13px"),
   fontWeight: 500,
-  lineHeight: 1.3,
-  letterSpacing: roleVar("eyebrow", "tracking", "0.08em"),
-  textTransform: "uppercase",
+  lineHeight: "16px",
+  letterSpacing: "0",
 } as const satisfies CSSProperties;
 
-/** 15px Figtree (16 before UI-P53). The default for prose and any text that wraps. */
+/** 15/20 Geist 400. Prose, post text, fields, buttons, nav. */
 export const body = {
   fontFamily: FIGTREE,
   fontSize: roleVar("body", "size", "15px"),
   fontWeight: 400,
-  lineHeight: roleVar("body", "leading", 1.55),
+  lineHeight: roleVar("body", "leading", "20px"),
   letterSpacing: "0",
   textWrap: "pretty",
 } as const satisfies CSSProperties;
 
-/** 16px Figtree (17 before UI-P53). Body copy that leads — a standfirst, a build's summary. */
+/** 17/22 Geist 400. Group headings inside settings and legal pages, the notepad
+    title, copy that leads. Bold it to 600 where it heads a group. */
 export const bodyLarge = {
   fontFamily: FIGTREE,
-  fontSize: roleVar("body-large", "size", "16px"),
+  fontSize: roleVar("body-large", "size", "17px"),
   fontWeight: 400,
-  lineHeight: roleVar("body-large", "leading", 1.55),
+  lineHeight: roleVar("body-large", "leading", "22px"),
   letterSpacing: "0",
   textWrap: "pretty",
 } as const satisfies CSSProperties;
 
-/**
- * 19px Figtree 600. A card's title.
- *
- * FIGTREE 600 SINCE UI-P53, AND SENTIENT BEFORE IT. BG-P09 set the role in the
- * display face at a fixed 22px: a title under a picture has to win the reader's
- * eye by face, size and contrast, and Sentient at 22 did, clear of the display
- * floor. The density pass takes 22 to 19, which is under Sentient's floor of 20,
- * so the role keeps the size and changes the face — Figtree at 600, the weight
- * that still wins against a photograph at 19. Tracking, leading and balancing
- * are unchanged.
- */
+/** 15/20 Geist 600. A row title, a name in a post. */
 export const cardTitle = {
   fontFamily: FIGTREE,
-  fontSize: roleVar("card-title", "size", "19px"),
+  fontSize: roleVar("card-title", "size", "15px"),
   fontWeight: roleVar("card-title", "weight", 600),
-  lineHeight: roleVar("card-title", "leading", 1.25),
-  letterSpacing: roleVar("card-title", "tracking", "-0.01em"),
+  lineHeight: roleVar("card-title", "leading", "20px"),
+  letterSpacing: "0",
   textWrap: "balance",
 } as const satisfies CSSProperties;
 
-/** 22–36px Sentient (30–48 before UI-P53). A section heading on a reading surface. */
+/** 20/24 Geist 600, tracking -0.01em. Section heads in side columns, compact
+    page heads, table titles. */
 export const sectionHead = {
-  fontFamily: SENTIENT,
-  fontSize: roleVar("section-head", "size", "clamp(22px, 2.7vw, 36px)"),
-  fontWeight: 500,
-  lineHeight: roleVar("section-head", "leading", 1.12),
+  fontFamily: FIGTREE,
+  fontSize: roleVar("section-head", "size", "20px"),
+  fontWeight: 600,
+  lineHeight: roleVar("section-head", "leading", "24px"),
   letterSpacing: roleVar("section-head", "tracking", "-0.01em"),
   textWrap: "balance",
 } as const satisfies CSSProperties;
 
-/** 33–58px Sentient (44–78 before UI-P53). One per page, at most. */
+/** 31/36 Geist 600. A visible page title: one per page, at most. */
 export const hero = {
-  fontFamily: SENTIENT,
-  fontSize: roleVar("hero", "size", "clamp(33px, 4.8vw, 58px)"),
-  fontWeight: 500,
-  lineHeight: roleVar("hero", "leading", 1.05),
+  fontFamily: FIGTREE,
+  fontSize: roleVar("hero", "size", "31px"),
+  fontWeight: 600,
+  lineHeight: roleVar("hero", "leading", "36px"),
   letterSpacing: roleVar("hero", "tracking", "-0.02em"),
   textWrap: "balance",
 } as const satisfies CSSProperties;
 
-/** 12–13px mono (13–14 before UI-P53). Model names, cost, timestamps, change
-    summaries, counts. Pair with `tabular` wherever the digits sit in a column.
-    0.83vw keeps it at 12px at 1440, where the old role rendered 13. */
-export const data = {
-  fontFamily: roleVar("data", "font", DM_MONO),
-  fontSize: roleVar("data", "size", "clamp(12px, 0.83vw, 13px)"),
+/** 31/36 Geist Serif 400, tracking -0.02em. The build title on the build page. Never bold. */
+export const work = {
+  fontFamily: SENTIENT,
+  fontSize: roleVar("work", "size", "31px"),
   fontWeight: 400,
-  lineHeight: roleVar("data", "leading", 1.45),
+  lineHeight: roleVar("work", "leading", "36px"),
+  letterSpacing: "-0.02em",
+  textWrap: "balance",
+} as const satisfies CSSProperties;
+
+/** 15/20 Geist Serif 400. A build's name inside a "Rebuilt from" box, a compare
+    column head, the credit line on Rebuild, a profile card's name in Followers. */
+export const workName = {
+  fontFamily: SENTIENT,
+  fontSize: "15px",
+  fontWeight: 400,
+  lineHeight: "20px",
   letterSpacing: "0",
 } as const satisfies CSSProperties;
 
-/** 12px Figtree 500 (13 before UI-P53). A field label or a chip — short, and never wrapping. */
+/** 13/16 Geist 400, tabular digits. Meta lines: a model name, a time, a short fact.
+    Not mono: only numbers are (see `monoLabel`). */
+export const data = {
+  fontFamily: roleVar("data", "font", FIGTREE),
+  fontSize: roleVar("data", "size", "13px"),
+  fontWeight: 400,
+  lineHeight: roleVar("data", "leading", "16px"),
+  letterSpacing: "0",
+  fontVariantNumeric: "tabular-nums",
+} as const satisfies CSSProperties;
+
+/** 13/16 Geist 500. A field label or a chip: short, and never wrapping. */
 export const label = {
   fontFamily: FIGTREE,
-  fontSize: roleVar("label", "size", "12px"),
+  fontSize: roleVar("label", "size", "13px"),
   fontWeight: 500,
-  lineHeight: 1.3,
-  letterSpacing: roleVar("label", "tracking", "0.01em"),
+  lineHeight: "16px",
+  letterSpacing: "0",
 } as const satisfies CSSProperties;
 
-/** 24px Geist 500 (UI-P80, new). A count or a headline number; large is 32 via
-    `--type-figure-size`. Tabular, so a figure cannot be set without it. Figtree
-    under the current look, where no board draws it yet. */
+/** 20/24 Geist 600. A count or a headline number, tabular. */
 export const figure = {
   fontFamily: FIGTREE,
-  fontSize: roleVar("figure", "size", "24px"),
-  fontWeight: 500,
-  lineHeight: 1.1,
-  letterSpacing: "-0.02em",
+  fontSize: roleVar("figure", "size", "20px"),
+  fontWeight: 600,
+  lineHeight: "24px",
+  letterSpacing: "-0.01em",
   fontVariantNumeric: "tabular-nums",
 } as const satisfies CSSProperties;
 
-/** 10.5px mono (UI-P80, new). Pills, ids, the `/` key. Geist Mono under the
-    refined look, DM Mono under the current. Named `monoLabel` because `mono`
-    is already the sized function below. */
+/** 13/16 Geist Mono. NUMBERS ONLY: counts in tables, step numbers, keyboard keys,
+    character counts, XP figures, "1 of 3". Tabular digits. */
 export const monoLabel = {
   fontFamily: DM_MONO,
-  fontSize: "10.5px",
+  fontSize: "13px",
   fontWeight: 400,
-  lineHeight: "18px",
+  lineHeight: "16px",
   letterSpacing: "0",
   fontVariantNumeric: "tabular-nums",
 } as const satisfies CSSProperties;
 
-/** The ten static roles, by name. The floors are checked over this table;
-    `display` and `mono` below are functions and are checked at the call. */
+/** The static roles, by name. The floors are checked over this table. */
 export const scale = {
   eyebrow,
   body,
@@ -232,6 +198,8 @@ export const scale = {
   cardTitle,
   sectionHead,
   hero,
+  work,
+  workName,
   data,
   label,
   figure,
@@ -239,55 +207,35 @@ export const scale = {
 } as const;
 
 /* ── Sized roles ───────────────────────────────────────────────────────────
-   Display and mono type are used at many sizes in the overhaul, and their
-   tracking and leading depend on the size, so each is a function that returns a
-   complete role. The bands are the reference's own.
-
-   `px` IS THE SIZE THE BOARD DREW BEFORE UI-P52, and the role renders it through
-   the density table. The bands stay keyed to that size because the tightened kit
-   kept each heading's tracking and leading when it shrank it: a 52px heading is
-   39px now and still −0.04em at 0.95. */
+   Callers still say the size they once drew; `display(px)` and `mono(px)` land
+   it on one of the five. */
 
 export interface DisplayOptions {
-  /** The lockup wordmark: −0.03em, line-height 1, no balancing, Sentient at
-   *  every size, and the one role allowed under the 20px floor. Drawn at 16,
-   *  18, 19, 21, 34, 64 and 70 before the pass; rendered at 15, 15, 16, 18, 26,
-   *  48 and 52 (the footer's is the smallest). */
+  /** The lockup wordmark: Geist 600, -0.03em, line-height 1, any size. */
   lockup?: boolean;
-  /** A page heading on mobile drawn at 30–36px takes −0.035em instead of −0.03em. */
+  /** Kept for callers; every page heading now takes the same tracking. */
   mobilePageHeading?: boolean;
 }
 
-/** The smallest the lockup wordmark is ever rendered: the footer's, 16 → 15 in UI-P52. */
+/** The smallest the lockup wordmark is ever rendered. */
 export const LOCKUP_MIN_PX = 15;
 
-/** The smallest size a board drew a heading at. `display()` refuses a smaller one. */
+/** The smallest size a heading was ever drawn at; `display()` refuses a smaller one. */
 export const DRAWN_HEADING_MIN_PX = 17;
 
-/** The smallest size a board drew the lockup wordmark at (the footer's). */
+/** The smallest size the lockup wordmark was ever drawn at. */
 export const DRAWN_LOCKUP_MIN_PX = 16;
 
-/**
- * A complete display role for a heading the board drew at `px`, rendered at
- * `denseFont(px)`, with the reference's letter-spacing and line-height for the
- * drawn size's band:
- *
- *   52 and up   −0.04em   0.95
- *   44–51       −0.035em  1
- *   30–43       −0.03em   1    (−0.035em for a mobile page heading at 30–36)
- *   17–29       −0.02em   1.05
- *   lockup      −0.03em   1    at its own size
- *
- * Sentient 500 when it renders at 20px or more; Figtree 600 at the same size
- * when the table takes it under 20 (every heading drawn at 22 or less), since
- * Sentient is never set under its floor. The lockup is Sentient at every size.
- *
- * Throws for a size no board drew a heading at — under 17px, or 16 for the
- * lockup — rather than emitting it: that is not a heading, and the mistake
- * should fail where it is written.
- */
+/** The one of the five sizes a drawn heading size lands on: 30 and up is 31/36, 22 to 29 is 20/24, under 22 is 17/22. */
+export function headingStep(px: number): { size: number; line: number } {
+  if (px >= 30) return { size: 31, line: 36 };
+  if (px >= 22) return { size: 20, line: 24 };
+  return { size: 17, line: 22 };
+}
+
+/** A complete Geist heading role for a heading drawn at `px`, on one of the five sizes. Never serif; for a work use `work`. */
 export function display(px: number, options: DisplayOptions = {}): CSSProperties {
-  const { lockup = false, mobilePageHeading = false } = options;
+  const { lockup = false } = options;
   const floor = lockup ? DRAWN_LOCKUP_MIN_PX : DRAWN_HEADING_MIN_PX;
   if (!(px >= floor) || !Number.isFinite(px)) {
     throw new RangeError(
@@ -296,76 +244,42 @@ export function display(px: number, options: DisplayOptions = {}): CSSProperties
       }.`,
     );
   }
-  const size = denseFont(px);
-
-  const base = {
-    fontFamily: lockup || size >= DISPLAY_MIN_PX ? SENTIENT : FIGTREE,
-    fontSize: `${size}px`,
-    fontWeight: lockup || size >= DISPLAY_MIN_PX ? 500 : 600,
-  } as const;
-
-  if (lockup) return { ...base, lineHeight: 1, letterSpacing: "-0.03em" };
-
-  let letterSpacing: string;
-  let lineHeight: number;
-  if (px >= 52) {
-    letterSpacing = "-0.04em";
-    lineHeight = 0.95;
-  } else if (px >= 44) {
-    letterSpacing = "-0.035em";
-    lineHeight = 1;
-  } else if (px >= 30) {
-    letterSpacing = mobilePageHeading && px <= 36 ? "-0.035em" : "-0.03em";
-    lineHeight = 1;
-  } else {
-    letterSpacing = "-0.02em";
-    lineHeight = 1.05;
+  if (lockup) {
+    return { fontFamily: FIGTREE, fontSize: `${Math.round(px * 0.94)}px`, fontWeight: 600, lineHeight: 1, letterSpacing: "-0.03em" };
   }
-  return { ...base, lineHeight, letterSpacing, textWrap: "balance" };
+  const { size, line } = headingStep(px);
+  return {
+    fontFamily: FIGTREE,
+    fontSize: `${size}px`,
+    fontWeight: 600,
+    lineHeight: `${line}px`,
+    letterSpacing: size === 31 ? "-0.02em" : "-0.01em",
+    textWrap: "balance",
+  };
 }
 
 export interface MonoOptions {
-  /** An eyebrow: uppercase, .09em tracking, weight 500. Used at 10–12px. */
+  /** Retired with the eyebrow: accepted so callers compile, and ignored. No uppercase anywhere. */
   caps?: boolean;
 }
 
-/**
- * A complete DM Mono role for type the board drew at `px`, rendered at
- * `denseFont(px)` (10–12 are kept, 13 → 12, 22 → 19, 40 → 30). Eyebrows
- * (`caps`) are uppercase with .09em tracking; data values carry no extra
- * tracking; a large number — drawn at 22px and up — takes −0.02em. Digits that
- * sit in a column also need `tabular`, which this role carries so a number
- * cannot be set without it.
- */
-export function mono(px: number, options: MonoOptions = {}): CSSProperties {
-  const { caps = false } = options;
-  const base = {
+/** A Geist Mono role, 13/16 at every size: numbers only. Tabular digits. */
+export function mono(_px: number, _options: MonoOptions = {}): CSSProperties {
+  return {
     fontFamily: DM_MONO,
-    fontSize: `${denseFont(px)}px`,
-    lineHeight: 1.3,
+    fontSize: "13px",
+    fontWeight: 400,
+    lineHeight: "16px",
+    letterSpacing: "0",
     fontVariantNumeric: "tabular-nums",
-  } as const;
-  if (caps) {
-    return { ...base, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase" };
-  }
-  return { ...base, fontWeight: 400, letterSpacing: px >= 22 ? "-0.02em" : "0" };
+  };
 }
 
 /**
  * The scale, by role. `type.body`, `type.sectionHead`, and so on.
  *
- * IMPORTING THIS INTO A FILE THAT ALREADY SAYS `type`. Two cases, both of
- * which the compiler catches and the bundler does not:
- *
- *   - the file declares its own `type` (a prop, a local), which shadows this
- *     one, so `type.cardTitle` reads a property off that value instead;
- *   - the file uses inline type-import modifiers (`import { type Foo }`),
- *     which a value binding called `type` makes ambiguous, and the imported
- *     types silently stop resolving.
- *
- * In either case import the roles by name — `import { cardTitle }`, or
- * `data as dataText` where the bare name would collide — rather than the
- * object. Every role below is exported individually for exactly this.
+ * IMPORTING THIS INTO A FILE THAT ALREADY SAYS `type`: import the roles by
+ * name instead (`import { cardTitle }`, or `data as dataText`).
  */
 export const type = {
   ...scale,
@@ -375,16 +289,14 @@ export const type = {
 
 export type TypeRole = keyof typeof scale;
 
-/** F77: the build editor's five type steps, in px: 12 meta, 14 body, 16 a section heading, 20 a headline, 24 the page
-    title. Nothing in the editor is set below 12. The roles above are whole styles; these are sizes only, for the editor's
+/** The build editor's five type steps, in px, each one of the five sizes: 13 meta, 15 body, 17 a section heading, 20 a
+    headline and the compact page title. Nothing in the editor is set below 13. The roles above are whole styles; these are sizes only, for the editor's
     own `text()` and `type()` recipes. */
-export const textStep = { meta: 12, body: 14, section: 16, headline: 20, title: 24 } as const;
+export const textStep = { meta: 13, body: 15, section: 17, headline: 20, title: 20 } as const;
 
-/** The seven sizes, in px. Every font size the site sets is one of these; the roles above stay for the pages that read
-    them. 32 the sign-in tagline only; 20 / 500 the page title; 16 / 500 a post or card title; 14 / 500 a section heading
-    (every h2 inside a page); 13 body, row titles and controls; 12 meta lines, breadcrumbs and text links; 11 tags, mono
-    labels and table micro-labels. */
-export const typeSize = { tagline: 32, title: 20, cardTitle: 16, section: 14, body: 13, meta: 12, micro: 11 } as const;
+/** The five sizes, in px. Every font size the site sets is one of these: 31 a visible page title and the build title;
+    20 a section head; 17 a group heading; 15 body, fields, buttons and nav; 13 meta, labels and chips. */
+export const typeSize = { title: 31, section: 20, group: 17, body: 15, meta: 13 } as const;
 
 /* ── Modifiers ─────────────────────────────────────────────────────────────
    Spread alongside a role rather than baked into it, because both depend on
@@ -415,10 +327,8 @@ export const tabular = {
    Both rules are stated in the theme as hard, so they are checked in code
    rather than trusted to review. */
 
-/** Sentient is never emitted below this size (the lockup wordmark aside).
-    20 since UI-P53, when the density pass took the old 17px floor's headings
-    under it; 17 before. */
-export const DISPLAY_MIN_PX = 20;
+/** Geist Serif is never emitted below this size: its smallest use is a work's name at 15. */
+export const DISPLAY_MIN_PX = 15;
 
 /** Below this size, Figtree is never emitted under weight 400. */
 export const BODY_WEIGHT_FLOOR_PX = 18;
@@ -462,13 +372,13 @@ export function floorViolations(role: string, style: CSSProperties): string[] {
   if (spends(family, "display")) {
     if (size === null) {
       found.push(
-        `${role}: Sentient at a size this check cannot resolve (${String(style.fontSize)}); ` +
-          `the display face needs a size provably at or above ${DISPLAY_MIN_PX}px.`,
+        `${role}: the serif at a size this check cannot resolve (${String(style.fontSize)}); ` +
+          `the serif needs a size provably at or above ${DISPLAY_MIN_PX}px.`,
       );
     } else if (size < DISPLAY_MIN_PX) {
       found.push(
-        `${role}: Sentient at ${size}px is below the ${DISPLAY_MIN_PX}px display floor — ` +
-          `the face loses its shape at this size, worst on Dusk. Use Figtree, or size up.`,
+        `${role}: the serif at ${size}px is below the ${DISPLAY_MIN_PX}px floor — ` +
+          `it is for works only. Use Geist, or size up.`,
       );
     }
   }

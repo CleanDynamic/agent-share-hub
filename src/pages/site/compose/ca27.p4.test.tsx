@@ -62,7 +62,7 @@ describe("the panel", () => {
     // jsdom drops a var() colour from an element's style (`background`, `border`); the browser test reads --window, 1px --window-border and the shadow.
     const foot = within(panel).getByTestId("details-foot");
     expect(foot.textContent).toBe(OVERLAY_FOOT_COPY.tap);
-    expect(foot.style.fontSize).toBe("12px");
+    expect(foot.style.fontSize).toBe("13px");
     expect(foot.style.textAlign).toBe("left");
     // Last in the panel: after the content.
     expect(panel.lastElementChild).toBe(foot);

@@ -99,7 +99,7 @@ export function ShellHeader({
                 border: "none",
                 color: "var(--text2)",
                 fontFamily: FONT,
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: 500,
                 cursor: "pointer",
                 transition: feedback("color", "background-color"),
@@ -152,7 +152,7 @@ export function ShellHeader({
                    gradient flattened and made the label worth re-measuring. */
                 color: "var(--on-action)",
                 fontFamily: FONT,
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: 500,
                 cursor: primaryAction.disabled ? "not-allowed" : "pointer",
                 opacity: primaryAction.disabled ? 0.5 : 1,
@@ -181,7 +181,7 @@ export function ShellHeader({
             display: "flex",
             alignItems: "center",
             fontFamily: FONT,
-            fontSize: 14,
+            fontSize: 15,
             fontWeight: 500,
             color: "var(--text)",
             whiteSpace: "nowrap",
@@ -224,7 +224,7 @@ export function ShellHeader({
                       background: "transparent",
                       border: "none",
                       fontFamily: FONT,
-                      fontSize: 12,
+                      fontSize: 13,
                       fontWeight: 500,
                       /* BG-P30. The resting tab was painted `--recess`, which
                          is a SURFACE token: 1.16:1 on Noon's ground and
@@ -243,7 +243,7 @@ export function ShellHeader({
                     {typeof t.count === "number" && (
                       <span
                         style={{
-                          fontSize: 11,
+                          fontSize: 13,
                           fontWeight: 500,
                           padding: "1px 4px",
                           borderRadius: 999,
@@ -283,7 +283,7 @@ export function ShellHeader({
                   ? "var(--text2)"
                   : "var(--text2)",
                 fontFamily: FONT,
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: 500,
                 cursor: secondaryAction.disabled ? "default" : "pointer",
                 padding: "4px 4px",

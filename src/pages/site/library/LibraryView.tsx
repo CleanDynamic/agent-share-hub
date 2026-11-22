@@ -173,7 +173,7 @@ export interface LibraryViewProps {
 
 /* ── shared ── */
 
-const small: CSSProperties = { fontFamily: FIGTREE, fontSize: 12, lineHeight: "20px", color: t.label };
+const small: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.label };
 const ellipsis: CSSProperties = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 
 
@@ -198,7 +198,7 @@ function KindRow({ item, current }: { item: LibraryKindsProps["items"][number]; 
         borderRadius: r.control,
         background: state.hovered ? hoverFill() : "transparent",
         fontFamily: FIGTREE,
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: current ? 500 : 400,
         color: current || state.hovered ? t.text : t.text2,
         textDecoration: "none",
@@ -206,7 +206,7 @@ function KindRow({ item, current }: { item: LibraryKindsProps["items"][number]; 
       }}
     >
       <span>{item.label}</span>
-      <span style={{ fontSize: 12, fontWeight: 400, color: t.label, fontVariantNumeric: "tabular-nums" }}>{item.count}</span>
+      <span style={{ fontSize: 13, fontWeight: 400, color: t.label, fontVariantNumeric: "tabular-nums" }}>{item.count}</span>
     </Link>
   );
 }
@@ -255,10 +255,10 @@ function CollectionRow({ item, current, href }: { item: CollectionEntry; current
       }}
     >
       <span style={{ minWidth: 0 }}>
-        <span style={{ display: "block", fontSize: 12, ...ellipsis }}>{item.name}</span>
+        <span style={{ display: "block", fontSize: 13, ...ellipsis }}>{item.name}</span>
         <span style={small}>{item.meta}</span>
       </span>
-      <span style={{ fontSize: 12, color: t.label, fontVariantNumeric: "tabular-nums" }}>{item.count}</span>
+      <span style={{ fontSize: 13, color: t.label, fontVariantNumeric: "tabular-nums" }}>{item.count}</span>
     </Link>
   );
 }
@@ -267,7 +267,7 @@ export function LibraryCollections({ read, items, current, hrefFor, onNew, empty
   return (
     <section aria-label="Collections" style={{ marginTop: 32 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingBottom: 8, borderBottom: `1px solid ${t.hairline}` }}>
-        <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, fontWeight: 500, lineHeight: "20px", color: t.text }}>Collections</h2>
+        <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: 500, lineHeight: "20px", color: t.text }}>Collections</h2>
         {onNew ? (
           <LibraryTextButton onClick={onNew} aria-label="New collection">
             New
@@ -315,7 +315,7 @@ export function LibraryChanges({ figure, parts, to, rows }: LibraryChangesProps)
               <span style={{ fontWeight: 500, color: t.text }}>{row.item}</span>
               <span style={{ color: t.label }}> · {row.detail}</span>
             </span>
-            <span style={{ fontSize: 12, color: t.label, fontVariantNumeric: "tabular-nums" }}>{row.age}</span>
+            <span style={{ fontSize: 13, color: t.label, fontVariantNumeric: "tabular-nums" }}>{row.age}</span>
           </div>
         ))}
       </div>
@@ -349,7 +349,7 @@ function ItemRow({ row, selected, usedIn, onSelect }: { row: LibraryRow; selecte
           style={{ display: "flex", flexDirection: "column", gap: 4, maxWidth: "100%", minWidth: 0, padding: 0, background: "none", border: 0, borderRadius: r.chip, textAlign: "left", fontFamily: FIGTREE, color: t.text, cursor: "pointer", ...ring(state.focusVisible) }}
         >
           <span style={{ display: "block", fontSize: 13, fontWeight: 500, lineHeight: "20px", maxWidth: 300, ...ellipsis, textDecoration: state.hovered ? "underline" : "none", textDecorationColor: t.line, textUnderlineOffset: 3 }}>{row.title}</span>
-          {row.detail ? <span style={{ ...small, fontSize: 12, display: "block", lineHeight: "20px", ...ellipsis }}>{row.detail}</span> : null}
+          {row.detail ? <span style={{ ...small, fontSize: 13, display: "block", lineHeight: "20px", ...ellipsis }}>{row.detail}</span> : null}
         </button>
       </td>
       <td style={td}>{row.type}</td>
@@ -403,9 +403,9 @@ export function LibraryItems(props: LibraryItemsProps) {
   /* A phone scrolls the table inside its own box, never the page sideways. */
   else table = () => (
       <div style={{ overflowX: "auto", marginTop: chips?.length || sameAsBuilds ? 16 : 0 }}>
-      <table data-testid="library-table" style={{ width: "100%", borderCollapse: "collapse", fontFamily: FIGTREE, fontSize: 12, fontVariantNumeric: "tabular-nums" }}>
+      <table data-testid="library-table" style={{ width: "100%", borderCollapse: "collapse", fontFamily: FIGTREE, fontSize: 13, fontVariantNumeric: "tabular-nums" }}>
         <thead>
-          <tr style={{ fontSize: 12, color: t.label }}>
+          <tr style={{ fontSize: 13, color: t.label }}>
             <th scope="col" style={th}>{itemColumn}</th>
             <th scope="col" style={th}>Type</th>
             <th scope="col" style={th}>State</th>
@@ -443,7 +443,7 @@ export function LibraryItems(props: LibraryItemsProps) {
         /* G17: a chip removed hands focus to the next chip (FocusRescue reads this as a list). */
         <div data-focus-list="" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
           {chips?.map((chip) => <ActiveFilterChip key={chip.name} name={chip.name} value={chip.value} onRemove={chip.onRemove} />)}
-          {sameAsBuilds ? <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.label, alignSelf: "center", marginLeft: 6 }}>Same filters as Builds</span> : null}
+          {sameAsBuilds ? <span style={{ fontFamily: FIGTREE, fontSize: 13, color: t.label, alignSelf: "center", marginLeft: 6 }}>Same filters as Builds</span> : null}
         </div>
       ) : null}
       <PageState
@@ -523,7 +523,7 @@ function VersionOption({ label, value, on, onChoose, onKeyDown }: { label: strin
         border: on ? `1px solid ${t.controlBorder}` : "1px solid transparent",
         borderRadius: r.chip,
         fontFamily: FIGTREE,
-        fontSize: 12,
+        fontSize: 13,
         color: on || state.hovered ? t.text : t.text2,
         cursor: "pointer",
         ...ring(state.focusVisible),
@@ -536,7 +536,7 @@ function VersionOption({ label, value, on, onChoose, onKeyDown }: { label: strin
 
 function Content({ lines }: { lines: readonly DiffLine[] }) {
   return (
-    <div style={{ marginTop: 12, padding: 12, ...WELL, boxShadow: "none", borderRadius: r.control, fontFamily: DM_MONO, fontSize: 12, lineHeight: "18px", color: t.text2, whiteSpace: "pre-wrap" }}>
+    <div style={{ marginTop: 12, padding: 12, ...WELL, boxShadow: "none", borderRadius: r.control, fontFamily: DM_MONO, fontSize: 13, lineHeight: "18px", color: t.text2, whiteSpace: "pre-wrap" }}>
       {lines.map((line, index) => (
         <span key={index} style={{ display: "block", color: line.change === "removed" ? t.breakageInk : line.change === "added" ? t.evidence : undefined, textDecoration: line.change === "removed" ? "line-through" : undefined }}>
           {line.change ? <VisuallyHidden>{line.change === "removed" ? "Removed: " : "Added: "}</VisuallyHidden> : null}
@@ -569,10 +569,10 @@ export function LibrarySelectedItem({ item }: { item: LibrarySelected }) {
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <TypeChip>{item.chip}</TypeChip>
         <span style={{ flex: 1 }} />
-        {item.state ? <span style={{ fontFamily: FIGTREE, fontSize: 12, color: STATE_TONE[item.state.tone ?? "label"] }}>{item.state.text}</span> : null}
+        {item.state ? <span style={{ fontFamily: FIGTREE, fontSize: 13, color: STATE_TONE[item.state.tone ?? "label"] }}>{item.state.text}</span> : null}
       </div>
-      <h2 style={{ margin: "10px 0 0", fontFamily: FIGTREE, fontSize: 14, fontWeight: 500, lineHeight: 1.3, color: t.text, overflowWrap: "anywhere" }}>{item.title}</h2>
-      {item.source ? <p style={{ margin: "2px 0 0", fontFamily: FIGTREE, fontSize: 12, color: t.label }}>{item.source}</p> : null}
+      <h2 style={{ margin: "10px 0 0", fontFamily: FIGTREE, fontSize: 15, fontWeight: 500, lineHeight: 1.3, color: t.text, overflowWrap: "anywhere" }}>{item.title}</h2>
+      {item.source ? <p style={{ margin: "2px 0 0", fontFamily: FIGTREE, fontSize: 13, color: t.label }}>{item.source}</p> : null}
 
       {item.kind === "step" && item.versions ? (
         <>
@@ -590,7 +590,7 @@ export function LibrarySelectedItem({ item }: { item: LibrarySelected }) {
       {item.rows.length ? <SelectedRows rows={item.rows} /> : null}
 
       {item.kind === "step" && item.note ? (
-        <label style={{ display: "block", marginTop: 12, fontFamily: FIGTREE, fontSize: 12, color: t.label }}>
+        <label style={{ display: "block", marginTop: 12, fontFamily: FIGTREE, fontSize: 13, color: t.label }}>
           Your note
           <NoteField value={item.note.value} onChange={item.note.onChange} onCommit={item.note.onCommit} />
         </label>
@@ -625,7 +625,7 @@ function NoteField({ value, onChange, onCommit }: { value: string; onChange: (va
       value={value}
       onChange={(event) => onChange(event.target.value)}
       {...handlers}
-      style={{ display: "block", width: "100%", boxSizing: "border-box", marginTop: 6, padding: "8px 10px", ...WELL, boxShadow: "none", borderRadius: r.control, color: t.text, fontFamily: FIGTREE, fontSize: 12, lineHeight: "20px", resize: "vertical", ...ring(state.focusVisible) }}
+      style={{ display: "block", width: "100%", boxSizing: "border-box", marginTop: 6, padding: "8px 10px", ...WELL, boxShadow: "none", borderRadius: r.control, color: t.text, fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", resize: "vertical", ...ring(state.focusVisible) }}
     />
   );
 }

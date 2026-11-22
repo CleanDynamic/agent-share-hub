@@ -271,7 +271,7 @@ const styles = {
     fontFamily: "var(--font-ui)",
     fontSize: 9,
     fontWeight: 600,
-    textTransform: "uppercase" as const,
+    textTransform: "none" as const,
     letterSpacing: "0.06em",
     color: "var(--text2)",
   },

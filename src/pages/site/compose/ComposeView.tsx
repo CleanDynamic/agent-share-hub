@@ -262,7 +262,7 @@ export function MediaPanel({
               <Adding pct={pct} />
             ) : (
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ flexGrow: 1, fontFamily: DM_MONO, fontSize: textStep.meta, color: t.text2 }}>Cover</span>
+                <span style={{ flexGrow: 1, fontFamily: FIGTREE, fontSize: textStep.meta, color: t.text2 }}>Cover</span>
                 <TextButton onClick={pick}>Replace</TextButton>
                 <TextButton onClick={onRemoveCover}>Remove</TextButton>
               </div>
@@ -468,7 +468,7 @@ export function ComposeView(props: ComposeViewProps) {
 
   const statusLine = (
     <>
-    <p data-testid="compose-status" style={{ margin: "4px 0 0", fontFamily: DM_MONO, fontSize: textStep.meta, color: t.text2 }}>
+    <p data-testid="compose-status" style={{ margin: "4px 0 0", fontFamily: FIGTREE, fontSize: textStep.meta, color: t.text2 }}>
       {published ? "Published" : "Draft"}
       <SaveLine save={save} lastSavedAt={props.lastSavedAt} pending={props.pendingWrites} onRetry={props.onRetrySave} />
       {needs && !published ? ` · still needs ${missing.join(", ")}` : null}

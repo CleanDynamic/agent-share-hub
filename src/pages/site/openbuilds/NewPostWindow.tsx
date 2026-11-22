@@ -225,10 +225,10 @@ export function NewPostWindow({ spaceSlug, draft: restored, onClose, onReopen }:
           rows={6}
           autoFocus
           onChange={(event) => change({ body: event.target.value })}
-          style={areaStyle(phone, 6, { fontSize: phone ? 16 : 13, outline: "none" })}
+          style={areaStyle(phone, 6, { fontSize: phone ? 15 : 13, outline: "none" })}
         />
         {notice ? (
-          <p id="new-post-notice" role={boxError ? undefined : "alert"} style={{ margin: "6px 0 0", fontFamily: FIGTREE, fontSize: 12, color: t.text }}>
+          <p id="new-post-notice" role={boxError ? undefined : "alert"} style={{ margin: "6px 0 0", fontFamily: FIGTREE, fontSize: 13, color: t.text }}>
             {notice}
           </p>
         ) : null}
@@ -266,7 +266,7 @@ export function NewPostWindow({ spaceSlug, draft: restored, onClose, onReopen }:
                 Remove
               </PostControl>
             </div>
-            {build && card.kind === "build" && card.tiles.length > 0 ? <p style={{ margin: "6px 0 0", fontFamily: FIGTREE, fontSize: 12, color: t.label }}>Click a step to mark it still open</p> : null}
+            {build && card.kind === "build" && card.tiles.length > 0 ? <p style={{ margin: "6px 0 0", fontFamily: FIGTREE, fontSize: 13, color: t.label }}>Click a step to mark it still open</p> : null}
           </div>
         ) : null,
       )}

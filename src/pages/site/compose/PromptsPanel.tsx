@@ -148,7 +148,7 @@ function PromptRow({
     </div>
   );
 
-  const source = <span style={{ fontFamily: DM_MONO, fontSize: textStep.meta, color: t.text2, minWidth: 0, overflowWrap: "anywhere" }}>{row.source}</span>;
+  const source = <span style={{ fontFamily: FIGTREE, fontSize: textStep.meta, color: t.text2, minWidth: 0, overflowWrap: "anywhere" }}>{row.source}</span>;
 
   return (
     <li
@@ -182,7 +182,7 @@ function PromptRow({
           borderRadius: r.full,
           background: t.cell,
           color: t.text,
-          fontFamily: DM_MONO,
+          fontFamily: FIGTREE,
           fontSize: textStep.meta,
           display: "flex",
           alignItems: "center",

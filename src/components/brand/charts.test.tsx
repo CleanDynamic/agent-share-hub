@@ -167,9 +167,9 @@ describe("RankRung and MarkTile", () => {
     expect(at(40)).toContain("border-radius:12px");
     // UI-P52 density pass: the rank type is drawn at 17 / 18 / 22 and display()
     // renders it at 16 / 15 / 19 — under 20px, in Figtree 600.
-    expect(at(28)).toContain("font-size:16px");
-    expect(at(32)).toContain("font-size:15px");
-    expect(at(40)).toContain("font-size:19px");
+    expect(at(28)).toContain("font-size:17px");
+    expect(at(32)).toContain("font-size:17px");
+    expect(at(40)).toContain("font-size:20px");
   });
 
   it("draws the creator mark at 38×38, radius 13, with a 20px trophy, glowing only when highest", () => {
@@ -223,7 +223,7 @@ describe("refined charts and timeline (UI-P85)", () => {
     expect(html).toContain("width:1px;background:var(--line)");
     expect(html).toContain("grid-template-columns:8px 48px minmax(0, 1fr)");
     expect(html).toContain("color:var(--breakage)");
-    expect(html).toContain("text-transform:uppercase");
+    expect(html).toContain("text-transform:none");
     expect(html).not.toContain("0 0 10px");
     expect(html).not.toContain("var(--lit)");
   });

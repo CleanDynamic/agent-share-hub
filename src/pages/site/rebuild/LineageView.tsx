@@ -79,7 +79,7 @@ function OpenLink({ to, title, phone }: { to: string; title: string; phone: bool
         minHeight: phone ? 44 : 24,
         padding: "0 4px",
         fontFamily: FIGTREE,
-        fontSize: 12,
+        fontSize: 13,
         color: t.action,
         textDecoration: "underline",
         textUnderlineOffset: 3,
@@ -116,7 +116,7 @@ function SelectionPanel({
   const upright = ({ fontStyle: "normal" } as const);
   const about = (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 9, flexWrap: "wrap", marginTop: 4 }}>
-      <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text }}>
+      <span style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text }}>
         {selection.parentTitle ? (
           <>
             <i style={upright}>{selection.title}</i> against <i style={upright}>{selection.parentTitle}</i>

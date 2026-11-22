@@ -322,7 +322,7 @@ describe("PROGRESS", () => {
     expect(values.map((value) => value.textContent)).toEqual(["3", "412", "73"]);
     for (const value of values) {
       const style = styleOf(value);
-      expect(style["font-family"]).toContain("Geist Serif");
+      expect(style["font-family"]).toContain("Geist Mono");
       expect(style["font-variant-numeric"]).toBe("tabular-nums");
       expect(style["color"]).toBe("var(--text)");
     }
@@ -372,7 +372,7 @@ describe("THIS WEEK", () => {
     expect(rows.map((row) => within(row).getByRole("progressbar").getAttribute("aria-valuenow"))).toEqual(["2", "1", "0"]);
     for (const row of rows) {
       const count = within(row).getByTestId("weekly-challenge-count");
-      expect(count.style.fontFamily).toContain("Geist Serif");
+      expect(count.style.fontFamily).toContain("Geist");
       expect(count.style.fontVariantNumeric).toBe("tabular-nums");
     }
   });

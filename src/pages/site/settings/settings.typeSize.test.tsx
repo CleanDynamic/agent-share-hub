@@ -17,7 +17,7 @@ describe("a settings section's title", () => {
     phone.on = false;
     render(<SectionPage title="Account">x</SectionPage>);
     const heading = screen.getByRole("heading", { level: 2, name: "Account" });
-    expect(heading.style.fontSize).toBe("14px");
+    expect(heading.style.fontSize).toBe("15px");
     expect(heading.style.fontWeight).toBe("500");
   });
 

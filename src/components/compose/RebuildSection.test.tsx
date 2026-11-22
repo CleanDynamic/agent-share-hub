@@ -410,7 +410,7 @@ describe("the rebuild section itself", () => {
     );
 
     for (const row of Array.from(doc.querySelectorAll("[data-change-kind]"))) {
-      expect(styleOf(row)).toContain("Geist Serif");
+      expect(styleOf(row)).toContain("Geist");
       expect(styleOf(row)).toContain("color:var(--text)");
     }
   });

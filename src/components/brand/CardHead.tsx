@@ -25,7 +25,7 @@ export function CardHead({ title, subtitle, action, headingLevel }: CardHeadProp
           style={{
             margin: 0,
             fontFamily: FIGTREE,
-            fontSize: 14,
+            fontSize: 15,
             fontWeight: 500,
             letterSpacing: "-0.005em",
             lineHeight: "normal",
@@ -35,7 +35,7 @@ export function CardHead({ title, subtitle, action, headingLevel }: CardHeadProp
           {title}
         </Title>
         {subtitle ? (
-          <div style={{ fontFamily: FIGTREE, fontSize: 12, fontWeight: 400, lineHeight: "normal", color: t.text2 }}>
+          <div style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 400, lineHeight: "normal", color: t.text2 }}>
             {subtitle}
           </div>
         ) : null}

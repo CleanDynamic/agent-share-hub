@@ -25,7 +25,7 @@ import { WAITING } from "@/lib/copy/copy";
 const LEDE = {
   margin: 0,
   fontFamily: FIGTREE,
-  fontSize: 12,
+  fontSize: 13,
   fontWeight: 400,
   lineHeight: 1.55,
   color: t.text2,
@@ -51,7 +51,7 @@ function BackToSignIn({ marginTop = 0 }: { marginTop?: number }) {
         marginTop,
         padding: "4px 0",
         fontFamily: FIGTREE,
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: 500,
         color: t.action,
         textDecoration: "underline",

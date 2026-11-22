@@ -179,7 +179,7 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
         {/* Header */}
         <div className="flex items-center gap-1.5 mb-2">
           <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: AGENT_COLOR }} />
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <span className="text-[10px] font-semibold tracking-wider text-muted-foreground">
             Agent
           </span>
           <input

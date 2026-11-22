@@ -33,7 +33,7 @@ import { Copy } from "lucide-react";
 
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import { Button } from "./Button";
 import { CategoryChip } from "./CategoryChip";
@@ -131,8 +131,8 @@ export function PartViewer<V extends string = string>({
             alignItems: "center",
             gap: 5,
             paddingLeft: phone ? 10 : 12,
-            fontFamily: DM_MONO,
-            fontSize: 11,
+            fontFamily: FIGTREE,
+            fontSize: 13,
             letterSpacing: ".08em",
             color: t.text2,
           }}
@@ -153,7 +153,7 @@ export function PartViewer<V extends string = string>({
             gap: 6,
             paddingLeft: phone ? 7 : 9,
             fontFamily: FIGTREE,
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: 500,
             color: t.text,
           }}
@@ -169,7 +169,7 @@ export function PartViewer<V extends string = string>({
       {phone ? null : (
         /* A viewer narrower than its tabs (UI-P39, 768–1279) scrolls them sideways, as a phone's row does, rather than cutting the last off. */
         <div className="bg-scroll-row" style={{ padding: "7px 10px 4px", marginBottom: -4, overflowX: "auto", scrollbarWidth: "none" }}>
-          <UnderlineTabs tabs={tabs} value={tab} onChange={onTabChange} fontSize={12} label={tabsLabel} />
+          <UnderlineTabs tabs={tabs} value={tab} onChange={onTabChange} fontSize={13} label={tabsLabel} />
         </div>
       )}
 
@@ -194,17 +194,17 @@ export function PartViewer<V extends string = string>({
                 value={mode}
                 onChange={onModeChange}
                 size={phone ? 34 : 28}
-                fontSize={phone ? 12 : 11}
+                fontSize={phone ? 13 : 13}
                 label="View"
               />
-              <Button variant="secondary" size={phone ? 34 : 30} fontSize={12} icon={Copy} onClick={onCopy}>
+              <Button variant="secondary" size={phone ? 34 : 30} fontSize={13} icon={Copy} onClick={onCopy}>
                 Copy
               </Button>
             </div>
-            <div style={{ fontFamily: FIGTREE, fontSize: phone ? 12 : 11, color: t.text2 }}>{blurb}</div>
+            <div style={{ fontFamily: FIGTREE, fontSize: phone ? 13 : 13, color: t.text2 }}>{blurb}</div>
           </>
         ) : null}
-        <div style={{ fontFamily: FIGTREE, fontSize: phone ? 14 : 13, lineHeight: 1.65, color: t.text }}>{children}</div>
+        <div style={{ fontFamily: FIGTREE, fontSize: phone ? 15 : 13, lineHeight: 1.65, color: t.text }}>{children}</div>
       </div>
     </section>
   );

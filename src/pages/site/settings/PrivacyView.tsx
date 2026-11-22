@@ -63,12 +63,12 @@ export function PrivacyView({ isPrivate, onTogglePrivate, blocked, onUnblock, bu
                         <Avatar size={28} userId={person.id} name={name} src={person.avatarUrl} alt="" />
                         <span style={{ minWidth: 0 }}>
                           <span style={{ display: "block", color: t.text, fontWeight: 500, overflowWrap: "anywhere" }}>{name}</span>
-                          {person.username ? <span style={{ display: "block", color: t.label, fontSize: 12 }}>{`@${person.username}`}</span> : null}
+                          {person.username ? <span style={{ display: "block", color: t.label, fontSize: 13 }}>{`@${person.username}`}</span> : null}
                         </span>
                       </span>
                     }
                     value={
-                      <Button variant="secondary" size={32} fontSize={12} aria-label={`${BLOCK_COPY.unblock} ${person.username ? `@${person.username}` : name}`} disabled={busy?.has(person.id)} onClick={() => onUnblock(person)}>
+                      <Button variant="secondary" size={32} fontSize={13} aria-label={`${BLOCK_COPY.unblock} ${person.username ? `@${person.username}` : name}`} disabled={busy?.has(person.id)} onClick={() => onUnblock(person)}>
                         {BLOCK_COPY.unblock}
                       </Button>
                     }

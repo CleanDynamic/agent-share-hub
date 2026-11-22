@@ -65,7 +65,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { feedback, scrollBehavior } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, tabular } from "@/lib/theme/type";
+import { tabular, FIGTREE } from "@/lib/theme/type";
 
 /** The glyph, at the size the row draws it everywhere. */
 export const ENGAGEMENT_ICON_SIZE = 18;
@@ -421,7 +421,7 @@ function Action({ label, slot, glyph, onPress, href, pressed, count, noun, phone
           data-engagement-count=""
           aria-hidden="true"
           style={{
-            fontFamily: DM_MONO,
+            fontFamily: FIGTREE,
             fontSize: 12,
             fontWeight: 400,
             lineHeight: 1.3,
