@@ -125,7 +125,7 @@ function InferredMark({ reason }: { reason: string | null }) {
       style={{
         ...labelText,
         fontSize: 10,
-        textTransform: "uppercase",
+        textTransform: "none",
         padding: "2px 5px",
         borderRadius: r.chip,
         whiteSpace: "nowrap",
@@ -201,7 +201,7 @@ function rowStyle(kept: boolean): CSSProperties {
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <span style={{ ...labelText, textTransform: "uppercase", color: t.text2 }}>
+    <span style={{ ...labelText, textTransform: "none", color: t.text2 }}>
       {children}
     </span>
   );

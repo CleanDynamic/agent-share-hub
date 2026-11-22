@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 export type ChipTone = "evidence" | "breakage" | "lit" | "text";
 
@@ -25,7 +25,7 @@ export function TypeChip({ children, tone }: { children: ReactNode; tone?: ChipT
         borderRadius: r.chip,
         background: t.control,
         color: tone ? TONE[tone] : t.text2,
-        fontFamily: DM_MONO, fontSize: 11, fontWeight: 400, lineHeight: "20px", textTransform: "uppercase",
+        fontFamily: FIGTREE, fontSize: 13, fontWeight: 400, lineHeight: "20px", textTransform: "none",
         whiteSpace: "nowrap",
       }}
     >

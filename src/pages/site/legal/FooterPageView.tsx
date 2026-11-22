@@ -44,8 +44,8 @@ export function subtitleOf(section: LegalSection): string {
 }
 
 const body: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, fontWeight: 400, lineHeight: "20px", color: t.text, margin: 0 };
-const sideHeading: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 14, fontWeight: 500, letterSpacing: 0, lineHeight: "normal", color: t.text };
-const meta: CSSProperties = { fontFamily: FIGTREE, fontSize: 12, fontWeight: 400, lineHeight: "normal", color: t.text2 };
+const sideHeading: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: 500, letterSpacing: 0, lineHeight: "normal", color: t.text };
+const meta: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, fontWeight: 400, lineHeight: "normal", color: t.text2 };
 const tag: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
@@ -56,7 +56,7 @@ const tag: CSSProperties = {
   background: t.inset,
   color: t.text2,
   fontFamily: DM_MONO,
-  fontSize: 11,
+  fontSize: 13,
   fontWeight: 400,
   fontVariantNumeric: "tabular-nums",
   boxSizing: "border-box",

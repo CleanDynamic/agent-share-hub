@@ -148,11 +148,11 @@ export function CanvasHeader({
             padding: '3px 12px', borderRadius: 'var(--r-chip)',
             background: tc.bg, border: `1px solid ${tc.border}`,
           }}>
-            <span style={{ fontSize: 10, fontWeight: 700, color: tc.color, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: tc.color, textTransform: 'none', letterSpacing: '0.08em' }}>
               {typeInfo.label}
             </span>
             {typeInfo.sub && (
-              <span style={{ fontSize: 9, color: 'var(--text2)', textTransform: 'uppercase', borderLeft: '1px solid var(--line)', paddingLeft: 6, marginLeft: 2 }}>
+              <span style={{ fontSize: 9, color: 'var(--text2)', textTransform: 'none', borderLeft: '1px solid var(--line)', paddingLeft: 6, marginLeft: 2 }}>
                 {typeInfo.sub}
               </span>
             )}
@@ -193,11 +193,11 @@ export function CanvasHeader({
             cursor: 'pointer',
           }}
         >
-          <span style={{ fontSize: 10, fontWeight: 700, color: tc.color, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: tc.color, textTransform: 'none', letterSpacing: '0.08em' }}>
             {typeInfo.label}
           </span>
           {typeInfo.sub && (
-            <span style={{ fontSize: 9, color: 'var(--text2)', textTransform: 'uppercase', borderLeft: '1px solid var(--line)', paddingLeft: 6, marginLeft: 2 }}>
+            <span style={{ fontSize: 9, color: 'var(--text2)', textTransform: 'none', borderLeft: '1px solid var(--line)', paddingLeft: 6, marginLeft: 2 }}>
               {typeInfo.sub}
             </span>
           )}

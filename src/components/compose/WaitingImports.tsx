@@ -213,7 +213,7 @@ export function WaitingImports({
       }}
     >
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-        <span style={{ ...labelText, textTransform: "uppercase" }}>Waiting for your review</span>
+        <span style={{ ...labelText, textTransform: "none" }}>Waiting for your review</span>
         <span data-testid="waiting-imports-count" style={{ ...dataText, color: t.text2 }}>
           {plural(imports.length, "conversation", "conversations")}
         </span>

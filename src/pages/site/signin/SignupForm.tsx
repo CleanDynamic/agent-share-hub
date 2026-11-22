@@ -164,7 +164,7 @@ export function SignupForm({
           Sign up
         </PrimaryAction>
         {showLegalLine ? (
-          <p data-testid="signup-legal-line" style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12, lineHeight: 1.4, color: t.label }}>
+          <p data-testid="signup-legal-line" style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.4, color: t.label }}>
             By signing up you agree to the{" "}
             <Link to="/terms" style={LEGAL_LINK} onClick={onLeaveForLegal}>
               Terms

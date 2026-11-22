@@ -22,7 +22,7 @@ import { REVIEW_FILES_MAX, REVIEW_SCOPES, reviewLine, reviewRefusal, type Review
 import { OUTPUT_KINDS, OUTPUT_LABEL, OUTPUTS_MAX, outputRow, outputsCountLine, outputsRefusal, type OutputKind, type OutputLink } from "@/lib/build/sessionOutputs";
 import { ACCESS_LABEL, ACCESS_SYSTEMS, ENVIRONMENT_LABEL, ENVIRONMENTS, ISOLATION_LABEL, ISOLATIONS, accessLine, type AccessScope, type AccessSystem, type Environment, type Isolation } from "@/lib/build/sessionAccess";
 import { settingLines, worktreeOf } from "@/lib/build/startedWith";
-import { DM_MONO, textStep } from "@/lib/theme/type";
+import { DM_MONO, textStep, FIGTREE } from "@/lib/theme/type";
 
 import { RUN_CHANGED_MAX, RUN_HISTORY_HELP, RUN_ID_MAX } from "@/lib/build/evalHarness";
 import { checkRunsOf, checkRunsRefusal, CHECK_RUNS_KEPT, type CheckRun } from "@/lib/build/graph";
@@ -713,7 +713,7 @@ export function ReviewControl({ id, extras, phone, onChange }: { id: string; ext
           spellCheck={false}
           onChange={(event) => setFiles(event.target.value)}
           onBlur={() => save("high_blast_radius", files)}
-          style={{ ...typedArea(phone, ring(false)), fontFamily: DM_MONO, fontSize: phone ? 16 : 12 }}
+          style={{ ...typedArea(phone, ring(false)), fontFamily: FIGTREE, fontSize: phone ? 16 : 12 }}
         />
       ) : null}
       {wrong ? <span style={text(textStep.meta, 400, t.text2)}>{wrong}</span> : null}

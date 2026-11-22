@@ -34,7 +34,7 @@ export function Row({ label, value, height = 40, inModule = false, as: Tag = "di
         boxSizing: "border-box",
         borderBottom: `1px solid ${inModule ? t.hairlineModule : t.hairline}`,
         fontFamily: FIGTREE,
-        fontSize: 12,
+        fontSize: 13,
         lineHeight: "normal",
         ...style,
       }}

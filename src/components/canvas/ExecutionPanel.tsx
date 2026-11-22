@@ -212,7 +212,7 @@ export function ExecutionPanel({
       }}>
         <div style={{
           fontSize: 9, fontWeight: 700,
-          textTransform: 'uppercase',
+          textTransform: 'none',
           letterSpacing: '0.10em',
           color: 'var(--text2)',
           marginBottom: 6,
@@ -263,7 +263,7 @@ export function ExecutionPanel({
           <div>
             <div style={{
               fontSize: 9, fontWeight: 700,
-              textTransform: 'uppercase',
+              textTransform: 'none',
               letterSpacing: '0.10em',
               color: 'color-mix(in srgb, var(--cat-configuration) 70%, transparent)',
               marginBottom: 8,

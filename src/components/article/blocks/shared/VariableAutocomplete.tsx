@@ -224,7 +224,7 @@ export function useVariableAutocomplete({
               }}
             />
             <span className="truncate">{b.name}</span>
-            <span className="ml-auto text-[10px] uppercase tracking-wider text-muted-foreground">
+            <span className="ml-auto text-[10px] tracking-wider text-muted-foreground">
               {b.type}
             </span>
           </button>

@@ -81,7 +81,7 @@ export const TextButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTM
         background: "none",
         border: 0,
         borderRadius: r.control,
-        fontSize: 12,
+        fontSize: 13,
         lineHeight: "16px",
         color: t.text2,
         cursor: "pointer",
@@ -130,7 +130,7 @@ function HideReason({ onHide, onCancel }: { onHide: (reason: string) => void; on
         value={reason}
         onChange={(event) => setReason(event.target.value)}
         placeholder="Why is it hidden?"
-        style={{ flex: "1 1 200px", minWidth: 0, height: 32, boxSizing: "border-box", padding: "0 8px", borderRadius: r.control, border: `1px solid ${t.controlBorder}`, background: t.well, color: t.text, fontFamily: FIGTREE, fontSize: phone ? 16 : 13 }}
+        style={{ flex: "1 1 200px", minWidth: 0, height: 32, boxSizing: "border-box", padding: "0 8px", borderRadius: r.control, border: `1px solid ${t.controlBorder}`, background: t.well, color: t.text, fontFamily: FIGTREE, fontSize: phone ? 15 : 13 }}
       />
       <PostControl type="submit">Hide</PostControl>
       <PostControl onClick={onCancel}>Cancel</PostControl>
@@ -160,17 +160,17 @@ export function ReplyAnatomy({ reply, children }: { reply: ReplyItem; children?:
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, minHeight: 24 }}>
           <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 6, rowGap: 4 }}>
             <span style={{ ...plain, fontSize: 13, fontWeight: 500, lineHeight: "20px" }}>{reply.author.name}</span>
-            <span style={{ ...plain, fontSize: 12, lineHeight: "20px", color: t.label }}>{[reply.author.handle ? `@${reply.author.handle}` : null, reply.age].filter(Boolean).join(" · ")}</span>
+            <span style={{ ...plain, fontSize: 13, lineHeight: "20px", color: t.label }}>{[reply.author.handle ? `@${reply.author.handle}` : null, reply.age].filter(Boolean).join(" · ")}</span>
             {reply.about ? (
               <>
-                <span style={{ ...plain, fontSize: 12, lineHeight: "20px", color: t.label }}>· on</span>
-                <DashedSlot data-testid="reply-about" style={{ display: "inline-flex", alignItems: "center", height: 20, padding: "0 6px", ...plain, fontSize: 12, color: t.text2 }}>
+                <span style={{ ...plain, fontSize: 13, lineHeight: "20px", color: t.label }}>· on</span>
+                <DashedSlot data-testid="reply-about" style={{ display: "inline-flex", alignItems: "center", height: 20, padding: "0 6px", ...plain, fontSize: 13, color: t.text2 }}>
                   {reply.about}
                 </DashedSlot>
               </>
             ) : null}
           </div>
-          {pinned ? <span style={{ ...plain, flex: "none", fontSize: 12, color: t.label }}>{`Pinned by ${reply.pinnedBy}`}</span> : null}
+          {pinned ? <span style={{ ...plain, flex: "none", fontSize: 13, color: t.label }}>{`Pinned by ${reply.pinnedBy}`}</span> : null}
         </div>
         {reply.body ? <p style={{ ...plain, marginTop: 4, fontSize: 13, lineHeight: "20px", whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{reply.body}</p> : null}
         <Attachments attachments={reply.attachments} />
@@ -188,7 +188,7 @@ export function Reply({ reply, actions, last, box }: { reply: ReplyItem; actions
   const pinned = reply.pinnedBy !== null;
   const collapsed = isCollapsed(reply.author.id, actions.blockedAuthors ?? NO_ONE);
   const content = collapsed ? (
-    <p data-testid="reply-collapsed" style={{ ...plain, fontSize: 12, lineHeight: "20px", color: t.label }}>
+    <p data-testid="reply-collapsed" style={{ ...plain, fontSize: 13, lineHeight: "20px", color: t.label }}>
       {BLOCK_COPY.collapsedReply}
     </p>
   ) : (

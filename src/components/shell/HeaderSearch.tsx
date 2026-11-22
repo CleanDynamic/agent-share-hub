@@ -26,7 +26,7 @@ import { normaliseQuery, SEARCH_MAX } from "@/lib/build/search";
 import { ring } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 /* index.css gives every <input> a `--recess` fill, a 1px border and a focus
    outline, all `!important`, which no inline style can beat. This field is a
@@ -154,7 +154,7 @@ export function HeaderSearch({
           /* The input's size is set here, on its box: above 768px index.css makes
              every input inherit its font size, so the input's own 12px never
              applied and the field drew the page's 16. */
-          fontSize: sheet ? 16 : 12,
+          fontSize: sheet ? 15 : 13,
           ...ring(focusVisible),
         }}
       >
@@ -192,7 +192,7 @@ export function HeaderSearch({
             flexGrow: 1,
             minWidth: 0,
             fontFamily: FIGTREE,
-            fontSize: sheet ? 16 : 12,
+            fontSize: sheet ? 15 : 13,
             color: t.text,
           }}
         />
@@ -200,8 +200,8 @@ export function HeaderSearch({
           <span
             aria-hidden="true"
             style={{
-              fontFamily: DM_MONO,
-              fontSize: 11,
+              fontFamily: FIGTREE,
+              fontSize: 13,
               border: `1px solid ${t.line}`,
               borderRadius: 6,
               padding: "0 5px",

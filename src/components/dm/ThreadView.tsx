@@ -225,7 +225,7 @@ function ReblogShareCard({ reblogId, meta }: { reblogId: string | null; meta: an
     >
       <div className="p-2.5">
         <span
-          className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider rounded-full"
+          className="inline-flex items-center gap-1 text-[10px] font-semibold tracking-wider rounded-full"
           style={{
             padding: "2px 8px",
             borderRadius: r["r-chip"],
@@ -876,7 +876,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
             fontSize: 9,
             fontWeight: 500,
             letterSpacing: "0.08em",
-            textTransform: "uppercase",
+            textTransform: "none",
             color: t.evidence,
           }}
         >

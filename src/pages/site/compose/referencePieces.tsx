@@ -56,7 +56,7 @@ export const words = (px: number, weight: 400 | 500 | 600, color: string, line?:
 export const data = (px: number, color: string): CSSProperties => ({ fontFamily: DM_MONO, fontSize: px, fontWeight: 400, lineHeight: "normal", color, fontVariantNumeric: "tabular-nums" });
 
 /** "REFERENCE GROUPS": the data face 11 in capitals, .04em apart, `--label`. */
-export const SECTION_LABEL: CSSProperties = { fontFamily: DM_MONO, fontSize: textStep.meta, fontWeight: 400, lineHeight: "normal", color: t.label, textTransform: "uppercase", letterSpacing: "0.04em" };
+export const SECTION_LABEL: CSSProperties = { fontFamily: DM_MONO, fontSize: textStep.meta, fontWeight: 400, lineHeight: "normal", color: t.label, textTransform: "none", letterSpacing: "0.04em" };
 
 /** The danger words: `--breakage`. */
 export const DANGER = t.breakage;

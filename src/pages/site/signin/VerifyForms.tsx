@@ -20,7 +20,7 @@ import { DIALOG, useAuthSizes } from "./authSizes";
 import { SIGNIN_COLOURS } from "./signinColours";
 import { WAITING } from "@/lib/copy/copy";
 
-const LINE = { margin: 0, fontFamily: FIGTREE, fontSize: 12, lineHeight: `${DIALOG.line}px`, color: t.text2 } as const;
+const LINE = { margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: `${DIALOG.line}px`, color: t.text2 } as const;
 
 export interface VerifyPendingProps {
   email: string;
@@ -71,7 +71,7 @@ export function VerifyPending({ email, resendState, cooldownSeconds = 0, onResen
             border: "none",
             padding: 0,
             fontFamily: FIGTREE,
-            fontSize: 12,
+            fontSize: 13,
             color: SIGNIN_COLOURS[room].link,
             cursor: "pointer",
             textDecoration: "underline",

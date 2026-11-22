@@ -75,7 +75,7 @@ import { r } from "@/lib/theme/radius";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { SPACE_COMPACT as SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, body, data as dataText, eyebrow, label as labelType, measure } from "@/lib/theme/type";
+import { body, data as dataText, eyebrow, label as labelType, measure, FIGTREE } from "@/lib/theme/type";
 import { signInButton } from "@/lib/copy/copy";
 
 /** How far below the screen the section starts asking for its comments. */
@@ -594,7 +594,7 @@ function CommentItem({
           )}
           <time
             dateTime={comment.createdAt}
-            style={{ fontFamily: DM_MONO, fontSize: 12, fontWeight: 400, lineHeight: 1.3, color: t.text2 }}
+            style={{ fontFamily: FIGTREE, fontSize: 12, fontWeight: 400, lineHeight: 1.3, color: t.text2 }}
           >
             {commentTime(comment.createdAt)}
             {comment.editedAt ? " · edited" : ""}

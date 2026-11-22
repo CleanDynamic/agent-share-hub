@@ -697,7 +697,7 @@ function DesktopActivity(props: ActivityViewProps) {
         <PageHeader
           title="Activity"
           actions={
-            <Button variant="secondary" size={32} fontSize={12} data-testid="activity-mark-all" disabled={!unread} onClick={onMarkAllRead}>
+            <Button variant="secondary" size={32} fontSize={13} data-testid="activity-mark-all" disabled={!unread} onClick={onMarkAllRead}>
               Mark all read
             </Button>
           }

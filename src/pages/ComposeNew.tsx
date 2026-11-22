@@ -993,7 +993,7 @@ export default function ComposeNew() {
           background: "var(--glass-2)",
         }}
       >
-        <label htmlFor="intake-repo-url" style={{ ...labelText, textTransform: "uppercase" }}>
+        <label htmlFor="intake-repo-url" style={{ ...labelText, textTransform: "none" }}>
           Or paste a repository URL
         </label>
 
@@ -1093,7 +1093,7 @@ export default function ComposeNew() {
           transition: feedback("background-color", "border-color"),
         }}
       >
-        <span style={{ ...labelText, textTransform: "uppercase" }}>
+        <span style={{ ...labelText, textTransform: "none" }}>
           Or drop a Build File
         </span>
 
@@ -1190,7 +1190,7 @@ export default function ComposeNew() {
           transition: feedback("background-color", "border-color"),
         }}
       >
-        <label htmlFor="intake-transcript" style={{ ...labelText, textTransform: "uppercase" }}>
+        <label htmlFor="intake-transcript" style={{ ...labelText, textTransform: "none" }}>
           Paste the transcript
         </label>
 

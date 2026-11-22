@@ -312,7 +312,7 @@ export function TemplateLibrary({
                           '1px solid var(--line)',
                         color: 'var(--text2)',
                         fontWeight: 600,
-                        textTransform: 'uppercase',
+                        textTransform: 'none',
                         letterSpacing: '0.06em',
                       }}
                     >

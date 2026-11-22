@@ -125,7 +125,7 @@ function PinnedContextStrip({
               fontSize: 11,
               fontWeight: 600,
               letterSpacing: "0.04em",
-              textTransform: "uppercase",
+              textTransform: "none",
               color: accent,
             }}
           >

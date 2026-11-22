@@ -7,7 +7,7 @@ import type { CSSProperties, ReactNode } from "react";
 import type { Category } from "@/lib/theme/category";
 import { r } from "@/lib/theme/radius";
 import { t, tokenVar, type TokenName } from "@/lib/theme/tokens";
-import { DM_MONO } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 export type PillTone = "evidence" | "breakage" | "lit-ink" | Category;
 
@@ -47,8 +47,8 @@ export function Pill({ children, tone, style }: PillProps) {
         height: 20,
         padding: "0 8px",
         borderRadius: r.chip,
-        fontFamily: DM_MONO,
-        fontSize: 11,
+        fontFamily: FIGTREE,
+        fontSize: 13,
         lineHeight: "normal",
         whiteSpace: "nowrap",
         ...paint(tone),

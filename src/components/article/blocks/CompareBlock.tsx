@@ -95,7 +95,7 @@ export function CompareBlockNode({ id, data, selected }: NodeProps) {
           style={{ background: COMPARE_COLOR }}
         />
         <Columns2 size={12} className="text-muted-foreground" />
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="text-[11px] font-semibold tracking-wide text-muted-foreground">
           Compare
         </span>
         <div className="flex-1" />

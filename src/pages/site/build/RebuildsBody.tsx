@@ -48,7 +48,7 @@ function FamilyLink({ to, phone, label, testId = "build-rebuilds-family" }: { to
         minHeight: phone ? 44 : 24,
         padding: "0 4px",
         fontFamily: FIGTREE,
-        fontSize: phone ? 13 : 12,
+        fontSize: phone ? 13 : 13,
         color: t.action,
         textDecoration: "underline",
         textUnderlineOffset: 3,
@@ -65,7 +65,7 @@ function FamilyLink({ to, phone, label, testId = "build-rebuilds-family" }: { to
 function MadeInReplyLine({ handle, to }: { handle: string; to: string }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   return (
-    <p data-testid="build-rebuild-made-in-reply" style={{ margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 12, lineHeight: 1.5, color: t.label }}>
+    <p data-testid="build-rebuild-made-in-reply" style={{ margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.5, color: t.label }}>
       Made in reply to{" "}
       <PageLink to={to} {...handlers} style={{ color: "inherit", textDecoration: "underline", textUnderlineOffset: 3, borderRadius: r.chip, ...ring(state.focusVisible) }}>
         @{handle}&apos;s topic

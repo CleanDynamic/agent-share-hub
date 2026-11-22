@@ -50,7 +50,7 @@ export interface LoginFormProps {
 /** G12: the resend link, and in its place, the same row, the one answer it ever gives. */
 function ResendVerification({ onResend, answer, colour }: { onResend: () => void; answer?: string; colour: string }) {
   return (
-    <div aria-live="polite" style={{ display: "flex", alignItems: "center", height: DIALOG.row, fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>
+    <div aria-live="polite" style={{ display: "flex", alignItems: "center", height: DIALOG.row, fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>
       {answer ? (
         <span>{answer}</span>
       ) : (
@@ -132,7 +132,7 @@ export function LoginForm({
             reserveMessage
           />
           <Gap size={8} />
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: DIALOG.row, fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: DIALOG.row, fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>
             <AuthCheck id="remember" checked={rememberMe} onChange={onRememberMeChange}>
               Keep me signed in
             </AuthCheck>
@@ -190,7 +190,7 @@ export function LoginForm({
           error={error}
           notice={notice}
         />
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>
           <AuthCheck id="remember" checked={rememberMe} onChange={onRememberMeChange}>
             Keep me signed in
           </AuthCheck>

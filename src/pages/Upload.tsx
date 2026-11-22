@@ -1707,7 +1707,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
               <div style={{ marginBottom: 32 }}>
                 <div style={{
                   fontSize: 11, fontWeight: 700,
-                  textTransform: 'uppercase',
+                  textTransform: 'none',
                   letterSpacing: '0.12em',
                   color: 'var(--text2)',
                   marginBottom: 8,
@@ -2013,7 +2013,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       <span style={{
                         fontSize: 10, fontWeight: 700,
                         color: ptConfig.color,
-                        textTransform: 'uppercase',
+                        textTransform: 'none',
                         letterSpacing: '0.08em',
                       }}>
                         {typeInfo.label}
@@ -2022,7 +2022,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                         <span style={{
                           fontSize: 9,
                           color: 'var(--text2)',
-                          textTransform: 'uppercase',
+                          textTransform: 'none',
                           letterSpacing: '0.06em',
                           borderLeft: '1px solid var(--line)',
                           paddingLeft: 6, marginLeft: 2,
@@ -2045,7 +2045,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                         style={{
                           padding: '3px 12px', borderRadius: 'var(--r-chip)',
                           fontSize: 10, fontWeight: 700,
-                          textTransform: 'uppercase',
+                          textTransform: 'none',
                           letterSpacing: '0.08em',
                           cursor: 'pointer',
                           background: diff ? `${diffColors[diff] ?? 'var(--text2)'}22` : 'var(--recess)',
@@ -2062,7 +2062,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       <label style={{
                         display: 'inline-flex', alignItems: 'center', gap: 6,
                         padding: '3px 12px', borderRadius: 'var(--r-chip)', fontSize: 10,
-                        fontWeight: 700, textTransform: 'uppercase',
+                        fontWeight: 700, textTransform: 'none',
                         letterSpacing: '0.08em',
                         background: 'var(--recess)',
                         border: '1px dashed var(--line)',
@@ -2112,7 +2112,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                             borderRadius: '50%',
                           }}
                         />
-                        <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text2)' }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'none', letterSpacing: '0.08em', color: 'var(--text2)' }}>
                           Cover
                         </span>
                         <button
@@ -2201,7 +2201,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       }} />
                       <div style={{
                         fontSize: 10, fontWeight: 700,
-                        textTransform: 'uppercase' as const,
+                        textTransform: 'none' as const,
                         letterSpacing: '0.12em',
                         color: 'var(--text2)',
                         padding: '0 8px', flexShrink: 0,
@@ -2276,7 +2276,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                     }} />
                     <div style={{
                       fontSize: 10, fontWeight: 700,
-                      textTransform: 'uppercase' as const,
+                      textTransform: 'none' as const,
                       letterSpacing: '0.12em',
                       color: cfg.color,
                       padding: '0 8px',
@@ -2334,7 +2334,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
               >
                 <span style={{
                   fontSize: 10, fontWeight: 700,
-                  textTransform: 'uppercase' as const,
+                  textTransform: 'none' as const,
                   letterSpacing: '0.12em',
                   color: 'var(--text2)',
                 }}>
@@ -2359,7 +2359,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                 <div style={{
                   fontSize: 11, fontWeight: 600,
                   color: 'var(--text2)',
-                  textTransform: 'uppercase',
+                  textTransform: 'none',
                   letterSpacing: '0.10em',
                   marginBottom: 12,
                 }}>
@@ -2383,7 +2383,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                 <div style={{
                   fontSize: 11, fontWeight: 600,
                   color: 'var(--text2)',
-                  textTransform: 'uppercase',
+                  textTransform: 'none',
                   letterSpacing: '0.10em',
                   marginBottom: 12,
                 }}>
@@ -2403,7 +2403,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                 <div style={{
                   fontSize: 11, fontWeight: 600,
                   color: 'var(--text2)',
-                  textTransform: 'uppercase',
+                  textTransform: 'none',
                   letterSpacing: '0.10em',
                   marginBottom: 12,
                 }}>
@@ -2457,7 +2457,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                 <div style={{
                   fontSize: 11, fontWeight: 600,
                   color: 'var(--text2)',
-                  textTransform: 'uppercase',
+                  textTransform: 'none',
                   letterSpacing: '0.10em',
                   marginBottom: 12,
                 }}>
@@ -2517,7 +2517,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                 <div style={{
                   fontSize: 11, fontWeight: 600,
                   color: 'var(--text2)',
-                  textTransform: 'uppercase',
+                  textTransform: 'none',
                   letterSpacing: '0.10em',
                   marginBottom: 12,
                 }}>
@@ -2569,7 +2569,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                 <div style={{
                   fontSize: 11, fontWeight: 600,
                   color: 'var(--text2)',
-                  textTransform: 'uppercase',
+                  textTransform: 'none',
                   letterSpacing: '0.10em',
                   marginBottom: 12,
                 }}>
@@ -2586,7 +2586,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                 <div style={{
                   fontSize: 11, fontWeight: 600,
                   color: 'var(--text2)',
-                  textTransform: 'uppercase',
+                  textTransform: 'none',
                   letterSpacing: '0.10em',
                   marginBottom: 12,
                 }}>
@@ -2600,7 +2600,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                 <div style={{
                   fontSize: 11, fontWeight: 600,
                   color: 'var(--text2)',
-                  textTransform: 'uppercase',
+                  textTransform: 'none',
                   letterSpacing: '0.10em',
                   marginBottom: 12,
                 }}>

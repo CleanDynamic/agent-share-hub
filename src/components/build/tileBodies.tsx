@@ -28,7 +28,7 @@ import { ManualThumb } from "@/pages/site/compose/ManualThumb";
 import { Quiet, ToolMark } from "@/pages/site/compose/refinedPieces";
 import { FindHit } from "./FindHit";
 import { ellipsis, text, tnum } from "@/pages/site/compose/refinedStyles";
-import { DM_MONO, measure, textStep } from "@/lib/theme/type";
+import { DM_MONO, measure, textStep, FIGTREE } from "@/lib/theme/type";
 import { BODY_LINE, DATA_LINE, FOOT_FACTS, FOOT_LINK as FOOT_LINK_STYLE, TEXT_LINK_BOX, LINK_ADDRESS, LINK_CARD, MORE_COUNT, PICTURE, PICTURES, RESPONSE_LINE, RESPONSE_WORD, STEPS, TILE_FOOT, VARIABLE } from "@/pages/site/compose/tileRecipes";
 import { size, space } from "@/lib/theme/space";
 import { EMPTY } from "@/lib/copy/copy";
@@ -181,7 +181,7 @@ export function FileTileBody({ step, indent = 0, lean = false, plain = false, on
       <div data-testid="file-tile" style={{ display: "flex", flexDirection: "column", gap: space[2], paddingLeft: indent, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: space[2], minWidth: 0 }}>
           {facts.kind === "picture" && facts.mediaId ? thumb(facts.mediaId, 48) : null}
-          <span data-testid="file-name" style={{ cursor: "default", fontFamily: DM_MONO, fontSize: textStep.meta, fontWeight: 500, lineHeight: "normal", color: t.text, ...ellipsis }}>{facts.name}</span>
+          <span data-testid="file-name" style={{ cursor: "default", fontFamily: FIGTREE, fontSize: textStep.meta, fontWeight: 500, lineHeight: "normal", color: t.text, ...ellipsis }}>{facts.name}</span>
         </div>
         {step.text ? <span style={{ ...text(textStep.meta, 400, t.label), overflowWrap: "anywhere" }}>{step.text}</span> : null}
       </div>

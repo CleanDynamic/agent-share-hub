@@ -48,7 +48,7 @@ export function TablePickerPopover({ editor, trigger }: TablePickerPopoverProps)
             fontSize: 11,
             fontWeight: 600,
             color: 'var(--text2)',
-            textTransform: 'uppercase',
+            textTransform: 'none',
             letterSpacing: '0.05em',
             marginBottom: 8,
           }}

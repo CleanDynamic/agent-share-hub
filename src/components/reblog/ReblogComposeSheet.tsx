@@ -229,7 +229,7 @@ function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
             fontSize: 9,
             fontWeight: 600,
             letterSpacing: "0.06em",
-            textTransform: "uppercase",
+            textTransform: "none",
             color: "var(--text)",
             background: typeColour,
             padding: "2px 6px",

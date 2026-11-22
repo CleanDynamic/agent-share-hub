@@ -96,7 +96,7 @@ export function AnnotationsList({
               >
                 <div style={{
                   fontSize: 10, fontWeight: 700,
-                  textTransform: 'uppercase',
+                  textTransform: 'none',
                   color: 'var(--text2)',
                   letterSpacing: '0.08em',
                   marginBottom: 4,

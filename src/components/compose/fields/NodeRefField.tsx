@@ -338,7 +338,7 @@ export function NodeRefField(props: FieldWidgetProps) {
                             ...labelText,
                             display: "block",
                             fontSize: 10,
-                            textTransform: "uppercase",
+                            textTransform: "none",
                             color: TEXT_MUTED,
                             padding: "4px 6px 2px",
                           }}

@@ -45,12 +45,12 @@ function Row({ row, onOpenReplay, onStartTopic }: { row: BreakageRowView; onOpen
       }}
     >
       <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: r.full, background: t.catBreakage, marginTop: 4 }} />
-      <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0, fontFamily: FIGTREE, fontSize: 12, lineHeight: 1.5 }}>
-        <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12, fontWeight: 500, lineHeight: 1.5, color: t.text }}>{row.name}</h3>
+      <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.5 }}>
+        <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, lineHeight: 1.5, color: t.text }}>{row.name}</h3>
         {row.happened ? <p style={{ margin: 0, color: t.text2, whiteSpace: "pre-wrap" }}>{row.happened}</p> : null}
         {row.fix ? (
           <p style={{ margin: 0, color: t.text, whiteSpace: "pre-wrap" }}>
-            <span style={{ fontFamily: DM_MONO, fontSize: 11, letterSpacing: ".09em", color: t.label, marginRight: 4 }}>FIX</span>
+            <span style={{ fontFamily: FIGTREE, fontSize: 13, letterSpacing: ".09em", color: t.label, marginRight: 4 }}>FIX</span>
             {row.fix}
           </p>
         ) : null}
@@ -60,7 +60,7 @@ function Row({ row, onOpenReplay, onStartTopic }: { row: BreakageRowView; onOpen
           <Button
             variant="ghost"
             size={28}
-            fontSize={11}
+            fontSize={13}
             icon={Play}
             aria-label={`Watch ${row.span} in the replay`}
             onClick={() => onOpenReplay(row.start as number)}
@@ -69,11 +69,11 @@ function Row({ row, onOpenReplay, onStartTopic }: { row: BreakageRowView; onOpen
           </Button>
         ) : (
           /* As tall as the Button it stands in for (28 drawn, 24 rendered), so a row keeps its height either way. */
-          <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.label, lineHeight: "24px" }}>{row.span ?? "no step recorded"}</span>
+          <span style={{ fontFamily: DM_MONO, fontSize: 13, color: t.label, lineHeight: "24px" }}>{row.span ?? "no step recorded"}</span>
         )}
-        {row.attempts ? <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.label }}>{row.attempts}</span> : null}
+        {row.attempts ? <span style={{ fontFamily: DM_MONO, fontSize: 13, color: t.label }}>{row.attempts}</span> : null}
         {onStartTopic ? (
-          <Button variant="ghost" size={28} fontSize={11} aria-label={`Start a topic: ${row.name}`} onClick={() => onStartTopic(row)}>
+          <Button variant="ghost" size={28} fontSize={13} aria-label={`Start a topic: ${row.name}`} onClick={() => onStartTopic(row)}>
             Start a topic
           </Button>
         ) : null}
@@ -101,13 +101,13 @@ function Gap({ gap, onReply }: { gap: OpenGapView; onReply?: (topicId: string) =
         borderColor: t.catBreakage,
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0, fontFamily: FIGTREE, fontSize: 12, lineHeight: 1.5 }}>
-        <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12, fontWeight: 500, lineHeight: 1.5, color: t.text }}>{gap.title}</h3>
+      <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.5 }}>
+        <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, lineHeight: 1.5, color: t.text }}>{gap.title}</h3>
         <p style={{ margin: 0, color: t.text2 }}>{gap.problem ?? "Left open on purpose: the build works without it."}</p>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
         {reply ? (
-          <Button variant="primary" size={30} fontSize={12} aria-label={`Reply: ${gap.title}`} onClick={reply}>
+          <Button variant="primary" size={30} fontSize={13} aria-label={`Reply: ${gap.title}`} onClick={reply}>
             Reply
           </Button>
         ) : null}
@@ -132,7 +132,7 @@ export function BreakageBody({ breakage }: { breakage: BreakageBodyView }) {
     <section data-testid="build-breakage" aria-label="Where it broke" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {rows.length > 0 ? (
         <div>
-          <p style={{ margin: 0, fontSize: 12, color: t.text2 }}>
+          <p style={{ margin: 0, fontSize: 13, color: t.text2 }}>
             {rows.length === 1 ? "1 recorded breakage" : `${rows.length.toLocaleString("en-GB")} recorded breakages`}, in the order they
             happened.
           </p>
@@ -143,7 +143,7 @@ export function BreakageBody({ breakage }: { breakage: BreakageBodyView }) {
           </ol>
         </div>
       ) : (
-        <p style={{ margin: 0, fontSize: 12, color: t.text2 }}>{EMPTY.breakages}</p>
+        <p style={{ margin: 0, fontSize: 13, color: t.text2 }}>{EMPTY.breakages}</p>
       )}
 
       {gaps.length > 0 ? (

@@ -11,7 +11,7 @@ import { Glyph } from "@/components/brand/Glyph";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE, textStep } from "@/lib/theme/type";
+import { FIGTREE, textStep } from "@/lib/theme/type";
 
 import { ellipsis, text } from "./refinedStyles";
 import { size, space } from "@/lib/theme/space";
@@ -99,7 +99,7 @@ export function ChosenValue({
 export function SuggestedRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <ul aria-label={label} style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
-      <li aria-hidden="true" style={{ fontFamily: DM_MONO, fontSize: textStep.meta, lineHeight: "normal", color: t.label }}>
+      <li aria-hidden="true" style={{ fontFamily: FIGTREE, fontSize: textStep.meta, lineHeight: "normal", color: t.label }}>
         Suggested
       </li>
       {children}
@@ -200,7 +200,7 @@ export function typeaheadRow(active: boolean, phone: boolean): CSSProperties {
 
 /** The path at the right: the data face, 11 `--label`, cut with an ellipsis. */
 export const typeaheadNote = (phone: boolean): CSSProperties => ({
-  fontFamily: DM_MONO,
+  fontFamily: FIGTREE,
   fontSize: textStep.meta,
   lineHeight: "normal",
   color: t.label,

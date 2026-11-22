@@ -305,7 +305,7 @@ export function ReblogFeedCard({
 
         {/* Reblog Pill */}
         <span
-          className="shrink-0 inline-flex items-center gap-1 rounded-full font-semibold uppercase tracking-wider"
+          className="shrink-0 inline-flex items-center gap-1 rounded-full font-semibold tracking-wider"
           style={{
             fontSize: 10,
             padding: "2px 8px",

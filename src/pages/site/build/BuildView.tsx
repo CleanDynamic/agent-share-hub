@@ -116,7 +116,7 @@ export interface BuildViewProps {
 export { BOTTOM_ROW, BuildViewSkeleton, dropped, HERO_ROW, heroRow, bottomRow, MOCK_ROWS, ProofSkeleton } from "./BuildViewSkeleton";
 import { creditLine } from "@/lib/build/contributors";
 import { BOTTOM_ROW, dropped, HERO_ROW, heroRow, bottomRow, MOCK_ROWS, pair, ProofSkeleton, side, wide } from "./BuildViewSkeleton";
-import { PAGE_TITLE, PageHeader } from "@/components/shell/PageHeader";
+import { PAGE_TITLE, PageHeader, WORK_TITLE } from "@/components/shell/PageHeader";
 import { pageColumns } from "@/components/shell/pageGrid";
 
 /** The phone shows this many parts before "Show n more parts". */
@@ -238,7 +238,7 @@ export function PartRow({
         ...ring(state.focusVisible),
       }}
     >
-      <span style={{ fontFamily: FIGTREE, fontSize: 16, fontWeight: 500, lineHeight: 1.05, letterSpacing: "-0.02em", color: t.label }}>{String(part.number).padStart(2, "0")}</span>
+      <span style={{ fontFamily: FIGTREE, fontSize: 15, fontWeight: 500, lineHeight: 1.05, letterSpacing: "-0.02em", color: t.label }}>{String(part.number).padStart(2, "0")}</span>
       <span style={{ display: "flex", alignItems: "center", gap: phone ? 6 : 4, minWidth: 0 }}>
         <span
           aria-hidden="true"
@@ -253,7 +253,7 @@ export function PartRow({
         <span
           style={{
             fontFamily: FIGTREE,
-            fontSize: phone ? 13 : 12,
+            fontSize: phone ? 13 : 13,
             color: t.text,
             whiteSpace: "nowrap",
             overflow: "hidden",
@@ -264,7 +264,7 @@ export function PartRow({
         </span>
       </span>
       {meta ? (
-        <span style={{ fontFamily: DM_MONO, fontSize: 11, color: part.gap ? t.catBreakage : t.text2 }}>{meta}</span>
+        <span style={{ fontFamily: DM_MONO, fontSize: 13, color: part.gap ? t.catBreakage : t.text2 }}>{meta}</span>
       ) : (
         <span />
       )}
@@ -310,7 +310,7 @@ export function AnatomyDialog({
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <Dialog.Title style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, fontWeight: 500, color: t.text }}>{title}</Dialog.Title>
+            <Dialog.Title style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: 500, color: t.text }}>{title}</Dialog.Title>
             <Dialog.Close asChild>
               <IconButton icon={X} label="Close" size={32} />
             </Dialog.Close>
@@ -371,7 +371,7 @@ export function AnatomyPanel({ anatomy, phone, onSelect }: { anatomy: BuildAnato
               border: 0,
               background: "transparent",
               fontFamily: FIGTREE,
-              fontSize: 12,
+              fontSize: 13,
               color: t.action,
               cursor: "pointer",
               textAlign: "left",
@@ -728,7 +728,7 @@ function Hero({
         </span>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, flexGrow: 1 }}>
           {/* Desktop: the title is the page's PageHeader (DesktopBuild). */}
-          {phone ? <h1 style={{ ...PAGE_TITLE, overflowWrap: "anywhere" }}>{hero.title}</h1> : null}
+          {phone ? <h1 style={{ ...WORK_TITLE, overflowWrap: "anywhere" }}>{hero.title}</h1> : null}
           <SummaryLine summary={hero.summary} />
           {hero.outcome ? (
             <p style={{ ...text(13, 400, t.text2), margin: 0, maxWidth: 680, lineHeight: "20px" }}>{hero.outcome}</p>
@@ -936,7 +936,7 @@ function ThreadHero({
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 320px", minWidth: 0 }}>
           {/* Desktop: the title and the actions are the page's PageHeader (DesktopBuild). */}
-          {phone ? <h1 style={{ ...PAGE_TITLE, overflowWrap: "anywhere" }}>{hero.title}</h1> : null}
+          {phone ? <h1 style={{ ...WORK_TITLE, overflowWrap: "anywhere" }}>{hero.title}</h1> : null}
           <SummaryLine summary={hero.summary} />
           {hero.outcome ? <p style={{ ...text(13, 400, t.text2), margin: 0, maxWidth: 680, lineHeight: "20px" }}>{hero.outcome}</p> : null}
           {/* An original build's byline carries the credit; a rebuild keeps its source line. */}
@@ -958,7 +958,7 @@ function ThreadHero({
                 data-testid="build-follow"
                 variant="secondary"
                 size={phone ? 44 : 28}
-                fontSize={12}
+                fontSize={13}
                 disabled={follow.busy}
                 onClick={follow.onToggle}
                 style={{ marginLeft: "auto" }}
@@ -1140,6 +1140,7 @@ function DesktopBuild(props: BuildViewProps) {
     {/* Page shell: the build's title at 64 / 88 with its actions; the breadcrumb is BuildPage's (PageBreadcrumb, every state). */}
     <PageHeader
       title={hero.title}
+      work
       actions={hero.thread ? <ActionGroup actions={actions} phone={false} announce={announce} /> : <ActionDock actions={actions} phone={false} announce={announce} inline />}
     />
     <div data-testid="build-view" data-viewport="desktop" style={{ display: "flex", flexDirection: "column", gap: 32, marginTop: 8, lineHeight: "normal" }}>

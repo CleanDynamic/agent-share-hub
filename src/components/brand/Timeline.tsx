@@ -103,14 +103,14 @@ function RefinedTimeline({ events, label }: Pick<TimelineProps, "events" | "labe
                 boxShadow: `0 0 0 3px ${t.surface}`,
               }}
             />
-            <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.label, fontVariantNumeric: "tabular-nums" }}>
+            <span style={{ fontFamily: FIGTREE, fontSize: 13, color: t.label, fontVariantNumeric: "tabular-nums" }}>
               {event.at}
             </span>
             <span style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
               <Eyebrow as="span" style={{ color: REFINED_INK[event.kind] }}>
                 {event.kind}
               </Eyebrow>
-              <span style={{ fontFamily: FIGTREE, fontSize: 12, fontWeight: 500, lineHeight: "normal", color: t.text }}>
+              <span style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, lineHeight: "normal", color: t.text }}>
                 {event.text}
               </span>
             </span>

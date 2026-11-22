@@ -12,7 +12,7 @@ import { MENU_ITEM_CLASS } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { feedback } from "@/lib/theme/motion";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import { r } from "@/lib/theme/radius";
 import { Button } from "@/components/brand/Button";
@@ -103,13 +103,13 @@ export function AccountMenu({ viewer, onSignOut, avatarSize = 24, drafts = 0, th
             zIndex: 50,
           }}
         >
-          <DropdownMenu.Label style={{ padding: "8px 12px", fontFamily: FIGTREE, fontSize: 12, fontWeight: 400, color: t.text2 }}>Signed in as <span style={{ fontWeight: 500, color: t.text }}>@{viewer.handle}</span></DropdownMenu.Label>
+          <DropdownMenu.Label style={{ padding: "8px 12px", fontFamily: FIGTREE, fontSize: 13, fontWeight: 400, color: t.text2 }}>Signed in as <span style={{ fontWeight: 500, color: t.text }}>@{viewer.handle}</span></DropdownMenu.Label>
           <Entry><PageLink to={profileHref} aria-current={onOwnProfile ? "page" : undefined} style={item}>Your profile</PageLink></Entry>
-          <Entry><PageLink to={SITE_NAV.drafts} style={item}>Your drafts{drafts > 0 && <span style={{ marginLeft: "auto", fontFamily: DM_MONO, fontSize: 11, color: t.text2 }}>{drafts}</span>}</PageLink></Entry>
+          <Entry><PageLink to={SITE_NAV.drafts} style={item}>Your drafts{drafts > 0 && <span style={{ marginLeft: "auto", fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>{drafts}</span>}</PageLink></Entry>
           <Entry><PageLink to={SITE_NAV.library} style={item}>Your library</PageLink></Entry>
           <Entry><PageLink to="/messages" style={item}>Messages</PageLink></Entry>
           <DropdownMenu.Separator style={{ height: 1, margin: "4px 0", background: t.windowBorder }} />
-          <DropdownMenu.CheckboxItem checked={theme === "dusk"} onCheckedChange={() => onToggleTheme?.()} style={{ ...item, color: t.text, background: "transparent", outlineColor: t.brandAccent }} onFocus={(event) => { event.currentTarget.style.background = HOVER_FILL; }} onBlur={(event) => { event.currentTarget.style.background = "transparent"; }}>Dark theme<span style={{ marginLeft: "auto", fontFamily: DM_MONO, fontSize: 11, color: t.text2 }}>{theme === "dusk" ? "On" : "Off"}</span></DropdownMenu.CheckboxItem>
+          <DropdownMenu.CheckboxItem checked={theme === "dusk"} onCheckedChange={() => onToggleTheme?.()} style={{ ...item, color: t.text, background: "transparent", outlineColor: t.brandAccent }} onFocus={(event) => { event.currentTarget.style.background = HOVER_FILL; }} onBlur={(event) => { event.currentTarget.style.background = "transparent"; }}>Dark theme<span style={{ marginLeft: "auto", fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>{theme === "dusk" ? "On" : "Off"}</span></DropdownMenu.CheckboxItem>
           <Entry><PageLink to={SITE_NAV.settings} aria-current={pathname.startsWith(SITE_NAV.settings) ? "page" : undefined} style={item}>Settings</PageLink></Entry>
           <Entry><PageLink to="/api-docs" style={item}>API docs</PageLink></Entry>
           <DropdownMenu.Separator style={{ height: 1, margin: "4px 0", background: t.windowBorder }} />

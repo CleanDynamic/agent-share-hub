@@ -1,5 +1,12 @@
-/* Geist Serif (TB-01; ELSH axis, no weight axis) and retained code-art Geist Mono, the site's faces. Variable files, one per family, self-hosted; Geist-OFL.txt sits
+/* Geist (sans, the interface), Geist Serif (works only, weight 400; TB-01; ELSH axis, no weight axis) and retained code-art Geist Mono, the site's faces. Variable files, one per family, self-hosted; Geist-OFL.txt sits
    beside them. Geist is preloaded in index.html. UI-P99 retired Figtree, Sentient and DM Mono. */
+@font-face {
+  font-family: "Geist";
+  src: url("/fonts/Geist-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
 @font-face {
   font-family: "Geist Serif";
   src: url("/fonts/GeistSerif-Variable.woff2") format("woff2");
@@ -23,36 +30,37 @@
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px; --space-12: 48px; --space-16: 64px;
   --size-icon-small: 12px; --size-icon: 16px; --size-tag: 20px; --size-control-small: 24px; --size-control: 32px; --size-row: 48px; --size-row-large: 56px; --size-touch: 44px;
 
-  --font-ui: 'Geist Serif', Georgia, 'Times New Roman', serif;
-  --font-display: 'Geist Serif', Georgia, 'Times New Roman', serif;
-  --font-data: 'Geist Serif', Georgia, 'Times New Roman', serif;
+  --font-ui: Geist, system-ui, sans-serif;
+  --font-display: 'Geist Serif', Georgia, serif;
+  --font-data: 'Geist Mono', ui-monospace, monospace;
 
-  --type-hero-size: 44px;
-  --type-hero-leading: 1.04;
-  --type-hero-tracking: -0.04em;
+  /* The five sizes: 31/36, 20/24, 17/22, 15/20, 13/16 (src/lib/theme/type.ts). */
+  --type-hero-size: 31px;
+  --type-hero-leading: 36px;
+  --type-hero-tracking: -0.02em;
   --type-section-head-size: 20px;
-  --type-section-head-leading: 1.2;
-  --type-section-head-tracking: -0.015em;
-  --type-figure-size: 24px;
-  --type-card-title-size: 14px;
-  --type-card-title-weight: 500;
-  --type-card-title-leading: 1.3;
-  --type-card-title-tracking: -0.005em;
-  --type-body-size: 13px;
+  --type-section-head-leading: 24px;
+  --type-section-head-tracking: -0.01em;
+  --type-figure-size: 20px;
+  --type-card-title-size: 15px;
+  --type-card-title-weight: 600;
+  --type-card-title-leading: 20px;
+  --type-card-title-tracking: 0;
+  --type-body-size: 15px;
   --type-body-leading: 20px;
-  --type-body-large-size: 13.5px;
+  --type-body-large-size: 17px;
   --type-body-large-leading: 22px;
-  --type-label-size: 12.5px;
+  --type-label-size: 13px;
   --type-label-tracking: 0;
   --type-data-font: var(--font-ui);
-  --type-data-size: 12px;
-  --type-data-leading: 1.4;
+  --type-data-size: 13px;
+  --type-data-leading: 16px;
   --type-eyebrow-font: var(--font-ui);
-  --type-eyebrow-size: 10.5px;
-  --type-eyebrow-tracking: 0.06em;
+  --type-eyebrow-size: 13px;
+  --type-eyebrow-tracking: 0;
 }
 @media (max-width: 767px) {
-  :root { --type-hero-size: 32px; }
+  :root { --type-hero-size: 31px; }
 }
 
 @tailwind base;
@@ -851,9 +859,9 @@ body {
     min-height: 100vh;
     color: var(--text);
     font-family: var(--font-ui);
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 400;
-    line-height: 1.55;
+    line-height: 20px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;

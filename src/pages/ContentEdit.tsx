@@ -448,7 +448,7 @@ export default function ContentEditPage() {
         {/* Works With */}
         {editAiTools.length > 0 && (
           <div className="relative group mb-3">
-            <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            <h3 className="text-[11px] font-semibold text-muted-foreground tracking-wider mb-2">
               Works with
               {changedSections.has("tools") && <span className="ml-2"><ChangedBadge /></span>}
             </h3>
@@ -564,7 +564,7 @@ export default function ContentEditPage() {
           <div className="space-y-4">
             {/* Changes summary */}
             <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Changes in this update:</p>
+              <p className="text-xs font-semibold text-muted-foreground tracking-wider mb-2">Changes in this update:</p>
               {changedFieldsList.length > 0 ? (
                 <ul className="space-y-1">
                   {changedFieldsList.map((f) => (

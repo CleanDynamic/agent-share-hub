@@ -31,7 +31,7 @@ import { commentTime } from "@/lib/social";
 import { skeletonStyle } from "@/lib/theme/controls";
 import { SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, body, eyebrow, measure } from "@/lib/theme/type";
+import { body, eyebrow, measure, FIGTREE } from "@/lib/theme/type";
 
 export const REPORTS_QUEUE_KEY = "admin-open-reports";
 /** UX-09 Q5: the topics and replies the site hid, each with Unhide. */
@@ -166,7 +166,7 @@ export function ReportsQueue() {
                     {report.note}
                   </p>
                 ) : null}
-                <span style={{ fontFamily: DM_MONO, fontSize: 12, lineHeight: 1.3, color: t.text2 }}>
+                <span style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: 1.3, color: t.text2 }}>
                   {report.reporter?.displayName?.trim() || (report.reporter?.username ? `@${report.reporter.username}` : "A reader")} ·{" "}
                   <time dateTime={report.createdAt}>{commentTime(report.createdAt)}</time>
                 </span>
@@ -234,7 +234,7 @@ export function ReportsQueue() {
                     {`“${entry.text}”`}
                   </Link>
                   {entry.hiddenAt ? (
-                    <span style={{ fontFamily: DM_MONO, fontSize: 12, lineHeight: 1.3, color: t.text2 }}>
+                    <span style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: 1.3, color: t.text2 }}>
                       Hidden <time dateTime={entry.hiddenAt}>{commentTime(entry.hiddenAt)}</time>
                     </span>
                   ) : null}

@@ -243,7 +243,7 @@ function ToolBox({ tool, phone }: { tool: ConnectorTool; phone: boolean }) {
           style={{
             flex: 1,
             minWidth: 0,
-            fontFamily: DM_MONO,
+            fontFamily: FIGTREE,
             fontSize: 12,
             whiteSpace: "nowrap",
             overflowX: "auto",

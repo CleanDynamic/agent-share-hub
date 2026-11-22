@@ -161,7 +161,7 @@ export function AIExportMenu({ isOpen, onClose, anchorEl, post: _post, onExport,
       </div>
 
       <div style={{ padding: "4px 0" }}>
-        <div style={{ padding: "8px 14px 4px", fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text2)" }}>
+        <div style={{ padding: "8px 14px 4px", fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "none", color: "var(--text2)" }}>
           FOR HUMANS
         </div>
         {humanFormats.map((item) => (
@@ -170,7 +170,7 @@ export function AIExportMenu({ isOpen, onClose, anchorEl, post: _post, onExport,
       </div>
 
       <div style={{ borderTop: "0.5px solid var(--line)", padding: "8px 14px" }}>
-        <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--evidence) 65%, transparent)" }}>
+        <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "none", color: "color-mix(in srgb, var(--evidence) 65%, transparent)" }}>
           FOR AI AGENTS & CHATBOTS
         </span>
       </div>

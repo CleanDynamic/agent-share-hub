@@ -69,7 +69,7 @@ export function IntakeProgress({
       style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 520 }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <span style={{ ...labelText, textTransform: "uppercase", color: TEAL }}>Reading</span>
+        <span style={{ ...labelText, textTransform: "none", color: TEAL }}>Reading</span>
         <h1 style={{ ...titleText, fontSize: 17, margin: 0, color: TEXT_PRIMARY }}>
           {sourceLabel}
         </h1>

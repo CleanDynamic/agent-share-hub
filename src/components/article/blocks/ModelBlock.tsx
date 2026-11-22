@@ -94,7 +94,7 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
             style={{ background: MODEL_COLOR }}
           />
           <Cpu size={12} className="text-muted-foreground" />
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="text-[11px] font-semibold tracking-wide text-muted-foreground">
             Model
           </span>
           <div className="flex-1" />

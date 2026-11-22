@@ -46,7 +46,7 @@ export function SettingsFrame({ section, children }: SettingsFrameProps) {
                     label={
                       <span style={{ display: "block" }}>
                         <span style={{ display: "block", color: t.text, fontWeight: 500 }}>{s.label}</span>
-                        <span style={{ display: "block", color: t.label, fontSize: 12, lineHeight: 1.4 }}>{s.note}</span>
+                        <span style={{ display: "block", color: t.label, fontSize: 13, lineHeight: 1.4 }}>{s.note}</span>
                       </span>
                     }
                     value={<Glyph name="chev" size={12} />}

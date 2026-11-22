@@ -131,7 +131,7 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
 
         {original && (
           <div className="mb-4">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+            <div className="text-xs tracking-wider text-muted-foreground mb-1">
               Original post
             </div>
             <EmbeddedOriginalCard
@@ -178,7 +178,7 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
                   </span>
                   <span className="text-xs text-muted-foreground">{timeAgo(r.created_at)}</span>
                   {isCurrent && (
-                    <span className="text-[10px] uppercase text-[var(--evidence)] ml-auto">
+                    <span className="text-[10px] text-[var(--evidence)] ml-auto">
                       You are here
                     </span>
                   )}
@@ -240,7 +240,7 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
           </div>
           <div className="flex items-center gap-2 mt-0.5">
             <span
-              className="inline-flex items-center gap-1 rounded-full text-[10px] font-semibold uppercase tracking-wider"
+              className="inline-flex items-center gap-1 rounded-full text-[10px] font-semibold tracking-wider"
               style={{
                 padding: "2px 8px",
                 color: "var(--evidence)",

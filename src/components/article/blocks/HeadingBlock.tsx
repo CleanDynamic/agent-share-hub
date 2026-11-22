@@ -76,7 +76,7 @@ export function HeadingBlockNode({ id, data, selected }: NodeProps) {
           style={{ background: HEADING_COLOR }}
         />
         <HeadingIcon size={12} className="text-muted-foreground" />
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="text-[11px] font-semibold tracking-wide text-muted-foreground">
           Heading
         </span>
 

@@ -394,7 +394,7 @@ export function ArrowOverlay({
             >
               <div style={{
                 fontSize: 9, fontWeight: 700,
-                textTransform: 'uppercase',
+                textTransform: 'none',
                 letterSpacing: '0.10em',
                 color: 'var(--text2)',
                 marginBottom: 8,

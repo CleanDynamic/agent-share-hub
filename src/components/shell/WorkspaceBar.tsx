@@ -328,7 +328,7 @@ function ExitControl({ exit }: { exit: WorkspaceExit }) {
               this one is a style object. */}
           <span
             style={{
-              fontFamily: SENTIENT,
+              fontFamily: FIGTREE,
               fontSize: 17,
               fontWeight: 500,
               lineHeight: 1,
@@ -398,7 +398,7 @@ function ReadOnlyContext({ text }: { text: string | null }) {
       title={text}
       style={{
         ...labelType,
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: 600,
         color: t.text,
         flex: 1,

@@ -283,7 +283,7 @@ function PromptItem({
         {prompt.text}
       </span>
       {prompt.added ? (
-        <span style={{ width: slot, flexShrink: 0, textAlign: "center", fontFamily: DM_MONO, fontSize: textStep.meta, color: t.text2 }}>added</span>
+        <span style={{ width: slot, flexShrink: 0, textAlign: "center", fontFamily: FIGTREE, fontSize: textStep.meta, color: t.text2 }}>added</span>
       ) : (
         <IconButton
           icon={Plus}

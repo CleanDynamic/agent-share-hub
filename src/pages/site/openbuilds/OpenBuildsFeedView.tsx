@@ -87,7 +87,7 @@ function SpaceLink({ to, current, children, fresh }: { to: string; current?: boo
       style={{ boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, minHeight: 32, background: state.hovered ? hoverFill() : "transparent", color: current || state.hovered ? t.text : t.text2, textDecoration: "none", ...rowText({ fontWeight: current ? 500 : 400 }), ...ring(state.focusVisible) }}
     >
       <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{children}</span>
-      {fresh ? <span style={{ flexShrink: 0, fontSize: 12, color: t.label }}>{`${fresh} new`}</span> : null}
+      {fresh ? <span style={{ flexShrink: 0, fontSize: 13, color: t.label }}>{`${fresh} new`}</span> : null}
     </Link>
   );
 }
@@ -143,7 +143,7 @@ function BusyThisWeek({ rows }: { rows: BusyRow[] }) {
               <Link to={`/openbuilds/spaces/${row.slug}`} style={{ ...rowText({ color: t.text }), textDecoration: "none", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {row.name}
               </Link>
-              <div style={{ ...rowText({ fontSize: 12, color: t.label }), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.meta}</div>
+              <div style={{ ...rowText({ fontSize: 13, color: t.label }), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.meta}</div>
             </div>
             <PostControl onClick={row.onJoin} aria-label={`Join ${row.name}`}>
               Join space
@@ -236,12 +236,12 @@ export function OpenBuildsFeedView(view: OpenBuildsFeedViewProps) {
             value={view.open ? "open" : "all"}
             onChange={(value) => view.onOpen(value === "open")}
             size={phone ? 50 : 28}
-            fontSize={12}
+            fontSize={13}
           />
         </div>
       </div>
       {menu ? <div style={{ padding: "12px 20px 0" }}>{menu}</div> : null}
-      <p style={{ margin: 0, padding: "8px 20px 0", ...rowText({ fontSize: 12, color: t.label }) }}>Newest first</p>
+      <p style={{ margin: 0, padding: "8px 20px 0", ...rowText({ fontSize: 13, color: t.label }) }}>Newest first</p>
       <Posts view={view} />
     </div>
   );

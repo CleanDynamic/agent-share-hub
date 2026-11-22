@@ -217,7 +217,7 @@ function AdModal({ open, onComplete, label, countdownSeconds = 3 }: {
         <div className="w-[320px] h-[100px] bg-muted/40 rounded-lg flex items-center justify-center border border-border">
           <span className="text-xs text-muted-foreground">Ad Space</span>
         </div>
-        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Advertisement</p>
+        <p className="text-[10px] text-muted-foreground tracking-wider">Advertisement</p>
         <p className="text-sm text-foreground">
           {label} <span className="font-bold text-[var(--evidence)]">{seconds}</span>…
         </p>
@@ -484,7 +484,7 @@ export function RenderBlockContent({
         padding: '14px 16px',
       }}>
         {lang && (
-          <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text2)', display: 'block', marginBottom: 8 }}>{lang}</span>
+          <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'none', letterSpacing: '0.1em', color: 'var(--text2)', display: 'block', marginBottom: 8 }}>{lang}</span>
         )}
         <button
           onClick={handleCopy}
@@ -515,11 +515,11 @@ export function RenderBlockContent({
     return (
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div style={{ background: 'var(--recess)', border: '1px solid var(--line)', borderRadius: 8, padding: 12 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text2)', marginBottom: 8 }}>A</div>
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'none', letterSpacing: '0.1em', color: 'var(--text2)', marginBottom: 8 }}>A</div>
           <p style={{ fontSize: 13, color: 'var(--text)', whiteSpace: 'pre-wrap', margin: 0 }}>{aText}</p>
         </div>
         <div style={{ background: 'var(--recess)', border: '1px solid var(--line)', borderRadius: 8, padding: 12 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text2)', marginBottom: 8 }}>B</div>
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'none', letterSpacing: '0.1em', color: 'var(--text2)', marginBottom: 8 }}>B</div>
           <p style={{ fontSize: 13, color: 'var(--text)', whiteSpace: 'pre-wrap', margin: 0 }}>{bText}</p>
         </div>
       </div>
@@ -645,7 +645,7 @@ export const PromptViewer = ({ block }: { block: BlockRow }) => {
         {block.prompt_role && (
           <span style={{
             padding: '2px 10px', borderRadius: 'var(--r-chip)', fontSize: 11,
-            fontWeight: 700, textTransform: 'uppercase',
+            fontWeight: 700, textTransform: 'none',
             background: 'color-mix(in srgb, var(--action) 15%, transparent)',
             border: '1px solid color-mix(in srgb, var(--action) 30%, transparent)',
             color: 'var(--action)',
@@ -673,7 +673,7 @@ export const PromptViewer = ({ block }: { block: BlockRow }) => {
           borderRadius: 8,
         }}>
           <div style={{
-            fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+            fontSize: 10, fontWeight: 700, textTransform: 'none',
             letterSpacing: '0.10em', color: 'var(--evidence)', marginBottom: 8,
           }}>
             Fill in variables
@@ -731,7 +731,7 @@ export const PromptViewer = ({ block }: { block: BlockRow }) => {
       {block.prompt_example_output && (
         <div style={{ marginTop: 12 }}>
           <div style={{
-            fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+            fontSize: 10, fontWeight: 700, textTransform: 'none',
             letterSpacing: '0.10em', color: 'var(--text2)',
             marginBottom: 8,
           }}>
@@ -775,7 +775,7 @@ const WorkflowViewer = ({ block }: { block: BlockRow }) => {
           color: 'var(--text)',
         }}>
           <span style={{
-            fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+            fontSize: 10, fontWeight: 700, textTransform: 'none',
             letterSpacing: '0.10em', color: 'var(--action)',
             display: 'block', marginBottom: 4,
           }}>
@@ -889,7 +889,7 @@ const WorkflowViewer = ({ block }: { block: BlockRow }) => {
           color: 'var(--text2)',
         }}>
           <span style={{
-            fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+            fontSize: 10, fontWeight: 700, textTransform: 'none',
             letterSpacing: '0.10em', color: 'var(--cat-configuration)',
             display: 'block', marginBottom: 4,
           }}>
@@ -914,7 +914,7 @@ const CodeViewer = ({ block }: { block: BlockRow }) => {
         <div style={{ marginBottom: 8 }}>
           <span style={{
             padding: '2px 10px', borderRadius: 'var(--r-chip)', fontSize: 11,
-            fontWeight: 700, textTransform: 'uppercase',
+            fontWeight: 700, textTransform: 'none',
             background: 'color-mix(in srgb, var(--cat-data) 15%, transparent)',
             border: '1px solid color-mix(in srgb, var(--cat-data) 30%, transparent)',
             color: 'var(--cat-data)',
@@ -934,7 +934,7 @@ const CodeViewer = ({ block }: { block: BlockRow }) => {
           fontFamily: 'Courier New, monospace',
         }}>
           <span style={{
-            fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+            fontSize: 10, fontWeight: 700, textTransform: 'none',
             letterSpacing: '0.10em', color: 'var(--text2)',
             fontFamily: 'var(--font-ui)',
           }}>
@@ -978,7 +978,7 @@ const CodeViewer = ({ block }: { block: BlockRow }) => {
           color: 'var(--text2)', lineHeight: 1.6,
         }}>
           <span style={{
-            fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+            fontSize: 10, fontWeight: 700, textTransform: 'none',
             letterSpacing: '0.10em', color: 'var(--text2)',
             display: 'block', marginBottom: 4,
           }}>Run</span>
@@ -1011,7 +1011,7 @@ const ResultViewer = ({ block }: { block: BlockRow }) => (
     {block.result_before && (
       <div style={{ marginBottom: 10 }}>
         <div style={{
-          fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+          fontSize: 10, fontWeight: 700, textTransform: 'none',
           letterSpacing: '0.10em', color: 'var(--cat-breakage)', marginBottom: 6,
         }}>Before</div>
         <div style={{
@@ -1029,7 +1029,7 @@ const ResultViewer = ({ block }: { block: BlockRow }) => (
     {block.result_after && (
       <div style={{ marginBottom: 10 }}>
         <div style={{
-          fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+          fontSize: 10, fontWeight: 700, textTransform: 'none',
           letterSpacing: '0.10em', color: 'var(--cat-configuration)', marginBottom: 6,
         }}>Output</div>
         <div style={{ position: 'relative' }}>
@@ -1086,7 +1086,7 @@ const ComparisonViewer = ({ block }: { block: BlockRow }) => {
   }) => (
     <div style={{ flex: 1, minWidth: 0 }}>
       <div style={{
-        fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+        fontSize: 11, fontWeight: 700, textTransform: 'none',
         letterSpacing: '0.08em', color: 'var(--text2)',
         marginBottom: 8, textAlign: 'center',
       }}>
@@ -1141,7 +1141,7 @@ const ComparisonViewer = ({ block }: { block: BlockRow }) => {
           color: 'var(--text2)',
         }}>
           <span style={{
-            fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+            fontSize: 10, fontWeight: 700, textTransform: 'none',
             letterSpacing: '0.10em', color: 'var(--cat-evidence)',
             display: 'block', marginBottom: 4, fontStyle: 'normal',
           }}>Verdict</span>
@@ -1587,7 +1587,7 @@ export function ContentBlockViewer({
                         gap: 4,
                         fontSize: 10,
                         fontWeight: 700,
-                        textTransform: 'uppercase',
+                        textTransform: 'none',
                         letterSpacing: '0.10em',
                         color: 'var(--text2)',
                         padding: '2px 8px',
@@ -1772,7 +1772,7 @@ export function ContentBlockViewer({
                   }}>
                     <div style={{
                       fontSize: 10, fontWeight: 700,
-                      textTransform: 'uppercase',
+                      textTransform: 'none',
                       letterSpacing: '0.12em',
                       color: 'var(--text2)',
                       marginBottom: 3,
@@ -1821,7 +1821,7 @@ export function ContentBlockViewer({
                           </div>
                           <span style={{
                             fontSize: 9, fontWeight: 700,
-                            textTransform: 'uppercase',
+                            textTransform: 'none',
                             letterSpacing: '0.10em',
                             color: 'var(--text2)',
                           }}>

@@ -34,7 +34,7 @@ const TWO_COLUMNS_MIN = 1101;
 
 const underlined: CSSProperties = {
   fontFamily: FIGTREE,
-  fontSize: 12,
+  fontSize: 13,
   lineHeight: "28px",
   color: t.text2,
   textDecoration: "underline",
@@ -139,7 +139,7 @@ export function StartRow({ phone, onDropSession }: { phone: boolean; onDropSessi
         </svg>
         Start a new build
       </span>
-      <span style={{ fontSize: 12, color: t.label, textAlign: "right" }}>
+      <span style={{ fontSize: 13, color: t.label, textAlign: "right" }}>
         {over ? "Drop to start a build from it" : phone ? null : "or drop a session here"}
       </span>
     </DashedSlot>

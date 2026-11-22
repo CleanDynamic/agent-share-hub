@@ -77,7 +77,7 @@ export function SpaceView(view: SpaceViewProps) {
         </div>
       ) : (
         <div role="tabpanel" aria-label="Posts">
-          <p style={{ margin: 0, padding: "8px 4px 0", fontFamily: FIGTREE, fontSize: 12, lineHeight: "16px", color: t.label }}>{view.orderLine}</p>
+          <p style={{ margin: 0, padding: "8px 4px 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label }}>{view.orderLine}</p>
           <PageState
             read={view.posts.read ?? (view.posts.status === "error" ? readOf("error", undefined, view.posts.onRetry) : readOf("ready", view.posts.items))}
             thing="posts"

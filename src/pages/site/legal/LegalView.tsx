@@ -26,7 +26,7 @@ const body: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, fontWeight: 400
 const link: CSSProperties = { color: t.text, textDecoration: "underline", textUnderlineOffset: 4, textDecorationThickness: 1 };
 const quietLink: CSSProperties = { ...link, color: t.text2 };
 const module_: CSSProperties = { background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, padding: 16 };
-const th: CSSProperties = { fontWeight: 500, padding: "0 16px 8px 0", borderBottom: `1px solid ${t.hairline}`, textAlign: "left", verticalAlign: "bottom", fontSize: 12, color: t.label };
+const th: CSSProperties = { fontWeight: 500, padding: "0 16px 8px 0", borderBottom: `1px solid ${t.hairline}`, textAlign: "left", verticalAlign: "bottom", fontSize: 13, color: t.label };
 const td: CSSProperties = { padding: "8px 16px 8px 0", borderBottom: `1px solid ${t.hairline}`, verticalAlign: "top", color: t.text };
 
 /** Text with its placeholders and outside addresses drawn. */
@@ -113,7 +113,7 @@ function Contents({ text }: { text: LegalText }) {
       ))}
     </ol>
   );
-  const title: CSSProperties = { fontFamily: FIGTREE, fontSize: 14, fontWeight: 500, lineHeight: 1.3, color: t.text };
+  const title: CSSProperties = { fontFamily: FIGTREE, fontSize: 15, fontWeight: 500, lineHeight: 1.3, color: t.text };
   return (
     <nav aria-label="In this page" data-testid="legal-contents" style={module_}>
       {phone ? (
@@ -146,7 +146,7 @@ export function LegalView({ text }: LegalViewProps) {
       <header style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div>
           <h1 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 20, fontWeight: 500, lineHeight: 1.2, letterSpacing: "-0.015em", color: t.text }}>{text.title}</h1>
-          <div style={{ marginTop: 4, fontSize: 12, fontWeight: 500, color: t.label }}>Last updated {formatLastUpdated(text.lastUpdated)}</div>
+          <div style={{ marginTop: 4, fontSize: 13, fontWeight: 500, color: t.label }}>Last updated {formatLastUpdated(text.lastUpdated)}</div>
         </div>
         <p style={{ ...body, color: t.text2 }}>{text.intro}</p>
       </header>

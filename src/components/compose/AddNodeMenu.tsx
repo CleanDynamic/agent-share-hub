@@ -121,7 +121,7 @@ export function AddNodeMenu({ nodeTypes, onAdd, disabled, levelLabel }: AddNodeM
             <DropdownMenuLabel
               style={{
                 ...labelText,
-                textTransform: "uppercase",
+                textTransform: "none",
                 fontSize: 10,
                 color: categoryColour(category),
               }}
@@ -162,7 +162,7 @@ export function AddNodeMenu({ nodeTypes, onAdd, disabled, levelLabel }: AddNodeM
                         fontSize: 10,
                         fontWeight: 400,
                         letterSpacing: "0.04em",
-                        textTransform: "uppercase",
+                        textTransform: "none",
                         color: fill.color,
                       }}
                     >

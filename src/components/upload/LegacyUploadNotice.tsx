@@ -51,7 +51,7 @@ export function LegacyUploadNotice() {
             fontSize: 12,
             fontWeight: 500,
             letterSpacing: "0.04em",
-            textTransform: "uppercase",
+            textTransform: "none",
             color: "var(--cat-artefact)",
           }}
         >

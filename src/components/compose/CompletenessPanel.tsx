@@ -407,7 +407,7 @@ export function CompletenessPanel({
           padding: 0,
           background: "transparent",
           border: "none",
-          textTransform: "uppercase",
+          textTransform: "none",
           color: TEXT_SECONDARY,
           cursor: "pointer",
         }}

@@ -42,10 +42,10 @@ const BAR_HEIGHT = 9;
 const HIT_HEIGHT = 44;
 
 const kindStyle = (kind: ReplayEventView["kind"]): CSSProperties => ({
-  fontFamily: DM_MONO,
-  fontSize: 11,
+  fontFamily: FIGTREE,
+  fontSize: 13,
   letterSpacing: ".08em",
-  textTransform: "uppercase",
+  textTransform: "none",
   color: EVENT_INK[kind],
   whiteSpace: "nowrap",
 });
@@ -172,10 +172,10 @@ function StepList({
           {titled ? (
             <div
               style={{
-                fontFamily: DM_MONO,
-                fontSize: 11,
+                fontFamily: FIGTREE,
+                fontSize: 13,
                 letterSpacing: ".09em",
-                textTransform: "uppercase",
+                textTransform: "none",
                 color: t.label,
                 padding: "9px 0 4px",
               }}
@@ -225,12 +225,12 @@ function StepRow({ event, current, phone, onGo }: { event: ReplayEventView; curr
           ...ring(state.focusVisible),
         }}
       >
-        <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.label }}>{event.at}</span>
+        <span style={{ fontFamily: DM_MONO, fontSize: 13, color: t.label }}>{event.at}</span>
         <span style={kindStyle(event.kind)}>{event.kind}</span>
         <span
           style={{
             fontFamily: FIGTREE,
-            fontSize: phone ? 13 : 12,
+            fontSize: phone ? 13 : 13,
             lineHeight: 1.4,
             color: t.text,
             whiteSpace: "nowrap",
@@ -336,13 +336,13 @@ export function ReplayBody({ replay, phone = false }: { replay: ReplayView; phon
             if (marker && marker.rebuilds.length === 1) onOpenRebuild?.(marker.rebuilds[0].id);
           }}
         />
-        <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.text2, whiteSpace: "nowrap" }}>
+        <span style={{ fontFamily: DM_MONO, fontSize: 13, color: t.text2, whiteSpace: "nowrap" }}>
           step {current.ordinal} of {events[last].ordinal}
         </span>
       </div>
 
       {markers.length > 0 ? (
-        <p data-testid="divergence-names" style={{ margin: 0, fontFamily: DM_MONO, fontSize: 11, color: t.text2 }}>
+        <p data-testid="divergence-names" style={{ margin: 0, fontFamily: DM_MONO, fontSize: 13, color: t.text2 }}>
           {pointed
             ? pointed.rebuilds.map((rebuild, index) => (
                 <span key={rebuild.id}>
@@ -354,8 +354,8 @@ export function ReplayBody({ replay, phone = false }: { replay: ReplayView; phon
                       padding: 0,
                       border: 0,
                       background: "transparent",
-                      fontFamily: DM_MONO,
-                      fontSize: 11,
+                      fontFamily: FIGTREE,
+                      fontSize: 13,
                       color: t.action,
                       textDecoration: "underline",
                       textUnderlineOffset: 3,
@@ -373,7 +373,7 @@ export function ReplayBody({ replay, phone = false }: { replay: ReplayView; phon
       <div data-testid="build-replay-current" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
           <span style={kindStyle(current.kind)}>{current.kind}</span>
-          <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.label }}>{current.at}</span>
+          <span style={{ fontFamily: DM_MONO, fontSize: 13, color: t.label }}>{current.at}</span>
         </div>
         <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.65, color: t.text, whiteSpace: "pre-wrap" }}>
           {current.text}
@@ -385,7 +385,7 @@ export function ReplayBody({ replay, phone = false }: { replay: ReplayView; phon
           <Button
             variant="secondary"
             size={30}
-            fontSize={12}
+            fontSize={13}
             icon={RefreshCw}
             disabled={forkPending}
             onClick={() => onFork(current.ordinal)}

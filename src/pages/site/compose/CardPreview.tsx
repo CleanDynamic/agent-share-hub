@@ -7,7 +7,7 @@ import { classificationLines } from "@/lib/classify/lines";
 import type { Classification } from "@/lib/classify/types";
 import { t } from "@/lib/theme/tokens";
 import { TITLE_LINE, fullText } from "@/lib/theme/truncate";
-import { DM_MONO, textStep } from "@/lib/theme/type";
+import { textStep, FIGTREE } from "@/lib/theme/type";
 
 import { text } from "./refinedStyles";
 
@@ -40,7 +40,7 @@ export function CardPreview({ title, classification, maker }: { title: string; c
           ) : null}
           {name ? <span style={{ ...text(textStep.body, 500, t.text), minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span> : null}
           {maker?.handle ? <span style={{ ...text(textStep.body, 400, t.label), minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{`@${maker.handle}`}</span> : null}
-          <span style={{ marginLeft: "auto", fontFamily: DM_MONO, fontSize: textStep.meta, color: t.label }}>Preview</span>
+          <span style={{ marginLeft: "auto", fontFamily: FIGTREE, fontSize: textStep.meta, color: t.label }}>Preview</span>
         </div>
         <div style={{ marginTop: 10, display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: 6, rowGap: 4, minWidth: 0 }}>
           <span {...fullText(title.trim())} style={{ ...text(textStep.section, 500, title.trim() ? t.text : t.label), ...TITLE_LINE, flex: "0 1 auto", lineHeight: "21px" }}>{title.trim() || "Untitled build"}</span>

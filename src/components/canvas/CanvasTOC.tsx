@@ -222,7 +222,7 @@ export function CanvasTOC({
             fontFamily: 'var(--font-ui)',
             writingMode: open ? 'horizontal-tb' : 'vertical-rl',
             letterSpacing: open ? 0 : '0.12em',
-            textTransform: 'uppercase',
+            textTransform: 'none',
             padding: '4px',
             zIndex: 2,
             transition: feedback("color"),
@@ -248,7 +248,7 @@ export function CanvasTOC({
             }}>
               <div style={{
                 fontSize: 9, fontWeight: 700,
-                textTransform: 'uppercase',
+                textTransform: 'none',
                 letterSpacing: '0.14em',
                 color: 'var(--text2)',
               }}>

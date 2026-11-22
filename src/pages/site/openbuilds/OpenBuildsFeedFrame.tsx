@@ -61,7 +61,7 @@ export function OpenBuildsFeedLoadingView() {
           centre={
             <>
               <TabsBones />
-              <p style={{ margin: 0, padding: "8px 20px 0", fontFamily: FIGTREE, fontSize: 12, lineHeight: "20px", color: t.label }}>Newest first</p>
+              <p style={{ margin: 0, padding: "8px 20px 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.label }}>Newest first</p>
               <div data-testid="openbuilds-feed-loading">
                 {Array.from({ length: POST_BONES }, (_, index) => (
                   <PostBones key={index} first={index === 0} />

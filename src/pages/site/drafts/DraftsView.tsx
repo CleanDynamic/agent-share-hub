@@ -169,13 +169,13 @@ function DraftRow({
           </span>
           {/* UX-09 P3: a draft made in a reply names its topic. Text, not a link: the whole row is the draft's link. */}
           {draftForLine(draft) ? (
-            <span data-testid="draft-for-topic" style={{ display: "block", fontSize: 12, color: t.label }}>
+            <span data-testid="draft-for-topic" style={{ display: "block", fontSize: 13, color: t.label }}>
               {draftForLine(draft)}
             </span>
           ) : null}
-          <span style={{ display: "block", fontSize: 12, color: t.label }}>{over ? "Drop to add this session" : draftSessions(draft)}</span>
+          <span style={{ display: "block", fontSize: 13, color: t.label }}>{over ? "Drop to add this session" : draftSessions(draft)}</span>
         </span>
-        <span style={{ fontSize: 12, color: t.label, whiteSpace: "nowrap" }}>{draftEdited(draft, now)}</span>
+        <span style={{ fontSize: 13, color: t.label, whiteSpace: "nowrap" }}>{draftEdited(draft, now)}</span>
         <span aria-hidden="true" style={{ display: "inline-flex", color: t.label }}>
           <Glyph name="chev" size={16} />
         </span>
@@ -362,7 +362,7 @@ function SessionRow({
       </span>
       <span style={{ minWidth: 0 }}>
         <span style={{ display: "block", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{promptLine(session)}</span>
-        <span style={{ display: "block", fontSize: 12, color: t.label, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{meta}</span>
+        <span style={{ display: "block", fontSize: 13, color: t.label, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{meta}</span>
       </span>
       <AddMenu session={session} items={items} phone={phone} onPick={onPick} />
     </li>
@@ -374,9 +374,9 @@ function SessionRow({
 function ConnectedTools({ tools, onManage }: { tools: ReturnType<typeof connectedTools>; onManage: () => void }) {
   return (
     <InnerTile style={{ marginTop: 24 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
-        <h3 style={{ margin: 0, fontSize: 12, fontWeight: 500, lineHeight: "normal" }}>Connected tools</h3>
-        <TextButton onClick={onManage} style={{ fontSize: 12, lineHeight: "normal", textDecoration: "none" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13 }}>
+        <h3 style={{ margin: 0, fontSize: 13, fontWeight: 500, lineHeight: "normal" }}>Connected tools</h3>
+        <TextButton onClick={onManage} style={{ fontSize: 13, lineHeight: "normal", textDecoration: "none" }}>
           Manage
         </TextButton>
       </div>
@@ -384,7 +384,7 @@ function ConnectedTools({ tools, onManage }: { tools: ReturnType<typeof connecte
         {tools.map((tool) => (
           <li key={tool.client} style={{ listStyle: "none", display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: 32 }}>
             <span style={{ color: t.text2 }}>{tool.name}</span>
-            <span style={{ fontSize: 12, color: t.label }}>{`last import ${tool.lastImport}`}</span>
+            <span style={{ fontSize: 13, color: t.label }}>{`last import ${tool.lastImport}`}</span>
           </li>
         ))}
       </ul>

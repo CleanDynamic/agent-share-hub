@@ -894,7 +894,7 @@ const ChipInput = ({ values, onChange, placeholder }: {
 
 const FieldLabel = ({ children }: { children: React.ReactNode }) => (
   <div style={{
-    fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+    fontSize: 10, fontWeight: 700, textTransform: 'none',
     letterSpacing: '0.10em', color: 'var(--text2)',
     marginBottom: 6, marginTop: 14,
   }}>{children}</div>
@@ -924,7 +924,7 @@ const PromptBlockEditor = ({ block, update, index }: {
             onClick={() => update(index, { promptRole: r })}
             style={{
               padding: '4px 12px', borderRadius: 6, fontSize: 11,
-              fontWeight: 600, textTransform: 'uppercase', cursor: 'pointer',
+              fontWeight: 600, textTransform: 'none', cursor: 'pointer',
               background: block.promptRole === r
                 ? 'color-mix(in srgb, var(--action) 20%, transparent)' : 'var(--recess)',
               border: `1px solid ${block.promptRole === r
@@ -1408,7 +1408,7 @@ const CodeBlockEditor = ({ block, update, index }: {
             onClick={() => update(index, { codeLanguage: l })}
             style={{
               padding: '3px 10px', borderRadius: 6, fontSize: 12,
-              cursor: 'pointer', textTransform: 'uppercase', fontWeight: 600,
+              cursor: 'pointer', textTransform: 'none', fontWeight: 600,
               background: block.codeLanguage === l
                 ? 'color-mix(in srgb, var(--cat-data) 20%, transparent)' : 'var(--recess)',
               border: `1px solid ${block.codeLanguage === l
@@ -2051,7 +2051,7 @@ const TutorialStepEditor = ({ block, update, index }: {
         <div style={{ marginBottom: 10 }}>
           <div style={{
             fontSize: 10, fontWeight: 700,
-            textTransform: 'uppercase',
+            textTransform: 'none',
             letterSpacing: '0.08em',
             color: 'var(--text2)',
             marginBottom: 6,
@@ -2133,7 +2133,7 @@ const TutorialStepEditor = ({ block, update, index }: {
       {/* Instruction text */}
       <div style={{
         fontSize: 10, fontWeight: 700,
-        textTransform: 'uppercase',
+        textTransform: 'none',
         letterSpacing: '0.08em',
         color: 'var(--text2)',
         marginBottom: 6,
@@ -2321,7 +2321,7 @@ const GroupBlockEditor = ({
                 display: 'flex', alignItems: 'center',
                 gap: 6, marginBottom: 8,
                 fontSize: 10, fontWeight: 700,
-                textTransform: 'uppercase',
+                textTransform: 'none',
                 letterSpacing: '0.10em',
                 color: 'var(--text2)',
               }}>
@@ -2403,7 +2403,7 @@ const GroupBlockEditor = ({
             <div style={{
               fontSize: 10, fontWeight: 600,
               color: 'var(--text2)',
-              textTransform: 'uppercase',
+              textTransform: 'none',
               letterSpacing: '0.08em',
               marginBottom: 6,
             }}>
@@ -2583,7 +2583,7 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   fontSize: 10, fontWeight: 700,
-                  textTransform: 'uppercase',
+                  textTransform: 'none',
                   letterSpacing: '0.12em',
                   color: 'var(--text2)',
                   marginBottom: 8,

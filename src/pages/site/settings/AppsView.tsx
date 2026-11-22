@@ -34,7 +34,7 @@ function AppRow({ app, last, onRevoke }: { app: ConnectedApp; last: boolean; onR
       }
       control={
         asking ? null : (
-          <Button variant="secondary" size={32} fontSize={12} aria-label={`${APPS_COPY.revoke} ${app.name}`} onClick={() => setAsking(true)}>
+          <Button variant="secondary" size={32} fontSize={13} aria-label={`${APPS_COPY.revoke} ${app.name}`} onClick={() => setAsking(true)}>
             {APPS_COPY.revoke}
           </Button>
         )

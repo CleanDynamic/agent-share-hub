@@ -66,9 +66,8 @@ function ruleEnd(text: string, open: number): number {
   return text.length;
 }
 
-// UI-P52 density pass: the floor is 20 (it was 17), because the pass takes the
-// smallest headings under 20 and those are now set in Figtree 600.
-describe("the display floor: the display face never below 20px", () => {
+// The serif is for works only, and its smallest use is a work's name at 15.
+describe("the serif floor: Geist Serif never below 15px", () => {
   it("holds across the shipped scale", () => {
     expect(assertFloors()).toEqual([]);
   });
@@ -94,8 +93,7 @@ describe("the display floor: the display face never below 20px", () => {
       fontWeight: 400,
     });
     expect(found).toHaveLength(1);
-    // UI-P52 density pass: the floor in the message is 20, not 17.
-    expect(found[0]).toMatch(/below the 20px display floor/);
+    expect(found[0]).toMatch(/below the 15px floor/);
   });
 
   it("catches a clamp whose lower bound breaches the floor", () => {
@@ -103,11 +101,11 @@ describe("the display floor: the display face never below 20px", () => {
     // the range, illegal at the bottom, which is where a phone renders it.
     const found = floorViolations("shrinkingHead", {
       fontFamily: SENTIENT,
-      fontSize: "clamp(16px, 4vw, 48px)",
+      fontSize: "clamp(12px, 4vw, 48px)",
       fontWeight: 400,
     });
     expect(found).toHaveLength(1);
-    expect(found[0]).toMatch(/16px is below/);
+    expect(found[0]).toMatch(/12px is below/);
   });
 
   it("refuses a display size it cannot resolve rather than passing it", () => {
@@ -131,7 +129,7 @@ describe("the weight floor: the UI face never under 400 below 18px", () => {
     );
     expect(light.length).toBeGreaterThan(0);
     for (const [role, style] of light) {
-      expect(style.fontWeight, `${role} is under the weight floor`).toBeGreaterThanOrEqual(
+      expect(Number(fallbackOf(String(style.fontWeight))), `${role} is under the weight floor`).toBeGreaterThanOrEqual(
         BODY_MIN_WEIGHT,
       );
     }
@@ -176,42 +174,48 @@ describe("the scale", () => {
     }
   });
 
-  it("matches the sizes and faces the theme specifies", () => {
-    // UI-P80: sizes and families are var() with today's value as the fallback;
-    // `now` reads that, which is what renders while data-look is absent.
+  it("matches the five sizes and the three faces the pack specifies", () => {
     const now = (v: unknown) => fallbackOf(String(v));
-    expect(now(type.eyebrow.fontSize)).toBe("12px");
-    expect(type.eyebrow.fontFamily).toBe(`var(--type-eyebrow-font, ${DM_MONO})`);
-    expect(now(type.eyebrow.letterSpacing)).toBe("0.08em");
-    expect(type.eyebrow.textTransform).toBe("uppercase");
-
-    // UI-P52 density pass: every size below is its old size through the table
-    // (design/prompts/README-density.md) — body 16 → 15, bodyLarge 17 → 16,
-    // section heads 30 → 22, the hero 44 → 33, data 13 → 12, labels 13 → 12.
-    // The eyebrow's 12 is in the kept band.
+    // 13/16 Geist 500, no uppercase: the eyebrow is retired and keeps only its name.
+    expect(now(type.eyebrow.fontSize)).toBe("13px");
+    expect(type.eyebrow.fontFamily).toBe(`var(--type-eyebrow-font, ${FIGTREE})`);
+    expect(type.eyebrow).not.toHaveProperty("textTransform");
+    // 15/20 body, 17/22 group headings, 15/20 600 row titles, 20/24 section heads, 31/36 page titles.
     expect(now(type.body.fontSize)).toBe("15px");
     expect(type.body.fontWeight).toBe(400);
-    expect(now(type.body.lineHeight)).toBe("1.55");
-    expect(now(type.bodyLarge.fontSize)).toBe("16px");
-
-    // THE CARD TITLE. BG-P09 made it the display face at a fixed 22 (22 ≥ the
-    // floor of the day, 17), so a title under a picture wins the eye by face and
-    // size; UI-P05 moved that face to Sentient. UI-P52 density pass: the table
-    // takes 22 to 19, under Sentient's floor of 20, so the role keeps the size
-    // and is set in Figtree 600 instead — still clear of the weight floor.
-    expect(minPx(type.cardTitle.fontSize)).toBe(19);
-    expect(type.cardTitle.fontFamily).toBe(FIGTREE);
+    expect(now(type.body.lineHeight)).toBe("20px");
+    expect(now(type.bodyLarge.fontSize)).toBe("17px");
+    expect(now(type.bodyLarge.lineHeight)).toBe("22px");
+    expect(now(type.cardTitle.fontSize)).toBe("15px");
     expect(now(type.cardTitle.fontWeight)).toBe("600");
+    expect(type.cardTitle.fontFamily).toBe(FIGTREE);
+    expect(now(type.sectionHead.fontSize)).toBe("20px");
+    expect(now(type.sectionHead.lineHeight)).toBe("24px");
+    expect(now(type.sectionHead.letterSpacing)).toBe("-0.01em");
+    expect(now(type.hero.fontSize)).toBe("31px");
+    expect(now(type.hero.lineHeight)).toBe("36px");
+    expect(now(type.label.fontSize)).toBe("13px");
+    expect(now(type.label.fontWeight)).toBe("500");
+    expect(now(type.data.fontSize)).toBe("13px");
+    expect(type.data.fontFamily).toBe(`var(--type-data-font, ${FIGTREE})`);
     expect(floorViolations("cardTitle", type.cardTitle)).toEqual([]);
-    expect(minPx(type.sectionHead.fontSize)).toBe(22);
-    expect(minPx(type.hero.fontSize)).toBe(33);
-    expect(minPx(type.data.fontSize)).toBe(12);
-    expect(now(type.label.fontSize)).toBe("12px");
-    expect(now(type.label.letterSpacing)).toBe("0.01em");
+  });
+
+  it("sets the serif at weight 400 only, for works only", () => {
+    expect(type.work.fontFamily).toBe(SENTIENT);
+    expect(type.work.fontWeight).toBe(400);
+    expect(fallbackOf(String(type.work.fontSize))).toBe("31px");
+    expect(fallbackOf(String(type.work.lineHeight))).toBe("36px");
+    expect(type.work.letterSpacing).toBe("-0.02em");
+    expect(type.workName.fontFamily).toBe(SENTIENT);
+    expect(type.workName.fontWeight).toBe(400);
+    for (const [role, style] of Object.entries(scale)) {
+      if (style.fontFamily === SENTIENT) expect(["work", "workName"], `${role} is serif`).toContain(role);
+    }
   });
 
   it("balances headings and prettifies descriptions", () => {
-    for (const role of ["cardTitle", "sectionHead", "hero"] as const) {
+    for (const role of ["cardTitle", "sectionHead", "hero", "work"] as const) {
       expect(type[role].textWrap, `${role} should balance`).toBe("balance");
     }
     for (const role of ["body", "bodyLarge"] as const) {
@@ -300,18 +304,20 @@ describe("the retired faces", () => {
     }
   });
 
-  it("self-hosts Geist and Geist Mono: two variable WOFF2 files, two @font-face rules, Geist preloaded", () => {
+  it("self-hosts Geist, Geist Serif and Geist Mono: three variable WOFF2 files, three @font-face rules, Geist and Geist Serif preloaded", () => {
     const html = readFileSync(join(process.cwd(), "index.html"), "utf8");
     const css = readFileSync(join(process.cwd(), "src/index.css"), "utf8");
-    for (const file of ["GeistSerif-Variable.woff2", "GeistMono-Variable.woff2"]) {
+    for (const file of ["Geist-Variable.woff2", "GeistSerif-Variable.woff2", "GeistMono-Variable.woff2"]) {
       expect(existsSync(join(process.cwd(), "public/fonts", file)), `${file} is shipped`).toBe(true);
     }
-    expect(html).toMatch(
-      /<link\s+rel="preload"\s+as="font"\s+type="font\/woff2"\s+href="\/fonts\/GeistSerif-Variable\.woff2"\s+crossorigin/,
-    );
+    for (const file of ["Geist-Variable.woff2", "GeistSerif-Variable.woff2"]) {
+      expect(html).toMatch(
+        new RegExp(`<link\\s+rel="preload"\\s+as="font"\\s+type="font/woff2"\\s+href="/fonts/${file.replace(".", "\\.")}"\\s+crossorigin`),
+      );
+    }
     const faces = [...css.matchAll(/@font-face\s*\{([^}]*)\}/g)].map((m) => m[1]);
-    expect(faces).toHaveLength(2);
-    for (const family of ["Geist Serif", "Geist Mono"]) {
+    expect(faces).toHaveLength(3);
+    for (const family of ["Geist", "Geist Serif", "Geist Mono"]) {
       const face = faces.find((f) => new RegExp(`font-family:\\s*"${family}"`).test(f));
       expect(face, `${family} is declared`).toBeDefined();
       expect(face).toMatch(/font-display:\s*swap/);
@@ -367,7 +373,7 @@ describe("every display-face instance comes from the scale", () => {
       join(process.cwd(), "src/components/content-detail/ContentDetailShell.tsx"),
       "utf8",
     );
-    expect(text).toMatch(/const titleFont = isBlog \? SENTIENT : FIGTREE;/);
+    expect(text).toMatch(/const titleFont = FIGTREE;/);
     // The 13px site takes the body face directly, not titleFont.
     expect(text).toMatch(/fontFamily: FIGTREE,\s*\n\s*fontSize: 13,/);
     // Every site that does read titleFont is at or above the floor.
@@ -389,28 +395,14 @@ describe("every display-face instance comes from the scale", () => {
 });
 
 describe("type.display(px)", () => {
-  const spacing = (px: number, options?: Parameters<typeof display>[1]) => {
-    const style = display(px, options);
-    return [style.letterSpacing, style.lineHeight];
-  };
-
-  it("is Sentient 500 at the drawn size through the density table, complete", () => {
-    // UI-P52 density pass: `px` is the size the board drew before the pass, and
-    // the role renders it through the table — 44 → 33 (it rendered 44).
-    const style = display(44);
-    expect(style.fontFamily).toBe(SENTIENT);
-    expect(style.fontSize).toBe("33px");
-    expect(style.fontWeight).toBe(500);
-    expect(style.textWrap).toBe("balance");
-  });
-
-  it("sets a heading the table takes under 20px in Figtree 600 at the same size", () => {
-    // UI-P52 density pass: Sentient stays at 20px and up. Every heading drawn at
-    // 22 or less renders under 20, so it keeps its size and changes its face.
-    expect(display(24)).toMatchObject({ fontFamily: SENTIENT, fontSize: "20px", fontWeight: 500 });
-    for (const [px, size] of [[22, 19], [21, 18], [20, 17], [19, 16], [18, 15], [17, 16]]) {
-      expect(display(px), `display(${px})`).toMatchObject({ fontFamily: FIGTREE, fontSize: `${size}px`, fontWeight: 600 });
-      expect(floorViolations(`display(${px})`, display(px))).toEqual([]);
+  it("is Geist 600 on one of the five sizes, never serif", () => {
+    expect(display(44)).toMatchObject({ fontFamily: FIGTREE, fontSize: "31px", fontWeight: 600, lineHeight: "36px", letterSpacing: "-0.02em", textWrap: "balance" });
+    expect(display(30)).toMatchObject({ fontSize: "31px", lineHeight: "36px" });
+    for (const px of [22, 24, 28]) {
+      expect(display(px), `display(${px})`).toMatchObject({ fontFamily: FIGTREE, fontSize: "20px", fontWeight: 600, lineHeight: "24px", letterSpacing: "-0.01em" });
+    }
+    for (const px of [17, 18, 20, 21]) {
+      expect(display(px), `display(${px})`).toMatchObject({ fontFamily: FIGTREE, fontSize: "17px", fontWeight: 600, lineHeight: "22px" });
     }
   });
 
@@ -419,101 +411,54 @@ describe("type.display(px)", () => {
     expect(type.mono).toBe(mono);
   });
 
-  it("sets letter-spacing and line-height by size band, as the reference does", () => {
-    expect(spacing(52)).toEqual(["-0.04em", 0.95]);
-    expect(spacing(78)).toEqual(["-0.04em", 0.95]);
-    expect(spacing(51)).toEqual(["-0.035em", 1]);
-    expect(spacing(44)).toEqual(["-0.035em", 1]);
-    expect(spacing(43)).toEqual(["-0.03em", 1]);
-    expect(spacing(30)).toEqual(["-0.03em", 1]);
-    expect(spacing(29)).toEqual(["-0.02em", 1.05]);
-    expect(spacing(20)).toEqual(["-0.02em", 1.05]);
-    expect(spacing(19)).toEqual(["-0.02em", 1.05]);
-    expect(spacing(17)).toEqual(["-0.02em", 1.05]);
-  });
-
-  it("tightens a mobile page heading at 30–36px to -0.035em, and only there", () => {
-    expect(spacing(30, { mobilePageHeading: true })).toEqual(["-0.035em", 1]);
-    expect(spacing(36, { mobilePageHeading: true })).toEqual(["-0.035em", 1]);
-    expect(spacing(37, { mobilePageHeading: true })).toEqual(["-0.03em", 1]);
-    expect(spacing(28, { mobilePageHeading: true })).toEqual(["-0.02em", 1.05]);
-  });
-
-  it("sets the lockup wordmark at -0.03em / 1 at each size the reference draws it", () => {
-    // UI-P52 density pass: drawn at 16, 18, 19, 21, 34, 64 and 70, rendered at
-    // 15, 15, 16, 18, 26, 48 and 52 — and Sentient at every one of them.
-    const drawn = [16, 18, 19, 21, 34, 64, 70];
-    const rendered = [15, 15, 16, 18, 26, 48, 52];
-    drawn.forEach((px, i) => {
+  it("sets the lockup wordmark at -0.03em / 1, in Geist", () => {
+    for (const px of [16, 18, 19, 21, 34, 64, 70]) {
       const style = display(px, { lockup: true });
-      expect(style.fontSize).toBe(`${rendered[i]}px`);
-      expect(style.fontFamily).toBe(SENTIENT);
+      expect(style.fontFamily).toBe(FIGTREE);
       expect([style.letterSpacing, style.lineHeight]).toEqual(["-0.03em", 1]);
       expect(style).not.toHaveProperty("textWrap");
-    });
+    }
   });
 
   it("holds the floor: nothing drawn under 17px, but the 16px lockup", () => {
-    // UI-P52 density pass: `px` is the drawn size, so the floors that guard it
-    // are the drawn ones they always were and the same inputs throw. What
-    // renders is smaller: the 16px lockup is 15 now, and Sentient's own floor
-    // (20) is held by setting smaller headings in Figtree, tested above.
     expect(() => display(16)).toThrow(/never drawn under 17px/);
     expect(() => display(12)).toThrow(RangeError);
     expect(() => display(Number.NaN)).toThrow(RangeError);
     expect(() => display(16, { lockup: true })).not.toThrow();
     expect(display(16, { lockup: true }).fontSize).toBe(`${LOCKUP_MIN_PX}px`);
     expect(() => display(15, { lockup: true })).toThrow(/never drawn under 16px/);
-    // What it emits clears the same check the static roles are held to.
     for (const px of [17, 18, 22, 30, 44, 52, 70]) {
       expect(floorViolations(`display(${px})`, display(px))).toEqual([]);
     }
   });
 });
 
-describe("type.mono(px, { caps })", () => {
-  it("is DM Mono, and carries tabular numerals", () => {
-    const style = mono(12);
-    expect(style.fontFamily).toBe(DM_MONO);
-    expect(style.fontSize).toBe("12px");
-    expect(style.fontVariantNumeric).toBe("tabular-nums");
-  });
-
-  it("renders the drawn size through the density table", () => {
-    // UI-P52 density pass: 10–12 are kept, 13 → 12, 22 → 19, 40 → 30, and the
-    // reference's few 9px labels become 10 (no text under 10px).
-    for (const [px, size] of [[9, 10], [10, 10], [12, 12], [13, 12], [14, 13], [22, 19], [30, 22], [40, 30]]) {
-      expect(mono(px).fontSize, `mono(${px})`).toBe(`${size}px`);
+describe("type.mono(px)", () => {
+  it("is Geist Mono 13/16 at every size, and carries tabular numerals", () => {
+    for (const px of [9, 10, 12, 13, 14, 22, 40]) {
+      const style = mono(px);
+      expect(style.fontFamily).toBe(DM_MONO);
+      expect(style.fontSize).toBe("13px");
+      expect(style.lineHeight).toBe("16px");
+      expect(style.fontVariantNumeric).toBe("tabular-nums");
     }
   });
 
-  it("sets an eyebrow uppercase at .09em", () => {
-    for (const px of [10, 11, 12]) {
-      const style = mono(px, { caps: true });
-      expect(style.textTransform).toBe("uppercase");
-      expect(style.letterSpacing).toBe("0.09em");
-    }
-  });
-
-  it("gives a data value no extra tracking, and a large number -0.02em", () => {
+  it("never sets uppercase, even when a caller still asks for caps", () => {
+    expect(mono(11, { caps: true })).not.toHaveProperty("textTransform");
     expect(mono(13).letterSpacing).toBe("0");
-    expect(mono(21).letterSpacing).toBe("0");
-    expect(mono(22).letterSpacing).toBe("-0.02em");
-    expect(mono(40).letterSpacing).toBe("-0.02em");
-    expect(mono(13)).not.toHaveProperty("textTransform");
   });
 
   it("is never under the weight floor", () => {
     expect(floorViolations("mono", mono(10))).toEqual([]);
-    expect(Number(mono(10, { caps: true }).fontWeight)).toBeGreaterThanOrEqual(BODY_MIN_WEIGHT);
   });
 });
 
-/* ── UI-P80 — the roles ────────────────────────────────────────────────────
+/* ── The roles ─────────────────────────────────────────────────────────────
    The roles are var() references; the declarations are in src/index.css. This
    resolves them the way the browser does. */
 
-describe("roles (UI-P80)", () => {
+describe("roles", () => {
   const css = readFileSync(join(process.cwd(), "src/index.css"), "utf8");
   const declarations = (selector: string) => {
     const open = css.indexOf("{", css.indexOf(`\n${selector} {`));
@@ -533,46 +478,38 @@ describe("roles (UI-P80)", () => {
   };
   const first = (family: string) => /^'?([^',]+)'?/.exec(family)![1];
 
-  it("declares the three family tokens: Geist, Geist and Geist Mono", () => {
-    expect(first(refined["font-ui"])).toBe("Geist Serif");
+  it("declares the three family tokens: Geist, Geist Serif and Geist Mono", () => {
+    expect(first(refined["font-ui"])).toBe("Geist");
     expect(first(refined["font-display"])).toBe("Geist Serif");
-    expect(first(refined["font-data"])).toBe("Geist Serif");
+    expect(first(refined["font-data"])).toBe("Geist Mono");
   });
 
-  it("resolves to the table of UI-P80", () => {
+  it("resolves to the five sizes", () => {
     const r = (v: unknown) => resolve(v, refined);
-    // hero 44 / 1.04 / -0.04em, Geist; 32 on mobile
-    expect([r(type.hero.fontSize), r(type.hero.lineHeight), r(type.hero.letterSpacing), r(type.hero.fontWeight)]).toEqual(["44px", "1.04", "-0.04em", "500"]);
-    expect(css).toMatch(/@media \(max-width: 767px\) \{\s*:root \{ --type-hero-size: 32px; \}/);
-    // page title 20 / 500 / 1.2 / -0.015em
-    expect([r(type.sectionHead.fontSize), r(type.sectionHead.lineHeight), r(type.sectionHead.letterSpacing)]).toEqual(["20px", "1.2", "-0.015em"]);
-    // figure 24 / 500 / 1.1 / -0.02em, tabular
-    expect([r(type.figure.fontSize), r(type.figure.fontWeight), r(type.figure.lineHeight), r(type.figure.letterSpacing)]).toEqual(["24px", "500", "1.1", "-0.02em"]);
+    expect([r(type.hero.fontSize), r(type.hero.lineHeight), r(type.hero.letterSpacing), r(type.hero.fontWeight)]).toEqual(["31px", "36px", "-0.02em", "600"]);
+    expect([r(type.sectionHead.fontSize), r(type.sectionHead.lineHeight), r(type.sectionHead.letterSpacing)]).toEqual(["20px", "24px", "-0.01em"]);
+    expect([r(type.figure.fontSize), r(type.figure.fontWeight)]).toEqual(["20px", "600"]);
     expect(type.figure.fontVariantNumeric).toBe("tabular-nums");
-    // card title 14 / 500 / 1.3 / -0.005em
-    expect([r(type.cardTitle.fontSize), r(type.cardTitle.fontWeight), r(type.cardTitle.lineHeight), r(type.cardTitle.letterSpacing)]).toEqual(["14px", "500", "1.3", "-0.005em"]);
-    // body 13 / 400 / 20px; step text 13.5 / 22px
-    expect([r(type.body.fontSize), r(type.body.fontWeight), r(type.body.lineHeight)]).toEqual(["13px", "400", "20px"]);
-    expect([r(type.bodyLarge.fontSize), r(type.bodyLarge.lineHeight)]).toEqual(["13.5px", "22px"]);
-    // label 12.5 / 500 / 1.3 / 0
-    expect([r(type.label.fontSize), r(type.label.fontWeight), r(type.label.lineHeight), r(type.label.letterSpacing)]).toEqual(["12.5px", "500", "1.3", "0"]);
-    // eyebrow 10.5 / 500 caps / .06em, in Geist, not mono
-    expect([r(type.eyebrow.fontSize), r(type.eyebrow.fontWeight), r(type.eyebrow.letterSpacing), type.eyebrow.textTransform]).toEqual(["10.5px", "500", "0.06em", "uppercase"]);
-    expect(first(r(type.eyebrow.fontFamily))).toBe("Geist Serif");
-    // meta (the data role) 12 / 400 / 1.4 in Geist
-    expect([r(type.data.fontSize), r(type.data.lineHeight)]).toEqual(["12px", "1.4"]);
-    expect(first(r(type.data.fontFamily))).toBe("Geist Serif");
-    // mono 10.5 / 400 / 18px in Geist Mono
-    expect([r(type.monoLabel.fontSize), r(type.monoLabel.fontWeight), r(type.monoLabel.lineHeight)]).toEqual(["10.5px", "400", "18px"]);
-    expect(first(r(type.monoLabel.fontFamily))).toBe("Geist Serif");
+    expect([r(type.cardTitle.fontSize), r(type.cardTitle.fontWeight), r(type.cardTitle.lineHeight)]).toEqual(["15px", "600", "20px"]);
+    expect([r(type.body.fontSize), r(type.body.fontWeight), r(type.body.lineHeight)]).toEqual(["15px", "400", "20px"]);
+    expect([r(type.bodyLarge.fontSize), r(type.bodyLarge.lineHeight)]).toEqual(["17px", "22px"]);
+    expect([r(type.label.fontSize), r(type.label.fontWeight), r(type.label.lineHeight)]).toEqual(["13px", "500", "16px"]);
+    expect([r(type.eyebrow.fontSize), r(type.eyebrow.letterSpacing)]).toEqual(["13px", "0"]);
+    expect(first(r(type.eyebrow.fontFamily))).toBe("Geist");
+    expect([r(type.data.fontSize), r(type.data.lineHeight)]).toEqual(["13px", "16px"]);
+    expect(first(r(type.data.fontFamily))).toBe("Geist");
+    expect([r(type.monoLabel.fontSize), r(type.monoLabel.lineHeight)]).toEqual(["13px", "16px"]);
+    expect(first(r(type.monoLabel.fontFamily))).toBe("Geist Mono");
   });
 
-  it("sets every refined heading and label in Geist, and nothing in a serif", () => {
+  it("sets every role in Geist, except the works in the serif and the numbers in mono", () => {
+    const mono = ["monoLabel"];
+    const serif = ["work", "workName"];
     for (const [role, style] of Object.entries(scale)) {
       const face = first(resolve((style as { fontFamily: string }).fontFamily, refined));
-      expect(["Geist Serif", "Geist Serif"], `${role} resolves to ${face}`).toContain(face);
+      const want = mono.includes(role) ? "Geist Mono" : serif.includes(role) ? "Geist Serif" : "Geist";
+      expect(face, `${role} resolves to ${face}`).toBe(want);
     }
-    expect(refined["font-display"]).toContain("Geist Serif");
   });
 
   it("keeps the floors over the shipped scale", () => {

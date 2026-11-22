@@ -377,7 +377,7 @@ function RowCard({
                 left: 8,
                 background: t.mediaTag,
                 color: t.text,
-                fontFamily: DM_MONO,
+                fontFamily: FIGTREE,
                 fontSize: 11,
                 lineHeight: "normal",
                 padding: "2px 4px",

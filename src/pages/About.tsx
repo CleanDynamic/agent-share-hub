@@ -12,7 +12,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE, measure } from "@/lib/theme/type";
 
 const prose: CSSProperties = { ...measure, margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.text2 };
-const heading: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 14, fontWeight: 500, lineHeight: 1.3, color: t.text };
+const heading: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: 500, lineHeight: 1.3, color: t.text };
 const link: CSSProperties = { color: t.text, textDecoration: "underline", textUnderlineOffset: 3, textDecorationThickness: 1 };
 
 /** A section under a hairline: its heading, then what it holds. */

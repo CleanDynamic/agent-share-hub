@@ -800,7 +800,7 @@ function BlogAutoDetectedCard({
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div className="flex flex-col gap-1">
           <span
-            className="text-[10px] font-semibold uppercase tracking-[0.08em]"
+            className="text-[10px] font-semibold tracking-[0.08em]"
             style={{ color: "var(--text2)" }}
           >
             Word Count
@@ -820,7 +820,7 @@ function BlogAutoDetectedCard({
         </div>
         <div className="flex flex-col gap-1">
           <span
-            className="text-[10px] font-semibold uppercase tracking-[0.08em]"
+            className="text-[10px] font-semibold tracking-[0.08em]"
             style={{ color: "var(--text2)" }}
           >
             References
@@ -842,7 +842,7 @@ function BlogAutoDetectedCard({
 
       <div className="mt-6 flex flex-col gap-2">
         <span
-          className="text-[10px] font-semibold uppercase tracking-[0.08em]"
+          className="text-[10px] font-semibold tracking-[0.08em]"
           style={{ color: "var(--text2)" }}
         >
           Referenced Items
@@ -1081,7 +1081,7 @@ function Section({
               color: accent,
               fontSize: "9px",
               fontWeight: 600,
-              textTransform: "uppercase",
+              textTransform: "none",
               letterSpacing: "0.08em",
               fontFamily: "var(--font-ui)",
             }}

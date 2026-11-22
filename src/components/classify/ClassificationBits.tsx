@@ -15,12 +15,12 @@ export function ClassificationLines({ lines, gap = 3 }: { lines: CardLines; gap?
   return (
     <div data-card-part="classification" style={{ display: "flex", flexDirection: "column", gap, minWidth: 0 }}>
       {lines.line1.length > 0 ? (
-        <p data-card-part="classification-1" style={{ margin: 0, fontFamily: DM_MONO, fontSize: 12, lineHeight: "17px", color: t.text, overflowWrap: "anywhere" }}>
+        <p data-card-part="classification-1" style={{ margin: 0, fontFamily: DM_MONO, fontSize: 13, lineHeight: "17px", color: t.text, overflowWrap: "anywhere" }}>
           {lines.line1.join(" \u00B7 ")}
         </p>
       ) : null}
       {lines.line2.length > 0 ? (
-        <p data-card-part="classification-2" style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12, lineHeight: "17px", color: t.text2, overflowWrap: "anywhere" }}>
+        <p data-card-part="classification-2" style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: "17px", color: t.text2, overflowWrap: "anywhere" }}>
           {lines.line2.join(" \u00B7 ")}
         </p>
       ) : null}
@@ -45,7 +45,7 @@ export function RegulatedTag() {
         borderStyle: "solid",
         borderColor: `var(--seg-on-border, ${t.controlBorder})`,
         fontFamily: FIGTREE,
-        fontSize: 11,
+        fontSize: 13,
         fontWeight: 400,
         lineHeight: "normal",
         color: t.text,
@@ -78,7 +78,7 @@ export function ProvenanceDot({ kind, viewer = "reader", showWord = false }: { k
   return (
     <span title={word} data-provenance={kind} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
       <span role="img" aria-label={word} style={dot} />
-      {showWord ? <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>{word}</span> : null}
+      {showWord ? <span style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>{word}</span> : null}
     </span>
   );
 }

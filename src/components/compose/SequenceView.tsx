@@ -316,7 +316,7 @@ export function SequenceView({ sequence, nodeOptions }: SequenceViewProps) {
   return (
     <div style={shell}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <span style={{ ...labelText, textTransform: "uppercase", color: TEXT_SECONDARY, flex: 1 }}>
+        <span style={{ ...labelText, textTransform: "none", color: TEXT_SECONDARY, flex: 1 }}>
           Sequence
         </span>
         {isWriting ? (

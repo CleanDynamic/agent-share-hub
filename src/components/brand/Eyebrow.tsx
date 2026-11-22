@@ -25,10 +25,10 @@ export function Eyebrow({ children, as: Tag = "div", style }: EyebrowProps) {
       style={{
         ...{
           fontFamily: FIGTREE,
-          fontSize: 11,
+          fontSize: 13,
           fontWeight: 500,
           letterSpacing: ".06em",
-          textTransform: "uppercase" as const,
+          textTransform: "none" as const,
         },
         lineHeight: "normal",
         color: t.label,

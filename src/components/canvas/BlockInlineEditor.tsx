@@ -53,7 +53,7 @@ function VideoEditor({ block, onChange }: VideoEditorProps) {
           style={{
             display: 'block',
             fontSize: 10, fontWeight: 700,
-            textTransform: 'uppercase',
+            textTransform: 'none',
             letterSpacing: '0.10em',
             color: 'var(--text)',
             marginBottom: 4,
@@ -85,7 +85,7 @@ function VideoEditor({ block, onChange }: VideoEditorProps) {
           style={{
             display: 'block',
             fontSize: 10, fontWeight: 700,
-            textTransform: 'uppercase',
+            textTransform: 'none',
             letterSpacing: '0.10em',
             color: 'var(--text2)',
             marginBottom: 4,
@@ -145,7 +145,7 @@ function VideoEditor({ block, onChange }: VideoEditorProps) {
           style={{
             display: 'block',
             fontSize: 10, fontWeight: 700,
-            textTransform: 'uppercase',
+            textTransform: 'none',
             letterSpacing: '0.10em',
             color: 'var(--text2)',
             marginBottom: 4,

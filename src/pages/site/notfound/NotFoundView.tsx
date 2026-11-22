@@ -49,7 +49,7 @@ export function NotFoundView({ path, onHome, sentence }: NotFoundViewProps) {
         <PageLink to={SITE_NAV.openbuilds} style={quiet}>OpenBuilds</PageLink>
       </nav>
       {path ? (
-        <code data-testid="not-found-path" style={{ fontFamily: DM_MONO, fontSize: 12, fontWeight: 400, color: t.label, overflowWrap: "anywhere" }}>
+        <code data-testid="not-found-path" style={{ fontFamily: DM_MONO, fontSize: 13, fontWeight: 400, color: t.label, overflowWrap: "anywhere" }}>
           {shownPath(path)}
         </code>
       ) : null}

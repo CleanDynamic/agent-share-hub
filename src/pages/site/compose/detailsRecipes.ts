@@ -53,7 +53,7 @@ export const VALUE: CSSProperties = { marginTop: HEAD_TO_VALUE, minWidth: 0 };
 
 export const PROSE: CSSProperties = { ...type(textStep.body, 400, t.text, 23), margin: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere" };
 export const PROSE_MUTED: CSSProperties = { ...PROSE, color: t.text2 };
-export const PROSE_CODE: CSSProperties = { ...PROSE, fontFamily: DM_MONO, fontSize: textStep.meta, lineHeight: "19px" };
+export const PROSE_CODE: CSSProperties = { ...PROSE, fontFamily: FIGTREE, fontSize: textStep.meta, lineHeight: "19px" };
 
 /** A label and its value: 38 tall, 13px, a 1px `--hairline` rule above; the label at the left, the value at the right, 14 apart at least. */
 export const ROW: CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, minHeight: 38, boxSizing: "border-box", borderTop: `1px solid ${t.hairline}`, fontFamily: FIGTREE, fontSize: textStep.body, minWidth: 0 };

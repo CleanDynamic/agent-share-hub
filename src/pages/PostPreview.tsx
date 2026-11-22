@@ -287,7 +287,7 @@ export default function PostPreviewPage() {
         {/* Works With */}
         {draft.ai_tools && draft.ai_tools.length > 0 && (
           <div className="relative group mb-4">
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Works with</h3>
+            <h3 className="text-xs font-semibold text-muted-foreground tracking-wider mb-2">Works with</h3>
             <div className="flex flex-wrap gap-1.5">
               {draft.ai_tools.map((tool: string) => (
                 <Badge key={tool} variant="outline" className="text-[10px]">{tool}</Badge>
