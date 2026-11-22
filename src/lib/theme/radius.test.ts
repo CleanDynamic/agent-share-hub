@@ -43,16 +43,18 @@ function sourceFiles(dir = SRC): Array<[string, string]> {
 }
 
 describe("the radius scale", () => {
-  it("is exactly the steps the spec lists, plus BG-P09's thread box and UI-P81's window", () => {
+  it("is exactly the Synth draft's steps (SY-01), plus the field and the text area", () => {
     expect(RADIUS).toEqual({
-      "r-chip": "4px",
-      "r-media": "6px",
-      "r-control": "6px",
-      "r-thread": "6px",
-      "r-card": "8px",
-      "r-panel": "10px",
-      "r-window": "12px",
+      "r-chip": "12px",
+      "r-media": "16px",
+      "r-control": "18px",
+      "r-thread": "10px",
+      "r-card": "10px",
+      "r-panel": "12px",
+      "r-window": "16px",
       "r-full": "999px",
+      "r-field": "20px",
+      "r-area": "10px",
     });
   });
 
@@ -71,37 +73,32 @@ describe("the radius scale", () => {
     for (const value of Object.values(r)) expect(value).toMatch(/^var\(--r-[a-z]+\)$/);
   });
 
-  it("steps upward from chip to window, and never downward", () => {
-    const rectangular: RadiusName[] = [
-      "r-chip",
-      "r-media",
-      "r-control",
-      "r-thread",
-      "r-card",
-      "r-panel",
-      "r-window",
-    ];
+  it("steps upward from chip to control, then field, and never downward", () => {
+    const rectangular: RadiusName[] = ["r-chip", "r-media", "r-control", "r-field"];
     const px = rectangular.map((n) => pixels(n));
     expect(px).toEqual([...px].sort((a, b) => a - b));
   });
 
-  it("is pixels throughout, and the window is its own step, 2px above the panel", () => {
+  it("is pixels throughout, and the window is its own step, 4px above the panel", () => {
     for (const name of RADIUS_NAMES) expect(RADIUS[name]).toMatch(/^\d+px$/);
-    expect(pixels("r-window")).toBe(pixels("r-panel") + 2);
+    expect(pixels("r-window")).toBe(pixels("r-panel") + 4);
     expect(r.window).toBe("var(--r-window)");
   });
 
-  it("ties exactly the media, the control and the thread box, as three roles", () => {
-    // Three names at 6px: the box, the button and the picture are different
-    // roles, and the day one of them moves the other two must not follow (see
-    // the note on `r-thread`). Any OTHER tie is a name for a size the scale
-    // already has, which is how six steps become sixteen.
+  it("ties only the roles that share a size by design", () => {
+    // The chip and the panel (12), the picture and the window (16), and the thread box, the card and the text area (10)
+    // are different roles, and the day one of them moves the others must not follow. Any OTHER tie is a name for a size
+    // the scale already has.
     const byValue = new Map<string, RadiusName[]>();
     for (const name of RADIUS_NAMES) {
       byValue.set(RADIUS[name], [...(byValue.get(RADIUS[name]) ?? []), name]);
     }
     const shared = [...byValue.values()].filter((names) => names.length > 1);
-    expect(shared).toEqual([["r-media", "r-control", "r-thread"]]);
+    expect(shared).toEqual([
+      ["r-chip", "r-panel"],
+      ["r-media", "r-window"],
+      ["r-thread", "r-card", "r-area"],
+    ]);
   });
 
   it("keeps --r-full for circular things, far above the rectangular steps", () => {

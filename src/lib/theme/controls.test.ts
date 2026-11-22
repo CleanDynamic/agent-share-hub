@@ -396,32 +396,35 @@ describe("where the radius tokens do not produce the shape the spec describes", 
     ["checkbox", CONTROL_SIZE.checkbox, "r-chip", CONTROL_CLASS.checkbox],
   ] as const;
 
-  it("lands as a soft rectangle on every control 30px or larger", () => {
+  // SY-01: the Synth draft rounds controls fully (`--r-control` 18px, buttons 36px tall), chips are pills at 12px, and the
+  // one-line field takes its own 20px. What the old block pinned as a soft rectangle is now the capsule on purpose; the
+  // arithmetic stays pinned so a later change to a height or a radius says what it does to the shape.
+  it("rounds a control fully when its box is no taller than twice --r-control", () => {
     for (const [name, size, token] of CONTROLS) {
-      if (size < 30) continue;
-      expect(fullyRounds(px(token), size), `${name} should not be fully rounded`).toBe(false);
+      if (token !== "r-control") continue;
+      expect(fullyRounds(px(token), size), `${name} (${size}px) is a capsule when ${size} <= ${px(token) * 2}`).toBe(size <= px(token) * 2);
     }
   });
 
-  it("the switch track is a soft rectangle: --r-control is 6px on a 24px track", () => {
-    // It was a capsule under the old 12px control radius (UI-P99 retired it).
-    expect(px("r-control")).toBe(6);
+  it("the switch track is a capsule: --r-control is 18px on a 24px track", () => {
+    expect(px("r-control")).toBe(18);
     expect(CONTROL_SIZE.switchTrack).toBe(24);
-    expect(fullyRounds(px("r-control"), CONTROL_SIZE.switchTrack)).toBe(false);
+    expect(fullyRounds(px("r-control"), CONTROL_SIZE.switchTrack)).toBe(true);
   });
 
-  it("the checkbox is a square with soft corners: --r-chip is 4px on a 15px box", () => {
-    // It was the same shape as a radio under the old 8px chip radius, and only
-    // the tick told them apart.
-    expect(px("r-chip")).toBe(4);
+  it("the checkbox's 15px box fully rounds under --r-chip (12px); the corner it takes moves in prompt 06", () => {
+    expect(px("r-chip")).toBe(12);
     expect(CONTROL_SIZE.checkbox).toBe(15);
-    expect(fullyRounds(px("r-chip"), CONTROL_SIZE.checkbox)).toBe(false);
+    expect(fullyRounds(px("r-chip"), CONTROL_SIZE.checkbox)).toBe(true);
   });
 
-  it("shows the same token reads correctly on the box it was sized for", () => {
-    // --r-chip was sized for a chip, roughly 24px tall, where it is a third of
-    // the height. The token is not the problem; the 16px box is.
-    expect(fullyRounds(px("r-chip"), 24)).toBe(false);
+  it("--r-chip is a pill on a chip about 24px tall", () => {
+    expect(fullyRounds(px("r-chip"), 24)).toBe(true);
+  });
+
+  it("--r-field (20px) and --r-area (10px) are the two new input radii", () => {
+    expect(px("r-field")).toBe(20);
+    expect(px("r-area")).toBe(10);
   });
 });
 

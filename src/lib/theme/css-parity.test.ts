@@ -95,7 +95,7 @@ describe("index.css mirrors shadcn.ts", () => {
     // with `rounded-md`/`rounded-sm` as calc() steps off it. It points at the
     // scale, so the number is not a fourth opinion.
     expect(got["radius"]).toBe("var(--r-control)");
-    expect(RADIUS["r-control"]).toBe("6px");
+    expect(RADIUS["r-control"]).toBe("18px");
   });
 
   it("gives the two rooms different values", () => {
@@ -142,7 +142,9 @@ describe("index.css mirrors elevation.ts", () => {
     // two levels are references now, so it is the shadows they name that differ.
     const light = parse(':root[data-theme="noon"]');
     const dark = parse(':root[data-theme="dusk"]');
-    expect(dark["control-shadow"]).not.toBe(light["control-shadow"]);
+    // SY-01: a control is raised by its shade, so its shadow is none in both rooms.
+    expect(dark["control-shadow"]).toBe("none");
+    expect(light["control-shadow"]).toBe("none");
     expect(dark["window-shadow"]).not.toBe(light["window-shadow"]);
   });
 });

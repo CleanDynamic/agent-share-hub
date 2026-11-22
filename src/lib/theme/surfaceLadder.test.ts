@@ -6,25 +6,31 @@ import { describe, expect, it } from "vitest";
 
 import { resolveToken, type ThemeKey } from "./resolve";
 import { TOKEN_NAMES } from "./semantics";
+import { contrast, luminance, parse } from "./luminance";
 
 const LADDER: Record<string, Record<ThemeKey, string>> = {
-  frame: { dusk: "#0F0F10", noon: "#E4E4E4" },
-  surface: { dusk: "#18181A", noon: "#EFEFEF" },
-  // Noon's module stays #FAFAFA: the reference's #F7F7F7 drops four category hues under their pinned ratios in
-  // contrast.test.ts (cat-artefact 3.87 against a 3.97 floor).
-  module: { dusk: "#202023", noon: "#FAFAFA" },
-  window: { dusk: "#28282C", noon: "#FFFFFF" },
-  well: { dusk: "#131315", noon: "#E8E8E8" },
-  "well-on-page": { dusk: "#0A0A0B", noon: "#DBDBDB" },
-  inset: { dusk: "#1B1B1D", noon: "#F1F1F1" },
-  control: { dusk: "#323237", noon: "#FFFFFF" },
+  frame: { dusk: "#040504", noon: "#E6EAE6" },
+  surface: { dusk: "#121513", noon: "#FFFFFF" },
+  module: { dusk: "#1B1F1C", noon: "#F1F3F1" },
+  tile: { dusk: "#1B1F1C", noon: "#F1F3F1" },
+  window: { dusk: "#1B1F1C", noon: "#FFFFFF" },
+  well: { dusk: "#121513", noon: "#FFFFFF" },
+  "well-on-page": { dusk: "#121513", noon: "#FFFFFF" },
+  paper: { dusk: "#040504", noon: "#E6EAE6" },
+  inset: { dusk: "#242925", noon: "#E7EBE7" },
+  control: { dusk: "#242925", noon: "#E7EBE7" },
+  notepad: { dusk: "#17231B", noon: "#EAF3EC" },
+  "notepad-edge": { dusk: "#2C3E31", noon: "#BFD5C4" },
+  "modal-foot": { dusk: "#161917", noon: "#EBEEEB" },
+  "field-edge": { dusk: "#646B66", noon: "#879189" },
   "selected-edge": { dusk: "#9A9AA2", noon: "#6E6E73" },
 };
 
 describe("the surface ladder", () => {
-  it("declares the two tokens the ladder adds", () => {
-    expect(TOKEN_NAMES).toContain("well-on-page");
-    expect(TOKEN_NAMES).toContain("inset");
+  it("declares the tokens the ladder adds", () => {
+    for (const name of ["well-on-page", "inset", "notepad", "notepad-edge", "modal-foot", "field-edge"]) {
+      expect(TOKEN_NAMES).toContain(name);
+    }
   });
 
   it.each(Object.entries(LADDER).flatMap(([name, v]) => (["dusk", "noon"] as const).map((theme) => ({ name, theme, want: v[theme] }))))(
@@ -39,9 +45,31 @@ describe("the surface ladder", () => {
     expect(resolveToken(theme, "selected-fill")).toBe(resolveToken(theme, "module"));
   });
 
-  it.each(["dusk", "noon"] as const)("%s: no two raised levels share a tone", (theme) => {
-    const raised = ["frame", "surface", "module", "window"].map((name) => resolveToken(theme, name));
-    expect(new Set(raised).size).toBe(4);
+  // SY-01: Page, Panel, Card, Raised, Notepad, in order, each distinguishable from its neighbour. Light puts the modal
+  // window on white so a modal reads above the grey page; it shares Panel's tone there and is not a ladder step.
+  it.each(["dusk", "noon"] as const)("%s: the five layers are five tones, in order of lightness (dark) or a step each (light)", (theme) => {
+    const layers = ["frame", "surface", "module", "control", "notepad"].map((name) => resolveToken(theme, name));
+    expect(new Set(layers).size).toBe(5);
+    const neighbours = layers.slice(1).map((tone, i) => contrast(layers[i], tone));
+    for (const ratio of neighbours) expect(ratio).toBeGreaterThan(1);
+  });
+
+  it("dark steps up one shade per layer from Page to Raised", () => {
+    const [page, panel, card, raised] = ["frame", "surface", "module", "control"].map((n) => luminance(resolveToken("dusk", n)));
+    expect(page).toBeLessThan(panel);
+    expect(panel).toBeLessThan(card);
+    expect(card).toBeLessThan(raised);
+  });
+
+  it("the notepad is the only green-tinted surface", () => {
+    const green = (hex: string) => {
+      const [r, g, b] = parse(hex);
+      return g - Math.max(r, b);
+    };
+    for (const theme of ["dusk", "noon"] as const) {
+      const tinted = ["frame", "surface", "module", "control", "modal-foot", "notepad"].filter((n) => green(resolveToken(theme, n)) >= 5);
+      expect(tinted).toEqual(["notepad"]);
+    }
   });
 });
 
@@ -55,18 +83,20 @@ describe("the ladder's role changes", () => {
   });
 });
 
-describe("the ladder's three border greys", () => {
-  const ROLES: Record<string, { tokens: string[]; dusk: string; noon: string }> = {
-    divider: { tokens: ["hairline", "hairline-module"], dusk: "#26262A", noon: "#E2E2E2" },
-    edge: { tokens: ["surface-border", "module-border", "tile-border", "well-border", "seg-border", "line"], dusk: "#303035", noon: "#D6D6D6" },
-    "control edge": { tokens: ["control-border", "window-border", "seg-on-border"], dusk: "#404046", noon: "#C8C8C8" },
-  };
-  it.each(Object.entries(ROLES).flatMap(([role, v]) => (["dusk", "noon"] as const).flatMap((theme) => v.tokens.map((name) => ({ role, theme, name, want: v[theme] })))))(
-    "$theme --$name is the $role, $want",
-    ({ theme, name, want }) => {
-      expect(resolveToken(theme, name)).toBe(want);
-    },
-  );
+describe("borders between areas are retired (SY-01)", () => {
+  it.each(["dusk", "noon"] as const)("%s: the area borders are transparent", (theme) => {
+    for (const name of ["surface-border", "module-border", "tile-border", "well-border", "seg-border", "line"]) {
+      expect(resolveToken(theme, name), name).toBe("transparent");
+    }
+  });
+
+  it.each(["dusk", "noon"] as const)("%s: the leftover hairline is the Card tone, so it disappears into the next layer", (theme) => {
+    for (const name of ["hairline", "hairline-module"]) expect(resolveToken(theme, name), name).toBe(resolveToken(theme, "module"));
+  });
+
+  it.each(["dusk", "noon"] as const)("%s: the field edge is the one edge left and clears 3:1 against the field fill", (theme) => {
+    expect(contrast(resolveToken(theme, "field-edge"), resolveToken(theme, "well"))).toBeGreaterThanOrEqual(3);
+  });
 });
 
 describe("hover on the ladder", () => {
