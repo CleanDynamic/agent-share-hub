@@ -1,40 +1,58 @@
-/* Fluid loading fields (Reference E), with no React: every loading state's shapes drawn as a living dot field that holds
-   their form without being hard rectangles.
+/* Fluid loading fields, with no React: every loading state's shapes drawn as a dot field of water that holds their form
+   without being hard rectangles.
 
    A REGION is one canvas over one loading area (a page placeholder, a panel, or one small element). Its SHAPES are the
-   boxes of the skeletons inside it, measured relative to it, each with its corner radius. ONE LOOP drives every region on
-   the page; a region that is off screen is skipped, and the loop stops when no region is on screen. Under reduced motion
-   each region draws one still frame at t = 3, with no reveal, no wind-down and no cursor.
+   boxes of the skeletons inside it, measured relative to it, each with its corner radius. ONE FIELD PER AREA: the drops
+   are placed over the region as fractions of its width and height, so the rings travel across every row of it together.
+   ONE LOOP drives every region on the page, at 30 frames a second; a region that is off screen is skipped, and the loop
+   stops when no region is on screen. Under reduced motion each region draws one still frame at t = 3, with no fade and
+   no splash.
 
-   Every number is Reference E's, as written. Times are seconds; lengths are CSS pixels. */
+   THE LOOK. One square lattice, pitch 4px. Dot radius pitch * 0.46 * (0.58 + 0.42 * tone). Three colours from the dot
+   tokens (tone over 0.74 Hi, over 0.44 Mid, else Deep, with a per-dot jitter of 0.11 either way so the colours dither).
+   Tone is a base (value noise and a hash) plus a slow swell plus the rings of the drops (engine.ts); the rings also move
+   each dot. The rhythm (`WATER_PHRASE_MS`, `WATER_DROPS`, `SPLASH_MS`) is decided in lib/theme/motion. Times are seconds;
+   lengths are CSS pixels. */
 
-import { clamp01, CoarseGrid, DotBatch, pn, sizeCanvas, smoothstep, startLoop } from "./engine";
+import { SPLASH_MS, WATER_DROPS, WATER_PHRASE_MS } from "@/lib/theme/motion";
 
+import { clamp01, dropRings, hash2, ringsOf, sizeCanvas, startLoop, swell, valueNoise, waveAt, DotBatch, DROP_POINTS, type Rings } from "./engine";
+
+/** The lattice: 4px for a loading field (6px for a full-screen background). */
+export const PITCH = 4;
+/** A spinner keeps its own 7px circle of dots. */
 export const STEP = 7;
 export const MAX_RADIUS = 3;
-/** The reveal and the wind-down travel down a region at 900px/s over an 80px ramp. */
-const SPEED = 900;
-const RAMP = 80;
+/** A first show fades in over 200ms; the dots fade out over 200ms when the content is ready (BLOCKS_OUT_MS). */
+const FADE_S = 0.2;
 /** Swapping placeholders: the old dots shrink out over 300ms. */
 const SWAP_OUT_S = 0.3;
-/** Cursor repulsion, as Reference C's with reach 100 and push 16. */
-const REACH = 100;
-const PUSH = 16;
-const POINTER_RATE = 16;
-const GAIN_RATE = 6;
-const GROW_RATE = 14;
-const RETURN_RATE = 3.2;
+/** Drawn at most this often. */
+const FRAME_S = 1 / 30;
 /** InlineLoader: the bright arc goes round once every 1.1s (5.7 rad/s); the centre dot holds at 0.62. */
 const ARC_SPEED = 5.7;
 const CENTRE_V = 0.62;
 const STILL_T = 3;
+const PHRASE_S = WATER_PHRASE_MS / 1000;
+const SPLASH_S = SPLASH_MS / 1000;
 
-export const FLUID_DARK = ["#2B6424", "#337A2C", "#3C8333", "#4A9C50", "#58BA71", "#6BE2A0"] as const;
-export const FLUID_LIGHT = ["#BFEDAE", "#A6EB8C", "#8DEB6B", "#77FC49", "#56C93A", "#3F9230"] as const;
-const STEPS = [0.5, 0.6, 0.7, 0.8, 0.92];
+if (DROP_POINTS.length !== WATER_DROPS) throw new Error("the drop points and WATER_DROPS disagree");
+
+/** The three dot tokens, deepest first, read off the page so a theme change is followed (a canvas cannot read a var()). */
+const FALLBACK = ["transparent", "transparent", "transparent"] as const;
+let palette: string[] = [...FALLBACK];
+let paletteTheme: string | null = null;
+function room(): readonly string[] {
+  if (typeof document === "undefined") return palette;
+  const theme = document.documentElement.dataset.theme ?? "";
+  if (theme === paletteTheme) return palette;
+  paletteTheme = theme;
+  const style = getComputedStyle(document.documentElement);
+  palette = ["--dot-deep", "--dot-mid", "--dot-hi"].map((name, i) => style.getPropertyValue(name).trim() || FALLBACK[i]);
+  return palette;
+}
 
 const reduced = () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-const room = () => (typeof document !== "undefined" && document.documentElement.dataset.theme === "dusk" ? FLUID_DARK : FLUID_LIGHT);
 const now = () => performance.now() / 1000;
 
 /** A shape inside a region: its box relative to the region, and its corner radius. */
@@ -58,9 +76,9 @@ export function roundedDistance(px: number, py: number, s: Shape): number {
 }
 
 /**
- * Where a shape's dots go, in region coordinates (Reference E): on the page-wide 7px grid for large shapes; for thin
- * shapes (height ≤ 28) rows centred on the shape and columns on the page grid; for small shapes (both sides ≤ 44) rows
- * and columns centred on the shape. A dot is kept when its signed distance to the rounded box is ≤ 3.
+ * Where a shape's dots go, in region coordinates: on the page-wide 4px lattice for large shapes; for thin shapes
+ * (height ≤ 28) rows centred on the shape and columns on the page lattice; for small shapes (both sides ≤ 44) rows and
+ * columns centred on the shape. A dot is kept when its signed distance to the rounded box is ≤ 2.
  */
 export function dotsOf(s: Shape, pageX: number, pageY: number): { x: number[]; y: number[]; sd: number[] } {
   const xs: number[] = [];
@@ -70,20 +88,20 @@ export function dotsOf(s: Shape, pageX: number, pageY: number): { x: number[]; y
   const thin = !small && s.height <= 28;
   const pageGrid = (from: number, to: number, origin: number) => {
     const out: number[] = [];
-    for (let v = Math.ceil((from + origin) / STEP) * STEP; v <= to + origin; v += STEP) out.push(v - origin);
+    for (let v = Math.ceil((from + origin) / PITCH) * PITCH; v <= to + origin; v += PITCH) out.push(v - origin);
     return out;
   };
   const centred = (start: number, length: number) => {
-    const count = Math.max(1, Math.round(length / STEP));
-    const first = start + length / 2 - ((count - 1) * STEP) / 2;
-    return Array.from({ length: count }, (_, i) => first + i * STEP);
+    const count = Math.max(1, Math.round(length / PITCH));
+    const first = start + length / 2 - ((count - 1) * PITCH) / 2;
+    return Array.from({ length: count }, (_, i) => first + i * PITCH);
   };
-  const columns = small ? centred(s.x, s.width) : pageGrid(s.x - 3, s.x + s.width + 3, pageX);
-  const rows = small || thin ? centred(s.y, s.height) : pageGrid(s.y - 3, s.y + s.height + 3, pageY);
+  const columns = small ? centred(s.x, s.width) : pageGrid(s.x - 2, s.x + s.width + 2, pageX);
+  const rows = small || thin ? centred(s.y, s.height) : pageGrid(s.y - 2, s.y + s.height + 2, pageY);
   for (const y of rows) {
     for (const x of columns) {
       const sd = roundedDistance(x, y, s);
-      if (sd <= 3) {
+      if (sd <= 2) {
         xs.push(x);
         ys.push(y);
         sds.push(sd);
@@ -93,7 +111,7 @@ export function dotsOf(s: Shape, pageX: number, pageY: number): { x: number[]; y
   return { x: xs, y: ys, sd: sds };
 }
 
-/** InlineLoader's dots: a circle on its own 7px grid centred on the circle (so there is a centre dot), kept when within 3. */
+/** InlineLoader's dots: a circle on its own 7px lattice centred on the circle (so there is a centre dot), kept when within 3. */
 export function loaderDotsOf(s: Shape): { x: number[]; y: number[]; sd: number[] } {
   const cx = s.x + s.width / 2;
   const cy = s.y + s.height / 2;
@@ -114,58 +132,20 @@ export function loaderDotsOf(s: Shape): { x: number[]; y: number[]; sd: number[]
   return { x: xs, y: ys, sd: sds };
 }
 
-/* ── the shared field ── */
+/* ── splashes: a press on the page drops a ring train at the pointer, alive for SPLASH_MS ── */
 
-const F = 0;
-const W = 1;
-const grid = new CoarseGrid(2);
-let gridSize = "";
-
-function fillField(t: number) {
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-  const size = `${width}x${height}`;
-  if (size !== gridSize) {
-    grid.resize(0, 0, width, height);
-    gridSize = size;
-  }
-  const cx = width / 2;
-  const cy = height / 2;
-  const angle = 0.12 * t;
-  const cos = Math.cos(angle);
-  const sin = Math.sin(angle);
-  const drift = 0.06 * t;
-  grid.fill((x, y, out) => {
-    // The pattern turns clockwise on screen, so the samples turn the other way.
-    const ex = x - cx;
-    const ey = y - cy;
-    const qx = (ex * cos + ey * sin) / 240;
-    const qy = (-ex * sin + ey * cos) / 240;
-    const w = pn(0.6 * qx + 4.1 + drift, 0.6 * qy - 2.3);
-    const w2 = pn(0.6 * qx - 8.4, 0.6 * qy + 5.2 - drift);
-    const X = qx + 0.9 * (w - 0.5);
-    const Y = qy + 0.9 * (w2 - 0.5) + 7.7;
-    out[F] = 0.76 * pn(X, Y) + 0.24 * pn(2.03 * X + 17.1, 2.03 * Y - 9.3);
-    out[W] = w;
-  });
+interface Splash {
+  /** Viewport position and when it fell. */
+  x: number;
+  y: number;
+  at: number;
 }
-
-/* ── the pointer ── */
-
-const pointer = { x: 0, y: 0, tx: 0, ty: 0, has: false, over: false, gain: 0 };
-let pointerListeners = 0;
-const onPointerMove = (event: PointerEvent) => {
-  pointer.tx = event.clientX;
-  pointer.ty = event.clientY;
-  if (!pointer.has) {
-    pointer.x = event.clientX;
-    pointer.y = event.clientY;
-    pointer.has = true;
-  }
-  pointer.over = true;
-};
-const onPointerOut = (event: PointerEvent) => {
-  if (!event.relatedTarget) pointer.over = false;
+const splashes: Splash[] = [];
+let splashListeners = 0;
+const onPointerDown = (event: PointerEvent) => {
+  if (reduced()) return;
+  splashes.push({ x: event.clientX, y: event.clientY, at: now() });
+  if (splashes.length > 8) splashes.shift();
 };
 
 /* ── regions ── */
@@ -182,15 +162,20 @@ export class FluidRegion {
   private x = new Float32Array(0);
   private y = new Float32Array(0);
   private sd = new Float32Array(0);
-  private amp = new Float32Array(0);
-  private ox = new Float32Array(0);
-  private oy = new Float32Array(0);
+  /** Each dot's base tone and its colour jitter, fixed per layout. */
+  private base = new Float32Array(0);
+  private jitter = new Float32Array(0);
+  /** The region's top-left on the page at layout, so the base and the swell stay put while the page scrolls. */
+  private pageX = 0;
+  private pageY = 0;
   private width = 0;
   private height = 0;
   private ratio = 1;
   private dirty = true;
   visible = true;
   shownAt = now();
+  /** When the next frame may be drawn (the 30 frames a second). */
+  nextAt = 0;
   goneAt: number | null = null;
   /** A placeholder that went while another took its place: shrinking out from this time. */
   swapOutAt: number | null = null;
@@ -237,152 +222,112 @@ export class FluidRegion {
     this.width = Math.ceil(this.host.clientWidth || box.width);
     this.height = Math.ceil(this.host.clientHeight || box.height);
     this.ratio = sizeCanvas(this.canvas, this.width + 2 * this.pad, this.height + 2 * this.pad);
-    const pageX = box.left + window.scrollX + this.host.clientLeft;
-    const pageY = box.top + window.scrollY + this.host.clientTop;
+    this.pageX = box.left + window.scrollX + this.host.clientLeft;
+    this.pageY = box.top + window.scrollY + this.host.clientTop;
     const xs: number[] = [];
     const ys: number[] = [];
     const sds: number[] = [];
-    const amps: number[] = [];
     for (const shape of this.shapes.values()) {
       if (shape.width <= 0 || shape.height <= 0) continue;
-      const dots = this.mode === "loader" ? loaderDotsOf(shape) : dotsOf(shape, pageX, pageY);
-      // The edge's breathing: a = min(3.2, 0.16 * min(width, height)). A loader has none.
-      const a = this.mode === "loader" ? 0 : Math.min(3.2, 0.16 * Math.min(shape.width, shape.height));
+      const dots = this.mode === "loader" ? loaderDotsOf(shape) : dotsOf(shape, this.pageX, this.pageY);
       xs.push(...dots.x);
       ys.push(...dots.y);
       sds.push(...dots.sd);
-      for (let i = 0; i < dots.x.length; i++) amps.push(a);
     }
     this.count = xs.length;
     this.x = Float32Array.from(xs);
     this.y = Float32Array.from(ys);
     this.sd = Float32Array.from(sds);
-    this.amp = Float32Array.from(amps);
-    this.ox = new Float32Array(this.count);
-    this.oy = new Float32Array(this.count);
+    this.base = new Float32Array(this.count);
+    this.jitter = new Float32Array(this.count);
+    for (let i = 0; i < this.count; i++) {
+      const px = this.pageX + xs[i];
+      const py = this.pageY + ys[i];
+      const cx = Math.round(px / PITCH);
+      const cy = Math.round(py / PITCH);
+      // Base tone: 0.42 + 0.22 * valueNoise(x * 0.07, y * 0.18) + 0.06 * (hash - 0.5); jitter of 0.11 either way.
+      this.base[i] = 0.42 + 0.22 * valueNoise(px * 0.07, py * 0.18) + 0.06 * (hash2(cx, cy) - 0.5);
+      this.jitter[i] = 0.22 * (hash2(cx + 7919, cy - 104729) - 0.5);
+    }
   }
 
-  /** The region's dots are all gone (its wind-down or its shrink-out is over). */
+  /** The region's dots are all gone (its fade-out or its shrink-out is over). */
   finished(t: number): boolean {
     if (this.swapOutAt !== null) return t - this.swapOutAt >= SWAP_OUT_S;
-    return this.goneAt !== null && (t - this.goneAt) * SPEED > this.height + RAMP;
+    return this.goneAt !== null && t - this.goneAt >= FADE_S;
   }
 
-  /** Dots with a cursor offset still easing back. */
-  private moving = 0;
+  /** The rings alive at `t` over this region: its drops, and any splash that landed on it. */
+  private ringsAt(t: number, still: boolean): Rings[] {
+    const rings = dropRings(t, this.width, this.height, PHRASE_S);
+    if (still || this.mode === "loader") return rings;
+    for (const splash of splashes) {
+      const own = ringsOf(splash.x - this.viewport.left, splash.y - this.viewport.top, t - splash.at, SPLASH_S);
+      if (own) rings.push(own);
+    }
+    return rings;
+  }
 
-  /** Move every dot's cursor offset on by `dt`. Measures where the region is this frame, for `draw` too. */
-  step(dt: number) {
+  /** Measures where the region is this frame, for `draw`. */
+  step() {
     const box = this.host.isConnected ? this.host.getBoundingClientRect() : null;
     if (box) this.viewport = { left: box.left + this.host.clientLeft, top: box.top + this.host.clientTop };
-    // Nothing to move: no offset left to ease back, and the pointer is beyond reach of every dot.
-    if (this.moving === 0 && box) {
-      const dx = Math.max(box.left - pointer.x, 0, pointer.x - box.right);
-      const dy = Math.max(box.top - pointer.y, 0, pointer.y - box.bottom);
-      if (!pointer.has || dx * dx + dy * dy > (REACH + 8) ** 2) return;
-    }
-    let moving = 0;
-    const grow = 1 - Math.exp(-GROW_RATE * dt);
-    const back = 1 - Math.exp(-RETURN_RATE * dt);
-    for (let i = 0; i < this.count; i++) {
-      let tx = 0;
-      let ty = 0;
-      if (pointer.has && this.mode === "shapes") {
-        const dx = this.viewport.left + this.x[i] - pointer.x;
-        const dy = this.viewport.top + this.y[i] - pointer.y;
-        const d2 = dx * dx + dy * dy;
-        if (d2 < REACH * REACH && d2 > 0) {
-          const d = Math.sqrt(d2);
-          const k = (1 - d / REACH) ** 2 * PUSH * pointer.gain;
-          tx = (dx / d) * k;
-          ty = (dy / d) * k;
-        }
-      }
-      if (tx === 0 && ty === 0 && this.ox[i] === 0 && this.oy[i] === 0) continue;
-      const k = tx * tx + ty * ty > this.ox[i] ** 2 + this.oy[i] ** 2 ? grow : back;
-      this.ox[i] += (tx - this.ox[i]) * k;
-      this.oy[i] += (ty - this.oy[i]) * k;
-      // An offset under a thousandth of a pixel is drawn as none: it is let go, and the dot stops being moved.
-      if (Math.abs(this.ox[i]) < 1e-3 && Math.abs(this.oy[i]) < 1e-3 && tx === 0 && ty === 0) {
-        this.ox[i] = 0;
-        this.oy[i] = 0;
-      } else moving++;
-    }
-    this.moving = moving;
   }
 
-  /** Draw at time `t`; `still` is reduced motion's single frame (t = 3, no reveal, no wind-down, no cursor). */
+  /** Draw at time `t`; `still` is reduced motion's single frame (t = 3, no fade, no splash). */
   draw(t: number, still: boolean) {
     const ctx = this.ctx;
     if (!ctx) return;
-    if (this.dirty) {
-      this.layout();
-      this.moving = 0;
-    }
-    // A still frame (reduced motion) has no step before it to say where the region is.
-    if (still && this.host.isConnected) {
-      const box = this.host.getBoundingClientRect();
-      this.viewport = { left: box.left + this.host.clientLeft, top: box.top + this.host.clientTop };
-    }
+    if (this.dirty) this.layout();
+    if (still && this.host.isConnected) this.step();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     ctx.setTransform(this.ratio, 0, 0, this.ratio, this.pad * this.ratio, this.pad * this.ratio);
-    const at = new Float64Array(3);
-    const palette = room();
+    const colours = room();
     const shrink = this.swapOutAt === null || still ? 1 : clamp01(1 - (t - this.swapOutAt) / SWAP_OUT_S);
-    const pageX = this.viewport.left + window.scrollX;
-    const pageY = this.viewport.top + window.scrollY;
-    this.batch.begin(palette.length);
+    const fadeIn = still ? 1 : clamp01((t - this.shownAt) / FADE_S);
+    const fadeOut = still || this.goneAt === null ? 1 : clamp01(1 - (t - this.goneAt) / FADE_S);
+    const rings = this.mode === "loader" ? [] : this.ringsAt(t, still);
+    this.batch.begin(colours.length);
     for (let i = 0; i < this.count; i++) {
       const lx = this.x[i];
       const ly = this.y[i];
-      const vx = this.viewport.left + lx;
-      const vy = this.viewport.top + ly;
-      const lead = still ? 1 : clamp01(((t - this.shownAt) * SPEED - ly) / RAMP);
-      const trail = still || this.goneAt === null ? 1 : clamp01(1 - ((t - this.goneAt) * SPEED - ly) / RAMP);
-      if (lead <= 0 || trail <= 0) continue;
-      grid.locate(vx, vy, at);
-      const f = grid.sample(F, at);
-      const w = grid.sample(W, at);
-      let v: number;
+      let tone: number;
       let m = 1;
-      // The dot's page position, for the breathing edge and the reverberation (stable while the page scrolls).
-      const x = pageX + lx;
-      const y = pageY + ly;
+      let dx = 0;
+      let dy = 0;
+      let jitter = 0;
+      let pitch = PITCH;
       if (this.mode === "loader") {
         // InlineLoader: a bright arc travelling clockwise once every 1.1s; the centre dot holds at 0.62.
-        const cxLocal = this.width / 2;
-        const cyLocal = this.height / 2;
-        const dx = lx - cxLocal;
-        const dy = ly - cyLocal;
-        if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) v = CENTRE_V;
+        pitch = STEP;
+        const ax = lx - this.width / 2;
+        const ay = ly - this.height / 2;
+        if (Math.abs(ax) < 0.5 && Math.abs(ay) < 0.5) tone = CENTRE_V;
         else {
-          const arc = 0.5 + 0.5 * Math.cos(Math.atan2(dy, dx) - ARC_SPEED * t);
-          v = 0.42 + 0.58 * arc * arc;
+          const arc = 0.5 + 0.5 * Math.cos(Math.atan2(ay, ax) - ARC_SPEED * t);
+          tone = 0.42 + 0.58 * arc * arc;
         }
       } else {
-        const sd = this.sd[i];
-        const a = this.amp[i];
-        if (sd > -(1.5 * a + 2)) {
-          const e = sd + 1.5 * a * (2 * pn(0.03 * x + 0.3 * t, 0.03 * y - 0.24 * t) - 1);
-          m = clamp01(0.5 - e / 2.6);
+        const base = this.base[i];
+        jitter = this.jitter[i];
+        const wave = rings.length ? waveAt(rings, lx, ly) : 0;
+        tone = base + swell(this.pageX + lx, this.pageY + ly, t) + 0.42 * wave * (0.6 + base);
+        if (rings.length) {
+          dx = 3 * (waveAt(rings, lx + 3, ly) - wave);
+          dy = 1.3 * wave;
         }
-        const fc = smoothstep(clamp01((f - 0.28) / 0.44));
-        const s = 0.5 + 0.5 * Math.sin((0.6 * x + 0.8 * y + 90 * (w - 0.5)) / 140 - 2.0 * t);
-        const rv = s * s;
-        v = 0.45 + 0.27 * fc + 0.28 * rv * (0.35 + 0.65 * fc);
+        // The edge: a dot on the shape's rim is half grown, one just outside is gone.
+        m = clamp01(0.5 - this.sd[i] / (PITCH * 0.7));
       }
-      const ox = this.ox[i];
-      const oy = this.oy[i];
-      const push = ox === 0 && oy === 0 ? 0 : Math.sqrt(ox * ox + oy * oy);
-      const radius = MAX_RADIUS * v ** 0.9 * m * lead * trail * shrink * (1 - Math.min(0.75, 0.05 * push));
-      let colour = 0;
-      while (colour < STEPS.length && v > STEPS[colour]) colour++;
-      const jx = this.mode === "loader" ? 0 : 2.4 * (w - 0.5);
-      const jy = this.mode === "loader" ? 0 : 4 * (f - 0.5);
-      this.batch.add(colour, lx + ox + jx, ly + oy + jy, radius);
+      tone = clamp01(tone);
+      const radius = pitch * 0.46 * (0.58 + 0.42 * tone) * m * shrink;
+      const shade = tone + jitter;
+      this.batch.add(shade > 0.74 ? 2 : shade > 0.44 ? 1 : 0, lx + dx, ly + dy, radius);
     }
-    this.batch.flush(ctx, palette);
+    ctx.globalAlpha = fadeIn * fadeOut;
+    this.batch.flush(ctx, colours);
+    ctx.globalAlpha = 1;
   }
 }
 
@@ -395,6 +340,7 @@ const ghosts = new Set<{ region: FluidRegion; layer: HTMLElement }>();
 let stop: (() => void) | null = null;
 let observer: IntersectionObserver | null = null;
 let last = -1;
+let lastDrawn = -1;
 
 function recordCost(ms: number) {
   const store = (window as unknown as { __dotsFrameTimes?: Record<string, number[]> }).__dotsFrameTimes;
@@ -404,26 +350,25 @@ function recordCost(ms: number) {
 /** Under reduced motion a region is drawn once per change, at t = 3. */
 function stillFrame(region: FluidRegion) {
   if (!reduced()) return;
-  fillField(STILL_T);
   region.draw(STILL_T, true);
 }
 
-function frame(t: number, dt: number): boolean | void {
+function frame(t: number): boolean | void {
   const started = performance.now();
   const anyOn = [...regions].some((region) => region.visible) || ghosts.size > 0;
   if (!anyOn && leaving.size === 0) {
     stop = null;
     return false;
   }
-  pointer.x += (pointer.tx - pointer.x) * (1 - Math.exp(-POINTER_RATE * dt));
-  pointer.y += (pointer.ty - pointer.y) * (1 - Math.exp(-POINTER_RATE * dt));
-  pointer.gain += ((pointer.over ? 1 : 0) - pointer.gain) * (1 - Math.exp(-GAIN_RATE * dt));
   settleLeaving(t);
   if (!anyOn) return;
-  fillField(t);
+  // 30 frames a second: a frame that comes early is skipped.
+  if (t - lastDrawn < FRAME_S - 0.004) return;
+  lastDrawn = t;
+  while (splashes.length && t - splashes[0].at > SPLASH_S) splashes.shift();
   for (const region of regions) {
     if (!region.visible) continue;
-    region.step(dt);
+    region.step();
     region.draw(t, false);
   }
   for (const ghost of ghosts) {
@@ -461,9 +406,9 @@ function settleLeaving(t: number) {
 function ensureLoop() {
   if (reduced() || stop) return;
   last = -1;
-  stop = startLoop((t, dt) => {
+  stop = startLoop((t) => {
     last = t;
-    return frame(t, dt);
+    return frame(t);
   });
 }
 
@@ -488,10 +433,7 @@ export function addRegion(region: FluidRegion) {
   region.host.appendChild(region.canvas);
   regions.add(region);
   visibility()?.observe(region.host);
-  if (pointerListeners++ === 0) {
-    window.addEventListener("pointermove", onPointerMove, { passive: true });
-    document.addEventListener("pointerout", onPointerOut);
-  }
+  if (splashListeners++ === 0) window.addEventListener("pointerdown", onPointerDown, { passive: true });
   if (reduced()) stillFrame(region);
   else ensureLoop();
 }
@@ -500,10 +442,7 @@ export function addRegion(region: FluidRegion) {
 export function removeRegion(region: FluidRegion) {
   regions.delete(region);
   observer?.unobserve(region.host);
-  if (--pointerListeners === 0) {
-    window.removeEventListener("pointermove", onPointerMove);
-    document.removeEventListener("pointerout", onPointerOut);
-  }
+  if (--splashListeners === 0) window.removeEventListener("pointerdown", onPointerDown);
   // Measured before the region's element leaves the page (a layout effect's cleanup); a region already gone has no box.
   if (!reduced() && region.visible && last >= 0) {
     const rect = region.canvas.getBoundingClientRect();

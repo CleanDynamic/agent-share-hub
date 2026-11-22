@@ -1109,6 +1109,51 @@ input[type="search"] { border-radius: var(--r-control); }
   to { opacity: 0; }
 }
 
+/* Overlays (motion prompt 04). A scrim fades 0 to 1 over BASE; a modal or menu fades in over BASE while rising 8px; a bottom
+   sheet rises from the bottom edge over BASE. Out is a fade (or the sheet's drop) over FAST. Radix keeps an element mounted
+   until its closing animation ends, so these also pace the unmount. `translate` (not `transform`) so the rise never
+   overrides a placement an element already holds in `transform` (a centred modal, a sheet being dragged). Opacity and
+   translate only, on STANDARD; the reduced-motion rule at the end of this file collapses every one of them. */
+@keyframes bgScrimIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes bgScrimOut {
+  to { opacity: 0; }
+}
+@keyframes bgRiseIn {
+  from { opacity: 0; translate: 0 8px; }
+  to   { opacity: 1; translate: 0 0; }
+}
+@keyframes bgRiseOut {
+  to { opacity: 0; }
+}
+@keyframes bgSheetIn {
+  from { translate: 0 100%; }
+  to   { translate: 0 0; }
+}
+@keyframes bgSheetOut {
+  to { translate: 0 100%; }
+}
+[data-motion="scrim"][data-state="open"] {
+  animation: bgScrimIn var(--motion-base) var(--motion-ease) both;
+}
+[data-motion="scrim"][data-state="closed"] {
+  animation: bgScrimOut var(--motion-fast) var(--motion-ease) both;
+}
+:is([role="dialog"], [role="alertdialog"], [role="menu"])[data-state="open"]:not([data-motion="sheet"]) {
+  animation: bgRiseIn var(--motion-base) var(--motion-ease) both;
+}
+:is([role="dialog"], [role="alertdialog"], [role="menu"])[data-state="closed"]:not([data-motion="sheet"]) {
+  animation: bgRiseOut var(--motion-fast) var(--motion-ease) both;
+}
+[data-motion="sheet"][data-state="open"] {
+  animation: bgSheetIn var(--motion-base) var(--motion-ease) both;
+}
+[data-motion="sheet"][data-state="closed"] {
+  animation: bgSheetOut var(--motion-fast) var(--motion-ease) both;
+}
+
 @keyframes bgContentIn {
   from { opacity: 0; }
   to   { opacity: 1; }
@@ -1469,7 +1514,7 @@ input[type="search"] { border-radius: var(--r-control); }
    only) and the content that arrives over them fades in; `data-loading-blocks` (a block and everything inside it) and
    `data-content-in` (the one element that fades in, not what is inside it) stand outside this rule. Reduced motion is answered
    in `LoadingBlocks` and in the global reduced-motion rule at the end of this file. */
-:root:not([data-theme-changing]) *:not([data-loading-blocks], [data-loading-blocks] *, [data-content-in]),
+:root:not([data-theme-changing]) *:not([data-loading-blocks], [data-loading-blocks] *, [data-content-in], [data-motion], [role="dialog"][data-state], [role="alertdialog"][data-state], [role="menu"][data-state]),
 :root:not([data-theme-changing]) *::before,
 :root:not([data-theme-changing]) *::after {
   transition: none !important;

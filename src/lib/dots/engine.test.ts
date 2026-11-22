@@ -2,7 +2,9 @@
 // definitions and sharing no code with engine.ts, is compared with the engine's at sixteen fixed points.
 import { describe, expect, it } from "vitest";
 
-import { bayer, CoarseGrid, ease, fbm3, PERM, pn, unturn } from "./engine";
+import { WATER_DROPS, WATER_PHRASE_MS } from "@/lib/theme/motion";
+
+import { bayer, CoarseGrid, DROP_POINTS, dropRings, ease, fbm3, hash2, PERM, pn, RING_LIFE_S, ringsOf, swell, unturn, valueNoise, waveAt } from "./engine";
 
 /* ── the reference, from the definitions ── */
 
@@ -98,5 +100,73 @@ describe("the helpers", () => {
     const at = new Float64Array(3);
     grid.locate(30, 50, at);
     expect(grid.sample(0, at)).toBeCloseTo(30 + 100, 9);
+  });
+});
+
+describe("the water", () => {
+  it("hashes a lattice point the same way every time, within 0 and 1", () => {
+    expect(hash2(12, -7)).toBe(hash2(12, -7));
+    expect(hash2(12, -7)).not.toBe(hash2(7, 12));
+    for (let i = 0; i < 500; i++) {
+      const h = hash2(i, i * 3 - 40);
+      expect(h).toBeGreaterThanOrEqual(0);
+      expect(h).toBeLessThan(1);
+    }
+  });
+
+  it("value noise is the hash at a lattice point and stays within 0 and 1 between them", () => {
+    expect(valueNoise(3, 5)).toBeCloseTo(hash2(3, 5), 12);
+    for (let i = 0; i < 500; i++) {
+      const v = valueNoise(i * 0.37, i * 0.91 - 20);
+      expect(v).toBeGreaterThanOrEqual(0);
+      expect(v).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("swells by 0.22 sin(x 0.011 + y 0.007 - 0.8 t) + 0.1 sin(x 0.023 - y 0.017 + 1.3 t)", () => {
+    expect(swell(0, 0, 0)).toBe(0);
+    expect(swell(100, 50, 2)).toBeCloseTo(0.22 * Math.sin(1.1 + 0.35 - 1.6) + 0.1 * Math.sin(2.3 - 0.85 + 2.6), 12);
+  });
+
+  it("has WATER_DROPS drop points inside one phrase, in order", () => {
+    expect(DROP_POINTS).toHaveLength(WATER_DROPS);
+    expect(DROP_POINTS.map((d) => d[2])).toEqual([0, 1.2, 1.8, 3.0, 3.6, 4.2]);
+    for (const [fx, fy, at] of DROP_POINTS) {
+      expect(fx).toBeGreaterThan(0);
+      expect(fx).toBeLessThan(1);
+      expect(fy).toBeGreaterThan(0);
+      expect(fy).toBeLessThan(1);
+      expect(at).toBeLessThan(WATER_PHRASE_MS / 1000);
+    }
+  });
+
+  it("sends rings out at 150 age^0.8, widening and lengthening with age", () => {
+    const rings = ringsOf(10, 20, 2);
+    expect(rings).not.toBeNull();
+    expect(rings!.front).toBeCloseTo(150 * 2 ** 0.8, 9);
+    expect(rings!.width).toBe(100);
+    expect(rings!.wavelength).toBe(78);
+    expect(rings!.amplitude).toBeCloseTo((1 - Math.exp(-10)) * Math.exp(-1) * 1.25, 9);
+  });
+
+  it("has no rings before a drop falls or after RING_LIFE_S", () => {
+    expect(ringsOf(0, 0, -0.01)).toBeNull();
+    expect(ringsOf(0, 0, RING_LIFE_S + 0.01)).toBeNull();
+    expect(ringsOf(0, 0, RING_LIFE_S)).not.toBeNull();
+  });
+
+  it("keeps a drop's rings from the last phrase alive while the next arrive", () => {
+    const phrase = WATER_PHRASE_MS / 1000;
+    // 0.5s into the second phrase: the first phrase's 4.2s drop is 1.1s old and its rings are still out.
+    const alive = dropRings(phrase + 0.5, 400, 300, phrase);
+    expect(alive.some((r) => r.x === 0.05 * 400 && r.y === 0.55 * 300)).toBe(true);
+  });
+
+  it("calms to nothing far from every ring and is finite near one", () => {
+    const rings = [ringsOf(0, 0, 1)!];
+    expect(waveAt(rings, 5000, 5000)).toBe(0);
+    const near = waveAt(rings, rings[0].front, 0);
+    expect(Number.isFinite(near)).toBe(true);
+    expect(near).toBeGreaterThan(0);
   });
 });

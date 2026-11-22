@@ -163,7 +163,7 @@ export function EditMediaDialog({ request, editor, host, phone, onClose, aspects
   return (
     <Dialog.Root open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
       <Dialog.Portal>
-        <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 50 }} />
+        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 50 }} />
         <Dialog.Content
           aria-describedby={undefined}
           data-testid="edit-media-dialog"

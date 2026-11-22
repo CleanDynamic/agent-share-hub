@@ -6,13 +6,13 @@
 // over `FAST`, then opacity to 0 over `FAST`, and it is removed. Under reduced motion it stands still at `scaleX(0.5)` and
 // goes when the page changes.
 //
-// 2px, square ends, `--action` at 60% (the prompt's `t.accent` is not a token here). Transform and opacity only.
+// 2px, square ends, Mint (`--tab-bar`). Transform and opacity only.
 
 import { useEffect, useRef, useState } from "react";
 
 import { SHOW_LINE_AFTER_MS, usePageChange, usePendingPath } from "@/lib/routing/go";
 import { FAST, STANDARD, prefersReducedMotion } from "@/lib/theme/motion";
-import { tokenAlpha } from "@/lib/theme/tokens";
+import { tokenVar } from "@/lib/theme/tokens";
 
 const LINE = {
   position: "absolute",
@@ -20,7 +20,7 @@ const LINE = {
   right: 0,
   bottom: 0,
   height: 2,
-  background: tokenAlpha("action", 0.6),
+  background: tokenVar("tab-bar"),
   transformOrigin: "left center",
   pointerEvents: "none",
 } as const;

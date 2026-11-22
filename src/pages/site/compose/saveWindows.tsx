@@ -72,7 +72,7 @@ export function RecipeWindow({ open, onClose, title, note, buttons, testId, widt
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 70 }} />
+        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 70 }} />
         <Dialog.Content role="alertdialog" aria-describedby={undefined} onOpenAutoFocus={focus.onOpenAutoFocus} onCloseAutoFocus={focus.onCloseAutoFocus} data-testid={testId} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 71, ...frameStyle(width) }}>
           <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12, overflowY: "auto", minHeight: 0 }}>
             <Dialog.Title style={TITLE}>{title}</Dialog.Title>

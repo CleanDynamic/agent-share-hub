@@ -302,7 +302,7 @@ export function AddFromLibraryWindow(props: AddFromLibraryWindowProps) {
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 50 }} />
+        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 50 }} />
         <Dialog.Content
           data-testid="add-from-library"
           onOpenAutoFocus={focus.onOpenAutoFocus}

@@ -87,6 +87,24 @@ export const SPIN_MS = 1000;
 /** How long a "look here" ring holds before it fades. See `pulseRing`. */
 export const PULSE_MS = 600;
 
+/* ── The dot water ────────────────────────────────────────────────────────────
+   The dot field (src/lib/dots) is the one ambient motion every loading state,
+   empty state, drop zone and the sign-in background share. Its rhythm is
+   decided here, with the rest of the durations, not in the drawing code.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/** 4800ms. One phrase of the dot field: the drops fall at fixed points inside it, then it starts again. */
+export const WATER_PHRASE_MS = 4800;
+
+/** How many drops fall in one phrase. */
+export const WATER_DROPS = 6;
+
+/** 3200ms. How long a pointer splash lives before its rings are gone. */
+export const SPLASH_MS = 3200;
+
+/** 110ms. How often a code glyph cell changes character during a splash. */
+export const GLYPH_STEP_MS = 110;
+
 /** Every duration this system knows, by name. */
 export const DURATION = {
   fast: FAST,

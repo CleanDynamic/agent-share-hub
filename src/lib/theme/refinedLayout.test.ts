@@ -47,8 +47,10 @@ describe("the focus, motion and phone rules in index.css", () => {
     expect(css).toMatch(/:root:not\(\[data-theme-changing\]\) \*(?::not\([^)]*\))?,[\s\S]*?transition: none !important;\s*animation: none !important;/);
   });
 
-  it("leaves out of that rule only a loading placeholder (CA-24): a block with what is inside it, and the one element that fades in", () => {
-    expect(css).toContain(":not([data-loading-blocks], [data-loading-blocks] *, [data-content-in])");
+  it("leaves out of that rule only a loading placeholder (CA-24) and the overlays' own motion (04): a block with what is inside it, the one element that fades in, and a scrim, a modal, a menu or a sheet", () => {
+    expect(css).toContain(
+      ":not([data-loading-blocks], [data-loading-blocks] *, [data-content-in], [data-motion], [role=\"dialog\"][data-state], [role=\"alertdialog\"][data-state], [role=\"menu\"][data-state])",
+    );
   });
 
   it("makes a phone's fields 16px", () => {

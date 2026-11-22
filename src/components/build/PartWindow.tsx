@@ -551,7 +551,7 @@ export function PartWindow(props: PartWindowProps) {
   return (
     <Dialog.Root open={shown} onOpenChange={(open) => !open && props.onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 60 }} />
+        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 60 }} />
         <Dialog.Content
           data-testid="part-window"
           data-part={props.open ?? undefined}

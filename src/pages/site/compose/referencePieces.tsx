@@ -300,7 +300,7 @@ export function KeepLinkDialog({ open, title, body, action, choices, onPick, onC
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && onCancel()}>
       <Dialog.Portal>
-        <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 70 }} />
+        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 70 }} />
         <Dialog.Content data-testid="keep-link-dialog" aria-describedby={undefined} onOpenAutoFocus={focus.onOpenAutoFocus} onCloseAutoFocus={focus.onCloseAutoFocus} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 71, ...frameStyle(420) }}>
           <div style={{ padding: PAD.card, display: "flex", flexDirection: "column", gap: GAP.column }}>
             <Dialog.Title style={GROUP_TITLE}>{title}</Dialog.Title>
@@ -479,7 +479,7 @@ export function ConfirmDialog({ open, width = 420, title, body, action, onConfir
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && onCancel()}>
       <Dialog.Portal>
-        <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 70 }} />
+        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 70 }} />
         <Dialog.Content role="alertdialog" data-testid={testId} aria-describedby={undefined} onOpenAutoFocus={focus.onOpenAutoFocus} onCloseAutoFocus={focus.onCloseAutoFocus} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 71, ...frameStyle(width) }}>
           <div style={{ padding: PAD.card, display: "flex", flexDirection: "column", gap: GAP.column }}>
             <Dialog.Title style={GROUP_TITLE}>{title}</Dialog.Title>

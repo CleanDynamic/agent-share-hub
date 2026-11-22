@@ -54,7 +54,7 @@ export function OpenRequestDialog({ open, title, initial, onClose, onSubmit }: O
   return (
     <Dialog.Root open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
       <Dialog.Portal>
-        <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.sheetDim, zIndex: 40 }} />
+        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.sheetDim, zIndex: 40 }} />
         <Dialog.Content
           data-testid="open-request-dialog"
           style={{

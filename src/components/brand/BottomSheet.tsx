@@ -74,9 +74,10 @@ export function BottomSheet({ open, onOpenChange, title, onCloseAutoFocus, child
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 40 }} />
+        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 40 }} />
         <Dialog.Content
           data-testid={rest["data-testid"] ?? "brand-bottom-sheet"}
+          data-motion="sheet"
           aria-describedby={undefined}
           onOpenAutoFocus={focus.onOpenAutoFocus}
           onCloseAutoFocus={focus.onCloseAutoFocus}

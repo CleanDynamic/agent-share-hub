@@ -64,7 +64,7 @@ export default function ConnectorDialogView({ open, onOpenChange }: ConnectorDia
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 50 }} />
+        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 50 }} />
         <Dialog.Content
           aria-describedby={undefined}
           data-testid="connector-dialog"
