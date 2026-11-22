@@ -50,14 +50,15 @@ describe("a shadow on a light ground is not a shadow on a dark ground", () => {
     expect(shadow("dusk", "elev-overlay")).not.toBe(shadow("noon", "elev-overlay"));
   });
 
-  it("raised differs too", () => {
-    expect(shadow("dusk", "elev-raised")).not.toBe(shadow("noon", "elev-raised"));
+  it("raised is shade, not shadow, in both themes (SY-01)", () => {
+    // The Synth draft raises a control by painting it a step lighter on the ladder, so its shadow is none.
+    expect(shadow("dusk", "elev-raised")).toBe("none");
+    expect(shadow("noon", "elev-raised")).toBe("none");
   });
 
-  it("Dusk's raised level carries a lit top hairline", () => {
-    // The hairline is what reads as "above" on a dark ground; the shadow only
-    // says how far. Remove it and Dusk's menus sit flat on the page.
-    expect(shadow("dusk", "elev-raised")).toContain("inset 0 1px 0");
+  it("the overlay's ring and drop carry the depth a shade cannot", () => {
+    expect(shadow("dusk", "elev-overlay")).toContain("0 0 0 1px");
+    expect(shadow("noon", "elev-overlay")).toContain("0 0 0 1px");
   });
 
   it("overlay is deeper than raised in both themes", () => {

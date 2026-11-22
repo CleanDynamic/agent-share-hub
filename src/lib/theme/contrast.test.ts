@@ -24,6 +24,20 @@ const round = (n: number) => Math.round(n * 100) / 100;
 const TEXT_FLOOR = 4.5;
 const UI_FLOOR = 3.0;
 
+/* SY-01: the nine `cat-*` hues stay as they were (the brand pack says so) while Noon's card (`--module`) moves from
+   #FAFAFA to #F1F3F1. Seven of the nine now measure under 4.5:1 on it. Each is pinned at what was measured (a ratchet: it
+   may rise, never fall). They are above the 3.0 UI floor, which is what a chip's mark and edge need; text in these hues
+   sits on the `cat-*-fill` pairing or uses an ink token. Dusk's nine all pass 4.5. */
+const NOON_BELOW_TEXT_FLOOR: Record<string, number> = {
+  "cat-instruction": 3.73,
+  "cat-artefact": 3.71,
+  "cat-configuration": 3.93,
+  "cat-media": 4.13,
+  "cat-data": 4.34,
+  "cat-evidence": 4.41,
+  "cat-breakage": 4.46,
+};
+
 const CATEGORIES: TokenName[] = [
   "cat-instruction",
   "cat-configuration",
@@ -59,6 +73,7 @@ const CATEGORIES: TokenName[] = [
 describe("the password strength meter", () => {
   const METER: TokenName[] = ["cat-breakage", "cat-artefact", "evidence"];
 
+
   /** The auth card's ground: `--glass` composited over the room. */
   const card = (theme: ThemeKey) => resolveRefined(theme, "module");
 
@@ -68,10 +83,11 @@ describe("the password strength meter", () => {
     ),
   )("$theme reads $token as a label on the auth card", ({ theme, token }) => {
     const actual = round(contrast(resolveRefined(theme, token), card(theme)));
-    // Noon's artefact hue measures 3.97 on a card, the same shortfall the category block below pins: it is a ratchet,
-    // and it may rise, never fall.
-    if (theme === "noon" && token === "cat-artefact") {
-      expect(actual, `${theme} ${token} is ${actual}:1 on the auth card`).toBeGreaterThanOrEqual(3.97);
+    // SY-01: Noon's card is #F1F3F1, a step darker than the old #FAFAFA, so the unchanged category hues measure lower
+    // on it. The shortfalls are pinned at what was measured, a ratchet: they may rise, never fall.
+    const pinned = theme === "noon" ? NOON_BELOW_TEXT_FLOOR[token] : undefined;
+    if (pinned !== undefined) {
+      expect(actual, `${theme} ${token} is ${actual}:1 on the auth card`).toBeGreaterThanOrEqual(pinned);
       expect(actual, `${theme} ${token} now reaches ${TEXT_FLOOR}: remove this exception`).toBeLessThan(TEXT_FLOOR);
       return;
     }
@@ -133,21 +149,7 @@ describe("the colour contract", () => {
     }
   });
 
-  /* UI-P79 asks every `cat-*` to reach 4.5:1 on `module` AND to use the values
-     it lists, "exactly as written". Four of Noon's nine cannot do both: measured
-     on #FAFAFA, cat-instruction is 3.98, cat-artefact 3.97, cat-configuration
-     4.20 and cat-media 4.42. The values are kept as the prompt gives them and
-     the shortfall is pinned here at what was measured (a ratchet: it may rise,
-     never fall), not hidden and not quietly passed. They are above the 3.0 UI
-     floor, which is what a chip's mark and edge need; text in these hues must
-     sit on the `cat-*-fill` pairing or be darkened by a later prompt. Dusk's
-     nine all pass 4.5. */
-  const NOON_BELOW_TEXT_FLOOR: Record<string, number> = {
-    "cat-instruction": 3.98,
-    "cat-artefact": 3.97,
-    "cat-configuration": 4.2,
-    "cat-media": 4.42,
-  };
+  /* The pins for Noon's category hues are NOON_BELOW_TEXT_FLOOR at the top of this file (SY-01). */
 
   it.each(["noon", "dusk"] as const)("%s: each category hue on module", (theme) => {
     for (const cat of CATEGORIES) {

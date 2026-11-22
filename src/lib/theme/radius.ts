@@ -36,11 +36,11 @@
 /** Every radius token and its value. The single source of truth for the scale. */
 export const RADIUS = {
   /** 4px — chips, tags, badges, checkboxes. */
-  "r-chip": "4px",
+  "r-chip": "12px",
   /** 6px — images, video, thumbnails, media wells. */
-  "r-media": "6px",
+  "r-media": "16px",
   /** 6px — buttons, inputs, selects, switch tracks, list rows. NOT 999px. */
-  "r-control": "6px",
+  "r-control": "18px",
   /**
    * 6px — the thread box inset in a build card (BG-P09), and nothing else.
    *
@@ -51,13 +51,13 @@ export const RADIUS = {
    * it — which is exactly the drift the named scale exists to stop. A radius
    * with two jobs is two radii.
    */
-  "r-thread": "6px",
+  "r-thread": "10px",
   /** 8px — cards. */
-  "r-card": "8px",
+  "r-card": "10px",
   /** 10px — the page surface and panels. */
-  "r-panel": "10px",
+  "r-panel": "12px",
   /** 12px — a window: a dialog or a side sheet (UI-P81). */
-  "r-window": "12px",
+  "r-window": "16px",
   /**
    * 999px — CIRCULAR THINGS ONLY: spinners, avatars.
    *
@@ -67,6 +67,10 @@ export const RADIUS = {
    * circle, one of the five steps above is its radius.
    */
   "r-full": "999px",
+  /** 20px — one-line inputs (SY-01). */
+  "r-field": "20px",
+  /** 10px — text areas and modal fields (SY-01). */
+  "r-area": "10px",
 } as const;
 
 export type RadiusName = keyof typeof RADIUS;

