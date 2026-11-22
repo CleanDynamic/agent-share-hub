@@ -15,3 +15,18 @@ export function useHideFrameChrome(hidden: boolean): void {
     return () => setHidden(false);
   }, [hidden, setHidden]);
 }
+
+/* Synth draft: by default the page area is ONE panel (Panel fill, radius 12). A page laid out as several columns draws a
+   panel per column itself, and asks the frame to step back from its own: `useColumnPanels(true)` sets it for as long as
+   the caller is mounted, before the first paint. `SiteFrameView` holds the answer and provides the setter. */
+
+export const FrameColumnsContext = createContext<(columns: boolean) => void>(() => undefined);
+
+export function useColumnPanels(columns: boolean): void {
+  const setColumns = useContext(FrameColumnsContext);
+  useLayoutEffect(() => {
+    if (!columns) return;
+    setColumns(true);
+    return () => setColumns(false);
+  }, [columns, setColumns]);
+}

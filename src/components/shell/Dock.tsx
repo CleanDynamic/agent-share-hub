@@ -70,7 +70,6 @@ function RefinedDockView({ current, unread, placement = "fixed" }: DockViewProps
         padding: `${DOCK_PAD}px 8px calc(${DOCK_PAD}px + env(safe-area-inset-bottom))`,
         boxSizing: "border-box",
         background: t.surface,
-        borderTop: `1px solid ${t.surfaceBorder}`,
       }}
     >
       {TILES.map(({ name, label, href, icon }) => {

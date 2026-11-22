@@ -61,7 +61,7 @@ import { insertBuildSessionIfTable, nextSessionPosition } from "@/lib/build/buil
 import { nextSessionNumber as nextNumber } from "@/lib/build/sessionNumbers";
 import { collapsedKeys as readCollapsed, getSessionOrder, setCollapsed, setSessionOrder, orderKeys } from "@/lib/build/sessionLayout";
 import { SessionJump, jumpItemsOf, useCurrentSession } from "@/components/build/SessionJump";
-import { HEADER_HEIGHT } from "@/components/shell/chromeSize";
+import { headerHeight } from "@/components/shell/chromeSize";
 import { useSessionEdits } from "./useSessionEdits";
 import { useViewOptions } from "./viewOptions";
 import { movedLine, movedStep, moveBy, moveModelOf, writeOf, type MoveNames } from "@/lib/build/moveRules";
@@ -2391,7 +2391,7 @@ function SandboxPageBody() {
     if (!head) return;
     // Focus first: a keyboard focus asks the roving list to show the head ("nearest"), and the jump's scroll must have the last word.
     head.focus({ preventScroll: true });
-    const run = scrollToShow(head, { align: "start", hold: true, offset: HEADER_HEIGHT + JUMP_GAP });
+    const run = scrollToShow(head, { align: "start", hold: true, offset: headerHeight(phone) + JUMP_GAP });
     void run.finished.then(() => {
       const session = head.closest<HTMLElement>("[data-session-key]");
       if (session) outlineOnce(session);

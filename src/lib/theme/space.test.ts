@@ -90,8 +90,8 @@ describe("the refined scale (UI-P81)", () => {
   // The refined look is specified as twelve plain numbers, not as named roles,
   // and as a handful of named layout values. Both sit beside SPACE and
   // SPACE_COMPACT; neither replaces them.
-  it("is the twelve steps the refined look names", () => {
-    expect([...SPACE_REFINED]).toEqual([2, 4, 6, 8, 12, 16, 20, 24, 32, 40, 48, 64]);
+  it("is the eleven steps the Synth draft names (Synth 03): base unit 4, with 2 for tracks", () => {
+    expect([...SPACE_REFINED]).toEqual([2, 4, 8, 12, 16, 20, 24, 32, 40, 48, 64]);
   });
 
   it("steps upward and repeats nothing", () => {
@@ -99,14 +99,14 @@ describe("the refined scale (UI-P81)", () => {
     expect(new Set(SPACE_REFINED).size).toBe(SPACE_REFINED.length);
   });
 
-  it("walks in twos to 8, fours to 24 and eights to 48, then closes at 64", () => {
+  it("walks in fours to 24 and eights to 48, then closes at 64", () => {
     const gaps = SPACE_REFINED.slice(1).map((v, i) => v - SPACE_REFINED[i]);
-    expect(gaps).toEqual([2, 2, 2, 4, 4, 4, 4, 8, 8, 8, 16]);
+    expect(gaps).toEqual([2, 4, 4, 4, 4, 4, 8, 8, 8, 16]);
   });
 
   it("recognises its own steps and nothing between them", () => {
     for (const step of SPACE_REFINED) expect(isRefinedStep(step), `${step}`).toBe(true);
-    for (const between of [0, 1, 3, 5, 7, 10, 14, 18, 22, 28, 36, 44, 56, 72]) {
+    for (const between of [0, 1, 3, 5, 6, 7, 10, 14, 18, 22, 28, 36, 44, 56, 72]) {
       expect(isRefinedStep(between), `${between} is not a step and must not pass`).toBe(false);
     }
   });
@@ -119,15 +119,23 @@ describe("the refined scale (UI-P81)", () => {
   });
 
   it("renders a step as pixels when a string is wanted", () => {
-    expect(px(SPACE_REFINED[5])).toBe("16px");
+    expect(px(SPACE_REFINED[4])).toBe("16px");
   });
 });
 
-describe("the refined layout values (UI-P81)", () => {
-  it("names the measures the refined boards repeat", () => {
+describe("the layout values (Synth 03)", () => {
+  it("names the measures the Synth boards repeat", () => {
     expect(LAYOUT_REFINED).toEqual({
-      headerHeight: 48,
-      gutter: "clamp(16px, 4.6vw, 64px)",
+      headerHeight: 88,
+      panelGutter: 8,
+      panelPad: 16,
+      postTop: 12,
+      postSide: 16,
+      postBottom: 4,
+      postGap: 8,
+      sectionTop: 12,
+      sectionBottom: 4,
+      headGap: 8,
       rowMin: 40,
       rowTwoLine: 48,
       rowAvatar: 56,
@@ -142,11 +150,9 @@ describe("the refined layout values (UI-P81)", () => {
     expect(LAYOUT_REFINED.tilePad).toBeLessThan(LAYOUT_REFINED.modulePad);
   });
 
-  it("bounds the gutter by two steps, so it never lands off the scale at either end", () => {
-    const [, min, max] = /^clamp\((\d+)px, [\d.]+vw, (\d+)px\)$/.exec(LAYOUT_REFINED.gutter) ?? [];
-    expect([Number(min), Number(max)]).toEqual([16, 64]);
-    expect(isRefinedStep(Number(min))).toBe(true);
-    expect(isRefinedStep(Number(max))).toBe(true);
+  it("spends only steps of the scale for every gap and padding", () => {
+    const gaps = ["panelGutter", "panelPad", "postTop", "postSide", "postBottom", "postGap", "sectionTop", "sectionBottom", "headGap"] as const;
+    for (const name of gaps) expect(isRefinedStep(LAYOUT_REFINED[name]), name).toBe(true);
   });
 
   it("grows a row with what it carries: one line, two lines, an avatar", () => {

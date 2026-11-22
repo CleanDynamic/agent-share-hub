@@ -1,4 +1,4 @@
-// CA-18 P4: the composer's frame drops the 1428 cap; every other page (the gallery, the build page) keeps it.
+// CA-18 P4: the composer's frame drops the 1280 cap; every other page (the gallery, the build page) keeps it.
 
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
@@ -18,17 +18,17 @@ const markup = (wide?: boolean) =>
   );
 
 describe("the frame's wide option", () => {
-  it("keeps the surface at 1428 and the main padding unless asked", () => {
+  it("keeps the container at 1280 and the panel's padding unless asked", () => {
     const html = markup();
-    expect(html).toContain("width:calc(100% - 16px);max-width:1428px;margin:0 auto 8px");
-    expect(html).toContain("padding:39px 55px 48px");
+    expect(html).toContain("width:100%;max-width:1280px;margin:0 auto;padding:0 8px 8px");
+    expect(html).toContain("padding:40px 16px 48px");
     expect(html).not.toContain("data-wide");
   });
 
   it("drops the cap and the side padding when wide, and starts the breadcrumb at the box's left edge (CA-18b P5)", () => {
     const html = markup(true);
     expect(html).toContain("max-width:none");
-    expect(html).not.toContain("max-width:1428px");
+    expect(html).not.toContain("max-width:1280px");
     expect(html).toContain("padding:0 0 48px");
     expect(html).toContain(`padding:24px 0 0 ${frameOf(innerWidthOf(window.innerWidth)).boxLeft - ORIGIN}px`);
   });

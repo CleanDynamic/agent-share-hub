@@ -22,7 +22,6 @@ import { PRIVACY_REVIEWED, TERMS_REVIEWED } from "@/content/legal/reviewed";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
-import { PAGE_EDGE } from "./chromeSize";
 import { FrameLink } from "./FrameLink";
 import { SITE_NAV } from "./siteNav";
 import { SITE_NAME } from "@/lib/site";
@@ -63,11 +62,10 @@ function RefinedSiteFooterView({ showPrivacy = false, showTerms = false, showFoo
       data-ui="site-footer"
       style={{
         marginTop: "auto",
-        width: "calc(100% - 16px)",
-        maxWidth: 1428,
+        width: "100%",
         margin: "auto auto 0",
         boxSizing: "border-box",
-        padding: phone ? "16px 16px 24px" : `16px ${PAGE_EDGE}px 24px`,
+        padding: "16px 16px 24px",
         display: "flex",
         flexWrap: "wrap",
         alignItems: phone ? "flex-start" : "center",

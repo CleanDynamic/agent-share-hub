@@ -6,16 +6,19 @@
    The board is `design/reference/vision/dusk/home.html`. The surface and its padding belong to the site frame; what is
    here starts at the columns.
 
-   COLUMNS. The page grid's feed template (3 / 6 / 3, 32 gutters); the centre has a hairline either side, centred in its
-   gutter. Below 1100 the left column is hidden (`minmax(0, 628px) 300px`, centred, the same gutter); below 760 one
-   column: the Drafts line, the feed, then the right column's sections in order. */
+   COLUMNS (Synth 03). Three PANELS on the page shade, 8 apart, no lines: `300px minmax(0, 1fr) 340px` from 1101 (the sides
+   narrow to 280 and 320 before the centre goes below 520). From 761 to 1100 the left panel is hidden
+   (`minmax(0, 1fr) 300px`); below 761 one column of panels: the Drafts line, the feed, then the right column's sections
+   in order. The frame's own panel steps back (`useColumnPanels`). */
 
 import type { CSSProperties, ReactNode } from "react";
 
 import { Button } from "@/components/brand/Button";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { PageHeader } from "@/components/shell/PageHeader";
-import { PAGE_GUTTER, pageColumns } from "@/components/shell/pageGrid";
+import { PANEL_GUTTER, PANEL_PAD, PANEL_RADIUS } from "@/components/shell/chromeSize";
+import { useColumnPanels } from "@/components/shell/frameChrome";
+import { panelColumns } from "@/components/shell/pageGrid";
 import { useMinWidth } from "@/components/shell/useMinWidth";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -25,6 +28,9 @@ const THREE_COLUMNS_MIN = 1101;
 const TWO_COLUMNS_MIN = 761;
 
 export type HomeLayout = "three" | "two" | "one";
+
+/** Below this the centre would go under 520 with 300 and 340 sides, so the sides narrow to 280 and 320 (1192 = 640 + 520 + 2 gaps + 2 margins). */
+const SIDES_FULL_MIN = 1192;
 
 export function useHomeLayout(): HomeLayout {
   const three = useMinWidth(THREE_COLUMNS_MIN);
@@ -46,9 +52,9 @@ export const text = (px: number, weight: 400 | 500, color: string, extra: CSSPro
 
 export const ellipsis: CSSProperties = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 
-/** A hairline between two sections of a side column. */
+/** Between two sections of a side column: no line, only the column's gap. Kept so the sections read as before. */
 export function Rule() {
-  return <div aria-hidden="true" style={{ height: 1, background: t.hairline }} />;
+  return null;
 }
 
 /* ── controls ── */
@@ -76,6 +82,12 @@ export function HomeControl({
 /** The board's body: Geist 13 on a 20 line, tabular numbers. */
 const root: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.text, fontVariantNumeric: "tabular-nums" };
 
+/** A column's panel: Panel fill, radius 12, no border, no shadow. `clip` so a sticky row inside still sticks. */
+const panel: CSSProperties = { background: t.surface, borderRadius: PANEL_RADIUS, overflow: "clip", minWidth: 0, boxSizing: "border-box" };
+
+/** A side column's panel: 16 inside, sections 24 apart. */
+const sidePanel: CSSProperties = { ...panel, padding: PANEL_PAD, display: "flex", flexDirection: "column", gap: 24 };
+
 export function HomeColumns({
   layout,
   left,
@@ -90,12 +102,14 @@ export function HomeColumns({
   /** One column only: the line above the feed. */
   top?: ReactNode;
 }) {
+  useColumnPanels(true);
+  const sidesFull = useMinWidth(SIDES_FULL_MIN);
   if (layout === "one") {
     return (
-      <div data-testid="home-view" data-layout="one" style={{ ...root, display: "flex", flexDirection: "column", gap: 24, minWidth: 0, paddingBottom: 48 }}>
-        {top}
-        <section aria-label="Feed" style={{ minWidth: 0 }}>{centre}</section>
-        <aside aria-label="The room" style={{ display: "flex", flexDirection: "column", gap: 32, minWidth: 0 }}>{right}</aside>
+      <div data-testid="home-view" data-layout="one" style={{ ...root, display: "flex", flexDirection: "column", gap: PANEL_GUTTER, minWidth: 0 }}>
+        {top ? <div style={{ ...panel, padding: PANEL_PAD }}>{top}</div> : null}
+        <section aria-label="Feed" style={{ ...panel, paddingBottom: 48 }}>{centre}</section>
+        <aside aria-label="The room" style={sidePanel}>{right}</aside>
       </div>
     );
   }
@@ -105,20 +119,15 @@ export function HomeColumns({
       data-testid="home-view"
       data-layout={layout}
       style={{
-        ...(three ? pageColumns("feed") : { display: "grid", gridTemplateColumns: "minmax(0, 628px) 300px", columnGap: PAGE_GUTTER, justifyContent: "center" }),
+        ...panelColumns(three ? "three" : "two", { sidesFull, between: !three }),
         ...root,
       }}
     >
-      {three ? (
-        <aside aria-label="Your studio" style={{ padding: "8px 0 48px", display: "flex", flexDirection: "column", gap: 32, minWidth: 0 }}>
-          {left}
-        </aside>
-      ) : null}
-      {/* The hairlines sit in the middle of the gutters: the section reaches half a gutter into each. */}
-      <section aria-label="Feed" style={{ borderLeft: `1px solid ${t.hairline}`, borderRight: `1px solid ${t.hairline}`, minWidth: 0, padding: "0 0 48px", margin: `0 -${PAGE_GUTTER / 2}px` }}>
+      {three ? <aside aria-label="Your studio" style={sidePanel}>{left}</aside> : null}
+      <section aria-label="Feed" style={{ ...panel, paddingBottom: 48 }}>
         {centre}
       </section>
-      <aside aria-label="The room" style={{ padding: "8px 0 48px", display: "flex", flexDirection: "column", gap: 32, minWidth: 0 }}>
+      <aside aria-label="The room" style={sidePanel}>
         {right}
       </aside>
     </div>
@@ -137,13 +146,13 @@ export function HeadBones() {
   );
 }
 
-/** Rows while they load: each its own height, a hairline under all but the last. */
+/** Rows while they load: each its own height. */
 export function RowBones({ count, height, what }: { count: number; height: number; what: string }) {
   return (
     <LoadingRegion what={what} style={{ display: "flex", flexDirection: "column" }}>
       {Array.from({ length: count }, (_, index) => (
-        <div key={index} style={{ height, boxSizing: "border-box", borderBottom: index < count - 1 ? `1px solid ${t.hairline}` : "none", display: "flex", alignItems: "center" }}>
-          <Skeleton height={height - 24} radius={6} />
+        <div key={index} style={{ height, boxSizing: "border-box", display: "flex", alignItems: "center" }}>
+          <Skeleton height={height - 24} radius={10} />
         </div>
       ))}
     </LoadingRegion>
@@ -152,13 +161,13 @@ export function RowBones({ count, height, what }: { count: number; height: numbe
 
 /** The feed's tabs row, drawn while the feed loads, at its own height. */
 function TabsBones() {
-  return <div style={{ height: 39, boxSizing: "border-box", borderBottom: `1px solid ${t.hairline}` }} />;
+  return <div style={{ height: 39, boxSizing: "border-box" }} />;
 }
 
 /** A post while the feed loads: the author row, a title, a picture. */
 function PostBones() {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "40px minmax(0, 1fr)", columnGap: 12, padding: "20px 20px 16px", borderBottom: `1px solid ${t.hairline}` }}>
+    <div style={{ display: "grid", gridTemplateColumns: "40px minmax(0, 1fr)", columnGap: 12, padding: "12px 16px 4px" }}>
       <Skeleton width={40} height={40} radius="50%" />
       <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
         <Skeleton width="40%" height={20} radius={4} />

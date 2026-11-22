@@ -33,7 +33,7 @@ import type { FrameViewer } from "./frameTypes";
 import { RoutedHeaderSearch } from "./HeaderSearch";
 import { SITE_NAV } from "./siteNav";
 import { deeper, openOver } from "@/pages/site/signin/signinUrl";
-import { HEADER_HEIGHT } from "./chromeSize";
+import { PHONE_HEADER_HEIGHT } from "./chromeSize";
 
 export interface MobileHeaderViewProps {
   viewer: FrameViewer | null;
@@ -84,7 +84,7 @@ function RefinedMobileHeaderView({ viewer, onSearchOpen, onAccountOpen, onSignIn
         position: "sticky",
         top: 0,
         zIndex: 20,
-        height: HEADER_HEIGHT,
+        height: PHONE_HEADER_HEIGHT,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",

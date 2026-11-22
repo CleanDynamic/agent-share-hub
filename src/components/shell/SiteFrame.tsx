@@ -26,11 +26,17 @@
 // root's first child. It is the one SVG filter `.bg-glass` panels refract through, mounted once per frame and
 // before the page, and it is a 0 x 0 hidden SVG that paints nothing.
 //
+// THE SYNTH FRAME (Synth 03). The root is the Page shade and a flex column. The header (88 tall, 48 on a phone) sits on it
+// with no line and no fill. Under it a centred container, `max-width: 1280`, `0 8px 8px`, holds the page as PANELS: Panel
+// fill, radius 12, no border, no shadow, 8 apart. A page with one column gets one panel from `<main>`; a page with several
+// calls `useColumnPanels(true)`, `<main>` steps back to a plain column and the page draws a panel per column. Wider
+// windows keep the 1280 and show Page on both sides. The older note below is kept for the slots, which have not moved.
+//
 // THE REFINED FRAME (UI-P87). Under the refined look the root is `--frame` and a flex column. The header sits on it
 // (sticky, 48, the frame behind it so the page scrolls under the frame and not through it), and one SURFACE wraps
 // everything below: `calc(100% - 16px)` wide, max 1428, `0 auto 8px`, `--surface`, a 1px `--surface-border`, radius 10,
 // `--surface-shadow`. `<main>` inside it has `39px 55px 48px` and a 24px column gap, the page's PageHeader first
-// (the composer keeps the breadcrumb slot first); the footer is inside the surface, pushed to its foot. On a phone the surface keeps its 6px inset
+// (the composer keeps the breadcrumb slot first); the footer is inside the container, pushed to its foot. On a phone the container keeps its 8px inset
 // and radius 10 under the 48px header, and the dock is fixed below it. The slots, their order and `#main` are the
 // same in both looks.
 //
@@ -41,13 +47,15 @@
 
 import { useState, type CSSProperties, type ReactNode } from "react";
 
+import { FrameColumnsContext } from "./frameChrome";
+
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { useWindowSize } from "@/pages/site/compose/DetailsAside";
-import { ORIGIN, SURFACE_MARGIN, frameOf, innerWidthOf } from "@/pages/site/compose/detailsLayout";
+import { ORIGIN, frameOf, innerWidthOf } from "@/pages/site/compose/detailsLayout";
 import { Breadcrumb } from "./Breadcrumb";
-import { HEADER_HEIGHT, PAGE_EDGE } from "./chromeSize";
+import { CRUMB_BAND, FRAME_MAX_WIDTH, PANEL_GUTTER, PANEL_PAD, PANEL_RADIUS, headerHeight } from "./chromeSize";
 import { Dock } from "./Dock";
 import { FocusRescue } from "./FocusRescue";
 import { MobileHeader } from "./MobileHeader";
@@ -109,36 +117,38 @@ const SKIP_BASE: CSSProperties = {
   alignItems: "center",
   padding: "0 12px",
   borderRadius: 12,
-  background: t.solid,
+  background: t.window,
   color: t.text,
-  border: `1px solid ${t.line}`,
+  border: `1px solid ${t.windowBorder}`,
   fontFamily: FIGTREE,
   fontSize: 13,
   fontWeight: 500,
   textDecoration: "none",
 };
 
-/** The refined look's one surface (UI-P87). */
-const SURFACE: CSSProperties = {
-  width: "calc(100% - 12px)",
-  maxWidth: 1428,
-  margin: "0 auto 6px",
+/** The page container: centred, 1280 at most, 8 from the window edge and 8 below. It has no fill; the panels are the surface. */
+const CONTAINER: CSSProperties = {
+  width: "100%",
+  maxWidth: FRAME_MAX_WIDTH,
+  margin: "0 auto",
+  padding: `0 ${PANEL_GUTTER}px ${PANEL_GUTTER}px`,
   flexGrow: 1,
   boxSizing: "border-box",
   display: "flex",
   flexDirection: "column",
   minWidth: 0,
-  background: t.surface,
-  border: `1px solid ${t.surfaceBorder}`,
-  borderRadius: 10,
-  boxShadow: t.surfaceShadow,
 };
 
-/** The desktop surface: SURFACE_MARGIN (8) from the window. The phone keeps SURFACE's 6. */
-const DESKTOP_SURFACE: CSSProperties = { ...SURFACE, width: `calc(100% - ${2 * SURFACE_MARGIN}px)`, margin: `0 auto ${SURFACE_MARGIN}px` };
+/** The composer (`wide`) lays itself out from the window's width, so its container is not capped. */
+const WIDE_CONTAINER: CSSProperties = { ...CONTAINER, maxWidth: "none" };
 
-/** S35: the composer's surface (`wide`): no 1428 cap, and SURFACE_MARGIN (8) from the window where other pages keep 6. */
-const WIDE_SURFACE: CSSProperties = { ...SURFACE, maxWidth: "none", width: `calc(100% - ${2 * SURFACE_MARGIN}px)`, margin: `0 auto ${SURFACE_MARGIN}px` };
+/** The one panel a single-column page sits in: Panel fill, radius 12, no border, no shadow. `clip` rather than `hidden`, so a
+    sticky row inside the panel still sticks. */
+const PANEL: CSSProperties = {
+  background: t.surface,
+  borderRadius: PANEL_RADIUS,
+  overflow: "clip",
+};
 
 /** "Skip to content": first focusable element, off-screen until focused, targets `#main`. 36 tall, and 44 on a phone. */
 function SkipLink({ phone }: { phone: boolean }) {
@@ -179,6 +189,8 @@ export function SiteFrameView({
   const phone = (viewport ?? (narrow ? "mobile" : "desktop")) === "mobile";
   /* SV-04: set once when the frame mounts, so the page audit can tell a header kept across a page change from one drawn again. */
   const [frameId] = useState(() => Math.random().toString(36).slice(2, 10));
+  /* A page drawn as several panels (`useColumnPanels`): `<main>` is then a plain column and draws no panel of its own. */
+  const [columns, setColumns] = useState(false);
 
   const root: CSSProperties = {
     position: "relative",
@@ -228,12 +240,12 @@ export function SiteFrameView({
         data-slot={phone ? "mobile-header" : "header"}
         data-frame-id={frameId}
         /* G22: pinned unless the window is short (zoomed), where it would cover the page. */
-        style={{ position: short ? "relative" : "sticky", top: 0, zIndex: 20, minHeight: HEADER_HEIGHT, background: t.frame }}
+        style={{ position: short ? "relative" : "sticky", top: 0, zIndex: 20, minHeight: headerHeight(phone), background: t.frame }}
       >
         {phone ? mobileHeader : header}
         {progress}
       </div>
-      <div data-ui="surface" data-wide={wide && !phone ? "true" : undefined} style={wide && !phone ? WIDE_SURFACE : phone ? SURFACE : DESKTOP_SURFACE}>
+      <div data-ui="surface" data-wide={wide && !phone ? "true" : undefined} data-columns={columns ? "true" : undefined} style={wide && !phone ? WIDE_CONTAINER : CONTAINER}>
         <main
           id="main"
           /* G4: the skip link's target. A programmatic focus target, never a Tab stop, and it draws no outline. */
@@ -244,23 +256,19 @@ export function SiteFrameView({
             zIndex: 1,
             display: "flex",
             flexDirection: "column",
-            gap: phone ? 16 : 24,
-            padding: phone
-              ? "16px 16px calc(80px + env(safe-area-inset-bottom))"
-              : wide
-                ? "0 0 48px"
-                : /* 40 / 56 / 48, less the surface's 1px border. */
-                  `39px ${PAGE_EDGE - 1}px 48px`,
+            gap: columns ? PANEL_GUTTER : phone ? 16 : 24,
+            padding: columns ? 0 : phone ? `${PANEL_PAD}px ${PANEL_PAD}px calc(80px + env(safe-area-inset-bottom))` : wide ? "0 0 48px" : `${PANEL_PAD + CRUMB_BAND}px ${PANEL_PAD}px 48px`,
             boxSizing: "border-box",
             minWidth: 0,
+            ...(columns ? null : PANEL),
           }}
         >
           {/* Only the composer keeps the frame's breadcrumb; a page with a parent draws it in its PageHeader. */}
           {phone || !wide ? null : <div data-slot="breadcrumb" style={{ padding: `24px 0 0 ${frameOf(innerWidthOf(win.width)).boxLeft - ORIGIN}px` }}>{breadcrumb}</div>}
-          {children}
+          <FrameColumnsContext.Provider value={setColumns}>{children}</FrameColumnsContext.Provider>
         </main>
+        <div data-slot="footer" style={{ marginTop: "auto", display: "flex", flexDirection: "column" }}>{footer}</div>
       </div>
-      <div data-slot="footer" style={{ marginTop: "auto", display: "flex", flexDirection: "column" }}>{footer}</div>
       {phone ? <div data-slot="dock">{dock}</div> : null}
     </div>
   );

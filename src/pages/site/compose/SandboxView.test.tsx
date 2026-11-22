@@ -260,9 +260,9 @@ describe("the refined look (UI-P93)", () => {
   it("draws the title row under a hairline, 32 in at the sides (F75, F76): the title and its status line at the left, Card and Preview as secondary 28 and Publish as the one primary 28 (CA-17 P6)", () => {
     view();
     const row = screen.getByTestId("sandbox-tabrow");
-    expect(row.getAttribute("style") ?? "").toContain("padding: 10px 31px 0px 31px");
+    expect(row.getAttribute("style") ?? "").toContain("padding: 10px 32px 0px 32px");
     // F18: it stays under the site header, on the surface's own tone, below dialogs and menus.
-    expect(row.getAttribute("style") ?? "").toContain("position: sticky; top: 48px; z-index: 10");
+    expect(row.getAttribute("style") ?? "").toContain("position: sticky; top: 88px; z-index: 10");
     expect(screen.getByRole("heading", { level: 1 }).getAttribute("style")).toMatch(/font-size:\s*20px/);
     const publish = screen.getByRole("button", { name: "Publish" });
     expect(publish.getAttribute("data-variant")).toBe("primary");
@@ -315,9 +315,9 @@ describe("the refined look (UI-P93)", () => {
   it("CA-18b: stands the three columns where frameOf puts them at 1440, not in a row", () => {
     const html = markup();
     // Window 1440: Build 640 from 400, Sources 216 from 144, Details 1080 wide room 320. The surface's 6, its border and the 34 are taken off.
-    expect(html).toContain("left:31px;width:256px");
-    expect(html).toContain('<div style="margin-left:287px">');
-    expect(html).toContain("left:1031px;width:360px");
+    expect(html).toContain("left:32px;width:256px");
+    expect(html).toContain('<div style="margin-left:288px">');
+    expect(html).toContain("left:1032px;width:360px");
     expect(html).toContain("position:relative;display:block;padding:32px 32px 0");
   });
 

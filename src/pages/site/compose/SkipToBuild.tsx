@@ -3,7 +3,8 @@
 
 import { useState, type CSSProperties } from "react";
 
-import { HEADER_HEIGHT } from "@/components/shell/chromeSize";
+import { headerHeight } from "@/components/shell/chromeSize";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { ROVING_ITEM, itemsOf } from "@/lib/focus/buildItems";
 import { ring } from "@/lib/theme/controls";
 import { t } from "@/lib/theme/tokens";
@@ -29,11 +30,12 @@ export function focusBuild(): boolean {
 /** "Skip to build": the page's first stop. Hidden until focused, then at the top-left of the composer box. */
 export function SkipToBuild() {
   const [focused, setFocused] = useState(false);
+  const phone = useIsPhone();
   const hidden: CSSProperties = { position: "absolute", width: 1, height: 1, margin: -1, padding: 0, overflow: "hidden", clip: "rect(0 0 0 0)", whiteSpace: "nowrap", border: 0 };
   const shown: CSSProperties = {
     position: "absolute",
     left: 18,
-    top: HEADER_HEIGHT + 12,
+    top: headerHeight(phone) + 12,
     zIndex: 40,
     boxSizing: "border-box",
     display: "inline-flex",

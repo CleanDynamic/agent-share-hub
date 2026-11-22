@@ -20,7 +20,7 @@ import { FIGTREE } from "@/lib/theme/type";
 import type { Crumb } from "./breadcrumbTrail";
 import { FrameLink } from "./FrameLink";
 import { useBreadcrumb } from "./useBreadcrumb";
-import { PAGE_EDGE } from "./chromeSize";
+import { CRUMB_BAND, PANEL_PAD } from "./chromeSize";
 import { useIsPhone } from "./useMinWidth";
 
 /* WCAG 2.5.8: an ancestor link's target is 24 high. The line it stands on is 19, so the extra 5 is taken back by a
@@ -117,10 +117,10 @@ export const Breadcrumb = memo(BreadcrumbContainer);
 /** Page shell: the breadcrumb in the 24 above the content's top, out of flow, as PageHeader's slot draws it, for a page whose
     PageHeader is drawn by its view while the page itself has other states (loading, a notice, a failure) that need the trail
     too: the build reader, the rebuild, the lineage. Desktop only, as the frame's was. `<main>` is its positioned box: its top
-    padding is 39 and its side padding PAGE_EDGE - 1. */
+    padding is PANEL_PAD + CRUMB_BAND and its side padding PANEL_PAD. */
 export function PageBreadcrumb() {
   return useIsPhone() ? null : (
-    <div data-slot="breadcrumb" style={{ position: "absolute", top: 39 - 24, left: PAGE_EDGE - 1, right: PAGE_EDGE - 1, height: 24, display: "flex", alignItems: "center", minWidth: 0 }}>
+    <div data-slot="breadcrumb" style={{ position: "absolute", top: PANEL_PAD, left: PANEL_PAD, right: PANEL_PAD, height: CRUMB_BAND, display: "flex", alignItems: "center", minWidth: 0 }}>
       <Breadcrumb />
     </div>
   );
