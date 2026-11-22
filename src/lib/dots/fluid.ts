@@ -14,9 +14,9 @@
    each dot. The rhythm (`WATER_PHRASE_MS`, `WATER_DROPS`, `SPLASH_MS`) is decided in lib/theme/motion. Times are seconds;
    lengths are CSS pixels. */
 
-import { SPLASH_MS, WATER_DROPS, WATER_PHRASE_MS } from "@/lib/theme/motion";
+import { BASE, SPLASH_MS, WATER_DROPS, WATER_PHRASE_MS } from "@/lib/theme/motion";
 
-import { clamp01, dropRings, hash2, ringsOf, sizeCanvas, startLoop, swell, valueNoise, waveAt, DotBatch, DROP_POINTS, type Rings } from "./engine";
+import { clamp01, dotPalette, dropRings, shadeOf, hash2, ringsOf, sizeCanvas, startLoop, swell, valueNoise, waveAt, DotBatch, DROP_POINTS, type Rings } from "./engine";
 
 /** The lattice: 4px for a loading field (6px for a full-screen background). */
 export const PITCH = 4;
@@ -24,7 +24,7 @@ export const PITCH = 4;
 export const STEP = 7;
 export const MAX_RADIUS = 3;
 /** A first show fades in over 200ms; the dots fade out over 200ms when the content is ready (BLOCKS_OUT_MS). */
-const FADE_S = 0.2;
+const FADE_S = BASE / 1000;
 /** Swapping placeholders: the old dots shrink out over 300ms. */
 const SWAP_OUT_S = 0.3;
 /** Drawn at most this often. */
@@ -38,19 +38,7 @@ const SPLASH_S = SPLASH_MS / 1000;
 
 if (DROP_POINTS.length !== WATER_DROPS) throw new Error("the drop points and WATER_DROPS disagree");
 
-/** The three dot tokens, deepest first, read off the page so a theme change is followed (a canvas cannot read a var()). */
-const FALLBACK = ["transparent", "transparent", "transparent"] as const;
-let palette: string[] = [...FALLBACK];
-let paletteTheme: string | null = null;
-function room(): readonly string[] {
-  if (typeof document === "undefined") return palette;
-  const theme = document.documentElement.dataset.theme ?? "";
-  if (theme === paletteTheme) return palette;
-  paletteTheme = theme;
-  const style = getComputedStyle(document.documentElement);
-  palette = ["--dot-deep", "--dot-mid", "--dot-hi"].map((name, i) => style.getPropertyValue(name).trim() || FALLBACK[i]);
-  return palette;
-}
+const room = dotPalette;
 
 const reduced = () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const now = () => performance.now() / 1000;
@@ -323,7 +311,7 @@ export class FluidRegion {
       tone = clamp01(tone);
       const radius = pitch * 0.46 * (0.58 + 0.42 * tone) * m * shrink;
       const shade = tone + jitter;
-      this.batch.add(shade > 0.74 ? 2 : shade > 0.44 ? 1 : 0, lx + dx, ly + dy, radius);
+      this.batch.add(shadeOf(shade), lx + dx, ly + dy, radius);
     }
     ctx.globalAlpha = fadeIn * fadeOut;
     this.batch.flush(ctx, colours);

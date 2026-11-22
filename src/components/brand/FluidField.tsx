@@ -108,3 +108,11 @@ function ShapeOwnRegion({ forwardedRef, gone, style, ...rest }: Inner & { gone: 
   const placed: CSSProperties = { position: "relative", ...style };
   return <div ref={el} {...rest} style={placed} />;
 }
+
+/**
+ * A field of water that fills its (positioned) parent: the drop zone's look while a file is dragged over it. The same
+ * lattice, colours and rings as a loading state, and one still frame under reduced motion. It takes no pointer events.
+ */
+export function WaterField({ style }: { style?: CSSProperties }) {
+  return <FluidShape aria-hidden="true" data-testid="water-field" style={{ position: "absolute", inset: 0, pointerEvents: "none", ...style }} />;
+}

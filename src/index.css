@@ -1154,6 +1154,71 @@ input[type="search"] { border-radius: var(--r-control); }
   animation: bgSheetOut var(--motion-fast) var(--motion-ease) both;
 }
 
+/* Toasts (motion prompt 04). Sonner positions a toast with its own `--y` and slides it the whole way in from the edge over .4s,
+   animating `height` as well. Here a toast arrives by opacity and an 8px rise over BASE and leaves by opacity over FAST;
+   `height` is not transitioned, and a toast being swiped follows the pointer with no transition. The stack's own offsets
+   (`--lift`, `--offset`) are left to sonner. */
+[data-sonner-toast] {
+  transition:
+    transform var(--motion-base) var(--motion-ease),
+    opacity var(--motion-base) var(--motion-ease) !important;
+}
+[data-sonner-toast]:not([data-mounted="true"]) {
+  --y: translateY(8px);
+}
+[data-sonner-toast][data-removed="true"] {
+  --y: translateY(8px);
+  opacity: 0;
+  transition:
+    transform var(--motion-fast) var(--motion-ease),
+    opacity var(--motion-fast) var(--motion-ease) !important;
+}
+[data-sonner-toast][data-swiping="true"] {
+  transition: none !important;
+}
+
+/* The modal under a notepad dims with its own scrim (motion prompt 04): `data-notepad-dim` on the modal fades the ::after in
+   over BASE and out over FAST. Opacity only. */
+[data-notepad-dim] {
+  position: relative;
+}
+[data-notepad-dim]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(4, 5, 4, 0.55);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-fast) var(--motion-ease);
+}
+[data-notepad-dim="on"]::after {
+  opacity: 1;
+  transition-duration: var(--motion-base);
+}
+
+/* The one hover fill (motion prompt 04): a layer inside the element whose OPACITY goes 0 to 1 over FAST, so no background colour
+   ever transitions. The step is the surface ladder's one hover, 1.9% of --text laid over whatever the element is. Pointer
+   devices only; a touch screen never sticks it. */
+[data-hover-fill] {
+  position: relative;
+}
+[data-hover-fill]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--text) 1.9%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-fast) var(--motion-ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  [data-hover-fill]:hover::before {
+    opacity: 1;
+  }
+}
+
 @keyframes bgContentIn {
   from { opacity: 0; }
   to   { opacity: 1; }
@@ -1514,8 +1579,8 @@ input[type="search"] { border-radius: var(--r-control); }
    only) and the content that arrives over them fades in; `data-loading-blocks` (a block and everything inside it) and
    `data-content-in` (the one element that fades in, not what is inside it) stand outside this rule. Reduced motion is answered
    in `LoadingBlocks` and in the global reduced-motion rule at the end of this file. */
-:root:not([data-theme-changing]) *:not([data-loading-blocks], [data-loading-blocks] *, [data-content-in], [data-motion], [role="dialog"][data-state], [role="alertdialog"][data-state], [role="menu"][data-state]),
-:root:not([data-theme-changing]) *::before,
+:root:not([data-theme-changing]) *:not([data-loading-blocks], [data-loading-blocks] *, [data-content-in], [data-motion], [data-hover-fill], [data-sonner-toast], [data-notepad-dim], [role="dialog"][data-state], [role="alertdialog"][data-state], [role="menu"][data-state]),
+:root:not([data-theme-changing]) *:not([data-hover-fill])::before,
 :root:not([data-theme-changing]) *::after {
   transition: none !important;
   animation: none !important;

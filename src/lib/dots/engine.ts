@@ -174,6 +174,29 @@ export function dropRings(t: number, width: number, height: number, phraseS: num
   return out;
 }
 
+/* ── the three dot colours ── */
+
+const FALLBACK = ["transparent", "transparent", "transparent"] as const;
+let palette: string[] = [...FALLBACK];
+let paletteTheme: string | null = null;
+
+/**
+ * The three dot tokens, deepest first (`--dot-deep`, `--dot-mid`, `--dot-hi`), read off the page: a canvas cannot read a
+ * var(). Read again when the theme changes.
+ */
+export function dotPalette(): readonly string[] {
+  if (typeof document === "undefined") return palette;
+  const theme = document.documentElement.dataset.theme ?? "";
+  if (theme === paletteTheme) return palette;
+  paletteTheme = theme;
+  const style = getComputedStyle(document.documentElement);
+  palette = ["--dot-deep", "--dot-mid", "--dot-hi"].map((name, i) => style.getPropertyValue(name).trim() || FALLBACK[i]);
+  return palette;
+}
+
+/** A tone and its jitter as a palette index: over 0.74 Hi (2), over 0.44 Mid (1), else Deep (0). */
+export const shadeOf = (tone: number): 0 | 1 | 2 => (tone > 0.74 ? 2 : tone > 0.44 ? 1 : 0);
+
 /* ── small helpers both layers use ── */
 
 /** Clamped to 0..1. */

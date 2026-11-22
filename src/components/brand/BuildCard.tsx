@@ -150,6 +150,7 @@ export function BuildCard({
         to={to}
         aria-labelledby={titleId}
         data-visual-slot="gallery-card"
+        data-hover-fill=""
         data-build-shape={shapeKey}
         data-card-layout={layout}
         data-card-lifted={lifted ? "" : undefined}

@@ -1,6 +1,8 @@
+import type { CSSProperties } from "react";
+
 import { r } from "@/lib/theme/radius";
 
-export function BeaverLogo({ theme, size = 32 }: { theme: "dusk" | "noon"; size?: number }) {
+export function BeaverLogo({ theme, size = 32, style }: { theme: "dusk" | "noon"; size?: number; style?: CSSProperties }) {
   const base = `/brand/beaver-${theme === "dusk" ? "dark" : "light"}`;
-  return <img src={`${base}-64.png`} srcSet={`${base}-64.png 1x, ${base}-128.png 2x`} width={size} height={size} alt="" style={{ display: "block", flexShrink: 0, borderRadius: size === 16 ? r.chip : r.control }} />;
+  return <img src={`${base}-64.png`} srcSet={`${base}-64.png 1x, ${base}-128.png 2x`} width={size} height={size} alt="" style={{ display: "block", flexShrink: 0, borderRadius: size === 16 ? r.chip : r.control, ...style }} />;
 }
