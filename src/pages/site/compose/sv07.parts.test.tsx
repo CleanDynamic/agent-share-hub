@@ -9,6 +9,8 @@ vi.mock("@/integrations/supabase/client", async () => (await import("@/lib/build
 import { requests, type Delay } from "@/lib/build/__audit__/fakeSupabase";
 import { storedWorkstreamsOf } from "@/lib/build/making";
 
+import { HEADER_HEIGHT } from "@/components/shell/chromeSize";
+
 import { scrollNeeded } from "./pageScroll";
 import { addChatTo, CHATS, making, mount, partKeys, pickChat, settled, setUp, tearDown } from "./sv07Harness";
 
@@ -125,7 +127,7 @@ describe("SV-07 P3 · closed parts", () => {
     expect(screen.getByRole("button", { name: "Collapse Part 2" })).toBeTruthy();
     const head = within(groups()[1]).getByTestId("session-head");
     expect(document.activeElement === head || head.contains(document.activeElement)).toBe(true);
-    expect(scrolls.at(-1)?.top).toBe(900 - 48 - 24);
+    expect(scrolls.at(-1)?.top).toBe(900 - HEADER_HEIGHT - 24);
   });
 });
 

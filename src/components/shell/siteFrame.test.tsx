@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
+import { useColumnPanels } from "./frameChrome";
 import { boardHeight, SiteFrameView } from "./SiteFrame";
 
 const frame = (props: Parameters<typeof SiteFrameView>[0]) =>
@@ -78,21 +79,44 @@ describe("SiteFrameView under the refined look", () => {
     expect(main.firstElementChild?.contains(screen.getByTestId("b"))).toBe(true);
   });
 
-  it("draws the surface recipe on --frame, with the board's main padding", () => {
+  it("draws the page on --frame and the page area as one panel: Panel fill, radius 12, no border, no shadow (Synth 03)", () => {
     const html = markup({ viewport: "desktop", children: <p>page</p> });
     expect(html).toContain("background:var(--frame)");
-    expect(html).toContain("width:calc(100% - 16px);max-width:1428px;margin:0 auto 8px");
-    expect(html).toContain("background:var(--surface);border:1px solid var(--surface-border);border-radius:10px;box-shadow:var(--surface-shadow)");
-    expect(html).toContain("padding:39px 55px 48px");
+    // The container: centred, 1280 at most, 8 from the window and 8 below, with no fill of its own.
+    expect(html).toContain("width:100%;max-width:1280px;margin:0 auto;padding:0 8px 8px");
+    // The panel: `<main>`, the 24 breadcrumb band above 16.
+    expect(html).toContain("padding:40px 16px 48px");
+    expect(html).toContain("background:var(--surface);border-radius:12px;overflow:clip");
+    expect(html).not.toContain("var(--surface-border)");
+    expect(html).not.toContain("var(--surface-shadow)");
   });
 
-  it("keeps the 6px inset and radius 10 on a phone, with the phone header and the dock", () => {
+  it("is 88 tall on a desktop and 48 on a phone, both on the page shade", () => {
+    expect(markup({ viewport: "desktop", children: <p>page</p> })).toContain("min-height:88px;background:var(--frame)");
+    expect(markup({ viewport: "mobile", children: <p>page</p> })).toContain("min-height:48px;background:var(--frame)");
+  });
+
+  it("keeps the 8px margins and the 12px radius on a phone, with the phone header and the dock", () => {
     refinedFrame({ viewport: "mobile", mobileHeader: <i data-testid="mh" />, dock: <i data-testid="d" />, children: <p>page</p> });
     expect(screen.getByTestId("mh")).toBeTruthy();
     expect(screen.getByTestId("d")).toBeTruthy();
     const html = markup({ viewport: "mobile", children: <p>page</p> });
-    expect(html).toContain("width:calc(100% - 12px);max-width:1428px;margin:0 auto 6px");
-    expect(html).toContain("border-radius:10px");
+    expect(html).toContain("width:100%;max-width:1280px;margin:0 auto;padding:0 8px 8px");
+    expect(html).toContain("border-radius:12px");
+  });
+
+  it("steps its own panel back when a page draws one panel per column (useColumnPanels)", () => {
+    function Columns() {
+      useColumnPanels(true);
+      return <p>columns</p>;
+    }
+    refinedFrame({ viewport: "desktop", children: <Columns /> });
+    const surface = screen.getByTestId("site-frame").querySelector('[data-ui="surface"]') as HTMLElement;
+    expect(surface.getAttribute("data-columns")).toBe("true");
+    const main = surface.querySelector("main#main") as HTMLElement;
+    expect(main.style.padding).toBe("0px");
+    expect(main.style.background).toBe("");
+    expect(main.style.gap).toBe("8px");
   });
 });
 

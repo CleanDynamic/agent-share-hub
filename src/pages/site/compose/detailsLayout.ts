@@ -25,10 +25,10 @@
    7. A prose section taller than the height is cut to fit, with Read all. */
 
 export const COMPOSER_INSET = 32;
-/** The surface sits this far from the window (SiteFrame). */
+/** The page container sits this far from the window (SiteFrame). */
 export const SURFACE_MARGIN = 8;
-/** The surface's own 1px border. */
-export const SURFACE_BORDER = 1;
+/** The surface has no border of its own now (Synth 03: panels have none), so the content box begins at the margin. */
+export const SURFACE_BORDER = 0;
 /** Where the surface's content box begins, from the window's left edge: its margin and its border. */
 export const ORIGIN = SURFACE_MARGIN + SURFACE_BORDER;
 export const SOURCES_WIDTH = 256;

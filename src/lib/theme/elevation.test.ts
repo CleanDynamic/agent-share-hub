@@ -8,6 +8,8 @@
 import { describe, expect, it } from "vitest";
 import {
   ELEVATION_LEVELS,
+  elevationFill,
+  surface,
   ELEVATION_TOKENS,
   SCRIM,
   duskElevation,
@@ -17,22 +19,43 @@ import {
 import { declared, resolveToken as resolveRefined } from "./resolve";
 
 describe("the elevation model", () => {
-  it("is three levels, and no fourth", () => {
-    expect(ELEVATION_LEVELS).toEqual(["flat", "raised", "overlay"]);
+  it("is six levels, and no seventh (Synth 03)", () => {
+    expect(ELEVATION_LEVELS).toEqual(["page", "panel", "card", "raised", "overlay", "notepad"]);
   });
 
-  it("is flat by default: a hairline, and nothing cast", () => {
-    expect(elevation.flat).toEqual({
-      boxShadow: "none",
-      borderWidth: 1,
-      borderStyle: "solid",
-      borderColor: "var(--line)",
-    });
+  it("casts nothing at page, panel and card, and draws no border at any level", () => {
+    for (const level of ["page", "panel", "card"] as const) expect(elevation[level]).toEqual({ boxShadow: "none" });
+    for (const level of ELEVATION_LEVELS) {
+      expect(elevation[level], level).not.toHaveProperty("border");
+      expect(elevation[level], level).not.toHaveProperty("borderWidth");
+    }
   });
 
-  it("spends tokens for the two levels that cast, so both follow the theme", () => {
+  it("spends tokens for the three levels that can differ by theme", () => {
     expect(elevation.raised.boxShadow).toBe("var(--elev-raised)");
     expect(elevation.overlay.boxShadow).toBe("var(--elev-overlay)");
+    expect(elevation.notepad.boxShadow).toBe("var(--elev-notepad)");
+  });
+
+  it("fills each level from the ladder: Page, Panel, Card, Raised, then the window and the notepad", () => {
+    expect(elevationFill).toEqual({
+      page: "var(--frame)",
+      panel: "var(--surface)",
+      card: "var(--module)",
+      raised: "var(--control)",
+      overlay: "var(--window)",
+      notepad: "var(--notepad)",
+    });
+    expect(surface("card")).toEqual({ background: "var(--module)", boxShadow: "none" });
+  });
+
+  it("puts the notepad above the overlay: a deeper drop, on its own edge", () => {
+    const drop = (value: string) => Math.max(...[...value.matchAll(/ (\d+)px (\d+)px/g)].map((m) => Number(m[2])));
+    for (const theme of ["noon", "dusk"] as const) {
+      expect(resolveRefined(theme, "elev-notepad")).toContain("0 0 0 1px var(--notepad-edge)");
+      expect(drop(resolveRefined(theme, "elev-notepad"))).toBeGreaterThan(24);
+    }
+    expect(resolveRefined("dusk", "elev-notepad")).toContain("0 32px 80px rgba(0,0,0,.65)");
   });
 
   it("keeps the scrim out of the overlay level", () => {
@@ -71,7 +94,7 @@ describe("a shadow on a light ground is not a shadow on a dark ground", () => {
     }
   });
 
-  it("names the same two tokens in both themes", () => {
+  it("names the same tokens in both themes", () => {
     expect(Object.keys(noonElevation).sort()).toEqual([...ELEVATION_TOKENS].sort());
     expect(Object.keys(duskElevation).sort()).toEqual([...ELEVATION_TOKENS].sort());
   });

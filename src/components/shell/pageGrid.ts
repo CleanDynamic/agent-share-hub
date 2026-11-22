@@ -32,3 +32,30 @@ export function pageColumns(template: PageTemplate): CSSProperties {
           : "minmax(0, 1fr)";
   return { display: "grid", gridTemplateColumns: tracks, columnGap: PAGE_GUTTER };
 }
+
+/* ── panels (Synth 03) ──
+   The frame's columns are panels on the page shade, 8 apart, with no lines. The side tracks are exact widths and the centre
+   takes the rest. A page moves onto these as its own prompt restyles it; until then it keeps the 12-column grid above. */
+
+/** The gap between panels. */
+export const PANEL_GAP = 8;
+
+export type PanelTemplate = "three" | "two" | "one";
+
+export interface PanelOptions {
+  /** From 1192 up the side panels are 300 and 340; below it they narrow to 280 and 320 so the centre keeps 520. */
+  sidesFull?: boolean;
+  /** The two-column side panel from 1101: 340, or 470 for a page that needs it (rebuild, lineage). */
+  wideSide?: boolean;
+  /** 761 to 1100: the side panel is 300 (a 470 becomes 380). */
+  between?: boolean;
+}
+
+/** The grid for a row of panels. `three`: left, centre, right. `two`: main and a side panel. `one`: a single panel. */
+export function panelColumns(template: PanelTemplate, { sidesFull = true, wideSide = false, between = false }: PanelOptions = {}): CSSProperties {
+  const left = sidesFull ? 300 : 280;
+  const rail = between ? (wideSide ? 380 : 300) : wideSide ? 470 : sidesFull ? 340 : 320;
+  const tracks =
+    template === "three" ? `${left}px minmax(0, 1fr) ${rail}px` : template === "two" ? `minmax(0, 1fr) ${rail}px` : "minmax(0, 1fr)";
+  return { display: "grid", gridTemplateColumns: tracks, columnGap: PANEL_GAP, alignItems: "start" };
+}

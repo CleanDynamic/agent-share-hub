@@ -1,5 +1,5 @@
 // UI-P97 — the refined two-track row between the boards: two tracks from 1024, one column below, the aside's side
-// hairline turned into a top one.
+// rule dropped (Synth 03: no lines).
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
@@ -15,19 +15,19 @@ describe("refinedLayout", () => {
     expect(mainStyle(false, { flex: "999 1 640px" })).toEqual({ flex: "999 1 640px" });
   });
 
-  it("is one column below 1024, the aside under the main column with a top hairline and no side one", () => {
+  it("is one column below 1024, the aside under the main column with no rule at all", () => {
     expect(trackRow(true, 48)).toMatchObject({ flexDirection: "column", gap: 48 });
     const aside = asideStyle(true, SIDE);
     expect(aside.borderLeft).toBeUndefined();
     expect(aside.paddingLeft).toBeUndefined();
-    expect(aside.borderTop).toBe("1px solid var(--hairline)");
+    expect(aside.borderTop).toBeUndefined();
     expect(aside).toMatchObject({ flex: "none", width: "100%", maxWidth: "none", order: 1 });
   });
 
   it("drops a leading sidebar's right rule too", () => {
     const aside = asideStyle(true, { paddingRight: 24, borderRight: "1px solid var(--hairline)" });
     expect(aside.borderRight).toBeUndefined();
-    expect(aside.borderTop).toBe("1px solid var(--hairline)");
+    expect(aside.borderTop).toBeUndefined();
   });
 
   it("gives the main column no flex basis in a column, where a basis is a height", () => {

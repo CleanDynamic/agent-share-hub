@@ -37,8 +37,8 @@
 // from UI-P55 to UI-P58 as they move to the tightened boards. `SPACE` stays, so
 // nothing that spends it breaks; the rule below holds on both scales.
 //
-// THE REFINED SCALE (UI-P81). The refined look is drawn on twelve plain steps,
-// 2 to 64, and a handful of named layout values, `SPACE_REFINED` and
+// THE REFINED SCALE (UI-P81, Synth 03). The refined look is drawn on eleven plain steps,
+// 2 to 64 (6 was dropped: the base unit is 4), and a handful of named layout values, `SPACE_REFINED` and
 // `LAYOUT_REFINED` below. They sit beside the two named scales and replace
 // neither: the current look keeps spending `SPACE` and `SPACE_COMPACT`, and a
 // component reads these only on its refined branch.
@@ -149,30 +149,36 @@ export const isCompactStep = (value: number): boolean => SPACE_COMPACT_STEPS.inc
  * boards to say, not this file.
  */
 // The build editor uses `space`.
-export const SPACE_REFINED = [2, 4, 6, 8, 12, 16, 20, 24, 32, 40, 48, 64] as const;
+export const SPACE_REFINED = [2, 4, 8, 12, 16, 20, 24, 32, 40, 48, 64] as const;
 
 /** True when `value` is one of the twelve refined steps. */
 export const isRefinedStep = (value: number): boolean => SPACE_REFINED.includes(value as never);
 
 /**
- * The refined look's named layout values (UI-P81): the measures the boards repeat
- * often enough that a component should say what it means rather than type the
- * number. Heights and paddings are pixels as numbers, like the scales above; the
- * gutter is a CSS length, because it is a `clamp()`, and is spent as a string.
+ * The Synth draft's named layout values (Synth 03): the measures the boards repeat often enough that a component should say
+ * what it means rather than type the number. All are pixels as numbers, like the scales above.
  *
- * `modulePad` and `tilePad` are steps of `SPACE_REFINED`, and the gutter is a
- * clamp between two of them, 16 and 64. The rest are heights, not gaps: a row
- * with an avatar in it is 56 high, and 56 is not a step.
+ * The page is panels on the page shade: `panelGutter` apart and from the window, `panelPad` inside. A feed post is
+ * `postTop` / `postSide` / `postBottom` of padding with `postGap` between posts; a section head is `sectionTop` above and
+ * `sectionBottom` below, `headGap` above its rows. Heights are not gaps: a row with an avatar is 56 high, and 56 is not a step.
  */
 export const LAYOUT_REFINED = {
-  /** The header bar. It sits on the frame with no background or border of its own. */
-  headerHeight: 48,
-  /**
-   * The page's side padding: 16 on a phone, 64 on a wide window, 4.6vw between.
-   * The surface spends it as `padding: 24px <gutter> 48px`, and the footer inside
-   * the surface spends it as the sides of its own padding.
-   */
-  gutter: "clamp(16px, 4.6vw, 64px)",
+  /** The desktop header bar. It sits on the page shade with no background or border of its own. */
+  headerHeight: 88,
+  /** Between panels, and between the panels and the window edge. */
+  panelGutter: 8,
+  /** A panel's inner padding. */
+  panelPad: 16,
+  /** A feed post's padding: 12 above, 16 at the sides, 4 below. */
+  postTop: 12,
+  postSide: 16,
+  postBottom: 4,
+  /** Between two posts. */
+  postGap: 8,
+  /** A section's padding above and below, and between its head and its rows. */
+  sectionTop: 12,
+  sectionBottom: 4,
+  headGap: 8,
   /** A row's minimum height when it carries one line. */
   rowMin: 40,
   /** A row with a second line of text. */

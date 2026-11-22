@@ -168,7 +168,7 @@ describe("phone chrome under the refined look", () => {
     ]);
     expect(screen.getByTestId("dock-tile-gallery").getAttribute("aria-current")).toBe("page");
     const html = renderToStaticMarkup(inRefined(<DockView current="gallery" unread={4} />));
-    expect(html).toContain("background:var(--surface);border-top:1px solid var(--surface-border)");
+    expect(html).toContain("background:var(--surface)");
     expect(html).toContain("background:var(--control-on)");
     expect(html).toContain("border:1px solid var(--control-border)");
     expect(html).not.toContain("backdrop-filter");

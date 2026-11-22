@@ -343,6 +343,7 @@
      needs no token — it is no shadow plus a --line hairline. */
   --elev-raised: var(--control-shadow);
   --elev-overlay: var(--window-shadow);
+  --elev-notepad: 0 0 0 1px var(--notepad-edge), 0 32px 80px rgba(11,18,13,.22);
 
   /* ── The shadcn bridge (BG-P28) ─────────────────────────────────────────────
      shadcn/ui's semantic names are consumed as Tailwind utilities —
@@ -605,6 +606,7 @@
      shadow says "how far". */
   --elev-raised: var(--control-shadow);
   --elev-overlay: var(--window-shadow);
+  --elev-notepad: 0 0 0 1px var(--notepad-edge), 0 32px 80px rgba(0,0,0,.65);
 
   /* The shadcn bridge, Dusk half. See the note in the Noon block. */
   --background: 120 11% 2%;

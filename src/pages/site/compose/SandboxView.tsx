@@ -38,7 +38,7 @@ import { MenuButton } from "@/components/brand/MenuButton";
 import { Segmented } from "@/components/brand/Segmented";
 import { BottomSheet as BrandBottomSheet, SheetRow, closeNow } from "@/components/brand/BottomSheet";
 import { BottomSheet } from "@/components/shell/BottomSheet";
-import { HEADER_HEIGHT } from "@/components/shell/chromeSize";
+import { headerHeight } from "@/components/shell/chromeSize";
 import { useIsPhone, useShortWindow } from "@/components/shell/useMinWidth";
 import { ring } from "@/lib/theme/controls";
 import { TITLE_LINE, fullText } from "@/lib/theme/truncate";
@@ -1131,7 +1131,7 @@ function SandboxBody(props: SandboxViewProps) {
   /* F62: `full` is where the columns stand with Details shown; `frame` is what is drawn, Build wider while Details is hidden. */
   const full = frameOf(innerWidthOf(win.width));
   const frame = frameOf(innerWidthOf(win.width), detailsHidden);
-  const stickyTop = HEADER_HEIGHT + rowHeight;
+  const stickyTop = headerHeight(phone) + rowHeight;
   // Map is for desktop; a phone is always the list.
   const lens: SandboxLens = phone ? "list" : props.lens;
   /* CA-18b P5: the composer is one box. The title area, the banner and the Map's row are padded in from `frameOf`'s edges. */
@@ -1470,7 +1470,7 @@ function SandboxBody(props: SandboxViewProps) {
     <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
       {/* The title row: the title and its status line at the left, then List and Map (CA-17 P6), then the actions. The tabs
           and the actions keep CA-17's measures from the rule; the row grows to hold the title. */}
-      <div data-testid="sandbox-tabrow" ref={tabsRef} style={{ ...TAB_ROW, position: "sticky", top: HEADER_HEIGHT, zIndex: 10, background: t.surface, height: "auto", minHeight: 44, gap: 16, padding: `10px ${padRight}px 0 ${padLeft}px`, flexWrap: compactRow ? "nowrap" : frame.boxRight - frame.boxLeft < 760 ? "wrap" : "nowrap" }}>
+      <div data-testid="sandbox-tabrow" ref={tabsRef} style={{ ...TAB_ROW, position: "sticky", top: headerHeight(phone), zIndex: 10, background: t.surface, height: "auto", minHeight: 44, gap: 16, padding: `10px ${padRight}px 0 ${padLeft}px`, flexWrap: compactRow ? "nowrap" : frame.boxRight - frame.boxLeft < 760 ? "wrap" : "nowrap" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, flexGrow: 1, minWidth: 0, marginBottom: 12 }}>
           {heading}
           {statusLine}

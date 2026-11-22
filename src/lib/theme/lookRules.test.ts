@@ -1760,7 +1760,11 @@ function spacingNumbers(value: string): number[] {
   return out;
 }
 
-const SPACE_OK = new Set<number>([0, 1, ...SPACE_REFINED]);
+/* Synth 03 dropped 6 from the scale. It is still spelled in about 160 places that the page prompts (07 to 15) restyle one area
+   at a time, so it is tolerated here until each is done; new code takes a step. Remove it when the last page has moved. */
+const SPACE_LEGACY = [6];
+
+const SPACE_OK = new Set<number>([0, 1, ...SPACE_LEGACY, ...SPACE_REFINED]);
 
 function spacingFindings(code: string): Finding[] {
   const out: Finding[] = [];

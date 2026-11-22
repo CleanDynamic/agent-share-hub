@@ -50,7 +50,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { AccountButton } from "./AccountButton";
-import { HEADER_HEIGHT, PAGE_EDGE } from "./chromeSize";
+import { FRAME_MAX_WIDTH, HEADER_HEIGHT, PANEL_GUTTER } from "./chromeSize";
 import { FrameLink } from "./FrameLink";
 import type { FrameViewer } from "./frameTypes";
 import { HeaderSearch, useGallerySearch } from "./HeaderSearch";
@@ -213,15 +213,15 @@ function RefinedSiteHeaderView({
       data-testid="site-header"
       data-ui="site-header"
       style={{
-        /* The surface's width rule, and its 56 content edge, so the header lines up with the page at every width. */
-        width: "calc(100% - 16px)",
-        maxWidth: 1428,
+        /* The panels' edges: the 1280 container centred, and the panels 8 inside it (88 from the window at 1440, 8 below 1296). */
+        width: "100%",
+        maxWidth: FRAME_MAX_WIDTH,
         margin: "0 auto",
         height: HEADER_HEIGHT,
         display: "flex",
         alignItems: "center",
         gap: space[2],
-        padding: `0 ${PAGE_EDGE}px`,
+        padding: `0 ${PANEL_GUTTER}px`,
         boxSizing: "border-box",
       }}
     >
@@ -229,7 +229,7 @@ function RefinedSiteHeaderView({
       <span style={{ width: full ? 8 : 0, flexShrink: 0 }} />
       {searchField ? <HeaderJumpSearch signedIn={signedIn} width={searchFull ? 272 : 200} initialValue={searchInitial} onSubmit={onSearch ?? (() => undefined)} /> : <IconButton icon={Search} glyph="search" boxed={false} label="Search" size={32} onClick={() => setSearchOpen(true)} />}
       <span style={{ width: full ? 8 : 0, flexShrink: 0 }} />
-      <nav aria-label="Primary" style={{ display: "flex", alignItems: "stretch", height: HEADER_HEIGHT, paddingLeft: 4 }}>
+      <nav aria-label="Primary" style={{ display: "flex", alignItems: "center", height: HEADER_HEIGHT, paddingLeft: 4 }}>
         {PRIMARY_LINKS.filter((link) => (!link.authOnly || signedIn) && (link.key !== "connect" || showConnect)).map((link) => {
           const isCurrent = link.key === current;
           return (

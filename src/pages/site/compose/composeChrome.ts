@@ -14,7 +14,7 @@
 
 import { useEffect } from "react";
 
-import { DOCK_HEIGHT, HEADER_HEIGHT } from "@/components/shell/chromeSize";
+import { DOCK_HEIGHT, headerHeight } from "@/components/shell/chromeSize";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 
 /** The sticky action bar on a phone: 8 + 48 + 8 and a 1px border above and below. */
@@ -37,7 +37,7 @@ export interface CollisionPadding {
 
 /** A composer menu's collision padding, for the viewport it is on. */
 export function menuCollisionPadding(phone: boolean): CollisionPadding {
-  return { top: HEADER_HEIGHT + BAR_AIR, right: BAR_AIR, bottom: (phone ? PHONE_BARS_BOTTOM : 0) + BAR_AIR, left: BAR_AIR };
+  return { top: headerHeight(phone) + BAR_AIR, right: BAR_AIR, bottom: (phone ? PHONE_BARS_BOTTOM : 0) + BAR_AIR, left: BAR_AIR };
 }
 
 export function useMenuCollisionPadding(): CollisionPadding {
@@ -47,7 +47,7 @@ export function useMenuCollisionPadding(): CollisionPadding {
 /** The page scroller's padding while the composer is open, as CSS lengths. */
 export function composerScrollPadding(phone: boolean): { top: string; bottom: string } {
   return {
-    top: `${HEADER_HEIGHT + BAR_AIR}px`,
+    top: `${headerHeight(phone) + BAR_AIR}px`,
     bottom: phone ? `calc(${PHONE_BARS_BOTTOM + BAR_AIR}px + env(safe-area-inset-bottom))` : `${BAR_AIR}px`,
   };
 }
