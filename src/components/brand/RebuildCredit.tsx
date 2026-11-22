@@ -42,7 +42,7 @@ import { categoryColour } from "@/lib/theme/category";
 import { chipType } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { body as bodyText, data as dataText } from "@/lib/theme/type";
+import { body as bodyText, data as dataText, SENTIENT } from "@/lib/theme/type";
 
 /** What the credit says when the source cannot be reached any more. */
 export const GONE = "(no longer available)";
@@ -198,7 +198,7 @@ export function RebuildCredit({
         {linked ? (
           <>
             {PREFIX}
-            <CreditPart to={to}>{title}</CreditPart>
+            <CreditPart to={to}><span style={{ fontFamily: SENTIENT, fontWeight: 400 }}>{title}</span></CreditPart>
             {handle ? (
               <>
                 {BY}

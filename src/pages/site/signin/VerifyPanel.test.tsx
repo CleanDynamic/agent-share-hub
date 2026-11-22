@@ -110,7 +110,7 @@ describe("resending", () => {
 
     expect(resendSignupEmail).toHaveBeenCalledWith("ada@example.com", "tok-1");
     expect(captcha.reset).toHaveBeenCalledTimes(1);
-    expect(screen.getByText("Sent again — it should arrive in a minute.")).toBeTruthy();
+    expect(screen.getByText("Sent again. It should arrive in a minute.")).toBeTruthy();
 
     await settle(2500);
     expect(screen.getByText("Resend available in 45s")).toBeTruthy();
@@ -134,7 +134,7 @@ describe("resending", () => {
     fireEvent.click(screen.getByRole("button", { name: "Resend verification" }));
     await settle(0);
     expect(screen.getByRole("button", { name: "Resend verification" })).toBeEnabled();
-    expect(screen.queryByText("Sent again — it should arrive in a minute.")).toBeNull();
+    expect(screen.queryByText("Sent again. It should arrive in a minute.")).toBeNull();
     expect(captcha.reset).toHaveBeenCalledTimes(1);
   });
 

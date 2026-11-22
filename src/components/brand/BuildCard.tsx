@@ -46,7 +46,7 @@ import { hoverIsFine, prefersReducedMotion } from "@/lib/theme/controls";
 import { feedback } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { display, FIGTREE } from "@/lib/theme/type";
+import { display, FIGTREE, SENTIENT } from "@/lib/theme/type";
 
 import { CategoryChip } from "./CategoryChip";
 import { FramedWork } from "./FramedWork";
@@ -285,7 +285,7 @@ export function CardCredit({ rebuiltFrom, by }: CardCreditProps) {
     >
       {source ? (
         <>
-          Rebuilt from <i style={{ color: t.text, fontStyle: "normal" }}>{source}</i>
+          Rebuilt from <i style={{ fontFamily: SENTIENT, fontWeight: 400, color: t.text, fontStyle: "normal" }}>{source}</i>
           {who ? ` by ${who}` : null}
         </>
       ) : (

@@ -17,7 +17,7 @@ import { PostControl } from "@/components/post/postControls";
 import { PlainRow } from "@/components/vision/PlainRow";
 import { PageLink as Link } from "@/lib/routing/PageLink";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { FIGTREE, SENTIENT } from "@/lib/theme/type";
 
 /** The feed column's width. */
 export const FEED_WIDTH = 620;
@@ -61,9 +61,9 @@ function Person({ person }: { person: FollowRowView }) {
     <span style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
       <Avatar size={32} userId={person.id} name={person.name} src={person.avatarUrl} alt="" />
       <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <span style={{ ...ellipsis, fontWeight: 500, color: t.text }}>
+        <span style={{ ...ellipsis, fontFamily: SENTIENT, fontWeight: 400, color: t.text }}>
           {person.name}
-          {person.handle ? <span style={{ fontWeight: 400, color: t.label }}>{` @${person.handle}`}</span> : null}
+          {person.handle ? <span style={{ fontFamily: FIGTREE, fontWeight: 400, color: t.label }}>{` @${person.handle}`}</span> : null}
         </span>
         {person.line ? <span style={{ ...ellipsis, color: t.text2, fontSize: 13 }}>{person.line}</span> : null}
       </span>

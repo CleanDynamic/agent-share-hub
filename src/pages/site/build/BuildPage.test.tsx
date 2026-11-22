@@ -498,7 +498,7 @@ describe("BuildPage (site frame) — the tab bodies, UI-P30", () => {
     expect(steps).toHaveLength(1);
     expect(steps[0].textContent).toContain("01");
     expect(within(steps[0]).getByTestId("build-run-well").textContent).toBe("You triage a professional inbox.");
-    expect(within(viewer).getByTestId("build-run-before").textContent).toContain("A Google account — Gmail API access.");
+    expect(within(viewer).getByTestId("build-run-before").textContent).toContain("A Google account · Gmail API access.");
 
     await act(async () => {
       fireEvent.click(within(steps[0]).getByRole("button", { name: "Copy step 1: Triage system prompt" }));

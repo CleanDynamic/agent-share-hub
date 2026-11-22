@@ -41,7 +41,7 @@ export function VerifyPending({ email, resendState, cooldownSeconds = 0, onResen
   return (
     <>
       <ViewHeading title="Check your inbox">
-        We sent a verification link to <span style={{ color: t.text }}>{email}</span>. Open it and your account is active — you can close
+        We sent a verification link to <span style={{ color: t.text }}>{email}</span>. Open it and your account is active. You can close
         this page.
       </ViewHeading>
       <Gap size={16} />
@@ -49,7 +49,7 @@ export function VerifyPending({ email, resendState, cooldownSeconds = 0, onResen
       <Gap size={8} />
       {resendState === "sent" ? (
         <div style={row}>
-          <p style={{ ...LINE, fontWeight: 500, color: t.evidence }}>Sent again — it should arrive in a minute.</p>
+          <p style={{ ...LINE, fontWeight: 500, color: t.evidence }}>Sent again. It should arrive in a minute.</p>
         </div>
       ) : resendState === "cooldown" ? (
         <div style={row}>

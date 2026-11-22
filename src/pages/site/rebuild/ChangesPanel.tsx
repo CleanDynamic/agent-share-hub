@@ -137,7 +137,7 @@ export function ChangesPanel({ groups, phone = false, fill = false, placeholder,
         <PanelHead
           headingLevel={2}
           title="What changed"
-          subtitle={phone ? "Computed from the source — not editable" : "Computed from the source — you cannot edit this list"}
+          subtitle={phone ? "Computed from the source, not editable" : "Computed from the source. You cannot edit this list"}
           right={!phone && groups ? <Eyebrow>{changesEyebrow(groups)}</Eyebrow> : undefined}
         />
         {about}

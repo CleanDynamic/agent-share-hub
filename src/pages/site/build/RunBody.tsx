@@ -329,7 +329,7 @@ export function RunBody({
                 />
                 <span style={{ minWidth: 0 }}>
                   {item.title}
-                  {item.requirement ? <span style={{ color: t.text2 }}> — {item.requirement}</span> : null}
+                  {item.requirement ? <span style={{ color: t.text2 }}> · {item.requirement}</span> : null}
                 </span>
               </li>
             ))}
