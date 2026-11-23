@@ -13,7 +13,6 @@
    is in try/catch, and a choice that cannot be read is the default eight. */
 
 import type { BuildsTableBuild } from "@/lib/build/gallery";
-import { isStale } from "@/lib/build/signals";
 import { regulatedArea, shownValues } from "@/lib/classify/facets";
 import { REGULATED_TAG, labelFor } from "@/lib/classify/lines";
 import { FACET_LABEL, FACETS, isKnown, type Facet } from "@/lib/classify/taxonomy";
@@ -47,8 +46,6 @@ export interface ClassCardView {
   title: string;
   /** "@maya · Workflow · Regulated area". */
   subtitle: string;
-  reproductions: number;
-  lit: boolean;
   rows: ClassRowView[];
 }
 
@@ -100,7 +97,7 @@ export function rowOf(c: Classification | undefined, facet: Facet, hrefOf: (key:
 }
 
 /** A build as a card: only the facets chosen, in the taxonomy's order. */
-export function cardOf(build: BuildsTableBuild, facets: readonly Facet[], hrefOf: (key: string) => string, now: number): ClassCardView {
+export function cardOf(build: BuildsTableBuild, facets: readonly Facet[], hrefOf: (key: string) => string, _now?: number): ClassCardView {
   const c = build.classifiedAs;
   const shape = build.shape ? shapeWord(build.shape) : "";
   const parts = [build.maker?.handle ? `@${build.maker.handle}` : "", shape, c && regulatedArea(c) ? REGULATED_TAG : ""].filter(Boolean);
@@ -109,8 +106,6 @@ export function cardOf(build: BuildsTableBuild, facets: readonly Facet[], hrefOf
     href: `/b2/${build.slug}`,
     title: build.title || "Untitled",
     subtitle: parts.join(" · "),
-    reproductions: build.reproductionCount,
-    lit: build.reproductionCount > 0 && !isStale({ last_confirmed_at: build.lastConfirmedAt, published_at: build.publishedAt }, now),
     rows: ALL_FACETS.filter((facet) => facets.includes(facet)).map((facet) => rowOf(c, facet, hrefOf)),
   };
 }

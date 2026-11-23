@@ -51,7 +51,7 @@ describe("the page", () => {
     draw();
     expect(screen.getByRole("heading", { level: 1, name: "Builds" })).toBeTruthy();
     expect(screen.getByTestId("builds-head").textContent).toMatch(/^Builds18 builds/);
-    expect(screen.getByText("18 builds · Each build's Map: one box per session, one line where a tile in one session uses something from another.")).toBeTruthy();
+    expect(screen.getByTestId("builds-count").textContent).toBe("18 builds");
     expect(screen.getByRole("button", { name: /Filters/ }).textContent).toContain("6");
     expect(screen.getByText("14 with a Map")).toBeTruthy();
   });
@@ -62,7 +62,7 @@ describe("the page", () => {
     expect(within(cards()[0]).getByRole("link", { name: "Call notes that write themselves" })).toBeTruthy();
     expect(within(cards()[0]).getByText("@maya · 3 sessions")).toBeTruthy();
     expect(within(cards()[1]).getByText("@mira · 2 parts · 5 sessions")).toBeTruthy();
-    expect(within(cards()[0]).getByText("6 reproduced")).toBeTruthy();
+    expect(within(cards()[0]).queryByText(/reproduced/)).toBeNull();
   });
 
   it("is three columns wide, two below 1100 and one below 760", () => {
@@ -89,11 +89,11 @@ describe("the page", () => {
     expect(skipped(cards()[0])).toBeUndefined();
   });
 
-  it("six active filters draw six chips and Clear all, and no \"+ n more\"", () => {
+  it("five active filters draw five chips and Clear all, and no \"+ n more\"", () => {
     const onClearAll = vi.fn();
     draw({ onClearAll });
     const row = screen.getByRole("group", { name: "Active filters" });
-    expect(within(row).getAllByRole("button", { name: /^Remove filter/ })).toHaveLength(6);
+    expect(within(row).getAllByRole("button", { name: /^Remove filter/ })).toHaveLength(5);
     expect(screen.queryByText(/\+ \d+ more/)).toBeNull();
     fireEvent.click(within(row).getByRole("button", { name: "Clear all" }));
     expect(onClearAll).toHaveBeenCalledTimes(1);
@@ -238,15 +238,6 @@ describe("an empty page", () => {
   });
 });
 
-describe("BF-01 the lamp", () => {
-  it("a card with no reproductions draws no lamp", () => {
-    const base = visionBuildsMapsProps();
-    draw({ cards: base.cards.map((card, index) => (index === 0 ? { ...card, reproductions: 0, reproduced: "0 reproduced", lit: false } : card)) });
-    expect(within(cards()[0]).queryByRole("img", { name: /Confirmed in the last|Stale/ })).toBeNull();
-    expect(within(cards()[1]).getByRole("img", { name: /Confirmed in the last|Stale/ })).toBeTruthy();
-  });
-});
-
 /* ── BF-02 P1 (C2) ── */
 
 describe("the updating state", () => {
@@ -257,7 +248,7 @@ describe("the updating state", () => {
     expect(grid.style.opacity).toBe("0.5");
     expect(grid.style.transition).toBe("");
     expect(screen.getByRole("status").textContent).toBe("Updating");
-    expect((screen.getByRole("heading", { level: 1 }) as HTMLElement).style.opacity).toBe("0.5");
+    expect((screen.getByTestId("builds-count") as HTMLElement).style.opacity).toBe("0.5");
   });
 
   it("not updating: aria-busy is false, opacity is not set, and the status is present and empty", () => {
@@ -275,9 +266,10 @@ describe("the head", () => {
   it('the head is the shared head: an h1 that reads "Builds", the count first on the line under it, aligned to the top, with the view switch (G8, G25)', () => {
     draw();
     const head = screen.getByTestId("builds-head");
-    expect(head.style.alignItems).toBe("flex-start");
+    // Synth 08: the h1 is for screen readers only; the count is the visible fact, and the switch sits at the right.
+    expect(within(head).getByRole("heading", { level: 1 }).className).toBe("sr-only");
     expect(within(head).getByRole("heading", { level: 1 }).textContent).toBe("Builds");
-    expect(head.textContent).toMatch(/^Builds\d+( of \d+)? builds?/);
+    expect(within(head).getByTestId("builds-count").textContent).toMatch(/^\d+( of \d+)? builds?$/);
     expect(within(head).getByRole("navigation", { name: "View" })).toBeTruthy();
   });
 });

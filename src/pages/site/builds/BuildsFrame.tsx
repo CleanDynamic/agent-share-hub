@@ -13,17 +13,18 @@ import { forwardRef, type ButtonHTMLAttributes, type CSSProperties, type ReactNo
 import { Link, useLocation } from "react-router-dom";
 
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
-import { PAGE_TITLE } from "@/components/shell/PageHeader";
+import { PANEL_RADIUS } from "@/components/shell/chromeSize";
+import { useColumnPanels } from "@/components/shell/frameChrome";
 import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
-import { PageFigure, type FigurePart } from "@/components/vision/PageFigure";
+import type { FigurePart } from "@/components/vision/PageFigure";
 import type { GalleryViewMode } from "@/lib/build/galleryParams";
 import { ring } from "@/lib/theme/controls";
 import { TOUCH_MIN } from "@/lib/theme/density";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
-import { controlPaint } from "@/lib/theme/refinedControl";
+import { controlPaint, hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 /** Cards in three columns, two below 1100, one below 760 (Maps and Classification). */
 export function useCardColumns(): 1 | 2 | 3 {
@@ -37,7 +38,7 @@ export const TABLE_ROW = 48;
 
 /* ── type ── */
 
-export const text = (px: number, weight: 400 | 500, color: string, extra: CSSProperties = {}): CSSProperties => ({
+export const text = (px: number, weight: 400 | 500 | 600, color: string, extra: CSSProperties = {}): CSSProperties => ({
   fontFamily: FIGTREE,
   fontSize: px,
   fontWeight: weight,
@@ -53,12 +54,16 @@ const ROOT: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, lineHeight: "20
 
 /* ── the column ── */
 
-/** The head, then the view's own content in one column 40 below it. */
+/** Synth 08: the page is one full-width panel on the page shade. The frame's own panel steps back and this draws it. */
+export const BUILDS_PANEL: CSSProperties = { background: t.surface, borderRadius: PANEL_RADIUS, overflow: "clip", minWidth: 0, boxSizing: "border-box", paddingBottom: 48 };
+
+/** The panel, the head in it, then the view's own content in one column under it. */
 export function BuildsColumns({ head, main, testId = "builds-page" }: { head: ReactNode; main: ReactNode; testId?: string }) {
+  useColumnPanels(true);
   return (
-    <div data-testid={testId} style={{ ...ROOT, paddingBottom: 64 }}>
+    <div data-testid={testId} style={{ ...ROOT, ...BUILDS_PANEL }}>
       {head}
-      <section aria-label="Builds" style={{ minWidth: 0, marginTop: 40 }}>
+      <section aria-label="Builds" style={{ minWidth: 0, padding: "0 20px" }}>
         {main}
       </section>
     </div>
@@ -74,7 +79,7 @@ const VIEWS: readonly GalleryViewMode[] = ["table", "maps", "classification"];
 function ViewSegment({ view, current, href, onIntent }: { view: GalleryViewMode; current: boolean; href: string; onIntent?: (view: GalleryViewMode) => void }) {
   const phone = useIsPhone();
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
-  const height = 28;
+  const height = 32;
   return (
     <Link
       to={href}
@@ -84,38 +89,39 @@ function ViewSegment({ view, current, href, onIntent }: { view: GalleryViewMode;
       onFocus={() => onIntent?.(view)}
       {...handlers}
       style={{
-        // On a phone the hit area reaches 44 with a matching negative margin; the drawn segment inside keeps its 28.
+        // On a phone the hit area reaches 44 with a matching negative margin; the drawn pill inside keeps its 32.
         display: "flex",
         alignItems: "center",
         ...(phone ? { paddingBlock: (TOUCH_MIN - height) / 2, marginBlock: (height - TOUCH_MIN) / 2 } : null),
-        borderRadius: r.chip,
+        borderRadius: 16,
         textDecoration: "none",
+        flexShrink: 0,
         ...ring(state.focusVisible),
       }}
     >
+      {/* Synth 08: a pill, 32 tall, 0 14px, 13/500 on Card; the current one Inverse at 600. */}
       <span
         style={{
           boxSizing: "border-box",
           height,
           display: "flex",
           alignItems: "center",
-          padding: "0 12px",
-          borderRadius: r.chip,
-          border: `1px solid ${current ? t.selectedEdge : "transparent"}`,
-          background: current ? t.control : "transparent",
+          padding: "0 14px",
+          borderRadius: 16,
+          background: current ? t.action : state.hovered ? hoverFill(t.module) : t.module,
           fontFamily: FIGTREE,
           fontSize: 13,
-          fontWeight: current ? 500 : 400,
+          fontWeight: current ? 600 : 500,
           lineHeight: "normal",
-          color: current || state.hovered ? t.text : t.text2,
+          color: current ? t.onAction : t.text,
           whiteSpace: "nowrap",
         }}
       >
-        {/* BF-03 (D1): the label holds the width of its 500 weight, so the switch is as wide on every view and no segment
+        {/* BF-03 (D1): the label holds the width of its heavier weight, so the switch is as wide on every view and no pill
             moves under the pointer when the current one changes. */}
         <span style={{ display: "inline-grid" }}>
           <span style={{ gridArea: "1 / 1" }}>{VIEW_LABEL[view]}</span>
-          <span aria-hidden="true" style={{ gridArea: "1 / 1", fontWeight: 500, visibility: "hidden" }}>
+          <span aria-hidden="true" style={{ gridArea: "1 / 1", fontWeight: 600, visibility: "hidden" }}>
             {VIEW_LABEL[view]}
           </span>
         </span>
@@ -124,11 +130,11 @@ function ViewSegment({ view, current, href, onIntent }: { view: GalleryViewMode;
   );
 }
 
-/** Table, Maps, Classification: a `--well` track with 2px padding and the current segment raised. Links, not buttons:
-    the view is in the address. */
+/** Table, Maps, Classification: a row of pills. Links, not buttons: the view is in the address. On a phone the row scrolls
+    sideways inside its own box. */
 export function ViewSwitch({ view, hrefFor, onIntent }: { view: GalleryViewMode; hrefFor: (view: GalleryViewMode) => string; onIntent?: (view: GalleryViewMode) => void }) {
   return (
-    <nav aria-label="View" style={{ display: "flex", gap: 2, padding: 2, background: t.well, border: `1px solid ${t.wellBorder}`, borderRadius: r.control }}>
+    <nav aria-label="View" style={{ display: "flex", gap: 8, minWidth: 0, maxWidth: "100%", overflowX: "auto", scrollbarWidth: "none", padding: 4, margin: -4 }}>
       {VIEWS.map((entry) => (
         <ViewSegment key={entry} view={entry} current={entry === view} href={hrefFor(entry)} onIntent={onIntent} />
       ))}
@@ -136,16 +142,19 @@ export function ViewSwitch({ view, hrefFor, onIntent }: { view: GalleryViewMode;
   );
 }
 
-/** "n builds", its meta line, and the view switch on the right: the one head of Table, Maps and Classification (BF-03 D1), so
-    the title and the switch stand in the same place on every view. The h1 holds the number only; the meta line sits under it. */
+/** The head: the count as a 20/600 fact ("120 builds", or "34 of 120 builds" when filtered) and the view switch at the right.
+    The page's h1, "Builds", is for screen readers only: the nav item already names the page. `parts` is kept so callers compile;
+    only its first piece, the count, is drawn. */
 export function BuildsHead({ figure, parts, switcher, updating }: { figure: ReactNode; parts: readonly FigurePart[]; switcher: ReactNode; updating?: boolean }) {
+  const count = parts[0]?.text;
   return (
-    <div data-testid="builds-head" style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
-      <PageFigure
-        /* PageHeader's title style; the h1 stays here because it dims itself while the list updates (BF-02). */
-        figure={<h1 style={{ ...PAGE_TITLE, ...(updating ? { opacity: 0.5 } : null) }}>{figure}</h1>}
-        parts={parts}
-      />
+    <div data-testid="builds-head" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "20px 20px 8px" }}>
+      <h1 className="sr-only" style={{ margin: 0 }}>
+        {figure}
+      </h1>
+      <div data-testid="builds-count" style={{ ...text(20, 600, t.text, { lineHeight: "24px", fontFamily: FIGTREE }), ...(updating ? { opacity: 0.5 } : null) }}>
+        {count ?? "\u00a0"}
+      </div>
       {switcher}
     </div>
   );
@@ -176,15 +185,15 @@ export const BuildsControl = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<
       {...handlers}
       style={{
         boxSizing: "border-box",
-        height: phone ? TOUCH_MIN : 28,
+        height: phone ? TOUCH_MIN : 32,
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
-        padding: "0 10px",
+        padding: "0 12px",
         borderRadius: r.control,
         fontFamily: FIGTREE,
         fontSize: 13,
-        fontWeight: 400,
+        fontWeight: 500,
         lineHeight: "normal",
         color: t.text,
         whiteSpace: "nowrap",
@@ -209,9 +218,9 @@ export const FiltersButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<
   const name = setName ? `${shown}, ${on ? `${activeCount} on, ` : ""}saved set` : on ? `Filters, ${activeCount} on` : "Filters";
   return (
     <BuildsControl ref={ref} aria-haspopup="dialog" aria-label={name} {...rest} selected={on}>
-      <span style={on ? { color: t.text, fontWeight: 500 } : { color: t.text2 }}>Filters</span>
+      <span style={{ color: t.text }}>Filters</span>
       {on ? " " : null}
-      {on ? <span style={{ color: t.text }}>{activeCount}</span> : null}
+      {on ? <span style={{ fontFamily: DM_MONO, fontSize: 13, fontWeight: 400, color: t.text2 }}>{activeCount}</span> : null}
       {setName ? " " : null}
       {setName ? <span style={{ color: t.text2, maxWidth: 160, ...ellipsis }}>{`· ${setName}`}</span> : null}
     </BuildsControl>
@@ -223,8 +232,8 @@ export const FiltersButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<
 export const hitArea = (by: number): CSSProperties => ({ padding: `${by}px 0`, margin: `${-by}px 0` });
 
 /** A text button: "Clear all", "Save current", "Add a calculation". Takes a ref and a button's props, so a menu's trigger can be one. */
-export const BuildsTextButton = forwardRef<HTMLButtonElement, Omit<ButtonHTMLAttributes<HTMLButtonElement>, "color"> & { size?: 12 | 12.5; color?: string }>(function BuildsTextButton(
-  { children, size = 12, color = t.label, ...rest },
+export const BuildsTextButton = forwardRef<HTMLButtonElement, Omit<ButtonHTMLAttributes<HTMLButtonElement>, "color"> & { size?: 12 | 12.5 | 13; color?: string; underline?: boolean }>(function BuildsTextButton(
+  { children, size = 12, color = t.label, underline = false, ...rest },
   ref,
 ) {
   const { state, handlers } = useInteractive<HTMLButtonElement>(rest);
@@ -245,6 +254,7 @@ export const BuildsTextButton = forwardRef<HTMLButtonElement, Omit<ButtonHTMLAtt
         fontSize: size,
         lineHeight: "inherit",
         color: state.hovered ? t.text : color,
+        textDecoration: underline ? "underline" : undefined,
         cursor: "pointer",
         ...ring(state.focusVisible),
       }}
@@ -317,15 +327,16 @@ export function BuildsLoadingView() {
 /** SV-12: the Maps page as it stands before its list arrives: the head, the row's height and the cards with their wells,
     at the grid's columns. */
 export function MapsLoadingView({ hrefFor }: { hrefFor: (view: GalleryViewMode) => string }) {
+  useColumnPanels(true);
   const wide = useMinWidth(1101);
   const middle = useMinWidth(761);
   const columns = wide ? 3 : middle ? 2 : 1;
   return (
     <LoadingRegion what="builds" announce>
-      <div data-testid="builds-loading" style={{ ...ROOT, paddingBottom: 64 }}>
+      <div data-testid="builds-loading" style={{ ...ROOT, ...BUILDS_PANEL }}>
         <BuildsHead figure="Builds" parts={[{ text: "\u00a0" }]} switcher={<ViewSwitch view="maps" hrefFor={hrefFor} />} />
-        <div style={{ height: 30, marginTop: 16 }} />
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, marginTop: 32 }} aria-hidden="true">
+        <div style={{ height: 30, marginTop: 16, marginInline: 20 }} />
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, margin: "32px 20px 0" }} aria-hidden="true">
           {Array.from({ length: columns * 2 }, (_, index) => (
             <div key={index} style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, padding: 16 }}>
               <Skeleton width="100%" height={220} radius={6} />
@@ -346,15 +357,16 @@ export function MapsLoadingView({ hrefFor }: { hrefFor: (view: GalleryViewMode) 
 /** SV-13: the Classification page as it stands before its list arrives: the head, the row's height and cards with a
     title and eight rows, at the grid's columns. */
 export function ClassificationLoadingView({ hrefFor }: { hrefFor: (view: GalleryViewMode) => string }) {
+  useColumnPanels(true);
   const columns = useCardColumns();
   return (
     <LoadingRegion what="builds" announce>
-      <div data-testid="builds-loading" style={{ ...ROOT, paddingBottom: 64 }}>
+      <div data-testid="builds-loading" style={{ ...ROOT, ...BUILDS_PANEL }}>
         <BuildsHead figure="Builds" parts={[{ text: "\u00a0" }]} switcher={<ViewSwitch view="classification" hrefFor={hrefFor} />} />
-        <div style={{ height: 28, marginTop: 24 }} />
+        <div style={{ height: 28, marginTop: 24, marginInline: 20 }} />
         {/* The key's line under the row, in its own type, so the cards start where the page's do. */}
-        <div style={{ ...text(12, 400, t.label), margin: "16px 0 0" }}>{"\u00a0"}</div>
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, alignItems: "start", marginTop: 16 }} aria-hidden="true">
+        <div style={{ ...text(12, 400, t.label), margin: "16px 20px 0" }}>{"\u00a0"}</div>
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, alignItems: "start", margin: "16px 20px 0" }} aria-hidden="true">
           {Array.from({ length: columns * 2 }, (_, index) => (
             <div key={index} style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, padding: 16 }}>
               <Skeleton width="55%" height={12} radius={4} />

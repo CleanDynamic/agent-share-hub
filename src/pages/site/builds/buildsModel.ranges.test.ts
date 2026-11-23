@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { parseGalleryParams } from "@/lib/build/galleryParams";
 
-import { activeChips, histogramOf, medianOf, panelSections, tableFooter, toggled, withRange, withoutChip } from "./buildsModel";
+import { activeChips, histogramOf, medianOf, panelSections, tableFooter, toggled, withRange, withoutChip, withoutRunFilters } from "./buildsModel";
 import type { RangeSection } from "./BuildsFiltersView";
 
 const params = (search: string) => parseGalleryParams(new URLSearchParams(search));
@@ -93,20 +93,20 @@ describe("the proof (SV-23 P2)", () => {
   const SPREAD = { reproductions: new Map([[1, 3]]), rebuilds: new Map(), likes: new Map(), steps: new Map(), sessions: new Map() };
   const ids = (state: object) => panelSections({ ...STATE, ...state }).map((section) => section.id);
 
-  it("draws Last confirmed and Confirmed or stale without any stored count, and the rest with it", () => {
-    expect(ids({ spread: null, worksOn: null })).toEqual(expect.arrayContaining(["within", "state", "shape"]));
+  // Synth 08: Reproductions, Last confirmed and Confirmed or stale are no longer in the panel.
+  it("draws Works on model and the number filters once their counts have answered, and never a run filter", () => {
+    expect(ids({ spread: null, worksOn: null })).toEqual(expect.arrayContaining(["shape"]));
+    for (const gone of ["within", "state", "reproductions"]) expect(ids({ spread: SPREAD, worksOn: [OPUS] })).not.toContain(gone);
     expect(ids({ spread: null, worksOn: null })).not.toContain("model");
     expect(ids({ spread: null, worksOn: null })).not.toContain("reproductions");
-    expect(ids({ spread: SPREAD, worksOn: [OPUS] }).filter((id) => ["reproductions", "model", "within", "state", "rebuilds", "likes", "shape", "steps", "sessions"].includes(id))).toEqual([
-      "reproductions", "model", "within", "state", "rebuilds", "likes", "shape", "steps", "sessions",
+    expect(ids({ spread: SPREAD, worksOn: [OPUS] }).filter((id) => ["model", "rebuilds", "likes", "shape", "steps", "sessions"].includes(id))).toEqual([
+      "model", "rebuilds", "likes", "shape", "steps", "sessions",
     ]);
   });
 
   it("holds the chosen value on each, and opens it", () => {
-    const sections = panelSections({ ...STATE, spread: SPREAD, worksOn: [OPUS], model: "opus-5-5", within: 30, confirmState: "stale" });
+    const sections = panelSections({ ...STATE, spread: SPREAD, worksOn: [OPUS], model: "opus-5-5" });
     expect(sections.find((section) => section.id === "model")).toMatchObject({ kind: "word", options: [{ key: "opus-5-5", label: "Opus 5.5", count: 18, checked: true }] });
-    expect(sections.find((section) => section.id === "within")).toMatchObject({ kind: "word", options: expect.arrayContaining([{ key: "within:30", label: "Within 30 days", checked: true }]) });
-    expect(sections.find((section) => section.id === "state")).toMatchObject({ kind: "word" });
   });
 
   it("is a choice of one: choosing the held value clears it, another replaces it", () => {
@@ -120,7 +120,9 @@ describe("the proof (SV-23 P2)", () => {
 
   it("has a chip for each, in words, and removing it clears only it", () => {
     const chosen = params("model=opus-5-5&within=30&state=stale&reps=2");
-    expect(activeChips(chosen).map((chip) => [chip.name, chip.value])).toEqual([["Works on", "Opus 5.5"], ["Last confirmed", "Within 30 days"], ["Confirmed or stale", "Stale"]]);
+    // An address from before Synth 08 may still carry the run filters; they have no chip, and the page reads them away (`withoutRunFilters`).
+    expect(activeChips(chosen).map((chip) => [chip.name, chip.value])).toEqual([["Works on", "Opus 5.5"]]);
+    expect(withoutRunFilters(chosen)).toMatchObject({ within: undefined, state: undefined, ranges: undefined, model: "opus-5-5" });
     expect(withoutChip(chosen, "model").model).toBeUndefined();
     expect(withoutChip(chosen, "within").within).toBeUndefined();
     expect(withoutChip(chosen, "state").state).toBeUndefined();
@@ -141,7 +143,7 @@ describe("the groups", () => {
     const of = (group: string) => sections.filter((section) => section.group === group).map((section) => section.id);
     expect(of("Classification")).toHaveLength(15);
     expect(of("Classification")).toContain("stack");
-    expect(of("Proof")).toEqual(["reproductions", "model", "within", "state", "rebuilds", "likes"]);
+    expect(of("Proof")).toEqual(["model", "rebuilds", "likes"]);
     /* Patterns has no value yet, so it follows the rest of Structure (Part 2). */
     expect(of("Structure")).toEqual(["shape", "steps", "sessions", "pattern"]);
     expect(of("OpenBuilds")).toEqual(["open"]);
@@ -195,9 +197,8 @@ describe("one order", () => {
   });
 
   it("each checklist carries what it holds, for the right of its name", () => {
-    const sections = panelSections({ ...STATE, counts, facets: ["field:law"], within: 30 });
+    const sections = panelSections({ ...STATE, counts, facets: ["field:law"] });
     expect(sections.find((section) => section.id === "field")).toMatchObject({ value: expect.stringMatching(/^Law/) });
-    expect(sections.find((section) => section.id === "within")).toMatchObject({ value: "Within 30 days" });
     expect(sections.find((section) => section.id === "shape")).toMatchObject({ value: "Any" });
   });
 });

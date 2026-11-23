@@ -5,17 +5,15 @@
    Each part is its own component, defined at module level. THE COLUMNS ARE DATA: `columns` says which of the board's
    twelve are drawn, in order, so the live page draws the ones whose data exists (SV-11 Part 3) and the dev page all.
 
-   REAL CONTROLS. A sortable head is a button, and its cell says `aria-sort`; the Runs 12 weeks bars are hidden from
-   screen readers and their group carries the numbers in words; the table scrolls inside its column (min width 1000) in a
-   region a keyboard can reach. Rows past the first screen are skipped until near (`content-visibility`). No motion: rows
+   REAL CONTROLS. A sortable head is a button, and its cell says `aria-sort`; the table scrolls inside its column (min width
+   1000) in a region a keyboard can reach. Synth 08: rows sit 2px apart with no lines and take the Card fill on hover;
+   numbers are right-aligned Geist Mono; the columns about reproductions and runs, and Tools, are not drawn. Rows past the first screen are skipped until near (`content-visibility`). No motion: rows
    change at once. */
 
 import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
-import { LampBar } from "@/components/brand/LampDot";
-import { ModelMark } from "@/components/brand/ModelMark";
 import { Checkbox } from "@/components/brand/Checkbox";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import {
@@ -32,12 +30,14 @@ import { Empty } from "@/components/vision/Empty";
 import type { CalcKind } from "@/lib/build/buildsLayout";
 import { ALL_COLUMN_IDS } from "@/lib/build/buildsColumns";
 import { RANGE_FILTERS } from "@/lib/build/galleryRanges";
-import { STALE_AFTER_DAYS } from "@/lib/build/signals";
 import { TextTabs, type TextTab } from "@/components/vision/TextTabs";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
+import { hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
+import { DM_MONO } from "@/lib/theme/type";
+import { ChevronDown } from "lucide-react";
 
 import { useColumnDrag, type HeadDrag } from "./columnDrag";
 import { BuildsControl, BuildsTextButton, FiltersButton, TABLE_ROW, UpdatingStatus, ellipsis, hitArea, text } from "./BuildsFrame";
@@ -54,6 +54,9 @@ export type ExtraColumnId = "shape" | "task" | "setting" | "role" | "technique" 
 export type ColumnId = BoardColumnId | ExtraColumnId;
 
 export const COLUMN_ORDER: readonly ColumnId[] = ["build", "built", "field", "tools", "steps", "sessions", "reproductions", "confirmed", "runs", "rebuilds", "open", "cost"];
+
+/** The default columns, in order. Synth 08: Tools, Reproductions, Confirmed and Runs are no longer drawn or offered. */
+export const DEFAULT_COLUMNS: readonly ColumnId[] = ["build", "built", "field", "steps", "sessions", "rebuilds", "open", "cost"];
 
 export const EXTRA_COLUMNS: readonly ExtraColumnId[] = ["shape", "task", "setting", "role", "technique", "modality", "method", "autonomy", "data", "oversight", "age", "skill", "works", "likes", "patterns", "published"];
 
@@ -93,7 +96,7 @@ export const COLUMN_NAME: Record<ColumnId, string> = {
 };
 const HEAD = COLUMN_NAME;
 
-const RIGHT: ReadonlySet<ColumnId> = new Set(["steps", "sessions", "reproductions", "rebuilds", "likes"]);
+const RIGHT: ReadonlySet<ColumnId> = new Set(["steps", "sessions", "rebuilds", "likes"]);
 
 export interface TableTool {
   id: string;
@@ -107,14 +110,14 @@ export interface TableRowView {
   maker: string;
   built: string;
   field: string;
+  /** Kept as data (sorting and calculations read it); no column draws it any more. */
   tools: readonly TableTool[];
   steps: number | null;
   sessions: number | null;
+  /** Kept as data; no column draws these three since Synth 08. */
   reproductions: number;
-  /** The lamp is lit: confirmed within the window; dim when it has gone stale. */
   lit: boolean;
   confirmed: string;
-  /** Twelve weekly counts, oldest first. */
   runs: readonly number[];
   rebuilds: number;
   open: string;
@@ -225,8 +228,9 @@ function SortMenu({ columns, sortable, sortColumn, onSortColumn }: Pick<BuildsTa
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <BuildsControl aria-label={`Sort: ${current}`}>
-          <span style={{ color: t.text2 }}>Sort</span> {current}
+        <BuildsControl aria-label={current ? `Sort: ${current}` : "Sort"}>
+          Sort
+          <ChevronDown size={14} aria-hidden="true" />
         </BuildsControl>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={6}>
@@ -257,7 +261,8 @@ function ColumnsChooser({ label, menu }: { label: string; menu: ColumnsMenu }) {
     <Popover>
       <PopoverTrigger asChild>
         <BuildsControl aria-label={`Columns: ${label}`}>
-          <span style={{ color: t.text2 }}>Columns</span> {label}
+          Columns
+          <ChevronDown size={14} aria-hidden="true" />
         </BuildsControl>
       </PopoverTrigger>
       <PopoverContent side={phone ? "bottom" : "left"} align={phone ? "end" : "start"} sideOffset={6} collisionPadding={14} style={{ width: 240, maxWidth: "calc(100vw - 28px)", maxHeight: "min(560px, calc(100dvh - 120px), var(--radix-popover-content-available-height))", overflowY: "auto", padding: 16 }}>
@@ -297,24 +302,24 @@ function ColumnsChooser({ label, menu }: { label: string; menu: ColumnsMenu }) {
 }
 
 function LensRow({ lenses, lens, onLens, columns, sortable, sortColumn, onSortColumn, columnsLabel, columnsMenu, updating, activeCount, onOpenFilters, setName }: Pick<BuildsTableViewProps, "lenses" | "lens" | "onLens" | "columns" | "sortable" | "sortColumn" | "onSortColumn" | "columnsLabel" | "columnsMenu" | "updating" | "activeCount" | "onOpenFilters" | "setName">) {
-  const phone = useIsPhone();
+  /* Synth 08: the lenses at the left, Filters, Sort and Columns at the right as small secondary buttons. From 761 to 1100 the
+     controls wrap under the lenses; below 761 the lenses scroll sideways inside their own row. */
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12, borderBottom: `1px solid ${t.hairline}` }}>
-      {/* G8: at 320 the lenses scroll in their own box and the controls wrap, rather than push the page sideways; where they
-          fit nothing changes. */}
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "0 12px" }}>
       {/* The box keeps 4px round the tabs for their focus ring, given back in margin, so nothing moves. */}
       <div style={{ padding: 4, margin: -4, maxWidth: "calc(100% + 8px)", boxSizing: "border-box", minWidth: 0, overflowX: "auto", scrollbarWidth: "none" }}>
         <TextTabs tabs={lenses} value={lens} onChange={onLens} label="Lens" rule={false} />
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 4 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, paddingBlock: 4 }}>
         <UpdatingStatus updating={updating} />
         <FiltersButton activeCount={activeCount} setName={setName} onClick={onOpenFilters} />
-        {phone ? <SortMenu columns={columns} sortable={sortable} sortColumn={sortColumn} onSortColumn={onSortColumn} /> : null}
+        <SortMenu columns={columns} sortable={sortable} sortColumn={sortColumn} onSortColumn={onSortColumn} />
         {columnsLabel && columnsMenu ? (
           <ColumnsChooser label={columnsLabel} menu={columnsMenu} />
         ) : columnsLabel ? (
-          <BuildsControl>
-            <span style={{ color: t.text2 }}>Columns</span> {columnsLabel}
+          <BuildsControl aria-label={`Columns: ${columnsLabel}`}>
+            Columns
+            <ChevronDown size={14} aria-hidden="true" />
           </BuildsControl>
         ) : null}
       </div>
@@ -333,7 +338,9 @@ export function ActiveFilters({ chips, onRemove, onClearAll }: { chips: readonly
         <ActiveFilterChip key={chip.key} name={chip.name} value={chip.value} onRemove={() => onRemove(chip.key)} />
       ))}
       <span style={{ height: 26, display: "inline-flex", alignItems: "center", padding: "0 8px" }}>
-        <BuildsTextButton onClick={onClearAll}>Clear all</BuildsTextButton>
+        <BuildsTextButton size={13} underline color={t.text2} onClick={onClearAll}>
+          Clear all
+        </BuildsTextButton>
       </span>
     </div>
   );
@@ -341,26 +348,31 @@ export function ActiveFilters({ chips, onRemove, onClearAll }: { chips: readonly
 
 /* ── cells ── */
 
-/** BF-01 P4 (C10): the lamp, named. Lit: confirmed within the window; dim: gone stale. Drawn only where there is a reproduction. */
-export function RowLamp({ lit }: { lit: boolean }) {
-  const name = lit ? `Confirmed in the last ${STALE_AFTER_DAYS} days` : `Stale: not confirmed in ${STALE_AFTER_DAYS} days`;
-  return (
-    <span role="img" aria-label={name} title={name} style={{ display: "inline-flex" }}>
-      <LampBar dim={!lit} />
-    </span>
-  );
-}
-
 /** BF-13 (C5b): the Build column stays in view while the table scrolls sideways, on the surface it sits on. */
-const PINNED: CSSProperties = { position: "sticky", left: 0, zIndex: 1, background: t.surface };
+const PINNED: CSSProperties = { position: "sticky", left: 0, zIndex: 1 };
 
 /** The pinned column's right edge, drawn only while the table is scrolled, so the cells passing under it are cut by a line. */
 function PinnedEdge({ scrolled }: { scrolled: boolean }) {
   return scrolled ? <span aria-hidden="true" style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 1, background: t.hairline }} /> : null;
 }
 
-const th = (right: boolean, last: boolean): React.CSSProperties => ({ ...text(12, 400, t.label), padding: last ? "0 0 10px" : "0 12px 10px 0", borderBottom: `1px solid ${t.hairline}`, textAlign: right ? "right" : "left", verticalAlign: "bottom", whiteSpace: "nowrap" });
-const td = (right: boolean, last: boolean): React.CSSProperties => ({ padding: last ? 0 : "0 12px 0 0", height: TABLE_ROW, textAlign: right ? "right" : "left", whiteSpace: "nowrap" });
+/* Heads are 13 Text 3, no line under them; a cell has 12 either side so a hovered row's Card fill has room round its words. */
+const th = (right: boolean, _last: boolean): React.CSSProperties => ({ ...text(13, 400, t.label), padding: "0 12px 8px", textAlign: right ? "right" : "left", verticalAlign: "bottom", whiteSpace: "nowrap" });
+const td = (right: boolean, position: number, count: number): React.CSSProperties => ({
+  padding: "0 12px",
+  height: TABLE_ROW,
+  textAlign: right ? "right" : "left",
+  whiteSpace: "nowrap",
+  borderRadius: position === 0 ? "8px 0 0 8px" : position === count - 1 ? "0 8px 8px 0" : 0,
+});
+
+/** A number: Geist Mono 15, right-aligned by its column. Zero or none is "0" in Text 3. */
+function Count({ value }: { value: number | null | undefined }) {
+  return value ? <span style={{ fontFamily: DM_MONO, fontSize: 15, color: t.text }}>{value}</span> : <span style={{ fontFamily: DM_MONO, fontSize: 15, color: t.label }}>0</span>;
+}
+
+/** A word cell with nothing in it: the shared empty mark. */
+const Blank = Empty;
 
 /** BF-11 (B2): a filtered head is in `--text` at 500 over a 1px `--selected-edge` line, and says so to a screen reader. No icon,
     and pressing it still only sorts: the way to the filter is the Filters button and the chip. The head and its button are named
@@ -383,7 +395,7 @@ function ColumnHead({ id, last, sorted, sorted2, sortable, onSort, filtered, dra
       aria-sort={ariaSort}
       aria-label={label}
       {...drag}
-      style={{ ...th(right, last), color: sorted || filtered ? t.text : t.label, ...(drag ? { userSelect: "none", touchAction: "none", cursor: "grab" } : null), ...(id === "build" ? PINNED : null) }}
+      style={{ ...th(right, last), color: sorted || filtered ? t.text : t.label, ...(drag ? { userSelect: "none", touchAction: "none", cursor: "grab" } : null), ...(id === "build" ? { ...PINNED, background: t.surface } : null) }}
     >
       {id === "build" ? <PinnedEdge scrolled={scrolled} /> : null}
       {sortable ? (
@@ -404,7 +416,7 @@ function ColumnHead({ id, last, sorted, sorted2, sortable, onSort, filtered, dra
           {HEAD[id]}
           {arrow ? (
             <span aria-hidden="true">
-              {arrow.ascending ? "↑" : "↓"}
+              <ChevronDown size={13} style={{ verticalAlign: "-2px", color: t.label, transform: arrow.ascending ? "rotate(180deg)" : undefined }} />
               {sorted2 && !sorted ? "2" : null}
             </span>
           ) : null}
@@ -419,51 +431,14 @@ function ColumnHead({ id, last, sorted, sorted2, sortable, onSort, filtered, dra
   );
 }
 
-/** A tool's mark: the real logo from the registry in the board's 16px tile. BF-01 P5 (C11): a keyboard can reach it, and
-    it names its tool to a screen reader and, on hover, in its title. No shared tooltip is used on a site page. */
-function ToolMark({ tool }: { tool: TableTool }) {
-  const { state, handlers } = useInteractive<HTMLSpanElement>();
-  return (
-    // BF-05 (G3): the focusable span is a 24 by 24 hit area with a -4 margin, so the row keeps its footprint; the 16px tile inside is what is drawn and what the focus ring circles.
-    <span role="img" aria-label={tool.name} title={tool.name} tabIndex={0} {...handlers} style={{ boxSizing: "content-box", width: 16, height: 16, padding: 4, margin: -4, display: "inline-grid", placeItems: "center" }}>
-      <span style={{ position: "relative", width: 16, height: 16, borderRadius: r.chip, background: t.tile, display: "inline-grid", placeItems: "center", ...ring(state.focusVisible) }}>
-        <ModelMark tool={tool.id} size={14} />
-      </span>
-    </span>
-  );
-}
-
-function ToolMarks({ tools }: { tools: readonly TableTool[] }) {
-  return (
-    <span style={{ display: "inline-flex", gap: 4, verticalAlign: "middle" }}>
-      {tools.map((tool) => (
-        <ToolMark key={tool.id} tool={tool} />
-      ))}
-    </span>
-  );
-}
-
-function RunBars({ runs }: { runs: readonly number[] }) {
-  if (runs.every((value) => value === 0)) return <Empty />;
-  const max = Math.max(1, ...runs);
-  const summary = `Runs per week over 12 weeks, oldest first: ${runs.join(", ")}`;
-  return (
-    <span role="img" aria-label={summary} style={{ display: "inline-flex", alignItems: "flex-end", gap: 2, height: 16, verticalAlign: "middle" }}>
-      {runs.map((value, index) => (
-        <span key={index} aria-hidden="true" style={{ width: 3, height: Math.max(2, Math.round((value / max) * 16)), borderRadius: 1, background: value === 0 ? t.line : t.evidence }} />
-      ))}
-    </span>
-  );
-}
-
 function BuildCell({ row }: { row: TableRowView }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   return (
     <span style={{ display: "block", minWidth: 200 }}>
-      <Link to={row.href} {...handlers} style={{ display: "block", maxWidth: 220, ...ellipsis, ...hitArea(2), ...text(13, 500, state.hovered ? t.text2 : t.text), textDecoration: "none", borderRadius: r.chip, ...ring(state.focusVisible) }}>
+      <Link to={row.href} {...handlers} style={{ display: "block", maxWidth: 240, ...ellipsis, ...hitArea(2), ...text(15, 600, state.hovered ? t.text2 : t.text), textDecoration: "none", borderRadius: r.chip, ...ring(state.focusVisible) }}>
         {row.title}
       </Link>
-      <span style={text(12, 400, t.label)}>@{row.maker}</span>
+      <span style={text(13, 400, t.label)}>@{row.maker}</span>
     </span>
   );
 }
@@ -473,47 +448,36 @@ function cellOf(id: ColumnId, row: TableRowView): ReactNode {
     case "build":
       return <BuildCell row={row} />;
     case "built":
-      return row.built || <Empty />;
+      return row.built || <Blank />;
     case "field":
-      return row.field || <Empty />;
-    case "tools":
-      return row.tools.length > 0 ? <ToolMarks tools={row.tools} /> : <Empty />;
+      return row.field || <Blank />;
     case "steps":
-      return row.steps ?? <Empty />;
+      return <Count value={row.steps} />;
     case "sessions":
-      return row.sessions ?? <Empty />;
-    case "reproductions":
-      return (
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-          {row.reproductions}
-          {row.reproductions > 0 ? <RowLamp lit={row.lit} /> : null}
-        </span>
-      );
-    case "confirmed":
-      return row.confirmed || <Empty />;
-    case "runs":
-      return <RunBars runs={row.runs} />;
+      return <Count value={row.sessions} />;
     case "rebuilds":
-      return row.rebuilds;
+      return <Count value={row.rebuilds} />;
     case "open":
-      return row.open || <Empty />;
+      return row.open || <Blank />;
     case "cost":
-      return row.cost || <Empty />;
+      return row.cost || <span style={{ color: t.label }}>Not measured</span>;
     default:
-      return row.extra?.[id] || <Empty />;
+      return row.extra?.[id] || <Blank />;
   }
 }
 
-const QUIET: ReadonlySet<ColumnId> = new Set(["built", "field", "confirmed", "open", "cost", ...EXTRA_COLUMNS]);
+const QUIET: ReadonlySet<ColumnId> = new Set(["built", "field", "open", "cost", ...EXTRA_COLUMNS]);
 
 /** Rows past the first screen are skipped until they come near. */
 const FIRST_SCREEN_ROWS = 14;
 
 function Row({ row, columns, index, scrolled }: { row: TableRowView; columns: readonly ColumnId[]; index: number; scrolled: boolean }) {
+  const { state, handlers } = useInteractive<HTMLTableRowElement>();
+  const fill = state.hovered ? t.module : "transparent";
   return (
-    <tr style={{ borderBottom: `1px solid ${t.hairline}`, ...(index >= FIRST_SCREEN_ROWS ? { contentVisibility: "auto", containIntrinsicSize: `auto ${TABLE_ROW}px` } : null) }}>
+    <tr {...handlers} style={index >= FIRST_SCREEN_ROWS ? { contentVisibility: "auto", containIntrinsicSize: `auto ${TABLE_ROW}px` } : undefined}>
       {columns.map((id, position) => (
-        <td key={id} style={{ ...td(RIGHT.has(id), position === columns.length - 1), color: QUIET.has(id) ? t.text2 : t.text, ...(id === "build" ? PINNED : null) }}>
+        <td key={id} style={{ ...td(RIGHT.has(id), position, columns.length), background: id === "build" && !state.hovered ? t.surface : fill, color: QUIET.has(id) ? t.text2 : t.text, ...(id === "build" ? PINNED : null) }}>
           {id === "build" ? <PinnedEdge scrolled={scrolled} /> : null}
           {cellOf(id, row)}
         </td>
@@ -523,22 +487,6 @@ function Row({ row, columns, index, scrolled }: { row: TableRowView; columns: re
 }
 
 /* ── the footer ── */
-
-/** BF-01 P4: what the two lamps mean. BF-13: its own line under the table, outside it. */
-function LampKey() {
-  return (
-    <span data-testid="builds-lamp-key" style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 8, ...text(12, 400, t.label) }}>
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-        <RowLamp lit />
-        <span>{`confirmed in the last ${STALE_AFTER_DAYS} days`}</span>
-      </span>
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-        <RowLamp lit={false} />
-        <span>stale</span>
-      </span>
-    </span>
-  );
-}
 
 /** Add a calculation: a menu of the columns one can be made on (sum and median of a count, most common of a word), or the dev page's plain button. */
 function AddCalculation({ footer }: { footer: TableFooterView }) {
@@ -570,6 +518,23 @@ function AddCalculation({ footer }: { footer: TableFooterView }) {
   ) : null;
 }
 
+/** A footer value: "Median 11" is the word in Text 3 and the number in Geist Mono 13 Text 2; a word value stays as it is. */
+function MedianValue({ text: value, numeric }: { text: string; numeric: boolean }) {
+  const at = value.lastIndexOf(" ");
+  const number = numeric && at > 0 ? value.slice(at + 1) : null;
+  return (
+    <span style={{ display: "block", width: 0, minWidth: "100%" }}>
+      {number === null ? (
+        value
+      ) : (
+        <>
+          {value.slice(0, at)} <span style={{ fontFamily: DM_MONO, fontSize: 13, color: t.text2 }}>{number}</span>
+        </>
+      )}
+    </span>
+  );
+}
+
 /** BF-13 (C6): one cell per column, in the drawn order, so a value moves with its column. The Build cell holds the count and, under
     it, Add a calculation; every other cell its own value and the calculations added on it, each with its Remove button. */
 function Footer({ columns, footer, scrolled }: { columns: readonly ColumnId[]; footer: TableFooterView; scrolled: boolean }) {
@@ -581,7 +546,7 @@ function Footer({ columns, footer, scrolled }: { columns: readonly ColumnId[]; f
           const last = position === columns.length - 1;
           const calculations = (footer.calculations ?? []).filter((calculation) => calculation.column === id);
           return (
-            <td key={id} style={{ ...text(12, 400, t.label), padding: last ? "12px 0 0" : "12px 12px 0 0", textAlign: RIGHT.has(id) ? "right" : "left", verticalAlign: "top", ...(id === "build" ? PINNED : null) }}>
+            <td key={id} style={{ ...text(13, 400, t.label), padding: last ? "12px 12px 0" : "12px 12px 0", textAlign: RIGHT.has(id) ? "right" : "left", verticalAlign: "top", ...(id === "build" ? { ...PINNED, background: t.surface } : null) }}>
               {id === "build" ? (
                 <>
                   <PinnedEdge scrolled={scrolled} />
@@ -592,7 +557,7 @@ function Footer({ columns, footer, scrolled }: { columns: readonly ColumnId[]; f
                 <>
                   {/* The footer's own value never widens its column: it wraps within the width the head and the cells set, and a
                       word longer than that ("Median" under Steps) runs into the cell's own padding. */}
-                  {footer.byColumn?.[id] ? <span style={{ display: "block", width: 0, minWidth: "100%" }}>{footer.byColumn[id]}</span> : null}
+                  {footer.byColumn?.[id] ? <MedianValue text={footer.byColumn[id]!} numeric={RIGHT.has(id)} /> : null}
                   {calculations.map((calculation) => (
                     <span key={calculation.key} style={{ display: "flex", alignItems: "baseline", justifyContent: RIGHT.has(id) ? "flex-end" : "flex-start", gap: 4 }}>
                       {calculation.text}
@@ -637,7 +602,7 @@ export function BuildsTableView(props: BuildsTableViewProps) {
         <div style={{ marginTop: 20 }}>{empty}</div>
       ) : (
         <div ref={region} role="region" aria-label="Builds table" data-scrolled={scrolled ? "true" : undefined} aria-busy={updating === true} tabIndex={0} style={{ position: "relative", marginTop: 20, overflowX: "auto", scrollbarWidth: "thin", scrollbarColor: `${t.label} transparent` }}>
-          <table style={{ width: "100%", minWidth: 1000, borderCollapse: "collapse", ...text(13, 400, t.text) }}>
+          <table style={{ width: "100%", minWidth: 760, borderCollapse: "separate", borderSpacing: "0 2px", ...text(15, 400, t.text) }}>
             <thead>
               <tr ref={headRow}>
                 {columns.map((id, position) => (
@@ -665,9 +630,8 @@ export function BuildsTableView(props: BuildsTableViewProps) {
           </table>
         </div>
       )}
-      {rows.length === 0 && empty ? null : <LampKey />}
       {onMore ? (
-        <div style={{ marginTop: 20 }}>
+        <div style={{ marginTop: 20, display: "flex", justifyContent: "center" }}>
           <BuildsControl onClick={onMore} disabled={loadingMore}>
             Show more
           </BuildsControl>

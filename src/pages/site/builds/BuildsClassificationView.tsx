@@ -14,7 +14,6 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { Checkbox } from "@/components/brand/Checkbox";
-import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
 import { Empty } from "@/components/vision/Empty";
 import type { GalleryViewMode } from "@/lib/build/galleryParams";
 import { FACET_LABEL, type Facet } from "@/lib/classify/taxonomy";
@@ -24,9 +23,10 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
-import { BuildsControl, BuildsHead, FiltersButton, UpdatingStatus, ViewSwitch, ellipsis, hitArea, text, useCardColumns } from "./BuildsFrame";
+import { BUILDS_PANEL, BuildsControl, BuildsHead, FiltersButton, UpdatingStatus, ViewSwitch, ellipsis, hitArea, text, useCardColumns } from "./BuildsFrame";
+import { useColumnPanels } from "@/components/shell/frameChrome";
 import { BuildsFilters, type BuildsFiltersViewProps } from "./BuildsFiltersView";
-import { ActiveFilters, RowLamp, type TableChip } from "./BuildsTableView";
+import { ActiveFilters, type TableChip } from "./BuildsTableView";
 import { ALL_FACETS, type ClassCardView, type ClassRowView, type ClassValueView } from "./classificationModel";
 
 export interface BuildsClassificationViewProps {
@@ -135,13 +135,6 @@ export function ClassificationCard({ card, index }: { card: ClassCardView; index
           </Link>
           <div style={{ marginTop: 2, ...text(12, 400, t.label), lineHeight: "normal" }}>{card.subtitle}</div>
         </div>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flex: "none", ...text(12, 400, t.text) }}>
-          <span>
-            {card.reproductions}
-            <VisuallyHidden> reproduced</VisuallyHidden>
-          </span>
-          {card.reproductions > 0 ? <RowLamp lit={card.lit} /> : null}
-        </span>
       </div>
       {blank ? (
         <p style={{ ...text(12, 400, t.label), margin: "16px 0 0" }}>Not classified yet</p>
@@ -177,18 +170,17 @@ function FacetChooser({ facets, onFacets }: Pick<BuildsClassificationViewProps, 
   );
 }
 
-const CLASSIFICATION_PARTS = [{ text: "Classification of each build" }, { text: "select a value to filter by it" }];
-
 export default function BuildsClassificationView(props: BuildsClassificationViewProps) {
   const { view, hrefFor, onViewIntent, buildsLabel, activeCount, chips, onRemoveChip, onClearAll, filters, setName, facets, onFacets, cards, onMore, loadingMore, empty, updating } = props;
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [facetsOpen, setFacetsOpen] = useState(false);
   const columns = useCardColumns();
+  useColumnPanels(true);
   return (
-    <div data-testid="builds-classification" style={ROOT}>
-      <BuildsHead figure="Builds" parts={buildsLabel ? [{ text: buildsLabel }, ...CLASSIFICATION_PARTS] : CLASSIFICATION_PARTS} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
+    <div data-testid="builds-classification" style={{ ...ROOT, ...BUILDS_PANEL }}>
+      <BuildsHead figure="Builds" parts={buildsLabel ? [{ text: buildsLabel }] : [{ text: "\u00a0" }]} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
 
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 16px", marginTop: 24 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 16px", margin: "16px 20px 0" }}>
         <FiltersButton activeCount={activeCount} setName={setName} disabled={!filters} onClick={() => setFiltersOpen(true)} />
         <BuildsControl aria-expanded={facetsOpen} onClick={() => setFacetsOpen((value) => !value)}>
           <span style={{ color: t.text2 }}>Facets shown</span>
@@ -201,27 +193,27 @@ export default function BuildsClassificationView(props: BuildsClassificationView
 
       {filters ? <BuildsFilters {...filters} open={filtersOpen} onOpenChange={setFiltersOpen} /> : null}
       {facetsOpen ? (
-        <div style={{ marginTop: 16 }}>
+        <div style={{ margin: "16px 20px 0" }}>
           <FacetChooser facets={facets} onFacets={onFacets} />
         </div>
       ) : null}
 
-      <p data-testid="classification-key" style={{ ...text(12, 400, t.label), margin: "16px 0 0" }}>
+      <p data-testid="classification-key" style={{ ...text(12, 400, t.label), margin: "16px 20px 0" }}>
         Under each facet: <span style={{ color: t.text2 }}>from n tiles</span>, <span style={{ color: t.text2 }}>derived</span> when the tiles were not kept, <span style={{ color: t.text2 }}>stated</span> by the maker, or{" "}
         <span style={{ color: t.text2 }}>corrected</span> by the maker
       </p>
 
       {cards.length === 0 && empty ? (
-        <div style={{ marginTop: 16 }}>{empty}</div>
+        <div style={{ margin: "16px 20px 0" }}>{empty}</div>
       ) : (
-        <div data-testid="builds-cards" aria-busy={updating === true} style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, alignItems: "start", marginTop: 16, paddingBottom: onMore ? 24 : 64, ...(updating ? { opacity: 0.5 } : null) }}>
+        <div data-testid="builds-cards" aria-busy={updating === true} style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, alignItems: "start", margin: "16px 20px 0", paddingBottom: onMore ? 24 : 0, ...(updating ? { opacity: 0.5 } : null) }}>
           {cards.map((card, index) => (
             <ClassificationCard key={card.id} card={card} index={index} />
           ))}
         </div>
       )}
       {onMore ? (
-        <div style={{ paddingBottom: 64 }}>
+        <div style={{ padding: "0 20px" }}>
           <BuildsControl onClick={onMore} disabled={loadingMore}>
             {loadingMore ? "Loading" : "Show more builds"}
           </BuildsControl>
