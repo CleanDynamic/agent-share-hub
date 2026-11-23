@@ -73,7 +73,7 @@ describe("CA-10 · the Drafts page, one status per panel", () => {
     expect(await screen.findByText("Draft 1")).toBeTruthy();
     await waitFor(() => expect(screen.getAllByText(FAILED_LINE)).toHaveLength(1), { timeout: 5_000 });
     expect(within(panel("Sessions")).queryByText(/Code /)).toBeNull();
-    expect(screen.queryByRole("alert", { name: "Continue editing" })).toBeNull();
+    expect(screen.queryByRole("alert", { name: "Drafts" })).toBeNull();
     /* SV-08: twelve rows, then "Show 3 more". */
     expect(screen.getByText("Draft 12")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Show 3 more" })).toBeTruthy();
@@ -92,7 +92,7 @@ describe("CA-10 · the Drafts page, one status per panel", () => {
 
   it("the drafts read failing shows its code in its own panel, and the sessions still show", async () => {
     mount({ faults: [{ method: "GET", path: DRAFTS, answer: TIMEOUT }] });
-    await waitFor(() => expect(within(panel("Continue editing")).queryByText(/Code /)).toBeNull(), { timeout: 5_000 });
+    await waitFor(() => expect(within(panel("Drafts")).queryByText(/Code /)).toBeNull(), { timeout: 5_000 });
     expect(screen.getAllByText(FAILED_LINE)).toHaveLength(1);
     expect(screen.getByText("A waiting session.")).toBeTruthy();
   });

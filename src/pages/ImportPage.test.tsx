@@ -198,8 +198,10 @@ describe("/import", () => {
     renderPage();
 
     expect(
-      screen.getByRole("heading", { level: 1, name: "Post a build without writing it up." })
+      screen.getByRole("heading", { level: 1, name: "Import a Build File" })
     ).toBeInTheDocument();
+
+    expect(screen.getByText("Post a build without writing it up.")).toBeInTheDocument();
 
     for (const step of ["Copy the Extractor", "Save what it gives you", "Drop it here"]) {
       expect(screen.getByRole("heading", { level: 2, name: step })).toBeInTheDocument();
@@ -245,24 +247,24 @@ describe("/import", () => {
   // and e2e/tier3/import-repaint.spec.ts reads the resolved colour in both
   // themes, which is the half only a browser can answer.
 
-  it("cuts each step into the page as a panel with a mono numeral", () => {
+  it("lists the steps with no panel around them, each behind a 28 number box", () => {
     renderPage();
 
     const steps = document.querySelectorAll('[data-visual-slot="import-step"]');
     expect(steps).toHaveLength(3);
 
     for (const step of Array.from(steps)) {
-      expect(step.getAttribute("style") ?? "").toContain("border-radius: var(--r-panel)");
+      expect(step.getAttribute("style") ?? "").not.toContain("border");
     }
 
-    // The numerals are a spine for the eye to follow: circular, and mono
-    // because a step number is a count.
+    // The numerals are a spine for the eye to follow: a 28 box, and mono because a step number is a count.
     for (const ordinal of [1, 2, 3]) {
       const numeral = screen.getByTestId(`import-step-${ordinal}`);
       expect(numeral).toHaveTextContent(String(ordinal));
       const style = numeral.getAttribute("style") ?? "";
       expect(style).toContain("Geist");
-      expect(style).toContain("border-radius: var(--r-full)");
+      expect(style).toContain("width: 28px");
+      expect(style).toContain("height: 28px");
     }
   });
 

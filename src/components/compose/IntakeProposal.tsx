@@ -548,7 +548,7 @@ function SecretsBanner({ secrets }: { secrets: SecretWarning[] }) {
       </span>
       <p style={{ ...bodyText, margin: 0, color: t.text }}>
         Looks like a key or password travelled in this file. Check these before
-        you publish — clear them in the fields after import.
+        you publish. Clear them in the fields after import.
       </p>
       <ul
         style={{

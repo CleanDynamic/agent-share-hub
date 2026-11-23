@@ -1,17 +1,19 @@
-/* SV-09: the Library page's frame, in a small module of its own: the three columns, the controls the page shares, and
-   the page as it stands while it loads (`LibraryLoadingView`, the route table's Placeholder and the page's own loading
-   state), so the Placeholder carries none of the page's code (its table, panels and dialogs).
+/* Synth 10 Part B: the Library page's frame, in a small module of its own: the two panels, the controls the page shares,
+   and the page as it stands while it loads (`LibraryLoadingView`, the route table's Placeholder and the page's own loading
+   state), so the Placeholder carries none of the page's code (its rows, sections and dialogs).
 
-   The board is `design/reference/vision/dusk/library.html`. The surface and its padding belong to the site frame; what is
-   here starts at the page head. Three columns are the page grid's feed template (3 / 6 / 3, 32 gutters); below 1200 the
-   selected item moves under the others (`208px minmax(0, 1fr)`, 48 apart); below 800 one column. */
+   PANELS (Synth 03). Two panels on the page shade, 8 apart, no lines: the saved things (`minmax(0, 1fr)`) and the side
+   panel (340 from 1101, 300 from 761 to 1100). Below 761 the side sections stack under the list. The frame's own panel
+   steps back (`useColumnPanels`). The page's h1 is for screen readers only: Library is the current nav item, and the
+   panel opens on its counts ("0 saved · 0 collections") in Text 3. */
 
 import type { CSSProperties, ReactNode } from "react";
 
 import { Button } from "@/components/brand/Button";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
-import { PageHeader } from "@/components/shell/PageHeader";
-import { pageColumns } from "@/components/shell/pageGrid";
+import { PANEL_GUTTER, PANEL_PAD, PANEL_RADIUS } from "@/components/shell/chromeSize";
+import { useColumnPanels } from "@/components/shell/frameChrome";
+import { panelColumns } from "@/components/shell/pageGrid";
 import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -19,53 +21,55 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
-/* ── the board's numbers ── */
+/* ── the numbers ── */
 
-/** The board's breakpoints: three columns above 1200, two above 800, one below. */
-const THREE_MIN = 1201;
-const TWO_MIN = 801;
+/** The two panels show from 761; the side panel is 340 from 1101 and 300 below that. */
+const TWO_MIN = 761;
+const WIDE_SIDE_MIN = 1101;
 
-/** Table rows are 52 high on the board. */
-export const TABLE_ROW = 52;
+/** A saved row, a Card: title 15/600 and its facts. */
+export const ROW_HEIGHT = 64;
 
-export type LibraryLayout = "three" | "two" | "one";
+export type LibraryLayout = "wide" | "mid" | "one";
 
 export function useLibraryLayout(): LibraryLayout {
-  const three = useMinWidth(THREE_MIN);
+  const wide = useMinWidth(WIDE_SIDE_MIN);
   const two = useMinWidth(TWO_MIN);
-  return three ? "three" : two ? "two" : "one";
+  return wide ? "wide" : two ? "mid" : "one";
 }
 
-/** The boards' root: Geist 13 on a 20px line, numbers tabular. */
+/** The page's root: Geist 13 on a 20px line, numbers tabular. */
 const ROOT: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.text, fontVariantNumeric: "tabular-nums" };
 
-const COLUMNS: Record<LibraryLayout, CSSProperties> = {
-  three: pageColumns("feed"),
-  two: { gridTemplateColumns: "208px minmax(0, 1fr)", columnGap: 48, rowGap: 48 },
-  one: { gridTemplateColumns: "minmax(0, 1fr)", rowGap: 40 },
-};
+const panel: CSSProperties = { background: t.surface, borderRadius: PANEL_RADIUS, overflow: "clip", minWidth: 0, boxSizing: "border-box", padding: PANEL_PAD };
 
-/** The page: the left column (head, kinds, collections), the main column, and the selected item. On a phone the left
-    column's head and kinds come first, then the main column, the selected item, and the collections last. */
-export function LibraryColumns({ layout, head, left, main, detail, testId = "library-page" }: { layout: LibraryLayout; head: ReactNode; left: ReactNode; main: ReactNode; detail: ReactNode; testId?: string }) {
-  if (layout === "one") {
-    return (
-      <div data-testid={testId} data-layout={layout} style={{ ...ROOT, display: "grid", ...COLUMNS.one, paddingBottom: 64 }}>
-        <div style={{ minWidth: 0 }}>{head}</div>
-        <section aria-label="Saved" style={{ minWidth: 0 }}>{main}</section>
-        <aside aria-label="Selected item" style={{ minWidth: 0 }}>{detail}</aside>
-        <div style={{ minWidth: 0 }}>{left}</div>
-      </div>
-    );
-  }
+/** The page: the saved things (head, kinds, changes, the list) and the side panel (collections, the selected item and a
+    collection's preview, then how saving works). */
+export function LibraryColumns({
+  layout,
+  head,
+  main,
+  side,
+  testId = "library-page",
+}: {
+  layout: LibraryLayout;
+  head: ReactNode;
+  main: ReactNode;
+  side: ReactNode;
+  testId?: string;
+}) {
+  useColumnPanels(true);
+  const frame: CSSProperties =
+    layout === "one" ? { display: "flex", flexDirection: "column", gap: PANEL_GUTTER } : panelColumns("two", { between: layout === "mid" });
   return (
-    <div data-testid={testId} data-layout={layout} style={{ ...ROOT, display: "grid", ...COLUMNS[layout], paddingBottom: 64 }}>
-      <aside aria-label="Library sections" style={{ minWidth: 0 }}>
+    <div data-testid={testId} data-layout={layout} style={{ ...ROOT, ...frame }}>
+      <section aria-label="Saved" style={{ ...panel, paddingBottom: 32 }}>
         {head}
-        {left}
+        {main}
+      </section>
+      <aside aria-label="Collections and the selected item" style={{ ...panel, display: "flex", flexDirection: "column", gap: 24 }}>
+        {side}
       </aside>
-      <section aria-label="Saved" style={{ minWidth: 0 }}>{main}</section>
-      <aside aria-label="Selected item" style={{ minWidth: 0, gridColumn: layout === "two" ? "1 / -1" : undefined }}>{detail}</aside>
     </div>
   );
 }
@@ -73,10 +77,26 @@ export function LibraryColumns({ layout, head, left, main, detail, testId = "lib
 /* ── controls ── */
 
 /** A control 32 high (44 on a phone, as the Drafts page's controls are): the shared Button, a link when it goes somewhere. */
-export function LibraryControl({ onClick, href, disabled, wide, children, ...rest }: { onClick?: () => void; href?: string; disabled?: boolean; wide?: boolean; children: ReactNode; "aria-label"?: string }) {
+export function LibraryControl({
+  onClick,
+  href,
+  disabled,
+  wide,
+  variant = "secondary",
+  children,
+  ...rest
+}: {
+  onClick?: () => void;
+  href?: string;
+  disabled?: boolean;
+  wide?: boolean;
+  variant?: "secondary" | "ghost";
+  children: ReactNode;
+  "aria-label"?: string;
+}) {
   const phone = useIsPhone();
   return (
-    <Button variant="secondary" size={phone ? 44 : 32} href={href} fullWidth={wide} disabled={disabled} onClick={onClick} {...rest}>
+    <Button variant={variant} size={phone ? 44 : 32} href={href} fullWidth={wide} disabled={disabled} onClick={onClick} {...rest}>
       {children}
     </Button>
   );
@@ -92,7 +112,7 @@ export function LibraryPrimary({ onClick, href, children }: { onClick?: () => vo
   );
 }
 
-/** A text button in `--text2`: the Collections head's "New". */
+/** A quiet text button in `--text2`: the Collections head's "New". */
 export function LibraryTextButton({ onClick, children, ...rest }: { onClick: () => void; children: ReactNode; "aria-label"?: string }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
@@ -110,72 +130,46 @@ export function LibraryTextButton({ onClick, children, ...rest }: { onClick: () 
 
 /* ── the head ── */
 
-const headMeta: CSSProperties = { margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.label, fontVariantNumeric: "tabular-nums" };
-
-/** "Library" and its count line. */
+/** The h1 is read by screen readers only (the nav names the page); the counts are the visible head, 13 in Text 3. */
 export function LibraryHead({ title, meta }: { title: string; meta: ReactNode }) {
   return (
-    <div>
-      <PageHeader title={title} />
-      <p style={headMeta}>{meta}</p>
-    </div>
+    <header style={{ marginBottom: 12 }}>
+      <h1 className="sr-only" style={{ margin: 0 }}>
+        {title}
+      </h1>
+      <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.label, fontVariantNumeric: "tabular-nums" }}>{meta}</p>
+    </header>
   );
 }
 
 /* ── loading ── */
 
-/** The table's header row while it loads: the header's own size, line and rule around a blank line, so it is the header's
-    height in any face. */
-function TableHeadBones() {
-  return <div style={{ fontFamily: FIGTREE, fontSize: 13, padding: "0 0 10px", borderBottom: `1px solid ${t.hairline}` }}>{"\u00a0"}</div>;
-}
-
-/** Rows of the table while it loads, at the table's own sizes, under its header row. */
+/** Rows of the list while it loads, at the row's own height. */
 export function TableRowSkeletons({ count }: { count: number }) {
   return (
     <div aria-hidden="true">
-      <TableHeadBones />
       {Array.from({ length: count }, (_, index) => (
-        <div key={index} style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 6, height: TABLE_ROW, borderBottom: `1px solid ${t.hairline}` }}>
-          <Skeleton width="40%" height={12} radius={4} />
-          <Skeleton width="28%" height={10} radius={4} />
+        <div key={index} style={{ display: "flex", alignItems: "center", height: ROW_HEIGHT, boxSizing: "border-box" }}>
+          <Skeleton height={ROW_HEIGHT - 8} radius={10} />
         </div>
       ))}
     </div>
   );
 }
 
-/** The collections list while it loads: three rows 40 high. */
+/** The collections list while it loads: three cards. */
 export function CollectionSkeletons() {
   return (
-    <div aria-hidden="true">
+    <div aria-hidden="true" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {[0, 1, 2].map((index) => (
-        <div key={index} style={{ display: "flex", alignItems: "center", height: 48, borderBottom: `1px solid ${t.hairline}` }}>
-          <Skeleton width="60%" height={12} radius={4} />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/** The kinds an owner's Library lists: `LIVE_KINDS` in libraryModel, counted here so the model stays out of the first download. */
-const KIND_ROWS = 8;
-
-/** The kinds while they load: one 32 row each, under the head as the kinds are. */
-function KindBones() {
-  return (
-    <div aria-hidden="true" style={{ marginTop: 28 }}>
-      {Array.from({ length: KIND_ROWS }, (_, index) => (
-        <div key={index} style={{ display: "flex", alignItems: "center", height: 32 }}>
-          <Skeleton width="50%" height={12} radius={4} />
-        </div>
+        <Skeleton key={index} height={56} radius={10} />
       ))}
     </div>
   );
 }
 
 /** The Library as it stands before its lists arrive: the route table's Placeholder for /library, and the page's own
-    loading state. The head and the column frames are drawn; the lists and the selected item are blocks. */
+    loading state. The head and the panels are drawn; the lists are blocks. */
 export function LibraryLoadingView() {
   const layout = useLibraryLayout();
   return (
@@ -184,25 +178,8 @@ export function LibraryLoadingView() {
         layout={layout}
         testId="library-loading"
         head={<LibraryHead title="Library" meta={" "} />}
-        left={
-          <>
-            <KindBones />
-            <section aria-label="Collections" style={{ marginTop: 32 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingBottom: 8, borderBottom: `1px solid ${t.hairline}` }}>
-                <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: 500, lineHeight: "20px", color: t.text }}>Collections</h2>
-                <span style={{ display: "inline-flex", height: 24 }} />
-              </div>
-              <CollectionSkeletons />
-            </section>
-          </>
-        }
-        main={
-          <>
-            <div style={{ height: 37, boxSizing: "border-box", borderBottom: `1px solid ${t.hairline}` }} />
-            <TableRowSkeletons count={7} />
-          </>
-        }
-        detail={<Skeleton height={320} radius={8} />}
+        main={<TableRowSkeletons count={7} />}
+        side={<CollectionSkeletons />}
       />
     </LoadingRegion>
   );

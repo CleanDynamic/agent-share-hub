@@ -1,27 +1,20 @@
-/* UI-P46, SV-08 — Drafts: the builds in progress, and the sessions waiting to join one.
+/* Synth 10 Part A: Drafts, the builds in progress and the sessions waiting to join one, as two panels.
 
-   PURE. Props in, markup out: no fetching, no `useAuth()`, no router hooks but
-   links. `DraftsPage` supplies the data and the writes; the dev compare page
-   supplies the sample data. The viewport is read here (768px) so both behave the
-   same.
+   PURE. Props in, markup out: no fetching, no `useAuth()`, no router hooks but links. `DraftsPage` supplies the data and
+   the writes; the dev compare page supplies the sample data.
 
-   SV-08: the board is `design/reference/vision/dusk/drafts.html`. Sections sit on the
-   surface with no box: Continue editing (the creator's drafts, last edited first, a
-   dashed "Start a new build" slot first, twelve rows and "Show n more") beside Sessions
-   (the conversations their AI tools sent, 56 high, one line of detail), and under the
-   sessions the page's one boxed tile, Connected tools. A session joins a draft by being
-   dragged onto it, or with its + menu; both end in the same `onAddToDraft` /
-   `onAddToNew`. Dragging is a mouse's job: below 768px, and on any pointer that is not
-   fine, rows are not draggable and the + menu is the way (a bottom sheet on the phone,
-   a dropdown on desktop).
+   The head is the fact ("36 drafts", the page's h1) with "New build" at the right. Rows have no lines: title 15/600, then
+   "4 sessions · edited 1w ago" in Text 3, a chevron; a hovered row steps up to Card. The side panel holds "8 sessions"
+   (a grip, the first prompt, "10 Oct · In 4 drafts", a plus) and "2 connections". A session joins a draft by being
+   dragged onto it, or with its + menu; both end in the same `onAddToDraft` / `onAddToNew`. Dragging is a mouse's job:
+   below 768px, and on any pointer that is not fine, rows are not draggable and the + menu is the way (a bottom sheet on
+   the phone, a dropdown on desktop).
 
-   NOTHING HERE READS content_items OR content_blocks. The older post drafts are
-   a link to /drafts/posts.
+   NOTHING HERE READS content_items OR content_blocks. The older post drafts are a link to /drafts/posts.
 
-   THE DRAG DATA is the session id as `text/plain`, effect `copy`. A drop target
-   only answers a drag that carries text, so dragging a file or a link over it
-   does nothing. The pointer is never held in state while a drag runs: the row that
-   is being dragged is the one piece of state, set once at the start. */
+   THE DRAG DATA is the session id as `text/plain`, effect `copy`. A drop target only answers a drag that carries text, so
+   dragging a file or a link over it does nothing. The pointer is never held in state while a drag runs: the row that is
+   being dragged is the one piece of state, set once at the start. */
 
 import { useState, type CSSProperties, type DragEvent, type Ref } from "react";
 import { Plus } from "lucide-react";
@@ -34,9 +27,7 @@ import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
 import { allFailed, shownState, type ReadLike } from "@/components/pagestate/pageStateModel";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
-import { ModelMark } from "@/components/brand/ModelMark";
-import { InnerTile } from "@/components/vision/InnerTile";
-import { SectionHead } from "@/components/vision/SectionHead";
+import { Button } from "@/components/brand/Button";
 
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { ConfirmDialog } from "@/pages/site/compose/referencePieces";
@@ -59,23 +50,26 @@ import { FIGTREE } from "@/lib/theme/type";
 
 import {
   ControlButton,
+  DraftsHead,
   DraftsLayout,
-  ListSection,
   ROW,
   RowSkeletons,
+  SESSION_ROW,
   SESSION_SKELETON_ROWS,
+  SideHead,
+  SideSection,
   StartRow,
   TextButton,
   useDropTarget,
 } from "./DraftsFrame";
 import {
   DRAFTS_SHOWN,
-  addLabel,
+  SESSIONS_SHOWN,
   connectedTools,
-  draftEdited,
-  draftSessions,
-  draftRowTitle,
+  connectionsMeta,
   draftForLine,
+  draftMeta,
+  draftRowTitle,
   draftsMeta,
   isUntitled,
   menuItems,
@@ -116,7 +110,7 @@ export interface DraftsViewProps {
   emptyDrafts?: { count: number; onRemove: () => void };
 }
 
-/* ── Continue editing ── */
+/* ── The drafts ── */
 
 function DraftRow({
   draft,
@@ -131,7 +125,7 @@ function DraftRow({
   const { state, handlers: focus } = useInteractive<HTMLAnchorElement>();
   const untitled = isUntitled(draft.title);
   return (
-    <li style={{ listStyle: "none" }}>
+    <li style={{ listStyle: "none", padding: "0 8px" }}>
       <IntentLink
         to={`/compose/${draft.id}`}
         data-testid="draft-row"
@@ -140,25 +134,27 @@ function DraftRow({
         {...focus}
         style={{
           display: "grid",
-          gridTemplateColumns: "minmax(0, 1fr) auto 16px",
+          gridTemplateColumns: "minmax(0, 1fr) 16px",
           columnGap: 16,
           alignItems: "center",
           minHeight: ROW,
-          borderBottom: `1px solid ${over ? t.evidence : t.hairline}`,
-          background: over || state.hovered ? hoverFill() : "transparent",
+          padding: "0 8px",
+          borderRadius: r.card,
+          background: over || state.hovered ? t.module : "transparent",
           textDecoration: "none",
           color: t.text,
           boxSizing: "border-box",
           ...ring(state.focusVisible),
         }}
       >
-        <span style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+        <span style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
           <span
             data-testid="draft-title"
             style={{
               display: "block",
-              fontSize: 13,
-              fontWeight: 500,
+              fontSize: 15,
+              fontWeight: 600,
+              lineHeight: "20px",
               color: untitled ? t.text2 : t.text,
               whiteSpace: "nowrap",
               overflow: "hidden",
@@ -169,13 +165,12 @@ function DraftRow({
           </span>
           {/* UX-09 P3: a draft made in a reply names its topic. Text, not a link: the whole row is the draft's link. */}
           {draftForLine(draft) ? (
-            <span data-testid="draft-for-topic" style={{ display: "block", fontSize: 13, color: t.label }}>
+            <span data-testid="draft-for-topic" style={{ display: "block", fontSize: 13, lineHeight: "16px", color: t.label }}>
               {draftForLine(draft)}
             </span>
           ) : null}
-          <span style={{ display: "block", fontSize: 13, color: t.label }}>{over ? "Drop to add this session" : draftSessions(draft)}</span>
+          <span style={{ display: "block", fontSize: 13, lineHeight: "16px", color: t.label }}>{over ? "Drop to add this session" : draftMeta(draft, now)}</span>
         </span>
-        <span style={{ fontSize: 13, color: t.label, whiteSpace: "nowrap" }}>{draftEdited(draft, now)}</span>
         <span aria-hidden="true" style={{ display: "inline-flex", color: t.label }}>
           <Glyph name="chev" size={16} />
         </span>
@@ -213,7 +208,7 @@ const menuItem: CSSProperties = {
 };
 
 /** What the + is called: it opens the ways to start a build from, or add, this session. */
-const ADD_NAME = "Start a build from this session";
+const ADD_NAME = "Add to a new build";
 
 /** The 28px + keeps its look; on a phone its hit area reaches 44 through padding with a matching negative margin. */
 const hitArea = (phone: boolean): CSSProperties => ({
@@ -341,11 +336,11 @@ function SessionRow({
       style={{
         listStyle: "none",
         display: "grid",
-        gridTemplateColumns: draggable ? "12px 18px minmax(0, 1fr) 28px" : "18px minmax(0, 1fr) 28px",
+        gridTemplateColumns: draggable ? "12px minmax(0, 1fr) 28px" : "minmax(0, 1fr) 28px",
         columnGap: 10,
         alignItems: "center",
-        minHeight: ROW,
-        borderBottom: `1px solid ${t.hairline}`,
+        minHeight: SESSION_ROW,
+        padding: "0 16px",
         cursor: draggable ? "grab" : "default",
         /* A dragged row is dimmed with the filter under the refined look, never with opacity. */
         filter: dragging ? "var(--dim-filter)" : undefined,
@@ -353,42 +348,32 @@ function SessionRow({
       }}
     >
       {draggable ? (
-        <span aria-hidden="true" style={{ display: "grid", placeItems: "center", color: t.line }}>
+        <span aria-hidden="true" style={{ display: "grid", placeItems: "center", color: t.label }}>
           <Glyph name="grip" size={12} />
         </span>
       ) : null}
-      <span style={{ display: "inline-flex", color: t.text }}>
-        <ModelMark tool={session.modelName ? null : session.client} model={session.modelName} size={18} />
-      </span>
       <span style={{ minWidth: 0 }}>
-        <span style={{ display: "block", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{promptLine(session)}</span>
-        <span style={{ display: "block", fontSize: 13, color: t.label, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{meta}</span>
+        <span style={{ display: "block", fontSize: 15, fontWeight: 600, lineHeight: "20px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{promptLine(session)}</span>
+        <span style={{ display: "block", fontSize: 13, lineHeight: "16px", color: t.label, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{meta}</span>
       </span>
       <AddMenu session={session} items={items} phone={phone} onPick={onPick} />
     </li>
   );
 }
 
-/* ── Connected tools ── */
+/* ── Connections ── */
 
-function ConnectedTools({ tools, onManage }: { tools: ReturnType<typeof connectedTools>; onManage: () => void }) {
+function Connections({ tools, onConnect }: { tools: ReturnType<typeof connectedTools>; onConnect: () => void }) {
   return (
-    <InnerTile style={{ marginTop: 24 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13 }}>
-        <h3 style={{ margin: 0, fontSize: 13, fontWeight: 500, lineHeight: "normal" }}>Connected tools</h3>
-        <TextButton onClick={onManage} style={{ fontSize: 13, lineHeight: "normal", textDecoration: "none" }}>
-          Manage
-        </TextButton>
+    <SideSection label="Connections" head={<SideHead title={connectionsMeta(tools.length)} />}>
+      <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
+        {tools.length > 0 ? <p style={{ margin: 0, fontSize: 15, lineHeight: "20px", color: t.text }}>{`Last import ${tools[0].lastImport}`}</p> : null}
+        <p style={{ margin: 0, fontSize: 13, lineHeight: "16px", color: t.label }}>Sessions arrive through the OpenBuilds connector. Drag one into a draft.</p>
+        <Button variant="secondary" size={32} onClick={onConnect}>
+          Connect a tool
+        </Button>
       </div>
-      <ul style={{ margin: "10px 0 0", padding: 0 }}>
-        {tools.map((tool) => (
-          <li key={tool.client} style={{ listStyle: "none", display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: 32 }}>
-            <span style={{ color: t.text2 }}>{tool.name}</span>
-            <span style={{ fontSize: 13, color: t.label }}>{`last import ${tool.lastImport}`}</span>
-          </li>
-        ))}
-      </ul>
-    </InnerTile>
+    </SideSection>
   );
 }
 
@@ -412,6 +397,7 @@ export function DraftsView({
   const phone = useIsPhone();
   const [confirmingEmpty, setConfirmingEmpty] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [showAllSessions, setShowAllSessions] = useState(false);
   const fine = useFinePointer();
   const canDrag = !phone && fine;
   const [dragging, setDragging] = useState<string | null>(null);
@@ -437,38 +423,33 @@ export function DraftsView({
 
   const shown = showAll ? drafts : drafts.slice(0, DRAFTS_SHOWN);
   const hidden = drafts.length - shown.length;
+  const sessionsList = showAllSessions ? sessions : sessions.slice(0, SESSIONS_SHOWN);
+  const sessionsHidden = sessions.length - sessionsList.length;
 
-  const continueSection = (
-    <ListSection
-      label="Continue editing"
-      head={<SectionHead title={draftsShown ? draftsMeta(drafts.length) : "Continue editing"} headingLevel={2} />}
-    >
+  const draftsSection = (
+    <>
       <StartRow phone={phone} onDropSession={onAddToNew} />
       {pageFailed ? (
-        <PageFailed reads={[draftsRead, sessionsRead]} region="Drafts" logs={["[Drafts] drafts read failed", "[Drafts] sessions read failed"]} style={{ padding: "16px 0" }} />
+        <PageFailed reads={[draftsRead, sessionsRead]} region="Drafts" logs={["[Drafts] drafts read failed", "[Drafts] sessions read failed"]} style={{ padding: "16px" }} />
       ) : (
       <PageState
         read={draftsRead}
         thing="your drafts"
-        region="Continue editing"
+        region="Drafts"
         log="[Drafts] drafts read failed"
-        style={{ padding: "16px 0" }}
-        skeleton={
-          <div style={{ marginTop: 8 }}>
-            <RowSkeletons count={6} what="your drafts" />
-          </div>
-        }
+        style={{ padding: "16px" }}
+        skeleton={<RowSkeletons count={6} what="your drafts" />}
         empty={{ when: () => drafts.length === 0, line: "Nothing in progress." }}
       >
         {() => (
         <>
-          <ul style={{ ...list, marginTop: 8 }}>
+          <ul style={list}>
             {shown.map((draft) => (
               <DraftRow key={draft.id} draft={draft} now={now} onDropSession={onAddToDraft} />
             ))}
           </ul>
           {hidden > 0 ? (
-            <div style={{ marginTop: 16 }}>
+            <div style={{ margin: "8px 16px 0" }}>
               <ControlButton onClick={() => setShowAll(true)}>{`Show ${hidden} more`}</ControlButton>
             </div>
           ) : null}
@@ -477,7 +458,7 @@ export function DraftsView({
       </PageState>
       )}
       {emptyDrafts && emptyDrafts.count > 0 ? (
-        <div style={{ minHeight: ROW, display: "flex", alignItems: "center" }}>
+        <div style={{ minHeight: 40, display: "flex", alignItems: "center", padding: "0 12px" }}>
           <TextButton onClick={() => setConfirmingEmpty(true)}>{`Remove empty drafts (${emptyDrafts.count})`}</TextButton>
           <ConfirmDialog
             open={confirmingEmpty}
@@ -492,19 +473,18 @@ export function DraftsView({
           />
         </div>
       ) : null}
-    </ListSection>
+    </>
   );
 
   const sessionsSection = (
-    <ListSection
+    <SideSection
       label="Sessions"
       head={
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+        <>
           {/* Out of the flow and over the whole section, so it adds no space and the page can tell when any of it shows. */}
           <span ref={sessionsAnchor} aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none" }} />
-          <SectionHead title={sessionsShown ? sessionsMeta(sessions.length) : "Sessions"} headingLevel={2} />
-          <TextButton onClick={onConnect}>How they get here</TextButton>
-        </div>
+          <SideHead title={sessionsShown ? sessionsMeta(sessions.length) : "Sessions"} />
+        </>
       }
     >
       {pageFailed ? null : (
@@ -513,20 +493,18 @@ export function DraftsView({
         thing="your sessions"
         region="Sessions"
         log="[Drafts] sessions read failed"
-        style={{ padding: "16px 0" }}
+        style={{ padding: "16px" }}
         skeleton={
           /* CA-10 (CA-09 F15, CLS 0.305 on a phone): the height of a typical list. */
-          <div style={{ marginTop: 16, borderTop: `1px solid ${t.hairline}` }}>
-            <RowSkeletons count={SESSION_SKELETON_ROWS} what="your sessions" />
-          </div>
+          <RowSkeletons count={SESSION_SKELETON_ROWS} height={SESSION_ROW} what="your sessions" />
         }
         empty={{ when: () => sessions.length === 0 && !moreSessions, line: "No new sessions.", action: { label: "Connect a tool", onClick: onConnect } }}
       >
         {() => (
         <>
           {sessions.length === 0 ? null : (
-            <ul style={{ ...list, marginTop: 16, borderTop: `1px solid ${t.hairline}` }}>
-              {sessions.map((session) => (
+            <ul style={list}>
+              {sessionsList.map((session) => (
                 <SessionRow
                   key={session.id}
                   session={session}
@@ -542,28 +520,31 @@ export function DraftsView({
               ))}
             </ul>
           )}
-          {moreSessions ? (
-            <div style={{ marginTop: 16 }}>
-              <ControlButton onClick={moreSessions.onMore} disabled={moreSessions.loading}>
-                {moreSessions.loading ? "Loading…" : "Show more sessions"}
-              </ControlButton>
+          {sessionsHidden > 0 || moreSessions ? (
+            <div style={{ margin: "4px 12px 0", display: "flex", gap: 8 }}>
+              {sessionsHidden > 0 ? <TextButton onClick={() => setShowAllSessions(true)}>Show all</TextButton> : null}
+              {moreSessions && sessionsHidden === 0 ? (
+                <TextButton onClick={moreSessions.onMore} disabled={moreSessions.loading}>
+                  {moreSessions.loading ? "Loading…" : "Show more sessions"}
+                </TextButton>
+              ) : null}
             </div>
           ) : null}
         </>
         )}
       </PageState>
       )}
-    </ListSection>
+    </SideSection>
   );
 
   const tools = sessionsShown ? connectedTools(sessions, now) : [];
 
   return (
     <DraftsLayout
-      onConnect={onConnect}
-      continueSection={continueSection}
+      head={<DraftsHead fact={draftsShown ? draftsMeta(drafts.length) : null} />}
+      draftsSection={draftsSection}
       sessionsSection={sessionsSection}
-      connectedTools={tools.length > 0 ? <ConnectedTools tools={tools} onManage={onConnect} /> : null}
+      connectionsSection={sessionsShown ? <Connections tools={tools} onConnect={onConnect} /> : null}
     />
   );
 }

@@ -530,7 +530,7 @@ for (const viewport of WIDTHS) {
       const { db, calls } = seen;
       await openIntake(page, db, calls);
 
-      await page.getByLabel("Paste the transcript").fill(TRANSCRIPT);
+      await page.getByLabel("Paste a transcript").fill(TRANSCRIPT);
       await page.getByRole("button", { name: "Read it" }).click();
 
       // THE REVIEW. What the parser found, said the way the page says it.
@@ -577,7 +577,7 @@ for (const viewport of WIDTHS) {
       const { db, calls } = seen;
       await openIntake(page, db, calls);
 
-      await page.getByLabel("Paste the transcript").fill(LOVABLE_EXPORT);
+      await page.getByLabel("Paste a transcript").fill(LOVABLE_EXPORT);
       await page.getByRole("button", { name: "Read it" }).click();
 
       await expect(page.getByRole("heading", { name: "Here is what it found" })).toBeVisible();

@@ -173,32 +173,25 @@ test.describe("the import page in both rooms", () => {
       // The header PageHeader renders, which is the component BG-P15 wrote for
       // this page and had to take back out until the repaint.
       await expect(
-        page.getByRole("heading", { level: 1, name: "Post a build without writing it up." })
+        page.getByRole("heading", { level: 1, name: "Import a Build File" })
       ).toBeVisible();
-      await expect(page.getByText("IMPORT", { exact: false }).first()).toBeVisible();
+      await expect(page.getByText("Post a build without writing it up.")).toBeVisible();
 
-      // Three steps, and the page's ground is the theme's, not a hard-coded one.
+      // Three steps. The page draws no ground of its own: it sits in the frame's panel.
       await expect(page.locator('[data-visual-slot="import-step"]')).toHaveCount(3);
-      const ground = await page.evaluate(
-        () =>
-          getComputedStyle(
-            document.querySelector('[data-visual-slot="import-frame"]') as HTMLElement
-          ).backgroundColor
-      );
-      expect(ground).toBe(await token(page, "--bg"));
     });
 
-    test(`cuts the steps into the page as --recess panels on ${theme}`, async ({ page }) => {
+    test(`lists the steps behind a 28 number box on --module on ${theme}`, async ({ page }) => {
       await page.setViewportSize({ width: 1400, height: 1000 });
       await openImport(page, theme);
 
-      const recess = await token(page, "--recess");
-      const steps = page.locator('[data-visual-slot="import-step"]');
+      const module = await token(page, "--module");
 
-      for (let index = 0; index < 3; index += 1) {
-        const step = steps.nth(index);
-        await expect(step).toHaveCSS("background-color", recess);
-        await expect(step).toHaveCSS("border-radius", "16px");
+      for (const ordinal of [1, 2, 3]) {
+        const numeral = page.getByTestId(`import-step-${ordinal}`);
+        await expect(numeral).toHaveCSS("background-color", module);
+        await expect(numeral).toHaveCSS("width", "28px");
+        await expect(numeral).toHaveCSS("height", "28px");
       }
     });
   }
@@ -220,15 +213,12 @@ test.describe("the drop target is obviously droppable", () => {
       await openImport(page, theme);
 
       const target = page.getByTestId("import-drop");
-      const line = await token(page, "--line");
+      const edge = await token(page, "--field-edge");
       const action = await token(page, "--action");
 
       await expect(target).toHaveAttribute("data-drop-state", "idle");
       await expect(target).toHaveCSS("border-style", "dashed");
-      await expect(target).toHaveCSS("border-top-color", line);
-      // It sits on --bg INSIDE the --recess step panel: a well inside a well
-      // is not a well, so the target steps back out of the surface around it.
-      await expect(target).toHaveCSS("background-color", await token(page, "--bg"));
+      await expect(target).toHaveCSS("border-top-color", edge);
 
       await target.hover();
       await expect(target).toHaveAttribute("data-drop-state", "hover");

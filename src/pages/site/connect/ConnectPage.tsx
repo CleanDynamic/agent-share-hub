@@ -6,14 +6,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { SeoHead } from "@/components/SeoHead";
-import type { GuideStep } from "@/components/connect/ConnectorGuide";
 import type { ConnectorTool } from "@/lib/connect/connector";
 
 import { ConnectView } from "./ConnectView";
 import { SITE_NAME } from "@/lib/site";
 
 export default function ConnectPage() {
-  const [step, setStep] = useState<GuideStep>(1);
   const [tool, setTool] = useState<ConnectorTool>("Claude");
   const navigate = useNavigate();
   return (
@@ -24,8 +22,6 @@ export default function ConnectPage() {
         path="/connect"
       />
       <ConnectView
-        step={step}
-        onStep={setStep}
         tool={tool}
         onTool={setTool}
         onDone={() => navigate("/drafts")}

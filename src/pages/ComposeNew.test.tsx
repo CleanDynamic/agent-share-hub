@@ -150,7 +150,7 @@ function renderIntake({ strict = false } = {}) {
 }
 
 const paste = (text: string) =>
-  fireEvent.change(screen.getByLabelText(/paste the transcript/i), { target: { value: text } });
+  fireEvent.change(screen.getByLabelText(/paste a transcript/i), { target: { value: text } });
 
 beforeEach(() => {
   createBuild.mockReset();
@@ -170,7 +170,7 @@ function dropFile(name: string, body: string, type = "text/plain") {
   // Fired on the textarea: React's synthetic drop bubbles to the zone's
   // handler, and targeting the zone by DOM shape would break on any reflow.
   const file = new File([body], name, { type });
-  fireEvent.drop(screen.getByLabelText(/paste the transcript/i), {
+  fireEvent.drop(screen.getByLabelText(/paste a transcript/i), {
     dataTransfer: { files: [file] },
   });
   return file;
@@ -263,14 +263,19 @@ describe("two parsers, no picker (NS-P20)", () => {
 });
 
 describe("the offer", () => {
-  it("presents all three ways in at once", async () => {
+  it("presents the five ways in at once, as equals", async () => {
     renderIntake();
 
     // None of them behind a disclosure: a creator with nothing to paste must
     // not have to hunt for the way in.
-    expect(screen.getByLabelText(/paste the transcript/i)).toBeTruthy();
-    expect(screen.getByText(/drop a transcript \(\.txt, \.md\)/i)).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "Start a build" })).toBeTruthy();
+    expect(screen.getByLabelText(/paste a transcript/i)).toBeTruthy();
+    expect(screen.getByText("A chat export, .json or .zip")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Choose a file" })).toBeTruthy();
+    expect(screen.getByLabelText(/or paste a repository url/i)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Choose a Build File" })).toBeTruthy();
     expect(screen.getByRole("button", { name: /start empty instead/i })).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/[—→]/);
   });
 
   it("creates a usable empty draft in one click", async () => {
@@ -591,7 +596,7 @@ describe("a repository URL (NS-P21)", () => {
     renderIntake();
 
     // Both on screen at once, neither behind a disclosure.
-    expect(screen.getByLabelText(/paste the transcript/i)).toBeTruthy();
+    expect(screen.getByLabelText(/paste a transcript/i)).toBeTruthy();
     expect(screen.getByLabelText(/or paste a repository url/i)).toBeTruthy();
     expect(screen.getByRole("button", { name: /read the repo/i })).toBeTruthy();
     // The promise the field makes, kept where a creator reads it.

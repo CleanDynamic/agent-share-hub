@@ -47,14 +47,16 @@ describe("Drafts behaviour", () => {
 
   it("starts a new build from the page-width slot", () => {
     view();
-    const slot = screen.getByRole("link", { name: /Start a new build/ });
+    const slot = screen.getByTestId("start-row");
     expect(slot.getAttribute("href")).toBe("/compose/new");
-    expect(slot.textContent).toContain("or drop a session here");
+    expect(slot.textContent).toContain("Drop a session here to start a build");
+    // The head's "New build" goes to the same place.
+    expect(screen.getByRole("link", { name: "New build" }).getAttribute("href")).toBe("/compose/new");
   });
 
   it("starts a build from a session dropped on that slot", () => {
     const p = view();
-    dropOn(screen.getByRole("link", { name: /Start a new build/ }), "s2");
+    dropOn(screen.getByTestId("start-row"), "s2");
     expect(p.onAddToNew).toHaveBeenCalledWith("s2");
   });
 
@@ -64,9 +66,9 @@ describe("Drafts behaviour", () => {
     expect(p.onAddToDraft).toHaveBeenCalledWith("s3", expect.objectContaining({ id: "d3" }));
   });
 
-  it("each session has a + named 'Start a build from this session' whose menu starts a build or adds to a draft", async () => {
+  it("each session has a + named 'Add to a new build' whose menu starts a build or adds to a draft", async () => {
     const p = view();
-    const plus = screen.getAllByRole("button", { name: "Start a build from this session" });
+    const plus = screen.getAllByRole("button", { name: "Add to a new build" });
     expect(plus).toHaveLength(sessionsFixture.length);
     fireEvent.pointerDown(plus[0], { button: 0, ctrlKey: false });
     fireEvent.keyDown(plus[0], { key: "Enter" });
@@ -77,7 +79,7 @@ describe("Drafts behaviour", () => {
 
   it("the + menu adds a session to a chosen draft", async () => {
     const p = view();
-    const plus = screen.getAllByRole("button", { name: "Start a build from this session" })[1];
+    const plus = screen.getAllByRole("button", { name: "Add to a new build" })[1];
     fireEvent.pointerDown(plus, { button: 0, ctrlKey: false });
     fireEvent.keyDown(plus, { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Add to Inbox triage v2" }));
@@ -127,34 +129,41 @@ describe("Drafts behaviour", () => {
     expect(onRemove).toHaveBeenCalledTimes(1);
   });
 
-  it("'Connect a tool', 'How they get here' and 'Manage' all open the connector dialog", () => {
+  it("'Connect a tool' in the connections section opens the connector dialog", () => {
     const p = view();
     fireEvent.click(screen.getByRole("button", { name: "Connect a tool" }));
-    fireEvent.click(screen.getByRole("button", { name: "How they get here" }));
-    fireEvent.click(screen.getByRole("button", { name: "Manage" }));
-    expect(p.onConnect).toHaveBeenCalledTimes(3);
+    expect(p.onConnect).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows 8 sessions, then the rest at once with 'Show all'", () => {
+    const sessions = Array.from({ length: 11 }, (_, i) => ({ ...sessionsFixture[0], id: `x${i}` }));
+    view({ sessions });
+    expect(screen.getAllByTestId("session-row")).toHaveLength(8);
+    fireEvent.click(screen.getByRole("button", { name: "Show all" }));
+    expect(screen.getAllByTestId("session-row")).toHaveLength(11);
+    expect(screen.queryByRole("button", { name: "Show all" })).toBeNull();
   });
 });
 
 describe("Drafts, the board's words", () => {
   const now = Date.parse("2026-10-06T10:00:00.000Z");
 
-  it("heads the lists with their counts", () => {
+  it("heads the lists with their facts: the count is the heading", () => {
     view({ drafts: many(28) });
-    expect(screen.getByText("28 drafts · latest first")).toBeInTheDocument();
-    expect(screen.getByText(`${sessionsFixture.length} imported · drag one into a draft`)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "28 drafts" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: `${sessionsFixture.length} sessions` })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: /connection/ })).toBeInTheDocument();
   });
 
-  it("names a session by its first prompt and details it '<tool> · <model> · <date> · in n drafts'", () => {
+  it("names a session by its first prompt and details it '<date> · In n drafts', with no tool or model", () => {
     const s = { ...sessionsFixture[4], client: "claude-code", draftIds: ["d1", "d2", "d3"] };
-    expect(sessionMeta(s, draftsFixture, now)).toBe("Claude Code · Opus 5.5 · 30 Sep · in 3 drafts");
-    expect(sessionMeta({ ...s, draftIds: ["d1"] }, draftsFixture, now)).toBe("Claude Code · Opus 5.5 · 30 Sep · in 1 draft");
+    expect(sessionMeta(s, draftsFixture, now)).toBe("30 Sep · In 3 drafts");
+    expect(sessionMeta({ ...s, draftIds: ["d1"] }, draftsFixture, now)).toBe("30 Sep · In 1 draft");
   });
 
-  it("starts the detail line 'No harness chosen' where the tool is unknown", () => {
+  it("starts the detail line with the date where the tool is unknown", () => {
     const s = { ...sessionsFixture[0], client: null, modelName: null };
-    expect(sessionMeta(s, draftsFixture, now)).toBe("No harness chosen · 2 Oct");
-    expect(sessionMeta({ ...s, modelName: "Opus 5.5" }, draftsFixture, now)).toBe("No harness chosen · Opus 5.5 · 2 Oct");
+    expect(sessionMeta(s, draftsFixture, now)).toBe("2 Oct");
   });
 
   it("lists each connected tool once with the date of its last import", () => {
@@ -170,11 +179,13 @@ describe("Drafts, the board's words", () => {
       ["Claude", "2 Oct"],
     ]);
     view({ sessions: sessions.map((x, i) => ({ ...sessionsFixture[0], id: `c${i}`, ...x })) });
-    expect(screen.getByText("last import 4 Oct")).toBeInTheDocument();
+    expect(screen.getByText("Last import 4 Oct")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "2 connections" })).toBeInTheDocument();
   });
 
-  it("leaves the tile out when no session names a tool", () => {
+  it("says there are no connections, and offers one, when no session names a tool", () => {
     view({ sessions: [] });
-    expect(screen.queryByText("Connected tools")).toBeNull();
+    expect(screen.getByRole("heading", { level: 2, name: "No connections" })).toBeInTheDocument();
+    expect(screen.queryByText(/^Last import/)).toBeNull();
   });
 });

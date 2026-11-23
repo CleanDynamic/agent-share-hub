@@ -56,8 +56,9 @@ describe("DraftsView", () => {
     view();
     expect(screen.getAllByTestId("draft-row")).toHaveLength(4);
     expect(screen.getAllByTestId("session-row")).toHaveLength(5);
-    expect(screen.getByRole("heading", { name: "Continue editing" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Sessions" })).toBeInTheDocument();
+    // Each panel is headed by its fact (Synth 10): "4 drafts", "5 sessions".
+    expect(screen.getByRole("heading", { level: 1, name: "4 drafts" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "5 sessions" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Older post drafts/ })).toBeNull();
   });
 
@@ -67,9 +68,9 @@ describe("DraftsView", () => {
     expect(titles[0].textContent).toBe("Photo renamer by date taken");
     expect(titles[1].textContent).toBe("Untitled build");
     const markup = html();
-    expect(markup).toContain('data-testid="draft-title" style="display:block;font-size:13px;font-weight:500');
-    expect(markup).toMatch(/font-weight:500;color:var\(--text\);white-space:nowrap[^>]*>Photo renamer by date taken/);
-    expect(markup).toMatch(/font-weight:500;color:var\(--text2\);white-space:nowrap[^>]*>Untitled build/);
+    expect(markup).toContain('data-testid="draft-title" style="display:block;font-size:15px;font-weight:600');
+    expect(markup).toMatch(/font-weight:600;line-height:20px;color:var\(--text\);white-space:nowrap[^>]*>Photo renamer by date taken/);
+    expect(markup).toMatch(/font-weight:600;line-height:20px;color:var\(--text2\);white-space:nowrap[^>]*>Untitled build/);
   });
 
   it("an empty title reads as Untitled build too", () => {
@@ -80,24 +81,23 @@ describe("DraftsView", () => {
     );
   });
 
-  it("the start row is a drop target: --evidence border, --row-highlight, new words, then a new build", () => {
+  it("the start row is a drop target: --evidence border, --module fill, new words, then a new build", () => {
     const p = view();
     const row = screen.getByTestId("start-row");
     expect(row.getAttribute("href")).toBe("/compose/new");
-    expect(row.textContent).toContain("or drop a session here");
+    expect(row.textContent).toContain("Drop a session here to start a build");
     dragWith(row, "dragOver");
     expect(row.getAttribute("data-over")).toBe("true");
     expect(row.textContent).toContain("Drop to start a build from it");
     dragWith(row, "drop", "s2");
     expect(p.onAddToNew).toHaveBeenCalledWith("s2");
-    expect(row.textContent).toContain("or drop a session here");
+    expect(row.textContent).toContain("Drop a session here to start a build");
   });
 
   it("a draft row is a drop target that says so, and adds the session to that draft", () => {
     const p = view();
     const row = screen.getAllByTestId("draft-row")[0];
-    expect(row.textContent).toContain("2 sessions");
-    expect(row.textContent).toContain("edited 17m ago");
+    expect(row.textContent).toContain("2 sessions · edited 17m ago");
     dragWith(row, "dragOver");
     expect(row.getAttribute("data-over")).toBe("true");
     expect(row.textContent).toContain("Drop to add this session");
@@ -127,7 +127,7 @@ describe("DraftsView", () => {
 
   it("the + menu offers a new build and up to eight drafts, and never removes a session", async () => {
     const p = view();
-    const add = screen.getAllByRole("button", { name: "Start a build from this session" })[0];
+    const add = screen.getAllByRole("button", { name: "Add to a new build" })[0];
     fireEvent.pointerDown(add, { button: 0, ctrlKey: false });
     fireEvent.keyDown(add, { key: "Enter" });
     const menu = await screen.findByRole("menu");
@@ -146,7 +146,7 @@ describe("DraftsView", () => {
     narrow = true;
     view();
     expect(screen.getAllByTestId("session-row")[0].getAttribute("draggable")).toBeNull();
-    fireEvent.click(screen.getAllByRole("button", { name: "Start a build from this session" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Add to a new build" })[0]);
     const sheet = await screen.findByRole("dialog", { name: "Add to a build" });
     expect(within(sheet).getAllByRole("button").map((b) => b.textContent)).toEqual(
       expect.arrayContaining(["Start a new build", "Add to Photo renamer by date taken"]),
@@ -156,9 +156,9 @@ describe("DraftsView", () => {
   it("CA-12: a session already in a draft is listed with the others, says so, and offers Open for that draft and Add to for the rest", async () => {
     view();
     const row = screen.getAllByTestId("session-row").find((li) => li.textContent?.includes("Rename every photo"));
-    expect(row?.textContent).toContain("in 1 draft");
+    expect(row?.textContent).toContain("In 1 draft");
     expect(screen.queryByRole("button", { name: /already in a build/ })).toBeNull();
-    fireEvent.keyDown(within(row as HTMLElement).getByRole("button", { name: "Start a build from this session" }), { key: "Enter" });
+    fireEvent.keyDown(within(row as HTMLElement).getByRole("button", { name: "Add to a new build" }), { key: "Enter" });
     const open = await screen.findByRole("menuitem", { name: "Open Photo renamer by date taken" });
     expect(open.getAttribute("href")).toBe("/compose/d1");
     expect(screen.queryByRole("menuitem", { name: "Add to Photo renamer by date taken" })).toBeNull();
@@ -174,12 +174,12 @@ describe("DraftsView", () => {
     expect(onMore).toHaveBeenCalled();
   });
 
-  it("draws Show more sessions and Connect a tool with the shared Button at 32 / 12 (the control-heights pass)", () => {
+  it("draws Connect a tool with the shared Button at 32 / 14, and Show more sessions as a quiet text button", () => {
     view({ moreSessions: { loading: false, onMore: vi.fn() } });
-    for (const button of [screen.getByRole("button", { name: "Show more sessions" }), screen.getAllByRole("button", { name: "Connect a tool" })[0]]) {
-      expect(button.getAttribute("data-ui"), button.textContent ?? "").toBe("button");
-      expect([button.style.height, button.style.padding], button.textContent ?? "").toEqual(["32px", "0px 12px"]);
-    }
+    const connect = screen.getAllByRole("button", { name: "Connect a tool" })[0];
+    expect(connect.getAttribute("data-ui")).toBe("button");
+    expect([connect.style.height, connect.style.padding]).toEqual(["32px", "0px 14px"]);
+    expect(screen.getByRole("button", { name: "Show more sessions" }).getAttribute("data-ui")).toBeNull();
   });
 
   it("empty: one line and one action each, and 'Nothing in progress.'", () => {
@@ -253,7 +253,7 @@ describe("draftsModel", () => {
 
   it("a session aimed at a draft ends its meta with it and leads its menu with it", () => {
     const aimed = { ...sessionsFixture[0], targetBuildId: "d3" };
-    expect(sessionMeta(aimed, draftsFixture, now)).toBe("Claude · GPT-6 Astra · 2 Oct · for Inbox triage v2");
+    expect(sessionMeta(aimed, draftsFixture, now)).toBe("2 Oct · for Inbox triage v2");
     expect(menuItems(aimed, draftsFixture)[0]).toMatchObject({ kind: "target", label: "Add to Inbox triage v2" });
   });
 

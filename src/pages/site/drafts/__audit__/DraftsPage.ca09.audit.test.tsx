@@ -103,7 +103,7 @@ describe("CA-09 · the Drafts page on tonight's schema", () => {
   it("the drafts read times out (57014): only the drafts panel fails, the sessions show", async () => {
     mount([{ method: "GET", path: DRAFTS, answer: TIMEOUT }]);
     await waitFor(() => expect(screen.getAllByText(FAILED_LINE)).toHaveLength(1), { timeout: 20_000 });
-    expect(screen.getByRole("alert", { name: "Continue editing" })).toBeTruthy();
+    expect(screen.getByRole("alert", { name: "Drafts" })).toBeTruthy();
     expect(screen.getByText("A waiting session.")).toBeTruthy();
     expect(sent(DRAFTS)).toEqual(["500 57014", "500 57014"]);
     expect(sent(WAITING)[0]).toBe("200");

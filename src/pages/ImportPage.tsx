@@ -56,19 +56,14 @@ import {
   BUILD_FILE_EXTENSIONS,
   useBuildFileDrop,
 } from "@/components/compose/useBuildFileDrop";
-import { PageHeader } from "@/components/shell/PageHeader";
+import { DropField } from "@/components/brand/DropField";
 import { Button } from "@/components/ui/button";
 
 import { r } from "@/lib/theme/radius";
 import { SPACE_COMPACT } from "@/lib/theme/space";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
-import {
-  body as bodyText,
-  cardTitle,
-  data as dataText,
-  label as labelText,
-  measure,
-} from "@/lib/theme/type";
+import { body as bodyText, data as dataText, hero, label as labelText, measure } from "@/lib/theme/type";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { fade, feedback } from "@/lib/theme/motion";
 import { SITE_NAME } from "@/lib/site";
 
@@ -246,7 +241,7 @@ function CopyDocumentButton({
         {state === "copied"
           ? "Copied"
           : state === "failed"
-            ? "Could not copy — use the download"
+            ? "Could not copy. Use the download."
             : ""}
       </span>
     </span>
@@ -275,28 +270,15 @@ function DownloadLink({
         download={filename}
         style={{ whiteSpace: "nowrap" }}
       >
-        Download the .md
+        Download
       </a>
     </Button>
   );
 }
 
 /**
- * One step: a numeral, a title, and whatever the step asks of the reader.
- *
- * BG-P24 — A `--recess` PANEL, NOT A GLASS CARD.
- *
- * The steps were `cardGlass`: a 2.5%-white film over a glass border, which is
- * a reading-surface treatment and which on a Noon ground is very nearly
- * nothing at all. `--recess` is the token for a surface the page is cut into,
- * and three panels cut into the page is exactly what three steps are. At
- * `--r-panel`, because that is the step of the scale a panel takes.
- *
- * THE NUMERAL IS MONO AND CIRCULAR. A step number is a count — the theme's own
- * list of what the data face sets — and `--r-full` is legal on it because a
- * circle is one of the two things that token is for. It carries the part-list
- * `--text2` on a `--bg` well rather than a teal tint: the numbers are a spine
- * for the eye to follow, not three accents competing with the drop target.
+ * One step (Synth 10): a 28 box holding the number in mono, then the step's heading (17/600) and whatever the step asks
+ * of the reader. No panel and no lines: the steps are a list on the page, 24 apart.
  */
 function Step({
   ordinal,
@@ -311,15 +293,10 @@ function Step({
     <li
       data-visual-slot="import-step"
       style={{
-        backgroundColor: t.recess,
-        borderWidth: 1,
-        borderStyle: "solid",
-        borderColor: t.line,
-        borderRadius: r.panel,
-        padding: 12,
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 10,
+        display: "grid",
+        gridTemplateColumns: "28px minmax(0, 1fr)",
+        columnGap: 12,
+        alignItems: "start",
       }}
     >
       <span
@@ -327,27 +304,21 @@ function Step({
         data-testid={`import-step-${ordinal}`}
         style={{
           ...dataText,
-          flex: "0 0 auto",
-          width: 21,
-          height: 21,
-          borderRadius: r.full,
+          width: 28,
+          height: 28,
+          borderRadius: r.card,
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
-          color: t.text2,
-          backgroundColor: t.bg,
-          borderWidth: 1,
-          borderStyle: "solid",
-          borderColor: t.line,
+          color: t.text,
+          backgroundColor: t.module,
         }}
       >
         {ordinal}
       </span>
 
-      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 7 }}>
-        {/* The card-title role: Figtree 600 at 19px since UI-P52, under the
-            20px below which Sentient is never set. */}
-        <h2 style={{ ...cardTitle, color: t.text, margin: 0 }}>{title}</h2>
+      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+        <h2 style={{ margin: 0, fontFamily: bodyText.fontFamily, fontSize: 17, fontWeight: 600, lineHeight: "22px", color: t.text }}>{title}</h2>
         {children}
       </div>
     </li>
@@ -400,29 +371,22 @@ function DropTarget({
 
   return (
     <>
-      <button
+      <DropField
+        as="button"
         type="button"
         data-testid="import-drop"
         data-visual-slot="import-drop"
         data-drop-state={isDragging ? "over" : hovered ? "hover" : "idle"}
+        armed={armed}
+        over={isDragging}
         onClick={() => inputRef.current?.click()}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={{
           fontFamily: "inherit",
           width: "100%",
-          padding: "13px 10px",
-          borderRadius: r.control,
-          /* Longhands: a `border` shorthand carrying a `var()` is dropped whole
-             by jsdom, taking the dashes with it. */
-          borderWidth: isDragging ? 1.5 : 1,
-          borderStyle: "dashed",
-          borderColor: armed ? t.action : t.line,
-          backgroundColor: isDragging
-            ? tokenAlpha("action", 0.12)
-            : hovered
-              ? tokenAlpha("action", 0.06)
-              : t.bg,
+          padding: "24px 16px",
+          backgroundColor: isDragging ? tokenAlpha("action", 0.12) : hovered ? tokenAlpha("action", 0.06) : "transparent",
           display: "flex",
           flexDirection: "column",
           gap: 4,
@@ -434,12 +398,11 @@ function DropTarget({
         <span style={{ ...bodyText, color: armed ? t.action : t.text }}>
           {isDragging ? "Let go to read it" : "Drag your Build File anywhere on this page"}
         </span>
-        {/* The formats and the cap in mono, because they are the file's facts
-            rather than an instruction. */}
-        <span style={{ ...dataText, color: t.text2 }}>
-          {`or click to choose one — ${BUILD_FILE_EXTENSIONS.join(", ")}, up to 2 MB`}
+        {/* The formats and the cap, because they are the file's facts rather than an instruction. */}
+        <span style={{ ...dataText, color: t.label }}>
+          {`or click to choose one. ${BUILD_FILE_EXTENSIONS.join(", ")}, up to 2 MB`}
         </span>
-      </button>
+      </DropField>
 
       <input
         ref={inputRef}
@@ -469,50 +432,20 @@ export default function ImportPage() {
   const taking = drop.state.name !== "idle";
 
   return (
-    /* ── BG-P15 put this page inside the application frame. BG-P24 finishes
-       the job that note deferred.
-
-       `minHeight: 100vh` went because the frame is 100dvh with its own scroll
-       region, and a 100vh floor inside that scroller is a second screen of
-       height. `fontFamily` went because `.fs-root` sets the Figtree stack
-       already. The inner container's `maxWidth: 720` + `margin: "0 auto"` went
-       as the doubled measure — the wide frame already caps and centres — and
-       its padding is one `SPACE_COMPACT.md` on this div (`SPACE.md` until
-       UI-P58's density pass), because `.fs-page-body` has
-       no horizontal inset of its own and the frame's own 24px collapses to 0
-       at phone width.
-
-       THE GROUND AND THE INK STAY EXPLICIT, AND THEY ARE TOKENS NOW. BG-P15
-       left them as `VOID`/`TEXT_PRIMARY` with a note saying this page and the
-       whole BuildFileIntake subtree under it were still painted from the
-       legacy dark module, so a light ground would make the body of the page
-       disappear. That subtree is repainted as of this prompt, and BG-P21
-       repointed both constants at `--bg` and `--text` in any case. What
-       remains is the reason the ground had to be stated at all, which never
-       had anything to do with the legacy module: this page paints an inset
-       drag ring across its WHOLE surface, so it has to BE a surface.
-
-       `isolation: isolate` STAYS and earns its place twice over: the drag ring
-       is an inset shadow on this element, and the page is a drop target for
-       the whole of itself. So does the boxShadow — it is the drag affordance,
-       not frame decoration, and it is `--action` now, the same accent the drop
-       target arms with, so the page and the well agree about what is
-       happening. ── */
+    /* The page sits in the frame's one panel. This element is the whole surface: it paints the inset drag ring (the page
+       is a drop target for the whole of itself), so it has to BE a surface, and isolates so the ring stays under what is
+       drawn on it. The column inside is 680 wide at every desktop width, centred. */
     <div
       data-visual-slot="import-frame"
       style={{
-        padding: SPACE_COMPACT.md,
-        backgroundColor: t.bg,
+        padding: `${SPACE_COMPACT.md}px 0`,
         color: t.text,
         isolation: "isolate",
-        // Visual only: an inset ring while a file is over the page, so the
-        // whole surface reads as the target it is. No structural property here.
+        // Visual only: an inset ring while a file is over the page, so the whole surface reads as the target it is.
         boxShadow: drop.isDragging
           ? `inset 0 0 0 2px ${tokenAlpha("action", 0.45)}`
           : "none",
-        // BG-P32: the inset ring lands at once. It answers a drag already in
-        // progress, so there is nothing for a fade to tell the reader, and an
-        // eased box-shadow repaints the whole page surface every frame.
+        // BG-P32: the inset ring lands at once. It answers a drag already in progress, so there is nothing for a fade to tell the reader.
         transition: undefined,
       }}
     >
@@ -528,39 +461,19 @@ export default function ImportPage() {
         style={{
           display: "flex",
           flexDirection: "column",
-          gap: 14,
+          gap: 24,
+          maxWidth: 680,
+          margin: "0 auto",
+          padding: `0 ${SPACE_COMPACT.md}px`,
         }}
       >
-        {/* BG-P15 deleted the "← OpenBuilds.ai" back link — the left rail
-            carries the wordmark and the nav, and on a phone the bottom bar
-            does — and then had to hand-roll the heading that was left,
-            because PageHeader paints from the two-theme semantic tokens while
-            this page and the whole BuildFileIntake subtree under it still
-            painted from the legacy dark module. There was no ground that
-            served both.
-
-            BG-P24 REPAINTS THAT SUBTREE, so the header PageHeader was written
-            for arrives with it. The eyebrow is what kind of page this is, the
-            title is what the page is, and the description is the promise —
-            capped at the reading measure by the component rather than by a
-            `measure` spread written here.
-
-            It still disappears once a file is in hand: `taking` is true from
-            the moment a Build File is being read, reviewed or refused, and the
-            intake gets the page to itself. */}
+        {/* It disappears once a file is in hand: `taking` is true from the moment a Build File is being read, reviewed or
+            refused, and the intake gets the page to itself. */}
         {taking ? null : (
-          <PageHeader
-            eyebrow="Import"
-            title="Post a build without writing it up."
-            description={
-              <>
-                The chat where you built the thing already knows what you did.
-                Give it the document below and it writes your build up for you —
-                the prompts you sent, the settings you landed on, what worked and
-                what broke. You bring the file back here.
-              </>
-            }
-          />
+          <header style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <h1 style={{ ...hero, margin: 0, color: t.text }}>Import a Build File</h1>
+            <p style={{ ...bodyText, ...measure, margin: 0, color: t.text2 }}>Post a build without writing it up.</p>
+          </header>
         )}
 
         {taking ? (
@@ -581,13 +494,12 @@ export default function ImportPage() {
               padding: 0,
               display: "flex",
               flexDirection: "column",
-              gap: 9,
+              gap: 24,
             }}
           >
             <Step ordinal={1} title="Copy the Extractor">
               <p style={{ ...bodyText, ...measure, margin: 0, color: t.text2 }}>
-                Paste it into the chat where you built your thing — ChatGPT,
-                Claude, Lovable, Cursor, any of them.
+                Paste it into the chat where you built your thing.
               </p>
               <div
                 style={{
@@ -638,7 +550,7 @@ export default function ImportPage() {
                   AUTO-PUBLISHES, and the creator stays between the file and
                   the record. It is quiet because it is a reassurance, not an
                   instruction. */}
-              <p style={{ ...bodyText, ...measure, margin: 0, color: t.text2 }}>
+              <p style={{ ...dataText, ...measure, margin: 0, color: t.label }}>
                 You see what it found before anything is saved, and nothing is
                 published until you say so.
               </p>
@@ -651,18 +563,9 @@ export default function ImportPage() {
           <section
             data-visual-slot="import-compiler"
             style={{
-              /* The same `--recess` panel the three steps take, because the
-                 fold is a fourth thing of the same kind — an answer to a rarer
-                 question, not a different sort of object. */
-              backgroundColor: t.recess,
-              borderWidth: 1,
-              borderStyle: "solid",
-              borderColor: t.line,
-              borderRadius: r.panel,
-              padding: 12,
               display: "flex",
               flexDirection: "column",
-              gap: 9,
+              gap: 12,
             }}
           >
             <button
@@ -688,8 +591,8 @@ export default function ImportPage() {
                 gap: 6,
               }}
             >
-              <span aria-hidden style={{ ...dataText, color: t.text2 }}>
-                {compilerOpen ? "▾" : "▸"}
+              <span aria-hidden style={{ display: "inline-flex", color: t.label }}>
+                {compilerOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
               </span>
               Built across more than one AI?
             </button>

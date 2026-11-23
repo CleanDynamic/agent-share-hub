@@ -269,7 +269,7 @@ test("both empty lines, each with its one action", async ({ page }) => {
 
   await page.goto("/library");
   const saved = page.getByTestId("library-empty");
-  await expect(saved).toContainText("Save a build and it waits for you here.");
+  await expect(saved).toContainText("Save a build, a session or a step and it waits for you here.");
   await expect(saved.getByRole("link", { name: "Browse builds" })).toHaveAttribute("href", "/builds");
 
   await expect(page.getByTestId("library-collections-empty")).toHaveText("No collections yet.");
