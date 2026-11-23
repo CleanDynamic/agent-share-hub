@@ -10,6 +10,7 @@
    Built from `modalRecipes` (lookRules holds this file to it); the fields that are not the recipes' own (the cost fields, the
    command it started with, the menu of sessions it ran beside) are the ones Details had, drawn as they always were. */
 
+import { ModelPicker } from "./ModelPicker";
 import { HARNESS_COPY, NO_HARNESS } from "@/lib/build/harnessWords";
 import { LoadingRegion } from "@/components/brand/Skeleton";
 import { LoadingBlocks } from "./LoadingBlocks";
@@ -232,7 +233,7 @@ function PluginForm({ phone, onAdd }: { phone: boolean; onAdd: (plugin: { name: 
         >
           Add plugin
         </RecipeButton>
-        <RecipeButton small phone={phone} onClick={() => setOpen(false)}>
+        <RecipeButton variant="ghost" small phone={phone} onClick={() => setOpen(false)}>
           Cancel
         </RecipeButton>
       </Inline>
@@ -314,8 +315,14 @@ function Form({ view, handlers, inBuild, onClose }: Omit<SessionDialogProps, "vi
             <span style={BODY_TEXT}>{view.tool}</span>
           )}
         </Row>
-        <Row id={`${key}-model`} label={SESSION_DIALOG_COPY.model} phone={phone}>
-          <span style={BODY_TEXT}>{modelWithId(view.model ? modelLabel(view.model) : null, extras.model_id) ?? SESSION_DIALOG_COPY.notNamed}</span>
+        {/* Synth 09: the model is chosen here, with the harness: every step in the session runs on it. Another model is another
+            session. An imported session's model is what its transcript recorded. */}
+        <Row id={`${key}-model`} label={SESSION_DIALOG_COPY.model} group={editableMeta} phone={phone}>
+          {editableMeta && view.editable ? (
+            <ModelPicker tool={view.editable.tool} value={view.editable.model ?? null} onChange={(model) => h.onSessionMeta?.(key, { model })} phone={phone} name={SESSION_DIALOG_COPY.model} anyWithoutTool field />
+          ) : (
+            <span style={BODY_TEXT}>{modelWithId(view.model ? modelLabel(view.model) : null, extras.model_id) ?? SESSION_DIALOG_COPY.notNamed}</span>
+          )}
         </Row>
 
         <Row id={`${key}-date`} label={SESSION_DIALOG_COPY.date} phone={phone}>

@@ -24,7 +24,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE, textStep } from "@/lib/theme/type";
 
-import { IconSquare, LAYER, MODAL_WIDTH, RecipeButton, scrimAt, windowPlacement } from "./modalRecipes";
+import { IconSquare, LAYER, MODAL_WIDTH, RecipeButton, fieldStyle, scrimAt, windowPlacement } from "./modalRecipes";
 import { space, size } from "@/lib/theme/space";
 import { PageState } from "@/components/pagestate/PageState";
 import { readOf } from "@/components/pagestate/pageStateModel";
@@ -173,7 +173,7 @@ function SearchField({ label, value, phone, onChange }: { label: string; value: 
       value={value}
       onChange={(event) => onChange(event.target.value)}
       {...handlers}
-      style={{ boxSizing: "border-box", width: "100%", height: phone ? size.touch : size.control, padding: `0 ${space[3]}px`, background: t.well, border: `1px solid ${t.wellBorder}`, borderRadius: 6, color: t.text, fontFamily: FIGTREE, fontSize: phone ? 16 : 13, ...ring(state.focusVisible) }}
+      style={{ ...fieldStyle(phone), ...ring(state.focusVisible) }}
     />
   );
 }
@@ -278,7 +278,7 @@ function Body(props: AddFromLibraryWindowProps) {
         <p style={{ ...line(textStep.meta, 400, t.label, 17), margin: 0, flex: 1, minWidth: 0 }}>
           {selectedShown ? footer : ""}
         </p>
-        <RecipeButton phone={phone} onClick={onClose}>
+        <RecipeButton variant="ghost" phone={phone} onClick={onClose}>
           {copy.cancel}
         </RecipeButton>
         <RecipeButton variant="primary" phone={phone} disabled={!selectedShown || inserting} onClick={() => selectedShown && onInsert(selectedShown.id)}>

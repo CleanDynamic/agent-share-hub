@@ -107,7 +107,7 @@ export function SmallWindow({ open, onClose, title, body, buttons, testId, width
 /** A footer button whose words remove: the danger text colour on the secondary button. */
 export function DangerButton({ children, onClick, testId, phone = false }: { children: ReactNode; onClick: () => void; testId?: string; phone?: boolean }) {
   return (
-    <RecipeButton small={!phone} phone={phone} data-testid={testId} data-tone="danger" style={{ color: DANGER }} onClick={onClick}>
+    <RecipeButton variant="danger" small={!phone} phone={phone} data-testid={testId} data-tone="danger" onClick={onClick}>
       {children}
     </RecipeButton>
   );
@@ -146,7 +146,7 @@ export function SessionRemoveWindow({ removal, onClose, onChoose }: { removal: S
       testId="remove-session-window"
       buttons={
         <>
-          <RecipeButton small={!phone} phone={phone} onClick={onClose}>
+          <RecipeButton variant="ghost" small={!phone} phone={phone} onClick={onClose}>
             {SESSION_WINDOW_COPY.cancel}
           </RecipeButton>
           <RecipeButton small={!phone} phone={phone} disabled={!removal.canKeep} data-testid="remove-session-keep" onClick={() => onChoose("keep")} {...keepReason.props}>

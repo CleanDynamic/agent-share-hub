@@ -111,10 +111,10 @@ import { CODE_COPY, firstLines, lineCount, looksLikeCode } from "./codeModel";
 import { getMediaById, signedMediaUrl } from "@/lib/build/media";
 import { ManualThumb } from "./ManualThumb";
 import { OutsideWarning } from "./OutsideWarning";
-import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
+import { MODEL_CLEARED_MS, MODEL_PICKER_COPY } from "./ModelPicker";
 import { CHECK_COPY, DotLine, Quiet, ToolMark } from "./refinedPieces";
 import { AgentRules, GateLine, JobLine, MentionText, TeamHead, TeamLinesContext, WaitsLine, mentionTeam } from "@/components/build/teamLines";
-import { BOX_ROWS, BoxRow, FOOT_LINK, LIST_BOX, TEXT_LINK_BOX, textLinkBox, MarkedName, listRow, NumberBadge, RESPONSE_WORD, RUN, SESSION_META, SmallCodeWell, TILE_EYEBROW, TILE_HEAD, TILE_INDENT, TILE_TEXT, TILE_TITLE, TileOptions, tileStyle as tileCard } from "./tileRecipes";
+import { FOOT_LINK, LIST_BOX, TEXT_LINK_BOX, textLinkBox, MarkedName, listRow, NumberBadge, RESPONSE_WORD, RUN, SESSION_META, SmallCodeWell, TILE_EYEBROW, TILE_HEAD, TILE_INDENT, TILE_TEXT, TILE_TITLE, TileOptions, tileStyle as tileCard } from "./tileRecipes";
 
 /** CA-15b: a tile's body and foot sit 34 in, under its title. */
 const INDENT = TILE_INDENT;
@@ -214,8 +214,6 @@ export interface BuildListProps {
   onOpenPrompt?: (id: string) => void;
   /** CA-18: a double click on any other tile opens its own window, to change it. Absent: nothing opens. A phone has no double click. */
   onEditTile?: (id: string) => void;
-  /** Synth 09: a tile's titled text box was pressed: open that box in the notepad over the tile's window. */
-  onOpenBox?: (id: string, field: string) => void;
   /** Synth 09: what a tile's window holds, section by section (as Details reads it), for the tile's content layer. */
   sectionsOf?: (id: string) => readonly ReadSection[] | null;
   onRename: (id: string, title: string) => void;
@@ -459,7 +457,6 @@ interface ListRefs {
   canMove?: (id: string, by: -1 | 1) => boolean;
   /** CA-21 P3: the tile (or session or part) held right now: its own element stays in the layout, hidden, as its place. */
   hidden?: string | null;
-  onOpenBox?: BuildListProps["onOpenBox"];
   sectionsOf?: BuildListProps["sectionsOf"];
   onSelect?: (id: string) => void;
 }
@@ -1136,24 +1133,6 @@ function ResultContent({ id, children }: { id: string; children: ReactNode }) {
   );
 }
 
-/**
- * Synth 09: the tile's titled text boxes, one row each under its title: Raised, radius 8, padded 6 10, the title 13/500 and
- * the Expand glyph at the right. Pressing one opens that box in the notepad over the tile's window. Untitled boxes do not show.
- */
-function BoxRows({ step, phone }: { step: Step; phone: boolean }) {
-  const { onOpenBox } = useContext(ListRefsContext);
-  const boxes = step.boxTitles ?? [];
-  if (boxes.length === 0) return null;
-  return (
-    <ul data-testid="tile-box-rows" data-no-drag="" style={BOX_ROWS}>
-      {boxes.map((box) => (
-        <li key={box.field} style={{ minWidth: 0 }}>
-          <BoxRow title={box.title} field={box.field} phone={phone} onOpen={onOpenBox ? () => onOpenBox(step.id, box.field) : undefined} />
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 /**
  * A tile's header: the number in its square, a type line (11.5, `--label`) with the title under it (14 / 500, one line, an
@@ -1169,7 +1148,6 @@ function TileHeader({ step, nest, phone, typeLine, typeTestId, title, menu, sele
           {typeLine}
         </span>
         {title}
-        <BoxRows step={step} phone={phone} />
         <StillOpenLine step={step} />
         {step.gate ? <GateLine gate={step.gate} /> : null}
         {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} /> : null}
@@ -2176,13 +2154,7 @@ function AddPrompt({
   /** CA-02 P7: true once text was pasted in, until the field is emptied. Only pasted text is offered as code. */
   const [pasted, setPasted] = useState(false);
   const [tool, setTool] = useState<string | null>(null);
-  const [model, setModel] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [cleared, setCleared] = useState<string | null>(null);
-  const announce = useAnnounce();
-  useEffect(() => {
-    if (cleared) announce(cleared);
-  }, [cleared, announce]);
   const field = useRef<HTMLTextAreaElement | null>(null);
   const setField = useCallback(
     (element: HTMLTextAreaElement | null) => {
@@ -2207,32 +2179,19 @@ function AddPrompt({
   useEffect(() => {
     if (sessionKey === null) return;
     setTool(sessionTool ? (toolFor(sessionTool)?.id ?? sessionTool) : null);
-    setModel(null);
   }, [sessionKey, sessionTool]);
-
-  useEffect(() => {
-    if (!cleared) return;
-    const timer = window.setTimeout(() => setCleared(null), CLEARED_NOTE_MS);
-    return () => window.clearTimeout(timer);
-  }, [cleared]);
 
   const toolLabel = tool ? (toolName(tool) ?? tool.trim()) : null;
   const known = toolFor(tool);
   /* A tool that runs prompts by itself saves no prompt: the field offers to add it as an agent instead. */
   const redirect = known !== null && runsItself(known);
 
-  const changeTool = (next: string | null) => {
-    setTool(next);
-    const after = nextModelAfterToolChange(next, model);
-    if (after.cleared && model) setCleared(ADD_PROMPT_COPY.cleared(toolName(next) ?? (next ?? "").trim(), model));
-    else setCleared(null);
-    setModel(after.model);
-  };
 
   const submit = async () => {
     if (!value.trim() || busy || redirect) return;
     setBusy(true);
-    const saved = await onAddPrompt({ text: value, tool, model });
+    // Synth 09: no model of its own: the prompt runs on its session's, chosen with the session's harness.
+    const saved = await onAddPrompt({ text: value, tool, model: null });
     setBusy(false);
     if (saved) {
       setValue("");
@@ -2257,7 +2216,6 @@ function AddPrompt({
     if (saved) {
       setValue("");
       setTool(null);
-      setModel(null);
     }
   };
 
@@ -2291,9 +2249,8 @@ function AddPrompt({
         </div>
       ) : null}
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-        <ToolPicker label={`Prompt tool · ${toolLabel ?? "pick a tool"}`} value={tool} onChange={changeTool} inBuild={inBuild} allowNone phone={phone} step="prompt" />
-        {/* CA-03: this row has no field label, so the model menu says it is the model while empty (F41: "Model"); chosen, it shows the model's name. */}
-        {redirect ? null : <ModelPicker tool={tool} value={model} onChange={setModel} phone={phone} placeholder={MODEL_PICKER_COPY.label} />}
+        <ToolPicker label={`Prompt tool · ${toolLabel ?? "pick a tool"}`} value={tool} onChange={setTool} inBuild={inBuild} allowNone phone={phone} step="prompt" />
+        {/* Synth 09: no model here: a prompt runs on its session's model, chosen with the session's harness. */}
         <span style={{ flexGrow: 1 }} />
         {/* F15 (D3): the add is a button in words, not an arrow. */}
         <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="primary" size={phone ? 44 : 32} fontSize={textStep.meta} data-testid="composer-add" disabled={!value.trim() || busy || redirect} onClick={() => void submit()}>
@@ -2308,9 +2265,6 @@ function AddPrompt({
           </Button>
         </div>
       ) : null}
-      <div data-testid="model-cleared">
-        {cleared ? <Quiet>{cleared}</Quiet> : null}
-      </div>
     </div>
   );
 }
@@ -2854,7 +2808,6 @@ export function BuildList(raw: BuildListProps) {
     });
   }
   const refs: ListRefs = {
-    onOpenBox: props.onOpenBox,
     sectionsOf: props.sectionsOf,
     onSelect: props.onSelect,
     mentioned: props.mentioned ?? NO_MENTIONS,

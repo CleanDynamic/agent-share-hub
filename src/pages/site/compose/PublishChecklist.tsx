@@ -240,7 +240,7 @@ export function PublishChecklist({ open, checklist, opensIn, onClose, onAction, 
           ) : (
             <span style={{ flexGrow: 1 }} />
           )}
-          <RecipeButton small={!phone} phone={phone} data-testid="checklist-close" onClick={onClose}>
+          <RecipeButton variant="ghost" small={!phone} phone={phone} data-testid="checklist-close" onClick={onClose}>
             {CHECKLIST_COPY.close}
           </RecipeButton>
           <RecipeButton

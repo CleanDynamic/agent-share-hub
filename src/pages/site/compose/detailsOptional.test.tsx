@@ -43,10 +43,10 @@ const row = (name: string) => placeNamed(name);
 const openRow = (name: string) => void placeNamed(name);
 
 describe("the row builders say what each tile holds, with the modals' words (CA-15 P11)", () => {
-  it("a prompt: Model settings and Variables", () => {
+  it("a prompt: Model settings (effort and instructions; the model is the session's) and Variables", () => {
     const rows = promptRows({ settings: { model: "Opus 5.5", effort: "high", instructions: "Be terse" } }, "Hi {name}");
     expect(rows.map((r) => r.name)).toEqual(["Model settings", "How it was sent", "Asks for", "Variables"]);
-    expect(rows[0].summary).toBe("Opus 5.5 · High effort · Be terse");
+    expect(rows[0].summary).toBe("High effort · Be terse");
     expect(rows[3].summary).toBe("{name}");
     expect(rows[3].toPatch({ name: "First name" })).toEqual({ variables: [{ name: "name", description: "First name" }] });
   });
@@ -96,8 +96,8 @@ describe("the row builders say what each tile holds, with the modals' words (CA-
     expect(toolRows({ connection: "mcp" })[2].description).toBe("");
   });
 
-  it("code: File path and Generated with; a result: Caption", () => {
-    expect(codeRows({ filename: "src/app.ts", tool: "claude-code", model: "Opus 5.5" }).map((r) => [r.name, r.summary])).toEqual([["File path", "src/app.ts"], ["What it belongs to", null], ["Generated with", "Claude Code · Opus 5.5"]]);
+  it("code: File path, and no Generated with (the session's harness wrote it); a result: Caption", () => {
+    expect(codeRows({ filename: "src/app.ts", tool: "claude-code", model: "Opus 5.5" }).map((r) => [r.name, r.summary])).toEqual([["File path", "src/app.ts"], ["What it belongs to", null]]);
     // SV-30 P9: what it belongs to, and where it runs.
     expect(codeRows({ part_of: "eval_harness", runs_where: "Terminal 2" })[1].summary).toBe("Part of the eval harness · Terminal 2");
     expect(codeRows({ part_of: "eval_harness" })[1].toPatch({ part_of: "", runs_where: "" })).toEqual({ part_of: null, runs_where: "" });
@@ -105,7 +105,7 @@ describe("the row builders say what each tile holds, with the modals' words (CA-
   });
 
   it("a system prompt, a dataset and a repository", () => {
-    expect(systemPromptRows({ text: "Use {tone}", version: "v2", model: "Opus 5.5" }).map((r) => [r.name, r.summary])).toEqual([["Model", "Opus 5.5"], ["Version", "v2"], ["Variables", "{tone}"]]);
+    expect(systemPromptRows({ text: "Use {tone}", version: "v2", model: "Opus 5.5" }).map((r) => [r.name, r.summary])).toEqual([["Version", "v2"], ["Variables", "{tone}"]]);
     expect(datasetRows({ description: "d", format: "CSV", record_count: 1200, columns: ["a", "b"] }).map((r) => [r.name, r.summary]).slice(0, 3)).toEqual([["Format", "CSV"], ["Record count", "1,200"], ["Columns", "a, b"]]);
     expect(datasetRows({ description: "d", use: "retrieval", chunk_strategy: "By paragraph", chunk_size: 512 }).map((r) => r.name)).toContain("Chunking");
     expect(datasetRows({ description: "d", use: "training" }).map((r) => r.name)).not.toContain("Chunking");
@@ -219,13 +219,14 @@ describe("a system prompt, a dataset and a GitHub repository in their windows (C
     }
   });
 
-  it("a system prompt asks Name, Text and Applies to first, then Model, Version and Variables, and writes the text on Save", () => {
+  it("a system prompt asks Name, Text and Applies to first, then Version and Variables (no Model), and writes the text on Save", () => {
     const { props } = windowFor([...prompts(), node("sp", "system_prompt", { step: true, text: "Use {tone}", scope: "all" }, { title: "Voice" })], "sp");
     const text = screen.getByLabelText("Text") as HTMLTextAreaElement;
     expect(text.value).toBe("Use {tone}");
     expect(screen.getByRole("group", { name: "Applies to" })).toBeTruthy();
     expect(text.compareDocumentPosition(screen.getByTestId("optional-section")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(rowNames()).toEqual(expect.arrayContaining(["Model", "Version", "Variables"]));
+    expect(rowNames()).toEqual(expect.arrayContaining(["Version", "Variables"]));
+    expect(rowNames()).not.toContain("Model");
     fireEvent.change(text, { target: { value: "Use {tone} and {voice}" } });
     save();
     expect(props.onExtras).toHaveBeenCalledWith("sp", { text: "Use {tone} and {voice}" });

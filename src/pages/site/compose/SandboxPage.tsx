@@ -1085,7 +1085,7 @@ function SandboxPageBody() {
   }, [groups, made, collapsedKeys, onToggleCollapsed, onPartFold]);
 
   const onSessionMeta = useCallback(
-    async function again(key: string, change: { tool?: string | null; date?: string }): Promise<void> {
+    async function again(key: string, change: { tool?: string | null; date?: string; model?: string | null }): Promise<void> {
       try {
         if (isLegacySession(key)) {
           await claim(key, change);
@@ -1292,8 +1292,6 @@ function SandboxPageBody() {
 
   /* CA-18: the tile whose own window is open (to change it), seen as Details sees it. */
   const [editId, setEditId] = useState<string | null>(null);
-  /** Synth 09: the text box a tile's titled row asked to open in the notepad, with the tile's window under it. */
-  const [editBox, setEditBox] = useState<string | null>(null);
   /** SV-28 P7: the agent or team whose setup prompt is shown; copying it loads the assembler on the click. */
   /* UX-08 P1: a step tile marked still open (`is_gap` and its problem text), or the mark taken off. */
   const onStillOpen = (id: string, problem: string | null) => {
@@ -1325,8 +1323,8 @@ function SandboxPageBody() {
   const editTitles = useMemo(() => {
     const step = editId ? findStepIn(steps, editId) : null;
     const seed = Object.fromEntries((step?.boxTitles ?? []).map((box) => [box.field, box.title]));
-    return { seed, expand: editBox, commit: (titles: Record<string, string>) => void (editId ? prompts.setBoxTitles(editId, titles) : undefined) };
-  }, [editId, editBox, steps, prompts]);
+    return { seed, commit: (titles: Record<string, string>) => void (editId ? prompts.setBoxTitles(editId, titles) : undefined) };
+  }, [editId, steps, prompts]);
   /** CA-18: how Details names the other tiles a section points at. */
   const buildFacts = useMemo(() => buildFactsOf({ steps, groups, names: listFacts.names, results: listFacts.results }), [steps, groups, listFacts.names, listFacts.results]);
   /* Synth 09: what each tile's window holds, section by section, as Details reads it: drawn on the tile's content layer. Read
@@ -1368,34 +1366,18 @@ function SandboxPageBody() {
     [select],
   );
 
-  /* Synth 09: a tile's titled box row opens that box in the notepad over the tile's own window: a prompt's in the prompt window,
-     every other kind's in its edit window. */
-  const [promptBox, setPromptBox] = useState<string | null>(null);
-  const openBox = useCallback(
-    (id: string, field: string) => {
-      if (findStepIn(steps, id)?.kind === "prompt") {
-        setPromptBox(field);
-        openPrompt(id);
-        return;
-      }
-      setEditBox(field);
-      setEditId(id);
-    },
-    [steps, openPrompt],
-  );
   /* The prompt window saves as it goes, so each box's title is written as it is left. */
   const promptTitles = useMemo(() => {
     const step = openPromptId ? findStepIn(steps, openPromptId) : null;
     return {
       seed: Object.fromEntries((step?.boxTitles ?? []).map((box) => [box.field, box.title])),
-      expand: promptBox,
       onTitle: (field: string, title: string) => {
         if (!openPromptId) return;
         const had = step?.boxTitles?.find((box) => box.field === field)?.title ?? "";
         if (had !== title.trim()) void prompts.setBoxTitles(openPromptId, { [field]: title });
       },
     };
-  }, [openPromptId, promptBox, steps, prompts]);
+  }, [openPromptId, steps, prompts]);
 
   /** Writes to a node inside an agent or a team are not laid over the tree, so read the build again once they land. */
   const afterWrite = useCallback(() => {
@@ -2942,7 +2924,6 @@ function SandboxPageBody() {
             onSelect={selection.selectTile}
             onOpenPrompt={openPrompt}
             onEditTile={openTile}
-            onOpenBox={openBox}
             sectionsOf={sectionsOf}
             onRename={prompts.rename}
             onMove={stepOf.move}
@@ -3136,7 +3117,7 @@ function SandboxPageBody() {
         }}
       />
       <BoxTitleSinkContext.Provider value={editTitles}>
-        <TileEditDialog view={editView} handlers={detailsStepped} inBuild={inBuild} teamsAvailable={teamsAvailable} onClose={() => { setEditId(null); setEditBox(null); }} />
+        <TileEditDialog view={editView} handlers={detailsStepped} inBuild={inBuild} teamsAvailable={teamsAvailable} onClose={() => setEditId(null)} />
       </BoxTitleSinkContext.Provider>
       <SetupPromptWindow id={promptFor} tree={nodes.tree} onCopy={copySetup} onClose={() => setPromptFor(null)} />
       <BoxTitleSinkContext.Provider value={promptTitles}>
@@ -3156,7 +3137,6 @@ function SandboxPageBody() {
         onNavigate={openPrompt}
         onClose={() => {
           setOpenPromptId(null);
-          setPromptBox(null);
           links.closeWindows();
         }}
         fromPost={links.fromPost}

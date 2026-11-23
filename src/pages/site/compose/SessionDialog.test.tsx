@@ -133,3 +133,20 @@ describe("the Session modal", () => {
     expect(within(dialog()).getByText("Claude Code")).toBeTruthy();
   });
 });
+
+// Synth 09: the model is chosen with the session's harness, here, and nowhere in a step's window.
+describe("the Session modal's model", () => {
+  it("picks a model from the session tool's own models and writes it through onSessionMeta", () => {
+    const { h } = open();
+    const picker = within(dialog()).getByRole("button", { name: /^Model/ });
+    fireEvent.keyDown(picker, { key: "Enter" });
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Opus 5.5" }));
+    save();
+    expect(calls(h)).toContainEqual(["onSessionMeta", "s2", { model: "Opus 5.5" }]);
+  });
+
+  it("reads an imported session's model and offers no picker: another model is another session", () => {
+    open({ editable: undefined });
+    expect(within(dialog()).queryByRole("button", { name: /^Model/ })).toBeNull();
+  });
+});

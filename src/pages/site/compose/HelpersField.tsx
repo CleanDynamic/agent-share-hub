@@ -237,7 +237,7 @@ export function HelpersField({ helpers, toolNames, decisions, phone, onChange, b
           {error ? <span role="alert" style={text(textStep.meta, 400, t.text)}>{error}</span> : null}
           <div style={{ display: "flex", gap: 8 }}>
             <Button variant="primary" size={size} onClick={add}>{HELPERS_COPY.addThis}</Button>
-            <Button variant="secondary" size={size} onClick={() => { setOpen(false); setError(null); }}>Cancel</Button>
+            <Button variant="ghost" size={size} onClick={() => { setOpen(false); setError(null); }}>Cancel</Button>
           </div>
         </div>
       ) : (

@@ -18,7 +18,7 @@ export function ClearBuildDialog({ open, counts, onClose, onConfirm }: { open: b
       testId="clear-build-window"
       buttons={
         <>
-          <RecipeButton small={!phone} phone={phone} onClick={onClose}>
+          <RecipeButton variant="ghost" small={!phone} phone={phone} onClick={onClose}>
             {CLEAR_COPY.cancel}
           </RecipeButton>
           <DangerButton phone={phone} testId="clear-build-confirm" onClick={onConfirm}>

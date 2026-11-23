@@ -21,7 +21,7 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
       width={MODAL_WIDTH.standard}
       testId="shortcuts-window"
       buttons={
-        <RecipeButton small={!phone} phone={phone} onClick={onClose}>
+        <RecipeButton variant="primary" small={!phone} phone={phone} onClick={onClose}>
           {SHORTCUT_COPY.done}
         </RecipeButton>
       }

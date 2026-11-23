@@ -98,33 +98,15 @@ describe("Add › Code (CA-02 P7)", () => {
     expect(filename().maxLength).toBe(120);
   });
 
-  it("adds the typed code as one step, generated with a tool and model by the Typed here rules", () => {
+  it("adds the typed code as one step, and asks for no tool or model: those come with the session", () => {
     const props = open();
+    expect(screen.queryByRole("button", { name: /(^|, )Generated with$/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "model" })).toBeNull();
     fireEvent.change(well(), { target: { value: "export const a = 1;\nexport const b = 2;\n" } });
     fireEvent.change(filename(), { target: { value: " app.ts " } });
-    openRow("Generated with");
-    fireEvent.click(screen.getByRole("button", { name: /(^|, )Generated with$/ }));
-    fireEvent.change(screen.getByRole("combobox", { name: "Find a tool" }), { target: { value: "cursor" } });
-    fireEvent.click(screen.getByRole("option", { name: "Cursor" }));
-    fireEvent.keyDown(screen.getByRole("button", { name: "model" }), { key: "Enter" });
-    fireEvent.click(screen.getByRole("menuitemradio", { name: "Opus 5" }));
     fireEvent.click(add());
-    expect(props.onAdd).toHaveBeenCalledWith({
-      steps: [{ source: "export const a = 1;\nexport const b = 2;\n", language: "ts", filename: "app.ts" }],
-      tool: "cursor",
-      model: "Opus 5",
-    });
+    expect(props.onAdd).toHaveBeenCalledWith(expect.objectContaining({ steps: [{ source: "export const a = 1;\nexport const b = 2;\n", language: "ts", filename: "app.ts" }] }));
     expect(props.onOpenChange).toHaveBeenCalledWith(false);
-  });
-
-  it("names code tools only in Generated with", () => {
-    open();
-    openRow("Generated with");
-    fireEvent.click(screen.getByRole("button", { name: /(^|, )Generated with$/ }));
-    fireEvent.click(screen.getByRole("option", { name: /^Show all/ }));
-    const names = screen.getAllByRole("option").map((option) => option.textContent);
-    expect(names).toContain("Claude Code");
-    expect(names).not.toContain("Midjourney");
   });
 
   it("makes each uploaded text file its own step, named by its file, and refuses the rest by name", async () => {

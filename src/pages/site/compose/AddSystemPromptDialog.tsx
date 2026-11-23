@@ -18,7 +18,6 @@ import { SYSTEM_PROMPT_TEXT_MAX, SYSTEM_PROMPT_VERSION_MAX, type SystemPromptSco
 import { VARIABLE_DESCRIPTION_MAX, variablesFor } from "@/lib/build/tileExtras";
 
 import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from "./ModalFrame";
-import { ModelPicker } from "./ModelPicker";
 import { Block, BlockHead, FieldArea, FieldInput, Hint, MODAL_WIDTH, NARROW, OptionGrid, Row, SegmentedField } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 
@@ -78,7 +77,8 @@ function Form({ onAdd, onCancel, phone, prompts, session, current, edit }: Pick<
   const [body, setBody] = useState(current?.text ?? "");
   const [applies, setApplies] = useState<Applies>(current?.applies ?? "all");
   const [picked, setPicked] = useState<string[]>(current?.picked ?? []);
-  const [model, setModel] = useState<string | null>(current?.model || null);
+  /* Kept as it was read, so a save writes it back unchanged: the model is the session's to say now. */
+  const model = current?.model || null;
   const [version, setVersion] = useState(current?.version ?? "");
   const [described, setDescribed] = useState<Record<string, string>>(current?.described ?? {});
   const uid = useId();
@@ -143,9 +143,7 @@ function Form({ onAdd, onCancel, phone, prompts, session, current, edit }: Pick<
       </Block>
 
       <OptionalSection>
-        <OptionalField name={SYSTEM_PROMPT_DIALOG_COPY.model} summary={summaryOf(model)} phone={phone}>
-          <ModelPicker tool={null} anyWithoutTool value={model} onChange={setModel} phone={phone} field />
-        </OptionalField>
+        {/* Synth 09: no Model: the system prompt is for its session's model, chosen with the session's harness. */}
         <OptionalField name={SYSTEM_PROMPT_DIALOG_COPY.version} description={SYSTEM_PROMPT_DIALOG_COPY.versionLine} summary={summaryOf(version)} phone={phone}>
           <FieldInput phone={phone} mono width={NARROW.version} aria-label={SYSTEM_PROMPT_DIALOG_COPY.version} maxLength={SYSTEM_PROMPT_VERSION_MAX} value={version} placeholder={SYSTEM_PROMPT_DIALOG_COPY.versionPlaceholder} onChange={(event) => setVersion(event.target.value)} />
         </OptionalField>

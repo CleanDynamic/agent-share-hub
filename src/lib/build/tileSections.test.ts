@@ -45,12 +45,15 @@ describe("the list", () => {
     const has = (kind: TileKind, label: string) => expect(labelsOf(kind), `${kind}: ${label}`).toContain(label);
     for (const label of [TOOL_DIALOG_COPY.tool, TOOL_DIALOG_COPY.connected, TOOL_DIALOG_COPY.did, TOOL_DIALOG_COPY.permissions, TOOL_DIALOG_COPY.plan, TOOL_DIALOG_COPY.setup, TOOL_DIALOG_COPY.alternatives]) has("tool", label);
     for (const label of [CHECK_DIALOG_COPY.tested, CHECK_DIALOG_COPY.passing, CHECK_DIALOG_COPY.runs, CHECK_DIALOG_COPY.failed, CHECK_DIALOG_COPY.lastRun, CHECK_DIALOG_COPY.method, CHECK_DIALOG_COPY.reviewer, CHECK_DIALOG_COPY.scoring, CHECK_DIALOG_COPY.modelTested, CHECK_DIALOG_COPY.evidence]) has("check", label);
-    for (const label of [CODE_DIALOG_COPY.code, CODE_DIALOG_COPY.language, CODE_DIALOG_COPY.filename, CODE_DIALOG_COPY.writtenWith]) has("code", label);
+    for (const label of [CODE_DIALOG_COPY.code, CODE_DIALOG_COPY.language, CODE_DIALOG_COPY.filename]) has("code", label);
+    // Synth 09: a step names no model or tool of its own; the session it was made in does.
+    expect(labelsOf("code")).not.toContain(CODE_DIALOG_COPY.writtenWith);
+    expect(labelsOf("system_prompt")).not.toContain(SYSTEM_PROMPT_DIALOG_COPY.model);
     for (const label of [AGENT_DIALOG_COPY.instructions, AGENT_DIALOG_COPY.starts, AGENT_DIALOG_COPY.limits, AGENT_DIALOG_COPY.output, AGENT_DIALOG_COPY.sample]) has("agent", label);
     has("team", AGENT_DIALOG_COPY.pattern);
     for (const label of [MANUAL_DIALOG_COPY.where, MANUAL_DIALOG_COPY.whatWasDone, MANUAL_DIALOG_COPY.picture]) has("manual", label);
     for (const label of [RESULT_DIALOG_COPY.outputType, RESULT_DIALOG_COPY.url, RESULT_DIALOG_COPY.picturesHead, RESULT_DIALOG_COPY.caption]) has("result", label);
-    for (const label of [SYSTEM_PROMPT_DIALOG_COPY.name, SYSTEM_PROMPT_DIALOG_COPY.text, SYSTEM_PROMPT_DIALOG_COPY.appliesTo, SYSTEM_PROMPT_DIALOG_COPY.model, SYSTEM_PROMPT_DIALOG_COPY.version, SYSTEM_PROMPT_DIALOG_COPY.variables]) has("system_prompt", label);
+    for (const label of [SYSTEM_PROMPT_DIALOG_COPY.name, SYSTEM_PROMPT_DIALOG_COPY.text, SYSTEM_PROMPT_DIALOG_COPY.appliesTo, SYSTEM_PROMPT_DIALOG_COPY.version, SYSTEM_PROMPT_DIALOG_COPY.variables]) has("system_prompt", label);
     for (const label of [DATASET_DIALOG_COPY.name, DATASET_DIALOG_COPY.description, DATASET_DIALOG_COPY.use, DATASET_DIALOG_COPY.format, DATASET_DIALOG_COPY.records, DATASET_DIALOG_COPY.columns, DATASET_DIALOG_COPY.source, DATASET_DIALOG_COPY.sample, DATASET_DIALOG_COPY.licence, DATASET_DIALOG_COPY.chunking]) has("dataset", label);
     for (const label of [REPO_DIALOG_COPY.url, REPO_DIALOG_COPY.ownership, REPO_DIALOG_COPY.description, REPO_DIALOG_COPY.thirdParty, REPO_DIALOG_COPY.pinned, REPO_DIALOG_COPY.path, REPO_DIALOG_COPY.modifications, REPO_DIALOG_COPY.keyFiles, REPO_DIALOG_COPY.run]) has("repo", label);
     for (const label of [FULL_PROMPT_COPY.prompt, FULL_PROMPT_COPY.response, FULL_PROMPT_COPY.modelSettings, FULL_PROMPT_COPY.variables]) has("prompt", label);

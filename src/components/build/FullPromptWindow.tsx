@@ -51,7 +51,6 @@ import { EFFORTS, EFFORT_LABEL, SETTINGS_INSTRUCTIONS_MAX, VARIABLE_DESCRIPTION_
 import { modelLabel } from "@/lib/models/registry";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE, textStep } from "@/lib/theme/type";
-import { ModelPicker } from "@/pages/site/compose/ModelPicker";
 import { OptionalField, OptionalSection, summaryOf } from "@/pages/site/compose/OptionalSection";
 import { OptionalRow, OptionalRows } from "@/pages/site/compose/OptionalRows";
 import { EYEBROW } from "@/pages/site/compose/refinedStyles";
@@ -447,7 +446,7 @@ function PromptOptional({ props, step, tool, model, phone, picked, onMarked, mod
     <OptionalSection>
       {agent && onExtras ? <JobFields step={step} agent={agent} names={props.names ?? {}} phone={phone} onExtras={onExtras} /> : null}
       <OptionalField name={FULL_PROMPT_COPY.modelSettings} summary={settingsLine} phone={phone}>
-        {modelElsewhere ? null : <ModelPicker tool={tool} value={model} onChange={(next) => saveSettings({ model: next ?? "" })} phone={phone} field />}
+        {/* Synth 09: no model here: a prompt runs on its session's model, chosen with the session's harness. */}
         <SegmentedField<Effort> label={FULL_PROMPT_COPY.effort} phone={phone} items={EFFORTS.map((effort) => ({ value: effort, label: EFFORT_LABEL[effort] }))} value={settings.effort} onChange={(effort) => saveSettings({ effort })} />
         <FieldArea
           phone={phone}

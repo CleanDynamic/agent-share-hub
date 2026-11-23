@@ -8,7 +8,7 @@ import { ModelMark } from "@/components/brand/ModelMark";
 import { markFor } from "@/lib/models/marks";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { CONTROL, SELECT_RING, controlPaint, hoverFill } from "@/lib/theme/refinedControl";
+import { CONTROL, SELECT_RING, controlPaint } from "@/lib/theme/refinedControl";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { PREVIEW, TITLE_LINE } from "@/lib/theme/truncate";
 import { DM_MONO, FIGTREE, textStep } from "@/lib/theme/type";
@@ -56,51 +56,6 @@ export const TILE_EYEBROW: CSSProperties = { ...type(textStep.meta, 400, t.label
 /** The title: 15/600. */
 export const TILE_TITLE: CSSProperties = { ...type(textStep.body, 600, t.text, 20), margin: 0, ...ellipsis };
 
-/* ── Synth 09: titled text boxes on a tile ── */
-
-/** The rows under a tile's title, 4 apart. */
-export const BOX_ROWS: CSSProperties = { listStyle: "none", margin: `${space[1]}px 0 0`, padding: 0, display: "flex", flexDirection: "column", gap: space[1], minWidth: 0 };
-
-/** One titled text box: a row on Raised, radius 8, padded 6 10, the title 13/500 and the Expand glyph at the right. Pressing it opens the box in the notepad. */
-export function BoxRow({ title, field, phone = false, onOpen }: { title: string; field: string; phone?: boolean; onOpen?: () => void }) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
-  return (
-    <button
-      type="button"
-      data-testid="tile-box-row"
-      data-field={field}
-      aria-label={`${title}, ${field}: open in the notepad`}
-      disabled={!onOpen}
-      onClick={(event) => {
-        event.stopPropagation();
-        onOpen?.();
-      }}
-      {...handlers}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: space[2],
-        width: "100%",
-        minWidth: 0,
-        minHeight: phone ? size.touch : undefined,
-        boxSizing: "border-box",
-        padding: "6px 10px",
-        border: 0,
-        borderRadius: r.card,
-        background: state.hovered ? hoverFill(t.control) : t.control,
-        textAlign: "left",
-        cursor: onOpen ? "pointer" : "default",
-        ...type(textStep.meta, 500, t.text, 17),
-        ...ring(state.focusVisible),
-      }}
-    >
-      <span style={{ ...ellipsis, flexGrow: 1 }}>{title}</span>
-      <span aria-hidden="true" style={{ display: "inline-flex", flexShrink: 0, color: t.text2 }}>
-        <Glyph name="expand" size={size.icon} />
-      </span>
-    </button>
-  );
-}
 
 /** The number box: 24 tall, the control recipe, the data face 13 `--text2`; filled Mint while its tile is chosen. */
 export function NumberBadge({ children, selected = false }: { children: ReactNode; selected?: boolean }) {

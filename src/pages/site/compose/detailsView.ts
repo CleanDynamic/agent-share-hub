@@ -31,6 +31,7 @@ import { modelLabel } from "@/lib/models/registry";
 import { asksHowRun, modelRunLine } from "@/lib/build/modelRun";
 import { runHostsOf } from "@/lib/build/deployment";
 import { toolFor } from "@/lib/tools/registry";
+import { normaliseModel } from "@/lib/models/registry";
 
 import {
   fileSize,
@@ -312,7 +313,7 @@ function sessionView(source: SourceSession, ctx: ViewContext): SessionView {
     setup: setupItemsOf(ctx.tree, source.key).map((item) => ({ id: item.id, kind: SETUP_KIND_LABEL[item.kind], name: item.name, description: item.description, notShared: item.notShared, loaded: item.loaded })),
     // CA-04 P1: a session made here, or an old build's typed prompts, can have its tool and day changed.
     ...(group && !real
-      ? { editable: { tool: group.tool ? (toolFor(group.tool)?.id ?? group.tool) : null, date: groupKind(group) === "typed" ? (group.startedAt ?? "") : "" } }
+      ? { editable: { tool: group.tool ? (toolFor(group.tool)?.id ?? group.tool) : null, date: groupKind(group) === "typed" ? (group.startedAt ?? "") : "", model: group.model ? (normaliseModel(group.model)?.id ?? group.model) : null } }
       : null),
   };
 }

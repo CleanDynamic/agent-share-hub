@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { BOX_TITLE_MAX, boxTitlesOf, withBoxTitles } from "@/lib/build/graph";
+import type { ReadSection } from "@/lib/build/tileSections";
 import { borderFor } from "@/lib/theme/partColour";
 import { SELECT_RING } from "@/lib/theme/refinedControl";
 
@@ -15,7 +16,7 @@ import { ConfirmDialog } from "./referencePieces";
 import { LAYER } from "./layers";
 import { WINDOW_TOP } from "./modalRecipes";
 import { BoxTitleSinkContext, ChoiceCards, FieldArea, SegmentedField } from "./modalRecipes";
-import { BoxRow, NumberBadge, tileStyle } from "./tileRecipes";
+import { NumberBadge, tileStyle } from "./tileRecipes";
 
 describe("box titles on the node", () => {
   it("reads the titled boxes, trimmed, and leaves out blank and malformed ones", () => {
@@ -55,14 +56,19 @@ describe("the tile", () => {
     expect(on).toContain("color:var(--on-brand-accent)");
   });
 
-  it("shows a titled box as a row on Raised that opens it", () => {
-    const onOpen = vi.fn();
-    render(<BoxRow title="Tone" field="Instructions" onOpen={onOpen} />);
-    const row = screen.getByRole("button", { name: "Tone, Instructions: open in the notepad" });
-    expect(row.textContent).toBe("Tone");
-    fireEvent.click(row);
-    expect(onOpen).toHaveBeenCalledTimes(1);
-    expect(renderToStaticMarkup(<BoxRow title="Tone" field="Instructions" onOpen={onOpen} />)).toContain("background:var(--control)");
+  it("draws no title rows under a tile's title, whatever titles its boxes have", async () => {
+    const { BuildList } = await import("./BuildList");
+    const { sandboxListProps } = await import("@/dev/fixtures/sandbox");
+    const { MemoryRouter } = await import("react-router-dom");
+    const props = sandboxListProps("bakery");
+    const steps = props.steps.map((step, at) => (at === 0 ? { ...step, boxTitles: [{ field: "Response", title: "First draft" }] } : step));
+    render(
+      <MemoryRouter>
+        <BuildList {...props} steps={steps} />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByTestId("tile-box-rows")).toBeNull();
+    expect(screen.queryByText("First draft")).toBeNull();
   });
 });
 
@@ -233,7 +239,7 @@ describe("the title row's Add", () => {
 describe("a step tile's content, on the notepad's tone", () => {
   it("leaves out what the tile's body draws and the reverse links, and keeps the window's order", async () => {
     const { tileSectionsOf } = await import("./tileContent");
-    const section = (key: string) => ({ key, label: key, value: { type: "prose" as const, text: key } });
+    const section = (key: string) => ({ key, label: key, value: { type: "prose" as const, text: key, count: "" } });
     const sections = ["prompt", "response", "model", "uses", "goesInto", "settings", "variables"].map(section);
     expect(tileSectionsOf("prompt", sections).map((s) => s.key)).toEqual(["model", "settings", "variables"]);
     expect(tileSectionsOf("tool", ["tool", "connected", "did", "permissions", "plan", "usedBy"].map(section)).map((s) => s.key)).toEqual(["permissions", "plan"]);
@@ -245,12 +251,12 @@ describe("a step tile's content, on the notepad's tone", () => {
     const { MemoryRouter } = await import("react-router-dom");
     const props = sandboxListProps("bakery");
     const first = props.steps[0];
-    const sectionsOf = (id: string) =>
+    const sectionsOf = (id: string): ReadSection[] =>
       id === first.id
         ? [
-            { key: "prompt", label: "Prompt", value: { type: "prose" as const, text: first.text } },
-            { key: "settings", label: "Model settings", value: { type: "rows" as const, rows: [{ label: "Reasoning effort", value: "High" }] } },
-            { key: "goesInto", label: "Used by", value: { type: "prose" as const, text: "Prompt 2" } },
+            { key: "prompt", label: "Prompt", value: { type: "prose" as const, text: first.text, count: "" } },
+            { key: "settings", label: "Model settings", value: { type: "rows" as const, rows: [{ label: "Reasoning effort", value: "High" }], count: "" } },
+            { key: "goesInto", label: "Used by", value: { type: "prose" as const, text: "Prompt 2", count: "" } },
           ]
         : [];
     render(

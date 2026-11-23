@@ -652,8 +652,9 @@ export const pickerFieldStyle = (phone: boolean, state: { hovered?: boolean }, e
   gap: space[2],
   width: "100%",
   minWidth: 0,
-  height: phone ? size.touch : size.control,
-  padding: `0 ${space[3]}px`,
+  /* Synth 09: as tall as a field (40) and padded as one, so a picker and a field side by side line up. */
+  height: phone ? size.touch : 40,
+  padding: "0 14px",
   borderRadius: r.control,
   textAlign: "left",
   cursor: "pointer",
@@ -903,16 +904,17 @@ function OptionButton({ label, chosen, disabled, phone, onPick }: { label: strin
         width: "100%",
         minWidth: 0,
         height: phone ? size.touch : size.control,
-        padding: `0 ${space[3]}px`,
+        padding: "0 14px",
         textAlign: "left",
-        borderRadius: r.control,
-        background: "transparent",
-        border: `1px solid ${t.windowBorder}`,
-        ...type(textStep.meta, 400, t.text2),
+        /* Synth 09: the same pills as a single choice (SegmentedField), laid out in a grid: Raised, the chosen one on the
+           action fill. */
+        borderRadius: r.full,
+        background: state.hovered && !chosen ? hoverFill(t.control) : t.control,
+        border: 0,
+        ...type(textStep.meta, 500, t.text),
         ...ELLIPSIS,
         cursor: disabled ? "default" : "pointer",
-        ...(state.hovered && !chosen ? { background: hoverFill(), color: t.text } : null),
-        ...(chosen ? { ...SELECTED, color: t.text } : null),
+        ...(chosen ? { background: t.action, color: t.onAction } : null),
         ...(disabled ? { filter: t.dimFilter } : null),
         ...ring(state.focusVisible),
       }}
@@ -925,7 +927,7 @@ function OptionButton({ label, chosen, disabled, phone, onPick }: { label: strin
 /* ── buttons ── */
 
 export interface RecipeButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "secondary" | "primary" | "ghost";
+  variant?: "secondary" | "primary" | "ghost" | "danger";
   small?: boolean;
   phone?: boolean;
   ref?: Ref<HTMLButtonElement>;
@@ -941,6 +943,11 @@ export function RecipeButton({ variant = "secondary", small = false, phone = fal
       : { ...PRIMARY, ...(state.hovered ? { filter: "brightness(1.08)" } : null) }
     : variant === "ghost"
       ? { background: state.hovered ? t.module : "transparent", border: "1px solid transparent", color: t.text2 }
+      : variant === "danger"
+        ? /* Synth 09: the one action that removes something for good, in a confirmation. */
+          disabled
+          ? { background: t.dangerText, border: "1px solid transparent", color: t.surface, opacity: 0.5 }
+          : { background: t.dangerText, border: "1px solid transparent", color: t.surface, ...(state.hovered ? { filter: "brightness(1.08)" } : null) }
       : { ...controlPaint(state), color: t.text, ...(disabled ? { filter: t.dimFilter } : null) };
   return (
     <button

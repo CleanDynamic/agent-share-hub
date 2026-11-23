@@ -66,7 +66,7 @@ export function PublishConfirm({ open, title, rows, onCancel, onPublish }: Publi
       footer={
         <>
           <span style={{ flexGrow: 1 }} />
-          <RecipeButton small={!phone} phone={phone} data-testid="confirm-cancel" onClick={onCancel}>
+          <RecipeButton variant="ghost" small={!phone} phone={phone} data-testid="confirm-cancel" onClick={onCancel}>
             {CONFIRM_COPY.cancel}
           </RecipeButton>
           <RecipeButton
