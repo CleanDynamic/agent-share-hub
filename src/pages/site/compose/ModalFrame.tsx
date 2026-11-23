@@ -67,7 +67,7 @@ export const MODAL_COPY = {
   allComplete: "Required fields complete",
 } as const;
 
-/** F25: on a computer the window's top edge, and the same room left under it (`WINDOW_TOP`, shared by every window). */
+/** F25: the room a window leaves above and below it on a computer (`WINDOW_TOP`, shared by every window). */
 export const MODAL_TOP = WINDOW_TOP;
 
 /** The footer's status line: the labels of what is still missing, or that nothing is. */
@@ -135,7 +135,7 @@ export function ModalShell({ open, onOpenChange, title, subtitle, eyebrow, width
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay data-motion="scrim" style={scrimAt(LAYER.window)} />
-        {/* F25: the top edge is pinned at 48, so opening a row grows the window downward and nothing above it moves; the body scrolls inside. */}
+        {/* Centred in the browser window, across and down; at most the window less 48 above and below, the body scrolling inside. */}
         <Dialog.Content data-testid={testId} onOpenAutoFocus={focus.onOpenAutoFocus} onCloseAutoFocus={focus.onCloseAutoFocus} style={windowPlacement(width, LAYER.window)}>
           <div data-testid="modal-header" style={HEADER}>
             <div style={HEADER_TEXT}>

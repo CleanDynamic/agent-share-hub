@@ -572,9 +572,9 @@ export function PartWindow(props: PartWindowProps) {
             ...(phone
               ? { inset: 0, padding: "16px 16px 0" }
               : {
-                  top: 96,
+                  top: "50%",
                   left: "50%",
-                  transform: "translateX(-50%)",
+                  transform: "translate(-50%, -50%)",
                   width: 760,
                   maxWidth: "calc(100vw - 32px)",
                   maxHeight: "calc(100dvh - 120px)",

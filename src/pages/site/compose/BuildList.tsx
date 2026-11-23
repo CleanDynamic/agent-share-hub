@@ -2082,7 +2082,7 @@ function ResultCard({ result, selected, ringed = false, onSelect, onEdit }: { re
       >
         <Glyph name="check" size={size.icon} />
       </span>
-      <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0, flexGrow: 1 }}>
         <span data-testid="result-eyebrow" style={{ ...text(textStep.meta, 400, t.label), ...ellipsis }}>
           {resultTypeLine(result.facts)}
         </span>

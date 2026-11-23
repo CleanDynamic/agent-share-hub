@@ -50,7 +50,10 @@ export const tileStyle = (selected = false): CSSProperties => ({
 });
 
 export const TILE_HEAD: CSSProperties = { display: "flex", alignItems: "flex-start", gap: space[2], minWidth: 0 };
-export const TILE_TEXT: CSSProperties = { display: "flex", flexDirection: "column", flexGrow: 1, minWidth: 0 };
+/** The kind over the title, 4 apart, so the two lines read as two. */
+export const TILE_TEXT: CSSProperties = { display: "flex", flexDirection: "column", gap: space[1], flexGrow: 1, minWidth: 0 };
+/** Where the title starts: past the drag handle's column, the number badge and the gap after it. */
+export const TITLE_COLUMN = TILE_INDENT + size.controlSmall + space[2];
 /** The kind: 13, Text 3. */
 export const TILE_EYEBROW: CSSProperties = { ...type(textStep.meta, 400, t.label, 17), ...ellipsis };
 /** The title: 15/600. */

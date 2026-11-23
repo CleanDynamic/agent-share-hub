@@ -107,8 +107,9 @@ describe("where every editor window stands", () => {
     const windows: [string, number][] = [["tile-window", LAYER.window], ["open-request-dialog", LAYER.window], ["confirm-window", LAYER.confirm]];
     for (const [id, layer] of windows) {
       const style = placed(screen.getByTestId(id));
-      expect(style, id).toContain(`top: ${WINDOW_TOP}px`);
-      expect(style, id).toContain("transform: translateX(-50%)");
+      // Centred in the browser window, across and down.
+      expect(style, id).toContain("top: 50%");
+      expect(style, id).toContain("transform: translate(-50%, -50%)");
       expect(style, id).toContain("width: 440px");
       expect(style, id).toContain(`max-height: calc(100dvh - ${2 * WINDOW_TOP}px)`);
       expect(style, id).toContain(`z-index: ${layer}`);
@@ -212,5 +213,17 @@ describe("a step tile's content, on the notepad's tone", () => {
     const { ContentWell } = await import("./tileContent");
     const { container } = render(<ContentWell watch={1}><span /></ContentWell>);
     expect(container.querySelector('[data-testid="tile-content"]')).toBeNull();
+  });
+});
+
+describe("a step tile's lines, in line", () => {
+  it("puts 4 between the kind and the title, and stands the content layer under the badge with its words under the title", async () => {
+    const { TILE_TEXT, TILE_INDENT, TITLE_COLUMN } = await import("./tileRecipes");
+    const { CONTENT_WELL } = await import("./tileContent");
+    expect(TILE_TEXT.gap).toBe(4);
+    expect(CONTENT_WELL.marginLeft).toBe(TILE_INDENT);
+    // The words inside keep the tile's own indent, so the layer's edge plus its padding plus that indent is the title's column.
+    const padLeft = Number(String(CONTENT_WELL.padding).split(" ")[3].replace("px", ""));
+    expect(TILE_INDENT + padLeft + TILE_INDENT).toBe(TITLE_COLUMN);
   });
 });

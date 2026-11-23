@@ -20,7 +20,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE, textStep } from "@/lib/theme/type";
 
 import { ValueView } from "./DetailsPanel";
-import { TILE_INDENT } from "./tileRecipes";
+import { TILE_INDENT, TITLE_COLUMN } from "./tileRecipes";
 
 /** The sections each kind's body already draws (or its header names), by the window's section keys. */
 export const SHOWN_IN_BODY: Partial<Record<StepKind, ReadonlySet<string>>> = {
@@ -48,11 +48,15 @@ export function tileSectionsOf(kind: StepKind, sections: readonly ReadSection[])
   return sections.filter((section) => !NEVER_ON_TILE.has(section.key) && !shown?.has(section.key));
 }
 
-/** The tonal layer: the notepad's fill, radius 10, padded 12 at the top, right and foot (the content keeps the tile's own indent). */
+/**
+ * The tonal layer: the notepad's fill, radius 10, padded 12 at the top, right and foot. It stands in line with the tile's
+ * header: its edge under the number badge, and its words (which keep the tile's own indent) under the title.
+ */
 export const CONTENT_WELL: CSSProperties = {
   background: t.notepad,
   borderRadius: r.card,
-  padding: `${space[3]}px ${space[3]}px ${space[3]}px 0`,
+  marginLeft: TILE_INDENT,
+  padding: `${space[3]}px ${space[3]}px ${space[3]}px ${TITLE_COLUMN - 2 * TILE_INDENT}px`,
   display: "flex",
   flexDirection: "column",
   gap: space[2],
@@ -115,7 +119,7 @@ export function ContentWell({ children, inset = false, watch }: { children: Reac
   });
   if (empty) return null;
   return (
-    <div ref={well} data-testid="tile-content" style={inset ? { ...CONTENT_WELL, paddingLeft: space[3] } : CONTENT_WELL}>
+    <div ref={well} data-testid="tile-content" style={inset ? { ...CONTENT_WELL, marginLeft: 0, paddingLeft: space[3] } : CONTENT_WELL}>
       {children}
     </div>
   );

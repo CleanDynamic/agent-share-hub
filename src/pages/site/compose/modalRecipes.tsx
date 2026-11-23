@@ -77,9 +77,9 @@ import { TEXT_LINK_BOX } from "./tileRecipes";
 export const MODAL_WIDTH = { standard: 440, wide: 440, confirm: 420, shortcuts: 460 } as const;
 
 /* ── where a window stands (Synth 09) ──
-   Every editor window on a computer stands in one place: its top edge pinned 48 from the top of the window (so opening an
-   optional row grows it downward and nothing above moves), centred across, 440 wide at most `100vw - 32`, and at most the
-   window's height less 48 above and below; its body scrolls inside. Below 768 every one is a bottom sheet instead.
+   Every editor window on a computer stands in one place: centred in the browser window, across and down, 440 wide at most
+   `100vw - 32`, and at most the window's height less 48 above and below; its body scrolls inside. Below 768 every one is a
+   bottom sheet instead.
 
    One ladder of layers, so a window opened over another, a menu opened inside one, and the notepad over any of them always
    land in the right order (each scrim is its window's layer less one). */
@@ -90,9 +90,9 @@ import { LAYER } from "./layers";
 /** A window's placement and frame on a computer, at its layer. */
 export const windowPlacement = (width: number, layer: number = LAYER.window): CSSProperties => ({
   position: "fixed",
-  top: WINDOW_TOP,
+  top: "50%",
   left: "50%",
-  transform: "translateX(-50%)",
+  transform: "translate(-50%, -50%)",
   zIndex: layer,
   ...frameStyle(width),
   maxHeight: `calc(100dvh - ${2 * WINDOW_TOP}px)`,
