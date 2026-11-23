@@ -80,9 +80,9 @@ const mount = (over: Partial<HomeViewProps>) =>
 const feedOf = (items: HomeViewProps["feed"]["items"]): HomeViewProps["feed"] => ({ status: "ready", items, hasMore: false, loadingMore: false, onMore: () => undefined, onRetry: () => undefined });
 
 describe("UX-07 P1: the Topics filter", () => {
-  it("keeps five filters and relabels Asks to Topics, leaving Notes as it was", () => {
-    expect(HOME_FILTERS.map((item) => item.label)).toEqual(["All", "Builds", "Rebuilds", "Notes", "Topics"]);
-    expect(HOME_FILTERS.find((item) => item.value === "notes")?.label).toBe("Notes");
+  it("keeps four filters, with Asks labelled Topics and no Notes", () => {
+    expect(HOME_FILTERS.map((item) => item.label)).toEqual(["All", "Builds", "Rebuilds", "Topics"]);
+    expect(HOME_FILTERS.find((item) => item.value === "asks")?.label).toBe("Topics");
   });
 
   it("matches topics and reply groups, and nothing else", () => {

@@ -13,7 +13,7 @@
    THE ADDRESS HOLDS THE TAB AND THE KIND (`?tab=following`, `?kind=notes`): the same page with new parameters, so the old
    items stay until the new arrive and nothing fades. A signed-out reader who asks for Following is sent to sign in. */
 
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { keepPreviousData, useInfiniteQuery, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -22,8 +22,7 @@ import { SeoHead } from "@/components/SeoHead";
 import { topicHref } from "@/components/post/postCardModel";
 import { reportError } from "@/lib/errors/report";
 import { SITE_NAME, siteUrl } from "@/lib/site";
-import { MEDIA_WIDTH } from "@/components/build/MediaFigure";
-import { coverMedia, feedMedia, stillFor, useSignedMedia, type CardMedia } from "@/components/gallery/cardMedia";
+import { feedMedia, useSignedMedia, type CardMedia } from "@/components/gallery/cardMedia";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { useSessionPhase } from "@/components/pagestate/useSessionPhase";
 import { allFailed, type ReadLike } from "@/components/pagestate/pageStateModel";
@@ -31,17 +30,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { engagementFor, useEngagement } from "@/hooks/useEngagement";
 import { librarySessionsKey, useLibrarySessions } from "@/hooks/useLibrarySessions";
 import { useMyWeek } from "@/hooks/useProgressPage";
-import { findRunByHandle } from "./runLookup";
 import { listPosts, postKey } from "@/lib/openbuilds";
-import type { PostingWindow } from "../openbuilds/PostingWindows";
-import { failedRunDraft } from "./runTopic";
 import { listPublishedBuildsByCreator } from "@/lib/build/builds";
 import { listDraftFirstPrompts, listDraftsWithSessions } from "@/lib/build/drafts";
 import { copyToClipboard } from "@/lib/deepLink";
-import { getGalleryBuildsByIds, listGallery, type GalleryBuild, type GalleryMedia } from "@/lib/build/gallery";
+import { getGalleryBuildsByIds, listGallery } from "@/lib/build/gallery";
 import { attachSession } from "@/lib/build/sessions";
-import { countLitToday, countReproducedToday, countRunsThisWeek, listMostReproduced } from "@/lib/build/signals";
-import { getWhereNextForViewer } from "@/lib/build/whereNext";
 import { listActivityFor } from "@/lib/feed/activity";
 import { getBuildFeed, type FeedItem, type PostFeedEntry } from "@/lib/feed/getBuildFeed";
 import { likePost, unlikePost } from "@/lib/openbuilds";
@@ -49,11 +43,12 @@ import { readFeedTopics } from "@/lib/openbuilds/feedTopics";
 import { saveItem, savedPostIds, unsaveItem } from "@/lib/library/savedItems";
 import { ReplyBox } from "@/pages/site/openbuilds/ReplyBox";
 import { replyDraftTitle } from "@/pages/site/openbuilds/postModel";
+import { classificationFacts } from "@/lib/classify/lines";
 import { getStreakDays } from "@/lib/progress";
 import { weekStartUtc, weeklyProgress } from "@/lib/progress/weekly";
-import { LIST_STALE_MS, SLOW_STALE_MS } from "@/lib/query/client";
+import { LIST_STALE_MS } from "@/lib/query/client";
 import { usePageReady } from "@/lib/routing/pageReady";
-import { draftMeta, draftRowTitle, isUntitled, promptLine, sessionDate, sessionSource } from "@/pages/site/drafts/draftsModel";
+import { draftMeta, draftRowTitle, isUntitled, promptLine, sessionDate } from "@/pages/site/drafts/draftsModel";
 
 import { HomeLoadingView } from "./HomeFrame";
 import { HomeView, type HomeScope, type Loadable } from "./HomeView";
@@ -65,13 +60,12 @@ import {
   feedWaitsForSession,
   homeItemOf,
   homeWeek,
+  isHomeFeedRow,
+  type HomeFeedRow,
   newerThan,
   readHomeSeen,
-  runRows,
-  type HomeRunRow,
   shownItems,
   sinceSection,
-  whereNextRows,
   writeHomeSeen,
   type HomeFilter,
   type HomePostDetail,
@@ -82,18 +76,9 @@ import {
 } from "./homeModel";
 import { SAVE_FAILED, COPY_LINK_FAILED, DONE } from "@/lib/copy/copy";
 
-/** UX-08 P2: the New post window loads when a failed run first opens it, not with the page. */
-const PostingWindows = lazy(() => import("../openbuilds/PostingWindows"));
-
-
 const STALE_MS = LIST_STALE_MS;
-/** The headline counts are estimates; a minute is as fresh as they mean to be. */
-const COUNT_STALE_MS = SLOW_STALE_MS;
 /** How far back the streak is read: far enough that a long one is counted whole. */
 const STREAK_LOOKBACK_DAYS = 400;
-/** Every thumbnail on Home is signed at the smallest slot width the read path has. */
-const THUMB_WIDTH = MEDIA_WIDTH.variant;
-
 const SIGN_IN = "/login?redirect=/";
 
 /** The part of a query a section reads. G1: a read that never answers fails at READ_TIMEOUT_MS by itself, so no section
@@ -174,8 +159,9 @@ export function HomePage() {
   });
 
   const items = useMemo(() => {
-    const byKey = new Map<string, FeedItem>();
-    for (const page of feedQuery.data?.pages ?? []) for (const item of page.items) byKey.set(item.key, item);
+    const byKey = new Map<string, HomeFeedRow>();
+    // A run note is not drawn on Home, so it is not counted as new either.
+    for (const page of feedQuery.data?.pages ?? []) for (const item of page.items) if (isHomeFeedRow(item)) byKey.set(item.key, item);
     return [...byKey.values()];
   }, [feedQuery.data]);
 
@@ -199,18 +185,7 @@ export function HomePage() {
 
   /* ── round 1: the columns ── */
 
-  const lit = useQuery({ queryKey: ["build", "countLitToday"], queryFn: countLitToday, staleTime: COUNT_STALE_MS });
-  const reproduced = useQuery({ queryKey: ["build", "countReproducedToday"], queryFn: () => countReproducedToday(), staleTime: COUNT_STALE_MS });
-  const runsWeek = useQuery({ queryKey: ["build", "countRunsThisWeek"], queryFn: () => countRunsThisWeek(), staleTime: COUNT_STALE_MS });
-
-  const weekStart = weekStartUtc(new Date()).toISOString();
-  const mostRun = useQuery({
-    queryKey: ["build", "listMostReproduced", weekStart],
-    queryFn: () => listMostReproduced({ since: new Date(weekStart), limit: 3 }),
-    staleTime: COUNT_STALE_MS,
-  });
-
-  /* Since you were last here: what others did with the reader's builds and saves since the previous visit. `seenAt` is
+  /* Since you were last here: the rebuilds of the reader's builds since the previous visit. `seenAt` is
      read once above, so the window does not move when this visit is recorded. No earlier visit: nothing to say. */
   const activity = useQuery({
     queryKey: ["feed", "listActivityFor", userId, seenAt],
@@ -256,12 +231,6 @@ export function HomePage() {
   const published = useQuery({
     queryKey: ["build", "listPublishedBuildsByCreator", userId, HOME_BUILD_ROWS],
     queryFn: () => listPublishedBuildsByCreator(userId!, { limit: HOME_BUILD_ROWS }),
-    enabled: userId !== null,
-    staleTime: STALE_MS,
-  });
-  const whereNext = useQuery({
-    queryKey: ["build", "getWhereNextForViewer", userId],
-    queryFn: () => getWhereNextForViewer(userId!),
     enabled: userId !== null,
     staleTime: STALE_MS,
   });
@@ -378,22 +347,6 @@ export function HomePage() {
   const engagementIds = useMemo(() => items.filter((item) => item.kind === "build" || item.kind === "rebuild").map((item) => item.build.id), [items]);
   const engagement = useEngagement(engagementIds);
 
-  /* UX-08 P2: only when the maker presses it. The feed row has the build and the reproducer's handle, so the run is found now; the
-     New post window then opens with the run in its words, and nothing is written until Post is pressed. */
-  const [win, setWin] = useState<PostingWindow | null>(null);
-  const onStartTopic = async (run: HomeRunRow) => {
-    if (!userId || !run.handle) return;
-    try {
-      const found = await findRunByHandle(run.buildId, run.handle);
-      if (!found) throw new Error("That run is not there any more");
-      if (found.worked) throw new Error("That run worked, so there is nothing to start a topic about");
-      setWin({ kind: "post", draft: failedRunDraft({ buildId: found.buildId, model: found.model }) });
-    } catch (error) {
-      reportError(error, { source: "home", context: "failedRunTopic" });
-      toast.error("Couldn't start a topic from that run. Try again.");
-    }
-  };
-
   const onAddSession = async (sessionId: string) => {
     try {
       const id = await attachSession(sessionId, { kind: "new" });
@@ -419,13 +372,10 @@ export function HomePage() {
       seen.add(row.id);
       rows.push(row);
     };
-    const thumb = (row: GalleryMedia | null) => (row ? { ...row, slotWidth: THUMB_WIDTH } : null);
     for (const item of shown) {
       if (item.kind !== "build") continue;
       for (const row of feedMedia(details.get(item.build.id)?.build ?? item.build)) push(row);
     }
-    for (const next of whereNext.data ?? []) push(thumb(next.build.cover));
-    for (const card of endCards.data?.builds ?? []) push(thumb(coverMedia(card)));
     return rows;
   })();
   const srcByPath = useSignedMedia(media);
@@ -449,13 +399,11 @@ export function HomePage() {
   const feedStatus = feedFailed ? "error" : arrived.current ? "ready" : "loading";
   usePageReady("home", feedStatus !== "loading" && firstScreenSettled);
 
-  const countsFailed = (reproduced.isError && reproduced.data === undefined) || (runsWeek.isError && runsWeek.data === undefined);
-  /* G9: every region the reader can see failed (the feed, the room's lists and counts, and, signed in, the studio). */
-  const regionReads: ReadLike[] = [feedQuery, stillOpen, mostRun, reproduced, ...(signedIn ? [drafts, library, week, whereNext] : [])];
+  /* G9: every region the reader can see failed (the feed, the open topics, and, signed in, the studio). */
+  const regionReads: ReadLike[] = [feedQuery, stillOpen, ...(signedIn ? [drafts, library, week] : [])];
   // G18: drawn again when the session's phase moves, so allFailed below is read again (it holds while checking).
   useSessionPhase();
   const pageFailed = feedFailed && allFailed(regionReads) ? regionReads : undefined;
-  const coverOf = (build: GalleryBuild) => stillFor(srcByPath, coverMedia(build));
 
   return (
     <>
@@ -484,9 +432,8 @@ export function HomePage() {
               return {
                 id: session.id,
                 title: promptLine(session),
-                meta: [sessionSource(session), sessionDate(session.createdAt, now), inDrafts > 0 ? `In ${inDrafts} ${inDrafts === 1 ? "draft" : "drafts"}` : null].filter(Boolean).join(" · "),
-                client: session.client,
-                model: session.model,
+                // "10 Oct · In 4 drafts": no tool and no model.
+                meta: [sessionDate(session.createdAt, now), inDrafts > 0 ? `In ${inDrafts} ${inDrafts === 1 ? "draft" : "drafts"}` : null].filter(Boolean).join(" · "),
               };
             }),
           }))}
@@ -552,40 +499,11 @@ export function HomePage() {
                 }
               : null,
           }}
-          endCards={(endCards.data?.builds ?? []).map((build) => ({ id: build.id, title: build.title, href: `/b2/${build.slug}`, plaque: build, cover: { src: coverOf(build) } }))}
-          room={{
-            reproducedToday: reproduced.data ?? null,
-            litToday: lit.data ?? null,
-            runsThisWeek: runsWeek.data ?? null,
-            failure: countsFailed
-              ? {
-                  onRetry: () => {
-                    void reproduced.refetch();
-                    void runsWeek.refetch();
-                    void lit.refetch();
-                  },
-                  error: reproduced.error ?? runsWeek.error,
-                  retrying: reproduced.isFetching || runsWeek.isFetching,
-                }
-              : undefined,
-            runs: runRows(items, 3, userId),
-            onStartTopic: userId ? (run) => void onStartTopic(run) : undefined,
-          }}
+          endCards={(endCards.data?.builds ?? []).map((build) => ({ id: build.id, title: build.title, href: `/b2/${build.slug}`, facts: classificationFacts(build.classifiedAs).join(" · ") }))}
           requests={signedIn === null ? { status: "loading" } : publicLoadable(stillOpen, (page) => stillOpenRows(page.posts))}
           stillOpenScope={stillOpenScope}
-          mostRun={publicLoadable(mostRun, (rows) =>
-            rows.map((row) => ({
-              buildId: row.buildId,
-              title: row.title,
-              href: `/b2/${row.slug}`,
-              maker: { id: row.creatorId, handle: row.maker.handle, name: row.maker.name ?? row.maker.handle ?? "Someone", avatarUrl: row.maker.avatarUrl },
-              count: row.count,
-            })),
-          )}
-          whereNext={loadable(signedIn, whereNext, (next) => whereNextRows(next, (item) => stillFor(srcByPath, item.build.cover)))}
           published={loadable(signedIn, published, (result) => ({
             total: result.total,
-            reproduced: result.reproduced,
             rows: result.rows.map((row) => ({ id: row.id, title: row.title, slug: row.slug, href: `/b2/${row.slug}`, published: row.published_at ? sessionDate(row.published_at, now) : "" })),
           }))}
           pageFailed={pageFailed}
@@ -594,11 +512,6 @@ export function HomePage() {
           }
         />
       </PageArrival>
-      {win ? (
-        <Suspense fallback={null}>
-          <PostingWindows window={win} onClose={() => setWin(null)} onReopen={setWin} />
-        </Suspense>
-      ) : null}
     </>
   );
 }

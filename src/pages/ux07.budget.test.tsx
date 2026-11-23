@@ -1,6 +1,6 @@
 // UX-07 P8: the choice budgets the additions must keep ⟦hicks-law › Enforcing It in the Code⟧, counted in the rendered pieces.
 //
-// Home's kind filters stay at five; a profile carries five tabs at most; and nothing UX-07 adds is a primary: Home's topics, reply
+// Home's kind filters stay at four (All, Builds, Rebuilds, Topics); a profile carries five tabs at most; and nothing UX-07 adds is a primary: Home's topics, reply
 // groups, the build page's Discussed in OpenBuilds, a profile's Topics, the Library's saved topics and the reaction row draw
 // controls and text buttons only, so a page keeps its one primary. Opened, Home's reply box carries the view's one primary, Reply.
 
@@ -53,10 +53,10 @@ const feed = (items: HomeViewProps["feed"]["items"]): HomeViewProps["feed"] => (
 const CARD: PostCardData = { id: "t1", to: "/openbuilds/topics/t1", author: { id: "maya", name: "Maya Chen", handle: "maya", avatarUrl: null }, age: "2h", spaces: [], reward: null, heading: "A topic", text: "", attachments: [], stillOpen: false, tags: [], closes: null, replies: null, pinned: false, hidden: null, engagementBuild: null };
 
 describe("UX-07 P8: the counts", () => {
-  it("keeps Home's filters at five", () => {
-    expect(HOME_FILTERS).toHaveLength(5);
+  it("keeps Home's filters at four", () => {
+    expect(HOME_FILTERS).toHaveLength(4);
     render(wrap(<HomeView {...visionHomeProps("populated")} feed={feed(topicItems)} />));
-    expect(within(screen.getByRole("group", { name: "Kind" })).getAllByRole("button")).toHaveLength(5);
+    expect(within(screen.getByRole("group", { name: "Kind" })).getAllByRole("button")).toHaveLength(4);
   });
 
   it("keeps a profile's filter at five or fewer (UX-10: the works tabs became the feed's filter)", () => {

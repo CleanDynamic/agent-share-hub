@@ -38,50 +38,98 @@ beforeEach(() => narrow(1440));
 afterEach(() => vi.unstubAllGlobals());
 
 describe("HomeView · control heights", () => {
-  it("draws Show more as the shared Button at 32 / 12, and a draft row's add button as a 24 icon button", () => {
+  it("draws Show more as the small secondary Button (32 / 14), and a session row's add button as a 32 round icon button", () => {
     mount({ feed: { ...visionHomeProps().feed, hasMore: true, onMore: vi.fn() } });
     const more = screen.getByRole("button", { name: "Show more" });
     expect(more.getAttribute("data-ui")).toBe("button");
-    expect([more.style.height, more.style.padding]).toEqual(["32px", "0px 12px"]);
+    expect([more.style.height, more.style.padding]).toEqual(["32px", "0px 14px"]);
     const add = screen.getAllByRole("button", { name: "Add to a new build" })[0];
     expect(add.getAttribute("data-ui")).toBe("icon-button");
-    expect([add.style.width, add.style.height]).toEqual(["24px", "24px"]);
+    expect([add.style.width, add.style.height]).toEqual(["32px", "32px"]);
     expect(screen.getByTestId("home-new-pill").style.height).toBe("32px");
   });
 
-  it("draws the Kind filter as the shared Segmented: a 32 track with 24 items", () => {
+  it("draws the kind pills as 32 high filter chips, in a group named Kind: All, Builds, Rebuilds, Topics", () => {
     mount();
     const kind = screen.getByRole("group", { name: "Kind" });
-    expect(kind.getAttribute("data-ui")).toBe("segmented");
-    expect(kind.style.height).toBe("32px");
-    for (const item of within(kind).getAllByRole("button")) expect(item.style.height).toBe("24px");
+    const pills = within(kind).getAllByRole("button");
+    expect(pills.map((pill) => pill.textContent)).toEqual(["All", "Builds", "Rebuilds", "Topics"]);
+    for (const pill of pills) {
+      expect(pill.getAttribute("data-ui")).toBe("filter-chip");
+      expect(pill.style.height).toBe("32px");
+    }
+    expect(kind.style.padding).toBe("12px 16px 4px");
   });
 
-  it("draws the latest runs' status chips 20 high with 8 either side and no shadow", () => {
+  it("draws the feed's tabs 53 high, sharing the panel's width", () => {
     mount();
-    const chips = within(screen.getByTestId("home-latest-runs")).getAllByText(/^(Worked|Didn’t)$/);
-    expect(chips.length).toBeGreaterThan(0);
-    for (const chip of chips) {
-      expect([chip.style.height, chip.style.padding], chip.textContent ?? "").toEqual(["20px", "0px 8px"]);
-      expect(chip.style.boxShadow).toBe("");
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs.map((tab) => tab.textContent)).toEqual(["Following", "Everyone"]);
+    for (const tab of tabs) {
+      expect(tab.style.height, tab.textContent ?? "").toBe("53px");
+      expect(tab.style.flex).toBe("1 1 0px");
     }
   });
 
-  it("draws the feed's underline tabs 32 high", () => {
+  it("draws the new pill centred, small, with an up arrow", () => {
     mount();
-    for (const tab of screen.getAllByRole("tab")) expect(tab.style.height, tab.textContent ?? "").toBe("32px");
+    const pill = screen.getByTestId("home-new-pill");
+    // The Inverse fill is a var(), which jsdom drops from a style; it is checked in the screenshots.
+    expect(pill.style.height).toBe("32px");
+    expect(pill.querySelector("svg")).toBeTruthy();
+    expect((pill.parentElement as HTMLElement).style.justifyContent).toBe("center");
+  });
+
+  it("spaces the posts 8 apart with 4 above and 16 below", () => {
+    mount();
+    const feed = screen.getByTestId("home-feed");
+    expect([feed.style.gap, feed.style.padding]).toEqual(["8px", "4px 0px 16px"]);
   });
 });
 
 describe("HomeView · the three columns", () => {
-  it("draws the studio, the feed and the room, each section under its own heading", () => {
+  it("hides the h1 from the eye and keeps it for screen readers", () => {
     mount();
-    for (const name of ["Since you were last here", "Continue editing", "Your sessions", "Your week", "Still open", "Most run this week", "Where next"]) {
-      expect(screen.getByRole("heading", { level: 2, name })).toBeTruthy();
+    const h1 = screen.getByRole("heading", { level: 1, name: "Home" });
+    expect(h1.className).toBe("sr-only");
+  });
+
+  it("heads each section by its fact", () => {
+    mount();
+    for (const name of ["2 rebuilds of your builds", "36 drafts", "8 sessions", "3 day streak", "2 published builds", "3 open in your spaces"]) {
+      expect(screen.getByRole("heading", { level: 2, name }), name).toBeTruthy();
     }
+    expect(within(screen.getByRole("complementary", { name: "Your studio" })).getAllByRole("heading", { level: 2 })).toHaveLength(5);
     expect(screen.getByRole("complementary", { name: "Your studio" })).toBeTruthy();
     expect(screen.getByRole("region", { name: "Feed" })).toBeTruthy();
     expect(screen.getByRole("complementary", { name: "The room" })).toBeTruthy();
+  });
+
+  it("draws a draft, a session and a published build as the rows the pack describes", () => {
+    mount();
+    const draft = screen.getAllByTestId("home-draft-row")[0];
+    expect(draft.getAttribute("href")).toBe("/compose/vd1");
+    expect(draft.textContent).toBe("Invoice chaser4 sessions · edited 1h ago");
+    const session = screen.getAllByTestId("home-session-row")[0];
+    expect(session.textContent).toBe("This session is being continued from a previous conversation10 Oct · In 3 drafts");
+    const published = screen.getAllByTestId("home-published-row");
+    expect(published.map((row) => row.textContent)).toEqual(["Call notes that write themselves12 Oct", "Inbox triage in one prompt3 Oct"]);
+    expect(screen.getByRole("button", { name: "Copy link" })).toBeTruthy();
+  });
+
+  it("names no tool or model on a session, and says nothing about runs or reproductions anywhere", () => {
+    mount();
+    const page = screen.getByTestId("home-view").textContent ?? "";
+    for (const word of ["Haiku", "Claude Code", "Reproduced", "runs this week", "Most run", "Where next", "reproduction", "confirmed", "Notes"]) expect(page, word).not.toContain(word);
+    expect(page).not.toContain(String.fromCharCode(8212));
+  });
+
+  it("draws the open topic's lead line, who and where, and the reward at the right in mono", () => {
+    mount();
+    const row = screen.getAllByTestId("home-request-row")[0];
+    expect(row.textContent).toBe("Handle paywalled sourcesResearch brief · 5 days left£40");
+    const reward = within(row).getByText("£40");
+    expect([reward.style.fontSize, reward.style.fontWeight]).toEqual(["15px", "500"]);
   });
 
   it("leaves Since you were last here out when it has no data (the live page until SV-15)", () => {
@@ -93,15 +141,14 @@ describe("HomeView · the three columns", () => {
     mount();
     expect(screen.getByRole("link", { name: "Open drafts" }).getAttribute("href")).toBe("/drafts");
     expect(screen.getByRole("link", { name: "Open OpenBuilds" }).getAttribute("href")).toBe("/openbuilds?open=1");
-    expect(screen.getByRole("link", { name: "Open activity" }).getAttribute("href")).toBe("/notifications");
   });
 
   it("names the week's bars in words and hides them from screen readers", () => {
     mount();
     const days = screen.getByRole("img", { name: "Active 3 of 7 days" });
     expect(days.querySelectorAll('[aria-hidden="true"]')).toHaveLength(7);
-    expect(screen.getByText("3 day streak · resets Monday 00:00 UTC")).toBeTruthy();
-    expect(screen.getAllByRole("progressbar")).toHaveLength(3);
+    expect(screen.getAllByRole("progressbar")).toHaveLength(1);
+    expect(screen.queryByText(/Run three builds/)).toBeNull();
   });
 
   it("adds a session to a new build", () => {
@@ -112,11 +159,10 @@ describe("HomeView · the three columns", () => {
   });
 
   it("asks a signed-out reader to sign in where the studio would be", () => {
-    mount({ drafts: { status: "signed-out" }, sessions: { status: "signed-out" }, week: { status: "signed-out" }, whereNext: { status: "signed-out" } });
+    mount({ drafts: { status: "signed-out" }, sessions: { status: "signed-out" }, week: { status: "signed-out" }, published: { status: "signed-out" } });
     const studio = screen.getByRole("complementary", { name: "Your studio" });
     expect(within(studio).getByRole("link", { name: "Sign in" }).getAttribute("href")).toBe("/login?redirect=/");
     expect(within(studio).getByRole("link", { name: "Sign in" }).getAttribute("data-ui")).toBe("button");
-    expect(screen.queryByRole("heading", { name: "Where next" })).toBeNull();
   });
 });
 
@@ -130,23 +176,24 @@ describe("HomeView · the feed", () => {
     expect(onScopeChange).toHaveBeenCalledWith("following");
     const kind = screen.getByRole("group", { name: "Kind" });
     expect(within(kind).getByRole("button", { name: "All" }).getAttribute("aria-pressed")).toBe("true");
-    fireEvent.click(within(kind).getByRole("button", { name: "Notes" }));
-    expect(onFilterChange).toHaveBeenCalledWith("notes");
+    fireEvent.click(within(kind).getByRole("button", { name: "Topics" }));
+    expect(onFilterChange).toHaveBeenCalledWith("asks");
+    expect(within(kind).queryByRole("button", { name: "Notes" })).toBeNull();
   });
 
   it("shows only the chosen kind", () => {
-    mount({ filter: "notes" });
+    mount({ filter: "rebuilds" });
     const kinds = screen.getAllByTestId("home-feed-item").map((item) => item.getAttribute("data-kind"));
-    expect(kinds).toEqual(["repro_note", "repro_note"]);
+    expect(kinds).toEqual(["rebuild"]);
   });
 
-  it("draws every kind of item the board draws, in order", () => {
+  it("draws every kind of item, in order, and no run note", () => {
     mount();
     const kinds = screen.getAllByTestId("home-feed-item").map((item) => item.getAttribute("data-kind"));
-    expect(kinds).toEqual(["build", "repro_note", "rebuild", "repro_note", "build"]);
-    expect(screen.getByText(", and it worked on opus-5.5")).toBeTruthy();
-    expect(screen.getByText(", and it didn’t work")).toBeTruthy();
+    expect(kinds).toEqual(["build", "rebuild", "build"]);
     expect(screen.getByText("Rebuilt from")).toBeTruthy();
+    // The rebuild's author row does not say "rebuilt" over the box that does.
+    expect(screen.queryByText(/rebuilt ·/)).toBeNull();
   });
 
   it("keeps an off-screen item out of the renderer's way with an intrinsic size", () => {
@@ -167,7 +214,9 @@ describe("HomeView · the feed", () => {
 
   it("ends with You're up to date and two builds, or Show more while there is more", () => {
     const { unmount } = mount();
-    expect(within(screen.getByTestId("home-feed-end")).getByRole("link", { name: "More builds" }).getAttribute("href")).toBe("/builds");
+    const end = within(screen.getByTestId("home-feed-end"));
+    expect(end.getByRole("link", { name: "More builds" }).getAttribute("href")).toBe("/builds");
+    expect(end.getByRole("link", { name: /Inbox triage in one prompt/ }).textContent).toBe("Inbox triage in one promptWeb app · Made with AI · No coding");
     unmount();
     const onMore = vi.fn();
     mount({ feed: { ...visionHomeProps().feed, hasMore: true, onMore } });
@@ -194,8 +243,8 @@ describe("HomeView · states", () => {
 
   it("G9: one region failing keeps the others; every region failing is one state for the page", () => {
     const failed = { status: "error" as const, onRetry: vi.fn(), error: { message: "boom" } };
-    const { unmount } = mount({ mostRun: failed }, "populated");
-    expect(screen.getByRole("alert", { name: "Most run this week" }).textContent).toContain("Couldn't load builds. Try again.");
+    const { unmount } = mount({ requests: failed }, "populated");
+    expect(screen.getByRole("alert", { name: "Still open" }).textContent).toContain("Couldn't load posts. Try again.");
     expect(screen.getByTestId("home-feed")).toBeTruthy();
     unmount();
     mount({ pageFailed: [readOf("error"), readOf("error")] }, "populated");
@@ -211,11 +260,20 @@ describe("HomeView · states", () => {
 });
 
 describe("HomeView · narrower windows", () => {
-  it("hides the studio below 1100", () => {
+  it("hides the studio below 1100 and puts the Drafts line at the top of the feed", () => {
     narrow(1000);
     mount();
     expect(screen.queryByRole("complementary", { name: "Your studio" })).toBeNull();
     expect(screen.getByTestId("home-view").getAttribute("data-layout")).toBe("two");
+    const line = screen.getByTestId("home-drafts-line");
+    expect(line.textContent).toBe("36 drafts in progress · 8 sessions");
+    expect(within(screen.getByRole("region", { name: "Feed" })).getByTestId("home-drafts-line")).toBe(line);
+  });
+
+  it("with the studio off the page and nothing open, the right panel holds the published builds", () => {
+    narrow(1000);
+    mount({ requests: { status: "ready", data: [] } });
+    expect(within(screen.getByRole("complementary", { name: "The room" })).getByRole("heading", { level: 2, name: "2 published builds" })).toBeTruthy();
   });
 
   it("is one column below 760: the Drafts line, the feed, then the room", () => {
@@ -224,30 +282,9 @@ describe("HomeView · narrower windows", () => {
     const view = screen.getByTestId("home-view");
     expect(view.getAttribute("data-layout")).toBe("one");
     const line = screen.getByTestId("home-drafts-line");
-    expect(line.textContent).toContain("28 drafts in progress · 8 sessions");
+    expect(line.textContent).toContain("36 drafts in progress · 8 sessions");
     expect(line.getAttribute("href")).toBe("/drafts");
     const order = [line, screen.getByRole("region", { name: "Feed" }), screen.getByRole("complementary", { name: "The room" })];
     for (let i = 1; i < order.length; i += 1) expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-});
-
-describe("HomeView · a topic from a failed run (SV-21, UX-08 P2)", () => {
-  const base = visionHomeProps("populated");
-  const runs = base.room.runs.map((run) => (run.worked ? run : { ...run, canStartTopic: true }));
-
-  it("offers the button on a failed run the viewer may act on, and presses it with that run", () => {
-    const onStartTopic = vi.fn();
-    mount({ room: { ...base.room, runs, onStartTopic } });
-    const buttons = screen.getAllByRole("button", { name: "Start a topic from this run" });
-    expect(buttons).toHaveLength(1);
-    fireEvent.click(buttons[0]);
-    expect(onStartTopic).toHaveBeenCalledWith(expect.objectContaining({ key: "r2", worked: false }));
-  });
-
-  it("draws no button without a handler, or on a run the viewer may not act on", () => {
-    mount({ room: { ...base.room, runs } });
-    expect(screen.queryByRole("button", { name: "Start a topic from this run" })).toBeNull();
-    mount({ room: { ...base.room, onStartTopic: vi.fn() } });
-    expect(screen.queryByRole("button", { name: "Start a topic from this run" })).toBeNull();
   });
 });

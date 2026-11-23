@@ -7,9 +7,7 @@
 import type { PlaqueBuild } from "@/components/brand/Plaque";
 import type { RowEngagement } from "@/components/social/EngagementRow";
 import { rewardWords, splitBody, topicHref } from "@/components/post/postCardModel";
-import { canStartTopicFromRun } from "./runTopic";
 import type { GalleryBuild } from "@/lib/build/gallery";
-import type { WhereNextItem } from "@/lib/build/whereNext";
 import type { Post } from "@/lib/openbuilds";
 import type { Classification } from "@/lib/classify/types";
 import type { ActivityEvent } from "@/lib/feed/activity";
@@ -26,13 +24,12 @@ export type HomeFeedScope = "everyone" | "following";
 export const feedKey = (scope: HomeFeedScope, userId: string | null): readonly unknown[] => (scope === "everyone" ? ["feed", "getBuildFeed", "everyone"] : ["feed", "getBuildFeed", "following", userId]);
 export const feedWaitsForSession = (scope: HomeFeedScope): boolean => scope === "following";
 
-export type HomeFilter = "all" | "builds" | "rebuilds" | "notes" | "asks";
+export type HomeFilter = "all" | "builds" | "rebuilds" | "asks";
 
 export const HOME_FILTERS: readonly { value: HomeFilter; label: string }[] = [
   { value: "all", label: "All" },
   { value: "builds", label: "Builds" },
   { value: "rebuilds", label: "Rebuilds" },
-  { value: "notes", label: "Notes" },
   // UX-07 P1: the fifth filter is Topics: the topics and the reply groups. Its address stays
   // `?kind=asks`, so a link made before it still lands here.
   { value: "asks", label: "Topics" },
@@ -41,13 +38,12 @@ export const HOME_FILTERS: readonly { value: HomeFilter; label: string }[] = [
 const KINDS_OF_FILTER: Record<Exclude<HomeFilter, "all">, readonly HomeFeedItem["kind"][]> = {
   builds: ["build"],
   rebuilds: ["rebuild"],
-  notes: ["repro_note"],
   asks: ["topic", "reply_group"],
 };
 
 /** The filters act on what is loaded, on `kind`, and on nothing else. */
 export function matchesFilter(kind: FeedItemKind | HomePostItem["kind"], filter: HomeFilter): boolean {
-  return filter === "all" || KINDS_OF_FILTER[filter].includes(kind);
+  return filter === "all" || (KINDS_OF_FILTER[filter] as readonly string[]).includes(kind);
 }
 
 /** A filter from the address: anything else is All. */
@@ -81,6 +77,7 @@ export interface HomeBuildPost {
   engagement?: RowEngagement;
 }
 
+/** Not drawn on Home any more; the profile still draws its own notes with it until its prompt. */
 export interface HomeReproNote {
   kind: "repro_note";
   key: string;
@@ -108,15 +105,16 @@ export interface HomeRebuildPost {
   engagement?: RowEngagement;
 }
 
-export type HomeFeedItem = HomeBuildPost | HomeReproNote | HomeRebuildPost | HomePostItem;
+export type HomeFeedItem = HomeBuildPost | HomeRebuildPost | HomePostItem;
+
+/** The feed rows Home draws: a run note is not one of them. */
+export type HomeFeedRow = Exclude<FeedItem, { kind: "repro_note" }>;
+export const isHomeFeedRow = (item: FeedItem): item is HomeFeedRow => item.kind !== "repro_note";
 
 /* ── the columns' rows ── */
 
-export type HomeSinceTone = "worked" | "failed" | "rebuild" | "stale";
-
 export interface HomeSinceRow {
   key: string;
-  tone: HomeSinceTone;
   title: string;
   detail: string;
   at: string;
@@ -128,7 +126,7 @@ export interface HomeDraftRow {
   id: string;
   title: string;
   untitled: boolean;
-  /** "4 sessions · edited 1h ago". */
+  /** "3 sessions · edited 22h ago". */
   meta: string;
 }
 
@@ -136,10 +134,8 @@ export interface HomeSessionRow {
   id: string;
   /** The first prompt. */
   title: string;
-  /** "Claude Code · 8 Oct · In 4 drafts". */
+  /** "10 Oct · In 4 drafts". No tool, no model. */
   meta: string;
-  client: string | null;
-  model: string | null;
 }
 
 export type HomeDayState = "active" | "frozen" | "none";
@@ -166,15 +162,13 @@ export const STILL_OPEN_SHOWN = 3;
 export const STILL_OPEN_META = { spaces: "In your spaces", everyone: "Across OpenBuilds" } as const;
 export type StillOpenScope = keyof typeof STILL_OPEN_META;
 
-/** Synth 06: the heading is the fact: "3 open in your spaces", "3 open on OpenBuilds". */
-export const STILL_OPEN_PHRASE = { spaces: "open in your spaces", everyone: "open on OpenBuilds" } as const;
+/** Synth 06: the heading is the fact: "3 open in your spaces", "3 open across OpenBuilds". */
+export const STILL_OPEN_PHRASE = { spaces: "open in your spaces", everyone: "open across OpenBuilds" } as const;
 
 /** UX-03 P6: the maker's published builds, for the room when nothing else in it has anything to show. */
 export interface HomePublished {
   /** Every build the maker has published, counted in full. */
   total: number;
-  /** How many of them anyone has reproduced; the meta line says "none reproduced yet" only at 0. */
-  reproduced: number;
   /** The newest first, up to HOME_BUILD_ROWS. */
   rows: readonly { id: string; title: string; href: string; slug: string; published: string }[];
 }
@@ -184,19 +178,6 @@ export interface HomeChallengeRow {
   title: string;
   done: number;
   target: number;
-}
-
-export interface HomeRunRow {
-  key: string;
-  worked: boolean;
-  buildTitle: string;
-  handle: string | null;
-  href: string;
-  at: string;
-  /** SV-21: the build the run is of, for opening a request from it. */
-  buildId: string;
-  /** SV-21: the viewer made the build and the run did not work, so "Start a topic from this run" is offered. */
-  canStartTopic: boolean;
 }
 
 export interface HomeRequestRow {
@@ -223,66 +204,30 @@ export function stillOpenRows(posts: readonly Post[], limit: number = STILL_OPEN
   });
 }
 
-export interface HomeMostRunRow {
-  buildId: string;
-  title: string;
-  href: string;
-  maker: HomePerson;
-  count: number;
-}
-
-export interface HomeCover {
-  /** A signed URL, or null: the view draws the dot-grid well. */
-  src: string | null;
-}
-
-export interface HomeWhereNextRow {
-  id: string;
-  title: string;
-  href: string;
-  /** "SAME TOOL · OPUS-5.5". */
-  reason: string;
-  cover: HomeCover;
-}
-
 export interface HomeEndCard {
   id: string;
   title: string;
   href: string;
-  plaque: PlaqueBuild;
-  cover: HomeCover;
+  /** "Web app · Made with AI · No coding": plain text, empty when the build is not classified. */
+  facts: string;
 }
 
 /* ── since you were last here (SV-15) ── */
 
-/** An activity event as Home's timeline row. The person is "@handle", or their name when they have no handle. */
-export function sinceRowOf(event: ActivityEvent): HomeSinceRow {
-  const base = { key: event.id, at: event.at, href: `/b2/${event.buildSlug}` };
-  switch (event.kind) {
-    case "run": {
-      const who = atHandle(event.runner.handle) ?? event.runner.name;
-      const on = event.model ? ` on ${event.model}` : "";
-      return { ...base, tone: event.worked ? "worked" : "failed", title: `${who} ran ${event.buildTitle}`, detail: event.worked ? `It worked${on}` : `It didn't work${on}` };
-    }
-    case "rebuild": {
-      const who = atHandle(event.rebuilder.handle) ?? event.rebuilder.name;
-      return { ...base, tone: "rebuild", title: `${who} rebuilt ${event.buildTitle}`, detail: `"${event.rebuildTitle}"`, href: `/b2/${event.rebuildSlug}` };
-    }
-    case "stale":
-      return { ...base, tone: "stale", title: `${event.buildTitle} is out of date`, detail: "Not confirmed in a while" };
-    case "edited":
-    case "removed":
-      // Only the Library's changes (savedOnly) carry these; Home does not ask for them.
-      return { ...base, tone: "stale", title: `${event.buildTitle} changed`, detail: event.kind === "edited" ? "Edited since you saved it" : "No longer there" };
-  }
+/** A rebuild of the reader's build as Home's row. The person is "@handle", or their name when they have no handle. */
+export function sinceRowOf(event: Extract<ActivityEvent, { kind: "rebuild" }>): HomeSinceRow {
+  const who = atHandle(event.rebuilder.handle) ?? event.rebuilder.name;
+  return { key: event.id, at: event.at, href: `/b2/${event.rebuildSlug}`, title: `${who} rebuilt ${event.buildTitle}`, detail: `"${event.rebuildTitle}"` };
 }
 
-/** The section's meta, "2d ago · what others did with your builds". Null when there is nothing to show: the section is left out. */
-export function sinceSection(events: readonly ActivityEvent[], seenAt: number, now: number): { meta: string; rows: HomeSinceRow[] } | null {
-  if (events.length === 0) return null;
-  const age = shortAgo(new Date(seenAt).toISOString(), now);
-  return { meta: `${age === "now" ? "Just now" : `${age} ago`} · what others did with your builds`, rows: events.map(sinceRowOf) };
+/** Rebuilds of the reader's builds since the last visit. Null when there are none: the section is left out. Runs and out-of-date notes are not shown. */
+export function sinceSection(events: readonly ActivityEvent[], _seenAt?: number, _now?: number): { rows: HomeSinceRow[] } | null {
+  const rows = events.filter((event): event is Extract<ActivityEvent, { kind: "rebuild" }> => event.kind === "rebuild").map(sinceRowOf);
+  return rows.length === 0 ? null : { rows };
 }
+
+/** "2 rebuilds of your builds". */
+export const sinceHeading = (count: number): string => `${count} ${count === 1 ? "rebuild" : "rebuilds"} of your builds`;
 
 /* ── words ── */
 
@@ -339,9 +284,6 @@ function daysLeft(iso: string | null, now: number): number | null {
 /** "1 solution", "3 solutions". */
 export const solutionsLabel = (n: number) => `${n} ${n === 1 ? "solution" : "solutions"}`;
 
-/** "14 runs", "1 run". */
-export const runsLabel = (n: number) => `${n.toLocaleString("en-GB")} ${n === 1 ? "run" : "runs"}`;
-
 /* ── the feed ── */
 
 const personOf = (maker: FeedItem["maker"]): HomePerson => ({
@@ -364,24 +306,9 @@ export interface HomeItemContext {
 }
 
 /** One feed row as the item Home draws. */
-export function homeItemOf(item: FeedItem, context: HomeItemContext): HomeFeedItem {
+export function homeItemOf(item: HomeFeedRow, context: HomeItemContext): HomeFeedItem {
   const build = item.build;
   const href = `/b2/${build.slug}`;
-
-  if (item.kind === "repro_note") {
-    return {
-      kind: "repro_note",
-      key: item.key,
-      at: item.at,
-      // A note's runner is the reproducer, whose id the row does not carry: their handle seeds the hue.
-      runner: { id: item.handle ?? item.key, handle: item.handle, name: item.handle ?? "Someone" },
-      buildTitle: item.title,
-      href,
-      model: (item.model ?? "").trim() || null,
-      note: item.note,
-      worked: item.worked,
-    };
-  }
 
   const detail = context.details.get(build.id);
   if (item.kind === "rebuild") {
@@ -409,17 +336,6 @@ export function homeItemOf(item: FeedItem, context: HomeItemContext): HomeFeedIt
     classification: detail?.classification ?? null,
     engagement: context.engagement(build.id),
   };
-}
-
-/** The latest runs: the feed's own notes, newest first. */
-export function runRows(items: readonly FeedItem[], limit = 3, viewerId: string | null = null): HomeRunRow[] {
-  const out: HomeRunRow[] = [];
-  for (const item of items) {
-    if (item.kind !== "repro_note") continue;
-    out.push({ key: item.key, worked: item.worked, buildTitle: item.title, handle: item.handle, href: `/b2/${item.slug}`, at: item.at, buildId: item.buildId, canStartTopic: canStartTopicFromRun(item, item.maker.id, viewerId) });
-    if (out.length === limit) break;
-  }
-  return out;
 }
 
 /** How many loaded items are newer than the last visit. A first visit has none. */
@@ -472,43 +388,28 @@ export function streakLength(rows: readonly StreakDayRow[], now: Date): number {
   return count;
 }
 
+const RUN_CHALLENGES: ReadonlySet<string> = new Set(["run-three-new", "reconfirm-stale"]);
+
 export function homeWeek(rows: readonly StreakDayRow[], progress: readonly ChallengeProgress[], now: Date): HomeWeek {
   return {
     days: weekDays(rows, now),
     today: (now.getUTCDay() + 6) % 7,
     streak: streakLength(rows, now),
-    challenges: progress.map(({ challenge, done, target }) => ({ slug: challenge.slug, title: challenge.title, done, target })),
+    // The challenges that count runs and confirmations are not on Home.
+    challenges: progress.filter(({ challenge }) => !RUN_CHALLENGES.has(challenge.slug)).map(({ challenge, done, target }) => ({ slug: challenge.slug, title: challenge.title, done, target })),
   };
 }
 
-/** "3 day streak · resets Monday 00:00 UTC". */
-export function weekMeta(streak: number): string {
-  return streak > 0 ? `${streak} day streak · resets Monday 00:00 UTC` : "Resets Monday 00:00 UTC";
+/** The week's heading is its fact: "4 day streak", or the days done when there is no streak. */
+export function weekHeading(week: Pick<HomeWeek, "streak" | "days">): string {
+  if (week.streak > 0) return `${week.streak} day streak`;
+  const active = week.days.filter((day) => day === "active").length;
+  return `${active} ${active === 1 ? "day" : "days"} active this week`;
 }
 
 /** The bars' words: "Active 5 of 7 days". */
 export function weekSummary(days: readonly HomeDayState[]): string {
   return `Active ${days.filter((day) => day === "active").length} of 7 days`;
-}
-
-/* ── where next ── */
-
-/** The caps line under a suggestion. */
-export function reasonLabel(item: Pick<WhereNextItem, "reason" | "reasonDetail">): string {
-  const detail = item.reasonDetail.trim().toUpperCase();
-  if (item.reason === "same_tool") return `SAME TOOL · ${detail}`;
-  if (item.reason === "more_from_maker") return `MORE FROM ${detail}`;
-  return "REBUILT FROM ONE YOU RAN";
-}
-
-export function whereNextRows(items: readonly WhereNextItem[], coverSrc: (item: WhereNextItem) => string | null): HomeWhereNextRow[] {
-  return items.map((item) => ({
-    id: item.build.id,
-    title: item.build.title,
-    href: `/b2/${item.build.slug}`,
-    reason: reasonLabel(item),
-    cover: { src: coverSrc(item) },
-  }));
 }
 
 /* ── "since you looked" ── */

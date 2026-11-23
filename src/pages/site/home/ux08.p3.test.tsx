@@ -58,11 +58,11 @@ describe("UX-08 P3 · stillOpenRows", () => {
 });
 
 describe("UX-08 P3 · Home's Still open section", () => {
-  it("populated: titled Still open, meta In your spaces, the chevron to /openbuilds?open=1, a row per topic", () => {
+  it("populated: headed by its fact, the chevron to /openbuilds?open=1, a row per topic", () => {
     mount({ requests: { status: "ready", data: stillOpenRows(POSTS) }, stillOpenScope: "spaces" });
     const section = screen.getByRole("region", { name: "Still open" });
-    expect(within(section).getByRole("heading", { level: 2, name: "Still open" })).toBeTruthy();
-    expect(within(section).getByText("In your spaces")).toBeTruthy();
+    expect(within(section).getByRole("heading", { level: 2, name: "3 open in your spaces" })).toBeTruthy();
+    expect(within(section).queryByText("In your spaces")).toBeNull();
     expect(within(section).getByRole("link", { name: "Open OpenBuilds" }).getAttribute("href")).toBe(STILL_OPEN_HREF);
     expect(STILL_OPEN_HREF).toBe("/openbuilds?open=1");
     const rows = within(section).getAllByTestId("home-request-row");
@@ -74,11 +74,11 @@ describe("UX-08 P3 · Home's Still open section", () => {
     expect(screen.queryByText(/Open requests/)).toBeNull();
   });
 
-  it("signed out: the meta reads Across OpenBuilds", () => {
+  it("signed out: the heading says open across OpenBuilds", () => {
     mount({ requests: { status: "ready", data: stillOpenRows(POSTS) }, stillOpenScope: "everyone" });
     const section = screen.getByRole("region", { name: "Still open" });
-    expect(within(section).getByText("Across OpenBuilds")).toBeTruthy();
-    expect(within(section).queryByText("In your spaces")).toBeNull();
+    expect(within(section).getByRole("heading", { level: 2, name: "3 open across OpenBuilds" })).toBeTruthy();
+    expect(within(section).queryByText("Across OpenBuilds")).toBeNull();
   });
 
   it("empty: the section is not drawn", () => {
