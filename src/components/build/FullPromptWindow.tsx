@@ -695,7 +695,7 @@ export function FullPromptWindow(props: FullPromptWindowProps) {
   return (
     <Dialog.Root open={Boolean(step)} onOpenChange={(open) => !open && props.onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 60 }} />
+        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 60 }} />
         <Dialog.Content
           data-testid="full-prompt-window"
           aria-describedby={undefined}

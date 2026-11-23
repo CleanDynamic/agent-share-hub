@@ -55,7 +55,7 @@ import { FIGTREE } from "@/lib/theme/type";
 import { useWindowSize } from "@/pages/site/compose/DetailsAside";
 import { ORIGIN, frameOf, innerWidthOf } from "@/pages/site/compose/detailsLayout";
 import { Breadcrumb } from "./Breadcrumb";
-import { CRUMB_BAND, FRAME_MAX_WIDTH, PANEL_GUTTER, PANEL_PAD, PANEL_RADIUS, headerHeight } from "./chromeSize";
+import { CRUMB_BAND, FRAME_MAX_WIDTH, PANEL_GUTTER, PANEL_PAD, PANEL_RADIUS } from "./chromeSize";
 import { Dock } from "./Dock";
 import { FocusRescue } from "./FocusRescue";
 import { MobileHeader } from "./MobileHeader";
@@ -65,6 +65,7 @@ import { SiteFooter } from "./SiteFooter";
 import { SiteHeader } from "./SiteHeader";
 import { type PageFit } from "./siteFrameFit";
 import { CrumbTitleProvider } from "./useBreadcrumb";
+import { useHeaderHeight } from "./useHeaderCompact";
 import { useIsPhone, useShortWindow } from "./useMinWidth";
 
 export { boardHeight, BOARD_GRID_HEIGHT, type PageFit } from "./siteFrameFit";
@@ -187,6 +188,7 @@ export function SiteFrameView({
   const short = useShortWindow();
   const win = useWindowSize();
   const phone = (viewport ?? (narrow ? "mobile" : "desktop")) === "mobile";
+  const barHeight = useHeaderHeight(phone);
   /* SV-04: set once when the frame mounts, so the page audit can tell a header kept across a page change from one drawn again. */
   const [frameId] = useState(() => Math.random().toString(36).slice(2, 10));
   /* A page drawn as several panels (`useColumnPanels`): `<main>` is then a plain column and draws no panel of its own. */
@@ -240,7 +242,7 @@ export function SiteFrameView({
         data-slot={phone ? "mobile-header" : "header"}
         data-frame-id={frameId}
         /* G22: pinned unless the window is short (zoomed), where it would cover the page. */
-        style={{ position: short ? "relative" : "sticky", top: 0, zIndex: 20, minHeight: headerHeight(phone), background: t.frame }}
+        style={{ position: short ? "relative" : "sticky", top: 0, zIndex: 20, minHeight: barHeight, background: t.frame }}
       >
         {phone ? mobileHeader : header}
         {progress}

@@ -39,8 +39,12 @@ import {
   LINEAR,
   REVEAL,
   REVEAL_SHIFT,
+  GLYPH_STEP_MS,
+  SPLASH_MS,
   STANDARD,
   THEME_SWITCH,
+  WATER_DROPS,
+  WATER_PHRASE_MS,
   fade,
   feedback,
   move,
@@ -104,6 +108,24 @@ describe("the vocabulary", () => {
     for (const curve of Object.values(EASING)) {
       expect(curve).not.toMatch(/\bease-in\b/);
     }
+  });
+});
+
+describe("the dot water", () => {
+  it("names the phrase, the drops, the splash and the glyph step", () => {
+    expect(WATER_PHRASE_MS).toBe(4800);
+    expect(WATER_DROPS).toBe(6);
+    expect(SPLASH_MS).toBe(3200);
+    expect(GLYPH_STEP_MS).toBe(110);
+  });
+
+  it("keeps the splash inside two phrases and the glyph step inside the splash", () => {
+    expect(SPLASH_MS).toBeLessThan(WATER_PHRASE_MS * 2);
+    expect(GLYPH_STEP_MS).toBeLessThan(SPLASH_MS);
+  });
+
+  it("does not add the water to the UI durations", () => {
+    expect(Object.values(DURATION)).not.toContain(WATER_PHRASE_MS);
   });
 });
 

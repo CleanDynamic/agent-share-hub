@@ -53,6 +53,7 @@ import {
   workspaceCard,
   workspaceGround,
 } from "@/components/shell/WorkspaceBar";
+import { WaterField } from "@/components/brand/FluidField";
 import { t } from "@/lib/theme/tokens";
 import { eyebrow } from "@/lib/theme/type";
 
@@ -236,8 +237,10 @@ function FileDropOverlay({ uploading }: { uploading: boolean }) {
         zIndex: 5,
       }}
     >
+      {uploading ? null : <WaterField />}
       <span
         style={{
+          position: "relative",
           ...labelText,
           color: TEAL,
           background: "var(--recess)",

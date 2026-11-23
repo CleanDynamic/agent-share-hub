@@ -27,7 +27,7 @@ export function AltSheet({ alt, returnTo, onClose }: AltSheetProps) {
   return (
     <Dialog.Root open={alt !== null} onOpenChange={(open) => (open ? undefined : onClose())}>
       <Dialog.Portal>
-        <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 70 }} />
+        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 70 }} />
         <Dialog.Content
           aria-describedby={undefined}
           data-testid="alt-sheet"

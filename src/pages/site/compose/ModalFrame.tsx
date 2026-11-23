@@ -131,7 +131,7 @@ export function ModalShell({ open, onOpenChange, title, subtitle, eyebrow, width
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 50 }} />
+        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 50 }} />
         {/* F25: the top edge is pinned at 48, so opening a row grows the window downward and nothing above it moves; the body scrolls inside. */}
         <Dialog.Content data-testid={testId} onOpenAutoFocus={focus.onOpenAutoFocus} onCloseAutoFocus={focus.onCloseAutoFocus} style={{ position: "fixed", top: MODAL_TOP, left: "50%", transform: "translateX(-50%)", zIndex: 51, ...frameStyle(width), maxHeight: `calc(100dvh - ${MODAL_TOP * 2}px)` }}>
           <div data-testid="modal-header" style={HEADER}>

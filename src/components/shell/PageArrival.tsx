@@ -1,8 +1,8 @@
 // SV-04 P5: a page's content arriving over its loading state, in the same slot.
 //
 // While `loading`, the page draws its loading state (the route's Placeholder has the same shape). When the first-screen
-// data is in, the content is drawn and fades in over FAST while a copy of the loading state, laid over it at the same
-// place, fades out over FAST, both on STANDARD, and is then taken away. The loading state is not removed before the
+// data is in, the content is drawn and fades in over CONTENT_IN_MS while a copy of the loading state, laid over it at the same
+// place, fades out over BLOCKS_OUT_MS, both on STANDARD, and is then taken away. The loading state is not removed before the
 // content is drawn, and the two hold the same boxes (the placeholders' match test), so nothing moves. A page that was
 // never loading when it mounted (its data in the cache), reduced motion, and an engine that cannot animate, get the
 // content at once.
@@ -15,9 +15,11 @@
 
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
-import { FAST, STANDARD, prefersReducedMotion } from "@/lib/theme/motion";
+import { BLOCKS_OUT_MS, CONTENT_IN_MS } from "@/pages/site/compose/loadingBlocks";
+import { STANDARD, prefersReducedMotion } from "@/lib/theme/motion";
 
-const IN = `bgPageIn ${FAST}ms ${STANDARD} both`;
+// The dots fade out over BLOCKS_OUT_MS while the content fades in over CONTENT_IN_MS, in place.
+const IN = `bgPageIn ${CONTENT_IN_MS}ms ${STANDARD} both`;
 
 export function PageArrival({ loading, placeholder, children }: { loading: boolean; placeholder: ReactNode; children: ReactNode }) {
   const [was] = useState(loading);
@@ -37,7 +39,7 @@ export function PageArrival({ loading, placeholder, children }: { loading: boole
     setPlace({ top: content.offsetTop, left: content.offsetLeft, width: content.offsetWidth, height: content.offsetHeight });
     content.style.animation = IN;
     // The copy goes when its fade has ended; this is for a fade that never reports it (a hidden tab).
-    const fallback = window.setTimeout(() => setDone(true), FAST + 400);
+    const fallback = window.setTimeout(() => setDone(true), Math.max(BLOCKS_OUT_MS, CONTENT_IN_MS) + 400);
     return () => {
       window.clearTimeout(fallback);
       if (content.style.animation === IN) content.style.animation = "";
@@ -53,7 +55,7 @@ export function PageArrival({ loading, placeholder, children }: { loading: boole
           aria-hidden="true"
           data-testid="page-arrival-placeholder"
           onAnimationEnd={() => setDone(true)}
-          style={{ position: "absolute", ...place, overflow: "hidden", pointerEvents: "none", animation: `bgPageOut ${FAST}ms ${STANDARD} both` }}
+          style={{ position: "absolute", ...place, overflow: "hidden", pointerEvents: "none", animation: `bgPageOut ${BLOCKS_OUT_MS}ms ${STANDARD} both` }}
         >
           {placeholder}
         </div>

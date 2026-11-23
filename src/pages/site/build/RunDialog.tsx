@@ -93,7 +93,7 @@ export function RunDialog({ open, onOpenChange, creator, suggestions, initialMod
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.sheetDim, zIndex: 40 }} />
+        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.sheetDim, zIndex: 40 }} />
         <Dialog.Content
           data-testid="build-run-dialog"
           style={{

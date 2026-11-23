@@ -6,6 +6,13 @@
 /** The desktop site header's height. */
 export const HEADER_HEIGHT = 88;
 
+/** The desktop header's height once the page has scrolled (and from the start under reduced motion). */
+export const HEADER_COMPACT_HEIGHT = 56;
+
+/** The beaver logo's width at the top of a page, and once the header has shrunk. It scales with `transform` between them. */
+export const LOGO_WIDTH = 96;
+export const LOGO_COMPACT_WIDTH = HEADER_COMPACT_HEIGHT;
+
 /** The phone header's height. */
 export const PHONE_HEADER_HEIGHT = 48;
 

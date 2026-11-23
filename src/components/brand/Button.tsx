@@ -26,6 +26,7 @@ import type { LucideIcon } from "lucide-react";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { PageLink } from "@/lib/routing/PageLink";
 import { useInteractive } from "@/lib/theme/interactive";
+import { FAST, move } from "@/lib/theme/motion";
 import { ring, touchArea } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { controlPaint, PRIMARY, refinedButtonHeight } from "@/lib/theme/refinedControl";
@@ -85,7 +86,7 @@ export function Button({
     variant === "primary"
       ? { ...PRIMARY, ...(state.hovered ? { filter: "brightness(1.08)" } : null) }
       : variant === "secondary"
-        ? controlPaint(state)
+        ? controlPaint({ hovered: state.hovered })
         : {
             background: "transparent",
             border: "1px solid transparent",
@@ -111,13 +112,16 @@ export function Button({
     whiteSpace: "nowrap",
     flexShrink: 0,
     textDecoration: "none",
+    /* Press: scale .98 over FAST, and no colour change (motion prompt 04). */
+    transform: state.pressed && !disabled ? "scale(.98)" : undefined,
+    transition: move(FAST),
     ...touchArea(phone),
     ...ring(state.focusVisible),
     ...style,
   };
   if (href !== undefined) {
     /* The same element in every respect but its tag: the button's attributes and handlers ride on the anchor. */
-    const anchor = { "data-ui": "button", "data-variant": variant, ...(rest as object), ...(handlers as object), style: look };
+    const anchor = { "data-ui": "button", "data-variant": variant, "data-hover-fill": variant === "ghost" ? "" : undefined, ...(rest as object), ...(handlers as object), style: look };
     /* A download is never routed: the router would take the click. */
     return href.startsWith("/") && !("download" in rest) ? (
       <PageLink to={href} {...anchor}>
@@ -130,7 +134,7 @@ export function Button({
     );
   }
   return (
-    <button data-ui="button" data-variant={variant} type={type} disabled={disabled} {...rest} {...handlers} style={look}>
+    <button data-ui="button" data-variant={variant} data-hover-fill={variant === "ghost" ? "" : undefined} type={type} disabled={disabled} {...rest} {...handlers} style={look}>
       {children}
     </button>
   );

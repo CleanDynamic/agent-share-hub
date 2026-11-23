@@ -38,6 +38,7 @@ const DialogOverlay = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
 >(({ className, style, ...props }, ref) => (
   <DialogPrimitive.Overlay
+    data-motion="scrim"
     ref={ref}
     style={{ ...scrimStyle, ...style }}
     className={cn(

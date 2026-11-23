@@ -11,11 +11,11 @@ import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
 import { useRoom } from "@/components/brand/useRoom";
-import { sizeCanvas, startLoop } from "@/lib/dots/engine";
+import { dotPalette, sizeCanvas, startLoop } from "@/lib/dots/engine";
 import { prefersReducedMotion } from "@/lib/theme/motion";
 
 import { buildCodeSprites, type CodeSprites } from "./codeSprites";
-import { DARK_PALETTE, HalftoneField, LIGHT_PALETTE, type Rect } from "./halftoneField";
+import { HalftoneField, type Rect } from "./halftoneField";
 import { isSigningIn } from "./signinActivity";
 
 /** Between the scrim (50) and the dialog (52). */
@@ -136,7 +136,6 @@ export function HalftoneLayer({ closing, onDone }: HalftoneLayerProps) {
     const ctx = el?.getContext("2d");
     if (!el || !ctx) return;
     const field = new HalftoneField();
-    const palette = room === "dusk" ? DARK_PALETTE : LIGHT_PALETTE;
     let rect: Rect | null = null;
     let ratio = 1;
     let sprites: CodeSprites | null = null;
@@ -145,7 +144,7 @@ export function HalftoneLayer({ closing, onDone }: HalftoneLayerProps) {
       rect = dialogRect() ?? rect;
       if (!rect) return;
       ratio = sizeCanvas(el, window.innerWidth, window.innerHeight);
-      field.layout({ width: window.innerWidth, height: window.innerHeight, dialog: rect, palette });
+      field.layout({ width: window.innerWidth, height: window.innerHeight, dialog: rect, palette: dotPalette() });
       // The code style's sheet, once per theme and device pixel ratio (not under reduced motion: no code style there).
       if (spriteRatio !== ratio && !prefersReducedMotion()) {
         spriteRatio = ratio;
@@ -193,7 +192,12 @@ export function HalftoneLayer({ closing, onDone }: HalftoneLayerProps) {
     }
 
     let origin = -1;
+    let drawnAt = -1;
     const onPointerMove = (event: PointerEvent) => field.pointer(event.clientX, event.clientY);
+    // A press drops a ring train at the pointer (SPLASH_MS).
+    let clock = 0;
+    const onPointerDown = (event: PointerEvent) => field.splash(event.clientX, event.clientY, clock);
+    window.addEventListener("pointerdown", onPointerDown, { passive: true });
     const onPointerOut = (event: PointerEvent) => {
       if (!event.relatedTarget) field.pointer(null, null);
     };
@@ -206,6 +210,10 @@ export function HalftoneLayer({ closing, onDone }: HalftoneLayerProps) {
       if (!rect) return;
       if (origin < 0) origin = now;
       const t = now - origin;
+      clock = t;
+      // 30 frames a second.
+      if (t - drawnAt < 1 / 30 - 0.004) return;
+      drawnAt = t;
       if (state.current.closing && state.current.closedAt === null) state.current.closedAt = t;
       if (!state.current.closing) state.current.closedAt = null;
       field.step(dt, isSigningIn(), false);
@@ -219,6 +227,7 @@ export function HalftoneLayer({ closing, onDone }: HalftoneLayerProps) {
       stop();
       window.removeEventListener("resize", layout);
       window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("pointerout", onPointerOut);
     };
   }, [room]);

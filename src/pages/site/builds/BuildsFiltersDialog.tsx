@@ -63,7 +63,7 @@ export function BuildsFiltersDialog({ open, onOpenChange, children, footer, head
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.sheetDim, zIndex: 40 }} />
+        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.sheetDim, zIndex: 40 }} />
         <Dialog.Content
           data-testid="builds-filters-dialog"
           style={dialogFrame(phone)}

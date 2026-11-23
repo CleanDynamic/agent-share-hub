@@ -286,7 +286,7 @@ export function AnatomyDialog({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.sheetDim, zIndex: 40 }} />
+        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.sheetDim, zIndex: 40 }} />
         <Dialog.Content
           data-testid="build-anatomy-dialog"
           aria-describedby={undefined}

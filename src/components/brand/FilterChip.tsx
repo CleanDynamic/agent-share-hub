@@ -45,7 +45,7 @@ export function FilterChip({
     height: 36,
     padding: "0 12px",
     borderRadius: r.control,
-    ...controlPaint(state),
+    ...controlPaint({ hovered: state.hovered }),
     ...(on ? SELECTED : null),
     color: t.text,
     gap: 6,

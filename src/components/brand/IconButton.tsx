@@ -74,7 +74,7 @@ export function IconButton({
         height: side,
         borderRadius: r.control,
         ...(boxed
-          ? controlPaint(state)
+          ? controlPaint({ hovered: state.hovered })
           : { background: "transparent", border: "1px solid transparent" }),
         color: !boxed && state.hovered ? t.text : t.text2,
         display: "flex",

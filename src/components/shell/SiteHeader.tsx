@@ -50,12 +50,14 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { AccountButton } from "./AccountButton";
-import { FRAME_MAX_WIDTH, HEADER_HEIGHT, PANEL_GUTTER } from "./chromeSize";
+import { FRAME_MAX_WIDTH, HEADER_COMPACT_HEIGHT, HEADER_HEIGHT, LOGO_COMPACT_WIDTH, LOGO_WIDTH, PANEL_GUTTER } from "./chromeSize";
+import { useHeaderCompact } from "./useHeaderCompact";
 import { FrameLink } from "./FrameLink";
 import type { FrameViewer } from "./frameTypes";
 import { HeaderSearch, useGallerySearch } from "./HeaderSearch";
 import { LazyBottomSheet } from "./LazyBottomSheet";
 import { isActivityPath, isBuildsPath, PRIMARY_LINKS, SITE_NAV, sectionForPath, type PrimarySection } from "./siteNav";
+import { move } from "@/lib/theme/motion";
 import { useMinWidth } from "./useMinWidth";
 
 export interface SiteHeaderViewProps {
@@ -163,7 +165,7 @@ function LazyAccountMenu({ viewer, onSignOut, avatarSize = 24, drafts = 0, theme
 
 const refinedLink: CSSProperties = {
   position: "relative",
-  height: HEADER_HEIGHT,
+  height: HEADER_COMPACT_HEIGHT,
   display: "flex",
   alignItems: "center",
   gap: space[2],
@@ -206,6 +208,8 @@ function RefinedSiteHeaderView({
   const [searchOpen, setSearchOpen] = useState(false);
   const signedIn = viewer !== null;
   const linkPad = full ? "0 8px" : compact ? "0 4px" : "0 8px";
+  const shrunk = useHeaderCompact();
+  const barHeight = shrunk ? HEADER_COMPACT_HEIGHT : HEADER_HEIGHT;
 
 
   return (
@@ -217,7 +221,7 @@ function RefinedSiteHeaderView({
         width: "100%",
         maxWidth: FRAME_MAX_WIDTH,
         margin: "0 auto",
-        height: HEADER_HEIGHT,
+        height: barHeight,
         display: "flex",
         alignItems: "center",
         gap: space[2],
@@ -225,11 +229,11 @@ function RefinedSiteHeaderView({
         boxSizing: "border-box",
       }}
     >
-      <FrameLink to={SITE_NAV.home} aria-label="OpenBuilds.ai home" aria-current={current === "home" ? "page" : undefined} style={{ flexShrink: 0, outlineColor: t.brandAccent }}><BeaverLogo theme={theme} /></FrameLink>
+      <FrameLink to={SITE_NAV.home} aria-label="OpenBuilds.ai home" aria-current={current === "home" ? "page" : undefined} style={{ flexShrink: 0, outlineColor: t.brandAccent }}><span style={{ display: "block", width: shrunk ? LOGO_COMPACT_WIDTH : LOGO_WIDTH, height: shrunk ? LOGO_COMPACT_WIDTH : LOGO_WIDTH }}><BeaverLogo theme={theme} size={LOGO_WIDTH} style={{ transformOrigin: "left top", transform: shrunk ? `scale(${LOGO_COMPACT_WIDTH / LOGO_WIDTH})` : "none", transition: move() }} /></span></FrameLink>
       <span style={{ width: full ? 8 : 0, flexShrink: 0 }} />
       {searchField ? <HeaderJumpSearch signedIn={signedIn} width={searchFull ? 272 : 200} initialValue={searchInitial} onSubmit={onSearch ?? (() => undefined)} /> : <IconButton icon={Search} glyph="search" boxed={false} label="Search" size={32} onClick={() => setSearchOpen(true)} />}
       <span style={{ width: full ? 8 : 0, flexShrink: 0 }} />
-      <nav aria-label="Primary" style={{ display: "flex", alignItems: "center", height: HEADER_HEIGHT, paddingLeft: 4 }}>
+      <nav aria-label="Primary" style={{ display: "flex", alignItems: "center", height: barHeight, paddingLeft: 4 }}>
         {PRIMARY_LINKS.filter((link) => (!link.authOnly || signedIn) && (link.key !== "connect" || showConnect)).map((link) => {
           const isCurrent = link.key === current;
           return (
@@ -237,7 +241,7 @@ function RefinedSiteHeaderView({
               key={link.key}
               to={link.href}
               aria-current={isCurrent ? "page" : undefined}
-              style={{ ...refinedLink, height: 32, padding: linkPad, fontWeight: isCurrent ? 500 : 400, color: isCurrent ? t.text : t.text2, whiteSpace: "nowrap", outlineColor: t.brandAccent, boxShadow: isCurrent ? `inset 0 -2px ${t.brandAccent}` : undefined }}
+              style={{ ...refinedLink, height: barHeight, padding: linkPad, fontWeight: isCurrent ? 500 : 400, color: isCurrent ? t.text : t.text2, whiteSpace: "nowrap", outlineColor: t.brandAccent, boxShadow: isCurrent ? `inset 0 -2px ${t.brandAccent}` : undefined }}
               hoverStyle={{ color: t.text }}
             >
               {link.label}

@@ -67,6 +67,136 @@ export function fbm3(x: number, y: number): number {
   return 0.6 * pn(x, y) + 0.28 * pn(2.03 * x + 17.1, 2.03 * y - 9.3) + 0.12 * pn(4.07 * x - 31.4, 4.07 * y + 5.7);
 }
 
+/* ── value noise and the per-dot hash (the water's base tone) ── */
+
+/** A stable hash of two integers, 0 to 1 (Math.imul keeps it in 32 bits). */
+export function hash2(ix: number, iy: number): number {
+  let h = Math.imul(ix | 0, 374761393) + Math.imul(iy | 0, 668265263);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+/** 2D value noise, 0 to 1: the hash at the four lattice corners, blended with a smoothstep. */
+export function valueNoise(x: number, y: number): number {
+  const xi = Math.floor(x);
+  const yi = Math.floor(y);
+  const xf = x - xi;
+  const yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf);
+  const v = yf * yf * (3 - 2 * yf);
+  const top = hash2(xi, yi) + (hash2(xi + 1, yi) - hash2(xi, yi)) * u;
+  const bottom = hash2(xi, yi + 1) + (hash2(xi + 1, yi + 1) - hash2(xi, yi + 1)) * u;
+  return top + (bottom - top) * v;
+}
+
+/* ── the water: swell and drops ──
+   Lengths are CSS pixels, times are seconds. `WATER_PHRASE_MS` and `WATER_DROPS` are decided in lib/theme/motion. */
+
+/** The six drop points: fractions of the field's width and height, and when in the phrase each falls. */
+export const DROP_POINTS: readonly (readonly [number, number, number])[] = [
+  [0.18, 0.2, 0],
+  [0.72, 0.46, 1.2],
+  [0.32, 0.78, 1.8],
+  [0.88, 0.1, 3.0],
+  [0.55, 0.95, 3.6],
+  [0.05, 0.55, 4.2],
+];
+
+/** A drop's rings are gone this long after it falls. */
+export const RING_LIFE_S = 5.6;
+
+/** The slow swell that lifts and lowers every dot's tone. */
+export function swell(x: number, y: number, t: number): number {
+  return 0.22 * Math.sin(x * 0.011 + y * 0.007 - t * 0.8) + 0.1 * Math.sin(x * 0.023 - y * 0.017 + t * 1.3);
+}
+
+/** One drop's train of rings at an age, worked out once a frame. `lo2` and `hi2` bound the squared distance the rings touch. */
+export interface Rings {
+  x: number;
+  y: number;
+  front: number;
+  width: number;
+  wavelength: number;
+  amplitude: number;
+  lo2: number;
+  hi2: number;
+}
+
+/** The rings of a drop at `x`, `y` that fell `age` seconds ago, or null when they are gone (or not yet fallen). */
+export function ringsOf(x: number, y: number, age: number, life = RING_LIFE_S): Rings | null {
+  if (age < 0 || age > life) return null;
+  const front = 150 * Math.pow(age, 0.8);
+  const width = 40 + 30 * age;
+  const lo = Math.max(0, front - 2.5 * width);
+  const hi = front + 2.5 * width;
+  return {
+    x,
+    y,
+    front,
+    width,
+    wavelength: 38 + 20 * age,
+    amplitude: ((1 - Math.exp(-5 * age)) * Math.exp(-0.5 * age)) * 1.25,
+    lo2: lo * lo,
+    hi2: hi * hi,
+  };
+}
+
+/** The height of every drop's rings at a point, summed. */
+export function waveAt(rings: readonly Rings[], x: number, y: number): number {
+  let sum = 0;
+  for (let i = 0; i < rings.length; i++) {
+    const ring = rings[i];
+    const dx = x - ring.x;
+    const dy = y - ring.y;
+    const d2 = dx * dx + dy * dy;
+    if (d2 < ring.lo2 || d2 > ring.hi2) continue;
+    const r = Math.sqrt(d2);
+    const off = r - ring.front;
+    const e = off / ring.width;
+    sum += (ring.amplitude / Math.sqrt(1 + r / 320)) * Math.exp(-e * e) * Math.cos((2 * Math.PI * off) / ring.wavelength);
+  }
+  return sum;
+}
+
+/**
+ * Every drop that is alive at `t` for a field `width` by `height`: this phrase's, and the two before it (a drop's rings
+ * outlive the phrase, so they keep fading while the next arrive).
+ */
+export function dropRings(t: number, width: number, height: number, phraseS: number): Rings[] {
+  const out: Rings[] = [];
+  const phrase = Math.floor(t / phraseS);
+  for (let k = phrase; k >= phrase - 2; k--) {
+    for (const [fx, fy, at] of DROP_POINTS) {
+      const rings = ringsOf(fx * width, fy * height, t - (k * phraseS + at));
+      if (rings) out.push(rings);
+    }
+  }
+  return out;
+}
+
+/* ── the three dot colours ── */
+
+const FALLBACK = ["transparent", "transparent", "transparent"] as const;
+let palette: string[] = [...FALLBACK];
+let paletteTheme: string | null = null;
+
+/**
+ * The three dot tokens, deepest first (`--dot-deep`, `--dot-mid`, `--dot-hi`), read off the page: a canvas cannot read a
+ * var(). Read again when the theme changes.
+ */
+export function dotPalette(): readonly string[] {
+  if (typeof document === "undefined") return palette;
+  const theme = document.documentElement.dataset.theme ?? "";
+  if (theme === paletteTheme) return palette;
+  paletteTheme = theme;
+  const style = getComputedStyle(document.documentElement);
+  palette = ["--dot-deep", "--dot-mid", "--dot-hi"].map((name, i) => style.getPropertyValue(name).trim() || FALLBACK[i]);
+  return palette;
+}
+
+/** A tone and its jitter as a palette index: over 0.74 Hi (2), over 0.44 Mid (1), else Deep (0). */
+export const shadeOf = (tone: number): 0 | 1 | 2 => (tone > 0.74 ? 2 : tone > 0.44 ? 1 : 0);
+
 /* ── small helpers both layers use ── */
 
 /** Clamped to 0..1. */
