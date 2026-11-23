@@ -24,12 +24,11 @@ export function spaceSearch(params: URLSearchParams, tab: SpaceTab): URLSearchPa
 export const WHO_WORDS: Record<SpaceWhoCanPost, string> = { anyone: "anyone can post", members: "members can post", invite: "invite only" };
 export const ORDER_WORDS: Record<SpaceOrder, string> = { newest: "Newest first", most_replied: "Most replied first", pinned_first: "Pinned first" };
 
-const handles = (list: readonly { handle: string | null }[]) => list.map((person) => (person.handle ? `@${person.handle}` : "someone")).join(", ");
 export const membersWords = (n: number) => `${n} ${n === 1 ? "member" : "members"}`;
 
-/** "Made by @sam · moderated by @sam, @ola · 412 members · anyone can post". */
+/** Synth 11: "Made by @sam · 412 members". */
 export function spaceMeta(crowd: SpaceCrowd): string {
-  return [`Made by ${crowd.creator.handle ? `@${crowd.creator.handle}` : "someone"}`, `moderated by ${handles(crowd.moderators)}`, membersWords(crowd.members), WHO_WORDS[crowd.space.whoCanPost]].join(" · ");
+  return [`Made by ${crowd.creator.handle ? `@${crowd.creator.handle}` : "someone"}`, membersWords(crowd.members)].join(" · ");
 }
 
 /** "Newest first · set by @sam". */

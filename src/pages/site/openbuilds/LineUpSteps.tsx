@@ -31,7 +31,7 @@ const text = (size: number, color: string, extra: CSSProperties = {}): CSSProper
 
 export function LineUpToggle({ on, onChange }: { on: boolean; onChange: (on: boolean) => void }) {
   return (
-    <label style={{ ...text(12, t.text2), display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+    <label style={{ ...text(13, t.text2), display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
       <Checkbox checked={on} onChange={(event) => onChange(event.target.checked)} />
       Line up steps
     </label>
@@ -40,7 +40,7 @@ export function LineUpToggle({ on, onChange }: { on: boolean; onChange: (on: boo
 
 function Cell({ cell }: { cell: LineCell | null }) {
   if (!cell) return <td style={{ padding: 4 }} />;
-  const words = <span style={{ ...text(12, t.text), overflowWrap: "anywhere" }}>{cell.title}</span>;
+  const words = <span style={{ ...text(13, t.text), overflowWrap: "anywhere" }}>{cell.title}</span>;
   return (
     <td style={{ padding: 4, verticalAlign: "top" }}>
       {cell.open ? (
@@ -62,8 +62,8 @@ export function LineUpTable({ lineUp }: { lineUp: LineUp }) {
   const numbers = Array.from({ length: lineUp.steps }, (_, at) => at + 1);
   return (
     <section aria-label={LINE_UP_TITLE} style={{ marginTop: 24, background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, padding: 16 }}>
-      <h3 style={text(14, t.text, { fontWeight: 500, lineHeight: 1.3 })}>{LINE_UP_TITLE}</h3>
-      <p style={{ ...text(12, t.label), marginTop: 2 }}>{LINE_UP_META}</p>
+      <h3 style={text(15, t.text, { fontWeight: 600, lineHeight: "20px" })}>{LINE_UP_TITLE}</h3>
+      <p style={{ ...text(13, t.label), marginTop: 2 }}>{LINE_UP_META}</p>
       <div style={{ marginTop: 16, overflowX: "auto" }}>
         <table style={{ borderCollapse: "collapse", tableLayout: "fixed", width: "100%", minWidth: BUILD_COLUMN + lineUp.steps * STEP_COLUMN }}>
           <caption style={{ captionSide: "top", textAlign: "left" }}>
@@ -77,11 +77,11 @@ export function LineUpTable({ lineUp }: { lineUp: LineUp }) {
           </colgroup>
           <thead>
             <tr>
-              <th scope="col" style={{ ...text(12, t.label, { fontWeight: 400 }), textAlign: "left", padding: 4 }}>
+              <th scope="col" style={{ ...text(13, t.label, { fontWeight: 400 }), textAlign: "left", padding: 4 }}>
                 Build
               </th>
               {numbers.map((number) => (
-                <th key={number} scope="col" style={{ ...text(12, t.label, { fontWeight: 400 }), textAlign: "left", padding: 4 }}>{`Step ${number}`}</th>
+                <th key={number} scope="col" style={{ ...text(13, t.label, { fontWeight: 400 }), textAlign: "left", padding: 4 }}>{`Step ${number}`}</th>
               ))}
             </tr>
           </thead>
@@ -89,7 +89,7 @@ export function LineUpTable({ lineUp }: { lineUp: LineUp }) {
             {lineUp.rows.map((row) => (
               <tr key={row.key}>
                 <th scope="row" style={{ padding: 4, textAlign: "left", verticalAlign: "top", fontWeight: 400 }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, ...text(12, t.text) }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, ...text(13, t.text) }}>
                     {row.author ? <Avatar size={20} userId={row.author.id} name={row.author.name} src={row.author.avatarUrl} /> : null}
                     {row.name}
                   </span>
@@ -102,7 +102,7 @@ export function LineUpTable({ lineUp }: { lineUp: LineUp }) {
           </tbody>
         </table>
       </div>
-      {lineUp.sentence ? <p style={{ ...text(12, t.text2, { lineHeight: "20px" }), marginTop: 12 }}>{lineUp.sentence}</p> : null}
+      {lineUp.sentence ? <p style={{ ...text(13, t.text2, { lineHeight: "20px" }), marginTop: 12 }}>{lineUp.sentence}</p> : null}
     </section>
   );
 }
