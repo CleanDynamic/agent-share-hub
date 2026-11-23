@@ -110,9 +110,6 @@ export function buildFixture(viewport: "desktop" | "mobile" = "desktop"): Omit<B
     },
     actions: { onCopyForAI: yes, onDownload: noop, onRebuild: noop, lineageTo: `/b2/${build.slug}/lineage` },
     proof: {
-      build: fixturePlaque(build),
-      lastRun: page.last_reproduced,
-      action: { kind: "reproduce", onPress: noop },
       details: [
         { label: "Made for", value: page.made_for },
         { label: "Made with", value: page.made_with },

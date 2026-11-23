@@ -75,7 +75,7 @@ import { r } from "@/lib/theme/radius";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { SPACE_COMPACT as SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
-import { body, data as dataText, eyebrow, label as labelType, measure, FIGTREE } from "@/lib/theme/type";
+import { body, data as dataText, label as labelType, measure, FIGTREE } from "@/lib/theme/type";
 import { signInButton } from "@/lib/copy/copy";
 
 /** How far below the screen the section starts asking for its comments. */
@@ -220,8 +220,9 @@ export function Comments({ build, parts, attachRequest, onOpenPart }: CommentsPr
       data-testid="comments"
       style={{ display: "flex", flexDirection: "column", gap: SPACE.md, scrollMarginTop: SPACE.md }}
     >
-      <h2 id="comments-heading" style={{ ...eyebrow, color: t.text2, margin: 0 }}>
-        Comments
+      {/* Synth 08: the heading is the fact ("4 comments"), 20/600; nothing before the first read says a number. */}
+      <h2 id="comments-heading" style={{ fontFamily: FIGTREE, fontSize: 20, fontWeight: 600, lineHeight: "24px", color: t.text, margin: 0 }}>
+        {pages.data ? (rows.length === 0 ? "No comments yet" : `${rows.length} ${rows.length === 1 ? "comment" : "comments"}`) : "Comments"}
       </h2>
 
       {isLoggedIn ? (

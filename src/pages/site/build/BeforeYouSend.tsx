@@ -30,7 +30,7 @@ export function hasBeforeYouSend(entry: ReaderStep): boolean {
   return inside(entry) ? entry.uses.length > 0 : entry.pasteIns.length > 0 || entry.attach.length > 0;
 }
 
-const text = (px: number, weight: 400 | 500, color: string): CSSProperties => ({
+const text = (px: number, weight: 400 | 500 | 600, color: string): CSSProperties => ({
   fontFamily: FIGTREE,
   fontSize: px,
   fontWeight: weight,
@@ -38,12 +38,12 @@ const text = (px: number, weight: 400 | 500, color: string): CSSProperties => ({
   color,
 });
 
+/* Synth 08: rows with no lines between them. */
 const row: CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: 12,
   minHeight: 48,
-  borderBottom: `1px solid ${t.hairlineModule}`,
 };
 
 const lines: CSSProperties = { display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 };
@@ -79,13 +79,15 @@ function LinkButton({ children, onClick, label }: { children: string; onClick: (
   );
 }
 
-export function BeforeYouSend({ entry, toolOf, onSelect }: BeforeYouSendProps) {
+export function BeforeYouSend({ entry, toolOf, onSelect, bare = false }: BeforeYouSendProps & { /** In the side panel, under its own heading: no heading of its own. */ bare?: boolean }) {
   if (!hasBeforeYouSend(entry)) return null;
   return (
-    <section data-testid="before-you-send" aria-label={BEFORE_YOU_SEND} style={{ display: "flex", flexDirection: "column" }}>
-      <h3 style={{ ...text(13, 500, t.text), margin: 0, paddingBottom: 8, borderBottom: `1px solid ${t.hairlineModule}` }}>
-        {BEFORE_YOU_SEND}
-      </h3>
+    <section data-testid="before-you-send" aria-label={bare ? undefined : BEFORE_YOU_SEND} style={{ display: "flex", flexDirection: "column" }}>
+      {bare ? null : (
+        <h3 style={{ ...text(13, 500, t.text), margin: 0, paddingBottom: 8 }}>
+          {BEFORE_YOU_SEND}
+        </h3>
+      )}
       {inside(entry) ? (
         entry.uses.map((use) => (
           <div key={use} data-testid="before-row" style={row}>
@@ -140,3 +142,38 @@ export function BeforeYouSend({ entry, toolOf, onSelect }: BeforeYouSendProps) {
 }
 
 export default BeforeYouSend;
+
+/** Every step with something to do before it is sent, flattened in reading order, with its number. */
+function entriesWithRows(steps: readonly ReaderStep[]): ReaderStep[] {
+  const out: ReaderStep[] = [];
+  const visit = (list: readonly ReaderStep[]) =>
+    list.forEach((entry) => {
+      if (hasBeforeYouSend(entry)) out.push(entry);
+      visit(entry.children);
+    });
+  visit(steps);
+  return out;
+}
+
+/**
+ * Synth 08: the side panel's "Before you send it", one section for the whole build: its heading 20/600 and, for each step that
+ * takes something in, that step's rows (what to paste, what to attach). Nothing is drawn when no step takes anything in. A row's
+ * link goes to the step on the page.
+ */
+export function BeforeYouSendPanel({ steps, toolOf, onSelect }: { steps: readonly ReaderStep[]; toolOf: (stepId: string) => string | null; onSelect: (stepId: string) => void }) {
+  const entries = entriesWithRows(steps);
+  if (entries.length === 0) return null;
+  return (
+    <section data-testid="build-before-you-send" aria-labelledby="build-before-you-send-heading" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <h2 id="build-before-you-send-heading" style={{ ...text(15, 600, t.text), fontSize: 20, lineHeight: "24px", margin: 0 }}>
+        {BEFORE_YOU_SEND}
+      </h2>
+      {entries.map((entry) => (
+        <div key={entry.step.id} style={{ display: "flex", flexDirection: "column" }}>
+          <span style={{ ...text(13, 500, t.label), paddingTop: 4 }}>{`Step ${entry.step.number}`}</span>
+          <BeforeYouSend entry={entry} toolOf={toolOf} onSelect={onSelect} bare />
+        </div>
+      ))}
+    </section>
+  );
+}
