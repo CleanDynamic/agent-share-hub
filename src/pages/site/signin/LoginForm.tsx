@@ -1,4 +1,7 @@
-/* UI-P36 — the Sign in card's body.
+/* Synth 13 Part B: "Sign in with your email address.", the two fields with their labels above, "Forgot password?" as an
+   underlined 13 Text 3 link, "Sign in" full width, then "or", the providers and the terms line.
+
+   UI-P36 — the Sign in card's body.
 
    The three providers, "or with email", the two fields, the remember and forgot
    row, and the primary action. PURE and fully controlled: the container owns
@@ -18,8 +21,8 @@ import { FrameLink } from "@/components/shell/FrameLink";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
-import { AuthCheck, AuthField, AuthForm, Gap, OrRule, PrimaryAction, ProviderButtons, PushDown } from "./AuthParts";
-import { DIALOG, useAuthSizes } from "./authSizes";
+import { AuthCheck, AuthField, AuthForm, OrRule, PrimaryAction, ProviderButtons, TermsLine } from "./AuthParts";
+import { DIALOG } from "./authSizes";
 import { SIGNIN_COLOURS } from "./signinColours";
 
 export interface LoginFormProps {
@@ -96,78 +99,12 @@ export function LoginForm({
   onResendVerification,
   resendAnswer,
 }: LoginFormProps) {
-  const { phone } = useAuthSizes();
   const room = useRoom();
-  if (!phone) {
-    /* The dialog's column (Reference A): providers, 16, the divider, 16, the two fields 16 apart, 4 and the reserved error
-       line, 8, the remember row, then the primary on the bottom padding line. */
-    return (
-      <>
-        <ProviderButtons onProvider={onProvider} loadingProvider={loadingProvider} />
-        <Gap size={16} />
-        <OrRule>Or with email</OrRule>
-        <Gap size={16} />
-        <AuthForm onSubmit={onSubmit}>
-          <AuthField
-            label="Email"
-            icon={User}
-            value={emailOrUsername}
-            onChange={onEmailOrUsernameChange}
-            placeholder="Email"
-            required
-            autoComplete="email"
-          />
-          <Gap size={16} />
-          <AuthField
-            label="Password"
-            icon={Lock}
-            showPasswordToggle
-            value={password}
-            onChange={onPasswordChange}
-            placeholder="Enter your password"
-            required
-            autoComplete="current-password"
-            error={error}
-            notice={notice}
-            reserveMessage
-          />
-          <Gap size={8} />
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: DIALOG.row, fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>
-            <AuthCheck id="remember" checked={rememberMe} onChange={onRememberMeChange}>
-              Keep me signed in
-            </AuthCheck>
-            <FrameLink
-              to={forgotTo}
-              state={forgotState}
-              style={{
-                lineHeight: `${DIALOG.row}px`,
-                color: SIGNIN_COLOURS[room].link,
-                textDecoration: "underline",
-                textUnderlineOffset: 4,
-                textDecorationThickness: 1,
-              }}
-            >
-              Forgot password?
-            </FrameLink>
-          </div>
-          {onResendVerification ? (
-            <>
-              <Gap size={8} />
-              <ResendVerification onResend={onResendVerification} answer={resendAnswer} colour={SIGNIN_COLOURS[room].link} />
-            </>
-          ) : null}
-          <PushDown />
-          <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText="Signing in">
-            Sign in
-          </PrimaryAction>
-        </AuthForm>
-      </>
-    );
-  }
+  /* Synth 13: one layout at every width. The line, the two fields, Forgot password and Keep me signed in, the main
+     button, then "or", the providers and the terms line. */
   return (
     <>
-      <ProviderButtons onProvider={onProvider} loadingProvider={loadingProvider} />
-      <OrRule>or with email</OrRule>
+      <p style={{ margin: 0, textAlign: "center", fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.text2 }}>Sign in with your email address.</p>
       <AuthForm onSubmit={onSubmit}>
         <AuthField
           label="Email"
@@ -189,36 +126,35 @@ export function LoginForm({
           autoComplete="current-password"
           error={error}
           notice={notice}
+          reserveMessage
         />
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: DIALOG.row, fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>
           <AuthCheck id="remember" checked={rememberMe} onChange={onRememberMeChange}>
             Keep me signed in
           </AuthCheck>
           <FrameLink
             to={forgotTo}
-            data-hit=""
-            /* The reference's phone says "Forgot?"; the name is the whole sentence. */
-            aria-label={phone ? "Forgot password?" : undefined}
+            state={forgotState}
             style={{
-              position: "relative",
-              /* A 28px target in a row the reference draws about 19px tall. */
-              padding: "6px 0",
-              margin: "-6px 0",
-              lineHeight: "19px",
-              color: t.action,
+              lineHeight: `${DIALOG.row}px`,
+              fontSize: 13,
+              color: t.label,
               textDecoration: "underline",
               textUnderlineOffset: 4,
               textDecorationThickness: 1,
             }}
           >
-            {phone ? "Forgot?" : "Forgot password?"}
+            Forgot password?
           </FrameLink>
         </div>
-        {onResendVerification ? <ResendVerification onResend={onResendVerification} answer={resendAnswer} colour={t.action} /> : null}
+        {onResendVerification ? <ResendVerification onResend={onResendVerification} answer={resendAnswer} colour={SIGNIN_COLOURS[room].link} /> : null}
         <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText="Signing in">
           Sign in
         </PrimaryAction>
       </AuthForm>
+      <OrRule />
+      <ProviderButtons onProvider={onProvider} loadingProvider={loadingProvider} />
+      <TermsLine />
     </>
   );
 }

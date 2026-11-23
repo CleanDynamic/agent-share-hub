@@ -42,8 +42,10 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
-import { AuthShell } from "@/components/auth/AuthShell";
 import { AuthButton } from "@/components/auth/AuthButton";
+import { useRoom } from "@/components/brand/useRoom";
+import { BeaverLogo } from "@/components/shell/BeaverLogo";
+import { CARD_LOGO_WIDTH } from "@/components/shell/chromeSize";
 import { SeoHead } from "@/components/SeoHead";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -67,6 +69,22 @@ import { screenError } from "@/lib/auth/authMessages";
 
 /** The chip's own padding, matching `CategoryChip`: a label, not a target. */
 const CHIP_PAD = "2px 8px";
+
+/* Synth 13 Part D: no site header or nav, on purpose. On the Page shade: the beaver at 96, centred, 120 from the top, then
+   a 420 card (the Panel fill here, radius 16, 24 padding). Every state of the page stands in it. */
+function ConsentShell({ children }: { children: React.ReactNode }) {
+  const room = useRoom();
+  return (
+    <main style={{ minHeight: "100dvh", background: t.frame, display: "flex", flexDirection: "column", alignItems: "center", padding: "120px 16px 48px", boxSizing: "border-box", fontFamily: FIGTREE }}>
+      <div aria-hidden="true" style={{ marginBottom: 24 }}>
+        <BeaverLogo theme={room} size={CARD_LOGO_WIDTH} />
+      </div>
+      <div data-testid="consent-card" style={{ width: "100%", maxWidth: 420, boxSizing: "border-box", padding: 24, borderRadius: 16, background: t.surface }}>
+        {children}
+      </div>
+    </main>
+  );
+}
 
 /** G4: our words for a failure; the auth service's own text never reaches the screen. */
 function messageOf(cause: unknown): string {
@@ -98,7 +116,7 @@ function Notice({
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <h1 style={{ ...cardTitle, margin: 0, color: t.text }}>{title}</h1>
+      <h1 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 20, lineHeight: "24px", fontWeight: 600, color: t.text }}>{title}</h1>
       <p style={{ ...bodyType, ...measure, margin: 0, color: t.text2 }}>{children}</p>
       {detail ? (
         <p style={{ ...dataType, margin: 0, color: t.text2, overflowWrap: "anywhere" }}>
@@ -150,14 +168,15 @@ function DenyButton({
       data-visual-slot="btn-secondary"
       {...handlers}
       style={{
-        ...buttonStyle("outline", state),
-        height: "48px",
+        ...buttonStyle("secondary", state),
+        height: "40px",
+        borderRadius: 20,
         width: "100%",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         fontFamily: FIGTREE,
-        fontSize: "14px",
+        fontSize: "15px",
         fontWeight: 600,
         opacity: disabled ? 0.5 : 1,
       }}
@@ -246,14 +265,14 @@ export default function OAuthConsent() {
      trace. */
   if (!authorizationId) {
     return (
-      <AuthShell>
+      <ConsentShell>
         {head}
         <Notice title="Nothing to authorize">
           This page answers a request from an application that wants access to
           your {SITE_NAME} account. It was opened without one, so there is
           nothing here to allow or deny.
         </Notice>
-      </AuthShell>
+      </ConsentShell>
     );
   }
 
@@ -269,25 +288,25 @@ export default function OAuthConsent() {
 
   if (authLoading) {
     return (
-      <AuthShell>
+      <ConsentShell>
         {head}
         <p style={{ ...bodyType, margin: 0, color: t.text2 }}>Checking your account…</p>
-      </AuthShell>
+      </ConsentShell>
     );
   }
 
   if (load.isPending) {
     return (
-      <AuthShell>
+      <ConsentShell>
         {head}
         <p style={{ ...bodyType, margin: 0, color: t.text2 }}>Reading the request…</p>
-      </AuthShell>
+      </ConsentShell>
     );
   }
 
   if (load.isError || !read) {
     return (
-      <AuthShell>
+      <ConsentShell>
         {head}
         <Notice
           title="That request could not be read"
@@ -295,18 +314,18 @@ export default function OAuthConsent() {
           It may have already been answered, or it may have expired. Ask the
           application to try again.
         </Notice>
-      </AuthShell>
+      </ConsentShell>
     );
   }
 
   if (read.kind === "redirect") {
     return (
-      <AuthShell>
+      <ConsentShell>
         {head}
         <p style={{ ...bodyType, margin: 0, color: t.text2 }}>
           You have already authorized this application. Taking you back…
         </p>
-      </AuthShell>
+      </ConsentShell>
     );
   }
 
@@ -316,25 +335,28 @@ export default function OAuthConsent() {
      than the first choice because two accounts can look alike by display name
      and never by address — and there is a last fallback because "Acting as "
      with nothing after it is worse than a vaguer sentence. */
-  const account = user?.email || (profile?.username ? `@${profile.username}` : "your account");
+  /* Synth 13 Part D: "Acting as @handle"; the email where there is no handle yet. */
+  const account = profile?.username ? `@${profile.username}` : user?.email || "your account";
   const busy = decision !== null;
 
   return (
-    <AuthShell>
+    <ConsentShell>
       {head}
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <h1 style={{ ...cardTitle, margin: 0, color: t.text }}>
-          {applicationName} wants access to your {SITE_NAME} account
-        </h1>
+        <h1 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 20, lineHeight: "24px", fontWeight: 600, color: t.text }}>Authorize an application</h1>
+        {/* The application's name as it registered it: data, drawn as text. */}
+        <p data-testid="consent-application" style={{ margin: 0, fontFamily: FIGTREE, fontSize: 17, lineHeight: "24px", color: t.text, overflowWrap: "anywhere" }}>
+          {applicationName}
+        </p>
 
         {/* The account the grant will act as. From `useAuth()` — the session is
             already in context and a second auth query here would be a second
             source of truth for the one fact this screen must not get wrong. */}
-        <p style={{ ...dataType, margin: 0, color: t.text2, overflowWrap: "anywhere" }}>
+        <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.text2, overflowWrap: "anywhere" }}>
           Acting as {account}
         </p>
 
-        <p style={{ ...bodyType, ...measure, margin: 0, color: t.text }}>
+        <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.text2 }}>
           This will let {applicationName} upload conversations to your
           {SITE_NAME} account as waiting imports for you to review. It cannot
           publish anything, and it cannot change or delete anything you have
@@ -342,7 +364,7 @@ export default function OAuthConsent() {
         </p>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={{ ...dataType, color: t.text2 }}>
+          <span style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label }}>
             {scopes.length === 1 ? "Scope requested" : "Scopes requested"}
           </span>
           {/* A LIST, NOT A ROW OF SPANS. The scopes are the substance of the
@@ -355,28 +377,28 @@ export default function OAuthConsent() {
             <ul
               style={{
                 display: "flex",
-                flexWrap: "wrap",
-                gap: 8,
+                flexDirection: "column",
+                gap: 4,
                 listStyle: "none",
                 margin: 0,
                 padding: 0,
               }}
             >
               {scopes.map((scope) => (
-                <li key={scope} style={{ ...chipStyle("neutral"), padding: CHIP_PAD }}>
+                <li key={scope} style={{ fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.text, overflowWrap: "anywhere" }}>
                   {scope}
                 </li>
               ))}
             </ul>
           ) : (
-            <span style={{ ...bodyType, color: t.text2 }}>None requested.</span>
+            <span style={{ fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.text2 }}>None requested.</span>
           )}
         </div>
 
         {/* Where the answer goes back to. A visitor deciding whether to trust an
             application is entitled to see which address the grant returns to,
             and a registered name alone does not tell them that. */}
-        <p style={{ ...dataType, margin: 0, color: t.text2, overflowWrap: "anywhere" }}>
+        <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label, overflowWrap: "anywhere" }}>
           Returns to {redirectUri}
           {applicationUri ? ` · ${applicationUri}` : ""}
         </p>
@@ -409,6 +431,6 @@ export default function OAuthConsent() {
           </DenyButton>
         </div>
       </div>
-    </AuthShell>
+    </ConsentShell>
   );
 }

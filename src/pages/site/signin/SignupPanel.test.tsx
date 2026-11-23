@@ -62,7 +62,7 @@ async function fillAll(over: Partial<Record<"name" | "username" | "email" | "pas
 }
 
 /** The submit: the switch's tab has the same name, "Sign up", and is the one with aria-pressed. */
-const create = () => screen.getAllByRole("button", { name: "Sign up" }).find((button) => !button.hasAttribute("aria-pressed")) as HTMLElement;
+const create = () => screen.getByRole("button", { name: "Join free" });
 
 describe("the view", () => {
   it("is the join view: the switch on Join free", () => {
@@ -138,7 +138,7 @@ describe("the username", () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(400);
     });
-    expect(screen.getByText('Taken — try "ada_l417"')).toBeTruthy();
+    expect(screen.getByText('That username is taken. Try "ada_l417"')).toBeTruthy();
 
     checkUsernameAvailability.mockResolvedValueOnce({ available: false });
     type("username", "ada_la");

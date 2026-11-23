@@ -62,9 +62,9 @@ describe("the gate", () => {
     expect(primary()).toBeEnabled();
   });
 
-  it("is a modal dialog over the page, labelled by the tagline", () => {
+  it("is a modal dialog over the page, labelled by its view (Synth 13: a visually hidden h2)", () => {
     open();
-    const dialog = screen.getByRole("dialog", { name: "Publish, reproduce and rebuild AI-assisted workflows." });
+    const dialog = screen.getByRole("dialog", { name: "Sign in" });
     expect(dialog.getAttribute("aria-modal")).toBe("true");
   });
 });
@@ -235,7 +235,10 @@ describe("the refusals", () => {
     open();
     fill("ada_l", "hunter22");
     submit();
-    expect(await screen.findByText("Sign in with your email address.")).toBeTruthy();
+    // The view's own line says the same words; the answer is the one tied to the password.
+    await waitFor(() => expect(screen.getAllByText("Sign in with your email address.")).toHaveLength(2));
+    const answer = screen.getAllByText("Sign in with your email address.").find((el) => el.getAttribute("data-testid") === "field-message" || el.closest('[data-testid="field-message"]'));
+    expect(answer).toBeTruthy();
     expect(signIn).not.toHaveBeenCalled();
     expect(primary()).toBeEnabled();
   });

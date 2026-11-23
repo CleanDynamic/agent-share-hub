@@ -38,6 +38,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { FrameLink } from "@/components/shell/FrameLink";
 
 import { DIALOG, useAuthSizes } from "./authSizes";
 import { PendingRing } from "./PendingRing";
@@ -94,12 +95,13 @@ export function ProviderButtons({ onProvider, loadingProvider }: ProviderButtons
         <Button
           key={provider.id}
           variant="secondary"
-          size={sizes.provider}
-          fontSize={sizes.providerFont}
+          size={44}
+          fontSize={15}
           fullWidth
           disabled={loadingProvider !== null}
           onClick={() => onProvider(provider.id)}
-          style={{ gap: 7 }}
+          /* Synth 13: 40 tall, radius 20 (44 on a phone, the touch target). */
+          style={{ gap: 7, height: sizes.provider, borderRadius: sizes.provider / 2, fontSize: 15, padding: "0 16px" }}
         >
           {loadingProvider === provider.id ? <PendingRing /> : null}
           {loadingProvider === provider.id ? provider.opening : provider.label}
@@ -107,31 +109,32 @@ export function ProviderButtons({ onProvider, loadingProvider }: ProviderButtons
       ))}
     </>
   );
-  /* In the dialog the three are one column, 8 apart; on a phone they stay siblings of the card's column. */
-  return sizes.phone ? buttons : <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{buttons}</div>;
+  /* One column, 8 apart. */
+  return <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{buttons}</div>;
 }
 
 /* ── the rule ── */
 
-/** Two hairlines either side of a mono eyebrow: "or with email". */
-export function OrRule({ children }: { children: ReactNode }) {
-  const sizes = useAuthSizes();
-  const line = { flexGrow: 1, height: 1, background: t.line } as const;
-  if (!sizes.phone) {
-    return (
-      <div style={{ display: "flex", alignItems: "center", gap: sizes.ruleGap, height: DIALOG.line }}>
-        <span aria-hidden="true" style={line} />
-        <span style={{ ...MONO_LINE, color: t.text2, whiteSpace: "nowrap" }}>{children}</span>
-        <span aria-hidden="true" style={line} />
-      </div>
-    );
-  }
+/** Synth 13: "or", 13 Text 3, centred, with no rules. */
+export function OrRule({ children = "or" }: { children?: ReactNode }) {
+  return <div style={{ textAlign: "center", fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label }}>{children}</div>;
+}
+
+/** Synth 13: the terms line under the providers, 13 Text 3, centred, the two links underlined. */
+export function TermsLine({ onLeave }: { onLeave?: () => void }) {
+  const link = { color: "inherit", textDecoration: "underline", textUnderlineOffset: 3 } as const;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: sizes.ruleGap, margin: sizes.ruleMargin }}>
-      <span aria-hidden="true" style={line} />
-      <Eyebrow size={10}>{children}</Eyebrow>
-      <span aria-hidden="true" style={line} />
-    </div>
+    <p data-testid="signin-terms" style={{ margin: 0, textAlign: "center", fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label }}>
+      By continuing you agree to the{" "}
+      <FrameLink to="/terms" style={link} onClick={onLeave}>
+        Terms
+      </FrameLink>{" "}
+      and the{" "}
+      <FrameLink to="/privacy" style={link} onClick={onLeave}>
+        Privacy policy
+      </FrameLink>
+      .
+    </p>
   );
 }
 
@@ -172,7 +175,8 @@ export function FieldMessage({
       style={{
         ...MESSAGE,
         ...(reserve ? { marginTop: 4, height: DIALOG.line, lineHeight: `${DIALOG.line}px`, whiteSpace: "nowrap" } : { marginTop: children ? 4 : 0 }),
-        color: tone === "good" ? t.evidence : tone === "neutral" ? t.text : t.catBreakage,
+        /* Synth 13: "Username available" in Mint, an error in Danger. */
+        color: tone === "good" ? t.brandAccent : tone === "neutral" ? t.text : t.dangerText,
       }}
     >
       {children}
@@ -246,16 +250,8 @@ export function AuthField({
 
   return (
     <div>
-      <label style={{ display: "flex", flexDirection: "column", gap: sizes.phone ? 5 : 8 }}>
-        {sizes.phone ? (
-          <Eyebrow size={10} as="span">
-            {label}
-          </Eyebrow>
-        ) : (
-          <Eyebrow as="span" style={{ ...MONO_LINE, letterSpacing: 0 }}>
-            {label}
-          </Eyebrow>
-        )}
+      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <span style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, lineHeight: "16px", color: t.text2 }}>{label}</span>
         <span
           data-testid="auth-field-box"
           style={{
@@ -263,15 +259,15 @@ export function AuthField({
             alignItems: "center",
             gap: 7,
             height: sizes.field,
-            /* In the dialog the field is 32 with its border; a phone's keeps its 44 content box. */
-            boxSizing: sizes.phone ? "content-box" : "border-box",
-            padding: sizes.phone ? "0 10px" : "0 12px",
-            borderRadius: r.control,
+            /* Synth 13: a one-line field, 40 tall with its edge (44 on a phone), radius 20. */
+            boxSizing: "border-box",
+            padding: "0 14px",
+            borderRadius: r.field,
             background: t.field,
-            border: `1px solid ${invalid ? t.catBreakage : focused ? t.action : t.line}`,
+            border: `1px solid ${invalid ? t.dangerText : focused ? t.fieldEdge : t.line}`,
             color: t.text2,
             fontFamily: FIGTREE,
-            fontSize: 13,
+            fontSize: 15,
             ...ring(focusVisible),
           }}
         >
@@ -311,7 +307,7 @@ export function AuthField({
               border: 0,
               outline: "none",
               fontFamily: FIGTREE,
-              fontSize: 13,
+              fontSize: 15,
               color: t.text,
             }}
           />
@@ -344,8 +340,8 @@ export function AuthField({
           ) : validation && validation.state !== "idle" ? (
             <span aria-hidden="true" style={{ display: "flex", flexShrink: 0 }}>
               {validation.state === "checking" ? <InlineLoader size={16} label="Checking the username" /> : null}
-              {validation.state === "valid" ? <Check size={16} strokeWidth={1.6} style={{ color: t.evidence }} /> : null}
-              {validation.state === "invalid" ? <X size={16} strokeWidth={1.6} style={{ color: t.catBreakage }} /> : null}
+              {validation.state === "valid" ? <Check size={16} strokeWidth={1.6} style={{ color: t.brandAccent }} /> : null}
+              {validation.state === "invalid" ? <X size={16} strokeWidth={1.6} style={{ color: t.dangerText }} /> : null}
             </span>
           ) : null}
         </span>
@@ -518,16 +514,16 @@ export function DialogPrimary({
       style={{
         boxSizing: "border-box",
         width: "100%",
-        height: DIALOG.control,
+        height: 40,
         flexShrink: 0,
-        padding: "0 12px",
-        borderRadius: r.control,
+        padding: "0 16px",
+        borderRadius: 20,
         border: `1px solid ${fill}`,
         background: fill,
         color: colours.onPrimary,
         fontFamily: FIGTREE,
-        fontSize: 13,
-        fontWeight: 500,
+        fontSize: 15,
+        fontWeight: 600,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -585,13 +581,7 @@ export function AuthForm({ onSubmit, children }: { onSubmit: () => void; childre
     errorFocus.arm();
     onSubmit();
   };
-  if (!sizes.phone) {
-    return (
-      <form ref={errorFocus.ref} onSubmit={submit} onInputCapture={errorFocus.disarm} style={{ display: "flex", flexDirection: "column", flex: "1 1 auto", minHeight: 0, margin: 0 }}>
-        {children}
-      </form>
-    );
-  }
+  /* Synth 13: one column at every width, 14 between its parts. */
   return (
     <form ref={errorFocus.ref} onSubmit={submit} onInputCapture={errorFocus.disarm} style={{ display: "flex", flexDirection: "column", gap: sizes.gap, margin: 0 }}>
       {children}

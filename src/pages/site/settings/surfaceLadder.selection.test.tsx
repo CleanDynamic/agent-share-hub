@@ -11,7 +11,7 @@ import { SettingsFrame } from "./SettingsFrame";
 const prop = (style: string, name: string) => new RegExp(`(?:^|;)${name}:([^;]*)`).exec(style)?.[1] ?? "";
 
 describe("the Settings side list on the surface ladder", () => {
-  it("gives the current section the selected border and the same fill as the others", () => {
+  it("fills the current section with Card and leaves the others on the panel (Synth 13)", () => {
     const html = renderToStaticMarkup(
       <MemoryRouter initialEntries={["/settings/privacy"]}>
         <SettingsFrame section="privacy" />
@@ -21,8 +21,8 @@ describe("the Settings side list on the surface ladder", () => {
     const links = [...doc.querySelectorAll('nav[aria-label="Settings"] a')];
     const current = links.find((a) => a.getAttribute("aria-current") === "page")?.getAttribute("style") ?? "";
     const other = links.find((a) => !a.hasAttribute("aria-current"))?.getAttribute("style") ?? "";
-    expect(prop(current, "background")).toBe(prop(other, "background"));
-    expect(prop(current, "border")).toBe("1px solid var(--selected-edge)");
-    expect(prop(other, "border")).toBe("1px solid transparent");
+    expect(prop(current, "background")).toBe("var(--module)");
+    expect(prop(other, "background")).toBe("transparent");
+    expect(prop(current, "font-weight")).toBe("600");
   });
 });

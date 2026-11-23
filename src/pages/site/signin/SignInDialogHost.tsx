@@ -7,13 +7,13 @@
    and the halftone layer winds down until it says it is done (G19); then each goes. If the address asks for the dialog
    again meanwhile, it is simply open again.
 
-   THE HALFTONE LAYER (G17) is drawn only around a dialog that has space around it: not on a phone, where the dialog is
-   the whole screen. Under reduced motion it has no wind-down and goes as the dialog closes. */
+   THE WATER (Synth 13 Part B) replaces the dim scrim and the halftone layer: a full-screen dot water at a 6px pitch that
+   answers the pointer, on every screen size (the dialog is never the whole screen now). It fades out with the dialog.
+   Under reduced motion it is a still field, and goes as the dialog closes. */
 
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
-import { useIsPhone } from "@/components/shell/useMinWidth";
 import { prefersReducedMotion } from "@/lib/theme/motion";
 
 import { SCRIM_OUT_MS } from "./signinMotion";
@@ -21,12 +21,11 @@ import { viewOf, type SignInView } from "./signinUrl";
 import { forgetPendingVerification } from "@/lib/auth/pendingVerification";
 
 const SignInDialog = lazy(() => import("./SignInDialog"));
-const HalftoneLayer = lazy(() => import("./HalftoneLayer"));
+const SignInWaterLayer = lazy(() => import("@/lib/dots/SignInWaterLayer"));
 
 export function SignInDialogHost() {
   const { search } = useLocation();
   const view = viewOf(search);
-  const phone = useIsPhone();
   /** The view last shown, kept while the dialog closes. */
   const [last, setLast] = useState<SignInView | null>(view);
   const [dialogDone, setDialogDone] = useState(false);
@@ -50,7 +49,7 @@ export function SignInDialogHost() {
     return () => window.clearTimeout(timer);
   }, [closing]);
 
-  const layer = !phone;
+  const layer = true;
   useEffect(() => {
     if (closing && dialogDone && (layerDone || !layer)) {
       setLast(null);
@@ -66,7 +65,7 @@ export function SignInDialogHost() {
       {/* Each its own boundary: the layer's chunk arriving late must not take the dialog off the screen. */}
       {layer && !layerDone ? (
         <Suspense fallback={null}>
-          <HalftoneLayer closing={closing} onDone={() => setLayerDone(true)} />
+          <SignInWaterLayer closing={closing} fadeOutMs={SCRIM_OUT_MS} onDone={() => setLayerDone(true)} />
         </Suspense>
       ) : null}
       {dialogDone ? null : (

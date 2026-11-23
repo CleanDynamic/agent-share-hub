@@ -92,10 +92,9 @@ export function SignupForm({
 }: SignupFormProps) {
   const errorId = useId();
   const tied = error ? errorId : undefined;
+  /* Synth 13: the fields, the terms and "Join free", then "or", the providers and the terms line. */
   return (
     <>
-      <ProviderButtons onProvider={onProvider} loadingProvider={loadingProvider} />
-      <OrRule>or with email</OrRule>
       <AuthForm onSubmit={onSubmit}>
         <AuthField
           label="Display name"
@@ -144,7 +143,7 @@ export function SignupForm({
             describedBy={tied}
             autoComplete="new-password"
           />
-          {password ? <PasswordStrengthMeter strength={passwordStrength} /> : null}
+          {password ? <PasswordStrengthMeter strength={passwordStrength} /> : <p style={{ margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label }}>At least 8 characters</p>}
         </div>
         <div>
           <AuthCheck id="terms" checked={agreedToTerms} onChange={onAgreedToTermsChange}>
@@ -161,10 +160,13 @@ export function SignupForm({
           <FieldMessage id={errorId} live={false}>{error}</FieldMessage>
         </div>
         <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText={WAITING.signingUp}>
-          Sign up
+          Join free
         </PrimaryAction>
+      </AuthForm>
+      <OrRule />
+      <ProviderButtons onProvider={onProvider} loadingProvider={loadingProvider} />
         {showLegalLine ? (
-          <p data-testid="signup-legal-line" style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.4, color: t.label }}>
+          <p data-testid="signup-legal-line" style={{ margin: 0, textAlign: "center", fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label }}>
             By signing up you agree to the{" "}
             <Link to="/terms" style={LEGAL_LINK} onClick={onLeaveForLegal}>
               Terms
@@ -176,7 +178,6 @@ export function SignupForm({
             .
           </p>
         ) : null}
-      </AuthForm>
     </>
   );
 }

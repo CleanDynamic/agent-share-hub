@@ -93,13 +93,14 @@ describe("ProviderButtons", () => {
 
 describe("OrRule", () => {
 
-  it("is 10px apart with 2px 0 around it on a phone", () => {
-    setViewport("phone");
-    const { container } = render(<OrRule>or with email</OrRule>);
-    const style = container.firstElementChild!.getAttribute("style")!;
-    // UI-P52 density pass: 10 → 7; the 2px is under the table's floor.
-    expect(style).toContain("gap: 7px");
-    expect(style).toContain("margin: 2px 0px");
+  it("is the word or, 13 Text 3, centred, with no rules (Synth 13)", () => {
+    const { container } = render(<OrRule />);
+    const el = container.firstElementChild!;
+    expect(el.textContent).toBe("or");
+    const style = el.getAttribute("style")!;
+    expect(style).toContain("text-align: center");
+    expect(style).toContain("font-size: 13px");
+    expect(el.querySelectorAll("span")).toHaveLength(0);
   });
 });
 
@@ -108,13 +109,12 @@ describe("AuthField", () => {
     <AuthField label="Email or username" icon={User} value="" onChange={() => {}} {...over} />
   );
 
-  it("draws the box 44 tall (content box) with 0 14px padding, radius 12, --field, a 1px --line border, 10px between icon and input", () => {
+  it("draws a one-line field 40 tall with its edge, 0 14px padding, the field radius, --field, a 1px --line border (Synth 13)", () => {
     const html = markup(field());
-    // The sign-in dialog (Reference A): the box 32 high with its border, 12 either side; the gap stays 7.
-    expect(html).toContain("height:32px");
+    expect(html).toContain("height:40px");
     expect(html).toContain("box-sizing:border-box");
-    expect(html).toContain("padding:0 12px");
-    expect(html).toContain("border-radius:var(--r-control)");
+    expect(html).toContain("padding:0 14px");
+    expect(html).toContain("border-radius:var(--r-field)");
     expect(html).toContain("background:var(--field)");
     expect(html).toContain("border:1px solid var(--line)");
     expect(html).toContain("gap:7px");
@@ -185,11 +185,11 @@ describe("AuthField", () => {
     expect(phone).toContain("height: 44px");
   });
 
-  it("says one thing under the field it is about, in --cat-breakage, as the field's description (G15: not also live)", () => {
+  it("says one thing under the field it is about, in Danger, as the field's description (G15: not also live)", () => {
     const html = markup(field({ error: "Wrong email or password" }));
-    expect(html).toContain("color:var(--cat-breakage)");
+    expect(html).toContain("color:var(--danger-text)");
     expect(html).toContain("Wrong email or password");
-    expect(html).toContain("border:1px solid var(--cat-breakage)");
+    expect(html).toContain("border:1px solid var(--danger-text)");
 
     show(field({ error: "Wrong email or password" }));
     const input = screen.getByRole("textbox");
@@ -209,16 +209,16 @@ describe("AuthField", () => {
     expect(screen.getByRole("textbox").hasAttribute("aria-describedby")).toBe(false);
   });
 
-  it("shows a validation's message under the field: breakage when invalid, evidence when good", () => {
+  it("shows a validation's message under the field: Danger when invalid, Mint when good (Synth 13)", () => {
     const { rerender } = show(field({ validation: { state: "invalid", message: "Username must be at least 3 characters" } }));
     expect(screen.getByText("Username must be at least 3 characters").getAttribute("style")).toBeTruthy();
     expect(screen.getByRole("textbox").getAttribute("aria-invalid")).toBe("true");
-    expect(renderToStaticMarkup(inRouter(field({ validation: { state: "invalid", message: "Taken" } })))).toContain("color:var(--cat-breakage)");
+    expect(renderToStaticMarkup(inRouter(field({ validation: { state: "invalid", message: "Taken" } })))).toContain("color:var(--danger-text)");
 
     rerender(inRouter(field({ validation: { state: "valid", message: "Username available" } })));
     expect(screen.getByRole("textbox").getAttribute("aria-invalid")).toBe("false");
     expect(renderToStaticMarkup(inRouter(field({ validation: { state: "valid", message: "Username available" } })))).toContain(
-      "color:var(--evidence)",
+      "color:var(--brand-accent)",
     );
   });
 
@@ -335,18 +335,20 @@ describe("PrimaryAction", () => {
 });
 
 describe("LoginForm", () => {
-  it("is the providers, the rule, both fields, the remember row and the one primary, in the reference's order", () => {
+  it("is the line, both fields, the remember row, the main button, then or, the providers and the terms (Synth 13)", () => {
     show(<LoginForm {...login()} />);
     const inOrder = [
-      screen.getByRole("button", { name: "Continue with Google" }),
-      screen.getByRole("button", { name: "Continue with GitHub" }),
-      screen.getByRole("button", { name: "Continue with X" }),
-      screen.getByText("Or with email"),
+      screen.getByText("Sign in with your email address."),
       screen.getByLabelText("Email", { exact: true }),
       screen.getByLabelText("Password", { exact: true }),
       screen.getByRole("checkbox", { name: "Keep me signed in" }),
       screen.getByRole("link", { name: "Forgot password?" }),
       screen.getByRole("button", { name: "Sign in" }),
+      screen.getByText("or"),
+      screen.getByRole("button", { name: "Continue with Google" }),
+      screen.getByRole("button", { name: "Continue with GitHub" }),
+      screen.getByRole("link", { name: "Terms" }),
+      screen.getByRole("link", { name: "Privacy policy" }),
     ];
     for (let i = 1; i < inOrder.length; i++) {
       expect(
@@ -401,22 +403,21 @@ describe("LoginForm", () => {
     expect(onRememberMeChange).toHaveBeenCalledWith(false);
   });
 
-  it("offers Keep me signed in ticked as it is told, and Forgot password? in --action to /reset-password", () => {
+  it("offers Keep me signed in ticked as it is told, and Forgot password? underlined in Text 3 to /reset-password", () => {
     show(<LoginForm {...login({ rememberMe: true })} />);
     expect(screen.getByRole("checkbox", { name: "Keep me signed in" })).toBeChecked();
     const forgot = screen.getByRole("link", { name: "Forgot password?" });
     expect(forgot.getAttribute("href")).toBe("/reset-password");
-    // The dialog's green text link: Noon's #173014 (the room under test).
-    expect(renderToStaticMarkup(inRouter(<LoginForm {...login()} />))).toContain("color:#173014");
+    expect(forgot.getAttribute("style")).toContain("text-decoration: underline");
+    expect(renderToStaticMarkup(inRouter(<LoginForm {...login()} />))).toContain("font-size:13px;color:var(--label)");
   });
 
-  it("says Forgot? on a phone and still reads as Forgot password?", () => {
+  it("says Forgot password? on a phone too (Synth 13: one layout at every width)", () => {
     setViewport("phone");
     show(<LoginForm {...login()} />);
     const forgot = screen.getByRole("link", { name: "Forgot password?" });
     expect(forgot.getAttribute("href")).toBe("/reset-password");
-    // Visually "Forgot?", named as the whole sentence.
-    expect(forgot.textContent).toBe("Forgot?");
+    expect(forgot.textContent).toBe("Forgot password?");
   });
 
   it("puts the one error under the password, said as the password's description, and nowhere else", () => {
@@ -430,14 +431,13 @@ describe("LoginForm", () => {
     expect(screen.getAllByText("Wrong email or password")).toHaveLength(1);
   });
 
-  it("is a column of the card's own rhythm: 12px on a desktop and 10px on a phone", () => {
+  it("is the same column on a desktop and on a phone (Synth 13)", () => {
     const { container, unmount } = show(<LoginForm {...login()} />);
-    // The sign-in dialog: the form fills the column and spaces its rows itself (4, 8 and 16); a phone keeps 7.
-    expect(container.querySelector("form")!.getAttribute("style")).toContain("flex: 1 1 auto");
+    const desktop = container.querySelector("form")!.getAttribute("style");
     unmount();
     setViewport("phone");
     const phone = show(<LoginForm {...login()} />);
-    expect(phone.container.querySelector("form")!.getAttribute("style")).toContain("gap: 7px");
+    expect(phone.container.querySelector("form")!.getAttribute("style")).toBe(desktop);
   });
 });
 
@@ -508,9 +508,9 @@ describe("SignupForm", () => {
 
   it("disables Create account until the page says it can be sent, and says what it is doing", () => {
     const { rerender } = show(<SignupForm {...signup({ canSubmit: false })} />);
-    expect(screen.getByRole("button", { name: "Sign up" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Join free" })).toBeDisabled();
     rerender(inRouter(<SignupForm {...signup({ canSubmit: true })} />));
-    expect(screen.getByRole("button", { name: "Sign up" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Join free" })).toBeEnabled();
     rerender(inRouter(<SignupForm {...signup({ isSubmitting: true })} />));
     expect(screen.getByRole("button", { name: "Signing up…" })).toBeDisabled();
   });
@@ -525,7 +525,7 @@ describe("SignupForm", () => {
   it("has the same three providers as Sign in", () => {
     show(<SignupForm {...signup()} />);
     expect(screen.getAllByRole("button", { name: /^Continue with/ })).toHaveLength(3);
-    expect(screen.getByText("or with email")).toBeTruthy();
+    expect(screen.getByText("or")).toBeTruthy();
   });
 });
 

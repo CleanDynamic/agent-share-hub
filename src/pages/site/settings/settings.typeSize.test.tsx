@@ -2,6 +2,7 @@
 // the page's title (20 / 500) on a phone, where the section is a page of its own.
 
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 const phone = vi.hoisted(() => ({ on: false }));
@@ -13,19 +14,19 @@ vi.mock("@/components/shell/useMinWidth", async (importOriginal) => ({
 import { SectionPage } from "./SettingParts";
 
 describe("a settings section's title", () => {
-  it("is an h2 at 14 / 500 on a desktop", () => {
+  it("is the page's h1, visually hidden, on a desktop (Synth 13: the chosen row names it)", () => {
     phone.on = false;
-    render(<SectionPage title="Account">x</SectionPage>);
-    const heading = screen.getByRole("heading", { level: 2, name: "Account" });
-    expect(heading.style.fontSize).toBe("15px");
-    expect(heading.style.fontWeight).toBe("500");
+    render(<MemoryRouter><SectionPage title="Account">x</SectionPage></MemoryRouter>);
+    const heading = screen.getByRole("heading", { level: 1, name: "Account" });
+    expect(heading.className).toBe("sr-only");
   });
 
-  it("is the page's h1 at 20 / 500 on a phone", () => {
+  it("is the page's h1 at 20 / 600 on a phone, with a way back to the list", () => {
     phone.on = true;
-    render(<SectionPage title="Account">x</SectionPage>);
+    render(<MemoryRouter><SectionPage title="Account">x</SectionPage></MemoryRouter>);
     const heading = screen.getByRole("heading", { level: 1, name: "Account" });
     expect(heading.style.fontSize).toBe("20px");
-    expect(heading.style.fontWeight).toBe("500");
+    expect(heading.style.fontWeight).toBe("600");
+    expect(screen.getByRole("link", { name: "Back to settings" }).getAttribute("href")).toBe("/settings");
   });
 });
