@@ -229,3 +229,50 @@ describe("the title row's Add", () => {
     expect(props.onAddTool).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("a step tile's content, on the notepad's tone", () => {
+  it("leaves out what the tile's body draws and the reverse links, and keeps the window's order", async () => {
+    const { tileSectionsOf } = await import("./tileContent");
+    const section = (key: string) => ({ key, label: key, value: { type: "prose" as const, text: key } });
+    const sections = ["prompt", "response", "model", "uses", "goesInto", "settings", "variables"].map(section);
+    expect(tileSectionsOf("prompt", sections).map((s) => s.key)).toEqual(["model", "settings", "variables"]);
+    expect(tileSectionsOf("tool", ["tool", "connected", "did", "permissions", "plan", "usedBy"].map(section)).map((s) => s.key)).toEqual(["permissions", "plan"]);
+  });
+
+  it("draws every other section the window holds on the layer, under the tile's own body", async () => {
+    const { BuildList } = await import("./BuildList");
+    const { sandboxListProps } = await import("@/dev/fixtures/sandbox");
+    const { MemoryRouter } = await import("react-router-dom");
+    const props = sandboxListProps("bakery");
+    const first = props.steps[0];
+    const sectionsOf = (id: string) =>
+      id === first.id
+        ? [
+            { key: "prompt", label: "Prompt", value: { type: "prose" as const, text: first.text } },
+            { key: "settings", label: "Model settings", value: { type: "rows" as const, rows: [{ label: "Reasoning effort", value: "High" }] } },
+            { key: "goesInto", label: "Used by", value: { type: "prose" as const, text: "Prompt 2" } },
+          ]
+        : [];
+    render(
+      <MemoryRouter>
+        <BuildList {...props} sectionsOf={sectionsOf} />
+      </MemoryRouter>,
+    );
+    const tile = screen.getAllByTestId("step-card").find((card) => card.querySelector('[data-testid="prompt-tile-text"]'))!;
+    const layer = within(tile).getByTestId("tile-content");
+    // jsdom drops a var() colour from a rendered style: the layer's fill is read from its recipe.
+    const { CONTENT_WELL } = await import("./tileContent");
+    expect(CONTENT_WELL.background).toBe("var(--notepad)");
+    expect(layer).toBeTruthy();
+    // The prompt's words are on the layer, then the section the body does not draw; "Used by" is left to Details.
+    expect(within(layer).getByTestId("prompt-tile-text").textContent).toContain(first.text.slice(0, 20));
+    expect(within(layer).getAllByTestId("tile-section").map((el) => el.getAttribute("data-section"))).toEqual(["settings"]);
+    expect(within(layer).getByTestId("tile-row").textContent).toBe("Reasoning effortHigh");
+  });
+
+  it("draws no layer on a tile with nothing to show", async () => {
+    const { ContentWell } = await import("./tileContent");
+    const { container } = render(<ContentWell watch={1}><span /></ContentWell>);
+    expect(container.querySelector('[data-testid="tile-content"]')).toBeNull();
+  });
+});

@@ -559,7 +559,7 @@ function Prose({ value, changes, clamp, onReadAll }: { value: Extract<SectionVal
   );
 }
 
-function ValueView({ value, onSelect, clamp, onReadAll }: { value: SectionValue; onSelect?: (id: string) => void; clamp?: number; onReadAll?: () => void }) {
+export function ValueView({ value, onSelect, clamp, onReadAll }: { value: SectionValue; onSelect?: (id: string) => void; clamp?: number; onReadAll?: () => void }) {
   switch (value.type) {
     case "prose":
       return <Prose value={value} clamp={clamp} onReadAll={onReadAll} />;

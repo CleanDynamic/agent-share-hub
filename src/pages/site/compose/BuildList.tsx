@@ -71,6 +71,8 @@ import { MemberLabel } from "./groupLabels";
 import { REF_KIND } from "@/lib/build/postRefs";
 import { borderFor, outlineFor } from "@/lib/theme/partColour";
 import { SELECT_RING } from "@/lib/theme/refinedControl";
+import type { ReadSection } from "@/lib/build/tileSections";
+import { ContentWell, TileSections, tileSectionsOf } from "./tileContent";
 import { refTo } from "@/lib/build/thread";
 import { Glyph } from "@/components/brand/Glyph";
 import { MenuButton } from "@/components/brand/MenuButton";
@@ -214,6 +216,8 @@ export interface BuildListProps {
   onEditTile?: (id: string) => void;
   /** Synth 09: a tile's titled text box was pressed: open that box in the notepad over the tile's window. */
   onOpenBox?: (id: string, field: string) => void;
+  /** Synth 09: what a tile's window holds, section by section (as Details reads it), for the tile's content layer. */
+  sectionsOf?: (id: string) => readonly ReadSection[] | null;
   onRename: (id: string, title: string) => void;
   onMove: (id: string, direction: -1 | 1) => Promise<unknown> | void;
   onRemove: (id: string) => void;
@@ -370,6 +374,8 @@ export function useClamped<T extends HTMLElement>(text: string) {
 
 export const clamp3: CSSProperties = { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" };
 export const clamp2: CSSProperties = PREVIEW;
+/** Synth 09: a prompt on its tile's content layer: six lines, then an ellipsis (Read all, in the tile's menu, has the rest). */
+const clampPrompt: CSSProperties = { ...PREVIEW, WebkitLineClamp: 6 };
 
 /** CA-20 P3: the tile is chosen with others, and is drawn as selected is. */
 const usePicked = (id: string): boolean => Boolean(useBuildSelectionContext()?.tiles.has(id));
@@ -454,6 +460,8 @@ interface ListRefs {
   /** CA-21 P3: the tile (or session or part) held right now: its own element stays in the layout, hidden, as its place. */
   hidden?: string | null;
   onOpenBox?: BuildListProps["onOpenBox"];
+  sectionsOf?: BuildListProps["sectionsOf"];
+  onSelect?: (id: string) => void;
 }
 
 /** CA-21 P1: a tile's Move up and Move down are greyed by its place in the build, not by its number among prompts. */
@@ -758,16 +766,18 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
       <span style={{ ...text(textStep.body, 500, step.title ? t.text : t.text2), overflowWrap: "anywhere" }}>
         {[kind === "Prompt" ? null : kind, step.title ?? (kind === "Prompt" ? stepTitle(step) : named ?? (step.kind === "file" ? step.filename : null))].filter(Boolean).join(" · ")}
       </span>
-      {step.kind === "code" ? (
-        <>
-          <CodePartLine step={step} />
-          <div data-no-drag="" style={{ display: "contents" }}>
-            <CodeLines text={step.text} compact testId="code-lines" label={`${kind} text`} />
-          </div>
-        </>
-      ) : step.text ? (
-        <p style={{ ...text(textStep.body, 400, t.text), lineHeight: "23px", margin: 0, overflowWrap: "anywhere", ...clamp2 }}>{step.text}</p>
-      ) : null}
+      <StepContent step={step} inset>
+        {step.kind === "code" ? (
+          <>
+            <CodePartLine step={step} />
+            <div data-no-drag="" style={{ display: "contents" }}>
+              <CodeLines text={step.text} compact testId="code-lines" label={`${kind} text`} />
+            </div>
+          </>
+        ) : step.text ? (
+          <p style={{ ...text(textStep.body, 400, t.text), lineHeight: "23px", margin: 0, overflowWrap: "anywhere", ...clampPrompt }}>{step.text}</p>
+        ) : null}
+      </StepContent>
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} indent={0} />
       <span>
@@ -1101,6 +1111,31 @@ function TileMenu({ step, noun, index, last, props, rename }: { step: Step; noun
   );
 }
 
+/** Synth 09: a tile's content on the notepad's tone: its own body, then every other section its window holds. */
+function StepContent({ step, inset = false, children }: { step: Step; inset?: boolean; children?: ReactNode }) {
+  const { sectionsOf, onSelect } = useContext(ListRefsContext);
+  const sections = tileSectionsOf(step.kind, sectionsOf?.(step.id) ?? []);
+  return (
+    <ContentWell inset={inset} watch={step}>
+      {children}
+      <TileSections sections={sections} onSelect={onSelect} indent={inset ? 0 : undefined} />
+    </ContentWell>
+  );
+}
+
+/** Synth 09: a result's content layer: its own body and the rest of its window (its summary is its title, so it is not said again). */
+function ResultContent({ id, children }: { id: string; children: ReactNode }) {
+  const { sectionsOf, onSelect } = useContext(ListRefsContext);
+  const read = sectionsOf?.(id) ?? null;
+  const sections = (read ?? []).filter((section) => section.key !== "summary" && section.key !== "outputType" && section.key !== "url");
+  return (
+    <ContentWell inset watch={read ?? children}>
+      {children}
+      <TileSections sections={sections} onSelect={onSelect} indent={0} />
+    </ContentWell>
+  );
+}
+
 /**
  * Synth 09: the tile's titled text boxes, one row each under its title: Raised, radius 8, padded 6 10, the title 13/500 and
  * the Expand glyph at the right. Pressing one opens that box in the notepad over the tile's window. Untitled boxes do not show.
@@ -1379,16 +1414,20 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
           {[step.origin ? originLine(step.origin) : null, step.asksFor ? ASKS_FOR_LABEL[step.asksFor] : null].filter(Boolean).join(" · ")}
         </p>
       ) : null}
-      <p
-        ref={textRef}
-        style={{ ...text(textStep.body, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }}
-      >
-        {/* F19: plain words; a prompt with marked changes keeps its text as written, so the marks stay on their words. */}
-        <ChangedText text={step.changes?.length ? step.text : plainPreview(step.text)} changes={step.changes} />
-      </p>
-      {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} lean /> : null}
-      {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
-      <TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />
+      {/* Synth 09: the prompt itself, on the notepad's layer, with everything else its window holds. */}
+      <StepContent step={step}>
+        <p
+          ref={textRef}
+          data-testid="prompt-tile-text"
+          style={{ ...text(textStep.body, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clampPrompt }}
+        >
+          {/* F19: plain words; a prompt with marked changes keeps its text as written, so the marks stay on their words. */}
+          <ChangedText text={step.changes?.length ? step.text : plainPreview(step.text)} changes={step.changes} />
+        </p>
+        {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} lean /> : null}
+        {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
+        <TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />
+      </StepContent>
       <MadeLine names={props.madeNames?.[step.id]} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
@@ -1613,6 +1652,7 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
         title={<TileTitle step={step} rename={rename} noun={noun} phone={phone} />}
         menu={<TileMenu step={step} noun={noun} index={index} last={last} props={props} rename={rename} />}
       />
+      <StepContent step={step}>
       {isTeam ? (
         <>
           <TeamAgents team={step} />
@@ -1643,6 +1683,7 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
       {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
       <TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />
       {isTeam ? null : <OutsideWarning names={outsideOf(step, props.names)} style={{ marginLeft: INDENT }} />}
+      </StepContent>
       {shown ? (
       <div data-testid="container-inside" style={{ marginLeft: INDENT, paddingLeft: 16, borderLeft: `1px solid ${t.hairlineModule}`, display: "flex", flexDirection: "column", gap: 8 }}>
         {step.children.map((child, index) => {
@@ -1770,8 +1811,10 @@ function PlainCard({ step, index, last, props, noun, body, after, link, typeLine
         title={<TileTitle step={step} rename={rename} noun={noun} phone={phone} />}
         menu={<TileMenu step={step} noun={noun} index={index} last={last} props={props} rename={rename} />}
       />
-      {body(INDENT)}
-      {after}
+      <StepContent step={step}>
+        {body(INDENT)}
+        {after}
+      </StepContent>
       <MadeLine names={props.madeNames?.[step.id]} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
@@ -1913,14 +1956,16 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
         title={<TileTitle step={step} rename={rename} noun="Code" phone={phone} />}
         menu={<TileMenu step={step} noun="Code" index={index} last={last} props={props} rename={rename} />}
       />
-      <div style={{ paddingLeft: INDENT, minWidth: 0 }}>
-        <CodePartLine step={step} />
-        <div data-no-drag="" style={{ display: "contents" }}>
-          <SmallCodeWell text={step.text} lines={all ? Number.POSITIVE_INFINITY : CODE_TILE_LINES} label={`Code ${step.number}`} />
+      <StepContent step={step}>
+        <div style={{ paddingLeft: INDENT, minWidth: 0 }}>
+          <CodePartLine step={step} />
+          <div data-no-drag="" style={{ display: "contents" }}>
+            <SmallCodeWell text={step.text} lines={all ? Number.POSITIVE_INFINITY : CODE_TILE_LINES} label={`Code ${step.number}`} />
+          </div>
         </div>
-      </div>
-      <LinkLines lines={[...callsOf(step.id, props.steps), ...definesOf(step.id, props.steps)]} onOpen={props.onSelect} indent={INDENT} />
-      <TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />
+        <LinkLines lines={[...callsOf(step.id, props.steps), ...definesOf(step.id, props.steps)]} onOpen={props.onSelect} indent={INDENT} />
+        <TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />
+      </StepContent>
       <MadeLine names={props.madeNames?.[step.id]} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
@@ -1986,6 +2031,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
         title={<TileTitle step={step} rename={rename} noun="Check" phone={phone} />}
         menu={<TileMenu step={step} noun="Check" index={index} last={last} props={props} rename={rename} />}
       />
+      <StepContent step={step}>
       {criteria ? (
         <p data-testid="check-criteria" style={{ ...text(textStep.body, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }}>
           <span style={{ ...text(textStep.meta, 400, t.text2) }}>Pass criteria: </span>
@@ -2002,6 +2048,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
           <span style={tnum}>{history}</span>
         </DotLine>
       ) : null}
+      </StepContent>
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
       <TileFoot step={step} props={props} link={openLink(step, "Check", props)} />
@@ -2064,7 +2111,10 @@ function ResultCard({ result, selected, ringed = false, onSelect, onEdit }: { re
         <span title={result.title} style={{ ...text(textStep.body, 500, t.text), ...ellipsis }}>
           {result.title}
         </span>
-        <ResultTileBody facts={result.facts} />
+        {/* Synth 09: a result's content on the notepad's layer, with everything else its window holds. */}
+        <ResultContent id={result.id}>
+          <ResultTileBody facts={result.facts} />
+        </ResultContent>
         {/* UX-02 P5: a result has no menu: its one link opens its window, where it is read and changed. */}
         <TileFooter
           facts={[resultHolds(result.facts) ? result.holds : null, result.from ? `from prompt ${result.from}` : null]}
@@ -2805,6 +2855,8 @@ export function BuildList(raw: BuildListProps) {
   }
   const refs: ListRefs = {
     onOpenBox: props.onOpenBox,
+    sectionsOf: props.sectionsOf,
+    onSelect: props.onSelect,
     mentioned: props.mentioned ?? NO_MENTIONS,
     onBack: props.onBackToPost,
     reveal: props.reveal ?? null,

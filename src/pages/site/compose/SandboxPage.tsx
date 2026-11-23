@@ -136,6 +136,7 @@ import type { ClashWindow as ClashWindowImpl } from "./ClashWindow";
 import { useTwoTabs, type ClashDescription } from "./useTwoTabs";
 import { useReferences } from "./useReferences";
 import { BoxTitleSinkContext } from "./modalRecipes";
+import { readSections, type ReadSection } from "@/lib/build/tileSections";
 import { BuildHistoryContext, useBuildHistory } from "./useBuildHistory";
 import { rowOf } from "./useComposeNodes";
 import { ComposeDnd } from "./ComposeDnd";
@@ -1328,6 +1329,18 @@ function SandboxPageBody() {
   }, [editId, editBox, steps, prompts]);
   /** CA-18: how Details names the other tiles a section points at. */
   const buildFacts = useMemo(() => buildFactsOf({ steps, groups, names: listFacts.names, results: listFacts.results }), [steps, groups, listFacts.names, listFacts.results]);
+  /* Synth 09: what each tile's window holds, section by section, as Details reads it: drawn on the tile's content layer. Read
+     when a tile is drawn, and kept until the build changes. */
+  const sectionsOf = useMemo(() => {
+    const cache = new Map<string, readonly ReadSection[] | null>();
+    return (id: string): readonly ReadSection[] | null => {
+      if (cache.has(id)) return cache.get(id) ?? null;
+      const view = resolveView({ selectedId: id, steps, groups, tree, sources: sourceSessionRows, sourceFiles: sourceFileRows, promptsState: sessions.promptsState, intoResult: listFacts.intoResult, media: mediaFacts });
+      const read = view && view.kind !== "session" ? readSections(view, buildFacts).sections : null;
+      cache.set(id, read);
+      return read;
+    };
+  }, [steps, groups, tree, sourceSessionRows, sourceFileRows, sessions.promptsState, listFacts.intoResult, mediaFacts, buildFacts]);
   /** CA-18: a prompt as Details reads it, for the prompt window's Model, Uses and Makes. */
   const promptDetails = useCallback(
     (id: string) => {
@@ -2930,6 +2943,7 @@ function SandboxPageBody() {
             onOpenPrompt={openPrompt}
             onEditTile={openTile}
             onOpenBox={openBox}
+            sectionsOf={sectionsOf}
             onRename={prompts.rename}
             onMove={stepOf.move}
             onRemove={actions.removeTile}
