@@ -109,7 +109,7 @@ export function ClassificationSection({ classification, maker }: { classificatio
   const perColumn = phone ? rows.length : Math.ceil(rows.length / 2);
   return (
     <section aria-label="Classification" data-testid="build-classification" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
-      <SectionHead headingLevel={2} title="Classification" meta={`${withValues.length} ${withValues.length === 1 ? "fact" : "facts"} about this build`} />
+      <SectionHead headingLevel={2} title={`${withValues.length} ${withValues.length === 1 ? "fact" : "facts"}`} />
       <div
         style={{
           ...moduleBox,

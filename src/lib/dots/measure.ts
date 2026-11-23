@@ -94,6 +94,7 @@ export function measureLayout(root: HTMLElement): Shape[] {
       if (node.nodeType !== 3 || !(node.textContent ?? "").trim() || typeof document.createRange !== "function") continue;
       const range = document.createRange();
       range.selectNodeContents(node);
+      if (typeof range.getClientRects !== "function") continue;
       const rects = Array.from(range.getClientRects()).map((r) => relative(r, host));
       lines.push(...linesOf(rects));
     }

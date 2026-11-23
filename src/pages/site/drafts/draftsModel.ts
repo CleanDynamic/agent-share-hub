@@ -121,12 +121,12 @@ export const DRAFTS_SHOWN = 12;
 
 /** The first line under Continue editing: "28 drafts · latest first". */
 export function draftsMeta(count: number): string {
-  return `${count} ${count === 1 ? "draft" : "drafts"} · latest first`;
+  return `${count} ${count === 1 ? "draft" : "drafts"}`;
 }
 
 /** The first line under Sessions: "8 imported · drag one into a draft" (no drag on touch). */
-export function sessionsMeta(count: number, canDrag: boolean): string {
-  return `${count} imported${canDrag ? " · drag one into a draft" : ""}`;
+export function sessionsMeta(count: number, _canDrag?: boolean): string {
+  return `${count} ${count === 1 ? "session" : "sessions"}`;
 }
 
 export interface ConnectedTool {

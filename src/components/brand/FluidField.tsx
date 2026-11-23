@@ -52,6 +52,9 @@ interface Drawn {
   tail?: boolean;
 }
 
+/** A thin, wide placeholder is a line of text: a bar. Anything else is a solid block unless it says otherwise. */
+const kindOf = (kind: ShapeKind | undefined, width: number, height: number): ShapeKind | undefined => kind ?? (height <= 20 && width >= height * 3 ? "bar" : undefined);
+
 function useShape(el: RefObject<HTMLElement | null>, region: FluidRegion | null, own: boolean, drawn: Drawn = {}) {
   const { kind, rows, tail } = drawn;
   useLayoutEffect(() => {
@@ -61,7 +64,7 @@ function useShape(el: RefObject<HTMLElement | null>, region: FluidRegion | null,
     const measure = () => {
       const box = node.getBoundingClientRect();
       if (own) {
-        region.setShape(key, { x: 0, y: 0, width: node.clientWidth || box.width, height: node.clientHeight || box.height, radius: radiusOf(node, box.width, box.height), kind, rows, tail });
+        region.setShape(key, { x: 0, y: 0, width: node.clientWidth || box.width, height: node.clientHeight || box.height, radius: radiusOf(node, box.width, box.height), kind: kindOf(kind, node.clientWidth || box.width, node.clientHeight || box.height), rows, tail });
         return;
       }
       const host = region.host.getBoundingClientRect();
@@ -71,7 +74,7 @@ function useShape(el: RefObject<HTMLElement | null>, region: FluidRegion | null,
         width: box.width,
         height: box.height,
         radius: radiusOf(node, box.width, box.height),
-        kind,
+        kind: kindOf(kind, box.width, box.height),
         rows,
         tail,
       });

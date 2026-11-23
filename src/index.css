@@ -1189,7 +1189,7 @@ input[type="search"] { border-radius: var(--r-control); }
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: rgba(4, 5, 4, 0.55);
+  background: var(--sheet-dim);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--motion-fast) var(--motion-ease);

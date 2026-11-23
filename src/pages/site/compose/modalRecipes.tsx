@@ -677,7 +677,7 @@ function Segment<V extends string>({ item, current, tabStop, phone, onPick }: { 
         whiteSpace: "nowrap",
         ...type(textStep.meta, 400, state.hovered ? t.text : t.text2),
         cursor: item.disabled ? "default" : "pointer",
-        ...(current ? { background: t.controlOn, borderColor: t.segOnBorder, color: t.text, boxShadow: "inset 0 1px 0 rgba(255,255,255,.04)" } : null),
+        ...(current ? { background: t.controlOn, borderColor: t.segOnBorder, color: t.text, boxShadow: "none" } : null),
         ...(item.disabled ? { filter: t.dimFilter } : null),
         ...ring(state.focusVisible),
       }}

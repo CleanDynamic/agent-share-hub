@@ -231,7 +231,7 @@ export function DraftsLoadingView() {
     <DraftsLayout
       onConnect={connector.open}
       continueSection={
-        <ListSection label="Continue editing" head={<SectionHead title="Continue editing" meta={"\u00a0"} headingLevel={2} />}>
+        <ListSection label="Continue editing" head={<SectionHead title="Continue editing" headingLevel={2} />}>
           <StartRow phone={phone} onDropSession={noDrop} />
           <div style={{ marginTop: 8 }}>
             <RowSkeletons count={DRAFT_SKELETON_ROWS} what="your drafts" />
@@ -243,7 +243,7 @@ export function DraftsLoadingView() {
           label="Sessions"
           head={
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-              <SectionHead title="Sessions" meta={"\u00a0"} headingLevel={2} />
+              <SectionHead title="Sessions" headingLevel={2} />
               {phone ? null : <TextButton onClick={connector.open}>How they get here</TextButton>}
             </div>
           }

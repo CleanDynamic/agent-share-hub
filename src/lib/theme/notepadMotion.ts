@@ -34,5 +34,5 @@ export async function notepadOut(notepad: HTMLElement, expand: HTMLElement | nul
   expand?.focus();
 }
 
-/** The dim over the modal under the notepad: `rgba(4,5,4,.55)` on the modal's own `::after` (see `[data-notepad-dim]`). */
+/** The dim over the modal under the notepad: `--sheet-dim` on the modal's own `::after` (see `[data-notepad-dim]`). */
 export const NOTEPAD_DIM_ATTRIBUTE = "data-notepad-dim";

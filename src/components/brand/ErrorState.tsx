@@ -26,7 +26,7 @@
 // THE FAILURE STAYS INSIDE THE PANEL THAT FAILED. The page's header, breadcrumb
 // and footer render around it, and so does every panel that did load: one
 // failing panel never blanks the page. Where a write fails after the screen has
-// already shown its result (reproduce, me too, mark read), this is the line the
+// already shown its result (follow, save, mark read), this is the line the
 // panel falls back to, with `line` saying "That didn't save." instead.
 //
 // On a phone the button is 44 tall, the touch floor. The region is an alert, so

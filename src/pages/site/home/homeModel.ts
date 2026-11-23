@@ -166,6 +166,9 @@ export const STILL_OPEN_SHOWN = 3;
 export const STILL_OPEN_META = { spaces: "In your spaces", everyone: "Across OpenBuilds" } as const;
 export type StillOpenScope = keyof typeof STILL_OPEN_META;
 
+/** Synth 06: the heading is the fact: "3 open in your spaces", "3 open on OpenBuilds". */
+export const STILL_OPEN_PHRASE = { spaces: "open in your spaces", everyone: "open on OpenBuilds" } as const;
+
 /** UX-03 P6: the maker's published builds, for the room when nothing else in it has anything to show. */
 export interface HomePublished {
   /** Every build the maker has published, counted in full. */
