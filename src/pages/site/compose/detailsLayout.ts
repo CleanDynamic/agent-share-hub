@@ -51,8 +51,11 @@ export const DETAILS_MAX = 340;
 /** The window widths the panels change at. */
 export const THREE_PANELS_FROM = 1101;
 export const SOURCES_COLUMN_FROM = 1024;
-/** Details' panel pads its content this far in (its content is 340 less twice this). */
+/** Details' panel pads its content this far in (its content is 340 less twice this). Every editor panel pads the same. */
 export const DETAILS_PAD = 16;
+/** The List's gutter inside the Build panel, at its left: with the panel's 16 it is the 40 a drag's rail and its place numbers
+    need (`RAIL_ROOM_ITEMS` in sortLayout), so they stand inside the Build panel and never in the gap or over Sources. */
+export const LIST_GUTTER = 40 - DETAILS_PAD;
 /** F70: the space every section takes above its heading: 24, a 1px rule, 24. */
 export const SEPARATION = 49;
 /** A section's label, its count and the 10 under them. */

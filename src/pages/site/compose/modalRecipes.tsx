@@ -76,6 +76,31 @@ import { TEXT_LINK_BOX } from "./tileRecipes";
 /** Synth 06: every window is 440 wide; a confirmation 420 and the shortcuts 460. */
 export const MODAL_WIDTH = { standard: 440, wide: 440, confirm: 420, shortcuts: 460 } as const;
 
+/* ── where a window stands (Synth 09) ──
+   Every editor window on a computer stands in one place: its top edge pinned 48 from the top of the window (so opening an
+   optional row grows it downward and nothing above moves), centred across, 440 wide at most `100vw - 32`, and at most the
+   window's height less 48 above and below; its body scrolls inside. Below 768 every one is a bottom sheet instead.
+
+   One ladder of layers, so a window opened over another, a menu opened inside one, and the notepad over any of them always
+   land in the right order (each scrim is its window's layer less one). */
+export const WINDOW_TOP = 48;
+export { LAYER } from "./layers";
+import { LAYER } from "./layers";
+
+/** A window's placement and frame on a computer, at its layer. */
+export const windowPlacement = (width: number, layer: number = LAYER.window): CSSProperties => ({
+  position: "fixed",
+  top: WINDOW_TOP,
+  left: "50%",
+  transform: "translateX(-50%)",
+  zIndex: layer,
+  ...frameStyle(width),
+  maxHeight: `calc(100dvh - ${2 * WINDOW_TOP}px)`,
+});
+
+/** The scrim under a window at `layer`. */
+export const scrimAt = (layer: number = LAYER.window): CSSProperties => ({ position: "fixed", inset: 0, background: t.scrim, zIndex: layer - 1 });
+
 /** The side padding every row, block and optional row carries inside a modal. */
 export const MODAL_PAD = 20;
 
@@ -483,6 +508,8 @@ export interface BoxTitleSink {
   seed?: Readonly<Record<string, string>>;
   commit?: (titles: Record<string, string>) => void;
   expand?: string | null;
+  /** A window that saves as it goes (the prompt window): a box's title, written when its title field is left or the notepad is Done. */
+  onTitle?: (name: string, title: string) => void;
 }
 export const BoxTitleSinkContext = createContext<BoxTitleSink>({});
 
@@ -555,6 +582,9 @@ export function FieldArea({ phone, rows, mono = false, onFocus, onBlur, title, o
           aria-label={name ? `${name} title` : undefined}
           value={shownTitle}
           onChange={(event) => setTitle(event.target.value)}
+          onBlur={() => {
+            if (!collector) sink.onTitle?.(nameOf(box.current), shownTitle);
+          }}
           style={{ ...fieldStyle(phone, { height: phone ? size.touch : 32, fontSize: phone ? 16 : 13 }), outline: "none" }}
         />
       </div>
@@ -597,7 +627,14 @@ export function FieldArea({ phone, rows, mono = false, onFocus, onBlur, title, o
         onDone={(next) => {
           if (box.current) writeBack(box.current, next);
           /* From the tile's row: the window saves once the field has taken the text. */
-          if (fromTile) window.setTimeout(() => collector?.submit(), 0);
+          if (fromTile && collector) window.setTimeout(() => collector.submit(), 0);
+          /* A window that saves as it goes saves a box when it is left: leave it once the text is in, and write its title. */
+          if (!collector) {
+            const node = box.current;
+            /* `focusout` is what React's onBlur listens to; the notepad's focus trap is still up, so the box is not focused itself. */
+            window.setTimeout(() => node?.dispatchEvent(new FocusEvent("focusout", { bubbles: true })), 0);
+            sink.onTitle?.(nameOf(node), shownTitle);
+          }
         }}
         returnFocusTo={expand}
       />

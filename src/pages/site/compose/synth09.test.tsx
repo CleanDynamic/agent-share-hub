@@ -9,7 +9,11 @@ import { BOX_TITLE_MAX, boxTitlesOf, withBoxTitles } from "@/lib/build/graph";
 import { borderFor } from "@/lib/theme/partColour";
 import { SELECT_RING } from "@/lib/theme/refinedControl";
 
-import { ModalForm } from "./ModalFrame";
+import { ModalForm, ModalShell } from "./ModalFrame";
+import { OpenRequestDialog } from "./OpenRequestDialog";
+import { ConfirmDialog } from "./referencePieces";
+import { LAYER } from "./layers";
+import { WINDOW_TOP } from "./modalRecipes";
 import { BoxTitleSinkContext, ChoiceCards, FieldArea, SegmentedField } from "./modalRecipes";
 import { BoxRow, NumberBadge, tileStyle } from "./tileRecipes";
 
@@ -131,5 +135,97 @@ describe("modal pieces", () => {
       </ModalForm>,
     );
     expect(screen.getByTestId("modal-status")).toHaveTextContent("Required: an application");
+  });
+});
+
+describe("where every editor window stands", () => {
+  const placed = (el: HTMLElement) => el.getAttribute("style") ?? "";
+
+  it("puts a tile's window, Mark still open and a confirmation in one place, 440 wide, each on its layer", () => {
+    render(
+      <ModalShell open onOpenChange={() => undefined} title="Add a tool" subtitle="External app the model used" testId="tile-window">
+        <span />
+      </ModalShell>,
+    );
+    render(<OpenRequestDialog open title="Still open: Session 2" onClose={() => undefined} onSubmit={() => undefined} />);
+    render(<ConfirmDialog open title="Clear all colours and links?" body="Removes them." action="Clear all" onConfirm={() => undefined} onCancel={() => undefined} testId="confirm-window" />);
+    const windows: [string, number][] = [["tile-window", LAYER.window], ["open-request-dialog", LAYER.window], ["confirm-window", LAYER.confirm]];
+    for (const [id, layer] of windows) {
+      const style = placed(screen.getByTestId(id));
+      expect(style, id).toContain(`top: ${WINDOW_TOP}px`);
+      expect(style, id).toContain("transform: translateX(-50%)");
+      expect(style, id).toContain("width: 440px");
+      expect(style, id).toContain(`max-height: calc(100dvh - ${2 * WINDOW_TOP}px)`);
+      expect(style, id).toContain(`z-index: ${layer}`);
+    }
+  });
+
+  it("orders the layers: windows, the prompt window, confirmations, menus, the notepad, the notice", () => {
+    const order = [LAYER.window, LAYER.promptWindow, LAYER.confirm, LAYER.floating, LAYER.floatingOver, LAYER.notepad, LAYER.notice];
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+  });
+
+  it("says nothing is missing until Mark still open is pressed empty, then says what to write", () => {
+    const onSubmit = vi.fn();
+    render(<OpenRequestDialog open title="Still open: Session 2" onClose={() => undefined} onSubmit={onSubmit} />);
+    fireEvent.click(screen.getByRole("button", { name: "Mark still open" }));
+    expect(screen.getByRole("alert").textContent).toBe("Say what's missing.");
+    expect(onSubmit).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByRole("textbox", { name: "What's missing" }), { target: { value: "  Deploy the worker " } });
+    fireEvent.click(screen.getByRole("button", { name: "Mark still open" }));
+    expect(onSubmit).toHaveBeenCalledWith("Deploy the worker");
+  });
+});
+
+describe("the status line's ready count and live titles", () => {
+  it("says how many required items are done", async () => {
+    const { readyLine } = await import("@/lib/build/publishChecklist");
+    expect(readyLine({ required: [{}, {}, {}, {}] as never, openRequired: 2 })).toBe("2 of 4 ready to publish");
+    expect(readyLine({ required: [], openRequired: 0 })).toBeNull();
+  });
+
+  it("in a window that saves as it goes, writes a box's title when its title field is left", () => {
+    const onTitle = vi.fn();
+    render(
+      <BoxTitleSinkContext.Provider value={{ onTitle, seed: { Response: "Draft" } }}>
+        <FieldArea phone={false} rows={3} aria-label="Response" defaultValue="Hello" />
+      </BoxTitleSinkContext.Provider>,
+    );
+    const title = screen.getByRole("textbox", { name: "Response title" });
+    expect(title).toHaveValue("Draft");
+    fireEvent.change(title, { target: { value: "Final" } });
+    fireEvent.blur(title);
+    expect(onTitle).toHaveBeenCalledWith("Response", "Final");
+  });
+
+  it("there, Done in the notepad leaves the box so its own save runs", async () => {
+    const onBlur = vi.fn();
+    render(
+      <BoxTitleSinkContext.Provider value={{ expand: "Response" }}>
+        <FieldArea phone={false} rows={3} aria-label="Response" defaultValue="Hello" onBlur={onBlur} />
+      </BoxTitleSinkContext.Provider>,
+    );
+    const pad = await screen.findByTestId("notepad");
+    await act(async () => {
+      fireEvent.click(within(pad).getByRole("button", { name: "Done" }));
+    });
+    await waitFor(() => expect(onBlur).toHaveBeenCalled());
+  });
+});
+
+describe("the title row's Add", () => {
+  it("is a secondary Add with a chevron that opens the same menu as a session's Add step, and adds to the current session", async () => {
+    const { AddMenu } = await import("./SandboxView");
+    const { everyEntry } = await import("./addMenuTestSupport");
+    const props = everyEntry();
+    render(<AddMenu phone={false} variant="title" {...props} />);
+    const add = screen.getByTestId("title-add");
+    expect(add.textContent).toBe("Add");
+    expect(screen.queryByTestId("add-to-session")).toBeNull();
+    expect(screen.queryByTestId("sandbox-add")).toBeNull();
+    fireEvent.keyDown(add, { key: "Enter" });
+    const menu = screen.getByRole("menu");
+    fireEvent.click(within(menu).getByRole("menuitem", { name: /^Tool/ }));
+    expect(props.onAddTool).toHaveBeenCalledTimes(1);
   });
 });

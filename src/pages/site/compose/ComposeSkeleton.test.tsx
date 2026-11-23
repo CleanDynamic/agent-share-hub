@@ -7,9 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { __resetMotionMediaCache } from "@/lib/theme/motion";
 
 import { ComposeArrival, ComposeSkeleton } from "./ComposeSkeleton";
-import { ORIGIN, frameOf, innerWidthOf } from "./detailsLayout";
-import { COMPOSER_PAD } from "./detailsRecipes";
-import { COUNTS_WIDTH, DETAILS_WIDTHS, SOURCES_WIDTHS, TILES, TILE_INSET, resetFirstShow } from "./loadingBlocks";
+import { LIST_GUTTER, ORIGIN, frameOf, innerWidthOf } from "./detailsLayout";
+import { COUNTS_WIDTH, DETAILS_WIDTHS, PANEL_PAD, SOURCES_WIDTHS, TILES, TILE_INSET, resetFirstShow } from "./loadingBlocks";
 
 function stage(width: number, phone = false, reduced = false) {
   Object.defineProperty(window, "innerWidth", { configurable: true, writable: true, value: width });
@@ -33,8 +32,8 @@ afterEach(() => {
 const px = (value: string) => Number.parseFloat(value);
 const widthsIn = (testId: string) => within(screen.getByTestId(testId)).getAllByTestId("loading-blocks").map((block) => px((block as HTMLElement).style.width));
 
-describe.each([900, 1280, 1440, 1920])("the skeleton at %i", (width) => {
-  it("stands each column where frameOf puts it", () => {
+describe.each([1024, 1100, 1280, 1440, 1920])("the skeleton at %i", (width) => {
+  it("stands each panel where frameOf puts it (Synth 09)", () => {
     stage(width);
     render(<ComposeSkeleton />);
     const frame = frameOf(innerWidthOf(width));
@@ -42,15 +41,16 @@ describe.each([900, 1280, 1440, 1920])("the skeleton at %i", (width) => {
     const build = screen.getByTestId("skeleton-build");
     expect(px(sources.style.left)).toBe(frame.sourcesLeft - ORIGIN);
     expect(px(sources.style.width)).toBe(frame.sources);
-    expect(px(build.style.marginLeft)).toBe(frame.buildLeft - ORIGIN - COMPOSER_PAD);
+    expect(px(build.style.marginLeft)).toBe(frame.buildLeft - ORIGIN);
     expect(px(build.style.width)).toBe(frame.build);
-    // The columns box is padded as the real one is, so these offsets are from the same origin.
-    expect(screen.getByTestId("skeleton-columns").style.padding).toBe(`32px ${COMPOSER_PAD}px 0px`);
+    // The panels start 8 under the title row's panel, as the real ones do, and pad their content 16 in.
+    expect(screen.getByTestId("skeleton-columns").style.padding).toBe("8px 0px 0px");
+    expect(build.style.padding).toBe(`${PANEL_PAD}px`);
     if (frame.beside) {
       const details = screen.getByTestId("skeleton-details");
       expect(px(details.style.left)).toBe(frame.detailsLeft - ORIGIN);
       expect(px(details.style.width)).toBe(frame.detailsWidth);
-      expect(widthsIn("skeleton-details")).toEqual(DETAILS_WIDTHS.map((w) => Math.min(w, frame.detailsWidth)));
+      expect(widthsIn("skeleton-details")).toEqual(DETAILS_WIDTHS.map((w) => Math.min(w, frame.detailsWidth - 2 * PANEL_PAD)));
     } else {
       expect(screen.queryByTestId("skeleton-details")).toBeNull();
     }
@@ -60,14 +60,14 @@ describe.each([900, 1280, 1440, 1920])("the skeleton at %i", (width) => {
     stage(width);
     render(<ComposeSkeleton />);
     const frame = frameOf(innerWidthOf(width));
-    expect(widthsIn("skeleton-sources")).toEqual(SOURCES_WIDTHS.map((w) => Math.min(w, frame.sources)));
+    expect(widthsIn("skeleton-sources")).toEqual(SOURCES_WIDTHS.map((w) => Math.min(w, frame.sources - 2 * PANEL_PAD)));
     const build = within(screen.getByTestId("skeleton-build")).getAllByTestId("loading-blocks") as HTMLElement[];
     // The post (3 rows at the post's width), the counts line, then five tiles of 3 rows at the tile width.
     expect(build).toHaveLength(2 + TILES);
-    expect([build[0].getAttribute("data-rows"), px(build[0].style.width)]).toEqual(["3", frame.build]);
+    expect([build[0].getAttribute("data-rows"), px(build[0].style.width)]).toEqual(["3", frame.build - 2 * PANEL_PAD]);
     expect([build[1].getAttribute("data-rows"), px(build[1].style.width)]).toEqual(["1", COUNTS_WIDTH]);
     // SV-05 P4: a tile box is a tile's height.
-    for (const tile of build.slice(2)) expect([tile.getAttribute("data-rows"), px(tile.style.width)]).toEqual(["9", frame.build - TILE_INSET]);
+    for (const tile of build.slice(2)) expect([tile.getAttribute("data-rows"), px(tile.style.width)]).toEqual(["9", frame.build - 2 * PANEL_PAD - LIST_GUTTER - TILE_INSET]);
     const title = within(screen.getByTestId("skeleton-tabrow")).getAllByTestId("loading-blocks");
     expect(title.map((block) => px((block as HTMLElement).style.width))).toEqual([180, 120]);
   });
@@ -80,6 +80,17 @@ describe.each([900, 1280, 1440, 1920])("the skeleton at %i", (width) => {
     expect(screen.getAllByRole("status")).toHaveLength(1);
     expect(screen.getByRole("status").getAttribute("aria-busy")).toBe("true");
     for (const block of screen.getAllByTestId("loading-blocks")) expect(block.getAttribute("aria-hidden")).toBe("true");
+  });
+});
+
+describe("the skeleton from 761 to 1023 (Synth 09)", () => {
+  it("has no Sources panel (Sources is a button there), and Build fills the width", () => {
+    stage(900);
+    render(<ComposeSkeleton />);
+    const frame = frameOf(innerWidthOf(900));
+    expect(screen.queryByTestId("skeleton-sources")).toBeNull();
+    expect(screen.queryByTestId("skeleton-details")).toBeNull();
+    expect(px(screen.getByTestId("skeleton-build").style.width)).toBe(frame.build);
   });
 });
 

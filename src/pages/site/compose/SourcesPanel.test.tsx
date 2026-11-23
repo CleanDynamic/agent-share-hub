@@ -158,12 +158,12 @@ describe("the refined look (UI-P93)", () => {
       </MemoryRouter>,
     );
 
-  it("lists the two groups in order, each session with a toggle and no tool mark (Synth 09)", () => {
+  it("lists the two groups in order, each session with its tool's real mark and a toggle", () => {
     panel();
     expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["In this build", "Available to add"]);
     const sessions = screen.getByRole("region", { name: "In this build" });
     expect(within(sessions).getAllByRole("button", { name: /^Open session/ })).toHaveLength(3);
-    expect(sessions.querySelectorAll("[data-mark]")).toHaveLength(0);
+    expect(sessions.querySelectorAll("[data-mark]")).toHaveLength(3);
   });
 
   it("has a 6px square per group (hollow for Available to add), a boxed 26 Add session, and the drop zone as a dashed 12-radius area over dots (Synth 09)", () => {

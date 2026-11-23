@@ -6,6 +6,7 @@
    never a colour) and the window (a menu). The components that spend them are in `refinedPieces.tsx`. Nothing here
    is a literal colour: every paint is a token. */
 
+import { LAYER } from "./layers";
 import type { CSSProperties } from "react";
 
 import { SELECTED, WELL } from "@/lib/theme/refinedControl";
@@ -130,7 +131,8 @@ export const tagStyle: CSSProperties = {
  * viewport less the collision padding), scrolling inside itself, and a scroll that reaches its end stays in it.
  */
 export const menuSurface = (width?: number): CSSProperties => ({
-  zIndex: 50,
+  /* Synth 09: over every window a menu can open from (the prompt window, a confirmation). */
+  zIndex: LAYER.floating,
   /* UX-02 P6: the cap below is the room Radix measured, so the padding and the border are inside it: a menu that reaches the cap
      stays inside the window (with content-box sizing it stood 10px taller than its room, past the window's edge). */
   boxSizing: "border-box",

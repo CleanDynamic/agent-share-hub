@@ -27,7 +27,7 @@ import { toolName } from "@/lib/tools/registry";
 
 import { ChoiceGrid } from "./ChoiceGrid";
 import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from "./ModalFrame";
-import { FieldArea, FieldInput, Hint, MODAL_WIDTH, RemovableTag, Row, SegmentedField, TagList } from "./modalRecipes";
+import { FieldArea, FieldInput, Hint, MODAL_WIDTH, RemovableTag, Row, SegmentedField, TagList, Block, BlockHead } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 import { ToolPicker } from "./ToolPicker";
 
@@ -110,29 +110,29 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed, edit }: Pick<AddTool
         <ToolPicker label={TOOL_DIALOG_COPY.tool} value={picked} onChange={setPicked} inBuild={inBuild} phone={phone} step="tool" list="app" placeholder={TOOL_DIALOG_COPY.selectTool} field />
       </Row>
 
+      {/* Synth 09: the tool's facts are rows of their own; only Setup steps and Alternatives are optional. */}
+      {/* Nine options: the full width of the window, its label above, so each says its name. */}
+      <Block noRule testId="tool-connection">
+        <BlockHead label={TOOL_DIALOG_COPY.connected} />
+        <ChoiceGrid<ToolConnection> label={TOOL_DIALOG_COPY.connected} items={CONNECTION_CHOICES} value={connection} onChange={setConnection} phone={phone} allowClear />
+      </Block>
+      <Row id={`${uid}-did`} label={TOOL_DIALOG_COPY.did} phone={phone}>
+        <FieldInput id={`${uid}-did`} phone={phone} value={did} maxLength={TOOL_SCOPES_MAX} placeholder={TOOL_DIALOG_COPY.didPlaceholder} onChange={(event) => setDid(event.target.value)} />
+      </Row>
+      <Row id={`${uid}-permissions`} label={TOOL_DIALOG_COPY.permissions} group phone={phone} top>
+        <SegmentedField<ToolPermission>
+          label={TOOL_DIALOG_COPY.permissions}
+          phone={phone}
+          items={TOOL_PERMISSIONS.map((value) => ({ value, label: TOOL_PERMISSION_LABEL[value] }))}
+          value={permissions}
+          onChange={(next) => setPermissions((current) => (current === next ? null : next))}
+        />
+      </Row>
+      <Row id={`${uid}-plan`} label={TOOL_DIALOG_COPY.plan} phone={phone}>
+        <FieldInput id={`${uid}-plan`} phone={phone} value={plan} maxLength={TOOL_PLAN_MAX} placeholder={TOOL_DIALOG_COPY.planPlaceholder} onChange={(event) => setPlan(event.target.value)} />
+      </Row>
+
       <OptionalSection>
-        <OptionalField name={TOOL_DIALOG_COPY.connected} description={TOOL_DIALOG_COPY.connectedLine} summary={connection ? CONNECTION_LABEL[connection] : null} phone={phone}>
-          <ChoiceGrid<ToolConnection> label={TOOL_DIALOG_COPY.connected} items={CONNECTION_CHOICES} value={connection} onChange={setConnection} phone={phone} allowClear />
-        </OptionalField>
-
-        <OptionalField name={TOOL_DIALOG_COPY.did} summary={summaryOf(did)} phone={phone}>
-          <FieldInput phone={phone} aria-label={TOOL_DIALOG_COPY.did} value={did} maxLength={TOOL_SCOPES_MAX} placeholder={TOOL_DIALOG_COPY.didPlaceholder} onChange={(event) => setDid(event.target.value)} />
-        </OptionalField>
-
-        <OptionalField name={TOOL_DIALOG_COPY.permissions} description={TOOL_DIALOG_COPY.permissionsLine} summary={permissions ? TOOL_PERMISSION_LABEL[permissions] : null} phone={phone}>
-          <SegmentedField<ToolPermission>
-            label={TOOL_DIALOG_COPY.permissions}
-            phone={phone}
-            items={TOOL_PERMISSIONS.map((value) => ({ value, label: TOOL_PERMISSION_LABEL[value] }))}
-            value={permissions}
-            onChange={(next) => setPermissions((current) => (current === next ? null : next))}
-          />
-        </OptionalField>
-
-        <OptionalField name={TOOL_DIALOG_COPY.plan} description={TOOL_DIALOG_COPY.planLine} summary={summaryOf(plan)} phone={phone}>
-          <FieldInput phone={phone} aria-label={TOOL_DIALOG_COPY.plan} value={plan} maxLength={TOOL_PLAN_MAX} placeholder={TOOL_DIALOG_COPY.planPlaceholder} onChange={(event) => setPlan(event.target.value)} />
-        </OptionalField>
-
         <OptionalField name={TOOL_DIALOG_COPY.setup} summary={summaryOf(steps)} phone={phone}>
           <FieldArea phone={phone} rows={3} aria-label={TOOL_DIALOG_COPY.setup} value={setup} placeholder={TOOL_DIALOG_COPY.setupPlaceholder} onChange={(event) => setSetup(event.target.value)} />
           {keyed ? <Hint testId="setup-key-hint">{TOOL_DIALOG_COPY.setupKeyHint}</Hint> : null}

@@ -28,3 +28,15 @@ export function fieldNamed(name: string): HTMLElement {
   if (!found) throw new Error(`No optional field named "${name}"; there are: ${drawnFields().map(titleOf).join(", ")}`);
   return found;
 }
+
+/** Synth 09: a field by its label, wherever it stands: an Optional field (opening its section) or a main row of the window. */
+export function placeNamed(name: string): HTMLElement {
+  openOptional();
+  const optional = drawnFields().find((field) => titleOf(field) === name);
+  if (optional) return optional;
+  const row = screen.queryAllByTestId("field-row").find((field) => field.querySelector("label, span")?.textContent === name);
+  if (row) return row;
+  const group = screen.queryAllByRole("group", { name })[0] ?? screen.queryAllByRole("radiogroup", { name })[0];
+  if (!group) throw new Error(`No field, row or group named "${name}"`);
+  return group;
+}

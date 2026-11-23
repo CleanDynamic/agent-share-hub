@@ -614,10 +614,10 @@ describe("the refined look (UI-P93)", () => {
       </MemoryRouter>,
     );
 
-  it("leads each session with its name and no tool mark (Synth 09), and draws prompts as modules, the selection the Mint ring", () => {
+  it("leads each session with the tool's real mark, and draws prompts as modules, the selection the Mint ring", () => {
     list();
     const heads = screen.getAllByTestId("session-head");
-    expect(heads.map((head) => Boolean(head.querySelector("[data-mark]")))).toEqual([false, false, false]);
+    expect(heads.map((head) => Boolean(head.querySelector("[data-mark]")))).toEqual([true, true, true]);
     const html = markup();
     // Synth 09: the chosen tile keeps the Card fill and takes the Mint ring outside a gap.
     expect(html).toMatch(/data-selected="true"[^>]*style="[^"]*background:var\(--module\);[^"]*box-shadow:0 0 0 2px var\(--surface\), 0 0 0 4px var\(--brand-accent\)/);

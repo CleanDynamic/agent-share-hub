@@ -1,7 +1,7 @@
 /* SV-18: Add from Library, the window. Pure: its props are the place, the rows, the selection and the version.
 
-   It is drawn as `design/reference/vision/dusk/composer-add-from-library.html` draws it: 640 wide, 80 from the top, `--window`
-   with a 1px `--control-border`, radius 12, `--window-shadow`, over `--scrim`, no blur. The frame, the close button and the
+   Synth 09: it stands where every editor window stands (`windowPlacement`: 440 wide, 48 from the top, the window frame), over
+   `--scrim`, no blur. The frame, the close button and the
    buttons come from `modalRecipes`; it opens and closes with the same Radix dialog the tile windows use, so its motion is
    theirs and nothing here is new. On a phone it is the same body in the existing sheet.
 
@@ -24,7 +24,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE, textStep } from "@/lib/theme/type";
 
-import { IconSquare, RecipeButton } from "./modalRecipes";
+import { IconSquare, LAYER, MODAL_WIDTH, RecipeButton, scrimAt, windowPlacement } from "./modalRecipes";
 import { space, size } from "@/lib/theme/space";
 import { PageState } from "@/components/pagestate/PageState";
 import { readOf } from "@/components/pagestate/pageStateModel";
@@ -302,34 +302,13 @@ export function AddFromLibraryWindow(props: AddFromLibraryWindowProps) {
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 50 }} />
+        <Dialog.Overlay data-motion="scrim" style={scrimAt(LAYER.window)} />
         <Dialog.Content
           data-testid="add-from-library"
           onOpenAutoFocus={focus.onOpenAutoFocus}
           onCloseAutoFocus={focus.onCloseAutoFocus}
-          style={{
-            position: "fixed",
-            top: 80,
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 51,
-            width: 640,
-            maxWidth: "calc(100vw - 32px)",
-            maxHeight: "calc(100dvh - 120px)",
-            boxSizing: "border-box",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-            background: t.window,
-            border: `1px solid ${t.controlBorder}`,
-            borderRadius: 12,
-            boxShadow: t.windowShadow,
-            color: t.text,
-            fontFamily: FIGTREE,
-            fontSize: textStep.body,
-            lineHeight: "22px",
-            fontVariantNumeric: "tabular-nums",
-          }}
+          /* Synth 09: the shared window placement and frame (48 from the top, 440 wide), as every editor window. */
+          style={{ ...windowPlacement(MODAL_WIDTH.standard, LAYER.window), fontSize: textStep.body, lineHeight: "22px", fontVariantNumeric: "tabular-nums" }}
         >
           {open ? <Body {...props} /> : null}
         </Dialog.Content>

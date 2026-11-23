@@ -54,13 +54,16 @@ export const TILES = 5;
 export const TILE_HEIGHT = 108;
 /** Tile boxes are 18 apart. */
 export const TILE_GAP = 18;
-/** The columns start this far under the title row, as `SandboxView` has them. */
-export const COLUMNS_TOP = 32;
-/** The title area's height: the heading, 6, the status line, and the 12 under them. The same box the real title row has. */
-export const TITLE_BLOCK_HEIGHT = 49;
-/** Under 760 wide the real title row wraps its tabs and actions onto lines of their own: 53 taller, 16 of which is the row gap. */
-export const TITLE_WRAP_ROOM = 37;
-export const TITLE_WRAP_UNDER = 760;
+/** Synth 09: the panels start 8 under the title row's panel, as `SandboxView` has them. */
+export const COLUMNS_TOP = 8;
+/** Synth 09: the title area's height inside the title row's panel: the serif heading (26), 4, the status line (17). */
+export const TITLE_BLOCK_HEIGHT = 47;
+/** Below 1101 the real title row puts Find and List/Map on a second line: 32 tall and 8 under the first. */
+export const TITLE_WRAP_ROOM = 40;
+/** The window width the title row stops wrapping at (`THREE_PANELS_FROM`). */
+export const TITLE_WRAP_UNDER = 1101;
+/** Each panel pads its content 16 in (`DETAILS_PAD`). */
+export const PANEL_PAD = 16;
 /** A tile sits in a run: 14 of padding and a 1px rule down its left. */
 export const TILE_INSET = 15;
 

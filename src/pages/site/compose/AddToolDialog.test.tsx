@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AddToolDialog, CONNECTION_CHOICES, TOOL_DIALOG_COPY, type AddToolDialogProps } from "./AddToolDialog";
-import { fieldNames, fieldNamed } from "./optionalKit";
+import { fieldNames, placeNamed } from "./optionalKit";
 
 let phone = false;
 beforeEach(() => {
@@ -24,8 +24,8 @@ const toolButton = () => screen.getByRole("button", { name: /(^|, )App$/ });
 const find = () => screen.getByRole("combobox", { name: "Find an app" });
 const add = () => screen.getByRole("button", { name: "Add" }) as HTMLButtonElement;
 const control = (name: string) => screen.getAllByLabelText(name).at(-1) as HTMLElement;
-const row = (name: string) => fieldNamed(name);
-const openRow = (name: string) => void fieldNamed(name);
+const row = (name: string) => placeNamed(name);
+const openRow = (name: string) => void placeNamed(name);
 
 function pickGitHub() {
   fireEvent.click(toolButton());
@@ -44,7 +44,8 @@ describe("Add › Tool (CA-02 P6, CA-12 P7, CA-15 P4)", () => {
     expect(screen.getByTestId("optional-count").textContent).toBe("6 fields");
     expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("false");
     expect(screen.queryAllByTestId("optional-field")).toHaveLength(0);
-    expect(fieldNames()).toEqual(["Connection method", "Actions performed", "Permissions", "Required plan", "Setup steps", "Alternatives"]);
+    // Synth 09: Connection method, Actions performed, Permissions and Required plan are rows of their own.
+    expect(fieldNames()).toEqual(["Setup steps", "Alternatives"]);
     expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("true");
     expect(document.body.textContent).not.toMatch(/How was it connected|What did it do|Pick an app/);
   });

@@ -38,6 +38,10 @@ import {
   HEADER,
   HEADER_ICONS,
   HEADER_TEXT,
+  LAYER,
+  WINDOW_TOP,
+  scrimAt,
+  windowPlacement,
   Hint as RecipeHint,
   IconSquare,
   MODAL_PAD,
@@ -50,7 +54,6 @@ import {
   TITLE,
   bodyStyle,
   footerStyle,
-  frameStyle,
   missingSet,
 } from "./modalRecipes";
 import { size as sizes, space } from "@/lib/theme/space";
@@ -66,8 +69,8 @@ export const MODAL_COPY = {
   allComplete: "Required fields complete",
 } as const;
 
-/** F25: on a computer the window's top edge, and the same room left under it. */
-export const MODAL_TOP = 48;
+/** F25: on a computer the window's top edge, and the same room left under it (`WINDOW_TOP`, shared by every window). */
+export const MODAL_TOP = WINDOW_TOP;
 
 /** The footer's status line: the labels of what is still missing, or that nothing is. */
 export const requiredLine = (missing: string | null | undefined): string => (missing ? `Required: ${missing}` : MODAL_COPY.allComplete);
@@ -133,9 +136,9 @@ export function ModalShell({ open, onOpenChange, title, subtitle, eyebrow, width
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 50 }} />
+        <Dialog.Overlay data-motion="scrim" style={scrimAt(LAYER.window)} />
         {/* F25: the top edge is pinned at 48, so opening a row grows the window downward and nothing above it moves; the body scrolls inside. */}
-        <Dialog.Content data-testid={testId} onOpenAutoFocus={focus.onOpenAutoFocus} onCloseAutoFocus={focus.onCloseAutoFocus} style={{ position: "fixed", top: MODAL_TOP, left: "50%", transform: "translateX(-50%)", zIndex: 51, ...frameStyle(width), maxHeight: `calc(100dvh - ${MODAL_TOP * 2}px)` }}>
+        <Dialog.Content data-testid={testId} onOpenAutoFocus={focus.onOpenAutoFocus} onCloseAutoFocus={focus.onCloseAutoFocus} style={windowPlacement(width, LAYER.window)}>
           <div data-testid="modal-header" style={HEADER}>
             <div style={HEADER_TEXT}>
               {eyebrow ? (

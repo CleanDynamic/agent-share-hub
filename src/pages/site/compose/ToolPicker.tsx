@@ -11,6 +11,7 @@
    drawn at the dim filter with its line under the name, and is `aria-disabled` unless it can still be picked (a tool
    that runs prompts by itself, named on a prompt). */
 
+import { LAYER } from "./layers";
 import * as Popover from "@radix-ui/react-popover";
 import { useId, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 
@@ -66,7 +67,8 @@ export interface ToolPickerProps {
 const isPickable = (row: PickerRow): boolean => row.kind !== "heading" && row.kind !== "note";
 
 /** Over the Add dialogs, whose content sits at 51 over a scrim at 50. */
-export const FLOATING_Z = 52;
+/** Synth 09: the ladder's floating layer, over every window a picker opens in. */
+export const FLOATING_Z = LAYER.floating;
 
 /** The words a row reads as. */
 function rowName(row: PickerRow, noneLabel = "No tool", list: ToolList = "ai", codeLabel = ""): string {

@@ -62,7 +62,7 @@ import { ClickToEdit, DetailsOverlay, useTouchPanel } from "./DetailsOverlay";
 import { DetailsAside, useWindowSize } from "./DetailsAside";
 import type { DetailsPlan } from "./DetailsPanel";
 import { HEAD_GAP, OVERLAY_WIDTH } from "./detailsRecipes";
-import { DETAILS_PAD, ORIGIN, frameOf, innerWidthOf } from "./detailsLayout";
+import { DETAILS_PAD, LIST_GUTTER, ORIGIN, frameOf, innerWidthOf } from "./detailsLayout";
 import { bareButton, menuItem, menuSurface, moduleStyle, text, tnum, wellField } from "./refinedStyles";
 import type { PartLabels } from "@/lib/build/making";
 import type { ComposePublished, ComposeStatus } from "./ComposeView";
@@ -74,7 +74,7 @@ import { PublishChecklist } from "./PublishChecklist";
 import { PublishConfirmWindow as PublishConfirm } from "./composerWindows";
 import { PUBLISHED_COPY, PublishedOptions } from "./PublishedMenu";
 import { outlineOnce } from "./buildMotion";
-import { confirmRows, publishedWords, type Checklist, type ChecklistItem, type ConfirmInput, type ConfirmRow } from "@/lib/build/publishChecklist";
+import { confirmRows, publishedWords, readyLine, type Checklist, type ChecklistItem, type ConfirmInput, type ConfirmRow } from "@/lib/build/publishChecklist";
 import { REASONS } from "@/lib/build/componentMenus";
 import { useReason } from "./removePieces";
 import type { SaveFailure } from "@/hooks/useComposeBuild";
@@ -142,6 +142,8 @@ export interface SandboxViewProps extends CardProps {
   strips?: ReactNode;
   /** SV-07 P5: room at the foot of the Build column while the notice shows (its height and 16), so it never covers the last row. */
   noticeRoom?: number;
+  /** Synth 09: the title row's Add (`AddMenu` with `variant="title"`), for the current session. */
+  addMenu?: ReactNode;
   /** CA-10: a save that stopped: its reason and code, for "Not saved: {reason}. Code {code}." */
   saveProblem?: SaveFailure | null;
   /** CA-10: why the build did not load: logged once, its code shown under "This build didn't load." */
@@ -460,7 +462,10 @@ export const ADD_MORE_COPY = { row: "More types" } as const;
  * CA-14 P5: the menu is the "+ Add step tile" row at the end of a session (`fixedSession`), which knows its session. UX-02 P7:
  * it is the one way to add a step tile; the Build header's Add (and its "Add to which session?") is gone.
  */
-export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps & { phone: boolean; targets?: AddTargets; fixedSession?: string }) {
+/** Synth 09: the title row's Add, the same menu as a session's Add step row, for the current session. */
+export const TITLE_ADD_COPY = { label: "Add" } as const;
+
+export function AddMenu({ phone, targets, fixedSession, variant = "row", ...props }: AddMenuProps & { phone: boolean; targets?: AddTargets; fixedSession?: string; /** Synth 09: "title" draws the trigger as the title row's secondary Add with a chevron. */ variant?: "row" | "title" }) {
   const [open, setOpen] = useState(false);
   /** Set by a row that moved focus, read once as the menu closes. */
   const moved = useRef(false);
@@ -518,7 +523,37 @@ export function AddMenu({ phone, targets, fixedSession, ...props }: AddMenuProps
     </Menu.Item>
   );
 
-  const trigger = (
+  const trigger = variant === "title" ? (
+      <button
+        ref={addButton}
+        type="button"
+        data-testid="title-add"
+        data-hit=""
+        aria-haspopup={phone ? "dialog" : "menu"}
+        aria-expanded={open}
+        {...rowTrigger.handlers}
+        onClick={phone ? () => setOpen(true) : undefined}
+        style={{
+          ...controlPaint(rowTrigger.state),
+          display: "inline-flex",
+          alignItems: "center",
+          gap: space[1],
+          height: size.control,
+          boxSizing: "border-box",
+          padding: `0 ${space[3]}px`,
+          borderRadius: r.full,
+          ...text(textStep.meta, 500, t.text),
+          cursor: "pointer",
+          flexShrink: 0,
+          ...ring(rowTrigger.state.focusVisible),
+        }}
+      >
+        {TITLE_ADD_COPY.label}
+        <span aria-hidden="true" style={{ display: "inline-flex", color: t.text2 }}>
+          <Glyph name="chevd" size={size.icon} />
+        </span>
+      </button>
+  ) : (
       <button
         ref={addButton}
         type="button"
@@ -1222,6 +1257,8 @@ function SandboxBody(props: SandboxViewProps) {
         retryStyle={underlined}
       />
       {props.threadNote ? ` · ${props.threadNote}` : null}
+      {/* Synth 09: how many of the required items are done, on a draft. */}
+      {!published && props.publish && readyLine(props.publish.checklist) ? <span data-testid="sandbox-ready">{` · ${readyLine(props.publish.checklist)}`}</span> : null}
       {/* CA-03 P8: what kind of build it is, once it has more than one step. */}
       {props.summary ? <span data-testid="sandbox-summary">{` · ${props.summary}`}</span> : null}
     </p>
@@ -1332,7 +1369,11 @@ function SandboxBody(props: SandboxViewProps) {
         {phone ? null : props.viewOptions ? <ViewMenu phone={false} view={props.viewOptions} /> : null}
       </div>
       {lens === "list" ? props.sessionList : null}
-      {guard("Build", props.emptyBuild ? <EmptyBuild {...props.emptyBuild} /> : (props.list ?? (listHint(phone) ? <p style={{ ...text(textStep.meta, 400, t.label), margin: 0 }}>{listHint(phone)}</p> : null)))}
+      {/* Synth 09: on a computer the List keeps a gutter at its left inside the Build panel, where a drag's rail and its place
+          numbers stand (`RAIL_ROOM_ITEMS` with the panel's own padding), so they never cross into the gap or Sources. */}
+      <div data-testid="build-list-gutter" style={{ minWidth: 0, ...(phone ? null : { paddingLeft: LIST_GUTTER }) }}>
+        {guard("Build", props.emptyBuild ? <EmptyBuild {...props.emptyBuild} /> : (props.list ?? (listHint(phone) ? <p style={{ ...text(textStep.meta, 400, t.label), margin: 0 }}>{listHint(phone)}</p> : null)))}
+      </div>
     </section>
   );
 
@@ -1353,6 +1394,7 @@ function SandboxBody(props: SandboxViewProps) {
   /* The column the post and the build share. */
   const buildColumn = (
     <div
+      data-testid={phone ? undefined : "sandbox-build-panel"}
       style={{
         minWidth: 0,
         display: "flex",
@@ -1487,6 +1529,7 @@ function SandboxBody(props: SandboxViewProps) {
         <div style={{ ...TAB_ACTIONS, marginLeft: "auto" }}>
           <BuildTitleActions only="history" />
           {wraps ? null : findPill}
+          {props.addMenu}
           {wraps ? null : tabs}
           {sourcesButton ? (
             <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={textStep.meta} aria-expanded={railOpen} data-testid="sources-button" onClick={() => setRailOpen((was) => !was)}>
@@ -1543,7 +1586,7 @@ function SandboxBody(props: SandboxViewProps) {
         /* CA-18b P2: the List's three panels stand where `frameOf` puts them. Build is in the flow; Sources and Details are
            placed beside it from the surface's edge. */
         <div data-testid="sandbox-columns" style={{ position: "relative", display: "block", padding: `${COLUMNS_TOP}px 0 0`, minWidth: 0 }}>
-          <div data-testid="sandbox-sources-slot" style={{ position: "absolute", top: COLUMNS_TOP, left: frame.sourcesLeft - ORIGIN, width: sourcesButton ? 0 : frame.sources, display: "flex", alignItems: "flex-start" }}>
+          <div data-testid={sourcesButton ? "sandbox-sources-anchor" : "sandbox-sources-slot"} style={{ position: "absolute", top: COLUMNS_TOP, left: frame.sourcesLeft - ORIGIN, width: sourcesButton ? 0 : frame.sources, display: "flex", alignItems: "flex-start" }}>
             <SourcesFrame rail={frame.rail} buttonOnly={sourcesButton} width={frame.sources} titled={!props.sources} counts={props.counts} open={railOpen && frame.rail} onOpen={() => setRailOpen(true)} onClose={() => setRailOpen(false)}>
               {sourcesBody}
             </SourcesFrame>

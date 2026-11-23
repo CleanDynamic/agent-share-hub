@@ -13,7 +13,7 @@ import { t } from "@/lib/theme/tokens";
 
 import { TitleIcon } from "./BuildTitleActions";
 import { MenuContent } from "./ComposeMenu";
-import { RecipeButton, LABEL } from "./modalRecipes";
+import { RecipeButton, LABEL, MODAL_WIDTH } from "./modalRecipes";
 import { PublishFrame } from "./PublishChecklist";
 import { DANGER } from "./referencePieces";
 import { menuItem, menuSurface } from "./refinedStyles";
@@ -77,7 +77,7 @@ export function PublishedOptions({ slug, title, onUnpublish, canUnpublish = true
         open={asking}
         onClose={() => setAsking(false)}
         title={PUBLISHED_COPY.unpublishTitle(title)}
-        width={420}
+        width={MODAL_WIDTH.standard}
         testId="unpublish-window"
         body={
           <p data-testid="unpublish-body" style={{ ...LABEL, margin: "4px 0 0" }}>

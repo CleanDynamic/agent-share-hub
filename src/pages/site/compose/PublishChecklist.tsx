@@ -18,7 +18,7 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 
-import { FOOT_NOTE, RecipeButton, TITLE, footerStyle, frameStyle, MODAL_WIDTH } from "./modalRecipes";
+import { FOOT_NOTE, RecipeButton, TITLE, footerStyle, MODAL_WIDTH, LAYER, scrimAt, windowPlacement } from "./modalRecipes";
 import { text } from "./refinedStyles";
 import { size } from "@/lib/theme/space";
 
@@ -61,13 +61,13 @@ export function PublishFrame({
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 70 }} />
+        <Dialog.Overlay data-motion="scrim" style={scrimAt(LAYER.confirm)} />
         <Dialog.Content
           data-testid={testId}
           aria-describedby={undefined}
           onOpenAutoFocus={focus.onOpenAutoFocus}
           onCloseAutoFocus={focus.onCloseAutoFocus}
-          style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 71, ...frameStyle(width) }}
+          style={windowPlacement(width, LAYER.confirm)}
         >
           <div style={{ padding: 20, flex: "1 1 auto", minHeight: 0, overflowY: "auto" }}>
             <Dialog.Title style={TITLE}>{title}</Dialog.Title>

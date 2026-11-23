@@ -12,7 +12,7 @@ import type { DetailsHandlers } from "./DetailsPanel";
 import { agentRows, checkRows, codeRows, datasetRows, promptRows, repoRows, resultRows, systemPromptRows, toolRows } from "./detailsOptional";
 import { resolveView } from "./detailsView";
 import { TileEditDialog } from "./TileEditDialog";
-import { fieldNames, fieldNamed } from "./optionalKit";
+import { fieldNames, placeNamed } from "./optionalKit";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
@@ -39,8 +39,8 @@ function windowFor(tree: NodeTree[], selectedId: string) {
 const save = () => fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Save" }));
 
 const rowNames = () => fieldNames();
-const row = (name: string) => fieldNamed(name);
-const openRow = (name: string) => void fieldNamed(name);
+const row = (name: string) => placeNamed(name);
+const openRow = (name: string) => void placeNamed(name);
 
 describe("the row builders say what each tile holds, with the modals' words (CA-15 P11)", () => {
   it("a prompt: Model settings and Variables", () => {
@@ -192,7 +192,10 @@ describe("the Optional section in a tile's window (CA-15 P11, CA-18 P2)", () => 
     expect(screen.getAllByLabelText("Actions performed").length).toBeGreaterThan(0);
     expect(screen.queryByLabelText("Service")).toBeNull();
     expect(screen.queryByLabelText("What it was used for")).toBeNull();
-    expect(rowNames()).toEqual(expect.arrayContaining(["Permissions", "Required plan", "Setup steps", "Alternatives"]));
+    // Synth 09: Permissions and Required plan are rows of the window; Setup steps and Alternatives stay optional.
+    expect(rowNames()).toEqual(expect.arrayContaining(["Setup steps", "Alternatives"]));
+    expect(placeNamed("Permissions").getAttribute("data-testid")).toBe("field-row");
+    expect(placeNamed("Required plan").getAttribute("data-testid")).toBe("field-row");
   });
 
   it("the placeholders of its fields are the example alone", () => {

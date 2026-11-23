@@ -134,10 +134,10 @@ describe("each kind's tile as its board (CA-15b P3)", () => {
     expect(within(prompt).queryByRole("button", { name: "Open prompt" })).toBeNull();
   });
 
-  it("a tool: its name with no app mark (Synth 09), what it did in the body", () => {
+  it("a tool: its app's mark before its name, what it did in the body", () => {
     show(boardTiles());
     const tool = tile("tool");
-    expect(within(within(tool).getByRole("heading", { level: 3 })).queryByTestId("app-mark")).toBeNull();
+    expect(within(within(tool).getByRole("heading", { level: 3 })).getByTestId("app-mark")).toBeTruthy();
     expect(within(tool).getByTestId("tool-scopes").textContent).toBe("Read the inbox, drafted replies");
     expect(within(tool).getByTestId("tile-footer-facts").textContent).toBe("Read and write · Free plan");
   });
@@ -169,10 +169,10 @@ describe("each kind's tile as its board (CA-15b P3)", () => {
     expect(within(tile("dataset")).getByTestId("dataset-columns").textContent).toBe("input · expected · actual · score");
   });
 
-  it("a repository: its name with no mark (Synth 09), then Open on GitHub in the foot", () => {
+  it("a repository: the mark before its name, then Open on GitHub in the foot", () => {
     show(boardTiles());
     const repo = tile("repo");
-    expect(within(within(repo).getByRole("heading", { level: 3 })).queryByTestId("app-mark")).toBeNull();
+    expect(within(within(repo).getByRole("heading", { level: 3 })).getByTestId("app-mark")).toBeTruthy();
     expect(within(repo).getByRole("link", { name: "Open on GitHub" })).toBeTruthy();
   });
 

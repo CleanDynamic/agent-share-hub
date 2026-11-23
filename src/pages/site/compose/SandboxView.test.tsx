@@ -374,7 +374,7 @@ describe("the refined Map and Card (UI-P94)", () => {
     view();
     fireEvent.click(screen.getByRole("button", { name: "Classification" }));
     const card = screen.getByTestId("sandbox-card");
-    expect(card.style.width).toBe("560px");
+    expect(card.style.width).toBe("440px");
   });
 });
 

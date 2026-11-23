@@ -23,7 +23,7 @@ import { t } from "@/lib/theme/tokens";
 
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { ModalShell } from "./ModalFrame";
-import { COUNT, MODAL_PAD, ModalInset, RecipeButton, bodyStyle, footerStyle, iconButtonSide, MODAL_WIDTH } from "./modalRecipes";
+import { COUNT, LAYER, MODAL_PAD, ModalInset, RecipeButton, bodyStyle, footerStyle, iconButtonSide, MODAL_WIDTH } from "./modalRecipes";
 import { menuItem, menuSurface } from "./refinedStyles";
 import { Badge, BlockTitle, ConfirmDialog, DANGER, ELLIPSIS, GAP, GhostIcon, InnerPanel, SortableRows, SquareSwatch, UndoRedo, words } from "./referencePieces";
 import { r } from "@/lib/theme/radius";
@@ -109,7 +109,7 @@ function GroupMenu({ group, others, onOpen, onMerge, onDelete, onOpenChange }: {
         <GhostIcon glyph="more" label={COLOURS_COPY.menu(groupName(group))} style={{ ...iconButtonSide(), borderRadius: r.control }} />
       </Menu.Trigger>
       <Menu.Portal>
-        <MenuContent align="end" sideOffset={4} style={{ ...menuSurface(200), zIndex: 80 }}>
+        <MenuContent align="end" sideOffset={4} style={{ ...menuSurface(200), zIndex: LAYER.floating }}>
           <Menu.Item onSelect={onOpen} style={menuItem(true, false)}>
             {COLOURS_COPY.open}
           </Menu.Item>
@@ -118,7 +118,7 @@ function GroupMenu({ group, others, onOpen, onMerge, onDelete, onOpenChange }: {
               {COLOURS_COPY.mergeInto}
             </Menu.SubTrigger>
             <Menu.Portal>
-              <MenuSubContent sideOffset={4} style={{ ...menuSurface(200), zIndex: 81 }}>
+              <MenuSubContent sideOffset={4} style={{ ...menuSurface(200), zIndex: LAYER.floatingOver }}>
                 {others.map((other) => (
                   <Menu.Item key={other.id} onSelect={() => onMerge(other.id)} style={{ ...menuItem(true, false), gap: 8 }}>
                     <SquareSwatch colour={other.colour} />

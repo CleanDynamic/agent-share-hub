@@ -7,7 +7,7 @@ import { tileView } from "@/dev/fixtures/detailsKinds";
 
 import type { DetailsHandlers, DetailsView } from "./DetailsPanel";
 import { TileEditDialog, opensEditDialog } from "./TileEditDialog";
-import { fieldNamed } from "./optionalKit";
+import { placeNamed } from "./optionalKit";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
@@ -58,8 +58,8 @@ describe("every kind opens in edit mode, filled in", () => {
 
 const dialog = () => screen.getByRole("dialog");
 const save = () => fireEvent.click(within(dialog()).getByRole("button", { name: "Save" }));
-const optional = (name: string) => fieldNamed(name);
-const openRow = (name: string) => void fieldNamed(name);
+const optional = (name: string) => placeNamed(name);
+const openRow = (name: string) => void placeNamed(name);
 const callsOf = (h: ReturnType<typeof handlers>) => HANDLER_NAMES.flatMap((name) => h[name].mock.calls.map((args) => [name, ...args]));
 
 describe("Save writes through the same handlers with the same arguments", () => {

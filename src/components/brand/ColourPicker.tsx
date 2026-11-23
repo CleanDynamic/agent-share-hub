@@ -54,7 +54,7 @@ import { HEX_HINT, normaliseHex, SUGGESTED_COLOURS, swatchFor } from "@/lib/them
 import { CONTROL, WELL, hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { refPaint, refWordsStyle } from "@/components/post/RefLinks";
-import { FIELD_FOCUS, FieldInput, HEADER_ICONS, IconSquare, RecipeButton, TextLink, fieldStyle, footerStyle, frameStyle } from "@/pages/site/compose/modalRecipes";
+import { FIELD_FOCUS, FieldInput, HEADER_ICONS, IconSquare, LAYER, RecipeButton, TextLink, fieldStyle, footerStyle, frameStyle } from "@/pages/site/compose/modalRecipes";
 import { TextButton } from "@/pages/site/compose/composeControls";
 import { menuItem, menuSurface } from "@/pages/site/compose/refinedStyles";
 import { CODE_FIELD, DANGER, ELLIPSIS, GAP, GhostIcon, InnerPanel, PAD, SquareSwatch, UndoRedo, data, words } from "@/pages/site/compose/referencePieces";
@@ -416,7 +416,7 @@ export function SavedSwatch({ hex, current, onUse, onRemove, large = false }: { 
         </span>
       </ContextMenu.Trigger>
       <ContextMenu.Portal>
-        <ContextMenu.Content style={{ ...menuSurface(), zIndex: 70 }}>
+        <ContextMenu.Content style={{ ...menuSurface(), zIndex: LAYER.floatingOver }}>
           <ContextMenu.Item style={menuItem(true, false)} onSelect={onUse}>
             {COLOUR_PICKER_COPY.useThis}
           </ContextMenu.Item>
@@ -852,7 +852,7 @@ export function ColourPicker(props: ColourPickerProps) {
       </BottomSheet>
     );
   }
-  const surface: CSSProperties = { ...frameStyle(PICKER_WIDTH), position: "fixed", zIndex: 60, top: place?.top ?? -9999, left: place?.left ?? 0, maxHeight: "calc(100dvh - 16px)" };
+  const surface: CSSProperties = { ...frameStyle(PICKER_WIDTH), position: "fixed", zIndex: LAYER.floating, top: place?.top ?? -9999, left: place?.left ?? 0, maxHeight: "calc(100dvh - 16px)" };
   return createPortal(
     <div ref={box} role="dialog" aria-label={`${COLOUR_PICKER_COPY.head}: ${props.what}`} style={surface}>
       <PickerBody key={key} {...props} />

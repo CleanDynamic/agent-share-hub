@@ -16,6 +16,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useEffect, useRef, useState, type RefObject } from "react";
 
 import { Glyph } from "@/components/brand/Glyph";
+import { LAYER } from "@/pages/site/compose/layers";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { copyToClipboard } from "@/lib/deepLink";
 import { ring } from "@/lib/theme/controls";
@@ -158,7 +159,8 @@ export function Notepad({ open, onClose, field, value, onDone, title = "", onTit
           }}
           style={{
             position: "fixed",
-            zIndex: 61,
+            /* Synth 09: over the window its box is in, whichever layer that is. */
+            zIndex: LAYER.notepad,
             boxSizing: "border-box",
             display: "flex",
             flexDirection: "column",

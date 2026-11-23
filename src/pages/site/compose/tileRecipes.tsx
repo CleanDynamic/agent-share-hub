@@ -191,10 +191,11 @@ export function AppMark({ name, small = false }: { name: string; small?: boolean
   );
 }
 
-/** A tool's or a repository's title. Synth 09: no app mark beside it; the name is the title. */
-export function MarkedName({ children }: { name: string; children: ReactNode }) {
+/** A name with its app's mark before it, 8 apart: a tool's or a repository's title. */
+export function MarkedName({ name, children }: { name: string; children: ReactNode }) {
   return (
     <span style={{ display: "flex", alignItems: "center", gap: space[2], minWidth: 0 }}>
+      <AppMark name={name} />
       <span style={ellipsis}>{children}</span>
     </span>
   );

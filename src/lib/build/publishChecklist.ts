@@ -85,6 +85,13 @@ export interface Checklist {
   opens: number;
 }
 
+/** Synth 09: the status line's count of the required items that are done: "2 of 4 ready to publish". Null with none required. */
+export function readyLine(checklist: Pick<Checklist, "required" | "openRequired">): string | null {
+  const total = checklist.required.length;
+  if (total === 0) return null;
+  return `${total - checklist.openRequired} of ${total} ready to publish`;
+}
+
 export const CHECKLIST_COPY = {
   title: "Publish checklist",
   required: "Required",

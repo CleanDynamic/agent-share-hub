@@ -1,7 +1,7 @@
 /* CA-24 P1: the composer before anything has loaded, in building blocks.
 
-   It stands where the real composer will: the same title row, the same columns from `frameOf`, so Sources, Build and Details
-   start at the positions of their blocks. It is the route's `Suspense` fallback and what `SandboxView` shows while the
+   It stands where the real composer will: the same title row's panel, the same three panels from `frameOf` (Synth 09), so
+   Sources, Build and Details start at the positions of their blocks, each in its panel. It is the route's `Suspense` fallback and what `SandboxView` shows while the
    build's first queries load. A phone gets its single column: the title lines, then the post and the tiles.
 
    The sizes are the board's "Loading: building blocks": title 180 and 120 wide, 10 apart; Sources five lines, 22 apart; Build
@@ -17,10 +17,11 @@ import { prefersReducedMotion } from "@/lib/theme/motion";
 import { t } from "@/lib/theme/tokens";
 
 import { useWindowSize } from "./DetailsAside";
-import { ORIGIN, frameOf, innerWidthOf } from "./detailsLayout";
-import { COMPOSER_PAD } from "./detailsRecipes";
+import { LIST_GUTTER, ORIGIN, frameOf, innerWidthOf } from "./detailsLayout";
 import { LoadingBlocks, LoadingStatus } from "./LoadingBlocks";
-import { BLOCKS_OUT_MS, CELL_H, COLUMNS_TOP, CONTENT_IN_MS, COUNTS_WIDTH, DETAILS_WIDTHS, LINE_GAP, POST_ROWS, SOURCES_WIDTHS, TILES, TILE_GAP, TILE_HEIGHT, TILE_INSET, TITLE_BLOCK_HEIGHT, TITLE_WIDTHS, TITLE_WRAP_ROOM, TITLE_WRAP_UNDER, takeFirstShow } from "./loadingBlocks";
+import { BLOCKS_OUT_MS, CELL_H, COLUMNS_TOP, CONTENT_IN_MS, COUNTS_WIDTH, DETAILS_WIDTHS, LINE_GAP, PANEL_PAD, POST_ROWS, SOURCES_WIDTHS, TILES, TILE_GAP, TILE_HEIGHT, TILE_INSET, TITLE_BLOCK_HEIGHT, TITLE_WIDTHS, TITLE_WRAP_ROOM, TITLE_WRAP_UNDER, takeFirstShow } from "./loadingBlocks";
+import { useColumnPanels } from "@/components/shell/frameChrome";
+import { headerHeight } from "@/components/shell/chromeSize";
 import { TAB_ROW } from "./tabRowRecipes";
 import { PlaceholderTitle } from "@/components/pagestate/PlaceholderTitle";
 
@@ -47,13 +48,14 @@ function Lines({ widths, start, building, gone, max }: { widths: readonly number
 }
 
 function BuildBlocks({ plan, start, building, gone }: { plan: Plan; start: number; building: boolean; gone: boolean }) {
-  const buildWidth = plan.phone ? "fill" : plan.frame.build;
-  const tileWidth = plan.phone ? "fill" : plan.frame.build - TILE_INSET;
+  /* Synth 09: inside the Build panel, which pads its content 16 in. */
+  const buildWidth = plan.phone ? "fill" : plan.frame.build - 2 * PANEL_PAD;
+  const tileWidth = plan.phone ? "fill" : plan.frame.build - 2 * PANEL_PAD - LIST_GUTTER - TILE_INSET;
   return (
     <div style={column(20)}>
       <LoadingBlocks kind="box" rows={POST_ROWS} width={buildWidth} order={start} building={building} gone={gone} />
       <LoadingBlocks kind="line" width={COUNTS_WIDTH} order={start + 1} building={building} gone={gone} />
-      <div style={{ ...column(TILE_GAP), ...(plan.phone ? null : { paddingLeft: TILE_INSET - 1 }) }}>
+      <div style={{ ...column(TILE_GAP), ...(plan.phone ? null : { paddingLeft: LIST_GUTTER + TILE_INSET - 1 }) }}>
         {/* SV-05 P4: each tile box fills a tile's whole height, so a box and the tile that takes its place are one size. */}
         {Array.from({ length: TILES }, (_, at) => (
           <LoadingBlocks key={at} kind="box" rows={TILE_HEIGHT / CELL_H} width={tileWidth} order={start + 2 + at} building={building} gone={gone} />
@@ -71,6 +73,8 @@ export const ComposeSkeleton = memo(function ComposeSkeleton({ gone = false, gho
   const inner = innerWidthOf(win.width);
   const frame = frameOf(inner);
   const plan: Plan = { phone, frame, width: phone ? "fill" : frame.build, inner, windowWidth: win.width };
+  /* Synth 09: on a computer the editor draws its own panels; so does its skeleton, so nothing changes shape as it arrives. */
+  useColumnPanels(!phone);
 
   const title = (
     <div style={{ ...column(LINE_GAP), height: TITLE_BLOCK_HEIGHT, flexGrow: 1, minWidth: 0 }}>
@@ -96,27 +100,30 @@ export const ComposeSkeleton = memo(function ComposeSkeleton({ gone = false, gho
 
   const padLeft = frame.boxLeft - ORIGIN;
   const padRight = win.width - ORIGIN - frame.boxRight;
-  const wraps = frame.boxRight - frame.boxLeft < TITLE_WRAP_UNDER;
+  const wraps = win.width < TITLE_WRAP_UNDER;
+  const panel: CSSProperties = { background: t.surface, borderRadius: "var(--r-panel)", padding: PANEL_PAD, boxSizing: "border-box" };
   return (
     <>
     {ghost ? null : <PlaceholderTitle>Build</PlaceholderTitle>}
     <LoadingStatus>
       <div data-testid="compose-skeleton" data-layout="desktop" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <div data-testid="skeleton-tabrow" style={{ ...TAB_ROW, height: "auto", minHeight: 44, gap: 16, padding: `10px ${padRight}px 0 ${padLeft}px`, alignItems: "flex-start", flexWrap: wraps ? "wrap" : "nowrap" }}>
-          <div style={{ flexGrow: 1, minWidth: 0, marginBottom: 12 }}>{title}</div>
-          {/* The real row wraps its tabs and actions below the title in a narrow window; the room they take is kept. */}
-          {wraps ? <div aria-hidden="true" style={{ flexBasis: "100%", height: TITLE_WRAP_ROOM }} /> : null}
+        {/* Synth 09: the title row's panel, where `SandboxView` stands it, with the second line it has below 1101. */}
+        <div data-testid="skeleton-tabrow" style={{ ...TAB_ROW, position: "sticky", top: headerHeight(false), zIndex: 10, margin: `0 ${padRight}px 0 ${padLeft}px`, alignItems: "flex-start", flexWrap: wraps ? "wrap" : "nowrap", rowGap: 8 }}>
+          <div style={{ flexGrow: 1, minWidth: 0 }}>{title}</div>
+          {wraps ? <div aria-hidden="true" style={{ flexBasis: "100%", height: TITLE_WRAP_ROOM - 8 }} /> : null}
         </div>
-        <div data-testid="skeleton-columns" style={{ position: "relative", display: "block", padding: `${COLUMNS_TOP}px ${COMPOSER_PAD}px 0`, minWidth: 0 }}>
-          <div data-testid="skeleton-sources" style={{ position: "absolute", top: COLUMNS_TOP, left: frame.sourcesLeft - ORIGIN, width: frame.sources }}>
-            <Lines widths={SOURCES_WIDTHS} start={2} building={building} gone={gone} max={frame.sources} />
-          </div>
-          <div data-testid="skeleton-build" style={{ marginLeft: frame.buildLeft - ORIGIN - COMPOSER_PAD, width: frame.build }}>
+        <div data-testid="skeleton-columns" style={{ position: "relative", display: "block", padding: `${COLUMNS_TOP}px 0 0`, minWidth: 0 }}>
+          {frame.rail ? null : (
+            <div data-testid="skeleton-sources" style={{ ...panel, position: "absolute", top: COLUMNS_TOP, left: frame.sourcesLeft - ORIGIN, width: frame.sources }}>
+              <Lines widths={SOURCES_WIDTHS} start={2} building={building} gone={gone} max={frame.sources - 2 * PANEL_PAD} />
+            </div>
+          )}
+          <div data-testid="skeleton-build" style={{ ...panel, marginLeft: frame.buildLeft - ORIGIN, width: frame.build }}>
             <BuildBlocks plan={plan} start={2 + SOURCES_WIDTHS.length} building={building} gone={gone} />
           </div>
           {frame.beside ? (
-            <div data-testid="skeleton-details" style={{ position: "absolute", top: COLUMNS_TOP, left: frame.detailsLeft - ORIGIN, width: frame.detailsWidth }}>
-              <Lines widths={DETAILS_WIDTHS} start={2 + SOURCES_WIDTHS.length + 2 + TILES} building={building} gone={gone} max={frame.detailsWidth} />
+            <div data-testid="skeleton-details" style={{ ...panel, position: "absolute", top: COLUMNS_TOP, bottom: 0, left: frame.detailsLeft - ORIGIN, width: frame.detailsWidth }}>
+              <Lines widths={DETAILS_WIDTHS} start={2 + SOURCES_WIDTHS.length + 2 + TILES} building={building} gone={gone} max={frame.detailsWidth - 2 * PANEL_PAD} />
             </div>
           ) : null}
         </div>
