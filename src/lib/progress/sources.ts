@@ -22,3 +22,11 @@ export const XP_SOURCES: readonly XpSource[] = [
   { event: "Your solution is accepted", xp: "50 plus 1 per £ of reward, at most 150" },
   { event: "Your build is confirmed working again after being stale", xp: "15" },
 ];
+
+/**
+ * Synth 15: the sources the progress page lists. The run-based ones (a run of your build, a run you report, a stale build
+ * confirmed again) are not on the interface; the database still pays them, and this list says nothing about them.
+ */
+export const LISTED_XP_SOURCES: readonly XpSource[] = XP_SOURCES.filter(
+  (source) => !/\bruns?\b|confirmed/i.test(source.event),
+);

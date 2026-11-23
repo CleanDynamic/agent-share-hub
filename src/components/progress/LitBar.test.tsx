@@ -1,10 +1,11 @@
-// RC-P27 / UI-P09 — the progress bar is light, never type: a StripedBar in --lit.
+// RC-P27 / Synth 15 — the progress bar: a Mint fill on the Raised track, nothing written on it.
 //
-// The claims: the fill is --lit stripes on a --bar-base field, nothing is
-// written on the bar, it says its value to assistive technology as the text
-// beside it does, and it fills only that share of its width.
+// The claims: it says its value to assistive technology as the text beside it
+// does, it fills only that share of its width, it is 6px by default and 4px
+// under a challenge, and the paint is --brand-accent on --control.
 
 import { render, screen } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { LitBar } from "./LitBar";
@@ -21,7 +22,15 @@ describe("the bar's paint", () => {
     expect(bar.getAttribute("aria-valuemin")).toBe("0");
     expect(bar.getAttribute("aria-valuemax")).toBe("242");
     expect(bar.getAttribute("aria-valuetext")).toBe("169 of 242 XP");
-    expect((container.querySelector("[data-striped-fill]") as HTMLElement).style.width).toBe("69.8%");
+    expect((container.querySelector("[data-bar-fill]") as HTMLElement).style.width).toBe("69.8%");
+    expect(bar.style.height).toBe("6px");
+  });
+
+  it("paints the Mint fill on the Raised track, 4px when asked", () => {
+    const html = renderToStaticMarkup(<LitBar value={1} max={2} label="x" valueText="1 of 2" height={4} />);
+    expect(html).toContain("background:var(--control)");
+    expect(html).toContain("background:var(--brand-accent)");
+    expect(html).toContain("height:4px");
   });
 
   it("keeps its test id, defaulting to lit-bar", () => {

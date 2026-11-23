@@ -94,12 +94,12 @@ describe("the reset note says and looks as it was specified", () => {
     expect(design).toContain(`"${RESET_NOTE_TEXT}"`);
   });
 
-  it("is a recess panel at the panel radius with one tertiary action and no amber", () => {
+  it("is a Card (Synth 15: Card fill, radius 12) with one tertiary action and no amber", () => {
     // Static markup, because jsdom drops var() values from a style object.
     const html = renderToStaticMarkup(<ResetNote />);
 
-    expect(html).toContain("background-color:var(--recess)");
-    expect(html).toContain("border-radius:var(--r-panel)");
+    expect(html).toContain("background-color:var(--module)");
+    expect(html).toContain("border-radius:12px");
     expect(html).toContain("color:var(--text)");
 
     // One button, and the ghost one: primary and secondary buttons carry a visual slot, tertiary does not.
@@ -114,12 +114,10 @@ describe("the reset note says and looks as it was specified", () => {
   it("keeps its action a 44px touch target", () => {
     render(<ResetNote />);
 
-    // The control kit's lg size is CONTROL_CLASS.button.lg — 32px at desktop since
-    // the control-heights pass (it was h-11, 44px, then 36) and still 44px below
-    // 768px, the touch target this asserts. The size is not set anywhere else.
+    // The control kit's lg size is CONTROL_CLASS.button.lg: 44px at every width since Synth 06,
+    // the touch target this asserts. The size is not set anywhere else.
     const className = screen.getByRole("button", { name: "Got it" }).className;
-    expect(className).toContain("h-[32px]");
-    expect(className).toContain("max-md:min-h-[44px]");
+    expect(className).toContain("h-[44px]");
   });
 
   it("uses no word the vocabulary forbids", () => {

@@ -273,6 +273,7 @@ export const ALLOW: Record<string, Record<string, string>> = {
   project: {
     "src/pages/site/build/BuildSteps.tsx|Put {} in your project": "the reader's own code project, where a file goes; not a build",
     "src/components/build/FullPromptWindow.tsx|Custom instructions or project knowledge that applied": "an AI provider's Projects feature; not a build",
+    "src/pages/site/notfound/notFoundModel.ts|If you were looking for a project, it may have been removed.": "Synth 15: the 404's line for an old /project/ address, the same words ProjectDetail's own state says; not a build",
   },
   workflow: {
     "src/pages/site/compose/detailsModel.ts|The command or workflow": "a tool's command or CI workflow file; not a build",

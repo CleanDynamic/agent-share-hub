@@ -73,7 +73,7 @@ import Analytics from "@/pages/Analytics";
 import { MY_BUILD_STATS_KEY } from "@/components/analytics/BuildAnalytics";
 import { RESET_NOTE_KEY } from "@/components/progress/ResetNote";
 import { useProgress } from "@/hooks/useProgress";
-import { XP_SOURCES } from "@/lib/progress/sources";
+import { LISTED_XP_SOURCES, XP_SOURCES } from "@/lib/progress/sources";
 
 const DAY = 86_400_000;
 const ago = (days: number) => new Date(Date.now() - days * DAY).toISOString();
@@ -109,7 +109,7 @@ const WEEK = [
   { reason: "run_reported", source_id: "b-22", created_at: NOW },
   { reason: "solution_accepted", source_id: "s-31", created_at: NOW },
 ];
-const HELD = ["founder", "first-build", "runner", "well-proven"];
+const HELD = ["founder", "first-build", "runner", "well-proven", "family"];
 const FIGURES = { builds: 2, reproductions_received: 7, rebuilds_of_their_work: 3 };
 
 /** The tables and functions of the features XP-DESIGN.md parks, and of the old panels RC-P27 unmounted. */
@@ -166,8 +166,8 @@ function renderPage() {
 async function settled() {
   await screen.findAllByTestId("badge-slot");
   await screen.findAllByTestId("weekly-challenge");
-  await screen.findAllByTestId("progress-figure-value");
-  await screen.findByTestId("maker-figures");
+  await screen.findByTestId("progress-xp");
+  await screen.findByTestId("build-stats-table");
 }
 
 /** A section by what names it: its heading, or the note. */
@@ -228,19 +228,20 @@ describe("the six sections", () => {
     const page = screen.getByTestId("progress-page");
     expect([...page.children].map(sectionName)).toEqual([
       "Reset note",
-      "Progress",
+      "Level 3",
       "Needs you",
-      "Your builds",
+      "2 builds",
       "This week",
-      "Badges",
+      "3 of 6 badges",
     ]);
     expect(within(page).getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
-      "Progress",
+      "Level 3",
       "Needs you",
-      "Your builds",
+      "2 builds",
       "This week",
-      "Badges",
+      "3 of 6 badges",
     ]);
+    expect(screen.getByRole("heading", { level: 1, name: "Your progress" })).toBeTruthy();
     expect(within(page).getAllByRole("note")).toHaveLength(1);
   });
 
@@ -251,7 +252,7 @@ describe("the six sections", () => {
     await settled();
 
     const page = screen.getByTestId("progress-page");
-    expect([...page.children].map(sectionName)).toEqual(["Progress", "Your builds", "This week", "Badges"]);
+    expect([...page.children].map(sectionName)).toEqual(["Level 3", "2 builds", "This week", "3 of 6 badges"]);
   });
 
   it("leave out every panel of the old product", async () => {
@@ -308,29 +309,28 @@ describe("colour", () => {
     expect(inked.filter((element) => inkOf(element, root) === "var(--lit)").map((element) => element.textContent)).toEqual([]);
 
     // The one other amber: a highest-tier badge's fill, whose ink is --on-lit.
-    const highest = root.querySelector('[data-testid="badge-mark-well-proven"]');
+    const highest = root.querySelector('[data-testid="badge-mark-family"]');
     expect(styleOf(highest)["background"]).toBe("var(--lit)");
     expect(styleOf(highest)["color"]).toBe("var(--on-lit)");
   });
 });
 
 describe("PROGRESS", () => {
-  it("gives the level, the XP and the XP to the next level in DM Mono with tabular digits, in --text", () => {
+  it("heads the section with the level, and gives the XP and the XP to the next level in mono 13 Text 2 (Synth 15)", () => {
     const root = staticPage();
 
-    const values = [...root.querySelectorAll('[data-testid="progress-figure-value"]')];
-    expect(values.map((value) => value.textContent)).toEqual(["3", "412", "73"]);
-    for (const value of values) {
-      const style = styleOf(value);
-      expect(style["font-family"]).toContain("Geist Mono");
-      expect(style["font-variant-numeric"]).toBe("tabular-nums");
-      expect(style["color"]).toBe("var(--text)");
-    }
-    expect([...root.querySelectorAll('[data-testid="progress-figure"]')].map((figure) => figure.lastElementChild?.textContent)).toEqual([
-      "level",
-      "XP",
-      "XP to level 4",
-    ]);
+    expect(root.querySelector('[data-testid="progress-level"]')?.textContent).toBe("Level 3");
+    const xp = root.querySelector('[data-testid="progress-xp"]');
+    expect(xp?.textContent).toBe("412 XP · 73 to level 4");
+    const style = styleOf(xp);
+    expect(style["font-family"]).toContain("Geist Mono");
+    expect(style["font-variant-numeric"]).toBe("tabular-nums");
+    expect(style["color"]).toBe("var(--text2)");
+    // The bar: 6px, the Mint fill on the Raised track.
+    const track = root.querySelector('[data-testid="level-bar"] [role="progressbar"]');
+    expect(styleOf(track)["height"]).toBe("6px");
+    expect(styleOf(track)["background"]).toBe("var(--control)");
+    expect(styleOf(track?.firstElementChild ?? null)["background"]).toBe("var(--brand-accent)");
   });
 
   it("draws the level's progress as the bar, 169 of the 242 XP between level 3 and level 4", async () => {
@@ -342,12 +342,18 @@ describe("PROGRESS", () => {
     expect(bar.getAttribute("aria-valuetext")).toBe("169 of 242 XP");
   });
 
-  it("lists how you earn: the six sources, in order, each with its XP", async () => {
+  it("lists how you earn: the sources that are not about runs, in order, each with its XP", async () => {
     renderPage();
     const heading = await screen.findByRole("heading", { level: 3, name: "How you earn" });
 
     const items = within(heading.parentElement as HTMLElement).getAllByTestId("xp-source");
-    expect(items.map((item) => item.textContent)).toEqual(XP_SOURCES.map((source) => `${source.event}${source.xp} XP`));
+    expect(items.map((item) => item.textContent)).toEqual(LISTED_XP_SOURCES.map((source) => `${source.event}${source.xp} XP`));
+    expect(LISTED_XP_SOURCES.map((source) => source.event)).toEqual([
+      "Your build is published (first time only)",
+      "Someone publishes a rebuild of your build",
+      "Your solution is accepted",
+    ]);
+    expect(XP_SOURCES).toHaveLength(6);
   });
 
   it("says a refused read is a refusal, never level 1", async () => {
@@ -357,19 +363,20 @@ describe("PROGRESS", () => {
     const refusal = await screen.findByTestId("progress-error");
     expect(refusal.textContent).toContain("You don't have access to this.");
     expect(within(refusal).getByRole("button", { name: "Try again" })).toBeTruthy();
-    expect(screen.queryByTestId("progress-figure-value")).toBeNull();
+    expect(screen.queryByTestId("progress-xp")).toBeNull();
     expect(screen.queryByRole("progressbar", { name: /Progress to level/ })).toBeNull();
   });
 });
 
 describe("THIS WEEK", () => {
-  it("shows at most three challenges, each n of m in DM Mono beside the same bar", async () => {
+  it("shows the challenges that are not about runs, each n / m in mono beside the 4px bar", async () => {
     renderPage();
     const rows = await screen.findAllByTestId("weekly-challenge");
 
     expect(rows.length).toBeLessThanOrEqual(3);
-    expect(rows.map((row) => within(row).getByTestId("weekly-challenge-count").textContent)).toEqual(["2 of 3", "1 of 1", "0 of 1"]);
-    expect(rows.map((row) => within(row).getByRole("progressbar").getAttribute("aria-valuenow"))).toEqual(["2", "1", "0"]);
+    expect(rows.map((row) => row.textContent)).toEqual(["Solve a gap1 / 1"]);
+    expect(rows.map((row) => within(row).getByRole("progressbar").getAttribute("aria-valuenow"))).toEqual(["1"]);
+    expect(screen.queryByText(/run three|re-confirm/i)).toBeNull();
     for (const row of rows) {
       const count = within(row).getByTestId("weekly-challenge-count");
       expect(count.style.fontFamily).toContain("Geist");
@@ -379,29 +386,21 @@ describe("THIS WEEK", () => {
 });
 
 describe("BADGES", () => {
-  it("draws the ten as BadgeMark, earned first, then not yet", async () => {
+  it("draws the badges that are not about runs as BadgeMark on Cards, earned first, then not yet", async () => {
     renderPage();
     const slots = await screen.findAllByTestId("badge-slot");
 
     const marks = slots.map((slot) => slot.querySelector('[role="img"]') as HTMLElement);
-    expect(marks).toHaveLength(10);
-    expect(marks.map((mark) => mark.getAttribute("data-earned"))).toEqual([
-      "true",
-      "true",
-      "true",
-      "true",
-      "false",
-      "false",
-      "false",
-      "false",
-      "false",
-      "false",
-    ]);
-    expect(marks.slice(0, 4).map((mark) => mark.getAttribute("data-testid"))).toEqual([
+    expect(marks).toHaveLength(6);
+    expect(marks.map((mark) => mark.getAttribute("data-earned"))).toEqual(["true", "true", "true", "false", "false", "false"]);
+    expect(marks.map((mark) => mark.getAttribute("data-testid"))).toEqual([
       "badge-mark-first-build",
-      "badge-mark-runner",
       "badge-mark-founder",
-      "badge-mark-well-proven",
+      "badge-mark-family",
+      "badge-mark-solver",
+      "badge-mark-rebuilt",
+      "badge-mark-fixer",
     ]);
+    expect(screen.getByRole("heading", { level: 2, name: "3 of 6 badges" })).toBeTruthy();
   });
 });
