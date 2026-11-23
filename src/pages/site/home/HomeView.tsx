@@ -65,7 +65,6 @@ import {
   runsLabel,
   shortAgo,
   solutionsLabel,
-  weekMeta,
   weekSummary,
   type HomeBuildPost,
   type HomeCover,
@@ -85,7 +84,7 @@ import {
   type HomeWhereNextRow,
   type HomePublished,
   STILL_OPEN_HREF,
-  STILL_OPEN_META,
+  STILL_OPEN_PHRASE,
   type StillOpenScope,
 } from "./homeModel";
 import type { HomeReplyGroup, HomeTopicPost } from "./homeTopics";
@@ -236,11 +235,11 @@ function Cover({ cover, height, width, eager = false }: { cover: HomeCover; heig
 
 const SINCE_DOT: Record<HomeSinceTone, string> = { worked: t.evidence, failed: t.catBreakage, rebuild: t.text2, stale: t.lit };
 
-export function SinceSection({ meta, rows, now }: { meta: string; rows: readonly HomeSinceRow[]; now: number }) {
+export function SinceSection({ rows, now }: { meta?: string; rows: readonly HomeSinceRow[]; now: number }) {
   return (
     <section aria-label="Since you were last here">
       <div style={{ marginBottom: 16 }}>
-        <SectionHead title="Since you were last here" meta={meta} headingLevel={2} />
+        <SectionHead title="Since you were last here" headingLevel={2} />
       </div>
       <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column" }}>
         {rows.map((row, index) => {
@@ -278,14 +277,14 @@ const sectionFrame = (label: string, head: ReactNode, gap = 8) => (body: ReactNo
 );
 
 export function ContinueSection({ drafts }: { drafts: HomeViewProps["drafts"] }) {
-  const meta = drafts.status === "ready" ? `${drafts.data.total} ${drafts.data.total === 1 ? "draft" : "drafts"} · latest first` : undefined;
+  const title = drafts.status === "ready" ? `${drafts.data.total} ${drafts.data.total === 1 ? "draft" : "drafts"}` : "Continue editing";
   return (
     <PageState
       read={readOfLoadable(drafts)}
       thing="your drafts"
       region="Continue editing"
       skeleton={<SectionBones rows={3} height={48} what="your drafts" />}
-      frame={sectionFrame("Continue editing", <SectionHead title="Continue editing" meta={meta} to={DRAFTS} openName="drafts" headingLevel={2} />)}
+      frame={sectionFrame("Continue editing", <SectionHead title={title} to={DRAFTS} openName="drafts" headingLevel={2} />)}
       empty={{ when: () => drafts.status === "ready" && drafts.data.rows.length === 0, line: "No drafts in progress." }}
     >
       {() =>
@@ -304,14 +303,14 @@ export function ContinueSection({ drafts }: { drafts: HomeViewProps["drafts"] })
 }
 
 export function SessionsSection({ sessions, onAdd }: { sessions: HomeViewProps["sessions"]; onAdd: (id: string) => void }) {
-  const meta = sessions.status === "ready" ? `${sessions.data.total} imported · newest first` : undefined;
+  const title = sessions.status === "ready" ? `${sessions.data.total} ${sessions.data.total === 1 ? "session" : "sessions"}` : "Your sessions";
   return (
     <PageState
       read={readOfLoadable(sessions)}
       thing="your sessions"
       region="Your sessions"
       skeleton={<SectionBones rows={2} height={52} what="your sessions" />}
-      frame={sectionFrame("Your sessions", <SectionHead title="Your sessions" meta={meta} to={DRAFTS} openName="sessions" headingLevel={2} />)}
+      frame={sectionFrame("Your sessions", <SectionHead title={title} to={DRAFTS} openName="sessions" headingLevel={2} />)}
       empty={{ when: () => sessions.status === "ready" && sessions.data.rows.length === 0, line: EMPTY.sessions }}
     >
       {() =>
@@ -375,7 +374,7 @@ export function WeekSection({ week }: { week: HomeViewProps["week"] }) {
       thing="your week"
       region="Your week"
       skeleton={<SectionBones rows={3} height={40} what="your week" />}
-      frame={sectionFrame("Your week", <SectionHead title="Your week" meta={week.status === "ready" ? weekMeta(week.data.streak) : undefined} headingLevel={2} />, 14)}
+      frame={sectionFrame("Your week", <SectionHead title="Your week" headingLevel={2} />, 14)}
     >
       {() =>
         week.status === "ready" && (
@@ -423,7 +422,7 @@ function StudioSignedOut() {
 function Studio(props: HomeViewProps) {
   if (props.drafts.status === "signed-out") return <StudioSignedOut />;
   const parts: ReactNode[] = [];
-  if (props.since) parts.push(<SinceSection key="since" meta={props.since.meta} rows={props.since.rows} now={props.now} />);
+  if (props.since) parts.push(<SinceSection key="since" rows={props.since.rows} now={props.now} />);
   parts.push(<ContinueSection key="drafts" drafts={props.drafts} />);
   parts.push(<SessionsSection key="sessions" sessions={props.sessions} onAdd={props.onAddSession} />);
   // UX-03 P6: a week with nothing done yet is not drawn.
@@ -891,7 +890,7 @@ export function RequestsSection({ requests, scope = "spaces" }: { requests: Home
       thing="posts"
       region="Still open"
       skeleton={<SectionBones rows={3} height={48} what="still-open topics" />}
-      frame={sectionFrame("Still open", <SectionHead title="Still open" meta={STILL_OPEN_META[scope]} to={STILL_OPEN_HREF} openName="OpenBuilds" headingLevel={2} />)}
+      frame={sectionFrame("Still open", <SectionHead title={requests.status === "ready" && requests.data.length > 0 ? `${requests.data.length} ${STILL_OPEN_PHRASE[scope]}` : "Still open"} to={STILL_OPEN_HREF} openName="OpenBuilds" headingLevel={2} />)}
       empty={{ when: () => requests.status === "ready" && requests.data.length === 0, line: "Nothing is still open right now." }}
     >
       {() =>
@@ -986,11 +985,11 @@ const roomSettled = (props: HomeViewProps): boolean =>
  */
 export function PublishedSection({ published, onCopyLink }: { published: HomePublished; onCopyLink?: (slug: string) => void }) {
   const newest = published.rows[0];
-  const meta = `${published.total} published${published.reproduced === 0 ? " · none reproduced yet" : ""}`;
+  const title = `${published.total} published ${published.total === 1 ? "build" : "builds"}`;
   return (
     <section aria-label="Your published builds">
       <div style={{ marginBottom: 8 }}>
-        <SectionHead title="Your published builds" meta={meta} headingLevel={2} />
+        <SectionHead title={title} headingLevel={2} />
       </div>
       {published.rows.map((row, index) => (
         <Link key={row.id} to={row.href} data-testid="home-published-row" style={rowLink(index === published.rows.length - 1, { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, minHeight: 32 })}>

@@ -20,8 +20,9 @@
 
 import type { CSSProperties, HTMLAttributes } from "react";
 
-import { useIsPhone } from "@/components/shell/useMinWidth";
 import { t } from "@/lib/theme/tokens";
+
+import { FluidShape } from "./FluidField";
 
 import { Button } from "./Button";
 
@@ -43,19 +44,25 @@ export interface EmptyStateProps extends Omit<HTMLAttributes<HTMLDivElement>, "c
 }
 
 export function EmptyState({ line, detail, action, style, ...rest }: EmptyStateProps) {
-  const phone = useIsPhone();
   /* UI-P97: one 13 `--text` line and one action. Secondary, because a panel's empty state is never the page's
      decision; a view with no other primary passes its own button instead of an `action`. 44 tall on a phone. */
   return (
     <div
       data-ui="empty-state"
       {...rest}
-      style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 12, padding: "24px 16px", ...style }}
+      style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 12, padding: "24px 16px", ...style }}
     >
-      <p style={{ margin: 0, fontFamily: "var(--font-ui)", fontSize: 13, lineHeight: "20px", fontWeight: 400, color: t.text }}>{line}</p>
-      {detail ? <p style={{ margin: "-8px 0 0", fontFamily: "var(--font-ui)", fontSize: 13, lineHeight: "20px", fontWeight: 400, color: t.text2 }}>{detail}</p> : null}
+      {/* Synth 06: a dot field fades in from one edge, over 8% of the area. */}
+      <FluidShape
+        aria-hidden="true"
+        data-testid="empty-dots"
+        dotKind="fill"
+        style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: "8%", pointerEvents: "none", maskImage: "linear-gradient(to top, black, transparent)", WebkitMaskImage: "linear-gradient(to top, black, transparent)" }}
+      />
+      <p style={{ margin: 0, fontFamily: "var(--font-ui)", fontSize: 15, lineHeight: "20px", fontWeight: 400, color: t.text2 }}>{line}</p>
+      {detail ? <p style={{ margin: "-8px 0 0", fontFamily: "var(--font-ui)", fontSize: 13, lineHeight: "16px", fontWeight: 400, color: t.label }}>{detail}</p> : null}
       {action ? (
-        <Button variant="secondary" size={phone ? 44 : 32} fontSize={13} href={action.href} onClick={action.onClick}>
+        <Button variant="secondary" size={32} fontSize={13} href={action.href} onClick={action.onClick}>
           {action.label}
         </Button>
       ) : null}

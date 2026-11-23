@@ -34,7 +34,7 @@ import { useInteractive } from "@/lib/theme/interactive";
    is a pseudo-element, so no style object can reach it, and a hand-written rule
    in `index.css` would lose to Tailwind at build time. The remaining mechanism
    is a Tailwind utility that spends the token —
-   `placeholder:text-[color:var(--text2)]` — which is a GENERATED utility rather
+   `placeholder:text-[color:var(--label)]` — which is a GENERATED utility rather
    than a new CSS class, so it is not the thing `neoscale-ui` RULE 1 forbids.
    The `color:` hint is load-bearing: without it Tailwind cannot tell a bare
    `var()` from a font size and drops the utility.
@@ -69,7 +69,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
       <input
         type={type}
         className={cn(
-          "flex w-full rounded-md border border-input bg-background text-base file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-[color:var(--text2)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+          "flex w-full rounded-md border border-input bg-background text-base file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-[color:var(--label)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
           CONTROL_CLASS.field,
           className,
         )}

@@ -40,7 +40,7 @@ import { elevation, SCRIM } from "./elevation";
 import { focusRing } from "./focus";
 import { r } from "./radius";
 import { t } from "./tokens";
-import { DM_MONO } from "./type";
+import { DM_MONO, FIGTREE } from "./type";
 
 /* ── Motion ───────────────────────────────────────────────────────────────────
    BG-P32 MOVED THE VOCABULARY OUT. Durations, easings, the two media queries
@@ -161,20 +161,18 @@ export function buttonSlot(variant: ButtonVariant): string | undefined {
 }
 
 function buttonPaint(variant: ButtonVariant): CSSProperties {
+  /* Synth 06: no borders, no inner highlight, no shadow on any kind. */
   switch (variant) {
     case "destructive":
-      return { background: t.catBreakage, color: t.onAction, borderColor: "transparent" };
+      /* Danger: Raised fill, Danger text. */
+      return { background: t.control, color: t.dangerText, borderColor: "transparent" };
     case "secondary":
-      return { background: t.glass, color: t.text, borderColor: t.line };
     case "outline":
-      return { background: t.glass2, color: t.text, borderColor: t.line };
+      return { background: t.control, color: t.text, borderColor: "transparent" };
     case "ghost":
       return { background: "transparent", color: t.text2, borderColor: "transparent" };
     case "link":
-      /* THE UNDERLINE IS AT REST, NOT ONLY ON HOVER. A link distinguished from
-         the text around it by colour alone fails WCAG 1.4.1, and hover is not
-         available to a touch user at all — so the affordance has to be visible
-         before anyone interacts. Hover thickens it rather than introducing it. */
+      /* THE UNDERLINE IS AT REST, NOT ONLY ON HOVER (WCAG 1.4.1). */
       return {
         background: "transparent",
         color: t.action,
@@ -185,7 +183,8 @@ function buttonPaint(variant: ButtonVariant): CSSProperties {
       };
     case "default":
     default:
-      return { background: t.action, color: t.onAction, borderColor: "transparent" };
+      /* Main: Mint fill, On-mint text. One per view. */
+      return { background: t.brandAccent, color: t.onBrandAccent, borderColor: "transparent" };
   }
 }
 
@@ -193,22 +192,28 @@ function buttonPaint(variant: ButtonVariant): CSSProperties {
 function buttonHover(variant: ButtonVariant): CSSProperties {
   switch (variant) {
     case "ghost":
-      /* A ghost button has no resting fill, so hover is where it acquires one:
-         that is what stops it reading as a label rather than a control. */
-      return { background: t.glass2, color: t.text };
+      /* Ghost rests with no fill; hover is Card. */
+      return { background: t.module, color: t.text };
     case "link":
       return { textDecorationThickness: "2px" };
     case "secondary":
-      return { background: t.glassHi, borderColor: t.text2 };
     case "outline":
-      return { background: t.glass, borderColor: t.text2 };
+    case "destructive":
+      return { background: `color-mix(in srgb, ${t.text} 6%, ${t.control})` };
     default:
-      /* Primary and destructive keep their fill and lighten by a measured step
-         rather than by an opacity change, which would let the page show
-         through a button whose whole job is to be solid. */
       return { filter: "brightness(1.08)" };
   }
 }
+
+export type ButtonSize = "default" | "sm" | "lg" | "icon";
+
+/** Synth 06: Main/secondary/ghost/danger 36 tall radius 18, 15/600; small 32 radius 16, 13/600; large 44 radius 22, 17/600; icon 36 round. */
+export const BUTTON_SHAPE: Record<ButtonSize, { radius: string; fontSize: number }> = {
+  default: { radius: "18px", fontSize: 15 },
+  sm: { radius: "16px", fontSize: 13 },
+  lg: { radius: "22px", fontSize: 17 },
+  icon: { radius: "999px", fontSize: 15 },
+};
 
 /**
  * A button, resting or in any state.
@@ -216,23 +221,26 @@ function buttonHover(variant: ButtonVariant): CSSProperties {
  * `link` is the one variant that keeps no border and no radius worth speaking
  * of — it is text — but it still takes the ring, because it is still a tab stop.
  */
-export function buttonStyle(variant: ButtonVariant, state: ControlState = {}): CSSProperties {
+export function buttonStyle(variant: ButtonVariant, state: ControlState = {}, size: ButtonSize = "default"): CSSProperties {
   const { hovered, focusVisible, pressed, disabled } = state;
+  const shape = BUTTON_SHAPE[size];
   const live = !disabled;
   const hot = Boolean(live && hovered);
 
   return {
     ...buttonPaint(variant),
-    borderRadius: variant === "link" ? undefined : r.control,
-    borderWidth: variant === "link" ? undefined : 1,
-    borderStyle: variant === "link" ? undefined : "solid",
+    borderRadius: variant === "link" ? undefined : shape.radius,
+    borderWidth: 0,
+    borderStyle: "none",
+    boxShadow: "none",
+    fontSize: shape.fontSize,
+    fontWeight: 600,
     transition: uiTransition(),
     cursor: disabled ? "not-allowed" : "pointer",
     ...(hot ? buttonHover(variant) : {}),
-    ...hoverLift(hot),
     /* Pressed cancels the lift and settles the control back onto the page, so a
        click reads as a press rather than as a second hover. */
-    ...(live && pressed ? { transform: "translateY(0)", filter: "brightness(.94)" } : {}),
+    ...(live && pressed ? { filter: "brightness(.94)" } : {}),
     ...ring(live && focusVisible),
   };
 }
@@ -257,25 +265,21 @@ export interface FieldState extends ControlState {
   readonly invalid?: boolean;
 }
 
-export function fieldStyle(state: FieldState = {}): CSSProperties {
+export function fieldStyle(state: FieldState = {}, shape: "line" | "area" = "line"): CSSProperties {
   const { hovered, focusVisible, invalid, disabled } = state;
   const live = !disabled;
 
-  const borderColor = invalid
-    ? t.catBreakage
-    : live && focusVisible
-      ? t.action
-      : live && hovered
-        ? t.text2
-        : t.line;
+  /* Synth 06: Panel fill, an inset 1px `--field-edge`, no border. The edge is a shadow so the box does not grow. */
+  const edge = invalid ? t.dangerText : live && focusVisible ? t.action : live && hovered ? t.text2 : t.fieldEdge;
 
   return {
-    background: t.recess,
+    background: t.surface,
     color: t.text,
-    borderColor,
-    borderWidth: 1,
-    borderStyle: "solid",
-    borderRadius: r.control,
+    borderWidth: 0,
+    borderStyle: "none",
+    boxShadow: `inset 0 0 0 1px ${edge}`,
+    borderRadius: shape === "area" ? r.area : r.field,
+    fontSize: 15,
     transition: uiTransition(),
     cursor: disabled ? "not-allowed" : undefined,
     ...ring(live && focusVisible),
@@ -290,14 +294,14 @@ export function fieldStyle(state: FieldState = {}): CSSProperties {
  * message and the border can share one token.
  */
 export const fieldMessageStyle: CSSProperties = {
-  color: t.catBreakage,
+  color: t.dangerText,
   fontFamily: DM_MONO,
   fontSize: "12px",
   lineHeight: 1.4,
 };
 
 /** `--text2`, so a placeholder reads as absent content rather than as a value. */
-export const placeholderStyle: CSSProperties = { color: t.text2 };
+export const placeholderStyle: CSSProperties = { color: t.label };
 
 /* ── Chips and badges ─────────────────────────────────────────────────────────
    Radius `--r-chip`, and DM Mono at 12px because a chip is a label on a
@@ -308,11 +312,10 @@ export const placeholderStyle: CSSProperties = { color: t.text2 };
 
 /** 12px DM Mono. The chip label, and the one type role a chip may carry. */
 export const chipType: CSSProperties = {
-  fontFamily: DM_MONO,
-  fontSize: "12px",
+  fontFamily: FIGTREE,
+  fontSize: "13px",
   fontWeight: 500,
-  lineHeight: 1.3,
-  letterSpacing: "0.02em",
+  lineHeight: "16px",
 };
 
 export type ChipTone = "category" | "neutral" | "action" | "evidence" | "outline";
@@ -340,7 +343,7 @@ export function chipStyle(
           ? { background: t.evidenceFill, color: t.evidence }
           : tone === "outline"
             ? { background: "transparent", color: t.text2 }
-            : { background: t.recess, color: t.text2 };
+            : { background: t.module, color: t.text };
 
   return {
     ...paint,
@@ -376,8 +379,7 @@ export const chipSelectedStyle: CSSProperties = {
 /* ── Tabs ─────────────────────────────────────────────────────────────────── */
 
 export const tabsListStyle: CSSProperties = {
-  background: t.recess,
-  borderRadius: r.control,
+  background: "transparent",
   transition: uiTransition(),
 };
 
@@ -391,7 +393,8 @@ export function tabTriggerStyle(state: ControlState = {}): CSSProperties {
   const { focusVisible, disabled } = state;
 
   return {
-    borderRadius: r.chip,
+    borderRadius: 0,
+    fontSize: 15,
     transition: uiTransition(),
     cursor: disabled ? "not-allowed" : "pointer",
     ...ring(!disabled && focusVisible),
@@ -408,9 +411,10 @@ export function tabTriggerStyle(state: ControlState = {}): CSSProperties {
  * a layout change, which this restyle is not allowed to make.
  */
 export const TAB_TRIGGER_CLASS =
-  "text-[color:var(--text2)] hover:text-[color:var(--text)] " +
-  "data-[state=active]:bg-[color:var(--glass)] data-[state=active]:text-[color:var(--text)] " +
-  "data-[state=active]:shadow-[inset_0_-2px_0_0_var(--action)]";
+  "relative font-medium text-[color:var(--label)] hover:text-[color:var(--text)] " +
+  "data-[state=active]:font-bold data-[state=active]:text-[color:var(--text)] " +
+  "after:content-[''] after:pointer-events-none after:absolute after:bottom-0 after:left-1/2 after:h-1 after:w-14 after:-translate-x-1/2 after:rounded-sm after:bg-[color:var(--tab-bar)] after:opacity-0 " +
+  "data-[state=active]:after:opacity-100";
 
 /* ── Switch, checkbox, radio ──────────────────────────────────────────────────
    WHY THE CHECKED COLOURS ARE CLASSES AND THE REST IS INLINE. Radix publishes
@@ -467,7 +471,7 @@ export function switchTrackStyle(state: ControlState = {}): CSSProperties {
      restyle must not do. Only the border's COLOUR is ours; its width belongs to
      the layout. */
   return {
-    borderRadius: r.control,
+    borderRadius: 10,
     transition: uiTransition(),
     cursor: disabled ? "not-allowed" : "pointer",
     ...ring(!disabled && focusVisible),
@@ -504,8 +508,8 @@ export function switchTrackStyle(state: ControlState = {}): CSSProperties {
    CHECKED IS UNCHANGED. `--action` fill with `--action` border, and the
    checked/unchecked distinction was never the failing pairing. */
 export const SWITCH_TRACK_CLASS =
-  "bg-[color:var(--recess)] border-[color:var(--text2)] hover:border-[color:var(--text)] " +
-  "data-[state=checked]:bg-[color:var(--action)] data-[state=checked]:border-[color:var(--action)]";
+  "bg-[color:var(--control)] border-transparent " +
+  "data-[state=checked]:bg-[color:var(--brand-accent)]";
 
 /** The thumb. Circular — `--r-full` is correct here and almost nowhere else. */
 export function switchThumbStyle(): CSSProperties {
@@ -516,7 +520,7 @@ export function switchThumbStyle(): CSSProperties {
 }
 
 export const SWITCH_THUMB_CLASS =
-  "bg-[color:var(--text2)] data-[state=checked]:bg-[color:var(--on-action)]";
+  "bg-[color:var(--label)] data-[state=checked]:bg-[color:var(--on-brand-accent)]";
 
 /**
  * The checkbox at `--r-chip`, as specified — and, at 15px square, fully round.
@@ -619,7 +623,8 @@ export const menuPanelStyle: CSSProperties = {
   borderColor: t.windowBorder,
   borderWidth: 1,
   borderStyle: "solid",
-  borderRadius: r.panel,
+  borderRadius: 12,
+  padding: 4,
   color: t.text,
   ...elevation.raised,
 };
@@ -639,7 +644,7 @@ export const menuPanelStyle: CSSProperties = {
 export function menuItemStyle(state: ControlState = {}): CSSProperties {
   return {
     minHeight: CONTROL_SIZE.menuItem,
-    borderRadius: r.chip,
+    borderRadius: 8,
     transition: uiTransition(),
     cursor: state.disabled ? "not-allowed" : "pointer",
   };
@@ -659,7 +664,7 @@ export function menuItemStyle(state: ControlState = {}): CSSProperties {
  * covering both keeps one definition for both menus.
  */
 export const MENU_ITEM_CLASS =
-  "text-[color:var(--text2)] data-[highlighted]:bg-[color:var(--recess)] data-[highlighted]:text-[color:var(--text)] focus:bg-[color:var(--recess)] focus:text-[color:var(--text)]";
+  "text-[color:var(--text)] data-[highlighted]:bg-[color:var(--module)] data-[highlighted]:text-[color:var(--text)] focus:bg-[color:var(--module)] focus:text-[color:var(--text)]";
 
 /** A hairline between groups of menu items. */
 export const menuSeparatorStyle: CSSProperties = { background: t.line };
@@ -673,7 +678,7 @@ export const dialogPanelStyle: CSSProperties = {
   borderColor: t.windowBorder,
   borderWidth: 1,
   borderStyle: "solid",
-  borderRadius: r.panel,
+  borderRadius: r.window,
   color: t.text,
   ...elevation.overlay,
 };
@@ -847,15 +852,15 @@ export function themeToggleSegmentStyle(state: ControlState & { selected?: boole
 
 export const CONTROL_SIZE = {
   /** The shadcn button, every size 32 (the control-heights pass); lg keeps 44 on a phone. */
-  button: { sm: 32, default: 32, lg: 32, icon: 32 },
+  button: { sm: 32, default: 36, lg: 44, icon: 36 },
   /** An input or a select trigger: 32. */
-  field: 32,
+  field: 40,
   /** A selectable chip — the filter chip: 36 → 30. */
-  chip: 30,
+  chip: 32,
   /** A tabs list: 32. */
-  tab: 32,
+  tab: 53,
   /** The switch track: 24 tall, 40 wide (`CONTROL_CLASS.switchTrack`). */
-  switchTrack: 24,
+  switchTrack: 20,
   /** The switch thumb: 20 → 16 square. */
   switchThumb: 16,
   /** A checkbox: 18 → 15. */
@@ -863,7 +868,7 @@ export const CONTROL_SIZE = {
   /** A radio: 16, under 20, so the table keeps it. */
   radio: 16,
   /** A menu item: 32. */
-  menuItem: 32,
+  menuItem: 36,
 } as const;
 
 /** Below 768px, a control that was at least 44px tall keeps a 44px hit area. */
@@ -873,34 +878,34 @@ export const TOUCH_HIT_CLASS = "max-md:min-h-[44px]";
 export const CONTROL_CLASS = {
   button: {
     /** h-10 px-4 py-2 */
-    default: "h-[32px] px-3 py-1.5",
+    default: "h-[36px] px-4 py-0",
     /** h-9 px-3 */
-    sm: "h-[32px] rounded-md px-3",
+    sm: "h-[32px] px-[14px] py-0",
     /** h-11 px-8, and 44px on a phone */
-    lg: "h-[32px] rounded-md px-3 max-md:min-h-[44px]",
+    lg: "h-[44px] px-5 py-0",
     /** h-10 w-10 */
-    icon: "h-[32px] w-[32px]",
+    icon: "h-[36px] w-[36px]",
   },
   /** h-10 px-3 py-2 — the input and the select trigger */
-  field: "h-[32px] px-3 py-1.5",
+  field: "h-[40px] px-[14px] py-0",
   /** px-3 py-2; its min-h-[80px] is over 64, so the table keeps it */
-  textarea: "px-[9px] py-1.5",
+  textarea: "px-3 py-2",
   /** px-2.5 py-0.5 — the badge */
-  chip: "px-[7px] py-0.5",
+  chip: "h-6 px-[10px] py-0",
   /** h-10 p-1 */
-  tabList: "h-[32px] p-1",
+  tabList: "h-[53px] p-0",
   /** px-3 py-1.5 */
-  tabTrigger: "px-[9px] py-1",
+  tabTrigger: "h-[53px] px-4 py-0",
   /** h-6 w-11; the control-heights pass's 24 by 40 */
-  switchTrack: "h-6 w-10",
+  switchTrack: "h-5 w-9",
   /** h-5 w-5, travelling 20px; now 16px travelling 20 to sit flush in the 36px inner track */
-  switchThumb: "h-4 w-4 data-[state=checked]:translate-x-5",
+  switchThumb: "h-4 w-4 data-[state=checked]:translate-x-4",
   /** h-4 w-4 */
   checkbox: "h-[15px] w-[15px]",
   /** h-4 w-4, kept */
   radio: "h-4 w-4",
   /** py-1.5; `menuItemStyle` holds the 32px minimum */
-  menuItem: "py-1",
+  menuItem: "px-[10px] py-1",
 } as const;
 
 /**

@@ -10,7 +10,6 @@ import { Avatar } from "@/components/brand/Avatar";
 import type { GalleryMedia } from "@/lib/build";
 import { MediaViewerProvider } from "@/components/post/media/MediaViewer";
 import { PostMediaGrid } from "@/components/post/media/PostMediaGrid";
-import { Plaque } from "@/components/brand/Plaque";
 import { EngagementRow, TopicEngagementRow, type RowEngagement, type TopicEngagementRowProps } from "@/components/social/EngagementRow";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { DashedSlot } from "@/components/vision/DashedSlot";
@@ -67,7 +66,7 @@ function HeadingLink({ to, level = 3, children }: { to: string; level?: 2 | 3; c
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   return (
     <Link to={to} data-testid="post-card-heading-link" {...handlers} style={{ display: "inline-block", lineHeight: "24px", color: t.text, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: 4, ...ring(state.focusVisible) }}>
-      <Heading style={{ ...plain, display: "inline", fontSize: 13, fontWeight: 500, lineHeight: 1.4 }}>{children}</Heading>
+      <Heading style={{ ...plain, display: "inline", fontSize: 15, fontWeight: 600, lineHeight: "20px" }}>{children}</Heading>
     </Link>
   );
 }
@@ -86,13 +85,12 @@ function SpaceLink({ to, children }: { to: string; children: string }) {
 function BuildAttachment({ attachment, onPickTile, renderTile }: { attachment: Extract<CardAttachment, { kind: "build" }>; onPickTile?: (id: string) => void; renderTile?: PostCardProps["renderTile"] }) {
   return (
     <div>
-      <div style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: radiusVar("r-card"), padding: 16, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+      <div style={{ background: t.module, borderRadius: 12, padding: "12px 14px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div style={{ minWidth: 0 }}>
           <div style={{ ...plain, fontSize: 13, fontWeight: 500, overflowWrap: "anywhere" }}>{attachment.title}</div>
           <div style={{ ...plain, fontSize: 13, color: t.label }}>{[attachment.harness ?? "Harness", attachment.steps > 0 ? `${attachment.steps} ${attachment.steps === 1 ? "step" : "steps"}` : null].filter(Boolean).join(" · ")}</div>
         </div>
-        {attachment.plaque ? <Plaque build={attachment.plaque} size="row" /> : null}
-      </div>
+              </div>
       <StepStripTiles tiles={attachment.tiles} openLabel="Still open" margin="8px 0 0" onPick={onPickTile} renderTile={renderTile} />
     </div>
   );
@@ -100,7 +98,7 @@ function BuildAttachment({ attachment, onPickTile, renderTile }: { attachment: E
 
 function StepAttachment({ attachment }: { attachment: Extract<CardAttachment, { kind: "step" }> }) {
   return (
-    <div style={{ ...tileBox, padding: "8px 10px" }}>
+    <div style={{ ...tileBox, padding: "12px 14px", borderRadius: 12, border: 0, background: t.module }}>
       <div style={{ ...plain, fontSize: 13, color: t.label }}>{attachment.head}</div>
       <div style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "18px", whiteSpace: "pre-wrap", overflowWrap: "anywhere", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{attachment.text}</div>
     </div>
@@ -128,11 +126,11 @@ export function AttachmentView({ attachment, onPickTile, renderTile }: { attachm
   if (attachment.kind === "picture") return <PicturesBlock pictures={[attachment]} />;
   if (attachment.kind === "line") {
     return (
-      <div style={{ ...tileBox, padding: "8px 10px", ...plain, fontSize: 13 }}>{attachment.text}</div>
+      <div style={{ ...tileBox, padding: "12px 14px", borderRadius: 12, border: 0, background: t.module, ...plain, fontSize: 13 }}>{attachment.text}</div>
     );
   }
   return (
-    <div style={{ ...tileBox, padding: "8px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+    <div style={{ ...tileBox, padding: "12px 14px", borderRadius: 12, border: 0, background: t.module, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
       <span style={{ ...plain, fontSize: 13, overflowWrap: "anywhere" }}>{attachment.name}</span>
       {attachment.href ? (
         <PostControl to={attachment.href} download>
@@ -180,7 +178,7 @@ function HideReason({ onHide, onCancel }: { onHide: (reason: string) => void; on
         value={reason}
         onChange={(event) => setReason(event.target.value)}
         placeholder="Why is it hidden?"
-        style={{ flex: "1 1 200px", minWidth: 0, height: 32, boxSizing: "border-box", padding: "0 10px", borderRadius: radiusVar("r-control"), border: `1px solid ${t.controlBorder}`, background: t.well, color: t.text, fontFamily: FIGTREE, fontSize: 15 }}
+        style={{ flex: "1 1 200px", minWidth: 0, height: 32, boxSizing: "border-box", padding: "0 10px", borderRadius: radiusVar("r-field"), border: 0, boxShadow: `inset 0 0 0 1px ${t.fieldEdge}`, background: t.surface, color: t.text, fontFamily: FIGTREE, fontSize: 15 }}
       />
       <PostControl type="submit">Hide</PostControl>
       <PostControl onClick={onCancel}>Cancel</PostControl>
@@ -201,7 +199,7 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
   // A hidden post, seen by a moderator: its heading greyed, the line, and Unhide.
   if (card.hidden) {
     return (
-      <article aria-label={card.heading} style={{ padding: "20px 0 16px", color: t.textDisabled }}>
+      <article aria-label={card.heading} style={{ padding: "4px 0", color: t.textDisabled }}>
         {headingLevel === 2 ? (
           <h2 style={{ ...plain, fontSize: 13, fontWeight: 500, lineHeight: 1.4, color: t.textDisabled }}>{card.heading}</h2>
         ) : (
@@ -221,7 +219,7 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
   return (
     <article
       aria-label={card.heading}
-      style={{ display: "grid", gridTemplateColumns: "40px minmax(0, 1fr)", columnGap: 12, padding: "20px 0 16px", boxSizing: "border-box", width: "100%", color: t.text, fontFamily: FIGTREE }}
+      style={{ display: "grid", gridTemplateColumns: "40px minmax(0, 1fr)", columnGap: 12, padding: "4px 0", boxSizing: "border-box", width: "100%", color: t.text, fontFamily: FIGTREE }}
     >
       <div style={{ gridColumn: 1, width: 40 }}>
         <Avatar size={40} userId={card.author.id} name={name} src={card.author.avatarUrl} />
@@ -231,7 +229,7 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
         {/* Head: name, @handle · age · in spaces; the reward and Pinned at the right end. */}
         <div style={{ display: "flex", alignItems: "baseline", gap: 6, minHeight: 24, marginBottom: 4 }}>
           <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexWrap: "wrap", alignItems: "baseline", columnGap: 6 }}>
-            <span style={{ ...plain, fontSize: 13, fontWeight: 500, lineHeight: 1.4 }}>{name}</span>
+            <span style={{ ...plain, fontSize: 15, fontWeight: 600, lineHeight: "20px" }}>{name}</span>
             <span style={{ ...plain, fontSize: 13, lineHeight: 1.4, color: label, whiteSpace: "pre-wrap" }}>
               {meta}
               {card.spaces.length > 0 ? " · in  " : ""}
@@ -269,8 +267,8 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
           <p
             style={{
               ...plain,
-              marginTop: 8,
-              fontSize: 13,
+              marginTop: 4,
+              fontSize: 15,
               lineHeight: "20px",
               color: t.text2,
               whiteSpace: "pre-wrap",
@@ -307,8 +305,8 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
 
         {card.replies ? <RepliesStrip replies={card.replies} /> : null}
 
-        {topic && !compact ? <TopicEngagementRow {...topic} style={{ marginTop: 12, maxWidth: 520, justifyContent: "space-between", ...topic.style }} /> : null}
-        {!topic && !compact && engagement && card.engagementBuild ? <EngagementRow variant="card" build={card.engagementBuild} counts={engagement.counts} liked={engagement.liked} saved={engagement.saved} style={{ marginTop: 12, maxWidth: 520, justifyContent: "space-between" }} /> : null}
+        {topic && !compact ? <TopicEngagementRow {...topic} style={{ marginTop: 12, maxWidth: 425, justifyContent: "space-between", ...topic.style }} /> : null}
+        {!topic && !compact && engagement && card.engagementBuild ? <EngagementRow variant="card" build={card.engagementBuild} counts={engagement.counts} liked={engagement.liked} saved={engagement.saved} style={{ marginTop: 12, maxWidth: 425, justifyContent: "space-between" }} /> : null}
         {!compact && reactions ? reactions : null}
       </div>
     </article>
@@ -323,7 +321,7 @@ function RepliesStrip({ replies }: { replies: NonNullable<PostCardData["replies"
       to={replies.to}
       data-testid="post-card-replies-strip"
       {...handlers}
-      style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8, minWidth: 0, boxSizing: "border-box", padding: "8px 12px", background: state.hovered ? t.controlOn : t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: radiusVar("r-card"), color: t.text, textDecoration: "none", ...ring(state.focusVisible) }}
+      style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8, minWidth: 0, boxSizing: "border-box", padding: "8px 12px", background: state.hovered ? t.control : t.module, borderRadius: 12, color: t.text, textDecoration: "none", ...ring(state.focusVisible) }}
     >
       {replies.people.length > 0 ? (
         <span aria-hidden="true" style={{ display: "inline-flex", flexShrink: 0 }}>

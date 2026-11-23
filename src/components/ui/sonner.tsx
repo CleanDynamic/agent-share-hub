@@ -2,6 +2,9 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useTheme } from "next-themes";
 import { Toaster as Sonner, toast, useSonner } from "sonner";
 
+import { t } from "@/lib/theme/tokens";
+import { FIGTREE } from "@/lib/theme/type";
+
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 /* G16: sonner puts every toast in one polite region. Errors must be said assertively, and nothing twice, so its region is set
@@ -55,12 +58,13 @@ const Toaster = ({ ...props }: ToasterProps) => {
         theme={theme as ToasterProps["theme"]}
         className="toaster group"
         toastOptions={{
+          /* Synth 06: Overlay fill, radius 12, 12px 16px, 15 Text; the action is a small secondary button. */
+          style: { background: t.window, color: t.text, border: 0, borderRadius: 12, padding: "12px 16px", fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", boxShadow: "var(--elev-overlay)" },
+          actionButtonStyle: { background: t.control, color: t.text, height: 32, padding: "0 14px", borderRadius: 16, fontSize: 13, fontWeight: 600 },
+          cancelButtonStyle: { background: "transparent", color: t.text2, height: 32, padding: "0 14px", borderRadius: 16, fontSize: 13, fontWeight: 600 },
           classNames: {
-            toast:
-              "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
-            description: "group-[.toast]:text-muted-foreground",
-            actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
-            cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
+            toast: "group toast",
+            description: "group-[.toast]:text-[color:var(--text2)]",
           },
         }}
         {...props}

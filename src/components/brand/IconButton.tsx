@@ -59,7 +59,8 @@ export function IconButton({
     { disabled },
   );
 
-  const side = size > 32 ? 30 : size;
+  /* Synth 06: 36 round; 32 and 28 in tight places; 44 for touch (the phone keeps the hit area by `touchArea` callers). */
+  const side = size >= 34 ? 36 : size >= 30 ? 32 : 28;
   return (
     <button
       data-ui="icon-button"
@@ -72,10 +73,10 @@ export function IconButton({
         boxSizing: "border-box",
         width: side,
         height: side,
-        borderRadius: r.control,
+        borderRadius: r.full,
         ...(boxed
           ? controlPaint({ hovered: state.hovered })
-          : { background: "transparent", border: "1px solid transparent" }),
+          : { background: state.hovered ? t.module : "transparent", border: "1px solid transparent" }),
         color: !boxed && state.hovered ? t.text : t.text2,
         display: "flex",
         alignItems: "center",

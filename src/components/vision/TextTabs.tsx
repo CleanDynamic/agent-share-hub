@@ -1,15 +1,11 @@
-/* SV-02: the boards' tabs (series README, Visual grammar 10): text buttons 36 high, 20 apart, 500 weight, `--text2`;
-   the selected one `--text` with a 1px `--text` underline that sits on the row's hairline.
-
-   The prompt calls this `UnderlineTabs`; that name is `components/brand/UnderlineTabs.tsx` (40 high, 24 apart, 2px edge),
-   which other pages use and which keeps its look, so this one is `TextTabs`. SV-10: Home's tabs are 40 high and 24 apart
-   (`height`, `gap`), on a row that draws its own hairline (`rule={false}`). `role="tablist"`; the arrows, Home and End
-   move between tabs, and a selected tab changes at once. */
+/* Synth 06: tabs that change what a page shows (Following / Everyone, Posts / Rules, lenses): 53 tall, 15/500 `--label`;
+   the current tab 15/700 `--text` with a 4px bar in `--tab-bar` (Mint), 56 wide, radius 2, centred at the bottom. No line
+   under the row. `role="tablist"` and `role="tab"` with `aria-selected`; the arrows, Home and End move between tabs, and a
+   selected tab changes at once. `height`, `gap` and `rule` are kept so callers compile; the shape is the pack's. */
 
 import { useRef, type KeyboardEvent, type ReactNode } from "react";
 
-import { useIsPhone } from "@/components/shell/useMinWidth";
-import { ring, touchArea } from "@/lib/theme/controls";
+import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -30,29 +26,25 @@ export interface TextTabsProps<V extends string = string> {
   onChange: (value: V) => void;
   /** The tablist's accessible name. */
   label: string;
-  /** 32 is the control-heights pass's tab (Home, Library, Space, the OpenBuilds feed); the default 36 waits on the Builds spec. */
+  /** Kept for callers; tabs are 53 tall. */
   height?: 32 | 36;
   gap?: 20 | 24;
-  /** The hairline under the tabs. Off where the row around them draws it (Home). */
+  /** Kept for callers; there is no line under the row. */
   rule?: boolean;
 }
 
 function Tab({
   current,
   tab,
-  height,
   onSelect,
   onKeyDown,
 }: {
   current: boolean;
-  height: number;
   tab: TextTab;
   onSelect: () => void;
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
 }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
-  /* The control-heights pass: on a phone a 32 high tab keeps a 44 high hit area (the Builds table's 36 waits on its spec). */
-  const touch = useIsPhone() && height === 32;
   return (
     <button
       type="button"
@@ -65,19 +57,17 @@ function Tab({
       onKeyDown={onKeyDown}
       {...handlers}
       style={{
+        position: "relative",
         boxSizing: "border-box",
-        height,
-        ...touchArea(touch),
-        margin: "0 0 -1px",
-        padding: 0,
+        height: 53,
+        padding: "0 16px",
         background: "none",
         border: 0,
-        borderBottom: `1px solid ${current ? t.text : "transparent"}`,
         fontFamily: FIGTREE,
-        fontSize: 13,
-        fontWeight: 500,
-        lineHeight: "normal",
-        color: current ? t.text : state.hovered ? t.text : t.text2,
+        fontSize: 15,
+        fontWeight: current ? 700 : 500,
+        lineHeight: "20px",
+        color: current || state.hovered ? t.text : t.label,
         whiteSpace: "nowrap",
         cursor: "pointer",
         ...ring(state.focusVisible),
@@ -87,11 +77,17 @@ function Tab({
       {tab.count !== undefined ? (
         <span style={{ marginLeft: 6, fontWeight: 400, color: t.label, fontVariantNumeric: "tabular-nums" }}>{tab.count}</span>
       ) : null}
+      {current ? (
+        <span
+          aria-hidden="true"
+          style={{ position: "absolute", left: "50%", bottom: 0, width: 56, height: 4, marginLeft: -28, borderRadius: 2, background: t.tabBar }}
+        />
+      ) : null}
     </button>
   );
 }
 
-export function TextTabs<V extends string = string>({ tabs, value, onChange, label, height = 36, gap = 20, rule = true }: TextTabsProps<V>) {
+export function TextTabs<V extends string = string>({ tabs, value, onChange, label }: TextTabsProps<V>) {
   const list = useRef<HTMLDivElement>(null);
 
   const move = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
@@ -114,14 +110,13 @@ export function TextTabs<V extends string = string>({ tabs, value, onChange, lab
       data-ui="text-tabs"
       role="tablist"
       aria-label={label}
-      style={{ display: "flex", gap, borderBottom: rule ? `1px solid ${t.hairline}` : undefined }}
+      style={{ display: "flex" }}
     >
       {tabs.map((tab, index) => (
         <Tab
           key={tab.value}
           tab={tab}
           current={tab.value === value}
-          height={height}
           onSelect={() => onChange(tab.value)}
           onKeyDown={(event) => move(event, index)}
         />

@@ -1,10 +1,7 @@
-/* SV-02: a row of plain values (series README, Visual grammar 5).
+/* Synth 06: a row of plain values. Label left, value right, no hairlines: 12px 16px padding, hover Card. Numbers are
+   right-aligned and tabular. `last` is kept so callers compile. */
 
-   Label left, value right, a `--hairline` under every row but the last. Heights are the boards': 40, 44, 48, 52 or 56.
-   Numbers are right-aligned and tabular. The last row is the caller's to say (`last`), so a list reads the same
-   whether it is one component per row or a map. */
-
-import type { ElementType, ReactNode } from "react";
+import { useState, type ElementType, type ReactNode } from "react";
 
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -15,31 +12,36 @@ export interface PlainRowProps {
   label: ReactNode;
   value?: ReactNode;
   height?: PlainRowHeight;
-  /** No hairline under it. */
+  /** Kept for callers; rows have no lines. */
   last?: boolean;
   as?: ElementType;
 }
 
-export function PlainRow({ label, value, height = 40, last = false, as: Tag = "div" }: PlainRowProps) {
+export function PlainRow({ label, value, height = 40, as: Tag = "div" }: PlainRowProps) {
+  const [hovered, setHovered] = useState(false);
   return (
     <Tag
       data-ui="plain-row"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         display: "flex",
         alignItems: "center",
         gap: 12,
         boxSizing: "border-box",
         minHeight: height,
-        borderBottom: last ? "none" : `1px solid ${t.hairline}`,
+        padding: "12px 16px",
+        borderRadius: 8,
+        background: hovered ? t.module : "transparent",
         fontFamily: FIGTREE,
-        fontSize: 13,
-        lineHeight: "normal",
+        fontSize: 15,
+        lineHeight: "20px",
         fontVariantNumeric: "tabular-nums",
       }}
     >
-      <span style={{ flexGrow: 1, minWidth: 0, fontWeight: 400, color: t.text2 }}>{label}</span>
+      <span style={{ flexGrow: 1, minWidth: 0, fontWeight: 600, color: t.text }}>{label}</span>
       {value !== undefined ? (
-        <span style={{ flexShrink: 0, fontWeight: 500, color: t.text, textAlign: "right" }}>{value}</span>
+        <span style={{ flexShrink: 0, fontWeight: 400, color: t.label, textAlign: "right" }}>{value}</span>
       ) : null}
     </Tag>
   );

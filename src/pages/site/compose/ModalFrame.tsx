@@ -181,7 +181,7 @@ export function ModalForm({ phone, onSubmit, onCancel, missing, blocked = false,
         event.preventDefault();
         if (ready) onSubmit();
       }}
-      style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: "1 1 auto", fontSize: phone ? 16 : 13 }}
+      style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: "1 1 auto", fontSize: phone ? 16 : 15 }}
     >
       <ModalInset.Provider value={phone ? 0 : MODAL_PAD}>
         {/* UX-02 P11: each field the footer names as required says so under itself too. */}
@@ -200,10 +200,10 @@ export function ModalForm({ phone, onSubmit, onCancel, missing, blocked = false,
         <span data-testid="modal-status" role="status" style={FOOT_NOTE}>
           {requiredLine(missing)}
         </span>
-        <RecipeButton phone={phone} onClick={onCancel}>
+        <RecipeButton variant="ghost" small phone={phone} onClick={onCancel}>
           {MODAL_COPY.cancel}
         </RecipeButton>
-        <RecipeButton variant="primary" phone={phone} type="submit" disabled={!ready}>
+        <RecipeButton variant="primary" small phone={phone} type="submit" disabled={!ready}>
           {addLabel}
         </RecipeButton>
       </div>
@@ -230,7 +230,7 @@ export function GlyphButton({ glyph, label, onClick, phone = false, size = 20 }:
         boxSizing: "border-box",
         background: "transparent",
         border: "1px solid transparent",
-        borderRadius: r.control,
+        borderRadius: r.full,
         color: state.hovered ? t.text : t.label,
         display: "inline-flex",
         alignItems: "center",

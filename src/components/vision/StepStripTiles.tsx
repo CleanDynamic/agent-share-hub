@@ -23,7 +23,7 @@ export interface StripTileData {
 }
 
 /** A tile: `--tile`, 1px `--tile-border`, radius 6, padding 10 12. */
-export const tileBox: CSSProperties = { boxSizing: "border-box", minWidth: 0, background: t.tile, border: `1px solid ${t.tileBorder}`, borderRadius: r.control, padding: "10px 12px" };
+export const tileBox: CSSProperties = { boxSizing: "border-box", minWidth: 0, background: t.module, border: 0, borderRadius: 12, padding: "12px 14px" };
 
 /** A tile that can be pressed: padded as the tile is, with the app's focus ring. */
 function TileButton({ label, pressed, onPick, children }: { label: string; pressed: boolean; onPick: () => void; children: ReactNode }) {

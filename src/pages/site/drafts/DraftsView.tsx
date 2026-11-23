@@ -441,7 +441,7 @@ export function DraftsView({
   const continueSection = (
     <ListSection
       label="Continue editing"
-      head={<SectionHead title="Continue editing" meta={draftsShown ? draftsMeta(drafts.length) : "\u00a0"} headingLevel={2} />}
+      head={<SectionHead title={draftsShown ? draftsMeta(drafts.length) : "Continue editing"} headingLevel={2} />}
     >
       <StartRow phone={phone} onDropSession={onAddToNew} />
       {pageFailed ? (
@@ -502,7 +502,7 @@ export function DraftsView({
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
           {/* Out of the flow and over the whole section, so it adds no space and the page can tell when any of it shows. */}
           <span ref={sessionsAnchor} aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none" }} />
-          <SectionHead title="Sessions" meta={sessionsShown ? sessionsMeta(sessions.length, canDrag) : "\u00a0"} headingLevel={2} />
+          <SectionHead title={sessionsShown ? sessionsMeta(sessions.length) : "Sessions"} headingLevel={2} />
           <TextButton onClick={onConnect}>How they get here</TextButton>
         </div>
       }

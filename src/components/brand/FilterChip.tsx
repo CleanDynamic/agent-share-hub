@@ -11,8 +11,6 @@ import type { ButtonHTMLAttributes, CSSProperties } from "react";
 
 import { useInteractive } from "@/lib/theme/interactive";
 import { ring } from "@/lib/theme/controls";
-import { r } from "@/lib/theme/radius";
-import { controlPaint, SELECTED } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -42,12 +40,12 @@ export function FilterChip({
   /* UI-P84: the control recipe at 36 high and radius 6; on lays the selected border over it, not an inversion. */
   const paint: CSSProperties = {
     boxSizing: "border-box",
-    height: 36,
-    padding: "0 12px",
-    borderRadius: r.control,
-    ...controlPaint({ hovered: state.hovered }),
-    ...(on ? SELECTED : null),
-    color: t.text,
+    height: 32,
+    padding: "0 14px",
+    borderRadius: 16,
+    border: 0,
+    background: on ? t.action : t.module,
+    color: on ? t.onAction : t.text,
     gap: 6,
   };
 
@@ -64,8 +62,8 @@ export function FilterChip({
         flexShrink: 0,
         ...paint,
         fontFamily: FIGTREE,
-        fontSize: 12,
-        fontWeight: 500,
+        fontSize: 13,
+        fontWeight: on ? 600 : 500,
         display: "inline-flex",
         alignItems: "center",
         cursor: "pointer",
@@ -78,7 +76,7 @@ export function FilterChip({
       {count !== undefined ? (
         <span
           style={
-            { fontSize: 11.5, fontWeight: 400, color: t.text2, fontVariantNumeric: "tabular-nums" }
+            { fontSize: 13, fontWeight: 400, color: on ? t.onAction : t.label, fontVariantNumeric: "tabular-nums" }
           }
         >
           {count}

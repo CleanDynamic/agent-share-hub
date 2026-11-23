@@ -20,13 +20,13 @@ export interface PillProps {
 function paint(tone: PillTone | undefined): CSSProperties {
   switch (tone) {
     case undefined:
-      return { background: t.pill, border: `1px solid ${t.moduleBorder}`, color: t.onPill };
+      return { background: t.module, color: t.text };
     case "evidence":
       return { background: t.evidenceFill, color: t.evidence };
     case "breakage":
       return { background: t.breakageFill, color: t.breakage };
     case "lit-ink":
-      return { background: t.pill, border: `1px solid ${t.moduleBorder}`, color: t.litInk };
+      return { background: t.module, color: t.litInk };
     default:
       return {
         background: tokenVar(`cat-${tone}-fill` as TokenName),
@@ -44,12 +44,13 @@ export function Pill({ children, tone, style }: PillProps) {
         display: "inline-flex",
         alignItems: "center",
         boxSizing: "border-box",
-        height: 20,
-        padding: "0 8px",
+        height: 24,
+        padding: "0 10px",
         borderRadius: r.chip,
         fontFamily: FIGTREE,
         fontSize: 13,
-        lineHeight: "normal",
+        fontWeight: 500,
+        lineHeight: "16px",
         whiteSpace: "nowrap",
         ...paint(tone),
         ...style,

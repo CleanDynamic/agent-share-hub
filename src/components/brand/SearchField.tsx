@@ -30,16 +30,16 @@ export function SearchField({ label, hint, width = 260, style, ...rest }: Search
         boxSizing: "border-box",
         width,
         maxWidth: "100%",
-        height: 30,
+        height: 40,
         display: "flex",
         alignItems: "center",
         gap: 8,
-        padding: "0 6px 0 12px",
-        borderRadius: r.control,
+        padding: "0 12px 0 14px",
+        borderRadius: r.field,
         ...WELL,
         color: t.label,
         /* Above 768px index.css makes every input inherit its font size, so the size is set here, on its box, too. */
-        fontSize: phone ? 15 : 13,
+        fontSize: 15,
         ...style,
       }}
     >
@@ -55,7 +55,7 @@ export function SearchField({ label, hint, width = 260, style, ...rest }: Search
           border: 0,
           outline: "none",
           fontFamily: FIGTREE,
-          fontSize: phone ? 15 : 13,
+          fontSize: 15,
           fontWeight: 400,
           color: t.text,
         }}
@@ -69,7 +69,7 @@ export function SearchField({ label, hint, width = 260, style, ...rest }: Search
             lineHeight: "16px",
             padding: "0 4px",
             borderRadius: 4,
-            border: `1px solid ${t.controlBorder}`,
+            background: t.control,
             color: t.label,
           }}
         >

@@ -7,7 +7,7 @@
 
 import { createContext, forwardRef, useContext, useImperativeHandle, useLayoutEffect, useRef, useState, type CSSProperties, type HTMLAttributes, type RefObject } from "react";
 
-import { addRegion, FluidRegion, markGone, removeRegion, type RegionMode } from "@/lib/dots/fluid";
+import { addRegion, FluidRegion, markGone, removeRegion, type RegionMode, type ShapeKind } from "@/lib/dots/fluid";
 
 /** Inside a region: `region` is null for the first render, until the region's element is on the page. */
 export const FluidRegionContext = createContext<{ region: FluidRegion | null } | null>(null);
@@ -46,7 +46,17 @@ function radiusOf(el: HTMLElement, width: number, height: number): number {
 }
 
 /** Keep `region` told where `el` is, relative to it, and how round. */
-function useShape(el: RefObject<HTMLElement | null>, region: FluidRegion | null, own: boolean) {
+interface Drawn {
+  kind?: ShapeKind;
+  rows?: number;
+  tail?: boolean;
+}
+
+/** A thin, wide placeholder is a line of text: a bar. Anything else is a solid block unless it says otherwise. */
+const kindOf = (kind: ShapeKind | undefined, width: number, height: number): ShapeKind | undefined => kind ?? (height <= 20 && width >= height * 3 ? "bar" : undefined);
+
+function useShape(el: RefObject<HTMLElement | null>, region: FluidRegion | null, own: boolean, drawn: Drawn = {}) {
+  const { kind, rows, tail } = drawn;
   useLayoutEffect(() => {
     const node = el.current;
     if (!node || !region) return;
@@ -54,7 +64,7 @@ function useShape(el: RefObject<HTMLElement | null>, region: FluidRegion | null,
     const measure = () => {
       const box = node.getBoundingClientRect();
       if (own) {
-        region.setShape(key, { x: 0, y: 0, width: node.clientWidth || box.width, height: node.clientHeight || box.height, radius: radiusOf(node, box.width, box.height) });
+        region.setShape(key, { x: 0, y: 0, width: node.clientWidth || box.width, height: node.clientHeight || box.height, radius: radiusOf(node, box.width, box.height), kind: kindOf(kind, node.clientWidth || box.width, node.clientHeight || box.height), rows, tail });
         return;
       }
       const host = region.host.getBoundingClientRect();
@@ -64,6 +74,9 @@ function useShape(el: RefObject<HTMLElement | null>, region: FluidRegion | null,
         width: box.width,
         height: box.height,
         radius: radiusOf(node, box.width, box.height),
+        kind: kindOf(kind, box.width, box.height),
+        rows,
+        tail,
       });
     };
     measure();
@@ -76,34 +89,40 @@ function useShape(el: RefObject<HTMLElement | null>, region: FluidRegion | null,
       window.removeEventListener("resize", measure);
       region.removeShape(key);
     };
-  }, [el, region, own]);
+  }, [el, region, own, kind, rows, tail]);
 }
 
 export interface FluidShapeProps extends HTMLAttributes<HTMLDivElement> {
   /** The content is ready (a shape that is its own region winds down). */
   gone?: boolean;
+  /** How the shape is drawn: solid (default), text lines (`lines`, with `dotRows`), a dotted outline or a faint fill. */
+  dotKind?: ShapeKind;
+  dotRows?: number;
+  /** A text line whose last 32% thins out. */
+  dotTail?: boolean;
 }
 
 /** An element whose box is a shape in the nearest region's field, or, with none around it, a region of its own. */
-export const FluidShape = forwardRef<HTMLDivElement, FluidShapeProps>(function FluidShape({ gone = false, style, ...rest }, ref) {
+export const FluidShape = forwardRef<HTMLDivElement, FluidShapeProps>(function FluidShape({ gone = false, dotKind, dotRows, dotTail, style, ...rest }, ref) {
   const inside = useContext(FluidRegionContext);
-  return inside ? <ShapeInRegion {...rest} style={style} region={inside.region} forwardedRef={ref} /> : <ShapeOwnRegion {...rest} style={style} gone={gone} forwardedRef={ref} />;
+  const drawn = { kind: dotKind, rows: dotRows, tail: dotTail };
+  return inside ? <ShapeInRegion {...rest} style={style} region={inside.region} forwardedRef={ref} drawn={drawn} /> : <ShapeOwnRegion {...rest} style={style} gone={gone} forwardedRef={ref} drawn={drawn} />;
 });
 
-type Inner = HTMLAttributes<HTMLDivElement> & { forwardedRef: React.ForwardedRef<HTMLDivElement> };
+type Inner = HTMLAttributes<HTMLDivElement> & { forwardedRef: React.ForwardedRef<HTMLDivElement>; drawn: Drawn };
 
-function ShapeInRegion({ region, forwardedRef, ...rest }: Inner & { region: FluidRegion | null }) {
+function ShapeInRegion({ region, forwardedRef, drawn, ...rest }: Inner & { region: FluidRegion | null }) {
   const el = useRef<HTMLDivElement>(null);
   useImperativeHandle(forwardedRef, () => el.current as HTMLDivElement);
-  useShape(el, region, false);
+  useShape(el, region, false, drawn);
   return <div ref={el} {...rest} />;
 }
 
-function ShapeOwnRegion({ forwardedRef, gone, style, ...rest }: Inner & { gone: boolean }) {
+function ShapeOwnRegion({ forwardedRef, gone, style, drawn, ...rest }: Inner & { gone: boolean }) {
   const el = useRef<HTMLDivElement>(null);
   useImperativeHandle(forwardedRef, () => el.current as HTMLDivElement);
   const region = useFluidRegion(el, { gone });
-  useShape(el, region, true);
+  useShape(el, region, true, drawn);
   // The canvas sits inside the element: it is the containing block unless the caller has placed it already.
   const placed: CSSProperties = { position: "relative", ...style };
   return <div ref={el} {...rest} style={placed} />;

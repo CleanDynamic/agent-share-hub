@@ -1,4 +1,4 @@
-/* CA-24 P1: building blocks, the loading placeholder; Part E (Reference E): drawn as a living dot field.
+/* CA-24 P1: building blocks, the loading placeholder; Part E (Reference E): drawn as a living dot field; Synth 06: its rows are text bars (`DotSkeleton` draws a measured layout).
 
    A `line` is one row; a `box` is `rows`; `width` and `height` may be "fill". The block keeps exactly the box it always
    had (rows of 12px, `loadingBlocks.ts` has the numbers), so nothing moves, and that box is a shape in the fluid field:
@@ -84,6 +84,9 @@ export function LoadingBlocks({ width, rows = 1, height, kind = "box", gone = fa
       data-cols={cols}
       data-gone={gone ? "" : undefined}
       gone={gone}
+      /* Synth 06: rows are text bars on the shared lattice, the last of several thinning out. */
+      dotKind="lines"
+      dotRows={count}
       style={{
         width: width === "fill" ? "100%" : width,
         height: filled ? "100%" : count * CELL_H,

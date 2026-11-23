@@ -19,13 +19,15 @@ export function TypeChip({ children, tone }: { children: ReactNode; tone?: ChipT
     <span
       data-ui="type-chip"
       style={{
-        display: "inline-block",
+        display: "inline-flex",
+        alignItems: "center",
         boxSizing: "border-box",
-        padding: "0 8px",
+        height: 24,
+        padding: "0 10px",
         borderRadius: r.chip,
-        background: t.control,
-        color: tone ? TONE[tone] : t.text2,
-        fontFamily: FIGTREE, fontSize: 13, fontWeight: 400, lineHeight: "20px", textTransform: "none",
+        background: t.module,
+        color: tone ? TONE[tone] : t.text,
+        fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, lineHeight: "16px", textTransform: "none",
         whiteSpace: "nowrap",
       }}
     >

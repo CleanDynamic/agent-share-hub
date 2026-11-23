@@ -3,7 +3,7 @@ import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
-import { buttonSlot, buttonStyle, CONTROL_CLASS, type ButtonVariant } from "@/lib/theme/controls";
+import { buttonSlot, buttonStyle, CONTROL_CLASS, type ButtonSize, type ButtonVariant } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -120,7 +120,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
            overrides it rather than fighting it. A `data-visual-slot` passed by
            a consumer also wins, because `props` is spread after this. */
         data-visual-slot={buttonSlot(resolved)}
-        style={{ ...buttonStyle(resolved, state), boxShadow: "none", ...style }}
+        aria-disabled={disabled || undefined}
+        style={{ ...buttonStyle(resolved, state, (size ?? "default") as ButtonSize), boxShadow: "none", ...style }}
         {...props}
         {...handlers}
       />

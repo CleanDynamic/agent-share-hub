@@ -26,7 +26,7 @@
 // THE FAILURE STAYS INSIDE THE PANEL THAT FAILED. The page's header, breadcrumb
 // and footer render around it, and so does every panel that did load: one
 // failing panel never blanks the page. Where a write fails after the screen has
-// already shown its result (reproduce, me too, mark read), this is the line the
+// already shown its result (follow, save, mark read), this is the line the
 // panel falls back to, with `line` saying "That didn't save." instead.
 //
 // On a phone the button is 44 tall, the touch floor. The region is an alert, so
@@ -35,7 +35,6 @@
 
 import { useEffect, useRef, type CSSProperties, type HTMLAttributes } from "react";
 
-import { useIsPhone } from "@/components/shell/useMinWidth";
 import { RETRYING_LABEL, RETRY_LABEL } from "@/lib/copy/copy";
 import { errorLine } from "@/lib/errors/code";
 import { t } from "@/lib/theme/tokens";
@@ -88,7 +87,6 @@ function useLogOnce(error: unknown, panel: string, log?: string) {
 }
 
 export function ErrorState({ line = DEFAULT_ERROR_LINE, panel, onRetry, error, log, retrying = false, style, ...rest }: ErrorStateProps) {
-  const phone = useIsPhone();
   useLogOnce(error, panel, log);
 
   /* UI-P97: one sentence and Try again (secondary). The panel's name is not drawn; it names the region for a screen
@@ -101,8 +99,8 @@ export function ErrorState({ line = DEFAULT_ERROR_LINE, panel, onRetry, error, l
       aria-label={panel}
       style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12, ...style }}
     >
-      <p style={{ margin: 0, fontFamily: "var(--font-ui)", fontSize: 13, lineHeight: "20px", color: t.text }}>{line}</p>
-      <Button variant="secondary" size={phone ? 44 : 32} fontSize={13} onClick={onRetry} disabled={retrying}>
+      <p style={{ margin: 0, fontFamily: "var(--font-ui)", fontSize: 15, lineHeight: "20px", color: t.text2 }}>{line}</p>
+      <Button variant="secondary" size={32} fontSize={13} onClick={onRetry} disabled={retrying}>
         {retrying ? RETRYING_LABEL : RETRY_LABEL}
       </Button>
     </div>
