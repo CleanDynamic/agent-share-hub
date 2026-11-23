@@ -62,7 +62,7 @@ async function fillAll(over: Partial<Record<"name" | "username" | "email" | "pas
 }
 
 /** The submit: the switch's tab has the same name, "Sign up", and is the one with aria-pressed. */
-const create = () => screen.getByRole("button", { name: "Join free" });
+const create = () => screen.getAllByRole("button", { name: "Sign up" }).find((button) => !button.hasAttribute("aria-pressed")) as HTMLElement;
 
 describe("the view", () => {
   it("is the join view: the switch on Join free", () => {

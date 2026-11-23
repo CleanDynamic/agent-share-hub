@@ -75,7 +75,7 @@ export function SettingsFrame({ section, children }: SettingsFrameProps) {
                 <PageLink
                   to={settingsPath(s.key)}
                   aria-current={isCurrent ? "page" : undefined}
-                  style={{ ...link, minHeight: 40, lineHeight: "20px", padding: "10px 8px", boxSizing: "border-box", borderRadius: 10, background: isCurrent ? t.module : "transparent", fontSize: 15, fontWeight: isCurrent ? 600 : 400, color: isCurrent ? t.text : t.text2 }}
+                  style={{ ...link, minHeight: 40, lineHeight: "20px", padding: "0 8px", display: "flex", alignItems: "center", boxSizing: "border-box", borderRadius: 10, background: isCurrent ? t.module : "transparent", fontSize: 15, fontWeight: isCurrent ? 600 : 400, color: isCurrent ? t.text : t.text2 }}
                 >
                   {s.label}
                 </PageLink>

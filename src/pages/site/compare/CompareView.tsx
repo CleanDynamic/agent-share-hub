@@ -46,11 +46,13 @@ export function stepsFact(rows: readonly CompareRow[]): string {
 function Cell({ step }: { step: Step | null }) {
   if (!step) {
     return (
-      <div data-testid="compare-gap" aria-label="No matching step" style={{ border: `1px dashed ${t.treeLine}`, borderRadius: 12, height: 56, boxSizing: "border-box" }} />
+      <div data-testid="compare-gap" style={{ border: `1px dashed ${t.treeLine}`, borderRadius: 12, height: 56, boxSizing: "border-box" }}>
+        <span className="sr-only">No matching step</span>
+      </div>
     );
   }
   return (
-    <div data-testid="compare-step" style={{ background: t.module, borderRadius: 12, padding: "10px 12px", minHeight: 56, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+    <div data-testid="compare-step" style={{ background: t.module, borderRadius: 12, padding: "8px 12px", minHeight: 56, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
       <span style={type(13, 400, t.label)}>{KIND[step.kind] ?? "Step"} {step.number}</span>
       <span style={{ ...type(15, 600, t.text), overflowWrap: "anywhere" }}>{stepTitle(step)}</span>
     </div>

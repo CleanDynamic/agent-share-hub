@@ -508,9 +508,9 @@ describe("SignupForm", () => {
 
   it("disables Create account until the page says it can be sent, and says what it is doing", () => {
     const { rerender } = show(<SignupForm {...signup({ canSubmit: false })} />);
-    expect(screen.getByRole("button", { name: "Join free" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Sign up" })).toBeDisabled();
     rerender(inRouter(<SignupForm {...signup({ canSubmit: true })} />));
-    expect(screen.getByRole("button", { name: "Join free" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Sign up" })).toBeEnabled();
     rerender(inRouter(<SignupForm {...signup({ isSubmitting: true })} />));
     expect(screen.getByRole("button", { name: "Signing up…" })).toBeDisabled();
   });

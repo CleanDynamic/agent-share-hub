@@ -160,7 +160,7 @@ export function SignupForm({
           <FieldMessage id={errorId} live={false}>{error}</FieldMessage>
         </div>
         <PrimaryAction disabled={!canSubmit} loading={isSubmitting} loadingText={WAITING.signingUp}>
-          Join free
+          Sign up
         </PrimaryAction>
       </AuthForm>
       <OrRule />

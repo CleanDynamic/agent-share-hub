@@ -38,8 +38,6 @@ import {
 } from "./signinMotion";
 import { SITE_NAME } from "@/lib/site";
 
-export const TAGLINE = "Publish and rebuild AI-assisted workflows.";
-
 /** The visually hidden h2 that names each view. */
 export const VIEW_TITLE: Record<string, string> = {
   login: "Sign in",
