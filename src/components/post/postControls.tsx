@@ -55,7 +55,7 @@ export const PostControl = forwardRef<HTMLButtonElement, ControlProps>(function 
   const phone = useIsPhone();
   const { state, handlers } = useInteractive<HTMLElement>(incomingOf(rest), { disabled: rest.disabled });
   const side = phone ? TOUCH_MIN : 32;
-  const style: CSSProperties = { ...base, height: side, padding: "0 14px", ...(round ? { width: side, padding: 0, borderRadius: "50%" } : null), fontWeight: 600, color: t.text, width: block && phone ? "100%" : undefined, ...controlPaint(state), ...ring(state.focusVisible), ...(rest.disabled ? { opacity: 0.5, cursor: "default" } : null) };
+  const style: CSSProperties = { ...base, height: side, padding: "0 14px", fontWeight: 600, color: t.text, width: block && phone ? "100%" : undefined, ...(round ? { width: side, padding: 0, borderRadius: "50%" } : null), ...controlPaint(state), ...ring(state.focusVisible), ...(rest.disabled ? { opacity: 0.5, cursor: "default" } : null) };
   if (to) {
     return (
       <Link to={to} download={download} {...handlers} style={style}>

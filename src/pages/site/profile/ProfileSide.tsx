@@ -238,8 +238,9 @@ function Progress({ progress }: { progress: ProgressView }) {
         {progress.xpLine ? <span>{progress.xpLine}</span> : null}
         {progress.streak ? <span>{progress.streak}</span> : null}
       </div>
-      <div style={{ marginTop: 12 }}>
-        <Segmented<TrackValue> label="Track" semantics="radio" size={28} items={progress.tracks} value={progress.track ?? ("" as TrackValue)} onChange={progress.onTrack} fullWidth compact fontSize={13} />
+      {/* The four tracks are wider than the side panel: they scroll inside it rather than spill past its edge. */}
+      <div style={{ marginTop: 12, overflowX: "auto", paddingBottom: 2 }}>
+        <Segmented<TrackValue> label="Track" semantics="radio" size={28} items={progress.tracks} value={progress.track ?? ("" as TrackValue)} onChange={progress.onTrack} compact fontSize={13} />
       </div>
     </section>
   );

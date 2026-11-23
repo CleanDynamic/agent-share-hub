@@ -90,7 +90,7 @@ export function rebuildFixture(viewport: "desktop" | "mobile" = "desktop"): Omit
     changes: changesFixture(viewport),
     readiness: {
       pct: rebuild.readiness_pct,
-      headline: "One thing before it can hang",
+      headline: "One thing before it can be published",
       next: rebuild.missing,
       ready: false,
     },

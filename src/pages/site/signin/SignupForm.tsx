@@ -143,7 +143,7 @@ export function SignupForm({
             describedBy={tied}
             autoComplete="new-password"
           />
-          {password ? <PasswordStrengthMeter strength={passwordStrength} /> : <p style={{ margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label }}>At least 8 characters</p>}
+          {password ? <PasswordStrengthMeter strength={passwordStrength} /> : null}
         </div>
         <div>
           <AuthCheck id="terms" checked={agreedToTerms} onChange={onAgreedToTermsChange}>
