@@ -271,6 +271,7 @@
   --hairline-module: var(--hairline);
   --control: #E7EBE7;
   --control-border: #D3D9D4;
+  --thread-node: #C9CFC9;
   --control-shadow: none;
   --control-on: var(--control);
   --seg-track: #DDE2DD;
@@ -537,6 +538,7 @@
   --hairline-module: var(--hairline);
   --control: #242925;
   --control-border: #2A2F2B;
+  --thread-node: #3A403B;
   --control-shadow: none;
   --control-on: var(--control);
   --seg-track: #0B0D0B;

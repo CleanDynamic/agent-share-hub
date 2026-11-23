@@ -7,7 +7,7 @@
 
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { useState } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { GalleryMedia } from "@/lib/build";
 import { splitThread, type Post, type PostBlock, type ThreadDoc } from "@/lib/build/thread";
@@ -163,9 +163,9 @@ function Harness({ count = 4, start = "closed", resetKey }: { count?: number; st
 describe("PostThread", () => {
   it("closed: post 1, and a toggle that counts the rest", () => {
     render(<Harness />);
-    expect(screen.getByText("Show more")).toBeInTheDocument();
-    expect(screen.getByText("3 more posts")).toBeInTheDocument();
-    expect(screen.queryByText("2 / 4")).toBeNull();
+    const toggle = screen.getByRole("button", { name: "Show more · 3 more posts" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveAttribute("aria-controls", document.querySelector("[data-post-region]")!.id);
     expect(document.querySelector("[data-post-region]")).toHaveAttribute("data-post-region", "closed");
     expect(document.querySelector("[data-post-region]")).toHaveAttribute("inert");
   });
@@ -177,30 +177,59 @@ describe("PostThread", () => {
 
   it("says 1 more post, not 1 more posts", () => {
     render(<Harness count={2} />);
-    expect(screen.getByText("1 more post")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Show more · 1 more post" })).toBeInTheDocument();
   });
 
-  it("opens, shows the counters on the later posts, and closes again", () => {
+  it("opens, closes and opens again, with no counters on the later posts", () => {
     render(<Harness />);
     fireEvent.click(screen.getByRole("button", { name: /Show more/ }));
-    expect(screen.getByText("2 / 4")).toBeInTheDocument();
-    expect(screen.getByText("3 / 4")).toBeInTheDocument();
-    expect(screen.getByText("4 / 4")).toBeInTheDocument();
-    expect(screen.queryByText("1 / 4")).toBeNull();
+    expect(screen.getByRole("button", { name: "Show less" })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("Post 2 words")).toBeInTheDocument();
+    expect(screen.queryByText("2 / 4")).toBeNull();
     expect(document.querySelector("[data-post-region]")).not.toHaveAttribute("inert");
-    fireEvent.click(screen.getByRole("button", { name: /Show less/ }));
-    expect(screen.getByText("Show more")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Show less" }));
+    expect(screen.getByRole("button", { name: /Show more/ })).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(screen.getByRole("button", { name: /Show more/ }));
+    expect(screen.getByRole("button", { name: "Show less" })).toBeInTheDocument();
   });
 
-  it("page: post 1 and the toggle; the toggle opens the rest at once and closes them again", () => {
+  it("moves focus to the first revealed post on opening and back to the toggle on closing", () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: /Show more/ }));
+    const second = document.querySelector("[data-post='2']") as HTMLElement;
+    expect(second).toHaveAttribute("tabindex", "-1");
+    expect(document.activeElement).toBe(second);
+    fireEvent.click(screen.getByRole("button", { name: "Show less" }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: /Show more/ }));
+  });
+
+  it("spaces the posts 16px apart, and draws the connector's nodes only with a connector", () => {
+    const { rerender } = render(<Harness start="open" />);
+    expect((document.querySelector("[data-post='3']") as HTMLElement).style.paddingTop).toBe("16px");
+    expect(document.querySelector("[data-thread-node]")).toBeNull();
+    rerender(
+      <PostThread posts={splitThread(doc(3))} mediaById={MEDIA} srcByPath={NO_SRC} mode="open" connector={{ x: -32, top: 16 }} />,
+    );
+    expect(document.querySelectorAll("[data-thread-node]")).toHaveLength(2);
+  });
+
+  it("shows one dot skeleton while the rest loads, and the failed line with Try again", () => {
+    const retry = vi.fn();
+    const { rerender } = render(<PostThread posts={splitThread(doc(3))} mediaById={MEDIA} srcByPath={NO_SRC} mode="open" rest="loading" />);
+    expect(document.querySelectorAll('[data-ui="loading"]')).toHaveLength(1);
+    expect(screen.queryByText("Post 2 words")).toBeNull();
+    rerender(<PostThread posts={splitThread(doc(3))} mediaById={MEDIA} srcByPath={NO_SRC} mode="open" rest="failed" onRetry={retry} />);
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(retry).toHaveBeenCalledTimes(1);
+  });
+
+  it("page: post 1 and the toggle; the toggle opens the rest and closes them again", () => {
     render(<Harness start="page" />);
     const region = () => document.querySelector("[data-post-region]") as HTMLElement;
     expect(region().getAttribute("data-post-region")).toBe("closed");
-    expect(region().style.transition).toBe("none");
-    expect(screen.queryByText("2 / 4")).toBeNull();
+    expect(screen.getByRole("button", { name: "1 of 4 posts · Show more" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Show more/ }));
     expect(region().getAttribute("data-post-region")).toBe("open");
-    expect(screen.getByText("2 / 4")).toBeInTheDocument();
     expect(screen.getByText("Post 4 words")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Show less" }));
     expect(region().getAttribute("data-post-region")).toBe("closed");
@@ -229,12 +258,6 @@ describe("PostThread", () => {
     rerender(<Harness start="open" resetKey="one" />);
     expect(screen.getByText("Show less")).toBeInTheDocument();
     rerender(<Harness start="open" resetKey="two" />);
-    expect(screen.getByText("Show more")).toBeInTheDocument();
-  });
-
-  it("puts the counter in Geist Mono 11px", () => {
-    render(<Harness start="open" />);
-    const counter = within(document.body).getByText("2 / 4");
-    expect(counter).toHaveStyle({ fontSize: "11px", color: "var(--label)" });
+    expect(screen.getByRole("button", { name: /Show more/ })).toBeInTheDocument();
   });
 });

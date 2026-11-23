@@ -102,6 +102,7 @@ export {
   getThreadMedia,
   isThreadDoc,
   legacyThread,
+  moreCountOf,
   postBodyLength,
   postPlainText,
   saveThread,

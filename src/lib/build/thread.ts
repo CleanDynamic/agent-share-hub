@@ -732,6 +732,11 @@ export function legacyThread(build: PostTextSource | null | undefined, media: re
   return { type: "doc", content };
 }
 
+/** How many posts follow the first in a thread document: 0 for no thread, or a thread of one post. */
+export function moreCountOf(doc: unknown): number {
+  return isThreadDoc(doc) ? Math.max(0, splitThread(doc).length - 1) : 0;
+}
+
 /** The build's thread: post_doc when it holds one, else the old post as a thread. */
 export function threadOf(build: ThreadSource | null | undefined, media: readonly ThreadMedia[]): ThreadDoc | null {
   if (isThreadDoc(build?.post_doc)) return build.post_doc;

@@ -1,7 +1,7 @@
 // Tier 1 — PT-09, a post thread from the composer to the build page.
 //
 // ONE MAKER WRITES A THREAD and the readers find it: two posts, a picture in the first and two in the second (CA-07: one grid per post),
-// written in the composer's Post tab, published, read as post 1 in the Gallery with the tool marks after the handle,
+// written in the composer's Post tab, published, read as post 1 in the Gallery,
 // opened with Show more, and read in full on the build page.
 //
 // THE BACKEND IS FAKED (support/postThreadBackend.ts), stateful: what the composer writes is what the Gallery and the
@@ -80,7 +80,7 @@ test("writes a two-post thread, publishes it, and it reads in the Gallery and on
   await describeAndPublish(page);
   await expect.poll(() => backend.build()?.status).not.toBe("draft");
 
-  // The Gallery: post 1, the tool marks after the handle, post 2 behind Show more.
+  // The Gallery: post 1, post 2 behind Show more.
   const before = backend.requests.length;
   await page.goto("/gallery");
   const item = page.locator("[data-feed-post]").first();
@@ -88,15 +88,8 @@ test("writes a two-post thread, publishes it, and it reads in the Gallery and on
   await expect(item.getByTestId("feed-author-name")).toHaveText("Audit Runner");
   const authorRow = item.locator("[data-feed-author-row]");
   await expect(authorRow).toContainText("@audit");
-  await expect(authorRow.getByRole("img", { name: /^Made with Claude/ })).toBeVisible();
-  // The marks come after the handle, not before it.
-  const order = await authorRow.evaluate((row) => {
-    const handle = row.textContent?.indexOf("@audit") ?? -1;
-    const marks = row.querySelector("[data-made-with]");
-    return { handle, marks: marks ? Array.from(row.querySelectorAll("*")).indexOf(marks) : -1, text: row.textContent ?? "" };
-  });
-  expect(order.handle).toBeGreaterThanOrEqual(0);
-  expect(order.marks).toBeGreaterThan(0);
+  // Synth 07: no tool marks beside the name.
+  await expect(authorRow.getByRole("img")).toHaveCount(0);
 
   await expect(item.getByText(FIRST)).toBeVisible();
 
@@ -128,7 +121,7 @@ test("writes a two-post thread, publishes it, and it reads in the Gallery and on
   await expect(hero).toBeVisible();
   await expect(page.getByRole("heading", { level: 1, name: "Weekend bakery site" })).toBeVisible();
   await expect(hero.getByText(FIRST)).toBeVisible();
-  await expect(hero.getByText(SECOND)).toBeHidden();
+  await expect(hero.locator("[data-post-region]")).toHaveAttribute("data-post-region", "closed");
   await hero.locator("[data-post-toggle]").click();
   await expect(hero.getByText(SECOND)).toBeVisible();
   await expect(hero.getByRole("img", { name: /^Picture/ })).toHaveCount(3);
