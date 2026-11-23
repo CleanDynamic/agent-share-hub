@@ -68,5 +68,16 @@ export function classificationLines(c: Classification | null | undefined): CardL
   return { line1: line1.slice(0, 4), line2, regulated: regulatedArea(c) };
 }
 
+/** Synth 07: the facts of a build as plain text parts: What was built, Role of AI, Skill needed. No stack. Empty when not classified. */
+export function classificationFacts(c: Classification | null | undefined): string[] {
+  if (!c) return [];
+  const out: string[] = [];
+  for (const facet of ["built", "role", "skill"] as const) {
+    const first = shownValues(c, facet).values[0];
+    if (first) out.push(labelFor(facet, first));
+  }
+  return out;
+}
+
 export const REGULATED_TAG = "Regulated area";
 export const REGULATED_NOTICE = "This build works in a regulated area. Check the rules that apply to you before using it.";

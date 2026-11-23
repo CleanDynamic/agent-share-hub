@@ -11,17 +11,17 @@ import {
   feedWaitsForSession,
   filterOf,
   homeItemOf,
+  isHomeFeedRow,
+  type HomeFeedRow,
   homeWeek,
   matchesFilter,
   newerThan,
   readHomeSeen,
-  reasonLabel,
-  runRows,
   shortAgo,
   streakLength,
   timeLeft,
   weekDays,
-  weekMeta,
+  weekHeading,
   weekSummary,
   writeHomeSeen,
   type HomeItemContext,
@@ -89,23 +89,31 @@ describe("matchesFilter", () => {
     expect(matchesFilter("rebuild", "all")).toBe(true);
     expect(matchesFilter("rebuild", "rebuilds")).toBe(true);
     expect(matchesFilter("rebuild", "builds")).toBe(false);
-    expect(matchesFilter("repro_note", "notes")).toBe(true);
+    expect(matchesFilter("repro_note", "all")).toBe(true);
+    expect(matchesFilter("repro_note", "builds")).toBe(false);
     expect(matchesFilter("topic", "asks")).toBe(true);
-    expect(matchesFilter("topic", "notes")).toBe(false);
+    expect(matchesFilter("topic", "builds")).toBe(false);
   });
 });
 
 const DAY = 86_400_000;
 const none: HomeItemContext = { details: new Map(), engagement: () => undefined };
+/** A feed row Home draws: a run note is not one. */
+const feedRow = (over: Partial<BuildFeedRow> = {}): HomeFeedRow => {
+  const item = toFeedItem(row(over));
+  if (!isHomeFeedRow(item)) throw new Error("a run note");
+  return item;
+};
 
 describe("the feed's items", () => {
-  it("draws a note's runner, its model, and whether it worked; a model not said is left out", () => {
-    const item = homeItemOf(toFeedItem(row({ item_kind: "repro_note", repro_user_username: "kit", repro_model: " ", repro_note: "Worked first time.", repro_worked: true })), none);
-    expect(item).toMatchObject({ kind: "repro_note", runner: { handle: "kit" }, model: null, note: "Worked first time.", worked: true, href: "/b2/invoice-triage" });
+  it("leaves a run note out of the rows Home draws", () => {
+    expect(isHomeFeedRow(toFeedItem(row({ item_kind: "repro_note", repro_user_username: "kit", repro_note: "Worked first time.", repro_worked: true })))).toBe(false);
+    expect(isHomeFeedRow(toFeedItem(row()))).toBe(true);
+    expect(isHomeFeedRow(toFeedItem(row({ item_kind: "rebuild" })))).toBe(true);
   });
 
   it("gives a build post its read post when the batch has it, and the feed row's build until then", () => {
-    const feed = toFeedItem(row());
+    const feed = feedRow();
     const before = homeItemOf(feed, none);
     expect(before.kind === "build" && before.build.post_doc).toBeFalsy();
     const doc = { type: "doc" as const, content: [] };
@@ -116,26 +124,8 @@ describe("the feed's items", () => {
   });
 
   it("names a rebuild's source from the frozen fork columns", () => {
-    const item = homeItemOf(toFeedItem(row({ item_kind: "rebuild", source_title_at_fork: "Call notes", source_handle_at_fork: "maya", rebuild_note: "Local model.\nMore." })), none);
+    const item = homeItemOf(feedRow({ item_kind: "rebuild", source_title_at_fork: "Call notes", source_handle_at_fork: "maya", rebuild_note: "Local model.\nMore." }), none);
     expect(item).toMatchObject({ kind: "rebuild", note: "Local model.", source: { title: "Call notes", handle: "maya" } });
-  });
-
-  it("takes the latest runs from the feed's notes, newest first, at most three", () => {
-    const notes = [1, 2, 3, 4].map((n) => toFeedItem(row({ item_kind: "repro_note", build_id: `b${n}`, item_at: `2026-09-30T1${n}:00:00Z`, repro_user_username: "kit", repro_worked: n !== 2 })));
-    const runs = runRows([toFeedItem(row()), ...notes]);
-    expect(runs.map((run) => [run.buildTitle, run.worked])).toEqual([
-      ["Invoice triage agent", true],
-      ["Invoice triage agent", false],
-      ["Invoice triage agent", true],
-    ]);
-  });
-
-  it("offers a topic from a failed run to the build's maker only", () => {
-    const failed = toFeedItem(row({ item_kind: "repro_note", repro_user_username: "kit", repro_worked: false }));
-    const makerId = failed.kind === "repro_note" ? failed.maker.id : "";
-    expect(runRows([failed], 3, makerId)[0]).toMatchObject({ canStartTopic: true, buildId: "b1" });
-    expect(runRows([failed], 3, "someone-else")[0].canStartTopic).toBe(false);
-    expect(runRows([failed])[0].canStartTopic).toBe(false);
   });
 
   it("counts the loaded items newer than the last visit, and none on a first visit", () => {
@@ -147,7 +137,8 @@ describe("the feed's items", () => {
 
 describe("the filter from the address", () => {
   it("reads a known kind and treats anything else as All", () => {
-    expect(filterOf("notes")).toBe("notes");
+    expect(filterOf("asks")).toBe("asks");
+    expect(filterOf("notes")).toBe("all");
     expect(filterOf("junk")).toBe("all");
     expect(filterOf(null)).toBe("all");
   });
@@ -166,6 +157,15 @@ describe("deadlines", () => {
 });
 
 describe("your week", () => {
+  it("leaves out the challenges that count runs and confirmations", () => {
+    const progress = [
+      { challenge: { slug: "run-three-new", title: "Run three", event: "run_reported" as const, count: 3 }, done: 1, target: 3 },
+      { challenge: { slug: "solve-a-gap", title: "Solve a gap", event: "solution_accepted" as const, count: 1 }, done: 0, target: 1 },
+      { challenge: { slug: "reconfirm-stale", title: "Re-confirm", event: "build_reconfirmed" as const, count: 1 }, done: 0, target: 1 },
+    ];
+    expect(homeWeek([], progress, new Date(NOW)).challenges.map((row) => row.slug)).toEqual(["solve-a-gap"]);
+  });
+
   const days = (entries: Record<string, "active" | "frozen">) =>
     Object.entries(entries).map(([date, kind]) => ({ date, kind }));
   const now = new Date(NOW);
@@ -195,17 +195,9 @@ describe("your week", () => {
     const week = homeWeek(days({ "2026-09-28": "active", "2026-09-29": "active" }), [], now);
     expect(week.today).toBe(2);
     expect(week.streak).toBe(2);
-    expect(weekMeta(week.streak)).toBe("2 day streak · resets Monday 00:00 UTC");
-    expect(weekMeta(0)).toBe("Resets Monday 00:00 UTC");
+    expect(weekHeading(week)).toBe("2 day streak");
+    expect(weekHeading({ streak: 0, days: week.days })).toBe("2 days active this week");
     expect(weekSummary(week.days)).toBe("Active 2 of 7 days");
-  });
-});
-
-describe("where next", () => {
-  it("prints each reason in caps, naming only what the reason names", () => {
-    expect(reasonLabel({ reason: "same_tool", reasonDetail: "Sonnet-4.5" })).toBe("SAME TOOL · SONNET-4.5");
-    expect(reasonLabel({ reason: "rebuilt_from_one_you_ran", reasonDetail: "Call notes" })).toBe("REBUILT FROM ONE YOU RAN");
-    expect(reasonLabel({ reason: "more_from_maker", reasonDetail: "@ines" })).toBe("MORE FROM @INES");
   });
 });
 
@@ -237,8 +229,8 @@ describe("sinceSection", () => {
     expect(sinceSection([], now - 2 * 86_400_000, now)).toBeNull();
   });
 
-  it("words each kind and links to the page it is about", async () => {
-    const { sinceSection } = await import("./homeModel");
+  it("keeps the rebuilds of the reader's builds and drops runs and out-of-date notes", async () => {
+    const { sinceSection, sinceHeading } = await import("./homeModel");
     const section = sinceSection(
       [
         { ...base, id: "run:1", kind: "run", runner: person, worked: false, model: "gpt-5", note: null },
@@ -248,12 +240,14 @@ describe("sinceSection", () => {
       now - 2 * 86_400_000,
       now,
     );
-    expect(section?.meta).toBe("2d ago · what others did with your builds");
-    expect(section?.rows.map((row) => [row.tone, row.title, row.detail, row.href])).toEqual([
-      ["failed", "@kit ran Call notes", "It didn't work on gpt-5", "/b2/call-notes"],
-      ["rebuild", "@kit rebuilt Call notes", '"On a local model"', "/b2/call-notes-2"],
-      ["stale", "Call notes is out of date", "Not confirmed in a while", "/b2/call-notes"],
-    ]);
+    expect(section?.rows.map((row) => [row.title, row.detail, row.href])).toEqual([["@kit rebuilt Call notes", '"On a local model"', "/b2/call-notes-2"]]);
+    expect(sinceHeading(1)).toBe("1 rebuild of your builds");
+    expect(sinceHeading(2)).toBe("2 rebuilds of your builds");
+  });
+
+  it("is left out when there are only runs", async () => {
+    const { sinceSection } = await import("./homeModel");
+    expect(sinceSection([{ ...base, id: "run:1", kind: "run", runner: person, worked: true, model: null, note: null }], now - 86_400_000, now)).toBeNull();
   });
 });
 

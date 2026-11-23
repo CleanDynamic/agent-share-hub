@@ -1,4 +1,5 @@
-// UX-03 P6: Home hides what has nothing to show, and a maker whose builds nobody has run yet sees them listed instead.
+// UX-03 P6, Synth 07: Home hides what has nothing to show. The maker's published builds are the studio's third section, and
+// the right panel's when it has nothing open and the studio is not on the page.
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
@@ -12,12 +13,14 @@ import { HOME_BUILD_ROWS } from "./homeModel";
 
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: null, isLoggedIn: false, loading: false }) }));
 
-beforeEach(() =>
+let width = 1440;
+beforeEach(() => {
+  width = 1440;
   vi.stubGlobal("matchMedia", (query: string) => {
     const min = /min-width:\s*(\d+)/.exec(query);
-    return { matches: min ? 1440 >= Number(min[1]) : false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined };
-  }),
-);
+    return { matches: min ? width >= Number(min[1]) : false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined };
+  });
+});
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -37,18 +40,14 @@ const PUBLISHED: HomeViewProps["published"] = {
   status: "ready",
   data: {
     total: 7,
-    reproduced: 0,
     rows: Array.from({ length: HOME_BUILD_ROWS }, (_, at) => ({ id: `b${at}`, title: `Build ${at + 1}`, href: `/b2/build-${at + 1}`, published: "2 Nov", slug: `build-${at + 1}` })),
   },
 };
 
-/** Nothing to show anywhere in the room, and a week with no progress. */
+/** Nothing open, and a week with no progress. */
 const NOTHING: Partial<HomeViewProps> = {
-  room: { reproducedToday: 0, litToday: 0, runsThisWeek: 0, runs: [] },
   requests: { status: "ready", data: [] },
-  mostRun: { status: "ready", data: [] },
-  whereNext: { status: "ready", data: [] },
-  week: { status: "ready", data: { days: ["none", "none", "none", "none", "none", "none", "none"], today: 2, streak: 0, challenges: [{ slug: "run-three", title: "Run three builds", done: 0, target: 3 }] } },
+  week: { status: "ready", data: { days: ["none", "none", "none", "none", "none", "none", "none"], today: 2, streak: 0, challenges: [{ slug: "solve-a-gap", title: "Solve a gap", done: 0, target: 1 }] } },
   published: PUBLISHED,
   onCopyLink,
 };
@@ -56,42 +55,37 @@ const NOTHING: Partial<HomeViewProps> = {
 const room = () => screen.getByRole("complementary", { name: "The room" });
 const headings = (within_: HTMLElement) => within(within_).queryAllByRole("heading", { level: 2 }).map((heading) => heading.textContent);
 
-describe("UX-03 P6: Home hides what has nothing to show", () => {
-  it("with everything at zero, the room is the maker's published builds alone", () => {
+describe("Home hides what has nothing to show", () => {
+  it("with nothing open, the studio holds the published builds and the right panel holds nothing", () => {
     mount(NOTHING);
-    expect(headings(room())).toEqual(["Your published builds"]);
-    expect(room().textContent).not.toContain("Reproduced today");
-    expect(room().textContent).not.toContain("Nothing is still open right now.");
-    expect(room().textContent).not.toContain("Nothing run yet this week.");
-    expect(room().textContent).not.toContain("Run a build this week and suggestions appear here.");
+    expect(headings(room())).toEqual([]);
     const module = screen.getByRole("region", { name: "Your published builds" });
-    expect(module.textContent).toContain("7 published · none reproduced yet");
+    expect(within(module).getByRole("heading", { level: 2, name: "7 published builds" })).toBeTruthy();
     expect(within(module).getAllByTestId("home-published-row")).toHaveLength(HOME_BUILD_ROWS);
-    expect(module.textContent).toContain("A reproduction is recorded when another signed-in person runs your build and says whether it worked.");
+    expect(module.textContent).not.toContain("reproduc");
     fireEvent.click(within(module).getByRole("button", { name: "Copy link" }));
     expect(onCopyLink).toHaveBeenCalledWith("build-1");
     // Your week with no progress is not drawn either.
-    expect(screen.queryByRole("heading", { name: "Your week" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Your week" })).toBeNull();
   });
 
-  it("with one still-open topic, shows Still open and not the published builds", () => {
-    mount({ ...NOTHING, requests: { status: "ready", data: [{ id: "r1", title: "Make it work offline", detail: "Bakery site · 3 days left", reward: "£40", href: "/bounties/r1/solve" }] } });
-    expect(headings(room())).toEqual(["Still open"]);
+  it("with the studio off the page and nothing open, the right panel holds the published builds, once", () => {
+    width = 1000;
+    mount(NOTHING);
+    expect(headings(room())).toEqual(["7 published builds"]);
+    expect(screen.getAllByRole("region", { name: "Your published builds" })).toHaveLength(1);
+  });
+
+  it("with an open topic, the right panel shows it and not the published builds", () => {
+    width = 1000;
+    mount({ ...NOTHING, requests: { status: "ready", data: [{ id: "r1", title: "Make it work offline", detail: "@maya · in Bakery site", reward: "£40", href: "/bounties/r1/solve" }] } });
+    expect(headings(room())).toEqual(["1 open in your spaces"]);
     expect(screen.queryByRole("region", { name: "Your published builds" })).toBeNull();
   });
 
-  it("signed out, is unchanged: the room's modules, and no published builds", () => {
-    mount({}, "populated");
-    const before = headings(room());
-    cleanup();
-    mount({ published: { status: "signed-out" }, onCopyLink }, "populated");
-    expect(headings(room())).toEqual(before);
+  it("signed out, says across OpenBuilds and has no published builds", () => {
+    mount({ published: { status: "signed-out" }, onCopyLink, stillOpenScope: "everyone" }, "populated");
+    expect(headings(room())).toEqual(["3 open across OpenBuilds"]);
     expect(screen.queryByRole("region", { name: "Your published builds" })).toBeNull();
-  });
-
-  it("keeps a count that is shown as it looks today", () => {
-    mount({ ...NOTHING, room: { reproducedToday: 3, litToday: 0, runsThisWeek: 5, runs: [] } });
-    expect(room().textContent).toContain("Reproduced today");
-    expect(room().textContent).toContain("runs this week");
   });
 });

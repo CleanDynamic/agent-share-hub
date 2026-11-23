@@ -22,9 +22,6 @@ const person = (id: string, handle: string, name: string, hue: number): HomePers
 const MAYA = person("u-maya", "maya", "Maya Kent", 0);
 const DAX = person("u-dax", "dax", "Dax", 2);
 const MIRA = person("u-mira", "mira", "Mira", 4);
-const KIT = person("u-kit", "kit", "Kit", 3);
-const JAY = person("u-jay", "jay", "Jay", 5);
-const LUKE = person("u-luke", "luke", "Luke", 4);
 const SUNTZU = person("u-suntzu", "suntzu", "suntzu", 1);
 
 const build = (id: string, title: string, over: Partial<GalleryBuild> = {}): GalleryBuild => ({
@@ -142,17 +139,6 @@ export const visionHomeItems: HomeFeedItem[] = [
     engagement: { counts: { likes: 24, comments: 5 }, liked: false, saved: false },
   },
   {
-    kind: "repro_note",
-    key: "note:inbox",
-    at: minutes(2),
-    runner: KIT,
-    buildTitle: "Inbox triage in one prompt",
-    href: "/b2/inbox-triage",
-    model: "opus-5.5",
-    note: "Worked first time. Changed the label list to mine.",
-    worked: true,
-  },
-  {
     kind: "rebuild",
     key: "rebuild:call-notes-local",
     at: hours(3),
@@ -162,17 +148,6 @@ export const visionHomeItems: HomeFeedItem[] = [
     build: localModel,
     plaque: localModel,
     engagement: { counts: { likes: 8, comments: 0 }, liked: false, saved: false },
-  },
-  {
-    kind: "repro_note",
-    key: "note:research",
-    at: hours(5),
-    runner: JAY,
-    buildTitle: "Research brief agent",
-    href: "/b2/research-brief",
-    model: "gpt-5",
-    note: "Stops on any paywalled source. Same with Opus.",
-    worked: false,
   },
   {
     kind: "build",
@@ -197,17 +172,15 @@ export function visionHomeProps(state: DesignState = "populated"): HomeViewProps
   const base: HomeViewProps = {
     now: VISION_HOME_NOW,
     since: {
-      meta: "2 days ago · what others did with your builds",
       rows: [
-        { key: "s1", tone: "worked", title: "@kit ran Call notes", detail: "It worked on opus-5.5", at: minutes(34) },
-        { key: "s2", tone: "rebuild", title: "@dax rebuilt Call notes", detail: "\"Session 2 on a local model\"", at: hours(3) },
-        { key: "s3", tone: "failed", title: "@jay ran Call notes", detail: "It didn't work on gpt-5", at: hours(5) },
+        { key: "s1", title: "@dax rebuilt Call notes", detail: "\"Session 2 on a local model\"", at: hours(3), href: "/b2/call-notes-local" },
+        { key: "s2", title: "@kit rebuilt Inbox triage", detail: "\"Labels from a sheet\"", at: hours(30), href: "/b2/inbox-triage-labels" },
       ],
     },
     drafts: {
       status: "ready",
       data: {
-        total: 28,
+        total: 36,
         rows: [
           { id: "vd1", title: "Invoice chaser", untitled: false, meta: "4 sessions · edited 1h ago" },
           { id: "vd2", title: "Untitled build", untitled: true, meta: "2 sessions · edited 2h ago" },
@@ -220,8 +193,8 @@ export function visionHomeProps(state: DesignState = "populated"): HomeViewProps
       data: {
         total: 8,
         rows: [
-          { id: "vs1", title: "This session is being continued from a previous conversation", meta: "Haiku 4.5 · 10 Oct · In 3 drafts", client: "claude", model: "claude-haiku-4-5" },
-          { id: "vs2", title: "This is my site https://agent-share-hub.lovable.app", meta: "Claude Code · 8 Oct · In 4 drafts", client: "claude-code", model: null },
+          { id: "vs1", title: "This session is being continued from a previous conversation", meta: "10 Oct · In 3 drafts" },
+          { id: "vs2", title: "This is my site https://agent-share-hub.lovable.app", meta: "8 Oct · In 4 drafts" },
         ],
       },
     },
@@ -233,9 +206,7 @@ export function visionHomeProps(state: DesignState = "populated"): HomeViewProps
         today: 3,
         streak: 3,
         challenges: [
-          { slug: "run-three", title: "Run three builds you haven't run before", done: 2, target: 3 },
-          { slug: "solve-gap", title: "Solve a gap", done: 0, target: 1 },
-          { slug: "reconfirm", title: "Re-confirm one of your stale builds", done: 1, target: 1 },
+          { slug: "solve-a-gap", title: "Solve a gap", done: 0, target: 1 },
         ],
       },
     },
@@ -248,19 +219,9 @@ export function visionHomeProps(state: DesignState = "populated"): HomeViewProps
     onShowNew: () => undefined,
     srcByPath: SRC,
     endCards: [
-      { id: "inbox-triage", title: "Inbox triage in one prompt", href: "/b2/inbox-triage", plaque: build("inbox-triage", "Inbox triage in one prompt", { reproduction_count: 31, last_confirmed_at: minutes(2), last_confirmed_model: "opus-5.5" }), cover: { src: null } },
-      { id: "untitled", title: "Untitled build", href: "/b2/untitled", plaque: build("untitled", "Untitled build"), cover: { src: null } },
+      { id: "inbox-triage", title: "Inbox triage in one prompt", href: "/b2/inbox-triage", facts: "Web app · Made with AI · No coding" },
+      { id: "untitled", title: "Untitled build", href: "/b2/untitled", facts: "" },
     ],
-    room: {
-      reproducedToday: 14,
-      litToday: 3,
-      runsThisWeek: 62,
-      runs: [
-        { key: "r1", worked: true, buildTitle: "Inbox triage", handle: "kit", href: "/b2/inbox-triage", at: minutes(2), buildId: "inbox-triage", canStartTopic: false },
-        { key: "r2", worked: false, buildTitle: "Research brief", handle: "jay", href: "/b2/research-brief", at: hours(5), buildId: "research-brief", canStartTopic: false },
-        { key: "r3", worked: true, buildTitle: "Call notes", handle: "kit", href: "/b2/call-notes", at: minutes(34), buildId: "call-notes", canStartTopic: false },
-      ],
-    },
     requests: {
       status: "ready",
       data: [
@@ -269,31 +230,27 @@ export function visionHomeProps(state: DesignState = "populated"): HomeViewProps
         { id: "b3", title: "Export to Keynote", detail: "Pitch deck · 2 weeks left", reward: "£25", href: "/openbuilds/topics/b3" },
       ],
     },
-    mostRun: {
+    published: {
       status: "ready",
-      data: [
-        { buildId: "inbox-triage", title: "Inbox triage in one prompt", href: "/b2/inbox-triage", maker: KIT, count: 31 },
-        { buildId: "call-notes", title: "Call notes that write themselves", href: "/b2/call-notes", maker: MAYA, count: 6 },
-        { buildId: "weekly-linear", title: "Weekly report from Linear", href: "/b2/weekly-linear", maker: LUKE, count: 4 },
-      ],
+      data: {
+        total: 2,
+        rows: [
+          { id: "pb1", title: "Call notes that write themselves", slug: "call-notes", href: "/b2/call-notes", published: "12 Oct" },
+          { id: "pb2", title: "Inbox triage in one prompt", slug: "inbox-triage", href: "/b2/inbox-triage", published: "3 Oct" },
+        ],
+      },
     },
-    whereNext: {
-      status: "ready",
-      data: [
-        { id: "meeting-linear", title: "Meeting to Linear tickets", href: "/b2/meeting-linear", reason: "SAME TOOL · OPUS-5.5", cover: { src: null } },
-        { id: "call-notes-local", title: "Call notes, local model", href: "/b2/call-notes-local", reason: "REBUILT FROM ONE YOU RAN", cover: { src: null } },
-      ],
-    },
+    onCopyLink: () => undefined,
   };
   const failure = { onRetry: () => undefined };
   if (state === "loading") {
-    return { ...base, feed: { ...base.feed, status: "loading", items: [] }, newCount: 0, drafts: { status: "loading" }, sessions: { status: "loading" }, week: { status: "loading" }, requests: { status: "loading" }, mostRun: { status: "loading" }, whereNext: { status: "loading" }, room: { reproducedToday: null, litToday: null, runsThisWeek: null, runs: [] } };
+    return { ...base, feed: { ...base.feed, status: "loading", items: [] }, newCount: 0, drafts: { status: "loading" }, sessions: { status: "loading" }, week: { status: "loading" }, requests: { status: "loading" }, published: { status: "loading" } };
   }
   if (state === "error") {
-    return { ...base, feed: { ...base.feed, status: "error", items: [] }, newCount: 0, drafts: { status: "error", ...failure }, sessions: { status: "error", ...failure }, week: { status: "error", ...failure }, requests: { status: "error", ...failure }, mostRun: { status: "error", ...failure }, whereNext: { status: "error", ...failure }, room: { ...base.room, failure, runs: [] } };
+    return { ...base, feed: { ...base.feed, status: "error", items: [] }, newCount: 0, drafts: { status: "error", ...failure }, sessions: { status: "error", ...failure }, week: { status: "error", ...failure }, requests: { status: "error", ...failure }, published: { status: "error", ...failure } };
   }
   if (state === "empty") {
-    return { ...base, since: null, feed: { ...base.feed, items: [] }, newCount: 0, endCards: [], drafts: { status: "ready", data: { total: 0, rows: [] } }, sessions: { status: "ready", data: { total: 0, rows: [] } }, requests: { status: "ready", data: [] }, mostRun: { status: "ready", data: [] }, whereNext: { status: "ready", data: [] }, room: { ...base.room, runs: [] } };
+    return { ...base, since: null, feed: { ...base.feed, items: [] }, newCount: 0, endCards: [], drafts: { status: "ready", data: { total: 0, rows: [] } }, sessions: { status: "ready", data: { total: 0, rows: [] } }, requests: { status: "ready", data: [] }, published: { status: "ready", data: { total: 0, rows: [] } } };
   }
   return base;
 }

@@ -88,12 +88,16 @@ const panel: CSSProperties = { background: t.surface, borderRadius: PANEL_RADIUS
 /** A side column's panel: 16 inside, sections 24 apart. */
 const sidePanel: CSSProperties = { ...panel, padding: PANEL_PAD, display: "flex", flexDirection: "column", gap: 24 };
 
+/** A side panel whose sections carry their own 16 at the sides (the section head and its rows), so the panel keeps only the top and bottom. */
+const flushPanel: CSSProperties = { ...sidePanel, padding: `${PANEL_PAD}px 0` };
+
 export function HomeColumns({
   layout,
   left,
   centre,
   right,
   top,
+  flush = false,
 }: {
   layout: HomeLayout;
   left: ReactNode;
@@ -101,15 +105,18 @@ export function HomeColumns({
   right: ReactNode;
   /** One column only: the line above the feed. */
   top?: ReactNode;
+  /** Home's side panels: the sections hold their own side padding. */
+  flush?: boolean;
 }) {
   useColumnPanels(true);
+  const side = flush ? flushPanel : sidePanel;
   const sidesFull = useMinWidth(SIDES_FULL_MIN);
   if (layout === "one") {
     return (
       <div data-testid="home-view" data-layout="one" style={{ ...root, display: "flex", flexDirection: "column", gap: PANEL_GUTTER, minWidth: 0 }}>
         {top ? <div style={{ ...panel, padding: PANEL_PAD }}>{top}</div> : null}
         <section aria-label="Feed" style={{ ...panel, paddingBottom: 48 }}>{centre}</section>
-        <aside aria-label="The room" style={sidePanel}>{right}</aside>
+        <aside aria-label="The room" style={side}>{right}</aside>
       </div>
     );
   }
@@ -123,11 +130,11 @@ export function HomeColumns({
         ...root,
       }}
     >
-      {three ? <aside aria-label="Your studio" style={sidePanel}>{left}</aside> : null}
+      {three ? <aside aria-label="Your studio" style={side}>{left}</aside> : null}
       <section aria-label="Feed" style={{ ...panel, paddingBottom: 48 }}>
         {centre}
       </section>
-      <aside aria-label="The room" style={sidePanel}>
+      <aside aria-label="The room" style={side}>
         {right}
       </aside>
     </div>
@@ -136,12 +143,11 @@ export function HomeColumns({
 
 /* ── loading ── */
 
-/** A section's head while it loads: the title's and the meta line's places. */
+/** A section's head while it loads: the fact's place, one line at the head's 24. */
 export function HeadBones() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <Skeleton width="50%" height={14} radius={4} />
-      <Skeleton width="70%" height={12} radius={4} />
+    <div style={{ padding: "0 16px 8px", height: 32, boxSizing: "border-box", display: "flex", alignItems: "center" }}>
+      <Skeleton width="50%" height={20} radius={4} />
     </div>
   );
 }
@@ -151,7 +157,7 @@ export function RowBones({ count, height, what }: { count: number; height: numbe
   return (
     <LoadingRegion what={what} style={{ display: "flex", flexDirection: "column" }}>
       {Array.from({ length: count }, (_, index) => (
-        <div key={index} style={{ height, boxSizing: "border-box", display: "flex", alignItems: "center" }}>
+        <div key={index} style={{ height, boxSizing: "border-box", display: "flex", alignItems: "center", padding: "0 16px" }}>
           <Skeleton height={height - 24} radius={10} />
         </div>
       ))}
@@ -161,17 +167,17 @@ export function RowBones({ count, height, what }: { count: number; height: numbe
 
 /** The feed's tabs row, drawn while the feed loads, at its own height. */
 function TabsBones() {
-  return <div style={{ height: 39, boxSizing: "border-box" }} />;
+  return <div style={{ height: 53, boxSizing: "border-box" }} />;
 }
 
 /** A post while the feed loads: the author row, a title, a picture. */
 function PostBones() {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "40px minmax(0, 1fr)", columnGap: 12, padding: "12px 16px 4px" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "40px minmax(0, 1fr)", columnGap: 12, padding: "4px 16px" }}>
       <Skeleton width={40} height={40} radius="50%" />
       <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
         <Skeleton width="40%" height={20} radius={4} />
-        <Skeleton width="80%" height={28} radius={4} />
+        <Skeleton width="80%" height={20} radius={4} />
         <Skeleton height={240} radius={6} />
       </div>
     </div>
@@ -193,7 +199,7 @@ export function FeedBones() {
 /** A side column's section while it loads. */
 export function SectionBones({ rows, height, what }: { rows: number; height: number; what: string }) {
   return (
-    <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <section style={{ display: "flex", flexDirection: "column" }}>
       <HeadBones />
       <RowBones count={rows} height={height} what={what} />
     </section>
@@ -203,11 +209,9 @@ export function SectionBones({ rows, height, what }: { rows: number; height: num
 function LeftBones() {
   return (
     <>
-      <SectionBones rows={3} height={48} what="your drafts" />
+      <SectionBones rows={3} height={52} what="your drafts" />
       <Rule />
-      <SectionBones rows={2} height={52} what="your sessions" />
-      <Rule />
-      <SectionBones rows={3} height={40} what="your week" />
+      <SectionBones rows={2} height={56} what="your sessions" />
     </>
   );
 }
@@ -215,11 +219,7 @@ function LeftBones() {
 function RightBones() {
   return (
     <>
-      <SectionBones rows={3} height={32} what="today's runs" />
-      <Rule />
-      <SectionBones rows={3} height={48} what="open requests" />
-      <Rule />
-      <SectionBones rows={3} height={48} what="the most run builds" />
+      <SectionBones rows={3} height={56} what="open topics" />
     </>
   );
 }
@@ -234,6 +234,7 @@ export function HomeLoadingView() {
     <div style={{ minHeight: "100vh" }}>
       <HomeColumns
         layout={layout}
+        flush
         top={layout === "one" ? <Skeleton height={44} radius={6} /> : undefined}
         left={<LeftBones />}
         centre={

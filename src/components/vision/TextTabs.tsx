@@ -31,15 +31,19 @@ export interface TextTabsProps<V extends string = string> {
   gap?: 20 | 24;
   /** Kept for callers; there is no line under the row. */
   rule?: boolean;
+  /** The tabs share the row's full width, each an equal part, the label centred. */
+  fill?: boolean;
 }
 
 function Tab({
   current,
   tab,
+  fill,
   onSelect,
   onKeyDown,
 }: {
   current: boolean;
+  fill?: boolean;
   tab: TextTab;
   onSelect: () => void;
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
@@ -61,6 +65,7 @@ function Tab({
         boxSizing: "border-box",
         height: 53,
         padding: "0 16px",
+        ...(fill ? { flex: "1 1 0", minWidth: 0 } : null),
         background: "none",
         border: 0,
         fontFamily: FIGTREE,
@@ -80,14 +85,14 @@ function Tab({
       {current ? (
         <span
           aria-hidden="true"
-          style={{ position: "absolute", left: "50%", bottom: 0, width: 56, height: 4, marginLeft: -28, borderRadius: 2, background: t.tabBar }}
+          style={{ position: "absolute", left: "calc(50% - 28px)", bottom: 0, width: 56, height: 4, borderRadius: 2, background: t.tabBar }}
         />
       ) : null}
     </button>
   );
 }
 
-export function TextTabs<V extends string = string>({ tabs, value, onChange, label }: TextTabsProps<V>) {
+export function TextTabs<V extends string = string>({ tabs, value, onChange, label, fill }: TextTabsProps<V>) {
   const list = useRef<HTMLDivElement>(null);
 
   const move = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
@@ -116,6 +121,7 @@ export function TextTabs<V extends string = string>({ tabs, value, onChange, lab
         <Tab
           key={tab.value}
           tab={tab}
+          fill={fill}
           current={tab.value === value}
           onSelect={() => onChange(tab.value)}
           onKeyDown={(event) => move(event, index)}
