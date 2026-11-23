@@ -1,21 +1,10 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { ArrowDownToLine, Link, MessageSquare, Plus } from "lucide-react";
-import type { ButtonHTMLAttributes } from "react";
 import { Button } from "@/components/brand/Button";
-import { Icon } from "@/components/brand/Icon";
+import { NewBuildTrigger } from "./NewBuildTrigger";
 import { r } from "@/lib/theme/radius";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
-
-/** The header's one primary: "New build", 32 high, with the plus. It opens the create menu (New build, Import, New post, Connect a tool). */
-export function NewBuildTrigger(props: ButtonHTMLAttributes<HTMLButtonElement>) {
-  return (
-    <Button variant="primary" size={32} aria-haspopup="menu" {...props} style={{ gap: 6, ...props.style }}>
-      <Icon lucide={Plus} glyph="plus" size={16} />
-      New build
-    </Button>
-  );
-}
 
 export function CreateMenu({ onChoose, defaultOpen = false }: { onChoose: (kind: "build" | "import" | "post" | "connect") => void; defaultOpen?: boolean }) {
   return <DropdownMenu.Root defaultOpen={defaultOpen}>

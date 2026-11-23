@@ -376,7 +376,14 @@ function Context({ context }: { context?: WorkspaceContext }) {
 
 /** The signed-in reader's avatar, a picture and not a link. Nothing where there is no reader. */
 function EditorAvatar() {
-  const auth = useAuth();
+  /* A specimen or a unit test of chrome has no provider: useContext runs either way, so the hook order holds. */
+  let auth: ReturnType<typeof useAuth> | null = null;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    auth = useAuth();
+  } catch {
+    auth = null;
+  }
   const user = auth?.user ?? null;
   if (!user) return null;
   const name = auth?.profile?.display_name || auth?.profile?.username || "User";

@@ -33,7 +33,7 @@ import { r } from "@/lib/theme/radius";
 import { space } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
-import { NewBuildTrigger } from "./CreateMenu";
+import { NewBuildTrigger } from "./NewBuildTrigger";
 
 import { AccountButton } from "./AccountButton";
 import { FRAME_MAX_WIDTH, HEADER_COMPACT_HEIGHT, HEADER_HEIGHT, LOGO_COMPACT_WIDTH, LOGO_WIDTH, PANEL_GUTTER } from "./chromeSize";
