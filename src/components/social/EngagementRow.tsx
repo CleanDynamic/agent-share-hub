@@ -65,7 +65,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { feedback, scrollBehavior } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { tabular, FIGTREE } from "@/lib/theme/type";
+import { tabular, DM_MONO } from "@/lib/theme/type";
 
 /** The glyph, at the size the row draws it everywhere. */
 export const ENGAGEMENT_ICON_SIZE = 18;
@@ -74,7 +74,7 @@ export const ENGAGEMENT_ICON_SIZE = 18;
 export const COMPACT_ICON_SIZE = 16;
 
 /** The smallest a press target may be, in either direction: 44 drawn, 36 through the density table, 44 on a phone (the touch target). */
-const hitOf = (phone: boolean, compact = false) => (phone ? 44 : compact ? 28 : 36);
+const hitOf = (phone: boolean, compact = false) => (phone ? 44 : compact ? 28 : 32);
 
 /** Padding plus border either side of a button's content: half of the 12 between pairs. */
 const PAD_INLINE = 6;
@@ -93,15 +93,6 @@ const ICON_TO_COUNT = 4;
  * toaster's filled default: the toast is a note, and the page keeps its one
  * filled button ⟦von-restorff-effect⟧.
  */
-const SAVED_TOAST_ACTION: CSSProperties = {
-  background: "transparent",
-  color: t.text2,
-  border: "none",
-  boxShadow: "none",
-  fontWeight: 600,
-  textDecoration: "underline",
-  textUnderlineOffset: 3,
-};
 
 export interface EngagementRowProps {
   build: { id: string; slug: string; title: string; rebuild_count?: number | null };
@@ -189,7 +180,6 @@ export function EngagementRow({ build, counts, liked, saved, variant, withRebuil
       if (next) {
         toast("Saved.", {
           action: { label: "Add to a collection", onClick: () => requestAddToCollection(build.id) },
-          actionButtonStyle: SAVED_TOAST_ACTION,
         });
       }
     } catch (error) {
@@ -322,7 +312,7 @@ export function TopicEngagementRow({ likes, liked, onLike, replies, onReply, sav
     ...(save ? [{ id: "save", label: save.saved ? "Unsave" : "Save", pressed: save.saved, onPress: save.onSave, glyph: "save" as const }] : []),
   ];
   return (
-    <div data-testid="engagement-row" data-variant="topic" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", marginInlineStart: -PAD_INLINE, marginTop: 6, ...style }}>
+    <div data-testid="engagement-row" data-variant="topic" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", justifyContent: "space-between", maxWidth: 425, marginInlineStart: -PAD_INLINE, marginTop: 12, ...style }}>
       {actions.map(({ id, ...action }) => (
         <Action key={id} phone={phone} {...action} />
       ))}
@@ -388,9 +378,9 @@ function Action({ label, slot, glyph, onPress, href, pressed, count, noun, phone
     margin: 0,
     boxSizing: "border-box",
     // A press sinks to the well; at rest the border is there but clear.
-    background: state.pressed ? t.well : "transparent",
-    border: `${BORDER}px solid ${state.pressed ? t.wellBorder : "transparent"}`,
-    borderRadius: r.control,
+    background: state.pressed || state.hovered ? t.module : "transparent",
+    border: `${BORDER}px solid transparent`,
+    borderRadius: r.full,
     // The count's colour; the glyph takes its own below.
     color: active || state.hovered ? t.text : t.text2,
     cursor: "pointer",
@@ -421,10 +411,11 @@ function Action({ label, slot, glyph, onPress, href, pressed, count, noun, phone
           data-engagement-count=""
           aria-hidden="true"
           style={{
-            fontFamily: FIGTREE,
-            fontSize: 12,
+            fontFamily: DM_MONO,
+            fontSize: 13,
             fontWeight: 400,
             lineHeight: 1.3,
+            color: t.label,
             minWidth: "2ch",
             textAlign: "left",
             ...tabular,

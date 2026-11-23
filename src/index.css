@@ -401,6 +401,7 @@
   /* SY-01 — Synth draft: the long-text surface, the modal foot, the field edge, signal and dot-motif tokens. Mirrored in semantics.ts. */
   --notepad: #EAF3EC;
   --notepad-edge: #BFD5C4;
+  --notepad-copy: #D5E6D9;
   --modal-foot: #EBEEEB;
   --field-edge: #879189;
   --danger-text: #B3261E;
@@ -640,6 +641,7 @@
   /* SY-01 — Synth draft: the long-text surface, the modal foot, the field edge, signal and dot-motif tokens. Mirrored in semantics.ts. */
   --notepad: #17231B;
   --notepad-edge: #2C3E31;
+  --notepad-copy: #24342A;
   --modal-foot: #161917;
   --field-edge: #646B66;
   --danger-text: #F07563;

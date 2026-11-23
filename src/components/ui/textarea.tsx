@@ -41,13 +41,13 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <textarea
         className={cn(
-          "flex min-h-[80px] w-full rounded-md border border-input bg-background text-sm placeholder:text-[color:var(--text2)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+          "flex min-h-[80px] w-full rounded-md border border-input bg-background text-sm placeholder:text-[color:var(--label)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
           CONTROL_CLASS.textarea,
           className,
         )}
         ref={ref}
         disabled={disabled}
-        style={{ ...fieldStyle({ ...state, invalid }), ...style }}
+        style={{ ...fieldStyle({ ...state, invalid }, "area"), ...style }}
         {...props}
         {...handlers}
       />

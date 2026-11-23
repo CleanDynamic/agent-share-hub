@@ -9,7 +9,6 @@ import { PageLink as Link } from "@/lib/routing/PageLink";
 import { ring } from "@/lib/theme/controls";
 import { TOUCH_MIN } from "@/lib/theme/density";
 import { useInteractive } from "@/lib/theme/interactive";
-import { r } from "@/lib/theme/radius";
 import { PRIMARY, controlPaint } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -31,7 +30,7 @@ const base: CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   flexShrink: 0,
-  borderRadius: r.control,
+  borderRadius: 16,
   fontFamily: FIGTREE,
   fontSize: 13,
   lineHeight: "normal",
@@ -53,7 +52,7 @@ interface ControlProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "st
 export const PostControl = forwardRef<HTMLButtonElement, ControlProps>(function PostControl({ to, download, block, children, type = "button", ...rest }, ref) {
   const phone = useIsPhone();
   const { state, handlers } = useInteractive<HTMLElement>(incomingOf(rest), { disabled: rest.disabled });
-  const style: CSSProperties = { ...base, height: phone ? TOUCH_MIN : 32, padding: "0 12px", fontWeight: 400, color: t.text, width: block && phone ? "100%" : undefined, ...controlPaint(state), ...ring(state.focusVisible), ...(rest.disabled ? { opacity: 0.5, cursor: "default" } : null) };
+  const style: CSSProperties = { ...base, height: phone ? TOUCH_MIN : 32, padding: "0 14px", fontWeight: 600, color: t.text, width: block && phone ? "100%" : undefined, ...controlPaint(state), ...ring(state.focusVisible), ...(rest.disabled ? { opacity: 0.5, cursor: "default" } : null) };
   if (to) {
     return (
       <Link to={to} download={download} {...handlers} style={style}>
@@ -72,7 +71,7 @@ export const PostControl = forwardRef<HTMLButtonElement, ControlProps>(function 
 export const PostPrimary = forwardRef<HTMLButtonElement, ControlProps>(function PostPrimary({ to, download, block, children, type = "button", ...rest }, ref) {
   const phone = useIsPhone();
   const { state, handlers } = useInteractive<HTMLElement>(incomingOf(rest), { disabled: rest.disabled });
-  const style: CSSProperties = { ...base, ...PRIMARY, height: phone ? TOUCH_MIN : 32, padding: "0 12px", fontWeight: 500, width: block && phone ? "100%" : undefined, ...ring(state.focusVisible) };
+  const style: CSSProperties = { ...base, ...PRIMARY, height: phone ? TOUCH_MIN : 32, padding: "0 14px", fontWeight: 600, width: block && phone ? "100%" : undefined, ...ring(state.focusVisible) };
   if (to) {
     return (
       <Link to={to} download={download} data-visual-slot="btn-primary" {...handlers} style={style}>

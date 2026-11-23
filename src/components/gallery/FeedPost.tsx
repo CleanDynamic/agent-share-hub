@@ -29,8 +29,7 @@ import { IntentLink as Link } from "@/lib/routing/IntentLink";
 
 import { Avatar } from "@/components/brand/Avatar";
 import { CoverFallback } from "@/components/brand/CoverFallback";
-import { MadeWithMarks } from "@/components/brand/MadeWithMarks";
-import { Plaque, type PlaqueBuild } from "@/components/brand/Plaque";
+import type { PlaqueBuild } from "@/components/brand/Plaque";
 import { PatternMarks } from "@/components/gallery/PatternMarks";
 import type { Pattern } from "@/lib/build/patterns";
 import { ClassificationLines, RegulatedTag } from "@/components/classify/ClassificationBits";
@@ -92,8 +91,6 @@ export function FeedPost({
   makerHandle,
   makerName,
   makerAvatar,
-  modelsUsed,
-  plaqueBuild,
   patterns,
   classification,
   engagement,
@@ -255,7 +252,7 @@ export function FeedPost({
         display: "grid",
         gridTemplateColumns: "40px minmax(0, 1fr)",
         columnGap: 12,
-        padding: "20px 0 16px",
+        padding: "4px 0",
         boxSizing: "border-box",
         width: "100%",
         color: t.text,
@@ -281,7 +278,7 @@ export function FeedPost({
           <span
             aria-hidden="true"
             data-feed-thread-line=""
-            style={{ position: "absolute", top: 46, bottom: 0, left: 19, width: 2, borderRadius: 1, background: t.hairline }}
+            style={{ position: "absolute", top: 46, bottom: 0, left: 19, width: 2, borderRadius: 1, background: t.control }}
           />
         ) : null}
       </div>
@@ -297,9 +294,6 @@ export function FeedPost({
         <span style={{ display: "flex", flex: "0 1 auto", minWidth: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.4, color: t.label }}>
           {handle ? <span style={{ minWidth: 0, ...ellipsis }}>{`@${handle}`}</span> : null}
           {age ? <span style={{ flex: "none", whiteSpace: "pre" }}>{handle ? ` · ${age}` : age}</span> : null}
-        </span>
-        <span style={{ marginLeft: 2, display: "inline-flex", flex: "none" }}>
-          <MadeWithMarks madeWith={build.made_with} modelsUsed={modelsUsed} phone={phone} />
         </span>
       </div>
 
@@ -343,8 +337,6 @@ export function FeedPost({
             <span data-testid="feed-draft" style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, lineHeight: 1.4, color: t.text2 }}>
               Draft
             </span>
-          ) : plaqueBuild ? (
-            <Plaque build={plaqueBuild} size="card" now={now} />
           ) : null}
           <PatternMarks patterns={patterns} />
         </div>
@@ -361,7 +353,7 @@ export function FeedPost({
             counts={engagement.counts}
             liked={engagement.liked}
             saved={engagement.saved}
-            style={{ marginTop: 12, maxWidth: 520, justifyContent: "space-between" }}
+            style={{ marginTop: 12, maxWidth: 425, justifyContent: "space-between" }}
           />
         ) : null}
       </div>

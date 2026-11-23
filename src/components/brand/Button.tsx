@@ -28,7 +28,6 @@ import { PageLink } from "@/lib/routing/PageLink";
 import { useInteractive } from "@/lib/theme/interactive";
 import { FAST, move } from "@/lib/theme/motion";
 import { ring, touchArea } from "@/lib/theme/controls";
-import { r } from "@/lib/theme/radius";
 import { controlPaint, PRIMARY, refinedButtonHeight } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -81,27 +80,28 @@ export function Button({
      which only sign-in and the editor reach), 12/13 at 500. Primary, secondary (the control recipe) and ghost are the
      board's. A labelled button draws no icon. */
   const height = refinedButtonHeight(size, phone);
-  const small = height <= 24;
+  const small = height <= 32;
+  const large = height >= 44;
   const paint: CSSProperties =
     variant === "primary"
       ? { ...PRIMARY, ...(state.hovered ? { filter: "brightness(1.08)" } : null) }
       : variant === "secondary"
         ? controlPaint({ hovered: state.hovered })
         : {
-            background: "transparent",
+            background: state.hovered ? t.module : "transparent",
             border: "1px solid transparent",
             color: state.hovered ? t.text : t.text2,
           };
   const look: CSSProperties = {
     boxSizing: "border-box",
     height,
-    padding: small ? "0 8px" : height < 36 ? "0 12px" : "0 16px",
-    borderRadius: r.control,
+    padding: small ? "0 14px" : large ? "0 20px" : "0 16px",
+    borderRadius: small ? 16 : large ? 22 : 18,
     color: variant === "secondary" ? t.text : undefined,
     ...paint,
     fontFamily: FIGTREE,
-    fontSize: small ? 12 : 13,
-    fontWeight: 500,
+    fontSize: small ? 13 : large ? 17 : 15,
+    fontWeight: 600,
     display: fullWidth ? "flex" : "inline-flex",
     width: fullWidth ? "100%" : undefined,
     alignItems: "center",
@@ -134,7 +134,7 @@ export function Button({
     );
   }
   return (
-    <button data-ui="button" data-variant={variant} data-hover-fill={variant === "ghost" ? "" : undefined} type={type} disabled={disabled} {...rest} {...handlers} style={look}>
+    <button data-ui="button" data-variant={variant} aria-disabled={disabled || undefined} data-hover-fill={variant === "ghost" ? "" : undefined} type={type} disabled={disabled} {...rest} {...handlers} style={look}>
       {children}
     </button>
   );

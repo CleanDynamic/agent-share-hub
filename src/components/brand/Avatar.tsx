@@ -17,9 +17,12 @@ import type { CSSProperties } from "react";
 
 import { cropInCell } from "@/components/post/media/cropStyle";
 import { cropFromUrl } from "@/lib/profile/avatarCrop";
-import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { DM_MONO } from "@/lib/theme/type";
+
+/* Synth 06: a rounded square, size / radius 96/20, 56/12, 40/9, 32/7, 24/6; the radius follows the size at about .22. Initials in mono 13. */
+const AVATAR_RADIUS: Record<number, number> = { 96: 20, 56: 12, 40: 9, 32: 7, 24: 6 };
+const avatarRadius = (size: number): number => AVATAR_RADIUS[size] ?? Math.round(size * 0.22);
 
 import { hashSeed } from "./hash";
 
@@ -67,7 +70,7 @@ export function Avatar({ size, name, src, alt, style }: AvatarProps) {
   const circle: CSSProperties = {
     width: box,
     height: box,
-    borderRadius: r.full,
+    borderRadius: avatarRadius(size),
     flexShrink: 0,
     ...style,
   };
@@ -102,13 +105,12 @@ export function Avatar({ size, name, src, alt, style }: AvatarProps) {
       style={{
         ...circle,
         /* UI-P84: initials on `--avatar-fill` in `--on-avatar`, Geist 500 at size × .38 (10 at the least). */
-        background: t.avatarFill,
-        border: `1px solid ${t.moduleBorder}`,
+        background: t.control,
         boxSizing: "border-box",
-        color: t.onAvatar,
-        fontFamily: FIGTREE,
-        fontSize: Math.max(10, Math.round(size * 0.38 * 10) / 10),
-        fontWeight: 500,
+        color: t.text2,
+        fontFamily: DM_MONO,
+        fontSize: 13,
+        fontWeight: 400,
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",

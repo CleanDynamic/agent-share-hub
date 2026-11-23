@@ -37,6 +37,8 @@ import { size } from "@/lib/theme/space";
 
 export const OPTIONAL_COPY = {
   heading: "Optional",
+  /** Synth 06: the toggle's words, "3 optional details". */
+  details: (n: number) => `${n} optional ${n === 1 ? "detail" : "details"}`,
   fields: (n: number) => `${n} ${n === 1 ? "field" : "fields"}`,
   /** "6 fields · 2 filled". */
   filled: (n: number, filled: number) => `${n} ${n === 1 ? "field" : "fields"} · ${filled} filled`,
@@ -305,11 +307,8 @@ export function OptionalSection({ children, bleed = 0 }: OptionalSectionProps) {
             data-ring-inset=""
             style={OPTIONAL.toggle(inset, hovered, phone, state.focusVisible)}
           >
-            <span style={OPTIONAL.heading}>{OPTIONAL_COPY.heading}</span>
+            <span data-testid="optional-count" style={OPTIONAL.heading}>{OPTIONAL_COPY.details(rows.length)}</span>
             <span style={OPTIONAL.tail}>
-              <span data-testid="optional-count" style={OPTIONAL.count}>
-                {filled > 0 ? OPTIONAL_COPY.filled(rows.length, filled) : OPTIONAL_COPY.fields(rows.length)}
-              </span>
               <span aria-hidden="true" style={{ ...OPTIONAL.chevron(open), transition: move(BASE) }}>
                 <Glyph name="chevd" size={size.icon} />
               </span>

@@ -1,9 +1,7 @@
-/* SV-02: a section's head, as the vision boards draw it (series README, Visual grammar 3).
-
-   Title 14/500 at line-height 1.3, the meta line 12/400 in `--label` two below it, and, when the section has a page of
-   its own, a 28px chevron at the top right: `--control` with a 1px `--control-border`, radius 6, a 12px chevron in
-   `--text`. The chevron is a link named "Open <section>". It is a `PageLink` (SV-04), so it changes page through `go()`. On a phone the
-   hit area reaches 44px by padding with a matching negative margin, so the drawn 28px does not change. */
+/* Synth 06: a section's head. The fact is the heading, 20/600 ("36 drafts"), 16px side padding and 8px under it. When the
+   section has a page of its own, a small ghost icon button with a chevron-right sits at the right, named "Open <heading>".
+   The `meta` prop is kept so callers compile, and it no longer renders: a caller that passed a count and a title now
+   passes the count as the title. */
 
 import type { ElementType, ReactNode } from "react";
 import { PageLink as Link } from "@/lib/routing/PageLink";
@@ -14,13 +12,12 @@ import { ring } from "@/lib/theme/controls";
 import { TOUCH_MIN } from "@/lib/theme/density";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
-import { controlPaint } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 export interface SectionHeadProps {
   title: ReactNode;
-  /** The line under the title: a count, a period, what the section holds. */
+  /** Kept for callers; no longer rendered. The fact is the title. */
   meta?: ReactNode;
   /** Where the chevron goes. Without it there is no chevron. */
   to?: string;
@@ -30,7 +27,7 @@ export interface SectionHeadProps {
   headingLevel?: 1 | 2 | 3 | 4;
 }
 
-/** The chevron alone, for a head drawn another way (SV-09: the Library's changes figure). */
+/** The chevron alone, for a head drawn another way: a ghost icon button, 32 (44 touch) with a chevron-right. */
 export function SectionChevron({ to, name }: { to: string; name: string }) {
   const phone = useIsPhone();
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
@@ -40,52 +37,31 @@ export function SectionChevron({ to, name }: { to: string; name: string }) {
       aria-label={`Open ${name}`}
       {...handlers}
       style={{
-        boxSizing: "content-box",
+        boxSizing: "border-box",
         flexShrink: 0,
-        width: 28,
-        height: 28,
-        padding: phone ? (TOUCH_MIN - 28) / 2 : 0,
-        margin: phone ? (28 - TOUCH_MIN) / 2 : 0,
+        width: phone ? TOUCH_MIN : 32,
+        height: phone ? TOUCH_MIN : 32,
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        position: "relative",
-        borderRadius: r.control,
-        color: t.text,
+        borderRadius: r.full,
+        background: state.hovered ? t.module : "transparent",
+        color: t.text2,
         textDecoration: "none",
         ...ring(state.focusVisible),
       }}
     >
-      <span
-        aria-hidden="true"
-        style={{
-          boxSizing: "border-box",
-          width: 28,
-          height: 28,
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: r.control,
-          ...controlPaint(state),
-        }}
-      >
-        <Glyph name="chev" size={12} />
-      </span>
+      <Glyph name="chev" size={16} />
     </Link>
   );
 }
 
-export function SectionHead({ title, meta, to, openName, headingLevel }: SectionHeadProps) {
+export function SectionHead({ title, to, openName, headingLevel }: SectionHeadProps) {
   const Title: ElementType = headingLevel ? (`h${headingLevel}` as ElementType) : "div";
   const name = openName ?? (typeof title === "string" ? title : "");
   return (
-    <div data-ui="section-head" style={{ display: "flex", alignItems: "flex-start", gap: 12, fontFamily: FIGTREE }}>
-      <div style={{ flexGrow: 1, minWidth: 0 }}>
-        <Title style={{ margin: 0, fontSize: 14, fontWeight: 500, lineHeight: 1.3, color: t.text }}>{title}</Title>
-        {meta ? (
-          <div style={{ marginTop: 2, fontSize: 12, fontWeight: 400, lineHeight: "normal", color: t.label }}>{meta}</div>
-        ) : null}
-      </div>
+    <div data-ui="section-head" style={{ display: "flex", alignItems: "center", gap: 12, padding: "0 16px 8px", fontFamily: FIGTREE }}>
+      <Title style={{ flexGrow: 1, minWidth: 0, margin: 0, fontSize: 20, fontWeight: 600, lineHeight: "24px", color: t.text }}>{title}</Title>
       {to ? <SectionChevron to={to} name={name} /> : null}
     </div>
   );

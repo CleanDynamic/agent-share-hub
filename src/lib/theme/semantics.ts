@@ -182,6 +182,7 @@ export const TOKEN_NAMES = [
   // SY-01: the Synth draft additions.
   "notepad",
   "notepad-edge",
+  "notepad-copy",
   "modal-foot",
   "field-edge",
   "danger-text",
@@ -340,6 +341,7 @@ export const noon: Record<TokenName, string> = {
   // SY-01
   "notepad": "#EAF3EC",
   "notepad-edge": "#BFD5C4",
+  "notepad-copy": "#D5E6D9",
   "modal-foot": "#EBEEEB",
   "field-edge": "#879189",
   "danger-text": "#B3261E",
@@ -495,6 +497,7 @@ export const dusk: Record<TokenName, string> = {
   // SY-01
   "notepad": "#17231B",
   "notepad-edge": "#2C3E31",
+  "notepad-copy": "#24342A",
   "modal-foot": "#161917",
   "field-edge": "#646B66",
   "danger-text": "#F07563",

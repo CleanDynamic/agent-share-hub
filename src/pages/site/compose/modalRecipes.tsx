@@ -46,6 +46,7 @@ import {
   createContext,
   isValidElement,
   useContext,
+  useId,
   useRef,
   useState,
   type ButtonHTMLAttributes,
@@ -59,6 +60,7 @@ import {
 } from "react";
 
 import { Glyph, type GlyphName } from "@/components/brand/Glyph";
+import { Notepad } from "@/components/brand/Notepad";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { CONTROL, PRIMARY, SELECTED, WELL, controlPaint, hoverFill } from "@/lib/theme/refinedControl";
@@ -70,10 +72,11 @@ import { TEXT_LINK_BOX } from "./tileRecipes";
 
 /* ── sizes ── */
 
-export const MODAL_WIDTH = { standard: 560, wide: 640 } as const;
+/** Synth 06: every window is 440 wide; a confirmation 420 and the shortcuts 460. */
+export const MODAL_WIDTH = { standard: 440, wide: 440, confirm: 420, shortcuts: 460 } as const;
 
 /** The side padding every row, block and optional row carries inside a modal. */
-export const MODAL_PAD = space[6];
+export const MODAL_PAD = 20;
 
 /**
  * How far a row pads itself in from the window's edges. A modal's form provides 20 (its rows run edge to edge and pad
@@ -106,7 +109,7 @@ export const useModalInset = (): number => useContext(ModalInset);
 
 /* ── type ── */
 
-const type = (px: number, weight: 400 | 500, color: string, line?: number): CSSProperties => ({
+const type = (px: number, weight: 400 | 500 | 600, color: string, line?: number): CSSProperties => ({
   fontFamily: FIGTREE,
   fontSize: px,
   fontWeight: weight,
@@ -114,9 +117,9 @@ const type = (px: number, weight: 400 | 500, color: string, line?: number): CSSP
   color,
 });
 
-export const TITLE: CSSProperties = { ...type(textStep.section, 500, t.text, 21), margin: 0 };
-export const SUBTITLE: CSSProperties = { ...type(textStep.body, 400, t.text2, 19), margin: `${space[1]}px 0 0` };
-export const LABEL: CSSProperties = type(textStep.body, 400, t.text2, 19);
+export const TITLE: CSSProperties = { ...type(textStep.body, 500, t.text, 20), margin: 0 };
+export const SUBTITLE: CSSProperties = { ...type(textStep.meta, 400, t.text2, 16), margin: `${space[1]}px 0 0` };
+export const LABEL: CSSProperties = type(textStep.meta, 400, t.text2, 16);
 export const STRONG_LABEL: CSSProperties = type(textStep.body, 500, t.text, 19);
 export const HINT: CSSProperties = type(textStep.meta, 400, t.label, 16);
 export const COUNT: CSSProperties = { fontFamily: DM_MONO, fontSize: textStep.meta, fontWeight: 400, lineHeight: "17px", color: t.label, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" };
@@ -127,7 +130,8 @@ export const BODY_TEXT: CSSProperties = type(textStep.body, 400, t.text, 19);
 export const DATA_FACE: CSSProperties = { fontFamily: DM_MONO };
 export const ELLIPSIS: CSSProperties = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 };
 
-const rule = (edge: string = t.hairlineModule): CSSProperties => ({ borderTop: `1px solid ${edge}` });
+/* Synth 06: no lines between rows. */
+const rule = (_edge?: string): CSSProperties => ({});
 
 /* ── the frame ── */
 
@@ -142,19 +146,19 @@ export const frameStyle = (width: number): CSSProperties => ({
   padding: 0,
   borderRadius: r.window,
   background: t.window,
-  border: `1px solid ${t.windowBorder}`,
+  border: 0,
   boxShadow: t.windowShadow,
   color: t.text,
   fontFamily: FIGTREE,
 });
 
-export const HEADER: CSSProperties = { display: "flex", alignItems: "flex-start", gap: space[3], padding: `${space[4]}px ${space[6]}px`, flexShrink: 0 };
+export const HEADER: CSSProperties = { display: "flex", alignItems: "flex-start", gap: space[3], padding: "16px 20px 12px", flexShrink: 0 };
 export const HEADER_TEXT: CSSProperties = { display: "flex", flexDirection: "column", flexGrow: 1, minWidth: 0 };
 export const HEADER_ICONS: CSSProperties = { display: "flex", alignItems: "center", gap: space[2], flexShrink: 0 };
 
 /** The middle: every row and block pads itself, so the body has none; it scrolls on a computer. */
 export const bodyStyle = (phone: boolean): CSSProperties =>
-  phone ? { display: "flex", flexDirection: "column", minWidth: 0 } : { display: "flex", flexDirection: "column", flex: "1 1 auto", minHeight: 0, overflowY: "auto", minWidth: 0 };
+  phone ? { display: "flex", flexDirection: "column", minWidth: 0, padding: "4px 0 12px" } : { display: "flex", flexDirection: "column", flex: "1 1 auto", minHeight: 0, overflowY: "auto", minWidth: 0, padding: "4px 0 12px" };
 
 export const footerStyle = (phone: boolean): CSSProperties => ({
   display: "flex",
@@ -165,7 +169,7 @@ export const footerStyle = (phone: boolean): CSSProperties => ({
   background: t.windowFoot,
   ...(phone
     ? { position: "sticky", bottom: 0, padding: `${space[3]}px 0`, marginTop: space[3], flexWrap: "wrap", zIndex: 1 }
-    : { padding: `${space[4]}px ${space[6]}px` }),
+    : { padding: "12px 20px 16px" }),
 });
 
 /** The footer's note, at the left: it takes the room the buttons leave. */
@@ -183,7 +187,7 @@ export interface IconSquareProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
 /** 28 square, radius 7, the control recipe, a 14 glyph in `--text2` (44 on a phone). */
 export function IconSquare({ glyph, label, phone = false, style, ...rest }: IconSquareProps) {
   const { state, handlers } = useInteractive<HTMLButtonElement>({}, { disabled: rest.disabled });
-  const side = phone ? size.touch : size.control;
+  const side = phone ? size.touch : 28;
   return (
     <button
       type="button"
@@ -198,7 +202,7 @@ export function IconSquare({ glyph, label, phone = false, style, ...rest }: Icon
         padding: 0,
         flexShrink: 0,
         boxSizing: "border-box",
-        borderRadius: r.control,
+        borderRadius: r.full,
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
@@ -260,7 +264,9 @@ export function Row({ label, id, group = false, hint, top = false, noRule = fals
         columnGap: space[4],
         rowGap: space[2],
         alignItems: top || phone ? "start" : "center",
-        padding: `${space[3]}px ${inset}px`,
+        padding: `${space[1]}px ${inset}px`,
+        minHeight: 48,
+        boxSizing: "border-box",
         minWidth: 0,
         ...(noRule ? null : rule()),
       }}
@@ -380,10 +386,10 @@ export const fieldStyle = (phone: boolean, extra: CSSProperties = {}): CSSProper
   ...WELL,
   boxSizing: "border-box",
   width: "100%",
-  height: phone ? size.touch : size.control,
-  padding: `0 ${space[3]}px`,
-  borderRadius: r.control,
-  ...type(phone ? 16 : 13, 400, t.text),
+  height: phone ? size.touch : 40,
+  padding: "0 14px",
+  borderRadius: r.field,
+  ...type(phone ? 16 : 15, 400, t.text),
   ...extra,
 });
 
@@ -393,15 +399,15 @@ export const areaStyle = (phone: boolean, rows: number, extra: CSSProperties = {
   width: "100%",
   /* S12: at least 64; otherwise its rows of 20, the padding and the 1px edges. */
   minHeight: Math.max(space[16], rows * 20 + 2 * space[2] + 2),
-  padding: `${space[2]}px ${space[3]}px`,
-  borderRadius: r.control,
+  padding: "8px 12px",
+  borderRadius: r.area,
   resize: "vertical",
-  ...type(phone ? 16 : 13, 400, t.text, 20),
+  ...type(phone ? 16 : 15, 400, t.text, 20),
   ...extra,
 });
 
 /** Focus: the border and a 1px ring in `--focus-ring`, drawn while the field has focus. */
-export const FIELD_FOCUS: CSSProperties = { borderColor: t.focusRing, outline: `1px solid ${t.focusRing}`, outlineOffset: 0 };
+export const FIELD_FOCUS: CSSProperties = { boxShadow: `inset 0 0 0 1px ${t.focusRing}`, outline: `1px solid ${t.focusRing}`, outlineOffset: 0 };
 
 function useFocused<E extends HTMLElement>(onFocus?: (event: React.FocusEvent<E>) => void, onBlur?: (event: React.FocusEvent<E>) => void) {
   const [focused, setFocused] = useState(false);
@@ -454,21 +460,99 @@ export interface FieldAreaProps extends Omit<TextareaHTMLAttributes<HTMLTextArea
   rows: number;
   mono?: boolean;
   ref?: Ref<HTMLTextAreaElement>;
+  /** The box's optional title; with `onTitleChange` the caller owns it, without them it is kept here. */
+  title?: string;
+  onTitleChange?: (title: string) => void;
 }
 
-/** A text area: a field padded 9 10 on 20, as tall as its rows, resizable up and down. */
-export function FieldArea({ phone, rows, mono = false, onFocus, onBlur, ...rest }: FieldAreaProps) {
+/** The text a native control now holds, written back so a controlled field's own `onChange` runs. */
+function writeBack(box: HTMLTextAreaElement, text: string) {
+  const set = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
+  set?.call(box, text);
+  box.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+/** The words a box is called, for the notepad's head: its own name, or its label's. */
+function nameOf(box: HTMLTextAreaElement | null): string {
+  if (!box) return "Text";
+  const named = box.getAttribute("aria-label");
+  if (named) return named;
+  const label = box.id ? document.querySelector(`label[for="${CSS.escape(box.id)}"]`) : null;
+  return label?.textContent?.trim() || "Text";
+}
+
+/**
+ * A text area, as Synth 06 draws every text box in a modal: empty (no placeholder words), with an optional title above it
+ * ("Title · optional", a 32 tall field) and an Expand button in its top right corner that opens the text in the notepad.
+ * The title is shared with the notepad: editing one edits the other. An untitled box shows nowhere else.
+ */
+/* `placeholder` is accepted so callers compile and is not drawn: a box in a modal is empty. */
+export function FieldArea({ phone, rows, mono = false, onFocus, onBlur, title, onTitleChange, ref, placeholder: _placeholder, ...rest }: FieldAreaProps) {
   const focus = useFocused<HTMLTextAreaElement>(onFocus, onBlur);
+  const box = useRef<HTMLTextAreaElement | null>(null);
+  const expand = useRef<HTMLButtonElement>(null);
+  const [kept, setKept] = useState(title ?? "");
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
+  const shownTitle = onTitleChange ? (title ?? "") : kept;
+  const setTitle = (next: string) => (onTitleChange ? onTitleChange(next) : setKept(next));
+  const name = rest["aria-label"] ?? "";
+  const titleId = useId();
   return (
-    <textarea
-      rows={rows}
-      className={PLACEHOLDER_CLASS}
-      {...rest}
-      data-focused={focus.focused || undefined}
-      onFocus={focus.onFocus}
-      onBlur={focus.onBlur}
-      style={areaStyle(phone, rows, { ...(mono ? { ...DATA_FACE, fontSize: phone ? 16 : 12.5 } : null), ...(focus.focused ? FIELD_FOCUS : { outline: "none" }) })}
-    />
+    <div data-testid="field-area" style={{ display: "flex", flexDirection: "column", gap: space[2], minWidth: 0 }}>
+      <div style={{ display: "grid", gridTemplateColumns: phone ? "minmax(0, 1fr)" : "96px minmax(0, 1fr)", columnGap: space[3], rowGap: space[1], alignItems: "center" }}>
+        <label htmlFor={titleId} style={{ ...HINT, whiteSpace: "nowrap" }}>
+          Title · optional
+        </label>
+        <input
+          id={titleId}
+          type="text"
+          aria-label={name ? `${name} title` : undefined}
+          value={shownTitle}
+          onChange={(event) => setTitle(event.target.value)}
+          style={{ ...fieldStyle(phone, { height: phone ? size.touch : 32, fontSize: phone ? 16 : 13 }), outline: "none" }}
+        />
+      </div>
+      <div style={{ position: "relative", minWidth: 0 }}>
+        <textarea
+          rows={rows}
+          {...rest}
+          ref={(node) => {
+            box.current = node;
+            if (typeof ref === "function") ref(node);
+            else if (ref) (ref as { current: HTMLTextAreaElement | null }).current = node;
+          }}
+          data-focused={focus.focused || undefined}
+          onFocus={focus.onFocus}
+          onBlur={focus.onBlur}
+          style={areaStyle(phone, rows, { paddingRight: 40, ...(mono ? { ...DATA_FACE, fontSize: phone ? 16 : 13 } : null), ...(focus.focused ? FIELD_FOCUS : { outline: "none" }) })}
+        />
+        <button
+          ref={expand}
+          type="button"
+          aria-label="Open in the notepad"
+          data-testid="field-expand"
+          data-hit=""
+          onClick={() => {
+            setText(box.current?.value ?? "");
+            setOpen(true);
+          }}
+          style={{ position: "absolute", top: 4, right: 4, width: phone ? size.touch : 28, height: phone ? size.touch : 28, padding: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", border: 0, borderRadius: r.full, background: "transparent", color: t.label, cursor: "pointer" }}
+        >
+          <Glyph name="expand" size={size.icon} />
+        </button>
+      </div>
+      <Notepad
+        open={open}
+        onClose={() => setOpen(false)}
+        field={nameOf(box.current)}
+        value={text}
+        title={shownTitle}
+        onTitleChange={setTitle}
+        onDone={(next) => box.current && writeBack(box.current, next)}
+        returnFocusTo={expand}
+      />
+    </div>
   );
 }
 
@@ -682,7 +766,7 @@ function OptionButton({ label, chosen, disabled, phone, onPick }: { label: strin
 /* ── buttons ── */
 
 export interface RecipeButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "secondary" | "primary";
+  variant?: "secondary" | "primary" | "ghost";
   small?: boolean;
   phone?: boolean;
   ref?: Ref<HTMLButtonElement>;
@@ -694,14 +778,17 @@ export function RecipeButton({ variant = "secondary", small = false, phone = fal
   const primary = variant === "primary";
   const paint: CSSProperties = primary
     ? disabled
-      ? { ...CONTROL, color: t.textDisabled, boxShadow: "none" }
+      ? { ...PRIMARY, opacity: 0.5, boxShadow: "none" }
       : { ...PRIMARY, ...(state.hovered ? { filter: "brightness(1.08)" } : null) }
-    : { ...controlPaint(state), color: t.text, ...(disabled ? { filter: t.dimFilter } : null) };
+    : variant === "ghost"
+      ? { background: state.hovered ? t.module : "transparent", border: "1px solid transparent", color: t.text2 }
+      : { ...controlPaint(state), color: t.text, ...(disabled ? { filter: t.dimFilter } : null) };
   return (
     <button
       type={kind}
       disabled={disabled}
       data-variant={variant}
+      aria-disabled={disabled || undefined}
       {...rest}
       {...handlers}
       style={{
@@ -711,11 +798,11 @@ export function RecipeButton({ variant = "secondary", small = false, phone = fal
         justifyContent: "center",
         flexShrink: 0,
         gap: space[2],
-        height: phone ? size.touch : size.control,
-        padding: `0 ${space[3]}px`,
-        borderRadius: r.control,
+        height: phone ? size.touch : 32,
+        padding: "0 14px",
+        borderRadius: 16,
         whiteSpace: "nowrap",
-        ...type(small ? 12.5 : 13, 500, t.text),
+        ...type(13, 600, t.text),
         ...paint,
         cursor: disabled ? "default" : "pointer",
         ...ring(state.focusVisible),
@@ -736,12 +823,12 @@ export const smallButtonStyle = (phone: boolean, state: { hovered?: boolean; pre
   alignSelf: "flex-start",
   gap: space[2],
   maxWidth: "100%",
-  height: phone ? size.touch : size.control,
-  padding: `0 ${space[3]}px`,
-  borderRadius: r.control,
+  height: phone ? size.touch : 32,
+  padding: "0 14px",
+  borderRadius: 16,
   whiteSpace: "nowrap",
   cursor: "pointer",
-  ...type(textStep.meta, 500, t.text),
+  ...type(textStep.meta, 600, t.text),
 });
 
 /** S6: the shared IconButton (components/brand) stops at 30 square; in the build editor an icon button is 32 square, 44 on a phone. */
@@ -858,8 +945,8 @@ export const OPTIONAL = {
   section: { display: "flex", flexDirection: "column", minWidth: 0, paddingBottom: space[1], ...rule() } as CSSProperties,
   /** CA-16b's `bleed`: the section reaches the window's edges from a body padded `bleed`. */
   sectionAt: (bleed: number): CSSProperties => ({ display: "flex", flexDirection: "column", minWidth: 0, paddingBottom: space[1], ...rule(), ...(bleed ? { margin: `0 -${bleed}px` } : null) }),
-  header: (inset: number): CSSProperties => ({ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: space[3], padding: `${space[3]}px ${inset}px` }),
-  heading: { ...STRONG_LABEL, margin: 0 } as CSSProperties,
+  header: (inset: number): CSSProperties => ({ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: space[2], padding: `${space[2]}px ${inset}px` }),
+  heading: { ...type(textStep.meta, 600, t.text2, 16), margin: 0 } as CSSProperties,
   count: COUNT,
   /** F81: each row's head button sits space[1] inside its rules, so two heads are 8 apart. */
   row: { ...rule(t.hairline), minWidth: 0, padding: `${space[1]}px 0` } as CSSProperties,
@@ -875,9 +962,9 @@ export const OPTIONAL = {
     boxSizing: "border-box",
     display: "flex",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: space[4],
-    minHeight: size.rowLarge,
+    justifyContent: "flex-start",
+    gap: space[2],
+    minHeight: 40,
     padding: `${space[2]}px ${inset}px`,
     background: hovered ? hoverFill() : "transparent",
   }),

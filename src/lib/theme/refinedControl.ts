@@ -8,10 +8,11 @@ import type { CSSProperties } from "react";
 
 import { t } from "./tokens";
 
+/* Synth 06: Raised fill, no border, no shadow. */
 export const CONTROL: CSSProperties = {
   background: t.control,
-  border: `1px solid ${t.controlBorder}`,
-  boxShadow: t.controlShadow,
+  border: "1px solid transparent",
+  boxShadow: "none",
 };
 
 /**
@@ -36,17 +37,19 @@ export const SELECTED: CSSProperties = {
   border: `1px solid ${t.selectedEdge}`,
 };
 
+/* Synth 06: a field. Panel fill and an inset 1px `--field-edge`; no border. */
 export const WELL: CSSProperties = {
-  background: t.well,
-  border: `1px solid ${t.wellBorder}`,
-  boxShadow: t.wellShadow,
+  background: t.surface,
+  border: "1px solid transparent",
+  boxShadow: `inset 0 0 0 1px ${t.fieldEdge}`,
 };
 
+/* Synth 06: the Main button. Mint fill, On-mint text, no border, no highlight, no shadow. */
 export const PRIMARY: CSSProperties = {
-  background: t.action,
-  border: `1px solid ${t.action}`,
-  boxShadow: t.actionShadow,
-  color: t.onAction,
+  background: t.brandAccent,
+  border: "1px solid transparent",
+  boxShadow: "none",
+  color: t.onBrandAccent,
 };
 
 /** A control's paint for its state: rest, hover, then pressed over both. */
@@ -54,11 +57,10 @@ export function controlPaint(state: { hovered?: boolean; pressed?: boolean }): C
   return { ...CONTROL, ...(state.hovered ? CONTROL_HOVER : null), ...(state.pressed ? PRESSED : null) };
 }
 
-/** Button heights: 24 (drawn 28, a row's small button) or 32. A phone's 44 and 48 touch targets stay. Drawn 44 and
-    over keeps 36 on desktop: only sign-in and the editor pass it, and neither is part of the control-heights pass. */
-export function refinedButtonHeight(size: number, phone: boolean): number {
-  if (phone && size >= 44) return size;
-  if (size <= 28) return 24;
-  if (size < 44) return 32;
-  return 36;
+/** Button heights: 32 (small: a row, a card or a modal), 36 (the standard) or 44 (large, a page-level call). A drawn size
+    of 34 or less renders small, 36 to 42 standard, 44 and over large. */
+export function refinedButtonHeight(size: number, _phone: boolean): number {
+  if (size <= 34) return 32;
+  if (size < 44) return 36;
+  return 44;
 }

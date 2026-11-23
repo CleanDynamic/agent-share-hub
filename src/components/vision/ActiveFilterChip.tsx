@@ -11,7 +11,6 @@ import { ring } from "@/lib/theme/controls";
 import { TOUCH_MIN } from "@/lib/theme/density";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
-import { CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -32,17 +31,17 @@ export function ActiveFilterChip({ name, value, onRemove }: ActiveFilterChipProp
     <span
       data-ui="active-filter-chip"
       style={{
-        ...CONTROL,
+        background: t.module,
         boxSizing: "border-box",
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
-        height: 26,
-        padding: "0 4px 0 8px",
-        borderRadius: r.control,
+        height: 32,
+        padding: "0 8px 0 14px",
+        borderRadius: 16,
         fontFamily: FIGTREE,
-        fontSize: 12,
-        fontWeight: 400,
+        fontSize: 13,
+        fontWeight: 500,
         whiteSpace: "nowrap",
       }}
     >

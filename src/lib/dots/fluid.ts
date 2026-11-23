@@ -43,6 +43,16 @@ const room = dotPalette;
 const reduced = () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const now = () => performance.now() / 1000;
 
+/**
+ * How a shape is drawn (Synth 06, DotSkeleton):
+ * - "block": solid dots over the whole box with its real radius (avatars, pictures; the default);
+ * - "bar": one text line, exactly as wide as the line;
+ * - "lines": `rows` text lines stacked at 12px, the last one thinning (the placeholder's rows);
+ * - "outline": a dotted outline of the box (borders);
+ * - "fill": a faint dot fill (buttons, number boxes).
+ */
+export type ShapeKind = "block" | "bar" | "lines" | "outline" | "fill";
+
 /** A shape inside a region: its box relative to the region, and its corner radius. */
 export interface Shape {
   x: number;
@@ -50,7 +60,19 @@ export interface Shape {
   width: number;
   height: number;
   radius: number;
+  kind?: ShapeKind;
+  /** "bar": the last line of a paragraph, whose final 32% thins out. "lines": the last row thins. */
+  tail?: boolean;
+  /** "lines": how many rows. */
+  rows?: number;
 }
+
+/** The share of a last line, from its right end, that thins out. */
+export const TAIL = 0.32;
+/** A faint fill's dot weight. */
+export const FILL_WEIGHT = 0.45;
+/** A text line's bar is this share of the font size tall; between the x-height (.66) and the cap height (.7). */
+export const BAR = 0.68;
 
 /** Signed distance from a point to a rounded rectangle (negative inside). */
 export function roundedDistance(px: number, py: number, s: Shape): number {
@@ -68,10 +90,13 @@ export function roundedDistance(px: number, py: number, s: Shape): number {
  * (height ≤ 28) rows centred on the shape and columns on the page lattice; for small shapes (both sides ≤ 44) rows and
  * columns centred on the shape. A dot is kept when its signed distance to the rounded box is ≤ 2.
  */
-export function dotsOf(s: Shape, pageX: number, pageY: number): { x: number[]; y: number[]; sd: number[] } {
+export function dotsOf(s: Shape, pageX: number, pageY: number): { x: number[]; y: number[]; sd: number[]; w: number[]; tail: number[] } {
   const xs: number[] = [];
   const ys: number[] = [];
   const sds: number[] = [];
+  const ws: number[] = [];
+  const tails: number[] = [];
+  const kind = s.kind ?? "block";
   const small = s.width <= 44 && s.height <= 44;
   const thin = !small && s.height <= 28;
   const pageGrid = (from: number, to: number, origin: number) => {
@@ -86,21 +111,56 @@ export function dotsOf(s: Shape, pageX: number, pageY: number): { x: number[]; y
   };
   const columns = small ? centred(s.x, s.width) : pageGrid(s.x - 2, s.x + s.width + 2, pageX);
   const rows = small || thin ? centred(s.y, s.height) : pageGrid(s.y - 2, s.y + s.height + 2, pageY);
+  const keep = (x: number, y: number, sd: number, w: number, tail: number) => {
+    xs.push(x);
+    ys.push(y);
+    sds.push(sd);
+    ws.push(w);
+    tails.push(tail);
+  };
+  if (kind === "bar" || kind === "lines") {
+    /* Text: each line is a bar centred on its row, on the page's columns, exactly as wide as the line. */
+    const count = kind === "lines" ? Math.max(1, s.rows ?? 1) : 1;
+    const pitch = kind === "lines" ? s.height / count : s.height;
+    const bar = kind === "lines" ? Math.min(8, pitch) : s.height;
+    for (let row = 0; row < count; row++) {
+      const cy = s.y + pitch * row + pitch / 2;
+      const last = row === count - 1;
+      const lineRows = Math.max(1, Math.round(bar / PITCH));
+      const first = cy - ((lineRows - 1) * PITCH) / 2;
+      const box: Shape = { x: s.x, y: first - PITCH / 2, width: s.width, height: lineRows * PITCH, radius: Math.min(2, (lineRows * PITCH) / 2) };
+      const across = pageGrid(box.x - 2, box.x + box.width + 2, pageX);
+      for (let j = 0; j < lineRows; j++) {
+        const y = first + j * PITCH;
+        for (const x of across) {
+          const sd = roundedDistance(x, y, box);
+          if (sd > 2) continue;
+          const at = s.width > 0 ? (x - s.x) / s.width : 0;
+          const thin = s.tail === true || (kind === "lines" && last && count > 1);
+          const tail = thin && at > 1 - TAIL ? (at - (1 - TAIL)) / TAIL : -1;
+          keep(x, y, sd, tail >= 0 ? 1 - 0.85 * tail : 1, tail);
+        }
+      }
+    }
+    return { x: xs, y: ys, sd: sds, w: ws, tail: tails };
+  }
   for (const y of rows) {
     for (const x of columns) {
       const sd = roundedDistance(x, y, s);
-      if (sd <= 2) {
-        xs.push(x);
-        ys.push(y);
-        sds.push(sd);
-      }
+      if (sd > 2) continue;
+      if (kind === "outline") {
+        /* A dotted outline: the rim only, every other dot along it. */
+        if (sd < -PITCH * 0.9) continue;
+        if ((Math.round((pageX + x) / PITCH) + Math.round((pageY + y) / PITCH)) % 2 !== 0) continue;
+        keep(x, y, sd, 1, -1);
+      } else keep(x, y, sd, kind === "fill" ? FILL_WEIGHT : 1, -1);
     }
   }
-  return { x: xs, y: ys, sd: sds };
+  return { x: xs, y: ys, sd: sds, w: ws, tail: tails };
 }
 
 /** InlineLoader's dots: a circle on its own 7px lattice centred on the circle (so there is a centre dot), kept when within 3. */
-export function loaderDotsOf(s: Shape): { x: number[]; y: number[]; sd: number[] } {
+export function loaderDotsOf(s: Shape): { x: number[]; y: number[]; sd: number[]; w: number[]; tail: number[] } {
   const cx = s.x + s.width / 2;
   const cy = s.y + s.height / 2;
   const radius = Math.min(s.width, s.height) / 2;
@@ -117,7 +177,7 @@ export function loaderDotsOf(s: Shape): { x: number[]; y: number[]; sd: number[]
       sds.push(sd);
     }
   }
-  return { x: xs, y: ys, sd: sds };
+  return { x: xs, y: ys, sd: sds, w: sds.map(() => 1), tail: sds.map(() => -1) };
 }
 
 /* ── splashes: a press on the page drops a ring train at the pointer, alive for SPLASH_MS ── */
@@ -150,6 +210,9 @@ export class FluidRegion {
   private x = new Float32Array(0);
   private y = new Float32Array(0);
   private sd = new Float32Array(0);
+  /** Each dot's weight (a faint fill, a thinning tail) and, for a thinning tail, how far along it is (-1 when not). */
+  private weight = new Float32Array(0);
+  private tailAt = new Float32Array(0);
   /** Each dot's base tone and its colour jitter, fixed per layout. */
   private base = new Float32Array(0);
   private jitter = new Float32Array(0);
@@ -185,8 +248,15 @@ export class FluidRegion {
 
   setShape(key: object, shape: Shape) {
     const held = this.shapes.get(key);
-    if (held && held.x === shape.x && held.y === shape.y && held.width === shape.width && held.height === shape.height && held.radius === shape.radius) return;
+    if (held && held.x === shape.x && held.y === shape.y && held.width === shape.width && held.height === shape.height && held.radius === shape.radius && held.kind === shape.kind && held.rows === shape.rows && held.tail === shape.tail) return;
     this.shapes.set(key, shape);
+    this.dirty = true;
+    stillFrame(this);
+  }
+
+  /** Replace every shape at once (DotSkeleton's measured layout). */
+  replaceShapes(shapes: readonly Shape[]) {
+    this.shapes = new Map(shapes.map((shape, at) => [{ at }, shape] as [object, Shape]));
     this.dirty = true;
     stillFrame(this);
   }
@@ -215,17 +285,25 @@ export class FluidRegion {
     const xs: number[] = [];
     const ys: number[] = [];
     const sds: number[] = [];
+    const ws: number[] = [];
+    const tails: number[] = [];
     for (const shape of this.shapes.values()) {
       if (shape.width <= 0 || shape.height <= 0) continue;
       const dots = this.mode === "loader" ? loaderDotsOf(shape) : dotsOf(shape, this.pageX, this.pageY);
-      xs.push(...dots.x);
-      ys.push(...dots.y);
-      sds.push(...dots.sd);
+      for (let i = 0; i < dots.x.length; i++) {
+        xs.push(dots.x[i]);
+        ys.push(dots.y[i]);
+        sds.push(dots.sd[i]);
+        ws.push(dots.w[i]);
+        tails.push(dots.tail[i]);
+      }
     }
     this.count = xs.length;
     this.x = Float32Array.from(xs);
     this.y = Float32Array.from(ys);
     this.sd = Float32Array.from(sds);
+    this.weight = Float32Array.from(ws);
+    this.tailAt = Float32Array.from(tails);
     this.base = new Float32Array(this.count);
     this.jitter = new Float32Array(this.count);
     for (let i = 0; i < this.count; i++) {
@@ -306,7 +384,10 @@ export class FluidRegion {
           dy = 1.3 * wave;
         }
         // The edge: a dot on the shape's rim is half grown, one just outside is gone.
-        m = clamp01(0.5 - this.sd[i] / (PITCH * 0.7));
+        m = clamp01(0.5 - this.sd[i] / (PITCH * 0.7)) * this.weight[i];
+        /* A thinning last line flickers slowly, and only there. */
+        const along = this.tailAt[i];
+        if (along >= 0 && !still) m *= 1 - 0.45 * along * (0.5 + 0.5 * Math.sin(t * 1.9 + (jitter + 0.11) * 40));
       }
       tone = clamp01(tone);
       const radius = pitch * 0.46 * (0.58 + 0.42 * tone) * m * shrink;
