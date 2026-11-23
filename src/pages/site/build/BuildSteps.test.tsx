@@ -250,21 +250,15 @@ describe("StepsList · an agent that reads content it doesn't control (CA-03 P7)
   });
 });
 
-describe("Synth 08: titled text boxes on a step", () => {
-  it("draws a row for each titled box with its length, opens the notepad read only on press, and skips an untitled box", () => {
+// Synth 09: titled text boxes (the "First draft" rows) are gone from the editor and from the build page.
+describe("no titled text boxes on a step", () => {
+  it("draws no titled box rows, whatever an old step's payload held", () => {
     const v = view("list");
     const steps = v.steps.map((entry, index) =>
-      index === 0
-        ? { ...entry, step: { ...entry.step, boxes: [{ title: "Rules", text: "x".repeat(512) }] } }
-        : entry,
+      index === 0 ? { ...entry, step: { ...entry.step, boxes: [{ title: "Rules", text: "x".repeat(512) }] } as typeof entry.step } : entry,
     );
     mountList({ ...v, steps });
-    const rows = screen.getAllByTestId("titled-box");
-    expect(rows).toHaveLength(1);
-    expect(rows[0].textContent).toContain("Rules");
-    expect(rows[0].textContent).toContain("512 characters");
-    fireEvent.click(rows[0]);
-    const dialog = screen.getByRole("dialog");
-    expect(within(dialog).queryByRole("button", { name: "Done" })).toBeNull();
+    expect(screen.queryByTestId("titled-box")).toBeNull();
+    expect(screen.queryByText("Rules")).toBeNull();
   });
 });

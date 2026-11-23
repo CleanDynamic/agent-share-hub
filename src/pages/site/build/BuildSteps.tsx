@@ -401,71 +401,12 @@ function ReadAll({ onRead, label = "Read all", expanded }: { onRead: () => void;
   );
 }
 
-/** Synth 08: a step's titled text boxes, one row each on Raised (radius 8, 6px 10px): the title 13/500 and its length in mono
-    13 Text 3 ("512 characters"). Pressing a row opens the notepad read only, sized to the text. A box with no title is not here. */
-function TitledBoxes({ boxes, indent = INDENT }: { boxes: readonly { title: string; text: string }[]; indent?: number }) {
-  const [open, setOpen] = useState<number | null>(null);
-  const rows = useRef<(HTMLButtonElement | null)[]>([]);
-  if (boxes.length === 0) return null;
-  const current = open === null ? null : boxes[open];
-  return (
-    <div data-testid="titled-boxes" style={{ display: "flex", flexDirection: "column", gap: 4, paddingLeft: indent }}>
-      {boxes.map((box, index) => (
-        <TitledBoxRow key={`${index}:${box.title}`} box={box} buttonRef={(node) => (rows.current[index] = node)} onOpen={() => setOpen(index)} />
-      ))}
-      <Notepad
-        open={current !== null}
-        onClose={() => setOpen(null)}
-        field={current?.title ?? ""}
-        value={current?.text ?? ""}
-        title={current?.title}
-        returnFocusTo={{ get current() { return open === null ? null : rows.current[open]; } }}
-      />
-    </div>
-  );
-}
-
-function TitledBoxRow({ box, buttonRef, onOpen }: { box: { title: string; text: string }; buttonRef: (node: HTMLButtonElement | null) => void; onOpen: () => void }) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
-  return (
-    <button
-      ref={buttonRef}
-      type="button"
-      data-testid="titled-box"
-      aria-haspopup="dialog"
-      onClick={onOpen}
-      {...handlers}
-      style={{
-        ...bareButton,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 12,
-        width: "100%",
-        minHeight: 32,
-        boxSizing: "border-box",
-        padding: "6px 10px",
-        borderRadius: 8,
-        background: state.hovered ? hoverFill(t.control) : t.control,
-        textAlign: "left",
-        cursor: "pointer",
-        ...ring(state.focusVisible),
-      }}
-    >
-      <span style={{ ...text(13, 500, t.text), minWidth: 0, overflowWrap: "anywhere" }}>{box.title}</span>
-      <span style={{ fontFamily: DM_MONO, fontSize: 13, color: t.label, whiteSpace: "nowrap", flexShrink: 0 }}>{countLine(box.text.length)}</span>
-    </button>
-  );
-}
-
 /** The text at 15/22 in Text 2 under the step's title: four lines, then the meta line (its word count, 13 Text 3) and "Read all". */
 function StepText({ step, onRead, alone = false, indent = INDENT }: { step: Step; onRead: () => void; alone?: boolean; indent?: number }) {
   const long = isLong(step);
-  const boxes = step.boxes && step.boxes.length > 0 ? <TitledBoxes boxes={step.boxes} indent={indent} /> : null;
-  if (!step.text) return boxes;
+  if (!step.text) return null;
   return (
     <>
-      {boxes}
       {step.origin || step.asksFor ? (
         <p data-testid="prompt-origin" style={{ ...text(13, 400, t.label), margin: 0, paddingLeft: indent }}>
           {[step.origin ? originLine(step.origin) : null, step.asksFor ? ASKS_FOR_LABEL[step.asksFor] : null].filter(Boolean).join(" · ")}
