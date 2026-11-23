@@ -206,7 +206,7 @@ describe("a file a step makes", () => {
       </MemoryRouter>,
     );
     const need = screen.getByTestId("build-need");
-    const row = within(need).getAllByTestId("need-row").find((entry) => /File/.test(entry.textContent ?? "") && entry.querySelector("a")) as HTMLElement;
+    const row = within(need).getAllByTestId("need-row").find((entry) => entry.querySelector('a[href*="#node-"]')) as HTMLElement;
     expect(row.querySelector("a")?.getAttribute("href")).toMatch(/#node-/);
     expect(within(need).queryByRole("link", { name: /Download/ })).toBeNull();
   });
@@ -230,7 +230,8 @@ describe("NeedPanel", () => {
     expect(kinds.some((text) => text.includes("Harness"))).toBe(true);
     expect(kinds.some((text) => text.includes("File"))).toBe(true);
     // A file row is a link to its step and has no Download; Download lives in the file's step.
-    expect(within(need).queryByRole("link", { name: "Download CLAUDE.md" })).toBeNull();
+    // Synth 08: a file with a download has a small secondary Download in its row.
+    expect(within(need).getByRole("link", { name: "Download CLAUDE.md" })).toBeTruthy();
     expect(within(need).getByText("4 sessions over 3 days")).toBeTruthy();
     // Details: stated rows only, without Made with, and without First result because Time is shown.
     const detailsGroup = within(need).getByRole("region", { name: "Details" });
