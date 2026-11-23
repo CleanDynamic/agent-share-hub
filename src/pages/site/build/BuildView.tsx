@@ -27,9 +27,7 @@ import { Avatar } from "@/components/brand/Avatar";
 import { Button } from "@/components/brand/Button";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { FilterChip } from "@/components/brand/FilterChip";
-import { PictureLight, ResultWindow } from "@/components/brand/FramedWork";
-import { Mark } from "@/components/brand/Mark";
-import { Plaque, plaqueState } from "@/components/brand/Plaque";
+import { ResultWindow } from "@/components/brand/FramedWork";
 import { Row } from "@/components/brand/Row";
 import { SectionHead } from "@/components/vision/SectionHead";
 import { StripedBar, type StripedBarTick } from "@/components/brand/StripedBar";
@@ -45,13 +43,12 @@ import {
   useWidthTier,
 } from "@/components/shell/useMinWidth";
 import { EngagementRow } from "@/components/social/EngagementRow";
-import { asideStyle, mainStyle } from "@/lib/theme/refinedLayout";
 import { ring, touchArea } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { scrollBehavior } from "@/lib/theme/motion";
-import { CONTROL, controlPaint, hoverFill } from "@/lib/theme/refinedControl";
+import { PRIMARY, controlPaint } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE, figure, DM_MONO } from "@/lib/theme/type";
+import { FIGTREE, DM_MONO } from "@/lib/theme/type";
 
 import type {
   BuildActionsView,
@@ -63,16 +60,17 @@ import type {
   BuildViewerView,
   CompletenessView,
 } from "./buildModel";
-import { DetailsGroup, NeedPanel, StepsList } from "./BuildSteps";
+import { BeforeYouSendPanel } from "./BeforeYouSend";
+import { DetailsGroup, NeedPanel, StepsList, stepDomId, toolLookup } from "./BuildSteps";
 import { menuItem, menuSurface } from "../compose/refinedStyles";
 import { buildSummary } from "@/lib/build/buildSummary";
 import { buildPatterns, patternsLine } from "@/lib/build/patterns";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Maximize2, Play, X } from "lucide-react";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
-import { PageEmpty, PageState, WriteFailed } from "@/components/pagestate/PageState";
+import { PageEmpty, PageState } from "@/components/pagestate/PageState";
 import type { ReadLike } from "@/components/pagestate/pageStateModel";
-import { WAY_OUT, SAVE_FAILED, signInButton, DONE } from "@/lib/copy/copy";
+import { WAY_OUT, DONE } from "@/lib/copy/copy";
 import { IconButton } from "@/components/brand/IconButton";
 import { Panel, PanelHead } from "@/components/brand/Panel";
 import { PartViewer } from "@/components/brand/PartViewer";
@@ -88,7 +86,6 @@ import {
   type BuildTabKey,
   type BuildTimelineView,
   type PartRowView,
-  type ProofActionKind,
 } from "./buildModel";
 
 export interface BuildViewProps {
@@ -115,23 +112,17 @@ export interface BuildViewProps {
 
 export { BOTTOM_ROW, BuildViewSkeleton, dropped, HERO_ROW, heroRow, bottomRow, MOCK_ROWS, ProofSkeleton } from "./BuildViewSkeleton";
 import { creditLine } from "@/lib/build/contributors";
-import { BOTTOM_ROW, dropped, HERO_ROW, heroRow, bottomRow, MOCK_ROWS, pair, ProofSkeleton, side, wide } from "./BuildViewSkeleton";
-import { PAGE_TITLE, PageHeader, WORK_TITLE } from "@/components/shell/PageHeader";
-import { pageColumns } from "@/components/shell/pageGrid";
+import { dropped, bottomRow, wide } from "./BuildViewSkeleton";
+import { PAGE_TITLE, WORK_TITLE } from "@/components/shell/PageHeader";
+import { PANEL_GUTTER, PANEL_RADIUS } from "@/components/shell/chromeSize";
+import { useColumnPanels } from "@/components/shell/frameChrome";
+import { pageColumns, panelColumns } from "@/components/shell/pageGrid";
 
 /** The phone shows this many parts before "Show n more parts". */
 export const PHONE_PARTS = 6;
 
 /** UX-03 P2: under the reader's action, what `recordReproduction` writes. */
-export const READER_NOTE = "Records the date, whether it worked and the model you used.";
 /** UX-03 P2: under the maker's Re-confirm, what `recordSelfConfirmation` writes. */
-export const MAKER_NOTE = "Records the date and the model you used.";
-
-export const ACTION_LABEL: Record<ProofActionKind, string> = {
-  reproduce: "I ran this and it worked",
-  reconfirm: "Re-confirm it still works",
-  "sign-in": signInButton("confirm"),
-};
 
 /** The viewer's body, which the tabs control. */
 export const VIEWER_PANEL = "build-viewer-panel";
@@ -175,20 +166,6 @@ export function useConfirmed(): [boolean, () => void] {
     timer.current = setTimeout(() => setOn(false), CONFIRMED_MS);
   }, []);
   return [on, confirm];
-}
-
-/** An optimistic run that the server refused: said once in the panel, with a retry. */
-export function RunFailed({ failure }: { failure: NonNullable<BuildProofView["writeError"]> }) {
-  return (
-    <WriteFailed
-      line={SAVE_FAILED}
-      panel="Reproduction"
-      onRetry={failure.onRetry}
-      error={failure.error}
-      style={{ marginTop: 8 }}
-      data-testid="build-run-error"
-    />
-  );
 }
 
 export function PartRow({
@@ -472,7 +449,7 @@ export function BuildViewState({ read }: { read: ReadLike }) {
 
 /* ── type and recipes ── */
 
-const text = (px: number, weight: 400 | 500, color: string, extra: CSSProperties = {}): CSSProperties => ({
+const text = (px: number, weight: 400 | 500 | 600, color: string, extra: CSSProperties = {}): CSSProperties => ({
   fontFamily: FIGTREE,
   fontSize: px,
   fontWeight: weight,
@@ -505,10 +482,13 @@ function DockItem({
   onClick,
   to,
   testId,
+  primary = false,
 }: {
   label: string;
   first: boolean;
   phone: boolean;
+  /** Rebuild: the main button. */
+  primary?: boolean;
   /** The item's height on a desktop: 28 on the hero's well, 30 in the thread's title block. A phone's is 44. */
   height: number;
   onClick?: () => void;
@@ -516,7 +496,7 @@ function DockItem({
   testId: string;
 }) {
   const { state, handlers } = useInteractive<HTMLButtonElement & HTMLAnchorElement>();
-  const style = dockItemStyle(first, phone, height, state);
+  const style = dockItemStyle(first, phone, height, state, primary);
   if (to) {
     return (
       <Link to={to} data-testid={testId} {...handlers} style={style}>
@@ -531,8 +511,8 @@ function DockItem({
   );
 }
 
-/** A dock item's paint: 28 high (30 inline, 44 on a phone), text only, a control border between items. */
-function dockItemStyle(first: boolean, phone: boolean, height: number, state: { hovered?: boolean; focusVisible?: boolean }): CSSProperties {
+/** Synth 08: an action is a pill, 32 high (44 on a phone), `0 14px`, 13/600: Rebuild is the main button, the rest are secondary. */
+function dockItemStyle(_first: boolean, phone: boolean, height: number, state: { hovered?: boolean; focusVisible?: boolean }, primary = false): CSSProperties {
   return {
     appearance: "none",
     boxSizing: "border-box",
@@ -540,16 +520,16 @@ function dockItemStyle(first: boolean, phone: boolean, height: number, state: { 
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "0 12px",
+    padding: "0 14px",
     margin: 0,
-    border: 0,
-    borderLeft: first ? 0 : `1px solid ${t.controlBorder}`,
-    background: state.hovered ? hoverFill() : "transparent",
-    ...text(12, 500, t.text),
+    borderRadius: 16,
+    ...(primary ? { ...PRIMARY, ...(state.hovered ? { filter: "brightness(1.08)" } : null) } : { ...controlPaint({ hovered: state.hovered }), color: t.text }),
+    ...text(13, 600, primary ? t.onBrandAccent : t.text),
     whiteSpace: "nowrap",
     textDecoration: "none",
     cursor: "pointer",
     minWidth: 0,
+    flexShrink: 0,
     ...ring(state.focusVisible),
   };
 }
@@ -604,7 +584,7 @@ function ActionDock({
   actions: BuildActionsView;
   phone: boolean;
   announce: (text: string) => void;
-  /** In the flow, at the right of the thread's title block, rather than laid over the hero's well. */
+  /** Kept so callers compile; the group is always in the flow now. */
   inline?: boolean;
 }) {
   const [, confirmCopied] = useConfirmed();
@@ -614,26 +594,22 @@ function ActionDock({
       announce(DONE.copied);
     }
   };
-  const frame: CSSProperties = phone
-    ? { display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }
-    : inline
-      ? { display: "inline-flex", flexShrink: 0 }
-      : { position: "absolute", right: 16, top: 12, display: "inline-flex" };
-  const height = inline ? 30 : 28;
+  const frame: CSSProperties = phone ? { display: "flex", flexWrap: "wrap", gap: 8 } : { display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "flex-end" };
+  const height = 32;
   return (
     <div
       data-testid="build-action-dock"
       role="group"
       aria-label="Take this build"
-      style={{ ...frame, ...CONTROL, borderRadius: 6, overflow: "hidden", boxSizing: "border-box" }}
+      style={{ ...frame, boxSizing: "border-box" }}
     >
-      <DockItem label="Copy for AI" first phone={phone} height={height} onClick={() => void copy()} testId="build-copy-for-ai" />
+      <DockItem label="Rebuild" first phone={phone} height={height} onClick={actions.onRebuild} testId="build-rebuild" primary />
+      <DockItem label="Copy for AI" first={false} phone={phone} height={height} onClick={() => void copy()} testId="build-copy-for-ai" />
       {actions.onDownloadSetup ? (
         <DownloadMenu phone={phone} height={height} onBuild={actions.onDownload} onSetup={actions.onDownloadSetup} />
       ) : (
         <DockItem label="Download" first={false} phone={phone} height={height} onClick={actions.onDownload} testId="build-download" />
       )}
-      <DockItem label="Rebuild" first={false} phone={phone} height={height} onClick={actions.onRebuild} testId="build-rebuild" />
       <DockItem label="Lineage" first={false} phone={phone} height={height} to={actions.lineageTo} testId="build-lineage" />
       {actions.compareTo ? <DockItem label="Compare with the original" first={false} phone={phone} height={height} to={actions.compareTo} testId="build-compare" /> : null}
     </div>
@@ -663,209 +639,99 @@ function Credit({ credit }: { credit: BuildCreditView }) {
 function Hero({
   hero,
   actions,
-  proof,
   phone,
-  now,
   announce,
-  inColumn = false,
 }: {
   hero: BuildHeroView;
   actions: BuildActionsView;
-  proof: BuildProofView;
   phone: boolean;
-  now?: number;
   announce: (text: string) => void;
-  /** UX-03 P2: inside the left column, which sizes it. */
-  inColumn?: boolean;
 }) {
-  const stacked = !useMinWidth(BETWEEN.stack);
-  const lamp = plaqueState(proof.build, now);
-  const credit = <Credit credit={hero.credit} />;
-  // UX-03 P2: no cover media, no picture area: the title block alone, with the action dock in its row.
+  // UX-03 P2: no cover media, no picture area: the title block alone.
   const pictured = hero.hasCover !== false;
   return (
-    <section
-      data-testid="build-hero"
-      data-pictured={pictured ? "true" : "false"}
-      aria-label="The build"
-      style={{ ...moduleStyle, ...(phone || inColumn ? null : wide(stacked)), padding: 0, overflow: "hidden" }}
-    >
+    <section data-testid="build-hero" data-pictured={pictured ? "true" : "false"} aria-label="The build" style={{ display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
+      <TitleBlock hero={hero} actions={actions} phone={phone} announce={announce} />
       {pictured ? (
-      <div
-        data-testid="build-hero-picture"
-        style={{
-          position: "relative",
-          height: 280,
-          background: t.well,
-          backgroundImage: `radial-gradient(${t.dotGrid} 1px, transparent 1px)`,
-          backgroundSize: "16px 16px",
-          borderBottom: `1px solid ${t.moduleBorder}`,
-        }}
-      >
-        {lamp === "unreproduced" ? null : <PictureLight dim={lamp === "stale"} />}
-        <ResultWindow label={`${hero.title} · Result`} style={{ position: "absolute", left: "calc(50% - 152px)", top: 64 }}>
-          {hero.cover}
-        </ResultWindow>
-      </div>
-      ) : null}
-      <div style={{ display: "flex", alignItems: pictured ? "center" : "flex-start", gap: 16, padding: 16 }}>
-        <span
-          aria-hidden="true"
+        <div
+          data-testid="build-hero-picture"
           style={{
-            ...CONTROL,
-            width: 44,
-            height: 44,
-            flexShrink: 0,
-            boxSizing: "border-box",
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            borderRadius: 8,
-            color: t.text,
+            position: "relative",
+            height: 280,
+            borderRadius: 12,
+            background: t.well,
+            backgroundImage: `radial-gradient(${t.dotGrid} 1px, transparent 1px)`,
+            backgroundSize: "16px 16px",
+            overflow: "hidden",
           }}
         >
-          <Mark size={24} />
-        </span>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, flexGrow: 1 }}>
-          {/* Desktop: the title is the page's PageHeader (DesktopBuild). */}
-          {phone ? <h1 style={{ ...WORK_TITLE, overflowWrap: "anywhere" }}>{hero.title}</h1> : null}
-          <SummaryLine summary={hero.summary} />
-          {hero.outcome ? (
-            <p style={{ ...text(13, 400, t.text2), margin: 0, maxWidth: 680, lineHeight: "20px" }}>{hero.outcome}</p>
-          ) : null}
-          {hero.credit.madeBy || hero.credit.rebuiltFrom ? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{credit}</p> : null}
-          {hero.delta ? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{hero.delta}</p> : null}
+          <ResultWindow label={`${hero.title} · Result`} style={{ position: "absolute", left: "calc(50% - 152px)", top: 64 }}>
+            {hero.cover}
+          </ResultWindow>
         </div>
-      </div>
+      ) : null}
     </section>
+  );
+}
+
+/**
+ * Synth 08: the head of the main panel. The build's title is the page's h1, Geist Serif 31/36; under it the maker ("Sun Tzu"
+ * 15/600, then "@suntzu · published 19 Nov" 15 Text 3) and, for a rebuild, its source; at the right the actions, which wrap
+ * under the title below 1101 and run full width on a phone, Rebuild first.
+ */
+function TitleBlock({ hero, thread, actions, phone, announce }: { hero: BuildHeroView; thread?: BuildThreadView; actions: BuildActionsView; phone: boolean; announce: (text: string) => void }) {
+  const { maker } = hero;
+  const follow = thread?.follow;
+  const rebuilt = Boolean(hero.credit.rebuiltFrom);
+  const handle = (maker?.handle ?? "").trim();
+  const name = (maker?.name ?? "").trim() || handle || "";
+  const profileHref = handle ? `/profile/${encodeURIComponent(handle)}` : null;
+  /* SV-16: "with @kit and @dax", the part of the credit line after the maker. */
+  const withLine = (maker?.contributors?.length ?? 0) > 0 ? creditLine("", maker?.contributors ?? []).trim() : "";
+  const published = thread?.published;
+  const nameNode = profileHref ? (
+    <Link to={profileHref} data-testid="build-author-name" style={{ color: t.text, textDecoration: "none", ...(phone ? { display: "inline-flex", alignItems: "center", minHeight: 44 } : null) }}>
+      {name}
+    </Link>
+  ) : (
+    <span data-testid="build-author-name">{name}</span>
+  );
+  return (
+    <div data-testid="build-title-block" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+      <div style={{ display: "flex", flexDirection: phone ? "column" : "row", flexWrap: phone ? "nowrap" : "wrap", alignItems: phone ? "stretch" : "flex-start", justifyContent: "space-between", gap: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 320px", minWidth: 0 }}>
+          <h1 style={{ ...WORK_TITLE, overflowWrap: "anywhere" }}>{hero.title}</h1>
+          <SummaryLine summary={hero.summary} />
+          {hero.outcome ? <p style={{ ...text(15, 400, t.text2), margin: 0, maxWidth: 680, lineHeight: "20px" }}>{hero.outcome}</p> : null}
+          {/* An original build's byline carries the credit; a rebuild keeps its source line. */}
+          {rebuilt ? <p style={{ ...text(13, 400, t.label), margin: 0 }}><Credit credit={hero.credit} /></p> : null}
+          {hero.delta ? <p style={{ ...text(13, 400, t.label), margin: 0 }}>{hero.delta}</p> : null}
+          {name || handle || published ? (
+            <div data-testid="build-author-row" style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 28, marginTop: 8, minWidth: 0, maxWidth: 680, whiteSpace: "nowrap" }}>
+              {maker ? <Avatar size={20} userId={maker.userId} name={name || "Maker"} src={maker.avatarUrl} /> : null}
+              {name ? <span style={{ ...text(15, 600, t.text), flex: "0 100 auto", minWidth: 0, ...ellipsis }}>{nameNode}</span> : null}
+              <span style={{ ...text(15, 400, t.label), display: "flex", flex: "0 1 auto", minWidth: 0 }}>
+                {handle ? <span style={{ minWidth: 0, ...ellipsis }}>{`@${handle}`}</span> : null}
+                {published ? <span style={{ flex: "none", whiteSpace: "pre" }}>{handle ? ` · published ${published}` : `published ${published}`}</span> : null}
+                {withLine ? <span data-testid="build-contributors" style={{ minWidth: 0, whiteSpace: "pre", ...ellipsis }}>{` · ${withLine}`}</span> : null}
+              </span>
+              {follow ? (
+                <Button data-testid="build-follow" variant="secondary" size={phone ? 44 : 32} fontSize={13} disabled={follow.busy} onClick={follow.onToggle} style={{ marginLeft: "auto" }}>
+                  {follow.following ? "Following" : "Follow"}
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+        <ActionDock actions={actions} phone={phone} announce={announce} inline />
+      </div>
+    </div>
   );
 }
 
 /* ── the hero with the maker's thread (PT-08) ── */
 
 const ellipsis: CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
-
-/** A 32 square control with three dots (`More actions`), or a 44 on a phone. */
-function MoreTrigger({ phone }: { phone: boolean }) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
-  const size = phone ? 44 : 32;
-  return (
-    <Menu.Trigger asChild>
-      <button
-        type="button"
-        aria-label="More actions"
-        aria-haspopup="menu"
-        data-testid="build-more"
-        {...handlers}
-        style={{
-          ...CONTROL,
-          ...controlPaint(state),
-          boxSizing: "border-box",
-          width: size,
-          height: size,
-          flexShrink: 0,
-          padding: 0,
-          borderRadius: 6,
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: t.text,
-          cursor: "pointer",
-          ...ring(state.focusVisible),
-        }}
-      >
-        <svg width={14} height={14} viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
-          <circle cx="3" cy="8" r="1.3" />
-          <circle cx="8" cy="8" r="1.3" />
-          <circle cx="13" cy="8" r="1.3" />
-        </svg>
-      </button>
-    </Menu.Trigger>
-  );
-}
-
-/**
- * UX-03 follow-up P12: Copy for AI (the page's one primary), Rebuild, and More. More holds Download, the setup
- * downloads, Lineage and, on a rebuild, Compare with the original.
- */
-function ActionGroup({ actions, phone, announce }: { actions: BuildActionsView; phone: boolean; announce: (text: string) => void }) {
-  const [, confirmCopied] = useConfirmed();
-  const copy = async () => {
-    if (await actions.onCopyForAI()) {
-      confirmCopied();
-      announce(DONE.copied);
-    }
-  };
-  const height = phone ? 44 : 32;
-  const item = menuItem(true, phone);
-  return (
-    <div
-      data-testid="build-action-group"
-      role="group"
-      aria-label="Take this build"
-      style={phone ? { display: "flex", flexWrap: "wrap", gap: 8 } : { display: "flex", gap: 8, flexShrink: 0 }}
-    >
-      <Button
-        data-testid="build-copy-for-ai"
-        variant="primary"
-        size={phone ? 44 : 32}
-        fontSize={13}
-        fullWidth={phone}
-        style={phone ? { flexBasis: "100%" } : undefined}
-        onClick={() => void copy()}
-      >
-        Copy for AI
-      </Button>
-      <Button
-        data-testid="build-rebuild"
-        variant="secondary"
-        size={phone ? 44 : 32}
-        fontSize={13}
-        style={phone ? { flex: "1 1 0", height } : undefined}
-        onClick={actions.onRebuild}
-      >
-        Rebuild
-      </Button>
-      <Menu.Root>
-        <MoreTrigger phone={phone} />
-        <Menu.Portal>
-          <Menu.Content align="end" sideOffset={4} style={menuSurface()}>
-            <Menu.Item data-testid="build-download" onSelect={actions.onDownload} style={item}>
-              Download the build
-            </Menu.Item>
-            {actions.onDownloadSetup ? (
-              <>
-                <Menu.Item onSelect={() => actions.onDownloadSetup?.()} style={item}>
-                  {DOWNLOAD_COPY.setup}
-                </Menu.Item>
-                <Menu.Label style={{ ...menuItem(false, phone), cursor: "default" }}>{DOWNLOAD_COPY.rebuildIn}</Menu.Label>
-                {mappedHarnesses()
-                  .filter((entry) => entry.harness !== "claude-code")
-                  .map((entry) => (
-                    <Menu.Item key={entry.harness} onSelect={() => actions.onDownloadSetup?.(entry.harness)} style={item}>
-                      {DOWNLOAD_COPY.setupFor(entry.name)}
-                    </Menu.Item>
-                  ))}
-              </>
-            ) : null}
-            <Menu.Item asChild style={item}>
-              <Link to={actions.lineageTo} data-testid="build-lineage" style={{ ...item, textDecoration: "none" }}>
-                Lineage
-              </Link>
-            </Menu.Item>
-            {actions.compareTo ? (
-              <Menu.Item asChild style={item}>
-                <Link to={actions.compareTo} data-testid="build-compare" style={{ ...item, textDecoration: "none" }}>
-                  Compare with the original
-                </Link>
-              </Menu.Item>
-            ) : null}
-          </Menu.Content>
-        </Menu.Portal>
-      </Menu.Root>
-    </div>
-  );
-}
 
 /**
  * A build that has a thread opens with it, as three things on the surface and no boxes (grammar 2): the title block
@@ -878,38 +744,13 @@ function ThreadHero({
   actions,
   phone,
   announce,
-  afterTitle,
 }: {
   hero: BuildHeroView;
   thread: BuildThreadView;
   actions: BuildActionsView;
   phone: boolean;
   announce: (text: string) => void;
-  /** A phone's page puts Reproduction between the action group and the post. */
-  afterTitle?: ReactNode;
 }) {
-  const { maker } = hero;
-  const { follow } = thread;
-  const rebuilt = Boolean(hero.credit.rebuiltFrom);
-  const handle = (maker?.handle ?? "").trim();
-  const name = (maker?.name ?? "").trim() || handle || "Maker";
-  const profileHref = handle ? `/profile/${encodeURIComponent(handle)}` : null;
-  /* SV-16: "with @kit and @dax", the part of the credit line after the maker. */
-  const withLine = (maker?.contributors?.length ?? 0) > 0 ? creditLine("", maker?.contributors ?? []).trim() : "";
-  const total = thread.posts.length;
-
-  const nameNode = profileHref ? (
-    <Link
-      to={profileHref}
-      data-testid="build-author-name"
-      style={{ color: t.text, textDecoration: "none", ...(phone ? { display: "inline-flex", alignItems: "center", minHeight: 44 } : null) }}
-    >
-      {name}
-    </Link>
-  ) : (
-    <span data-testid="build-author-name">{name}</span>
-  );
-
   const engagement = (
     <EngagementRow
       build={thread.build}
@@ -922,59 +763,11 @@ function ThreadHero({
   );
 
   return (
-    <section data-testid="build-hero" data-hero="thread" aria-label="The build" style={{ display: "flex", flexDirection: "column", gap: 48, minWidth: 0 }}>
-      <div
-        data-testid="build-title-block"
-        style={{
-          display: "flex",
-          flexDirection: phone ? "column" : "row",
-          flexWrap: phone ? "nowrap" : "wrap",
-          alignItems: phone ? "stretch" : "flex-start",
-          justifyContent: "space-between",
-          gap: 16,
-        }}
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 320px", minWidth: 0 }}>
-          {/* Desktop: the title and the actions are the page's PageHeader (DesktopBuild). */}
-          {phone ? <h1 style={{ ...WORK_TITLE, overflowWrap: "anywhere" }}>{hero.title}</h1> : null}
-          <SummaryLine summary={hero.summary} />
-          {hero.outcome ? <p style={{ ...text(13, 400, t.text2), margin: 0, maxWidth: 680, lineHeight: "20px" }}>{hero.outcome}</p> : null}
-          {/* An original build's byline carries the credit; a rebuild keeps its source line. */}
-          {rebuilt ? <p style={{ ...text(12, 400, t.label), margin: 0 }}><Credit credit={hero.credit} /></p> : null}
-          {hero.delta ? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{hero.delta}</p> : null}
-          <div
-            data-testid="build-author-row"
-            style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 28, marginTop: 8, minWidth: 0, maxWidth: 680, whiteSpace: "nowrap" }}
-          >
-            {maker ? <Avatar size={20} userId={maker.userId} name={name} src={maker.avatarUrl} /> : null}
-            <span style={{ ...text(12, 400, t.text), flex: "0 100 auto", minWidth: 0, ...ellipsis }}>{nameNode}</span>
-            <span style={{ ...text(12, 400, t.label), display: "flex", flex: "0 1 auto", minWidth: 0 }}>
-              {handle ? <span style={{ minWidth: 0, ...ellipsis }}>{`@${handle}`}</span> : null}
-              {thread.published ? <span style={{ flex: "none", whiteSpace: "pre" }}>{handle ? ` · ${thread.published}` : thread.published}</span> : null}
-              {withLine ? <span data-testid="build-contributors" style={{ minWidth: 0, whiteSpace: "pre", ...ellipsis }}>{` · ${withLine}`}</span> : null}
-            </span>
-            {follow ? (
-              <Button
-                data-testid="build-follow"
-                variant="secondary"
-                size={phone ? 44 : 28}
-                fontSize={13}
-                disabled={follow.busy}
-                onClick={follow.onToggle}
-                style={{ marginLeft: "auto" }}
-              >
-                {follow.following ? "Following" : "Follow"}
-              </Button>
-            ) : null}
-          </div>
-        </div>
-        {phone ? <ActionGroup actions={actions} phone={phone} announce={announce} /> : null}
-      </div>
+    <section data-testid="build-hero" data-hero="thread" aria-label="The build" style={{ display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
+      <TitleBlock hero={hero} thread={thread} actions={actions} phone={phone} announce={announce} />
 
-      {afterTitle}
-
+      {/* Synth 08: the post is the feed post, with no heading over it; the thread's "1 of 3 posts · Show more" is its own toggle. */}
       <section data-testid="build-thread" aria-label="Post" style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
-        <SectionHead headingLevel={2} title="Post" meta={total > 1 ? `1 of ${total} posts` : undefined} />
         <div data-testid="build-posts" style={{ minWidth: 0, maxWidth: 680 }}>
           {/* CA-07: a picture in the post opens full screen. */}
           <MediaViewerProvider>
@@ -1012,42 +805,6 @@ function CompletenessModule({ completeness }: { completeness: CompletenessView }
         <StripedBar value={score} colour={t.evidence} height={11} label="Completeness" valueText={`${score} of 100. The gallery lists builds at ${galleryAt} or above.`} />
         {next ? <p style={{ ...text(12, 400, t.text2), margin: 0 }}>Next: {next}.</p> : null}
       </div>
-    </section>
-  );
-}
-
-/** A section of the right column: on the surface with no box, a hairline between sections and 28 above and below it (grammar 2, 7). */
-function SideSection({ first = false, last = false, children }: { first?: boolean; last?: boolean; children: ReactNode }) {
-  return <div style={{ paddingTop: first ? 0 : 28, paddingBottom: last ? 0 : 28, borderTop: first ? undefined : `1px solid ${t.hairline}`, minWidth: 0 }}>{children}</div>;
-}
-
-/**
- * UX-03 follow-up P15: Reproduction. The head carries the state: the plaque, with its lamp and its own words, is the
- * meta line, so the state and the count are said once. The action is a control, so `Copy for AI` is the page's only
- * primary.
- */
-function Proof({ proof, phone, now, inColumn = false }: { proof: BuildProofView; phone: boolean; now?: number; inColumn?: boolean }) {
-  const { action } = proof;
-  const stacked = !useMinWidth(BETWEEN.stack);
-  return (
-    <section data-testid="build-proof" aria-label="Reproduction" style={{ ...(phone || inColumn ? null : mainStyle(stacked, side)), display: "flex", flexDirection: "column", gap: 14 }}>
-      <SectionHead headingLevel={2} title="Reproduction" meta={<Plaque build={proof.build} size="row" now={now} />} />
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <Button
-          data-testid="build-proof-action"
-          data-action={action.kind}
-          variant="secondary"
-          size={phone ? 48 : 32}
-          fontSize={13}
-          fullWidth
-          disabled={action.pending}
-          onClick={action.onPress}
-        >
-          {action.pending ? "Recording…" : ACTION_LABEL[action.kind]}
-        </Button>
-        <p style={{ ...text(12, 400, t.text2), margin: 0, lineHeight: "18px" }}>{action.kind === "reconfirm" ? MAKER_NOTE : READER_NOTE}</p>
-      </div>
-      {proof.writeError ? <RunFailed failure={proof.writeError} /> : null}
     </section>
   );
 }
@@ -1093,24 +850,19 @@ export function BuildPanel({
   );
 }
 
-/** What you need, with the dialog an "Other parts" row opens its own body in. */
-function StepsNeed({ steps, phone, inColumn = false, details }: { steps: BuildStepsView; phone: boolean; inColumn?: boolean; details?: readonly { label: string; value: string }[] }) {
+/** The side panel's steps part: What you need, with the dialog an "Other parts" row opens its own body in, then Before you send it. */
+function StepsNeed({ steps, details }: { steps: BuildStepsView; details?: readonly { label: string; value: string }[] }) {
   const [open, setOpen] = useState<string | null>(null);
-  const stacked = !useMinWidth(BETWEEN.stack);
   const row = open ? steps.need.flatMap((group) => group.rows).find((candidate) => candidate.id === open) : undefined;
+  const toolOf = toolLookup(steps.steps);
   return (
-    <div
-      style={
-        phone
-          ? { minWidth: 0 }
-          : inColumn
-            ? /* In the right column: a section on the surface; its hairline is the column's. */
-              { minWidth: 0 }
-            : /* Content-box, as the board: 340 of column, then its 32 of padding and the hairline; under 1024 it drops under The build. */
-            asideStyle(stacked, { ...side, boxSizing: "content-box", paddingLeft: 32, borderLeft: `1px solid ${t.hairline}` })
-      }
-    >
+    <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 32 }}>
       <NeedPanel view={steps} onOpenOther={setOpen} details={details} />
+      <BeforeYouSendPanel
+        steps={steps.steps}
+        toolOf={toolOf}
+        onSelect={(id) => document.getElementById(stepDomId(id))?.scrollIntoView?.({ behavior: scrollBehavior(), block: "start" })}
+      />
       <AnatomyDialog open={Boolean(open)} onOpenChange={(next) => !next && setOpen(null)} title={row?.title ?? "Part"}>
         {open ? steps.otherBody(open) : null}
       </AnatomyDialog>
@@ -1120,72 +872,43 @@ function StepsNeed({ steps, phone, inColumn = false, details }: { steps: BuildSt
 
 /* ── desktop ── */
 
-function DesktopBuild(props: BuildViewProps) {
-  const { now, hero, actions, proof, anatomy, viewer, timeline, steps } = props;
-  const tier = useWidthTier();
-  const stacked = tier === "stacked";
-  const { announce, region } = useAnnouncer();
+/** Synth 08: a panel on the page shade: 12 radius, 20 of padding. */
+const PANEL: CSSProperties = { background: t.surface, borderRadius: PANEL_RADIUS, minWidth: 0, boxSizing: "border-box", padding: 20 };
 
-  /* UX-03 P2: one layout, with a thread or without: the left column is the title block (the thread's, or the hero), then The
-     build, then the classification; the right column is the reproduction, then What you need. The columns are independent, so
-     neither leaves space in the other. Stacked, the order is the phone's: title block, reproduction, The build, What you need,
-     classification. */
-  const title = hero.thread ? (
-    <ThreadHero hero={hero} thread={hero.thread} actions={actions} phone={false} announce={announce} />
-  ) : (
-    <Hero hero={hero} actions={actions} proof={proof} phone={false} now={now} announce={announce} inColumn />
-  );
+/** The side panel's parts, in order: What you need and Before you send it (or the details), then the owner's Completeness. */
+function SideParts({ proof, steps }: { proof: BuildProofView; steps?: BuildStepsView }) {
   return (
     <>
-    {/* Page shell: the build's title at 64 / 88 with its actions; the breadcrumb is BuildPage's (PageBreadcrumb, every state). */}
-    <PageHeader
-      title={hero.title}
-      work
-      actions={hero.thread ? <ActionGroup actions={actions} phone={false} announce={announce} /> : <ActionDock actions={actions} phone={false} announce={announce} inline />}
-    />
-    <div data-testid="build-view" data-viewport="desktop" style={{ display: "flex", flexDirection: "column", gap: 32, marginTop: 8, lineHeight: "normal" }}>
-      {/* The page grid's main and side template (9 / 3) above 1024. */}
-      <div data-testid="build-main-row" style={stacked ? { ...pair(stacked), justifyContent: "space-between", alignItems: "flex-start" } : { ...pageColumns("mainSide"), alignItems: "start" }}>
-        {stacked ? (
-          <>
-            {title}
-            <Proof proof={proof} phone={false} now={now} inColumn />
-            {steps ? <BuildPanel viewer={viewer} steps={steps} phone={false} announce={announce} inColumn /> : null}
-            {steps ? <StepsNeed steps={steps} phone={false} inColumn details={proof.details} /> : null}
-            {steps ? null : <DetailsGroup details={proof.details} />}
-            {props.classification}
-      {props.discussed}
-            {proof.completeness ? <CompletenessModule completeness={proof.completeness} /> : null}
-          </>
-        ) : (
-          <>
-            <div data-testid="build-wide-column" style={{ ...wide(false), display: "flex", flexDirection: "column", gap: 48 }}>
-              {title}
-              {steps ? <BuildPanel viewer={viewer} steps={steps} phone={false} announce={announce} inColumn /> : null}
-              {props.classification}
-              {props.discussed}
-            </div>
-            <div data-testid="build-side-column" style={{ ...side, display: "flex", flexDirection: "column" }}>
-              <SideSection first last={!steps && !proof.completeness && !proof.details.length}>
-                <Proof proof={proof} phone={false} now={now} inColumn />
-              </SideSection>
-              {steps ? (
-                <SideSection last={!proof.completeness}>
-                  <StepsNeed steps={steps} phone={false} inColumn details={proof.details} />
-                </SideSection>
-              ) : (
-                <SideSection last={!proof.completeness}>
-                  <DetailsGroup details={proof.details} />
-                </SideSection>
-              )}
-              {proof.completeness ? (
-                <SideSection last>
-                  <CompletenessModule completeness={proof.completeness} />
-                </SideSection>
-              ) : null}
-            </div>
-          </>
-        )}
+      {steps ? <StepsNeed steps={steps} details={proof.details} /> : <DetailsGroup details={proof.details} />}
+      {proof.completeness ? <CompletenessModule completeness={proof.completeness} /> : null}
+    </>
+  );
+}
+
+function DesktopBuild(props: BuildViewProps) {
+  const { hero, actions, proof, anatomy, viewer, timeline, steps } = props;
+  const tier = useWidthTier();
+  const { announce, region } = useAnnouncer();
+  useColumnPanels(true);
+  /* From 1101 the side panel is 340; from 761 to 1100 it is 300 (`panelColumns`). */
+  const wideSide = useMinWidth(1101);
+
+  /* One layout, with a thread or without: the main panel holds the title block, the post when there is one, The build and the
+     classification; the side panel holds What you need, Before you send it and, for the maker, Completeness. */
+  const title = hero.thread ? <ThreadHero hero={hero} thread={hero.thread} actions={actions} phone={false} announce={announce} /> : <Hero hero={hero} actions={actions} phone={false} announce={announce} />;
+  return (
+    <>
+    <div data-testid="build-view" data-viewport="desktop" style={{ display: "flex", flexDirection: "column", gap: PANEL_GUTTER, lineHeight: "normal" }}>
+      <div data-testid="build-main-row" style={panelColumns("two", { between: !wideSide })}>
+        <div data-testid="build-wide-column" style={{ ...PANEL, display: "flex", flexDirection: "column", gap: 40 }}>
+          {title}
+          {steps ? <BuildPanel viewer={viewer} steps={steps} phone={false} announce={announce} inColumn /> : null}
+          {props.classification}
+          {props.discussed}
+        </div>
+        <aside data-testid="build-side-column" aria-label="What you need" style={{ ...PANEL, display: "flex", flexDirection: "column", gap: 32 }}>
+          <SideParts proof={proof} steps={steps} />
+        </aside>
       </div>
       {steps ? null : (
         /* From 1280 up the page grid's feed template (3 / 6 / 3), so the right column keeps the upper row's 1072 edge. */
@@ -1210,21 +933,17 @@ function DesktopBuild(props: BuildViewProps) {
 /* ── phone ── */
 
 function PhoneBuild(props: BuildViewProps) {
-  const { now, hero, actions, proof, anatomy, viewer, timeline, steps } = props;
+  const { hero, actions, proof, anatomy, viewer, timeline, steps } = props;
   const { announce, region } = useAnnouncer();
   const viewerRef = useRef<HTMLDivElement>(null);
+  useColumnPanels(true);
 
   /* The viewer is below the tabs and the anatomy: whatever changes it brings it into view. */
   const reveal = () => viewerRef.current?.scrollIntoView?.({ behavior: scrollBehavior(), block: "nearest" });
 
   let lower: ReactNode;
   if (steps) {
-    lower = (
-      <>
-        <BuildPanel viewer={viewer} steps={steps} phone announce={announce} />
-        <StepsNeed steps={steps} phone details={proof.details} />
-      </>
-    );
+    lower = <BuildPanel viewer={viewer} steps={steps} phone announce={announce} />;
   } else {
     lower = (
       <>
@@ -1251,38 +970,34 @@ function PhoneBuild(props: BuildViewProps) {
     );
   }
 
+  /* One column: the head, the post and The build in the main panel, then What you need and Before you send it, then the lower panels. */
   return (
-    <div data-testid="build-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 16, lineHeight: "normal", minWidth: 0 }}>
-      {hero.thread ? (
-        <ThreadHero hero={hero} thread={hero.thread} actions={actions} phone announce={announce} afterTitle={<Proof proof={proof} phone now={now} />} />
-      ) : (
-        <>
-          <Hero hero={hero} actions={actions} proof={proof} phone now={now} announce={announce} />
-          <ActionDock actions={actions} phone announce={announce} />
-        </>
-      )}
-      {hero.thread ? null : <Proof proof={proof} phone now={now} />}
-      {steps ? null : <DetailsGroup details={proof.details} />}
-      {viewer.tabs.length < 2 && steps ? null : (
-      <ScrollRow gap={6} label="Sections of this build" tablist>
-        {viewer.tabs.map((tab) => (
-          <FilterChip
-            key={tab.value}
-            label={tab.label}
-            on={tab.value === viewer.tab}
-            tab={{ id: `build-tab-${tab.value}`, controls: "build-tabpanel" }}
-            onClick={() => {
-              viewer.onTabChange(tab.value);
-              if (!steps) reveal();
-            }}
-          />
-        ))}
-      </ScrollRow>
-      )}
-      {lower}
-      {props.classification}
-      {props.discussed}
-      {proof.completeness ? <CompletenessModule completeness={proof.completeness} /> : null}
+    <div data-testid="build-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: PANEL_GUTTER, lineHeight: "normal", minWidth: 0 }}>
+      <div style={{ ...PANEL, display: "flex", flexDirection: "column", gap: 24 }}>
+        {hero.thread ? <ThreadHero hero={hero} thread={hero.thread} actions={actions} phone announce={announce} /> : <Hero hero={hero} actions={actions} phone announce={announce} />}
+        {viewer.tabs.length < 2 && steps ? null : (
+          <ScrollRow gap={6} label="Sections of this build" tablist>
+            {viewer.tabs.map((tab) => (
+              <FilterChip
+                key={tab.value}
+                label={tab.label}
+                on={tab.value === viewer.tab}
+                tab={{ id: `build-tab-${tab.value}`, controls: "build-tabpanel" }}
+                onClick={() => {
+                  viewer.onTabChange(tab.value);
+                  if (!steps) reveal();
+                }}
+              />
+            ))}
+          </ScrollRow>
+        )}
+        {lower}
+        {props.classification}
+        {props.discussed}
+      </div>
+      <aside aria-label="What you need" style={{ ...PANEL, display: "flex", flexDirection: "column", gap: 32 }}>
+        <SideParts proof={proof} steps={steps} />
+      </aside>
       {region}
     </div>
   );
@@ -1306,7 +1021,7 @@ export function BuildView(props: BuildViewProps) {
 function SummaryLine({ summary }: { summary: string | undefined }) {
   if (!summary) return null;
   return (
-    <p data-testid="build-summary" title={summary} style={{ ...text(12, 400, t.text2), margin: 0, minWidth: 0, maxWidth: "100%", ...ellipsis }}>
+    <p data-testid="build-summary" title={summary} style={{ ...text(13, 400, t.text2), margin: 0, minWidth: 0, maxWidth: "100%", ...ellipsis }}>
       {summary}
     </p>
   );

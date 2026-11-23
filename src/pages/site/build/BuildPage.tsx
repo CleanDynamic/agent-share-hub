@@ -65,15 +65,12 @@ import {
   getApprovedLayers,
   getBuild,
   getBuildBySlug,
-  getBuildHeader,
   getMediaForBuild,
   getThreadMedia,
   getWhereNext,
   layerOf,
   listRebuildCards,
   listRebuilds,
-  recordReproduction,
-  recordSelfConfirmation,
   resolveCover,
   serialiseChangeSet,
   splitThread,
@@ -116,7 +113,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { BreakageBody } from "./BreakageBody";
-import { CommentsPanel, LowerSections, WhereNextPanels } from "./BuildLower";
+import { CommentsPanel, LowerBuildCard, LowerSections, WhereNextPanels } from "./BuildLower";
 import { PageEmpty, PageState } from "@/components/pagestate/PageState";
 import { PageArrival } from "@/components/shell/PageArrival";
 import { BuildView, BuildViewSkeleton, BuildViewState } from "./BuildView";
@@ -157,7 +154,6 @@ import {
 import { RebuildsBody, REBUILD_CARD } from "./RebuildsBody";
 import { ReplayBody } from "./ReplayBody";
 import { ResultFrame } from "./ResultFrame";
-import { RunDialog, type RunSubmission } from "./RunDialog";
 import { LayerSteps, RunBody } from "./RunBody";
 import { PageBreadcrumb } from "@/components/shell/Breadcrumb";
 import { SAVE_FAILED, FOLLOW_PERSON_FAILED, UNFOLLOW_PERSON_FAILED } from "@/lib/copy/copy";
@@ -588,7 +584,6 @@ function BuildPageBody() {
   const [mode, setMode] = useState<PartViewerMode>("run");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [jumpTo, setJumpTo] = useState<number | null>(null);
-  const [running, setRunning] = useState(false);
   const [reporting, setReporting] = useState<{ type: "build"; id: string } | null>(null);
 
   /* The replay's jump is one-shot: cleared on the commit after it was read. */
@@ -753,7 +748,6 @@ function BuildPageBody() {
     if (!data) return [];
     const rows: { key: string; heading: string; builds: GalleryBuild[] }[] = [
       { key: "rebuilds", heading: "Rebuilds of this", builds: data.rebuilds },
-      ...(data.sharedTool ? [{ key: "made-with", heading: `More made with ${data.sharedTool.tool}`, builds: data.sharedTool.builds }] : []),
       { key: "maker", heading: `More from ${data.makerName ?? "this maker"}`, builds: data.fromMaker },
     ];
     return rows
@@ -779,45 +773,7 @@ function BuildPageBody() {
 
   /* ── writes ── */
 
-  const putHeader = useCallback(
-    (header: Build) =>
-      queryClient.setQueryData<BuildRecord | null>(recordKey(slug), (current) => (current ? { ...current, build: header } : current)),
-    [queryClient, slug],
-  );
-
-  /* OPTIMISTIC. The new count and clock are shown the moment the run is submitted; the write follows. If it fails the
-     header goes back to what it was and the proof panel says so, with a way to run it again — never an exception. */
-  const [announcement, say] = useAnnouncer();
-  const [runFailure, setRunFailure] = useState<{ error: unknown } | null>(null);
-
-  const submitRun = useCallback(
-    async ({ worked, model, note }: RunSubmission) => {
-      if (!build) return;
-      const before = build;
-      setRunFailure(null);
-      say(viewerIsCreator ? "Reconfirmed." : worked ? "Reproduction recorded." : "Report recorded.");
-      if (worked || viewerIsCreator) {
-        putHeader({
-          ...build,
-          reproduction_count: (build.reproduction_count ?? 0) + (viewerIsCreator ? 0 : 1),
-          last_confirmed_at: new Date().toISOString(),
-          last_confirmed_model: model.trim() || build.last_confirmed_model,
-        });
-      }
-      try {
-        if (viewerIsCreator) await recordSelfConfirmation({ buildId: build.id, modelUsed: model });
-        else await recordReproduction({ buildId: build.id, worked, modelUsed: model, note });
-        // The count and the clock are kept by the database; read them back rather than guess.
-        const fresh = await getBuildHeader(build.id);
-        if (fresh) putHeader(fresh);
-      } catch (error) {
-        putHeader(before);
-        say(SAVE_FAILED);
-        setRunFailure({ error });
-      }
-    },
-    [build, viewerIsCreator, putHeader, say],
-  );
+  const [announcement] = useAnnouncer();
 
   /* OPTIMISTIC, as the profile page's Follow is: the button changes on the press, the write follows, and a refusal puts
      it back and says so. Nobody signed in goes to sign in and back. */
@@ -884,19 +840,14 @@ function BuildPageBody() {
   const loginBack = (to: string) => `/login?redirect=${encodeURIComponent(to)}`;
 
   /** A card on one of the page's walls: the gallery's own card, its picture signed with the rest. */
-  const cardOf = (card: GalleryBuild, size: "rebuild" | "wall"): CardView => ({
+  const cardOf = (card: GalleryBuild, size: "rebuild" | "wall", maker?: string | null): CardView => ({
     key: card.id,
-    render: (variant) =>
+    render: () =>
       size === "rebuild" ? (
         <GalleryCard build={card} srcByPath={srcByPath} coverHeight={REBUILD_CARD.coverHeight} titleSize={REBUILD_CARD.titleSize} />
       ) : (
-        <GalleryCard
-          build={card}
-          srcByPath={srcByPath}
-          engagement={engagementFor(engagement, card.id)}
-          coverHeight={variant === "phone" ? 96 : 92}
-          titleSize={variant === "phone" ? 18 : 19}
-        />
+        /* Synth 08: the lower rows' cards are on Card with the name and the maker, nothing else. */
+        <LowerBuildCard href={`/b2/${card.slug}`} title={card.title} maker={maker} />
       ),
   });
 
@@ -1035,7 +986,7 @@ function BuildPageBody() {
   const nextPanels: WhereNextRowView[] = nextRows.map((row) => ({
     key: row.key,
     heading: row.heading,
-    cards: row.builds.map((card) => cardOf(card, "wall")),
+    cards: row.builds.map((card) => cardOf(card, "wall", row.key === "maker" ? ((record.maker?.username ?? "").trim() || null) : null)),
   }));
 
   const coverNode = coverSrc ? (
@@ -1172,21 +1123,6 @@ function BuildPageBody() {
           ...(source.data?.build.slug ? { compareTo: `/b2/${build.slug}/compare/${source.data.build.slug}` } : null),
         }}
         proof={{
-          build,
-          lastRun: shortDate(build.last_confirmed_at),
-          action: {
-            kind: !isLoggedIn ? "sign-in" : viewerIsCreator ? "reconfirm" : "reproduce",
-            onPress: () => (isLoggedIn ? setRunning(true) : navigate(loginBack(location.pathname))),
-          },
-          writeError: runFailure
-            ? {
-                onRetry: () => {
-                  setRunFailure(null);
-                  setRunning(true);
-                },
-                error: runFailure.error,
-              }
-            : undefined,
           details: [...proofDetails(build, tree), ...((inCollections.data ?? 0) > 0 ? [{ label: "Collections", value: inCollectionsText(inCollections.data as number) }] : [])],
           completeness: completeness
             ? {
@@ -1229,15 +1165,6 @@ function BuildPageBody() {
         }}
         timeline={{ ...timeline, onPlay: () => setTab("watch") }}
         steps={stepsView}
-      />
-
-      <RunDialog
-        open={running}
-        onOpenChange={setRunning}
-        creator={viewerIsCreator}
-        suggestions={(build.made_with ?? []).filter((entry) => entry.trim().length > 0)}
-        initialModel={viewerIsCreator ? (build.last_confirmed_model ?? "") : ""}
-        onSubmit={submitRun}
       />
 
       {/* UI-P30 — under the first screen, in the order they always came: the

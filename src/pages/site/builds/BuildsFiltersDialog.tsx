@@ -1,7 +1,7 @@
 /* BF-06 (A1): the one Filters dialog, the same in Table, Maps and Classification. Pure: it frames what it is given.
 
-   Framed as `SetDialogs.tsx` frames its own (Radix `Dialog` used directly, the refined tokens): the overlay `--sheet-dim` at
-   z 40, the content `--solid` with the glass border, the panel radius and the sheet shadow at z 41. 820 by 640 at most and
+   Framed in the Synth modal recipe (Synth 06): the overlay `--sheet-dim` at z 40, the content on `--window` with no border,
+   radius 16 and the window shadow at z 41, no lines between its three rows. 820 by 640 at most and
    centred on a desktop; the whole screen on a phone. Three rows: the header (the title and Close), the body that scrolls,
    and the footer (Done unless another is given). Escape, Close and Done close it, and focus goes back to the button that
    opened it. */
@@ -39,7 +39,7 @@ export const dialogFrame = (phone: boolean): CSSProperties => ({
   display: "grid",
   gridTemplateRows: "auto minmax(0, 1fr) auto",
   background: t.window,
-  boxShadow: t.shadowSheet,
+  boxShadow: t.windowShadow,
   color: t.text,
   fontFamily: FIGTREE,
   ...(phone
@@ -50,8 +50,8 @@ export const dialogFrame = (phone: boolean): CSSProperties => ({
         transform: "translate(-50%, -50%)",
         width: "min(820px, calc(100vw - 28px))",
         height: "min(640px, calc(100dvh - 28px))",
-        borderRadius: r.panel,
-        border: `1px solid ${t.glassBorder}`,
+        borderRadius: r.window,
+        border: 0,
       }),
 });
 
@@ -76,16 +76,16 @@ export function BuildsFiltersDialog({ open, onOpenChange, children, footer, head
             opener.current?.focus();
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: `1px solid ${t.hairline}` }}>
-            <Dialog.Title style={{ fontFamily: FIGTREE, fontSize: 15, fontWeight: 500, lineHeight: 1.05, letterSpacing: "-0.02em", textWrap: "balance", margin: 0, color: t.text }}>Filters</Dialog.Title>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 20px 12px" }}>
+            <Dialog.Title style={{ fontFamily: FIGTREE, fontSize: 20, fontWeight: 600, lineHeight: "24px", textWrap: "balance", margin: 0, color: t.text }}>Filters</Dialog.Title>
             <Dialog.Description style={VISUALLY_HIDDEN}>Choose which builds are shown.</Dialog.Description>
             <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 12 }}>{headerExtra}</div>
             <Dialog.Close asChild>
               <IconButton icon={X} label="Close" size={38} />
             </Dialog.Close>
           </div>
-          <div style={{ overflowY: "auto", padding: "0 16px" }}>{children}</div>
-          <div style={{ padding: "12px 16px", borderTop: `1px solid ${t.hairline}` }}>
+          <div style={{ overflowY: "auto", padding: "0 20px" }}>{children}</div>
+          <div style={{ padding: "12px 20px 16px", background: t.windowFoot }}>
             {footer ?? (
               <div style={{ display: "flex", justifyContent: "flex-end" }}>
                 <Dialog.Close asChild>

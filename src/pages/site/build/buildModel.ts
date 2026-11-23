@@ -195,18 +195,12 @@ export interface CompletenessView {
   next: string | null;
 }
 
+/** Synth 08: what the side panel holds besides the steps' needs. The reproduction column, its action and its run messages are gone. */
 export interface BuildProofView {
-  /** The one record the orb, the plaque and the lamp read. */
-  build: PlaqueBuild;
-  /** "27 Sep", or null when nobody has confirmed it. */
-  lastRun: string | null;
-  action: ProofActionView;
   /** Made for · Made with · Setup · Monthly · First result · Needs, in that order. */
   details: readonly ProofDetailView[];
   /** The creator's own view only; null for everyone else. */
   completeness: CompletenessView | null;
-  /** A run that did not save: the count has gone back, and the panel says so with a way to ask again. */
-  writeError?: { onRetry: () => void; error?: unknown };
 }
 
 export interface PartRowView {

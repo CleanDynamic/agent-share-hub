@@ -480,7 +480,7 @@ function RangeField({ label, value, placeholder, min, max, onCommit }: { label: 
 
 /* ── a scale filter ── */
 
-/** BF-09 (A9): one value of a scale, named: a button 36 high, its label wrapping, pressed in the selected look. */
+/** BF-09 (A9): one value of a scale, named: a pill at least 36 high, its label wrapping, Inverse when chosen. */
 function ScaleButton({ label, on, onClick }: { label: string; on: boolean; onClick: () => void }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
@@ -492,10 +492,12 @@ function ScaleButton({ label, on, onClick }: { label: string; on: boolean; onCli
       style={{
         boxSizing: "border-box",
         minHeight: 36,
-        padding: "6px 8px",
-        borderRadius: r.control,
-        ...(on ? { background: t.selectedFill, border: `1px solid ${t.selectedEdge}` } : { background: "none", border: `1px solid ${t.label}` }),
-        ...text(12, on ? 500 : 400, on ? t.text : t.text2, { lineHeight: "16px", textAlign: "center" }),
+        padding: "6px 14px",
+        /* Synth 08: a choice is a pill: Card at rest, Inverse with 600 when chosen, as the view switch is. */
+        borderRadius: 18,
+        border: 0,
+        background: on ? t.action : t.module,
+        ...text(13, on ? 600 : 500, on ? t.onAction : t.text, { lineHeight: "16px", textAlign: "center" }),
         whiteSpace: "normal",
         cursor: "pointer",
         ...ring(state.focusVisible),

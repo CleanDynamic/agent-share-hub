@@ -57,7 +57,6 @@ import { t } from "@/lib/theme/tokens";
 import { hasFilters } from "@/lib/build/gallery";
 
 import BuildsPage from "./BuildsPage";
-import { statParts } from "./BuildsView";
 
 const build = (n: number) => ({
   id: `b${n}`, slug: `b${n}`, title: `Build ${n}`, shape: "app", madeWith: ["Claude Code"], reproductionCount: n, lastConfirmedAt: null, lastConfirmedModel: null,
@@ -130,7 +129,8 @@ beforeEach(() => {
 });
 
 /** G25: the head's text: "Builds", then the meta line (the count first, once the list has answered). */
-const headText = () => screen.getByTestId("builds-head").textContent ?? "";
+/* Synth 08: the head draws the count as a fact; the h1 "Builds" is for screen readers. */
+const headText = () => screen.getByTestId("builds-count").textContent ?? "";
 
 describe("BuildsPage", () => {
   it("starts the list, the stats, the lens counts and the facets together", async () => {
@@ -142,13 +142,13 @@ describe("BuildsPage", () => {
     expect(getGalleryFacets).toHaveBeenCalledTimes(1);
     expect(getCountSpread).toHaveBeenCalledTimes(1);
     expect(getWorksOnModelCounts).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(headText()).toMatch(/^Builds2 builds/));
+    await waitFor(() => expect(headText()).toMatch(/^2 builds$/));
   });
 
   it("draws the head from the stats and the rows from the list", async () => {
     renderAt("/builds");
-    expect(await screen.findByText("214 reproductions")).toBeTruthy();
-    expect(screen.getByText(/78% confirmed in the last 120 days/)).toBeTruthy();
+    await waitFor(() => expect(headText()).toBe("2 builds"));
+    expect(document.body.textContent).not.toMatch(/214 reproductions|78% confirmed/);
     expect(screen.getByRole("link", { name: "Build 1" }).getAttribute("href")).toBe("/b2/b1");
     expect(screen.getByRole("link", { name: "Table" }).getAttribute("aria-current")).toBe("page");
   });
@@ -204,10 +204,10 @@ describe("BuildsPage", () => {
 
   it("writes the lens, and a chip takes its value away", async () => {
     renderAt("/builds?f=field%3Alaw");
-    fireEvent.click(await screen.findByRole("tab", { name: /Reproduced/ }));
-    await waitFor(() => expect(address).toBe("/builds?lens=proven&f=field%3Alaw"));
+    fireEvent.click(await screen.findByRole("tab", { name: /Rebuilt/ }));
+    await waitFor(() => expect(address).toBe("/builds?lens=rebuilt&f=field%3Alaw"));
     fireEvent.click(screen.getByRole("button", { name: "Remove filter Field" }));
-    await waitFor(() => expect(address).toBe("/builds?lens=proven"));
+    await waitFor(() => expect(address).toBe("/builds?lens=rebuilt"));
   });
 
   it("sorts from a column head", async () => {
@@ -244,7 +244,7 @@ describe("BuildsPage", () => {
     expect(report).not.toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ context: "listBuildsTable" }));
     listBuildsTable.mockResolvedValue({ builds: [build(1)], total: 1 });
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
-    await waitFor(() => expect(headText()).toMatch(/^Builds1 build\b/));
+    await waitFor(() => expect(headText()).toMatch(/^1 build$/));
   });
 
   describe("the stored counts (SV-23 P1)", () => {
@@ -265,7 +265,7 @@ describe("BuildsPage", () => {
       renderAt("/builds");
       expect(await screen.findByRole("columnheader", { name: "Steps" })).toBeTruthy();
       expect(screen.getByRole("columnheader", { name: "Sessions" })).toBeTruthy();
-      expect(screen.getByText("Median 8")).toBeTruthy();
+      expect(screen.getByText("Median", { exact: false }).closest("td")?.textContent).toBe("Median 8");
       await openFilters("Structure");
       expect(await screen.findByRole("region", { name: "Steps" })).toBeTruthy();
       expect(screen.getByRole("region", { name: "Sessions" })).toBeTruthy();
@@ -302,27 +302,22 @@ describe("BuildsPage", () => {
     const SPREAD = { steps: new Map(), sessions: new Map(), reproductions: new Map([[1, 4], [3, 2]]), rebuilds: new Map(), likes: new Map() };
     const OPUS = { id: "opus-5-5", name: "Opus 5.5" };
 
-    it("draws Runs, 12 weeks from the list, with words for the bars", async () => {
+    it("draws no Runs column and no run bars, whatever the list carries", async () => {
       listBuildsTable.mockResolvedValue({ builds: [{ ...build(1), runs: [0, 0, 1, 0, 2, 0, 0, 3, 0, 0, 1, 1] }], total: 1 });
       renderAt("/builds");
-      expect(await screen.findByRole("columnheader", { name: "Runs, 12 weeks" })).toBeTruthy();
-      expect(screen.getByRole("img", { name: "Runs per week over 12 weeks, oldest first: 0, 0, 1, 0, 2, 0, 0, 3, 0, 0, 1, 1" })).toBeTruthy();
+      await screen.findByRole("link", { name: "Build 1" });
+      expect(screen.queryByRole("columnheader", { name: /^Runs/ })).toBeNull();
+      expect(screen.queryByRole("img", { name: /^Runs per week/ })).toBeNull();
     });
 
-    it("offers Last confirmed and Confirmed or stale from the columns that exist, and writes the choice to the address", async () => {
-      renderAt("/builds");
-      await openFilters("Proof");
-      fireEvent.click(await screen.findByRole("checkbox", { name: /Within 30 days/ }));
-      applyFilters();
-      await waitFor(() => expect(address).toBe("/builds?within=30"));
-      await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ confirmedWithin: 30 })));
-      await openFilters("Proof");
-      fireEvent.click(screen.getByRole("checkbox", { name: /Within 30 days/ }));
-      fireEvent.click(screen.getByRole("checkbox", { name: /Stale, not confirmed in 120 days/ }));
-      applyFilters();
-      await waitFor(() => expect(address).toBe("/builds?state=stale"));
-      await waitFor(() => expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ confirmedState: "stale" })));
-      expect(await screen.findByRole("button", { name: "Remove filter Confirmed or stale" })).toBeTruthy();
+    it("offers no Last confirmed or Confirmed or stale, and reads them out of an address from before", async () => {
+      renderAt("/builds?within=30&state=stale");
+      await screen.findByRole("link", { name: "Build 1" });
+      expect(screen.queryByRole("button", { name: /Remove filter (Last confirmed|Confirmed or stale)/ })).toBeNull();
+      expect(listBuildsTable).toHaveBeenLastCalledWith(expect.not.objectContaining({ confirmedWithin: 30 }));
+      expect(listBuildsTable).toHaveBeenLastCalledWith(expect.not.objectContaining({ confirmedState: "stale" }));
+      await openFilters();
+      expect(screen.queryByRole("checkbox", { name: /Within 30 days|Stale, not confirmed/ })).toBeNull();
     });
 
     it("draws Works on model once its counts answer with the stored counts live, and writes the model", async () => {
@@ -343,7 +338,7 @@ describe("BuildsPage", () => {
       getWorksOnModelCounts.mockResolvedValue([{ model: OPUS, builds: 18 }]);
       renderAt("/builds");
       await screen.findByRole("link", { name: "Build 1" });
-      await openFilters("Proof");
+      await openFilters();
       expect(screen.queryByRole("region", { name: "Works on model" })).toBeNull();
       expect(screen.queryByRole("region", { name: "Reproductions" })).toBeNull();
     });
@@ -352,7 +347,7 @@ describe("BuildsPage", () => {
 
 describe("SV-24 P1: saved filter sets", () => {
   const SET_ID = "0b6f3a42-1c52-4e0e-9a3c-6d2f1f4a9c10";
-  const mine = { id: SET_ID, name: "Stale agents", search: "shape=agent&state=stale", isPublic: false, ownerId: "reader-1", layout: null };
+  const mine = { id: SET_ID, name: "Stale agents", search: "shape=agent&pattern=router", isPublic: false, ownerId: "reader-1", layout: null };
 
   it("draws no section, and makes no request for sets, when nobody is signed in", async () => {
     renderAt("/builds");
@@ -368,7 +363,7 @@ describe("SV-24 P1: saved filter sets", () => {
     renderAt("/builds?view=maps");
     await openFilters("Saved");
     const link = await screen.findByRole("link", { name: /Stale agents/ });
-    expect(link.getAttribute("href")).toBe(`/builds?view=maps&shape=agent&state=stale&set=${SET_ID}`);
+    expect(link.getAttribute("href")).toBe(`/builds?view=maps&shape=agent&pattern=router&set=${SET_ID}`);
     expect(screen.getByRole("link", { name: /Sales/ }).textContent).toContain("Public");
   });
 
@@ -390,7 +385,7 @@ describe("SV-24 P1: saved filter sets", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: /Public/ }));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(sets.createFilterSet).toHaveBeenCalledWith({ name: "Law, newest", search: "f=field%3Alaw&sort=newest", isPublic: true }));
-    await waitFor(() => expect(address).toBe(`/builds?view=maps&shape=agent&state=stale&set=${SET_ID}`));
+    await waitFor(() => expect(address).toBe(`/builds?view=maps&shape=agent&pattern=router&set=${SET_ID}`));
   });
 
   it("renames a set from its menu", async () => {
@@ -413,14 +408,14 @@ describe("SV-24 P1: saved filter sets", () => {
     sets.listMyFilterSets.mockResolvedValue([mine]);
     sets.getFilterSet.mockResolvedValue({ ...mine, mine: true, members: 0, member: false });
     sets.deleteFilterSet.mockResolvedValue(undefined);
-    renderAt(`/builds?shape=agent&state=stale&set=${SET_ID}`);
+    renderAt(`/builds?shape=agent&pattern=router&set=${SET_ID}`);
     await openFilters("Saved");
     fireEvent.keyDown(await screen.findByRole("button", { name: "More for Stale agents" }), { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Delete" }));
     expect(sets.deleteFilterSet).not.toHaveBeenCalled();
     fireEvent.click(await screen.findByRole("button", { name: "Delete" }));
     await waitFor(() => expect(sets.deleteFilterSet).toHaveBeenCalledWith(SET_ID));
-    await waitFor(() => expect(address).toBe("/builds?shape=agent&state=stale"));
+    await waitFor(() => expect(address).toBe("/builds?shape=agent&pattern=router"));
   });
 
   it("lets a reader follow a public set that is not theirs, and leave it", async () => {
@@ -477,13 +472,14 @@ describe("SV-24 P2: the reader's layout", () => {
   it("chooses the Table's columns from the Columns chooser, and keeps them", async () => {
     listBuildsTable.mockResolvedValue({ countsLive: true, builds: [{ ...build(1), classifiedAs: { ...emptyClassification(), derived: { skill: { values: ["no-coding"] } } } }], total: 1 });
     renderAt("/builds");
-    fireEvent.click(await screen.findByRole("button", { name: "Columns: 12 of 28" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Columns: 8 of 24" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "Skill" }));
     expect(await screen.findByRole("columnheader", { name: "Skill" })).toBeTruthy();
     expect(screen.getByText("No coding")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Columns: 13 of 28" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Columns: 9 of 24" })).toBeTruthy();
     fireEvent.click(screen.getByRole("checkbox", { name: "Rebuilds" }));
     await waitFor(() => expect(screen.queryByRole("columnheader", { name: "Rebuilds" })).toBeNull());
+    expect(screen.queryByRole("checkbox", { name: /^(Tools|Reproductions|Confirmed|Runs)/ })).toBeNull();
     expect(stored().columns).toContain("skill");
     expect(stored().columns).not.toContain("rebuilds");
     fireEvent.click(screen.getByRole("button", { name: "Back to the default columns" }));
@@ -493,7 +489,7 @@ describe("SV-24 P2: the reader's layout", () => {
 
   it("offers no Steps or Sessions column until the list carries the stored counts", async () => {
     renderAt("/builds");
-    fireEvent.click(await screen.findByRole("button", { name: "Columns: 10 of 25" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Columns: 6 of 21" }));
     expect(screen.queryByRole("checkbox", { name: "Steps" })).toBeNull();
     expect(screen.getByRole("checkbox", { name: "Shape" })).toBeTruthy();
   });
@@ -503,11 +499,11 @@ describe("SV-24 P2: the reader's layout", () => {
     await screen.findByRole("link", { name: "Build 1" });
     expect(listBuildsTable).toHaveBeenCalledTimes(1);
     fireEvent.keyDown(screen.getByRole("button", { name: "Add a calculation" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitemcheckbox", { name: "Sum, Reproductions" }));
-    expect(await screen.findByText("Sum, Reproductions 3")).toBeTruthy();
-    expect(stored().calculations).toEqual([{ column: "reproductions", kind: "sum" }]);
-    fireEvent.click(screen.getByRole("button", { name: "Remove Sum, Reproductions 3" }));
-    await waitFor(() => expect(screen.queryByText("Sum, Reproductions 3")).toBeNull());
+    fireEvent.click(await screen.findByRole("menuitemcheckbox", { name: "Sum, Rebuilds" }));
+    expect(await screen.findByText("Sum, Rebuilds 0")).toBeTruthy();
+    expect(stored().calculations).toEqual([{ column: "rebuilds", kind: "sum" }]);
+    fireEvent.click(screen.getByRole("button", { name: "Remove Sum, Rebuilds 0" }));
+    await waitFor(() => expect(screen.queryByText("Sum, Rebuilds 0")).toBeNull());
     expect(listBuildsTable).toHaveBeenCalledTimes(1);
   });
 
@@ -544,35 +540,28 @@ describe("SV-24 P2: the reader's layout", () => {
 
 
 describe("BF-01 the head line", () => {
-  it('with no filter the head reads "2 builds" and its meta line starts "Of 2 published"', async () => {
+  it('with no filter the head reads "2 builds" and nothing else', async () => {
     getGalleryStats.mockResolvedValue({ inGallery: 2, reproducedThisWeek: 0, weeklyGoal: null, freshPct: 50 });
     renderAt("/builds");
     /* G8, G25: the h1 is "Builds"; the count leads the meta line under it. */
     await screen.findByRole("heading", { level: 1, name: "Builds" });
-    await waitFor(() => expect(headText()).toMatch(/^Builds2 builds · Of 2 published/));
+    await waitFor(() => expect(headText()).toBe("2 builds"));
   });
 
-  it('with a filter on, the head reads "1 of 2 builds" and the meta line has no "Of 2 published" part', async () => {
+  it('with a filter on, the head reads "1 of 2 builds"', async () => {
     listBuildsTable.mockResolvedValue({ builds: [build(1)], total: 1 });
     getGalleryStats.mockResolvedValue({ inGallery: 2, reproducedThisWeek: 0, weeklyGoal: null, freshPct: 50 });
     renderAt(`/builds?f=${encodeURIComponent(`autonomy:${AUTONOMY_VALUES[0].id}`)}`);
-    await waitFor(() => expect(headText()).toMatch(/^Builds1 of 2 builds/));
-    const head = screen.getByTestId("builds-head");
-    await waitFor(() => expect(head.textContent).toContain("this week"));
-    expect(head.textContent).not.toContain("published");
+    await waitFor(() => expect(headText()).toBe("1 of 2 builds"));
+    expect(screen.getByTestId("builds-head").textContent).not.toMatch(/this week|published/);
   });
 
-  it("the reproductions clause is in the evidence colour only when the number is above zero", async () => {
-    /* jsdom drops a `color: var(...)` from inline style, so the colour is read from the element statParts returns. */
-    const runsSpan = (runsThisWeek: number) => {
-      const fragment = statParts({ published: 2, runsThisWeek, freshPct: 50 })[1].text as ReactElement<{ children: ReactNode }>;
-      return Children.toArray(fragment.props.children).find((child) => isValidElement(child) && (child.props as Record<string, unknown>)["data-testid"] === "stat-runs") as ReactElement<{ style: CSSProperties }>;
-    };
-    expect(runsSpan(0).props.style.color).toBe(t.text2);
-    expect(runsSpan(3).props.style.color).toBe(t.evidence);
-    getGalleryStats.mockResolvedValue({ inGallery: 2, reproducedThisWeek: 0, weeklyGoal: null, freshPct: 50 });
+  it("Synth 08: the head says the count alone, with no run statistics", async () => {
+    getGalleryStats.mockResolvedValue({ inGallery: 2, reproducedThisWeek: 5, weeklyGoal: null, freshPct: 50 });
     renderAt("/builds");
-    expect((await screen.findByTestId("stat-runs")).textContent).toBe("0 reproductions");
+    await waitFor(() => expect(headText()).toMatch(/builds?$/));
+    expect(screen.queryByTestId("stat-runs")).toBeNull();
+    expect(document.body.textContent).not.toMatch(/reproduction|confirmed in the last/i);
   });
 });
 
@@ -714,12 +703,10 @@ describe("BF-08 draft and Apply", () => {
     await openFilters();
     fireEvent.click(screen.getByRole("checkbox", { name: /Education/ }));
     fireEvent.click(screen.getByRole("checkbox", { name: /Law/ }));
-    fireEvent.click(screen.getByRole("button", { name: /^Proof/ }));
-    fireEvent.click(screen.getByRole("checkbox", { name: /Within 30 days/ }));
     applyFilters();
     await waitFor(() => expect(new URLSearchParams(address.split("?")[1]).getAll("f")).toEqual(["field:education", "field:law"]));
     const query = new URLSearchParams(address.split("?")[1]);
-    expect([query.get("view"), query.get("sort"), query.get("within")]).toEqual(["classification", "newest", "30"]);
+    expect([query.get("view"), query.get("sort")]).toEqual(["classification", "newest"]);
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(entries).toHaveLength(2);
     await waitFor(() => expect(listBuildsTable).toHaveBeenCalledTimes(asked + 1));
@@ -798,12 +785,12 @@ describe("BF-08 draft and Apply", () => {
 /* ── BF-08 P3 (C1) ── */
 
 describe("BF-08 lens counts follow the filters", () => {
-  it("with a filter on, the All tab's number equals the number of rows the list reports", async () => {
+  it("with a filter on, the All tab carries no number and the head says how many rows the list reports", async () => {
     listBuildsTable.mockResolvedValue({ builds: [build(1)], total: 1 });
     countGalleryLenses.mockImplementation(async (filters?: { facets?: string[] }) => ((filters?.facets?.length ?? 0) > 0 ? { all: 1, proven: 1, rebuilt: 0, unsolved: 0 } : { all: 2, proven: 1, rebuilt: 0, unsolved: 0 }));
     renderAt("/builds?f=field%3Alaw");
-    await waitFor(() => expect(headText()).toMatch(/^Builds1 /));
-    await waitFor(() => expect(screen.getByRole("tab", { name: /^All/ }).textContent).toBe("All1"));
+    await waitFor(() => expect(headText()).toMatch(/^1 /));
+    expect(screen.getByRole("tab", { name: /^All/ }).textContent).toBe("All");
     expect(countGalleryLenses).toHaveBeenCalledWith(expect.objectContaining({ facets: ["field:law"] }));
   });
 
@@ -917,7 +904,7 @@ describe("BF-11 a filter's column", () => {
     await screen.findByRole("link", { name: "Build 1" });
     expect(autonomyHead()).toBeTruthy();
     expect(screen.getByRole("columnheader", { name: /^Shape/ })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Columns: 10 of 25" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Columns: 6 of 21" })).toBeTruthy();
   });
 });
 
@@ -939,17 +926,17 @@ describe("BF-12 every head sorts when its answer is true", () => {
     renderAt("/builds");
     await screen.findByRole("link", { name: "Build 1" });
     const heads = screen.getAllByRole("columnheader");
-    expect(heads.length).toBe(10);
+    expect(heads.length).toBe(6);
     for (const cell of heads) expect(within(cell).queryByRole("button")).toBeTruthy();
   });
 
-  it("with more pages to load, only Reproductions, Last confirmed, Rebuilds, Steps, Sessions and Published are buttons; the rest are text", async () => {
+  it("with more pages to load, only Rebuilds, Steps, Sessions and Published are buttons; the rest are text", async () => {
     many(true);
-    localStorage.setItem("builds:layout:v1", JSON.stringify({ columns: ["build", "field", "steps", "sessions", "reproductions", "confirmed", "rebuilds", "published", "skill"], calculations: [] }));
+    localStorage.setItem("builds:layout:v1", JSON.stringify({ columns: ["build", "field", "steps", "sessions", "rebuilds", "published", "skill"], calculations: [] }));
     renderAt("/builds");
     await screen.findByRole("link", { name: "Build 1" });
     const buttons = screen.getAllByRole("columnheader").filter((cell) => within(cell).queryByRole("button")).map((cell) => cell.textContent?.replace(/[↑↓2]/g, ""));
-    expect(buttons).toEqual(["Steps", "Sessions", "Reproductions", "Confirmed", "Rebuilds", "Published"]);
+    expect(buttons).toEqual(["Steps", "Sessions", "Rebuilds", "Published"]);
   });
 
   it("pressing Field (whole list loaded) writes by=field and reorders the rows without asking the list again", async () => {
@@ -989,12 +976,14 @@ describe("BF-12 every head sorts when its answer is true", () => {
     await waitFor(() => expect(address).toBe("/builds"));
   });
 
-  it("pressing Reproductions, the default sort, only flips the direction", async () => {
+  it("pressing Rebuilds writes sort=rebuilt, again dir=asc, and a third press returns to the default order", async () => {
     renderAt("/builds");
     await screen.findByRole("link", { name: "Build 1" });
-    fireEvent.click(within(head(/^Reproductions/)).getByRole("button"));
-    await waitFor(() => expect(address).toBe("/builds?dir=asc"));
-    fireEvent.click(within(head(/^Reproductions/)).getByRole("button"));
+    fireEvent.click(within(head(/^Rebuilds/)).getByRole("button"));
+    await waitFor(() => expect(address).toBe("/builds?sort=rebuilt"));
+    fireEvent.click(within(head(/^Rebuilds/)).getByRole("button"));
+    await waitFor(() => expect(address).toBe("/builds?sort=rebuilt&dir=asc"));
+    fireEvent.click(within(head(/^Rebuilds/)).getByRole("button"));
     await waitFor(() => expect(address).toBe("/builds"));
   });
 
@@ -1003,10 +992,11 @@ describe("BF-12 every head sorts when its answer is true", () => {
     renderAt("/builds?by=field&dir=asc");
     await screen.findByRole("link", { name: "Build 1" });
     expect(head(/^Field/).getAttribute("aria-sort")).toBe("ascending");
-    expect(head(/^Field/).textContent).toContain("↑");
+    // The chevron points up for ascending (it is turned over).
+    expect(head(/^Field/).querySelector("svg")?.getAttribute("style")).toContain("rotate(180deg)");
     for (const cell of screen.getAllByRole("columnheader").filter((entry) => !/^Field/.test(entry.textContent ?? ""))) {
       expect(cell.getAttribute("aria-sort")).toBeNull();
-      expect(cell.textContent).not.toMatch(/[↑↓]/);
+      expect(cell.querySelector("svg")).toBeNull();
     }
   });
 
@@ -1015,8 +1005,9 @@ describe("BF-12 every head sorts when its answer is true", () => {
     renderAt("/builds?by=field");
     await screen.findByRole("link", { name: "Build 1" });
     expect(head(/^Field/).getAttribute("aria-sort")).toBeNull();
-    expect(head(/^Field/).textContent).not.toMatch(/[↑↓]/);
-    expect(head(/^Reproductions/).getAttribute("aria-sort")).toBe("descending");
+    expect(head(/^Field/).querySelector("svg")).toBeNull();
+    // The default order is by reproductions, a column that is not drawn: no head carries the sort.
+    for (const cell of screen.getAllByRole("columnheader")) expect(cell.getAttribute("aria-sort")).toBeNull();
     expect(titles().slice(0, 3)).toEqual(["Build 1", "Build 2", "Build 3"]);
     expect(listBuildsTable).toHaveBeenLastCalledWith(expect.objectContaining({ sort: "reproduced", ascending: false }));
   });
@@ -1035,9 +1026,9 @@ describe("BF-12 one sort control on the page", () => {
     renderAt("/builds?sort=steps&dir=asc");
     await screen.findByRole("link", { name: "Build 1" });
     fireEvent.keyDown(screen.getByRole("button", { name: "Sort: Steps" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitemradio", { name: "Reproductions" }));
-    await waitFor(() => expect(address).toBe("/builds"));
-    fireEvent.keyDown(screen.getByRole("button", { name: "Sort: Reproductions" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitemradio", { name: "Rebuilds" }));
+    await waitFor(() => expect(address).toBe("/builds?sort=rebuilt"));
+    fireEvent.keyDown(screen.getByRole("button", { name: "Sort: Rebuilds" }), { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitemradio", { name: "Steps" }));
     await waitFor(() => expect(address).toBe("/builds?sort=steps"));
     expect(screen.getByRole("columnheader", { name: /^Steps/ }).getAttribute("aria-sort")).toBe("descending");
@@ -1048,50 +1039,50 @@ describe("BF-12 a second key with Shift", () => {
   const field = (id: string) => ({ ...emptyClassification(), declared: { ...emptyClassification().declared, field: [{ id }] } });
   const three = () =>
     listBuildsTable.mockResolvedValue({
-      builds: [{ ...build(1), classifiedAs: field("education") }, { ...build(2), classifiedAs: field("law") }, { ...build(3), classifiedAs: field("education") }],
+      builds: [{ ...build(1), rebuildCount: 1, classifiedAs: field("education") }, { ...build(2), rebuildCount: 2, classifiedAs: field("law") }, { ...build(3), rebuildCount: 3, classifiedAs: field("education") }],
       total: 3,
     });
   const titles = () => screen.getAllByRole("link", { name: /^Build \d+$/ }).map((link) => link.textContent);
   const button = (name: RegExp) => within(screen.getByRole("columnheader", { name })).getByRole("button");
   const query = () => new URLSearchParams(address.split("?")[1]);
 
-  it("Shift-pressing Reproductions while sorted by Field writes by2=reproductions and orders within each field", async () => {
+  it("Shift-pressing Rebuilds while sorted by Field writes by2=rebuilds and orders within each field", async () => {
     three();
     renderAt("/builds?by=field");
     await screen.findByRole("link", { name: "Build 1" });
     expect(titles()).toEqual(["Build 2", "Build 1", "Build 3"]);
-    fireEvent.click(button(/^Reproductions/), { shiftKey: true });
-    await waitFor(() => expect(query().get("by2")).toBe("reproductions"));
+    fireEvent.click(button(/^Rebuilds/), { shiftKey: true });
+    await waitFor(() => expect(query().get("by2")).toBe("rebuilds"));
     expect(query().get("by")).toBe("field");
     expect(titles()).toEqual(["Build 2", "Build 3", "Build 1"]);
   });
 
-  it('the second key\'s head shows its arrow followed by "2", has no aria-sort (G18), and its button says it is the second key', async () => {
+  it('the second key\'s head shows its chevron and a "2", has no aria-sort (G18), and its button says it is the second key', async () => {
     three();
-    renderAt("/builds?by=field&by2=reproductions");
+    renderAt("/builds?by=field&by2=rebuilds");
     await screen.findByRole("link", { name: "Build 1" });
-    const second = screen.getByRole("columnheader", { name: /^Reproductions/ });
+    const second = screen.getByRole("columnheader", { name: /^Rebuilds/ });
     expect(second.getAttribute("aria-sort")).toBeNull();
-    expect(second.textContent).toBe("Reproductions↓2, then by this, descending");
+    expect(second.textContent).toBe("Rebuilds2, then by this, descending");
     expect(within(second).getByRole("button").textContent).toContain("then by this, descending");
     const sorted = screen.getAllByRole("columnheader").filter((cell) => ["ascending", "descending"].includes(cell.getAttribute("aria-sort") ?? ""));
-    expect(sorted.map((cell) => cell.textContent)).toEqual(["Field↓"]);
+    expect(sorted.map((cell) => cell.textContent)).toEqual(["Field"]);
   });
 
   it("Shift-press again flips it; a third clears it", async () => {
     three();
-    renderAt("/builds?by=field&by2=reproductions");
+    renderAt("/builds?by=field&by2=rebuilds");
     await screen.findByRole("link", { name: "Build 1" });
-    fireEvent.click(button(/^Reproductions/), { shiftKey: true });
+    fireEvent.click(button(/^Rebuilds/), { shiftKey: true });
     await waitFor(() => expect(query().get("dir2")).toBe("asc"));
     expect(titles()).toEqual(["Build 2", "Build 1", "Build 3"]);
-    fireEvent.click(button(/^Reproductions/), { shiftKey: true });
+    fireEvent.click(button(/^Rebuilds/), { shiftKey: true });
     await waitFor(() => expect(address).toBe("/builds?by=field"));
   });
 
   it("a plain press on any head clears the second key", async () => {
     three();
-    renderAt("/builds?by=field&by2=reproductions");
+    renderAt("/builds?by=field&by2=rebuilds");
     await screen.findByRole("link", { name: "Build 1" });
     fireEvent.click(button(/^Field/));
     await waitFor(() => expect(address).toBe("/builds?dir=asc&by=field"));
@@ -1103,7 +1094,7 @@ describe("BF-12 a second key with Shift", () => {
     listBuildsTable.mockResolvedValue({ builds: Array.from({ length: 50 }, (_, at) => build(at + 1)), total: 120 });
     renderAt("/builds?sort=rebuilt");
     await screen.findByRole("link", { name: "Build 1" });
-    fireEvent.click(button(/^Reproductions/), { shiftKey: true });
+    fireEvent.click(button(/^Rebuilds/), { shiftKey: true });
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(address).toBe("/builds?sort=rebuilt");
   });
@@ -1112,10 +1103,10 @@ describe("BF-12 a second key with Shift", () => {
     three();
     renderAt("/builds?by=field");
     await screen.findByRole("link", { name: "Build 1" });
-    button(/^Reproductions/).focus();
-    fireEvent.keyDown(button(/^Reproductions/), { key: "Enter", shiftKey: true });
-    await waitFor(() => expect(query().get("by2")).toBe("reproductions"));
-    fireEvent.keyDown(button(/^Reproductions/), { key: " ", shiftKey: true });
+    button(/^Rebuilds/).focus();
+    fireEvent.keyDown(button(/^Rebuilds/), { key: "Enter", shiftKey: true });
+    await waitFor(() => expect(query().get("by2")).toBe("rebuilds"));
+    fireEvent.keyDown(button(/^Rebuilds/), { key: " ", shiftKey: true });
     await waitFor(() => expect(query().get("dir2")).toBe("asc"));
   });
 });
@@ -1159,8 +1150,8 @@ describe("BF-14 match some conditions", () => {
     candidates();
     renderAt(`${THREE}&match=2`);
     await screen.findByRole("link", { name: "Build 1" });
-    await waitFor(() => expect(headText()).toMatch(/^Builds2 of 120 builds/));
-    expect(within(screen.getByRole("tablist", { name: "Lens" })).getByRole("tab", { name: /^All/ }).textContent).toContain("2");
+    await waitFor(() => expect(headText()).toMatch(/^2 of 120 builds$/));
+    expect(within(screen.getByRole("tablist", { name: "Lens" })).getByRole("tab", { name: /^All/ }).textContent).toBe("All");
   });
 
   it('when the lens holds more builds than one page, the Match control is disabled and a line says "Available when every build is loaded: <n> of <total> so far.", and Load all asks for the remaining pages', async () => {

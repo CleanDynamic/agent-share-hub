@@ -27,7 +27,8 @@ describe("BF-11 filter columns", () => {
       spread,
       worksOn,
     }).map((section) => section.id);
-    expect(ids.length).toBe(26);
+    // Synth 08: Reproductions, Last confirmed and Confirmed or stale are no longer filters in the panel.
+    expect(ids.length).toBe(23);
     for (const id of ids) {
       expect(FILTER_COLUMN, id).toHaveProperty(id);
       expect(ALL_COLUMNS).toContain(FILTER_COLUMN[id]);
@@ -52,7 +53,8 @@ describe("BF-11 filter columns", () => {
 
   it("drawnColumns: the reader's columns, then the filtered ones not already there, in the table's own order", () => {
     expect(drawnColumns(["build", "field"], ["autonomy", "field"], true, true)).toEqual(["build", "field", "autonomy"]);
-    expect(drawnColumns(["build"], ["skill", "tools", "autonomy"], true, true)).toEqual(["build", "tools", "autonomy", "skill"]);
+    // Tools is no longer a column, so the filter that names it draws none.
+    expect(drawnColumns(["build"], ["skill", "tools", "autonomy"], true, true)).toEqual(["build", "autonomy", "skill"]);
   });
 
   it("drawnColumns: with the setting off, only the reader's columns", () => {

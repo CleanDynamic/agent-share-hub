@@ -38,7 +38,7 @@ describe("groups and a name search", () => {
   it("the groups are buttons; Classification is current at first; each shows how many filters it holds", () => {
     draw((p) => ({ ...p, sections: p.sections.map((section) => (section.kind === "word" ? { ...section, options: section.options.map((option) => ({ ...option, checked: false })) } : section.kind === "scale" ? { ...section, segments: section.segments.map((segment) => ({ ...segment, on: false })) } : { ...section, value: [section.min, section.max] })) }));
     /* BF-09: a signed-in reader's saved sets are listed first, as Saved. */
-    expect(groups().map((button) => button.textContent)).toEqual(["Saved2", "Classification7", "Proof3", "Structure1", "OpenBuilds1"]);
+    expect(groups().map((button) => button.textContent)).toEqual(["Saved2", "Classification7", "Proof2", "Structure1", "OpenBuilds1"]);
     expect(screen.getByRole("button", { name: /^Classification/ }).getAttribute("aria-current")).toBe("true");
     expect(screen.getByRole("button", { name: /^Proof/ }).getAttribute("aria-current")).toBeNull();
   });
@@ -52,15 +52,15 @@ describe("groups and a name search", () => {
     draw();
     expect(shownNames()).toContain("Field");
     fireEvent.click(screen.getByRole("button", { name: /^Proof/ }));
-    expect(shownNames()).toEqual(["Reproductions", "Works on model", "Last confirmed"]);
+    expect(shownNames()).toEqual(["Rebuilds", "Works on model"]);
     expect(screen.getByRole("button", { name: /^Proof/ }).getAttribute("aria-current")).toBe("true");
   });
 
-  it('typing "conf" in Find a filter shows Last confirmed and Confirmed or stale only, each labelled with its group, and no group is current', () => {
-    draw((p) => ({ ...p, sections: [...p.sections, { kind: "word", id: "state", name: "Confirmed or stale", group: "Proof", order: "scale", value: "Any", options: [] }] }));
-    fireEvent.change(screen.getByRole("searchbox", { name: "Find a filter" }), { target: { value: "conf" } });
-    expect(shownNames()).toEqual(["Last confirmed", "Confirmed or stale"]);
-    for (const name of ["Last confirmed", "Confirmed or stale"]) expect(within(screen.getByRole("region", { name })).getByText("Proof")).toBeTruthy();
+  it('typing "model" in Find a filter shows Works on model only, labelled with its group, and no group is current', () => {
+    draw();
+    fireEvent.change(screen.getByRole("searchbox", { name: "Find a filter" }), { target: { value: "model" } });
+    expect(shownNames()).toEqual(["Works on model"]);
+    for (const name of ["Works on model"]) expect(within(screen.getByRole("region", { name })).getByText("Proof")).toBeTruthy();
     expect(groups().some((button) => button.getAttribute("aria-current") === "true")).toBe(false);
   });
 
@@ -179,7 +179,7 @@ describe("Autonomy", () => {
     expect(autonomy().getAllByRole("button").map((button) => button.textContent)).toEqual(LABELS);
   });
 
-  it("a pressed value has aria-pressed true and the selected look", () => {
+  it("a pressed value has aria-pressed true and is the Inverse pill; an unpressed one is a Card pill", () => {
     draw();
     expect(autonomy().getByRole("button", { name: "AI suggests and you approve" }).getAttribute("aria-pressed")).toBe("true");
     expect(autonomy().getByRole("button", { name: "You do each step" }).getAttribute("aria-pressed")).toBe("false");
@@ -190,10 +190,12 @@ describe("Autonomy", () => {
       </MemoryRouter>,
     );
     const pressed = markup.match(/<button[^>]*aria-pressed="true"[^>]*>AI suggests and you approve<\/button>/)?.[0] ?? "";
-    expect(pressed).toContain("background:var(--selected-fill)");
-    expect(pressed).toContain("border:1px solid var(--selected-edge)");
+    expect(pressed).toContain("background:var(--action)");
+    expect(pressed).toContain("color:var(--on-action)");
+    expect(pressed).toContain("font-weight:600");
     const off = markup.match(/<button[^>]*aria-pressed="false"[^>]*>You do each step<\/button>/)?.[0] ?? "";
-    expect(off).toContain("border:1px solid var(--label)");
+    expect(off).toContain("background:var(--module)");
+    expect(off).toContain("font-weight:500");
   });
 
   it("each button is at least 36 high", () => {
@@ -217,11 +219,11 @@ describe("Autonomy", () => {
 /* ── BF-09 P2 (A10) ── */
 
 describe("number fields", () => {
-  /** Proof's Reproductions: 0 to 40, chosen 3 to no limit, 164 counted. */
+  /** Proof's Rebuilds: 0 to 40, chosen 3 to no limit, 164 counted. */
   const reproductions = (onRange = vi.fn(), change: (props: BuildsFiltersViewProps) => BuildsFiltersViewProps = (p) => p) => {
     draw((p) => change({ ...p, onRange }));
     fireEvent.click(screen.getByRole("button", { name: /^Proof/ }));
-    return { onRange, region: within(screen.getByRole("region", { name: "Reproductions" })) };
+    return { onRange, region: within(screen.getByRole("region", { name: "Rebuilds" })) };
   };
 
   it('a range filter has two number fields, "At least" and "At most", showing the range, empty for no limit', () => {
@@ -235,46 +237,46 @@ describe("number fields", () => {
   });
 
   it("typing 3 in At least and pressing Enter calls onChange with [3, max]", () => {
-    const { onRange, region } = reproductions(vi.fn(), (p) => ({ ...p, sections: p.sections.map((section) => (section.kind === "range" && section.id === "reproductions" ? { ...section, value: [0, 40] as const } : section)) }));
+    const { onRange, region } = reproductions(vi.fn(), (p) => ({ ...p, sections: p.sections.map((section) => (section.kind === "range" && section.id === "rebuilds" ? { ...section, value: [0, 40] as const } : section)) }));
     const least = region.getByRole("spinbutton", { name: "At least" });
     fireEvent.focus(least);
     fireEvent.change(least, { target: { value: "3" } });
     fireEvent.keyDown(least, { key: "Enter" });
-    expect(onRange).toHaveBeenCalledWith("reproductions", [3, 40]);
+    expect(onRange).toHaveBeenCalledWith("rebuilds", [3, 40]);
   });
 
   it("clearing At least and leaving the field calls onChange with [0, <high>]", () => {
-    const { onRange, region } = reproductions(vi.fn(), (p) => ({ ...p, sections: p.sections.map((section) => (section.kind === "range" && section.id === "reproductions" ? { ...section, value: [3, 20] as const } : section)) }));
+    const { onRange, region } = reproductions(vi.fn(), (p) => ({ ...p, sections: p.sections.map((section) => (section.kind === "range" && section.id === "rebuilds" ? { ...section, value: [3, 20] as const } : section)) }));
     const least = region.getByRole("spinbutton", { name: "At least" });
     fireEvent.focus(least);
     fireEvent.change(least, { target: { value: "" } });
     fireEvent.blur(least);
-    expect(onRange).toHaveBeenCalledWith("reproductions", [0, 20]);
+    expect(onRange).toHaveBeenCalledWith("rebuilds", [0, 20]);
   });
 
   it("a value above the cap is held to the cap; a low above the high is held to the high", () => {
-    const { onRange, region } = reproductions(vi.fn(), (p) => ({ ...p, sections: p.sections.map((section) => (section.kind === "range" && section.id === "reproductions" ? { ...section, value: [3, 20] as const } : section)) }));
+    const { onRange, region } = reproductions(vi.fn(), (p) => ({ ...p, sections: p.sections.map((section) => (section.kind === "range" && section.id === "rebuilds" ? { ...section, value: [3, 20] as const } : section)) }));
     const most = region.getByRole("spinbutton", { name: "At most" });
     fireEvent.focus(most);
     fireEvent.change(most, { target: { value: "99" } });
     fireEvent.keyDown(most, { key: "Enter" });
-    expect(onRange).toHaveBeenLastCalledWith("reproductions", [3, 40]);
+    expect(onRange).toHaveBeenLastCalledWith("rebuilds", [3, 40]);
     const least = region.getByRole("spinbutton", { name: "At least" });
     fireEvent.focus(least);
     fireEvent.change(least, { target: { value: "30" } });
     fireEvent.keyDown(least, { key: "Enter" });
-    expect(onRange).toHaveBeenLastCalledWith("reproductions", [20, 20]);
+    expect(onRange).toHaveBeenLastCalledWith("rebuilds", [20, 20]);
   });
 
   it("with fewer than five builds counted the histogram is not drawn; the slider and fields are", () => {
     const { region } = reproductions(vi.fn(), (p) => ({ ...p, sections: p.sections.map((section) => (section.kind === "range" ? { ...section, counted: 4 } : section)) }));
-    const group = region.getByRole("group", { name: /^Reproductions,/ });
+    const group = region.getByRole("group", { name: /^Rebuilds,/ });
     expect(group.querySelector('[aria-hidden="true"] > span')).toBeNull();
     expect(region.getAllByRole("slider")).toHaveLength(2);
     expect(region.getByRole("spinbutton", { name: "At least" })).toBeTruthy();
     cleanup();
     const drawn = reproductions();
-    expect(drawn.region.getByRole("group", { name: /^Reproductions,/ }).querySelectorAll('[aria-hidden="true"] > span').length).toBeGreaterThan(0);
+    expect(drawn.region.getByRole("group", { name: /^Rebuilds,/ }).querySelectorAll('[aria-hidden="true"] > span').length).toBeGreaterThan(0);
   });
 });
 

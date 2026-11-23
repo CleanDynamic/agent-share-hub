@@ -91,7 +91,7 @@ describe("the build page with a thread", () => {
 
     const row = within(hero).getByTestId("build-author-row");
     expect(within(row).getByText("Maya Okafor")).toBeTruthy();
-    expect(row.textContent).toContain("@maya · 6 Oct");
+    expect(row.textContent).toContain("@maya · published 6 Oct");
     expect(row.querySelector("[data-made-with]")).toBeNull();
     expect(row.querySelector('[data-ui="avatar"]')?.getAttribute("style") ?? row.innerHTML).toMatch(/20px/);
     expect(screen.queryByTestId("build-shape-tag")).toBeNull();
@@ -99,13 +99,15 @@ describe("the build page with a thread", () => {
     expect(within(hero).getByText("First I sorted the inbox by hand.")).toBeTruthy();
     expect(hero.querySelector('[data-thread-mode="page"]')).not.toBeNull();
     expect(hero.querySelector("[data-post-region]")?.getAttribute("data-post-region")).toBe("closed");
+    // Synth 08: the toggle says where the thread stands: "1 of 3 posts · Show more".
+    expect(within(hero).getByRole("button", { name: "1 of 3 posts · Show more" })).toBeTruthy();
     fireEvent.click(within(hero).getByRole("button", { name: /show more/i }));
     for (const text of ["Then I taught the agent the rules.", "It now clears forty a day."]) {
       expect(within(hero).getByText(text)).toBeTruthy();
     }
     expect(hero.querySelector("[data-post-region]")?.getAttribute("data-post-region")).toBe("open");
-    expect(within(hero).getByRole("heading", { level: 2, name: "Post" })).toBeTruthy();
-    expect(within(hero).getByText("1 of 3 posts")).toBeTruthy();
+    expect(within(hero).queryByRole("heading", { level: 2, name: "Post" })).toBeNull();
+    expect(within(hero).getByRole("button", { name: "Show less" })).toBeTruthy();
 
     expect(within(hero).queryByRole("img", { name: /· Result$/ })).toBeNull();
     expect(hero.querySelector('[data-ui="picture-light"]')).toBeNull();
@@ -123,18 +125,16 @@ describe("the build page with a thread", () => {
     expect(screen.queryByTestId("build-contributors")).toBeNull();
   });
 
-  it("has one primary button, Rebuild, More, and a More menu with Download, Lineage and, on a rebuild, Compare", async () => {
+  it("has Rebuild as the main button, then Copy for AI, Download, Lineage and, on a rebuild, Compare with the original", () => {
     const p = props({ rebuilt: true });
     mount({ ...p, actions: { ...p.actions, compareTo: "/compare/inbox-triage" } });
     const group = screen.getByRole("group", { name: "Take this build" });
-    expect(within(group).getAllByRole("button").map((button) => button.textContent ?? button.getAttribute("aria-label"))).toEqual(["Copy for AI", "Rebuild", ""]);
-    expect(within(group).getByRole("button", { name: "More actions" })).toBeTruthy();
+    expect(within(group).getAllByRole("button").map((button) => button.textContent)).toEqual(["Rebuild", "Copy for AI", "Download"]);
+    expect(within(group).getAllByRole("link").map((link) => link.textContent)).toEqual(["Lineage", "Compare with the original"]);
     expect(group.querySelectorAll('button[data-testid="build-copy-for-ai"]')).toHaveLength(1);
-    fireEvent.keyDown(within(group).getByRole("button", { name: "More actions" }), { key: "Enter" });
-    const items = (await screen.findAllByRole("menuitem")).map((entry) => entry.textContent);
-    expect(items).toEqual(expect.arrayContaining(["Download the build", "Lineage", "Compare with the original"]));
-    expect(items.indexOf("Download the build")).toBeLessThan(items.indexOf("Lineage"));
+    expect(within(group).queryByRole("button", { name: "More actions" })).toBeNull();
     expect(screen.getByTestId("build-lineage").getAttribute("href")).toBe(p.actions.lineageTo);
+    expect(screen.getByTestId("build-compare").getAttribute("href")).toBe("/compare/inbox-triage");
   });
 
   it("keeps Copy for AI, Rebuild and Follow by name, and Follow calls through", () => {
@@ -163,8 +163,9 @@ describe("the build page with a thread", () => {
 
   it("puts the actions in the title block and the engagement row under the post, with no Rebuild in it", () => {
     mount(props());
-    // Page shell: the title and its actions are the page's PageHeader on a desktop.
-    expect(within(screen.getByRole("heading", { level: 1 }).closest("header")!).getByRole("group", { name: "Take this build" })).toBeTruthy();
+    // Synth 08: the title and its actions are the head of the main panel.
+    expect(within(screen.getByTestId("build-title-block")).getByRole("heading", { level: 1 })).toBeTruthy();
+    expect(within(screen.getByTestId("build-title-block")).getByRole("group", { name: "Take this build" })).toBeTruthy();
     const hero = screen.getByTestId("build-hero");
     const engagement = within(hero).getByTestId("engagement-row");
     expect(engagement.querySelector('[data-engagement-action="rebuild"]')).toBeNull();
@@ -185,34 +186,34 @@ describe("the build page with a thread", () => {
     expect(screen.getByTestId("build-hero").textContent).not.toContain("made by");
   });
 
-  it("lays the thread and The build in one left column and the reproduction in the right", () => {
+  it("lays the thread and The build in the main panel and What you need in the side panel", () => {
     screenIs("wide");
     mount(props());
     // UX-03 P2: one layout with a thread or without.
     const row = screen.getByTestId("build-main-row");
-    // Page shell: the page grid's main and side template.
+    // Synth 08: two panels, main and side.
     expect(row.style.display).toBe("grid");
     const [left, right] = Array.from(row.children) as HTMLElement[];
     expect(left.contains(screen.getByTestId("build-hero"))).toBe(true);
     expect(left.contains(screen.getByTestId("build-steps-panel"))).toBe(true);
-    expect(right.contains(screen.getByTestId("build-proof"))).toBe(true);
+    expect(screen.queryByTestId("build-proof")).toBeNull();
     expect(right.contains(screen.getByTestId("build-need"))).toBe(true);
   });
 });
 
 describe("the build page without a thread", () => {
-  it("is today's hero: the well, the result window and the dock over it", () => {
+  it("is the hero: the title block, then the well and the result window", () => {
     mount(props({ thread: null }));
     const hero = screen.getByTestId("build-hero");
     expect(hero.getAttribute("data-hero")).toBeNull();
     expect(within(hero).getByRole("img", { name: /· Result$/ })).toBeTruthy();
-    // Page shell: the dock is the page header's action on a desktop.
-    expect(within(screen.getByRole("heading", { level: 1 }).closest("header")!).getByRole("group", { name: "Take this build" })).toBeTruthy();
+    expect(within(hero).getByRole("heading", { level: 1 })).toBeTruthy();
+    expect(within(hero).getByRole("group", { name: "Take this build" })).toBeTruthy();
     expect(screen.queryByTestId("build-thread")).toBeNull();
     expect(screen.queryByRole("button", { name: /^Follow/ })).toBeNull();
     // UX-03 P2: the same two columns as a thread's: the hero, then The build, on the left; the reproduction on the right.
     expect(screen.getByTestId("build-wide-column").contains(hero)).toBe(true);
-    expect(screen.getByTestId("build-side-column").contains(screen.getByTestId("build-proof"))).toBe(true);
+    expect(screen.getByTestId("build-side-column").contains(screen.getByTestId("build-need"))).toBe(true);
   });
 });
 
@@ -224,7 +225,7 @@ describe("the build page with a thread on a phone", () => {
     expect(title.style.flexDirection).toBe("column");
     expect(within(title).getByRole("group", { name: "Take this build" })).toBeTruthy();
     expect(screen.getAllByRole("group", { name: "Take this build" })).toHaveLength(1);
-    const order = ["build-hero", "build-proof", "build-steps"].map((id) => screen.getByTestId(id));
+    const order = ["build-hero", "build-steps", "build-need"].map((id) => screen.getByTestId(id));
     for (let i = 1; i < order.length; i += 1) {
       expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     }

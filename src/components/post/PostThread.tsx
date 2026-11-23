@@ -245,7 +245,7 @@ function Toggle({
           ...ring(state.focusVisible),
         }}
       >
-        {loading ? "Loading…" : open ? "Show less" : `Show more · ${more === 1 ? "1 more post" : `${more} more posts`}`}
+        {loading ? "Loading…" : open ? "Show less" : `1 of ${more + 1} posts · Show more`}
       </button>
     );
   }

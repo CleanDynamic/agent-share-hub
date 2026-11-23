@@ -4,9 +4,9 @@
    dev page `vision-builds-table` and the views' tests). Every name, number and sentence is sample content. The board's
    letter tiles are the real marks of the tools they stand for. */
 
-import { statParts, type BuildsViewProps } from "@/pages/site/builds/BuildsView";
+import type { BuildsViewProps } from "@/pages/site/builds/BuildsView";
 import type { FilterSection, WordOption } from "@/pages/site/builds/BuildsFiltersView";
-import { COLUMN_ORDER, type BuildsTableViewProps, type TableRowView } from "@/pages/site/builds/BuildsTableView";
+import { DEFAULT_COLUMNS, type BuildsTableViewProps, type TableRowView } from "@/pages/site/builds/BuildsTableView";
 
 const noop = () => undefined;
 
@@ -30,8 +30,8 @@ export const visionBuildsSections: FilterSection[] = [
   },
   {
     kind: "range",
-    id: "reproductions",
-    name: "Reproductions",
+    id: "rebuilds",
+    name: "Rebuilds",
     group: "Proof",
     valueText: "3 or more",
     histogram: bars([22, 18, 14, 12, 10, 9, 8, 7, 6, 5, 5, 4, 4, 3, 3, 2, 2, 2, 1, 1], 2, 19),
@@ -83,7 +83,6 @@ export const visionBuildsSections: FilterSection[] = [
   { kind: "word", id: "task", name: "Task", group: "Classification", order: "count", value: "Any", options: words([["Drafting", 12, false], ["Research", 8, false]]) },
   { kind: "word", id: "built", name: "What was built", group: "Classification", order: "count", value: "Any", options: words([["Automation workflow", 9, false], ["Configured assistant", 6, false]]) },
   { kind: "word", id: "technique", name: "Techniques", group: "Classification", order: "count", value: "Any", options: [] },
-  { kind: "word", id: "within", name: "Last confirmed", group: "Proof", order: "scale", value: "Any", options: [["Within 7 days", false], ["Within 30 days", false], ["Within 90 days", false]].map(([label, checked]) => ({ key: String(label), label: String(label), checked: Boolean(checked) })) },
   { kind: "word", id: "cost", name: "Cost to run", group: "Classification", order: "scale", value: "Any", options: words([["Free plans are enough", 14, false], ["Needs a paid plan", 6, false]]) },
   { kind: "word", id: "open", name: "Still open", group: "OpenBuilds", order: "az", value: "Any", options: words([["Has a still-open topic", 3, false]]) },
 ];
@@ -137,8 +136,8 @@ export const visionBuildsRows: TableRowView[] = DATA.map((d, index) => ({
 
 export function visionBuildsTableProps(): BuildsViewProps {
   return {
-    figure: "18 builds",
-    parts: statParts({ published: 120, runsThisWeek: 214, freshPct: 78 }),
+    figure: "Builds",
+    parts: [{ text: "120 builds" }],
     view: "table",
     hrefFor: () => "#",
     filters: {
@@ -168,21 +167,21 @@ export function visionBuildsTableProps(): BuildsViewProps {
       onAddColumns: noop,
     },
     table: {
-      lenses: [{ value: "all", label: "All" }, { value: "proven", label: "Reproduced" }, { value: "rebuilt", label: "Rebuilt" }, { value: "unsolved", label: "Still open" }],
+      lenses: [{ value: "all", label: "All" }, { value: "rebuilt", label: "Rebuilt", count: 34 }, { value: "unsolved", label: "Still open", count: 9 }],
       lens: "all",
       onLens: noop,
-      columnsLabel: "12 of 24",
-      chips: [["Field", "Sales"], ["Tools", "Claude Code"], ["Reproductions", "3 or more"], ["Works on", "Opus 5.5"], ["Steps", "5 to 30"], ["Autonomy", "2 of 4"]].map(([name, value]) => ({ key: name, name, value })),
+      columnsLabel: "8 of 24",
+      chips: [["Field", "Sales"], ["Tools", "Claude Code"], ["Works on", "Opus 5.5"], ["Steps", "5 to 30"], ["Autonomy", "2 of 4"]].map(([name, value]) => ({ key: name, name, value })),
       onRemoveChip: noop,
       onClearAll: noop,
-      columns: COLUMN_ORDER,
+      columns: DEFAULT_COLUMNS,
       rows: visionBuildsRows,
-      sortColumn: { id: "reproductions", ascending: false },
-      sortable: new Set(["reproductions", "confirmed", "rebuilds"]),
+      sortColumn: { id: "steps", ascending: false },
+      sortable: new Set(["steps", "sessions", "rebuilds"]),
       onSortColumn: noop,
       /* BF-11: the drawn columns the sample's chips filter on. */
-      filtered: new Set(["field", "tools", "reproductions", "steps"]),
-      footer: { count: "18 builds", byColumn: { field: "Sales", tools: "Claude Code", steps: "Median 11", reproductions: "Total 214" }, onCalculate: noop },
+      filtered: new Set(["field", "steps"]),
+      footer: { count: "18 builds", byColumn: { field: "Sales", steps: "Median 11" }, onCalculate: noop },
     },
   };
 }
