@@ -77,25 +77,27 @@ describe("F30, F36 and F37 · one Model, one way of saving, the same sections", 
     open("maker", { goesInto: [] });
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getAllByRole("group", { name: "Model" })).toHaveLength(1);
-    expect(within(dialog).getAllByRole("button", { name: /^Model( |$)/ })).toHaveLength(1);
+    // The model is chosen with the session's harness, never in the window: no Model control here.
+    expect(within(dialog).queryAllByRole("button", { name: /^Model( |$)/ })).toHaveLength(0);
     expect(within(screen.getByTestId("edit-goes-into")).getByTestId("edit-goes-into-empty").textContent).toBe("Not used by any step yet");
     const order = (root: HTMLElement) => ["edit-uses", "edit-makes", "edit-goes-into"].map((id) => within(root).getByTestId(id)).map((el) => el.compareDocumentPosition(within(root).getByRole("group", { name: "Model" })) & Node.DOCUMENT_POSITION_PRECEDING ? "after" : "before");
     expect(order(dialog)).toEqual(["after", "after", "after"]);
     // Model settings no longer draws the model: effort and instructions only.
-    fireEvent.click(within(dialog).getByRole("button", { name: /^Optional/ }));
+    fireEvent.click(within(dialog).getByRole("button", { name: /optional details?$/ }));
     expect(within(dialog).getByText("Model settings")).toBeTruthy();
-    expect(within(dialog).getAllByRole("button", { name: /^Model( |$)/ })).toHaveLength(1);
+    expect(within(dialog).queryAllByRole("button", { name: /^Model( |$)/ })).toHaveLength(0);
   });
 
-  it("F37: a prompt in a session with no model of its own reads the session's, as From session; no session at all says so", () => {
+  it("F37: the model is the session's, read only, and says where it is chosen; no session at all says so", () => {
     // p3 sits in Session 2 (Claude Code · Sonnet 5.5) in the bakery fixture.
     open("maker", { typed: false, model: null, tool: null }, { groups: true });
-    expect(screen.getByTestId("model-from-session").textContent).toBe("From session: Sonnet 5.5");
+    expect(screen.getByTestId("model-from-session").textContent).toBe("Sonnet 5.5");
+    expect(screen.getByText("Chosen with the session's harness. Another model is another session.")).toBeTruthy();
     expect(screen.queryByText("No session to read the model from")).toBeNull();
     cleanup();
-    // p4 was typed here, into no session: the line says so.
+    // p4 was typed here, into no session: the line says so, and there is still nothing to pick.
     open("maker", { id: "p4", typed: true, model: null, tool: "ChatGPT" }, { groups: true, openId: "p4" });
-    expect(screen.getByText("No session to read the model from")).toBeTruthy();
-    expect(screen.queryByTestId("model-from-session")).toBeNull();
+    expect(screen.getByTestId("model-from-session").textContent).toBe("No session to read the model from");
+    expect(screen.queryAllByRole("button", { name: /^Model( |$)/ })).toHaveLength(0);
   });
 });

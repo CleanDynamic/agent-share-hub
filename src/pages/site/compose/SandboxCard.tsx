@@ -489,7 +489,7 @@ function CardBody(props: SandboxCardProps & { guard: CloseGuard }) {
         <span data-testid="card-required" role="status" style={FOOT_NOTE}>
           {notSaved ? NOT_SAVED_LINE : titleOk ? "Required fields complete" : "Required: a title"}
         </span>
-        <RecipeButton phone={phone} onClick={() => props.onOpenChange(false)}>
+        <RecipeButton variant="ghost" phone={phone} onClick={() => props.onOpenChange(false)}>
           Cancel
         </RecipeButton>
         <RecipeButton variant="primary" phone={phone} disabled={!titleOk || saving} onClick={() => void onSave()}>

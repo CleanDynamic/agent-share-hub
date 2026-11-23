@@ -233,7 +233,8 @@ const PROMPT: readonly SectionDef[] = [
   GOES,
   S("settings", "Model settings", "", (tile) => {
     const settings = settingsOf(payloadOf(tile).settings);
-    return settings ? rows([["Model", settings.model ? modelLabel(settings.model) : null], ["Reasoning effort", settings.effort !== "default" ? EFFORT_LABEL[settings.effort] : null], ["Custom instructions", settings.instructions]]) : null;
+    /* Synth 09: the model is the session's, not a setting of the prompt. */
+    return settings ? rows([["Reasoning effort", settings.effort !== "default" ? EFFORT_LABEL[settings.effort] : null], ["Custom instructions", settings.instructions]]) : null;
   }),
   S("variables", "Variables", "Format: {company name}", (tile) => {
     const names = variableNamesIn(textOf(tile));
@@ -263,7 +264,7 @@ const CODE: readonly SectionDef[] = [
   S("code", "Code", "Source code as used", (tile) => (tile.kind === "code" ? prose(tile.source, noun(tile.lines, "line"), { copy: true, code: true }) : null), true),
   S("language", "Language", "The language the code is written in", (tile) => (tile.kind === "code" ? one("Language", tile.language) : null)),
   S("filename", "File path", "", (tile) => (tile.kind === "code" ? one("File path", tile.filename) : null)),
-  S("writtenWith", "Generated with", "Tool and model", (tile) => (tile.kind === "code" ? rows([["Tool", tile.tool ? (toolName(tile.tool) ?? tile.tool) : null], ["Model", tile.model]]) : null)),
+  /* Synth 09: no "Generated with": the code was written in its session, with the session's harness and model. */
   USES,
   MAKES,
   GOES,
@@ -445,7 +446,7 @@ const SYSTEM_PROMPT: readonly SectionDef[] = [
     const scope = scopeOf(tile.payload.scope);
     return one("Applies to", scope.kind === "all" ? "All prompts" : scope.kind === "session" ? "This session" : `Selected prompts · ${scope.ids.length}`);
   }, true),
-  S("model", "Model", "", (tile) => one("Model", str(payloadOf(tile).model) ? modelLabel(str(payloadOf(tile).model)) : null)),
+  /* Synth 09: no Model: a system prompt is for its session's model. */
   S("version", "Version", "Version or date", (tile) => (tile.kind === "system_prompt" ? one("Version", systemPromptOf(tile.payload).version) : null)),
   S("variables", "Variables", "The {names} written in the text, each with a line about it", (tile) => {
     if (tile.kind !== "system_prompt") return null;

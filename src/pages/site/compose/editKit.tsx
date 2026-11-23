@@ -11,13 +11,10 @@ import { MADE_FILE_NAME_MAX, TITLE_MAX, type RuntimePatch } from "@/lib/build/gr
 
 import type { DetailsHandlers, DetailsView } from "./DetailsPanel";
 import type { GoesRow, InputOption, MakesRow, UseRow } from "./detailsModel";
-import { Block, BlockHead, FieldInput, FileButton, FileLine, Hint, Inline, LabelText, PANEL_LIST, PickerFieldButton, RecipeButton, Row, SegmentedField, Tag, TagList, TextLink } from "./modalRecipes";
+import { BODY_TEXT, Block, BlockHead, FieldInput, FileButton, FileLine, Hint, Inline, LabelText, PANEL_LIST, PickerFieldButton, RecipeButton, Row, SegmentedField, Tag, TagList, TextLink } from "./modalRecipes";
 import { modelLabel } from "@/lib/models/registry";
-import { harnessTool, modelMenu } from "@/lib/tools/modelRules";
 
-import { ModelPicker } from "./ModelPicker";
 import { ModelRunFields } from "./ModelRunFields";
-import { PairNote } from "./PairNote";
 import { PickMenu } from "./PickMenu";
 import { RunsWhenField } from "./RunsWhenField";
 import { RuntimeFields } from "./RuntimeFields";
@@ -425,6 +422,9 @@ export const PROMPT_EDIT_COPY = {
   noSession: "No session to read the model from",
   /** F37: a prompt inside a session, with no model of its own, reads the session's. */
   fromSession: (model: string) => `From session: ${model}`,
+  /** Synth 09: the model is the session's, chosen with its harness; another model is another session. */
+  chosenInSession: "Chosen with the session's harness. Another model is another session.",
+  notChosen: "Not chosen yet: choose it in the session",
   /** F36: Used by, when nothing uses the prompt yet. */
   notUsed: "Not used by any step yet",
 } as const;
@@ -441,22 +441,17 @@ export interface PromptSession {
  * weights), Uses, Makes and Goes into. The window saves as it goes, so these call their handlers as they are used, as Details did.
  */
 export function PromptEdits({ view, handlers, phone, session }: { view: Extract<DetailsView, { kind: "prompt" }>; handlers: PromptEditHandlers; phone: boolean; session?: PromptSession | null }) {
-  const [openModel, setOpenModel] = useState(0);
-  const tool = view.tool ?? session?.tool ?? null;
-  const fromSession = !view.model && session?.model ? session.model : null;
-  const asksModel = modelMenu(harnessTool(tool)).state !== "hidden" && modelMenu(harnessTool(tool)).state !== "none";
+  /* Synth 09: a prompt does not choose its model. It runs on its session's, chosen with the session's harness in the Session
+     window; moving to another model is another session. A prompt an import recorded keeps the model the transcript names. */
+  const model = session?.model ?? (view.model ? modelLabel(view.model) : null);
   return (
     <>
-      {/* F33: the label above the control, as every field in the window; F36: the one Model section. */}
-      <Block label={PROMPT_EDIT_COPY.model}>
+      <Block label={PROMPT_EDIT_COPY.model} testId="prompt-model">
         <BlockHead label={PROMPT_EDIT_COPY.model} />
-        <ModelPicker tool={tool} value={view.model} onChange={(model) => handlers.onModel(view.id, model)} phone={phone} name="Model" openSignal={openModel} anyWithoutTool field />
-        {fromSession ? (
-          <Hint testId="model-from-session">{PROMPT_EDIT_COPY.fromSession(modelLabel(fromSession))}</Hint>
-        ) : !view.model && !session && asksModel ? (
-          <Hint>{PROMPT_EDIT_COPY.noSession}</Hint>
-        ) : null}
-        <PairNote tool={tool} model={view.model} phone={phone} onChange={() => setOpenModel((n) => n + 1)} onRemove={() => handlers.onModel(view.id, null)} />
+        <span data-testid="model-from-session" style={BODY_TEXT}>
+          {model ?? (session ? PROMPT_EDIT_COPY.notChosen : PROMPT_EDIT_COPY.noSession)}
+        </span>
+        {model ? <Hint>{PROMPT_EDIT_COPY.chosenInSession}</Hint> : null}
       </Block>
       {view.modelRun && handlers.onModelRun ? (
         <Block label="How it was run" testId="edit-model-run">

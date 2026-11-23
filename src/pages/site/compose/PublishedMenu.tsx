@@ -87,7 +87,7 @@ export function PublishedOptions({ slug, title, onUnpublish, canUnpublish = true
         footer={
           <>
             <span style={{ flexGrow: 1 }} />
-            <RecipeButton small={!phone} phone={phone} data-testid="unpublish-cancel" onClick={() => setAsking(false)}>
+            <RecipeButton variant="ghost" small={!phone} phone={phone} data-testid="unpublish-cancel" onClick={() => setAsking(false)}>
               {PUBLISHED_COPY.cancel}
             </RecipeButton>
             <DangerButton

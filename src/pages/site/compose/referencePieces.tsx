@@ -333,7 +333,7 @@ export function KeepLinkDialog({ open, title, body, action, choices, onPick, onC
           </div>
           <div style={footerStyle(false)}>
             <span style={{ ...NOTE, flexGrow: 1 }} />
-            <RecipeButton small onClick={onCancel}>
+            <RecipeButton variant="ghost" small onClick={onCancel}>
               {KEEP_COPY.cancel}
             </RecipeButton>
             <RecipeButton small variant="primary" disabled={!chosen} onClick={() => chosen && onPick(chosen)}>
@@ -488,10 +488,10 @@ export function ConfirmDialog({ open, width = MODAL_WIDTH.standard, title, body,
           </div>
           <div style={footerStyle(false)}>
             <span style={{ flexGrow: 1 }} />
-            <RecipeButton small onClick={onCancel}>
+            <RecipeButton variant="ghost" small onClick={onCancel}>
               {KEEP_COPY.cancel}
             </RecipeButton>
-            <RecipeButton small onClick={onConfirm} data-tone="danger" style={{ color: DANGER }}>
+            <RecipeButton variant="danger" small onClick={onConfirm} data-tone="danger">
               {action}
             </RecipeButton>
           </div>

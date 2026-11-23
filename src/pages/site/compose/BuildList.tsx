@@ -71,6 +71,8 @@ import { MemberLabel } from "./groupLabels";
 import { REF_KIND } from "@/lib/build/postRefs";
 import { borderFor, outlineFor } from "@/lib/theme/partColour";
 import { SELECT_RING } from "@/lib/theme/refinedControl";
+import type { ReadSection } from "@/lib/build/tileSections";
+import { ContentWell, TileSections, tileSectionsOf } from "./tileContent";
 import { refTo } from "@/lib/build/thread";
 import { Glyph } from "@/components/brand/Glyph";
 import { MenuButton } from "@/components/brand/MenuButton";
@@ -109,10 +111,10 @@ import { CODE_COPY, firstLines, lineCount, looksLikeCode } from "./codeModel";
 import { getMediaById, signedMediaUrl } from "@/lib/build/media";
 import { ManualThumb } from "./ManualThumb";
 import { OutsideWarning } from "./OutsideWarning";
-import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
+import { MODEL_CLEARED_MS, MODEL_PICKER_COPY } from "./ModelPicker";
 import { CHECK_COPY, DotLine, Quiet, ToolMark } from "./refinedPieces";
 import { AgentRules, GateLine, JobLine, MentionText, TeamHead, TeamLinesContext, WaitsLine, mentionTeam } from "@/components/build/teamLines";
-import { BOX_ROWS, BoxRow, FOOT_LINK, LIST_BOX, TEXT_LINK_BOX, textLinkBox, MarkedName, listRow, NumberBadge, RESPONSE_WORD, RUN, SESSION_META, SmallCodeWell, TILE_EYEBROW, TILE_HEAD, TILE_INDENT, TILE_TEXT, TILE_TITLE, TileOptions, tileStyle as tileCard } from "./tileRecipes";
+import { FOOT_LINK, LIST_BOX, TEXT_LINK_BOX, textLinkBox, MarkedName, listRow, NumberBadge, RESPONSE_WORD, RUN, SESSION_META, SmallCodeWell, TILE_EYEBROW, TILE_HEAD, TILE_INDENT, TILE_TEXT, TILE_TITLE, TileOptions, tileStyle as tileCard } from "./tileRecipes";
 
 /** CA-15b: a tile's body and foot sit 34 in, under its title. */
 const INDENT = TILE_INDENT;
@@ -212,8 +214,8 @@ export interface BuildListProps {
   onOpenPrompt?: (id: string) => void;
   /** CA-18: a double click on any other tile opens its own window, to change it. Absent: nothing opens. A phone has no double click. */
   onEditTile?: (id: string) => void;
-  /** Synth 09: a tile's titled text box was pressed: open that box in the notepad over the tile's window. */
-  onOpenBox?: (id: string, field: string) => void;
+  /** Synth 09: what a tile's window holds, section by section (as Details reads it), for the tile's content layer. */
+  sectionsOf?: (id: string) => readonly ReadSection[] | null;
   onRename: (id: string, title: string) => void;
   onMove: (id: string, direction: -1 | 1) => Promise<unknown> | void;
   onRemove: (id: string) => void;
@@ -370,6 +372,8 @@ export function useClamped<T extends HTMLElement>(text: string) {
 
 export const clamp3: CSSProperties = { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" };
 export const clamp2: CSSProperties = PREVIEW;
+/** Synth 09: a prompt on its tile's content layer: six lines, then an ellipsis (Read all, in the tile's menu, has the rest). */
+const clampPrompt: CSSProperties = { ...PREVIEW, WebkitLineClamp: 6 };
 
 /** CA-20 P3: the tile is chosen with others, and is drawn as selected is. */
 const usePicked = (id: string): boolean => Boolean(useBuildSelectionContext()?.tiles.has(id));
@@ -453,7 +457,8 @@ interface ListRefs {
   canMove?: (id: string, by: -1 | 1) => boolean;
   /** CA-21 P3: the tile (or session or part) held right now: its own element stays in the layout, hidden, as its place. */
   hidden?: string | null;
-  onOpenBox?: BuildListProps["onOpenBox"];
+  sectionsOf?: BuildListProps["sectionsOf"];
+  onSelect?: (id: string) => void;
 }
 
 /** CA-21 P1: a tile's Move up and Move down are greyed by its place in the build, not by its number among prompts. */
@@ -758,16 +763,18 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
       <span style={{ ...text(textStep.body, 500, step.title ? t.text : t.text2), overflowWrap: "anywhere" }}>
         {[kind === "Prompt" ? null : kind, step.title ?? (kind === "Prompt" ? stepTitle(step) : named ?? (step.kind === "file" ? step.filename : null))].filter(Boolean).join(" · ")}
       </span>
-      {step.kind === "code" ? (
-        <>
-          <CodePartLine step={step} />
-          <div data-no-drag="" style={{ display: "contents" }}>
-            <CodeLines text={step.text} compact testId="code-lines" label={`${kind} text`} />
-          </div>
-        </>
-      ) : step.text ? (
-        <p style={{ ...text(textStep.body, 400, t.text), lineHeight: "23px", margin: 0, overflowWrap: "anywhere", ...clamp2 }}>{step.text}</p>
-      ) : null}
+      <StepContent step={step} inset>
+        {step.kind === "code" ? (
+          <>
+            <CodePartLine step={step} />
+            <div data-no-drag="" style={{ display: "contents" }}>
+              <CodeLines text={step.text} compact testId="code-lines" label={`${kind} text`} />
+            </div>
+          </>
+        ) : step.text ? (
+          <p style={{ ...text(textStep.body, 400, t.text), lineHeight: "23px", margin: 0, overflowWrap: "anywhere", ...clampPrompt }}>{step.text}</p>
+        ) : null}
+      </StepContent>
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} indent={0} />
       <span>
@@ -1101,24 +1108,31 @@ function TileMenu({ step, noun, index, last, props, rename }: { step: Step; noun
   );
 }
 
-/**
- * Synth 09: the tile's titled text boxes, one row each under its title: Raised, radius 8, padded 6 10, the title 13/500 and
- * the Expand glyph at the right. Pressing one opens that box in the notepad over the tile's window. Untitled boxes do not show.
- */
-function BoxRows({ step, phone }: { step: Step; phone: boolean }) {
-  const { onOpenBox } = useContext(ListRefsContext);
-  const boxes = step.boxTitles ?? [];
-  if (boxes.length === 0) return null;
+/** Synth 09: a tile's content on the notepad's tone: its own body, then every other section its window holds. */
+function StepContent({ step, inset = false, children }: { step: Step; inset?: boolean; children?: ReactNode }) {
+  const { sectionsOf, onSelect } = useContext(ListRefsContext);
+  const sections = tileSectionsOf(step.kind, sectionsOf?.(step.id) ?? []);
   return (
-    <ul data-testid="tile-box-rows" data-no-drag="" style={BOX_ROWS}>
-      {boxes.map((box) => (
-        <li key={box.field} style={{ minWidth: 0 }}>
-          <BoxRow title={box.title} field={box.field} phone={phone} onOpen={onOpenBox ? () => onOpenBox(step.id, box.field) : undefined} />
-        </li>
-      ))}
-    </ul>
+    <ContentWell inset={inset} watch={step}>
+      {children}
+      <TileSections sections={sections} onSelect={onSelect} indent={inset ? 0 : undefined} />
+    </ContentWell>
   );
 }
+
+/** Synth 09: a result's content layer: its own body and the rest of its window (its summary is its title, so it is not said again). */
+function ResultContent({ id, children }: { id: string; children: ReactNode }) {
+  const { sectionsOf, onSelect } = useContext(ListRefsContext);
+  const read = sectionsOf?.(id) ?? null;
+  const sections = (read ?? []).filter((section) => section.key !== "summary" && section.key !== "outputType" && section.key !== "url");
+  return (
+    <ContentWell inset watch={read ?? children}>
+      {children}
+      <TileSections sections={sections} onSelect={onSelect} indent={0} />
+    </ContentWell>
+  );
+}
+
 
 /**
  * A tile's header: the number in its square, a type line (11.5, `--label`) with the title under it (14 / 500, one line, an
@@ -1134,7 +1148,6 @@ function TileHeader({ step, nest, phone, typeLine, typeTestId, title, menu, sele
           {typeLine}
         </span>
         {title}
-        <BoxRows step={step} phone={phone} />
         <StillOpenLine step={step} />
         {step.gate ? <GateLine gate={step.gate} /> : null}
         {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} /> : null}
@@ -1379,16 +1392,20 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
           {[step.origin ? originLine(step.origin) : null, step.asksFor ? ASKS_FOR_LABEL[step.asksFor] : null].filter(Boolean).join(" · ")}
         </p>
       ) : null}
-      <p
-        ref={textRef}
-        style={{ ...text(textStep.body, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }}
-      >
-        {/* F19: plain words; a prompt with marked changes keeps its text as written, so the marks stay on their words. */}
-        <ChangedText text={step.changes?.length ? step.text : plainPreview(step.text)} changes={step.changes} />
-      </p>
-      {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} lean /> : null}
-      {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
-      <TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />
+      {/* Synth 09: the prompt itself, on the notepad's layer, with everything else its window holds. */}
+      <StepContent step={step}>
+        <p
+          ref={textRef}
+          data-testid="prompt-tile-text"
+          style={{ ...text(textStep.body, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clampPrompt }}
+        >
+          {/* F19: plain words; a prompt with marked changes keeps its text as written, so the marks stay on their words. */}
+          <ChangedText text={step.changes?.length ? step.text : plainPreview(step.text)} changes={step.changes} />
+        </p>
+        {step.reply ? <ReplyBlock reply={step.reply} indent={INDENT} lean /> : null}
+        {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
+        <TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />
+      </StepContent>
       <MadeLine names={props.madeNames?.[step.id]} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
@@ -1613,6 +1630,7 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
         title={<TileTitle step={step} rename={rename} noun={noun} phone={phone} />}
         menu={<TileMenu step={step} noun={noun} index={index} last={last} props={props} rename={rename} />}
       />
+      <StepContent step={step}>
       {isTeam ? (
         <>
           <TeamAgents team={step} />
@@ -1643,6 +1661,7 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
       {step.outputShape ? <ShapeChip shape={step.outputShape} indent={INDENT} /> : null}
       <TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />
       {isTeam ? null : <OutsideWarning names={outsideOf(step, props.names)} style={{ marginLeft: INDENT }} />}
+      </StepContent>
       {shown ? (
       <div data-testid="container-inside" style={{ marginLeft: INDENT, paddingLeft: 16, borderLeft: `1px solid ${t.hairlineModule}`, display: "flex", flexDirection: "column", gap: 8 }}>
         {step.children.map((child, index) => {
@@ -1770,8 +1789,10 @@ function PlainCard({ step, index, last, props, noun, body, after, link, typeLine
         title={<TileTitle step={step} rename={rename} noun={noun} phone={phone} />}
         menu={<TileMenu step={step} noun={noun} index={index} last={last} props={props} rename={rename} />}
       />
-      {body(INDENT)}
-      {after}
+      <StepContent step={step}>
+        {body(INDENT)}
+        {after}
+      </StepContent>
       <MadeLine names={props.madeNames?.[step.id]} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
@@ -1913,14 +1934,16 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
         title={<TileTitle step={step} rename={rename} noun="Code" phone={phone} />}
         menu={<TileMenu step={step} noun="Code" index={index} last={last} props={props} rename={rename} />}
       />
-      <div style={{ paddingLeft: INDENT, minWidth: 0 }}>
-        <CodePartLine step={step} />
-        <div data-no-drag="" style={{ display: "contents" }}>
-          <SmallCodeWell text={step.text} lines={all ? Number.POSITIVE_INFINITY : CODE_TILE_LINES} label={`Code ${step.number}`} />
+      <StepContent step={step}>
+        <div style={{ paddingLeft: INDENT, minWidth: 0 }}>
+          <CodePartLine step={step} />
+          <div data-no-drag="" style={{ display: "contents" }}>
+            <SmallCodeWell text={step.text} lines={all ? Number.POSITIVE_INFINITY : CODE_TILE_LINES} label={`Code ${step.number}`} />
+          </div>
         </div>
-      </div>
-      <LinkLines lines={[...callsOf(step.id, props.steps), ...definesOf(step.id, props.steps)]} onOpen={props.onSelect} indent={INDENT} />
-      <TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />
+        <LinkLines lines={[...callsOf(step.id, props.steps), ...definesOf(step.id, props.steps)]} onOpen={props.onSelect} indent={INDENT} />
+        <TileCostLines step={step} audience="maker" groups={props.costGroups ?? []} indent={INDENT} />
+      </StepContent>
       <MadeLine names={props.madeNames?.[step.id]} />
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
@@ -1986,6 +2009,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
         title={<TileTitle step={step} rename={rename} noun="Check" phone={phone} />}
         menu={<TileMenu step={step} noun="Check" index={index} last={last} props={props} rename={rename} />}
       />
+      <StepContent step={step}>
       {criteria ? (
         <p data-testid="check-criteria" style={{ ...text(textStep.body, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }}>
           <span style={{ ...text(textStep.meta, 400, t.text2) }}>Pass criteria: </span>
@@ -2002,6 +2026,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
           <span style={tnum}>{history}</span>
         </DotLine>
       ) : null}
+      </StepContent>
       <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
       <TileFoot step={step} props={props} link={openLink(step, "Check", props)} />
@@ -2057,14 +2082,17 @@ function ResultCard({ result, selected, ringed = false, onSelect, onEdit }: { re
       >
         <Glyph name="check" size={size.icon} />
       </span>
-      <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0, flexGrow: 1 }}>
         <span data-testid="result-eyebrow" style={{ ...text(textStep.meta, 400, t.label), ...ellipsis }}>
           {resultTypeLine(result.facts)}
         </span>
         <span title={result.title} style={{ ...text(textStep.body, 500, t.text), ...ellipsis }}>
           {result.title}
         </span>
-        <ResultTileBody facts={result.facts} />
+        {/* Synth 09: a result's content on the notepad's layer, with everything else its window holds. */}
+        <ResultContent id={result.id}>
+          <ResultTileBody facts={result.facts} />
+        </ResultContent>
         {/* UX-02 P5: a result has no menu: its one link opens its window, where it is read and changed. */}
         <TileFooter
           facts={[resultHolds(result.facts) ? result.holds : null, result.from ? `from prompt ${result.from}` : null]}
@@ -2126,13 +2154,7 @@ function AddPrompt({
   /** CA-02 P7: true once text was pasted in, until the field is emptied. Only pasted text is offered as code. */
   const [pasted, setPasted] = useState(false);
   const [tool, setTool] = useState<string | null>(null);
-  const [model, setModel] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [cleared, setCleared] = useState<string | null>(null);
-  const announce = useAnnounce();
-  useEffect(() => {
-    if (cleared) announce(cleared);
-  }, [cleared, announce]);
   const field = useRef<HTMLTextAreaElement | null>(null);
   const setField = useCallback(
     (element: HTMLTextAreaElement | null) => {
@@ -2157,32 +2179,19 @@ function AddPrompt({
   useEffect(() => {
     if (sessionKey === null) return;
     setTool(sessionTool ? (toolFor(sessionTool)?.id ?? sessionTool) : null);
-    setModel(null);
   }, [sessionKey, sessionTool]);
-
-  useEffect(() => {
-    if (!cleared) return;
-    const timer = window.setTimeout(() => setCleared(null), CLEARED_NOTE_MS);
-    return () => window.clearTimeout(timer);
-  }, [cleared]);
 
   const toolLabel = tool ? (toolName(tool) ?? tool.trim()) : null;
   const known = toolFor(tool);
   /* A tool that runs prompts by itself saves no prompt: the field offers to add it as an agent instead. */
   const redirect = known !== null && runsItself(known);
 
-  const changeTool = (next: string | null) => {
-    setTool(next);
-    const after = nextModelAfterToolChange(next, model);
-    if (after.cleared && model) setCleared(ADD_PROMPT_COPY.cleared(toolName(next) ?? (next ?? "").trim(), model));
-    else setCleared(null);
-    setModel(after.model);
-  };
 
   const submit = async () => {
     if (!value.trim() || busy || redirect) return;
     setBusy(true);
-    const saved = await onAddPrompt({ text: value, tool, model });
+    // Synth 09: no model of its own: the prompt runs on its session's, chosen with the session's harness.
+    const saved = await onAddPrompt({ text: value, tool, model: null });
     setBusy(false);
     if (saved) {
       setValue("");
@@ -2207,7 +2216,6 @@ function AddPrompt({
     if (saved) {
       setValue("");
       setTool(null);
-      setModel(null);
     }
   };
 
@@ -2241,9 +2249,8 @@ function AddPrompt({
         </div>
       ) : null}
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-        <ToolPicker label={`Prompt tool · ${toolLabel ?? "pick a tool"}`} value={tool} onChange={changeTool} inBuild={inBuild} allowNone phone={phone} step="prompt" />
-        {/* CA-03: this row has no field label, so the model menu says it is the model while empty (F41: "Model"); chosen, it shows the model's name. */}
-        {redirect ? null : <ModelPicker tool={tool} value={model} onChange={setModel} phone={phone} placeholder={MODEL_PICKER_COPY.label} />}
+        <ToolPicker label={`Prompt tool · ${toolLabel ?? "pick a tool"}`} value={tool} onChange={setTool} inBuild={inBuild} allowNone phone={phone} step="prompt" />
+        {/* Synth 09: no model here: a prompt runs on its session's model, chosen with the session's harness. */}
         <span style={{ flexGrow: 1 }} />
         {/* F15 (D3): the add is a button in words, not an arrow. */}
         <Button style={phone ? BUTTON_PAD : BUTTON_PAD_SMALL_TEXT} variant="primary" size={phone ? 44 : 32} fontSize={textStep.meta} data-testid="composer-add" disabled={!value.trim() || busy || redirect} onClick={() => void submit()}>
@@ -2258,9 +2265,6 @@ function AddPrompt({
           </Button>
         </div>
       ) : null}
-      <div data-testid="model-cleared">
-        {cleared ? <Quiet>{cleared}</Quiet> : null}
-      </div>
     </div>
   );
 }
@@ -2804,7 +2808,8 @@ export function BuildList(raw: BuildListProps) {
     });
   }
   const refs: ListRefs = {
-    onOpenBox: props.onOpenBox,
+    sectionsOf: props.sectionsOf,
+    onSelect: props.onSelect,
     mentioned: props.mentioned ?? NO_MENTIONS,
     onBack: props.onBackToPost,
     reveal: props.reveal ?? null,

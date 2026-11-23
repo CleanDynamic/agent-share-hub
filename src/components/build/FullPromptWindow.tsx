@@ -51,11 +51,10 @@ import { EFFORTS, EFFORT_LABEL, SETTINGS_INSTRUCTIONS_MAX, VARIABLE_DESCRIPTION_
 import { modelLabel } from "@/lib/models/registry";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE, textStep } from "@/lib/theme/type";
-import { ModelPicker } from "@/pages/site/compose/ModelPicker";
 import { OptionalField, OptionalSection, summaryOf } from "@/pages/site/compose/OptionalSection";
 import { OptionalRow, OptionalRows } from "@/pages/site/compose/OptionalRows";
 import { EYEBROW } from "@/pages/site/compose/refinedStyles";
-import { Block, BlockHead, Count, FOOT_NOTE, FieldArea, FieldInput, HEADER, HEADER_ICONS, HEADER_TEXT, Hint, IconSquare, Inline, MODAL_PAD, MODAL_WIDTH, ModalInset, RecipeButton, Row, SUBTITLE, SegmentedField, areaStyle, bodyStyle, footerStyle, BUTTON_PAD, BUTTON_PAD_SMALL_TEXT, LAYER, scrimAt, windowPlacement } from "@/pages/site/compose/modalRecipes";
+import { Block, BlockHead, Count, FOOT_NOTE, FieldArea, FieldInput, HEADER, HEADER_ICONS, HEADER_TEXT, Hint, IconSquare, Inline, MODAL_PAD, MODAL_WIDTH, ModalInset, RecipeButton, Row, SUBTITLE, SegmentedField, areaStyle, bodyStyle, footerStyle, BUTTON_PAD, BUTTON_PAD_SMALL_TEXT, LAYER, scrimAt, phoneWindowPlacement, windowPlacement } from "@/pages/site/compose/modalRecipes";
 
 import type { PromptView } from "@/pages/site/compose/DetailsPanel";
 import { PromptEdits, type PromptEditHandlers } from "@/pages/site/compose/editKit";
@@ -447,7 +446,7 @@ function PromptOptional({ props, step, tool, model, phone, picked, onMarked, mod
     <OptionalSection>
       {agent && onExtras ? <JobFields step={step} agent={agent} names={props.names ?? {}} phone={phone} onExtras={onExtras} /> : null}
       <OptionalField name={FULL_PROMPT_COPY.modelSettings} summary={settingsLine} phone={phone}>
-        {modelElsewhere ? null : <ModelPicker tool={tool} value={model} onChange={(next) => saveSettings({ model: next ?? "" })} phone={phone} field />}
+        {/* Synth 09: no model here: a prompt runs on its session's model, chosen with the session's harness. */}
         <SegmentedField<Effort> label={FULL_PROMPT_COPY.effort} phone={phone} items={EFFORTS.map((effort) => ({ value: effort, label: EFFORT_LABEL[effort] }))} value={settings.effort} onChange={(effort) => saveSettings({ effort })} />
         <FieldArea
           phone={phone}
@@ -705,8 +704,8 @@ export function FullPromptWindow(props: FullPromptWindowProps) {
           data-look={"refined"}
           style={{
             ...(phone
-              ? { position: "fixed", zIndex: LAYER.promptWindow, inset: 0, boxSizing: "border-box", overflowY: "auto", padding: "16px 16px 0", background: t.window, color: t.text, fontFamily: FIGTREE }
-              : /* F38, Synth 09: the shared window placement, its top pinned at 48 (F25), so a section that opens moves nothing above it. */
+              ? { ...phoneWindowPlacement(LAYER.promptWindow), padding: "16px 16px 0", color: t.text, fontFamily: FIGTREE }
+              : /* F38, Synth 09: the shared window placement, pinned to the centre of the browser window. */
                 windowPlacement(MODAL_WIDTH.wide, LAYER.promptWindow)),
           }}
         >

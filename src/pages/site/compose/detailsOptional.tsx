@@ -220,14 +220,14 @@ export function promptRows(payload: Raw, promptText: string): ExtraRow[] {
     {
       name: FULL_PROMPT_COPY.modelSettings,
       description: "",
-      summary: summaryOf(settings.model, effortHeld ? `${EFFORT_LABEL[settings.effort]} effort` : null, settings.instructions),
+      /* Synth 09: no model here: a prompt runs on its session's model. A model stored before is written back as it was. */
+      summary: summaryOf(effortHeld ? `${EFFORT_LABEL[settings.effort]} effort` : null, settings.instructions),
       fields: [
-        { key: "model", label: FULL_PROMPT_COPY.model, kind: "model" },
         { key: "effort", label: FULL_PROMPT_COPY.effort, kind: "choice", items: items(EFFORTS, EFFORT_LABEL) },
         { key: "instructions", label: FULL_PROMPT_COPY.instructions, kind: "text", rows: 3, max: 2000 },
       ],
-      values: { model: settings.model, effort: settings.effort === "default" ? "" : settings.effort, instructions: settings.instructions },
-      toPatch: (v) => ({ settings: { model: v.model, effort: v.effort || "default", instructions: v.instructions } }),
+      values: { effort: settings.effort === "default" ? "" : settings.effort, instructions: settings.instructions },
+      toPatch: (v) => ({ settings: { model: settings.model, effort: v.effort || "default", instructions: v.instructions } }),
     },
     /* SV-30 P3: how it was sent, and what it asks for. Both are the maker's to say; neither is read from the text. */
     {
@@ -432,17 +432,7 @@ export function codeRows(payload: Raw): ExtraRow[] {
       values: { part_of: partOfOf(payload) ?? "", runs_where: runsWhereOf(payload) ?? "" },
       toPatch: (v) => ({ part_of: v.part_of || null, runs_where: v.runs_where ?? "" }),
     },
-    {
-      name: CODE_DIALOG_COPY.writtenWith,
-      description: CODE_DIALOG_COPY.writtenWithLine,
-      summary: summaryOf(tool ? (toolName(tool) ?? tool) : null, model),
-      fields: [
-        { key: "tool", label: CODE_DIALOG_COPY.writtenWithTool, kind: "tool", placeholder: "Select a tool" },
-        { key: "model", label: "Model", kind: "model" },
-      ],
-      values: { tool, model },
-      toPatch: (v) => ({ tool: v.tool ?? "", model: v.model ?? "" }),
-    },
+    /* Synth 09: no "Generated with": the code was written in its session, with the session's harness and model. */
   ];
 }
 
@@ -468,14 +458,7 @@ export function systemPromptRows(payload: Raw): ExtraRow[] {
   const names = variableNamesIn(facts.text);
   const saved = variablesOf(payload.variables);
   return [
-    {
-      name: SYSTEM_PROMPT_DIALOG_COPY.model,
-      description: "",
-      summary: summaryOf(model),
-      fields: [{ key: "model", label: SYSTEM_PROMPT_DIALOG_COPY.model, kind: "model" }],
-      values: { model },
-      toPatch: (v) => ({ model: v.model ?? "" }),
-    },
+    /* Synth 09: no Model: a system prompt is for its session's model. */
     {
       name: SYSTEM_PROMPT_DIALOG_COPY.version,
       description: SYSTEM_PROMPT_DIALOG_COPY.versionLine,

@@ -159,7 +159,8 @@ export interface SessionView {
    * CA-04 P1: a session made here (or an old build's typed prompts, read as one): its Tool and Date can be changed.
    * `tool` is a tool id or a typed name, or null for "Typed here"; `date` is "2026-10-12", or "" when it has none yet.
    */
-  editable?: { tool: string | null; date: string };
+  /** Synth 09: a session made here chooses its harness and, with it, its model (every step in it runs on that model). */
+  editable?: { tool: string | null; date: string; model?: string | null };
   /** CA-04 P4: what the AI was given before the first prompt. Absent or empty: no Setup section. */
   setup?: readonly SetupRow[];
   /** CA-04 P6: what it worked until, when the maker said. */
@@ -405,7 +406,7 @@ export interface DetailsHandlers {
   /** TF-13: give a session whose client names no tool its tool (null: none). Absent: the picker is not shown. */
   onSessionTool?: (sessionId: string, tool: string | null) => void;
   /** CA-04 P1: change a session made here: its tool (null: "Typed here") or its day. Absent: they are shown, not edited. */
-  onSessionMeta?: (key: string, change: { tool?: string | null; date?: string }) => void;
+  onSessionMeta?: (key: string, change: { tool?: string | null; date?: string; model?: string | null }) => void;
   /** CA-04 P6: what a session worked until (null takes it off). Absent: Worked until is shown, not edited. */
   onSessionGoal?: (key: string, goal: SessionGoal | null) => void;
   /** CA-05: change what a session carries beyond its steps: its extras are written whole (a key left out goes). Absent: they are shown, not edited. */
@@ -559,7 +560,7 @@ function Prose({ value, changes, clamp, onReadAll }: { value: Extract<SectionVal
   );
 }
 
-function ValueView({ value, onSelect, clamp, onReadAll }: { value: SectionValue; onSelect?: (id: string) => void; clamp?: number; onReadAll?: () => void }) {
+export function ValueView({ value, onSelect, clamp, onReadAll }: { value: SectionValue; onSelect?: (id: string) => void; clamp?: number; onReadAll?: () => void }) {
   switch (value.type) {
     case "prose":
       return <Prose value={value} clamp={clamp} onReadAll={onReadAll} />;

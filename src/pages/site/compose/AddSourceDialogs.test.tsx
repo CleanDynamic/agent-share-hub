@@ -50,10 +50,10 @@ describe("Add › System prompt", () => {
     expect(add().disabled).toBe(false);
   });
 
-  it("lists Model, Version and Variables closed in Optional, with placeholders that are the example alone", () => {
+  it("lists Version and Variables closed in Optional (no Model: the session's harness chooses it), with placeholders that are the example alone", () => {
     open();
     expect(screen.queryByLabelText("Version")).toBeNull();
-    expect(rowNames()).toEqual(["Model", "Version", "Variables"]);
+    expect(rowNames()).toEqual(["Version", "Variables"]);
     expect((screen.getByLabelText("Name") as HTMLInputElement).placeholder).not.toMatch(/^e\.g\./);
     expect((screen.getByLabelText("Text") as HTMLTextAreaElement).placeholder).not.toMatch(/^e\.g\./);
   });

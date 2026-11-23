@@ -19,16 +19,12 @@ import { useId, useState } from "react";
 import { CodeEditorField } from "@/components/code/CodeEditorField";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { CODE_FILENAME_MAX, CODE_LANGUAGES, CODE_MAX, type CodeLanguage } from "@/lib/build/graph";
-import { nextModelAfterToolChange } from "@/lib/tools/modelRules";
-import { toolName } from "@/lib/tools/registry";
 
 import { CODE_COPY, codeLanguageFor, isCodeLanguage, lineCount, readCodeFile } from "./codeModel";
 import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from "./ModalFrame";
-import { ModelPicker } from "./ModelPicker";
 import { Alert, Block, BlockHead, FieldInput, FileButton, FileLine, Hint, Inline, MODAL_WIDTH, Row } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 import { PickMenu } from "./PickMenu";
-import { ToolPicker } from "./ToolPicker";
 
 export const CODE_DIALOG_COPY = {
   title: "Add code",
@@ -105,8 +101,9 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed, current, edit }: Pic
   const [filename, setFilename] = useState(current?.filename ?? "");
   /** Null while the language follows the text and the file name. */
   const [chosen, setChosen] = useState<CodeLanguage | null>(current?.language ?? null);
-  const [tool, setTool] = useState<string | null>(current?.tool ?? null);
-  const [model, setModel] = useState<string | null>(current?.model ?? null);
+  /* Kept as they were read, so a save writes them back unchanged: they are the session's to say now. */
+  const tool = current?.tool ?? null;
+  const model = current?.model ?? null;
   const [files, setFiles] = useState<CodeStepInput[]>([]);
   const [refused, setRefused] = useState<string[]>([]);
   const uid = useId();
@@ -179,24 +176,7 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed, current, edit }: Pic
         <OptionalField name={CODE_DIALOG_COPY.filename} summary={summaryOf(filename)} phone={phone}>
           <FieldInput phone={phone} mono aria-label={CODE_DIALOG_COPY.filename} value={filename} maxLength={CODE_FILENAME_MAX} placeholder={CODE_DIALOG_COPY.filenamePlaceholder} autoComplete="off" onChange={(event) => setFilename(event.target.value)} />
         </OptionalField>
-        <OptionalField name={CODE_DIALOG_COPY.writtenWith} description={CODE_DIALOG_COPY.writtenWithLine} summary={summaryOf(tool ? (toolName(tool) ?? tool) : null, model)} phone={phone}>
-          <ToolPicker
-            label={CODE_DIALOG_COPY.writtenWithTool}
-            value={tool}
-            onChange={(next) => {
-              setTool(next);
-              setModel(nextModelAfterToolChange(next, model).model);
-            }}
-            inBuild={inBuild}
-            allowNone
-            unpicked={tool === null}
-            phone={phone}
-            step="code"
-            placeholder={CODE_DIALOG_COPY.selectTool}
-            field
-          />
-          <ModelPicker tool={tool} value={model} onChange={setModel} phone={phone} field />
-        </OptionalField>
+        {/* Synth 09: no "Generated with": the code was written in its session, with the session's harness and model. */}
       </OptionalSection>
       {edit?.after ? edit.after({ steps: [{ source, language, filename: filename.trim() || null }], tool, model }) : null}
     </ModalForm>

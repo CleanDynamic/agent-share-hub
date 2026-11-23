@@ -351,7 +351,7 @@ function GroupForm(props: ReferenceGroupWindowProps) {
         <span data-testid="group-window-note" role="status" style={FOOT_NOTE}>
           {note ?? ""}
         </span>
-        <RecipeButton phone={phone} onClick={onClose}>
+        <RecipeButton variant="ghost" phone={phone} onClick={onClose}>
           {GROUP_WINDOW_COPY.cancel}
         </RecipeButton>
         <RecipeButton variant="primary" phone={phone} disabled={Boolean(note)} onClick={() => onSave(draft) && onClose()}>

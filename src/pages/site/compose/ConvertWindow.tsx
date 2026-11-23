@@ -28,7 +28,7 @@ export function ConvertWindow({ conversion, onClose, onConfirm }: { conversion: 
       testId="convert-window"
       buttons={
         <>
-          <RecipeButton small={!phone} phone={phone} onClick={onClose}>
+          <RecipeButton variant="ghost" small={!phone} phone={phone} onClick={onClose}>
             Cancel
           </RecipeButton>
           <RecipeButton variant="primary" small={!phone} phone={phone} data-testid="convert-confirm" onClick={onConfirm}>

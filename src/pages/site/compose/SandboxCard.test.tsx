@@ -268,12 +268,12 @@ describe("F20 to F28 · the Optional rows of the Classification", () => {
     for (const head of heads) expect(within(head).queryByTestId("optional-row-count")?.textContent ?? "").not.toBe("From the build");
   });
 
-  it("F25: the window is pinned 48 from the top and its body scrolls inside", async () => {
+  it("F25: the window is centred in the browser window, at most 48 from its top and foot, and its body scrolls inside", async () => {
     live();
     mount();
     const sheet = await screen.findByTestId("sandbox-card");
-    expect(sheet.style.top).toBe("48px");
-    expect(sheet.style.transform).toBe("translateX(-50%)");
+    expect(sheet.style.top).toBe("50%");
+    expect(sheet.style.transform).toBe("translate(-50%, -50%)");
     expect(sheet.style.maxHeight).toBe("calc(100dvh - 96px)");
     expect(screen.getByTestId("card-body").style.overflowY).toBe("auto");
   });

@@ -1,23 +1,20 @@
-// The bottom sheet (UI-P19): a real dialog that rises from the bottom edge.
+// The phone's window (UI-P19, centred since Synth 09): a real dialog, pinned to the centre of the screen like every
+// window on a computer. (Its name is kept from when it rose from the bottom edge.)
 //
 // Built on `@radix-ui/react-dialog`, so focus is trapped, Escape closes and the
-// page behind is inert. The overlay is `--sheet-dim`; the sheet is `--solid`
-// with a 1px `--glass-border` top edge and `--shadow-sheet`, radius 22px 22px
-// 0 0, padded to clear the home indicator, at most 88dvh tall and scrolling on
-// its own. A grabber (40×5, `--line`) sits centred at the top: dragging it down
-// more than 80px closes the sheet. A visible Close control (an `IconButton`) is
-// there for keyboard and pointer users who do not drag. The title is required —
-// it is the dialog's accessible name — and may be visually hidden.
+// page behind is inert. It takes the window recipe: `--window`, a 1px
+// `--window-border`, radius 12, `--sheet-shadow`, over `--scrim`, no blur;
+// 16 from the screen's sides, at most the screen's height less 16 above and
+// below (clear of the notch and the home indicator), scrolling on its own. A
+// visible Close control (an `IconButton`) closes it, as Escape and a tap on the
+// scrim do. The title is required: it is the dialog's accessible name, and may
+// be visually hidden.
 //
-// NOTHING BLURS: the sheet is solid on purpose; only the header and dock blur.
-//
-// DENSER SINCE UI-P55: 9 between its parts, 7px 12px 17px around them, the title
-// 15px; the grabber, its 80px drag and the Close control's drawn 38 are as they
-// were (the IconButton renders that 38 at 31).
+// 9 between its parts, 12 around them, the title 15px.
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
-import { useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { useWindowFocus } from "@/lib/focus/windowFocus";
 import { IconButton } from "@/components/brand/IconButton";
@@ -25,8 +22,8 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 
-/** A downward drag of more than this many px on the grabber closes the sheet. */
-export const SHEET_DRAG_CLOSE_PX = 80;
+/** How far the window stands in from the screen's edges. */
+export const SHEET_EDGE = 16;
 
 export interface BottomSheetProps {
   open: boolean;
@@ -39,72 +36,40 @@ export interface BottomSheetProps {
 }
 
 export function BottomSheet({ open, onOpenChange, title, hideTitle = false, children }: BottomSheetProps) {
-  /* UI-P87, refined: the window recipe, as a side sheet: `--window`, a 1px `--window-border`, radius 12 at the top,
-     `--sheet-shadow`, over `--scrim`, no blur. Everything else, the drag to close included, is the same. */
   const focus = useWindowFocus(open);
-  const start = useRef<number | null>(null);
-  const [drag, setDrag] = useState(0);
-
-  const onDown = (event: PointerEvent<HTMLDivElement>) => {
-    start.current = event.clientY;
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-  };
-  const onMove = (event: PointerEvent<HTMLDivElement>) => {
-    if (start.current === null) return;
-    setDrag(Math.max(0, event.clientY - start.current));
-  };
-  const onUp = () => {
-    const far = drag > SHEET_DRAG_CLOSE_PX;
-    start.current = null;
-    setDrag(0);
-    if (far) onOpenChange(false);
-  };
-
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 40 }} />
         <Dialog.Content
           data-testid="bottom-sheet"
-          data-motion="sheet"
           aria-describedby={undefined}
           onOpenAutoFocus={focus.onOpenAutoFocus}
           onCloseAutoFocus={focus.onCloseAutoFocus}
           style={{
             position: "fixed",
-            left: 0,
-            right: 0,
-            bottom: 0,
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
             zIndex: 41,
             display: "flex",
             flexDirection: "column",
             gap: 9,
-            maxHeight: "88dvh",
+            width: `calc(100vw - ${2 * SHEET_EDGE}px)`,
+            maxHeight: `calc(100dvh - ${2 * SHEET_EDGE}px - env(safe-area-inset-top) - env(safe-area-inset-bottom))`,
             overflowY: "auto",
+            overscrollBehavior: "contain",
             boxSizing: "border-box",
-            padding: "7px 12px calc(17px + env(safe-area-inset-bottom))",
-            ...{
-              borderRadius: "12px 12px 0 0",
-              background: t.window,
-              border: `1px solid ${t.windowBorder}`,
-              borderBottom: 0,
-              boxShadow: t.sheetShadow,
-            },
+            /* No padding at the foot: a footer pinned to the bottom of the scroll sits on the window's edge, with nothing under it. */
+            padding: "12px 12px 0",
+            borderRadius: 12,
+            background: t.window,
+            border: `1px solid ${t.windowBorder}`,
+            boxShadow: t.sheetShadow,
             color: t.text,
             fontFamily: FIGTREE,
-            transform: drag ? `translateY(${drag}px)` : undefined,
           }}
         >
-          <div
-            data-testid="sheet-grabber"
-            onPointerDown={onDown}
-            onPointerMove={onMove}
-            onPointerUp={onUp}
-            onPointerCancel={onUp}
-            style={{ alignSelf: "center", padding: "4px 17px", touchAction: "none", cursor: "grab" }}
-          >
-            <div style={{ width: 40, height: 5, borderRadius: 3, background: t.line }} />
-          </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 9 }}>
             <Dialog.Title
               style={

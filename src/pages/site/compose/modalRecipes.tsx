@@ -77,9 +77,9 @@ import { TEXT_LINK_BOX } from "./tileRecipes";
 export const MODAL_WIDTH = { standard: 440, wide: 440, confirm: 420, shortcuts: 460 } as const;
 
 /* ── where a window stands (Synth 09) ──
-   Every editor window on a computer stands in one place: its top edge pinned 48 from the top of the window (so opening an
-   optional row grows it downward and nothing above moves), centred across, 440 wide at most `100vw - 32`, and at most the
-   window's height less 48 above and below; its body scrolls inside. Below 768 every one is a bottom sheet instead.
+   Every editor window on a computer stands in one place: centred in the browser window, across and down, 440 wide at most
+   `100vw - 32`, and at most the window's height less 48 above and below; its body scrolls inside. Below 768 every one is a
+   bottom sheet instead.
 
    One ladder of layers, so a window opened over another, a menu opened inside one, and the notepad over any of them always
    land in the right order (each scrim is its window's layer less one). */
@@ -90,12 +90,30 @@ import { LAYER } from "./layers";
 /** A window's placement and frame on a computer, at its layer. */
 export const windowPlacement = (width: number, layer: number = LAYER.window): CSSProperties => ({
   position: "fixed",
-  top: WINDOW_TOP,
+  top: "50%",
   left: "50%",
-  transform: "translateX(-50%)",
+  transform: "translate(-50%, -50%)",
   zIndex: layer,
   ...frameStyle(width),
   maxHeight: `calc(100dvh - ${2 * WINDOW_TOP}px)`,
+});
+
+/** A window on a phone: pinned to the centre of the screen too, 16 from its sides and at most its height less 16 above and below. */
+export const phoneWindowPlacement = (layer: number = LAYER.window): CSSProperties => ({
+  position: "fixed",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  zIndex: layer,
+  boxSizing: "border-box",
+  width: "calc(100vw - 32px)",
+  maxHeight: "calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom))",
+  overflowY: "auto",
+  overscrollBehavior: "contain",
+  background: t.window,
+  border: `1px solid ${t.windowBorder}`,
+  borderRadius: r.panel,
+  boxShadow: t.windowShadow,
 });
 
 /** The scrim under a window at `layer`. */
@@ -486,9 +504,6 @@ export interface FieldAreaProps extends Omit<TextareaHTMLAttributes<HTMLTextArea
   rows: number;
   mono?: boolean;
   ref?: Ref<HTMLTextAreaElement>;
-  /** The box's optional title; with `onTitleChange` the caller owns it, without them it is kept here. */
-  title?: string;
-  onTitleChange?: (title: string) => void;
 }
 
 /** The text a native control now holds, written back so a controlled field's own `onChange` runs. */
@@ -497,28 +512,6 @@ function writeBack(box: HTMLTextAreaElement, text: string) {
   set?.call(box, text);
   box.dispatchEvent(new Event("input", { bubbles: true }));
 }
-
-/* ── Synth 09: titled text boxes ──
-   A window's boxes start from the titles the tile has (`seed`, by box name) and, when its form is submitted, hand every
-   box's title to `commit` (blank ones too, so a cleared title comes off). `expand` names a box to open in the notepad as the
-   window opens: a tile's titled row does that, and Done then saves the window. Provided round a window by whoever opens it
-   (the editor page for an Add, the tile's own edit window); without it a title lives only while the window is open. */
-
-export interface BoxTitleSink {
-  seed?: Readonly<Record<string, string>>;
-  commit?: (titles: Record<string, string>) => void;
-  expand?: string | null;
-  /** A window that saves as it goes (the prompt window): a box's title, written when its title field is left or the notepad is Done. */
-  onTitle?: (name: string, title: string) => void;
-}
-export const BoxTitleSinkContext = createContext<BoxTitleSink>({});
-
-/** What a form gives its boxes: where each one writes its title, and how Done in an expanded box saves the window. */
-export interface BoxTitleCollector {
-  set: (name: string, title: string) => void;
-  submit: () => void;
-}
-export const BoxTitleCollectorContext = createContext<BoxTitleCollector | null>(null);
 
 /** The words a box is called, for the notepad's head: its own name, or its label's. */
 function nameOf(box: HTMLTextAreaElement | null): string {
@@ -530,111 +523,56 @@ function nameOf(box: HTMLTextAreaElement | null): string {
 }
 
 /**
- * A text area, as Synth 06 draws every text box in a modal: empty (no placeholder words), with an optional title above it
- * ("Title · optional", a 32 tall field) and an Expand button in its top right corner that opens the text in the notepad.
- * The title is shared with the notepad: editing one edits the other. An untitled box shows nowhere else.
+ * A text area, as Synth 06 draws every text box in a modal: empty (no placeholder words), with an Expand button in its top
+ * right corner that opens the text in the notepad. Done in the notepad writes the text back to the box.
  */
 /* `placeholder` is accepted so callers compile and is not drawn: a box in a modal is empty. */
-export function FieldArea({ phone, rows, mono = false, onFocus, onBlur, title, onTitleChange, ref, placeholder: _placeholder, ...rest }: FieldAreaProps) {
+export function FieldArea({ phone, rows, mono = false, onFocus, onBlur, ref, placeholder: _placeholder, ...rest }: FieldAreaProps) {
   const focus = useFocused<HTMLTextAreaElement>(onFocus, onBlur);
   const box = useRef<HTMLTextAreaElement | null>(null);
   const expand = useRef<HTMLButtonElement>(null);
-  const sink = useContext(BoxTitleSinkContext);
-  const collector = useContext(BoxTitleCollectorContext);
-  const [kept, setKept] = useState(title ?? (rest["aria-label"] ? (sink.seed?.[rest["aria-label"]] ?? "") : ""));
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
-  /** Opened from the tile's titled row: Done saves the window too. */
-  const [fromTile, setFromTile] = useState(false);
-  const shownTitle = onTitleChange ? (title ?? "") : kept;
-  const setTitle = (next: string) => {
-    if (onTitleChange) onTitleChange(next);
-    else setKept(next);
-    collector?.set(nameOf(box.current), next);
-  };
-  const name = rest["aria-label"] ?? "";
-  /* A box named by its <label> (not aria-label) learns its name once drawn: its seeded title, and the box the tile asked for. */
-  useEffect(() => {
-    const named = nameOf(box.current);
-    const seeded = sink.seed?.[named];
-    if (!onTitleChange && !kept && seeded) {
-      setKept(seeded);
-      collector?.set(named, seeded);
-    } else if (shownTitle) collector?.set(named, shownTitle);
-    if (sink.expand && sink.expand === named) {
-      setText(box.current?.value ?? "");
-      setFromTile(true);
-      setOpen(true);
-    }
-    // Once, as the window opens.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  const titleId = useId();
   return (
-    <div data-testid="field-area" style={{ display: "flex", flexDirection: "column", gap: space[2], minWidth: 0 }}>
-      <div style={{ display: "grid", gridTemplateColumns: phone ? "minmax(0, 1fr)" : "96px minmax(0, 1fr)", columnGap: space[3], rowGap: space[1], alignItems: "center" }}>
-        <label htmlFor={titleId} style={{ ...HINT, whiteSpace: "nowrap" }}>
-          Title · optional
-        </label>
-        <input
-          id={titleId}
-          type="text"
-          aria-label={name ? `${name} title` : undefined}
-          value={shownTitle}
-          onChange={(event) => setTitle(event.target.value)}
-          onBlur={() => {
-            if (!collector) sink.onTitle?.(nameOf(box.current), shownTitle);
-          }}
-          style={{ ...fieldStyle(phone, { height: phone ? size.touch : 32, fontSize: phone ? 16 : 13 }), outline: "none" }}
-        />
-      </div>
-      <div style={{ position: "relative", minWidth: 0 }}>
-        <textarea
-          rows={rows}
-          {...rest}
-          ref={(node) => {
-            box.current = node;
-            if (typeof ref === "function") ref(node);
-            else if (ref) (ref as { current: HTMLTextAreaElement | null }).current = node;
-          }}
-          data-focused={focus.focused || undefined}
-          onFocus={focus.onFocus}
-          onBlur={focus.onBlur}
-          style={areaStyle(phone, rows, { paddingRight: 40, ...(mono ? { ...DATA_FACE, fontSize: phone ? 16 : 13 } : null), ...(focus.focused ? FIELD_FOCUS : { outline: "none" }) })}
-        />
-        <button
-          ref={expand}
-          type="button"
-          aria-label="Open in the notepad"
-          data-testid="field-expand"
-          data-hit=""
-          onClick={() => {
-            setText(box.current?.value ?? "");
-            setOpen(true);
-          }}
-          style={{ position: "absolute", top: 4, right: 4, width: phone ? size.touch : 28, height: phone ? size.touch : 28, padding: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", border: 0, borderRadius: r.full, background: "transparent", color: t.label, cursor: "pointer" }}
-        >
-          <Glyph name="expand" size={size.icon} />
-        </button>
-      </div>
+    <div data-testid="field-area" style={{ position: "relative", minWidth: 0 }}>
+      <textarea
+        rows={rows}
+        {...rest}
+        ref={(node) => {
+          box.current = node;
+          if (typeof ref === "function") ref(node);
+          else if (ref) (ref as { current: HTMLTextAreaElement | null }).current = node;
+        }}
+        data-focused={focus.focused || undefined}
+        onFocus={focus.onFocus}
+        onBlur={focus.onBlur}
+        style={areaStyle(phone, rows, { paddingRight: 40, ...(mono ? { ...DATA_FACE, fontSize: phone ? 16 : 13 } : null), ...(focus.focused ? FIELD_FOCUS : { outline: "none" }) })}
+      />
+      <button
+        ref={expand}
+        type="button"
+        aria-label="Open in the notepad"
+        data-testid="field-expand"
+        data-hit=""
+        onClick={() => {
+          setText(box.current?.value ?? "");
+          setOpen(true);
+        }}
+        style={{ position: "absolute", top: 4, right: 4, width: phone ? size.touch : 28, height: phone ? size.touch : 28, padding: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", border: 0, borderRadius: r.full, background: "transparent", color: t.label, cursor: "pointer" }}
+      >
+        <Glyph name="expand" size={size.icon} />
+      </button>
       <Notepad
         open={open}
         onClose={() => setOpen(false)}
         field={nameOf(box.current)}
         value={text}
-        title={shownTitle}
-        onTitleChange={setTitle}
         onDone={(next) => {
-          if (box.current) writeBack(box.current, next);
-          /* From the tile's row: the window saves once the field has taken the text. */
-          if (fromTile && collector) window.setTimeout(() => collector.submit(), 0);
-          /* A window that saves as it goes saves a box when it is left: leave it once the text is in, and write its title. */
-          if (!collector) {
-            const node = box.current;
-            /* `focusout` is what React's onBlur listens to; the notepad's focus trap is still up, so the box is not focused itself. */
-            window.setTimeout(() => node?.dispatchEvent(new FocusEvent("focusout", { bubbles: true })), 0);
-            sink.onTitle?.(nameOf(node), shownTitle);
-          }
+          const node = box.current;
+          if (node) writeBack(node, next);
+          /* A window that saves as it goes saves a box when it is left: leave it once the text is in. `focusout` is what React's
+             onBlur listens to; the notepad's focus trap is still up, so the box is not focused itself. */
+          window.setTimeout(() => node?.dispatchEvent(new FocusEvent("focusout", { bubbles: true })), 0);
         }}
         returnFocusTo={expand}
       />
@@ -652,8 +590,9 @@ export const pickerFieldStyle = (phone: boolean, state: { hovered?: boolean }, e
   gap: space[2],
   width: "100%",
   minWidth: 0,
-  height: phone ? size.touch : size.control,
-  padding: `0 ${space[3]}px`,
+  /* Synth 09: as tall as a field (40) and padded as one, so a picker and a field side by side line up. */
+  height: phone ? size.touch : 40,
+  padding: "0 14px",
   borderRadius: r.control,
   textAlign: "left",
   cursor: "pointer",
@@ -903,16 +842,17 @@ function OptionButton({ label, chosen, disabled, phone, onPick }: { label: strin
         width: "100%",
         minWidth: 0,
         height: phone ? size.touch : size.control,
-        padding: `0 ${space[3]}px`,
+        padding: "0 14px",
         textAlign: "left",
-        borderRadius: r.control,
-        background: "transparent",
-        border: `1px solid ${t.windowBorder}`,
-        ...type(textStep.meta, 400, t.text2),
+        /* Synth 09: the same pills as a single choice (SegmentedField), laid out in a grid: Raised, the chosen one on the
+           action fill. */
+        borderRadius: r.full,
+        background: state.hovered && !chosen ? hoverFill(t.control) : t.control,
+        border: 0,
+        ...type(textStep.meta, 500, t.text),
         ...ELLIPSIS,
         cursor: disabled ? "default" : "pointer",
-        ...(state.hovered && !chosen ? { background: hoverFill(), color: t.text } : null),
-        ...(chosen ? { ...SELECTED, color: t.text } : null),
+        ...(chosen ? { background: t.action, color: t.onAction } : null),
         ...(disabled ? { filter: t.dimFilter } : null),
         ...ring(state.focusVisible),
       }}
@@ -925,7 +865,7 @@ function OptionButton({ label, chosen, disabled, phone, onPick }: { label: strin
 /* ── buttons ── */
 
 export interface RecipeButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "secondary" | "primary" | "ghost";
+  variant?: "secondary" | "primary" | "ghost" | "danger";
   small?: boolean;
   phone?: boolean;
   ref?: Ref<HTMLButtonElement>;
@@ -941,6 +881,11 @@ export function RecipeButton({ variant = "secondary", small = false, phone = fal
       : { ...PRIMARY, ...(state.hovered ? { filter: "brightness(1.08)" } : null) }
     : variant === "ghost"
       ? { background: state.hovered ? t.module : "transparent", border: "1px solid transparent", color: t.text2 }
+      : variant === "danger"
+        ? /* Synth 09: the one action that removes something for good, in a confirmation. */
+          disabled
+          ? { background: t.dangerText, border: "1px solid transparent", color: t.surface, opacity: 0.5 }
+          : { background: t.dangerText, border: "1px solid transparent", color: t.surface, ...(state.hovered ? { filter: "brightness(1.08)" } : null) }
       : { ...controlPaint(state), color: t.text, ...(disabled ? { filter: t.dimFilter } : null) };
   return (
     <button

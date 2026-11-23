@@ -48,10 +48,7 @@ export interface NotepadProps {
   value: string;
   /** Done: writes the text back to the field. Absent, the notepad is read only. */
   onDone?: (text: string) => void;
-  /** The optional title shared with the modal field. */
-  title?: string;
-  onTitleChange?: (title: string) => void;
-  /** Where focus goes back to: the Expand button or the title row. */
+  /** Where focus goes back to: the Expand button. */
   returnFocusTo?: RefObject<HTMLElement | null>;
 }
 
@@ -84,7 +81,7 @@ function CloseButton({ label, onClick }: { label: string; onClick: () => void })
   );
 }
 
-export function Notepad({ open, onClose, field, value, onDone, title = "", onTitleChange, returnFocusTo }: NotepadProps) {
+export function Notepad({ open, onClose, field, value, onDone, returnFocusTo }: NotepadProps) {
   const readOnly = onDone === undefined;
   const phone = useIsPhone();
   const [draft, setDraft] = useState(value);
@@ -187,19 +184,7 @@ export function Notepad({ open, onClose, field, value, onDone, title = "", onTit
             <Dialog.Title style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, lineHeight: "16px", color: t.brandAccent }}>{field}</Dialog.Title>
             <CloseButton label={`Close ${field}`} onClick={() => void leave()} />
           </div>
-          {onTitleChange || title ? (
-            <input
-              data-notepad-field=""
-              aria-label={`${field} title`}
-              data-testid="notepad-title"
-              value={title}
-              readOnly={readOnly || !onTitleChange}
-              onChange={(event) => onTitleChange?.(event.target.value)}
-              style={{ ...body, flexShrink: 0, height: 32, margin: "4px 0 8px", fontSize: 17, fontWeight: 600, lineHeight: "24px" }}
-            />
-          ) : (
-            <div style={{ height: 8 }} />
-          )}
+          <div style={{ height: 8 }} />
           {readOnly ? (
             <div
               data-notepad-text=""

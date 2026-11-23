@@ -45,7 +45,7 @@ import { TextButton } from "@/pages/site/compose/composeControls";
 import { EYEBROW, text, tnum } from "@/pages/site/compose/refinedStyles";
 import { size, space } from "@/lib/theme/space";
 import { r } from "@/lib/theme/radius";
-import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT, iconButtonSide } from "@/pages/site/compose/modalRecipes";
+import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT, iconButtonSide, phoneWindowPlacement } from "@/pages/site/compose/modalRecipes";
 import { DONE, COPY_TEXT_FAILED, COPY_CODE_FAILED } from "@/lib/copy/copy";
 
 export const PART_WINDOW_COPY = {
@@ -570,11 +570,11 @@ export function PartWindow(props: PartWindowProps) {
             flexDirection: "column",
             gap: 16,
             ...(phone
-              ? { inset: 0, padding: "16px 16px 0" }
+              ? { ...phoneWindowPlacement(61), padding: "16px 16px 0" }
               : {
-                  top: 96,
+                  top: "50%",
                   left: "50%",
-                  transform: "translateX(-50%)",
+                  transform: "translate(-50%, -50%)",
                   width: 760,
                   maxWidth: "calc(100vw - 32px)",
                   maxHeight: "calc(100dvh - 120px)",

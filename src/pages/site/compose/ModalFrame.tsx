@@ -31,8 +31,6 @@ import { t } from "@/lib/theme/tokens";
 import { EYEBROW } from "./refinedStyles";
 import {
   Alert,
-  BoxTitleCollectorContext,
-  BoxTitleSinkContext,
   FOOT_NOTE,
   GroupHeading,
   HEADER,
@@ -69,7 +67,7 @@ export const MODAL_COPY = {
   allComplete: "Required fields complete",
 } as const;
 
-/** F25: on a computer the window's top edge, and the same room left under it (`WINDOW_TOP`, shared by every window). */
+/** F25: the room a window leaves above and below it on a computer (`WINDOW_TOP`, shared by every window). */
 export const MODAL_TOP = WINDOW_TOP;
 
 /** The footer's status line: the labels of what is still missing, or that nothing is. */
@@ -137,7 +135,7 @@ export function ModalShell({ open, onOpenChange, title, subtitle, eyebrow, width
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay data-motion="scrim" style={scrimAt(LAYER.window)} />
-        {/* F25: the top edge is pinned at 48, so opening a row grows the window downward and nothing above it moves; the body scrolls inside. */}
+        {/* Centred in the browser window, across and down; at most the window less 48 above and below, the body scrolling inside. */}
         <Dialog.Content data-testid={testId} onOpenAutoFocus={focus.onOpenAutoFocus} onCloseAutoFocus={focus.onCloseAutoFocus} style={windowPlacement(width, LAYER.window)}>
           <div data-testid="modal-header" style={HEADER}>
             <div style={HEADER_TEXT}>
@@ -183,19 +181,11 @@ export interface ModalFormProps {
 
 export function ModalForm({ phone, onSubmit, onCancel, missing, blocked = false, addLabel = MODAL_COPY.add, alert, status, children }: ModalFormProps) {
   const ready = missing === null && !blocked;
-  /* Synth 09: every box's title, by its name, handed to whoever opened the window when it is saved. */
-  const sink = useContext(BoxTitleSinkContext);
-  const titles = useRef(new Map<string, string>());
-  const form = useRef<HTMLFormElement>(null);
-  const collector = useMemo(() => ({ set: (name: string, title: string) => void titles.current.set(name, title), submit: () => form.current?.requestSubmit() }), []);
   return (
-    <BoxTitleCollectorContext.Provider value={collector}>
     <form
-      ref={form}
       onSubmit={(event) => {
         event.preventDefault();
         if (!ready) return;
-        if (sink.commit && titles.current.size > 0) sink.commit(Object.fromEntries(titles.current));
         onSubmit();
       }}
       style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: "1 1 auto", fontSize: phone ? 16 : 15 }}
@@ -225,7 +215,6 @@ export function ModalForm({ phone, onSubmit, onCancel, missing, blocked = false,
         </RecipeButton>
       </div>
     </form>
-    </BoxTitleCollectorContext.Provider>
   );
 }
 

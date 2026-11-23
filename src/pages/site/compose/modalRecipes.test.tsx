@@ -140,7 +140,8 @@ describe("the modal recipes (CA-15b P1)", () => {
     const grid = screen.getByRole("group", { name: "Connection method" });
     expect(styleOf(grid)).toMatchObject({ gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "8px" });
     const option = screen.getByRole("button", { name: "Command-line interface" });
-    expect(styleOf(option)).toMatchObject({ height: "32px", textAlign: "left", whiteSpace: "nowrap", textOverflow: "ellipsis", borderRadius: "var(--r-control)" }); // S13
+    // Synth 09: an option is a pill, as the option pills everywhere else in the editor.
+    expect(styleOf(option)).toMatchObject({ height: "32px", textAlign: "left", whiteSpace: "nowrap", textOverflow: "ellipsis", borderRadius: "var(--r-full)" });
     expect(option.getAttribute("title")).toBe("Command-line interface");
     expect(screen.getByRole("button", { name: "MCP server" }).getAttribute("aria-pressed")).toBe("true");
   });

@@ -275,7 +275,7 @@ export const GATE_COPY = {
   title: "Approval",
   addLine: "A person approves before work continues",
   approves: "What is approved",
-  approvesPlaceholder: "The client email draft",
+  approvesPlaceholder: "e.g. The client email draft",
   by: "Who approves",
   reviewer: "Reviewer agent",
   blocks: "Steps that wait for it",

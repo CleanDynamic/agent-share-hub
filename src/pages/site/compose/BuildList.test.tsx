@@ -160,54 +160,24 @@ describe("step cards", () => {
   });
 });
 
-describe("Typed here: the model menu follows the tool (CA-02 P4)", () => {
-  const openMenu = (name: string | RegExp) => fireEvent.keyDown(screen.getByRole("button", { name }), { key: "Enter" });
+// Synth 09: the composer picks no model. The model menu (CA-02 P4) moved to the session's window, with the harness.
+describe("Typed here: the tool, and no model", () => {
   const pickTool = (query: string, row: string | RegExp) => {
     fireEvent.click(screen.getByRole("button", { name: /(^|, )Prompt tool · / }));
     fireEvent.change(screen.getByRole("combobox", { name: "Find a tool" }), { target: { value: query } });
     fireEvent.click(screen.getByRole("option", { name: row }));
   };
 
-  it("asks for a tool before it offers a model", () => {
-    list(noToolFirst());
-    const button = screen.getByRole("button", { name: "Select a tool first" });
-    expect((button as HTMLButtonElement).disabled).toBe(true);
-    // F41: the control reads "Model".
-    expect(button.textContent).toContain("Model");
-  });
-
-  it("offers the tool's own models under their lab, and saves the one picked", async () => {
+  it("draws no model menu: a typed prompt runs on its session's model, and saves none of its own (Synth 09)", async () => {
     const props = list();
+    expect(screen.queryByRole("button", { name: /^model/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Select a tool first" })).toBeNull();
     pickTool("claude", "Claude");
-    openMenu("model");
-    expect(screen.getByText("Anthropic")).toBeTruthy();
-    expect(screen.queryByRole("menuitemradio", { name: "Grok 4.7" })).toBeNull();
-    fireEvent.click(screen.getByRole("menuitemradio", { name: "Opus 5.5" }));
+    expect(screen.queryByRole("button", { name: /^model/ })).toBeNull();
+    expect(screen.queryByTestId("model-cleared")).toBeNull();
     fireEvent.change(screen.getByPlaceholderText("Add a prompt to this session"), { target: { value: "Plan it" } });
     fireEvent.click(screen.getByTestId("composer-add"));
-    expect(props.onAddPrompt).toHaveBeenCalledWith({ text: "Plan it", tool: "claude", model: "Opus 5.5" });
-  });
-
-  it("clears a model the new tool does not offer, and says so once, in the visible line (the announcer says it aloud, CA-26)", () => {
-    list();
-    pickTool("claude", "Claude");
-    openMenu("model");
-    fireEvent.click(screen.getByRole("menuitemradio", { name: "Opus 5.5" }));
-    pickTool("chatgpt", "ChatGPT");
-    expect(screen.getByRole("button", { name: "model" })).toBeTruthy();
-    const region = screen.getByTestId("model-cleared");
-    expect(region.getAttribute("aria-live")).toBeNull();
-    expect(region.textContent).toBe("Opus 5.5 not on ChatGPT. Cleared.");
-  });
-
-  it("keeps a model the new tool offers", () => {
-    list();
-    pickTool("claude", "Claude");
-    openMenu("model");
-    fireEvent.click(screen.getByRole("menuitemradio", { name: "Opus 5" }));
-    pickTool("cursor", "Cursor");
-    expect(screen.getByRole("button", { name: "model Opus 5" })).toBeTruthy();
-    expect(screen.getByTestId("model-cleared").textContent).toBe("");
+    expect(props.onAddPrompt).toHaveBeenCalledWith({ text: "Plan it", tool: "claude", model: null });
   });
 
   it("draws no model menu for a tool that runs prompts by itself, and saves no prompt", () => {
@@ -240,31 +210,6 @@ describe("Typed here: the model menu follows the tool (CA-02 P4)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add as an agent" }));
     await waitFor(() => expect(onAddAsAgent).toHaveBeenCalled());
     expect(field.value).toBe("Triage my inbox");
-  });
-
-  it("offers a typed model through Other model… for a tool that takes one", () => {
-    const props = list();
-    pickTool("claude code", "Claude Code");
-    openMenu("model");
-    fireEvent.click(screen.getByRole("menuitem", { name: "Other model…" }));
-    const other = screen.getByRole("textbox", { name: "Other model" }) as HTMLInputElement;
-    expect(other.maxLength).toBe(40);
-    fireEvent.change(other, { target: { value: "my-local-llm" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    fireEvent.change(screen.getByPlaceholderText("Add a prompt to this session"), { target: { value: "Go" } });
-    fireEvent.click(screen.getByTestId("composer-add"));
-    expect(props.onAddPrompt).toHaveBeenCalledWith({ text: "Go", tool: "claude-code", model: "my-local-llm" });
-  });
-
-  it("offers a builder's tiers, and shows a hidden model's note in place of a menu", () => {
-    list();
-    pickTool("v0", "v0");
-    openMenu("model");
-    expect(screen.getAllByRole("menuitemradio").map((item) => item.textContent)).toEqual(["No model", "v0 Mini", "v0 Pro", "v0 Max"]);
-    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
-    pickTool("lovable", "Lovable");
-    expect(screen.getByText("Lovable picks the model that builds your app")).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /^model/ })).toBeNull();
   });
 });
 
@@ -847,16 +792,9 @@ describe("F15 and F41 · the composer", () => {
     await waitFor(() => expect(props.onAddPrompt).toHaveBeenCalledWith(expect.objectContaining({ text: "def" })));
   });
 
-  it("F41: the model control reads Model until one is chosen, then that model's name", () => {
+  it("F41: the composer offers no model control; the model is chosen with the session's harness (Synth 09)", () => {
     list();
-    expect(screen.getByRole("button", { name: "model" }).textContent).toContain("Model");
-    fireEvent.click(screen.getByRole("button", { name: /(^|, )Prompt tool · / }));
-    fireEvent.change(screen.getByRole("combobox", { name: "Find a tool" }), { target: { value: "claude" } });
-    fireEvent.click(screen.getByRole("option", { name: "Claude" }));
-    fireEvent.keyDown(screen.getByRole("button", { name: "model" }), { key: "Enter" });
-    fireEvent.click(screen.getByRole("menuitemradio", { name: "Opus 5.5" }));
-    const chosen = screen.getByRole("button", { name: "model Opus 5.5" });
-    expect(chosen.textContent).toContain("Opus 5.5");
-    expect(chosen.textContent).not.toContain("Model");
+    expect(screen.queryByRole("button", { name: /^model/ })).toBeNull();
+    expect(within(screen.getByTestId("add-prompt")).queryByText("Model")).toBeNull();
   });
 });

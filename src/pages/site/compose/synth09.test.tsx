@@ -5,7 +5,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import { BOX_TITLE_MAX, boxTitlesOf, withBoxTitles } from "@/lib/build/graph";
+import type { ReadSection } from "@/lib/build/tileSections";
 import { borderFor } from "@/lib/theme/partColour";
 import { SELECT_RING } from "@/lib/theme/refinedControl";
 
@@ -14,26 +14,8 @@ import { OpenRequestDialog } from "./OpenRequestDialog";
 import { ConfirmDialog } from "./referencePieces";
 import { LAYER } from "./layers";
 import { WINDOW_TOP } from "./modalRecipes";
-import { BoxTitleSinkContext, ChoiceCards, FieldArea, SegmentedField } from "./modalRecipes";
-import { BoxRow, NumberBadge, tileStyle } from "./tileRecipes";
-
-describe("box titles on the node", () => {
-  it("reads the titled boxes, trimmed, and leaves out blank and malformed ones", () => {
-    expect(boxTitlesOf({ box_titles: { Instructions: "  Tone  ", Setup: "", Notes: 3 } })).toEqual([{ field: "Instructions", title: "Tone" }]);
-    expect(boxTitlesOf({ box_titles: ["no"] })).toEqual([]);
-    expect(boxTitlesOf({})).toEqual([]);
-  });
-
-  it("merges new titles over the old, takes a blank one off, and keeps the rest of the payload", () => {
-    const payload = { colour: "#FF0000", box_titles: { Instructions: "Tone", Setup: "Keys" } };
-    expect(withBoxTitles(payload, { Setup: "", Steps: "Order" })).toEqual({ colour: "#FF0000", box_titles: { Instructions: "Tone", Steps: "Order" } });
-    expect(withBoxTitles({ box_titles: { Setup: "Keys" } }, { Setup: " " })).toEqual({});
-  });
-
-  it("keeps a title to its limit", () => {
-    expect(withBoxTitles({}, { Text: "x".repeat(BOX_TITLE_MAX + 20) })).toEqual({ box_titles: { Text: "x".repeat(BOX_TITLE_MAX) } });
-  });
-});
+import { ChoiceCards, FieldArea, SegmentedField } from "./modalRecipes";
+import { NumberBadge, tileStyle } from "./tileRecipes";
 
 describe("the tile", () => {
   it("is a Card at radius 12, padded 12 14, with the Mint ring outside a gap when chosen", () => {
@@ -55,58 +37,31 @@ describe("the tile", () => {
     expect(on).toContain("color:var(--on-brand-accent)");
   });
 
-  it("shows a titled box as a row on Raised that opens it", () => {
-    const onOpen = vi.fn();
-    render(<BoxRow title="Tone" field="Instructions" onOpen={onOpen} />);
-    const row = screen.getByRole("button", { name: "Tone, Instructions: open in the notepad" });
-    expect(row.textContent).toBe("Tone");
-    fireEvent.click(row);
-    expect(onOpen).toHaveBeenCalledTimes(1);
-    expect(renderToStaticMarkup(<BoxRow title="Tone" field="Instructions" onOpen={onOpen} />)).toContain("background:var(--control)");
+  it("draws no title rows under a tile's title (the first-draft rows are gone)", async () => {
+    const { BuildList } = await import("./BuildList");
+    const { sandboxListProps } = await import("@/dev/fixtures/sandbox");
+    const { MemoryRouter } = await import("react-router-dom");
+    const props = sandboxListProps("bakery");
+    // An old build may still hold box titles in its payload: nothing reads them any more.
+    const steps = props.steps.map((step, at) => (at === 0 ? ({ ...step, boxTitles: [{ field: "Response", title: "First draft" }] } as typeof step) : step));
+    render(
+      <MemoryRouter>
+        <BuildList {...props} steps={steps} />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByTestId("tile-box-rows")).toBeNull();
+    expect(screen.queryByText("First draft")).toBeNull();
   });
 });
 
-describe("a window's box titles", () => {
-  function Window({ commit, seed, expand, onSubmit = () => undefined }: { commit: (titles: Record<string, string>) => void; seed?: Record<string, string>; expand?: string; onSubmit?: () => void }) {
-    return (
-      <BoxTitleSinkContext.Provider value={{ commit, seed, expand }}>
-        <ModalForm phone={false} missing={null} onSubmit={onSubmit} onCancel={() => undefined}>
-          <FieldArea phone={false} rows={3} aria-label="Instructions" defaultValue="Be brief." />
-        </ModalForm>
-      </BoxTitleSinkContext.Provider>
-    );
-  }
-
-  it("starts from the tile's title and hands every box's title over when it is saved", () => {
-    const commit = vi.fn();
-    const onSubmit = vi.fn();
-    render(<Window commit={commit} onSubmit={onSubmit} seed={{ Instructions: "Tone" }} />);
-    const title = screen.getByRole("textbox", { name: "Instructions title" });
-    expect(title).toHaveValue("Tone");
-    fireEvent.change(title, { target: { value: "Voice" } });
-    fireEvent.click(screen.getByRole("button", { name: "Add" }));
-    expect(commit).toHaveBeenCalledWith({ Instructions: "Voice" });
-    expect(onSubmit).toHaveBeenCalledTimes(1);
-  });
-
-  it("hands nothing over when it is cancelled", () => {
-    const commit = vi.fn();
-    render(<Window commit={commit} seed={{ Instructions: "Tone" }} />);
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(commit).not.toHaveBeenCalled();
-  });
-
-  it("opens the box the tile asked for in the notepad, and Done saves the window", async () => {
-    const commit = vi.fn();
-    const onSubmit = vi.fn();
-    render(<Window commit={commit} onSubmit={onSubmit} seed={{ Instructions: "Tone" }} expand="Instructions" />);
+describe("a window's text boxes (no titles)", () => {
+  it("draws a box with its Expand button and no title field, and the notepad has no title either", async () => {
+    render(<FieldArea phone={false} rows={3} aria-label="Response" defaultValue="Hello" />);
+    expect(screen.queryByText("Title · optional")).toBeNull();
+    expect(screen.queryByRole("textbox", { name: "Response title" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Open in the notepad" }));
     const pad = await screen.findByTestId("notepad");
-    expect(within(pad).getByText("Instructions")).toBeInTheDocument();
-    await act(async () => {
-      fireEvent.click(within(pad).getByRole("button", { name: "Done" }));
-    });
-    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
-    expect(commit).toHaveBeenCalledWith({ Instructions: "Tone" });
+    expect(within(pad).queryByTestId("notepad-title")).toBeNull();
   });
 });
 
@@ -152,8 +107,9 @@ describe("where every editor window stands", () => {
     const windows: [string, number][] = [["tile-window", LAYER.window], ["open-request-dialog", LAYER.window], ["confirm-window", LAYER.confirm]];
     for (const [id, layer] of windows) {
       const style = placed(screen.getByTestId(id));
-      expect(style, id).toContain(`top: ${WINDOW_TOP}px`);
-      expect(style, id).toContain("transform: translateX(-50%)");
+      // Centred in the browser window, across and down.
+      expect(style, id).toContain("top: 50%");
+      expect(style, id).toContain("transform: translate(-50%, -50%)");
       expect(style, id).toContain("width: 440px");
       expect(style, id).toContain(`max-height: calc(100dvh - ${2 * WINDOW_TOP}px)`);
       expect(style, id).toContain(`z-index: ${layer}`);
@@ -177,34 +133,17 @@ describe("where every editor window stands", () => {
   });
 });
 
-describe("the status line's ready count and live titles", () => {
+describe("the status line's ready count, and the notepad's Done", () => {
   it("says how many required items are done", async () => {
     const { readyLine } = await import("@/lib/build/publishChecklist");
     expect(readyLine({ required: [{}, {}, {}, {}] as never, openRequired: 2 })).toBe("2 of 4 ready to publish");
     expect(readyLine({ required: [], openRequired: 0 })).toBeNull();
   });
 
-  it("in a window that saves as it goes, writes a box's title when its title field is left", () => {
-    const onTitle = vi.fn();
-    render(
-      <BoxTitleSinkContext.Provider value={{ onTitle, seed: { Response: "Draft" } }}>
-        <FieldArea phone={false} rows={3} aria-label="Response" defaultValue="Hello" />
-      </BoxTitleSinkContext.Provider>,
-    );
-    const title = screen.getByRole("textbox", { name: "Response title" });
-    expect(title).toHaveValue("Draft");
-    fireEvent.change(title, { target: { value: "Final" } });
-    fireEvent.blur(title);
-    expect(onTitle).toHaveBeenCalledWith("Response", "Final");
-  });
-
-  it("there, Done in the notepad leaves the box so its own save runs", async () => {
+  it("in a window that saves as it goes, Done in the notepad leaves the box so its own save runs", async () => {
     const onBlur = vi.fn();
-    render(
-      <BoxTitleSinkContext.Provider value={{ expand: "Response" }}>
-        <FieldArea phone={false} rows={3} aria-label="Response" defaultValue="Hello" onBlur={onBlur} />
-      </BoxTitleSinkContext.Provider>,
-    );
+    render(<FieldArea phone={false} rows={3} aria-label="Response" defaultValue="Hello" onBlur={onBlur} />);
+    fireEvent.click(screen.getByRole("button", { name: "Open in the notepad" }));
     const pad = await screen.findByTestId("notepad");
     await act(async () => {
       fireEvent.click(within(pad).getByRole("button", { name: "Done" }));
@@ -227,5 +166,64 @@ describe("the title row's Add", () => {
     const menu = screen.getByRole("menu");
     fireEvent.click(within(menu).getByRole("menuitem", { name: /^Tool/ }));
     expect(props.onAddTool).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("a step tile's content, on the notepad's tone", () => {
+  it("leaves out what the tile's body draws and the reverse links, and keeps the window's order", async () => {
+    const { tileSectionsOf } = await import("./tileContent");
+    const section = (key: string) => ({ key, label: key, value: { type: "prose" as const, text: key, count: "" } });
+    const sections = ["prompt", "response", "model", "uses", "goesInto", "settings", "variables"].map(section);
+    expect(tileSectionsOf("prompt", sections).map((s) => s.key)).toEqual(["model", "settings", "variables"]);
+    expect(tileSectionsOf("tool", ["tool", "connected", "did", "permissions", "plan", "usedBy"].map(section)).map((s) => s.key)).toEqual(["permissions", "plan"]);
+  });
+
+  it("draws every other section the window holds on the layer, under the tile's own body", async () => {
+    const { BuildList } = await import("./BuildList");
+    const { sandboxListProps } = await import("@/dev/fixtures/sandbox");
+    const { MemoryRouter } = await import("react-router-dom");
+    const props = sandboxListProps("bakery");
+    const first = props.steps[0];
+    const sectionsOf = (id: string): ReadSection[] =>
+      id === first.id
+        ? [
+            { key: "prompt", label: "Prompt", value: { type: "prose" as const, text: first.text, count: "" } },
+            { key: "settings", label: "Model settings", value: { type: "rows" as const, rows: [{ label: "Reasoning effort", value: "High" }], count: "" } },
+            { key: "goesInto", label: "Used by", value: { type: "prose" as const, text: "Prompt 2", count: "" } },
+          ]
+        : [];
+    render(
+      <MemoryRouter>
+        <BuildList {...props} sectionsOf={sectionsOf} />
+      </MemoryRouter>,
+    );
+    const tile = screen.getAllByTestId("step-card").find((card) => card.querySelector('[data-testid="prompt-tile-text"]'))!;
+    const layer = within(tile).getByTestId("tile-content");
+    // jsdom drops a var() colour from a rendered style: the layer's fill is read from its recipe.
+    const { CONTENT_WELL } = await import("./tileContent");
+    expect(CONTENT_WELL.background).toBe("var(--notepad)");
+    expect(layer).toBeTruthy();
+    // The prompt's words are on the layer, then the section the body does not draw; "Used by" is left to Details.
+    expect(within(layer).getByTestId("prompt-tile-text").textContent).toContain(first.text.slice(0, 20));
+    expect(within(layer).getAllByTestId("tile-section").map((el) => el.getAttribute("data-section"))).toEqual(["settings"]);
+    expect(within(layer).getByTestId("tile-row").textContent).toBe("Reasoning effortHigh");
+  });
+
+  it("draws no layer on a tile with nothing to show", async () => {
+    const { ContentWell } = await import("./tileContent");
+    const { container } = render(<ContentWell watch={1}><span /></ContentWell>);
+    expect(container.querySelector('[data-testid="tile-content"]')).toBeNull();
+  });
+});
+
+describe("a step tile's lines, in line", () => {
+  it("puts 4 between the kind and the title, and stands the content layer under the badge with its words under the title", async () => {
+    const { TILE_TEXT, TILE_INDENT, TITLE_COLUMN } = await import("./tileRecipes");
+    const { CONTENT_WELL } = await import("./tileContent");
+    expect(TILE_TEXT.gap).toBe(4);
+    expect(CONTENT_WELL.marginLeft).toBe(TILE_INDENT);
+    // The words inside keep the tile's own indent, so the layer's edge plus its padding plus that indent is the title's column.
+    const padLeft = Number(String(CONTENT_WELL.padding).split(" ")[3].replace("px", ""));
+    expect(TILE_INDENT + padLeft + TILE_INDENT).toBe(TITLE_COLUMN);
   });
 });

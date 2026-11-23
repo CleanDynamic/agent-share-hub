@@ -123,18 +123,15 @@ describe("BottomSheet", () => {
     expect(onClose).toHaveBeenLastCalledWith(false);
   });
 
-  it("closes when the grabber is dragged down more than 80px, not less", () => {
-    const onClose = vi.fn();
-    render(<Harness onClose={onClose} />);
-    const grabber = screen.getByTestId("sheet-grabber");
-    fireEvent.pointerDown(grabber, { clientY: 100, pointerId: 1 });
-    fireEvent.pointerMove(grabber, { clientY: 170, pointerId: 1 });
-    fireEvent.pointerUp(grabber, { pointerId: 1 });
-    expect(onClose).not.toHaveBeenCalled();
-    fireEvent.pointerDown(grabber, { clientY: 100, pointerId: 1 });
-    fireEvent.pointerMove(grabber, { clientY: 190, pointerId: 1 });
-    fireEvent.pointerUp(grabber, { pointerId: 1 });
-    expect(onClose).toHaveBeenCalledWith(false);
+  it("stands pinned to the centre of the screen, 16 from its sides, and scrolls inside (Synth 09)", () => {
+    render(<Harness onClose={() => undefined} />);
+    const sheet = screen.getByTestId("bottom-sheet");
+    expect(sheet.style.top).toBe("50%");
+    expect(sheet.style.left).toBe("50%");
+    expect(sheet.style.transform).toBe("translate(-50%, -50%)");
+    expect(sheet.style.width).toBe("calc(100vw - 32px)");
+    expect(sheet.style.overflowY).toBe("auto");
+    expect(screen.queryByTestId("sheet-grabber")).toBeNull();
   });
 });
 
@@ -178,7 +175,7 @@ describe("phone chrome under the refined look", () => {
     expect(html).not.toContain("var(--dock)");
   });
 
-  it("a sheet takes the window recipe over --scrim, and keeps its name and Close", () => {
+  it("a phone window takes the window recipe over --scrim, and keeps its name and Close", () => {
     render(
       inRefined(
         <BottomSheet open onOpenChange={vi.fn()} title="Account">
@@ -189,7 +186,7 @@ describe("phone chrome under the refined look", () => {
     expect(screen.getByRole("dialog", { name: "Account" })).toBeTruthy();
     expect(screen.getByRole("button", { name: /^Close/ })).toBeTruthy();
     const sheet = screen.getByTestId("bottom-sheet");
-    expect(sheet.style.borderRadius).toBe("12px 12px 0 0");
+    expect(sheet.style.borderRadius).toBe("12px");
     expect(sheet.style.backdropFilter ?? "").toBe("");
   });
 });
