@@ -974,7 +974,8 @@ function ThreadHero({
       {afterTitle}
 
       <section data-testid="build-thread" aria-label="Post" style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
-        <SectionHead headingLevel={2} title="Post" meta={total > 1 ? `1 of ${total} posts` : undefined} />
+        <SectionHead headingLevel={2} title="Post" />
+        {total > 1 ? <p style={{ ...text(13, 400, t.label), margin: "-8px 16px 0" }}>{`1 of ${total} posts`}</p> : null}
         <div data-testid="build-posts" style={{ minWidth: 0, maxWidth: 680 }}>
           {/* CA-07: a picture in the post opens full screen. */}
           <MediaViewerProvider>
@@ -1003,7 +1004,8 @@ function CompletenessModule({ completeness }: { completeness: CompletenessView }
   const { score, galleryAt, next } = completeness;
   return (
     <section data-testid="build-completeness" aria-label="Completeness" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
-      <SectionHead headingLevel={2} title="Completeness" meta={<span data-testid="build-completeness-private">Visible to you only</span>} />
+      <SectionHead headingLevel={2} title="Completeness" />
+      <p data-testid="build-completeness-private" style={{ ...text(13, 400, t.label), margin: "-8px 16px 0" }}>Visible to you only</p>
       <div style={{ ...moduleStyle, padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 6, ...text(13, 400, t.label, tnum) }}>
           <span style={text(13, 500, t.text, tnum)}>{score}</span>
@@ -1031,7 +1033,10 @@ function Proof({ proof, phone, now, inColumn = false }: { proof: BuildProofView;
   const stacked = !useMinWidth(BETWEEN.stack);
   return (
     <section data-testid="build-proof" aria-label="Reproduction" style={{ ...(phone || inColumn ? null : mainStyle(stacked, side)), display: "flex", flexDirection: "column", gap: 14 }}>
-      <SectionHead headingLevel={2} title="Reproduction" meta={<Plaque build={proof.build} size="row" now={now} />} />
+      <SectionHead headingLevel={2} title="Reproduction" />
+      <div style={{ margin: "-8px 16px 0" }}>
+        <Plaque build={proof.build} size="row" now={now} />
+      </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <Button
           data-testid="build-proof-action"

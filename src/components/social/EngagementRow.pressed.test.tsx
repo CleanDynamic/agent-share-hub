@@ -39,12 +39,12 @@ const like = () => {
 };
 
 describe("an action's states", () => {
-  it("sinks to the well when pressed, with a 1px well border and no opacity", () => {
+  it("takes the Card fill when pressed, with no border colour and no opacity", () => {
     held.pressed = true;
     held.hovered = false;
     const style = like();
-    expect(style).toContain("background:var(--well)");
-    expect(style).toContain("border:1px solid var(--well-border)");
+    expect(style).toContain("background:var(--module)");
+    expect(style).toContain("border:1px solid transparent");
     expect(style).not.toContain("opacity");
   });
 

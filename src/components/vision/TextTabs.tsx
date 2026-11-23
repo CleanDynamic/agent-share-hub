@@ -80,7 +80,7 @@ function Tab({
       {current ? (
         <span
           aria-hidden="true"
-          style={{ position: "absolute", left: "50%", bottom: 0, width: 56, height: 4, marginLeft: -28, borderRadius: 2, background: t.tabBar }}
+          style={{ position: "absolute", left: "50%", bottom: 0, width: 56, height: 4, transform: "translateX(-50%)", borderRadius: 2, background: t.tabBar }}
         />
       ) : null}
     </button>

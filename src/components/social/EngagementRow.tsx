@@ -378,7 +378,7 @@ function Action({ label, slot, glyph, onPress, href, pressed, count, noun, phone
     margin: 0,
     boxSizing: "border-box",
     // A press sinks to the well; at rest the border is there but clear.
-    background: state.pressed || state.hovered ? t.module : "transparent",
+    background: state.pressed ? t.module : "transparent",
     border: `${BORDER}px solid transparent`,
     borderRadius: r.full,
     // The count's colour; the glyph takes its own below.

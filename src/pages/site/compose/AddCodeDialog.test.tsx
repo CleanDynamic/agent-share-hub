@@ -41,10 +41,10 @@ const upload = (...files: File[]) => fireEvent.change(screen.getByTestId("code-f
 describe("Add › Code (CA-02 P7)", () => {
   // CA-11: the well is now a numbered code box. It is 12 lines tall (20 each, 6 padding top and bottom, a 1px border
   // each side), the line height is 20px not 1.55, and the gutter starts at 1.
-  it("is a 640-wide dialog in the shared frame with a monospace well of 12 lines, a numbered gutter and no spell check", () => {
+  it("is a 440-wide dialog in the shared frame with a monospace well of 12 lines, a numbered gutter and no spell check", () => {
     open();
     expect(screen.getByRole("dialog", { name: CODE_DIALOG_COPY.title })).toBeTruthy();
-    expect(screen.getByTestId("add-code-dialog").style.width).toBe("640px");
+    expect(screen.getByTestId("add-code-dialog").style.width).toBe("440px");
     expect(screen.getByTestId("code-well-box").style.height).toBe("254px");
     expect(screen.getByTestId("code-gutter-numbers").textContent).toBe("1");
     expect(well().getAttribute("spellcheck")).toBe("false");
@@ -61,11 +61,11 @@ describe("Add › Code (CA-02 P7)", () => {
     const order = [screen.getByLabelText("Code"), screen.getByRole("button", { name: "Upload files" }), screen.getByRole("button", { name: "Language" }), screen.getByTestId("optional-section")];
     for (let i = 1; i < order.length; i += 1) expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(body.contains(order[3])).toBe(true);
-    expect(screen.getByTestId("optional-count").textContent).toBe("2 fields");
+    expect(screen.getByTestId("optional-count").textContent).toBe("2 optional details");
     expect(screen.queryByLabelText("File path")).toBeNull();
     expect(fieldNames()).toEqual(["File path", "Generated with"]);
     expect(screen.getByText("Each file becomes its own step")).toBeTruthy();
-    expect(document.body.textContent).not.toMatch(/File name|Written with|optional/);
+    expect(document.body.textContent).not.toMatch(/File name|Written with/);
   });
 
   it("says All required fields complete once there is code", () => {

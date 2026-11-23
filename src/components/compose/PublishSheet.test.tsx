@@ -417,9 +417,9 @@ describe("the publish sheet", () => {
     const confirm = screen.getByTestId("publish-confirm");
 
     // The kit's own button rather than a hand-rolled surface: it marks its own
-    // slot, and it is at --r-control rather than the retired 999px capsule.
+    // slot, and it is at radius 18 rather than the retired 999px capsule.
     expect(confirm.getAttribute("data-visual-slot")).toBe("btn-primary");
-    expect(confirm.getAttribute("style") ?? "").toContain("border-radius: var(--r-control)");
+    expect(confirm.getAttribute("style") ?? "").toContain("border-radius: 18px");
 
     // Disabled, WITH THE REASON ON THE SCREEN. Never a toast: a refusal that
     // disappears after four seconds is one the reader who needed it longest

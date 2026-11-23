@@ -117,7 +117,7 @@ describe("the item has no box", () => {
       expect(item.style[property], property).toBe("");
     }
     expect(container.querySelector('[data-ui="picture-lamp"]')).toBeNull();
-    expect(item).toHaveStyle({ padding: "20px 0px 16px" });
+    expect(item).toHaveStyle({ padding: "4px 0px" });
   });
 
   it("is two columns 12px apart: a 40px author column and the content", () => {
@@ -129,13 +129,13 @@ describe("the item has no box", () => {
 });
 
 describe("the author row", () => {
-  it("shows the name, the handle and the short age, the tools as marks after them", () => {
+  it("shows the name, the handle and the short age, and no tool marks beside them", () => {
     const { container } = renderRow(build());
     const row = container.querySelector("[data-feed-author-row]") as HTMLElement;
     expect(within(row).getByTestId("feed-author-name")).toHaveTextContent("Maria Silva");
     expect(row).toHaveTextContent("@maria · 2d");
     expect(row).toHaveStyle({ minHeight: "24px", gap: "6px" });
-    expect(within(row).getByRole("img", { name: "Made with ChatGPT and Claude" })).toBeInTheDocument();
+    expect(within(row).queryByRole("img", { name: /Made with/ })).toBeNull();
   });
 
   it("links the name and the avatar to the profile", () => {
@@ -233,14 +233,14 @@ describe("the build line and the actions", () => {
     expect(screen.queryByTestId("rebuild-count")).toBeNull();
   });
 
-  it("draws the action row with Rebuild, capped at 520px and spread, only when handed engagement", () => {
+  it("draws the action row with Rebuild, capped at 425px and spread, only when handed engagement", () => {
     const { unmount } = renderRow(build());
     expect(screen.queryByTestId("engagement-row")).toBeNull();
     unmount();
 
     renderRow(build(), { engagement: { counts: { likes: 3, comments: 1 }, liked: false, saved: false } });
     const row = screen.getByTestId("engagement-row");
-    expect(row).toHaveStyle({ maxWidth: "520px", justifyContent: "space-between" });
+    expect(row).toHaveStyle({ maxWidth: "425px", justifyContent: "space-between" });
     expect(row.querySelector('[data-engagement-action="rebuild"]')).not.toBeNull();
   });
 });

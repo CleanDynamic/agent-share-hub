@@ -246,7 +246,7 @@ function Section({ id, props }: { id: SideSectionKey; props: ProfileSideProps })
 function Progress({ progress }: { progress: ProgressView }) {
   return (
     <section aria-label={PROGRESS_TITLE} data-testid="profile-progress" style={MODULE}>
-      <SectionHead title={PROGRESS_TITLE} meta={`Level ${progress.level}`} headingLevel={2} />
+      <SectionHead title={`Level ${progress.level}`} headingLevel={2} />
       <div style={{ ...BODY, marginTop: 12, display: "flex", flexDirection: "column", gap: 4, fontVariantNumeric: "tabular-nums" }}>
         {progress.xpLine ? <span>{progress.xpLine}</span> : null}
         {progress.streak ? <span>{progress.streak}</span> : null}

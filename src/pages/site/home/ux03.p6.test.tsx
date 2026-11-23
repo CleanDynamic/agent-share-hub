@@ -59,13 +59,14 @@ const headings = (within_: HTMLElement) => within(within_).queryAllByRole("headi
 describe("UX-03 P6: Home hides what has nothing to show", () => {
   it("with everything at zero, the room is the maker's published builds alone", () => {
     mount(NOTHING);
-    expect(headings(room())).toEqual(["Your published builds"]);
+    expect(headings(room())).toEqual(["7 published builds"]);
     expect(room().textContent).not.toContain("Reproduced today");
     expect(room().textContent).not.toContain("Nothing is still open right now.");
     expect(room().textContent).not.toContain("Nothing run yet this week.");
     expect(room().textContent).not.toContain("Run a build this week and suggestions appear here.");
     const module = screen.getByRole("region", { name: "Your published builds" });
-    expect(module.textContent).toContain("7 published · none reproduced yet");
+    expect(module.textContent).toContain("7 published builds");
+    expect(module.textContent).not.toMatch(/reproduced/i);
     expect(within(module).getAllByTestId("home-published-row")).toHaveLength(HOME_BUILD_ROWS);
     expect(module.textContent).toContain("A reproduction is recorded when another signed-in person runs your build and says whether it worked.");
     fireEvent.click(within(module).getByRole("button", { name: "Copy link" }));
@@ -76,7 +77,7 @@ describe("UX-03 P6: Home hides what has nothing to show", () => {
 
   it("with one still-open topic, shows Still open and not the published builds", () => {
     mount({ ...NOTHING, requests: { status: "ready", data: [{ id: "r1", title: "Make it work offline", detail: "Bakery site · 3 days left", reward: "£40", href: "/bounties/r1/solve" }] } });
-    expect(headings(room())).toEqual(["Still open"]);
+    expect(headings(room())).toEqual(["1 open in your spaces"]);
     expect(screen.queryByRole("region", { name: "Your published builds" })).toBeNull();
   });
 

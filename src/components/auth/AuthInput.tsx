@@ -88,7 +88,7 @@ export function AuthInput({
     width: "100%",
     padding: showPasswordToggle || validation ? "0 44px 0 14px" : "0 14px",
     fontFamily: FIGTREE,
-    fontSize: "14px",
+    fontSize: "15px",
     fontWeight: 400,
   };
 
@@ -151,7 +151,7 @@ export function AuthInput({
   const validationMessageStyle = {
     ...fieldMessageStyle,
     marginTop: "6px",
-    color: validation?.state === "valid" ? t.evidence : t.catBreakage,
+    color: validation?.state === "valid" ? t.evidence : t.dangerText,
   };
 
   return (
@@ -212,7 +212,7 @@ export function AuthInput({
                 <Check size={16} style={{ color: t.evidence }} />
               )}
               {validation.state === "invalid" && (
-                <X size={16} style={{ color: t.catBreakage }} />
+                <X size={16} style={{ color: t.dangerText }} />
               )}
             </span>
           )}

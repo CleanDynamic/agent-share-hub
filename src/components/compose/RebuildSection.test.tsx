@@ -430,8 +430,8 @@ describe("the rebuild section itself", () => {
 
     const note = doc.querySelector('[data-testid="rebuild-note"]');
     expect(note).not.toBeNull();
-    expect(styleOf(note)).toContain("background:var(--recess)");
-    expect(styleOf(note)).toContain("border-radius:var(--r-control)");
+    expect(styleOf(note)).toContain("background:var(--surface)");
+    expect(styleOf(note)).toContain("border-radius:var(--r-area)");
   });
 
   /**

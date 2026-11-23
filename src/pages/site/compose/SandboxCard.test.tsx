@@ -491,7 +491,7 @@ describe("SV-05 P7 · the window's inset", () => {
     mount({ phone: false });
     await screen.findByTestId("sandbox-card");
     const preview = screen.getByTestId("card-body").firstElementChild as HTMLElement;
-    expect(preview.style.padding).toBe("0px 24px 16px"); // S31
+    expect(preview.style.padding).toBe("0px 20px 16px");
     cleanup();
     live();
     mount({ phone: true });

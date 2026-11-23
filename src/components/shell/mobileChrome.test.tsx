@@ -160,7 +160,7 @@ describe("phone chrome under the refined look", () => {
     expect(head).not.toContain("backdrop-filter");
   });
 
-  it("the dock is a --surface bar with a --surface-border top edge and control tiles, no glass, names kept", () => {
+  it("the dock is a --surface bar with a --surface-border top edge and borderless control tiles, no glass, names kept", () => {
     render(inRefined(<DockView current="gallery" unread={4} />));
     expect(screen.getAllByRole("link").map((a) => a.getAttribute("aria-label"))).toEqual([
       "Home",
@@ -173,7 +173,7 @@ describe("phone chrome under the refined look", () => {
     const html = renderToStaticMarkup(inRefined(<DockView current="gallery" unread={4} />));
     expect(html).toContain("background:var(--surface)");
     expect(html).toContain("background:var(--control-on)");
-    expect(html).toContain("border:1px solid var(--control-border)");
+    expect(html).toContain("border:1px solid transparent");
     expect(html).not.toContain("backdrop-filter");
     expect(html).not.toContain("var(--dock)");
   });

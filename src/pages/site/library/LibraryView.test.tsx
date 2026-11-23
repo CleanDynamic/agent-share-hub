@@ -179,7 +179,7 @@ describe("LibraryView", () => {
     expect(order.indexOf("library-items")).toBeLessThan(order.indexOf("library-selected"));
   });
 
-  it("draws its buttons with the shared Button, 32 high with 12 side padding (the control-heights pass)", () => {
+  it("draws its buttons with the shared Button, 32 high with 14 side padding", () => {
     view();
     const buttons = [
       screen.getByRole("button", { name: "Filters 2" }),
@@ -189,7 +189,7 @@ describe("LibraryView", () => {
     for (const button of buttons) {
       expect(button.getAttribute("data-ui"), button.textContent ?? "").toBe("button");
       expect(button.style.height, button.textContent ?? "").toBe("32px");
-      expect(button.style.padding, button.textContent ?? "").toBe("0px 12px");
+      expect(button.style.padding, button.textContent ?? "").toBe("0px 14px");
     }
   });
 
@@ -200,11 +200,11 @@ describe("LibraryView", () => {
     for (const item of within(group).getAllByRole("radio")) expect(item.style.height).toBe("24px");
   });
 
-  it("draws its underline tabs 32 high", () => {
+  it("draws its tabs 53 high", () => {
     view();
     const tabs = screen.getAllByRole("tab");
     expect(tabs.length).toBeGreaterThan(0);
-    for (const tab of tabs) expect(tab.style.height, tab.textContent ?? "").toBe("32px");
+    for (const tab of tabs) expect(tab.style.height, tab.textContent ?? "").toBe("53px");
   });
 
   it("draws no section whose prop is absent", () => {

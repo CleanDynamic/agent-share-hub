@@ -1864,6 +1864,26 @@ function componentFindings(code: string, file: string): Finding[] {
 export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
   {
     rule: "spacing 14 is not in SPACE_REFINED",
+    text: 'padding: "0 14px",',
+    why: "Synth 06: the pack's buttons, pills and inputs pad 0 14 (small button, pill, one-line field) and its inner cards 12 14.",
+  },
+  {
+    rule: "spacing 14 is not in SPACE_REFINED",
+    text: 'padding: "0 8px 0 14px",',
+    why: "Synth 06: the pack's buttons, pills and inputs pad 0 14 (small button, pill, one-line field) and its inner cards 12 14.",
+  },
+  {
+    rule: "spacing 14 is not in SPACE_REFINED",
+    text: 'padding: "0 14px", fontWeight: 600',
+    why: "Synth 06: the pack's buttons, pills and inputs pad 0 14 (small button, pill, one-line field) and its inner cards 12 14.",
+  },
+  {
+    rule: "spacing 14 is not in SPACE_REFINED",
+    text: 'export const tileBox: CSSProperties = { boxSizing: "border-box", minWidth: 0, background: t.module',
+    why: "Synth 06: the pack's buttons, pills and inputs pad 0 14 (small button, pill, one-line field) and its inner cards 12 14.",
+  },
+  {
+    rule: "spacing 14 is not in SPACE_REFINED",
     text: `<Link to={to} data-visual-slot="btn-primary" {...handlers} style={{ ...controlBase, ...PRIMARY, height: phone ? TOUCH_MIN : 32, padding: "0 `,
     why: "SV-14: the OpenBuilds board pads Run an untested build 0 14.",
   },

@@ -139,10 +139,10 @@ describe("Drafts behaviour", () => {
 describe("Drafts, the board's words", () => {
   const now = Date.parse("2026-10-06T10:00:00.000Z");
 
-  it("heads the lists with their counts", () => {
+  it("heads the lists with the fact: their counts", () => {
     view({ drafts: many(28) });
-    expect(screen.getByText("28 drafts · latest first")).toBeInTheDocument();
-    expect(screen.getByText(`${sessionsFixture.length} imported · drag one into a draft`)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "28 drafts" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: `${sessionsFixture.length} sessions` })).toBeInTheDocument();
   });
 
   it("names a session by its first prompt and details it '<tool> · <model> · <date> · in n drafts'", () => {

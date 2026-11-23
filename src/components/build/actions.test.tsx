@@ -27,15 +27,15 @@ const forkState: ForkState = {
 };
 
 describe("Rebuild this is the page's one primary", () => {
-  it("fills --action and puts --on-action on it", () => {
+  it("fills Mint and puts On-mint on it", () => {
     const doc = staticDoc(<ForkControl state={forkState} />);
     const button = doc.querySelector("button");
 
     expect(button?.textContent).toBe("Rebuild this");
-    expect(styleOf(button)).toContain("background:var(--action)");
-    expect(styleOf(button)).toContain("color:var(--on-action)");
-    // A control at --r-control. Nothing in this system is a pill.
-    expect(styleOf(button)).toContain("border-radius:var(--r-control)");
+    expect(styleOf(button)).toContain("background:var(--brand-accent)");
+    expect(styleOf(button)).toContain("color:var(--on-brand-accent)");
+    // Radius 18, the standard button. Nothing in this system is a pill.
+    expect(styleOf(button)).toContain("border-radius:18px");
   });
 
   it("carries the primary slot, so a supplied surface can replace it", () => {

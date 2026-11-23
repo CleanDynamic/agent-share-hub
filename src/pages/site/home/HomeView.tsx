@@ -374,7 +374,7 @@ export function WeekSection({ week }: { week: HomeViewProps["week"] }) {
       thing="your week"
       region="Your week"
       skeleton={<SectionBones rows={3} height={40} what="your week" />}
-      frame={sectionFrame("Your week", <SectionHead title="Your week" headingLevel={2} />, 14)}
+      frame={sectionFrame("Your week", <SectionHead title={week.status === "ready" && week.data.streak > 0 ? `${week.data.streak} day streak` : "Your week"} headingLevel={2} />, 14)}
     >
       {() =>
         week.status === "ready" && (

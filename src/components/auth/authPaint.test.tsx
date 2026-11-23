@@ -123,9 +123,9 @@ describe("AuthInput", () => {
 
   it("paints the message and the field's edge from one token", () => {
     const doc = invalid();
-    expect(styleOf(doc.querySelector("p"))).toContain("color:var(--cat-breakage)");
+    expect(styleOf(doc.querySelector("p"))).toContain("color:var(--danger-text)");
     expect(styleOf(doc.querySelector("input"))).toContain(
-      "border-color:var(--cat-breakage)",
+      "inset 0 0 0 1px var(--danger-text)",
     );
     expect(doc.querySelector("input")?.getAttribute("aria-invalid")).toBe("true");
   });
@@ -145,22 +145,22 @@ describe("AuthInput", () => {
   it("rests on the kit's field treatment", () => {
     const doc = staticDoc(<AuthInput label="Email" value="" onChange={() => {}} />);
     const style = styleOf(doc.querySelector("input"));
-    expect(style).toContain("background:var(--recess)");
-    expect(style).toContain("border-color:var(--line)");
-    expect(style).toContain("border-radius:var(--r-control)");
+    expect(style).toContain("background:var(--surface)");
+    expect(style).toContain("inset 0 0 0 1px var(--field-edge)");
+    expect(style).toContain("border-radius:var(--r-field)");
     // The iOS rule owns the mobile size; nothing here may outrank it.
-    expect(style).toContain("font-size:14px");
+    expect(style).toContain("font-size:15px");
   });
 });
 
 describe("the two button treatments", () => {
-  it("makes AuthButton the primary: --action filled, --on-action labelled", () => {
+  it("makes AuthButton the primary: Mint filled, On-mint labelled", () => {
     const doc = staticDoc(<AuthButton>Sign in</AuthButton>);
     const button = doc.querySelector("button");
     const style = styleOf(button);
-    expect(style).toContain("background:var(--action)");
-    expect(style).toContain("color:var(--on-action)");
-    expect(style).toContain("border-radius:var(--r-control)");
+    expect(style).toContain("background:var(--brand-accent)");
+    expect(style).toContain("color:var(--on-brand-accent)");
+    expect(style).toContain("border-radius:18px");
     expect(style).not.toContain("linear-gradient");
     expect(button?.getAttribute("data-visual-slot")).toBe("btn-primary");
   });
@@ -173,8 +173,8 @@ describe("the two button treatments", () => {
     expect(buttons).toHaveLength(3);
     for (const button of buttons) {
       const style = styleOf(button);
-      expect(style).toContain("background:var(--glass)");
-      expect(style).toContain("border-color:var(--line)");
+      expect(style).toContain("background:var(--control)");
+      expect(style).not.toContain("border-width:1px");
       expect(button.getAttribute("data-visual-slot")).toBe("btn-secondary");
     }
     // Google's four brand fills survive untouched — they are a trademark, not

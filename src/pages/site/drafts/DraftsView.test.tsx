@@ -56,8 +56,8 @@ describe("DraftsView", () => {
     view();
     expect(screen.getAllByTestId("draft-row")).toHaveLength(4);
     expect(screen.getAllByTestId("session-row")).toHaveLength(5);
-    expect(screen.getByRole("heading", { name: "Continue editing" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Sessions" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "4 drafts" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "5 sessions" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Older post drafts/ })).toBeNull();
   });
 
@@ -174,11 +174,11 @@ describe("DraftsView", () => {
     expect(onMore).toHaveBeenCalled();
   });
 
-  it("draws Show more sessions and Connect a tool with the shared Button at 32 / 12 (the control-heights pass)", () => {
+  it("draws Show more sessions and Connect a tool with the shared Button at 32 / 14", () => {
     view({ moreSessions: { loading: false, onMore: vi.fn() } });
     for (const button of [screen.getByRole("button", { name: "Show more sessions" }), screen.getAllByRole("button", { name: "Connect a tool" })[0]]) {
       expect(button.getAttribute("data-ui"), button.textContent ?? "").toBe("button");
-      expect([button.style.height, button.style.padding], button.textContent ?? "").toEqual(["32px", "0px 12px"]);
+      expect([button.style.height, button.style.padding], button.textContent ?? "").toEqual(["32px", "0px 14px"]);
     }
   });
 

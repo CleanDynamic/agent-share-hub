@@ -38,23 +38,23 @@ beforeEach(() => narrow(1440));
 afterEach(() => vi.unstubAllGlobals());
 
 describe("HomeView · control heights", () => {
-  it("draws Show more as the shared Button at 32 / 12, and a draft row's add button as a 24 icon button", () => {
+  it("draws Show more as the shared Button at 32 / 14, and a draft row's add button as a 28 icon button", () => {
     mount({ feed: { ...visionHomeProps().feed, hasMore: true, onMore: vi.fn() } });
     const more = screen.getByRole("button", { name: "Show more" });
     expect(more.getAttribute("data-ui")).toBe("button");
-    expect([more.style.height, more.style.padding]).toEqual(["32px", "0px 12px"]);
+    expect([more.style.height, more.style.padding]).toEqual(["32px", "0px 14px"]);
     const add = screen.getAllByRole("button", { name: "Add to a new build" })[0];
     expect(add.getAttribute("data-ui")).toBe("icon-button");
-    expect([add.style.width, add.style.height]).toEqual(["24px", "24px"]);
+    expect([add.style.width, add.style.height]).toEqual(["28px", "28px"]);
     expect(screen.getByTestId("home-new-pill").style.height).toBe("32px");
   });
 
-  it("draws the Kind filter as the shared Segmented: a 32 track with 24 items", () => {
+  it("draws the Kind filter as the shared Segmented: a row of 32 high pills", () => {
     mount();
     const kind = screen.getByRole("group", { name: "Kind" });
     expect(kind.getAttribute("data-ui")).toBe("segmented");
     expect(kind.style.height).toBe("32px");
-    for (const item of within(kind).getAllByRole("button")) expect(item.style.height).toBe("24px");
+    for (const item of within(kind).getAllByRole("button")) expect(item.style.height).toBe("32px");
   });
 
   it("draws the latest runs' status chips 20 high with 8 either side and no shadow", () => {
@@ -67,16 +67,17 @@ describe("HomeView · control heights", () => {
     }
   });
 
-  it("draws the feed's underline tabs 32 high", () => {
+  it("draws the feed's tabs 53 high", () => {
     mount();
-    for (const tab of screen.getAllByRole("tab")) expect(tab.style.height, tab.textContent ?? "").toBe("32px");
+    for (const tab of screen.getAllByRole("tab")) expect(tab.style.height, tab.textContent ?? "").toBe("53px");
   });
 });
 
 describe("HomeView · the three columns", () => {
   it("draws the studio, the feed and the room, each section under its own heading", () => {
     mount();
-    for (const name of ["Since you were last here", "Continue editing", "Your sessions", "Your week", "Still open", "Most run this week", "Where next"]) {
+    // Synth 06: a section is headed by the fact it holds ("36 drafts", "3 day streak", "3 open in your spaces").
+    for (const name of ["Since you were last here", /^\d+ drafts?$/, /^\d+ sessions?$/, /^3 day streak$/, /^\d+ open in your spaces$/, "Most run this week", "Where next"]) {
       expect(screen.getByRole("heading", { level: 2, name })).toBeTruthy();
     }
     expect(screen.getByRole("complementary", { name: "Your studio" })).toBeTruthy();
@@ -100,7 +101,7 @@ describe("HomeView · the three columns", () => {
     mount();
     const days = screen.getByRole("img", { name: "Active 3 of 7 days" });
     expect(days.querySelectorAll('[aria-hidden="true"]')).toHaveLength(7);
-    expect(screen.getByText("3 day streak · resets Monday 00:00 UTC")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 2, name: "3 day streak" })).toBeTruthy();
     expect(screen.getAllByRole("progressbar")).toHaveLength(3);
   });
 

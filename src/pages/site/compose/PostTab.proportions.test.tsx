@@ -200,6 +200,6 @@ describe("the + button", () => {
     mount(doc(p("one")));
     const add = within(screen.getByTestId("post-toolbar")).getByRole("button", { name: "Add another post" });
     expect([add.style.width, add.style.borderRadius]).toEqual(["32px", "999px"]);
-    expect(add.getAttribute("style")).toContain("var(--control-shadow)");
+    expect(add.getAttribute("style")).toContain("box-shadow: none");
   });
 });

@@ -87,10 +87,11 @@ describe("the Save toast", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(toast).toHaveBeenCalled());
 
-    const [message, options] = toast.mock.calls[0] as [string, { action: { label: string; onClick: () => void }; actionButtonStyle: { background: string } }];
+    const [message, options] = toast.mock.calls[0] as [string, { action: { label: string; onClick: () => void }; actionButtonStyle?: unknown }];
     expect(message).toBe("Saved.");
     expect(options.action.label).toBe("Add to a collection");
-    expect(options.actionButtonStyle.background).toBe("transparent");
+    // The action is the toaster's own small secondary button (Synth 06), so the toast sets no style of its own.
+    expect(options.actionButtonStyle).toBeUndefined();
 
     options.action.onClick();
     await waitFor(() => expect(screen.getByTestId("requested").textContent).toBe("build-7"));

@@ -36,10 +36,10 @@ describe("Add › System prompt", () => {
     return props;
   };
 
-  it("is a 560-wide dialog in the shared frame, saying what is required until the name and text are there", () => {
+  it("is a 440-wide dialog in the shared frame, saying what is required until the name and text are there", () => {
     open();
     expect(screen.getByRole("dialog", { name: SYSTEM_PROMPT_DIALOG_COPY.title })).toBeTruthy();
-    expect(screen.getByTestId("add-system-prompt-dialog").style.width).toBe("560px");
+    expect(screen.getByTestId("add-system-prompt-dialog").style.width).toBe("440px");
     expect(screen.getByTestId("modal-subtitle").textContent).toBe("Instructions for several prompts");
     expect(status()).toBe("Required: Name, Text");
     expect(add().disabled).toBe(true);
@@ -132,10 +132,10 @@ describe("Add › Dataset", () => {
     return props;
   };
 
-  it("is a 560-wide dialog that asks for a name and a description", () => {
+  it("is a 440-wide dialog that asks for a name and a description", () => {
     open();
     expect(screen.getByRole("dialog", { name: DATASET_DIALOG_COPY.title })).toBeTruthy();
-    expect(screen.getByTestId("add-dataset-dialog").style.width).toBe("560px");
+    expect(screen.getByTestId("add-dataset-dialog").style.width).toBe("440px");
     expect(status()).toBe("Required: Name, Description");
     type("Name", "Tickets");
     expect(status()).toBe("Required: Description");
@@ -208,10 +208,10 @@ describe("Add › GitHub repository", () => {
   };
   const owner = (label: string) => fireEvent.click(screen.getByRole("radio", { name: label }));
 
-  it("is a 560-wide dialog that asks for a URL and an ownership", () => {
+  it("is a 440-wide dialog that asks for a URL and an ownership", () => {
     open();
     expect(screen.getByRole("dialog", { name: REPO_DIALOG_COPY.title })).toBeTruthy();
-    expect(screen.getByTestId("add-repo-dialog").style.width).toBe("560px");
+    expect(screen.getByTestId("add-repo-dialog").style.width).toBe("440px");
     expect(status()).toBe("Required: Repository URL, Ownership");
     type("Repository URL", "github.com/acme/shop");
     expect(status()).toBe("Required: Ownership");
@@ -327,6 +327,11 @@ describe("F31, F33 and F34 · Add a dataset's form conventions", () => {
     for (const name of ["Name", "Description", "Format", "Source", "Licence"]) {
       if (["Format", "Source", "Licence"].includes(name)) openRow(name);
       const field = screen.getByLabelText(name) as HTMLInputElement;
+      // Synth 06: a text area in a modal is drawn empty; the one-line fields keep their examples.
+      if (field.tagName === "TEXTAREA") {
+        expect(field.placeholder, name).toBe("");
+        continue;
+      }
       expect(field.placeholder, name).toMatch(/^e\.g\. /);
       expect(field.className).toContain("placeholder:text-[color:var(--label)]");
     }
@@ -345,7 +350,7 @@ describe("F31, F33 and F34 · Add a dataset's form conventions", () => {
     expect(screen.queryByTestId("field-row")).toBeNull();
   });
 
-  it("F34: each Use option is a toggle with aria-pressed, and the chosen one is filled, not a well", () => {
+  it("F34: each Use option is a toggle with aria-pressed, and the chosen one is filled, not a field", () => {
     renderDataset();
     const option = screen.getByRole("button", { name: "Evaluation" });
     expect(option.getAttribute("aria-pressed")).toBe("false");
@@ -355,6 +360,6 @@ describe("F31, F33 and F34 · Add a dataset's form conventions", () => {
     // The selected recipe is the selected edge alone (no ring), never the well a text field sits in. jsdom keeps shadows, not a var() edge.
     expect(option.style.boxShadow).not.toBe("var(--selected-ring)");
     expect(option.style.boxShadow).not.toBe("var(--well-shadow)");
-    expect((screen.getByLabelText("Name") as HTMLInputElement).style.boxShadow).toBe("var(--well-shadow)");
+    expect((screen.getByLabelText("Name") as HTMLInputElement).style.boxShadow).toMatch(/^inset 0 0 0 1px var\(--(field-edge|focus-ring)\)$/);
   });
 });

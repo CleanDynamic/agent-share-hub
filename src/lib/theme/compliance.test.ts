@@ -303,13 +303,7 @@ const CAPPED: Record<string, { max: number; why: string }> = {
       "The dev motion harness (only under import.meta.env.DEV): two test hooks that set a tile's colour to a suggested " +
       "maker colour so the audit can watch it change, and a black bar the audit hides or shows to frame its recordings.",
   },
-  "src/pages/site/compose/modalRecipes.tsx": {
-    max: 1,
-    why:
-      "The selected segment's 4% white top highlight, inset 0 1px 0 rgba(255,255,255,.04). No token holds that one " +
-      "layer alone (control-shadow adds a drop shadow, surface-shadow is .035), and moving to either changes the look, " +
-      "which SV-26 may not. A later prompt should add the token; this entry goes then.",
-  },
+
 };
 
 /* THE THREE SCRIMS, together, because they are one unresolved question rather

@@ -11,17 +11,17 @@ const styleOf = (html: string, selector: string) =>
   new DOMParser().parseFromString(html, "text/html").querySelector(selector)?.getAttribute("style") ?? "";
 
 describe("the surface ladder in the brand primitives", () => {
-  it("draws an initials avatar on its fill with an edge", () => {
+  it("draws an initials avatar on Raised with no edge", () => {
     const style = styleOf(renderToStaticMarkup(<Avatar size={26} userId="u1" name="Ada Lovelace" />), '[data-ui="avatar"]');
-    expect(style).toContain("background:var(--avatar-fill)");
-    expect(style).toContain("border:1px solid var(--module-border)");
+    expect(style).toContain("background:var(--control)");
+    expect(style).not.toContain("border:1px solid");
   });
 
-  it("draws a plain status chip on its fill with an edge", () => {
+  it("draws a plain status chip on Card with no edge", () => {
     for (const tone of [undefined, "lit-ink"] as const) {
       const style = styleOf(renderToStaticMarkup(<Pill tone={tone}>4 runs</Pill>), '[data-ui="pill"]');
-      expect(style).toContain("background:var(--pill)");
-      expect(style).toContain("border:1px solid var(--module-border)");
+      expect(style).toContain("background:var(--module)");
+      expect(style).not.toContain("border:1px solid");
     }
   });
 });

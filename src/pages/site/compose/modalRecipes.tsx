@@ -964,7 +964,7 @@ export const OPTIONAL = {
     alignItems: "center",
     justifyContent: "flex-start",
     gap: space[2],
-    minHeight: 40,
+    minHeight: phone ? size.touch : 40,
     padding: `${space[2]}px ${inset}px`,
     background: hovered ? hoverFill() : "transparent",
   }),

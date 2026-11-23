@@ -53,22 +53,22 @@ describe("the Add dialog", () => {
     expect(document.body.textContent).not.toMatch(/One agent|A team of agents|Add an agent or a team/);
   });
 
-  it("is 560 wide", () => {
+  it("is 440 wide", () => {
     open();
-    expect(screen.getByTestId("add-agent-dialog").style.width).toBe("560px");
+    expect(screen.getByTestId("add-agent-dialog").style.width).toBe("440px");
   });
 
   it("shows Name and Models up front and keeps everything else in Optional, closed, in order, ten fields for a team and nine for a single agent", () => {
     open();
     expect(screen.getByLabelText("Name")).toBeTruthy();
     expect(screen.getByRole("group", { name: "Models" })).toBeTruthy();
-    expect(screen.getByTestId("optional-count").textContent).toBe("9 fields");
+    expect(screen.getByTestId("optional-count").textContent).toBe("9 optional details");
     expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("false");
     expect(screen.queryByLabelText("System instructions")).toBeNull();
     expect(names()).toEqual(["System instructions", "Available tools", "Trigger", "Harness", "Memory", "Helpers", "Limits", "Output and destination", "Sample run"]);
     fireEvent.click(screen.getByRole("radio", { name: new RegExp(AGENT_DIALOG_COPY.team) }));
     expect(names().at(-1)).toBe("Orchestration pattern");
-    expect(screen.getByTestId("optional-count").textContent).toBe("10 fields");
+    expect(screen.getByTestId("optional-count").textContent).toBe("10 optional details");
   });
 
   it("puts the default title in the name's placeholder, and saves an empty name as null, with Add ready on the default model", () => {
@@ -246,7 +246,7 @@ describe("the host platform, its models and its tools (CA-02 P5)", () => {
     const props = open({ seed: { harness: "hermes-agent", instructions: "Triage my inbox" } });
     expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("true");
     expect(rowOf("Harness").textContent).toContain("Hermes Agent");
-    expect((within(rowOf("System instructions")).getByRole("textbox") as HTMLTextAreaElement).value).toBe("Triage my inbox");
+    expect((within(rowOf("System instructions")).getByRole("textbox", { name: "System instructions" }) as HTMLTextAreaElement).value).toBe("Triage my inbox");
     fireEvent.click(add());
     expect(props.onAdd).toHaveBeenCalledWith({ kind: "agent", name: null, model: DEFAULT_AGENT_MODEL, harness: "hermes-agent", tools: [], instructions: "Triage my inbox" });
   });

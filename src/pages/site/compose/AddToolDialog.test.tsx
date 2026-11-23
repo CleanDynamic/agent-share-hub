@@ -41,7 +41,7 @@ describe("Add › Tool (CA-02 P6, CA-12 P7, CA-15 P4)", () => {
     expect(toolButton().textContent).toBe("Select an app");
     expect(screen.getByTestId("modal-status").textContent).toBe("Required: App");
     expect(add().disabled).toBe(true);
-    expect(screen.getByTestId("optional-count").textContent).toBe("6 fields");
+    expect(screen.getByTestId("optional-count").textContent).toBe("6 optional details");
     expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("false");
     expect(screen.queryAllByTestId("optional-field")).toHaveLength(0);
     expect(fieldNames()).toEqual(["Connection method", "Actions performed", "Permissions", "Required plan", "Setup steps", "Alternatives"]);
@@ -118,7 +118,7 @@ describe("Add › Tool (CA-02 P6, CA-12 P7, CA-15 P4)", () => {
   it("says in the toggle row how many fields hold something", () => {
     open();
     openRow("Actions performed");
-    expect(screen.getByTestId("optional-count").textContent).toBe("6 fields");
+    expect(screen.getByTestId("optional-count").textContent).toBe("6 optional details");
     fireEvent.change(control("Actions performed"), { target: { value: "read issues" } });
     expect(row("Actions performed").textContent).toContain("Actions performed");
   });
