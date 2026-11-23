@@ -192,7 +192,7 @@ const headProps = (over: Partial<ProfileHeadProps> = {}): ProfileHeadProps => ({
   level: null,
   oneLine: null,
   links: [],
-  record: recordParts("maya", { builds: 1, reproducedByOthers: 0, rebuiltFrom: 0, firstRebuildSlug: null, topicsAndReplies: 0 }),
+  record: recordParts("maya", { builds: 1, rebuiltFrom: 0, firstRebuildSlug: null, topicsAndReplies: 0 }),
   isOwn: false,
   following: false,
   onFollow: vi.fn(),

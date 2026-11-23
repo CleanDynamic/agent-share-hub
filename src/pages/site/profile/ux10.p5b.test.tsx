@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { trailFor } from "@/components/shell/breadcrumbTrail";
 import { matchRoute } from "@/lib/routing/routeTable";
 
-import { FollowListView, followEmpty, followTitle, type FollowListViewProps, type FollowRowView } from "./FollowListView";
+import { FollowListView, followEmpty, followFact, followTitle, type FollowListViewProps, type FollowRowView } from "./FollowListView";
 
 const lists = vi.hoisted(() => ({ calls: [] as unknown[][], pages: new Map<string | null, unknown>() }));
 const follow = vi.hoisted(() => ({ follow: vi.fn(async () => undefined), unfollow: vi.fn(async () => undefined) }));
@@ -47,12 +47,21 @@ const view = (over: Partial<FollowListViewProps> = {}) =>
   );
 
 describe("the view", () => {
-  it("titles both lists, with the count in label", () => {
+  it("the h1 is the fact (Synth 12): 31 followers, or 4 following; the list keeps the title as its name", () => {
     expect(followTitle("followers", "maya")).toBe("@maya's followers");
     expect(followTitle("following", "maya")).toBe("People @maya follows");
+    expect(followFact("following", "maya", 4)).toBe("4 following");
+    expect(followFact("followers", "maya", 1)).toBe("1 follower");
     view();
-    expect(screen.getByRole("heading", { level: 1, name: "@maya's followers" })).toBeInTheDocument();
-    expect(screen.getByText("31")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "31 followers" })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "@maya's followers" })).toBeInTheDocument();
+  });
+
+  it("the left panel is the person, linking back to the profile, with the other list's count as a link", () => {
+    view({ owner: { id: "u-maya", name: "Maya Kent", avatarUrl: null, otherCount: 88 } });
+    const owner = screen.getByTestId("follow-owner");
+    expect(within(owner).getByText("Maya Kent").closest("a")?.getAttribute("href")).toBe("/profile/maya");
+    expect(within(owner).getByRole("link", { name: "88 following" }).getAttribute("href")).toBe("/profile/maya/following");
   });
 
   it("each person: name, @handle and their one line; Follow or Following for all but the reader", () => {
@@ -64,6 +73,7 @@ describe("the view", () => {
     expect(within(rows[0]).getByRole("button", { name: "Follow" })).toBeInTheDocument();
     expect(within(rows[1]).getByRole("button", { name: "Following" }).getAttribute("aria-pressed")).toBe("true");
     expect(within(rows[2]).queryByRole("button")).toBeNull();
+    expect(within(rows[2]).getByText("You")).toBeInTheDocument();
   });
 
   it("is empty in one line, and private in the profile's sentence", () => {
@@ -77,7 +87,7 @@ describe("the view", () => {
   });
 
   it("G32: while the reads are out, the list's skeleton; never a blank page", () => {
-    view({ read: [readOf("loading"), readOf("loading")], people: [] });
+    view({ read: [readOf("loading"), readOf("loading")], people: [], total: null });
     expect(document.querySelector('[aria-busy="true"]')).not.toBeNull();
     expect(screen.getByRole("heading", { level: 1, name: "@maya's followers" })).toBeInTheDocument();
   });
@@ -135,7 +145,7 @@ describe("the page", () => {
     fireEvent.click(screen.getByRole("button", { name: "Follow" }));
     await waitFor(() => expect(screen.getByRole("button", { name: "Following" })).toBeInTheDocument());
     expect(follow.follow).toHaveBeenCalledWith("u-me", "p1");
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("People @maya follows");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("4 following");
   });
 });
 

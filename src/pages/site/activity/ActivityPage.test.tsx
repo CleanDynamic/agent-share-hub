@@ -59,9 +59,9 @@ function notification(n: number, over: Partial<Notification> = {}): Notification
     id: `n-${n}`,
     recipient_id: "viewer-1",
     actor_id: "actor-1",
-    notification_type: "reproduced",
-    kind: "reproduced",
-    body: "ran your build and it worked",
+    notification_type: "rebuilt",
+    kind: "rebuilt",
+    body: "rebuilt your build",
     target_type: "build",
     target_id: "build-1",
     metadata: { build_id: "build-1" },
@@ -134,8 +134,9 @@ describe("ActivityPage loading", () => {
     mount();
     expect(await screen.findAllByTestId("activity-row")).toHaveLength(2);
     expect(await screen.findByText("1 unread · live")).toBeTruthy();
-    expect(await screen.findByText("4")).toBeTruthy();
-    expect(await screen.findByRole("img", { name: /runs of your builds in the last 90 days/ })).toBeTruthy();
+    // Synth 12: the run-based count and the runs chart are still read, and no longer drawn.
+    expect(await screen.findByText("1 person this week")).toBeTruthy();
+    expect(screen.queryByRole("img", { name: /runs of your builds/ })).toBeNull();
 
     expect(getNotifications).toHaveBeenCalledWith({ userId: "viewer-1", limit: 50, offset: 0 });
     expect(getUnreadCount).toHaveBeenCalledWith("viewer-1");
@@ -319,19 +320,25 @@ describe("ActivityPage live", () => {
     expect(getNotifications).toHaveBeenCalledTimes(3);
   });
 
-  it("says live and Listening only while the channel is up", async () => {
+  it("says live only while the channel is up, and Reconnecting while it is not (Synth 12)", async () => {
     for (const status of ["connecting", "offline"] as const) {
       channel.status = status;
       const { unmount } = mount();
       expect(await screen.findByText("1 unread")).toBeTruthy();
       expect(screen.queryByText("1 unread · live")).toBeNull();
       expect(screen.getByText("Reconnecting")).toBeTruthy();
-      expect(screen.getByText("offline")).toBeTruthy();
       unmount();
     }
     channel.status = "live";
     mount();
     expect(await screen.findByText("1 unread · live")).toBeTruthy();
-    expect(screen.getByText("Listening")).toBeTruthy();
+    expect(screen.getByText("● live")).toBeTruthy();
+  });
+
+  it("draws no run: a reproduced notification is left out of the list", async () => {
+    getNotifications.mockResolvedValue({ notifications: [notification(1), notification(2, { kind: "reproduced", notification_type: "reproduced", body: "ran your build and it worked" })], total: 2 });
+    mount();
+    expect(await screen.findAllByTestId("activity-row")).toHaveLength(1);
+    expect(screen.queryByText(/ran your build/)).toBeNull();
   });
 });

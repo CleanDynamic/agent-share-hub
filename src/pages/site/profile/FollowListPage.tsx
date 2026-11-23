@@ -84,6 +84,7 @@ export function FollowListPage({ which }: { which: FollowList }) {
       <SeoHead title={followTitle(which, handle)} description={followTitle(which, handle)} path={`/profile/${handle}/${which}`} noIndex />
       <FollowListView
         handle={handle}
+        owner={profile ? { id: profile.id, name: profile.displayName ?? `@${handle}`, avatarUrl: profile.avatarUrl ?? null, otherCount: which === "followers" ? profile.counts.following : profile.counts.followers } : null}
         which={which}
         total={profile ? (which === "followers" ? profile.counts.followers : profile.counts.following) : null}
         /* G33: an absent or private profile decides the page by itself; the list is not what failed or is missing then. */

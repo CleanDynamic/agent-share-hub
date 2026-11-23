@@ -102,14 +102,14 @@ describe("the first screen", () => {
     await screen.findAllByTestId("profile-feed-item");
     expect(calls.slice(0, 3).sort()).toEqual(["feed", "side", "summary"]);
     expect(stubs.feed).toHaveBeenCalledWith("maya", expect.objectContaining({ filter: "all", cursor: null }));
-    expect(screen.getByTestId("profile-record").textContent).toBe("14 builds · 9 reproduced by others · rebuilt from 6 times · 31 topics and replies");
+    expect(screen.getByTestId("profile-record").textContent).toBe("14 builds · rebuilt from 6 times · 31 topics and replies");
   });
 
   it("opens on ?show=, which wins over the owner's filter", async () => {
     stubs.summary.mockResolvedValue(summary({ settings: { feedFilter: "builds", buildDisplay: "first_post", sideSections: [], notesVisible: "everyone", levelVisible: "everyone" } }));
-    renderAt("/profile/maya?show=notes");
+    renderAt("/profile/maya?show=topics");
     await screen.findAllByTestId("profile-feed-item");
-    expect(stubs.feed).toHaveBeenCalledWith("maya", expect.objectContaining({ filter: "notes" }));
+    expect(stubs.feed).toHaveBeenCalledWith("maya", expect.objectContaining({ filter: "topics" }));
   });
 });
 
