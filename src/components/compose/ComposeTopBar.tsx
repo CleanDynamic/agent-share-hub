@@ -422,12 +422,17 @@ export function ComposeTopBar({
      creator actually spends the hour. */
   const mode: WorkspaceMode = isRebuild ? "rebuild" : "compose";
 
+  /* The back button goes to Drafts, and on a rebuild to the build it was made from, by name (when that build is known). */
+  const sourceTitle = isRebuild ? (build.source_title_at_fork ?? rebuild?.source?.build.title ?? null) : null;
+  const sourceSlug = isRebuild ? (rebuild?.source?.build.slug ?? null) : null;
+  const exit = sourceTitle && sourceSlug ? { to: `/b2/${sourceSlug}`, hint: `Back to ${sourceTitle}` } : { to: "/drafts" };
+
   /* SV-26 P2: the bar, its hero controls and Publish share one tooltip provider, as they shared the app's. */
   return (
     <TooltipProvider>
     <WorkspaceBar
       mode={mode}
-      exit={{ to: "/gallery" }}
+      exit={exit}
       context={{
         kind: "editable",
         value: build.title ?? "",

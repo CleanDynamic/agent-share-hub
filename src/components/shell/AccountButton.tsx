@@ -2,8 +2,6 @@
 // draw it at once while the menu (and the menu library under it) loads apart, in `AccountMenu`. The same button is the
 // menu's trigger once the menu is here, so nothing on screen changes when it arrives.
 
-import { ChevronDown } from "lucide-react";
-import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 
@@ -12,6 +10,9 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 
 import type { FrameViewer } from "./frameTypes";
+
+/** The header's avatar is a rounded square, radius 7, not a circle. */
+export const AVATAR_RADIUS = 7;
 
 export interface AccountButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   viewer: FrameViewer;
@@ -30,10 +31,9 @@ export const AccountButton = forwardRef<HTMLButtonElement, AccountButtonProps>(f
       aria-label="Open account menu"
       {...rest}
       {...handlers}
-      style={{ boxSizing: "border-box", width: 44, height: 32, padding: 0, border: 0, background: "transparent", borderRadius: r.control, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, color: t.text2, flexShrink: 0, ...ring(state.focusVisible), outlineColor: state.focusVisible ? t.brandAccent : undefined }}
+      style={{ boxSizing: "border-box", width: 32, height: 32, padding: 0, border: 0, background: "transparent", borderRadius: AVATAR_RADIUS, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: t.text2, flexShrink: 0, ...ring(state.focusVisible), outlineColor: state.focusVisible ? t.brandAccent : undefined }}
     >
-      <Avatar size={avatarSize} userId={viewer.id} name={viewer.name} hue={viewer.hue} src={viewer.avatarUrl} />
-      <ChevronDown size={8} aria-hidden="true" />
+      <Avatar size={avatarSize} userId={viewer.id} name={viewer.name} hue={viewer.hue} src={viewer.avatarUrl} style={{ borderRadius: AVATAR_RADIUS }} />
     </button>
   );
 });

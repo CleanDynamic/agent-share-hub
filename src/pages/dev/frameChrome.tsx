@@ -80,7 +80,6 @@ export function devChrome({ theme, current = "gallery", activityCurrent = false,
       <SiteFooterView
         signedIn
         onSignOut={noop}
-        onConnect={noop}
       />
     ),
   };

@@ -64,16 +64,22 @@ describe("Breadcrumb", () => {
       </MemoryRouter>,
     );
 
-  it("renders ancestors as links and the current page as aria-current", () => {
+  it("draws only the parent, as one link above the h1", () => {
     at("/b2/x", "Invoice triage agent");
     const nav = screen.getByRole("navigation", { name: "Breadcrumb" });
-    expect(nav.textContent).toBe("Home/Builds/Invoice triage agent");
+    expect(nav.textContent).toBe("Builds");
     expect(screen.getByRole("link", { name: "Builds" }).getAttribute("href")).toBe("/builds");
-    expect(screen.getByText("Invoice triage agent").getAttribute("aria-current")).toBe("page");
+    expect(screen.queryByText("Invoice triage agent")).toBeNull();
+    expect(screen.queryByText("Home")).toBeNull();
   });
 
-  it("shows a skeleton until the page supplies its title", () => {
-    at("/b2/x", null);
+  it("draws nothing for a page that sits straight under Home", () => {
+    at("/builds", null);
+    expect(screen.queryByRole("navigation", { name: "Breadcrumb" })).toBeNull();
+  });
+
+  it("shows a skeleton while the parent's name loads (the build's name above Lineage)", () => {
+    at("/b2/x/lineage", null);
     expect(screen.getByRole("status", { name: "Loading" })).toBeTruthy();
   });
 });
@@ -81,12 +87,25 @@ describe("Breadcrumb", () => {
 describe("SiteFooterView", () => {
   it("hides unreviewed legal and safety links", () => {
     render(<MemoryRouter><SiteFooterView /></MemoryRouter>);
-    expect(screen.getAllByRole("link").map(a=>a.getAttribute("href"))).toEqual(["/", "/about", "/api-docs"]);
+    expect(screen.getAllByRole("link").map(a=>a.getAttribute("href"))).toEqual(["/", "/about", "/connect"]);
   });
   it("offers all reviewed links in the approved order", () => {
     render(<MemoryRouter initialEntries={["/privacy"]}><SiteFooterView showPrivacy showTerms showFooterPages /></MemoryRouter>);
-    expect(screen.getAllByRole("link").map(a=>a.getAttribute("href"))).toEqual(["/", "/about", "/api-docs", "/terms", "/privacy", "/rules", "/report", "/contact"]);
+    expect(screen.getAllByRole("link").map(a=>a.getAttribute("href"))).toEqual(["/", "/about", "/privacy", "/terms", "/rules", "/report", "/contact", "/connect"]);
     expect(screen.getByRole("link",{name:"Privacy"}).getAttribute("aria-current")).toBe("page");
+  });
+  it("ends with Sign in, or Sign out when signed in, underlined in the text colour", () => {
+    const out = vi.fn();
+    const view = render(<MemoryRouter><SiteFooterView signedIn onSignOut={out} /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    expect(out).toHaveBeenCalledOnce();
+    view.unmount();
+    const signIn = vi.fn();
+    render(<MemoryRouter><SiteFooterView onSignIn={signIn} /></MemoryRouter>);
+    const button = screen.getByRole("button", { name: "Sign in" });
+    expect(button.getAttribute("style")).toContain("underline");
+    fireEvent.click(button);
+    expect(signIn).toHaveBeenCalledOnce();
   });
 });
 
@@ -113,26 +132,25 @@ describe("ThemeSegmented", () => {
 });
 
 /* UI-P87 — the refined breadcrumb and footer. Names, items and order are the current ones; styles from SSR markup. */
-describe("breadcrumb and footer under the refined look", () => {
+describe("the parent link", () => {
   const REFINED = "/dev/kit/pages/home";
 
-  it("the breadcrumb is Geist 12, 8 apart, '/' in --label, the current page --text at 500", () => {
+  it("is 13px in --label and underlined, with no separator and no current page", () => {
     const html = renderToStaticMarkup(
       <MemoryRouter initialEntries={[REFINED]}>
         <BreadcrumbView
           trail={[
             { label: "Home", href: "/" },
-            { label: "Gallery", href: "/gallery" },
-            { label: "Bakery homepage" },
+            { label: "OpenBuilds", href: "/openbuilds" },
+            { label: "Bakery space" },
           ]}
         />
       </MemoryRouter>,
     );
-    expect(html).toContain("gap:8px");
-    expect(html).not.toContain("height:33px");
-    expect(html).toContain("font-size:13px;color:var(--text2)");
-    expect(html).toMatch(/aria-hidden="true" style="[^"]*font-size:13px;color:var\(--label\)">\//);
-    expect(html).toMatch(/aria-current="page" style="[^"]*font-size:13px;font-weight:500;color:var\(--text\)/);
+    expect(html).toContain("font-size:13px");
+    expect(html).toContain("color:var(--label)");
+    expect(html).toContain("text-decoration:underline");
+    expect(html).not.toContain("aria-current");
+    expect(html).not.toContain("Bakery space");
   });
-
 });

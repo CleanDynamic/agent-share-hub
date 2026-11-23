@@ -5,23 +5,21 @@ import { isActivityPath, isBuildsPath, PRIMARY_LINKS, SITE_NAV, sectionForPath }
 describe("PRIMARY_LINKS", () => {
   // The header's links, in order. A change here is a change to the navigation's
   // budget (hicks-law), so it shows up as a diff in this snapshot.
-  it("is the header's list: Library and Drafts are signed-in only", () => {
+  it("is the header's list: Home, Builds, OpenBuilds, Library (Library is signed-in only)", () => {
     expect(PRIMARY_LINKS).toEqual([
-      { key: "drafts", label: "Drafts", href: "/drafts", authOnly: true },
-      { key: "library", label: "Library", href: "/library", authOnly: true },
+      { key: "home", label: "Home", href: "/" },
       { key: "gallery", label: "Builds", href: "/builds" },
       { key: "openbuilds", label: "OpenBuilds", href: "/openbuilds" },
-      { key: "connect", label: "Connect a tool", href: "/connect" },
+      { key: "library", label: "Library", href: "/library", authOnly: true },
     ]);
   });
 
   it("agrees with SITE_NAV", () => {
     expect(PRIMARY_LINKS.map((link) => link.href)).toEqual([
-      SITE_NAV.drafts,
-      SITE_NAV.library,
+      SITE_NAV.home,
       SITE_NAV.gallery,
       SITE_NAV.openbuilds,
-      "/connect",
+      SITE_NAV.library,
     ]);
   });
 });
@@ -36,10 +34,11 @@ describe("sectionForPath", () => {
     ["/rebuild/invoice-triage", "gallery"],
     ["/openbuilds", "openbuilds"],
     ["/library", "library"],
-    ["/drafts", "drafts"],
-    ["/drafts/posts", "drafts"],
-    ["/compose/new", "drafts"],
-    ["/compose/abc", "drafts"],
+    ["/drafts", null],
+    ["/drafts/posts", null],
+    ["/compose/new", null],
+    ["/compose/abc", null],
+    ["/connect", null],
     ["/import", null],
     ["/notifications", null],
     ["/profile/maya", null],

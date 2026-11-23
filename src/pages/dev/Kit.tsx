@@ -138,7 +138,7 @@ function WorkspaceSection() {
       <div style={{ borderWidth: 1, borderStyle: "solid", borderColor: t.line, overflow: "hidden" }}>
         <WorkspaceBar
           mode="compose"
-          exit={{ to: "/gallery" }}
+          exit={{ to: "/drafts" }}
           context={{
             kind: "editable",
             value: title,

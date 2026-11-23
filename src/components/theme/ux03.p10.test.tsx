@@ -54,7 +54,7 @@ describe("UX-03 P10: Light, Dark and System", () => {
     render(
       <ThemeProvider>
         <MemoryRouter>
-          <SiteFooterView signedIn={false} onSignOut={vi.fn()} onConnect={vi.fn()} />
+          <SiteFooterView signedIn={false} onSignOut={vi.fn()} />
         </MemoryRouter>
       </ThemeProvider>,
     );

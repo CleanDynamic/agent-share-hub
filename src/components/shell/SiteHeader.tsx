@@ -1,31 +1,16 @@
-// The site header (UI-P17): the sticky glass bar of the site frame, desktop only.
+// The site header (Synth 05): the beaver on its own, the nav, search, New build, Activity, theme and the account, on the
+// Page shade with no line and no fill. 88 tall at the top of a page and 56 once it has scrolled (`useHeaderCompact`).
 //
-// Lockup · Home / Builds / OpenBuilds / Library with the lamp under the current
-// one · search · New build · Activity · theme · account. It is the one
-// full-width blurred surface on desktop, so nothing inside it blurs.
+// TWO COMPONENTS. `SiteHeaderView` is pure — props only, so the dev compare page renders it with the sample viewer;
+// `SiteHeader` reads the route, `useAuth()`, the theme and the unread count and renders the view.
 //
-// TWO COMPONENTS. `SiteHeaderView` is pure — props only, so the dev compare page
-// renders it with the sample viewer; `SiteHeader` reads the route, `useAuth()`,
-// the theme and the unread count and renders the view. `ShellHeader`, `NavSearch`
-// and the old bell are untouched: they stay for `FlatShell`.
+// "CURRENT" IS A SECTION, NOT AN EXACT MATCH (`sectionForPath`): a build page and the rebuild page are Builds; import,
+// compose, Drafts and Activity are none. The current tab has `aria-current="page"` and a 3px Mint bar.
 //
-// "CURRENT" IS A SECTION, NOT AN EXACT MATCH (`sectionForPath`): a build page and
-// the rebuild page are Gallery; import, compose and Activity are none — the bell
-// shows Activity instead. The lamp is `--lit` with `--nav-lamp-glow`: amber is
-// light, never text.
-//
-// LIBRARY AND ACTIVITY ARE SIGNED-IN ONLY, as they are in `allNavItems`: both
-// routes sit behind `ProtectedRoute`, so a signed-out header does not offer them.
-//
-// THE DENSITY PASS (UI-P55). The bar is 52 (64 before) and, as the board draws it,
-// its 1px edge sits outside those 52, so the column starts at 53 on every board.
-// The links are 13px with 0 10px each side, the gaps 20 / 10 / 6, and the search,
-// New build, the bell and the theme control are 31 (38 before). The lockup and
-// the brand controls take the drawn sizes and render them through the table
-// (21 → 18). The side gutters below 1328 are not drawn on any board and keep the
-// 1280 column's edges, so they stay.
+// LIBRARY AND ACTIVITY ARE SIGNED-IN ONLY: both routes sit behind `ProtectedRoute`, so a signed-out header does not offer
+// them. Drafts is in the account menu.
 
-import { Bell, ChevronDown, Moon, Plus, Search, Sun } from "lucide-react";
+import { Bell, Monitor, Moon, Search, Sun } from "lucide-react";
 import { lazy, memo, startTransition, Suspense, useEffect, useState, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -33,7 +18,7 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/brand/Button";
 import { Icon } from "@/components/brand/Icon";
 import { IconButton } from "@/components/brand/IconButton";
-import { BeaverLogo } from "./BeaverLogo";
+import { BEAVER_RATIO, BeaverLogo } from "./BeaverLogo";
 import { HeaderJumpSearch } from "./HeaderJumpSearch";
 import type { PostingWindow } from "@/pages/site/openbuilds/PostingWindows";
 import { useAuth } from "@/contexts/AuthContext";
@@ -48,6 +33,7 @@ import { r } from "@/lib/theme/radius";
 import { space } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
+import { NewBuildTrigger } from "./CreateMenu";
 
 import { AccountButton } from "./AccountButton";
 import { FRAME_MAX_WIDTH, HEADER_COMPACT_HEIGHT, HEADER_HEIGHT, LOGO_COMPACT_WIDTH, LOGO_WIDTH, PANEL_GUTTER } from "./chromeSize";
@@ -73,6 +59,8 @@ export interface SiteHeaderViewProps {
   viewer: FrameViewer | null;
   /** The painted theme, for the theme control. */
   theme: "noon" | "dusk";
+  /** The reader's choice (dark, light, system), for the theme control's icon. Absent: the painted theme. */
+  themeChoice?: "noon" | "dusk" | "system";
   onToggleTheme: () => void;
   onSignIn: () => void;
   onSignOut: () => void;
@@ -85,27 +73,10 @@ export interface SiteHeaderViewProps {
   onCreate?: (kind: "build" | "import" | "post" | "connect") => void;
 }
 
-/* THE HEADER BETWEEN THE BOARDS (UI-P39). The reference draws 1280 and nothing
-   else, so below it the header gives ground in steps and drops nothing:
-   ≥1260 is the reference's gaps; 960–1259 tightens them; below 960 tightens
-   them again. The search is the reference's 280 to 1100 and 200 below it, and
-   below 900 an icon button that opens the search sheet. New build loses its
-   label below 980 and keeps it as its accessible name. */
 const MID_MIN = 960;
 const FULL_MIN = 1260;
 const SEARCH_FULL_MIN = 1100;
 const SEARCH_FIELD_MIN = 900;
-const NEW_LABEL_MIN = 980;
-
-const visuallyHidden: CSSProperties = {
-  position: "absolute",
-  width: 1,
-  height: 1,
-  margin: -1,
-  overflow: "hidden",
-  clip: "rect(0 0 0 0)",
-  whiteSpace: "nowrap",
-};
 
 /* SV-26 P2: the account menu and its menu library load apart from the first page (`AccountMenu.tsx`). Until they are
    here the same account button stands in its place; it warms the menu on hover or focus, and a press opens the menu as
@@ -154,25 +125,25 @@ function LazyAccountMenu({ viewer, onSignOut, avatarSize = 24, drafts = 0, theme
   );
 }
 
-/* ── UI-P87, refined ──
-   On `--frame` with no background and no border, 48 high, `0 space[6]` (24), gap space[2] (8; S37): the lockup (18 / 14), a 1px × 16 `--line`
-   divider, the links (13/500 `--text2`, `0 12px` as the board draws them; the current one `--text` with a 2px
-   `--nav-mark` bar 10 in from each side and `--nav-lamp-glow`; Drafts keeps its count at 11/500 `--label`), a spacer,
-   the search (240×30, "/"), New build as a secondary button 30 high with no icon, the bell as a ghost 30 icon link with
-   the unread count as a 12px `--lit-mark` badge, the theme as a ghost 30 icon button, and the avatar at 26. On
-   /notifications the bell takes the `--control-on` fill and the `--control-border` edge, never a colour. The steps the
-   header gives ground in between the boards are the current header's. */
+/* THE HEADER BETWEEN THE BOARDS. The pack draws 1440 and nothing else, so below it the header gives ground in steps and
+   drops nothing: from 1260 the search is 340, from 1100 it is 300, below that 220; below 900 it is an icon button that
+   opens the search sheet. The nav tabs tighten from 12 to 8 either side below 960. */
+const TAB_PAD_FULL = 12;
+const TAB_PAD_TIGHT = 8;
 
-const refinedLink: CSSProperties = {
-  position: "relative",
-  height: HEADER_COMPACT_HEIGHT,
-  display: "flex",
-  alignItems: "center",
-  gap: space[2],
-  fontFamily: FIGTREE,
-  fontSize: 13,
-  fontWeight: 500,
+/** The tab's own bar: 3px Mint, 12 in from each side, radius 2, on the bottom edge; light adds a 1px Ink line under it. */
+const TAB_BAR: CSSProperties = {
+  position: "absolute",
+  left: 12,
+  right: 12,
+  bottom: 0,
+  height: 3,
+  borderRadius: 2,
+  background: t.tabBar,
+  boxShadow: `0 1px 0 ${t.tabBarEdge}`,
 };
+
+const ROUND: CSSProperties = { width: 40, height: 40, borderRadius: r.full };
 
 const loadCreateMenu = () => import("./CreateMenu");
 const CreateMenu = lazy(() => loadCreateMenu().then((m) => ({ default: m.CreateMenu })));
@@ -181,7 +152,7 @@ function LazyCreateMenu({ onChoose }: { onChoose: (kind: "build" | "import" | "p
   const [ready, setReady] = useState(false);
   const [open, setOpen] = useState(false);
   const warm = () => { void loadCreateMenu(); };
-  const standIn = <Button variant="ghost" size={32} aria-label="Create new…" aria-haspopup="menu" aria-expanded={false} title="Create new…" onPointerEnter={warm} onFocus={warm} onClick={() => { setOpen(true); setReady(true); }} style={{ padding: "0 8px", outlineColor: t.brandAccent }}><Plus size={16} /><ChevronDown size={8} /></Button>;
+  const standIn = <NewBuildTrigger aria-expanded={false} onPointerEnter={warm} onFocus={warm} onClick={() => { setOpen(true); setReady(true); }} />;
   return <Suspense fallback={standIn}>{ready ? <CreateMenu onChoose={onChoose} defaultOpen={open} /> : standIn}</Suspense>;
 }
 
@@ -192,6 +163,7 @@ function RefinedSiteHeaderView({
   drafts = 0,
   viewer,
   theme,
+  themeChoice,
   onToggleTheme,
   onSignIn,
   onSignOut,
@@ -204,20 +176,22 @@ function RefinedSiteHeaderView({
   const compact = !useMinWidth(MID_MIN);
   const searchFull = useMinWidth(SEARCH_FULL_MIN);
   const searchField = useMinWidth(SEARCH_FIELD_MIN);
-  const showConnect = useMinWidth(NEW_LABEL_MIN);
+  const edge = useMinWidth(FRAME_MAX_WIDTH + 16);
   const [searchOpen, setSearchOpen] = useState(false);
   const signedIn = viewer !== null;
-  const linkPad = full ? "0 8px" : compact ? "0 4px" : "0 8px";
+  const tabPad = compact ? TAB_PAD_TIGHT : TAB_PAD_FULL;
   const shrunk = useHeaderCompact();
   const barHeight = shrunk ? HEADER_COMPACT_HEIGHT : HEADER_HEIGHT;
-
+  const choice = themeChoice ?? theme;
+  const ThemeIcon = choice === "system" ? Monitor : choice === "dusk" ? Moon : Sun;
+  const themeLabel = choice === "system" ? "Theme: System" : choice === "dusk" ? "Theme: Dark" : "Theme: Light";
 
   return (
     <header
       data-testid="site-header"
       data-ui="site-header"
       style={{
-        /* The panels' edges: the 1280 container centred, and the panels 8 inside it (88 from the window at 1440, 8 below 1296). */
+        /* The 1280 container, centred: the beaver is 80 from the window's edge at 1440. Below 1296 the window's edge is 8 away. */
         width: "100%",
         maxWidth: FRAME_MAX_WIDTH,
         margin: "0 auto",
@@ -225,34 +199,28 @@ function RefinedSiteHeaderView({
         display: "flex",
         alignItems: "center",
         gap: space[2],
-        padding: `0 ${PANEL_GUTTER}px`,
+        padding: edge ? 0 : `0 ${PANEL_GUTTER}px`,
         boxSizing: "border-box",
       }}
     >
-      <FrameLink to={SITE_NAV.home} aria-label="OpenBuilds.ai home" aria-current={current === "home" ? "page" : undefined} style={{ flexShrink: 0, outlineColor: t.brandAccent }}><span style={{ display: "block", width: shrunk ? LOGO_COMPACT_WIDTH : LOGO_WIDTH, height: shrunk ? LOGO_COMPACT_WIDTH : LOGO_WIDTH }}><BeaverLogo theme={theme} size={LOGO_WIDTH} style={{ transformOrigin: "left top", transform: shrunk ? `scale(${LOGO_COMPACT_WIDTH / LOGO_WIDTH})` : "none", transition: move() }} /></span></FrameLink>
-      <span style={{ width: full ? 8 : 0, flexShrink: 0 }} />
-      {searchField ? <HeaderJumpSearch signedIn={signedIn} width={searchFull ? 272 : 200} initialValue={searchInitial} onSubmit={onSearch ?? (() => undefined)} /> : <IconButton icon={Search} glyph="search" boxed={false} label="Search" size={32} onClick={() => setSearchOpen(true)} />}
-      <span style={{ width: full ? 8 : 0, flexShrink: 0 }} />
-      <nav aria-label="Primary" style={{ display: "flex", alignItems: "center", height: barHeight, paddingLeft: 4 }}>
-        {PRIMARY_LINKS.filter((link) => (!link.authOnly || signedIn) && (link.key !== "connect" || showConnect)).map((link) => {
+      <FrameLink to={SITE_NAV.home} aria-label="OpenBuilds.ai home" style={{ flexShrink: 0, display: "block" }}>
+        <span style={{ display: "block", width: shrunk ? LOGO_COMPACT_WIDTH : LOGO_WIDTH, height: Math.round((shrunk ? LOGO_COMPACT_WIDTH : LOGO_WIDTH) * BEAVER_RATIO) }}>
+          <BeaverLogo theme={theme} size={LOGO_WIDTH} style={{ transformOrigin: "left top", transform: shrunk ? `scale(${LOGO_COMPACT_WIDTH / LOGO_WIDTH})` : "none", transition: move() }} />
+        </span>
+      </FrameLink>
+      <nav aria-label="Primary" style={{ display: "flex", alignItems: "stretch", height: barHeight, marginLeft: 28 - space[2] }}>
+        {PRIMARY_LINKS.filter((link) => !link.authOnly || signedIn).map((link) => {
           const isCurrent = link.key === current;
           return (
             <FrameLink
               key={link.key}
               to={link.href}
               aria-current={isCurrent ? "page" : undefined}
-              style={{ ...refinedLink, height: barHeight, padding: linkPad, fontWeight: isCurrent ? 500 : 400, color: isCurrent ? t.text : t.text2, whiteSpace: "nowrap", outlineColor: t.brandAccent, boxShadow: isCurrent ? `inset 0 -2px ${t.brandAccent}` : undefined }}
+              style={{ position: "relative", display: "flex", alignItems: "center", height: barHeight, padding: `0 ${tabPad}px`, fontFamily: FIGTREE, fontSize: 15, fontWeight: isCurrent ? 600 : 500, color: isCurrent ? t.text : t.label, whiteSpace: "nowrap" }}
               hoverStyle={{ color: t.text }}
             >
               {link.label}
-              {link.key === "drafts" && drafts > 0 && (
-                <span
-                  data-testid="drafts-count"
-                  style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, color: t.label, fontVariantNumeric: "tabular-nums" }}
-                >
-                  {drafts}
-                </span>
-              )}
+              {isCurrent && <span aria-hidden="true" data-testid="nav-bar" style={{ ...TAB_BAR, left: tabPad, right: tabPad }} />}
             </FrameLink>
           );
         })}
@@ -260,35 +228,38 @@ function RefinedSiteHeaderView({
 
       <span style={{ flexGrow: 1 }} />
 
+      {searchField ? <HeaderJumpSearch signedIn={signedIn} width={full ? 340 : searchFull ? 300 : 220} initialValue={searchInitial} onSubmit={onSearch ?? (() => undefined)} /> : <IconButton icon={Search} glyph="search" boxed={false} label="Search" size={32} data-hover-fill="" onClick={() => setSearchOpen(true)} style={ROUND} />}
+
+      <LazyCreateMenu onChoose={(kind) => { if (!viewer) onSignIn(); else if (onCreate) onCreate(kind); else if (kind === "build") onNewBuild(); }} />
+
       {signedIn && (
         <FrameLink
           to={SITE_NAV.activity}
           aria-label={unread > 0 ? `Activity, ${unread} unread` : "Activity"}
           aria-current={activityCurrent ? "page" : undefined}
+          data-hover-fill=""
           style={{
+            ...ROUND,
             position: "relative",
-            width: 32,
-            height: 32,
             boxSizing: "border-box",
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
-            borderRadius: r.control,
             color: activityCurrent ? t.text : t.text2,
-            ...(activityCurrent
-              ? { background: t.controlOn, border: `1px solid ${t.controlBorder}` }
-              : { background: "transparent", border: "1px solid transparent" }),
+            background: activityCurrent ? t.controlOn : "transparent",
+            border: `1px solid ${activityCurrent ? t.controlBorder : "transparent"}`,
           }}
           hoverStyle={{ color: t.text }}
         >
-          <Icon lucide={Bell} glyph="bell" size={16} />
-          {unread > 0 && <span aria-hidden="true" data-testid="unread-dot" style={{ position: "absolute", top: 0, right: 0, width: 8, height: 8, borderRadius: r.full, background: t.brandAccent, boxShadow: `0 0 0 2px ${t.frame}` }} />}
+          <Icon lucide={Bell} glyph="bell" size={18} />
+          {unread > 0 && <span aria-hidden="true" data-testid="unread-dot" style={{ position: "absolute", top: 8, right: 8, width: 5, height: 5, borderRadius: 0, background: t.tabBar }} />}
         </FrameLink>
       )}
 
-      <LazyCreateMenu onChoose={(kind) => { if (!viewer) onSignIn(); else if (onCreate) onCreate(kind); else if (kind === "build") onNewBuild(); }} />
-      {viewer ? <LazyAccountMenu viewer={viewer} onSignOut={onSignOut} avatarSize={24} drafts={drafts} theme={theme} onToggleTheme={onToggleTheme} /> : <><SignInControl onSignIn={onSignIn} /><IconButton size={32} boxed={false} icon={theme === "dusk" ? Moon : Sun} glyph={theme === "dusk" ? "moon" : "sun"} label={theme === "dusk" ? "Theme: Dark" : "Theme: Light"} onClick={onToggleTheme} style={{ outlineColor: t.brandAccent }} /></>}
+      <IconButton icon={ThemeIcon} glyph={choice === "system" ? undefined : choice === "dusk" ? "moon" : "sun"} boxed={false} label={themeLabel} size={32} data-hover-fill="" onClick={onToggleTheme} style={{ ...ROUND }} />
+
+      {viewer ? <LazyAccountMenu viewer={viewer} onSignOut={onSignOut} avatarSize={32} drafts={drafts} theme={theme} onToggleTheme={onToggleTheme} /> : <SignInControl onSignIn={onSignIn} />}
 
       {searchField ? null : (
         <LazyBottomSheet open={searchOpen} onOpenChange={setSearchOpen} title="Search">
@@ -330,7 +301,7 @@ function SiteHeaderContainer() {
   const navigate = useNavigate();
   const go = useGo() ?? navigate;
   const { isLoggedIn, user, profile, signOut } = useAuth();
-  const { resolved, setTheme } = useTheme();
+  const { resolved, theme: themeChoice, setTheme } = useTheme();
   const { count } = useUnreadNotifications();
   const draftCount = useQuery({
     queryKey: ["build", "countDraftBuilds"],
@@ -361,7 +332,8 @@ function SiteHeaderContainer() {
       drafts={isLoggedIn ? (draftCount.data ?? 0) : 0}
       viewer={viewer}
       theme={resolved}
-      onToggleTheme={() => setTheme(resolved === "dusk" ? "noon" : "dusk")}
+      themeChoice={themeChoice}
+      onToggleTheme={() => setTheme(themeChoice === "dusk" ? "noon" : themeChoice === "noon" ? "system" : "dusk")}
       /* G5: the sign-in dialog opens over this page (`?signin=login`), coming back here once signed in. */
       onSignIn={() => navigate(openOver(pathname, window.location.search), { state: deeper(locationState) })}
       onSignOut={async () => {

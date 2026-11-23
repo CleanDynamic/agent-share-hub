@@ -58,7 +58,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         isolation: "isolate",
       }}
     >
-      <WorkspaceBar mode="compose" exit={{ to: "/gallery" }} />
+      <WorkspaceBar mode="compose" exit={{ to: "/drafts" }} />
       <div
         style={{
           flex: 1,

@@ -60,20 +60,21 @@ describe("MobileHeaderView", () => {
     return handlers;
   };
 
-  it("signed in: lockup, Search, Account", () => {
+  it("signed in: the beaver, then Search, Activity and Menu", () => {
     const h = header(viewer);
     expect(screen.getByRole("link", { name: "OpenBuilds.ai home" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
-    fireEvent.click(screen.getByRole("button", { name: /account menu$/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+    expect(screen.getByRole("link", { name: "Activity" }).getAttribute("href")).toBe("/notifications");
     expect(h.onSearchOpen).toHaveBeenCalled();
     expect(h.onAccountOpen).toHaveBeenCalled();
   });
 
-  it("signed out: Sign in instead of the avatar", () => {
+  it("signed out: Sign in instead of Activity", () => {
     const h = header(null);
     fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
     expect(h.onSignIn).toHaveBeenCalled();
-    expect(screen.queryByRole("button", { name: /account menu$/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Activity/ })).toBeNull();
   });
 });
 
@@ -142,16 +143,18 @@ describe("phone chrome under the refined look", () => {
   const REFINED = "/dev/kit/pages/home";
   const inRefined = (node: React.ReactElement) => <MemoryRouter initialEntries={[REFINED]}>{node}</MemoryRouter>;
 
-  it("the header is --frame, 48 high, no edge and no blur, with the lockup and icon buttons, names kept", () => {
+  it("the header is --frame, 64 high, no edge and no blur, with the beaver at 40 and three 44px icon buttons, names kept", () => {
     render(inRefined(<MobileHeaderView viewer={viewer} onSearchOpen={vi.fn()} onAccountOpen={vi.fn()} onSignIn={vi.fn()} />));
     expect(screen.getByRole("link", { name: "OpenBuilds.ai home" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Search" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /account menu$/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Menu" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Activity" })).toBeTruthy();
+    expect(document.querySelector("[data-testid=mobile-header] img")?.getAttribute("width")).toBe("40");
     const html = renderToStaticMarkup(
       inRefined(<MobileHeaderView viewer={viewer} onSearchOpen={vi.fn()} onAccountOpen={vi.fn()} onSignIn={vi.fn()} />),
     );
     const head = html.slice(html.indexOf("<header"), html.indexOf(">", html.indexOf("<header")));
-    expect(head).toContain("height:48px");
+    expect(head).toContain("height:64px");
     expect(head).toContain("background:var(--frame)");
     expect(head).not.toMatch(/[;"]border(-bottom)?:/);
     expect(head).not.toContain("backdrop-filter");

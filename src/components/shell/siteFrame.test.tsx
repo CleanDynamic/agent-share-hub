@@ -91,9 +91,9 @@ describe("SiteFrameView under the refined look", () => {
     expect(html).not.toContain("var(--surface-shadow)");
   });
 
-  it("is 88 tall on a desktop and 48 on a phone, both on the page shade", () => {
+  it("is 88 tall on a desktop and 64 on a phone, both on the page shade", () => {
     expect(markup({ viewport: "desktop", children: <p>page</p> })).toContain("min-height:88px;background:var(--frame)");
-    expect(markup({ viewport: "mobile", children: <p>page</p> })).toContain("min-height:48px;background:var(--frame)");
+    expect(markup({ viewport: "mobile", children: <p>page</p> })).toContain("min-height:64px;background:var(--frame)");
   });
 
   it("keeps the 8px margins and the 12px radius on a phone, with the phone header and the dock", () => {
