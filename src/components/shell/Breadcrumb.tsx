@@ -1,16 +1,12 @@
-// The breadcrumb (UI-P18): where this page sits, mirroring the URL.
+// The parent link (Synth 05): there is no breadcrumb. Where a page has a parent, one 13px `--label` underlined link to it sits
+// above the h1 ("OpenBuilds" above a space's name, the build's name above Lineage and Compare, the space above a topic).
+// A page that sits straight under Home has no parent and draws nothing.
 //
-// `<nav aria-label="Breadcrumb">`, 33px tall (40 before the UI-P55 density pass),
-// 6 apart. Ancestors are links in Figtree 12px `--text2` each followed by a "/"
-// in DM Mono 12px `--label` (hidden from assistive tech); the current page is a
-// `<span aria-current="page">` at weight 600 in `--text`, one line with an
-// ellipsis at 480px. While a title is loading the current crumb is a 120×12
-// `--recess` skeleton.
+// It keeps the `<nav aria-label="Breadcrumb">` and its test ids, and the route's trail (`breadcrumbTrail.ts`) is unchanged:
+// the parent is the trail's second-to-last crumb, from a trail of three or more. While a parent's name is loading it is a
+// 120x16 `--recess` bar, so nothing moves when the name arrives.
 //
 // `BreadcrumbView` is pure (a trail in, a nav out); `Breadcrumb` reads the route.
-//
-// UNDER THE REFINED LOOK (UI-P87): Geist 12.5, 8 apart, no fixed height; ancestors `--text2`, the "/" in Geist
-// `--label`, the current page `--text` at 500. The structure and the names are the same.
 
 import { memo, type CSSProperties } from "react";
 
@@ -42,65 +38,26 @@ const LOADING_CRUMB: CSSProperties = {
 };
 
 export function BreadcrumbView({ trail }: { trail: readonly Crumb[] }) {
-  const text: CSSProperties = { fontFamily: FIGTREE, fontSize: 13 };
-  const currentWeight = 500;
+  const parent = trail.length >= 3 ? trail[trail.length - 2] : null;
+  if (!parent || !parent.href) return null;
   return (
     <nav
       data-testid="breadcrumb"
       data-ui="breadcrumb"
       aria-label="Breadcrumb"
-      style={
-        { display: "flex", alignItems: "center", gap: 8, minWidth: 0 }
-      }
+      style={{ display: "flex", alignItems: "center", minWidth: 0 }}
     >
-      {trail.map((crumb, index) => {
-        const last = index === trail.length - 1;
-        return (
-          <span key={index} style={{ display: "contents" }}>
-            {last || !crumb.href ? (
-              crumb.label === null ? (
-                <span
-                  role="status"
-                  aria-label="Loading"
-                  aria-current="page"
-                  style={LOADING_CRUMB}
-                />
-              ) : (
-                <span
-                  aria-current={last ? "page" : undefined}
-                  style={{
-                    ...text,
-                    fontWeight: last ? currentWeight : 400,
-                    color: last ? t.text : t.text2,
-                    lineHeight: `${CRUMB_LINE}px`,
-                    maxWidth: 480,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {crumb.label}
-                </span>
-              )
-            ) : crumb.label === null ? (
-              <span
-                role="status"
-                aria-label="Loading"
-                style={LOADING_CRUMB}
-              />
-            ) : (
-              <FrameLink to={crumb.href} style={{ ...text, color: t.text2, ...LINK_HIT }}>
-                {crumb.label}
-              </FrameLink>
-            )}
-            {!last && (
-              <span aria-hidden="true" style={{ fontFamily: FIGTREE, fontSize: 13, color: t.label }}>
-                /
-              </span>
-            )}
-          </span>
-        );
-      })}
+      {parent.label === null ? (
+        <span role="status" aria-label="Loading" style={LOADING_CRUMB} />
+      ) : (
+        <FrameLink
+          to={parent.href}
+          style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 400, color: t.label, textDecoration: "underline", textUnderlineOffset: 3, maxWidth: 480, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...LINK_HIT }}
+          hoverStyle={{ color: t.text }}
+        >
+          {parent.label}
+        </FrameLink>
+      )}
     </nav>
   );
 }

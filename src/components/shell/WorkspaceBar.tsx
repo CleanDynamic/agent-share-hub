@@ -37,29 +37,29 @@
 //   line, and none in anything the four routes mount as chrome. A blurred
 //   surface in here is a bug, not a taste.
 //
-// ── THE EXIT ─────────────────────────────────────────────────────────────────
+// ── THE EDITOR BAR (Synth 05) ─────────────────────────────────────────────────
 //
-// The exit is the reason this prompt exists, so it is a CONTROL and not a text
-// link: a bordered box on `--recess`, the wordmark in the display face, a
-// chevron, hover, keyboard focus and a tooltip naming the destination. A
-// creator who cannot find their way out of a full-screen editor panics, and a
-// four-word link in a crowded bar is not findable. Its border is `--text2`
-// rather than the `--line` every other control here takes — 5.26:1 on
-// Noon and 7.65:1 on Dusk, clearing the 3.0 floor for UI state, where
-// `--line` on `--bg` measures 1.30 and 1.82 and would leave the one control
-// nobody may miss reading as a label. It is also the tallest thing in the bar,
-// which is the whole of its emphasis (von-restorff): one element differing from
-// its neighbours, not a second primary action competing with Publish.
+// A three-part grid `1fr auto 1fr`, 88 tall, on the Page shade: at the left a 44px round back button (a chevron and no
+// text; its name says where it goes, "Back to Drafts", or "Back to <source build>" on a rebuild), in the centre the beaver
+// on its own, at the right the account's avatar. Under it, in the same header, is the toolbar the workspace always had:
+// the mode, the build's title, the save line and the route's own controls, and the theme control.
 //
-// Styled inline like every other surface on this path, because Tailwind's
-// generated utilities beat hand-written classes at build time (neoscale-ui
-// RULE 1).
+// The back button is a CONTROL and not a text link, because a creator who cannot find their way out of a full-screen
+// editor panics. It is the only way out: the beaver and the avatar are pictures, not links, because a creator who is
+// building should not be offered somewhere else to go.
+//
+// Styled inline like every other surface on this path, because Tailwind's generated utilities beat hand-written classes at
+// build time (neoscale-ui RULE 1).
 
 import type { CSSProperties, ReactNode } from "react";
+import { ChevronLeft } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Avatar } from "@/components/brand/Avatar";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { useAuth } from "@/contexts/AuthContext";
+import { useResolvedTheme } from "@/contexts/ThemeContext";
 import {
   fieldStyle,
   ring,
@@ -69,20 +69,20 @@ import {
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { SENTIENT, FIGTREE, eyebrow, label as labelType } from "@/lib/theme/type";
-import { SITE_NAME } from "@/lib/site";
+import { FIGTREE, eyebrow, label as labelType } from "@/lib/theme/type";
+import { AVATAR_RADIUS } from "./AccountButton";
+import { BeaverLogo } from "./BeaverLogo";
+import { EDITOR_BACK_SIZE, EDITOR_BAR_HEIGHT, LOGO_WIDTH } from "./chromeSize";
+
+/** The toolbar under the editor bar: the mode, the title, the save line, the route's controls and the theme control. */
+export const WORKSPACE_TOOLBAR_HEIGHT = 43;
 
 /**
- * The bar's height, in pixels.
- *
- * FORTY-THREE SINCE THE UI-P55 DENSITY PASS, which took ComposeTopBar's 52 (the
- * number it carried from NS-P07) through the table. The compose workspace is a
- * flex column whose panel row is `flex:1`, so the 9 pixels the bar gave up went
- * to the tray, the tree and the inspector. Nothing else may resize it —
- * `WorkspaceBar.test.tsx` asserts the number and the e2e spec measures the
- * rendered box.
+ * The whole header's height, in pixels: the 88px editor bar and the 43px toolbar. The compose workspace is a flex column
+ * whose panel row is `flex:1`, so nothing else may resize it — `WorkspaceBar.test.tsx` asserts the number and the e2e spec
+ * measures the rendered box.
  */
-export const WORKSPACE_BAR_HEIGHT = 43;
+export const WORKSPACE_BAR_HEIGHT = EDITOR_BAR_HEIGHT + WORKSPACE_TOOLBAR_HEIGHT;
 
 /** Which room of the workspace this is. Named in the bar's mono eyebrow. */
 export type WorkspaceMode = "compose" | "rebuild" | "convert";
@@ -165,7 +165,7 @@ export interface WorkspaceExit {
   /**
    * The tooltip, which must name the ACTUAL destination.
    *
-   * Defaults to "Back to the gallery", which is true on compose and rebuild.
+   * Defaults to "Back to Drafts", which is true on compose and rebuild when the source build is not known.
    * Convert overrides it, because convert's exit goes to the post being
    * converted rather than to /gallery — see ConvertPrompt. A tooltip that named
    * a page the control does not open would be worse than no tooltip at all.
@@ -220,64 +220,33 @@ export interface WorkspaceBarProps {
   right?: ReactNode;
 }
 
-/* ── The exit ──────────────────────────────────────────────────────────────── */
-
-/** The chevron. Inline rather than an icon import, so the bar adds no bytes to
- *  the four lazy chunks that mount it. `currentColor`, so it follows the label
- *  through every state without a second colour decision. */
-function Chevron() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ flexShrink: 0 }}
-    >
-      <path d="M15 18l-6-6 6-6" />
-    </svg>
-  );
-}
+/* ── The back button ──────────────────────────────────────────────────────── */
 
 /**
- * The exit's paint, in every state.
+ * The back button's paint, in every state.
  *
- * EXPORTED, AND TESTED AS AN OBJECT RATHER THAN THROUGH THE DOM. jsdom's CSS
- * parser drops any colour-valued property whose value is a bare `var()`, so
- * `background-color: var(--recess)` never reaches the rendered style attribute
- * in a unit test even though a browser paints it. Asserting the builder is how
- * `controls.ts` handles the same problem; the e2e spec then measures the
- * computed values in a real browser, which is the half jsdom cannot do.
+ * EXPORTED, AND TESTED AS AN OBJECT RATHER THAN THROUGH THE DOM. jsdom's CSS parser drops any colour-valued property whose
+ * value is a bare `var()`, so `background-color: var(--control)` never reaches the rendered style attribute in a unit test
+ * even though a browser paints it. Asserting the builder is how `controls.ts` handles the same problem.
  */
 export function exitControlStyle(state: ControlState = {}): CSSProperties {
   const hot = Boolean(state.hovered);
 
   return {
+    boxSizing: "border-box",
     display: "inline-flex",
     alignItems: "center",
-    gap: 5,
+    justifyContent: "center",
     flexShrink: 0,
-    /* Taller than every other control in the bar, which is the whole of its
-       emphasis: one element differing from its neighbours, not a second primary
-       action competing with Publish. 30 since the UI-P55 density pass (36
-       before); the controls a route puts beside it (30–32px today) take the
-       table with their pages. */
-    height: 30,
-    padding: "0 9px 0 7px",
-    borderRadius: r.control,
-    /* Flat. --recess on --bg, no blur — the ground rule at the top. */
-    backgroundColor: hot ? t.line : t.recess,
-    /* --text2 rather than --line: the one control here that must read as a
-       control at a glance. 5.26:1 Noon, 7.65:1 Dusk, against --line's
-       1.30 and 1.82 which are under the 3.0 floor for UI state. */
+    width: EDITOR_BACK_SIZE,
+    height: EDITOR_BACK_SIZE,
+    padding: 0,
+    borderRadius: r.full,
+    /* Flat: the control's fill, and its edge, which is the one the hover darkens toward the text. No blur. */
+    backgroundColor: t.control,
     borderWidth: 1,
     borderStyle: "solid",
-    borderColor: hot ? t.text : t.text2,
+    borderColor: hot ? t.text : t.controlBorder,
     color: t.text,
     textDecoration: "none",
     transition: uiTransition(),
@@ -288,7 +257,7 @@ export function exitControlStyle(state: ControlState = {}): CSSProperties {
 function ExitControl({ exit }: { exit: WorkspaceExit }) {
   const navigate = useNavigate();
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
-  const hint = exit.hint ?? "Back to the gallery";
+  const hint = exit.hint ?? "Back to Drafts";
 
   return (
     <Tooltip>
@@ -314,30 +283,7 @@ function ExitControl({ exit }: { exit: WorkspaceExit }) {
           {...handlers}
           style={exitControlStyle(state)}
         >
-          <Chevron />
-          {/* The wordmark, in the display face, from the SENTIENT stack rather
-              than a hand-written family — naming the face in source is what
-              `type.test.ts` forbids, because that guard is what keeps the
-              display floor enforceable across the whole product.
-
-              17 SINCE THE UI-P55 DENSITY PASS (20 before). The display face is
-              never set under 20 except as the wordmark, which the lockup takes
-              down to 15 (`LOCKUP_MIN_PX`); this is that word, so it keeps the
-              face. WorkspaceBar.test.tsx asserts the floor, because the scale's
-              own sweep only sees sizes written into CSS template literals and
-              this one is a style object. */}
-          <span
-            style={{
-              fontFamily: FIGTREE,
-              fontSize: 17,
-              fontWeight: 500,
-              lineHeight: 1,
-              letterSpacing: "-0.01em",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {SITE_NAME}
-          </span>
+          <ChevronLeft size={20} strokeWidth={1.75} aria-hidden="true" />
         </Link>
       </TooltipTrigger>
       <TooltipContent side="bottom">{hint}</TooltipContent>
@@ -428,68 +374,77 @@ function Context({ context }: { context?: WorkspaceContext }) {
 
 /* ── The bar ───────────────────────────────────────────────────────────────── */
 
+/** The signed-in reader's avatar, a picture and not a link. Nothing where there is no reader. */
+function EditorAvatar() {
+  /* A specimen or a unit test of chrome has no provider: useContext runs either way, so the hook order holds. */
+  let auth: ReturnType<typeof useAuth> | null = null;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    auth = useAuth();
+  } catch {
+    auth = null;
+  }
+  const user = auth?.user ?? null;
+  if (!user) return null;
+  const name = auth?.profile?.display_name || auth?.profile?.username || "User";
+  return <Avatar size={32} userId={user.id} name={name} src={auth?.profile?.avatar_url} style={{ borderRadius: AVATAR_RADIUS }} />;
+}
+
 export function WorkspaceBar({ mode, exit, context, right }: WorkspaceBarProps) {
+  const theme = useResolvedTheme();
   return (
     <header
       data-visual-slot="workspace-bar"
       data-testid="workspace-bar"
       data-workspace-mode={mode}
-      style={{
-        /* The bar IS the ground, separated from the work by one hairline. That
-           is the most a chrome band may assert in a workspace. */
-        backgroundColor: t.bg,
-        ...workspaceHairline,
-        height: WORKSPACE_BAR_HEIGHT,
-        flexShrink: 0,
-        display: "flex",
-        alignItems: "center",
-        gap: 7,
-        padding: "0 10px",
-        /* NOTHING IN THE BAR IS EVER UNREACHABLE, WHICH IS NOT THE SAME AS
-           EVERYTHING FITTING. Measured at 1440/1280/1100/1024/900/768, the bar's
-           contents fit down to about 1000px and then run over: the theme toggle
-           is 203px of three word-labelled segments and the compose bar was
-           already close to full before it. The workspace frame is
-           `overflow: hidden`, so without this the controls at the right end —
-           Publish among them — would be clipped off-screen rather than merely
-           cramped, and the route's one primary action would be unreachable at a
-           laptop width.
-
-           `overflow-x: auto` with `overflow-y: hidden` keeps the row exactly
-           WORKSPACE_BAR_HEIGHT tall (measured at every width above) and
-           makes the overrun scrollable instead of lost. It is a floor, not a
-           fix: the real answer is a denser theme control or a bar that sheds
-           labels below the single-column breakpoint, and both are a design
-           decision this prompt does not own. Reported in the handoff. */
-        overflowX: "auto",
-        overflowY: "hidden",
-      }}
+      style={{ backgroundColor: t.bg, flexShrink: 0, height: WORKSPACE_BAR_HEIGHT, display: "flex", flexDirection: "column" }}
     >
-      <ExitControl exit={exit} />
-
-      <span
-        aria-hidden
-        style={{ width: 1, height: 16, backgroundColor: t.line, flexShrink: 0 }}
-      />
-
-      {/* Mode identity. Mono, because an eyebrow is data about the surface
-          rather than prose on it. --text2 on --bg: 5.26 Noon, 7.65 Dusk. */}
-      <span
-        data-testid="workspace-mode"
-        style={{ ...eyebrow, color: t.text2, flexShrink: 0 }}
+      <div
+        data-testid="editor-bar"
+        style={{ height: EDITOR_BAR_HEIGHT, flexShrink: 0, display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", padding: "0 24px", boxSizing: "border-box" }}
       >
-        {MODE_LABEL[mode]}
-      </span>
+        <div style={{ justifySelf: "start" }}>
+          <ExitControl exit={exit} />
+        </div>
+        <BeaverLogo theme={theme} size={LOGO_WIDTH} />
+        <div style={{ justifySelf: "end", display: "flex" }}>
+          <EditorAvatar />
+        </div>
+      </div>
 
-      <Context context={context} />
+      <div
+        data-testid="workspace-toolbar"
+        style={{
+          ...workspaceHairline,
+          height: WORKSPACE_TOOLBAR_HEIGHT,
+          flexShrink: 0,
+          boxSizing: "border-box",
+          display: "flex",
+          alignItems: "center",
+          gap: 7,
+          padding: "0 10px",
+          /* NOTHING IN THE BAR IS EVER UNREACHABLE, WHICH IS NOT THE SAME AS EVERYTHING FITTING. The toolbar's contents fit down
+             to about 1000px and then run over: the workspace frame is `overflow: hidden`, so without this the controls at the
+             right end, Publish among them, would be clipped off-screen rather than merely cramped. `overflow-x: auto` with
+             `overflow-y: hidden` keeps the row exactly its height and makes the overrun scrollable instead of lost. */
+          overflowX: "auto",
+          overflowY: "hidden",
+        }}
+      >
+        {/* Mode identity. Mono, because an eyebrow is data about the surface rather than prose on it. */}
+        <span data-testid="workspace-mode" style={{ ...eyebrow, color: t.text2, flexShrink: 0 }}>
+          {MODE_LABEL[mode]}
+        </span>
 
-      {right}
+        <Context context={context} />
 
-      {/* A creator may work in here for an hour. Changing rooms should not mean
-          leaving the workspace to do it. */}
-      <span style={{ flexShrink: 0, display: "inline-flex" }}>
-        <ThemeToggle />
-      </span>
+        {right}
+
+        {/* A creator may work in here for an hour. Changing rooms should not mean leaving the workspace to do it. */}
+        <span style={{ flexShrink: 0, display: "inline-flex" }}>
+          <ThemeToggle />
+        </span>
+      </div>
     </header>
   );
 }

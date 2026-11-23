@@ -319,7 +319,7 @@ function Shell({ children }: { children: React.ReactNode }) {
     >
       <WorkspaceBar
         mode="compose"
-        exit={{ to: "/gallery" }}
+        exit={{ to: "/drafts" }}
         context={{ kind: "readonly", text: "New build" }}
       />
       <div

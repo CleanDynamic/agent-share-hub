@@ -33,7 +33,7 @@ import { expect, test, type Page } from "@playwright/test";
 const THEMES = ["noon", "dusk"] as const;
 
 /** ComposeTopBar's 52 through the density table (UI-P52 density pass). Only that pass resizes it. */
-const BAR_HEIGHT = 43;
+const BAR_HEIGHT = 131;
 
 /** Set the theme before first paint, the way index.html's boot script reads it. */
 async function withTheme(page: Page, theme: string) {
@@ -99,8 +99,8 @@ test.describe("the exit", () => {
     await openKit(page, "noon");
     const control = exit(page);
     await expect(control).toBeVisible();
-    await expect(control).toContainText("OpenBuilds.ai");
-    await expect(control).toHaveAttribute("href", "/gallery");
+    await expect(control).toHaveAttribute("aria-label", "Back to Drafts");
+    await expect(control).toHaveAttribute("href", "/drafts");
 
     const paint = await control.evaluate((el) => {
       const s = getComputedStyle(el);
@@ -118,14 +118,14 @@ test.describe("the exit", () => {
     // Taller than the controls beside it: its only emphasis. UI-P52 density
     // pass: 36 → 30; the 30–32px controls a route puts beside it take the table
     // with their pages.
-    expect(paint.height).toBe(30);
+    expect(paint.height).toBe(44);
     expect(paint.height).toBeLessThan(BAR_HEIGHT);
   });
 
   test("navigates out of the workspace when pressed", async ({ page }) => {
     await openKit(page, "noon");
     await exit(page).click();
-    await expect(page).toHaveURL(/\/gallery$/);
+    await expect(page).toHaveURL(/\/drafts$/);
   });
 
   test("is reachable and operable from the keyboard", async ({ page }) => {
@@ -133,7 +133,7 @@ test.describe("the exit", () => {
     await exit(page).focus();
     await expect(exit(page)).toBeFocused();
     await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(/\/gallery$/);
+    await expect(page).toHaveURL(/\/drafts$/);
   });
 
   for (const theme of THEMES) {

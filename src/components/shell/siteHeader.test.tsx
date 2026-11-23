@@ -9,9 +9,9 @@ function header(props: Partial<SiteHeaderViewProps> = {}) {
  render(<MemoryRouter><SiteHeaderView {...base} /></MemoryRouter>); return base;
 }
 describe("TB-01 desktop header", () => {
- it("offers the approved five global links, with Builds current", () => {
+ it("offers Home, Builds, OpenBuilds and Library, with Builds current", () => {
   header(); const links = within(screen.getByRole("navigation", { name: "Primary" })).getAllByRole("link");
-  expect(links.map(a => a.getAttribute("href"))).toEqual(["/drafts", "/library", "/builds", "/openbuilds", "/connect"]);
+  expect(links.map(a => a.getAttribute("href"))).toEqual(["/", "/builds", "/openbuilds", "/library"]);
   expect(links.filter(a => a.getAttribute("aria-current") === "page").map(a => a.getAttribute("href"))).toEqual(["/builds"]);
  });
  it("omits private links signed out and keeps sign-in and theme", () => {
@@ -23,11 +23,11 @@ describe("TB-01 desktop header", () => {
   header({unread:12}); expect(screen.getByRole("link", {name:"Activity, 12 unread"}).getAttribute("href")).toBe("/notifications");
  });
  it("opens Create and uses the existing New build handler", async () => {
-  const p=header(); fireEvent.click(screen.getByRole("button", {name:"Create new…"}));
+  const p=header(); fireEvent.click(screen.getByRole("button", {name:"New build"}));
   fireEvent.click(await screen.findByRole("menuitem", {name:"New build"})); expect(p.onNewBuild).toHaveBeenCalledOnce();
  });
  it("requires sign-in for Create when signed out", async () => {
-  const p=header({viewer:null}); fireEvent.click(screen.getByRole("button", {name:"Create new…"}));
+  const p=header({viewer:null}); fireEvent.click(screen.getByRole("button", {name:"New build"}));
   fireEvent.click(await screen.findByRole("menuitem", {name:"New build"})); expect(p.onSignIn).toHaveBeenCalledOnce(); expect(p.onNewBuild).not.toHaveBeenCalled();
  });
 });

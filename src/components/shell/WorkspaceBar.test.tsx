@@ -11,6 +11,10 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("@/contexts/AuthContext", () => ({
+  useAuth: () => ({ user: { id: "u1" }, profile: { display_name: "Maya Okafor", username: "maya", avatar_url: null } }),
+}));
+
 import {
   WORKSPACE_BAR_HEIGHT,
   WorkspaceBar,
@@ -21,7 +25,6 @@ import {
   type WorkspaceMode,
 } from "./WorkspaceBar";
 import { focusRing } from "@/lib/theme/focus";
-import { LOCKUP_MIN_PX } from "@/lib/theme/type";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider, THEME_STORAGE_KEY } from "@/contexts/ThemeContext";
 
@@ -75,23 +78,23 @@ beforeEach(() => {
 });
 
 describe("WorkspaceBar — the exit", () => {
-  it("reads as the wordmark and is reachable by its destination's name", () => {
+  it("is a round chevron with no text, named by where it goes", () => {
     renderBar();
-    expect(exit()).toHaveTextContent("OpenBuilds.ai");
-    expect(screen.getByLabelText("Back to the gallery")).toBe(exit());
+    expect(exit()).toHaveAccessibleName("Back to Drafts");
+    expect(screen.getByLabelText("Back to Drafts")).toBe(exit());
+    expect(exit().textContent).toBe("");
+    expect(exit().querySelector("svg")).not.toBeNull();
   });
 
-  it("goes to the gallery on compose and rebuild", () => {
+  it("goes to Drafts on compose", () => {
     for (const mode of ["compose", "rebuild"] as const) {
-      const view = renderBar({ mode });
-      expect(exit()).toHaveAttribute("href", "/gallery");
-      fireEvent.click(exit());
-      expect(screen.getByTestId("landed")).toHaveTextContent("gallery");
+      const view = renderBar({ mode, to: "/drafts" });
+      expect(exit()).toHaveAttribute("href", "/drafts");
       view.unmount();
     }
   });
 
-  it("goes where convert sent it, and names that destination rather than the gallery", () => {
+  it("goes where the route sent it, and names that destination rather than Drafts", () => {
     renderBar({ mode: "convert", to: "/content/xyz", hint: "Back to the post" });
     expect(exit()).toHaveAttribute("href", "/content/xyz");
     expect(exit()).toHaveAccessibleName("Back to the post");
@@ -99,31 +102,25 @@ describe("WorkspaceBar — the exit", () => {
     expect(screen.getByTestId("landed")).toHaveTextContent("post");
   });
 
-  it("is a control and not a bare link: a fill, a visible border, a control radius", () => {
+  it("is a control and not a bare link: a 44px round button on the control fill with an edge", () => {
     const resting = exitControlStyle();
-    expect(resting.backgroundColor).toBe("var(--recess)");
-    // --text2, not --line: --line on --bg measures 1.30:1 and 1.82:1, under the
-    // 3.0 floor, and would leave the exit reading as a label.
-    expect(resting.borderColor).toBe("var(--text2)");
+    expect(resting.backgroundColor).toBe("var(--control)");
+    expect(resting.borderColor).toBe("var(--control-border)");
     expect(resting.borderWidth).toBe(1);
-    expect(resting.borderRadius).toBe("var(--r-control)");
+    expect(resting.borderRadius).toBe("var(--r-full)");
+    expect(resting.width).toBe(44);
+    expect(resting.height).toBe(44);
     expect(resting.color).toBe("var(--text)");
     expect(resting.textDecoration).toBe("none");
 
-    // Taller than the controls beside it — its only emphasis. UI-P52 density
-    // pass: 36 → 30; the 30–32px controls a route puts beside it take the
-    // table with their pages.
-    expect(resting.height).toBe(30);
-
     renderBar();
-    expect(exit().getAttribute("style")).toContain("var(--r-control)");
+    expect(exit().getAttribute("style")).toContain("var(--r-full)");
   });
 
   it("answers hover and keyboard focus, so its states are visible", () => {
     const hovered = exitControlStyle({ hovered: true });
-    expect(hovered.backgroundColor).toBe("var(--line)");
     expect(hovered.borderColor).toBe("var(--text)");
-    expect(hovered.backgroundColor).not.toBe(exitControlStyle().backgroundColor);
+    expect(hovered.borderColor).not.toBe(exitControlStyle().borderColor);
 
     // The shared ring, never a second one invented here.
     expect(exitControlStyle({ focusVisible: true })).toMatchObject(focusRing);
@@ -212,25 +209,26 @@ describe("WorkspaceBar — the right side", () => {
 });
 
 describe("WorkspaceBar — the ground rule", () => {
-  it("sets the wordmark at the wordmark's floor and never under it", () => {
+  it("is a three-part grid: back button, the beaver on its own, the account's avatar", () => {
     renderBar();
-    const style = exit().querySelector("span")?.getAttribute("style") ?? "";
-    const size = Number(/font-size:\s*(\d+)px/.exec(style)?.[1]);
-    // type.test.ts sweeps CSS template literals for this; a style object is
-    // invisible to it, so the one new Sentient site checks its own floor.
-    // UI-P52 density pass: the word is 17 (20 before), under the display floor,
-    // which only the wordmark may go under — down to the lockup's 15.
-    expect(size).toBe(17);
-    expect(size).toBeGreaterThanOrEqual(LOCKUP_MIN_PX);
+    const grid = screen.getByTestId("editor-bar");
+    expect(grid.getAttribute("style")).toContain("grid-template-columns: 1fr auto 1fr");
+    expect(grid.getAttribute("style")).toContain("height: 88px");
+    const logo = grid.querySelector("img");
+    expect(logo?.getAttribute("alt")).toBe("");
+    expect(logo?.getAttribute("src")).toMatch(/beaver-(dark|light)-logo/);
+    expect(logo?.getAttribute("width")).toBe("96");
+    // A picture, not a link: the back button is the one way out.
+    expect(logo?.closest("a")).toBeNull();
+    expect(within(grid).getByRole("img", { name: "Maya Okafor" })).toBeInTheDocument();
+    expect(within(grid).queryByText("OpenBuilds.ai")).toBeNull();
   });
 
-  it("is 43px, ComposeTopBar's 52 through the density table", () => {
-    // UI-P52 density pass: 52 → 43.
-    expect(WORKSPACE_BAR_HEIGHT).toBe(43);
+  it("is 131px: the 88px editor bar and the 43px toolbar under it", () => {
+    expect(WORKSPACE_BAR_HEIGHT).toBe(131);
     renderBar();
-    expect(screen.getByTestId("workspace-bar").getAttribute("style")).toContain(
-      "height: 43px",
-    );
+    expect(screen.getByTestId("workspace-bar").getAttribute("style")).toContain("height: 131px");
+    expect(screen.getByTestId("workspace-toolbar").getAttribute("style")).toContain("height: 43px");
   });
 
   it("puts the ground on --bg and the panels on --recess, with --line hairlines", () => {

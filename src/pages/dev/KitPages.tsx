@@ -119,9 +119,9 @@ const CHROME: Record<string, Partial<DevChromeOptions>> = {
   frame: { current: "home", dockCurrent: "home" },
   profile: { current: "home", dockCurrent: "home" },
   activity: { current: null, activityCurrent: true, dockCurrent: "activity" },
-  drafts: { current: "drafts", dockCurrent: null },
-  compose: { current: "drafts", dockCurrent: null },
-  sandbox: { current: "drafts", dockCurrent: null },
+  drafts: { current: null, dockCurrent: null },
+  compose: { current: null, dockCurrent: null },
+  sandbox: { current: null, dockCurrent: null },
 };
 
 const WIDTH: Record<DesignViewport, number> = { desktop: 1440, mobile: 390 };

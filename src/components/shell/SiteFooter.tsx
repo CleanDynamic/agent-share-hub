@@ -1,36 +1,31 @@
-// The site footer (UI-P18): lockup, five links, the credit. UX-03 P10: no theme control; the header's is the one.
+// The site footer (Synth 05): on the Page shade under the panels, with no line above it. The beaver at 48, then the links
+// at 13/400 `--text2` 20 apart (About, Privacy, Terms, Community rules, Report a problem, Contact, Connect a tool), and at
+// the right "Sign out" (signed in) or "Sign in", underlined, in `--text`. Padding 20px 80px 28px: the beaver and the last
+// control sit where the header's do (the 1280 container's edges, 80 from the window at 1440).
 //
-// `<footer>` full width, 88px, a 1px `--header-border` top edge on `--header`
-// with NO blur (the header is the one blurred surface). The inner row is the
-// 1280 column. The last link is "Sign in" when signed out and "Sign out" — a
-// button in the same style — when signed in; the reference draws the signed-out
-// item, so that difference is expected in the compare.
-//
-// DENSER SINCE UI-P55: the row is 20 apart and the links 16 apart in 12px type;
-// the 88px height is over the table's band and stays. The lockup and the theme
-// control take the drawn 16 and 32/11 and render them through the table. The
-// side gutters below 1328 keep the column's edges, as the header's do.
+// Privacy and Terms appear only once their text has been reviewed (`src/content/legal/reviewed.ts`); Community rules,
+// Report a problem and Contact appear together once the Terms they repeat are reviewed.
 
 import { memo, type CSSProperties } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
+import { PRIVACY_REVIEWED, TERMS_REVIEWED } from "@/content/legal/reviewed";
+import { useAuth } from "@/contexts/AuthContext";
 import { useResolvedTheme } from "@/contexts/ThemeContext";
 import { touchHit } from "@/lib/theme/controls";
-import { useIsPhone } from "./useMinWidth";
-import { BeaverLogo } from "./BeaverLogo";
-import { PRIVACY_REVIEWED, TERMS_REVIEWED } from "@/content/legal/reviewed";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
+import { deeper, openOver } from "@/pages/site/signin/signinUrl";
 
+import { BeaverLogo } from "./BeaverLogo";
+import { FOOTER_LOGO_WIDTH, FRAME_MAX_WIDTH, PANEL_GUTTER } from "./chromeSize";
 import { FrameLink } from "./FrameLink";
 import { SITE_NAV } from "./siteNav";
-import { SITE_NAME } from "@/lib/site";
+import { useIsPhone, useMinWidth } from "./useMinWidth";
 
 export interface SiteFooterViewProps {
   signedIn?: boolean;
   onSignOut?: () => void;
-  /** "Connect a tool": opens the connector guide. */
-  onConnect?: () => void;
   /** UX-12 P3: a legal link appears only once its text has been reviewed (src/content/legal/reviewed.ts). */
   showPrivacy?: boolean;
   showTerms?: boolean;
@@ -39,59 +34,73 @@ export interface SiteFooterViewProps {
   /** Where Sign in goes: the sign-in dialog over the page, and the history state that push carries. */
   signInTo?: string;
   signInState?: unknown;
+  /** Sign in as an action, where the container opens the dialog itself. */
+  onSignIn?: () => void;
 }
 
-/* UI-P87, refined: inside the surface, under a 1px `--hairline`, `12px <gutter>`, wrapping with `12px 24px` between
-   items: the lockup (15 / 13), the links at 12.5 `--text2` `8px 20px` apart, a spacer, and "© buildgallery" at 12
-   `--label`. The items, their order and their names are the current footer's; UX-03 P10 took out the Theme control. */
-const refinedLink: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, fontWeight: 400, color: t.text2 };
+const linkStyle: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, fontWeight: 400, color: t.text2 };
+const actionStyle: CSSProperties = { ...linkStyle, fontWeight: 400, color: t.text, textDecoration: "underline", textUnderlineOffset: 4, background: "transparent", border: 0, padding: 0, cursor: "pointer" };
 
-function RefinedSiteFooterView({ showPrivacy = false, showTerms = false, showFooterPages = false }: SiteFooterViewProps) {
+export function SiteFooterView({ signedIn = false, onSignOut, onSignIn, showPrivacy = false, showTerms = false, showFooterPages = false, signInTo, signInState }: SiteFooterViewProps) {
   const theme = useResolvedTheme();
   const phone = useIsPhone();
+  const edge = useMinWidth(FRAME_MAX_WIDTH + 16);
   const { pathname } = useLocation();
   const links = [
-    { label: "About", href: "/about" }, { label: "API docs", href: "/api-docs" },
-    ...(showTerms ? [{ label: "Terms", href: "/terms" }] : []),
+    { label: "About", href: "/about" },
     ...(showPrivacy ? [{ label: "Privacy", href: "/privacy" }] : []),
+    ...(showTerms ? [{ label: "Terms", href: "/terms" }] : []),
     ...(showFooterPages ? [{ label: "Community rules", href: "/rules" }, { label: "Report a problem", href: "/report" }, { label: "Contact", href: "/contact" }] : []),
+    { label: "Connect a tool", href: "/connect" },
   ];
+  const side = edge ? 0 : PANEL_GUTTER;
   return (
     <footer
       data-testid="site-footer"
       data-ui="site-footer"
       style={{
-        marginTop: "auto",
-        width: "100%",
-        margin: "auto auto 0",
+        /* On the Page, inside the container: its 8px side padding is taken back, so the footer's edges are the container's. */
+        width: "calc(100% + 16px)",
+        margin: `auto -${PANEL_GUTTER}px 0`,
         boxSizing: "border-box",
-        padding: "16px 16px 24px",
+        padding: `20px ${side}px 28px`,
         display: "flex",
         flexWrap: "wrap",
         alignItems: phone ? "flex-start" : "center",
         flexDirection: phone ? "column" : "row",
-        justifyContent: "space-between",
-        gap: "8px 24px",
+        gap: phone ? 12 : 20,
       }}
     >
-      <FrameLink to={SITE_NAV.home} aria-label="OpenBuilds.ai home" style={{ ...refinedLink, display: "flex", alignItems: "center", gap: 8, outlineColor: t.brandAccent, ...touchHit(phone, 44) }}>
-        <BeaverLogo theme={theme} size={16} /><span>© {new Date().getFullYear()} {SITE_NAME}</span>
+      <FrameLink to={SITE_NAV.home} aria-label="OpenBuilds.ai home" style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+        <BeaverLogo theme={theme} size={FOOTER_LOGO_WIDTH} />
       </FrameLink>
-      <nav aria-label="Footer" style={{ display: "flex", flexWrap: "wrap", gap: "8px 20px", justifyContent: phone ? "flex-start" : "flex-end" }}>
-        {links.map(({ label, href }) => <FrameLink key={href} to={href} aria-current={pathname === href ? "page" : undefined} style={{ ...refinedLink, color: pathname === href ? t.text : t.text2, display: "inline-flex", alignItems: "center", minWidth: phone ? 44 : undefined, outlineColor: t.brandAccent, textUnderlineOffset: 4, ...touchHit(phone, 44) }} hoverStyle={{ color: t.text, textDecoration: "underline" }}>{label}</FrameLink>)}
+      <nav aria-label="Footer" style={{ display: "flex", flexWrap: "wrap", gap: "8px 20px", flexGrow: 1 }}>
+        {links.map(({ label, href }) => <FrameLink key={href} to={href} aria-current={pathname === href ? "page" : undefined} style={{ ...linkStyle, color: pathname === href ? t.text : t.text2, display: "inline-flex", alignItems: "center", minWidth: phone ? 44 : undefined, textUnderlineOffset: 4, ...touchHit(phone, 44) }} hoverStyle={{ color: t.text, textDecoration: "underline" }}>{label}</FrameLink>)}
       </nav>
+      {signedIn ? (
+        <button type="button" onClick={onSignOut} style={{ ...actionStyle, ...touchHit(phone, 44) }}>Sign out</button>
+      ) : signInTo ? (
+        <FrameLink to={signInTo} state={signInState} style={{ ...actionStyle, ...touchHit(phone, 44), display: "inline-flex", alignItems: "center" }}>Sign in</FrameLink>
+      ) : (
+        <button type="button" onClick={onSignIn} style={{ ...actionStyle, ...touchHit(phone, 44) }}>Sign in</button>
+      )}
     </footer>
   );
 }
 
-export function SiteFooterView(props: SiteFooterViewProps) {
-  return <RefinedSiteFooterView {...props} />;
-}
-
 /** The container: signed-in state and sign-out from `useAuth()`. */
 function SiteFooterContainer() {
+  const { isLoggedIn, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { pathname, state } = useLocation();
   return (
     <SiteFooterView
+      signedIn={isLoggedIn}
+      onSignOut={async () => {
+        await signOut();
+        navigate("/");
+      }}
+      onSignIn={() => navigate(openOver(pathname, window.location.search), { state: deeper(state) })}
       showPrivacy={PRIVACY_REVIEWED}
       showTerms={TERMS_REVIEWED}
       showFooterPages={TERMS_REVIEWED}

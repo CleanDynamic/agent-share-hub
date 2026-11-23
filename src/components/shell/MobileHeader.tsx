@@ -1,30 +1,22 @@
-// The mobile header (UI-P19): the sticky glass bar of the site frame below 768px.
+// The mobile header (Synth 05): below 768px, 64 tall on the Page shade with no line and no fill. The beaver on its own at
+// 40, and at the right three 44px round icon buttons: Search (opens a full-width search sheet), Activity and Menu. The menu
+// sheet holds the nav (Home, Builds, OpenBuilds, Library), the account's pages, the theme control and Sign out. Signed out,
+// Activity is Sign in, as the desktop header offers neither Activity nor Library to a reader who is not signed in.
 //
-// 48px and its 1px edge (58 before the UI-P55 density pass), `--header` with the
-// one blur value, the lockup on the left and on the right a Search button (opens
-// a full-width search sheet) and the account control — the avatar (opens the
-// account sheet) or a Sign in button. It replaces `MobileTopBar` on site-frame
-// routes; `MobileTopBar` stays for `FlatShell`. The avatar's button keeps its
-// 44px touch target and the account sheet's rows keep 44; the type and the gaps
-// tighten, and the brand controls render their drawn sizes through the table.
-//
-// `MobileHeaderView` is pure (callbacks in, a bar out); `MobileHeader` owns the
-// two sheets, the route and the account. The account sheet is Profile, Library, Drafts,
-// the theme control (Noon · Dusk · System) and Sign out. UX-15 added Settings after Drafts.
+// `MobileHeaderView` is pure (callbacks in, a bar out); `MobileHeader` owns the two sheets, the route and the account.
 
-import { accountLabel } from "./accountLabel";
-import { Search } from "lucide-react";
+import { Bell, Menu, Search } from "lucide-react";
 import { memo, useState, type CSSProperties } from "react";
+import { r } from "@/lib/theme/radius";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
-import { Avatar } from "@/components/brand/Avatar";
+import { Icon } from "@/components/brand/Icon";
 import { Button } from "@/components/brand/Button";
 import { IconButton } from "@/components/brand/IconButton";
-import { Lockup } from "@/components/brand/Lockup";
 import { ThemeSegmented } from "@/components/theme/ThemeSegmented";
 import { useAuth } from "@/contexts/AuthContext";
-import { ring, touchArea } from "@/lib/theme/controls";
-import { useInteractive } from "@/lib/theme/interactive";
+import { useResolvedTheme } from "@/contexts/ThemeContext";
+import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -33,49 +25,27 @@ import type { FrameViewer } from "./frameTypes";
 import { RoutedHeaderSearch } from "./HeaderSearch";
 import { SITE_NAV } from "./siteNav";
 import { deeper, openOver } from "@/pages/site/signin/signinUrl";
-import { PHONE_HEADER_HEIGHT } from "./chromeSize";
+import { PHONE_HEADER_HEIGHT, PHONE_LOGO_WIDTH } from "./chromeSize";
+import { BeaverLogo } from "./BeaverLogo";
+import { FrameLink } from "./FrameLink";
+import { isActivityPath, PRIMARY_LINKS } from "./siteNav";
 
 export interface MobileHeaderViewProps {
   viewer: FrameViewer | null;
   onSearchOpen: () => void;
+  /** Opens the menu sheet. */
   onAccountOpen: () => void;
   onSignIn: () => void;
+  /** Unread notifications, for the Activity button's name and its dot. */
+  unread?: number;
+  /** On /notifications. */
+  activityCurrent?: boolean;
+  theme?: "dusk" | "noon";
 }
 
-function AvatarButton({ viewer, onClick, size = 34 }: { viewer: FrameViewer; onClick: () => void; size?: number }) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
-  return (
-    <button
-      type="button"
-      aria-label={accountLabel(viewer)}
-      onClick={onClick}
-      {...handlers}
-      style={{
-        /* The 44px touch target, hung outside the drawn avatar so the row lays
-           out as the board's: (44 − 28) / 2 = 8 each side since UI-P55 (5 around
-           the 34 before). */
-        width: 44,
-        height: 44,
-        margin: `${-(44 - (size === 34 ? 28 : size)) / 2}px`,
-        padding: 0,
-        border: 0,
-        background: "transparent",
-        borderRadius: "50%",
-        cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        ...ring(state.focusVisible),
-      }}
-    >
-      <Avatar size={size} userId={viewer.id} name={viewer.name} hue={viewer.hue} src={viewer.avatarUrl} />
-    </button>
-  );
-}
+const ROUND_44: CSSProperties = { width: 44, height: 44, borderRadius: r.full };
 
-/* UI-P87, refined: on `--frame`, 48 high with no edge and no blur, `0 12px`: the lockup (18 / 14), then the search as a
-   ghost 30 icon button and the avatar at 26 (inside its 44px touch target), or Sign in. */
-function RefinedMobileHeaderView({ viewer, onSearchOpen, onAccountOpen, onSignIn }: MobileHeaderViewProps) {
+function RefinedMobileHeaderView({ viewer, onSearchOpen, onAccountOpen, onSignIn, unread = 0, activityCurrent = false, theme = "dusk" }: MobileHeaderViewProps) {
   return (
     <header
       data-testid="mobile-header"
@@ -88,21 +58,33 @@ function RefinedMobileHeaderView({ viewer, onSearchOpen, onAccountOpen, onSignIn
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "0 12px",
+        padding: "0 12px 0 16px",
         boxSizing: "border-box",
         background: t.frame,
       }}
     >
-      <Lockup size={14} markSize={18} to={SITE_NAV.home} />
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <IconButton icon={Search} glyph="search" boxed={false} label="Search" size={32} onClick={onSearchOpen} style={touchArea(true, true)} />
+      <FrameLink to={SITE_NAV.home} aria-label="OpenBuilds.ai home" style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+        <BeaverLogo theme={theme} size={PHONE_LOGO_WIDTH} />
+      </FrameLink>
+      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+        <IconButton icon={Search} glyph="search" boxed={false} label="Search" size={32} data-hover-fill="" onClick={onSearchOpen} style={ROUND_44} />
         {viewer ? (
-          <AvatarButton viewer={viewer} onClick={onAccountOpen} size={26} />
+          <FrameLink
+            to={SITE_NAV.activity}
+            aria-label={unread > 0 ? `Activity, ${unread} unread` : "Activity"}
+            aria-current={activityCurrent ? "page" : undefined}
+            data-hover-fill=""
+            style={{ ...ROUND_44, position: "relative", boxSizing: "border-box", display: "inline-flex", alignItems: "center", justifyContent: "center", color: activityCurrent ? t.text : t.text2, background: activityCurrent ? t.controlOn : "transparent", border: `1px solid ${activityCurrent ? t.controlBorder : "transparent"}` }}
+          >
+            <Icon lucide={Bell} glyph="bell" size={18} />
+            {unread > 0 && <span aria-hidden="true" data-testid="unread-dot" style={{ position: "absolute", top: 11, right: 11, width: 5, height: 5, background: t.tabBar }} />}
+          </FrameLink>
         ) : (
           <Button variant="secondary" size={32} onClick={onSignIn}>
             Sign in
           </Button>
         )}
+        <IconButton icon={Menu} boxed={false} label="Menu" size={32} data-hover-fill="" onClick={onAccountOpen} style={ROUND_44} />
       </div>
     </header>
   );
@@ -135,6 +117,8 @@ function MobileHeaderContainer() {
   const { pathname, state: locationState } = useLocation();
   const navigate = useNavigate();
   const { isLoggedIn, user, profile, signOut } = useAuth();
+  const theme = useResolvedTheme();
+  const { count: unread } = useUnreadNotifications();
   const [searchOpen, setSearchOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
 
@@ -157,6 +141,9 @@ function MobileHeaderContainer() {
         viewer={viewer}
         onSearchOpen={() => setSearchOpen(true)}
         onAccountOpen={() => setAccountOpen(true)}
+        unread={unread}
+        activityCurrent={isActivityPath(pathname)}
+        theme={theme}
         /* G5: the sign-in dialog opens over this page, full screen on a phone. */
         onSignIn={() => navigate(openOver(pathname, window.location.search), { state: deeper(locationState) })}
       />
@@ -165,26 +152,35 @@ function MobileHeaderContainer() {
         <RoutedHeaderSearch variant="sheet" autoFocus onDone={() => setSearchOpen(false)} />
       </LazyBottomSheet>
 
-      <LazyBottomSheet open={accountOpen} onOpenChange={setAccountOpen} title="Account">
-        <Link to={profileHref} aria-current={onOwnProfile ? "page" : undefined} style={row} onClick={() => setAccountOpen(false)}>Profile</Link>
-        <Link to={SITE_NAV.library} style={row} onClick={() => setAccountOpen(false)}>Library</Link>
-        <Link to={SITE_NAV.drafts} style={row} onClick={() => setAccountOpen(false)}>Drafts</Link>
-        {/* UX-15: Settings, before the theme control and Sign out. */}
-        <Link to={SITE_NAV.settings} aria-current={pathname === SITE_NAV.settings || pathname.startsWith(`${SITE_NAV.settings}/`) ? "page" : undefined} style={row} onClick={() => setAccountOpen(false)}>Settings</Link>
+      <LazyBottomSheet open={accountOpen} onOpenChange={setAccountOpen} title="Menu">
+        {PRIMARY_LINKS.filter((link) => !link.authOnly || viewer).map((link) => {
+          const here = link.href === "/" ? pathname === "/" : pathname === link.href || pathname.startsWith(`${link.href}/`);
+          return <Link key={link.key} to={link.href} aria-current={here ? "page" : undefined} style={row} onClick={() => setAccountOpen(false)}>{link.label}</Link>;
+        })}
+        {viewer && (
+          <>
+            <Link to={profileHref} aria-current={onOwnProfile ? "page" : undefined} style={row} onClick={() => setAccountOpen(false)}>Profile</Link>
+            <Link to={SITE_NAV.drafts} aria-current={pathname === SITE_NAV.drafts ? "page" : undefined} style={row} onClick={() => setAccountOpen(false)}>Drafts</Link>
+            {/* UX-15: Settings, before the theme control and Sign out. */}
+            <Link to={SITE_NAV.settings} aria-current={pathname === SITE_NAV.settings || pathname.startsWith(`${SITE_NAV.settings}/`) ? "page" : undefined} style={row} onClick={() => setAccountOpen(false)}>Settings</Link>
+          </>
+        )}
         <div style={{ padding: "4px 0" }}>
           <ThemeSegmented size={36} fontSize={13} />
         </div>
-        <button
-          type="button"
-          style={row}
-          onClick={async () => {
-            setAccountOpen(false);
-            await signOut();
-            navigate("/");
-          }}
-        >
-          Sign out
-        </button>
+        {viewer && (
+          <button
+            type="button"
+            style={row}
+            onClick={async () => {
+              setAccountOpen(false);
+              await signOut();
+              navigate("/");
+            }}
+          >
+            Sign out
+          </button>
+        )}
       </LazyBottomSheet>
     </>
   );

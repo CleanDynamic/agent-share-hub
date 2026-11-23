@@ -19,29 +19,26 @@ export const SITE_NAV = {
   settings: "/settings",
 } as const;
 
-export type PrimarySection = "home" | "gallery" | "openbuilds" | "library" | "drafts" | "connect";
+export type PrimarySection = "home" | "gallery" | "openbuilds" | "library";
 
-/** The links in the header's primary nav, in order. Library is signed-in only, as in `allNavItems`. */
+/** The links in the header's primary nav, in order. Library is signed-in only, as in `allNavItems`. Drafts is in the account menu. */
 export const PRIMARY_LINKS: readonly { key: PrimarySection; label: string; href: string; authOnly?: boolean }[] = [
-  { key: "drafts", label: "Drafts", href: SITE_NAV.drafts, authOnly: true },
-  { key: "library", label: "Library", href: SITE_NAV.library, authOnly: true },
+  { key: "home", label: "Home", href: SITE_NAV.home },
   { key: "gallery", label: "Builds", href: SITE_NAV.gallery },
   { key: "openbuilds", label: "OpenBuilds", href: SITE_NAV.openbuilds },
-  { key: "connect", label: "Connect a tool", href: "/connect" },
+  { key: "library", label: "Library", href: SITE_NAV.library, authOnly: true },
 ];
 
 /**
  * The primary link a route belongs to. A build page and the rebuild page count
- * as Builds; import and Activity belong to none, compose belongs to Drafts (Activity is shown by
+ * as Builds; import, Activity, Drafts, compose and Connect belong to none (Activity is shown by
  * the bell instead).
  */
 export function sectionForPath(pathname: string): PrimarySection | null {
-  if (pathname === "/connect") return "connect";
   if (pathname === "/" || pathname === "") return "home";
   if (isBuildsPath(pathname) || pathname.startsWith("/b2/") || pathname.startsWith("/rebuild/")) return "gallery";
   if (isOpenBuildsPath(pathname) || pathname.startsWith("/openbuilds/")) return "openbuilds";
   if (pathname === "/library" || pathname.startsWith("/library/")) return "library";
-  if (pathname === "/drafts" || pathname.startsWith("/drafts/") || pathname.startsWith("/compose/")) return "drafts";
   return null;
 }
 

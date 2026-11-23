@@ -23,6 +23,8 @@ import { SiteHeaderView } from "./SiteHeader";
    the hicks-law group — the header's New build button and its Drafts link sit
    together — so the signed-in header is five links and one button, and the dock
    stays at five tiles.
+   Synth 05: the header's nav is Home, Builds, OpenBuilds, Library (Drafts is in the account menu, Connect a tool in the
+   footer), and the phone header's menu holds the nav and the account's pages.
    ──────────────────────────────────────────────────────────────────────────── */
 
 const authState: {
@@ -73,16 +75,16 @@ beforeEach(() => {
 });
 
 describe("navigation budgets (hicks-law › Budgets)", () => {
-  it("a signed-in reader's header has 5 links and the New build button", () => {
+  it("a signed-in reader's header has 4 links and the New build button", () => {
     header(true);
-    expect(primaryLinks()).toEqual(["Drafts", "Library", "Builds", "OpenBuilds", "Connect a tool"]);
-    expect(screen.getAllByRole("button", { name: "Create new…" })).toHaveLength(1);
+    expect(primaryLinks()).toEqual(["Home", "Builds", "OpenBuilds", "Library"]);
+    expect(screen.getAllByRole("button", { name: "New build" })).toHaveLength(1);
   });
 
   it("a signed-out visitor's header has Home, Builds and OpenBuilds", () => {
     header(false);
-    expect(primaryLinks()).toEqual(["Builds", "OpenBuilds", "Connect a tool"]);
-    expect(screen.getAllByRole("button", { name: "Create new…" })).toHaveLength(1);
+    expect(primaryLinks()).toEqual(["Home", "Builds", "OpenBuilds"]);
+    expect(screen.getAllByRole("button", { name: "New build" })).toHaveLength(1);
   });
 
   it("the phone dock offers exactly 5 destinations", () => {
@@ -107,7 +109,7 @@ describe("navigation budgets (hicks-law › Budgets)", () => {
     expect(screen.getByRole("combobox", { name: "Search builds" })).toBeInTheDocument();
   });
 
-  it("the phone's account sheet lists Profile, Library, Drafts and Settings, then Sign out", async () => {
+  it("the phone's menu lists the nav, then Profile, Drafts and Settings, then Sign out", async () => {
     authState.isLoggedIn = true;
     authState.profile = { display_name: "Ada Lovelace", username: "ada", avatar_url: null };
     authState.user = { id: "u1", email: "ada@example.com" };
@@ -118,15 +120,18 @@ describe("navigation budgets (hicks-law › Budgets)", () => {
         </MemoryRouter>
       </ThemeProvider>,
     );
-    fireEvent.click(screen.getByRole("button", { name: /account menu$/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Menu" }));
     // SV-26 P2: the sheet's code loads on first open (LazyBottomSheet).
-    const sheet = await screen.findByRole("dialog", { name: "Account" });
-    expect(within(sheet).getAllByRole("link").map((a) => a.textContent)).toEqual(["Profile", "Library", "Drafts", "Settings"]);
+    const sheet = await screen.findByRole("dialog", { name: "Menu" });
+    // Synth 05: the nav moved into the menu, then the account's pages.
+    expect(within(sheet).getAllByRole("link").map((a) => a.textContent)).toEqual(["Home", "Builds", "OpenBuilds", "Library", "Profile", "Drafts", "Settings"]);
     expect(within(sheet).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual([
-      "/profile/ada",
+      "/",
+      "/builds",
+      "/openbuilds",
       "/library",
+      "/profile/ada",
       "/drafts",
-      // UX-15: Settings joins the account sheet (the owner asked for it; the primary nav is unchanged).
       "/settings",
     ]);
   });

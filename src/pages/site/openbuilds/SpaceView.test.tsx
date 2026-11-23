@@ -49,7 +49,7 @@ const props = (extra: Partial<SpaceViewProps> = {}): SpaceViewProps => ({
 
 const draw = (extra: Partial<SpaceViewProps> = {}) =>
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={["/openbuilds/spaces/evals"]}>
       <SpaceView {...props(extra)} />
     </MemoryRouter>,
   );
@@ -57,7 +57,7 @@ const draw = (extra: Partial<SpaceViewProps> = {}) =>
 afterEach(() => vi.unstubAllGlobals());
 
 describe("SpaceView", () => {
-  it("opens with PageHeader: the shared title style and the breadcrumb above it (page shell)", () => {
+  it("opens with PageHeader: the shared title style and the parent link above it (page shell)", () => {
     const { container } = draw();
     const h1 = screen.getByRole("heading", { level: 1, name: "Evals" });
     expect(h1.style.fontSize).toBe("20px");

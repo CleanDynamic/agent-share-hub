@@ -20,7 +20,7 @@ const footer = (extra: { showPrivacy?: boolean; showTerms?: boolean; showFooterP
   render(
     <MemoryRouter>
       <ThemeProvider>
-        <SiteFooterView signedIn={false} onSignOut={() => {}} onConnect={() => {}} {...extra} />
+        <SiteFooterView signedIn={false} onSignOut={() => {}} {...extra} />
       </ThemeProvider>
     </MemoryRouter>,
   );
@@ -32,7 +32,7 @@ describe("the footer", () => {
     expect(screen.queryByRole("link", { name: "Terms" })).toBeNull();
   });
 
-  it("TB-02: shows the three footer pages after Terms, in order, only when showFooterPages is true", () => {
+  it("TB-02: shows the three footer pages after Terms, then Connect a tool, in order, only when showFooterPages is true", () => {
     const { unmount } = footer({ showPrivacy: true, showTerms: true });
     for (const name of ["Community rules", "Report a problem", "Contact"]) expect(screen.queryByRole("link", { name })).toBeNull();
     unmount();
@@ -41,25 +41,25 @@ describe("the footer", () => {
     const destinations = Array.from(links, (a) => [a.textContent, a.getAttribute("href")]);
     expect(destinations).toEqual([
       ["About", "/about"],
-      ["API docs", "/api-docs"],
-      ["Terms", "/terms"],
       ["Privacy", "/privacy"],
+      ["Terms", "/terms"],
       ["Community rules", "/rules"],
       ["Report a problem", "/report"],
       ["Contact", "/contact"],
+      ["Connect a tool", "/connect"],
     ]);
     const style = (name: string) => screen.getByRole("link", { name }).getAttribute("style");
     expect(style("Contact")).toBe(style("About"));
   });
 
-  it("shows both after API docs, in the neighbours' style, once told they are reviewed", () => {
+  it("shows both after About, in the neighbours' style, once told they are reviewed", () => {
     footer({ showPrivacy: true, showTerms: true });
     const links = Array.from(screen.getByRole("navigation", { name: "Footer" }).querySelectorAll("a"), (a) => [a.textContent, a.getAttribute("href")]);
     expect(links).toEqual([
       ["About", "/about"],
-      ["API docs", "/api-docs"],
-      ["Terms", "/terms"],
       ["Privacy", "/privacy"],
+      ["Terms", "/terms"],
+      ["Connect a tool", "/connect"],
     ]);
     const style = (name: string) => screen.getByRole("link", { name }).getAttribute("style");
     expect(style("Privacy")).toBe(style("About"));
