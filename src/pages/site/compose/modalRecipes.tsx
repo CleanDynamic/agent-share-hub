@@ -486,9 +486,6 @@ export interface FieldAreaProps extends Omit<TextareaHTMLAttributes<HTMLTextArea
   rows: number;
   mono?: boolean;
   ref?: Ref<HTMLTextAreaElement>;
-  /** The box's optional title; with `onTitleChange` the caller owns it, without them it is kept here. */
-  title?: string;
-  onTitleChange?: (title: string) => void;
 }
 
 /** The text a native control now holds, written back so a controlled field's own `onChange` runs. */
@@ -497,28 +494,6 @@ function writeBack(box: HTMLTextAreaElement, text: string) {
   set?.call(box, text);
   box.dispatchEvent(new Event("input", { bubbles: true }));
 }
-
-/* ── Synth 09: titled text boxes ──
-   A window's boxes start from the titles the tile has (`seed`, by box name) and, when its form is submitted, hand every
-   box's title to `commit` (blank ones too, so a cleared title comes off). `expand` names a box to open in the notepad as the
-   window opens: a tile's titled row does that, and Done then saves the window. Provided round a window by whoever opens it
-   (the editor page for an Add, the tile's own edit window); without it a title lives only while the window is open. */
-
-export interface BoxTitleSink {
-  seed?: Readonly<Record<string, string>>;
-  commit?: (titles: Record<string, string>) => void;
-  expand?: string | null;
-  /** A window that saves as it goes (the prompt window): a box's title, written when its title field is left or the notepad is Done. */
-  onTitle?: (name: string, title: string) => void;
-}
-export const BoxTitleSinkContext = createContext<BoxTitleSink>({});
-
-/** What a form gives its boxes: where each one writes its title, and how Done in an expanded box saves the window. */
-export interface BoxTitleCollector {
-  set: (name: string, title: string) => void;
-  submit: () => void;
-}
-export const BoxTitleCollectorContext = createContext<BoxTitleCollector | null>(null);
 
 /** The words a box is called, for the notepad's head: its own name, or its label's. */
 function nameOf(box: HTMLTextAreaElement | null): string {
@@ -530,111 +505,56 @@ function nameOf(box: HTMLTextAreaElement | null): string {
 }
 
 /**
- * A text area, as Synth 06 draws every text box in a modal: empty (no placeholder words), with an optional title above it
- * ("Title · optional", a 32 tall field) and an Expand button in its top right corner that opens the text in the notepad.
- * The title is shared with the notepad: editing one edits the other. An untitled box shows nowhere else.
+ * A text area, as Synth 06 draws every text box in a modal: empty (no placeholder words), with an Expand button in its top
+ * right corner that opens the text in the notepad. Done in the notepad writes the text back to the box.
  */
 /* `placeholder` is accepted so callers compile and is not drawn: a box in a modal is empty. */
-export function FieldArea({ phone, rows, mono = false, onFocus, onBlur, title, onTitleChange, ref, placeholder: _placeholder, ...rest }: FieldAreaProps) {
+export function FieldArea({ phone, rows, mono = false, onFocus, onBlur, ref, placeholder: _placeholder, ...rest }: FieldAreaProps) {
   const focus = useFocused<HTMLTextAreaElement>(onFocus, onBlur);
   const box = useRef<HTMLTextAreaElement | null>(null);
   const expand = useRef<HTMLButtonElement>(null);
-  const sink = useContext(BoxTitleSinkContext);
-  const collector = useContext(BoxTitleCollectorContext);
-  const [kept, setKept] = useState(title ?? (rest["aria-label"] ? (sink.seed?.[rest["aria-label"]] ?? "") : ""));
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
-  /** Opened from the tile's titled row: Done saves the window too. */
-  const [fromTile, setFromTile] = useState(false);
-  const shownTitle = onTitleChange ? (title ?? "") : kept;
-  const setTitle = (next: string) => {
-    if (onTitleChange) onTitleChange(next);
-    else setKept(next);
-    collector?.set(nameOf(box.current), next);
-  };
-  const name = rest["aria-label"] ?? "";
-  /* A box named by its <label> (not aria-label) learns its name once drawn: its seeded title, and the box the tile asked for. */
-  useEffect(() => {
-    const named = nameOf(box.current);
-    const seeded = sink.seed?.[named];
-    if (!onTitleChange && !kept && seeded) {
-      setKept(seeded);
-      collector?.set(named, seeded);
-    } else if (shownTitle) collector?.set(named, shownTitle);
-    if (sink.expand && sink.expand === named) {
-      setText(box.current?.value ?? "");
-      setFromTile(true);
-      setOpen(true);
-    }
-    // Once, as the window opens.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  const titleId = useId();
   return (
-    <div data-testid="field-area" style={{ display: "flex", flexDirection: "column", gap: space[2], minWidth: 0 }}>
-      <div style={{ display: "grid", gridTemplateColumns: phone ? "minmax(0, 1fr)" : "96px minmax(0, 1fr)", columnGap: space[3], rowGap: space[1], alignItems: "center" }}>
-        <label htmlFor={titleId} style={{ ...HINT, whiteSpace: "nowrap" }}>
-          Title · optional
-        </label>
-        <input
-          id={titleId}
-          type="text"
-          aria-label={name ? `${name} title` : undefined}
-          value={shownTitle}
-          onChange={(event) => setTitle(event.target.value)}
-          onBlur={() => {
-            if (!collector) sink.onTitle?.(nameOf(box.current), shownTitle);
-          }}
-          style={{ ...fieldStyle(phone, { height: phone ? size.touch : 32, fontSize: phone ? 16 : 13 }), outline: "none" }}
-        />
-      </div>
-      <div style={{ position: "relative", minWidth: 0 }}>
-        <textarea
-          rows={rows}
-          {...rest}
-          ref={(node) => {
-            box.current = node;
-            if (typeof ref === "function") ref(node);
-            else if (ref) (ref as { current: HTMLTextAreaElement | null }).current = node;
-          }}
-          data-focused={focus.focused || undefined}
-          onFocus={focus.onFocus}
-          onBlur={focus.onBlur}
-          style={areaStyle(phone, rows, { paddingRight: 40, ...(mono ? { ...DATA_FACE, fontSize: phone ? 16 : 13 } : null), ...(focus.focused ? FIELD_FOCUS : { outline: "none" }) })}
-        />
-        <button
-          ref={expand}
-          type="button"
-          aria-label="Open in the notepad"
-          data-testid="field-expand"
-          data-hit=""
-          onClick={() => {
-            setText(box.current?.value ?? "");
-            setOpen(true);
-          }}
-          style={{ position: "absolute", top: 4, right: 4, width: phone ? size.touch : 28, height: phone ? size.touch : 28, padding: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", border: 0, borderRadius: r.full, background: "transparent", color: t.label, cursor: "pointer" }}
-        >
-          <Glyph name="expand" size={size.icon} />
-        </button>
-      </div>
+    <div data-testid="field-area" style={{ position: "relative", minWidth: 0 }}>
+      <textarea
+        rows={rows}
+        {...rest}
+        ref={(node) => {
+          box.current = node;
+          if (typeof ref === "function") ref(node);
+          else if (ref) (ref as { current: HTMLTextAreaElement | null }).current = node;
+        }}
+        data-focused={focus.focused || undefined}
+        onFocus={focus.onFocus}
+        onBlur={focus.onBlur}
+        style={areaStyle(phone, rows, { paddingRight: 40, ...(mono ? { ...DATA_FACE, fontSize: phone ? 16 : 13 } : null), ...(focus.focused ? FIELD_FOCUS : { outline: "none" }) })}
+      />
+      <button
+        ref={expand}
+        type="button"
+        aria-label="Open in the notepad"
+        data-testid="field-expand"
+        data-hit=""
+        onClick={() => {
+          setText(box.current?.value ?? "");
+          setOpen(true);
+        }}
+        style={{ position: "absolute", top: 4, right: 4, width: phone ? size.touch : 28, height: phone ? size.touch : 28, padding: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", border: 0, borderRadius: r.full, background: "transparent", color: t.label, cursor: "pointer" }}
+      >
+        <Glyph name="expand" size={size.icon} />
+      </button>
       <Notepad
         open={open}
         onClose={() => setOpen(false)}
         field={nameOf(box.current)}
         value={text}
-        title={shownTitle}
-        onTitleChange={setTitle}
         onDone={(next) => {
-          if (box.current) writeBack(box.current, next);
-          /* From the tile's row: the window saves once the field has taken the text. */
-          if (fromTile && collector) window.setTimeout(() => collector.submit(), 0);
-          /* A window that saves as it goes saves a box when it is left: leave it once the text is in, and write its title. */
-          if (!collector) {
-            const node = box.current;
-            /* `focusout` is what React's onBlur listens to; the notepad's focus trap is still up, so the box is not focused itself. */
-            window.setTimeout(() => node?.dispatchEvent(new FocusEvent("focusout", { bubbles: true })), 0);
-            sink.onTitle?.(nameOf(node), shownTitle);
-          }
+          const node = box.current;
+          if (node) writeBack(node, next);
+          /* A window that saves as it goes saves a box when it is left: leave it once the text is in. `focusout` is what React's
+             onBlur listens to; the notepad's focus trap is still up, so the box is not focused itself. */
+          window.setTimeout(() => node?.dispatchEvent(new FocusEvent("focusout", { bubbles: true })), 0);
         }}
         returnFocusTo={expand}
       />

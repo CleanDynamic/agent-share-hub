@@ -31,8 +31,6 @@ import { t } from "@/lib/theme/tokens";
 import { EYEBROW } from "./refinedStyles";
 import {
   Alert,
-  BoxTitleCollectorContext,
-  BoxTitleSinkContext,
   FOOT_NOTE,
   GroupHeading,
   HEADER,
@@ -183,19 +181,11 @@ export interface ModalFormProps {
 
 export function ModalForm({ phone, onSubmit, onCancel, missing, blocked = false, addLabel = MODAL_COPY.add, alert, status, children }: ModalFormProps) {
   const ready = missing === null && !blocked;
-  /* Synth 09: every box's title, by its name, handed to whoever opened the window when it is saved. */
-  const sink = useContext(BoxTitleSinkContext);
-  const titles = useRef(new Map<string, string>());
-  const form = useRef<HTMLFormElement>(null);
-  const collector = useMemo(() => ({ set: (name: string, title: string) => void titles.current.set(name, title), submit: () => form.current?.requestSubmit() }), []);
   return (
-    <BoxTitleCollectorContext.Provider value={collector}>
     <form
-      ref={form}
       onSubmit={(event) => {
         event.preventDefault();
         if (!ready) return;
-        if (sink.commit && titles.current.size > 0) sink.commit(Object.fromEntries(titles.current));
         onSubmit();
       }}
       style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: "1 1 auto", fontSize: phone ? 16 : 15 }}
@@ -225,7 +215,6 @@ export function ModalForm({ phone, onSubmit, onCancel, missing, blocked = false,
         </RecipeButton>
       </div>
     </form>
-    </BoxTitleCollectorContext.Provider>
   );
 }
 
