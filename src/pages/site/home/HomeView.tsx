@@ -13,7 +13,7 @@
    items at the top at once. */
 
 import { PriorityImageScope } from "@/components/post/media/priorityImage";
-import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, type CSSProperties, type ReactNode } from "react";
 import { Plus } from "lucide-react";
 
 import { Avatar } from "@/components/brand/Avatar";
@@ -26,6 +26,9 @@ import { IconButton } from "@/components/brand/IconButton";
 import { LampBar } from "@/components/brand/LampDot";
 import { FeedPost } from "@/components/gallery/FeedPost";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
+import { useThreadRest } from "@/components/gallery/useThreadRest";
+import { PostThread } from "@/components/post/PostThread";
+import { splitThread, threadOf, type GalleryMedia } from "@/lib/build";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { EngagementRow } from "@/components/social/EngagementRow";
 import { PostCard } from "@/components/post/PostCard";
@@ -636,24 +639,62 @@ function BuildLine({ title, href }: { title: string; href: string }) {
   );
 }
 
-export function RebuildItem({ item, now, onNear }: { item: HomeRebuildPost; now: number; onNear?: (ids: string[]) => void }) {
+export function RebuildItem({ item, srcByPath, now, onNear }: { item: HomeRebuildPost; srcByPath: MediaSrcMap; now: number; onNear?: (ids: string[]) => void }) {
   const ref = useNear<HTMLDivElement>(item.build.id, onNear);
   const source = atHandle(item.source.handle);
   const handle = atHandle(item.maker.handle);
   const age = shortAgo(item.at, now);
   const line = [handle, age].filter(Boolean).join(" · ");
+  const phone = useIsPhone();
+
+  /* The rebuild's own thread, when its write-up has more than one post. The note and the "Rebuilt from" card are its first
+     post's place, so the thread opens with the posts after it. */
+  const doc = useMemo(() => threadOf(item.build, item.build.media), [item.build]);
+  const posts = useMemo(() => (doc ? splitThread(doc) : []), [doc]);
+  const threaded = posts.length > 1;
+  const { phase, rest, restState, open, close, warm, retry } = useThreadRest({ buildId: item.build.id, enabled: threaded });
+  const mediaById = useMemo(() => {
+    const map = new Map<string, GalleryMedia>(item.build.media.map((row) => [row.id, row]));
+    for (const row of rest?.rows ?? []) map.set(row.id, row);
+    return map;
+  }, [item.build.media, rest]);
+  const srcAll = useMemo<MediaSrcMap>(() => (rest && rest.src.size > 0 ? new Map([...srcByPath, ...rest.src]) : srcByPath), [srcByPath, rest]);
+
+  const start = (
+    <>
+      {item.note ? <p style={text(15, 400, t.text, { margin: 0 })}>{item.note}</p> : null}
+      <div style={{ marginTop: 12, padding: 12, background: t.module, borderRadius: r.card }}>
+        <span style={{ display: "block", ...rowMeta() }}>Rebuilt from</span>
+        <span style={{ display: "block", ...text(15, 500, t.text), ...ellipsis }}>{item.source.title}</span>
+        {source ? <span style={{ display: "block", ...rowMeta() }}>{source}</span> : null}
+      </div>
+    </>
+  );
   return (
     <FeedItemFrame height={320} data-kind="rebuild" data-testid="home-feed-item">
       <article ref={ref} aria-label={item.build.title} style={{ display: "grid", gridTemplateColumns: "40px minmax(0, 1fr)", columnGap: 12, padding: "4px 0" }}>
         <Avatar size={40} userId={item.maker.id} name={item.maker.name} hue={item.maker.hue} src={item.maker.avatarUrl} />
         <div style={{ minWidth: 0 }}>
           <AuthorRow name={item.maker.name} line={line} />
-          {item.note ? <p style={text(15, 400, t.text, { margin: 0 })}>{item.note}</p> : null}
-          <div style={{ marginTop: 12, padding: 12, background: t.module, borderRadius: r.card }}>
-            <span style={{ display: "block", ...rowMeta() }}>Rebuilt from</span>
-            <span style={{ display: "block", ...text(15, 500, t.text), ...ellipsis }}>{item.source.title}</span>
-            {source ? <span style={{ display: "block", ...rowMeta() }}>{source}</span> : null}
-          </div>
+          {threaded ? (
+            <PostThread
+              posts={posts}
+              first={start}
+              mediaById={mediaById}
+              srcByPath={srcAll}
+              mode={phase === "open" ? "open" : "closed"}
+              onOpen={open}
+              onClose={close}
+              onIntent={warm}
+              rest={restState}
+              onRetry={retry}
+              connector={{ x: -(40 + 12) + 20, top: 16 }}
+              phone={phone}
+              resetKey={item.build.id}
+            />
+          ) : (
+            start
+          )}
           <BuildLine title={item.build.title} href={`/b2/${item.build.slug}`} />
           {item.engagement ? (
             <EngagementRow
@@ -789,7 +830,7 @@ function FeedBody(props: HomeViewProps) {
             item.kind === "build" ? (
               <BuildItem key={item.key} item={item} srcByPath={srcByPath} now={now} onNear={onPostsNear} />
             ) : item.kind === "rebuild" ? (
-              <RebuildItem key={item.key} item={item} now={now} onNear={onPostsNear} />
+              <RebuildItem key={item.key} item={item} srcByPath={srcByPath} now={now} onNear={onPostsNear} />
             ) : item.kind === "topic" ? (
               <TopicItem key={item.key} item={item} actions={props.topics} />
             ) : (

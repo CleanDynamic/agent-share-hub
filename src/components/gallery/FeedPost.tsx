@@ -3,8 +3,9 @@
 // NO BOX. The item has no fill, border, shadow or radius and no lamp above it;
 // the list draws a 1px hairline between items. Two columns, 12px apart: a 40px
 // author column and the content. The thread opens in place, and while it is
-// open a 2px hairline runs down the author column from just under the avatar to
-// the end of the last post (the build line and the actions are not part of it).
+// open PostThread draws a 2px connector down the author column from 4px under
+// the avatar to the last post's node (the build line and the actions are not
+// part of it).
 //
 // THE GRID IS FOUR CELLS, NOT TWO COLUMNS OF STACKED BLOCKS, because the line
 // has to stop where the posts stop and the build line sits below them in the
@@ -13,9 +14,9 @@
 //
 // WHAT IT SIGNS. Post 1's pictures arrive signed with the page's other card
 // media (feedMedia). The rest of the thread is fetched and signed once, as one
-// query (UX-03 P9): started when Show more is hovered on a fine pointer or
+// query (useThreadRest): started when Show more is hovered on a fine pointer or
 // focused, so the press opens from the cache; a press with nothing fetched yet
-// shows Loading and opens when it lands. Every picture
+// opens at once with a dot skeleton post where the others will land. Every picture
 // reserves its height from its node's w and h, so nothing moves as pictures
 // arrive.
 //
@@ -23,8 +24,7 @@
 // Title line and its cover through the existing chain, coverMedia then
 // CoverFallback, so no item is empty.
 
-import { QueryClientContext } from "@tanstack/react-query";
-import { useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type ReactNode } from "react";
+import { useMemo, useRef, type CSSProperties, type MouseEvent as ReactMouseEvent, type ReactNode } from "react";
 import { IntentLink as Link } from "@/lib/routing/IntentLink";
 
 import { Avatar } from "@/components/brand/Avatar";
@@ -39,14 +39,15 @@ import { MediaViewerProvider } from "@/components/post/media/MediaViewer";
 import { PostThread } from "@/components/post/PostThread";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { EngagementRow, type RowEngagement } from "@/components/social/EngagementRow";
-import { getThreadMedia, splitThread, threadOf, type GalleryBuild, type GalleryMedia, type Post } from "@/lib/build";
+import { splitThread, threadOf, type GalleryBuild, type GalleryMedia, type Post } from "@/lib/build";
 import { shortAge } from "@/lib/social/time";
 import { useInteractive } from "@/lib/theme/interactive";
 import { ring } from "@/lib/theme/controls";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
-import { CARD_THREAD_WIDTH, coverMedia, mediaAlt, signCardMedia, type MediaSrcMap } from "./cardMedia";
+import { coverMedia, mediaAlt, type MediaSrcMap } from "./cardMedia";
+import { useThreadRest } from "./useThreadRest";
 
 export interface FeedPostProps {
   build: GalleryBuild;
@@ -75,15 +76,11 @@ export interface FeedPostProps {
   preview?: boolean;
 }
 
-type Phase = "closed" | "loading" | "open";
-
-/** Fields of a media row a PostMedia reads, which BuildMedia also carries. */
-type ThreadRow = GalleryMedia;
-
 const column: CSSProperties = { minWidth: 0 };
 
-/** UX-03 P9: how long the rest of a thread, fetched on intent, is kept: under the fifty minutes its signatures live. */
-const THREAD_STALE_MS = 40 * 60_000;
+/** The author column's width and the gap to the content: where the thread's connector runs. */
+const AVATAR = 40;
+const GUTTER = 12;
 
 export function FeedPost({
   build,
@@ -147,66 +144,8 @@ export function FeedPost({
   );
   const posts = threaded ? threadPosts : titlePosts;
 
-  // Show more: asked for once, signed, then opened.
-  const [phase, setPhase] = useState<Phase>("closed");
-  const [rest, setRest] = useState<{ rows: ThreadRow[]; src: MediaSrcMap } | null>(null);
-  const asking = useRef(false);
-  const client = useContext(QueryClientContext);
-
-  /* UX-03 P9: the rest of the thread, fetched and signed as one query, so hovering or focusing Show more can start it and the
-     press opens from the cache. Kept for less than a signature lives (signCardMedia's are kept fifty minutes). */
-  const restQuery = useMemo(
-    () => ({
-      queryKey: ["build", "getThreadMedia", build.id, CARD_THREAD_WIDTH] as const,
-      queryFn: async () => {
-        const rows = (await getThreadMedia(build.id)) as ThreadRow[];
-        const src = await signCardMedia(rows.map((row) => ({ ...row, slotWidth: CARD_THREAD_WIDTH })), client);
-        return { rows, src };
-      },
-      staleTime: THREAD_STALE_MS,
-    }),
-    [build.id, client],
-  );
-
-  const warm = useCallback(() => {
-    if (preview || rest || !threaded || !client) return;
-    void client.prefetchQuery(restQuery);
-  }, [preview, rest, threaded, client, restQuery]);
-
-  const open = useCallback(async () => {
-    if (asking.current || phase !== "closed") return;
-    // A preview already holds every picture; there is nothing to ask for.
-    if (rest || preview) {
-      setPhase("open");
-      return;
-    }
-    // Asked for on intent and here already: open at once.
-    const ready = client?.getQueryData<{ rows: ThreadRow[]; src: MediaSrcMap }>(restQuery.queryKey);
-    if (ready) {
-      setRest(ready);
-      setPhase("open");
-      return;
-    }
-    asking.current = true;
-    setPhase("loading");
-    try {
-      setRest(client ? await client.fetchQuery(restQuery) : await restQuery.queryFn());
-    } catch {
-      // The posts still open; their pictures hold their reserved places.
-    } finally {
-      asking.current = false;
-      setPhase("open");
-    }
-  }, [phase, preview, rest, client, restQuery]);
-
-  const close = useCallback(() => setPhase("closed"), []);
-
-  // Another build in this item's place: its own thread, closed.
-  useEffect(() => {
-    setPhase("closed");
-    setRest(null);
-    asking.current = false;
-  }, [build.id]);
+  // Show more: the thread opens at once; the pictures of the later posts are asked for once, signed and cached.
+  const { phase, rest, restState, open, close, warm, retry } = useThreadRest({ buildId: build.id, enabled: threaded, preview });
 
   const mediaById = useMemo(() => {
     const map = new Map<string, GalleryMedia>(build.media.map((row) => [row.id, row]));
@@ -236,10 +175,12 @@ export function FeedPost({
       mediaById={mediaById}
       srcByPath={srcAll}
       mode={isOpen ? "open" : "closed"}
-      onOpen={threaded ? () => void open() : undefined}
+      onOpen={threaded ? open : undefined}
       onIntent={threaded ? warm : undefined}
       onClose={close}
-      loading={phase === "loading"}
+      rest={restState}
+      onRetry={retry}
+      connector={{ x: -(AVATAR + GUTTER) + AVATAR / 2, top: phone ? -4 : 16 }}
       phone={phone}
       resetKey={build.id}
       headingLink={headed && buildHref ? (words) => <HeadingLink to={buildHref}>{words}</HeadingLink> : undefined}
@@ -276,13 +217,6 @@ export function FeedPost({
         ) : (
           <Avatar size={40} userId={build.creator_id} name={name} src={makerAvatar} />
         )}
-        {isOpen ? (
-          <span
-            aria-hidden="true"
-            data-feed-thread-line=""
-            style={{ position: "absolute", top: 46, bottom: 0, left: 19, width: 2, borderRadius: 1, background: t.control }}
-          />
-        ) : null}
       </div>
 
       {/* Author row: name, @handle · age, the tools. */}

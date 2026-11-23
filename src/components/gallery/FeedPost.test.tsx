@@ -117,7 +117,7 @@ describe("the item has no box", () => {
       expect(item.style[property], property).toBe("");
     }
     expect(container.querySelector('[data-ui="picture-lamp"]')).toBeNull();
-    expect(item).toHaveStyle({ padding: "20px 0px 16px" });
+    expect(item).toHaveStyle({ padding: "4px 0px" });
   });
 
   it("is two columns 12px apart: a 40px author column and the content", () => {
@@ -129,13 +129,14 @@ describe("the item has no box", () => {
 });
 
 describe("the author row", () => {
-  it("shows the name, the handle and the short age, the tools as marks after them", () => {
+  it("shows the name, the handle and the short age, and no tool marks", () => {
     const { container } = renderRow(build());
     const row = container.querySelector("[data-feed-author-row]") as HTMLElement;
     expect(within(row).getByTestId("feed-author-name")).toHaveTextContent("Maria Silva");
     expect(row).toHaveTextContent("@maria · 2d");
     expect(row).toHaveStyle({ minHeight: "24px", gap: "6px" });
-    expect(within(row).getByRole("img", { name: "Made with ChatGPT and Claude" })).toBeInTheDocument();
+    // Synth 07: no tool marks beside the name.
+    expect(within(row).queryByRole("img")).toBeNull();
   });
 
   it("links the name and the avatar to the profile", () => {
@@ -155,46 +156,87 @@ describe("the author row", () => {
 describe("the thread", () => {
   it("is closed to post 1, with Show more and the count of the rest", () => {
     renderRow(build());
-    expect(screen.getByText("Show more")).toBeInTheDocument();
-    expect(screen.getByText("2 more posts")).toBeInTheDocument();
-    expect(document.querySelector("[data-feed-thread-line]")).toBeNull();
+    const toggle = screen.getByRole("button", { name: "Show more · 2 more posts" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveAttribute("aria-controls", document.querySelector("[data-post-region]")!.id);
+    expect(toggle).toHaveStyle({ fontSize: "13px", fontWeight: "500", minHeight: "32px" });
+    expect(document.querySelector("[data-thread-line]")).toBeNull();
   });
 
-  it("fetches the rest once, reads Loading… meanwhile, opens, and draws the line", async () => {
+  it("says 1 more post for a thread of two", () => {
+    renderRow(build({ post_doc: { type: "doc", content: [words("One"), { type: "postBreak" }, words("Two")] } as unknown as ThreadDoc }));
+    expect(screen.getByRole("button", { name: "Show more · 1 more post" })).toBeInTheDocument();
+  });
+
+  it("opens at once, shows one dot skeleton while the rest is fetched, then the posts without an avatar or author row", async () => {
     let release: (rows: GalleryMedia[]) => void = () => {};
     getThreadMedia.mockReturnValue(new Promise<GalleryMedia[]>((resolve) => (release = resolve)));
     renderRow(build());
 
     fireEvent.click(screen.getByRole("button", { name: /Show more/ }));
-    const loading = await screen.findByRole("button", { name: "Loading…" });
-    expect(loading).toBeDisabled();
+    const toggle = await screen.findByRole("button", { name: "Show less" });
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(document.querySelectorAll('[data-ui="loading"]')).toHaveLength(1);
+    expect(screen.queryByText("Second post words")).toBeNull();
 
     release([media("m1", { post_position: 0 }), media("m3", { post_position: 1 })]);
-    await waitFor(() => expect(screen.getByRole("button", { name: /Show less/ })).toBeInTheDocument());
-    expect(screen.getByText("2 / 3")).toBeInTheDocument();
-    expect(document.querySelector("[data-feed-thread-line]")).toHaveStyle({ top: "46px", width: "2px", borderRadius: "1px" });
+    await waitFor(() => expect(screen.getByText("Second post words")).toBeInTheDocument());
+    expect(document.querySelector('[data-ui="loading"]')).toBeNull();
+    expect(screen.getByText("Third post words")).toBeInTheDocument();
+    expect(screen.queryByText("2 / 3")).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: /Show less/ }));
-    expect(screen.getByRole("button", { name: /Show more/ })).toBeInTheDocument();
+    // One author row and one avatar for the build, whatever the number of posts.
+    expect(document.querySelectorAll("[data-feed-author-row]")).toHaveLength(1);
+    expect(document.querySelectorAll("[data-feed-author-column] img, [data-feed-author-column] [data-ui='avatar']").length).toBeLessThanOrEqual(1);
+    // The build line and the actions are drawn once, under the last post.
+    expect(document.querySelectorAll("[data-feed-build-line]")).toHaveLength(1);
+
+    // The connector: a 2px line from 4px under the avatar, and a 10px node on each following post's first line.
+    const lines = document.querySelectorAll("[data-thread-line]");
+    expect(lines.length).toBeGreaterThan(0);
+    expect(lines[0]).toHaveStyle({ top: "16px", width: "2px", borderRadius: "1px", left: "-33px" });
+    const nodes = document.querySelectorAll("[data-thread-node]");
+    expect(nodes).toHaveLength(2);
+    expect(nodes[0]).toHaveStyle({ width: "10px", height: "10px", borderRadius: "3px" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Show less" }));
+    expect(screen.getByRole("button", { name: /Show more/ })).toHaveAttribute("aria-expanded", "false");
+    expect(document.querySelector("[data-thread-line]")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /Show more/ }));
-    await waitFor(() => expect(screen.getByRole("button", { name: /Show less/ })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("button", { name: "Show less" })).toBeInTheDocument());
     expect(getThreadMedia).toHaveBeenCalledTimes(1);
     expect(getThreadMedia).toHaveBeenCalledWith("b1");
   });
 
-  it("opens even when the rest cannot be fetched, and tries again next time", async () => {
+  it("moves focus to the first revealed post when it opens, and back to Show more when it closes", async () => {
+    renderRow(build());
+    fireEvent.click(screen.getByRole("button", { name: /Show more/ }));
+    await waitFor(() => expect(screen.getByText("Second post words")).toBeInTheDocument());
+    const second = document.querySelector("[data-post='2']") as HTMLElement;
+    expect(second).toHaveAttribute("tabindex", "-1");
+    await waitFor(() => expect(document.activeElement).toBe(second));
+    fireEvent.click(screen.getByRole("button", { name: "Show less" }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: /Show more/ })));
+  });
+
+  it("shows the failed line with Try again where the posts will appear, and tries again", async () => {
     getThreadMedia.mockRejectedValueOnce(new Error("offline"));
     renderRow(build());
     fireEvent.click(screen.getByRole("button", { name: /Show more/ }));
-    await waitFor(() => expect(screen.getByRole("button", { name: /Show less/ })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole("button", { name: /Show less/ }));
-    fireEvent.click(screen.getByRole("button", { name: /Show more/ }));
-    await waitFor(() => expect(getThreadMedia).toHaveBeenCalledTimes(2));
+    const failed = await waitFor(() => {
+      const node = document.querySelector("[data-post-failed]");
+      expect(node).not.toBeNull();
+      return node as HTMLElement;
+    });
+    expect(failed).toHaveTextContent("Couldn't load posts.");
+    fireEvent.click(within(failed).getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(screen.getByText("Second post words")).toBeInTheDocument());
+    expect(getThreadMedia).toHaveBeenCalledTimes(2);
   });
 
   it("has no toggle for a one-post thread", () => {
     renderRow(build({ post_doc: { type: "doc", content: [words("Only post")] } as unknown as ThreadDoc }));
-    expect(screen.queryByText("Show more")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Show more/ })).toBeNull();
     expect(screen.getByText("Only post")).toBeInTheDocument();
   });
 });
@@ -208,7 +250,7 @@ describe("a build with no thread", () => {
     expect(within(post).getByText("Crumb homepage").closest("p")).toHaveStyle({ fontSize: "20px" });
     expect(within(post).getByRole("link", { name: "Crumb homepage" })).toHaveAttribute("href", expect.stringMatching(/^\/b2\//));
     expect(within(post).getByRole("img")).toHaveAttribute("src", "https://signed.example/m9.png");
-    expect(screen.queryByText("Show more")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Show more/ })).toBeNull();
   });
 
   it("draws the cover fallback when there is no cover media at all", () => {
@@ -233,14 +275,14 @@ describe("the build line and the actions", () => {
     expect(screen.queryByTestId("rebuild-count")).toBeNull();
   });
 
-  it("draws the action row with Rebuild, capped at 520px and spread, only when handed engagement", () => {
+  it("draws the action row with Rebuild, capped at 425px and spread, only when handed engagement", () => {
     const { unmount } = renderRow(build());
     expect(screen.queryByTestId("engagement-row")).toBeNull();
     unmount();
 
     renderRow(build(), { engagement: { counts: { likes: 3, comments: 1 }, liked: false, saved: false } });
     const row = screen.getByTestId("engagement-row");
-    expect(row).toHaveStyle({ maxWidth: "520px", justifyContent: "space-between" });
+    expect(row).toHaveStyle({ maxWidth: "425px", justifyContent: "space-between" });
     expect(row.querySelector('[data-engagement-action="rebuild"]')).not.toBeNull();
   });
 });
