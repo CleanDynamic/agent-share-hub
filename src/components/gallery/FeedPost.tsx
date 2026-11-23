@@ -79,6 +79,8 @@ export interface FeedPostProps {
 const column: CSSProperties = { minWidth: 0 };
 
 /** The author column's width and the gap to the content: where the thread's connector runs. */
+/** The lines of a feed post's first paragraph before Show more: the post is cut here until the reader opens it. */
+export const FEED_TEXT_LINES = 6;
 const AVATAR = 40;
 const GUTTER = 12;
 
@@ -145,7 +147,7 @@ export function FeedPost({
   const posts = threaded ? threadPosts : titlePosts;
 
   // Show more: the thread opens at once; the pictures of the later posts are asked for once, signed and cached.
-  const { phase, rest, restState, open, close, warm, retry } = useThreadRest({ buildId: build.id, enabled: threaded, preview });
+  const { phase, rest, restState, open, close, warm, retry } = useThreadRest({ buildId: build.id, enabled: threaded && threadPosts.length > 1, preview });
 
   const mediaById = useMemo(() => {
     const map = new Map<string, GalleryMedia>(build.media.map((row) => [row.id, row]));
@@ -156,7 +158,7 @@ export function FeedPost({
 
   const srcAll = useMemo<MediaSrcMap>(() => (rest && rest.src.size > 0 ? new Map([...srcByPath, ...rest.src]) : srcByPath), [srcByPath, rest]);
 
-  const isOpen = phase === "open" && threaded && threadPosts.length > 1;
+  const isOpen = phase === "open" && threaded;
 
   /* ── the cells ── */
 
@@ -180,6 +182,7 @@ export function FeedPost({
       onClose={close}
       rest={restState}
       onRetry={retry}
+      clampLines={FEED_TEXT_LINES}
       connector={{ x: -(AVATAR + GUTTER) + AVATAR / 2, top: phone ? -4 : 16 }}
       phone={phone}
       resetKey={build.id}

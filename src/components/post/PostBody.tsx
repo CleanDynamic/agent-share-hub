@@ -17,7 +17,7 @@
 // Heading in a post is a p with the heading style. `realHeadings` turns them
 // into h2 and h3 for a surface that wants an outline; it never emits an h1.
 
-import { Fragment, type CSSProperties, type ReactNode } from "react";
+import { Fragment, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from "react";
 
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import type { GalleryMedia } from "@/lib/build";
@@ -47,6 +47,10 @@ export interface PostBodyProps {
   compact?: boolean;
   /** UX-03 P1: wraps the words of the post's first heading (a feed post makes them the link to its build). Absent: plain. */
   headingLink?: (content: ReactNode) => ReactNode;
+  /** A feed's closed post: its first paragraph is cut after this many lines. */
+  clampLines?: number;
+  /** Told whether that paragraph is actually cut, on mount and whenever its width changes. */
+  onCut?: (cut: boolean) => void;
 }
 
 // The wire format is untrusted, so every read goes through these.
@@ -149,7 +153,29 @@ function renderList(node: Loose, ctx: Ctx, key: number, nested: boolean): ReactN
   );
 }
 
-function renderBlock(node: Loose, ctx: Ctx, key: number, inset: number, firstHeading = false): ReactNode {
+/** A paragraph cut after `lines` lines, which tells its parent whether anything is cut. */
+function ClampedParagraph({ style, lines, onCut, children }: { style: CSSProperties; lines: number; onCut?: (cut: boolean) => void; children: ReactNode }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const report = useRef(onCut);
+  report.current = onCut;
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => report.current?.(el.scrollHeight > el.clientHeight + 1);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const sizes = new ResizeObserver(measure);
+    sizes.observe(el);
+    return () => sizes.disconnect();
+  }, []);
+  return (
+    <p ref={ref} data-post-clamped="" style={{ ...style, display: "-webkit-box", WebkitLineClamp: lines, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+      {children}
+    </p>
+  );
+}
+
+function renderBlock(node: Loose, ctx: Ctx, key: number, inset: number, firstHeading = false, clamp = false): ReactNode {
   const { scale, props } = ctx;
   const pad: CSSProperties = inset ? { paddingRight: inset } : {};
 
@@ -158,8 +184,13 @@ function renderBlock(node: Loose, ctx: Ctx, key: number, inset: number, firstHea
       const content = childrenOf(node);
       if (content.length === 0) return null;
       const small = attrsOf(node).size === "small";
-      return (
-        <p key={key} style={{ ...(small ? scale.small : scale.body), ...pad }}>
+      const style = { ...(small ? scale.small : scale.body), ...pad };
+      return clamp && props.clampLines ? (
+        <ClampedParagraph key={key} style={style} lines={props.clampLines} onCut={props.onCut}>
+          {renderInline(content)}
+        </ClampedParagraph>
+      ) : (
+        <p key={key} style={style}>
           {renderInline(content)}
         </p>
       );
@@ -265,11 +296,12 @@ export function PostBody(props: PostBodyProps) {
   const blocks = toGrids({ type: "doc", content }).content.filter(isNode) as Loose[];
   const first = blocks[0];
   const heading = blocks.findIndex((node) => node.type === "heading");
+  const firstParagraph = blocks.findIndex((node) => node.type === "paragraph");
 
   return (
     <div data-post-body="" style={{ display: "flex", flexDirection: "column", gap: BLOCK_GAP, ...(props.compact ? { maxWidth: 680 } : null) }}>
       {blocks.map((node, index) =>
-        renderBlock(node, ctx, index, index === 0 && typeof first.type === "string" && TEXT_BLOCKS.has(first.type) ? (props.firstLineInset ?? 0) : 0, index === heading),
+        renderBlock(node, ctx, index, index === 0 && typeof first.type === "string" && TEXT_BLOCKS.has(first.type) ? (props.firstLineInset ?? 0) : 0, index === heading, index === firstParagraph),
       )}
     </div>
   );

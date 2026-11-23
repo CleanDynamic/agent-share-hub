@@ -56,7 +56,7 @@ export function useThreadRest({ buildId, enabled, preview = false }: ThreadRestO
   }, [preview, rest, enabled, client, query]);
 
   const ask = useCallback(async () => {
-    if (preview || rest) return;
+    if (preview || rest || !enabled) return;
     const ready = client?.getQueryData<ThreadRestData>(query.queryKey);
     if (ready) {
       setRest(ready);
@@ -71,7 +71,7 @@ export function useThreadRest({ buildId, enabled, preview = false }: ThreadRestO
     } finally {
       setAsking(false);
     }
-  }, [preview, rest, client, query]);
+  }, [preview, rest, enabled, client, query]);
 
   const open = useCallback(() => {
     if (phase !== "closed") return;

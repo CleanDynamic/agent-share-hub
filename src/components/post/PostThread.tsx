@@ -78,6 +78,8 @@ export interface PostThreadProps {
   onIntent?: () => void;
   /** The connector and its nodes, for a thread drawn beside an avatar column. */
   connector?: ThreadConnector;
+  /** The first post's text is cut after this many lines while the thread is closed; a cut text alone makes Show more appear. */
+  clampLines?: number;
   /** Replaces post 1's body (a rebuild's note and its "Rebuilt from" card stay with the first post). */
   first?: ReactNode;
 }
@@ -101,11 +103,13 @@ export function PostThread({
   headingLink,
   onIntent,
   connector,
+  clampLines,
   first: firstSlot,
 }: PostThreadProps) {
   const regionId = useId();
   const page = mode === "page";
   const [pageOpen, setPageOpen] = useState(false);
+  const [cut, setCut] = useState(false);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const regionRef = useRef<HTMLDivElement>(null);
   /** Where focus goes once the thread has changed: set by a press, so a reset or a reload never moves it. */
@@ -143,12 +147,13 @@ export function PostThread({
 
   const [first, ...rest] = posts;
   const total = posts.length;
-  const foldable = total > 1;
+  const foldable = total > 1 || cut;
   const lines = postType(phone).firstLine;
-  const connected = connector !== undefined && open && settled;
+  const connected = connector !== undefined && open && settled && rest.length > 0;
 
   const press = () => {
-    focusNext.current = open ? "toggle" : "post";
+    // With no later posts only the text opens, and it is already where the reader is looking.
+    focusNext.current = open ? "toggle" : rest.length > 0 ? "post" : null;
     if (page) setPageOpen((was) => !was);
     else if (open) onClose?.();
     else onOpen?.();
@@ -199,10 +204,10 @@ export function PostThread({
 
   return (
     <div data-post-thread="" data-thread-mode={mode} style={{ display: "flex", flexDirection: "column" }}>
-      <div data-post={1} style={{ position: "relative" }}>
+      <div data-post={1} id={rest.length === 0 ? regionId : undefined} style={{ position: "relative" }}>
         {connected && connector ? line({ top: connector.top, bottom: -1 }) : null}
         {firstSlot ?? (
-          <PostBody post={first} mediaById={mediaById} srcByPath={srcByPath} phone={phone} headingLink={headingLink} compact={page} />
+          <PostBody post={first} mediaById={mediaById} srcByPath={srcByPath} phone={phone} headingLink={headingLink} compact={page} clampLines={open ? undefined : clampLines} onCut={setCut} />
         )}
       </div>
       {rest.length > 0 ? (
@@ -316,7 +321,7 @@ function Toggle({
     },
     onFocus: () => onIntent?.(),
   });
-  const label = open ? "Show less" : plain ? `1 of ${more + 1} posts · Show more` : `Show more · ${more === 1 ? "1 more post" : `${more} more posts`}`;
+  const label = open ? "Show less" : plain ? `1 of ${more + 1} posts · Show more` : more === 0 ? "Show more" : `Show more · ${more === 1 ? "1 more post" : `${more} more posts`}`;
   return (
     <button
       ref={buttonRef}

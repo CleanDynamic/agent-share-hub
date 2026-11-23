@@ -234,6 +234,27 @@ describe("the thread", () => {
     expect(getThreadMedia).toHaveBeenCalledTimes(2);
   });
 
+  it("shows Show more alone when only the text is cut, and opens only the text", () => {
+    const heightOf = vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockImplementation(function (this: HTMLElement) {
+      return this.hasAttribute("data-post-clamped") ? 400 : 0;
+    });
+    vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(function (this: HTMLElement) {
+      return this.hasAttribute("data-post-clamped") ? 120 : 0;
+    });
+    renderRow(build({ post_doc: { type: "doc", content: [words("A very long post")] } as unknown as ThreadDoc }));
+    const toggle = screen.getByRole("button", { name: "Show more" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveAttribute("aria-controls", document.querySelector("[data-post='1']")!.id);
+    expect(document.querySelector("[data-post-clamped]")).toHaveStyle({ overflow: "hidden" });
+    fireEvent.click(toggle);
+    expect(screen.getByRole("button", { name: "Show less" })).toHaveAttribute("aria-expanded", "true");
+    expect(document.querySelector("[data-post-clamped]")).toBeNull();
+    expect(document.querySelector("[data-thread-line]")).toBeNull();
+    expect(getThreadMedia).not.toHaveBeenCalled();
+    heightOf.mockRestore();
+    vi.restoreAllMocks();
+  });
+
   it("has no toggle for a one-post thread", () => {
     renderRow(build({ post_doc: { type: "doc", content: [words("Only post")] } as unknown as ThreadDoc }));
     expect(screen.queryByRole("button", { name: /Show more/ })).toBeNull();
