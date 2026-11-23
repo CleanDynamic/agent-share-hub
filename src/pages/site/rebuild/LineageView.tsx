@@ -1,22 +1,15 @@
-/* UI-P31 — /b2/:slug/lineage, from the rebuild page's own pieces.
+/* Synth 14 Part B: /b2/:slug/lineage. PURE. Two panels, `minmax(0, 1fr) 470px`: on the left a 13 Text 3 link to the build
+   above, the h1 "6 builds in this family" with the pills Tree and List ("Read the family as"), and the tree, every node a
+   button (the chosen one Raised with a 2px Mint ring). On the right "What changed" for the chosen build, with "Open this
+   build" as an underlined 13 link in the section head; before a choice, "Pick a build in the family to see what changed."
+   At 760 and below the List replaces the tree. */
 
-   PURE. The same Family panel in the left track, and on the right what changed
-   for the build the reader picks — its change set against the build it was
-   rebuilt from — in place of the rebuild page's readiness. Before a pick, the
-   panel says how to make one. Every node is a choice here rather than a way
-   out; the chosen build is one link away from the panel's head.
-
-   DESKTOP: the rebuild page's grid, `minmax(0, 1fr) 470px`, filling, with no
-   visible heading (the breadcrumb names the build). PHONE: a heading, the family
-   as an indented list, then what changed. */
-
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import type { PanelFailure } from "@/components/pagestate/PageState";
-import { PageHeading } from "@/components/brand/PageHeading";
-import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
-import { useIsPhone, useTierFit, useWidthTier } from "@/components/shell/useMinWidth";
+import { type PageFit } from "@/components/shell/siteFrameFit";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
@@ -25,12 +18,8 @@ import { FIGTREE } from "@/lib/theme/type";
 
 import { ChangesPanel } from "./ChangesPanel";
 import { FamilyPanel } from "./FamilyPanel";
+import { FamilyColumns } from "./RebuildView";
 import { type ChangeGroupView, type FamilyNodeView } from "./rebuildModel";
-import { PageHeader } from "@/components/shell/PageHeader";
-import { pageColumns } from "@/components/shell/pageGrid";
-
-/** The first line of body copy under the title. */
-const BODY_LINE: CSSProperties = { margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.text2 };
 
 /** What the right column shows for the build the reader picked. */
 export interface LineageSelection {
@@ -51,6 +40,8 @@ export interface LineageViewProps {
   fit?: PageFit;
   /** The build in the address. */
   title: string;
+  /** Its page: the quiet link above the heading. */
+  buildTo?: string;
   family: FamilyNodeView | null;
   selectedId: string | null;
   onSelect: (id: string) => void;
@@ -66,7 +57,7 @@ export interface LineageViewProps {
 export const PICK_PROMPT = "Pick a build in the family to see what changed.";
 export const ROOT_NOTE = "This is where the family starts: it was not rebuilt from anything, so there is nothing to compare it with.";
 
-function OpenLink({ to, title, phone }: { to: string; title: string; phone: boolean }) {
+function OpenLink({ to, phone }: { to: string; phone: boolean }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   return (
     <Link
@@ -80,14 +71,14 @@ function OpenLink({ to, title, phone }: { to: string; title: string; phone: bool
         padding: "0 4px",
         fontFamily: FIGTREE,
         fontSize: 13,
-        color: t.action,
+        color: t.text,
         textDecoration: "underline",
         textUnderlineOffset: 3,
         borderRadius: r.chip,
         ...ring(state.focusVisible),
       }}
     >
-      Open {title}
+      Open this build
     </Link>
   );
 }
@@ -115,18 +106,15 @@ function SelectionPanel({
   /* No italics under the refined look: the title stays upright in the line's own ink. */
   const upright = ({ fontStyle: "normal" } as const);
   const about = (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 9, flexWrap: "wrap", marginTop: 4 }}>
-      <span style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text }}>
-        {selection.parentTitle ? (
-          <>
-            <i style={upright}>{selection.title}</i> against <i style={upright}>{selection.parentTitle}</i>
-          </>
-        ) : (
-          <i style={upright}>{selection.title}</i>
-        )}
-      </span>
-      <OpenLink to={selection.to} title={selection.title} phone={phone} />
-    </div>
+    <p style={{ margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label }}>
+      {selection.parentTitle ? (
+        <>
+          <i style={upright}>{selection.title}</i> against <i style={upright}>{selection.parentTitle}</i>
+        </>
+      ) : (
+        <i style={upright}>{selection.title}</i>
+      )}
+    </p>
   );
 
   const placeholder = !selection.parentTitle ? ROOT_NOTE : undefined;
@@ -142,6 +130,7 @@ function SelectionPanel({
       phone={phone}
       fill={fill}
       about={about}
+      action={<OpenLink to={selection.to} phone={phone} />}
       placeholder={placeholder}
       loading={working}
       failure={failure}
@@ -149,46 +138,32 @@ function SelectionPanel({
   );
 }
 
-export function LineageView({ fit: givenFit = "content", title, family, selectedId, onSelect, selection, alone, familyLoading, familyFailure }: LineageViewProps) {
+export function LineageView({ title, buildTo, family, selectedId, onSelect, selection, alone, familyLoading, familyFailure }: LineageViewProps) {
   const phone = useIsPhone();
-  const fit = useTierFit(givenFit);
-  /* UI-P39: below 1024 the selection stacks under the family, as on the phone. */
-  const stacked = useWidthTier() === "stacked";
-
-  if (phone) {
-    return (
-      <div data-testid="lineage-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 9, lineHeight: "normal" }}>
-        <PageHeading eyebrow="Lineage" title={title} sub="Every published rebuild in this family. Pick one to see what it changed." size={32} />
-        <FamilyPanel root={family} phone selectedId={selectedId} onSelect={onSelect} loading={familyLoading} failure={familyFailure} />
-        <SelectionPanel selection={selection} phone fill={false} alone={alone} />
-      </div>
-    );
-  }
-
+  const above = (
+    <Link to={buildTo ?? ".."} relative="path" data-testid="lineage-back" style={{ display: "inline-block", marginBottom: 8, fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label, textDecoration: "none" }}>
+      {`Back to ${title}`}
+    </Link>
+  );
   return (
-    <div data-testid="lineage-view" data-viewport="desktop" style={{ display: "flex", flexDirection: "column", gap: 9, lineHeight: "normal", ...boardHeight(fit) }}>
-      {/* Page shell: the page's title; the build's name is in the breadcrumb; the line the hidden h1 held is the first line of body copy. */}
-      <div style={{ paddingBottom: 15 }}>
-        <PageHeader title="Lineage" />
-        <p style={BODY_LINE}>{`The family of ${title}`}</p>
-      </div>
-      <div
-        style={{
-          /* The page grid's 8 / 4 template (mainWideSide): the side column from 960 at 1440, 416 wide. Stacked below 1024. */
-          ...(stacked ? { display: "grid", gridTemplateColumns: "minmax(0, 1fr)" } : pageColumns("mainWideSide")),
-          rowGap: 9,
-          flexGrow: 1,
-          minHeight: 0,
-        }}
-      >
-        <div style={{ minHeight: 0 }}>
-          <FamilyPanel root={family} fit={fit} fill={!stacked} selectedId={selectedId} onSelect={onSelect} loading={familyLoading} failure={familyFailure} />
-        </div>
-        <div style={{ minHeight: 0, minWidth: 0 }}>
-          <SelectionPanel selection={selection} phone={false} fill={!stacked} alone={alone} />
-        </div>
-      </div>
-    </div>
+    <FamilyColumns
+      testId="lineage-view"
+      viewport={phone ? "mobile" : "desktop"}
+      left={
+        <FamilyPanel
+          root={family}
+          phone={phone}
+          headingLevel={1}
+          above={above}
+          reading={phone ? "list" : undefined}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          loading={familyLoading}
+          failure={familyFailure}
+        />
+      }
+      right={<SelectionPanel selection={selection} phone={phone} fill={false} alone={alone} />}
+    />
   );
 }
 

@@ -27,6 +27,6 @@ describe("the family's counts (G25)", () => {
 
   it("are drawn once it has loaded", () => {
     draw({ root: { id: "b1", parentId: null, depth: 0, slug: "b1", title: "Bakery", maker: null, publishedAt: null, reproductionCount: 0, rebuildNote: null, works: null, children: [] } as never });
-    expect(screen.getByTestId("family-panel").textContent).toMatch(/1 build · 1 generation/);
+    expect(screen.getByTestId("family-panel").textContent).toMatch(/1 build in this family/);
   });
 });

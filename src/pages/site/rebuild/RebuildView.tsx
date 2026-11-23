@@ -1,30 +1,19 @@
-/* UI-P31 — /rebuild/:slug, as the reference draws it
-   (design/reference/{desktop,mobile}/{noon,dusk}/rebuild.html).
-
-   PURE. Props in, markup out: no fetching, no `useAuth()`, no router hooks but
-   `Link`. `RebuildPage` supplies live data; the dev compare page the sample.
-   The viewport is read here (the 768px breakpoint) so both agree.
-
-   DESKTOP: a grid `minmax(0, 1fr) 470px` filling the page — the family, full
-   height, on the left; on the right a column 9 apart (UI-P58), what changed (filling)
-   over readiness (290). The board draws no heading, so the page's h1 is for
-   assistive technology alone.
-
-   PHONE: the decision first. The heading ("Rebuild · draft", the draft's title,
-   "Rebuilding {source} by @{maker}."), then readiness with the credit and
-   Publish, then what changed, then the family as an indented list (a tree does
-   not fit 390). */
+/* Synth 14 Part A: /rebuild/:slug. PURE. Props in, markup out: `RebuildPage` supplies live data; the dev compare page the
+   sample. Under the editor bar ("Back to <source build>"), two panels, `minmax(0, 1fr) 470px`: the family on the left, its
+   h1 the fact ("6 builds in this family"); on the right "What changed", then the readiness section and the decision. From
+   761 to 1100 the side is 380 and the tree scrolls sideways inside its panel; at 760 and below the sections follow the tree
+   and "Publish rebuild" is pinned to the bottom of the screen. */
 
 import { PageState } from "@/components/pagestate/PageState";
 import type { ReadLike } from "@/components/pagestate/pageStateModel";
 import { WAY_OUT, type Thing } from "@/lib/copy/copy";
 import type { CSSProperties, ReactNode } from "react";
 
-import { PageHeading } from "@/components/brand/PageHeading";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { Panel } from "@/components/brand/Panel";
 import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
-import { useIsPhone, useTierFit, useWidthTier } from "@/components/shell/useMinWidth";
+import { useColumnPanels } from "@/components/shell/frameChrome";
+import { useIsPhone, useMinWidth, useTierFit, useWidthTier } from "@/components/shell/useMinWidth";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -32,8 +21,8 @@ import { FIGTREE } from "@/lib/theme/type";
 import { ChangesPanel } from "./ChangesPanel";
 import { FamilyPanel } from "./FamilyPanel";
 import { ReadinessPanel } from "./ReadinessPanel";
-import { PAGE_TITLE, PageHeader } from "@/components/shell/PageHeader";
-import { pageColumns } from "@/components/shell/pageGrid";
+import { PAGE_TITLE } from "@/components/shell/PageHeader";
+import { PANEL_GAP, pageColumns, panelColumns } from "@/components/shell/pageGrid";
 import {
   rebuildingLine,
   type ChangeGroupView,
@@ -43,8 +32,6 @@ import {
 } from "./rebuildModel";
 import { PlaceholderTitle } from "@/components/pagestate/PlaceholderTitle";
 
-/** The first line of body copy under the title. */
-const BODY_LINE: CSSProperties = { margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.text2 };
 
 export interface RebuildViewProps {
   fit?: PageFit;
@@ -66,72 +53,64 @@ export interface RebuildViewProps {
   publishFailure?: { onRetry: () => void; error?: unknown } | null;
 }
 
-/** The readiness panel's height on the desktop board. */
+/** The readiness panel's height on the desktop board (kept for the skeleton). */
 const READINESS_HEIGHT = 290;
+
+const panel: CSSProperties = { background: t.surface, borderRadius: 12, padding: 16, boxSizing: "border-box", minWidth: 0 };
+
+/** Synth 14: two panels, `minmax(0, 1fr) 470px` from 1101, the side 380 from 761 to 1100, one column at 760 and below. */
+export function FamilyColumns({ left, right, testId, viewport }: { left: ReactNode; right: ReactNode; testId: string; viewport: string }) {
+  useColumnPanels(true);
+  const two = useMinWidth(761);
+  const wide = useMinWidth(1101);
+  return (
+    <div
+      data-testid={testId}
+      data-viewport={viewport}
+      style={{
+        lineHeight: "normal",
+        fontFamily: FIGTREE,
+        ...(two ? panelColumns("two", { wideSide: true, between: !wide }) : { display: "flex", flexDirection: "column", gap: PANEL_GAP }),
+      }}
+    >
+      <div style={{ ...panel, overflowX: "auto" }}>{left}</div>
+      <div style={{ ...panel, display: "flex", flexDirection: "column", gap: 32 }}>{right}</div>
+    </div>
+  );
+}
 
 export function RebuildView(props: RebuildViewProps) {
   const { draftTitle, source, family, changes, readiness, credit, onPublish, onKeepDraft, workspaceTo, publishing, publishFailure } = props;
   const phone = useIsPhone();
   const fit = useTierFit(props.fit ?? "content");
-  /* UI-P39: below 1024 the right track stacks under the family, readiness first as on the phone. */
-  const stacked = useWidthTier() === "stacked";
-  const board = fit === "board";
-
-  const readinessPanel = (
-    <ReadinessPanel
-      readiness={readiness}
-      credit={credit}
-      onPublish={onPublish}
-      onKeepDraft={onKeepDraft}
-      workspaceTo={workspaceTo}
-      publishing={publishing}
-      failure={publishFailure}
-      phone={phone}
-      fill={!phone && !stacked}
-    />
-  );
-
-  if (phone) {
-    return (
-      <div data-testid="rebuild-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 9, lineHeight: "normal" }}>
-        <PageHeading eyebrow="Rebuild · draft" title={draftTitle} sub={rebuildingLine(source)} size={32} />
-        {readinessPanel}
-        <ChangesPanel groups={changes} phone loading={changes === null} />
-        <FamilyPanel root={family} phone />
-      </div>
-    );
-  }
 
   return (
-    <div data-testid="rebuild-view" data-viewport="desktop" style={{ display: "flex", flexDirection: "column", gap: 9, lineHeight: "normal", ...boardHeight(fit) }}>
-      {/* Page shell: the page's title; the build's name is in the breadcrumb; the line the hidden h1 held is the first line of body copy. */}
-      <div style={{ paddingBottom: 15 }}>
-        <PageHeader title="Rebuild" />
-        <p style={BODY_LINE}>{`${draftTitle}: ${rebuildingLine(source)}`}</p>
-      </div>
-      <div
-        style={{
-          /* The page grid's 8 / 4 template (mainWideSide): the side column from 960 at 1440, 416 wide. Stacked below 1024. */
-          ...(stacked ? { display: "grid", gridTemplateColumns: "minmax(0, 1fr)" } : pageColumns("mainWideSide")),
-          rowGap: 9,
-          flexGrow: 1,
-          minHeight: 0,
-        }}
-      >
-        <div style={{ minHeight: 0 }}>
-          <FamilyPanel root={family} fit={fit} fill={!stacked} />
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 9, minHeight: 0, minWidth: 0 }}>
-          {stacked ? <div style={{ minHeight: READINESS_HEIGHT }}>{readinessPanel}</div> : null}
-          <div style={{ flexGrow: 1, minHeight: 0 }}>
-            <ChangesPanel groups={changes} fill={!stacked} loading={changes === null} />
-          </div>
-          {stacked ? null : (
-            <div style={{ flexShrink: 0, ...(board ? { height: READINESS_HEIGHT } : { minHeight: READINESS_HEIGHT }) }}>{readinessPanel}</div>
-          )}
-        </div>
-      </div>
-    </div>
+    <FamilyColumns
+      testId="rebuild-view"
+      viewport={phone ? "mobile" : "desktop"}
+      left={
+        <>
+          {/* The draft and its source, for assistive technology: the editor bar names them to the eye. */}
+          <p className="sr-only">{`${draftTitle}: ${rebuildingLine(source)}`}</p>
+          <FamilyPanel root={family} fit={fit} phone={phone} headingLevel={1} />
+        </>
+      }
+      right={
+        <>
+          <ChangesPanel groups={changes} phone={phone} loading={changes === null} />
+          <ReadinessPanel
+            readiness={readiness}
+            credit={credit}
+            onPublish={onPublish}
+            onKeepDraft={onKeepDraft}
+            workspaceTo={workspaceTo}
+            publishing={publishing}
+            failure={publishFailure}
+            phone={phone}
+          />
+        </>
+      }
+    />
   );
 }
 

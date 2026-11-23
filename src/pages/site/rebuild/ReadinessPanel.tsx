@@ -1,43 +1,26 @@
-/* UI-P31 — whether the rebuild can hang, the credit it will carry, and the
-   decision.
+/* Synth 14: whether the rebuild can be published, the credit it will carry, and the decision, as a section of the side panel.
 
-   A ring orb at the gate's figure (rebuildReadiness(): the three things every
-   record needs to be published, and the one a rebuild adds — it has to change
-   something), the headline ("One thing before it can hang", "{n} things…",
-   "Ready to hang") and the first thing still missing. Under them the credit the
-   rebuild will carry: "Rebuilt from *source* by @maker" from the two columns
-   the fork froze (rebuildCreditLine's sentence, so it cannot drift), and the Δ
-   line. It is part of the record, structural: there is no control here that
-   removes it. Then the one primary, "Publish rebuild" (publishRebuild()), which
-   says why it cannot be pressed yet while the gate is closed, and "Keep as
-   draft", which goes back to the workspace the draft lives in. The first thing
-   still missing links to that workspace too: it is where the thing gets done,
-   and on a phone, where the board draws Publish alone, it is the way on.
-
-   Desktop: a row (OrbRing 120; Rebuild readiness, headline 16 / 500, Figtree 12),
-   the credit box 10 below, the actions 10 below. Phone: OrbRing 112, headline 16,
-   Figtree 12, the credit's sentence at 13, a full-width 48/15 primary (the
-   Button maps it: 44 tall on a phone). Sizes are after UI-P58's density table;
-   `display()` and the brand primitives take the drawn size.
+   Headed by its fact: "One thing before it can be published", "{n} things before it can be published" or "Ready to
+   publish". The first missing thing is an underlined link to the editor ("Step 4 has no text yet"). Then "The credit it will
+   carry" (13 Text 3) and the credit line, "Rebuilt from <source in Geist Serif> by @maker" (15): part of the record, with no
+   control that removes it. Then "Publish rebuild" (main; disabled while not ready, its visible reason under it and linked
+   by aria-describedby) and "Keep as draft" (secondary). On a phone the buttons are pinned to the bottom of the screen.
 
    PURE. */
 
 import { useId } from "react";
-import { Check } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/brand/Button";
 import { WriteFailed } from "@/components/pagestate/PageState";
-import { Eyebrow } from "@/components/brand/Eyebrow";
-import { Panel } from "@/components/brand/Panel";
 import { rebuildCreditLine } from "@/components/build/rebuildCredit";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { FIGTREE, SENTIENT } from "@/lib/theme/type";
 
-import type { ReadinessView, RebuildCreditView } from "./rebuildModel";
+import { publishReason, type ReadinessView, type RebuildCreditView } from "./rebuildModel";
 import { SAVE_FAILED } from "@/lib/copy/copy";
 
 export interface ReadinessPanelProps {
@@ -45,46 +28,34 @@ export interface ReadinessPanelProps {
   credit: RebuildCreditView;
   onPublish: () => void;
   onKeepDraft: () => void;
-  /**
-   * The draft's workspace. The first thing still missing links there — it is
-   * where that thing gets done — which on a phone, where the board draws
-   * Publish alone, is the way on while Publish cannot be pressed.
-   */
+  /** The draft's workspace. The first thing still missing links there: it is where that thing gets done. */
   workspaceTo?: string;
   /** The publish is in flight. */
   publishing?: boolean;
   /** The last publish did not save: said in the panel, with a way to ask again. */
   failure?: { onRetry: () => void; error?: unknown } | null;
   phone?: boolean;
-  /** The desktop column's fixed height. */
+  /** Kept for callers. */
   fill?: boolean;
 }
 
-export function CreditBox({ credit, phone = false }: { credit: RebuildCreditView; phone?: boolean }) {
+export function CreditBox({ credit }: { credit: RebuildCreditView; phone?: boolean }) {
   const line =
     rebuildCreditLine({ source_title_at_fork: credit.title, source_handle_at_fork: credit.handle }) ?? `Rebuilt from ${credit.title}`;
   return (
-    <div
-      data-testid="rebuild-credit-box"
-      style={
-        { marginTop: 12, padding: 12, borderRadius: 6, background: t.inset, border: `1px solid ${t.tileBorder}` }
-      }
-    >
-      <Eyebrow size={10}>The credit it will carry</Eyebrow>
+    <div data-testid="rebuild-credit-box" style={{ marginTop: 16 }}>
+      <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label }}>The credit it will carry</p>
       <p
         data-testid="rebuild-credit-line"
         data-rebuild-credit=""
         title={line}
-        style={{ margin: "4px 0 0", fontFamily: FIGTREE, fontSize: phone ? 13 : 13, lineHeight: "normal", color: t.text }}
+        style={{ margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.text }}
       >
-        Rebuilt from <i style={{ fontStyle: "normal" }}>{credit.title}</i>
+        Rebuilt from <i style={{ fontStyle: "normal", fontFamily: SENTIENT }}>{credit.title}</i>
         {credit.handle ? ` by @${credit.handle}` : null}
       </p>
       {credit.delta ? (
-        <p
-          data-testid="rebuild-credit-delta"
-          style={{ margin: "3px 0 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: t.text2, overflowWrap: "anywhere" }}
-        >
+        <p data-testid="rebuild-credit-delta" style={{ margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.text2, overflowWrap: "anywhere" }}>
           {credit.delta}
         </p>
       ) : null}
@@ -117,88 +88,67 @@ export function ReadinessPanel({
   publishing = false,
   failure = null,
   phone = false,
-  fill = false,
 }: ReadinessPanelProps) {
-  const nextId = `rebuild-next-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const id = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const nextId = `rebuild-next-${id}`;
+  const reasonId = `rebuild-reason-${id}`;
   const blocked = !readiness.ready;
-  /* Under the refined look the readiness is a tile with the figure in it, not a ring orb. */
-  const orb = <div
-    data-ui="readiness-tile"
-    role="img"
-    aria-label={`${readiness.pct}% ready. ${readiness.headline}.`}
-    style={{
-      flexShrink: 0,
-      width: phone ? 88 : 96,
-      boxSizing: "border-box",
-      padding: 12,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "flex-start",
-      gap: 2,
-      background: t.inset,
-      border: `1px solid ${t.tileBorder}`,
-      borderRadius: 6,
-    }}
-  >
-    <span aria-hidden="true" style={{ fontFamily: FIGTREE, fontSize: 15, lineHeight: "normal", color: t.text, fontVariantNumeric: "tabular-nums" }}>{`${readiness.pct}%`}</span>
-    <span aria-hidden="true" style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: t.label }}>ready</span>
-  </div>;
+  const reason = blocked ? publishReason(readiness.next) : null;
 
-  const publish = (
-    <Button
-      data-testid="rebuild-publish"
-      variant="primary"
-      size={phone ? 48 : 36}
-      fontSize={13}
-      icon={Check}
-      fullWidth={phone}
-      disabled={blocked || publishing}
-      aria-describedby={blocked && readiness.next ? nextId : undefined}
-      title={blocked ? (readiness.next ?? undefined) : undefined}
-      onClick={onPublish}
+  const actions = (
+    <div
+      data-testid="rebuild-actions"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        marginTop: 16,
+        ...(phone ? { position: "sticky", bottom: 0, padding: "12px 0", background: t.surface, zIndex: 2 } : null),
+      }}
     >
-      {publishing ? "Publishing…" : "Publish rebuild"}
-    </Button>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <Button
+          data-testid="rebuild-publish"
+          variant="primary"
+          size={phone ? 44 : 32}
+          fontSize={13}
+          fullWidth={phone}
+          disabled={blocked || publishing}
+          aria-describedby={reason ? reasonId : blocked && readiness.next ? nextId : undefined}
+          onClick={onPublish}
+        >
+          {publishing ? "Publishing…" : "Publish rebuild"}
+        </Button>
+        <Button data-testid="rebuild-keep-draft" variant="secondary" size={phone ? 44 : 32} fontSize={13} fullWidth={phone} onClick={onKeepDraft}>
+          Keep as draft
+        </Button>
+      </div>
+      {reason ? (
+        <p id={reasonId} data-testid="rebuild-publish-reason" style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label }}>
+          {reason}
+        </p>
+      ) : null}
+    </div>
   );
 
   return (
-    <Panel padding={phone ? "16px" : "16px 18px"} style={fill ? { height: "100%" } : undefined}>
+    <section aria-labelledby={`rebuild-ready-${id}`}>
       <div data-testid="readiness-panel" data-ready={readiness.ready ? "" : undefined}>
-        <div style={{ display: "flex", gap: phone ? 10 : 12, alignItems: "center" }}>
-          {orb}
-          <div style={{ display: "flex", flexDirection: "column", gap: phone ? 4 : 6, minWidth: 0 }}>
-            <Eyebrow>{phone ? "Readiness" : "Rebuild readiness"}</Eyebrow>
-            <div style={{ fontFamily: FIGTREE, fontSize: 15, fontWeight: 500, lineHeight: 1.1, letterSpacing: "-0.02em", color: t.text }}>{readiness.headline}</div>
-            {readiness.next ? (
-              <div id={nextId} style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: t.text2 }}>
-                {workspaceTo ? <NextLink to={workspaceTo}>{readiness.next}</NextLink> : readiness.next}
-              </div>
-            ) : null}
-          </div>
-        </div>
+        <h2 id={`rebuild-ready-${id}`} style={{ margin: 0, fontFamily: FIGTREE, fontSize: 20, fontWeight: 600, lineHeight: "24px", color: t.text }}>
+          {readiness.headline}
+        </h2>
+        {readiness.next ? (
+          <p id={nextId} style={{ margin: "8px 0 0", fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.text }}>
+            {workspaceTo ? <NextLink to={workspaceTo}>{readiness.next}</NextLink> : readiness.next}
+          </p>
+        ) : null}
         <CreditBox credit={credit} phone={phone} />
-        {phone ? (
-          <div style={{ marginTop: 10 }}>{publish}</div>
-        ) : (
-          <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
-            {publish}
-            <Button data-testid="rebuild-keep-draft" variant="ghost" size={36} fontSize={13} onClick={onKeepDraft}>
-              Keep as draft
-            </Button>
-          </div>
-        )}
+        {actions}
         {failure ? (
-          <WriteFailed
-            line={SAVE_FAILED}
-            panel="Publish rebuild"
-            onRetry={failure.onRetry}
-            error={failure.error}
-            style={{ marginTop: 9 }}
-            data-testid="rebuild-publish-error"
-          />
+          <WriteFailed line={SAVE_FAILED} panel="Publish rebuild" onRetry={failure.onRetry} error={failure.error} style={{ marginTop: 9 }} data-testid="rebuild-publish-error" />
         ) : null}
       </div>
-    </Panel>
+    </section>
   );
 }
 
