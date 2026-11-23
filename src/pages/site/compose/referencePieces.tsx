@@ -38,7 +38,7 @@ import { DM_MONO, FIGTREE, textStep } from "@/lib/theme/type";
 
 import { dropIn, liftOut, useCrossfade, useHeld } from "./buildMotion";
 import { BAR_AIR, PHONE_BARS_BOTTOM } from "./composeChrome";
-import { GROUP_TITLE, NOTE, RecipeButton, SUBTITLE, footerStyle, frameStyle } from "./modalRecipes";
+import { GROUP_TITLE, NOTE, RecipeButton, SUBTITLE, footerStyle, LAYER, MODAL_WIDTH, scrimAt, windowPlacement } from "./modalRecipes";
 import { size as sizes, space } from "@/lib/theme/space";
 import { r } from "@/lib/theme/radius";
 
@@ -86,8 +86,9 @@ export function InnerPanel({ children, testId, style, bar }: { children: ReactNo
 /* ── swatches ── */
 
 /** A square of a colour: 12 (radius 3), 10 (radius 2) or 30 (radius 7). Empty, it is a dashed square in `--label`. */
-export function SquareSwatch({ colour, size = 12 }: { colour: string | null | undefined; size?: 10 | 12 | 30 }) {
-  const radius = size === 30 ? 7 : size === 12 ? 3 : 2;
+export function SquareSwatch({ colour, size = 12 }: { colour: string | null | undefined; size?: 10 | 12 | 14 | 30 }) {
+  /* Synth 09: 14 at radius 4 in the Colours window's rows. */
+  const radius = size === 30 ? 7 : size === 14 ? 4 : size === 12 ? 3 : 2;
   return (
     <span
       aria-hidden="true"
@@ -245,7 +246,7 @@ export function ReferenceNotice({ notice: given, onUndo, onDone, phone = false }
         width: "max-content",
         // On a phone the dock and the action bar cover the foot of the screen, and the page (z-index 1) is under the dock: the notice stands above them.
         bottom: phone ? `calc(${PHONE_BARS_BOTTOM + BAR_AIR}px + env(safe-area-inset-bottom))` : NOTICE_BOTTOM,
-        zIndex: 80,
+        zIndex: LAYER.notice,
         boxSizing: "border-box",
         height: NOTICE_HEIGHT,
         maxWidth: "calc(100vw - 32px)",
@@ -300,8 +301,8 @@ export function KeepLinkDialog({ open, title, body, action, choices, onPick, onC
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && onCancel()}>
       <Dialog.Portal>
-        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 70 }} />
-        <Dialog.Content data-testid="keep-link-dialog" aria-describedby={undefined} onOpenAutoFocus={focus.onOpenAutoFocus} onCloseAutoFocus={focus.onCloseAutoFocus} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 71, ...frameStyle(420) }}>
+        <Dialog.Overlay data-motion="scrim" style={scrimAt(LAYER.confirm)} />
+        <Dialog.Content data-testid="keep-link-dialog" aria-describedby={undefined} onOpenAutoFocus={focus.onOpenAutoFocus} onCloseAutoFocus={focus.onCloseAutoFocus} style={windowPlacement(MODAL_WIDTH.standard, LAYER.confirm)}>
           <div style={{ padding: PAD.card, display: "flex", flexDirection: "column", gap: GAP.column }}>
             <Dialog.Title style={GROUP_TITLE}>{title}</Dialog.Title>
             {body ? <p style={{ ...SUBTITLE, margin: 0 }}>{body}</p> : null}
@@ -474,13 +475,13 @@ export function Badge({ children }: { children: ReactNode }) {
 }
 
 /** A confirmation: a title, a line, Cancel and the action in the danger colour. */
-export function ConfirmDialog({ open, width = 420, title, body, action, onConfirm, onCancel, testId }: { open: boolean; width?: number; title: string; body: string; action: string; onConfirm: () => void; onCancel: () => void; testId?: string }) {
+export function ConfirmDialog({ open, width = MODAL_WIDTH.standard, title, body, action, onConfirm, onCancel, testId }: { open: boolean; width?: number; title: string; body: string; action: string; onConfirm: () => void; onCancel: () => void; testId?: string }) {
   const focus = useWindowFocus(open);
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && onCancel()}>
       <Dialog.Portal>
-        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 70 }} />
-        <Dialog.Content role="alertdialog" data-testid={testId} aria-describedby={undefined} onOpenAutoFocus={focus.onOpenAutoFocus} onCloseAutoFocus={focus.onCloseAutoFocus} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 71, ...frameStyle(width) }}>
+        <Dialog.Overlay data-motion="scrim" style={scrimAt(LAYER.confirm)} />
+        <Dialog.Content role="alertdialog" data-testid={testId} aria-describedby={undefined} onOpenAutoFocus={focus.onOpenAutoFocus} onCloseAutoFocus={focus.onCloseAutoFocus} style={windowPlacement(width, LAYER.confirm)}>
           <div style={{ padding: PAD.card, display: "flex", flexDirection: "column", gap: GAP.column }}>
             <Dialog.Title style={GROUP_TITLE}>{title}</Dialog.Title>
             <p style={{ ...SUBTITLE, margin: 0 }}>{body}</p>

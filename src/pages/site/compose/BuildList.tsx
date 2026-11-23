@@ -70,6 +70,7 @@ import { ColourButton } from "@/components/brand/ColourButton";
 import { MemberLabel } from "./groupLabels";
 import { REF_KIND } from "@/lib/build/postRefs";
 import { borderFor, outlineFor } from "@/lib/theme/partColour";
+import { SELECT_RING } from "@/lib/theme/refinedControl";
 import { refTo } from "@/lib/build/thread";
 import { Glyph } from "@/components/brand/Glyph";
 import { MenuButton } from "@/components/brand/MenuButton";
@@ -111,7 +112,7 @@ import { OutsideWarning } from "./OutsideWarning";
 import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
 import { CHECK_COPY, DotLine, Quiet, ToolMark } from "./refinedPieces";
 import { AgentRules, GateLine, JobLine, MentionText, TeamHead, TeamLinesContext, WaitsLine, mentionTeam } from "@/components/build/teamLines";
-import { FOOT_LINK, LIST_BOX, TEXT_LINK_BOX, textLinkBox, MarkedName, listRow, NumberBadge, RESPONSE_WORD, RUN, SESSION_META, SmallCodeWell, TILE_EYEBROW, TILE_HEAD, TILE_INDENT, TILE_TEXT, TILE_TITLE, TileOptions, tileStyle as tileCard } from "./tileRecipes";
+import { BOX_ROWS, BoxRow, FOOT_LINK, LIST_BOX, TEXT_LINK_BOX, textLinkBox, MarkedName, listRow, NumberBadge, RESPONSE_WORD, RUN, SESSION_META, SmallCodeWell, TILE_EYEBROW, TILE_HEAD, TILE_INDENT, TILE_TEXT, TILE_TITLE, TileOptions, tileStyle as tileCard } from "./tileRecipes";
 
 /** CA-15b: a tile's body and foot sit 34 in, under its title. */
 const INDENT = TILE_INDENT;
@@ -211,6 +212,8 @@ export interface BuildListProps {
   onOpenPrompt?: (id: string) => void;
   /** CA-18: a double click on any other tile opens its own window, to change it. Absent: nothing opens. A phone has no double click. */
   onEditTile?: (id: string) => void;
+  /** Synth 09: a tile's titled text box was pressed: open that box in the notepad over the tile's window. */
+  onOpenBox?: (id: string, field: string) => void;
   onRename: (id: string, title: string) => void;
   onMove: (id: string, direction: -1 | 1) => Promise<unknown> | void;
   onRemove: (id: string) => void;
@@ -450,6 +453,7 @@ interface ListRefs {
   canMove?: (id: string, by: -1 | 1) => boolean;
   /** CA-21 P3: the tile (or session or part) held right now: its own element stays in the layout, hidden, as its place. */
   hidden?: string | null;
+  onOpenBox?: BuildListProps["onOpenBox"];
 }
 
 /** CA-21 P1: a tile's Move up and Move down are greyed by its place in the build, not by its number among prompts. */
@@ -483,7 +487,12 @@ export const partName = (step: Pick<Step, "kind" | "number" | "title" | "default
 const pickerName = (step: Step): string => (step.title && step.number ? `${partName(step)} · ${step.title}` : partName(step));
 
 /** CA-06 P4: a coloured tile's edge, through the one helper. */
-const colourEdge = (colour: string | undefined): CSSProperties | null => (colour ? borderFor(colour) : null);
+/** The maker's colour on a tile's edge. A colour never replaces the selection ring: a selected tile keeps the Mint ring outside it. */
+const colourEdge = (colour: string | undefined, selected = false): CSSProperties | null => {
+  if (!colour) return null;
+  const edge = borderFor(colour);
+  return selected ? { ...edge, boxShadow: `${edge.boxShadow}, ${SELECT_RING}` } : edge;
+};
 
 /** The colour button at the right of a tile's top row: on a desktop, or wherever the tile has no menu to put it in. */
 function CardColour({ step, phone, inMenu = false }: { step: Step; phone: boolean; inMenu?: boolean }) {
@@ -735,8 +744,8 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
         outline: "none",
         ...focus.ring,
         cursor: "pointer",
-        ...(selected ? { background: t.selectedFill, borderColor: t.selectedEdge, boxShadow: t.selectedRing } : null),
-        ...colourEdge(step.colour),
+        ...(selected ? { boxShadow: SELECT_RING } : null),
+        ...colourEdge(step.colour, selected),
         ...(nest.takes ? TAKES : null), ...nest.touchStyle,
         ...(hidden ? { visibility: "hidden" } : null),
       }}
@@ -1093,19 +1102,39 @@ function TileMenu({ step, noun, index, last, props, rename }: { step: Step; noun
 }
 
 /**
+ * Synth 09: the tile's titled text boxes, one row each under its title: Raised, radius 8, padded 6 10, the title 13/500 and
+ * the Expand glyph at the right. Pressing one opens that box in the notepad over the tile's window. Untitled boxes do not show.
+ */
+function BoxRows({ step, phone }: { step: Step; phone: boolean }) {
+  const { onOpenBox } = useContext(ListRefsContext);
+  const boxes = step.boxTitles ?? [];
+  if (boxes.length === 0) return null;
+  return (
+    <ul data-testid="tile-box-rows" data-no-drag="" style={BOX_ROWS}>
+      {boxes.map((box) => (
+        <li key={box.field} style={{ minWidth: 0 }}>
+          <BoxRow title={box.title} field={box.field} phone={phone} onOpen={onOpenBox ? () => onOpenBox(step.id, box.field) : undefined} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
  * A tile's header: the number in its square, a type line (11.5, `--label`) with the title under it (14 / 500, one line, an
  * ellipsis), the colour (only when one is set) and the ⋯ menu. The drag handle is drawn while the tile is hovered or has focus.
  */
-function TileHeader({ step, nest, phone, typeLine, typeTestId, title, menu }: { step: Step; nest: ReturnType<typeof useNestTile>; phone: boolean; typeLine: ReactNode; typeTestId: string; title: ReactNode; menu: ReactNode }) {
+function TileHeader({ step, nest, phone, typeLine, typeTestId, title, menu, selected = false }: { step: Step; nest: ReturnType<typeof useNestTile>; phone: boolean; typeLine: ReactNode; typeTestId: string; title: ReactNode; menu: ReactNode; selected?: boolean }) {
   return (
     <div style={TILE_HEAD}>
       <DragHandle label={`Move ${gripName(step)}`} nest={nest} />
-      <NumberBadge>{step.number}</NumberBadge>
+      <NumberBadge selected={selected}>{step.number}</NumberBadge>
       <div style={TILE_TEXT}>
         <span data-testid={typeTestId} style={TILE_EYEBROW}>
           {typeLine}
         </span>
         {title}
+        <BoxRows step={step} phone={phone} />
         <StillOpenLine step={step} />
         {step.gate ? <GateLine gate={step.gate} /> : null}
         {step.waitsFor ? <WaitsLine waitsFor={step.waitsFor} /> : null}
@@ -1262,9 +1291,10 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         const files = Array.from(event.dataTransfer.files);
         if (files.length > 0) props.onDropOnStep?.(step.id, files);
       } : undefined}
-      style={{ ...tileCard(selected || over), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
+      style={{ ...tileCard(selected || over), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected || over), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
+        selected={selected}
         step={step}
         nest={nest}
         phone={phone}
@@ -1571,9 +1601,10 @@ function ContainerCard({ step, index, last, props }: { step: Step; index: number
       tabIndex={0}
       {...focus.bind}
       onClick={() => props.onSelect(step.id)}
-      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
+      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
+        selected={selected}
         step={step}
         nest={nest}
         phone={phone}
@@ -1727,9 +1758,10 @@ function PlainCard({ step, index, last, props, noun, body, after, link, typeLine
           props.onSelect(step.id);
         }
       }}
-      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
+      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
+        selected={selected}
         step={step}
         nest={nest}
         phone={phone}
@@ -1869,9 +1901,10 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
           props.onSelect(step.id);
         }
       }}
-      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
+      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
+        selected={selected}
         step={step}
         nest={nest}
         phone={phone}
@@ -1941,9 +1974,10 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
           props.onSelect(step.id);
         }
       }}
-      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
+      style={{ ...tileCard(selected), outline: "none", ...focus.ring, cursor: "pointer", ...colourEdge(step.colour, selected), ...(nest.takes ? TAKES : null), ...nest.touchStyle }}
     >
       <TileHeader
+        selected={selected}
         step={step}
         nest={nest}
         phone={phone}
@@ -2770,6 +2804,7 @@ export function BuildList(raw: BuildListProps) {
     });
   }
   const refs: ListRefs = {
+    onOpenBox: props.onOpenBox,
     mentioned: props.mentioned ?? NO_MENTIONS,
     onBack: props.onBackToPost,
     reveal: props.reveal ?? null,

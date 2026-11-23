@@ -121,17 +121,16 @@ describe("the modal recipes (CA-15b P1)", () => {
     expect(pickerFieldStyle(false, {}, false).color).toBe(t.text);
   });
 
-  it("segmented: the track, items 28 tall sharing the width; the chosen one on --control-on with --seg-on-border", () => {
+  it("segmented (Synth 09): pills 32 tall, 6 apart, wrapping, no track; the chosen one on the action fill", () => {
     const pick = vi.fn();
     render(<SegmentedField label="Permissions" phone={false} value="rw" onChange={pick} items={[{ value: "r", label: "Read only" }, { value: "rw", label: "Read and write" }]} />);
     const group = screen.getByRole("radiogroup", { name: "Permissions" });
-    expect(styleOf(group)).toMatchObject({ padding: "2px", gap: "2px", borderRadius: "var(--r-card)", flexWrap: "wrap" });
+    expect(styleOf(group)).toMatchObject({ gap: "6px", flexWrap: "wrap" });
     const seg = html(<SegmentedField label="P" phone={false} value="rw" onChange={() => {}} items={[{ value: "rw", label: "Read and write" }]} />);
-    expect(seg).toContain(`background:${t.segTrack}`);
+    expect(seg).not.toContain(`background:${t.segTrack}`);
     const [first, second] = within(group).getAllByRole("radio");
-    expect(styleOf(first)).toMatchObject({ height: "32px", padding: "0px 12px", borderRadius: "var(--r-control)", whiteSpace: "nowrap" }); // S13
-    expect(seg).toContain(`border-color:${t.segOnBorder}`);
-    expect(seg).toContain(`background:${t.controlOn}`);
+    expect(styleOf(first)).toMatchObject({ height: "32px", padding: "0px 14px", borderRadius: "var(--r-full)", whiteSpace: "nowrap" });
+    expect(seg).toContain(`background:${t.action}`);
     fireEvent.click(first);
     expect(pick).toHaveBeenCalledWith("r");
   });

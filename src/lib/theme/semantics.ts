@@ -185,6 +185,10 @@ export const TOKEN_NAMES = [
   "notepad-copy",
   "modal-foot",
   "field-edge",
+  // Synth 09: how wide a maker's colour edge is on a tile (1 dark, 1.5 light).
+  "maker-edge",
+  // Synth 09: the dim over a modal while its notepad is open.
+  "notepad-dim",
   "danger-text",
   "warn",
   "tab-bar",
@@ -344,6 +348,8 @@ export const noon: Record<TokenName, string> = {
   "notepad-copy": "#D5E6D9",
   "modal-foot": "#EBEEEB",
   "field-edge": "#879189",
+  "maker-edge": "1.5px",
+  "notepad-dim": "rgba(11,18,13,.25)",
   "danger-text": "#B3261E",
   "warn": "#8A6100",
   "tab-bar": "#77FC49",
@@ -500,6 +506,8 @@ export const dusk: Record<TokenName, string> = {
   "notepad-copy": "#24342A",
   "modal-foot": "#161917",
   "field-edge": "#646B66",
+  "maker-edge": "1px",
+  "notepad-dim": "rgba(10,10,11,.5)",
   "danger-text": "#F07563",
   "warn": "#F2C14E",
   "tab-bar": "#6BE2A0",

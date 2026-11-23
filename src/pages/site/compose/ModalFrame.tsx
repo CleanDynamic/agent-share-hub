@@ -18,7 +18,7 @@
    provides `ModalInset` so its rows and blocks run edge to edge and pad themselves 20 in. */
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { Children, useId, type ReactNode } from "react";
+import { Children, useContext, useId, useMemo, useRef, type ReactNode } from "react";
 
 import { Glyph } from "@/components/brand/Glyph";
 import { BottomSheet } from "@/components/shell/BottomSheet";
@@ -31,11 +31,17 @@ import { t } from "@/lib/theme/tokens";
 import { EYEBROW } from "./refinedStyles";
 import {
   Alert,
+  BoxTitleCollectorContext,
+  BoxTitleSinkContext,
   FOOT_NOTE,
   GroupHeading,
   HEADER,
   HEADER_ICONS,
   HEADER_TEXT,
+  LAYER,
+  WINDOW_TOP,
+  scrimAt,
+  windowPlacement,
   Hint as RecipeHint,
   IconSquare,
   MODAL_PAD,
@@ -48,7 +54,6 @@ import {
   TITLE,
   bodyStyle,
   footerStyle,
-  frameStyle,
   missingSet,
 } from "./modalRecipes";
 import { size as sizes, space } from "@/lib/theme/space";
@@ -64,8 +69,8 @@ export const MODAL_COPY = {
   allComplete: "Required fields complete",
 } as const;
 
-/** F25: on a computer the window's top edge, and the same room left under it. */
-export const MODAL_TOP = 48;
+/** F25: on a computer the window's top edge, and the same room left under it (`WINDOW_TOP`, shared by every window). */
+export const MODAL_TOP = WINDOW_TOP;
 
 /** The footer's status line: the labels of what is still missing, or that nothing is. */
 export const requiredLine = (missing: string | null | undefined): string => (missing ? `Required: ${missing}` : MODAL_COPY.allComplete);
@@ -131,9 +136,9 @@ export function ModalShell({ open, onOpenChange, title, subtitle, eyebrow, width
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 50 }} />
+        <Dialog.Overlay data-motion="scrim" style={scrimAt(LAYER.window)} />
         {/* F25: the top edge is pinned at 48, so opening a row grows the window downward and nothing above it moves; the body scrolls inside. */}
-        <Dialog.Content data-testid={testId} onOpenAutoFocus={focus.onOpenAutoFocus} onCloseAutoFocus={focus.onCloseAutoFocus} style={{ position: "fixed", top: MODAL_TOP, left: "50%", transform: "translateX(-50%)", zIndex: 51, ...frameStyle(width), maxHeight: `calc(100dvh - ${MODAL_TOP * 2}px)` }}>
+        <Dialog.Content data-testid={testId} onOpenAutoFocus={focus.onOpenAutoFocus} onCloseAutoFocus={focus.onCloseAutoFocus} style={windowPlacement(width, LAYER.window)}>
           <div data-testid="modal-header" style={HEADER}>
             <div style={HEADER_TEXT}>
               {eyebrow ? (
@@ -171,15 +176,27 @@ export interface ModalFormProps {
   children: ReactNode;
   /** Said under the body, above the footer, as an alert (what the write refused with). */
   alert?: string | null;
+  /** Synth 09: the footer's line in the window's own words ("Required: an application", "Goes after Prompt 3"), in place of
+      the one `missing` makes. The fields still say "Required" under themselves from `missing`. */
+  status?: string | null;
 }
 
-export function ModalForm({ phone, onSubmit, onCancel, missing, blocked = false, addLabel = MODAL_COPY.add, alert, children }: ModalFormProps) {
+export function ModalForm({ phone, onSubmit, onCancel, missing, blocked = false, addLabel = MODAL_COPY.add, alert, status, children }: ModalFormProps) {
   const ready = missing === null && !blocked;
+  /* Synth 09: every box's title, by its name, handed to whoever opened the window when it is saved. */
+  const sink = useContext(BoxTitleSinkContext);
+  const titles = useRef(new Map<string, string>());
+  const form = useRef<HTMLFormElement>(null);
+  const collector = useMemo(() => ({ set: (name: string, title: string) => void titles.current.set(name, title), submit: () => form.current?.requestSubmit() }), []);
   return (
+    <BoxTitleCollectorContext.Provider value={collector}>
     <form
+      ref={form}
       onSubmit={(event) => {
         event.preventDefault();
-        if (ready) onSubmit();
+        if (!ready) return;
+        if (sink.commit && titles.current.size > 0) sink.commit(Object.fromEntries(titles.current));
+        onSubmit();
       }}
       style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: "1 1 auto", fontSize: phone ? 16 : 15 }}
     >
@@ -198,7 +215,7 @@ export function ModalForm({ phone, onSubmit, onCancel, missing, blocked = false,
       </ModalInset.Provider>
       <div data-testid="modal-footer" style={footerStyle(phone)}>
         <span data-testid="modal-status" role="status" style={FOOT_NOTE}>
-          {requiredLine(missing)}
+          {status ?? requiredLine(missing)}
         </span>
         <RecipeButton variant="ghost" small phone={phone} onClick={onCancel}>
           {MODAL_COPY.cancel}
@@ -208,6 +225,7 @@ export function ModalForm({ phone, onSubmit, onCancel, missing, blocked = false,
         </RecipeButton>
       </div>
     </form>
+    </BoxTitleCollectorContext.Provider>
   );
 }
 

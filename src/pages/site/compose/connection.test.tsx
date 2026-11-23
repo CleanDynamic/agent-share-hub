@@ -15,7 +15,7 @@ import type { BuildStepsView } from "@/pages/site/build/buildModel";
 
 import { DetailsPanel, type ToolView } from "./DetailsPanel";
 import { TileEditDialog } from "./TileEditDialog";
-import { fieldNamed } from "./optionalKit";
+import { placeNamed } from "./optionalKit";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
@@ -60,7 +60,7 @@ describe("Tool window (CA-18: the connection is chosen there, and Details only r
 
   it("offers the nine connection methods, and where an MCP server ran, saving them through onToolConnection", () => {
     const onToolConnection = mount(view());
-    fieldNamed("Connection method");
+    placeNamed("Connection method");
     const group = screen.getByRole("group", { name: "Connection method" });
     expect(within(group).getAllByRole("button").map((button) => button.textContent)).toEqual(["MCP server", "Native integration", "Custom code", "Browser extension", "API key", "Zapier, Make or n8n", "Plugin or skill", "Command-line interface", "Manual copy and paste"]);
     expect(screen.queryByRole("group", { name: "Where it ran" })).toBeNull();

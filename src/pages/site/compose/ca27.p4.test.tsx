@@ -9,7 +9,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { sandboxViewProps } from "@/dev/fixtures/sandbox";
 import { BASE } from "@/lib/theme/motion";
 
-import { BUILD_ACTIONS, SandboxView, type SandboxViewProps } from "./SandboxView";
+import { SandboxView, type SandboxViewProps } from "./SandboxView";
 import { OVERLAY_FOOT_COPY, OVERLAY_PANEL_PAD, OVERLAY_WIDTH, TABLET_MAX } from "./detailsRecipes";
 import { ORIGIN, frameOf, innerWidthOf } from "./detailsLayout";
 
@@ -51,12 +51,12 @@ afterEach(() => {
 });
 
 describe("the panel", () => {
-  it("is 300 wide, the window recipe, padded 14, with the foot at its bottom left", () => {
-    view(1024);
+  it("is 340 wide, the window recipe, padded 14, with the foot at its bottom left", () => {
+    view(1000);
     const panel = screen.getByTestId("details-overlay");
-    expect(OVERLAY_WIDTH).toBe(300);
+    expect(OVERLAY_WIDTH).toBe(340);
     expect(OVERLAY_PANEL_PAD).toBe(14);
-    expect(panel.style.width).toBe("300px");
+    expect(panel.style.width).toBe("340px");
     expect(panel.style.padding).toBe("14px");
     expect(panel.style.borderRadius).toBe("12px");
     // jsdom drops a var() colour from an element's style (`background`, `border`); the browser test reads --window, 1px --window-border and the shadow.
@@ -76,7 +76,7 @@ describe("the panel", () => {
     const frame = frameOf(innerWidthOf(1024));
     expect(frame.beside).toBe(false);
     // Its right edge is the box's: Build's, where Details is not beside it; the columns area starts ORIGIN (9, S35) in from the window's edge.
-    expect(parseFloat(slot.style.left) + 300 + ORIGIN).toBe(frame.boxRight);
+    expect(parseFloat(slot.style.left) + 340 + ORIGIN).toBe(frame.boxRight);
     expect(slot.style.top).toBe("0px");
     expect(slot.style.bottom).toBe("0px");
     expect(slot.style.pointerEvents).toBe("none");
@@ -115,13 +115,13 @@ describe("the panel", () => {
     expect(screen.queryByTestId("details-overlay")).toBeNull();
   });
 
-  it("says Tap to edit up to 1152, and Click to edit with a mouse beyond it", () => {
-    expect(TABLET_MAX).toBe(1152);
-    view(1152);
+  it("says Tap to edit up to 1023, and Click to edit with a mouse beyond it", () => {
+    expect(TABLET_MAX).toBe(1023);
+    view(1023);
     expect(screen.getByTestId("details-foot").textContent).toBe("Tap to edit");
     cleanup();
-    // F62: Details is beside the build from 1240, so the overlay's widest window is 1232.
-    view(1232);
+    // Synth 09: Details is beside the build from 1101, so the overlay's widest window is 1100.
+    view(1100);
     expect(screen.getByTestId("details-foot").textContent).toBe("Click to edit");
   });
 
@@ -132,30 +132,29 @@ describe("the panel", () => {
   });
 });
 
-describe("the title row", () => {
-  it("at 768 Preview waits in a 'Build actions' menu and Publish stays", async () => {
-    view(768);
+describe("the title row (Synth 09)", () => {
+  it("below 1101 Preview and Publish stay; Find and List/Map move to a second line", () => {
+    view(1024);
     const row = screen.getByTestId("sandbox-tabrow");
-    expect(within(row).queryByRole("link", { name: "Preview" })).toBeNull();
+    expect(within(row).getByRole("link", { name: "Preview" })).toBeTruthy();
     expect(within(row).getByRole("button", { name: "Publish" })).toBeTruthy();
-    const menu = within(row).getByRole("button", { name: BUILD_ACTIONS.label });
-    expect(menu.style.width).toBe("32px"); // S6
-    expect(menu.style.height).toBe("32px");
-    fireEvent.pointerDown(menu, { button: 0, ctrlKey: false });
-    fireEvent.keyDown(menu, { key: "Enter" });
-    await act(async () => undefined);
-    expect(await screen.findByRole("menuitem", { name: "Preview" })).toBeTruthy();
+    const second = within(row).getByTestId("sandbox-tabrow-second");
+    expect(within(second).getByTestId("sandbox-tabs")).toBeTruthy();
   });
 
-  it("at 1152 and wider Preview stays beside the title and there is no menu", () => {
+  it("below 1024 Sources is a button in the row that opens it over the build", () => {
+    view(900);
+    const button = within(screen.getByTestId("sandbox-tabrow")).getByRole("button", { name: "Sources" });
+    expect(screen.queryByTestId("sources-overlay")).toBeNull();
+    fireEvent.click(button);
+    expect(screen.getByTestId("sources-overlay")).toBeTruthy();
+  });
+
+  it("from 1101 the row is one line and Sources is a panel", () => {
     view(1152);
     const row = screen.getByTestId("sandbox-tabrow");
     expect(within(row).getByRole("link", { name: "Preview" })).toBeTruthy();
-    expect(within(row).queryByRole("button", { name: BUILD_ACTIONS.label })).toBeNull();
-  });
-
-  it("a published build keeps its own row", () => {
-    view(768, { published: { slug: "a-build", inGallery: true, shortfall: "" } as SandboxViewProps["published"] });
-    expect(screen.queryByRole("button", { name: BUILD_ACTIONS.label })).toBeNull();
+    expect(within(row).queryByTestId("sandbox-tabrow-second")).toBeNull();
+    expect(within(row).queryByRole("button", { name: "Sources" })).toBeNull();
   });
 });

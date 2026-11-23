@@ -104,7 +104,7 @@ const settled = () => waitFor(() => expect(screen.getByTestId("find-count")).toB
 const count = () => screen.getByTestId("find-count").textContent;
 
 describe("the field", () => {
-  it("is a button named Find in build just before View, and opens the field on a click", async () => {
+  it("is a button named Find in build in the title row (Synth 09), before View, and opens the field on a click", async () => {
     await mount();
     const button = screen.getByRole("button", { name: FIND_COPY.button });
     const view = screen.getByTestId("sandbox-view");
@@ -113,7 +113,7 @@ describe("the field", () => {
     fireEvent.click(button);
     const box = await screen.findByTestId("find-field");
     expect(box.compareDocumentPosition(view) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getByTestId("sandbox-counts").compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(screen.getByTestId("sandbox-tabrow")).getByTestId("find-field")).toBe(box);
     expect(field().placeholder).toBe("Find in build");
     for (const name of [FIND_COPY.previous, FIND_COPY.next, FIND_COPY.close]) expect(screen.getByRole("button", { name })).toBeTruthy();
     await waitFor(() => expect(document.activeElement).toBe(field()));

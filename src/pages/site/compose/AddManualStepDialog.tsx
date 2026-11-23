@@ -94,7 +94,7 @@ export interface AddManualStepDialogProps {
   approval?: ApprovalChoices & { gate?: Gate | null; self?: string };
 }
 
-function Form({ available, onAdd, onCancel, phone, inBuild = [], seed, edit }: Pick<AddManualStepDialogProps, "available" | "onAdd" | "inBuild" | "seed" | "edit"> & { onCancel: () => void; phone: boolean }) {
+function Form({ available, onAdd, onCancel, phone, inBuild = [], seed, edit, after }: Pick<AddManualStepDialogProps, "available" | "onAdd" | "inBuild" | "seed" | "edit" | "after"> & { onCancel: () => void; phone: boolean }) {
   const [kind, setKind] = useState<WhereKind>(seed?.where?.kind ?? "app");
   const [picked, setPicked] = useState<string | null>(seed?.where?.kind === "app" ? seed.where.name : null);
   const [site, setSite] = useState(seed?.where?.kind === "site" ? (seed.where.url ?? "") : "");
@@ -134,7 +134,7 @@ function Form({ available, onAdd, onCancel, phone, inBuild = [], seed, edit }: P
   };
 
   return (
-    <ModalForm phone={phone} missing={missing} blocked={!available || done.length > MANUAL_LINES_MAX} alert={available ? null : MANUAL_DIALOG_COPY.missing} onCancel={onCancel} addLabel={edit ? MODAL_COPY.save : undefined} onSubmit={() => (edit ? edit.onSave(input()) : onAdd?.(input()))}>
+    <ModalForm phone={phone} missing={missing} status={!missing && after && !edit ? MANUAL_DIALOG_COPY.after(after) : null} blocked={!available || done.length > MANUAL_LINES_MAX} alert={available ? null : MANUAL_DIALOG_COPY.missing} onCancel={onCancel} addLabel={edit ? MODAL_COPY.save : undefined} onSubmit={() => (edit ? edit.onSave(input()) : onAdd?.(input()))}>
       {edit?.before ? edit.before(input()) : null}
       <Block label={MANUAL_DIALOG_COPY.where} noRule>
         <BlockHead label={MANUAL_DIALOG_COPY.where} />
@@ -204,7 +204,7 @@ export function AddManualStepDialog({ open, onOpenChange, after, available, onAd
     close();
   };
   return (
-    <ModalShell open={open} onOpenChange={onOpenChange} title={edit ? edit.title : approval ? "Add an approval" : MANUAL_DIALOG_COPY.title} eyebrow={edit ? MODAL_COPY.edit : undefined} subtitle={after && !edit ? MANUAL_DIALOG_COPY.after(after) : approval ? GATE_COPY.addLine : MANUAL_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId={approval ? (edit ? "edit-approval-dialog" : "add-approval-dialog") : edit ? "edit-manual-dialog" : "add-manual-dialog"}>
+    <ModalShell open={open} onOpenChange={onOpenChange} title={edit ? edit.title : approval ? "Add an approval" : MANUAL_DIALOG_COPY.title} eyebrow={edit ? MODAL_COPY.edit : undefined} subtitle={approval ? GATE_COPY.addLine : MANUAL_DIALOG_COPY.subtitle} width={MODAL_WIDTH.standard} testId={approval ? (edit ? "edit-approval-dialog" : "add-approval-dialog") : edit ? "edit-manual-dialog" : "add-manual-dialog"}>
       {approval ? (
         <ApprovalForm
           choices={approval}
@@ -222,7 +222,7 @@ export function AddManualStepDialog({ open, onOpenChange, after, available, onAd
           }}
         />
       ) : (
-        <Form available={available} inBuild={inBuild} seed={seed} edit={edit && { ...edit, onSave: (input) => { edit.onSave(input); close(); } }} onAdd={add} onCancel={close} phone={phone} />
+        <Form available={available} after={after} inBuild={inBuild} seed={seed} edit={edit && { ...edit, onSave: (input) => { edit.onSave(input); close(); } }} onAdd={add} onCancel={close} phone={phone} />
       )}
     </ModalShell>
   );

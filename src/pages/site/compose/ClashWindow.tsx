@@ -11,7 +11,7 @@ import { CLASH_COPY, type ClashView, type PanelField } from "@/lib/build/clashVi
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE, textStep } from "@/lib/theme/type";
 
-import { RecipeButton } from "./modalRecipes";
+import { RecipeButton, MODAL_WIDTH } from "./modalRecipes";
 import { RecipeWindow } from "./saveWindows";
 
 const PANEL = { boxSizing: "border-box", minWidth: 0, flex: "1 1 0", padding: "12px 14px", background: t.well, border: `1px solid ${t.hairlineModule}`, borderRadius: 10, display: "flex", flexDirection: "column", gap: 8 } as const;
@@ -42,7 +42,7 @@ export function ClashWindow({ view, onUseOther, onKeepThis, busy = false }: { vi
       note={CLASH_COPY.body}
       small
       testId="clash-window"
-      width={560}
+      width={MODAL_WIDTH.standard}
       buttons={
         <>
           <RecipeButton small={!phone} phone={phone} disabled={busy} data-testid="clash-use-other" onClick={onUseOther}>

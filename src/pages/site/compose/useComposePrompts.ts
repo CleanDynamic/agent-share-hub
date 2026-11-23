@@ -78,6 +78,7 @@ import {
   removeUse,
   setExtras,
   setNodeColour,
+  setNodeBoxTitles,
   setStillOpen,
   setNodeFields,
   setInstructions,
@@ -251,6 +252,8 @@ export interface ComposePrompts {
   setFields: (id: string, fields: Record<string, string | null>) => void;
   /** CA-06 P4: a tile's colour, "#RRGGBB", or null to take it off. */
   setColour: (id: string, colour: string | null) => void;
+  /** Synth 09: the titles of a tile's text boxes, by box name, merged over what it had; a blank title takes one off. */
+  setBoxTitles: (id: string, titles: Record<string, string>) => Promise<void>;
   /** UX-08 P1: mark a step tile still open with what is missing, or (null) take the mark off. */
   setStillOpen: (id: string, problem: string | null) => void;
   /** UI-P66: take a node out of an agent or a team. */
@@ -671,6 +674,7 @@ export function useComposePrompts({
   const setFields = (id: string, fields: Record<string, string | null>) =>
     void writeStep(id, "Couldn't save the fields. Try again.", (node) => setNodeFields(node, fields));
   const setColour = (id: string, colour: string | null) => void writeStep(id, "Couldn't save the colour. Try again.", (node) => setNodeColour(node, colour));
+  const setBoxTitles = (id: string, titles: Record<string, string>) => writeStep(id, "Couldn't save the box titles. Try again.", (node) => setNodeBoxTitles(node, titles));
   const setStillOpenOf = (id: string, problem: string | null) => void writeStep(id, "Couldn't save Still open. Try again.", (node) => setStillOpen(node, problem));
 
   const removeInside = (id: string) => {
@@ -962,5 +966,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setExtras: setExtrasOf, setTextOf, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setCheckText: setCheckTextOf, setCodeSource: setCodeSourceOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, setStillOpen: setStillOpenOf, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addDeploymentTile, setDeployment, addSystemPromptTile, addDatasetTile, addRepoTile, addRetrievalTile, addAgentOrTeam, addDecisionTile, setDecision: setDecisionOf, setRuntime: setRuntimeOf, setRunsWhen: setRunsWhenOf, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setReply, setExtras: setExtrasOf, setTextOf, setCheckRuns: setCheckRunsOf, setCheckCases: setCasesOf, setCheckText: setCheckTextOf, setCodeSource: setCodeSourceOf, setModelRun: setModelRunOf, setAgentNotes: setAgentNotesOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, setColour, setBoxTitles, setStillOpen: setStillOpenOf, removeInside, addMadeFile, removeMadeFile, addPiece, addResultOf, addToolTile, addDeploymentTile, setDeployment, addSystemPromptTile, addDatasetTile, addRepoTile, addRetrievalTile, addAgentOrTeam, addDecisionTile, setDecision: setDecisionOf, setRuntime: setRuntimeOf, setRunsWhen: setRunsWhenOf, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
 }

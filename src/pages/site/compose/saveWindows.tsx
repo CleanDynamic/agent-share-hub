@@ -12,7 +12,7 @@ import { BottomSheet } from "@/components/shell/BottomSheet";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { t } from "@/lib/theme/tokens";
 
-import { LABEL, NOTE, RecipeButton, TITLE, footerStyle, frameStyle } from "./modalRecipes";
+import { LABEL, NOTE, RecipeButton, TITLE, footerStyle, LAYER, MODAL_WIDTH, scrimAt, windowPlacement } from "./modalRecipes";
 
 export const LEAVE_COPY = {
   title: "Changes still saving",
@@ -72,8 +72,8 @@ export function RecipeWindow({ open, onClose, title, note, buttons, testId, widt
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 70 }} />
-        <Dialog.Content role="alertdialog" aria-describedby={undefined} onOpenAutoFocus={focus.onOpenAutoFocus} onCloseAutoFocus={focus.onCloseAutoFocus} data-testid={testId} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 71, ...frameStyle(width) }}>
+        <Dialog.Overlay data-motion="scrim" style={scrimAt(LAYER.confirm)} />
+        <Dialog.Content role="alertdialog" aria-describedby={undefined} onOpenAutoFocus={focus.onOpenAutoFocus} onCloseAutoFocus={focus.onCloseAutoFocus} data-testid={testId} style={windowPlacement(width, LAYER.confirm)}>
           <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12, overflowY: "auto", minHeight: 0 }}>
             <Dialog.Title style={TITLE}>{title}</Dialog.Title>
             {note ? <p style={noteStyle}>{note}</p> : null}
@@ -102,7 +102,7 @@ export function LeaveWindow({ open, count, unsent = [], onStay, onLeave }: { ope
       title={count > 0 || unsent.length === 0 ? LEAVE_COPY.title : LEAVE_COPY.titleUnsent}
       note={count > 0 || unsent.length === 0 ? LEAVE_COPY.body(count) : undefined}
       testId="leave-window"
-      width={420}
+      width={MODAL_WIDTH.standard}
       body={
         unsent.length > 0 ? (
           <ul data-testid="leave-unsent" style={{ ...NOTE, color: t.text2, margin: 0, paddingLeft: 0, listStyle: "none" }}>

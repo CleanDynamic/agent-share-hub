@@ -26,8 +26,8 @@ afterEach(() => {
 });
 
 describe("the tile recipes (CA-15b P3)", () => {
-  it("tile: --module, radius 10, padding 14 16, gap 8", () => {
-    expect(tileStyle()).toMatchObject({ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: "var(--r-panel)", padding: "12px 16px", gap: 8 }); // S24
+  it("tile: --module, radius 12, padding 12 14, gap 8 (Synth 09)", () => {
+    expect(tileStyle()).toMatchObject({ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: "var(--r-panel)", padding: "12px 14px", gap: 8 });
   });
 
   it("run: gap 10, padded 14 from a hairline down the left", () => {

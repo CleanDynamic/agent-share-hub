@@ -37,6 +37,10 @@ export const SELECTED: CSSProperties = {
   border: `1px solid ${t.selectedEdge}`,
 };
 
+/* Synth 09: a chosen tile in the editor. A 2px Mint ring outside a 2px gap in the panel's own fill, as a shadow so the
+   tile's border stays free for the maker's colour (a colour never replaces it). */
+export const SELECT_RING = `0 0 0 2px ${t.surface}, 0 0 0 4px ${t.brandAccent}`;
+
 /* Synth 06: a field. Panel fill and an inset 1px `--field-edge`; no border. */
 export const WELL: CSSProperties = {
   background: t.surface,

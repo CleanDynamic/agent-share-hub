@@ -32,7 +32,7 @@ import { AGENT_SETUP_COPY, savedModels, setupReady, useAgentSetupFields, type Ag
 import { ChoiceGrid } from "./ChoiceGrid";
 import { HelpersField } from "./HelpersField";
 import { MODAL_COPY, ModalForm, ModalShell, missingLabels, type EditMode } from "./ModalFrame";
-import { Block, FieldArea, FieldInput, Hint, MODAL_WIDTH, Row, SegmentedField } from "./modalRecipes";
+import { Block, ChoiceCards, FieldArea, FieldInput, Hint, MODAL_WIDTH, Row, SegmentedField } from "./modalRecipes";
 import { OptionalField, OptionalSection, summaryOf } from "./OptionalSection";
 
 export const AGENT_DIALOG_COPY = {
@@ -227,17 +227,16 @@ function Form({
       {edit?.before ? edit.before(draftInput) : null}
       {edit ? null : (
       <Block noRule>
-        <SegmentedField<"agent" | "team">
+        <ChoiceCards<"agent" | "team">
           label="Type"
           phone={phone}
           value={kind}
           onChange={choose}
           items={[
             { value: "agent", label: AGENT_DIALOG_COPY.one },
-            { value: "team", label: AGENT_DIALOG_COPY.team, disabled: !teamsAvailable },
+            { value: "team", label: AGENT_DIALOG_COPY.team, disabled: !teamsAvailable, line: teamsAvailable ? undefined : AGENT_DIALOG_COPY.teamsMissing },
           ]}
         />
-        {!teamsAvailable ? <Hint>{AGENT_DIALOG_COPY.teamsMissing}</Hint> : null}
       </Block>
       )}
 

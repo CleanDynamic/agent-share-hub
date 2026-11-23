@@ -315,8 +315,11 @@ export function measureSkeleton(root: HTMLElement, held: Held, live: MoveModel, 
   return { ...skeletonOf({ kind, items, containers, held: held.id, moved, room: left - edge, frame }), origin: { x: origin.x, y: origin.y } };
 }
 
-/** The right edge of whatever stands to the left of the build column: Sources, or its rail. */
+/** The right edge of whatever stands to the left of the build column: Sources, or its rail. Synth 09: where the Build column is a
+    panel, its own left edge, so a drag's rail and its numbers stay inside the Build panel and never cross into the gap or Sources. */
 export function leftEdge(): number {
+  const panel = document.querySelector<HTMLElement>('[data-testid="sandbox-build-panel"]');
+  if (panel) return panel.getBoundingClientRect().left;
   let edge = 0;
   for (const element of document.querySelectorAll<HTMLElement>('[data-testid="sources-panel"], [data-testid="sources-rail"]')) edge = Math.max(edge, element.getBoundingClientRect().right);
   return edge;

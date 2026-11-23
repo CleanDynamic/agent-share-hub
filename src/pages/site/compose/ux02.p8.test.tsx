@@ -81,7 +81,7 @@ describe("UX-02 P8 · Sources in two groups", () => {
     const props = panel();
     fireEvent.click(screen.getByRole("button", { name: "Add files" }));
     expect(props.onPick).toHaveBeenCalledTimes(1);
-    expect(screen.getByText("Or drop files anywhere on the build.")).toBeTruthy();
+    expect(screen.getByText("Drop sessions or files")).toBeTruthy();
     expect(screen.queryByTestId("sources-drop")).toBeNull();
   });
 });

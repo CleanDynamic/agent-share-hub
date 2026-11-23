@@ -54,7 +54,7 @@ import { HEX_HINT, normaliseHex, SUGGESTED_COLOURS, swatchFor } from "@/lib/them
 import { CONTROL, WELL, hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { refPaint, refWordsStyle } from "@/components/post/RefLinks";
-import { FIELD_FOCUS, FieldInput, HEADER_ICONS, IconSquare, RecipeButton, TextLink, fieldStyle, footerStyle, frameStyle } from "@/pages/site/compose/modalRecipes";
+import { FIELD_FOCUS, FieldInput, HEADER_ICONS, IconSquare, LAYER, RecipeButton, TextLink, fieldStyle, footerStyle, frameStyle } from "@/pages/site/compose/modalRecipes";
 import { TextButton } from "@/pages/site/compose/composeControls";
 import { menuItem, menuSurface } from "@/pages/site/compose/refinedStyles";
 import { CODE_FIELD, DANGER, ELLIPSIS, GAP, GhostIcon, InnerPanel, PAD, SquareSwatch, UndoRedo, data, words } from "@/pages/site/compose/referencePieces";
@@ -103,6 +103,8 @@ export const COLOUR_PICKER_COPY = {
 export const PICKER_WIDTH = 320;
 export const WHEEL_SIZE = 124;
 const SWATCH = 22;
+/** Synth 09: a saved colour in the Colours window. */
+const SWATCH_LARGE = 28;
 /** The swatch rows' label column. */
 const LABEL_COLUMN = 62;
 
@@ -329,7 +331,7 @@ function Lightness({ value, onChange }: { value: number; onChange: (next: number
 
 /* ── swatches ── */
 
-function Swatch({ hex, current, onPick, onKeyDown }: { hex: string; current: boolean; onPick: () => void; onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void }) {
+function Swatch({ hex, current, onPick, onKeyDown, large = false }: { hex: string; current: boolean; onPick: () => void; onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void; /** Synth 09: the Colours window's saved colours, 28 square at radius 8. */ large?: boolean }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <button
@@ -341,11 +343,11 @@ function Swatch({ hex, current, onPick, onKeyDown }: { hex: string; current: boo
       onKeyDown={onKeyDown}
       {...handlers}
       style={{
-        width: SWATCH,
-        height: SWATCH,
+        width: large ? SWATCH_LARGE : SWATCH,
+        height: large ? SWATCH_LARGE : SWATCH,
         padding: 0,
         border: "none",
-        borderRadius: "50%",
+        borderRadius: large ? 8 : "50%",
         cursor: "pointer",
         flexShrink: 0,
         ...swatchFor(hex),
@@ -405,16 +407,16 @@ function SaveCircle({ disabled, onSave }: { disabled: boolean; onSave: () => voi
 }
 
 /** A saved swatch, with its menu on right-click (press and hold on a phone): Use this colour, Remove from saved. */
-export function SavedSwatch({ hex, current, onUse, onRemove }: { hex: string; current: boolean; onUse: () => void; onRemove: () => void }) {
+export function SavedSwatch({ hex, current, onUse, onRemove, large = false }: { hex: string; current: boolean; onUse: () => void; onRemove: () => void; large?: boolean }) {
   return (
     <ContextMenu.Root>
       <ContextMenu.Trigger asChild>
         <span style={{ display: "inline-flex" }} data-saved-swatch={hex}>
-          <Swatch hex={hex} current={current} onPick={onUse} onKeyDown={moveAlong} />
+          <Swatch hex={hex} current={current} onPick={onUse} onKeyDown={moveAlong} large={large} />
         </span>
       </ContextMenu.Trigger>
       <ContextMenu.Portal>
-        <ContextMenu.Content style={{ ...menuSurface(), zIndex: 70 }}>
+        <ContextMenu.Content style={{ ...menuSurface(), zIndex: LAYER.floatingOver }}>
           <ContextMenu.Item style={menuItem(true, false)} onSelect={onUse}>
             {COLOUR_PICKER_COPY.useThis}
           </ContextMenu.Item>
@@ -850,7 +852,7 @@ export function ColourPicker(props: ColourPickerProps) {
       </BottomSheet>
     );
   }
-  const surface: CSSProperties = { ...frameStyle(PICKER_WIDTH), position: "fixed", zIndex: 60, top: place?.top ?? -9999, left: place?.left ?? 0, maxHeight: "calc(100dvh - 16px)" };
+  const surface: CSSProperties = { ...frameStyle(PICKER_WIDTH), position: "fixed", zIndex: LAYER.floating, top: place?.top ?? -9999, left: place?.left ?? 0, maxHeight: "calc(100dvh - 16px)" };
   return createPortal(
     <div ref={box} role="dialog" aria-label={`${COLOUR_PICKER_COPY.head}: ${props.what}`} style={surface}>
       <PickerBody key={key} {...props} />

@@ -44,6 +44,7 @@ import { holdsFolder, readDrop } from "./dropFolders";
 import { SLIDE_ATTR } from "./flip";
 import { scrollToShow } from "./pageScroll";
 import { ToolMark } from "./refinedPieces";
+import { FluidShape } from "@/components/brand/FluidField";
 import { fullText, PREVIEW } from "@/lib/theme/truncate";
 import { bareButton, ellipsis, menuItem, menuSurface, text, tnum, wellField } from "./refinedStyles";
 import { libraryName, middleCut, REMINDER_ROWS, REPEAT_COPY, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession, type SourceUnfinishedItem } from "./sourcesModel";
@@ -66,7 +67,8 @@ export const SOURCES_COPY = {
   filter: "Filter sessions",
   noMatch: "No session matches.",
   addFiles: "Add files",
-  dropLine: "Or drop files anywhere on the build.",
+  /** Synth 09: the drop zone's words. A chat export dropped here is taken in as sessions (the intake); any other file is a file of the build. */
+  dropLine: "Drop sessions or files",
   /** SV-05 P6: the text button beside a file a tool in the build reads. */
   addFile: "Add",
   stillArriving: "Still arriving",
@@ -493,14 +495,24 @@ function UnfinishedRow({ item, phone }: { item: SourceUnfinishedItem; phone: boo
   );
 }
 
-/** UX-02 P8: the panel's foot: Add files opens the picker; on a computer, one line says a file can be dropped on the build too. */
+/** UX-02 P8, Synth 09: the panel's foot: on a computer the drop zone ("Drop sessions or files"), then Add files, which opens the picker. */
 function AddFiles({ fine, phone, onPick }: Pick<SourcesPanelProps, "fine" | "phone" | "onPick">) {
   return (
-    <div data-testid="sources-add-files" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: space[1] }}>
+    <div
+      data-testid="sources-add-files"
+      style={
+        fine
+          ? /* Synth 09: the drop zone, a dashed 12-radius area (the field's edge) over a faint field of dots. */
+            { position: "relative", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: space[1], padding: `${space[4]}px ${space[3]}px`, borderRadius: r.panel, border: `1px dashed ${t.fieldEdge}`, overflow: "hidden", isolation: "isolate" }
+          : { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: space[1] }
+      }
+    >
+      {fine ? <FluidShape aria-hidden="true" data-testid="drop-dots" dotKind="fill" style={{ position: "absolute", inset: 0, zIndex: -1, pointerEvents: "none", opacity: 0.3 }} /> : null}
+      {/* Synth 09: on a computer the zone says what it takes, then offers the picker. */}
+      {fine ? <p style={{ ...text(textStep.meta, 400, t.text2), margin: 0 }}>{SOURCES_COPY.dropLine}</p> : null}
       <TextButton onClick={onPick} target={phone} style={{ ...textLinkBox(phone), ...text(textStep.meta, 500, t.text) }}>
         {SOURCES_COPY.addFiles}
       </TextButton>
-      {fine ? <p style={{ ...text(textStep.meta, 400, t.text2), margin: 0 }}>{SOURCES_COPY.dropLine}</p> : null}
     </div>
   );
 }

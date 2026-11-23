@@ -55,10 +55,9 @@ import { ModelPicker } from "@/pages/site/compose/ModelPicker";
 import { OptionalField, OptionalSection, summaryOf } from "@/pages/site/compose/OptionalSection";
 import { OptionalRow, OptionalRows } from "@/pages/site/compose/OptionalRows";
 import { EYEBROW } from "@/pages/site/compose/refinedStyles";
-import { Block, BlockHead, Count, FOOT_NOTE, FieldArea, FieldInput, HEADER, HEADER_ICONS, HEADER_TEXT, Hint, IconSquare, Inline, MODAL_PAD, MODAL_WIDTH, ModalInset, RecipeButton, Row, SUBTITLE, SegmentedField, areaStyle, bodyStyle, footerStyle, frameStyle, BUTTON_PAD, BUTTON_PAD_SMALL_TEXT } from "@/pages/site/compose/modalRecipes";
+import { Block, BlockHead, Count, FOOT_NOTE, FieldArea, FieldInput, HEADER, HEADER_ICONS, HEADER_TEXT, Hint, IconSquare, Inline, MODAL_PAD, MODAL_WIDTH, ModalInset, RecipeButton, Row, SUBTITLE, SegmentedField, areaStyle, bodyStyle, footerStyle, BUTTON_PAD, BUTTON_PAD_SMALL_TEXT, LAYER, scrimAt, windowPlacement } from "@/pages/site/compose/modalRecipes";
 
 import type { PromptView } from "@/pages/site/compose/DetailsPanel";
-import { MODAL_TOP } from "@/pages/site/compose/ModalFrame";
 import { PromptEdits, type PromptEditHandlers } from "@/pages/site/compose/editKit";
 
 import { JobFields, agentOfPrompt } from "./JobFields";
@@ -695,7 +694,7 @@ export function FullPromptWindow(props: FullPromptWindowProps) {
   return (
     <Dialog.Root open={Boolean(step)} onOpenChange={(open) => !open && props.onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 60 }} />
+        <Dialog.Overlay data-motion="scrim" style={scrimAt(LAYER.promptWindow)} />
         <Dialog.Content
           data-testid="full-prompt-window"
           aria-describedby={undefined}
@@ -705,12 +704,10 @@ export function FullPromptWindow(props: FullPromptWindowProps) {
           onKeyDown={onKeyDown}
           data-look={"refined"}
           style={{
-            position: "fixed",
-            zIndex: 61,
             ...(phone
-              ? { inset: 0, boxSizing: "border-box", overflowY: "auto", padding: "16px 16px 0", background: t.window, color: t.text, fontFamily: FIGTREE }
-              : /* CA-15b: the frame recipe, 640 wide. F38: its top edge pinned at 48 as ModalShell's (F25), so a section that opens moves nothing above it. */
-                { top: MODAL_TOP, left: "50%", transform: "translateX(-50%)", ...frameStyle(MODAL_WIDTH.wide), maxHeight: `calc(100dvh - ${MODAL_TOP * 2}px)` }),
+              ? { position: "fixed", zIndex: LAYER.promptWindow, inset: 0, boxSizing: "border-box", overflowY: "auto", padding: "16px 16px 0", background: t.window, color: t.text, fontFamily: FIGTREE }
+              : /* F38, Synth 09: the shared window placement, its top pinned at 48 (F25), so a section that opens moves nothing above it. */
+                windowPlacement(MODAL_WIDTH.wide, LAYER.promptWindow)),
           }}
         >
           {step ? (

@@ -16,6 +16,8 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useEffect, useRef, useState, type RefObject } from "react";
 
 import { Glyph } from "@/components/brand/Glyph";
+import { LAYER } from "@/pages/site/compose/layers";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { copyToClipboard } from "@/lib/deepLink";
 import { ring } from "@/lib/theme/controls";
 import { elevation } from "@/lib/theme/elevation";
@@ -84,6 +86,7 @@ function CloseButton({ label, onClick }: { label: string; onClick: () => void })
 
 export function Notepad({ open, onClose, field, value, onDone, title = "", onTitleChange, returnFocusTo }: NotepadProps) {
   const readOnly = onDone === undefined;
+  const phone = useIsPhone();
   const [draft, setDraft] = useState(value);
   const [copied, setCopied] = useState(false);
   const window_ = useRef<HTMLDivElement>(null);
@@ -119,6 +122,7 @@ export function Notepad({ open, onClose, field, value, onDone, title = "", onTit
   const text = readOnly ? value : draft;
   const chars = Array.from(text).length;
   const width = readOnly ? readOnlyWidth(chars) : NOTEPAD_EDITOR_WIDTH;
+  const fullScreen = phone && !readOnly;
 
   const body: React.CSSProperties = {
     margin: 0,
@@ -155,17 +159,24 @@ export function Notepad({ open, onClose, field, value, onDone, title = "", onTit
           }}
           style={{
             position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            zIndex: 61,
-            width,
-            maxWidth: "calc(100vw - 32px)",
-            maxHeight: readOnly ? "70vh" : "calc(100dvh - 64px)",
+            /* Synth 09: over the window its box is in, whichever layer that is. */
+            zIndex: LAYER.notepad,
             boxSizing: "border-box",
             display: "flex",
             flexDirection: "column",
-            borderRadius: 16,
+            /* Synth 09: in the editor, 880 wide from 1101 and `min(880px, 100vw - 64px)` below; on a phone, the whole screen,
+               its header and footer pinned and the text scrolling between them. */
+            ...(fullScreen
+              ? { inset: 0, width: "100%", height: "100dvh", maxHeight: "none", borderRadius: 0 }
+              : {
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width,
+                  maxWidth: readOnly ? "calc(100vw - 32px)" : "calc(100vw - 64px)",
+                  maxHeight: readOnly ? "70vh" : "calc(100dvh - 64px)",
+                  borderRadius: 16,
+                }),
             background: t.notepad,
             color: t.text,
             fontFamily: FIGTREE,
@@ -178,6 +189,7 @@ export function Notepad({ open, onClose, field, value, onDone, title = "", onTit
           </div>
           {onTitleChange || title ? (
             <input
+              data-notepad-field=""
               aria-label={`${field} title`}
               data-testid="notepad-title"
               value={title}
@@ -200,6 +212,7 @@ export function Notepad({ open, onClose, field, value, onDone, title = "", onTit
             </div>
           ) : (
             <textarea
+              data-notepad-field=""
               data-notepad-text=""
               aria-label={field}
               value={draft}

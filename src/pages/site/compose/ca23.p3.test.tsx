@@ -54,7 +54,7 @@ describe("the window", () => {
     expect(buttons.map((button) => button.textContent)).toEqual(["Leave", "Stay"]);
     expect(buttons[0].getAttribute("data-variant")).toBe("secondary");
     expect(buttons[1].getAttribute("data-variant")).toBe("primary");
-    expect(window_.style.width).toBe("420px");
+    expect(window_.style.width).toBe("440px");
   });
 });
 

@@ -40,7 +40,7 @@ describe("the Session modal", () => {
   it("is the tile frame: Edit above the session's own line, Save, and its sections in order", () => {
     open();
     expect(screen.getByTestId("modal-eyebrow").textContent).toBe("Edit");
-    expect(screen.getByRole("dialog", { name: "Session 2 · Claude Code" })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: "Session 2" })).toBeTruthy();
     openOptional();
     const text = dialog().textContent ?? "";
     const order = ["Harness and model", "Date", "Worked until", "What it cost", "Started with", "Own copy of the code", "Ran alongside", "Setup", "Prompts shared"].map((label) => text.indexOf(label));

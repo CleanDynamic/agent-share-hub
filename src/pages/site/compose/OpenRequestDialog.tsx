@@ -4,21 +4,15 @@
 
    PRESENTATIONAL. The caller writes. A real dialog (Radix): focus is trapped, Escape closes. */
 
-import { useEffect, useId, useState, type FormEvent } from "react";
-import * as Dialog from "@radix-ui/react-dialog";
-import { X } from "lucide-react";
+import { useEffect, useId, useState } from "react";
 
-import { Button } from "@/components/brand/Button";
-import { IconButton } from "@/components/brand/IconButton";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { OPEN_PROBLEM_MAX } from "@/lib/build/openRequest";
-import { fieldStyle } from "@/lib/theme/controls";
-import { r } from "@/lib/theme/radius";
-import { t } from "@/lib/theme/tokens";
-import { FIGTREE, display, textStep } from "@/lib/theme/type";
 
 export { OPEN_REQUEST_COPY } from "./openRequestCopy";
 import { OPEN_REQUEST_COPY } from "./openRequestCopy";
-import { iconButtonSide } from "./modalRecipes";
+import { ModalForm, ModalShell } from "./ModalFrame";
+import { Block, BlockHead, FieldArea, MODAL_WIDTH } from "./modalRecipes";
 
 export interface OpenRequestDialogProps {
   open: boolean;
@@ -44,74 +38,29 @@ export function OpenRequestDialog({ open, title, initial, onClose, onSubmit }: O
   }, [open]);
 
   const empty = problem.trim() === "";
-  const submit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setTried(true);
-    if (empty) return;
-    onSubmit(problem.trim());
-  };
+  const phone = useIsPhone();
 
+  /* Synth 09: the shared window (the same place, width and layers as every other), its one box empty with Expand. Pressing
+     Mark still open with nothing written says so, as before, rather than greying the button. */
   return (
-    <Dialog.Root open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
-      <Dialog.Portal>
-        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.sheetDim, zIndex: 40 }} />
-        <Dialog.Content
-          data-testid="open-request-dialog"
-          style={{
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            zIndex: 41,
-            width: "min(480px, calc(100vw - 32px))",
-            maxHeight: "88dvh",
-            overflowY: "auto",
-            boxSizing: "border-box",
-            padding: "12px 16px 16px",
-            borderRadius: r.panel,
-            background: t.window,
-            border: `1px solid ${t.windowBorder}`,
-            boxShadow: t.shadowSheet,
-            color: t.text,
-            fontFamily: FIGTREE,
-          }}
-        >
-          <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-              <Dialog.Title style={{ ...display(22), margin: 0, color: t.text }}>{title}</Dialog.Title>
-              <Dialog.Close asChild>
-                <IconButton style={iconButtonSide()} icon={X} label="Close" size={38} />
-              </Dialog.Close>
-            </div>
-            <Dialog.Description style={{ margin: 0, fontSize: textStep.body, lineHeight: 1.55, color: t.text2 }}>{OPEN_REQUEST_COPY.description}</Dialog.Description>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <label htmlFor={`${id}-problem`} style={{ fontSize: textStep.meta, color: t.label }}>
-                {OPEN_REQUEST_COPY.label}
-              </label>
-              <textarea
-                id={`${id}-problem`}
-                rows={3}
-                value={problem}
-                maxLength={OPEN_PROBLEM_MAX}
-                aria-invalid={tried && empty}
-                aria-describedby={tried && empty ? `${id}-why` : undefined}
-                onChange={(event) => setProblem(event.target.value)}
-                style={{ ...fieldStyle(), fontFamily: FIGTREE, fontSize: textStep.section, width: "100%", padding: "8px", color: t.text, boxSizing: "border-box", resize: "vertical" }}
-              />
-              {tried && empty ? (
-                <span id={`${id}-why`} role="alert" style={{ fontSize: textStep.meta, color: t.text2 }}>
-                  {OPEN_REQUEST_COPY.empty}
-                </span>
-              ) : null}
-            </div>
-            <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <Button type="submit" variant="primary" size={44} fontSize={textStep.body}>
-                {OPEN_REQUEST_COPY.submit}
-              </Button>
-            </div>
-          </form>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+    <ModalShell open={open} onOpenChange={(next) => (next ? undefined : onClose())} title={title} subtitle={OPEN_REQUEST_COPY.description} width={MODAL_WIDTH.standard} testId="open-request-dialog">
+      <ModalForm
+        phone={phone}
+        missing={null}
+        addLabel={OPEN_REQUEST_COPY.submit}
+        status=""
+        alert={tried && empty ? OPEN_REQUEST_COPY.empty : null}
+        onCancel={onClose}
+        onSubmit={() => {
+          setTried(true);
+          if (!empty) onSubmit(problem.trim());
+        }}
+      >
+        <Block noRule>
+          <BlockHead label={OPEN_REQUEST_COPY.label} htmlFor={`${id}-problem`} />
+          <FieldArea id={`${id}-problem`} phone={phone} rows={3} value={problem} maxLength={OPEN_PROBLEM_MAX} aria-invalid={tried && empty} onChange={(event) => setProblem(event.target.value)} />
+        </Block>
+      </ModalForm>
+    </ModalShell>
   );
 }

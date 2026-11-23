@@ -30,7 +30,7 @@ import { t } from "@/lib/theme/tokens";
 import { fallOut, riseIn, useCrossfade } from "./buildMotion";
 import { ACTION_BAR_BOTTOM } from "./composeChrome";
 import { MenuContent } from "./ComposeMenu";
-import { GROUP_TITLE, IconSquare, LABEL, RecipeButton, footerStyle, frameStyle } from "./modalRecipes";
+import { GROUP_TITLE, IconSquare, LABEL, RecipeButton, footerStyle, LAYER, MODAL_WIDTH, scrimAt, windowPlacement } from "./modalRecipes";
 import { DANGER, ELLIPSIS, GAP, PAD, words } from "./referencePieces";
 import { menuItem, menuSurface } from "./refinedStyles";
 import { focusBuild } from "./buildFocus";
@@ -70,7 +70,7 @@ export interface SmallWindowProps {
 }
 
 /** The 420 window every removal, clearing and conversion asks in. Escape and a click outside cancel. */
-export function SmallWindow({ open, onClose, title, body, buttons, testId, width = 420, children }: SmallWindowProps) {
+export function SmallWindow({ open, onClose, title, body, buttons, testId, width = MODAL_WIDTH.standard, children }: SmallWindowProps) {
   const phone = useIsPhone();
   const focus = useWindowFocus(open);
   if (phone) {
@@ -87,8 +87,8 @@ export function SmallWindow({ open, onClose, title, body, buttons, testId, width
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 70 }} />
-        <Dialog.Content role="alertdialog" aria-describedby={undefined} onOpenAutoFocus={focus.onOpenAutoFocus} onCloseAutoFocus={focus.onCloseAutoFocus} data-testid={testId} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 71, ...frameStyle(width) }}>
+        <Dialog.Overlay data-motion="scrim" style={scrimAt(LAYER.confirm)} />
+        <Dialog.Content role="alertdialog" aria-describedby={undefined} onOpenAutoFocus={focus.onOpenAutoFocus} onCloseAutoFocus={focus.onCloseAutoFocus} data-testid={testId} style={windowPlacement(width, LAYER.confirm)}>
           <div style={{ padding: PAD.card, display: "flex", flexDirection: "column", gap: GAP.column }}>
             <Dialog.Title style={GROUP_TITLE}>{title}</Dialog.Title>
             {body ? <p style={{ ...LABEL, margin: 0 }}>{body}</p> : null}

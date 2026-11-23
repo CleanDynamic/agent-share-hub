@@ -128,7 +128,7 @@ describe("a clash", () => {
     const window_ = await clash();
     expect(within(window_).getByText("Prompt 2 changed in another tab")).toBeTruthy();
     expect(within(window_).getByText("The version you don't keep goes to Recently removed.")).toBeTruthy();
-    expect(window_.style.width).toBe("560px");
+    expect(window_.style.width).toBe("440px");
     const thisTab = within(window_).getByTestId("clash-mine");
     const otherTabPanel = within(window_).getByTestId("clash-theirs");
     expect(within(thisTab).getByText(/^This tab · \d\d:\d\d$/)).toBeTruthy();

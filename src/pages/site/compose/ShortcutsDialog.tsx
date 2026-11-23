@@ -5,7 +5,7 @@ import { useIsPhone } from "@/components/shell/useMinWidth";
 import { SHORTCUT_COPY, SHORTCUT_GROUPS, SHORTCUTS, isMac } from "@/lib/build/shortcuts";
 import { t } from "@/lib/theme/tokens";
 
-import { COUNT, GROUP_TITLE, RecipeButton } from "./modalRecipes";
+import { COUNT, GROUP_TITLE, RecipeButton, MODAL_WIDTH } from "./modalRecipes";
 import { words } from "./referencePieces";
 import { SmallWindow } from "./removePieces";
 
@@ -18,7 +18,7 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
       open={open}
       onClose={onClose}
       title={SHORTCUT_COPY.title}
-      width={560}
+      width={MODAL_WIDTH.standard}
       testId="shortcuts-window"
       buttons={
         <RecipeButton small={!phone} phone={phone} onClick={onClose}>
@@ -31,9 +31,10 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
           <section key={group} aria-label={group}>
             <h3 style={{ ...GROUP_TITLE, fontSize: textStep.body }}>{group}</h3>
             {SHORTCUTS.filter((entry) => entry.group === group).map((entry) => (
-              <div key={entry.id} data-testid="shortcut-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 36, borderBottom: `1px solid ${t.hairline}` }}>
+              <div key={entry.id} data-testid="shortcut-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 36 }}>
                 <span style={words(textStep.body, 400, t.text)}>{entry.label}</span>
-                <kbd style={{ ...COUNT, margin: 0 }}>{mac ? entry.mac : entry.other}</kbd>
+                {/* Synth 09: the key in a 24-tall Raised box, radius 6, mono 13. */}
+                <kbd style={{ ...COUNT, margin: 0, display: "inline-flex", alignItems: "center", height: 24, padding: "0 8px", boxSizing: "border-box", borderRadius: 6, background: t.control, color: t.text }}>{mac ? entry.mac : entry.other}</kbd>
               </div>
             ))}
           </section>

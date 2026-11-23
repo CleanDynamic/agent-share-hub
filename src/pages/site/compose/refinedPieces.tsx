@@ -4,9 +4,9 @@
 import type { CSSProperties, ReactNode } from "react";
 
 import { ModelMark } from "@/components/brand/ModelMark";
+import { markFor } from "@/lib/models/marks";
 import { checkHistoryLine, checkStatus, type CheckFacts } from "@/lib/build/graph";
 import { casesLine } from "@/lib/build/testCases";
-import { markFor } from "@/lib/models/marks";
 import { CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, textStep } from "@/lib/theme/type";
@@ -43,7 +43,7 @@ export function NumberTile({ children }: { children: ReactNode }) {
   );
 }
 
-/** The tool's real mark, or a 6px square when it has none. */
+/** The tool's real mark, or a 6px square when it has none. Kept in the Synth draft: tools keep their icons. */
 export function ToolMark({ tool, model, size }: { tool?: string | null; model?: string | null; size: 14 | 16 | 20 | 24 }) {
   if (markFor({ tool, model }) === null) {
     return <span aria-hidden="true" style={{ width: 6, height: 6, margin: (size - 6) / 2, borderRadius: 1, background: t.label, flexShrink: 0 }} />;

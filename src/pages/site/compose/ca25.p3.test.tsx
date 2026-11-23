@@ -164,10 +164,10 @@ describe("the Unpublish window", () => {
     return screen.findByTestId("unpublish-window");
   };
 
-  it("is 420 wide with its title, its body, Cancel and Unpublish in the danger colour", async () => {
+  it("is 440 wide (Synth 09) with its title, its body, Cancel and Unpublish in the danger colour", async () => {
     render(<Harness onUnpublish={async () => "done"} extra={{ title: "Bakery homepage" }} />);
     const window = await ask();
-    expect(window.getAttribute("style")).toContain("width: 420px");
+    expect(window.getAttribute("style")).toContain("width: 440px");
     expect(within(window).getByText("Unpublish Bakery homepage?")).toBeTruthy();
     expect(within(window).getByTestId("unpublish-body").textContent).toBe("The link stops working. The build stays a draft.");
     expect(within(window).getByTestId("unpublish-cancel").textContent).toBe("Cancel");
