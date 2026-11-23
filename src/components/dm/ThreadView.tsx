@@ -910,7 +910,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
         <div key={msg.id}>
           {showDate && (
             <div className="flex justify-center my-4">
-              <span className="text-[12px] text-muted-foreground bg-background px-3 py-1 rounded-full">
+              <span style={{ fontSize: 13, lineHeight: "16px", color: t.label }}>
                 {dateSeparatorLabel(msg.sent_at)}
               </span>
             </div>
@@ -1024,6 +1024,9 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
     };
 
     /**
+     * Synth 12 Part D: theirs on Card, yours on Raised (`--bubble-theirs`, `--bubble-mine`, which are #F1F3F1 and #E7EBE7
+     * in the light), radius 18 all round, 10px 14px, 15/20, at most 70% wide.
+     *
      * BG-P26. Own messages take an `--action` wash with `--text` on it; theirs
      * take `--recess`. Both carry `--text`, which is the measured pairing —
      * 10.27:1 and 11.33:1 on Noon, 10.54:1 and 10.62:1 on Dusk. The
@@ -1038,8 +1041,10 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
       if (msg.message_type === "like") return {};
       if (msg.message_type === "image" || msg.message_type === "post_share") return {};
       return {
-        background: isMine ? tokenAlpha("action", 0.18) : t.recess,
+        background: isMine ? t.bubbleMine : t.bubbleTheirs,
         color: t.text,
+        fontSize: 15,
+        lineHeight: "20px",
       };
     };
 
@@ -1050,13 +1055,11 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
      * corner is what carries direction now that the fill no longer can.
      */
     const bubbleRadiusStyle: React.CSSProperties = {
-      borderRadius: isMine
-        ? `${r["r-control"]} ${r["r-control"]} 0 ${r["r-control"]}`
-        : `${r["r-control"]} ${r["r-control"]} ${r["r-control"]} 0`,
+      borderRadius: 18,
+      ...(msg.message_type === "image" || msg.message_type === "post_share" || msg.message_type === "like" ? null : { padding: "10px 14px" }),
     };
 
-    const paddingClass = msg.message_type === "image" || msg.message_type === "post_share" || msg.message_type === "like"
-      ? "" : "px-3.5 py-2.5";
+    const paddingClass = "";
 
     const messageContextItems = (
       <>
@@ -1090,7 +1093,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
       >
         {showDate && (
           <div className="flex justify-center my-4">
-            <span className="text-[12px] text-muted-foreground bg-background px-3 py-1 rounded-full">
+            <span style={{ fontSize: 13, lineHeight: "16px", color: t.label }}>
               {dateSeparatorLabel(msg.sent_at)}
             </span>
           </div>
@@ -1110,7 +1113,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
             </div>
           )}
 
-          <div className="max-w-[75%] relative">
+          <div className="max-w-[70%] relative">
             {repliedMsg && (
               <div className="mb-1 pl-2 border-l-2 border-muted-foreground/30 text-[12px] text-muted-foreground truncate max-w-full">
                 ↩ {repliedMsg.sender_id === user?.id ? "You" : displayName}: {repliedMsg.text_content?.slice(0, 60) || "Media"}
@@ -1152,11 +1155,12 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
 
             {showingTimestamp && (
               <p
-                className={`text-[10px] mt-0.5 ${isMine ? "text-right" : "text-left"}`}
+                className={`mt-0.5 ${isMine ? "text-right" : "text-left"}`}
                 style={{
-                  fontFamily: dataType.fontFamily,
+                  fontSize: 13,
+                  lineHeight: "16px",
                   ...tabular,
-                  color: t.text2,
+                  color: t.label,
                 }}
               >
                 {formatMessageTime(msg.sent_at)}
@@ -1350,6 +1354,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
         <MessageInputBar
           threadId={threadId}
           otherDisplayName={displayName}
+          otherHandle={otherUser.username ?? null}
           replyToId={replyTo?.id || null}
           onClearReply={() => setReplyTo(null)}
           onMessageSent={() => {

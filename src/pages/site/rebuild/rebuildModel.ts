@@ -169,7 +169,7 @@ export function familyStats(root: FamilyNodeView | null): { builds: number; gene
 export function familySubtitle(root: FamilyNodeView | null): string {
   const { builds, generations } = familyStats(root);
   const count = (n: number, one: string, many: string) => `${n.toLocaleString("en-GB")} ${n === 1 ? one : many}`;
-  return `${count(builds, "build", "builds")} · ${count(generations, "generation", "generations")} · lamps show which still work`;
+  return `${count(builds, "build", "builds")} · ${count(generations, "generation", "generations")}`;
 }
 
 /** The list is the default above this many builds; a tree that wide is read better as a list. */
@@ -177,16 +177,16 @@ export const TREE_MAX_NODES = 12;
 
 /* ── the tree's geometry ── */
 
-export const NODE_WIDTH = 140;
+export const NODE_WIDTH = 150;
 /** Siblings stand at least this far apart. */
 export const NODE_GAP = 40;
 /** Generation g stands at y = ROW_TOP + ROW_STEP · g. */
 export const ROW_TOP = 18;
-export const ROW_STEP = 150;
-/** From a node's top to where its connectors leave it. */
-export const NODE_HEIGHT = 110;
+export const ROW_STEP = 96;
+/** From a node's top to where its connectors leave it: Synth 14's node is two 16px lines in 10px of padding. */
+export const NODE_HEIGHT = 56;
 /** The canvas's height on the board. */
-export const CANVAS_HEIGHT = 460;
+export const CANVAS_HEIGHT = 280;
 
 export interface PlacedNode {
   node: FamilyNodeView;
@@ -407,7 +407,7 @@ export function changesEyebrow(groups: readonly ChangeGroupView[]): string {
 export interface ReadinessView {
   /** How much of the gate is met: the three things every record needs, and having changed something. */
   pct: number;
-  /** "One thing before it can hang", "{n} things before it can hang", "Ready to hang". */
+  /** "One thing before it can be published", "{n} things before it can be published", "Ready to publish". */
   headline: string;
   /** The first thing still missing, as a sentence. Null when nothing is. */
   next: string | null;
@@ -434,13 +434,31 @@ export function readinessView(readiness: PublishReadiness, changes: ChangeSet): 
     pct: Math.round(((total - outstanding) / total) * 100),
     headline:
       outstanding === 0
-        ? "Ready to hang"
+        ? "Ready to publish"
         : outstanding === 1
-          ? "One thing before it can hang"
-          : `${outstanding.toLocaleString("en-GB")} things before it can hang`,
+          ? "One thing before it can be published"
+          : `${outstanding.toLocaleString("en-GB")} things before it can be published`,
     next: readiness.blocking[0] ? sentence(readiness.blocking[0].copy) : diverged ? null : NO_CHANGES_REASON,
     ready: readiness.ready,
   };
+}
+
+/**
+ * Synth 14: why Publish cannot be pressed yet, as a sentence under it: "Step 4 has no text yet." becomes "Publish once Step 4
+ * has text."; anything else is "Publish once this is done: …". Null when nothing is missing.
+ */
+export function publishReason(next: string | null): string | null {
+  if (!next) return null;
+  const text = next.trim().replace(/\.$/, "");
+  const missing = /^(.+?) has no (.+?) yet$/i.exec(text);
+  if (missing) return `Publish once ${missing[1]} has ${missing[2]}.`;
+  return `Publish once this is done: ${text.charAt(0).toLowerCase()}${text.slice(1)}.`;
+}
+
+/** Synth 14: the family as its fact, "6 builds in this family". */
+export function familyFact(root: FamilyNodeView | null): string {
+  const { builds } = familyStats(root);
+  return `${builds.toLocaleString("en-GB")} ${builds === 1 ? "build" : "builds"} in this family`;
 }
 
 /* ══ the heading ═════════════════════════════════════════════════════════════ */

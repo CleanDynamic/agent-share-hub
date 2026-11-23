@@ -1,4 +1,9 @@
-/* UI-P35 — the Activity page's pure pieces: the kinds it draws a badge for, the
+/* Synth 12 Part C: runs are no longer drawn. A "reproduced" notification ("ran your build") is left out of the list, the
+   Show me switches and the phone's choices; the days are Today, Yesterday, This week, then dates; a row's words are the
+   ones `resolveTarget.ts` writes ("rebuilt your build", "liked your build"), with the actor's handle split out so the view
+   can set it in 600. A topic started from your build carries the "topic" square.
+
+   UI-P35 — the Activity page's pure pieces: the kinds it draws a badge for, the
    days it groups by, the filter, and one notification as the row the view draws.
 
    THE KINDS ARE THE ONES THE DATABASE WRITES. The reference draws seven, and all
@@ -28,9 +33,8 @@ import {
 
 export type ActivityKind = BuildNotificationKind;
 
-/** The "Show me" panel's order, as the reference lists the kinds. */
+/** The "Show me" panel's order. Synth 12: no "reproduced"; runs are not drawn. */
 export const ACTIVITY_KINDS: readonly ActivityKind[] = [
-  "reproduced",
   "rebuilt",
   "comment",
   "reply",
@@ -41,11 +45,41 @@ export const ACTIVITY_KINDS: readonly ActivityKind[] = [
 
 /** The phone's chips after "All": one kind each, as the mobile board draws them. */
 export const PHONE_CHIPS: ReadonlyArray<{ kind: ActivityKind; label: string }> = [
-  { kind: "reproduced", label: "Reproduced" },
   { kind: "rebuilt", label: "Rebuilt" },
   { kind: "comment", label: "Comments" },
+  { kind: "reply", label: "Replies" },
+  { kind: "like", label: "Likes" },
   { kind: "follow", label: "Follows" },
+  { kind: "published", label: "Published" },
 ];
+
+/** What each kind's switch in Show me is called. */
+export const KIND_LABEL: Readonly<Record<ActivityKind, string>> = {
+  reproduced: "Runs",
+  rebuilt: "Rebuilt",
+  comment: "Comments",
+  reply: "Replies",
+  like: "Likes",
+  follow: "Follows",
+  published: "Published",
+};
+
+/** The square on a row's avatar: a kind, or a topic started from your build. */
+export type ActivitySquare = Exclude<ActivityKind, "reproduced"> | "topic";
+
+/** Whether a switch in Show me is on: everything shows when none is chosen. */
+export function kindShown(kind: ActivityKind, chosen: ReadonlySet<ActivityKind>): boolean {
+  return chosen.size === 0 || chosen.has(kind);
+}
+
+/** Flip one kind's switch. With everything showing, turning one off chooses the rest; turning the last one back on shows
+    everything again. The filter underneath is the same chosen set as before. */
+export function switchKind(chosen: ReadonlySet<ActivityKind>, kind: ActivityKind, kinds: readonly ActivityKind[] = ACTIVITY_KINDS): Set<ActivityKind> {
+  const shown = new Set(chosen.size === 0 ? kinds : chosen);
+  if (shown.has(kind)) shown.delete(kind);
+  else shown.add(kind);
+  return shown.size === kinds.length ? new Set() : shown;
+}
 
 export type KindCounts = Readonly<Record<ActivityKind, number>>;
 
@@ -97,6 +131,10 @@ export interface ActivityRow {
   id: string;
   /** Null for a kind with no drawn badge. */
   kind: ActivityKind | null;
+  /** The square on the avatar's shoulder; null for none. */
+  square?: ActivitySquare | null;
+  /** The actor as the line opens with them ("@kit"), set in 600; null when the line does not open with them. */
+  actorLabel?: string | null;
   /** ISO time it happened. */
   at: string;
   actor: ActivityActor;
@@ -113,15 +151,15 @@ export interface ActivityRow {
   href: string | null;
 }
 
-/** The verb each kind is told with, before the build's title. */
+/** The words each kind is told with, before the build's title: `resolveTarget.ts`'s. */
 const LEAD: Record<ActivityKind, string> = {
-  reproduced: "ran",
-  rebuilt: "rebuilt",
-  comment: "commented on",
-  reply: "replied to your comment on",
-  like: "liked",
+  reproduced: "ran your build",
+  rebuilt: "rebuilt your build",
+  comment: "commented on your build",
+  reply: "replied to your comment",
+  like: "liked your build",
   follow: "started following you",
-  published: "published",
+  published: "published a new build",
 };
 
 /**
@@ -176,6 +214,8 @@ export function activityRowOf(n: Notification, coverSrc: string | null): Activit
     return {
       id: n.id,
       kind: null,
+      square: n.kind === "post_started" ? "topic" : n.kind === "post_reply" || n.kind === "post_thread" ? "reply" : n.kind === "post_like" ? "like" : null,
+      actorLabel: name,
       at: n.created_at,
       actor: { id: n.actor?.id ?? n.actor_id ?? n.id, name: n.actor?.display_name?.trim() || n.actor?.username?.trim() || "Someone", avatarUrl: n.actor?.avatar_url ?? null },
       who: name ? `${name} ${message}` : capitalise(message),
@@ -202,6 +242,8 @@ export function activityRowOf(n: Notification, coverSrc: string | null): Activit
   return {
     id: n.id,
     kind,
+    square: kind === null || kind === "reproduced" ? null : kind,
+    actorLabel: name && who.startsWith(name) ? name : null,
     at: n.created_at,
     actor: {
       id: n.actor?.id ?? n.actor_id ?? n.id,
@@ -219,8 +261,9 @@ export function activityRowOf(n: Notification, coverSrc: string | null): Activit
 
 /* ── the days ── */
 
-export const ACTIVITY_DAYS = ["Today", "Yesterday", "Earlier this week", "Earlier"] as const;
-export type ActivityDay = (typeof ACTIVITY_DAYS)[number];
+/** The named days. Before this week a day is its date ("12 Nov"), or "Earlier" for a time that cannot be read. */
+export const ACTIVITY_DAYS = ["Today", "Yesterday", "This week", "Earlier"] as const;
+export type ActivityDay = string;
 
 export interface ActivityGroup {
   day: ActivityDay;
@@ -241,25 +284,29 @@ export function dayOf(at: string, now: Date): ActivityDay {
   const d = now.getDate();
   if (time >= new Date(y, m, d).getTime()) return "Today";
   if (time >= new Date(y, m, d - 1).getTime()) return "Yesterday";
-  if (time >= new Date(y, m, d - ((now.getDay() + 6) % 7)).getTime()) return "Earlier this week";
-  return "Earlier";
+  if (time >= new Date(y, m, d - ((now.getDay() + 6) % 7)).getTime()) return "This week";
+  const when = new Date(time);
+  return when.toLocaleDateString("en-GB", { day: "numeric", month: "short", ...(when.getFullYear() === y ? null : { year: "numeric" }) });
 }
 
-/** The rows under their days, in day order, keeping each day's own order. Empty days are left out. */
+/** The rows under their days: the named days first in their order, then the dated days newest first (the order the rows
+    came in), each keeping its own order. Empty days are left out. */
 export function groupByDay(rows: readonly ActivityRow[], now: Date): ActivityGroup[] {
   const byDay = new Map<ActivityDay, ActivityRow[]>();
   for (const row of rows) {
     const day = dayOf(row.at, now);
     byDay.set(day, [...(byDay.get(day) ?? []), row]);
   }
-  return ACTIVITY_DAYS.filter((day) => byDay.has(day)).map((day) => ({ day, rows: byDay.get(day)! }));
+  const named = ["Today", "Yesterday", "This week"];
+  const dated = [...byDay.keys()].filter((day) => !named.includes(day) && day !== "Earlier");
+  const order = [...named, ...dated, "Earlier"];
+  return order.filter((day) => byDay.has(day)).map((day) => ({ day, rows: byDay.get(day)! }));
 }
 
-/** The groups with only the chosen kinds' rows; a day left empty goes. */
+/** The groups with only the chosen kinds' rows, and never a run ("ran your build" is not drawn); a day left empty goes. */
 export function filterGroups(groups: readonly ActivityGroup[], chosen: ReadonlySet<ActivityKind>): ActivityGroup[] {
-  if (chosen.size === 0) return [...groups];
   return groups
-    .map((group) => ({ day: group.day, rows: group.rows.filter((row) => matchesKinds(row.kind, chosen)) }))
+    .map((group) => ({ day: group.day, rows: group.rows.filter((row) => row.kind !== "reproduced" && matchesKinds(row.kind, chosen)) }))
     .filter((group) => group.rows.length > 0);
 }
 

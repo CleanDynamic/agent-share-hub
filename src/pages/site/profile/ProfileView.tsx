@@ -1,10 +1,8 @@
 /* UX-10: /profile/:handle, the profile as a feed. PURE: typed props, no fetching, no `useAuth()`, no router hooks but `Link`.
 
-   The head across the page column, then the feed (about 620 wide) and the side column (280) beside it, separated by
-   whitespace. On a phone the side column folds under the head as one collapsed About row, and the feed is full width. A private
-   profile the reader does not follow is the head alone, with its sentence.
-
-   This replaces UI-P34's banner, level ring, stat boxes, works tabs and activity grid (UX-10 Part 10). */
+   Synth 12 Part A: the head is a panel across the whole 1280 container; under it two panels, the feed (`minmax(0, 1fr)`)
+   and the side (340 from 1101, 300 from 761 to 1100). At 760 and below the side's sections follow the feed in one column.
+   A private profile the reader does not follow is the head alone, with its sentence. */
 
 import { PageState } from "@/components/pagestate/PageState";
 import type { ReadLike } from "@/components/pagestate/pageStateModel";
@@ -13,14 +11,15 @@ import type { ReactNode } from "react";
 
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
-import { pageColumns } from "@/components/shell/pageGrid";
-import { BETWEEN, useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
+import { PANEL_GAP, panelColumns } from "@/components/shell/pageGrid";
+import { useColumnPanels } from "@/components/shell/frameChrome";
+import { useMinWidth } from "@/components/shell/useMinWidth";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { ProfileFeed, type ProfileFeedProps } from "./ProfileFeed";
 import { ProfileHead, type ProfileHeadProps } from "./ProfileHead";
-import { ProfileSide, SIDE_WIDTH, type ProfileSideProps } from "./ProfileSide";
+import { ProfileSide, type ProfileSideProps } from "./ProfileSide";
 import { PAGE_TITLE } from "@/components/shell/PageHeader";
 import { PlaceholderTitle } from "@/components/pagestate/PlaceholderTitle";
 
@@ -36,28 +35,32 @@ export interface ProfileViewProps {
   side: ProfileSideProps | null;
 }
 
+/** The two panels show from 761; the side is 340 from 1101. */
+const TWO_PANELS_MIN = 761;
+const WIDE_SIDE_MIN = 1101;
+
 export function ProfileView({ head, feed, side }: ProfileViewProps) {
-  const phone = useIsPhone();
-  const grid = useMinWidth(BETWEEN.stack);
+  useColumnPanels(true);
+  const two = useMinWidth(TWO_PANELS_MIN);
+  const wide = useMinWidth(WIDE_SIDE_MIN);
+  const feedPanel = feed ? (
+    <div style={{ background: t.surface, borderRadius: 12, padding: 16, minWidth: 0, boxSizing: "border-box" }}>
+      <ProfileFeed {...feed} />
+    </div>
+  ) : null;
   return (
-    <div data-testid="profile-view" style={{ display: "flex", flexDirection: "column", gap: 24, minWidth: 0, paddingBottom: 48, fontFamily: FIGTREE }}>
+    <div data-testid="profile-view" style={{ display: "flex", flexDirection: "column", gap: PANEL_GAP, minWidth: 0, paddingBottom: 48, fontFamily: FIGTREE }}>
       <ProfileHead {...head} />
       {feed || side ? (
-        phone ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
-            {side ? <ProfileSide {...side} /> : null}
-            {feed ? <ProfileFeed {...feed} /> : null}
-          </div>
-        ) : grid ? (
-          /* The page grid's main and side template (9 / 3), under the full-width head. */
-          <div style={{ ...pageColumns("mainSide"), alignItems: "start", minWidth: 0 }}>
-            <div style={{ maxWidth: FEED_COLUMN, minWidth: 0 }}>{feed ? <ProfileFeed {...feed} /> : null}</div>
-            {side ? <ProfileSide {...side} /> : null}
+        two ? (
+          <div style={{ ...panelColumns("two", { between: !wide }), minWidth: 0 }}>
+            <div style={{ minWidth: 0 }}>{feedPanel}</div>
+            {side ? <ProfileSide {...side} /> : <div />}
           </div>
         ) : (
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: COLUMN_GAP, minWidth: 0 }}>
-            <div style={{ flex: `1 1 ${FEED_COLUMN}px`, maxWidth: FEED_COLUMN, minWidth: 0 }}>{feed ? <ProfileFeed {...feed} /> : null}</div>
-            {side ? <ProfileSide {...side} /> : <div style={{ width: SIDE_WIDTH, flex: "none" }} />}
+          <div style={{ display: "flex", flexDirection: "column", gap: PANEL_GAP, minWidth: 0 }}>
+            {feedPanel}
+            {side ? <ProfileSide {...side} /> : null}
           </div>
         )
       ) : null}
@@ -71,7 +74,7 @@ export function ProfileViewSkeleton() {
     <>
     <PlaceholderTitle>Profile</PlaceholderTitle>
     <LoadingRegion what="Profile" announce style={{ display: "flex", flexDirection: "column", gap: 24, minHeight: "60vh" }}>
-      <Skeleton height={300} radius={10} />
+      <Skeleton height={300} radius={12} />
       <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: FEED_COLUMN }}>
         <Skeleton width={320} height={32} radius={6} />
         {Array.from({ length: 3 }, (_, index) => (

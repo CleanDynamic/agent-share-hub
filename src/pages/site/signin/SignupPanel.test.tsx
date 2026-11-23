@@ -138,7 +138,7 @@ describe("the username", () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(400);
     });
-    expect(screen.getByText('Taken — try "ada_l417"')).toBeTruthy();
+    expect(screen.getByText('That username is taken. Try "ada_l417"')).toBeTruthy();
 
     checkUsernameAvailability.mockResolvedValueOnce({ available: false });
     type("username", "ada_la");

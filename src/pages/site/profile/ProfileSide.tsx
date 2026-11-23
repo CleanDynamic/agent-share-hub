@@ -1,27 +1,21 @@
-/* UX-10 P7 and P9: the profile's side column. PURE: typed props, no fetching.
+/* UX-10 P7 and P9, restyled by Synth 12 Part A: the profile's side panel. PURE: typed props, no fetching.
 
-   280 wide beside the feed. Each section is a `module` box headed with `SectionHead`, in the owner's order, and a section that is
-   hidden or empty is not drawn:
+   One panel (Panel fill, radius 12) beside the feed: 340 from 1101, 300 from 761 to 1100; below that the sections follow the
+   feed. Each section is headed by its fact, in the owner's order, and a section that is hidden or empty is not drawn:
 
-     about        the About (line breaks kept, as plain text), and `Works in`: the tools and models of their published builds
-     spaces       the spaces they belong to, each a PlainRow with their standing (Created, Moderator or Member), up to 5, then Show all
-     others       What others did with it: up to three lines, each a count and a link, each gone at zero
-     collections  the collections module, as the old profile drew it
-     marks        the earned marks as plain type chips: no tiers
+     about        "About": the About, line breaks kept, as plain text
+     spaces       "3 spaces": each space and their standing (Created, Moderator or Member), up to 5, then Show all
+     others       "What others did with it": up to three lines, each a count and a link, each gone at zero
+     collections  "2 collections"
+     marks        "Marks": the earned marks, joined by " · "
 
-   YOUR PROGRESS (P9) is a module at the top for the owner only, whatever level_visible says: Level, the XP line (the one place XP
-   is said), the streak when there is one, and the four tracks as a Segmented that writes where it always has. No ring, no glow.
-
-   ON A PHONE the column is one collapsed `About` row under the head, which opens in place. */
+   YOUR PROGRESS (P9) is a section at the top for the owner only: Level, the XP line, the streak and the track picker.
+   The "Works in" tool list is gone. */
 
 import { useState, type CSSProperties, type ReactNode } from "react";
 
 import { Segmented } from "@/components/brand/Segmented";
 import { PostControl } from "@/components/post/postControls";
-import { useIsPhone } from "@/components/shell/useMinWidth";
-import { PlainRow } from "@/components/vision/PlainRow";
-import { SectionHead } from "@/components/vision/SectionHead";
-import { TypeChip } from "@/components/vision/TypeChip";
 import { PageLink as Link } from "@/lib/routing/PageLink";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
@@ -29,7 +23,7 @@ import { FIGTREE } from "@/lib/theme/type";
 
 import type { OthersLine } from "./profileFeedModel";
 
-export const SIDE_WIDTH = 280;
+export const SIDE_WIDTH = 340;
 
 export type SideSectionKey = "about" | "spaces" | "others" | "collections" | "marks";
 
@@ -66,7 +60,8 @@ export interface ProfileSideProps {
   /** The owner's order, with each section's hidden flag. */
   order: readonly { key: SideSectionKey; hidden: boolean }[];
   about: string | null;
-  worksIn: readonly string[];
+  /** Kept for callers; Synth 12 no longer draws the "Works in" list. */
+  worksIn?: readonly string[];
   spaces: readonly SideSpace[];
   others: readonly OthersLine[];
   collections: readonly SideCollection[];
@@ -77,31 +72,38 @@ export interface ProfileSideProps {
 
 export const SIDE_TITLES: Record<SideSectionKey, string> = {
   about: "About",
-  spaces: "In spaces",
+  spaces: "Spaces",
   others: "What others did with it",
   collections: "Collections",
   marks: "Marks",
 };
 
+const plural = (n: number, one: string) => `${n.toLocaleString("en-GB")} ${n === 1 ? one : `${one}s`}`;
+
+/** The heading a section shows: its fact where it has a count ("3 spaces", "2 collections"). */
+export function sideHeading(key: SideSectionKey, props: Pick<ProfileSideProps, "spaces" | "collections">): string {
+  if (key === "spaces") return plural(props.spaces.length, "space");
+  if (key === "collections") return plural(props.collections.length, "collection");
+  return SIDE_TITLES[key];
+}
+
 export const PROGRESS_TITLE = "Your progress";
 
+/** A section inside the side panel: no box of its own. */
 const MODULE: CSSProperties = {
   boxSizing: "border-box",
-  background: t.module,
-  border: `1px solid ${t.moduleBorder}`,
-  borderRadius: 8,
-  boxShadow: t.moduleShadow,
-  padding: 16,
+  padding: "0 16px",
   minWidth: 0,
 };
 
-const BODY: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.text2 };
+const BODY: CSSProperties = { fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.text2 };
+const HEAD: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 17, fontWeight: 600, lineHeight: "24px", color: t.text };
 
 function Module({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
     <section aria-label={title} data-testid={`profile-side-${id}`} style={MODULE}>
-      <SectionHead title={title} headingLevel={2} />
-      <div style={{ marginTop: 12 }}>{children}</div>
+      <h2 style={HEAD}>{title}</h2>
+      <div style={{ marginTop: 8 }}>{children}</div>
     </section>
   );
 }
@@ -117,8 +119,7 @@ function CollectionTile({ tile }: { tile: SideCollection }) {
         flexDirection: "column",
         gap: 4,
         padding: 4,
-        background: t.inset,
-        border: `1px solid ${t.tileBorder}`,
+        background: t.module,
         borderRadius: r.card,
         boxSizing: "border-box",
         textDecoration: "none",
@@ -134,8 +135,8 @@ function CollectionTile({ tile }: { tile: SideCollection }) {
         ))}
       </div>
       <div style={{ padding: "0 4px 4px", display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-        <h3 style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, lineHeight: 1.3, margin: 0, color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tile.title}</h3>
-        <div style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: t.text2 }}>{tile.count}</div>
+        <h3 style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 600, lineHeight: "16px", margin: 0, color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tile.title}</h3>
+        <div style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label }}>{tile.count}</div>
       </div>
     </Link>
   );
@@ -147,18 +148,13 @@ function Spaces({ spaces }: { spaces: readonly SideSpace[] }) {
   return (
     <>
       <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-        {shown.map((space, index) => (
-          <PlainRow
-            key={space.slug}
-            as="li"
-            last={index === shown.length - 1}
-            label={
-              <Link to={`/openbuilds/spaces/${space.slug}`} style={{ color: t.text, textDecoration: "none" }}>
-                {space.name}
-              </Link>
-            }
-            value={<span style={{ fontWeight: 400, color: t.label, fontSize: 13 }}>{space.standing}</span>}
-          />
+        {shown.map((space) => (
+          <li key={space.slug} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, minHeight: 36, fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px" }}>
+            <Link to={`/openbuilds/spaces/${space.slug}`} style={{ color: t.text, textDecoration: "none", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {space.name}
+            </Link>
+            <span style={{ color: t.label, fontSize: 13, flex: "none" }}>{space.standing}</span>
+          </li>
         ))}
       </ul>
       {spaces.length > 5 && !all ? (
@@ -171,10 +167,10 @@ function Spaces({ spaces }: { spaces: readonly SideSpace[] }) {
 }
 
 /** Whether a section has anything to draw. */
-export function sectionHasContent(key: SideSectionKey, props: Pick<ProfileSideProps, "about" | "worksIn" | "spaces" | "others" | "collections" | "marks">): boolean {
+export function sectionHasContent(key: SideSectionKey, props: Pick<ProfileSideProps, "about" | "spaces" | "others" | "collections" | "marks">): boolean {
   switch (key) {
     case "about":
-      return Boolean(props.about?.trim()) || props.worksIn.length > 0;
+      return Boolean(props.about?.trim());
     case "spaces":
       return props.spaces.length > 0;
     case "others":
@@ -191,18 +187,12 @@ function Section({ id, props }: { id: SideSectionKey; props: ProfileSideProps })
     case "about":
       return (
         <Module id="about" title={SIDE_TITLES.about}>
-          {props.about?.trim() ? <p style={{ ...BODY, margin: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{props.about.trim()}</p> : null}
-          {props.worksIn.length > 0 ? (
-            <div data-testid="profile-works-in" style={{ marginTop: props.about?.trim() ? 12 : 0 }}>
-              <div style={{ fontFamily: FIGTREE, fontSize: 13, color: t.label }}>Works in</div>
-              <div style={{ ...BODY, color: t.text }}>{props.worksIn.join(" · ")}</div>
-            </div>
-          ) : null}
+          <p style={{ ...BODY, color: t.text, margin: 0, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{props.about?.trim()}</p>
         </Module>
       );
     case "spaces":
       return (
-        <Module id="spaces" title={SIDE_TITLES.spaces}>
+        <Module id="spaces" title={sideHeading("spaces", props)}>
           <Spaces spaces={props.spaces} />
         </Module>
       );
@@ -212,7 +202,7 @@ function Section({ id, props }: { id: SideSectionKey; props: ProfileSideProps })
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
             {props.others.map((line) => (
               <li key={line.key} style={{ ...BODY, fontVariantNumeric: "tabular-nums" }}>
-                <Link to={line.to} style={{ color: t.text2, textDecoration: "none" }}>
+                <Link to={line.to} style={{ color: t.text, textDecoration: "none" }}>
                   {line.text}
                 </Link>
               </li>
@@ -222,7 +212,7 @@ function Section({ id, props }: { id: SideSectionKey; props: ProfileSideProps })
       );
     case "collections":
       return (
-        <Module id="collections" title={SIDE_TITLES.collections}>
+        <Module id="collections" title={sideHeading("collections", props)}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             {props.collections.map((tile) => (
               <CollectionTile key={tile.key} tile={tile} />
@@ -233,11 +223,7 @@ function Section({ id, props }: { id: SideSectionKey; props: ProfileSideProps })
     case "marks":
       return (
         <Module id="marks" title={SIDE_TITLES.marks}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {props.marks.map((mark) => (
-              <TypeChip key={mark}>{mark}</TypeChip>
-            ))}
-          </div>
+          <p style={{ ...BODY, margin: 0 }}>{props.marks.join(" · ")}</p>
         </Module>
       );
   }
@@ -246,50 +232,30 @@ function Section({ id, props }: { id: SideSectionKey; props: ProfileSideProps })
 function Progress({ progress }: { progress: ProgressView }) {
   return (
     <section aria-label={PROGRESS_TITLE} data-testid="profile-progress" style={MODULE}>
-      <SectionHead title={PROGRESS_TITLE} meta={`Level ${progress.level}`} headingLevel={2} />
-      <div style={{ ...BODY, marginTop: 12, display: "flex", flexDirection: "column", gap: 4, fontVariantNumeric: "tabular-nums" }}>
+      <h2 style={HEAD}>{PROGRESS_TITLE}</h2>
+      <div style={{ ...BODY, marginTop: 8, display: "flex", flexDirection: "column", gap: 4, fontVariantNumeric: "tabular-nums" }}>
+        <span>{`Level ${progress.level}`}</span>
         {progress.xpLine ? <span>{progress.xpLine}</span> : null}
         {progress.streak ? <span>{progress.streak}</span> : null}
       </div>
-      {/* The four tracks need about 260 of the column's 248: the picker runs into the module's padding rather than past its edge. */}
-      <div style={{ marginTop: 12, marginLeft: -12, marginRight: -12 }}>
-        <Segmented<TrackValue> label="Track" semantics="radio" size={28} items={progress.tracks} value={progress.track ?? ("" as TrackValue)} onChange={progress.onTrack} fullWidth compact fontSize={13} />
+      {/* The four tracks are wider than the side panel: they scroll inside it rather than spill past its edge. */}
+      <div style={{ marginTop: 12, overflowX: "auto", paddingBottom: 2 }}>
+        <Segmented<TrackValue> label="Track" semantics="radio" size={28} items={progress.tracks} value={progress.track ?? ("" as TrackValue)} onChange={progress.onTrack} compact fontSize={13} />
       </div>
     </section>
   );
 }
 
 export function ProfileSide(props: ProfileSideProps) {
-  const phone = useIsPhone();
-  const [open, setOpen] = useState(false);
   const sections = props.order.filter((section) => !section.hidden && sectionHasContent(section.key, props));
-  const column = (
-    <div data-testid="profile-side" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
-      {props.progress ? <Progress progress={props.progress} /> : null}
-      {sections.map((section) => (
-        <Section key={section.key} id={section.key} props={props} />
-      ))}
-    </div>
-  );
   if (!props.progress && sections.length === 0) return null;
-  // Up to 280, and no wider than the page grid's side track (264 at 1280).
-  if (!phone) return <aside aria-label="About this person" style={{ width: "100%", maxWidth: SIDE_WIDTH, flex: "none", minWidth: 0 }}>{column}</aside>;
   return (
-    <aside aria-label="About this person" style={{ minWidth: 0 }}>
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-controls="profile-side-panel"
-        onClick={() => setOpen((was) => !was)}
-        style={{ ...MODULE, width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: 44, padding: "0 16px", cursor: "pointer", fontFamily: FIGTREE, fontSize: 15, fontWeight: 500, color: t.text }}
-      >
-        <span>{SIDE_TITLES.about}</span>
-        <span aria-hidden="true" style={{ color: t.label }}>
-          {open ? "−" : "+"}
-        </span>
-      </button>
-      <div id="profile-side-panel" hidden={!open} style={{ marginTop: 12 }}>
-        {open ? column : null}
+    <aside aria-label="About this person" style={{ minWidth: 0, background: t.surface, borderRadius: 12, padding: "16px 0", boxSizing: "border-box" }}>
+      <div data-testid="profile-side" style={{ display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
+        {props.progress ? <Progress progress={props.progress} /> : null}
+        {sections.map((section) => (
+          <Section key={section.key} id={section.key} props={props} />
+        ))}
       </div>
     </aside>
   );

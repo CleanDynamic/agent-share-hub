@@ -197,6 +197,17 @@ export const TOKEN_NAMES = [
   "dot-deep",
   "dot-mid",
   "dot-hi",
+  // Synth 12 to 14: Activity's kind squares, message bubbles, the family tree's lines and nodes.
+  "kind-rebuilt",
+  "kind-comment",
+  "kind-like",
+  "kind-follow",
+  "kind-published",
+  "kind-topic",
+  "bubble-theirs",
+  "bubble-mine",
+  "tree-line",
+  "tree-node",
 ] as const;
 
 export type TokenName = (typeof TOKEN_NAMES)[number];
@@ -359,6 +370,16 @@ export const noon: Record<TokenName, string> = {
   "dot-deep": "#5DB84C",
   "dot-mid": "#2E8A34",
   "dot-hi": "#145F19",
+  "kind-rebuilt": "var(--brand-accent)",
+  "kind-comment": "#2F5FA8",
+  "kind-like": "#B5474A",
+  "kind-follow": "#6B4FA8",
+  "kind-published": "#8A6A1E",
+  "kind-topic": "#2E7A72",
+  "bubble-theirs": "#F1F3F1",
+  "bubble-mine": "#E7EBE7",
+  "tree-line": "#C8D0CA",
+  "tree-node": "#F1F3F1",
 };
 
 /** Dusk, dark. */
@@ -518,6 +539,16 @@ export const dusk: Record<TokenName, string> = {
   "dot-deep": "#27521A",
   "dot-mid": "#3C8333",
   "dot-hi": "#6BE2A0",
+  "kind-rebuilt": "var(--brand-accent)",
+  "kind-comment": "#7FA7D9",
+  "kind-like": "#D98C8C",
+  "kind-follow": "#B79AD6",
+  "kind-published": "#C9A86B",
+  "kind-topic": "#8FBFB8",
+  "bubble-theirs": "var(--module)",
+  "bubble-mine": "var(--control)",
+  "tree-line": "#2F3430",
+  "tree-node": "var(--module)",
 };
 export const themes: Record<ThemeName, Record<TokenName, string>> = {
   noon,

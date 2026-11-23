@@ -38,11 +38,11 @@ function HeaderAvatar({ urls, fallback }: { urls: string[]; fallback: string }) 
       <div
         className="relative flex-shrink-0 overflow-hidden rounded-full flex items-center justify-center"
         style={{
-          width: 36,
-          height: 36,
-          background: "var(--recess)",
+          width: 40,
+          height: 40,
+          background: "var(--control)",
           color: "var(--text2)",
-          fontSize: 11,
+          fontSize: 13,
           fontWeight: 600,
         }}
       >
@@ -56,7 +56,7 @@ function HeaderAvatar({ urls, fallback }: { urls: string[]; fallback: string }) 
   }
   const display = urls.slice(0, 3);
   return (
-    <div className="relative flex-shrink-0" style={{ width: 36, height: 36 }}>
+    <div className="relative flex-shrink-0" style={{ width: 40, height: 40 }}>
       {display.map((url, i) => (
         <div
           key={i}
@@ -67,7 +67,7 @@ function HeaderAvatar({ urls, fallback }: { urls: string[]; fallback: string }) 
             left: i * 7,
             top: i * 3,
             zIndex: display.length - i,
-            border: "1.5px solid var(--bg)",
+            border: "1.5px solid var(--surface)",
           }}
         >
           <img src={url} alt="" className="h-full w-full object-cover" />
@@ -227,17 +227,17 @@ export function ConversationHeader({
       <div
         className="flex items-center gap-3"
         style={{
-          height: 56,
-          padding: "0 14px",
-          borderBottom: "0.5px solid var(--line)",
-          background: "var(--bg)",
+          minHeight: 64,
+          padding: "12px 16px",
+          background: "var(--surface)",
         }}
       >
         <button
           onClick={onBack}
-          className="lg:hidden flex items-center justify-center transition-colors hover:bg-white/5 flex-shrink-0"
-          style={{ width: 28, height: 28, borderRadius: "var(--r-control)", color: "var(--text2)" }}
+          className="md:hidden flex items-center justify-center flex-shrink-0"
+          style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--control)", color: "var(--text)" }}
           title="Back"
+          aria-label="Back to messages"
         >
           <ArrowLeft size={16} />
         </button>
@@ -250,8 +250,9 @@ export function ConversationHeader({
               className="truncate"
               style={{
                 fontFamily: "var(--font-ui)",
-                fontSize: 14,
-                fontWeight: 700,
+                fontSize: 15,
+                lineHeight: "20px",
+                fontWeight: 600,
                 color: "var(--text)",
               }}
             >
@@ -279,10 +280,11 @@ export function ConversationHeader({
               className="truncate"
               style={{
                 fontFamily: "var(--font-ui)",
-                fontSize: 11,
+                fontSize: 13,
+                lineHeight: "16px",
                 fontWeight: 400,
-                color: "var(--text2)",
-                marginTop: 1,
+                color: "var(--label)",
+                margin: 0,
               }}
             >
               {memberSubtitle}
@@ -290,22 +292,24 @@ export function ConversationHeader({
           )}
         </div>
 
-        <div className="flex items-center gap-1 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <button
             onClick={onSearchInThread}
-            className="flex items-center justify-center transition-colors hover:bg-white/5"
-            style={{ width: 28, height: 28, borderRadius: "var(--r-control)", color: "var(--text2)" }}
+            className="flex items-center justify-center"
+            style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--control)", color: "var(--text)" }}
             title="Search in conversation"
+            aria-label="Search in conversation"
           >
-            <Search size={14} />
+            <Search size={16} />
           </button>
           <button
             onClick={onSettings}
-            className="flex items-center justify-center transition-colors hover:bg-white/5"
-            style={{ width: 28, height: 28, borderRadius: "var(--r-control)", color: "var(--text2)" }}
+            className="flex items-center justify-center"
+            style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--control)", color: "var(--text)" }}
             title="Conversation settings"
+            aria-label="Conversation settings"
           >
-            <Settings size={14} />
+            <Settings size={16} />
           </button>
         </div>
       </div>

@@ -2299,6 +2299,11 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
   },
   {
     rule: "no gradient (radial)",
+    text: "backgroundImage: `radial-gradient(${t.dotDeep} 1px, transparent 1.2px)`,",
+    why: "Synth 12: the profile head's fallback when there is no header picture, the Panel shade with the Deep dots at a 6px pitch, as the prompt draws it.",
+  },
+  {
+    rule: "no gradient (radial)",
     text: "radial-gradient(${t.dotGrid} 1px, transparent 1px)",
     why: "The map well's dot grid. RULES.md (UI-P99) makes it part of the well recipe for maps and media; it was there before CA-03.",
   },

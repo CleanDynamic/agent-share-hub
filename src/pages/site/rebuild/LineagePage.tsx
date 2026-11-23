@@ -156,6 +156,7 @@ function LineagePageBody() {
       <LineageView
         fit="content"
         title={build.title}
+        buildTo={`/b2/${build.slug}`}
         family={tree}
         selectedId={selectedId}
         onSelect={(id) => setSelectedId((current) => (current === id ? null : id))}

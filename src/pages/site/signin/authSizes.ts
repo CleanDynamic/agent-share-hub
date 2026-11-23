@@ -16,8 +16,9 @@
 import { useIsPhone } from "@/components/shell/useMinWidth";
 
 /* The dialog (Reference A): every control 32 high, so fields, providers and the primary are the site's standard height. */
-const DESKTOP = { phone: false, field: 32, provider: 32, providerFont: 13, primary: 32, ruleGap: 8, ruleMargin: "0", gap: 16 } as const;
-const PHONE = { phone: true, field: 44, provider: 48, providerFont: 15, primary: 48, ruleGap: 7, ruleMargin: "2px 0", gap: 7 } as const;
+/* Synth 13: one-line fields 40 tall; the main button and the providers 40 tall, radius 20, on every width. */
+const DESKTOP = { phone: false, field: 40, provider: 40, providerFont: 15, primary: 40, ruleGap: 8, ruleMargin: "0", gap: 14 } as const;
+const PHONE = { phone: true, field: 44, provider: 44, providerFont: 15, primary: 44, ruleGap: 8, ruleMargin: "0", gap: 14 } as const;
 
 /** The sizes for the viewport the page is being drawn in. */
 export function useAuthSizes() {
@@ -28,12 +29,13 @@ export function useAuthSizes() {
     in the form column is 432 wide. The picture is 360 by 300, flush to the top. The halftone layer is built around this
     rectangle, so the dialog never grows: a view that does not fit is a design question, not a scroll bar. */
 export const DIALOG = {
-  width: 840,
+  /** Synth 13: one 420 card; the old two-column numbers are kept for callers that still read them. */
+  width: 420,
   height: 540,
   radius: 16,
   left: 360,
-  right: 480,
-  pad: 24,
+  right: 420,
+  pad: 20,
   picture: 300,
   /** A control's height in the form column: Button, Segmented track and field. */
   control: 32,

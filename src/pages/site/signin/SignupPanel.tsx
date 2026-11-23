@@ -152,7 +152,7 @@ export function SignupPanel() {
       } else {
         setUsernameValidation({
           state: "invalid",
-          message: suggestion ? `Taken — try "${suggestion}"` : "That username is taken",
+          message: suggestion ? `That username is taken. Try "${suggestion}"` : "That username is taken",
         });
       }
     }, 400);

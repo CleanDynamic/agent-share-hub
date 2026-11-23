@@ -45,9 +45,9 @@ const mount = (over: Partial<ProfileSideProps> = {}) =>
 const titles = () => screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent);
 
 describe("the side column", () => {
-  it("draws its sections in the owner's order, each a module with its head", () => {
+  it("draws its sections in the owner's order, each headed by its fact (Synth 12: \"2 spaces\")", () => {
     mount({ order: [{ key: "marks", hidden: false }, { key: "spaces", hidden: false }, { key: "about", hidden: false }, { key: "others", hidden: false }, { key: "collections", hidden: false }] });
-    expect(titles()).toEqual(["Marks", "In spaces", "About", "What others did with it"]);
+    expect(titles()).toEqual(["Marks", "2 spaces", "About", "What others did with it"]);
   });
 
   it("leaves out a hidden section and an empty one", () => {
@@ -56,11 +56,12 @@ describe("the side column", () => {
     expect(sectionHasContent("collections", props())).toBe(false);
   });
 
-  it("keeps the About's line breaks, and lists Works in from the builds", () => {
+  it("keeps the About's line breaks, and draws no Works in list (Synth 12)", () => {
     mount();
     const about = screen.getByTestId("profile-side-about");
     expect(about.querySelector("p")?.style.whiteSpace).toBe("pre-wrap");
-    expect(within(about).getByTestId("profile-works-in").textContent).toBe("Works inClaude Code · Opus 5.5");
+    expect(within(about).queryByTestId("profile-works-in")).toBeNull();
+    expect(about.textContent).not.toContain("Works in");
   });
 
   it("gives each space its standing, and Show all after five", () => {
@@ -82,10 +83,11 @@ describe("the side column", () => {
     expect(othersLines("maya", { rebuiltFrom: 0, firstRebuildSlug: null, stepsAdded: 1, topicsStarted: 0 }).map((line) => line.text)).toEqual(["Steps added to 1 other draft"]);
   });
 
-  it("draws the marks as plain type chips, with no tiers", () => {
-    mount();
+  it("draws the marks as plain text joined by dots, never chips, with no tiers", () => {
+    mount({ marks: ["First build", "Ten builds"] });
     const marks = screen.getByTestId("profile-side-marks");
-    expect(marks.querySelectorAll('[data-ui="type-chip"]')).toHaveLength(1);
+    expect(marks.querySelectorAll('[data-ui="type-chip"]')).toHaveLength(0);
+    expect(marks.querySelector("p")?.textContent).toBe("First build · Ten builds");
     expect(marks.textContent).not.toMatch(/rare|highest|common/i);
   });
 
@@ -94,15 +96,12 @@ describe("the side column", () => {
     expect(screen.queryByRole("heading", { name: /recent/i })).toBeNull();
   });
 
-  it("on a phone is one collapsed About row that opens in place", () => {
+  it("on a phone draws its sections in full (Synth 12: they follow the feed), with no folded row", () => {
     vi.stubGlobal("matchMedia", (query: string) => ({ matches: !query.includes("min-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined, addListener: () => undefined, removeListener: () => undefined }));
     mount();
-    const row = screen.getByRole("button", { name: /About/ });
-    expect(row.getAttribute("aria-expanded")).toBe("false");
-    expect(screen.queryByTestId("profile-side")).toBeNull();
-    fireEvent.click(row);
-    expect(row.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.queryByRole("button", { name: /About/ })).toBeNull();
     expect(screen.getByTestId("profile-side")).toBeInTheDocument();
+    expect(screen.getByTestId("profile-side-about")).toBeInTheDocument();
   });
 });
 

@@ -277,8 +277,6 @@ export const ALLOW: Record<string, Record<string, string>> = {
   workflow: {
     "src/pages/site/compose/detailsModel.ts|The command or workflow": "a tool's command or CI workflow file; not a build",
     "src/pages/site/compose/toolPickerModel.ts|Add its workflow with Add › File": "a tool's workflow file; not a build",
-    "src/pages/site/signin/SignInDialogFrame.tsx|Publish, reproduce and rebuild AI-assisted workflows.": "the tagline, decided by the owner (prompt 9)",
-    "src/pages/site/signin/SignInDialogFrame.tsx|AI-assisted workflows.": "the tagline's third line on a phone",
   },
 };
 

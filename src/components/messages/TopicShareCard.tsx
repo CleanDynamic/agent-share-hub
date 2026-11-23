@@ -12,7 +12,7 @@ import { feedback } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
-import { cardTitle, eyebrow, label } from "@/lib/theme/type";
+import { eyebrow } from "@/lib/theme/type";
 
 export function TopicShareCard({ topic }: { topic: SharedTopic }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
@@ -29,20 +29,19 @@ export function TopicShareCard({ topic }: { topic: SharedTopic }) {
         maxWidth: "100%",
         padding: SPACE.sm,
         boxSizing: "border-box",
-        borderRadius: r.card,
-        border: `1px solid ${state.hovered ? t.text2 : t.line}`,
-        background: t.bg,
+        borderRadius: r.panel,
+        background: state.hovered ? t.control : t.module,
         color: t.text,
         textDecoration: "none",
-        transition: feedback("border-color"),
+        transition: feedback("background-color"),
         ...ring(state.focusVisible),
       }}
     >
       <span style={{ ...eyebrow, color: t.label }}>Topic</span>
-      <span data-testid="message-topic-heading" style={{ ...cardTitle, color: t.text, overflowWrap: "anywhere" }}>
+      <span data-testid="message-topic-heading" style={{ fontSize: 15, lineHeight: "20px", fontWeight: 600, color: t.text, overflowWrap: "anywhere" }}>
         {topic.heading}
       </span>
-      {topic.handle ? <span style={{ ...label, color: t.text2 }}>{`@${topic.handle}`}</span> : null}
+      {topic.handle ? <span style={{ fontSize: 13, lineHeight: "16px", color: t.label }}>{`@${topic.handle}`}</span> : null}
     </Link>
   );
 }

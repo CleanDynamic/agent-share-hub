@@ -143,8 +143,8 @@ describe("RebuildPage (site frame)", () => {
     await settled();
     expect(getRebuildDraft).toHaveBeenCalledWith({ sourceBuildId: "src", creatorId: "me" });
     expect(startRebuild).not.toHaveBeenCalled();
-    // Page shell: the title is "Rebuild"; the line that was the hidden h1 is the first line of body copy.
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Rebuild");
+    // Synth 14: the h1 is the family's fact; the draft and its source are said for screen readers.
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("3 builds in this family");
     expect(screen.getByText("Multi-currency triage: Rebuilding Invoice triage agent by @maya.")).toBeTruthy();
   });
 
@@ -170,7 +170,8 @@ describe("RebuildPage (site frame)", () => {
     await waitFor(() => expect(screen.getAllByTestId("family-node")).toHaveLength(3));
     const draft = screen.getAllByTestId("family-node").find((element) => element.hasAttribute("data-draft"));
     expect(draft?.getAttribute("href")).toBe("/b2/multi-currency-triage");
-    expect(screen.getByText("Family of Invoice triage agent")).toBeTruthy();
+    expect(screen.getByText("Your rebuild")).toBeTruthy();
+    expect(screen.queryByText(/reproduced/)).toBeNull();
     expect(getBuildClocks).toHaveBeenCalledWith(["src", "other", "draft"]);
   });
 
@@ -178,7 +179,7 @@ describe("RebuildPage (site frame)", () => {
     renderAt("/rebuild/invoice-triage");
     await settled();
     expect(screen.getByTestId("rebuild-credit-line").textContent).toBe("Rebuilt from Invoice triage agent by @maya");
-    expect(screen.getByText("Ready to hang")).toBeTruthy();
+    expect(screen.getByText("Ready to publish")).toBeTruthy();
 
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Publish rebuild" }));
@@ -193,7 +194,8 @@ describe("RebuildPage (site frame)", () => {
     await settled();
     const publish = screen.getByRole("button", { name: "Publish rebuild" }) as HTMLButtonElement;
     expect(publish.disabled).toBe(true);
-    expect(screen.getByText("One thing before it can hang")).toBeTruthy();
+    expect(screen.getByText("One thing before it can be published")).toBeTruthy();
+    expect(publish.getAttribute("aria-describedby")).toBe(screen.getByTestId("rebuild-publish-reason").id);
     expect(screen.getByTestId("rebuild-next").textContent).toBe(NO_CHANGES_REASON);
     fireEvent.click(publish);
     expect(publishRebuild).not.toHaveBeenCalled();
@@ -261,7 +263,7 @@ describe("LineagePage (site frame)", () => {
     const keys = screen.getAllByTestId("change-row").map((row) => row.getAttribute("data-change-key"));
     expect(keys).toEqual(serialiseChangeSet(changeSet(sourceRecord as never, rebuildRecord as never)).map((line) => line.key));
     const panel = screen.getByTestId("changes-panel");
-    expect(within(panel).getByRole("link", { name: "Open Triage for NGOs" }).getAttribute("href")).toBe("/b2/other-slug");
+    expect(within(panel).getByRole("link", { name: "Open this build" }).getAttribute("href")).toBe("/b2/other-slug");
     expect(nodes[1].getAttribute("aria-pressed")).toBe("true");
   });
 

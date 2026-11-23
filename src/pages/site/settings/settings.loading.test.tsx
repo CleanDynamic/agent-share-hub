@@ -69,8 +69,8 @@ describe("the route table's placeholder for Settings", () => {
         <SettingsPlaceholder />
       </MemoryRouter>,
     );
-    expect(view.getByRole("heading", { level: 1 }).textContent).toBe("Settings");
-    expect(view.getByRole("heading", { level: 2 }).textContent).toBe("Notifications");
+    expect(view.getByRole("navigation", { name: "Settings" }).textContent).toContain("Settings");
+    expect(view.getByRole("heading", { level: 1 }).textContent).toBe("Notifications");
     expect(view.container.querySelectorAll('[data-testid="settings-card-bones"]').length).toBe(PREFERENCE_GROUPS.length);
   });
 });
