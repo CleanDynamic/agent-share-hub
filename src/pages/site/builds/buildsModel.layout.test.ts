@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { ALL_COLUMNS, COLUMN_ORDER, EXTRA_COLUMNS, type TableRowView } from "./BuildsTableView";
+import { ALL_COLUMNS, COLUMN_ORDER, DEFAULT_COLUMNS, EXTRA_COLUMNS, type TableRowView } from "./BuildsTableView";
 import { movedColumn, placedColumn, drawnColumns, tableFooter, availableColumns, calculate, calculationOptions, calculationsFor, chosenColumns, columnsLabel, columnsMenu, footerCalculations, tableRow, toggledColumns } from "./buildsModel";
 import { emptyClassification } from "@/lib/classify/facets";
 import { MODEL_VERSIONS, modelKeysOf } from "@/lib/models/registry";
@@ -24,17 +24,19 @@ describe("the columns", () => {
     expect(new Set(ALL_COLUMNS).size).toBe(28);
   });
 
-  it("offer all 28 once the stored counts are live, and 25 until then (no Steps, Sessions or Works on model)", () => {
-    expect(availableColumns(true)).toHaveLength(28);
-    expect(availableColumns(false)).toHaveLength(25);
+  // Synth 08: Tools, Reproductions, Confirmed and Runs are no longer offered, so 24 of the 28, and 21 until the counts are live.
+  it("offer 24 once the stored counts are live, and 21 until then (no Steps, Sessions or Works on model)", () => {
+    expect(availableColumns(true)).toHaveLength(24);
+    expect(availableColumns(false)).toHaveLength(21);
+    for (const gone of ["tools", "reproductions", "confirmed", "runs"] as const) expect(availableColumns(true)).not.toContain(gone);
     expect(availableColumns(false)).not.toContain("steps");
     expect(availableColumns(false)).not.toContain("works");
   });
 
-  it("are the default twelve until the reader chooses", () => {
-    expect(chosenColumns(null, true)).toEqual(COLUMN_ORDER);
-    expect(columnsLabel(chosenColumns(null, true), true)).toBe("12 of 28");
-    expect(columnsLabel(chosenColumns(null, false), false)).toBe("10 of 25");
+  it("are the default eight until the reader chooses", () => {
+    expect(chosenColumns(null, true)).toEqual(DEFAULT_COLUMNS);
+    expect(columnsLabel(chosenColumns(null, true), true)).toBe("8 of 24");
+    expect(columnsLabel(chosenColumns(null, false), false)).toBe("6 of 21");
   });
 
   // BF-13 (C6): the reader's order is kept; it used to be put back in the table's own order.
@@ -53,7 +55,7 @@ describe("the columns", () => {
 
   it("make the chooser's checklist with Build fixed on", () => {
     const menu = columnsMenu(chosenColumns(null, true), true, () => undefined);
-    expect(menu.options).toHaveLength(28);
+    expect(menu.options).toHaveLength(24);
     expect(menu.options.find((option) => option.id === "build")).toMatchObject({ on: true, locked: true });
     expect(menu.options.find((option) => option.id === "task")).toMatchObject({ on: false, name: "Task" });
     expect(menu.onReset).toBeUndefined();
@@ -163,8 +165,8 @@ describe("the four new columns", () => {
 describe("BF-13 the footer by column", () => {
   it("tableFooter puts each value under its own column", () => {
     const rows = [row(), row({ id: "b2", steps: 14, reproductions: 2 })];
-    expect(tableFooter(5, rows)).toEqual({ count: "5 builds", byColumn: { field: "Sales", tools: "Claude Code", steps: "Median 12", reproductions: "Total 6" } });
-    expect(tableFooter(null, [row({ field: "", tools: [], steps: null })]).byColumn).toEqual({ reproductions: "Total 4" });
+    expect(tableFooter(5, rows)).toEqual({ count: "5 builds", byColumn: { field: "Sales", steps: "Median 12" } });
+    expect(tableFooter(null, [row({ field: "", tools: [], steps: null })]).byColumn).toEqual({});
   });
 
   it("footerCalculations carry their column", () => {
@@ -175,11 +177,13 @@ describe("BF-13 the footer by column", () => {
 
 describe("BF-13 the reader's order", () => {
   it("chosenColumns keeps the saved order, with Build first whatever was saved", () => {
-    expect(chosenColumns(["field", "build", "reproductions", "tools"], true)).toEqual(["build", "field", "reproductions", "tools"]);
+    expect(chosenColumns(["field", "build", "steps", "rebuilds"], true)).toEqual(["build", "field", "steps", "rebuilds"]);
+    // A column that is no longer offered is dropped from a saved layout.
+    expect(chosenColumns(["field", "reproductions", "tools"], true)).toEqual(["build", "field"]);
   });
 
   it("chosenColumns with nothing saved is the default order", () => {
-    expect(chosenColumns(null, true)).toEqual(COLUMN_ORDER);
+    expect(chosenColumns(null, true)).toEqual(DEFAULT_COLUMNS);
   });
 
   it("movedColumn: left and right by one place; Build never moves and nothing moves before it; at an end it does nothing", () => {

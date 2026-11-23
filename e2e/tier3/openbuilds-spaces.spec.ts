@@ -71,6 +71,8 @@ test("a reader makes a space, posts in it with a step attached, and hides the po
   await expect(window).toHaveCount(0);
   const first = page.getByRole("article").first();
   await expect(first.getByRole("heading", { name: "Can anyone make the scorer faster?" })).toBeVisible();
+  // The window closes and the card shows before the post is written: wait for the write, then check it.
+  await expect.poll(() => world.created.rpc.length).toBeGreaterThan(0);
   expect(world.created.rpc[0]).toMatchObject({ body: "Can anyone make the scorer faster?\nIt takes four seconds a CV.", attachments: [{ kind: "step", build_id: "b1", node_id: "n2" }] });
   expect(world.created.rpc[0].space_ids).toEqual([world.created.spaces[0].id]);
 

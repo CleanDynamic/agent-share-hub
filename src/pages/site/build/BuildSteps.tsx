@@ -30,6 +30,7 @@ import {
 } from "react";
 
 import { Button } from "@/components/brand/Button";
+import { Notepad, countLine } from "@/components/brand/Notepad";
 import { CodeLines } from "@/components/code/CodeLines";
 import { CodePartLine } from "../compose/CodePartLine";
 import { Eyebrow } from "@/components/brand/Eyebrow";
@@ -183,6 +184,17 @@ export interface StepsListProps {
  * What The build keeps between renders, shared by this view and its refined fork (UI-P90): the lens, the step that is
  * ringed, the step open in the full prompt window, where the Map starts, and the lookups the window reads.
  */
+/** The tool a step's chat was in, by step id: a new chat names its tool and the steps after it carry on in it. */
+export function toolLookup(steps: readonly ReaderStep[]): (id: string) => string | null {
+  const tools = new Map<string, string | null>();
+  let current: string | null = null;
+  for (const entry of steps) {
+    if (entry.chat?.kind === "new") current = entry.chat.tool;
+    if (entry.chat) tools.set(entry.step.id, current);
+  }
+  return (id: string) => tools.get(id) ?? null;
+}
+
 export function useStepsList(view: BuildStepsView, phone: boolean) {
   const { steps } = view;
   const [lens, setLens] = useState<"list" | "map">("list");
@@ -211,15 +223,7 @@ export function useStepsList(view: BuildStepsView, phone: boolean) {
 
   const raw = useMemo(() => steps.map((entry) => entry.step), [steps]);
   const names = useMemo(() => namesIn(steps), [steps]);
-  const toolOf = useMemo(() => {
-    const tools = new Map<string, string | null>();
-    let current: string | null = null;
-    for (const entry of steps) {
-      if (entry.chat?.kind === "new") current = entry.chat.tool;
-      if (entry.chat) tools.set(entry.step.id, current);
-    }
-    return (id: string) => tools.get(id) ?? null;
-  }, [steps]);
+  const toolOf = useMemo(() => toolLookup(steps), [steps]);
   const flat = useMemo(() => {
     const out = new Map<string, ReaderStep>();
     const visit = (list: readonly ReaderStep[]) => list.forEach((entry) => (out.set(entry.step.id, entry), visit(entry.children)));
@@ -243,7 +247,7 @@ const ReaderMap = lazy(() => import("./ReaderMap"));
 
 /* ── type ── */
 
-const text = (px: number, weight: 400 | 500, color: string, extra: CSSProperties = {}): CSSProperties => ({
+const text = (px: number, weight: 400 | 500 | 600, color: string, extra: CSSProperties = {}): CSSProperties => ({
   fontFamily: FIGTREE,
   fontSize: px,
   fontWeight: weight,
@@ -385,7 +389,7 @@ function ReadAll({ onRead, label = "Read all", expanded }: { onRead: () => void;
       style={{
         ...bareButton,
         height: 24,
-        ...text(12, 500, t.text),
+        ...text(13, 500, t.text),
         textDecoration: "underline",
         textUnderlineOffset: 3,
         textDecorationColor: state.hovered ? t.text2 : t.line,
@@ -397,24 +401,83 @@ function ReadAll({ onRead, label = "Read all", expanded }: { onRead: () => void;
   );
 }
 
-/** The text at 13.5/22 indented 36: four lines, then "Read all" and the word count. */
+/** Synth 08: a step's titled text boxes, one row each on Raised (radius 8, 6px 10px): the title 13/500 and its length in mono
+    13 Text 3 ("512 characters"). Pressing a row opens the notepad read only, sized to the text. A box with no title is not here. */
+function TitledBoxes({ boxes, indent = INDENT }: { boxes: readonly { title: string; text: string }[]; indent?: number }) {
+  const [open, setOpen] = useState<number | null>(null);
+  const rows = useRef<(HTMLButtonElement | null)[]>([]);
+  if (boxes.length === 0) return null;
+  const current = open === null ? null : boxes[open];
+  return (
+    <div data-testid="titled-boxes" style={{ display: "flex", flexDirection: "column", gap: 4, paddingLeft: indent }}>
+      {boxes.map((box, index) => (
+        <TitledBoxRow key={`${index}:${box.title}`} box={box} buttonRef={(node) => (rows.current[index] = node)} onOpen={() => setOpen(index)} />
+      ))}
+      <Notepad
+        open={current !== null}
+        onClose={() => setOpen(null)}
+        field={current?.title ?? ""}
+        value={current?.text ?? ""}
+        title={current?.title}
+        returnFocusTo={{ get current() { return open === null ? null : rows.current[open]; } }}
+      />
+    </div>
+  );
+}
+
+function TitledBoxRow({ box, buttonRef, onOpen }: { box: { title: string; text: string }; buttonRef: (node: HTMLButtonElement | null) => void; onOpen: () => void }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  return (
+    <button
+      ref={buttonRef}
+      type="button"
+      data-testid="titled-box"
+      aria-haspopup="dialog"
+      onClick={onOpen}
+      {...handlers}
+      style={{
+        ...bareButton,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
+        width: "100%",
+        minHeight: 32,
+        boxSizing: "border-box",
+        padding: "6px 10px",
+        borderRadius: 8,
+        background: state.hovered ? hoverFill(t.control) : t.control,
+        textAlign: "left",
+        cursor: "pointer",
+        ...ring(state.focusVisible),
+      }}
+    >
+      <span style={{ ...text(13, 500, t.text), minWidth: 0, overflowWrap: "anywhere" }}>{box.title}</span>
+      <span style={{ fontFamily: DM_MONO, fontSize: 13, color: t.label, whiteSpace: "nowrap", flexShrink: 0 }}>{countLine(box.text.length)}</span>
+    </button>
+  );
+}
+
+/** The text at 15/22 in Text 2 under the step's title: four lines, then the meta line (its word count, 13 Text 3) and "Read all". */
 function StepText({ step, onRead, alone = false, indent = INDENT }: { step: Step; onRead: () => void; alone?: boolean; indent?: number }) {
   const long = isLong(step);
-  if (!step.text) return null;
+  const boxes = step.boxes && step.boxes.length > 0 ? <TitledBoxes boxes={step.boxes} indent={indent} /> : null;
+  if (!step.text) return boxes;
   return (
     <>
+      {boxes}
       {step.origin || step.asksFor ? (
-        <p data-testid="prompt-origin" style={{ ...text(12, 400, t.label), margin: 0, paddingLeft: indent }}>
+        <p data-testid="prompt-origin" style={{ ...text(13, 400, t.label), margin: 0, paddingLeft: indent }}>
           {[step.origin ? originLine(step.origin) : null, step.asksFor ? ASKS_FOR_LABEL[step.asksFor] : null].filter(Boolean).join(" · ")}
         </p>
       ) : null}
       <p
         data-testid="step-text"
         style={{
-          ...text(13, 400, t.text),
+          ...text(15, 400, t.text2),
           margin: 0,
           paddingLeft: indent,
-          lineHeight: "21px",
+          lineHeight: "22px",
           whiteSpace: "pre-wrap",
           overflowWrap: "anywhere",
           ...(long ? { display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" as const, overflow: "hidden" } : null),
@@ -423,17 +486,17 @@ function StepText({ step, onRead, alone = false, indent = INDENT }: { step: Step
         <ChangedText text={step.text} changes={step.changes} />
       </p>
       {step.changes?.length ? (
-        <p data-testid="changes-line" style={{ ...text(12, 400, t.label), margin: 0, paddingLeft: indent }}>
+        <p data-testid="changes-line" style={{ ...text(13, 400, t.label), margin: 0, paddingLeft: indent }}>
           {changesLine(step.changes.length)}
         </p>
       ) : null}
       {long ? (
         <div style={{ display: "flex", alignItems: "center", gap: 12, paddingLeft: indent }}>
+          <span style={text(13, 400, t.label, tnum)}>{step.words} words</span>
           <ReadAll onRead={onRead} />
-          <span style={text(12, 400, t.label, tnum)}>{step.words} words</span>
         </div>
       ) : alone ? (
-        <div style={{ ...text(12, 400, t.label, tnum), paddingLeft: indent }}>{step.words} words</div>
+        <div style={{ ...text(13, 400, t.label, tnum), paddingLeft: indent }}>{step.words} words</div>
       ) : null}
     </>
   );
@@ -1323,7 +1386,6 @@ export function StepsList({ view, phone, announce, titled = false }: StepsListPr
   const { lens, setLens, ringed, open, setOpen, go, raw, names, toolOf, flat, map } = useStepsList(view, phone);
   const ctx: Ctx = { view, phone, announce, ringed, go, read: setOpen };
   const hint = map ? "Click a session to see what joins it · Esc clears" : headNote(steps).replace(/^./, (c) => c.toUpperCase());
-  const meta = [view.counts, hint].filter(Boolean).join(" · ");
 
   /* CA-14 P3: the sessions the maker left folded start folded; a reader can fold or open any of them, for this visit only. */
   const runs = sessionRuns(withEmptySessions(groupsOf(steps, { onCopy: view.onCopy, announce, phone }), view.groups));
@@ -1463,9 +1525,12 @@ export function StepsList({ view, phone, announce, titled = false }: StepsListPr
   return (
     <TeamLinesContext.Provider value={{ open: go, names, phone, steps: steps.flatMap((entry) => [entry.step, ...entry.step.children]) }}>
     <div data-testid="build-steps" style={column(16)}>
-      {titled ? <SectionHead headingLevel={2} title="Steps" meta={meta} /> : <p data-testid="steps-meta" style={{ ...text(12, 400, t.label), margin: 0 }}>{meta}</p>}
-      {view.mapAvailable && !phone ? (
-        <div>
+      {/* Synth 08: the heading is the fact ("3 sessions · 12 steps"), 20/600, with List and Map as pills at its right. */}
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <h2 data-testid="steps-meta" style={{ ...text(20, 600, t.text), lineHeight: "24px", margin: 0 }}>
+          {view.counts || "The build"}
+        </h2>
+        {view.mapAvailable && !phone ? (
           <Segmented<"list" | "map">
             label="How to look at the build"
             items={[
@@ -1477,8 +1542,9 @@ export function StepsList({ view, phone, announce, titled = false }: StepsListPr
             size={28}
             fontSize={13}
           />
-        </div>
-      ) : null}
+        ) : null}
+      </div>
+      {map ? <p style={{ ...text(13, 400, t.label), margin: 0 }}>{hint}</p> : null}
       <CostStrip steps={steps.map((entry) => entry.step)} groups={view.groups ?? []} audience="reader" />
       {!map && jumpItems.length >= 3 ? <SessionJump items={jumpItems} current={inView} phone={phone} onJump={(key) => jumpTo(headOf(key))} /> : null}
       {map ? (
@@ -1622,30 +1688,35 @@ export function DetailsGroup({ details }: { details: readonly { label: string; v
   );
 }
 
-/** One row of the list of tools and files: a chip, the name, the model when one was recorded, and where it is used. */
+/** One row of the list of tools and files (Synth 08): the name 15/600 over its kind 13 Text 3 ("Model", "File · 120 KB"), and a
+    small secondary Download for a file that has one. */
 function ListRow({ row }: { row: NeedRow }) {
   const file = row.kind === "file";
   /* A file's steps are links (UX-03 P3): its row goes to the first, and says them all. */
   const stepsOfFile = row.steps ?? [];
-  const where = file ? (stepsOfFile.length > 0 ? `${stepsOfFile.length === 1 ? "Step" : "Steps"} ${stepsOfFile.map((step) => step.number).join(", ")}` : "") : row.where;
-  const chip = row.kind === "harness" ? "Harness" : row.kind === "model" ? "Model" : row.kind === "tool" ? "Tool" : row.kind === "file" ? "File" : null;
+  const kind = row.kind === "harness" ? "Harness" : row.kind === "model" ? "Model" : row.kind === "tool" ? "Tool" : file ? "File" : "";
+  const kindLine = [kind, file ? row.detail : row.model ? row.model : ""].filter(Boolean).join(" · ");
   const body = (
-    <>
-      {chip ? <TypeChip>{chip}</TypeChip> : null}
-      <span style={file ? { fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, color: t.text, overflowWrap: "anywhere" } : { ...text(13, 500, t.text), overflowWrap: "anywhere" }}>{row.title}</span>
-      {row.model ? <span style={{ ...text(13, 400, t.label), overflowWrap: "anywhere" }}>{`· ${row.model}`}</span> : null}
-      <span style={{ flexGrow: 1 }} />
-      {where ? <span style={{ ...text(12, 400, t.label), whiteSpace: "nowrap" }}>{where}</span> : null}
-    </>
+    <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
+      <span style={{ ...text(15, 600, t.text), lineHeight: "20px", overflowWrap: "anywhere" }}>{row.title}</span>
+      {kindLine ? <span style={{ ...text(13, 400, t.label), lineHeight: "20px", overflowWrap: "anywhere" }}>{kindLine}</span> : null}
+    </span>
   );
-  const frame: CSSProperties = { display: "flex", alignItems: "center", gap: 8, minWidth: 0, color: "inherit", textDecoration: "none" };
-  return file && stepsOfFile.length > 0 ? (
-    <Link to={{ hash: `#node-${stepsOfFile[0].id}` }} data-testid="need-row" style={frame}>
-      {body}
-    </Link>
-  ) : (
+  const frame: CSSProperties = { display: "flex", alignItems: "center", gap: 12, minWidth: 0, color: "inherit", textDecoration: "none" };
+  return (
     <div data-testid="need-row" style={frame}>
-      {body}
+      {file && stepsOfFile.length > 0 ? (
+        <Link to={{ hash: `#node-${stepsOfFile[0].id}` }} style={{ ...frame, flexGrow: 1 }}>
+          {body}
+        </Link>
+      ) : (
+        body
+      )}
+      {file && row.download ? (
+        <Button variant="secondary" size={28} href={row.download} aria-label={`Download ${row.title}`} {...{ download: row.title }}>
+          Download
+        </Button>
+      ) : null}
     </div>
   );
 }
@@ -1670,7 +1741,7 @@ export function NeedPanel({ view, onOpenOther, details = [] }: NeedPanelProps) {
     <div data-testid="build-need" style={column(16)}>
       <SectionHead headingLevel={2} title="What you need" meta={meta || undefined} />
       {list.length > 0 ? (
-        <div data-testid="need-list" style={column(14)}>
+        <div data-testid="need-list" style={column(16)}>
           {list.map((row, index) => (
             <ListRow key={`${row.kind}:${row.title}:${index}`} row={row} />
           ))}

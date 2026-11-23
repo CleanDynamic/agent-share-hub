@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PENDING_VERIFICATION_KEY } from "@/lib/auth/pendingVerification";
 
 vi.mock("./SignInDialog", () => ({ default: () => <div data-testid="dialog" /> }));
-vi.mock("./HalftoneLayer", () => ({ default: () => null }));
+vi.mock("@/lib/dots/SignInWaterLayer", () => ({ default: () => null }));
 
 import { SignInDialogHost } from "./SignInDialogHost";
 

@@ -104,27 +104,35 @@ export function sessionSource(session: Pick<SessionSummary, "modelName" | "clien
 }
 
 /**
- * SV-08: a session's detail line, "<tool> · <model> · <date>", then "for <draft>" when the connector was aimed at one, then
- * "in n drafts". A part that is not known is left out; with no tool the line starts NO_HARNESS.
+ * Synth 10: a session's detail line, "<date>", then "for <draft>" when the connector was aimed at one, then "In n drafts".
+ * The tool and model are not drawn beside a session: the first prompt and the date say which it is.
  */
 export function sessionMeta(session: SessionSummary, drafts: readonly DraftListItem[], now: number): string {
-  const parts = [sessionApp(session) ?? NO_HARNESS, session.modelName, sessionDate(session.createdAt, now)].filter(Boolean) as string[];
+  const parts = [sessionDate(session.createdAt, now)].filter(Boolean) as string[];
   const target = session.targetBuildId ? drafts.find((d) => d.id === session.targetBuildId) : undefined;
   if (target) parts.push(`for ${draftTitle(target.title)}`);
   const inDrafts = (session.draftIds ?? (session.buildId ? [session.buildId] : [])).length;
-  if (inDrafts > 0) parts.push(`in ${inDrafts} ${inDrafts === 1 ? "draft" : "drafts"}`);
+  if (inDrafts > 0) parts.push(`In ${inDrafts} ${inDrafts === 1 ? "draft" : "drafts"}`);
   return parts.join(" · ");
+}
+
+/** The sessions shown before "Show all". */
+export const SESSIONS_SHOWN = 8;
+
+/** "2 connections", "1 connection", "No connections". */
+export function connectionsMeta(count: number): string {
+  return count === 0 ? "No connections" : `${count} ${count === 1 ? "connection" : "connections"}`;
 }
 
 /** SV-08: the drafts shown before "Show n more". */
 export const DRAFTS_SHOWN = 12;
 
-/** The first line under Continue editing: "28 drafts · latest first". */
+/** The drafts head: "28 drafts". */
 export function draftsMeta(count: number): string {
   return `${count} ${count === 1 ? "draft" : "drafts"}`;
 }
 
-/** The first line under Sessions: "8 imported · drag one into a draft" (no drag on touch). */
+/** The sessions head: "8 sessions". */
 export function sessionsMeta(count: number, _canDrag?: boolean): string {
   return `${count} ${count === 1 ? "session" : "sessions"}`;
 }

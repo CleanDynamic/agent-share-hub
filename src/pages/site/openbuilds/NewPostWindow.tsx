@@ -225,7 +225,7 @@ export function NewPostWindow({ spaceSlug, draft: restored, onClose, onReopen }:
           rows={6}
           autoFocus
           onChange={(event) => change({ body: event.target.value })}
-          style={areaStyle(phone, 6, { fontSize: phone ? 15 : 13, outline: "none" })}
+          style={areaStyle(phone, 6, { fontSize: 15, outline: "none" })}
         />
         {notice ? (
           <p id="new-post-notice" role={boxError ? undefined : "alert"} style={{ margin: "6px 0 0", fontFamily: FIGTREE, fontSize: 13, color: t.text }}>

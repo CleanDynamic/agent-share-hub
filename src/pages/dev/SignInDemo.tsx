@@ -7,6 +7,7 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { SiteFrameView } from "@/components/shell/SiteFrame";
+import { SignInWaterLayer } from "@/lib/dots/SignInWaterLayer";
 import { signinFixture, SIGNIN_MODES, type SigninMode } from "@/dev/fixtures/signin";
 import { useDesignTheme } from "@/dev/useDesignTheme";
 import { LoginForm } from "@/pages/site/signin/LoginForm";
@@ -41,6 +42,8 @@ export default function SignInDemo({ viewport }: DesignPageProps) {
   return (
     <SiteFrameView variant="bare" viewport={viewport}>
       <div style={{ minHeight: "100dvh" }} />
+      {/* Synth 13: the water the host draws behind the dialog. */}
+      <SignInWaterLayer />
       <SignInDialogFrame open onOpenChange={noop} view={mode} rowStart={rowStart}>
         {mode === "signup" ? (
           <SignupForm {...sample.signup} />

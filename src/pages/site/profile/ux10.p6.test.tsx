@@ -30,7 +30,7 @@ describe("the four cards", () => {
   it("draws each kind in the database's order, pins first with a Pinned line", () => {
     mount();
     const items = screen.getAllByTestId("profile-feed-item");
-    expect(items.map((item) => item.getAttribute("data-kind"))).toEqual(["topic", "build", "repro_note", "reply", "build"]);
+    expect(items.map((item) => item.getAttribute("data-kind"))).toEqual(["topic", "build", "reply", "build"]);
     expect(within(items[0]).getByTestId("profile-pinned").textContent).toBe("Pinned");
     expect(within(items[1]).queryByTestId("profile-pinned")).toBeNull();
   });
@@ -40,22 +40,21 @@ describe("the four cards", () => {
     const items = screen.getAllByTestId("profile-feed-item");
     expect(within(items[0]).getByRole("heading", { name: "How do you score a call summary?" })).toBeInTheDocument();
     expect(items[1].querySelector('[data-testid="map-card"]')).toBeNull();
-    expect(items[4].querySelector('[data-testid="map-card"]')).not.toBeNull();
-    expect(items[4].textContent).toMatch(/^Rebuilt from /);
+    expect(items[3].querySelector('[data-testid="map-card"]')).not.toBeNull();
+    expect(items[3].textContent).toMatch(/^Rebuilt from /);
   });
 
   it("a reply says Replied to @kit in <space>, linking to the reply", () => {
     mount();
-    const replied = within(screen.getAllByTestId("profile-feed-item")[3]).getByTestId("profile-replied-to");
+    const replied = within(screen.getAllByTestId("profile-feed-item")[2]).getByTestId("profile-replied-to");
     expect(replied.textContent).toBe("Replied to @kit in Audio");
     expect(replied.getAttribute("href")).toBe("/openbuilds/topics/t-kit#reply-r-1");
   });
 
-  it("a note is headed Reproduced @kit's Podcast clipper on Opus 5.5: it worked, the outcome in its own colour", () => {
+  it("draws no reproduction note (Synth 12 removes them from the interface)", () => {
     mount();
-    const note = screen.getAllByTestId("profile-feed-item")[2];
-    expect(note.textContent).toContain("Reproduced @kit's Podcast clipper on Opus 5.5: it worked");
-    expect(within(note).getByText("it worked")).toBeInTheDocument();
+    expect(screen.queryByText(/Reproduced/)).toBeNull();
+    expect(screen.getAllByTestId("profile-feed-item").some((item) => item.getAttribute("data-kind") === "repro_note")).toBe(false);
   });
 
   it("keeps every card's own engagement and counts nothing new", () => {
@@ -96,18 +95,18 @@ describe("how a build shows", () => {
 });
 
 describe("the filter", () => {
-  it("hides an option with nothing in it, never All; at most five", () => {
-    expect(feedOptions({ builds: 2, topics: 0, replies: 1, notes: 0 }).map((option) => option.label)).toEqual(["All", "Builds", "Replies"]);
-    expect(feedOptions(null)).toHaveLength(5);
+  it("hides an option with nothing in it, never All; at most four, with no Notes (Synth 12)", () => {
+    expect(feedOptions({ builds: 2, topics: 0, replies: 1, notes: 3 }).map((option) => option.label)).toEqual(["All", "Builds", "Replies"]);
+    expect(feedOptions(null)).toHaveLength(4);
     mount();
     const group = screen.getByRole("radiogroup", { name: "Show" });
-    expect(within(group).getAllByRole("radio").map((radio) => radio.textContent)).toEqual(["All", "Builds", "Topics", "Replies", "Notes"]);
+    expect(within(group).getAllByRole("radio").map((radio) => radio.textContent)).toEqual(["All", "Builds", "Topics", "Replies"]);
   });
 
   it("opens on the owner's filter; ?show= overrides it; a hidden option falls back to All", () => {
     const counts = { builds: 2, topics: 3, replies: 0, notes: 1 };
     expect(shownFilter(null, "topics", counts)).toBe("topics");
-    expect(shownFilter("notes", "topics", counts)).toBe("notes");
+    expect(shownFilter("notes", "topics", counts)).toBe("topics");
     expect(shownFilter("replies", "topics", counts)).toBe("all");
     expect(shownFilter("saves", "builds", counts)).toBe("builds");
   });
@@ -115,8 +114,8 @@ describe("the filter", () => {
   it("asks for the new filter when a segment is chosen", () => {
     const onFilter = vi.fn();
     mount({ onFilter });
-    fireEvent.click(screen.getByRole("radio", { name: "Notes" }));
-    expect(onFilter).toHaveBeenCalledWith("notes");
+    fireEvent.click(screen.getByRole("radio", { name: "Replies" }));
+    expect(onFilter).toHaveBeenCalledWith("replies");
   });
 });
 
@@ -152,6 +151,6 @@ describe("Show more", () => {
     mount({ entries, hasMore: false });
     const articles = within(screen.getByRole("feed")).getAllByRole("article", { name: "How do you score a call summary?" });
     expect(articles.length).toBeGreaterThan(0);
-    expect(screen.getAllByTestId("profile-feed-item")[0].getAttribute("aria-setsize")).toBe(String(entries.length));
+    expect(screen.getAllByTestId("profile-feed-item")[0].getAttribute("aria-setsize")).toBe(String(entries.filter((entry) => entry.kind !== "repro_note").length));
   });
 });

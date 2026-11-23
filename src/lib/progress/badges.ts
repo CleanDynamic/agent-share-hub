@@ -34,3 +34,9 @@ export function badgesInOrder<T extends { id: string }>(
   const notYet = catalogue.filter((badge) => !held.has(badge.id)).map((badge) => ({ badge, earned: false }));
   return [...earned, ...notYet];
 }
+
+/** Synth 15: the badges earned by runs (running builds, being run, re-confirming) are not on the interface. */
+export const RUN_BADGE_IDS: ReadonlySet<string> = new Set(["runner", "proven", "keeper", "well-proven"]);
+
+/** The catalogue as the progress page lists it: without the run badges. */
+export const listedBadges = <T extends { id: string }>(catalogue: readonly T[]): T[] => catalogue.filter((badge) => !RUN_BADGE_IDS.has(badge.id));

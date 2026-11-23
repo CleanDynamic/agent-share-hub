@@ -8,12 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Check } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { uiTransition } from "@/lib/theme/controls";
-import { elevation } from "@/lib/theme/elevation";
 import { r } from "@/lib/theme/radius";
-import { t, tokenAlpha } from "@/lib/theme/tokens";
-import { cardTitle, data as dataText, eyebrow, FIGTREE, tabular } from "@/lib/theme/type";
+import { t } from "@/lib/theme/tokens";
+import { data as dataText, DM_MONO, FIGTREE, tabular } from "@/lib/theme/type";
 import { SITE_NAME } from "@/lib/site";
 
 const USE_CASES = ["Social Media", "Research", "Business", "Productivity", "Content", "Learning", "Email", "Finance", "Hobby", "Other"];
@@ -98,44 +97,46 @@ export default function Onboarding() {
      animating padding and border-width alongside the colour.
      ───────────────────────────────────────────────────────────────────────── */
 
+  /* Synth 13 Part C: one panel, 560 wide, 40 from the top, 28 padding. "1 of 3" in mono 13 Text 3; the question as the h1
+     (31/36); the line under it 15 Text 2; the choices as small pills (chosen: Inverse), names as text with no logos. */
   const panelStyle = {
-    background: t.glass,
-    borderWidth: 1,
-    borderStyle: "solid" as const,
-    borderColor: t.glassBorder,
+    background: t.surface,
     borderRadius: r.panel,
-    ...elevation.raised,
+    width: "100%",
+    maxWidth: 560,
+    padding: 28,
+    boxSizing: "border-box" as const,
   };
-
-  const headingStyle = { ...cardTitle, color: t.text };
-
+  const headingStyle = { margin: 0, fontFamily: FIGTREE, fontSize: 31, lineHeight: "36px", fontWeight: 600, color: t.text };
   const subheadingStyle = {
-    marginTop: "4px",
+    margin: "8px 0 0",
     fontFamily: FIGTREE,
-    fontSize: "13px",
+    fontSize: "15px",
     fontWeight: 400,
-    lineHeight: 1.55,
+    lineHeight: "20px",
     color: t.text2,
   };
-
   const tileStyle = (selected: boolean) => ({
-    background: selected ? tokenAlpha("action", 0.12) : t.recess,
-    borderWidth: 1,
-    borderStyle: "solid" as const,
-    borderColor: selected ? t.action : t.line,
-    borderRadius: r.control,
-    color: selected ? t.text : t.text2,
+    height: 32,
+    padding: "0 14px",
+    background: selected ? t.inverse : t.module,
+    border: 0,
+    borderRadius: 16,
+    color: selected ? t.onInverse : t.text,
     fontFamily: FIGTREE,
+    fontSize: 13,
+    fontWeight: selected ? 600 : 500,
     transition: uiTransition(),
   });
+  const mainButton = { height: 40, borderRadius: 20, background: t.action, color: t.onAction, fontSize: 15, fontWeight: 600 };
 
   return (
-    <div className="flex min-h-[80vh] items-center justify-center px-4">
+    <div className="flex min-h-[80vh] justify-center px-4" style={{ paddingTop: 40, alignItems: "flex-start" }}>
       <SeoHead title="Onboarding" description={`Set up your ${SITE_NAME} profile.`} path="/onboarding" noIndex />
-      <div className="w-full max-w-lg p-6 sm:p-8" style={panelStyle}>
+      <div style={panelStyle}>
         {/* Where the reader is, in words. */}
-        <p style={{ ...eyebrow, color: t.text2, marginBottom: "24px" }}>
-          Step {step} of 3
+        <p style={{ fontFamily: DM_MONO, fontSize: 13, lineHeight: "16px", color: t.label, margin: "0 0 12px", ...tabular }}>
+          {step} of 3
         </p>
 
         {/* STEP 1 */}
@@ -145,7 +146,7 @@ export default function Onboarding() {
               <h1 style={headingStyle}>What do you want your AI to do?</h1>
               <p style={subheadingStyle}>Select one or more areas you're interested in.</p>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-wrap" style={{ gap: 8 }}>
               {USE_CASES.map((uc) => {
                 const selected = interests.includes(uc);
                 return (
@@ -153,23 +154,17 @@ export default function Onboarding() {
                     key={uc}
                     onClick={() => toggle(interests, uc, setInterests)}
                     aria-pressed={selected}
-                    className="relative flex items-center justify-center p-4 text-sm font-medium"
+                    className="flex items-center justify-center"
                     style={tileStyle(selected)}
                   >
                     {uc}
-                    {selected && (
-                      <Check
-                        className="absolute top-2 right-2 h-3.5 w-3.5"
-                        style={{ color: t.action }}
-                      />
-                    )}
                   </button>
                 );
               })}
             </div>
-            <Button onClick={saveStep1} disabled={interests.length === 0 || saving} className="w-full">
+            <Button onClick={saveStep1} disabled={interests.length === 0 || saving} className="w-full" style={mainButton}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Next
+              Continue
             </Button>
           </div>
         )}
@@ -181,7 +176,7 @@ export default function Onboarding() {
               <h1 style={headingStyle}>Which AI tools do you use?</h1>
               <p style={subheadingStyle}>Pick all that apply.</p>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-wrap" style={{ gap: 8 }}>
               {AI_TOOLS.filter((tool) => tool !== "Any Tool").map((tool) => {
                 const selected = tools.includes(tool);
                 return (
@@ -189,23 +184,17 @@ export default function Onboarding() {
                     key={tool}
                     onClick={() => toggle(tools, tool, setTools)}
                     aria-pressed={selected}
-                    className="relative flex items-center justify-center p-4 text-sm font-medium"
+                    className="flex items-center justify-center"
                     style={tileStyle(selected)}
                   >
                     {tool}
-                    {selected && (
-                      <Check
-                        className="absolute top-2 right-2 h-3.5 w-3.5"
-                        style={{ color: t.action }}
-                      />
-                    )}
                   </button>
                 );
               })}
             </div>
-            <Button onClick={saveStep2} disabled={tools.length === 0 || saving} className="w-full">
+            <Button onClick={saveStep2} disabled={tools.length === 0 || saving} className="w-full" style={mainButton}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Next
+              Continue
             </Button>
           </div>
         )}
@@ -219,7 +208,7 @@ export default function Onboarding() {
                 Your Discover page is now personalised to show content matching your interests.
               </p>
             </div>
-            <Button onClick={finishUser} className="w-full">Start browsing</Button>
+            <Button onClick={finishUser} className="w-full" style={mainButton}>Start browsing</Button>
           </div>
         )}
 
@@ -248,17 +237,17 @@ export default function Onboarding() {
                 </p>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="website">Website URL (optional)</Label>
-                <Input id="website" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://" />
-              </div>
-              <div className="space-y-1.5">
                 <Label htmlFor="twitter">Twitter handle (optional)</Label>
                 <Input id="twitter" value={twitter} onChange={(e) => setTwitter(e.target.value)} placeholder="@handle" />
               </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="website">Website URL (optional)</Label>
+                <Input id="website" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://" />
+              </div>
             </div>
-            <Button onClick={finishCreator} disabled={saving} className="w-full">
+            <Button onClick={finishCreator} disabled={saving} className="w-full" style={mainButton}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Go to my profile
+              Save
             </Button>
           </div>
         )}

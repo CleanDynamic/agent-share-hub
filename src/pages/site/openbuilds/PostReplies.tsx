@@ -1,9 +1,9 @@
-/* UX-06 Part 1: the Thread's replies. PURE: typed props, no fetching, no `useAuth()`, no router hooks but `Link`.
+/* UX-06 Part 1, Synth 11: the Thread's replies. PURE: typed props, no fetching, no `useAuth()`, no router hooks but `Link`.
 
-   A reply has no box: `Avatar` 24, the name in 13 at the card's weight (600), the age in `--label`, the body in 13, attachments as
-   the post card draws them, then a row of text buttons (12 `--text2`, 16 apart). A `--hairline` between replies, none after the
-   last. Replies to a reply sit 38 in, over a 1px `--hairline` rule on their left; two levels are drawn, and a deeper branch is
-   `View 3 more replies`. A pinned reply is the same reply inside the module box, with `Pinned by @maya` at the right of its head. */
+   A reply has no box: `Avatar` 24, the name 15/600, the handle and age 15 in Text 3, the text 15, attachments as the post card
+   draws them, then a row of text buttons (13 in Text 3, 16 apart). A `--hairline` between replies, none after the last. Replies
+   to a reply sit 34 in; two levels are drawn, and a deeper branch is `View 3 more replies`. A pinned reply is the same reply
+   inside a Card (the Card fill, radius 12, no border), with `Pinned by @maya` after its age. */
 
 import { forwardRef, useState, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
@@ -56,7 +56,7 @@ export interface ReplyActions {
   blockedAuthors?: ReadonlySet<string>;
 }
 
-/** A text button: 12 `--text2`, no box, underlined at once under a fine pointer's hover. On a phone its hit area is 44 high. */
+/** A text button: 13 in Text 3, no box, underlined at once under a fine pointer's hover. On a phone its hit area is 44 high. */
 export const TextButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement>>(function TextButton({ children, style, type = "button", ...rest }, ref) {
   const phone = useIsPhone();
   const { state, handlers } = useInteractive<HTMLButtonElement>({
@@ -83,7 +83,7 @@ export const TextButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTM
         borderRadius: r.control,
         fontSize: 13,
         lineHeight: "16px",
-        color: t.text2,
+        color: state.hovered ? t.text2 : t.label,
         cursor: "pointer",
         whiteSpace: "nowrap",
         textDecoration: state.hovered ? "underline" : "none",
@@ -115,7 +115,6 @@ function ReplyMenu({ reply, actions, onAsk }: { reply: ReplyItem; actions: Reply
 }
 
 function HideReason({ onHide, onCancel }: { onHide: (reason: string) => void; onCancel: () => void }) {
-  const phone = useIsPhone();
   const [reason, setReason] = useState("");
   return (
     <form
@@ -130,7 +129,7 @@ function HideReason({ onHide, onCancel }: { onHide: (reason: string) => void; on
         value={reason}
         onChange={(event) => setReason(event.target.value)}
         placeholder="Why is it hidden?"
-        style={{ flex: "1 1 200px", minWidth: 0, height: 32, boxSizing: "border-box", padding: "0 8px", borderRadius: r.control, border: `1px solid ${t.controlBorder}`, background: t.well, color: t.text, fontFamily: FIGTREE, fontSize: phone ? 15 : 13 }}
+        style={{ flex: "1 1 200px", minWidth: 0, height: 32, boxSizing: "border-box", padding: "0 8px", borderRadius: r.control, border: `1px solid ${t.controlBorder}`, background: t.well, color: t.text, fontFamily: FIGTREE, fontSize: 15 }}
       />
       <PostControl type="submit">Hide</PostControl>
       <PostControl onClick={onCancel}>Cancel</PostControl>
@@ -153,26 +152,26 @@ function Attachments({ attachments }: { attachments: readonly CardAttachment[] }
 /** UX-07: a reply's anatomy (its author, words and attachments), with whatever sits under it: the Thread's actions, or nothing (Home's reply groups). */
 export function ReplyAnatomy({ reply, children }: { reply: ReplyItem; children?: ReactNode }) {
   const pinned = reply.pinnedBy !== null;
+  const meta = [reply.author.handle ? `@${reply.author.handle}` : null, reply.age, pinned ? `Pinned by ${reply.pinnedBy}` : null].filter(Boolean).join(" · ");
   return (
     <div style={{ display: "grid", gridTemplateColumns: "24px minmax(0, 1fr)", columnGap: 12 }}>
       <Avatar size={24} userId={reply.author.id} name={reply.author.name} src={reply.author.avatarUrl} />
       <div style={{ minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, minHeight: 24 }}>
           <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 6, rowGap: 4 }}>
-            <span style={{ ...plain, fontSize: 13, fontWeight: 500, lineHeight: "20px" }}>{reply.author.name}</span>
-            <span style={{ ...plain, fontSize: 13, lineHeight: "20px", color: t.label }}>{[reply.author.handle ? `@${reply.author.handle}` : null, reply.age].filter(Boolean).join(" · ")}</span>
+            <span style={{ ...plain, fontSize: 15, fontWeight: 600, lineHeight: "20px" }}>{reply.author.name}</span>
+            <span style={{ ...plain, fontSize: 15, lineHeight: "20px", color: t.label }}>{meta}</span>
             {reply.about ? (
               <>
-                <span style={{ ...plain, fontSize: 13, lineHeight: "20px", color: t.label }}>· on</span>
+                <span style={{ ...plain, fontSize: 15, lineHeight: "20px", color: t.label }}>· on</span>
                 <DashedSlot data-testid="reply-about" style={{ display: "inline-flex", alignItems: "center", height: 20, padding: "0 6px", ...plain, fontSize: 13, color: t.text2 }}>
                   {reply.about}
                 </DashedSlot>
               </>
             ) : null}
           </div>
-          {pinned ? <span style={{ ...plain, flex: "none", fontSize: 13, color: t.label }}>{`Pinned by ${reply.pinnedBy}`}</span> : null}
         </div>
-        {reply.body ? <p style={{ ...plain, marginTop: 4, fontSize: 13, lineHeight: "20px", whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{reply.body}</p> : null}
+        {reply.body ? <p style={{ ...plain, marginTop: 4, fontSize: 15, lineHeight: "20px", whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{reply.body}</p> : null}
         <Attachments attachments={reply.attachments} />
         {children}
       </div>
@@ -188,7 +187,7 @@ export function Reply({ reply, actions, last, box }: { reply: ReplyItem; actions
   const pinned = reply.pinnedBy !== null;
   const collapsed = isCollapsed(reply.author.id, actions.blockedAuthors ?? NO_ONE);
   const content = collapsed ? (
-    <p data-testid="reply-collapsed" style={{ ...plain, fontSize: 13, lineHeight: "20px", color: t.label }}>
+    <p data-testid="reply-collapsed" style={{ ...plain, fontSize: 15, lineHeight: "20px", color: t.label }}>
       {BLOCK_COPY.collapsedReply}
     </p>
   ) : (
@@ -219,7 +218,7 @@ export function Reply({ reply, actions, last, box }: { reply: ReplyItem; actions
         ) : null}
         {reply.more > 0 ? (
           <div style={{ marginTop: 8 }}>
-            <LinkText to={actions.branchHref(reply.id)} size={12} same>{`View ${reply.more} more ${reply.more === 1 ? "reply" : "replies"}`}</LinkText>
+            <LinkText to={actions.branchHref(reply.id)} same>{`View ${reply.more} more ${reply.more === 1 ? "reply" : "replies"}`}</LinkText>
           </div>
         ) : null}
     </ReplyAnatomy>
@@ -227,10 +226,10 @@ export function Reply({ reply, actions, last, box }: { reply: ReplyItem; actions
 
   return (
     <li id={replyAnchor(reply.id)} data-testid="reply" data-depth={reply.depth} style={{ listStyle: "none", padding: "16px 0", borderBottom: last ? "none" : `1px solid ${t.hairline}` }}>
-      {pinned && !collapsed ? <div style={{ background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card, padding: 16 }}>{content}</div> : content}
+      {pinned && !collapsed ? <div data-testid="reply-pinned" style={{ background: t.module, borderRadius: 12, padding: 16 }}>{content}</div> : content}
       {box?.at === reply.id ? <div style={{ marginTop: 16 }}>{box.node}</div> : null}
       {reply.children.length > 0 ? (
-        <ol aria-label={`Replies to ${reply.author.name}`} style={{ margin: "8px 0 0 38px", padding: "0 0 0 12px", borderLeft: `1px solid ${t.hairline}` }}>
+        <ol aria-label={`Replies to ${reply.author.name}`} style={{ margin: "8px 0 0 34px", padding: 0 }}>
           {reply.children.map((child, index) => (
             <Reply key={child.id} reply={child} actions={actions} last={index === reply.children.length - 1} box={box} />
           ))}
@@ -242,11 +241,11 @@ export function Reply({ reply, actions, last, box }: { reply: ReplyItem; actions
 
 /** A link drawn as a text button: a reply's Open build and Rebuild (other pages, through `PageLink`), and `View 3 more replies`
     (this page with new parameters: a plain link, so nothing fades). */
-function LinkText({ to, size = 12, same = false, children }: { to: string; size?: number; same?: boolean; children: ReactNode }) {
+function LinkText({ to, same = false, children }: { to: string; same?: boolean; children: ReactNode }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   const Tag = same ? Link : PageLink;
   return (
-    <Tag to={to} {...handlers} style={{ ...plain, display: "inline-flex", alignItems: "center", height: 24, padding: "0 4px", fontSize: size, lineHeight: "16px", color: t.text2, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: r.control, whiteSpace: "nowrap", ...ring(state.focusVisible) }}>
+    <Tag to={to} {...handlers} style={{ ...plain, display: "inline-flex", alignItems: "center", height: 24, padding: "0 4px", fontSize: 13, lineHeight: "16px", color: state.hovered ? t.text2 : t.label, textDecoration: state.hovered ? "underline" : "none", textUnderlineOffset: 3, borderRadius: r.control, whiteSpace: "nowrap", ...ring(state.focusVisible) }}>
       {children}
     </Tag>
   );

@@ -1,4 +1,7 @@
-// A build, in a message (RC-P20).
+// A build, in a message (RC-P20). Synth 12 Part D: a compact Card (Card fill, radius 12, no edge): the cover, the build's
+// name 15/600 and its facts as plain text joined by " · " (What was built · Role of AI · Skill needed). No plaque: the
+// reproduction count is no longer drawn. What follows is the RC-P20 history.
+//
 //
 // THE SAME OBJECT AS EVERYWHERE ELSE ⟦law-of-similarity⟧: the build's cover
 // (signed through cardMedia, as a gallery card's is), its title in the card's
@@ -7,7 +10,6 @@
 // one column, 260 wide at most, one link to /b2/<slug>.
 
 import { Link } from "react-router-dom";
-import { Plaque } from "@/components/brand/Plaque";
 import { coverMedia, stillFor, type MediaSrcMap } from "@/components/gallery/cardMedia";
 import type { GalleryBuild } from "@/lib/build/gallery";
 import { ring } from "@/lib/theme/controls";
@@ -16,7 +18,7 @@ import { feedback } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
-import { cardTitle } from "@/lib/theme/type";
+import { classificationFacts } from "@/lib/classify/lines";
 
 export interface BuildShareCardProps {
   build: GalleryBuild;
@@ -37,13 +39,12 @@ export function BuildShareCard({ build, srcByPath }: BuildShareCardProps) {
         flexDirection: "column",
         width: 260,
         maxWidth: "100%",
-        borderRadius: r.card,
-        border: `1px solid ${state.hovered ? t.text2 : t.line}`,
-        background: t.bg,
+        borderRadius: r.panel,
+        background: state.hovered ? t.control : t.module,
         overflow: "hidden",
         color: t.text,
         textDecoration: "none",
-        transition: feedback("border-color"),
+        transition: feedback("background-color"),
         ...ring(state.focusVisible),
       }}
     >
@@ -55,10 +56,14 @@ export function BuildShareCard({ build, srcByPath }: BuildShareCardProps) {
         />
       ) : null}
       <div style={{ display: "flex", flexDirection: "column", gap: SPACE.xs, padding: SPACE.sm }}>
-        <span data-testid="message-build-title" style={{ ...cardTitle, color: t.text, overflowWrap: "anywhere" }}>
+        <span data-testid="message-build-title" style={{ fontSize: 15, lineHeight: "20px", fontWeight: 600, color: t.text, overflowWrap: "anywhere" }}>
           {build.title}
         </span>
-        <Plaque build={build} size="card" />
+        {classificationFacts(build.classifiedAs).length > 0 ? (
+          <span data-testid="message-build-facts" style={{ fontSize: 13, lineHeight: "16px", color: t.text2 }}>
+            {classificationFacts(build.classifiedAs).join(" · ")}
+          </span>
+        ) : null}
       </div>
     </Link>
   );

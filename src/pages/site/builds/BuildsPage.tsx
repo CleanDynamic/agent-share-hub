@@ -51,7 +51,7 @@ import { t } from "@/lib/theme/tokens";
 
 import { BuildsControl, BuildsLoadingView, ClassificationLoadingView, MapsLoadingView, text } from "./BuildsFrame";
 import type { BuildsFiltersViewProps, SavedSetsProps } from "./BuildsFiltersView";
-import { BuildsView, statParts } from "./BuildsView";
+import { BuildsView } from "./BuildsView";
 import {
   LENS_LABEL,
   MAPS_PAGE,
@@ -85,6 +85,7 @@ import {
   toggled,
   toggledColumns,
   withRange,
+  withoutRunFilters,
   withoutChip,
   type PanelOrder,
 } from "./buildsModel";
@@ -134,7 +135,7 @@ export default function BuildsPage() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const userId = user?.id ?? null;
-  const params = parseGalleryParams(search);
+  const params = withoutRunFilters(parseGalleryParams(search));
   const view: GalleryViewMode = params.view ?? "table";
   /* BF-14 (B6): with a match applied, the list is asked for the lens and the required filters only: the candidates, every one of
      which the browser checks against the countable filters once all are loaded. */
@@ -473,11 +474,7 @@ export default function BuildsPage() {
     <BuildsView
       figure="Builds"
       parts={
-        buildsLabel && stats.data
-          ? [{ text: buildsLabel }, ...statParts({ published: stats.data.inGallery, runsThisWeek: stats.data.reproducedThisWeek, freshPct: stats.data.freshPct, filtered })]
-          : buildsLabel
-            ? [{ text: buildsLabel }]
-            : [{ text: " " }]
+        buildsLabel ? [{ text: buildsLabel }] : [{ text: "\u00a0" }]
       }
       view={view}
       hrefFor={hrefFor}
@@ -487,7 +484,7 @@ export default function BuildsPage() {
         view === "table" && !(shownList.error && !shownList.data)
           ? {
               /* BF-14: with a match applied, the lens on screen counts the rows the match leaves; the other lenses' builds are not loaded. */
-              lenses: GALLERY_LENSES.map((lens) => ({ value: lens, label: LENS_LABEL[lens], count: matchLive && lens === params.lens ? builds.length : lensCounts.data?.[lens] })),
+              lenses: GALLERY_LENSES.filter((lens) => lens !== "proven").map((lens) => ({ value: lens, label: LENS_LABEL[lens], count: lens === "all" ? undefined : matchLive && lens === params.lens ? builds.length : lensCounts.data?.[lens] })),
               lens: params.lens,
               setName: openDetail?.name,
               onLens: (lens) => go({ ...params, lens: lens as GalleryLens }),

@@ -127,7 +127,13 @@ import {
   labelText,
   pageHeadingText,
 } from "@/components/build/tokens";
+import { Button } from "@/components/brand/Button";
+import { DropField } from "@/components/brand/DropField";
+import { useMinWidth } from "@/components/shell/useMinWidth";
 import { feedback } from "@/lib/theme/motion";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { DM_MONO, FIGTREE, hero } from "@/lib/theme/type";
 import { screenError } from "@/lib/auth/authMessages";
 
 /** A build is never asked to name itself before it exists. */
@@ -287,7 +293,7 @@ function joinedDraftMessage(title: string, counts: MaterialiseCounts): string {
     .join(" and ");
   return (
     `Added to “${title}”: ${added}` +
-    (counts.nodes > 0 ? " — drag from the tray into the build to place them." : ".")
+    (counts.nodes > 0 ? ". Drag from the tray into the build to place them." : ".")
   );
 }
 
@@ -336,13 +342,17 @@ function Shell({ children }: { children: React.ReactNode }) {
         <div
           style={{
             ...workspacePanel,
+            /* Synth 10: one panel on the page shade, at most 1080 wide, 24 inside, no line round it. */
+            backgroundColor: t.surface,
+            borderWidth: 0,
             width: "100%",
-            maxWidth: 720,
+            maxWidth: 1080,
             margin: "auto",
-            padding: 28,
+            padding: 24,
+            boxSizing: "border-box",
             display: "flex",
             flexDirection: "column",
-            gap: 18,
+            gap: 16,
           }}
         >
           {children}
@@ -366,6 +376,8 @@ export default function ComposeNew() {
   const [isWriting, setWriting] = useState(false);
   const [isDragging, setDragging] = useState(false);
   const [isStarting, setStarting] = useState(false);
+  /* Synth 10: the 1.4fr / 1fr grid from 1101; below it one column with the paste box first. */
+  const wideGrid = useMinWidth(1101);
 
   /** What the connector left waiting. null until the first read answers. */
   const [waiting, setWaiting] = useState<WaitingImport[] | null>(null);
@@ -547,7 +559,7 @@ export default function ComposeNew() {
         // Nothing has been read yet, so there is no character count to show.
         characterCount: 0,
         description:
-          "Reading the manifests, the README and one entrypoint file — not the " +
+          "Reading the manifests, the README and one entrypoint file, not the " +
           "whole repository. Nothing is saved until you have looked at what it found.",
       });
 
@@ -670,11 +682,11 @@ export default function ComposeNew() {
             : counts.events === 0
               // A repository has no sequence, so naming an empty one would read
               // as something having gone missing.
-              ? `${counts.nodes} ${counts.nodes === 1 ? "item is" : "items are"} in your tray — ` +
-                `drag them into the build to place them.`
+              ? `${counts.nodes} ${counts.nodes === 1 ? "item is" : "items are"} in your tray. ` +
+                `Drag them into the build to place them.`
               : `${counts.nodes} ${counts.nodes === 1 ? "item is" : "items are"} in your tray and ` +
-                `${counts.events} ${counts.events === 1 ? "prompt is" : "prompts are"} in the sequence — ` +
-                `drag from the tray into the build to place them.`,
+                `${counts.events} ${counts.events === 1 ? "prompt is" : "prompts are"} in the sequence. ` +
+                `Drag from the tray into the build to place them.`,
       });
     } catch (cause) {
       setWriting(false);
@@ -834,7 +846,7 @@ export default function ComposeNew() {
           <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
             {stage.sourceLabel} is valid JSON, but nothing in it looks like a
             Lovable session export or like a chat transcript. Rather than guess
-            and read it wrongly, this asks once — the answer is used for this
+            and read it wrongly, this asks once. The answer is used for this
             file and not remembered.
           </p>
         </div>
@@ -892,7 +904,7 @@ export default function ComposeNew() {
             fontFamily: FONT_STACK,
           }}
         >
-          Neither — go back
+          Neither, go back
         </button>
       </Shell>
     );
@@ -946,24 +958,54 @@ export default function ComposeNew() {
 
   const busy = isStarting || busyRef.current;
 
+  /* The transcript box and the drop area take the same file the same way. */
+  const fileDropHandlers = {
+    onDragOver: (event: React.DragEvent) => {
+      event.preventDefault();
+      if (!isDragging) setDragging(true);
+    },
+    onDragLeave: (event: React.DragEvent) => {
+      // Only when the pointer leaves the zone itself, not a child of it.
+      if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+      setDragging(false);
+    },
+    onDrop: (event: React.DragEvent) => {
+      event.preventDefault();
+      setDragging(false);
+      const file = event.dataTransfer.files?.[0];
+      if (file) void takeFile(file);
+    },
+  };
+
+  const readPasted = () => {
+    // A GitHub URL pasted into the transcript box is still a repository. Feeding one line to parse-transcript would read
+    // it as a whole session and propose nothing worth keeping.
+    const pasted = text.trim();
+    if (!/\s/.test(pasted) && isRepoUrl(pasted)) {
+      void takeRepo(pasted);
+      return;
+    }
+
+    const source = detectExportSource(text);
+    if (source === "ambiguous") {
+      setError(null);
+      setStage({ name: "asking", rawText: text, sourceLabel: "pasted text" });
+      return;
+    }
+    void takeTranscript(text, source === "lovable" ? "pasted Lovable export" : "pasted transcript", source);
+  };
+
   return (
     <Shell>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <h1 style={{ ...pageHeadingText, margin: 0 }}>Start a build</h1>
-        <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
-          If you built this in a chat, bring the chat. It gets split into the
-          prompts you sent and the code and settings that came back, and all of
-          it lands in your tray for you to arrange. If what you have is a public
-          repository, bring that instead — it is read for its stack, its
-          prerequisites and what it says it does.
+        <h1 style={{ ...hero, margin: 0, color: t.text }}>Start a build</h1>
+        <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.text2 }}>
+          It arrives already structured, so you see what it found before anything is saved.
         </p>
       </div>
 
-      {/* EX-P09. What the connector left waiting, above the fold so a creator
-          who sent a conversation from their chat finds it before they are
-          offered a paste box. Its own block in the same column: nothing already
-          on this page moved to make room for it, and it renders nothing at all
-          when the list is empty. */}
+      {/* EX-P09. What the connector left waiting, above the fold so a creator who sent a conversation from their chat finds
+          it before they are offered a paste box. It renders nothing at all when the list is empty. */}
       <WaitingImports
         imports={waiting ?? []}
         busy={busy}
@@ -974,406 +1016,223 @@ export default function ComposeNew() {
         error={waitingError}
       />
 
-      {/* A PEER OF THE PASTE ZONE, not a control inside it (NS-P21).
-          A URL is decided by looking at it; a transcript is decided by reading
-          it. Putting a one-line field inside a drop target labelled "paste the
-          transcript" would blur both. The panel is a single 720px column, so
-          peers stack — which is also what this would do on a narrow screen if
-          it were laid out in a row. No existing element's layout was touched to
-          place it. */}
-      <div
-        data-visual-slot="intake-repo-url"
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 10,
-          padding: 14,
-          borderRadius: 12,
-          border: `1px solid ${HAIRLINE}`,
-          background: "var(--glass-2)",
-        }}
-      >
-        <label htmlFor="intake-repo-url" style={{ ...labelText, textTransform: "none" }}>
-          Or paste a repository URL
-        </label>
+      {/* The ways in are equals: the paste box on the left, a drop area, a repository and a Build File stacked on the
+          right. Below 1101 the paste box comes first and the rest follow in one column. */}
+      <div style={{ display: "grid", gridTemplateColumns: wideGrid ? "minmax(0, 1.4fr) minmax(0, 1fr)" : "minmax(0, 1fr)", gap: 16, alignItems: "start" }}>
+        <div
+          data-visual-slot="intake-paste"
+          {...fileDropHandlers}
+          style={{ display: "flex", flexDirection: "column", gap: 12, padding: 16, borderRadius: r.card, background: t.module, boxSizing: "border-box", minWidth: 0 }}
+        >
+          <label htmlFor="intake-transcript" style={{ fontFamily: FIGTREE, fontSize: 17, fontWeight: 600, lineHeight: "22px", color: t.text }}>
+            Paste a transcript
+          </label>
 
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
-          <input
-            id="intake-repo-url"
-            type="url"
-            inputMode="url"
-            autoComplete="off"
-            spellCheck={false}
-            value={repoUrl}
+          <textarea
+            id="intake-transcript"
+            value={text}
             onChange={(event) => {
-              setRepoUrl(event.target.value);
+              setText(event.target.value);
               if (error) setError(null);
             }}
-            onKeyDown={(event) => {
-              // Enter submits: a one-line field that needed a mouse to send
-              // would be the slowest way in on the page.
-              if (event.key !== "Enter") return;
-              event.preventDefault();
-              if (!busy) void takeRepo(repoUrl);
-            }}
             disabled={busy}
-            placeholder="https://github.com/owner/repository"
+            spellCheck={false}
+            placeholder={
+              "You said:\nBuild me a script that renames photos by the date they were taken.\n\nChatGPT said:\nUse exiftool…"
+            }
             style={{
-              flex: "1 1 260px",
-              minWidth: 0,
+              width: "100%",
               boxSizing: "border-box",
-              fontFamily: FONT_STACK,
+              minHeight: 240,
+              resize: "vertical",
+              fontFamily: DM_MONO,
               fontSize: 13,
-              fontWeight: 300,
-              lineHeight: 1.6,
-              color: TEXT_PRIMARY,
-              background: "var(--glass-2)",
-              border: "1px solid var(--line)",
-              borderRadius: 10,
-              padding: "9px 12px",
+              lineHeight: "18px",
+              color: t.text,
+              background: t.field,
+              border: 0,
+              borderRadius: r.area,
+              padding: 12,
             }}
           />
 
-          {/* VISUAL SLOT — the primary button surface is supplied externally.
-              Structure only here: pill geometry, disabled state, no surface. */}
-          <span data-visual-slot="btn-primary" style={{ display: "inline-flex" }}>
-            <button
-              type="button"
-              onClick={() => void takeRepo(repoUrl)}
-              disabled={busy}
-              style={{
-                fontFamily: "inherit",
-                fontSize: 12,
-                fontWeight: 500,
-                letterSpacing: "0.04em",
-                height: 34,
-                padding: "0 18px",
-                borderRadius: 100,
-                background: "var(--glass-2)",
-                border: `1px solid ${hexToRgba(TEAL, 0.32)}`,
-                /* UI-P38: the hue stays on the border; text in evidence teal read 4.41:1 on dusk glass. */
-                color: busy ? TEXT_MUTED : TEXT_PRIMARY,
-                cursor: busy ? "wait" : "pointer",
-                whiteSpace: "nowrap",
-              }}
-            >
-              Read the repo
-            </button>
-          </span>
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <Button variant="primary" size={32} onClick={readPasted} disabled={busy}>
+              Read it
+            </Button>
+          </div>
         </div>
 
-        <span style={{ ...bodyText, fontSize: 12, color: TEXT_MUTED }}>
-          Public GitHub repositories only. Nothing is cloned — the manifests, the
-          README and one entrypoint file are read, and everything found is a
-          suggestion you confirm.
-        </span>
-      </div>
-
-      {/* NS-P34. A peer of the other ways in, laid out as the repository card
-          is: its own bordered block in the same column, so nothing already on
-          this page had to move to make room for it. */}
-      <div
-        data-visual-slot="intake-build-file"
-        data-testid="import-drop"
-        onDragOver={(event) => event.preventDefault()}
-        onDrop={(event) => {
-          // Claimed here so the window listener does not read it a second time.
-          event.preventDefault();
-          const file = event.dataTransfer.files?.[0];
-          if (file) void drop.acceptFile(file);
-        }}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 10,
-          padding: 14,
-          borderRadius: 12,
-          border: `1px solid ${drop.isDragging ? hexToRgba(TEAL, 0.55) : HAIRLINE}`,
-          background: drop.isDragging ? hexToRgba(TEAL, 0.06) : "var(--glass-2)",
-          transition: feedback("background-color", "border-color"),
-        }}
-      >
-        <span style={{ ...labelText, textTransform: "none" }}>
-          Or drop a Build File
-        </span>
-
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
-          {/* VISUAL SLOT — the primary button surface is supplied externally.
-              Structure only here: pill geometry, disabled state, no surface. */}
-          <span data-visual-slot="btn-primary" style={{ display: "inline-flex" }}>
-            <button
-              type="button"
-              data-testid="import-choose-build-file"
-              onClick={() => buildFileInputRef.current?.click()}
-              disabled={busy}
-              style={{
-                fontFamily: "inherit",
-                fontSize: 12,
-                fontWeight: 500,
-                letterSpacing: "0.04em",
-                height: 34,
-                padding: "0 18px",
-                borderRadius: 100,
-                background: "var(--glass-2)",
-                border: `1px solid ${hexToRgba(TEAL, 0.32)}`,
-                color: busy ? TEXT_MUTED : TEXT_PRIMARY,
-                cursor: busy ? "wait" : "pointer",
-                whiteSpace: "nowrap",
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+          <DropField
+            data-visual-slot="intake-file"
+            armed={isDragging}
+            over={isDragging}
+            {...fileDropHandlers}
+            style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, padding: 16 }}
+          >
+            <span style={{ fontFamily: FIGTREE, fontSize: 17, fontWeight: 600, lineHeight: "22px", color: t.text }}>Drop a file</span>
+            <span style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label }}>
+              {isDragging ? "Let go to read it." : "A chat export, .json or .zip"}
+            </span>
+            <Button variant="secondary" size={32} onClick={() => fileInputRef.current?.click()} disabled={busy}>
+              Choose a file
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".txt,.md,.markdown,.text,.json,.zip,text/plain,text/markdown,application/json,application/zip"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                // Cleared so choosing the same file twice fires change again.
+                event.target.value = "";
+                if (file) void takeFile(file);
               }}
-            >
-              Choose a Build File
-            </button>
-          </span>
+              style={{ display: "none" }}
+            />
+          </DropField>
 
-          <Link
-            to="/import"
+          {/* A URL is decided by looking at it; a transcript is decided by reading it, so it is its own way in (NS-P21). */}
+          <div
+            data-visual-slot="intake-repo-url"
+            style={{ display: "flex", flexDirection: "column", gap: 8, padding: 16, borderRadius: r.card, background: t.module, boxSizing: "border-box" }}
+          >
+            <label htmlFor="intake-repo-url" style={{ fontFamily: FIGTREE, fontSize: 17, fontWeight: 600, lineHeight: "22px", color: t.text }}>
+              Or paste a repository URL
+            </label>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+              <input
+                id="intake-repo-url"
+                type="url"
+                inputMode="url"
+                autoComplete="off"
+                spellCheck={false}
+                value={repoUrl}
+                onChange={(event) => {
+                  setRepoUrl(event.target.value);
+                  if (error) setError(null);
+                }}
+                onKeyDown={(event) => {
+                  // Enter submits: a one-line field that needed a mouse to send would be the slowest way in on the page.
+                  if (event.key !== "Enter") return;
+                  event.preventDefault();
+                  if (!busy) void takeRepo(repoUrl);
+                }}
+                disabled={busy}
+                placeholder="https://github.com/owner/repository"
+                style={{
+                  flex: "1 1 200px",
+                  minWidth: 0,
+                  boxSizing: "border-box",
+                  height: 40,
+                  fontFamily: FIGTREE,
+                  fontSize: 15,
+                  color: t.text,
+                  background: t.field,
+                  border: 0,
+                  borderRadius: r.field,
+                  padding: "0 16px",
+                }}
+              />
+              <Button variant="secondary" size={32} onClick={() => void takeRepo(repoUrl)} disabled={busy}>
+                Read the repo
+              </Button>
+            </div>
+            <span style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label }}>
+              Public GitHub repositories only. Nothing is cloned. The manifests, the README and one entrypoint file are read, and everything found is a suggestion you confirm.
+            </span>
+          </div>
+
+          {/* NS-P34. A Build File dropped anywhere on this card is read, and so is one chosen with the button. */}
+          <div
+            data-visual-slot="intake-build-file"
+            data-testid="import-drop"
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => {
+              // Claimed here so the window listener does not read it a second time.
+              event.preventDefault();
+              const file = event.dataTransfer.files?.[0];
+              if (file) void drop.acceptFile(file);
+            }}
             style={{
-              ...labelText,
-              color: TEXT_SECONDARY,
-              textDecoration: "underline",
-              textUnderlineOffset: 3,
-              whiteSpace: "nowrap",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+              gap: 8,
+              padding: 16,
+              borderRadius: r.card,
+              background: drop.isDragging ? t.field : t.module,
+              boxSizing: "border-box",
+              transition: feedback("background-color"),
             }}
           >
-            Get the Extractor
-          </Link>
+            <span style={{ fontFamily: FIGTREE, fontSize: 17, fontWeight: 600, lineHeight: "22px", color: t.text }}>Or drop a Build File</span>
+            <span style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label }}>
+              {drop.isDragging ? "Let go to read it." : `The file the AI wrote up for you (${BUILD_FILE_EXTENSIONS.join(", ")}).`}
+            </span>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
+              <Button variant="secondary" size={32} data-testid="import-choose-build-file" onClick={() => buildFileInputRef.current?.click()} disabled={busy}>
+                Choose a Build File
+              </Button>
+              <Link to="/import" style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text2, textDecoration: "underline", textUnderlineOffset: 3, whiteSpace: "nowrap" }}>
+                Get the Extractor
+              </Link>
+            </div>
+            <input
+              ref={buildFileInputRef}
+              type="file"
+              accept={BUILD_FILE_EXTENSIONS.join(",")}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                // Cleared so choosing the same file twice fires change again.
+                event.target.value = "";
+                if (file) void drop.acceptFile(file);
+              }}
+              style={{ display: "none" }}
+            />
+          </div>
         </div>
-
-        <span style={{ ...bodyText, fontSize: 12, color: TEXT_MUTED }}>
-          {drop.isDragging
-            ? "Let go to read it."
-            : `The file the AI wrote up for you (${BUILD_FILE_EXTENSIONS.join(", ")}). ` +
-              "It arrives already structured — you see what it found before anything is saved."}
-        </span>
-
-        <input
-          ref={buildFileInputRef}
-          type="file"
-          accept={BUILD_FILE_EXTENSIONS.join(",")}
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            // Cleared so choosing the same file twice fires change again.
-            event.target.value = "";
-            if (file) void drop.acceptFile(file);
-          }}
-          style={{ display: "none" }}
-        />
-      </div>
-
-      {/* The zone is both the paste target and the drop target: one surface, so
-          a creator never has to work out which half takes a file. */}
-      <div
-        onDragOver={(event) => {
-          event.preventDefault();
-          if (!isDragging) setDragging(true);
-        }}
-        onDragLeave={(event) => {
-          // Only when the pointer leaves the zone itself, not a child of it.
-          if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
-          setDragging(false);
-        }}
-        onDrop={(event) => {
-          event.preventDefault();
-          setDragging(false);
-          const file = event.dataTransfer.files?.[0];
-          if (file) void takeFile(file);
-        }}
-        style={{
-          position: "relative",
-          display: "flex",
-          flexDirection: "column",
-          gap: 10,
-          padding: 14,
-          borderRadius: 12,
-          border: `1px dashed ${isDragging ? hexToRgba(TEAL, 0.55) : HAIRLINE}`,
-          background: isDragging ? hexToRgba(TEAL, 0.06) : "var(--glass-2)",
-          transition: feedback("background-color", "border-color"),
-        }}
-      >
-        <label htmlFor="intake-transcript" style={{ ...labelText, textTransform: "none" }}>
-          Paste the transcript
-        </label>
-
-        <textarea
-          id="intake-transcript"
-          value={text}
-          onChange={(event) => {
-            setText(event.target.value);
-            if (error) setError(null);
-          }}
-          disabled={busy}
-          spellCheck={false}
-          placeholder={
-            "You said:\nBuild me a script that renames photos by the date they were taken.\n\nChatGPT said:\nUse exiftool…"
-          }
-          style={{
-            width: "100%",
-            boxSizing: "border-box",
-            minHeight: 210,
-            resize: "vertical",
-            fontFamily: FONT_STACK,
-            fontSize: 13,
-            fontWeight: 300,
-            lineHeight: 1.6,
-            color: TEXT_PRIMARY,
-            background: "var(--glass-2)",
-            border: `1px solid var(--line)`,
-            borderRadius: 10,
-            padding: "10px 12px",
-          }}
-        />
-
-        <span style={{ ...bodyText, fontSize: 12, color: TEXT_MUTED }}>
-          {isDragging
-            ? "Drop it to read it."
-            : "Or drop a transcript (.txt, .md) or a Lovable export (.json, .zip) anywhere on this box."}
-        </span>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".txt,.md,.markdown,.text,.json,.zip,text/plain,text/markdown,application/json,application/zip"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            // Cleared so choosing the same file twice fires change again.
-            event.target.value = "";
-            if (file) void takeFile(file);
-          }}
-          style={{ display: "none" }}
-        />
       </div>
 
       {error ? (
         <p
           role="alert"
           style={{
-            ...bodyText,
             margin: 0,
-            padding: "10px 12px",
-            borderRadius: 8,
-            border: `1px solid ${hexToRgba(GAP_RED, 0.3)}`,
-            background: hexToRgba(GAP_RED, 0.06),
-            color: TEXT_PRIMARY,
+            padding: "12px 16px",
+            borderRadius: r.card,
+            background: t.breakageFill,
+            color: t.text,
+            fontFamily: FIGTREE,
+            fontSize: 15,
+            lineHeight: "20px",
           }}
         >
           {error}
         </p>
       ) : null}
 
-      <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-        {/* VISUAL SLOT — the primary button surface is supplied externally.
-            Structure only here: pill geometry, disabled state, no surface. */}
-        <span data-visual-slot="btn-primary" style={{ display: "inline-flex" }}>
-          <button
-            type="button"
-            onClick={() => {
-              // A GitHub URL pasted into the transcript box is still a
-              // repository. Feeding one line to parse-transcript would read it
-              // as a whole session and propose nothing worth keeping.
-              const pasted = text.trim();
-              if (!/\s/.test(pasted) && isRepoUrl(pasted)) {
-                void takeRepo(pasted);
-                return;
-              }
-
-              const source = detectExportSource(text);
-              if (source === "ambiguous") {
-                setError(null);
-                setStage({ name: "asking", rawText: text, sourceLabel: "pasted text" });
-                return;
-              }
-              void takeTranscript(
-                text,
-                source === "lovable" ? "pasted Lovable export" : "pasted transcript",
-                source
-              );
-            }}
-            disabled={busy}
-            style={{
-              fontFamily: "inherit",
-              fontSize: 12,
-              fontWeight: 500,
-              letterSpacing: "0.04em",
-              height: 34,
-              padding: "0 18px",
-              borderRadius: 100,
-              background: "var(--glass-2)",
-              border: `1px solid ${hexToRgba(TEAL, 0.32)}`,
-              color: busy ? TEXT_MUTED : TEAL,
-              cursor: busy ? "wait" : "pointer",
-            }}
-          >
-            Read it
-          </button>
-        </span>
-
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={busy}
-          style={{
-            ...labelText,
-            fontFamily: "inherit",
-            background: "transparent",
-            border: "none",
-            padding: 0,
-            cursor: busy ? "wait" : "pointer",
-            color: TEXT_SECONDARY,
-            textDecoration: "underline",
-            textUnderlineOffset: 3,
-          }}
-        >
-          Choose a file
-        </button>
-
-        <span aria-hidden style={{ width: 1, height: 16, background: HAIRLINE }} />
-
-        {/* Always on screen, never behind a disclosure: someone with nothing to
-            paste must not have to hunt for the way in. */}
+      {/* Always on screen, never behind a disclosure: someone with nothing to paste must not have to hunt for the way in. */}
+      <div>
         <button
           type="button"
           onClick={() => void startEmpty()}
           disabled={busy}
           style={{
-            ...labelText,
-            fontFamily: "inherit",
+            fontFamily: FIGTREE,
+            fontSize: 13,
+            lineHeight: "20px",
             background: "transparent",
             border: "none",
             padding: 0,
             cursor: busy ? "wait" : "pointer",
-            /* BG-P30. Was TEAL — `--evidence` — which measures 4.23:1 on the
-               intake panel's `--recess` ground, under the 4.5:1 floor, at
-               12px/500. Its own neighbour two elements up ("Choose a file")
-               already spends TEXT_SECONDARY on the same ground at the same
-               size, so the legal pairing was sitting beside it: text2/recess
-               is 4.55:1 on Noon and 5.73:1 on Dusk. It is also what the
-               theme prescribes for a tertiary action. */
-            color: TEXT_SECONDARY,
+            color: t.text2,
             textDecoration: "underline",
             textUnderlineOffset: 3,
           }}
         >
           {isStarting ? "Creating a draft…" : "Start empty instead"}
         </button>
-
-        <span aria-hidden style={{ width: 1, height: 16, background: HAIRLINE }} />
-
-        {/* A FOURTH WAY IN, added as a peer link rather than as a restructure
-            (NS-P33). Someone who has the chat but does not want to paste it —
-            or whose chat is too long to paste — gets the Extractor instead and
-            comes back with one file. Nothing above was moved to place it. */}
-        <Link
-          to="/import"
-          style={{
-            ...labelText,
-            fontFamily: "inherit",
-            color: TEXT_SECONDARY,
-            textDecoration: "underline",
-            textUnderlineOffset: 3,
-          }}
-        >
-          Import a build
-        </Link>
       </div>
     </Shell>
   );

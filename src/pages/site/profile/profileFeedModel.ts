@@ -37,36 +37,31 @@ export function metaParts(input: { handle: string; place: string | null; joined:
 
 export interface RecordFigures {
   builds: number;
-  reproducedByOthers: number;
   rebuiltFrom: number;
   firstRebuildSlug: string | null;
   topicsAndReplies: number;
 }
 
 export interface RecordPart {
-  key: "builds" | "reproduced" | "rebuilt" | "topics";
+  key: "builds" | "rebuilt" | "topics";
   text: string;
   to: string;
-  /** Only "reproduced by others" is in the evidence colour. */
-  evidence: boolean;
 }
 
-/** `14 builds · 9 reproduced by others · rebuilt from 6 times · 31 topics and replies`; a zero part drops out. */
+/** `14 builds · rebuilt from 6 times · 31 topics and replies`; a zero part drops out. Synth 12: no reproduction count. */
 export function recordParts(handle: string, figures: RecordFigures): RecordPart[] {
   const feed = (show: FeedFilter) => `/profile/${handle}?show=${show}`;
   const parts: RecordPart[] = [];
-  if (figures.builds > 0) parts.push({ key: "builds", text: plural(figures.builds, "build"), to: feed("builds"), evidence: false });
-  if (figures.reproducedByOthers > 0) parts.push({ key: "reproduced", text: `${count(figures.reproducedByOthers)} reproduced by others`, to: feed("builds"), evidence: true });
+  if (figures.builds > 0) parts.push({ key: "builds", text: plural(figures.builds, "build"), to: feed("builds") });
   if (figures.rebuiltFrom > 0) {
     parts.push({
       key: "rebuilt",
       text: `rebuilt from ${plural(figures.rebuiltFrom, "time")}`,
       to: figures.firstRebuildSlug ? `/b2/${figures.firstRebuildSlug}` : feed("builds"),
-      evidence: false,
     });
   }
   if (figures.topicsAndReplies > 0) {
-    parts.push({ key: "topics", text: `${count(figures.topicsAndReplies)} ${figures.topicsAndReplies === 1 ? "topic or reply" : "topics and replies"}`, to: feed("topics"), evidence: false });
+    parts.push({ key: "topics", text: `${count(figures.topicsAndReplies)} ${figures.topicsAndReplies === 1 ? "topic or reply" : "topics and replies"}`, to: feed("topics") });
   }
   return parts;
 }
@@ -99,7 +94,6 @@ export const FEED_OPTIONS: readonly { value: FeedFilter; label: string }[] = [
   { value: "builds", label: "Builds" },
   { value: "topics", label: "Topics" },
   { value: "replies", label: "Replies" },
-  { value: "notes", label: "Notes" },
 ];
 
 export interface KindCounts {
@@ -109,9 +103,9 @@ export interface KindCounts {
   notes: number;
 }
 
-/** The filter's options: an option with no items is hidden, All never is. Unknown counts hide nothing. */
+/** The filter's options: an option with no items is hidden, All never is. Unknown counts hide nothing. Synth 12: no Notes. */
 export function feedOptions(counts: KindCounts | null): { value: FeedFilter; label: string }[] {
-  return FEED_OPTIONS.filter((option) => option.value === "all" || !counts || counts[option.value] > 0);
+  return FEED_OPTIONS.filter((option) => option.value === "all" || !counts || counts[option.value as keyof KindCounts] > 0);
 }
 
 /** The filter the feed opens on: `?show=` wins, then the owner's, then All; an option that is hidden falls back to All. */

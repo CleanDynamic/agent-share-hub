@@ -47,7 +47,7 @@ afterEach(() => {
 });
 
 describe("BuildView on a desktop", () => {
-  it("is the fork, drawn from the dev page's fixture: one h1, the hero, the reproduction and The build", () => {
+  it("is drawn from the dev page's fixture: one h1, the hero, The build and What you need, and no reproduction column", () => {
     render(
       <MemoryRouter initialEntries={[REFINED]}>
         <BuildStepsDemo viewport="desktop" />
@@ -56,16 +56,17 @@ describe("BuildView on a desktop", () => {
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(screen.getByRole("heading", { level: 1, name: "Bakery homepage" })).toBeTruthy();
     expect(screen.getByTestId("build-hero")).toBeTruthy();
-    expect(screen.getByTestId("build-proof")).toBeTruthy();
+    expect(screen.queryByTestId("build-proof")).toBeNull();
     expect(screen.getAllByTestId("step-card")).toHaveLength(5);
     expect(screen.getByTestId("build-need")).toBeTruthy();
   });
 
-  it("hangs the result window under the picture light, with the credit and no shape tag", () => {
+  it("draws the title block with the credit and the delta, and no picture light, plaque or shape tag", () => {
     mount(stepsProps());
     const hero = screen.getByTestId("build-hero");
     expect(within(hero).getByRole("img", { name: "Bakery homepage · Result" })).toBeTruthy();
-    expect(hero.querySelector('[data-ui="picture-light"]')?.getAttribute("data-variant")).toBe("on");
+    expect(hero.querySelector('[data-ui="picture-light"]')).toBeNull();
+    expect(hero.querySelector('[data-ui="plaque"]')).toBeNull();
     expect(screen.queryByTestId("build-shape-tag")).toBeNull();
     expect(hero.textContent).toContain("Rebuilt from Inbox sorter by @kofi · made by @maya");
     expect(hero.textContent).toContain("Δ swapped model, added retry step");
@@ -73,13 +74,7 @@ describe("BuildView on a desktop", () => {
     expect(hero.querySelector("i")).toBeNull();
   });
 
-  it("leaves the picture light off when nobody has reproduced the build", () => {
-    const props = stepsProps();
-    mount({ ...props, proof: { ...props.proof, build: { ...props.proof.build, reproduction_count: 0 } } });
-    expect(screen.getByTestId("build-hero").querySelector('[data-ui="picture-light"]')).toBeNull();
-  });
-
-  it("the action dock is text only and calls each action", async () => {
+  it("the actions are pills with no icon, Rebuild first and the main one, and call each action", async () => {
     const onCopyForAI = vi.fn().mockResolvedValue(true);
     const onDownload = vi.fn();
     const onRebuild = vi.fn();
@@ -87,7 +82,8 @@ describe("BuildView on a desktop", () => {
     mount({ ...props, actions: { ...props.actions, onCopyForAI, onDownload, onRebuild } });
     const dock = screen.getByRole("group", { name: "Take this build" });
     expect(dock.querySelector("svg")).toBeNull();
-    expect(within(dock).getAllByRole("button").map((button) => button.textContent)).toEqual(["Copy for AI", "Download", "Rebuild"]);
+    expect(within(dock).getAllByRole("button").map((button) => button.textContent)).toEqual(["Rebuild", "Copy for AI", "Download"]);
+    expect(within(dock).getByRole("button", { name: "Rebuild" }).style.borderRadius).toBe("16px");
     expect(within(dock).getByRole("link", { name: "Lineage" }).getAttribute("href")).toBe(props.actions.lineageTo);
     await act(async () => {
       fireEvent.click(within(dock).getByRole("button", { name: "Copy for AI" }));
@@ -99,23 +95,12 @@ describe("BuildView on a desktop", () => {
     expect(onRebuild).toHaveBeenCalledTimes(1);
   });
 
-  it("the reproduction column: the state in the head, one plaque, a control action, no count row and no facts table (UX-03 follow-up P15)", () => {
-    const onPress = vi.fn();
-    const props = stepsProps();
-    mount({ ...props, proof: { ...props.proof, action: { kind: "reproduce", onPress } } });
-    const proof = screen.getByTestId("build-proof");
-    expect(within(proof).getByRole("heading", { level: 2, name: "Reproduction" })).toBeTruthy();
-    expect(proof.textContent).not.toContain("ran it");
-    expect(proof.querySelectorAll('[data-ui="plaque"]')).toHaveLength(1);
-    // Copy for AI is the page's only primary; the proof action is a control.
-    expect(document.querySelectorAll('[data-ui="button"][data-variant="primary"]')).toHaveLength(0);
-    const action = within(proof).getByRole("button", { name: "I ran this and it worked" });
-    expect(action.getAttribute("data-variant")).toBe("secondary");
-    expect(action.querySelector("svg")).toBeNull();
-    fireEvent.click(action);
-    expect(onPress).toHaveBeenCalledTimes(1);
-    expect(within(proof).getByText("Records the date, whether it worked and the model you used.")).toBeTruthy();
-    expect(proof.querySelectorAll('[data-ui="row"]')).toHaveLength(0);
+  it("has no reproduction column, plaque, run action or run note anywhere on the page", () => {
+    mount(stepsProps());
+    expect(screen.queryByTestId("build-proof")).toBeNull();
+    expect(document.querySelectorAll('[data-ui="plaque"]')).toHaveLength(0);
+    expect(screen.queryByRole("button", { name: /I ran this|Re-confirm/ })).toBeNull();
+    expect(document.body.textContent).not.toMatch(/Records the date|reproduc|plaque/i);
     expect(within(screen.getByTestId("build-completeness")).getByRole("progressbar", { name: "Completeness" }).getAttribute("aria-valuenow")).toBe("86");
   });
 
@@ -123,20 +108,11 @@ describe("BuildView on a desktop", () => {
     const props = stepsProps();
     mount({ ...props, proof: { ...props.proof, completeness: { score: 86, publishAt: 40, galleryAt: 70, next: null } } });
     const module = screen.getByTestId("build-completeness");
-    expect(within(module).getByText("Visible to you only")).toBeTruthy();
     expect(module.textContent).toContain("of 100 · Gallery lists from 70");
     expect(module.textContent).not.toMatch(/Publish\s?\d/);
     expect(within(module).getByRole("heading", { level: 2, name: "Completeness" })).toBeTruthy();
     const bar = within(module).getByRole("progressbar", { name: "Completeness" });
     expect(bar.getAttribute("aria-valuetext")).toBe("86 of 100. The gallery lists builds at 70 or above.");
-  });
-
-  it("says a run that did not save, with a retry", () => {
-    const onRetry = vi.fn();
-    const props = stepsProps();
-    mount({ ...props, proof: { ...props.proof, writeError: { onRetry } } });
-    fireEvent.click(within(screen.getByTestId("build-run-error")).getByRole("button", { name: "Try again" }));
-    expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
   it("The build's tabs, then the steps; another tab keeps its own body", () => {
@@ -181,19 +157,17 @@ describe("BuildView on a desktop", () => {
 });
 
 describe("BuildView on a phone", () => {
-  it("keeps today's order: the hero, the action row, the reproduction, the sections, The build, What you need", () => {
+  it("keeps one column: the title block with its actions, The build, then What you need", () => {
     phone(true);
     mount(stepsProps("mobile"));
     expect(screen.getByTestId("build-view").getAttribute("data-viewport")).toBe("mobile");
-    const order = ["build-hero", "build-action-dock", "build-proof", "build-steps", "build-need"].map((id) => screen.getByTestId(id));
+    const order = ["build-hero", "build-action-dock", "build-steps", "build-need"].map((id) => screen.getByTestId(id));
     for (let i = 1; i < order.length; i += 1) {
       expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     }
-    // The dock is under the hero, not on it.
-    expect(within(screen.getByTestId("build-hero")).queryByTestId("build-action-dock")).toBeNull();
-    // Steps is the only tab: no tab bar, and the section's own h2 instead.
+    // Steps is the only tab: no tab bar, and the section's own h2, the fact, instead.
     expect(screen.queryByRole("tablist")).toBeNull();
-    expect(screen.getByRole("heading", { level: 2, name: "Steps" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 2, name: /sessions?|steps?/ })).toBeTruthy();
     expect(screen.queryByRole("group", { name: "How to look at the build" })).toBeNull();
   });
 });
@@ -220,19 +194,12 @@ describe("a check on the build page (CA-03 P5)", () => {
     const base = buildFixture("desktop");
     return { ...base, hero: { ...base.hero, title, outcome }, viewer: { ...base.viewer, tabs: stepTabs(false), tab: "anatomy" }, steps };
   };
-  const proofMarkup = (props: BuildViewProps) => {
-    const { container, unmount } = mount(props);
-    const proof = container.querySelector('[data-testid="build-proof"]')?.outerHTML ?? "";
-    const plaque = container.querySelector('[data-ui="plaque"]')?.outerHTML ?? "";
-    unmount();
-    return { proof, plaque };
-  };
-
   it("draws it as a step: the test description, pass criteria, failure notes and its status", () => {
     mount(withSteps([check]));
     const card = screen.getAllByTestId("step-card").find((entry) => entry.getAttribute("data-kind") === "check")!;
-    // UX-03 P3: the type is said in the head, "Step <n> · Check".
-    expect(within(card).getByTestId("step-label").textContent).toMatch(/^Step \d+ · Check$/);
+    // The step's number is its label; the kind is said beside it.
+    expect(within(card).getByTestId("step-label").textContent).toMatch(/^Step \d+$/);
+    expect(card.textContent).toContain("Check");
     expect(within(card).getByTestId("check-status").textContent).toBe("Passed 13 of 14 runs · since 12 Oct");
     expect(within(card).getAllByTestId("label-value").map((row) => row.textContent)).toEqual([
       "Test descriptionPlaces a test order for 2 sourdough loaves",
@@ -241,14 +208,6 @@ describe("a check on the build page (CA-03 P5)", () => {
     ]);
     expect(card.textContent).not.toMatch(/verified|reproduc|ran it/i);
     expect(card.querySelector('[data-ui="plaque"]')).toBeNull();
-  });
-
-  it("never changes the plaque, the reproduction count or the proof panel", () => {
-    const without = proofMarkup(withSteps([]));
-    const withCheck = proofMarkup(withSteps([check]));
-    expect(withCheck.plaque).not.toBe("");
-    expect(withCheck.plaque).toBe(without.plaque);
-    expect(withCheck.proof).toBe(without.proof);
   });
 });
 
@@ -264,7 +223,7 @@ describe("the summary line under the title (CA-03 P8)", () => {
       </MemoryRouter>,
     );
     const tag = /<p data-testid="build-summary"[^>]*>/.exec(markup)?.[0] ?? "";
-    expect(tag).toContain("font-size:12px");
+    expect(tag).toContain("font-size:13px");
     expect(tag).toContain("color:var(--text2)");
     expect(tag).toContain("white-space:nowrap");
     expect(tag).toContain("text-overflow:ellipsis");
@@ -274,19 +233,6 @@ describe("the summary line under the title (CA-03 P8)", () => {
     const props = stepsProps();
     mount({ ...props, steps: props.steps ? { ...props.steps, steps: [] } : props.steps });
     expect(screen.queryByTestId("build-summary")).toBeNull();
-  });
-
-  it("leaves the plaque where it was and as it was", () => {
-    const plaqueOf = (props: BuildViewProps) => {
-      const { container, unmount } = mount(props);
-      const plaque = container.querySelector('[data-ui="plaque"]')?.outerHTML ?? "";
-      unmount();
-      return plaque;
-    };
-    const props = stepsProps();
-    const without = plaqueOf({ ...props, hero: { ...props.hero, summary: "" } });
-    expect(without).not.toBe("");
-    expect(plaqueOf(props)).toBe(without);
   });
 });
 

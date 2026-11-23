@@ -45,14 +45,17 @@ interface ControlProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "st
   download?: boolean;
   /** Fill the width and stand 44 high on a phone. */
   block?: boolean;
+  /** Synth 12: a round icon control (the `···` More), as wide as it is tall. */
+  round?: boolean;
   children: ReactNode;
 }
 
 /** A control: a button, or a link when `to` is given. */
-export const PostControl = forwardRef<HTMLButtonElement, ControlProps>(function PostControl({ to, download, block, children, type = "button", ...rest }, ref) {
+export const PostControl = forwardRef<HTMLButtonElement, ControlProps>(function PostControl({ to, download, block, round, children, type = "button", ...rest }, ref) {
   const phone = useIsPhone();
   const { state, handlers } = useInteractive<HTMLElement>(incomingOf(rest), { disabled: rest.disabled });
-  const style: CSSProperties = { ...base, height: phone ? TOUCH_MIN : 32, padding: "0 14px", fontWeight: 600, color: t.text, width: block && phone ? "100%" : undefined, ...controlPaint(state), ...ring(state.focusVisible), ...(rest.disabled ? { opacity: 0.5, cursor: "default" } : null) };
+  const side = phone ? TOUCH_MIN : 32;
+  const style: CSSProperties = { ...base, height: side, padding: "0 14px", fontWeight: 600, color: t.text, width: block && phone ? "100%" : undefined, ...(round ? { width: side, padding: 0, borderRadius: "50%" } : null), ...controlPaint(state), ...ring(state.focusVisible), ...(rest.disabled ? { opacity: 0.5, cursor: "default" } : null) };
   if (to) {
     return (
       <Link to={to} download={download} {...handlers} style={style}>

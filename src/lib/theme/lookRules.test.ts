@@ -2299,6 +2299,11 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
   },
   {
     rule: "no gradient (radial)",
+    text: "backgroundImage: `radial-gradient(${t.dotDeep} 1px, transparent 1.2px)`,",
+    why: "Synth 12: the profile head's fallback when there is no header picture, the Panel shade with the Deep dots at a 6px pitch, as the prompt draws it.",
+  },
+  {
+    rule: "no gradient (radial)",
     text: "radial-gradient(${t.dotGrid} 1px, transparent 1px)",
     why: "The map well's dot grid. RULES.md (UI-P99) makes it part of the well recipe for maps and media; it was there before CA-03.",
   },
@@ -2511,6 +2516,16 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "the lucide icon ChevronDown drawn on its own",
     text: "<ChevronDown",
     why: "The composer's Your sessions panel (UI-P64), there before CA-10, which only makes Add model's Other focus in the tap. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
+  },
+  {
+    rule: "spacing 34 is not in SPACE_REFINED",
+    text: 'margin: "8px 0 0 34px"',
+    why: "Synth 11: a reply to a reply sits 34 in, the 24 avatar and its 10 gap, so its avatar lines up under the parent's name.",
+  },
+  {
+    rule: "spacing 34 is not in SPACE_REFINED",
+    text: 'marginLeft: "34px"',
+    why: "Synth 11: the PostView test that holds a nested reply at the 34 indent the prompt gives.",
   },
   {
     rule: "spacing 14 is not in SPACE_REFINED",

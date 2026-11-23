@@ -105,8 +105,8 @@ const postsQuery = (ids: string[]) => ({
   staleTime: STALE_MS,
 });
 
-/** The ids of a feed's build posts, in order. */
-const postIds = (items: readonly FeedItem[]) => items.filter((item) => item.kind === "build").map((item) => item.build.id);
+/** The ids of a feed's build posts and rebuilds, in order: a rebuild's thread opens in place too. */
+const postIds = (items: readonly FeedItem[]) => items.filter((item) => item.kind === "build" || item.kind === "rebuild").map((item) => item.build.id);
 
 export function HomePage() {
   const { user, loading: authLoading } = useAuth();

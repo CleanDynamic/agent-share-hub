@@ -56,7 +56,7 @@ export function repliesDetail(digest: ReplyDigest | undefined, now: number): str
 /* ── the view's shapes ── */
 
 export type CardAttachment =
-  | { kind: "build"; key: string; title: string; harness: string | null; steps: number; plaque: PlaqueBuild | null; tiles: StripTileData[]; to: string | null }
+  | { kind: "build"; key: string; title: string; harness: string | null; steps: number; /** Synth 11: the sessions its steps came from, once each. */ sessions: number; plaque: PlaqueBuild | null; tiles: StripTileData[]; to: string | null }
   | { kind: "step"; key: string; head: string; text: string }
   | { kind: "line"; key: string; text: string }
   | { kind: "picture"; key: string; path: string; mediaKind: "image" | "video"; src: string | null }
@@ -129,12 +129,15 @@ export function cardAttachment(post: Pick<Post, "id" | "stillOpen" | "aboutNodeI
     const { tiles, count } = tilesOf(rows, openId);
     const title = (facts?.title || textOf(snapshot.title) || textOf(sourceOf(snapshot).buildTitle)).trim() || "Untitled build";
     if (!facts && !copied) return null;
+    const sessionKeys = copied ? copied.map((child) => child.payload?.session) : nodes.map((node) => node.session);
+    const sessions = new Set(sessionKeys.filter((value): value is string => typeof value === "string" && value.length > 0)).size;
     return {
       kind: "build",
       key,
       title,
       harness: facts?.madeWith?.trim() || null,
       steps: count,
+      sessions,
       plaque: facts && facts.status !== "draft" ? { reproduction_count: facts.reproduction_count, last_confirmed_at: facts.last_confirmed_at, last_confirmed_model: facts.last_confirmed_model, published_at: facts.published_at } : null,
       tiles,
       to: facts?.slug && facts.status !== "draft" ? `/b2/${facts.slug}` : null,

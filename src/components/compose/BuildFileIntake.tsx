@@ -261,8 +261,8 @@ export function BuildFileIntake({ state, onReset, onCopyExtractor }: BuildFileIn
     if (!isLoggedIn) {
       const returnTo = `${location.pathname}${location.search}`;
       setError(
-        `You need to be signed in to save a build. Sign in, then drop the file again — ` +
-          `nothing has been written yet.`
+        `You need to be signed in to save a build. Sign in, then drop the file again. ` +
+          `Nothing has been written yet.`
       );
       navigate(`/login?redirect=${encodeURIComponent(returnTo)}`);
       return;
@@ -281,7 +281,7 @@ export function BuildFileIntake({ state, onReset, onCopyExtractor }: BuildFileIn
           : `${plural(counts.nodes, "part", "parts")} and ` +
             `${plural(counts.events, "step", "steps")} came in from your file` +
             (placement.leftInTray > 0
-              ? ` — ${placement.leftInTray} of them are in the tray, waiting for somewhere to sit.`
+              ? `. ${placement.leftInTray} of them are in the tray, waiting for somewhere to sit.`
               : ". Check it over, then publish when you are ready.");
 
       const arrival: ComposeArrivalState = {
@@ -294,7 +294,7 @@ export function BuildFileIntake({ state, onReset, onCopyExtractor }: BuildFileIn
       navigate(`/compose/${buildId}`, { replace: true, state: arrival });
     } catch (cause) {
       setWriting(false);
-      setError(screenError(cause, "That could not be saved. Nothing was lost — try again.", { source: "compose", context: "buildFileWrite" }));
+      setError(screenError(cause, "That could not be saved. Nothing was lost. Try again.", { source: "compose", context: "buildFileWrite" }));
     }
   }, [isLoggedIn, isWriting, location, navigate, parsed, selection]);
 
@@ -334,7 +334,7 @@ export function BuildFileIntake({ state, onReset, onCopyExtractor }: BuildFileIn
       isWriting={isWriting}
       error={error}
       sourceLine={sourceLineFor(state.result)}
-      arrivalNote="What you keep arrives already placed, in the shape the file described — anything you untick is left out."
+      arrivalNote="What you keep arrives already placed, in the shape the file described. Anything you untick is left out."
       secrets={state.result.meta.secrets}
       testId="import-review"
       confirmTestId="import-confirm"

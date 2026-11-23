@@ -69,7 +69,8 @@ describe("StepsList", () => {
     expect(screen.getByRole("group", { name: /^Session \d · Claude Code$/ }).querySelector('[data-mark="claudecode-color"]')).not.toBeNull();
     // No initial in a tile: the mark is the logo alone.
     expect(list.querySelector('[data-mark] span')).toBeNull();
-    expect(screen.getByText("4 sessions · 5 prompts · 1 file · 3–6 Oct · Copy each step into the chat it names")).toBeTruthy();
+    // Synth 08: the heading is the fact, alone, with the List and Map pills at its right.
+    expect(screen.getByRole("heading", { level: 2, name: "4 sessions · 5 prompts · 1 file · 3–6 Oct" })).toBeTruthy();
     expect(screen.getByText("Send in the same chat as step 4")).toBeTruthy();
     expect(screen.getByRole("group", { name: "How to look at the build" })).toBeTruthy();
   });
@@ -205,15 +206,14 @@ describe("a file a step makes", () => {
       </MemoryRouter>,
     );
     const need = screen.getByTestId("build-need");
-    const row = within(need).getAllByTestId("need-row").find((entry) => entry.querySelector('[data-ui="type-chip"]')?.textContent === "File") as HTMLElement;
-    expect(row.tagName).toBe("A");
-    expect(row.getAttribute("href")).toMatch(/#node-/);
+    const row = within(need).getAllByTestId("need-row").find((entry) => /File/.test(entry.textContent ?? "") && entry.querySelector("a")) as HTMLElement;
+    expect(row.querySelector("a")?.getAttribute("href")).toMatch(/#node-/);
     expect(within(need).queryByRole("link", { name: /Download/ })).toBeNull();
   });
 });
 
 describe("NeedPanel", () => {
-  it("lists tools and files as one list of chips with the steps they are used in; no subtitle, no footer note, no model not recorded", () => {
+  it("lists tools and files as one list, each a name over its kind; no subtitle, no footer note, no model not recorded", () => {
     render(
       <MemoryRouter initialEntries={[REFINED]}>
         <NeedPanel view={view("list")} onOpenOther={vi.fn()} details={[{ label: "Made with", value: "ChatGPT" }, { label: "Made for", value: "Bakers" }, { label: "Setup", value: "—" }, { label: "First result", value: "35 min" }]} />
@@ -225,11 +225,10 @@ describe("NeedPanel", () => {
     expect(need.textContent).not.toContain("Copy for AI copies");
     expect(need.textContent).not.toContain("model not recorded");
     const rows = within(need).getAllByTestId("need-row");
-    const chips = rows.map((row) => row.querySelector('[data-ui="type-chip"]')?.textContent);
-    expect(chips).toContain("Harness");
-    expect(chips).toContain("File");
-    const harness = rows.find((row) => row.querySelector('[data-ui="type-chip"]')?.textContent === "Harness") as HTMLElement;
-    expect(harness.textContent).toMatch(/Steps? \d/);
+    // Synth 08: a row is the name over its kind ("Harness", "Model", "File · 12 KB"); there are no chips.
+    const kinds = rows.map((row) => row.textContent ?? "");
+    expect(kinds.some((text) => text.includes("Harness"))).toBe(true);
+    expect(kinds.some((text) => text.includes("File"))).toBe(true);
     // A file row is a link to its step and has no Download; Download lives in the file's step.
     expect(within(need).queryByRole("link", { name: "Download CLAUDE.md" })).toBeNull();
     expect(within(need).getByText("4 sessions over 3 days")).toBeTruthy();
@@ -248,5 +247,24 @@ describe("StepsList · an agent that reads content it doesn't control (CA-03 P7)
     const warning = screen.getByTestId("outside-warning");
     expect(warning.textContent).toBe("This agent reads content it doesn't control.It can use Hermes Agent and Gmail. Before you run it, check what it's allowed to change.");
     expect(warning.querySelector("svg")).toBeNull();
+  });
+});
+
+describe("Synth 08: titled text boxes on a step", () => {
+  it("draws a row for each titled box with its length, opens the notepad read only on press, and skips an untitled box", () => {
+    const v = view("list");
+    const steps = v.steps.map((entry, index) =>
+      index === 0
+        ? { ...entry, step: { ...entry.step, boxes: [{ title: "Rules", text: "x".repeat(512) }] } }
+        : entry,
+    );
+    mountList({ ...v, steps });
+    const rows = screen.getAllByTestId("titled-box");
+    expect(rows).toHaveLength(1);
+    expect(rows[0].textContent).toContain("Rules");
+    expect(rows[0].textContent).toContain("512 characters");
+    fireEvent.click(rows[0]);
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).queryByRole("button", { name: "Done" })).toBeNull();
   });
 });

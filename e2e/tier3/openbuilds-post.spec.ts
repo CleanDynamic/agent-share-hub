@@ -31,12 +31,12 @@ test("a post opens from the feed, and the Thread and the Wall switch in the addr
     });
   await expect.poll(moving).toBe(0);
 
-  await page.getByRole("button", { name: "Wall · 1 build" }).click();
+  await page.getByRole("button", { name: "Wall 1 build" }).click();
   await expect(page).toHaveURL(/\/openbuilds\/topics\/p1\?view=wall$/);
   await expect(page.getByRole("region", { name: "Wall" }).getByTestId("wall-card")).toHaveCount(1);
   expect(await moving()).toBe(0);
 
-  await page.getByRole("button", { name: /^Thread · / }).click();
+  await page.getByRole("button", { name: /^Thread \d/ }).click();
   await expect(page).toHaveURL(/\/openbuilds\/topics\/p1$/);
   await expect(page.getByRole("region", { name: "Thread" })).toBeVisible();
   expect(await moving()).toBe(0);
@@ -66,6 +66,8 @@ test("a reader replies on a step of the post's build and sees the reply marked o
 
   const reply = page.getByTestId("reply").filter({ hasText: "Split the rubric into weights." });
   await expect(reply.getByTestId("reply-about")).toHaveText("Step 2 · Code");
+  // The reply is in the Thread before it is written: wait for the write, then check it.
+  await expect.poll(() => world.created.rpc.length).toBeGreaterThan(0);
   expect(world.created.rpc.at(-1)).toMatchObject({ parent_id: "p1", about_node_id: "n2", body: "Split the rubric into weights." });
   // Once the server answers, the page reads the thread again and the reply is still marked.
   await expect.poll(() => world.posts.some((post) => post.parent_id === "p1" && post.about_node_id === "n2")).toBe(true);
@@ -145,8 +147,8 @@ test("the Wall draws the builds in replies, and Reply with a build opens the pic
   const card = wall.getByTestId("wall-card");
   await expect(card).toHaveCount(1);
   await expect(card.getByRole("heading", { name: "Resume screener" })).toBeVisible();
-  await expect(card.getByText("Claude Code · new build")).toBeVisible();
-  await expect(card.getByRole("link", { name: "Open" })).toHaveAttribute("href", "/b2/resume-screener");
+  await expect(card.getByText("new build", { exact: true })).toBeVisible();
+  await expect(card.getByRole("link", { name: "Open build" })).toHaveAttribute("href", "/b2/resume-screener");
 
   await expect(wall.getByText("Built something for this? Reply with a build.")).toBeVisible();
   await wall.getByRole("button", { name: "Reply with a build" }).click();
@@ -175,16 +177,14 @@ test("at 390 wide the page is one column with no sideways scroll, on the Thread 
   await expect(page.getByTestId("openbuilds-post")).toHaveAttribute("data-layout", "one");
   expect(await sideways()).toBeLessThanOrEqual(0);
 
-  // The switch spans the column at 44 high; the side column comes after the replies.
-  const show = page.getByRole("group", { name: "Show" });
-  const thread = page.getByRole("button", { name: /^Thread · / });
+  // The pills keep a 44 high hit area on a phone; the side sections come after the replies.
+  const thread = page.getByRole("button", { name: /^Thread \d/ });
   expect((await thread.boundingBox())?.height).toBe(44);
   const column = await page.getByRole("region", { name: "Thread" }).boundingBox();
-  expect(Math.abs(((await show.boundingBox())?.width ?? 0) - (column?.width ?? 0))).toBeLessThanOrEqual(1);
   const side = await page.getByRole("complementary", { name: "About this post" }).boundingBox();
   expect(side!.y).toBeGreaterThan(column!.y + column!.height - 1);
 
-  await page.getByRole("button", { name: "Wall · 1 build" }).click();
+  await page.getByRole("button", { name: "Wall 1 build" }).click();
   await expect(page.getByTestId("wall-card")).toHaveCount(1);
   expect(await sideways()).toBeLessThanOrEqual(0);
   await expect(page.getByRole("checkbox", { name: "Line up steps" })).toHaveCount(0);

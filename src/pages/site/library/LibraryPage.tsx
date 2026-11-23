@@ -48,7 +48,6 @@ import {
   updateCollection,
   type BuildCollection,
 } from "@/lib/library";
-import { modelLabel } from "@/lib/models/registry";
 import { usePageReady } from "@/lib/routing/pageReady";
 import {
   collectionSavedBy,
@@ -63,7 +62,6 @@ import {
 } from "@/lib/library/savedItems";
 import type { GalleryBuild } from "@/lib/build/gallery";
 import { listMySavedBuilds } from "@/lib/social";
-import { isStale } from "@/lib/build/signals";
 import { currentLines, diffLines, listSourceStates, savedLines } from "@/lib/library/sourceVersions";
 import { listActivityFor } from "@/lib/feed/activity";
 import { toCardData, topicHref } from "@/components/post/postCardModel";
@@ -496,11 +494,10 @@ export default function LibraryPage() {
         kind: "build",
         id: chosenBuild.id,
         chip: chosenBuild.shape ?? "other",
-        state: isStale(chosenBuild, now) ? { text: "Stale" } : { text: `${openId ? "Added" : "Saved"} ${ageWords(chosen?.at ?? "", now)}` },
+        state: { text: `${openId ? "Added" : "Saved"} ${ageWords(chosen?.at ?? "", now)}` },
         title: chosenBuild.title?.trim() || "Untitled build",
         source: chosenBuild.outcome?.trim() || null,
-        build: chosenBuild,
-        rows: chosenBuild.last_confirmed_model ? [{ label: "Model", value: modelLabel(chosenBuild.last_confirmed_model) }] : [],
+        rows: [],
         openHref: `/b2/${chosenBuild.slug}`,
         onCopy: () => void copyLink(chosenBuild.slug),
         copyLabel: "Copy link",
@@ -568,7 +565,6 @@ export default function LibraryPage() {
         layout={layout}
         testId="library-state"
         head={<LibraryHead title={visiting && owner.data ? `${ownerName}'s library` : "Library"} meta={" "} />}
-        left={null}
         main={
           ownerState === "failed" ? (
             <PageFailed reads={[owner]} region="Library" logs={["[Library] owner read failed"]} />
@@ -586,7 +582,7 @@ export default function LibraryPage() {
             </PageState>
           )
         }
-        detail={null}
+        side={null}
       />
     ) : (
       <LibraryView
@@ -642,7 +638,9 @@ export default function LibraryPage() {
                   ? "Nothing in this collection yet."
                   : itemKind
                     ? "Nothing kept here yet."
-                    : "Save a build and it waits for you here.",
+                    : "Save a build, a session or a step and it waits for you here.",
+            /* Only the reader's own empty Library has a page of its own: a head, the line, and two actions. */
+            title: !visiting && !openId && !itemKind ? "Nothing saved yet" : undefined,
             action: { label: "Browse builds", href: "/builds" },
           },
           itemColumn: openId ? "Build" : ITEM_COLUMN[kind],

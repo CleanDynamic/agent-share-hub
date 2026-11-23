@@ -1,7 +1,7 @@
 /* SV-11: Builds' words and shapes, pure: what the list is asked for, and how a row, a filter and the head are put. */
 
 import { BUILDS_TABLE_PAGE_SIZE, GALLERY_SHAPES, confirmedCutoff, hasFilters, madeWithSpellings, type LensCountFilters, type BuildsTableBuild, type CountSpread, type WorksOnModelCount, type BuildsTableOptions, type BuildsTablePage, type GalleryFeedSort, type GalleryLens } from "@/lib/build/gallery";
-import { CONFIRMED_WITHIN, DEFAULT_GALLERY_SORT, type ConfirmedState, type ConfirmedWithin, type GalleryParams } from "@/lib/build/galleryParams";
+import { DEFAULT_GALLERY_SORT, type ConfirmedState, type ConfirmedWithin, type GalleryParams } from "@/lib/build/galleryParams";
 import { RANGE_FILTERS, RANGE_KEYS, rangeWords, type NumberRange, type RangeKey } from "@/lib/build/galleryRanges";
 import { PATTERN_LABEL, type Pattern } from "@/lib/build/patterns";
 import { STALE_AFTER_DAYS, isStale } from "@/lib/build/signals";
@@ -109,12 +109,6 @@ export interface PanelState {
   worksOn?: readonly WorksOnModelCount[] | null;
 }
 
-const WITHIN_WORDS = (days: number) => `Within ${days} days`;
-const STATE_WORDS: Record<ConfirmedState, { option: string; chip: string }> = {
-  confirmed: { option: `Confirmed in the last ${STALE_AFTER_DAYS} days`, chip: "Confirmed" },
-  stale: { option: `Stale, not confirmed in ${STALE_AFTER_DAYS} days`, chip: "Stale" },
-};
-
 /* ── the number filters (SV-23) ── */
 
 const HISTOGRAM_BARS = 12;
@@ -191,15 +185,12 @@ export function panelSections(state: PanelState): FilterSection[] {
     for (const key of keys) sections.push(rangeSection(key, state.spread, state.ranges?.[key], group));
   };
   /* SV-23 P2, the proof: Reproductions, Works on model, Last confirmed, Confirmed or stale, Rebuilds, Likes. */
-  rangeSections(["reproductions"], "Proof");
   if (state.worksOn) {
     const chosen = state.model ? modelById(state.model) : null;
     const options = state.worksOn.map((entry) => ({ key: entry.model.id, label: entry.model.name, count: entry.builds, checked: entry.model.id === state.model }));
     if (chosen && !options.some((option) => option.checked)) options.push({ key: chosen.id, label: chosen.name, count: 0, checked: true });
     sections.push({ kind: "word", id: "model", name: "Works on model", group: "Proof", order: state.order, value: chosen?.name ?? "Any", options: inOrder(options, state.order) });
   }
-  sections.push({ kind: "word", id: "within", name: "Last confirmed", group: "Proof", order: "scale", value: state.within !== undefined ? WITHIN_WORDS(state.within) : "Any", options: CONFIRMED_WITHIN.map((days) => ({ key: `within:${days}`, label: WITHIN_WORDS(days), checked: state.within === days })) });
-  sections.push({ kind: "word", id: "state", name: "Confirmed or stale", group: "Proof", order: "scale", value: state.confirmState ? STATE_WORDS[state.confirmState].chip : "Any", options: (["confirmed", "stale"] as const).map((entry) => ({ key: `state:${entry}`, label: STATE_WORDS[entry].option, checked: state.confirmState === entry })) });
   rangeSections(["rebuilds", "likes"], "Proof");
   const shapeValue = state.shapes.length === 1 ? shapeWord(state.shapes[0]) : state.shapes.length > 1 ? `${state.shapes.length} chosen` : "Any";
   sections.push({ kind: "word", id: "shape", name: "Shape", group: "Structure", order: state.order, value: shapeValue, options: inOrder(GALLERY_SHAPES.map((shape) => ({ key: shape, label: shapeWord(shape), count: 0, checked: state.shapes.includes(shape) })), state.order) });
@@ -236,8 +227,6 @@ export function activeChips(params: GalleryParams): TableChip[] {
   if (params.open) chips.push({ key: "open", name: "Still open", value: "Has one" });
   const model = params.model ? modelById(params.model) : null;
   if (model) chips.push({ key: "model", name: "Works on", value: model.name });
-  if (params.within !== undefined) chips.push({ key: "within", name: "Last confirmed", value: WITHIN_WORDS(params.within) });
-  if (params.state) chips.push({ key: "state", name: "Confirmed or stale", value: STATE_WORDS[params.state].chip });
   for (const key of RANGE_KEYS) {
     const range = params.ranges?.[key];
     if (range) chips.push({ key: `range:${key}`, name: RANGE_FILTERS[key].name, value: rangeWords(range) });
@@ -560,18 +549,21 @@ export function sortRows(rows: readonly TableRowView[], by: ColumnId, ascending:
 const agoWords = (ago: string): string => (ago === "now" ? "just now" : ago ? `${ago} ago` : "");
 
 /** The live columns: the board's, less Steps and Sessions, which wait for the stored counts. */
-export const LIVE_COLUMNS: readonly ColumnId[] = ["build", "built", "field", "tools", "reproductions", "confirmed", "runs", "rebuilds", "open", "cost"];
+export const LIVE_COLUMNS: readonly ColumnId[] = ["build", "built", "field", "rebuilds", "open", "cost"];
 
 /** SV-23 P1: Steps and Sessions join once the list carries the stored counts. */
 export function columnsFor(countsLive: boolean): readonly ColumnId[] {
-  return countsLive ? ["build", "built", "field", "tools", "steps", "sessions", "reproductions", "confirmed", "runs", "rebuilds", "open", "cost"] : LIVE_COLUMNS;
+  return countsLive ? ["build", "built", "field", "steps", "sessions", "rebuilds", "open", "cost"] : LIVE_COLUMNS;
 }
 
 /* ── the columns the reader chose (SV-24 P2) ── */
 
+/** Synth 08: the columns that are no longer drawn or offered: Tools and the three about reproductions and runs. */
+export const REMOVED_COLUMNS: ReadonlySet<ColumnId> = new Set<ColumnId>(["tools", "reproductions", "confirmed", "runs"]);
+
 /** The columns the chooser offers: all 28, less Steps, Sessions and Works on model until the list carries the stored counts. */
 export function availableColumns(countsLive: boolean): ColumnId[] {
-  return ALL_COLUMNS.filter((id) => countsLive || (id !== "steps" && id !== "sessions" && id !== "works"));
+  return ALL_COLUMNS.filter((id) => !REMOVED_COLUMNS.has(id) && (countsLive || (id !== "steps" && id !== "sessions" && id !== "works")));
 }
 
 /** The columns drawn: the default twelve, or the ones the reader kept, always with Build first. BF-13 (C6): in the reader's order. */
@@ -606,8 +598,8 @@ export const columnsLabel = (chosen: readonly ColumnId[], countsLive: boolean): 
 export type ColumnGroup = "Identity" | "Classification" | "Proof" | "Structure" | "OpenBuilds";
 const COLUMN_GROUPS: readonly (readonly [ColumnGroup, readonly ColumnId[]])[] = [
   ["Identity", ["build", "published"]],
-  ["Classification", ["built", "field", "tools", "cost", "task", "setting", "role", "technique", "modality", "method", "autonomy", "data", "oversight", "age", "skill"]],
-  ["Proof", ["reproductions", "works", "confirmed", "runs", "rebuilds", "likes"]],
+  ["Classification", ["built", "field", "cost", "task", "setting", "role", "technique", "modality", "method", "autonomy", "data", "oversight", "age", "skill"]],
+  ["Proof", ["works", "rebuilds", "likes"]],
   ["Structure", ["shape", "steps", "sessions", "patterns"]],
   ["OpenBuilds", ["open"]],
 ];
@@ -724,20 +716,17 @@ export function medianOf(values: readonly number[]): number | null {
   return sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
-/** The footer: the count, the most common Field and Tools on the page, the median steps and the reproductions on the page. */
+/** The footer: the count, the most common Field on the page and the median steps. */
 export function tableFooter(total: number | null, rows: readonly TableRowView[]): TableFooterView {
   const median = medianOf(rows.flatMap((row) => (row.steps === null ? [] : [row.steps])));
   const field = mostCommon(rows.map((row) => row.field));
-  const tool = mostCommon(rows.flatMap((row) => row.tools.map((entry) => entry.name)));
   const count = total ?? rows.length;
   /* BF-13 (C6): each value under its own column, so it moves with the column. */
   return {
     count: `${count} ${count === 1 ? "build" : "builds"}`,
     byColumn: {
       ...(field ? { field } : null),
-      ...(tool ? { tools: tool } : null),
       ...(median === null ? null : { steps: `Median ${median}` }),
-      reproductions: `Total ${rows.reduce((sum, row) => sum + row.reproductions, 0)}`,
     },
   };
 }
@@ -792,4 +781,17 @@ export function nextSort(params: GalleryParams, column: ColumnId, allLoaded: boo
   if (params.by !== column) return { ...kept, by: column, dir: undefined };
   if (params.dir !== "asc") return { ...kept, dir: "asc" };
   return { ...kept, by: undefined, dir: undefined };
+}
+
+/** Synth 08: an address from before the run filters left the interface (Last confirmed, Confirmed or stale, the Reproductions
+    range, the Reproduced lens) is read without them, so no filter is on that the page cannot show or remove. */
+export function withoutRunFilters(params: GalleryParams): GalleryParams {
+  const { reproductions: _gone, ...ranges } = params.ranges ?? {};
+  return {
+    ...params,
+    within: undefined,
+    state: undefined,
+    ranges: Object.keys(ranges).length > 0 ? ranges : undefined,
+    lens: params.lens === "proven" ? "all" : params.lens,
+  };
 }

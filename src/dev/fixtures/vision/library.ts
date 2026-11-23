@@ -24,11 +24,10 @@ export const visionLibraryCollections: CollectionEntry[] = [
 export const visionLibraryChanges: LibraryChange[] = [
   { id: "ch1", tag: "EDITED", item: "Summary on one prompt", detail: "1 line changed", age: "2d" },
   { id: "ch2", tag: "REMOVED", item: "Tone checker agent", detail: "build unpublished, your snapshot kept", age: "3d" },
-  { id: "ch3", tag: "RUN", item: "Account research brief", detail: "worked on Opus 5.5 · @dax", age: "5h" },
-  { id: "ch4", tag: "STALE", item: "Account research brief", detail: "not confirmed in a while", age: "1d" },
+  { id: "ch3", tag: "REBUILD", item: "Account research brief", detail: "rebuilt by @dax", age: "5h" },
 ];
 
-const STATES: Record<string, ItemState> = { Same: "same", Edited: "edited", Removed: "removed", Stale: "stale" };
+const STATES: Record<string, ItemState> = { Same: "same", Edited: "edited", Removed: "removed" };
 
 export const visionLibraryRows: LibraryRow[] = (
   [
@@ -38,7 +37,7 @@ export const visionLibraryRows: LibraryRow[] = (
     ["Tone checker agent", "Step 3 · Cold email personaliser · @jay", "Agent", "Removed", 2, "1w ago"],
     ["Label list for triage", "Step 1 · Inbox triage · @kit", "Prompt", "Same", 19, "1w ago"],
     ["Lead score rubric", "Step 4 · Lead scoring · @luke", "Prompt", "Same", 5, "2w ago"],
-    ["Objection classifier", "Step 2 · Objection coach · @ava", "Prompt", "Stale", 1, "1mo ago"],
+    ["Objection classifier", "Step 2 · Objection coach · @ava", "Prompt", "Same", 1, "1mo ago"],
   ] as const
 ).map(([title, detail, type, state, usedIn, lastUsed], index) => ({ id: `vr${index + 1}`, title, detail, type, state: STATES[state], usedIn, lastUsed }));
 
@@ -66,8 +65,8 @@ export function visionLibraryProps(state: DesignState = "populated"): LibraryVie
     changes:
       status === "ready" && !empty
         ? {
-            figure: "6 changes",
-            parts: [{ text: "Since your last visit" }, { text: "3 edited" }, { text: "1 removed", tone: "breakage" }, { text: "2 reproduced on Opus 5.5", tone: "evidence" }],
+            figure: "3 changes",
+            parts: [{ text: "Since your last visit" }, { text: "3 edited" }, { text: "1 removed", tone: "breakage" }],
             to: "/notifications",
             rows: visionLibraryChanges,
           }
@@ -88,7 +87,7 @@ export function visionLibraryProps(state: DesignState = "populated"): LibraryVie
       sameAsBuilds: true,
       read,
       thing: "your library",
-      empty: { line: "Save a step from any build and it waits for you here.", action: { label: "Browse builds", href: "/builds" } },
+      empty: { title: "Nothing saved yet", line: "Save a build, a session or a step and it waits for you here.", action: { label: "Browse builds", href: "/builds" } },
       itemColumn: "Step",
       rows: empty ? [] : visionLibraryRows,
       selected: "vr1",
@@ -119,7 +118,6 @@ export function visionLibraryProps(state: DesignState = "populated"): LibraryVie
             },
             rows: [
               { label: "Model", value: "Opus 5.5" },
-              { label: "Source build", value: "6 reproduced", lamp: true },
               { label: "Used in", value: "4 builds · 1 yours" },
               { label: "In collections", value: "Sales prompts" },
             ],

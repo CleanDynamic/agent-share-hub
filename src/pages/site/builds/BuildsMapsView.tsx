@@ -25,9 +25,10 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
-import { BuildsControl, BuildsHead, FiltersButton, UpdatingStatus, ViewSwitch, ellipsis, hitArea, text, useCardColumns } from "./BuildsFrame";
+import { BUILDS_PANEL, BuildsControl, BuildsHead, FiltersButton, UpdatingStatus, ViewSwitch, ellipsis, hitArea, text, useCardColumns } from "./BuildsFrame";
+import { useColumnPanels } from "@/components/shell/frameChrome";
 import { BuildsFilters, type BuildsFiltersViewProps } from "./BuildsFiltersView";
-import { ActiveFilters, RowLamp, type TableChip } from "./BuildsTableView";
+import { ActiveFilters, type TableChip } from "./BuildsTableView";
 import { EMPTY } from "@/lib/copy/copy";
 
 /** The well, in the board's own units. */
@@ -81,11 +82,6 @@ export interface MapCardView {
   maker: string | null;
   /** "3 parts · 5 sessions". */
   summary: string;
-  /** "6 reproduced". */
-  reproduced: string;
-  /** BF-01 P4: the same count as a number: the lamp is drawn only above zero. */
-  reproductions: number;
-  lit: boolean;
   /** How many sessions the build has: none is "No sessions yet", one is "One session. A Map needs two." */
   sessions: number;
   /** BF-03 (D2): the Map was not read; the card says so in its summary and the well says nothing. */
@@ -217,10 +213,6 @@ export function MapCard({ card, direction, index }: { card: MapCardView; directi
           </Link>
           <span style={text(12, 400, t.label)}>{`${card.maker ? `@${card.maker} · ` : ""}${card.summary}`}</span>
         </span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flex: "none" }}>
-          <span style={text(12, 400, t.text2)}>{card.reproduced}</span>
-          {card.reproductions > 0 ? <RowLamp lit={card.lit} /> : null}
-        </span>
       </div>
     </article>
   );
@@ -228,17 +220,16 @@ export function MapCard({ card, direction, index }: { card: MapCardView; directi
 
 /* ── the page ── */
 
-const MAPS_PARTS = [{ text: "Each build's Map: one box per session, one line where a tile in one session uses something from another." }];
-
 export default function BuildsMapsView(props: BuildsMapsViewProps) {
   const { view, hrefFor, onViewIntent, activeCount, chips, onRemoveChip, onClearAll, filters, setName, direction, onDirection, buildsLabel, withMap, cards, onMore, loadingMore, empty, notice, updating } = props;
   const [open, setOpen] = useState(false);
   const columns = useCardColumns();
+  useColumnPanels(true);
   return (
-    <div data-testid="builds-maps" style={ROOT}>
-      <BuildsHead figure="Builds" parts={buildsLabel ? [{ text: buildsLabel }, ...MAPS_PARTS] : MAPS_PARTS} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
+    <div data-testid="builds-maps" style={{ ...ROOT, ...BUILDS_PANEL }}>
+      <BuildsHead figure="Builds" parts={buildsLabel ? [{ text: buildsLabel }] : [{ text: "\u00a0" }]} updating={updating} switcher={<ViewSwitch view={view} hrefFor={hrefFor} onIntent={onViewIntent} />} />
 
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 16 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, margin: "16px 20px 0" }}>
         <FiltersButton activeCount={activeCount} setName={setName} disabled={!filters} onClick={() => setOpen(true)} />
         <span style={{ flex: 1 }} />
         <Segmented<MapsDirection>
@@ -261,19 +252,19 @@ export default function BuildsMapsView(props: BuildsMapsViewProps) {
 
       {filters ? <BuildsFilters {...filters} open={open} onOpenChange={setOpen} /> : null}
 
-      {notice ? <div style={{ marginTop: 24 }}>{notice}</div> : null}
+      {notice ? <div style={{ margin: "24px 20px 0" }}>{notice}</div> : null}
 
       {cards.length === 0 && empty ? (
-        <div style={{ marginTop: 32 }}>{empty}</div>
+        <div style={{ margin: "32px 20px 0" }}>{empty}</div>
       ) : (
-        <div data-testid="builds-cards" aria-busy={updating === true} style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, marginTop: 32, paddingBottom: onMore ? 24 : 64, ...(updating ? { opacity: 0.5 } : null) }}>
+        <div data-testid="builds-cards" aria-busy={updating === true} style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, gap: 24, margin: "32px 20px 0", paddingBottom: onMore ? 24 : 0, ...(updating ? { opacity: 0.5 } : null) }}>
           {cards.map((card, index) => (
             <MapCard key={card.id} card={card} direction={direction} index={index} />
           ))}
         </div>
       )}
       {onMore ? (
-        <div style={{ paddingBottom: 64 }}>
+        <div style={{ padding: "0 20px" }}>
           <BuildsControl onClick={onMore} disabled={loadingMore}>
             {loadingMore ? "Loading" : "Show more builds"}
           </BuildsControl>

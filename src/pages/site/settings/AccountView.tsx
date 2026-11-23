@@ -58,8 +58,8 @@ function EmailGroup({ email, onChangeEmail }: Pick<AccountViewProps, "email" | "
     <Group title="Email">
       <SettingRow
         last
-        label="Email address"
-        hint={email ?? "Loading"}
+        label={email ?? "Loading"}
+        hint="Where sign-in links and notices go."
         control={
           open ? null : (
             <Button variant="secondary" size={32} fontSize={13} onClick={() => { setOpen(true); action.reset(); }}>
@@ -281,7 +281,7 @@ function DevicesGroup({ onSignOutEverywhere, devices, onSignOutDevice }: Pick<Ac
         hint="Ends every session, on every device. You will sign in again here."
         control={
           asking ? null : (
-            <Button variant="secondary" size={32} fontSize={13} onClick={() => setAsking(true)}>
+            <Button variant="secondary" size={32} fontSize={13} style={{ color: t.dangerText }} onClick={() => setAsking(true)}>
               Sign out everywhere
             </Button>
           )

@@ -359,7 +359,6 @@ export function ProfilePage() {
     record: side
       ? recordParts(summary.handle, {
           builds: side.counts.builds,
-          reproducedByOthers: side.reproducedByOthers,
           rebuiltFrom: side.rebuiltFrom,
           firstRebuildSlug: side.firstRebuildSlug,
           topicsAndReplies: side.counts.topics + side.counts.replies,

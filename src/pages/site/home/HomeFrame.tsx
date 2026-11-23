@@ -98,6 +98,7 @@ export function HomeColumns({
   right,
   top,
   flush = false,
+  omitEmptyRight = false,
 }: {
   layout: HomeLayout;
   left: ReactNode;
@@ -107,6 +108,8 @@ export function HomeColumns({
   top?: ReactNode;
   /** Home's side panels: the sections hold their own side padding. */
   flush?: boolean;
+  /** Synth 11 (OpenBuilds): with nothing in the right column, draw no panel there (its track stays, empty). */
+  omitEmptyRight?: boolean;
 }) {
   useColumnPanels(true);
   const side = flush ? flushPanel : sidePanel;
@@ -116,7 +119,7 @@ export function HomeColumns({
       <div data-testid="home-view" data-layout="one" style={{ ...root, display: "flex", flexDirection: "column", gap: PANEL_GUTTER, minWidth: 0 }}>
         {top ? <div style={{ ...panel, padding: PANEL_PAD }}>{top}</div> : null}
         <section aria-label="Feed" style={{ ...panel, paddingBottom: 48 }}>{centre}</section>
-        <aside aria-label="The room" style={side}>{right}</aside>
+        {omitEmptyRight && !right ? null : <aside aria-label="The room" style={side}>{right}</aside>}
       </div>
     );
   }
@@ -134,9 +137,13 @@ export function HomeColumns({
       <section aria-label="Feed" style={{ ...panel, paddingBottom: 48 }}>
         {centre}
       </section>
-      <aside aria-label="The room" style={side}>
-        {right}
-      </aside>
+      {omitEmptyRight && !right ? (
+        <div />
+      ) : (
+        <aside aria-label="The room" style={side}>
+          {right}
+        </aside>
+      )}
     </div>
   );
 }

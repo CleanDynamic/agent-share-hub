@@ -45,7 +45,7 @@
 // `position: relative` root (see PageBackdrop) — never `fixed` — and it is the
 // entrance's own tone (`signin`, UI-P36).
 
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useState, type CSSProperties, type ReactNode } from "react";
 
 import { FrameColumnsContext } from "./frameChrome";
 
@@ -192,7 +192,11 @@ export function SiteFrameView({
   /* SV-04: set once when the frame mounts, so the page audit can tell a header kept across a page change from one drawn again. */
   const [frameId] = useState(() => Math.random().toString(36).slice(2, 10));
   /* A page drawn as several panels (`useColumnPanels`): `<main>` is then a plain column and draws no panel of its own. */
-  const [columns, setColumns] = useState(false);
+  /* Synth 11: the pages that asked for column panels and are still mounted, counted, so a loading copy taken away after
+     the page arrived (PageArrival's fade) does not take the page's panels with it. */
+  const [claims, setClaims] = useState(0);
+  const setColumns = useCallback((on: boolean) => setClaims((count) => Math.max(0, count + (on ? 1 : -1))), []);
+  const columns = claims > 0;
 
   const root: CSSProperties = {
     position: "relative",

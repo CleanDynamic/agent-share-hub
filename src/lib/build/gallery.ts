@@ -25,7 +25,7 @@ import { TOOLS, toolFor } from "@/lib/tools/registry";
 import { isPattern, type Pattern } from "./patterns";
 import { weekStartUtc } from "@/lib/progress/weekly";
 import { WEEKLY_REPRODUCTION_GOAL } from "@/lib/progress/goals";
-import type { ThreadDoc } from "./thread";
+import { moreCountOf, type ThreadDoc } from "./thread";
 import { RANGE_FILTERS, RANGE_KEYS, type NumberRange, type RangeKey } from "./galleryRanges";
 import { runsPerWeek, runsSince } from "./runsPerWeek";
 import { normaliseQuery, searchBuildIds } from "./search";
@@ -1250,6 +1250,8 @@ function engagementOf(row: EngagementColumns): GalleryPostBuild["engagement"] {
 /** SV-10: a build post as Home's feed draws it: the card with its post, and what the feed row does not carry. */
 export interface GalleryPostBuild extends GalleryBuild {
   models_used: string[];
+  /** How many posts follow the first, from the thread the same request returns: the count Show more reads. */
+  more_count: number;
   /** builds.like_count and comment_count, so the post's action row has its numbers without a request of its own. */
   engagement?: { likes: number; comments: number };
 }
@@ -1274,7 +1276,7 @@ export async function getGalleryBuildsByIds(ids: readonly string[]): Promise<Gal
   );
   return wanted.flatMap((id) => {
     const row = byId.get(id);
-    return row ? [{ ...toGalleryBuild(row), models_used: row.models_used ?? [], engagement: engagementOf(row) }] : [];
+    return row ? [{ ...toGalleryBuild(row), models_used: row.models_used ?? [], more_count: moreCountOf(row.post_doc), engagement: engagementOf(row) }] : [];
   });
 }
 

@@ -1,9 +1,9 @@
 // RC-P17b — the admin's Reports tab, rendered.
 //
 // The claims: each open report is a row that says what was reported, why, the
-// reporter's note, who and when, and links to the target; "Hide" is secondary
-// and asks first, in a dialog whose one filled button says "Hide it"; "Dismiss"
-// is tertiary and closes one report; hiding clears every row about the same
+// reporter's note, who and when, and links to the target; "Hide" (small
+// secondary) asks first, in a dialog whose one filled button says "Hide it";
+// "Dismiss" (small secondary, Synth 15) closes one report; hiding clears every row about the same
 // target; an empty queue says "Nothing has been reported."; a refused queue
 // says "You don't have access to this." The data layer is stubbed at
 // src/lib/moderation; the queue is real.
@@ -85,26 +85,28 @@ describe("ReportsQueue", () => {
 
     await waitFor(() => expect(rows()).toHaveLength(2));
     const [first, second] = rows();
-    expect(first.textContent).toContain("Build · Not theirs");
+    expect(within(first).getByTestId("admin-row-select").textContent).toBe("Not theirs");
+    expect(first.textContent).toContain("Build");
     expect(within(first).getByRole("link", { name: "Invoice reader" }).getAttribute("href")).toBe("/b2/invoice-reader");
     expect(first.textContent).toContain("Copied from my repo.");
     expect(first.textContent).toContain("Rae");
     expect(first.querySelector("time")?.getAttribute("datetime")).toBe("2026-09-28T10:00:00.000Z");
 
-    expect(second.textContent).toContain("Comment · Harmful");
+    expect(within(second).getByTestId("admin-row-select").textContent).toBe("Harmful");
+    expect(second.textContent).toContain("Comment");
     expect(within(second).getByRole("link").getAttribute("href")).toBe("/b2/invoice-reader#comments");
     expect(second.textContent).toContain("@sam");
   });
 
-  it("gives each row a secondary Hide and a tertiary Dismiss, and nothing filled", async () => {
+  it("gives each row a small secondary Hide and Dismiss (Synth 15), and nothing filled", async () => {
     listOpenReports.mockResolvedValue({ reports: [report("r1")], nextBefore: null });
     renderQueue();
     await waitFor(() => expect(rows()).toHaveLength(1));
 
     const row = rows()[0];
-    expect(within(row).getByRole("button", { name: "Hide" }).getAttribute("data-visual-slot")).toBe("btn-secondary");
-    expect(within(row).getByRole("button", { name: "Dismiss" }).getAttribute("data-visual-slot")).toBeNull();
-    expect(row.querySelectorAll('[data-visual-slot="btn-primary"]')).toHaveLength(0);
+    expect(within(row).getByRole("button", { name: "Hide" }).getAttribute("data-variant")).toBe("secondary");
+    expect(within(row).getByRole("button", { name: "Dismiss" }).getAttribute("data-variant")).toBe("secondary");
+    expect(row.querySelectorAll('[data-variant="primary"]')).toHaveLength(0);
   });
 
   it("dismisses one report, and only that one", async () => {
@@ -141,7 +143,7 @@ describe("ReportsQueue", () => {
 
     const dialog = await screen.findByTestId("hide-dialog");
     expect(within(dialog).getByRole("heading", { name: "Hide this build?" })).toBeTruthy();
-    const filled = [...dialog.querySelectorAll('[data-visual-slot="btn-primary"]')].map((button) => button.textContent);
+    const filled = [...dialog.querySelectorAll('[data-variant="primary"]')].map((button) => button.textContent);
     expect(filled).toEqual(["Hide it"]);
 
     fireEvent.click(within(dialog).getByRole("button", { name: "Hide it" }));
@@ -185,7 +187,8 @@ describe("UX-09 P8, Q5: a topic's report in the queue", () => {
     listOpenReports.mockResolvedValue({ reports: [topicReport()], nextBefore: null });
     renderQueue();
     const [row] = await screen.findAllByTestId("report-row");
-    expect(row.textContent).toContain("OpenBuilds · Spam");
+    expect(within(row).getByTestId("admin-row-select").textContent).toBe("Spam");
+    expect(row.textContent).toContain("OpenBuilds");
     expect(within(row).getByRole("link", { name: "Topic: “Can anyone make the scorer faster?”" }).getAttribute("href")).toBe("/openbuilds/topics/p1");
     expect(within(row).getByRole("button", { name: "Hide" })).toBeEnabled();
     expect(within(row).getByRole("button", { name: "Dismiss" })).toBeInTheDocument();

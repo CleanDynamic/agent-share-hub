@@ -1,41 +1,20 @@
-/* UI-P45 — /connect in the site frame: the view.
+/* Synth 10 Part E: /connect in the site frame: the view.
 
-   Pure: the page holds the step and the tool and says where "Go to Drafts"
-   goes. The guide is the same one the dialog shows, inline in a plain panel. */
+   Pure: the page holds the tool and says where "Go to Drafts" goes. One panel at 680 at every desktop width, centred: the
+   h1 "Connect a tool" (31/36), then the three numbered steps (the AI tool switch as pills, the connector address in a
+   Card, Send a session, Use it in a build). The dialog keeps the stepper; the page lays the three out together. */
 
-import { Panel } from "@/components/brand/Panel";
-import { ConnectorGuide, type ConnectorGuideProps } from "@/components/connect/ConnectorGuide";
-import { Breadcrumb } from "@/components/shell/Breadcrumb";
-import { PageHeader } from "@/components/shell/PageHeader";
-import { pageColumns } from "@/components/shell/pageGrid";
-import { useIsPhone } from "@/components/shell/useMinWidth";
+import { ConnectSteps, type ConnectStepsProps } from "@/components/connect/ConnectorGuide";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
-import { SITE_NAME } from "@/lib/site";
+import { hero } from "@/lib/theme/type";
 
-export type ConnectViewProps = Omit<ConnectorGuideProps, "doneLabel" | "gutter">;
+export type ConnectViewProps = Omit<ConnectStepsProps, "doneLabel">;
 
 export function ConnectView(props: ConnectViewProps) {
-  const phone = useIsPhone();
-  const guide = (
-    <Panel surface="plain" padding="0">
-      <ConnectorGuide {...props} doneLabel="Go to Drafts" />
-    </Panel>
-  );
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: phone ? 720 : undefined, minWidth: 0 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-        <PageHeader title="Connect a tool" breadcrumb={phone ? undefined : <Breadcrumb />} />
-        <p style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.5, margin: 0, color: t.text2 }}>
-          Send the chats you build in to {SITE_NAME}, then turn them into builds.
-        </p>
-      </div>
-      {/* Desktop: the page grid's feed template, the guide in columns 4 to 9. */}
-      {phone ? guide : (
-        <div style={pageColumns("feed")}>
-          <div style={{ gridColumn: 2, minWidth: 0 }}>{guide}</div>
-        </div>
-      )}
+    <div data-testid="connect-view" style={{ maxWidth: 680, margin: "0 auto", padding: "8px 16px 64px", minWidth: 0 }}>
+      <h1 style={{ ...hero, margin: "0 0 24px", color: t.text }}>Connect a tool</h1>
+      <ConnectSteps {...props} doneLabel="Go to Drafts" />
     </div>
   );
 }

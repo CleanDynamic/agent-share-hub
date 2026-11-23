@@ -46,8 +46,8 @@ describe("totals and the differences in words", () => {
 
   it("keeps to build and to run in separate rows, and hides money the maker did not show", () => {
     const rows = totalsRows(totalsOf(copy), totalsOf(original));
-    expect(rows.map((row) => row.label)).toEqual(["To build · time", "To build · tokens", "To build · cost", "To run", "To set up", "API estimate", "Steps", "Models used"]);
-    const cost = rows.find((row) => row.label === "To build · cost");
+    expect(rows.map((row) => row.label)).toEqual(["Time to build", "Tokens to build", "Cost to build", "To run", "To set up", "API estimate", "Steps", "Models used"]);
+    const cost = rows.find((row) => row.label === "Cost to build");
     expect(cost).toMatchObject({ a: "–", b: "£10.00" });
     expect(rows.find((row) => row.label === "Models used")).toMatchObject({ a: "Sonnet 5.5", b: "Opus 5.5" });
   });

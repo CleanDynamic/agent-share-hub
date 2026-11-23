@@ -150,7 +150,8 @@ export default function KitPages() {
       data-design-theme={theme}
       data-design-viewport={viewport}
       data-design-state={state}
-      style={{ width: page === "sandbox" && new URLSearchParams(window.location.search).has("window") ? "100%" : WIDTH[viewport] }}
+      /* `?fluid=1` (dev only): the page at the window's own width, for checking a layout's breakpoints. */
+      style={{ width: (page === "sandbox" && new URLSearchParams(window.location.search).has("window")) || new URLSearchParams(window.location.search).has("fluid") ? "100%" : WIDTH[viewport] }}
     >
       <Suspense fallback={null}>
         {UNFRAMED.has(page) || isBare(page, window.location.search) ? (

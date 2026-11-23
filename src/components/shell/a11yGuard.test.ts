@@ -19,7 +19,6 @@ const KEYS = ["onKeyDown", "onKeyUp", "onKeyPress"];
 
 /** A pointer convenience round a real control, which is what the keyboard and screen readers use: allowed, with its reason. */
 const ALLOWED: { file: string; tag: string; rule: string; reason: string }[] = [
-  { file: "src/pages/site/library/LibraryView.tsx", tag: "tr", rule: "click", reason: "A click anywhere on the row selects it; the row's first cell is the button (aria-pressed) that does the same." },
 ];
 
 /** A file whose first line says it is a test's own host (ca26.menuHost.tsx) is not the site. */

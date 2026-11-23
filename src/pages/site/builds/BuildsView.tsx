@@ -6,35 +6,10 @@ import { useState, type ReactNode } from "react";
 
 import type { FigurePart } from "@/components/vision/PageFigure";
 import type { GalleryViewMode } from "@/lib/build/galleryParams";
-import { STALE_AFTER_DAYS } from "@/lib/build/signals";
-import { t } from "@/lib/theme/tokens";
 
 import { BuildsColumns, BuildsHead, ViewSwitch } from "./BuildsFrame";
 import { BuildsFilters, type BuildsFiltersViewProps } from "./BuildsFiltersView";
 import { BuildsTableView, type BuildsTableViewProps } from "./BuildsTableView";
-
-export interface BuildsStats {
-  published: number;
-  runsThisWeek: number;
-  freshPct: number;
-  /** BF-01 P2: a filter is on, so the figure already says "n of published" and the first part is left out. */
-  filtered?: boolean;
-}
-
-/** "Of 120 published · 214 reproductions this week · 78% confirmed in the last 120 days", the runs in `--evidence` when above zero. */
-export function statParts({ published, runsThisWeek, freshPct, filtered }: BuildsStats): FigurePart[] {
-  return [
-    ...(filtered ? [] : [{ text: `Of ${published} published` }]),
-    {
-      text: (
-        <>
-          <span data-testid="stat-runs" style={{ color: runsThisWeek > 0 ? t.evidence : t.text2 }}>{`${runsThisWeek} ${runsThisWeek === 1 ? "reproduction" : "reproductions"}`}</span> this week
-        </>
-      ),
-    },
-    { text: `${freshPct}% confirmed in the last ${STALE_AFTER_DAYS} days` },
-  ];
-}
 
 export interface BuildsViewProps {
   figure: ReactNode;

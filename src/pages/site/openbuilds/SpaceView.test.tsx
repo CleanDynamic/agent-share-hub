@@ -6,6 +6,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { PostCardData } from "@/components/post/postCardModel";
 
+import { fallbackOf, hero } from "@/lib/theme/type";
+
 import { atWidth } from "./OpenBuildsFeedView.test";
 import { SpaceView, type SpaceViewProps } from "./SpaceView";
 
@@ -34,7 +36,7 @@ const moderation = () => ({ onPin: vi.fn(), onUnpin: vi.fn(), onHide: vi.fn(), o
 const props = (extra: Partial<SpaceViewProps> = {}): SpaceViewProps => ({
   name: "Evals",
   description: "Scoring work, together.",
-  meta: "Made by @sam · moderated by @sam, @ola · 412 members · anyone can post",
+  meta: "Made by @sam · 412 members",
   orderLine: "Newest first · set by @sam",
   rules: "Be kind.\nShow the build.",
   role: "none",
@@ -57,21 +59,27 @@ const draw = (extra: Partial<SpaceViewProps> = {}) =>
 afterEach(() => vi.unstubAllGlobals());
 
 describe("SpaceView", () => {
-  it("opens with PageHeader: the shared title style and the parent link above it (page shell)", () => {
-    const { container } = draw();
+  it("heads its one 680 panel with an underlined OpenBuilds link above the h1 at 31/36", () => {
+    draw();
     const h1 = screen.getByRole("heading", { level: 1, name: "Evals" });
-    expect(h1.style.fontSize).toBe("20px");
-    expect(h1.style.lineHeight).toBe("24px");
-    const slot = container.querySelector('[data-slot="page-breadcrumb"]')!;
-    expect(slot.querySelector('[data-testid="breadcrumb"]')).not.toBeNull();
+    // The h1 is the type scale's page title role, 31/36 at 600 (its size is a custom property jsdom does not keep).
+    expect(h1.style.fontWeight).toBe("600");
+    expect(fallbackOf(hero.fontSize)).toBe("31px");
+    expect(fallbackOf(hero.lineHeight)).toBe("36px");
+    const parent = screen.getByRole("link", { name: "OpenBuilds" });
+    expect(parent).toHaveAttribute("href", "/openbuilds");
+    expect(parent.style.textDecoration).toBe("underline");
+    expect(parent.style.fontSize).toBe("13px");
+    expect(parent.compareDocumentPosition(h1) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByTestId("space-view").style.maxWidth).toBe("680px");
   });
 
   it("heads the page with the space's name, its description and the made-by line", () => {
     atWidth(1440);
     draw();
     expect(screen.getByRole("heading", { level: 1, name: "Evals" })).toBeInTheDocument();
-    expect(screen.getByText("Scoring work, together.")).toBeInTheDocument();
-    expect(screen.getByText("Made by @sam · moderated by @sam, @ola · 412 members · anyone can post")).toBeInTheDocument();
+    expect(screen.getByText("Scoring work, together.").style.fontSize).toBe("15px");
+    expect(screen.getByText("Made by @sam · 412 members").style.fontSize).toBe("13px");
   });
 
   it("offers a non-member Join as the one primary, and no Settings", () => {

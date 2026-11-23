@@ -230,11 +230,14 @@ describe("Library", () => {
     expect(within(panel).getByRole("button", { name: "Add to a collection" })).toBeInTheDocument();
   });
 
-  it("is one line and one action when nothing is saved", async () => {
+  it("says 'Nothing saved yet' with a way to browse and a way to learn how saving works", async () => {
     renderAt("/library");
     const empty = await screen.findByTestId("library-empty");
-    expect(empty.textContent).toContain("Save a build and it waits for you here.");
+    expect(within(empty).getByRole("heading", { name: "Nothing saved yet" })).toBeInTheDocument();
+    expect(empty.textContent).toContain("Save a build, a session or a step and it waits for you here.");
     expect(within(empty).getByRole("link", { name: "Browse builds" })).toHaveAttribute("href", "/builds");
+    expect(within(empty).getByRole("button", { name: "How saving works" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "How saving works" })).toBeInTheDocument();
   });
 
   it("says it couldn't load your library, with Try again, and Try again asks again", async () => {
@@ -328,7 +331,7 @@ describe("Library", () => {
 
     await waitFor(() => expect(rowTitles()).toEqual(["Kept step 1", "Clean-up agent"]));
     expect(listSavedItems).toHaveBeenCalledWith({ kind: "step", after: undefined });
-    expect(screen.getByRole("columnheader", { name: "Used in" })).toBeInTheDocument();
+    expect(screen.getAllByTestId("library-row")[0].textContent).toContain("Used in 4");
     const panel = screen.getByTestId("library-selected");
     expect(within(panel).getByText("4 builds")).toBeInTheDocument();
     expect(within(panel).getByRole("link", { name: "Open source" })).toHaveAttribute("href", "/b2/call-notes");

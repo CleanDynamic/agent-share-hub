@@ -17,17 +17,19 @@ describe("libraryChanges", () => {
     { ...base, id: "stale:b1", kind: "stale", role: "saver" },
   ];
 
-  it("keeps only the saved builds' events and words them for the list", () => {
-    expect(libraryChanges(events, now)).toEqual([
-      { id: "run:1", tag: "RUN", item: "Account research brief", detail: "worked on Opus 5.5 · @kit", age: "5h" },
-      { id: "stale:b1", tag: "STALE", item: "Account research brief", detail: "not confirmed in a while", age: "5h" },
+  const rebuilt: ActivityEvent = { ...base, id: "rebuild:1", kind: "rebuild", role: "saver", rebuilder: kit } as ActivityEvent;
+
+  it("keeps only the saved builds' events, and leaves out the run-based ones", () => {
+    expect(libraryChanges(events, now)).toEqual([]);
+    expect(libraryChanges([...events, rebuilt], now)).toEqual([
+      { id: "rebuild:1", tag: "REBUILD", item: "Account research brief", detail: "rebuilt by @kit", age: "5h" },
     ]);
   });
 
   it("counts them for the figure", () => {
-    expect(changesFigure(libraryChanges(events, now))).toEqual({
-      figure: "2 changes",
-      parts: [{ text: "Last 14 days" }, { text: "1 run", tone: "evidence" }, { text: "1 out of date", tone: "lit" }],
+    expect(changesFigure(libraryChanges([...events, rebuilt], now))).toEqual({
+      figure: "1 change",
+      parts: [{ text: "Last 14 days" }, { text: "1 rebuilt" }],
     });
   });
 });

@@ -245,11 +245,17 @@ export const RULES: Rule[] = [
  * in that file for that rule.
  */
 export const ALLOW: Record<string, Record<string, string>> = {
+  // Synth 11 gives this word: the small Join on each row of "Most new posts this week", beside the space's name. Its
+  // accessible name is "Join <space>", so to a screen reader it is never bare.
+  "bare-join": {
+    "src/pages/site/openbuilds/OpenBuildsFeedView.tsx|Join": "the row's small Join beside the space's name (Synth 11); named \"Join <space>\" for screen readers",
+  },
   "empty-stop": {
     "src/pages/site/profile/profileModel.ts|No streak yet": "a value in the streak stat line, beside \"12-day streak · best 31\"; not an empty state",
     "src/pages/site/settings/AppsView.tsx|No access listed": "a value in an app's hint, beside \"Can access: …\"; not an empty state",
     "src/components/build/FullPromptWindow.tsx|No variables yet": "a count in the window's meta line, beside \"3 variables\"; a value",
     "src/components/build/FullPromptWindow.tsx|Nothing added yet": "the placeholder of an empty reply box, not an empty state",
+    "src/pages/site/library/LibraryPage.tsx|Nothing saved yet": "the heading of the Library's own empty state (a fact, as every heading is); the sentence under it ends with a full stop",
     "src/pages/site/compose/StillOpenSpaces.tsx|No spaces to post in": "a disabled menu option (menu options are not empty states)",
     "src/pages/site/openbuilds/NewPostWindow.tsx|No spaces to post in": "a disabled menu option (menu options are not empty states)",
   },
@@ -267,12 +273,11 @@ export const ALLOW: Record<string, Record<string, string>> = {
   project: {
     "src/pages/site/build/BuildSteps.tsx|Put {} in your project": "the reader's own code project, where a file goes; not a build",
     "src/components/build/FullPromptWindow.tsx|Custom instructions or project knowledge that applied": "an AI provider's Projects feature; not a build",
+    "src/pages/site/notfound/notFoundModel.ts|If you were looking for a project, it may have been removed.": "Synth 15: the 404's line for an old /project/ address, the same words ProjectDetail's own state says; not a build",
   },
   workflow: {
     "src/pages/site/compose/detailsModel.ts|The command or workflow": "a tool's command or CI workflow file; not a build",
     "src/pages/site/compose/toolPickerModel.ts|Add its workflow with Add › File": "a tool's workflow file; not a build",
-    "src/pages/site/signin/SignInDialogFrame.tsx|Publish, reproduce and rebuild AI-assisted workflows.": "the tagline, decided by the owner (prompt 9)",
-    "src/pages/site/signin/SignInDialogFrame.tsx|AI-assisted workflows.": "the tagline's third line on a phone",
   },
 };
 

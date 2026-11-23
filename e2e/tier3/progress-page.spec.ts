@@ -143,9 +143,9 @@ async function fakeBackend(page: Page, { theme = "noon" }: { theme?: "noon" | "d
 
 /** The page has drawn every section's data. */
 async function settled(page: Page) {
-  await expect(page.getByTestId("badge-slot")).toHaveCount(10);
-  await expect(page.getByTestId("weekly-challenge")).toHaveCount(3);
-  await expect(page.getByTestId("progress-figure-value")).toHaveCount(3);
+  await expect(page.getByTestId("badge-slot")).toHaveCount(6);
+  await expect(page.getByTestId("weekly-challenge")).toHaveCount(1);
+  await expect(page.getByTestId("progress-xp")).toHaveCount(1);
   await expect(page.getByTestId("needs-you-line")).toHaveCount(1);
 }
 
@@ -159,13 +159,13 @@ test("the page is six sections in order: the note, Progress, Needs you, Your bui
       section.getAttribute("role") === "note" ? "Reset note" : section.querySelector("h2")?.textContent ?? "?",
     ),
   );
-  expect(sections).toEqual(["Reset note", "Progress", "Needs you", "Your builds", "This week", "Badges"]);
+  expect(sections).toEqual(["Reset note", "Level 3", "Needs you", "2 builds", "This week", "2 of 6 badges"]);
   await expect(page.getByTestId("progress-page").getByRole("heading", { level: 2 })).toHaveText([
-    "Progress",
+    "Level 3",
     "Needs you",
-    "Your builds",
+    "2 builds",
     "This week",
-    "Badges",
+    "2 of 6 badges",
   ]);
 });
 
@@ -209,14 +209,14 @@ test("no request reaches a parked feature's table or function", async ({ page })
   expect(asked.filter((path) => PARKED.includes(path))).toEqual([]);
 });
 
-test("this week shows at most three challenges, each n of m beside its bar", async ({ page }) => {
+test("this week shows the challenges that are not about runs, each n / m beside its bar", async ({ page }) => {
   await fakeBackend(page);
   await page.goto("/analytics");
 
   const rows = page.getByTestId("weekly-challenge");
-  await expect(rows).toHaveCount(3);
-  await expect(page.getByTestId("weekly-challenge-count")).toHaveText(["2 of 3", "1 of 1", "0 of 1"]);
-  await expect(page.getByTestId("this-week").getByRole("progressbar")).toHaveCount(3);
+  await expect(rows).toHaveCount(1);
+  await expect(page.getByTestId("weekly-challenge-count")).toHaveText(["1 / 1"]);
+  await expect(page.getByTestId("this-week").getByRole("progressbar")).toHaveCount(1);
 });
 
 test("badges are drawn earned first, then not yet", async ({ page }) => {
@@ -224,9 +224,9 @@ test("badges are drawn earned first, then not yet", async ({ page }) => {
   await page.goto("/analytics");
 
   const slots = page.getByTestId("badge-slot").locator('[role="img"]');
-  await expect(slots).toHaveCount(10);
+  await expect(slots).toHaveCount(6);
   const earned = await slots.evaluateAll((marks) => marks.map((mark) => mark.getAttribute("data-earned")));
-  expect(earned).toEqual(["true", "true", "true", "true", "false", "false", "false", "false", "false", "false"]);
+  expect(earned).toEqual(["true", "true", "false", "false", "false", "false"]);
   await expect(slots.first()).toHaveAccessibleName("First build, common badge");
 });
 
@@ -262,7 +262,7 @@ test("Got it closes the reset note, and it stays closed after a reload", async (
   await expect(page.getByRole("note")).toHaveCount(0);
 
   await page.reload();
-  await expect(page.getByTestId("badge-slot")).toHaveCount(10);
+  await expect(page.getByTestId("badge-slot")).toHaveCount(6);
   await expect(page.getByRole("note")).toHaveCount(0);
 });
 

@@ -1,28 +1,28 @@
 /* TB-02: the view of /rules, /report and /contact. PURE: a LegalText and the page's path in, the page out. It reads no data and
-   no router of its own; the links it draws go through FrameLink. Main and side (9 / 3) from 1024, stacked below it.
-   One Panel per section; a list or a table is a column of 48px list rows. The side column is "In this page", "Status", "Related". */
+   no router of its own; the links it draws go through FrameLink.
+
+   Synth 15 Part B: two panels on the page shade, `minmax(0, 1fr) 300px`, 8 apart, the pair 1100 wide at most and centred.
+   The main panel opens on the h1 at 31/36 and the intro, then each section with no box: its h2 at 17/600 and its text at
+   15/20; a list or a table is a column of 48px rows without lines. The side panel holds "In this page", "Status" ("Not
+   reviewed yet" while the text is a draft) and "Related pages" as row links. Below 1101 the side panel follows the main one. */
 
 import { ChevronRight } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 
-import { CardHead } from "@/components/brand/CardHead";
 import { Icon } from "@/components/brand/Icon";
-import { Panel } from "@/components/brand/Panel";
 import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
+import { PANEL_GUTTER, PANEL_PAD, PANEL_RADIUS } from "@/components/shell/chromeSize";
+import { useColumnPanels } from "@/components/shell/frameChrome";
 import { FrameLink } from "@/components/shell/FrameLink";
-import { PageHeader } from "@/components/shell/PageHeader";
-import { pageColumns } from "@/components/shell/pageGrid";
-import { BETWEEN, useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
+import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
 import type { LegalBlock, LegalSection, LegalText } from "@/content/legal/types";
-import { ring, touchArea } from "@/lib/theme/controls";
+import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { asideStyle, mainStyle, trackRow } from "@/lib/theme/refinedLayout";
-import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
-import { SideSection } from "@/pages/site/openbuilds/OpenBuildsFrame";
+import { DM_MONO, FIGTREE, hero, textStep } from "@/lib/theme/type";
 
 import { Inline } from "./LegalView";
+import { SECTION_HEADING } from "./legalStyles";
 import { anchorOf, formatLastUpdated } from "./legalModel";
 
 /** The pages a reader may want next, in order. The current page is left out. */
@@ -34,7 +34,16 @@ export const RELATED_PAGES: ReadonlyArray<{ label: string; href: string }> = [
   { label: "Privacy", href: "/privacy" },
 ];
 
-/** The one rule for a card's subtitle, on all three pages. */
+/** The width the two panels share at most, and the width from which they stand side by side. */
+export const FOOTER_PAGE_WIDTH = 1100;
+const SIDE_BY_SIDE_MIN = 1101;
+const SIDE_WIDTH = 300;
+const ROW = 48;
+
+/**
+ * What a section holds, in words. The sections no longer draw it (a heading states its own fact and has no subtitle under
+ * it); it is kept for the tests that hold the counts to the texts.
+ */
 export function subtitleOf(section: LegalSection): string {
   const list = section.blocks.find((block): block is Extract<LegalBlock, { kind: "list" }> => block.kind === "list");
   if (list) return `${list.items.length} rules · Please don't`;
@@ -43,25 +52,10 @@ export function subtitleOf(section: LegalSection): string {
   return section.source === "code" ? "How the site works" : "From the Terms";
 }
 
-const body: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, fontWeight: 400, lineHeight: "20px", color: t.text, margin: 0 };
-const sideHeading: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: 500, letterSpacing: 0, lineHeight: "normal", color: t.text };
-const meta: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, fontWeight: 400, lineHeight: "normal", color: t.text2 };
-const tag: CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  height: 20,
-  padding: "0 8px",
-  borderRadius: r.chip,
-  background: t.inset,
-  color: t.text2,
-  fontFamily: DM_MONO,
-  fontSize: 13,
-  fontWeight: 400,
-  fontVariantNumeric: "tabular-nums",
-  boxSizing: "border-box",
-};
-const rowBorder = `1px solid ${t.hairlineModule}`;
+const body: CSSProperties = { fontFamily: FIGTREE, fontSize: textStep.body, fontWeight: 400, lineHeight: "20px", color: t.text2, margin: 0 };
+const meta: CSSProperties = { fontFamily: FIGTREE, fontSize: textStep.meta, fontWeight: 400, lineHeight: "20px", color: t.label, margin: 0 };
+const panel: CSSProperties = { background: t.surface, borderRadius: PANEL_RADIUS, minWidth: 0, boxSizing: "border-box" };
+const rowStyle: CSSProperties = { minHeight: ROW, padding: "12px 0", display: "flex", alignItems: "center", gap: 12, boxSizing: "border-box" };
 
 function Block({ block, section, caption, phone }: { block: LegalBlock; section: string; caption: string; phone: boolean }) {
   if (block.kind === "p") {
@@ -75,11 +69,11 @@ function Block({ block, section, caption, phone }: { block: LegalBlock; section:
     return (
       <ol data-testid="footer-list" style={{ listStyle: "none", margin: 0, padding: 0 }}>
         {block.items.map((item, index) => (
-          <li key={index} style={{ minHeight: 48, padding: "12px 0", display: "flex", alignItems: "center", gap: 12, borderTop: rowBorder, boxSizing: "border-box" }}>
-            <span aria-hidden="true" data-testid="footer-number" style={{ ...tag, minWidth: 28 }}>
+          <li key={index} style={rowStyle}>
+            <span aria-hidden="true" data-testid="footer-number" style={{ fontFamily: DM_MONO, fontSize: textStep.meta, lineHeight: "20px", color: t.label, fontVariantNumeric: "tabular-nums", minWidth: 20, flexShrink: 0 }}>
               {String(index + 1).padStart(2, "0")}
             </span>
-            <span style={{ ...body, fontWeight: 500 }}>
+            <span style={{ ...body, color: t.text }}>
               <Inline text={item} section={section} />
             </span>
           </li>
@@ -104,8 +98,8 @@ function Block({ block, section, caption, phone }: { block: LegalBlock; section:
       <tbody>
         {block.rows.map((row, rowIndex) => (
           <tr key={rowIndex}>
-            <td style={{ ...body, fontWeight: 500, height: 48, padding: "12px 12px 12px 0", borderTop: rowBorder, textAlign: "left", verticalAlign: "middle", boxSizing: "border-box" }}>{row[0]}</td>
-            <td style={{ ...meta, padding: "12px 0", borderTop: rowBorder, textAlign: "right", verticalAlign: "middle", boxSizing: "border-box" }}>
+            <td style={{ ...body, color: t.text, height: ROW, padding: "12px 12px 12px 0", textAlign: "left", verticalAlign: "middle", boxSizing: "border-box" }}>{row[0]}</td>
+            <td style={{ ...body, padding: "12px 0", textAlign: "right", verticalAlign: "middle", boxSizing: "border-box" }}>
               <Inline text={row[1]} section={section} />
             </td>
           </tr>
@@ -115,40 +109,49 @@ function Block({ block, section, caption, phone }: { block: LegalBlock; section:
   );
 }
 
-function SectionCard({ section, phone }: { section: LegalSection; phone: boolean }) {
+function SectionBlock({ section, phone }: { section: LegalSection; phone: boolean }) {
   const caption = section.id === "report-something" ? "Report reasons" : section.heading;
   return (
-    <section id={section.id} aria-labelledby={`${section.id}-heading`} style={{ scrollMarginTop: 24 }}>
-      <Panel as="div">
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <CardHead headingLevel={2} title={<span id={`${section.id}-heading`}>{section.heading}</span>} subtitle={subtitleOf(section)} />
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {section.blocks.map((block, index) => (
-              <Block key={index} block={block} section={section.id} caption={caption} phone={phone} />
-            ))}
-          </div>
-        </div>
-      </Panel>
+    <section id={section.id} aria-labelledby={`${section.id}-heading`} style={{ scrollMarginTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
+      <h2 id={`${section.id}-heading`} style={SECTION_HEADING}>{section.heading}</h2>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {section.blocks.map((block, index) => (
+          <Block key={index} block={block} section={section.id} caption={caption} phone={phone} />
+        ))}
+      </div>
     </section>
   );
 }
 
-function SideHead({ title, text }: { title: string; text: string }) {
+/** A side section: its head (20/600) and what it holds. */
+function SideSection({ title, label, children }: { title: string; label: string; children: ReactNode }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 12 }}>
-      <h2 style={sideHeading}>{title}</h2>
-      <div style={meta}>{text}</div>
-    </div>
+    <section aria-label={label} style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <h2 style={{ margin: 0, padding: `0 ${PANEL_PAD}px 8px`, fontFamily: FIGTREE, fontSize: textStep.headline, fontWeight: 600, lineHeight: "24px", color: t.text }}>{title}</h2>
+      {children}
+    </section>
   );
 }
 
-const sideLink: CSSProperties = { ...body, display: "flex", alignItems: "center", minHeight: 32, textDecoration: "none" };
+/** A side row that goes somewhere: 44 tall (48 on a phone), 16 at the sides, the Card fill under the pointer. */
+const sideRow = (phone: boolean, hovered: boolean): CSSProperties => ({
+  ...body,
+  color: t.text,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+  minHeight: phone ? ROW : 44,
+  padding: `0 ${PANEL_PAD}px`,
+  textDecoration: "none",
+  background: hovered ? t.module : "transparent",
+});
 
-/** An in-page anchor with the keyboard ring and the side links' hover. */
+/** An in-page anchor with the keyboard ring and the rows' hover. */
 function AnchorLink({ href, phone, children }: { href: string; phone: boolean; children: ReactNode }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   return (
-    <a href={href} {...handlers} style={{ ...sideLink, ...touchArea(phone), ...(state.hovered ? { color: t.text2 } : null), ...ring(state.focusVisible) }}>
+    <a href={href} {...handlers} style={{ ...sideRow(phone, state.hovered), ...ring(state.focusVisible) }}>
       {children}
     </a>
   );
@@ -156,9 +159,8 @@ function AnchorLink({ href, phone, children }: { href: string; phone: boolean; c
 
 function Side({ text, path, phone }: { text: LegalText; path: string; phone: boolean }) {
   return (
-    <aside aria-label="About this page">
-      <SideSection first label="In this page">
-        <SideHead title="In this page" text={`${text.sections.length} sections`} />
+    <aside aria-label="About this page" data-testid="footer-side" style={{ ...panel, padding: `${PANEL_PAD}px 0`, display: "flex", flexDirection: "column", gap: 24 }}>
+      <SideSection title="In this page" label="In this page">
         <nav aria-label="In this page" style={{ display: "flex", flexDirection: "column" }}>
           {text.sections.map((section) => (
             <AnchorLink key={section.id} href={anchorOf(section.id)} phone={phone}>
@@ -167,23 +169,23 @@ function Side({ text, path, phone }: { text: LegalText; path: string; phone: boo
           ))}
         </nav>
       </SideSection>
-      <SideSection first={false} label="Status">
-        <SideHead title="Status" text={`Last updated ${formatLastUpdated(text.lastUpdated)}`} />
-        {text.reviewed ? null : (
-          <div data-testid="footer-status" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={tag}>draft</span>
-            <span style={meta}>Not reviewed yet</span>
-          </div>
-        )}
+      <SideSection title="Status" label="Status">
+        <div style={{ padding: `0 ${PANEL_PAD}px`, display: "flex", flexDirection: "column", gap: 4 }}>
+          {text.reviewed ? null : (
+            <p data-testid="footer-status" style={{ ...body, color: t.text }}>
+              Not reviewed yet
+            </p>
+          )}
+          <p style={meta}>Last updated {formatLastUpdated(text.lastUpdated)}</p>
+        </div>
       </SideSection>
-      <SideSection first={false} label="Related">
-        <SideHead title="Related" text="Rules and policies" />
+      <SideSection title="Related pages" label="Related">
         <nav aria-label="Related pages" style={{ display: "flex", flexDirection: "column" }}>
           {RELATED_PAGES.filter((page) => page.href !== path).map((page) => (
-            <FrameLink key={page.href} to={page.href} style={{ ...sideLink, justifyContent: "space-between", ...touchArea(phone) }} hoverStyle={{ color: t.text2 }}>
+            <FrameLink key={page.href} to={page.href} style={sideRow(phone, false)} hoverStyle={{ background: t.module }}>
               {page.label}
               <span aria-hidden="true" style={{ display: "inline-flex", flexShrink: 0 }}>
-                <Icon lucide={ChevronRight} size={16} color={t.text2} />
+                <Icon lucide={ChevronRight} size={16} color={t.label} />
               </span>
             </FrameLink>
           ))}
@@ -200,27 +202,36 @@ export interface FooterPageViewProps {
 }
 
 export function FooterPageView({ text, path }: FooterPageViewProps) {
-  const stacked = !useMinWidth(BETWEEN.stack);
   const phone = useIsPhone();
+  const sideBySide = useMinWidth(SIDE_BY_SIDE_MIN);
+  useColumnPanels(!phone);
   const main = (
-    <div data-testid="footer-main" style={mainStyle(stacked, { display: "flex", flexDirection: "column", gap: 24, minWidth: 0 })}>
+    <div data-testid="footer-main" style={{ ...(phone ? null : { ...panel, padding: 24 }), display: "flex", flexDirection: "column", gap: 32, minWidth: 0 }}>
+      <header style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <h1 style={{ ...hero, margin: 0, color: t.text }}>{text.title}</h1>
+        <p style={body}>{text.intro}</p>
+      </header>
       {text.sections.map((section) => (
-        <SectionCard key={section.id} section={section} phone={phone} />
+        <SectionBlock key={section.id} section={section} phone={phone} />
       ))}
     </div>
   );
-  const side = (
-    <div data-testid="footer-side" style={asideStyle(stacked, { minWidth: 0 })}>
-      <Side text={text} path={path} phone={phone} />
-    </div>
-  );
   return (
-    <div data-testid="footer-page" style={{ fontFamily: FIGTREE, minWidth: 0, paddingBottom: 48 }}>
-      <PageHeader title={text.title} description={text.intro} />
-      <div style={stacked ? trackRow(true, 24) : { ...pageColumns("mainSide"), alignItems: "start", minWidth: 0 }}>
-        {main}
-        {side}
-      </div>
+    <div
+      data-testid="footer-page"
+      style={{
+        fontFamily: FIGTREE,
+        minWidth: 0,
+        width: "100%",
+        maxWidth: FOOTER_PAGE_WIDTH,
+        margin: "0 auto",
+        ...(sideBySide
+          ? { display: "grid", gridTemplateColumns: `minmax(0, 1fr) ${SIDE_WIDTH}px`, columnGap: PANEL_GUTTER, alignItems: "start" }
+          : { display: "flex", flexDirection: "column", gap: phone ? 24 : PANEL_GUTTER }),
+      }}
+    >
+      {main}
+      <Side text={text} path={path} phone={phone} />
     </div>
   );
 }

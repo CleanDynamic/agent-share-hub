@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { isPermissionError } from "@/lib/errors/permission";
-import { Camera, Image as ImageIcon, Mic, Smile, Heart, Send, X, Loader2, Square, AtSign } from "lucide-react";
+import { Camera, Image as ImageIcon, Mic, Smile, Heart, Send, X, Loader2, Square } from "lucide-react";
 import { ThreadReferencePicker, type ReferenceItem } from "@/components/messages/ThreadReferencePicker";
 import { isTopicShareState, listShareableBuilds, sendBuildMessage, sendTopicMessage } from "@/lib/messaging";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -20,6 +20,8 @@ import { uiTransition } from "@/lib/theme/controls";
 interface MessageInputBarProps {
   threadId: string;
   otherDisplayName: string;
+  /** "maya": the placeholder reads "Message @maya". */
+  otherHandle?: string | null;
   replyToId: string | null;
   onClearReply: () => void;
   onMessageSent: () => void;
@@ -36,6 +38,7 @@ interface PendingShare {
 export function MessageInputBar({
   threadId,
   otherDisplayName,
+  otherHandle = null,
   replyToId,
   onClearReply,
   onMessageSent,
@@ -461,35 +464,53 @@ export function MessageInputBar({
         </div>
       )}
 
-      <div className="px-3 py-2 border-t border-border flex items-end gap-2">
-        {/* Left icons */}
-        <div className="flex items-center gap-1 shrink-0 pb-1">
-          <button
-            onClick={() => cameraInputRef.current?.click()}
-            className="p-1"
-            style={{ color: tok.text2, transition: uiTransition() }}
-            aria-label="Take a photo"
-          >
-            <Camera className="h-5 w-5" />
-          </button>
-          <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageSelect} />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="p-1"
-            style={{ color: tok.text2, transition: uiTransition() }}
-            aria-label="Attach an image"
-          >
-            <ImageIcon className="h-5 w-5" />
-          </button>
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
-          <button
-            onClick={startRecording}
-            className="p-1"
-            style={{ color: tok.text2, transition: uiTransition() }}
-            aria-label="Record a voice note"
-          >
-            <Mic className="h-5 w-5" />
-          </button>
+      {/* Synth 12 Part D: the input bar is a Card pill (radius 22): attach (round icons), the text field, "Share a build"
+          (ghost, small) and "Send" (the main button, small). */}
+      <div className="px-3 py-3">
+        <div className="flex items-end gap-2" style={{ background: tok.module, borderRadius: 22, padding: "6px 6px 6px 8px", minHeight: 44, boxSizing: "border-box" }}>
+          <div className="flex items-center gap-1 shrink-0">
+            {[
+              { label: "Take a photo", Icon: Camera, onClick: () => cameraInputRef.current?.click() },
+              { label: "Attach an image", Icon: ImageIcon, onClick: () => fileInputRef.current?.click() },
+              { label: "Record a voice note", Icon: Mic, onClick: startRecording },
+            ].map(({ label, Icon, onClick }) => (
+              <button
+                key={label}
+                onClick={onClick}
+                className="flex items-center justify-center"
+                style={{ width: 32, height: 32, borderRadius: "50%", color: tok.text2, transition: uiTransition() }}
+                aria-label={label}
+              >
+                <Icon className="h-4 w-4" />
+              </button>
+            ))}
+            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageSelect} />
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+          </div>
+
+          {/* Text input */}
+          <div className="flex-1 relative min-w-0">
+            <Textarea
+              ref={textareaRef}
+              value={text}
+              onChange={(e) => handleTextChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={pendingShare ? "Add a note (optional)…" : otherHandle ? `Message @${otherHandle}` : "Message…"}
+              aria-label={otherHandle ? `Message @${otherHandle}` : "Message"}
+              className="min-h-[32px] max-h-[120px] resize-none px-2 py-1.5 pr-8"
+              style={{ background: "transparent", border: 0, boxShadow: "none", fontSize: 15, lineHeight: "20px" }}
+              rows={1}
+            />
+            <button
+              onClick={() => setShowEmoji(!showEmoji)}
+              className="absolute right-2 bottom-2"
+              style={{ color: tok.text2, transition: uiTransition() }}
+              aria-label="Insert an emoji"
+            >
+              <Smile className="h-4 w-4" />
+            </button>
+          </div>
+
           <button
             ref={atButtonRef}
             onClick={() => {
@@ -497,54 +518,24 @@ export function MessageInputBar({
               if (pickerOpen) closePicker();
               else openPicker("");
             }}
-            className="p-1"
-            style={{ color: pickerOpen ? tok.text : tok.text2, transition: uiTransition() }}
-            aria-label="Share a build"
+            className="shrink-0"
+            aria-expanded={pickerOpen}
+            style={{ height: 32, padding: "0 12px", borderRadius: 16, fontSize: 13, fontWeight: 600, color: pickerOpen ? tok.text : tok.text2, background: pickerOpen ? tok.control : "transparent", transition: uiTransition() }}
           >
-            <AtSign className="h-5 w-5" />
+            Share a build
           </button>
-        </div>
 
-        {/* Text input */}
-        <div className="flex-1 relative">
-          <Textarea
-            ref={textareaRef}
-            value={text}
-            onChange={(e) => handleTextChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={pendingShare ? "Add a note (optional)…" : "Message…"}
-            /* The BG-P07 textarea already paints itself — `--recess` ground,
-               `--line` border, `--r-control` corners, the kit's focus ring. The
-               three classes dropped here (`rounded-full`, `bg-accent/50`,
-               `border-border`) were overriding all of that with a pill in a
-               shadcn palette colour. Sizes and padding stay: they are
-               structural. */
-            className="min-h-[36px] max-h-[120px] resize-none text-sm px-4 py-2 pr-10"
-            rows={1}
-          />
-          <button
-            onClick={() => setShowEmoji(!showEmoji)}
-            className="absolute right-3 bottom-2"
-            style={{ color: tok.text2, transition: uiTransition() }}
-            aria-label="Insert an emoji"
-          >
-            <Smile className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Right action */}
-        <div className="shrink-0 pb-1">
           {text.trim() || imageFile || pendingShare ? (
             <button
               onClick={imageFile ? sendImage : sendText}
               disabled={sending}
-              className="p-2"
+              className="shrink-0 flex items-center justify-center gap-1.5"
               style={{
-                // The one primary action on this surface: `--action` fill with
-                // `--on-action` on it, the measured pair (5.65:1 on Noon,
-                // 6.35:1 on Dusk). `bg-primary` was a shadcn palette colour and
-                // carried neither room's action hue.
-                borderRadius: r["r-control"],
+                height: 32,
+                padding: "0 14px",
+                borderRadius: 16,
+                fontSize: 13,
+                fontWeight: 600,
                 background: tok.action,
                 color: tok.onAction,
                 opacity: sending ? 0.6 : 1,
@@ -552,18 +543,18 @@ export function MessageInputBar({
               }}
               aria-label="Send"
             >
-              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Send
             </button>
           ) : (
-            // Tertiary, because there is one primary per view and the send
-            // button above is it. The heart is a ghost control in `--text2`.
+            // Nothing to send yet: the heart, a round ghost icon; Send takes its place once there is something.
             <button
               onClick={sendHeart}
-              className="p-2"
-              style={{ color: tok.text2, transition: uiTransition() }}
+              className="shrink-0 flex items-center justify-center"
+              style={{ width: 32, height: 32, borderRadius: "50%", color: tok.text2, transition: uiTransition() }}
               aria-label="Send a heart"
             >
-              <Heart className="h-5 w-5" />
+              <Heart className="h-4 w-4" />
             </button>
           )}
         </div>
