@@ -174,13 +174,13 @@ describe("BuildPage (site frame)", () => {
     renderAt();
     expect(await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" })).toBeTruthy();
     expect(screen.queryByTestId("build-shape-tag")).toBeNull();
-    expect(within(screen.getByTestId("build-proof")).queryByText("ran it")).toBeNull();
+    expect(screen.queryByTestId("build-proof")).toBeNull();
     expect(screen.queryByText("not yet reproduced")).toBeNull();
     expect(screen.getByText("£18.40")).toBeTruthy();
     expect(screen.getByText("35 min")).toBeTruthy();
     // What you need, in the proof card.
     expect(screen.getAllByText("A Google account").length).toBeGreaterThan(0);
-    expect(screen.getByTestId("build-hero").textContent).toContain("made by @maya");
+    expect(screen.getByTestId("build-author-row").textContent).toContain("@maya");
 
     const rows = screen.getAllByTestId("build-part-row");
     expect(rows.map((row) => row.getAttribute("data-part-id"))).toEqual(["n1", "n2", "n3", "n4"]);
@@ -259,11 +259,11 @@ describe("BuildPage (site frame)", () => {
     expect((click.mock.contexts[0] as HTMLAnchorElement).download).toBe("inbox-triage.openbuilds.json");
   });
 
-  it("sends a signed-out reader to sign in, for confirming and for rebuilding", async () => {
+  it("offers a signed-out reader no way to confirm: the build page has no reproduction control", async () => {
     renderAt();
     await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" });
-    fireEvent.click(screen.getByRole("button", { name: "Sign in to confirm" }));
-    expect(screen.getByTestId("path").textContent).toBe("/login?redirect=%2Fb2%2Finbox-triage");
+    expect(screen.queryByRole("button", { name: "Sign in to confirm" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /I ran this|Re-confirm/ })).toBeNull();
   });
 
   it("rebuilds through /rebuild/:slug, by way of sign-in when signed out", async () => {
@@ -280,84 +280,28 @@ describe("BuildPage (site frame)", () => {
     expect(screen.getAllByTestId("path").at(-1)?.textContent).toBe("/rebuild/inbox-triage");
   });
 
-  it("records a reader's reproduction with the model they used, then shows the count the database holds", async () => {
+  it("draws no reproduction control for a signed-in reader, and no dialog to record one", async () => {
     auth.isLoggedIn = true;
     auth.userId = "reader";
-    recordReproduction.mockResolvedValue({ id: "r1" });
-    getBuildHeader.mockResolvedValue({ ...header, reproduction_count: 1, last_confirmed_at: new Date().toISOString(), last_confirmed_model: "sonnet-4.5" });
     renderAt();
     await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" });
     expect(screen.queryByTestId("build-completeness")).toBeNull();
-
-    fireEvent.click(screen.getByRole("button", { name: "I ran this and it worked" }));
-    const dialog = await screen.findByRole("dialog", { name: "You ran this build" });
-    fireEvent.change(within(dialog).getByLabelText("Which model did you run it on?"), { target: { value: "sonnet-4.5" } });
-    await act(async () => {
-      fireEvent.click(within(dialog).getByRole("button", { name: "It worked" }));
-    });
-
-    expect(recordReproduction).toHaveBeenCalledWith({ buildId: "b", worked: true, modelUsed: "sonnet-4.5", note: "" });
-    expect(recordSelfConfirmation).not.toHaveBeenCalled();
-    await waitFor(() => expect(within(screen.getByTestId("build-proof")).getByText("1 reproduced")).toBeTruthy());
+    expect(screen.queryByRole("button", { name: /I ran this|Re-confirm/ })).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
+    expect(recordReproduction).not.toHaveBeenCalled();
   });
 
-  it("lets the creator re-confirm without inserting a reproduction, and shows them completeness", async () => {
+  it("shows the creator completeness, with no Re-confirm", async () => {
     auth.isLoggedIn = true;
     auth.userId = "maker";
-    recordSelfConfirmation.mockResolvedValue({ id: "b" });
-    getBuildHeader.mockResolvedValue({ ...header, last_confirmed_at: new Date().toISOString(), last_confirmed_model: "claude-opus-4-5" });
     renderAt();
     await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" });
 
     const block = screen.getByTestId("build-completeness");
     expect(block.textContent).not.toContain("Publish 60");
-    expect(block.textContent).toContain("Visible to you only");
     expect(block.textContent).toMatch(/Next: /);
-
-    fireEvent.click(screen.getByRole("button", { name: "Re-confirm it still works" }));
-    const dialog = await screen.findByRole("dialog", { name: "You ran your own build" });
-    expect(within(dialog).queryByLabelText("Anything worth adding? (optional)")).toBeNull();
-    fireEvent.change(within(dialog).getByLabelText("Which model did you run it on?"), { target: { value: "claude-opus-4-5" } });
-    await act(async () => {
-      fireEvent.click(within(dialog).getByRole("button", { name: "It still works" }));
-    });
-
-    expect(recordSelfConfirmation).toHaveBeenCalledWith({ buildId: "b", modelUsed: "claude-opus-4-5" });
-    expect(recordReproduction).not.toHaveBeenCalled();
-    // The clock moves; the count, and so the plaque, stays other people's.
-    await waitFor(() => expect(recordSelfConfirmation).toHaveBeenCalledTimes(1));
-    expect(within(screen.getByTestId("build-proof")).queryByText("ran it")).toBeNull();
-    expect(screen.queryByText("not yet reproduced")).toBeNull();
-  });
-
-  it("shows a reproduction at once, and rolls it back with a line in the proof panel if the write fails — never the exception", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    auth.isLoggedIn = true;
-    auth.userId = "reader";
-    let fail!: (reason: unknown) => void;
-    recordReproduction.mockReturnValue(new Promise((_, reject) => (fail = reject)));
-    renderAt();
-    await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" });
-    expect(screen.queryByText("not yet reproduced")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "I ran this and it worked" }));
-    const dialog = await screen.findByRole("dialog", { name: "You ran this build" });
-    fireEvent.click(within(dialog).getByRole("button", { name: "It worked" }));
-
-    // The new state is on screen before the server has answered, and the dialog has closed.
-    await waitFor(() => expect(screen.queryByText("not yet reproduced")).toBeNull());
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.queryByTestId("build-run-error")).toBeNull();
-
-    await act(async () => fail(new Error("recordReproduction failed: new row violates row-level security policy")));
-    const failed = await screen.findByTestId("build-run-error");
-    expect(failed.textContent).toContain("Couldn't save that. Try again.");
-    expect(failed.textContent).not.toContain("row-level security");
-    expect(screen.queryByText("not yet reproduced")).toBeNull();
-
-    fireEvent.click(within(failed).getByRole("button", { name: "Try again" }));
-    expect(await screen.findByRole("dialog", { name: "You ran this build" })).toBeTruthy();
-    vi.restoreAllMocks();
+    expect(screen.queryByRole("button", { name: "Re-confirm it still works" })).toBeNull();
+    expect(recordSelfConfirmation).not.toHaveBeenCalled();
   });
 
   it("credits a rebuild's source and says what changed against it", async () => {
@@ -560,7 +504,7 @@ describe("BuildPage (site frame) — the tab bodies, UI-P30", () => {
     expect(within(result).getByTestId("build-result-frame").textContent).toContain("214 invoices routed.");
   });
 
-  it("puts the comments and where next in glass panels under the first screen", async () => {
+  it("puts the comments and where next in panels under the first screen", async () => {
     getWhereNext.mockResolvedValue({
       rebuilds: [],
       sharedTool: null,
@@ -570,10 +514,10 @@ describe("BuildPage (site frame) — the tab bodies, UI-P30", () => {
     renderAt();
     await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" });
     const lower = screen.getByTestId("build-lower");
-    expect(within(lower).getByTestId("build-comments-panel").closest('[data-ui="panel"]')).not.toBeNull();
+    expect(within(lower).getByTestId("build-comments-panel").closest("section")).not.toBeNull();
 
     const row = await within(lower).findByTestId("where-next-maker");
-    expect(row.closest('[data-ui="panel"]')).not.toBeNull();
+    expect(row.closest("section")).not.toBeNull();
     expect(within(row).getByRole("heading", { level: 2, name: "More from Maya Okafor" })).toBeTruthy();
     expect(within(row).getAllByTestId("where-next-card")).toHaveLength(1);
     expect(getWhereNext).toHaveBeenCalledWith({ buildId: "b", creatorId: "maker", madeWith: ["claude-opus-4-5"] });
@@ -605,7 +549,7 @@ describe("BuildPage with the maker's thread", () => {
     const hero = screen.getByTestId("build-hero");
     expect(hero.getAttribute("data-hero")).toBe("thread");
     expect(within(screen.getByTestId("build-author-row")).getByText("Maya Okafor")).toBeTruthy();
-    expect(screen.getByTestId("build-author-row").textContent).toContain("@maya · 1 Sep");
+    expect(screen.getByTestId("build-author-row").textContent).toContain("@maya · published 1 Sep");
     expect(within(hero).getByText("I built this over a weekend.")).toBeTruthy();
     expect(within(hero).getByText("Here is what broke first.")).toBeTruthy();
     expect(within(hero).queryByRole("img", { name: /· Result$/ })).toBeNull();
@@ -644,11 +588,10 @@ describe("BuildPage with the maker's thread", () => {
     expect(isFollowingMaker).not.toHaveBeenCalled();
   });
 
-  it("without a thread keeps today's hero", async () => {
+  it("without a thread keeps the hero, and draws the title block with no Follow", async () => {
     renderAt();
     await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" });
     expect(screen.getByTestId("build-hero").getAttribute("data-hero")).toBeNull();
-    expect(screen.queryByTestId("build-author-row")).toBeNull();
     expect(screen.queryByRole("button", { name: /^Follow/ })).toBeNull();
   });
 });

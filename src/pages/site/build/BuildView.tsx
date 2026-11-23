@@ -1021,7 +1021,7 @@ export function BuildView(props: BuildViewProps) {
 function SummaryLine({ summary }: { summary: string | undefined }) {
   if (!summary) return null;
   return (
-    <p data-testid="build-summary" title={summary} style={{ ...text(12, 400, t.text2), margin: 0, minWidth: 0, maxWidth: "100%", ...ellipsis }}>
+    <p data-testid="build-summary" title={summary} style={{ ...text(13, 400, t.text2), margin: 0, minWidth: 0, maxWidth: "100%", ...ellipsis }}>
       {summary}
     </p>
   );

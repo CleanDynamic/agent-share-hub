@@ -30,6 +30,7 @@ import {
 } from "react";
 
 import { Button } from "@/components/brand/Button";
+import { Notepad, countLine } from "@/components/brand/Notepad";
 import { CodeLines } from "@/components/code/CodeLines";
 import { CodePartLine } from "../compose/CodePartLine";
 import { Eyebrow } from "@/components/brand/Eyebrow";
@@ -388,7 +389,7 @@ function ReadAll({ onRead, label = "Read all", expanded }: { onRead: () => void;
       style={{
         ...bareButton,
         height: 24,
-        ...text(12, 500, t.text),
+        ...text(13, 500, t.text),
         textDecoration: "underline",
         textUnderlineOffset: 3,
         textDecorationColor: state.hovered ? t.text2 : t.line,
@@ -400,24 +401,83 @@ function ReadAll({ onRead, label = "Read all", expanded }: { onRead: () => void;
   );
 }
 
-/** The text at 13.5/22 indented 36: four lines, then "Read all" and the word count. */
+/** Synth 08: a step's titled text boxes, one row each on Raised (radius 8, 6px 10px): the title 13/500 and its length in mono
+    13 Text 3 ("512 characters"). Pressing a row opens the notepad read only, sized to the text. A box with no title is not here. */
+function TitledBoxes({ boxes, indent = INDENT }: { boxes: readonly { title: string; text: string }[]; indent?: number }) {
+  const [open, setOpen] = useState<number | null>(null);
+  const rows = useRef<(HTMLButtonElement | null)[]>([]);
+  if (boxes.length === 0) return null;
+  const current = open === null ? null : boxes[open];
+  return (
+    <div data-testid="titled-boxes" style={{ display: "flex", flexDirection: "column", gap: 4, paddingLeft: indent }}>
+      {boxes.map((box, index) => (
+        <TitledBoxRow key={`${index}:${box.title}`} box={box} buttonRef={(node) => (rows.current[index] = node)} onOpen={() => setOpen(index)} />
+      ))}
+      <Notepad
+        open={current !== null}
+        onClose={() => setOpen(null)}
+        field={current?.title ?? ""}
+        value={current?.text ?? ""}
+        title={current?.title}
+        returnFocusTo={{ get current() { return open === null ? null : rows.current[open]; } }}
+      />
+    </div>
+  );
+}
+
+function TitledBoxRow({ box, buttonRef, onOpen }: { box: { title: string; text: string }; buttonRef: (node: HTMLButtonElement | null) => void; onOpen: () => void }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  return (
+    <button
+      ref={buttonRef}
+      type="button"
+      data-testid="titled-box"
+      aria-haspopup="dialog"
+      onClick={onOpen}
+      {...handlers}
+      style={{
+        ...bareButton,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
+        width: "100%",
+        minHeight: 32,
+        boxSizing: "border-box",
+        padding: "6px 10px",
+        borderRadius: 8,
+        background: state.hovered ? hoverFill(t.control) : t.control,
+        textAlign: "left",
+        cursor: "pointer",
+        ...ring(state.focusVisible),
+      }}
+    >
+      <span style={{ ...text(13, 500, t.text), minWidth: 0, overflowWrap: "anywhere" }}>{box.title}</span>
+      <span style={{ fontFamily: DM_MONO, fontSize: 13, color: t.label, whiteSpace: "nowrap", flexShrink: 0 }}>{countLine(box.text.length)}</span>
+    </button>
+  );
+}
+
+/** The text at 15/22 in Text 2 under the step's title: four lines, then the meta line (its word count, 13 Text 3) and "Read all". */
 function StepText({ step, onRead, alone = false, indent = INDENT }: { step: Step; onRead: () => void; alone?: boolean; indent?: number }) {
   const long = isLong(step);
-  if (!step.text) return null;
+  const boxes = step.boxes && step.boxes.length > 0 ? <TitledBoxes boxes={step.boxes} indent={indent} /> : null;
+  if (!step.text) return boxes;
   return (
     <>
+      {boxes}
       {step.origin || step.asksFor ? (
-        <p data-testid="prompt-origin" style={{ ...text(12, 400, t.label), margin: 0, paddingLeft: indent }}>
+        <p data-testid="prompt-origin" style={{ ...text(13, 400, t.label), margin: 0, paddingLeft: indent }}>
           {[step.origin ? originLine(step.origin) : null, step.asksFor ? ASKS_FOR_LABEL[step.asksFor] : null].filter(Boolean).join(" · ")}
         </p>
       ) : null}
       <p
         data-testid="step-text"
         style={{
-          ...text(13, 400, t.text),
+          ...text(15, 400, t.text2),
           margin: 0,
           paddingLeft: indent,
-          lineHeight: "21px",
+          lineHeight: "22px",
           whiteSpace: "pre-wrap",
           overflowWrap: "anywhere",
           ...(long ? { display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" as const, overflow: "hidden" } : null),
@@ -426,17 +486,17 @@ function StepText({ step, onRead, alone = false, indent = INDENT }: { step: Step
         <ChangedText text={step.text} changes={step.changes} />
       </p>
       {step.changes?.length ? (
-        <p data-testid="changes-line" style={{ ...text(12, 400, t.label), margin: 0, paddingLeft: indent }}>
+        <p data-testid="changes-line" style={{ ...text(13, 400, t.label), margin: 0, paddingLeft: indent }}>
           {changesLine(step.changes.length)}
         </p>
       ) : null}
       {long ? (
         <div style={{ display: "flex", alignItems: "center", gap: 12, paddingLeft: indent }}>
+          <span style={text(13, 400, t.label, tnum)}>{step.words} words</span>
           <ReadAll onRead={onRead} />
-          <span style={text(12, 400, t.label, tnum)}>{step.words} words</span>
         </div>
       ) : alone ? (
-        <div style={{ ...text(12, 400, t.label, tnum), paddingLeft: indent }}>{step.words} words</div>
+        <div style={{ ...text(13, 400, t.label, tnum), paddingLeft: indent }}>{step.words} words</div>
       ) : null}
     </>
   );

@@ -168,6 +168,8 @@ export interface Step {
   dismissed?: string[];
   /** UX-08 P1: the maker marked the step tile still open (`is_gap`); what is missing, in their words (`payload.gap_problem`), "" when none were written. */
   stillOpen?: string;
+  /** Synth 08: the step's titled text boxes, in order, read from `payload.text_boxes` (`{ title, text }`). A box with no title is left out: it shows nowhere on the page. */
+  boxes?: { title: string; text: string }[];
   children: Step[];
   /** A manual step's picture (its `media_id`), when it has one. */
   mediaId?: string | null;
@@ -475,6 +477,17 @@ const stringOf = (value: unknown): string | null => (typeof value === "string" &
 
 // G4: a refusal is our own sentence, so the screen may show it (screenError reads ShownError through the cause chain).
 const refuse = (operation: string, message: string): Error => buildLayerError(operation, new ShownError(message));
+
+/** Synth 08: the titled text boxes a step's payload holds; a box with no title or no text is not read. */
+export function titledBoxesOf(payload: Record<string, unknown>): { title: string; text: string }[] {
+  const list = payload.text_boxes;
+  if (!Array.isArray(list)) return [];
+  return list.flatMap((entry) => {
+    if (!entry || typeof entry !== "object") return [];
+    const { title, text } = entry as Record<string, unknown>;
+    return typeof title === "string" && title.trim() && typeof text === "string" && text.trim() ? [{ title: title.trim(), text }] : [];
+  });
+}
 
 /** Words in a text, split on whitespace. */
 export function wordCount(text: string): number {
@@ -1017,6 +1030,7 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     dismissed: dismissedOf(payload),
     children,
     ...(node.is_gap ? { stillOpen: gapProblem(node.payload) } : null),
+    ...(titledBoxesOf(payload).length > 0 ? { boxes: titledBoxesOf(payload) } : null),
     ...(summary ? { summary: true as const } : null),
     ...(kind === "manual" ? { mediaId: stringOf(payload.media_id), lines: manualLinesOf(text), ...(where ? { where } : null) } : null),
     ...((kind === "prompt" || kind === "agent" || kind === "code") && modelRunOf(payload.modelRun) ? { modelRun: modelRunOf(payload.modelRun) as ModelRun } : null),
