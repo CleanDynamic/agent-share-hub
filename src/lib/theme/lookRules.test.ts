@@ -2513,6 +2513,16 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     why: "The composer's Your sessions panel (UI-P64), there before CA-10, which only makes Add model's Other focus in the tap. Restyling it would change structural CSS on an existing layout element (RULES.md 3).",
   },
   {
+    rule: "spacing 34 is not in SPACE_REFINED",
+    text: 'margin: "8px 0 0 34px"',
+    why: "Synth 11: a reply to a reply sits 34 in, the 24 avatar and its 10 gap, so its avatar lines up under the parent's name.",
+  },
+  {
+    rule: "spacing 34 is not in SPACE_REFINED",
+    text: 'marginLeft: "34px"',
+    why: "Synth 11: the PostView test that holds a nested reply at the 34 indent the prompt gives.",
+  },
+  {
     rule: "spacing 14 is not in SPACE_REFINED",
     text: 'padding: "8px 8px 8px 14px"',
     why: "The strips at the top of the Build column (CA-23): padding 8 8 8 14 is the board's own measure for the Offline and Changed in another tab strips.",

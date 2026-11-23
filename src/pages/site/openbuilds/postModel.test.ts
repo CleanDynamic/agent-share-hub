@@ -107,9 +107,10 @@ describe("the Wall's cards", () => {
 
   it("names a rebuild's source and a new build as new", () => {
     const [jo, kit] = wallCards(thread, extras, NOW);
-    expect(kit).toMatchObject({ kind: "published", title: "Kit's screener", line: "Claude Code · Rebuilt from @maya", to: "/b2/kits-screener", rebuildTo: "/rebuild/kits-screener", pinned: false });
-    expect(jo).toMatchObject({ kind: "published", line: "Claude Code · new build", pinned: true });
-    expect(kit.kind === "published" ? kit.plaque?.reproduction_count : null).toBe(2);
+    // Synth 11: no harness beside the build, and no reproduction count on the card.
+    expect(kit).toMatchObject({ kind: "published", title: "Kit's screener", line: "Rebuilt from @maya", to: "/b2/kits-screener", rebuildTo: "/rebuild/kits-screener", pinned: false });
+    expect(jo).toMatchObject({ kind: "published", line: "new build", pinned: true });
+    expect(kit).not.toHaveProperty("plaque");
   });
 
   it("draws a build attached from a draft as in progress, with its sessions and when it was updated", () => {

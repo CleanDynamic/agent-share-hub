@@ -3,14 +3,16 @@
    state), so the Placeholder carries none of the page's code.
 
    The board is `design/reference/vision/dusk/openbuilds.html`. The surface and its padding belong to the site frame; what
-   is here starts at the columns. Columns `minmax(0, 1fr) 320px`, 72 apart, no rule between; below 1000 one column, the
-   side column after the main one, 48 apart. */
+   is here starts at the columns. Synth 11: panels on the page shade, `minmax(0, 1fr) 340px` from 1101, the side 300 from
+   761 to 1100, 8 apart; at 760 and below one column, the side panel after the main one. */
 
 import { forwardRef, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from "react";
 
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
-import { pageColumns } from "@/components/shell/pageGrid";
+import { panelColumns } from "@/components/shell/pageGrid";
+import { PANEL_GUTTER, PANEL_PAD, PANEL_RADIUS } from "@/components/shell/chromeSize";
+import { useColumnPanels } from "@/components/shell/frameChrome";
 import { PageLink as Link } from "@/lib/routing/PageLink";
 import { ring } from "@/lib/theme/controls";
 import { TOUCH_MIN } from "@/lib/theme/density";
@@ -20,24 +22,29 @@ import { PRIMARY, controlPaint } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
-/** The board's breakpoint: two columns above 1000. */
-const TWO_MIN = 1001;
+/** Synth 11: two panels from 761 (main and a side panel of 340, 300 from 761 to 1100); one column below. */
+const TWO_MIN = 761;
+const WIDE_SIDE_MIN = 1101;
 
 /** The boards' root: Geist 13 on a 20px line, numbers tabular. */
 const ROOT: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, lineHeight: "20px", color: t.text, fontVariantNumeric: "tabular-nums" };
 
-/** The page: the main column (48 between its groups) and the side column, each 64 above the footer. */
+/** A panel on the page shade: Panel fill, radius 12, no border. */
+const PANEL: CSSProperties = { boxSizing: "border-box", minWidth: 0, background: t.surface, borderRadius: PANEL_RADIUS, overflow: "clip" };
+
+/** The page: the main panel and the side panel, 8 apart; below 761 the side panel follows the main one. */
 export function OpenBuildsColumns({ main, side, testId = "openbuilds-page", sideLabel = "Your work" }: { main: ReactNode; side: ReactNode; testId?: string; /** UX-06: the side column's name. */ sideLabel?: string }) {
+  useColumnPanels(true);
   const two = useMinWidth(TWO_MIN);
+  const wide = useMinWidth(WIDE_SIDE_MIN);
   return (
     <div
       data-testid={testId}
       data-layout={two ? "two" : "one"}
-      /* Two columns: the page grid's main and side template (9 / 3). */
-      style={{ ...ROOT, ...(two ? pageColumns("mainSide") : { display: "grid", gridTemplateColumns: "minmax(0, 1fr)", rowGap: 48 }) }}
+      style={{ ...ROOT, ...(two ? panelColumns("two", { between: !wide }) : { display: "flex", flexDirection: "column", gap: PANEL_GUTTER }) }}
     >
-      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 48, paddingBottom: two ? 64 : 0 }}>{main}</div>
-      <aside aria-label={sideLabel} style={{ minWidth: 0, display: "flex", flexDirection: "column", paddingBottom: 64 }}>
+      <div style={{ ...PANEL, display: "flex", flexDirection: "column", padding: `${PANEL_PAD}px ${PANEL_PAD}px 48px` }}>{main}</div>
+      <aside aria-label={sideLabel} style={{ ...PANEL, display: "flex", flexDirection: "column", gap: 24, padding: `${PANEL_PAD}px 0` }}>
         {side}
       </aside>
     </div>

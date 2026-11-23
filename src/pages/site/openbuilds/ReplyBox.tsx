@@ -1,7 +1,7 @@
-/* UX-06 Part 2: the reply box. One is open at a time, at the foot of the Thread or under the reply it answers, and it carries the
-   view's one primary, Reply.
+/* UX-06 Part 2, Synth 11: the reply box. One is open at a time, at the foot of the Thread or under the reply it answers, and it
+   carries the view's one primary, Reply.
 
-   `Avatar` 24, then the box: `On Step 4 · Prompt` with a Remove link when the reply is about a step, a textarea (16 on a phone)
+   A Card (the Card fill, radius 12, 16 inside): `Avatar` 32, then `On Step 4 · Prompt` with a Remove link when the reply is about a step, a textarea in the field recipe
    saying `Reply with words, work, or both`, the one attachment with Remove, then Attach work (UX-05's picker in reply mode: someone
    else's work offers Mention instead), Add image or file, Make a step tile (Part 3: a small editor in the box; on Reply the build layer
    makes one draft, `Reply: <heading>`, with one session and the tile, and the reply attaches that step), and Reply. Text or one
@@ -15,7 +15,6 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { Avatar } from "@/components/brand/Avatar";
 import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
-import { useIsPhone } from "@/components/shell/useMinWidth";
 import { AttachmentView, PicturesBlock } from "@/components/post/PostCard";
 import { PostControl, PostPrimary } from "@/components/post/postControls";
 import { cardAttachment, type CardAttachment } from "@/components/post/postCardModel";
@@ -24,7 +23,7 @@ import { fileKindFor, MEDIA_MAX_BYTES } from "@/lib/build/media";
 import { reportError } from "@/lib/errors/report";
 import { readNamedWork, uploadEntryMedia, type AttachmentInput, type LabelledWork, type WorkSize } from "@/lib/openbuilds";
 import { NO_CARD_WORK, workNamedBy, type CardWork } from "@/lib/openbuilds/cardWork";
-import { ring } from "@/lib/theme/controls";
+import { fieldStyle, ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
@@ -61,12 +60,12 @@ export interface ReplyBoxProps {
   onSent?: () => void;
 }
 
-const textLine = (size: number, color: string): CSSProperties => ({ fontFamily: FIGTREE, fontSize: size, lineHeight: "16px", color, margin: 0 });
+const textLine = (size: 13 | 15, color: string): CSSProperties => ({ fontFamily: FIGTREE, fontSize: size, lineHeight: size === 15 ? "20px" : "16px", color, margin: 0 });
 
 function RemoveLink({ onClick, label }: { onClick: () => void; label: string }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
-    <button type="button" aria-label={label} onClick={onClick} {...handlers} style={{ ...textLine(12, t.text2), padding: 0, background: "none", border: 0, borderRadius: r.control, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3, ...(state.hovered ? { color: t.text } : null), ...ring(state.focusVisible) }}>
+    <button type="button" aria-label={label} onClick={onClick} {...handlers} style={{ ...textLine(13, t.text2), padding: 0, background: "none", border: 0, borderRadius: r.control, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3, ...(state.hovered ? { color: t.text } : null), ...ring(state.focusVisible) }}>
       Remove
     </button>
   );
@@ -75,7 +74,6 @@ function RemoveLink({ onClick, label }: { onClick: () => void; label: string }) 
 const EMPTY_TILE: ReplyStepTile = { kind: "prompt", text: "", tool: null, model: null };
 
 export function ReplyBox({ pageId, rootId, parentId, about, onRemoveAbout, signInTo, draftTitle, pick, onSent }: ReplyBoxProps) {
-  const phone = useIsPhone();
   const qc = useQueryClient();
   const { user, profile } = useAuth();
   const viewerId = user?.id ?? null;
@@ -179,11 +177,11 @@ export function ReplyBox({ pageId, rootId, parentId, about, onRemoveAbout, signI
 
   return (
     // UX-09 P1: `#reply-box` on a topic's address brings this box into view, with its field focused (Reply on a gap).
-    <div id={REPLY_BOX_ID} data-testid="reply-box" style={{ display: "grid", gridTemplateColumns: "24px minmax(0, 1fr)", columnGap: 12 }}>
-      <Avatar size={24} userId={viewerId ?? "signed-out"} name={name} src={profile?.avatar_url ?? null} />
+    <div id={REPLY_BOX_ID} data-testid="reply-box" style={{ display: "grid", gridTemplateColumns: "32px minmax(0, 1fr)", columnGap: 12, background: t.module, borderRadius: 12, padding: 16 }}>
+      <Avatar size={32} userId={viewerId ?? "signed-out"} name={name} src={profile?.avatar_url ?? null} />
       <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
         {about ? (
-          <p style={{ ...textLine(12, t.label), display: "flex", gap: 8, alignItems: "baseline" }}>
+          <p style={{ ...textLine(13, t.label), display: "flex", gap: 8, alignItems: "baseline" }}>
             <span>{`On ${about.label}`}</span>
             <RemoveLink onClick={onRemoveAbout} label={`Remove ${about.label}`} />
           </p>
@@ -199,7 +197,7 @@ export function ReplyBox({ pageId, rootId, parentId, about, onRemoveAbout, signI
           placeholder={REPLY_PLACEHOLDER}
           onChange={(event) => change({ body: event.target.value })}
           {...field.handlers}
-          style={{ boxSizing: "border-box", width: "100%", minHeight: 64, padding: "8px 12px", borderRadius: r.control, border: `1px solid ${t.controlBorder}`, background: t.well, color: t.text, fontFamily: FIGTREE, fontSize: phone ? 15 : 13, lineHeight: "20px", resize: "vertical", outline: "none", ...ring(field.state.focusVisible) }}
+          style={{ boxSizing: "border-box", width: "100%", minHeight: 64, padding: "8px 12px", ...fieldStyle(field.state, "area"), fontFamily: FIGTREE, lineHeight: "20px", resize: "vertical", outline: "none" }}
         />
         {tile ? <StepTileEditor tile={tile} onChange={setTile} idPrefix={`reply-tile-${parentId}`} /> : null}
         {drawn ? (
@@ -240,7 +238,7 @@ export function ReplyBox({ pageId, rootId, parentId, about, onRemoveAbout, signI
           )}
         </div>
         {notice ? (
-          <p role="alert" style={{ ...textLine(12, t.text), lineHeight: "20px" }}>
+          <p role="alert" style={textLine(15, t.text)}>
             {notice}
           </p>
         ) : null}

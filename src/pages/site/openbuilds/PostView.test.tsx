@@ -76,10 +76,10 @@ const props = (extra: Partial<PostViewProps> = {}): PostViewProps => ({
   },
   actions,
   side: {
-    space: { name: "Claude Code", to: "/openbuilds/spaces/claude-code", meta: "Made by @sam · 412 members", description: "Work made with Claude Code", joined: false, onJoin: vi.fn(), onLeave: vi.fn() },
-    rows: [
-      { label: "People replying", value: 4 },
-      { label: "Replies on Step 4", value: 1 },
+    space: { name: "Claude Code", to: "/openbuilds/spaces/claude-code", members: "412 members", madeBy: "Made by @sam", description: "Work made with Claude Code", joined: false, onJoin: vi.fn(), onLeave: vi.fn() },
+    builds: [
+      { key: "r1", name: "Kit's screener", meta: "@kit · Rebuilt from @maya", to: "/b2/kits" },
+      { key: "r2", name: "Ana's screener", meta: "@ana · In progress · 2 sessions", to: null },
     ],
   },
   ...extra,
@@ -97,48 +97,64 @@ describe("the post page's anatomy", () => {
     vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("min-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
   });
 
-  it("draws the crumbs as links and the post's heading as the page's h1, with the full body", () => {
+  it("draws a link to the space above the post and the post's lead line as the page's h1 at 20/600, with the full body", () => {
     draw();
-    const crumbs = screen.getByRole("navigation", { name: "Where this post is" });
-    expect(within(crumbs).getByRole("link", { name: "OpenBuilds" })).toHaveAttribute("href", "/openbuilds");
-    expect(within(crumbs).getByRole("link", { name: "Claude Code" })).toHaveAttribute("href", "/openbuilds/spaces/claude-code");
+    const up = screen.getByRole("navigation", { name: "Where this post is" });
+    expect(within(up).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/openbuilds/spaces/claude-code"]);
+    expect(up.style.fontSize).toBe("13px");
     const h1 = screen.getByRole("heading", { level: 1 });
     expect(h1).toHaveTextContent("Can anyone make the scorer faster?");
-    expect(h1).toHaveStyle({ fontSize: "20px", fontWeight: "500" });
+    expect(h1).toHaveStyle({ fontSize: "20px", fontWeight: "600" });
     // Not a link on its own page, and the body is not clamped.
     expect(screen.queryByTestId("post-card-heading-link")).toBeNull();
     expect(screen.getByText(/And a fourth\./).getAttribute("style") ?? "").not.toContain("line-clamp");
   });
 
-  it("offers only the Thread until a reply holds a build, and says the order", () => {
+  it("links to OpenBuilds above the post when the topic is in no space", () => {
+    draw({ crumbs: [{ label: "OpenBuilds", to: "/openbuilds" }] });
+    expect(within(screen.getByRole("navigation", { name: "Where this post is" })).getByRole("link", { name: "OpenBuilds" })).toHaveAttribute("href", "/openbuilds");
+  });
+
+  it("offers only the Thread pill until a reply holds a build, and says the order", () => {
     draw();
     const show = screen.getByRole("group", { name: "Show" });
-    expect(within(show).getAllByRole("button").map((button) => button.textContent)).toEqual(["Thread · 6"]);
+    expect(within(show).getAllByRole("button").map((button) => button.textContent)).toEqual(["Thread 6"]);
+    expect(within(show).getByRole("button", { name: "Thread 6" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("Oldest first")).toBeInTheDocument();
   });
 
   it("offers the Wall once a reply holds a build, and switches by the address's handler", () => {
     const onTab = vi.fn();
     draw({ builds: 3, onTab });
-    fireEvent.click(screen.getByRole("button", { name: "Wall · 3 builds" }));
+    fireEvent.click(screen.getByRole("button", { name: "Wall 3 builds" }));
     expect(onTab).toHaveBeenCalledWith("wall");
   });
 
-  it("draws a pinned reply in the module box with who pinned it", () => {
+  it("draws a pinned reply first inside a Card, with who pinned it after the age", () => {
     draw();
     const [maya] = screen.getAllByTestId("reply");
-    expect(within(maya).getByText("Pinned by @sam")).toBeInTheDocument();
+    const box = within(maya).getByTestId("reply-pinned");
+    expect(box).toHaveStyle({ borderRadius: "12px", padding: "16px" });
+    expect(box.style.border).toBe("");
+    expect(within(maya).getByText(/· Pinned by @sam$/)).toBeInTheDocument();
   });
 
-  it("draws two levels, the second 38 in over a hairline rule, and counts a deeper branch", () => {
+  it("draws a reply's name 15/600, its age and text at 15", () => {
+    draw();
+    const [maya] = screen.getAllByTestId("reply");
+    expect(within(maya).getByText("MAYA")).toHaveStyle({ fontSize: "15px", fontWeight: "600" });
+    expect(within(maya).getByText(/· Pinned by @sam$/)).toHaveStyle({ fontSize: "15px" });
+  });
+
+  it("draws two levels, the second 34 in, and counts a deeper branch", () => {
     draw();
     const nested = screen.getByRole("list", { name: "Replies to KIT" });
-    expect(nested).toHaveStyle({ marginLeft: "38px", borderLeft: "1px solid var(--hairline)" });
+    expect(nested).toHaveStyle({ marginLeft: "34px" });
     expect(within(nested).getAllByTestId("reply").map((entry) => entry.getAttribute("data-depth"))).toEqual(["1", "1"]);
     expect(within(nested).getByRole("link", { name: "View 3 more replies" })).toHaveAttribute("href", "/?reply=ola");
   });
 
-  it("draws Reply, Like and View more as text buttons 24 high with 4 side padding (the control-heights pass)", () => {
+  it("draws Reply, Like and View more as 13 text buttons 24 high with 4 side padding (the control-heights pass)", () => {
     draw();
     const first = screen.getAllByTestId("reply")[0];
     const controls = [
@@ -146,7 +162,7 @@ describe("the post page's anatomy", () => {
       within(first).getByRole("button", { name: "Like" }),
       screen.getByRole("link", { name: "View 3 more replies" }),
     ];
-    for (const control of controls) expect([control.style.height, control.style.padding], control.textContent ?? "").toEqual(["24px", "0px 4px"]);
+    for (const control of controls) expect([control.style.height, control.style.padding, control.style.fontSize], control.textContent ?? "").toEqual(["24px", "0px 4px", "13px"]);
   });
 
   it("marks a reply about a step, and shows a like count only above zero", () => {
@@ -166,13 +182,23 @@ describe("the post page's anatomy", () => {
     expect(onShowAll).toHaveBeenCalled();
   });
 
-  it("draws the space and In this post in the side column", () => {
+  it("heads the space's section in the side panel by its fact, then the builds in the post by their count", () => {
     draw();
     const side = screen.getByRole("complementary", { name: "About this post" });
-    expect(within(side).getByRole("link", { name: "Claude Code" })).toHaveAttribute("href", "/openbuilds/spaces/claude-code");
-    expect(within(side).getByText("Made by @sam · 412 members")).toBeInTheDocument();
-    expect(within(side).getByRole("button", { name: "Join Claude Code" })).toBeInTheDocument();
-    expect(within(side).getByText("People replying")).toBeInTheDocument();
-    expect(within(side).getByText("Replies on Step 4")).toBeInTheDocument();
+    const space = within(side).getByRole("region", { name: "Space" });
+    expect(within(space).getByRole("heading", { level: 2, name: "412 members" })).toBeInTheDocument();
+    expect(within(space).getByText("Work made with Claude Code")).toBeInTheDocument();
+    expect(within(space).getByText("Made by @sam")).toBeInTheDocument();
+    expect(within(space).getByRole("button", { name: "Join Claude Code" })).toHaveTextContent("Join space");
+    const builds = within(side).getByRole("region", { name: "Builds in this post" });
+    expect(within(builds).getByRole("heading", { level: 2, name: "2 builds in this post" })).toBeInTheDocument();
+    expect(within(builds).getByRole("link", { name: "Kit's screener" })).toHaveAttribute("href", "/b2/kits");
+    expect(within(builds).getByText("Ana's screener").tagName).toBe("SPAN");
+    expect(within(builds).getByText("@kit · Rebuilt from @maya")).toBeInTheDocument();
+  });
+
+  it("has no builds section while no reply holds a build", () => {
+    draw({ side: { space: null, builds: [] } });
+    expect(screen.queryByRole("region", { name: "Builds in this post" })).toBeNull();
   });
 });

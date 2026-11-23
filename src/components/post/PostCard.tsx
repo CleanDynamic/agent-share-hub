@@ -22,7 +22,7 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { PostControl } from "./postControls";
-import { repliesWords, type CardAttachment, type PostCardData } from "./postCardModel";
+import { repliesWords, sessionsWords, type CardAttachment, type PostCardData } from "./postCardModel";
 
 /** What a moderator can do to a post, from its `···` menu. */
 export interface CardModeration {
@@ -36,7 +36,7 @@ export interface PostCardProps {
   card: PostCardData;
   /** A list clamps the text to three lines; the post's own page does not. */
   clamp?: boolean;
-  /** UX-06: the post's own page: the heading is the page's `h1`, 20/500, and not a link; the text is never clamped. */
+  /** UX-06: the post's own page: the heading is the page's `h1`, 20/600, and not a link; the text is never clamped. */
   page?: boolean;
   /** G12: the heading's level in a feed: 3 under a section's h2 (the default), 2 where the feed sits right under the page's h1 (a profile). */
   headingLevel?: 2 | 3;
@@ -82,15 +82,14 @@ function SpaceLink({ to, children }: { to: string; children: string }) {
   );
 }
 
+/** Synth 11: attached work as a Card: "Build" in Text 3, the name 15/600, the facts in 13 Text 3 joined by " · " (its sessions and steps), then the steps. */
 function BuildAttachment({ attachment, onPickTile, renderTile }: { attachment: Extract<CardAttachment, { kind: "build" }>; onPickTile?: (id: string) => void; renderTile?: PostCardProps["renderTile"] }) {
+  const facts = [attachment.sessions > 0 ? sessionsWords(attachment.sessions) : null, attachment.steps > 0 ? `${attachment.steps} ${attachment.steps === 1 ? "step" : "steps"}` : null].filter(Boolean).join(" · ");
   return (
-    <div>
-      <div style={{ background: t.module, borderRadius: 12, padding: "12px 14px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ ...plain, fontSize: 13, fontWeight: 500, overflowWrap: "anywhere" }}>{attachment.title}</div>
-          <div style={{ ...plain, fontSize: 13, color: t.label }}>{[attachment.harness ?? "Harness", attachment.steps > 0 ? `${attachment.steps} ${attachment.steps === 1 ? "step" : "steps"}` : null].filter(Boolean).join(" · ")}</div>
-        </div>
-              </div>
+    <div data-testid="post-card-build" style={{ background: t.module, borderRadius: 12, padding: "12px 14px" }}>
+      <div style={{ ...plain, fontSize: 13, lineHeight: "16px", color: t.label }}>Build</div>
+      <div style={{ ...plain, marginTop: 2, fontSize: 15, fontWeight: 600, lineHeight: "20px", overflowWrap: "anywhere" }}>{attachment.title}</div>
+      {facts ? <div style={{ ...plain, fontSize: 13, lineHeight: "16px", color: t.label }}>{facts}</div> : null}
       <StepStripTiles tiles={attachment.tiles} openLabel="Still open" margin="8px 0 0" onPick={onPickTile} renderTile={renderTile} />
     </div>
   );
@@ -226,7 +225,9 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
       </div>
 
       <div style={{ gridColumn: 2, minWidth: 0 }}>
-        {/* Head: name, @handle · age · in spaces; the reward and Pinned at the right end. */}
+        {/* Synth 11: a pinned card says so above the author line, 13 in Text 2. */}
+        {card.pinned ? <div style={{ ...plain, fontSize: 13, lineHeight: "16px", color: t.text2, marginBottom: 4 }}>Pinned</div> : null}
+        {/* Head: name, @handle · age · in spaces; the reward at the right end. */}
         <div style={{ display: "flex", alignItems: "baseline", gap: 6, minHeight: 24, marginBottom: 4 }}>
           <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexWrap: "wrap", alignItems: "baseline", columnGap: 6 }}>
             <span style={{ ...plain, fontSize: 15, fontWeight: 600, lineHeight: "20px" }}>{name}</span>
@@ -241,7 +242,6 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
               ))}
             </span>
           </div>
-          {card.pinned ? <span style={{ ...plain, flex: "none", fontSize: 13, color: label }}>Pinned</span> : null}
           {card.reward ? <span style={{ ...plain, flex: "none", fontSize: 13, fontWeight: 500 }}>{card.reward}</span> : null}
           {moderation || onReport || onMessage || onBlock ? <ModerationMenu card={card} moderation={moderation} onAsk={() => setAsking(true)} onReport={onReport} onMessage={onMessage} onBlock={onBlock} /> : null}
         </div>
@@ -256,7 +256,7 @@ export function PostCard({ card: full, clamp = true, page = false, headingLevel 
         ) : null}
 
         {page ? (
-          <h1 style={{ ...plain, fontSize: 20, fontWeight: 500, lineHeight: 1.3, letterSpacing: "-0.015em", overflowWrap: "anywhere" }}>{card.heading || "Untitled post"}</h1>
+          <h1 style={{ ...plain, fontSize: 20, fontWeight: 600, lineHeight: "24px", letterSpacing: "-0.01em", overflowWrap: "anywhere" }}>{card.heading || "Untitled post"}</h1>
         ) : (
           <HeadingLink to={card.to} level={headingLevel}>
             {card.heading || "Untitled post"}

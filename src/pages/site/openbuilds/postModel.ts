@@ -7,7 +7,6 @@
 //
 // Words a reader sees say "step"; the reply's own editor says "step tile".
 
-import type { PlaqueBuild } from "@/components/brand/Plaque";
 import { cardAttachment, splitBody, type CardAttachment } from "@/components/post/postCardModel";
 import { kindOfNode, topSteps } from "@/lib/build/graph";
 import { REF_KIND } from "@/lib/build/postRefs";
@@ -239,9 +238,8 @@ export type WallCard =
       replyId: string;
       title: string;
       author: ReplyItem["author"];
-      /** "Claude Code · Rebuilt from @maya", or "Claude Code · new build". */
+      /** "Rebuilt from @maya", or "new build". */
       line: string;
-      plaque: PlaqueBuild | null;
       pinned: boolean;
       to: string;
       rebuildTo: string;
@@ -282,7 +280,6 @@ export function wallCards(thread: PostThread, extras: Pick<PostPageExtras, "work
     const card = attachment.buildId ? extras.work.builds.get(attachment.buildId) : undefined;
     const facts = attachment.buildId ? extras.facts.get(attachment.buildId) : undefined;
     if (!card?.slug || card.status === "draft") return [];
-    const harness = card.madeWith?.trim() || null;
     const origin = facts?.parentBuildId ? (facts.sourceHandle ? `Rebuilt from @${facts.sourceHandle}` : "Rebuilt") : "new build";
     return [
       {
@@ -290,8 +287,7 @@ export function wallCards(thread: PostThread, extras: Pick<PostPageExtras, "work
         replyId: reply.id,
         title: card.title?.trim() || "Untitled build",
         author,
-        line: [harness, origin].filter(Boolean).join(" · "),
-        plaque: { reproduction_count: card.reproduction_count, last_confirmed_at: card.last_confirmed_at, last_confirmed_model: card.last_confirmed_model, published_at: card.published_at },
+        line: origin,
         pinned,
         to: `/b2/${card.slug}`,
         rebuildTo: `/rebuild/${card.slug}`,
@@ -404,5 +400,5 @@ export function lineUpOf(thread: PostThread, postBuildId: string | null, extras:
 export const replyDraftTitle = (post: Pick<Post, "body">): string => `Reply: ${splitBody(post.body).heading || "a post"}`.slice(0, 140);
 
 /** "6 replies"-style counts for the switch: `Thread · 6`, `Wall · 3 builds`. */
-export const threadLabel = (replies: number): string => `Thread · ${replies}`;
-export const wallLabel = (builds: number): string => `Wall · ${builds} ${builds === 1 ? "build" : "builds"}`;
+export const threadLabel = (replies: number): string => `Thread ${replies}`;
+export const wallLabel = (builds: number): string => `Wall ${builds} ${builds === 1 ? "build" : "builds"}`;
