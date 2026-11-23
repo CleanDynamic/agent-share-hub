@@ -118,15 +118,19 @@ describe("selection on the ladder (F3)", () => {
 });
 
 describe("selection on the composer's tiles (F3)", () => {
-  it("a selected tile keeps the unselected fill and takes the selected border", async () => {
-    const { tileStyle } = await import("@/pages/site/compose/tileRecipes");
+  it("a selected module keeps the unselected fill and takes the selected border", async () => {
     const { moduleStyle } = await import("@/pages/site/compose/refinedStyles");
-    for (const recipe of [tileStyle, moduleStyle]) {
-      expect(recipe(true).background).toBe(recipe(false).background);
-      expect(recipe(true).border).toBe("1px solid var(--selected-edge)");
-      expect(recipe(false).border).not.toBe(recipe(true).border);
-      expect(recipe(true).boxShadow).toBe(recipe(false).boxShadow);
-    }
+    expect(moduleStyle(true).background).toBe(moduleStyle(false).background);
+    expect(moduleStyle(true).border).toBe("1px solid var(--selected-edge)");
+    expect(moduleStyle(false).border).not.toBe(moduleStyle(true).border);
+    expect(moduleStyle(true).boxShadow).toBe(moduleStyle(false).boxShadow);
+  });
+
+  it("Synth 09: a selected tile keeps its fill and its border (free for a maker's colour) and takes the Mint ring outside a gap", async () => {
+    const { tileStyle } = await import("@/pages/site/compose/tileRecipes");
+    expect(tileStyle(true).background).toBe(tileStyle(false).background);
+    expect(tileStyle(true).border).toBe(tileStyle(false).border);
+    expect(tileStyle(true).boxShadow).toBe("0 0 0 2px var(--surface), 0 0 0 4px var(--brand-accent)");
   });
 });
 

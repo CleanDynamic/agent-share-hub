@@ -85,10 +85,11 @@ export const COMPOSER_PAD = space[8];
 export const HEAD_GAP = 18;
 
 /* CA-18 P5: the overlay panel of a smaller window, and the foot that says a click edits. */
-/** CA-27 P4: the panel is 300 wide on a tablet. */
-export const OVERLAY_WIDTH = 300;
-/** Where a window stops being a tablet's: the panel says "Tap to edit" up to here (and on any touch screen). */
-export const TABLET_MAX = 1152;
+/** Synth 09: Details over the build (761 to 1100) is 340 wide, as it is beside the build. */
+export const OVERLAY_WIDTH = 340;
+/** Where a window stops being a tablet's: the panel says "Tap to edit" up to here (and on any touch screen). Synth 09: the
+    panel is drawn up to 1100, so a tablet is up to 1023 and 1024 to 1100 with a mouse says "Click to edit". */
+export const TABLET_MAX = 1023;
 /** CA-27 P4: the panel's padding. */
 export const OVERLAY_PANEL_PAD = 14;
 export const OVERLAY_EDGE = 8;

@@ -10,7 +10,7 @@
       has some. When two share a code, an inner panel says so, with Make them a group.
    3. Your saved colours, "Shared across builds", with the picker's menu.
 
-   The footer: Undo and Redo, "Clear all colours and links…" in the danger colour, and Done. Deleting, merging and clearing
+   The footer: Undo and Redo, "Clear all colours and links…" as a ghost button (Synth 09), and Done. Deleting, merging and clearing
    ask first; everything else happens at once, and Undo is the way back. Readers never get this window. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
@@ -23,7 +23,7 @@ import { t } from "@/lib/theme/tokens";
 
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { ModalShell } from "./ModalFrame";
-import { COUNT, MODAL_PAD, ModalInset, RecipeButton, bodyStyle, footerStyle, iconButtonSide } from "./modalRecipes";
+import { COUNT, MODAL_PAD, ModalInset, RecipeButton, bodyStyle, footerStyle, iconButtonSide, MODAL_WIDTH } from "./modalRecipes";
 import { menuItem, menuSurface } from "./refinedStyles";
 import { Badge, BlockTitle, ConfirmDialog, DANGER, ELLIPSIS, GAP, GhostIcon, InnerPanel, SortableRows, SquareSwatch, UndoRedo, words } from "./referencePieces";
 import { r } from "@/lib/theme/radius";
@@ -201,7 +201,7 @@ function ColoursBody(props: ColoursWindowProps) {
                 render: (grip) => (
                   <span data-colours-group={group.id} data-menu-open={menuOpen === group.id || undefined} style={{ display: "flex", alignItems: "center", gap: GAP.row, flexGrow: 1, minWidth: 0, alignSelf: "stretch", padding: "0 4px", borderRadius: 6, background: menuOpen === group.id ? t.tile : "transparent" }}>
                     {grip}
-                    <SquareSwatch colour={group.colour} />
+                    <SquareSwatch colour={group.colour} size={14} />
                     <span style={{ ...words(textStep.body, 500, group.name ? t.text : t.text2), ...ELLIPSIS }}>{groupName(group)}</span>
                     <span style={{ ...COUNT, flexGrow: 1 }}>{group.colour}</span>
                     <span style={{ ...words(textStep.meta, 400, t.label), flexShrink: 0 }}>
@@ -239,7 +239,7 @@ function ColoursBody(props: ColoursWindowProps) {
                   render: (grip) => (
                     <span data-colours-single={ref} style={{ display: "flex", alignItems: "center", gap: GAP.row, flexGrow: 1, minWidth: 0, padding: "0 4px" }}>
                       {grip}
-                      <SquareSwatch colour={colour} />
+                      <SquareSwatch colour={colour} size={14} />
                       <Badge>{lookup.get(ref)?.number ?? ""}</Badge>
                       <span style={{ ...words(textStep.body, 500, t.text), ...ELLIPSIS }}>{nameOf(ref)}</span>
                       <span style={{ ...COUNT, flexGrow: 1 }}>{colour}</span>
@@ -263,7 +263,7 @@ function ColoursBody(props: ColoursWindowProps) {
             {props.swatches.favourites.length === 0 ? <span style={words(textStep.meta, 400, t.text2)}>{COLOURS_COPY.noSaved}</span> : null}
             <div data-swatch-row="" style={{ display: "flex", flexWrap: "wrap", gap: GAP.swatch }}>
               {props.swatches.favourites.map((hex) => (
-                <SavedSwatch key={hex} hex={hex} current={false} onUse={() => undefined} onRemove={() => props.onSwatches({ ...props.swatches, favourites: props.swatches.favourites.filter((entry) => entry !== hex) })} />
+                <SavedSwatch key={hex} large hex={hex} current={false} onUse={() => undefined} onRemove={() => props.onSwatches({ ...props.swatches, favourites: props.swatches.favourites.filter((entry) => entry !== hex) })} />
               ))}
             </div>
           </div>
@@ -271,9 +271,10 @@ function ColoursBody(props: ColoursWindowProps) {
       </ModalInset.Provider>
       <div data-testid="colours-footer" style={footerStyle(phone)}>
         <UndoRedo phone={phone} canUndo={history.canUndo} canRedo={history.canRedo} onUndo={history.onUndo} onRedo={history.onRedo} />
-        <button type="button" data-testid="colours-clear" onClick={() => setConfirm({ kind: "clear" })} style={{ appearance: "none", background: "none", border: 0, padding: phone ? "12px 0" : 0, cursor: "pointer", ...words(textStep.meta, 500, DANGER) }}>
+        {/* Synth 09: a ghost button; the danger is in the question it asks. */}
+        <RecipeButton variant="ghost" phone={phone} data-testid="colours-clear" onClick={() => setConfirm({ kind: "clear" })}>
           {COLOURS_COPY.clear}
-        </button>
+        </RecipeButton>
         <span style={{ flexGrow: 1 }} />
         <RecipeButton variant="primary" phone={phone} onClick={props.onClose}>
           {COLOURS_COPY.done}
@@ -281,7 +282,7 @@ function ColoursBody(props: ColoursWindowProps) {
       </div>
       <ConfirmDialog
         open={confirm?.kind === "clear"}
-        width={420}
+        width={MODAL_WIDTH.standard}
         testId="colours-clear-confirm"
         title={COLOURS_COPY.clearTitle}
         body={COLOURS_COPY.clearBody(groups.length, singlesCount, props.linkCount)}
@@ -323,7 +324,7 @@ function ColoursBody(props: ColoursWindowProps) {
 export function ColoursWindow(props: ColoursWindowProps) {
   const { open, onClose } = props;
   return (
-    <ModalShell open={open} onOpenChange={(next) => !next && onClose()} title={COLOURS_COPY.title} subtitle={COLOURS_COPY.subtitle} width={600} testId="colours-window">
+    <ModalShell open={open} onOpenChange={(next) => !next && onClose()} title={COLOURS_COPY.title} subtitle={COLOURS_COPY.subtitle} width={MODAL_WIDTH.standard} testId="colours-window">
       <ColoursBody {...props} />
     </ModalShell>
   );

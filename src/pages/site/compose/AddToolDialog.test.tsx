@@ -39,7 +39,7 @@ describe("Add › Tool (CA-02 P6, CA-12 P7, CA-15 P4)", () => {
     expect(screen.getByRole("dialog", { name: TOOL_DIALOG_COPY.title })).toBeTruthy();
     expect(screen.getByTestId("modal-subtitle").textContent).toBe("External app the model used");
     expect(toolButton().textContent).toBe("Select an app");
-    expect(screen.getByTestId("modal-status").textContent).toBe("Required: App");
+    expect(screen.getByTestId("modal-status").textContent).toBe("Required: an application");
     expect(add().disabled).toBe(true);
     expect(screen.getByTestId("optional-count").textContent).toBe("6 fields");
     expect(screen.getByTestId("optional-toggle").getAttribute("aria-expanded")).toBe("false");

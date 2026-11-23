@@ -158,21 +158,22 @@ describe("the refined look (UI-P93)", () => {
       </MemoryRouter>,
     );
 
-  it("lists the two groups in order, each session with its tool's real mark and a toggle", () => {
+  it("lists the two groups in order, each session with a toggle and no tool mark (Synth 09)", () => {
     panel();
     expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["In this build", "Available to add"]);
     const sessions = screen.getByRole("region", { name: "In this build" });
     expect(within(sessions).getAllByRole("button", { name: /^Open session/ })).toHaveLength(3);
-    expect(sessions.querySelectorAll("[data-mark]")).toHaveLength(3);
+    expect(sessions.querySelectorAll("[data-mark]")).toHaveLength(0);
   });
 
-  it("has a 6px square per group (hollow for Available to add), a boxed 26 Add session, and no dashed drop zone (UX-02 P8)", () => {
+  it("has a 6px square per group (hollow for Available to add), a boxed 26 Add session, and the drop zone as a dashed 12-radius area over dots (Synth 09)", () => {
     panel();
     const add = screen.getAllByRole("button", { name: "Add session" })[0];
     expect(add.getAttribute("style")).toMatch(/width:\s*32px/); // S6
     const html = markup();
     expect(html).toContain("width:6px;height:6px;box-sizing:border-box;border-radius:1px;background:transparent;border:1px solid var(--text2)");
-    expect(html).not.toContain("dashed");
+    expect(html).toContain("border-radius:var(--r-panel);border:1px dashed var(--field-edge)");
+    expect(screen.getByTestId("drop-dots")).toBeTruthy();
     expect(html).toContain("Or drop files anywhere on the build.");
   });
 });

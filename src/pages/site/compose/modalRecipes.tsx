@@ -46,6 +46,7 @@ import {
   createContext,
   isValidElement,
   useContext,
+  useEffect,
   useId,
   useRef,
   useState,
@@ -472,6 +473,26 @@ function writeBack(box: HTMLTextAreaElement, text: string) {
   box.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
+/* ── Synth 09: titled text boxes ──
+   A window's boxes start from the titles the tile has (`seed`, by box name) and, when its form is submitted, hand every
+   box's title to `commit` (blank ones too, so a cleared title comes off). `expand` names a box to open in the notepad as the
+   window opens: a tile's titled row does that, and Done then saves the window. Provided round a window by whoever opens it
+   (the editor page for an Add, the tile's own edit window); without it a title lives only while the window is open. */
+
+export interface BoxTitleSink {
+  seed?: Readonly<Record<string, string>>;
+  commit?: (titles: Record<string, string>) => void;
+  expand?: string | null;
+}
+export const BoxTitleSinkContext = createContext<BoxTitleSink>({});
+
+/** What a form gives its boxes: where each one writes its title, and how Done in an expanded box saves the window. */
+export interface BoxTitleCollector {
+  set: (name: string, title: string) => void;
+  submit: () => void;
+}
+export const BoxTitleCollectorContext = createContext<BoxTitleCollector | null>(null);
+
 /** The words a box is called, for the notepad's head: its own name, or its label's. */
 function nameOf(box: HTMLTextAreaElement | null): string {
   if (!box) return "Text";
@@ -491,12 +512,36 @@ export function FieldArea({ phone, rows, mono = false, onFocus, onBlur, title, o
   const focus = useFocused<HTMLTextAreaElement>(onFocus, onBlur);
   const box = useRef<HTMLTextAreaElement | null>(null);
   const expand = useRef<HTMLButtonElement>(null);
-  const [kept, setKept] = useState(title ?? "");
+  const sink = useContext(BoxTitleSinkContext);
+  const collector = useContext(BoxTitleCollectorContext);
+  const [kept, setKept] = useState(title ?? (rest["aria-label"] ? (sink.seed?.[rest["aria-label"]] ?? "") : ""));
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
+  /** Opened from the tile's titled row: Done saves the window too. */
+  const [fromTile, setFromTile] = useState(false);
   const shownTitle = onTitleChange ? (title ?? "") : kept;
-  const setTitle = (next: string) => (onTitleChange ? onTitleChange(next) : setKept(next));
+  const setTitle = (next: string) => {
+    if (onTitleChange) onTitleChange(next);
+    else setKept(next);
+    collector?.set(nameOf(box.current), next);
+  };
   const name = rest["aria-label"] ?? "";
+  /* A box named by its <label> (not aria-label) learns its name once drawn: its seeded title, and the box the tile asked for. */
+  useEffect(() => {
+    const named = nameOf(box.current);
+    const seeded = sink.seed?.[named];
+    if (!onTitleChange && !kept && seeded) {
+      setKept(seeded);
+      collector?.set(named, seeded);
+    } else if (shownTitle) collector?.set(named, shownTitle);
+    if (sink.expand && sink.expand === named) {
+      setText(box.current?.value ?? "");
+      setFromTile(true);
+      setOpen(true);
+    }
+    // Once, as the window opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const titleId = useId();
   return (
     <div data-testid="field-area" style={{ display: "flex", flexDirection: "column", gap: space[2], minWidth: 0 }}>
@@ -549,7 +594,11 @@ export function FieldArea({ phone, rows, mono = false, onFocus, onBlur, title, o
         value={text}
         title={shownTitle}
         onTitleChange={setTitle}
-        onDone={(next) => box.current && writeBack(box.current, next)}
+        onDone={(next) => {
+          if (box.current) writeBack(box.current, next);
+          /* From the tile's row: the window saves once the field has taken the text. */
+          if (fromTile) window.setTimeout(() => collector?.submit(), 0);
+        }}
         returnFocusTo={expand}
       />
     </div>
@@ -624,7 +673,7 @@ export interface SegmentedFieldProps<V extends string> {
   testId?: string;
 }
 
-/** One choice from a few: a radio group, the arrows move the choice. Items share the width and wrap when they must. */
+/** One choice from a few, as pills (Synth 09): a radio group, the arrows move the choice; the pills wrap when they must. */
 export function SegmentedField<V extends string>({ label, items, value, onChange, phone, testId = "segmented" }: SegmentedFieldProps<V>) {
   const group = useRef<HTMLDivElement>(null);
   const stop = items.some((item) => item.value === value) ? value : items.find((item) => !item.disabled)?.value;
@@ -646,7 +695,8 @@ export function SegmentedField<V extends string>({ label, items, value, onChange
       data-ui="segmented"
       data-testid={testId}
       onKeyDown={onKeyDown}
-      style={{ display: "flex", flexWrap: "wrap", gap: 2, padding: 2, boxSizing: "border-box", width: "100%", minWidth: 0, background: t.segTrack, border: `1px solid ${t.segBorder}`, borderRadius: r.card }}
+      /* Synth 09: pills, 6 apart, wrapping; no track. */
+      style={{ display: "flex", flexWrap: "wrap", gap: 6, boxSizing: "border-box", width: "100%", minWidth: 0 }}
     >
       {items.map((item) => (
         <Segment key={item.value} item={item} current={item.value === value} tabStop={item.value === stop} phone={phone} onPick={() => onChange(item.value)} />
@@ -667,22 +717,94 @@ function Segment<V extends string>({ item, current, tabStop, phone, onPick }: { 
       onClick={item.disabled ? undefined : onPick}
       {...handlers}
       style={{
-        flex: "1 1 0",
+        flex: "0 0 auto",
         boxSizing: "border-box",
         height: phone ? size.touch : size.control,
-        padding: `0 ${space[3]}px`,
-        borderRadius: r.control,
-        border: "1px solid transparent",
-        background: "transparent",
+        padding: "0 14px",
+        borderRadius: r.full,
+        border: 0,
+        background: state.hovered ? hoverFill(t.control) : t.control,
         whiteSpace: "nowrap",
-        ...type(textStep.meta, 400, state.hovered ? t.text : t.text2),
+        ...type(textStep.meta, 500, t.text),
         cursor: item.disabled ? "default" : "pointer",
-        ...(current ? { background: t.controlOn, borderColor: t.segOnBorder, color: t.text, boxShadow: "none" } : null),
+        ...(current ? { background: t.action, color: t.onAction } : null),
         ...(item.disabled ? { filter: t.dimFilter } : null),
         ...ring(state.focusVisible),
       }}
     >
       {item.label}
+    </button>
+  );
+}
+
+/* ── choice cards (Synth 09) ── */
+
+export interface ChoiceCardItem<V extends string> {
+  value: V;
+  label: string;
+  /** One line under the label (13, Text 3): why it cannot be chosen, for one that is disabled. */
+  line?: string;
+  disabled?: boolean;
+}
+
+/**
+ * One choice from two or three, as cards side by side: a radio group, the arrows move the choice. A card is padded 12 14,
+ * radius 12, the label 15/500; the chosen one is on Raised with the Mint ring; a disabled one is at .55 with its line.
+ */
+export function ChoiceCards<V extends string>({ label, items, value, onChange, phone }: { label: string; items: readonly ChoiceCardItem<V>[]; value: V | null; onChange: (value: V) => void; phone: boolean }) {
+  const group = useRef<HTMLDivElement>(null);
+  const stop = items.some((item) => item.value === value) ? value : items.find((item) => !item.disabled)?.value;
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const step = event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 0;
+    if (step === 0) return;
+    event.preventDefault();
+    const from = Math.max(0, items.findIndex((item) => item.value === value));
+    let to = (from + step + items.length) % items.length;
+    for (let tries = 0; items[to].disabled && tries < items.length; tries++) to = (to + step + items.length) % items.length;
+    onChange(items[to].value);
+    group.current?.querySelectorAll<HTMLElement>('[role="radio"]')[to]?.focus();
+  };
+  return (
+    <div ref={group} role="radiogroup" aria-label={label} data-testid="choice-cards" onKeyDown={onKeyDown} style={{ display: "grid", gridTemplateColumns: phone ? "minmax(0, 1fr)" : `repeat(${items.length}, minmax(0, 1fr))`, gap: space[2], minWidth: 0, padding: 4, margin: -4 }}>
+      {items.map((item) => (
+        <ChoiceCard key={item.value} item={item} current={item.value === value} tabStop={item.value === stop} phone={phone} onPick={() => onChange(item.value)} />
+      ))}
+    </div>
+  );
+}
+
+function ChoiceCard<V extends string>({ item, current, tabStop, phone, onPick }: { item: ChoiceCardItem<V>; current: boolean; tabStop: boolean; phone: boolean; onPick: () => void }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>({}, { disabled: item.disabled });
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={current}
+      disabled={item.disabled || undefined}
+      tabIndex={tabStop ? 0 : -1}
+      onClick={item.disabled ? undefined : onPick}
+      data-testid="choice-card"
+      {...handlers}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+        gap: 2,
+        minHeight: phone ? size.touch : 56,
+        boxSizing: "border-box",
+        padding: "12px 14px",
+        border: 0,
+        borderRadius: r.panel,
+        textAlign: "left",
+        background: current ? t.control : state.hovered && !item.disabled ? hoverFill(t.module) : t.module,
+        boxShadow: current ? `0 0 0 2px ${t.window}, 0 0 0 4px ${t.brandAccent}` : `inset 0 0 0 1px ${t.fieldEdge}`,
+        opacity: item.disabled ? 0.55 : 1,
+        cursor: item.disabled ? "default" : "pointer",
+        ...ring(state.focusVisible),
+      }}
+    >
+      <span style={type(textStep.body, 500, t.text, 20)}>{item.label}</span>
+      {item.line ? <span style={type(textStep.meta, 400, t.label, 17)}>{item.line}</span> : null}
     </button>
   );
 }

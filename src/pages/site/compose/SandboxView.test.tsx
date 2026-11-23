@@ -257,13 +257,15 @@ describe("the refined look (UI-P93)", () => {
       </MemoryRouter>,
     );
 
-  it("draws the title row under a hairline, 32 in at the sides (F75, F76): the title and its status line at the left, Card and Preview as secondary 28 and Publish as the one primary 28 (CA-17 P6)", () => {
+  it("draws the title row as a panel over the composer box (Synth 09): the title (serif 20) and its status line at the left, Classification and Preview as secondary and Publish as the one primary", () => {
     view();
     const row = screen.getByTestId("sandbox-tabrow");
-    expect(row.getAttribute("style") ?? "").toContain("padding: 10px 32px 0px 32px");
+    expect(row.getAttribute("style") ?? "").toContain("padding: 12px 16px");
+    expect(row.getAttribute("style") ?? "").toContain("margin: 0px 4px");
     // F18: it stays under the site header, on the surface's own tone, below dialogs and menus.
     expect(row.getAttribute("style") ?? "").toContain("position: sticky; top: 88px; z-index: 10");
     expect(screen.getByRole("heading", { level: 1 }).getAttribute("style")).toMatch(/font-size:\s*20px/);
+    expect(screen.getByRole("heading", { level: 1 }).getAttribute("style")).toContain("Geist Serif");
     const publish = screen.getByRole("button", { name: "Publish" });
     expect(publish.getAttribute("data-variant")).toBe("primary");
     expect(publish.getAttribute("style")).toMatch(/height:\s*32px/); // S1
@@ -275,19 +277,19 @@ describe("the refined look (UI-P93)", () => {
     expect(within(row).getByRole("link", { name: "Preview" }).parentElement?.getAttribute("style")).toContain("gap: 8px");
   });
 
-  it("draws List and Map at 13, the selected one in --text at 500 with a 1.5px line under it (CA-17 P6)", () => {
+  it("draws List and Map as pills (Synth 09), the selected one in --text at 500 on Raised", () => {
     view({ lens: "list" });
     const list = screen.getByTestId("sandbox-tab-list");
     const map = screen.getByTestId("sandbox-tab-map");
     expect(list.getAttribute("aria-pressed")).toBe("true");
     expect(list.getAttribute("style")).toContain("font-weight: 500");
     expect(list.getAttribute("style")).toContain("font-size: 15px");
-    expect(list.getAttribute("style")).toContain("padding: 0px 8px"); // S33
+    expect(list.getAttribute("style")).toContain("padding: 0px 14px");
     expect(list.getAttribute("style")).toContain("height: 32px");
-    expect(list.getAttribute("style")).toContain("inset 0 -1.5px 0");
+    expect(list.getAttribute("style")).toContain("border-radius: var(--r-full)");
     expect(map.getAttribute("style")).toContain("font-weight: 400");
-    expect(map.getAttribute("style")).not.toContain("inset");
-    expect(screen.getByTestId("sandbox-tabs").getAttribute("style")).toContain("gap: 24px");
+    expect(map.getAttribute("style")).toContain("background: transparent");
+    expect(screen.getByTestId("sandbox-tabs").getAttribute("style")).toContain("gap: 4px");
     fireEvent.click(map);
   });
 
@@ -305,20 +307,20 @@ describe("the refined look (UI-P93)", () => {
     expect(within(screen.getByTestId("sandbox-tabrow")).getByRole("heading", { level: 1 })).toBeTruthy();
   });
 
-  it("puts Sources on the surface, 256 wide, with no rule on its right (S34, D6)", () => {
+  it("puts Sources in its own panel, 300 wide, with no rule on its right (Synth 09)", () => {
     const html = markup();
-    expect(html).toContain("flex:0 0 256px;width:256px;box-sizing:border-box");
+    expect(html).toContain("flex:0 0 300px;width:300px");
     expect(html).not.toContain("border-right:1px solid var(--hairline)");
-    expect(html).toContain("flex:0 1 680px;width:680px");
+    expect(html).toContain("flex:0 1 760px;width:760px");
   });
 
   it("CA-18b: stands the three columns where frameOf puts them at 1440, not in a row", () => {
     const html = markup();
-    // Window 1440: Build 640 from 400, Sources 216 from 144, Details 1080 wide room 320. The surface's 6, its border and the 34 are taken off.
-    expect(html).toContain("left:32px;width:256px");
-    expect(html).toContain('<div style="margin-left:288px">');
-    expect(html).toContain("left:1032px;width:360px");
-    expect(html).toContain("position:relative;display:block;padding:32px 32px 0");
+    // Synth 09, window 1440: Sources 300 from 12, Build 760 from 320, Details 340 from 1088, 8 apart; the frame's 8 is taken off.
+    expect(html).toContain("left:4px;width:300px");
+    expect(html).toContain('<div style="margin-left:312px">');
+    expect(html).toContain("left:1080px;width:340px");
+    expect(html).toContain("position:relative;display:block;padding:8px 0 0");
   });
 
   // UX-02 P7: one way to add at each level. The Build header's Add is gone, on a computer and on a phone; a step is added

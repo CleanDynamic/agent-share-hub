@@ -54,6 +54,8 @@ export const TOOL_DIALOG_COPY = {
   removeAlternative: (name: string) => `Remove ${name}`,
   add: "Add",
   cancel: "Cancel",
+  /** Synth 09: the footer while no app is chosen. */
+  needsApp: "Required: an application",
 } as const;
 
 /** The nine ways a tool was connected, in the words the tile uses. */
@@ -102,7 +104,7 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed, edit }: Pick<AddTool
   const input = (): AddToolInput => ({ service, connection, scopes: did.trim(), permissions, plan: plan.trim(), setup: steps.slice(0, TOOL_SETUP_MAX).map((line) => line.slice(0, TOOL_SETUP_LINE_MAX)), alternatives });
 
   return (
-    <ModalForm phone={phone} missing={missing} onCancel={onCancel} addLabel={edit ? MODAL_COPY.save : undefined} onSubmit={() => (edit ? edit.onSave(input()) : onAdd?.(input()))}>
+    <ModalForm phone={phone} missing={missing} status={missing ? TOOL_DIALOG_COPY.needsApp : null} onCancel={onCancel} addLabel={edit ? MODAL_COPY.save : undefined} onSubmit={() => (edit ? edit.onSave(input()) : onAdd?.(input()))}>
       {edit?.before ? edit.before(input()) : null}
       <Row id={`${uid}-tool`} label={TOOL_DIALOG_COPY.tool} group phone={phone} noRule>
         <ToolPicker label={TOOL_DIALOG_COPY.tool} value={picked} onChange={setPicked} inBuild={inBuild} phone={phone} step="tool" list="app" placeholder={TOOL_DIALOG_COPY.selectTool} field />

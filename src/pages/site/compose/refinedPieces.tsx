@@ -3,10 +3,8 @@
 
 import type { CSSProperties, ReactNode } from "react";
 
-import { ModelMark } from "@/components/brand/ModelMark";
 import { checkHistoryLine, checkStatus, type CheckFacts } from "@/lib/build/graph";
 import { casesLine } from "@/lib/build/testCases";
-import { markFor } from "@/lib/models/marks";
 import { CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, textStep } from "@/lib/theme/type";
@@ -43,16 +41,10 @@ export function NumberTile({ children }: { children: ReactNode }) {
   );
 }
 
-/** The tool's real mark, or a 6px square when it has none. */
-export function ToolMark({ tool, model, size }: { tool?: string | null; model?: string | null; size: 14 | 16 | 20 | 24 }) {
-  if (markFor({ tool, model }) === null) {
-    return <span aria-hidden="true" style={{ width: 6, height: 6, margin: (size - 6) / 2, borderRadius: 1, background: t.label, flexShrink: 0 }} />;
-  }
-  return (
-    <span style={{ display: "inline-flex", flexShrink: 0, color: t.text }}>
-      <ModelMark tool={tool} model={model} size={size} />
-    </span>
-  );
+/** Synth 09: tool and harness marks are gone from beside names, sessions and facts; the name is said in words where a field
+    asks for it. Kept as a component (it draws nothing) so each row that placed a mark keeps its own markup. */
+export function ToolMark(_props: { tool?: string | null; model?: string | null; size: 14 | 16 | 20 | 24 }) {
+  return null;
 }
 
 /** "Uses", "Goes into", "words": the quiet 11.5 `--label` words of a row. */

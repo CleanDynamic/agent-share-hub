@@ -44,6 +44,7 @@ import { holdsFolder, readDrop } from "./dropFolders";
 import { SLIDE_ATTR } from "./flip";
 import { scrollToShow } from "./pageScroll";
 import { ToolMark } from "./refinedPieces";
+import { FluidShape } from "@/components/brand/FluidField";
 import { fullText, PREVIEW } from "@/lib/theme/truncate";
 import { bareButton, ellipsis, menuItem, menuSurface, text, tnum, wellField } from "./refinedStyles";
 import { libraryName, middleCut, REMINDER_ROWS, REPEAT_COPY, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession, type SourceUnfinishedItem } from "./sourcesModel";
@@ -435,8 +436,7 @@ function LibraryRow({ item, phone, onAdd, parts, lastPart }: { item: SourceLibra
   return (
     <div ref={drag.setRef} data-source-drag={movable ? drag.dragId : undefined} style={{ ...rowLine, display: "flex", alignItems: "center", gap: space[2], minHeight: phone ? size.touch : size.row, padding: `${space[2]}px 0`, boxSizing: "border-box" }}>
       <SourceGrip drag={drag} label={`Move ${libraryName(item)}`} phone={phone} still={!movable} />
-      {/* SV-05 P3: the app's mark when the app is known; none when it is not. */}
-      {item.appKnown ? <ToolMark tool={item.app} size={size.icon} /> : <span aria-hidden="true" style={{ width: size.icon, flexShrink: 0 }} />}
+      {/* Synth 09: no app mark (SV-05 P3's), so no room kept for one. */}
       <span style={{ display: "flex", flexDirection: "column", gap: space[1], minWidth: 0, flexGrow: 1 }}>
         {/* UX-02 P8: a long name wraps to two lines before it is cut. */}
         <span title={libraryName(item)} style={{ ...text(textStep.body, 400, t.text2), ...PREVIEW }}>{middleCut(libraryName(item), LIBRARY_NAME_MAX)}</span>
@@ -496,7 +496,16 @@ function UnfinishedRow({ item, phone }: { item: SourceUnfinishedItem; phone: boo
 /** UX-02 P8: the panel's foot: Add files opens the picker; on a computer, one line says a file can be dropped on the build too. */
 function AddFiles({ fine, phone, onPick }: Pick<SourcesPanelProps, "fine" | "phone" | "onPick">) {
   return (
-    <div data-testid="sources-add-files" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: space[1] }}>
+    <div
+      data-testid="sources-add-files"
+      style={
+        fine
+          ? /* Synth 09: the drop zone, a dashed 12-radius area (the field's edge) over a faint field of dots. */
+            { position: "relative", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: space[1], padding: `${space[4]}px ${space[3]}px`, borderRadius: r.panel, border: `1px dashed ${t.fieldEdge}`, overflow: "hidden", isolation: "isolate" }
+          : { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: space[1] }
+      }
+    >
+      {fine ? <FluidShape aria-hidden="true" data-testid="drop-dots" dotKind="fill" style={{ position: "absolute", inset: 0, zIndex: -1, pointerEvents: "none" }} /> : null}
       <TextButton onClick={onPick} target={phone} style={{ ...textLinkBox(phone), ...text(textStep.meta, 500, t.text) }}>
         {SOURCES_COPY.addFiles}
       </TextButton>

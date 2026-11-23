@@ -39,6 +39,9 @@ import { Segmented } from "@/components/brand/Segmented";
 import { BottomSheet as BrandBottomSheet, SheetRow, closeNow } from "@/components/brand/BottomSheet";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { headerHeight } from "@/components/shell/chromeSize";
+import { useColumnPanels } from "@/components/shell/frameChrome";
+import { PANEL_GAP } from "@/components/shell/pageGrid";
+import { elevation, elevationFill } from "@/lib/theme/elevation";
 import { useIsPhone, useShortWindow } from "@/components/shell/useMinWidth";
 import { ring } from "@/lib/theme/controls";
 import { TITLE_LINE, fullText } from "@/lib/theme/truncate";
@@ -58,8 +61,8 @@ import { BUILD_HEAD, TAB_ACTIONS, TAB_GROUP, TAB_ROW, tabStyle } from "./tabRowR
 import { ClickToEdit, DetailsOverlay, useTouchPanel } from "./DetailsOverlay";
 import { DetailsAside, useWindowSize } from "./DetailsAside";
 import type { DetailsPlan } from "./DetailsPanel";
-import { COMPOSER_PAD, HEAD_GAP, OVERLAY_WIDTH } from "./detailsRecipes";
-import { ORIGIN, SOURCES_WIDTH, frameOf, innerWidthOf } from "./detailsLayout";
+import { HEAD_GAP, OVERLAY_WIDTH } from "./detailsRecipes";
+import { DETAILS_PAD, ORIGIN, frameOf, innerWidthOf } from "./detailsLayout";
 import { bareButton, menuItem, menuSurface, moduleStyle, text, tnum, wellField } from "./refinedStyles";
 import type { PartLabels } from "@/lib/build/making";
 import type { ComposePublished, ComposeStatus } from "./ComposeView";
@@ -84,7 +87,7 @@ import { size, space } from "@/lib/theme/space";
 import { BUTTON_PAD, BUTTON_PAD_SMALL_TEXT, iconButtonSide } from "./modalRecipes";
 import { r } from "@/lib/theme/radius";
 
-import { textStep } from "@/lib/theme/type";
+import { SENTIENT, textStep } from "@/lib/theme/type";
 export type SandboxLens = "list" | "map";
 
 /** CA-24 P3: a panel whose own query has failed (`failed`), and the refetch of that panel's queries alone. */
@@ -293,7 +296,8 @@ export const LIST_HINT_PHONE = "Tap a step to see its details";
 export const listHint = (phone: boolean): string | null => (phone ? LIST_HINT_PHONE : null);
 
 /** The columns start this far under the title row. */
-const COLUMNS_TOP = 32;
+/** Synth 09: the panels sit 8 under the title row's panel, as they sit 8 apart. */
+const COLUMNS_TOP = PANEL_GAP;
 export const DETAILS_EMPTY = "Select a step to see its details";
 /** F62 (decision D7): the right panel's collapse and the way back. */
 export const DETAILS_TOGGLE_COPY = { hide: "Hide details", show: "Show details" } as const;
@@ -921,29 +925,6 @@ function LinkButton({ to, phone, height, children }: { to: string | null; phone:
   );
 }
 
-/** CA-27 P4: where the title row has no room for Card, Preview and Publish beside the title, Preview waits in this menu (28 square, "Build actions"); Publish stays. */
-export const BUILD_ACTIONS = { label: "Build actions", preview: "Preview" } as const;
-
-function BuildActionsMenu({ previewTo }: { previewTo: string | null }) {
-  const navigate = useNavigate();
-  const why = useReason(previewTo ? undefined : REASONS.preview);
-  return (
-    <Menu.Root modal={false}>
-      <Menu.Trigger asChild>
-        <IconButton style={iconButtonSide()} icon={MoreHorizontal} glyph="more" label={BUILD_ACTIONS.label} size={28} data-testid="build-actions" data-hit="" />
-      </Menu.Trigger>
-      <Menu.Portal>
-        <MenuContent align="end" sideOffset={6} style={menuSurface(160)}>
-          <Menu.Item disabled={!previewTo} onSelect={() => previewTo && navigate(previewTo)} data-testid="build-actions-preview" style={menuItem(Boolean(previewTo), false)} {...why.props}>
-            {BUILD_ACTIONS.preview}
-          </Menu.Item>
-          {why.note}
-        </MenuContent>
-      </Menu.Portal>
-    </Menu.Root>
-  );
-}
-
 function PanelTitle({ children }: { children: ReactNode }) {
   return <h2 style={{ ...text(textStep.body, 500, t.text), margin: 0 }}>{children}</h2>;
 }
@@ -984,9 +965,17 @@ function RailButton({ glyph, label, count, onClick }: { glyph: "panel" | "layers
   );
 }
 
-/** Sources: the column on the surface; in Map, a 56 rail that opens the full column over the map's left side. */
+/** Synth 09: a column of the editor is a panel: Panel fill, radius 12, padded 16, no edge. */
+const PANEL_STYLE: CSSProperties = { background: elevationFill.panel, borderRadius: r.panel, padding: DETAILS_PAD, boxSizing: "border-box", ...elevation.panel };
+/** Sources over the build (761 to 1023, and from the Map's rail): the Overlay fill and shadow, 300 wide. */
+const SOURCES_OVERLAY_WIDTH = 300;
+
+/** Sources: its panel (300, or 260 from 1024 to 1100); behind a "Sources" button below 1024 (`buttonOnly`), opening as a left
+    overlay; in Map, a 52 rail that opens the full column over the map's left side. */
 function SourcesFrame({
   rail,
+  buttonOnly = false,
+  width = 300,
   titled,
   counts,
   open,
@@ -995,6 +984,8 @@ function SourcesFrame({
   children,
 }: {
   rail: boolean;
+  buttonOnly?: boolean;
+  width?: number;
   titled: boolean;
   counts: SandboxViewProps["counts"];
   open: boolean;
@@ -1011,8 +1002,8 @@ function SourcesFrame({
         flexDirection: "column",
         gap: 20,
         ...(overlay
-          ? { ...moduleStyle(), background: t.window, borderColor: t.windowBorder, boxShadow: t.windowShadow }
-          : /* S34: 256 wide; D6: no rule between the columns. */ { flex: `0 0 ${SOURCES_WIDTH}px`, width: SOURCES_WIDTH, boxSizing: "border-box" }),
+          ? { ...PANEL_STYLE, background: elevationFill.overlay, ...elevation.overlay }
+          : { ...PANEL_STYLE, flex: `0 0 ${width}px`, width }),
       }}
     >
       {titled || overlay ? (
@@ -1025,6 +1016,21 @@ function SourcesFrame({
     </section>
   );
   if (!rail) return column(false);
+  const overlay = open ? (
+    <div
+      data-testid="sources-overlay"
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          event.stopPropagation();
+          onClose();
+        }
+      }}
+      style={{ position: "absolute", left: 0, top: 0, width: SOURCES_OVERLAY_WIDTH, zIndex: 20 }}
+    >
+      {column(true)}
+    </div>
+  ) : null;
+  if (buttonOnly) return overlay;
   const hairline: CSSProperties = { width: 28, height: 1, background: t.hairlineModule, margin: "4px 0" };
   return (
     <>
@@ -1042,20 +1048,7 @@ function SourcesFrame({
         <span aria-hidden="true" style={hairline} />
         <RailButton glyph="plus" label="Add a source" onClick={onOpen} />
       </div>
-      {open ? (
-        <div
-          data-testid="sources-overlay"
-          onKeyDown={(event) => {
-            if (event.key === "Escape") {
-              event.stopPropagation();
-              onClose();
-            }
-          }}
-          style={{ position: "absolute", left: 0, top: 0, width: 260, zIndex: 20 }}
-        >
-          {column(true)}
-        </div>
-      ) : null}
+      {overlay}
     </>
   );
 }
@@ -1086,6 +1079,8 @@ function SandboxBody(props: SandboxViewProps) {
   const phone = useIsPhone();
   const short = useShortWindow();
   const win = useWindowSize();
+  /* Synth 09: on a computer the editor draws its own panels (the title row, Sources, Build, Details) on the page shade. */
+  useColumnPanels(!phone);
   const touchPanel = useTouchPanel(win.width);
   const { status, published, save } = props;
 
@@ -1214,7 +1209,8 @@ function SandboxBody(props: SandboxViewProps) {
   ) : null;
 
   const statusLine = (
-    <p data-testid="sandbox-status" style={{ ...text(textStep.meta, 400, t.text2), margin: 0, overflowWrap: "anywhere" }}>
+    <p data-testid="sandbox-status" style={{ ...text(textStep.meta, 400, t.label), margin: 0, overflowWrap: "anywhere" }}>
+      <SaveSquare save={save} />
       {published ? publishedWords(props.publishedAt) : "Draft"}
       <SaveLine
         save={save}
@@ -1235,7 +1231,7 @@ function SandboxBody(props: SandboxViewProps) {
     <h1
       data-testid="sandbox-heading"
       {...fullText(untitled ? null : props.title.trim())}
-      style={{ ...text(textStep.title, 500, t.text), margin: 0, letterSpacing: "-0.015em", ...TITLE_LINE }}
+      style={{ ...text(textStep.title, 500, t.text), fontFamily: SENTIENT, margin: 0, ...TITLE_LINE }}
     >
       {untitled ? UNTITLED : props.title.trim()}
     </h1>
@@ -1333,8 +1329,6 @@ function SandboxBody(props: SandboxViewProps) {
             {props.viewOptions ? <ViewMenu phone view={props.viewOptions} /> : null}
           </span>
         ) : null}
-        {phone || !props.find?.open ? null : <FindField find={props.find} />}
-        {phone || !props.find ? null : <FindButton find={props.find} />}
         {phone ? null : props.viewOptions ? <ViewMenu phone={false} view={props.viewOptions} /> : null}
       </div>
       {lens === "list" ? props.sessionList : null}
@@ -1364,7 +1358,8 @@ function SandboxBody(props: SandboxViewProps) {
         display: "flex",
         flexDirection: "column",
         gap: 20,
-        ...(phone ? { flex: "999 1 480px" } : { flex: `0 1 ${frame.build}px`, width: frame.build }),
+        ...(phone ? { flex: "999 1 480px" } : { ...PANEL_STYLE, padding: undefined, paddingTop: DETAILS_PAD, paddingInline: DETAILS_PAD, paddingBottom: DETAILS_PAD, flex: `0 1 ${frame.build}px`, width: frame.build }),
+        /* SV-07: room at the foot for the notice, so it never covers the last row. */
         ...(props.noticeRoom ? { paddingBottom: props.noticeRoom } : null),
       }}
     >
@@ -1463,21 +1458,41 @@ function SandboxBody(props: SandboxViewProps) {
     );
   }
 
-  /* CA-27 P4: on a tablet the composer box is 612 to 636 wide: Card, Preview and Publish would take the row from the title, so Preview goes into a menu. */
-  const compactRow = !published && frame.boxRight - frame.boxLeft < 760;
+  /* Synth 09: from 1024 to 1100 the row's tools wrap to a second line (Find and List/Map move down); below 1024 Sources is a
+     button here, opening it as a left overlay. */
+  const wraps = win.width < 1101;
+  const sourcesButton = frame.rail && lens === "list";
+  /* The pill stays while the field is open, so Escape can give focus back to it. */
+  const findPill =
+    props.find && !phone ? (
+      <>
+        {props.find.open ? <FindField find={props.find} /> : null}
+        <FindButton find={props.find} />
+      </>
+    ) : null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-      {/* The title row: the title and its status line at the left, then List and Map (CA-17 P6), then the actions. The tabs
-          and the actions keep CA-17's measures from the rule; the row grows to hold the title. */}
-      <div data-testid="sandbox-tabrow" ref={tabsRef} style={{ ...TAB_ROW, position: "sticky", top: headerHeight(phone), zIndex: 10, background: t.surface, height: "auto", minHeight: 44, gap: 16, padding: `10px ${padRight}px 0 ${padLeft}px`, flexWrap: compactRow ? "nowrap" : frame.boxRight - frame.boxLeft < 760 ? "wrap" : "nowrap" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, flexGrow: 1, minWidth: 0, marginBottom: 12 }}>
+      {/* The title row, a panel of its own: the title and its status line at the left; then Undo and Redo, Find, List and Map,
+          Classification, Preview, Publish and More. */}
+      <div
+        data-testid="sandbox-tabrow"
+        ref={tabsRef}
+        style={{ ...TAB_ROW, position: "sticky", top: headerHeight(phone), zIndex: 10, gap: 8, rowGap: 8, margin: `0 ${padRight}px 0 ${padLeft}px`, flexWrap: wraps ? "wrap" : "nowrap", boxShadow: `0 -${PANEL_GAP}px 0 ${t.frame}` }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, flexGrow: 1, flexBasis: wraps ? "320px" : "auto", minWidth: 0 }}>
           {heading}
           {statusLine}
         </div>
-        {tabs}
         <div style={{ ...TAB_ACTIONS, marginLeft: "auto" }}>
-          <BuildTitleActions />
+          <BuildTitleActions only="history" />
+          {wraps ? null : findPill}
+          {wraps ? null : tabs}
+          {sourcesButton ? (
+            <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={textStep.meta} aria-expanded={railOpen} data-testid="sources-button" onClick={() => setRailOpen((was) => !was)}>
+              Sources
+            </Button>
+          ) : null}
           <Button style={BUTTON_PAD_SMALL_TEXT} variant="secondary" size={32} fontSize={textStep.meta} aria-label="Classification" onClick={() => openCard(null)}>
             Classification
           </Button>
@@ -1490,49 +1505,50 @@ function SandboxBody(props: SandboxViewProps) {
             </>
           ) : (
             <>
-              {compactRow ? (
-                <BuildActionsMenu previewTo={previewTo} />
-              ) : (
-                <LinkButton to={previewTo} phone={false} height={28}>
-                  Preview
-                </LinkButton>
-              )}
+              <LinkButton to={previewTo} phone={false} height={28}>
+                Preview
+              </LinkButton>
               <Button style={BUTTON_PAD_SMALL_TEXT} size={32} fontSize={textStep.meta} disabled={publishDisabled} onClick={() => void pressPublish()}>
                 {publishLabel}
               </Button>
             </>
           )}
+          <BuildTitleActions only="more" />
         </div>
+        {wraps && (findPill || tabs) ? (
+          <div data-testid="sandbox-tabrow-second" style={{ flexBasis: "100%", display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+            {findPill}
+            <span style={{ flexGrow: 1 }} />
+            {tabs}
+          </div>
+        ) : null}
       </div>
       {banner ? <div style={{ padding: `16px ${padRight}px 0 ${padLeft}px` }}>{banner}</div> : null}
       {props.strips && lens === "map" ? <div style={{ padding: `8px ${padRight}px 0 ${padLeft}px` }}>{props.strips}</div> : null}
       {lens === "map" ? (
         <div
           data-testid="sandbox-columns"
-          style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 24, padding: `${COLUMNS_TOP}px ${padRight}px 0 ${padLeft}px`, minWidth: 0 }}
+          style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: PANEL_GAP, padding: `${COLUMNS_TOP}px ${padRight}px 0 ${padLeft}px`, minWidth: 0 }}
         >
           <SourcesFrame rail titled={!props.sources} counts={props.counts} open={railOpen} onOpen={() => setRailOpen(true)} onClose={() => setRailOpen(false)}>
             {sourcesBody}
           </SourcesFrame>
-          {/* CA-17 P4: Details is not shown in the Map view: the map column fills, then 48, then the map's panel, 312 wide. */}
-          <div data-testid="map-view" style={MAP_AND_PANEL}>
+          {/* CA-17 P4: Details is not shown in the Map view: the map column fills, then the map's panel. */}
+          <div data-testid="map-view" style={{ ...MAP_AND_PANEL, ...PANEL_STYLE }}>
             <div style={MAP_COLUMN}>{mapNode}</div>
             {props.mapPanel ? guard("Map", props.mapPanel) : null}
           </div>
         </div>
       ) : (
-        /* CA-18b P2: the List's three columns stand where `frameOf` puts them, not in a row that lets one push another. Build
-           is in the flow, centred on the window; Sources and Details are placed beside it from the surface's edge. */
-        <div
-          data-testid="sandbox-columns"
-          style={{ position: "relative", display: "block", padding: `${COLUMNS_TOP}px ${COMPOSER_PAD}px 0`, minWidth: 0 }}
-        >
-          <div data-testid="sandbox-sources-slot" style={{ position: "absolute", top: COLUMNS_TOP, left: frame.sourcesLeft - ORIGIN, width: frame.sources, display: "flex", alignItems: "flex-start" }}>
-            <SourcesFrame rail={frame.rail} titled={!props.sources} counts={props.counts} open={railOpen && frame.rail} onOpen={() => setRailOpen(true)} onClose={() => setRailOpen(false)}>
+        /* CA-18b P2: the List's three panels stand where `frameOf` puts them. Build is in the flow; Sources and Details are
+           placed beside it from the surface's edge. */
+        <div data-testid="sandbox-columns" style={{ position: "relative", display: "block", padding: `${COLUMNS_TOP}px 0 0`, minWidth: 0 }}>
+          <div data-testid="sandbox-sources-slot" style={{ position: "absolute", top: COLUMNS_TOP, left: frame.sourcesLeft - ORIGIN, width: sourcesButton ? 0 : frame.sources, display: "flex", alignItems: "flex-start" }}>
+            <SourcesFrame rail={frame.rail} buttonOnly={sourcesButton} width={frame.sources} titled={!props.sources} counts={props.counts} open={railOpen && frame.rail} onOpen={() => setRailOpen(true)} onClose={() => setRailOpen(false)}>
               {sourcesBody}
             </SourcesFrame>
           </div>
-          <div style={{ marginLeft: frame.buildLeft - ORIGIN - COMPOSER_PAD }}>{buildColumn}</div>
+          <div style={{ marginLeft: frame.buildLeft - ORIGIN }}>{buildColumn}</div>
           {full.beside ? null : (
             /* CA-27 P4: Details where it does not fit beside the build is a panel over the composer box's right edge. */
             <DetailsOverlay selectedKey={props.selectedKey} left={frame.boxRight - ORIGIN - OVERLAY_WIDTH} top={stickyTop} touch={touchPanel} onEdit={props.onEditSelected}>
@@ -1540,7 +1556,7 @@ function SandboxBody(props: SandboxViewProps) {
             </DetailsOverlay>
           )}
           {frame.beside ? (
-            <div data-testid="sandbox-details-slot" style={{ position: "absolute", top: COLUMNS_TOP, bottom: 0, left: frame.detailsLeft - ORIGIN, width: frame.detailsWidth, display: "flex", alignItems: "stretch" }}>
+            <div data-testid="sandbox-details-slot" style={{ ...PANEL_STYLE, position: "absolute", top: COLUMNS_TOP, bottom: 0, left: frame.detailsLeft - ORIGIN, width: frame.detailsWidth, display: "flex", alignItems: "stretch" }}>
               <DetailsAside
                 inner={innerWidthOf(win.width)}
                 windowHeight={win.height}
@@ -1565,6 +1581,12 @@ function SandboxBody(props: SandboxViewProps) {
       {confirmWindow}
     </div>
   );
+}
+
+/** Synth 09: the save square before the status line: 8 square, radius 2; Mint once saved, Text 3 while saving, the danger text on a failure. */
+function SaveSquare({ save }: { save: SaveState }) {
+  const colour = save === "error" ? t.dangerText : save === "saved" ? t.brandAccent : t.label;
+  return <span aria-hidden="true" data-testid="save-square" data-state={save} style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: colour, marginRight: 8, verticalAlign: "middle", position: "relative", top: -1 }} />;
 }
 
 export default SandboxView;

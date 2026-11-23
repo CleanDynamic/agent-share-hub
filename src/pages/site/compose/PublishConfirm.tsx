@@ -10,7 +10,7 @@ import { useIsPhone } from "@/components/shell/useMinWidth";
 import { CONFIRM_COPY, type ConfirmRow } from "@/lib/build/publishChecklist";
 import { t } from "@/lib/theme/tokens";
 
-import { ELLIPSIS, RecipeButton } from "./modalRecipes";
+import { ELLIPSIS, RecipeButton, MODAL_WIDTH } from "./modalRecipes";
 import { PublishFrame } from "./PublishChecklist";
 import { text } from "./refinedStyles";
 
@@ -35,7 +35,7 @@ export function PublishConfirm({ open, title, rows, onCancel, onPublish }: Publi
       open={open}
       onClose={onCancel}
       title={CONFIRM_COPY.title(title)}
-      width={480}
+      width={MODAL_WIDTH.standard}
       testId="publish-confirm"
       body={
         <>

@@ -76,7 +76,8 @@ export function stepTooltip(kind: "undo" | "redo", sentence: string | null, keys
   return sentence && keys ? `${base} (${keys})` : base;
 }
 
-export function BuildTitleActions({ phone = false, keys }: { phone?: boolean; keys?: { undo?: string; redo?: string; shortcuts?: ReactNode } }): ReactNode {
+/** Synth 09: `only` draws one end of the set: Undo and Redo lead the title row, More ends it. */
+export function BuildTitleActions({ phone = false, keys, only }: { phone?: boolean; keys?: { undo?: string; redo?: string; shortcuts?: ReactNode }; only?: "history" | "more" }): ReactNode {
   const history = useBuildHistoryContext();
   const actions = useBuildActionsContext();
   const undoWhy = useReason(history && !history.canUndo ? HISTORY_COPY.nothingToUndo : undefined);
@@ -84,8 +85,12 @@ export function BuildTitleActions({ phone = false, keys }: { phone?: boolean; ke
   const clearWhy = useReason(actions && actions.clear.counts.sessions + actions.clear.counts.tiles + actions.clear.counts.files + actions.clear.counts.parts === 0 ? CLEAR_COPY.nothing : undefined);
   if (!history) return null;
   const empty = !actions || actions.clear.counts.sessions + actions.clear.counts.tiles + actions.clear.counts.files + actions.clear.counts.parts === 0;
+  const history_ = only !== "more";
+  const more = only !== "history";
   return (
     <>
+      {history_ ? (
+      <>
       <TitleIcon
         glyph="undo"
         phone={phone}
@@ -108,7 +113,9 @@ export function BuildTitleActions({ phone = false, keys }: { phone?: boolean; ke
         aria-describedby={redoWhy.props["aria-describedby"]}
       />
       {redoWhy.note}
-      {actions ? (
+      </>
+      ) : null}
+      {more && actions ? (
         <Menu.Root>
           <Menu.Trigger asChild>
             <TitleIcon glyph="more" phone={phone} label={CLEAR_COPY.options} title={CLEAR_COPY.options} data-testid="build-options" />

@@ -57,7 +57,7 @@ export const LIBRARY_WINDOW_COPY = {
   steps: "Steps",
   collections: "Collections",
   version: "Version to insert",
-  states: { same: "Same", edited: "Edited since saved", removed: "Source removed", stale: "Stale" } as Record<LibraryRowState, string>,
+  states: { same: "Same", edited: "Edited since saved", removed: "Source removed", stale: "Out of date" } as Record<LibraryRowState, string>,
   loading: "Loading your saved items…",
   empty: "Nothing you have saved fits here yet.",
   noMatch: "Nothing matches that.",

@@ -18,7 +18,7 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 
-import { FOOT_NOTE, RecipeButton, TITLE, footerStyle, frameStyle } from "./modalRecipes";
+import { FOOT_NOTE, RecipeButton, TITLE, footerStyle, frameStyle, MODAL_WIDTH } from "./modalRecipes";
 import { text } from "./refinedStyles";
 import { size } from "@/lib/theme/space";
 
@@ -214,7 +214,7 @@ export function PublishChecklist({ open, checklist, opensIn, onClose, onAction, 
       open={open}
       onClose={onClose}
       title={CHECKLIST_COPY.title}
-      width={480}
+      width={MODAL_WIDTH.standard}
       testId="publish-checklist"
       closeFocus={() => {
         const kept = acted.current;

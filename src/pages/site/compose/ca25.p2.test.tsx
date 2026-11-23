@@ -154,11 +154,11 @@ describe("Confirm from the page's Publish", () => {
     expect(props.onPublish).not.toHaveBeenCalled();
   });
 
-  it("is 480 wide, in the window recipe", async () => {
+  it("is 440 wide, in the window recipe (Synth 09: every modal)", async () => {
     view();
     await press();
     const style = screen.getByTestId("publish-confirm").getAttribute("style") ?? "";
-    expect(style).toContain("width: 480px");
+    expect(style).toContain("width: 440px");
     expect(style).toContain("var(--window-shadow)");
   });
 });

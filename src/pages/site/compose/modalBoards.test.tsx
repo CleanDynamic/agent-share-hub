@@ -83,7 +83,7 @@ describe("each modal as its board (CA-15b P2)", () => {
       ["Setup steps", ""],
       ["Alternatives", "Apps that do the same job"],
     ]);
-    footer("Required: App");
+    footer("Required: an application");
   });
 
   it("Add a check", () => {

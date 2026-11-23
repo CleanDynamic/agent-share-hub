@@ -86,8 +86,9 @@ export function InnerPanel({ children, testId, style, bar }: { children: ReactNo
 /* ── swatches ── */
 
 /** A square of a colour: 12 (radius 3), 10 (radius 2) or 30 (radius 7). Empty, it is a dashed square in `--label`. */
-export function SquareSwatch({ colour, size = 12 }: { colour: string | null | undefined; size?: 10 | 12 | 30 }) {
-  const radius = size === 30 ? 7 : size === 12 ? 3 : 2;
+export function SquareSwatch({ colour, size = 12 }: { colour: string | null | undefined; size?: 10 | 12 | 14 | 30 }) {
+  /* Synth 09: 14 at radius 4 in the Colours window's rows. */
+  const radius = size === 30 ? 7 : size === 14 ? 4 : size === 12 ? 3 : 2;
   return (
     <span
       aria-hidden="true"

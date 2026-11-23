@@ -404,6 +404,8 @@
   --notepad-copy: #D5E6D9;
   --modal-foot: #EBEEEB;
   --field-edge: #879189;
+  --maker-edge: 1.5px;
+  --notepad-dim: rgba(11,18,13,.25);
   --danger-text: #B3261E;
   --warn: #8A6100;
   --tab-bar: #77FC49;
@@ -644,6 +646,8 @@
   --notepad-copy: #24342A;
   --modal-foot: #161917;
   --field-edge: #646B66;
+  --maker-edge: 1px;
+  --notepad-dim: rgba(10,10,11,.5);
   --danger-text: #F07563;
   --warn: #F2C14E;
   --tab-bar: #6BE2A0;
@@ -1002,6 +1006,13 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
 
 input[type="search"] { border-radius: var(--r-control); }
 
+/* Synth 09: the notepad's title and text sit on the notepad itself, with no field edge or well of their own. */
+:is(input, textarea)[data-notepad-field] {
+  background: transparent !important;
+  border-width: 0 !important;
+  border-radius: 0;
+}
+
 /* Publish-page focus ring — accessible keyboard focus */
 .publish-focus:focus-visible {
   outline: 2px solid rgba(232,87,26,0.30) !important;
@@ -1189,7 +1200,7 @@ input[type="search"] { border-radius: var(--r-control); }
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: var(--sheet-dim);
+  background: var(--notepad-dim);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--motion-fast) var(--motion-ease);
