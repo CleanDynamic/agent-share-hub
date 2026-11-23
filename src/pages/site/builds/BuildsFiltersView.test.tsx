@@ -179,7 +179,7 @@ describe("Autonomy", () => {
     expect(autonomy().getAllByRole("button").map((button) => button.textContent)).toEqual(LABELS);
   });
 
-  it("a pressed value has aria-pressed true and the selected look", () => {
+  it("a pressed value has aria-pressed true and is the Inverse pill; an unpressed one is a Card pill", () => {
     draw();
     expect(autonomy().getByRole("button", { name: "AI suggests and you approve" }).getAttribute("aria-pressed")).toBe("true");
     expect(autonomy().getByRole("button", { name: "You do each step" }).getAttribute("aria-pressed")).toBe("false");
@@ -190,10 +190,12 @@ describe("Autonomy", () => {
       </MemoryRouter>,
     );
     const pressed = markup.match(/<button[^>]*aria-pressed="true"[^>]*>AI suggests and you approve<\/button>/)?.[0] ?? "";
-    expect(pressed).toContain("background:var(--selected-fill)");
-    expect(pressed).toContain("border:1px solid var(--selected-edge)");
+    expect(pressed).toContain("background:var(--action)");
+    expect(pressed).toContain("color:var(--on-action)");
+    expect(pressed).toContain("font-weight:600");
     const off = markup.match(/<button[^>]*aria-pressed="false"[^>]*>You do each step<\/button>/)?.[0] ?? "";
-    expect(off).toContain("border:1px solid var(--label)");
+    expect(off).toContain("background:var(--module)");
+    expect(off).toContain("font-weight:500");
   });
 
   it("each button is at least 36 high", () => {
