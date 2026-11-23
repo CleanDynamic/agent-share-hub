@@ -174,7 +174,7 @@ describe("the refined look (UI-P93)", () => {
     expect(html).toContain("width:6px;height:6px;box-sizing:border-box;border-radius:1px;background:transparent;border:1px solid var(--text2)");
     expect(html).toContain("border-radius:var(--r-panel);border:1px dashed var(--field-edge)");
     expect(screen.getByTestId("drop-dots")).toBeTruthy();
-    expect(html).toContain("Or drop files anywhere on the build.");
+    expect(html).toContain("Drop sessions or files");
   });
 });
 
