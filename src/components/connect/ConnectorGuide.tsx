@@ -88,7 +88,7 @@ const ADDRESS_LABEL = "Copy the connector address";
 const TOOL_COPY: Record<ConnectorTool, ToolCopy> = {
   Claude: {
     before: [
-      "In Claude, open Customize → Connectors, choose +, then Add custom connector.",
+      "In Claude, open Customize, Connectors, choose +, then Add custom connector.",
       "Paste this address and choose Add:",
     ],
     code: CONNECTOR_URL,
@@ -126,10 +126,13 @@ function CopyButton({
   label,
   phone,
   onInverse = false,
+  showLabel = false,
 }: {
   value: string;
   label: string;
   phone: boolean;
+  /** The page draws the whole label ("Copy the connector address"); the dialog keeps "Copy". */
+  showLabel?: boolean;
   /** Drawn on the code well (`--inverse`), where the secondary's own paint would vanish in Dusk. */
   onInverse?: boolean;
 }) {
@@ -160,7 +163,7 @@ function CopyButton({
         onClick={() => void copy()}
         style={onInverse ? { background: "transparent", color: t.onInverse, borderColor: t.onInverse2 } : undefined}
       >
-        {copied ? "Copied" : "Copy"}
+        {copied ? "Copied" : showLabel ? label : "Copy"}
       </Button>
       <span role="status">{copied ? <VisuallyHidden>Copied</VisuallyHidden> : null}</span>
     </>
@@ -217,9 +220,51 @@ const box: CSSProperties = {
   boxSizing: "border-box",
 };
 
-function ToolBox({ tool, phone }: { tool: ConnectorTool; phone: boolean }) {
+function ToolBox({ tool, phone, plain = false }: { tool: ConnectorTool; phone: boolean; plain?: boolean }) {
   const copy = TOOL_COPY[tool];
   const link = GUIDE_LINKS[tool];
+  if (plain) {
+    /* The page's version: the lines in plain text, the address in a Card in mono 15 with its copy button under it. */
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
+        {copy.before.map((line) => (
+          <p key={line} style={{ ...text14, fontSize: 15, lineHeight: "20px", color: t.text2 }}>
+            {line}
+          </p>
+        ))}
+        <code
+          tabIndex={0}
+          data-testid="connector-address"
+          style={{
+            alignSelf: "stretch",
+            boxSizing: "border-box",
+            padding: "12px 16px",
+            borderRadius: r.card,
+            background: t.module,
+            color: t.text,
+            fontFamily: DM_MONO,
+            fontSize: 15,
+            lineHeight: "20px",
+            whiteSpace: "nowrap",
+            overflowX: "auto",
+          }}
+        >
+          {copy.code}
+        </code>
+        <CopyButton value={copy.code} label={copy.codeLabel} phone={phone} showLabel />
+        {copy.after.map((line) => (
+          <p key={line} style={{ ...text14, fontSize: 13, lineHeight: "16px", color: t.label }}>
+            {line}
+          </p>
+        ))}
+        {link ? (
+          <a href={link.href} target="_blank" rel="noopener noreferrer" style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text2, textDecoration: "underline", textUnderlineOffset: 3 }}>
+            {link.label}
+          </a>
+        ) : null}
+      </div>
+    );
+  }
   return (
     <div style={{ ...box, padding: 12, display: "flex", flexDirection: "column", gap: 7 }}>
       {copy.before.map((line) => (
@@ -272,7 +317,6 @@ function ToolBox({ tool, phone }: { tool: ConnectorTool; phone: boolean }) {
           }}
         >
           {link.label}
-          <span aria-hidden> ↗</span>
         </a>
       ) : null}
     </div>
@@ -478,6 +522,82 @@ export function ConnectorGuide({ step, onStep, tool, onTool, onDone, doneLabel, 
         </Button>
       </div>
     </div>
+  );
+}
+
+/* ── the page's version: three numbered steps, all showing ──
+   The dialog steps through the guide; /connect lays the same three out as a list, each with a 28 box holding its number
+   and a 17/600 heading. The AI tool switch is a row of pills (text only). */
+
+export interface ConnectStepsProps {
+  tool: ConnectorTool;
+  onTool: (tool: ConnectorTool) => void;
+  onDone: () => void;
+  /** What the last step's primary says. */
+  doneLabel: string;
+}
+
+function NumberedStep({ ordinal, title, children }: { ordinal: number; title: string; children: ReactNode }) {
+  return (
+    <li style={{ display: "grid", gridTemplateColumns: "28px minmax(0, 1fr)", columnGap: 12, alignItems: "start", listStyle: "none" }}>
+      <span
+        aria-hidden
+        data-testid={`connect-step-${ordinal}`}
+        style={{ width: 28, height: 28, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: r.card, background: t.module, color: t.text, fontFamily: DM_MONO, fontSize: 13 }}
+      >
+        {ordinal}
+      </span>
+      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
+        <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 17, fontWeight: 600, lineHeight: "22px", color: t.text }}>{title}</h2>
+        {children}
+      </div>
+    </li>
+  );
+}
+
+export function ConnectSteps({ tool, onTool, onDone, doneLabel }: ConnectStepsProps) {
+  const phone = useIsPhone();
+  const phrase = PHRASES[0];
+  return (
+    <ol data-ui="connector-guide" style={{ margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 24, color: t.text, fontFamily: FIGTREE }}>
+      <NumberedStep ordinal={1} title={STEP_LABELS[0]}>
+        <div role="group" aria-label="AI tool" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {CONNECTOR_TOOLS.map((name) => (
+            <FilterChip key={name} label={name} on={name === tool} onClick={() => onTool(name)} />
+          ))}
+        </div>
+        <div style={{ alignSelf: "stretch" }}>
+          <ToolBox tool={tool} phone={phone} plain />
+        </div>
+      </NumberedStep>
+
+      <NumberedStep ordinal={2} title={STEP_LABELS[1]}>
+        <p style={{ ...text14, fontSize: 15, lineHeight: "20px", color: t.text2 }}>{phrase.line}</p>
+        <div style={{ alignSelf: "stretch", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "12px 16px", borderRadius: r.card, background: t.module }}>
+          <span style={{ fontSize: 15, lineHeight: "20px", color: t.text }}>“{phrase.say}”</span>
+          <span style={{ display: "inline-flex", flexShrink: 0 }}>
+            <CopyButton value={phrase.say} label={`Copy “${phrase.say}”`} phone={phone} />
+          </span>
+        </div>
+        <p style={{ ...text14, fontSize: 13, lineHeight: "16px", color: t.label }}>
+          The whole conversation is sent, word for word. Anything that looks like an API key or other secret is removed before it is saved. Nothing is published unless you publish it.
+        </p>
+      </NumberedStep>
+
+      <NumberedStep ordinal={3} title={STEP_LABELS[2]}>
+        <p style={{ ...text14, fontSize: 15, lineHeight: "20px", color: t.text2 }}>Drag a session into a draft, then pick the prompts that matter.</p>
+        <Button variant="primary" size={phone ? 44 : 32} onClick={onDone}>
+          {doneLabel}
+        </Button>
+        <p style={{ ...text14, fontSize: 13, lineHeight: "16px", color: t.label }}>
+          No connector? Use the Extractor on the{" "}
+          <FrameLink to="/import" style={{ color: t.text2, textDecoration: "underline", textUnderlineOffset: 3 }}>
+            Import page
+          </FrameLink>
+          .
+        </p>
+      </NumberedStep>
+    </ol>
   );
 }
 

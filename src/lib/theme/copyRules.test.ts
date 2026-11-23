@@ -250,6 +250,7 @@ export const ALLOW: Record<string, Record<string, string>> = {
     "src/pages/site/settings/AppsView.tsx|No access listed": "a value in an app's hint, beside \"Can access: …\"; not an empty state",
     "src/components/build/FullPromptWindow.tsx|No variables yet": "a count in the window's meta line, beside \"3 variables\"; a value",
     "src/components/build/FullPromptWindow.tsx|Nothing added yet": "the placeholder of an empty reply box, not an empty state",
+    "src/pages/site/library/LibraryPage.tsx|Nothing saved yet": "the heading of the Library's own empty state (a fact, as every heading is); the sentence under it ends with a full stop",
     "src/pages/site/compose/StillOpenSpaces.tsx|No spaces to post in": "a disabled menu option (menu options are not empty states)",
     "src/pages/site/openbuilds/NewPostWindow.tsx|No spaces to post in": "a disabled menu option (menu options are not empty states)",
   },

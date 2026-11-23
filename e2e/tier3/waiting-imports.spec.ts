@@ -424,7 +424,7 @@ for (const viewport of WIDTHS) {
       // Above the fold: the panel sits above the paste zone, and within the
       // first viewport at both widths.
       const panelBox = await panel(page).boundingBox();
-      const pasteBox = await page.getByLabel("Paste the transcript").boundingBox();
+      const pasteBox = await page.getByLabel("Paste a transcript").boundingBox();
       expect(panelBox && pasteBox && panelBox.y < pasteBox.y).toBe(true);
       expect(panelBox && panelBox.y < viewport.height).toBe(true);
 
@@ -443,7 +443,7 @@ for (const viewport of WIDTHS) {
       await openIntake(page, db);
 
       await expect(panel(page)).toHaveCount(0);
-      await expect(page.getByLabel("Paste the transcript")).toBeVisible();
+      await expect(page.getByLabel("Paste a transcript")).toBeVisible();
     });
 
     test("Review opens the tick-box screen with everything kept, and Skip leaves it waiting", async ({

@@ -113,7 +113,7 @@ describe("LibraryView", () => {
   it("chooses an item from its row", () => {
     const onSelect = vi.fn();
     view({ items: { ...visionLibraryProps().items, onSelect } });
-    fireEvent.click(screen.getAllByTestId("library-row")[2]);
+    fireEvent.click(within(screen.getAllByTestId("library-row")[2]).getByRole("button"));
     expect(onSelect).toHaveBeenCalledWith("vr3");
   });
 
@@ -164,12 +164,14 @@ describe("LibraryView", () => {
     expect(onRetry).toHaveBeenCalled();
   });
 
-  it("is one line and one action when empty", () => {
+  it("says 'Nothing saved yet' with one line, Browse builds and How saving works when empty", () => {
     view(visionLibraryProps("empty"));
     const empty = screen.getByTestId("library-empty");
-    expect(within(empty).getByText("Save a step from any build and it waits for you here.")).toBeInTheDocument();
+    expect(within(empty).getByRole("heading", { name: "Nothing saved yet" })).toBeInTheDocument();
+    expect(within(empty).getByText("Save a build, a session or a step and it waits for you here.")).toBeInTheDocument();
     expect(within(empty).getAllByRole("link")).toHaveLength(1);
-    expect(within(empty).getByRole("link")).toHaveAttribute("data-ui", "button");
+    expect(within(empty).getByRole("link", { name: "Browse builds" })).toHaveAttribute("data-ui", "button");
+    expect(within(empty).getByRole("button", { name: "How saving works" })).toBeInTheDocument();
   });
 
   it("stacks the side panel under the list on a phone, kinds as the same pills", () => {

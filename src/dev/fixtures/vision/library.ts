@@ -87,7 +87,7 @@ export function visionLibraryProps(state: DesignState = "populated"): LibraryVie
       sameAsBuilds: true,
       read,
       thing: "your library",
-      empty: { line: "Save a step from any build and it waits for you here.", action: { label: "Browse builds", href: "/builds" } },
+      empty: { title: "Nothing saved yet", line: "Save a build, a session or a step and it waits for you here.", action: { label: "Browse builds", href: "/builds" } },
       itemColumn: "Step",
       rows: empty ? [] : visionLibraryRows,
       selected: "vr1",

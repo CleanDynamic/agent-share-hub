@@ -118,7 +118,7 @@ export function IntakeProgress({
             color: TEXT_SECONDARY,
           }}
         >
-          Still reading. This takes a few seconds — your draft already exists,
+          Still reading. This takes a few seconds. Your draft already exists,
           so nothing is lost if this fails.
         </p>
       ) : null}

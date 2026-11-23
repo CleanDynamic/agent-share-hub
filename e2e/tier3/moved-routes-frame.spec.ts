@@ -224,7 +224,7 @@ test.describe("BG-P15 — the moved pages' own content survived the move", () =>
     await page.goto("/import");
 
     await expect(
-      page.getByRole("heading", { name: "Post a build without writing it up.", level: 1 })
+      page.getByRole("heading", { name: "Import a Build File", level: 1 })
     ).toBeVisible();
     await expect(page.getByTestId("import-drop")).toBeVisible();
   });

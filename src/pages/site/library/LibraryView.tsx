@@ -194,7 +194,7 @@ function KindPill({ item, current }: { item: LibraryKindsProps["items"][number];
         alignItems: "center",
         gap: 6,
         height: phone ? 44 : 32,
-        padding: "0 14px",
+        padding: "0 16px",
         borderRadius: 16,
         background: current ? t.module : state.hovered ? t.module : "transparent",
         border: `1px solid ${current ? t.selectedEdge : t.controlBorder}`,
@@ -253,8 +253,8 @@ function CollectionRow({ item, current, href }: { item: CollectionEntry; current
         padding: "0 12px",
         boxSizing: "border-box",
         borderRadius: r.card,
-        background: current || state.hovered ? t.module : "transparent",
-        border: `1px solid ${current ? t.selectedEdge : "transparent"}`,
+        background: t.module,
+        border: `1px solid ${current || state.hovered ? t.selectedEdge : "transparent"}`,
         fontFamily: FIGTREE,
         color: t.text,
         textDecoration: "none",
@@ -291,7 +291,7 @@ export function LibraryCollections({ read, items, current, hrefFor, onNew, empty
         empty={{ when: () => items.length === 0, line: emptyLine, testId: "library-collections-empty" }}
       >
         {() => (
-          <div data-testid="library-collections" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <div data-testid="library-collections" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {items.map((item) => (
               <CollectionRow key={item.id} item={item} current={item.id === current} href={hrefFor(item.id)} />
             ))}
@@ -319,7 +319,7 @@ export function LibraryChanges({ figure, parts, to, rows }: LibraryChangesProps)
       </div>
       <ul style={{ listStyle: "none", margin: "12px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
         {rows.map((row) => (
-          <li key={row.id} style={{ padding: "10px 12px", borderRadius: r.card, background: t.module, fontFamily: FIGTREE }}>
+          <li key={row.id} style={{ padding: "8px 12px", borderRadius: r.card, background: t.module, fontFamily: FIGTREE }}>
             <span style={{ display: "block", fontSize: 15, fontWeight: 600, lineHeight: "20px", color: t.text, ...ellipsis }}>{row.item}</span>
             <span style={{ ...small, display: "block", lineHeight: "16px" }}>{[CHANGE_WORD[row.tag], row.detail, row.age].filter(Boolean).join(" · ")}</span>
           </li>
@@ -340,16 +340,12 @@ function ItemRow({ row, selected, usedIn, onSelect }: { row: LibraryRow; selecte
      when it was last used. */
   const facts = [row.type, row.state === "same" ? null : STATE_WORD[row.state], usedIn && row.usedIn ? `Used in ${row.usedIn}` : null, row.lastUsed].filter(Boolean);
   return (
-    /* G21: the row is not in a grid, so its selected state is aria-pressed on its button, not aria-selected here; a click
-       anywhere on the row is a pointer convenience for that button. */
-    <li data-testid="library-row" onClick={onSelect} style={{ listStyle: "none", cursor: "pointer" }}>
+    /* G21: the row is not in a grid, so its selected state is aria-pressed on its button, which fills the row. */
+    <li data-testid="library-row" style={{ listStyle: "none" }}>
       <button
         type="button"
         aria-pressed={selected}
-        onClick={(event) => {
-          event.stopPropagation();
-          onSelect();
-        }}
+        onClick={onSelect}
         {...handlers}
         style={{
           display: "flex",
@@ -360,8 +356,8 @@ function ItemRow({ row, selected, usedIn, onSelect }: { row: LibraryRow; selecte
           justifyContent: "center",
           boxSizing: "border-box",
           padding: "8px 12px",
-          background: selected || state.hovered ? t.module : "transparent",
-          border: `1px solid ${selected ? t.selectedEdge : "transparent"}`,
+          background: t.module,
+          border: `1px solid ${selected || state.hovered ? t.selectedEdge : "transparent"}`,
           borderRadius: r.card,
           textAlign: "left",
           fontFamily: FIGTREE,
@@ -423,12 +419,15 @@ function TopicCards({ topics }: { topics: readonly LibraryTopic[] }) {
 function LibraryEmptyBlock({ empty, onHow }: { empty: LibraryEmpty; onHow: () => void }) {
   return (
     <div data-testid="library-empty" style={{ position: "relative", padding: "24px 4px 40px", minHeight: 200 }}>
-      <div
-        aria-hidden="true"
-        style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "55%", pointerEvents: "none", WebkitMaskImage: "linear-gradient(to left, #000, transparent)", maskImage: "linear-gradient(to left, #000, transparent)" }}
-      >
-        <WaterField />
-      </div>
+      {/* The dots fade in from the right edge: two fields, a wide faint one under a narrow stronger one. */}
+      {[
+        { width: "38%", opacity: 0.2 },
+        { width: "18%", opacity: 0.35 },
+      ].map((layer) => (
+        <div key={layer.width} aria-hidden="true" style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: layer.width, opacity: layer.opacity, pointerEvents: "none" }}>
+          <WaterField />
+        </div>
+      ))}
       <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
         <h2 style={SIDE_HEAD}>{empty.title}</h2>
         <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.text2 }}>{empty.line}</p>
@@ -466,7 +465,7 @@ export function LibraryItems(props: LibraryItemsProps) {
   if (props.topics) list = () => <TopicCards topics={props.topics ?? []} />;
   else if (empty.title && rows.length === 0) list = () => <LibraryEmptyBlock empty={empty} onHow={showHowSaving} />;
   else list = () => (
-      <ul data-testid="library-list" aria-label={itemColumn === "Build" ? "Saved builds" : "Saved items"} style={{ margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+      <ul data-testid="library-list" aria-label={itemColumn === "Build" ? "Saved builds" : "Saved items"} style={{ margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
         {rows.map((row) => (
           <ItemRow key={row.id} row={row} selected={row.id === selected} usedIn={usedIn} onSelect={() => onSelect(row.id)} />
         ))}
@@ -691,7 +690,7 @@ export function LibraryPreview({ name, meta, to, rows, read, onStart }: LibraryP
       <PageState read={read} thing="this collection" region={`Collection: ${name}`} skeleton={<CollectionSkeletons />}>
         {() =>
           rows.slice(0, 3).map((row) => (
-            <div key={row.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, minHeight: 32, fontFamily: FIGTREE, fontSize: 13 }}>
+            <div key={row.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, minHeight: 32, fontFamily: FIGTREE, fontSize: 13 }}>
               <span style={{ minWidth: 0, color: t.text, ...ellipsis }}>{row.title}</span>
               <span style={small}>{row.type}</span>
             </div>
