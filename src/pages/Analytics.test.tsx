@@ -1,11 +1,11 @@
 // RC-P23 — analytics on builds, rendered.
 //
 // The claims: the page asks for its build numbers in three requests and never
-// for a legacy post (and no module it imports can); NEEDS YOU lists the three
-// reasons, one line per build, and is absent when nothing needs the maker;
-// YOUR BUILDS is the four figures, the order in one sentence and a table of
-// exactly eight columns, numbers in DM Mono at the trailing edge, a stale claim
-// saying so, and no sort control; the empty and refused states are STATES.md's;
+// for a legacy post (and no module it imports can); NEEDS YOU lists the open
+// topics (Synth 15: no run-based reason), one line per build, and is absent when nothing needs the maker;
+// the builds table (Synth 15) is headed by its fact and has four columns,
+// numbers in Geist Mono at the trailing edge, no run figures and no sort
+// control; the empty and refused states are STATES.md's;
 // and both sections sit directly under the level and XP, where the legacy
 // engagement grid used to be at the foot of the tab. The build numbers, and
 // since RC-P27 the progress page's own reads, run through the real data layer
@@ -130,50 +130,43 @@ describe("Analytics on builds", () => {
     expect(recorded.requests.filter((request) => request.includes("content_items"))).toEqual([]);
   });
 
-  it("draws a table of exactly eight columns, in order, with numbers in DM Mono at the trailing edge", async () => {
+  it("draws the table headed by its fact, four columns in order, numbers in Geist Mono at the trailing edge", async () => {
     answers.builds.data = [build(1), build(2)];
     answers.metrics.data = [metrics(1), metrics(2)];
     renderPage();
 
     const table = await screen.findByTestId("build-stats-table");
+    expect(screen.getByRole("heading", { level: 2, name: "2 builds" })).toBeTruthy();
     const headers = within(table).getAllByRole("columnheader").map((cell) => cell.textContent);
-    expect(headers).toEqual(["Build", "Got working", "Last confirmed", "Rebuilds", "Likes", "Comments", "Saves", "Still open"]);
+    expect(headers).toEqual(["Build", "Rebuilds", "Likes", "Saved"]);
 
     const firstRow = within(table).getAllByTestId("build-stats-row")[0];
     const cells = within(firstRow).getAllByRole("cell");
-    expect(cells).toHaveLength(7);
-    const gotWorking = cells[0];
-    expect(gotWorking.textContent).toBe("4");
-    expect(gotWorking.style.fontFamily).toContain("Geist Mono");
-    expect(gotWorking.style.fontVariantNumeric).toBe("tabular-nums");
-    expect(gotWorking.style.textAlign).toBe("end");
+    expect(cells.map((cell) => cell.textContent)).toEqual(["1", "10", "2"]);
+    const rebuilds = cells[0];
+    expect(rebuilds.style.fontFamily).toContain("Geist Mono");
+    expect(rebuilds.style.fontVariantNumeric).toBe("tabular-nums");
+    expect(rebuilds.style.textAlign).toBe("end");
     expect(within(firstRow).getByRole("link", { name: "Build 1" }).getAttribute("href")).toBe("/b2/build-1");
   });
 
-  it("states the order in one sentence and offers no sort control", async () => {
-    answers.builds.data = [build(2), build(1)];
+  it("keeps the table's order, offers no sort control, and draws no run figures (Synth 15)", async () => {
+    answers.builds.data = [build(2), build(1, { last_confirmed_at: ago(200) })];
     answers.metrics.data = [metrics(1), metrics(2)];
     renderPage();
 
-    expect((await screen.findByTestId("build-stats-order")).textContent).toBe("Most got working first, then the most recently confirmed.");
+    await screen.findByTestId("build-stats-table");
+    expect(screen.queryByTestId("build-stats-order")).toBeNull();
     const titles = screen.getAllByTestId("build-stats-row").map((row) => within(row).getByRole("link").textContent);
     expect(titles).toEqual(["Build 1", "Build 2"]);
     expect(screen.queryAllByRole("button", { name: /sort/i })).toHaveLength(0);
     expect(screen.queryAllByRole("combobox")).toHaveLength(0);
+    expect(screen.queryByTestId("build-stats-confirmed")).toBeNull();
+    expect(screen.queryByText(/stale|confirmed|got working|reproduc/i)).toBeNull();
+    expect(screen.queryAllByTestId("maker-figure")).toHaveLength(0);
   });
 
-  it("says stale in words on a stale claim, never in a warning colour", async () => {
-    answers.builds.data = [build(1, { last_confirmed_at: ago(200) })];
-    answers.metrics.data = [metrics(1)];
-    renderPage();
-
-    const cell = await screen.findByTestId("build-stats-confirmed");
-    expect(cell.getAttribute("data-stale")).toBe("true");
-    expect(cell.textContent).toMatch(/months ago, on Sonnet 4\.5 · stale$/);
-    expect(cell.style.color).not.toBe(t.catBreakage);
-  });
-
-  it("lists the three reasons in Needs you, one line per build, most pressing first", async () => {
+  it("lists the open topics in Needs you, one line per build, and no run-based reason", async () => {
     answers.builds.data = [
       build(1),
       build(2, { last_confirmed_at: ago(200) }),
@@ -186,10 +179,7 @@ describe("Analytics on builds", () => {
     const section = await screen.findByTestId("needs-you");
     expect(within(section).getByRole("heading", { name: "Needs you" })).toBeTruthy();
     const lines = within(section).getAllByTestId("needs-you-line").map((line) => line.textContent);
-    expect(lines).toHaveLength(3);
-    expect(lines[0]).toBe("Build 43 topics still open");
-    expect(lines[1]).toBe("Build 3a recent run did not work");
-    expect(lines[2]).toMatch(/^Build 2not confirmed since \d{1,2} \w+ \d{4}$/);
+    expect(lines).toEqual(["Build 43 topics still open"]);
   });
 
   it("leaves Needs you out entirely when nothing needs the maker", async () => {
@@ -210,7 +200,7 @@ describe("Analytics on builds", () => {
     const action = within(empty).getByRole("link", { name: "New build" });
     expect(action.getAttribute("href")).toBe("/compose/new");
     expect(action.getAttribute("data-visual-slot")).toBe("btn-secondary");
-    expect(screen.getAllByTestId("maker-figure")).toHaveLength(3);
+    expect(screen.getByRole("heading", { level: 2, name: "0 builds" })).toBeTruthy();
   });
 
   it("says a refused read is a refusal, never an empty table", async () => {
@@ -229,7 +219,7 @@ describe("Analytics on builds", () => {
     renderPage();
 
     const yours = await screen.findByTestId("your-builds");
-    expect(within(yours).getByRole("heading", { name: "Your builds" })).toBeTruthy();
+    expect(await within(yours).findByRole("heading", { name: "1 build" })).toBeTruthy();
     expect(screen.queryByText("Your story starts here")).toBeNull();
     expect(screen.queryByText("Day-returns")).toBeNull();
     expect(screen.queryByText("Reblogs")).toBeNull();

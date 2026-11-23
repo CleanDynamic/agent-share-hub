@@ -26,9 +26,10 @@ const page = (at: string) =>
   );
 
 describe("the model", () => {
-  it("names a build or a profile from the path, and nothing else", () => {
+  it("names a build, a profile or a project from the path, and nothing else", () => {
     expect(hintFor("/b/abc")).toBe("If you were looking for a build, it may have been made private or deleted.");
     expect(hintFor("/u/maren")).toBe("If you were looking for a profile, the username may have changed.");
+    expect(hintFor("/project/9")).toBe("If you were looking for a project, it may have been removed.");
     expect(hintFor("/this-does-not-exist")).toBeNull();
   });
   it("cuts the shown path to 60 characters", () => {
@@ -53,9 +54,17 @@ describe("the page", () => {
   it.each([
     ["/b/gone", "If you were looking for a build, it may have been made private or deleted."],
     ["/u/gone", "If you were looking for a profile, the username may have changed."],
+    ["/project/gone", "If you were looking for a project, it may have been removed."],
   ])("adds a sentence for %s", (at, sentence) => {
     page(at);
     expect(screen.getByTestId("not-found-hint")).toHaveTextContent(sentence);
+  });
+
+  it("draws a band of Deep dots that takes no pointer", () => {
+    page("/nope");
+    const dots = screen.getByTestId("not-found-dots");
+    expect(dots).toHaveAttribute("aria-hidden", "true");
+    expect(dots.style.pointerEvents).toBe("none");
   });
 
   it("moves focus to the h1", () => {

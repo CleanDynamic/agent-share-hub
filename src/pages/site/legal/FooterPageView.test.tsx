@@ -50,24 +50,25 @@ describe.each(pages)("%s page", (_name, text, path) => {
     for (const section of text.sections) expect(screen.getByRole("region", { name: section.heading })).toHaveAttribute("id", section.id);
   });
 
-  it("gives every card a subtitle", () => {
+  it("draws no subtitle under a section's heading (Synth 15: the heading is the fact)", () => {
     view(text, path);
-    for (const section of text.sections) expect(screen.getAllByText(subtitleOf(section)).length).toBeGreaterThan(0);
+    for (const section of text.sections) expect(screen.queryByText(subtitleOf(section))).toBeNull();
   });
 
-  it("side: one link per section, Related without this page and in order, draft tag while not reviewed", () => {
+  it("side: one link per section, Related without this page and in order, Not reviewed yet while a draft", () => {
     view(text, path);
     const nav = within(screen.getByRole("navigation", { name: "In this page" }));
     expect(nav.getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(text.sections.map((s) => `#${s.id}`));
     const related = within(screen.getByRole("navigation", { name: "Related pages" }));
     const all = ["/rules", "/report", "/contact", "/terms", "/privacy"];
     expect(related.getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(all.filter((href) => href !== path));
-    expect(screen.getByText("draft")).toBeInTheDocument();
+    expect(screen.getByTestId("footer-status")).toHaveTextContent("Not reviewed yet");
+    expect(screen.queryByText("draft")).toBeNull();
   });
 
-  it("shows no draft tag once reviewed", () => {
+  it("says nothing about review once reviewed", () => {
     view({ ...text, reviewed: true }, path);
-    expect(screen.queryByText("draft")).toBeNull();
+    expect(screen.queryByTestId("footer-status")).toBeNull();
     expect(screen.queryByText("Not reviewed yet")).toBeNull();
   });
 });

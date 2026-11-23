@@ -24,10 +24,8 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { r } from "@/lib/theme/radius";
-import { SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
-import { body, measure } from "@/lib/theme/type";
+import { FIGTREE, textStep } from "@/lib/theme/type";
 import { SITE_NAME } from "@/lib/site";
 
 /** XP-DESIGN.md › Reset, word for word. A test holds the two together. */
@@ -66,14 +64,14 @@ export function ResetNote() {
         display: "flex",
         flexWrap: "wrap",
         alignItems: "center",
-        gap: SPACE.xs,
-        padding: SPACE.sm,
-        backgroundColor: t.recess,
+        gap: 12,
+        padding: "12px 14px",
+        backgroundColor: t.module,
         color: t.text,
-        borderRadius: r.panel,
+        borderRadius: 12,
       }}
     >
-      <p style={{ ...body, ...measure, margin: 0, flex: "1 1 240px" }}>{RESET_NOTE_TEXT}</p>
+      <p style={{ fontFamily: FIGTREE, fontSize: textStep.body, lineHeight: "20px", color: t.text2, margin: 0, flex: "1 1 240px" }}>{RESET_NOTE_TEXT}</p>
       <Button
         variant="ghost"
         size="lg"

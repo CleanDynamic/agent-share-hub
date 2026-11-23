@@ -1,26 +1,57 @@
-import { useState } from "react";
+/* /admin. Synth 15 Part F: in the site frame, two panels, `minmax(0, 1fr) 340px` (AdminFrame): the h1 "Admin" at 20/600 with
+   Sign Out at the right and the site's counts as one line under it, then the tabs (Reports, Service Listings, AI Tools,
+   Projects, Learning Paths, Curators; prompt 06's tabs at content width). Each tab is a table; the selected row is
+   Card-filled and its detail fills the side panel, headed by its fact, with the same actions as its row. Confirmations
+   and the rejection reason use the modal recipe. Every read, write, query key and toast is the page's own. */
+
+import { useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { adminSetCurator } from "@/lib/auth/adminSetCurator";
 import { insertNotification } from "@/lib/notifications";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, CheckCircle, XCircle, Loader2, ExternalLink, Eye } from "lucide-react";
 import { SeoHead } from "@/components/SeoHead";
 import { ReportsQueue } from "@/components/moderation/ReportsQueue";
-
+import { AdminConfirm, RejectWithReason } from "@/components/admin/AdminDialogs";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+  ADMIN_META,
+  AdminDetail,
+  AdminEmpty,
+  AdminLayout,
+  AdminRowsLoading,
+  AdminSection,
+  AdminTable,
+  DetailActions,
+  DetailFact,
+  RowAction,
+  adminText,
+  countOf,
+  useAdminMode,
+} from "@/components/admin/AdminFrame";
+import { Button } from "@/components/brand/Button";
+import { TextTabs } from "@/components/vision/TextTabs";
 import { SITE_NAME } from "@/lib/site";
+import { t } from "@/lib/theme/tokens";
+import { textStep } from "@/lib/theme/type";
+
+/* eslint-disable @typescript-eslint/no-explicit-any -- the admin's reads are untyped joins, as they were */
+
+type TabValue = "reports" | "services" | "tools" | "projects" | "paths" | "curators";
+
+const TABS: ReadonlyArray<{ value: TabValue; label: string }> = [
+  { value: "reports", label: "Reports" },
+  { value: "services", label: "Service Listings" },
+  { value: "tools", label: "AI Tools" },
+  { value: "projects", label: "Projects" },
+  { value: "paths", label: "Learning Paths" },
+  { value: "curators", label: "Curators" },
+];
+
+const day = (value: string | null | undefined): string => (value ? new Date(value).toLocaleDateString() : "");
+const handle = (profile: { username?: string | null } | null | undefined): string => `@${profile?.username || "unknown"}`;
+const who = (profile: { username?: string | null; display_name?: string | null } | null | undefined): string => profile?.display_name || profile?.username || "Unknown";
+const linkStyle: CSSProperties = { ...adminText(textStep.body, t.text), textDecoration: "underline", textDecorationColor: t.label, textUnderlineOffset: 3, overflowWrap: "anywhere" };
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -286,439 +317,409 @@ const Admin = () => {
     navigate("/");
   }
 
-  return (
-    <div className="py-10 px-6">
-      <SeoHead title="Admin" description="Admin panel." path="/admin" noIndex />
-      <div className="mx-auto max-w-5xl">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold text-foreground">Admin Panel</h1>
-          <Button variant="outline" size="sm" onClick={handleSignOut}>
-            <LogOut className="mr-2 h-4 w-4" /> Sign Out
-          </Button>
+
+  const [tab, setTab] = useState<TabValue>("reports");
+  const mode = useAdminMode();
+
+  const facts = [
+    countOf(pendingItems?.length ?? 0, "pending item"),
+    countOf(approvedToolsList.length, "AI tool"),
+    countOf(pendingProjects?.length ?? 0, "pending project"),
+    countOf(approvedProjects?.length ?? 0, "live project"),
+    countOf(totalRatings ?? 0, "rating"),
+    countOf(totalComments ?? 0, "comment"),
+  ].join(" · ");
+
+  const head = (
+    <>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+          <h1 style={adminText(textStep.headline, t.text, { fontWeight: 600, lineHeight: "24px" })}>Admin</h1>
+          <p data-testid="admin-facts" style={ADMIN_META}>{facts}</p>
         </div>
-
-        {/* Stats row */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
-          <div className="border border-border rounded-xl p-4 bg-card text-center">
-            <p className="text-2xl font-bold text-foreground">{pendingItems?.length ?? 0}</p>
-            <p className="text-[10px] text-muted-foreground tracking-wider">Pending</p>
-          </div>
-          <div className="border border-border rounded-xl p-4 bg-card text-center">
-            <p className="text-2xl font-bold text-foreground">{approvedToolsList.length}</p>
-            <p className="text-[10px] text-muted-foreground tracking-wider">AI Tools</p>
-          </div>
-          <div className="border border-border rounded-xl p-4 bg-card text-center">
-            <p className="text-2xl font-bold text-foreground">{pendingProjects?.length ?? 0}</p>
-            <p className="text-[10px] text-muted-foreground tracking-wider">Pending Projects</p>
-          </div>
-          <div className="border border-border rounded-xl p-4 bg-card text-center">
-            <p className="text-2xl font-bold text-foreground">{approvedProjects?.length ?? 0}</p>
-            <p className="text-[10px] text-muted-foreground tracking-wider">Live Projects</p>
-          </div>
-          <div className="border border-border rounded-xl p-4 bg-card text-center">
-            <p className="text-2xl font-bold text-foreground">{totalRatings ?? 0}</p>
-            <p className="text-[10px] text-muted-foreground tracking-wider">Total Ratings</p>
-          </div>
-          <div className="border border-border rounded-xl p-4 bg-card text-center">
-            <p className="text-2xl font-bold text-foreground">{totalComments ?? 0}</p>
-            <p className="text-[10px] text-muted-foreground tracking-wider">Total Comments</p>
-          </div>
-        </div>
-
-        <Tabs defaultValue="reports" className="space-y-6">
-          <TabsList className="bg-card border border-border">
-            <TabsTrigger value="reports">Reports</TabsTrigger>
-            <TabsTrigger value="services">Service Listings</TabsTrigger>
-            <TabsTrigger value="tools">AI Tools</TabsTrigger>
-            <TabsTrigger value="projects">Projects</TabsTrigger>
-            <TabsTrigger value="paths">Learning Paths</TabsTrigger>
-            <TabsTrigger value="curators">Curators</TabsTrigger>
-          </TabsList>
-
-          {/* ── RC-P17b: the reports queue. It takes the Content Queue's place:
-                 that tab moderated legacy posts, all of which the clear deletes. ── */}
-          <TabsContent value="reports">
-            <ReportsQueue />
-          </TabsContent>
-
-          {/* ── Service listings management ── */}
-          <TabsContent value="services" className="space-y-4">
-            <h2 className="text-lg font-semibold text-foreground">Service Listings</h2>
-            {listingsLoading ? (
-              <div className="space-y-3">
-                <Skeleton className="h-16 w-full rounded-xl" />
-                <Skeleton className="h-16 w-full rounded-xl" />
-              </div>
-            ) : !allListings || allListings.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-10 text-center">No service listings yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {allListings.map((listing) => {
-                  const creator = listing.profiles as { username: string | null; display_name: string | null } | null;
-                  return (
-                    <div key={listing.id} className="border border-border rounded-xl p-4 bg-card flex flex-col sm:flex-row sm:items-center gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="text-sm font-semibold text-foreground truncate">{listing.title}</p>
-                          <Badge
-                            variant="outline"
-                            className={`text-[10px] ${listing.is_active ? "bg-[var(--cat-evidence-fill)] text-[var(--cat-evidence)] border-[var(--cat-evidence)]" : "bg-muted text-muted-foreground border-border"}`}
-                          >
-                            {listing.is_active ? "Active" : "Inactive"}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          by @{creator?.username || "unknown"} · <span className="font-semibold text-[var(--cat-artefact)]">£{Number(listing.price_gbp ?? 0).toFixed(2)}</span>
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs text-muted-foreground">{listing.is_active ? "Active" : "Deactivated"}</span>
-                        <Switch
-                          checked={listing.is_active}
-                          onCheckedChange={(checked) =>
-                            toggleListingMutation.mutate({ id: listing.id, is_active: checked })
-                          }
-                          disabled={toggleListingMutation.isPending}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* ── AI Tools registry ── */}
-          <TabsContent value="tools" className="space-y-6">
-            {toolsLoading ? (
-              <div className="space-y-3">
-                <Skeleton className="h-10 w-full rounded-xl" />
-                <Skeleton className="h-16 w-full rounded-xl" />
-                <Skeleton className="h-16 w-full rounded-xl" />
-              </div>
-            ) : (
-              <>
-                {/* Stats bar */}
-                <div className="flex gap-4 text-sm">
-                  <span className="text-foreground font-medium">{approvedToolsList.length} tools approved</span>
-                  <span className="text-muted-foreground">·</span>
-                  <span className="text-muted-foreground">{pendingToolsList.length} pending review</span>
-                </div>
-
-                {/* Pending */}
-                {pendingToolsList.length > 0 && (
-                  <div className="space-y-3">
-                    <h3 className="text-sm font-semibold text-foreground">Pending</h3>
-                    {pendingToolsList.map((tool: any) => (
-                      <ToolCard
-                        key={tool.id}
-                        tool={tool}
-                        onApprove={() => approveToolMutation.mutate(tool.id)}
-                        onReject={(reason) => rejectToolMutation.mutate({ id: tool.id, reason })}
-                        approving={approveToolMutation.isPending}
-                        rejecting={rejectToolMutation.isPending}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                {/* Approved */}
-                {approvedToolsList.length > 0 && (
-                  <div className="space-y-3">
-                    <h3 className="text-sm font-semibold text-foreground">Approved</h3>
-                    {approvedToolsList.map((tool: any) => (
-                      <div key={tool.id} className="border border-border rounded-xl p-4 bg-card">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-semibold text-foreground">{tool.name}</p>
-                          {tool.is_official && (
-                            <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/30">Official</Badge>
-                          )}
-                          <Badge variant="outline" className="text-[10px] bg-[var(--cat-evidence-fill)] text-[var(--cat-evidence)] border-[var(--cat-evidence)]">Approved</Badge>
-                        </div>
-                        {tool.description && <p className="text-xs text-muted-foreground mt-1">{tool.description}</p>}
-                        <p className="text-xs text-muted-foreground mt-1">{tool.category}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Rejected */}
-                {rejectedToolsList.length > 0 && (
-                  <div className="space-y-3">
-                    <h3 className="text-sm font-semibold text-foreground text-muted-foreground">Rejected</h3>
-                    {rejectedToolsList.map((tool: any) => (
-                      <div key={tool.id} className="border border-border rounded-xl p-3 bg-card opacity-60">
-                        <p className="text-sm text-foreground">{tool.name}</p>
-                        {tool.rejected_reason && <p className="text-xs text-destructive mt-0.5">{tool.rejected_reason}</p>}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {!allTools || allTools.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-10 text-center">No tools in the registry yet.</p>
-                ) : null}
-              </>
-            )}
-          </TabsContent>
-
-          {/* ── Projects ── */}
-          <TabsContent value="projects" className="space-y-6">
-            {/* Pending Projects */}
-            <h2 className="text-lg font-semibold text-foreground">Pending Projects</h2>
-            {pendingProjectsLoading ? (
-              <div className="space-y-3"><Skeleton className="h-20 w-full rounded-xl" /><Skeleton className="h-20 w-full rounded-xl" /></div>
-            ) : !pendingProjects || pendingProjects.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-6 text-center">No pending projects.</p>
-            ) : (
-              <div className="space-y-3">
-                {pendingProjects.map((proj: any) => {
-                  const creator = proj.profiles as { username: string | null; display_name: string | null } | null;
-                  const comps = proj.project_components ?? [];
-                  return (
-                    <div key={proj.id} className="border border-border rounded-xl p-4 bg-card space-y-3">
-                      <div className="flex flex-col sm:flex-row sm:items-start gap-3">
-                        <div className="flex-1 min-w-0 space-y-1">
-                          <p className="text-sm font-semibold text-foreground">{proj.title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            by {creator?.display_name || creator?.username || "Unknown"} · {new Date(proj.created_at).toLocaleDateString()} · {comps.length} component{comps.length !== 1 ? "s" : ""}
-                          </p>
-                          <p className="text-xs text-muted-foreground line-clamp-2">{proj.description}</p>
-                          {/* Component summaries */}
-                          <div className="space-y-1 pt-1">
-                            {comps.map((c: any, i: number) => {
-                              const cid = c.linked_content_id || c.inline_content_id;
-                              const ci = pendingProjContent?.find((x: any) => x.id === cid);
-                              return (
-                                <p key={c.id} className="text-[10px] text-muted-foreground">
-                                  {i + 1}. {ci?.title ?? "Unknown"} — {ci?.content_type ?? ""} ({ci?.monetisation_type ?? "free"})
-                                </p>
-                              );
-                            })}
-                          </div>
-                          {proj.cover_image_url && (
-                            <button type="button" onClick={() => window.open(`/project/${proj.id}`, "_blank")} className="text-[10px] text-primary hover:underline">
-                              View cover image
-                            </button>
-                          )}
-                        </div>
-                        <div className="flex gap-2 shrink-0">
-                          <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-8" onClick={() => approveProjectMutation.mutate(proj.id)} disabled={approveProjectMutation.isPending}>
-                            {approveProjectMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3 mr-1" />}
-                            Approve
-                          </Button>
-                          <Button size="sm" variant="outline" className="text-xs h-8 border-destructive text-destructive hover:bg-destructive/10" onClick={() => rejectProjectMutation.mutate(proj.id)} disabled={rejectProjectMutation.isPending}>
-                            {rejectProjectMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3 mr-1" />}
-                            Reject
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Approved Projects */}
-            <h2 className="text-lg font-semibold text-foreground mt-8">Approved Projects</h2>
-            {approvedProjectsLoading ? (
-              <Skeleton className="h-20 w-full rounded-xl" />
-            ) : !approvedProjects || approvedProjects.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-6 text-center">No approved projects.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left">
-                      <th className="py-2 px-3 text-xs text-muted-foreground font-medium">Title</th>
-                      <th className="py-2 px-3 text-xs text-muted-foreground font-medium">Creator</th>
-                      <th className="py-2 px-3 text-xs text-muted-foreground font-medium">Components</th>
-                      <th className="py-2 px-3 text-xs text-muted-foreground font-medium">Views</th>
-                      <th className="py-2 px-3 text-xs text-muted-foreground font-medium">Approved</th>
-                      <th className="py-2 px-3 text-xs text-muted-foreground font-medium"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {approvedProjects.map((proj: any) => {
-                      const creator = proj.profiles as { username: string | null; display_name: string | null } | null;
-                      return (
-                        <tr key={proj.id} className="border-b border-border">
-                          <td className="py-2.5 px-3 text-foreground font-medium truncate max-w-[200px]">{proj.title}</td>
-                          <td className="py-2.5 px-3 text-muted-foreground">@{creator?.username || "unknown"}</td>
-                          <td className="py-2.5 px-3 text-muted-foreground">{(proj.project_components ?? []).length}</td>
-                          <td className="py-2.5 px-3 text-muted-foreground">{proj.view_count}</td>
-                          <td className="py-2.5 px-3 text-muted-foreground">{proj.approved_at ? new Date(proj.approved_at).toLocaleDateString() : "—"}</td>
-                          <td className="py-2.5 px-3">
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button size="sm" variant="outline" className="text-xs h-7 border-destructive text-destructive hover:bg-destructive/10">
-                                  Remove
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent className="bg-card border-border">
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Remove "{proj.title}"?</AlertDialogTitle>
-                                  <AlertDialogDescription>This will set the project back to pending. It will no longer be visible on the site.</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => removeProjectMutation.mutate(proj.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                    Remove
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </TabsContent>
-
-          {/* ── Learning Paths ── */}
-          <TabsContent value="paths" className="space-y-4">
-            <h2 className="text-lg font-semibold text-foreground">Pending Learning Paths</h2>
-            {pendingPathsLoading ? (
-              <div className="space-y-3">
-                <Skeleton className="h-20 w-full rounded-xl" />
-              </div>
-            ) : !pendingPaths || pendingPaths.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-10 text-center">No pending learning paths.</p>
-            ) : (
-              <div className="space-y-3">
-                {pendingPaths.map((path: any) => {
-                  const creator = path.profiles as any;
-                  return (
-                    <div key={path.id} className="border border-border rounded-xl p-4 bg-card flex flex-col sm:flex-row sm:items-center gap-4">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">{path.title}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          by {creator?.display_name || creator?.username || "Unknown"} · {path.difficulty_range}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{path.description}</p>
-                      </div>
-                      <div className="flex gap-2 shrink-0">
-                        <Button
-                          size="sm"
-                          className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-8"
-                          onClick={() => approvePathMutation.mutate(path.id)}
-                          disabled={approvePathMutation.isPending}
-                        >
-                          <CheckCircle className="h-3 w-3 mr-1" /> Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-xs h-8 border-destructive text-destructive hover:bg-destructive/10"
-                          onClick={() => rejectPathMutation.mutate(path.id)}
-                          disabled={rejectPathMutation.isPending}
-                        >
-                          <XCircle className="h-3 w-3 mr-1" /> Reject
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* ── Curators ── */}
-          <TabsContent value="curators" className="space-y-6">
-            <CuratorsTab />
-          </TabsContent>
-        </Tabs>
+        <Button variant="secondary" size={mode === "cards" ? 44 : 32} onClick={handleSignOut}>
+          Sign Out
+        </Button>
       </div>
-    </div>
+      <div style={{ overflowX: "auto", margin: "0 -16px", padding: "0 4px" }}>
+        <TextTabs<TabValue>
+          label="Admin sections"
+          value={tab}
+          onChange={setTab}
+          tabs={TABS.map((entry) => ({ ...entry, id: `admin-tab-${entry.value}`, controls: `admin-panel-${entry.value}` }))}
+        />
+      </div>
+    </>
+  );
+
+  return (
+    <>
+      <SeoHead title="Admin" description="Admin panel." path="/admin" noIndex />
+      <AdminLayout head={head}>
+        <div role="tabpanel" id={`admin-panel-${tab}`} aria-labelledby={`admin-tab-${tab}`} style={{ display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
+          {/* RC-P17b: the reports queue. It takes the Content Queue's place: that tab moderated legacy posts, all of which the clear deletes. */}
+          {tab === "reports" ? <ReportsQueue /> : null}
+          {tab === "services" ? (
+            <ServicesTab
+              listings={allListings}
+              loading={listingsLoading}
+              onToggle={(id, is_active) => toggleListingMutation.mutate({ id, is_active })}
+              busy={toggleListingMutation.isPending}
+            />
+          ) : null}
+          {tab === "tools" ? (
+            <ToolsTab
+              tools={allTools}
+              loading={toolsLoading}
+              approved={approvedToolsList.length}
+              pending={pendingToolsList.length}
+              onApprove={(id) => approveToolMutation.mutate(id)}
+              onReject={(id, reason) => rejectToolMutation.mutate({ id, reason })}
+              approving={approveToolMutation.isPending}
+              rejecting={rejectToolMutation.isPending}
+            />
+          ) : null}
+          {tab === "projects" ? (
+            <ProjectsTab
+              pending={pendingProjects}
+              approved={approvedProjects}
+              loading={pendingProjectsLoading || approvedProjectsLoading}
+              content={pendingProjContent}
+              onApprove={(id) => approveProjectMutation.mutate(id)}
+              onReject={(id) => rejectProjectMutation.mutate(id)}
+              onRemove={(id) => removeProjectMutation.mutate(id)}
+              approving={approveProjectMutation.isPending}
+              rejecting={rejectProjectMutation.isPending}
+              removing={removeProjectMutation.isPending}
+            />
+          ) : null}
+          {tab === "paths" ? (
+            <PathsTab
+              paths={pendingPaths}
+              loading={pendingPathsLoading}
+              onApprove={(id) => approvePathMutation.mutate(id)}
+              onReject={(id) => rejectPathMutation.mutate(id)}
+              approving={approvePathMutation.isPending}
+              rejecting={rejectPathMutation.isPending}
+            />
+          ) : null}
+          {tab === "curators" ? <CuratorsTab /> : null}
+        </div>
+      </AdminLayout>
+    </>
   );
 };
 
-/** A detailed card for a pending tool submission with approve/reject */
-function ToolCard({
-  tool,
+/* ── Service listings ── */
+
+function ServicesTab({ listings, loading, onToggle, busy }: { listings: any[] | undefined; loading: boolean; onToggle: (id: string, active: boolean) => void; busy: boolean }) {
+  const [selected, setSelected] = useState<string | null>(null);
+  const picked = listings?.find((listing) => listing.id === selected) ?? null;
+  const price = (listing: any) => `£${Number(listing.price_gbp ?? 0).toFixed(2)}`;
+  const toggle = (listing: any) => (
+    <RowAction disabled={busy} onClick={() => onToggle(listing.id, !listing.is_active)}>
+      {listing.is_active ? "Deactivate" : "Activate"}
+    </RowAction>
+  );
+  return (
+    <AdminSection fact={loading ? "Service listings" : countOf(listings?.length ?? 0, "service listing")}>
+      {loading ? (
+        <AdminRowsLoading />
+      ) : !listings || listings.length === 0 ? (
+        <AdminEmpty>No service listings yet.</AdminEmpty>
+      ) : (
+        <AdminTable
+          label="Service listings"
+          rows={listings}
+          rowKey={(listing) => listing.id}
+          selected={selected}
+          onSelect={setSelected}
+          name={{ head: "Listing", cell: (listing) => listing.title, label: (listing) => listing.title }}
+          columns={[
+            { head: "By", meta: (listing) => handle(listing.profiles), cell: (listing) => handle(listing.profiles) },
+            { head: "Price", numeric: true, meta: price, cell: price },
+            { head: "Status", meta: (listing) => (listing.is_active ? "Active" : "Inactive"), cell: (listing) => (listing.is_active ? "Active" : "Inactive") },
+          ]}
+          actions={toggle}
+        />
+      )}
+      {picked ? (
+        <AdminDetail fact={picked.title} onClose={() => setSelected(null)}>
+          <DetailFact label="By">{handle(picked.profiles)}</DetailFact>
+          <DetailFact label="Price" mono>{price(picked)}</DetailFact>
+          <DetailFact label="Status">{picked.is_active ? "Active" : "Deactivated"}</DetailFact>
+          <DetailActions>{toggle(picked)}</DetailActions>
+        </AdminDetail>
+      ) : null}
+    </AdminSection>
+  );
+}
+
+/* ── AI tools ── */
+
+function ToolsTab({
+  tools,
+  loading,
+  approved,
+  pending,
   onApprove,
   onReject,
   approving,
   rejecting,
 }: {
-  tool: any;
-  onApprove: () => void;
-  onReject: (reason?: string) => void;
+  tools: any[] | undefined;
+  loading: boolean;
+  approved: number;
+  pending: number;
+  onApprove: (id: string) => void;
+  onReject: (id: string, reason?: string) => void;
   approving: boolean;
   rejecting: boolean;
 }) {
-  const [rejectReason, setRejectReason] = useState("");
-  const [showReject, setShowReject] = useState(false);
-  const submitter = tool.profiles as { username: string | null; display_name: string | null } | null;
-
+  const [selected, setSelected] = useState<string | null>(null);
+  const [rejectingTool, setRejectingTool] = useState<any | null>(null);
+  /* Pending first, then approved, then rejected, each in the order they were read. */
+  const order: Record<string, number> = { pending: 0, approved: 1, rejected: 2 };
+  const rows = [...(tools ?? [])].filter((tool) => tool.status in order).sort((a, b) => order[a.status] - order[b.status]);
+  const picked = rows.find((tool) => tool.id === selected) ?? null;
+  const status = (tool: any) => (tool.status === "approved" ? (tool.is_official ? "Approved · Official" : "Approved") : tool.status === "pending" ? "Pending" : "Rejected");
+  const actions = (tool: any) =>
+    tool.status === "pending" ? (
+      <>
+        <RowAction disabled={approving} onClick={() => onApprove(tool.id)}>
+          Approve
+        </RowAction>
+        <RowAction disabled={rejecting} onClick={() => setRejectingTool(tool)}>
+          Reject
+        </RowAction>
+      </>
+    ) : null;
   return (
-    <div className="border border-border rounded-xl p-4 bg-card space-y-3">
-      <div className="flex flex-col sm:flex-row sm:items-start gap-3">
-        <div className="flex-1 min-w-0 space-y-1">
-          <p className="text-sm font-semibold text-foreground">{tool.name}</p>
-          {tool.website_url && (
-            <a
-              href={tool.website_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-            >
-              {tool.website_url} <ExternalLink className="h-3 w-3" />
-            </a>
-          )}
-          {tool.description && <p className="text-xs text-muted-foreground">{tool.description}</p>}
-          <p className="text-xs text-muted-foreground">
-            Category: {tool.category} · Submitted by @{submitter?.username || "unknown"} · {new Date(tool.created_at).toLocaleDateString()}
-          </p>
-        </div>
-        <div className="flex gap-2 shrink-0">
-          <Button
-            size="sm"
-            className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-8"
-            onClick={onApprove}
-            disabled={approving}
-          >
-            {approving ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3 mr-1" />}
-            Approve
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="text-xs h-8 border-destructive text-destructive hover:bg-destructive/10"
-            onClick={() => showReject ? onReject(rejectReason) : setShowReject(true)}
-            disabled={rejecting}
-          >
-            {rejecting ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3 mr-1" />}
-            Reject
-          </Button>
-        </div>
-      </div>
-      {showReject && (
-        <div className="flex gap-2">
-          <Input
-            value={rejectReason}
-            onChange={(e) => setRejectReason(e.target.value)}
-            placeholder="Rejection reason (optional)"
-            className="h-8 text-xs bg-background border-border rounded-lg flex-1"
-          />
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8 text-xs"
-            onClick={() => onReject(rejectReason)}
-            disabled={rejecting}
-          >
-            Confirm
-          </Button>
-        </div>
+    <AdminSection fact={loading ? "AI tools" : `${approved} tools approved · ${pending} pending review`} label="AI tools">
+      {loading ? (
+        <AdminRowsLoading />
+      ) : rows.length === 0 ? (
+        <AdminEmpty>No tools in the registry yet.</AdminEmpty>
+      ) : (
+        <AdminTable
+          label="AI tools"
+          rows={rows}
+          rowKey={(tool) => tool.id}
+          selected={selected}
+          onSelect={setSelected}
+          name={{ head: "Tool", cell: (tool) => tool.name, label: (tool) => tool.name }}
+          columns={[
+            { head: "Category", meta: (tool) => tool.category ?? "", cell: (tool) => tool.category },
+            { head: "Status", meta: status, cell: status },
+            { head: "Submitted", meta: (tool) => day(tool.created_at), cell: (tool) => day(tool.created_at) },
+          ]}
+          actions={(tool) => actions(tool)}
+        />
       )}
-    </div>
+      {picked ? (
+        <AdminDetail fact={picked.name} onClose={() => setSelected(null)}>
+          {picked.website_url ? (
+            <DetailFact label="Website">
+              <a href={picked.website_url} target="_blank" rel="noopener noreferrer" style={linkStyle}>
+                {picked.website_url}
+              </a>
+            </DetailFact>
+          ) : null}
+          {picked.description ? <DetailFact label="Description">{picked.description}</DetailFact> : null}
+          <DetailFact label="Category">{picked.category}</DetailFact>
+          <DetailFact label="Status">{status(picked)}</DetailFact>
+          <DetailFact label="Submitted by">{`${handle(picked.profiles)} · ${day(picked.created_at)}`}</DetailFact>
+          {picked.rejected_reason ? <DetailFact label="Rejection reason">{picked.rejected_reason}</DetailFact> : null}
+          {actions(picked) ? <DetailActions>{actions(picked)}</DetailActions> : null}
+        </AdminDetail>
+      ) : null}
+      <RejectWithReason
+        open={rejectingTool !== null}
+        onOpenChange={(open) => (!open ? setRejectingTool(null) : undefined)}
+        name={rejectingTool?.name ?? "this tool"}
+        busy={rejecting}
+        onReject={(reason) => {
+          if (rejectingTool) onReject(rejectingTool.id, reason);
+          setRejectingTool(null);
+        }}
+      />
+    </AdminSection>
   );
 }
 
+/* ── Projects ── */
+
+function ProjectsTab({
+  pending,
+  approved,
+  loading,
+  content,
+  onApprove,
+  onReject,
+  onRemove,
+  approving,
+  rejecting,
+  removing,
+}: {
+  pending: any[] | undefined;
+  approved: any[] | undefined;
+  loading: boolean;
+  content: any[] | undefined;
+  onApprove: (id: string) => void;
+  onReject: (id: string) => void;
+  onRemove: (id: string) => void;
+  approving: boolean;
+  rejecting: boolean;
+  removing: boolean;
+}) {
+  const [selected, setSelected] = useState<string | null>(null);
+  const [removingProject, setRemovingProject] = useState<any | null>(null);
+  const rows = [...(pending ?? []).map((project) => ({ ...project, live: false })), ...(approved ?? []).map((project) => ({ ...project, live: true }))];
+  const picked = rows.find((project) => project.id === selected) ?? null;
+  const parts = (project: any) => (project.project_components ?? []).length;
+  const actions = (project: any) =>
+    project.live ? (
+      <RowAction disabled={removing} onClick={() => setRemovingProject(project)}>
+        Remove
+      </RowAction>
+    ) : (
+      <>
+        <RowAction disabled={approving} onClick={() => onApprove(project.id)}>
+          Approve
+        </RowAction>
+        <RowAction disabled={rejecting} onClick={() => onReject(project.id)}>
+          Reject
+        </RowAction>
+      </>
+    );
+  return (
+    <AdminSection fact={loading ? "Projects" : `${countOf(pending?.length ?? 0, "pending project")} · ${approved?.length ?? 0} live`} label="Projects">
+      {loading ? (
+        <AdminRowsLoading />
+      ) : rows.length === 0 ? (
+        <AdminEmpty>No pending projects.</AdminEmpty>
+      ) : (
+        <AdminTable
+          label="Projects"
+          rows={rows}
+          rowKey={(project) => project.id}
+          selected={selected}
+          onSelect={setSelected}
+          name={{ head: "Project", cell: (project) => project.title, label: (project) => project.title }}
+          columns={[
+            { head: "Creator", meta: (project) => handle(project.profiles), cell: (project) => handle(project.profiles) },
+            { head: "Parts", numeric: true, meta: (project) => countOf(parts(project), "component"), cell: (project) => parts(project) },
+            { head: "Views", numeric: true, meta: (project) => (project.live ? countOf(project.view_count ?? 0, "view") : ""), cell: (project) => (project.live ? (project.view_count ?? 0) : "") },
+            { head: "Status", meta: (project) => (project.live ? "Live" : "Pending"), cell: (project) => (project.live ? "Live" : "Pending") },
+            { head: "When", meta: (project) => day(project.live ? project.approved_at : project.created_at), cell: (project) => day(project.live ? project.approved_at : project.created_at) },
+          ]}
+          actions={actions}
+        />
+      )}
+      {picked ? (
+        <AdminDetail fact={picked.title} onClose={() => setSelected(null)}>
+          <DetailFact label="Creator">{`${who(picked.profiles)} · ${day(picked.created_at)}`}</DetailFact>
+          <DetailFact label="Status">{picked.live ? `Live since ${day(picked.approved_at)}` : "Pending"}</DetailFact>
+          {picked.description ? <DetailFact label="Description">{picked.description}</DetailFact> : null}
+          {!picked.live && parts(picked) > 0 ? (
+            <DetailFact label={countOf(parts(picked), "component")}>
+              {(picked.project_components ?? [])
+                .map((component: any, index: number) => {
+                  const id = component.linked_content_id || component.inline_content_id;
+                  const item = content?.find((entry: any) => entry.id === id);
+                  return `${index + 1}. ${item?.title ?? "Unknown"} · ${item?.content_type ?? ""} (${item?.monetisation_type ?? "free"})`;
+                })
+                .join("\n")}
+            </DetailFact>
+          ) : null}
+          {!picked.live && picked.cover_image_url ? (
+            <div>
+              <button type="button" onClick={() => window.open(`/project/${picked.id}`, "_blank")} style={{ ...linkStyle, background: "transparent", border: 0, padding: 0, cursor: "pointer" }}>
+                View cover image
+              </button>
+            </div>
+          ) : null}
+          <DetailActions>{actions(picked)}</DetailActions>
+        </AdminDetail>
+      ) : null}
+      <AdminConfirm
+        open={removingProject !== null}
+        onOpenChange={(open) => (!open ? setRemovingProject(null) : undefined)}
+        title={`Remove "${removingProject?.title ?? ""}"?`}
+        description="This will set the project back to pending. It will no longer be visible on the site."
+        confirmLabel="Remove"
+        busy={removing}
+        testId="remove-project-dialog"
+        onConfirm={() => {
+          if (removingProject) onRemove(removingProject.id);
+          setRemovingProject(null);
+        }}
+      />
+    </AdminSection>
+  );
+}
+
+/* ── Learning paths ── */
+
+function PathsTab({
+  paths,
+  loading,
+  onApprove,
+  onReject,
+  approving,
+  rejecting,
+}: {
+  paths: any[] | undefined;
+  loading: boolean;
+  onApprove: (id: string) => void;
+  onReject: (id: string) => void;
+  approving: boolean;
+  rejecting: boolean;
+}) {
+  const [selected, setSelected] = useState<string | null>(null);
+  const picked = paths?.find((path) => path.id === selected) ?? null;
+  const actions = (path: any) => (
+    <>
+      <RowAction disabled={approving} onClick={() => onApprove(path.id)}>
+        Approve
+      </RowAction>
+      <RowAction disabled={rejecting} onClick={() => onReject(path.id)}>
+        Reject
+      </RowAction>
+    </>
+  );
+  return (
+    <AdminSection fact={loading ? "Learning paths" : countOf(paths?.length ?? 0, "pending learning path")} label="Learning paths">
+      {loading ? (
+        <AdminRowsLoading />
+      ) : !paths || paths.length === 0 ? (
+        <AdminEmpty>No pending learning paths.</AdminEmpty>
+      ) : (
+        <AdminTable
+          label="Pending learning paths"
+          rows={paths}
+          rowKey={(path) => path.id}
+          selected={selected}
+          onSelect={setSelected}
+          name={{ head: "Path", cell: (path) => path.title, label: (path) => path.title }}
+          columns={[
+            { head: "Creator", meta: (path) => who(path.profiles), cell: (path) => who(path.profiles) },
+            { head: "Difficulty", meta: (path) => path.difficulty_range ?? "", cell: (path) => path.difficulty_range },
+          ]}
+          actions={actions}
+        />
+      )}
+      {picked ? (
+        <AdminDetail fact={picked.title} onClose={() => setSelected(null)}>
+          <DetailFact label="Creator">{who(picked.profiles)}</DetailFact>
+          {picked.difficulty_range ? <DetailFact label="Difficulty">{picked.difficulty_range}</DetailFact> : null}
+          {picked.description ? <DetailFact label="Description">{picked.description}</DetailFact> : null}
+          <DetailActions>{actions(picked)}</DetailActions>
+        </AdminDetail>
+      ) : null}
+    </AdminSection>
+  );
+}
 
 /* ---- Curators Tab ---- */
 function CuratorsTab() {
@@ -776,7 +777,7 @@ function CuratorsTab() {
     onSuccess: (_d, app) => {
       queryClient.invalidateQueries({ queryKey: ["admin_curator_apps_pending"] });
       queryClient.invalidateQueries({ queryKey: ["admin_active_curators"] });
-      toast({ title: `Approved — ${app.profiles?.display_name || app.profiles?.username} is now a Curator.` });
+      toast({ title: `Approved. ${app.profiles?.display_name || app.profiles?.username} is now a Curator.` });
     },
   });
 
@@ -802,78 +803,70 @@ function CuratorsTab() {
     },
   });
 
-  return (
-    <>
-      <h2 className="text-lg font-semibold text-foreground">Pending Applications</h2>
-      {appsLoading ? (
-        <div className="space-y-3"><Skeleton className="h-20 w-full rounded-xl" /></div>
-      ) : !pendingApps || pendingApps.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-6 text-center">No pending curator applications.</p>
-      ) : (
-        <div className="space-y-3">
-          {pendingApps.map((app: any) => {
-            const p = app.profiles;
-            const initials = (p?.display_name || p?.username || "?").slice(0, 2).toUpperCase();
-            return (
-              <div key={app.id} className="border border-border rounded-xl p-4 bg-card flex flex-col sm:flex-row sm:items-start gap-4">
-                <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-medium shrink-0 overflow-hidden">
-                    {p?.avatar_url ? <img src={p.avatar_url} alt="" className="h-full w-full object-cover" /> : initials}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground">{p?.display_name || p?.username}</p>
-                    <p className="text-xs text-muted-foreground">@{p?.username} · {p?.follower_count ?? 0} followers · applied {app.applied_at ? new Date(app.applied_at).toLocaleDateString() : ""}</p>
-                    <p className="text-xs text-muted-foreground mt-2 whitespace-pre-wrap">{app.reason}</p>
-                  </div>
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-8" onClick={() => approveMutation.mutate(app)} disabled={approveMutation.isPending}>
-                    {approveMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3 mr-1" />} Approve
-                  </Button>
-                  <Button size="sm" variant="outline" className="text-xs h-8 border-destructive text-destructive hover:bg-destructive/10" onClick={() => rejectMutation.mutate(app)} disabled={rejectMutation.isPending}>
-                    {rejectMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3 mr-1" />} Reject
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+  const [selected, setSelected] = useState<string | null>(null);
+  const rows = [
+    ...(pendingApps ?? []).map((app: any) => ({ key: `app-${app.id}`, kind: "application" as const, app, profile: app.profiles })),
+    ...(activeCurators ?? []).map((curator: any) => ({ key: `curator-${curator.id}`, kind: "curator" as const, curator, profile: curator.profiles })),
+  ];
+  type CuratorRow = (typeof rows)[number];
+  const picked = rows.find((row) => row.key === selected) ?? null;
+  const loading = appsLoading || curatorsLoading;
+  const actions = (row: CuratorRow) =>
+    row.kind === "application" ? (
+      <>
+        <RowAction disabled={approveMutation.isPending} onClick={() => approveMutation.mutate(row.app)}>
+          Approve
+        </RowAction>
+        <RowAction disabled={rejectMutation.isPending} onClick={() => rejectMutation.mutate(row.app)}>
+          Reject
+        </RowAction>
+      </>
+    ) : (
+      <RowAction disabled={deactivateMutation.isPending} onClick={() => deactivateMutation.mutate(row.curator)}>
+        Deactivate
+      </RowAction>
+    );
+  const when = (row: CuratorRow) => (row.kind === "application" ? `Applied ${day(row.app.applied_at)}` : `Joined ${day(row.curator.approved_at)}`);
+  const fact = loading ? "Curators" : `${countOf(pendingApps?.length ?? 0, "pending application")} · ${countOf(activeCurators?.length ?? 0, "active curator")}`;
 
-      <h2 className="text-lg font-semibold text-foreground mt-8">Active Curators</h2>
-      {curatorsLoading ? (
-        <Skeleton className="h-20 w-full rounded-xl" />
-      ) : !activeCurators || activeCurators.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-6 text-center">No active curators.</p>
+  return (
+    <AdminSection fact={fact} label="Curators">
+      {loading ? (
+        <AdminRowsLoading />
+      ) : rows.length === 0 ? (
+        <AdminEmpty>No pending curator applications.</AdminEmpty>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left">
-                <th className="py-2 px-3 text-xs text-muted-foreground font-medium">Curator</th>
-                <th className="py-2 px-3 text-xs text-muted-foreground font-medium">Followers</th>
-                <th className="py-2 px-3 text-xs text-muted-foreground font-medium">Recommendations</th>
-                <th className="py-2 px-3 text-xs text-muted-foreground font-medium">Joined</th>
-                <th className="py-2 px-3 text-xs text-muted-foreground font-medium"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {activeCurators.map((c: any) => (
-                <tr key={c.id} className="border-b border-border">
-                  <td className="py-2.5 px-3 text-foreground font-medium">{c.profiles?.display_name || c.profiles?.username} <span className="text-xs text-muted-foreground">@{c.profiles?.username}</span></td>
-                  <td className="py-2.5 px-3 text-muted-foreground">{c.profiles?.follower_count ?? 0}</td>
-                  <td className="py-2.5 px-3 text-muted-foreground">{recCounts?.[c.id] ?? 0}</td>
-                  <td className="py-2.5 px-3 text-muted-foreground">{c.approved_at ? new Date(c.approved_at).toLocaleDateString() : "—"}</td>
-                  <td className="py-2.5 px-3">
-                    <Button size="sm" variant="outline" className="text-xs h-7 border-destructive text-destructive hover:bg-destructive/10" onClick={() => deactivateMutation.mutate(c)} disabled={deactivateMutation.isPending}>Deactivate</Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <AdminTable<CuratorRow>
+          label="Curators"
+          rows={rows}
+          rowKey={(row) => row.key}
+          selected={selected}
+          onSelect={setSelected}
+          name={{ head: "Name", cell: (row) => who(row.profile), label: (row) => who(row.profile) }}
+          columns={[
+            { head: "Handle", meta: (row) => handle(row.profile), cell: (row) => handle(row.profile) },
+            { head: "Followers", numeric: true, meta: (row) => countOf(row.profile?.follower_count ?? 0, "follower"), cell: (row) => row.profile?.follower_count ?? 0 },
+            {
+              head: "Recommendations",
+              numeric: true,
+              meta: (row) => (row.kind === "curator" ? countOf(recCounts?.[row.curator.id] ?? 0, "recommendation") : ""),
+              cell: (row) => (row.kind === "curator" ? (recCounts?.[row.curator.id] ?? 0) : ""),
+            },
+            { head: "Status", meta: when, cell: when },
+          ]}
+          actions={actions}
+        />
       )}
-    </>
+      {picked ? (
+        <AdminDetail fact={picked.kind === "application" ? `${who(picked.profile)} applied` : `${who(picked.profile)} is a curator`} onClose={() => setSelected(null)}>
+          <DetailFact label="Handle">{`${handle(picked.profile)} · ${countOf(picked.profile?.follower_count ?? 0, "follower")}`}</DetailFact>
+          <DetailFact label={picked.kind === "application" ? "Applied" : "Joined"}>{picked.kind === "application" ? day(picked.app.applied_at) : day(picked.curator.approved_at)}</DetailFact>
+          {picked.kind === "application" && picked.app.reason ? <DetailFact label="Reason">{picked.app.reason}</DetailFact> : null}
+          {picked.kind === "curator" ? <DetailFact label="Recommendations" mono>{recCounts?.[picked.curator.id] ?? 0}</DetailFact> : null}
+          <DetailActions>{actions(picked)}</DetailActions>
+        </AdminDetail>
+      ) : null}
+    </AdminSection>
   );
 }
 

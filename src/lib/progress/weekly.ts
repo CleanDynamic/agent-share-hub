@@ -105,3 +105,8 @@ export async function getMyWeekEvents(userId: string, now: Date = new Date()): P
   if (response.error) throw progressFailure("getMyWeekEvents", userId, response);
   return (response.data ?? []) as WeekEvent[];
 }
+
+/** Synth 15: the challenges the progress page shows: none that is about runs (the run and the re-confirm challenges). */
+export const LISTED_WEEKLY_CHALLENGES: readonly WeeklyChallenge[] = WEEKLY_CHALLENGES.filter(
+  (challenge) => challenge.event !== "run_reported" && challenge.event !== "build_reconfirmed",
+);
