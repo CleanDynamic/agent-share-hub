@@ -7,7 +7,6 @@
 import type { LibrarySavedItem, SavedKind } from "@/lib/library/savedItems";
 import type { SourceStatus } from "@/lib/library/sourceVersions";
 import type { SavedBuild } from "@/lib/social";
-import { isStale } from "@/lib/build/signals";
 import type { ActivityEvent } from "@/lib/feed/activity";
 import { shortAgo } from "@/pages/site/home/homeModel";
 
@@ -59,9 +58,9 @@ export function kindTabs(kind: LibraryKind): { value: string; label: string }[] 
 
 /* ── the rows ── */
 
-export type ItemState = "same" | "edited" | "removed" | "stale";
+export type ItemState = "same" | "edited" | "removed";
 
-export const STATE_WORD: Record<ItemState, string> = { same: "Same", edited: "Edited", removed: "Removed", stale: "Stale" };
+export const STATE_WORD: Record<ItemState, string> = { same: "Same", edited: "Edited", removed: "Removed" };
 
 export interface LibraryRow {
   id: string;
@@ -77,7 +76,7 @@ export interface LibraryRow {
   lastUsed: string;
 }
 
-export type ChangeTag = "EDITED" | "REMOVED" | "RUN" | "REBUILD" | "STALE";
+export type ChangeTag = "EDITED" | "REMOVED" | "REBUILD";
 
 export interface LibraryChange {
   id: string;
@@ -119,7 +118,7 @@ export function savedBuildRow({ savedAt, build }: SavedBuild, now: number): Libr
     title: build.title?.trim() || "Untitled build",
     detail: build.outcome?.trim() || null,
     type: capital(build.shape ?? "other"),
-    state: isStale(build, now) ? "stale" : "same",
+    state: "same",
     lastUsed: ageWords(savedAt, now),
   };
 }
@@ -250,16 +249,13 @@ const handleOf = (person: { handle: string | null; name: string }) => (person.ha
 /** The changes on the reader's SAVED builds, as the list draws them. Builds they made are Home's and Builds' to report. */
 export function libraryChanges(events: readonly ActivityEvent[], now: number): LibraryChange[] {
   return events
-    .filter((event) => event.role === "saver")
+    /* Run-based events (a run, a stale build) are not drawn: the Library reports what happened to what was saved. */
+    .filter((event) => event.role === "saver" && event.kind !== "run" && event.kind !== "stale")
     .map((event): LibraryChange => {
       const age = shortAgo(event.at, now);
       switch (event.kind) {
-        case "run":
-          return { id: event.id, tag: "RUN", item: event.buildTitle, detail: `${event.worked ? "worked" : "didn't work"}${event.model ? ` on ${event.model}` : ""} · ${handleOf(event.runner)}`, age };
         case "rebuild":
           return { id: event.id, tag: "REBUILD", item: event.buildTitle, detail: `rebuilt by ${handleOf(event.rebuilder)}`, age };
-        case "stale":
-          return { id: event.id, tag: "STALE", item: event.buildTitle, detail: "not confirmed in a while", age };
         case "edited":
           return { id: event.id, tag: "EDITED", item: itemTitle(event.item), detail: "its source was edited after you saved it", age };
         case "removed":
@@ -268,12 +264,10 @@ export function libraryChanges(events: readonly ActivityEvent[], now: number): L
     });
 }
 
-/** The figure and meta for the list: "3 changes", "2 reproduced", "1 rebuilt". */
+/** The figure and meta for the list: "3 changes", "1 rebuilt". */
 export function changesFigure(rows: readonly LibraryChange[]): { figure: string; parts: { text: string; tone?: "evidence" | "lit" }[] } {
   const count = (tag: ChangeTag) => rows.filter((row) => row.tag === tag).length;
   const parts: { text: string; tone?: "evidence" | "lit" }[] = [];
-  if (count("RUN")) parts.push({ text: `${count("RUN")} run`, tone: "evidence" });
   if (count("REBUILD")) parts.push({ text: `${count("REBUILD")} rebuilt` });
-  if (count("STALE")) parts.push({ text: `${count("STALE")} out of date`, tone: "lit" });
   return { figure: `${rows.length} ${rows.length === 1 ? "change" : "changes"}`, parts: [{ text: `Last ${CHANGES_WINDOW_DAYS} days` }, ...parts] };
 }

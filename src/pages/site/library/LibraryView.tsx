@@ -13,21 +13,20 @@ import type { Thing } from "@/lib/copy/copy";
 import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 import { Link } from "react-router-dom";
 
-import { Plaque, PlaqueLamp, type PlaqueBuild } from "@/components/brand/Plaque";
+import { WaterField } from "@/components/brand/FluidField";
 import { PostCard } from "@/components/post/PostCard";
 import type { PostCardData } from "@/components/post/postCardModel";
 import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
 import { ActiveFilterChip } from "@/components/vision/ActiveFilterChip";
-import { PageFigure, type FigurePart } from "@/components/vision/PageFigure";
-import { PlainRow } from "@/components/vision/PlainRow";
-import { SectionChevron, SectionHead } from "@/components/vision/SectionHead";
+import type { FigurePart } from "@/components/vision/PageFigure";
+import { SectionChevron } from "@/components/vision/SectionHead";
 import { TextTabs } from "@/components/vision/TextTabs";
-import { TypeChip, type ChipTone } from "@/components/vision/TypeChip";
 import { useIsPhone } from "@/components/shell/useMinWidth";
+import { PANEL_PAD } from "@/components/shell/chromeSize";
 import { ring, touchArea } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
-import { WELL, hoverFill } from "@/lib/theme/refinedControl";
+import { WELL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
@@ -38,7 +37,7 @@ import {
   LibraryHead,
   LibraryPrimary,
   LibraryTextButton,
-  TABLE_ROW,
+  ROW_HEIGHT,
   TableRowSkeletons,
   useLibraryLayout,
 } from "./LibraryFrame";
@@ -81,7 +80,8 @@ export interface LibraryCollectionHeading {
   actions?: readonly { label: string; onClick: () => void; disabled?: boolean }[];
 }
 
-export type LibraryEmpty = { line: string; action: { label: string; href: string } | { label: string; onClick: () => void } };
+/** `title` makes it the page's own empty state (a head, the line, two actions and a field of dots); without it, one line and an action. */
+export type LibraryEmpty = { title?: string; line: string; action: { label: string; href: string } | { label: string; onClick: () => void } };
 
 export interface LibraryItemsProps {
   heading?: LibraryCollectionHeading;
@@ -125,7 +125,7 @@ interface SelectedBase {
   state?: { text: string; tone?: "lit" | "breakage" | "label" };
   title: string;
   source?: string | null;
-  rows: readonly { label: string; value: ReactNode; lamp?: boolean }[];
+  rows: readonly { label: string; value: ReactNode }[];
   onCopy: () => void;
   copyLabel?: string;
   openHref?: string;
@@ -141,10 +141,9 @@ export interface SelectedStep extends SelectedBase {
   onRemove?: () => void;
 }
 
-/** A saved build: its Plaque, and Open as the one primary. */
+/** A saved build: Open as the one primary. */
 export interface SelectedBuild extends SelectedBase {
   kind: "build";
-  build: PlaqueBuild;
   openHref: string;
   onAddToCollection?: () => void;
   onRemoveFromCollection?: { name: string; onRemove: () => void };
@@ -169,6 +168,8 @@ export interface LibraryViewProps {
   items: LibraryItemsProps;
   selected: LibrarySelected | null;
   preview?: LibraryPreviewProps;
+  /** Topics the reader may follow, as side rows. Absent or empty: the section is not drawn. */
+  topicsToFollow?: readonly { id: string; title: string; href: string }[];
 }
 
 /* ── shared ── */
@@ -177,10 +178,11 @@ const small: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, lineHeight: "2
 const ellipsis: CSSProperties = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 
 
-/* ── left: the kinds ── */
+/* ── the kinds, as pills ── */
 
-function KindRow({ item, current }: { item: LibraryKindsProps["items"][number]; current: boolean }) {
+function KindPill({ item, current }: { item: LibraryKindsProps["items"][number]; current: boolean }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  const phone = useIsPhone();
   return (
     <Link
       to={item.href}
@@ -188,34 +190,34 @@ function KindRow({ item, current }: { item: LibraryKindsProps["items"][number]; 
       {...handlers}
       style={{
         boxSizing: "border-box",
-        display: "flex",
-        justifyContent: "space-between",
+        display: "inline-flex",
         alignItems: "center",
-        minHeight: 32,
-        padding: "0 7px",
-        margin: "0 -8px",
-        border: `1px solid ${current ? t.selectedEdge : "transparent"}`,
-        borderRadius: r.control,
-        background: state.hovered ? hoverFill() : "transparent",
+        gap: 6,
+        height: phone ? 44 : 32,
+        padding: "0 14px",
+        borderRadius: 16,
+        background: current ? t.module : state.hovered ? t.module : "transparent",
+        border: `1px solid ${current ? t.selectedEdge : t.controlBorder}`,
         fontFamily: FIGTREE,
         fontSize: 13,
-        fontWeight: current ? 500 : 400,
+        fontWeight: current ? 600 : 500,
+        whiteSpace: "nowrap",
         color: current || state.hovered ? t.text : t.text2,
         textDecoration: "none",
         ...ring(state.focusVisible),
       }}
     >
       <span>{item.label}</span>
-      <span style={{ fontSize: 13, fontWeight: 400, color: t.label, fontVariantNumeric: "tabular-nums" }}>{item.count}</span>
+      <span style={{ fontWeight: 400, color: t.label, fontVariantNumeric: "tabular-nums" }}>{item.count}</span>
     </Link>
   );
 }
 
 export function LibraryKinds({ items, value }: LibraryKindsProps) {
   return (
-    <nav aria-label="Kinds" style={{ marginTop: 28 }}>
+    <nav aria-label="Kinds" style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
       {items.map((item) => (
-        <KindRow key={item.value} item={item} current={item.value === value} />
+        <KindPill key={item.value} item={item} current={item.value === value} />
       ))}
     </nav>
   );
@@ -224,13 +226,15 @@ export function LibraryKinds({ items, value }: LibraryKindsProps) {
 /** On a phone the kinds are a row of tabs. */
 export function LibraryKindTabs({ items, value, onChange }: LibraryKindsProps) {
   return (
-    <div style={{ marginTop: 24, overflowX: "auto" }}>
+    <div style={{ marginBottom: 12, overflowX: "auto" }}>
       <TextTabs label="Kinds" height={32} tabs={items.map((item) => ({ value: item.value, label: item.label, count: item.count }))} value={value ?? "all"} onChange={onChange} />
     </div>
   );
 }
 
-/* ── left: the collections ── */
+/* ── the side: the collections, as Cards ── */
+
+const SIDE_HEAD: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 20, fontWeight: 600, lineHeight: "24px", color: t.text };
 
 function CollectionRow({ item, current, href }: { item: CollectionEntry; current: boolean; href: string }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
@@ -245,18 +249,21 @@ function CollectionRow({ item, current, href }: { item: CollectionEntry; current
         justifyContent: "space-between",
         alignItems: "center",
         gap: 8,
-        minHeight: 48,
-        borderBottom: `1px solid ${t.hairline}`,
-        background: current ? t.selectedFill : state.hovered ? hoverFill() : "transparent",
+        minHeight: 56,
+        padding: "0 12px",
+        boxSizing: "border-box",
+        borderRadius: r.card,
+        background: current || state.hovered ? t.module : "transparent",
+        border: `1px solid ${current ? t.selectedEdge : "transparent"}`,
         fontFamily: FIGTREE,
-        color: state.hovered ? t.text2 : t.text,
+        color: t.text,
         textDecoration: "none",
         ...ring(state.focusVisible),
       }}
     >
       <span style={{ minWidth: 0 }}>
-        <span style={{ display: "block", fontSize: 13, ...ellipsis }}>{item.name}</span>
-        <span style={small}>{item.meta}</span>
+        <span style={{ display: "block", fontSize: 15, fontWeight: 600, lineHeight: "20px", ...ellipsis }}>{item.name}</span>
+        <span style={{ ...small, display: "block", lineHeight: "16px" }}>{item.meta}</span>
       </span>
       <span style={{ fontSize: 13, color: t.label, fontVariantNumeric: "tabular-nums" }}>{item.count}</span>
     </Link>
@@ -264,10 +271,12 @@ function CollectionRow({ item, current, href }: { item: CollectionEntry; current
 }
 
 export function LibraryCollections({ read, items, current, hrefFor, onNew, emptyLine }: LibraryCollectionsProps) {
+  const ready = shownState(Array.isArray(read) ? read : [read as ReadLike]) === "ready";
   return (
-    <section aria-label="Collections" style={{ marginTop: 32 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingBottom: 8, borderBottom: `1px solid ${t.hairline}` }}>
-        <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: 500, lineHeight: "20px", color: t.text }}>Collections</h2>
+    <section aria-label="Collections">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: 32, paddingBottom: 8 }}>
+        {/* The fact is the heading: "3 collections". */}
+        <h2 style={SIDE_HEAD}>{ready ? `${items.length} ${items.length === 1 ? "collection" : "collections"}` : "Collections"}</h2>
         {onNew ? (
           <LibraryTextButton onClick={onNew} aria-label="New collection">
             New
@@ -282,14 +291,11 @@ export function LibraryCollections({ read, items, current, hrefFor, onNew, empty
         empty={{ when: () => items.length === 0, line: emptyLine, testId: "library-collections-empty" }}
       >
         {() => (
-        <>
-          <div data-testid="library-collections">
+          <div data-testid="library-collections" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             {items.map((item) => (
               <CollectionRow key={item.id} item={item} current={item.id === current} href={hrefFor(item.id)} />
             ))}
           </div>
-          <p style={{ ...small, margin: "10px 0 0" }}>Ordered by your last use</p>
-        </>
         )}
       </PageState>
     </section>
@@ -298,74 +304,94 @@ export function LibraryCollections({ read, items, current, hrefFor, onNew, empty
 
 /* ── main: the changes ── */
 
-const CHANGE_TONE: Record<ChangeTag, ChipTone> = { EDITED: "lit", REMOVED: "breakage", RUN: "evidence", REBUILD: "text", STALE: "lit" };
+/** Run-based change kinds are gone; what is left is what happened to a saved thing. */
+const CHANGE_WORD: Record<ChangeTag, string> = { EDITED: "Edited", REMOVED: "Removed", REBUILD: "Rebuilt" };
 
 export function LibraryChanges({ figure, parts, to, rows }: LibraryChangesProps) {
   return (
-    <section aria-label="Changes" data-testid="library-changes">
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
-        <PageFigure figure={figure} parts={parts} />
+    <section aria-label="Changes" data-testid="library-changes" style={{ marginBottom: 24 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+        <div>
+          <h2 style={SIDE_HEAD}>{figure}</h2>
+          <p style={{ ...small, margin: 0 }}>{parts.map((part) => part.text).join(" · ")}</p>
+        </div>
         {to ? <SectionChevron to={to} name="all changes" /> : null}
       </div>
-      <div style={{ marginTop: 16 }}>
+      <ul style={{ listStyle: "none", margin: "12px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
         {rows.map((row) => (
-          <div key={row.id} style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr) auto", columnGap: 12, alignItems: "center", minHeight: 32, borderBottom: `1px solid ${t.hairline}`, fontFamily: FIGTREE, fontSize: 13 }}>
-            <TypeChip tone={CHANGE_TONE[row.tag]}>{row.tag}</TypeChip>
-            <span style={{ minWidth: 0, ...ellipsis }}>
-              <span style={{ fontWeight: 500, color: t.text }}>{row.item}</span>
-              <span style={{ color: t.label }}> · {row.detail}</span>
-            </span>
-            <span style={{ fontSize: 13, color: t.label, fontVariantNumeric: "tabular-nums" }}>{row.age}</span>
-          </div>
+          <li key={row.id} style={{ padding: "10px 12px", borderRadius: r.card, background: t.module, fontFamily: FIGTREE }}>
+            <span style={{ display: "block", fontSize: 15, fontWeight: 600, lineHeight: "20px", color: t.text, ...ellipsis }}>{row.item}</span>
+            <span style={{ ...small, display: "block", lineHeight: "16px" }}>{[CHANGE_WORD[row.tag], row.detail, row.age].filter(Boolean).join(" · ")}</span>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   );
 }
 
-/* ── main: the table ── */
+/* ── main: the saved things, as Cards ── */
 
 /* G6: words, so the legible inks: --lit-ink and --breakage-ink reach 4.5:1 on Noon's rows; Dusk's read as before. */
-const STATE_COLOUR: Record<ItemState, string> = { same: t.text2, edited: t.litInk, removed: t.breakageInk, stale: t.label };
-
-const th: CSSProperties = { fontWeight: 400, padding: "0 12px 10px 0", borderBottom: `1px solid ${t.hairline}`, textAlign: "left", whiteSpace: "nowrap" };
-const td: CSSProperties = { padding: "0 12px 0 0", color: t.text2, whiteSpace: "nowrap" };
+const STATE_COLOUR: Record<ItemState, string> = { same: t.text2, edited: t.litInk, removed: t.breakageInk };
 
 function ItemRow({ row, selected, usedIn, onSelect }: { row: LibraryRow; selected: boolean; usedIn: boolean; onSelect: () => void }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
+  /* Facts are plain text joined by " · ": what it is, what happened to it (only when something did), where it is used,
+     when it was last used. */
+  const facts = [row.type, row.state === "same" ? null : STATE_WORD[row.state], usedIn && row.usedIn ? `Used in ${row.usedIn}` : null, row.lastUsed].filter(Boolean);
   return (
     /* G21: the row is not in a grid, so its selected state is aria-pressed on its button, not aria-selected here; a click
        anywhere on the row is a pointer convenience for that button. */
-    <tr data-testid="library-row" onClick={onSelect} style={{ borderBottom: `1px solid ${t.hairline}`, background: selected ? t.selectedFill : "transparent", cursor: "pointer" }}>
-      <td style={{ padding: "0 12px 0 0", height: TABLE_ROW }}>
-        <button
-          type="button"
-          aria-pressed={selected}
-          onClick={(event) => {
-            event.stopPropagation();
-            onSelect();
-          }}
-          {...handlers}
-          style={{ display: "flex", flexDirection: "column", gap: 4, maxWidth: "100%", minWidth: 0, padding: 0, background: "none", border: 0, borderRadius: r.chip, textAlign: "left", fontFamily: FIGTREE, color: t.text, cursor: "pointer", ...ring(state.focusVisible) }}
-        >
-          <span style={{ display: "block", fontSize: 13, fontWeight: 500, lineHeight: "20px", maxWidth: 300, ...ellipsis, textDecoration: state.hovered ? "underline" : "none", textDecorationColor: t.line, textUnderlineOffset: 3 }}>{row.title}</span>
-          {row.detail ? <span style={{ ...small, fontSize: 13, display: "block", lineHeight: "20px", ...ellipsis }}>{row.detail}</span> : null}
-        </button>
-      </td>
-      <td style={td}>{row.type}</td>
-      <td style={td}>
-        <span style={{ color: STATE_COLOUR[row.state] }}>{STATE_WORD[row.state]}</span>
-      </td>
-      {usedIn ? <td style={{ ...td, textAlign: "right" }}>{row.usedIn ?? ""}</td> : null}
-      <td style={{ ...td, padding: 0, textAlign: "right" }}>{row.lastUsed}</td>
-    </tr>
+    <li data-testid="library-row" onClick={onSelect} style={{ listStyle: "none", cursor: "pointer" }}>
+      <button
+        type="button"
+        aria-pressed={selected}
+        onClick={(event) => {
+          event.stopPropagation();
+          onSelect();
+        }}
+        {...handlers}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+          width: "100%",
+          minHeight: ROW_HEIGHT,
+          justifyContent: "center",
+          boxSizing: "border-box",
+          padding: "8px 12px",
+          background: selected || state.hovered ? t.module : "transparent",
+          border: `1px solid ${selected ? t.selectedEdge : "transparent"}`,
+          borderRadius: r.card,
+          textAlign: "left",
+          fontFamily: FIGTREE,
+          color: t.text,
+          cursor: "pointer",
+          ...ring(state.focusVisible),
+        }}
+      >
+        <span style={{ display: "block", fontSize: 15, fontWeight: 600, lineHeight: "20px", ...ellipsis }}>{row.title}</span>
+        {row.detail ? <span style={{ ...small, display: "block", lineHeight: "16px", ...ellipsis }}>{row.detail}</span> : null}
+        <span style={{ ...small, display: "block", lineHeight: "16px" }}>
+          {facts.map((fact, index) => (
+            <span key={index}>
+              {index > 0 ? " · " : null}
+              <span style={{ color: row.state !== "same" && fact === STATE_WORD[row.state] ? STATE_COLOUR[row.state] : undefined }}>{fact}</span>
+            </span>
+          ))}
+        </span>
+      </button>
+    </li>
   );
 }
 
 function CollectionHeading({ heading }: { heading: LibraryCollectionHeading }) {
   return (
-    <div data-testid="library-collection-open" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 32 }}>
-      <PageFigure figure={heading.name} parts={[{ text: heading.meta }]} />
+    <div data-testid="library-collection-open" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 16 }}>
+      <div>
+        <h2 style={SIDE_HEAD}>{heading.name}</h2>
+        <p style={{ ...small, margin: 0 }}>{heading.meta}</p>
+      </div>
       {heading.actions?.length ? (
         <div data-testid="library-collection-actions" style={{ display: "flex", gap: 6 }}>
           {heading.actions.map((action) => (
@@ -383,8 +409,8 @@ function CollectionHeading({ heading }: { heading: LibraryCollectionHeading }) {
 function TopicCards({ topics }: { topics: readonly LibraryTopic[] }) {
   return (
     <ol data-testid="library-topics" aria-label="Saved topics" style={{ listStyle: "none", margin: 0, padding: 0 }}>
-      {topics.map((topic, index) => (
-        <li key={topic.id} data-testid="library-topic" style={{ borderTop: index === 0 ? "none" : `1px solid ${t.hairline}`, paddingBottom: 12 }}>
+      {topics.map((topic) => (
+        <li key={topic.id} data-testid="library-topic" style={{ paddingBottom: 12 }}>
           {topic.card ? <PostCard card={topic.card} compact /> : <p style={{ margin: 0, padding: "20px 0 8px", fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>{topic.title || "A topic that is no longer shown"}</p>}
           <LibraryTextButton onClick={topic.onUnsave}>Remove from Library</LibraryTextButton>
         </li>
@@ -393,43 +419,66 @@ function TopicCards({ topics }: { topics: readonly LibraryTopic[] }) {
   );
 }
 
+/** The page's own empty state: a head, one line, two actions, and a field of dots that fades in from the right edge. */
+function LibraryEmptyBlock({ empty, onHow }: { empty: LibraryEmpty; onHow: () => void }) {
+  return (
+    <div data-testid="library-empty" style={{ position: "relative", padding: "24px 4px 40px", minHeight: 200 }}>
+      <div
+        aria-hidden="true"
+        style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "55%", pointerEvents: "none", WebkitMaskImage: "linear-gradient(to left, #000, transparent)", maskImage: "linear-gradient(to left, #000, transparent)" }}
+      >
+        <WaterField />
+      </div>
+      <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
+        <h2 style={SIDE_HEAD}>{empty.title}</h2>
+        <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.text2 }}>{empty.line}</p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+          {"href" in empty.action ? (
+            <LibraryControl href={empty.action.href}>{empty.action.label}</LibraryControl>
+          ) : (
+            <LibraryControl onClick={empty.action.onClick}>{empty.action.label}</LibraryControl>
+          )}
+          <LibraryControl variant="ghost" onClick={onHow}>
+            How saving works
+          </LibraryControl>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** "How saving works" is a side section on the same page: its button moves the reader there. */
+export const HOW_SAVING_ID = "library-how-saving";
+
+function showHowSaving() {
+  const section = document.getElementById(HOW_SAVING_ID);
+  if (!section) return;
+  section.scrollIntoView({ block: "nearest" });
+  section.focus({ preventScroll: true });
+}
+
 export function LibraryItems(props: LibraryItemsProps) {
   const { heading, tabs, tab, onTab, controls, chips, sameAsBuilds, read, thing, empty, itemColumn, rows, selected, onSelect, more } = props;
   const usedIn = rows.some((row) => row.usedIn !== undefined);
   const ready = shownState(Array.isArray(read) ? read : [read as ReadLike]) === "ready";
   const emptyAction: EmptyStateAction = "href" in empty.action ? { label: empty.action.label, href: empty.action.href } : { label: empty.action.label, onClick: empty.action.onClick };
-  let table: () => ReactNode;
-  if (props.topics) table = () => <TopicCards topics={props.topics ?? []} />;
-  /* A phone scrolls the table inside its own box, never the page sideways. */
-  else table = () => (
-      <div style={{ overflowX: "auto", marginTop: chips?.length || sameAsBuilds ? 16 : 0 }}>
-      <table data-testid="library-table" style={{ width: "100%", borderCollapse: "collapse", fontFamily: FIGTREE, fontSize: 13, fontVariantNumeric: "tabular-nums" }}>
-        <thead>
-          <tr style={{ fontSize: 13, color: t.label }}>
-            <th scope="col" style={th}>{itemColumn}</th>
-            <th scope="col" style={th}>Type</th>
-            <th scope="col" style={th}>State</th>
-            {usedIn ? <th scope="col" style={{ ...th, textAlign: "right" }}>Used in</th> : null}
-            <th scope="col" aria-sort="descending" style={{ ...th, padding: "0 0 10px", textAlign: "right", color: t.text }}>
-              Last used <span aria-hidden="true">↓</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <ItemRow key={row.id} row={row} selected={row.id === selected} usedIn={usedIn} onSelect={() => onSelect(row.id)} />
-          ))}
-        </tbody>
-      </table>
-      </div>
+  let list: () => ReactNode;
+  if (props.topics) list = () => <TopicCards topics={props.topics ?? []} />;
+  else if (empty.title && rows.length === 0) list = () => <LibraryEmptyBlock empty={empty} onHow={showHowSaving} />;
+  else list = () => (
+      <ul data-testid="library-list" aria-label={itemColumn === "Build" ? "Saved builds" : "Saved items"} style={{ margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+        {rows.map((row) => (
+          <ItemRow key={row.id} row={row} selected={row.id === selected} usedIn={usedIn} onSelect={() => onSelect(row.id)} />
+        ))}
+      </ul>
   );
   return (
     <section aria-label={itemColumn === "Build" ? "Saved builds" : "Saved items"} data-testid="library-items">
       {heading ? <CollectionHeading heading={heading} /> : null}
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12, borderBottom: `1px solid ${t.hairline}` }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <TabsOnRule tabs={tabs} tab={tab} onTab={onTab} />
         {controls ? (
-          <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
+          <div style={{ display: "flex", gap: 6 }}>
             <LibraryControl onClick={controls.onFilters}>
               <span style={{ color: t.text2 }}>Filters</span> {controls.filters}
             </LibraryControl>
@@ -441,7 +490,7 @@ export function LibraryItems(props: LibraryItemsProps) {
       </div>
       {chips?.length || sameAsBuilds ? (
         /* G17: a chip removed hands focus to the next chip (FocusRescue reads this as a list). */
-        <div data-focus-list="" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
+        <div data-focus-list="" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4, marginBottom: 8 }}>
           {chips?.map((chip) => <ActiveFilterChip key={chip.name} name={chip.name} value={chip.value} onRemove={chip.onRemove} />)}
           {sameAsBuilds ? <span style={{ fontFamily: FIGTREE, fontSize: 13, color: t.label, alignSelf: "center", marginLeft: 6 }}>Same filters as Builds</span> : null}
         </div>
@@ -452,9 +501,9 @@ export function LibraryItems(props: LibraryItemsProps) {
         region={itemColumn === "Build" ? "Saved builds" : "Saved items"}
         skeleton={<TableRowSkeletons count={7} />}
         style={{ paddingBlock: 16 }}
-        empty={{ when: () => rows.length === 0, line: empty.line, action: emptyAction, testId: "library-empty" }}
+        empty={empty.title ? undefined : { when: () => rows.length === 0, line: empty.line, action: emptyAction, testId: "library-empty" }}
       >
-        {table}
+        {list}
       </PageState>
       {more && ready ? (
         <div style={{ marginTop: 16 }}>
@@ -467,10 +516,10 @@ export function LibraryItems(props: LibraryItemsProps) {
   );
 }
 
-/** TextTabs draws its own hairline; the row with the controls carries one too, so the tabs sit on it. */
+/** The state tabs, on the row with the controls. */
 function TabsOnRule({ tabs, tab, onTab }: { tabs: LibraryItemsProps["tabs"]; tab: string; onTab: (tab: string) => void }) {
   return (
-    <div style={{ marginBottom: -1 }}>
+    <div>
       <TextTabs label="State" height={32} tabs={tabs} value={tab} onChange={onTab} />
     </div>
   );
@@ -549,14 +598,11 @@ function Content({ lines }: { lines: readonly DiffLine[] }) {
 
 function SelectedRows({ rows }: { rows: SelectedBase["rows"] }) {
   return (
-    <div style={{ marginTop: 16 }}>
+    <div style={{ marginTop: 12 }}>
       {rows.map((row) => (
-        <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, minHeight: 32, borderTop: `1px solid ${t.hairline}`, fontFamily: FIGTREE, fontSize: 13 }}>
-          <span style={{ color: t.text2 }}>{row.label}</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 8, color: t.text, textAlign: "right" }}>
-            {row.value}
-            {row.lamp ? <PlaqueLamp dim={false} /> : null}
-          </span>
+        <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, minHeight: 32, fontFamily: FIGTREE, fontSize: 13 }}>
+          <span style={{ color: t.label }}>{row.label}</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8, color: t.text, textAlign: "right" }}>{row.value}</span>
         </div>
       ))}
     </div>
@@ -566,12 +612,17 @@ function SelectedRows({ rows }: { rows: SelectedBase["rows"] }) {
 export function LibrarySelectedItem({ item }: { item: LibrarySelected }) {
   return (
     <section aria-label={`Selected: ${item.title}`} data-testid="library-selected" style={{ padding: 16, background: t.module, border: `1px solid ${t.moduleBorder}`, borderRadius: r.card }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <TypeChip>{item.chip}</TypeChip>
-        <span style={{ flex: 1 }} />
-        {item.state ? <span style={{ fontFamily: FIGTREE, fontSize: 13, color: STATE_TONE[item.state.tone ?? "label"] }}>{item.state.text}</span> : null}
-      </div>
-      <h2 style={{ margin: "10px 0 0", fontFamily: FIGTREE, fontSize: 15, fontWeight: 500, lineHeight: 1.3, color: t.text, overflowWrap: "anywhere" }}>{item.title}</h2>
+      {/* What it is and where it stands, in one line of plain text: "Build · Saved 2d ago". */}
+      <p style={{ ...small, margin: 0 }}>
+        {item.chip}
+        {item.state ? (
+          <>
+            {" · "}
+            <span style={{ color: STATE_TONE[item.state.tone ?? "label"] }}>{item.state.text}</span>
+          </>
+        ) : null}
+      </p>
+      <h2 style={{ margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 17, fontWeight: 600, lineHeight: "22px", color: t.text, overflowWrap: "anywhere" }}>{item.title}</h2>
       {item.source ? <p style={{ margin: "2px 0 0", fontFamily: FIGTREE, fontSize: 13, color: t.label }}>{item.source}</p> : null}
 
       {item.kind === "step" && item.versions ? (
@@ -580,11 +631,6 @@ export function LibrarySelectedItem({ item }: { item: LibrarySelected }) {
           <Content lines={item.versions.value === "saved" ? item.versions.saved : item.versions.current} />
           <p style={{ ...small, margin: "8px 0 0" }}>{item.versions.changed}</p>
         </>
-      ) : null}
-      {item.kind === "build" ? (
-        <div style={{ marginTop: 12 }}>
-          <Plaque build={item.build} size="row" />
-        </div>
       ) : null}
 
       {item.rows.length ? <SelectedRows rows={item.rows} /> : null}
@@ -634,21 +680,24 @@ function NoteField({ value, onChange, onCommit }: { value: string; onChange: (va
 
 export function LibraryPreview({ name, meta, to, rows, read, onStart }: LibraryPreviewProps) {
   return (
-    <section aria-label={`Collection: ${name}`} data-testid="library-preview" style={{ marginTop: 32 }}>
-      <SectionHead title={name} meta={meta} to={to} headingLevel={2} />
-      <div style={{ marginTop: 12 }}>
-        <PageState read={read} thing="this collection" region={`Collection: ${name}`} skeleton={<CollectionSkeletons />}>
-          {() =>
-          rows.slice(0, 3).map((row, index, shown) => (
-            <div key={row.id} style={{ display: "grid", gridTemplateColumns: "16px 1fr auto", columnGap: 10, alignItems: "center", minHeight: 32, borderBottom: index < shown.length - 1 ? `1px solid ${t.hairline}` : "none", fontFamily: FIGTREE, fontSize: 13 }}>
-              <span style={{ ...small, fontVariantNumeric: "tabular-nums" }}>{index + 1}</span>
+    <section aria-label={`Collection: ${name}`} data-testid="library-preview">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, minHeight: 32, paddingBottom: 8 }}>
+        <div style={{ minWidth: 0 }}>
+          <h2 style={{ ...SIDE_HEAD, ...ellipsis }}>{name}</h2>
+          <p style={{ ...small, margin: 0 }}>{meta}</p>
+        </div>
+        <SectionChevron to={to} name={name} />
+      </div>
+      <PageState read={read} thing="this collection" region={`Collection: ${name}`} skeleton={<CollectionSkeletons />}>
+        {() =>
+          rows.slice(0, 3).map((row) => (
+            <div key={row.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, minHeight: 32, fontFamily: FIGTREE, fontSize: 13 }}>
               <span style={{ minWidth: 0, color: t.text, ...ellipsis }}>{row.title}</span>
               <span style={small}>{row.type}</span>
             </div>
           ))
-          }
-        </PageState>
-      </div>
+        }
+      </PageState>
       {onStart ? (
         <div style={{ marginTop: 12 }}>
           <LibraryControl wide onClick={onStart}>
@@ -660,34 +709,68 @@ export function LibraryPreview({ name, meta, to, rows, read, onStart }: LibraryP
   );
 }
 
+/* ── the side: how saving works, and topics to follow ── */
+
+const HOW_SAVING = [
+  "Save a build, a session or a step from where you find it.",
+  "A saved step or part keeps the version you saved, and says when its source is edited or removed.",
+  "Collections group saved builds, and each is private or public.",
+] as const;
+
+export function HowSavingWorks() {
+  return (
+    <section id={HOW_SAVING_ID} tabIndex={-1} aria-label="How saving works" style={{ outline: "none" }}>
+      <h2 style={{ ...SIDE_HEAD, paddingBottom: 8 }}>How saving works</h2>
+      <ul style={{ margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+        {HOW_SAVING.map((line) => (
+          <li key={line} style={{ listStyle: "none", fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.text2 }}>
+            {line}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function TopicsToFollow({ topics }: { topics: NonNullable<LibraryViewProps["topicsToFollow"]> }) {
+  return (
+    <section aria-label="Topics to follow">
+      <h2 style={{ ...SIDE_HEAD, paddingBottom: 8 }}>{`${topics.length} ${topics.length === 1 ? "topic" : "topics"} to follow`}</h2>
+      <ul style={{ margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+        {topics.map((topic) => (
+          <li key={topic.id} style={{ listStyle: "none" }}>
+            <Link to={topic.href} style={{ display: "block", padding: "8px 12px", borderRadius: r.card, fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, lineHeight: "20px", color: t.text, textDecoration: "none", ...ellipsis }}>
+              {topic.title}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 /* ── the page ── */
 
-export function LibraryView({ head, kinds, collections, changes, items, selected, preview }: LibraryViewProps) {
+export function LibraryView({ head, kinds, collections, changes, items, selected, preview, topicsToFollow }: LibraryViewProps) {
   const layout = useLibraryLayout();
   return (
     <LibraryColumns
       layout={layout}
-      head={
-        <>
-          <LibraryHead title={head.title} meta={head.meta} />
-          {kinds ? layout === "one" ? <LibraryKindTabs {...kinds} /> : <LibraryKinds {...kinds} /> : null}
-        </>
-      }
-      left={<LibraryCollections {...collections} />}
+      head={<LibraryHead title={head.title} meta={head.meta} />}
       main={
         <>
-          {changes ? (
-            <div style={{ marginBottom: 48 }}>
-              <LibraryChanges {...changes} />
-            </div>
-          ) : null}
+          {kinds ? <LibraryKinds {...kinds} /> : null}
+          {changes ? <LibraryChanges {...changes} /> : null}
           <LibraryItems {...items} />
         </>
       }
-      detail={
+      side={
         <>
+          <LibraryCollections {...collections} />
           {selected ? <LibrarySelectedItem item={selected} /> : null}
           {preview ? <LibraryPreview {...preview} /> : null}
+          <HowSavingWorks />
+          {topicsToFollow && topicsToFollow.length > 0 ? <TopicsToFollow topics={topicsToFollow} /> : null}
         </>
       }
     />
