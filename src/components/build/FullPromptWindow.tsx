@@ -54,7 +54,7 @@ import { FIGTREE, textStep } from "@/lib/theme/type";
 import { OptionalField, OptionalSection, summaryOf } from "@/pages/site/compose/OptionalSection";
 import { OptionalRow, OptionalRows } from "@/pages/site/compose/OptionalRows";
 import { EYEBROW } from "@/pages/site/compose/refinedStyles";
-import { Block, BlockHead, Count, FOOT_NOTE, FieldArea, FieldInput, HEADER, HEADER_ICONS, HEADER_TEXT, Hint, IconSquare, Inline, MODAL_PAD, MODAL_WIDTH, ModalInset, RecipeButton, Row, SUBTITLE, SegmentedField, areaStyle, bodyStyle, footerStyle, BUTTON_PAD, BUTTON_PAD_SMALL_TEXT, LAYER, scrimAt, windowPlacement } from "@/pages/site/compose/modalRecipes";
+import { Block, BlockHead, Count, FOOT_NOTE, FieldArea, FieldInput, HEADER, HEADER_ICONS, HEADER_TEXT, Hint, IconSquare, Inline, MODAL_PAD, MODAL_WIDTH, ModalInset, RecipeButton, Row, SUBTITLE, SegmentedField, areaStyle, bodyStyle, footerStyle, BUTTON_PAD, BUTTON_PAD_SMALL_TEXT, LAYER, scrimAt, phoneWindowPlacement, windowPlacement } from "@/pages/site/compose/modalRecipes";
 
 import type { PromptView } from "@/pages/site/compose/DetailsPanel";
 import { PromptEdits, type PromptEditHandlers } from "@/pages/site/compose/editKit";
@@ -704,8 +704,8 @@ export function FullPromptWindow(props: FullPromptWindowProps) {
           data-look={"refined"}
           style={{
             ...(phone
-              ? { position: "fixed", zIndex: LAYER.promptWindow, inset: 0, boxSizing: "border-box", overflowY: "auto", padding: "16px 16px 0", background: t.window, color: t.text, fontFamily: FIGTREE }
-              : /* F38, Synth 09: the shared window placement, its top pinned at 48 (F25), so a section that opens moves nothing above it. */
+              ? { ...phoneWindowPlacement(LAYER.promptWindow), padding: "16px 16px 0", color: t.text, fontFamily: FIGTREE }
+              : /* F38, Synth 09: the shared window placement, pinned to the centre of the browser window. */
                 windowPlacement(MODAL_WIDTH.wide, LAYER.promptWindow)),
           }}
         >

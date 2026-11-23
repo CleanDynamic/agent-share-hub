@@ -98,6 +98,24 @@ export const windowPlacement = (width: number, layer: number = LAYER.window): CS
   maxHeight: `calc(100dvh - ${2 * WINDOW_TOP}px)`,
 });
 
+/** A window on a phone: pinned to the centre of the screen too, 16 from its sides and at most its height less 16 above and below. */
+export const phoneWindowPlacement = (layer: number = LAYER.window): CSSProperties => ({
+  position: "fixed",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  zIndex: layer,
+  boxSizing: "border-box",
+  width: "calc(100vw - 32px)",
+  maxHeight: "calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom))",
+  overflowY: "auto",
+  overscrollBehavior: "contain",
+  background: t.window,
+  border: `1px solid ${t.windowBorder}`,
+  borderRadius: r.panel,
+  boxShadow: t.windowShadow,
+});
+
 /** The scrim under a window at `layer`. */
 export const scrimAt = (layer: number = LAYER.window): CSSProperties => ({ position: "fixed", inset: 0, background: t.scrim, zIndex: layer - 1 });
 
