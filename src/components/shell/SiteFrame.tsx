@@ -263,7 +263,7 @@ export function SiteFrameView({
             display: "flex",
             flexDirection: "column",
             gap: columns ? PANEL_GUTTER : phone ? 16 : 24,
-            padding: columns ? 0 : phone ? `${PANEL_PAD}px ${PANEL_PAD}px calc(80px + env(safe-area-inset-bottom))` : wide ? "0 0 48px" : `${PANEL_PAD + CRUMB_BAND}px ${PANEL_PAD}px 48px`,
+            padding: columns ? 0 : phone ? `${PANEL_PAD}px ${PANEL_PAD}px calc(72px + env(safe-area-inset-bottom))` : wide ? "0 0 48px" : `${PANEL_PAD + CRUMB_BAND}px ${PANEL_PAD}px 48px`,
             boxSizing: "border-box",
             minWidth: 0,
             ...(columns ? null : PANEL),

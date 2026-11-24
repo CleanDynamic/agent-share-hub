@@ -45,6 +45,7 @@ import {
 import { resolveNotificationCovers } from "@/lib/notifications/covers";
 import type { GetNotificationsResult } from "@/lib/notifications/getNotifications";
 
+import { useRegisterPageBar } from "@/components/shell/phoneBarRegistry";
 import { ActivityView, type ActivityListProps, type ActivityLoad, type ActivityRuns } from "./ActivityView";
 import { activityRowOf, countKinds, groupByDay, runsLabel, scaleSeries, type ActivityRow } from "./activityModel";
 
@@ -215,6 +216,11 @@ export function ActivityPage() {
       setWriteFailure({ again: markAll, error });
     });
   }, [qc, userId, listKey, unreadKey, resync, say]);
+
+  // Prompt 19: on a phone the top bar's right slot is "Mark all read"; the write is this page's own.
+  useRegisterPageBar({
+    markAll: { run: markAll, disabled: typeof unreadQuery.data === "number" ? unreadQuery.data <= 0 : true },
+  });
 
   const writeError = writeFailure
     ? {

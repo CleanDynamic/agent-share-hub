@@ -8,7 +8,7 @@
 import type { ReactNode } from "react";
 
 import { DockView, type DockViewProps } from "@/components/shell/Dock";
-import { MobileHeaderView } from "@/components/shell/MobileHeader";
+import { PhoneTopBar } from "@/components/phone/PhoneTopBar";
 import { BreadcrumbView } from "@/components/shell/Breadcrumb";
 import type { FrameViewer } from "@/components/shell/frameTypes";
 import { SiteFooterView } from "@/components/shell/SiteFooter";
@@ -72,7 +72,7 @@ export function devChrome({ theme, current = "gallery", activityCurrent = false,
       />
     ),
     mobileHeader: (
-      <MobileHeaderView viewer={FIXTURE_FRAME_VIEWER} onSearchOpen={noop} onAccountOpen={noop} onSignIn={noop} />
+      <PhoneTopBar left="account" centre="logo" viewer={FIXTURE_FRAME_VIEWER} unread={fixtures.viewer.unread > 0} right={{ icon: "search", label: "Search", onClick: noop }} onLeft={noop} />
     ),
     dock: <DockView current={dockCurrent} unread={fixtures.viewer.unread} />,
     breadcrumb: <BreadcrumbView trail={trail} />,

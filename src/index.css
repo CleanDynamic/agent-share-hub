@@ -1189,6 +1189,49 @@ input[type="search"] { border-radius: var(--r-control); }
   animation: bgSheetOut var(--motion-fast) var(--motion-ease) both;
 }
 
+/* Prompt 19, phone only: the account drawer slides from the left in BASE and out in FAST; a pushed page (the search page)
+   enters from the right in BASE. Under reduced motion each slide is a fade of the same length. Translate only. */
+@keyframes bgDrawerIn {
+  from { translate: -100% 0; }
+  to   { translate: 0 0; }
+}
+@keyframes bgDrawerOut {
+  to { translate: -100% 0; }
+}
+@keyframes bgPushIn {
+  from { translate: 100% 0; }
+  to   { translate: 0 0; }
+}
+@keyframes bgPushOut {
+  to { translate: 100% 0; }
+}
+@media (max-width: 767px) {
+  [data-motion="drawer"][data-state="open"] {
+    animation: bgDrawerIn var(--motion-base) var(--motion-ease) both;
+  }
+  [data-motion="drawer"][data-state="closed"] {
+    animation: bgDrawerOut var(--motion-fast) var(--motion-ease) both;
+  }
+  [data-motion="push"][data-state="open"] {
+    animation: bgPushIn var(--motion-base) var(--motion-ease) both;
+  }
+  [data-motion="push"][data-state="closed"] {
+    animation: bgPushOut var(--motion-fast) var(--motion-ease) both;
+  }
+}
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+  [data-motion="drawer"][data-state="open"],
+  [data-motion="push"][data-state="open"],
+  [data-motion="sheet"][data-state="open"] {
+    animation: bgScrimIn var(--motion-base) var(--motion-ease) both !important;
+  }
+  [data-motion="drawer"][data-state="closed"],
+  [data-motion="push"][data-state="closed"],
+  [data-motion="sheet"][data-state="closed"] {
+    animation: bgScrimOut var(--motion-fast) var(--motion-ease) both !important;
+  }
+}
+
 /* Toasts (motion prompt 04). Sonner positions a toast with its own `--y` and slides it the whole way in from the edge over .4s,
    animating `height` as well. Here a toast arrives by opacity and an 8px rise over BASE and leaves by opacity over FAST;
    `height` is not transitioned, and a toast being swiped follows the pointer with no transition. The stack's own offsets
