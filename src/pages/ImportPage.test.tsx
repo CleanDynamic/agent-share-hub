@@ -416,3 +416,40 @@ describe("/import", () => {
     await waitFor(() => expect(written).toEqual([COMPILER_BODY]));
   });
 });
+
+// Mobile prompt 25, Part D: /import below 768.
+describe("/import on a phone", () => {
+  beforeEach(() => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("max-width"),
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }));
+  });
+
+  it("words the third step for choosing, not dropping, and opens the picker from a main button", () => {
+    renderPage();
+    expect(screen.getByRole("heading", { level: 2, name: "Choose your Build File" })).toBeInTheDocument();
+    expect(screen.queryByText("Drop it here")).toBeNull();
+    expect(screen.queryByText(/Drag your Build File/)).toBeNull();
+    const choose = screen.getByRole("button", { name: "Choose a file" });
+    expect(choose.getAttribute("data-variant")).toBe("main");
+    const input = screen.getByTestId("import-file-input") as HTMLInputElement;
+    const click = vi.spyOn(input, "click");
+    fireEvent.click(choose);
+    expect(click).toHaveBeenCalled();
+  });
+
+  it("copies the Extractor from a BigButton that reads Copied and announces the repo's words", async () => {
+    renderPage();
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalled());
+    const button = screen.getByTestId("copy-extractor");
+    expect(button.getAttribute("data-ui")).toBe("big-button");
+    fireEvent.click(button);
+    await waitFor(() => expect(button.textContent).toBe("Copied"));
+    expect(written).toEqual([EXTRACTOR_BODY]);
+    expect(screen.getAllByRole("status").some((el) => el.textContent === "Copied.")).toBe(true);
+    expect(screen.getByTestId("download-extractor").textContent).toBe("Download");
+  });
+});

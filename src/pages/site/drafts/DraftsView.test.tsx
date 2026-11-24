@@ -142,15 +142,15 @@ describe("DraftsView", () => {
     expect(p.onAddToDraft).toHaveBeenCalledWith("s1", expect.objectContaining({ id: "d1" }));
   });
 
-  it("on a phone the + opens the 'Add to a build' sheet and rows have no grip", async () => {
+  it("on a phone the plus opens the 'Add to a draft' sheet, New build first, and the row is not draggable", async () => {
     narrow = true;
     view();
     expect(screen.getAllByTestId("session-row")[0].getAttribute("draggable")).toBeNull();
-    fireEvent.click(screen.getAllByRole("button", { name: "Add to a new build" })[0]);
-    const sheet = await screen.findByRole("dialog", { name: "Add to a build" });
-    expect(within(sheet).getAllByRole("button").map((b) => b.textContent)).toEqual(
-      expect.arrayContaining(["Start a new build", "Add to Photo renamer by date taken"]),
-    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Add to a draft" })[0]);
+    const sheet = await screen.findByRole("dialog", { name: "Add to a draft" });
+    const names = within(sheet).getAllByRole("button").map((b) => b.textContent);
+    expect(names).toEqual(expect.arrayContaining(["New build", "Add to Photo renamer by date taken"]));
+    expect(names.indexOf("New build")).toBeLessThan(names.indexOf("Add to Photo renamer by date taken"));
   });
 
   it("CA-12: a session already in a draft is listed with the others, says so, and offers Open for that draft and Add to for the rest", async () => {
@@ -307,5 +307,41 @@ describe("the page-level failed state follows the session check (G18)", () => {
     } finally {
       setSessionPhase("live");
     }
+  });
+});
+
+describe("DraftsView on a phone", () => {
+  beforeEach(() => {
+    narrow = true;
+  });
+
+  it("draws the fact as a hidden h1, order tabs, filter pills and draft rows with their age", () => {
+    view();
+    expect(screen.getByRole("heading", { level: 1, name: "4 drafts" }).className).toContain("sr-only");
+    expect(screen.getByRole("tablist", { name: "Order" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Show" })).toBeInTheDocument();
+    const rows = screen.getAllByTestId("draft-row");
+    expect(rows).toHaveLength(4);
+    expect(rows[0].getAttribute("href")).toBe("/compose/d1");
+    expect(rows[0].textContent).toContain("Photo renamer by date taken");
+    expect(rows[0].textContent).toContain("2 sessions");
+    expect(screen.getByRole("heading", { level: 2, name: "5 sessions" })).toBeInTheDocument();
+  });
+
+  it("Oldest reverses the order and No sessions filters the list", () => {
+    view();
+    const first = screen.getAllByTestId("draft-row")[0].getAttribute("href");
+    fireEvent.click(screen.getByRole("tab", { name: "Oldest" }));
+    expect(screen.getAllByTestId("draft-row")[0].getAttribute("href")).not.toBe(first);
+    fireEvent.click(within(screen.getByRole("group", { name: "Show" })).getByRole("button", { name: /No sessions/ }));
+    for (const row of screen.getAllByTestId("draft-row")) expect(row.textContent).toContain("No sessions");
+  });
+
+  it("choosing 'New build' in the sheet starts a build from the session", async () => {
+    const p = view();
+    fireEvent.click(screen.getAllByRole("button", { name: "Add to a draft" })[0]);
+    const sheet = await screen.findByRole("dialog", { name: "Add to a draft" });
+    fireEvent.click(within(sheet).getByRole("button", { name: "New build" }));
+    expect(p.onAddToNew).toHaveBeenCalledWith("s1");
   });
 });

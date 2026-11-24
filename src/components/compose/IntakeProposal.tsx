@@ -24,6 +24,9 @@
 // are absent on the transcript path, which renders exactly as it did.
 
 import { useMemo, useState } from "react";
+import { BigButton } from "@/components/phone/BigButton";
+import { PHONE_MARGIN } from "@/components/shell/chromeSize";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import type { CSSProperties } from "react";
 import type {
   IntakeSelectionState,
@@ -658,6 +661,7 @@ export function IntakeProposal({
 
   const keptTotal =
     selection.eventOrdinals.size + selection.nodeLocalIds.size;
+  const phone = useIsPhone();
 
   return (
     <div
@@ -785,6 +789,32 @@ export function IntakeProposal({
         </p>
       ) : null}
 
+      {phone ? (
+        /* Mobile prompt 25: the one primary is pinned under the bottom inset, full width, on the page shade. A review for a new
+           build says "Make the build"; into an existing draft it keeps its count. */
+        <>
+          <button
+            type="button"
+            onClick={onSkip}
+            disabled={isWriting}
+            style={{ alignSelf: "center", minHeight: 44, padding: "0 8px", background: "transparent", border: 0, fontFamily: "inherit", fontSize: 15, color: t.text2, textDecoration: "underline", textUnderlineOffset: 3, cursor: isWriting ? "wait" : "pointer" }}
+          >
+            Throw this away and start empty
+          </button>
+          <div style={{ position: "sticky", bottom: 0, zIndex: 10, margin: `0 -${PHONE_MARGIN}px`, padding: `12px ${PHONE_MARGIN}px calc(12px + env(safe-area-inset-bottom))`, background: t.bg }}>
+            <BigButton
+              main
+              full
+              {...(confirmTestId ? { "data-testid": confirmTestId } : {})}
+              onClick={onConfirm}
+              disabled={isWriting}
+              style={{ cursor: isWriting ? "wait" : undefined }}
+            >
+              {isWriting ? "Adding to the draft…" : keptTotal === 0 ? "Continue with nothing kept" : arrivalNote ? `Add ${keptTotal} to the draft` : "Make the build"}
+            </BigButton>
+          </div>
+        </>
+      ) : (
       <div
         style={{
           display: "flex",
@@ -839,6 +869,7 @@ export function IntakeProposal({
           Throw this away and start empty
         </button>
       </div>
+      )}
     </div>
   );
 }
