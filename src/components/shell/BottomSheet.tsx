@@ -24,6 +24,9 @@ import { IconButton } from "@/components/brand/IconButton";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
+import { PhoneBottomSheet, type PhoneSheetHeight } from "@/components/phone/BottomSheet";
+
+import { useIsPhone } from "./useMinWidth";
 
 /** A downward drag of more than this many px on the grabber closes the sheet. */
 export const SHEET_DRAG_CLOSE_PX = 80;
@@ -36,9 +39,23 @@ export interface BottomSheetProps {
   /** Hide the visible title (the name stays). */
   hideTitle?: boolean;
   children?: ReactNode;
+  /** Phone only (prompt 17): one line under the title. */
+  line?: string;
+  /** Phone only: `content` (default, at most 90%), `half` (drags up to full) or `full`. */
+  height?: PhoneSheetHeight;
+  /** Phone only: force whether closing asks "Discard changes?". Absent: the sheet watches its fields. */
+  dirty?: boolean;
+  /** Phone only: a pinned footer, a status line at the left and buttons at the right. */
+  footer?: { status?: ReactNode; actions?: ReactNode };
 }
 
-export function BottomSheet({ open, onOpenChange, title, hideTitle = false, children }: BottomSheetProps) {
+/** From 768 up the sheet is the one drawn below; below it, the phone's sheet (prompt 17) with the same name, Close and behaviour. */
+export function BottomSheet(props: BottomSheetProps) {
+  const phone = useIsPhone();
+  return phone ? <PhoneBottomSheet {...props} /> : <WideBottomSheet {...props} />;
+}
+
+function WideBottomSheet({ open, onOpenChange, title, hideTitle = false, children }: BottomSheetProps) {
   /* UI-P87, refined: the window recipe, as a side sheet: `--window`, a 1px `--window-border`, radius 12 at the top,
      `--sheet-shadow`, over `--scrim`, no blur. Everything else, the drag to close included, is the same. */
   const focus = useWindowFocus(open);

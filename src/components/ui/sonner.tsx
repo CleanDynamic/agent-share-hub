@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useTheme } from "next-themes";
 import { Toaster as Sonner, toast, useSonner } from "sonner";
 
+import { PHONE_TOAST_MS, PHONE_TOAST_OFFSET, phoneToastActionStyle, phoneToastStyle } from "@/components/phone/PhoneToast";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -51,16 +53,23 @@ function ToastSpeaker() {
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme();
+  /* Prompt 17: below 768 a toast is the phone's: Text fill, 48 tall, above the dock, five seconds, one at a time. */
+  const phone = useIsPhone();
 
   return (
     <>
       <Sonner
         theme={theme as ToasterProps["theme"]}
         className="toaster group"
+        {...(phone ? { duration: PHONE_TOAST_MS, visibleToasts: 1, offset: PHONE_TOAST_OFFSET, mobileOffset: PHONE_TOAST_OFFSET } : {})}
         toastOptions={{
           /* Synth 06: Overlay fill, radius 12, 12px 16px, 15 Text; the action is a small secondary button. */
-          style: { background: t.window, color: t.text, border: 0, borderRadius: 12, padding: "12px 16px", fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", boxShadow: "var(--elev-overlay)" },
-          actionButtonStyle: { background: t.control, color: t.text, height: 32, padding: "0 14px", borderRadius: 16, fontSize: 13, fontWeight: 600 },
+          style: phone
+            ? phoneToastStyle
+            : { background: t.window, color: t.text, border: 0, borderRadius: 12, padding: "12px 16px", fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", boxShadow: "var(--elev-overlay)" },
+          actionButtonStyle: phone
+            ? phoneToastActionStyle
+            : { background: t.control, color: t.text, height: 32, padding: "0 14px", borderRadius: 16, fontSize: 13, fontWeight: 600 },
           cancelButtonStyle: { background: "transparent", color: t.text2, height: 32, padding: "0 14px", borderRadius: 16, fontSize: 13, fontWeight: 600 },
           classNames: {
             toast: "group toast",
