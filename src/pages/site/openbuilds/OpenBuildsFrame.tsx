@@ -37,14 +37,17 @@ export function OpenBuildsColumns({ main, side, testId = "openbuilds-page", side
   useColumnPanels(true);
   const two = useMinWidth(TWO_MIN);
   const wide = useMinWidth(WIDE_SIDE_MIN);
+  const phone = useIsPhone();
+  // Prompt 21: on a phone the panels are sections on the Page shade: no fill, no radius, the frame's 8 inset taken back.
+  const flat: CSSProperties = phone ? { background: "transparent", borderRadius: 0, overflow: "visible" } : {};
   return (
     <div
       data-testid={testId}
       data-layout={two ? "two" : "one"}
-      style={{ ...ROOT, ...(two ? panelColumns("two", { between: !wide }) : { display: "flex", flexDirection: "column", gap: PANEL_GUTTER }) }}
+      style={{ ...ROOT, ...(two ? panelColumns("two", { between: !wide }) : { display: "flex", flexDirection: "column", gap: phone ? 0 : PANEL_GUTTER }), ...(phone ? { margin: `0 -${PANEL_GUTTER}px` } : null) }}
     >
-      <div style={{ ...PANEL, display: "flex", flexDirection: "column", padding: `${PANEL_PAD}px ${PANEL_PAD}px 48px` }}>{main}</div>
-      <aside aria-label={sideLabel} style={{ ...PANEL, display: "flex", flexDirection: "column", gap: 24, padding: `${PANEL_PAD}px 0` }}>
+      <div style={{ ...PANEL, ...flat, display: "flex", flexDirection: "column", padding: phone ? 0 : `${PANEL_PAD}px ${PANEL_PAD}px 48px` }}>{main}</div>
+      <aside aria-label={sideLabel} style={{ ...PANEL, ...flat, display: "flex", flexDirection: "column", gap: 24, padding: phone ? "0 0 calc(var(--reply-bar-h, 0px) + 16px)" : `${PANEL_PAD}px 0` }}>
         {side}
       </aside>
     </div>

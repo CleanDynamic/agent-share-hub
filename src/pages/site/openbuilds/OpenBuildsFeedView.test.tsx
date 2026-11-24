@@ -214,13 +214,16 @@ describe("OpenBuildsFeedView", () => {
     expect(screen.getByRole("region", { name: "Most new posts this week" })).toBeInTheDocument();
   });
 
-  it("on a phone: one column, All your spaces as a menu, and Most new posts this week after the feed", () => {
+  it("on a phone (prompt 20): the tabs, the spaces as pills after All with Make a space last, the posts and the round Post button", () => {
     atWidth(390);
     draw();
     expect(screen.queryByRole("region", { name: "Your spaces" })).toBeNull();
-    expect(screen.getByRole("button", { name: "All your spaces" })).toBeInTheDocument();
-    const busy = screen.getByRole("region", { name: "Most new posts this week" });
-    expect(screen.getByRole("region", { name: "Feed" }).compareDocumentPosition(busy) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "All your spaces" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Most new posts this week" })).toBeNull();
+    const pills = within(screen.getByRole("group", { name: "Show" })).getAllByRole("button");
+    expect(pills[0].textContent).toBe("All");
+    expect(pills[pills.length - 1].textContent).toBe("Make a space");
+    expect(screen.getByTestId("round-post-button").getAttribute("aria-label")).toBe("Post");
   });
 
   it("draws the Make a space control with a plus and its label as its name", () => {

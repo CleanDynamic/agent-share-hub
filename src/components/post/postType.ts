@@ -82,3 +82,27 @@ export function postType(phone: boolean): PostTypeScale {
     },
   };
 }
+
+/** Between two posts of one build on the phone feed (prompt 20): the visible gap between two builds, 12 under and 12 over. */
+export const FEED_THREAD_GAP = 24;
+
+/** The phone feed's scale (prompt 20): post text 15/20, a lead 15/600, meta 13/16. Pictures and lists keep the shared rules. */
+export function feedType(): PostTypeScale {
+  const base = postType(true);
+  const line = (size: number, weight: number, leading: string, colour: string = t.text): CSSProperties => ({
+    ...base.body,
+    fontSize: size,
+    fontWeight: weight,
+    lineHeight: leading,
+    letterSpacing: "0",
+    color: colour,
+  });
+  return {
+    ...base,
+    title: { ...line(17, 600, "22px"), letterSpacing: "-0.01em", textWrap: "balance" },
+    heading: { ...line(15, 600, "20px"), textWrap: "balance" },
+    body: { ...line(15, 400, "20px"), textWrap: "pretty" },
+    small: { ...line(13, 400, "16px", t.text2), textWrap: "pretty" },
+    firstLine: { title: 22, heading: 20, body: 20, small: 16, composer: base.firstLine.composer },
+  };
+}

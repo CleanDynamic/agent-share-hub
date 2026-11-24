@@ -276,15 +276,15 @@ describe("HomeView · narrower windows", () => {
     expect(within(screen.getByRole("complementary", { name: "The room" })).getByRole("heading", { level: 2, name: "2 published builds" })).toBeTruthy();
   });
 
-  it("is one column below 760: the Drafts line, the feed, then the room", () => {
+  it("is the feed alone below 768 (prompt 20): no drafts line, no room, the tabs and the posts", () => {
     narrow(390);
     mount();
     const view = screen.getByTestId("home-view");
-    expect(view.getAttribute("data-layout")).toBe("one");
-    const line = screen.getByTestId("home-drafts-line");
-    expect(line.textContent).toContain("36 drafts in progress · 8 sessions");
-    expect(line.getAttribute("href")).toBe("/drafts");
-    const order = [line, screen.getByRole("region", { name: "Feed" }), screen.getByRole("complementary", { name: "The room" })];
-    for (let i = 1; i < order.length; i += 1) expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(view.getAttribute("data-layout")).toBe("phone");
+    expect(screen.queryByTestId("home-drafts-line")).toBeNull();
+    expect(screen.queryByRole("complementary", { name: "The room" })).toBeNull();
+    expect(screen.queryByRole("complementary", { name: "Your studio" })).toBeNull();
+    expect(screen.getByRole("tablist", { name: "Feed scope" })).toBeTruthy();
+    expect(screen.getAllByTestId("home-feed-item").length).toBeGreaterThan(0);
   });
 });
