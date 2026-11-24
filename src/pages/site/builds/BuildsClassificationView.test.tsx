@@ -93,7 +93,8 @@ describe("BF-04 values that can be pressed", () => {
 
   it("a hovered value draws the underline solid, where hover is a fine pointer", () => {
     const base = window.matchMedia;
-    window.matchMedia = ((query: string) => ({ ...base(query), matches: true })) as unknown as typeof window.matchMedia;
+    /* Every query but the phone's: a fine pointer, a wide window. (A phone has its own card, drawn by the phone's test.) */
+    window.matchMedia = ((query: string) => ({ ...base(query), matches: !query.includes("max-width") })) as unknown as typeof window.matchMedia;
     drawValues();
     const link = screen.getByRole("link", { name: "Education" });
     fireEvent.mouseEnter(link);

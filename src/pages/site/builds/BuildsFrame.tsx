@@ -12,7 +12,9 @@
 import { forwardRef, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 
+import { MobileIcon } from "@/components/brand/MobileIcon";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
+import { PhonePills } from "@/components/phone/PhonePills";
 import { PANEL_RADIUS } from "@/components/shell/chromeSize";
 import { useColumnPanels } from "@/components/shell/frameChrome";
 import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
@@ -25,6 +27,8 @@ import { r } from "@/lib/theme/radius";
 import { controlPaint, hoverFill } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+
+import { PhoneCardSkeletons } from "./BuildsPhone";
 
 /** Cards in three columns, two below 1100, one below 760 (Maps and Classification). */
 export function useCardColumns(): 1 | 2 | 3 {
@@ -57,13 +61,18 @@ const ROOT: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, lineHeight: "20
 /** Synth 08: the page is one full-width panel on the page shade. The frame's own panel steps back and this draws it. */
 export const BUILDS_PANEL: CSSProperties = { background: t.surface, borderRadius: PANEL_RADIUS, overflow: "clip", minWidth: 0, boxSizing: "border-box", paddingBottom: 48 };
 
+/** Prompt 21: on a phone the panel is not drawn: the page is the Page shade, the cards are its Panels. */
+const PHONE_PAGE: CSSProperties = { minWidth: 0, boxSizing: "border-box", paddingBottom: 24 };
+export const panelFor = (phone: boolean): CSSProperties => (phone ? PHONE_PAGE : BUILDS_PANEL);
+
 /** The panel, the head in it, then the view's own content in one column under it. */
 export function BuildsColumns({ head, main, testId = "builds-page" }: { head: ReactNode; main: ReactNode; testId?: string }) {
+  const phone = useIsPhone();
   useColumnPanels(true);
   return (
-    <div data-testid={testId} style={{ ...ROOT, ...BUILDS_PANEL }}>
+    <div data-testid={testId} style={{ ...ROOT, ...panelFor(phone) }}>
       {head}
-      <section aria-label="Builds" style={{ minWidth: 0, padding: "0 20px" }}>
+      <section aria-label="Builds" style={{ minWidth: 0, padding: phone ? 0 : "0 20px" }}>
         {main}
       </section>
     </div>
@@ -133,6 +142,15 @@ function ViewSegment({ view, current, href, onIntent }: { view: GalleryViewMode;
 /** Table, Maps, Classification: a row of pills. Links, not buttons: the view is in the address. On a phone the row scrolls
     sideways inside its own box. */
 export function ViewSwitch({ view, hrefFor, onIntent }: { view: GalleryViewMode; hrefFor: (view: GalleryViewMode) => string; onIntent?: (view: GalleryViewMode) => void }) {
+  const phone = useIsPhone();
+  if (phone) {
+    /* Prompt 21: PhonePills whose pills are links, so the view stays in the address. */
+    return (
+      <nav aria-label="View">
+        <PhonePills<GalleryViewMode> label="Views" value={view} onChange={() => undefined} pills={VIEWS.map((entry) => ({ value: entry, label: VIEW_LABEL[entry], href: hrefFor(entry), onIntent: () => onIntent?.(entry) }))} />
+      </nav>
+    );
+  }
   return (
     <nav aria-label="View" style={{ display: "flex", gap: 8, minWidth: 0, maxWidth: "100%", overflowX: "auto", scrollbarWidth: "none", padding: 4, margin: -4 }}>
       {VIEWS.map((entry) => (
@@ -146,13 +164,15 @@ export function ViewSwitch({ view, hrefFor, onIntent }: { view: GalleryViewMode;
     The page's h1, "Builds", is for screen readers only: the nav item already names the page. `parts` is kept so callers compile;
     only its first piece, the count, is drawn. */
 export function BuildsHead({ figure, parts, switcher, updating }: { figure: ReactNode; parts: readonly FigurePart[]; switcher: ReactNode; updating?: boolean }) {
+  const phone = useIsPhone();
   const count = parts[0]?.text;
   return (
-    <div data-testid="builds-head" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "20px 20px 8px" }}>
+    <div data-testid="builds-head" style={phone ? undefined : { display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "20px 20px 8px" }}>
       <h1 className="sr-only" style={{ margin: 0 }}>
         {figure}
       </h1>
-      <div data-testid="builds-count" style={{ ...text(20, 600, t.text, { lineHeight: "24px", fontFamily: FIGTREE }), ...(updating ? { opacity: 0.5 } : null) }}>
+      {/* Prompt 21: on a phone the count is the fact, 20/24 600 with padding 0 16 8, and the view switch is its own row under it. */}
+      <div data-testid="builds-count" style={{ ...text(20, 600, t.text, { lineHeight: "24px", fontFamily: FIGTREE }), ...(phone ? { padding: "0 16px 8px" } : null), ...(updating ? { opacity: 0.5 } : null) }}>
         {count ?? "\u00a0"}
       </div>
       {switcher}
@@ -198,7 +218,8 @@ export const BuildsControl = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<
         color: t.text,
         whiteSpace: "nowrap",
         cursor: "pointer",
-        ...(selected ? { background: t.selectedFill, border: `1px solid ${t.selectedEdge}` } : controlPaint(state)),
+        /* Prompt 21: on a phone a control is a Card fill with no outline, chosen or not. */
+        ...(phone ? { background: t.module, border: 0, borderRadius: 10 } : selected ? { background: t.selectedFill, border: `1px solid ${t.selectedEdge}` } : controlPaint(state)),
         ...ring(state.focusVisible),
       }}
     >
@@ -211,6 +232,7 @@ export const BuildsControl = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<
     with one on it is drawn in the selected look (not the primary: Apply is the dialog's one primary). It opens a dialog.
     BF-09 (A8): with a saved set open, its name follows the count. */
 export const FiltersButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { activeCount: number; setName?: string }>(function FiltersButton({ activeCount, setName, ...rest }, ref) {
+  const phone = useIsPhone();
   const on = activeCount > 0;
   /* G7: the name starts with what is drawn, in its order ("Filters 6 · Mine"), then the state it adds. The spaces between the
      pieces are not drawn (the control is a flex box); they keep the words apart for a voice-control user. */
@@ -218,9 +240,10 @@ export const FiltersButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<
   const name = setName ? `${shown}, ${on ? `${activeCount} on, ` : ""}saved set` : on ? `Filters, ${activeCount} on` : "Filters";
   return (
     <BuildsControl ref={ref} aria-haspopup="dialog" aria-label={name} {...rest} selected={on}>
+      {phone ? <MobileIcon name="filter" size={18} /> : null}
       <span style={{ color: t.text }}>Filters</span>
       {on ? " " : null}
-      {on ? <span style={{ fontFamily: DM_MONO, fontSize: 13, fontWeight: 400, color: t.text2 }}>{activeCount}</span> : null}
+      {on ? <span style={{ fontFamily: DM_MONO, fontSize: 13, fontWeight: 400, color: phone ? t.brandAccent : t.text2 }}>{activeCount}</span> : null}
       {setName ? " " : null}
       {setName ? <span style={{ color: t.text2, maxWidth: 160, ...ellipsis }}>{`· ${setName}`}</span> : null}
     </BuildsControl>
@@ -303,6 +326,7 @@ function viewHref(pathname: string, search: string, view: GalleryViewMode): stri
 export function BuildsLoadingView() {
   const { pathname, search } = useLocation();
   const view = viewOfSearch(search);
+  const phone = useIsPhone();
   const hrefFor = (next: GalleryViewMode) => viewHref(pathname, search, next);
   if (view === "maps") return <MapsLoadingView hrefFor={hrefFor} />;
   if (view === "classification") return <ClassificationLoadingView hrefFor={hrefFor} />;
@@ -312,12 +336,16 @@ export function BuildsLoadingView() {
         testId="builds-loading"
         head={<BuildsHead figure="Builds" parts={[{ text: "\u00a0" }]} switcher={<ViewSwitch view={view} hrefFor={hrefFor} />} />}
         main={
+          phone ? (
+            <PhoneCardSkeletons count={6} height={112} />
+          ) : (
           <>
             <div style={{ height: 36, borderBottom: `1px solid ${t.hairline}` }} />
             <div style={{ marginTop: 20 }}>
               <TableRowSkeletons count={10} />
             </div>
           </>
+          )
         }
       />
     </LoadingRegion>
@@ -331,6 +359,17 @@ export function MapsLoadingView({ hrefFor }: { hrefFor: (view: GalleryViewMode) 
   const wide = useMinWidth(1101);
   const middle = useMinWidth(761);
   const columns = wide ? 3 : middle ? 2 : 1;
+  const phone = useIsPhone();
+  if (phone) {
+    return (
+      <LoadingRegion what="builds" announce>
+        <div data-testid="builds-loading" style={{ ...ROOT, ...panelFor(true) }}>
+          <BuildsHead figure="Builds" parts={[{ text: "\u00a0" }]} switcher={<ViewSwitch view="maps" hrefFor={hrefFor} />} />
+          <PhoneCardSkeletons count={4} height={268} />
+        </div>
+      </LoadingRegion>
+    );
+  }
   return (
     <LoadingRegion what="builds" announce>
       <div data-testid="builds-loading" style={{ ...ROOT, ...BUILDS_PANEL }}>
@@ -359,6 +398,17 @@ export function MapsLoadingView({ hrefFor }: { hrefFor: (view: GalleryViewMode) 
 export function ClassificationLoadingView({ hrefFor }: { hrefFor: (view: GalleryViewMode) => string }) {
   useColumnPanels(true);
   const columns = useCardColumns();
+  const phone = useIsPhone();
+  if (phone) {
+    return (
+      <LoadingRegion what="builds" announce>
+        <div data-testid="builds-loading" style={{ ...ROOT, ...panelFor(true) }}>
+          <BuildsHead figure="Builds" parts={[{ text: "\u00a0" }]} switcher={<ViewSwitch view="classification" hrefFor={hrefFor} />} />
+          <PhoneCardSkeletons count={4} height={220} />
+        </div>
+      </LoadingRegion>
+    );
+  }
   return (
     <LoadingRegion what="builds" announce>
       <div data-testid="builds-loading" style={{ ...ROOT, ...BUILDS_PANEL }}>

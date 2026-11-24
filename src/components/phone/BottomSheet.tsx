@@ -22,7 +22,7 @@ import { TOUCH_MIN } from "@/lib/theme/density";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { ActionSheet } from "./ActionSheet";
 import { useKeyboardInset } from "./useKeyboardInset";
@@ -46,6 +46,8 @@ export interface PhoneBottomSheetProps {
   hideTitle?: boolean;
   /** One line under the title, 13 Text 2. */
   line?: string;
+  /** A small label on the title's line, after it: "8 of 20", in mono 13 Text 3. Not part of the dialog's name. */
+  titleNote?: ReactNode;
   height?: PhoneSheetHeight;
   /** Force whether closing asks first. Absent: the sheet watches its fields. */
   dirty?: boolean;
@@ -55,7 +57,7 @@ export interface PhoneBottomSheetProps {
   children?: ReactNode;
 }
 
-export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false, line, height = "content", dirty, footer, onCloseAutoFocus, children, ...rest }: PhoneBottomSheetProps) {
+export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false, line, titleNote, height = "content", dirty, footer, onCloseAutoFocus, children, ...rest }: PhoneBottomSheetProps) {
   const focus = useWindowFocus(open, onCloseAutoFocus);
   const keyboard = useKeyboardInset();
   const start = useRef<{ y: number; at: number } | null>(null);
@@ -152,7 +154,10 @@ export function PhoneBottomSheet({ open, onOpenChange, title, hideTitle = false,
             </div>
             <div data-testid="sheet-header" style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: `0 4px 0 ${PHONE_MARGIN}px`, touchAction: "none" }}>
               <div style={{ flex: 1, minWidth: 0, padding: "11px 0 8px" }}>
-                <Dialog.Title style={hideTitle ? VISUALLY_HIDDEN : { margin: 0, fontSize: 17, fontWeight: 600, lineHeight: "22px", color: t.text }}>{title}</Dialog.Title>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                  <Dialog.Title style={hideTitle ? VISUALLY_HIDDEN : { margin: 0, fontSize: 17, fontWeight: 600, lineHeight: "22px", color: t.text }}>{title}</Dialog.Title>
+                  {titleNote ? <span style={{ fontFamily: DM_MONO, fontSize: 13, lineHeight: "16px", color: t.label }}>{titleNote}</span> : null}
+                </div>
                 {line ? <p style={{ margin: 0, fontSize: 13, lineHeight: "16px", color: t.text2 }}>{line}</p> : null}
               </div>
               <button

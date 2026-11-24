@@ -15,7 +15,7 @@ import type { BuildMap } from "@/lib/build/buildsMaps";
 import { layoutSessionMap, type Edge, type MapSession, type SessionMapLayout, type SessionMapModel } from "@/lib/build/sessionMap";
 
 import { BOX_H, BOX_W, WELL_H, WELL_W, type MapCardView, type MapDrawing, type MapLineView, type MapsDirection } from "./BuildsMapsView";
-import { tableRow } from "./buildsModel";
+import { shapeWord, tableRow } from "./buildsModel";
 
 /** The board's margins inside the well, and how far from the bottom and the right a box may reach. */
 const LEFT = 16;
@@ -113,7 +113,7 @@ export function drawingOf(model: SessionMapModel, layout: SessionMapLayout): Map
     const x = round1(toX(box.x));
     const y = round1(toY(box.y));
     placed.set(box.key, { key: box.key, x, y });
-    kept.push({ key: box.key, x, y, label: boxLabel(session), meta: `${modelWord(session)}${modelWord(session) ? " · " : ""}${session.tiles}` });
+    kept.push({ key: box.key, x, y, label: boxLabel(session), meta: `${modelWord(session)}${modelWord(session) ? " · " : ""}${session.tiles}`, ...(session.colour ? { colour: session.colour } : null) });
   }
 
   const byKey = new Map(boxes.map((box) => [box.key, box]));
@@ -182,6 +182,7 @@ export function cardOf(build: BuildsTableBuild, map: BuildMap | undefined, now: 
     title: row.title,
     maker: build.maker?.handle ?? null,
     summary: !map && failed ? "Couldn't load the map." : mapSummary(model),
+    shape: shapeWord(build.shape),
     sessions: model?.sessions.length ?? 0,
     failed: !map && failed,
     words: !map && failed ? `${row.title}: the Map did not load.` : mapWords(row.title, model),

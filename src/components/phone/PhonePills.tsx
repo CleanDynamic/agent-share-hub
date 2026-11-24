@@ -2,14 +2,25 @@
 // overflow. The chosen pill keeps the Inverse fill: one Mint element per region stays the New button or the round post button.
 // Each pill is a toggle (`aria-pressed`), or a tab when `tabs` is given.
 
+import { Link } from "react-router-dom";
+
 import { FilterChip } from "@/components/brand/FilterChip";
 import { PHONE_MARGIN } from "@/components/shell/chromeSize";
 import { PHONE_PILL } from "@/components/shell/chromeSize";
+import { ring } from "@/lib/theme/controls";
+import { TOUCH_MIN } from "@/lib/theme/density";
+import { useInteractive } from "@/lib/theme/interactive";
+import { t } from "@/lib/theme/tokens";
+import { FIGTREE } from "@/lib/theme/type";
 
 export interface PhonePill<V extends string = string> {
   value: V;
   label: string;
   count?: number | string;
+  /** A link pill: the row's choice is an address, so it stays in the address. `onChange` is not called for it. */
+  href?: string;
+  /** Pointing at or focusing a link pill (to start fetching what it opens). */
+  onIntent?: () => void;
 }
 
 export interface PhonePillsProps<V extends string = string> {
@@ -21,6 +32,55 @@ export interface PhonePillsProps<V extends string = string> {
   label: string;
 }
 
+/** A pill that is a link: the same 32 tall shape, its hit area grown to 44 by padding with a matching negative margin. */
+function LinkPill({ pill, on }: { pill: PhonePill; on: boolean }) {
+  const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  const grow = (TOUCH_MIN - PHONE_PILL) / 2;
+  return (
+    <Link
+      to={pill.href as string}
+      preventScrollReset
+      aria-current={on ? "page" : undefined}
+      onPointerEnter={pill.onIntent}
+      onFocus={pill.onIntent}
+      {...handlers}
+      style={{
+        flexShrink: 0,
+        display: "flex",
+        alignItems: "center",
+        boxSizing: "border-box",
+        paddingBlock: grow,
+        marginBlock: -grow,
+        textDecoration: "none",
+        borderRadius: PHONE_PILL / 2,
+        ...ring(state.focusVisible),
+      }}
+    >
+      <span
+        style={{
+          boxSizing: "border-box",
+          height: PHONE_PILL,
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          padding: "0 12px",
+          borderRadius: PHONE_PILL / 2,
+          background: on ? t.action : t.module,
+          color: on ? t.onAction : t.text,
+          fontFamily: FIGTREE,
+          fontSize: 13,
+          fontWeight: on ? 600 : 500,
+          lineHeight: "normal",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {pill.label}
+        {pill.count !== undefined ? <span style={{ fontWeight: 400, opacity: 0.7, fontVariantNumeric: "tabular-nums" }}>{pill.count}</span> : null}
+      </span>
+    </Link>
+  );
+}
+
 export function PhonePills<V extends string = string>({ pills, value, onChange, label }: PhonePillsProps<V>) {
   return (
     <div
@@ -30,7 +90,10 @@ export function PhonePills<V extends string = string>({ pills, value, onChange, 
       aria-label={label}
       style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", padding: `12px ${PHONE_MARGIN}px` }}
     >
-      {pills.map((pill) => (
+      {pills.map((pill) =>
+        pill.href !== undefined ? (
+          <LinkPill key={pill.value} pill={pill} on={pill.value === value} />
+        ) : (
         <FilterChip
           key={pill.value}
           label={pill.label}
@@ -39,7 +102,8 @@ export function PhonePills<V extends string = string>({ pills, value, onChange, 
           onClick={() => onChange(pill.value)}
           style={{ height: PHONE_PILL, minHeight: PHONE_PILL, padding: "0 12px", borderRadius: PHONE_PILL / 2 }}
         />
-      ))}
+        ),
+      )}
     </div>
   );
 }
