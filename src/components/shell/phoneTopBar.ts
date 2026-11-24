@@ -10,7 +10,7 @@ export type BarLeft = "account" | "back" | "close" | "none";
 /** `logo`, `none`, or the words drawn in the centre. */
 export type BarCentre = { kind: "logo" } | { kind: "none" } | { kind: "title"; text: string };
 /** What the right slot holds. `more` and `action` come from the page (see the registry); the rest are the bar's own. */
-export type BarRight = "search" | "markAll" | "more" | "newBuild" | "settings" | "skip" | "none";
+export type BarRight = "search" | "markAll" | "more" | "newBuild" | "settings" | "messageSettings" | "skip" | "none";
 
 export interface PhoneBarSpec {
   left: BarLeft;
@@ -63,7 +63,9 @@ export function phoneBarFor(pathname: string): PhoneBarSpec {
   if (path === SITE_NAV.library || path.startsWith("/library")) return { left: "back", centre: title("Library"), right: "none" };
   if (path === SITE_NAV.drafts || path.startsWith("/drafts")) return { left: "back", centre: title("Drafts"), right: "newBuild" };
   if (path === SITE_NAV.settings || path.startsWith(`${SITE_NAV.settings}/`)) return { left: "back", centre: title("Settings"), right: "none" };
-  if (path === "/messages" || path.startsWith("/messages/")) return { left: "back", centre: title("Messages"), right: "settings" };
+  // Messages (prompt 26): the list has the settings gear; a conversation names the person (the page registers it) and has More.
+  if (path === "/messages") return { left: "back", centre: title("Messages"), right: "messageSettings", backTo: "/" };
+  if (path.startsWith("/messages/")) return { left: "back", centre: title("Messages"), right: "more", backTo: "/messages" };
   if (path === "/search") return { left: "back", centre: title("Search"), right: "none" };
 
   // Import and Connect are tasks that end: close, and the page's name.

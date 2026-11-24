@@ -13,7 +13,7 @@ import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { PANEL_GAP, panelColumns } from "@/components/shell/pageGrid";
 import { useColumnPanels } from "@/components/shell/frameChrome";
-import { useMinWidth } from "@/components/shell/useMinWidth";
+import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -43,11 +43,22 @@ export function ProfileView({ head, feed, side }: ProfileViewProps) {
   useColumnPanels(true);
   const two = useMinWidth(TWO_PANELS_MIN);
   const wide = useMinWidth(WIDE_SIDE_MIN);
+  const phone = useIsPhone();
   const feedPanel = feed ? (
     <div style={{ background: t.surface, borderRadius: 12, padding: 16, minWidth: 0, boxSizing: "border-box" }}>
       <ProfileFeed {...feed} />
     </div>
   ) : null;
+  /* Below 768 there are no panels: the head, the feed and the side sections run down the Page shade, edge to edge. */
+  if (phone) {
+    return (
+      <div data-testid="profile-view" data-phone="" style={{ display: "flex", flexDirection: "column", minWidth: 0, margin: `0 -${PANEL_GAP}px`, paddingBottom: 24, fontFamily: FIGTREE }}>
+        <ProfileHead {...head} />
+        {feed ? <ProfileFeed {...feed} /> : null}
+        {side ? <ProfileSide {...side} /> : null}
+      </div>
+    );
+  }
   return (
     <div data-testid="profile-view" style={{ display: "flex", flexDirection: "column", gap: PANEL_GAP, minWidth: 0, paddingBottom: 48, fontFamily: FIGTREE }}>
       <ProfileHead {...head} />

@@ -4,7 +4,7 @@
 
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { GalleryBuild } from "@/lib/build";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import { BuildShareCard } from "@/components/messages/BuildShareCard";
@@ -77,3 +77,16 @@ describe("BuildShareCard", () => {
     expect(card.querySelector("img")?.getAttribute("src")).toBe("https://signed.example/cover.png");
   });
 });
+
+describe("BuildShareCard on a phone (mobile prompt 26 Part E)", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  it("is compact: 240 wide, the word Build, the name, and no cover", () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: !query.includes("min-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined, addListener: () => undefined, removeListener: () => undefined }));
+    const card = renderCard(build(), new Map([["b1/cover.png", "https://signed.example/cover.png"]]));
+    expect(card.style.width).toBe("240px");
+    expect(card.textContent).toContain("Build");
+    expect(screen.getByTestId("message-build-title").textContent).toBe("Invoice reader");
+    expect(card.querySelector("img")).toBeNull();
+  });
+});
+

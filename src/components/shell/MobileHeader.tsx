@@ -47,6 +47,8 @@ function rightAction(
       return { icon: "new", label: "New build", to: SITE_NAV.create };
     case "settings":
       return page.settings ? { icon: "gear", label: "Conversation settings", onClick: page.settings } : null;
+    case "messageSettings":
+      return { icon: "gear", label: "Messages settings", to: SITE_NAV.settings };
     case "skip":
       return page.skip ? { text: "Skip", label: "Skip", onClick: page.skip } : null;
     default:
