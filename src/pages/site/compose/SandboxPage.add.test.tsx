@@ -76,12 +76,13 @@ async function openAdd(phone: boolean) {
   return phone ? within(opened) : null;
 }
 
-/** F40: the five on the first screen; every other type sits under More types, opened first. */
+/** F40: on a computer the five on the first screen; every other type sits under More types, opened first. Prompt 24: a phone's
+    Add sheet lists every entry at once. */
 const FIRST_SCREEN = /^(Prompt|Agent|Tool|File|Dataset)\b/;
 async function openMore(phone: boolean, sheet: ReturnType<typeof within> | null, name: RegExp) {
   if (FIRST_SCREEN.test(name.source.replace(/^\^/, ""))) return;
-  if (sheet) fireEvent.click(sheet.getByRole("button", { name: /^More types/ }));
-  else fireEvent.click(await screen.findByTestId("add-more-types"));
+  if (sheet) return;
+  fireEvent.click(await screen.findByTestId("add-more-types"));
   void phone;
 }
 

@@ -18,15 +18,19 @@
    provides `ModalInset` so its rows and blocks run edge to edge and pad themselves 20 in. */
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { Children, useContext, useId, useMemo, useRef, type ReactNode } from "react";
+import { Children, useContext, useId, useMemo, useRef, type CSSProperties, type ReactNode } from "react";
 
 import { Glyph } from "@/components/brand/Glyph";
 import { BottomSheet } from "@/components/shell/BottomSheet";
+import { PHONE_MARGIN } from "@/components/shell/chromeSize";
+import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { useWindowFocus } from "@/lib/focus/windowFocus";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
+import { scrollBehavior } from "@/lib/theme/motion";
+import { shakeOnce } from "@/lib/theme/shake";
 
 import { EYEBROW } from "./refinedStyles";
 import {
@@ -111,25 +115,31 @@ export interface ModalShellProps {
   /** CA-15b: 560 for most tiles, 640 for the prompt window, code and decision. */
   width?: number;
   testId: string;
+  /** Prompt 24: on a phone a form is a full sheet; a short list (Recently removed) opens to its content. */
+  phoneHeight?: "full" | "content" | "half";
   children: ReactNode;
 }
 
 /** The window. `children` is the form (`ModalForm`); it is mounted only while the window is open, so each opening starts clean. */
-export function ModalShell({ open, onOpenChange, title, subtitle, eyebrow, width = MODAL_WIDTH.standard, testId, children }: ModalShellProps) {
+export function ModalShell({ open, onOpenChange, title, subtitle, eyebrow, width = MODAL_WIDTH.standard, testId, phoneHeight = "full", children }: ModalShellProps) {
   const phone = useIsPhone();
   const focus = useWindowFocus(open);
   if (phone) {
     return (
-      <BottomSheet open={open} onOpenChange={onOpenChange} title={title}>
-        {eyebrow ? (
-          <p data-testid="modal-eyebrow" style={{ ...EYEBROW, margin: 0 }}>
-            {eyebrow}
-          </p>
-        ) : null}
-        <p data-testid="modal-subtitle" style={{ ...SUBTITLE, margin: 0 }}>
-          {subtitle}
-        </p>
-        {open ? children : null}
+      /* Prompt 24: a full sheet (to 59 below the top); the title 17/22 600 and the one line under it 13 Text 2 sit in the
+         sheet's header, by its 44 close button. The form below pins its own footer above the keyboard. */
+      <BottomSheet open={open} onOpenChange={onOpenChange} title={title} line={subtitle} height={phoneHeight}>
+        <div data-ui="modal-sheet" style={{ display: "flex", flexDirection: "column", minHeight: "100%", padding: `0 ${PHONE_MARGIN}px` }}>
+          {eyebrow ? (
+            <p data-testid="modal-eyebrow" style={{ ...EYEBROW, margin: "4px 0 0" }}>
+              {eyebrow}
+            </p>
+          ) : null}
+          <span data-testid="modal-subtitle" style={VISUALLY_HIDDEN}>
+            {subtitle}
+          </span>
+          {open ? children : null}
+        </div>
       </BottomSheet>
     );
   }
@@ -203,7 +213,7 @@ export function ModalForm({ phone, onSubmit, onCancel, missing, blocked = false,
       <ModalInset.Provider value={phone ? 0 : MODAL_PAD}>
         {/* UX-02 P11: each field the footer names as required says so under itself too. */}
         <MissingFields.Provider value={missingSet(missing)}>
-        <div data-testid="modal-body" style={bodyStyle(phone)}>
+        <div data-testid="modal-body" style={phone ? { ...bodyStyle(phone), flex: "1 0 auto" } : bodyStyle(phone)}>
           {children}
           {alert ? (
             <div style={{ padding: phone ? "8px 0 0" : `0 ${MODAL_PAD}px 14px` }}>
@@ -213,20 +223,89 @@ export function ModalForm({ phone, onSubmit, onCancel, missing, blocked = false,
         </div>
         </MissingFields.Provider>
       </ModalInset.Provider>
-      <div data-testid="modal-footer" style={footerStyle(phone)}>
+      <div data-testid="modal-footer" style={phone ? PHONE_FOOTER : footerStyle(phone)}>
         <span data-testid="modal-status" role="status" style={FOOT_NOTE}>
           {status ?? requiredLine(missing)}
         </span>
         <RecipeButton variant="ghost" small phone={phone} onClick={onCancel}>
           {MODAL_COPY.cancel}
         </RecipeButton>
-        <RecipeButton variant="primary" small phone={phone} type="submit" disabled={!ready}>
-          {addLabel}
-        </RecipeButton>
+        {phone ? (
+          /* Prompt 24: on a phone a missing field leaves the action looking disabled (45%) but it still answers: a tap takes the
+             reader to the first missing field, focuses it and shakes it once. */
+          <RecipeButton
+            variant="primary"
+            small
+            phone
+            type="submit"
+            aria-disabled={!ready || undefined}
+            data-ready={ready ? "" : undefined}
+            onClick={(event) => {
+              if (ready) return;
+              event.preventDefault();
+              if (form.current) goToMissing(form.current);
+            }}
+            style={ready ? undefined : { opacity: PHONE_NOT_READY_OPACITY, boxShadow: "none" }}
+          >
+            {addLabel}
+          </RecipeButton>
+        ) : (
+          <RecipeButton variant="primary" small phone={phone} type="submit" disabled={!ready}>
+            {addLabel}
+          </RecipeButton>
+        )}
       </div>
     </form>
     </BoxTitleCollectorContext.Provider>
   );
+}
+
+/** Prompt 24: the phone's action while a required field is missing. */
+export const PHONE_NOT_READY_OPACITY = 0.45;
+
+/** The phone form's footer: on Surface, pinned to the bottom of the sheet (so above the keyboard, which the sheet rides),
+    12 16 plus the bottom inset, run to the sheet's edges. */
+const PHONE_FOOTER: CSSProperties = {
+  position: "sticky",
+  bottom: 0,
+  zIndex: 1,
+  display: "flex",
+  alignItems: "center",
+  gap: space[2],
+  flexShrink: 0,
+  margin: `${space[3]}px -${PHONE_MARGIN}px 0`,
+  padding: `12px ${PHONE_MARGIN}px calc(12px + env(safe-area-inset-bottom))`,
+  background: t.surface,
+};
+
+const FOCUSABLE = 'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled]), [tabindex="0"]';
+
+/** The first field the form names as missing (its "Required" line), or else the first empty text box: scrolled to, focused and
+    shaken once. */
+export function goToMissing(form: HTMLElement): HTMLElement | null {
+  const body = form.querySelector<HTMLElement>('[data-testid="modal-body"]') ?? form;
+  const line = body.querySelector<HTMLElement>('[data-testid="field-required"]');
+  let box: HTMLElement | null = null;
+  let control: HTMLElement | null = null;
+  if (line) {
+    for (let node = line.parentElement; node && node !== body; node = node.parentElement) {
+      const found = node.querySelector<HTMLElement>(FOCUSABLE);
+      if (found) {
+        box = node;
+        control = found;
+        break;
+      }
+    }
+  }
+  if (!control) {
+    control = Array.from(body.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input[type="text"], input:not([type]), textarea')).find((field) => !field.disabled && field.value.trim() === "") ?? null;
+    box = control?.parentElement ?? null;
+  }
+  if (!control) return null;
+  control.scrollIntoView?.({ block: "center", behavior: scrollBehavior() });
+  control.focus({ preventScroll: true });
+  shakeOnce(box);
+  return control;
 }
 
 /** A small quiet glyph button, such as a chip's remove: 20 square (44 on a phone), never boxed, no icon library. */

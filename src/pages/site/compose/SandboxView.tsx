@@ -36,8 +36,12 @@ import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { MenuButton } from "@/components/brand/MenuButton";
 import { Segmented } from "@/components/brand/Segmented";
-import { BottomSheet as BrandBottomSheet, SheetRow, closeNow } from "@/components/brand/BottomSheet";
+import { BottomSheet as BrandBottomSheet, closeNow } from "@/components/brand/BottomSheet";
 import { BottomSheet } from "@/components/shell/BottomSheet";
+import { PhoneBottomSheet } from "@/components/phone/BottomSheet";
+import { MobileIcon } from "@/components/brand/MobileIcon";
+import type { MobileIconName } from "@/components/brand/mobileIcons";
+import { PHONE_TILE_RADIUS } from "./modalRecipes";
 import { headerHeight } from "@/components/shell/chromeSize";
 import { useColumnPanels } from "@/components/shell/frameChrome";
 import { PANEL_GAP } from "@/components/shell/pageGrid";
@@ -437,6 +441,70 @@ const addItem = (enabled: boolean): CSSProperties => ({
   borderRadius: r.control,
 });
 
+/** Prompt 24: the mobile icon for each entry of the phone's Add sheet. */
+export const ADD_ICON: Record<AddKey, MobileIconName> = {
+  prompt: "prompt",
+  agent: "agent",
+  decision: "decision",
+  retrieval: "retrieval",
+  system_prompt: "system",
+  file: "file",
+  dataset: "dataset",
+  tool: "tool",
+  repo: "repo",
+  manual: "manual",
+  approval: "approval",
+  code: "code",
+  check: "test",
+  result: "result",
+  library: "library",
+};
+
+/** A row's height in the phone's Add sheet, and its icon's square. */
+export const ADD_SHEET_ROW = 52;
+const ADD_SHEET_ICON = 40;
+/** An entry that is not ready yet, on a phone. */
+const NOT_READY_OPACITY = 0.4;
+
+function AddSheetRow({ item, onSelect }: { item: AddEntry; onSelect: () => void }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>({}, { disabled: !item.enabled });
+  const icon: MobileIconName = item.key.startsWith("deploy:") ? "publish" : ADD_ICON[item.key as AddKey];
+  return (
+    <button
+      type="button"
+      disabled={!item.enabled}
+      onClick={onSelect}
+      onFocus={item.onWarm}
+      data-ui="add-sheet-row"
+      {...handlers}
+      style={{
+        ...bareButton,
+        display: "flex",
+        alignItems: "center",
+        gap: space[3],
+        width: "100%",
+        minHeight: ADD_SHEET_ROW,
+        boxSizing: "border-box",
+        padding: `6px ${space[2]}px`,
+        borderRadius: r.panel,
+        textAlign: "left",
+        opacity: item.enabled ? 1 : NOT_READY_OPACITY,
+        cursor: item.enabled ? "pointer" : "default",
+        ...(state.pressed && item.enabled ? { background: t.module } : null),
+        ...ring(state.focusVisible),
+      }}
+    >
+      <span aria-hidden="true" style={{ flexShrink: 0, width: ADD_SHEET_ICON, height: ADD_SHEET_ICON, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: PHONE_TILE_RADIUS, background: t.control, color: t.text }}>
+        <MobileIcon name={icon} size={20} />
+      </span>
+      <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+        <span style={text(15, 500, t.text)}>{item.name}</span>
+        {item.line ? <span style={text(13, 400, t.label)}>{item.line}</span> : null}
+      </span>
+    </button>
+  );
+}
+
 /** CA-14 P5: where a new step tile goes: a session's own "+ Add step tile" row names its session. */
 export interface AddTargets {
   /** Called, in the same tap, with the session chosen, just before the item runs. */
@@ -604,38 +672,18 @@ export function AddMenu({ phone, targets, fixedSession, variant = "row", ...prop
     return (
       <>
         {trigger}
-        <BrandBottomSheet open={open} onOpenChange={setOpen} title={ADD_ASK_COPY.row} onCloseAutoFocus={backToAdd} data-testid="add-sheet">
-          {(
-            /* UX-02 P6: the same groups, one column. */
-            <>
-              {layout.primary.map((item) => (
-                <SheetRow key={item.key} name={item.name} line={item.line} disabled={!item.enabled} onSelect={() => choose(item)} />
-              ))}
-              {/* F40: the other types under More types, opened in place. */}
-              {hasMore ? <SheetRow name={ADD_MORE_COPY.row} line="" expanded={showMore} onSelect={() => setMoreOpen((open) => !open)} /> : null}
-              {showMore ? (
-                <>
-                  {layout.groups.map((group) => (
-                    <Fragment key={group.category}>
-                      <p style={{ ...text(textStep.meta, 500, t.label), margin: "12px 16px 4px" }}>{group.head}</p>
-                      {group.entries.map((item) => (
-                        <SheetRow key={item.key} inset name={item.name} line={item.line} disabled={!item.enabled} onSelect={() => choose(item)} />
-                      ))}
-                    </Fragment>
-                  ))}
-                  {layout.loose.map((item) => (
-                    <SheetRow key={item.key} inset name={item.name} line={item.line} disabled={!item.enabled} onSelect={() => choose(item)} />
-                  ))}
-                  {layout.deployment.length > 0 ? <SheetRow inset name={DEPLOYMENT_GROUP_HEAD} line="" expanded={deployOpen} onSelect={() => setDeployOpen((open) => !open)} /> : null}
-                  {deployOpen
-                    ? layout.deployment.map((item) => <SheetRow key={item.key} inset name={item.name} line={item.line} disabled={!item.enabled} onSelect={() => choose(item)} />)
-                    : null}
-                </>
-              ) : null}
-              {layout.library ? <SheetRow name={layout.library.name} line={layout.library.line} disabled={!layout.library.enabled} onSelect={() => choose(layout.library as AddEntry)} /> : null}
-            </>
-          )}
-        </BrandBottomSheet>
+        {/* Prompt 24: a full sheet titled "Add" with no footer: every entry in the repo's order, each a 52 row with its kind's icon
+            in a 40 square on Raised, the name 15/500 and its line 13 Text 3; an entry not ready is at 40% and does nothing. */}
+        <PhoneBottomSheet open={open} onOpenChange={setOpen} title={TITLE_ADD_COPY.label} height="full" dirty={false} onCloseAutoFocus={backToAdd} data-testid="add-sheet">
+          <div role="group" aria-label={TITLE_ADD_COPY.label} style={{ display: "flex", flexDirection: "column", gap: 4, padding: `4px ${space[2]}px 16px` }}>
+            {entries.map((item, index) => (
+              <Fragment key={item.key}>
+                {item.group && item.group !== entries[index - 1]?.group ? <p style={{ ...text(13, 500, t.label), margin: "12px 8px 4px" }}>{item.group}</p> : null}
+                <AddSheetRow item={item} onSelect={() => choose(item)} />
+              </Fragment>
+            ))}
+          </div>
+        </PhoneBottomSheet>
       </>
     );
   }

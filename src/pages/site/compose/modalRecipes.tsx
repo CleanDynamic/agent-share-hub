@@ -51,6 +51,7 @@ import {
   useRef,
   useState,
   type ButtonHTMLAttributes,
+  type ChangeEvent,
   type CSSProperties,
   type InputHTMLAttributes,
   type KeyboardEvent,
@@ -62,6 +63,8 @@ import {
 
 import { Glyph, type GlyphName } from "@/components/brand/Glyph";
 import { Notepad } from "@/components/brand/Notepad";
+import { MobileIcon } from "@/components/brand/MobileIcon";
+import { BigButton } from "@/components/phone/BigButton";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { CONTROL, PRIMARY, SELECTED, WELL, controlPaint, hoverFill } from "@/lib/theme/refinedControl";
@@ -529,6 +532,9 @@ function nameOf(box: HTMLTextAreaElement | null): string {
   return label?.textContent?.trim() || "Text";
 }
 
+/** Prompt 24: on a phone a box's optional title is a 36 tall field above it. */
+export const PHONE_TITLE_FIELD = 36;
+
 /**
  * A text area, as Synth 06 draws every text box in a modal: empty (no placeholder words), with an optional title above it
  * ("Title · optional", a 32 tall field) and an Expand button in its top right corner that opens the text in the notepad.
@@ -585,7 +591,7 @@ export function FieldArea({ phone, rows, mono = false, onFocus, onBlur, title, o
           onBlur={() => {
             if (!collector) sink.onTitle?.(nameOf(box.current), shownTitle);
           }}
-          style={{ ...fieldStyle(phone, { height: phone ? size.touch : 32, fontSize: phone ? 16 : 13 }), outline: "none" }}
+          style={{ ...fieldStyle(phone, { height: phone ? PHONE_TITLE_FIELD : 32, fontSize: phone ? 16 : 13 }), outline: "none" }}
         />
       </div>
       <div style={{ position: "relative", minWidth: 0 }}>
@@ -733,7 +739,7 @@ export function SegmentedField<V extends string>({ label, items, value, onChange
       data-testid={testId}
       onKeyDown={onKeyDown}
       /* Synth 09: pills, 6 apart, wrapping; no track. */
-      style={{ display: "flex", flexWrap: "wrap", gap: 6, boxSizing: "border-box", width: "100%", minWidth: 0 }}
+      style={{ display: "flex", flexWrap: "wrap", gap: phone ? space[2] : 6, rowGap: phone ? space[2] : 6, boxSizing: "border-box", width: "100%", minWidth: 0, ...(phone ? { padding: `${(size.touch - PHONE_CHIP) / 2}px 0` } : null) }}
     >
       {items.map((item) => (
         <Segment key={item.value} item={item} current={item.value === value} tabStop={item.value === stop} phone={phone} onPick={() => onChange(item.value)} />
@@ -742,8 +748,56 @@ export function SegmentedField<V extends string>({ label, items, value, onChange
   );
 }
 
+/** Prompt 24: a choice on a phone is a chip 36 tall (radius 18, Raised; chosen Inverse) in a 44 tall hit area. */
+export const PHONE_CHIP = 36;
+/** Prompt 24: twelve or more choices on a phone are a two-column grid of 44 tall tiles, radius 10. */
+export const PHONE_TILE_RADIUS = 10;
+
 function Segment<V extends string>({ item, current, tabStop, phone, onPick }: { item: SegmentedFieldItem<V>; current: boolean; tabStop: boolean; phone: boolean; onPick: () => void }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>({}, { disabled: item.disabled });
+  if (phone) {
+    return (
+      <button
+        type="button"
+        role="radio"
+        aria-checked={current}
+        tabIndex={tabStop ? 0 : -1}
+        disabled={item.disabled || undefined}
+        onClick={item.disabled ? undefined : onPick}
+        data-ui="phone-chip"
+        {...handlers}
+        style={{
+          flex: "0 0 auto",
+          boxSizing: "border-box",
+          height: size.touch,
+          padding: `${(size.touch - PHONE_CHIP) / 2}px 0`,
+          margin: `-${(size.touch - PHONE_CHIP) / 2}px 0`,
+          border: 0,
+          background: "transparent",
+          borderRadius: PHONE_CHIP / 2,
+          cursor: item.disabled ? "default" : "pointer",
+          ...ring(state.focusVisible),
+        }}
+      >
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            boxSizing: "border-box",
+            height: PHONE_CHIP,
+            padding: "0 14px",
+            borderRadius: PHONE_CHIP / 2,
+            whiteSpace: "nowrap",
+            ...type(textStep.meta, 500, current ? t.onAction : t.text),
+            background: current ? t.action : t.control,
+            opacity: item.disabled ? 0.5 : 1,
+          }}
+        >
+          {item.label}
+        </span>
+      </button>
+    );
+  }
   return (
     <button
       type="button"
@@ -913,6 +967,8 @@ function OptionButton({ label, chosen, disabled, phone, onPick }: { label: strin
         cursor: disabled ? "default" : "pointer",
         ...(state.hovered && !chosen ? { background: hoverFill(), color: t.text } : null),
         ...(chosen ? { ...SELECTED, color: t.text } : null),
+        /* Prompt 24: a phone's tile: Raised, radius 10, no edge; chosen Inverse. */
+        ...(phone ? { borderRadius: PHONE_TILE_RADIUS, border: 0, background: chosen ? t.action : t.control, color: chosen ? t.onAction : t.text, fontWeight: 500 } : null),
         ...(disabled ? { filter: t.dimFilter } : null),
         ...ring(state.focusVisible),
       }}
@@ -1240,8 +1296,32 @@ export interface DropZoneProps {
 }
 
 /** 148 tall, the well, a dashed edge; the words and a small button that opens the file chooser. Files dropped on it count too. */
+/** Prompt 24: a phone cannot drop, so the drop zone is two big buttons side by side. */
+export const PHONE_DROP_COPY = { camera: "Camera", select: "Select files" } as const;
+
 export function DropZone({ words, button, accept, multiple = false, onFiles, phone, testId, inputLabel }: DropZoneProps) {
   const input = useRef<HTMLInputElement>(null);
+  const camera = useRef<HTMLInputElement>(null);
+  if (phone) {
+    const pick = (event: ChangeEvent<HTMLInputElement>) => {
+      onFiles(event.target.files);
+      event.target.value = "";
+    };
+    return (
+      <div data-testid="drop-zone-phone" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: space[2] }}>
+        <BigButton full onClick={() => camera.current?.click()}>
+          <MobileIcon name="camera" size={20} />
+          <span style={{ marginLeft: 8 }}>{PHONE_DROP_COPY.camera}</span>
+        </BigButton>
+        <BigButton full onClick={() => input.current?.click()}>
+          <MobileIcon name="image" size={20} />
+          <span style={{ marginLeft: 8 }}>{PHONE_DROP_COPY.select}</span>
+        </BigButton>
+        <input ref={camera} type="file" hidden accept={accept ?? "image/*,video/*"} capture="environment" aria-label={`${inputLabel}: ${PHONE_DROP_COPY.camera}`} onChange={pick} />
+        <input ref={input} data-testid={testId} type="file" hidden accept={accept} multiple={multiple} aria-label={inputLabel} onChange={pick} />
+      </div>
+    );
+  }
   return (
     <div
       onDragOver={(event) => event.preventDefault()}

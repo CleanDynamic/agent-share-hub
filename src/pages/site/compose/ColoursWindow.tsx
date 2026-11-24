@@ -20,6 +20,8 @@ import { SavedSwatch, type Swatches } from "@/components/brand/ColourPicker";
 import { GROUP_MIN_MEMBERS, singlesInOrder, stateIn, type ColourModel, type ReferenceGroup } from "@/lib/build/referenceGroups";
 import { shownName, type RefEntry, type RefGroup } from "@/lib/build/postRefs";
 import { t } from "@/lib/theme/tokens";
+import { MobileIcon } from "@/components/brand/MobileIcon";
+import { PHONE_MARGIN } from "@/components/shell/chromeSize";
 
 import { MenuContent, MenuSubContent } from "./ComposeMenu";
 import { ModalShell } from "./ModalFrame";
@@ -98,6 +100,9 @@ export interface ColoursWindowProps {
   onClose: () => void;
 }
 
+/** A phone footer draws no rule above itself. */
+const rulesOff = { borderTop: 0, boxShadow: "none" } as const;
+
 const groupName = (group: Pick<ReferenceGroup, "name">) => group.name ?? COLOURS_COPY.noName;
 
 /* ── a group's menu ── */
@@ -161,7 +166,8 @@ function ColoursBody(props: ColoursWindowProps) {
     return [...byColour].filter(([, refs]) => refs.length >= 2);
   }, [singles, model]);
   const inset = phone ? 0 : MODAL_PAD;
-  const block = { display: "flex", flexDirection: "column" as const, gap: GAP.column, padding: `14px ${inset}px 16px`, borderTop: `1px solid ${t.hairlineModule}`, minWidth: 0 };
+  /* Prompt 24: on a phone the sections are spaced, not ruled. */
+  const block = { display: "flex", flexDirection: "column" as const, gap: GAP.column, padding: `14px ${inset}px 16px`, borderTop: phone ? 0 : `1px solid ${t.hairlineModule}`, minWidth: 0 };
 
   const merge = (from: ReferenceGroup, into: ReferenceGroup) => {
     const fromWords = props.linkedWords(`group:${from.id}`);
@@ -201,13 +207,33 @@ function ColoursBody(props: ColoursWindowProps) {
                 render: (grip) => (
                   <span data-colours-group={group.id} data-menu-open={menuOpen === group.id || undefined} style={{ display: "flex", alignItems: "center", gap: GAP.row, flexGrow: 1, minWidth: 0, alignSelf: "stretch", padding: "0 4px", borderRadius: 6, background: menuOpen === group.id ? t.tile : "transparent" }}>
                     {grip}
-                    <SquareSwatch colour={group.colour} size={14} />
-                    <span style={{ ...words(textStep.body, 500, group.name ? t.text : t.text2), ...ELLIPSIS }}>{groupName(group)}</span>
-                    <span style={{ ...COUNT, flexGrow: 1 }}>{group.colour}</span>
-                    <span style={{ ...words(textStep.meta, 400, t.label), flexShrink: 0 }}>
-                      {COLOURS_COPY.components(group.members.length)}
-                      {isLinked(`group:${group.id}`) ? ` · ${COLOURS_COPY.linked}` : ""}
-                    </span>
+                    {phone ? (
+                      /* Prompt 24: on a phone the group is a row that opens it: a 16 swatch (radius 4), the name 15/500, "3 components"
+                         13 Text 3 and a chevron. */
+                      <button type="button" data-testid="colours-group-open" onClick={() => props.onOpenGroup(group.id)} style={{ display: "flex", alignItems: "center", gap: 12, flexGrow: 1, minWidth: 0, minHeight: 52, padding: 0, border: 0, background: "transparent", color: t.text, textAlign: "left", cursor: "pointer" }}>
+                        <span aria-hidden="true" style={{ width: 16, height: 16, flexShrink: 0, borderRadius: 4, background: group.colour }} />
+                        <span style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
+                          <span style={{ ...words(15, 500, group.name ? t.text : t.text2), ...ELLIPSIS }}>{groupName(group)}</span>
+                          <span style={{ ...words(13, 400, t.label), ...ELLIPSIS }}>
+                            {COLOURS_COPY.components(group.members.length)}
+                            {isLinked(`group:${group.id}`) ? ` · ${COLOURS_COPY.linked}` : ""}
+                          </span>
+                        </span>
+                        <span aria-hidden="true" style={{ display: "inline-flex", color: t.label }}>
+                          <MobileIcon name="chevr" size={20} />
+                        </span>
+                      </button>
+                    ) : (
+                      <>
+                        <SquareSwatch colour={group.colour} size={14} />
+                        <span style={{ ...words(textStep.body, 500, group.name ? t.text : t.text2), ...ELLIPSIS }}>{groupName(group)}</span>
+                        <span style={{ ...COUNT, flexGrow: 1 }}>{group.colour}</span>
+                        <span style={{ ...words(textStep.meta, 400, t.label), flexShrink: 0 }}>
+                          {COLOURS_COPY.components(group.members.length)}
+                          {isLinked(`group:${group.id}`) ? ` · ${COLOURS_COPY.linked}` : ""}
+                        </span>
+                      </>
+                    )}
                     <GroupMenu
                       group={group}
                       others={groups.filter((other) => other.id !== group.id)}
@@ -269,8 +295,8 @@ function ColoursBody(props: ColoursWindowProps) {
           </div>
         </div>
       </ModalInset.Provider>
-      <div data-testid="colours-footer" style={footerStyle(phone)}>
-        <UndoRedo phone={phone} canUndo={history.canUndo} canRedo={history.canRedo} onUndo={history.onUndo} onRedo={history.onRedo} />
+      <div data-testid="colours-footer" style={phone ? { ...footerStyle(phone), ...rulesOff, margin: `12px -${PHONE_MARGIN}px 0`, padding: `12px ${PHONE_MARGIN}px calc(12px + env(safe-area-inset-bottom))`, background: t.surface } : footerStyle(phone)}>
+        {phone ? null : <UndoRedo phone={phone} canUndo={history.canUndo} canRedo={history.canRedo} onUndo={history.onUndo} onRedo={history.onRedo} />}
         {/* Synth 09: a ghost button; the danger is in the question it asks. */}
         <RecipeButton variant="ghost" phone={phone} data-testid="colours-clear" onClick={() => setConfirm({ kind: "clear" })}>
           {COLOURS_COPY.clear}
@@ -324,7 +350,7 @@ function ColoursBody(props: ColoursWindowProps) {
 export function ColoursWindow(props: ColoursWindowProps) {
   const { open, onClose } = props;
   return (
-    <ModalShell open={open} onOpenChange={(next) => !next && onClose()} title={COLOURS_COPY.title} subtitle={COLOURS_COPY.subtitle} width={MODAL_WIDTH.standard} testId="colours-window">
+    <ModalShell open={open} onOpenChange={(next) => !next && onClose()} title={COLOURS_COPY.title} subtitle={COLOURS_COPY.subtitle} width={MODAL_WIDTH.standard} testId="colours-window" phoneHeight="half">
       <ColoursBody {...props} />
     </ModalShell>
   );

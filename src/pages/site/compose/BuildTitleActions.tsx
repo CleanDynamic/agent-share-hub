@@ -11,6 +11,7 @@ import * as Menu from "@radix-ui/react-dropdown-menu";
 import { type ButtonHTMLAttributes, type ReactNode } from "react";
 
 import { Glyph, type GlyphName } from "@/components/brand/Glyph";
+import { useHardwareKeyboard } from "@/components/shell/useMinWidth";
 import { HISTORY_COPY } from "@/lib/build/buildHistory";
 import { SHORTCUT_COPY, shortcutLabel } from "@/lib/build/shortcuts";
 import { CLEAR_COPY } from "@/lib/build/componentMenus";
@@ -83,6 +84,8 @@ export function BuildTitleActions({ phone = false, keys, only }: { phone?: boole
   const undoWhy = useReason(history && !history.canUndo ? HISTORY_COPY.nothingToUndo : undefined);
   const redoWhy = useReason(history && !history.canRedo ? HISTORY_COPY.nothingToRedo : undefined);
   const clearWhy = useReason(actions && actions.clear.counts.sessions + actions.clear.counts.tiles + actions.clear.counts.files + actions.clear.counts.parts === 0 ? CLEAR_COPY.nothing : undefined);
+  /* Prompt 24: on a phone the shortcuts are listed only once a hardware keyboard shows itself. */
+  const keyboard = useHardwareKeyboard();
   if (!history) return null;
   const empty = !actions || actions.clear.counts.sessions + actions.clear.counts.tiles + actions.clear.counts.files + actions.clear.counts.parts === 0;
   const history_ = only !== "more";
@@ -129,7 +132,7 @@ export function BuildTitleActions({ phone = false, keys, only }: { phone?: boole
                 </Menu.Item>
               ) : null}
               {keys?.shortcuts}
-              {phone ? null : (
+              {phone && !keyboard ? null : (
                 <Menu.Item data-testid="build-options-shortcuts" onSelect={actions.shortcuts.open} style={{ ...menuItem(true, phone), justifyContent: "space-between", gap: 12 }}>
                   <span>{SHORTCUT_COPY.item}</span>
                   <span aria-hidden="true" style={COUNT}>{shortcutLabel("help")}</span>

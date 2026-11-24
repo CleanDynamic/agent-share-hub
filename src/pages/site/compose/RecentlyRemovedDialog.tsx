@@ -9,6 +9,7 @@
 import { useEffect, useState } from "react";
 
 import { Glyph } from "@/components/brand/Glyph";
+import { MobileIcon } from "@/components/brand/MobileIcon";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { REMOVED_COPY, agoLine, type RemovedEntry } from "@/lib/build/removedLog";
 import { t } from "@/lib/theme/tokens";
@@ -30,27 +31,28 @@ export function RecentlyRemovedDialog({ open, entries, onRestore, onClose }: { o
     return () => window.clearInterval(timer);
   }, [open]);
   return (
-    <ModalShell open={open} onOpenChange={(next) => !next && onClose()} title={REMOVED_COPY.title} subtitle={REMOVED_COPY.subtitle} width={MODAL_WIDTH.standard} testId="recently-removed-window">
+    <ModalShell open={open} onOpenChange={(next) => !next && onClose()} title={REMOVED_COPY.title} subtitle={REMOVED_COPY.subtitle} width={MODAL_WIDTH.standard} testId="recently-removed-window" phoneHeight="content">
       <div style={bodyStyle(phone)}>
         {entries.length === 0 ? (
-          <p data-testid="removed-empty" style={{ ...LABEL, margin: 0, padding: "20px" }}>
+          <p data-testid="removed-empty" style={{ ...LABEL, margin: 0, padding: phone ? "12px 0" : "20px" }}>
             {REMOVED_COPY.empty}
           </p>
         ) : (
-          <ul aria-label={REMOVED_COPY.title} style={{ listStyle: "none", margin: 0, padding: "0 20px", display: "flex", flexDirection: "column", minWidth: 0 }}>
+          <ul aria-label={REMOVED_COPY.title} style={{ listStyle: "none", margin: 0, padding: phone ? 0 : "0 20px", display: "flex", flexDirection: "column", minWidth: 0 }}>
             {entries.map((entry, at) => (
               <li
                 key={entry.id}
                 data-testid="removed-row"
-                style={{ boxSizing: "border-box", height: phone ? 56 : 44, display: "flex", alignItems: "center", gap: 12, minWidth: 0, borderTop: at === 0 ? undefined : `1px solid ${t.hairline}` }}
+                style={{ boxSizing: "border-box", height: phone ? 56 : 44, display: "flex", alignItems: "center", gap: 12, minWidth: 0, borderTop: at === 0 || phone ? undefined : `1px solid ${t.hairline}` }}
               >
                 <Badge>{typeof entry.badge === "string" ? entry.badge : <Glyph name={entry.badge.glyph} size={size.iconSmall} />}</Badge>
                 <span style={{ ...ELLIPSIS, flexGrow: 1, display: "flex", alignItems: "baseline", gap: 0 }}>
-                  <span style={words(textStep.body, 500, t.text)}>{entry.name}</span>
-                  {entry.detail ? <span style={words(textStep.body, 400, t.text2)}>{` · ${entry.detail}`}</span> : null}
+                  <span style={words(phone ? 15 : textStep.body, 500, t.text)}>{entry.name}</span>
+                  {entry.detail ? <span style={words(phone ? 13 : textStep.body, 400, phone ? t.label : t.text2)}>{` · ${entry.detail}`}</span> : null}
                 </span>
-                <span style={{ ...words(textStep.meta, 400, t.text2), whiteSpace: "nowrap", flexShrink: 0 }}>{agoLine(entry.at, now)}</span>
+                <span style={{ ...words(textStep.meta, 400, phone ? t.label : t.text2), whiteSpace: "nowrap", flexShrink: 0 }}>{agoLine(entry.at, now)}</span>
                 <RecipeButton small={!phone} phone={phone} aria-label={`${REMOVED_COPY.restore} ${entry.name}`} data-testid="removed-restore" onClick={() => onRestore(entry.id)}>
+                  {phone ? <MobileIcon name="restore" size={16} /> : null}
                   {REMOVED_COPY.restore}
                 </RecipeButton>
               </li>

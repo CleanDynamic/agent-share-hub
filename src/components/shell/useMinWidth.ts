@@ -76,3 +76,28 @@ export function sideTrack(px: number): string {
 export function useTierFit<F extends string>(fit: F | undefined): F | "content" | undefined {
   return useWidthTier() === "full" ? fit : "content";
 }
+
+/* Prompt 24: whether a hardware keyboard is about, for the phone's Keyboard shortcuts item: a fine pointer, or a key pressed
+   with a modifier (Cmd, Ctrl, Alt) since the page loaded. */
+let keyboardSeen = false;
+const keyboardListeners = new Set<() => void>();
+function onModifierKey(event: KeyboardEvent) {
+  if (keyboardSeen || !(event.metaKey || event.ctrlKey || event.altKey)) return;
+  keyboardSeen = true;
+  keyboardListeners.forEach((notify) => notify());
+}
+function subscribeKeyboard(onChange: () => void) {
+  if (typeof window === "undefined") return () => {};
+  if (keyboardListeners.size === 0) window.addEventListener("keydown", onModifierKey, true);
+  keyboardListeners.add(onChange);
+  return () => {
+    keyboardListeners.delete(onChange);
+    if (keyboardListeners.size === 0) window.removeEventListener("keydown", onModifierKey, true);
+  };
+}
+
+export function useHardwareKeyboard(): boolean {
+  const fine = useMedia("(pointer: fine)", true);
+  const seen = useSyncExternalStore(subscribeKeyboard, () => keyboardSeen, () => false);
+  return fine || seen;
+}

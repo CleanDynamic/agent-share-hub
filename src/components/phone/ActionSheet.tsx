@@ -5,6 +5,7 @@
 import * as AlertDialog from "@radix-ui/react-alert-dialog";
 import type { ReactNode } from "react";
 
+import { useWindowFocus } from "@/lib/focus/windowFocus";
 import { PHONE_MARGIN, PHONE_SHEET_RADIUS } from "@/components/shell/chromeSize";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -19,16 +20,24 @@ export interface ActionSheetProps {
   action: { label: string; onSelect: () => void; danger?: boolean };
   /** Defaults to "Cancel". */
   cancelLabel?: string;
+  /** Prompt 24: more the sheet shows under the explanation (the public rows of "Publish <title>?"). */
+  children?: ReactNode;
+  "data-testid"?: string;
+  actionTestId?: string;
+  cancelTestId?: string;
 }
 
-export function ActionSheet({ open, onOpenChange, title, explanation, action, cancelLabel = "Cancel" }: ActionSheetProps) {
+export function ActionSheet({ open, onOpenChange, title, explanation, action, cancelLabel = "Cancel", children, actionTestId, cancelTestId, ...rest }: ActionSheetProps) {
+  /* Closed, focus goes back to what opened the sheet (Cancel still takes it as it opens). */
+  const focus = useWindowFocus(open);
   return (
     <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
       <AlertDialog.Portal>
         <AlertDialog.Overlay data-motion="scrim" style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 50 }} />
         <AlertDialog.Content
-          data-testid="action-sheet"
+          data-testid={rest["data-testid"] ?? "action-sheet"}
           data-motion="sheet"
+          onCloseAutoFocus={focus.onCloseAutoFocus}
           style={{
             position: "fixed",
             left: 0,
@@ -53,13 +62,14 @@ export function ActionSheet({ open, onOpenChange, title, explanation, action, ca
           ) : (
             <AlertDialog.Description style={{ display: "none" }}>{title}</AlertDialog.Description>
           )}
+          {children}
           <AlertDialog.Action asChild>
-            <BigButton full main={!action.danger} danger={action.danger} onClick={action.onSelect}>
+            <BigButton full main={!action.danger} danger={action.danger} data-testid={actionTestId} onClick={action.onSelect}>
               {action.label}
             </BigButton>
           </AlertDialog.Action>
           <AlertDialog.Cancel asChild>
-            <BigButton full>{cancelLabel}</BigButton>
+            <BigButton full data-testid={cancelTestId}>{cancelLabel}</BigButton>
           </AlertDialog.Cancel>
         </AlertDialog.Content>
       </AlertDialog.Portal>

@@ -24,6 +24,7 @@ import { DockView } from "@/components/shell/Dock";
 import { NewSheet } from "@/components/shell/NewSheet";
 import { useDesignTheme } from "@/dev/useDesignTheme";
 import { t } from "@/lib/theme/tokens";
+import { KitPhoneSheets } from "./KitPhoneSheets";
 import { FIGTREE } from "@/lib/theme/type";
 
 const names = Object.keys(MOBILE_ICONS) as MobileIconName[];
@@ -89,6 +90,7 @@ export default function KitPhone() {
         <BigButton full onClick={() => setAction(true)}>Open an action sheet</BigButton>
         <PhoneToast action={{ label: "Undo", onClick: () => undefined }}>Draft moved</PhoneToast>
       </section>
+      <KitPhoneSheets />
       <section data-catalogue="icons">
         <SectionFact fact={`${names.length} icons`} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, padding: "0 16px" }}>

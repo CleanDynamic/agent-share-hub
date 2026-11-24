@@ -41,6 +41,8 @@ import { LiveRegion, useAnnouncer } from "@/components/brand/LiveRegion";
 import { ModelTag } from "@/components/brand/ModelTag";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { useIsPhone } from "@/components/shell/useMinWidth";
+import { PHONE_SHEET_RADIUS } from "@/components/shell/chromeSize";
+import { SHEET_TOP_GAP as STEP_SHEET_TOP } from "@/components/phone/BottomSheet";
 import { ChangedText } from "@/components/build/ChangedText";
 import { CodeLines } from "@/components/code/CodeLines";
 import { SHAPE_HOW_LABEL, shapeFragment, type OutputShape } from "@/lib/build/answerShape";
@@ -204,7 +206,7 @@ function bodyFacts(props: FullPromptWindowProps, step: Step, prompts: readonly S
   });
   const goesInto = all.filter((candidate) => candidate.id !== step.id && candidate.uses.some((use) => use.kind === "output" && use.node_id === step.id));
   const before = uses.flatMap((use) => (use.paste ? [use.paste] : []));
-  return { previous, next, place, name, instructions, tool, model, line, uses, goesInto, before, group };
+  return { previous, next, place, name, instructions, tool, model, line, uses, goesInto, before, group, inSession, sessionTotal: sessionPrompts.length, sessionName: group && dated ? `Session ${group.number}` : null };
 }
 
 /* ── the refined look (UI-P94) ── */
@@ -518,6 +520,25 @@ function saving<H extends Record<string, unknown>>(handlers: H, mark: () => void
   return out as H;
 }
 
+/** Prompt 24: the step sheet's words on a phone. */
+export const STEP_SHEET_COPY = { back: "Back", next: "Next" } as const;
+/** Prompt 24: one segment per step in the session, 4 tall, 6 apart. */
+export const STEP_SEGMENT = { height: 4, gap: 6 } as const;
+
+/** The step sheet's progress on a phone: the segments (done and current in Mint, the rest Raised), then "Session 1 · 1 of 4". */
+function StepProgress({ at, total, where }: { at: number; total: number; where: string }) {
+  return (
+    <div data-testid="step-progress" style={{ display: "flex", flexDirection: "column", gap: 8, padding: "0 0 12px" }}>
+      <div aria-hidden="true" style={{ display: "flex", gap: STEP_SEGMENT.gap }}>
+        {Array.from({ length: total }, (_, index) => (
+          <span key={index} data-done={index < at ? "" : undefined} style={{ flex: "1 1 0", height: STEP_SEGMENT.height, borderRadius: STEP_SEGMENT.height / 2, background: index < at ? t.brandAccent : t.control }} />
+        ))}
+      </div>
+      <span style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", color: t.label }}>{`${where} · ${at} of ${total}`}</span>
+    </div>
+  );
+}
+
 function RefinedBody({ props: given, step, prompts, phone }: { props: FullPromptWindowProps; step: Step; prompts: readonly Step[]; phone: boolean }) {
   /* F30: every write (the title, the text, the reply, a change, the extras, the edits) marks the window saved. */
   const [saved, setSaved] = useState(false);
@@ -534,7 +555,7 @@ function RefinedBody({ props: given, step, prompts, phone }: { props: FullPrompt
   const existing = rangeAt(step.changes ?? [], picked ?? { start: -1, end: -1 });
   const markable = mode === "maker" && onChanges && !isInstructions(step) && picked !== null && (existing !== null || picked.end > picked.start);
   const textRef = useRef<HTMLDivElement>(null);
-  const { previous, next, place, name, instructions, tool, model, line, uses, goesInto, before, group } = bodyFacts(props, step, prompts);
+  const { previous, next, place, name, instructions, tool, model, line, uses, goesInto, before, group, inSession, sessionTotal, sessionName } = bodyFacts(props, step, prompts);
 
   // Opening puts focus on the text box.
   useEffect(() => {
@@ -570,14 +591,15 @@ function RefinedBody({ props: given, step, prompts, phone }: { props: FullPrompt
           </p>
         </div>
         <div style={HEADER_ICONS}>
-          {onNavigate ? <NavSquare glyph="larr" phone={phone} label={previous ? `${FULL_PROMPT_COPY.previous}: ${stepTitle(previous)}` : FULL_PROMPT_COPY.previous} disabled={!previous} onClick={() => previous && onNavigate(previous.id)} /> : null}
-          {onNavigate ? <NavSquare glyph="rarr" phone={phone} label={next ? `${FULL_PROMPT_COPY.next}: ${stepTitle(next)}` : FULL_PROMPT_COPY.next} disabled={!next} onClick={() => next && onNavigate(next.id)} /> : null}
+          {onNavigate && !phone ? <NavSquare glyph="larr" phone={phone} label={previous ? `${FULL_PROMPT_COPY.previous}: ${stepTitle(previous)}` : FULL_PROMPT_COPY.previous} disabled={!previous} onClick={() => previous && onNavigate(previous.id)} /> : null}
+          {onNavigate && !phone ? <NavSquare glyph="rarr" phone={phone} label={next ? `${FULL_PROMPT_COPY.next}: ${stepTitle(next)}` : FULL_PROMPT_COPY.next} disabled={!next} onClick={() => next && onNavigate(next.id)} /> : null}
           <Dialog.Close asChild>
             <IconSquare glyph="x" label="Close" phone={phone} />
           </Dialog.Close>
         </div>
       </div>
 
+      {phone && sessionTotal > 0 && inSession > 0 ? <StepProgress at={inSession} total={sessionTotal} where={sessionName ?? (step.kind === "prompt" ? "Prompt" : name)} /> : null}
       <ModalInset.Provider value={phone ? 0 : MODAL_PAD}>
         <div data-testid="modal-body" style={bodyStyle(phone)}>
           <Block noRule>
@@ -660,9 +682,21 @@ function RefinedBody({ props: given, step, prompts, phone }: { props: FullPrompt
         <span role="status" data-testid="prompt-saved" style={FOOT_NOTE_WORD}>
           {saved ? FULL_PROMPT_COPY.saved : null}
         </span>
-        <RecipeButton variant="primary" phone={phone} data-testid="prompt-close" aria-label={FULL_PROMPT_COPY.closeWindow} onClick={onClose}>
-          {FULL_PROMPT_COPY.close}
-        </RecipeButton>
+        {/* Prompt 24: on a phone Back and Next move between the steps without closing; the last step's main button is Done. */}
+        {phone && onNavigate ? (
+          <RecipeButton variant="ghost" phone data-testid="prompt-back" aria-label={previous ? `${FULL_PROMPT_COPY.previous}: ${stepTitle(previous)}` : FULL_PROMPT_COPY.previous} disabled={!previous} onClick={() => previous && onNavigate(previous.id)}>
+            {STEP_SHEET_COPY.back}
+          </RecipeButton>
+        ) : null}
+        {phone && onNavigate && next ? (
+          <RecipeButton variant="primary" phone data-testid="prompt-next" aria-label={`${FULL_PROMPT_COPY.next}: ${stepTitle(next)}`} onClick={() => onNavigate(next.id)}>
+            {STEP_SHEET_COPY.next}
+          </RecipeButton>
+        ) : (
+          <RecipeButton variant="primary" phone={phone} data-testid="prompt-close" aria-label={FULL_PROMPT_COPY.closeWindow} onClick={onClose}>
+            {FULL_PROMPT_COPY.close}
+          </RecipeButton>
+        )}
       </div>
       <span hidden data-testid="full-prompt-place">{place}</span>
     </div>
@@ -703,9 +737,11 @@ export function FullPromptWindow(props: FullPromptWindowProps) {
           onCloseAutoFocus={windowFocus.onCloseAutoFocus}
           onKeyDown={onKeyDown}
           data-look={"refined"}
+          data-motion={phone ? "sheet" : undefined}
           style={{
             ...(phone
-              ? { position: "fixed", zIndex: LAYER.promptWindow, inset: 0, boxSizing: "border-box", overflowY: "auto", padding: "16px 16px 0", background: t.window, color: t.text, fontFamily: FIGTREE }
+              ? /* Prompt 24: the step sheet, a full sheet (59 below the top) on Card, radius 16 at the top, sliding up. */
+                { position: "fixed", zIndex: LAYER.promptWindow, left: 0, right: 0, bottom: 0, top: STEP_SHEET_TOP, boxSizing: "border-box", overflowY: "auto", padding: "16px 16px 0", borderRadius: `${PHONE_SHEET_RADIUS}px ${PHONE_SHEET_RADIUS}px 0 0`, background: t.module, color: t.text, fontFamily: FIGTREE }
               : /* F38, Synth 09: the shared window placement, its top pinned at 48 (F25), so a section that opens moves nothing above it. */
                 windowPlacement(MODAL_WIDTH.wide, LAYER.promptWindow)),
           }}
