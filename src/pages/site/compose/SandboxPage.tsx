@@ -2823,7 +2823,7 @@ function SandboxPageBody() {
         }),
       },
       sources: {
-        sessions: sourceSessionRows.map((row) => ({ key: row.key, number: row.number, line: [row.title, row.detail].filter(Boolean).join(" / "), colour: normaliseHex(groups.find((entry) => groupKey(entry) === row.key)?.colour) })),
+        sessions: sourceSessionRows.map((row) => ({ key: row.key, number: row.number, line: [row.title, row.detail.split(" · ").at(-1)].filter(Boolean).join(" / "), colour: normaliseHex(groups.find((entry) => groupKey(entry) === row.key)?.colour) })),
         files: sourceFileRows.map((file) => ({ id: file.id, name: file.name, note: file.note })),
         onAddTo: (key: string) => {
           aimAt(key);

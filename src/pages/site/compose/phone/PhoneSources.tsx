@@ -3,6 +3,8 @@
    end of that session ("Add Session 1 at the end"). "Files in this build", each file. The computer's drop zone becomes two big
    buttons side by side: "Choose a file" (the native picker, the page's own) and "Import". */
 
+import { useEffect, useRef, useState, type ReactNode } from "react";
+
 import { MobileIcon } from "@/components/brand/MobileIcon";
 import { BigButton } from "@/components/phone/BigButton";
 import { PhoneBottomSheet } from "@/components/phone/BottomSheet";
@@ -14,6 +16,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
+import { useSourceDrag } from "../listNest";
 import { PHONE_EDITOR_COPY } from "./phoneEditorModel";
 
 export interface PhoneSourcesModel {
@@ -41,18 +44,56 @@ function Plus({ label, onClick }: { label: string; onClick: () => void }) {
   );
 }
 
+/**
+ * A session row as something to drag: a long press (the List's 250ms touch hold) picks it up, as the computer's grip does, and the
+ * List behind takes the drop. While it is held the sheet steps aside; when it lands the sheet closes. `+` and the row's controls
+ * keep their own presses.
+ */
+function DragRow({ id, onHeld, children }: { id: string; onHeld: (held: boolean) => void; children: ReactNode }) {
+  const drag = useSourceDrag("session", id);
+  const held = useRef(onHeld);
+  held.current = onHeld;
+  useEffect(() => {
+    held.current(drag.held);
+  }, [drag.held]);
+  if (!drag.on) return <>{children}</>;
+  const listeners = (drag.handle.listeners ?? {}) as Record<string, ((event: unknown) => void) | undefined>;
+  return (
+    <div
+      ref={(element) => {
+        drag.setRef(element);
+        drag.handle.setActivator(element);
+      }}
+      data-source-drag={drag.dragId}
+      onPointerDown={listeners.onPointerDown}
+      onTouchStart={listeners.onTouchStart}
+      style={{ WebkitTouchCallout: "none", userSelect: "none", ...(drag.held ? { opacity: 0.4 } : null) }}
+    >
+      {children}
+    </div>
+  );
+}
+
 const HEAD = { margin: 0, padding: `12px ${PHONE_MARGIN}px 4px`, fontFamily: FIGTREE, fontSize: 13, lineHeight: "16px", fontWeight: 400, color: t.label } as const;
 
 export function PhoneSources({ open, onOpenChange, model }: { open: boolean; onOpenChange: (open: boolean) => void; model: PhoneSourcesModel | null }) {
   const importLink = useInteractive<HTMLAnchorElement>();
+  /* A session picked up here: the sheet steps aside; once it is let go, the sheet closes on the List. */
+  const [dragging, setDragging] = useState(false);
+  const wasDragging = useRef(false);
+  useEffect(() => {
+    if (wasDragging.current && !dragging) onOpenChange(false);
+    wasDragging.current = dragging;
+  }, [dragging, onOpenChange]);
   return (
-    <PhoneBottomSheet open={open} onOpenChange={onOpenChange} title={PHONE_EDITOR_COPY.sources} height="half" data-testid="phone-sources">
+    <PhoneBottomSheet open={open} onOpenChange={onOpenChange} title={PHONE_EDITOR_COPY.sources} height="half" stepAside={dragging} data-testid="phone-sources">
       {model ? (
         <div style={{ display: "flex", flexDirection: "column", paddingBottom: 12 }}>
           <section aria-label={PHONE_EDITOR_COPY.sessionsIn}>
             <h3 style={HEAD}>{PHONE_EDITOR_COPY.sessionsIn}</h3>
             {model.sessions.length === 0 ? <p style={{ ...HEAD, paddingTop: 4, color: t.text2 }}>{PHONE_EDITOR_COPY.noSessions}</p> : null}
             {model.sessions.map((session) => (
+              <DragRow key={session.key} id={session.key} onHeld={(held) => setDragging((now) => (held ? true : now && false))}>
               <PhoneRow
                 key={session.key}
                 data-testid="phone-source-session"
@@ -72,6 +113,7 @@ export function PhoneSources({ open, onOpenChange, model }: { open: boolean; onO
                   ),
                 }}
               />
+              </DragRow>
             ))}
           </section>
           <section aria-label={PHONE_EDITOR_COPY.filesIn}>

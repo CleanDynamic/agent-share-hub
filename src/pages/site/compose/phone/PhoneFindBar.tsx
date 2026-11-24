@@ -4,6 +4,7 @@
    finds, how it moves and what it opens are the page's `useBuildFind`, unchanged. */
 
 import { useEffect, type CSSProperties, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 import { MobileIcon } from "@/components/brand/MobileIcon";
 import { PHONE_MARGIN, PHONE_TOPBAR } from "@/components/shell/chromeSize";
@@ -54,7 +55,8 @@ export function PhoneFindBar({ find }: { find: BuildFind }) {
     const frame = window.requestAnimationFrame(() => find.inputRef.current?.focus());
     return () => window.cancelAnimationFrame(frame);
   }, [find.inputRef]);
-  return (
+  /* A portal: the page's main column is a stacking context of its own, under the top bar this stands over. */
+  return createPortal(
     <div role="search" data-testid="phone-find-bar" style={BAR}>
       <div style={{ flex: "1 1 0", minWidth: 0, boxSizing: "border-box", height: 40, borderRadius: 20, background: t.module, boxShadow: `inset 0 0 0 2px ${t.brandAccent}`, display: "flex", alignItems: "center", gap: 8, padding: "0 8px 0 12px" }}>
         <span aria-hidden="true" style={{ color: t.label, display: "inline-flex" }}>
@@ -98,7 +100,8 @@ export function PhoneFindBar({ find }: { find: BuildFind }) {
       >
         {PHONE_EDITOR_COPY.cancel}
       </button>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

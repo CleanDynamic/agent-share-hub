@@ -13,6 +13,7 @@
    page's, the same handler the computer's control calls. */
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 
 import { MobileIcon } from "@/components/brand/MobileIcon";
@@ -30,6 +31,7 @@ import { CLEAR_COPY } from "@/lib/build/componentMenus";
 import { readyLine, type ChecklistItem } from "@/lib/build/publishChecklist";
 import { useRegisterPageBar, type MoreItem } from "@/components/shell/phoneBarRegistry";
 import { ring } from "@/lib/theme/controls";
+import { BASE, STANDARD, prefersReducedMotion } from "@/lib/theme/motion";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE, SENTIENT } from "@/lib/theme/type";
@@ -453,7 +455,8 @@ export function PhoneEditor(props: PhoneEditorProps) {
 
       <BottomSheet open={detailsOpen} onOpenChange={setDetailsOpen} title="Details">
         <ClickToEdit onEdit={props.onEditSelected ? () => { setDetailsOpen(false); props.onEditSelected?.(); } : undefined} phone>
-          {props.detailsBody}
+          {/* The 16 side margin of a phone; prompt 24 draws the step's sheet itself. */}
+          <div style={{ padding: `0 ${PHONE_MARGIN}px ${PHONE_MARGIN}px`, minWidth: 0 }}>{props.detailsBody}</div>
         </ClickToEdit>
       </BottomSheet>
 
@@ -593,6 +596,12 @@ function SaveSquareInline({ save }: { save: SaveState }) {
 /** Preview, full screen: the build page as a reader sees it, a close button at the top left and Publish in a sticky footer. */
 function PreviewScreen({ to, onClose, onPublish, published }: { to: string; onClose: () => void; onPublish: () => void; published: boolean }) {
   const close = useRef<HTMLButtonElement>(null);
+  const screenRef = useRef<HTMLDivElement>(null);
+  /* A pushed page: it enters from the right in BASE; with reduced motion it fades in over the same time. Transform and opacity only. */
+  useEffect(() => {
+    const reduced = prefersReducedMotion();
+    screenRef.current?.animate?.(reduced ? [{ opacity: 0 }, { opacity: 1 }] : [{ transform: "translateX(100%)" }, { transform: "translateX(0)" }], { duration: BASE, easing: STANDARD });
+  }, []);
   useEffect(() => {
     close.current?.focus();
     const onKey = (event: KeyboardEvent) => {
@@ -601,8 +610,9 @@ function PreviewScreen({ to, onClose, onPublish, published }: { to: string; onCl
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
-  return (
-    <div role="dialog" aria-modal="true" aria-label={PHONE_EDITOR_COPY.preview} data-testid="phone-preview" style={{ position: "fixed", inset: 0, zIndex: 60, background: t.bg, display: "flex", flexDirection: "column", animation: "none" }}>
+  /* A portal, over the top bar: the page's main column is a stacking context of its own. */
+  return createPortal(
+    <div ref={screenRef} role="dialog" aria-modal="true" aria-label={PHONE_EDITOR_COPY.preview} data-testid="phone-preview" style={{ position: "fixed", inset: 0, zIndex: 60, background: t.bg, display: "flex", flexDirection: "column" }}>
       <div style={{ boxSizing: "border-box", height: "calc(52px + env(safe-area-inset-top))", paddingTop: "env(safe-area-inset-top)", paddingInline: 4, display: "flex", alignItems: "center", background: t.bg }}>
         <button ref={close} type="button" aria-label={PHONE_EDITOR_COPY.closePreview} onClick={onClose} style={{ width: 44, height: 44, border: 0, borderRadius: 22, background: "transparent", color: t.text, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           <MobileIcon name="close" size={24} />
@@ -617,7 +627,8 @@ function PreviewScreen({ to, onClose, onPublish, published }: { to: string; onCl
           </BigButton>
         </div>
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }
 

@@ -43,7 +43,8 @@ import { useCrossfade } from "./buildMotion";
 import { size } from "@/lib/theme/space";
 import { iconButtonSide } from "./modalRecipes";
 
-import { textStep } from "@/lib/theme/type";
+import { DM_MONO, textStep } from "@/lib/theme/type";
+import { FAST, STANDARD, prefersReducedMotion } from "@/lib/theme/motion";
 import { EMPTY } from "@/lib/copy/copy";
 export const SESSION_HEAD_COPY = {
   titlePlaceholder: "Add a title",
@@ -183,7 +184,7 @@ function TitleField({ session, phone, onSave }: { session: SourceSession; phone:
     if (past) announce(SESSION_HEAD_COPY.typedPast(draft.length));
   }, [past, draft.length, announce]);
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0, flex: quiet ? "0 1 auto" : phone ? "1 1 100%" : "1 1 120px" }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0, flex: quiet ? "0 1 auto" : phone ? "1 1 0" : "1 1 120px" }}>
       <input
         ref={setField}
         type="text"
@@ -214,7 +215,8 @@ function TitleField({ session, phone, onSave }: { session: SourceSession; phone:
           textOverflow: "ellipsis",
           userSelect: "text",
           ...text(textStep.section, 400, t.text),
-          ...(phone ? { fontSize: textStep.section } : null),
+          /* Prompt 23: on a phone the title is Text 2, at 16 so iOS does not zoom into the field. */
+          ...(phone ? { fontSize: 16, color: t.text2 } : null),
         }}
       />
       {past ? (
@@ -225,6 +227,9 @@ function TitleField({ session, phone, onSave }: { session: SourceSession; phone:
     </span>
   );
 }
+
+/** Prompt 23: a session's date on a phone, mono 13 Text 3. */
+const PHONE_DATE = { fontFamily: DM_MONO, fontSize: 13, color: t.label } as const;
 
 /** The tile count and the date, in the head's quiet words. */
 /** CA-15b: the session line's facts, 12.5 `--label`. */
@@ -286,7 +291,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
       {maker ? (
           <TitleField session={session} phone={phone} onSave={(title) => ops?.onTitle(session.key, title)} />
         ) : session.title ? (
-          <span data-testid="session-title-text" {...fullText(session.title)} style={{ ...text(textStep.body, 400, t.text), ...TITLE_LINE, flex: "1 1 120px" }}>
+          <span data-testid="session-title-text" {...fullText(session.title)} style={{ ...text(textStep.body, 400, phone ? t.text2 : t.text), ...TITLE_LINE, flex: "1 1 120px" }}>
             <FindHit text={session.title} />
           </span>
         ) : (
@@ -298,7 +303,7 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
           </span>
         ) : null}
         {/* F50: the date at the right, at least 12 from what stands before it (the row's 8 and 4 more). */}
-        {session.date ? <span data-testid="session-date" style={{ ...quiet(t.label), marginLeft: "auto", paddingLeft: 4 }}>{session.date}</span> : null}
+        {session.date ? <span data-testid="session-date" style={{ ...quiet(t.label), marginLeft: "auto", paddingLeft: 4, ...(phone ? PHONE_DATE : null) }}>{session.date}</span> : null}
         {session.open ? (
           <span data-testid="session-open-request" {...fullText(session.open)} style={{ ...quiet(t.lit), ...TITLE_LINE, maxWidth: 240 }}>
             {SESSION_HEAD_COPY.requested}
@@ -375,9 +380,9 @@ export function SessionHead({ session, phone, tiles, collapsed, controls, onTogg
         }}
       >
         {drop.overForSession ? <span data-testid="session-drop-line" aria-hidden="true" style={{ position: "absolute", left: 0, right: 0, top: -6, height: 2, background: t.text2 }} /> : null}
-        <IconButton style={iconButtonSide(phone)}
+        <IconButton style={phone ? { ...iconButtonSide(phone), transform: collapsed ? "rotate(-90deg)" : "none", transition: prefersReducedMotion() ? "none" : `transform ${FAST}ms ${STANDARD}` } : iconButtonSide(phone)}
           icon={ChevronRight}
-          glyph={collapsed ? "chev" : "chevd"}
+          glyph={phone ? "chevd" : collapsed ? "chev" : "chevd"}
           boxed={false}
           size={30}
           data-hit=""
