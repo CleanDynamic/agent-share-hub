@@ -29,7 +29,6 @@ import { useColumnPanels } from "@/components/shell/frameChrome";
 import { HIDE_TRAVEL, useBarsHidden, useHideBarsOnScroll } from "@/components/shell/phoneBars";
 import { PageLink as Link } from "@/lib/routing/PageLink";
 import { move } from "@/lib/theme/motion";
-import { useNavigate } from "react-router-dom";
 import { ring, touchArea } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
@@ -71,6 +70,9 @@ export interface OpenBuildsFeedViewProps {
   onScope: (scope: FeedScope) => void;
   open: boolean;
   onOpen: (open: boolean) => void;
+  /** Prompt 21: the space pill chosen on a phone (`?space=`), and one move to a pill: All, Still open or a space. */
+  space?: string | null;
+  onShow?: (next: { open: boolean; space: string | null }) => void;
   onPost: () => void;
   onMakeSpace: () => void;
   /** Where Sign in goes and comes back to. */
@@ -252,7 +254,6 @@ function PhoneFeed({ view }: { view: OpenBuildsFeedViewProps }) {
   useColumnPanels(true);
   useHideBarsOnScroll(false);
   const hidden = useBarsHidden();
-  const navigate = useNavigate();
   const tabs: readonly { value: FeedScope; label: string }[] = [
     { value: "mine", label: "Your spaces" },
     { value: "everyone", label: "Everyone" },
@@ -264,10 +265,10 @@ function PhoneFeed({ view }: { view: OpenBuildsFeedViewProps }) {
     { value: "make", label: "Make a space" },
   ];
   const pick = (value: string) => {
-    if (value === "all") view.onOpen(false);
-    else if (value === "open") view.onOpen(true);
-    else if (value === "make") view.onMakeSpace();
-    else navigate(`/openbuilds/spaces/${value.slice("space:".length)}`);
+    if (value === "make") return view.onMakeSpace();
+    const next = value === "all" ? { open: false, space: null } : value === "open" ? { open: true, space: null } : { open: false, space: value.slice("space:".length) };
+    if (view.onShow) view.onShow(next);
+    else view.onOpen(next.open);
   };
   return (
     <div data-testid="home-view" data-layout="phone" style={{ fontFamily: FIGTREE, color: t.text, paddingBottom: "calc(72px + env(safe-area-inset-bottom))", margin: `0 -${PANEL_GUTTER}px` }}>
@@ -281,7 +282,7 @@ function PhoneFeed({ view }: { view: OpenBuildsFeedViewProps }) {
         <PageFailed reads={view.pageFailed} region="OpenBuilds" style={{ padding: 16 }} />
       ) : (
         <>
-          <PhonePills pills={pills} value={view.open ? "open" : "all"} onChange={pick} label="Show" />
+          <PhonePills pills={pills} value={view.space ? `space:${view.space}` : view.open ? "open" : "all"} onChange={pick} label="Show" />
           <Posts view={view} phone />
         </>
       )}

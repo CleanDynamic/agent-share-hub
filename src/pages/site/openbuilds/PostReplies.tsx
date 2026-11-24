@@ -10,6 +10,7 @@ import { Link } from "react-router-dom";
 
 import { Avatar } from "@/components/brand/Avatar";
 import { MobileIcon } from "@/components/brand/MobileIcon";
+import { PhoneNameLink } from "@/components/phone/PhoneNameLink";
 import type { MobileIconName } from "@/components/brand/mobileIcons";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { AttachmentView, PicturesBlock } from "@/components/post/PostCard";
@@ -169,7 +170,11 @@ export function ReplyAnatomy({ reply, children, phone = false }: { reply: ReplyI
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, minHeight: phone ? 20 : 24 }}>
           {/* Prompt 21: on a phone the name and the age share one line, cut with an ellipsis. */}
           <div style={{ flex: "1 1 auto", minWidth: 0, display: "flex", flexWrap: phone ? "nowrap" : "wrap", alignItems: "center", columnGap: phone ? 4 : 6, rowGap: 4 }}>
-            <span style={{ ...plain, fontSize: 15, fontWeight: 600, lineHeight: "20px", ...(phone ? { flex: "0 0 auto", maxWidth: "70%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } : null) }}>{reply.author.name}</span>
+            {phone ? (
+              <PhoneNameLink handle={reply.author.handle}>{reply.author.name}</PhoneNameLink>
+            ) : (
+              <span style={{ ...plain, fontSize: 15, fontWeight: 600, lineHeight: "20px" }}>{reply.author.name}</span>
+            )}
             <span style={{ ...plain, fontSize: 15, lineHeight: "20px", color: t.label, ...(phone ? { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } : null) }}>{meta}</span>
             {reply.about ? (
               <>

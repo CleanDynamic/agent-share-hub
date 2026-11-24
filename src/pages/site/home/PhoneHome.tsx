@@ -17,6 +17,7 @@ import { readOf } from "@/components/pagestate/pageStateModel";
 import { FeedPost } from "@/components/gallery/FeedPost";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import { useThreadRest } from "@/components/gallery/useThreadRest";
+import { PhoneNameLink } from "@/components/phone/PhoneNameLink";
 import { PhoneRow } from "@/components/phone/PhoneRow";
 import { PhoneTabs } from "@/components/phone/PhoneTabs";
 import { PostCard } from "@/components/post/PostCard";
@@ -324,7 +325,7 @@ function RebuildPost({ item, srcByPath, now, onNear }: { item: HomeRebuildPost; 
         <Avatar size={40} userId={item.maker.id} name={item.maker.name} hue={item.maker.hue} src={item.maker.avatarUrl} />
         <div style={{ minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4, minHeight: 20, marginBottom: 4, whiteSpace: "nowrap", minWidth: 0 }}>
-            <span style={{ fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, lineHeight: "20px", color: t.text, overflow: "hidden", textOverflow: "ellipsis", flex: "0 0 auto", maxWidth: "70%" }}>{item.maker.name}</span>
+            <PhoneNameLink handle={item.maker.handle}>{item.maker.name}</PhoneNameLink>
             <span style={{ fontFamily: FIGTREE, fontSize: 15, lineHeight: "20px", color: t.label, overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{line}</span>
             <span style={{ flex: 1 }} />
             <MoreDots onPress={() => setMore(true)} />

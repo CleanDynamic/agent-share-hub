@@ -81,3 +81,53 @@ test.describe("phone checks at 390", () => {
     await expect(busy).toBeHidden();
   });
 });
+
+test.describe("keyboard and name links at 390", () => {
+  test.beforeEach(async ({ page }) => {
+    await installPhoneStub(page);
+    // A visual viewport the test can shrink the way a soft keyboard does: `__keyboard(px)` covers that many pixels.
+    await page.addInitScript(() => {
+      const target = new EventTarget();
+      const fake = Object.assign(target, { height: window.innerHeight, width: window.innerWidth, offsetTop: 0, offsetLeft: 0, scale: 1 });
+      Object.defineProperty(window, "visualViewport", { value: fake, configurable: true });
+      (window as unknown as { __keyboard: (px: number) => void }).__keyboard = (px) => {
+        fake.height = window.innerHeight - px;
+        target.dispatchEvent(new Event("resize"));
+      };
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+  });
+
+  test("the reply bar rides above the keyboard and returns when it closes", async ({ page }) => {
+    await page.goto("/openbuilds/topics/t-open");
+    const bar = page.getByTestId("reply-box");
+    await expect(bar).toBeVisible();
+    const rest = await bar.boundingBox();
+    expect(Math.round((rest?.y ?? 0) + (rest?.height ?? 0))).toBe(844);
+    await page.evaluate(() => (window as unknown as { __keyboard: (px: number) => void }).__keyboard(300));
+    await expect.poll(async () => Math.round(((await bar.boundingBox())?.y ?? 0) + ((await bar.boundingBox())?.height ?? 0))).toBe(844 - 300);
+    await page.evaluate(() => (window as unknown as { __keyboard: (px: number) => void }).__keyboard(0));
+    await expect.poll(async () => Math.round(((await bar.boundingBox())?.y ?? 0) + ((await bar.boundingBox())?.height ?? 0))).toBe(844);
+  });
+
+  test("the last reply scrolls clear of the bar", async ({ page }) => {
+    await page.goto("/openbuilds/topics/t-open");
+    const last = page.getByTestId("reply").last();
+    await expect(last).toBeVisible();
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await expect
+      .poll(async () => {
+        const bar = await page.getByTestId("reply-box").boundingBox();
+        const box = await last.boundingBox();
+        return (bar?.y ?? 0) - ((box?.y ?? 0) + (box?.height ?? 0));
+      })
+      .toBeGreaterThanOrEqual(0);
+  });
+
+  test("author names in topic cards and replies are links with a 44 tall hit area", async ({ page }) => {
+    await page.goto("/openbuilds/topics/t-open");
+    const names = page.getByTestId("phone-author-name");
+    await expect(names.first()).toBeVisible();
+    for (const box of await Promise.all((await names.all()).map((n) => n.boundingBox()))) expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+  });
+});
