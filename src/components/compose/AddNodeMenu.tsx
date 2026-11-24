@@ -146,7 +146,7 @@ export function AddNodeMenu({ nodeTypes, onAdd, disabled, levelLabel }: AddNodeM
                       width: 6,
                       height: 6,
                       borderRadius: r.chip,
-                      background: fill.color,
+                      background: categoryColour(category),
                       boxShadow: `0 0 0 3px ${fill.background}`,
                       flexShrink: 0,
                     }}

@@ -98,12 +98,11 @@
 }
 
 /* ── Section label (trending, categories etc) ── */
+/* Synth 16: no label is set in capitals; 13/500 like every other label. */
 .ns-section-label {
   font-family: var(--font-ui);
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--text2);
   margin-bottom: 16px;
 }

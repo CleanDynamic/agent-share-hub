@@ -55,8 +55,8 @@ export const words = (px: number, weight: 400 | 500 | 600, color: string, line?:
 /** The data face at a size, in a colour. */
 export const data = (px: number, color: string): CSSProperties => ({ fontFamily: DM_MONO, fontSize: px, fontWeight: 400, lineHeight: "normal", color, fontVariantNumeric: "tabular-nums" });
 
-/** "REFERENCE GROUPS": the data face 11 in capitals, .04em apart, `--label`. */
-export const SECTION_LABEL: CSSProperties = { fontFamily: DM_MONO, fontSize: textStep.meta, fontWeight: 400, lineHeight: "normal", color: t.label, textTransform: "none", letterSpacing: "0.04em" };
+/** "Reference groups": 13 in Text 3 (Synth 16: mono is for numbers only, and no label is set in capitals). */
+export const SECTION_LABEL: CSSProperties = { fontFamily: FIGTREE, fontSize: textStep.meta, fontWeight: 400, lineHeight: "normal", color: t.label };
 
 /** The danger words: `--breakage`. */
 export const DANGER = t.breakage;

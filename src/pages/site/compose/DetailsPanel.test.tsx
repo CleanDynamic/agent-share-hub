@@ -143,7 +143,7 @@ describe("the sections", () => {
     panel();
     const prose = screen.getAllByTestId("details-prose");
     expect(prose[0].textContent).toContain("The menu grid overflows on a phone.");
-    expect(prose[0].style.lineHeight).toBe("21px");
+    expect(prose[0].style.lineHeight).toBe("23px"); // Synth 06: prose at 15 on 23
     expect(prose[1].textContent).toBe("Done. The grid is one column below 600px.");
   });
 

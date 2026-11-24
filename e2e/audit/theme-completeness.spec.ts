@@ -34,6 +34,7 @@ import { DEGRADED, ROUTES, THEMES, inOwnRoom, openRoute } from "./support/harnes
 import { collectColours } from "./support/probe";
 import { writeCsv, writeText } from "./support/report";
 import { dusk, noon, TOKEN_NAMES } from "../../src/lib/theme/semantics";
+import { PICTURE_SHADE } from "../../src/components/post/media/shade";
 
 test.describe.configure({ mode: "serial" });
 
@@ -75,6 +76,11 @@ function paletteOf(theme: Record<string, string>) {
      the same in both rooms, so it can never be "the other room's only". Before UI-P99 the current look's shadow
      tokens carried it in both palettes; the refined ones carry it in Noon alone. */
   rgbOnly.add("0,0,0");
+  /* Synth 16: the picture controls' shade (shade.ts, CA-07) is the same in both rooms by rule (RULES §2: values identical
+     in both themes that sit on artwork). Dusk's --media-tag happens to share its channels, which made the ALT tag on a
+     Noon picture read as "Dusk's paint"; it is neither room's, so it belongs to both. */
+  const shade = normalise(PICTURE_SHADE);
+  if (shade) rgbOnly.add(shade.split(",").slice(0, 3).join(","));
   return { exact, rgbOnly };
 }
 

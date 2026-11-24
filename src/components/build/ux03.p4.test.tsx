@@ -1,4 +1,4 @@
-// UX-03 P4: the build page's Classification in two groups, by provenance, and nothing empty for a reader.
+// UX-03 P4: the build page's Classification: provenance named on each value, and nothing empty for a reader.
 
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -25,34 +25,31 @@ const draw = (classification: Classification, maker?: { editHref: string }) =>
 
 const group = (name: string) => screen.queryByRole("group", { name });
 
-describe("UX-03 P4: two groups by provenance", () => {
-  it("shows a reader with only derived values one group and no Not stated", () => {
+/* UX-03 follow-up P17 replaced the two provenance groups with one list of rows: a derived value names its provenance itself
+   ("Derived from the build", as its group's name and tooltip) and a stated value carries nothing. The three claims stay. */
+const derivedValues = () => screen.queryAllByRole("group").filter((node) => (node.getAttribute("aria-label") ?? "").endsWith("Derived from the build"));
+const row = (facet: string) => screen.getByRole("region", { name: "Classification" }).querySelector(`[data-facet='${facet}']`)?.closest('[data-ui="row"]') as HTMLElement | null;
+
+describe("UX-03 P4: provenance, on each value", () => {
+  it("shows a reader with only derived values those values as derived, and no Not stated", () => {
     draw(DERIVED_ONLY);
-    const derived = group("Derived from the build");
-    expect(derived).not.toBeNull();
-    expect(group("Stated by the maker")).toBeNull();
+    expect(derivedValues().length).toBeGreaterThan(0);
     expect(screen.getByRole("region", { name: "Classification" }).textContent).not.toContain("Not stated");
-    expect(within(derived as HTMLElement).getByText("What was built")).toBeTruthy();
-    expect(within(derived as HTMLElement).getByText("Techniques")).toBeTruthy();
+    expect(row("built")).not.toBeNull();
   });
 
-  it("puts each value under its provenance, the maker's first", () => {
+  it("names a derived value's provenance and leaves a stated one plain", () => {
     draw(BOTH);
-    const stated = group("Stated by the maker") as HTMLElement;
-    const derived = group("Derived from the build") as HTMLElement;
-    expect(within(stated).getByText("Hybrid search")).toBeTruthy();
-    expect(within(derived).getByText("Web app")).toBeTruthy();
-    expect(stated.compareDocumentPosition(derived) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    // A facet is its label above its values, in a grid of four columns on a desktop.
-    expect((stated.querySelector("[data-testid='classification-grid']") as HTMLElement).style.gridTemplateColumns).toBe("repeat(4, minmax(0, 1fr))");
+    expect(within(row("field") as HTMLElement).getByText("Hybrid search")).toBeTruthy();
+    expect(within(row("field") as HTMLElement).queryByRole("group")).toBeNull();
+    expect(within(row("built") as HTMLElement).getByRole("group").getAttribute("title")).toBe("Derived from the build");
   });
 
   it("shows the maker, on their own build, Not stated for each empty facet they set, and where to fill it", () => {
     draw(DERIVED_ONLY, { editHref: "/compose/b1" });
-    const stated = group("Stated by the maker") as HTMLElement;
     for (const facet of ["field", "task", "setting", "data", "age"]) {
-      expect((stated.querySelector(`[data-facet='${facet}']`) as HTMLElement).textContent).toContain("Not stated");
+      expect((row(facet) as HTMLElement).textContent).toContain("Not stated");
     }
-    expect(within(stated).getByRole("link", { name: "Open Classification" }).getAttribute("href")).toBe("/compose/b1");
+    expect(screen.getByTestId("classification-open").getAttribute("href")).toBe("/compose/b1");
   });
 });

@@ -24,6 +24,7 @@ const authState: { isLoggedIn: boolean; profile: unknown; user: unknown; signOut
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => authState }));
 
 vi.mock("@/lib/build/gallery", () => ({
+  gallerySelect: () => "",
   listGallery: vi.fn(async () => ({
     builds: [
       { id: "b1", slug: "invoice-triage", title: "Invoice triage", outcome: "Sorts invoices" },
@@ -32,6 +33,9 @@ vi.mock("@/lib/build/gallery", () => ({
     total: 2,
   })),
 }));
+// Prompt 21: Search reads the busy spaces while the field is empty; these tests are about the results.
+vi.mock("@/lib/openbuilds", () => ({ listBusySpaces: vi.fn(async () => []), postKey: (...parts: unknown[]) => ["posts", ...parts] }));
+
 vi.mock("@/lib/search/phoneSearch", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/search/phoneSearch")>()),
   searchTopics: vi.fn(async () => ({ rows: [{ id: "t1", title: "How do I route invoices?", by: "@kit" }], total: 1 })),

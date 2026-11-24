@@ -49,6 +49,8 @@ describe("ThemeToggle", () => {
   });
 
   it("is one tab stop, with the checked option carrying it", () => {
+    // The pack's default is Dark (Synth 01); these start from Light.
+    window.localStorage.setItem(THEME_STORAGE_KEY, "noon");
     renderToggle();
     expect(option("Light").tabIndex).toBe(0);
     expect(option("Dark").tabIndex).toBe(-1);
@@ -60,6 +62,8 @@ describe("ThemeToggle", () => {
   });
 
   it("moves the selection with the arrow keys, and wraps", () => {
+    // The pack's default is Dark (Synth 01); these start from Light.
+    window.localStorage.setItem(THEME_STORAGE_KEY, "noon");
     renderToggle();
     fireEvent.keyDown(group(), { key: "ArrowRight" });
     expect(checked()).toBe("Dark");
@@ -109,6 +113,8 @@ describe("ThemeToggle", () => {
   });
 
   it("carries the ring along an arrow-key move", () => {
+    // The pack's default is Dark (Synth 01); these start from Light.
+    window.localStorage.setItem(THEME_STORAGE_KEY, "noon");
     renderToggle();
     act(() => option("Light").focus());
     fireEvent.keyDown(group(), { key: "ArrowRight" });

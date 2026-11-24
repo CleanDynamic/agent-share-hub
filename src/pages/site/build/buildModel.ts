@@ -384,6 +384,8 @@ export function formatFirstResult(minutes: number | null | undefined): string | 
 
 /** What the wall label prints when a fact is missing. */
 export const MISSING = "—";
+/** Synth 16: an event with no time draws no time (the em dash was on screen). */
+export const NO_TIME = "";
 
 const listText = (values: readonly (string | null)[] | null | undefined): string | null => {
   const kept = (values ?? []).map((value) => (value ?? "").trim()).filter(Boolean);
@@ -582,7 +584,7 @@ export function timelineFrom(events: readonly BuildEvent[]): { events: TimelineE
       const at = time(event.occurred_at);
       return {
         kind: event.kind as EventKind,
-        at: at !== null && start !== null ? clockLabel(at - start) : MISSING,
+        at: at !== null && start !== null ? clockLabel(at - start) : NO_TIME,
         text: eventText(event),
       };
     });
@@ -680,7 +682,7 @@ export function replayEvents(events: readonly BuildEvent[]): ReplayEventView[] {
       id: event.id,
       ordinal: event.ordinal,
       kind: (KINDS.has(event.kind) ? event.kind : "note") as EventKind,
-      at: at !== null && start !== null ? clockLabel(at - start) : MISSING,
+      at: at !== null && start !== null ? clockLabel(at - start) : NO_TIME,
       ...(event.occurred_at && shortDate(event.occurred_at) ? { when: `${shortDate(event.occurred_at)}, ${new Date(event.occurred_at).toISOString().slice(11, 16)}` } : null),
       text: eventText(event),
       phaseKey: run?.key ?? "none",

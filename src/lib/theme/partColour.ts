@@ -33,9 +33,17 @@ export function borderFor(hex: string): CSSProperties {
   return { borderColor: hex, borderWidth: "var(--maker-edge)", boxShadow: `inset 0 0 0 1px ${withAlpha(hex, 0.35)}` };
 }
 
-/** A coloured session: a 1px line round its head and its tiles, radius 12. */
+/** The maker colour's edge width on the Synth pack: 1.5px. */
+export const MAKER_EDGE = 1.5;
+
+/** A coloured session: a 1.5px line round its head and its tiles, radius 12. */
 export function outlineFor(hex: string): CSSProperties {
-  return { border: `1px solid ${hex}`, borderRadius: 12 };
+  return { border: `${MAKER_EDGE}px solid ${hex}`, borderRadius: 12 };
+}
+
+/** A coloured row in a list that draws no lines: a 1.5px edge in its colour along its top, drawn inside it. */
+export function topEdgeFor(hex: string): CSSProperties {
+  return { boxShadow: `inset 0 ${MAKER_EDGE}px 0 ${hex}` };
 }
 
 /** The weakest and strongest fill a coloured link takes, and how much stronger hover is. */

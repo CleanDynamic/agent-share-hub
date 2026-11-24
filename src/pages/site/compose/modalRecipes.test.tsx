@@ -37,21 +37,21 @@ const styleOf = (element: Element) => getComputedStyle(element as HTMLElement);
 const html = (node: ReactElement) => renderToStaticMarkup(node);
 
 describe("the modal recipes (CA-15b P1)", () => {
-  it("frame: the window recipe, radius 12, overflow hidden, at most the window less 80", () => {
+  it("frame: the window recipe, radius --r-window, no edge but the overlay shadow's, overflow hidden, at most the window less 80", () => {
     const frame = frameStyle(560);
-    expect(frame).toMatchObject({ width: 560, borderRadius: "var(--r-window)", background: t.window, border: `1px solid ${t.windowBorder}`, boxShadow: t.windowShadow, overflow: "hidden", maxHeight: "calc(100dvh - 80px)" });
+    expect(frame).toMatchObject({ width: 560, borderRadius: "var(--r-window)", background: t.window, border: 0, boxShadow: t.windowShadow, overflow: "hidden", maxHeight: "calc(100dvh - 80px)" });
     expect(frameStyle(640).width).toBe(640);
   });
 
-  it("icon button: 28 square, radius 7, the control recipe, a 16 glyph (S8)", () => {
+  it("icon button: 28 round, the Raised recipe, a 16 glyph (Synth 06)", () => {
     render(<IconSquare glyph="x" label="Close" />);
     const button = screen.getByRole("button", { name: "Close" });
-    expect(styleOf(button)).toMatchObject({ width: "32px", height: "32px", borderRadius: "var(--r-control)" }); // S6
+    expect(styleOf(button)).toMatchObject({ width: "28px", height: "28px", borderRadius: "var(--r-full)" });
     expect(html(<IconSquare glyph="x" label="Close" />)).toContain(`background:${t.control}`);
     expect(button.querySelector("svg")?.getAttribute("width")).toBe("16");
   });
 
-  it("row: a 148 label column, gap 16, padding 12 20 inside a modal, a rule above", () => {
+  it("row: a 148 label column, gap 16, padding 4 20 inside a modal, at least 48 tall, no rule (Synth 06)", () => {
     render(
       <ModalInset.Provider value={20}>
         <Row id="app" label="Application" phone={false}>
@@ -60,8 +60,8 @@ describe("the modal recipes (CA-15b P1)", () => {
       </ModalInset.Provider>,
     );
     const row = screen.getByTestId("field-row");
-    expect(styleOf(row)).toMatchObject({ gridTemplateColumns: "148px minmax(0, 1fr)", columnGap: "16px", padding: "12px 20px", alignItems: "center" });
-    expect(html(<Row id="a" label="A" phone={false}><span /></Row>)).toContain(`border-top:1px solid ${t.hairlineModule}`);
+    expect(styleOf(row)).toMatchObject({ gridTemplateColumns: "148px minmax(0, 1fr)", columnGap: "16px", padding: "4px 20px", minHeight: "48px", alignItems: "center" });
+    expect(html(<Row id="a" label="A" phone={false}><span /></Row>)).not.toContain("border-top");
     expect(screen.getByLabelText("Application")).toBeTruthy();
   });
 
@@ -82,7 +82,7 @@ describe("the modal recipes (CA-15b P1)", () => {
     expect(styleOf(screen.getByTestId("field-row")).gridTemplateColumns).toBe("minmax(0, 1fr)");
   });
 
-  it("block: padding 14 20 16 and a rule; its head is at least 28 tall with the count in the data face", () => {
+  it("block: padding 16 20 and no rule; its head is at least 28 tall with the count in the data face", () => {
     render(
       <ModalInset.Provider value={20}>
         <Block testId="block">
@@ -92,32 +92,32 @@ describe("the modal recipes (CA-15b P1)", () => {
     );
     const block = screen.getByTestId("block");
     expect(styleOf(block).padding).toBe("16px 20px"); // S31: space[4] top and bottom; the sides are the inset given
-    expect(html(<Block>x</Block>)).toContain(`border-top:1px solid ${t.hairlineModule}`);
+    expect(html(<Block>x</Block>)).not.toContain("border-top");
     const count = screen.getByTestId("count");
     expect(count.style.fontSize).toBe("13px");
     expect(html(<BlockHead label="Prompt" count="48 words" />)).toContain(`color:${t.label}`);
     expect((count.parentElement as HTMLElement).style.minHeight).toBe("28px");
   });
 
-  it("field: 32 tall, padding 0 10, radius 8, the well, 13px; a phone takes 44 and 16px", () => {
-    expect(fieldStyle(false)).toMatchObject({ height: 32, padding: "0 12px", borderRadius: "var(--r-control)", background: t.well, fontSize: 13 }); // S10
+  it("field: 40 tall, padding 0 14, radius --r-field, on the panel with the field edge, 15px; a phone takes 44 and 16px", () => {
+    expect(fieldStyle(false)).toMatchObject({ height: 40, padding: "0 14px", borderRadius: "var(--r-field)", background: t.surface, boxShadow: `inset 0 0 0 1px ${t.fieldEdge}`, fontSize: 15 });
     expect(fieldStyle(true)).toMatchObject({ height: 44, fontSize: 16 });
     render(<FieldInput phone={false} aria-label="Name" />);
     const input = screen.getByLabelText("Name");
-    expect(styleOf(input)).toMatchObject({ height: "32px", borderRadius: "var(--r-control)" });
+    expect(styleOf(input)).toMatchObject({ height: "40px", borderRadius: "var(--r-field)" });
     fireEvent.focus(input);
     expect(input.getAttribute("data-focused")).toBe("true");
-    expect(FIELD_FOCUS).toEqual({ borderColor: t.focusRing, outline: `1px solid ${t.focusRing}`, outlineOffset: 0 });
+    expect(FIELD_FOCUS).toEqual({ boxShadow: `inset 0 0 0 1px ${t.focusRing}`, outline: `1px solid ${t.focusRing}`, outlineOffset: 0 });
   });
 
-  it("text area: padding 9 10 on 20, as tall as its rows", () => {
-    expect(areaStyle(false, 5)).toMatchObject({ padding: "8px 12px", lineHeight: "20px", minHeight: 118, borderRadius: "var(--r-control)" }); // S12
+  it("text area: padding 8 12 on 20, as tall as its rows, radius --r-area", () => {
+    expect(areaStyle(false, 5)).toMatchObject({ padding: "8px 12px", lineHeight: "20px", minHeight: 118, borderRadius: "var(--r-area)" });
     render(<FieldArea phone={false} rows={5} aria-label="Prompt" />);
     expect(screen.getByLabelText("Prompt").getAttribute("rows")).toBe("5");
   });
 
-  it("picker field: the well, full width, the placeholder in --label", () => {
-    expect(pickerFieldStyle(false, {}, true)).toMatchObject({ width: "100%", height: 32, background: t.well, color: t.label, borderRadius: "var(--r-control)", textAlign: "left" }); // S14
+  it("picker field: the field recipe, full width, the placeholder in --label", () => {
+    expect(pickerFieldStyle(false, {}, true)).toMatchObject({ width: "100%", height: 32, background: t.surface, color: t.label, borderRadius: "var(--r-control)", textAlign: "left" });
     expect(pickerFieldStyle(false, {}, false).color).toBe(t.text);
   });
 
@@ -150,7 +150,7 @@ describe("the modal recipes (CA-15b P1)", () => {
     expect(styleOf(screen.getByRole("group", { name: "Usage" })).gridTemplateColumns).toBe("repeat(2, minmax(0, 1fr))");
   });
 
-  it("buttons: 32 tall, radius r.control, padded 0 12, small ones too (S1 to S4); a disabled primary is the control with --text-disabled words", () => {
+  it("buttons: 32 tall, rounded 16, padded 0 14, 13/600, small ones too; a disabled primary keeps its fill at half strength", () => {
     render(
       <>
         <RecipeButton>Cancel</RecipeButton>
@@ -160,12 +160,11 @@ describe("the modal recipes (CA-15b P1)", () => {
         </RecipeButton>
       </>,
     );
-    expect(styleOf(screen.getByRole("button", { name: "Cancel" }))).toMatchObject({ height: "32px", borderRadius: "var(--r-control)", padding: "0px 12px" });
-    expect(styleOf(screen.getByRole("button", { name: "Copy prompt" }))).toMatchObject({ height: "32px", padding: "0px 12px", fontSize: "12.5px" });
+    expect(styleOf(screen.getByRole("button", { name: "Cancel" }))).toMatchObject({ height: "32px", borderRadius: "16px", padding: "0px 14px" });
+    expect(styleOf(screen.getByRole("button", { name: "Copy prompt" }))).toMatchObject({ height: "32px", padding: "0px 14px", fontSize: "13px" });
     const add = screen.getByRole("button", { name: "Add" });
     const disabled = html(<RecipeButton variant="primary" disabled>Add</RecipeButton>);
-    expect(disabled).toContain(`background:${t.control}`);
-    expect(disabled).toContain(`color:${t.textDisabled}`);
+    expect(disabled).toContain("opacity:0.5");
     expect(add.hasAttribute("disabled")).toBe(true);
   });
 
@@ -183,8 +182,9 @@ describe("the modal recipes (CA-15b P1)", () => {
     expect(styleOf(screen.getByTestId("tag"))).toMatchObject({ height: "20px", padding: "0px 8px", borderRadius: "var(--r-chip)", fontSize: "13px" });
   });
 
-  it("footer: padding 14 20, a rule above, the footer fill", () => {
-    expect(footerStyle(false)).toMatchObject({ padding: "16px 24px", background: t.windowFoot, gap: 8, borderTop: `1px solid ${t.hairlineModule}` });
+  it("footer: padding 12 20 16, no rule, the footer fill", () => {
+    expect(footerStyle(false)).toMatchObject({ padding: "12px 20px 16px", background: t.windowFoot, gap: 8 });
+    expect(footerStyle(false).borderTop).toBeUndefined();
   });
 
   it("phone (CA-15b P4): the footer stays at the bottom of the sheet; fields and buttons are 44 tall at 16px", () => {

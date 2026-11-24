@@ -829,6 +829,7 @@ export const ROUTES: AuditRoute[] = [
         path: sandbox("ca22", "&bar=hide&history=1"),
         after: async (page: Page) => {
           // The dev page's own bar of buttons presses the pick, then comes off the page: it is not the page.
+          await page.waitForSelector('[data-testid="act-pick-two"]', { timeout: 20_000 });
           await page.evaluate(() => {
             (document.querySelector('[data-testid="act-pick-two"]') as HTMLElement).click();
             document.querySelector('[data-testid="motion-bar"]')?.remove();
@@ -924,4 +925,37 @@ export async function openRoute(
     .evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))))
     .catch(() => {});
   if (route.after) await route.after(page);
+  // A window that opens once its data arrives starts its rise-in late: wait until the page stops changing, then settle.
+  await settleDom(page);
+  await settleAnimations(page);
+}
+
+/** Synth 16: wait until the page's element count has held for a second (sampled every 500ms), at most 10s. */
+export async function settleDom(page: Page) {
+  let last = -1;
+  let steady = 0;
+  for (let at = 0; at < 20 && steady < 2; at += 1) {
+    const count = await page.evaluate(() => document.querySelectorAll("*").length).catch(() => -1);
+    steady = count === last ? steady + 1 : 0;
+    last = count;
+    await page.waitForTimeout(500);
+  }
+}
+
+/**
+ * Synth 16: wait for every finite animation on the page to finish (a window's rise-in, a panel's fade), at most 3s. A
+ * window that opens after its data arrives is still rising in at the 1.5s mark, and a probe that read it then measured
+ * text at 45% opacity that no reader is left looking at. Infinite animations (the dot fields, a spinner) are not waited on.
+ */
+export async function settleAnimations(page: Page) {
+  await page
+    .evaluate(async () => {
+      const deadline = new Promise((resolve) => setTimeout(resolve, 3000));
+      const finite = document.getAnimations().filter((animation) => {
+        const timing = animation.effect?.getComputedTiming();
+        return animation.playState === "running" && timing !== undefined && Number.isFinite(Number(timing.endTime));
+      });
+      await Promise.race([Promise.all(finite.map((animation) => animation.finished.catch(() => undefined))), deadline]);
+    })
+    .catch(() => {});
 }

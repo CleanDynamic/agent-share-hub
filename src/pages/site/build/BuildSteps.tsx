@@ -68,7 +68,7 @@ import { TypeChip } from "@/components/vision/TypeChip";
 import { SectionHead } from "@/components/vision/SectionHead";
 import { focusable } from "@/components/build/partNav";
 import { flashOutline } from "@/components/post/RefLinks";
-import { borderFor, outlineFor } from "@/lib/theme/partColour";
+import { borderFor, outlineFor, topEdgeFor } from "@/lib/theme/partColour";
 import { groupKey, groupKind, groupOfStep, shownGroups, type SessionGroup } from "@/lib/build/graph";
 import { parseRefTo, refTo } from "@/lib/build/thread";
 import type { Step } from "@/lib/build/graph";
@@ -297,19 +297,18 @@ const moduleStyle = (ringed: boolean): CSSProperties => ({
   ...(ringed ? { borderColor: t.selectedEdge, boxShadow: t.selectedRing } : null),
 });
 
-/** UX-03 follow-up P14: a step is a row in its session's module: a hairline above it and 14 above and below its content. */
+/** UX-03 follow-up P14: a step is a row in its session's module, 14 above and below its content. Synth 16: no hairline
+    between rows (shades, not lines); a step the maker coloured (or that a named group colours) keeps a 1.5px edge in its
+    colour along its top. On a phone a step is a Card instead (`phoneCardStyle`). */
 const rowStyle = (ringed: boolean, colour?: string, phone = false): CSSProperties => (phone ? phoneCardStyle(ringed, colour) : {
   display: "flex",
   flexDirection: "column",
   gap: 6,
   padding: "14px 0",
-  borderTop: `1px solid ${t.hairlineModule}`,
   boxSizing: "border-box",
   minWidth: 0,
   /* A step a chip or an address named is ringed for 1.2s. */
-  ...(ringed ? { boxShadow: t.selectedRing, borderRadius: 6 } : null),
-  /* A step the maker coloured (or that a named group colours) keeps it as the hairline above it. */
-  ...(colour && !ringed ? { borderTopColor: colour } : null),
+  ...(ringed ? { boxShadow: t.selectedRing, borderRadius: 6 } : colour ? topEdgeFor(colour) : null),
 });
 
 /** Prompt 22: on a phone a step is a Card (radius 12, padding 12 14, 6 between its parts), 8 below the one before. A step the
@@ -331,7 +330,7 @@ const phoneCardStyle = (ringed: boolean, colour?: string): CSSProperties => ({
 /** A session: one module (grammar 2), padded `16px 16px 4px` so the last row sits evenly. A coloured session's outline is its colour. */
 const sessionModuleStyle = (colour: string | undefined, phone = false): CSSProperties => (phone ? { display: "flex", flexDirection: "column", minWidth: 0 } : {
   background: t.module,
-  border: `1px solid ${colour ?? t.moduleBorder}`,
+  ...(colour ? outlineFor(colour) : { border: 0 }),
   borderRadius: 8,
   boxShadow: t.moduleShadow,
   padding: "16px 16px 4px",
@@ -950,7 +949,8 @@ interface Ctx {
 /** UX-03 P3's rules for the name under a head: a prompt's generated title ("Prompt 3") and a file's default name are not said again. */
 const showsTitle = (entry: ReaderStep): boolean => {
   if (!entry.title) return false;
-  const generated = entry.isDefaultTitle && entry.step.kind === "prompt" && entry.title === `Prompt ${entry.step.number}`;
+  /* UX-03 P3: a prompt the maker did not name is called by its step head; the title made from its text is not shown. */
+  const generated = entry.isDefaultTitle && entry.step.kind === "prompt";
   const fileName = entry.isDefaultTitle && entry.step.kind === "file";
   const generic = entry.isDefaultTitle && ["manual", "code", "check", "agent", "team"].includes(entry.step.kind);
   return !(generated || fileName || generic);
@@ -1601,7 +1601,7 @@ export function StepsList({ view, phone, announce, titled = false }: StepsListPr
         isContainer(entry) ? <ContainerCard key={entry.step.id} entry={entry} ctx={ctx} /> : <StepCard key={entry.step.id} entry={entry} ctx={ctx} />,
       );
     const body = run.groups.map((group, at) => {
-      if (at === 0 && chat && typeof group.head === "function") return group.entries.length === 0 ? <p key={group.key} style={{ ...text(13, 400, t.label), margin: 0, padding: "14px 0", borderTop: `1px solid ${t.hairlineModule}` }}>{EMPTY.steps}</p> : <div key={group.key} style={column(0)}>{rows(group)}</div>;
+      if (at === 0 && chat && typeof group.head === "function") return group.entries.length === 0 ? <p key={group.key} style={{ ...text(13, 400, t.label), margin: 0, padding: "14px 0" }}>{NO_STEPS_COPY}</p> : <div key={group.key} style={column(0)}>{rows(group)}</div>;
       return (
         <div key={group.key} style={column(0)}>
           {typeof group.head === "function" ? group.head(null) : group.head}
@@ -1818,6 +1818,8 @@ function ListRow({ row }: { row: NeedRow }) {
     <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
       <span style={{ ...text(15, 600, t.text), lineHeight: "20px", overflowWrap: "anywhere" }}>{row.title}</span>
       {kindLine ? <span style={{ ...text(13, 400, t.label), lineHeight: "20px", overflowWrap: "anywhere" }}>{kindLine}</span> : null}
+      {/* CA-04 P5, kept by Synth 16: a tool connected by MCP says how ("MCP server · at a web address · sign in with ..."). */}
+      {row.extra ? <span data-testid="need-extra" style={{ ...text(13, 400, t.label), lineHeight: "20px", overflowWrap: "anywhere" }}>{row.extra}</span> : null}
     </span>
   );
   const frame: CSSProperties = { display: "flex", alignItems: "center", gap: 12, minWidth: 0, color: "inherit", textDecoration: "none" };

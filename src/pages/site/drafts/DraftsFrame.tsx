@@ -182,6 +182,9 @@ export function DraftsHead({ fact }: { fact: string | null }) {
 
 const panel: CSSProperties = { background: t.surface, borderRadius: PANEL_RADIUS, overflow: "clip", minWidth: 0, boxSizing: "border-box", padding: `${PANEL_PAD}px 0` };
 
+/** Mobile prompt 25: a phone draws no panel; the lists sit on the Page shade. */
+const PHONE_PANEL: CSSProperties = { background: "transparent", padding: 0 };
+
 /** A side section: its head (the fact, 20/600) and its rows. */
 export function SideSection({ label, head, children }: { label: string; head: ReactNode; children: ReactNode }) {
   return (
@@ -215,10 +218,11 @@ export function DraftsLayout({
   connectionsSection: ReactNode;
 }) {
   useColumnPanels(true);
-  const two = useMinWidth(TWO_PANELS_MIN);
+  const phone = useIsPhone();
+  const two = useMinWidth(TWO_PANELS_MIN) && !phone;
   const wide = useMinWidth(WIDE_SIDE_MIN);
   const side = (
-    <aside aria-label="Sessions and connections" style={{ ...panel, display: "flex", flexDirection: "column", gap: 24 }}>
+    <aside aria-label="Sessions and connections" style={{ ...panel, ...(phone ? PHONE_PANEL : null), display: "flex", flexDirection: "column", gap: 24 }}>
       {sessionsSection}
       {connectionsSection}
     </aside>
@@ -235,7 +239,7 @@ export function DraftsLayout({
         ...(two ? panelColumns("two", { between: !wide }) : { display: "flex", flexDirection: "column", gap: PANEL_GUTTER }),
       }}
     >
-      <section aria-label="Drafts" style={{ ...panel, paddingBottom: 24 }}>
+      <section aria-label="Drafts" style={{ ...panel, ...(phone ? PHONE_PANEL : null), paddingBottom: 24 }}>
         {head}
         {draftsSection}
       </section>

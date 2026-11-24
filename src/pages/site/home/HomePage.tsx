@@ -63,6 +63,7 @@ import {
   isHomeFeedRow,
   type HomeFeedRow,
   newerThan,
+  newAuthorsOf,
   readHomeSeen,
   shownItems,
   sinceSection,
@@ -180,6 +181,7 @@ export function HomePage() {
     }
   }, [feedQuery.isSuccess]);
   const newCount = revealed ? 0 : newerThan([...items, ...postEntries], seenAt);
+  const newAuthors = revealed ? [] : newAuthorsOf([...items, ...postEntries], seenAt);
   const shown = shownItems(items, seenAt, revealed);
   const shownPosts = shownItems(postEntries, seenAt, revealed);
 
@@ -470,6 +472,7 @@ export function HomePage() {
             retrying: feedFailed && feedQuery.isFetching,
           }}
           newCount={newCount}
+          newAuthors={newAuthors}
           onShowNew={() => setRevealed(true)}
           srcByPath={srcByPath}
           onPostsNear={onPostsNear}

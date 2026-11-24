@@ -1764,7 +1764,11 @@ function spacingNumbers(value: string): number[] {
    at a time, so it is tolerated here until each is done; new code takes a step. Remove it when the last page has moved. */
 const SPACE_LEGACY = [6];
 
-const SPACE_OK = new Set<number>([0, 1, ...SPACE_LEGACY, ...SPACE_REFINED]);
+/* Synth 16: the pack's own steps beside the refined scale. A pill and a small button are 0 14px (Synth 06), a Card 12px 14px
+   or 14px 16px, and a reading panel pads 28 (Synth 15). */
+const SPACE_SYNTH = [14, 28];
+
+const SPACE_OK = new Set<number>([0, 1, ...SPACE_LEGACY, ...SPACE_REFINED, ...SPACE_SYNTH]);
 
 function spacingFindings(code: string): Finding[] {
   const out: Finding[] = [];
@@ -1862,6 +1866,16 @@ function componentFindings(code: string, file: string): Finding[] {
  * excuses anything new.
  */
 export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `padding: "6px 10px",`,
+    why: "Synth 08: a step's titled text box row is Raised, radius 8, 6px 10px (the build page prompt).",
+  },
+  {
+    rule: "spacing 10 is not in SPACE_REFINED",
+    text: `const PHONE_REPLY_GAP: CSSProperties = { columnGap: "10px" };`,
+    why: "Prompt 21: a phone reply's 28 avatar and its text are 10 apart, so a reply to a reply indents 38 (the mobile pack's measure).",
+  },
   {
     rule: "spacing 3 is not in SPACE_REFINED",
     text: `gap: 3,`,
@@ -2647,7 +2661,9 @@ describe("the look rules, on snippets", () => {
 
   it("holds spacing to SPACE_REFINED, 0 and 1", () => {
     expect(rules("const s = { gap: 8, padding: \"4px 12px\", margin: 0, paddingTop: 1, rowGap: 16 };")).toEqual([]);
-    expect(rules("const s = { gap: 14 };")).toEqual(["spacing 14 is not in SPACE_REFINED"]);
+    expect(rules("const s = { gap: 13 };")).toEqual(["spacing 13 is not in SPACE_REFINED"]);
+    // Synth 16: the pack's own 14 and 28 are steps too.
+    expect(rules("const s = { gap: 14, padding: 28 };")).toEqual([]);
     expect(rules("const s = { padding: \"7px 10px\" };")).toEqual(["spacing 7, 10 is not in SPACE_REFINED"]);
     expect(rules("const s = { padding: phone ? 10 : 8 };")).toEqual(["spacing 10 is not in SPACE_REFINED"]);
     expect(rules("const s = { margin: \"-12px -4px\" };")).toEqual([]);

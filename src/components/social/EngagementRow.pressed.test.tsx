@@ -1,4 +1,4 @@
-// PT-02 — a pressed action sinks to the well: --well and a 1px --well-border, no opacity.
+// PT-02, Synth 04: a pressed action takes the Card fill (the pack's hover fill and press), no opacity.
 //
 // The interaction hook is held in the pressed and hovered state, and the paint is read from static markup
 // (src/test/tokenStyle.tsx), because jsdom drops token-valued styles.
@@ -39,21 +39,21 @@ const like = () => {
 };
 
 describe("an action's states", () => {
-  it("sinks to the well when pressed, with a 1px well border and no opacity", () => {
+  it("takes the Card fill when pressed, its border clear, and no opacity", () => {
     held.pressed = true;
     held.hovered = false;
     const style = like();
-    expect(style).toContain("background:var(--well)");
-    expect(style).toContain("border:1px solid var(--well-border)");
+    expect(style).toContain("background:var(--module)");
+    expect(style).toContain("border:1px solid transparent");
     expect(style).not.toContain("opacity");
   });
 
-  it("steps to --text on hover and changes nothing else", () => {
+  it("steps to --text and the Card fill on hover, and no opacity", () => {
     held.pressed = false;
     held.hovered = true;
     const style = like();
     expect(style).toContain("color:var(--text)");
-    expect(style).toContain("background:transparent");
+    expect(style).toContain("background:var(--module)");
     expect(style).not.toContain("opacity");
   });
 

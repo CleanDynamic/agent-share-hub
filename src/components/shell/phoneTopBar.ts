@@ -66,7 +66,11 @@ export function phoneBarFor(pathname: string): PhoneBarSpec {
   if (path === "/messages" || path.startsWith("/messages/")) return { left: "back", centre: title("Messages"), right: "settings" };
   if (path === "/search") return { left: "back", centre: title("Search"), right: "none" };
 
-  // Any other page (Connect, Import, legal, About): back, and the page's own name left to its heading.
+  // Import and Connect are tasks that end: close, and the page's name.
+  if (path === "/import") return { left: "close", centre: title("Import"), right: "none" };
+  if (path === "/connect") return { left: "close", centre: title("Connect a tool"), right: "none" };
+
+  // Any other page (legal, About): back, and the page's own name left to its heading.
   return { left: "back", centre: none, right: "none" };
 }
 
@@ -74,11 +78,22 @@ export function phoneBarFor(pathname: string): PhoneBarSpec {
  * Routes where a pinned footer or a full-screen task replaces the dock: the editor, Start a build, Rebuild, onboarding and the
  * sign-in screen (the dialog is opened by `?signin=` on any page). Messages replaces it with the composer's reply bar.
  */
+/**
+ * Prompt 21: a topic pins its own reply bar to the bottom, so the dock slides down and away on that route and comes back on
+ * leaving it. Unlike `dockHiddenFor` the dock stays mounted, so the move is a transform, not a pop.
+ */
+export function dockAwayFor(pathname: string): boolean {
+  const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname || "/";
+  return /^\/openbuilds\/topics\/[^/]+$/.test(path);
+}
+
 export function dockHiddenFor(pathname: string, search = ""): boolean {
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname || "/";
   if (new URLSearchParams(search).has("signin")) return true;
   if (path === SITE_NAV.create || path.startsWith("/compose") || path.startsWith("/rebuild/")) return true;
   if (path === "/onboarding" || path.startsWith("/onboarding/")) return true;
+  /* Connect pins its main action to the bottom edge, where the dock would sit. */
+  if (path === "/connect") return true;
   if (/^\/messages\/[^/]+$/.test(path)) return true;
   if (path === "/auth/callback" || path.startsWith("/oauth") || path.startsWith("/consent")) return true;
   return false;

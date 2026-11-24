@@ -7,6 +7,7 @@ import type { BuildEvent, ChangeLine, NodeTree, NodeType } from "@/lib/build";
 import {
   BUILD_TABS,
   MISSING,
+  NO_TIME,
   anatomySubtitle,
   breakageRows,
   buildTabs,
@@ -251,7 +252,7 @@ describe("the timeline", () => {
 
   it("does not clock a step that carries no time", () => {
     expect(timelineFrom([event(1, { kind: "prompt", payload: { text: "x" } })])).toEqual({
-      events: [{ kind: "prompt", at: MISSING, text: "x" }],
+      events: [{ kind: "prompt", at: NO_TIME, text: "x" }],
       duration: null,
     });
   });

@@ -26,6 +26,13 @@ describe("phoneBarFor (prompt 19's table)", () => {
     expect(phoneBarFor(path)).toEqual({ left: "back", centre: title(name), right });
   });
 
+  it.each([
+    ["/import", "Import"],
+    ["/connect", "Connect a tool"],
+  ])("%s: close, %s, nothing", (path, name) => {
+    expect(phoneBarFor(path)).toEqual({ left: "close", centre: title(name), right: "none" });
+  });
+
   it("Followers and Following: back and the word (the page replaces it with the person's name)", () => {
     expect(phoneBarFor("/profile/ada/followers")).toMatchObject({ left: "back", centre: title("Followers"), right: "none" });
     expect(phoneBarFor("/profile/ada/following")).toMatchObject({ left: "back", centre: title("Following") });
@@ -69,7 +76,7 @@ describe("phoneBarFor (prompt 19's table)", () => {
 });
 
 describe("dockHiddenFor", () => {
-  it.each(["/compose/abc", "/compose/new", "/rebuild/x", "/onboarding", "/messages/t1", "/auth/callback"])("hides on %s", (path) => {
+  it.each(["/compose/abc", "/compose/new", "/rebuild/x", "/onboarding", "/messages/t1", "/auth/callback", "/connect"])("hides on %s", (path) => {
     expect(dockHiddenFor(path)).toBe(true);
   });
   it("hides while the sign-in dialog is open on any page", () => {

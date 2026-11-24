@@ -192,3 +192,28 @@ describe("NewPostWindow", () => {
     expect(document.body.textContent).not.toContain(String.fromCharCode(8212));
   });
 });
+
+describe("NewPostWindow on a phone (prompt 21)", () => {
+  beforeEach(() => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("max-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
+  });
+
+  it("is a full sheet with a 44 close button and Post in the footer, the box at 16px", async () => {
+    draw();
+    const sheet = await screen.findByTestId("new-post-window");
+    expect(sheet.getAttribute("data-height")).toBe("full");
+    expect(within(sheet).getByRole("button", { name: "Close New post" })).toBeTruthy();
+    expect(within(screen.getByTestId("sheet-footer")).getByRole("button", { name: "Post" })).toBeTruthy();
+    expect(screen.getByRole("textbox", { name: "Post" }).style.fontSize).toBe("16px");
+  });
+
+  it("closing with text asks first, and Discard closes", async () => {
+    const { onClose } = draw();
+    await screen.findByTestId("new-post-window");
+    fireEvent.change(screen.getByRole("textbox", { name: "Post" }), { target: { value: "Half a thought" } });
+    fireEvent.click(screen.getByRole("button", { name: "Close New post" }));
+    expect(onClose).not.toHaveBeenCalled();
+    fireEvent.click(await screen.findByRole("button", { name: "Discard" }));
+    expect(onClose).toHaveBeenCalled();
+  });
+});

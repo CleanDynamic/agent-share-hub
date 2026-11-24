@@ -249,7 +249,7 @@ describe("a team that checks itself (CA-03 P9)", () => {
     expect(shapeListProps("team-checks").names).toMatchObject({ "k-t1": "Gmail", "k-t2": "Google Sheets" });
   });
 
-  it("leaves the plaque's markup as it was without the check", async () => {
+  it("draws no plaque on the build page, with the check or without it", async () => {
     const { buildFixture } = await import("@/dev/fixtures/build");
     const { buildStepsFixture } = await import("@/dev/fixtures/buildSteps");
     const { BuildView } = await import("@/pages/site/build/BuildView");
@@ -264,8 +264,9 @@ describe("a team that checks itself (CA-03 P9)", () => {
       cleanup();
       return plaque;
     };
+    // Synth: the plaque is gone from the build page, with the check and without it.
     const without = plaqueWith([]);
-    expect(without).not.toBe("");
+    expect(without).toBe("");
     expect(plaqueWith([{ ...checkNode, uses: undefined, payload: { ...(checkNode.payload as object), uses: [] } } as NodeTree])).toBe(without);
   });
 });

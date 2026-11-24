@@ -24,7 +24,8 @@ import { FrameLink } from "./FrameLink";
 import { isActivityPath, SITE_NAV, sectionForPath } from "./siteNav";
 import { PHONE_DOCK } from "./chromeSize";
 import { NewSheet } from "./NewSheet";
-import { dockHiddenFor } from "./phoneTopBar";
+import { dockAwayFor, dockHiddenFor } from "./phoneTopBar";
+import { move } from "@/lib/theme/motion";
 
 export type DockTileName = "home" | "gallery" | "new" | "openbuilds" | "activity";
 
@@ -44,6 +45,8 @@ export interface DockViewProps {
   placement?: "fixed" | "absolute" | "static";
   /** New opens the New sheet. */
   onNew?: () => void;
+  /** Prompt 21: slid down out of sight (a topic's reply bar stands where it was). */
+  away?: boolean;
 }
 
 /* Prompt 19: the dock on the phone. Fixed to the bottom edge, full width, on Page: no glass, no blur, no lamp, no glow, no
@@ -85,13 +88,17 @@ function NewSlot({ onNew }: { onNew?: () => void }) {
   );
 }
 
-function RefinedDockView({ current, unread, placement = "fixed", onNew }: DockViewProps) {
+function RefinedDockView({ current, unread, placement = "fixed", onNew, away = false }: DockViewProps) {
   return (
     <nav
       data-testid="dock"
       data-ui="dock"
       aria-label="Primary"
+      aria-hidden={away || undefined}
+      ref={(node) => { node?.toggleAttribute("inert", away); }}
       style={{
+        transform: away ? "translateY(100%)" : "translateY(0)",
+        transition: move(),
         position: placement,
         left: 0,
         right: 0,
@@ -158,7 +165,7 @@ function DockContainer() {
   if (dockHiddenFor(pathname, search)) return null;
   return (
     <>
-      <DockView current={current} unread={count} placement={short ? "static" : "fixed"} onNew={() => setNewOpen(true)} />
+      <DockView current={current} unread={count} placement={short ? "static" : "fixed"} away={dockAwayFor(pathname)} onNew={() => setNewOpen(true)} />
       <NewSheet open={newOpen} onOpenChange={setNewOpen} />
     </>
   );

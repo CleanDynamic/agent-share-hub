@@ -137,21 +137,19 @@ export function AuthInput({
 
   const helperStyle = {
     fontFamily: FIGTREE,
-    fontSize: "11px",
+    fontSize: "13px",
     fontWeight: 400,
-    fontStyle: "italic" as const,
-    color: t.text2,
+    color: t.label,
     marginTop: "6px",
   };
 
-  /* Beneath the field, always — never only a toast. Breakage red is legal as
-     text on both grounds (≥4.83 Noon, ≥5.75 Dusk), which is what lets the
+  /* Beneath the field, always, never only a toast. `--danger-text` is the invalid field's edge too (Synth 16), so the
      message and the border share one token; a confirmation is `--evidence`, the
      token that means "it worked" everywhere else. */
   const validationMessageStyle = {
     ...fieldMessageStyle,
     marginTop: "6px",
-    color: validation?.state === "valid" ? t.evidence : t.catBreakage,
+    color: validation?.state === "valid" ? t.evidence : t.dangerText,
   };
 
   return (

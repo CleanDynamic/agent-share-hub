@@ -249,6 +249,7 @@ export const ALLOW: Record<string, Record<string, string>> = {
   // accessible name is "Join <space>", so to a screen reader it is never bare.
   "bare-join": {
     "src/pages/site/openbuilds/OpenBuildsFeedView.tsx|Join": "the row's small Join beside the space's name (Synth 11); named \"Join <space>\" for screen readers",
+    "src/pages/site/openbuilds/SpaceView.tsx|Join": "prompt 20 Part C: the phone space head's small Join; named \"Join <space>\" for screen readers",
   },
   "empty-stop": {
     "src/pages/site/profile/profileModel.ts|No streak yet": "a value in the streak stat line, beside \"12-day streak · best 31\"; not an empty state",

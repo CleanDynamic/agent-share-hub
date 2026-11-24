@@ -58,6 +58,8 @@ import { copyToClipboard } from "@/lib/deepLink";
 import { isPermissionError } from "@/lib/errors/permission";
 import { SocialError, likeBuild, saveBuild, unlikeBuild, unsaveBuild, type EngagementCounts } from "@/lib/social";
 import { Glyph, type GlyphName } from "@/components/brand/Glyph";
+import { MobileIcon } from "@/components/brand/MobileIcon";
+import type { MobileIconName } from "@/components/brand/mobileIcons";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { siteUrl } from "@/lib/site";
 import { ring } from "@/lib/theme/controls";
@@ -85,6 +87,17 @@ const BORDER = 1;
 /** Top and bottom padding plus border that makes an 18px icon a full target. */
 const padBlockOf = (phone: boolean, compact = false) => (hitOf(phone, compact) - (compact ? COMPACT_ICON_SIZE : ENGAGEMENT_ICON_SIZE)) / 2;
 
+/** The phone feed's row: spread evenly across the text column, nothing wrapping, the last button on the column's right edge. */
+const FEED_ROW: CSSProperties = { flexWrap: "nowrap", justifyContent: "space-between", maxWidth: "none", width: "100%", marginTop: 0 };
+
+/** The phone icon a glyph stands for, and its filled version while on. */
+const FEED_ICON: Record<string, [MobileIconName, MobileIconName]> = {
+  heart: ["heart", "heartf"],
+  comment: ["reply", "reply"],
+  rebuild: ["rebuild", "rebuild"],
+  save: ["save", "savef"],
+};
+
 /** Between an icon and its count. */
 const ICON_TO_COUNT = 4;
 
@@ -107,6 +120,8 @@ export interface EngagementRowProps {
   compact?: boolean;
   /** Layout for where the row stands (a width cap, spreading the actions), applied over the row's own. */
   style?: CSSProperties;
+  /** Prompt 20: the phone feed's row: 44 tall buttons spread across the text column, the phone icons at 20 in Text 3, counts in mono 13. */
+  phoneFeed?: boolean;
 }
 
 /** One build's share of its list's engagement: what a card or header passes on. */
@@ -114,7 +129,7 @@ export type RowEngagement = Pick<EngagementRowProps, "counts" | "liked" | "saved
 
 type Pending = { liked?: boolean; saved?: boolean; likes?: number };
 
-export function EngagementRow({ build, counts, liked, saved, variant, withRebuild = false, compact = false, style }: EngagementRowProps) {
+export function EngagementRow({ build, counts, liked, saved, variant, withRebuild = false, compact = false, style, phoneFeed = false }: EngagementRowProps) {
   const { isLoggedIn } = useAuth();
   const phone = useIsPhone();
   const navigate = useNavigate();
@@ -276,13 +291,14 @@ export function EngagementRow({ build, counts, liked, saved, variant, withRebuil
         flexWrap: compact ? "nowrap" : "wrap",
         // The first icon lines up with the text above it; its hit area reaches
         // into the padding instead.
-        marginInlineStart: compact ? 0 : -PAD_INLINE,
+        marginInlineStart: compact || phoneFeed ? 0 : -PAD_INLINE,
         ...(variant === "card" ? { marginTop: 6 } : null),
+        ...(phoneFeed ? FEED_ROW : null),
         ...style,
       }}
     >
       {actions.map(({ id, ...action }) => (
-        <Action key={id} phone={phone} compact={compact} {...action} />
+        <Action key={id} phone={phone} compact={compact} feed={phoneFeed} {...action} />
       ))}
     </div>
   );
@@ -302,9 +318,11 @@ export interface TopicEngagementRowProps {
   /** Absent: Save is not offered. */
   save?: { saved: boolean; onSave: () => void };
   style?: CSSProperties;
+  /** Prompt 20: the phone feed's row (see `EngagementRowProps.phoneFeed`). */
+  phoneFeed?: boolean;
 }
 
-export function TopicEngagementRow({ likes, liked, onLike, replies, onReply, save, style }: TopicEngagementRowProps) {
+export function TopicEngagementRow({ likes, liked, onLike, replies, onReply, save, style, phoneFeed = false }: TopicEngagementRowProps) {
   const phone = useIsPhone();
   const actions: ActionSpec[] = [
     { id: "like", label: liked ? "Unlike" : "Like", pressed: liked, count: likes, noun: ["like", "likes"], onPress: onLike, glyph: "heart" },
@@ -312,9 +330,9 @@ export function TopicEngagementRow({ likes, liked, onLike, replies, onReply, sav
     ...(save ? [{ id: "save", label: save.saved ? "Unsave" : "Save", pressed: save.saved, onPress: save.onSave, glyph: "save" as const }] : []),
   ];
   return (
-    <div data-testid="engagement-row" data-variant="topic" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", justifyContent: "space-between", maxWidth: 425, marginInlineStart: -PAD_INLINE, marginTop: 12, ...style }}>
+    <div data-testid="engagement-row" data-variant="topic" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", justifyContent: "space-between", maxWidth: 425, marginInlineStart: phoneFeed ? 0 : -PAD_INLINE, marginTop: 12, ...(phoneFeed ? FEED_ROW : null), ...style }}>
       {actions.map(({ id, ...action }) => (
-        <Action key={id} phone={phone} {...action} />
+        <Action key={id} phone={phone} feed={phoneFeed} {...action} />
       ))}
     </div>
   );
@@ -354,14 +372,14 @@ interface ActionSpec {
   noun?: readonly [string, string];
 }
 
-type ActionProps = Omit<ActionSpec, "id"> & { phone: boolean; compact?: boolean };
+type ActionProps = Omit<ActionSpec, "id"> & { phone: boolean; compact?: boolean; feed?: boolean };
 
 /** One tertiary action: the glyph, and its count where it has one. */
-function Action({ label, slot, glyph, onPress, href, pressed, count, noun, phone, compact = false }: ActionProps) {
+function Action({ label, slot, glyph, onPress, href, pressed, count, noun, phone, compact = false, feed = false }: ActionProps) {
   const { state, handlers } = useInteractive<HTMLButtonElement | HTMLAnchorElement>();
   const active = pressed === true;
   /* UX-03 Part 8's zero rule, in the compact foot: a count of nothing is not drawn. */
-  const hasCount = count !== undefined && !(compact && !count);
+  const hasCount = count !== undefined && !((compact || feed) && !count);
   const name = slot ?? label.toLowerCase();
   // UX-03 P8: a zero is not printed; a count above it is, and the name says it once ("Like, 2 likes").
   const shown = typeof count === "number" && count > 0 ? count : null;
@@ -387,7 +405,9 @@ function Action({ label, slot, glyph, onPress, href, pressed, count, noun, phone
     textDecoration: "none",
     transition: feedback("color", "background-color", "border-color"),
     ...ring(state.focusVisible),
+    ...(feed ? { minWidth: 44, minHeight: 44, padding: 0, background: "transparent", color: t.label, gap: 6 } : null),
   };
+  const [rest, filled] = FEED_ICON[glyph] ?? ["heart", "heartf"];
 
   const content = (
     <>
@@ -398,11 +418,11 @@ function Action({ label, slot, glyph, onPress, href, pressed, count, noun, phone
         style={{
           display: "inline-flex",
           flexShrink: 0,
-          color: active ? t.action : "currentColor",
+          color: active ? (feed ? (glyph === "heart" ? t.brandAccent : t.text) : t.action) : "currentColor",
           transition: feedback("color"),
         }}
       >
-        <Glyph name={glyph} size={compact ? COMPACT_ICON_SIZE : ENGAGEMENT_ICON_SIZE} fill={active ? "currentColor" : "none"} />
+        {feed ? <MobileIcon name={active ? filled : rest} size={20} /> : <Glyph name={glyph} size={compact ? COMPACT_ICON_SIZE : ENGAGEMENT_ICON_SIZE} fill={active ? "currentColor" : "none"} />}
       </span>
       {hasCount ? (
         // UX-03 P8: the slot keeps two digits' width whether it holds a number or not, so the row does not shift when a Like
@@ -416,7 +436,7 @@ function Action({ label, slot, glyph, onPress, href, pressed, count, noun, phone
             fontWeight: 400,
             lineHeight: 1.3,
             color: t.label,
-            minWidth: "2ch",
+            minWidth: feed ? undefined : "2ch",
             textAlign: "left",
             ...tabular,
           }}

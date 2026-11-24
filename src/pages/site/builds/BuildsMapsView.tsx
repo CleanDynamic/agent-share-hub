@@ -233,7 +233,7 @@ function PhoneWell({ drawing, note, words }: { drawing: MapDrawing | null; note?
       {drawing ? (
         <div aria-hidden="true" style={{ position: "relative", width: "100%", minWidth: w, height: h }}>
           {drawing.parts.map((part) => (
-            <span key={part.key} style={{ position: "absolute", left: pct(part.x, w), top: pct(part.y, h), fontFamily: DM_MONO, fontSize: 12, letterSpacing: ".04em", color: t.label, whiteSpace: "nowrap" }}>
+            <span key={part.key} style={{ position: "absolute", left: pct(part.x, w), top: pct(part.y, h), fontFamily: FIGTREE, fontSize: 13, color: t.label, whiteSpace: "nowrap" }}>
               {part.label}
             </span>
           ))}
@@ -245,7 +245,7 @@ function PhoneWell({ drawing, note, words }: { drawing: MapDrawing | null; note?
           {drawing.boxes.map((box) => (
             <span
               key={box.key}
-              style={{ position: "absolute", left: pct(box.x, w), top: pct(box.y, h), width: BOX_W, height: BOX_H, boxSizing: "border-box", padding: "0 8px", display: "flex", alignItems: "center", background: t.inset, borderRadius: 8, overflow: "hidden", whiteSpace: "nowrap", ...(box.colour ? { boxShadow: `inset 3px 0 0 ${box.colour}`, paddingLeft: 11 } : null), ...phoneText(12, 400, t.text) }}
+              style={{ position: "absolute", left: pct(box.x, w), top: pct(box.y, h), width: BOX_W, height: BOX_H, boxSizing: "border-box", padding: "0 8px", display: "flex", alignItems: "center", background: t.inset, borderRadius: 8, overflow: "hidden", whiteSpace: "nowrap", ...(box.colour ? { boxShadow: `inset 3px 0 0 ${box.colour}`, paddingLeft: 12 } : null), ...phoneText(12, 400, t.text) }}
             >
               <span style={{ ...ellipsis, display: "block" }}>{sessionWord(box.label)}</span>
             </span>

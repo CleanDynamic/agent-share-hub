@@ -65,7 +65,7 @@ describe("each modal as its board (CA-15b P2)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Image or video" }));
     header("Add a result", "Output of this prompt");
     const body = screen.getByTestId("modal-body").textContent ?? "";
-    expect(inOrder(body, ["Output type", "12 types", "Link", "Image or video", "File", "Model", "Text", "Audio", "Deployed app or website", "Data table", "Sent message", "Change in an external app", "Metric", "Offline outcome", "Images and videos", "0 files", "Drop images or videos", "Select files", "Optional", "1 field"])).toEqual([]);
+    expect(inOrder(body, ["Output type", "12 types", "Link", "Image or video", "File", "Model", "Text", "Audio", "Deployed app or website", "Data table", "Sent message", "Change in an external app", "Metric", "Offline outcome", "Images and videos", "0 files", "Drop images or videos", "Select files", "1 optional detail"])).toEqual([]);
     expect(optionalRows()).toEqual([["Caption", "One line"]]);
     footer("Required: Images and videos");
   });
@@ -74,12 +74,9 @@ describe("each modal as its board (CA-15b P2)", () => {
     mount(<AddToolDialog open onOpenChange={() => {}} onAdd={() => {}} />);
     header("Add a tool", "External app the model used");
     expect(screen.getByRole("button", { name: /(^|, )App$/ }).textContent).toBe("Select an app");
-    expect(inOrder(screen.getByTestId("modal-body").textContent ?? "", ["App", "Select an app", "Optional", "6 fields"])).toEqual([]);
+    expect(inOrder(screen.getByTestId("modal-body").textContent ?? "", ["App", "Select an app", "2 optional details"])).toEqual([]);
+    // Synth 09: Connection method, Actions performed, Permissions and Required plan are rows of their own.
     expect(optionalRows()).toEqual([
-      ["Connection method", "MCP server, native integration, custom code and 6 more"],
-      ["Actions performed", ""],
-      ["Permissions", "Read only, read and write, or acts as the maker"],
-      ["Required plan", "Free or plan name"],
       ["Setup steps", ""],
       ["Alternatives", "Apps that do the same job"],
     ]);
@@ -89,7 +86,7 @@ describe("each modal as its board (CA-15b P2)", () => {
   it("Add a check", () => {
     mount(<AddCheckDialog open onOpenChange={() => {}} onAdd={() => {}} />);
     header("Add a check", "Test of part of the build");
-    expect(inOrder(screen.getByTestId("modal-body").textContent ?? "", ["Test description", "0 / 280", "Pass criteria", "Runs", "passed out of", "Optional", "14 fields"])).toEqual([]);
+    expect(inOrder(screen.getByTestId("modal-body").textContent ?? "", ["Test description", "0 / 280", "Pass criteria", "Runs", "passed out of", "14 optional details"])).toEqual([]);
     expect(optionalRows()).toEqual([
       ["Test cases", "Input, expected output, actual output"],
       ["Failure notes", "What failed and what changed"],
@@ -113,7 +110,7 @@ describe("each modal as its board (CA-15b P2)", () => {
   it("Add code", () => {
     mount(<AddCodeDialog open onOpenChange={() => {}} onAdd={() => {}} seed={"const a = 1;\nconst b = 2;"} />);
     header("Add code", "Source code as used");
-    expect(inOrder(screen.getByTestId("modal-body").textContent ?? "", ["Code", "2 lines", "Upload files", "Each file becomes its own step", "Language", "Optional", "2 fields"])).toEqual([]);
+    expect(inOrder(screen.getByTestId("modal-body").textContent ?? "", ["Code", "2 lines", "Upload files", "Each file becomes its own step", "Language", "2 optional details"])).toEqual([]);
     // The language field shows the language's name, guessed from the code until it is chosen.
     expect(screen.getByRole("button", { name: "Language" }).textContent).toMatch(/^(TypeScript|JavaScript)$/);
     expect(optionalRows()).toEqual([
@@ -127,7 +124,7 @@ describe("each modal as its board (CA-15b P2)", () => {
     mount(<AddAgentDialog open onOpenChange={() => {}} onAdd={() => {}} nextNumber={4} teamsAvailable />);
     header("Add an agent", "Autonomous model with instructions and tools");
     expect(within(screen.getByRole("radiogroup", { name: "Type" })).getAllByRole("radio").map((radio) => radio.textContent)).toEqual(["Single agent", "Multi-agent team"]);
-    expect(inOrder(screen.getByTestId("modal-body").textContent ?? "", ["Name", "Models", "Primary", "Optional", "9 fields"])).toEqual([]);
+    expect(inOrder(screen.getByTestId("modal-body").textContent ?? "", ["Name", "Models", "Primary", "9 optional details"])).toEqual([]);
     expect(optionalRows()).toEqual([
       ["System instructions", ""],
       ["Available tools", "Apps the agent can call"],
@@ -149,7 +146,7 @@ describe("each modal as its board (CA-15b P2)", () => {
     mount(<AddDecisionDialog open onOpenChange={() => {}} onAdd={() => {}} codeTiles={[]} stepChoices={[]} />);
     header("Add a decision", "Structured answer from a model");
     expect(
-      inOrder(screen.getByTestId("modal-body").textContent ?? "", ["Model", "Model or service", "Version", "Invocation", "Direct", "Through an adapter", "Questions", "1 question", "Question 1", "Key", "Type", "Single choice", "Multiple choice", "Score", "Ranking", "Yes or no", "Extraction", "Instructions", "Options", "Add an option", "Add a question", "Optional", "13 fields"]),
+      inOrder(screen.getByTestId("modal-body").textContent ?? "", ["Model", "Model or service", "Version", "Invocation", "Direct", "Through an adapter", "Questions", "1 question", "Question 1", "Key", "Type", "Single choice", "Multiple choice", "Score", "Ranking", "Yes or no", "Extraction", "Instructions", "Options", "Add an option", "Add a question", "13 optional details"]),
     ).toEqual([]);
     expect(optionalRows()).toEqual([
       ["Option descriptions", ""],
@@ -193,8 +190,7 @@ describe("each modal as its board (CA-15b P2)", () => {
         "Ran as a tool or MCP server",
         "Provided as model context",
         "Forked and modified",
-        "Optional",
-        "5 fields",
+        "5 optional details",
       ]),
     ).toEqual([]);
     expect(optionalRows()).toEqual([
@@ -213,13 +209,14 @@ describe("each modal as its board (CA-15b P2)", () => {
     const window = screen.getByTestId("full-prompt-window");
     expect(within(window).getByRole("button", { name: "Rename prompt" })).toBeTruthy();
     expect(within(window).getByRole("button", { name: "Close" })).toBeTruthy();
-    expect(inOrder(window.textContent ?? "", ["Prompt", "3 words", "Copy prompt", "Response", "0 / 4,000", "Optional", "2 fields", "Esc Close · ← → Previous or next prompt", "Close"])).toEqual([]);
+    expect(inOrder(window.textContent ?? "", ["Prompt", "3 words", "Copy prompt", "Response", "0 / 4,000", "2 optional details", "Esc Close · ← → Previous or next prompt", "Close"])).toEqual([]);
     expect(optionalRows()).toEqual([
       ["Model settings", ""],
       ["Variables", "Format: {company name}"],
     ]);
     expect(within(screen.getByRole("radiogroup", { name: "Reasoning effort" })).getAllByRole("radio").map((radio) => radio.textContent)).toEqual(["Default", "Low", "High"]);
-    expect((screen.getByLabelText("Custom instructions or project knowledge that applied") as HTMLTextAreaElement).placeholder).toBe("Custom instructions or project knowledge that applied");
+    // Synth 06: a text box in a modal is empty; its label names it.
+    expect((screen.getByLabelText("Custom instructions or project knowledge that applied") as HTMLTextAreaElement).placeholder).toBe("");
     expect(screen.getByText("No variables yet")).toBeTruthy();
   });
 });
