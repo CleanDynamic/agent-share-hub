@@ -25,12 +25,14 @@ import { TOUCH_MIN } from "@/lib/theme/density";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
-import { ConfirmDialog } from "@/pages/site/compose/referencePieces";
 import { shortAgo } from "@/pages/site/home/homeModel";
 import type { DraftListItem } from "@/lib/build/drafts";
 import type { SessionSummary } from "@/lib/build/sessions";
 
 import type { DraftsViewProps } from "./DraftsView";
+
+/** The confirm window is DraftsView's (the one import this folder keeps from the composer); the phone page is handed it. */
+export type ConfirmDialogComponent = (props: { open: boolean; title: string; body: string; action: string; onCancel: () => void; onConfirm: () => void }) => React.ReactNode;
 import { RowSkeletons, SESSION_ROW, SESSION_SKELETON_ROWS } from "./DraftsFrame";
 import {
   DRAFTS_SHOWN,
@@ -138,7 +140,7 @@ function SessionLine({ session, meta, drafts, onPick }: { session: SessionSummar
   );
 }
 
-export function DraftsPhone({ now, draftsRead, sessionsRead, sessionsAnchor, drafts, sessions, moreSessions, onAddToNew, onAddToDraft, onConnect, emptyDrafts }: DraftsViewProps) {
+export function DraftsPhone({ ConfirmDialog, now, draftsRead, sessionsRead, sessionsAnchor, drafts, sessions, moreSessions, onAddToNew, onAddToDraft, onConnect, emptyDrafts }: DraftsViewProps & { ConfirmDialog: ConfirmDialogComponent }) {
   const [order, setOrder] = useState<Order>("latest");
   const [filter, setFilter] = useState<Filter>("all");
   const [showAll, setShowAll] = useState(false);

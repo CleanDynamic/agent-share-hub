@@ -552,7 +552,7 @@ function DraftsDesktop({
 
 /** Below 768 the page is the phone's (`DraftsPhone`); from 768 up it is the two panels, unchanged. */
 export function DraftsView(props: DraftsViewProps) {
-  return useIsPhone() ? <DraftsPhone {...props} /> : <DraftsDesktop {...props} />;
+  return useIsPhone() ? <DraftsPhone {...props} ConfirmDialog={ConfirmDialog} /> : <DraftsDesktop {...props} />;
 }
 
 export default DraftsView;
